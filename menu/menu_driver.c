@@ -811,30 +811,6 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    return match_found;
 }
 
-/* How long the same action has been going. The menu sends a held
- * direction as one action, a pause (the scroll delay, 256 ms by
- * default), then one every 33 ms; a pause of under 200 ms between two
- * of the same action keeps it going, so the first auto-repeat starts the
- * count and the ones after add to it. A frame with no action changes
- * nothing. */
-#define MENU_ACTION_BRIDGE_US 200000
-
-void menu_driver_note_action(enum menu_action action, retro_time_t now)
-{
-   struct menu_state *menu_st = &menu_driver_state;
-
-   if (action == MENU_ACTION_NOOP)
-      return;
-   if (     action != menu_st->prev_action
-         || now - menu_st->last_action_time >= MENU_ACTION_BRIDGE_US)
-   {
-      menu_st->action_start_time = now;
-      menu_st->prev_action       = action;
-   }
-   menu_st->last_action_time  = now;
-   menu_st->action_press_time = now - menu_st->action_start_time;
-}
-
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
@@ -5510,6 +5486,16 @@ static unsigned input_combo_type_onkeyup_lut[INPUT_COMBO_LAST] =
  * all, acts on the menu's first frame and shuts it again. */
 static bool menu_event_starts_afresh;
 
+/* A held direction, once Menu Scroll Delay (the user's) has passed:
+ * the list moves 20 entries a second to start with - what the menu gave
+ * at 60 Hz - and faster as the hold goes on, by real time and not by
+ * frames; the steps it moves in are as fine as the display's frames
+ * allow. Left, Right and the other buttons repeat 20 times a second.
+ * MENU_REPEAT_INTERVAL_US is that repeat's period and the acceleration's
+ * step. */
+#define MENU_REPEAT_PER_SECOND  20
+#define MENU_REPEAT_INTERVAL_US (1000000 / MENU_REPEAT_PER_SECOND)
+
 unsigned menu_event(
       settings_t *settings,
       input_bits_t *p_input,
@@ -5520,21 +5506,27 @@ unsigned menu_event(
    /* the mouse or the touchscreen is in use this frame */
    bool pointer_active                             = false;
    /* Used for key repeat */
-   static retro_time_t last_time_us                = 0;
-   static float delay_timer                        = 0.0f;
-   static float delay_count                        = 0.0f;
+   /* The auto-repeat of a held direction, on a clock of real time: the
+    * first repeat comes the scroll delay after the press, the next ones
+    * every MENU_REPEAT_INTERVAL_US after that, on a schedule that
+    * carries over what a frame overshoots - so the rate is the same at
+    * any refresh rate. */
+   static retro_time_t hold_start_us               = 0;
+   static retro_time_t next_repeat_us              = 0;
+   /* Up/Down's motion: entries due, in millionths, and when it was
+    * last worked out */
+   static retro_time_t list_carry                  = 0;
+   static retro_time_t list_last_us                = 0;
+   static bool list_started                        = false;
+   static bool holding                             = false;
    static unsigned ok_old                          = 0;
    static uint8_t switch_old                       = 0;
    static size_t ok_enum_idx                       = 0;
    static bool keydown[RARCH_FIRST_CUSTOM_BIND]    = {false};
    static bool navigation_reset_delay              = true;
-   static bool hold_initial                        = true;
-   static bool hold_reset                          = true;
    unsigned ret                                    = MENU_ACTION_NOOP;
    uint8_t switch_current                          = 0;
    uint8_t switch_trigger                          = 0;
-   bool set_scroll                                 = false;
-   unsigned new_scroll_accel                       = 0;
    struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    gfx_display_t *p_disp                           = disp_get_ptr();
@@ -5608,22 +5600,15 @@ unsigned menu_event(
       ok_old                                       = ok_current;
       switch_old                                   = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                                    | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      /* Reset the navigation auto-repeat state machine, not just
-       * its clock. A hold that spans the blocked interval would
-       * otherwise resume with 'hold_reset' still false and
-       * 'delay_count' already partway to 'delay_timer', so the
-       * first unblocked frame fires a repeat immediately - and it
-       * does so at the accumulated scroll acceleration, which
-       * menu_driver_ctl() turns into up to six entries per step.
-       * That is what makes the selection jump several places when
-       * the menu unblocks mid-hold. Treat the block as ending the
-       * hold: the next press starts from the initial delay again. */
-      last_time_us                                 = menu_st->input_time_us;
-      hold_reset                                   = true;
-      hold_initial                                 = true;
-      delay_count                                  = 0.0f;
+      /* The block ends the hold: a hold that spans it would otherwise
+       * resume with a repeat already due, at the acceleration it had,
+       * and the selection would jump several places as the menu
+       * unblocks. The next press starts from the initial delay. */
+      holding                                      = false;
       navigation_initial                           = 0;
       menu_st->scroll.acceleration                 = 0;
+      menu_st->scroll.steps                        = 0;
+      menu_st->action_press_time                   = 0;
       return MENU_ACTION_NOOP;
    }
 
@@ -5756,14 +5741,13 @@ unsigned menu_event(
       menu_input->cancel_inhibit      = true;
       switch_old                      = BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_LEFT)
                                       | BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-      /* Reset the navigation auto-repeat state machine, for the
-       * same reason as the BLOCK_ALL_INPUT path above */
-      last_time_us                    = menu_st->input_time_us;
-      hold_reset                      = true;
-      hold_initial                    = true;
-      delay_count                     = 0.0f;
+      /* End the hold, for the same reason as the BLOCK_ALL_INPUT
+       * path above */
+      holding                         = false;
       navigation_initial              = 0;
       menu_st->scroll.acceleration    = 0;
+      menu_st->scroll.steps           = 0;
+      menu_st->action_press_time      = 0;
       return MENU_ACTION_NOOP;
    }
 
@@ -5780,47 +5764,108 @@ unsigned menu_event(
          && BIT256_GET_PTR(p_input, menu_ok_btn))
       navigation_current &= ~(1 << RETRO_DEVICE_ID_JOYPAD_START);
 
+   /* 0: this frame's Up or Down moves as the acceleration says (a
+    * press); otherwise it moves this many entries (a repeat) */
+   menu_st->scroll.steps            = 0;
    if (navigation_current)
    {
-      float delta_time              = (float)(menu_st->input_time_us - last_time_us) / 1000;
-
-      last_time_us                  = menu_st->input_time_us;
+      retro_time_t now              = menu_st->input_time_us;
+      retro_time_t repeat_from;
       navigation_reset_delay        = true;
 
       /* Store first direction in order to block "diagonals" */
       if (!navigation_initial)
          navigation_initial         = navigation_current;
 
-      if (hold_reset)
+      if (!holding)
       {
-         /* Don't run anything first frame */
-         hold_reset                 = false;
-         delay_timer                = (hold_initial) ? menu_scroll_delay : 33.33f;
-         delay_count                = 0;
+         /* The press itself acts through the edge; what follows is the
+          * repeat, from Menu Scroll Delay on */
+         holding                    = true;
+         hold_start_us              = now;
+         list_started               = false;
+         list_carry                 = 0;
+         next_repeat_us             = now + (retro_time_t)menu_scroll_delay * 1000;
+      }
+      repeat_from                   = hold_start_us
+         + (retro_time_t)menu_scroll_delay * 1000;
+
+      /* Acceleration and the number speed-up go by how long the
+       * direction has been repeating, not by frames: one step of
+       * acceleration per MENU_REPEAT_INTERVAL_US */
+      if (now >= repeat_from)
+      {
+         retro_time_t repeating     = now - repeat_from;
+         unsigned accel             = (unsigned)MIN(1 + repeating
+               / MENU_REPEAT_INTERVAL_US, 1000);
+         menu_st->scroll.acceleration = MIN(accel, menu_scroll_fast ? 25U : 5U);
+         menu_st->action_press_time   = repeating;
       }
       else
       {
-         hold_initial               = false;
-         delay_count               += delta_time;
+         menu_st->scroll.acceleration = 0;
+         menu_st->action_press_time   = 0;
       }
 
-      if (delay_count >= delay_timer)
+      if (now > hold_start_us)
       {
          uint32_t input_repeat      = 0;
-         for (i = 0; i < NAVIGATION_BUTTONS; i++)
-            BIT32_SET(input_repeat, navigation_buttons[i]);
 
+         /* Left, Right and the other buttons: a repeat each
+          * MENU_REPEAT_INTERVAL_US, on a schedule that carries over
+          * what a frame overshoots */
+         if (now >= next_repeat_us)
+         {
+            unsigned due            = (unsigned)(1
+                  + (now - next_repeat_us) / MENU_REPEAT_INTERVAL_US);
+            next_repeat_us         += (retro_time_t)due * MENU_REPEAT_INTERVAL_US;
+            for (i = 0; i < NAVIGATION_BUTTONS; i++)
+               BIT32_SET(input_repeat, navigation_buttons[i]);
+         }
+
+         /* Up and Down: the list moves at a speed in entries a second,
+          * which the acceleration raises, and as often as frames come:
+          * each frame moves the entries due since the last one, and
+          * carries the fraction. A faster display moves the same
+          * distance in more, smaller steps. */
+         if (now >= repeat_from)
+         {
+            retro_time_t speed      = MENU_REPEAT_PER_SECOND
+               * (retro_time_t)((MAX(menu_st->scroll.acceleration, 2) - 2) / 4 + 1);
+            unsigned moves;
+            if (!list_started)
+            {
+               /* the first repeat is due at repeat_from itself */
+               list_started         = true;
+               list_carry           = 1000000 + (now - repeat_from) * speed;
+            }
+            else
+               list_carry          += (now - list_last_us) * speed;
+            moves                   = (unsigned)(list_carry / 1000000);
+            list_carry             -= (retro_time_t)moves * 1000000;
+            BIT32_CLEAR(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
+            BIT32_CLEAR(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
+            if (moves)
+            {
+               BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
+               BIT32_SET(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
+               menu_st->scroll.steps = moves;
+            }
+         }
+         else
+         {
+            BIT32_CLEAR(input_repeat, RETRO_DEVICE_ID_JOYPAD_UP);
+            BIT32_CLEAR(input_repeat, RETRO_DEVICE_ID_JOYPAD_DOWN);
+         }
          p_trigger_input->data[0]  |= p_input->data[0] & input_repeat;
-         set_scroll                 = true;
-         hold_reset                 = true;
-         new_scroll_accel           = MIN(menu_st->scroll.acceleration + 1, menu_scroll_fast ? 25U : 5U);
       }
+      list_last_us                  = now;
    }
    else
    {
-      set_scroll                    = true;
-      hold_reset                    = true;
-      hold_initial                  = true;
+      holding                       = false;
+      menu_st->scroll.acceleration  = 0;
+      menu_st->action_press_time    = 0;
 
       /* Buffer for keyboard combo jitter */
       if (navigation_reset_delay)
@@ -5828,9 +5873,6 @@ unsigned menu_event(
       else
          navigation_initial         = 0;
    }
-
-   if (set_scroll)
-      menu_st->scroll.acceleration  = new_scroll_accel;
 
    /* Left/Right edge detection
     * > Must be maintained regardless of the on-screen keyboard
@@ -8296,7 +8338,11 @@ int generic_menu_entry_action(
       case MENU_ACTION_UP:
          if (selection_buf_size > 0)
          {
-            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            /* a repeat moves the entries its clock made due (see
+             * menu_event()); a press moves one */
+            unsigned scroll_speed  = menu_st->scroll.steps
+               ? menu_st->scroll.steps
+               : (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
             if (!(menu_st->selection_ptr == 0 && !wraparound_enable))
             {
                size_t idx             = 0;
@@ -8325,7 +8371,11 @@ int generic_menu_entry_action(
       case MENU_ACTION_DOWN:
          if (selection_buf_size > 0)
          {
-            unsigned scroll_speed  = (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
+            /* a repeat moves the entries its clock made due (see
+             * menu_event()); a press moves one */
+            unsigned scroll_speed  = menu_st->scroll.steps
+               ? menu_st->scroll.steps
+               : (unsigned)((MAX(scroll_accel, 2) - 2) / 4 + 1);
             if (!(menu_st->selection_ptr >= selection_buf_size - 1
                   && !wraparound_enable))
             {

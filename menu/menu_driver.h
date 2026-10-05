@@ -505,13 +505,9 @@ struct menu_state
    retro_time_t input_last_time_us;
    menu_input_t input_state;               /* retro_time_t alignment */
 
-   /* How long the same action has been going: since action_start_time,
-    * with the pauses between its auto-repeats bridged, last seen at
-    * last_action_time. Held Left/Right on a number speeds up by it.
-    * See menu_driver_note_action(). */
-   retro_time_t action_start_time;
+   /* How long a held direction has been repeating, in real time: held
+    * Left/Right on a number speeds up by it. Set by menu_event(). */
    retro_time_t action_press_time;
-   retro_time_t last_action_time;
 
    struct menu_bind_state input_binds;     /* uint64_t alignment */
 
@@ -537,13 +533,16 @@ struct menu_state
       size_t   index_list[SCROLL_INDEX_SIZE];
       unsigned index_size;
       unsigned acceleration;
+      /* entries this frame's Up or Down moves: set by a held
+       * direction's repeat (as many as its speed made due since the last
+       * frame); 0 for a press, which moves as the acceleration says */
+      unsigned steps;
       enum menu_scroll_mode mode;
    } scroll;
 
    /* unsigned alignment */
    unsigned input_dialog_kb_idx;
    menu_dialog_t dialog_st;
-   enum menu_action prev_action;
    enum menu_input_dialog_kb_text_type input_dialog_kb_text_type;
 #ifdef HAVE_RUNAHEAD
    unsigned int runahead_mode;
@@ -810,10 +809,6 @@ void menu_driver_toggle(
       bool on);
 
 /* Iterate the menu driver for one frame. */
-/* The menu's action this frame, for how long the same action has been
- * going (action_press_time). */
-void menu_driver_note_action(enum menu_action action, retro_time_t now);
-
 bool menu_driver_iterate(
       struct menu_state *menu_st,
       gfx_display_t *p_disp,

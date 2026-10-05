@@ -7856,8 +7856,6 @@ static enum runloop_state_enum runloop_check_state(
             focused = true;
       }
 
-      menu_driver_note_action(action, current_time);
-
       /* Check whether menu screensaver should be enabled */
       if (     (screensaver_timeout > 0)
             && (menu_st->flags   & MENU_ST_FLAG_SCREENSAVER_SUPPORTED)

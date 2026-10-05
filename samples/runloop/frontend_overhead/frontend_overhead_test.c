@@ -3134,67 +3134,129 @@ static void lane_ai_presses(void)
 #endif
 }
 
-/* How long the menu's same action has been going, which speeds up a
- * held Left/Right on a number: a held direction as the menu sends it -
- * once, the scroll delay, then every 33 ms, with frames of no action
- * between - counts from the first auto-repeat; a let-go, a pause of
- * 200 ms or more, or another action starts it again. Driven with times
- * of its own, so it takes no real seconds. */
-static void lane_menu_press_time(void)
+/* The menu's auto-repeat goes by real time and uses every frame: Down
+ * held for three seconds with the menu at 30, 60, 120, 144 and 240 Hz
+ * moves the same distance at each, starts repeating at Menu Scroll
+ * Delay, and ends with the same acceleration and speed-up time. With
+ * fast scrolling the list runs at up to 120 entries a second: a 240 Hz
+ * menu covers the same distance in single-entry steps on more frames,
+ * where a 60 Hz one has to jump two at a time. menu_event() is driven
+ * directly with times of its own, so it takes no real seconds. */
+struct repeat_run
+{
+   unsigned moved, first_repeat_ms, accel, max_step, frames_moving;
+   retro_time_t press_time;
+};
+
+static void repeat_hold(unsigned hz, retro_time_t t0, struct repeat_run *out)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   settings_t *settings       = config_get_ptr();
+   input_bits_t held, none, trig;
+   retro_time_t period        = 1000000 / hz;
+   retro_time_t t;
+   bool first                 = true;
+
+   memset(out, 0, sizeof(*out));
+   BIT256_CLEAR_ALL(none);
+   BIT256_CLEAR_ALL(held);
+   BIT256_SET(held, RETRO_DEVICE_ID_JOYPAD_DOWN);
+   /* let go first, so the hold starts here */
+   menu_st->input_time_us = t0 - period;
+   trig = none;
+   menu_event(settings, &none, &trig, false);
+
+   for (t = t0; t < t0 + 3000000; t += period)
+   {
+      unsigned action, step;
+      trig                   = first ? held : none;
+      menu_st->input_time_us = t;
+      action                 = menu_event(settings, &held, &trig, false);
+      if (action == MENU_ACTION_DOWN)
+      {
+         step = menu_st->scroll.steps ? menu_st->scroll.steps : 1;
+         out->moved += step;
+         out->frames_moving++;
+         if (step > out->max_step)
+            out->max_step = step;
+         if (!first && !out->first_repeat_ms)
+            out->first_repeat_ms = (unsigned)((t - t0) / 1000);
+      }
+      first = false;
+   }
+   out->accel      = menu_st->scroll.acceleration;
+   out->press_time = menu_st->action_press_time;
+   menu_st->input_time_us = t;
+   trig = none;
+   menu_event(settings, &none, &trig, false);
+}
+
+static void lane_menu_repeat_rates(void)
 {
 #ifdef HAVE_MENU
-   struct menu_state *menu_st = menu_state_get_ptr();
-   enum menu_action saved_prev = menu_st->prev_action;
-   retro_time_t t, run_start, last = 0;
+   static const unsigned hz[] = { 30, 60, 120, 144, 240 };
+   settings_t *settings       = config_get_ptr();
+   bool saved_fast            = settings->bools.menu_scroll_fast;
+   unsigned delay_ms          = settings->uints.menu_scroll_delay;
+   struct repeat_run run[5], fast[5];
    unsigned had = failures;
-   bool rising  = true;
+   unsigned r, k;
+   char msg[200];
 
-   /* held Right for 22 s: one action at 0, none until the scroll delay,
-    * then one every 33 ms; frames every 16 ms in between */
-   menu_driver_note_action(MENU_ACTION_RIGHT, 1000000);
-   CHECK(menu_st->action_press_time == 0, "menu press time: a new action did not start at 0");
-   for (t = 1000000 + 16000; t < 1000000 + 256000; t += 16000)
-      menu_driver_note_action(MENU_ACTION_NOOP, t);
-   run_start = 1000000 + 256000;
-   for (t = run_start; t < run_start + 22000000; t += 33000)
+   pm_set_menu(true);
+   run_loop_frames(3);
+   settings->bools.menu_scroll_fast = false;
+   for (r = 0; r < 5; r++)
+      repeat_hold(hz[r], 50000000 + (retro_time_t)r * 10000000, &run[r]);
+   settings->bools.menu_scroll_fast = true;
+   for (r = 0; r < 5; r++)
+      repeat_hold(hz[r], 200000000 + (retro_time_t)r * 10000000, &fast[r]);
+   settings->bools.menu_scroll_fast = saved_fast;
+
+   for (r = 0; r < 5; r++)
    {
-      retro_time_t f;
-      menu_driver_note_action(MENU_ACTION_RIGHT, t);
-      if (menu_st->action_press_time < last)
-         rising = false;
-      last = menu_st->action_press_time;
-      for (f = t + 16000; f < t + 33000; f += 16000)
-         menu_driver_note_action(MENU_ACTION_NOOP, f);
+      retro_time_t period_ms_x10 = 10000 / hz[r];
+      /* the press, then 20 a second from the scroll delay on */
+      unsigned want = 1 + 1 + (3000 - delay_ms - 1) / 50;
+      snprintf(msg, sizeof(msg), "menu repeat: at %u Hz Down held 3 s moved %u entries, not %u (+-1)",
+            hz[r], run[r].moved, want);
+      CHECK(run[r].moved + 1 >= want && run[r].moved <= want + 1, msg);
+      snprintf(msg, sizeof(msg), "menu repeat: at %u Hz the first repeat came at %u ms, not at the scroll delay (%u ms) or within a frame of it",
+            hz[r], run[r].first_repeat_ms, delay_ms);
+      CHECK(run[r].first_repeat_ms >= delay_ms
+            && run[r].first_repeat_ms * 10 <= delay_ms * 10 + (unsigned)period_ms_x10 + 10, msg);
+      snprintf(msg, sizeof(msg), "menu repeat: with fast scrolling at %u Hz Down held 3 s moved %u entries, at 60 Hz %u (+-2)",
+            hz[r], fast[r].moved, fast[1].moved);
+      CHECK(fast[r].moved + 2 >= fast[1].moved && fast[r].moved <= fast[1].moved + 2, msg);
+      for (k = 0; k < r; k++)
+      {
+         snprintf(msg, sizeof(msg), "menu repeat: the acceleration after 3 s differs between %u Hz (%u) and %u Hz (%u)",
+               hz[k], run[k].accel, hz[r], run[r].accel);
+         CHECK(run[k].accel + 1 >= run[r].accel && run[r].accel + 1 >= run[k].accel, msg);
+         snprintf(msg, sizeof(msg), "menu repeat: the speed-up time after 3 s differs by more than a frame between %u Hz and %u Hz",
+               hz[k], hz[r]);
+         CHECK(run[k].press_time - run[r].press_time < 35000 && run[r].press_time - run[k].press_time < 35000, msg);
+      }
    }
-   CHECK(rising, "menu press time: it went down while the direction was held");
-   CHECK(menu_st->action_press_time > 21000000,
-         "menu press time: 22 s of a held direction did not reach the last speed-up (over 21 s)");
-   CHECK(menu_st->action_press_time < 22000000,
-         "menu press time: it counted from before the first auto-repeat");
+   /* the faster the display, the finer the steps */
+   snprintf(msg, sizeof(msg), "menu repeat: fast scrolling at 240 Hz moved up to %u entries in a frame, not one at a time",
+         fast[4].max_step);
+   CHECK(fast[4].max_step == 1, msg);
+   snprintf(msg, sizeof(msg), "menu repeat: fast scrolling moved on %u frames at 240 Hz and %u at 60 Hz: the faster display was not used",
+         fast[4].frames_moving, fast[1].frames_moving);
+   CHECK(fast[4].frames_moving * 2 > fast[1].frames_moving * 3, msg);
 
-   /* let go a second, then Left: from 0 */
-   t += 1000000;
-   menu_driver_note_action(MENU_ACTION_LEFT, t);
-   CHECK(menu_st->action_press_time == 0, "menu press time: another action after a let-go did not start at 0");
-
-   /* the same action after a pause of 300 ms: from 0 */
-   menu_driver_note_action(MENU_ACTION_LEFT, t + 33000);
-   CHECK(menu_st->action_press_time == 33000, "menu press time: an auto-repeat 33 ms on was not added");
-   menu_driver_note_action(MENU_ACTION_LEFT, t + 33000 + 300000);
-   CHECK(menu_st->action_press_time == 0, "menu press time: a pause of 300 ms did not start it again");
-
-   /* another action within 200 ms: from 0 */
-   menu_driver_note_action(MENU_ACTION_RIGHT, t + 33000 + 350000);
-   CHECK(menu_st->action_press_time == 0, "menu press time: another action within 200 ms did not start it again");
-
-   menu_st->prev_action       = saved_prev;
-   menu_st->action_press_time = 0;
+   pm_set_menu(false);
+   run_loop_frames(3);
    if (failures == had)
-      printf("[pass] menu press time: a held direction counts from its first"
-            " auto-repeat and reaches the last speed-up after 21 s; a let-go,"
-            " a pause of 200 ms or more, or another action starts it again\n");
+      printf("[pass] menu repeat: Down held 3 s moves %u entries at 30, 60,"
+            " 120, 144 and 240 Hz alike (%u with fast scrolling), starts at"
+            " the scroll delay; fast scrolling moves on %u frames at 240 Hz"
+            " a step at a time, on %u at 60 Hz up to %u at a time\n",
+            run[1].moved, fast[1].moved, fast[4].frames_moving,
+            fast[1].frames_moving, fast[1].max_step);
 #else
-   printf("[skip] menu press time: needs the menu\n");
+   printf("[skip] menu repeat: needs the menu\n");
 #endif
 }
 
@@ -4516,7 +4578,7 @@ int main(int argc, char *argv[])
       lane_menu_combo_gate();
       lane_menu_pause();
       lane_ai_presses();
-      lane_menu_press_time();
+      lane_menu_repeat_rates();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
