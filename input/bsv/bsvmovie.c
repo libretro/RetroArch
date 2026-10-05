@@ -207,8 +207,7 @@ static bool movie_find_checkpoint_before(bsv_movie_t *movie, int64_t frame,
 {
    uint8_t tok;
    uint64_t frame_len;
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED) || consider_paused;
+   bool paused = !!(runloop_get_flags() & RUNLOOP_FLAG_PAUSED) || consider_paused;
    /* Skip to prev would prefer to go back at least 30 frames
       if rewinding when not paused, but won't skip over more
       than one checkpoint while going backwards. */
@@ -1063,10 +1062,9 @@ void bsv_movie_scan_from_start(bsv_movie_t *movie, int32_t len)
    bsv_movie_scan_to(movie, len);
 }
 
-void bsv_movie_next_frame(input_driver_state_t *input_st)
+void bsv_movie_next_frame(input_driver_state_t *input_st,
+      unsigned checkpoint_interval, bool checkpoint_deserialize)
 {
-   unsigned checkpoint_interval;
-   unsigned checkpoint_deserialize;
    /* If bsv_movie_state_next_handle is not NULL, deinit and set
       bsv_movie_state_handle to bsv_movie_state_next_handle and clear
       next_handle */
@@ -1074,8 +1072,6 @@ void bsv_movie_next_frame(input_driver_state_t *input_st)
 
    if (!handle)
       return;
-   checkpoint_interval    = config_get_ptr()->uints.replay_checkpoint_interval;
-   checkpoint_deserialize = config_get_ptr()->bools.replay_checkpoint_deserialize;
 #ifdef HAVE_REWIND
    if (state_manager_frame_is_reversed())
    {
@@ -1585,10 +1581,8 @@ bool replay_set_serialized_data(void *buf)
 
 void bsv_movie_poll(input_driver_state_t *input_st)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   retro_keyboard_event_t *key_event = &runloop_st->key_event;
    bsv_movie_t *handle = input_st->bsv_movie_state_handle;
-   if (*key_event && *key_event == runloop_st->frontend_key_event)
+   if (runloop_key_event_is_frontend())
    {
       int i;
       bsv_key_data_t k;
@@ -2076,8 +2070,7 @@ bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame)
 
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st)
 {
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
-   bool paused = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
+   bool paused = !!(runloop_get_flags() & RUNLOOP_FLAG_PAUSED);
    /* Can't skip forward in an unpaused recording replay. */
    if (      !input_st->bsv_movie_state_handle
          || (!input_st->bsv_movie_state_handle->playback && !paused)

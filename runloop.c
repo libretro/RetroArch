@@ -4978,6 +4978,14 @@ void runloop_set_platform_paused(bool paused)
       runloop_state.flags &= ~(RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE);
 }
 
+/* Whether the keyboard callback in place is the frontend's own, which
+ * is the one a replay feeds its recorded keys to. */
+bool runloop_key_event_is_frontend(void)
+{
+   return     runloop_state.key_event
+           && runloop_state.key_event == runloop_state.frontend_key_event;
+}
+
 /* Whether a core has content loaded. */
 bool runloop_content_loaded(void)
 {
@@ -9632,7 +9640,9 @@ int runloop_iterate(void)
     * has in cache; no bit needed. */
    if (input_st->bsv_movie_state_handle)
    {
-      bsv_movie_next_frame(input_st);
+      bsv_movie_next_frame(input_st,
+            settings->uints.replay_checkpoint_interval,
+            settings->bools.replay_checkpoint_deserialize);
       if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
       {
          movie_stop(input_st);

@@ -35,7 +35,7 @@
  *
  *    bsv_movie_dequeue_next(input_st);           runloop.c:8312
  *    ...core runs...
- *    bsv_movie_next_frame(input_st);
+ *    bsv_movie_next_frame(input_st, ...);
  *    if (flags & BSV_FLAG_MOVIE_END)
  *    {
  *       movie_stop(input_st);
@@ -128,6 +128,10 @@ void RARCH_ERR(const char *fmt, ...)  { va_list ap; va_start(ap, fmt); vfprintf(
 
 settings_t *config_get_ptr(void) { return &settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &runloop_st; }
+/* the two things the replay code asks the run loop by name */
+uint32_t runloop_get_flags(void) { return runloop_st.flags; }
+bool runloop_key_event_is_frontend(void)
+{ return runloop_st.key_event && runloop_st.key_event == runloop_st.frontend_key_event; }
 input_driver_state_t *input_state_get_ptr(void) { return &input_st; }
 bool content_load_state_in_progress(void *data) { (void)data; return false; }
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
@@ -181,7 +185,10 @@ static void frame(unsigned n)
 {
    bsv_movie_dequeue_next(&input_st);
    stub_core_run(n);
-   bsv_movie_next_frame(&input_st);
+   /* the two replay settings, as the run loop hands them over */
+   bsv_movie_next_frame(&input_st,
+         settings.uints.replay_checkpoint_interval,
+         settings.bools.replay_checkpoint_deserialize);
    if (input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END)
    {
       movie_stop(&input_st);

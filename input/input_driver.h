@@ -1024,6 +1024,15 @@ bool input_config_get_winraw_xinput_enable(void);
 bool input_config_get_winraw_player_lights(void);
 bool input_config_get_sdl3_system_keyboard(void);
 bool input_config_overlay_configured(void);
+bool input_config_get_sensors_enable(void);
+unsigned input_config_get_block_timeout(void);
+bool input_config_get_device_vibration(void);
+bool input_config_get_stylus_enable(void);
+bool input_config_get_stylus_require_contact_for_click(void);
+bool input_config_get_stylus_hover_moves_pointer(void);
+unsigned input_config_get_stylus_pressure_sensitivity(void);
+bool input_config_get_android_disconnect_workaround(void);
+const char *input_config_get_android_physical_keyboard(void);
 const char *input_config_get_joypad_driver(void);
 const char *input_config_get_keyboard_layout(void);
 const char *input_config_get_autoconfig_dir(void);
@@ -1709,7 +1718,10 @@ void input_overlay_check_mouse_cursor(void);
 
 #ifdef HAVE_BSV_MOVIE
 void bsv_movie_frame_rewind(void);
-void bsv_movie_next_frame(input_driver_state_t *input_st);
+/* @checkpoint_interval and @checkpoint_deserialize are the two replay
+ * settings, handed over by the run loop, which has them. */
+void bsv_movie_next_frame(input_driver_state_t *input_st,
+      unsigned checkpoint_interval, bool checkpoint_deserialize);
 bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
 bool bsv_movie_reset_playback(bsv_movie_t *handle);
 bool bsv_movie_reset_recording(bsv_movie_t *handle);

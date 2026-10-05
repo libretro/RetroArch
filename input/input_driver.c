@@ -9584,6 +9584,65 @@ bool input_config_get_sdl3_system_keyboard(void)
    return settings && settings->bools.input_sdl3_system_keyboard;
 }
 
+/* Sensors are allowed; and they are, until the settings say not. */
+bool input_config_get_sensors_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return !settings || settings->bools.input_sensors_enable;
+}
+
+unsigned input_config_get_block_timeout(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->uints.input_block_timeout : 0;
+}
+
+/* The device itself may vibrate, where it can. */
+bool input_config_get_device_vibration(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.enable_device_vibration;
+}
+
+#ifdef ANDROID
+bool input_config_get_stylus_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_stylus_enable;
+}
+
+bool input_config_get_stylus_require_contact_for_click(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_stylus_require_contact_for_click;
+}
+
+bool input_config_get_stylus_hover_moves_pointer(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_stylus_hover_moves_pointer;
+}
+
+unsigned input_config_get_stylus_pressure_sensitivity(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->uints.input_stylus_pressure_sensitivity : 0;
+}
+
+bool input_config_get_android_disconnect_workaround(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.android_input_disconnect_workaround;
+}
+
+/* The physical keyboard the user named, as "vid:pid", or "". */
+const char *input_config_get_android_physical_keyboard(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->arrays.input_android_physical_keyboard : "";
+}
+#endif
+
 /* An overlay is switched on and one is chosen. */
 bool input_config_overlay_configured(void)
 {

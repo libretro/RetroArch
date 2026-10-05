@@ -989,8 +989,7 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          {
-            settings_t *settings         = config_get_ptr();
-            bool sensors_allowed         = !settings || settings->bools.input_sensors_enable;
+            bool sensors_allowed         = input_config_get_sensors_enable();
             /* Re-enable sensors that were disabled on focus loss */
             bool enable_accelerometer   = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_DISABLE));
@@ -1262,8 +1261,7 @@ static void *android_input_init(const char *joypad_driver)
     * Check sensor_state_mask to avoid double-enabling, since
     * ASensorEventQueue_enableSensor is reference-counted. */
    {
-      settings_t *settings = config_get_ptr();
-      bool enable_sensors = !settings || settings->bools.input_sensors_enable;
+      bool enable_sensors = input_config_get_sensors_enable();
 
       if (enable_sensors && !android_app->sensor_state_mask)
       {
@@ -1458,7 +1456,6 @@ static INLINE void android_input_poll_event_type_motion(
    float x, y;
    int32_t tool_type;
    bool is_stylus, is_finger, is_hover_action;
-   settings_t *settings;
    android_stylus_cfg_t stylus_cfg;
    bool side_pressed;
    float pressure, distance;
@@ -1499,14 +1496,10 @@ static INLINE void android_input_poll_event_type_motion(
 
    if (is_stylus)
    {
-      settings = config_get_ptr();
-      if (!settings)
-         return;
-
       if (motion_ptr >= MAX_TOUCH)
          return;
 
-      if (!settings->bools.input_stylus_enable)
+      if (!input_config_get_stylus_enable())
       {
 #ifdef DEBUG_ANDROID_INPUT
          RARCH_LOG("[RA Input] Stylus support disabled - ignoring stylus event\n");
@@ -1520,11 +1513,11 @@ static INLINE void android_input_poll_event_type_motion(
       g_android_stylus_last_event_ns = (int64_t)cpu_features_get_time_usec() * 1000;
 
       stylus_cfg.require_contact      =
-         settings->bools.input_stylus_require_contact_for_click;
+         input_config_get_stylus_require_contact_for_click();
       stylus_cfg.hover_moves_pointer  =
-         settings->bools.input_stylus_hover_moves_pointer;
+         input_config_get_stylus_hover_moves_pointer();
       stylus_cfg.pressure_sensitivity =
-         settings->uints.input_stylus_pressure_sensitivity;
+         input_config_get_stylus_pressure_sensitivity();
 
       buttons         = p_AMotionEvent_getButtonState ?
          AMotionEvent_getButtonState(event) : 0;
@@ -2046,7 +2039,6 @@ static int android_input_recover_port(android_input_t *android, int id)
    int vendorId          = 0;
    int productId         = 0;
    int ret               = -1;
-   settings_t *settings  = config_get_ptr();
 
    if (!engine_lookup_name(device_name, &vendorId,
 			   &productId, sizeof(device_name), id))
@@ -2077,7 +2069,7 @@ static int android_input_recover_port(android_input_t *android, int id)
    if (ret < 0)
        return -1;
 
-   if (!settings->bools.android_input_disconnect_workaround)
+   if (!input_config_get_android_disconnect_workaround())
    {
       char stale_name[256];
 
@@ -2109,10 +2101,9 @@ static bool is_configured_as_physical_keyboard(int vendor_id, int product_id, co
     int keyboard_vendor_id;
     int keyboard_product_id;
     char keyboard_name[256];
-    settings_t *settings = config_get_ptr();
 
     {
-        const char *str = settings->arrays.input_android_physical_keyboard;
+        const char *str = input_config_get_android_physical_keyboard();
         char *end       = NULL;
         long vid, pid;
 
@@ -2970,7 +2961,6 @@ static void android_input_poll(void *data)
    int timeout;
    struct android_app *android_app = (struct android_app*)g_android;
    android_input_t *android        = (android_input_t*)data;
-   settings_t            *settings = config_get_ptr();
 
    /* Apply any text staged by the native (IME) keyboard. */
    android_keyboard_poll();
@@ -2990,7 +2980,7 @@ static void android_input_poll(void *data)
     * First iteration blocks; once an event has woken us, drain the rest
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
     * in one call. */
-   timeout = settings->uints.input_block_timeout;
+   timeout = input_config_get_block_timeout();
    if (runloop_get_flags() & RUNLOOP_FLAG_IDLE)
       timeout = -1;
 

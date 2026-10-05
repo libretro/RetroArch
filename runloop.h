@@ -960,6 +960,10 @@ void runloop_set_platform_paused(bool paused);
 /* Whether a core has content loaded. */
 bool runloop_content_loaded(void);
 
+/* Whether the keyboard callback in place is the frontend's own, which
+ * is the one a replay feeds its recorded keys to. */
+bool runloop_key_event_is_frontend(void);
+
 bool runloop_get_entry_state_path(char *path, size_t len, int slot);
 
 bool runloop_get_current_savestate_path(char *path, size_t len);
