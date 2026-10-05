@@ -3325,7 +3325,11 @@ static void xmb_tab_set_selection(void *data)
 
    if (xmb)
    {
-      size_t tab_selection          = xmb->tab_selection[xmb->categories_selection_ptr];
+      /* one slot per tab, for as many tabs as the array holds */
+      size_t tab_selection          =
+            (xmb->categories_selection_ptr < ARRAY_SIZE(xmb->tab_selection))
+            ? xmb->tab_selection[xmb->categories_selection_ptr]
+            : 0;
       if (tab_selection)
       {
          struct menu_state *menu_st = menu_state_get_ptr();
@@ -10750,8 +10754,10 @@ static void xmb_list_cache(void *data, enum menu_list_type type,
       case MENU_LIST_HORIZONTAL:
          xmb->categories_selection_ptr_old = xmb->categories_selection_ptr;
 
-         /* Remember last selection per tab */
-         xmb->tab_selection[xmb->categories_selection_ptr] = selection;
+         /* Remember last selection per tab, for as many tabs as the
+          * array holds */
+         if (xmb->categories_selection_ptr < ARRAY_SIZE(xmb->tab_selection))
+            xmb->tab_selection[xmb->categories_selection_ptr] = selection;
 
          switch (action)
          {

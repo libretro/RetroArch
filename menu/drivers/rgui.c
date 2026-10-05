@@ -8190,7 +8190,8 @@ static void rgui_navigation_set(void *data, bool scroll)
          rgui->playlist_mainmenu_selection[RGUI_MAINMENU_HISTORY] = selection;
       else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
          rgui->playlist_mainmenu_selection[RGUI_MAINMENU_FAVORITES] = selection;
-      else
+      /* one slot per playlist, for as many as the array holds */
+      else if (rgui->playlist_selection_ptr < ARRAY_SIZE(rgui->playlist_selection))
          rgui->playlist_selection[rgui->playlist_selection_ptr] = selection;
    }
    else if (rgui->flags & RGUI_FLAG_IS_PLAYLISTS_TAB)
@@ -8385,7 +8386,7 @@ static void rgui_populate_entries(
             menu_st->selection_ptr = rgui->playlist_mainmenu_selection[RGUI_MAINMENU_HISTORY];
          else if (string_is_equal(rgui->menu_title, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_FAVORITES_TAB)))
             menu_st->selection_ptr = rgui->playlist_mainmenu_selection[RGUI_MAINMENU_FAVORITES];
-         else
+         else if (rgui->playlist_selection_ptr < ARRAY_SIZE(rgui->playlist_selection))
             menu_st->selection_ptr = rgui->playlist_selection[rgui->playlist_selection_ptr];
       }
    }

@@ -4419,8 +4419,10 @@ static void ozone_go_to_sidebar(ozone_handle_t *ozone,
    if (menu_show_sublabels && menu_current_sel_only)
       ozone->flags               |= OZONE_FLAG_NEED_COMPUTE;
 
-   /* Remember last selection per tab */
-   ozone->tab_selection[ozone->categories_selection_ptr] = ozone->selection;
+   /* Remember last selection per tab, for as many tabs as the array
+    * holds */
+   if (ozone->categories_selection_ptr < ARRAY_SIZE(ozone->tab_selection))
+      ozone->tab_selection[ozone->categories_selection_ptr] = ozone->selection;
 
    ozone_sidebar_update_collapse(ozone, ozone_collapse_sidebar, true);
 
@@ -4667,7 +4669,10 @@ static void ozone_tab_set_selection(void *data)
    if (     ozone
          && !(ozone->flags2 & OZONE_FLAG2_LAST_POINTER_IN_SIDEBAR))
    {
-      size_t tab_selection = ozone->tab_selection[ozone->categories_selection_ptr];
+      size_t tab_selection =
+            (ozone->categories_selection_ptr < ARRAY_SIZE(ozone->tab_selection))
+            ? ozone->tab_selection[ozone->categories_selection_ptr]
+            : 0;
       if (tab_selection)
       {
          struct menu_state *menu_st = menu_state_get_ptr();
@@ -9043,7 +9048,9 @@ static enum menu_action ozone_parse_menu_entry_action(
                   NULL,
                   MENU_ENUM_LABEL_PLAYLIST_MANAGER_SETTINGS_STR,
                   MENU_SETTING_ACTION,
-                  ozone->tab_selection[ozone->categories_selection_ptr],
+                  (ozone->categories_selection_ptr < ARRAY_SIZE(ozone->tab_selection))
+                  ? ozone->tab_selection[ozone->categories_selection_ptr]
+                  : 0,
                   0,
                   ACTION_OK_DL_PLAYLIST_MANAGER_SETTINGS);
 
@@ -9471,7 +9478,8 @@ static enum menu_action ozone_parse_menu_entry_action(
             else
             {
                /* Jump to first item on Main Menu */
-               ozone->tab_selection[ozone->categories_selection_ptr] = 0;
+               if (ozone->categories_selection_ptr < ARRAY_SIZE(ozone->tab_selection))
+                  ozone->tab_selection[ozone->categories_selection_ptr] = 0;
                menu_st->selection_ptr = 0;
             }
 
