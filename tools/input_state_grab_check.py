@@ -113,6 +113,29 @@ def count_tree(root):
 COMMAND = re.compile(r'\b(command_event|retroarch_ctl|retroarch_main_quit)\s*\(')
 
 
+# The menu reads the pointer from the view the frontend compiles once a
+# poll (input_driver_pointer_view()) and calls no driver for it.
+MENU_DEVICE_READ = re.compile(r'\binput_driver_device_state\s*\(')
+
+
+def menu_device_reads(root):
+    found = {}
+    base = os.path.join(root, 'menu')
+    for d, _dirs, files in os.walk(base):
+        for f in files:
+            if not f.endswith(('.c', '.m', '.cpp')):
+                continue
+            path = os.path.join(d, f)
+            try:
+                text = open(path, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(MENU_DEVICE_READ.findall(strip_comments(text)))
+            if n:
+                found[os.path.relpath(path, root).replace(os.sep, '/')] = n
+    return found
+
+
 def command_calls(root):
     found = {}
     base = os.path.join(root, 'input')
@@ -232,6 +255,11 @@ def run(root, allowed, outside_allowed=None):
             print('%s: down to %d, and OUTSIDE_ALLOWED in tools/input_state_grab_check.py still says %d.\n'
                   '  Lower the number%s.' % (rel, have, may, ' (remove the line)' if not have else ''))
             bad += 1
+    for rel, n in sorted(menu_device_reads(root).items()):
+        print('%s: reads the input driver for the pointer itself, %d time(s).\n'
+              '  Read the view the frontend compiles once a poll: '
+              'input_driver_pointer_view().' % (rel, n))
+        bad += 1
     for rel, n in sorted(command_calls(root).items()):
         print('%s: issues a frontend command itself, %d time(s).\n'
               '  Ask for it: input_driver_platform_request().' % (rel, n))
@@ -308,6 +336,14 @@ def selftest():
             if got != want:
                 print('selftest: %s: wanted %d, got %d' % (what, want, got))
                 bad += 1
+        # the menu reading the driver for the pointer itself
+        os.makedirs(os.path.join(root, 'menu'), exist_ok=True)
+        with open(os.path.join(root, 'menu', 'm.c'), 'w') as f:
+            f.write('int m(void) { return input_driver_device_state(0, 2, 0, 0); }\n')
+        if menu_device_reads(root).get('menu/m.c') != 1:
+            print('selftest: the menu reading the driver for the pointer was not found')
+            bad += 1
+        os.remove(os.path.join(root, 'menu', 'm.c'))
         # a driver issuing a frontend command itself, and one asking
         with open(os.path.join(root, 'input', 'drivers', 'cmd.c'), 'w') as f:
             f.write('void q(void) { command_event(CMD_EVENT_QUIT, 0); }\n')
@@ -322,7 +358,7 @@ def selftest():
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 6))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 7))
     return 0
 
 

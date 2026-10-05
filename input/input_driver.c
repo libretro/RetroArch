@@ -10389,6 +10389,69 @@ void input_driver_set_platform_menu_button(bool held)
  * and holds none of them.
  *
  * Whether there is a driver to read at all. */
+/* The pointer view is compiled once per poll. */
+static unsigned input_poll_generation = 1;
+
+const input_pointer_view_t *input_driver_pointer_view(void)
+{
+   static input_pointer_view_t view;
+   static unsigned             compiled;
+
+   if (compiled == input_poll_generation)
+      return &view;
+   compiled   = input_poll_generation;
+   memset(&view, 0, sizeof(view));
+   if (!input_driver_has_device_state())
+      return &view;
+
+   view.flags   = INPUT_PTR_VIEW_VALID;
+   view.mouse_x = input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0,
+         RETRO_DEVICE_ID_MOUSE_X);
+   view.mouse_y = input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0,
+         RETRO_DEVICE_ID_MOUSE_Y);
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_LEFT))
+      view.flags |= INPUT_PTR_VIEW_MOUSE_LEFT;
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_RIGHT))
+      view.flags |= INPUT_PTR_VIEW_MOUSE_RIGHT;
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_WHEELUP))
+      view.flags |= INPUT_PTR_VIEW_WHEEL_UP;
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+      view.flags |= INPUT_PTR_VIEW_WHEEL_DOWN;
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP))
+      view.flags |= INPUT_PTR_VIEW_HWHEEL_UP;
+   if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
+            RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
+      view.flags |= INPUT_PTR_VIEW_HWHEEL_DOWN;
+
+   view.ptr_x   = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_X);
+   view.ptr_y   = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+         RETRO_DEVICE_ID_POINTER_Y);
+   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RETRO_DEVICE_ID_POINTER_PRESSED))
+      view.flags |= INPUT_PTR_VIEW_PTR_PRESSED;
+   if (input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
+            RARCH_DEVICE_ID_POINTER_BACK))
+      view.flags |= INPUT_PTR_VIEW_PTR_BACK;
+
+   view.scr_x   = input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+         RETRO_DEVICE_ID_POINTER_X);
+   view.scr_y   = input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+         RETRO_DEVICE_ID_POINTER_Y);
+   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+            RETRO_DEVICE_ID_POINTER_PRESSED))
+      view.flags |= INPUT_PTR_VIEW_SCR_PRESSED;
+   if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
+            RARCH_DEVICE_ID_POINTER_BACK))
+      view.flags |= INPUT_PTR_VIEW_SCR_BACK;
+   return &view;
+}
+
 bool input_driver_has_device_state(void)
 {
    return     input_driver_st.current_driver
@@ -10722,6 +10785,7 @@ void input_driver_poll(void)
       sec_joypad->poll();
    if (input && input->poll)
       input->poll(input_st->current_data);
+   input_poll_generation++;
 
 #ifdef HAVE_THREADS
    /* the keys another thread has reported since the last poll */

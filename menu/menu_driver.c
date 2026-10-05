@@ -2112,7 +2112,8 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       (menu &&
        menu->driver_ctx &&
        menu->driver_ctx->set_texture);
-   bool state_inited               = input_driver_has_device_state();
+   const input_pointer_view_t *view = input_driver_pointer_view();
+   bool state_inited               = (view->flags & INPUT_PTR_VIEW_VALID) != 0;
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
    if (overlay_active)
@@ -2148,17 +2149,9 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    /* X/Y position */
    if (state_inited)
    {
-      if ((hw_state->x = input_driver_device_state(
-                  0,
-                  RARCH_DEVICE_MOUSE_SCREEN,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_X)) != last_x)
+      if ((hw_state->x = view->mouse_x) != last_x)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      if ((hw_state->y = input_driver_device_state(
-                  0,
-                  RARCH_DEVICE_MOUSE_SCREEN,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_Y)) != last_y)
+      if ((hw_state->y = view->mouse_y) != last_y)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
 
@@ -2201,58 +2194,34 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    {
       /* Select (LMB)
        * Note that releasing select also counts as activity */
-      if (input_driver_device_state(
-                  0,
-               RETRO_DEVICE_MOUSE,
-               0,
-               RETRO_DEVICE_ID_MOUSE_LEFT))
+      if (view->flags & INPUT_PTR_VIEW_MOUSE_LEFT)
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
 
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
-      if (input_driver_device_state(
-                  0,
-               RETRO_DEVICE_MOUSE,
-               0,
-               RETRO_DEVICE_ID_MOUSE_RIGHT))
+      if (view->flags & INPUT_PTR_VIEW_MOUSE_RIGHT)
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
 
       /* Up (mouse wheel up) */
-      if (input_driver_device_state(
-                  0,
-                  RETRO_DEVICE_MOUSE,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELUP))
+      if (view->flags & INPUT_PTR_VIEW_WHEEL_UP)
          hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_UP
                             | MENU_INP_PTR_FLG_ACTIVE
                              );
 
       /* Down (mouse wheel down) */
-      if (input_driver_device_state(
-                  0,
-                  RETRO_DEVICE_MOUSE,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+      if (view->flags & INPUT_PTR_VIEW_WHEEL_DOWN)
          hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_DOWN
                             | MENU_INP_PTR_FLG_ACTIVE
                              );
 
       /* Left (mouse wheel horizontal left) */
-      if (input_driver_device_state(
-                  0,
-                  RETRO_DEVICE_MOUSE,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
+      if (view->flags & INPUT_PTR_VIEW_HWHEEL_DOWN)
          hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_LEFT
                             | MENU_INP_PTR_FLG_ACTIVE
                              );
 
       /* Right (mouse wheel horizontal right) */
-      if (input_driver_device_state(
-                  0,
-                  RETRO_DEVICE_MOUSE,
-                  0,
-                  RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP))
+      if (view->flags & INPUT_PTR_VIEW_HWHEEL_UP)
          hw_state->flags |=  (MENU_INP_PTR_FLG_PRESS_RIGHT
                             | MENU_INP_PTR_FLG_ACTIVE
                              );
@@ -2282,7 +2251,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    unsigned fb_width, fb_height;
    int pointer_x                                = 0;
    int pointer_y                                = 0;
-   bool state_inited                            = input_driver_has_device_state();
+   const input_pointer_view_t *view             = input_driver_pointer_view();
+   bool state_inited                            = (view->flags & INPUT_PTR_VIEW_VALID) != 0;
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
@@ -2336,9 +2306,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* X pos */
    if (state_inited)
-      pointer_x                  = input_driver_device_state(
-                  0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_X);
+      pointer_x                  = (pointer_device == RETRO_DEVICE_POINTER)
+         ? view->ptr_x : view->scr_x;
    hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    hw_state->x *= input_touch_scale;
 
@@ -2362,9 +2331,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* Y pos */
    if (state_inited)
-      pointer_y = input_driver_device_state(
-                  0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_Y);
+      pointer_y = (pointer_device == RETRO_DEVICE_POINTER)
+         ? view->ptr_y : view->scr_y;
    hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
    hw_state->y *= input_touch_scale;
 
@@ -2385,9 +2353,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
     * Note that releasing select also counts as activity */
    if (state_inited)
    {
-      if (input_driver_device_state(
-                  0, pointer_device,
-            0, RETRO_DEVICE_ID_POINTER_PRESSED))
+      if (view->flags & ((pointer_device == RETRO_DEVICE_POINTER)
+               ? INPUT_PTR_VIEW_PTR_PRESSED : INPUT_PTR_VIEW_SCR_PRESSED))
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
       else
          hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_SELECT;
@@ -2404,9 +2371,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
     * Note that releasing cancel also counts as activity */
    if (state_inited)
    {
-      if (input_driver_device_state(
-                  0, pointer_device,
-            0, RARCH_DEVICE_ID_POINTER_BACK))
+      if (view->flags & ((pointer_device == RETRO_DEVICE_POINTER)
+               ? INPUT_PTR_VIEW_PTR_BACK : INPUT_PTR_VIEW_SCR_BACK))
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
       else
          hw_state->flags &= ~MENU_INP_PTR_FLG_PRESS_CANCEL;

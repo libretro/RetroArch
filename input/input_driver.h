@@ -1201,6 +1201,33 @@ int16_t input_driver_device_state(unsigned port,
 int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       unsigned device, unsigned idx, unsigned id);
 
+/* Port 0's mouse and first touch, read from the driver once per poll,
+ * so every reader in a frame sees one state and a wheel notch once. */
+enum input_pointer_view_flags
+{
+   INPUT_PTR_VIEW_VALID         = (1 << 0), /* there was a driver to read */
+   INPUT_PTR_VIEW_MOUSE_LEFT    = (1 << 1),
+   INPUT_PTR_VIEW_MOUSE_RIGHT   = (1 << 2),
+   INPUT_PTR_VIEW_WHEEL_UP      = (1 << 3),
+   INPUT_PTR_VIEW_WHEEL_DOWN    = (1 << 4),
+   INPUT_PTR_VIEW_HWHEEL_UP     = (1 << 5),
+   INPUT_PTR_VIEW_HWHEEL_DOWN   = (1 << 6),
+   INPUT_PTR_VIEW_PTR_PRESSED   = (1 << 7),  /* RETRO_DEVICE_POINTER */
+   INPUT_PTR_VIEW_PTR_BACK      = (1 << 8),
+   INPUT_PTR_VIEW_SCR_PRESSED   = (1 << 9),  /* RARCH_DEVICE_POINTER_SCREEN */
+   INPUT_PTR_VIEW_SCR_BACK      = (1 << 10)
+};
+
+typedef struct input_pointer_view
+{
+   int16_t mouse_x, mouse_y;    /* RARCH_DEVICE_MOUSE_SCREEN */
+   int16_t ptr_x, ptr_y;        /* RETRO_DEVICE_POINTER */
+   int16_t scr_x, scr_y;        /* RARCH_DEVICE_POINTER_SCREEN */
+   uint16_t flags;              /* enum input_pointer_view_flags */
+} input_pointer_view_t;
+
+const input_pointer_view_t *input_driver_pointer_view(void);
+
 /* A controller as the controller has it, for the capture of a bind:
  * each array that is given is filled - @buttons with whether each is
  * down, @axes with each axis's position, @hats with the directions
