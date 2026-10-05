@@ -1545,7 +1545,7 @@ void flush_wayland_fd(void *data)
  * got to it first. */
 void wayland_input_dispatch(input_ctx_wayland_data_t *wl)
 {
-#ifdef WAYLAND_HAVE_INPUT_QUEUE
+#ifdef WAYLAND_HAVE_QUEUE_DISPATCH
    struct pollfd fd = {0};
 #endif
 
@@ -1555,7 +1555,7 @@ void wayland_input_dispatch(input_ctx_wayland_data_t *wl)
       return;
    }
 
-#ifdef WAYLAND_HAVE_INPUT_QUEUE
+#ifdef WAYLAND_HAVE_QUEUE_DISPATCH
    fd.fd            = wl->fd;
    fd.events        = POLLIN | POLLERR | POLLHUP;
 

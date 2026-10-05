@@ -274,11 +274,17 @@ typedef struct data_offer_ctx
  * handlers, between the shared configure processing and the clearing
  * of 'configured'.  EGL uses it to resize/create the wl_egl_window;
  * Vulkan needs no additional action and passes NULL. */
-/* Not on webOS, whose Wayland library is an older one: there the
- * seat stays on the default queue. */
+/* Not on webOS, whose Wayland library is an older one, without proxy
+ * wrappers or wl_display_roundtrip_queue(): its own code puts the seat
+ * on the input queue with what it has (wayland_common_webos.c), and
+ * the input driver's poll dispatches it the same way
+ * (WAYLAND_HAVE_QUEUE_DISPATCH, which needs only reads of one queue -
+ * and the backport, where it is built, falls back to the default queue
+ * on a library without them). */
 #ifndef WEBOS
 #define WAYLAND_HAVE_INPUT_QUEUE 1
 #endif
+#define WAYLAND_HAVE_QUEUE_DISPATCH 1
 
 /* The input driver's poll: dispatch the input queue, reading the
  * connection if nothing else has. Where there is no input queue it is
