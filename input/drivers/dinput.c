@@ -30,6 +30,7 @@
 #include <stddef.h>
 #include <string.h>
 #include <boolean.h>
+#include <retro_atomic.h>
 
 #include <windowsx.h>
 
@@ -58,20 +59,55 @@
 /* Context has to be global as joypads also ride on this context. */
 LPDIRECTINPUT8 g_dinput_ctx;
 
-struct dinput_pointer_status
+/* Touches, as WM_POINTER* hands them: a fixed set of slots the window
+ * procedure writes and the poll reads, with no lock. The window
+ * procedure runs on the thread that owns the window - with threaded
+ * video, not the poll's - so the list of malloc()ed nodes this was,
+ * added to and freed there while the poll walked it, was a race that
+ * could read freed memory.
+ *
+ * One writer, the window procedure: it fills a slot's position and
+ * order and then publishes the slot by storing its id (plus one, so 0
+ * is a free slot); it frees one by storing 0. The poll reads the id
+ * with acquire and then the rest. A touch's position and its id can be
+ * a frame apart at worst. Touches are given out in the order they went
+ * down, as the list kept them. */
+#define DINPUT_MAX_POINTERS 16
+
+struct dinput_pointer_slot
 {
-   struct dinput_pointer_status *next;
-   int pointer_id;
-   int pointer_x;
-   int pointer_y;
+   retro_atomic_int_t id_plus1;  /* 0: free */
+   retro_atomic_int_t order;     /* when it went down */
+   retro_atomic_int_t pos;       /* x << 16 | y, client coordinates */
+};
+
+#define DINPUT_POS_PACK(x, y) ((int)(((uint32_t)(uint16_t)(int16_t)(x) << 16) \
+      | (uint32_t)(uint16_t)(int16_t)(y)))
+#define DINPUT_POS_X(p)       ((int16_t)(uint16_t)((uint32_t)(p) >> 16))
+#define DINPUT_POS_Y(p)       ((int16_t)(uint16_t)((uint32_t)(p) & 0xffffu))
+
+/* What the window procedure hands the poll besides touches, in one word
+ * both change with atomic operations: the wheel's notches, a click that
+ * focused the window or landed on its title bar, and the left/right
+ * Shift and Alt held (for the releases the OS does not send). The rest
+ * of the flags are the poll's alone. */
+enum dinput_msg_flags
+{
+   DINP_MSG_SHIFT_L      = (1 << 0),
+   DINP_MSG_SHIFT_R      = (1 << 1),
+   DINP_MSG_ALT_L        = (1 << 2),
+   DINP_MSG_ALT_R        = (1 << 3),
+   DINP_MSG_DBCLK_TITLE  = (1 << 4),
+   DINP_MSG_WHEEL_UP     = (1 << 5),
+   DINP_MSG_WHEEL_DOWN   = (1 << 6),
+   DINP_MSG_HWHEEL_UP    = (1 << 7),
+   DINP_MSG_HWHEEL_DOWN  = (1 << 8),
+   DINP_MSG_MOUSE_IGNORE = (1 << 9)
 };
 
 enum dinput_input_flags
 {
-   DINP_FLAG_SHIFT_L           = (1 << 0),
-   DINP_FLAG_SHIFT_R           = (1 << 1),
-   DINP_FLAG_ALT_L             = (1 << 2),
-   DINP_FLAG_ALT_R             = (1 << 3),
+   /* bits 0-3: the Shift and Alt keys, now in msg_flags */
    DINP_FLAG_DBCLK_ON_TITLEBAR = (1 << 4),
    DINP_FLAG_MOUSE_L_BTN       = (1 << 5),
    DINP_FLAG_MOUSE_R_BTN       = (1 << 6),
@@ -91,9 +127,9 @@ struct dinput_input
    LPDIRECTINPUTDEVICE8 keyboard;
    LPDIRECTINPUTDEVICE8 mouse;
    const input_device_driver_t *joypad;
-   struct dinput_pointer_status pointer_head; /* dummy head for easy iteration */
-   int window_pos_x;
-   int window_pos_y;
+   struct dinput_pointer_slot pointers[DINPUT_MAX_POINTERS];
+   retro_atomic_int_t pointer_order;  /* the window procedure's */
+   retro_atomic_int_t msg_flags;      /* enum dinput_msg_flags */
    int mouse_rel_x;
    int mouse_rel_y;
    int mouse_x;
@@ -232,33 +268,55 @@ static void dinput_poll(void *data)
 
       /* If both shift keys are pressed simultaneously, the OS will not issue
        * a WM_KEYUP for the first one. That up event will be issued here. */
-      if ((di->flags & DINP_FLAG_SHIFT_L) && !(di->state[DIK_LSHIFT] & 0x80))
+      if ((retro_atomic_load_acquire_int(&di->msg_flags) & DINP_MSG_SHIFT_L) && !(di->state[DIK_LSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_LSHIFT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
-         di->flags &= ~DINP_FLAG_SHIFT_L;
+         retro_atomic_fetch_and_int(&di->msg_flags, ~DINP_MSG_SHIFT_L);
       }
-      if ((di->flags & DINP_FLAG_SHIFT_R) && !(di->state[DIK_RSHIFT] & 0x80))
+      if ((retro_atomic_load_acquire_int(&di->msg_flags) & DINP_MSG_SHIFT_R) && !(di->state[DIK_RSHIFT] & 0x80))
       {
          input_keyboard_event(false, RETROK_RSHIFT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
-         di->flags &= ~DINP_FLAG_SHIFT_R;
+         retro_atomic_fetch_and_int(&di->msg_flags, ~DINP_MSG_SHIFT_R);
       }
 
       /* When using alt-tab, the alt key won't get a WM_KEYUP message from the
        * OS. Instead we issue it here when ALT isn't pressed down anymore. */
-      if ((di->flags & DINP_FLAG_ALT_L) && !(di->state[DIK_LMENU]  & 0x80))
+      if ((retro_atomic_load_acquire_int(&di->msg_flags) & DINP_MSG_ALT_L) && !(di->state[DIK_LMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_LALT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
-         di->flags &= ~DINP_FLAG_ALT_L;
+         retro_atomic_fetch_and_int(&di->msg_flags, ~DINP_MSG_ALT_L);
       }
-      if ((di->flags & DINP_FLAG_ALT_R) && !(di->state[DIK_RMENU]  & 0x80))
+      if ((retro_atomic_load_acquire_int(&di->msg_flags) & DINP_MSG_ALT_R) && !(di->state[DIK_RMENU]  & 0x80))
       {
          input_keyboard_event(false, RETROK_RALT, 0,
                win32_get_keyboard_mods(), RETRO_DEVICE_KEYBOARD);
-         di->flags &= ~DINP_FLAG_ALT_R;
+         retro_atomic_fetch_and_int(&di->msg_flags, ~DINP_MSG_ALT_R);
       }
+   }
+
+   /* What the window procedure has handed over since the last poll:
+    * the wheel's notches, a focusing click, a title-bar double
+    * click. Taken once, into the poll's own flags. */
+   {
+      int msg = retro_atomic_fetch_and_int(&di->msg_flags,
+            ~(DINP_MSG_WHEEL_UP | DINP_MSG_WHEEL_DOWN
+             | DINP_MSG_HWHEEL_UP | DINP_MSG_HWHEEL_DOWN
+             | DINP_MSG_MOUSE_IGNORE | DINP_MSG_DBCLK_TITLE));
+      if (msg & DINP_MSG_WHEEL_UP)
+         di->flags |= DINP_FLAG_MOUSE_WU_BTN;
+      if (msg & DINP_MSG_WHEEL_DOWN)
+         di->flags |= DINP_FLAG_MOUSE_WD_BTN;
+      if (msg & DINP_MSG_HWHEEL_UP)
+         di->flags |= DINP_FLAG_MOUSE_HWU_BTN;
+      if (msg & DINP_MSG_HWHEEL_DOWN)
+         di->flags |= DINP_FLAG_MOUSE_HWD_BTN;
+      if (msg & DINP_MSG_MOUSE_IGNORE)
+         di->flags |= DINP_FLAG_MOUSE_IGNORE;
+      if (msg & DINP_MSG_DBCLK_TITLE)
+         di->flags |= DINP_FLAG_DBCLK_ON_TITLEBAR;
    }
 
    if (di->mouse)
@@ -435,6 +493,39 @@ static bool dinput_mouse_button_pressed(
    return false;
 }
 
+/* The touch given out @idx-th, in the order they went down. */
+static bool dinput_pointer_get(struct dinput_input *di, unsigned idx,
+      int *x, int *y)
+{
+   unsigned i, n = 0;
+   int order[DINPUT_MAX_POINTERS], pos[DINPUT_MAX_POINTERS];
+
+   for (i = 0; i < DINPUT_MAX_POINTERS; i++)
+   {
+      if (!retro_atomic_load_acquire_int(&di->pointers[i].id_plus1))
+         continue;
+      order[n] = retro_atomic_load_relaxed_int(&di->pointers[i].order);
+      pos[n]   = retro_atomic_load_relaxed_int(&di->pointers[i].pos);
+      n++;
+   }
+   if (idx >= n)
+      return false;
+   /* the idx-th earliest: n is a handful, a selection is enough */
+   for (i = 0; i <= idx; i++)
+   {
+      unsigned j, min = i;
+      int t;
+      for (j = i + 1; j < n; j++)
+         if (order[j] - order[min] < 0)
+            min = j;
+      t = order[i]; order[i] = order[min]; order[min] = t;
+      t = pos[i];   pos[i]   = pos[min];   pos[min]   = t;
+   }
+   *x = DINPUT_POS_X(pos[idx]);
+   *y = DINPUT_POS_Y(pos[idx]);
+   return true;
+}
+
 static int16_t dinput_lightgun_aiming_state(
       struct dinput_input *di, unsigned idx, unsigned id)
 {
@@ -444,30 +535,11 @@ static int16_t dinput_lightgun_aiming_state(
    int16_t res_screen_x        = 0;
    int16_t res_screen_y        = 0;
 
-   int x                       = 0;
-   int y                       = 0;
-   unsigned num                = 0;
+   int x                       = di->mouse_x;
+   int y                       = di->mouse_y;
 
-   struct dinput_pointer_status
-      *check_pos               = di->pointer_head.next;
-
-   while (check_pos && num < idx)
-   {
-      num++;
-      check_pos                = check_pos->next;
-   }
-
-   if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
-      return 0;
-
-   x = di->mouse_x;
-   y = di->mouse_y;
-
-   if (check_pos)
-   {
-      x = check_pos->pointer_x;
-      y = check_pos->pointer_y;
-   }
+   if (!dinput_pointer_get(di, idx, &x, &y) && idx > 0)
+      return 0; /* idx = 0 has mouse fallback. */
 
    if (video_driver_translate_coord_viewport_wrap(
                &vp, x, y,
@@ -673,26 +745,13 @@ static int16_t dinput_input_state(
                int16_t res_y               = 0;
                int16_t res_screen_x        = 0;
                int16_t res_screen_y        = 0;
-               unsigned num                = 0;
-               struct dinput_pointer_status *
-                  check_pos                = di->pointer_head.next;
-
-               while (check_pos && num < idx)
-               {
-                  num++;
-                  check_pos    = check_pos->next;
-               }
-               if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
-                  return 0;
+               bool touched;
 
                x               = di->mouse_x;
                y               = di->mouse_y;
-
-               if (check_pos)
-               {
-                  x            = check_pos->pointer_x;
-                  y            = check_pos->pointer_y;
-               }
+               touched         = dinput_pointer_get(di, idx, &x, &y);
+               if (!touched && idx > 0) /* idx = 0 has mouse fallback. */
+                  return 0;
 
                if (video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
                            &res_x, &res_y, &res_screen_x, &res_screen_y))
@@ -710,7 +769,7 @@ static int16_t dinput_input_state(
                      case RETRO_DEVICE_ID_POINTER_Y:
                         return res_y;
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
-                        return check_pos ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
+                        return touched ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
                         return input_driver_pointer_is_offscreen(res_x, res_y);
                      default:
@@ -809,73 +868,52 @@ static int16_t dinput_input_state(
 #define GET_POINTERID_WPARAM(wParam)   (LOWORD(wParam))
 #endif
 
-/* Stores X/Y in client coordinates. */
-static void dinput_pointer_store_pos(
-      struct dinput_pointer_status *pointer, WPARAM lParam)
+/* The window procedure's: a touch's position in client coordinates. */
+static int dinput_pointer_pos(WPARAM lParam)
 {
    POINT point;
    point.x            = GET_X_LPARAM(lParam);
    point.y            = GET_Y_LPARAM(lParam);
    ScreenToClient((HWND)video_driver_window_get(), &point);
-   pointer->pointer_x = point.x;
-   pointer->pointer_y = point.y;
+   return DINPUT_POS_PACK(point.x, point.y);
 }
 
-static void dinput_add_pointer(struct dinput_input *di,
-      struct dinput_pointer_status *new_pointer)
-{
-   struct dinput_pointer_status *insert_pos = NULL;
-
-   new_pointer->next                        = NULL;
-   insert_pos                               = &di->pointer_head;
-
-   while (insert_pos->next)
-      insert_pos                            = insert_pos->next;
-   insert_pos->next                         = new_pointer;
-}
-
-static void dinput_delete_pointer(struct dinput_input *di, int pointer_id)
-{
-   struct dinput_pointer_status *check_pos  = &di->pointer_head;
-
-   while (check_pos && check_pos->next)
-   {
-      if (check_pos->next->pointer_id == pointer_id)
-      {
-         struct dinput_pointer_status *to_delete = check_pos->next;
-         check_pos->next                  = check_pos->next->next;
-         free(to_delete);
-      }
-      check_pos = check_pos->next;
-   }
-}
-
-static struct dinput_pointer_status *dinput_find_pointer(
+static struct dinput_pointer_slot *dinput_pointer_find(
       struct dinput_input *di, int pointer_id)
 {
-   struct dinput_pointer_status *check_pos = di->pointer_head.next;
+   unsigned i;
+   for (i = 0; i < DINPUT_MAX_POINTERS; i++)
+      if (retro_atomic_load_relaxed_int(&di->pointers[i].id_plus1)
+            == pointer_id + 1)
+         return &di->pointers[i];
+   return NULL;
+}
 
-   while (check_pos)
-   {
-      if (check_pos->pointer_id == pointer_id)
-         break;
-      check_pos = check_pos->next;
-   }
-
-   return check_pos;
+static void dinput_pointer_down(struct dinput_input *di, int pointer_id,
+      WPARAM lParam)
+{
+   unsigned i;
+   if (dinput_pointer_find(di, pointer_id))
+      return;
+   for (i = 0; i < DINPUT_MAX_POINTERS; i++)
+      if (!retro_atomic_load_relaxed_int(&di->pointers[i].id_plus1))
+      {
+         retro_atomic_store_relaxed_int(&di->pointers[i].pos,
+               dinput_pointer_pos(lParam));
+         retro_atomic_store_relaxed_int(&di->pointers[i].order,
+               retro_atomic_fetch_add_int(&di->pointer_order, 1));
+         retro_atomic_store_release_int(&di->pointers[i].id_plus1,
+               pointer_id + 1);
+         return;
+      }
+   /* more touches than slots: the rest are not followed */
 }
 
 static void dinput_clear_pointers(struct dinput_input *di)
 {
-   struct dinput_pointer_status *pointer = &di->pointer_head;
-
-   while (pointer->next)
-   {
-      struct dinput_pointer_status *del  = pointer->next;
-
-      pointer->next = pointer->next->next;
-      free(del);
-   }
+   unsigned i;
+   for (i = 0; i < DINPUT_MAX_POINTERS; i++)
+      retro_atomic_store_release_int(&di->pointers[i].id_plus1, 0);
 }
 
 bool dinput_handle_message(void *data,
@@ -894,41 +932,29 @@ bool dinput_handle_message(void *data,
    {
       case WM_SETFOCUS:
       case WM_KILLFOCUS:
-         di->flags       |= DINP_FLAG_MOUSE_IGNORE;
+         retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_MOUSE_IGNORE);
          break;
       case WM_NCLBUTTONDBLCLK:
-         di->flags       |= DINP_FLAG_DBCLK_ON_TITLEBAR;
-         break;
-      case WM_MOUSEMOVE:
-         di->window_pos_x = GET_X_LPARAM(lParam);
-         di->window_pos_y = GET_Y_LPARAM(lParam);
+         retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_DBCLK_TITLE);
          break;
       case WM_POINTERDOWN:
-         {
-            struct dinput_pointer_status *new_pointer =
-               (struct dinput_pointer_status *)malloc(sizeof(struct dinput_pointer_status));
-
-            if (new_pointer)
-            {
-               new_pointer->pointer_id = GET_POINTERID_WPARAM(wParam);
-               dinput_pointer_store_pos(new_pointer, lParam);
-               dinput_add_pointer(di, new_pointer);
-               return true;
-            }
-         }
-         break;
+         dinput_pointer_down(di, GET_POINTERID_WPARAM(wParam), lParam);
+         return true;
       case WM_POINTERUP:
          {
-            int pointer_id = GET_POINTERID_WPARAM(wParam);
-            dinput_delete_pointer(di, pointer_id);
+            struct dinput_pointer_slot *slot = dinput_pointer_find(di,
+                  GET_POINTERID_WPARAM(wParam));
+            if (slot)
+               retro_atomic_store_release_int(&slot->id_plus1, 0);
          }
          return true;
       case WM_POINTERUPDATE:
          {
-            int pointer_id                 = GET_POINTERID_WPARAM(wParam);
-            struct dinput_pointer_status *pointer = dinput_find_pointer(di, pointer_id);
-            if (pointer)
-               dinput_pointer_store_pos(pointer, lParam);
+            struct dinput_pointer_slot *slot = dinput_pointer_find(di,
+                  GET_POINTERID_WPARAM(wParam));
+            if (slot)
+               retro_atomic_store_relaxed_int(&slot->pos,
+                     dinput_pointer_pos(lParam));
          }
          return true;
       case WM_DEVICECHANGE:
@@ -955,15 +981,15 @@ bool dinput_handle_message(void *data,
 #endif
       case WM_MOUSEWHEEL:
          if (((short) HIWORD(wParam))/120 > 0)
-            di->flags |= DINP_FLAG_MOUSE_WU_BTN;
+            retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_WHEEL_UP);
          if (((short) HIWORD(wParam))/120 < 0)
-            di->flags |= DINP_FLAG_MOUSE_WD_BTN;
+            retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_WHEEL_DOWN);
          break;
       case WM_MOUSEHWHEEL:
          if (((short) HIWORD(wParam))/120 > 0)
-            di->flags |= DINP_FLAG_MOUSE_HWU_BTN;
+            retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_HWHEEL_UP);
          if (((short) HIWORD(wParam))/120 < 0)
-            di->flags |= DINP_FLAG_MOUSE_HWD_BTN;
+            retro_atomic_fetch_or_int(&di->msg_flags, DINP_MSG_HWHEEL_DOWN);
          break;
       case WM_KEYUP:                /* Key released */
       case WM_SYSKEYUP:             /* Key released */
@@ -972,7 +998,7 @@ bool dinput_handle_message(void *data,
          {
             unsigned keysym       = (lParam >> 16) & 0xff;
             bool extended         = (lParam >> 24) & 0x1;
-            uint16_t flag         = 0;
+            int flag              = 0;
 
             /* extended keys will map to dinput if the high bit is set */
             if (extended)
@@ -980,18 +1006,22 @@ bool dinput_handle_message(void *data,
 
             switch (keysym)
             {
-               case DIK_LSHIFT: flag = DINP_FLAG_SHIFT_L; break;
-               case DIK_RSHIFT: flag = DINP_FLAG_SHIFT_R; break;
-               case DIK_LMENU:  flag = DINP_FLAG_ALT_L;   break;
-               case DIK_RMENU:  flag = DINP_FLAG_ALT_R;   break;
+               case DIK_LSHIFT: flag = DINP_MSG_SHIFT_L; break;
+               case DIK_RSHIFT: flag = DINP_MSG_SHIFT_R; break;
+               case DIK_LMENU:  flag = DINP_MSG_ALT_L;   break;
+               case DIK_RMENU:  flag = DINP_MSG_ALT_R;   break;
             }
 
-            if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
-               di->flags |= flag;
-            else if (di->flags & flag)
-               di->flags &= ~flag;
-            else if (flag) /* key up already issued or down never happened */
-               return true;
+            if (flag)
+            {
+               if (message == WM_KEYDOWN || message == WM_SYSKEYDOWN)
+                  retro_atomic_fetch_or_int(&di->msg_flags, flag);
+               /* the poll may have issued the up already: the bit
+                * says, and is cleared in the same step */
+               else if (!(retro_atomic_fetch_and_int(&di->msg_flags, ~flag)
+                        & flag))
+                  return true; /* up already issued, or down never happened */
+            }
          }
          break;
    }
