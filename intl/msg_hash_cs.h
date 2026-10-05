@@ -765,6 +765,7 @@ static const struct
    char s_56e1b336[21];
    char s_313d15c0[10];
    char s_e9f0dd82[27];
+   char s_0bd714f7[5];
    char s_72765a06[13];
    char s_72765a07[13];
    char s_72765a08[13];
@@ -1078,7 +1079,6 @@ static const struct
    char s_5e519829[25];
 #endif
 #endif
-   char s_f228c6c5[21];
    char s_11926382[21];
    char s_645ae416[26];
    char s_df92f5b5[42];
@@ -2503,7 +2503,6 @@ static const struct
    char s_74d87c7a[47];
    char s_12adb1e7[47];
    char s_070529d4[67];
-   char s_30d1fc05[47];
 #ifdef GEKKO
    char s_3180dcf5[65];
 #endif
@@ -2544,7 +2543,6 @@ static const struct
    char s_47df0525[66];
    char s_03e272fc[50];
    char s_5c2cc60f[84];
-   char s_d6d8d4be[87];
    char s_e86d2704[82];
    char s_dda608b5[369];
    char s_6f5a032a[51];
@@ -2673,7 +2671,6 @@ static const struct
    char s_6435c857[54];
 #endif
 #endif
-   char s_01efec73[54];
    char s_d3fc9970[53];
    char s_740bd7c4[58];
    char s_f052dae3[69];
@@ -4812,6 +4809,7 @@ static const struct
    "Y Tla\304\215\303\255tko (Vlevo)",
    "Kl\303\255\304\215 %s",
    "Typ mapov\303\241n\303\255 kl\303\241vesnice",
+   "V\305\241e",
    "Zbra\305\210 Aux A",
    "Zbra\305\210 Aux B",
    "Zbra\305\210 Aux C",
@@ -5127,7 +5125,6 @@ static const struct
    "Zobrazit 'Vysunout disk'",
 #endif
 #endif
-   "Uk\303\241zat 'N\303\241pov\304\233da'",
    "Zobrazit 'Informace'",
    "Zobrazit 'Na\304\215\303\255st obsah'",
    "Ozn\303\241men\303\255 o spu\305\241t\304\233n\303\255 \"Na\304\215\303\255st obsah\"",
@@ -6835,7 +6832,6 @@ static const struct
    "Sn\303\255\305\276\303\255 \303\272rove\305\210 v\303\275stupn\303\255 hlasitosti zvuku.",
    "Zvy\305\241uje \303\272rove\305\210 v\303\275stupn\303\255 hlasitosti zvuku.",
    "Zapne/vypne synchronizaci s p\305\231esnou sn\303\255mkovou frekvenc\303\255 obsahu.",
-   "Fyzick\303\241 my\305\241 rozpoznan\303\241 aplikac\303\255 RetroArch.",
 #ifdef GEKKO
    "Nastaven\303\255 stupnice x/y pro rychlost sv\304\233teln\303\251 pistole Wiimote.",
 #endif
@@ -6918,8 +6914,6 @@ static const struct
    "V tomto adres\303\241\305\231i jsou ulo\305\276eny vstupn\303\255 remapy.",
    "P\305\231epsat vstupn\303\255 vazby p\305\231emapovan\303\275mi vazbami nastaven\303\275mi pro a"
    "ktu\303\241ln\303\255 j\303\241dro.",
-   "Ur\304\215uje, kter\303\275 port j\303\241dra bude p\305\231ij\303\255mat vstup z portu frontend"
-   "ov\303\251ho ovlada\304\215e %u.",
    "P\305\231emapov\303\241n\303\255 se pou\305\276ije pouze pro aktivn\303\255 gamepad, do kter\303"
    "\251ho bylo ulo\305\276eno.",
    "Zm\304\233na zp\305\257sobu mapov\303\241n\303\255 virtu\303\241ln\303\255ho za\305\231\303\255z"
@@ -7176,7 +7170,6 @@ static const struct
    "V hlavn\303\255 nab\303\255dce zobrazte mo\305\276nost 'Vysunout disk'.",
 #endif
 #endif
-   "Zobrazen\303\255 mo\305\276nosti \"N\303\241pov\304\233da\" v hlavn\303\255 nab\303\255dce.",
    "Zobrazen\303\255 mo\305\276nosti 'Informace' v hlavn\303\255 nab\303\255dce.",
    "Zobrazen\303\255 mo\305\276nosti 'Na\304\215\303\255st obsah' v hlavn\303\255 nab\303\255dce.",
    "Zobrazen\303\255 kr\303\241tk\303\251 animace zp\304\233tn\303\251 vazby p\305\231i na\304\215"
@@ -8796,7 +8789,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162483u
+      (sizeof(msg_hash_cs_blob) == (162279u
 #ifdef ANDROID
        + 390u
 #endif
@@ -9911,6 +9904,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10224,7 +10218,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -11648,7 +11641,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -11689,7 +11681,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -11818,7 +11809,6 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

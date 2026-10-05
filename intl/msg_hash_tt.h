@@ -35,6 +35,7 @@ static const struct
    char s_c0d9bee1[13];
    char s_e2f27171[11];
    char s_2f9a064c[11];
+   char s_0bd714f7[13];
    char s_87071f08[9];
    char s_3c371cf3[11];
    char s_f4c2f40f[19];
@@ -122,6 +123,7 @@ static const struct
    "\320\234\321\203\320\267\321\213\320\272\320\260",
    "\320\257\321\200\320\264\323\231\320\274",
    "\320\257\321\200\320\264\323\231\320\274",
+   "\320\221\320\260\321\200\320\273\321\213\320\272",
    "\320\247\321\213\320\263\321\203",
    "\320\232\321\213\320\267\321\213\320\273",
    "\320\220\320\262\321\202\320\276\320\274\320\260\321\202\320\270\320\272",
@@ -193,7 +195,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tt_blob_check[
-      (sizeof(msg_hash_tt_blob) == (868u
+      (sizeof(msg_hash_tt_blob) == (881u
 #ifdef HAVE_MICROPHONE
        + 17u
 #endif
@@ -239,6 +241,7 @@ static const uint32_t msg_hash_tt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_GOTO_MUSIC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_HELP_LIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_TRANSITION_ANIM_AUTO,

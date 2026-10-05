@@ -85,6 +85,7 @@ static const struct
    char s_f9ee4a82[5];
    char s_7beff2c4[5];
    char s_009a10e3[8];
+   char s_0bd714f7[7];
    char s_735c53f7[14];
    char s_87071f08[4];
    char s_ec502f2a[21];
@@ -358,6 +359,7 @@ static const struct
    "BANT",
    "ARNO",
    "Mewnbwn",
+   "Popeth",
    "Gwasanaeth AI",
    "Cau",
    "Ailgychwyn RetroArch",
@@ -569,7 +571,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cy_blob_check[
-      (sizeof(msg_hash_cy_blob) == (5213u
+      (sizeof(msg_hash_cy_blob) == (5220u
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
        + 77u
@@ -651,6 +653,7 @@ static const uint32_t msg_hash_cy_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_ON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_AI_SERVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_QUIT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_RESTART_KEY,

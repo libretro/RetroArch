@@ -676,6 +676,7 @@ static const struct
    char s_56e1b336[18];
    char s_313d15c0[13];
    char s_e9f0dd82[41];
+   char s_0bd714f7[7];
    char s_72765a06[13];
    char s_72765a07[13];
    char s_72765a08[13];
@@ -973,7 +974,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[19];
-   char s_f228c6c5[15];
    char s_11926382[17];
    char s_645ae416[28];
    char s_df92f5b5[36];
@@ -1504,6 +1504,18 @@ static const struct
    char s_4ceac87e[11];
    char s_f62d1074[5];
    char s_387a4176[17];
+   char s_131e934d[9];
+   char s_7745a38e[7];
+   char s_49e4b96c[9];
+   char s_2102d995[9];
+   char s_e69d6a8f[9];
+   char s_4e2cbad9[10];
+   char s_4e2cbb07[9];
+   char s_13ef7ee0[10];
+   char s_863f74bc[9];
+   char s_b28f6db3[10];
+   char s_6c9436e3[8];
+   char s_64ee333c[8];
    char s_28863bc1[14];
    char s_f751c497[13];
    char s_9329c64c[8];
@@ -2518,7 +2530,6 @@ static const struct
    char s_6435c857[55];
 #endif
 #endif
-   char s_01efec73[39];
    char s_d3fc9970[41];
    char s_740bd7c4[52];
    char s_f052dae3[56];
@@ -4193,6 +4204,7 @@ static const struct
    "Y-painike (Vasen)",
    "N\303\244pp\303\244in %s",
    "N\303\244pp\303\244imist\303\266 ohjaimen kartoitus tyyppi",
+   "Kaikki",
    "Pyssy, Aux A",
    "Pyssy, Aux B",
    "Pyssy, Aux C",
@@ -4491,7 +4503,6 @@ static const struct
 #endif
 #endif
    "N\303\244yt\303\244 koko polku",
-   "N\303\244yt\303\244 'Ohje'",
    "N\303\244yt\303\244 \"Tiedot\"",
    "N\303\244yt\303\244 \"Lataa sis\303\244lt\303\266\303\244\"",
    "\"Lataa sis\303\244lt\303\266\303\244\"-aloitusilmoitus",
@@ -5030,6 +5041,18 @@ static const struct
    "Julkaisija",
    "Alue",
    "Julkaisukuukausi",
+   "Huhtikuu",
+   "Elokuu",
+   "Joulukuu",
+   "Helmikuu",
+   "Tammikuu",
+   "Hein\303\244kuu",
+   "Kes\303\244kuu",
+   "Maaliskuu",
+   "Toukokuu",
+   "Marraskuu",
+   "Lokakuu",
+   "Syyskuu",
    "Julkaisuvuosi",
    "T\303\244rin\303\244tuki",
    "Pisteet",
@@ -6259,7 +6282,6 @@ static const struct
    "N\303\244yt\303\244 \"Poista levy asemasta\"-valinta p\303\244\303\244valikossa.",
 #endif
 #endif
-   "N\303\244yt\303\244 \"Ohje\"-valinta p\303\244\303\244valikossa.",
    "N\303\244yt\303\244 \"Tiedot\"-valinta p\303\244\303\244valikossa.",
    "N\303\244yt\303\244 \"Lataa sis\303\244lt\303\266\303\244\"-valinta p\303\244\303\244valikossa.",
    "N\303\244yt\303\244 lyhyt palauteanimaatio sis\303\244lt\303\266\303\244 ladattaessa.",
@@ -7519,7 +7541,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123691u
+      (sizeof(msg_hash_fi_blob) == (123751u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -8519,6 +8541,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -8816,7 +8839,6 @@ static const uint32_t msg_hash_fi_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -9346,6 +9368,18 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -10360,7 +10394,6 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

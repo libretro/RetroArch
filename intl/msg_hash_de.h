@@ -564,6 +564,7 @@ static const struct
 #endif
    char s_543b5a62[24];
    char s_d1dc5a72[36];
+   char s_b72aa8dd[39];
    char s_1d9a045d[32];
    char s_9ada0438[47];
    char s_eb66d46b[18];
@@ -733,6 +734,7 @@ static const struct
    char s_db16b335[17];
    char s_10358d4e[15];
    char s_0ad18744[12];
+   char s_7a3aee46[23];
    char s_0b7c8e91[22];
    char s_0bf63b67[21];
    char s_36b2a31c[15];
@@ -811,6 +813,10 @@ static const struct
 #ifdef ANDROID
    char s_b573f90c[25];
 #endif
+   char s_ed300063[40];
+   char s_28ea7dfa[21];
+   char s_b9dacc8a[26];
+   char s_e7afbcd6[39];
    char s_e28bc72f[27];
    char s_0b2a8528[42];
    char s_ea5757a0[9];
@@ -840,6 +846,7 @@ static const struct
    char s_0b32f489[34];
    char s_1c82054d[25];
    char s_d458f013[30];
+   char s_6e1d0b9d[21];
    char s_56e1b31e[17];
    char s_56e1b31f[16];
    char s_267cbe7d[34];
@@ -859,6 +866,9 @@ static const struct
    char s_56e1b336[16];
    char s_313d15c0[9];
    char s_e9f0dd82[34];
+   char s_b58b86df[14];
+   char s_1b46171b[21];
+   char s_0bd714f7[5];
    char s_0bebb490[12];
    char s_72765a06[14];
    char s_72765a07[14];
@@ -990,6 +1000,8 @@ static const struct
    char s_b8b18b90[18];
    char s_efa8d516[30];
    char s_d7c1d887[21];
+   char s_ac419de7[15];
+   char s_d87f977f[27];
    char s_8c49943c[18];
    char s_d2c6b214[28];
 #ifdef HAVE_SDL3
@@ -1005,7 +1017,19 @@ static const struct
    char s_a7da7dc1[25];
    char s_980ef0e8[8];
    char s_fcf05466[27];
+   char s_172a1f47[26];
+   char s_ebede389[35];
+   char s_941bb4f3[27];
+   char s_8f104024[17];
+   char s_60523ef9[33];
    char s_da16c634[15];
+#ifdef ANDROID
+   char s_4c636851[20];
+   char s_10996997[43];
+   char s_a8f7398d[32];
+   char s_16430f5d[34];
+#endif
+   char s_a310fe56[112];
    char s_d042d680[25];
    char s_16cacb01[23];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1026,10 +1050,19 @@ static const struct
    char s_feaf16c5[14];
    char s_dedb2642[28];
    char s_ff1b8ce5[19];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_19f5e3bc[52];
+#endif
+#endif
    char s_bd07998f[15];
    char s_4e2f19db[19];
    char s_9e66791a[18];
    char s_f3076af9[9];
+   char s_3e958bb3[22];
+   char s_3e981328[16];
+   char s_d5d699bd[31];
+   char s_591b268d[26];
    char s_c64d260f[8];
 #ifdef HAVE_LAKKA_SWITCH
    char s_becdc648[30];
@@ -1132,6 +1165,9 @@ static const struct
    char s_d3574e33[14];
    char s_9d0bdde1[15];
    char s_eded64b9[14];
+   char s_337429c4[11];
+   char s_4c78a5a2[15];
+   char s_dbd59c7e[16];
    char s_e22edcd8[7];
    char s_d86adca1[25];
    char s_a17f6a67[62];
@@ -1153,6 +1189,7 @@ static const struct
    char s_89a75c21[20];
    char s_9439ec8b[18];
    char s_1e09db79[10];
+   char s_6735ad12[20];
    char s_0d2d8eef[11];
    char s_400523e5[22];
    char s_989836e4[45];
@@ -1206,7 +1243,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[29];
-   char s_f228c6c5[17];
    char s_11926382[25];
    char s_645ae416[24];
    char s_df92f5b5[37];
@@ -1290,7 +1326,9 @@ static const struct
    char s_40084357[10];
    char s_df62d56f[9];
    char s_4a1166e1[21];
+   char s_44e2e900[12];
    char s_9f2cc577[20];
+   char s_dc216f95[23];
    char s_42b8ffbf[6];
    char s_64702d9a[38];
    char s_e829b8da[18];
@@ -1334,6 +1372,7 @@ static const struct
    char s_d48223f9[38];
    char s_28adc26d[37];
    char s_0b9c6082[33];
+   char s_8974ac0f[18];
    char s_b80a2fc4[19];
    char s_02b33f2e[51];
    char s_d3b03946[14];
@@ -1367,6 +1406,25 @@ static const struct
    char s_aadf6541[28];
 #ifdef _3DS
    char s_4b1915d7[43];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_2ab94c3e[23];
+   char s_3225c36e[11];
+   char s_eaf7de23[14];
+   char s_f11cbd53[26];
+   char s_46d3d8b1[9];
+   char s_6b12cfdb[21];
+   char s_51775f83[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_9155967d[26];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_528fd575[21];
+   char s_d64e8d73[24];
+   char s_675071f2[12];
 #endif
    char s_c3168ee5[5];
    char s_e2f5e678[5];
@@ -1549,6 +1607,7 @@ static const struct
    char s_77155e0f[21];
    char s_3936fe87[78];
    char s_393985fc[24];
+   char s_57110ba8[30];
    char s_56e21ee1[18];
    char s_b152eb42[27];
    char s_f70406ce[21];
@@ -1746,6 +1805,14 @@ static const struct
    char s_a986c4da[12];
    char s_69f2e90c[18];
    char s_387a4176[24];
+   char s_49e4b96c[9];
+   char s_2102d995[8];
+   char s_e69d6a8f[7];
+   char s_4e2cbad9[5];
+   char s_4e2cbb07[5];
+   char s_13ef7ee0[6];
+   char s_863f74bc[4];
+   char s_6c9436e3[8];
    char s_28863bc1[23];
    char s_f751c497[23];
    char s_9329c64c[10];
@@ -1981,11 +2048,26 @@ static const struct
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[22];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_ef0cd939[17];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_9b023eee[26];
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[13];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   char s_6e573f56[21];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_e62744f8[19];
 #endif
    char s_35808dba[38];
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -2697,6 +2779,7 @@ static const struct
    char s_48e88dc4[159];
    char s_3d233cd0[77];
    char s_9198f1a0[218];
+   char s_dfe733cb[401];
    char s_165e564b[313];
    char s_c3968f26[98];
    char s_a2b65159[52];
@@ -2799,6 +2882,8 @@ static const struct
 #ifdef ANDROID
    char s_50f43cfa[309];
 #endif
+   char s_b65270d1[416];
+   char s_27fda584[258];
    char s_e85b309d[76];
    char s_cd94bb16[226];
    char s_a17a67e1[50];
@@ -2822,7 +2907,9 @@ static const struct
    char s_6da9b571[277];
    char s_c2827177[133];
    char s_09f2837b[244];
+   char s_512d7a8b[77];
    char s_2c4c27eb[238];
+   char s_bb6fb70d[484];
    char s_85147d5c[86];
    char s_0b56ad4c[65];
    char s_c312b1ca[39];
@@ -2886,7 +2973,7 @@ static const struct
    char s_74d87c7a[35];
    char s_12adb1e7[32];
    char s_070529d4[68];
-   char s_30d1fc05[46];
+   char s_30d1fc05[284];
 #ifdef GEKKO
    char s_3180dcf5[62];
 #endif
@@ -2928,9 +3015,10 @@ static const struct
    char s_47df0525[66];
    char s_03e272fc[57];
    char s_5c2cc60f[102];
-   char s_d6d8d4be[78];
+   char s_d6d8d4be[160];
    char s_e86d2704[74];
    char s_dda608b5[352];
+   char s_bc08c395[328];
    char s_6f5a032a[61];
    char s_9530e802[126];
 #ifdef HAVE_SDL3
@@ -2945,6 +3033,14 @@ static const struct
    char s_aaa55caa[111];
    char s_6a44b3af[65];
    char s_a7d61696[54];
+   char s_ae581977[325];
+   char s_493a2167[355];
+#ifdef ANDROID
+   char s_354b4abf[127];
+   char s_21594ec5[204];
+   char s_d1b3c47b[248];
+   char s_27919f0b[244];
+#endif
    char s_f9db39ef[103];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[92];
@@ -2964,8 +3060,14 @@ static const struct
    char s_a7fd96b0[83];
    char s_1d42d613[115];
    char s_eaa7274b[45];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_bb34fe6a[241];
+#endif
+#endif
    char s_10994fc9[115];
    char s_bde8a108[52];
+   char s_420308fb[356];
 #ifdef HAVE_LAKKA_SWITCH
    char s_c4b1f676[48];
 #endif
@@ -3016,6 +3118,9 @@ static const struct
    char s_c220b5bb[149];
    char s_bcca484f[96];
    char s_1205716b[300];
+   char s_168498b2[331];
+   char s_55248110[26];
+   char s_f9fce5ac[153];
    char s_b3c6310f[74];
    char s_b1305e15[88];
    char s_2b2a7762[82];
@@ -3028,6 +3133,7 @@ static const struct
    char s_ff7d19fe[219];
    char s_db495a9d[35];
    char s_ddc672a7[60];
+   char s_6fe18880[384];
    char s_ccea261d[149];
    char s_f754a0d3[79];
    char s_4fe7b3d2[130];
@@ -3076,7 +3182,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[105];
-   char s_01efec73[43];
    char s_d3fc9970[51];
    char s_740bd7c4[50];
    char s_f052dae3[67];
@@ -3179,6 +3284,7 @@ static const struct
    char s_da518d67[172];
    char s_1195a4db[36];
    char s_ce069670[29];
+   char s_8f44157d[179];
    char s_77c6c6f2[56];
    char s_126432dc[130];
    char s_bc33055d[93];
@@ -3192,7 +3298,14 @@ static const struct
    char s_0d834bc5[55];
 #endif
 #ifdef HAVE_NFSCLIENT
+   char s_1536325c[300];
+   char s_70f70009[466];
    char s_3487ce71[33];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_7a3d78eb[40];
+#endif
 #endif
    char s_d2ae640b[84];
    char s_8e5bac99[99];
@@ -3496,11 +3609,26 @@ static const struct
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_706ff4dc[318];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_fed3fee7[122];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[71];
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[211];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   char s_743b6f84[466];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_044e8e26[232];
    char s_907ef7cc[33];
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -3927,6 +4055,8 @@ static const struct
    char s_d50c6bf1[30];
    char s_64a038aa[30];
    char s_697f59c0[25];
+   char s_10e46c37[51];
+   char s_2a722735[37];
    char s_05437279[27];
    char s_c0cae103[30];
    char s_71d52dde[57];
@@ -4044,6 +4174,8 @@ static const struct
    char s_a9f3b2c3[18];
    char s_0e7aca8a[17];
    char s_ab1afe7c[18];
+   char s_b6b13e9f[26];
+   char s_1492e328[47];
    char s_026b7f11[18];
    char s_3b7c0dd8[17];
    char s_b43a100a[18];
@@ -4061,6 +4193,14 @@ static const struct
    char s_01a4c762[12];
    char s_ba4d8b17[44];
    char s_ffed014a[42];
+   char s_cc3fcff6[43];
+   char s_68bd6ae1[36];
+   char s_599fa4bb[40];
+   char s_406b377c[38];
+   char s_66e729cd[48];
+   char s_c826cb6b[26];
+   char s_cd004b60[30];
+   char s_5c253665[75];
    char s_1295b61f[38];
    char s_debd302d[13];
    char s_8bd09b44[33];
@@ -4098,6 +4238,8 @@ static const struct
    char s_3c214e5f[37];
    char s_2ada2134[16];
    char s_00fc26e4[9];
+   char s_d66d432f[16];
+   char s_15c0f14a[16];
    char s_7c4c8dd7[80];
    char s_45fa49af[62];
    char s_143f28c7[100];
@@ -5102,6 +5244,7 @@ static const struct
 #endif
    "Cores immer vorschlagen",
    "Backup von Cores bei Aktualisierung",
+   "Automatische Core-Backups komprimieren",
    "Maximale Anzahl an Core-Backups",
    "Heruntergeladene Archive automatisch entpacken",
    "Buildbot-Core-URL",
@@ -5272,6 +5415,7 @@ static const struct
    "Nach Spielerzahl",
    "Nach Publisher",
    "Nach Region",
+   "Nach Erscheinungsmonat",
    "Nach Erscheinungsjahr",
    "Nach Rumble-Funktion",
    "Nach Bewertung",
@@ -5350,6 +5494,10 @@ static const struct
 #ifdef ANDROID
    "Systemtastatur verwenden",
 #endif
+   "Tastatur beim Dr\303\274cken der ersten Taste",
+   "Seinen Port zuweisen",
+   "Auf den Controller warten",
+   "Ports beim ersten Tastendruck zuweisen",
    "Automatische Konfiguration",
    "'Spielfokus'-Modus automatisch aktivieren",
    "Erkennen",
@@ -5379,6 +5527,7 @@ static const struct
    "Hotkey-Ger\303\244tetyp zusammenf\303\274hren",
    "Hotkeys folgen Spieler 1",
    "Tastatur-Controller-Zuordnung",
+   "Eingabeinformationen",
    "A-Knopf (rechts)",
    "B-Knopf (unten)",
    "Controller-Eingabe im Hintergrund",
@@ -5398,6 +5547,9 @@ static const struct
    "Y-Knopf (links)",
    "Taste %s",
    "Tastatur-Controller-Zuordnungstyp",
+   "Tastaturindex",
+   "%s (nicht verbunden)",
+   "Alle",
    "Tastatur %s",
    "Pistole Aux A",
    "Pistole Aux B",
@@ -5529,6 +5681,8 @@ static const struct
    "Zugeordneter Port",
    "Remaps nach Gamepad sortieren",
    "RetroPad-Zuweisungen",
+   "Eingabedrehung",
+   "Automatisch (Videodrehung)",
    "Vibrationsst\303\244rke",
    "Controller-Profil speichern",
 #ifdef HAVE_SDL3
@@ -5544,7 +5698,20 @@ static const struct
    "Bewegungs-/Lichtsensoren",
    "Eingabe",
    "Kleine Tastatur aktivieren",
+   "Erste Eingabe hat Vorrang",
+   "SOCD-Verarbeitung (Links + Rechts)",
+   "Letzte Eingabe hat Vorrang",
+   "Oben hat Vorrang",
+   "SOCD-Verarbeitung (Oben + Unten)",
    "Joy-Con teilen",
+#ifdef ANDROID
+   "Stiftunterst\303\274tzung",
+   "Das Schweben des Stiftes bewegt den Cursor",
+   "Druckempfindlichkeit des Stifts",
+   "Stift erfordert Bildschirmkontakt",
+#endif
+   "Der Eingabetreiber \342\200\236%s\342\200\234 erkennt diese als ein einziges Ger\303\244t und ka"
+   "nn sie nicht voneinander unterscheiden.",
    "Touch-Eingabe aktivieren",
    "Touchscreen-Skalierung",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5565,10 +5732,19 @@ static const struct
    "Turbo-Periode",
    "Einheitliche Men\303\274steuerung",
    "Port %u Controller",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "XInput f\303\274r Xbox-Controller (Neustart erforderlich)",
+#endif
+#endif
    "JIT verf\303\274gbar",
    "Controller-Profile",
    "Controllertreiber",
    "Tastatur",
+   "Ger\303\244t VID/PID: %d/%d",
+   "Tastatur %d: %s",
+   "Tastatur: Alle Tastaturen (%s)",
+   "Schl\303\274sselbund-Passphrase",
    "Dienste",
 #ifdef HAVE_LAKKA_SWITCH
    "Optionen f\303\274r Nintendo Switch",
@@ -5671,6 +5847,9 @@ static const struct
    "Doppel-Symbol",
    "Liste (mittel)",
    "Liste (klein)",
+   "MCP-Server",
+   "MCP-Serverport",
+   "MCP-Servertoken",
    "Medium",
    "Speichernutzung anzeigen",
    "Aktualisierungsintervall f\303\274r die Speichernutzung (In Frames)",
@@ -5692,6 +5871,7 @@ static const struct
    "Schriftfarbe: Gr\303\274n",
    "Schriftfarbe: Rot",
    "Deckkraft",
+   "Bildrate f\303\274r Men\303\274",
    "Helligkeit",
    "Horizontale Animation",
    "Tasten \342\200\236OK\342\200\234 und \342\200\236Abbrechen\342\200\234 tauschen",
@@ -5745,7 +5925,6 @@ static const struct
 #endif
 #endif
    "Vollst\303\244ndige Pfade anzeigen",
-   "\"Hilfe\" anzeigen",
    "\"Informationen\" anzeigen",
    "\"Inhalt laden\" anzeigen",
    "\"Inhalt laden\" Startbenachrichtigung",
@@ -5829,7 +6008,9 @@ static const struct
    "Entfernen",
    "Anhalten",
    "Lautst\303\244rkeanpassung",
+   "Maus %s: %s",
    "Maus-Unterst\303\274tzung",
+   "Maus: Alle M\303\244use (%s)",
    "Musik",
    "Unbekannte Dateierweiterungen filtern",
    "Navigationsumlauf",
@@ -5873,6 +6054,7 @@ static const struct
    "Netzwerkspiel \303\266ffentlich ank\303\274ndigen",
    "LAN-Netzwerkspielliste aktualisieren",
    "Netzwerkspielliste aktualisieren",
+   "Ger\303\244te anfordern",
    "Ger\303\244t %u anfragen",
    "Clients verbieten, die nicht im Slave-Modus laufen",
    "Spitzname: %s",
@@ -5906,6 +6088,25 @@ static const struct
    "Nutzer %d Netzwerk-RetroPad",
 #ifdef _3DS
    "New3DS-Taktfrequenz / -L2-Cache aktivieren",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "NFS-Export durchsuchen",
+   "NFS-Export",
+   "NFS-Mountport",
+   "Maximale NFS-Verbindungen",
+   "NFS-Port",
+   "NFS-Read-Ahead (KiB)",
+   "NFS-Server",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "NFS-Netzwerkeinstellungen",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "NFS-Unterverzeichnis",
+   "NFS-Zeit\303\274berschreitung",
+   "NFS-Version",
 #endif
    "Nein",
    "Kein",
@@ -6089,6 +6290,7 @@ static const struct
    "Ger\303\244te-Anzeigename: %s\nGer\303\244te-Konfigurationsname: %s\nGer\303\244te-VID/PID: %d/%"
    "d",
    "Ger\303\244tename Port %d: %s",
+   "Kein Autokonfigurationsprofil",
    "Energieverwaltung",
    "Anzahl pr\303\244emptiver Frames",
    "Vorhanden, optional:",
@@ -6293,6 +6495,14 @@ static const struct
    "Perspektive",
    "Plattformexklusiv",
    "Ver\303\266ffentlichungsmonat",
+   "Dezember",
+   "Februar",
+   "Januar",
+   "Juli",
+   "Juni",
+   "M\303\244rz",
+   "Mai",
+   "Oktober",
    "Ver\303\266ffentlichungsjahr",
    "Vibration unterst\303\274tzt",
    "Bewertung",
@@ -6528,11 +6738,26 @@ static const struct
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "SMB-Client aktivieren",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "SMB-Kerberos-KDC",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Maximale SMB-Verbindungen",
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB-Passwort",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   "SMB-Read-Ahead (KiB)",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "SMB-Kerberos-Realm",
 #endif
    "KRB falls verf\303\274gbar, NTLM wenn nicht",
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -7400,6 +7625,11 @@ static const struct
    "Erstellt automatisch Sicherungskopien aller installierten Cores, wenn ein Online-Update ausgef"
    "\303\274hrt wird. Erm\303\266glicht einfaches Zur\303\274cksetzen auf einen funktionierenden Cor"
    "e, wenn das Update eine Regression einf\303\274hrt.",
+   "Die Sicherungskopie, die bei einem Online-Update von einem Core erstellt wird, komprimiert speic"
+   "hern und damit etwa die H\303\244lfte der Gr\303\266\303\237e des Cores einnehmen. Ist diese Opt"
+   "ion deaktiviert, wird der ersetzte Core unver\303\244ndert in die Sicherungskopien verschoben: D"
+   "ie Aktualisierung erfordert keine Zeit f\303\274r die Komprimierung, jedoch nimmt jede Sicherung"
+   "skopie etwa doppelt so viel Speicherplatz ein.",
    "Angeben, wie viele automatisch generierte Sicherungen f\303\274r jeden installierten Core aufbew"
    "ahrt werden sollen. Wenn diese Grenze erreicht ist, wird beim Erstellen einer neuen Sicherung "
    "\303\274ber ein Online-Update die \303\244lteste Sicherung gel\303\266scht. Manuelle Core-Sicher"
@@ -7551,6 +7781,15 @@ static const struct
    "e und die Verwendung von Passwort-Managern. Erfordert einen Touchscreen oder eine Eingabemethode"
    ", die mit einem Gamepad bedient werden kann.",
 #endif
+   "Bei \342\200\236Ports beim ersten Tastendruck zuweisen\342\200\234: Legt fest, was eine Taste be"
+   "wirkt, die den Bedienelementen eines Ports zugewiesen ist. \342\200\236Seinen Port zuweisen\342"
+   "\200\234 weist dem Port den entsprechenden Core-Port zu, so wie es eine Taste des zugeh\303\266r"
+   "igen Controllers tun w\303\274rde. \342\200\236Auf den Controller warten\342\200\234 \303\274ber"
+   "l\303\244sst die Zuweisung den Tasten des Controllers, sofern kein Controller mit dem Anschluss "
+   "verbunden ist.",
+   "Beim Starten von Inhalten ist keinem Core-Port ein Controller zugeordnet. Jedem Controller wird "
+   "der n\303\244chste freie Core-Port zugewiesen, sobald erstmals eine Taste an ihm gedr\303\274ckt"
+   " wird. Diese Einstellung wird ab dem n\303\244chsten Start von Inhalten angewendet.",
    "Konfiguriert automatisch Controller mit einem Profil im Plug-and-Play-Stil.",
    "Den 'Spielfokus'-Modus aktivieren, wenn Inhalte gestartet oder fortgesetzt werden. Wenn diese Op"
    "tion auf 'Erkennen' gesetzt ist, wird sie aktiviert, wenn der aktuelle Core \303\274ber die Fron"
@@ -7590,9 +7829,16 @@ static const struct
    "Hotkeys sind an Core-Port 1 gebunden, auch wenn Core-Port 1 einem anderen Benutzer zugewiesen wu"
    "rde. Hinweis: Tastatur-Hotkeys funktionieren nicht, wenn Core-Port 1 einem Benutzer > 1 zugewies"
    "en wurde (Tastatureingaben stammen von Benutzer 1).",
+   "Den Controller in jedem Port und die dort verwendete Konfiguration anzeigen.",
    "Controller-Eingaben akzeptieren, auch wenn RetroArch nicht das aktive Fenster ist. Wenn deaktivi"
    "ert, werden Controller ignoriert, solange sie nicht im Fokus sind: Men\303\274, Tastenkombinatio"
    "nen und der laufende Inhalt reagieren nicht darauf.",
+   "Die Tastatur, von der die Tastenbelegungen dieses Anschlusses gelesen werden. Mit \342\200\236Al"
+   "le\342\200\234 werden alle Tastaturen als eine einzige Tastatur behandelt. Wenn der Eingabetreib"
+   "er einzelne Tastaturen unterscheiden kann, kann eine bestimmte Tastatur ausgew\303\244hlt werden"
+   ". Diese Auswahl wird anhand der Ger\303\244teidentit\303\244t gespeichert und bleibt diesem Ansc"
+   "hluss zugeordnet, auch wenn Tastaturen angeschlossen oder entfernt werden. Hotkeys und das Men"
+   "\303\274 reagieren weiterhin auf jede Tastatur.",
    "Maximale Benutzeranzahl, die von RetroArch unterst\303\274tzt wird. (Neustart erforderlich)",
    "Controller-Tastenkombination, mit der das Men\303\274 aufgerufen wird.",
    "Men\303\274-Steuerungseinstellungen \303\244ndern.",
@@ -7682,7 +7928,10 @@ static const struct
    "Verringert Audio-Lautst\303\244rkepegel.",
    "Erh\303\266ht Audio-Lautst\303\244rkepegel.",
    "Synchronisierung mit exakter Signalfrequenz des Inhalts umschalten.",
-   "Die physische Maus wie von RetroArch erkannt.",
+   "Die physische Maus, wie sie von RetroArch erkannt wird. Wenn der Eingabetreiber einzelne M\303"
+   "\244use unterscheiden kann, wird die hier ausgew\303\244hlte Maus anhand ihrer Ger\303\244teiden"
+   "tit\303\244t gespeichert und bleibt diesem Anschluss zugeordnet, auch wenn M\303\244use angeschl"
+   "ossen oder entfernt werden.",
 #ifdef GEKKO
    "X/Y-Skala f\303\274r Wiimote Lichtpistolengeschwindigkeit anpassen.",
 #endif
@@ -7751,13 +8000,19 @@ static const struct
    "Eingabe-Remaps werden in diesem Verzeichnis gespeichert.",
    "Die Eingabebelegung mit der Neubelegung \303\274berschreiben, die f\303\274r den aktuellen Core "
    "festgelegt wurde.",
-   "Bestimmt, welcher Core-Port Eingaben vom Frontend-Controller-Port %u erh\303\244lt.",
+   "Legt fest, welcher Core-Anschluss Eingaben vom Frontend-Controlleranschluss %u empf\303\244ngt. "
+   "Mit \342\200\236Kein\342\200\234 werden die Eingaben an keinen Core-Anschluss gesendet.",
    "Remaps gelten nur f\303\274r das aktive Gamepad, in dem sie gespeichert wurden.",
    "\303\204ndert, wie das virtuelle RetroPad einem physischen Eingabeger\303\244t zugeordnet wird. "
    "Wenn ein Eingabeger\303\244t korrekt erkannt und automatisch konfiguriert wird, brauchen Benutze"
    "r dieses Men\303\274 wahrscheinlich nicht zu verwenden.\nHinweis: F\303\274r Core-spezifische Ei"
    "ngabe\303\244nderungen bitte stattdessen das Untermen\303\274 \342\200\236Steuerung\342\200\234 "
    "des Schnellmen\303\274s verwenden.",
+   "Dreht die vom Core erkannten Richtungen des D-Pads und der Analogsticks f\303\274r gedreht darge"
+   "stellte Inhalte. Der Winkel entspricht dem f\303\274r \342\200\236Videodrehung\342\200\234 festg"
+   "elegten Winkel: Bei 90 Grad entspricht \342\200\236Links\342\200\234 auf dem Controller \342\200"
+   "\236Oben\342\200\234 im Spiel. Mit \342\200\236Automatisch\342\200\234 wird die Einstellung \342"
+   "\200\236Videodrehung\342\200\234 \303\274bernommen.",
    "Die Gr\303\266\303\237enordnung der haptischen Feedback-Effekte angeben.",
    "Eine automatische Konfigurationsdatei speichern, die automatisch angewendet wird, wenn dieser Co"
    "ntroller erneut erkannt wird.",
@@ -7779,6 +8034,30 @@ static const struct
    "ichtung entsprechen.",
    "\303\204ndert Beschleunigungsmesser, Gyroskop und Beleuchtungsst\303\244rke.",
    "Controller-, Tastatur- und Mauseinstellungen \303\244ndern.",
+   "Was ein Core vom D-Pad erkennt, wenn Links und Rechts gleichzeitig gedr\303\274ckt werden. Mit "
+   "\342\200\236Aus\342\200\234 werden beide Eingaben weitergegeben. \342\200\236Neutral\342\200\234"
+   " gibt keine der beiden Eingaben weiter, \342\200\236Letzte Eingabe hat Vorrang\342\200\234 gibt "
+   "die zuletzt gedr\303\274ckte Richtung weiter und \342\200\236Erste Eingabe hat Vorrang\342\200"
+   "\234 die zuerst gedr\303\274ckte.",
+   "Was ein Core vom D-Pad erkennt, wenn Oben und Unten gleichzeitig gedr\303\274ckt werden. Mit "
+   "\342\200\236Aus\342\200\234 werden beide Eingaben weitergegeben. \342\200\236Neutral\342\200\234"
+   " gibt keine der beiden Eingaben weiter, \342\200\236Letzte Eingabe hat Vorrang\342\200\234 die z"
+   "uletzt gedr\303\274ckte, \342\200\236Erste Eingabe hat Vorrang\342\200\234 die zuerst gedr\303"
+   "\274ckte und \342\200\236Oben hat Vorrang\342\200\234 immer die Eingabe \342\200\236Oben\342\200"
+   "\234.",
+#ifdef ANDROID
+   "Stiftger\303\244te aktivieren. Erm\303\266glicht pr\303\244zise Eingaben beim Zeichnen und bei Z"
+   "eigespielen. Bei Eingabekonflikten deaktivieren.",
+   "Dem Stift beim Schweben (ohne den Bildschirm zu ber\303\274hren) den Cursor bewegen. Wichtig f"
+   "\303\274r Zeichen- und Malspiele sowie Lightgun-Spiele. Diese Option ausschalten, wenn sich der "
+   "Cursor unerwartet bewegt.",
+   "Empfindlichkeit des Stiftes. H\303\266here Werte = h\303\266here Empfindlichkeit (leichtere Ber"
+   "\303\274hrung). Der Standardwert 70 ist f\303\274r die meisten Ger\303\244te geeignet. Beim Verw"
+   "enden einer Displayschutzfolie sollte der Wert niedriger eingestellt werden (40\342\200\22350).",
+   "EIN: Der Stift muss den Bildschirm physisch ber\303\274hren, damit ein Klick registriert wird. A"
+   "US: Der Stift kann einen Klick ausl\303\266sen, indem er den Bildschirm ber\303\274hrt ODER inde"
+   "m er \303\274ber dem Bildschirm schwebt und die Seitentaste gedr\303\274ckt wird.",
+#endif
    "Die x/y-Skalierung der Touchscreen-Koordinaten an die Anzeigenskalierung des Betriebssystems anp"
    "assen.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -7804,9 +8083,21 @@ static const struct
    "\303\204ndert, wie das virtuelle RetroPad dem physischen Eingabeger\303\244t f\303\274r diesen v"
    "irtuellen Anschluss zugewiesen wird.",
    "Core-spezifische Eingabezuordnungen \303\244ndern.",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Mit dem Controller-Treiber \342\200\236Raw\342\200\234 werden Xbox-kompatible Controller \303"
+   "\274ber XInput eingelesen. Dabei werden die Trigger getrennt und die XInput-Tastenanordnung verw"
+   "endet. Andere Controller werden weiterhin \303\274ber die Raw-Eingabe eingelesen.",
+#endif
+#endif
    "In diesem Verzeichnis werden Controller-Profile gespeichert, mit denen Controller automatisch ko"
    "nfiguriert werden.",
    "Zu verwendender Controller. (Neustart erforderlich)",
+   "Den Schl\303\274ssel des Schl\303\274sselbunds, in dem gespeicherte Passw\303\266rter aufbewahrt"
+   " werden, mit einer Passphrase sch\303\274tzen, damit diese wieder ge\303\266ffnet werden k\303"
+   "\266nnen, wenn die Konfiguration auf einen anderen Rechner \303\274bertragen wird. Nach einer so"
+   "lchen \303\234bertragung die Passphrase hier einmalig eingeben. Das Feld leer lassen, um die Pas"
+   "sphrase zu entfernen.",
 #ifdef HAVE_LAKKA_SWITCH
    "Nintendo Switch spezifische Optionen verwalten.",
 #endif
@@ -7886,6 +8177,13 @@ static const struct
    "einfarbigen Hintergrund. Dies gew\303\244hrleistet eine einheitliche Anzeigegr\303\266\303\237e "
    "f\303\274r alle Bilder und verbessert das Erscheinungsbild des Men\303\274s beim Anzeigen von Vo"
    "rschaubildern mit unterschiedlichen Basisabmessungen.",
+   "AI-Assistenten die Steuerung von RetroArch \303\274ber das Model Context Protocol \303\274berlas"
+   "sen: Jeder Netzwerkbefehl wird zu einem Werkzeug. Der Server lauscht ausschlie\303\237lich auf d"
+   "iesem Rechner unter http://127.0.0.1:<port>/mcp und akzeptiert nur Clients, die das unten angege"
+   "bene Token senden. Die \303\204nderung wird beim Neustart wirksam.",
+   "TCP-Port des MCP-Servers.",
+   "Das Tr\303\244gertoken, das ein MCP-Client senden muss. Es wird beim ersten Start des Servers er"
+   "stellt; es muss in den Client-Einstellungen eingegeben werden.",
    "Die verwendete und die gesamte Arbeitsspeichermenge des Systems anzeigen.",
    "Die Anzeige der Speichernutzung wird im eingestellten Intervall in Frames aktualisiert.",
    "Zur\303\274ck zum Hauptmen\303\274 aus Registerkarten/Seitenleiste beim Dr\303\274cken von Zur"
@@ -7901,6 +8199,11 @@ static const struct
    "en werden diese immer angezeigt.",
    "Dateibrowsereinstellungen \303\244ndern.",
    "\303\204ndert die Deckkraft des Standardhintergrunds f\303\274r Men\303\274s.",
+   "Die Bildwiederholrate, mit der das Men\303\274 angezeigt wird, w\303\244hrend Inhalte geladen we"
+   "rden. Bei der Option \342\200\236Anzeigefrequenz\342\200\234 wird das Men\303\274 mit der Bildwi"
+   "ederholrate des Bildschirms angezeigt; Inhalte, die im Hintergrund des Men\303\274s weiterlaufen"
+   ", behalten ihre eigene Bildwiederholrate bei. Bei der Option \342\200\236Inhaltsfrequenz\342\200"
+   "\234 wird das Men\303\274 mit der Bildrate des Inhalts angezeigt.",
    "Helligkeit des Men\303\274s in cd/m\302\262 (Nits) bei Nutzung eines HDR-Displays. Nur sichtbar,"
    " wenn HDR unter \342\200\236Einstellungen > Video > HDR\342\200\234 aktiviert ist.",
    "Horizontale Animation f\303\274r das Men\303\274 aktivieren. Verursacht Leistungseinbu\303\237e.",
@@ -7985,7 +8288,6 @@ static const struct
 #endif
    "Vollst\303\244ndige Pfade f\303\274r Verzeichniseinstellungen anzeigen, anstatt nur den gew\303"
    "\244hlten Verzeichnisnamen.",
-   "Die Option \"Hilfe\" im Hauptmen\303\274 anzeigen.",
    "Die Option \"Informationen\" im Hauptmen\303\274 anzeigen.",
    "Die Option \"Inhalt laden\" im Hauptmen\303\274 anzeigen.",
    "Beim Laden von Inhalten eine kurze Startfeedback-Animation zeigen.",
@@ -8142,6 +8444,8 @@ static const struct
    "en.",
    "Im LAN nach Netzwerkspielen suchen.",
    "Nach Netzwerkspielen suchen.",
+   "Die Spielerpl\303\244tze, die bei Teilnahme an einer Netplay-Sitzung beim Host angefordert werde"
+   "n. Wenn keine Auswahl getroffen wurde, weist der Host den ersten freien Spielerplatz zu.",
    "Anfragen, mit dem angegebenen Eingabeger\303\244t zu spielen.",
    "Keine Nicht-Slave-Modus-Verbindungen zulassen. Nicht empfohlen, au\303\237er f\303\274r sehr sch"
    "nelle Netzwerke mit sehr schwachen Maschinen.",
@@ -8158,7 +8462,22 @@ static const struct
    "New3DS-Taktfrequenz (804MHz) und -L2-Cache aktivieren.",
 #endif
 #ifdef HAVE_NFSCLIENT
+   "Pfad, den der Server exportiert, z. B. /export/roms. Der Pfad des Verzeichnisses auf dem Server "
+   "funktioniert auch f\303\274r NFS Version 4, wo der Server es m\303\266glicherweise unter einem k"
+   "\303\274rzeren Namen bereitstellt. Das Feld leer lassen, um den Export in der Adresse als nfs://"
+   "server/export/path anzugeben.",
+   "Daten werden vorab abgerufen, wenn ein Spiel eine Datei in kleinen Abschnitten liest, wobei ein "
+   "Hintergrundthread daf\303\274r sorgt, dass das n\303\244chste Fenster angezeigt wird. Dies kann "
+   "gro\303\237e Disc-Images \303\274ber eine langsame Verbindung fl\303\274ssiger wiedergeben; es e"
+   "rfordert jedoch mehr Speicher und eine zus\303\244tzliche Verbindung pro ge\303\266ffneter Datei"
+   ". Der Wert 0 deaktiviert diese Funktion: Jeder Lesevorgang entspricht einer Anfrage, so wie vor "
+   "dem Einsatz von Read-Ahead.",
    "Server-IP-Adresse oder Hostname.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "NFS-Export-Einstellungen konfigurieren.",
+#endif
 #endif
    "Eine Bildschirmmeldung anzeigen, wenn Eingabeger\303\244te angeschlossen/getrennt werden.",
    "Zeigt eine Nachricht auf dem Bildschirm an, wenn Eingabeger\303\244te nicht konfiguriert werden "
@@ -8626,6 +8945,14 @@ static const struct
    "d Ethernet gegen\303\274ber WLAN dringend empfohlen. Hinweis: Die \303\204nderungen werden beim "
    "n\303\244chsten Aufrufen einer Freigabe wirksam, und Inhalte, die bereits von einer Freigabe aus"
    " ausgef\303\274hrt werden, behalten ihre aktuelle Verbindung bei.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Host des Kerberos-Schl\303\274sselverteilungszentrums. Dieses Feld leer lassen, wenn der SMB-Ser"
+   "ver der Dom\303\244nencontroller ist.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Die maximale Anzahl der im Umfeld verwendeten Verbindungen ausw\303\244hlen.",
 #endif
 #endif
@@ -8633,6 +8960,21 @@ static const struct
    "Passwort f\303\274r die Authentifizierung. Dies ist optional, wenn Gastzugang auf dem Server akt"
    "iviert ist. Windows 10 und h\303\266her: Gastzugang ist standardm\303\244\303\237ig deaktiviert,"
    " daher ist hier ein Passwort erforderlich.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   "Daten werden vorab abgerufen, wenn ein Spiel eine Datei in kleinen Abschnitten liest, wobei ein "
+   "Hintergrundthread daf\303\274r sorgt, dass das n\303\244chste Fenster angezeigt wird. Dies kann "
+   "gro\303\237e Disc-Images \303\274ber eine langsame Verbindung fl\303\274ssiger wiedergeben; es e"
+   "rfordert jedoch mehr Speicher und eine zus\303\244tzliche Verbindung pro ge\303\266ffneter Datei"
+   ". Der Wert 0 deaktiviert diese Funktion: Jeder Lesevorgang entspricht einer Anfrage, so wie vor "
+   "dem Einsatz von Read-Ahead.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Kerberos-Realm f\303\274r die Ticketauthentifizierung, z. B. die Active-Directory-Dom\303\244ne "
+   "in Gro\303\237buchstaben (BEISPIEL.COM). F\303\274r die Passwort-Authentifizierung (NTLMSSP) lee"
+   "r lassen. Der Server muss \303\274ber den Hostnamen angegeben werden.",
    "Server-IP-Adresse oder Hostname.",
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -9277,6 +9619,8 @@ static const struct
    "Dekompression l\303\244uft bereits.",
    "Dekompression fehlgeschlagen.",
    "Erkannte Bildbereich von",
+   "%s und Tastatur wurden dem Core-Port %u zugewiesen",
+   "%s wurde dem Core-Port %u zugewiesen",
    "%s konfiguriert in Port %u",
    "%s wurde von Port %u getrennt",
    "%s (%u/%u) nicht konfiguriert, verwendet R\303\274ckfalloption",
@@ -9395,6 +9739,8 @@ static const struct
    "Passwort eingeben",
    "Passwort falsch.",
    "Passwort korrekt.",
+   "Schl\303\274sselbund-Passphrase",
+   "Neue Schl\303\274sselbund-Passphrase (leer entfernt)",
    "Passwort eingeben",
    "Passwort falsch.",
    "Passwort korrekt.",
@@ -9412,6 +9758,14 @@ static const struct
    "in Megabyte",
    "Mauseingabe per Touchscreen ist deaktiviert",
    "Mauseingabe per Touchscreen ist aktiviert",
+   "Tastatur wurde dem Core-Port %u zugewiesen",
+   "Schl\303\274sselbund-Passphrase entfernt.",
+   "Schl\303\274sselbund-Passphrase eingerichtet.",
+   "Schl\303\274sselbund-Passphrase ist falsch.",
+   "Schl\303\274sselbund-Passphrase wird eingerichtet \342\200\246",
+   "Schl\303\274sselbund entsperrt.",
+   "Schl\303\274sselbund entsperren \342\200\246",
+   "Die Schl\303\274sseldatei des Schl\303\274sselbundes konnte nicht aktualisiert werden.",
    "Neueste Version bereits installiert: ",
    "Beste(r): %s",
    "Ranglistenversuch fehlgeschlagen",
@@ -9449,6 +9803,8 @@ static const struct
    "Aktuelle Eintr\303\244ge werden gepr\303\274ft: ",
    "Scanne Inhalt: ",
    "Speicher",
+   "Inhaltsfrequenz",
+   "Anzeigefrequenz",
    "Warnung: Fehlende Assets; bitte den Online-Updater verwenden, falls verf\303\274gbar.",
    "Eingegebene Replay-Filmdatei ist keine g\303\274ltige REPLAY-Datei.",
    "Filmdatei besitzt offenbar eine andere Serializer-Version. Wird h\303\266chstwahrscheinlich fehl"
@@ -9695,7 +10051,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (212188u
+      (sizeof(msg_hash_de_blob) == (217883u
 #ifdef ANDROID
        + 358u
 #endif
@@ -9759,6 +10115,10 @@ typedef char msg_hash_de_blob_check[
 #endif
 #ifdef ANDROID
        + 30u
+       + 20u
+       + 43u
+       + 32u
+       + 34u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
        + 14u
@@ -9766,6 +10126,11 @@ typedef char msg_hash_de_blob_check[
        + 23u
        + 25u
        + 26u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 52u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 30u
@@ -9811,6 +10176,25 @@ typedef char msg_hash_de_blob_check[
 #ifdef _3DS
        + 43u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 23u
+       + 11u
+       + 14u
+       + 26u
+       + 9u
+       + 21u
+       + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 26u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 21u
+       + 24u
+       + 12u
+#endif
 #ifdef HAVE_QT
        + 644u
 #endif
@@ -9837,11 +10221,26 @@ typedef char msg_hash_de_blob_check[
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 22u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 17u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 26u
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 13u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 21u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 19u
        + 11u
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -9983,6 +10382,10 @@ typedef char msg_hash_de_blob_check[
 #endif
 #ifdef ANDROID
        + 70u
+       + 127u
+       + 204u
+       + 248u
+       + 244u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
        + 92u
@@ -9990,6 +10393,11 @@ typedef char msg_hash_de_blob_check[
        + 77u
        + 91u
        + 136u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 241u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 48u
@@ -10033,7 +10441,14 @@ typedef char msg_hash_de_blob_check[
        + 55u
 #endif
 #ifdef HAVE_NFSCLIENT
+       + 300u
+       + 466u
        + 33u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 40u
+#endif
 #endif
 #ifdef HAVE_GAME_AI
        + 36u
@@ -10062,11 +10477,26 @@ typedef char msg_hash_de_blob_check[
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 318u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 122u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 71u
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 211u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 466u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 232u
        + 33u
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -10718,6 +11148,7 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
@@ -10887,6 +11318,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
@@ -10965,6 +11397,10 @@ static const uint32_t msg_hash_de_ids[] =
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_ASSIGNS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_WAITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -10994,6 +11430,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
@@ -11013,6 +11450,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -11144,6 +11584,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -11159,7 +11601,19 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_LAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -11180,10 +11634,19 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_SYSTEM_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYCHAIN_PASSPHRASE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
 #ifdef HAVE_LAKKA_SWITCH
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SWITCH_OPTIONS,
@@ -11286,6 +11749,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_TOKEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -11307,6 +11773,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAME_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -11360,7 +11827,6 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -11444,7 +11910,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_SYSTEM_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_WRAPAROUND,
@@ -11488,6 +11956,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
@@ -11521,6 +11990,25 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_READAHEAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_VERSION,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
@@ -11703,6 +12191,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -11899,6 +12388,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PERSPECTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -12134,11 +12631,26 @@ static const uint32_t msg_hash_de_ids[] =
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_KDC,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_READAHEAD,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_REALM,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -12842,6 +13354,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -12944,6 +13457,8 @@ static const uint32_t msg_hash_de_ids[] =
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -12967,7 +13482,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -13076,6 +13593,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -13090,6 +13608,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_VERTICAL,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -13109,8 +13635,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_KEYCHAIN_PASSPHRASE,
 #ifdef HAVE_LAKKA_SWITCH
    (uint32_t)MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
 #endif
@@ -13161,6 +13693,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_TOKEN,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
@@ -13173,6 +13708,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAME_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -13221,7 +13757,6 @@ static const uint32_t msg_hash_de_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -13324,6 +13859,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
@@ -13337,7 +13873,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
 #endif
 #ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
    (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SETTINGS,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -13641,11 +14184,26 @@ static const uint32_t msg_hash_de_ids[] =
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_KDC,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
 #endif
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_READAHEAD,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_REALM,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
@@ -14067,6 +14625,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,
    (uint32_t)MSG_DETECTED_VIEWPORT_OF,
+   (uint32_t)MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
+   (uint32_t)MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR,
    (uint32_t)MSG_DEVICE_CONFIGURED_IN_PORT_NR,
    (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
@@ -14184,6 +14744,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_KEYCHAIN_PASSPHRASE,
+   (uint32_t)MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
@@ -14201,6 +14763,14 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
+   (uint32_t)MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_REMOVED,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_SET,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_WRONG,
+   (uint32_t)MSG_KEYCHAIN_SETTING_PASSPHRASE,
+   (uint32_t)MSG_KEYCHAIN_UNLOCKED,
+   (uint32_t)MSG_KEYCHAIN_UNLOCKING,
+   (uint32_t)MSG_KEYCHAIN_WRITE_FAILED,
    (uint32_t)MSG_LATEST_CORE_INSTALLED,
    (uint32_t)MSG_LEADERBOARD_BEST,
    (uint32_t)MSG_LEADERBOARD_FAILED,
@@ -14238,6 +14808,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_START,
    (uint32_t)MSG_MEMORY,
+   (uint32_t)MSG_MENU_FRAME_RATE_CONTENT,
+   (uint32_t)MSG_MENU_FRAME_RATE_DISPLAY,
    (uint32_t)MSG_MISSING_ASSETS,
    (uint32_t)MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
    (uint32_t)MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

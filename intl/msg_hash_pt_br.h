@@ -633,14 +633,60 @@ static const struct
    char s_15f24ff4[8];
    char s_ec7e8026[8];
    char s_5d29b870[6];
+   char s_3cc9b420[19];
+   char s_bdea22f3[24];
+   char s_558faf3a[12];
+   char s_5fb85af7[12];
+   char s_5fbcf86a[10];
+   char s_575c05fd[22];
    char s_6996339b[7];
+   char s_9104dbe7[8];
+   char s_b4e9520b[31];
+   char s_12bd74ce[12];
+   char s_12c0a864[20];
+   char s_bfba8cdb[12];
    char s_08e9410c[20];
    char s_d95824aa[23];
    char s_639f529e[18];
    char s_4927597c[13];
    char s_77b74366[14];
+   char s_5266be65[22];
+   char s_8aeea24b[5];
+   char s_a18bec42[14];
+   char s_bf07df5b[23];
+   char s_b6df3202[13];
+   char s_bf5d5d76[16];
+   char s_0ec02c87[25];
+   char s_c07d4ce0[23];
+   char s_146397b0[10];
+   char s_c8d6f855[16];
+   char s_fda5cd4a[22];
+   char s_8e5cb774[19];
+   char s_d3deb2af[19];
+   char s_2821fa51[11];
+   char s_a10cbab5[5];
+   char s_a10cbbd0[14];
+   char s_a1381a82[18];
+   char s_f3a18a9f[11];
+   char s_14691293[16];
+   char s_cab4e5d1[10];
+   char s_f3b9b113[19];
+   char s_b6d851f0[19];
    char s_ab49119c[14];
+   char s_94ab8f8c[16];
+   char s_deed0812[18];
+   char s_dfa3c8c3[4];
+   char s_52dea05d[14];
+   char s_146c6f57[6];
+   char s_7ec63ffc[35];
+   char s_7f004a36[94];
+   char s_a3825f18[16];
+   char s_ef2d0a03[21];
+   char s_ad17a194[13];
    char s_ddf679b9[7];
+   char s_7137e7c2[22];
+   char s_f9fe3b9c[12];
+   char s_e62892df[16];
    char s_3b7e9d77[8];
    char s_d31f6d88[18];
    char s_f03e9c42[17];
@@ -794,6 +840,7 @@ static const struct
    char s_0b32f489[38];
    char s_1c82054d[27];
    char s_d458f013[44];
+   char s_6e1d0b9d[25];
    char s_56e1b31e[19];
    char s_56e1b31f[17];
    char s_597c4715[30];
@@ -812,6 +859,8 @@ static const struct
    char s_56e1b336[20];
    char s_313d15c0[9];
    char s_e9f0dd82[44];
+   char s_0bd714f7[6];
+   char s_0bebb490[11];
    char s_72765a06[17];
    char s_72765a07[17];
    char s_72765a08[17];
@@ -953,6 +1002,10 @@ static const struct
    char s_980ef0e8[8];
    char s_fcf05466[26];
    char s_da16c634[18];
+#ifdef ANDROID
+   char s_4c636851[18];
+   char s_a8f7398d[36];
+#endif
    char s_d042d680[16];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1152,7 +1205,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[27];
-   char s_f228c6c5[16];
    char s_11926382[24];
    char s_645ae416[29];
    char s_df92f5b5[57];
@@ -1705,6 +1757,18 @@ static const struct
    char s_4ceac87e[14];
    char s_f62d1074[8];
    char s_387a4176[20];
+   char s_131e934d[6];
+   char s_7745a38e[7];
+   char s_49e4b96c[9];
+   char s_2102d995[10];
+   char s_e69d6a8f[8];
+   char s_4e2cbad9[6];
+   char s_4e2cbb07[6];
+   char s_13ef7ee0[7];
+   char s_863f74bc[5];
+   char s_b28f6db3[9];
+   char s_6c9436e3[8];
+   char s_64ee333c[9];
    char s_28863bc1[19];
    char s_f751c497[24];
    char s_9329c64c[5];
@@ -2002,7 +2066,9 @@ static const struct
    char s_52e94a24[20];
    char s_d748f469[45];
    char s_9f006f5c[20];
+   char s_773482e7[12];
    char s_7fec5ca7[12];
+   char s_f05bb3b5[12];
    char s_9374b989[19];
    char s_7943e750[27];
    char s_cec8f66d[30];
@@ -2650,6 +2716,8 @@ static const struct
    char s_aa6534cc[34];
    char s_51d334ea[33];
    char s_95de8c94[34];
+   char s_f43bec66[104];
+   char s_d814ec71[74];
    char s_f2a19576[28];
    char s_b2a8d230[55];
    char s_11c7fa0c[101];
@@ -2733,6 +2801,7 @@ static const struct
    char s_6da9b571[283];
    char s_c2827177[141];
    char s_09f2837b[269];
+   char s_512d7a8b[64];
    char s_85147d5c[85];
    char s_0b56ad4c[58];
    char s_c312b1ca[47];
@@ -2794,7 +2863,6 @@ static const struct
    char s_74d87c7a[48];
    char s_12adb1e7[48];
    char s_070529d4[91];
-   char s_30d1fc05[54];
 #ifdef GEKKO
    char s_3180dcf5[69];
 #endif
@@ -2836,7 +2904,6 @@ static const struct
    char s_47df0525[63];
    char s_03e272fc[63];
    char s_5c2cc60f[83];
-   char s_d6d8d4be[91];
    char s_e86d2704[65];
    char s_dda608b5[330];
    char s_6f5a032a[58];
@@ -2980,7 +3047,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[117];
-   char s_01efec73[44];
    char s_d3fc9970[52];
    char s_740bd7c4[57];
    char s_f052dae3[83];
@@ -5042,14 +5108,61 @@ static const struct
    "Pausado",
    "Jogando",
    "Disco",
+   "Disco Genu\303\255no: %s",
+   "Data de Lan\303\247amento: %s",
+   "Sistema: %s",
+   "T\303\255tulo: %s",
+   "Faixa %d:",
+   "N\303\272mero de faixas: %d",
    "\303\201udio",
+   "Modo %d",
+   " - Comprimento: %02d:%02d.%02d",
+   " - Modo: %s",
+   " - Tamanho: %.1f MB",
+   "Vers\303\243o: %s",
    "Carregar novo disco",
    "\303\215ndice atual do disco",
    "Controle de Disco",
    "Ejetar disco",
    "Inserir disco",
+   "Soma de verifica\303\247\303\243o",
+   "Ruim",
+   "Cromaticidade",
+   "Formatos de \303\201udio CTA",
+   "Colorimetria",
+   "Capacidades CTA",
+   "Metadados Est\303\241ticos HDR",
+   "Formatos de V\303\255deo CTA",
+   "Fabricado",
+   "Tempo Detalhado",
+   "Se\303\247\303\265es do DisplayID",
+   "Tempo Estabelecido",
+   "Bloco de Extens\303\243o",
+   "Conte\303\272dos",
+   "Gama",
+   "Gama de Cores",
+   "Entrada de V\303\255deo",
+   "Fabricante",
+   "Nome do Monitor",
+   "preferido",
+   "C\303\263digo do Produto",
+   "Limites de Alcance",
    "Formato bruto",
+   "Tamanho da Tela",
+   "N\303\272mero de S\303\251rie",
+   "Ler",
+   "Tempo Padr\303\243o",
+   "Texto",
+   "Apenas parte do EDID pode ser lido",
+   "Um laptop embutido ou all-in-one n\303\243o cont\303\251m EDID. Um monitor externo conectado por"
+   " DDC tem.",
+   "Vers\303\243o do EDID",
+   "Exibir informa\303\247\303\265es",
+   "Orienta\303\247\303\243o",
    "Sa\303\255da",
+   "Taxa de Atualiza\303\247\303\243o",
+   "Resolu\303\247\303\243o",
+   "Exibir Servidor",
    "Padr\303\243o",
    "Baixar um n\303\272cleo",
    "Baixar conte\303\272do",
@@ -5204,6 +5317,7 @@ static const struct
    "Mesclar Tipo de Dispositivo da Hotkey",
    "Atalhos Seguem o Jogador 1",
    "Habilitar mapeamento de controle no teclado",
+   "Informa\303\247\303\265es de Entrada",
    "Bot\303\243o A (direita)",
    "Bot\303\243o B (baixo)",
    "Direcional digital para baixo",
@@ -5222,6 +5336,8 @@ static const struct
    "Bot\303\243o Y (esquerda)",
    "Tecla %s",
    "Tipo de mapeamento para controle no teclado",
+   "Todas",
+   "Teclado %s",
    "Aux A da pistola",
    "Aux B da pistola",
    "Aux C da pistola",
@@ -5363,6 +5479,10 @@ static const struct
    "Entrada",
    "Habilitar teclado pequeno",
    "Joy-Con separados",
+#ifdef ANDROID
+   "Suporte \303\240 Stylus",
+   "Sensibilidade de Press\303\243o da Stylus",
+#endif
    "Habilitar toque",
    "Escala de toque",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5562,7 +5682,6 @@ static const struct
 #endif
 #endif
    "Mostrar Caminhos Completos",
-   "Mostrar \"Ajuda\"",
    "Mostrar \"Informa\303\247\303\265es\"",
    "Mostrar \"Carregar conte\303\272do\"",
    "Notifica\303\247\303\243o de inicializa\303\247\303\243o ao \"Carregar conte\303\272do\"",
@@ -6127,6 +6246,18 @@ static const struct
    "Distribuidora",
    "Regi\303\243o",
    "M\303\252s de lan\303\247amento",
+   "Abril",
+   "Agosto",
+   "Dezembro",
+   "Fevereiro",
+   "Janeiro",
+   "Julho",
+   "Junho",
+   "Mar\303\247o",
+   "Maio",
+   "Novembro",
+   "Outubro",
+   "Setembro",
    "Ano de lan\303\247amento",
    "Suporte para vibra\303\247\303\243o",
    "Nota",
@@ -6424,7 +6555,9 @@ static const struct
    "URL da transmiss\303\243o",
    "Configura\303\247\303\243o de transmiss\303\243o personalizada",
    "Conte\303\272do Atual: %s",
+   "Carregar %s",
    "Subsistemas",
+   "Come\303\247ar %s",
    "N\303\272cleos sugeridos",
    "Desativar protetor de tela",
    "Modo de desempenho sustentado",
@@ -7204,6 +7337,9 @@ static const struct
    "Gerenciamento de imagem de disco.",
    "Abre a bandeja de disco virtual.",
    "Fecha a bandeja de disco virtual.",
+   "Exibir o EDID que a tela em uso relata: identidade, capacidades, tempo suportado e blocos de ext"
+   "ens\303\243o.",
+   "Exibir a tela de servidor, sa\303\255da, modo e tamanho f\303\255sico da tela em uso.",
    "Baixa e instala um n\303\272cleo.",
    "Baixe conte\303\272dos gratuitos para o n\303\272cleo selecionado.",
    "Baixa os arquivos de sistema auxiliares necess\303\241rios para opera\303\247\303\243o do n\303"
@@ -7335,6 +7471,7 @@ static const struct
    " um usu\303\241rio diferente. Observa\303\247\303\243o: os atalhos de teclado n\303\243o funcion"
    "ar\303\243o se a porta 1 for remapeada para qualquer usu\303\241rio acima de 1 (pois a entrada d"
    "o teclado \303\251 do usu\303\241rio 1).",
+   "Visualizar o controle em cada porta e a configura\303\247\303\243o que usa.",
    "Quantidade m\303\241xima de usu\303\241rios suportada pelo RetroArch. (Requer reinicializa\303"
    "\247\303\243o)",
    "Combina\303\247\303\243o de bot\303\265es do controle para alternar o menu.",
@@ -7417,7 +7554,6 @@ static const struct
    "Aumenta o n\303\255vel do volume da sa\303\255da de \303\241udio.",
    "Alterna a sincroniza\303\247\303\243o com a taxa de quadros exata do conte\303\272do entre ligad"
    "o/desligado.",
-   "O mouse f\303\255sico, conforme reconhecido pelo RetroArch.",
 #ifdef GEKKO
    "Ajusta a escala X/Y para a velocidade da light gun usando o Wiimote.",
 #endif
@@ -7484,8 +7620,6 @@ static const struct
    "Os remapeamentos de entrada s\303\243o armazenados neste diret\303\263rio.",
    "Substitua os v\303\255nculos da entrada com os v\303\255nculos definidos para o n\303\272cleo at"
    "ual.",
-   "Especifica qual porta do n\303\272cleo receber\303\241 a entrada da porta de controle da interfa"
-   "ce %u.",
    "Aplica os remapeamentos somente no controle usado no salvamento.",
    "Altere como o RetroPad virtual \303\251 mapeado para um dispositivo de entrada f\303\255sico. Se"
    " um dispositivo de entrada for reconhecido e configurado automaticamente corretamente, provavelm"
@@ -7724,7 +7858,6 @@ static const struct
 #endif
    "Mostrar caminhos completos para as configura\303\247\303\265es de diret\303\263rio, em vez de ap"
    "enas o nome do diret\303\263rio selecionado.",
-   "Mostra a op\303\247\303\243o \"Ajuda\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Informa\303\247\303\265es\" no menu principal.",
    "Mostra a op\303\247\303\243o \"Carregar conte\303\272do\" no menu principal.",
    "Exibe uma breve anima\303\247\303\243o de feedback de inicializa\303\247\303\243o ao carregar o "
@@ -9376,7 +9509,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_br_blob_check[
-      (sizeof(msg_hash_pt_br_blob) == (193884u
+      (sizeof(msg_hash_pt_br_blob) == (194896u
 #ifdef ANDROID
        + 352u
 #endif
@@ -9443,6 +9576,8 @@ typedef char msg_hash_pt_br_blob_check[
 #endif
 #ifdef ANDROID
        + 27u
+       + 18u
+       + 36u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
        + 30u
@@ -10465,14 +10600,60 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE_CONTENT,
@@ -10626,6 +10807,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
@@ -10644,6 +10826,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10785,6 +10969,10 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10984,7 +11172,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -11536,6 +11723,18 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -11833,7 +12032,9 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAMING_URL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STREAM_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_CONTENT_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_LOAD_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SUBSYSTEM_START_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUPPORTED_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSPEND_SCREENSAVER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SUSTAINED_PERFORMANCE_MODE,
@@ -12480,6 +12681,8 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -12563,6 +12766,7 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -12624,7 +12828,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12666,7 +12869,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -12810,7 +13012,6 @@ static const uint32_t msg_hash_pt_br_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

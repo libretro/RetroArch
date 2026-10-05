@@ -893,6 +893,7 @@ static const struct
    char s_56e1b336[20];
    char s_313d15c0[9];
    char s_e9f0dd82[46];
+   char s_0bd714f7[5];
    char s_0bebb490[11];
    char s_72765a06[16];
    char s_72765a07[16];
@@ -1236,7 +1237,6 @@ static const struct
    char s_d02afc79[32];
    char s_7a2033d4[20];
    char s_a6e5d0ee[23];
-   char s_f228c6c5[16];
    char s_645ae416[25];
    char s_df92f5b5[41];
    char s_dcbf8b04[25];
@@ -1786,6 +1786,18 @@ static const struct
    char s_4ceac87e[7];
    char s_f62d1074[8];
    char s_387a4176[18];
+   char s_131e934d[6];
+   char s_7745a38e[7];
+   char s_49e4b96c[9];
+   char s_2102d995[9];
+   char s_e69d6a8f[8];
+   char s_4e2cbad9[6];
+   char s_4e2cbb07[6];
+   char s_13ef7ee0[6];
+   char s_863f74bc[5];
+   char s_b28f6db3[9];
+   char s_6c9436e3[8];
+   char s_64ee333c[9];
    char s_28863bc1[18];
    char s_f751c497[21];
    char s_9329c64c[12];
@@ -2917,7 +2929,6 @@ static const struct
    char s_74d87c7a[47];
    char s_12adb1e7[46];
    char s_070529d4[77];
-   char s_30d1fc05[42];
 #ifdef GEKKO
    char s_3180dcf5[65];
 #endif
@@ -2959,7 +2970,6 @@ static const struct
    char s_47df0525[64];
    char s_03e272fc[57];
    char s_5c2cc60f[86];
-   char s_d6d8d4be[86];
    char s_e86d2704[75];
    char s_dda608b5[335];
    char s_6f5a032a[68];
@@ -3105,7 +3115,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[107];
-   char s_01efec73[45];
    char s_d3fc9970[52];
    char s_740bd7c4[54];
    char s_f052dae3[73];
@@ -5462,6 +5471,7 @@ static const struct
    "Bot\303\263n Y (esquerda)",
    "Chave %s",
    "Tipo de asignaci\303\263n do controlador de teclado",
+   "Todo",
    "Teclado %s",
    "Arma Auxiliar A",
    "Arma Auxiliar B",
@@ -5805,7 +5815,6 @@ static const struct
    "Mostrar \"Descargador principal\"",
    "Mostrar \"Dump Disc\"",
    "Amosar rutas completas",
-   "Mostrar \"Axuda\"",
    "Mostrar \"Cargar contido\"",
    "Notificaci\303\263n de inicio \"Cargar contido\"",
    "Mostrar \"Cargar n\303\272cleo\"",
@@ -6366,6 +6375,18 @@ static const struct
    "Editor",
    "Rexi\303\263n",
    "Mes de Lanzamento",
+   "Abril",
+   "Agosto",
+   "Decembro",
+   "Febreiro",
+   "Xaneiro",
+   "Xullo",
+   "Xu\303\261o",
+   "Marzo",
+   "Maio",
+   "Novembro",
+   "Outubro",
+   "Setembro",
    "Ano de lanzamento",
    "Vibraci\303\263n soportada",
    "Puntuaci\303\263n",
@@ -7760,7 +7781,6 @@ static const struct
    "Dimin\303\272e o nivel de volume de audio de sa\303\255da.",
    "Aumenta o nivel de volume de audio de sa\303\255da.",
    "Activa/desactiva a sincronizaci\303\263n coa taxa de fotogramas de contido exacta.",
-   "O rato f\303\255sico reco\303\261ecido por RetroArch.",
 #ifdef GEKKO
    "Axusta a escala x/y para a velocidade da pistola de luz Wiimote.",
 #endif
@@ -7828,7 +7848,6 @@ static const struct
    "Combinaci\303\263n de bot\303\263ns do controlador para sa\303\255r de RetroArch.",
    "Neste directorio g\303\241rdanse as reasignaci\303\263ns de entrada.",
    "Anular os enlaces de entrada cos enlaces reasignados definidos para o n\303\272cleo actual.",
-   "Especifica que porto principal recibir\303\241 entrada do porto do controlador frontend %u.",
    "As reasignaci\303\263ns s\303\263 se aplicar\303\241n ao mando activo no que foron gardadas.",
    "Cambia como se asigna o RetroPad virtual a un dispositivo de entrada f\303\255sico. Se un dispos"
    "itivo de entrada se reco\303\261ece e se configura automaticamente correctamente, probablemente "
@@ -8065,7 +8084,6 @@ static const struct
 #endif
    "Amosa as rutas completas na configuraci\303\263n de directorios, en lugar de s\303\263 o nome do"
    " directorio escollido.",
-   "Mostra a opci\303\263n \"Axuda\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Informaci\303\263n\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Cargar contido\" no men\303\272 principal.",
    "Mostra unha breve animaci\303\263n de comentarios de inicio ao cargar contido.",
@@ -9762,7 +9780,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (212811u
+      (sizeof(msg_hash_gl_blob) == (212715u
 #ifdef ANDROID
        + 365u
 #endif
@@ -11100,6 +11118,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -11443,7 +11462,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -11992,6 +12010,18 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -13117,7 +13147,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -13159,7 +13188,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -13305,7 +13333,6 @@ static const uint32_t msg_hash_gl_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

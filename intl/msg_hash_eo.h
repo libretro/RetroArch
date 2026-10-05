@@ -818,6 +818,7 @@ static const struct
    char s_56e1b336[22];
    char s_313d15c0[9];
    char s_e9f0dd82[1];
+   char s_0bd714f7[6];
    char s_72765a06[14];
    char s_72765a07[14];
    char s_72765a08[14];
@@ -1167,7 +1168,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[30];
-   char s_f228c6c5[15];
    char s_11926382[18];
    char s_645ae416[24];
    char s_df92f5b5[30];
@@ -2826,7 +2826,6 @@ static const struct
    char s_74d87c7a[46];
    char s_12adb1e7[43];
    char s_070529d4[55];
-   char s_30d1fc05[45];
 #ifdef GEKKO
    char s_3180dcf5[59];
 #endif
@@ -2868,7 +2867,6 @@ static const struct
    char s_47df0525[49];
    char s_03e272fc[59];
    char s_5c2cc60f[94];
-   char s_d6d8d4be[82];
    char s_e86d2704[86];
    char s_dda608b5[290];
    char s_6f5a032a[52];
@@ -3011,7 +3009,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[93];
-   char s_01efec73[44];
    char s_d3fc9970[47];
    char s_740bd7c4[53];
    char s_f052dae3[65];
@@ -5207,6 +5204,7 @@ static const struct
    "Butono Y (maldekstra)",
    "Klavo %s",
    "",
+   "\304\210iuj",
    "Pafila Akc. A",
    "Pafila Akc. B",
    "Pafila Akc. C",
@@ -5556,7 +5554,6 @@ static const struct
 #endif
 #endif
    "Montri plenajn dosierindikojn",
-   "Montri \"Helpo\"",
    "Montri \"Informoj\"",
    "Montri \"\305\234argi enhavon\"",
    "Sciigo kiam \305\235argante enhavon",
@@ -7359,7 +7356,6 @@ static const struct
    "Malpliigas nivelon de la\305\255teco de sona eligo.",
    "Pliigas nivelon de la\305\255teco de sona eligo.",
    "Baskuligas sinkronigon al \304\235usta enhava filmer-ofteco.",
-   "La fizika muso, kiel agnoskita de RetroArch.",
 #ifdef GEKKO
    "Al\304\235ustigi skalon X/Y por rapido de \"light gun\" de Wiimote",
 #endif
@@ -7423,7 +7419,6 @@ static const struct
    "Enigaj reasignoj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Transpasi la enigajn klavasignadojn kontra\305\255 la reasignitaj klavasignoj por la kuranta ker"
    "no.",
-   "Specifas la kernan konektejon, kiu ricevos enigojn de fasada regila konektejo %u.",
    "Reasignadoj nur estos aplikitaj al la aktiva ludregilo, en kiu ili estis konservitaj.",
    "\305\234an\304\235i kiel la virtuala RetroPad estas asignita al fizika enigaparato. Se enigapara"
    "to estas agnoskita kaj a\305\255tomate konfigurita \304\235uste, uzantoj eble ne bezonos uzi "
@@ -7631,7 +7626,6 @@ static const struct
 #endif
    "Montri plenajn dosierindikojn por dosierujaj agordojn, anstata\305\255 nur la elektita dosiernom"
    "o.",
-   "Montri la opcion \"Helpo\" en la \304\210efa menuo.",
    "Montri la opcion \"Informoj\" en la \304\210efa menuo.",
    "Montri la opcion \"\305\234argi enhavon\" en la \304\210efa menuo.",
    "Montri malda\305\255ran animacio por indiki, ke enhavo estas \305\235argata.",
@@ -9138,7 +9132,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171756u
+      (sizeof(msg_hash_eo_blob) == (171576u
 #ifdef ANDROID
        + 312u
 #endif
@@ -10385,6 +10379,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10734,7 +10729,6 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12392,7 +12386,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12434,7 +12427,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -12577,7 +12569,6 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

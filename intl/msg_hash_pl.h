@@ -888,6 +888,7 @@ static const struct
    char s_56e1b336[18];
    char s_313d15c0[11];
    char s_e9f0dd82[36];
+   char s_0bd714f7[10];
    char s_0bebb490[14];
    char s_72765a06[15];
    char s_72765a07[15];
@@ -1239,7 +1240,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[25];
-   char s_f228c6c5[15];
    char s_11926382[20];
    char s_645ae416[26];
    char s_df92f5b5[52];
@@ -1795,6 +1795,18 @@ static const struct
    char s_69f2e90c[30];
    char s_4ceac87e[8];
    char s_387a4176[22];
+   char s_131e934d[10];
+   char s_7745a38e[10];
+   char s_49e4b96c[10];
+   char s_2102d995[5];
+   char s_e69d6a8f[9];
+   char s_4e2cbad9[7];
+   char s_4e2cbb07[9];
+   char s_13ef7ee0[7];
+   char s_863f74bc[4];
+   char s_b28f6db3[9];
+   char s_6c9436e3[13];
+   char s_64ee333c[10];
    char s_28863bc1[17];
    char s_f751c497[18];
    char s_9329c64c[6];
@@ -2938,7 +2950,6 @@ static const struct
    char s_74d87c7a[54];
    char s_12adb1e7[54];
    char s_070529d4[76];
-   char s_30d1fc05[44];
 #ifdef GEKKO
    char s_3180dcf5[67];
 #endif
@@ -2980,7 +2991,6 @@ static const struct
    char s_47df0525[59];
    char s_03e272fc[57];
    char s_5c2cc60f[95];
-   char s_d6d8d4be[87];
    char s_e86d2704[94];
    char s_dda608b5[313];
    char s_6f5a032a[34];
@@ -3128,7 +3138,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[91];
-   char s_01efec73[40];
    char s_d3fc9970[45];
    char s_740bd7c4[51];
    char s_f052dae3[87];
@@ -5507,6 +5516,7 @@ static const struct
    "Przycisk Y (lewo)",
    "Klawisz %s",
    "Typ mapowania kontrolera klawiatury",
+   "Wszystkie",
    "Klawiatura %s",
    "Pistolet Aux A",
    "Pistolet Aux B",
@@ -5858,7 +5868,6 @@ static const struct
 #endif
 #endif
    "Pokazuj pe\305\202ne \305\233cie\305\274ki",
-   "Poka\305\274 'Pomoc'",
    "Poka\305\274 'Informacje'",
    "Poka\305\274 'Za\305\202aduj tre\305\233\304\207'",
    "Powiadomienie o uruchomieniu \"Za\305\202aduj zawarto\305\233\304\207\"",
@@ -6426,6 +6435,18 @@ static const struct
    "Wy\305\202\304\205cznie na t\304\231 platform\304\231",
    "Wydawca",
    "Data wydania miesi\304\205c",
+   "Kwiecie\305\204",
+   "Sierpie\305\204",
+   "Grudzie\305\204",
+   "Luty",
+   "Stycze\305\204",
+   "Lipiec",
+   "Czerwiec",
+   "Marzec",
+   "Maj",
+   "Listopad",
+   "Pa\305\272dziernik",
+   "Wrzesie\305\204",
    "Data wydania rok",
    "Obs\305\202uga wibracji",
    "Wynik",
@@ -7838,7 +7859,6 @@ static const struct
    "Zwi\304\231ksza poziom g\305\202o\305\233no\305\233ci d\305\272wi\304\231ku wyj\305\233ciowego.",
    "Przel\304\205cza synchronizacj\304\231 do dok\305\202adnej liczby klatek na sekund\304\231 tre"
    "\305\233ci.",
-   "Fizyczna myszka rozpoznana przez RetroArch.",
 #ifdef GEKKO
    "Dostosuj skal\304\231 x/y dla pr\304\231dko\305\233ci pistoletu \305\233wietlnego Wiimote.",
 #endif
@@ -7909,8 +7929,6 @@ static const struct
    "Przemapowania wej\305\233cia s\304\205 przechowywane w tym katalogu.",
    "Zast\304\205p powi\304\205zania wej\305\233ciowe z zapisanymi powi\304\205zaniami ustawionymi dl"
    "a bie\305\274\304\205cego rdzenia.",
-   "Okre\305\233la, kt\303\263ry port rdzenia otrzyma dane wej\305\233ciowe z portu kontrolera front"
-   "endu %u.",
    "Przypisania b\304\231d\304\205 tylko zastosowywane do aktywnego kontrolera, w kt\303\263rym zost"
    "a\305\202y zapisanie.",
    "Zmie\305\204 spos\303\263b mapowania wirtualnego RetroPada na fizyczne urz\304\205dzenie wej\305"
@@ -8171,7 +8189,6 @@ static const struct
 #endif
    "Pokazuj pe\305\202ne \305\233cie\305\274ki dla ustawie\305\204 katalog\303\263w, zamiast tylko n"
    "azwy wybranego katalogu.",
-   "Poka\305\274 opcj\304\231 \"Pomoc\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 'Informacje' w menu g\305\202\303\263wnym.",
    "Poka\305\274 opcj\304\231 \"Za\305\202aduj tre\305\233\304\207\" w menu g\305\202\303\263wnym.",
    "Poka\305\274 kr\303\263tk\304\205 animacj\304\231 z informacj\304\205 o uruchomieniu podczas "
@@ -9978,7 +9995,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (197875u
+      (sizeof(msg_hash_pl_blob) == (197802u
 #ifdef ANDROID
        + 385u
 #endif
@@ -11326,6 +11343,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -11677,7 +11695,6 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12232,6 +12249,18 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PLATFORM_EXCLUSIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -13372,7 +13401,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -13414,7 +13442,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -13562,7 +13589,6 @@ static const uint32_t msg_hash_pl_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

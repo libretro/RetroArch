@@ -319,7 +319,6 @@ static const struct
    char s_5e519829[40];
 #endif
 #endif
-   char s_f228c6c5[28];
    char s_11926382[35];
    char s_645ae416[39];
    char s_dcbf8b04[39];
@@ -1328,7 +1327,6 @@ static const struct
    "Amosar la opci\303\263n \302\253Espulsar el discu\302\273",
 #endif
 #endif
-   "Amosar la opci\303\263n \302\253Ayuda\302\273",
    "Amosar la opci\303\263n \302\253Informaci\303\263n\302\273",
    "Amosar la opci\303\263n \302\253Cargar conten\303\255u\302\273",
    "Amosar la opci\303\263n \302\253Cargar un nucleu\302\273",
@@ -2074,7 +2072,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24553u
+      (sizeof(msg_hash_ast_blob) == (24525u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2467,7 +2465,6 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,

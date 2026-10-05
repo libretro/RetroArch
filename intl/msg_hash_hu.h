@@ -600,7 +600,7 @@ static const struct
    char s_22600fe7[19];
    char s_12b8e195[15];
    char s_dd6afca3[21];
-   char s_4bcbcc14[32];
+   char s_4bcbcc14[36];
    char s_e97bb565[36];
    char s_da7a38eb[27];
 #ifdef _3DS
@@ -808,6 +808,7 @@ static const struct
    char s_56e1b336[13];
    char s_313d15c0[14];
    char s_e9f0dd82[45];
+   char s_0bd714f7[8];
    char s_72765a06[25];
    char s_72765a07[25];
    char s_72765a08[25];
@@ -1144,7 +1145,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[26];
-   char s_f228c6c5[19];
    char s_11926382[26];
    char s_645ae416[33];
    char s_df92f5b5[49];
@@ -2740,7 +2740,6 @@ static const struct
    char s_74d87c7a[34];
    char s_12adb1e7[31];
    char s_070529d4[69];
-   char s_30d1fc05[47];
 #ifdef GEKKO
    char s_3180dcf5[67];
 #endif
@@ -2782,7 +2781,6 @@ static const struct
    char s_47df0525[65];
    char s_03e272fc[47];
    char s_5c2cc60f[100];
-   char s_d6d8d4be[93];
    char s_e86d2704[96];
    char s_dda608b5[291];
    char s_6f5a032a[40];
@@ -2926,7 +2924,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[112];
-   char s_01efec73[51];
    char s_d3fc9970[59];
    char s_740bd7c4[65];
    char s_f052dae3[70];
@@ -5028,7 +5025,7 @@ static const struct
    "V\303\255zszintes m\303\251ret",
    "CRT felbont\303\241s",
    "CRT szuperfelbont\303\241s",
-   "Egyedi friss\303\255t\303\251si gyakoris\303\241g",
+   "Egyedi k\303\251pfriss\303\255t\303\251si gyakoris\303\241g",
    "F\303\274gg\305\221legesen k\303\266z\303\251pre igaz\303\255t\303\241s",
    "V\303\255zszintes k\303\266z\303\251p\303\241ll\303\241s",
 #ifdef _3DS
@@ -5237,6 +5234,7 @@ static const struct
    "Y gomb (bal)",
    "%s billenty\305\261",
    "Billenty\305\261zet kontroller lek\303\251pez\303\251s t\303\255pusa",
+   "\303\226sszes",
    "Pisztoly kieg\303\251sz\303\255t\305\221 A",
    "Pisztoly kieg\303\251sz\303\255t\305\221 B",
    "Pisztoly kieg\303\251sz\303\255t\305\221 C",
@@ -5580,7 +5578,6 @@ static const struct
 #endif
 #endif
    "Teljes \303\272tvonal mutat\303\241sa",
-   "\"S\303\272g\303\263\" l\303\241that\303\263",
    "\"Inform\303\241ci\303\263k\" l\303\241that\303\263",
    "\"Tartalom bet\303\266lt\303\251se\" l\303\241that\303\263",
    "\"Tartalom bet\303\266lt\303\251se\" \303\251rtes\303\255t\303\251s ind\303\255t\303\241skor",
@@ -7534,7 +7531,6 @@ static const struct
    "A kimen\305\221 hanger\305\221 n\303\266vel\303\251se.",
    "Ki-be kapcsolja a pontos igazod\303\241st a tartalom k\303\251pfriss\303\255t\303\251s\303\251he"
    "z.",
-   "A RetroArch \303\241ltal felismert t\303\251nyleges eg\303\251r.",
 #ifdef GEKKO
    "Az x/y szorz\303\263 \303\241ll\303\255t\303\241sa a Wiimote f\303\251nypisztoly sebess\303\251g"
    "\303\251hez.",
@@ -7618,8 +7614,6 @@ static const struct
    "A remap f\303\241jlok ebbe a k\303\266nyvt\303\241rba ker\303\274lnek.",
    "Az aktu\303\241lis mag ir\303\241ny\303\255t\303\241s kioszt\303\241s\303\241nak fel\303\274lb"
    "\303\255r\303\241l\303\241sa a m\303\263dos\303\255tott (remap) kioszt\303\241ssal.",
-   "A mag melyik csatlakoz\303\263ja kapja meg a bemenetet a frontend %u. bemeneti csatlakoz\303\263"
-   "j\303\241r\303\263l.",
    "A remap f\303\241jlok csak arra az akt\303\255v kontrollerre lesznek \303\251rv\303\251nyesek, a"
    "mivel el voltak mentve.",
    "A virtu\303\241lis RetroPad lek\303\251pez\303\251se a fizikai bemeneti eszk\303\266zre. Ha a be"
@@ -7905,7 +7899,6 @@ static const struct
    "A k\303\266nyvt\303\241rbe\303\241ll\303\255t\303\241sok teljes el\303\251r\303\251si \303\272tj"
    "\303\241nak megjelen\303\255t\303\251se, a kiv\303\241lasztott k\303\266nyvt\303\241r neve helye"
    "tt.",
-   "A \"S\303\272g\303\263\" lehet\305\221s\303\251g jelenjen meg a f\305\221men\303\274ben.",
    "Az \"Inform\303\241ci\303\263k\" lehet\305\221s\303\251g jelenjen meg a f\305\221men\303\274ben.",
    "A \"Tartalom bet\303\266lt\303\251se\" lehet\305\221s\303\251g jelenjen meg a f\305\221men\303"
    "\274ben.",
@@ -9792,7 +9785,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188159u
+      (sizeof(msg_hash_hu_blob) == (187961u
 #ifdef ANDROID
        + 316u
 #endif
@@ -11029,6 +11022,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -11365,7 +11359,6 @@ static const uint32_t msg_hash_hu_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12958,7 +12951,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -13000,7 +12992,6 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -13144,7 +13135,6 @@ static const uint32_t msg_hash_hu_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
