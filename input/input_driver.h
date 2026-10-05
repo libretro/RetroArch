@@ -1089,6 +1089,21 @@ int16_t input_driver_device_state(unsigned port,
 int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       unsigned device, unsigned idx, unsigned id);
 
+/* A controller as the controller has it, for the capture of a bind:
+ * each array that is given is filled - @buttons with whether each is
+ * down, @axes with each axis's position, @hats with the directions
+ * held OR-ed in. @poll polls the joypad drivers first. */
+void input_driver_capture_pad(unsigned pad, bool poll,
+      bool *buttons, unsigned num_buttons,
+      int16_t *axes, unsigned num_axes,
+      uint16_t *hats, unsigned num_hats);
+
+/* The device drivers are polled and nothing else of a poll is done. */
+void input_driver_poll_devices(void);
+
+/* A controller's profile is looked up again, as if just connected. */
+void input_driver_autoconfigure_pad(unsigned pad);
+
 /* The RetroPad controls a user's controller and keys hold right now, as
  * bound and before remaps: a bit each for the sixteen buttons, then
  * for the sticks' eight directions (RARCH_ANALOG_LEFT_X_PLUS on).

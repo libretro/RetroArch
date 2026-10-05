@@ -1989,40 +1989,15 @@ static bool menu_input_key_bind_poll_find_trigger(
 }
 
 
+/* Where each of the controller's axes rests, read as the capture of a
+ * bind starts. */
 static void menu_input_key_bind_poll_bind_get_rested_axes(
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       struct menu_bind_state *state)
 {
-   unsigned a;
-   unsigned port          = state->port;
-
-   if (joypad)
-   {
-      /* poll only the relevant port */
-      for (a = 0; a < MENU_MAX_AXES; a++)
-      {
-         if (AXIS_POS(a) != AXIS_NONE)
-            state->axis_state[port].rested_axes[a]  =
-               joypad->axis(port, AXIS_POS(a));
-         if (AXIS_NEG(a) != AXIS_NONE)
-            state->axis_state[port].rested_axes[a] +=
-               joypad->axis(port, AXIS_NEG(a));
-      }
-   }
-
-   if (sec_joypad)
-   {
-      /* poll only the relevant port */
-      for (a = 0; a < MENU_MAX_AXES; a++)
-      {
-         if (AXIS_POS(a) != AXIS_NONE)
-            state->axis_state[port].rested_axes[a]  = sec_joypad->axis(port, AXIS_POS(a));
-
-         if (AXIS_NEG(a) != AXIS_NONE)
-            state->axis_state[port].rested_axes[a] += sec_joypad->axis(port, AXIS_NEG(a));
-      }
-   }
+   input_driver_capture_pad(state->port, false,
+         NULL, 0,
+         state->axis_state[state->port].rested_axes, MENU_MAX_AXES,
+         NULL, 0);
 }
 
 MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type osk_idx)
@@ -2624,40 +2599,6 @@ end:
 error:
    menu_displaylist_info_free(&info);
    return false;
-}
-
-static void menu_input_key_bind_poll_bind_state_internal(
-      const input_device_driver_t *joypad,
-      struct menu_bind_state *state,
-      unsigned port,
-      bool timed_out)
-{
-   unsigned i;
-
-   /* poll only the relevant port */
-   for (i = 0; i < MENU_MAX_BUTTONS; i++)
-      state->state[port].buttons[i] = joypad->button(port, i);
-
-   for (i = 0; i < MENU_MAX_AXES; i++)
-   {
-      if (AXIS_POS(i) != AXIS_NONE)
-         state->state[port].axes[i]  = joypad->axis(port, AXIS_POS(i));
-
-      if (AXIS_NEG(i) != AXIS_NONE)
-         state->state[port].axes[i] += joypad->axis(port, AXIS_NEG(i));
-   }
-
-   for (i = 0; i < MENU_MAX_HATS; i++)
-   {
-      if (joypad->button(port, HAT_MAP(i, HAT_UP_MASK)))
-         state->state[port].hats[i] |= HAT_UP_MASK;
-      if (joypad->button(port, HAT_MAP(i, HAT_DOWN_MASK)))
-         state->state[port].hats[i] |= HAT_DOWN_MASK;
-      if (joypad->button(port, HAT_MAP(i, HAT_LEFT_MASK)))
-         state->state[port].hats[i] |= HAT_LEFT_MASK;
-      if (joypad->button(port, HAT_MAP(i, HAT_RIGHT_MASK)))
-         state->state[port].hats[i] |= HAT_RIGHT_MASK;
-   }
 }
 
 /* This sets up all the callback functions for a menu entry.
@@ -3656,7 +3597,6 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
 }
 
 static void menu_input_key_bind_poll_bind_state(
-      input_driver_state_t *input_st,
       unsigned joy_idx,
       struct menu_bind_state *state,
       bool timed_out)
@@ -3664,12 +3604,6 @@ static void menu_input_key_bind_poll_bind_state(
    unsigned b;
    bool state_inited                       = input_driver_has_device_state();
    unsigned port                           = state->port;
-   const input_device_driver_t *joypad     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
 
    memset(state->state, 0, sizeof(state->state));
 
@@ -3704,21 +3638,11 @@ static void menu_input_key_bind_poll_bind_state(
 
    state->skip                = timed_out;
 
-   if (joypad)
-   {
-      if (joypad->poll)
-         joypad->poll();
-      menu_input_key_bind_poll_bind_state_internal(
-            joypad, state, port, timed_out);
-   }
-
-   if (sec_joypad)
-   {
-      if (sec_joypad->poll)
-         sec_joypad->poll();
-      menu_input_key_bind_poll_bind_state_internal(
-            sec_joypad, state, port, timed_out);
-   }
+   /* the controller itself: polled, then read as it has it */
+   input_driver_capture_pad(port, true,
+         state->state[port].buttons, MENU_MAX_BUTTONS,
+         state->state[port].axes,    MENU_MAX_AXES,
+         state->state[port].hats,    MENU_MAX_HATS);
 }
 
 MENU_NOINLINE static int menu_dialog_iterate(
@@ -5135,15 +5059,6 @@ bool menu_input_key_bind_set_mode(
    input_driver_state_t *input_st      = input_state_get_ptr();
    struct menu_state *menu_st          = &menu_driver_state;
    menu_handle_t       *menu           = menu_st->driver_data;
-   const input_device_driver_t
-      *joypad                          = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                      = input_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                      = NULL;
-#endif
    menu_input_t *menu_input            = &menu_st->input_state;
    settings_t     *settings            = config_get_ptr();
    struct menu_bind_state *binds       = &menu_st->input_binds;
@@ -5163,12 +5078,8 @@ bool menu_input_key_bind_set_mode(
    binds->port                         = settings->uints.input_joypad_index[
       index_offset];
 
-   menu_input_key_bind_poll_bind_get_rested_axes(
-         joypad,
-         sec_joypad,
-         binds);
+   menu_input_key_bind_poll_bind_get_rested_axes(binds);
    menu_input_key_bind_poll_bind_state(
-         input_st,
          settings->uints.input_joypad_index[binds->port],
          binds, false);
 
@@ -5268,7 +5179,6 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       input_st->flags                      &= ~INP_FLAG_KB_MAPPING_BLOCKED;
 
       menu_input_key_bind_poll_bind_state(
-            input_st,
             settings->uints.input_joypad_index[new_binds.port],
             &new_binds, timed_out);
 

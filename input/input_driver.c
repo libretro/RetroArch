@@ -9945,6 +9945,98 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
          port, device, idx, id);
 }
 
+/* A controller as the controller has it - its own buttons, axes and
+ * hats, not the RetroPad's - for the capture of a bind. The menu read
+ * the joypad drivers for this itself, and polled them; it asks here.
+ *
+ * Each array is filled when it is given: @buttons with whether each
+ * is down, @axes with each axis's position, and each of @hats has the
+ * mask of its directions held OR-ed in. With @poll the joypad drivers
+ * are polled first, as the capture does once a frame. Where there are
+ * two joypad drivers the second is read after the first, over it. */
+void input_driver_capture_pad(unsigned pad, bool poll,
+      bool *buttons, unsigned num_buttons,
+      int16_t *axes, unsigned num_axes,
+      uint16_t *hats, unsigned num_hats)
+{
+   unsigned i, d;
+   const input_device_driver_t *drivers[2];
+
+   drivers[0] = input_driver_st.primary_joypad;
+#ifdef HAVE_MFI
+   drivers[1] = input_driver_st.secondary_joypad;
+#else
+   drivers[1] = NULL;
+#endif
+
+   for (d = 0; d < 2; d++)
+   {
+      const input_device_driver_t *joypad = drivers[d];
+
+      if (!joypad)
+         continue;
+      if (poll && joypad->poll)
+         joypad->poll();
+
+      if (buttons)
+         for (i = 0; i < num_buttons; i++)
+            buttons[i] = joypad->button(pad, (uint16_t)i);
+
+      if (axes)
+         for (i = 0; i < num_axes; i++)
+         {
+            axes[i]  = joypad->axis(pad, AXIS_POS(i));
+            axes[i] += joypad->axis(pad, AXIS_NEG(i));
+         }
+
+      if (hats)
+         for (i = 0; i < num_hats; i++)
+         {
+            if (joypad->button(pad, HAT_MAP(i, HAT_UP_MASK)))
+               hats[i] |= HAT_UP_MASK;
+            if (joypad->button(pad, HAT_MAP(i, HAT_DOWN_MASK)))
+               hats[i] |= HAT_DOWN_MASK;
+            if (joypad->button(pad, HAT_MAP(i, HAT_LEFT_MASK)))
+               hats[i] |= HAT_LEFT_MASK;
+            if (joypad->button(pad, HAT_MAP(i, HAT_RIGHT_MASK)))
+               hats[i] |= HAT_RIGHT_MASK;
+         }
+   }
+}
+
+/* The device drivers are polled, and nothing else of a poll is done:
+ * for a driver restart, which must not act on what was read before
+ * it. */
+void input_driver_poll_devices(void)
+{
+   input_driver_state_t *input_st          = &input_driver_st;
+   const input_device_driver_t *joypad     = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad = NULL;
+#endif
+
+   if (joypad && joypad->poll)
+      joypad->poll();
+   if (sec_joypad && sec_joypad->poll)
+      sec_joypad->poll();
+   if (input_st->current_driver && input_st->current_driver->poll)
+      input_st->current_driver->poll(input_st->current_data);
+}
+
+/* A controller's profile is looked up again, as if it had just been
+ * connected: after the menu has saved one for it. */
+void input_driver_autoconfigure_pad(unsigned pad)
+{
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
+
+   if (joypad)
+      input_autoconfigure_connect(joypad->name(pad),
+            NULL, NULL, joypad->ident,
+            pad, 0, 0);
+}
+
 /* The RetroPad controls a user's controller and keys hold right now, as
  * they are bound: before remaps, turbo and the rest. One bit each, by
  * the control's number: the sixteen buttons, then the sticks'

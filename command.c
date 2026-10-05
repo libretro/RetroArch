@@ -3353,7 +3353,6 @@ static void command_reinit_snapshot_cb(void *userdata,
 void command_event_reinit(const int flags)
 {
    settings_t *settings           = config_get_ptr();
-   input_driver_state_t *input_st = input_state_get_ptr();
    video_driver_state_t *video_st = video_state_get_ptr();
 #ifdef HAVE_MENU
    gfx_display_t *p_disp          = disp_get_ptr();
@@ -3364,15 +3363,6 @@ void command_event_reinit(const int flags)
 #endif
    enum input_game_focus_cmd_type
       game_focus_cmd              = GAME_FOCUS_CMD_REAPPLY;
-   const input_device_driver_t
-      *joypad                     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                 = input_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                 = NULL;
-#endif
 
    /* Snapshot the last cached core frame before tearing the video
     * driver down.  video_driver_free() invalidates the cache as
@@ -3515,12 +3505,7 @@ void command_event_reinit(const int flags)
    }
 
    /* Poll input to avoid possibly stale data to corrupt things. */
-   if (joypad && joypad->poll)
-      joypad->poll();
-   if (sec_joypad && sec_joypad->poll)
-      sec_joypad->poll();
-   if (input_st->current_driver && input_st->current_driver->poll)
-      input_st->current_driver->poll(input_st->current_data);
+   input_driver_poll_devices();
    command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
 
 #ifdef HAVE_MENU

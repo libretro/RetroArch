@@ -2818,14 +2818,7 @@ static int setting_action_ok_bind_all_save_autoconfig(
       }
 
       /* Load and activate saved profile */
-      {
-         const input_device_driver_t *joypad = input_state_get_ptr()->primary_joypad;
-
-         if (joypad)
-            input_autoconfigure_connect(joypad->name(map),
-                  NULL, NULL, joypad->ident,
-                  map, 0, 0);
-      }
+      input_driver_autoconfigure_pad(map);
    }
    else
    {

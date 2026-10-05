@@ -37,7 +37,14 @@ calling an input driver's state function itself,
 which the menu did, fourteen times, with the driver, its data and the
 joypads taken out of the input state. It asks the frontend now
 (input_driver_device_state(), input_driver_bind_capture_state()).
-There is to be none.
+The same goes for a joypad driver's functions,
+
+    joypad->poll();   joypad->button(port, i);   joypad->name(pad)
+
+which the capture of a bind, a driver restart and the saving of a
+controller profile called (input_driver_capture_pad(),
+input_driver_poll_devices(), input_driver_autoconfigure_pad()).
+There is to be none of either.
 
 Usage:
    tools/input_state_grab_check.py [--root DIR] [--selftest]
@@ -94,7 +101,8 @@ def count_tree(root):
     return found
 
 
-DRIVER_CALL = re.compile(r'->\s*input_state\s*\(')
+DRIVER_CALL = re.compile(r'->\s*input_state\s*\('
+                         r'|\b(?:sec_|primary_|secondary_)?joypad\s*->\s*[a-z_]+\s*\(')
 # where an input driver's own functions are not looked for: the input
 # layer itself, the tests, and code that is not RetroArch's
 NOT_CALLERS = ('input/', 'samples/', 'deps/', 'libretro-common/', 'pkg/', '.git/')
@@ -125,8 +133,9 @@ def run(root, allowed):
     found = count_tree(root)
     bad = 0
     for rel, n in sorted(driver_calls(root).items()):
-        print('%s: calls an input driver\'s state function itself, %d time(s).\n'
-              '  Ask the frontend: input_driver_device_state().' % (rel, n))
+        print('%s: calls an input or joypad driver itself, %d time(s).\n'
+              '  Ask the frontend: input_driver_device_state(), '
+              'input_driver_capture_pad(), input_driver_poll_devices().' % (rel, n))
         bad += 1
     for rel in sorted(set(found) | set(allowed)):
         have = found.get(rel, 0)
