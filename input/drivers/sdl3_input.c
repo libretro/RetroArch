@@ -247,8 +247,7 @@ static bool sdl3_key_pressed(sdl3_input_t *sdl, int key)
       if (sdl_webos_sticky_pressed(slot))
          return true;
 
-      if (input_state_get_ptr()
-            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+      if (input_driver_keyboard_mapping_blocked())
          return false;
    }
    if (key == RETROK_F1 && sdl->kb_state[SDL_SCANCODE_WEBOS_EXIT])
@@ -529,7 +528,7 @@ static int16_t sdl3_input_state(
          /* While a text box is open, Ctrl is the clipboard-paste
           * modifier (see sdl3_paste_clipboard), so ignore acting
           * on it here. */
-         if ((id == RETROK_LCTRL || id == RETROK_RCTRL) && input_state_get_ptr()->keyboard_line.enabled)
+         if ((id == RETROK_LCTRL || id == RETROK_RCTRL) && input_driver_keyboard_line_enabled())
             return 0;
          return (id && id < RETROK_LAST) && sdl3_key_pressed(sdl, id);
       case RETRO_DEVICE_LIGHTGUN:
@@ -649,8 +648,8 @@ static void sdl3_input_free(void *data)
 
    /* Nothing polls after this point, so the flags would stay raised
     * across a runtime driver switch. */
-   input_state_get_ptr()->flags &=
-      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+   input_driver_set_native_keyboard_shown(false);
+   input_driver_set_native_keyboard_available(false);
 
    SDL_QuitSubSystem(SDL_INIT_EVENTS);
    free(sdl);
@@ -971,16 +970,16 @@ static void sdl3_manage_text_input(void)
 {
    bool want                    = false;
    bool shown                   = false;
-   input_driver_state_t *input_st = input_state_get_ptr();
    SDL_Window *win;
 
    if (!sdl3_uses_screen_keyboard() || !(win = sdl3_get_window()))
    {
-      input_st->flags &= ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+      input_driver_set_native_keyboard_shown(false);
+      input_driver_set_native_keyboard_available(false);
       return;
    }
 
-   input_st->flags |= INP_FLAG_NATIVE_KB_AVAIL;
+   input_driver_set_native_keyboard_available(true);
 
 #ifdef HAVE_MENU
    want = menu_input_dialog_get_display_kb()
@@ -1033,10 +1032,7 @@ publish:
     * appear and the user can dismiss it behind our back. Report what
     * is actually on screen. */
    shown = SDL_ScreenKeyboardShown(win);
-   if (shown)
-      input_st->flags |=  INP_FLAG_NATIVE_KB_SHOWN;
-   else
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+   input_driver_set_native_keyboard_shown(shown);
 }
 
 /* Translates control/modifier keys into their ASCII character counterpart. */
@@ -1140,8 +1136,7 @@ static void sdl3_input_poll(void *data)
          uint32_t character  = 0;
 
 #ifdef WEBOS
-         input_driver_state_t *input_st = input_state_get_ptr();
-         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+         bool osk_active = input_driver_keyboard_mapping_blocked();
 
          if (!osk_active)
             sdl_webos_phys_kbd_typing = false;
@@ -1220,7 +1215,7 @@ static void sdl3_input_poll(void *data)
          if (     event.type == SDL_EVENT_KEY_DOWN
                && event.key.key == SDLK_V
                && (event.key.mod & SDL_KMOD_CTRL)
-               && input_state_get_ptr()->keyboard_line.enabled)
+               && input_driver_keyboard_line_enabled())
          {
             sdl3_paste_clipboard();
             continue;

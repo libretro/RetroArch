@@ -953,6 +953,13 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
+/* The platform has taken the application away, or given it back:
+ * paused and idle while it is away. */
+void runloop_set_platform_paused(bool paused);
+
+/* Whether a core has content loaded. */
+bool runloop_content_loaded(void);
+
 bool runloop_get_entry_state_path(char *path, size_t len, int slot);
 
 bool runloop_get_current_savestate_path(char *path, size_t len);

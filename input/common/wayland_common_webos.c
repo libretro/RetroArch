@@ -826,7 +826,6 @@ void wl_keyboard_handle_key_webos(void *data,
    int value = (state == WL_KEYBOARD_KEY_STATE_PRESSED) ? 1 : 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    uint32_t keysym            = key;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    /* Handle 'duplicate' inputs that correspond
     * to the same RETROK_* key */
@@ -866,7 +865,7 @@ void wl_keyboard_handle_key_webos(void *data,
 
    /* OSK: D-pad / Enter navigate and confirm the grid; do not inject
     * text-cursor moves or '\n' line submission from those keys. */
-   if (input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+   if (input_driver_keyboard_mapping_blocked())
    {
       switch (keysym)
       {

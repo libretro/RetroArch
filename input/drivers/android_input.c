@@ -424,7 +424,7 @@ bool android_keyboard_start(char **buffer_ptr, size_t *size_ptr,
 
    /* Suppress the built-in OSK for as long as the IME owns the line;
     * without this both are drawn at once and both consume input. */
-   input_state_get_ptr()->flags |= INP_FLAG_NATIVE_KB_SHOWN;
+   input_driver_set_native_keyboard_shown(true);
 
    if ((env = jni_thread_getenv()))
    {
@@ -454,7 +454,7 @@ void android_keyboard_end(void)
    if (!retro_atomic_load_relaxed_int(&android_kbd_open))
       return;
 
-   input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+   input_driver_set_native_keyboard_shown(false);
 
    /* Close the gate first, then clear the session: the UI thread
     * checks the gate before producing, and anything that races past
@@ -512,8 +512,6 @@ void android_keyboard_poll(void)
 
    if (finished)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-
       /* Mirror the iOS completion block: fire the callback (NULL line
        * on cancel), then release the keyboard line and unblock hotkeys.
        * The callback closes the dialog, which hides the soft keyboard
@@ -521,11 +519,7 @@ void android_keyboard_poll(void)
       if (cb)
          cb(userdata, cancel ? NULL : buffer);
 
-      if (input_st)
-      {
-         input_keyboard_line_free(input_st);
-         input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
-      }
+      input_driver_keyboard_line_end();
 
       /* The callback normally closes the dialog (-> android_keyboard_end),
        * which clears our state. If it did not, drop the now-freed buffer
@@ -536,7 +530,7 @@ void android_keyboard_poll(void)
          android_kbd_buffer = NULL;
          retro_atomic_store_release_int(&android_kbd_open, 0);
          android_kbd_drain_pending();
-         input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+         input_driver_set_native_keyboard_shown(false);
       }
    }
 }
@@ -753,7 +747,6 @@ static void android_input_release_state_ack(struct android_app *android_app)
 static void android_input_flush_state(void)
 {
    settings_t *settings        = config_get_ptr();
-   runloop_state_t *runloop_st = runloop_state_get_ptr();
 
    /* Config subsystem is not up yet - nothing to persist. */
    if (!settings)
@@ -771,7 +764,7 @@ static void android_input_flush_state(void)
     * transient state. There is nothing to save in either case:
     * CMD_EVENT_SAVE_FILES exists to persist SRAM and game-specific
     * cheats, both of which require loaded content. */
-   if (runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
+   if (runloop_content_loaded())
       command_event(CMD_EVENT_SAVE_FILES, NULL);
 
    /* Core options: written unconditionally on core unload, so not
@@ -996,7 +989,6 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_GAINED_FOCUS:
          {
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
             settings_t *settings         = config_get_ptr();
             bool sensors_allowed         = !settings || settings->bools.input_sensors_enable;
             /* Re-enable sensors that were disabled on focus loss */
@@ -1027,8 +1019,7 @@ static void android_input_poll_main_cmd(void)
                enable_gyroscope     = false;
             }
 
-            runloop_st->flags &= ~(RUNLOOP_FLAG_PAUSED
-                                 | RUNLOOP_FLAG_IDLE);
+            runloop_set_platform_paused(false);
             video_driver_unset_stub_frame();
 
             /* Try to enable sensors via input driver. If that fails before the
@@ -1098,7 +1089,6 @@ static void android_input_poll_main_cmd(void)
       case APP_CMD_LOST_FOCUS:
          android_keypress_vibrate_pending = false;
          {
-            runloop_state_t *runloop_st = runloop_state_get_ptr();
             bool disable_accelerometer  = (android_app->sensor_state_mask &
                   (UINT64_C(1) << RETRO_SENSOR_ACCELEROMETER_ENABLE)) &&
                         android_app->accelerometerSensor;
@@ -1106,8 +1096,7 @@ static void android_input_poll_main_cmd(void)
                   (UINT64_C(1) << RETRO_SENSOR_GYROSCOPE_ENABLE)) &&
                         android_app->gyroscopeSensor;
 
-            runloop_st->flags |=  (RUNLOOP_FLAG_PAUSED
-                                 | RUNLOOP_FLAG_IDLE);
+            runloop_set_platform_paused(true);
             video_driver_set_stub_frame();
 
             /* Avoid draining battery while app is not being used. */
@@ -1240,9 +1229,9 @@ static void *android_input_init(const char *joypad_driver)
 
    /* The IME is only reachable if the Java side resolved showKeyboard. */
    if (android_app && android_app->showKeyboard)
-      input_state_get_ptr()->flags |=  INP_FLAG_NATIVE_KB_AVAIL;
+      input_driver_set_native_keyboard_available(true);
    else
-      input_state_get_ptr()->flags &= ~INP_FLAG_NATIVE_KB_AVAIL;
+      input_driver_set_native_keyboard_available(false);
 
    frontend_android_get_version_sdk(&sdk);
 
@@ -1690,8 +1679,7 @@ static INLINE void android_input_poll_event_type_motion(
          if ((AMotionEvent_getEventTime(event)-AMotionEvent_getDownTime(event))/1000000 < 200)
          {
             /* Prevent the quick tap if a button on the overlay is down */
-            input_driver_state_t *input_st = input_state_get_ptr();
-            if (!(input_st->flags & INP_FLAG_BLOCK_POINTER_INPUT))
+            if (!input_driver_pointer_input_blocked())
                android->quick_tap_time = AMotionEvent_getEventTime(event);
          }
          android->mouse_l = 0;
@@ -3003,7 +2991,7 @@ static void android_input_poll(void *data)
     * without blocking so a burst (RESUME then INPUT_CHANGED) is handled
     * in one call. */
    timeout = settings->uints.input_block_timeout;
-   if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_IDLE)
+   if (runloop_get_flags() & RUNLOOP_FLAG_IDLE)
       timeout = -1;
 
    while ((ident =
@@ -3367,8 +3355,8 @@ static void android_input_free_input(void *data)
 
    android_keyboard_free();
 
-   input_state_get_ptr()->flags &=
-      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+   input_driver_set_native_keyboard_shown(false);
+   input_driver_set_native_keyboard_available(false);
 
    free(data);
 }

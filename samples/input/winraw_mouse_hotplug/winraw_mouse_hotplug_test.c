@@ -112,6 +112,7 @@ unsigned input_mouse_port_index(unsigned port)
    return choice[port] < 0 ? MAX_INPUT_DEVICES : (unsigned)choice[port];
 }
 struct menu_state *menu_state_get_ptr(void) { return &stub_menu; }
+bool menu_driver_alive(void) { return (stub_menu.flags & MENU_ST_FLAG_ALIVE) != 0; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...) { (void)fmt; }

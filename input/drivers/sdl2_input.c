@@ -175,8 +175,7 @@ static bool sdl2_key_pressed(int key)
       if (sdl2_webos_sticky_pressed(slot))
          return true;
 
-      if (input_state_get_ptr()
-            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+      if (input_driver_keyboard_mapping_blocked())
          return false;
    }
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
@@ -532,8 +531,7 @@ static void sdl2_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.keysym.sym);
 #ifdef WEBOS
-         input_driver_state_t *input_st = input_state_get_ptr();
-         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+         bool osk_active = input_driver_keyboard_mapping_blocked();
 
          if (!osk_active)
             sdl2_webos_phys_kbd_typing = false;

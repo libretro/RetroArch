@@ -167,23 +167,17 @@ static void vita_ime_utf8_to_utf16(SceWChar16 *out, size_t out_units,
 
 static void vita_ime_set_shown(bool shown)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
-
-   if (shown)
-      input_st->flags |=  INP_FLAG_NATIVE_KB_SHOWN;
-   else
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+   input_driver_set_native_keyboard_shown(shown);
 }
 
 static bool vita_ime_open(psp_input_t *psp)
 {
    SceImeDialogParam param;
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    sceImeDialogParamInit(&param);
 
    vita_ime_utf8_to_utf16(psp->ime_title, ARRAY_SIZE(psp->ime_title),
-         menu_st->input_dialog_kb_label);
+         menu_input_dialog_get_kb_label());
    psp->ime_initial[0]  = 0;
    psp->ime_text[0]     = 0;
 
@@ -215,7 +209,6 @@ static void vita_ime_commit(psp_input_t *psp)
 {
    size_t units                   = 0;
    size_t bytes                   = 0;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    while (units < VITA_IME_TEXT_MAX && psp->ime_text[units])
       units++;
@@ -225,24 +218,17 @@ static void vita_ime_commit(psp_input_t *psp)
    utf16_conv_utf8((uint8_t*)psp->ime_utf8, &bytes,
          (const uint16_t*)psp->ime_text, units);
 
-   input_keyboard_line_clear(input_st);
-   if (bytes)
-      input_keyboard_line_append(&input_st->keyboard_line,
-            psp->ime_utf8, bytes);
+   input_driver_keyboard_line_set(psp->ime_utf8, bytes);
 }
 
 static void vita_ime_poll(psp_input_t *psp)
 {
    SceImeDialogResult result;
-   input_driver_state_t *input_st = input_state_get_ptr();
    bool video_ready               = vita_ime_video_ready();
    bool want                      = menu_input_dialog_get_display_kb()
-         && input_st->keyboard_line.enabled;
+         && input_driver_keyboard_line_enabled();
 
-   if (video_ready)
-      input_st->flags |=  INP_FLAG_NATIVE_KB_AVAIL;
-   else
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_AVAIL;
+   input_driver_set_native_keyboard_available(video_ready);
 
    if (!psp->ime_open)
    {
@@ -299,8 +285,8 @@ static void vita_ime_free(psp_input_t *psp)
       sceImeDialogTerm();
       psp->ime_open = false;
    }
-   input_state_get_ptr()->flags &=
-      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+   input_driver_set_native_keyboard_shown(false);
+   input_driver_set_native_keyboard_available(false);
 }
 #endif
 

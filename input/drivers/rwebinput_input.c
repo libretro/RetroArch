@@ -425,15 +425,13 @@ static EM_BOOL rwebinput_pointerlockchange_cb(int event_type,
 
    if (!pointerlock_change_event->isActive)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-
-      if (input_st->game_focus_state.enabled)
+      if (input_driver_game_focus_enabled())
       {
          enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
          command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
       }
 
-      if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
+      if (input_driver_mouse_grabbed())
       {
          command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
       }

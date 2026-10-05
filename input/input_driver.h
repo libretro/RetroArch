@@ -1013,6 +1013,20 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 void input_driver_init_sdl1(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #endif
+/* What a driver may ask the frontend, and tell it, without taking its
+ * state (input_state_get_ptr()): each is one thing, by name. */
+void input_driver_set_native_keyboard_available(bool available);
+void input_driver_set_native_keyboard_shown(bool shown);
+bool input_driver_native_keyboard_shown(void);
+bool input_driver_keyboard_mapping_blocked(void);
+bool input_driver_keyboard_line_enabled(void);
+void input_driver_keyboard_line_set(const char *utf8, size_t len);
+void input_driver_keyboard_line_end(void);
+bool input_driver_pointer_input_blocked(void);
+bool input_driver_game_focus_enabled(void);
+bool input_driver_mouse_grabbed(void);
+void *input_driver_current_data(void);
+
 /* The platform's own menu button - one that is not a controller's and
  * has no bind - is held, or is not. Held, it counts as the Menu Toggle
  * hotkey held. For the driver that reads the button, on the frontend's

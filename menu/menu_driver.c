@@ -4898,6 +4898,19 @@ void menu_input_get_pointer_state(menu_input_pointer_t *copy_target)
       memcpy(copy_target, &menu_input->pointer, sizeof(menu_input_pointer_t));
 }
 
+/* Whether the menu is up, for code that has no other business with
+ * the menu's state. */
+bool menu_driver_alive(void)
+{
+   return (menu_driver_state.flags & MENU_ST_FLAG_ALIVE) != 0;
+}
+
+/* The label of the text entry that is open. */
+const char *menu_input_dialog_get_kb_label(void)
+{
+   return menu_driver_state.input_dialog_kb_label;
+}
+
 const char *menu_input_dialog_get_buffer(void)
 {
    struct menu_state    *menu_st  = &menu_driver_state;

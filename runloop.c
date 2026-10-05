@@ -4968,6 +4968,22 @@ uint32_t runloop_get_flags(void)
    return runloop_state.flags;
 }
 
+/* The platform has taken the application away, or given it back:
+ * paused and idle while it is away. */
+void runloop_set_platform_paused(bool paused)
+{
+   if (paused)
+      runloop_state.flags |=  (RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE);
+   else
+      runloop_state.flags &= ~(RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE);
+}
+
+/* Whether a core has content loaded. */
+bool runloop_content_loaded(void)
+{
+   return (runloop_state.current_core.flags & RETRO_CORE_FLAG_GAME_LOADED) != 0;
+}
+
 void runloop_system_info_free(void)
 {
    runloop_state_t *runloop_st   = &runloop_state;

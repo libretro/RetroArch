@@ -1317,7 +1317,7 @@ static const uint8_t *winraw_port_keys(const winraw_input_t *wr,
    if (!idx)
       return NULL;
 #ifdef HAVE_MENU
-   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+   if (menu_driver_alive())
       return NULL;
 #endif
    if (idx < 0 || (unsigned)idx > wr->kg_cnt)
@@ -1469,7 +1469,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
        * break multiple mice positions */
       bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
 #ifdef HAVE_MENU
-      if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+      if (menu_driver_alive())
          getcursorpos = true;
 #endif
       /* Input overlay with mouse cursor must also use GetCursorPos() */
@@ -1723,7 +1723,7 @@ static void winraw_kev_deliver(winraw_input_t *wr)
 #ifdef HAVE_MENU
    /* keys typed elsewhere are not typed into the menu */
    if (     !winraw_focus
-         && (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE))
+         && menu_driver_alive())
    {
       wr->kev_n = 0;
       return;
@@ -2603,7 +2603,7 @@ static int16_t winraw_input_state(
 
 #ifdef HAVE_MENU
       if (!keys_ok && wr->kb_background)
-         keys_ok = !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE);
+         keys_ok = !menu_driver_alive();
 #else
       if (wr->kb_background)
          keys_ok = true;

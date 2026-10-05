@@ -9524,6 +9524,82 @@ static void input_key_lane_take(void);
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
 
+/* What a driver may ask the frontend, and tell it, without taking its
+ * state: each is one thing, by name. A driver that needs something
+ * that is not here gets a call added here, not the state pointer. */
+
+/* The platform's own on-screen keyboard: whether there is one to show,
+ * and whether it is up. */
+void input_driver_set_native_keyboard_available(bool available)
+{
+   if (available)
+      input_driver_st.flags |=  INP_FLAG_NATIVE_KB_AVAIL;
+   else
+      input_driver_st.flags &= ~INP_FLAG_NATIVE_KB_AVAIL;
+}
+
+void input_driver_set_native_keyboard_shown(bool shown)
+{
+   if (shown)
+      input_driver_st.flags |=  INP_FLAG_NATIVE_KB_SHOWN;
+   else
+      input_driver_st.flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+}
+
+bool input_driver_native_keyboard_shown(void)
+{
+   return (input_driver_st.flags & INP_FLAG_NATIVE_KB_SHOWN) != 0;
+}
+
+/* A line of text is being typed: the keys go to it and not to the
+ * binds. */
+bool input_driver_keyboard_mapping_blocked(void)
+{
+   return (input_driver_st.flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
+}
+
+bool input_driver_keyboard_line_enabled(void)
+{
+   return input_driver_st.keyboard_line.enabled;
+}
+
+/* The platform's keyboard hands over the whole line as it stands. */
+void input_driver_keyboard_line_set(const char *utf8, size_t len)
+{
+   input_keyboard_line_clear(&input_driver_st);
+   if (len)
+      input_keyboard_line_append(&input_driver_st.keyboard_line, utf8, len);
+}
+
+/* The platform's keyboard is done with the line: it is let go and the
+ * binds get the keys again. */
+void input_driver_keyboard_line_end(void)
+{
+   input_keyboard_line_free(&input_driver_st);
+   input_driver_st.flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+}
+
+bool input_driver_pointer_input_blocked(void)
+{
+   return (input_driver_st.flags & INP_FLAG_BLOCK_POINTER_INPUT) != 0;
+}
+
+bool input_driver_game_focus_enabled(void)
+{
+   return input_driver_st.game_focus_state.enabled;
+}
+
+bool input_driver_mouse_grabbed(void)
+{
+   return (input_driver_st.flags & INP_FLAG_GRAB_MOUSE_STATE) != 0;
+}
+
+/* The input driver's own data, for a joypad driver that is part of it. */
+void *input_driver_current_data(void)
+{
+   return input_driver_st.current_data;
+}
+
 /* The platform's own menu button is held, or is not: the Home button
  * of a Wii Remote, the console's reset button on a GameCube, a tap on
  * a 3DS's bottom screen, the menu key of a handheld. It is not one of

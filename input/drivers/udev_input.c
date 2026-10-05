@@ -3960,7 +3960,7 @@ static int udev_port_keys(udev_input_t *udev, unsigned port)
    if (!idx)
       return -1;
 #ifdef HAVE_MENU
-   if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+   if (menu_driver_alive())
       return -1;
 #endif
    if (idx < 0 || idx > MAX_INPUT_DEVICES || udev->keyboards[idx - 1] < 0)

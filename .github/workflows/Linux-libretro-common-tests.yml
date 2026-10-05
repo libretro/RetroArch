@@ -176,6 +176,19 @@ jobs:
           python3 tools/input_video_separation_check.py --selftest
           python3 tools/input_video_separation_check.py
 
+      - name: Check input drivers ask by name and do not take the frontend's state
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # A driver that needs something from the settings, the run
+          # loop, the menu or the input frontend asks for it by name;
+          # it does not take the whole state and pick a field out.
+          # What is still to be converted is listed in the check, file
+          # by file with a count, and the counts only go down.
+          python3 tools/input_state_grab_check.py --selftest
+          python3 tools/input_state_grab_check.py
+
       - name: Check a setting's label exists wherever its translations name it
         shell: bash
         working-directory: ${{ github.workspace }}
