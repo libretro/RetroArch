@@ -25,6 +25,8 @@ extern unsigned gt_last_crc;
  * AddressSanitizer reports. gt_update_fail makes that many in-place
  * updates refuse, forcing a replacement. */
 int gt_lend_owned;
+/* Lane 9: the slot the driver will not lend (-1: none) */
+int gt_lend_refuse = -1;
 int gt_update_fail;
 int gt_lend_freed;
 static uintptr_t gt_tex_next = 2;
@@ -321,6 +323,8 @@ static void gt_lend_unload(uintptr_t id)
 void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
 {
    if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !pitch)
+      return NULL;
+   if ((int)slot == gt_lend_refuse)
       return NULL;
    /* Lent by another texture still alive: that one keeps it, parked
     * until it is unloaded, and this texture gets memory of its own */

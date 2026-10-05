@@ -94,7 +94,7 @@ extern int gt_can_update, gt_updates;
 extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
        gt_lend_stale;
 extern void gt_lend_reset(void);
-extern int  gt_lend_owned, gt_update_fail, gt_lend_freed;
+extern int  gt_lend_owned, gt_update_fail, gt_lend_freed, gt_lend_refuse;
 void gt_async_flush(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
@@ -529,6 +529,107 @@ int main(void)
             bad = 1;
          }
          gfx_surface_free(s8);
+      }
+      gt_lend_mode  = 0;
+      gt_lend_owned = 0;
+      gt_lend_reset();
+   }
+
+   /* 9. partial lending: the driver lends one slot and refuses the
+    *    other. A two-slot surface lends just the slot it was given and
+    *    copies into the other; a one-slot surface, which needs both to
+    *    stay double buffered, lends neither. Every frame still lands. */
+   {
+      unsigned nslots, k, w, n9 = 64u * 48u;
+      int      ok9 = 1;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_refuse = 1;
+      for (nslots = 2; nslots >= 1; nslots--)
+      {
+         gfx_surface_t *s9 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48),
+               nslots, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               NULL, NULL);
+         int up0 = gt_uploads;
+         if (!s9)
+         {
+            ok9 = 0;
+            break;
+         }
+         for (k = 0; k < 6; k++)
+         {
+            unsigned slot = k % nslots;
+            for (w = 0; w < n9; w++)
+               s9->slots[slot][w] = 0xff000000u
+                  | ((nslots * 64u + k) * 0x01030507u + w);
+            if (gfx_surface_submit(s9, slot, false)
+                  != GFX_SURFACE_SUBMIT_DONE)
+               ok9 = 0;
+         }
+         if (     gt_uploads - up0 != 6
+               || s9->lent != (nslots == 2 ? 1u : 0u))
+         {
+            printf("[FAIL] partial lending, %u slot(s): lent %u, %d of 6 "
+                   "frames uploaded\n", nslots, (unsigned)s9->lent,
+                   gt_uploads - up0);
+            ok9 = 0;
+         }
+         gfx_surface_free(s9);
+      }
+      if (ok9)
+         printf("[ok]   a driver lending one slot of two: a two-slot "
+                "surface lent that one, a one-slot surface neither; every "
+                "frame landed\n");
+      else
+         bad = 1;
+      gt_lend_refuse = -1;
+      gt_lend_mode   = 0;
+      gt_lend_owned  = 0;
+      gt_lend_reset();
+   }
+
+   /* 10. cancellation and teardown under lending: an animation is
+    *     closed over and over with its jobs queued or decoding into
+    *     memory its texture lent (the GPU is never behind here, so jobs
+    *     start the moment they may). Closing waits a running decode out
+    *     and keeps a queued one from starting, before the surface and
+    *     texture go: a job writing after them writes freed memory,
+    *     which AddressSanitizer reports. */
+   {
+      int closes = 0, lent_closes = 0, round;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_freed  = 0;
+      for (round = 0; round < 60; round++)
+      {
+         reset_thumb(&th);
+         gfx_thumbnail_anim_open(&th, path);
+         for (i = 0; i < 6 + (round % 6); i++)
+         {
+            gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+            usleep(4000);
+         }
+         if (th.anim)
+            closes++;
+         if (     th.anim_surface
+               && ((gfx_surface_t*)th.anim_surface)->lent)
+            lent_closes++;
+         gfx_thumbnail_reset(&th);
+      }
+      if (closes >= 50 && lent_closes >= 20 && gt_lend_freed >= 20)
+         printf("[ok]   %d animations closed, %d while lending, with jobs "
+                "on lent memory; %d lent buffers freed after them\n",
+                closes, lent_closes, gt_lend_freed);
+      else
+      {
+         printf("[FAIL] closing under lending: %d closes, %d while "
+                "lending, %d lent buffers freed\n", closes, lent_closes,
+                gt_lend_freed);
+         bad = 1;
       }
       gt_lend_mode  = 0;
       gt_lend_owned = 0;
