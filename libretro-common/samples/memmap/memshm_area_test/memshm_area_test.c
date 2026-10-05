@@ -272,6 +272,31 @@ int main(void)
       ok &= good;
    }
 
+   /* A fastmem window maps a page at a time, thousands of them, side
+    * by side: every one is tracked, and each unmaps on its own. */
+   {
+      const unsigned many = 600;
+      memshm_area_t *big  = memshm_area_create((size_t)slot * many);
+      unsigned i, mapped = 0, unmapped = 0;
+      if (!big)
+         printf("  ok: (no room for a %u-slot area)\n", many);
+      else
+      {
+         unsigned char *b = memshm_area_base(big);
+         for (i = 0; i < many; i++)
+            if (memshm_area_map(big, h, 0, b + (size_t)slot * i, shm_len,
+                     PROT_READ | PROT_WRITE))
+               mapped++;
+         for (i = 0; i < many; i++)
+            if (memshm_area_unmap(big, b + (size_t)slot * i, shm_len))
+               unmapped++;
+         printf("  %s: %u side-by-side mappings made and unmapped one by one\n",
+               (mapped == many && unmapped == many) ? "ok" : "FAIL", many);
+         ok &= (mapped == many && unmapped == many);
+         memshm_area_free(big);
+      }
+   }
+
    memshm_destroy(h);
    memshm_area_free(area);
    printf(ok ? "memshm area: ok\n" : "memshm area: FAILED\n");

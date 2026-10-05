@@ -320,8 +320,7 @@ size_t         memshm_area_size(const memshm_area_t *area);
  * @len        : bytes.
  * @prot       : PROT_READ | PROT_WRITE | PROT_EXEC.
  *
- * Refused when any part of the range is already mapped, or the area
- * holds as many mappings as it can track (128).
+ * Refused when any part of the range is already mapped.
  *
  * Returns: @at on success, NULL on failure.
  */
