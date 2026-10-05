@@ -650,6 +650,24 @@ jobs:
              timeout 120 ./win32_msg_route_test
           make clean
           echo "[pass] win32_msg_route_test (ASan)"
+      - name: Build and run win32_screensaver_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_screensaver
+        run: |
+          set -eu
+          # win32_suspend_screensaver() from gfx/common/win32_common.c,
+          # compiled from the shipping text against a fake kernel32
+          # that counts power requests the way Windows does.  Every
+          # video driver init asks to hold the screensaver off, so the
+          # one request must be created once and set once however
+          # often it is asked, and turning the setting off must free
+          # the display.  Before Windows 7 the thread execution state
+          # must be continuous to hold anything.
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make SANITIZER=address,undefined check
+          make clean
+          echo "[pass] win32_screensaver_test (ASan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers

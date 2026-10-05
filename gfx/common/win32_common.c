@@ -2289,83 +2289,85 @@ HWND win32_get_window(void) { return main_window.hwnd; }
 
 bool win32_suspend_screensaver(void *data, bool enable)
 {
-   if (enable)
+   /* REASON_CONTEXT, spelled out for SDKs that predate it. */
+   typedef struct
    {
-      char tmp[PATH_MAX_LENGTH];
-      int major                             = 0;
-      int minor                             = 0;
-      const frontend_ctx_driver_t *frontend = frontend_get_ptr();
-
-      if (!frontend)
-         return false;
-
-      if (frontend->get_os)
-         frontend->get_os(tmp, sizeof(tmp), &major, &minor);
-
-      if (major * 100 + minor >= 601)
+      ULONG Version;
+      DWORD Flags;
+      union
       {
-#if _WIN32_WINNT >= 0x0601
-         /* Windows 7, 8, 10 codepath */
-         typedef HANDLE(WINAPI * PowerCreateRequestPtr)(REASON_CONTEXT *context);
-         typedef BOOL(WINAPI * PowerSetRequestPtr)(HANDLE PowerRequest,
-            POWER_REQUEST_TYPE RequestType);
-         PowerCreateRequestPtr powerCreateRequest;
-         PowerSetRequestPtr    powerSetRequest;
-         HMODULE kernel32 = GetModuleHandle("kernel32.dll");
-
-         if (kernel32)
+         struct
          {
-            powerCreateRequest =
-               (PowerCreateRequestPtr)GetProcAddress(
-                     kernel32, "PowerCreateRequest");
-            powerSetRequest =
-               (PowerSetRequestPtr)GetProcAddress(
-                     kernel32, "PowerSetRequest");
+            HMODULE LocalizedReasonModule;
+            ULONG LocalizedReasonId;
+            ULONG ReasonStringCount;
+            LPWSTR *ReasonStrings;
+         } Detailed;
+         LPWSTR SimpleReasonString;
+      } Reason;
+   } win32_reason_context_t;
+   typedef HANDLE (WINAPI *PowerCreateRequest_t)(win32_reason_context_t*);
+   typedef BOOL   (WINAPI *PowerRequest_t)(HANDLE, int);
+   typedef DWORD  (WINAPI *SetThreadExecutionState_t)(DWORD);
+   /* One request for the process. Windows counts every
+    * PowerSetRequest, so it is set only when it is not already. Calls
+    * never overlap: they come from the thread that owns the video
+    * driver. */
+   static HANDLE request               = NULL;
+   static PowerRequest_t set_request   = NULL;
+   static PowerRequest_t clear_request = NULL;
+   static bool request_set             = false;
+   static bool request_probed          = false;
+   SetThreadExecutionState_t set_state;
+   HMODULE kernel32                    = GetModuleHandleA("kernel32.dll");
 
-            if (powerCreateRequest && powerSetRequest)
-            {
-               POWER_REQUEST_CONTEXT RequestContext;
-               HANDLE Request;
+   if (!kernel32)
+      return false;
 
-               RequestContext.Version                   =
-                  POWER_REQUEST_CONTEXT_VERSION;
-               RequestContext.Flags                     =
-                  POWER_REQUEST_CONTEXT_SIMPLE_STRING;
-               RequestContext.Reason.SimpleReasonString = (LPWSTR)
-                  L"RetroArch running";
+   /* Windows 7 and later */
+   if (!request_probed)
+   {
+      PowerCreateRequest_t create = (PowerCreateRequest_t)
+         GetProcAddress(kernel32, "PowerCreateRequest");
+      set_request    = (PowerRequest_t)
+         GetProcAddress(kernel32, "PowerSetRequest");
+      clear_request  = (PowerRequest_t)
+         GetProcAddress(kernel32, "PowerClearRequest");
+      request_probed = true;
 
-               Request                                  =
-                  powerCreateRequest(&RequestContext);
-
-               powerSetRequest(Request, PowerRequestDisplayRequired);
-               /* TODO/FIXME - handle is never released so
-                * technically counts as a memory leak. However, this
-                * handle needs to be kept alive so long as the screensaver
-                * should be suppressed. So this variable might need to
-                * be bookkept somewhere else where it can be properly
-                * closed upon shutdown */
-               return true;
-            }
-         }
-#endif
-      }
-      else if (major * 100 + minor >= 410)
+      if (create && set_request && clear_request)
       {
-#if _WIN32_WINDOWS >= 0x0410 || _WIN32_WINNT >= 0x0410
-         /* 98 / 2K / XP / Vista codepath */
-         SetThreadExecutionState(ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED);
-         return true;
-#endif
-      }
-      else
-      {
-         /* 95 / NT codepath */
-         /* No way to block the screensaver. */
-         return true;
+         win32_reason_context_t ctx;
+         ctx.Version                   = 0; /* POWER_REQUEST_CONTEXT_VERSION */
+         ctx.Flags                     = 0x1; /* ..._SIMPLE_STRING */
+         ctx.Reason.SimpleReasonString = (LPWSTR)L"RetroArch running";
+         request                       = create(&ctx);
+         if (request == INVALID_HANDLE_VALUE)
+            request = NULL;
       }
    }
 
-   return false;
+   /* PowerRequestDisplayRequired */
+   if (request)
+   {
+      if (enable == request_set)
+         return true;
+      if (!(enable
+               ? set_request(request, 0)
+               : clear_request(request, 0)))
+         return false;
+      request_set = enable;
+      return true;
+   }
+
+   /* 98 / 2000 / XP / Vista: continuous state for the calling thread,
+    * ES_CONTINUOUS | ES_DISPLAY_REQUIRED | ES_SYSTEM_REQUIRED. */
+   if ((set_state = (SetThreadExecutionState_t)
+            GetProcAddress(kernel32, "SetThreadExecutionState")))
+      return set_state(enable ? 0x80000003 : 0x80000000) != 0;
+
+   /* 95 / NT 4 have no way to hold the screensaver off. */
+   return true;
 }
 
 static bool win32_monitor_set_fullscreen(
