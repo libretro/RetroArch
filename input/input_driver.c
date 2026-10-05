@@ -10167,6 +10167,68 @@ bool input_driver_hold_bits(input_bits_t *bits)
    return held;
 }
 
+/* Platform requests: done at once on the frontend's thread, where every
+ * driver that makes one makes it today; from any other thread a bit in
+ * a word the next poll takes whole, with no lock. */
+static retro_atomic_int_t input_platform_requests;
+
+static void input_driver_platform_do(enum input_platform_request req)
+{
+   switch (req)
+   {
+      case INPUT_PLATFORM_QUIT:
+         command_event(CMD_EVENT_QUIT, NULL);
+         break;
+      case INPUT_PLATFORM_SHUTDOWN:
+         retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+         break;
+      case INPUT_PLATFORM_MENU_TOGGLE:
+         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         break;
+      case INPUT_PLATFORM_REINIT_VIDEO:
+         command_event(CMD_EVENT_REINIT, NULL);
+         break;
+      case INPUT_PLATFORM_FOCUS_LOST:
+         if (input_driver_game_focus_enabled())
+         {
+            enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
+            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
+         }
+         if (input_driver_mouse_grabbed())
+            command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
+         break;
+      default:
+         break;
+   }
+}
+
+void input_driver_platform_request(enum input_platform_request req)
+{
+   if (req >= INPUT_PLATFORM_REQUEST_LAST)
+      return;
+#ifdef HAVE_THREADS
+   if (!task_is_on_main_thread())
+   {
+      retro_atomic_fetch_or_int(&input_platform_requests, (int)(1u << req));
+      return;
+   }
+#endif
+   input_driver_platform_do(req);
+}
+
+/* The poll's: what other threads asked for since the last one. */
+static void input_driver_platform_take(void)
+{
+   unsigned req;
+   int pending;
+   if (!retro_atomic_load_relaxed_int(&input_platform_requests))
+      return;
+   pending = retro_atomic_exchange_int(&input_platform_requests, 0);
+   for (req = 0; req < INPUT_PLATFORM_REQUEST_LAST; req++)
+      if (pending & (int)(1u << req))
+         input_driver_platform_do((enum input_platform_request)req);
+}
+
 /* Input polled without blocking, for netplay catching up. */
 void input_driver_set_nonblocking(bool on)
 {
@@ -10657,6 +10719,8 @@ void input_driver_poll(void)
    /* the keys another thread has reported since the last poll */
    input_key_lane_poll();
 #endif
+   /* and what platforms asked for from other threads */
+   input_driver_platform_take();
 
    /* When the devices were read. The statistics show how old the input
     * a frame was made from is by the time that frame is on screen, and

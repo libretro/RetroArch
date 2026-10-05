@@ -2828,7 +2828,7 @@ static void android_input_reinit(void)
       bool recreated = video_context_surface_create();
 
       if (!recreated)
-         command_event(CMD_EVENT_REINIT, NULL);
+         input_driver_platform_request(INPUT_PLATFORM_REINIT_VIDEO);
    }
 
    android_app_write_cmd(android_app, APP_CMD_REINIT_DONE);
@@ -2936,7 +2936,7 @@ static void android_input_poll(void *data)
 
       if (android_app->destroyRequested != 0)
       {
-         retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+         input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
          return;
       }
 
@@ -2994,7 +2994,7 @@ bool android_run_events(void *data)
    /* Check if we are exiting. */
    if (android_app->destroyRequested != 0)
    {
-      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
       return false;
    }
 

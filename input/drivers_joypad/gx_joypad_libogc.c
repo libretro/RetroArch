@@ -458,7 +458,7 @@ static void gx_joypad_poll(void)
 #ifdef HW_RVL
    if (g_quit)
    {
-      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
       g_quit = false;
       return;
    }

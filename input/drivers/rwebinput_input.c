@@ -425,16 +425,7 @@ static EM_BOOL rwebinput_pointerlockchange_cb(int event_type,
 
    if (!pointerlock_change_event->isActive)
    {
-      if (input_driver_game_focus_enabled())
-      {
-         enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
-      }
-
-      if (input_driver_mouse_grabbed())
-      {
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      }
+      input_driver_platform_request(INPUT_PLATFORM_FOCUS_LOST);
    }
 
    return EM_TRUE;

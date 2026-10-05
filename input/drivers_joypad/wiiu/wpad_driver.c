@@ -184,7 +184,7 @@ static void wpad_update_touch_state(int16_t state[3][2],
 static void wpad_check_panic_button(uint32_t held_buttons)
 {
    if ((held_buttons & PANIC_BUTTON_MASK) == PANIC_BUTTON_MASK)
-      command_event(CMD_EVENT_QUIT, NULL);
+      input_driver_platform_request(INPUT_PLATFORM_QUIT);
 }
 
 static void wpad_poll(void)

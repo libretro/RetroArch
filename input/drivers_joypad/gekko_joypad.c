@@ -373,7 +373,7 @@ static void gekko_joypad_poll(void)
    if (power_pressed)
    {
       power_pressed = 0;
-      retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+      input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
       return;
    }
 

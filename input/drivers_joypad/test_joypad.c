@@ -496,7 +496,7 @@ static void test_joypad_poll(void)
             if (input_autoconfigure_pending())
                break;
             input_test_steps[i].handled = true;
-            command_event(CMD_EVENT_QUIT, NULL);
+            input_driver_platform_request(INPUT_PLATFORM_QUIT);
             break;
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST

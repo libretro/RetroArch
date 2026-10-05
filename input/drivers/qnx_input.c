@@ -587,7 +587,7 @@ static void qnx_handle_navigator_event(
          }
          break;
       case NAVIGATOR_SWIPE_DOWN:
-         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         input_driver_platform_request(INPUT_PLATFORM_MENU_TOGGLE);
          break;
       case NAVIGATOR_WINDOW_STATE:
          switch(navigator_event_get_window_state(event))
@@ -624,7 +624,7 @@ static void qnx_handle_navigator_event(
    return;
 
 shutdown:
-   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
 }
 
 static void *qnx_input_init(const char *joypad_driver)

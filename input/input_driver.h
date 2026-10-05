@@ -1139,6 +1139,21 @@ void input_driver_hold_clear(void);
  * out. True while it is holding something back. */
 bool input_driver_hold_bits(input_bits_t *bits);
 void input_driver_set_nonblocking(bool on);
+
+/* What a platform asks of the frontend through its input driver: the
+ * home or power button, a panic combination, the system closing the
+ * app, its window going away and coming back. The driver says what
+ * happened; the frontend decides what is done. */
+enum input_platform_request
+{
+   INPUT_PLATFORM_QUIT = 0,        /* quit as the Quit hotkey does */
+   INPUT_PLATFORM_SHUTDOWN,        /* the system is closing the app */
+   INPUT_PLATFORM_MENU_TOGGLE,     /* the platform's menu gesture */
+   INPUT_PLATFORM_REINIT_VIDEO,    /* the window's surface was lost */
+   INPUT_PLATFORM_FOCUS_LOST,      /* game focus off, mouse let go */
+   INPUT_PLATFORM_REQUEST_LAST
+};
+void input_driver_platform_request(enum input_platform_request req);
 void input_driver_set_remapping_cache_active(void);
 void input_driver_device_info_save(input_device_info_t *dst);
 void input_driver_device_info_restore(const input_device_info_t *src);

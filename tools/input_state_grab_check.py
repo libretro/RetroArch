@@ -106,6 +106,34 @@ def count_tree(root):
     return found
 
 
+# Frontend commands an input driver issued itself - quit, shut down,
+# toggle the menu, restart video - which it asks for now with
+# input_driver_platform_request(): there is to be none under input/
+# but in the frontend.
+COMMAND = re.compile(r'\b(command_event|retroarch_ctl|retroarch_main_quit)\s*\(')
+
+
+def command_calls(root):
+    found = {}
+    base = os.path.join(root, 'input')
+    for d, _dirs, files in os.walk(base):
+        for f in files:
+            if not f.endswith(('.c', '.m', '.mm', '.cpp')):
+                continue
+            path = os.path.join(d, f)
+            rel = os.path.relpath(path, root).replace(os.sep, '/')
+            if rel in FRONTEND:
+                continue
+            try:
+                text = open(path, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(COMMAND.findall(strip_comments(text)))
+            if n:
+                found[rel] = n
+    return found
+
+
 DRIVER_CALL = re.compile(r'->\s*input_state\s*\('
                          r'|\b(?:sec_|primary_|secondary_)?joypad\s*->\s*[a-z_]+\s*\(')
 # where an input driver's own functions are not looked for: the input
@@ -204,6 +232,10 @@ def run(root, allowed, outside_allowed=None):
             print('%s: down to %d, and OUTSIDE_ALLOWED in tools/input_state_grab_check.py still says %d.\n'
                   '  Lower the number%s.' % (rel, have, may, ' (remove the line)' if not have else ''))
             bad += 1
+    for rel, n in sorted(command_calls(root).items()):
+        print('%s: issues a frontend command itself, %d time(s).\n'
+              '  Ask for it: input_driver_platform_request().' % (rel, n))
+        bad += 1
     for rel, n in sorted(driver_calls(root).items()):
         print('%s: calls an input or joypad driver itself, %d time(s).\n'
               '  Ask the frontend: input_driver_device_state(), '
@@ -276,10 +308,21 @@ def selftest():
             if got != want:
                 print('selftest: %s: wanted %d, got %d' % (what, want, got))
                 bad += 1
+        # a driver issuing a frontend command itself, and one asking
+        with open(os.path.join(root, 'input', 'drivers', 'cmd.c'), 'w') as f:
+            f.write('void q(void) { command_event(CMD_EVENT_QUIT, 0); }\n')
+        if command_calls(root).get('input/drivers/cmd.c') != 1:
+            print('selftest: a driver issuing a frontend command was not found')
+            bad += 1
+        with open(os.path.join(root, 'input', 'drivers', 'cmd.c'), 'w') as f:
+            f.write('void q(void) { input_driver_platform_request(INPUT_PLATFORM_QUIT); }\n')
+        if command_calls(root):
+            print('selftest: a driver asking for a quit was taken for one issuing it')
+            bad += 1
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 4))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 6))
     return 0
 
 
