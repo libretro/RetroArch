@@ -212,6 +212,7 @@
 #ifdef HAVE_THREADS
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/video_thread_hw.h"
+#include "frontend/thread_elevation.h"
 #endif
 #ifdef HAVE_BLUETOOTH
 #include "bluetooth/bluetooth_driver.h"
@@ -9284,6 +9285,24 @@ static void runloop_task_slow_handler(retro_task_t *task,
  * Threaded Tasks takes effect at the next task_queue_check(), between
  * frames, where the swap can join the worker without holding up a
  * load. */
+#ifdef HAVE_THREADS
+/* The main thread runs the core and the menu, so the Games task: ahead
+ * of ordinary threads, never real time. */
+static thread_elevation_token_t retroarch_main_elevation;
+#endif
+
+void retroarch_main_thread_priority(bool raise)
+{
+#ifdef HAVE_THREADS
+   if (!raise)
+      thread_elevation_lower_current(&retroarch_main_elevation);
+   else if (thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
+            &retroarch_main_elevation, NULL, NULL)
+         == THREAD_ELEVATION_GRANTED)
+      RARCH_LOG("[Core] Main thread priority raised.\n");
+#endif
+}
+
 void retroarch_task_queue_configure(void)
 {
 #ifdef HAVE_THREADS
@@ -9302,6 +9321,7 @@ void retroarch_task_queue_configure(void)
     * in video_driver.c before video_init_thread(). */
    if (settings->bools.thread_prefer_fast_cores)
       sthread_prefer_fast_cores();
+   retroarch_main_thread_priority(settings->bools.main_thread_priority);
 #else
    bool threaded_enable        = false;
 #endif

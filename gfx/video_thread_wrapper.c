@@ -106,6 +106,7 @@ static void video_thread_read_vp(thread_video_t *thr,
 #include "../retroarch.h"
 #include "../runloop.h"
 #include "../verbosity.h"
+#include "../frontend/thread_elevation.h"
 
 #include <retro_assert.h>
 
@@ -1884,10 +1885,16 @@ static void video_thread_slot_widget_paths(
 #endif
 
 static bool video_thread_prefer_fast_cores;
+static bool video_thread_raise_priority;
 
 void video_thread_set_prefer_fast_cores(bool prefer)
 {
    video_thread_prefer_fast_cores = prefer;
+}
+
+void video_thread_set_raise_priority(bool raise)
+{
+   video_thread_raise_priority = raise;
 }
 
 /* Video thread: whether this pass has anything to do. A repeat that has
@@ -1923,11 +1930,17 @@ static void video_thread_loop(void *data)
    unsigned slot;
    bool claimed;
    bool have_cmd;
+   thread_elevation_token_t elevation;
    thread_video_t *thr = (thread_video_t*)data;
 
    sthread_setname("ra-video");
    if (video_thread_prefer_fast_cores && sthread_prefer_fast_cores())
       RARCH_LOG("[Video] Video thread placed on the performance cores.\n");
+   memset(&elevation, 0, sizeof(elevation));
+   if (     video_thread_raise_priority
+         && thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
+               &elevation, NULL, NULL) == THREAD_ELEVATION_GRANTED)
+      RARCH_LOG("[Video] Video thread priority raised.\n");
 
    for (;;)
    {
@@ -2013,7 +2026,10 @@ static void video_thread_loop(void *data)
       video_thread_run_deferred(thr);
 
       if (have_cmd && video_thread_handle_packet(thr, &pkt))
+      {
+         thread_elevation_lower_current(&elevation);
          return;
+      }
 
       video_thread_async_run(thr);
 

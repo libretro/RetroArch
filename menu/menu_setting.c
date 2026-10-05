@@ -10197,6 +10197,11 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
+#ifdef HAVE_THREADS
+      case MENU_ENUM_LABEL_MAIN_THREAD_PRIORITY:
+         retroarch_main_thread_priority(settings->bools.main_thread_priority);
+         break;
+#endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       case MENU_ENUM_LABEL_WIN32_POWER_PLAN:
          if (     !frontend_driver_set_power_plan(settings->bools.win32_power_plan)

@@ -1049,6 +1049,8 @@ typedef struct settings
       bool discord_enable;
       bool threaded_data_runloop_enable;
       bool thread_prefer_fast_cores;
+      bool video_thread_priority;
+      bool main_thread_priority;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;

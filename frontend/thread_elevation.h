@@ -47,6 +47,28 @@ enum thread_elevation_result
    THREAD_ELEVATION_PENDING
 };
 
+enum thread_elevation_task
+{
+   /* A thread that wakes for each device period and sleeps again: the
+    * backend chain, real time where it is granted. */
+   THREAD_ELEVATION_TASK_AUDIO = 0,
+   /* A thread that may run flat out, like the main or video thread:
+    * ahead of ordinary threads, never real time, which would starve
+    * the system or get the thread killed for running too long. */
+   THREAD_ELEVATION_TASK_GAMES
+};
+
+/* What a raise changed on the calling thread, so it can be undone.
+ * Zeroed before the first raise; a raise through a token that already
+ * holds one changes nothing. */
+typedef struct thread_elevation_token
+{
+   void *module;
+   void *handle;
+   int   kind;
+   int   prev;
+} thread_elevation_token_t;
+
 typedef struct thread_elevation_backend
 {
    /* 'tid' names the thread for a brokered backend and is ignored by a
@@ -61,14 +83,25 @@ typedef struct thread_elevation_backend
 } thread_elevation_backend_t;
 
 /**
- * Applies every additive backend to the calling thread, then raises it
- * through the first backend that grants it. Returns at once. On
- * PENDING, *pending_via (if given) is set to the ident of the backend
- * now working on it; *added_via (if given) is set to the ident of an
- * additive backend that applied, or NULL.
+ * For TASK_AUDIO: applies every additive backend to the calling thread,
+ * then raises it through the first backend that grants it; on Windows
+ * the MMCSS Pro Audio class comes first. For TASK_GAMES: the MMCSS
+ * Games class on Windows, else a priority above normal, never the
+ * chain. Returns at once. On PENDING, *pending_via (if given) is set to
+ * the ident of the backend now working on it; *added_via (if given) is
+ * set to the ident of an additive backend that applied, or NULL. What
+ * the raise changed is recorded in *token (if given).
  */
 enum thread_elevation_result thread_elevation_raise_current(
+      enum thread_elevation_task task, thread_elevation_token_t *token,
       const char **pending_via, const char **added_via);
+
+/**
+ * Undoes what *token records, on the calling thread - the one that
+ * raised through it - and clears it. Changes made by the backend chain
+ * are not recorded and stay until the thread ends.
+ */
+void thread_elevation_lower_current(thread_elevation_token_t *token);
 
 /**
  * For a brokered backend refused after answering PENDING: tries the

@@ -245,6 +245,10 @@ void retroarch_init_task_queue(void);
 /* Applies the task-queue settings to the running queue. */
 void retroarch_task_queue_configure(void);
 
+/* Schedules the main thread ahead of ordinary threads, or puts it back;
+ * called on the main thread. */
+void retroarch_main_thread_priority(bool raise);
+
 /**
  * retroarch_main_deinit_begin:
  * retroarch_main_deinit_pending:

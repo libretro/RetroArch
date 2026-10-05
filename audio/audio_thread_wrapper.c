@@ -138,19 +138,22 @@ static void audio_thread_park_stopped(audio_thread_t *thr)
 static void audio_thread_loop(void *data)
 {
    bool is_shutdown;
+   thread_elevation_token_t elevation;
    audio_thread_t *thr = (audio_thread_t*)data;
 
    if (!thr)
       return;
 
    sthread_setname("ra-audio");
+   memset(&elevation, 0, sizeof(elevation));
 
    /* Best effort and never fatal: a refusal leaves the default. */
    if (thr->raise_priority)
    {
       const char *via   = NULL;
       const char *added = NULL;
-      switch (thread_elevation_raise_current(&via, &added))
+      switch (thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO,
+               &elevation, &via, &added))
       {
          case THREAD_ELEVATION_GRANTED:
             RARCH_LOG("[Audio] Audio thread priority raised.\n");
@@ -194,12 +197,16 @@ static void audio_thread_loop(void *data)
          thr->driver->free(thr->driver_data);
       retro_eventcount_free(&thr->ec);
       free(thr);
+      thread_elevation_lower_current(&elevation);
       return;
    }
    retro_eventcount_notify(&thr->ec);
 
    if (!thr->driver_data)
+   {
+      thread_elevation_lower_current(&elevation);
       return;
+   }
 
    /* Wait until we start to avoid calling
     * stop immediately after initialization. A stop can land here as
@@ -254,6 +261,7 @@ static void audio_thread_loop(void *data)
 
    audio_driver_pipeline_consumer_exit();
    thr->driver->free(thr->driver_data);
+   thread_elevation_lower_current(&elevation);
 }
 
 /**

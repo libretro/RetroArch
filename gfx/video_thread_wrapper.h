@@ -871,6 +871,14 @@ typedef struct thread_video
 void video_thread_set_prefer_fast_cores(bool prefer);
 
 /**
+ * video_thread_set_raise_priority:
+ *
+ * Asks that the video thread, once spawned by video_init_thread(), be
+ * scheduled ahead of ordinary threads (thread_elevation, Games task).
+ */
+void video_thread_set_raise_priority(bool raise);
+
+/**
  * video_thread_host_hold:
  * @on_exit : run on the thread before it ends, if it ends without
  *            another driver having run on it.

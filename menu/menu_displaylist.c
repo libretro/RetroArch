@@ -11655,6 +11655,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_KIOSK_MODE_PASSWORD,                              PARSE_ONLY_STRING, false},
                {MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE,                          PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_THREAD_PREFER_FAST_CORES,                              PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_VIDEO_THREAD_PRIORITY,                                 PARSE_ONLY_BOOL,   true},
+               {MENU_ENUM_LABEL_MAIN_THREAD_PRIORITY,                                  PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_TIMEOUT,                              PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION,                            PARSE_ONLY_UINT,   false},
                {MENU_ENUM_LABEL_MENU_SCREENSAVER_ANIMATION_SPEED,                      PARSE_ONLY_FLOAT,  false},

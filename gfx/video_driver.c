@@ -6318,6 +6318,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 
       video_thread_set_prefer_fast_cores(
             settings->bools.thread_prefer_fast_cores);
+      video_thread_set_raise_priority(
+            settings->bools.video_thread_priority);
       ret = video_init_thread(
             (const video_driver_t**)&video_st->current_video,
             &video_st->data,

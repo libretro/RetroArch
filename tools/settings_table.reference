@@ -253,6 +253,8 @@ bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
 bool	thread_prefer_fast_cores	1	0
+bool	video_thread_priority	1	1
+bool	main_thread_priority	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -932,6 +934,8 @@ bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
 bool	thread_prefer_fast_cores	1	0
+bool	video_thread_priority	1	1
+bool	main_thread_priority	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1
@@ -1613,6 +1617,8 @@ bool	menu_thumbnail_preview_audio	1	0
 bool	content_show_settings	1	1
 bool	threaded_data_runloop_enable	1	1
 bool	thread_prefer_fast_cores	1	0
+bool	video_thread_priority	1	1
+bool	main_thread_priority	1	0
 bool	menu_navigation_wraparound_enable	1	1
 bool	menu_horizontal_animation	1	1
 bool	menu_show_full_paths	1	1

@@ -26,12 +26,32 @@
 #include "../gfx/common/dbus_runtime.h"
 
 #if defined(__linux__) && !defined(_WIN32)
+#include <errno.h>
 #include <unistd.h>
+#include <sys/resource.h>
 #include <sys/syscall.h>
 /* The prototype every Linux libc uses; spelled out so a strict C89
  * build, where glibc hides it, sees the same one. */
 extern long syscall(long number, ...);
 #endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+#include <windows.h>
+#define THREAD_ELEVATION_HAVE_MMCSS
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__)
+#include <dlfcn.h>
+#endif
+
+enum thread_elevation_token_kind
+{
+   THREAD_ELEVATION_TOKEN_NONE = 0,
+   THREAD_ELEVATION_TOKEN_MMCSS,
+   THREAD_ELEVATION_TOKEN_WIN32_PRIORITY,
+   THREAD_ELEVATION_TOKEN_NICE,
+   THREAD_ELEVATION_TOKEN_QOS
+};
 
 /* In the order they are tried; every self-acting backend first. A
  * harness that brings its own list defines this macro and the array. */
@@ -85,7 +105,150 @@ static uint64_t thread_elevation_current_tid(void)
 #endif
 }
 
+#ifdef THREAD_ELEVATION_HAVE_MMCSS
+/* avrt.dll exists from Vista on, so it is resolved, not linked. */
+static bool thread_elevation_mmcss(const wchar_t *task,
+      thread_elevation_token_t *token)
+{
+   typedef HANDLE (WINAPI *av_set_t)(LPCWSTR, LPDWORD);
+   DWORD idx    = 0;
+   HANDLE h     = NULL;
+   av_set_t set;
+   HMODULE avrt = LoadLibraryA("avrt.dll");
+
+   if (!avrt)
+      return false;
+   if ((set = (av_set_t)GetProcAddress(avrt,
+               "AvSetMmThreadCharacteristicsW")))
+      h = set(task, &idx);
+   if (!h || h == INVALID_HANDLE_VALUE)
+   {
+      FreeLibrary(avrt);
+      return false;
+   }
+   token->module = avrt;
+   token->handle = h;
+   token->kind   = THREAD_ELEVATION_TOKEN_MMCSS;
+   return true;
+}
+#endif
+
+#if defined(__APPLE__) && defined(__MACH__) && defined(RTLD_DEFAULT)
+/* pthread_set_qos_class_self_np arrived with 10.10: looked up, so one
+ * binary still runs on older releases. */
+static int thread_elevation_set_qos(unsigned qos_class)
+{
+   int (*set)(unsigned, int) = NULL;
+   *(void**)&set = dlsym(RTLD_DEFAULT, "pthread_set_qos_class_self_np");
+   return set ? set(qos_class, 0) : -1;
+}
+#endif
+
+/* Above ordinary threads and never real time, on the systems where
+ * that is the thread's own to ask for; the consoles keep their
+ * defaults, since the core's own threads share a few cores there. */
+static enum thread_elevation_result thread_elevation_games_raise(
+      thread_elevation_token_t *token)
+{
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   int prev = GetThreadPriority(GetCurrentThread());
+   if (     prev == THREAD_PRIORITY_ERROR_RETURN
+         || !SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST))
+      return THREAD_ELEVATION_REFUSED;
+   token->kind = THREAD_ELEVATION_TOKEN_WIN32_PRIORITY;
+   token->prev = prev;
+   return THREAD_ELEVATION_GRANTED;
+#elif defined(__linux__)
+   /* -4 is Android's display band, which an app may give its own
+    * threads; elsewhere as far as RLIMIT_NICE allows, up to -5. */
+#if defined(__ANDROID__)
+   int want  = -4;
+#else
+   int want  = -5;
+   struct rlimit rl;
+#endif
+   id_t tid  = (id_t)syscall(SYS_gettid);
+   int prev;
+
+   errno = 0;
+   prev  = getpriority(PRIO_PROCESS, tid);
+   if (errno || want >= prev)
+      return THREAD_ELEVATION_REFUSED;
+   if (setpriority(PRIO_PROCESS, tid, want) != 0)
+   {
+#if defined(__ANDROID__)
+      return THREAD_ELEVATION_REFUSED;
+#else
+      /* Without CAP_SYS_NICE, as low as RLIMIT_NICE allows */
+      if (     getrlimit(RLIMIT_NICE, &rl) != 0
+            || rl.rlim_cur == RLIM_INFINITY
+            || (want = 20 - (int)rl.rlim_cur) >= prev
+            || setpriority(PRIO_PROCESS, tid, want) != 0)
+         return THREAD_ELEVATION_REFUSED;
+#endif
+   }
+   token->kind = THREAD_ELEVATION_TOKEN_NICE;
+   token->prev = prev;
+   return THREAD_ELEVATION_GRANTED;
+#elif defined(__APPLE__) && defined(__MACH__) && defined(RTLD_DEFAULT)
+   /* QOS_CLASS_USER_INTERACTIVE */
+   if (thread_elevation_set_qos(0x21) != 0)
+      return THREAD_ELEVATION_REFUSED;
+   token->kind = THREAD_ELEVATION_TOKEN_QOS;
+   return THREAD_ELEVATION_GRANTED;
+#else
+   (void)token;
+   return THREAD_ELEVATION_REFUSED;
+#endif
+}
+
+void thread_elevation_lower_current(thread_elevation_token_t *token)
+{
+   if (!token)
+      return;
+
+   switch (token->kind)
+   {
+#ifdef THREAD_ELEVATION_HAVE_MMCSS
+      case THREAD_ELEVATION_TOKEN_MMCSS:
+         {
+            typedef BOOL (WINAPI *av_revert_t)(HANDLE);
+            av_revert_t revert = (av_revert_t)GetProcAddress(
+                  (HMODULE)token->module, "AvRevertMmThreadCharacteristics");
+            if (revert)
+               revert((HANDLE)token->handle);
+            FreeLibrary((HMODULE)token->module);
+         }
+         break;
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      case THREAD_ELEVATION_TOKEN_WIN32_PRIORITY:
+         SetThreadPriority(GetCurrentThread(), token->prev);
+         break;
+#endif
+#if defined(__linux__) && !defined(_WIN32)
+      case THREAD_ELEVATION_TOKEN_NICE:
+         setpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid), token->prev);
+         break;
+#endif
+#if defined(__APPLE__) && defined(__MACH__) && defined(RTLD_DEFAULT)
+      case THREAD_ELEVATION_TOKEN_QOS:
+         /* QOS_CLASS_DEFAULT */
+         thread_elevation_set_qos(0x15);
+         break;
+#endif
+      default:
+         break;
+   }
+
+   token->module = NULL;
+   token->handle = NULL;
+   token->kind   = THREAD_ELEVATION_TOKEN_NONE;
+   token->prev   = 0;
+}
+
 enum thread_elevation_result thread_elevation_raise_current(
+      enum thread_elevation_task task, thread_elevation_token_t *token,
       const char **pending_via, const char **added_via)
 {
    unsigned i;
@@ -94,6 +257,20 @@ enum thread_elevation_result thread_elevation_raise_current(
 
    if (added_via)
       *added_via = NULL;
+   if (token && token->kind != THREAD_ELEVATION_TOKEN_NONE)
+      return THREAD_ELEVATION_GRANTED;
+
+   if (task == THREAD_ELEVATION_TASK_GAMES)
+   {
+      thread_elevation_token_t scratch;
+      if (!token)
+         token = &scratch;
+#ifdef THREAD_ELEVATION_HAVE_MMCSS
+      if (thread_elevation_mmcss(L"Games", token))
+         return THREAD_ELEVATION_GRANTED;
+#endif
+      return thread_elevation_games_raise(token);
+   }
 
    /* Additive backends first: each goes on top of whatever the chain
     * grants, so none of them ends it. */
@@ -105,6 +282,13 @@ enum thread_elevation_result thread_elevation_raise_current(
             && added_via)
          *added_via = b->ident;
    }
+
+#ifdef THREAD_ELEVATION_HAVE_MMCSS
+   /* The class carries its own priority, so the chain is not added on
+    * top of it. */
+   if (token && thread_elevation_mmcss(L"Pro Audio", token))
+      return THREAD_ELEVATION_GRANTED;
+#endif
 
    for (i = 0; thread_elevation_backends[i]; i++)
    {

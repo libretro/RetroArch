@@ -14,6 +14,7 @@
 #include <sched.h>
 #include <pthread.h>
 #include <sys/syscall.h>
+#include <sys/resource.h>
 
 #include <boolean.h>
 #include <rthreads/rthreads.h>
@@ -210,6 +211,31 @@ static void eevdf_worker(void *data)
    eevdf_runtime = a.runtime;
 }
 
+static enum thread_elevation_result games_result;
+static enum thread_elevation_result games_again;
+static int games_nice_before, games_nice_raised, games_nice_again;
+static int games_nice_after;
+static int games_policy;
+
+/* On a thread of its own, so the nice value it changes is its own */
+static void games_worker(void *data)
+{
+   thread_elevation_token_t token;
+   id_t tid = (id_t)syscall(SYS_gettid);
+   (void)data;
+   memset(&token, 0, sizeof(token));
+   games_nice_before = getpriority(PRIO_PROCESS, tid);
+   games_result      = thread_elevation_raise_current(
+         THREAD_ELEVATION_TASK_GAMES, &token, NULL, NULL);
+   games_nice_raised = getpriority(PRIO_PROCESS, tid);
+   games_policy      = sched_getscheduler(0);
+   games_again       = thread_elevation_raise_current(
+         THREAD_ELEVATION_TASK_GAMES, &token, NULL, NULL);
+   games_nice_again  = getpriority(PRIO_PROCESS, tid);
+   thread_elevation_lower_current(&token);
+   games_nice_after  = getpriority(PRIO_PROCESS, tid);
+}
+
 int main(void)
 {
    const char *via;
@@ -226,7 +252,7 @@ int main(void)
       static const char *const want[] = { "hint", "self" };
       reset(); self_answer = THREAD_ELEVATION_GRANTED;
       via = NULL;
-      r   = thread_elevation_raise_current(&via, &added);
+      r   = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, &via, &added);
       check("granted", r == THREAD_ELEVATION_GRANTED && !via);
       expect_calls("nothing after it tried", want, 2);
    }
@@ -236,7 +262,7 @@ int main(void)
       static const char *const want[] = { "hint", "self", "slow", "misplaced", "grant" };
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 0; grant_answer = THREAD_ELEVATION_REFUSED;
-      r = thread_elevation_raise_current(NULL, NULL);
+      r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, NULL, NULL);
       check("refused", r == THREAD_ELEVATION_REFUSED);
       expect_calls("every backend, in order", want, 5);
       check("brokered backends got the caller's thread id",
@@ -252,7 +278,7 @@ int main(void)
       slow_goes_async = 1; grant_answer = THREAD_ELEVATION_GRANTED;
       misplaced_answer = THREAD_ELEVATION_GRANTED;
       via = NULL;
-      r   = thread_elevation_raise_current(&via, &added);
+      r   = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, &via, &added);
       check("caller told pending, by name",
             r == THREAD_ELEVATION_PENDING && via && !strcmp(via, "slow"));
       if (slow_thread)
@@ -267,7 +293,7 @@ int main(void)
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 1; grant_answer = THREAD_ELEVATION_REFUSED;
       misplaced_answer = THREAD_ELEVATION_GRANTED;
-      r = thread_elevation_raise_current(NULL, NULL);
+      r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, NULL, NULL);
       check("pending", r == THREAD_ELEVATION_PENDING);
       if (slow_thread)
          sthread_join(slow_thread);
@@ -280,14 +306,14 @@ int main(void)
       reset(); hint_answer = THREAD_ELEVATION_GRANTED;
       self_answer = THREAD_ELEVATION_GRANTED;
       added = NULL;
-      r     = thread_elevation_raise_current(&via, &added);
+      r     = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, &via, &added);
       check("the chain still granted after it", r == THREAD_ELEVATION_GRANTED);
       check("and it was reported by name", added && !strcmp(added, "hint"));
       expect_calls("tried first, and the chain went on", want, 2);
       reset(); self_answer = THREAD_ELEVATION_REFUSED;
       slow_goes_async = 1; grant_answer = THREAD_ELEVATION_GRANTED;
       misplaced_answer = THREAD_ELEVATION_REFUSED;
-      r = thread_elevation_raise_current(NULL, NULL);
+      r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO, NULL, NULL, NULL);
       if (slow_thread)
          sthread_join(slow_thread);
       {
@@ -320,12 +346,56 @@ int main(void)
          printf("   --   no real time for this runner; that case is skipped\n");
    }
 
+   printf("7. the Games task never reaches the chain\n");
+   {
+      thread_elevation_token_t token;
+      sthread_t *t;
+      int nice_main = getpriority(PRIO_PROCESS, (id_t)me);
+      reset(); self_answer = THREAD_ELEVATION_GRANTED;
+      hint_answer = THREAD_ELEVATION_GRANTED;
+      slow_goes_async = 0; grant_answer = THREAD_ELEVATION_GRANTED;
+      memset(&token, 0, sizeof(token));
+      r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
+            &token, NULL, &added);
+      check("no backend is asked, real time or hint", calls.n == 0);
+      check("no additive backend is reported", added == NULL);
+      thread_elevation_lower_current(&token);
+      check("lowering puts the calling thread back as it was",
+            getpriority(PRIO_PROCESS, (id_t)me) == nice_main);
+      hint_answer = THREAD_ELEVATION_REFUSED;
+
+      t = sthread_create(games_worker, NULL);
+      sthread_join(t);
+      if (games_result == THREAD_ELEVATION_GRANTED)
+      {
+         check("granted: the thread runs at a lower nice value",
+               games_nice_raised < games_nice_before);
+         check("a second raise through the same token changes nothing",
+               games_again == THREAD_ELEVATION_GRANTED
+               && games_nice_again == games_nice_raised);
+         check("lowering puts the nice value back",
+               games_nice_after == games_nice_before);
+      }
+      else
+      {
+         check("refused: the nice value is left alone",
+               games_nice_raised == games_nice_before);
+         printf("   --   no lower nice value for this runner; the round trip is skipped\n");
+      }
+      check("the worker started where the main thread is",
+            games_nice_before == nice_main);
+      check("the policy stays time-shared", games_policy == SCHED_OTHER);
+      printf("        (%s, nice %d -> %d -> %d)\n",
+            games_result == THREAD_ELEVATION_GRANTED ? "granted" : "refused",
+            games_nice_before, games_nice_raised, games_nice_after);
+   }
+
    slock_free(calls_lock);
    if (failures)
    {
       printf("thread elevation: %d failure(s)\n", failures);
       return 1;
    }
-   printf("thread elevation: chain order and continuation hold\n");
+   printf("thread elevation: chain order, continuation and the Games task hold\n");
    return 0;
 }

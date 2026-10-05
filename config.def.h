@@ -576,6 +576,12 @@
  * the user's call. */
 #define DEFAULT_THREAD_PREFER_FAST_CORES false
 
+/* Schedule the threaded video thread ahead of ordinary threads, never
+ * real time; the main thread, which can run unthrottled, only when
+ * asked. */
+#define DEFAULT_VIDEO_THREAD_PRIORITY true
+#define DEFAULT_MAIN_THREAD_PRIORITY false
+
 /* Set to true if HW render cores should get their private context. */
 #define DEFAULT_VIDEO_SHARED_CONTEXT false
 
