@@ -410,7 +410,9 @@ static int rnfs_rpc_send(struct rnfs_ctx *c, int fd, uint32_t prog, uint32_t ver
    int        to = (int)c->timeout * 1000;
    static const char machine[] = "retroarch";
 
-   *xid_out = xid;
+   /* the reply to this request is the only status that may stand */
+   c->status = RNFS_STATUS_NONE;
+   *xid_out  = xid;
    x.p = msg + 4; x.end = msg + c->buf_size; x.fail = 0;
    xdr_u32(&x, xid);
    xdr_u32(&x, 0);                            /* CALL */
@@ -559,6 +561,8 @@ static int rnfs_call(struct rnfs_ctx *c, uint32_t proc,
       if (rnfs_redial(c) != 0)
       {
          free(held);
+         /* what the failed mount answered is not this call's status */
+         c->status = RNFS_STATUS_NONE;
          rnfs_err(c, "not connected");
          return -1;
       }
@@ -709,6 +713,7 @@ static int nfs4_compound(struct rnfs_ctx *c, const uint8_t *ops, size_t ops_len,
 
    if (c->fd < 0 && rnfs_redial(c) != 0)
    {
+      c->status = RNFS_STATUS_NONE;
       rnfs_err(c, "not connected");
       return -1;
    }
@@ -1443,6 +1448,8 @@ done:
 static int nfs4_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
       struct rnfs_stat *st, int parent, char *last, size_t last_len)
 {
+   /* a path refused before any request is sent has no status */
+   c->status = RNFS_STATUS_NONE;
    if (nfs4_walk_once(c, path, fh, st, parent, last, last_len) == 0)
       return 0;
    if (c->fd >= 0 || c->redialing)
@@ -1725,6 +1732,7 @@ int rnfs_connect(struct rnfs_ctx *c, const char *server, const char *export_path
    int      mfd;
    uint8_t  args[600];
    struct xdr x, reply;
+   c->status = RNFS_STATUS_NONE;
    rnfs_dcache_flush(c);   /* handles belong to the export mounted before */
 
    rnfs_disconnect(c);
@@ -2075,6 +2083,8 @@ unsigned rnfs_get_minor_version(const struct rnfs_ctx *c)
 static int rnfs_walk(struct rnfs_ctx *c, const char *path, struct rnfs_fh *fh,
       struct rnfs_stat *st, int parent, char *last, size_t last_len)
 {
+   /* a path refused before any request is sent has no status */
+   c->status = RNFS_STATUS_NONE;
    if (rnfs_walk_once(c, path, fh, st, parent, last, last_len) == 0)
       return 0;
    if (c->fd >= 0 || c->redialing)
@@ -2543,7 +2553,10 @@ static int64_t rnfs_fetch(struct rnfs_ctx *c, struct rnfs_file *f,
       c->lost_session = 0;
       c->stale_state  = 0;
       if (c->fd < 0 && rnfs_redial(c) != 0)
+      {
+         c->status = RNFS_STATUS_NONE;
          return -1;
+      }
       if ((r = rnfs_fetch_once(c, f, off, out, len)) >= 0 || c->redialing)
          break;
       if (c->fd >= 0 && c->lost_session)
