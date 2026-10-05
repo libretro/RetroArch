@@ -7054,6 +7054,14 @@ const char *input_driver_get_ident(void)
    return (input && input->ident) ? input->ident : "";
 }
 
+/* Whether the input driver can make the device vibrate on a key
+ * press. */
+bool input_driver_has_keypress_vibrate(void)
+{
+   const input_driver_t *input = input_driver_st.current_driver;
+   return input && input->keypress_vibrate;
+}
+
 uint64_t input_driver_get_capabilities(void)
 {
    const input_driver_t *input = input_driver_st.current_driver;
@@ -9845,6 +9853,31 @@ bool input_driver_keyboard_mapping_blocked(void)
 bool input_driver_keyboard_line_enabled(void)
 {
    return input_driver_st.keyboard_line.enabled;
+}
+
+/* The line of text being typed, for whoever draws it: its bytes, or
+ * NULL when there is none, and in @cursor where the cursor stands in
+ * them, which is never past their end. */
+const char *input_driver_keyboard_line_view(size_t *cursor)
+{
+   const input_keyboard_line_t *line = &input_driver_st.keyboard_line;
+   if (cursor)
+      *cursor = (line->ptr > line->size) ? line->size : line->ptr;
+   return line->buffer;
+}
+
+/* The keys go to the text and not to the on-screen keyboard: the text
+ * box has the focus (Tab moves it). */
+bool input_driver_keyboard_textbox_focus(void)
+{
+   return input_driver_st.osk_textbox_focus;
+}
+
+/* Text is put at the end of the line being typed, as if typed. */
+void input_driver_keyboard_line_append(const char *utf8, size_t len)
+{
+   if (utf8 && len)
+      input_keyboard_line_append(&input_driver_st.keyboard_line, utf8, len);
 }
 
 /* The platform's keyboard hands over the whole line as it stands. */

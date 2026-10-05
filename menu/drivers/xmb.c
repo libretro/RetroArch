@@ -1394,22 +1394,20 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
    if (draw_caret)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-      input_keyboard_line_t *line    = &input_st->keyboard_line;
+      size_t line_cursor             = 0;
+      const char *line_text          = input_driver_keyboard_line_view(&line_cursor);
       const char *input              = strchr(message, '\n');
 
       draw_caret = false;
 
-      if (input && line->buffer
+      if (input && line_text
             && ((menu_driver_get_current_time() / 500000) & 1))
       {
          char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_message[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - message + 1);
-         size_t ptr = line->ptr;
+         size_t ptr = line_cursor;
 
-         if (ptr > line->size)
-            ptr = line->size;
          if (len < sizeof(cursor_src))
          {
             if (ptr >= sizeof(cursor_src) - len)
@@ -1419,7 +1417,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
              * non-overlapping source and destination
              * buffers, so stage the source separately */
             memcpy(cursor_src, message, len);
-            memcpy(cursor_src + len, line->buffer, ptr);
+            memcpy(cursor_src + len, line_text, ptr);
             cursor_src[len + ptr] = '\0';
 
             (xmb->word_wrap)(
@@ -1460,7 +1458,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       xmb->osk_textbox_h = slice_h;
    }
 
-   if (input_dialog_display_kb && input_state_get_ptr()->osk_textbox_focus && line_count > 1)
+   if (input_dialog_display_kb && input_driver_keyboard_textbox_focus() && line_count > 1)
    {
       int cursor_offset = (xmb->margins_dialog + (xmb->margins_slice * 2)) / 3;
 
@@ -1564,7 +1562,6 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
 
    if (input_dialog_display_kb)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
       struct menu_state *menu_st     = menu_state_get_ptr();
       gfx_display_draw_keyboard(
             p_disp,
@@ -1573,7 +1570,7 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
             xmb->textures.list[XMB_TEXTURE_KEY_HOVER],
             xmb->font,
             menu_st->osk_grid,
-            input_st->osk_textbox_focus ? 44 : menu_st->osk_ptr,
+            input_driver_keyboard_textbox_focus() ? 44 : menu_st->osk_ptr,
             0xffffffff);
    }
 

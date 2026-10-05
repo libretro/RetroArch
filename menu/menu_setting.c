@@ -15713,9 +15713,7 @@ static void settings_build_input(
             ADD_DESC(inp_desc_9);
 
       {
-         input_driver_state_t *st = input_state_get_ptr();
-         input_driver_t *current_input = st->current_driver;
-         if (string_is_equal(current_input->ident, "android"))
+         if (string_is_equal(input_driver_get_ident(), "android"))
          {
             /* Descriptor holdout: value target outside settings_t. */
             CONFIG_ACTION(
@@ -15816,10 +15814,7 @@ static void settings_build_input(
           * Android entries above are gated on the active input driver.
           * A gl+udev desktop build compiled with SDL3 support should
           * not show a toggle that does nothing. */
-         input_driver_state_t *st      = input_state_get_ptr();
-         input_driver_t *current_input = st->current_driver;
-         if (     current_input
-               && string_is_equal(current_input->ident, "sdl3")
+         if (     string_is_equal(input_driver_get_ident(), "sdl3")
                && input_osk_native_available())
             CONFIG_BOOL(
                   list, list_info,

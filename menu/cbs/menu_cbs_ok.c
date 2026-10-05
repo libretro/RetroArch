@@ -4073,8 +4073,7 @@ static int action_ok_rename_entry(const char *path,
    if ((playlist = playlist_get_cached()))
       playlist_get_index(playlist, entry_idx, &entry);
    if (entry && entry->label && *entry->label)
-      input_keyboard_line_append(&input_state_get_ptr()->keyboard_line,
-            entry->label, strlen(entry->label));
+      input_driver_keyboard_line_append(entry->label, strlen(entry->label));
 
    return 0;
 }

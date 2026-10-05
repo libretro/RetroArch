@@ -7176,9 +7176,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
     int i                         = 0;
     char keyboard[sizeof(settings->arrays.input_android_physical_keyboard)];
     bool keyboard_added           = false;
-    input_driver_state_t *st      = input_state_get_ptr();
-    input_driver_t *current_input = st->current_driver;
-    bool is_android_driver        = !strcmp(current_input->ident, "android");
+    bool is_android_driver        = string_is_equal(input_driver_get_ident(), "android");
 
     device_lbl[0]                 = '\0';
 
@@ -7222,7 +7220,7 @@ static int menu_displaylist_parse_input_select_physical_keyboard_list(
             /*
              * Skip devices that do not look like keyboards
              */
-            if (!android_input_can_be_keyboard(st->current_data, i))
+            if (!android_input_can_be_keyboard(input_driver_current_data(), i))
                 continue;
 
             const char *device_name =   input_config_get_device_display_name(i)
@@ -9069,23 +9067,22 @@ unsigned menu_displaylist_build_list(
          {
             char os_ver[64];
             int major, minor;
-            input_driver_t *current_input =
-                  input_state_get_ptr()->current_driver;
+            const char *input_ident     = input_driver_get_ident();
             const frontend_ctx_driver_t *frontend =
                   frontend_get_ptr();
 
             if (frontend && frontend->get_os)
                frontend->get_os(os_ver, sizeof(os_ver), &major, &minor);
 
-            if (current_input->keypress_vibrate)
+            if (input_driver_has_keypress_vibrate())
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_VIBRATE_ON_KEYPRESS,
                         PARSE_ONLY_BOOL, false) == 0)
                   count++;
 
             /* TODO/FIXME - should we dehardcode this? */
-            if (         !strcmp(current_input->ident, "android")
-                  ||    (!strcmp(current_input->ident, "cocoa")
+            if (         !strcmp(input_ident, "android")
+                  ||    (!strcmp(input_ident, "cocoa")
                      &&  !strcmp(os_ver, "iOS")))
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         MENU_ENUM_LABEL_ENABLE_DEVICE_VIBRATION,

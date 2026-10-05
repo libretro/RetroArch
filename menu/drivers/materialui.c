@@ -2945,22 +2945,20 @@ static void materialui_render_messagebox(
 
    if (draw_caret)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-      input_keyboard_line_t *line    = &input_st->keyboard_line;
+      size_t line_cursor             = 0;
+      const char *line_text          = input_driver_keyboard_line_view(&line_cursor);
       const char *input              = strchr(msg, '\n');
 
       draw_caret = false;
 
-      if (input && line->buffer
+      if (input && line_text
             && ((menu_driver_get_current_time() / 500000) & 1))
       {
          char cursor_src[MENU_LABEL_MAX_LENGTH];
          char cursor_msg[MENU_LABEL_MAX_LENGTH];
          size_t len = (size_t)(input - msg + 1);
-         size_t ptr = line->ptr;
+         size_t ptr = line_cursor;
 
-         if (ptr > line->size)
-            ptr = line->size;
          if (len < sizeof(cursor_src))
          {
             if (ptr >= sizeof(cursor_src) - len)
@@ -2970,7 +2968,7 @@ static void materialui_render_messagebox(
              * non-overlapping source and destination
              * buffers, so stage the source separately */
             memcpy(cursor_src, msg, len);
-            memcpy(cursor_src + len, line->buffer, ptr);
+            memcpy(cursor_src + len, line_text, ptr);
             cursor_src[len + ptr] = '\0';
 
             (mui->word_wrap)(
@@ -3025,7 +3023,7 @@ static void materialui_render_messagebox(
          mui->colors.surface_background,
          NULL);
 
-   if (draw_focus && input_state_get_ptr()->osk_textbox_focus)
+   if (draw_focus && input_driver_keyboard_textbox_focus())
    {
       int cursor_s = ((int)(mui->last_scale_factor * 4.0f) < 3)
             ? 3 : (int)(mui->last_scale_factor * 4.0f);
@@ -8570,7 +8568,6 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
    {
       size_t _len;
       char msg[NAME_MAX_LENGTH];
-      input_driver_state_t *input_st = input_state_get_ptr();
       const char *str                = menu_input_dialog_get_buffer();
       const char *label              = menu_st->input_dialog_kb_label;
 
@@ -8607,7 +8604,7 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                tex_list[MUI_TEXTURE_KEY_HOVER],
                mui->font_data.list.font,
                menu_st->osk_grid,
-               input_st->osk_textbox_focus ? 44 : menu_st->osk_ptr,
+               input_driver_keyboard_textbox_focus() ? 44 : menu_st->osk_ptr,
                0xFFFFFFFF);
       }
 

@@ -46,6 +46,11 @@ controller profile called (input_driver_capture_pad(),
 input_driver_poll_devices(), input_driver_autoconfigure_pad()).
 There is to be none of either.
 
+A third: the input state taken by the menu and the UI layer
+(OUTSIDE_ALLOWED), which are being moved onto the same named calls.
+The menu drivers take none any more; what is left is listed with a
+count that only goes down.
+
 Usage:
    tools/input_state_grab_check.py [--root DIR] [--selftest]
 """
@@ -129,9 +134,62 @@ def driver_calls(root):
     return found
 
 
-def run(root, allowed):
+# The input state taken by the menu and the UI layer, which are being
+# moved onto named calls as the drivers were: what is left, file by
+# file. A file may not have more than its number, one that is not
+# listed may have none, and a file below its number has it lowered.
+#
+# menu/menu_driver.c: text entry, the overlay and a few flags.
+# The Apple UI files: they put touches, keys and the mouse into the
+# Cocoa input driver's own data; that goes with the platform pump.
+OUTSIDE_DIRS = ('menu', 'ui')
+OUTSIDE_ALLOWED = {
+    'menu/menu_driver.c':                9,
+    'ui/companion/companion_core.c':     1,
+    'ui/drivers/cocoa/cocoa_common.m':   1,
+    'ui/drivers/ui_cocoa.m':             3,
+    'ui/drivers/ui_cocoatouch.m':        9,
+}
+INPUT_STATE = re.compile(r'\binput_state_get_ptr\s*\(\s*\)')
+
+
+def count_outside(root):
+    found = {}
+    for top in OUTSIDE_DIRS:
+        for d, dirs, files in os.walk(os.path.join(root, top)):
+            if 'test' in dirs:
+                dirs.remove('test')
+            for f in files:
+                if not f.endswith(('.c', '.m', '.mm', '.cpp')):
+                    continue
+                path = os.path.join(d, f)
+                try:
+                    text = open(path, encoding='utf-8', errors='replace').read()
+                except OSError:
+                    continue
+                n = len(INPUT_STATE.findall(strip_comments(text)))
+                if n:
+                    found[os.path.relpath(path, root).replace(os.sep, '/')] = n
+    return found
+
+
+def run(root, allowed, outside_allowed=None):
     found = count_tree(root)
     bad = 0
+    outside = count_outside(root)
+    if outside_allowed is None:
+        outside_allowed = OUTSIDE_ALLOWED
+    for rel in sorted(set(outside) | set(outside_allowed)):
+        have = outside.get(rel, 0)
+        may = outside_allowed.get(rel, 0)
+        if have > may:
+            print('%s: takes the input state %d time(s), %d allowed.\n'
+                  '  Ask the frontend by name (input_driver_...()).' % (rel, have, may))
+            bad += 1
+        elif have < may:
+            print('%s: down to %d, and OUTSIDE_ALLOWED in tools/input_state_grab_check.py still says %d.\n'
+                  '  Lower the number%s.' % (rel, have, may, ' (remove the line)' if not have else ''))
+            bad += 1
     for rel, n in sorted(driver_calls(root).items()):
         print('%s: calls an input or joypad driver itself, %d time(s).\n'
               '  Ask the frontend: input_driver_device_state(), '
@@ -153,8 +211,9 @@ def run(root, allowed):
     if bad:
         print('FAIL input_state_grab_check: %d file(s)' % bad)
         return 1
-    print('PASS input_state_grab_check (%d state pointer(s) still taken under input/, in %d file(s); none new)'
-          % (left, len(found)))
+    print('PASS input_state_grab_check (under input/: %d state pointer(s) taken; '
+          'menu/ and ui/: the input state taken %d time(s) in %d file(s), none new)'
+          % (left, sum(outside.values()), len(outside)))
     return 0
 
 
@@ -184,16 +243,29 @@ def selftest():
                     f.write('x = current_input->input_state(data, 0);\n')
                 allowed = {'input/drivers/b_input.c': 2}
             with contextlib.redirect_stdout(io.StringIO()):
-                got = run(root, allowed)
+                got = run(root, allowed, {})
             if what.startswith('a menu file'):
                 os.remove(os.path.join(root, 'menu', 'm.c'))
+            if got != want:
+                print('selftest: %s: wanted %d, got %d' % (what, want, got))
+                bad += 1
+        # the menu and UI lists: a file over its number, and one under it
+        os.makedirs(os.path.join(root, 'ui'))
+        with open(os.path.join(root, 'ui', 'u.c'), 'w') as f:
+            f.write('a = input_state_get_ptr()->flags;\nb = input_state_get_ptr();\n')
+        for outside, want, what in (({'ui/u.c': 2}, 0, 'a UI file at its number'),
+                                    ({'ui/u.c': 1}, 1, 'a UI file over its number'),
+                                    ({'ui/u.c': 3}, 1, 'a UI file under its number'),
+                                    ({}, 1, 'a UI file that is not listed')):
+            with contextlib.redirect_stdout(io.StringIO()):
+                got = run(root, {'input/drivers/b_input.c': 2}, outside)
             if got != want:
                 print('selftest: %s: wanted %d, got %d' % (what, want, got))
                 bad += 1
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % len(cases))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 4))
     return 0
 
 

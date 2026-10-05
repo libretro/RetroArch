@@ -991,6 +991,10 @@ bool input_mouse_pin_absent(unsigned port);
  * an empty string when there is none. */
 const char *input_driver_get_ident(void);
 
+/* Whether the input driver can make the device vibrate on a key
+ * press. */
+bool input_driver_has_keypress_vibrate(void);
+
 /* Which input driver a window gets: input_driver_choice.c. */
 #if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
 void input_driver_init_windows(const char *joypad_name,
@@ -1059,6 +1063,12 @@ bool input_driver_native_keyboard_shown(void);
 bool input_driver_keyboard_mapping_blocked(void);
 bool input_driver_keyboard_line_enabled(void);
 void input_driver_keyboard_line_set(const char *utf8, size_t len);
+void input_driver_keyboard_line_append(const char *utf8, size_t len);
+/* The line of text being typed, for whoever draws it: its bytes or
+ * NULL, and where the cursor stands in them. And whether the text box
+ * has the focus, and not the on-screen keyboard. */
+const char *input_driver_keyboard_line_view(size_t *cursor);
+bool input_driver_keyboard_textbox_focus(void);
 void input_driver_keyboard_line_end(void);
 bool input_driver_pointer_input_blocked(void);
 bool input_driver_game_focus_enabled(void);

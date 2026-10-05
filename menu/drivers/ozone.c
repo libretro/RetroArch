@@ -7387,7 +7387,8 @@ OZONE_NOINLINE static void ozone_draw_osk(
    unsigned video_height = VIDEO_SCALE_H(video_dims);
    char message[2048];
    gfx_display_t *p_disp          = (gfx_display_t*)disp_userdata;
-   input_driver_state_t *input_st = input_state_get_ptr();
+   size_t line_cursor             = 0;
+   const char *line_text          = input_driver_keyboard_line_view(&line_cursor);
    struct menu_state *menu_st     = menu_state_get_ptr();
    const char *text               = str;
    unsigned text_color            = 0xffffffff;
@@ -7496,7 +7497,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
       text_color  = ozone_theme_light.text_sublabel_rgba;
    }
 
-   if (input_st->osk_textbox_focus)
+   if (input_driver_keyboard_textbox_focus())
    {
       float cursor_color[16];
       int cursor_s = ozone->dimensions.spacer_5px;
@@ -7529,14 +7530,12 @@ OZONE_NOINLINE static void ozone_draw_osk(
       }
    }
 
-   if (!draw_placeholder && input_st->keyboard_line.buffer)
+   if (!draw_placeholder && line_text)
    {
       char cursor_src[2048];
       char cursor_message[2048];
-      size_t ptr = input_st->keyboard_line.ptr;
+      size_t ptr = line_cursor;
 
-      if (ptr > input_st->keyboard_line.size)
-         ptr = input_st->keyboard_line.size;
       if (ptr >= sizeof(cursor_src))
          ptr = sizeof(cursor_src) - 1;
 
@@ -7545,7 +7544,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
        * (in-place use aborts under fortified strlcpy on
        * macOS and corrupts wide glyphs in the wideglyph
        * variant), so stage the source separately */
-      memcpy(cursor_src, input_st->keyboard_line.buffer, ptr);
+      memcpy(cursor_src, line_text, ptr);
       cursor_src[ptr] = '\0';
       (ozone->word_wrap)(cursor_message,
             sizeof(cursor_message),
@@ -7646,7 +7645,7 @@ OZONE_NOINLINE static void ozone_draw_osk(
                   : ozone->textures[OZONE_TEXTURE_CURSOR_BORDER],
             ozone->fonts.entries_label.font,
             menu_st->osk_grid,
-            input_st->osk_textbox_focus ? 44 : menu_st->osk_ptr,
+            input_driver_keyboard_textbox_focus() ? 44 : menu_st->osk_ptr,
             ozone->theme->text_rgba);
    }
 }
