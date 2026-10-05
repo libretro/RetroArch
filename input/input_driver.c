@@ -10052,6 +10052,75 @@ void input_driver_hold_core_input(void)
    input_driver_st.core_hold_armed = true;
 }
 
+/* Input polled without blocking, for netplay catching up. */
+void input_driver_set_nonblocking(bool on)
+{
+   if (on)
+      input_driver_st.flags |=  INP_FLAG_NONBLOCKING;
+   else
+      input_driver_st.flags &= ~INP_FLAG_NONBLOCKING;
+}
+
+/* A core's remaps changed global settings that are put back when the
+ * core is unloaded. */
+void input_driver_set_remapping_cache_active(void)
+{
+   input_driver_st.flags |= INP_FLAG_REMAPPING_CACHE_ACTIVE;
+}
+
+/* Every device's name and identity, copied out and back: for a
+ * configuration being swapped and restored around a core. */
+void input_driver_device_info_save(input_device_info_t *dst)
+{
+   memcpy(dst, input_driver_st.input_device_info,
+         sizeof(input_driver_st.input_device_info));
+}
+
+void input_driver_device_info_restore(const input_device_info_t *src)
+{
+   memcpy(input_driver_st.input_device_info, src,
+         sizeof(input_driver_st.input_device_info));
+}
+
+/* A port's sensor axis map, as read and as set. */
+const input_sensor_map_t *input_config_get_sensor_map(unsigned port)
+{
+   if (port >= MAX_INPUT_DEVICES)
+      return NULL;
+   return &input_driver_st.input_sensor_map[port];
+}
+
+void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map)
+{
+   if (port < MAX_INPUT_DEVICES && map)
+      input_driver_st.input_sensor_map[port] = *map;
+}
+
+#ifdef HAVE_OVERLAY
+/* Where an eight-way area's slopes are kept: the d-pad's or the face
+ * buttons', a low and a high one. An overlay's area points at them, so
+ * that a change of the setting reaches every area. */
+float *input_driver_overlay_eightway_slopes(bool abxy)
+{
+   return abxy ? input_driver_st.overlay_eightway_abxy_slopes
+               : input_driver_st.overlay_eightway_dpad_slopes;
+}
+#endif
+
+#if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
+/* The AI service presses button @id for a frame; and whether it is. */
+void input_driver_ai_gamepad_press(unsigned id)
+{
+   if (id < MAX_USERS)
+      input_driver_st.ai_gamepad_state[id] = 2;
+}
+
+bool input_driver_ai_gamepad_pressed(unsigned id)
+{
+   return id < MAX_USERS && input_driver_st.ai_gamepad_state[id];
+}
+#endif
+
 /* An overlay is up and has a page showing. */
 bool input_driver_overlay_active_page(void)
 {

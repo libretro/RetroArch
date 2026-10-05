@@ -2043,7 +2043,6 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
    retro_task_t *task                     = NULL;
    autoconfig_handle_t *autoconfig_handle = NULL;
    settings_t *settings                   = config_get_ptr();
-   input_driver_state_t *input_st         = input_state_get_ptr();
    bool notification_show_autoconfig      = settings ? settings->bools.notification_show_autoconfig : true;
    bool pause_on_disconnect               = settings ? settings->bools.pause_on_disconnect : true;
    bool menu_pause_libretro               = settings ? settings->bools.menu_pause_libretro : false;
@@ -2076,9 +2075,9 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
 
    /* Use display_name as name instead since autoconfig display_name
     * is destroyed already, and real name does not matter at this point */
-   if (input_st && *input_st->input_device_info[port].display_name)
+   if (input_config_get_device_display_name(port))
       strlcpy(autoconfig_handle->device_info.name,
-            input_st->input_device_info[port].display_name,
+            input_config_get_device_display_name(port),
             sizeof(autoconfig_handle->device_info.name));
    else if (name && *name)
       strlcpy(autoconfig_handle->device_info.name,

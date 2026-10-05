@@ -297,7 +297,6 @@ static void handle_translation_response(
    settings_t* settings              = config_get_ptr();
    uint32_t runloop_flags            = runloop_get_flags();
 #ifdef HAVE_ACCESSIBILITY
-   input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
    video_driver_state_t
       *video_st                      = video_state_get_ptr();
@@ -611,47 +610,47 @@ static void handle_translation_response(
                case 1:
 #ifdef HAVE_ACCESSIBILITY
                   if (key[0] == 'b')
-                     input_st->ai_gamepad_state[0]  = 2;
+                     input_driver_ai_gamepad_press(0);
                   else if (key[0] == 'y')
-                     input_st->ai_gamepad_state[1]  = 2;
+                     input_driver_ai_gamepad_press(1);
                   else if (key[0] == 'a')
-                     input_st->ai_gamepad_state[8]  = 2;
+                     input_driver_ai_gamepad_press(8);
                   else if (key[0] == 'x')
-                     input_st->ai_gamepad_state[9]  = 2;
+                     input_driver_ai_gamepad_press(9);
                   else if (key[0] == 'l')
-                     input_st->ai_gamepad_state[10] = 2;
+                     input_driver_ai_gamepad_press(10);
                   else if (key[0] == 'r')
-                     input_st->ai_gamepad_state[11] = 2;
+                     input_driver_ai_gamepad_press(11);
 #endif
                   break;
                case 2:
 #ifdef HAVE_ACCESSIBILITY
                   if (memcmp(key, "up", 2) == 0)
-                     input_st->ai_gamepad_state[4]  = 2;
+                     input_driver_ai_gamepad_press(4);
                   else if (memcmp(key, "l2", 2) == 0)
-                     input_st->ai_gamepad_state[12] = 2;
+                     input_driver_ai_gamepad_press(12);
                   else if (memcmp(key, "r2", 2) == 0)
-                     input_st->ai_gamepad_state[13] = 2;
+                     input_driver_ai_gamepad_press(13);
                   else if (memcmp(key, "l3", 2) == 0)
-                     input_st->ai_gamepad_state[14] = 2;
+                     input_driver_ai_gamepad_press(14);
                   else if (memcmp(key, "r3", 2) == 0)
-                     input_st->ai_gamepad_state[15] = 2;
+                     input_driver_ai_gamepad_press(15);
 #endif
                   break;
                case 4:
 #ifdef HAVE_ACCESSIBILITY
                   if (memcmp(key, "down", 4) == 0)
-                     input_st->ai_gamepad_state[5]  = 2;
+                     input_driver_ai_gamepad_press(5);
                   else if (memcmp(key, "left", 4) == 0)
-                     input_st->ai_gamepad_state[6]  = 2;
+                     input_driver_ai_gamepad_press(6);
 #endif
                   break;
                case 5:
 #ifdef HAVE_ACCESSIBILITY
                   if (memcmp(key, "start", 5) == 0)
-                     input_st->ai_gamepad_state[3]  = 2;
+                     input_driver_ai_gamepad_press(3);
                   else if (memcmp(key, "right", 5) == 0)
-                     input_st->ai_gamepad_state[7]  = 2;
+                     input_driver_ai_gamepad_press(7);
                   else
 #endif
                   if (memcmp(key, "pause", 5) == 0)
@@ -660,7 +659,7 @@ static void handle_translation_response(
                case 6:
 #ifdef HAVE_ACCESSIBILITY
                   if (memcmp(key, "select", 6) == 0)
-                     input_st->ai_gamepad_state[2]  = 2;
+                     input_driver_ai_gamepad_press(2);
 #endif
                   break;
                case 7:
@@ -1265,7 +1264,6 @@ static bool http_translate(
    settings_t *settings              = config_get_ptr();
    video_driver_state_t *video_st    = video_state_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
-   input_driver_state_t *input_st    = input_state_get_ptr();
 #endif
 #ifdef DEBUG
    access_state_t *access_st         = access_state_get_ptr();
@@ -1341,7 +1339,7 @@ static bool http_translate(
          rjsonwriter_raw(jsonwriter, " ", 1);
 #ifdef HAVE_ACCESSIBILITY
          rjsonwriter_rawf(jsonwriter, "%u",
-               (input_st->ai_gamepad_state[i] ? 1 : 0));
+               (input_driver_ai_gamepad_pressed(i) ? 1 : 0));
 #else
          rjsonwriter_rawf(jsonwriter, "%u", 0);
 #endif

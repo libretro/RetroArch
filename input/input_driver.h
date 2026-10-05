@@ -1112,6 +1112,18 @@ bool input_driver_overlay_active_page(void);
  * until each is let go: for the menu as it closes, so that the press
  * that closed it does nothing in the content. */
 void input_driver_hold_core_input(void);
+void input_driver_set_nonblocking(bool on);
+void input_driver_set_remapping_cache_active(void);
+void input_driver_device_info_save(input_device_info_t *dst);
+void input_driver_device_info_restore(const input_device_info_t *src);
+void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map);
+#ifdef HAVE_OVERLAY
+float *input_driver_overlay_eightway_slopes(bool abxy);
+#endif
+#if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
+void input_driver_ai_gamepad_press(unsigned id);
+bool input_driver_ai_gamepad_pressed(unsigned id);
+#endif
 void input_driver_keyboard_line_append(const char *utf8, size_t len);
 /* The line of text being typed, for whoever draws it: its bytes or
  * NULL, and where the cursor stands in them. And whether the text box

@@ -7943,7 +7943,6 @@ typedef struct
 static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
 {
    unsigned i, j;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    bkp->autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS,
          sizeof(retro_keybind_set));
@@ -7975,15 +7974,13 @@ static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
       }
    }
 
-   memcpy(bkp->device_info, input_st->input_device_info,
-         sizeof(bkp->device_info));
+   input_driver_device_info_save(bkp->device_info);
    return true;
 }
 
 static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
 {
    unsigned i, j;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    if (!bkp->autoconf_binds || !bkp->autoconf_labels)
       return;
@@ -8005,8 +8002,7 @@ static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
       }
    }
 
-   memcpy(input_st->input_device_info, bkp->device_info,
-         sizeof(bkp->device_info));
+   input_driver_device_info_restore(bkp->device_info);
 
    free(bkp->autoconf_binds);
    free(bkp->autoconf_labels);
@@ -10493,7 +10489,7 @@ bool input_remapping_load_file(void *data, const char *path)
    /* Whenever a remap file is loaded, subsequent
     * changes to global remap-related parameters
     * must be reset at the next core deinitialisation */
-   input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
+   input_driver_set_remapping_cache_active();
 
    return true;
 }
@@ -10854,8 +10850,7 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 void input_config_reset_autoconfig_binds(unsigned port)
 {
    size_t i;
-   input_driver_state_t *input_st;
-   input_sensor_map_t *map;
+   input_sensor_map_t map;
 
    if (port >= MAX_USERS)
       return;
@@ -10880,21 +10875,12 @@ void input_config_reset_autoconfig_binds(unsigned port)
    }
 
    /* Reset sensor axis map to default identity mapping */
-   input_st = input_state_get_ptr();
-   map      = &input_st->input_sensor_map[port];
    for (i = 0; i < 6; i++)
    {
-      map->axes[i].source = (int8_t)i;
-      map->axes[i].sign   = 1;
+      map.axes[i].source = (int8_t)i;
+      map.axes[i].sign   = 1;
    }
-}
-
-const input_sensor_map_t *input_config_get_sensor_map(unsigned port)
-{
-   input_driver_state_t *input_st = input_state_get_ptr();
-   if (port >= MAX_INPUT_DEVICES)
-      return NULL;
-   return &input_st->input_sensor_map[port];
+   input_driver_set_sensor_map(port, &map);
 }
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
@@ -10907,8 +10893,8 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds     = NULL;
    struct input_bind_label *labels = NULL;
-   input_driver_state_t *input_st;
-   input_sensor_map_t *map;
+   const input_sensor_map_t *current;
+   input_sensor_map_t map;
 
    if ((port >= MAX_USERS) || !config)
       return;
@@ -10934,8 +10920,9 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    }
 
    /* Parse sensor axis map overrides from autoconfig profile */
-   input_st = input_state_get_ptr();
-   map      = &input_st->input_sensor_map[port];
+   if (!(current = input_config_get_sensor_map(port)))
+      return;
+   map = *current;
    for (i = 0; i < 6; i++)
    {
       char tmp[16];
@@ -10947,12 +10934,13 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
             int code = (int)strtol(tmp + 1, NULL, 0);
             if (code >= 0 && code <= 5)
             {
-               map->axes[i].source = (int8_t)code;
-               map->axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
+               map.axes[i].source = (int8_t)code;
+               map.axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
             }
          }
       }
    }
+   input_driver_set_sensor_map(port, &map);
 }
 
 void input_config_parse_mouse_button(char *s,

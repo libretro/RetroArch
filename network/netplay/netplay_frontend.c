@@ -4130,7 +4130,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       if ((netplay->flags & NETPLAY_FLAG_CATCH_UP))
       {
          netplay->flags &= ~NETPLAY_FLAG_CATCH_UP;
-         input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
+         input_driver_set_nonblocking(false);
          driver_set_nonblock_state();
       }
       return;
@@ -4323,7 +4323,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
       if (netplay->self_frame_count + 1 >= lo_frame_count)
       {
          netplay->flags &= ~NETPLAY_FLAG_CATCH_UP;
-         input_state_get_ptr()->flags &= ~INP_FLAG_NONBLOCKING;
+         input_driver_set_nonblocking(false);
          driver_set_nonblock_state();
       }
 
@@ -4352,7 +4352,7 @@ static void netplay_sync_input_post_frame(netplay_t *netplay, bool stalled)
                /* We're definitely falling behind! */
                netplay->flags |= NETPLAY_FLAG_CATCH_UP;
                netplay->catch_up_time        = 0;
-               input_state_get_ptr()->flags |= INP_FLAG_NONBLOCKING;
+               input_driver_set_nonblocking(true);
                driver_set_nonblock_state();
             }
             else
@@ -8856,11 +8856,7 @@ bool init_netplay_deferred(const char *server, unsigned port, const char *mitm_s
 void input_poll_net(netplay_t *netplay)
 {
    if (!netplay_should_skip(netplay))
-   {
-      input_driver_state_t *input_st = input_state_get_ptr();
-
-      netplay_poll(netplay, input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT);
-   }
+      netplay_poll(netplay, input_driver_libretro_input_blocked());
 }
 
 /* Netplay polling callbacks */

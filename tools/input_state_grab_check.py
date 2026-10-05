@@ -142,14 +142,33 @@ def driver_calls(root):
 # Nothing under menu/ or ui/ takes it any more: the Apple UI hands its
 # mouse, pointer and touch events to the Cocoa input driver's own calls
 # (input/drivers/cocoa_input.h), and does not write the driver's data.
-OUTSIDE_DIRS = ('menu', 'ui')
+#
+# tasks/, network/ and the frontend files below too. What is left there
+# is the replay code being handed the input state by the commands, the
+# save-state and movie tasks and rewind, which is the frontend passing
+# its own state on.
+OUTSIDE_DIRS = ('menu', 'ui', 'tasks', 'network')
+OUTSIDE_FILES = ('command.c', 'configuration.c', 'state_manager.c')
 OUTSIDE_ALLOWED = {
+    'command.c':           4,
+    'state_manager.c':     3,
+    'tasks/task_movie.c':  3,
+    'tasks/task_save.c':   7,
 }
 INPUT_STATE = re.compile(r'\binput_state_get_ptr\s*\(\s*\)')
 
 
 def count_outside(root):
     found = {}
+    for rel in OUTSIDE_FILES:
+        path = os.path.join(root, rel)
+        try:
+            text = open(path, encoding='utf-8', errors='replace').read()
+        except OSError:
+            continue
+        n = len(INPUT_STATE.findall(strip_comments(text)))
+        if n:
+            found[rel] = n
     for top in OUTSIDE_DIRS:
         for d, dirs, files in os.walk(os.path.join(root, top)):
             if 'test' in dirs:
@@ -207,7 +226,7 @@ def run(root, allowed, outside_allowed=None):
         print('FAIL input_state_grab_check: %d file(s)' % bad)
         return 1
     print('PASS input_state_grab_check (under input/: %d state pointer(s) taken; '
-          'menu/ and ui/: the input state taken %d time(s) in %d file(s), none new)'
+          'outside it: the input state taken %d time(s) in %d file(s), none new)'
           % (left, sum(outside.values()), len(outside)))
     return 0
 

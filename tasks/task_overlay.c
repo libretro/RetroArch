@@ -469,7 +469,6 @@ static void task_overlay_desc_populate_eightway_config(
       unsigned ol_idx, unsigned desc_idx)
 {
    size_t _len;
-   input_driver_state_t *input_st = input_state_get_ptr();
    overlay_eightway_config_t *eightway;
    char conf_key[64];
    char *str;
@@ -500,8 +499,8 @@ static void task_overlay_desc_populate_eightway_config(
          BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_LEFT);
          BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-         eightway->slope_low  = &input_st->overlay_eightway_dpad_slopes[0];
-         eightway->slope_high = &input_st->overlay_eightway_dpad_slopes[1];
+         eightway->slope_low  = &input_driver_overlay_eightway_slopes(false)[0];
+         eightway->slope_high = &input_driver_overlay_eightway_slopes(false)[1];
          break;
 
       case OVERLAY_TYPE_ABXY_AREA:
@@ -510,8 +509,8 @@ static void task_overlay_desc_populate_eightway_config(
          BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_Y);
          BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_A);
 
-         eightway->slope_low  = &input_st->overlay_eightway_abxy_slopes[0];
-         eightway->slope_high = &input_st->overlay_eightway_abxy_slopes[1];
+         eightway->slope_low  = &input_driver_overlay_eightway_slopes(true)[0];
+         eightway->slope_high = &input_driver_overlay_eightway_slopes(true)[1];
          break;
 
       default:
