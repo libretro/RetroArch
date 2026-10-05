@@ -1237,10 +1237,30 @@ static bool retro_task_sync_primitives_new(void)
    return false;
 }
 
+/* A switch from the regular queue hands over tasks it never counted.
+ * Called before any worker can touch the lists. */
+static void retro_task_threaded_count_lists(void)
+{
+   retro_task_t *task;
+   int running  = 0;
+   int finished = 0;
+   for (task = tasks_running.front; task; task = task->next)
+      running++;
+   for (task = tasks_finished.front; task; task = task->next)
+      finished++;
+   /* Leftovers of an earlier threaded gather, as it marks them */
+   if (!finished && tasks_retiring.front)
+      finished = 1;
+   retro_atomic_store_release_int(&tasks_running_count,  running);
+   retro_atomic_store_release_int(&tasks_finished_count, finished);
+}
+
 static bool retro_task_threaded_init(void)
 {
    if (!retro_task_sync_primitives_new())
       return false;
+
+   retro_task_threaded_count_lists();
 
    if (!(worker_self = (struct task_worker*)calloc(1, sizeof(*worker_self))))
    {
@@ -1495,6 +1515,7 @@ static bool retro_task_gcd_init(void)
 
    slock_lock(running_lock);
    worker_continue = true;
+   retro_task_threaded_count_lists();
    for (task = tasks_running.front; task; task = task->next)
    {
       if (task_is_main_thread_task(task))
