@@ -267,18 +267,21 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
 {
    uintptr_t new_handle = 0;
 
-   if (s->handle && s->fmt == fmt && s->can_update && s->num_slots)
+   if (s->handle && s->fmt == fmt && s->can_update)
    {
-      switch (video_driver_texture_update(s->handle, &s->img))
+      enum video_texture_update u = video_driver_texture_update(
+            s->handle, &s->img);
+      if (u == VIDEO_TEXTURE_UPDATE_DONE)
+         return GFX_SURFACE_SUBMIT_DONE;
+      /* A still has no next frame to make up for a dropped one: it
+       * loads instead. */
+      if (u == VIDEO_TEXTURE_UPDATE_DROPPED)
       {
-         case VIDEO_TEXTURE_UPDATE_DONE:
-            return GFX_SURFACE_SUBMIT_DONE;
-         case VIDEO_TEXTURE_UPDATE_DROPPED:
+         if (s->num_slots)
             return GFX_SURFACE_SUBMIT_DROPPED;
-         default:
-            break;
       }
-      s->can_update = 0;
+      else
+         s->can_update = 0;
    }
 
    /* A producer still writing lent memory of the texture about to be
@@ -337,6 +340,17 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    else if (s->node.dropped)
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
+      /* A still has no next frame to make up for it: sent again, its
+       * pixels and payload kept until it lands. */
+      if (!s->num_slots && !s->dying)
+      {
+         s->node.dropped = 0;
+         if (video_thread_async_post(&s->node))
+         {
+            s->inflight = 1;
+            return;
+         }
+      }
       s->dropped    = 1;
    }
 
@@ -369,8 +383,7 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
 #ifdef HAVE_THREADS
    if (video_driver_thread_wrapper_active())
    {
-      bool need_load = !s->handle || s->fmt != fmt || !s->can_update
-         || !s->num_slots;
+      bool need_load = !s->handle || s->fmt != fmt || !s->can_update;
 
       s->node.kind    = need_load
             ? VIDEO_THREAD_ASYNC_LOAD : VIDEO_THREAD_ASYNC_UPDATE;

@@ -4372,7 +4372,14 @@ static void lane_surface_external(void)
             dst = (uint16_t*)s->slots[slot];
             for (i = 0; i < n * 4; i++)
                dst[i] = (uint16_t)(0x3c00u + ((i + k) & 0xff));
-            r = gfx_surface_submit(s, slot, rgba);
+            /* a dropped frame stays in its slot: sent again */
+            for (tries = 0; tries < 16; tries++)
+            {
+               r = gfx_surface_submit(s, slot, rgba);
+               if (r != GFX_SURFACE_SUBMIT_DROPPED)
+                  break;
+               run_frames(1);
+            }
             CHECK(r == GFX_SURFACE_SUBMIT_DONE
                   || r == GFX_SURFACE_SUBMIT_QUEUED,
                   "fp16 lane: stream submit %u returned %d", k, r);
@@ -4474,7 +4481,16 @@ static void lane_surface_lend(void)
          for (i = 0; i < n; i++)
             s->slots[slot][i] = 0xff000000u | (uint32_t)(i * 2654435761u
                   >> 8) | k;
-         r = gfx_surface_submit(s, slot, rgba);
+         /* A driver with no staging free drops the frame, which stays
+          * in the slot: submitted again a frame later, as a producer
+          * does. */
+         for (tries = 0; tries < 16; tries++)
+         {
+            r = gfx_surface_submit(s, slot, rgba);
+            if (r != GFX_SURFACE_SUBMIT_DROPPED)
+               break;
+            run_frames(1);
+         }
          CHECK(r == GFX_SURFACE_SUBMIT_DONE || r == GFX_SURFACE_SUBMIT_QUEUED,
                "surface lend lane: submit %u returned %d", k, r);
          for (tries = 0; tries < 16 && s->inflight; tries++)

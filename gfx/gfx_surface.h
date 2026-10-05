@@ -53,7 +53,7 @@ RETRO_BEGIN_DECLS
  *
  * An update the driver takes without uploading is DROPPED, or under the
  * wrapper reaches release() with dropped set. A surface without slots
- * always loads, so a still is never dropped.
+ * is never left on a dropped frame: it loads, or is sent again.
  *
  * The struct is public so producers can address the slots directly;
  * everything else is the surface's. */
