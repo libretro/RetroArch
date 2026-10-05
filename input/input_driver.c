@@ -37,6 +37,9 @@
 #endif
 
 #include "input_driver.h"
+#ifdef HAVE_THREADS
+#include "input_key_lane.h"
+#endif
 #include "common/input_device_pins.h"
 #ifdef HAVE_OVERLAY
 #include "../led/led_defines.h"
@@ -9556,7 +9559,7 @@ void input_driver_read_sensor_snapshot(float *gyro3,
 }
 
 #ifdef HAVE_THREADS
-static void input_key_lane_take(void);
+static void input_key_lane_poll(void);
 #endif
 
 /* RetroPad buttons a first press is looked for on: all but the d-pad. */
@@ -10603,7 +10606,7 @@ void input_driver_poll(void)
 
 #ifdef HAVE_THREADS
    /* the keys another thread has reported since the last poll */
-   input_key_lane_take();
+   input_key_lane_poll();
 #endif
 
    /* When the devices were read. The statistics show how old the input
@@ -12470,143 +12473,25 @@ static const char *accessibility_lut_name(char key)
  * the poll that takes them is the first that could have seen them.
  *
  * One reader, the poll, and any number of writers - in practice the
- * video thread - with no lock between them (see input_key_lane below).
- * Sixty-four events between two polls is more than a keyboard sends;
- * past that a press is dropped and counted, and a release is kept. */
+ * video thread - with no lock between them: see input_key_lane.h, which
+ * also says what a full lane does with a press and with a release. */
 static void input_keyboard_event_now(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device);
 
 #ifdef HAVE_THREADS
-#define INPUT_KEY_LANE_SIZE 64 /* a power of two */
-#define INPUT_KEY_WORDS     ((RETROK_LAST + 31) / 32)
+static input_key_lane_t input_key_lane;
+static bool input_key_lane_warned;
 
-/* A bounded queue of many writers and one reader, without a lock: each
- * slot has a sequence number that says whose turn it is. A writer
- * claims the next slot by moving the tail with a compare-and-swap,
- * fills it, and hands it to the reader through its sequence; the
- * reader hands it back the same way. Writers never wait on each other
- * - one that loses the race for a slot takes the next - and the reader
- * never waits on a writer: a slot not yet filled is simply not there
- * yet. Each writer's events stay in the order it sent them.
- *
- * A slot's sequence is kept less its index, so that the zeroed queue
- * the program starts with is the queue's first state.
- *
- * When it is full, a key down is dropped and counted; a key up is not
- * lost: it is noted in a bitmap the poll turns back into the release,
- * once the queue is drained, for a key it last saw go down. A full
- * queue cannot leave a key held. */
-static struct
+/* The poll's: the events that came since the last one, then the kept
+ * releases whose presses have been given out. */
+static void input_key_lane_poll(void)
 {
-   struct
-   {
-      retro_atomic_int_t seq;    /* less the slot's index */
-      uint32_t character;
-      unsigned code;
-      unsigned device;
-      uint16_t mod;
-      bool     down;
-   } slot[INPUT_KEY_LANE_SIZE];
-   retro_atomic_int_t tail;      /* next to claim: the writers' */
-   int                head;      /* next to take: the poll's alone */
-   retro_atomic_int_t dropped;
-   retro_atomic_int_t released[INPUT_KEY_WORDS]; /* ups that did not fit */
-   bool warned;
-} input_key_lane;
+   input_key_lane_take(&input_key_lane, input_keyboard_event_now);
 
-/* Keys the frontend last saw go down, for the ups above: the main
- * thread's alone. */
-static uint32_t input_keys_down[INPUT_KEY_WORDS];
-
-static void input_key_lane_push(bool down, unsigned code,
-      uint32_t character, uint16_t mod, unsigned device)
-{
-   int pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
-
-   for (;;)
-   {
-      unsigned i = (unsigned)pos & (INPUT_KEY_LANE_SIZE - 1);
-      int seq    = retro_atomic_load_acquire_int(
-            &input_key_lane.slot[i].seq) + (int)i;
-      int dif    = seq - pos;
-
-      if (dif == 0)
-      {
-         if (retro_atomic_cas_int(&input_key_lane.tail, pos, pos + 1))
-         {
-            input_key_lane.slot[i].down      = down;
-            input_key_lane.slot[i].code      = code;
-            input_key_lane.slot[i].character = character;
-            input_key_lane.slot[i].mod       = mod;
-            input_key_lane.slot[i].device    = device;
-            retro_atomic_store_release_int(&input_key_lane.slot[i].seq,
-                  pos + 1 - (int)i);
-            return;
-         }
-         pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
-      }
-      else if (dif < 0)
-         break;                  /* full */
-      else
-         pos = retro_atomic_load_relaxed_int(&input_key_lane.tail);
-   }
-
-   retro_atomic_fetch_add_int(&input_key_lane.dropped, 1);
-   if (!down && code < RETROK_LAST)
-      retro_atomic_fetch_or_int(&input_key_lane.released[code >> 5],
-            (int)(1u << (code & 31)));
-}
-
-/* The poll's: every event that has come since the last one, then the
- * releases that did not fit. */
-static void input_key_lane_take(void)
-{
-   unsigned w;
-
-   for (;;)
-   {
-      int pos    = input_key_lane.head;
-      unsigned i = (unsigned)pos & (INPUT_KEY_LANE_SIZE - 1);
-      int seq    = retro_atomic_load_acquire_int(
-            &input_key_lane.slot[i].seq) + (int)i;
-      bool down;
-      unsigned code, device;
-      uint32_t character;
-      uint16_t mod;
-
-      if (seq != pos + 1)
-         break;                  /* nothing more, or not filled yet */
-
-      down      = input_key_lane.slot[i].down;
-      code      = input_key_lane.slot[i].code;
-      character = input_key_lane.slot[i].character;
-      mod       = input_key_lane.slot[i].mod;
-      device    = input_key_lane.slot[i].device;
-      /* the slot is free before the event is acted on */
-      retro_atomic_store_release_int(&input_key_lane.slot[i].seq,
-            pos + INPUT_KEY_LANE_SIZE - (int)i);
-      input_key_lane.head = pos + 1;
-      input_keyboard_event_now(down, code, character, mod, device);
-   }
-
-   for (w = 0; w < INPUT_KEY_WORDS; w++)
-   {
-      uint32_t ups;
-      unsigned b;
-      if (!retro_atomic_load_relaxed_int(&input_key_lane.released[w]))
-         continue;
-      ups = (uint32_t)retro_atomic_exchange_int(
-            &input_key_lane.released[w], 0);
-      for (b = 0; b < 32; b++)
-         if ((ups & (1u << b)) && (input_keys_down[w] & (1u << b)))
-            input_keyboard_event_now(false, w * 32 + b, 0, 0,
-                  RETRO_DEVICE_KEYBOARD);
-   }
-
-   if (     !input_key_lane.warned
+   if (     !input_key_lane_warned
          && retro_atomic_load_relaxed_int(&input_key_lane.dropped))
    {
-      input_key_lane.warned = true;
+      input_key_lane_warned = true;
       RARCH_WARN("[Input] More than %d keyboard events came between two"
             " polls: key presses past that were dropped, releases"
             " kept.\n", INPUT_KEY_LANE_SIZE);
@@ -12625,9 +12510,13 @@ void input_keyboard_event(bool down, unsigned code,
 #ifdef HAVE_THREADS
    if (!task_is_on_main_thread())
    {
-      input_key_lane_push(down, code, character, mod, device);
+      input_key_lane_push(&input_key_lane, down, code, character, mod,
+            device);
       return;
    }
+   /* a press here is newer than a release the lane kept for its key */
+   if (down)
+      input_key_lane_take_back_release(&input_key_lane, code);
 #endif
    input_keyboard_event_now(down, code, character, mod, device);
 }
@@ -12641,13 +12530,7 @@ static void input_keyboard_event_now(bool down, unsigned code,
       uint32_t character, uint16_t mod, unsigned device)
 {
 #ifdef HAVE_THREADS
-   if (code < RETROK_LAST)
-   {
-      if (down)
-         input_keys_down[code >> 5] |=  (1u << (code & 31));
-      else
-         input_keys_down[code >> 5] &= ~(1u << (code & 31));
-   }
+   input_key_lane_note(&input_key_lane, down, code, false);
 #endif
    input_keyboard_event_now_act(down, code, character, mod, device);
 }

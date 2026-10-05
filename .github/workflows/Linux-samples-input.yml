@@ -429,6 +429,29 @@ jobs:
           make clean
           echo "[pass] bind_trigger_axis_test (ASan)"
 
+      - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/key_lane
+        run: |
+          set -eu
+          # Keyboard events reported off the frontend's thread wait in
+          # a lock-free queue for the poll (input/input_key_lane.h).
+          # The test includes that header and drives it: a writer
+          # stopped right after claiming a slot with the queue full
+          # behind it and a release that did not fit (the key must not
+          # be left held); a kept release never undoing a newer press;
+          # the counters across their wrap (UBSan); four writers at
+          # once, every event exactly once and in order (TSan).
+          make clean all
+          timeout 60 ./key_lane_test
+          make clean all SANITIZER=undefined,address
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./key_lane_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./key_lane_test
+          make clean
+          echo "[pass] key_lane_test"
+
       - name: Build and run device_registry_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/device_registry
