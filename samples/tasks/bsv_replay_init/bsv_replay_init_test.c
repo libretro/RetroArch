@@ -98,6 +98,19 @@
  *             checkpoints: an encoded length past the stored bytes, a
  *             superblock sequence longer than the previous one, and
  *             a superblock or block index that was never defined.
+ *  skips      a legacy checkpoint whose size wraps or runs past the
+ *             file: a seek finds no checkpoint in it, and a timeline
+ *             compare does not call it the same timeline.
+ *  legacy_short  a legacy checkpoint frame cut short: no buffer, and no
+ *             size left claiming one.
+ *  short_block   a savestate's replay block shorter than a replay
+ *             header is refused before the header is read.
+ *  write_oom  a checkpoint the core asks too much memory for records no
+ *             size for the buffer it could not get.
+ *  decode_fail_invalid  (STATESTREAM) a recorder's handle whose decode
+ *             fails no longer claims cur_save matches its sequence.
+ *  index_hash_missing   (STATESTREAM) collecting an object whose hash
+ *             its map no longer holds adds nothing to the map.
  */
 
 #include <stdio.h>
@@ -124,6 +137,7 @@
 #ifdef HAVE_STATESTREAM
 #include "../../../input/bsv/uint32s_index.h"
 #include <array/rbuf.h>
+#include <array/rhmap.h>
 #endif
 
 /* The checkpoint lane asks for more memory than exists and expects
@@ -202,7 +216,12 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       msgs_ended++;
 }
 
-size_t core_serialize_size(void) { return STATE_SIZE; }
+/* The write_checkpoint lane has the core ask for more than exists. */
+static size_t serialize_size_override = 0;
+size_t core_serialize_size(void)
+{
+   return serialize_size_override ? serialize_size_override : STATE_SIZE;
+}
 bool core_serialize(retro_ctx_serialize_info_t *info)
 {
    memcpy(info->data, core_state, STATE_SIZE);
@@ -891,6 +910,64 @@ static void lane_decode_fail_ends(void)
    bsv_movie_free(h);
    lane_done("decode_fail_ends", NULL);
 }
+
+/* A recorder's handle has cur_save matching its superblock sequence
+ * (cur_save_valid).  A decode that fails part way has updated the
+ * sequence but not cur_save, so the claim no longer holds. */
+static void lane_decode_fail_invalid(void)
+{
+   static const uint8_t seq1[]  = { 0x00, 0x00, 0x03, 0x91, 0x00 };
+   static const uint8_t no_sb[] = { 0x00, 0x00, 0x03, 0x91, 0x05 };
+   static uint8_t buf[12 + 64];
+   bsv_movie_t *h;
+
+   reset_counters();
+   input_st.bsv_movie_state.flags = 0;
+   h = statestream_handle(NULL, buf, seq1, sizeof(seq1), sizeof(seq1));
+   CHECK(load_statestream(h), "one-entry sequence failed to load");
+   /* as the recorder leaves it after writing a checkpoint */
+   h->cur_save_valid = true;
+   statestream_handle(h, buf, no_sb, sizeof(no_sb), sizeof(no_sb));
+   CHECK(!load_statestream(h), "sequence naming an unknown superblock loaded");
+   CHECK(!h->cur_save_valid,
+         "cur_save still claimed valid after a failed decode");
+   input_st.bsv_movie_state.flags = 0;
+   bsv_movie_free(h);
+   lane_done("decode_fail_invalid", NULL);
+}
+
+/* Collecting an object whose hash its map no longer names (a hashes[]
+ * entry out of step with the map, here the hash of an object whose key
+ * was deleted): the lookup must not add the key back.  A deleted key's
+ * slot keeps its old bucket, naming the other object, so a re-added key
+ * would come back with a bucket the collection cannot empty. */
+static void lane_index_hash_missing(void)
+{
+   uint32s_index_t *idx = uint32s_index_new(1, 2, 2);
+   uint32_t obj;
+   uint32_t stale;
+   size_t keys;
+
+   reset_counters();
+   /* frame 1: object 1; frame 2: object 2, the one collected; frame 3:
+    * object 3, which closes frame 2 for the commit */
+   obj = 0x11; uint32s_index_insert(idx, &obj, 1);
+   obj = 0x22; uint32s_index_insert(idx, &obj, 2);
+   obj = 0x33; uint32s_index_insert(idx, &obj, 3);
+   stale = idx->hashes[1];
+   CHECK(RHMAP_DEL(idx->index, stale), "fixture key was not in the map");
+   idx->hashes[2] = stale;
+   keys = RHMAP_LEN(idx->index);
+   uint32s_index_commit(idx);
+   CHECK(idx->objects[2] == NULL, "object 2 was not collected");
+   CHECK(!RHMAP_HAS(idx->index, stale),
+         "collecting it added its missing hash back to the map");
+   CHECK(RHMAP_LEN(idx->index) == keys,
+         "collecting it changed the map from %u keys to %u",
+         (unsigned)keys, (unsigned)RHMAP_LEN(idx->index));
+   uint32s_index_free(idx);
+   lane_done("index_hash_missing", NULL);
+}
 #endif
 
 /* Defined in bsvmovie.c; no header declares it. */
@@ -1019,6 +1096,123 @@ static void lane_checkpoint_seek(void)
    lane_done("checkpoint_seek", NULL);
 }
 
+/* A legacy checkpoint frame's size is the file's.  One that wraps
+ * (2^64 - 8 seeks back into its own frame) or runs past the file
+ * leaves nothing to seek to and nothing to compare. */
+static void lane_skips(void)
+{
+   static uint8_t seekf[REPLAY_HEADER_LEN_BYTES + 4 + 8 + 16];
+   static uint8_t timef[REPLAY_HEADER_LEN_BYTES + 4 + 8 + 4];
+   uint64_t wrap = swap_if_big64(~(uint64_t)7);
+   uint64_t past = swap_if_big64((uint64_t)1 << 62);
+   uint8_t *p;
+   bsv_movie_t *h;
+
+   reset_counters();
+
+   /* frame 0: no keys, no inputs, a checkpoint of 2^64 - 8 bytes */
+   p    = seekf + REPLAY_HEADER_LEN_BYTES;
+   p[3] = REPLAY_TOKEN_CHECKPOINT_FRAME;
+   memcpy(p + 4, &wrap, sizeof(wrap));
+   h = mem_handle(seekf, sizeof(seekf), 1);
+   input_st.bsv_movie_state_handle = h;
+   input_st.bsv_movie_state.flags  = 0;
+   CHECK(!movie_seek_to_frame(&input_st, 5),
+         "seek landed on a checkpoint whose size wraps");
+   input_st.bsv_movie_state_handle = NULL;
+   bsv_movie_free(h);
+
+   /* a checkpoint of 2^62 bytes, then a regular frame; compared with
+    * itself */
+   p    = timef + REPLAY_HEADER_LEN_BYTES;
+   p[3] = REPLAY_TOKEN_CHECKPOINT_FRAME;
+   memcpy(p + 4, &past, sizeof(past));
+   p[12 + 3] = REPLAY_TOKEN_REGULAR_FRAME;
+   h = mem_handle(timef, sizeof(timef), 1);
+   intfstream_seek(h->file, (int64_t)sizeof(timef), SEEK_SET);
+   CHECK(!replay_check_same_timeline(h, timef, sizeof(timef)),
+         "a checkpoint size past the file compared as the same timeline");
+   bsv_movie_free(h);
+
+   input_st.bsv_movie_state.flags = 0;
+   lane_done("skips", NULL);
+}
+
+/* A legacy checkpoint frame cut short: the buffer it was read into is
+ * freed, and no size may go on claiming it. */
+static void lane_legacy_short(void)
+{
+   static uint8_t legacy[1 + 1 + 8 + 10];
+   uint64_t size = swap_if_big64(64);
+   bsv_movie_t *h;
+   bool ret;
+
+   reset_counters();
+   legacy[0] = 0;                              /* no key events */
+   legacy[1] = REPLAY_TOKEN_CHECKPOINT_FRAME;
+   memcpy(legacy + 2, &size, sizeof(size));
+   input_st.bsv_movie_state.flags = 0;
+   h       = (bsv_movie_t*)calloc(1, sizeof(*h));
+   h->file = intfstream_open_memory(legacy, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(legacy));
+   ret = bsv_movie_read_next_events(h, REPLAY_CPBEHAVIOR_DESERIALIZE, true);
+   CHECK(!ret, "truncated legacy checkpoint loaded");
+   CHECK(input_st.bsv_movie_state.flags & BSV_FLAG_MOVIE_END,
+         "truncated legacy checkpoint did not end the movie");
+   CHECK(!h->cur_save && h->cur_save_size == 0,
+         "cur_save_size %u with no buffer", (unsigned)h->cur_save_size);
+   bsv_movie_free(h);
+   input_st.bsv_movie_state.flags = 0;
+   lane_done("legacy_short", NULL);
+}
+
+/* A savestate's replay block shorter than a replay header: refused
+ * before the header is read past the block's end (ASan reports the
+ * read). */
+static void lane_short_block(void)
+{
+   static uint8_t file[1 << 12];
+   uint8_t *block = (uint8_t*)malloc(8);
+   int32_t loaded_len = swap_if_big32(REPLAY_HEADER_LEN_BYTES);
+   bsv_movie_t *h = mem_handle(file, sizeof(file), 2);
+
+   reset_counters();
+   memcpy(block, &loaded_len, 4);
+   memset(block + 4, 0, 4);
+   h->identifier = 0;
+   input_st.bsv_movie_state_handle = h;
+   input_st.bsv_movie_state.flags  = BSV_FLAG_MOVIE_RECORDING;
+   CHECK(!replay_set_serialized_data(&input_st, block, 8),
+         "an 8-byte replay block was accepted");
+   input_st.bsv_movie_state_handle = NULL;
+   input_st.bsv_movie_state.flags  = 0;
+   bsv_movie_free(h);
+   free(block);
+   lane_done("short_block", NULL);
+}
+
+/* The core asks for more state than can be allocated: the checkpoint
+ * fails, and no size is left on the buffer it could not get (the exit
+ * swaps it into last_save). */
+static void lane_write_oom(void)
+{
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+   int64_t ret;
+
+   reset_counters();
+   serialize_size_override = (size_t)1 << (sizeof(size_t) * 8 - 2);
+   ret = bsv_movie_write_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_NONE,
+         REPLAY_CHECKPOINT2_ENCODING_RAW);
+   serialize_size_override = 0;
+   CHECK(ret < 0, "an unallocatable checkpoint was written");
+   CHECK(!h->cur_save && !h->last_save
+         && h->cur_save_size == 0 && h->last_save_size == 0,
+         "sizes %u/%u left for buffers that were never allocated",
+         (unsigned)h->cur_save_size, (unsigned)h->last_save_size);
+   bsv_movie_free(h);
+   lane_done("write_oom", NULL);
+}
+
 int main(int argc, char **argv)
 {
    const char *path = "bsv_replay_init_test.replay";
@@ -1043,12 +1237,18 @@ int main(int argc, char **argv)
    lane_header_no_layout();
    lane_no_index();
    lane_decode_fail_ends();
+   lane_decode_fail_invalid();
+   lane_index_hash_missing();
 #endif
    lane_timeline_inputs();
    lane_state_replay_len();
    lane_event_capacity();
    lane_seek_no_checkpoint();
    lane_checkpoint_seek();
+   lane_skips();
+   lane_legacy_short();
+   lane_short_block();
+   lane_write_oom();
 
    filestream_delete(path);
    task_queue_deinit();
