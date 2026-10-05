@@ -502,7 +502,6 @@ static int16_t x_input_state(
    {
       unsigned mouse_port  = port;
       x11_input_t *x11     = (x11_input_t*)data;
-      settings_t *settings = config_get_ptr();
 
 #ifdef HAVE_XI2
       if (!x11->di)
@@ -519,7 +518,7 @@ static int16_t x_input_state(
                unsigned i;
                int16_t ret = 0;
 
-               if (settings->uints.input_mouse_index[port] == 0)
+               if (input_config_get_mouse_index(port) == 0)
                {
                   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                   {
@@ -556,7 +555,7 @@ static int16_t x_input_state(
                         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                      )
                      return 1;
-                  else if (settings->uints.input_mouse_index[port] == 0)
+                  else if (input_config_get_mouse_index(port) == 0)
                   {
                      if (x_mouse_button_pressed(x11, port, binds[port][id].mbutton))
                         return 1;
@@ -853,7 +852,6 @@ static void x_input_poll(void *data)
    XIButtonState buttons_return;
    XIModifierState modifiers_return;
    XIGroupState group_return;
-   settings_t *settings     = config_get_ptr();
    unsigned mouse_dev_idx   = 0;
    unsigned mouse_ports     = x11->di ? MAX_MOUSE_IDX : 1;
 #else
@@ -922,7 +920,7 @@ static void x_input_poll(void *data)
       }
       else
       {
-         mouse_dev_idx = settings->uints.input_mouse_index[mouse_port];
+         mouse_dev_idx = input_config_get_mouse_index(mouse_port);
          if (mouse_dev_idx >= MAX_INPUT_DEVICES || x11->mouse_dev_list[mouse_dev_idx] < 0)
             return;
 

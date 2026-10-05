@@ -1013,6 +1013,22 @@ void input_driver_init_wayland(const char *joypad_name, void *window_data,
 void input_driver_init_sdl1(const char *joypad_name,
       input_driver_t **input, void **input_data);
 #endif
+/* The settings a driver reads, by name: a driver does not take the
+ * settings (config_get_ptr()) and pick a field out. */
+unsigned input_config_get_mouse_index(unsigned port);
+unsigned input_config_get_joypad_index(unsigned port);
+unsigned input_config_get_rumble_gain(void);
+bool input_config_get_nowinkey_enable(void);
+bool input_config_get_keyboard_background(void);
+bool input_config_get_winraw_xinput_enable(void);
+bool input_config_get_winraw_player_lights(void);
+bool input_config_get_sdl3_system_keyboard(void);
+bool input_config_overlay_configured(void);
+const char *input_config_get_joypad_driver(void);
+const char *input_config_get_keyboard_layout(void);
+const char *input_config_get_autoconfig_dir(void);
+const char *input_config_get_test_input_file(bool joypad);
+
 /* What a driver may ask the frontend, and tell it, without taking its
  * state (input_state_get_ptr()): each is one thing, by name. */
 void input_driver_set_native_keyboard_available(bool available);

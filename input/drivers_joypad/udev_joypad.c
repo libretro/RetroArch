@@ -853,9 +853,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    /* Set rumble gain here, if supported */
    if (test_bit(FF_RUMBLE, ffbit))
    {
-      settings_t *settings = config_get_ptr();
-      unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
-                                      : DEFAULT_RUMBLE_GAIN;
+      unsigned rumble_gain = input_config_get_rumble_gain();
       udev_set_rumble_gain(p, rumble_gain);
    }
 #endif

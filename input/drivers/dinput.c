@@ -173,7 +173,7 @@ static void *dinput_init(const char *joypad_driver)
 
    if (di->keyboard)
    {
-      bool input_nowinkey_enable = config_get_ptr()->bools.input_nowinkey_enable;
+      bool input_nowinkey_enable = input_config_get_nowinkey_enable();
       DWORD flags                = DISCL_NONEXCLUSIVE | DISCL_FOREGROUND;
       if (input_nowinkey_enable)
          flags                  |= DISCL_NOWINKEY;
@@ -501,7 +501,6 @@ static int16_t dinput_input_state(
       unsigned idx,
       unsigned id)
 {
-   settings_t *settings;
    struct dinput_input *di    = (struct dinput_input*)data;
 
    if (port < MAX_USERS)
@@ -511,13 +510,12 @@ static int16_t dinput_input_state(
          case RETRO_DEVICE_JOYPAD:
             {
                int16_t ret = 0;
-               settings    = config_get_ptr();
 
                if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
                {
                   unsigned i;
 
-                  if (settings->uints.input_mouse_index[port] == 0)
+                  if (input_config_get_mouse_index(port) == 0)
                   {
                      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
                      {
@@ -554,7 +552,7 @@ static int16_t dinput_input_state(
                            && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
                         )
                         return 1;
-                     else if (settings->uints.input_mouse_index[port] == 0)
+                     else if (input_config_get_mouse_index(port) == 0)
                      {
                         if (dinput_mouse_button_pressed(di, port, binds[port][id].mbutton))
                            return 1;
@@ -598,8 +596,7 @@ static int16_t dinput_input_state(
             }
             break;
          case RARCH_DEVICE_MOUSE_SCREEN:
-            settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[port] != 0)
+            if (input_config_get_mouse_index(port) != 0)
                break;
 
             switch (id)
@@ -613,8 +610,7 @@ static int16_t dinput_input_state(
             }
             /* fall-through */
          case RETRO_DEVICE_MOUSE:
-            settings                   = config_get_ptr();
-            if (settings->uints.input_mouse_index[port] == 0)
+            if (input_config_get_mouse_index(port) == 0)
             {
                switch (id)
                {
@@ -773,8 +769,7 @@ static int16_t dinput_input_state(
                            return 1;
                         else
                         {
-                           settings = config_get_ptr();
-                           if (settings->uints.input_mouse_index[port] == 0)
+                           if (input_config_get_mouse_index(port) == 0)
                            {
                               if (dinput_mouse_button_pressed(di, port, binds[port][new_id].mbutton))
                                  return 1;

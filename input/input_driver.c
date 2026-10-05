@@ -86,6 +86,7 @@
 #include "../command.h"
 #include "../config.def.keybinds.h"
 #include "../configuration.h"
+#include "../config.def.h"
 #include "../core_info.h"
 #include "../driver.h"
 #include "../frontend/frontend_driver.h"
@@ -9523,6 +9524,111 @@ static void input_key_lane_take(void);
 /* in first_press_pending: no press, every unmapped user gets its own port */
 #define INPUT_FIRST_PRESS_GIVE_UP (1U << 31)
 static bool input_first_press_blocked(void);
+
+/* The settings a driver reads, by name. A driver does not take the
+ * settings (config_get_ptr()) and pick a field out: what drivers
+ * depend on is this list, and the layout of the settings is the
+ * frontend's business. Each answers with the default before the
+ * settings are there. */
+unsigned input_config_get_mouse_index(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return (settings && port < MAX_USERS)
+      ? settings->uints.input_mouse_index[port] : 0;
+}
+
+unsigned input_config_get_joypad_index(unsigned port)
+{
+   settings_t *settings = config_get_ptr();
+   return (settings && port < MAX_USERS)
+      ? settings->uints.input_joypad_index[port] : port;
+}
+
+unsigned input_config_get_rumble_gain(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->uints.input_rumble_gain : DEFAULT_RUMBLE_GAIN;
+}
+
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+bool input_config_get_nowinkey_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_nowinkey_enable;
+}
+#endif
+
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+bool input_config_get_keyboard_background(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_keyboard_background;
+}
+
+bool input_config_get_winraw_xinput_enable(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_winraw_xinput_enable;
+}
+
+bool input_config_get_winraw_player_lights(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_winraw_player_lights;
+}
+#endif
+
+bool input_config_get_sdl3_system_keyboard(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings && settings->bools.input_sdl3_system_keyboard;
+}
+
+/* An overlay is switched on and one is chosen. */
+bool input_config_overlay_configured(void)
+{
+   settings_t *settings = config_get_ptr();
+   return     settings
+           && settings->bools.input_overlay_enable
+           && *settings->paths.path_overlay;
+}
+
+/* The joypad driver the user chose, or NULL. */
+const char *input_config_get_joypad_driver(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->arrays.input_joypad_driver : NULL;
+}
+
+const char *input_config_get_keyboard_layout(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings ? settings->arrays.input_keyboard_layout : "";
+}
+
+/* The directory of controller profiles, or NULL when profiles are
+ * switched off or there is none. */
+const char *input_config_get_autoconfig_dir(void)
+{
+   settings_t *settings = config_get_ptr();
+   if (     !settings
+         || !settings->bools.input_autodetect_enable
+         || settings->paths.directory_autoconfig[0] == '\0')
+      return NULL;
+   return settings->paths.directory_autoconfig;
+}
+
+#ifdef HAVE_TEST_DRIVERS
+/* The script of the test input driver, or of the test joypad driver. */
+const char *input_config_get_test_input_file(bool joypad)
+{
+   settings_t *settings = config_get_ptr();
+   if (!settings)
+      return "";
+   return joypad ? settings->paths.test_input_file_joypad
+                 : settings->paths.test_input_file_general;
+}
+#endif
 
 /* What a driver may ask the frontend, and tell it, without taking its
  * state: each is one thing, by name. A driver that needs something

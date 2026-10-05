@@ -157,7 +157,7 @@ static int16_t sdl1_input_state(
          return ret;
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
-         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
+         if (input_config_get_mouse_index(port) == 0)
          {
             switch (id)
             {

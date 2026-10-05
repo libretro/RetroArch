@@ -98,6 +98,8 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor,
 /* Every mouse port reads the first master pointer. */
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+/* the settings a driver asks for by name, read from the ones above */
+#include "../input_config_stubs.h"
 bool video_driver_has_focus(void) { return x11_has_focus(NULL); }
 enum rarch_display_type video_driver_display_type_get(void)
 { return RARCH_DISPLAY_X11; }

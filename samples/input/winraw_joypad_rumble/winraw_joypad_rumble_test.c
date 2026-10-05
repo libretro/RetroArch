@@ -233,6 +233,8 @@ bool input_autoconfigure_disconnect(unsigned port, const char *name)
 /* the driver reads one setting: whether Xbox pads are XInput's */
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+/* the settings a driver asks for by name, read from the ones above */
+#include "../input_config_stubs.h"
 bool winraw_raw_input_polled(void) { return true; }
 void winraw_queue_read(void) { }
 void winraw_queue_claim_thread(bool claim) { (void)claim; }

@@ -356,7 +356,6 @@ static void test_joypad_autodetect_remove(unsigned autoconf_pad)
 
 static void *test_joypad_init(void *data)
 {
-   settings_t *settings = config_get_ptr();
    unsigned i;
 
    if (!input_test_steps)
@@ -365,7 +364,7 @@ static void *test_joypad_init(void *data)
    if (!input_test_steps)
       return NULL;
 
-   input_test_file_read(settings->paths.test_input_file_joypad);
+   input_test_file_read(input_config_get_test_input_file(true));
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
 
@@ -467,7 +466,6 @@ static void test_joypad_poll(void)
          {
 #ifdef HAVE_CONFIGFILE
             unsigned port        = input_test_steps[i].param_num;
-            settings_t *settings = config_get_ptr();
             /* A controller added by an earlier step is only there
              * once its autoconfig task has been applied, and frames
              * do not wait for that.  The menu has no entry to save
@@ -478,7 +476,7 @@ static void test_joypad_poll(void)
                break;
             if (port < MAX_USERS)
             {
-               unsigned dev     = settings->uints.input_joypad_index[port];
+               unsigned dev     = input_config_get_joypad_index(port);
                const char *name = (dev < MAX_USERS)
                   ? input_config_get_device_name(dev) : NULL;
                RARCH_LOG("[Test joypad] Save profile for port %u: %s.\n",

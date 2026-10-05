@@ -61,6 +61,8 @@ const struct rarch_key_map rarch_key_map_winraw[] = { { 0, RETROK_UNKNOWN } };
 static settings_t stub_settings;
 static struct menu_state stub_menu;
 settings_t *config_get_ptr(void) { return &stub_settings; }
+/* the settings a driver asks for by name, read from the ones above */
+#include "../input_config_stubs.h"
 
 /* A port's keyboard, as the frontend works it out from the port's pin
  * and number: the rule itself (input/common/input_device_pins.h), fed

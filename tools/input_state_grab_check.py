@@ -52,31 +52,20 @@ FRONTEND = ('input/input_driver.c', 'input/input_driver.h',
 ALLOWED = {
     # the replay code: takes the input and run loop state
     'input/bsv/bsvmovie.c':                              12,
-    # settings read by a driver: the frontend is to hand these over
+    # settings read by a driver on a platform not converted yet
     'input/common/wayland_common_webos.c':               1,
     'input/drivers/android_input.c':                     7,
     'input/drivers/cocoa_input.m':                       3,
-    'input/drivers/dinput.c':                            5,
     'input/drivers/gx_input.c':                          2,
-    'input/drivers/sdl1_input.c':                        1,
-    # one of these two is the SDL2 video driver's window, for the grab
-    'input/drivers/sdl2_input.c':                        2,
-    'input/drivers/sdl3_input.c':                        2,
-    'input/drivers/test_input.c':                        1,
+    # the SDL2 video driver's window, for the grab
+    'input/drivers/sdl2_input.c':                        1,
+    # the touch options, and a driver that rewrites the settings
     'input/drivers/udev_input.c':                        4,
-    'input/drivers/winraw_input.c':                      7,
-    'input/drivers/x11_input.c':                         2,
     'input/drivers_joypad/android_joypad.c':             1,
     'input/drivers_joypad/gx_joypad_libogc.c':           1,
     'input/drivers_joypad/mfi_joypad.m':                 1,
     'input/drivers_joypad/psp_joypad.c':                 1,
-    'input/drivers_joypad/sdl3_joypad.c':                2,
-    'input/drivers_joypad/sdl_dingux_joypad.c':          1,
     'input/drivers_joypad/switch_joypad.c':              1,
-    'input/drivers_joypad/test_joypad.c':                2,
-    'input/drivers_joypad/udev_joypad.c':                1,
-    'input/drivers_joypad/winraw_joypad.c':              2,
-    'input/drivers_keyboard/keyboard_event_xkb.c':       1,
 }
 
 

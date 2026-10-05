@@ -172,9 +172,7 @@ static dingux_joypad_t dingux_joypad;
 #if defined(HAVE_LIBSHAKE)
 static bool sdl_dingux_rumble_init(dingux_joypad_rumble_t *rumble)
 {
-   settings_t *settings = config_get_ptr();
-   unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
-                                   : DEFAULT_RUMBLE_GAIN;
+   unsigned rumble_gain = input_config_get_rumble_gain();
    bool weak_uploaded   = false;
    bool strong_uploaded = false;
 

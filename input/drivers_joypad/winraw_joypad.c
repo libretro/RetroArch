@@ -1873,7 +1873,7 @@ static void *winraw_joypad_joypad_init(void *data)
    }
 
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
-   winraw_joypad_xinput_own = config_get_ptr()->bools.input_winraw_xinput_enable;
+   winraw_joypad_xinput_own = input_config_get_winraw_xinput_enable();
 #endif
    if (winraw_joypad_xinput_own)
       winraw_joypad_xinput_load();
@@ -2233,11 +2233,9 @@ static void winraw_joypad_player_lights(void)
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
    static unsigned tick;
    unsigned slot, u;
-   settings_t *settings;
 
    if ((tick++ & 31) || !winraw_joypad_out_writer)
       return;
-   settings = config_get_ptr();
    for (slot = 0; slot < MAX_USERS; slot++)
    {
       winraw_joypad_out_t *out = &winraw_joypad_out[slot];
@@ -2245,9 +2243,9 @@ static void winraw_joypad_player_lights(void)
 
       if (!out->present || out->xinput)
          continue;
-      if (settings->bools.input_winraw_player_lights)
+      if (input_config_get_winraw_player_lights())
          for (u = 0; u < MAX_USERS; u++)
-            if (settings->uints.input_joypad_index[u] == slot)
+            if (input_config_get_joypad_index(u) == slot)
             {
                player = (int)u + 1;
                break;
