@@ -3078,6 +3078,12 @@ static bool rgui_load_image(
       return false;
    }
 
+   /* The load asks for 10-bit wherever the driver samples it, and RGUI
+    * draws in software from 8-bit ARGB words: a 16-bit PNG comes here
+    * as packed XRGB2101010, narrowed back to the words it reads. */
+   if (((struct texture_image*)data)->pix10)
+      image_texture_narrow_10bit((struct texture_image*)data);
+
    switch (type)
    {
       case MENU_IMAGE_WALLPAPER:
