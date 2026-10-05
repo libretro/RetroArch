@@ -4068,7 +4068,11 @@ bool command_event(enum event_command cmd, void *data)
          if (!runloop_get_replay_path(replay_path, sizeof(replay_path), replay_slot))
             res = false;
          if (res)
-            res = movie_start_record(input_st, replay_path);
+         {
+            const task_notify_t *n = (const task_notify_t*)data;
+            res = movie_start_record_notify(input_st, replay_path,
+                  n ? n->cb : NULL, n ? n->user_data : NULL);
+         }
          if (res && settings->bools.replay_auto_index)
             configuration_set_int(settings, settings->ints.replay_slot, replay_slot);
          if (!res)
@@ -4126,18 +4130,24 @@ bool command_event(enum event_command cmd, void *data)
          }
          break;
       case CMD_EVENT_SAVE_REPLAY_CHECKPOINT:
-#ifdef HAVE_BSV_MOVIE
-         movie_commit_checkpoint(input_state_get_ptr());
-#endif
-         break;
       case CMD_EVENT_PREV_REPLAY_CHECKPOINT:
-#ifdef HAVE_BSV_MOVIE
-         movie_skip_to_prev_checkpoint(input_state_get_ptr());
-#endif
-         break;
       case CMD_EVENT_NEXT_REPLAY_CHECKPOINT:
 #ifdef HAVE_BSV_MOVIE
-         movie_skip_to_next_checkpoint(input_state_get_ptr());
+         {
+            const task_notify_t *n = (const task_notify_t*)data;
+            input_driver_state_t *input_st  = input_state_get_ptr();
+            bool res;
+            if (cmd == CMD_EVENT_SAVE_REPLAY_CHECKPOINT)
+               res = movie_commit_checkpoint(input_st);
+            else if (cmd == CMD_EVENT_PREV_REPLAY_CHECKPOINT)
+               res = movie_skip_to_prev_checkpoint(input_st);
+            else
+               res = movie_skip_to_next_checkpoint(input_st);
+            if (!res)
+               return false;
+            if (n)
+               task_notify_set(&input_st->bsv_movie_op, n->cb, n->user_data);
+         }
 #endif
          break;
       case CMD_EVENT_REPLAY_DECREMENT:
@@ -4316,6 +4326,9 @@ bool command_event(enum event_command cmd, void *data)
             menu_driver_ctl(MENU_NAVIGATION_CTL_CLEAR, &pending_push);
          }
 #endif
+         /* through already, unless it started the dummy core's load */
+         if (!task_content_load_pending())
+            task_content_load_notify_finish(NULL);
          break;
       case CMD_EVENT_CLOSE_CONTENT:
 #ifdef HAVE_MENU
@@ -9143,8 +9156,7 @@ bool retroarch_main_init_drivers(bool staged,
 
    drivers_init(settings, DRIVERS_CMD_ALL, (enum driver_lifetime_flags)0, verbosity_enabled);
 #ifdef HAVE_COMMAND
-   input_driver_deinit_command(input_st);
-   input_driver_init_command(input_st, settings);
+   input_driver_refresh_command(input_st, settings);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_st->remote)
@@ -9389,7 +9401,10 @@ bool retroarch_main_deinit_begin(void)
    }
 #endif
 #ifdef HAVE_COMMAND
-   input_driver_deinit_command(input_st);
+   /* kept across a content load: the next session's driver init
+    * remakes them only if their settings changed */
+   if (!runloop_st->content_switching)
+      input_driver_deinit_command(input_st);
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    if (input_st->remote)

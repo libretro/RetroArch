@@ -1440,10 +1440,9 @@ static void lane_acceptance(const char *dir)
 }
 
 /* ------------------------------------------------------------------ */
-/* Lane: replay reply                                                  */
+/* Lanes: answered once the work is through                            */
 /* ------------------------------------------------------------------ */
 
-#ifdef HAVE_BSV_MOVIE
 /* A command interface of the test's own: which sender a reply is for
  * is 'source' at the time of the reply, as with the network
  * interface's last datagram source. */
@@ -1451,8 +1450,10 @@ static int      rr_source;
 static unsigned rr_replies;
 static int      rr_reply_to;          /* the sender the reply went to */
 static char     rr_reply[128];
-static bool     rr_in_command;        /* inside command_play_replay_slot */
+static bool     rr_in_command;        /* inside the command handler */
 static unsigned rr_in_command_replies;
+static unsigned rr_state_calls;       /* core state calls by the handler */
+static unsigned rr_polled_switching;  /* polls during a content load */
 
 static void rr_record(int to, const char *s, size_t len)
 {
@@ -1487,14 +1488,55 @@ static void rr_reply_to_cb(command_t *cmd, void *dest, const char *s, size_t len
    rr_record(*(int*)dest, s, len);
 }
 
-static bool rr_play(command_t *cmd, const char *slot)
+static void rr_poll(command_t *cmd)
 {
+   (void)cmd;
+   if (runloop_is_content_switching())
+      rr_polled_switching++;
+}
+
+static bool rr_run(command_t *cmd,
+      bool (*handler)(command_t *cmd, const char *arg), const char *arg)
+{
+   unsigned before = core_export("harness_core_state_calls");
    bool ok;
-   rr_in_command = true;
-   ok            = command_play_replay_slot(cmd, slot);
-   rr_in_command = false;
+   rr_in_command  = true;
+   ok             = handler(cmd, arg);
+   rr_in_command  = false;
+   rr_state_calls = core_export("harness_core_state_calls") - before;
    return ok;
 }
+
+/* Runs @handler as a command, then frames until it is answered. */
+static bool rr_ask(command_t *cmd,
+      bool (*handler)(command_t *cmd, const char *arg), const char *arg)
+{
+   unsigned n;
+   bool ok;
+   rr_replies  = rr_in_command_replies = 0;
+   rr_reply[0] = '\0';
+   ok          = rr_run(cmd, handler, arg);
+   for (n = 0; n < 300 && !rr_replies; n++)
+      pump(1);
+   return ok;
+}
+
+/* The harness core running, the menu closed. */
+static void run_harness_core(void)
+{
+   if (     !core_is_up()
+         || runloop_state_get_ptr()->current_core_type == CORE_TYPE_DUMMY)
+   {
+      CHECK(task_push_load_contentless_core_from_menu(core_path),
+            "the load was not started");
+      pump(200);
+   }
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+}
+
+#ifdef HAVE_BSV_MOVIE
 
 /* PLAY_REPLAY_SLOT answers with the replay's handle, which the movie
  * task installs from its callback.  The command returns at once and
@@ -1527,7 +1569,10 @@ static void lane_replay_reply(const char *dir)
    configuration_set_bool(settings, settings->bools.replay_auto_index, false);
    configuration_set_int(settings, settings->ints.replay_slot, 3);
    CHECK(command_event(CMD_EVENT_RECORD_REPLAY, NULL), "recording did not start");
-   pump(30);
+   pump(10);
+   /* a checkpoint for SEEK_REPLAY below to land on */
+   command_event(CMD_EVENT_SAVE_REPLAY_CHECKPOINT, NULL);
+   pump(20);
    command_event(CMD_EVENT_HALT_REPLAY, NULL);
    pump(2);
    runloop_get_replay_path(path, sizeof(path), 3);
@@ -1541,7 +1586,7 @@ static void lane_replay_reply(const char *dir)
 
    rr_replies = rr_in_command_replies = 0;
    rr_source  = 1;
-   CHECK(rr_play(&cmd, slot), "PLAY_REPLAY_SLOT did not start playback");
+   CHECK(rr_run(&cmd, command_play_replay_slot, slot), "PLAY_REPLAY_SLOT did not start playback");
    CHECK(rr_in_command_replies == 0,
          "PLAY_REPLAY_SLOT answered before returning: it held the frame "
          "until the movie task was through");
@@ -1562,19 +1607,45 @@ static void lane_replay_reply(const char *dir)
          "reply \"%s\" does not carry the replay handle", rr_reply);
    pump(5);
    CHECK(rr_replies == 1, "the reply was sent again");
+
+   /* SEEK_REPLAY: a line-based interface is answered at once, as it
+    * always was; a structured one once the seek has run. */
+   {
+      char want[64];
+      rr_replies = rr_in_command_replies = 0;
+      rr_source  = 1;
+      CHECK(rr_run(&cmd, command_seek_replay, "25"), "SEEK_REPLAY was refused");
+      snprintf(want, sizeof(want), "OK %lld\n",
+            (long long)input_st->bsv_movie_state.seek_target_frame);
+      CHECK(rr_in_command_replies == 1 && string_is_equal(rr_reply, want),
+            "a line-based SEEK_REPLAY was answered \"%s\" (%u in the command)",
+            rr_reply, rr_in_command_replies);
+      pump(5);
+      cmd.structured = true;
+      CHECK(rr_ask(&cmd, command_seek_replay, "25"),
+            "a structured SEEK_REPLAY was refused");
+      want[strlen(want) - 1] = '\0';
+      CHECK(rr_in_command_replies == 0,
+            "a structured SEEK_REPLAY was answered before the seek ran");
+      CHECK(rr_replies == 1 && string_is_equal(rr_reply, want),
+            "a structured SEEK_REPLAY was answered \"%s\", not \"%s\"",
+            rr_reply, want);
+      cmd.structured = false;
+   }
+
    command_event(CMD_EVENT_HALT_REPLAY, NULL);
    pump(2);
 
    /* The interfaces torn down while the reply is owed. */
    rr_replies = rr_in_command_replies = 0;
    rr_source  = 1;
-   CHECK(rr_play(&cmd, slot), "the second PLAY_REPLAY_SLOT did not start");
+   CHECK(rr_run(&cmd, command_play_replay_slot, slot), "the second PLAY_REPLAY_SLOT did not start");
    input_driver_deinit_command(input_st);
    pump(20);
    CHECK(rr_replies == 0, "a reply went to a torn-down interface");
    command_event(CMD_EVENT_HALT_REPLAY, NULL);
    pump(2);
-   CHECK(rr_play(&cmd, slot), "a dropped reply left the next command refused");
+   CHECK(rr_run(&cmd, command_play_replay_slot, slot), "a dropped reply left the next command refused");
    pump(20);
    CHECK(rr_replies == 1, "the command after a dropped reply was not answered");
    command_event(CMD_EVENT_HALT_REPLAY, NULL);
@@ -1586,6 +1657,116 @@ static void lane_replay_reply(const char *dir)
       fprintf(stderr, "[pass] replay-reply lane (answered after %u frames)\n", n);
 }
 #endif
+
+/* LOAD_STATE_SLOT and SAVE_STATE_SLOT answer once their task is
+ * through, never from within the command: a command can arrive from
+ * the core's own input poll, where serializing re-enters the core. */
+static void lane_state_slot_reply(void)
+{
+   command_t cmd;
+   char saved[PATH_MAX_LENGTH], corrupt[PATH_MAX_LENGTH];
+   unsigned had = failures;
+
+   run_harness_core();
+   memset(&cmd, 0, sizeof(cmd));
+   cmd.replier    = rr_replier;
+   cmd.reply_dest = rr_reply_dest;
+   cmd.reply_to   = rr_reply_to_cb;
+   runloop_get_savestate_path(saved,   sizeof(saved),   2);
+   runloop_get_savestate_path(corrupt, sizeof(corrupt), 3);
+   remove(saved);
+
+   CHECK(rr_ask(&cmd, command_save_state_slot, "2"),
+         "SAVE_STATE_SLOT was refused");
+   CHECK(rr_state_calls == 0 && rr_in_command_replies == 0,
+         "SAVE_STATE_SLOT saved from within the command");
+   CHECK(string_is_equal(rr_reply, "SAVE_STATE_SLOT 2") && path_is_valid(saved),
+         "SAVE_STATE_SLOT answered \"%s\"", rr_reply);
+
+   CHECK(rr_ask(&cmd, command_load_state_slot, "2"),
+         "LOAD_STATE_SLOT was refused");
+   CHECK(rr_state_calls == 0 && rr_in_command_replies == 0,
+         "LOAD_STATE_SLOT loaded from within the command");
+   CHECK(string_is_equal(rr_reply, "LOAD_STATE_SLOT 2"),
+         "LOAD_STATE_SLOT answered \"%s\"", rr_reply);
+
+   /* shorter than the core's state: retro_unserialize() refuses it */
+   filestream_write_file(corrupt, "short", 5);
+   rr_ask(&cmd, command_load_state_slot, "3");
+   CHECK(strncmp(rr_reply, "LOAD_STATE_SLOT ERROR", 21) == 0,
+         "a state the core refused was answered \"%s\"", rr_reply);
+
+   remove(saved);
+   remove(corrupt);
+   if (failures == had)
+      fprintf(stderr, "[pass] state-slot-reply lane\n");
+}
+
+/* LOAD_CONTENT and CLOSE_CONTENT, asked by a structured interface,
+ * answer once the load is through. The command interfaces outlive the
+ * load, and are not polled while it runs: what reaches them waits. */
+static void lane_content_reply(const char *dir)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   command_t cmd, **slot = &input_st->command[MAX_CMD_DRIVERS - 1];
+   char content[600], arg[1200];
+   unsigned gen, had = failures;
+
+   run_harness_core();
+   /* made as the settings ask: a lane before tore them down by hand */
+   input_driver_refresh_command(input_st, config_get_ptr());
+   CHECK(!*slot, "no free command interface slot");
+   if (*slot)
+      return;
+   memset(&cmd, 0, sizeof(cmd));
+   cmd.poll       = rr_poll;
+   cmd.replier    = rr_replier;
+   cmd.reply_dest = rr_reply_dest;
+   cmd.reply_to   = rr_reply_to_cb;
+   cmd.structured = true;
+   *slot          = &cmd;
+   gen            = input_driver_command_generation();
+   snprintf(content, sizeof(content), "%s/harness.bin", dir);
+   filestream_write_file(content, "harness", 7);
+   snprintf(arg, sizeof(arg), "%s|%s", core_path, content);
+
+   rr_polled_switching = 0;
+   CHECK(rr_ask(&cmd, command_load_content, arg), "LOAD_CONTENT was refused");
+   CHECK(rr_in_command_replies == 0,
+         "LOAD_CONTENT answered before the load was through");
+   CHECK(rr_polled_switching == 0,
+         "the command interfaces were polled %u times during the load",
+         rr_polled_switching);
+   CHECK(strncmp(rr_reply, "LOAD_CONTENT ", 13) == 0
+         && !strstr(rr_reply, " ERROR"),
+         "LOAD_CONTENT answered \"%s\"", rr_reply);
+   CHECK(input_driver_command_generation() == gen && *slot == &cmd,
+         "the command interfaces were remade by the load");
+
+   /* the dummy core in the failed core's place is no success */
+   snprintf(arg, sizeof(arg), "%.500s.missing|%s", core_path, content);
+   rr_ask(&cmd, command_load_content, arg);
+   CHECK(strncmp(rr_reply, "LOAD_CONTENT ERROR", 18) == 0,
+         "a core that failed to load was answered \"%s\"", rr_reply);
+
+   /* a line-based interface has never been told, and is not */
+   cmd.structured = false;
+   snprintf(arg, sizeof(arg), "%s|%s", core_path, content);
+   rr_ask(&cmd, command_load_content, arg);
+   CHECK(rr_replies == 0, "a line-based interface was answered \"%s\"",
+         rr_reply);
+   cmd.structured = true;
+
+   rr_ask(&cmd, command_close_content, "");
+   CHECK(string_is_equal(rr_reply, "CLOSE_CONTENT"),
+         "CLOSE_CONTENT answered \"%s\"", rr_reply);
+
+   *slot = NULL;
+   remove(content);
+   run_harness_core();
+   if (failures == had)
+      fprintf(stderr, "[pass] content-reply lane\n");
+}
 
 /* ------------------------------------------------------------------ */
 /* Lane: screenshot steps                                              */
@@ -2256,6 +2437,8 @@ int main(int argc, char *argv[])
 #ifdef HAVE_BSV_MOVIE
    lane_replay_reply(dir);
 #endif
+   lane_state_slot_reply();
+   lane_content_reply(dir);
 #if defined(HAVE_SCREENSHOTS) && defined(HAVE_RPNG)
    lane_screenshot_steps(dir);
 #endif

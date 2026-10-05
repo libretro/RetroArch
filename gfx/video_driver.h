@@ -36,6 +36,7 @@
 #include <gfx/scaler/scaler.h>
 #include <formats/image.h>
 #include <formats/rpng.h>
+#include "../tasks/task_notify.h"
 
 #include "../configuration.h"
 #include "../input/input_driver.h"
@@ -1052,6 +1053,7 @@ typedef struct shader_load_deferred
    unsigned               current_pass; /* next pass to compile          */
    unsigned               total_passes;
    void                  *driver_data;  /* driver-specific work state    */
+   task_notify_t          done;         /* told once the load ends       */
 } shader_load_deferred_t;
 
 typedef struct video_driver
@@ -1726,6 +1728,12 @@ video_driver_state_t *video_state_get_ptr(void);
  * is in progress, compiles one pass and checks for completion.
  **/
 void video_driver_shader_deferred_tick(void);
+
+/* @cb is told once the deferred shader load in progress ends: task_data
+ * is the preset's path, and error is set if it did not load. False
+ * when no load is in progress. A caller still waiting is told it was
+ * superseded. */
+bool video_shader_deferred_notify(retro_task_callback_t cb, void *user_data);
 
 bool video_driver_set_rotation(unsigned rotation);
 

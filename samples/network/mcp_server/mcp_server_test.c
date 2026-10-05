@@ -73,6 +73,8 @@ const struct cmd_action_map *command_action_list(size_t *count)
 const struct cmd_map *command_hotkey_list(size_t *count)
 { *count = sizeof(test_hotkeys) / sizeof(test_hotkeys[0]); return test_hotkeys; }
 
+bool command_interfaces_held(void) { return false; }
+
 bool command_run(command_t *handle, const char *name, const char *arg)
 {
    size_t i;

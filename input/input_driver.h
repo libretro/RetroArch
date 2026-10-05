@@ -29,6 +29,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <streams/interface_stream.h>
+#include "../tasks/task_notify.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
@@ -658,16 +659,21 @@ typedef struct
    bool kept_not_next;
 #ifdef HAVE_COMMAND
    /* Bumped whenever the command interfaces below are torn down. A
-    * command that reinitialises the input driver - LOAD_CONTENT,
-    * DRIVERS_REINIT - frees the very object whose poll dispatched it;
+    * command that has them remade - LOAD_CONTENT, when the new
+    * session's settings for them differ - frees the very object whose
+    * poll dispatched it;
     * the dispatcher compares this before and after and stops when it
     * has changed rather than touch that object again. */
    unsigned command_generation;
    command_t *command[MAX_CMD_DRIVERS];
+   /* The settings the interfaces above were made from */
+   char command_config[NAME_MAX_LENGTH * 3 + 64];
 #endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
    bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
+   /* told once the checkpoint or seek asked for has run */
+   task_notify_t    bsv_movie_op;
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -1843,6 +1849,11 @@ void input_driver_init_command(
       settings_t *settings);
 
 void input_driver_deinit_command(input_driver_state_t *input_st);
+
+/* Remakes the command interfaces only if their settings changed, so
+ * that they, and the replies they owe, outlive a content load. */
+void input_driver_refresh_command(input_driver_state_t *input_st,
+      settings_t *settings);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1877,16 +1888,20 @@ bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
 bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
+/* @cb, when this returns true, is told once playback has started:
+ * task_data is the replay's identifier, as text, and error is set if it
+ * did not start. */
+bool movie_start_playback_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data);
 
 /* True while a playback-start task is pending, i.e. until its
  * callback has installed the replay handle. */
 bool movie_playback_start_in_progress(void *data);
-/* The identifier of the replay the last playback start installed, 0
- * if it installed none; meaningful once the start is no longer in
- * progress.  Read it there: the run loop moves the new handle out of
- * bsv_movie_state_next_handle on the following frame. */
-int64_t movie_playback_start_identifier(void);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
+/* As movie_start_playback_notify(), told once recording has started:
+ * task_data is the replay's path. */
+bool movie_start_record_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data);
 bool movie_stop_playback(input_driver_state_t *input_st);
 bool movie_stop_record(input_driver_state_t *input_st);
 bool movie_stop(input_driver_state_t *input_st);

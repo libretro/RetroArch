@@ -25,6 +25,7 @@
 #include <boolean.h>
 #include <retro_inline.h>
 #include <retro_common_api.h>
+#include <queues/task_queue.h>
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
@@ -81,6 +82,12 @@ bool is_narrator_running(bool accessibility_enable);
    the handle_translation_cb wipes the widgets, and pass that in here.
 */
 bool run_translation_service(settings_t *settings, bool paused);
+
+/* @cb, when this returns true, is told once the service has answered:
+ * task_data is its text, or NULL when it sent none, and error is set
+ * if it failed. */
+bool run_translation_service_notify(settings_t *settings, bool paused,
+      retro_task_callback_t cb, void *user_data);
 
 /**
  * config_get_ai_service_backend_options:

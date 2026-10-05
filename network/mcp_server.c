@@ -988,7 +988,12 @@ static void mcp_poll(command_t *cmd)
                if ((want = mcp_want(c)) == -2)
                   mcp_respond(c, 413, "Payload Too Large", NULL, NULL, 0);
                else if (want >= 0)
+               {
                   mcp_request(mcp, cmd, i);
+                  /* the other requests wait out the content load */
+                  if (command_interfaces_held())
+                     return;
+               }
             }
             break;
          case MCP_CONN_WRITING:
@@ -1103,6 +1108,7 @@ command_t *command_mcp_new(uint16_t port, const char *bind_address,
    cmd->reply_to   = mcp_reply_to;
    cmd->reply_image_to = mcp_reply_image_to;
    cmd->destroy    = mcp_destroy;
+   cmd->structured = true;
    RARCH_LOG("[MCP] Listening on http://%s:%hu/mcp.\n",
          bind_address, (unsigned short)port);
    return cmd;

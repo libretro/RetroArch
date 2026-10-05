@@ -69,18 +69,32 @@ argument for the next page, as in `Nintendo - SNES 200`), and loads an
 entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES` gives
 the installed cores and their paths.
 
-`LOAD_CONTENT` answers once the load has started, not once it is through:
-the load runs over the next frames, and while it does the server restarts
-with the rest of RetroArch's command interfaces, so a request sent then
-may find no server. `GET_STATUS` reports `PLAYING` with the system and
-the content's name once the game runs, and `CONTENTLESS` if the load
-failed. A request still waiting for its answer when the server restarts
-is answered with an error rather than left without one.
+A tool whose work runs over later frames answers once that work is
+through, with what came of it, or with the command's name, `ERROR` and
+the reason:
+
+- `LOAD_CONTENT`, `START_CORE`: the content's path once it runs; a core
+  that fails to start is an error. `CLOSE_CONTENT`, `UNLOAD_CORE`: once
+  the content is closed. Requests sent while content loads wait for it.
+- `LOAD_STATE_SLOT`, `SAVE_STATE_SLOT`: once the state is applied or
+  written.
+- `PLAY_REPLAY_SLOT`, `RECORD_REPLAY`, `SEEK_REPLAY` and the replay
+  checkpoint tools: once the replay has started, or the seek or
+  checkpoint has run.
+- `SET_SHADER`: the preset's path once it has compiled.
+- `AI_SERVICE`: one translation of the screen, answered with the
+  service's text.
+
+Work that takes longer than ten seconds, such as a slow load, is
+answered with an error saying so; the work goes on, and `GET_STATUS`
+tells when it is through. A request still waiting for its answer when
+the server goes is answered with an error rather than left without one.
 
 Hotkey tools (`PAUSE_TOGGLE`, `FAST_FORWARD`, `MENU_UP`) press the hotkey
 for one frame. Tools marked as holds (`FAST_FORWARD_HOLD`, `REWIND`) last
-that one frame too. `SCREENSHOT` is the exception: it takes the
-screenshot at once and answers when it has been written - with the
+that one frame too. `SCREENSHOT`, `AI_SERVICE` and the replay recording
+and checkpoint tools are the exceptions, answered as above; `SCREENSHOT`
+takes the screenshot at once and answers when it has been written - with the
 picture itself as image content (PNG, up to 4 MiB) and the file's path as
 text, so a client can see the screen without reaching the file - or with
 `SCREENSHOT ERROR` and the reason if it could not be.

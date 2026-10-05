@@ -336,7 +336,11 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
    later we can replace the start_record/start_playback flags and
    remove the entirety of input_driver_st bsv_state, which is only
    needed due to mixing sync and async during initialization. */
-typedef struct bsv_state moviectl_task_state_t;
+typedef struct
+{
+   struct bsv_state bsv;
+   retro_task_callback_t cb; /* the caller's */
+} moviectl_task_state_t;
 
 /* True from the push of a playback-start task until its main-thread
  * callback has installed the replay handle.
@@ -349,16 +353,10 @@ typedef struct bsv_state moviectl_task_state_t;
  * same window between a worker finishing and its callback running.
  * The flag transitions strictly on the main thread. */
 static bool movie_playback_start_pending = false;
-static int64_t movie_playback_start_id  = 0;
 
 bool movie_playback_start_in_progress(void *data)
 {
    return movie_playback_start_pending;
-}
-
-int64_t movie_playback_start_identifier(void)
-{
-   return movie_playback_start_id;
 }
 
 static void task_moviectl_playback_handler(retro_task_t *task)
@@ -379,14 +377,19 @@ static void moviectl_start_playback_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-  struct bsv_state *state        = (struct bsv_state *)task_data;
+  moviectl_task_state_t *state   = (moviectl_task_state_t *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
+  int64_t id                     = 0;
+  char id_str[24];
   movie_playback_start_pending   = false;
-  input_st->bsv_movie_state      = *state;
-  if (   bsv_movie_start_playback(input_st, state->movie_start_path)
+  input_st->bsv_movie_state      = state->bsv;
+  if (   bsv_movie_start_playback(input_st, state->bsv.movie_start_path)
       && input_st->bsv_movie_state_next_handle)
-     movie_playback_start_id     =
-        input_st->bsv_movie_state_next_handle->identifier;
+     id = input_st->bsv_movie_state_next_handle->identifier;
+  snprintf(id_str, sizeof(id_str), "%lld", (long long)id);
+  if (state->cb)
+     state->cb(task, id_str, user_data, error ? error
+           : id ? NULL : msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE));
   free(state);
 }
 
@@ -412,10 +415,14 @@ static void moviectl_start_record_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-  struct bsv_state *state        = (struct bsv_state *)task_data;
+  moviectl_task_state_t *state   = (moviectl_task_state_t *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
-  input_st->bsv_movie_state      = *state;
-  bsv_movie_start_record(input_st, state->movie_start_path);
+  bool started;
+  input_st->bsv_movie_state      = state->bsv;
+  started = bsv_movie_start_record(input_st, state->bsv.movie_start_path);
+  if (state->cb)
+     state->cb(task, state->bsv.movie_start_path, user_data, error ? error
+           : started ? NULL : msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
   free(state);
 }
 
@@ -492,6 +499,7 @@ bool movie_stop_record(input_driver_state_t *input_st)
 
 bool movie_stop(input_driver_state_t *input_st)
 {
+   task_notify_fire(&input_st->bsv_movie_op, NULL, "The replay stopped.");
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
@@ -508,22 +516,29 @@ bool movie_stop(input_driver_state_t *input_st)
 
 bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
+   return movie_start_playback_notify(input_st, path, NULL, NULL);
+}
+
+bool movie_start_playback_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data)
+{
   retro_task_t       *task      = task_init();
   moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
   bool file_exists              = filestream_exists(path);
 
   if (task && state && file_exists)
   {
-     *state                        = input_st->bsv_movie_state;
-     strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+     state->bsv                    = input_st->bsv_movie_state;
+     state->cb                     = cb;
+     strlcpy(state->bsv.movie_start_path, path, sizeof(state->bsv.movie_start_path));
      task->type                    = TASK_TYPE_NONE;
      task->state                   = state;
      task->handler                 = task_moviectl_playback_handler;
      task->callback                = moviectl_start_playback_cb;
+     task->user_data               = user_data;
      task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
      movie_playback_start_pending  = true;
-     movie_playback_start_id       = 0;
 
      if (task_queue_push(task))
         return true;
@@ -542,6 +557,12 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
 
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
+   return movie_start_record_notify(input_st, path, NULL, NULL);
+}
+
+bool movie_start_record_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data)
+{
    const char *_msg              = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
@@ -550,8 +571,9 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
    {
       size_t _len;
       char msg[128];
-      *state                     = input_st->bsv_movie_state;
-      strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+      state->bsv                 = input_st->bsv_movie_state;
+      state->cb                  = cb;
+      strlcpy(state->bsv.movie_start_path, path, sizeof(state->bsv.movie_start_path));
 
       _len                       = strlcpy(msg, _msg, sizeof(msg));
       snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
@@ -560,6 +582,7 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
       task->state                = state;
       task->handler              = task_moviectl_record_handler;
       task->callback             = moviectl_start_record_cb;
+      task->user_data            = user_data;
 
       task->title                = strdup(msg);
 
