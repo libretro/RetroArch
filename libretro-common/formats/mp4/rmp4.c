@@ -987,9 +987,16 @@ static void rmp4_parse_traf(rmp4_t *m, const uint8_t *body, uint64_t size,
                fl = first_flags;
             pts = rmp4_ticks_to_ns(
                   (int64_t)t->frag_dts + cts, t->timescale);
-            if (sz && doff + sz <= m->len)
+            if (sz)
+            {
+               /* A fragment can supply a 64-bit base offset. Check the
+                * range before adding, or the end offset can wrap. */
+               if (doff > (uint64_t)m->len
+                     || sz > (uint64_t)m->len - doff)
+                  return;
                rmp4_track_append(t, doff, sz, pts,
                      (uint8_t)!((fl >> 16) & 1));
+            }
             doff        += sz;
             t->frag_dts += dur;
          }
@@ -1291,9 +1298,14 @@ int rmp4_read_packet(rmp4_t *m, rmp4_packet *pkt)
    {
       rmp4_itrack *t = &m->trk[best];
       uint32_t     c = t->cursor;
+      /* Reject a malformed sample table before forming a file pointer. */
+      if (t->off[c] > (uint64_t)m->len
+            || t->size[c] > (uint64_t)m->len - t->off[c])
+         return -1;
       /* Sample bytes not yet in the buffer: consume nothing and let
        * the caller retry once more of the file has been read. */
-      if (t->off[c] + t->size[c] > (uint64_t)m->avail)
+      if (t->off[c] > (uint64_t)m->avail
+            || t->size[c] > (uint64_t)m->avail - t->off[c])
          return RMP4_READ_AGAIN;
       t->cursor++;
       if (t->off[c] + t->size[c] > m->media_max_end)
