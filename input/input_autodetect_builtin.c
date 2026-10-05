@@ -124,6 +124,25 @@ DECL_AXIS_EX(r_y_plus,  -3, "Right Thumbstick Y+") /* SDL_GAMEPAD_AXIS_RIGHTY   
 DECL_AXIS_EX(r_y_minus, +3, "Right Thumbstick Y-") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
 DECL_MENU_EX(5, "Guide")                           /* SDL_GAMEPAD_BUTTON_GUIDE          */
 
+/* A PS3 controller under SDL's own driver for it (SDL_JOYSTICK_HIDAPI_PS3)
+ * reports how hard ten of its buttons are pressed, on axes after the
+ * gamepad's six, in the order SDL lists the buttons: the four face
+ * buttons, the shoulders, the D-Pad. Each is bound beside its button:
+ * the button says pressed, the axis says how hard. Without that
+ * driver the pad has six axes and these read nothing. */
+#define SDL3_PS3_BINDS \
+SDL3_DEFAULT_BINDS \
+DECL_AXIS(b,     +6)  /* Cross    */ \
+DECL_AXIS(a,     +7)  /* Circle   */ \
+DECL_AXIS(y,     +8)  /* Square   */ \
+DECL_AXIS(x,     +9)  /* Triangle */ \
+DECL_AXIS(l,     +10) /* L1       */ \
+DECL_AXIS(r,     +11) /* R1       */ \
+DECL_AXIS(up,    +12) \
+DECL_AXIS(down,  +13) \
+DECL_AXIS(left,  +14) \
+DECL_AXIS(right, +15)
+
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
 #define DINGUX_SDL_DEFAULT_BINDS \
 DECL_BTN_EX(a,           8, "A") \
@@ -803,6 +822,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef HAVE_SDL3
    DECL_AUTOCONF_DEVICE("Gamepad", "sdl3", SDL3_DEFAULT_BINDS),
+   /* named by tasks/task_autodetect.c for a PS3 controller, and not a
+    * name a controller gives itself */
+   DECL_AUTOCONF_DEVICE("SDL3 PS3 Gamepad", "sdl3", SDL3_PS3_BINDS),
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
