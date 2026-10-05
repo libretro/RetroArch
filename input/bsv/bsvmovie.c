@@ -309,6 +309,7 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
       if (intfstream_read(handle->file, buf, state_size) != state_size)
       {
          RARCH_ERR("[Replay] %s\n", msg_hash_to_str(MSG_COULD_NOT_READ_STATE_FROM_MOVIE));
+         free(buf);
          return false;
       }
       info_size              = core_serialize_size();
@@ -1901,6 +1902,9 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
    size_t superblock_byte_size = movie->superblocks->object_size*block_byte_size;
    intfstream_t *read_mem      = intfstream_open_memory(encoded,
          RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE, encoded_size);
+   /* Every exit frees item, so a value of the wrong type is freed with
+    * it; RDT_NULL holds nothing to free. */
+   item.type = RDT_NULL;
    /* NULL-check reader_state: rmsgpack_dom_reader_state_new can
     * now return NULL on OOM.  Bailing to 'exit' hits the
     * rmsgpack_dom_reader_state_free call at the cleanup label
@@ -1983,6 +1987,7 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
                goto exit;
             }
             /* do not free binary rmsgpack item since insert_exact takes over its allocation */
+            item.type = RDT_NULL;
             break;
          case BSV_IFRAME_NEW_SUPERBLOCK_TOKEN:
             rmsgpack_dom_read_with(read_mem, &item, reader_state);
@@ -2122,6 +2127,7 @@ bool bsv_movie_read_deduped_state(bsv_movie_t *movie, uint8_t *encoded, size_t e
       }
    }
 exit:
+   rmsgpack_dom_value_free(&item);
    uint32s_index_commit(movie->blocks);
    /* Superblocks are small enough that there's no real benefit to garbage collecting them */
    /* uint32s_index_commit(movie->superblocks); */
