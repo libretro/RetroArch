@@ -24,7 +24,12 @@
 #include <ogc/cache.h>
 #include <ogc/system.h>
 #include <ogc/usbstorage.h>
+#include <ogc/libversion.h>
+#if _V_MAJOR_ < 3
 #include <ogc/lwp_threads.h>
+#else
+#include <ogc/machine/processor.h>
+#endif
 #include <sdcard/wiisd_io.h>
 
 #include <string/stdstring.h>
@@ -247,7 +252,18 @@ void system_exec_wii(const char *_path, bool should_load_game)
    DCFlushRange(BOOTER_ADDR, _len);
 
    SYS_ResetSystem(SYS_SHUTDOWN, 0, 0);
+#if _V_MAJOR_ < 3
    __lwp_thread_stopmultitasking((void (*)(void))BOOTER_ADDR);
+#else
+   /* libogc 3 has no thread call that ends the scheduler; with
+    * interrupts off nothing runs after the jump into the booter. */
+   {
+      u32 level;
+      _CPU_ISR_Disable(level);
+      (void)level;
+      ((void (*)(void))BOOTER_ADDR)();
+   }
+#endif
 
 exit:
 #ifndef IS_SALAMANDER

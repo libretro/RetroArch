@@ -224,6 +224,15 @@ struct pollfd
 
 #elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 #include <network.h>
+#include <ogc/libversion.h>
+
+/* libogc 3 declares struct addrinfo in its own netdb.h, has its own
+ * inet_ntop and inet_pton, and keeps the poll flags in poll.h. */
+#if _V_MAJOR_ >= 3
+#include <poll.h>
+#define NET_HAVE_SYS_ADDRINFO 1
+#define NET_HAVE_SYS_INET_NTOP 1
+#endif
 
 #define NETWORK_HAVE_POLL 1
 
@@ -347,7 +356,7 @@ RETRO_BEGIN_DECLS
 #define NI_NAMEREQD    8
 #define NI_DGRAM       16
 
-#ifndef __PS3__
+#if !defined(__PS3__) && !defined(NET_HAVE_SYS_ADDRINFO)
 struct addrinfo
 {
    int ai_flags;
