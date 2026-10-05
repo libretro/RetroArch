@@ -2372,6 +2372,21 @@ void dxgi_copy(
          break;
       }
 
+      case DXGI_FORMAT_R16G16B16A16_FLOAT:
+         /* RGBA half floats, which only ever go to the same format. */
+         if ((unsigned)dst_format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+         {
+            const UINT8* in  = (const UINT8*)src_data;
+            UINT8*       out = (UINT8*)dst_data;
+            for (i = 0; i < height; i++)
+            {
+               memcpy(out, in, (size_t)width * 8);
+               in  += src_pitch ? src_pitch : width * 8;
+               out += dst_pitch ? dst_pitch : width * 8;
+            }
+         }
+         break;
+
       case DXGI_FORMAT_R10G10B10A2_UNORM:
       {
          /* Native 10-bit source. The ABI's XRGB2101010 packs R in bits

@@ -4187,12 +4187,17 @@ static void lane_surface_external(void)
       src.pixels       = px;
       src.payload      = px;
       src.payload_free = surf_payload_free;
-      src.pixfmt       = GFX_SURFACE_PIXFMT_FP16;
-      r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
-      CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
-            "FP16 external submit returned %d, not FAILED", r);
-      CHECK(!s->payload_free && !s->inflight,
-            "refused submit kept a payload or went in flight");
+      /* Half floats to a texture path that would read them as 32-bit
+       * texels; one that keeps them has the fp16 lane below. */
+      if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+      {
+         src.pixfmt    = GFX_SURFACE_PIXFMT_FP16;
+         r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
+         CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
+               "FP16 external submit returned %d, not FAILED", r);
+         CHECK(!s->payload_free && !s->inflight,
+               "refused submit kept a payload or went in flight");
+      }
       src.pixfmt       = GFX_SURFACE_PIXFMT_GX_RGBA8;
       r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
 #ifdef GEKKO
@@ -4287,6 +4292,101 @@ static void lane_surface_external(void)
       }
    }
 
+   /* Half floats, on a real driver whose texture path keeps them: an
+    * FP16 still loads, updates in place and reloads as 8888, and an
+    * FP16 stream updates the same texture - from the driver's upload
+    * memory where it lends it. Under a validating Vulkan a copy of the
+    * wrong size or layout is an error. */
+   if (     real_driver()
+         && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+   {
+      uint16_t *ph  = (uint16_t*)malloc(n * 8);
+      uint32_t *p8  = (uint32_t*)malloc(n * sizeof(uint32_t));
+      uintptr_t first = 0;
+      unsigned  k, tries;
+      s = gfx_surface_new_static(VIDEO_SCALE_PACK(64, 48),
+            TEXTURE_FILTER_LINEAR);
+      CHECK(s && ph && p8, "fp16 lane: allocation failed");
+      if (s && ph && p8)
+      {
+         for (i = 0; i < n; i++)
+         {
+            ph[i * 4 + 0] = (uint16_t)(0x3c00u + (i & 0x3ff)); /* 1.0.. */
+            ph[i * 4 + 1] = 0x4500u;                            /* 5.0  */
+            ph[i * 4 + 2] = 0xb800u;                            /* -0.5 */
+            ph[i * 4 + 3] = 0x3c00u;
+            p8[i]         = 0xff000000u | (uint32_t)(i * 2654435761u >> 8);
+         }
+         src.payload      = NULL;
+         src.payload_free = NULL;
+         src.rgba         = rgba;
+         for (k = 0; k < 3; k++)
+         {
+            src.pixels = (k < 2) ? (const void*)ph : (const void*)p8;
+            src.pixfmt = (k < 2) ? GFX_SURFACE_PIXFMT_FP16
+                                 : GFX_SURFACE_PIXFMT_8888;
+            for (tries = 0; tries < 8; tries++)
+            {
+               r = gfx_surface_submit_external(s, &src, NULL, NULL);
+               if (r != GFX_SURFACE_SUBMIT_BUSY)
+                  break;
+               run_frames(1);
+            }
+            CHECK(r == GFX_SURFACE_SUBMIT_QUEUED
+                  || r == GFX_SURFACE_SUBMIT_DONE,
+                  "fp16 lane: submit %u returned %d", k, r);
+            for (tries = 0; tries < 8 && s->inflight; tries++)
+               run_frames(1);
+            CHECK(s->handle != 0, "fp16 lane: submit %u left no texture", k);
+            if (k == 0)
+               first = s->handle;
+            else if (k == 1 && video_driver_texture_can_update())
+               CHECK(s->handle == first, "fp16 lane: a second FP16 frame "
+                     "replaced the texture instead of updating it");
+         }
+      }
+      free(ph);
+      free(p8);
+      gfx_surface_free(s);
+      run_frames(2);
+
+      /* A stream of half floats through two slots. */
+      s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+            GFX_SURFACE_PIXFMT_FP16, TEXTURE_FILTER_LINEAR, NULL, NULL);
+      CHECK(s != NULL, "fp16 lane: no stream surface");
+      if (s)
+      {
+         for (k = 0; k < 6; k++)
+         {
+            unsigned slot = k & 1;
+            uint16_t *dst;
+            for (tries = 0; tries < 16
+                  && (s->inflight || !gfx_surface_slot_writable(s, slot));
+                  tries++)
+               run_frames(1);
+            dst = (uint16_t*)s->slots[slot];
+            for (i = 0; i < n * 4; i++)
+               dst[i] = (uint16_t)(0x3c00u + ((i + k) & 0xff));
+            r = gfx_surface_submit(s, slot, rgba);
+            CHECK(r == GFX_SURFACE_SUBMIT_DONE
+                  || r == GFX_SURFACE_SUBMIT_QUEUED,
+                  "fp16 lane: stream submit %u returned %d", k, r);
+            for (tries = 0; tries < 16 && s->inflight; tries++)
+               run_frames(1);
+            if (k == 0)
+               first = s->handle;
+            else if (s->can_update)
+               CHECK(s->handle == first, "fp16 lane: stream frame %u "
+                     "replaced the texture", k);
+         }
+         gfx_surface_free(s);
+         run_frames(2);
+      }
+      if (failures == had)
+         fprintf(stderr, "[pass] fp16 surface lane (still load, update, "
+               "reload as 8888; stream in place)\n");
+   }
+
    /* One slot surface per format bit: sized from the format. */
    s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_FP16,
          TEXTURE_FILTER_LINEAR, NULL, NULL);
@@ -4294,8 +4394,9 @@ static void lane_surface_external(void)
    if (s)
    {
       memset(s->slots[0], 0, n * GFX_SURFACE_PIXFMT_BPP(s->pixfmt));
-      CHECK(gfx_surface_submit(s, 0, rgba) == GFX_SURFACE_SUBMIT_FAILED,
-            "FP16 slot submit reached a driver with no FP16 path");
+      if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+         CHECK(gfx_surface_submit(s, 0, rgba) == GFX_SURFACE_SUBMIT_FAILED,
+               "FP16 slot submit reached a driver with no FP16 path");
       gfx_surface_free(s);
    }
    CHECK(gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,

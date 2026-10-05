@@ -1255,6 +1255,9 @@ static void d3d12_update_texture_into(
          case DXGI_FORMAT_R10G10B10A2_UNORM:
             pitch = width * 4;
             break;
+         case DXGI_FORMAT_R16G16B16A16_FLOAT:
+            pitch = width * 8;
+            break;
          case DXGI_FORMAT_B5G6R5_UNORM:
             pitch = width * 2;
             break;
@@ -8322,7 +8325,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = image->pix10
+   texture->desc.Format = image->fp16
+         ? DXGI_FORMAT_R16G16B16A16_FLOAT
+         : image->pix10
          ? DXGI_FORMAT_R10G10B10A2_UNORM
          : DXGI_FORMAT_B8G8R8A8_UNORM;
    texture->srv_heap    = &d3d12->desc.srv_heap;
@@ -8333,7 +8338,8 @@ static uintptr_t d3d12_gfx_load_texture_internal(
    if (texture->upload_buffer)
       d3d12_update_texture(
             image->width, image->height, 0,
-            image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
+            image->fp16  ? DXGI_FORMAT_R16G16B16A16_FLOAT
+          : image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
                          : DXGI_FORMAT_B8G8R8A8_UNORM,
             image->pixels, texture);
 
@@ -9071,6 +9077,10 @@ static bool d3d12_gfx_supports_texture_format(void* data,
    /* R10G10B10A2_UNORM is what load and update make of a pix10 image,
     * and every feature level samples it. */
    if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return d3d12 && d3d12->device;
+   /* R16G16B16A16_FLOAT is sampled and filtered at every feature
+    * level; load and update copy its rows as they are. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return d3d12 && d3d12->device;
    if (!d3d12 || !d3d12->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;

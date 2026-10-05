@@ -10171,7 +10171,9 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
       VkComponentMapping swz;
       const VkComponentMapping *pswz = NULL;
       bool has_mips;
-      if (image->pix10)
+      if (image->fp16)
+         tex_fmt = VK_FORMAT_R16G16B16A16_SFLOAT; /* R,G,B,A as stored */
+      else if (image->pix10)
       {
          /* Same portability handling as the source frame: prefer the ARGB
           * ordering, else A2B10G10R10 + red<->blue view swizzle. */
@@ -10291,7 +10293,8 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
    if (     !vk->context || !texture
          || texture->image == VK_NULL_HANDLE
          || texture->layout != VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-         || vulkan_format_to_bpp(texture->format) != 4)
+         || (     vulkan_format_to_bpp(texture->format) != 4
+               && vulkan_format_to_bpp(texture->format) != 8))
       return NULL;
 
    device = vk->context->device;
@@ -10397,7 +10400,7 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
 
    if (!lent_src)
    {
-      row_bytes = (size_t)image->width * 4;
+      row_bytes = (size_t)image->width * vulkan_format_to_bpp(texture->format);
       src       = (const uint8_t*)image->pixels;
       dst       = (uint8_t*)staging->mapped;
       if (staging->stride == row_bytes)
@@ -10584,6 +10587,10 @@ static bool vulkan_supports_texture_format(void *data,
     * whose fallback (A2B10G10R10 plus a swizzle) every device samples,
     * and updates as raw 32-bit words into that same format. */
    if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
+      return vk && vk->context;
+   /* R16G16B16A16_SFLOAT is a format every device samples, filters
+    * and blits. */
+   if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return vk && vk->context;
    if (!vk || !vk->context || !vulkan_gpu_format_to_vk(fmt, &vkfmt))
       return false;

@@ -91,13 +91,13 @@ bool gfx_surface_query_requirements(unsigned width,
     * of them, since a producer with a wider source loses nothing by
     * decoding into it and everything by being narrowed twice.
     *
-    * FP16 is not listed yet even under a scRGB framebuffer: the
-    * texture interface has no encoding for it, and every driver
-    * composites menu textures as SDR (sRGB to scRGB at menu nits), so
-    * a linear scRGB texel would be encoded a second time. It is
-    * listed once a driver loads and updates RGBA16F and composites
-    * such a texture as linear; the slots, pitches and update keys
-    * here already size from the format. */
+    * FP16 is not listed yet even where the driver loads and updates
+    * RGBA16F (TEXTURE_GPU_FORMAT_RGBA16F): every driver composites
+    * menu textures as SDR (sRGB to scRGB at menu nits), so a linear
+    * scRGB texel would be encoded a second time. It is listed once a
+    * driver composites such a texture as linear; a submit of it is
+    * taken already, and the slots, pitches and update keys here size
+    * from the format. */
    req->formats    = GFX_SURFACE_PIXFMT_8888;
    /* The texture path's own answer, not whether the context presents
     * 10-bit core frames (GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE): the two
@@ -175,11 +175,21 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
    s->img.height        = VIDEO_SCALE_H(s->dims);
    s->img.supports_rgba = rgba;
    s->img.compressed    = NULL;
+   s->img.fp16          = false;
    switch (pixfmt)
    {
       case GFX_SURFACE_PIXFMT_8888:
          s->img.pix10   = false;
          break;
+      case GFX_SURFACE_PIXFMT_FP16:
+         /* Half floats have no narrower form here: the driver takes
+          * them as they are or the submit fails. */
+         if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+            return false;
+         s->img.pix10   = false;
+         s->img.fp16    = true;
+         *fmt = 4;
+         return true;
       case GFX_SURFACE_PIXFMT_2101010:
          s->img.pix10   = true;
          if (gfx_surface_must_narrow(pixfmt))

@@ -59,6 +59,11 @@ struct texture_image
     * uploaded as such by drivers that answer TEXTURE_GPU_FORMAT_RGB10A2;
     * others get an 8-bit copy via image_texture_narrow_10bit(). */
    bool pix10;
+   /* When true, ->pixels holds RGBA half floats, eight bytes a pixel in
+    * memory order R,G,B,A - linear light, which no 8-bit encoding
+    * covers - rather than 32-bit texels. Only uploaded by drivers that
+    * answer TEXTURE_GPU_FORMAT_RGBA16F; exclusive with ->pix10. */
+   bool fp16;
    /* Optional GPU-native compressed payload (BCn).  When non-NULL a
     * capable driver may upload it directly and leave ->pixels NULL;
     * image_texture_realize_rgba() decodes to ->pixels on demand for
@@ -109,7 +114,12 @@ enum texture_gpu_format
     * supports_texture_format to learn whether the driver's load and
     * in-place update sample it as 10-bit rather than reading its words
     * as 8-bit texels. */
-   TEXTURE_GPU_FORMAT_RGB10A2
+   TEXTURE_GPU_FORMAT_RGB10A2,
+   /* Likewise uncompressed: RGBA half floats in ->pixels, flagged by
+    * ->fp16, eight bytes a pixel in memory order R,G,B,A. Asked of
+    * supports_texture_format to learn whether the driver's load and
+    * in-place update keep them as floats. */
+   TEXTURE_GPU_FORMAT_RGBA16F
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are

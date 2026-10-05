@@ -4245,6 +4245,11 @@ bool video_driver_texture_load(void *data,
          && ti->pix10
          && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
       image_texture_narrow_10bit(ti);
+   /* Half floats have no 8-bit form to fall back to here. */
+   if (     ti
+         && ti->fp16
+         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+      return false;
 
    GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);
    *id = poke->load_texture(video_st->data, data, threaded, filter_type);
@@ -4275,6 +4280,10 @@ bool video_driver_texture_load_async(void *data,
             && !video_driver_supports_texture_format(
                TEXTURE_GPU_FORMAT_RGB10A2))
          image_texture_narrow_10bit(ti);
+      if (     ti->fp16
+            && !video_driver_supports_texture_format(
+               TEXTURE_GPU_FORMAT_RGBA16F))
+         return false;
       GFX_INSTR_INC(GFX_INSTR_TEX_LOAD_ASYNC);
       if (video_thread_texture_load_async(ti, filter_type,
                done, user, release))
