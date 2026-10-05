@@ -505,6 +505,7 @@ typedef struct video_frame_info
    unsigned runahead_frames;
    unsigned aspect_ratio_idx;
    unsigned max_swapchain_images;
+   unsigned fse_negotiation;
    /* Settings a driver reads while it draws a frame: they arrive with
     * the frame, so the thread that draws never reads what the menu
     * writes on the main thread. */
@@ -618,6 +619,8 @@ typedef struct video_frame_info
    bool core_status_msg_show;
    bool post_filter_record;
    bool windowed_fullscreen;
+   bool vsync;
+   bool adaptive_vsync;
    bool fullscreen;
    bool font_enable;
    bool hdr_support;

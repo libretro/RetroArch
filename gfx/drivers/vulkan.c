@@ -8817,6 +8817,20 @@ static bool vulkan_frame(void *data, const void *frame,
    bool use_offscreen_buffer                     = false;
 #endif
 
+   /* A swapchain the context makes while this frame draws is made from
+    * the frame's settings */
+   {
+      vulkan_swapchain_settings_t *ss = &vk->context->swapchain_settings;
+      ss->display_peak        = video_info->hdr_display_peak;
+      ss->hdr_mode            = video_info->hdr_mode;
+      ss->bit_depth           = video_info->swapchain_bit_depth;
+      ss->max_images          = video_info->max_swapchain_images;
+      ss->fse_negotiation     = video_info->fse_negotiation;
+      ss->vsync               = video_info->vsync;
+      ss->adaptive_vsync      = video_info->adaptive_vsync;
+      ss->windowed_fullscreen = video_info->windowed_fullscreen;
+   }
+
    /* A resize known of before this frame is drawn is done now, so
     * that the frame is drawn at the new size. */
    {

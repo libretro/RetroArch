@@ -2465,11 +2465,12 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    uint32_t present_mode_count             = 0;
    VkPresentModeKHR swapchain_present_mode = VK_PRESENT_MODE_FIFO_KHR;
    VkCompositeAlphaFlagBitsKHR composite   = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-   settings_t                    *settings = config_get_ptr();
-   bool vsync                              = settings->bools.video_vsync;
-   bool adaptive_vsync                     = settings->bools.video_adaptive_vsync;
+   /* Never the settings: this can run on the thread that draws */
+   const vulkan_swapchain_settings_t *ss   = &vk->context.swapchain_settings;
+   bool vsync                              = ss->vsync;
+   bool adaptive_vsync                     = ss->adaptive_vsync;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-   bool video_windowed_fullscreen          = settings->bools.video_windowed_fullscreen;
+   bool video_windowed_fullscreen          = ss->windowed_fullscreen;
    /* Relaxed: ALLOWED is a hint and the driver may decline - and on
     * NVIDIA it does, leaving the swapchain on DWM's independent-flip
     * path with the setting silently inert (PresentMon reports
@@ -2478,7 +2479,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * vkAcquireFullScreenExclusiveModeEXT once the swapchain exists. */
    bool fse_forced                         =
          !video_windowed_fullscreen
-      && settings->uints.video_fse_negotiation == VIDEO_FSE_FORCED;
+      && ss->fse_negotiation == VIDEO_FSE_FORCED;
    HMONITOR hmonitor;
    /* Assigned rather than initialised: the exclusive mode depends on
     * two settings read above, and C89 wants an initialiser it can
@@ -2817,7 +2818,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT)
       {
-         unsigned video_hdr_mode = settings->uints.video_hdr_mode;
+         unsigned video_hdr_mode = ss->hdr_mode;
 
          /* Advertise HDR capabilities to the menu based on which
           * surface formats the driver actually enumerates.
@@ -2921,7 +2922,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
           * removes the final-pass quantisation without dragging in the
           * whole HDR pipeline.  Opt-in, since it is not free on every
           * compositor, and fall back to 8-bit when unavailable. */
-         if (settings->uints.video_swapchain_bit_depth == 2)
+         if (ss->bit_depth == 2)
          {
             for (i = 0; i < format_count; i++)
             {
@@ -3009,7 +3010,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
     * We hard sync against the swapchain, so if we have 2 images,
     * we would be unable to overlap CPU and GPU, which can get very slow
     * for GPU-rendered cores. */
-   desired_swapchain_images    = settings->uints.video_max_swapchain_images;
+   desired_swapchain_images    = ss->max_images;
 
    /* We don't clamp the number of images requested to what is reported
     * as supported by the implementation in surface_properties.minImageCount,
@@ -3306,7 +3307,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       meta.whitePoint.x              = 0.3127f;
       meta.whitePoint.y              = 0.3290f;
       /* 1000 nits unless Use Display Peak supplies the display's */
-      meta.maxLuminance              = video_driver_hdr_metadata_peak(1000.0f);
+      meta.maxLuminance              = ss->display_peak > 0.0f
+            ? ss->display_peak : 1000.0f;
       meta.minLuminance              = 0.001f;
       meta.maxContentLightLevel      = meta.maxLuminance;
       meta.maxFrameAverageLightLevel = meta.maxLuminance;
@@ -3315,6 +3317,22 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 #endif
 
    return true;
+}
+
+/* The settings a swapchain is made from, as the context is made:
+ * the main thread's, or the one it is waiting on.  Each frame takes
+ * them over after that. */
+static void vulkan_swapchain_settings_init(vulkan_swapchain_settings_t *ss)
+{
+   settings_t *settings    = config_get_ptr();
+   ss->display_peak        = video_driver_hdr_metadata_peak(0.0f);
+   ss->hdr_mode            = settings->uints.video_hdr_mode;
+   ss->bit_depth           = settings->uints.video_swapchain_bit_depth;
+   ss->max_images          = settings->uints.video_max_swapchain_images;
+   ss->fse_negotiation     = settings->uints.video_fse_negotiation;
+   ss->vsync               = settings->bools.video_vsync;
+   ss->adaptive_vsync      = settings->bools.video_adaptive_vsync;
+   ss->windowed_fullscreen = settings->bools.video_windowed_fullscreen;
 }
 
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
@@ -3340,6 +3358,7 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
    }
 
    vk->wsi_type = type;
+   vulkan_swapchain_settings_init(&vk->context.swapchain_settings);
 
    if (!vulkan_library)
    {

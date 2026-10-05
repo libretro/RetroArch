@@ -209,6 +209,22 @@ enum vk_texture_flags
    VK_TEX_FLAG_BAR_MAPPED                   = (1 << 3)
 };
 
+/* The settings a swapchain is made from.  The thread that draws can
+ * make one (a lost swapchain is remade on the next acquire), so it is
+ * made from this copy: seeded when the context is made, and taken
+ * from each frame after that, never read from the settings there. */
+typedef struct vulkan_swapchain_settings
+{
+   float    display_peak;        /* nits; 0 for the fixed metadata  */
+   unsigned hdr_mode;
+   unsigned bit_depth;           /* video_swapchain_bit_depth       */
+   unsigned max_images;
+   unsigned fse_negotiation;
+   bool     vsync;
+   bool     adaptive_vsync;
+   bool     windowed_fullscreen;
+} vulkan_swapchain_settings_t;
+
 typedef struct vulkan_context
 {
    slock_t *queue_lock;
@@ -283,6 +299,7 @@ typedef struct vulkan_context
 
    unsigned swapchain_dims;      /* VIDEO_SCALE_PACK */
    unsigned num_recycled_acquire_semaphores;
+   vulkan_swapchain_settings_t swapchain_settings;
    /* Present mode the current swapchain was created with; compared
     * against the mode a new swap_interval resolves to so a request
     * that would not change the swapchain does not recreate it. */

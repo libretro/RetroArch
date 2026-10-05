@@ -5110,6 +5110,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
                                            = settings->bools.input_menu_swap_ok_cancel_buttons;
    video_info->max_swapchain_images        = settings->uints.video_max_swapchain_images;
    video_info->windowed_fullscreen         = settings->bools.video_windowed_fullscreen;
+   video_info->vsync                       = settings->bools.video_vsync;
+   video_info->adaptive_vsync              = settings->bools.video_adaptive_vsync;
+   video_info->fse_negotiation             = settings->uints.video_fse_negotiation;
    video_info->fullscreen                  = settings->bools.video_fullscreen
          || (disp_flags & VIDEO_FLAG_FORCE_FULLSCREEN);
    video_info->menu_mouse_enable           = settings->bools.menu_mouse_enable;
