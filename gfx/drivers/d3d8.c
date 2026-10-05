@@ -3116,8 +3116,8 @@ static uintptr_t d3d8_update_texture_wrap(void *data)
 }
 #endif
 
-static bool d3d8_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update d3d8_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
 {
    (void)video_data;
 #ifdef HAVE_THREADS
@@ -3126,11 +3126,13 @@ static bool d3d8_update_texture(void *video_data, uintptr_t id,
       struct d3d8_update_cmd cmd;
       cmd.ti = ti;
       cmd.id = id;
-      return video_thread_texture_handle(&cmd,
-            d3d8_update_texture_wrap) != 0;
+      return (video_thread_texture_handle(&cmd,
+            d3d8_update_texture_wrap) != 0)
+            ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
    }
 #endif
-   return d3d8_update_texture_internal(id, ti);
+   return (d3d8_update_texture_internal(id, ti))
+      ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
 static uintptr_t d3d8_load_texture(void *video_data, void *data,

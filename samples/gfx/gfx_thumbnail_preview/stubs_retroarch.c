@@ -48,8 +48,9 @@ bool video_driver_texture_unload(uintptr_t *id)
 /* No in-place path: every animation frame is a replacement load, so
  * the upload and unload counts the probes read keep their meaning. */
 bool video_driver_texture_can_update(void) { return false; }
-bool video_driver_texture_update(uintptr_t id, void *data)
-{ (void)id; (void)data; return false; }
+/* enum video_texture_update: 0 is refused. */
+int video_driver_texture_update(uintptr_t id, void *data)
+{ (void)id; (void)data; return 0; }
 unsigned video_driver_get_disp_flags(void) { return 0; }
 void video_driver_get_video_output_size(unsigned *dims, char *d, size_t l)
 { *dims = VIDEO_SCALE_PACK(1920, 1080); (void)d; (void)l; }

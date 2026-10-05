@@ -47,7 +47,6 @@
 #include "../../state_manager.h"
 #endif
 
-#include "../gfx_instrument.h"
 #include "../font_driver.h"
 #include "../common/d3d_common.h"
 #include "../common/win32_common.h"
@@ -3919,8 +3918,9 @@ static uintptr_t d3d10_texture_unload_wrap(void *data)
  * created and released. The staging texture the last update copied
  * from may still be the GPU's; mapping it would wait, so the frame is
  * dropped instead and the texture keeps what it shows. */
-static bool d3d10_gfx_update_texture_internal(d3d10_video_t *d3d10,
-      uintptr_t handle, const struct texture_image *image)
+static enum video_texture_update d3d10_gfx_update_texture_internal(
+      d3d10_video_t *d3d10, uintptr_t handle,
+      const struct texture_image *image)
 {
    D3D10_MAPPED_TEXTURE2D mapped;
    D3D10_BOX box;
@@ -3930,14 +3930,14 @@ static bool d3d10_gfx_update_texture_internal(d3d10_video_t *d3d10,
    if (     !d3d10 || !texture || !texture->staging || image->pix10
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    hr = texture->staging->lpVtbl->Map(texture->staging, 0,
          D3D10_MAP_WRITE, D3D10_MAP_FLAG_DO_NOT_WAIT, &mapped);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
-      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    if (FAILED(hr))
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    dxgi_copy(image->width, image->height, texture->desc.Format, 0,
          image->pixels, texture->desc.Format, mapped.RowPitch,
@@ -3955,25 +3955,25 @@ static bool d3d10_gfx_update_texture_internal(d3d10_video_t *d3d10,
          (D3D10Resource)texture->staging, 0, &box);
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
       d3d10->device->lpVtbl->GenerateMips(d3d10->device, texture->view);
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
 static uintptr_t d3d10_texture_update_wrap(void *data)
 {
    d3d10_texture_cmd_t *cmd = (d3d10_texture_cmd_t*)data;
-   cmd->handle = d3d10_gfx_update_texture_internal(cmd->d3d10,
-         cmd->handle, cmd->image) ? cmd->handle : 0;
-   return 0;
+   return (uintptr_t)d3d10_gfx_update_texture_internal(cmd->d3d10,
+         cmd->handle, cmd->image);
 }
 #endif
 
-static bool d3d10_gfx_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update d3d10_gfx_update_texture(
+      void *video_data, uintptr_t id, const struct texture_image *ti,
+      bool threaded)
 {
    d3d10_video_t *d3d10 = (d3d10_video_t*)video_data;
    if (!id || !ti || !ti->pixels)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    if (threaded)
@@ -3983,8 +3983,8 @@ static bool d3d10_gfx_update_texture(void *video_data, uintptr_t id,
       cmd.image       = (struct texture_image*)ti;
       cmd.filter_type = TEXTURE_FILTER_LINEAR;
       cmd.handle      = id;
-      video_thread_texture_handle(&cmd, d3d10_texture_update_wrap);
-      return cmd.handle != 0;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, d3d10_texture_update_wrap);
    }
 #endif
 

@@ -84,13 +84,14 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 bool video_driver_texture_can_update(void) { return true; }
 
-bool video_driver_texture_update(uintptr_t id, void *data)
+enum video_texture_update video_driver_texture_update(uintptr_t id,
+      void *data)
 {
    const struct texture_image *img = (const struct texture_image*)data;
    if (!id || id > STUB_MAX_TEXTURES || !stub_tex[id - 1].live)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    stub_tex[id - 1].checksum = stub_checksum(img);
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 uint32_t video_driver_get_disp_flags(void) { return 0; }

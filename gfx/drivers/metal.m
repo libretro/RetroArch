@@ -7428,12 +7428,12 @@ static void metal_unload_texture(void *data,
  * Must run on the thread that owns Context.blitCommandBuffer (see
  * metal_load_texture_internal): metal_update_texture routes it to
  * the video thread when threaded video is up. */
-static bool metal_update_texture_internal(void *video_data,
-      uintptr_t handle, const struct texture_image *ti)
+static enum video_texture_update metal_update_texture_internal(
+      void *video_data, uintptr_t handle, const struct texture_image *ti)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_data;
    if (!md || !handle || !ti || !ti->pixels)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    @autoreleasepool
    {
@@ -7443,7 +7443,7 @@ static bool metal_update_texture_internal(void *video_data,
             || tex.mipmapLevelCount > 1
             || tex.width  != ti->width
             || tex.height != ti->height)
-         return false;
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
       {
          /* The texture's own texel size: RGBA16Float half floats are 8 */
          NSUInteger bpp = (tex.pixelFormat == MTLPixelFormatRGBA16Float)
@@ -7459,18 +7459,18 @@ static bool metal_update_texture_internal(void *video_data,
           * written over the GPU's shoulder, which is the policy the
           * other backends keep. */
          if (__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
-            return true;
+            return VIDEO_TEXTURE_UPDATE_DROPPED;
          if (t.staging.length < len * METAL_STAGING_SLOTS)
          {
             id<MTLBuffer> buf = [tex.device
                   newBufferWithLength:len * METAL_STAGING_SLOTS
                   options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
             if (!buf)
-               return false;
+               return VIDEO_TEXTURE_UPDATE_REFUSED;
             t.staging = RARCH_AUTORELEASE_R(buf);
          }
          if (!(cb = md.context.blitCommandBuffer))
-            return false;
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
          memcpy((uint8_t *)t.staging.contents + off, ti->pixels, len);
 #if TARGET_OS_OSX
          if (t.staging.storageMode == MTLStorageModeManaged)
@@ -7502,27 +7502,25 @@ static bool metal_update_texture_internal(void *video_data,
          }
       }
    }
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
-/* Runs on the video thread via CMD_CUSTOM_COMMAND; the result goes
- * back through cmd->handle (0 = refused), as metal_texture_load_wrap
- * does, since the int return channel is not wide enough for it. */
+/* Runs on the video thread via CMD_CUSTOM_COMMAND; the outcome comes
+ * back as the command's return value. */
 static uintptr_t metal_texture_update_wrap(void *data)
 {
    metal_texture_cmd_t *cmd = (metal_texture_cmd_t*)data;
-   cmd->handle = metal_update_texture_internal(cmd->video_data,
-         cmd->handle, cmd->image) ? cmd->handle : 0;
-   return 0;
+   return (uintptr_t)metal_update_texture_internal(cmd->video_data,
+         cmd->handle, cmd->image);
 }
 #endif
 
-static bool metal_update_texture(void *video_data, uintptr_t handle,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update metal_update_texture(void *video_data,
+      uintptr_t handle, const struct texture_image *ti, bool threaded)
 {
    if (!handle || !ti)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    /* The update encodes a blit into Context.blitCommandBuffer, which
@@ -7536,8 +7534,8 @@ static bool metal_update_texture(void *video_data, uintptr_t handle,
       cmd.image       = (struct texture_image *)ti;
       cmd.filter_type = TEXTURE_FILTER_LINEAR;
       cmd.handle      = handle;
-      video_thread_texture_handle(&cmd, metal_texture_update_wrap);
-      return cmd.handle != 0;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, metal_texture_update_wrap);
    }
 #endif
 

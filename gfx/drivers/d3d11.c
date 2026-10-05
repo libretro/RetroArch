@@ -6901,8 +6901,9 @@ static uintptr_t d3d11_gfx_load_texture(
  * staging texture it kept is mapped and copied into the resource, as
  * for the first upload. Immediate-context work, so the video thread's
  * when the wrapper is up. */
-static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
-      uintptr_t handle, const struct texture_image *image)
+static enum video_texture_update d3d11_gfx_update_texture_internal(
+      d3d11_video_t *d3d11, uintptr_t handle,
+      const struct texture_image *image)
 {
    D3D11_MAPPED_SUBRESOURCE mapped;
    D3D11_BOX box;
@@ -6913,7 +6914,7 @@ static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
    if (     !d3d11 || !texture || !texture->staging
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    /* The staging texture the last update copied from may still be
     * the GPU's; a plain map would wait for it. This is a streaming
@@ -6922,9 +6923,9 @@ static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
    hr = ctx->lpVtbl->Map(ctx, (D3D11Resource)texture->staging, 0,
          D3D11_MAP_WRITE, D3D11_MAP_FLAG_DO_NOT_WAIT, &mapped);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
-      return true;
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    if (FAILED(hr))
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    dxgi_copy(image->width, image->height, texture->desc.Format, 0,
          image->pixels, texture->desc.Format, mapped.RowPitch, mapped.pData);
@@ -6940,25 +6941,25 @@ static bool d3d11_gfx_update_texture_internal(d3d11_video_t *d3d11,
          0, 0, 0, 0, (D3D11Resource)texture->staging, 0, &box);
    if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
       ctx->lpVtbl->GenerateMips(ctx, texture->view);
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
 static uintptr_t d3d11_texture_update_wrap(void *data)
 {
    d3d11_texture_cmd_t *cmd = (d3d11_texture_cmd_t*)data;
-   cmd->handle = d3d11_gfx_update_texture_internal(cmd->d3d11,
-         cmd->handle, cmd->image) ? cmd->handle : 0;
-   return 0;
+   return (uintptr_t)d3d11_gfx_update_texture_internal(cmd->d3d11,
+         cmd->handle, cmd->image);
 }
 #endif
 
-static bool d3d11_gfx_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update d3d11_gfx_update_texture(
+      void *video_data, uintptr_t id, const struct texture_image *ti,
+      bool threaded)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_data;
    if (!id || !ti || !ti->pixels)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    if (threaded)
@@ -6968,8 +6969,8 @@ static bool d3d11_gfx_update_texture(void *video_data, uintptr_t id,
       cmd.image       = (struct texture_image*)ti;
       cmd.filter_type = TEXTURE_FILTER_LINEAR;
       cmd.handle      = id;
-      video_thread_texture_handle(&cmd, d3d11_texture_update_wrap);
-      return cmd.handle != 0;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, d3d11_texture_update_wrap);
    }
 #endif
 

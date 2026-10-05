@@ -28,11 +28,12 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 bool video_driver_texture_can_update(void) { return true; }
 
-bool video_driver_texture_update(uintptr_t id, void *data)
+enum video_texture_update video_driver_texture_update(uintptr_t id,
+      void *data)
 {
    (void)data;
    stub_updates++;
-   return id != 0;
+   return id ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
 uint32_t video_driver_get_disp_flags(void) { return 0; }

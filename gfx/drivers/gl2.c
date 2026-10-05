@@ -6606,11 +6606,11 @@ static uintptr_t video_texture_update_wrap_gl2(void *data)
 }
 #endif
 
-static bool gl2_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update gl2_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
 {
    if (!id || !ti || !ti->pixels)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    if (threaded)
@@ -6620,12 +6620,12 @@ static bool gl2_update_texture(void *video_data, uintptr_t id,
       cmd.payload = (void*)ti;
       cmd.handle  = id;
       video_thread_texture_handle(&cmd, video_texture_update_wrap_gl2);
-      return true;
+      return VIDEO_TEXTURE_UPDATE_DONE;
    }
 #endif
 
    gl2_update_texture_internal(id, ti);
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 static uint32_t gl2_get_flags(void *data)

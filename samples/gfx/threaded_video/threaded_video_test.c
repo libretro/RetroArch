@@ -3978,14 +3978,14 @@ static uintptr_t surftex_load(void *data, void *img, bool threaded,
 
 /* In place: the same handle comes back, which is what lets the lane
  * check that a driver with an update path is not reloading. */
-static bool surftex_update(void *data, uintptr_t id,
+static enum video_texture_update surftex_update(void *data, uintptr_t id,
       const struct texture_image *ti, bool threaded)
 {
    (void)data; (void)ti; (void)threaded;
    if (!surftex_is_live(id))
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    surftex_updates++;
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 static void surftex_unload(void *data, bool threaded, uintptr_t id)

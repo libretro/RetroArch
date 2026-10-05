@@ -1809,14 +1809,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
 
       /* READY and not queued: the worker holds no reference, so the
        * frame (the surface slot this job owns) can be submitted from
-       * where it is. A submit still in flight from the last poll
-       * means the video thread has not taken that one yet: keep this
-       * frame for the next poll rather than queue behind it. */
+       * where it is. A submit still in flight from the last poll, or
+       * one the driver dropped, keeps this frame for the next poll. */
       {
          gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
          enum gfx_surface_submit_result res = gfx_surface_submit(s,
                thumbnail->anim_job_upload, ju->use_rgba);
-         if (res == GFX_SURFACE_SUBMIT_BUSY)
+         if (     res == GFX_SURFACE_SUBMIT_BUSY
+               || res == GFX_SURFACE_SUBMIT_DROPPED)
             return;
          if (res == GFX_SURFACE_SUBMIT_DONE)
             gfx_thumbnail_anim_shown(thumbnail, s);

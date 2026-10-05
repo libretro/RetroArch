@@ -267,10 +267,17 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
 {
    uintptr_t new_handle = 0;
 
-   if (s->handle && s->fmt == fmt && s->can_update)
+   if (s->handle && s->fmt == fmt && s->can_update && s->num_slots)
    {
-      if (video_driver_texture_update(s->handle, &s->img))
-         return GFX_SURFACE_SUBMIT_DONE;
+      switch (video_driver_texture_update(s->handle, &s->img))
+      {
+         case VIDEO_TEXTURE_UPDATE_DONE:
+            return GFX_SURFACE_SUBMIT_DONE;
+         case VIDEO_TEXTURE_UPDATE_DROPPED:
+            return GFX_SURFACE_SUBMIT_DROPPED;
+         default:
+            break;
+      }
       s->can_update = 0;
    }
 
@@ -312,6 +319,7 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    unsigned slot    = s->inflight_slot;
 
    s->inflight      = 0;
+   s->dropped       = 0;
 
    if (s->node.kind == VIDEO_THREAD_ASYNC_LOAD)
    {
@@ -326,6 +334,11 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    }
    else if (!handle)
       s->can_update = 0;
+   else if (s->node.dropped)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
+      s->dropped    = 1;
+   }
 
    if (s->payload_free)
    {
@@ -345,6 +358,7 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    }
    if (s->release)
       s->release(s->user, s, slot);
+   s->dropped = 0;
 }
 #endif
 
@@ -354,7 +368,8 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
 #ifdef HAVE_THREADS
    if (video_driver_thread_wrapper_active())
    {
-      bool need_load = !s->handle || s->fmt != fmt || !s->can_update;
+      bool need_load = !s->handle || s->fmt != fmt || !s->can_update
+         || !s->num_slots;
 
       s->node.kind    = need_load
             ? VIDEO_THREAD_ASYNC_LOAD : VIDEO_THREAD_ASYNC_UPDATE;
@@ -364,6 +379,7 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
       s->node.done    = gfx_surface_done;
       s->node.user    = s;
       s->node.release = NULL;
+      s->node.dropped = 0;
       if (video_thread_async_post(&s->node))
       {
          s->inflight      = 1;
@@ -383,8 +399,9 @@ static void gfx_surface_count(enum gfx_surface_submit_result r)
 {
    GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
          ? GFX_INSTR_SUBMIT_QUEUED
-         : (r == GFX_SURFACE_SUBMIT_DONE
-            ? GFX_INSTR_SUBMIT_DONE : GFX_INSTR_SUBMIT_FAILED));
+         : r == GFX_SURFACE_SUBMIT_DONE ? GFX_INSTR_SUBMIT_DONE
+         : r == GFX_SURFACE_SUBMIT_DROPPED ? GFX_INSTR_SUBMIT_DROPPED
+         : GFX_INSTR_SUBMIT_FAILED);
 }
 
 enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,

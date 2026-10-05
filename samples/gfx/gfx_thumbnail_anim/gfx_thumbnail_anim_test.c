@@ -96,6 +96,7 @@ extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
 extern void gt_lend_reset(void);
 extern int  gt_lend_owned, gt_update_fail, gt_lend_freed, gt_lend_refuse;
 void gt_async_flush(void);
+int gt_surface_outcome_test(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
  * the video thread. */
@@ -637,6 +638,11 @@ int main(void)
    }
 
    gfx_thumbnail_anim_worker_deinit();
+
+   /* 11. the surface's direct-video outcomes, slot by slot */
+   gt_lend_mode = 0;
+   if (gt_surface_outcome_test())
+      bad = 1;
 
    remove(path);
    printf("%s\n", bad ? "FAILED" : "PASS");

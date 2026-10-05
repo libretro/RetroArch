@@ -69,22 +69,30 @@ bool video_driver_texture_unload(uintptr_t *id)
 int gt_can_update = 1;
 int gt_updates;
 static void gt_lend_uploaded(const void *px, unsigned w, unsigned h);
-bool video_driver_texture_update(uintptr_t id, void *data)
+/* Returns enum video_texture_update's values: 0 refused, 1 done, 2
+ * dropped. gt_drop_updates makes that many updates drop. */
+int gt_drop_updates;
+int video_driver_texture_update(uintptr_t id, void *data)
 {
    uintptr_t same = id;
    struct { void *px; unsigned w, h; } *img = data;
    if (!id)
-      return false;
+      return 0;
    if (gt_update_fail > 0)
    {
       gt_update_fail--;
-      return false;
+      return 0;
+   }
+   if (gt_drop_updates > 0)
+   {
+      gt_drop_updates--;
+      return 2;
    }
    gt_updates++;
    video_driver_texture_load(data, 0, &same);
    if (img)
       gt_lend_uploaded(img->px, img->w, img->h);
-   return true;
+   return 1;
 }
 bool video_driver_texture_can_update(void) { return gt_can_update != 0; }
 

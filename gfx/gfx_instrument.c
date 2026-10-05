@@ -41,6 +41,7 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "submit_queued",
    "submit_busy",
    "submit_failed",
+   "submit_dropped",
    "submit_copy",
    "anim_frame",
    "anim_direct",

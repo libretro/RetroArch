@@ -51,6 +51,10 @@ RETRO_BEGIN_DECLS
  * gets BUSY and the caller keeps its frame for the next poll, which
  * is what a slow present would have shown anyway.
  *
+ * An update the driver takes without uploading is DROPPED, or under the
+ * wrapper reaches release() with dropped set. A surface without slots
+ * always loads, so a still is never dropped.
+ *
  * The struct is public so producers can address the slots directly;
  * everything else is the surface's. */
 
@@ -61,8 +65,10 @@ enum gfx_surface_submit_result
    GFX_SURFACE_SUBMIT_FAILED = 0, /* nothing uploaded, slot is free */
    GFX_SURFACE_SUBMIT_DONE,       /* uploaded, slot is free */
    GFX_SURFACE_SUBMIT_QUEUED,     /* slot held until release() */
-   GFX_SURFACE_SUBMIT_BUSY        /* a queued submit is still in
+   GFX_SURFACE_SUBMIT_BUSY,       /* a queued submit is still in
                                      flight; nothing taken */
+   GFX_SURFACE_SUBMIT_DROPPED     /* not uploaded; the slot is free
+                                     and still holds the frame */
 };
 
 typedef struct gfx_surface gfx_surface_t;
@@ -131,6 +137,8 @@ struct gfx_surface
    uint8_t writing;
    uintptr_t retired_handle;
    uint8_t can_update; /* driver updates in place */
+   /* Set while release() runs for a dropped submit. */
+   uint8_t dropped;
 };
 
 /* What the active video driver wants of an image, asked once before

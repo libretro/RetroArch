@@ -3969,9 +3969,9 @@ static void input_overlay_update_desc_geom(input_overlay_t *ol,
 
 #ifdef HAVE_RPNG
 /* Show one frame of a two-frame APNG, from the pair composed at load.
- * False when the surface is still the video thread's or the submit
- * failed: the caller keeps its current state, so the next poll tries
- * again instead of the press or release being lost. */
+ * False when the surface is still the video thread's, the submit
+ * failed or was dropped: the caller keeps its current state, so the
+ * next poll tries again instead of the press or release being lost. */
 static bool input_overlay_update_apng_frame(input_overlay_t *ol,
       size_t i, int target_frame)
 {
@@ -3986,8 +3986,15 @@ static bool input_overlay_update_apng_frame(input_overlay_t *ol,
    frame_len = VIDEO_SCALE_AREA(s->dims);
    memcpy(s->slots[0], pix + (target_frame ? frame_len : 0),
          frame_len * sizeof(uint32_t));
-   return gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
-         != GFX_SURFACE_SUBMIT_FAILED;
+   switch (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba))
+   {
+      case GFX_SURFACE_SUBMIT_DONE:
+      case GFX_SURFACE_SUBMIT_QUEUED:
+         return true;
+      default:
+         break;
+   }
+   return false;
 }
 
 /* Update every two-frame APNG to the frame matching its aggregated

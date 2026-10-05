@@ -10396,8 +10396,8 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
    return st;
 }
 
-static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
-      const struct texture_image *image)
+static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
+      uintptr_t handle, const struct texture_image *image)
 {
    struct vk_texture *texture = (struct vk_texture*)handle;
    struct vk_stream_state *st;
@@ -10417,7 +10417,7 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
          || VIDEO_SCALE_W(texture->dims) != image->width
          || VIDEO_SCALE_H(texture->dims) != image->height
          || !(st = vulkan_stream_state_get(vk, texture)))
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    device = vk->context->device;
 
@@ -10431,7 +10431,8 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
    if (slot < VK_STREAM_SLOTS)
    {
       if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
-         { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* written early: keep the last frame */
+         /* written early: keep the last frame */
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
       lent_src = true;
    }
    else
@@ -10444,7 +10445,8 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
          slot ^= 1;
          if (     (st->lent & (1u << slot))
                || vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
-            { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* none free: keep the last frame */
+            /* none free: keep the last frame */
+            return VIDEO_TEXTURE_UPDATE_DROPPED;
       }
       st->next_slot = slot ^ 1;
    }
@@ -10528,25 +10530,24 @@ static bool vulkan_update_texture_internal(vk_t *vk, uintptr_t handle,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
 static uintptr_t vulkan_texture_update_wrap(void *data)
 {
    vulkan_texture_cmd_t *cmd = (vulkan_texture_cmd_t*)data;
-   cmd->handle = vulkan_update_texture_internal(cmd->vk, cmd->handle,
-         (const struct texture_image*)cmd->image) ? cmd->handle : 0;
-   return 0;
+   return (uintptr_t)vulkan_update_texture_internal(cmd->vk, cmd->handle,
+         (const struct texture_image*)cmd->image);
 }
 #endif
 
-static bool vulkan_update_texture(void *data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update vulkan_update_texture(void *data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
 {
    vk_t *vk = (vk_t*)data;
    if (!id || !ti)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    /* The stream lists and the staging pool are the video thread's. */
@@ -10558,8 +10559,8 @@ static bool vulkan_update_texture(void *data, uintptr_t id,
       cmd.tc          = NULL;
       cmd.handle      = id;
       cmd.filter_type = TEXTURE_FILTER_LINEAR;
-      video_thread_texture_handle(&cmd, vulkan_texture_update_wrap);
-      return cmd.handle != 0;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, vulkan_texture_update_wrap);
    }
 #endif
 

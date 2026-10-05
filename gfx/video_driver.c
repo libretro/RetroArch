@@ -4314,18 +4314,21 @@ bool video_driver_texture_load_async(void *data,
    return true;
 }
 
-bool video_driver_texture_update(uintptr_t id, void *data)
+enum video_texture_update video_driver_texture_update(uintptr_t id,
+      void *data)
 {
    video_driver_state_t *video_st     = &video_driver_st;
    const video_poke_interface_t *poke = video_st->poke;
-   bool ok;
+   enum video_texture_update r;
    if (!id || !data || !poke || !poke->update_texture)
-      return false;
-   ok = poke->update_texture(video_st->data, id,
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   r = poke->update_texture(video_st->data, id,
          (const struct texture_image*)data,
          video_driver_thread_wrapper_active());
-   GFX_INSTR_INC(ok ? GFX_INSTR_TEX_UPDATE : GFX_INSTR_TEX_UPDATE_REFUSED);
-   return ok;
+   GFX_INSTR_INC(r == VIDEO_TEXTURE_UPDATE_DONE ? GFX_INSTR_TEX_UPDATE
+         : r == VIDEO_TEXTURE_UPDATE_DROPPED ? GFX_INSTR_TEX_UPDATE_DROPPED
+         : GFX_INSTR_TEX_UPDATE_REFUSED);
+   return r;
 }
 
 bool video_driver_supports_texture_format(enum texture_gpu_format fmt)

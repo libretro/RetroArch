@@ -1287,15 +1287,19 @@ static void video_thread_async_run(thread_video_t *thr)
          /* The handle is the poster's texture; it comes back as the
           * result so done() sees the same value on success, 0 when
           * the driver refused to update it in place. */
-         if (     !driver_data || !poke || !poke->update_texture
-               || !poke->update_texture(driver_data, n->handle,
-                     (const struct texture_image*)n->img, false))
+         enum video_texture_update r = VIDEO_TEXTURE_UPDATE_REFUSED;
+         if (driver_data && poke && poke->update_texture)
+            r = poke->update_texture(driver_data, n->handle,
+                  (const struct texture_image*)n->img, false);
+         n->dropped = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
+         if (r == VIDEO_TEXTURE_UPDATE_REFUSED)
          {
             GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_REFUSED);
             n->handle = 0;
          }
          else
-            GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE);
+            GFX_INSTR_INC(n->dropped ? GFX_INSTR_TEX_UPDATE_DROPPED
+                  : GFX_INSTR_TEX_UPDATE);
       }
       else
       {
@@ -4221,14 +4225,14 @@ static bool thread_supports_texture_format(void *video_data,
  * thread_load_texture does. The underlying driver decides whether to marshal
  * the GPU work onto the video thread; the descriptor stays alive because
  * video_thread_texture_handle is synchronous. */
-static bool thread_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update thread_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
 {
    thread_video_t *thr = (thread_video_t*)video_data;
 
    if (thr && thr->driver_data && thr->poke && thr->poke->update_texture)
       return thr->poke->update_texture(thr->driver_data, id, ti, threaded);
-   return false;
+   return VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
 static uintptr_t thread_load_texture_compressed(void *video_data,

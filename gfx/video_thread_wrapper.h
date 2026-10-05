@@ -200,7 +200,8 @@ typedef void (*video_thread_async_release_t)(void *img);
 /* What the video thread does with a node. LOAD creates a texture from
  * img and reports the handle; UPDATE writes img into the texture whose
  * handle the node carries, in place, and reports that handle back (0
- * when the driver could not take the update). */
+ * when the driver could not take the update), with dropped set when
+ * the driver took it but uploaded nothing. */
 enum video_thread_async_kind
 {
    VIDEO_THREAD_ASYNC_LOAD = 0,
@@ -219,6 +220,7 @@ typedef struct video_thread_async_load
    uintptr_t handle;
    enum texture_filter_type filter;
    uint8_t kind;                   /* enum video_thread_async_kind */
+   uint8_t dropped;                /* UPDATE: taken, nothing uploaded */
    /* The node belongs to the poster, who embeds it in a resource that
     * outlives the post: the wrapper never frees it, and delivers
     * done() exactly once for every accepted post, so the poster can

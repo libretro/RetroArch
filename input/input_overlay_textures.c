@@ -107,6 +107,21 @@ void input_overlay_release_textures(input_overlay_t *ol)
    ol->page_textures = NULL;
 }
 
+/* A dropped frame of a two-frame image: mark it as showing neither, so
+ * the next poll submits the one its press state wants. */
+static void input_overlay_surface_release(void *user, gfx_surface_t *s,
+      unsigned slot)
+{
+   input_overlay_t *ol = (input_overlay_t*)user;
+   size_t i;
+   (void)slot;
+   if (!s->dropped || !ol || !ol->anim_2frame_cur || !ol->surfaces)
+      return;
+   for (i = 0; i < ol->num_images; i++)
+      if (ol->surfaces[i] == (void*)s)
+         ol->anim_2frame_cur[i] = 0xff;
+}
+
 /* Every unique image of the pack becomes a surface and its upload is
  * submitted. With threaded video the uploads are the video thread's
  * from here; the handles arrive at a later poll. False when one could
@@ -146,7 +161,8 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
          : animated
          ? gfx_surface_new(VIDEO_SCALE_PACK(ol->images[i]->width,
                ol->images[i]->height),
-               1, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL)
+               1, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               input_overlay_surface_release, ol)
          : gfx_surface_new_static(VIDEO_SCALE_PACK(ol->images[i]->width,
             ol->images[i]->height), TEXTURE_FILTER_LINEAR);
       GFX_INSTR_INC(GFX_INSTR_OVERLAY_UPLOAD);

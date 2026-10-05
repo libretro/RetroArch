@@ -8613,8 +8613,9 @@ static bool d3d12_texture_upload_buffer2(d3d12_video_t *d3d12,
    return true;
 }
 
-static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
-      uintptr_t handle, const struct texture_image *image)
+static enum video_texture_update d3d12_gfx_update_texture_internal(
+      d3d12_video_t *d3d12, uintptr_t handle,
+      const struct texture_image *image)
 {
    d3d12_texture_t *texture = (d3d12_texture_t*)handle;
    UINT64 done;
@@ -8623,7 +8624,7 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height
          || texture->desc.MipLevels > 1)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    if (!texture->lent)
    {
       /* A copy from the upload buffer recorded by a frame that has not
@@ -8634,13 +8635,13 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
       if (     !texture->dirty && texture->upload_fence && d3d12
             && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
                < texture->upload_fence)
-         { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
       d3d12_update_texture(image->width, image->height, 0,
             texture->desc.Format, image->pixels, texture);
-      return true;
+      return VIDEO_TEXTURE_UPDATE_DONE;
    }
    if (!d3d12)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
    done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
    /* A lent slot holding the frame already: the producer wrote it where
     * the draw-time copy reads from, once the slot was ready. */
@@ -8649,44 +8650,46 @@ static bool d3d12_gfx_update_texture_internal(d3d12_video_t *d3d12,
             && (const uint8_t*)image->pixels == texture->lend_mapped[k])
       {
          if (done < texture->lend_fence[k])
-            { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* written early: keep the last frame */
+            /* written early: keep the last frame */
+            return VIDEO_TEXTURE_UPDATE_DROPPED;
          texture->pending = (uint8_t)k;
          texture->dirty   = true;
-         return true;
+         return VIDEO_TEXTURE_UPDATE_DONE;
       }
    /* Otherwise copied into the buffer nobody else writes, made on
     * first use. */
    k = (texture->lent & 1u) ? 1 : 0;
    if (texture->lent & (1u << k))
-      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; } /* every buffer lent: keep the last frame */
+      /* every buffer lent: keep the last frame */
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    if (k == 1 && !d3d12_texture_upload_buffer2(d3d12, texture))
-      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    if (     done < texture->lend_fence[k]
          && !(texture->dirty && texture->pending == k))
-      { GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_DROPPED); return true; }
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
    d3d12_update_texture_into(image->width, image->height, 0,
          texture->desc.Format, image->pixels, texture,
          (ID3D12Resource*)(k ? texture->upload_buffer2
                              : texture->upload_buffer));
    texture->pending = (uint8_t)k;
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
 static uintptr_t d3d12_texture_update_wrap(void *data)
 {
    d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
-   cmd->handle = d3d12_gfx_update_texture_internal(cmd->d3d12,
-         cmd->handle, cmd->image) ? cmd->handle : 0;
-   return 0;
+   return (uintptr_t)d3d12_gfx_update_texture_internal(cmd->d3d12,
+         cmd->handle, cmd->image);
 }
 #endif
 
-static bool d3d12_gfx_update_texture(void *video_data, uintptr_t id,
-      const struct texture_image *ti, bool threaded)
+static enum video_texture_update d3d12_gfx_update_texture(
+      void *video_data, uintptr_t id, const struct texture_image *ti,
+      bool threaded)
 {
    if (!id || !ti || !ti->pixels)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
    if (threaded)
@@ -8696,8 +8699,8 @@ static bool d3d12_gfx_update_texture(void *video_data, uintptr_t id,
       cmd.image       = (struct texture_image*)ti;
       cmd.filter_type = TEXTURE_FILTER_LINEAR;
       cmd.handle      = id;
-      video_thread_texture_handle(&cmd, d3d12_texture_update_wrap);
-      return cmd.handle != 0;
+      return (enum video_texture_update)video_thread_texture_handle(
+            &cmd, d3d12_texture_update_wrap);
    }
 #endif
 
