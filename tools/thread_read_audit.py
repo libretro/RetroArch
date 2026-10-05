@@ -155,6 +155,124 @@ FRAME_CONTEXT_ENTRIES = (
     "d3d12_gfx_frame",
 )
 
+# The context driver callbacks the frame-context functions above call
+# through their gfx_ctx_driver_t (ctx_driver->swap_buffers and the
+# rest): another indirect edge the binary walk cannot follow, one level
+# below the wrapper's.  Whatever function a context driver's table puts
+# in one of these slots runs inside the frame context, so it is an entry
+# too.  The slots are found by field name in gfx/video_driver.h and the
+# functions in them from every gfx_ctx_driver_t table in the tree.
+FRAME_CONTEXT_CTX_SLOTS = (
+    "update_window_title",
+    "set_resize",
+    "swap_buffers",
+    "bind_hw_render",
+)
+
+C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
+CTX_TABLE_RE = re.compile(
+    r"\bgfx_ctx_driver_t\s+[A-Za-z_][A-Za-z_0-9]*\s*=\s*\{")
+IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z_0-9]*$")
+
+
+def first_arm(text):
+    """Preprocessor lines dropped, keeping only each conditional's first
+    arm: a table's #ifdef X / #else arms fill the same slot, so one arm
+    is enough to number the slots."""
+    keep, stack = [], []
+    for line in text.split("\n"):
+        d = line.strip()
+        if d.startswith("#"):
+            word = d[1:].strip().split(None, 1)[0] if d[1:].strip() else ""
+            if word in ("if", "ifdef", "ifndef"):
+                stack.append(all(stack) if stack else True)
+            elif word in ("elif", "else") and stack:
+                stack[-1] = False
+            elif word == "endif" and stack:
+                stack.pop()
+            continue
+        if not stack or all(stack):
+            keep.append(line)
+    return "\n".join(keep)
+
+
+def ctx_struct_fields(header_text):
+    """gfx_ctx_driver_t's fields, in order."""
+    m = re.search(r"typedef\s+struct\s+gfx_ctx_driver\s*\{(.*?)\}\s*"
+                  r"gfx_ctx_driver_t\s*;", C_COMMENT_RE.sub(" ", header_text),
+                  re.S)
+    if not m:
+        return []
+    fields = []
+    for decl in first_arm(m.group(1)).split(";"):
+        decl = " ".join(decl.split())
+        if not decl:
+            continue
+        f = re.search(r"\(\s*\*\s*([A-Za-z_][A-Za-z_0-9]*)\s*\)", decl)
+        if not f:
+            f = re.search(r"([A-Za-z_][A-Za-z_0-9]*)\s*$", decl)
+        if f:
+            fields.append(f.group(1))
+    return fields
+
+
+def ctx_table_slots(fields, source_text, slots):
+    """The functions every gfx_ctx_driver_t table in source_text puts in
+    the named slots, positional or designated."""
+    found = set()
+    text = C_COMMENT_RE.sub(" ", source_text)
+    for m in CTX_TABLE_RE.finditer(text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[i], 0)
+            i += 1
+        body = first_arm(text[m.end():i - 1])
+        items, depth, cur = [], 0, []
+        for ch in body:
+            if ch in "({[":
+                depth += 1
+            elif ch in ")}]":
+                depth -= 1
+            if ch == "," and depth == 0:
+                items.append("".join(cur).strip())
+                cur = []
+            else:
+                cur.append(ch)
+        if "".join(cur).strip():
+            items.append("".join(cur).strip())
+        for pos, item in enumerate(items):
+            d = re.match(r"^\.([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(.*)$", item, re.S)
+            if d:
+                field, value = d.group(1), d.group(2).strip()
+            elif pos < len(fields):
+                field, value = fields[pos], item
+            else:
+                continue
+            value = re.sub(r"^\(\s*[A-Za-z_][A-Za-z_0-9 *]*\)\s*", "", value)
+            if (field in slots and IDENT_RE.match(value)
+                    and value not in ("NULL", "true", "false")):
+                found.add(value)
+    return found
+
+
+def ctx_callback_entries(root):
+    try:
+        with open(os.path.join(root, "gfx", "video_driver.h"),
+                  errors="replace") as f:
+            fields = ctx_struct_fields(f.read())
+    except OSError:
+        return set()
+    found = set()
+    for path in iter_sources(root):
+        try:
+            with open(path, errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+        if "gfx_ctx_driver_t" in text:
+            found |= ctx_table_slots(fields, text, FRAME_CONTEXT_CTX_SLOTS)
+    return found
+
 
 def iter_sources(root):
     for base, dirs, files in os.walk(root):
@@ -217,6 +335,8 @@ def source_entries(root, main_thread=None):
     if INCLUDE_FRAME_CONTEXT:
         for name in FRAME_CONTEXT_ENTRIES:
             entries.setdefault(name, "(threaded frame context)")
+        for name in sorted(ctx_callback_entries(root)):
+            entries.setdefault(name, "(context callback in a frame)")
     return entries
 
 
@@ -420,6 +540,33 @@ def selftest():
         if not ok:
             print("selftest: FAIL entries=%d findings=%r"
                   % (audited, findings))
+            return 1
+        fields = ctx_struct_fields(
+            "typedef struct gfx_ctx_driver {\n"
+            "   void* (*init)(void *video_driver);\n"
+            "   update_window_title_cb update_window_title;\n"
+            "   bool has_windowed;\n"
+            "   void (*swap_buffers)(void*);\n"
+            "   const char *ident;\n"
+            "   void (*bind_hw_render)(void *data, bool enable);\n"
+            "} gfx_ctx_driver_t;\n")
+        slots = ctx_table_slots(fields,
+            "const gfx_ctx_driver_t a = {\n"
+            "   a_init,\n"
+            "#ifdef HAVE_X\n"
+            "   a_title, /* update_window_title */\n"
+            "#else\n"
+            "   NULL,\n"
+            "#endif\n"
+            "   true,\n"
+            "   a_swap,\n"
+            "   \"a\",\n"
+            "   NULL\n"
+            "};\n"
+            "gfx_ctx_driver_t b = { .swap_buffers = b_swap, .init = b_init };\n",
+            FRAME_CONTEXT_CTX_SLOTS)
+        if slots != {"a_title", "a_swap", "b_swap"}:
+            print("selftest: FAIL context table slots %r" % sorted(slots))
             return 1
         allow = {("bad_worker", "config_get_ptr"),
                  ("pool_handler", "config_get_ptr")}
