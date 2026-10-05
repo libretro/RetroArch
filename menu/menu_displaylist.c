@@ -2471,12 +2471,19 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
    {
       /* Nothing to show, and two quite different reasons for it: the
        * display server has no way to read one, or it has and the
-       * display in use carries none. Say what would. */
+       * display in use carries none. Say what would. On Android the
+       * usual case is a phone or tablet panel, whose EDID the system
+       * keeps from apps; laptops and DDC do not come into it. */
+#if defined(ANDROID)
+      enum msg_hash_enums why = MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID;
+#else
+      enum msg_hash_enums why = MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE;
+#endif
       if (menu_displaylist_edid_line(list, MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE)))
          count++;
       if (menu_entries_append(list,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE), "",
+            msg_hash_to_str(why), "",
             MENU_ENUM_LABEL_DISPLAY_EDID_ENTRY, MENU_SETTINGS_CORE_INFO_NONE,
             0, 0, NULL))
          count++;

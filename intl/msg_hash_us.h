@@ -1740,6 +1740,10 @@ MSG_HASH(
    "A built-in laptop or all-in-one panel carries no EDID. An external display connected over DDC does."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
+   "Android does not let apps read the EDID of a phone or tablet's built-in screen. A TV box driving a display over HDMI exposes it where the device allows."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
    "Raw"
    )
