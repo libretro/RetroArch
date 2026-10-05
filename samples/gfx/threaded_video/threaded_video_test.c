@@ -4548,7 +4548,7 @@ static void lane_surface_update(void)
    gfx_surface_t *s;
    enum gfx_surface_submit_result r;
    bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
-   unsigned i;
+   unsigned i, tries;
    unsigned queued;
    uintptr_t first;
 
@@ -4706,7 +4706,15 @@ static void lane_surface_update(void)
    for (i = 0; i < 10; i++)
    {
       surf_fill(s, 0, i + 1);
-      r = gfx_surface_submit(s, 0, rgba);
+      /* A driver with no staging free drops the frame, which stays in
+       * the slot: submitted again a frame later, as a producer does. */
+      for (tries = 0; tries < 16; tries++)
+      {
+         r = gfx_surface_submit(s, 0, rgba);
+         if (r != GFX_SURFACE_SUBMIT_DROPPED)
+            break;
+         run_frames(1);
+      }
       CHECK(r == GFX_SURFACE_SUBMIT_DONE, "direct frame %u returned %d", i, r);
       run_frames(1);
    }
