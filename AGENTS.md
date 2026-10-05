@@ -106,6 +106,12 @@ Regression tests must build on both Windows and Linux.
 - Do not use POSIX-only or Win32-only headers or APIs in test code without a working path for the other platform; prefer libretro-common facilities.
 - Check that the test builds with a Linux toolchain and with mingw-w64 (MSYS2 MINGW64 or a cross-compiler) before submitting.
 
+If a change touches code already covered by the GitHub CI workflow regression tests (`.github/workflows/`), run those tests locally and make sure they still pass before presenting the change.
+
+- Find every workflow that builds or links the touched files, including samples/ and libretro-common/samples/ harnesses and tools/*.sh scripts.
+- Build and run them with the workflow's own configure line and flags, not a local approximation.
+- Do not present a change while any of those tests fail.
+
 ## Scope of changes
 
 Keep changes focused.
