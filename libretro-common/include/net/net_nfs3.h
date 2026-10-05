@@ -130,7 +130,14 @@ unsigned rnfs_get_minor_version(const struct rnfs_ctx *c);
  * READ_PLUS (holes sent as their extent): for tests. */
 uint64_t rnfs_get_rx_bytes(const struct rnfs_ctx *c);
 int rnfs_get_read_plus(const struct rnfs_ctx *c);
-/* Last nfsstat3, for callers that map them. */
+/* The status the server gave the last request a call sent (nfsstat3,
+ * or nfsstat4 for NFSv4), for callers that map them. A call that got
+ * no answer - no connection, a timeout, a path the client refused
+ * before sending - leaves RNFS_STATUS_NONE, so an earlier answer never
+ * stands in for it. RNFS_STATUS_NOENT is NFS3ERR_NOENT and
+ * NFS4ERR_NOENT alike. */
+#define RNFS_STATUS_NOENT 2
+#define RNFS_STATUS_NONE  ((uint32_t)0xFFFFFFFFUL)
 uint32_t rnfs_get_status(const struct rnfs_ctx *c);
 int rnfs_get_fd(const struct rnfs_ctx *c);
 

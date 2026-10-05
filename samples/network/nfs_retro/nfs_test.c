@@ -20,6 +20,7 @@ int main(int argc, char **argv)
    static uint8_t big[200000], back[200000];
    char small[64];
    unsigned i, n = 0, found = 0, sub = 0;
+   uint16_t nport = 0, mport = 0;
 
    if (argc < 3)
       return 2;
@@ -29,7 +30,11 @@ int main(int argc, char **argv)
       return 2;
    rnfs_set_timeout(c, 5);
    if (argc > 4)
-      rnfs_set_ports(c, (uint16_t)atoi(argv[3]), (uint16_t)atoi(argv[4]));
+   {
+      nport = (uint16_t)atoi(argv[3]);
+      mport = (uint16_t)atoi(argv[4]);
+   }
+   rnfs_set_ports(c, nport, mport);
    if (argc > 5)
       rnfs_set_version(c, (unsigned)atoi(argv[5]));
    CHECK(rnfs_connect(c, argv[1], argv[2]) == 0, "mount");
@@ -45,6 +50,40 @@ int main(int argc, char **argv)
    CHECK(rnfs_stat(c, "rnfs_test.bin", &st) == 0 && st.size == sizeof(big) && !st.is_dir, "stat");
    CHECK(rnfs_stat(c, "/", &st) == 0 && st.is_dir, "stat root");
    CHECK(rnfs_stat(c, "no_such", &st) != 0, "stat missing");
+   CHECK(rnfs_get_status(c) == RNFS_STATUS_NOENT, "stat missing is NOENT");
+   CHECK(!rnfs_open(c, "no_such", RNFS_O_RDONLY)
+         && rnfs_get_status(c) == RNFS_STATUS_NOENT, "open missing is NOENT");
+   /* RENAME onto an existing name replaces it in one step */
+   f = rnfs_open(c, "rnfs_repl.bin", RNFS_O_WRONLY | RNFS_O_CREAT | RNFS_O_TRUNC);
+   CHECK(f && rnfs_write(c, f, big, 10) == 10 && rnfs_close(c, f) == 0, "create replacement");
+   f = rnfs_open(c, "rnfs_old.bin", RNFS_O_WRONLY | RNFS_O_CREAT | RNFS_O_TRUNC);
+   CHECK(f && rnfs_write(c, f, big, 20) == 20 && rnfs_close(c, f) == 0, "create target");
+   CHECK(rnfs_rename(c, "rnfs_repl.bin", "rnfs_old.bin") == 0, "rename over a file");
+   CHECK(rnfs_stat(c, "rnfs_old.bin", &st) == 0 && st.size == 10, "rename replaced the target");
+   CHECK(rnfs_stat(c, "rnfs_repl.bin", &st) != 0, "rename source gone");
+   CHECK(rnfs_unlink(c, "rnfs_old.bin") == 0, "unlink replaced");
+   /* A call that gets no answer must not report the status of the one
+    * before it: callers read NOENT as \"the file is not there\". First
+    * a path refused before anything is sent, then a call whose
+    * connection drops and whose redial fails, then the same call with
+    * the server back, which must answer again. */
+   {
+      char longname[300];
+      memset(longname, 'a', sizeof(longname) - 1);
+      longname[sizeof(longname) - 1] = '\0';
+      CHECK(rnfs_stat(c, longname, &st) != 0, "over-long name refused");
+      CHECK(rnfs_get_status(c) == RNFS_STATUS_NONE, "refused path leaves no status");
+      CHECK(rnfs_stat(c, "no_such", &st) != 0
+            && rnfs_get_status(c) == RNFS_STATUS_NOENT, "stat missing again");
+      rnfs_set_ports(c, 1, 1);
+      CHECK(rnfs_get_fd(c) >= 0, "connected before the drop");
+      shutdown(rnfs_get_fd(c), 2);
+      CHECK(rnfs_stat(c, "no_such_either", &st) != 0, "stat without a server");
+      CHECK(rnfs_get_status(c) == RNFS_STATUS_NONE, "unanswered call leaves no status");
+      rnfs_set_ports(c, nport, mport);
+      CHECK(rnfs_stat(c, "no_such_either", &st) != 0
+            && rnfs_get_status(c) == RNFS_STATUS_NOENT, "stat missing after redial");
+   }
 
    f = rnfs_open(c, "/rnfs_test.bin", RNFS_O_RDONLY);
    CHECK(f, "open");
