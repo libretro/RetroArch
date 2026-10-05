@@ -28,7 +28,9 @@ S_UINT_EX(mcp_server_port, MCP_SERVER_PORT,
       "MCP Server Port",
       "TCP port of the MCP server.")
 #endif
-#if defined(HAVE_MCP) && !defined(SETTINGS_DEF_CONFIG_PASS)
+/* Its label has to exist in every build, as the two above do: the
+ * translations name it whether or not the build has the server. */
+#if (defined(HAVE_MCP) || defined(SETTINGS_DEF_STRINGS_PASS)) && !defined(SETTINGS_DEF_CONFIG_PASS)
 S_STRING(mcp_server_token, MCP_SERVER_TOKEN,
       "mcp_server_token",
       "", SD_FLAG_ALLOW_INPUT, 0, NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT,

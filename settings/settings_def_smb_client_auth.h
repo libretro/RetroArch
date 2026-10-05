@@ -6,14 +6,19 @@
 
 /* String rows keep their configuration.c rows literal, as the cloud
  * sync ones do; the descriptor and string tables come from here. */
-#if defined(HAVE_SMBCLIENT) && !defined(SETTINGS_DEF_CONFIG_PASS)
+/* The translations name these two labels wherever this group's region
+ * of msg_hash.h is compiled, which is with the SMB client or the NFS
+ * one: intl/json2h.py drops a guard line that mentions a pass, the
+ * feature in it included. So the labels exist with either client;
+ * the rows themselves still need the SMB client. */
+#if (defined(HAVE_SMBCLIENT) || (defined(SETTINGS_DEF_STRINGS_PASS) && defined(HAVE_NFSCLIENT))) && !defined(SETTINGS_DEF_CONFIG_PASS)
 S_STRING(smb_client_realm, SMB_CLIENT_REALM,
       "smb_client_realm",
       "", SD_FLAG_ALLOW_INPUT, 0, NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT,
       "SMB Kerberos Realm",
       "Kerberos realm for ticket authentication, such as the Active Directory domain in capitals (EXAMPLE.COM). Leave empty for password (NTLMSSP) authentication. The server must be given by host name.")
 #endif
-#if defined(HAVE_SMBCLIENT) && !defined(SETTINGS_DEF_CONFIG_PASS)
+#if (defined(HAVE_SMBCLIENT) || (defined(SETTINGS_DEF_STRINGS_PASS) && defined(HAVE_NFSCLIENT))) && !defined(SETTINGS_DEF_CONFIG_PASS)
 S_STRING(smb_client_kdc, SMB_CLIENT_KDC,
       "smb_client_kdc",
       "", SD_FLAG_ALLOW_INPUT, 0, NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT,
