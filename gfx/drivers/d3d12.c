@@ -3217,9 +3217,8 @@ static bool d3d12_shader_load_begin(void *data,
       for (i = 0; i < ds->shader_preset->luts; i++)
       {
          struct texture_image image;
-         image.pixels        = NULL;
-         image.width         = 0;
-         image.height        = 0;
+         /* pix10 is a request the load reads: cleared with the rest */
+         memset(&image, 0, sizeof(image));
          image.supports_rgba = true;
 
          if (!image_texture_load(&image,

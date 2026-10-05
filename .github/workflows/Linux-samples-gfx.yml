@@ -75,6 +75,18 @@ jobs:
           # are migrated one at a time; a new one may not join them.
           python3 tools/surface_requirements_check.py
 
+      - name: texture_image request check
+        shell: bash
+        run: |
+          set -eu
+          # image_texture_load reads pix10 as the caller's request for a
+          # 10-bit decode, so a stack image filled field by field asks for
+          # whatever the stack held and a 16-bit PNG comes back as packed
+          # 10-bit words now and then. Every loaded image has its request
+          # set first; the self-test proves an unset one is caught.
+          python3 tools/texture_image_init_check.py --selftest
+          python3 tools/texture_image_init_check.py
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
