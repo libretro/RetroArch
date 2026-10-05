@@ -991,7 +991,6 @@ static int test_emulated_mailbox(void)
    VkCommandBufferAllocateInfo cmd_info;
    VkCommandPool pool   = VK_NULL_HANDLE;
    VkCommandBuffer cmd  = VK_NULL_HANDLE;
-   settings_t *settings = (settings_t*)config_get_ptr();
    unsigned frames      = 0;
    unsigned asks        = 0;
    unsigned round;
@@ -1034,8 +1033,9 @@ static int test_emulated_mailbox(void)
    {
       unsigned want = frames + 40;
 
-      /* Fast-forward with vsync on: emulation comes up. */
-      settings->bools.video_vsync = true;
+      /* Fast-forward with vsync on: emulation comes up. The swapchain
+       * is made from the context's copy, as a frame would set it. */
+      vk.context.swapchain_settings.vsync = true;
       if (     !vulkan_create_swapchain(&vk, vk.context.swapchain_dims, 0)
             || !(vk.flags & VK_DATA_FLAG_EMULATING_MAILBOX)
             || vk.mailbox.swapchain == VK_NULL_HANDLE)
@@ -1084,7 +1084,7 @@ static int test_emulated_mailbox(void)
       }
       vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
    }
-   settings->bools.video_vsync = false;
+   vk.context.swapchain_settings.vsync = false;
 
    vulkan_surface_destroy(&vk);
    vkDeviceWaitIdle(vk.context.device);
