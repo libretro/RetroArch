@@ -798,19 +798,26 @@ static bool memshm_placeholder_apis(void)
  * flat array is right for the few tens of ranges a fastmem window
  * splits into, and keeps the whole thing allocation-light. */
 #define MEMSHM_MAX_PLACEHOLDERS 256
+#endif
 
 typedef struct
 {
    size_t start;
    size_t end;
 } memshm_range_t;
-#endif
+
+/* The mappings an area holds, as [start, end) offsets, unordered. Map
+ * refuses a range touching one and unmap takes only exactly one: on
+ * POSIX both write over whatever range they are given (MAP_FIXED,
+ * PROT_NONE), and Windows unmaps a view whole. */
+#define MEMSHM_MAX_MAPPINGS 128
 
 struct memshm_area
 {
    unsigned char *base;
    size_t         len;
-   size_t         mappings;
+   memshm_range_t maps[MEMSHM_MAX_MAPPINGS];
+   int            map_count;
 #if defined(_WIN32) && !defined(_XBOX)
    memshm_range_t ranges[MEMSHM_MAX_PLACEHOLDERS];
    int            range_count;
@@ -1140,6 +1147,51 @@ static bool memshm_area_offset(const memshm_area_t *area, const void *at,
    *off = (size_t)(addr - base);
    return true;
 }
+
+/* Whether [start, end) shares a byte with a mapping in the area. */
+static bool memshm_area_overlaps(const memshm_area_t *area,
+      size_t start, size_t end)
+{
+   int i;
+   for (i = 0; i < area->map_count; i++)
+      if (start < area->maps[i].end && area->maps[i].start < end)
+         return true;
+   return false;
+}
+
+/* Index of the mapping that is exactly [start, end), or -1. */
+static int memshm_area_find_map(const memshm_area_t *area,
+      size_t start, size_t end)
+{
+   int i;
+   for (i = 0; i < area->map_count; i++)
+      if (area->maps[i].start == start && area->maps[i].end == end)
+         return i;
+   return -1;
+}
+
+/* Room is checked before the OS is asked, so this cannot fail. */
+static void memshm_area_add_map(memshm_area_t *area,
+      size_t start, size_t end)
+{
+   area->maps[area->map_count].start = start;
+   area->maps[area->map_count].end   = end;
+   area->map_count++;
+}
+
+static void memshm_area_drop_map(memshm_area_t *area, int i)
+{
+   area->maps[i] = area->maps[--area->map_count];
+}
+
+/* What a map of [off, off + len) needs before anything is touched: no
+ * mapping there already and a free entry to record it in. */
+static bool memshm_area_can_map(const memshm_area_t *area,
+      size_t off, size_t len)
+{
+   return area->map_count < MEMSHM_MAX_MAPPINGS
+      && !memshm_area_overlaps(area, off, off + len);
+}
 #endif
 
 unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
@@ -1155,7 +1207,8 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
    DWORD  page_prot;
 #endif
 
-   if (!memshm_area_offset(area, at, len, &map_off))
+   if (     !memshm_area_offset(area, at, len, &map_off)
+         || !memshm_area_can_map(area, map_off, len))
       return NULL;
 
    if (area->legacy)
@@ -1183,7 +1236,7 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
                (DWORD)(offset & 0xFFFFFFFFu), len, at);
          if (view == at)
          {
-            area->mappings++;
+            memshm_area_add_map(area, map_off, map_off + len);
             return (unsigned char*)view;
          }
          if (view)
@@ -1261,7 +1314,7 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
       DWORD old_prot;
       VirtualProtect(at, len, page_prot, &old_prot);
    }
-   area->mappings++;
+   memshm_area_add_map(area, map_off, map_off + len);
    return (unsigned char*)at;
 #else
    return NULL;
@@ -1281,13 +1334,14 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
          return NULL;
       span += page - (span % page);
    }
-   if (!memshm_area_offset(area, at, span, &map_off))
+   if (     !memshm_area_offset(area, at, span, &map_off)
+         || !memshm_area_can_map(area, map_off, span))
       return NULL;
    p = mmap(at, len, prot, MAP_SHARED | MAP_FIXED,
          MEMSHM_FD(handle), (off_t)offset);
    if (p == MAP_FAILED)
       return NULL;
-   area->mappings++;
+   memshm_area_add_map(area, map_off, map_off + span);
    return (unsigned char*)p;
 #else
    (void)area; (void)handle; (void)offset; (void)at; (void)len; (void)prot;
@@ -1299,16 +1353,14 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
 {
 #if defined(_WIN32) && !defined(_XBOX)
    size_t map_off;
+   int    map;
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
    int    cur, left, right;
 #endif
 
-   if (!memshm_area_offset(area, at, len, &map_off))
-      return false;
-   /* Nothing is mapped, so this address cannot be one this returned:
-    * an unbalanced unmap would otherwise wrap the count and take the
-    * area's own teardown with it. */
-   if (!area->mappings)
+   /* Only a mapping exactly as made: a view is unmapped whole. */
+   if (     !memshm_area_offset(area, at, len, &map_off)
+         || (map = memshm_area_find_map(area, map_off, map_off + len)) < 0)
       return false;
 
    if (area->legacy)
@@ -1322,16 +1374,16 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
       /* Put the reservations back at once: an unreserved hole in the
        * span is an address another allocation can take, and then the
        * next map there fails for good. */
+      memshm_area_drop_map(area, map);
       if (!memshm_legacy_reserve(area, first, count))
          return false;
-      area->mappings--;
       return true;
    }
 
 #if defined(MEMSHM_HAVE_PLACEHOLDERS)
    if (!s_UnmapViewOfFile2(GetCurrentProcess(), at, MEM_PRESERVE_PLACEHOLDER))
       return false;
-   area->mappings--;
+   memshm_area_drop_map(area, map);
 
    /* The range is a free placeholder of its own now, whether or not it
     * goes on to coalesce with a neighbour, so record that before either
@@ -1386,6 +1438,7 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
    size_t map_off;
    size_t span = len;
    size_t page = mempagesize();
+   int    map;
 
    if (page && (span % page))
    {
@@ -1393,15 +1446,16 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len)
          return false;
       span += page - (span % page);
    }
-   if (!memshm_area_offset(area, at, span, &map_off))
-      return false;
-   if (!area->mappings)
+   /* Only a mapping exactly as made: PROT_NONE covers whatever range
+    * it is given. */
+   if (     !memshm_area_offset(area, at, span, &map_off)
+         || (map = memshm_area_find_map(area, map_off, map_off + span)) < 0)
       return false;
    /* Anonymous PROT_NONE back over the range: the reservation is whole
     * again and the kernel merges the VMAs. */
    if (mmap(at, len, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0) == MAP_FAILED)
       return false;
-   area->mappings--;
+   memshm_area_drop_map(area, map);
    return true;
 #else
    (void)area; (void)at; (void)len;
