@@ -2413,6 +2413,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
             sizeof(sync_state->dir_core_assets));
       sync_state->dirlist     = task_cloud_sync_directory_map_new(settings);
    }
+   cloud_sync_capture();
    if (!sync_state->dirlist)
    {
       free(sync_state);

@@ -26,7 +26,9 @@
  *   their handlers, and gives up on a call stuck past its bound; that
  *   call's result, once it comes, is freed by the worker and never
  *   reaches a poll - not one of a sync begun after it either;
- * - a driver without the blocking flag is still called directly.
+ * - a driver without the blocking flag is still called directly;
+ * - cloud_sync_capture() runs the driver's capture hook on the calling
+ *   thread, and is a no-op for a driver without one.
  */
 
 #include <stdio.h>
@@ -151,9 +153,17 @@ static bool drv_free(const char *path, cloud_sync_complete_handler_t cb,
    return true;
 }
 
+static unsigned  captures;
+static uintptr_t capture_thread;
+static void drv_capture(void)
+{
+   captures++;
+   capture_thread = sthread_get_current_thread_id();
+}
+
 static cloud_sync_driver_t blocking = {
    drv_begin, drv_end, drv_read, drv_update, drv_free, "blocking",
-   CLOUD_SYNC_DRIVER_FLG_BLOCKING
+   CLOUD_SYNC_DRIVER_FLG_BLOCKING, drv_capture
 };
 
 /* ---- results as the handlers see them ---- */
@@ -398,6 +408,16 @@ int main(void)
    CHECK(cloud_sync_free("direct", on_done, (void*)9), "direct call");
    CHECK(nresults == 1 && results[0].tag == 9 && results[0].thread == me
          && driver_thread == me, "direct call completes inline on this thread");
+
+   /* the settings a driver's calls read are copied on the caller's
+    * thread, once per sync, and a driver without the hook is skipped */
+   captures = 0;
+   cloud_sync_capture();
+   CHECK(captures == 1 && capture_thread == me,
+         "capture runs once, on the calling thread");
+   blocking.cloud_sync_capture = NULL;
+   cloud_sync_capture();
+   CHECK(captures == 1, "a driver without a capture hook is left alone");
 
    /* let the last worker leave before the process does */
    retro_sleep(50);

@@ -45,6 +45,12 @@ typedef struct cloud_sync_driver
 
    const char *ident;
    unsigned flags;
+
+   /* Optional. Copies the settings the calls above read, on the main
+    * thread as a sync is pushed, so none of them reads the live
+    * settings - a blocking driver's calls run on a worker, and one may
+    * still be running when the frontend frees them on exit. */
+   void (*cloud_sync_capture)(void);
 } cloud_sync_driver_t;
 
 /* The driver's calls block on the network until they are done and
@@ -92,6 +98,14 @@ const char* config_get_cloud_sync_driver_options(void);
 
 void cloud_sync_find_driver(const char *drv, const char *prefix,
       bool verbosity_enabled);
+
+/**
+ * cloud_sync_capture:
+ *
+ * Main thread, before the sync's task is pushed: the driver copies the
+ * settings its calls will read.
+ **/
+void cloud_sync_capture(void);
 
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data);
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data);

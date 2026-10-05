@@ -418,6 +418,13 @@ void cloud_sync_poll(cloud_sync_poll_budget_t within, void *budget)
 void cloud_sync_deinit(unsigned timeout_ms) { (void)timeout_ms; }
 #endif
 
+void cloud_sync_capture(void)
+{
+   const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;
+   if (driver && driver->cloud_sync_capture)
+      driver->cloud_sync_capture();
+}
+
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 {
    const cloud_sync_driver_t *driver = cloud_sync_state_get_ptr()->driver;

@@ -58,6 +58,37 @@ typedef struct
 
 static nfs_sync_state_t nfs_st;
 
+/* The settings, as cloud_sync_capture() found them. */
+static struct
+{
+   char server[256];
+   char export_path[PATH_MAX_LENGTH];
+   char subdir[PATH_MAX_LENGTH];
+   unsigned timeout;
+   unsigned port;
+   unsigned mount_port;
+   unsigned version;
+   unsigned readahead;
+   bool destructive;
+} nfs_set;
+
+static void nfs_sync_capture(void)
+{
+   settings_t *settings = config_get_ptr();
+   strlcpy(nfs_set.server, settings->arrays.nfs_server,
+         sizeof(nfs_set.server));
+   strlcpy(nfs_set.export_path, settings->arrays.nfs_export,
+         sizeof(nfs_set.export_path));
+   strlcpy(nfs_set.subdir, settings->arrays.nfs_subdir,
+         sizeof(nfs_set.subdir));
+   nfs_set.timeout     = settings->uints.nfs_timeout;
+   nfs_set.port        = settings->uints.nfs_port;
+   nfs_set.mount_port  = settings->uints.nfs_mount_port;
+   nfs_set.version     = settings->uints.nfs_version;
+   nfs_set.readahead   = settings->uints.nfs_readahead;
+   nfs_set.destructive = settings->bools.cloud_sync_destructive;
+}
+
 /* @a/@b into @s; false when it does not fit, so a truncated name is
  * never used. */
 static bool nfs_sync_join(char *s, size_t len, const char *a, const char *b)
@@ -172,10 +203,9 @@ static bool nfs_sync_backup_name(struct rnfs_ctx *ctx, char *s, size_t len,
 static bool nfs_sync_begin(cloud_sync_complete_handler_t cb,
       void *user_data)
 {
-   settings_t         *settings = config_get_ptr();
-   const char         *server   = settings->arrays.nfs_server;
-   const char         *export_path = settings->arrays.nfs_export;
-   const char         *subdir   = settings->arrays.nfs_subdir;
+   const char         *server   = nfs_set.server;
+   const char         *export_path = nfs_set.export_path;
+   const char         *subdir   = nfs_set.subdir;
    nfs_sync_scratch_t *s        = NULL;
    struct rnfs_ctx    *ctx      = NULL;
    size_t              _len     = 0;
@@ -190,11 +220,11 @@ static bool nfs_sync_begin(cloud_sync_complete_handler_t cb,
          || !(ctx = rnfs_new()))
       goto fail;
 
-   rnfs_set_timeout(ctx, settings->uints.nfs_timeout);
-   rnfs_set_ports(ctx, (uint16_t)settings->uints.nfs_port,
-         (uint16_t)settings->uints.nfs_mount_port);
-   rnfs_set_version(ctx, settings->uints.nfs_version);
-   rnfs_set_readahead(ctx, settings->uints.nfs_readahead * 1024);
+   rnfs_set_timeout(ctx, nfs_set.timeout);
+   rnfs_set_ports(ctx, (uint16_t)nfs_set.port,
+         (uint16_t)nfs_set.mount_port);
+   rnfs_set_version(ctx, nfs_set.version);
+   rnfs_set_readahead(ctx, nfs_set.readahead * 1024);
 
    RARCH_LOG(NFSPFX "Connecting to %s:%s\n", server, export_path);
    if (rnfs_connect(ctx, server, export_path) != 0)
@@ -369,7 +399,6 @@ static bool nfs_update(const char *path, RFILE *rfile,
 {
    nfs_sync_scratch_t *s        = nfs_st.s;
    struct rnfs_ctx    *ctx      = nfs_st.ctx;
-   settings_t         *settings = config_get_ptr();
    bool                backed_up = false;
    struct rnfs_stat    st;
 
@@ -395,7 +424,7 @@ static bool nfs_update(const char *path, RFILE *rfile,
       goto fail;
    }
 
-   if (     !settings->bools.cloud_sync_destructive
+   if (     !nfs_set.destructive
          && !string_is_equal(path, CLOUD_SYNC_SERVER_MANIFEST))
    {
       if (rnfs_stat(ctx, s->remote, &st) == 0)
@@ -442,7 +471,6 @@ static bool nfs_free(const char *path, cloud_sync_complete_handler_t cb,
 {
    nfs_sync_scratch_t *s        = nfs_st.s;
    struct rnfs_ctx    *ctx      = nfs_st.ctx;
-   settings_t         *settings = config_get_ptr();
    struct rnfs_stat    st;
    int                 rc;
 
@@ -452,7 +480,7 @@ static bool nfs_free(const char *path, cloud_sync_complete_handler_t cb,
       cb(user_data, path, false, NULL);
       return true;
    }
-   if (settings->bools.cloud_sync_destructive)
+   if (nfs_set.destructive)
       rc = rnfs_unlink(ctx, s->remote);
    else if ((rc = rnfs_stat(ctx, s->remote, &st)) == 0)
       rc = nfs_sync_backup_name(ctx, s->backup, sizeof(s->backup), s->remote)
@@ -473,5 +501,6 @@ cloud_sync_driver_t cloud_sync_nfs = {
    nfs_update,
    nfs_free,
    "nfs",
-   CLOUD_SYNC_DRIVER_FLG_BLOCKING
+   CLOUD_SYNC_DRIVER_FLG_BLOCKING,
+   nfs_sync_capture
 };

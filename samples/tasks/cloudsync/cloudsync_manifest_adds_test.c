@@ -58,6 +58,7 @@ size_t fill_pathname_application_special(char *s, size_t len,
 void cloud_sync_find_driver(const char *drv, const char *prefix,
       bool verbosity_enabled)
 { (void)drv; (void)prefix; (void)verbosity_enabled; }
+void cloud_sync_capture(void) { }
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 { (void)cb; (void)user_data; return false; }
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
