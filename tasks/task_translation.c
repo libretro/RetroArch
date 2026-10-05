@@ -1330,6 +1330,10 @@ static bool http_translate(
    {
       static const char* state_labels[] = { "b", "y", "select", "start", "up", "down", "left", "right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
       int i;
+#ifdef HAVE_ACCESSIBILITY
+      /* in RetroPad order, as the labels are */
+      uint16_t held = input_driver_ai_gamepad_held();
+#endif
       for (i = 0; i < (int)ARRAY_SIZE(state_labels); i++)
       {
          rjsonwriter_raw(jsonwriter, ",", 1);
@@ -1339,7 +1343,7 @@ static bool http_translate(
          rjsonwriter_raw(jsonwriter, " ", 1);
 #ifdef HAVE_ACCESSIBILITY
          rjsonwriter_rawf(jsonwriter, "%u",
-               (input_driver_ai_gamepad_pressed(i) ? 1 : 0));
+               (unsigned)((held >> i) & 1u));
 #else
          rjsonwriter_rawf(jsonwriter, "%u", 0);
 #endif

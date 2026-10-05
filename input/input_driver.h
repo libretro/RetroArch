@@ -697,7 +697,9 @@ typedef struct
 #endif
 #if defined(HAVE_TRANSLATE)
 #if defined(HAVE_ACCESSIBILITY)
-   int ai_gamepad_state[MAX_USERS];
+   /* RetroPad buttons the AI service presses for user 1, one bit each,
+    * for the next poll: set by its reply, taken whole by the poll. */
+   retro_atomic_int_t ai_press_pending;
 #endif
 #endif
    bool osk_textbox_focus;
@@ -1121,8 +1123,11 @@ void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map);
 float *input_driver_overlay_eightway_slopes(bool abxy);
 #endif
 #if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
+/* The AI service: presses RetroPad button @id for user 1 for one poll;
+ * and the RetroPad buttons user 1 holds now, as bound, for its
+ * request. */
 void input_driver_ai_gamepad_press(unsigned id);
-bool input_driver_ai_gamepad_pressed(unsigned id);
+uint16_t input_driver_ai_gamepad_held(void);
 #endif
 void input_driver_keyboard_line_append(const char *utf8, size_t len);
 /* The line of text being typed, for whoever draws it: its bytes or

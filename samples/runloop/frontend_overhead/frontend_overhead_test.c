@@ -3002,6 +3002,77 @@ static void lane_menu_pause(void)
 #endif
 }
 
+/* The AI service's presses: a button it presses reaches the core for
+ * exactly one frame, and two presses before the next poll both do. */
+static void lane_ai_presses(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32) && defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
+   const unsigned A = 1u << RETRO_DEVICE_ID_JOYPAD_A;
+   const unsigned X = 1u << RETRO_DEVICE_ID_JOYPAD_X;
+   settings_t *settings = config_get_ptr();
+   bool saved_enable    = settings->bools.ai_service_enable;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   long (*runs)(void);
+   void *core;
+   unsigned had = failures;
+   unsigned i, frames_a = 0, frames_ax = 0, buttons;
+   int axes[4];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !(runs = (long (*)(void))dlsym(core, "harness_core_runs")))
+   {
+      CHECK(false, "AI presses: the harness core's trace entry points");
+      return;
+   }
+   settings->bools.ai_service_enable = true;
+   trace(2, 0);
+   run_loop_frames(3);
+
+   /* one press: one frame */
+   input_driver_ai_gamepad_press(RETRO_DEVICE_ID_JOYPAD_A);
+   for (i = 0; i < 6; i++)
+   {
+      long before = runs();
+      run_loop_frames(1);
+      if (runs() == before)
+         continue;
+      trace_last(&buttons, axes);
+      if (buttons & A)
+         frames_a++;
+   }
+   CHECK(frames_a == 1, "AI presses: a press did not reach the core for exactly one frame");
+
+   /* two presses before the poll: both, in the same frame */
+   input_driver_ai_gamepad_press(RETRO_DEVICE_ID_JOYPAD_A);
+   input_driver_ai_gamepad_press(RETRO_DEVICE_ID_JOYPAD_X);
+   for (i = 0; i < 6; i++)
+   {
+      long before = runs();
+      run_loop_frames(1);
+      if (runs() == before)
+         continue;
+      trace_last(&buttons, axes);
+      if ((buttons & (A | X)) == (A | X))
+         frames_ax++;
+   }
+   CHECK(frames_ax == 1, "AI presses: two presses did not both reach the core, for one frame");
+
+   trace(0, 0);
+   settings->bools.ai_service_enable = saved_enable;
+   run_loop_frames(2);
+   if (failures == had)
+      printf("[pass] AI presses: a button the AI service presses reaches the"
+            " core for exactly one frame; two pressed before a poll arrive"
+            " together\n");
+#else
+   printf("[skip] AI presses: needs the test drivers and the AI service"
+         " (HAVE_TRANSLATE, HAVE_ACCESSIBILITY)\n");
+#endif
+}
+
 /* Aim From Analog Stick: a port's stick is where its lightgun or
  * pointer points. */
 static void lane_aim_stick(void)
@@ -4223,6 +4294,7 @@ int main(int argc, char *argv[])
       lane_pointer_capture();
       lane_menu_combo_gate();
       lane_menu_pause();
+      lane_ai_presses();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

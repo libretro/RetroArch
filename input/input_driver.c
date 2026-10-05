@@ -10090,16 +10090,21 @@ void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map)
 
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
-/* The AI service presses button @id for a frame; and whether it is. */
+/* The AI service presses RetroPad button @id for user 1, for the next
+ * poll. A press is a bit in a word the poll takes whole, so a reply
+ * handled on any thread cannot tear or lose one. */
 void input_driver_ai_gamepad_press(unsigned id)
 {
-   if (id < MAX_USERS)
-      input_driver_st.ai_gamepad_state[id] = 2;
+   if (id < RARCH_FIRST_CUSTOM_BIND)
+      retro_atomic_fetch_or_int(&input_driver_st.ai_press_pending,
+            (int)(1u << id));
 }
 
-bool input_driver_ai_gamepad_pressed(unsigned id)
+/* The RetroPad buttons user 1 holds now, as bound and before remaps:
+ * read when a request is sent, not copied every frame. */
+uint16_t input_driver_ai_gamepad_held(void)
 {
-   return id < MAX_USERS && input_driver_st.ai_gamepad_state[id];
+   return (uint16_t)(input_driver_user_controls_bound(0) & 0xffffu);
 }
 #endif
 
@@ -12245,15 +12250,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #if defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE)
       if (settings->bools.ai_service_enable)
       {
-         int i;
-         input_st->gamepad_input_override = 0;
-         for (i = 0; i < MAX_USERS; i++)
-         {
-            /* Set gamepad input override */
-            if (input_st->ai_gamepad_state[i] == 2)
-               input_st->gamepad_input_override |= (1 << i);
-            input_st->ai_gamepad_state[i] = 0;
-         }
+         /* the AI service's presses, for this poll only */
+         input_st->gamepad_input_override = (unsigned)(uint16_t)
+            retro_atomic_exchange_int(&input_st->ai_press_pending, 0);
       }
 #endif /* defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE) */
    }
