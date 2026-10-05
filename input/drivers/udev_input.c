@@ -233,7 +233,7 @@ typedef struct
    int32_t x_abs, y_abs;
    int32_t x_min, y_min;
    int32_t x_max, y_max;
-   int32_t x_rel, y_rel;
+   uint32_t rel;          /* x, y motion: VIDEO_POS_PACK */
    int32_t abs;
    bool l, r, m, b4, b5;
    bool wu, wd, whu, whd;
@@ -353,9 +353,8 @@ typedef struct
 {
    /* Unique tracking ID for this slot. UDEV_TRACKING_ID_NONE -> No touch. */
    int32_t tracking_id;
-   /* Current position of the tracked touch. */
-   int16_t pos_x;
-   int16_t pos_y;
+   /* Current position of the tracked touch: VIDEO_POS_PACK. */
+   uint32_t pos;
    /* Current major and minor axis. */
    int16_t minor;
    int16_t major;
@@ -365,9 +364,8 @@ typedef struct
    uint16_t change;
    /* Start timestamp of the current or last touch down. */
    udev_touch_ts_t td_time;
-   /* Start position of the current or last touch down. */
-   int16_t td_pos_x;
-   int16_t td_pos_y;
+   /* Start position of the current or last touch down: VIDEO_POS_PACK. */
+   uint32_t td_pos;
 } udev_slot_state_t;
 
 /* Type used to represent touch slot ID, UDEV_INPUT_TOUCH_SLOT_ID_NONE (-1) is used for none. */
@@ -415,14 +413,11 @@ typedef struct
 
    /* Simulated pointer / touchscreen */
    /* Pointer position in the touch panel coordinates. */
-   int32_t pointer_pos_x;
-   int32_t pointer_pos_y;
+   uint32_t pointer_pos;       /* VIDEO_POS_PACK */
    /* Pointer position in the main panel coordinates. */
-   int32_t pointer_ma_pos_x;
-   int32_t pointer_ma_pos_y;
+   uint32_t pointer_ma_pos;    /* VIDEO_POS_PACK */
    /* Pointer position delta in main panel pixels. */
-   int16_t pointer_ma_rel_x;
-   int16_t pointer_ma_rel_y;
+   uint32_t pointer_ma_rel;    /* VIDEO_POS_PACK */
    /* Pointer position mapped onto the primary screen (-0x7fff - 0x7fff). */
    uint32_t pointer_scr_pos;   /* VIDEO_POS_PACK */
    /* Pointer position within the window, -0x7fff - 0x7fff -> inside. */
@@ -430,14 +425,11 @@ typedef struct
 
    /* Simulated mouse */
    /* Mouse position in the original pixel coordinates. */
-   int16_t mouse_pos_x;
-   int16_t mouse_pos_y;
+   uint32_t mouse_pos;         /* VIDEO_POS_PACK */
    /* Mouse position delta in screen pixels. */
-   int16_t mouse_rel_x;
-   int16_t mouse_rel_y;
+   uint32_t mouse_rel;         /* VIDEO_POS_PACK */
    /* Mouse wheel delta in number of frames to hold that value. */
-   int16_t mouse_wheel_x;
-   int16_t mouse_wheel_y;
+   uint32_t mouse_wheel;       /* VIDEO_POS_PACK */
 
    /* Mouse touchpad simulation */
    /* Sensitivity of the touchpad mouse. */
@@ -482,8 +474,7 @@ typedef struct
    /* Step of scrolling for the scroll wheel gesture. */
    uint16_t gest_scroll_step;
    /* High resolution scroll. */
-   int16_t gest_scroll_x;
-   int16_t gest_scroll_y;
+   uint32_t gest_scroll;       /* VIDEO_POS_PACK */
    /* Percentage of screen considered as a corner. */
    uint16_t gest_corner;
    /* Time-delayed callbacks used for tap gesture automation. */
@@ -570,8 +561,7 @@ typedef struct udev_input
 
    int fd;
    /* OS pointer coords (zeros if we don't have X11) */
-   int pointer_x;
-   int pointer_y;
+   uint32_t os_pointer_pos;    /* VIDEO_POS_PACK */
 
    unsigned num_devices;
 
@@ -741,12 +731,12 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 
    if (abs)
    {
-      mouse->x_rel += x - mouse->x_abs;
+      VIDEO_POS_ADD(mouse->rel, x - mouse->x_abs, 0);
       mouse->x_abs = x;
    }
    else
    {
-      mouse->x_rel += x;
+      VIDEO_POS_ADD(mouse->rel, x, 0);
       if (video_driver_get_viewport_info(&vp))
       {
          mouse->x_abs += x;
@@ -773,7 +763,7 @@ static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
    else
       src_width = VIDEO_SCALE_W(vp.full_dims);
 
-   x = (double)VIDEO_SCALE_W(vp.dims) / src_width * mouse->x_rel;
+   x = (double)VIDEO_SCALE_W(vp.dims) / src_width * VIDEO_POS_X(mouse->rel);
 
    return x + (x < 0 ? -0.5 : 0.5);
 }
@@ -784,12 +774,12 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 
    if (abs)
    {
-      mouse->y_rel += y - mouse->y_abs;
+      VIDEO_POS_ADD(mouse->rel, 0, y - mouse->y_abs);
       mouse->y_abs = y;
    }
    else
    {
-      mouse->y_rel += y;
+      VIDEO_POS_ADD(mouse->rel, 0, y);
       if (video_driver_get_viewport_info(&vp))
       {
          mouse->y_abs += y;
@@ -816,7 +806,7 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    else
       src_height = VIDEO_SCALE_H(vp.full_dims);
 
-   y = (double)VIDEO_SCALE_H(vp.dims) / src_height * mouse->y_rel;
+   y = (double)VIDEO_SCALE_H(vp.dims) / src_height * VIDEO_POS_Y(mouse->rel);
 
    return y + (y < 0 ? -0.5 : 0.5);
 }
@@ -1292,8 +1282,8 @@ static void udev_dump_touch_slot(const char *label, const udev_slot_state_t *slo
    RARCH_DBG("[udev] %s\t(%u,%u) %d:%hdx%hd (@%hdx%hd) %hd <%hdx%hd> %s\n", label,
              slot_state->td_time.s, slot_state->td_time.us,
              slot_state->tracking_id,
-             slot_state->pos_x, slot_state->pos_y,
-             slot_state->td_pos_x, slot_state->td_pos_y,
+             VIDEO_POS_X(slot_state->pos), VIDEO_POS_Y(slot_state->pos),
+             VIDEO_POS_X(slot_state->td_pos), VIDEO_POS_Y(slot_state->td_pos),
              slot_state->pressure,
              slot_state->minor, slot_state->major,
              udev_touch_change_to_str(slot_state->change));
@@ -1375,10 +1365,10 @@ static void udev_dump_touch_dev(udev_input_device_t *dev)
    RARCH_DBG("[udev] \tmouse = {\n");
    RARCH_DBG("[udev] \t\tabs = %d\n", mouse->abs);
    RARCH_DBG("[udev] \t\tx -> %d~%d (%d-%d)\n",
-             mouse->x_abs, mouse->x_rel,
+             mouse->x_abs, VIDEO_POS_X(mouse->rel),
              mouse->x_min, mouse->x_max);
    RARCH_DBG("[udev] \t\ty -> %d~%d (%d-%d)\n",
-             mouse->y_abs, mouse->y_rel,
+             mouse->y_abs, VIDEO_POS_Y(mouse->rel),
              mouse->y_min, mouse->y_max);
    RARCH_DBG("[udev] \t\tL = %c | R = %c | M = %c | 4 = %c | 5 = %c\n",
              mouse->l ? 'X' : 'O', mouse->r ? 'X' : 'O',
@@ -1636,22 +1626,17 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->pointer_enabled   = UDEV_INPUT_TOUCH_POINTER_EN;
    touch->pointer_btn_pp    = false;
    touch->pointer_btn_pb    = false;
-   touch->pointer_pos_x     = 0;
-   touch->pointer_pos_y     = 0;
-   touch->pointer_ma_pos_x  = 0;
-   touch->pointer_ma_pos_y  = 0;
-   touch->pointer_ma_rel_x  = 0;
-   touch->pointer_ma_rel_y  = 0;
+   touch->pointer_pos = 0;
+   touch->pointer_ma_pos = 0;
+   touch->pointer_ma_rel = 0;
    touch->pointer_scr_pos   = 0;
    touch->pointer_vp_pos    = 0;
 
    /* Initialize mouse simulation */
    touch->mouse_enabled = UDEV_INPUT_TOUCH_MOUSE_EN;
    touch->mouse_freeze_cursor = false;
-   touch->mouse_rel_x = 0;
-   touch->mouse_rel_y = 0;
-   touch->mouse_wheel_x = 0;
-   touch->mouse_wheel_y = 0;
+   touch->mouse_rel = 0;
+   touch->mouse_wheel = 0;
    touch->mouse_btn_l = false;
    touch->mouse_btn_r = false;
    touch->mouse_btn_m = false;
@@ -1689,8 +1674,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->gest_tap_possible = false;
    touch->gest_scroll_sensitivity = UDEV_INPUT_TOUCH_GEST_SCROLL_SENSITIVITY;
    touch->gest_scroll_step = UDEV_INPUT_TOUCH_GEST_SCROLL_STEP;
-   touch->gest_scroll_x = 0;
-   touch->gest_scroll_y = 0;
+   touch->gest_scroll = 0;
    touch->gest_corner = UDEV_INPUT_TOUCH_GEST_CORNER;
 
    for (iii = 0; iii < UDEV_TOUCH_TGEST_LAST; ++iii)
@@ -1786,9 +1770,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
    RARCH_DDBG("[udev] \tMT X-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
-      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pos_x, mt_req_values[iii]);
-      staging[iii].pos_x = mt_req_values[iii];
-      staging[iii].td_pos_x = mt_req_values[iii];
+      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, VIDEO_POS_X(staging[iii].pos), mt_req_values[iii]);
+      VIDEO_POS_PUT_X(staging[iii].pos, mt_req_values[iii]);
+      VIDEO_POS_PUT_X(staging[iii].td_pos, mt_req_values[iii]);
    }
 
    /* Request MT position on the y-axis for each slot */
@@ -1799,9 +1783,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
    RARCH_DDBG("[udev] \tMT Y-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
-      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pos_y, mt_req_values[iii]);
-      staging[iii].pos_y    = mt_req_values[iii];
-      staging[iii].td_pos_y = mt_req_values[iii];
+      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, VIDEO_POS_Y(staging[iii].pos), mt_req_values[iii]);
+      VIDEO_POS_PUT_Y(staging[iii].pos, mt_req_values[iii]);
+      VIDEO_POS_PUT_Y(staging[iii].td_pos, mt_req_values[iii]);
    }
 
    /* Request minor axis for each slot */
@@ -1856,12 +1840,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
  *   with the video_driver_get_viewport_info function.
  * @param pointer_pos_x Input x-coordinate on the touch panel.
  * @param pointer_pos_y Input y-coordinate on the touch panel.
- * @param pointer_ma_pos_x Output x-coordinate on the target panel.
- * @param pointer_ma_pos_y Output y-coordinate on the target panel.
- * @param pointer_ma_rel_x Output x-coordinate change on the target panel.
- *   The resulting delta is added to this output!
- * @param pointer_ma_rel_y Output y-coordinate change on the target panel.
- *   The resulting delta is added to this output!
+ * @param pointer_ma_pos Output position on the target panel, packed.
+ * @param pointer_ma_rel Output position change on the target panel,
+ *   packed. The resulting delta is added to this output!
  * @param pointer_scr_pos Output position on the target screen, packed.
  *   Uses the scaled coordinates -0x7fff - 0x7fff.
  * @param pointer_vp_pos Output position on the target window, packed.
@@ -1872,8 +1853,7 @@ static bool udev_translate_touch_pos(
         const udev_input_touch_t *src_touch,
         video_viewport_t *target_vp,
         int32_t pointer_pos_x, int32_t pointer_pos_y,
-        int32_t *pointer_ma_pos_x, int32_t *pointer_ma_pos_y,
-        int16_t *pointer_ma_rel_x, int16_t *pointer_ma_rel_y,
+        uint32_t *pointer_ma_pos, uint32_t *pointer_ma_rel,
         uint32_t *pointer_scr_pos, uint32_t *pointer_vp_pos)
 {
    int16_t vp_x = 0, vp_y = 0, scr_x = 0, scr_y = 0;
@@ -1887,16 +1867,15 @@ static bool udev_translate_touch_pos(
    int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * VIDEO_SCALE_H(target_vp->full_dims)) / 0x7fff);
 
    /* Calculate relative offsets. */
-   *pointer_ma_rel_x += ma_pos_x - *pointer_ma_pos_x;
-   *pointer_ma_rel_y += ma_pos_y - *pointer_ma_pos_y;
+   VIDEO_POS_ADD(*pointer_ma_rel, ma_pos_x - VIDEO_POS_X(*pointer_ma_pos),
+         ma_pos_y - VIDEO_POS_Y(*pointer_ma_pos));
 
    /* Set the new main panel positions. */
-   *pointer_ma_pos_x  = ma_pos_x;
-   *pointer_ma_pos_y  = ma_pos_y;
+   *pointer_ma_pos    = VIDEO_POS_PACK(ma_pos_x, ma_pos_y);
 
    /* Main panel -> Screen and Viewport; on failure both are left */
    if (!video_driver_translate_coord_viewport_wrap(target_vp,
-            *pointer_ma_pos_x, *pointer_ma_pos_y,
+            VIDEO_POS_X(*pointer_ma_pos), VIDEO_POS_Y(*pointer_ma_pos),
             &vp_x, &vp_y, &scr_x, &scr_y))
       return false;
    *pointer_vp_pos  = VIDEO_POS_PACK(vp_x, vp_y);
@@ -1959,8 +1938,7 @@ static void udev_input_touch_gest_reset_bool(void *touch, void *tgt)
 /* Callback used for resetting mouse_wheel_x/y variables to 0. */
 static void udev_input_touch_gest_reset_scroll(void *touch, void *none)
 {
-   ((udev_input_touch_t*)touch)->gest_scroll_x = 0;
-   ((udev_input_touch_t*)touch)->gest_scroll_y = 0;
+   ((udev_input_touch_t*)touch)->gest_scroll = 0;
 }
 
 /**
@@ -2064,7 +2042,7 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
          case 3:
             /* Three taps -> Middle mouse button & Specials */
             if (!udev_input_touch_tgest_special(touch, &now,
-                        touch->pointer_pos_x, touch->pointer_pos_y))
+                        VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos)))
             {
                touch->mouse_btn_m = true;
                /* Setup callback to reset the button state. */
@@ -2261,17 +2239,14 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
          break;
       case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
-         touch->gest_scroll_x +=
-            (
-               touch->pointer_ma_rel_x *
+         VIDEO_POS_ADD(touch->gest_scroll, (
+               VIDEO_POS_X(touch->pointer_ma_rel) *
                touch->gest_scroll_sensitivity
-            ) / touch->info_x_limits.range;
-         touch->gest_scroll_y +=
-            (
-               touch->pointer_ma_rel_y *
+            ) / touch->info_x_limits.range, (
+               VIDEO_POS_Y(touch->pointer_ma_rel) *
                touch->gest_scroll_sensitivity
-            ) / touch->info_y_limits.range;
-         RARCH_DDBG("[udev] MGesture: DF/NTD -> 3D Wheel: %hd x %hd | %hd\n", touch->gest_scroll_x, touch->gest_scroll_y, touch->gest_scroll_step);
+            ) / touch->info_y_limits.range);
+         RARCH_DDBG("[udev] MGesture: DF/NTD -> 3D Wheel: %hd x %hd | %hd\n", VIDEO_POS_X(touch->gest_scroll), VIDEO_POS_Y(touch->gest_scroll), touch->gest_scroll_step);
          break;
       case UDEV_TOUCH_MGEST_D_STAP_DRAG:
          /* Gesture for two finger single tap drag. */
@@ -2348,19 +2323,16 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             if (iii == touch->gest_primary_slot)
             {
                /* Use position of the primary touch point */
-               touch->pointer_pos_x = slot_curr->pos_x;
-               touch->pointer_pos_y = slot_curr->pos_y;
+               touch->pointer_pos = slot_curr->pos;
                udev_translate_touch_pos(
                   touch, &vp,
-                  touch->pointer_pos_x, touch->pointer_pos_y,
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
+                  VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos),
+                  &touch->pointer_ma_pos, &touch->pointer_ma_rel,
                   &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
 
                /* Reset deltas after, since first touchdown has no delta. */
-               touch->pointer_ma_rel_x = 0;
-               touch->pointer_ma_rel_y = 0;
+               touch->pointer_ma_rel = 0;
             }
 
             /* Pointer section */
@@ -2374,14 +2346,13 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                if (touch->touchpad_enabled)
                {  /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Initialize touchpad position to the current mouse position */
-                  touch->touchpad_pos_x = (float) touch->mouse_pos_x;
-                  touch->touchpad_pos_y = (float) touch->mouse_pos_y;
+                  touch->touchpad_pos_x = (float) VIDEO_POS_X(touch->mouse_pos);
+                  touch->touchpad_pos_y = (float) VIDEO_POS_Y(touch->mouse_pos);
                }
                else
                {  /* Direct mode -> Direct virtual mouse. */
                   /* Initialize mouse position to the current pointer position */
-                  touch->mouse_pos_x = touch->pointer_ma_pos_x;
-                  touch->mouse_pos_y = touch->pointer_ma_pos_y;
+                  touch->mouse_pos = touch->pointer_ma_pos;
                }
 
                /* Trackball mode */
@@ -2453,8 +2424,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                if (touch->trackball_enabled)
                {
                   /* Update trackball position */
-                  touch->trackball_pos_x    = (float) touch->mouse_pos_x;
-                  touch->trackball_pos_y    = (float) touch->mouse_pos_y;
+                  touch->trackball_pos_x    = (float) VIDEO_POS_X(touch->mouse_pos);
+                  touch->trackball_pos_y    = (float) VIDEO_POS_Y(touch->mouse_pos);
                   /* The trackball is free to move */
                   touch->trackball_inertial = true;
                }
@@ -2469,8 +2440,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y,
-                     slot_curr->pos_x, slot_curr->pos_y,
+                     VIDEO_POS_X(slot_curr->td_pos), VIDEO_POS_Y(slot_curr->td_pos),
+                     VIDEO_POS_X(slot_curr->pos), VIDEO_POS_Y(slot_curr->pos),
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
@@ -2510,18 +2481,15 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             if (iii == touch->gest_primary_slot)
             {
                /* Use position of the primary touch point */
-               touch->pointer_pos_x    = slot_curr->pos_x;
-               touch->pointer_pos_y    = slot_curr->pos_y;
+               touch->pointer_pos = slot_curr->pos;
 
                /* Reset deltas first, so we can get new change. */
-               touch->pointer_ma_rel_x = 0;
-               touch->pointer_ma_rel_y = 0;
+               touch->pointer_ma_rel = 0;
 
                udev_translate_touch_pos(
                   touch, &vp,
-                  touch->pointer_pos_x, touch->pointer_pos_y,
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
+                  VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos),
+                  &touch->pointer_ma_pos, &touch->pointer_ma_rel,
                   &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
             }
@@ -2542,56 +2510,52 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                {
                   /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Calculate high resolution positions and clip them. */
-                  touch->touchpad_pos_x   += touch->pointer_ma_rel_x * touch->touchpad_sensitivity;
+                  touch->touchpad_pos_x   += VIDEO_POS_X(touch->pointer_ma_rel) * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_x < 0.0f)
                      touch->touchpad_pos_x = 0.0f;
                   else if (touch->touchpad_pos_x > VIDEO_SCALE_W(vp.full_dims))
                      touch->touchpad_pos_x = VIDEO_SCALE_W(vp.full_dims);
-                  touch->touchpad_pos_y += touch->pointer_ma_rel_y * touch->touchpad_sensitivity;
+                  touch->touchpad_pos_y += VIDEO_POS_Y(touch->pointer_ma_rel) * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_y < 0.0f)
                      touch->touchpad_pos_y = 0.0f;
                   else if (touch->touchpad_pos_y > VIDEO_SCALE_H(vp.full_dims))
                      touch->touchpad_pos_y = VIDEO_SCALE_H(vp.full_dims);
 
                   /* Backup last values for delta. */
-                  last_mouse_pos_x   = touch->mouse_pos_x;
-                  last_mouse_pos_y   = touch->mouse_pos_y;
+                  last_mouse_pos_x   = VIDEO_POS_X(touch->mouse_pos);
+                  last_mouse_pos_y   = VIDEO_POS_Y(touch->mouse_pos);
 
                   /* Convert high resolution (sub-pixels) -> low resolution (pixels) */
-                  touch->mouse_pos_x = (int32_t) touch->touchpad_pos_x;
-                  touch->mouse_pos_y = (int32_t) touch->touchpad_pos_y;
+                  touch->mouse_pos = VIDEO_POS_PACK((int32_t) touch->touchpad_pos_x, (int32_t) touch->touchpad_pos_y);
 
                   /* Calculate cursor delta in screen space. */
-                  touch->mouse_rel_x += touch->mouse_pos_x - last_mouse_pos_x;
-                  touch->mouse_rel_y += touch->mouse_pos_y - last_mouse_pos_y;
+                  VIDEO_POS_ADD(touch->mouse_rel, VIDEO_POS_X(touch->mouse_pos) - last_mouse_pos_x, VIDEO_POS_Y(touch->mouse_pos) - last_mouse_pos_y);
                }
                else
                {
                   /* Direct mode -> Direct virtual mouse. */
                   /* Set mouse cursor position directly from the pointer. */
-                  last_mouse_pos_x       = touch->mouse_pos_x;
-                  last_mouse_pos_y       = touch->mouse_pos_y;
-                  touch->mouse_rel_x    += touch->pointer_ma_pos_x - touch->mouse_pos_x;
-                  touch->mouse_rel_y    += touch->pointer_ma_pos_y - touch->mouse_pos_y;
-                  touch->mouse_pos_x     = touch->pointer_ma_pos_x;
-                  touch->mouse_pos_y     = touch->pointer_ma_pos_y;
+                  last_mouse_pos_x       = VIDEO_POS_X(touch->mouse_pos);
+                  last_mouse_pos_y       = VIDEO_POS_Y(touch->mouse_pos);
+                  VIDEO_POS_ADD(touch->mouse_rel, VIDEO_POS_X(touch->pointer_ma_pos) - VIDEO_POS_X(touch->mouse_pos), VIDEO_POS_Y(touch->pointer_ma_pos) - VIDEO_POS_Y(touch->mouse_pos));
+                  touch->mouse_pos = touch->pointer_ma_pos;
                }
 
                /* Trackball mode */
                if (touch->trackball_enabled)
                {
                   /* Update trackball position */
-                  touch->trackball_pos_x = (float)touch->mouse_pos_x;
-                  touch->trackball_pos_y = (float)touch->mouse_pos_y;
+                  touch->trackball_pos_x = (float)VIDEO_POS_X(touch->mouse_pos);
+                  touch->trackball_pos_y = (float)VIDEO_POS_Y(touch->mouse_pos);
                   /* Accumulate trackball velocity */
                   touch->trackball_vel_x = \
                      touch->trackball_frict_x * touch->trackball_vel_x + \
                      touch->trackball_sensitivity_x * \
-                     (touch->mouse_pos_x - last_mouse_pos_x);
+                     (VIDEO_POS_X(touch->mouse_pos) - last_mouse_pos_x);
                   touch->trackball_vel_y = \
                      touch->trackball_frict_y * touch->trackball_vel_y + \
                      touch->trackball_sensitivity_y * \
-                     (touch->mouse_pos_y - last_mouse_pos_y);
+                     (VIDEO_POS_Y(touch->mouse_pos) - last_mouse_pos_y);
                }
             }
 
@@ -2604,8 +2568,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y,
-                     slot_curr->pos_x, slot_curr->pos_y,
+                     VIDEO_POS_X(slot_curr->td_pos), VIDEO_POS_Y(slot_curr->td_pos),
+                     VIDEO_POS_X(slot_curr->pos), VIDEO_POS_Y(slot_curr->pos),
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
@@ -2706,45 +2670,45 @@ static void udev_handle_touch(void *data,
             case ABS_X:
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_X to %d\n", event->value);
-               touch->staging[0].pos_x = event->value;
+               VIDEO_POS_PUT_X(touch->staging[0].pos, event->value);
 
                /* Low priority event, mark the change. */
                if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[0].td_pos_x = event->value;
+                  VIDEO_POS_PUT_X(touch->staging[0].td_pos, event->value);
                break;
             case ABS_MT_POSITION_X:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_X to %d\n", touch->current_slot, event->value);
-               touch->staging[touch->current_slot].pos_x = event->value;
+               VIDEO_POS_PUT_X(touch->staging[touch->current_slot].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[touch->current_slot].td_pos_x = event->value;
+                  VIDEO_POS_PUT_X(touch->staging[touch->current_slot].td_pos, event->value);
                break;
             case ABS_Y:
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_Y to %d\n", event->value);
-               touch->staging[0].pos_y = event->value;
+               VIDEO_POS_PUT_Y(touch->staging[0].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[0].td_pos_y = event->value;
+                  VIDEO_POS_PUT_Y(touch->staging[0].td_pos, event->value);
                break;
             case ABS_MT_POSITION_Y:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_Y to %d\n", touch->current_slot, event->value);
-               touch->staging[touch->current_slot].pos_y = event->value;
+               VIDEO_POS_PUT_Y(touch->staging[touch->current_slot].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[touch->current_slot].td_pos_y = event->value;
+                  VIDEO_POS_PUT_Y(touch->staging[touch->current_slot].td_pos, event->value);
                break;
             case ABS_MT_TOUCH_MINOR:
                RARCH_DDBG("[udev] handle_touch: [%d] MINOR to %d\n", touch->current_slot, event->value);
@@ -2848,12 +2812,10 @@ static void udev_input_touch_state_trackball(
          touch->trackball_pos_x += delta_x;
          touch->trackball_pos_y += delta_y;
          /* Update the real mouse position */
-         touch->mouse_pos_x = (int16_t) touch->trackball_pos_x;
-         touch->mouse_pos_y = (int16_t) touch->trackball_pos_y;
+         touch->mouse_pos = VIDEO_POS_PACK((int16_t) touch->trackball_pos_x, (int16_t) touch->trackball_pos_y);
 
          /* Add the movement to mouse delta */
-         touch->mouse_rel_x += delta_x;
-         touch->mouse_rel_y += delta_y;
+         VIDEO_POS_ADD(touch->mouse_rel, delta_x, delta_y);
       }
 
       /* Attenuate the velocity */
@@ -2931,31 +2893,31 @@ static void udev_input_touch_state_gest(
       case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
          /* Convert accumulated scrolls to mouse_wheel_x/y */
-         if (   touch->gest_scroll_x >  touch->gest_scroll_step
-             || touch->gest_scroll_x < -touch->gest_scroll_step)
+         if (   VIDEO_POS_X(touch->gest_scroll) >  touch->gest_scroll_step
+             || VIDEO_POS_X(touch->gest_scroll) < -touch->gest_scroll_step)
          { /* Add one scroll step. TODO - Add multiple? */
             /* Add if oriented the same or simply set to one. */
-            if (touch->gest_scroll_x * touch->mouse_wheel_x > 0)
-               touch->mouse_wheel_x += 1 * udev_touch_sign(touch->gest_scroll_x);
+            if (VIDEO_POS_X(touch->gest_scroll) * VIDEO_POS_X(touch->mouse_wheel) > 0)
+               VIDEO_POS_ADD(touch->mouse_wheel, 1 * udev_touch_sign(VIDEO_POS_X(touch->gest_scroll)), 0);
             else
-               touch->mouse_wheel_x  = 1 * udev_touch_sign(touch->gest_scroll_x);
+               VIDEO_POS_PUT_X(touch->mouse_wheel, 1 * udev_touch_sign(VIDEO_POS_X(touch->gest_scroll)));
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_x -= touch->gest_scroll_step *
-               udev_touch_sign(touch->gest_scroll_x);
+            VIDEO_POS_ADD(touch->gest_scroll, -(touch->gest_scroll_step *
+               udev_touch_sign(VIDEO_POS_X(touch->gest_scroll))), 0);
          }
-         if (   touch->gest_scroll_y > touch->gest_scroll_step
-             || touch->gest_scroll_y < -touch->gest_scroll_step)
+         if (   VIDEO_POS_Y(touch->gest_scroll) > touch->gest_scroll_step
+             || VIDEO_POS_Y(touch->gest_scroll) < -touch->gest_scroll_step)
          {
             /* Add one scroll step. TODO - Add multiple? */
             /* TODO - Note the -sign, the vertical scroll seems inverted. */
             /* Add if oriented the same or simply set to one. */
-            if (touch->gest_scroll_y * touch->mouse_wheel_x > 0)
-               touch->mouse_wheel_y += 1 * -udev_touch_sign(touch->gest_scroll_y);
+            if (VIDEO_POS_Y(touch->gest_scroll) * VIDEO_POS_X(touch->mouse_wheel) > 0)
+               VIDEO_POS_ADD(touch->mouse_wheel, 0, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
             else
-               touch->mouse_wheel_y = 1 * -udev_touch_sign(touch->gest_scroll_y);
+               VIDEO_POS_PUT_Y(touch->mouse_wheel, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_y -= touch->gest_scroll_step *
-               udev_touch_sign(touch->gest_scroll_y);
+            VIDEO_POS_ADD(touch->gest_scroll, 0, -(touch->gest_scroll_step *
+               udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll))));
          }
          break;
       case UDEV_TOUCH_MGEST_D_STAP_DRAG:
@@ -3029,20 +2991,20 @@ static int16_t udev_input_touch_state(
          {
             case RETRO_DEVICE_ID_MOUSE_X:
                if (screen)
-                  ret = touch->mouse_pos_x;
+                  ret = VIDEO_POS_X(touch->mouse_pos);
                else
                {
-                  ret = touch->mouse_rel_x;
-                  touch->mouse_rel_x = 0;
+                  ret = VIDEO_POS_X(touch->mouse_rel);
+                  VIDEO_POS_PUT_X(touch->mouse_rel, 0);
                }
                break;
             case RETRO_DEVICE_ID_MOUSE_Y:
                if (screen)
-                  ret = touch->mouse_pos_y;
+                  ret = VIDEO_POS_Y(touch->mouse_pos);
                else
                {
-                  ret = touch->mouse_rel_y;
-                  touch->mouse_rel_y = 0;
+                  ret = VIDEO_POS_Y(touch->mouse_rel);
+                  VIDEO_POS_PUT_Y(touch->mouse_rel, 0);
                }
                break;
             case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -3061,24 +3023,24 @@ static int16_t udev_input_touch_state(
                ret = touch->mouse_btn_b5;
                break;
             case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-               ret = touch->mouse_wheel_y > 0;
+               ret = VIDEO_POS_Y(touch->mouse_wheel) > 0;
                if (ret)
-                  touch->mouse_wheel_y--;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 0, -1);
                break;
             case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-               ret = touch->mouse_wheel_y < 0;
+               ret = VIDEO_POS_Y(touch->mouse_wheel) < 0;
                if (ret)
-                  touch->mouse_wheel_y++;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 0, 1);
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-               ret = touch->mouse_wheel_x > 0;
+               ret = VIDEO_POS_X(touch->mouse_wheel) > 0;
                if (ret)
-                  touch->mouse_wheel_x--;
+                  VIDEO_POS_ADD(touch->mouse_wheel, -1, 0);
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-               ret = touch->mouse_wheel_x < 0;
+               ret = VIDEO_POS_X(touch->mouse_wheel) < 0;
                if (ret)
-                  touch->mouse_wheel_x++;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 1, 0);
                break;
             default:
                break;
@@ -3665,22 +3627,26 @@ end:
 }
 
 #ifdef HAVE_X11
-static void udev_input_get_pointer_position(int *x, int *y)
+/* @pos: VIDEO_POS_PACK; left as it is off X11. */
+static void udev_input_get_pointer_position(uint32_t *pos)
 {
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
       Window w;
       int p;
       unsigned m;
+      int x            = VIDEO_POS_X(*pos);
+      int y            = VIDEO_POS_Y(*pos);
       Display *display = (Display*)video_driver_display_get();
       Window window    = (Window)video_driver_window_get();
 
-      XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+      XQueryPointer(display, window, &w, &w, &p, &p, &x, &y, &m);
+      *pos             = VIDEO_POS_PACK(x, y);
    }
 }
 
 static void udev_input_adopt_rel_pointer_position_from_mouse(
-      int *x, int *y, udev_input_mouse_t *mouse)
+      uint32_t *pos, udev_input_mouse_t *mouse)
 {
    static int noX11DispX = 0;
    static int noX11DispY = 0;
@@ -3708,11 +3674,9 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
          noX11DispY = minY;
       if (noX11DispY > maxY)
          noX11DispY = maxY;
-      *x            = noX11DispX;
-      *y            = noX11DispY;
+      *pos          = VIDEO_POS_PACK(noX11DispX, noX11DispY);
    }
-   mouse->x_rel     = 0;
-   mouse->y_rel     = 0;
+   mouse->rel       = 0;
 }
 #endif
 
@@ -3739,7 +3703,7 @@ static void udev_input_poll(void *data)
    udev_input_t *udev        = (udev_input_t*)data;
 
 #ifdef HAVE_X11
-   udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
+   udev_input_get_pointer_position(&udev->os_pointer_pos);
 #endif
 
    for (i = 0; i < (int)udev->num_devices; i++)
@@ -3750,10 +3714,9 @@ static void udev_input_poll(void *data)
       mouse = &udev->devices[i]->mouse;
 #ifdef HAVE_X11
       udev_input_adopt_rel_pointer_position_from_mouse(
-            &udev->pointer_x, &udev->pointer_y, mouse);
+            &udev->os_pointer_pos, mouse);
 #else
-      mouse->x_rel = 0;
-      mouse->y_rel = 0;
+      mouse->rel = 0;
 #endif
       mouse->wu    = false;
       mouse->wd    = false;
@@ -3816,10 +3779,10 @@ static bool udev_pointer_is_off_window(const udev_input_t *udev)
    struct video_viewport view;
    bool r = video_driver_get_viewport_info(&view);
    if (r)
-      return (udev->pointer_x < 0
-           || udev->pointer_x >= (int)VIDEO_SCALE_W(view.full_dims)
-           || udev->pointer_y < 0
-           || udev->pointer_y >= (int)VIDEO_SCALE_H(view.full_dims));
+      return (VIDEO_POS_X(udev->os_pointer_pos) < 0
+           || VIDEO_POS_X(udev->os_pointer_pos) >= (int)VIDEO_SCALE_W(view.full_dims)
+           || VIDEO_POS_Y(udev->os_pointer_pos) < 0
+           || VIDEO_POS_Y(udev->os_pointer_pos) >= (int)VIDEO_SCALE_H(view.full_dims));
 #endif
    return false;
 }
@@ -3865,9 +3828,9 @@ static int16_t udev_mouse_state(udev_input_t *udev,
       switch (id)
       {
          case RETRO_DEVICE_ID_MOUSE_X:
-            return screen ? udev->pointer_x : udev_mouse_get_x(mouse);
+            return screen ? VIDEO_POS_X(udev->os_pointer_pos) : udev_mouse_get_x(mouse);
          case RETRO_DEVICE_ID_MOUSE_Y:
-            return screen ? udev->pointer_y : udev_mouse_get_y(mouse);
+            return screen ? VIDEO_POS_Y(udev->os_pointer_pos) : udev_mouse_get_y(mouse);
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             return mouse->l;
          case RETRO_DEVICE_ID_MOUSE_RIGHT:

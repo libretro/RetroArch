@@ -249,6 +249,12 @@ enum text_alignment
     | ((unsigned)VIDEO_POS_CLAMP(y) & 0xffffu))
 #define VIDEO_POS_X(p) ((int)(int16_t)(((unsigned)(p) >> 16) & 0xffffu))
 #define VIDEO_POS_Y(p) ((int)(int16_t)( (unsigned)(p)        & 0xffffu))
+/* One axis of a packed position set, or both moved by a delta, the
+ * other half kept. */
+#define VIDEO_POS_PUT_X(p, x) ((p) = VIDEO_POS_PACK((x), VIDEO_POS_Y(p)))
+#define VIDEO_POS_PUT_Y(p, y) ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p), (y)))
+#define VIDEO_POS_ADD(p, dx, dy) \
+   ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p) + (dx), VIDEO_POS_Y(p) + (dy)))
 
 /* One axis of an origin, leaving the other half as it stands. */
 #define VIDEO_POS_PUT_X(p, x) \
