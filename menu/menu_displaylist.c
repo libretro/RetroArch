@@ -11492,6 +11492,7 @@ unsigned menu_displaylist_build_list(
 #endif
 #ifdef HAVE_SCREENSHOTS
                {MENU_ENUM_LABEL_CHEEVOS_AUTO_SCREENSHOT,                               PARSE_ONLY_BOOL,   false  },
+               {MENU_ENUM_LABEL_CHEEVOS_SCREENSHOT_DELAY,                              PARSE_ONLY_UINT,   false  },
 #endif
                {MENU_ENUM_LABEL_CHEEVOS_START_ACTIVE,                                  PARSE_ONLY_BOOL,   false  },
             };

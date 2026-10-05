@@ -21,6 +21,7 @@
 - CHEEVOS: Update to rcheevos 12.3
 - CHEEVOS: Download badges on demand only
 - CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
+- CHEEVOS: Add configurable frame delay for automatic screenshots
 - CLOUDSYNC: Google Drive cloud sync driver
 - CLOUDSYNC: NFS cloud sync driver
 - CONFIG: Fix saving main configuration after load configuration

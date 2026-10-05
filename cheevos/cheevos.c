@@ -418,6 +418,96 @@ static void rcheevos_retry_achievement_popup(retro_task_t* task)
 
 #endif /* HAVE_GFX_WIDGETS */
 
+#ifdef HAVE_SCREENSHOTS
+typedef struct rcheevos_pending_screenshot
+{
+   struct rcheevos_pending_screenshot* next;
+   unsigned achievement_id;
+   unsigned frames_remaining;
+} rcheevos_pending_screenshot_t;
+
+static rcheevos_pending_screenshot_t* rcheevos_pending_screenshots;
+
+static void rcheevos_take_achievement_screenshot(unsigned achievement_id)
+{
+   const settings_t* settings = config_get_ptr();
+   size_t shotname_len = sizeof(char) * 8192;
+   char* shotname = (char*)malloc(shotname_len);
+
+   if (shotname)
+   {
+      const char *path_directory_screenshot = settings->paths.directory_screenshot;
+      snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
+         path_directory_screenshot,
+         path_basename(path_get(RARCH_PATH_BASENAME)),
+         (unsigned)achievement_id);
+      shotname[shotname_len - 1] = '\0';
+
+      if (take_screenshot(path_directory_screenshot,
+         shotname,
+         true,
+         video_driver_cached_frame_is_hw_render(),
+         false,
+         true))
+         CHEEVOS_LOG(RCHEEVOS_TAG
+            "Captured screenshot for achievement %u\n",
+            achievement_id);
+      else
+         CHEEVOS_LOG(RCHEEVOS_TAG
+            "Failed to capture screenshot for achievement %u\n",
+            achievement_id);
+
+      free(shotname);
+   }
+}
+
+static void rcheevos_queue_screenshot(unsigned achievement_id)
+{
+   unsigned delay = config_get_ptr()->uints.cheevos_screenshot_delay;
+   rcheevos_pending_screenshot_t** tail = &rcheevos_pending_screenshots;
+   rcheevos_pending_screenshot_t* shot;
+
+   if (!delay)
+   {
+      rcheevos_take_achievement_screenshot(achievement_id);
+      return;
+   }
+
+   shot = (rcheevos_pending_screenshot_t*)malloc(sizeof(*shot));
+   if (!shot)
+   {
+      rcheevos_take_achievement_screenshot(achievement_id);
+      return;
+   }
+
+   shot->achievement_id   = achievement_id;
+   shot->frames_remaining = delay;
+   shot->next             = NULL;
+   while (*tail)
+      tail = &(*tail)->next;
+   *tail = shot;
+}
+
+static void rcheevos_process_screenshots(bool clear)
+{
+   rcheevos_pending_screenshot_t** entry = &rcheevos_pending_screenshots;
+
+   while (*entry)
+   {
+      rcheevos_pending_screenshot_t* shot = *entry;
+      if (clear || --shot->frames_remaining == 0)
+      {
+         if (!clear)
+            rcheevos_take_achievement_screenshot(shot->achievement_id);
+         *entry = shot->next;
+         free(shot);
+      }
+      else
+         entry = &shot->next;
+   }
+}
+#endif
+
 static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 {
    const settings_t* settings = config_get_ptr();
@@ -513,36 +603,7 @@ static void rcheevos_award_achievement(const rc_client_achievement_t* cheevo)
 #ifdef HAVE_SCREENSHOTS
    /* Take a screenshot of the achievement. */
    if (settings->bools.cheevos_auto_screenshot)
-   {
-      size_t shotname_len = sizeof(char) * 8192;
-      char* shotname = (char*)malloc(shotname_len);
-
-      if (shotname)
-      {
-         const char *path_directory_screenshot = settings->paths.directory_screenshot;
-         snprintf(shotname, shotname_len, "%s/%s-cheevo-%u",
-            path_directory_screenshot,
-            path_basename(path_get(RARCH_PATH_BASENAME)),
-            (unsigned)cheevo->id);
-         shotname[shotname_len - 1] = '\0';
-
-         if (take_screenshot(path_directory_screenshot,
-            shotname,
-            true,
-            video_driver_cached_frame_is_hw_render(),
-            false,
-            true))
-            CHEEVOS_LOG(RCHEEVOS_TAG
-               "Captured screenshot for achievement %u\n",
-               cheevo->id);
-         else
-            CHEEVOS_LOG(RCHEEVOS_TAG
-               "Failed to capture screenshot for achievement %u\n",
-               cheevo->id);
-
-         free(shotname);
-      }
-   }
+      rcheevos_queue_screenshot(cheevo->id);
 #endif
 }
 
@@ -821,6 +882,10 @@ void rcheevos_reset_game(bool widgets_ready)
    rcheevos_hide_widgets(widgets_ready);
 #endif
 
+#ifdef HAVE_SCREENSHOTS
+   rcheevos_process_screenshots(true);
+#endif
+
    rc_client_reset(rcheevos_locals.client);
 
    /* Some cores reallocate memory on reset,
@@ -869,6 +934,10 @@ bool rcheevos_unload(void)
     * queued_command. The atomic store synchronizes with the
     * acquire-load on the bg thread. */
    retro_atomic_inc_int(&rcheevos_locals.load_generation);
+#endif
+
+#ifdef HAVE_SCREENSHOTS
+   rcheevos_process_screenshots(true);
 #endif
 
 #ifdef HAVE_GFX_WIDGETS
@@ -1203,6 +1272,11 @@ void rcheevos_test(void)
       retro_atomic_store_release_int(&rcheevos_locals.queued_command,
             CMD_EVENT_NONE);
    }
+#endif
+
+#ifdef HAVE_SCREENSHOTS
+   /* Process before evaluation so new unlocks wait a full frame. */
+   rcheevos_process_screenshots(!config_get_ptr()->bools.cheevos_auto_screenshot);
 #endif
 
    if (rcheevos_locals.memory.count != 0)
