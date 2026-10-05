@@ -1626,8 +1626,7 @@ task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 #endif
 
 
-static void* ctr_init(const video_info_t* video,
-      input_driver_t** input, void** input_data)
+static void* ctr_init(const video_info_t* video)
 {
    size_t i;
    float refresh_rate;
@@ -1788,7 +1787,7 @@ static void* ctr_init(const video_info_t* video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    ctr->keep_aspect           = true;
    ctr->should_resize         = true;

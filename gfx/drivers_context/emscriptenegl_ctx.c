@@ -191,12 +191,11 @@ static bool gfx_ctx_emscripten_bind_api(void *data,
 }
 
 static void gfx_ctx_emscripten_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
    /* no input driver of this context's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 }
 
 static bool gfx_ctx_emscripten_has_focus(void *data) {

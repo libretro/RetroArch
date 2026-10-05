@@ -713,12 +713,11 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 }
 
 static void gfx_ctx_wgl_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
-   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 }
 
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data) { return win32_api; }

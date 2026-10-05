@@ -6718,9 +6718,7 @@ static void vulkan_note_built(vk_t *vk)
    vk->built           = true;
 }
 
-static void *vulkan_init(const video_info_t *video,
-      input_driver_t **input,
-      void **input_data)
+static void *vulkan_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
    unsigned win_dims;
@@ -6988,8 +6986,7 @@ static void *vulkan_init(const video_info_t *video,
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       vk->ctx_driver->input_driver(
-            vk->ctx_data, joypad_name,
-            input, input_data);
+            vk->ctx_data, joypad_name);
       RARCH_DBG("[Vulkan] Context input driver ready.\n");
    }
 

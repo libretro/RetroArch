@@ -53,7 +53,7 @@ static void *driver_init(void)
    vinfo.vsync = true;
    vinfo.rgb32 = false;
    vinfo.smooth = false;
-   return video_psp1.init(&vinfo, NULL, NULL);
+   return video_psp1.init(&vinfo);
 }
 
 static void driver_frame(void *psp, const void *frame, unsigned w,

@@ -389,8 +389,7 @@ static void clear_screen(switch_video_t *sw)
     framebufferEnd(&sw->fb);
 }
 
-static void *switch_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *switch_init(const video_info_t *video)
 {
     switch_video_t *sw = (switch_video_t *)calloc(1, sizeof(*sw));
     if (!sw)
@@ -428,7 +427,7 @@ static void *switch_init(const video_info_t *video,
     /* Autoselect driver */
     /* no input driver of this driver's own: the frontend starts the
      * platform's */
-    input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+    input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
 
     clear_screen(sw);

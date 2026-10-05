@@ -485,9 +485,7 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
  * declared on Context, where nothing referred to it. */
 @property(nonatomic, readwrite) bool frameMenuLinearFilter;
 
-- (instancetype)initWithVideo:(const video_info_t *)video
-                                       input:(input_driver_t **)input
-                                  inputData:(void **)inputData;
+- (instancetype)initWithVideo:(const video_info_t *)video;
 
 - (void)setVideo:(const video_info_t *)video;
 - (bool)renderFrame:(const void *)frame
@@ -4667,8 +4665,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
 }
 
 - (instancetype)initWithVideo:(const video_info_t *)video
-                        input:(input_driver_t **)input
-                    inputData:(void **)inputData
 {
    if (self = [super init])
    {
@@ -4829,8 +4825,6 @@ static void metal_pull_cached_frame_cb(void *userdata,
       [self applyVideoMode:_video.dims
                 fullscreen:_video.fullscreen];
 
-      *input         = NULL;
-      *inputData     = NULL;
       /* graphics display driver */
       _display       = [[MenuDisplay alloc] initWithContext:_context];
       /* menu view */
@@ -7037,8 +7031,6 @@ static bool metal_set_shader(void *data,
 typedef struct
 {
    const video_info_t *video;
-   input_driver_t **input;
-   void **input_data;
    void *result;
 } metal_init_args_t;
 
@@ -7063,9 +7055,7 @@ static void metal_init_mainthread(void *userdata)
 
    [apple_platform setViewType:APPLE_VIEW_TYPE_METAL];
 
-   md = [[MetalDriver alloc] initWithVideo:args->video
-                                     input:args->input
-                                 inputData:args->input_data];
+   md = [[MetalDriver alloc] initWithVideo:args->video];
    if (md == nil)
    {
       args->result = NULL;
@@ -7079,15 +7069,11 @@ static void metal_init_mainthread(void *userdata)
 }
 
 static void *metal_init(
-      const video_info_t *video,
-      input_driver_t **input,
-      void **input_data)
+      const video_info_t *video)
 {
    metal_init_args_t args;
 
    args.video      = video;
-   args.input      = input;
-   args.input_data = input_data;
    args.result     = NULL;
 
    cocoa_main_thread_sync(metal_init_mainthread, &args);

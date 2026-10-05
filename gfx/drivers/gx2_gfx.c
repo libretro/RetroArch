@@ -1029,8 +1029,7 @@ static void gx2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 
 static uint32_t gx2_get_flags(void *data);
 
-static void *gx2_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gx2_init(const video_info_t *video)
 {
    unsigned i;
    float refresh_rate              = 60.0f / 1.001f;
@@ -1043,12 +1042,10 @@ static void *gx2_init(const video_info_t *video,
    if (!wiiu)
       return NULL;
 
-   *input                          = NULL;
-   *input_data                     = NULL;
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    /* video initialize */
    wiiu->cmd_buffer                = MEM2_alloc(0x400000, 0x40);

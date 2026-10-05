@@ -337,11 +337,8 @@ static bool gfx_ctx_mali_fbdev_set_video_mode(void *data,
 }
 
 static void gfx_ctx_mali_fbdev_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 static enum gfx_ctx_api gfx_ctx_mali_fbdev_get_api(void *data)

@@ -502,8 +502,7 @@ static void blit_line(gekko_video_t *gx, unsigned x, unsigned y,
 
 /* ---- the driver ---- */
 
-static void *gekko_init(const video_info_t *video, input_driver_t **input,
-      void **input_data)
+static void *gekko_init(const video_info_t *video)
 {
    settings_t *settings = config_get_ptr();
    gekko_video_t *gx    = (gekko_video_t*)calloc(1, sizeof(*gx));
@@ -513,7 +512,7 @@ static void *gekko_init(const video_info_t *video, input_driver_t **input,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    if (!g_xfb[0])
    {

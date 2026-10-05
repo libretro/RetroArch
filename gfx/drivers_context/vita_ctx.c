@@ -139,12 +139,9 @@ error:
 
 
 static void vita_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data) 
+      const char *name)
 {
 #if defined(HAVE_VITAGLES)
-    *input      = NULL;
-    *input_data = NULL;
 #endif
 }
 static bool vita_has_focus(void *data) { return true; }

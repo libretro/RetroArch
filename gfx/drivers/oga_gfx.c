@@ -348,8 +348,7 @@ static void oga_free(void *data)
    vid = NULL;
 }
 
-static void *oga_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *oga_init(const video_info_t *video)
 {
    int i;
    oga_video_t *vid                     = NULL;
@@ -362,7 +361,7 @@ static void *oga_init(const video_info_t *video,
 
    /* no input driver of this driver's own: there is no window system
     * here, and the frontend starts the one that goes with that */
-   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
    if (!vid)

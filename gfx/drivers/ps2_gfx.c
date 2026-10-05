@@ -747,12 +747,10 @@ static void setupScalingMode(ps2_video_t *ps2, int iWidth, int iHeight, float fD
        gsGlobal->DH - 1);
 }
 
-static void *ps2_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *ps2_init(const video_info_t *video)
 {
    ps2_video_t *ps2 = (ps2_video_t *)calloc(1, sizeof(ps2_video_t));
 
-   *input_data      = NULL;
 
    if (!ps2)
       return NULL;
@@ -766,7 +764,7 @@ static void *ps2_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    return ps2;
 }

@@ -1197,8 +1197,7 @@ static int exynos_render_msg(struct exynos_video *vid,
    return exynos_blend_font(pdata);
 }
 
-static void *exynos_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *exynos_init(const video_info_t *video)
 {
    struct exynos_video *vid;
    const unsigned fb_bpp = 4; /* Use XRGB8888 framebuffer. */
@@ -1245,8 +1244,6 @@ static void *exynos_init(const video_info_t *video,
    exynos_perf_init(&vid->data->perf);
 #endif
 
-   if (input && input_data)
-      *input = NULL;
 
    if (exynos_init_font(vid) != 0)
    {

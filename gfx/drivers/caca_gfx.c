@@ -208,16 +208,13 @@ static void caca_create(caca_t *caca)
    video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
 }
 
-static void *caca_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *caca_init(const video_info_t *video)
 {
    caca_t *caca        = (caca_t*)calloc(1, sizeof(*caca));
 
    if (!caca)
       return NULL;
 
-   *input               = NULL;
-   *input_data          = NULL;
 
    caca->frame_width    = VIDEO_SCALE_W(video->dims);
    caca->frame_height   = VIDEO_SCALE_H(video->dims);

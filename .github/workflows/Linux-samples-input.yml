@@ -104,7 +104,7 @@ jobs:
           # The Windows video drivers and contexts, and the X11 and KMS
           # contexts, used to call input_driver_init_windows(), _x11()
           # or _kms() from their own start-up. They say what kind of
-          # window they put up (input_driver_left_to_frontend()) and
+          # window they put up (input_driver_video_window()) and
           # the frontend starts the input driver for it once the video
           # driver is up (video_driver_init_input()). No file under
           # gfx/ may call those three again.

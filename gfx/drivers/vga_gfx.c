@@ -181,13 +181,10 @@ static void vga_gfx_create(void)
    vga_upload_palette();
 }
 
-static void *vga_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *vga_gfx_init(const video_info_t *video)
 {
    vga_t *vga          = (vga_t*)calloc(1, sizeof(*vga));
 
-   *input              = NULL;
-   *input_data         = NULL;
 
    vga->vga_frame_width    = VIDEO_SCALE_W(video->dims);
    vga->vga_frame_height   = VIDEO_SCALE_H(video->dims);

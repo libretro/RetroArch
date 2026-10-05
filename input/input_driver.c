@@ -7199,32 +7199,30 @@ input_driver_t *input_driver_get_current(void)
 }
 
 /* The kind of window the video driver being started says it put up
- * (input_driver_left_to_frontend()), for video_driver_init_input(). */
+ * (input_driver_video_window()), for video_driver_init_input(). */
 static enum input_window_kind input_window_for_video = INPUT_WINDOW_OTHER;
 /* and the input state it holds for that window, if it holds any
- * (input_driver_left_to_frontend_with()) */
+ * (input_driver_video_window()) */
 static void *input_window_data_for_video             = NULL;
 
-/* The slots a video driver's init fills in when it brings its own
- * input driver. */
-input_driver_t **input_driver_video_slots(void ***data_slot)
+/* Before the video driver's init: no window kind said yet, and no
+ * input driver current - which every video driver used to arrange by
+ * clearing the slots it was handed. Whatever is current now is the
+ * driver the setting names (video_driver_init_input() gets it back as
+ * tmp); a driver kept across a restart is held apart (kept_driver). */
+void input_driver_video_init_begin(void)
 {
-   /* the driver about to start has said nothing yet */
-   input_window_for_video      = INPUT_WINDOW_OTHER;
-   input_window_data_for_video = NULL;
-   *data_slot = (void**)&input_driver_st.current_data;
-   return &input_driver_st.current_driver;
+   input_window_for_video        = INPUT_WINDOW_OTHER;
+   input_window_data_for_video   = NULL;
+   input_driver_st.current_driver = NULL;
+   input_driver_st.current_data   = NULL;
 }
 
-void input_driver_left_to_frontend(enum input_window_kind window,
-      input_driver_t **input, void **input_data)
+void input_driver_video_window(enum input_window_kind window,
+      void *window_data)
 {
    input_window_for_video      = window;
-   input_window_data_for_video = NULL;
-   if (input)
-      *input                   = NULL;
-   if (input_data)
-      *input_data              = NULL;
+   input_window_data_for_video = window_data;
 }
 
 #ifdef HAVE_SDL3
@@ -7234,13 +7232,6 @@ bool input_driver_is_sdl3(void)
 }
 #endif
 
-void input_driver_left_to_frontend_with(enum input_window_kind window,
-      void *window_data,
-      input_driver_t **input, void **input_data)
-{
-   input_driver_left_to_frontend(window, input, input_data);
-   input_window_data_for_video = window_data;
-}
 
 /* Leaving the input driver running across a video driver restart
  * ---------------------------------------------------------------
@@ -7566,7 +7557,7 @@ bool video_driver_init_input(
        * start the input driver for their window themselves, each from
        * its own start-up - on the video thread, with threaded video.
        * They say what kind of window it is
-       * (input_driver_left_to_frontend()) and it is started here, by
+       * (input_driver_video_window()) and it is started here, by
        * the frontend, on its own thread. The test driver, when it is
        * the setting and has a file to play, is left to the setting
        * below as it was. */

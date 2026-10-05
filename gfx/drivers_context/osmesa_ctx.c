@@ -307,11 +307,8 @@ static void osmesa_ctx_swap_buffers(void *data)
 }
 
 static void osmesa_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 static gfx_ctx_proc_t osmesa_ctx_get_proc_address(const char *name)

@@ -202,12 +202,11 @@ static bool gfx_ctx_uwp_set_video_mode(void *data,
 }
 
 static void gfx_ctx_uwp_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
    /* no input driver of this context's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 }
 
 static enum gfx_ctx_api gfx_ctx_uwp_get_api(void *data)

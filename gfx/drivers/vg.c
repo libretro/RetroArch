@@ -138,8 +138,7 @@ static bool vg_font_init(vg_t *vg, const char *path, float size)
    return true;
 }
 
-static void *vg_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *vg_init(const video_info_t *video)
 {
    unsigned win_dims;
    VGfloat clearColor[4]           = {0, 0, 0, 1};
@@ -244,8 +243,7 @@ static void *vg_init(const video_info_t *video,
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       vg->ctx_driver->input_driver(
-            vg->ctx_data, joypad_name,
-            input, input_data);
+            vg->ctx_data, joypad_name);
    }
 
    if (video->font_enable)

@@ -41,8 +41,8 @@ VIDEO_STATE_IN_INPUT = {
 
 # gfx/ files that still name an input or a joypad driver (3): none.
 # Every video driver and context leaves the input driver to the
-# frontend (input_driver_left_to_frontend()), and nothing goes back in
-# here.
+# frontend, saying what kind of window it made
+# (input_driver_video_window()), and nothing goes back in here.
 INPUT_DRIVERS_IN_GFX = {
 }
 
@@ -111,6 +111,20 @@ def compare(what, found, allowed, errors):
                           " down to match" % (what, rel, have, may))
 
 
+SLOT = re.compile(r"\binput_driver_t\s*\*\s*\*")
+
+
+def count_slots(root, sub):
+    """A video driver's init is handed no slot to put an input driver in:
+    input_driver_t ** appears nowhere under gfx/."""
+    found = {}
+    for rel, path in source_files(root, sub):
+        n = len(SLOT.findall(strip_comments(read(path))))
+        if n:
+            found[rel] = n
+    return found
+
+
 def check(root):
     errors = []
     names = driver_names(root)
@@ -125,6 +139,8 @@ def check(root):
             VIDEO_STATE_IN_INPUT, errors)
     compare("gfx/ names an input or joypad driver",
             count_names(root, "gfx", names), INPUT_DRIVERS_IN_GFX, errors)
+    compare("gfx/ takes a slot for an input driver (input_driver_t **)",
+            count_slots(root, "gfx"), {}, errors)
     return errors
 
 
@@ -182,6 +198,12 @@ def selftest():
             "void f(void) { video_state_get_ptr(); }\n")
         if not any("b_input.c" in e for e in check(tmp)):
             failures.append("a new input file taking the video state passes")
+
+        put("gfx/drivers/clean_gfx.c",
+            "void *f(const video_info_t *v, input_driver_t **i, void **d);\n")
+        if not any("slot" in e for e in check(tmp)):
+            failures.append("a video init taking an input driver slot passes")
+        put("gfx/drivers/clean_gfx.c", "int a;\n")
 
         VIDEO_STATE_IN_INPUT, INPUT_DRIVERS_IN_GFX = keep
     finally:

@@ -170,11 +170,8 @@ error:
 }
 
 static void switch_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-    *input      = NULL;
-    *input_data = NULL;
 }
 
 static enum gfx_ctx_api switch_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }

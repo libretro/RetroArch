@@ -1921,8 +1921,7 @@ static bool gxm_font_get_line_metrics(void* data,
  * VIDEO DRIVER
  */
 
-static void *gxm_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gxm_gfx_init(const video_info_t *video)
 {
    unsigned int color;
    unsigned temp_width                    = PSP_FB_WIDTH;
@@ -1933,8 +1932,6 @@ static void *gxm_gfx_init(const video_info_t *video,
    if (!vita)
       return NULL;
 
-   *input             = NULL;
-   *input_data        = NULL;
 
    gxm_init_internal((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X,
    (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV)
@@ -1972,7 +1969,7 @@ static void *gxm_gfx_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    vita->keep_aspect        = true;
    vita->should_resize      = true;

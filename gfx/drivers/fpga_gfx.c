@@ -130,16 +130,13 @@ static void fpga_create(fpga_t *fpga)
    fpga->framebuffer = ((volatile unsigned*)fpga->regOp.ptr);
 }
 
-static void *fpga_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *fpga_init(const video_info_t *video)
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    if (!fpga)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    fpga->frame_width                    = VIDEO_SCALE_W(video->dims);
    fpga->frame_height                   = VIDEO_SCALE_H(video->dims);

@@ -36,8 +36,7 @@ static bool gfx_ctx_null_set_video_mode(void *data,
       bool fullscreen) { return true; }
 static void gfx_ctx_null_destroy(void *data) { }
 static void gfx_ctx_null_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data) { }
+      const char *name) { }
 static bool gfx_ctx_null_has_focus(void *data) { return true; }
 static bool gfx_ctx_null_suppress_screensaver(void *data, bool enable) { return false; }
 static enum gfx_ctx_api gfx_ctx_null_get_api(void *data) { return GFX_CTX_NONE; }

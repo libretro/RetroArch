@@ -1247,8 +1247,7 @@ static void gl1_overlay_tex_geom(void *data,
 }
 #endif
 
-static void *gl1_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gl1_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
 #ifdef VITA
@@ -1273,8 +1272,6 @@ static void *gl1_init(const video_info_t *video,
    if (!gl1)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    gl1->frame_dims                      = video->dims;
 
@@ -1439,8 +1436,7 @@ static void *gl1_init(const video_info_t *video,
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       gl1->ctx_driver->input_driver(
-            gl1->ctx_data, joypad_name,
-            input, input_data);
+            gl1->ctx_data, joypad_name);
    }
 
 

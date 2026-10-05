@@ -5414,8 +5414,7 @@ static void d3d12_hw_v2_set_texture_fenced(void *data, ID3D12Resource *texture,
       d3d12->queue.handle->lpVtbl->Wait(d3d12->queue.handle, fence, value);
 }
 
-static void *d3d12_gfx_init(const video_info_t* video,
-      input_driver_t** input, void** input_data)
+static void *d3d12_gfx_init(const video_info_t* video)
 {
 #ifdef HAVE_MONITOR
    MONITORINFOEX  current_mon;
@@ -5490,7 +5489,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
-   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 
    d3d12_init_base(d3d12);
 

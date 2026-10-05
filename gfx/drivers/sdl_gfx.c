@@ -259,8 +259,7 @@ static void sdl_gfx_set_handles(void)
 #endif
 }
 
-static void *sdl_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sdl_gfx_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
    const SDL_VideoInfo *video_info = NULL;
@@ -321,7 +320,7 @@ static void *sdl_gfx_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with an SDL 1.2 window */
-   input_driver_left_to_frontend(INPUT_WINDOW_SDL1, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_SDL1, NULL);
 
    sdl_init_font(vid,
          video_font_enable,

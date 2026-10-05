@@ -95,12 +95,11 @@ static enum gfx_ctx_api drm_api           = GFX_CTX_NONE;
 void (*swap_buffers)(void*);
 
 static void gfx_ctx_go2_drm_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
    /* no input driver of this driver's own: there is no window system
     * here, and the frontend starts the one that goes with that */
-   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 }
 
 static void *gfx_ctx_go2_drm_init(void *video_driver)

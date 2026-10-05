@@ -560,14 +560,11 @@ settings_t *config_get_ptr(void)
 
 /* the driver starts no input driver itself: it leaves that to the
  * frontend, and says what kind of platform this is */
-void input_driver_left_to_frontend(enum input_window_kind window,
-      input_driver_t **input, void **input_data)
+void input_driver_video_window(enum input_window_kind window,
+      void *window_data)
 {
    (void)window;
-   if (input)
-      *input      = NULL;
-   if (input_data)
-      *input_data = NULL;
+   (void)window_data;
 }
 
 void menu_driver_frame(bool menu_is_alive, video_frame_info_t *video_info)

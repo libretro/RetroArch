@@ -346,8 +346,7 @@ static void sdl_dingux_gfx_free(void *data)
    free(vid);
 }
 
-static void *sdl_dingux_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sdl_dingux_gfx_init(const video_info_t *video)
 {
    sdl_dingux_video_t *vid                       = NULL;
    uint32_t sdl_subsystem_flags                  = SDL_WasInit(0);
@@ -452,7 +451,7 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
    /* No input driver of this driver's own: the frontend starts the
     * one the setting names - which is what was done here, for the
     * four it can be on these devices. */
-   input_driver_left_to_frontend(INPUT_WINDOW_OTHER, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_OTHER, NULL);
 
    /* Initialise OSD font */
    sdl_dingux_init_font_color(vid);

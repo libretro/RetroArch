@@ -554,8 +554,6 @@ typedef struct thread_video
    const video_poke_interface_t *poke;
 
    void *driver_data;
-   input_driver_t **input;
-   void **input_data;
 
    /* Overlay alpha modulation, lock-free. The values are float bits
     * in atomic ints: the main thread's set_alpha (fire-and-forget by
@@ -901,7 +899,6 @@ void video_thread_host_stop(void);
 
 bool video_init_thread(
       const video_driver_t **out_driver, void **out_data,
-      input_driver_t **input, void **input_data,
       const video_driver_t *driver, const video_info_t info);
 
 bool video_thread_font_init(

@@ -2388,8 +2388,7 @@ static void gdi_create(gdi_t *gdi)
    }
 }
 
-static void *gdi_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gdi_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
    unsigned mode_dims = 0;
@@ -2401,8 +2400,6 @@ static void *gdi_init(const video_info_t *video,
    if (!gdi)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    gdi->frame_dims = video->dims;
    gdi->rgb32                           = video->rgb32;
@@ -2466,7 +2463,7 @@ static void *gdi_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
-   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 
 
    RARCH_LOG("[GDI] Init complete.\n");

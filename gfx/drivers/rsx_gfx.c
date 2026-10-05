@@ -1465,8 +1465,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->bgcolor[RSX_SHADER_STOCK_BLEND]     = rsxFragmentProgramGetConst(rsx->fpo[RSX_SHADER_STOCK_BLEND], "bgcolor");
 }
 
-static void* rsx_init(const video_info_t* video,
-      input_driver_t** input, void** input_data)
+static void* rsx_init(const video_info_t* video)
 {
    int i;
    const gfx_ctx_driver_t* ctx_driver = NULL;
@@ -1527,7 +1526,7 @@ static void* rsx_init(const video_info_t* video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    rsx_context_bind_hw_render(rsx, true);
 

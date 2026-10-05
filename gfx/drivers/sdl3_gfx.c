@@ -227,8 +227,7 @@ static void sdl3_stream_upload(sdl3_tex_t *target, const void *src,
    SDL_UnlockTexture(target->tex);
 }
 
-static void *sdl3_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sdl3_gfx_init(const video_info_t *video)
 {
    int i;
    sdl3_video_t *vid = NULL;
@@ -279,7 +278,7 @@ static void *sdl3_gfx_init(const video_info_t *video,
 
    sdl3_refresh_viewport(vid);
 
-   sdl3_input_driver(config_get_ptr()->arrays.input_joypad_driver, input, input_data);
+   sdl3_input_driver(config_get_ptr()->arrays.input_joypad_driver);
 
    return vid;
 

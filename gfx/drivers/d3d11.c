@@ -3874,8 +3874,7 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    return true;
 }
 
-static void *d3d11_gfx_init(const video_info_t* video,
-      input_driver_t** input, void** input_data)
+static void *d3d11_gfx_init(const video_info_t* video)
 {
    unsigned       i;
 #ifdef HAVE_MONITOR
@@ -3990,7 +3989,7 @@ static void *d3d11_gfx_init(const video_info_t* video,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
-   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 
    matrix_4x4_identity(d3d11->identity);
 

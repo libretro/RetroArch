@@ -1243,7 +1243,9 @@ void input_driver_restart_with_next_video_restart(void);
 retro_time_t input_driver_get_poll_time(void);
 uint32_t input_driver_get_flags(void);
 input_driver_t *input_driver_get_current(void);
-input_driver_t **input_driver_video_slots(void ***data_slot);
+/* For the video driver's start-up, before the driver's init: the
+ * window kind is not yet known and no input driver is current. */
+void input_driver_video_init_begin(void);
 void input_driver_free_with_video(const void *video_data);
 /* Why the pointer is captured. It used to be one flag that about ten
  * places toggled or rewrote, each after looking at it, so what it
@@ -1309,7 +1311,7 @@ enum input_window_kind
     * input_driver_init_kms() */
    INPUT_WINDOW_KMS,
    /* a Wayland surface, whose seat's state the video context holds
-    * and hands over (input_driver_left_to_frontend_with()):
+    * and hands over (input_driver_video_window()):
     * input_driver_init_wayland() */
    INPUT_WINDOW_WAYLAND,
    /* an SDL 3 window: input_driver_init_sdl3() */
@@ -1321,26 +1323,22 @@ enum input_window_kind
    INPUT_WINDOW_PLATFORM
 };
 
-/* For a video driver's or a context's start-up, in place of starting
- * an input driver itself: it brings none, and the frontend is to
- * start the one that goes with a window of this kind. Clears the two
- * slots. A driver that says nothing here and fills in no slots gets
- * the input driver the setting names, as ever. */
-void input_driver_left_to_frontend(enum input_window_kind window,
-      input_driver_t **input, void **input_data);
-
-/* The same, for a window system whose input state lives with the
- * window, in the video driver's own data: @window_data is that state,
- * and is what the input driver the frontend starts is given. */
-void input_driver_left_to_frontend_with(enum input_window_kind window,
-      void *window_data,
-      input_driver_t **input, void **input_data);
+/* For a video driver's or a context's start-up: what kind of window it
+ * made, so that the frontend starts the input driver that goes with
+ * it. A video driver starts no input driver itself and is handed no
+ * slots to put one in. @window_data is, for a window system whose
+ * input state lives with the window in the video driver's own data
+ * (Wayland), that state - what the input driver the frontend starts is
+ * given; NULL otherwise. A driver that says nothing gets the input
+ * driver the setting names, as ever. */
+void input_driver_video_window(enum input_window_kind window,
+      void *window_data);
 
 /* Called once the video driver is up. If it brought an input driver of
  * its own, that is the input driver. Otherwise one is started here:
  * the one kept from before the restart; the one that goes with the
  * kind of window the video driver named
- * (input_driver_left_to_frontend()); failing those, the one the
+ * (input_driver_video_window()); failing those, the one the
  * setting names. */
 bool video_driver_init_input(
       input_driver_t *tmp,

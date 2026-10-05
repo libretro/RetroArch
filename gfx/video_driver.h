@@ -759,7 +759,9 @@ typedef struct gfx_ctx_driver
 
    /* Most video backends will want to use a certain input driver.
     * Checks for it here. */
-   void (*input_driver)(void*, const char *, input_driver_t**, void**);
+   /* says what kind of window the context made:
+    * input_driver_video_window() */
+   void (*input_driver)(void*, const char *);
 
    /* Wraps whatever gl_proc_address() there is.
     * Does not take opaque, to avoid lots of ugly wrapper code. */
@@ -1073,12 +1075,10 @@ typedef struct shader_load_deferred
 typedef struct video_driver
 {
    /* Should the video driver act as an input driver as well?
-    * The video initialization might preinitialize an input driver
-    * to override the settings in case the video driver relies on
-    * input driver for event handling. */
-   void *(*init)(const video_info_t *video,
-         input_driver_t **input,
-         void **input_data);
+    * A driver starts no input driver: it says what kind of window it
+    * made (input_driver_video_window()) and the frontend starts the
+    * input driver that goes with it. */
+   void *(*init)(const video_info_t *video);
 
    /* Updates frame on the screen.
     * Frame can be either XRGB1555, RGB565 or ARGB32 format

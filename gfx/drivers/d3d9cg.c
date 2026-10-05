@@ -3820,8 +3820,7 @@ static bool d3d9_cg_set_shader(void *data,
 }
 
 static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
-      const video_info_t *info, input_driver_t **input,
-      void **input_data)
+      const video_info_t *info)
 {
 #ifdef HAVE_MONITOR
    bool windowed_full;
@@ -3925,7 +3924,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with a Windows window */
-   input_driver_left_to_frontend(INPUT_WINDOW_WINDOWS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 
    {
       char version_str[128];
@@ -3948,8 +3947,7 @@ static bool d3d9_cg_init_internal(d3d9_video_t *d3d,
    return true;
 }
 
-static void *d3d9_cg_init(const video_info_t *info,
-      input_driver_t **input, void **input_data)
+static void *d3d9_cg_init(const video_info_t *info)
 {
    d3d9_video_t *d3d = (d3d9_video_t*)calloc(1, sizeof(*d3d));
 
@@ -3975,7 +3973,7 @@ static void *d3d9_cg_init(const video_info_t *info,
    d3d->should_resize        = false;
    d3d->menu                 = NULL;
 
-   if (!d3d9_cg_init_internal(d3d, info, input, input_data))
+   if (!d3d9_cg_init_internal(d3d, info))
    {
       RARCH_ERR("[D3D9 Cg] Failed to init D3D.\n");
       free(d3d);

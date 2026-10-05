@@ -611,8 +611,7 @@ static void sunxi_vsync_thread_func(void *data)
    }
 }
 
-static void *sunxi_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sunxi_init(const video_info_t *video)
 {
    struct sunxi_video *_dispvars = (struct sunxi_video*)
       calloc(1, sizeof(struct sunxi_video));
@@ -660,8 +659,6 @@ static void *sunxi_init(const video_info_t *video,
    if (!retro_eventcount_init(&_dispvars->vsync_ec))
       goto error;
 
-   if (input && input_data)
-      *input = NULL;
 
    /* Launching vsync thread */
    _dispvars->vsync_thread     = sthread_create(sunxi_vsync_thread_func, _dispvars);

@@ -417,8 +417,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
 
-static void *dispmanx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *dispmanx_init(const video_info_t *video)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
 
@@ -462,8 +461,6 @@ static void *dispmanx_init(const video_info_t *video,
    _dispvars->main_surface     = NULL;
    _dispvars->menu_surface     = NULL;
 
-   if (input && input_data)
-      *input = NULL;
 
    /* Enable/disable dispmanx bilinear filtering. */
    dispmanx_set_scaling(video->smooth);

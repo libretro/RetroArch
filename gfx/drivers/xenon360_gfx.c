@@ -101,8 +101,7 @@ static void xenon360_free(void *data)
    free(xenos);
 }
 
-static void *xenon360_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *xenon360_init(const video_info_t *video)
 {
    static const struct XenosVBFFormat vbf =
    {

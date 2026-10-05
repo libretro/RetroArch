@@ -186,12 +186,9 @@ static VIDEO_NOINLINE void video_thread_ring_drain(thread_video_t *thr)
    }
 }
 
-static void *video_thread_init_never_call(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *video_thread_init_never_call(const video_info_t *video)
 {
    (void)video;
-   (void)input;
-   (void)input_data;
    RARCH_ERR("Sanity check fail! Threaded mustn't be reinit.\n");
    abort();
    return NULL;
@@ -675,8 +672,7 @@ static bool video_thread_handle_packet(
       case CMD_INIT:
          if (thr->driver && thr->driver->init)
          {
-            thr->driver_data = thr->driver->init(&thr->info,
-                  thr->input, thr->input_data);
+            thr->driver_data = thr->driver->init(&thr->info);
             if (thr->driver_data && thr->driver->viewport_info)
             {
                struct video_viewport vp;
@@ -3320,8 +3316,7 @@ static void video_thread_set_nonblock_state(void *data, bool state,
 }
 
 static bool video_thread_init(thread_video_t *thr,
-      const video_info_t info,
-      input_driver_t **input, void **input_data)
+      const video_info_t info)
 {
    thread_packet_t pkt;
 
@@ -3372,8 +3367,6 @@ static bool video_thread_init(thread_video_t *thr,
       retro_atomic_int_init(&thr->frame.state, VIDEO_THREAD_RING_MAKE(0, 0, false));
    }
 
-   thr->input                = input;
-   thr->input_data           = input_data;
    thr->info                 = info;
    /* PRESENTABLE is the default the video thread applies when the
     * context has no answer, so the runloop is not told there is nothing
@@ -4454,7 +4447,6 @@ static void video_thread_set_callbacks(thread_video_t *thr,
  * Returns: true (1) if successful, otherwise false (0).
  **/
 bool video_init_thread(const video_driver_t **out_driver, void **out_data,
-      input_driver_t **input, void **input_data,
       const video_driver_t *drv, const video_info_t info)
 {
    thread_video_t *thr = (thread_video_t*)calloc(1, sizeof(video_thread_private_t));
@@ -4475,7 +4467,7 @@ bool video_init_thread(const video_driver_t **out_driver, void **out_data,
     * resolve to "Thread wrapper" instead of the wrapped driver ("glcore"),
     * causing shader-backend detection to fail. */
    video_state_get_ptr()->thread_wrapper_active = true;
-   if (!video_thread_init(thr, info, input, input_data))
+   if (!video_thread_init(thr, info))
    {
       /* video_thread is a member of thr, not a static vtable, so leaving
        * it published hands the caller freed memory once thr goes.

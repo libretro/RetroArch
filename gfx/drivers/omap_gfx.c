@@ -950,8 +950,7 @@ static void omap_render_msg(omap_video_t *vid, const char *msg)
 }
 
 /* FIXME/TODO: Filters not supported. */
-static void *omap_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *omap_init(const video_info_t *video)
 {
    settings_t *settings = config_get_ptr();
    omap_video_t *vid    = (omap_video_t*)calloc(1, sizeof(omap_video_t));
@@ -978,8 +977,6 @@ static void *omap_init(const video_info_t *video,
    if (omapfb_set_mode(vid->omap, 320, 240) != 0)
       goto fail_omapfb;
 
-   if (input && input_data)
-      *input = NULL;
 
    omap_init_font(vid);
 

@@ -256,8 +256,7 @@ static void scroll_on_demand(int pixelheight)
 #endif  /* HAVE_SYS_IOCTL_H */
 }
 
-static void *sixel_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sixel_gfx_init(const video_info_t *video)
 {
    void *ctx_data                       = NULL;
    const char *scale_str                = NULL;
@@ -266,8 +265,6 @@ static void *sixel_gfx_init(const video_info_t *video,
    if (!sixel)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    sixel_video_bits                     = video->rgb32 ? 32 : 16;
 
@@ -289,7 +286,7 @@ static void *sixel_gfx_init(const video_info_t *video,
 
    /* no input driver of this driver's own: there is no window system
     * here, and the frontend starts the one that goes with that */
-   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 
 
    return sixel;

@@ -352,8 +352,7 @@ static void sdl_refresh_input_size(sdl2_video_t *vid, bool menu, bool rgb32,
    }
 }
 
-static void *sdl2_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sdl2_gfx_init(const video_info_t *video)
 {
    int i;
    unsigned flags;
@@ -524,8 +523,6 @@ static void *sdl2_gfx_init(const video_info_t *video,
     * this is the same wiring every other modern driver does. */
 #endif
 
-   *input      = NULL;
-   *input_data = NULL;
 
    return vid;
 

@@ -47,8 +47,7 @@ typedef struct xshm
    bool use_shm;
 } xshm_t;
 
-static void *xshm_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *xshm_init(const video_info_t *video)
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
    Window parent;
@@ -116,7 +115,7 @@ static void *xshm_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * one that goes with an X11 window */
-   input_driver_left_to_frontend(INPUT_WINDOW_X11, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_X11, NULL);
 
    return xshm;
  error:

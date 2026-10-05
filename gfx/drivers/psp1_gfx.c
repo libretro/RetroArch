@@ -336,8 +336,7 @@ static bool psp_build_row_blit(psp1_video_t *psp, const void *frame,
    return true;
 }
 
-static void *psp_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *psp_init(const video_info_t *video)
 {
    /* TODO : add ASSERT() checks or use main RAM if
     * VRAM is too low for desired video->input_scale. */
@@ -549,7 +548,7 @@ static void *psp_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    psp->vblank_not_reached = true;
    sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0,

@@ -481,11 +481,8 @@ static bool gfx_ctx_vc_set_video_mode(void *data,
 static enum gfx_ctx_api gfx_ctx_vc_get_api(void *data) { return vc_api; }
 
 static void gfx_ctx_vc_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 static bool gfx_ctx_vc_has_focus(void *data) { return g_egl_inited; }

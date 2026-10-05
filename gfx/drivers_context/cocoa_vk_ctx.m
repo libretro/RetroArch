@@ -118,11 +118,8 @@ static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool disable)
 }
 
 static void cocoa_vk_gfx_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 #if TARGET_OS_OSX

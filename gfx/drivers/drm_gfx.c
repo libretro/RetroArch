@@ -735,8 +735,7 @@ static bool init_drm(void)
    return true;
 }
 
-static void *drm_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *drm_init(const video_info_t *video)
 {
    struct drm_video *_drmvars = (struct drm_video*)
       calloc(1, sizeof(struct drm_video));
@@ -762,8 +761,6 @@ static void *drm_init(const video_info_t *video,
    _drmvars->main_surface     = NULL;
    _drmvars->menu_surface     = NULL;
 
-   if (input && input_data)
-      *input = NULL;
 
    /* DRM Init */
    if (!init_drm())

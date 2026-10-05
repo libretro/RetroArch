@@ -230,13 +230,12 @@ static int hub75_env_int(const char *name, int min_value, int max_value)
    return (int)parsed;
 }
 
-static void hub75_input_driver(const char *joypad_driver,
-      input_driver_t **input, void **input_data)
+static void hub75_input_driver(const char *joypad_driver)
 {
    (void)joypad_driver;
    /* no input driver of this driver's own: there is no window system
     * here, and the frontend starts the one that goes with that */
-   input_driver_left_to_frontend(INPUT_WINDOW_KMS, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 }
 
 static void hub75_gpio_delay(unsigned slowdown)
@@ -470,8 +469,7 @@ static void hub75_free(void *data)
    free(hub75);
 }
 
-static void *hub75_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *hub75_init(const video_info_t *video)
 {
    settings_t *settings = config_get_ptr();
    hub75_t *hub75 = (hub75_t*)calloc(1, sizeof(*hub75));
@@ -481,8 +479,6 @@ static void *hub75_init(const video_info_t *video,
    int value;
    size_t pixel_count;
 
-   *input      = NULL;
-   *input_data = NULL;
    if (!hub75)
       return NULL;
 
@@ -553,7 +549,7 @@ static void *hub75_init(const video_info_t *video,
    }
    hub75->refresh_thread_started = true;
 
-   hub75_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   hub75_input_driver(settings->arrays.input_joypad_driver);
    frontend_driver_install_signal_handler();
 
    RARCH_LOG("[HUB75] Initialized %ux%u Raspberry Pi 5 RP1 matrix "

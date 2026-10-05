@@ -628,8 +628,7 @@ static void build_disp_list(void)
    display_list_size = GX_EndDispList();
 }
 
-static void *gx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gx_init(const video_info_t *video)
 {
    settings_t *settings            = config_get_ptr();
    gx_video_t *gx                  = (gx_video_t*)calloc(1, sizeof(gx_video_t));
@@ -639,7 +638,7 @@ static void *gx_init(const video_info_t *video,
 
    /* no input driver of this driver's own: the frontend starts the
     * platform's */
-   input_driver_left_to_frontend(INPUT_WINDOW_PLATFORM, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    VIDEO_Init();
    GX_Init(gx_fifo, sizeof(gx_fifo));

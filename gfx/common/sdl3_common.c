@@ -402,19 +402,17 @@ bool sdl3_suppress_screensaver(void *data, bool enable)
    return enable ? SDL_DisableScreenSaver() : SDL_EnableScreenSaver();
 }
 
-void sdl3_input_driver(const char *joypad_name,
-      input_driver_t **input, void **input_data)
+void sdl3_input_driver(const char *joypad_name)
 {
    /* no input driver of this window's own: the frontend starts the
     * one that goes with an SDL 3 window */
-   input_driver_left_to_frontend(INPUT_WINDOW_SDL3, input, input_data);
+   input_driver_video_window(INPUT_WINDOW_SDL3, NULL);
 }
 
 void sdl3_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   sdl3_input_driver(name, input, input_data);
+   sdl3_input_driver(name);
 }
 
 bool sdl3_ctx_enabled(const char *ctx_ident)

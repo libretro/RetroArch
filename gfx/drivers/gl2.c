@@ -5512,8 +5512,7 @@ static bool renderchain_gl2_init_first(void **renderchain_handle)
    return true;
 }
 
-static void *gl2_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gl2_init(const video_info_t *video)
 {
    enum gfx_wrap_type wrap_type;
    unsigned full_x, full_y;
@@ -5939,8 +5938,7 @@ static void *gl2_init(const video_info_t *video,
    {
       const char *joypad_name = settings->arrays.input_joypad_driver;
       gl->ctx_driver->input_driver(
-            gl->ctx_data, joypad_name,
-            input, input_data);
+            gl->ctx_data, joypad_name);
    }
 
 

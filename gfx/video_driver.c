@@ -488,12 +488,8 @@ void video_coord_array_free(video_coord_array_t *ca)
    ca->allocated            = 0;
 }
 
-static void *video_null_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *video_null_init(const video_info_t *video)
 {
-   *input      = NULL;
-   *input_data = NULL;
-
    frontend_driver_install_signal_handler();
 
    return (void*)-1;
@@ -6106,8 +6102,6 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    unsigned max_dim, scale, width, height;
    video_viewport_settings_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
-   input_driver_t **input_slot            = NULL;
-   void **input_data_slot                 = NULL;
    static uint16_t dummy_pixels[32]       = {0};
    runloop_state_t *runloop_st            = runloop_state_get_ptr();
    settings_t       *settings             = config_get_ptr();
@@ -6307,7 +6301,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video_st->frame_drop_count        = 0;
 
    tmp                               = input_driver_get_current();
-   input_slot                        = input_driver_video_slots(&input_data_slot);
+   input_driver_video_init_begin();
    /* Need to grab the "real" video driver interface on a reinit. */
    video_driver_find_driver(settings, "video driver", verbosity_enabled);
 
@@ -6343,8 +6337,6 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       ret = video_init_thread(
             (const video_driver_t**)&video_st->current_video,
             &video_st->data,
-            input_slot,
-            input_data_slot,
             video_st->current_video,
             video);
       if (!ret)
@@ -6359,10 +6351,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    }
    else
 #endif
-      video_st->data = video_st->current_video->init(
-            &video,
-            input_slot,
-            input_data_slot);
+      video_st->data = video_st->current_video->init(&video);
 
 #ifdef HAVE_WAYLAND
    /* A Wayland window kept across the reinit that this driver did not
