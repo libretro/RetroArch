@@ -155,6 +155,11 @@ typedef struct gl3
 #endif /* HAVE_SHADERPIPELINE */
       struct gl3_buffer_locations alpha_blend_loc;
       struct gl3_buffer_locations font_loc;
+      /* Half-float (linear scRGB) textures under the scRGB composite:
+       * alpha_blend_linear.frag, made the first time one is drawn */
+      GLuint alpha_blend_linear;
+      struct gl3_buffer_locations alpha_blend_linear_loc;
+      bool   alpha_blend_linear_tried;
 #ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations ribbon_loc;
       struct gl3_buffer_locations ribbon_simple_loc;
@@ -190,6 +195,10 @@ typedef struct gl3
       GLuint   ui_tex;
       unsigned dims;
       bool     active;
+      /* The SDR content layer, which the menu is drawn into, is FP16:
+       * always, but while recording, which reads it back each frame
+       * and keeps it RGBA8 for the copy the driver makes as it is */
+      bool     tex_fp16;
       /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
       bool     pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the
@@ -924,11 +933,52 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
       const struct gl3_buffer_locations **loc);
 #endif
 
+/* The names of the half-float textures loaded: linear scRGB, which the
+ * HDR composite shows through the linear program rather than as SDR.
+ * Loaded, drawn and deleted on the context's own thread, so the table
+ * needs no lock; past its size a texture is drawn as any other. */
+#define GL3_FP16_TEXTURES 32
+static GLuint   gl3_fp16_tex[GL3_FP16_TEXTURES];
+static unsigned gl3_fp16_count;
+
+static void gl3_fp16_remember(GLuint id)
+{
+   if (gl3_fp16_count < GL3_FP16_TEXTURES)
+      gl3_fp16_tex[gl3_fp16_count++] = id;
+}
+
+static void gl3_fp16_forget(GLuint id)
+{
+   unsigned i;
+   for (i = 0; i < gl3_fp16_count; i++)
+      if (gl3_fp16_tex[i] == id)
+      {
+         gl3_fp16_tex[i] = gl3_fp16_tex[--gl3_fp16_count];
+         return;
+      }
+}
+
+static bool gl3_fp16_is(GLuint id)
+{
+   unsigned i;
+   for (i = 0; i < gl3_fp16_count; i++)
+      if (gl3_fp16_tex[i] == id)
+         return true;
+   return false;
+}
+
+#ifdef HAVE_SLANG
+static GLuint gl3_linear_program(gl3_t *gl);
+#else
+static GLuint gl3_linear_program(gl3_t *gl) { (void)gl; return 0; }
+#endif
+
 static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
       void *data, unsigned video_dims)
 {
    video_coords_t coords;
    gl3_t *gl                 = (gl3_t*)data;
+   GLuint lin_prog           = 0;
 
    if (!gl || !draw)
       return;
@@ -1005,7 +1055,14 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
 #endif /* HAVE_SHADERPIPELINE */
 
          default:
-            glUseProgram(gl->pipelines.alpha_blend);
+            /* A half-float texture is linear scRGB: under the scRGB
+             * composite, through the program that inverts its encode */
+            if (     gl->scrgb.active
+                  && gl3_fp16_is((GLuint)draw->texture)
+                  && (lin_prog = gl3_linear_program(gl)))
+               glUseProgram(lin_prog);
+            else
+               glUseProgram(gl->pipelines.alpha_blend);
             break;
       }
 
@@ -1026,7 +1083,24 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
          const math_matrix_4x4 *mat = draw->matrix_data
                         ? (const math_matrix_4x4*)draw->matrix_data
                         : (const math_matrix_4x4*)&gl->mvp_no_rot;
-         if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
+         if (lin_prog)
+         {
+            /* The MVP, then the menu nits and the composite's gamut:
+             * the composite shows a UI texel at the menu nits */
+            float ubo[20];
+            memcpy(ubo, mat->data, 16 * sizeof(float));
+            ubo[16] = gl->scrgb.menu_nits;
+            ubo[17] = (float)gl->scrgb.expand_gamut;
+            ubo[18] = 0.0f;
+            ubo[19] = 0.0f;
+            if (gl->pipelines.alpha_blend_linear_loc.flat_ubo_vertex >= 0)
+               glUniform4fv(gl->pipelines.alpha_blend_linear_loc.flat_ubo_vertex,
+                     5, ubo);
+            if (gl->pipelines.alpha_blend_linear_loc.flat_ubo_fragment >= 0)
+               glUniform4fv(gl->pipelines.alpha_blend_linear_loc.flat_ubo_fragment,
+                     5, ubo);
+         }
+         else if (gl->pipelines.alpha_blend_loc.flat_ubo_vertex >= 0)
             glUniform4fv(gl->pipelines.alpha_blend_loc.flat_ubo_vertex,
                          4, mat->data);
       }
@@ -2067,6 +2141,12 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.alpha_blend);
       gl->pipelines.alpha_blend = 0;
    }
+   if (gl->pipelines.alpha_blend_linear)
+   {
+      glDeleteProgram(gl->pipelines.alpha_blend_linear);
+      gl->pipelines.alpha_blend_linear = 0;
+   }
+   gl->pipelines.alpha_blend_linear_tried = false;
    if (gl->pipelines.mesh)
    {
       glDeleteProgram(gl->pipelines.mesh);
@@ -2433,6 +2513,26 @@ static void gl3_set_viewport(gl3_t *gl,
 static const uint32_t gl3_alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
       ;
+
+static const uint32_t gl3_alpha_blend_linear_frag[] =
+#include "vulkan_shaders/alpha_blend_linear.frag.inc"
+      ;
+
+/* The program for a half-float texture under the scRGB composite, made
+ * the first time one is drawn; 0 where it cannot be. */
+static GLuint gl3_linear_program(gl3_t *gl)
+{
+   if (     !gl->pipelines.alpha_blend_linear
+         && !gl->pipelines.alpha_blend_linear_tried)
+   {
+      gl->pipelines.alpha_blend_linear_tried = true;
+      gl->pipelines.alpha_blend_linear       = gl3_cross_compile_program(
+            gl3_alpha_blend_vert, sizeof(gl3_alpha_blend_vert),
+            gl3_alpha_blend_linear_frag, sizeof(gl3_alpha_blend_linear_frag),
+            &gl->pipelines.alpha_blend_linear_loc, true);
+   }
+   return gl->pipelines.alpha_blend_linear;
+}
 
 #ifdef HAVE_SHADERPIPELINE
 static const uint32_t gl3_pipeline_ribbon_vert[] =
@@ -3658,6 +3758,8 @@ static void video_texture_load_gl3(
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
    }
+   else
+      gl3_fp16_remember(id);
    glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -4496,12 +4598,22 @@ static bool gl3_needs_pq_downconvert(gl3_t *gl)
 #endif
 }
 
+/* The SDR content layer's format: FP16 unless recording reads it back
+ * (see gl3_frame_target_fbo); a PQ source's content layer is RGB10_A2
+ * and its UI has its own FP16 layer. */
+static bool gl3_scrgb_wants_fp16(const gl3_t *gl)
+{
+   return    !gl->video_info.source_hdr10
+          && !(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE);
+}
+
 static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
 {
    if (!gl->scrgb.active && !gl3_needs_pq_downconvert(gl))
       return 0;
 
-   if (!gl->scrgb.fbo || gl->scrgb.dims != dims)
+   if (     !gl->scrgb.fbo || gl->scrgb.dims != dims
+         || gl->scrgb.tex_fp16 != gl3_scrgb_wants_fp16(gl))
    {
       unsigned width  = VIDEO_SCALE_W(dims);
       unsigned height = VIDEO_SCALE_H(dims);
@@ -4515,8 +4627,22 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
        * target does: this offscreen holds the frame between the shader
        * chain's viewport pass and the encode, and 8-bit PQ bands. */
       if (gl->video_info.source_hdr10)
+      {
+         gl->scrgb.tex_fp16 = false;
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2, width, height, 0,
                GL_RGBA, GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
+      }
+      /* SDR content, with the menu drawn here too: FP16, so its alpha
+       * keeps every step and a linear texture's values above menu white
+       * reach the encode - but RGBA8 while recording, which reads this
+       * layer back each frame (gl3_pbo_async_readback): RGBA8 into
+       * GL_UNSIGNED_BYTE is the copy the driver makes without
+       * converting. The linear path is offered only while it is FP16
+       * (TEXTURE_GPU_FORMAT_SCRGB), so a recording keeps the tone-mapped
+       * previews it had. */
+      else if ((gl->scrgb.tex_fp16 = gl3_scrgb_wants_fp16(gl)))
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
+               GL_RGBA, GL_HALF_FLOAT, NULL);
       else
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
@@ -4560,8 +4686,11 @@ static GLuint gl3_frame_target_fbo(gl3_t *gl, unsigned dims)
       {
          glGenTextures(1, &gl->scrgb.ui_tex);
          glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
-         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0,
-               GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+         /* Half floats: nothing reads this layer back, so its alpha
+          * keeps every step and a linear texture's values above menu
+          * white reach the encode at no readback cost */
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0,
+               GL_RGBA, GL_HALF_FLOAT, NULL);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
          glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -5741,6 +5870,7 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
       gl->ctx_driver->make_current(false);
 
    glid = (GLuint)id;
+   gl3_fp16_forget(glid);
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -5854,6 +5984,7 @@ static void gl3_unload_texture(void *data, bool threaded,
 #endif
 
    glid = (GLuint)id;
+   gl3_fp16_forget(glid);
    glDeleteTextures(1, &glid);
 }
 
@@ -6189,6 +6320,18 @@ static bool gl3_supports_texture_format(void *data,
       /* RGBA16F from half floats is core in GL 3.0 and GLES 3.0. */
       case TEXTURE_GPU_FORMAT_RGBA16F:
          return true;
+      /* The linear program shows such a texture as linear scRGB while
+       * the backbuffer is scRGB; in SDR there is no linear light. */
+      case TEXTURE_GPU_FORMAT_SCRGB:
+         /* Only where the menu's layer is FP16: an 8-bit one would clip
+          * the highlights the tone-mapped path rolls off */
+         if (data)
+         {
+            const gl3_t *gl = (const gl3_t*)data;
+            return gl->scrgb.active && (gl->video_info.source_hdr10
+                  ? gl->scrgb.ui_fbo != 0 : gl->scrgb.tex_fp16);
+         }
+         return false;
       case TEXTURE_GPU_FORMAT_BC1:
       case TEXTURE_GPU_FORMAT_BC2:
       case TEXTURE_GPU_FORMAT_BC3:
