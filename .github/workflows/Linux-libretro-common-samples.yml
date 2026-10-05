@@ -168,6 +168,7 @@ jobs:
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test
+            rpng_apng_bounds_test
             # Benchmark, not a pass/fail test, but it runs its default
             # 4K comparison and exits 0, so under this job's sanitizer
             # build it doubles as end-to-end ASan/UBSan smoke coverage
