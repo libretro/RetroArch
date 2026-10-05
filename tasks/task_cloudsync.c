@@ -14,6 +14,7 @@
 
 #include <features/features_cpu.h>
 #include <file/file_path.h>
+#include <retro_dirent.h>
 #include <formats/rjson.h>
 #include <formats/rjson_stream.h>
 #include <lists/dir_list.h>
@@ -124,6 +125,16 @@ typedef struct
    struct tcs_fetched *fetched_in;
 #endif
    struct tcs_fetched *fetched;
+   /* The walk of the synced directories that builds current_manifest,
+    * a few entries per run: the directories open from the root of
+    * dirlist[walk_root_idx] down, each with the length of its path in
+    * walk_path; walk_bufs holds walk_root, walk_path and two scratch
+    * paths, PATH_MAX_LENGTH each. */
+   struct tcs_walk_dir *walk;
+   size_t walk_depth;
+   size_t walk_cap;
+   size_t walk_root_idx;
+   char *walk_bufs;
    bool need_manifest_uploaded;
    bool failures;
    bool conflicts;
@@ -486,78 +497,119 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
    return false;
 }
 
-/**
- * task_cloud_sync_manifest_append_dir:
- * @manifest         : pointer to the current file_list
- * @dir_fullpath     : the full path to the directory to be added
- * @dir_name         : the name of the directory to be added
- *
- * Adds all the files within the given directory to the provided
- * file list, with the exception of the ones that should be ignored
- */
-static bool task_cloud_sync_manifest_append_dir(file_list_t *manifest,
-      const char *dir_fullpath, char *dir_name)
+/* A directory open in the walk, and the length of its path. */
+struct tcs_walk_dir
 {
-   size_t i;
-   struct string_list *dir_list;
-   /* the directory, a file's path under it and its key: on the heap,
-    * one block per directory, as the task runs on small stacks */
-   char               *dir_fullpath_slash = (char*)malloc(3 * PATH_MAX_LENGTH);
-   char               *relative_path      = dir_fullpath_slash + PATH_MAX_LENGTH;
-   char               *alt                = relative_path + PATH_MAX_LENGTH;
+   struct RDIR *dir;
+   size_t       len;
+};
 
-   if (!dir_fullpath_slash)
+#define CS_WALK_ROOT(s) ((s)->walk_bufs)
+#define CS_WALK_PATH(s) ((s)->walk_bufs + PATH_MAX_LENGTH)
+#define CS_WALK_REL(s)  ((s)->walk_bufs + 2 * PATH_MAX_LENGTH)
+#define CS_WALK_ALT(s)  ((s)->walk_bufs + 3 * PATH_MAX_LENGTH)
+
+static void task_cloud_sync_walk_free(task_cloud_sync_state_t *sync_state)
+{
+   while (sync_state->walk_depth)
+      retro_closedir(sync_state->walk[--sync_state->walk_depth].dir);
+   free(sync_state->walk);
+   free(sync_state->walk_bufs);
+   sync_state->walk      = NULL;
+   sync_state->walk_cap  = 0;
+   sync_state->walk_bufs = NULL;
+}
+
+/* Opens CS_WALK_PATH(sync_state), @len long, as the next level down. */
+static bool task_cloud_sync_walk_push(task_cloud_sync_state_t *sync_state,
+      size_t len)
+{
+   struct RDIR *dir;
+   if (sync_state->walk_depth == sync_state->walk_cap)
+   {
+      size_t cap = sync_state->walk_cap ? sync_state->walk_cap * 2 : 8;
+      struct tcs_walk_dir *walk = (struct tcs_walk_dir*)realloc(
+            sync_state->walk, cap * sizeof(*walk));
+      if (!walk)
+         return false;
+      sync_state->walk     = walk;
+      sync_state->walk_cap = cap;
+   }
+   if (!(dir = retro_opendir_include_hidden(CS_WALK_PATH(sync_state), true)))
       return false;
-   strlcpy(dir_fullpath_slash, dir_fullpath, PATH_MAX_LENGTH);
-   fill_pathname_slash(dir_fullpath_slash, PATH_MAX_LENGTH);
-
-   /* A root that cannot be opened is what dir_list_new() reports NULL
-    * for, and it is not the same as an empty directory: an empty one
-    * says every file under it is gone, which is a statement the diff
-    * acts on by deleting the server's copies. A directory that could
-    * not be read says nothing at all, so the caller stops rather than
-    * letting the manifest claim a deletion that never happened. */
-   if (!(dir_list = dir_list_new(dir_fullpath_slash, NULL, false, true, true, true)))
+   if (retro_dirent_error(dir))
    {
-      RARCH_ERR(CSPFX "Could not read \"%s\".\n", dir_fullpath_slash);
-      free(dir_fullpath_slash);
+      retro_closedir(dir);
       return false;
    }
-
-   if (dir_list->size == 0)
-   {
-      string_list_free(dir_list);
-      free(dir_fullpath_slash);
-      return true;
-   }
-
-   file_list_reserve(manifest, manifest->size + dir_list->size);
-   for (i = 0; i < dir_list->size; i++)
-   {
-      size_t      idx = manifest->size;
-      const char *full_path = dir_list->elems[i].data;
-
-      path_relative_to(relative_path, full_path, dir_fullpath_slash, PATH_MAX_LENGTH);
-      fill_pathname_join_special(alt, dir_name, relative_path, PATH_MAX_LENGTH);
-
-      if (task_cloud_sync_should_ignore_file(alt))
-         continue;
-
-      /* The "alt" refers to the relative path of whatever we're syncing relative to the retroarch folder
-       * whereas the full_path is the absolute disk path of the file. When building the manifest, adhere
-       * to a portable standard, but use that as the portable representation of paths. While the actual
-       * "manifest" is comprised of full, local-style paths associated with "alt"s which are portable. */
-      pathname_make_slashes_portable(alt);
-      file_list_append(manifest, full_path, NULL, 0, 0, 0);
-      file_list_set_alt_at_offset(manifest, idx, alt);
-   }
-
-   /* TODO Is this freed anywhere else? Am I missing something? The dir_list's contents are strdup'ed, so freeing this shouldn't break anything
-    * Remove this comment once a decision has been taken*/
-   string_list_free(dir_list);
-   free(dir_fullpath_slash);
-
+   sync_state->walk[sync_state->walk_depth].dir = dir;
+   sync_state->walk[sync_state->walk_depth].len = len;
+   sync_state->walk_depth++;
    return true;
+}
+
+/* One entry of the walk: the next name in the deepest open directory,
+ * which adds a file to current_manifest or opens a subdirectory, or
+ * the end of that directory. Lists what dir_list_new() lists for the
+ * root, recursively, hidden entries included and directories left
+ * out; a subdirectory that cannot be opened is skipped as it skips
+ * one. */
+static void task_cloud_sync_walk_step(task_cloud_sync_state_t *sync_state)
+{
+   struct tcs_walk_dir *top  = &sync_state->walk[sync_state->walk_depth - 1];
+   char                *path = CS_WALK_PATH(sync_state);
+   const char          *name;
+   size_t               len;
+   size_t               idx;
+   bool                 is_dir;
+
+   if (!retro_readdir(top->dir))
+   {
+      retro_closedir(top->dir);
+      sync_state->walk_depth--;
+      return;
+   }
+   name = retro_dirent_get_name(top->dir);
+   if (     (name[0] == '.' || name[0] == '$')
+         && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
+      return;
+
+   len = top->len;
+   if (len && path[len - 1] != '/' && path[len - 1] != '\\')
+      path[len++] = '/';
+   len += strlcpy(path + len, name, PATH_MAX_LENGTH - len);
+   if (len >= PATH_MAX_LENGTH)
+      return;
+
+   is_dir = retro_dirent_is_dir(top->dir, NULL);
+#if TARGET_OS_IPHONE || TARGET_OS_OSX
+   /* listed as a file, as dir_list_new() lists it */
+   if (is_dir && len >= 10 && !memcmp(path + len - 10, ".framework", 10))
+      is_dir = false;
+#endif
+   if (is_dir)
+   {
+      task_cloud_sync_walk_push(sync_state, len);
+      return;
+   }
+
+   path_relative_to(CS_WALK_REL(sync_state), path, CS_WALK_ROOT(sync_state),
+         PATH_MAX_LENGTH);
+   fill_pathname_join_special(CS_WALK_ALT(sync_state),
+         sync_state->dirlist->elems[sync_state->walk_root_idx].data,
+         CS_WALK_REL(sync_state), PATH_MAX_LENGTH);
+   if (task_cloud_sync_should_ignore_file(CS_WALK_ALT(sync_state)))
+      return;
+
+   /* The "alt" refers to the relative path of whatever we're syncing relative to the retroarch folder
+    * whereas the full_path is the absolute disk path of the file. When building the manifest, adhere
+    * to a portable standard, but use that as the portable representation of paths. While the actual
+    * "manifest" is comprised of full, local-style paths associated with "alt"s which are portable. */
+   pathname_make_slashes_portable(CS_WALK_ALT(sync_state));
+   idx = sync_state->current_manifest->size;
+   file_list_append(sync_state->current_manifest, path, NULL, 0, 0, 0);
+   file_list_set_alt_at_offset(sync_state->current_manifest, idx,
+         CS_WALK_ALT(sync_state));
 }
 
 /**
@@ -677,10 +729,14 @@ static size_t task_cloud_sync_count_out_of_scope(
  *
  * Create an in-memory manifest of actual, current disk data
  */
-static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync_state)
+/* Builds current_manifest from the synced directories, as many entries
+ * per run as @b allows and at least one, so a large directory does not
+ * hold up one run of the handler - the frame loop, with Threaded Tasks
+ * off. */
+static void task_cloud_sync_build_current_manifest(
+      task_cloud_sync_state_t *sync_state, nbio_budget_t *b)
 {
    struct string_list *dirlist = sync_state->dirlist;
-   size_t i;
 
    if (!dirlist)
    {
@@ -688,41 +744,59 @@ static void task_cloud_sync_build_current_manifest(task_cloud_sync_state_t *sync
       return;
    }
 
-   if (!(sync_state->current_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
+   if (!sync_state->current_manifest)
    {
-      task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
-      return;
-   }
-
-   if (!(sync_state->updated_server_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
-   {
-      task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
-      return;
-   }
-
-   if (!(sync_state->updated_local_manifest = (file_list_t *)calloc(1, sizeof(file_list_t))))
-   {
-      task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
-      return;
-   }
-
-   /* The userdata of the elements is actually the full path to the directory, while data is the name of the folder itself */
-   /* The paths iterated here are not portable, because they are still used for iterating later on */
-   for (i = 0; i < dirlist->size; i++)
-   {
-      if (!task_cloud_sync_manifest_append_dir(sync_state->current_manifest,
-               (const char*)dirlist->elems[i].userdata, dirlist->elems[i].data))
+      if (     !(sync_state->current_manifest        = (file_list_t *)calloc(1, sizeof(file_list_t)))
+            || !(sync_state->updated_server_manifest = (file_list_t *)calloc(1, sizeof(file_list_t)))
+            || !(sync_state->updated_local_manifest  = (file_list_t *)calloc(1, sizeof(file_list_t)))
+            || !(sync_state->walk_bufs               = (char*)malloc(4 * PATH_MAX_LENGTH)))
       {
-         /* Half a picture of local state is worse than none: every file
-          * the unread directory holds would look deleted, and the diff
-          * would remove the server's copy of each one. */
+         task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
+         return;
+      }
+      sync_state->walk_root_idx = 0;
+   }
+
+   while (task_nbio_slice_within_budget(b, 0, 0))
+   {
+      if (sync_state->walk_depth)
+      {
+         task_cloud_sync_walk_step(sync_state);
+         if (!sync_state->walk_depth)
+            sync_state->walk_root_idx++;
+         continue;
+      }
+      if (sync_state->walk_root_idx >= dirlist->size)
+         break;
+
+      /* The userdata of the elements is actually the full path to the directory, while data is the name of the folder itself */
+      /* The paths iterated here are not portable, because they are still used for iterating later on */
+      strlcpy(CS_WALK_ROOT(sync_state),
+            (const char*)dirlist->elems[sync_state->walk_root_idx].userdata,
+            PATH_MAX_LENGTH);
+      fill_pathname_slash(CS_WALK_ROOT(sync_state), PATH_MAX_LENGTH);
+      strlcpy(CS_WALK_PATH(sync_state), CS_WALK_ROOT(sync_state), PATH_MAX_LENGTH);
+      /* A root that cannot be opened is not the same as an empty
+       * directory: an empty one says every file under it is gone, which
+       * is a statement the diff acts on by deleting the server's copies.
+       * A directory that could not be read says nothing at all, and half
+       * a picture of local state is worse than none, so the sync stops
+       * rather than letting the manifest claim a deletion that never
+       * happened. */
+      if (!task_cloud_sync_walk_push(sync_state, strlen(CS_WALK_PATH(sync_state))))
+      {
+         RARCH_ERR(CSPFX "Could not read \"%s\".\n", CS_WALK_ROOT(sync_state));
          RARCH_ERR(CSPFX "Not syncing, the current state of the disk could not be established.\n");
+         task_cloud_sync_walk_free(sync_state);
          sync_state->failures = true;
          task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_END);
          return;
       }
    }
+   if (sync_state->walk_depth || sync_state->walk_root_idx < dirlist->size)
+      return;
 
+   task_cloud_sync_walk_free(sync_state);
    file_list_sort_on_alt(sync_state->current_manifest);
    sync_state->server_out_of_scope =
       task_cloud_sync_count_out_of_scope(sync_state);
@@ -2164,7 +2238,7 @@ static void task_cloud_sync_task_step(retro_task_t *task,
          task_cloud_sync_read_local_manifest(sync_state);
          break;
       case CLOUD_SYNC_PHASE_BUILD_CURRENT_MANIFEST:
-         task_cloud_sync_build_current_manifest(sync_state);
+         task_cloud_sync_build_current_manifest(sync_state, b);
          break;
       case CLOUD_SYNC_PHASE_DIFF:
          {
@@ -2257,6 +2331,7 @@ static void task_cloud_sync_cleanup(retro_task_t *task)
     * elems[i].data, so the strdup'd directories go with it. */
    if (sync_state->dirlist)
       string_list_free(sync_state->dirlist);
+   task_cloud_sync_walk_free(sync_state);
    if (sync_state->hash_cur.file)
       filestream_close(sync_state->hash_cur.file);
    task_cloud_sync_fetched_take(sync_state);

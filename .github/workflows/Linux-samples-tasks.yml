@@ -209,7 +209,10 @@ jobs:
           # its MD5 unchanged, small files several to a run, the floor
           # alone finishing the diff, and a 9 MiB download reported from
           # another thread hashed by the task over many runs instead of
-          # by the callback. Pushed on the real task queue and run to its
+          # by the callback. The directory walk listing the local files
+          # runs within the grant too and lists what dir_list_new() did,
+          # an unreadable root still stopping the sync. Pushed on the real
+          # task queue and run to its
           # end, the sync must release everything (LeakSanitizer).
           make clean cloudsync_pacing_test
           timeout 120 ./cloudsync_pacing_test

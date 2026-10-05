@@ -25,6 +25,11 @@
  *    task thread over many runs within the grant, and its hash goes
  *    into both updated manifests (the fetch callback used to hash the
  *    whole file itself, on the thread it ran on);
+ *  - the directory walk that lists the local files runs as many entries
+ *    per run as the grant allows, at least one, instead of reading every
+ *    synced directory in one run, and lists what dir_list_new() listed:
+ *    nested and hidden files, ignored names left out, two roots; a root
+ *    that cannot be read still stops the sync;
  *  - pushed on the task queue and run to its end, the sync releases
  *    everything it held (LeakSanitizer): the state used to be left
  *    behind by every sync, because it was freed from a callback that
@@ -347,6 +352,157 @@ static void fetch_lane(void)
    free(task);
 }
 
+static int key_cmp(const void *a, const void *b)
+{
+   return strcmp(*(const char*const*)a, *(const char*const*)b);
+}
+
+/* The keys dir_list_new() gives for @root under @name, as the manifest
+ * build made them before the walk. */
+static size_t reference_keys(const char *root, const char *name,
+      char **keys, size_t at)
+{
+   char slash[256], rel[256], alt[256];
+   struct string_list *l;
+   size_t i;
+   strlcpy(slash, root, sizeof(slash));
+   fill_pathname_slash(slash, sizeof(slash));
+   if (!(l = dir_list_new(slash, NULL, false, true, true, true)))
+      return at;
+   for (i = 0; i < l->size; i++)
+   {
+      path_relative_to(rel, l->elems[i].data, slash, sizeof(rel));
+      fill_pathname_join_special(alt, name, rel, sizeof(alt));
+      if (task_cloud_sync_should_ignore_file(alt))
+         continue;
+      pathname_make_slashes_portable(alt);
+      keys[at++] = strdup(alt);
+   }
+   string_list_free(l);
+   return at;
+}
+
+static task_cloud_sync_state_t *walk_state(const char *root_a, const char *root_b)
+{
+   task_cloud_sync_state_t *st = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
+   struct string_list *dl      = string_list_new();
+   union string_list_elem_attr attr;
+   attr.i = 0;
+   string_list_append(dl, "saves", attr);
+   dl->elems[0].userdata = strdup(root_a);
+   if (root_b)
+   {
+      string_list_append(dl, "states", attr);
+      dl->elems[1].userdata = strdup(root_b);
+   }
+   st->dirlist = dl;
+   retro_atomic_int_init(&st->waiting, 0);
+   retro_atomic_int_init(&st->phase, (int)CLOUD_SYNC_PHASE_BUILD_CURRENT_MANIFEST);
+   return st;
+}
+
+static unsigned walk_run(task_cloud_sync_state_t *st, retro_task_t *task)
+{
+   unsigned i;
+   task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
+   runs = 0; max_granted = 0;
+   for (i = 0; i < 200000
+         && task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_BUILD_CURRENT_MANIFEST; i++)
+      task_cloud_sync_task_handler(task);
+   return runs;
+}
+
+static void walk_lane(void)
+{
+   char      a[160], b[160], path[256], cmd[800];
+   char    **keys = (char**)calloc(4000, sizeof(char*));
+   char    **got  = (char**)calloc(4000, sizeof(char*));
+   size_t    nkeys = 0, i;
+   unsigned  r, k;
+   int       same;
+   task_cloud_sync_state_t *st;
+   retro_task_t *task;
+
+   snprintf(a, sizeof(a), "%s/walk_saves", dir);
+   snprintf(b, sizeof(b), "%s/walk_states", dir);
+   snprintf(cmd, sizeof(cmd), "mkdir -p %s/core1/sub %s/core2 %s/.hidden %s/x", a, a, a, b);
+   if (system(cmd) != 0)
+      return;
+   for (k = 0; k < 2400; k++)
+   {
+      const char *sub = (k % 4 == 0) ? "core1" : (k % 4 == 1) ? "core1/sub" : (k % 4 == 2) ? "core2" : "";
+      snprintf(path, sizeof(path), "%s/%s%sf%04u.srm", a, sub, *sub ? "/" : "", k);
+      write_file(path, 16, k);
+   }
+   for (k = 0; k < 600; k++)
+   {
+      snprintf(path, sizeof(path), "%s/x/s%04u.state", b, k);
+      write_file(path, 16, k);
+   }
+   snprintf(path, sizeof(path), "%s/.hidden/h.srm", a);      write_file(path, 4, 1);
+   snprintf(path, sizeof(path), "%s/.dot.srm", a);           write_file(path, 4, 1);
+   snprintf(path, sizeof(path), "%s/core2/p.srm.rafetching", a); write_file(path, 4, 1);
+   snprintf(path, sizeof(path), "%s/.DS_Store", b);          write_file(path, 4, 1);
+
+   nkeys = reference_keys(a, "saves", keys, 0);
+   nkeys = reference_keys(b, "states", keys, nkeys);
+   qsort(keys, nkeys, sizeof(*keys), key_cmp);
+
+   st   = walk_state(a, b);
+   task = task_init();
+   grant = 20;
+   r = walk_run(st, task);
+   check("walk: reaches the diff", task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_DIFF);
+   check("walk: spread over runs, not one", r >= (unsigned)(nkeys / 21));
+   check("walk: no run past its grant", max_granted <= 21);
+   same = st->current_manifest && st->current_manifest->size == nkeys && nkeys >= 3002;
+   for (i = 0; same && i < nkeys; i++)
+      got[i] = st->current_manifest->list[i].alt;
+   if (same)
+      qsort(got, nkeys, sizeof(*got), key_cmp);
+   for (i = 0; same && i < nkeys; i++)
+      if (strcmp(got[i], keys[i]))
+         same = 0;
+   check("walk: the same files dir_list_new() lists, hidden ones too", same);
+   for (i = 0; same && i < nkeys; i++)
+      if (strstr(keys[i], ".rafetching") || strstr(keys[i], ".DS_Store"))
+         same = 0;
+   check("walk: ignored names left out", same);
+   task_cloud_sync_cleanup(task);
+   free(task->title);
+   free(task);
+
+   /* a spent window: one entry per run, and it still ends */
+   st   = walk_state(a, NULL);
+   task = task_init();
+   grant = 0;
+   r = walk_run(st, task);
+   check("walk: one entry per run with a spent window, and it ends",
+         task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_DIFF && max_granted == 1);
+   task_cloud_sync_cleanup(task);
+   free(task->title);
+   free(task);
+
+   /* a root that cannot be read stops the sync */
+   snprintf(path, sizeof(path), "%s/no_such_dir", dir);
+   st   = walk_state(a, path);
+   task = task_init();
+   grant = 20;
+   walk_run(st, task);
+   check("walk: an unreadable root stops the sync",
+         task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_END && st->failures);
+   task_cloud_sync_cleanup(task);
+   free(task->title);
+   free(task);
+
+   for (i = 0; i < nkeys; i++)
+      free(keys[i]);
+   free(keys);
+   free(got);
+   snprintf(cmd, sizeof(cmd), "rm -rf %s %s", a, b);
+   if (system(cmd) != 0) { }
+}
+
 /* A whole sync's tail through the real task queue: the diff, the local
  * manifest and the end, then retirement. Run under LeakSanitizer in CI. */
 static void queue_lane(void)
@@ -424,6 +580,7 @@ int main(void)
    check("spent window: one unit per run", max_granted == 1);
 
    fetch_lane();
+   walk_lane();
    queue_lane();
 
    rmdir(dir);
