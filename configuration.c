@@ -2654,6 +2654,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
@@ -3376,6 +3377,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
@@ -4074,6 +4076,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
@@ -4807,6 +4810,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
@@ -5402,6 +5406,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
@@ -7609,6 +7614,10 @@ static bool config_load_file(const char *path, settings_t *settings)
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   /* Also undoes a plan left active by a run that did not exit cleanly. */
+   frontend_driver_set_power_plan(settings->bools.win32_power_plan);
+#endif
 #ifdef HAVE_COMPRESSION
    rzipstream_set_write_codec(settings->uints.save_compression_codec == 1
          ? RZIP_CODEC_ZSTD : RZIP_CODEC_DEFLATE);

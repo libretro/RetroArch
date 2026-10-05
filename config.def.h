@@ -2040,6 +2040,9 @@
 /* Only applies to Android 7.0 (API 24) and up */
 #define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
+/* Windows: activate the low-latency copy of the power plan */
+#define DEFAULT_WIN32_POWER_PLAN false
+
 #if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_VIBRATE_ON_KEYPRESS true
 #else

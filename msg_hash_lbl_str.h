@@ -1763,6 +1763,7 @@
 #define MENU_ENUM_LABEL_WIFI_ENABLED_STR "wifi_enabled"
 #define MENU_ENUM_LABEL_WIFI_NETWORK_SCAN_STR "wifi_network_scan"
 #define MENU_ENUM_LABEL_WIFI_SETTINGS_STR "wifi_settings"
+#define MENU_ENUM_LABEL_WIN32_POWER_PLAN_STR "win32_power_plan"
 #define MENU_ENUM_LABEL_XMB_ALPHA_FACTOR_STR "xmb_alpha_factor"
 #define MENU_ENUM_LABEL_XMB_CURRENT_MENU_ICON_STR "xmb_current_menu_icon"
 #define MENU_ENUM_LABEL_XMB_ENTRY_ICONS_STR "xmb_entry_icons"

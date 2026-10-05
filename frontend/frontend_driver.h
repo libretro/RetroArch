@@ -106,6 +106,7 @@ typedef struct frontend_ctx_driver
     * it does.  The file browser stops Parent Directory short of a
     * root the drive list does not offer. */
    bool (*root_in_drive_list)(void);
+   bool (*set_power_plan)(bool on);
 } frontend_ctx_driver_t;
 
 typedef struct
@@ -200,6 +201,8 @@ enum retro_language frontend_driver_get_user_language(void);
 bool frontend_driver_has_gamemode(void);
 
 bool frontend_driver_set_gamemode(bool on);
+
+bool frontend_driver_set_power_plan(bool on);
 
 frontend_state_t *frontend_state_get_ptr(void);
 

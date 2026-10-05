@@ -13341,6 +13341,9 @@ unsigned menu_displaylist_build_list(
 #ifdef HAVE_LAKKA
                {MENU_ENUM_LABEL_GAMEMODE_ENABLE,            PARSE_ONLY_BOOL},
 #endif /*HAVE_LAKKA*/
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+               {MENU_ENUM_LABEL_WIN32_POWER_PLAN,           PARSE_ONLY_BOOL},
+#endif
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)

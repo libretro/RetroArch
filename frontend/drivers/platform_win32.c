@@ -649,11 +649,337 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    return _len;
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
+/* Opts out of EcoQoS and keeps the timer resolution request honoured
+ * while the window is minimized or occluded.  Builds that predate the
+ * timer flag reject it, so retry with execution speed alone. */
+static void frontend_win32_disable_power_throttling(void)
+{
+   typedef struct
+   {
+      ULONG Version;
+      ULONG ControlMask;
+      ULONG StateMask;
+   } win32_power_throttling_t;
+   typedef BOOL (WINAPI *SetProcessInformation_t)(HANDLE, int,
+         LPVOID, DWORD);
+   win32_power_throttling_t state;
+   SetProcessInformation_t set_info;
+   HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+
+   if (!kernel32)
+      return;
+   if (!(set_info = (SetProcessInformation_t)GetProcAddress(
+               kernel32, "SetProcessInformation")))
+      return;
+
+   /* ProcessPowerThrottling; EXECUTION_SPEED | IGNORE_TIMER_RESOLUTION */
+   state.Version     = 1;
+   state.ControlMask = 0x1 | 0x4;
+   state.StateMask   = 0;
+   if (!set_info(GetCurrentProcess(), 4, &state, sizeof(state)))
+   {
+      state.ControlMask = 0x1;
+      set_info(GetCurrentProcess(), 4, &state, sizeof(state));
+   }
+}
+
+typedef DWORD (WINAPI *PowerGetActiveScheme_t)(HKEY, GUID**);
+typedef DWORD (WINAPI *PowerSetActiveScheme_t)(HKEY, const GUID*);
+typedef DWORD (WINAPI *PowerDuplicateScheme_t)(HKEY, const GUID*,
+      GUID**);
+typedef DWORD (WINAPI *PowerDeleteScheme_t)(HKEY, const GUID*);
+typedef DWORD (WINAPI *PowerWriteACValueIndex_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, DWORD);
+typedef DWORD (WINAPI *PowerWriteString_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, UCHAR*, DWORD);
+typedef DWORD (WINAPI *PowerReadDescription_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, UCHAR*, DWORD*);
+
+typedef struct
+{
+   PowerGetActiveScheme_t   get_active;
+   PowerSetActiveScheme_t   set_active;
+   PowerDuplicateScheme_t   duplicate;
+   PowerDeleteScheme_t      remove;
+   PowerWriteACValueIndex_t write_ac;
+   PowerWriteString_t       write_name;
+   PowerWriteString_t       write_desc;
+   PowerReadDescription_t   read_desc;
+} win32_powrprof_t;
+
+enum win32_power_plan_flags
+{
+   WIN32_POWER_PLAN_LOADED    = (1 << 0),
+   WIN32_POWER_PLAN_APPLIED   = (1 << 1),
+   WIN32_POWER_PLAN_RECOVERED = (1 << 2)
+};
+
+static win32_powrprof_t win32_powrprof;
+static uint8_t win32_power_plan_flags = 0;
+
+/* RetroArch's copy of the active plan.  Its description holds the
+ * plan it was copied from, so a run that ended without restoring is
+ * undone on the next start. */
+static const GUID win32_power_plan_guid =
+   { 0x56125c01, 0x3c55, 0x4c9b,
+      { 0xab, 0x33, 0x55, 0xf2, 0xdf, 0xe1, 0x34, 0x15 } };
+static const GUID win32_power_plan_balanced =
+   { 0x381b4222, 0xf694, 0x41f0,
+      { 0x96, 0x85, 0xff, 0x5b, 0xb2, 0x60, 0xdf, 0x2e } };
+static const GUID win32_power_sub_processor =
+   { 0x54533251, 0x82be, 0x4824,
+      { 0x96, 0xc1, 0x47, 0xb6, 0x0b, 0x74, 0x0d, 0x00 } };
+static const GUID win32_power_perf_check =
+   { 0x4d2b0152, 0x7d5c, 0x498b,
+      { 0x88, 0xe2, 0x34, 0x34, 0x53, 0x92, 0xa2, 0xc5 } };
+static const GUID win32_power_throttle_min =
+   { 0x893dee8e, 0x2bef, 0x41e0,
+      { 0x89, 0xc6, 0xb5, 0x5d, 0x09, 0x29, 0x96, 0x4c } };
+static const GUID win32_power_parking_min_cores =
+   { 0x0cc5b647, 0xc1df, 0x4637,
+      { 0x89, 0x1a, 0xde, 0xc3, 0x5c, 0x31, 0x85, 0x83 } };
+
+/* Writes the 36 hex-and-dash characters of a GUID, no braces. */
+static void win32_power_guid_to_wstr(const GUID *g, WCHAR *s)
+{
+   static const char hex[] = "0123456789ABCDEF";
+   unsigned char b[16];
+   size_t i, j = 0;
+
+   b[0] = (unsigned char)(g->Data1 >> 24);
+   b[1] = (unsigned char)(g->Data1 >> 16);
+   b[2] = (unsigned char)(g->Data1 >>  8);
+   b[3] = (unsigned char)(g->Data1      );
+   b[4] = (unsigned char)(g->Data2 >>  8);
+   b[5] = (unsigned char)(g->Data2      );
+   b[6] = (unsigned char)(g->Data3 >>  8);
+   b[7] = (unsigned char)(g->Data3      );
+   for (i = 0; i < 8; i++)
+      b[8 + i] = g->Data4[i];
+
+   for (i = 0; i < 16; i++)
+   {
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+         s[j++] = L'-';
+      s[j++] = (WCHAR)hex[b[i] >> 4];
+      s[j++] = (WCHAR)hex[b[i] & 0xF];
+   }
+   s[j] = 0;
+}
+
+static bool win32_power_wstr_to_guid(const WCHAR *s, GUID *g)
+{
+   unsigned char b[16];
+   size_t i, j = 0;
+
+   for (i = 0; i < 16; i++)
+   {
+      unsigned v = 0;
+      size_t k;
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+      {
+         if (s[j++] != L'-')
+            return false;
+      }
+      for (k = 0; k < 2; k++)
+      {
+         WCHAR c = s[j++];
+         v <<= 4;
+         if (c >= L'0' && c <= L'9')
+            v |= (unsigned)(c - L'0');
+         else if (c >= L'A' && c <= L'F')
+            v |= (unsigned)(c - L'A' + 10);
+         else if (c >= L'a' && c <= L'f')
+            v |= (unsigned)(c - L'a' + 10);
+         else
+            return false;
+      }
+      b[i] = (unsigned char)v;
+   }
+   if (s[j] != 0)
+      return false;
+
+   g->Data1 = ((unsigned long)b[0] << 24) | ((unsigned long)b[1] << 16)
+            | ((unsigned long)b[2] <<  8) |  (unsigned long)b[3];
+   g->Data2 = (unsigned short)((b[4] << 8) | b[5]);
+   g->Data3 = (unsigned short)((b[6] << 8) | b[7]);
+   for (i = 0; i < 8; i++)
+      g->Data4[i] = b[8 + i];
+   return true;
+}
+
+/* powrprof is resolved at runtime; it does not exist before Vista. */
+static win32_powrprof_t *win32_powrprof_get(void)
+{
+   HMODULE lib;
+   win32_powrprof_t *p = &win32_powrprof;
+
+   if (win32_power_plan_flags & WIN32_POWER_PLAN_LOADED)
+      return p->get_active ? p : NULL;
+   win32_power_plan_flags |= WIN32_POWER_PLAN_LOADED;
+
+   if (!(lib = LoadLibraryA("powrprof.dll")))
+      return NULL;
+
+   p->get_active = (PowerGetActiveScheme_t)GetProcAddress(lib,
+         "PowerGetActiveScheme");
+   p->set_active = (PowerSetActiveScheme_t)GetProcAddress(lib,
+         "PowerSetActiveScheme");
+   p->duplicate  = (PowerDuplicateScheme_t)GetProcAddress(lib,
+         "PowerDuplicateScheme");
+   p->remove     = (PowerDeleteScheme_t)GetProcAddress(lib,
+         "PowerDeleteScheme");
+   p->write_ac   = (PowerWriteACValueIndex_t)GetProcAddress(lib,
+         "PowerWriteACValueIndex");
+   p->write_name = (PowerWriteString_t)GetProcAddress(lib,
+         "PowerWriteFriendlyName");
+   p->write_desc = (PowerWriteString_t)GetProcAddress(lib,
+         "PowerWriteDescription");
+   p->read_desc  = (PowerReadDescription_t)GetProcAddress(lib,
+         "PowerReadDescription");
+
+   if (     !p->get_active || !p->set_active || !p->duplicate
+         || !p->remove     || !p->write_ac   || !p->write_name
+         || !p->write_desc || !p->read_desc)
+   {
+      p->get_active = NULL;
+      return NULL;
+   }
+   return p;
+}
+
+/* Reactivates the plan RetroArch's copy was made from, if the copy
+ * is still active, then deletes the copy. */
+static void win32_power_plan_restore(win32_powrprof_t *p)
+{
+   GUID *active = NULL;
+
+   if (     p->get_active(NULL, &active) == ERROR_SUCCESS
+         && active)
+   {
+      if (!memcmp(active, &win32_power_plan_guid, sizeof(GUID)))
+      {
+         WCHAR desc[64];
+         DWORD size    = sizeof(desc);
+         GUID original = win32_power_plan_balanced;
+
+         if (p->read_desc(NULL, &win32_power_plan_guid, NULL, NULL,
+                  (UCHAR*)desc, &size) == ERROR_SUCCESS)
+         {
+            desc[ARRAY_SIZE(desc) - 1] = 0;
+            if (!win32_power_wstr_to_guid(desc, &original))
+               original = win32_power_plan_balanced;
+         }
+
+         if (     p->set_active(NULL, &original) != ERROR_SUCCESS
+               && memcmp(&original, &win32_power_plan_balanced,
+                  sizeof(GUID)))
+            p->set_active(NULL, &win32_power_plan_balanced);
+      }
+      LocalFree(active);
+   }
+
+   p->remove(NULL, &win32_power_plan_guid);
+}
+
+/* Activates a copy of the current plan with processor performance
+ * re-evaluation at its longest interval.  Minimum processor state and
+ * unparked cores are pinned at 100% so there is nothing left for that
+ * check to decide.  Only AC values change; on battery the copy behaves
+ * like the original. */
+static bool win32_power_plan_apply(win32_powrprof_t *p)
+{
+   static const WCHAR name[] = L"RetroArch Low Latency";
+   WCHAR desc[37];
+   GUID copy     = win32_power_plan_guid;
+   GUID *dst     = &copy;
+   GUID *active  = NULL;
+   bool ok       = false;
+
+   win32_power_plan_restore(p);
+
+   if (     p->get_active(NULL, &active) != ERROR_SUCCESS
+         || !active)
+      return false;
+
+   win32_power_guid_to_wstr(active, desc);
+
+   if (p->duplicate(NULL, active, &dst) == ERROR_SUCCESS)
+   {
+      /* A caller-supplied GUID is used as is; should a new one be
+       * allocated instead, work on that so nothing writes to a plan
+       * that does not exist. */
+      if (dst && dst != &copy)
+      {
+         copy = *dst;
+         LocalFree(dst);
+      }
+      ok =     p->write_name(NULL, &copy, NULL, NULL,
+                     (UCHAR*)name, sizeof(name)) == ERROR_SUCCESS
+            && p->write_desc(NULL, &copy, NULL, NULL,
+                     (UCHAR*)desc, sizeof(desc)) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_perf_check, 5000) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_throttle_min, 100) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_parking_min_cores, 100) == ERROR_SUCCESS
+            && p->set_active(NULL, &copy) == ERROR_SUCCESS;
+
+      if (!ok)
+         p->remove(NULL, &copy);
+   }
+
+   LocalFree(active);
+   return ok;
+}
+
+static bool frontend_win32_set_power_plan(bool on)
+{
+   win32_powrprof_t *p;
+
+   if (on && (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED))
+      return true;
+   if (     !on
+         && !(win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
+         &&  (win32_power_plan_flags & WIN32_POWER_PLAN_RECOVERED))
+      return true;
+   if (!(p = win32_powrprof_get()))
+      return false;
+
+   win32_power_plan_flags |= WIN32_POWER_PLAN_RECOVERED;
+   win32_power_plan_flags &= ~WIN32_POWER_PLAN_APPLIED;
+
+   if (!on)
+   {
+      win32_power_plan_restore(p);
+      return true;
+   }
+   if (!win32_power_plan_apply(p))
+   {
+      RARCH_WARN("[Power] Could not activate the low-latency power plan.\n");
+      return false;
+   }
+   win32_power_plan_flags |= WIN32_POWER_PLAN_APPLIED;
+   return true;
+}
+
+static void frontend_win32_deinit(void *data)
+{
+   if (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
+      frontend_win32_set_power_plan(false);
+}
+#endif
+
 static void frontend_win32_init(void *data)
 {
    /* Initializes DPI awareness, accelerator table, and
     * prepares programmatic resources (replaces .rc file). */
    win32_resources_init();
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_disable_power_throttling();
+#endif
 }
 
 
@@ -1313,7 +1639,11 @@ static enum rarch_display_type frontend_win32_get_display_type(void)
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_env_get,         /* env_get   */
    frontend_win32_init,            /* init      */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_deinit,          /* deinit    */
+#else
    NULL,                           /* deinit    */
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
    frontend_win32_respawn,         /* exitspawn */
 #else
@@ -1354,7 +1684,13 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* set_gamemode        */
    frontend_win32_get_display_type,
    "win32",                         /* ident               */
-   NULL                             /* get_video_driver    */
+   NULL,                            /* get_video_driver    */
+   NULL,                            /* root_in_drive_list  */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_set_power_plan    /* set_power_plan      */
+#else
+   NULL                             /* set_power_plan      */
+#endif
 };
 
 /* Windows GUI-subsystem entry point.

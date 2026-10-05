@@ -1166,6 +1166,7 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+      bool win32_power_plan;
 #ifdef HAVE_BSV_MOVIE
       bool replay_checkpoint_deserialize;
 #endif

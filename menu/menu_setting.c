@@ -10197,6 +10197,19 @@ static void general_write_handler(rarch_setting_t *setting)
       case MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE:
          frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
          break;
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+      case MENU_ENUM_LABEL_WIN32_POWER_PLAN:
+         if (     !frontend_driver_set_power_plan(settings->bools.win32_power_plan)
+               && settings->bools.win32_power_plan)
+         {
+            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_APPLY_POWER_PLAN);
+            runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+            configuration_set_bool(settings,
+                  settings->bools.win32_power_plan, false);
+         }
+         break;
+#endif
 #ifdef ANDROID
       case MENU_ENUM_LABEL_VIDEO_NOTCH_WRITE_OVER:
       case MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB:
@@ -13226,6 +13239,13 @@ static const setting_desc_t power_manageme_desc_0_s1[] = {
 static const setting_desc_t power_manageme_desc_1[] = {
 /* GENERATED: rows come from settings_def_gamemode.h in order. */
 #include "../settings/settings_def_gamemode.h"
+};
+#endif
+
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+static const setting_desc_t power_manageme_desc_2[] = {
+/* GENERATED: rows come from settings_def_power_plan.h in order. */
+#include "../settings/settings_def_power_plan.h"
 };
 #endif
 
@@ -16634,6 +16654,9 @@ static void settings_build_power_management(
 #ifndef HAVE_LAKKA
       if (frontend_driver_has_gamemode())
             ADD_DESC(power_manageme_desc_1);
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+            ADD_DESC(power_manageme_desc_2);
+#endif
 
       GROUP_END();
 #endif
@@ -19010,6 +19033,9 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #ifndef HAVE_LAKKA
    { power_manageme_desc_1, (uint16_t)ARRAY_SIZE(power_manageme_desc_1) },
+#endif
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   { power_manageme_desc_2, (uint16_t)ARRAY_SIZE(power_manageme_desc_2) },
 #endif
 #ifdef HAVE_TRANSLATE
    { ai_service_desc_0, (uint16_t)ARRAY_SIZE(ai_service_desc_0) },
