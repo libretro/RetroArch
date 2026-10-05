@@ -10031,14 +10031,6 @@ bool input_driver_game_focus_core_requested(void)
    return input_driver_st.game_focus_state.core_requested;
 }
 
-#ifdef HAVE_OVERLAY
-/* An overlay is up. */
-bool input_driver_overlay_alive(void)
-{
-   const input_overlay_t *ol = input_driver_st.overlay_ptr;
-   return ol && (ol->flags & INPUT_OVERLAY_ALIVE);
-}
-
 /* The buttons the core's ports have down now are kept from the core
  * until each is let go. They are found at the next poll: until then
  * every button is held back, which is at most the frame the menu
@@ -10096,16 +10088,6 @@ void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map)
       input_driver_st.input_sensor_map[port] = *map;
 }
 
-#ifdef HAVE_OVERLAY
-/* Where an eight-way area's slopes are kept: the d-pad's or the face
- * buttons', a low and a high one. An overlay's area points at them, so
- * that a change of the setting reaches every area. */
-float *input_driver_overlay_eightway_slopes(bool abxy)
-{
-   return abxy ? input_driver_st.overlay_eightway_abxy_slopes
-               : input_driver_st.overlay_eightway_dpad_slopes;
-}
-#endif
 
 #if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
 /* The AI service presses button @id for a frame; and whether it is. */
@@ -10121,6 +10103,22 @@ bool input_driver_ai_gamepad_pressed(unsigned id)
 }
 #endif
 
+#ifdef HAVE_OVERLAY
+/* An overlay is up. */
+bool input_driver_overlay_alive(void)
+{
+   const input_overlay_t *ol = input_driver_st.overlay_ptr;
+   return ol && (ol->flags & INPUT_OVERLAY_ALIVE);
+}
+
+/* Where an eight-way area's slopes are kept: the d-pad's or the face
+ * buttons', a low and a high one. An overlay's area points at them, so
+ * that a change of the setting reaches every area. */
+float *input_driver_overlay_eightway_slopes(bool abxy)
+{
+   return abxy ? input_driver_st.overlay_eightway_abxy_slopes
+               : input_driver_st.overlay_eightway_dpad_slopes;
+}
 /* An overlay is up and has a page showing. */
 bool input_driver_overlay_active_page(void)
 {
