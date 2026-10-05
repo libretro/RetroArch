@@ -31,11 +31,10 @@
 
 /* A position in the window - the pointer's, a touch's - or a motion, x
  * and y packed in one word: written in one store, so the two always go
- * together. Each is a signed 16-bit value. */
-#define COCOA_POS_PACK(x, y) \
-   (((uint32_t)(uint16_t)(int16_t)(x) << 16) | (uint32_t)(uint16_t)(int16_t)(y))
-#define COCOA_POS_X(p)       ((int16_t)(uint16_t)((uint32_t)(p) >> 16))
-#define COCOA_POS_Y(p)       ((int16_t)(uint16_t)((uint32_t)(p) & 0xffffu))
+ * together. The packing is the one the rest of the frontend uses. */
+#define COCOA_POS_PACK(x, y) VIDEO_POS_PACK(x, y)
+#define COCOA_POS_X(p)       VIDEO_POS_X(p)
+#define COCOA_POS_Y(p)       VIDEO_POS_Y(p)
 
 typedef struct
 {

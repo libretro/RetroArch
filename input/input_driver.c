@@ -2300,11 +2300,13 @@ static int16_t input_overlay_device_mouse_state(
       case RETRO_DEVICE_ID_MOUSE_X:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_MOUSE);
          res =   (ptr_st->mouse.scale_x)
-               * (ptr_st->screen_x - ptr_st->mouse.prev_screen_x);
+               * (VIDEO_POS_X(ptr_st->screen_pos)
+                  - VIDEO_POS_X(ptr_st->mouse.prev_screen_pos));
          return res;
       case RETRO_DEVICE_ID_MOUSE_Y:
          res =   (ptr_st->mouse.scale_y)
-               * (ptr_st->screen_y - ptr_st->mouse.prev_screen_y);
+               * (VIDEO_POS_Y(ptr_st->screen_pos)
+                  - VIDEO_POS_Y(ptr_st->mouse.prev_screen_pos));
          return res;
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return    (ptr_st->mouse.click & 0x1)
@@ -2335,19 +2337,19 @@ static int16_t input_overlay_lightgun_state(
        * so if we want to pass true offscreen value, it must be detected */
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
-         if (   ( ptr_st->ptr[0].x > -0x7fff && ptr_st->ptr[0].x != 0x7fff)
+         if (   ( VIDEO_POS_X(ptr_st->ptr[0]) > -0x7fff && VIDEO_POS_X(ptr_st->ptr[0]) != 0x7fff)
                || !input_overlay_lightgun_allow_offscreen)
-            return ptr_st->ptr[0].x;
+            return VIDEO_POS_X(ptr_st->ptr[0]);
          return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-         if (   ( ptr_st->ptr[0].y > -0x7fff && ptr_st->ptr[0].y != 0x7fff)
+         if (   ( VIDEO_POS_Y(ptr_st->ptr[0]) > -0x7fff && VIDEO_POS_Y(ptr_st->ptr[0]) != 0x7fff)
                || !input_overlay_lightgun_allow_offscreen)
-            return ptr_st->ptr[0].y;
+            return VIDEO_POS_Y(ptr_st->ptr[0]);
          return -0x8000;
       case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
          ptr_st->device_mask |= (1 << RETRO_DEVICE_LIGHTGUN);
          return ( input_overlay_lightgun_allow_offscreen
-               && input_driver_pointer_is_offscreen(ptr_st->ptr[0].x, ptr_st->ptr[0].y));
+               && input_driver_pointer_is_offscreen(VIDEO_POS_X(ptr_st->ptr[0]), VIDEO_POS_Y(ptr_st->ptr[0])));
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
       case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
@@ -2381,17 +2383,17 @@ static int16_t input_overlay_pointer_state(input_overlay_t *ol,
    switch (id)
    {
       case RETRO_DEVICE_ID_POINTER_X:
-         return ptr_st->ptr[idx].x;
+         return VIDEO_POS_X(ptr_st->ptr[idx]);
       case RETRO_DEVICE_ID_POINTER_Y:
-         return ptr_st->ptr[idx].y;
+         return VIDEO_POS_Y(ptr_st->ptr[idx]);
       case RETRO_DEVICE_ID_POINTER_PRESSED:
          return (idx < ptr_st->count)
-               && ptr_st->ptr[idx].x != -0x8000
-               && ptr_st->ptr[idx].y != -0x8000;
+               && VIDEO_POS_X(ptr_st->ptr[idx]) != -0x8000
+               && VIDEO_POS_Y(ptr_st->ptr[idx]) != -0x8000;
       case RETRO_DEVICE_ID_POINTER_COUNT:
          return ptr_st->count;
       case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-         return input_driver_pointer_is_offscreen(ptr_st->ptr[idx].x, ptr_st->ptr[idx].y);
+         return input_driver_pointer_is_offscreen(VIDEO_POS_X(ptr_st->ptr[idx]), VIDEO_POS_Y(ptr_st->ptr[idx]));
    }
 
    return 0;
@@ -4853,8 +4855,9 @@ static void input_overlay_poll_mouse(settings_t *settings,
       pending_click   = false;
 
       /* Assume main pointer changed. Reset deltas */
-      mouse_st->prev_screen_x = x_start = ptr_st->screen_x;
-      mouse_st->prev_screen_y = y_start = ptr_st->screen_y;
+      mouse_st->prev_screen_pos = ptr_st->screen_pos;
+      x_start = VIDEO_POS_X(ptr_st->screen_pos);
+      y_start = VIDEO_POS_Y(ptr_st->screen_pos);
 
       if (ptr_count > old_ptr_count)
       {
@@ -4877,8 +4880,8 @@ static void input_overlay_poll_mouse(settings_t *settings,
    }
 
    /* Action type */
-   is_swipe = abs(ptr_st->screen_x - x_start) > swipe_thres_x ||
-              abs(ptr_st->screen_y - y_start) > swipe_thres_y;
+   is_swipe = abs(VIDEO_POS_X(ptr_st->screen_pos) - x_start) > swipe_thres_x ||
+              abs(VIDEO_POS_Y(ptr_st->screen_pos) - y_start) > swipe_thres_y;
    is_brief = (now_usec - start_usec) < 200000;
    is_long  = (now_usec - start_usec) > (hold_to_drag ? hold_usec : 250000);
 
@@ -4993,8 +4996,8 @@ static void input_overlay_track_touch_inputs(
 
       for (j = 0; j < old_state->touch_count; j++)
       {
-         x_dist  = state->touch[i].x - old_state->touch[j].x;
-         y_dist  = state->touch[i].y - old_state->touch[j].y;
+         x_dist  = VIDEO_POS_X(state->touch[i]) - VIDEO_POS_X(old_state->touch[j]);
+         y_dist  = VIDEO_POS_Y(state->touch[i]) - VIDEO_POS_Y(old_state->touch[j]);
 
          sq_dist = x_dist * x_dist + y_dist * y_dist;
 
@@ -5042,34 +5045,25 @@ static void input_overlay_update_pointer_coords(
    if (     ptr_st->device_mask
          & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
    {
-      ptr_st->ptr[ptr_st->count].x  = input->input_state(
-            input_data, NULL, NULL, NULL, NULL, true, 0,
-            RETRO_DEVICE_POINTER,
-            touch_idx,
-            RETRO_DEVICE_ID_POINTER_X);
-      ptr_st->ptr[ptr_st->count].y  = input->input_state(
-            input_data, NULL, NULL, NULL, NULL, true, 0,
-            RETRO_DEVICE_POINTER,
-            touch_idx,
-            RETRO_DEVICE_ID_POINTER_Y);
+      ptr_st->ptr[ptr_st->count] = VIDEO_POS_PACK(
+            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+               RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_X),
+            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+               RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_Y));
    }
 
    /* Need fullscreen pointer for mouse only */
    if (     !ptr_st->count
          && (ptr_st->device_mask & (1 << RETRO_DEVICE_MOUSE)))
    {
-      ptr_st->mouse.prev_screen_x = ptr_st->screen_x;
-      ptr_st->screen_x            = input->input_state(
-            input_data, NULL, NULL, NULL, NULL, true, 0,
-            RARCH_DEVICE_POINTER_SCREEN,
-            touch_idx,
-            RETRO_DEVICE_ID_POINTER_X);
-      ptr_st->mouse.prev_screen_y = ptr_st->screen_y;
-      ptr_st->screen_y            = input->input_state(
-            input_data, NULL, NULL, NULL, NULL, true, 0,
-            RARCH_DEVICE_POINTER_SCREEN,
-            touch_idx,
-            RETRO_DEVICE_ID_POINTER_Y);
+      ptr_st->mouse.prev_screen_pos = ptr_st->screen_pos;
+      ptr_st->screen_pos            = VIDEO_POS_PACK(
+            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+               RARCH_DEVICE_POINTER_SCREEN, touch_idx,
+               RETRO_DEVICE_ID_POINTER_X),
+            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+               RARCH_DEVICE_POINTER_SCREEN, touch_idx,
+               RETRO_DEVICE_ID_POINTER_Y));
    }
 
    ptr_st->count++;
@@ -5176,28 +5170,13 @@ INPUT_NOINLINE static void input_poll_overlay(
                RETRO_DEVICE_ID_POINTER_PRESSED);
             i++)
       {
-         ol_state->touch[i].x = input->input_state(
-               input_data,
-               joypad,
-               sec_joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
-               device,
-               i,
-               RETRO_DEVICE_ID_POINTER_X);
-         ol_state->touch[i].y = input->input_state(
-               input_data,
-               joypad,
-               sec_joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
-               device,
-               i,
-               RETRO_DEVICE_ID_POINTER_Y);
+         ol_state->touch[i] = VIDEO_POS_PACK(
+               input->input_state(input_data, joypad, sec_joypad,
+                  &joypad_info, NULL, keyboard_mapping_blocked, 0,
+                  device, i, RETRO_DEVICE_ID_POINTER_X),
+               input->input_state(input_data, joypad, sec_joypad,
+                  &joypad_info, NULL, keyboard_mapping_blocked, 0,
+                  device, i, RETRO_DEVICE_ID_POINTER_Y));
       }
       ol_state->touch_count = i;
 
@@ -5240,7 +5219,8 @@ INPUT_NOINLINE static void input_poll_overlay(
              && !BIT16_GET(ptrdev_touch_mask, i))
             hitbox_pressed = input_overlay_poll(
                   ol, &polled_data, i, old_i,
-                  ol_state->touch[i].x, ol_state->touch[i].y, touch_scale);
+                  VIDEO_POS_X(ol_state->touch[i]),
+                  VIDEO_POS_Y(ol_state->touch[i]), touch_scale);
          else
             ol->flags &= ~INPUT_OVERLAY_BLOCKED;
 

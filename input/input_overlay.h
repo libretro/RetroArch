@@ -375,12 +375,8 @@ typedef struct input_overlay_state
    /* This is a bitmask of (1 << key_bind_id). */
    input_bits_t buttons;
 
-   /* Input pointers from input_state */
-   struct
-   {
-      int16_t x;
-      int16_t y;
-   } touch[OVERLAY_MAX_TOUCH];
+   /* Input pointers from input_state: x, y as VIDEO_POS_PACK */
+   uint32_t touch[OVERLAY_MAX_TOUCH];
    int touch_count;
 } input_overlay_state_t;
 
@@ -389,8 +385,7 @@ typedef struct input_overlay_mouse_state
    float scale_x;
    float scale_y;
 
-   int16_t prev_screen_x;
-   int16_t prev_screen_y;
+   uint32_t prev_screen_pos;   /* VIDEO_POS_PACK */
 
    /* Bits 0-2 used for LMB, RMB, MMB */
    uint8_t click;
@@ -400,17 +395,12 @@ typedef struct input_overlay_mouse_state
 /* Non-hitbox input state for pointer, mouse, and lightgun */
 typedef struct input_overlay_pointer_state
 {
-   /* Input pointers that missed every hitbox */
-   struct
-   {
-      int16_t x;
-      int16_t y;
-   } ptr[OVERLAY_MAX_TOUCH];
+   /* Input pointers that missed every hitbox: VIDEO_POS_PACK */
+   uint32_t ptr[OVERLAY_MAX_TOUCH];
    unsigned count;
 
-   /* Main pointer, full screen */
-   int16_t screen_x;
-   int16_t screen_y;
+   /* Main pointer, full screen: VIDEO_POS_PACK */
+   uint32_t screen_pos;
 
    struct input_overlay_lightgun_state
    {

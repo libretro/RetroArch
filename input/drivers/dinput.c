@@ -81,10 +81,6 @@ struct dinput_pointer_slot
    retro_atomic_int_t pos;       /* x << 16 | y, client coordinates */
 };
 
-#define DINPUT_POS_PACK(x, y) ((int)(((uint32_t)(uint16_t)(int16_t)(x) << 16) \
-      | (uint32_t)(uint16_t)(int16_t)(y)))
-#define DINPUT_POS_X(p)       ((int16_t)(uint16_t)((uint32_t)(p) >> 16))
-#define DINPUT_POS_Y(p)       ((int16_t)(uint16_t)((uint32_t)(p) & 0xffffu))
 
 /* What the window procedure hands the poll besides touches, in one word
  * both change with atomic operations: the wheel's notches, a click that
@@ -521,8 +517,8 @@ static bool dinput_pointer_get(struct dinput_input *di, unsigned idx,
       t = order[i]; order[i] = order[min]; order[min] = t;
       t = pos[i];   pos[i]   = pos[min];   pos[min]   = t;
    }
-   *x = DINPUT_POS_X(pos[idx]);
-   *y = DINPUT_POS_Y(pos[idx]);
+   *x = VIDEO_POS_X(pos[idx]);
+   *y = VIDEO_POS_Y(pos[idx]);
    return true;
 }
 
@@ -875,7 +871,7 @@ static int dinput_pointer_pos(WPARAM lParam)
    point.x            = GET_X_LPARAM(lParam);
    point.y            = GET_Y_LPARAM(lParam);
    ScreenToClient((HWND)video_driver_window_get(), &point);
-   return DINPUT_POS_PACK(point.x, point.y);
+   return (int)VIDEO_POS_PACK(point.x, point.y);
 }
 
 static struct dinput_pointer_slot *dinput_pointer_find(
