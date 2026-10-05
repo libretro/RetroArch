@@ -54,7 +54,9 @@ CFLAGS  += -Wall -std=gnu99 -g -O1 \
 # to observe the undo snapshot reusing its buffer: the addresses are
 # identical either way, because a state-sized block is mmap'd and the
 # kernel hands back the same region on the next request.
-LDFLAGS += -Wl,--wrap=malloc -lpthread -lm
+# --wrap=calloc so a lane can fail the allocations a finishing task
+# would make, to show the notified caller is told regardless.
+LDFLAGS += -Wl,--wrap=malloc -Wl,--wrap=calloc -lpthread -lm
 
 # Extra flags for the caller; CFLAGS= on the command line would replace
 # everything set above instead of adding to it.

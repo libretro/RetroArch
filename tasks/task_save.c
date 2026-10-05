@@ -423,7 +423,6 @@ static void task_save_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
    uint8_t flg;
-   save_task_state_t *task_data = NULL;
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -433,25 +432,13 @@ static void task_save_handler_finished(retro_task_t *task,
    {
       intfstream_close(state->file);
       free(state->file);
+      state->file = NULL;
    }
 
    flg = task_get_flags(task);
 
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
-
-   task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
-   /* NULL-check: the memcpy below NULL-derefs on OOM.  The
-    * completion callbacks save_state_cb / undo_save_state_cb
-    * are NULL-tolerant to match this code path.  On OOM we leave
-    * task_data unset (NULL); task_set_data is skipped and the
-    * completion callback receives NULL for its task_data
-    * parameter. */
-   if (task_data)
-   {
-      memcpy(task_data, state, sizeof(*state));
-      task_set_data(task, task_data);
-   }
 
    if (state->data)
    {
@@ -463,8 +450,12 @@ static void task_save_handler_finished(retro_task_t *task,
    }
    free(state->fe_replay);
    free(state->fe_cheevos);
+   state->fe_replay  = NULL;
+   state->fe_cheevos = NULL;
 
-   free(state);
+   /* The state itself is the callback's task_data, which frees it:
+    * nothing is allocated here, so the callback always has it. */
+   task_set_data(task, state);
 }
 
 /* Align to 8-byte boundary */
@@ -1058,7 +1049,6 @@ static void task_load_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
    uint8_t flg;
-   load_task_data_t *task_data = NULL;
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -1066,6 +1056,7 @@ static void task_load_handler_finished(retro_task_t *task,
    {
       intfstream_close(state->file);
       free(state->file);
+      state->file = NULL;
    }
 
    flg = task_get_flags(task);
@@ -1073,26 +1064,10 @@ static void task_load_handler_finished(retro_task_t *task,
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
-   if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
-   {
-      /* On OOM: set a task error (so the user sees 'load state
-       * failed' rather than silent failure), free state - an early
-       * return without the free leaks it - and return.  The completion
-       * callbacks handle NULL task_data via their own NULL-
-       * checks. */
-      if (!task_get_error(task))
-         task_set_error(task, strdup("Out of memory"));
-      if (state->data)
-         free(state->data);
-      free(state);
-      return;
-   }
-
-   memcpy(task_data, state, sizeof(*task_data));
-
-   task_set_data(task, task_data);
-
-   free(state);
+   /* The state, with the data read into it, is the callback's
+    * task_data, which frees both: nothing is allocated here, so the
+    * callback always has it. */
+   task_set_data(task, state);
 }
 
 /**
@@ -1468,14 +1443,6 @@ static void content_load_state_cb(retro_task_t *task,
     * whichever way this callback exits. */
    load_state_task_pending     = false;
 
-   /* NULL-check load_data: task_load_handler_finished may fail
-    * to allocate the task_data copy on OOM and leave it NULL.
-    * Skip all processing - the emulator state is unchanged and
-    * the task error (set by the handler) surfaces the failure
-    * to the user. */
-   if (!load_data)
-      return;
-
    _len = load_data->size;
    buf  = load_data->data;
 
@@ -1637,12 +1604,6 @@ static void save_state_cb(retro_task_t *task,
 
    /* Out of the core whichever way this callback exits. */
    save_state_task_pending    = false;
-   /* NULL-check: task_save_handler_finished may fail to alloc
-    * the task_data copy on OOM and leave it NULL.  Skip the
-    * screenshot hook and free(state) on NULL - free(NULL) is a
-    * no-op but we can't read state->path / state->flags. */
-   if (!state)
-      return;
    if (state->done_cb)
       state->done_cb(task, state->path, user_data, error);
 #ifdef HAVE_SCREENSHOTS
@@ -1821,17 +1782,6 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    size_t                 size;
    bool               autosave;
    retro_task_callback_t done_cb;
-
-   /* NULL-check load_data: task_load_handler_finished may have
-    * failed to allocate the task_data copy on OOM.  Delegate the
-    * NULL-safe no-op to content_load_state_cb (which already
-    * handles NULL via its own guard) and skip the subsequent
-    * save push which would NULL-deref ->path / ->undo_data. */
-   if (!load_data)
-   {
-      content_load_state_cb(task, task_data, user_data, error);
-      return;
-   }
 
    path     = strdup(load_data->path);
    data     = load_data->undo_data;

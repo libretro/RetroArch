@@ -234,6 +234,21 @@ static void alloc_count_begin(void)
 
 static void alloc_count_end(void) { alloc_count_on = 0; }
 
+/* While set, every calloc() of a path-carrying size fails: what a
+ * save or load task allocating its result when it finishes would ask
+ * for.  The task's own state is allocated when it is pushed, before
+ * this is set. */
+static int calloc_fail_big = 0;
+
+extern void *__real_calloc(size_t n, size_t size);
+
+void *__wrap_calloc(size_t n, size_t size)
+{
+   if (calloc_fail_big && size && n >= PATH_MAX_LENGTH / size)
+      return NULL;
+   return __real_calloc(n, size);
+}
+
 static int ser_dest_calls = 0;
 
 static void ser_dest_reset(void) { ser_dest_calls = 0; }
@@ -1101,6 +1116,56 @@ static void test_close_waits_for_save(void)
    filestream_delete(path);
 }
 
+/* -----------------------------------------------------------------
+ * A caller of content_save_state_notify / content_load_state_notify
+ * is told how its task ended even when nothing more can be
+ * allocated by then: a finishing task hands its own state to the
+ * callback rather than allocating a copy that may fail.
+ * ----------------------------------------------------------------- */
+static unsigned told_calls;
+static int      told_error;
+static char     told_path[PATH_MAX_LENGTH];
+
+static void told_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   (void)task; (void)user_data;
+   told_calls++;
+   told_error = error != NULL;
+   strlcpy(told_path, task_data ? (const char*)task_data : "",
+         sizeof(told_path));
+}
+
+static void test_notify_without_allocation(void)
+{
+   const char *path = "sst_notify.state";
+
+   frontend_reset();
+   core_fill(3 * TEST_SAVE_STATE_CHUNK);
+   filestream_delete(path);
+   clock_step = 0;
+
+   told_calls = 0;
+   okf(content_save_state_notify(path, true, told_cb, NULL),
+         "notified save is pushed");
+   calloc_fail_big = 1;
+   pump(1000);
+   calloc_fail_big = 0;
+   okf(told_calls == 1 && !told_error && !strcmp(told_path, path),
+         "notified save is told it was written, allocation failing");
+
+   told_calls = 0;
+   okf(content_load_state_notify(path, false, false, told_cb, NULL),
+         "notified load is pushed");
+   calloc_fail_big = 1;
+   pump(1000);
+   calloc_fail_big = 0;
+   okf(told_calls == 1 && !told_error && !strcmp(told_path, path),
+         "notified load is told it was applied, allocation failing");
+
+   filestream_delete(path);
+}
+
 static int run_default_lane(void)
 {
    printf("== task_save.c I/O regression oracle ==\n");
@@ -1125,6 +1190,7 @@ static int run_default_lane(void)
    test_undo_snapshot_grows();
    test_undo_snapshot_failure_keeps_previous();
    test_undo_allocates_nothing();
+   test_notify_without_allocation();
 
    content_reset_savestate_backups();
    task_queue_deinit();
