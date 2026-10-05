@@ -61,7 +61,10 @@ enum image_flags_enum
 {
    IMAGE_FLAG_IS_BLOCKING                = (1 << 0),
    IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING  = (1 << 1),
-   IMAGE_FLAG_IS_FINISHED                = (1 << 2)
+   IMAGE_FLAG_IS_FINISHED                = (1 << 2),
+   /* The caller takes half floats (TASK_IMAGE_LOAD_HDR): an HDR video
+    * still is asked for them where the driver offers FP16. */
+   IMAGE_FLAG_WANT_HDR                   = (1 << 3)
 };
 
 struct nbio_image_handle
@@ -189,6 +192,7 @@ static int task_image_process(struct nbio_image_handle *image)
    image->ti.width  = width;
    image->ti.height = height;
    image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
+   image->ti.fp16   = image_transfer_is_fp16(image->handle, image->type);
 
    return retval;
 }
@@ -365,6 +369,12 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
        * assuming the driver's preference is reachable. */
       if (req.formats & GFX_SURFACE_PIXFMT_2101010)
          image_transfer_set_want_10bit(image->handle, image->type, 1);
+      /* Half floats only for a caller that said it takes them: nothing
+       * narrows them, and a consumer that reads the pixels itself
+       * (RGUI) has no use for linear light. */
+      if (     (image->flags & IMAGE_FLAG_WANT_HDR)
+            && (req.formats & GFX_SURFACE_PIXFMT_FP16))
+         image_transfer_set_want_fp16(image->handle, image->type, true);
    }
 
    /* Hand the byte order to the transfer layer now: the JPEG fused
@@ -854,7 +864,9 @@ bool task_image_load_handler(retro_task_t *task)
           * must be cleared explicitly or video_driver_texture_load() will
           * dereference a garbage pointer. */
          img->compressed = NULL;
-         if (image->upscale_threshold > 0)
+         /* The resamplers know 8-bit and packed 10-bit texels; a
+          * still of half floats is taken at its own size. */
+         if (image->upscale_threshold > 0 && !image->ti.fp16)
          {
             if (   ((image->ti.width  > 0)
                 &&  (image->ti.height > 0))
@@ -930,7 +942,7 @@ bool task_image_load_handler(retro_task_t *task)
           * 10-bit as well - a 16-bit PNG, which rpng packs as
           * XRGB2101010, is exactly the kind of file that gets this
           * large. */
-         if (image->downscale_cap > 0)
+         if (image->downscale_cap > 0 && !image->ti.fp16)
             downscale_image(image->downscale_cap, &image->ti);
 
          img->width         = image->ti.width;
@@ -1045,6 +1057,16 @@ bool task_push_image_load(const char *fullpath,
       unsigned downscale_cap,
       retro_task_callback_t cb, void *user_data)
 {
+   return task_push_image_load_ex(fullpath,
+         supports_rgba ? TASK_IMAGE_LOAD_RGBA : 0,
+         upscale_threshold, downscale_cap, cb, user_data);
+}
+
+bool task_push_image_load_ex(const char *fullpath, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      retro_task_callback_t cb, void *user_data)
+{
+   bool supports_rgba = (load_flags & TASK_IMAGE_LOAD_RGBA) ? true : false;
    nbio_handle_t             *nbio   = NULL;
    struct nbio_image_handle   *image = NULL;
    retro_task_t                   *t = task_init();
@@ -1096,7 +1118,8 @@ bool task_push_image_load(const char *fullpath,
    image->handle                     = NULL;
    image->cb                         = NULL;
 
-   image->flags                      = 0;
+   image->flags                      = (load_flags & TASK_IMAGE_LOAD_HDR)
+      ? IMAGE_FLAG_WANT_HDR : 0;
 
    image->ti.width                   = 0;
    image->ti.height                  = 0;

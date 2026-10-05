@@ -161,6 +161,61 @@ done:
    free(buf);
 }
 
+/* The still a thumbnail is first shown from: image_transfer_process
+ * of a video, asked for half floats or not, as task_image drives it. */
+static void still_lane(const fixture_t *f, int want)
+{
+   size_t    len;
+   void     *buf = load(f->path, &len);
+   void     *h   = image_transfer_new(f->type);
+   uint32_t *px  = NULL;
+   unsigned  w = 0, hh = 0, had = failures;
+   int       r, guard = 0;
+   double    ref = pq_scrgb((298 * (GREY_Y - 64) + 128) >> 8);
+   int       expect = want && f->hdr;
+
+   CHECK(h != NULL, "%s: no transfer", f->path);
+   if (!h)
+   {
+      free(buf);
+      return;
+   }
+   image_transfer_set_buffer_ptr(h, f->type, buf, len);
+   image_transfer_set_want_fp16(h, f->type, want ? true : false);
+   CHECK(image_transfer_start(h, f->type), "%s: start failed", f->path);
+   while (image_transfer_iterate(h, f->type) && guard++ < 100000)
+      ;
+   guard = 0;
+   do
+      r = image_transfer_process(h, f->type, &px, len, &w, &hh, true);
+   while (r == IMAGE_PROCESS_NEXT && guard++ < 100000);
+   CHECK(r == IMAGE_PROCESS_END && px && w == W && hh == H,
+         "%s: still not decoded (%d, %ux%u)", f->path, r, w, hh);
+   CHECK(image_transfer_is_fp16(h, f->type) == (expect != 0),
+         "%s: still is_fp16 says %d, asked %d", f->path,
+         image_transfer_is_fp16(h, f->type), want);
+   if (px && expect)
+   {
+      const uint16_t *p = (const uint16_t*)px
+         + ((size_t)(H / 2) * W + W / 2) * 4;
+      double e = fabs(half_to_double(p[0]) - ref) / ref;
+      CHECK(e < 0.04 && p[3] == 0x3c00, "%s: still off the PQ EOTF by "
+            "%.4f relative", f->path, e);
+   }
+   else if (px)
+      /* 32-bit words: a half-float 1.0 alpha (0x3c00) in the top bits
+       * would mean half floats where none were asked for. */
+      CHECK((px[0] >> 24) == 0xff, "%s: still is not 32-bit words "
+            "(0x%08x)", f->path, (unsigned)px[0]);
+   free(px);
+   image_transfer_free(h, f->type);
+   free(buf);
+   if (failures == had)
+      printf("[ok]   %s still, %s: %s\n", f->path,
+            want ? "asked" : "not asked",
+            expect ? "half floats on the PQ EOTF" : "32-bit words");
+}
+
 int main(void)
 {
    static const fixture_t fx[] = {
@@ -171,7 +226,11 @@ int main(void)
    };
    unsigned i;
    for (i = 0; i < sizeof(fx) / sizeof(fx[0]); i++)
+   {
       lane(&fx[i]);
+      still_lane(&fx[i], 1);
+      still_lane(&fx[i], 0);
+   }
    if (failures)
    {
       fprintf(stderr, "%u failure(s)\n", failures);

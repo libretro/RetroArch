@@ -111,6 +111,12 @@ struct rwebm_video
    int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
+   int            want_fp16;  /* caller takes half floats for HDR      */
+   int            last_fp16;  /* last processed frame was half floats  */
+   /* An HDR still's frame: width * height 8-byte pixels the stream
+    * decodes into from the decode stage on, handed out as the still -
+    * the canvas and its copy are skipped. NULL otherwise. */
+   uint16_t      *still_fp16;
    /* Bytes of 'buf' actually read so far, for decoding a still from a
     * file whose read is in progress: 0 means fully resident (the
     * default), and the still decode returns IMAGE_PROCESS_WAIT
@@ -1061,7 +1067,19 @@ void rwebm_video_free(rwebm_video_t *webm)
       return;
    if (webm->stream)
       rwebm_video_stream_close(webm->stream);
+   free(webm->still_fp16);
    free(webm);
+}
+
+void rwebm_video_set_want_fp16(rwebm_video_t *webm, int want)
+{
+   if (webm)
+      webm->want_fp16 = want ? 1 : 0;
+}
+
+bool rwebm_video_is_fp16(const rwebm_video_t *webm)
+{
+   return webm && webm->last_fp16;
 }
 
 rwebm_video_stream_t *rwebm_video_detach_stream(rwebm_video_t *webm)
@@ -1207,6 +1225,21 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
           * holds for the END slice's copy below). */
          webm->stream->want10    = webm->want10;
          webm->stream->emit_argb = supports_rgba ? 0 : 1;
+         /* An HDR source for a caller that takes half floats: the
+          * stream blits the still straight into the frame handed out,
+          * at 8 bytes a pixel. Without the memory it is an ordinary
+          * still. */
+         free(webm->still_fp16);
+         webm->still_fp16 = NULL;
+         if (     webm->want_fp16
+               && rwebm_video_stream_is_hdr(webm->stream)
+               && (webm->still_fp16 = (uint16_t*)malloc(
+                     (size_t)webm->stream->width
+                     * webm->stream->height * 8)))
+         {
+            webm->stream->out       = (uint32_t*)webm->still_fp16;
+            webm->stream->want_fp16 = 1;
+         }
          webm->still_stage       = RWEBM_VIDEO_STILL_DECODE;
          return IMAGE_PROCESS_NEXT;
       }
@@ -1230,17 +1263,32 @@ int rwebm_video_process_image(rwebm_video_t *webm, void **buf,
    frame = s->frame;
 
    webm->last_10bit = s->is10;
+   webm->last_fp16  = s->is_fp16;
 
-   n = (size_t)s->width * s->height;
-   if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
-      goto fail;
+   if (webm->still_fp16)
+   {
+      /* Decoded where it is handed out: half floats from a 10-bit HDR
+       * frame, or the 32-bit words of any other, either way in place.
+       * The stream lets go of it before it plays on as an animation. */
+      out               = (uint32_t*)webm->still_fp16;
+      webm->still_fp16  = NULL;
+      s->out            = NULL;
+      s->want_fp16      = 0;
+   }
+   else
+   {
+      n = (size_t)s->width * s->height;
+      if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
+         goto fail;
 
-   /* The canvas is already in the caller's channel order: 10-bit
-    * output is packed XRGB2101010, and the 8-bit blit emitted ARGB or
-    * ABGR words per supports_rgba (set at the scan/decode transition
-    * above), so the copy is verbatim in every case - the per-pixel
-    * R/B swizzle this replaced was a full extra pass over the frame. */
-   memcpy(out, frame, n * sizeof(uint32_t));
+      /* The canvas is already in the caller's channel order: 10-bit
+       * output is packed XRGB2101010, and the 8-bit blit emitted ARGB
+       * or ABGR words per supports_rgba (set at the scan/decode
+       * transition above), so the copy is verbatim in every case - the
+       * per-pixel R/B swizzle this replaced was a full extra pass over
+       * the frame. */
+      memcpy(out, frame, n * sizeof(uint32_t));
+   }
 
    if (width)
       *width  = s->width;
@@ -1259,5 +1307,7 @@ fail:
    rwebm_video_stream_close(webm->stream);
    webm->stream      = NULL;
    webm->still_stage = RWEBM_VIDEO_STILL_IDLE;
+   free(webm->still_fp16);
+   webm->still_fp16  = NULL;
    return IMAGE_PROCESS_ERROR;
 }

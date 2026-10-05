@@ -210,6 +210,9 @@ int task_image_png_probe(void *t) { (void)t; return -1; }
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+bool task_push_image_load_ex(const char *a, unsigned b, unsigned c,
+      unsigned d, void *e, void *f)
+{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
 
 /* gfx_thumbnail_draw() reaches the display driver through this rather
  * than through one of the helpers, so it needs its own stub even

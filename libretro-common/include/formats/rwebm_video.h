@@ -99,6 +99,14 @@ void rwebm_video_set_avail(rwebm_video_t *webm, size_t avail);
 /* True if the last rwebm_video_process_image() produced XRGB2101010. */
 bool rwebm_video_is_10bit(const rwebm_video_t *webm);
 
+/* Half floats for an HDR still: with want set, a PQ or HLG source's
+ * first frame is decoded as linear scRGB (rwebm_video_blit_i420_fp16)
+ * straight into the frame process hands out, 8 bytes a pixel; is_fp16
+ * says whether the last one came out so. Any other source decodes as
+ * it always did. */
+void rwebm_video_set_want_fp16(rwebm_video_t *webm, int want);
+bool rwebm_video_is_fp16(const rwebm_video_t *webm);
+
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
  * success, IMAGE_PROCESS_ERROR on failure (no supported video track,

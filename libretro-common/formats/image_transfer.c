@@ -583,6 +583,48 @@ void image_transfer_set_want_10bit(void *data, enum image_type_enum type,
 }
 
 
+/* Ask a video still for linear scRGB half floats from an HDR (PQ or
+ * HLG) source, 8 bytes a pixel in the frame process hands out; a no-op
+ * for every other type, and for an SDR source of these. */
+void image_transfer_set_want_fp16(void *data, enum image_type_enum type,
+      bool want)
+{
+   switch (type)
+   {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         rwebm_video_set_want_fp16((rwebm_video_t*)data, want);
+         break;
+#endif
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         rmp4_video_set_want_fp16((rmp4_video_t*)data, want);
+         break;
+#endif
+      default:
+         break;
+   }
+}
+
+/* Whether the last processed frame came out as half floats. */
+bool image_transfer_is_fp16(void *data, enum image_type_enum type)
+{
+   switch (type)
+   {
+#ifdef HAVE_RWEBM
+      case IMAGE_TYPE_WEBM:
+         return rwebm_video_is_fp16((const rwebm_video_t*)data);
+#endif
+#ifdef HAVE_RMP4
+      case IMAGE_TYPE_MP4:
+         return rmp4_video_is_fp16((const rmp4_video_t*)data);
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
 /* Report whether the last processed frame was actually written as
  * packed XRGB2101010 rather than 8-bit RGBA, i.e. 10-bit was requested
  * and the source could supply it.  False for every type that cannot

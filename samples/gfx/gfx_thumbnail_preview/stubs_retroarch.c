@@ -104,6 +104,13 @@ bool task_push_image_load(const char *path, bool rgba, unsigned t,
    free(ud);              /* the tag would be freed by the callback */
    return true;
 }
+/* The thumbnail loads its stills with the flags form; the same here. */
+bool task_push_image_load_ex(const char *path, unsigned flags, unsigned t,
+      unsigned c, void *cb, void *ud)
+{
+   (void)flags;
+   return task_push_image_load(path, false, t, c, cb, ud);
+}
 bool task_image_detach_video_stream(void *t, void **s, int *ty, void **x,
       void **b, size_t *l)
 { (void)t; (void)s; (void)ty; (void)x; (void)b; (void)l; return false; }

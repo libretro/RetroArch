@@ -136,6 +136,12 @@ struct rmp4_video
    int            still_stage; /* enum above */
    int            want10;     /* caller requested 10-bit thumbnail output */
    int            last_10bit; /* last processed frame was XRGB2101010 */
+   int            want_fp16;  /* caller takes half floats for HDR      */
+   int            last_fp16;  /* last processed frame was half floats  */
+   /* An HDR still's frame: width * height 8-byte pixels the stream
+    * renders into from the decode stage on, handed out as the still -
+    * the canvas and its copy are skipped. NULL otherwise. */
+   uint16_t      *still_fp16;
    /* Bytes of 'buf' actually read so far, for decoding a still from a
     * file whose read is in progress: 0 means fully resident (the
     * default; set_buf_ptr keeps it), and the still decode returns
@@ -1524,7 +1530,19 @@ void rmp4_video_free(rmp4_video_t *mp4)
       return;
    if (mp4->stream)
       rmp4_video_stream_close(mp4->stream);
+   free(mp4->still_fp16);
    free(mp4);
+}
+
+void rmp4_video_set_want_fp16(rmp4_video_t *mp4, int want)
+{
+   if (mp4)
+      mp4->want_fp16 = want ? 1 : 0;
+}
+
+bool rmp4_video_is_fp16(const rmp4_video_t *mp4)
+{
+   return mp4 && mp4->last_fp16;
 }
 
 rmp4_video_stream_t *rmp4_video_detach_stream(rmp4_video_t *mp4)
@@ -1652,6 +1670,20 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
           * holds for the END slice's copy below). */
          mp4->stream->want10    = mp4->want10;
          mp4->stream->emit_argb = supports_rgba ? 0 : 1;
+         /* An HDR source for a caller that takes half floats: the
+          * still renders straight into the frame handed out, at 8
+          * bytes a pixel. Without the memory it is an ordinary still. */
+         free(mp4->still_fp16);
+         mp4->still_fp16 = NULL;
+         if (     mp4->want_fp16
+               && rmp4_video_stream_is_hdr(mp4->stream)
+               && (mp4->still_fp16 = (uint16_t*)malloc(
+                     (size_t)mp4->stream->width
+                     * mp4->stream->height * 8)))
+         {
+            mp4->stream->out       = (uint32_t*)mp4->still_fp16;
+            mp4->stream->want_fp16 = 1;
+         }
          mp4->still_stage       = RMP4_VIDEO_STILL_DECODE;
          return IMAGE_PROCESS_NEXT;
 
@@ -1675,17 +1707,32 @@ int rmp4_video_process_image(rmp4_video_t *mp4, void **buf,
       goto fail;
 
    mp4->last_10bit = s->is10;
+   mp4->last_fp16  = s->is_fp16;
 
-   n = (size_t)s->width * s->height;
-   if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
-      goto fail;
+   if (mp4->still_fp16)
+   {
+      /* Rendered where it is handed out: half floats from a 10-bit HDR
+       * frame, or the 32-bit words of any other, either way in place.
+       * The stream lets go of it before it plays on as an animation. */
+      out             = (uint32_t*)mp4->still_fp16;
+      mp4->still_fp16 = NULL;
+      s->out          = NULL;
+      s->want_fp16    = 0;
+   }
+   else
+   {
+      n = (size_t)s->width * s->height;
+      if (!(out = (uint32_t*)malloc(n * sizeof(uint32_t))))
+         goto fail;
 
-   /* The canvas is already in the caller's channel order: 10-bit
-    * output is packed XRGB2101010, and the 8-bit blit emitted ARGB or
-    * ABGR words per supports_rgba (set at the scan/decode transition
-    * above), so the copy is verbatim in every case - the per-pixel
-    * R/B swizzle this replaced was a full extra pass over the frame. */
-   memcpy(out, frame, n * sizeof(uint32_t));
+      /* The canvas is already in the caller's channel order: 10-bit
+       * output is packed XRGB2101010, and the 8-bit blit emitted ARGB
+       * or ABGR words per supports_rgba (set at the scan/decode
+       * transition above), so the copy is verbatim in every case - the
+       * per-pixel R/B swizzle this replaced was a full extra pass over
+       * the frame. */
+      memcpy(out, frame, n * sizeof(uint32_t));
+   }
 
    if (width)
       *width  = s->width;
@@ -1704,5 +1751,7 @@ fail:
    rmp4_video_stream_close(mp4->stream);
    mp4->stream      = NULL;
    mp4->still_stage = RMP4_VIDEO_STILL_IDLE;
+   free(mp4->still_fp16);
+   mp4->still_fp16  = NULL;
    return IMAGE_PROCESS_ERROR;
 }

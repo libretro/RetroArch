@@ -268,6 +268,15 @@ bool image_transfer_is_valid(void *data, enum image_type_enum type);
  * every other type. */
 bool image_transfer_is_10bit(void *data, enum image_type_enum type);
 
+/* Ask a video still (WEBM, MP4) for linear scRGB half floats from an
+ * HDR (PQ or HLG) source - RGBA half floats, 8 bytes a pixel, in the
+ * frame image_transfer_process hands out - and whether the last frame
+ * came out so. A no-op and false for every other type and source. Only
+ * for a caller that can take them: nothing narrows half floats. */
+void image_transfer_set_want_fp16(void *data, enum image_type_enum type,
+      bool want);
+bool image_transfer_is_fp16(void *data, enum image_type_enum type);
+
 /* Ask a decoder to emit packed XRGB2101010 instead of 8-bit RGBA.
  * Honoured by PNG (16-bit-per-channel RGB sources) and by the video
  * types (10-bit HDR sources); ignored by every other type, and by an

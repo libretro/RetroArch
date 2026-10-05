@@ -61,6 +61,14 @@ void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail);
 /* True if the last rmp4_video_process_image() produced XRGB2101010. */
 bool rmp4_video_is_10bit(const rmp4_video_t *mp4);
 
+/* Half floats for an HDR still: with want set, a PQ or HLG source's
+ * first frame - VP9, H.264 or H.265 - is rendered as linear scRGB
+ * (rwebm_video_blit_i420_fp16) straight into the frame process hands
+ * out, 8 bytes a pixel; is_fp16 says whether the last one came out so.
+ * Any other source decodes as it always did. */
+void rmp4_video_set_want_fp16(rmp4_video_t *mp4, int want);
+bool rmp4_video_is_fp16(const rmp4_video_t *mp4);
+
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
  * success, IMAGE_PROCESS_ERROR on failure (no supported video track,

@@ -270,6 +270,23 @@ bool task_push_image_load(const char *fullpath,
       unsigned downscale_cap,
       retro_task_callback_t cb, void *userdata);
 
+enum task_image_load_flags
+{
+   /* Decode in R,G,B,A memory order rather than ARGB words */
+   TASK_IMAGE_LOAD_RGBA = (1 << 0),
+   /* The caller uploads the image and takes RGBA half floats - linear
+    * scRGB, ->fp16 set - which an HDR video still is then decoded as
+    * wherever the driver offers GFX_SURFACE_PIXFMT_FP16. Such a still
+    * is never resampled: upscale_threshold and downscale_cap pass it
+    * by. Without the flag no load returns half floats. */
+   TASK_IMAGE_LOAD_HDR  = (1 << 1)
+};
+
+/* task_push_image_load with its options as TASK_IMAGE_LOAD_* bits. */
+bool task_push_image_load_ex(const char *fullpath, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      retro_task_callback_t cb, void *userdata);
+
 /* For an image-load task whose file is a video (WEBM/MP4): take
  * ownership of the decoder stream the still-frame decode left open,
  * positioned just past the first displayed frame, together with the

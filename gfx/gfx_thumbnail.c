@@ -211,6 +211,12 @@ static bool gfx_thumbnail_use_rgba(void)
    return req.rgba;
 }
 
+/* A thumbnail's still is uploaded through its surface, which takes
+ * half floats where the driver offers them: an HDR video's still may
+ * come as linear scRGB (TASK_IMAGE_LOAD_HDR). */
+#define GFX_THUMBNAIL_LOAD_FLAGS ((gfx_thumbnail_use_rgba() \
+      ? TASK_IMAGE_LOAD_RGBA : 0) | TASK_IMAGE_LOAD_HDR)
+
 static void gfx_thumbnail_init_fade(
       gfx_thumbnail_state_t *p_gfx_thumb,
       gfx_thumbnail_t *thumbnail)
@@ -2023,11 +2029,19 @@ static void gfx_thumbnail_handle_upload(
          src.pixels       = img->pixels;
          src.payload      = img;
          src.payload_free = gfx_thumbnail_still_free;
-         src.pixfmt       = img->pix10
-            ? GFX_SURFACE_PIXFMT_2101010 : GFX_SURFACE_PIXFMT_8888;
+         src.pixfmt       = img->fp16  ? GFX_SURFACE_PIXFMT_FP16
+                          : img->pix10 ? GFX_SURFACE_PIXFMT_2101010
+                                       : GFX_SURFACE_PIXFMT_8888;
          src.rgba         = img->supports_rgba;
-         r = gfx_surface_submit_external(s, &src,
-               gfx_thumbnail_still_release, thumbnail_tag->thumbnail);
+         /* Half floats have no narrower form: a driver that stopped
+          * offering them since the decode (a reinit, HDR turned off)
+          * gets no still, and the animation that opens below brings
+          * the picture. */
+         if (     !img->fp16
+               || (     gfx_surface_query_requirements(0, &req)
+                     && (req.formats & GFX_SURFACE_PIXFMT_FP16)))
+            r = gfx_surface_submit_external(s, &src,
+                  gfx_thumbnail_still_release, thumbnail_tag->thumbnail);
       }
       if (r == GFX_SURFACE_SUBMIT_QUEUED)
       {
@@ -2345,8 +2359,8 @@ void gfx_thumbnail_request(
 
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
-               if (task_push_image_load(
-                        thumbnail_path, gfx_thumbnail_use_rgba(),
+               if (task_push_image_load_ex(
+                        thumbnail_path, GFX_THUMBNAIL_LOAD_FLAGS,
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
@@ -2483,8 +2497,8 @@ void gfx_thumbnail_request_file(
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
-   if (task_push_image_load(
-         file_path, gfx_thumbnail_use_rgba(),
+   if (task_push_image_load_ex(
+         file_path, GFX_THUMBNAIL_LOAD_FLAGS,
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))
