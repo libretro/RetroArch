@@ -97,14 +97,16 @@ TEST2_SOURCES_C := \
 # filter type forced per scanline, across every colour type, bit depth
 # and a width sweep - and decodes them with rpng, so it needs the
 # decoder, the CRC used to seal the chunks it writes, and the deflate
-# backend it compresses them with.  No file I/O and no second decoder as
-# an oracle: the expected pixels are a function of position, so the
-# generator knows them.
+# backend it compresses them with (rtime.c for features_cpu.c, whose
+# retro_sleep_us is a function only on Windows).  No file I/O and no
+# second decoder as an oracle: the expected pixels are a function of
+# position, so the generator knows them.
 TEST3_SOURCES_C := \
 	$(CORE_DIR)/rpng_decode_corpus_test.c \
 	$(LIBRETRO_PNG_DIR)/rpng.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_pipe.c \
@@ -145,8 +147,9 @@ CORPUS_CFLAGS := $(CFLAGS)
 CFLAGS        += -DRPNG_TEST
 
 ifneq ($(SANITIZER),)
-   CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
-   LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
+   CFLAGS        := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
+   CORPUS_CFLAGS := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CORPUS_CFLAGS)
+   LDFLAGS       := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
