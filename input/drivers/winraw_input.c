@@ -325,7 +325,12 @@ typedef struct
 
 /* TODO/FIXME - static globals */
 static winraw_mouse_t *g_mice        = NULL;
-static bool winraw_focus             = false;
+/* Whether the main window has the keyboard focus. Written by the window
+ * procedure - on the video thread when video is threaded - and read by
+ * the poll: an atomic, which a plain bool written on one thread and read
+ * on another is not. */
+static retro_atomic_int_t winraw_focus_flag;
+#define winraw_focus (retro_atomic_load_acquire_int(&winraw_focus_flag) != 0)
 
 /* Sync internal mouse coordinates with the OS cursor position.
  * Used after events such as window mode, size, and focus changes */
@@ -2873,10 +2878,10 @@ bool winraw_handle_message(UINT msg,
    switch (msg)
    {
       case WM_SETFOCUS:
-         winraw_focus = true;
+         retro_atomic_store_release_int(&winraw_focus_flag, 1);
          break;
       case WM_KILLFOCUS:
-         winraw_focus = false;
+         retro_atomic_store_release_int(&winraw_focus_flag, 0);
          break;
 
       case WM_DEVICECHANGE:

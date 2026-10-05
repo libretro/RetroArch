@@ -626,14 +626,14 @@ int main(void)
       CHECK(!winraw_in_background(wr, RIM_INPUT), "foreground input refused");
       CHECK(winraw_in_background(wr, RIM_INPUTSINK), "background input taken");
       wr->sink     = true;
-      winraw_focus = false;
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
       CHECK(winraw_in_background(wr, RIM_INPUTSINK),
             "a sink took input with the main window unfocused");
-      winraw_focus = true;
+      retro_atomic_store_release_int(&winraw_focus_flag, 1);
       CHECK(!winraw_in_background(wr, RIM_INPUTSINK),
             "a sink refused input with the main window focused");
       wr->sink     = false;
-      winraw_focus = false;
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
       printf("   ok   background input: refused, unless a sink with the main window focused\n");
    }
 

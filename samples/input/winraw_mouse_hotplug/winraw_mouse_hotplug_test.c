@@ -210,7 +210,7 @@ int main(void)
    if (!wr)
       return 1;
    /* focused: without the focus the poll lets go of mouse buttons */
-   winraw_focus = true;
+   retro_atomic_store_release_int(&winraw_focus_flag, 1);
    winraw_poll(wr);
 
    /* it has moved and has a button down */

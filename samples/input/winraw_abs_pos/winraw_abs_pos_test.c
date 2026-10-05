@@ -185,7 +185,7 @@ int main(void)
    wr->flags           |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
    wr->view_abs_ratio_x = 1.0;
    wr->view_abs_ratio_y = 1.0;
-   winraw_focus         = true;
+   retro_atomic_store_release_int(&winraw_focus_flag, 1);
    wr->last_focus       = true;
 
    for (i = 0; i < sizeof(pos) / sizeof(pos[0]); i++)

@@ -390,7 +390,7 @@ int main(void)
    CHECK(wr && wr->poll_drain, "the driver did not start read by the poll");
    if (!wr)
       return 1;
-   winraw_focus = true;
+   retro_atomic_store_release_int(&winraw_focus_flag, 1);
    winraw_poll(wr);
    CHECK(wr->kb_cnt == 2 && wr->kbs[0] == K(1) && wr->kbs[1] == K(2),
          "start: %u keyboards listed, want the two, oldest first", wr->kb_cnt);
@@ -825,11 +825,11 @@ int main(void)
       key(K(5), SC_KEY_A, true);
       winraw_poll(wr);
       CHECK(pad_b(0), "the first port does not read its key with the window active");
-      winraw_focus = false;
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
       winraw_poll(wr);
       CHECK(!pad_b(0) && !pad_mask_b(0) && !port_key(0, RETROK_a),
             "with the setting off a key is read while another window is active");
-      winraw_focus = true;
+      retro_atomic_store_release_int(&winraw_focus_flag, 1);
       winraw_poll(wr);
 
       /* on: content reads the keys; hotkeys do not, and nothing does
@@ -839,7 +839,7 @@ int main(void)
       CHECK(wr->kb_background, "the driver did not take the setting");
       key(K(5), SC_KEY_A, true);
       key(K(5), SC_KEY_F, true);
-      winraw_focus = false;
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
       winraw_poll(wr);
       CHECK(pad_b(0) && pad_mask_b(0) && port_key(0, RETROK_a),
             "with the setting on content does not read a key while another window is active");
@@ -849,18 +849,18 @@ int main(void)
             "the open menu read a key pressed while another window was active");
       stub_menu.flags &= ~MENU_ST_FLAG_ALIVE;
       /* the window active again: everything answers */
-      winraw_focus = true;
+      retro_atomic_store_release_int(&winraw_focus_flag, 1);
       winraw_poll(wr);
       CHECK(pad_b(0) && hotkey(0), "with the window active again a key or a hotkey is not read");
       /* turned off while another window is active: the keys are let go */
-      winraw_focus = false;
+      retro_atomic_store_release_int(&winraw_focus_flag, 0);
       winraw_poll(wr);
       stub_settings.bools.input_keyboard_background = false;
       winraw_poll(wr); /* the setting is taken at the end of a poll */
       winraw_poll(wr);
       CHECK(!wr->kb_keys[SC_KEY_A],
             "turning the setting off with another window active left a key held");
-      winraw_focus = true;
+      retro_atomic_store_release_int(&winraw_focus_flag, 1);
       winraw_poll(wr);
       printf("   ok   with Background Keyboard Input on, content reads keys while another window is active; hotkeys and the menu do not; off, nothing does\n");
    }
