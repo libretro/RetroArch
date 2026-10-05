@@ -508,7 +508,8 @@ void dxgi_set_hdr_metadata(
       float                         max_output_nits,
       float                         min_output_nits,
       float                         max_cll,
-      float                         max_fall
+      float                         max_fall,
+      float                         display_peak
 );
 
 /* Convert an HDR swapchain-format pixel buffer into SDR BGR24 bottom-up,

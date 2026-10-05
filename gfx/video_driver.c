@@ -5148,6 +5148,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->hdr_menu_nits                = settings->floats.video_hdr_menu_nits;
    video_info->hdr_paper_white_nits         = settings->floats.video_hdr_paper_white_nits;
    video_info->hdr_expand_gamut             = settings->uints.video_hdr_expand_gamut;
+   video_info->hdr_display_peak             = (float)video_driver_display_peak_in_use();
    video_info->menu_linear_filter           = settings->bools.menu_linear_filter;
    video_info->ctx_scaling                  = settings->bools.video_ctx_scaling;
    video_info->menu_ticker_speed            = settings->floats.menu_ticker_speed;

@@ -2873,7 +2873,8 @@ void dxgi_set_hdr_metadata(
       float                         max_output_nits,
       float                         min_output_nits,
       float                         max_cll,
-      float                         max_fall
+      float                         max_fall,
+      float                         display_peak
 )
 {
    /* TODO/FIXME - static globals - not thread-safe */
@@ -2888,8 +2889,7 @@ void dxgi_set_hdr_metadata(
    DXGI_HDR_METADATA_HDR10 hdr10_meta_data          = {0};
    int selected_chroma                              = 0;
    /* The driver's fixed values unless Use Display Peak supplies the
-    * display's */
-   float display_peak = video_driver_hdr_metadata_peak(0.0f);
+    * display's (@display_peak, 0 when it does not) */
    if (display_peak > 0.0f)
    {
       max_output_nits = display_peak;

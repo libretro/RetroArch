@@ -541,6 +541,10 @@ typedef struct video_frame_info
    unsigned time_show;
    unsigned msg_queue_delay;
 
+   /* The display's peak in nits where Use Display Peak asks for it and
+    * it is known, else 0: HDR metadata a driver sets while drawing comes
+    * from here, not the settings. */
+   float hdr_display_peak;
    float menu_wallpaper_opacity;
    float menu_framebuffer_opacity;
    float refresh_rate;

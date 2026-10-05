@@ -468,6 +468,10 @@ typedef struct
       float                            min_output_nits;
       float                            max_cll;
       float                            max_fall;
+      /* The display's peak for the metadata, 0 for the values above:
+       * taken from each frame, so a swapchain the frame rebuilds reads
+       * no settings */
+      float                            display_peak;
    } hdr;
 #endif
 
@@ -4823,7 +4827,8 @@ static bool d3d12_init_swapchain(d3d12_video_t* d3d12,
          d3d12->hdr.max_output_nits,
          d3d12->hdr.min_output_nits,
          d3d12->hdr.max_cll,
-         d3d12->hdr.max_fall);
+         d3d12->hdr.max_fall,
+         d3d12->hdr.display_peak);
 #endif
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
@@ -5470,6 +5475,7 @@ static void *d3d12_gfx_init(const video_info_t* video,
    d3d12->hdr.min_output_nits             = 0.001f;
    d3d12->hdr.max_cll                     = 0.0f;
    d3d12->hdr.max_fall                    = 0.0f;
+   d3d12->hdr.display_peak                = video_driver_hdr_metadata_peak(0.0f);
 #endif
 
    if (settings->bools.video_waitable_swapchains)
@@ -6462,6 +6468,9 @@ static bool d3d12_gfx_frame(
    }
 
    d3d12->chain.current_rt_format = back_buffer_format;
+   /* A swapchain this frame rebuilds takes the display's peak from
+    * the frame, not the settings */
+   d3d12->hdr.display_peak        = video_info->hdr_display_peak;
 #endif
    cmd                            = d3d12->queue.cmd;
 
@@ -6632,7 +6641,8 @@ static bool d3d12_gfx_frame(
                   d3d12->hdr.max_output_nits,
                   d3d12->hdr.min_output_nits,
                   d3d12->hdr.max_cll,
-                  d3d12->hdr.max_fall);
+                  d3d12->hdr.max_fall,
+                  d3d12->hdr.display_peak);
 #endif
          }
 #ifdef HAVE_DXGI_HDR
