@@ -7876,10 +7876,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       gfx_display_set_alpha(col, 0.25f);
 
       /* Back */
-      if (     ozone->pointer.x >= cursor_x
-            && ozone->pointer.x <= cursor_x + cursor_w
-            && ozone->pointer.y >= cursor_y
-            && ozone->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(ozone->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(ozone->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(ozone->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(ozone->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_back = true;
 
@@ -7937,10 +7937,10 @@ OZONE_NOINLINE static void ozone_draw_messagebox(
       cursor_x = icon_x - icon_padding;
       cursor_w = icon_size + (icon_padding * 4) + ozone->footer_labels.ok.width;
 
-      if (     ozone->pointer.x >= cursor_x
-            && ozone->pointer.x <= cursor_x + cursor_w
-            && ozone->pointer.y >= cursor_y
-            && ozone->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(ozone->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(ozone->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(ozone->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(ozone->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_ok = true;
 
@@ -10996,8 +10996,8 @@ static void ozone_render(void *data,
        *   becomes impossible... */
       if (ozone->pointer.type == MENU_POINTER_MOUSE)
       {
-         int16_t cursor_x_delta = ozone->pointer.x - ozone->cursor_x_old;
-         int16_t cursor_y_delta = ozone->pointer.y - ozone->cursor_y_old;
+         int16_t cursor_x_delta = VIDEO_POS_X(ozone->pointer.pos) - ozone->cursor_x_old;
+         int16_t cursor_y_delta = VIDEO_POS_Y(ozone->pointer.pos) - ozone->cursor_y_old;
 
          if (   (cursor_x_delta >  ozone->pointer_active_delta)
              || (cursor_x_delta < -ozone->pointer_active_delta)
@@ -11009,8 +11009,8 @@ static void ozone_render(void *data,
       /* On touchscreens, just check for any movement */
       else
       {
-         if (   (ozone->pointer.x != ozone->cursor_x_old)
-             || (ozone->pointer.y != ozone->cursor_y_old))
+         if (   (VIDEO_POS_X(ozone->pointer.pos) != ozone->cursor_x_old)
+             || (VIDEO_POS_Y(ozone->pointer.pos) != ozone->cursor_y_old))
             ozone->flags |=  OZONE_FLAG_CURSOR_MODE;
       }
    }
@@ -11022,8 +11022,8 @@ static void ozone_render(void *data,
          || (menu_driver_get_current_time() - ozone->cursor_old_time
             > CURSOR_ACTIVE_WINDOW))
    {
-      ozone->cursor_x_old    = ozone->pointer.x;
-      ozone->cursor_y_old    = ozone->pointer.y;
+      ozone->cursor_x_old    = VIDEO_POS_X(ozone->pointer.pos);
+      ozone->cursor_y_old    = VIDEO_POS_Y(ozone->pointer.pos);
       ozone->cursor_old_time = menu_driver_get_current_time();
    }
 
@@ -11090,7 +11090,7 @@ static void ozone_render(void *data,
            || (ozone->pointer.flags & MENU_INP_PTR_FLG_PRESSED))
       {
          if ((ozone->flags & OZONE_FLAG_DRAW_SIDEBAR)
-               && (ozone->pointer.x < ozone->dimensions_sidebar_width
+               && (VIDEO_POS_X(ozone->pointer.pos) < ozone->dimensions_sidebar_width
                 +  ozone->sidebar_offset))
             ozone->flags2 |=  OZONE_FLAG2_POINTER_IN_SIDEBAR;
          else
@@ -11270,10 +11270,10 @@ static void ozone_render(void *data,
          {
             /* Check whether pointer is within the bounds
              * of the current entry */
-            if (     (ozone->pointer.x > entry_x)
-                  && (ozone->pointer.x < entry_x + entry_width)
-                  && (ozone->pointer.y > entry_y)
-                  && (ozone->pointer.y < entry_y + OZONE_NODE_HEIGHT(node)))
+            if (     (VIDEO_POS_X(ozone->pointer.pos) > entry_x)
+                  && (VIDEO_POS_X(ozone->pointer.pos) < entry_x + entry_width)
+                  && (VIDEO_POS_Y(ozone->pointer.pos) > entry_y)
+                  && (VIDEO_POS_Y(ozone->pointer.pos) < entry_y + OZONE_NODE_HEIGHT(node)))
             {
                /* Pointer selection is always updated */
                menu_input->ptr = (unsigned)i;
@@ -11398,8 +11398,8 @@ static void ozone_render(void *data,
             /* If pointer is within the bounds of the
              * current category, cache category index
              * (for use in next 'pointer up' event) */
-            if (     (ozone->pointer.y > category_y)
-                  && (ozone->pointer.y < category_y + category_height))
+            if (     (VIDEO_POS_Y(ozone->pointer.pos) > category_y)
+                  && (VIDEO_POS_Y(ozone->pointer.pos) < category_y + category_height))
             {
                ozone->pointer_categories_selection = i;
                ozone->flags2 |= OZONE_FLAG2_POINTER_ON_CATEGORY;
@@ -12696,8 +12696,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    {
       menu_input_get_pointer_state(&ozone->pointer);
 
-      ozone->cursor_x_old = ozone->pointer.x;
-      ozone->cursor_y_old = ozone->pointer.y;
+      ozone->cursor_x_old = VIDEO_POS_X(ozone->pointer.pos);
+      ozone->cursor_y_old = VIDEO_POS_Y(ozone->pointer.pos);
       ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
 
       /* If ozone_render() hasn't run yet (which is the case at
@@ -13100,8 +13100,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
                ozone->pure_white,
                ozone->dimensions.cursor_size,
                icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_POINTER],
-               ozone->pointer.x,
-               ozone->pointer.y);
+               VIDEO_POS_X(ozone->pointer.pos),
+               VIDEO_POS_Y(ozone->pointer.pos));
    }
 
    /* Unbind fonts */

@@ -10405,10 +10405,7 @@ const input_pointer_view_t *input_driver_pointer_view(void)
       return &view;
 
    view.flags   = INPUT_PTR_VIEW_VALID;
-   view.mouse_x = input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0,
-         RETRO_DEVICE_ID_MOUSE_X);
-   view.mouse_y = input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0,
-         RETRO_DEVICE_ID_MOUSE_Y);
+   view.mouse_pos = input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0);
    if (input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0,
             RETRO_DEVICE_ID_MOUSE_LEFT))
       view.flags |= INPUT_PTR_VIEW_MOUSE_LEFT;
@@ -10428,10 +10425,7 @@ const input_pointer_view_t *input_driver_pointer_view(void)
             RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
       view.flags |= INPUT_PTR_VIEW_HWHEEL_DOWN;
 
-   view.ptr_x   = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-         RETRO_DEVICE_ID_POINTER_X);
-   view.ptr_y   = input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
-         RETRO_DEVICE_ID_POINTER_Y);
+   view.ptr_pos   = input_driver_device_pos(0, RETRO_DEVICE_POINTER, 0);
    if (input_driver_device_state(0, RETRO_DEVICE_POINTER, 0,
             RETRO_DEVICE_ID_POINTER_PRESSED))
       view.flags |= INPUT_PTR_VIEW_PTR_PRESSED;
@@ -10439,10 +10433,7 @@ const input_pointer_view_t *input_driver_pointer_view(void)
             RARCH_DEVICE_ID_POINTER_BACK))
       view.flags |= INPUT_PTR_VIEW_PTR_BACK;
 
-   view.scr_x   = input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
-         RETRO_DEVICE_ID_POINTER_X);
-   view.scr_y   = input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
-         RETRO_DEVICE_ID_POINTER_Y);
+   view.scr_pos   = input_driver_device_pos(0, RARCH_DEVICE_POINTER_SCREEN, 0);
    if (input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0,
             RETRO_DEVICE_ID_POINTER_PRESSED))
       view.flags |= INPUT_PTR_VIEW_SCR_PRESSED;
@@ -10461,6 +10452,37 @@ bool input_driver_has_device_state(void)
 /* A mouse, a pointer or a key: @device, @idx and @id as libretro has
  * them. No binds go to the driver, so no pad's button is read through
  * its bind. Only while input_driver_has_device_state(). */
+uint32_t input_driver_device_pos(unsigned port, unsigned device,
+      unsigned idx)
+{
+   rarch_joypad_info_t joypad_info;
+   input_driver_state_t *input_st          = &input_driver_st;
+   const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->primary_joypad);
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->secondary_joypad);
+#else
+   const input_device_driver_t *sec_joypad = NULL;
+#endif
+   bool mouse     = device == RARCH_DEVICE_MOUSE_SCREEN
+                 || device == RETRO_DEVICE_MOUSE;
+   bool blocked   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
+   int16_t x, y;
+
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = NULL;
+   joypad_info.axis_threshold = 0.0f;
+
+   x = input_st->current_driver->input_state(input_st->current_data,
+         joypad, sec_joypad, &joypad_info, NULL, blocked, port, device, idx,
+         mouse ? RETRO_DEVICE_ID_MOUSE_X : RETRO_DEVICE_ID_POINTER_X);
+   y = input_st->current_driver->input_state(input_st->current_data,
+         joypad, sec_joypad, &joypad_info, NULL, blocked, port, device, idx,
+         mouse ? RETRO_DEVICE_ID_MOUSE_Y : RETRO_DEVICE_ID_POINTER_Y);
+   return VIDEO_POS_PACK(x, y);
+}
+
 int16_t input_driver_device_state(unsigned port,
       unsigned device, unsigned idx, unsigned id)
 {

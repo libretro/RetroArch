@@ -5143,10 +5143,10 @@ static void rgui_render_messagebox(
          int cursor_h                           = (int)((icon_size * 5) / 2);
 
          /* Back */
-         if (     rgui->pointer.x >= cursor_x
-               && rgui->pointer.x <= cursor_x + cursor_w
-               && rgui->pointer.y >= cursor_y
-               && rgui->pointer.y <= cursor_y + cursor_h)
+         if (     VIDEO_POS_X(rgui->pointer.pos) >= cursor_x
+               && VIDEO_POS_X(rgui->pointer.pos) <= cursor_x + cursor_w
+               && VIDEO_POS_Y(rgui->pointer.pos) >= cursor_y
+               && VIDEO_POS_Y(rgui->pointer.pos) <= cursor_y + cursor_h)
          {
             menu_st->dialog_st.confirm_hover_back = true;
 
@@ -5173,10 +5173,10 @@ static void rgui_render_messagebox(
          cursor_x = icon_x - (int)icon_size;
          cursor_w = (int)(icon_size * 2 + str_ok_width);
 
-         if (     rgui->pointer.x >= cursor_x
-               && rgui->pointer.x <= cursor_x + cursor_w
-               && rgui->pointer.y >= cursor_y
-               && rgui->pointer.y <= cursor_y + cursor_h)
+         if (     VIDEO_POS_X(rgui->pointer.pos) >= cursor_x
+               && VIDEO_POS_X(rgui->pointer.pos) <= cursor_x + cursor_w
+               && VIDEO_POS_Y(rgui->pointer.pos) >= cursor_y
+               && VIDEO_POS_Y(rgui->pointer.pos) <= cursor_y + cursor_h)
          {
             menu_st->dialog_st.confirm_hover_ok = true;
 
@@ -5937,12 +5937,12 @@ static void rgui_render(void *data, unsigned dims,
        && !show_fs_thumbnail)
    {
       /* Update currently 'highlighted' item */
-      if (rgui->pointer.y > (int)rgui->term_layout.start_y)
+      if (VIDEO_POS_Y(rgui->pointer.pos) > (int)rgui->term_layout.start_y)
       {
          old_start       = menu_st->entries.begin;
          /* NOTE: It's okay for this to go out of range
           * (limits are checked in rgui_pointer_up()) */
-         menu_input->ptr = (unsigned)(((rgui->pointer.y - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start);
+         menu_input->ptr = (unsigned)(((VIDEO_POS_Y(rgui->pointer.pos) - rgui->term_layout.start_y) / rgui->font_height_stride) + old_start);
       }
 
       /* Allow drag-scrolling if items are currently off-screen */
@@ -5950,7 +5950,7 @@ static void rgui_render(void *data, unsigned dims,
             && (bottom > 0))
       {
          int32_t scroll_y_max   = bottom * (int32_t)rgui->font_height_stride;
-         rgui->scroll_y        += -1 * rgui->pointer.dy;
+         rgui->scroll_y        += -1 * VIDEO_POS_Y(rgui->pointer.delta);
          if (rgui->scroll_y < 0)
             rgui->scroll_y      = 0;
          if (rgui->scroll_y > scroll_y_max)
@@ -6666,9 +6666,9 @@ static void rgui_render(void *data, unsigned dims,
       if (cursor_visible && rgui->frame_buf.data)
       {
          rgui_color_rect(rgui->frame_buf.data, p_disp->framebuf_dims,
-               rgui->pointer.x, rgui->pointer.y - 5, 1, 11, rgui->colors.normal_color);
+               VIDEO_POS_X(rgui->pointer.pos), VIDEO_POS_Y(rgui->pointer.pos) - 5, 1, 11, rgui->colors.normal_color);
          rgui_color_rect(rgui->frame_buf.data, p_disp->framebuf_dims,
-               rgui->pointer.x - 5, rgui->pointer.y, 11, 1, rgui->colors.normal_color);
+               VIDEO_POS_X(rgui->pointer.pos) - 5, VIDEO_POS_Y(rgui->pointer.pos), 11, 1, rgui->colors.normal_color);
       }
    }
 }

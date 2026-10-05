@@ -2103,6 +2103,8 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    struct menu_state *menu_st      = &menu_driver_state;
    static int16_t last_x           = -0x7fff;
    static int16_t last_y           = -0x7fff;
+   int x                           = 0;
+   int y                           = 0;
    bool ignore_position            = false;
    bool is_select_pressed          = false;
    bool is_cancel_pressed          = false;
@@ -2129,8 +2131,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
 
    /* Easiest to set inactive by default, and toggle
     * when input is detected */
-   hw_state->x                     = 0;
-   hw_state->y                     = 0;
+   hw_state->pos                   = 0;
    hw_state->flags                 = 0;
 
    if (!menu_mouse_enable)
@@ -2149,9 +2150,9 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    /* X/Y position */
    if (state_inited)
    {
-      if ((hw_state->x = view->mouse_x) != last_x)
-         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      if ((hw_state->y = view->mouse_y) != last_y)
+      x = VIDEO_POS_X(view->mouse_pos);
+      y = VIDEO_POS_Y(view->mouse_pos);
+      if (x != last_x || y != last_y)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
 
@@ -2159,8 +2160,8 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    if (last_x == -0x7fff && last_y == -0x7fff)
       ignore_position = true;
 
-   last_x                          = hw_state->x;
-   last_y                          = hw_state->y;
+   last_x                          = x;
+   last_y                          = y;
 
    /* > X/Y position adjustment */
    if (menu_has_fb)
@@ -2176,19 +2177,20 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       video_driver_get_viewport_info(&vp);
 
       /* Adjust X position */
-      hw_state->x                  = (int16_t)(((float)(hw_state->x - VIDEO_POS_X(vp.pos)) / (float)VIDEO_SCALE_W(vp.dims)) * (float)fb_width);
-      if (hw_state->x < 0)
-         hw_state->x               = 0;
-      else if (hw_state->x >= (int)fb_width)
-         hw_state->x               = (fb_width -1);
+      x                  = (int16_t)(((float)(x - VIDEO_POS_X(vp.pos)) / (float)VIDEO_SCALE_W(vp.dims)) * (float)fb_width);
+      if (x < 0)
+         x               = 0;
+      else if (x >= (int)fb_width)
+         x               = (fb_width -1);
 
       /* Adjust Y position */
-      hw_state->y                  = (int16_t)(((float)(hw_state->y - VIDEO_POS_Y(vp.pos)) / (float)VIDEO_SCALE_H(vp.dims)) * (float)fb_height);
-      if (hw_state->y <  0)
-         hw_state->y               = 0;
-      else if (hw_state->y >= (int)fb_height)
-         hw_state->y               = (fb_height-1);
+      y                  = (int16_t)(((float)(y - VIDEO_POS_Y(vp.pos)) / (float)VIDEO_SCALE_H(vp.dims)) * (float)fb_height);
+      if (y <  0)
+         y               = 0;
+      else if (y >= (int)fb_height)
+         y               = (fb_height-1);
    }
+   hw_state->pos                   = VIDEO_POS_PACK(x, y);
 
    if (state_inited)
    {
@@ -2262,6 +2264,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
                RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
    static int16_t last_x                        = 0;
    static int16_t last_y                        = 0;
+   int x                                        = 0;
+   int y                                        = 0;
    static bool last_select_pressed              = false;
    static bool last_cancel_pressed              = false;
 
@@ -2285,8 +2289,7 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    /* If touchscreen is disabled, ignore all input */
    if (!pointer_enabled)
    {
-      hw_state->x       = 0;
-      hw_state->y       = 0;
+      hw_state->pos     = 0;
       hw_state->flags  &= ~(MENU_INP_PTR_FLG_PRESS_SELECT
                           | MENU_INP_PTR_FLG_PRESS_CANCEL);
       /* Keep the edge detectors in step with the cleared flags,
@@ -2306,10 +2309,11 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* X pos */
    if (state_inited)
-      pointer_x                  = (pointer_device == RETRO_DEVICE_POINTER)
-         ? view->ptr_x : view->scr_x;
-   hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
-   hw_state->x *= input_touch_scale;
+      pointer_x                  = VIDEO_POS_X(
+            (pointer_device == RETRO_DEVICE_POINTER)
+            ? view->ptr_pos : view->scr_pos);
+   x            = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
+   x           *= input_touch_scale;
 
    /* > An annoyance - we get different starting positions
     *   depending upon whether pointer_device is
@@ -2318,9 +2322,9 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
     *   false positives on first run */
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
-      if (hw_state->x != last_x)
+      if (x != last_x)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_x = hw_state->x;
+      last_x = x;
    }
    else
    {
@@ -2331,16 +2335,17 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* Y pos */
    if (state_inited)
-      pointer_y = (pointer_device == RETRO_DEVICE_POINTER)
-         ? view->ptr_y : view->scr_y;
-   hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
-   hw_state->y *= input_touch_scale;
+      pointer_y = VIDEO_POS_Y(
+            (pointer_device == RETRO_DEVICE_POINTER)
+            ? view->ptr_pos : view->scr_pos);
+   y            = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
+   y           *= input_touch_scale;
 
    if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
    {
-      if (hw_state->y != last_y)
+      if (y != last_y)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_y = hw_state->y;
+      last_y = y;
    }
    else
    {
@@ -2348,6 +2353,7 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
       last_y = pointer_y;
    }
+   hw_state->pos = VIDEO_POS_PACK(x, y);
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
@@ -5653,8 +5659,7 @@ unsigned menu_event(
 
    /* Populate menu_input_state
     * Note: dx, dy, ptr, y_accel, etc. entries are set elsewhere */
-   menu_input->pointer.x          = pointer_hw_state->x;
-   menu_input->pointer.y          = pointer_hw_state->y;
+   menu_input->pointer.pos        = pointer_hw_state->pos;
    if (menu_input->select_inhibit || menu_input->cancel_inhibit)
       menu_input->pointer.flags &= ~(MENU_INP_PTR_FLG_ACTIVE
                                    | MENU_INP_PTR_FLG_PRESS_SELECT);
@@ -6289,8 +6294,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
    {
       menu_ctx_pointer_t point;
 
-      point.x       = pointer_hw_state->x;
-      point.y       = pointer_hw_state->y;
+      point.x       = VIDEO_POS_X(pointer_hw_state->pos);
+      point.y       = VIDEO_POS_Y(pointer_hw_state->pos);
       point.ptr     = 0;
       point.cbs     = NULL;
       point.entry   = NULL;
@@ -6308,8 +6313,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
    {
       if (pointer_hw_state->flags & MENU_INP_PTR_FLG_PRESS_SELECT)
       {
-         int16_t x           = pointer_hw_state->x;
-         int16_t y           = pointer_hw_state->y;
+         int16_t x           = VIDEO_POS_X(pointer_hw_state->pos);
+         int16_t y           = VIDEO_POS_Y(pointer_hw_state->pos);
          static float accel0 = 0.0f;
          static float accel1 = 0.0f;
 
@@ -6398,8 +6403,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                   if (osk_active || messagebox_active)
                   {
                      /* Inhibit normal pointer input */
-                     menu_input->pointer.dx              = 0;
-                     menu_input->pointer.dy              = 0;
+                     menu_input->pointer.delta              = 0;
                      menu_input->pointer.y_accel         = 0.0f;
                      menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
                      accel0                              = 0.0f;
@@ -6409,8 +6413,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
                   else
                   {
                      /* Assign current deltas */
-                     menu_input->pointer.dx              = x - last_x;
-                     menu_input->pointer.dy              = y - last_y;
+                     menu_input->pointer.delta           = VIDEO_POS_PACK(
+                           x - last_x, y - last_y);
 
                      /* Update maximum start->current deltas */
                      if (dx_start > 0)
@@ -6428,7 +6432,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                               ? dy_start_abs : dy_start_up_max;
 
                      /* Magic numbers... */
-                     menu_input->pointer.y_accel = (accel0 + accel1 + (float)menu_input->pointer.dy) / 3.0f;
+                     menu_input->pointer.y_accel = (accel0 + accel1 + (float)VIDEO_POS_Y(menu_input->pointer.delta)) / 3.0f;
                      accel0                      = accel1;
                      accel1                      = menu_input->pointer.y_accel;
 
@@ -6498,8 +6502,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                else
                {
                   /* Pointer is stationary */
-                  menu_input->pointer.dx              = 0;
-                  menu_input->pointer.dy              = 0;
+                  menu_input->pointer.delta              = 0;
                   menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
 
                   /* Standard behaviour (on Android, at least) is to stop
@@ -6530,8 +6533,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
             else
             {
                /* No dpi info - just fallback to zero... */
-               menu_input->pointer.dx              = 0;
-               menu_input->pointer.dy              = 0;
+               menu_input->pointer.delta              = 0;
                menu_input->pointer.y_accel         = 0.0f;
                menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
                accel0                              = 0.0f;
@@ -6733,8 +6735,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
          last_press_direction_time           = 0;
          menu_input->pointer.press_duration  = 0;
          menu_input->pointer.press_direction = MENU_INPUT_PRESS_DIRECTION_NONE;
-         menu_input->pointer.dx              = 0;
-         menu_input->pointer.dy              = 0;
+         menu_input->pointer.delta              = 0;
          menu_input->pointer.flags          &= ~(MENU_INP_PTR_FLG_DRAGGED);
       }
    }

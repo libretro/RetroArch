@@ -1602,10 +1602,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       gfx_display_set_alpha(col, 0.5f);
 
       /* Back */
-      if (     xmb->pointer.x >= cursor_x
-            && xmb->pointer.x <= cursor_x + cursor_w
-            && xmb->pointer.y >= cursor_y
-            && xmb->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(xmb->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(xmb->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(xmb->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(xmb->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_back = true;
 
@@ -1666,10 +1666,10 @@ XMB_NOINLINE static void xmb_render_messagebox_internal(
       cursor_x = icon_x - icon_padding;
       cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
 
-      if (     xmb->pointer.x >= cursor_x
-            && xmb->pointer.x <= cursor_x + cursor_w
-            && xmb->pointer.y >= cursor_y
-            && xmb->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(xmb->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(xmb->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(xmb->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(xmb->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_ok = true;
 
@@ -8129,8 +8129,8 @@ static void xmb_render(void *data,
          if (xmb->drag_mode == XMB_DRAG_DETECTING)
          {
             /* Wait for movement threshold before locking direction */
-            float dx        = fabs((float)xmb->pointer.x - xmb->drag_start_x);
-            float dy        = fabs((float)xmb->pointer.y - xmb->drag_start_y);
+            float dx        = fabs((float)VIDEO_POS_X(xmb->pointer.pos) - xmb->drag_start_x);
+            float dy        = fabs((float)VIDEO_POS_Y(xmb->pointer.pos) - xmb->drag_start_y);
             float threshold = 10.0f;
 
             if (dx > threshold || dy > threshold)
@@ -8151,7 +8151,7 @@ static void xmb_render(void *data,
             {
                /* Apply horizontal drag to categories */
                size_t list_size = xmb_list_get_size(xmb, MENU_LIST_HORIZONTAL) + xmb->system_tab_end + 1;
-               float current_dx = (float)xmb->pointer.x - xmb->drag_start_x;
+               float current_dx = (float)VIDEO_POS_X(xmb->pointer.pos) - xmb->drag_start_x;
                float min_x      = -xmb->icon_spacing_horizontal * (float)(list_size > 0 ? list_size - 1 : 0);
                float max_x      = 0.0f;
 
@@ -8203,7 +8203,7 @@ static void xmb_render(void *data,
             size_t list_size           = MENU_LIST_GET_SELECTION(menu_list, 0)->size;
 
             /* Calculate how many items to move based on drag distance */
-            float dy          = (float)xmb->pointer.y - xmb->drag_start_y;
+            float dy          = (float)VIDEO_POS_Y(xmb->pointer.pos) - xmb->drag_start_y;
             float item_height = xmb->icon_spacing_vertical;
 
             /* Convert drag distance to item steps with threshold */
@@ -8258,8 +8258,8 @@ static void xmb_render(void *data,
       int16_t margin_top   = (int16_t)xmb->margins_screen_top;
       int16_t margin_left  = (int16_t)xmb->margins_screen_left;
       int16_t margin_right = (int16_t)((float)VIDEO_SCALE_W(dims) - xmb->margins_screen_left);
-      int16_t pointer_x    = xmb->pointer.x;
-      int16_t pointer_y    = xmb->pointer.y;
+      int16_t pointer_x    = VIDEO_POS_X(xmb->pointer.pos);
+      int16_t pointer_y    = VIDEO_POS_Y(xmb->pointer.pos);
 
       /* When determining current pointer selection, we
        * only track pointer movements between the left
@@ -10354,8 +10354,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
                &coord_white[0],
                xmb->cursor_size,
                tex_list[XMB_TEXTURE_POINTER],
-               xmb->pointer.x,
-               xmb->pointer.y);
+               VIDEO_POS_X(xmb->pointer.pos),
+               VIDEO_POS_Y(xmb->pointer.pos));
    }
 
    if (video_st->current_video && video_st->current_video->set_viewport)

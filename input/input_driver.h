@@ -35,6 +35,7 @@
 #endif /* HAVE_CONFIG_H */
 
 #include "input_defines.h"
+#include "../gfx/video_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
@@ -1196,6 +1197,13 @@ void input_driver_set_platform_menu_button(bool held);
  * input_driver_bind_capture_state(): the same with the frontend's
  * binds and the pad @joy_idx, as the capture of a bind reads them. */
 bool input_driver_has_device_state(void);
+
+/* A device's position in one call, packed with VIDEO_POS_PACK: the X and Y of a mouse
+ * (RARCH_DEVICE_MOUSE_SCREEN, RETRO_DEVICE_MOUSE) or a pointer
+ * (RETRO_DEVICE_POINTER, RARCH_DEVICE_POINTER_SCREEN). Needs a driver
+ * that can be read, as input_driver_device_state() does. */
+uint32_t input_driver_device_pos(unsigned port, unsigned device,
+      unsigned idx);
 int16_t input_driver_device_state(unsigned port,
       unsigned device, unsigned idx, unsigned id);
 int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
@@ -1220,9 +1228,9 @@ enum input_pointer_view_flags
 
 typedef struct input_pointer_view
 {
-   int16_t mouse_x, mouse_y;    /* RARCH_DEVICE_MOUSE_SCREEN */
-   int16_t ptr_x, ptr_y;        /* RETRO_DEVICE_POINTER */
-   int16_t scr_x, scr_y;        /* RARCH_DEVICE_POINTER_SCREEN */
+   uint32_t mouse_pos;          /* RARCH_DEVICE_MOUSE_SCREEN, VIDEO_POS_PACK */
+   uint32_t ptr_pos;            /* RETRO_DEVICE_POINTER */
+   uint32_t scr_pos;            /* RARCH_DEVICE_POINTER_SCREEN */
    uint16_t flags;              /* enum input_pointer_view_flags */
 } input_pointer_view_t;
 

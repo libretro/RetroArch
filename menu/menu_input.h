@@ -211,8 +211,7 @@ enum menu_inp_ptr_hwst_flags
  * common to mouse + touchscreen hardware */
 typedef struct menu_input_pointer_hw_state
 {
-   int16_t x;
-   int16_t y;
+   uint32_t pos;       /* x, y: VIDEO_POS_PACK */
    uint16_t flags;
 } menu_input_pointer_hw_state_t;
 
@@ -226,10 +225,8 @@ typedef struct menu_input_pointer
    float y_accel;
    enum menu_pointer_type type;
    enum menu_input_pointer_press_direction press_direction;
-   int16_t x;
-   int16_t y;
-   int16_t dx;
-   int16_t dy;
+   uint32_t pos;       /* x, y: VIDEO_POS_PACK */
+   uint32_t delta;     /* dx, dy: VIDEO_POS_PACK */
    uint16_t flags;
 } menu_input_pointer_t;
 

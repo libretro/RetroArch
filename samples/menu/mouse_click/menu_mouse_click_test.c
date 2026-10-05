@@ -231,7 +231,7 @@ static bool point_at(unsigned entry)
       held.y = (int16_t)y;
       frames(2);
       if (     pointed_entry() == entry
-            && menu_state_get_ptr()->input_state.pointer.y == (int16_t)y)
+            && VIDEO_POS_Y(menu_state_get_ptr()->input_state.pointer.pos) == (int16_t)y)
       {
          /* A row is several pixels tall: stop a little inside it. */
          held.y = (int16_t)(y + 2);

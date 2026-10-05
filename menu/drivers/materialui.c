@@ -3101,10 +3101,10 @@ static void materialui_render_messagebox(
       gfx_display_set_alpha(mui->colors.list_icon, 0.25f);
 
       /* Back */
-      if (     mui->pointer.x >= cursor_x
-            && mui->pointer.x <= cursor_x + cursor_w
-            && mui->pointer.y >= cursor_y
-            && mui->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(mui->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(mui->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(mui->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(mui->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_back = true;
 
@@ -3157,10 +3157,10 @@ static void materialui_render_messagebox(
       cursor_x = icon_x - icon_padding;
       cursor_w = icon_size + (icon_padding * 4) + str_ok_width;
 
-      if (     mui->pointer.x >= cursor_x
-            && mui->pointer.x <= cursor_x + cursor_w
-            && mui->pointer.y >= cursor_y
-            && mui->pointer.y <= cursor_y + cursor_h)
+      if (     VIDEO_POS_X(mui->pointer.pos) >= cursor_x
+            && VIDEO_POS_X(mui->pointer.pos) <= cursor_x + cursor_w
+            && VIDEO_POS_Y(mui->pointer.pos) >= cursor_y
+            && VIDEO_POS_Y(mui->pointer.pos) <= cursor_y + cursor_h)
       {
          menu_st->dialog_st.confirm_hover_ok = true;
 
@@ -4526,7 +4526,7 @@ static void materialui_render(void *data,
       {
          float view_height  = (float)dims_h - (float)header_height -
                (float)VIDEO_SCALE_H(mui->nav_bar_layout_dims) - (float)mui->status_bar.height;
-         float view_y       = (float)mui->pointer.y - (float)header_height;
+         float view_y       = (float)VIDEO_POS_Y(mui->pointer.pos) - (float)header_height;
          float y_scroll_max = mui->content_height - view_height;
 
          /* Scroll position is just fraction of view height
@@ -4555,7 +4555,7 @@ static void materialui_render(void *data,
             mui->overscroll_velocity = 0.0f;
             mui->scroll_y = materialui_apply_overscroll(
                   mui->pointer_start_scroll_y -
-                  (float)(mui->pointer.y - mui->pointer_start_y),
+                  (float)(VIDEO_POS_Y(mui->pointer.pos) - mui->pointer_start_y),
                   scroll_y_max, overscroll_max);
          }
          else
@@ -4627,8 +4627,8 @@ static void materialui_render(void *data,
           && (!(mui->flags & MUI_FLAG_SCROLLBAR_DRAGGED))
           && (!(mui->flags & MUI_FLAG_SHOW_FULLSCREEN_THUMBNAILS)))
       {
-         int16_t pointer_x = mui->pointer.x;
-         int16_t pointer_y = mui->pointer.y;
+         int16_t pointer_x = VIDEO_POS_X(mui->pointer.pos);
+         int16_t pointer_y = VIDEO_POS_Y(mui->pointer.pos);
 
          /* Check if pointer is within the 'list' region of
           * the window (i.e. exclude header, navigation bar,
@@ -6895,10 +6895,10 @@ MUI_NOINLINE static void materialui_render_entry_touch_feedback(
    if (pointer_active)
       pointer_active =
          (mui->touch_feedback_selection == menu_input->ptr)
-         && ((unsigned)mui->pointer.x >  mui->landscape_optimization.border_width)
-         && ((unsigned)mui->pointer.x <  video_width - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims))
-         && ((unsigned)mui->pointer.y >= header_height)
-         && ((unsigned)mui->pointer.y <= video_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height);
+         && ((unsigned)VIDEO_POS_X(mui->pointer.pos) >  mui->landscape_optimization.border_width)
+         && ((unsigned)VIDEO_POS_X(mui->pointer.pos) <  video_width - mui->landscape_optimization.border_width - VIDEO_SCALE_W(mui->nav_bar_layout_dims))
+         && ((unsigned)VIDEO_POS_Y(mui->pointer.pos) >= header_height)
+         && ((unsigned)VIDEO_POS_Y(mui->pointer.pos) <= video_height - VIDEO_SCALE_H(mui->nav_bar_layout_dims) - mui->status_bar.height);
 
    /* Touch feedback highlight fades in when pointer
     * is held stationary on a menu entry */
@@ -8669,8 +8669,8 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
                color_white,
                mui->cursor_size,
                tex_list[MUI_TEXTURE_POINTER],
-               mui->pointer.x,
-               mui->pointer.y);
+               VIDEO_POS_X(mui->pointer.pos),
+               VIDEO_POS_Y(mui->pointer.pos));
    }
 
    /* Undo any transparency adjustments caused
