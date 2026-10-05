@@ -91,19 +91,20 @@ bool gfx_surface_query_requirements(unsigned width,
     * of them, since a producer with a wider source loses nothing by
     * decoding into it and everything by being narrowed twice.
     *
-    * FP16 is not listed yet even where the driver loads and updates
-    * RGBA16F (TEXTURE_GPU_FORMAT_RGBA16F): every driver composites
-    * menu textures as SDR (sRGB to scRGB at menu nits), so a linear
-    * scRGB texel would be encoded a second time. It is listed once a
-    * driver composites such a texture as linear; a submit of it is
-    * taken already, and the slots, pitches and update keys here size
-    * from the format. */
+    * FP16 is listed where the driver keeps half floats
+    * (TEXTURE_GPU_FORMAT_RGBA16F) and shows them as linear scRGB
+    * (TEXTURE_GPU_FORMAT_SCRGB), which it does only while the output
+    * is HDR: anywhere else the composite treats a texture as SDR, and
+    * a linear texel would be encoded a second time. */
    req->formats    = GFX_SURFACE_PIXFMT_8888;
    /* The texture path's own answer, not whether the context presents
     * 10-bit core frames (GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE): the two
     * are set by different code and need not agree. */
    if (video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
       req->formats |= GFX_SURFACE_PIXFMT_2101010;
+   if (     video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F)
+         && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_SCRGB))
+      req->formats |= GFX_SURFACE_PIXFMT_FP16;
    if (req->formats & GFX_SURFACE_PIXFMT_FP16)
       req->preferred = GFX_SURFACE_PIXFMT_FP16;
    else if (req->formats & GFX_SURFACE_PIXFMT_2101010)

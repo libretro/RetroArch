@@ -4215,8 +4215,13 @@ static void lane_surface_external(void)
          CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
                "2101010 submit to a driver without 10-bit returned %d", r);
       }
-      CHECK(!(req.formats & GFX_SURFACE_PIXFMT_FP16),
-            "FP16 advertised with no texture path for it");
+      CHECK(!!(req.formats & GFX_SURFACE_PIXFMT_FP16)
+            == (     video_driver_supports_texture_format(
+                        TEXTURE_GPU_FORMAT_RGBA16F)
+                  && video_driver_supports_texture_format(
+                        TEXTURE_GPU_FORMAT_SCRGB)),
+            "FP16 offered without a path that shows it as linear scRGB, "
+            "or withheld from one");
       r = gfx_surface_submit_pixels(s, px, rgba);
       CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
             "submit_pixels on a slotless surface returned %d", r);

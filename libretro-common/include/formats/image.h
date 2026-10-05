@@ -119,7 +119,12 @@ enum texture_gpu_format
     * ->fp16, eight bytes a pixel in memory order R,G,B,A. Asked of
     * supports_texture_format to learn whether the driver's load and
     * in-place update keep them as floats. */
-   TEXTURE_GPU_FORMAT_RGBA16F
+   TEXTURE_GPU_FORMAT_RGBA16F,
+   /* Asked of supports_texture_format to learn whether an RGBA16F
+    * texture drawn in the menu or over content is shown as linear
+    * scRGB - 1.0 at 80 nits, the 709 primaries - rather than as an
+    * SDR-encoded one: true only while the output is HDR. */
+   TEXTURE_GPU_FORMAT_SCRGB
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are

@@ -113,7 +113,11 @@ enum d3d11_state_flags
    /* The core's frames are already PQ-encoded Rec.2020 at absolute
     * luminance (RETRO_PIXEL_FORMAT_HDR10_2101010), so the HDR composition
     * must pass them through rather than encode them a second time. */
-   D3D11_ST_FLAG_SOURCE_HDR10        = (1 << 18)
+   D3D11_ST_FLAG_SOURCE_HDR10        = (1 << 18),
+   /* The menu has drawn a texture wider than eight bits under HDR: the
+    * back buffer the UI is drawn into is R16G16B16A16_FLOAT from then
+    * on (d3d11_back_buffer_format), so the composite gets it as drawn. */
+   D3D11_ST_FLAG_UI_WIDE             = (1 << 19)
 };
 
 enum d3d11_feature_level_hint
@@ -396,6 +400,9 @@ typedef struct
    d3d11_uniform_t       ubo_values;
 #ifdef HAVE_DXGI_HDR
    d3d11_texture_t       back_buffer;
+   /* The format back_buffer was asked for; desc.Format is what the
+    * device gave, the closest it samples and renders. */
+   DXGI_FORMAT           back_buffer_req;
 #endif
    D3D11SamplerState     samplers[RARCH_FILTER_MAX][RARCH_WRAP_MAX];
    D3D11BlendState       blend_enable;
@@ -476,6 +483,8 @@ typedef struct
       /* 16-bit (R16_UNORM) coverage atlas variant: no SRV component
        * swizzle exists on d3d11, so a .r-sampling entry is needed */
       d3d11_shader_t shader_font_a16_hdr;
+      /* RGBA16F textures: linear scRGB, see PSMainLinearHDR */
+      d3d11_shader_t shader_linear_hdr;
       D3D11Buffer    hdr_cb;
 #endif
       D3D11Buffer    vbo;
@@ -595,6 +604,24 @@ static INLINE d3d11_shader_t *d3d11_sprite_font_shader(d3d11_video_t *d3d11)
 }
 
 
+
+#ifdef HAVE_DXGI_HDR
+/* The back buffer: the last shader pass's format, which the content
+ * composite reads it as; with no preset, the UI layer's 8 bits. Either
+ * way R16G16B16A16_FLOAT once the menu has drawn a texture wider than
+ * eight bits (D3D11_ST_FLAG_UI_WIDE): the float holds every value the
+ * narrower formats would, so the content composite reads it the same,
+ * and the UI's alpha keeps all its steps. */
+static DXGI_FORMAT d3d11_back_buffer_format(d3d11_video_t *d3d11)
+{
+   if (d3d11->flags & D3D11_ST_FLAG_UI_WIDE)
+      return DXGI_FORMAT_R16G16B16A16_FLOAT;
+   if (d3d11->shader_preset && d3d11->shader_preset->passes)
+      return glslang_format_to_dxgi(
+            d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format);
+   return DXGI_FORMAT_R8G8B8A8_UNORM;
+}
+#endif
 
 #define D3D11_ROLLING_SCANLINE_SIMULATION
 
@@ -937,6 +964,9 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
 {
    int vertex_count     = 1;
    d3d11_video_t *d3d11 = (d3d11_video_t*)data;
+#ifdef HAVE_DXGI_HDR
+   bool linear          = false;
+#endif
 
    if (!d3d11 || !draw || !draw->texture)
       return;
@@ -1080,11 +1110,33 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
             d3d11->context, 0, 1, &texture->view);
       d3d11->context->lpVtbl->PSSetSamplers(
             d3d11->context, 0, 1, (D3D11SamplerState*)&texture->sampler);
+#ifdef HAVE_DXGI_HDR
+      /* A texture wider than eight bits keeps its precision only in a
+       * UI layer that can hold it; a half-float one is linear scRGB and
+       * goes through the entry that inverts the composite's encode. */
+      if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
+      {
+         if (     texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT
+               || texture->desc.Format == DXGI_FORMAT_R10G10B10A2_UNORM)
+            if (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE)
+               d3d11->flags |= D3D11_ST_FLAG_UI_WIDE;
+         linear = vertex_count == 1
+            && texture->desc.Format == DXGI_FORMAT_R16G16B16A16_FLOAT;
+         if (linear)
+            d3d11->context->lpVtbl->PSSetShader(d3d11->context,
+                  d3d11->sprites.shader_linear_hdr.ps, NULL, 0);
+      }
+#endif
    }
 
    d3d11->context->lpVtbl->Draw(d3d11->context, vertex_count,
          d3d11->sprites.offset);
    d3d11->sprites.offset += vertex_count;
+#ifdef HAVE_DXGI_HDR
+   if (linear)
+      d3d11->context->lpVtbl->PSSetShader(d3d11->context,
+            d3d11_sprite_shader(d3d11)->ps, NULL, 0);
+#endif
 
    if (vertex_count > 1)
    {
@@ -3384,6 +3436,7 @@ static void d3d11_gfx_free(void* data)
    d3d11_release_shader(&d3d11->sprites.shader_hdr);
    d3d11_release_shader(&d3d11->sprites.shader_font_hdr);
    d3d11_release_shader(&d3d11->sprites.shader_font_a16_hdr);
+   d3d11_release_shader(&d3d11->sprites.shader_linear_hdr);
    Release(d3d11->sprites.hdr_cb);
 #endif
    Release(d3d11->sprites.vbo);
@@ -3803,7 +3856,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
    memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
    d3d11->back_buffer.desc.Width              = width;
    d3d11->back_buffer.desc.Height             = height;
-   d3d11->back_buffer.desc.Format             = d3d11->shader_preset && d3d11->shader_preset->passes ? glslang_format_to_dxgi(d3d11->pass[d3d11->shader_preset->passes - 1].semantics.format) : DXGI_FORMAT_R8G8B8A8_UNORM;
+   d3d11->back_buffer.desc.Format             = d3d11_back_buffer_format(d3d11);
+   d3d11->back_buffer_req                     = d3d11->back_buffer.desc.Format;
    d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
    d3d11_release_texture(&d3d11->back_buffer);
    d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
@@ -4287,6 +4341,12 @@ static void *d3d11_gfx_init(const video_info_t* video,
                d3d11->device, shader,
                sizeof(shader), NULL, "VSMain", "PSMainA16HDR", "GSMain", desc,
                countof(desc), &d3d11->sprites.shader_font_a16_hdr,
+               D3D11_FEATURE_LEVEL_HINT_DONTCARE))
+         goto error;
+      if (!d3d11_init_shader(
+               d3d11->device, shader,
+               sizeof(shader), NULL, "VSMain", "PSMainLinearHDR", "GSMain",
+               desc, countof(desc), &d3d11->sprites.shader_linear_hdr,
                D3D11_FEATURE_LEVEL_HINT_DONTCARE))
          goto error;
 
@@ -5221,7 +5281,8 @@ static bool d3d11_gfx_frame_body(
          memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
          d3d11->back_buffer.desc.Width              = video_width;
          d3d11->back_buffer.desc.Height             = video_height;
-         d3d11->back_buffer.desc.Format             = back_buffer_format;
+         d3d11->back_buffer.desc.Format             = d3d11_back_buffer_format(d3d11);
+         d3d11->back_buffer_req                     = d3d11->back_buffer.desc.Format;
          d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
          d3d11_release_texture(&d3d11->back_buffer);
          d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
@@ -5905,6 +5966,16 @@ static bool d3d11_gfx_frame_body(
       (d3d11->flags & D3D11_ST_FLAG_MENU_ENABLE))
    {
       static const float clear_colour[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
+      /* The UI layer takes the format the menu has asked for, before
+       * it is drawn into: the content composite is done with it. */
+      if (     d3d11->back_buffer.handle
+            && d3d11->back_buffer_req != d3d11_back_buffer_format(d3d11))
+      {
+         d3d11->back_buffer_req         = d3d11_back_buffer_format(d3d11);
+         d3d11->back_buffer.desc.Format = d3d11->back_buffer_req;
+         d3d11_release_texture(&d3d11->back_buffer);
+         d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
+      }
       context->lpVtbl->OMSetRenderTargets(context, 1,
             &d3d11->back_buffer.rt_view, NULL);
 
@@ -7166,6 +7237,12 @@ static bool d3d11_gfx_supports_texture_format(void* data,
     * level; load and update copy its rows as they are. */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return v && v->device;
+#ifdef HAVE_DXGI_HDR
+   /* PSMainLinearHDR shows such a texture as linear scRGB while the
+    * output is HDR; in SDR there is no linear light to show it in. */
+   if (fmt == TEXTURE_GPU_FORMAT_SCRGB)
+      return v && v->device && (v->flags & D3D11_ST_FLAG_HDR_ENABLE);
+#endif
    if (!v || !v->device || dxgi == DXGI_FORMAT_UNKNOWN)
       return false;
    if (FAILED(v->device->lpVtbl->CheckFormatSupport(
