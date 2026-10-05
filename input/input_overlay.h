@@ -450,6 +450,9 @@ struct input_overlay
    /* When the frame showing now is due to be replaced, in
     * microseconds on the same clock as the rest of the frontend. */
    int64_t *anim_next_us;
+   /* Set while a looping image's slot holds a frame the driver dropped:
+    * it is sent again before the stream moves on. */
+   uint8_t *anim_resend;
    /* A gfx_surface per unique image, holding that texture: the same
     * ownership the animated previews use, so an overlay asset and a
     * preview frame reach the GPU through one path. num_images of
@@ -617,6 +620,10 @@ void input_overlay_release_textures(input_overlay_t *ol);
  * call; false when it cannot be uploaded this way, or when the uploads
  * are still with the video thread (input_overlay_promote_textures). */
 bool input_overlay_upload_textures(input_overlay_t *ol);
+
+/* Submit the frame in looping animated image @i's slot, or the one a
+ * driver dropped there before. False when nothing was taken. */
+bool input_overlay_anim_submit(input_overlay_t *ol, size_t i);
 
 /* Whether the pack can still be shown: it has its textures, or the
  * pixels to make them from. */

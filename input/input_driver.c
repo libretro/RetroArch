@@ -4049,6 +4049,14 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
       /* Two-frame APNGs are driven by desc press state, not time. */
       if (ol->anim_2frame && ol->anim_2frame[i])
          continue;
+      /* A frame the driver dropped goes again before the next one;
+       * the schedule ran on as if it had been shown. */
+      if (ol->anim_resend[i])
+      {
+         if (!s->inflight)
+            input_overlay_anim_submit(ol, i);
+         continue;
+      }
       if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
          continue;
       /* The last frame is still the video thread's, or the GPU's: this
@@ -4067,8 +4075,7 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
       }
       memcpy(s->slots[0], frame,
             VIDEO_SCALE_AREA(s->dims) * sizeof(uint32_t));
-      if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
-            == GFX_SURFACE_SUBMIT_FAILED)
+      if (!input_overlay_anim_submit(ol, i))
          continue;
       ol->anim_next_us[i] = now
          + (retro_time_t)(duration_ms > 0 ? duration_ms : 100) * 1000;
@@ -4512,6 +4519,7 @@ static void input_overlay_free_images(input_overlay_t *ol)
    free(ol->anim_data);
    free(ol->anim_len);
    free(ol->anim_next_us);
+   free(ol->anim_resend);
    if (ol->anim_2frame_pix)
       for (i = 0; i < ol->num_images; i++)
          free(ol->anim_2frame_pix[i]);
@@ -4523,6 +4531,7 @@ static void input_overlay_free_images(input_overlay_t *ol)
    ol->anim_data           = NULL;
    ol->anim_len            = NULL;
    ol->anim_next_us        = NULL;
+   ol->anim_resend         = NULL;
    ol->anim_2frame         = NULL;
    ol->anim_2frame_pressed = NULL;
    ol->anim_2frame_cur     = NULL;
@@ -8714,6 +8723,7 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
             && (ol->anim_len     = (size_t*)calloc(ol->num_images, sizeof(size_t)))
             && (ol->anim_stream  = (void**)calloc(ol->num_images, sizeof(void*)))
             && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t)))
+            && (ol->anim_resend  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame_pressed = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame_cur     = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))

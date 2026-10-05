@@ -84,12 +84,19 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 bool video_driver_texture_can_update(void) { return true; }
 
+unsigned stub_drop_updates;
+
 enum video_texture_update video_driver_texture_update(uintptr_t id,
       void *data)
 {
    const struct texture_image *img = (const struct texture_image*)data;
    if (!id || id > STUB_MAX_TEXTURES || !stub_tex[id - 1].live)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (stub_drop_updates)
+   {
+      stub_drop_updates--;
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
    stub_tex[id - 1].checksum = stub_checksum(img);
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
@@ -147,8 +154,14 @@ unsigned stub_video_thread_run(void)
          video_driver_texture_load(n->img, n->filter, &id);
          n->handle    = id;
       }
-      else if (!video_driver_texture_update(n->handle, n->img))
-         n->handle    = 0;
+      else
+      {
+         enum video_texture_update r = video_driver_texture_update(
+               n->handle, n->img);
+         n->dropped   = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
+         if (r == VIDEO_TEXTURE_UPDATE_REFUSED)
+            n->handle = 0;
+      }
       STUB_NEXT(n) = NULL;
       if (stub_out_tail)
          STUB_NEXT(stub_out_tail) = n;

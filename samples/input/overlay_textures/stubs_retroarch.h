@@ -19,6 +19,7 @@ extern struct stub_texture stub_tex[STUB_MAX_TEXTURES];
 extern unsigned stub_tex_loads;      /* uploads since stub_reset()   */
 extern unsigned stub_tex_live;       /* textures not yet unloaded    */
 extern bool     stub_tex_load_fails; /* the driver refuses an upload */
+extern unsigned stub_drop_updates;   /* that many updates are dropped */
 
 uint32_t stub_checksum(const struct texture_image *img);
 void stub_reset(void);

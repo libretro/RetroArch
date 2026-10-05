@@ -68,6 +68,7 @@
 
 #include "../../../input/input_overlay.h"
 
+#include "../../../gfx/gfx_surface.h"
 #include "stubs_retroarch.h"
 
 #ifdef HAVE_THREADS
@@ -230,6 +231,9 @@ static void pack_free(input_overlay_t *ol)
       free(ol->overlays[i].descs);
    }
    free(ol->overlays);
+   free(ol->anim_stream);
+   free(ol->anim_next_us);
+   free(ol->anim_resend);
    free(ol);
 }
 
@@ -548,6 +552,74 @@ static void lane_threaded_freed_in_flight(void)
 }
 #endif
 
+/* A looping animated image whose frame the driver drops: the frame is
+ * marked and sent again from its slot, and only then reaches the
+ * texture. Direct, and under the wrapper, where the drop comes back
+ * through the surface's release. */
+static void lane_anim_dropped(bool threaded)
+{
+   static int dummy_stream;
+   unsigned before = failures;
+   const char *lane = threaded ? "threaded, dropped animation frame"
+                               : "dropped animation frame";
+   input_overlay_t *ol;
+   gfx_surface_t *s;
+   drv_reset();
+#ifdef HAVE_THREADS
+   stub_thread_active    = threaded;
+   stub_thread_wins_race = threaded;
+#endif
+   ol = pack_new(&iface_textures, NUM_IMAGES);
+   ol->anim_stream    = (void**)calloc(NUM_IMAGES, sizeof(void*));
+   ol->anim_next_us   = (int64_t*)calloc(NUM_IMAGES, sizeof(int64_t));
+   ol->anim_resend    = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
+   ol->anim_stream[0] = &dummy_stream; /* image 0 animates */
+   pack_show(ol, 0);
+   input_overlay_load_page(ol);
+#ifdef HAVE_THREADS
+   if (threaded)
+      video_thread_async_poll();
+#endif
+   s = ol->surfaces ? (gfx_surface_t*)ol->surfaces[0] : NULL;
+   CHECK(s && s->num_slots == 1 && s->handle, "%s: no animated surface", lane);
+   if (s && s->num_slots == 1 && s->handle)
+   {
+      struct texture_image want;
+      uint32_t sum;
+      size_t p, n = VIDEO_SCALE_AREA(s->dims);
+      for (p = 0; p < n; p++)
+         s->slots[0][p] = 0xff00ff00u ^ (uint32_t)p;
+      memset(&want, 0, sizeof(want));
+      want.width  = VIDEO_SCALE_W(s->dims);
+      want.height = VIDEO_SCALE_H(s->dims);
+      want.pixels = s->slots[0];
+      sum         = stub_checksum(&want);
+
+      stub_drop_updates = 1;
+      CHECK(input_overlay_anim_submit(ol, 0), "%s: not taken", lane);
+#ifdef HAVE_THREADS
+      if (threaded)
+         video_thread_async_poll();
+#endif
+      CHECK(ol->anim_resend[0], "%s: not marked to go again", lane);
+      CHECK(stub_texture_get(s->handle)->checksum != sum,
+            "%s: the dropped frame reached the texture", lane);
+      CHECK(input_overlay_anim_submit(ol, 0), "%s: resend not taken", lane);
+#ifdef HAVE_THREADS
+      if (threaded)
+         video_thread_async_poll();
+#endif
+      CHECK(!ol->anim_resend[0] && stub_texture_get(s->handle)->checksum == sum,
+            "%s: the frame sent again did not land", lane);
+   }
+   stub_drop_updates = 0;
+   pack_free(ol);
+#ifdef HAVE_THREADS
+   stub_thread_active = stub_thread_wins_race = false;
+#endif
+   printf("[%s] %s lane\n", failures == before ? "pass" : "fail", lane);
+}
+
 int main(void)
 {
    lane_textures();
@@ -556,7 +628,9 @@ int main(void)
    lane_pixels("upload fails", &iface_textures, false, true);
    lane_load_fails();
    lane_no_images();
+   lane_anim_dropped(false);
 #ifdef HAVE_THREADS
+   lane_anim_dropped(true);
    lane_threaded_prompt();
    lane_threaded_late();
    lane_threaded_late_refused("threaded, late and declined", true,  false);

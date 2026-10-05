@@ -107,19 +107,40 @@ void input_overlay_release_textures(input_overlay_t *ol)
    ol->page_textures = NULL;
 }
 
-/* A dropped frame of a two-frame image: mark it as showing neither, so
- * the next poll submits the one its press state wants. */
+/* A frame dropped on the video thread. A two-frame image is marked as
+ * showing neither, so the next poll submits the one its press state
+ * wants; a looping one sends the frame still in its slot again. */
 static void input_overlay_surface_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
    input_overlay_t *ol = (input_overlay_t*)user;
    size_t i;
    (void)slot;
-   if (!s->dropped || !ol || !ol->anim_2frame_cur || !ol->surfaces)
+   if (!s->dropped || !ol || !ol->surfaces)
       return;
    for (i = 0; i < ol->num_images; i++)
-      if (ol->surfaces[i] == (void*)s)
-         ol->anim_2frame_cur[i] = 0xff;
+   {
+      if (ol->surfaces[i] != (void*)s)
+         continue;
+      if (ol->anim_2frame && ol->anim_2frame[i])
+      {
+         if (ol->anim_2frame_cur)
+            ol->anim_2frame_cur[i] = 0xff;
+      }
+      else if (ol->anim_resend)
+         ol->anim_resend[i] = 1;
+   }
+}
+
+bool input_overlay_anim_submit(input_overlay_t *ol, size_t i)
+{
+   gfx_surface_t *s = (gfx_surface_t*)ol->surfaces[i];
+   enum gfx_surface_submit_result r = gfx_surface_submit(s, 0,
+         ol->images[i]->supports_rgba);
+   ol->anim_resend[i] = (r == GFX_SURFACE_SUBMIT_DROPPED);
+   return r == GFX_SURFACE_SUBMIT_DONE
+       || r == GFX_SURFACE_SUBMIT_QUEUED
+       || r == GFX_SURFACE_SUBMIT_DROPPED;
 }
 
 /* Every unique image of the pack becomes a surface and its upload is
@@ -191,6 +212,8 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;
          ol->anim_next_us[i] = 0;
+         if (ol->anim_resend)
+            ol->anim_resend[i] = 0;
          /* The new texture shows the first (unpressed) frame, so a
           * two-frame APNG held down across a reupload gets its
           * pressed frame back on the next poll. */
