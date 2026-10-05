@@ -6492,7 +6492,8 @@ static void vulkan_set_command_buffers(void *handle, uint32_t num_cmd,
    }
 
    vk->hw.num_cmd             = num_cmd;
-   memcpy(vk->hw.cmd, cmd, sizeof(VkCommandBuffer) * num_cmd);
+   if (num_cmd)
+      memcpy(vk->hw.cmd, cmd, sizeof(VkCommandBuffer) * num_cmd);
 }
 
 /* The filter chain's wait before a rebuild or teardown: this driver's

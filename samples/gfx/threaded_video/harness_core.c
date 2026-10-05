@@ -33,7 +33,10 @@ static unsigned runs;
  * frontend, which is what a core is entitled to do in context_destroy.
  * It can also withdraw the image in mid-session the way a core does
  * before it rebuilds its renderer: set_image(NULL), then destroy. Either
- * way the frontend must not draw from the image again. */
+ * way the frontend must not draw from the image again.
+ * harness_core_hw_ring() switches it to an image per sync index instead,
+ * each cleared on the core's side of the sync index protocol and handed
+ * over behind a semaphore, as a core with a renderer of its own does. */
 static int hw_mode;
 /* HARNESS_CORE_HW_VULKAN=2: the core creates the device, through the
  * negotiation interface's create_device, the way Beetle PSX and the
@@ -67,15 +70,40 @@ static PFN_vkEndCommandBuffer           hw_vkEndCommandBuffer;
 static PFN_vkCmdPipelineBarrier         hw_vkCmdPipelineBarrier;
 static PFN_vkCmdClearColorImage         hw_vkCmdClearColorImage;
 static PFN_vkQueueSubmit                hw_vkQueueSubmit;
+static PFN_vkQueueWaitIdle              hw_vkQueueWaitIdle;
 static PFN_vkCreateFence                hw_vkCreateFence;
 static PFN_vkDestroyFence               hw_vkDestroyFence;
 static PFN_vkWaitForFences              hw_vkWaitForFences;
+static PFN_vkResetFences                hw_vkResetFences;
+static PFN_vkCreateSemaphore            hw_vkCreateSemaphore;
+static PFN_vkDestroySemaphore           hw_vkDestroySemaphore;
 static PFN_vkGetPhysicalDeviceMemoryProperties hw_vkGetPhysicalDeviceMemoryProperties;
+
+/* harness_core_hw_ring(): 0 off, 1 every third frame a dupe, 2 every
+ * third frame a software frame, 3 every frame a hardware one. */
+#define HW_RING_SLOTS 8
+static int           hw_ring;
+static unsigned      hw_ring_sent;
+/* Told each image the core is about to clear, as its 64 bits. */
+static void        (*hw_ring_clear_hook)(uint64_t image);
+static VkCommandPool hw_ring_pool;
+static struct hw_ring_slot
+{
+   struct retro_vulkan_image image;
+   VkImage         vkimage;
+   VkDeviceMemory  memory;
+   VkCommandBuffer cmd;
+   VkSemaphore     semaphore;
+   VkFence         fence;
+   int             pending;
+   unsigned        uses;
+} hw_ring_slots[HW_RING_SLOTS];
 
 #define HW_SYM(name) \
    hw_##name = (PFN_##name)hw_vk->get_device_proc_addr(hw_vk->device, #name)
 
-static void hw_barrier(VkCommandBuffer cmd, VkImageLayout from, VkImageLayout to,
+static void hw_barrier(VkCommandBuffer cmd, VkImage image,
+      VkImageLayout from, VkImageLayout to,
       VkAccessFlags src_access, VkAccessFlags dst_access,
       VkPipelineStageFlags src_stage, VkPipelineStageFlags dst_stage)
 {
@@ -88,7 +116,7 @@ static void hw_barrier(VkCommandBuffer cmd, VkImageLayout from, VkImageLayout to
    b.newLayout                   = to;
    b.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
    b.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   b.image                       = hw_vkimage;
+   b.image                       = image;
    b.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    b.subresourceRange.levelCount = 1;
    b.subresourceRange.layerCount = 1;
@@ -108,23 +136,14 @@ static void hw_image_destroy(void)
    hw_have_image = 0;
 }
 
-/* A cleared W x H image in the layout the frontend samples it in. */
-static int hw_image_create(void)
+/* A W x H image, its memory and the view the frontend samples. */
+static int hw_image_alloc(VkImage *image, VkDeviceMemory *memory,
+      struct retro_vulkan_image *out)
 {
    VkImageCreateInfo ici;
    VkMemoryRequirements reqs;
    VkPhysicalDeviceMemoryProperties props;
    VkMemoryAllocateInfo mai;
-   VkCommandPoolCreateInfo cpi;
-   VkCommandBufferAllocateInfo cai;
-   VkCommandBufferBeginInfo cbi;
-   VkFenceCreateInfo fci;
-   VkSubmitInfo si;
-   VkImageSubresourceRange range;
-   VkClearColorValue colour;
-   VkCommandPool pool  = VK_NULL_HANDLE;
-   VkCommandBuffer cmd = VK_NULL_HANDLE;
-   VkFence fence       = VK_NULL_HANDLE;
    uint32_t i;
 
    memset(&ici, 0, sizeof(ici));
@@ -141,10 +160,10 @@ static int hw_image_create(void)
    ici.usage         = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
    ici.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
    ici.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-   if (hw_vkCreateImage(hw_vk->device, &ici, NULL, &hw_vkimage) != VK_SUCCESS)
+   if (hw_vkCreateImage(hw_vk->device, &ici, NULL, image) != VK_SUCCESS)
       return 0;
 
-   hw_vkGetImageMemoryRequirements(hw_vk->device, hw_vkimage, &reqs);
+   hw_vkGetImageMemoryRequirements(hw_vk->device, *image, &reqs);
    hw_vkGetPhysicalDeviceMemoryProperties(hw_vk->gpu, &props);
    for (i = 0; i < props.memoryTypeCount; i++)
       if (reqs.memoryTypeBits & (1u << i))
@@ -154,27 +173,46 @@ static int hw_image_create(void)
    mai.allocationSize  = reqs.size;
    mai.memoryTypeIndex = i;
    if (     i == props.memoryTypeCount
-         || hw_vkAllocateMemory(hw_vk->device, &mai, NULL, &hw_memory) != VK_SUCCESS)
+         || hw_vkAllocateMemory(hw_vk->device, &mai, NULL, memory) != VK_SUCCESS)
    {
-      hw_vkDestroyImage(hw_vk->device, hw_vkimage, NULL);
+      hw_vkDestroyImage(hw_vk->device, *image, NULL);
       return 0;
    }
-   hw_vkBindImageMemory(hw_vk->device, hw_vkimage, hw_memory, 0);
+   hw_vkBindImageMemory(hw_vk->device, *image, *memory, 0);
 
-   memset(&hw_image, 0, sizeof(hw_image));
-   hw_image.image_layout                            = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-   hw_image.create_info.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-   hw_image.create_info.image                       = hw_vkimage;
-   hw_image.create_info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
-   hw_image.create_info.format                      = VK_FORMAT_R8G8B8A8_UNORM;
-   hw_image.create_info.components.r                = VK_COMPONENT_SWIZZLE_R;
-   hw_image.create_info.components.g                = VK_COMPONENT_SWIZZLE_G;
-   hw_image.create_info.components.b                = VK_COMPONENT_SWIZZLE_B;
-   hw_image.create_info.components.a                = VK_COMPONENT_SWIZZLE_A;
-   hw_image.create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-   hw_image.create_info.subresourceRange.levelCount = 1;
-   hw_image.create_info.subresourceRange.layerCount = 1;
-   hw_vkCreateImageView(hw_vk->device, &hw_image.create_info, NULL, &hw_image.image_view);
+   memset(out, 0, sizeof(*out));
+   out->image_layout                            = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   out->create_info.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+   out->create_info.image                       = *image;
+   out->create_info.viewType                    = VK_IMAGE_VIEW_TYPE_2D;
+   out->create_info.format                      = VK_FORMAT_R8G8B8A8_UNORM;
+   out->create_info.components.r                = VK_COMPONENT_SWIZZLE_R;
+   out->create_info.components.g                = VK_COMPONENT_SWIZZLE_G;
+   out->create_info.components.b                = VK_COMPONENT_SWIZZLE_B;
+   out->create_info.components.a                = VK_COMPONENT_SWIZZLE_A;
+   out->create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   out->create_info.subresourceRange.levelCount = 1;
+   out->create_info.subresourceRange.layerCount = 1;
+   hw_vkCreateImageView(hw_vk->device, &out->create_info, NULL, &out->image_view);
+   return 1;
+}
+
+/* A cleared W x H image in the layout the frontend samples it in. */
+static int hw_image_create(void)
+{
+   VkCommandPoolCreateInfo cpi;
+   VkCommandBufferAllocateInfo cai;
+   VkCommandBufferBeginInfo cbi;
+   VkFenceCreateInfo fci;
+   VkSubmitInfo si;
+   VkImageSubresourceRange range;
+   VkClearColorValue colour;
+   VkCommandPool pool  = VK_NULL_HANDLE;
+   VkCommandBuffer cmd = VK_NULL_HANDLE;
+   VkFence fence       = VK_NULL_HANDLE;
+
+   if (!hw_image_alloc(&hw_vkimage, &hw_memory, &hw_image))
+      return 0;
 
    memset(&cpi, 0, sizeof(cpi));
    cpi.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -190,7 +228,7 @@ static int hw_image_create(void)
    cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
    cbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    hw_vkBeginCommandBuffer(cmd, &cbi);
-   hw_barrier(cmd, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+   hw_barrier(cmd, hw_vkimage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          0, VK_ACCESS_TRANSFER_WRITE_BIT,
          VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
    memset(&range, 0, sizeof(range));
@@ -203,7 +241,7 @@ static int hw_image_create(void)
    colour.float32[3] = 1.0f;
    hw_vkCmdClearColorImage(cmd, hw_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
          &colour, 1, &range);
-   hw_barrier(cmd, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+   hw_barrier(cmd, hw_vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
    hw_vkEndCommandBuffer(cmd);
@@ -224,6 +262,161 @@ static int hw_image_create(void)
    hw_vkDestroyCommandPool(hw_vk->device, pool, NULL);
 
    hw_have_image = 1;
+   return 1;
+}
+
+static void hw_ring_slot_free(struct hw_ring_slot *s)
+{
+   if (s->image.image_view)
+      hw_vkDestroyImageView(hw_vk->device, s->image.image_view, NULL);
+   if (s->vkimage)
+      hw_vkDestroyImage(hw_vk->device, s->vkimage, NULL);
+   if (s->memory)
+      hw_vkFreeMemory(hw_vk->device, s->memory, NULL);
+   if (s->semaphore)
+      hw_vkDestroySemaphore(hw_vk->device, s->semaphore, NULL);
+   if (s->fence)
+      hw_vkDestroyFence(hw_vk->device, s->fence, NULL);
+   memset(s, 0, sizeof(*s));
+}
+
+static int hw_ring_slot_init(struct hw_ring_slot *s)
+{
+   VkCommandBufferAllocateInfo cai;
+   VkSemaphoreCreateInfo sci;
+   VkFenceCreateInfo fci;
+   if (!hw_image_alloc(&s->vkimage, &s->memory, &s->image))
+   {
+      s->vkimage = VK_NULL_HANDLE;
+      s->memory  = VK_NULL_HANDLE;
+      return 0;
+   }
+   memset(&cai, 0, sizeof(cai));
+   cai.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cai.commandPool        = hw_ring_pool;
+   cai.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cai.commandBufferCount = 1;
+   memset(&sci, 0, sizeof(sci));
+   sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   memset(&fci, 0, sizeof(fci));
+   fci.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   return hw_vkAllocateCommandBuffers(hw_vk->device, &cai, &s->cmd) == VK_SUCCESS
+       && hw_vkCreateSemaphore(hw_vk->device, &sci, NULL, &s->semaphore) == VK_SUCCESS
+       && hw_vkCreateFence(hw_vk->device, &fci, NULL, &s->fence) == VK_SUCCESS;
+}
+
+/* The images go with the context. The frontend's reads of them are on
+ * the queue, and so are its waits on their semaphores. */
+static void hw_ring_free(void)
+{
+   unsigned i;
+   if (!hw_ring_pool)
+      return;
+   hw_vk->lock_queue(hw_vk->handle);
+   hw_vkQueueWaitIdle(hw_vk->queue);
+   hw_vk->unlock_queue(hw_vk->handle);
+   for (i = 0; i < HW_RING_SLOTS; i++)
+      hw_ring_slot_free(&hw_ring_slots[i]);
+   hw_vkDestroyCommandPool(hw_vk->device, hw_ring_pool, NULL);
+   hw_ring_pool = VK_NULL_HANDLE;
+}
+
+/* The core's side of the sync index protocol: wait for the index, then
+ * clear its image, which the frontend must no longer read, and hand it
+ * over behind the clear's semaphore. */
+static int hw_ring_send(void)
+{
+   VkCommandBufferBeginInfo cbi;
+   VkSubmitInfo si;
+   VkClearColorValue colour;
+   struct hw_ring_slot *s;
+   uint32_t index;
+
+   if (!hw_ring_pool)
+   {
+      VkCommandPoolCreateInfo cpi;
+      memset(&cpi, 0, sizeof(cpi));
+      cpi.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+      cpi.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+      cpi.queueFamilyIndex = hw_vk->queue_index;
+      if (hw_vkCreateCommandPool(hw_vk->device, &cpi, NULL, &hw_ring_pool) != VK_SUCCESS)
+         return 0;
+   }
+   hw_vk->wait_sync_index(hw_vk->handle);
+   index = hw_vk->get_sync_index(hw_vk->handle);
+   if (index >= HW_RING_SLOTS)
+      return 0;
+   s = &hw_ring_slots[index];
+   if (!s->semaphore && !hw_ring_slot_init(s))
+   {
+      hw_ring_slot_free(s);
+      return 0;
+   }
+   if (s->pending)
+   {
+      hw_vkWaitForFences(hw_vk->device, 1, &s->fence, VK_TRUE, UINT64_MAX);
+      hw_vkResetFences(hw_vk->device, 1, &s->fence);
+      s->pending = 0;
+      /* wait_sync_index says the frontend is done with the index, its
+       * semaphore included. Every other use signals the same semaphore
+       * again, a validation error if the frontend never waited it; the
+       * rest recycle it, one if a wait of it is still on the queue. */
+      if (s->uses++ & 1)
+      {
+         VkSemaphoreCreateInfo sci;
+         hw_vkDestroySemaphore(hw_vk->device, s->semaphore, NULL);
+         memset(&sci, 0, sizeof(sci));
+         sci.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+         if (hw_vkCreateSemaphore(hw_vk->device, &sci, NULL, &s->semaphore) != VK_SUCCESS)
+         {
+            s->semaphore = VK_NULL_HANDLE;
+            hw_ring_slot_free(s);
+            return 0;
+         }
+      }
+   }
+   if (hw_ring_clear_hook)
+   {
+      uint64_t image = 0;
+      memcpy(&image, &s->vkimage, sizeof(s->vkimage));
+      hw_ring_clear_hook(image);
+   }
+
+   memset(&cbi, 0, sizeof(cbi));
+   cbi.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   cbi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   hw_vkBeginCommandBuffer(s->cmd, &cbi);
+   hw_barrier(s->cmd, s->vkimage, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         0, VK_ACCESS_TRANSFER_WRITE_BIT,
+         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+   colour.float32[0] = (float)(runs & 0xff) / 255.0f;
+   colour.float32[1] = 0.5f;
+   colour.float32[2] = 0.25f;
+   colour.float32[3] = 1.0f;
+   hw_vkCmdClearColorImage(s->cmd, s->vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+         &colour, 1, &s->image.create_info.subresourceRange);
+   hw_barrier(s->cmd, s->vkimage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   hw_vkEndCommandBuffer(s->cmd);
+
+   memset(&si, 0, sizeof(si));
+   si.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   si.commandBufferCount   = 1;
+   si.pCommandBuffers      = &s->cmd;
+   si.signalSemaphoreCount = 1;
+   si.pSignalSemaphores    = &s->semaphore;
+   hw_vk->lock_queue(hw_vk->handle);
+   if (hw_vkQueueSubmit(hw_vk->queue, 1, &si, s->fence) != VK_SUCCESS)
+   {
+      hw_vk->unlock_queue(hw_vk->handle);
+      return 0;
+   }
+   hw_vk->unlock_queue(hw_vk->handle);
+   s->pending = 1;
+   hw_vk->set_image(hw_vk->handle, &s->image, 1, &s->semaphore,
+         VK_QUEUE_FAMILY_IGNORED);
+   hw_ring_sent++;
    return 1;
 }
 
@@ -253,9 +446,13 @@ static void hw_context_reset(void)
    HW_SYM(vkCmdPipelineBarrier);
    HW_SYM(vkCmdClearColorImage);
    HW_SYM(vkQueueSubmit);
+   HW_SYM(vkQueueWaitIdle);
    HW_SYM(vkCreateFence);
    HW_SYM(vkDestroyFence);
    HW_SYM(vkWaitForFences);
+   HW_SYM(vkResetFences);
+   HW_SYM(vkCreateSemaphore);
+   HW_SYM(vkDestroySemaphore);
    hw_vkGetPhysicalDeviceMemoryProperties = (PFN_vkGetPhysicalDeviceMemoryProperties)
       hw_vk->get_instance_proc_addr(hw_vk->instance, "vkGetPhysicalDeviceMemoryProperties");
    if (!hw_withdrawn)
@@ -354,7 +551,10 @@ static const struct retro_hw_render_context_negotiation_interface_vulkan hw_nego
 static void hw_context_destroy(void)
 {
    if (hw_vk)
+   {
       hw_image_destroy();
+      hw_ring_free();
+   }
    hw_vk = NULL;
 }
 
@@ -384,6 +584,16 @@ RETRO_API unsigned harness_core_hw_restore(void)
       return 0;
    hw_withdrawn = 0;
    return hw_image_create() ? 1 : 0;
+}
+
+RETRO_API void harness_core_hw_ring(int mode) { hw_ring = mode; }
+
+/* Images handed over in the ring mode. */
+RETRO_API unsigned harness_core_hw_ring_sent(void) { return hw_ring_sent; }
+
+RETRO_API void harness_core_hw_ring_on_clear(void (*hook)(uint64_t image))
+{
+   hw_ring_clear_hook = hook;
 }
 
 void retro_set_environment(retro_environment_t cb)
@@ -506,6 +716,17 @@ void retro_run(void)
    {
       retro_time_t until = harness_time_usec() + (retro_time_t)harness_run_us;
       while (harness_time_usec() < until) { }
+   }
+
+   if (hw_mode && hw_vk && hw_ring)
+   {
+      if (runs % 3 == 0 && hw_ring == 2)
+         video_cb(frame, W, H, W * bpp);
+      else if ((runs % 3 != 0 || hw_ring == 3) && hw_ring_send())
+         video_cb(RETRO_HW_FRAME_BUFFER_VALID, W, H, 0);
+      else
+         video_cb(NULL, W, H, 0);
+      return;
    }
 
    if (hw_mode && hw_vk)

@@ -52,7 +52,12 @@
  * three one is always idle for the video thread to take. No lock, and
  * no driver fence is ever used by two threads at the same time. The
  * driver's signal is only called on an idle fence and its wait only on
- * an armed one, which is all the drivers' fences need. */
+ * an armed one, which is all the drivers' fences need.
+ *
+ * The core's thread arms a slot too, behind the queue work for a frame
+ * it took back before the video thread claimed it. The video thread
+ * draws nothing from that slot meanwhile, so a slot is still armed by
+ * one thread at a time. */
 
 #define HW_FENCE_CELLS 3
 
@@ -81,7 +86,8 @@ static INLINE void hw_fence_init(hw_fence_t *f)
    f->held = 0;
 }
 
-/* Video thread, after a frame drawn from the slot. `forever` is the
+/* Video thread, after a frame drawn from the slot; or the core's
+ * thread, for a frame taken back (see above). `forever` is the
  * driver's unbounded timeout. */
 static INLINE void hw_fence_arm(hw_fence_t *f, hw_fence_signal_fn signal,
       hw_fence_wait_fn wait, void *data, unsigned forever)

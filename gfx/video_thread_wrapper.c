@@ -2125,7 +2125,8 @@ static void video_thread_loop(void *data)
                   /* A hardware frame: the driver reads the core's
                    * image and command buffers from its own state,
                    * which this thread now fills from the ring slot. */
-                  video_thread_hw_before_frame(thr, thr->frame.slot[slot].hw_slot);
+                  video_thread_hw_before_frame(thr, thr->frame.slot[slot].hw_slot,
+                        false);
                   ret = thr->driver->frame(thr->driver_data,
                      RETRO_HW_FRAME_BUFFER_VALID,
                      thr->frame.slot[slot].dims,
@@ -2146,11 +2147,12 @@ static void video_thread_loop(void *data)
                   unsigned fdims    = thr->frame.slot[slot].dims;
                   unsigned fpitch   = thr->frame.slot[slot].pitch;
                   /* A dupe of a hardware frame draws the last presented
-                   * HW slot again, so it is installed and fenced like
-                   * the frame that first drew it: the core's wait on
-                   * the slot then covers this read as well. */
-                  int dupe_hw_slot  = thr->frame.slot[slot].dupe
-                     ? video_thread_hw_dupe_slot(thr) : -1;
+                   * HW slot again, and on Vulkan so does a software
+                   * frame, so it is installed and fenced like the frame
+                   * that first drew it: the core's wait on the slot
+                   * then covers this read as well. */
+                  int dupe_hw_slot  = video_thread_hw_dupe_slot(thr,
+                        thr->frame.slot[slot].dupe);
                   if (fdata && thr->frame.slot[slot].convert)
                      video_thread_convert(thr, thr->frame.slot[slot].convert,
                            &fdata, fdims, &fpitch);
@@ -2159,7 +2161,7 @@ static void video_thread_loop(void *data)
                      video_thread_filter(thr, &fdata, &fdims, &fpitch);
 #endif
                   if (dupe_hw_slot >= 0)
-                     video_thread_hw_before_frame(thr, dupe_hw_slot);
+                     video_thread_hw_before_frame(thr, dupe_hw_slot, true);
                   ret = thr->driver->frame(thr->driver_data,
                      fdata, fdims,
                      thr->frame.slot[slot].count,
@@ -2876,6 +2878,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    unsigned height = VIDEO_SCALE_H(dims);
    unsigned slot       = 0;
    int hw_slot         = -1;
+   unsigned taken_back = 0;
    bool dropped        = false;
    bool dupe_dropped   = false;
    bool zero_copy      = false;
@@ -3026,7 +3029,7 @@ static bool video_thread_frame(void *data, const void *frame_,
    hw_slot = -1;
    if (frame_ == RETRO_HW_FRAME_BUFFER_VALID)
    {
-      hw_slot = video_thread_hw_publish(thr);
+      hw_slot = video_thread_hw_publish(thr, &taken_back);
       frame_  = NULL;
       /* No ring: the driver cannot take a hardware frame from this
        * thread. frame_ is NULL now, which this function treats as a
@@ -3077,6 +3080,15 @@ static bool video_thread_frame(void *data, const void *frame_,
             &dropped, &dupe_dropped);
       if (dropped)
          thr->miss_count++;
+      if (dropped && !dupe_dropped)
+         video_thread_hw_drop(thr, thr->frame.slot[slot].hw_slot);
+   }
+   /* A push the hardware ring took frames back for counts as one that
+    * replaced a frame does: once. */
+   if (taken_back && !dropped)
+   {
+      thr->miss_count++;
+      dropped = true;
    }
 
    /* The picked slot is unclaimed, so the worker holds no pointer into
