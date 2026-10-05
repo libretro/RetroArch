@@ -3710,6 +3710,9 @@ static float materialui_get_scroll(materialui_handle_t *mui,
 
    if (!mui || !list || !list->size)
       return 0;
+   /* scroll to the last entry, as a selection past the end would be */
+   if (selection >= list->size)
+      selection = list->size - 1;
 
    /* Read cached size from mui rather than locking video_st via
     * video_driver_get_output_dims: mui->last_{width,height} is updated
@@ -6621,7 +6624,7 @@ MUI_NOINLINE static void materialui_render_menu_list(
 
    /* Draw any auxiliary items required for the
     * currently selected entry */
-   if (materialui_render_selected_entry_aux)
+   if (materialui_render_selected_entry_aux && selection < list->size)
       materialui_render_selected_entry_aux(
             mui, userdata,
             video_dims,
@@ -7688,7 +7691,7 @@ static bool materialui_get_selected_thumbnails(
 
    /* Get currently selected node */
    list = menu_list ? MENU_LIST_GET_SELECTION(menu_list, 0) : NULL;
-   if (!list)
+   if (!list || selection >= list->size)
       return false;
 
    node = (materialui_node_t*)list->list[selection].userdata;
