@@ -64,7 +64,12 @@ endif
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
 # RetroArch's own system layer, os/gekko; HAVE_LIBOGC=1 builds on
-# devkitPro's libogc instead.
+# devkitPro's libogc instead.  EXTERNAL_LIBOGC=1, which the core CI
+# templates pass when they relink the precompiled HAVE_LIBOGC=1 tree,
+# names devkitPro's libogc too and selects the same build.
+ifeq ($(EXTERNAL_LIBOGC), 1)
+HAVE_LIBOGC       ?= 1
+endif
 HAVE_LIBOGC       ?= 0
 ifeq ($(HAVE_LIBOGC), 1)
 libogc_platform    := 1
