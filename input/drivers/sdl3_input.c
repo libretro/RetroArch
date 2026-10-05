@@ -981,10 +981,8 @@ static void sdl3_manage_text_input(void)
 
    input_driver_set_native_keyboard_available(true);
 
-#ifdef HAVE_MENU
-   want = menu_input_dialog_get_display_kb()
+   want = input_driver_keyboard_line_enabled()
        && input_config_get_sdl3_system_keyboard();
-#endif
 
    if (want == SDL_TextInputActive(win))
       goto publish;
@@ -996,19 +994,17 @@ static void sdl3_manage_text_input(void)
       SDL_TextInputType type = SDL_TEXTINPUT_TYPE_TEXT;
       SDL_PropertiesID props = SDL_CreateProperties();
 
-#ifdef HAVE_MENU
-      switch (menu_input_dialog_get_kb_text_type())
+      switch (input_driver_text_entry_type())
       {
-         case MENU_INPUT_DIALOG_KB_TYPE_PASSWORD:
+         case INPUT_TEXT_TYPE_PASSWORD:
             type = SDL_TEXTINPUT_TYPE_TEXT_PASSWORD_HIDDEN;
             break;
-         case MENU_INPUT_DIALOG_KB_TYPE_NUMBER:
+         case INPUT_TEXT_TYPE_NUMBER:
             type = SDL_TEXTINPUT_TYPE_NUMBER;
             break;
          default:
             break;
       }
-#endif
 
       /* Menu drivers draw the dialog's entry field in the top half of
        * the screen, so keep the system keyboard/IME from covering it.

@@ -9880,29 +9880,62 @@ void input_driver_keyboard_line_append(const char *utf8, size_t len)
       input_keyboard_line_append(&input_driver_st.keyboard_line, utf8, len);
 }
 
+/* What the open line is for, kept for the platform keyboards. */
+static char input_text_entry_label_buf[256];
+static enum input_text_type input_text_entry_type_val;
+
 /* A line of text is opened for @cb, after any line that was open is let
  * go. Returns where the line's buffer pointer is kept, which the menu
  * reads its text through. The keys go to the line, not to the binds,
- * from here until it is closed. */
+ * from here until it is closed.
+ *
+ * @label and @type say what the line is for. A platform with a keyboard
+ * of its own that edits the line in place - iOS, and Android when its
+ * system keyboard is chosen - has it brought up here, with them. The
+ * others look at input_driver_keyboard_line_enabled() and ask for the
+ * label and type. */
 const char **input_driver_text_entry_open(void *userdata,
-      input_keyboard_line_complete_t cb)
+      input_keyboard_line_complete_t cb,
+      const char *label, enum input_text_type type)
 {
    const char **buffer;
+
    input_keyboard_line_free(&input_driver_st);
+   if (label)
+      strlcpy(input_text_entry_label_buf, label,
+            sizeof(input_text_entry_label_buf));
+   else
+      input_text_entry_label_buf[0] = '\0';
+   input_text_entry_type_val = type;
+
    buffer = input_keyboard_start_line(userdata,
          &input_driver_st.keyboard_line, cb);
    input_driver_st.flags |= INP_FLAG_KB_MAPPING_BLOCKED;
+
+#if defined(HAVE_COCOATOUCH)
+   ios_keyboard_start((char**)buffer,
+         &input_driver_st.keyboard_line.size,
+         &input_driver_st.keyboard_line.ptr,
+         label, cb, userdata);
+#elif defined(ANDROID)
+   if (config_get_ptr()->bools.input_android_system_keyboard)
+      android_keyboard_start((char**)buffer,
+            &input_driver_st.keyboard_line.size,
+            &input_driver_st.keyboard_line.ptr,
+            label, cb, userdata);
+#endif
+
    return buffer;
 }
 
-/* Where the line's length and cursor are kept, for a platform's own
- * keyboard (Android, iOS), which edits the line in place. */
-void input_driver_keyboard_line_fields(size_t **size, size_t **cursor)
+const char *input_driver_text_entry_label(void)
 {
-   if (size)
-      *size   = &input_driver_st.keyboard_line.size;
-   if (cursor)
-      *cursor = &input_driver_st.keyboard_line.ptr;
+   return input_text_entry_label_buf;
+}
+
+enum input_text_type input_driver_text_entry_type(void)
+{
+   return input_text_entry_type_val;
 }
 
 /* The line of text is emptied; it stays open. */

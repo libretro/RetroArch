@@ -8703,10 +8703,6 @@ bool menu_driver_iterate(
 
 bool menu_input_dialog_start_search(void)
 {
-#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
-   size_t *line_size                       = NULL;
-   size_t *line_cursor                     = NULL;
-#endif
    settings_t *settings                    = config_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    bool accessibility_enable               = settings->bools.accessibility_enable;
@@ -8741,41 +8737,24 @@ bool menu_input_dialog_start_search(void)
 
    menu_st->input_dialog_keyboard_buffer   =
       input_driver_text_entry_open(menu,
-            menu_input_search_cb);
-#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
-   /* the platform's own keyboard edits the line in place */
-   input_driver_keyboard_line_fields(&line_size, &line_cursor);
-#endif
-
-#ifdef HAVE_COCOATOUCH
-   /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
-   ios_keyboard_start(
-         (char **)menu_st->input_dialog_keyboard_buffer,
-         line_size, line_cursor,
-         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
-         menu_input_search_cb,
-         menu);
-#endif
-#ifdef ANDROID
-   /* Use the Android system keyboard instead of the custom on-screen one */
-   if (config_get_ptr()->bools.input_android_system_keyboard)
-      android_keyboard_start(
-            (char **)menu_st->input_dialog_keyboard_buffer,
-            line_size, line_cursor,
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
             menu_input_search_cb,
-            menu);
-#endif
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_SEARCH),
+            INPUT_TEXT_TYPE_TEXT);
+
 
    return true;
 }
 
+/* The menu's text types are handed to the frontend as its own; they
+ * have to stay in the same order. */
+typedef char menu_text_type_matches_input[
+      (   (int)MENU_INPUT_DIALOG_KB_TYPE_TEXT     == (int)INPUT_TEXT_TYPE_TEXT
+       && (int)MENU_INPUT_DIALOG_KB_TYPE_PASSWORD == (int)INPUT_TEXT_TYPE_PASSWORD
+       && (int)MENU_INPUT_DIALOG_KB_TYPE_NUMBER   == (int)INPUT_TEXT_TYPE_NUMBER)
+      ? 1 : -1];
+
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 {
-#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
-   size_t *line_size                       = NULL;
-   size_t *line_cursor                     = NULL;
-#endif
 #ifdef HAVE_ACCESSIBILITY
    settings_t *settings             = config_get_ptr();
    bool accessibility_enable        = settings->bools.accessibility_enable;
@@ -8830,31 +8809,10 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
 
    menu_st->input_dialog_keyboard_buffer =
       input_driver_text_entry_open(menu,
-            line->cb);
-#if defined(HAVE_COCOATOUCH) || defined(ANDROID)
-   /* the platform's own keyboard edits the line in place */
-   input_driver_keyboard_line_fields(&line_size, &line_cursor);
-#endif
-
-#ifdef HAVE_COCOATOUCH
-   /* Use iOS/tvOS native keyboard instead of custom on-screen keyboard */
-   ios_keyboard_start(
-         (char **)menu_st->input_dialog_keyboard_buffer,
-         line_size, line_cursor,
-         line->label,
-         line->cb,
-         menu);
-#endif
-#ifdef ANDROID
-   /* Use the Android system keyboard instead of the custom on-screen one */
-   if (config_get_ptr()->bools.input_android_system_keyboard)
-      android_keyboard_start(
-            (char **)menu_st->input_dialog_keyboard_buffer,
-            line_size, line_cursor,
-            line->label,
             line->cb,
-            menu);
-#endif
+            line->label,
+            (enum input_text_type)line->text_type);
+
 
    return true;
 }

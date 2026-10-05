@@ -177,7 +177,7 @@ static bool vita_ime_open(psp_input_t *psp)
    sceImeDialogParamInit(&param);
 
    vita_ime_utf8_to_utf16(psp->ime_title, ARRAY_SIZE(psp->ime_title),
-         menu_input_dialog_get_kb_label());
+         input_driver_text_entry_label());
    psp->ime_initial[0]  = 0;
    psp->ime_text[0]     = 0;
 
@@ -185,12 +185,12 @@ static bool vita_ime_open(psp_input_t *psp)
    param.dialogMode     = SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL;
    param.textBoxMode    = SCE_IME_DIALOG_TEXTBOX_MODE_DEFAULT;
 
-   switch (menu_input_dialog_get_kb_text_type())
+   switch (input_driver_text_entry_type())
    {
-      case MENU_INPUT_DIALOG_KB_TYPE_PASSWORD:
+      case INPUT_TEXT_TYPE_PASSWORD:
          param.textBoxMode = SCE_IME_DIALOG_TEXTBOX_MODE_PASSWORD;
          break;
-      case MENU_INPUT_DIALOG_KB_TYPE_NUMBER:
+      case INPUT_TEXT_TYPE_NUMBER:
          param.type        = SCE_IME_TYPE_NUMBER;
          break;
       default:
@@ -225,8 +225,7 @@ static void vita_ime_poll(psp_input_t *psp)
 {
    SceImeDialogResult result;
    bool video_ready               = vita_ime_video_ready();
-   bool want                      = menu_input_dialog_get_display_kb()
-         && input_driver_keyboard_line_enabled();
+   bool want                      = input_driver_keyboard_line_enabled();
 
    input_driver_set_native_keyboard_available(video_ready);
 

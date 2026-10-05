@@ -1066,9 +1066,21 @@ void input_driver_keyboard_line_set(const char *utf8, size_t len);
 /* Text entry, for the menu: a line is opened for a callback and the
  * keys go to it until it is closed; the platform keyboards edit it in
  * place; the on-screen keyboard and the touch keyboards type into it. */
+/* What a line of text is for: the platform keyboards show a matching
+ * layout. In the order of the menu's own. */
+enum input_text_type
+{
+   INPUT_TEXT_TYPE_TEXT = 0,
+   INPUT_TEXT_TYPE_PASSWORD,
+   INPUT_TEXT_TYPE_NUMBER
+};
 const char **input_driver_text_entry_open(void *userdata,
-      input_keyboard_line_complete_t cb);
-void input_driver_keyboard_line_fields(size_t **size, size_t **cursor);
+      input_keyboard_line_complete_t cb,
+      const char *label, enum input_text_type type);
+/* The open line's label and type, for a platform's keyboard that shows
+ * them; whether a line is open is input_driver_keyboard_line_enabled(). */
+const char *input_driver_text_entry_label(void);
+enum input_text_type input_driver_text_entry_type(void);
 size_t input_driver_keyboard_line_length(void);
 void input_driver_keyboard_line_clear(void);
 void input_driver_osk_press(enum osk_type *osk_idx, int ptr,
