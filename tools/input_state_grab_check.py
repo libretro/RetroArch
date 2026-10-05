@@ -29,6 +29,16 @@ ALLOWED below was what was still to be converted, file by file with a
 count, and it is empty now: a file that is not listed may have none,
 so nothing goes back in.
 
+A second thing is counted, the other way round: code outside input/
+calling an input driver's state function itself,
+
+    current_input->input_state(input_st->current_data, joypad, ...)
+
+which the menu did, fourteen times, with the driver, its data and the
+joypads taken out of the input state. It asks the frontend now
+(input_driver_device_state(), input_driver_bind_capture_state()).
+There is to be none.
+
 Usage:
    tools/input_state_grab_check.py [--root DIR] [--selftest]
 """
@@ -84,9 +94,40 @@ def count_tree(root):
     return found
 
 
+DRIVER_CALL = re.compile(r'->\s*input_state\s*\(')
+# where an input driver's own functions are not looked for: the input
+# layer itself, the tests, and code that is not RetroArch's
+NOT_CALLERS = ('input/', 'samples/', 'deps/', 'libretro-common/', 'pkg/', '.git/')
+
+
+def driver_calls(root):
+    found = {}
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root).replace(os.sep, '/') + '/'
+        if rel_d.startswith(NOT_CALLERS):
+            dirs[:] = []
+            continue
+        for f in files:
+            if not f.endswith(('.c', '.m', '.mm', '.cpp')):
+                continue
+            path = os.path.join(d, f)
+            try:
+                text = open(path, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(DRIVER_CALL.findall(strip_comments(text)))
+            if n:
+                found[os.path.relpath(path, root).replace(os.sep, '/')] = n
+    return found
+
+
 def run(root, allowed):
     found = count_tree(root)
     bad = 0
+    for rel, n in sorted(driver_calls(root).items()):
+        print('%s: calls an input driver\'s state function itself, %d time(s).\n'
+              '  Ask the frontend: input_driver_device_state().' % (rel, n))
+        bad += 1
     for rel in sorted(set(found) | set(allowed)):
         have = found.get(rel, 0)
         may = allowed.get(rel, 0)
@@ -122,13 +163,21 @@ def selftest():
         cases = [({'input/drivers/b_input.c': 2}, 0, 'the listed count'),
                  ({'input/drivers/b_input.c': 1}, 1, 'one more than listed'),
                  ({}, 1, 'a file that is not listed'),
+                 ('menu', 1, 'a menu file calling the driver'),
                  ({'input/drivers/b_input.c': 3}, 1, 'fewer than listed'),
                  ({'input/drivers/b_input.c': 2, 'input/drivers/a_input.c': 1}, 1, 'a listed file with none left')]
         import io
         import contextlib
         for allowed, want, what in cases:
+            if allowed == 'menu':
+                os.makedirs(os.path.join(root, 'menu'))
+                with open(os.path.join(root, 'menu', 'm.c'), 'w') as f:
+                    f.write('x = current_input->input_state(data, 0);\n')
+                allowed = {'input/drivers/b_input.c': 2}
             with contextlib.redirect_stdout(io.StringIO()):
                 got = run(root, allowed)
+            if what.startswith('a menu file'):
+                os.remove(os.path.join(root, 'menu', 'm.c'))
             if got != want:
                 print('selftest: %s: wanted %d, got %d' % (what, want, got))
                 bad += 1

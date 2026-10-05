@@ -2096,18 +2096,12 @@ MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type 
 MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
-      input_driver_state_t *input_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
       bool menu_mouse_enable,
       bool input_overlay_enable,
       bool overlay_active,
       menu_input_pointer_hw_state_t *hw_state)
 {
    struct menu_state *menu_st      = &menu_driver_state;
-   rarch_joypad_info_t joypad_info;
    static int16_t last_x           = -0x7fff;
    static int16_t last_y           = -0x7fff;
    bool ignore_position            = false;
@@ -2119,8 +2113,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       (menu &&
        menu->driver_ctx &&
        menu->driver_ctx->set_texture);
-   bool state_inited               = current_input &&
-      current_input->input_state;
+   bool state_inited               = input_driver_has_device_state();
 #ifdef HAVE_OVERLAY
    /* Menu pointer controls are ignored when overlays are enabled. */
    if (overlay_active)
@@ -2153,32 +2146,16 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       return;
    }
 
-   joypad_info.joy_idx             = 0;
-   joypad_info.auto_binds          = NULL;
-   joypad_info.axis_threshold      = 0.0f;
-
    /* X/Y position */
    if (state_inited)
    {
-      if ((hw_state->x = current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if ((hw_state->x = input_driver_device_state(
                   0,
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
                   RETRO_DEVICE_ID_MOUSE_X)) != last_x)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      if ((hw_state->y = current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if ((hw_state->y = input_driver_device_state(
                   0,
                   RARCH_DEVICE_MOUSE_SCREEN,
                   0,
@@ -2225,14 +2202,8 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    {
       /* Select (LMB)
        * Note that releasing select also counts as activity */
-      if (current_input->input_state(
-               input_st->current_data,
-               joypad,
-               sec_joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
+      if (input_driver_device_state(
+                  0,
                RETRO_DEVICE_MOUSE,
                0,
                RETRO_DEVICE_ID_MOUSE_LEFT))
@@ -2240,27 +2211,15 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
 
       /* Cancel (RMB)
        * Note that releasing cancel also counts as activity */
-      if (current_input->input_state(
-               input_st->current_data,
-               joypad,
-               sec_joypad,
-               &joypad_info,
-               NULL,
-               keyboard_mapping_blocked,
-               0,
+      if (input_driver_device_state(
+                  0,
                RETRO_DEVICE_MOUSE,
                0,
                RETRO_DEVICE_ID_MOUSE_RIGHT))
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
 
       /* Up (mouse wheel up) */
-      if (current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if (input_driver_device_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
@@ -2270,13 +2229,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
                              );
 
       /* Down (mouse wheel down) */
-      if (current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if (input_driver_device_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
@@ -2286,13 +2239,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
                              );
 
       /* Left (mouse wheel horizontal left) */
-      if (current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if (input_driver_device_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
@@ -2302,13 +2249,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
                              );
 
       /* Right (mouse wheel horizontal right) */
-      if (current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  NULL,
-                  keyboard_mapping_blocked,
+      if (input_driver_device_state(
                   0,
                   RETRO_DEVICE_MOUSE,
                   0,
@@ -2334,21 +2275,15 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
 MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
-      input_driver_state_t *input_st,
-      input_driver_t *current_input,
-      const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
-      bool keyboard_mapping_blocked,
       bool overlay_active,
       bool pointer_enabled,
       unsigned input_touch_scale,
       menu_input_pointer_hw_state_t *hw_state)
 {
-   rarch_joypad_info_t joypad_info;
    unsigned fb_width, fb_height;
    int pointer_x                                = 0;
    int pointer_y                                = 0;
-   const retro_keybind_set *binds[MAX_USERS] = {NULL};
+   bool state_inited                            = input_driver_has_device_state();
    /* Is a background texture set for the current menu driver?
     * Checks if the menu framebuffer is set.
     * This would usually only return true
@@ -2400,19 +2335,10 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    fb_width             = VIDEO_SCALE_W(p_disp->framebuf_dims);
    fb_height            = VIDEO_SCALE_H(p_disp->framebuf_dims);
 
-   joypad_info.joy_idx                          = 0;
-   joypad_info.auto_binds                       = NULL;
-   joypad_info.axis_threshold                   = 0.0f;
-
    /* X pos */
-   if (current_input->input_state)
-      pointer_x                  = current_input->input_state(
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info, (*binds),
-            keyboard_mapping_blocked,
-            0, pointer_device,
+   if (state_inited)
+      pointer_x                  = input_driver_device_state(
+                  0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_X);
    hw_state->x  = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    hw_state->x *= input_touch_scale;
@@ -2436,14 +2362,9 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    }
 
    /* Y pos */
-   if (current_input->input_state)
-      pointer_y = current_input->input_state(
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info, (*binds),
-            keyboard_mapping_blocked,
-            0, pointer_device,
+   if (state_inited)
+      pointer_y = input_driver_device_state(
+                  0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_Y);
    hw_state->y  = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
    hw_state->y *= input_touch_scale;
@@ -2463,15 +2384,10 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
-   if (current_input->input_state)
+   if (state_inited)
    {
-      if (current_input->input_state(
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info, (*binds),
-            keyboard_mapping_blocked,
-            0, pointer_device,
+      if (input_driver_device_state(
+                  0, pointer_device,
             0, RETRO_DEVICE_ID_POINTER_PRESSED))
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_SELECT;
       else
@@ -2487,15 +2403,10 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
 
    /* Cancel (touch screen 'back' - don't know what is this, but whatever...)
     * Note that releasing cancel also counts as activity */
-   if (current_input->input_state)
+   if (state_inited)
    {
-      if (current_input->input_state(
-            input_st->current_data,
-            joypad,
-            sec_joypad,
-            &joypad_info, (*binds),
-            keyboard_mapping_blocked,
-            0, pointer_device,
+      if (input_driver_device_state(
+                  0, pointer_device,
             0, RARCH_DEVICE_ID_POINTER_BACK))
          hw_state->flags |=  MENU_INP_PTR_FLG_PRESS_CANCEL;
       else
@@ -3746,16 +3657,12 @@ bool menu_driver_search_filter_enabled(const char *label, unsigned type)
 
 static void menu_input_key_bind_poll_bind_state(
       input_driver_state_t *input_st,
-      const retro_keybind_set *binds,
-      float input_axis_threshold,
       unsigned joy_idx,
       struct menu_bind_state *state,
-      bool timed_out,
-      bool keyboard_mapping_blocked)
+      bool timed_out)
 {
    unsigned b;
-   rarch_joypad_info_t joypad_info;
-   input_driver_t *current_input           = input_st->current_driver;
+   bool state_inited                       = input_driver_has_device_state();
    unsigned port                           = state->port;
    const input_device_driver_t *joypad     = input_st->primary_joypad;
 #ifdef HAVE_MFI
@@ -3766,11 +3673,7 @@ static void menu_input_key_bind_poll_bind_state(
 
    memset(state->state, 0, sizeof(state->state));
 
-   joypad_info.axis_threshold           = input_axis_threshold;
-   joypad_info.joy_idx                  = joy_idx;
-   joypad_info.auto_binds               = input_autoconf_binds[joy_idx];
-
-   if (current_input->input_state)
+   if (state_inited)
    {
       /* Poll mouse (on the relevant port)
        *
@@ -3783,13 +3686,8 @@ static void menu_input_key_bind_poll_bind_state(
       for (b = 2; b < MENU_MAX_MBUTTONS; b++)
       {
          state->state[port].mouse_buttons[b] =
-            current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  binds,
-                  keyboard_mapping_blocked,
+            input_driver_bind_capture_state(
+                  joy_idx,
                   port,
                   RETRO_DEVICE_MOUSE, 0, b);
       }
@@ -3797,21 +3695,12 @@ static void menu_input_key_bind_poll_bind_state(
       for (b = RETROK_BACKSPACE; b < RETROK_LAST; b++)
       {
          state->state[port].keys[b] =
-            current_input->input_state(
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  &joypad_info,
-                  binds,
-                  keyboard_mapping_blocked,
+            input_driver_bind_capture_state(
+                  joy_idx,
                   0,
                   RETRO_DEVICE_KEYBOARD, 0, b);
       }
    }
-
-   joypad_info.joy_idx        = 0;
-   joypad_info.auto_binds     = NULL;
-   joypad_info.axis_threshold = 0.0f;
 
    state->skip                = timed_out;
 
@@ -5280,11 +5169,8 @@ bool menu_input_key_bind_set_mode(
          binds);
    menu_input_key_bind_poll_bind_state(
          input_st,
-         (*input_st->libretro_input_binds),
-         settings->floats.input_axis_threshold,
          settings->uints.input_joypad_index[binds->port],
-         binds, false,
-         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
+         binds, false);
 
    current_usec                        = cpu_features_get_time_usec();
 
@@ -5383,11 +5269,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
       menu_input_key_bind_poll_bind_state(
             input_st,
-            (*input_st->libretro_input_binds),
-            settings->floats.input_axis_threshold,
             settings->uints.input_joypad_index[new_binds.port],
-            &new_binds, timed_out,
-            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false);
+            &new_binds, timed_out);
 
       /* Wait until keys and buttons are released */
       if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
@@ -5706,21 +5589,9 @@ unsigned menu_event(
    struct menu_state *menu_st                      = &menu_driver_state;
    menu_input_t *menu_input                        = &menu_st->input_state;
    input_driver_state_t *input_st                  = input_state_get_ptr();
-   input_driver_t *current_input                   = input_st->current_driver;
-   /* Read through the idle stand-in while background controller
-    * input is off and the window is unfocused. */
-   const input_device_driver_t *joypad             =
-      input_driver_joypad_for_read(input_st->primary_joypad);
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad         =
-      input_driver_joypad_for_read(input_st->secondary_joypad);
-#else
-   const input_device_driver_t *sec_joypad         = NULL;
-#endif
    gfx_display_t *p_disp                           = disp_get_ptr();
    menu_input_pointer_hw_state_t *pointer_hw_state = &menu_st->input_pointer_hw_state;
    menu_handle_t *menu                             = menu_st->driver_data;
-   bool keyboard_mapping_blocked                   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) ? true : false;
    bool menu_mouse_enable                          = settings->bools.menu_mouse_enable;
    bool menu_pointer_enable                        = settings->bools.menu_pointer_enable;
    bool swap_ok_cancel_btns                        = settings->bools.input_menu_swap_ok_cancel_buttons;
@@ -5831,11 +5702,6 @@ unsigned menu_event(
          menu_input_get_mouse_hw_state(
                p_disp,
                menu,
-               input_st,
-               current_input,
-               joypad,
-               sec_joypad,
-               keyboard_mapping_blocked,
                menu_mouse_enable,
                input_overlay_enable,
                overlay_active,
@@ -5850,11 +5716,6 @@ unsigned menu_event(
          menu_input_get_touchscreen_hw_state(
                p_disp,
                menu,
-               input_st,
-               current_input,
-               joypad,
-               sec_joypad,
-               keyboard_mapping_blocked,
                overlay_active,
                pointer_enabled,
                input_touch_scale,

@@ -1074,6 +1074,21 @@ void *input_driver_current_data(void);
  * thread. */
 void input_driver_set_platform_menu_button(bool held);
 
+/* Reads of the input driver for a consumer that is not the core - the
+ * menu. It asks here and holds neither the driver nor its data nor a
+ * joypad. The two reads are valid only while there is a driver to
+ * read, input_driver_has_device_state().
+ *
+ * input_driver_device_state(): a mouse, a pointer or a key; no binds
+ * go to the driver.
+ * input_driver_bind_capture_state(): the same with the frontend's
+ * binds and the pad @joy_idx, as the capture of a bind reads them. */
+bool input_driver_has_device_state(void);
+int16_t input_driver_device_state(unsigned port,
+      unsigned device, unsigned idx, unsigned id);
+int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
+      unsigned device, unsigned idx, unsigned id);
+
 /* The RetroPad controls a user's controller and keys hold right now, as
  * bound and before remaps: a bit each for the sixteen buttons, then
  * for the sticks' eight directions (RARCH_ANALOG_LEFT_X_PLUS on).

@@ -9874,6 +9874,77 @@ void input_driver_set_platform_menu_button(bool held)
    input_driver_st.platform_menu_button = held;
 }
 
+/* Reads of the input driver for a consumer that is not the core: the
+ * menu, which used to call the driver itself with the driver, its data
+ * and the joypads taken out of the input state. It asks here instead,
+ * and holds none of them.
+ *
+ * Whether there is a driver to read at all. */
+bool input_driver_has_device_state(void)
+{
+   return     input_driver_st.current_driver
+           && input_driver_st.current_driver->input_state;
+}
+
+/* A mouse, a pointer or a key: @device, @idx and @id as libretro has
+ * them. No binds go to the driver, so no pad's button is read through
+ * its bind. Only while input_driver_has_device_state(). */
+int16_t input_driver_device_state(unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   rarch_joypad_info_t joypad_info;
+   input_driver_state_t *input_st          = &input_driver_st;
+   const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->primary_joypad);
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
+         input_st, input_st->secondary_joypad);
+#else
+   const input_device_driver_t *sec_joypad = NULL;
+#endif
+
+   joypad_info.joy_idx        = 0;
+   joypad_info.auto_binds     = NULL;
+   joypad_info.axis_threshold = 0.0f;
+
+   return input_st->current_driver->input_state(
+         input_st->current_data,
+         joypad, sec_joypad, &joypad_info,
+         NULL,
+         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
+         port, device, idx, id);
+}
+
+/* The same for the capture of a bind, which reads the mouse buttons
+ * and the keys with the frontend's binds and the pad @joy_idx in
+ * hand, as it always has. Only while input_driver_has_device_state(). */
+int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
+      unsigned device, unsigned idx, unsigned id)
+{
+   rarch_joypad_info_t joypad_info;
+   input_driver_state_t *input_st          = &input_driver_st;
+   settings_t *settings                    = config_get_ptr();
+   const input_device_driver_t *joypad     = input_st->primary_joypad;
+#ifdef HAVE_MFI
+   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
+#else
+   const input_device_driver_t *sec_joypad = NULL;
+#endif
+
+   if (joy_idx >= MAX_USERS)
+      joy_idx                 = 0;
+   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+   joypad_info.joy_idx        = joy_idx;
+   joypad_info.auto_binds     = input_autoconf_binds[joy_idx];
+
+   return input_st->current_driver->input_state(
+         input_st->current_data,
+         joypad, sec_joypad, &joypad_info,
+         (*input_st->libretro_input_binds),
+         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
+         port, device, idx, id);
+}
+
 /* The RetroPad controls a user's controller and keys hold right now, as
  * they are bound: before remaps, turbo and the rest. One bit each, by
  * the control's number: the sixteen buttons, then the sticks'
