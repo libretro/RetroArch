@@ -214,6 +214,33 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
           echo "[pass] smb_backup_test (TSan)"
 
+      - name: Build and run nfs_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/nfs_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/nfs.c and runs it against an
+          # in-memory export (fake_nfs.c) keeping net_nfs3.c's status
+          # contract. A download is written beside the local file and
+          # renamed over it once complete; only the server answering
+          # NOENT reads as "not there"; an upload is one RENAME over the
+          # old file, kept as <path>-<time>[-n] with destructive sync
+          # off. Covers failed opens and partial reads leaving the local
+          # save intact, unanswered stat/unlink failing instead of
+          # reporting a missing file or a delete, failed write, backup
+          # and final rename leaving the old file and no temporary, the
+          # manifest skipping the backup, refused over-long names, the
+          # subdirectory and a concurrent MKDIR.
+          make clean all SANITIZER=address,undefined
+          test -x nfs_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./nfs_backup_test
+          echo "[pass] nfs_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./nfs_backup_test
+          echo "[pass] nfs_backup_test (TSan)"
+
       - name: Build and run gdrive_backup_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/network/gdrive_backup

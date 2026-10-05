@@ -449,6 +449,11 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
    if (string_ends_with(filename, "/.DS_Store"))
        return true;
 
+   /* a download still being written, or left by one that never
+    * finished (network/cloud_sync/nfs.c) */
+   if (string_ends_with(filename, ".rafetching"))
+       return true;
+
    return false;
 }
 
