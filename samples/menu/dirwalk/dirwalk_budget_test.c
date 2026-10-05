@@ -680,6 +680,7 @@ int main(int argc, char *argv[])
       retro_time_t paced      = 0;
       retro_time_t total      = 0;
       bool deferred           = false;
+      int paced_rounds, bench_rounds;
       int round;
 
       ref = reference_list(big_dir, NULL, true, false, true,
@@ -689,13 +690,19 @@ int main(int argc, char *argv[])
 
       /* PACED_ROUNDS on the real clock, then BENCH_ROUNDS frozen,
        * each frozen round paired with a blocking walk just before. */
-      for (round = 0; round < PACED_ROUNDS + BENCH_ROUNDS; round++)
+      /* Under a sanitizer the wall-clock asserts are skipped, so the
+       * rounds only check parity: one of each does that, and the 40k
+       * fixture walked eight times is most of this job's sanitizer
+       * time. */
+      paced_rounds = sanitize ? 1 : PACED_ROUNDS;
+      bench_rounds = sanitize ? 1 : BENCH_ROUNDS;
+      for (round = 0; round < paced_rounds + bench_rounds; round++)
       {
          struct string_list *got = NULL;
          retro_time_t t0, dt;
          retro_time_t bdt        = 0;
          bool this_deferred      = false;
-         bool frozen             = (round >= PACED_ROUNDS);
+         bool frozen             = (round >= paced_rounds);
          bool equal;
 
          if (frozen)

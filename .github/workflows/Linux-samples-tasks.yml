@@ -23,7 +23,11 @@ jobs:
   samples-tasks:
     name: Build and run samples/tasks
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # One job runs every samples/tasks oracle, most of them three times
+    # (plain, ASan + UBSan, TSan): 53 steps. Ten minutes was the budget
+    # when there were fewer; it now runs out partway through and the
+    # job is cancelled with nothing failing.
+    timeout-minutes: 30
 
     steps:
       - name: Install dependencies
