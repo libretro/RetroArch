@@ -184,6 +184,9 @@ jobs:
             task_queue_detach_test
             task_queue_main_thread_test
             task_queue_budget_test
+            # A switch to the threaded queue takes over the tasks
+            # already queued and counts them.
+            task_queue_switch_test
             image_blit_bands_test
             tpool_wait_test
             # Four CPU-burning jobs on a pool of four must overlap;
