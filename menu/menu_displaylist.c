@@ -9653,11 +9653,10 @@ unsigned menu_displaylist_build_list(
          {
             static menu_displaylist_build_info_selective_t build_list[] = {
                {MENU_ENUM_LABEL_AUDIO_SYNC,                      PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
+               {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
                {MENU_ENUM_LABEL_AUDIO_THREADED_PIPELINE,         PARSE_ONLY_BOOL,     true  },
-#ifdef HAVE_THREADS
-               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
-               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
-#endif
+               {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
                {MENU_ENUM_LABEL_AUDIO_THREAD_PRIORITY,           PARSE_ONLY_BOOL,     true  },
 #ifdef HAVE_WASAPI
                /* Which way the thread's priority is asked for, so it
@@ -9665,9 +9664,10 @@ unsigned menu_displaylist_build_list(
                 * all: checked below against the setting above it. */
                {MENU_ENUM_LABEL_AUDIO_WASAPI_MMCSS,              PARSE_ONLY_BOOL,     false },
 #endif
-               {MENU_ENUM_LABEL_AUDIO_MAX_TIMING_SKEW,           PARSE_ONLY_FLOAT,    true  },
-               {MENU_ENUM_LABEL_AUDIO_RATE_CONTROL_DELTA,        PARSE_ONLY_FLOAT,    true  },
-               {MENU_ENUM_LABEL_AUDIO_SINK_RATE_ESTIMATION,      PARSE_ONLY_BOOL,     true  },
+#ifdef HAVE_THREADS
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH,              PARSE_ONLY_BOOL,     true  },
+               {MENU_ENUM_LABEL_AUDIO_TIME_STRETCH_LOWPASS,      PARSE_ONLY_BOOL,     true  },
+#endif
             };
 
 #ifdef HAVE_WASAPI
@@ -9986,23 +9986,16 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,        PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_MAX_USERS,                       PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                 PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_INPUT_JOYPAD_BACKGROUND,               PARSE_ONLY_BOOL,  true},
-#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
-               {MENU_ENUM_LABEL_INPUT_KEYBOARD_BACKGROUND,             PARSE_ONLY_BOOL,  true},
-#endif
                {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                 PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                   PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_QUIT,                          PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_CLOSE,                         PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_RESET,                         PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,                    PARSE_ONLY_UINT,  true},
-               {MENU_ENUM_LABEL_INPUT_BIND_HOLD,                       PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,               PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,              PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE, PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,    PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_KEYBOARD,           PARSE_ONLY_UINT,  true},
-               {MENU_ENUM_LABEL_INPUT_TRIGGER_FULL_RANGE,              PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ROTATION,                        PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_SOCD_HORIZONTAL,                 PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_SOCD_VERTICAL,                   PARSE_ONLY_UINT,  true},
@@ -10012,6 +10005,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_DESCRIPTOR_LABEL_SHOW,           PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_DESCRIPTOR_HIDE_UNBOUND,         PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,           PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_INPUT_TRIGGER_FULL_RANGE,              PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,                 PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,              PARSE_ONLY_FLOAT, true},
 #if defined(GEKKO)
@@ -10027,6 +10021,8 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,          PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_TOUCH_VMOUSE_GESTURE,            PARSE_ONLY_BOOL,  true},
 #endif
+               {MENU_ENUM_LABEL_INPUT_BIND_TIMEOUT,                    PARSE_ONLY_UINT,  true},
+               {MENU_ENUM_LABEL_INPUT_BIND_HOLD,                       PARSE_ONLY_UINT,  true},
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
                {MENU_ENUM_LABEL_INPUT_NOWINKEY_ENABLE,                 PARSE_ONLY_BOOL,  true},
 #endif
@@ -10037,10 +10033,14 @@ unsigned menu_displaylist_build_list(
 #ifdef ANDROID
                {MENU_ENUM_LABEL_ANDROID_INPUT_DISCONNECT_WORKAROUND,   PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_STYLUS_ENABLE,                   PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK, PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK, PARSE_ONLY_BOOL, true},
                {MENU_ENUM_LABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,      PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,    PARSE_ONLY_UINT,  true},
+               {MENU_ENUM_LABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,    PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_INPUT_BLOCK_TIMEOUT,                   PARSE_ONLY_UINT,  true},
+#endif
+               {MENU_ENUM_LABEL_INPUT_JOYPAD_BACKGROUND,               PARSE_ONLY_BOOL,  true},
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+               {MENU_ENUM_LABEL_INPUT_KEYBOARD_BACKGROUND,             PARSE_ONLY_BOOL,  true},
 #endif
                {MENU_ENUM_LABEL_INPUT_POLL_TYPE_BEHAVIOR,              PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_DRIVER,                          PARSE_ONLY_STRING_OPTIONS, true},
@@ -13626,12 +13626,12 @@ unsigned menu_displaylist_build_list(
          {
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_CONFIG_SAVE_ON_EXIT,        PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_REMAP_SAVE_ON_EXIT,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_GAME_SPECIFIC_OPTIONS,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_OVERRIDES_ENABLE,      PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_AUTO_REMAPS_ENABLE,         PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_INITIAL_DISK_CHANGE_ENABLE, PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL,        PARSE_ONLY_BOOL},
                {MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS,        PARSE_ONLY_BOOL},
             };
 
