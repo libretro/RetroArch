@@ -65,6 +65,12 @@
 #ifndef AUDCLNT_E_ENGINE_FORMAT_LOCKED
 #define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 #endif
+#ifndef AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM 0x80000000
+#endif
+#ifndef AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY 0x08000000
+#endif
 
 enum wasapi_flags
 {
@@ -523,7 +529,7 @@ static void wasapi_log_endpoint_formats(IAudioClient *client, AUDCLNT_SHAREMODE 
    }
 }
 
-static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout)
+static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout, bool *convert)
 {
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
@@ -552,6 +558,16 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
           * layout refused, and the caller decides what stereo costs. */
          if (suggested_format->Format.nChannels != channels)
          {
+            /* A microphone is read as mono, which the shared engine
+             * makes of a wider endpoint only through its converter. */
+            if (convert && channels == 1)
+            {
+               RARCH_LOG("[WASAPI] The endpoint has %u channels; the engine converts them to mono.\n",
+                     suggested_format->Format.nChannels);
+               *convert = true;
+               CoTaskMemFree(suggested_format);
+               return true;
+            }
             RARCH_WARN("[WASAPI] Windows offers %u channels for the %u requested; layout 0x%03x refused.\n",
                   suggested_format->Format.nChannels, channels, layout);
             break;
@@ -786,7 +802,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout, NULL))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       RELEASE(client);
@@ -878,6 +894,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    unsigned sh_buffer_length      = settings->uints.audio_wasapi_sh_buffer_length;
    REFERENCE_TIME default_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
+   DWORD stream_flags             = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
+   bool convert                   = false;
    HRESULT hr                     = _IMMDevice_Activate(device,
          IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
 
@@ -916,11 +934,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels, layout))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels, layout, &convert))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       goto error;
    }
+
+   if (convert)
+      stream_flags |= AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+                    | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
 
    if (low_latency)
       *low_latency = false;
@@ -932,7 +954,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
     * grid several times finer - which, with audio_sync on, is the grid
     * the whole frame loop is released on. Any failure here falls
     * through to the IAudioClient path below on a fresh client, so a
-    * system that cannot do this behaves exactly as before. */
+    * system that cannot do this behaves exactly as before. The periods
+    * are for the engine's own format, so a converted stream skips it. */
+   if (!convert)
    {
       IAudioClient3 *client3 = NULL;
       hr = _IAudioClient_QueryInterface(client,
@@ -1017,7 +1041,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 #endif
 
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-         AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+         stream_flags,
          buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
@@ -1035,7 +1059,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       }
 
       hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+            stream_flags,
             buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
    }
 
