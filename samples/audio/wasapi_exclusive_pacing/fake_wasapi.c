@@ -9,6 +9,7 @@
 #include <time.h>
 #include <errno.h>
 #include <stdio.h>
+#include <features/features_cpu.h>
 #include "fake_wasapi.h"
 
 const GUID IID_IAudioClient        = { 1, 0, 0, {0} };
@@ -253,14 +254,16 @@ void fake_device_stats(fake_device_stats_t *out)
 static void *device_thread(void *p)
 {
    fake_client_t *c = (fake_client_t*)p;
-   struct timespec next;
-   long period_ns = (long)(c->period_hns * 100);
-   clock_gettime(CLOCK_MONOTONIC, &next);
+   /* Deadlines on the clock retro_sleep_until_us() waits on, which it
+    * does finely everywhere - on Windows too, where a pthreads sleep
+    * keeps the scheduler tick. Nanoseconds, so a period that is no
+    * whole microsecond does not drift. */
+   int64_t period_ns = (int64_t)c->period_hns * 100;
+   int64_t next_ns   = (int64_t)cpu_features_get_time_usec() * 1000;
    for (;;)
    {
-      next.tv_nsec += period_ns;
-      while (next.tv_nsec >= 1000000000L) { next.tv_sec++; next.tv_nsec -= 1000000000L; }
-      clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+      next_ns += period_ns;
+      retro_sleep_until_us((retro_time_t)((next_ns + 999) / 1000));
       pthread_mutex_lock(&c->m);
       if (!c->running) { pthread_mutex_unlock(&c->m); break; }
       c->stats.periods++;
@@ -612,7 +615,7 @@ void  mmdevice_thread(void *data) { (void)data; }
 DWORD IMMNotificationThreadId = 0;
 BOOL PostThreadMessage(DWORD id, unsigned msg, unsigned long wp, long lp) { (void)id; (void)msg; (void)wp; (void)lp; return TRUE; }
 
-DWORD FormatMessageA(DWORD flags, const void *src, DWORD id, DWORD lang, LPSTR buf, DWORD size, void *args)
+DWORD FormatMessageA(DWORD flags, const void *src, DWORD id, DWORD lang, char *buf, DWORD size, void *args)
 {
    (void)flags; (void)src; (void)lang; (void)args;
    return (DWORD)snprintf(buf, size, "error %u", (unsigned)id);
@@ -621,6 +624,6 @@ DWORD GetLastError(void) { return 0; }
 
 HANDLE GetCurrentThread(void) { return NULL; }
 BOOL SetThreadPriority(HANDLE h, int prio) { (void)h; (void)prio; return TRUE; }
-HMODULE LoadLibraryA(const char *name) { (void)name; return NULL; }
-void   *GetProcAddress(HMODULE m, const char *name) { (void)m; (void)name; return NULL; }
-BOOL    FreeLibrary(HMODULE m) { (void)m; return TRUE; }
+void   *LoadLibraryA(const char *name) { (void)name; return NULL; }
+void   *GetProcAddress(void *m, const char *name) { (void)m; (void)name; return NULL; }
+BOOL    FreeLibrary(void *m) { (void)m; return TRUE; }
