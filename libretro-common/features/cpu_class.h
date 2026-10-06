@@ -65,6 +65,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boolean.h>
+#include <retro_inline.h>
 
 #ifndef CPU_CLASS_SYSFS
 #define CPU_CLASS_SYSFS "/sys/devices/system/cpu"
@@ -251,7 +252,9 @@ static size_t cpu_class_read(unsigned char *cls, size_t len)
 
 #else
 
-static size_t cpu_class_read(unsigned char *cls, size_t len)
+/* No class source: inline so a platform whose callers are compiled
+ * out of the ranking does not carry an unreferenced function. */
+static INLINE size_t cpu_class_read(unsigned char *cls, size_t len)
 {
    memset(cls, 0, len);
    return 0;

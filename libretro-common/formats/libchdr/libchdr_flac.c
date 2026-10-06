@@ -191,7 +191,7 @@ static void flac_decoder_write_callback(void *userdata, void *buffer, size_t byt
 
 	/* interleaved case */
 	shift = decoder->uncompressed_swap ? 8 : 0;
-	blocksize = bytes / (sampch * sizeof(sampbuf[0]));
+	blocksize = (int)(bytes / (sampch * sizeof(sampbuf[0])));
 	if (decoder->uncompressed_start[1] == NULL)
 	{
 		int16_t *dest = decoder->uncompressed_start[0] + offset * sampch;

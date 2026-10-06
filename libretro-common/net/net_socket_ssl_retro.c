@@ -1781,7 +1781,7 @@ static int tls13_recv_certificate(struct ssl_state *s, struct x509_cert *leaf)
    }
    x509_trust_load_pem_parts(tls_trust_parts, tls_trust_sizes, tls_trust_count);
    info[0] = '\0';
-   if (x509_verify_chain(ders, lens, n, s->domain, time(NULL), info, sizeof(info)) != 0)
+   if (x509_verify_chain(ders, lens, (unsigned)n, s->domain, time(NULL), info, sizeof(info)) != 0)
    {
       ssl_socket_log_verify_fail(s->verify_mode == 0, s->domain, info);
       if (s->verify_mode == 0)

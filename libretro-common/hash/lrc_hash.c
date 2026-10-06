@@ -101,6 +101,13 @@
 #include <features/features_cpu.h>
 #endif
 
+/* The scalar rounds are compiled when they are the only path or the
+ * runtime fallback of a dispatching one. */
+#if defined(SHA_ARM_DISPATCH) || defined(SHA_X86_DISPATCH) \
+   || !(defined(SHA_HAVE_ARM_PATH) || defined(SHA_HAVE_X86_PATH))
+#define SHA_NEED_SCALAR 1
+#endif
+
 #if defined(SHA_HAVE_ARM_PATH)
 #include <arm_neon.h>
 #if defined(SHA_ARM_NEEDS_TARGET)
@@ -242,6 +249,7 @@ static void sha256_block_hw(uint32_t *h, const uint8_t *in)
 }
 #endif
 
+#ifdef SHA_NEED_SCALAR
 static void sha256_block_scalar(struct sha256_state *p)
 {
    unsigned i;
@@ -285,6 +293,7 @@ static void sha256_block_scalar(struct sha256_state *p)
    p->h[0] += a; p->h[1] += b; p->h[2] += c; p->h[3] += d;
    p->h[4] += e; p->h[5] += f; p->h[6] += g; p->h[7] += h;
 }
+#endif
 
 static void sha256_block(struct sha256_state *p)
 {
@@ -607,6 +616,7 @@ static void sha1_block_hw(uint32_t *state, const uint8_t *in)
 }
 #endif
 
+#ifdef SHA_NEED_SCALAR
 static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
 {
    const unsigned K[] =            /* Constants defined in SHA-1   */
@@ -696,6 +706,7 @@ static void SHA1ProcessMessageBlockScalar(struct sha1_state *context)
    context->digest[4] =
       (context->digest[4] + E) & 0xFFFFFFFF;
 }
+#endif
 
 static void SHA1ProcessMessageBlock(struct sha1_state *context)
 {
@@ -865,7 +876,7 @@ void SHA1Digest(const uint8_t* data, size_t len, uint8_t digest[20])
    struct sha1_state sha;
 
    SHA1Reset(&sha);
-   SHA1Input(&sha, data, len);
+   sha1_stream_update(&sha, data, len);
 
    if (!SHA1Result(&sha, digest))
       memset(digest, 0, 20);

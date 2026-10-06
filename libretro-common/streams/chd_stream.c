@@ -169,7 +169,7 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
       if (strncmp(p, "TRACK:", 6) != 0)
          return false;
       p += 6;
-      md->track = strtoul(p, (char **)&p, 10);
+      md->track = (uint32_t)strtoul(p, (char **)&p, 10);
 
       if (*p++ != ' ' || strncmp(p, "TYPE:", 5) != 0)
          return false;
@@ -198,7 +198,7 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
       if (*p++ != ' ' || strncmp(p, "FRAMES:", 7) != 0)
          return false;
       p += 7;
-      md->frames = strtoul(p, NULL, 10);
+      md->frames = (uint32_t)strtoul(p, NULL, 10);
       md->extra  = padding_frames(md->frames);
       return true;
    }
@@ -214,7 +214,7 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
          size_t len;
 
          if (strncmp(p, "TRACK:", 6) == 0)
-            md->track = strtoul(p + 6, &p, 10);
+            md->track = (uint32_t)strtoul(p + 6, &p, 10);
          else if (strncmp(p, "TYPE:", 5) == 0)
          {
             p   += 5;
@@ -252,11 +252,11 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             p += len;
          }
          else if (strncmp(p, "FRAMES:", 7) == 0)
-            md->frames = strtoul(p + 7, &p, 10);
+            md->frames = (uint32_t)strtoul(p + 7, &p, 10);
          else if (strncmp(p, "PAD:", 4) == 0)
-            md->pad = strtoul(p + 4, &p, 10);
+            md->pad = (uint32_t)strtoul(p + 4, &p, 10);
          else if (strncmp(p, "PREGAP:", 7) == 0)
-            md->pregap = strtoul(p + 7, &p, 10);
+            md->pregap = (uint32_t)strtoul(p + 7, &p, 10);
          else if (strncmp(p, "PGTYPE:", 7) == 0)
          {
             p   += 7;
@@ -282,7 +282,7 @@ chdstream_get_meta(chd_file *chd, int idx, metadata_t *md)
             p += len;
          }
          else if (strncmp(p, "POSTGAP:", 8) == 0)
-            md->postgap = strtoul(p + 8, &p, 10);
+            md->postgap = (uint32_t)strtoul(p + 8, &p, 10);
          else
             p++;
       }
