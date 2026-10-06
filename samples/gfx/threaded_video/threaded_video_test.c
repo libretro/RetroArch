@@ -6045,6 +6045,9 @@ static void lane_hw_ring_sync(void)
    hwring_poke.hw_ring_install = hwring_install;
    set_poke(thr, &hwring_poke);
    on_clear(hwring_on_clear);
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
    ring(2);
    s0 = hwlane_core_call("harness_core_hw_ring_sent");
    hwlane_pump(HWRING_SLOW_FRAMES);
@@ -6079,6 +6082,23 @@ static void lane_hw_ring_sync(void)
    CHECK(hwring_overlaps == 0,
          "hw ring sync: the core cleared the image being drawn %u time(s)",
          hwring_overlaps);
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int drops   = gfx_instrument_get(GFX_INSTR_HW_DROP);
+      int submits = gfx_instrument_get(GFX_INSTR_HW_DROP_SUBMIT);
+      /* Every frame handed over behind a semaphore and never drawn was
+       * dropped, and a drop costs the core's thread one queue
+       * submission: the semaphore wait and the slot's fence together. */
+      CHECK(drops == (int)(replaced + hw_replaced),
+            "hw ring sync: %u frames replaced but %d dropped on the ring",
+            replaced + hw_replaced, drops);
+      CHECK(submits == drops,
+            "hw ring sync: %d drops cost %d queue submissions, not one each",
+            drops, submits);
+      fprintf(stderr, "[baseline] hw ring sync: %d drops, %d queue submissions\n",
+            drops, submits);
+   }
+#endif
 
    ring(0);
    hwlane_pump(5);

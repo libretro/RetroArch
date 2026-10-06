@@ -97,6 +97,9 @@ enum gfx_instrument_counter
    GFX_INSTR_FRAME_TEX_CREATE,  /* frame textures (re)created       */
    GFX_INSTR_FRAME_COPY_HOST,   /* frames copied by the CPU          */
    GFX_INSTR_FRAME_LENT_WINDOW, /* frames read straight out of a loan*/
+   /* The threaded wrapper's hardware ring (Vulkan) */
+   GFX_INSTR_HW_DROP,           /* frames taken back or replaced     */
+   GFX_INSTR_HW_DROP_SUBMIT,    /* ..queue submissions they cost     */
 
    GFX_INSTR_COUNT
 };

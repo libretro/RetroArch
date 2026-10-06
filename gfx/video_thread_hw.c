@@ -24,6 +24,7 @@
 #include "video_thread_wrapper.h"
 #include "video_thread_hw.h"
 #include "video_thread_hw_fence.h"
+#include "gfx_instrument.h"
 #include "../configuration.h"
 #include "../verbosity.h"
 
@@ -55,8 +56,9 @@ typedef struct
     * copy: the core's own struct may be rewritten for its next frame
     * while the video thread is still driving the driver with this one. */
    struct retro_vulkan_image image;
-   VkSemaphore     *semaphores;
-   VkCommandBuffer *cmd;
+   VkSemaphore          *semaphores;
+   VkPipelineStageFlags *wait_stages;
+   VkCommandBuffer      *cmd;
    unsigned         num_semaphores;
    unsigned         cap_semaphores;
    unsigned         num_cmd;
@@ -211,6 +213,7 @@ static void hw_set_image(void *handle,
 {
    hw_ring_t *ring = hw_ring_of(handle);
    hw_slot_t *s;
+   uint32_t i;
    if (!ring)
       return;
    s = &ring->slot[ring->index];
@@ -235,16 +238,26 @@ static void hw_set_image(void *handle,
    {
       VkSemaphore *grown = (VkSemaphore*)realloc(s->semaphores,
             sizeof(*grown) * num_semaphores);
-      if (!grown)
+      VkPipelineStageFlags *stages;
+      if (grown)
+         s->semaphores = grown;
+      stages = (VkPipelineStageFlags*)realloc(s->wait_stages,
+            sizeof(*stages) * num_semaphores);
+      if (stages)
+         s->wait_stages = stages;
+      if (!grown || !stages)
       {
          s->num_semaphores = 0;
          return;
       }
-      s->semaphores     = grown;
       s->cap_semaphores = num_semaphores;
    }
    if (num_semaphores)
+   {
       memcpy(s->semaphores, semaphores, sizeof(*semaphores) * num_semaphores);
+      for (i = 0; i < num_semaphores; i++)
+         s->wait_stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   }
    s->num_semaphores   = num_semaphores;
    s->src_queue_family = src_queue_family;
 }
@@ -1054,20 +1067,53 @@ void video_thread_hw_after_frame(thread_video_t *thr, int hw_slot)
          HW_RING_WAIT_FOREVER);
 }
 
+#ifdef HAVE_VULKAN
+/* The arm's signal for a dropped frame: the one submission that waits
+ * the frame's semaphores also carries the slot's fence. */
+typedef struct
+{
+   thread_video_t *thr;
+   hw_slot_t      *s;
+} hw_drop_arm_t;
+
+static void hw_drop_signal(void *data, void *fence)
+{
+   hw_drop_arm_t *d = (hw_drop_arm_t*)data;
+   hw_ring_t *ring  = (hw_ring_t*)d->thr->frame.hw_ring;
+   VkSubmitInfo info;
+   memset(&info, 0, sizeof(info));
+   info.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   info.waitSemaphoreCount = d->s->num_semaphores;
+   info.pWaitSemaphores    = d->s->semaphores;
+   info.pWaitDstStageMask  = d->s->wait_stages;
+   hw_lock_queue(d->thr);
+   ring->queue_submit(ring->iface.vk.queue, 1, &info,
+         (VkFence)(uintptr_t)fence);
+   hw_unlock_queue(d->thr);
+   GFX_INSTR_INC(GFX_INSTR_HW_DROP_SUBMIT);
+}
+
+static bool hw_drop_wait(void *data, void *fence, unsigned timeout_us)
+{
+   hw_drop_arm_t *d = (hw_drop_arm_t*)data;
+   return d->thr->poke->hw_ring_fence_wait(d->thr->driver_data, fence,
+         timeout_us);
+}
+#endif
+
 /* A binary semaphore the core signalled must be waited before the core
  * signals it again, and a replaced frame is never drawn: its semaphores
- * are waited here, on the queue, as a core would. The waits may sit
- * behind the video thread's frame on the queue, so the slot's fence is
- * armed after them, and the core's wait on the slot covers them before
- * it reuses or destroys the semaphores. The video thread does not arm
- * the slot meanwhile: a frame it never claimed is not the one it
- * presented last. */
+ * are waited here, on the queue, as a core would, by the submission
+ * that arms the slot's fence. The core's wait on the slot then covers
+ * them before it reuses or destroys the semaphores. The video thread
+ * does not arm the slot meanwhile: a frame it never claimed is not the
+ * one it presented last. */
 void video_thread_hw_drop(thread_video_t *thr, int hw_slot)
 {
 #ifdef HAVE_VULKAN
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    hw_slot_t *s;
-   unsigned i;
+   hw_drop_arm_t d;
    if (     !ring || ring->api != HW_API_VULKAN || !ring->queue_submit
          || hw_slot < 0 || hw_slot >= VIDEO_THREAD_HW_RING)
       return;
@@ -1080,26 +1126,15 @@ void video_thread_hw_drop(thread_video_t *thr, int hw_slot)
       s->num_cmd        = 0;
       return;
    }
-   hw_lock_queue(thr);
-   for (i = 0; i < s->num_semaphores; i++)
-   {
-      VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-      VkSubmitInfo info;
-      memset(&info, 0, sizeof(info));
-      info.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-      info.waitSemaphoreCount = 1;
-      info.pWaitSemaphores    = &s->semaphores[i];
-      info.pWaitDstStageMask  = &stage;
-      ring->queue_submit(ring->iface.vk.queue, 1, &info, VK_NULL_HANDLE);
-   }
-   hw_unlock_queue(thr);
-   s->num_semaphores = 0;
+   GFX_INSTR_INC(GFX_INSTR_HW_DROP);
    /* An earlier arming is waited out first, in slices where that
     * matters, so the arm below finds none to wait itself. */
    hw_wait_slot(ring, (unsigned)hw_slot);
-   hw_fence_arm(&s->fence, thr->poke->hw_ring_fence_signal,
-         thr->poke->hw_ring_fence_wait, thr->driver_data,
+   d.thr = thr;
+   d.s   = s;
+   hw_fence_arm(&s->fence, hw_drop_signal, hw_drop_wait, &d,
          HW_RING_WAIT_FOREVER);
+   s->num_semaphores = 0;
 #else
    (void)thr;
    (void)hw_slot;
@@ -1176,6 +1211,7 @@ void video_thread_hw_free(thread_video_t *thr)
       }
 #ifdef HAVE_VULKAN
       free(s->semaphores);
+      free(s->wait_stages);
       free(s->cmd);
 #endif
 #ifdef HAVE_D3D12
