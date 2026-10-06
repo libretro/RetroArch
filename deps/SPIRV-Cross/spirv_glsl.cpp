@@ -27,7 +27,6 @@
 #include <algorithm>
 #include <assert.h>
 #include <cmath>
-#include <limits>
 #include <locale.h>
 #include <utility>
 
@@ -5434,28 +5433,50 @@ string CompilerGLSL::constant_expression(const SPIRConstant &c, bool inside_bloc
 #pragma warning(disable : 4996)
 #endif
 
+/* Classification of an IEEE encoding read from its integer bits, so that
+ * the result does not depend on the floating-point mode the compiler was
+ * given (fast-math folds isnan/isinf and comparisons against infinity). */
+enum fp_class
+{
+	FP_CLASS_FINITE = 0,
+	FP_CLASS_POS_INF,
+	FP_CLASS_NEG_INF,
+	FP_CLASS_NAN
+};
+
+static enum fp_class fp_classify_bits(uint64_t bits, unsigned exp_bits, unsigned mant_bits)
+{
+	uint64_t exp_mask  = (((uint64_t)1 << exp_bits) - 1) << mant_bits;
+	uint64_t mant_mask = ((uint64_t)1 << mant_bits) - 1;
+	uint64_t sign_mask = (uint64_t)1 << (exp_bits + mant_bits);
+	if ((bits & exp_mask) != exp_mask)
+		return FP_CLASS_FINITE;
+	if (bits & mant_mask)
+		return FP_CLASS_NAN;
+	return (bits & sign_mask) ? FP_CLASS_NEG_INF : FP_CLASS_POS_INF;
+}
+
 string CompilerGLSL::convert_half_to_string(const SPIRConstant &c, uint32_t col, uint32_t row)
 {
 	string res;
 	float float_value = c.scalar_f16(col, row);
+	enum fp_class cls = fp_classify_bits(c.scalar_u16(col, row), 5, 10);
 
 	// There is no literal "hf" in GL_NV_gpu_shader5, so to avoid lots
 	// of complicated workarounds, just value-cast to the half type always.
-	if (std::isnan(float_value) || std::isinf(float_value))
+	if (cls != FP_CLASS_FINITE)
 	{
 		SPIRType type;
 		type.basetype = SPIRType::Half;
 		type.vecsize = 1;
 		type.columns = 1;
 
-		if (float_value == numeric_limits<float>::infinity())
+		if (cls == FP_CLASS_POS_INF)
 			res = join(type_to_glsl(type), "(1.0 / 0.0)");
-		else if (float_value == -numeric_limits<float>::infinity())
+		else if (cls == FP_CLASS_NEG_INF)
 			res = join(type_to_glsl(type), "(-1.0 / 0.0)");
-		else if (std::isnan(float_value))
-			res = join(type_to_glsl(type), "(0.0 / 0.0)");
 		else
-			SPIRV_CROSS_THROW("Cannot represent non-finite floating point constant.");
+			res = join(type_to_glsl(type), "(0.0 / 0.0)");
 	}
 	else
 	{
@@ -5473,8 +5494,9 @@ string CompilerGLSL::convert_float_to_string(const SPIRConstant &c, uint32_t col
 {
 	string res;
 	float float_value = c.scalar_f32(col, row);
+	enum fp_class cls = fp_classify_bits(c.scalar(col, row), 8, 23);
 
-	if (std::isnan(float_value) || std::isinf(float_value))
+	if (cls != FP_CLASS_FINITE)
 	{
 		// Use special representation.
 		if (!is_legacy())
@@ -5496,37 +5518,35 @@ string CompilerGLSL::convert_float_to_string(const SPIRConstant &c, uint32_t col
 #endif
 
 			const char *comment = "inf";
-			if (float_value == -numeric_limits<float>::infinity())
+			if (cls == FP_CLASS_NEG_INF)
 				comment = "-inf";
-			else if (std::isnan(float_value))
+			else if (cls == FP_CLASS_NAN)
 				comment = "nan";
 			res = join(bitcast_glsl_op(out_type, in_type), "(", print_buffer, " /* ", comment, " */)");
 		}
 		else
 		{
-			if (float_value == numeric_limits<float>::infinity())
+			if (cls == FP_CLASS_POS_INF)
 			{
 				if (backend.float_literal_suffix)
 					res = "(1.0f / 0.0f)";
 				else
 					res = "(1.0 / 0.0)";
 			}
-			else if (float_value == -numeric_limits<float>::infinity())
+			else if (cls == FP_CLASS_NEG_INF)
 			{
 				if (backend.float_literal_suffix)
 					res = "(-1.0f / 0.0f)";
 				else
 					res = "(-1.0 / 0.0)";
 			}
-			else if (std::isnan(float_value))
+			else
 			{
 				if (backend.float_literal_suffix)
 					res = "(0.0f / 0.0f)";
 				else
 					res = "(0.0 / 0.0)";
 			}
-			else
-				SPIRV_CROSS_THROW("Cannot represent non-finite floating point constant.");
 		}
 	}
 	else
@@ -5543,8 +5563,9 @@ std::string CompilerGLSL::convert_double_to_string(const SPIRConstant &c, uint32
 {
 	string res;
 	double double_value = c.scalar_f64(col, row);
+	enum fp_class cls = fp_classify_bits(c.scalar_u64(col, row), 11, 52);
 
-	if (std::isnan(double_value) || std::isinf(double_value))
+	if (cls != FP_CLASS_FINITE)
 	{
 		// Use special representation.
 		if (!is_legacy())
@@ -5574,9 +5595,9 @@ std::string CompilerGLSL::convert_double_to_string(const SPIRConstant &c, uint32
 #endif
 
 			const char *comment = "inf";
-			if (double_value == -numeric_limits<double>::infinity())
+			if (cls == FP_CLASS_NEG_INF)
 				comment = "-inf";
-			else if (std::isnan(double_value))
+			else if (cls == FP_CLASS_NAN)
 				comment = "nan";
 			res = join(bitcast_glsl_op(out_type, in_type), "(", print_buffer, " /* ", comment, " */)");
 		}
@@ -5587,29 +5608,27 @@ std::string CompilerGLSL::convert_double_to_string(const SPIRConstant &c, uint32
 			if (options.version < 400)
 				require_extension_internal("GL_ARB_gpu_shader_fp64");
 
-			if (double_value == numeric_limits<double>::infinity())
+			if (cls == FP_CLASS_POS_INF)
 			{
 				if (backend.double_literal_suffix)
 					res = "(1.0lf / 0.0lf)";
 				else
 					res = "(1.0 / 0.0)";
 			}
-			else if (double_value == -numeric_limits<double>::infinity())
+			else if (cls == FP_CLASS_NEG_INF)
 			{
 				if (backend.double_literal_suffix)
 					res = "(-1.0lf / 0.0lf)";
 				else
 					res = "(-1.0 / 0.0)";
 			}
-			else if (std::isnan(double_value))
+			else
 			{
 				if (backend.double_literal_suffix)
 					res = "(0.0lf / 0.0lf)";
 				else
 					res = "(0.0 / 0.0)";
 			}
-			else
-				SPIRV_CROSS_THROW("Cannot represent non-finite floating point constant.");
 		}
 	}
 	else
