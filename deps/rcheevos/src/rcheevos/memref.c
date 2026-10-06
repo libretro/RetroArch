@@ -2,7 +2,6 @@
 
 #include <stdlib.h> /* malloc/realloc */
 #include <string.h> /* memcpy */
-#include <math.h>   /* INFINITY/NAN */
 
 #define MEMREF_PLACEHOLDER_ADDRESS 0xFFFFFFFF
 
@@ -323,6 +322,12 @@ int rc_parse_memref(const char** memaddr, uint8_t* size, uint32_t* address) {
   return RC_OK;
 }
 
+static float rc_float_from_bits(uint32_t bits) {
+  float result;
+  memcpy(&result, &bits, sizeof(result));
+  return result;
+}
+
 static float rc_build_float(uint32_t mantissa_bits, int32_t exponent, int sign) {
   /* 32-bit float has a 23-bit mantissa and 8-bit exponent */
   const uint32_t implied_bit = 1 << 23;
@@ -330,23 +335,13 @@ static float rc_build_float(uint32_t mantissa_bits, int32_t exponent, int sign) 
   double dbl = ((double)mantissa) / ((double)implied_bit);
 
   if (exponent > 127) {
-    /* exponent above 127 is a special number */
-    if (mantissa_bits == 0) {
-      /* infinity */
-#ifdef INFINITY /* INFINITY and NAN #defines require C99 */
-      dbl = (double)INFINITY;
-#else
-      dbl = -log(0.0);
-#endif
-    }
-    else {
-      /* NaN */
-#ifdef NAN
-      dbl = NAN;
-#else
-      dbl = -sqrt(-1);
-#endif
-    }
+    /* exponent above 127 is a special number: infinity when the mantissa is
+     * zero, NaN otherwise. Assemble it from the IEEE encoding so the result
+     * does not depend on the compiler's floating-point mode. */
+    uint32_t bits = 0x7F800000U | (mantissa_bits == 0 ? 0 : 0x00400000U);
+    if (sign)
+      bits |= 0x80000000U;
+    return rc_float_from_bits(bits);
   }
   else if (exponent > 0) {
     /* exponent from 1 to 127 is a number greater than 1 */
