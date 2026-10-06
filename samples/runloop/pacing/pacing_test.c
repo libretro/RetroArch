@@ -322,6 +322,98 @@ static void test_margin(void)
       margin = runloop_pace_margin_update(margin, 250 + (i & 1) * 50, period);
    check(margin >= 250 && margin <= 300,
          "a 250-300 us overshoot settles the margin between them");
+   /* Short periods may follow the timer past a quarter, never past
+    * the period itself. */
+   check(runloop_pace_margin_update(0, 100000, 4166) == 2000,
+         "240 Hz: the margin follows the timer to the floor");
+   check(runloop_pace_margin_update(0, 100000, 555) == 555,
+         "a period under the floor caps the margin at the period");
+}
+
+/* The limiter as runloop_iterate() runs it, over a sleep that lands
+ * @overshoot past what it was asked for - a coarse OS timer. Returns
+ * the achieved frames per second of loop time. */
+static double limiter_rate(retro_time_t period_us, retro_time_t work,
+      retro_time_t overshoot, unsigned frames)
+{
+   int64_t      anchor = 0;
+   retro_time_t margin = 0;
+   retro_time_t now    = 0;
+   unsigned     i;
+
+   for (i = 0; i < frames; i++)
+   {
+      retro_time_t to_sleep;
+      now     += work;
+      to_sleep = runloop_pace_schedule(&anchor, (int64_t)period_us * 1000,
+            now);
+      if (to_sleep > 0)
+      {
+         const retro_time_t deadline = anchor / 1000;
+         if (to_sleep > margin)
+         {
+            const retro_time_t asked_until = deadline - margin;
+            now    = asked_until + overshoot;
+            margin = runloop_pace_margin_update(margin,
+                  now - asked_until, period_us);
+         }
+         if (now < deadline)
+            now = deadline;
+      }
+   }
+   return (double)frames * 1000000.0 / (double)now;
+}
+
+static void test_fastforward_ratios(void)
+{
+   /* 60 fps content, a core that runs a frame in 50 us, and an OS
+    * timer from fine to the 2 ms a coarse one lands past its ask. At
+    * 2 ms the margin held to a quarter period slept every 30x frame
+    * past its slot, and 30x ran slower than 15x. */
+   const double fps = 60.0;
+   retro_time_t overshoot;
+
+   for (overshoot = 250; overshoot <= 2000; overshoot += 250)
+   {
+      double r15 = limiter_rate((retro_time_t)(1000000.0 / (fps * 15.0)),
+            50, overshoot, 6000);
+      double r30 = limiter_rate((retro_time_t)(1000000.0 / (fps * 30.0)),
+            50, overshoot, 6000);
+      double r60 = limiter_rate((retro_time_t)(1000000.0 / (fps * 60.0)),
+            50, overshoot, 6000);
+      char msg[160];
+
+      snprintf(msg, sizeof(msg), "%u us timer: 15x/30x/60x at %.0f/%.0f/%.0f fps,"
+            " wanted 900/1800/3600", (unsigned)overshoot, r15, r30, r60);
+      check(   r15 > fps * 15.0 * 0.97
+            && r30 > fps * 30.0 * 0.97
+            && r60 > fps * 60.0 * 0.97, msg);
+   }
+   /* And the ordinary frame still sleeps most of its period. */
+   check(limiter_rate(16683, 2000, 2000, 600) > 59.0,
+         "60 Hz with a 2 ms timer keeps 60");
+   printf("   fast-forward: 15x, 30x and 60x reach their rates on a "
+          "0.25-2 ms timer\n");
+}
+
+/* The video driver's blocking state, as every caller hands it over:
+ * vsync blocks only alone - never with Scanline Sync, a content rate
+ * vsync cannot hold, or fast-forward. */
+static void test_vsync_blocks(void)
+{
+   unsigned m;
+   for (m = 0; m < 16; m++)
+   {
+      bool vsync = (m & 1) != 0, scan = (m & 2) != 0;
+      bool force = (m & 4) != 0, ff   = (m & 8) != 0;
+      char msg[96];
+      snprintf(msg, sizeof(msg), "vsync %d scanline %d force %d ff %d",
+            vsync, scan, force, ff);
+      check(runloop_vsync_blocks(vsync, scan, force, ff)
+            == (vsync && !scan && !force && !ff), msg);
+   }
+   check(!runloop_vsync_blocks(true, true, false, false),
+         "Scanline Sync on: the swap never blocks as well (judder)");
 }
 
 
@@ -606,11 +698,22 @@ static void test_menu_table(void)
    check(runloop_pace_decide(menu_facts(AT_DISPLAY, 1, 1, 0, 0, 0)
             | PACE_FACT_WRAPPER) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER),
          "display rate: VSync+Audio, threaded -> VSync+Timer");
-   /* The menu's refresh-rate timer stands aside only for vsync,
-    * focus and display pacing, not for scanline: two clocks. A fact,
-    * not an endorsement. */
-   MENU_ROW(AT_DISPLAY, 0, 0, 0, 0, 1, RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER,
-         "display rate: Scanline -> Scanline+Timer");
+   /* Scanline Sync holds the focused menu as vsync does: the frame
+    * limit the menu path leaves standing then is whatever fast-forward
+    * last set, and a timer on it ran the menu at the fast-forward
+    * ratio - below 1.0x, slower than the display. Between locks the
+    * gap limiter bridges at the display's period. */
+   MENU_ROW(AT_DISPLAY, 0, 0, 0, 0, 1, RUNLOOP_PACE_SCANLINE,
+         "display rate: Scanline -> Scanline (no fast-forward-period timer)");
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 0, 0, 0, 0, 1)
+            & ~PACE_FACT_SCANLINE_LOCKED) == RUNLOOP_PACE_TIMER,
+         "display rate: Scanline between locks -> Timer (the gap limiter, "
+         "at the display's period)");
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 0, 0, 0, 0, 1)
+            & ~PACE_FACT_FOCUSED)
+            == (RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER),
+         "display rate: Scanline, unfocused -> Scanline+Timer (the menu "
+         "path sets the display's period there)");
 
    /* 'Content Rate': held to the content's period by audio when it
     * blocks, by the timer when it does not - one or the other, never
@@ -643,6 +746,8 @@ int main(void)
    test_sample_filter();
    test_schedule();
    test_margin();
+   test_fastforward_ratios();
+   test_vsync_blocks();
    test_swap_interval();
    test_sync_plan();
    test_menu_table();

@@ -1599,19 +1599,15 @@ void driver_set_nonblock_state(void)
    bool audio_driver_active    = (AUDIO_FLAGS_GET(audio_st)  & AUDIO_FLAG_ACTIVE) ? true : false;
    bool runloop_force_nonblock = (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) ? true : false;
 
-   /* Only apply non-block-state for video if we're using vsync. */
    if (video_driver_active && video_st->data)
    {
       if (video_st->current_video->set_nonblock_state)
-      {
-         bool video_nonblock        = enable;
-         if (!video_vsync || runloop_force_nonblock)
-            video_nonblock = true;
          video_st->current_video->set_nonblock_state(video_st->data,
-               video_nonblock,
+               !runloop_vsync_blocks(video_vsync,
+                  settings->bools.video_scanline_sync,
+                  runloop_force_nonblock, enable),
                video_driver_test_all_flags(GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
                && adaptive_vsync, swap_interval);
-      }
    }
 
    if (audio_driver_active && audio_st->context_audio_data)
@@ -4941,10 +4937,18 @@ bool command_event(enum event_command cmd, void *data)
                   settings->uints.video_swap_interval);
             video_driver_state_t
                *video_st              = video_state_get_ptr();
+            input_driver_state_t
+               *input_st              = input_state_get_ptr();
 
-            if (video_st->current_video->set_nonblock_state)
+            if (     video_st->data
+                  && video_st->current_video
+                  && video_st->current_video->set_nonblock_state)
                video_st->current_video->set_nonblock_state(
-                     video_st->data, false,
+                     video_st->data,
+                     !runloop_vsync_blocks(settings->bools.video_vsync,
+                        settings->bools.video_scanline_sync,
+                        (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) != 0,
+                        (input_st->flags & INP_FLAG_NONBLOCKING) != 0),
                      video_driver_test_all_flags(
                         GFX_CTX_FLAGS_ADAPTIVE_VSYNC)
                      && adaptive_vsync, swap_interval);

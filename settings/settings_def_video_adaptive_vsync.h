@@ -6,6 +6,6 @@
 
 S_BOOL(video_adaptive_vsync, VIDEO_ADAPTIVE_VSYNC,
       "video_adaptive_vsync",
-      DEFAULT_ADAPTIVE_VSYNC, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      DEFAULT_ADAPTIVE_VSYNC, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
       "Adaptive VSync",
       "VSync is enabled until performance falls below the target refresh rate. Can minimize stuttering when performance falls below real time, and be more energy efficient. Not compatible with 'Frame Delay'.")

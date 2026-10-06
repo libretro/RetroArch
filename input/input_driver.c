@@ -12984,17 +12984,15 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 
                   /* Past the threshold one way or the other: the
                    * direction of the D-pad, or in a playlist the right
-                   * stick's own bind for that way. The four were
-                   * written out, each dividing the value to compare
-                   * it; the limits are the same comparison's, found
-                   * once (input_stick_limits()). */
+                   * stick's own bind for that way. X maps to LEFT/RIGHT
+                   * (6/7), Y to UP/DOWN (4/5). */
                   if (ret <= stick_below || ret >= stick_above)
                   {
                      unsigned neg = (ret <= stick_below) ? 1 : 0;
                      BIT256_SET_PTR(current_bits, playlist
-                           ? INPUT_ANALOG_AXIS_BIND(
+                           ? (unsigned)INPUT_ANALOG_AXIS_BIND(
                                  RETRO_DEVICE_INDEX_ANALOG_RIGHT, a) + neg
-                           : (RETRO_DEVICE_ID_JOYPAD_LEFT - 2 * a) + !neg);
+                           : (unsigned)(RETRO_DEVICE_ID_JOYPAD_LEFT - 2 * a) + !neg);
                   }
                }
             }

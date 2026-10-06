@@ -9510,6 +9510,12 @@ static void general_write_handler(rarch_setting_t *setting)
          video_shader_toggle(settings, true);
 #endif
          break;
+      case MENU_ENUM_LABEL_VIDEO_SCANLINE_SYNC:
+         /* Lock from fresh output lines rather than whatever the last
+          * time it was on left behind */
+         if (*setting->value.target.boolean)
+            video_driver_scanline_init();
+         break;
       case MENU_ENUM_LABEL_VIDEO_THREADED:
          if (*setting->value.target.boolean)
             task_queue_set_threaded();

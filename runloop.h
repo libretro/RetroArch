@@ -458,6 +458,17 @@ static INLINE retro_time_t runloop_content_frame_time_us(float core_hz)
    return period;
 }
 
+/* Whether the video driver presents with vsync blocking. Scanline
+ * Sync does its own waiting on the beam and runs the swap unsynced, so
+ * it and vsync never block together; a content rate vsync cannot hold
+ * (force_nonblock) and fast-forward (nonblocking) run unsynced too.
+ * Every place that hands the driver its blocking state asks this. */
+static INLINE bool runloop_vsync_blocks(bool vsync, bool scanline_sync,
+      bool force_nonblock, bool nonblocking)
+{
+   return vsync && !scanline_sync && !force_nonblock && !nonblocking;
+}
+
 /* Whether the frame limiter should hold the loop to the display rate
  * because nothing else is: an empty pace record means no vsync, no
  * audio, no scanline lock, and no fast-forward limit to fall back on.
@@ -519,23 +530,34 @@ static INLINE retro_time_t runloop_pace_schedule(int64_t *anchor_ns,
    return 0;
 }
 
+/* The longest sleep overshoot the margin follows whatever the period:
+ * the coarsest timer a supported OS sleeps on, with headroom. */
+#define RUNLOOP_PACE_MARGIN_FLOOR_US 2000
+
 /* The gap limiter's sleep margin: how early the sleep is asked to
  * return, so the remainder can be spun to the deadline. It tracks the
  * sleep's observed overshoot - up at once, since one late sleep is a
  * frame late; down by a sixteenth a frame, so a single quiet sleep does
- * not unwind it - and never past a quarter of the period, so the spin
- * stays a fraction of the frame. */
+ * not unwind it. It is held to a quarter of the period, so the spin
+ * stays a fraction of the frame, except that it may follow the timer
+ * up to RUNLOOP_PACE_MARGIN_FLOOR_US, and at most a whole period: a
+ * period shorter than the OS can sleep - fast-forward at high ratios -
+ * is spun rather than slept past. */
 static INLINE retro_time_t runloop_pace_margin_update(retro_time_t margin,
       retro_time_t overshoot, retro_time_t period)
 {
+   retro_time_t cap = period / 4;
+   if (cap < RUNLOOP_PACE_MARGIN_FLOOR_US)
+      cap = (period < RUNLOOP_PACE_MARGIN_FLOOR_US)
+         ? period : RUNLOOP_PACE_MARGIN_FLOOR_US;
    if (overshoot < 0)
       overshoot = 0;
    if (overshoot > margin)
       margin = overshoot;
    else
       margin -= (margin - overshoot) / 16;
-   if (margin > period / 4)
-      margin = period / 4;
+   if (margin > cap)
+      margin = cap;
    return margin;
 }
 
@@ -722,7 +744,8 @@ static INLINE unsigned runloop_pace_sources(runloop_pace_facts_t f)
                     && !display_paces)
                 || (!display_paces && !menu_content
                     && (f & PACE_FACT_MENU_ALIVE)
-                    && (   !(f & PACE_FACT_VSYNC) || !(f & PACE_FACT_FOCUSED)
+                    && (   !(f & (PACE_FACT_VSYNC | PACE_FACT_SCANLINE_SYNC))
+                        || !(f & PACE_FACT_FOCUSED)
                         || (   (f & PACE_FACT_MENU_DISPLAY_RATE)
                             && (f & PACE_FACT_WRAPPER))))
                 || (!display_paces && (f & PACE_FACT_PAUSED))))

@@ -6235,9 +6235,11 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    video.dims                        = VIDEO_SCALE_PACK(width, height);
    video.fullscreen                  = settings->bools.video_fullscreen
          || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_FORCE_FULLSCREEN);
-   video.vsync                       = settings->bools.video_vsync
-         && !settings->bools.video_scanline_sync
-         && (!(runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK));
+   video.vsync                       = runloop_vsync_blocks(
+         settings->bools.video_vsync,
+         settings->bools.video_scanline_sync,
+         (runloop_st->flags & RUNLOOP_FLAG_FORCE_NONBLOCK) != 0,
+         false);
    video.force_aspect                = settings->bools.video_force_aspect;
    video.swap_interval               = runloop_get_video_swap_interval(
          settings->uints.video_swap_interval);

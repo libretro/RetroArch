@@ -29,7 +29,7 @@
 
 S_BOOL(video_vsync, VIDEO_VSYNC,
       "video_vsync",
-      DEFAULT_VSYNC, SD_FLAG_NONE, SDESC_FLG_REFRESH, CMD_EVENT_NONE,
+      DEFAULT_VSYNC, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
       "Vertical Sync (VSync)",
       "Synchronize the output video of the graphics card to the refresh rate of the screen. Recommended.")
 S_UINT(video_swap_interval, VIDEO_SWAP_INTERVAL,
@@ -89,7 +89,7 @@ S_UINT_H(video_hard_sync_frames, VIDEO_HARD_SYNC_FRAMES,
       "Set how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.")
 S_BOOL(video_scanline_sync, VIDEO_SCANLINE_SYNC,
       "video_scanline_sync",
-      DEFAULT_SCANLINE_SYNC, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      DEFAULT_SCANLINE_SYNC, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_VIDEO_SET_BLOCKING_STATE,
       "Scanline Sync",
       "Synchronize video presentation to scanline position prediction based on core time. Requirements: VSync off, Frame Delay off, display Hz near 1x core FPS and GPU at max clocks.")
 S_UINT(video_scanline_sync_offset, VIDEO_SCANLINE_SYNC_OFFSET,

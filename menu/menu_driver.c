@@ -7169,6 +7169,12 @@ void retroarch_menu_running_finished(bool quit)
 
    if (!quit)
    {
+      /* The menu paces itself through the frame limit; running
+       * content gets its fast-forward limit back. Paused content keeps
+       * the display-rate limit the pause set, and unpausing restores it. */
+      if (!(runloop_st->flags & RUNLOOP_FLAG_PAUSED))
+         command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
+
 #ifdef HAVE_AUDIOMIXER
       /* Stop menu background music before we exit the menu */
       if (     settings
