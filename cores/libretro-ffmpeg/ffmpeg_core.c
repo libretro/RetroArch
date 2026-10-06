@@ -797,6 +797,8 @@ typedef struct ffmpeg_core_ctx
     * whole, while the main thread waits for the seek and touches
     * nothing. */
    retro_spsc_t audio_decode_fifo;
+   /* One run's worth of audio drained from the ring, sized with it. */
+   int16_t *run_audio_buffer;
    sthread_t *decode_thread_handle;
    retro_atomic_int_t decode_thread_dead;
    /* The decode thread can not go on: audio_starved holds the bytes it
@@ -2424,12 +2426,7 @@ static int seek_adjust(int target)
 void CORE_PREFIX(retro_run)(void)
 {
    double min_pts;
-   /* A clip with no audio stream has a sample rate of zero, and a
-    * zero-length array is not an array: the declaration alone is
-    * undefined, before anything reads it. One element costs nothing
-    * and is never used, since to_read_frames comes out of the same
-    * rate and is zero too. */
-   int16_t audio_buffer[(MEDIA_STR.sample_rate / 20) + 1];
+   int16_t *audio_buffer        = g_ctx.run_audio_buffer;
    bool left, right, up, down, l1, l2, r1, r2;
    int16_t ret                  = 0;
    size_t to_read_frames        = 0;
@@ -2942,7 +2939,8 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
          if (pix_fmts != NULL)
          {
             /* Look if codec can supports the pix format of the device */
-            for (size_t j = 0; pix_fmts[j] != AV_PIX_FMT_NONE; j++)
+            size_t j;
+            for (j = 0; pix_fmts[j] != AV_PIX_FMT_NONE; j++)
                if (pix_fmts[j] == device_pix_fmt)
                {
                   decoder_pix_fmt = pix_fmts[j];
@@ -3052,8 +3050,10 @@ static enum AVPixelFormat select_decoder(AVCodecContext *ctx,
 static enum AVPixelFormat get_format(AVCodecContext *ctx,
                                      const enum AVPixelFormat *pix_fmts)
 {
+   size_t i;
+
    /* Look if we can reuse the current decoder */
-   for (size_t i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
+   for (i = 0; pix_fmts[i] != AV_PIX_FMT_NONE; i++)
    {
       if (pix_fmts[i] == g_ctx.hw_pix_fmt)
          return g_ctx.hw_pix_fmt;
@@ -3721,7 +3721,7 @@ static void decode_thread(void *data)
 {
    unsigned i;
    bool eof                = false;
-   struct SwrContext *swr[(AUDIO_STREAMS_NUM_STR > 0) ? AUDIO_STREAMS_NUM_STR : 1];
+   struct SwrContext *swr[MAX_STREAMS];
    AVFrame *aud_frame      = NULL;
    int16_t *audio_buffer   = NULL;
    size_t audio_buffer_cap = 0;
@@ -4109,6 +4109,8 @@ void CORE_PREFIX(retro_unload_game)(void)
    if (g_ctx.audio_decode_fifo_init)
       retro_spsc_free(&AUDIO_DECODE_FIFO_STR);
    g_ctx.audio_decode_fifo_init = false;
+   free(g_ctx.run_audio_buffer);
+   g_ctx.run_audio_buffer = NULL;
 
 #ifdef HAVE_SSA
    ASS_LOCK_STR = NULL;
@@ -4285,6 +4287,10 @@ bool CORE_PREFIX(retro_load_game)(const struct retro_game_info *info)
       g_ctx.audio_decode_fifo_init = retro_spsc_init(&AUDIO_DECODE_FIFO_STR,
          MEDIA_STR.sample_rate * sizeof(int16_t) * 2 * 2
       );
+      g_ctx.run_audio_buffer = (int16_t*)malloc(
+         ((MEDIA_STR.sample_rate / 20) + 1) * sizeof(int16_t));
+      if (!g_ctx.run_audio_buffer)
+         goto error;
    }
 
    if (!g_ctx.ecs_inited)
