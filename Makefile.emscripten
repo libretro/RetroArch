@@ -56,6 +56,7 @@ HAVE_7ZIP = 1
 HAVE_RZSTD = 1
 HAVE_BSV_MOVIE ?= 1
 HAVE_CHD ?= 0
+HAVE_RCHD = 1
 HAVE_NETPLAYDISCOVERY ?= 0
 
 # enables pthreads, requires special headers on the web server:
