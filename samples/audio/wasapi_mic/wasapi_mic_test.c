@@ -124,6 +124,38 @@ int main(void)
    }
    fifo_free(mic.buffer);
 
+   /* An endpoint whose mix format is stereo: the engine has no mono
+    * shared stream to offer, only its converter. The microphone opens
+    * shared and mono all the same, and leaves exclusive mode alone. */
+   {
+      bool exclusive      = false;
+      bool float_fmt      = false;
+      unsigned rate       = 48000;
+      unsigned channels   = 0;
+      DWORD flags         = 0;
+      IAudioClient *client;
+
+      fake_device_configure_mix_channels(2);
+      client = wasapi_init_client((IMMDevice*)mmdevice_init_device(NULL, 1),
+            &exclusive, &float_fmt, &rate, 64, 1, AUDIO_LAYOUT_STEREO, NULL, NULL);
+      fake_device_opened(&channels, &flags);
+      CHECK(client != NULL, "a stereo endpoint opens for the microphone", client != NULL, 1);
+      CHECK(!exclusive, "in shared mode", exclusive, 0);
+      CHECK(channels == 1, "as a mono stream", channels, 1);
+      CHECK(flags & AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, "the engine converts", flags, 0);
+      CHECK(rate == 48000, "at the rate asked for", rate, 48000);
+      CHECK(!float_fmt, "in the sample format asked for", float_fmt, 0);
+      RELEASE(client);
+
+      /* The converter is the microphone's alone: a layout wider than
+       * the endpoint's is still refused. */
+      client = wasapi_init_client_sh((IMMDevice*)mmdevice_init_device(NULL, 1),
+            &float_fmt, &rate, 64, 6, AUDIO_LAYOUT_5POINT1, NULL, NULL);
+      CHECK(client == NULL, "a wider layout is refused, not converted", client != NULL, 0);
+      RELEASE(client);
+      fake_device_configure_mix_channels(0);
+   }
+
    if (failures)
    {
       printf("[fail] wasapi_mic_test: %u check(s) failed\n", failures);

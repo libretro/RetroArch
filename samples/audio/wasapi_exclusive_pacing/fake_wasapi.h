@@ -118,6 +118,8 @@ static const GUID mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL =
 typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } AUDCLNT_SHAREMODE;
 #define AUDCLNT_STREAMFLAGS_EVENTCALLBACK 0x00040000
 #define AUDCLNT_STREAMFLAGS_NOPERSIST     0x00080000
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY 0x08000000
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM      0x80000000
 #define AUDCLNT_BUFFERFLAGS_SILENT        0x2
 #define AUDCLNT_ERR(n) ((HRESULT)(0x88890000 | (n)))
 #define AUDCLNT_E_NOT_INITIALIZED          AUDCLNT_ERR(0x01)
@@ -283,6 +285,12 @@ void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_pe
 /* The pin's PCM channel limit (0: any) and whether it takes AC-3 over
  * IEC 61937 in exclusive mode - a TV on HDMI: 2 and true. */
 void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3);
+/* The channel count of the engine's mix format (0: it takes any). A
+ * shared stream of another count is offered the mix format instead,
+ * and opens only when it asks for the engine's converter. */
+void fake_device_configure_mix_channels(unsigned channels);
+/* The channel count and stream flags the last stream opened with. */
+void fake_device_opened(unsigned *channels, DWORD *flags);
 /* Keep every byte released to the device from now on; what was kept. */
 void   fake_device_capture(bool on);
 size_t fake_device_captured(const uint8_t **buf);

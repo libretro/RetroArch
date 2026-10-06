@@ -96,7 +96,11 @@ static struct
     * here by deriving the timestamp from the position at a rate that
     * is not quite the nominal one. */
    double   clock_ppm;
-} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false, 0.0 };
+   unsigned mix_channels;      /* the engine's mix format; 0 = any */
+} g_cfg = { 48000, 0, 0, 0, 30000, 100000, false, 0, 0, 0, false, 0.0, 0 };
+
+static unsigned g_opened_channels = 0;
+static DWORD    g_opened_flags    = 0;
 
 /* The QPC timestamp that goes with a position, in 100 ns units, which
  * is what both clock interfaces specify. */
@@ -132,6 +136,17 @@ void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_
 {
    g_cfg.max_channels       = max_channels;
    g_cfg.accept_iec61937_ac3 = accept_iec61937_ac3;
+}
+
+void fake_device_configure_mix_channels(unsigned channels)
+{
+   g_cfg.mix_channels = channels;
+}
+
+void fake_device_opened(unsigned *channels, DWORD *flags)
+{
+   *channels = g_opened_channels;
+   *flags    = g_opened_flags;
 }
 
 void fake_device_capture(bool on)
@@ -332,6 +347,9 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
    }
    else
    {
+      if (     g_cfg.mix_channels && fmt->nChannels != g_cfg.mix_channels
+            && !(flags & AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM))
+         return AUDCLNT_E_UNSUPPORTED_FORMAT;
       c->period_hns    = g_cfg.default_period;
       c->period_frames = (unsigned)((c->period_hns * g_cfg.rate + 5000000) / 10000000);
       /* The legacy shared engine buffer: the duration asked for, at
@@ -347,6 +365,8 @@ static HRESULT c_initialize(IAudioClient *t, AUDCLNT_SHAREMODE mode, DWORD flags
    c->frame_bytes = fmt->nBlockAlign;
    c->buffer      = (BYTE*)calloc(c->buffer_frames, c->frame_bytes);
    c->initialised = true;
+   g_opened_channels      = fmt->nChannels;
+   g_opened_flags         = flags;
    c->stats.period_frames = c->period_frames;
    c->stats.buffer_frames = c->buffer_frames;
    c->stats.share_mode    = mode == AUDCLNT_SHAREMODE_EXCLUSIVE;
@@ -369,6 +389,26 @@ static HRESULT c_isformatsupported(IAudioClient *t, AUDCLNT_SHAREMODE mode, cons
       return format_answer(fmt);
    if (g_cfg.max_channels && fmt->nChannels > g_cfg.max_channels)
       return AUDCLNT_E_UNSUPPORTED_FORMAT;
+   if (g_cfg.mix_channels && fmt->nChannels != g_cfg.mix_channels)
+   {
+      WAVEFORMATEXTENSIBLE *mix = closest
+         ? (WAVEFORMATEXTENSIBLE*)calloc(1, sizeof(*mix)) : NULL;
+      if (mix)
+      {
+         mix->Format.wFormatTag           = WAVE_FORMAT_EXTENSIBLE;
+         mix->Format.nChannels            = (WORD)g_cfg.mix_channels;
+         mix->Format.nSamplesPerSec       = g_cfg.rate;
+         mix->Format.wBitsPerSample       = 32;
+         mix->Format.nBlockAlign          = (WORD)(g_cfg.mix_channels * 4);
+         mix->Format.nAvgBytesPerSec      = g_cfg.rate * mix->Format.nBlockAlign;
+         mix->Format.cbSize               = 22;
+         mix->Samples.wValidBitsPerSample = 32;
+         mix->dwChannelMask               = KSAUDIO_SPEAKER_STEREO;
+         mix->SubFormat                   = KSDATAFORMAT_SUBTYPE_IEEE_FLOAT;
+         *closest                         = &mix->Format;
+      }
+      return S_FALSE;
+   }
    return S_OK; /* shared: the engine mixes anything */
 }
 static HRESULT c_getmixformat(IAudioClient *t, WAVEFORMATEX **f) { (void)t; *f = NULL; return E_FAIL; }
