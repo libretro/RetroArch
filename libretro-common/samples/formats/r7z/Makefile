@@ -11,6 +11,7 @@ ARCHIVE_SOURCES := \
 	r7z_archive_detach_test.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_archive.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_bcj2.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_filters.c \
