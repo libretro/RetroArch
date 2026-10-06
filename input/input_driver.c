@@ -1644,9 +1644,18 @@ static void input_port_keys_refresh(input_port_keys_t *k,
    memset(down, 0, sizeof(down));
    input->keys_down(data, port, k->key, k->bind, k->count, down);
    memset(k->key_down, 0, sizeof(k->key_down));
-   for (i = 0; i < k->count; i++)
-      if (down[i >> 5] & (1u << (i & 31)))
-         k->key_down[k->bind[i] >> 5] |= (1u << (k->bind[i] & 31));
+   /* the keys that are down, a set bit at a time: few are, of the
+    * sixty-odd a port's binds name, and each was looked at */
+   for (i = 0; i < (k->count + 31u) / 32; i++)
+   {
+      uint32_t held = down[i];
+      for (; held; held &= held - 1)
+      {
+         unsigned n = (i << 5) + (unsigned)compat_ctz(held);
+         if (n < k->count)
+            k->key_down[k->bind[n] >> 5] |= (1u << (k->bind[n] & 31));
+      }
+   }
    k->pad_keys     = (uint16_t)k->key_down[0];
    /* not "is any down" but "may the bits be other than clear" */
    k->any_key_down = true;
@@ -1731,9 +1740,12 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
       unsigned ret   = keyboard_mapping_blocked ? 0 : k->pad_keys;
       /* the few, if any, bound to a mouse button */
       unsigned mouse = k->pad_mbuttons;
-      for (i = 0; mouse; i++, mouse >>= 1)
-         if ((mouse & 1) && input_bind_mouse_button_down(k, port, binds[i].mbutton))
+      for (; mouse; mouse &= mouse - 1)
+      {
+         i = (unsigned)compat_ctz(mouse);
+         if (input_bind_mouse_button_down(k, port, binds[i].mbutton))
             ret |= (1u << i);
+      }
       return (int16_t)ret;
    }
 
