@@ -254,9 +254,9 @@ int main(void)
       move(M(2), 7, -2);
       winraw_poll(wr);
       b = index_of(M(2));
-      CHECK(wr->mice[b].dlt_x == 7 && wr->mice[b].dlt_y == -2,
+      CHECK(VIDEO_POS_X(wr->mice[b].dlt) == 7 && VIDEO_POS_Y(wr->mice[b].dlt) == -2,
             "the new mouse's next report read %d,%d, not 7,-2",
-            (int)wr->mice[b].dlt_x, (int)wr->mice[b].dlt_y);
+            (int)VIDEO_POS_X(wr->mice[b].dlt), (int)VIDEO_POS_Y(wr->mice[b].dlt));
    }
    printf("   ok   a mouse plugged in: in the list after the poll its first report came in, the old one keeps its state\n");
 

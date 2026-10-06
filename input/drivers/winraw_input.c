@@ -88,18 +88,17 @@ extern "C" {
  * The split that does exist: winraw_callback() runs on whichever
  * thread owns the window, while winraw_poll() is called from
  * input_driver_poll() in the runloop, always on the main thread. Every
- * field the two share crosses a thread boundary. dlt_x/dlt_y,
- * whl_u/whl_d, pos_pending, abs_pending and abs_pos are
+ * field the two share crosses a thread boundary. dlt, whl,
+ * pos_pending, abs_pending and abs_pos are
  * retro_atomic_int_t for that reason.
  *
- * x and y are plain LONG because they have exactly one writer:
- * winraw_poll(). The wndproc never reads or writes them. It publishes
+ * pos is a plain word because it has exactly one writer:
+ * winraw_poll(). The wndproc never reads or writes it. It publishes
  * what it knows - an accumulated delta, a request to sample the system
  * cursor, or an absolute position - and poll derives the position from
- * whichever applies, once per frame. abs_ref_x/abs_ref_y are the
- * wndproc's own copy of the last absolute report, used to turn
- * successive absolute positions into deltas without reading the
- * position it does not own.
+ * whichever applies, once per frame. The wndproc turns successive
+ * absolute positions into deltas from abs_pos, which it alone writes,
+ * without reading the position it does not own.
  *
  * It used to be two writers both doing read-modify-write, which was a
  * lost-update race that atomics would not have fixed - only made to
@@ -151,14 +150,14 @@ typedef struct
     * per frame. Two writers doing read-modify-write here was a
     * lost-update race that no amount of atomicity would have fixed. */
    uint32_t pos;   /* x, y in the window: VIDEO_POS_PACK */
-   /* Absolute-position reference, touched only by the wndproc. Used to
-    * turn successive MOUSE_MOVE_ABSOLUTE reports into deltas. */
-   LONG abs_ref_x, abs_ref_y;
    /* Produced by the wndproc, drained once per frame by winraw_poll().
     * The snapshot in winraw_input_t::mice is single-threaded; only the
-    * g_mice originals are ever accessed concurrently. */
-   retro_atomic_int_t dlt_x, dlt_y;
-   retro_atomic_int_t whl_u, whl_d;
+    * g_mice originals are ever accessed concurrently.
+    * dlt: the motion since the last poll, x and y as one
+    * VIDEO_POS_PACK word, so a report's two halves are added and taken
+    * together. whl: WRAW_WHL_* bits. */
+   retro_atomic_int_t dlt;
+   retro_atomic_int_t whl;
    /* Set by the wndproc when this mouse needs its position taken from
     * the system cursor, drained once per frame by winraw_poll(). */
    retro_atomic_int_t pos_pending;
@@ -171,6 +170,10 @@ typedef struct
    int device;
    uint8_t flags;
 } winraw_mouse_t;
+
+/* winraw_mouse_t::whl */
+#define WRAW_WHL_UP   (1 << 0)
+#define WRAW_WHL_DOWN (1 << 1)
 
 struct winraw_pointer_status
 {
@@ -1371,9 +1374,9 @@ static bool winraw_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
          return ((mouse->flags & WRAW_MOUSE_FLG_BTN_B5) > 0);
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return mouse->whl_u;
+         return (mouse->whl & WRAW_WHL_UP) != 0;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return mouse->whl_d;
+         return (mouse->whl & WRAW_WHL_DOWN) != 0;
    }
 
    return false;
@@ -1407,6 +1410,18 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
    wr->flags             |= WRAW_INP_FLG_MOUSE_XY_MAPPING_READY;
 }
 
+/* A report's motion added to the total, both halves in one step. An
+ * axis is held to what a core can be given, -32768..32767 a frame. */
+static INLINE void winraw_dlt_add(retro_atomic_int_t *dlt, int dx, int dy)
+{
+   int old, now;
+   do
+   {
+      old = retro_atomic_load_relaxed_int(dlt);
+      now = (int)VIDEO_POS_PACK(VIDEO_POS_X(old) + dx, VIDEO_POS_Y(old) + dy);
+   } while (!retro_atomic_cas_int(dlt, old, now));
+}
+
 static void winraw_update_mouse_state(winraw_input_t *wr,
       winraw_mouse_t *mouse, RAWMOUSE *state)
 {
@@ -1416,17 +1431,16 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       if ((wr->flags & WRAW_INP_FLG_MOUSE_XY_MAPPING_READY) > 0)
       {
+         /* abs_pos is written by this thread alone, so the report
+          * before this one is there to take the motion from: the delta
+          * is derived without reading the position winraw_poll() owns. */
+         unsigned last = (unsigned)retro_atomic_load_relaxed_int(
+               &mouse->abs_pos);
          state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
          state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
-         /* abs_ref_* is this thread's own copy of the last absolute
-          * position, so the delta can be derived without reading the
-          * position that winraw_poll() owns. */
-         retro_atomic_fetch_add_int(&mouse->dlt_x,
-               state->lLastX - mouse->abs_ref_x);
-         retro_atomic_fetch_add_int(&mouse->dlt_y,
-               state->lLastY - mouse->abs_ref_y);
-         mouse->abs_ref_x = state->lLastX;
-         mouse->abs_ref_y = state->lLastY;
+         winraw_dlt_add(&mouse->dlt,
+               state->lLastX - VIDEO_POS_X(last),
+               state->lLastY - VIDEO_POS_Y(last));
          retro_atomic_store_release_int(&mouse->abs_pos,
                (int)VIDEO_POS_PACK(state->lLastX, state->lLastY));
          retro_atomic_store_release_int(&mouse->abs_pending, 1);
@@ -1453,8 +1467,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
 
       if (getcursorpos)
       {
-         retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
-         retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
+         winraw_dlt_add(&mouse->dlt, state->lLastX, state->lLastY);
 
          /* Defer the cursor query to winraw_poll(). GetCursorPos() is an
           * unconditional kernel transition on every Windows version, and
@@ -1474,13 +1487,12 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
          /* Handle different sensitivity for lightguns */
          if (mouse->device == RETRO_DEVICE_LIGHTGUN)
          {
-            retro_atomic_store_release_int(&mouse->dlt_x, state->lLastX);
-            retro_atomic_store_release_int(&mouse->dlt_y, state->lLastY);
+            retro_atomic_store_release_int(&mouse->dlt,
+                  (int)VIDEO_POS_PACK(state->lLastX, state->lLastY));
          }
          else
          {
-            retro_atomic_fetch_add_int(&mouse->dlt_x, state->lLastX);
-            retro_atomic_fetch_add_int(&mouse->dlt_y, state->lLastY);
+            winraw_dlt_add(&mouse->dlt, state->lLastX, state->lLastY);
          }
       }
    }
@@ -1528,9 +1540,9 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    if (state->usButtonFlags & RI_MOUSE_WHEEL)
    {
       if ((SHORT)state->usButtonData > 0)
-         retro_atomic_store_release_int(&mouse->whl_u, 1);
+         retro_atomic_fetch_or_int(&mouse->whl, WRAW_WHL_UP);
       else if ((SHORT)state->usButtonData < 0)
-         retro_atomic_store_release_int(&mouse->whl_d, 1);
+         retro_atomic_fetch_or_int(&mouse->whl, WRAW_WHL_DOWN);
    }
 }
 
@@ -2352,12 +2364,12 @@ static void winraw_publish_pointers(winraw_input_t *wr)
          buttons |= INPUT_POINTER_BUTTON_4;
       if (m->flags & WRAW_MOUSE_FLG_BTN_B5)
          buttons |= INPUT_POINTER_BUTTON_5;
-      if (m->whl_u)
+      if (m->whl & WRAW_WHL_UP)
          buttons |= INPUT_POINTER_WHEEL_UP;
-      if (m->whl_d)
+      if (m->whl & WRAW_WHL_DOWN)
          buttons |= INPUT_POINTER_WHEEL_DOWN;
       frame[i].pos     = m->pos;
-      frame[i].rel     = VIDEO_POS_PACK(m->dlt_x, m->dlt_y);
+      frame[i].rel     = (uint32_t)m->dlt;
       frame[i].buttons = (uint16_t)buttons;
    }
    for (; touch && touches < 16; touch = touch->next)
@@ -2483,13 +2495,16 @@ static void winraw_poll(void *data)
        * reports asked for it or however many mice are attached. */
       LONG dx;
       LONG dy;
+      int dlt;
 
       /* Clear buttons when not focused */
       if (!winraw_focus)
          g_mice[i].flags = 0;
 
-      dx = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_x, 0);
-      dy = (LONG)retro_atomic_exchange_int(&g_mice[i].dlt_y, 0);
+      /* the frame's motion, both halves in one take */
+      dlt = retro_atomic_exchange_int(&g_mice[i].dlt, 0);
+      dx  = VIDEO_POS_X(dlt);
+      dy  = VIDEO_POS_Y(dlt);
 
       if (retro_atomic_exchange_int(&g_mice[i].pos_pending, 0))
       {
@@ -2531,10 +2546,8 @@ static void winraw_poll(void *data)
       }
 
       wr->mice[i].pos     = g_mice[i].pos;
-      wr->mice[i].dlt_x   = dx;
-      wr->mice[i].dlt_y   = dy;
-      wr->mice[i].whl_u   = retro_atomic_exchange_int(&g_mice[i].whl_u, 0);
-      wr->mice[i].whl_d   = retro_atomic_exchange_int(&g_mice[i].whl_d, 0);
+      wr->mice[i].dlt     = dlt;
+      wr->mice[i].whl     = retro_atomic_exchange_int(&g_mice[i].whl, 0);
       wr->mice[i].flags   = g_mice[i].flags;
    }
 
