@@ -169,10 +169,10 @@ static void second_report(void) { report(3000, 4000); }
 
 static void expect(LONG x, LONG y, const char *what)
 {
-   if (wr->mice[0].x != x || wr->mice[0].y != y)
+   if (VIDEO_POS_X(wr->mice[0].pos) != x || VIDEO_POS_Y(wr->mice[0].pos) != y)
    {
       printf("   FAIL %s: poll read (%ld, %ld), want (%ld, %ld)\n", what,
-            (long)wr->mice[0].x, (long)wr->mice[0].y, (long)x, (long)y);
+            (long)VIDEO_POS_X(wr->mice[0].pos), (long)VIDEO_POS_Y(wr->mice[0].pos), (long)x, (long)y);
       failures++;
    }
    else
@@ -208,16 +208,16 @@ int main(void)
    load_hook = second_report;
    winraw_poll(wr);
    load_hook = NULL;
-   if (   !(wr->mice[0].x == 1000 && wr->mice[0].y == 2000)
-       && !(wr->mice[0].x == 3000 && wr->mice[0].y == 4000))
+   if (   !(VIDEO_POS_X(wr->mice[0].pos) == 1000 && VIDEO_POS_Y(wr->mice[0].pos) == 2000)
+       && !(VIDEO_POS_X(wr->mice[0].pos) == 3000 && VIDEO_POS_Y(wr->mice[0].pos) == 4000))
    {
       printf("   FAIL a report during poll: read (%ld, %ld), which no "
-            "report gave\n", (long)wr->mice[0].x, (long)wr->mice[0].y);
+            "report gave\n", (long)VIDEO_POS_X(wr->mice[0].pos), (long)VIDEO_POS_Y(wr->mice[0].pos));
       failures++;
    }
    else
       printf("   ok   a report during poll: read (%ld, %ld), as reported\n",
-            (long)wr->mice[0].x, (long)wr->mice[0].y);
+            (long)VIDEO_POS_X(wr->mice[0].pos), (long)VIDEO_POS_Y(wr->mice[0].pos));
 
    /* And the next poll takes the report that landed. */
    winraw_poll(wr);

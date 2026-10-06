@@ -223,8 +223,7 @@ int main(void)
 
    /* it has moved and has a button down */
    a = index_of(M(1));
-   g_mice[a].x      = 123;
-   g_mice[a].y      = 456;
+   g_mice[a].pos    = VIDEO_POS_PACK(123, 456);
    g_mice[a].flags  = WRAW_MOUSE_FLG_BTN_L;
    g_mice[a].device = RETRO_DEVICE_LIGHTGUN;
 
@@ -243,11 +242,11 @@ int main(void)
    b = index_of(M(2));
    CHECK(a >= 0 && b >= 0, "the two mice are not both in the list");
    if (a >= 0)
-      CHECK(g_mice[a].x == 123 && g_mice[a].y == 456
+      CHECK(g_mice[a].pos == VIDEO_POS_PACK(123, 456)
             && g_mice[a].flags == WRAW_MOUSE_FLG_BTN_L
             && g_mice[a].device == RETRO_DEVICE_LIGHTGUN,
             "the mouse that was there lost its state: %ld,%ld flags %#x device %d",
-            (long)g_mice[a].x, (long)g_mice[a].y, g_mice[a].flags, g_mice[a].device);
+            (long)VIDEO_POS_X(g_mice[a].pos), (long)VIDEO_POS_Y(g_mice[a].pos), g_mice[a].flags, g_mice[a].device);
    if (b >= 0)
    {
       /* the device type that makes a report move by its delta */

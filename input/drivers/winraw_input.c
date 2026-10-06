@@ -150,7 +150,7 @@ typedef struct
     * the atomics below and poll derives the position from them once
     * per frame. Two writers doing read-modify-write here was a
     * lost-update race that no amount of atomicity would have fixed. */
-   LONG x, y;
+   uint32_t pos;   /* x, y in the window: VIDEO_POS_PACK */
    /* Absolute-position reference, touched only by the wndproc. Used to
     * turn successive MOUSE_MOVE_ABSOLUTE reports into deltas. */
    LONG abs_ref_x, abs_ref_y;
@@ -348,10 +348,10 @@ static bool winraw_sync_mouse_to_cursor(winraw_input_t *wr)
 
    ScreenToClient(wnd, &p);
 
-   for (i = 0; i < wr->mouse_cnt; ++i)
    {
-      g_mice[i].x = (LONG)p.x;
-      g_mice[i].y = (LONG)p.y;
+      uint32_t pos = VIDEO_POS_PACK(p.x, p.y);
+      for (i = 0; i < wr->mouse_cnt; ++i)
+         g_mice[i].pos = pos;
    }
 
    return true;
@@ -913,10 +913,10 @@ static bool winraw_init_devices(winraw_mouse_t **mice, unsigned *mouse_cnt)
       if (!GetCursorPos(&crs_pos))
          goto error;
 
-      for (i = 0; i < mouse_cnt_r; ++i)
       {
-         mice_r[i].x = crs_pos.x;
-         mice_r[i].y = crs_pos.y;
+         uint32_t pos = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
+         for (i = 0; i < mouse_cnt_r; ++i)
+            mice_r[i].pos = pos;
       }
    }
 
@@ -1396,11 +1396,9 @@ static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
    /* Sync to OS cursor position; fall back to center if it fails */
    if (!winraw_sync_mouse_to_cursor(wr))
    {
+      uint32_t pos = VIDEO_POS_PACK(mouse_x, mouse_y);
       for (i = 0; i < wr->mouse_cnt; i++)
-      {
-         g_mice[i].x      = mouse_x;
-         g_mice[i].y      = mouse_y;
-      }
+         g_mice[i].pos = pos;
    }
 
    wr->view_abs_ratio_x   = (double)VIDEO_SCALE_W(viewport.full_dims)  / 65535.0;
@@ -2358,7 +2356,7 @@ static void winraw_publish_pointers(winraw_input_t *wr)
          buttons |= INPUT_POINTER_WHEEL_UP;
       if (m->whl_d)
          buttons |= INPUT_POINTER_WHEEL_DOWN;
-      frame[i].pos     = VIDEO_POS_PACK(m->x, m->y);
+      frame[i].pos     = m->pos;
       frame[i].rel     = VIDEO_POS_PACK(m->dlt_x, m->dlt_y);
       frame[i].buttons = (uint16_t)buttons;
    }
@@ -2476,7 +2474,7 @@ static void winraw_poll(void *data)
 
    for (i = 0; i < wr->mouse_cnt; ++i)
    {
-      /* Derive the position. This is the only writer of g_mice[i].x/y.
+      /* Derive the position. This is the only writer of g_mice[i].pos.
        *
        * The three sources are mutually exclusive and the wndproc marks
        * which one applies: a deferred cursor query wins, then an
@@ -2506,22 +2504,18 @@ static void winraw_poll(void *data)
                crs_pos_valid = true;
          }
          if (crs_pos_valid)
-         {
-            g_mice[i].x = crs_pos.x;
-            g_mice[i].y = crs_pos.y;
-         }
+            g_mice[i].pos = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
       }
       else if (retro_atomic_exchange_int(&g_mice[i].abs_pending, 0))
       {
-         unsigned pos = (unsigned)retro_atomic_load_acquire_int(
+         /* the report's word is the position's */
+         g_mice[i].pos = (uint32_t)retro_atomic_load_acquire_int(
                &g_mice[i].abs_pos);
-         g_mice[i].x  = (LONG)VIDEO_POS_X(pos);
-         g_mice[i].y  = (LONG)VIDEO_POS_Y(pos);
       }
       else if (dx || dy)
       {
-         LONG nx = g_mice[i].x + dx;
-         LONG ny = g_mice[i].y + dy;
+         LONG nx = VIDEO_POS_X(g_mice[i].pos) + dx;
+         LONG ny = VIDEO_POS_Y(g_mice[i].pos) + dy;
          /* Prevent travel outside active window */
          if (nx < wr->active_rect.left)
             nx = wr->active_rect.left;
@@ -2533,12 +2527,10 @@ static void winraw_poll(void *data)
          else if (ny > wr->active_rect.bottom)
             ny = wr->active_rect.bottom;
 
-         g_mice[i].x = nx;
-         g_mice[i].y = ny;
+         g_mice[i].pos = VIDEO_POS_PACK(nx, ny);
       }
 
-      wr->mice[i].x       = g_mice[i].x;
-      wr->mice[i].y       = g_mice[i].y;
+      wr->mice[i].pos     = g_mice[i].pos;
       wr->mice[i].dlt_x   = dx;
       wr->mice[i].dlt_y   = dy;
       wr->mice[i].whl_u   = retro_atomic_exchange_int(&g_mice[i].whl_u, 0);
