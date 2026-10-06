@@ -541,6 +541,20 @@ static bool cocoa_mouse_button_pressed(
    return false;
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void cocoa_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (apple_key_state[rarch_keysym_lut[keys[i]]])
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t cocoa_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -557,69 +571,9 @@ static int16_t cocoa_input_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            /* Do a bitwise OR to combine both input
-             * states together */
-            int16_t ret = 0;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                        && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]])
-                     ret |= (1 << i);
-               }
-            }
-            return ret;
-         }
-
-         if (RETRO_KEYBIND_VALID(&binds[port][id]))
-         {
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])]]
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         {
-            int16_t ret           = 0;
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_plus_key]])
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_minus_key]])
-                  ret += -0x7fff;
-            }
-            return ret;
-         }
-         break;
-
+      /* The RetroPad's buttons, the hotkeys and a stick's axes, where
+       * they are bound to keys or mouse buttons, are the frontend's to
+       * answer: it asks cocoa_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
@@ -1131,10 +1085,13 @@ input_driver_t input_cocoa = {
 #endif
    NULL,                         /* grab_stdin */
 #if TARGET_OS_IOS
-   cocoa_input_keypress_vibrate
+   cocoa_input_keypress_vibrate,
 #else
-   NULL                          /* vibrate */
+   NULL,                         /* vibrate */
 #endif
+   NULL,                         /* survives_video */
+   cocoa_keys_down,
+   NULL                          /* bind_mouse_buttons */
 };
 
 /* What the Apple UI hands the Cocoa input driver.
