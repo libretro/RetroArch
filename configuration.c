@@ -7971,7 +7971,7 @@ static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         memcpy(&bkp->autoconf_binds[i][j], &input_autoconf_binds[i][j],
+         memcpy(&bkp->autoconf_binds[i][j], input_autoconf_bind(i, j),
                sizeof(struct retro_keybind));
          /* Duplicate allocated strings (don't share pointers!) */
          if (input_autoconf_bind_labels[i][j].joykey)
@@ -8004,7 +8004,7 @@ static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
          if (input_autoconf_bind_labels[i][j].joyaxis)
             free(input_autoconf_bind_labels[i][j].joyaxis);
 
-         memcpy(&input_autoconf_binds[i][j], &bkp->autoconf_binds[i][j],
+         memcpy(input_autoconf_bind(i, j), &bkp->autoconf_binds[i][j],
                sizeof(struct retro_keybind));
          /* String ownership moves back to input_autoconf_bind_labels */
          input_autoconf_bind_labels[i][j] = bkp->autoconf_labels[i][j];
@@ -8437,7 +8437,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const char                 *base     = NULL;
 
       prefix[0]                            = '\0';
@@ -8484,7 +8484,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const char                 *base     = NULL;
 
       prefix[0]                            = '\0';
@@ -8534,7 +8534,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const struct retro_keybind *def_bind = &default_binds[i];
       const char                 *base     = NULL;
       bool differs_from_default            = false;
@@ -8692,8 +8692,8 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    /* Pre-fill existing autoconf binds for empty binds */
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
-      struct retro_keybind *bind      = &input_config_binds[user][i];
-      struct retro_keybind *auto_bind = &input_autoconf_binds[dev][i];
+      struct retro_keybind *bind      = input_config_bind(user, i);
+      struct retro_keybind *auto_bind = input_autoconf_bind(dev, i);
       struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
       struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
 
@@ -8714,31 +8714,31 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
 
    /* Require at least directions (D-Pad or Left Analog) and South button,
     * otherwise the profile is completely useless */
-   if (input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_B].joykey == NO_BTN)
+   if (input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_B)->joykey == NO_BTN)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_UP)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_UP)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_MINUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_MINUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_DOWN)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_DOWN)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_PLUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_PLUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_LEFT)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_LEFT)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_MINUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_MINUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_RIGHT)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_RIGHT)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_PLUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_PLUS)->joyaxis == AXIS_NONE)
       valid = false;
 
    /* Update config file */
@@ -8762,7 +8762,7 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
    {
       unsigned id                      = input_config_bind_order[i];
-      const struct retro_keybind *bind = &input_config_binds[user][id];
+      const struct retro_keybind *bind = input_config_bind(user, id);
 
       if (RETRO_KEYBIND_VALID(bind))
       {
@@ -8774,7 +8774,7 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
    {
       unsigned id                      = input_config_bind_order[i];
-      const struct retro_keybind *bind = &input_config_binds[user][id];
+      const struct retro_keybind *bind = input_config_bind(user, id);
       struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
 
       if (RETRO_KEYBIND_VALID(bind))
@@ -9161,11 +9161,10 @@ bool config_save_file(const char *path)
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
-            /* Save current input_config_binds */
+            /* Save the current binds */
             saved_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
             if (saved_binds)
-               memcpy(saved_binds, input_config_binds,
-                     MAX_USERS * sizeof(retro_keybind_set));
+               input_config_binds_copy_out(saved_binds);
 
             /* Config-bind labels are saved and restored by value, exactly as
              * they were when they lived inside the bind struct. */
@@ -9183,13 +9182,12 @@ bool config_save_file(const char *path)
             config_set_defaults(defaults);
 
             /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
-            memcpy(defaults_binds, input_config_binds, MAX_USERS * sizeof(retro_keybind_set));
+            input_config_binds_copy_out(defaults_binds);
 
-            /* Restore input_config_binds */
+            /* Restore the binds */
             if (saved_binds)
             {
-               memcpy(input_config_binds, saved_binds,
-                     MAX_USERS * sizeof(retro_keybind_set));
+               input_config_binds_copy_in(saved_binds);
                free(saved_binds);
             }
 
@@ -9894,7 +9892,7 @@ int8_t config_save_overrides(enum override_type type,
       path_mkdir(override_directory);
 
    /* Store current binds as override binds */
-   memcpy(input_override_binds, input_config_binds, sizeof(input_config_binds));
+   input_config_binds_copy_out(input_override_binds);
 
    /* Load the original config file in memory */
    config_load_file(
@@ -10173,7 +10171,7 @@ int8_t config_save_overrides(enum override_type type,
          for (j = 0; j < RARCH_BIND_LIST_END; j++)
          {
             const struct retro_keybind *override_bind = &input_override_binds[i][j];
-            const struct retro_keybind *config_bind   = &input_config_binds[i][j];
+            const struct retro_keybind *config_bind   = input_config_bind(i, j);
 
             if (     config_bind->joyaxis != override_bind->joyaxis
                   || config_bind->joykey  != override_bind->joykey
@@ -10269,7 +10267,7 @@ int8_t config_save_overrides(enum override_type type,
    }
 
    /* Since config_load_file resets binds, restore overrides back to current binds */
-   memcpy(input_config_binds, input_override_binds, sizeof(input_config_binds));
+   input_config_binds_copy_in(input_override_binds);
 
    if (bool_settings)
       free(bool_settings);
@@ -10866,9 +10864,9 @@ void input_config_reset_autoconfig_binds(unsigned port)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_autoconf_binds[port][i].joykey  = NO_BTN;
-      input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
-      RETRO_KEYBIND_SET_VALID(&input_autoconf_binds[port][i], false);
+      input_autoconf_bind(port, i)->joykey  = NO_BTN;
+      input_autoconf_bind(port, i)->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(input_autoconf_bind(port, i), false);
 
       if (input_autoconf_bind_labels[port][i].joykey)
       {
@@ -10908,7 +10906,7 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    if ((port >= MAX_USERS) || !config)
       return;
 
-   binds  = input_autoconf_binds[port];
+   binds  = input_autoconf_bind(port, 0);
    labels = input_autoconf_bind_labels[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)

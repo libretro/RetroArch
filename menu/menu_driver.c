@@ -1697,7 +1697,7 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
             binds->begin             = MENU_SETTINGS_BIND_BEGIN
                   + input_config_bind_order[0];
             binds->last              = MENU_SETTINGS_BIND_LAST;
-            binds->output            = &input_config_binds[setting->index_offset][0]
+            binds->output            = input_config_bind(setting->index_offset, 0)
                   + input_config_bind_order[0];
             binds->buffer            = *(binds->output);
 
@@ -5148,7 +5148,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       bool complete                         = false;
       struct menu_bind_state new_binds      = *_binds;
       unsigned bind_index                   = _binds->begin - MENU_SETTINGS_BIND_BEGIN;
-      const struct retro_keybind *old_binds = &input_config_binds[new_binds.port][bind_index];
+      const struct retro_keybind *old_binds = input_config_bind(new_binds.port, bind_index);
       unsigned old_key                      = RETRO_KEYBIND_KEY(old_binds);
 
       input_driver_set_keyboard_mapping_blocked(false);
@@ -5283,7 +5283,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
          /* Next bind */
          new_binds.output                    =
-                 &input_config_binds[new_binds.port][0]
+                 input_config_bind(new_binds.port, 0)
                + input_config_bind_order[new_binds.order];
          new_binds.buffer = *(new_binds.output);
          new_binds.timer_hold   .timeout_us  = input_bind_hold_us;
@@ -5973,12 +5973,12 @@ unsigned menu_event(
       if (runloop_state_get_ptr()->flags & RUNLOOP_FLAG_CORE_RUNNING)
       {
          int i;
-         const struct retro_keybind menu_toggle_bind = input_config_binds[0][RARCH_MENU_TOGGLE];
+         const struct retro_keybind menu_toggle_bind = *input_config_bind(0, RARCH_MENU_TOGGLE);
 
          for (i = RETRO_DEVICE_ID_JOYPAD_L2; i <= RETRO_DEVICE_ID_JOYPAD_R3; i++)
          {
-            if (     (menu_toggle_bind.joykey != NO_BTN && menu_toggle_bind.joykey == input_config_binds[0][i].joykey)
-                  || (RETRO_KEYBIND_KEY(&menu_toggle_bind) != RETROK_UNKNOWN && RETRO_KEYBIND_KEY(&menu_toggle_bind) == RETRO_KEYBIND_KEY(&input_config_binds[0][i])))
+            if (     (menu_toggle_bind.joykey != NO_BTN && menu_toggle_bind.joykey == input_config_bind(0, i)->joykey)
+                  || (RETRO_KEYBIND_KEY(&menu_toggle_bind) != RETROK_UNKNOWN && RETRO_KEYBIND_KEY(&menu_toggle_bind) == RETRO_KEYBIND_KEY(input_config_bind(0, i))))
                onkeyup |= (1 << i);
          }
       }
@@ -6172,7 +6172,7 @@ unsigned menu_event(
          memset(keydown, 0, sizeof(keydown));
 
       /* Prevent simultaneous hotkey actions according to hotkey block delay */
-      if (input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey != NO_BTN)
+      if (input_config_bind(0, RARCH_ENABLE_HOTKEY)->joykey != NO_BTN)
       {
          if (      input_driver_libretro_input_blocked()
                || !input_driver_hotkey_blocked())

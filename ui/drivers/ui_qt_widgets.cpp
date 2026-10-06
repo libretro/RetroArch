@@ -5608,7 +5608,7 @@ QWidget *UserBindsPage::widget()
       {
          char descriptor[300];
          const struct retro_keybind *keybind   =
-            &input_config_binds[p][retro_id];
+            input_config_bind(p, retro_id);
          const struct retro_keybind *auto_bind =
             (const struct retro_keybind*)
             input_config_get_bind_auto(p, retro_id);
@@ -5620,7 +5620,7 @@ QWidget *UserBindsPage::widget()
             sizeof(descriptor));
 
          const struct retro_keybind *keyptr =
-            &input_config_binds[p][retro_id];
+            input_config_bind(p, retro_id);
 
          QString label = msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr));
 

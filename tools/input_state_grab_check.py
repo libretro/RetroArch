@@ -185,6 +185,35 @@ def driver_calls(root):
     return found
 
 
+# The bind arrays are the input code's own. Everything else gets at a
+# bind through input_config_bind() and input_autoconf_bind(), and at a
+# whole set through input_config_binds_copy_out() and _copy_in(), so
+# how the binds are kept can change without the menu, the configuration
+# and the UI changing with it.
+BIND_ARRAY = re.compile(r'\binput_(?:config|autoconf)_binds\b(?!_)')
+
+
+def bind_array_uses(root):
+    found = {}
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root).replace(os.sep, '/') + '/'
+        if rel_d.startswith(NOT_CALLERS):
+            dirs[:] = []
+            continue
+        for f in files:
+            if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
+                continue
+            path = os.path.join(d, f)
+            try:
+                text = open(path, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(BIND_ARRAY.findall(strip_comments(text)))
+            if n:
+                found[os.path.relpath(path, root).replace(os.sep, '/')] = n
+    return found
+
+
 # The input state taken by the menu and the UI layer, which are being
 # moved onto named calls as the drivers were: what is left, file by
 # file. A file may not have more than its number, one that is not
@@ -268,6 +297,11 @@ def run(root, allowed, outside_allowed=None):
         print('%s: calls an input or joypad driver itself, %d time(s).\n'
               '  Ask the frontend: input_driver_device_state(), '
               'input_driver_capture_pad(), input_driver_poll_devices().' % (rel, n))
+        bad += 1
+    for rel, n in sorted(bind_array_uses(root).items()):
+        print('%s: names a bind array itself, %d time(s).\n'
+              '  Get at a bind through input_config_bind() or '
+              'input_autoconf_bind().' % (rel, n))
         bad += 1
     for rel in sorted(set(found) | set(allowed)):
         have = found.get(rel, 0)
@@ -355,10 +389,26 @@ def selftest():
         if command_calls(root):
             print('selftest: a driver asking for a quit was taken for one issuing it')
             bad += 1
+        # code outside input/ naming a bind array, and going through the call
+        os.makedirs(os.path.join(root, 'menu'), exist_ok=True)
+        with open(os.path.join(root, 'menu', 'b.c'), 'w') as f:
+            f.write('x = input_config_binds[0][1].joykey;\n'
+                    'y = &input_autoconf_binds[p][i];\n'
+                    'input_config_binds_copy_out(sets); /* input_config_binds */\n')
+        if bind_array_uses(root).get('menu/b.c') != 2:
+            print('selftest: a menu file naming the bind arrays was not counted as two')
+            bad += 1
+        with open(os.path.join(root, 'menu', 'b.c'), 'w') as f:
+            f.write('x = input_config_bind(0, 1)->joykey;\n'
+                    'y = input_autoconf_bind(p, i);\n')
+        if bind_array_uses(root):
+            print('selftest: a menu file going through the calls was taken for one naming the arrays')
+            bad += 1
+        os.remove(os.path.join(root, 'menu', 'b.c'))
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 7))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 9))
     return 0
 
 

@@ -239,7 +239,7 @@ static int action_start_input_desc(
       /* Check whether core has defined this input */
       if (sys_info->input_desc_btn[mapped_port][btn_idx] && *sys_info->input_desc_btn[mapped_port][btn_idx])
       {
-         const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
+         const struct retro_keybind *keyptr = input_config_bind(user_idx, btn_idx);
          settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
       }
       else

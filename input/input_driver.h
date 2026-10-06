@@ -17,6 +17,7 @@
 #ifndef __INPUT_DRIVER__H
 #define __INPUT_DRIVER__H
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -2158,6 +2159,34 @@ extern hid_driver_t wiiu_hid;
 
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+
+/* How everything outside input/ gets at a bind: a user's, and the one
+ * a pad's autoconfig profile gave it. The arrays are the input code's
+ * own, and how the binds are kept is its to change; a check holds that
+ * nothing else names them (tools/input_state_grab_check.py). These
+ * compile to the indexing they stand for. */
+static INLINE struct retro_keybind *input_config_bind(
+      unsigned user, unsigned id)
+{
+   return &input_config_binds[user][id];
+}
+
+static INLINE struct retro_keybind *input_autoconf_bind(
+      unsigned pad, unsigned id)
+{
+   return &input_autoconf_binds[pad][id];
+}
+
+/* Every user's binds, copied out to and back from @sets[MAX_USERS]. */
+static INLINE void input_config_binds_copy_out(retro_keybind_set *sets)
+{
+   memcpy(sets, input_config_binds, sizeof(input_config_binds));
+}
+
+static INLINE void input_config_binds_copy_in(retro_keybind_set *sets)
+{
+   memcpy(input_config_binds, sets, sizeof(input_config_binds));
+}
 extern input_bind_label_set input_config_bind_labels[MAX_USERS];
 extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
