@@ -753,6 +753,22 @@ const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
    return NULL;
 }
 
+void retro_vfs_file_prefetch_impl(
+      libretro_vfs_implementation_file *stream, uint64_t offset,
+      uint64_t len)
+{
+   /* A hint, and one this backend has nothing to give: it never maps a
+    * file, so there is no mapping to make resident, and its handles
+    * come from the app's brokered file calls, which offer no read-ahead
+    * request. Doing nothing is the documented answer where the OS has
+    * none. Defined all the same, for the reason above:
+    * filestream_prefetch() calls it whenever no frontend VFS is
+    * installed. */
+   (void)stream;
+   (void)offset;
+   (void)len;
+}
+
 int retro_vfs_stat_64_impl(const char *path, int64_t *size)
 {
    wchar_t *path_wide;
