@@ -9941,6 +9941,7 @@ static void input_keys_pressed(
       bool input_hotkey_device_merge)
 {
    uint32_t maybe_held[(RARCH_BIND_LIST_END + 31) / 32];
+   unsigned hot_word;
    unsigned i;
    /* Autoconf binds are indexed by joy_idx, not frontend port */
    unsigned joy_idx               = joypad_info->joy_idx;
@@ -10275,84 +10276,99 @@ static void input_keys_pressed(
     * which acts on being let go and is always among them. */
    input_hotkeys_maybe_held(input_st, port, maybe_held);
 
-   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   /* Only the hotkeys in it are gone through, lowest first as before:
+    * a word of it at a time, a set bit at a time. Going through all
+    * sixty to test each one's bit was most of what was left here. */
+   for (hot_word = RARCH_FIRST_META_KEY >> 5;
+         hot_word < (RARCH_BIND_LIST_END + 31) / 32; hot_word++)
    {
-      bool other_pressed;
-      bool bit_pressed;
+      uint32_t hot = maybe_held[hot_word];
 
-      if (!(maybe_held[i >> 5] & (1u << (i & 31))))
-         continue;
+      /* none below the first hotkey, none past the last bind */
+      if (hot_word == (RARCH_FIRST_META_KEY >> 5))
+         hot &= ~(uint32_t)0 << (RARCH_FIRST_META_KEY & 31);
+      if (hot_word == (RARCH_BIND_LIST_END >> 5) && (RARCH_BIND_LIST_END & 31))
+         hot &= ((uint32_t)1 << (RARCH_BIND_LIST_END & 31)) - 1;
 
-      other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-      bit_pressed   = RETRO_KEYBIND_VALID(&binds[port][i])
-            && input_state_wrap(
-                  input_st->current_driver,
-                  input_st->current_data,
-                  joypad,
-                  sec_joypad,
-                  joypad_info,
-                  binds,
-                  kb_blocked,
-                  port, RETRO_DEVICE_JOYPAD, 0,
-                  i);
-
-      if (     bit_pressed
-            || other_pressed
-            || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
+      for (; hot; hot &= hot - 1)
       {
-         any_pressed = true;
-         if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
-            continue;
+         bool other_pressed;
+         bool bit_pressed;
 
-         if (libretro_hotkey_set || keyboard_hotkey_set)
+         i = (hot_word << 5) + (unsigned)compat_ctz(hot);
+
+         other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
+         bit_pressed   = RETRO_KEYBIND_VALID(&binds[port][i])
+               && input_state_wrap(
+                     input_st->current_driver,
+                     input_st->current_data,
+                     joypad,
+                     sec_joypad,
+                     joypad_info,
+                     binds,
+                     kb_blocked,
+                     port, RETRO_DEVICE_JOYPAD, 0,
+                     i);
+
+         if (     bit_pressed
+               || other_pressed
+               || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
          {
-            /* Do not block "other source" (input overlay) presses */
-            if (block_hotkey[i] && !other_pressed)
+            any_pressed = true;
+            if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
                continue;
-         }
 
-         /* Set menu toggle on release */
-         if (i == RARCH_MENU_TOGGLE)
-         {
-            if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
+            if (libretro_hotkey_set || keyboard_hotkey_set)
             {
-               input_st->flags |=  INP_FLAG_MENU_PRESS_PENDING;
-               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+               /* Do not block "other source" (input overlay) presses */
+               if (block_hotkey[i] && !other_pressed)
+                  continue;
             }
-            continue;
-         }
-         else if (i != RARCH_ENABLE_HOTKEY)
-         {
-            input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
 
-            /* Game Focus toggle is always allowed, so it must clear menu cancel */
-            if (i == RARCH_GAME_FOCUS_TOGGLE)
-               input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
-         }
-
-         BIT256_SET_PTR(p_new_state, i);
-      }
-      else
-      {
-         if (i == RARCH_MENU_TOGGLE)
-         {
-            /* Untrigger menu if press was shorter than hotkey block delay */
-            if (      (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
-                  && !(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL)
-                  && !BIT256_GET_PTR(p_new_state, RARCH_ENABLE_HOTKEY)
-                  && input_st->input_hotkey_block_counter
-                  && input_st->input_hotkey_block_counter < input_hotkey_block_delay)
-               input_st->flags &= ~INP_FLAG_MENU_PRESS_PENDING;
-
-            if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+            /* Set menu toggle on release */
+            if (i == RARCH_MENU_TOGGLE)
             {
-               /* Forget menu press if any other hotkey was pressed */
-               if (!(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL))
-                  BIT256_SET_PTR(p_new_state, i);
+               if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING))
+               {
+                  input_st->flags |=  INP_FLAG_MENU_PRESS_PENDING;
+                  input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+               }
+               continue;
+            }
+            else if (i != RARCH_ENABLE_HOTKEY)
+            {
+               input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
 
-               input_st->flags &= ~(INP_FLAG_MENU_PRESS_PENDING | INP_FLAG_MENU_PRESS_CANCEL);
+               /* Game Focus toggle is always allowed, so it must clear menu cancel */
+               if (i == RARCH_GAME_FOCUS_TOGGLE)
+                  input_st->flags &= ~INP_FLAG_MENU_PRESS_CANCEL;
+            }
+
+            BIT256_SET_PTR(p_new_state, i);
+         }
+         else
+         {
+            if (i == RARCH_MENU_TOGGLE)
+            {
+               /* Untrigger menu if press was shorter than hotkey block delay */
+               if (      (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+                     && !(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL)
+                     && !BIT256_GET_PTR(p_new_state, RARCH_ENABLE_HOTKEY)
+                     && input_st->input_hotkey_block_counter
+                     && input_st->input_hotkey_block_counter < input_hotkey_block_delay)
+                  input_st->flags &= ~INP_FLAG_MENU_PRESS_PENDING;
+
+               if (input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+               {
+                  /* Forget menu press if any other hotkey was pressed */
+                  if (!(input_st->flags & INP_FLAG_MENU_PRESS_CANCEL))
+                     BIT256_SET_PTR(p_new_state, i);
+
+                  input_st->flags &= ~(INP_FLAG_MENU_PRESS_PENDING | INP_FLAG_MENU_PRESS_CANCEL);
+               }
             }
          }
+
       }
    }
 
