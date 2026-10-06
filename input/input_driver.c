@@ -10112,7 +10112,12 @@ static void input_keys_pressed(
    {
       i = RARCH_MENU_TOGGLE;
 
+      /* The two share a key where neither has one, too - every port but
+       * the first, as the binds come - and "no key" was then asked of
+       * the driver like any other, each frame for each of them. No key
+       * is not a key that can be down. */
       if (     RETRO_KEYBIND_VALID(&binds[port][i])
+            && RETRO_KEYBIND_KEY(&input_config_binds[port][i]) != RETROK_UNKNOWN
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
