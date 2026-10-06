@@ -3818,6 +3818,85 @@ static int16_t input_state_internal(
 }
 
 
+#if defined(HAVE_MENU) || defined(HAVE_OVERLAY)
+/* The stick values past which a stick is taken for a direction.
+ *
+ * The menu and the overlay each compared a stick's value, divided by
+ * 0x7fff as a float, with the axis threshold: below minus the threshold
+ * one way, above it the other - the overlay counting a value that
+ * meets the threshold (@inclusive), the menu not. A stick reads one of
+ * 65536 values, and the division only ever grows with the value, so
+ * each comparison holds from some value on: these are those two values
+ * - the greatest still below, the least already above - found by
+ * bisection with that very comparison, so what is taken is the same
+ * value for value, and a stick costs integer compares where it cost
+ * divisions. Worked out again only when the threshold changes; with
+ * none that any value passes, they are one outside what a stick reads. */
+#define INPUT_STICK_IS_BELOW(v, threshold, inclusive) ((inclusive) \
+      ? ((float)(int16_t)(v) / 0x7fff <= -(threshold)) \
+      : ((float)(int16_t)(v) / 0x7fff <  -(threshold)))
+#define INPUT_STICK_IS_ABOVE(v, threshold, inclusive) ((inclusive) \
+      ? ((float)(int16_t)(v) / 0x7fff >=  (threshold)) \
+      : ((float)(int16_t)(v) / 0x7fff >   (threshold)))
+
+static void input_stick_limits(float threshold, bool inclusive,
+      int *below, int *above)
+{
+   /* one remembered answer each: [0] the menu's, [1] the overlay's */
+   static float for_threshold[2];
+   static int   lim_below[2];
+   static int   lim_above[2];
+   static bool  have[2];
+   unsigned n = inclusive ? 1 : 0;
+
+   if (!have[n] || for_threshold[n] != threshold)
+   {
+      int lo, hi;
+
+      /* the greatest value below: it holds for every value up to it */
+      if (!INPUT_STICK_IS_BELOW(-0x8000, threshold, inclusive))
+         lim_below[n] = -0x8000 - 1;
+      else
+      {
+         lo = -0x8000;
+         hi =  0x7fff;
+         while (lo < hi)
+         {
+            int mid = lo + (hi - lo + 1) / 2;
+            if (INPUT_STICK_IS_BELOW(mid, threshold, inclusive))
+               lo = mid;
+            else
+               hi = mid - 1;
+         }
+         lim_below[n] = lo;
+      }
+
+      /* the least value above: it holds for every value from it */
+      if (!INPUT_STICK_IS_ABOVE(0x7fff, threshold, inclusive))
+         lim_above[n] = 0x7fff + 1;
+      else
+      {
+         lo = -0x8000;
+         hi =  0x7fff;
+         while (lo < hi)
+         {
+            int mid = lo + (hi - lo) / 2;
+            if (INPUT_STICK_IS_ABOVE(mid, threshold, inclusive))
+               hi = mid;
+            else
+               lo = mid + 1;
+         }
+         lim_above[n] = lo;
+      }
+
+      for_threshold[n] = threshold;
+      have[n]          = true;
+   }
+   *below = lim_below[n];
+   *above = lim_above[n];
+}
+#endif
+
 #ifdef HAVE_OVERLAY
 /**
  * input_overlay_add_inputs:
@@ -5458,19 +5537,18 @@ static void input_overlay_update_pointer_coords(
 }
 
 /* A stick's two axes as four buttons: past the threshold one way or
- * the other on x, and on y. */
-#define INPUT_OVERLAY_STICK_TO_BUTTONS(state, threshold, x, y, left, right, up, down) \
+ * the other on x, and on y. @below and @above are the stick values the
+ * threshold comes to (input_stick_limits(), inclusive). */
+#define INPUT_OVERLAY_STICK_TO_BUTTONS(state, below, above, x, y, left, right, up, down) \
    do \
    { \
-      float stick_x = (float)(x) / 0x7fff; \
-      float stick_y = (float)(y) / 0x7fff; \
-      if (stick_x <= -(threshold)) \
+      if ((x) <= (below)) \
          BIT256_SET((state)->buttons, left); \
-      if (stick_x >=  (threshold)) \
+      if ((x) >= (above)) \
          BIT256_SET((state)->buttons, right); \
-      if (stick_y <= -(threshold)) \
+      if ((y) <= (below)) \
          BIT256_SET((state)->buttons, up); \
-      if (stick_y >=  (threshold)) \
+      if ((y) >= (above)) \
          BIT256_SET((state)->buttons, down); \
    } while (0)
 
@@ -5728,15 +5806,19 @@ INPUT_NOINLINE static void input_poll_overlay(
          && !(input_analog_dpad_modes[analog_dpad_mode] & 4))
    {
       unsigned sticks = input_analog_dpad_modes[analog_dpad_mode] & 3;
+      int stick_below;
+      int stick_above;
+
+      input_stick_limits(axis_threshold, true, &stick_below, &stick_above);
 
       if (analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
       {
          /* the left stick is the D-pad, the right one the face buttons */
-         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold,
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, stick_below, stick_above,
                ol_state->analog[0], ol_state->analog[1],
                RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
                RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_DOWN);
-         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold,
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, stick_below, stick_above,
                ol_state->analog[2], ol_state->analog[3],
                RETRO_DEVICE_ID_JOYPAD_Y,    RETRO_DEVICE_ID_JOYPAD_A,
                RETRO_DEVICE_ID_JOYPAD_X,    RETRO_DEVICE_ID_JOYPAD_B);
@@ -5755,7 +5837,7 @@ INPUT_NOINLINE static void input_poll_overlay(
             if (!y)
                y = ol_state->analog[3];
          }
-         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold, x, y,
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, stick_below, stick_above, x, y,
                RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
                RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_DOWN);
       }
@@ -12641,81 +12723,12 @@ void input_remapping_set_defaults(bool clear_cache)
 }
 
 #ifdef HAVE_MENU
-/* The stick values past which the menu takes a stick for a direction.
- *
- * The menu compared a stick's value, divided by 0x7fff as a float,
- * with the axis threshold: less than minus the threshold one way, more
- * than it the other. A stick reads one of 65536 values, and the
- * division only ever grows with the value, so each comparison holds
- * from some value on: these are those two values - the greatest still
- * below, the least already above - found by bisection with that very
- * comparison, so what the menu takes is the same value for value, and
- * a deflected stick costs two integer compares where it cost four
- * divisions. Worked out again only when the threshold changes; with
- * none that any value passes, they are one outside what a stick reads. */
-#define INPUT_MENU_STICK_IS_BELOW(v, threshold) ((float)(int16_t)(v) / 0x7fff < -(threshold))
-#define INPUT_MENU_STICK_IS_ABOVE(v, threshold) ((float)(int16_t)(v) / 0x7fff >  (threshold))
-
 /* The D-pad's four are numbered up, down, left, right, which is what
  * lets a direction be worked out from the axis and the way. */
 typedef char input_menu_dpad_ids_in_a_row[(
          RETRO_DEVICE_ID_JOYPAD_DOWN  == RETRO_DEVICE_ID_JOYPAD_UP   + 1
       && RETRO_DEVICE_ID_JOYPAD_LEFT  == RETRO_DEVICE_ID_JOYPAD_UP   + 2
       && RETRO_DEVICE_ID_JOYPAD_RIGHT == RETRO_DEVICE_ID_JOYPAD_LEFT + 1) ? 1 : -1];
-
-static void input_menu_stick_limits(float threshold, int *below, int *above)
-{
-   static float for_threshold;
-   static int   lim_below;
-   static int   lim_above;
-   static bool  have;
-
-   if (!have || for_threshold != threshold)
-   {
-      int lo, hi;
-
-      /* the greatest value below: it holds for every value up to it */
-      if (!INPUT_MENU_STICK_IS_BELOW(-0x8000, threshold))
-         lim_below = -0x8000 - 1;
-      else
-      {
-         lo = -0x8000;
-         hi =  0x7fff;
-         while (lo < hi)
-         {
-            int mid = lo + (hi - lo + 1) / 2;
-            if (INPUT_MENU_STICK_IS_BELOW(mid, threshold))
-               lo = mid;
-            else
-               hi = mid - 1;
-         }
-         lim_below = lo;
-      }
-
-      /* the least value above: it holds for every value from it */
-      if (!INPUT_MENU_STICK_IS_ABOVE(0x7fff, threshold))
-         lim_above = 0x7fff + 1;
-      else
-      {
-         lo = -0x8000;
-         hi =  0x7fff;
-         while (lo < hi)
-         {
-            int mid = lo + (hi - lo) / 2;
-            if (INPUT_MENU_STICK_IS_ABOVE(mid, threshold))
-               hi = mid;
-            else
-               lo = mid + 1;
-         }
-         lim_above = lo;
-      }
-
-      for_threshold = threshold;
-      have          = true;
-   }
-   *below = lim_below;
-   *above = lim_above;
-}
 #endif
 
 void input_driver_collect_system_input(input_driver_state_t *input_st,
@@ -12790,7 +12803,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          int stick_above;
          int16_t stick_xy[2];
 
-         input_menu_stick_limits(joypad_info.axis_threshold,
+         input_stick_limits(joypad_info.axis_threshold, false,
                &stick_below, &stick_above);
 
          /* Read input from analog sticks according to settings. */
@@ -12848,7 +12861,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                    * stick's own bind for that way. The four were
                    * written out, each dividing the value to compare
                    * it; the limits are the same comparison's, found
-                   * once (input_menu_stick_limits()). */
+                   * once (input_stick_limits()). */
                   if (ret <= stick_below || ret >= stick_above)
                   {
                      unsigned neg = (ret <= stick_below) ? 1 : 0;
