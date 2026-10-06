@@ -1009,6 +1009,16 @@ jobs:
           sudo apt-get install -y -qq xvfb libvkd3d1 mesa-vulkan-drivers > /dev/null
           REQUIRE_D3D12=1 samples/gfx/d3d12_hw_interface_v2/run.sh
 
+      - name: D3D texture pokes marshal onto the video thread (mingw, object check)
+        shell: bash
+        run: |
+          set -eu
+          # Every texture poke a caller reaches with threaded=true that
+          # touches a device's queue or descriptor heaps goes through
+          # video_thread_texture_handle(); read off the compiled object's
+          # relocations, D3D12's compressed load included.
+          make -C samples/gfx/d3d_texture_marshal check
+
       - name: Win32 window procedure on a real window (mingw + Wine, headless)
         shell: bash
         run: |

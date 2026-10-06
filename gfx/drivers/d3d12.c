@@ -8460,10 +8460,11 @@ static void d3d12_gfx_set_osd_msg(
 #ifdef HAVE_THREADS
 typedef struct
 {
-   d3d12_video_t               *d3d12;
-   struct texture_image        *image;
-   enum texture_filter_type     filter_type;
-   uintptr_t                    handle; /* in for unload, out for load */
+   d3d12_video_t                   *d3d12;
+   struct texture_image            *image;
+   const struct texture_compressed *tc;
+   enum texture_filter_type         filter_type;
+   uintptr_t                        handle; /* in for unload, out for load */
 } d3d12_texture_cmd_t;
 #endif
 
@@ -9282,11 +9283,12 @@ static bool d3d12_gfx_supports_texture_format(void* data,
    return (fs.Support1 & D3D12_FORMAT_SUPPORT1_TEXTURE2D) != 0;
 }
 
-static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
-      const struct texture_compressed* tc, bool threaded,
+/* The copy goes through the driver's queue and the SRV comes out of its
+ * descriptor heap, so this runs on the thread that owns them. */
+static uintptr_t d3d12_gfx_load_texture_compressed_internal(
+      d3d12_video_t* d3d12, const struct texture_compressed* tc,
       enum texture_filter_type filter_type)
 {
-   d3d12_video_t*        d3d12       = (d3d12_video_t*)video_data;
    d3d12_texture_t*      texture     = NULL;
    D3D12Device           device;
    DXGI_FORMAT           dxgi;
@@ -9305,7 +9307,6 @@ static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
    unsigned              block_bytes = 16;
    HRESULT               hr;
 
-   (void)threaded;
    if (!d3d12 || !d3d12->device || !tc || tc->num_mips == 0)
       return 0;
    dxgi = d3d12_dxgi_from_gpu_format(tc->format);
@@ -9451,6 +9452,40 @@ static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
    texture->size_data.w = 1.0f / (float)tc->mips[0].height;
    texture->dirty       = false;
    return (uintptr_t)texture;
+}
+
+#ifdef HAVE_THREADS
+static uintptr_t d3d12_texture_load_compressed_wrap(void *data)
+{
+   d3d12_texture_cmd_t *cmd = (d3d12_texture_cmd_t*)data;
+   cmd->handle = d3d12_gfx_load_texture_compressed_internal(
+         cmd->d3d12, cmd->tc, cmd->filter_type);
+   return 0;
+}
+#endif
+
+static uintptr_t d3d12_gfx_load_texture_compressed(void* video_data,
+      const struct texture_compressed* tc, bool threaded,
+      enum texture_filter_type filter_type)
+{
+   d3d12_video_t* d3d12 = (d3d12_video_t*)video_data;
+
+#ifdef HAVE_THREADS
+   /* Same reasoning as d3d12_gfx_load_texture() */
+   if (threaded)
+   {
+      d3d12_texture_cmd_t cmd;
+      cmd.d3d12       = d3d12;
+      cmd.image       = NULL;
+      cmd.tc          = tc;
+      cmd.filter_type = filter_type;
+      cmd.handle      = 0;
+      video_thread_texture_handle(&cmd, d3d12_texture_load_compressed_wrap);
+      return cmd.handle;
+   }
+#endif
+
+   return d3d12_gfx_load_texture_compressed_internal(d3d12, tc, filter_type);
 }
 
 /* DXGI carries the present interval as the SyncInterval argument of
