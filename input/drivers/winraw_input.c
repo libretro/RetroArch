@@ -1436,13 +1436,14 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
           * is derived without reading the position winraw_poll() owns. */
          unsigned last = (unsigned)retro_atomic_load_relaxed_int(
                &mouse->abs_pos);
-         state->lLastX = (LONG)(wr->view_abs_ratio_x * state->lLastX);
-         state->lLastY = (LONG)(wr->view_abs_ratio_y * state->lLastY);
+         /* this report's place in the window, scaled and packed once */
+         unsigned now  = VIDEO_POS_PACK(
+               (LONG)(wr->view_abs_ratio_x * state->lLastX),
+               (LONG)(wr->view_abs_ratio_y * state->lLastY));
          winraw_dlt_add(&mouse->dlt,
-               state->lLastX - VIDEO_POS_X(last),
-               state->lLastY - VIDEO_POS_Y(last));
-         retro_atomic_store_release_int(&mouse->abs_pos,
-               (int)VIDEO_POS_PACK(state->lLastX, state->lLastY));
+               VIDEO_POS_X(now) - VIDEO_POS_X(last),
+               VIDEO_POS_Y(now) - VIDEO_POS_Y(last));
+         retro_atomic_store_release_int(&mouse->abs_pos, (int)now);
          retro_atomic_store_release_int(&mouse->abs_pending, 1);
       }
       else
