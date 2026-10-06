@@ -227,12 +227,13 @@ jobs:
           # beetle-psx takes).
           HARNESS_CORE_XRGB8888=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           # And with the harness core as a Vulkan hardware core, which
-          # runs its own lane alone: the core's image must not be drawn
+          # runs its own lanes alone: the core's image must not be drawn
           # from once the core has destroyed it - at a content close,
           # unthreaded and under the wrapper, and after a set_image(NULL)
-          # - and a dupe of a hardware frame must not re-submit a fence
-          # that is already signalled. Either is a validation error
-          # here, and on lavapipe a crash.
+          # - a dupe of a hardware frame must not re-submit a fence that
+          # is already signalled, and a frame the push replaces must not
+          # leave its semaphore signalled for the core to signal again.
+          # Each is a validation error here, and on lavapipe a crash.
           HARNESS_CORE_HW_VULKAN=1 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
           # And as a core that creates the device itself, through the
@@ -392,6 +393,7 @@ jobs:
           export VK_DRIVER_FILES=/usr/share/vulkan/icd.d/lvp_icd.json
           SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           HARNESS_CORE_XRGB8888=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          HARNESS_CORE_HW_VULKAN=1 SAN=address VK_DEBUG=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
   vulkan-tsan-harness:

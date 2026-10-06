@@ -55,7 +55,9 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "overlay_draw_alloc",
    "frame_tex_create",
    "frame_copy_host",
-   "frame_lent_window"
+   "frame_lent_window",
+   "hw_drop",
+   "hw_drop_submit"
 };
 
 int gfx_instrument_get(enum gfx_instrument_counter c)

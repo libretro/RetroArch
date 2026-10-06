@@ -47,6 +47,9 @@
 #include "../../../verbosity.h"
 #include "../../../input/input_driver.h"
 #include "../../../tasks/task_content.h"
+#ifdef HAVE_VULKAN
+#include <libretro_vulkan.h>
+#endif
 
 #ifdef HAVE_X11
 #include <X11/Xlib.h>
@@ -5908,6 +5911,207 @@ static void lane_hw_image_lifetime(const char *core_path)
             " after the core's teardown)\n", after_plain, after_wrapped);
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: a hardware core's own images, behind a semaphore per frame   */
+/*   The harness core in its ring mode renders into an image per sync */
+/*   index, which the video thread reads a frame or two later, behind */
+/*   a semaphore per frame, and dupes every third: a dupe draws the   */
+/*   last image again. Then, behind a present slower than a frame,    */
+/*   with a software frame every third and then with hardware frames  */
+/*   only, hardware frames the video thread never drew are replaced   */
+/*   or taken back, and the core comes back to slots still queued.    */
+/*   The core signals a slot's semaphore again on every other use and */
+/*   recycles it on the rest, so the validation layer reports one the */
+/*   frontend never waited, and one whose wait is still on the queue. */
+/*   A slot queued twice behind one signal hangs the queue. The core  */
+/*   must also keep running ahead of the slow present rather than     */
+/*   wait for it, and never be handed the image the video thread is   */
+/*   drawing from.                                                    */
+/* ------------------------------------------------------------------ */
+
+#define HWRING_FRAMES      600
+#define HWRING_SLOW_FRAMES 120
+
+static video_driver_t        hwring_driver;
+static const video_driver_t *hwring_inner;
+static unsigned              hwring_hw_drawn;
+static unsigned              hwring_present_ms;
+static video_poke_interface_t        hwring_poke;
+static const video_poke_interface_t *hwring_inner_poke;
+/* The core's image the ring installed for the next frame call (the
+ * video thread's own), and the one inside the frame call now. */
+static uint64_t              hwring_installed;
+static retro_atomic_ptr_t    hwring_drawing;
+/* Images the core cleared while the video thread was drawing them. */
+static unsigned              hwring_overlaps;
+
+static bool hwring_install(void *data, const void *image,
+      const void *semaphores, unsigned num_semaphores,
+      unsigned src_queue_family, const void *cmd, unsigned num_cmd)
+{
+   hwring_installed = 0;
+#ifdef HAVE_VULKAN
+   if (image)
+      memcpy(&hwring_installed,
+            &((const struct retro_vulkan_image*)image)->create_info.image,
+            sizeof(VkImage));
+#endif
+   return hwring_inner_poke->hw_ring_install(data, image, semaphores,
+         num_semaphores, src_queue_family, cmd, num_cmd);
+}
+
+static bool hwring_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   bool ret;
+   if (frame == RETRO_HW_FRAME_BUFFER_VALID)
+      hwring_hw_drawn++;
+   retro_atomic_store_release_ptr(&hwring_drawing,
+         (void*)(uintptr_t)hwring_installed);
+   hwring_installed = 0;
+   retro_sleep(hwring_present_ms);
+   ret = hwring_inner->frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+   retro_atomic_store_release_ptr(&hwring_drawing, NULL);
+   return ret;
+}
+
+/* The core's thread, before it clears an image. */
+static void hwring_on_clear(uint64_t image)
+{
+   if (     image
+         && (void*)(uintptr_t)image
+            == retro_atomic_load_acquire_ptr(&hwring_drawing))
+      hwring_overlaps++;
+}
+
+static void lane_hw_ring_sync(void)
+{
+   unsigned had = failures;
+   dylib_t lib  = runloop_state_get_ptr()->lib_handle;
+   void (*ring)(int) = lib
+      ? (void (*)(int))dylib_proc(lib, "harness_core_hw_ring") : NULL;
+   void (*on_clear)(void (*)(uint64_t)) = lib
+      ? (void (*)(void (*)(uint64_t)))dylib_proc(lib,
+            "harness_core_hw_ring_on_clear") : NULL;
+   unsigned f0, f1, s0, s1, replaced;
+   unsigned h0, h1, hw_drawn, hw_replaced;
+   thread_video_t *thr;
+
+   if (!ring || !on_clear || !hwlane_core_call("harness_core_hw_active"))
+   {
+      CHECK(0, "hw ring sync: the harness core is not a hardware core"
+            " with a ring mode");
+      return;
+   }
+
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   hwlane_pump(5);
+   expect_wrapper(true, "hw ring sync");
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   if (!thr || !thr->frame.hw_ring)
+   {
+      CHECK(0, "hw ring sync: the wrapper has no hardware ring for this driver");
+      set_threaded_via_setting(false);
+      hwlane_pump(5);
+      return;
+   }
+
+   ring(1);
+   f0 = hwlane_core_call("harness_core_hw_ring_sent");
+   hwlane_pump(HWRING_FRAMES);
+   video_thread_wait_idle();
+   f1 = hwlane_core_call("harness_core_hw_ring_sent");
+   CHECK(f1 - f0 >= HWRING_FRAMES / 2,
+         "hw ring sync: %u images handed over in %u frames",
+         f1 - f0, (unsigned)HWRING_FRAMES);
+
+   /* Every hardware frame handed over and never drawn was replaced
+    * or taken back by the push. */
+   hwring_inner        = thr->driver;
+   hwring_driver       = *thr->driver;
+   hwring_driver.frame = hwring_frame;
+   hwring_hw_drawn     = 0;
+   hwring_present_ms   = 30;
+   hwring_installed    = 0;
+   hwring_overlaps     = 0;
+   retro_atomic_ptr_init(&hwring_drawing, NULL);
+   set_driver(thr, &hwring_driver);
+   hwring_inner_poke           = thr->poke;
+   hwring_poke                 = *thr->poke;
+   hwring_poke.hw_ring_install = hwring_install;
+   set_poke(thr, &hwring_poke);
+   on_clear(hwring_on_clear);
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
+   ring(2);
+   s0 = hwlane_core_call("harness_core_hw_ring_sent");
+   hwlane_pump(HWRING_SLOW_FRAMES);
+   video_thread_wait_idle();
+   s1 = hwlane_core_call("harness_core_hw_ring_sent");
+   replaced = s1 - s0 - hwring_hw_drawn;
+   CHECK(replaced >= HWRING_SLOW_FRAMES / 12,
+         "hw ring sync: %u of %u hardware frames replaced behind a"
+         " slow present: the lane proved nothing",
+         replaced, s1 - s0);
+
+   /* Hardware frames only: nothing but the core's own frames to drop,
+    * and the core must not be held to the present's rate for it. The
+    * present is slow enough that a slow runner's core still outruns
+    * it several times over. */
+   hwring_hw_drawn   = 0;
+   hwring_present_ms = 100;
+   ring(3);
+   h0 = hwlane_core_call("harness_core_hw_ring_sent");
+   hwlane_pump(HWRING_SLOW_FRAMES);
+   video_thread_wait_idle();
+   h1 = hwlane_core_call("harness_core_hw_ring_sent");
+   on_clear(NULL);
+   set_poke(thr, hwring_inner_poke);
+   set_driver(thr, hwring_inner);
+   hw_drawn    = hwring_hw_drawn;
+   hw_replaced = h1 - h0 - hw_drawn;
+   CHECK(hw_replaced >= (h1 - h0) / 3,
+         "hw ring sync: hardware frames only, %u handed over and %u drawn"
+         " behind a slow present: the core is held to the present",
+         h1 - h0, hw_drawn);
+   CHECK(hwring_overlaps == 0,
+         "hw ring sync: the core cleared the image being drawn %u time(s)",
+         hwring_overlaps);
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int drops   = gfx_instrument_get(GFX_INSTR_HW_DROP);
+      int submits = gfx_instrument_get(GFX_INSTR_HW_DROP_SUBMIT);
+      /* Every frame handed over behind a semaphore and never drawn was
+       * dropped, and a drop costs the core's thread one queue
+       * submission: the semaphore wait and the slot's fence together. */
+      CHECK(drops == (int)(replaced + hw_replaced),
+            "hw ring sync: %u frames replaced but %d dropped on the ring",
+            replaced + hw_replaced, drops);
+      CHECK(submits == drops,
+            "hw ring sync: %d drops cost %d queue submissions, not one each",
+            drops, submits);
+      fprintf(stderr, "[baseline] hw ring sync: %d drops, %d queue submissions\n",
+            drops, submits);
+   }
+#endif
+
+   ring(0);
+   hwlane_pump(5);
+   set_threaded_via_setting(false);
+   hwlane_pump(5);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] hw ring sync lane (%u images, %u of %u"
+            " hardware frames replaced behind a slow present, %u of %u"
+            " with hardware frames only)\n",
+            f1 - f0, replaced, s1 - s0, hw_replaced, h1 - h0);
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -6026,9 +6230,10 @@ int main(int argc, char *argv[])
    CHECK(menu_is_up(), "menu did not open");
    expect_wrapper(false, "boot");
 
-   /* The harness core as a hardware core: its own lane, alone. */
+   /* The harness core as a hardware core: its own lanes, alone. */
    if (getenv("HARNESS_CORE_HW_VULKAN"))
    {
+      lane_hw_ring_sync();
       lane_hw_image_lifetime(core_path);
       goto shutdown;
    }
