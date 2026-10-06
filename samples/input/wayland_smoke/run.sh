@@ -53,16 +53,46 @@ mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 export DISPLAY=:93
 Xvfb :93 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
-sleep 1
-weston --backend=x11 --renderer=pixman --width=1024 --height=640 \
-   --socket=wl-smoke --no-config > "$work/weston.log" 2>&1 &
-WESTON=$!
-for i in $(seq 1 60); do
-   [ -S "$XDG_RUNTIME_DIR/wl-smoke" ] && break
+# The X server is up when something can connect to it and be answered.
+# A fixed wait was here, and on a loaded machine it was too short.
+for i in $(seq 1 240); do
+   xdotool getdisplaygeometry > /dev/null 2>&1 && break
+   kill -0 $XVFB 2>/dev/null || break
    sleep 0.25
 done
-[ -S "$XDG_RUNTIME_DIR/wl-smoke" ] \
-   || { echo "the compositor did not start" >&2; tail -5 "$work/weston.log" >&2; exit 1; }
+xdotool getdisplaygeometry > /dev/null 2>&1 \
+   || { echo "the X server did not start" >&2; cat "$work/xvfb.log" >&2; exit 1; }
+
+# The compositor is up when its socket is there. It is given a minute,
+# and a second go if it exits or does not get there: it once stopped
+# after loading its X11 backend and the fifteen seconds it had ran out,
+# on a run where nothing of RetroArch had been started yet. If it does
+# not start, both logs are shown whole, with how it ended.
+start_compositor() {
+   rm -f "$XDG_RUNTIME_DIR/wl-smoke" "$XDG_RUNTIME_DIR/wl-smoke.lock"
+   weston --backend=x11 --renderer=pixman --width=1024 --height=640 \
+      --socket=wl-smoke --no-config > "$work/weston.log" 2>&1 &
+   WESTON=$!
+   for i in $(seq 1 240); do
+      [ -S "$XDG_RUNTIME_DIR/wl-smoke" ] && return 0
+      kill -0 $WESTON 2>/dev/null || break
+      sleep 0.25
+   done
+   if kill -0 $WESTON 2>/dev/null; then
+      echo "the compositor was still starting after a minute" >&2
+      kill $WESTON 2>/dev/null
+   else
+      wait $WESTON 2>/dev/null
+      echo "the compositor exited with status $?" >&2
+   fi
+   echo "--- weston's log:" >&2
+   cat "$work/weston.log" >&2
+   WESTON=
+   return 1
+}
+start_compositor || { echo "starting the compositor again" >&2; sleep 2; start_compositor; } \
+   || { echo "the compositor did not start" >&2
+        echo "--- the X server's log:" >&2; cat "$work/xvfb.log" >&2; exit 1; }
 sleep 1
 # the compositor's window on the X display: what the keys are sent to
 comp=$(xdotool search --onlyvisible --name "" 2>/dev/null | tail -1)

@@ -185,7 +185,15 @@ ${MINGW_CC:-x86_64-w64-mingw32-gcc} -O1 -o "$work/close.exe" "$work/close.c" \
 export DISPLAY=:98
 Xvfb :98 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
-sleep 1
+# The X server is up when something can connect to it and be answered.
+# A fixed wait was here, and on a loaded machine it was too short.
+for i in $(seq 1 240); do
+   xdotool getdisplaygeometry > /dev/null 2>&1 && break
+   kill -0 $XVFB 2>/dev/null || break
+   sleep 0.25
+done
+xdotool getdisplaygeometry > /dev/null 2>&1 \
+   || { echo "the X server did not start" >&2; cat "$work/xvfb.log" >&2; exit 1; }
 
 write_cfg() {  # $1: video_threaded  $2: input driver  $3: joypad driver
    cat > "$work/retroarch.cfg" <<CFG
