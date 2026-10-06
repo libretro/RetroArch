@@ -457,7 +457,7 @@ static void *apple_display_server_get_resolution_list(
 
    CFRelease(displayModes);
    CFRelease(currentMode);
-   RARCH_LOG("Found %u display modes on macOS\n", *len);
+   RARCH_LOG("Found %u display modes on macOS.\n", *len);
    return conf;
 #else
    /* pre-10.6 Leopard/Tiger fallback: CGDisplayModeRef doesn't exist
@@ -482,7 +482,7 @@ static void *apple_display_server_get_resolution_list(
    conf[0].idx              = 0;
    conf[0].current          = true;
    (void)currentRate;
-   RARCH_LOG("[Video] Legacy macOS: reporting current mode %ux%u only\n",
+   RARCH_LOG("[Video] Legacy macOS: reporting current mode %ux%u only.\n",
          VIDEO_SCALE_W(conf[0].dims), VIDEO_SCALE_H(conf[0].dims));
    return conf;
 #endif /* RARCH_HAS_CGDISPLAYMODE_API */
@@ -535,7 +535,7 @@ static void *apple_display_server_get_resolution_list(
 
    NSArray *sorted = [[rates allObjects] sortedArrayUsingSelector:@selector(compare:)];
    *len = (unsigned)[sorted count];
-   RARCH_LOG("Available screen refresh rates: %s\n", [[NSString stringWithFormat:@"%@", sorted] UTF8String]);
+   RARCH_LOG("[Video] Available screen refresh rates: %s\n", [[NSString stringWithFormat:@"%@", sorted] UTF8String]);
 
    if (!(conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config))))
       return NULL;
@@ -626,10 +626,10 @@ static void *apple_display_server_init(void)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
-      RARCH_LOG("[Video] Stored original display mode for restoration\n");
+      RARCH_LOG("[Video] Stored original display mode for restoration.\n");
    else
       RARCH_WARN("[Video] Could not read the current display mode;"
-            " it will not be restored on exit\n");
+            " it will not be restored on exit.\n");
 #endif
 
    /* Sync the display link to the configured refresh rate.
@@ -687,7 +687,7 @@ static void apple_display_server_destroy(void *data)
       CGError result = CGDisplaySetDisplayMode(apple->display_id, apple->original_mode, NULL);
       if (result == kCGErrorSuccess)
       {
-         RARCH_LOG("[Video] Restored original display mode\n");
+         RARCH_LOG("[Video] Restored original display mode.\n");
       }
       else
       {
