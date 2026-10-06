@@ -13,6 +13,7 @@
  * surface the video thread already held, eglMakeCurrent refused, and
  * every hardware core on Android died in its renderer's init. */
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <libretro.h>
 
@@ -38,6 +39,10 @@ static core_bind_framebuffer_t core_bind_framebuffer;
 static core_viewport_t         core_viewport;
 static core_clear_color_t      core_clear_color;
 static core_clear_t            core_clear;
+/* EGL_HW_CORE_CACHE_FBO=1: the framebuffer is asked for once, here, and
+ * bound every frame after, as GLideN64's glsm does (#19727). */
+static int                     cache_fbo;
+static unsigned                cached_fbo;
 
 static void context_reset(void)
 {
@@ -58,8 +63,16 @@ static void context_reset(void)
    have_context = version && core_bind_framebuffer && core_viewport
       && core_clear_color && core_clear;
    if (have_context)
+   {
       fprintf(stderr, "[egl_hw_core] context_reset: GL_VERSION \"%s\"\n",
             (const char*)version);
+      if (cache_fbo)
+      {
+         cached_fbo = (unsigned)hw.get_current_framebuffer();
+         fprintf(stderr, "[egl_hw_core] context_reset: cached FBO %u\n",
+               cached_fbo);
+      }
+   }
    else
       fprintf(stderr, "[egl_hw_core] context_reset: NO CONTEXT\n");
    fflush(stderr);
@@ -121,8 +134,8 @@ void retro_run(void)
       video_cb(NULL, W, H, 0);
       return;
    }
-   core_bind_framebuffer(CORE_GL_FRAMEBUFFER,
-         (unsigned)hw.get_current_framebuffer());
+   core_bind_framebuffer(CORE_GL_FRAMEBUFFER, cache_fbo
+         ? cached_fbo : (unsigned)hw.get_current_framebuffer());
    core_viewport(0, 0, W, H);
    /* 51, 153, 204 in a screenshot. */
    core_clear_color(0.2f, 0.6f, 0.8f, 1.0f);
@@ -136,6 +149,7 @@ bool retro_load_game(const struct retro_game_info *game)
    (void)game;
    environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt);
    memset(&hw, 0, sizeof(hw));
+   cache_fbo          = getenv("EGL_HW_CORE_CACHE_FBO") != NULL;
    hw.context_type    = RETRO_HW_CONTEXT_OPENGL;
    hw.context_reset   = context_reset;
    hw.context_destroy = context_destroy;

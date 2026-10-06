@@ -140,6 +140,12 @@ typedef struct
    /* The core's current sync index: the slot it is rendering into.
     * Main thread only between pushes; the push moves it. */
    unsigned  index;
+   /* OpenGL: the slot whose framebuffer the core last asked for, and
+    * whether it asked since the last publish. A core that caches the
+    * framebuffer from context_reset renders into that slot whatever
+    * index says, so the ring stays on it (#19727). */
+   unsigned  gl_fbo_slot;
+   bool      gl_queried;
    /* The slot the video thread last drew a real frame from, or -1. A
     * dupe (video_refresh(NULL)) draws it again, and on Vulkan so does
     * a software frame, so it is what they fence and what the core is
@@ -848,6 +854,8 @@ uintptr_t video_thread_hw_get_current_framebuffer(void *data)
    hw_ring_t *ring     = hw_ring_of(data);
    if (!ring || ring->api != HW_API_GL || !thr->poke->hw_ring_framebuffer)
       return 0;
+   ring->gl_fbo_slot = ring->index;
+   ring->gl_queried  = true;
    return thr->poke->hw_ring_framebuffer(thr->driver_data, ring->index);
 }
 
@@ -889,9 +897,16 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned published;
+   bool stay;
    *taken_back     = 0;
    if (!ring)
       return -1;
+   /* A core that did not ask for its framebuffer rendered into the one
+    * it has: that slot is the frame, and the ring stays on it */
+   stay = (ring->api == HW_API_GL && !ring->gl_queried);
+   if (stay)
+      ring->index = ring->gl_fbo_slot;
+   ring->gl_queried = false;
    published = ring->index;
 #ifdef HAVE_D3D11
    if (ring->api == HW_API_D3D11)
@@ -947,7 +962,8 @@ int video_thread_hw_publish(thread_video_t *thr, unsigned *taken_back)
          return -1;
    }
 #endif
-   ring->index = (ring->index + 1) % VIDEO_THREAD_HW_RING;
+   if (!stay)
+      ring->index = (ring->index + 1) % VIDEO_THREAD_HW_RING;
 #ifdef HAVE_VULKAN
    if (ring->api == HW_API_VULKAN)
       ring->index = hw_vk_next_slot(ring, published, taken_back);

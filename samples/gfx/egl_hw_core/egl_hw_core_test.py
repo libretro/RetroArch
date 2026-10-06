@@ -84,7 +84,7 @@ def read_png(path):
     return width, height, rows
 
 
-def run(retroarch, name, threaded, hide):
+def run(retroarch, name, threaded, hide, cache_fbo=False, frames=20):
     d = tempfile.mkdtemp(prefix="egl_hw_core_")
     try:
         shot = os.path.join(d, "shot.png")
@@ -112,8 +112,10 @@ def run(retroarch, name, threaded, hide):
         if hide:
             env["LD_PRELOAD"]        = SHIM
             env["EGL_HW_CORE_SHIM"]  = hide
+        if cache_fbo:
+            env["EGL_HW_CORE_CACHE_FBO"] = "1"
         cmd = ["xvfb-run", "-a", "-s", "-screen 0 1024x768x24", retroarch,
-               "--config=" + cfg, "-L", CORE, "--max-frames=20",
+               "--config=" + cfg, "-L", CORE, "--max-frames=%d" % frames,
                "--max-frames-ss", "--max-frames-ss-path=" + shot, "-v"]
         proc = subprocess.run(cmd, env=env, stdout=subprocess.PIPE,
                               stderr=subprocess.STDOUT, timeout=120)
@@ -136,6 +138,12 @@ def run(retroarch, name, threaded, hide):
         if bool(hide) != ("[egl_shim] pbuffer created" in log):
             return fail("the core's context is %s a pbuffer"
                         % ("not on" if hide else "on"))
+        # A core that keeps the framebuffer from context_reset renders
+        # into one ring slot: the ring must stay on it, or two of three
+        # presented frames were never drawn (#19727).
+        if cache_fbo != ("[egl_hw_core] context_reset: cached FBO" in log):
+            return fail("the core %s the framebuffer"
+                        % ("did not cache" if cache_fbo else "cached"))
         if proc.returncode != 0:
             return fail("retroarch exited with %d" % proc.returncode)
         if not os.path.exists(shot):
@@ -146,7 +154,7 @@ def run(retroarch, name, threaded, hide):
         if bad:
             return fail("%d of %d pixels are not the core's colour (centre %s)"
                         % (bad, w * h, rows[h // 2][w // 2]))
-        print("ok   %s" % name)
+        print("ok   %s (centre %s)" % (name, rows[h // 2][w // 2]))
         return True
     finally:
         shutil.rmtree(d, ignore_errors=True)
@@ -157,14 +165,22 @@ def main():
         raise SystemExit(__doc__)
     retroarch = os.path.abspath(sys.argv[1])
     cases = [
-        ("threaded",                 True,  ""),
-        ("threaded, pbuffer",        True,  "surfaceless"),
-        ("threaded, pbuffer config", True,  "surfaceless,pbuffer"),
-        ("unthreaded",               False, ""),
+        ("threaded",                 True,  "",                   False),
+        ("threaded, pbuffer",        True,  "surfaceless",        False),
+        ("threaded, pbuffer config", True,  "surfaceless,pbuffer", False),
+        ("threaded, cached FBO",     True,  "",                   True),
+        ("unthreaded",               False, "",                   False),
     ]
     ok = True
-    for name, threaded, hide in cases:
-        ok = run(retroarch, name, threaded, hide) and ok
+    for name, threaded, hide, cache_fbo in cases:
+        if cache_fbo:
+            # Which slot the core cached depends on when context_reset
+            # ran: a run per slot of the ring, each must show the frame.
+            for frames in (20, 21, 22):
+                ok = run(retroarch, "%s, %d frames" % (name, frames),
+                         threaded, hide, cache_fbo, frames) and ok
+        else:
+            ok = run(retroarch, name, threaded, hide, cache_fbo) and ok
     sys.exit(0 if ok else 1)
 
 
