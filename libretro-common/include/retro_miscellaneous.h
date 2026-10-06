@@ -542,9 +542,14 @@ typedef struct
  * hyperthread sibling run and lowers the spinning core's power, at no
  * cost to when the loop notices the change. Nothing where there is no
  * such instruction. */
-#if defined(_MSC_VER) && (defined(_M_IX86) || defined(_M_X64))
-#include <intrin.h>
+#if defined(_MSC_VER) && (defined(_M_X64) || (defined(_M_IX86) && _MSC_VER >= 1310))
+/* <emmintrin.h>, not <intrin.h>: VS2005's <intrin.h> collides with
+ * <windows.h> in C++ (C2733 on _interlockedbittestandset), and VS2003
+ * has no <intrin.h> at all. */
+#include <emmintrin.h>
 #define retro_cpu_relax() _mm_pause()
+#elif defined(_MSC_VER) && defined(_M_IX86)
+#define retro_cpu_relax() do { __asm _emit 0xF3 __asm _emit 0x90 } while (0)
 #elif defined(__i386__) || defined(__x86_64__)
 #define retro_cpu_relax() __asm__ __volatile__("pause" ::: "memory")
 #elif defined(__aarch64__) || (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7)
