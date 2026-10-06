@@ -627,6 +627,14 @@ static bool                    input_snapshot_forced;
 
 void input_driver_set_snapshot_bridge(bool on)
 {
+   /* which drivers are read through the bridge is decided again:
+    * input_snapshot_for() takes a driver it already stands in for as
+    * decided */
+   if (input_snapshot_forced != on)
+   {
+      input_snapshot_bridge[0].real = NULL;
+      input_snapshot_bridge[1].real = NULL;
+   }
    input_snapshot_forced = on;
 }
 
@@ -1154,6 +1162,12 @@ static const input_device_driver_t *input_snapshot_for(
    unsigned b = (drv == st->secondary_joypad && drv != st->primary_joypad)
       ? 1 : 0;
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
+
+   /* The driver it stands in for already: that was decided below when
+    * it was set up, and nothing that decides it has changed since (the
+    * test switch above clears it). Asked several times a frame. */
+   if (bridge->real == drv)
+      return &bridge->adapter;
 
    if (!input_snapshot_forced && !input_snapshot_driver_checked(drv))
       return NULL;
