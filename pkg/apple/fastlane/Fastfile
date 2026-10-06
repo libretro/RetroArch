@@ -156,6 +156,11 @@ private_lane :ra_update_signing do |options|
 end
 
 private_lane :ra_build_app do |options|
+  # xcodebuild -exportArchive copies the archive with rsync and requires
+  # Apple's /usr/bin/rsync; a Homebrew rsync earlier in PATH makes the
+  # export fail with "Copy failed".
+  ENV["PATH"] = "/usr/bin:#{ENV['PATH']}"
+
   build_app(
     workspace: "RetroArch.xcworkspace",
     scheme: options[:scheme],
