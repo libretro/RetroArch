@@ -5387,6 +5387,23 @@ static void input_overlay_update_pointer_coords(
    ptr_st->count++;
 }
 
+/* A stick's two axes as four buttons: past the threshold one way or
+ * the other on x, and on y. */
+#define INPUT_OVERLAY_STICK_TO_BUTTONS(state, threshold, x, y, left, right, up, down) \
+   do \
+   { \
+      float stick_x = (float)(x) / 0x7fff; \
+      float stick_y = (float)(y) / 0x7fff; \
+      if (stick_x <= -(threshold)) \
+         BIT256_SET((state)->buttons, left); \
+      if (stick_x >=  (threshold)) \
+         BIT256_SET((state)->buttons, right); \
+      if (stick_y <= -(threshold)) \
+         BIT256_SET((state)->buttons, up); \
+      if (stick_y >=  (threshold)) \
+         BIT256_SET((state)->buttons, down); \
+   } while (0)
+
 /*
  * input_poll_overlay:
  *
@@ -5635,88 +5652,43 @@ INPUT_NOINLINE static void input_poll_overlay(
    }
 
    /* Check for analog_dpad_mode.
-    * Map analogs to d-pad buttons when configured. */
-   switch (analog_dpad_mode)
+    * Map analogs to d-pad buttons when configured: the sticks the mode
+    * takes, as the table of the modes has them. */
+   if (     analog_dpad_mode < ANALOG_DPAD_LAST
+         && !(input_analog_dpad_modes[analog_dpad_mode] & 4))
    {
-      case ANALOG_DPAD_LSTICK:
-      case ANALOG_DPAD_RSTICK:
+      unsigned sticks = input_analog_dpad_modes[analog_dpad_mode] & 3;
+
+      if (analog_dpad_mode == ANALOG_DPAD_TWINSTICK)
       {
-         float analog_x, analog_y;
-         unsigned analog_base = 2;
-
-         if (analog_dpad_mode == ANALOG_DPAD_LSTICK)
-            analog_base = 0;
-
-         analog_x = (float)ol_state->analog[analog_base + 0] / 0x7fff;
-         analog_y = (float)ol_state->analog[analog_base + 1] / 0x7fff;
-
-         if (analog_x <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         if (analog_x >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         if (analog_y <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
-         if (analog_y >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
-         break;
+         /* the left stick is the D-pad, the right one the face buttons */
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold,
+               ol_state->analog[0], ol_state->analog[1],
+               RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+               RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_DOWN);
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold,
+               ol_state->analog[2], ol_state->analog[3],
+               RETRO_DEVICE_ID_JOYPAD_Y,    RETRO_DEVICE_ID_JOYPAD_A,
+               RETRO_DEVICE_ID_JOYPAD_X,    RETRO_DEVICE_ID_JOYPAD_B);
       }
-
-      case ANALOG_DPAD_LRSTICK:
+      else if (sticks)
       {
-         float analog_x, analog_y;
+         /* the one stick it takes; with both, the left, and the right
+          * where the left is at rest */
+         int16_t x = (sticks & 1) ? ol_state->analog[0] : ol_state->analog[2];
+         int16_t y = (sticks & 1) ? ol_state->analog[1] : ol_state->analog[3];
 
-         analog_x = (float)ol_state->analog[0] / 0x7fff;
-         analog_y = (float)ol_state->analog[1] / 0x7fff;
-
-         if (!analog_x)
-            analog_x = (float)ol_state->analog[2] / 0x7fff;
-
-         if (!analog_y)
-            analog_y = (float)ol_state->analog[3] / 0x7fff;
-
-         if (analog_x <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         if (analog_x >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         if (analog_y <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
-         if (analog_y >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
-         break;
+         if (sticks == 3)
+         {
+            if (!x)
+               x = ol_state->analog[2];
+            if (!y)
+               y = ol_state->analog[3];
+         }
+         INPUT_OVERLAY_STICK_TO_BUTTONS(ol_state, axis_threshold, x, y,
+               RETRO_DEVICE_ID_JOYPAD_LEFT, RETRO_DEVICE_ID_JOYPAD_RIGHT,
+               RETRO_DEVICE_ID_JOYPAD_UP,   RETRO_DEVICE_ID_JOYPAD_DOWN);
       }
-
-      case ANALOG_DPAD_TWINSTICK:
-      {
-         float analog_x, analog_y;
-
-         analog_x = (float)ol_state->analog[0] / 0x7fff;
-         analog_y = (float)ol_state->analog[1] / 0x7fff;
-
-         if (analog_x <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_LEFT);
-         if (analog_x >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_RIGHT);
-         if (analog_y <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_UP);
-         if (analog_y >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_DOWN);
-
-         analog_x = (float)ol_state->analog[2] / 0x7fff;
-         analog_y = (float)ol_state->analog[3] / 0x7fff;
-
-         if (analog_x <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_Y);
-         if (analog_x >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_A);
-         if (analog_y <= -axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_X);
-         if (analog_y >=  axis_threshold)
-            BIT256_SET(ol_state->buttons, RETRO_DEVICE_ID_JOYPAD_B);
-         break;
-      }
-
-      default:
-         break;
    }
 
    button_pressed = input_overlay_add_inputs(ol, ol_state, input_st,
