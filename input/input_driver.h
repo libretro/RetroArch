@@ -1271,7 +1271,15 @@ enum input_pointers_flags
    INPUT_POINTERS_POINTER_OFFSCREEN = (1 << 4),
    /* A place with a touch reads the touch alone: lifted - a pen in the
     * air - it is not pressed, whatever the mouse's buttons say. */
-   INPUT_POINTERS_TOUCH_ALONE     = (1 << 5)
+   INPUT_POINTERS_TOUCH_ALONE     = (1 << 5),
+   /* The lightgun's buttons are what they are bound to - a pad's
+    * button or axis, a key, a mouse button - and the frontend answers
+    * them. Without this the driver answers them itself (the Wayland and
+    * SDL1 and 2 drivers give them the mouse's buttons, bound or not). */
+   INPUT_POINTERS_GUN_BUTTONS_BOUND = (1 << 6),
+   /* ... and one bound to a mouse button reads the one mouse at every
+    * port, whatever each port's Mouse Index */
+   INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT = (1 << 7)
 };
 
 /* From the driver's poll. @count devices, at most MAX_USERS.

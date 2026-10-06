@@ -519,56 +519,7 @@ static int16_t x_input_state(
             return (id && id < RETROK_LAST) && x_keyboard_pressed(x11, id);
          /* The mouse, the pointer and the lightgun's aim are the
           * frontend's to answer: x_input_poll() publishes each mouse. */
-         case RETRO_DEVICE_LIGHTGUN:
-            switch ( id )
-            {
-                  /*buttons*/
-               case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-               case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-               case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-               case RETRO_DEVICE_ID_LIGHTGUN_START:
-               case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-               case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-               case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-                  {
-                     unsigned new_id                = input_driver_lightgun_id_convert(id);
-                     const uint64_t bind_joykey     = input_config_binds[port][new_id].joykey;
-                     const uint64_t bind_joyaxis    = input_config_binds[port][new_id].joyaxis;
-                     const uint64_t autobind_joykey = input_autoconf_binds[port][new_id].joykey;
-                     const uint64_t autobind_joyaxis= input_autoconf_binds[port][new_id].joyaxis;
-                     uint16_t joyport               = joypad_info->joy_idx;
-                     float axis_threshold           = joypad_info->axis_threshold;
-                     const uint64_t joykey          = (bind_joykey != NO_BTN)
-                        ? bind_joykey  : autobind_joykey;
-                     const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-                        ? bind_joyaxis : autobind_joyaxis;
-
-                     if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
-                     {
-                        if ((uint16_t)joykey != NO_BTN && joypad->button(
-                                 joyport, (uint16_t)joykey))
-                           return 1;
-                        if (joyaxis != AXIS_NONE &&
-                              ((float)abs(joypad->axis(joyport, joyaxis))
-                               / 0x8000) > axis_threshold)
-                           return 1;
-                        else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
-                              && !keyboard_mapping_blocked
-                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][new_id]))
-                           )
-                           return 1;
-                        else if (x_mouse_button_pressed(x11, port, binds[port][new_id].mbutton))
-                              return 1;
-                     }
-                  }
-                  break;
-            }
-            break;
+         /* ... and the lightgun's buttons, from what they are bound to. */
       }
    }
 
@@ -1007,7 +958,7 @@ static void x_input_poll(void *data)
    }
    (void)xi;
    input_driver_publish_pointers(frame, count,
-         INPUT_POINTERS_MOUSE_3_TOUCHES);
+         INPUT_POINTERS_MOUSE_3_TOUCHES | INPUT_POINTERS_GUN_BUTTONS_BOUND);
 }
 
 static void x_grab_mouse(void *data, bool state)

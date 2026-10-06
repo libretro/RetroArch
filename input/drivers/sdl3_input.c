@@ -342,57 +342,7 @@ static int16_t sdl3_input_state(
          if ((id == RETROK_LCTRL || id == RETROK_RCTRL) && input_driver_keyboard_line_enabled())
             return 0;
          return (id && id < RETROK_LAST) && sdl3_key_pressed(sdl, id);
-      case RETRO_DEVICE_LIGHTGUN:
-         switch (id)
-         {
-            /* Buttons */
-            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-            case RETRO_DEVICE_ID_LIGHTGUN_START:
-            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-               {
-                  unsigned new_id                 = input_driver_lightgun_id_convert(id);
-                  const uint64_t bind_joykey      = input_config_binds[port][new_id].joykey;
-                  const uint64_t bind_joyaxis     = input_config_binds[port][new_id].joyaxis;
-                  const uint64_t autobind_joykey  = input_autoconf_binds[port][new_id].joykey;
-                  const uint64_t autobind_joyaxis = input_autoconf_binds[port][new_id].joyaxis;
-                  uint16_t joyport                = joypad_info->joy_idx;
-                  float axis_threshold            = joypad_info->axis_threshold;
-                  const uint64_t joykey           = (bind_joykey != NO_BTN)
-                        ? bind_joykey  : autobind_joykey;
-                  const uint32_t joyaxis          = (bind_joyaxis != AXIS_NONE)
-                        ? bind_joyaxis : autobind_joyaxis;
-
-                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
-                  {
-                     if ((uint16_t)joykey != NO_BTN && joypad->button(
-                              joyport, (uint16_t)joykey))
-                        return 1;
-                     if (joyaxis != AXIS_NONE &&
-                           ((float)abs(joypad->axis(joyport, joyaxis))
-                            / 0x8000) > axis_threshold)
-                        return 1;
-                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
-                           && !keyboard_mapping_blocked
-                           && sdl3_key_pressed(sdl, RETRO_KEYBIND_KEY(&binds[port][new_id]))
-                        )
-                        return 1;
-                     else if (sdl3_mouse_button_pressed(sdl,
-                           binds[port][new_id].mbutton))
-                        return 1;
-                  }
-               }
-               break;
-         }
-         break;
+      /* ... and the lightgun's buttons, from what they are bound to. */
    }
 
    return 0;
@@ -941,6 +891,8 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
 
    input_driver_publish_pointers(&frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_GUN_BUTTONS_BOUND
+         | INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT
          | INPUT_POINTERS_POINTER_OFFSCREEN | INPUT_POINTERS_TOUCH_ALONE);
    input_driver_publish_touches(touch_pos, touches, present, down);
 }

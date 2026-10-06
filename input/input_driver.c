@@ -1556,8 +1556,9 @@ static INLINE const input_port_keys_t *input_port_keys_get(
    return k;
 }
 
-/* A bind's mouse button, from the mouse the driver published. */
-static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
+/* The bit a mouse button bound to a control has in a published frame;
+ * 0 for what is not a button. */
+static unsigned input_mbutton_bit(unsigned mbutton)
 {
    static const uint16_t bit[] = {
       /* RETRO_DEVICE_ID_MOUSE_X .. _BUTTON_5, in the order they are numbered */
@@ -1565,8 +1566,15 @@ static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
       INPUT_POINTER_WHEEL_UP, INPUT_POINTER_WHEEL_DOWN, INPUT_POINTER_MIDDLE,
       INPUT_POINTER_HWHEEL_UP, INPUT_POINTER_HWHEEL_DOWN,
       INPUT_POINTER_BUTTON_4, INPUT_POINTER_BUTTON_5 };
+   return (mbutton < ARRAY_SIZE(bit)) ? bit[mbutton] : 0;
+}
+
+/* A bind's mouse button, from the mouse the driver published. */
+static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
+{
    unsigned i;
-   if (mbutton >= ARRAY_SIZE(bit))
+   unsigned bit = input_mbutton_bit(mbutton);
+   if (!bit)
       return false;
    /* Which mouse a port has: where the driver lists its mice, the one
     * at the port's Mouse Index; where it has the one, the port whose
@@ -1576,7 +1584,22 @@ static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
       return false;
    i = input_pointer_of_port(port, RETRO_DEVICE_MOUSE);
    return i < input_pointers.count
-      && (input_pointers.frame[i].buttons & bit[mbutton]) != 0;
+      && (input_pointers.frame[i].buttons & bit) != 0;
+}
+
+/* A lightgun button's mouse button. The gun's mouse is the port's as
+ * the driver lists them - the one at its Mouse Index, or the one there
+ * is - and with some drivers the one mouse whatever the port. */
+static bool input_gun_mouse_button_down(unsigned port, unsigned mbutton)
+{
+   unsigned i;
+   unsigned bit = input_mbutton_bit(mbutton);
+   if (!bit)
+      return false;
+   i = (input_pointers.flags & INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT)
+      ? 0 : input_pointer_of_port(port, RETRO_DEVICE_MOUSE);
+   return i < input_pointers.count
+      && (input_pointers.frame[i].buttons & bit) != 0;
 }
 
 /* The RetroPad buttons, or one bind, of @port from the keys and mouse
@@ -1659,6 +1682,65 @@ static int16_t input_analog_from_keys(input_driver_t *input, void *data,
    if (k->key_down[id_minus >> 5] & (1u << (id_minus & 31)))
       ret += -0x7fff;
    return ret;
+}
+
+/* A lightgun's button, from what it is bound to: a pad's button or
+ * axis, a key, a mouse button, in that order - what each input driver's
+ * own code for the lightgun's buttons worked out. @held is left alone
+ * for an id that is not one of them (the aim is answered elsewhere). */
+static bool input_gun_button_from_binds(input_driver_t *input, void *data,
+      const input_device_driver_t *joypad, rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, bool keyboard_mapping_blocked,
+      unsigned port, unsigned id, int16_t *held)
+{
+   unsigned new_id;
+
+   switch (id)
+   {
+      case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+      case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
+      case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
+      case RETRO_DEVICE_ID_LIGHTGUN_START:
+      case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
+      case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
+      case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
+         break;
+      default:
+         return false;
+   }
+
+   *held  = 0;
+   new_id = input_driver_lightgun_id_convert(id);
+
+   if (new_id < RARCH_BIND_LIST_END && RETRO_KEYBIND_VALID(&binds[new_id]))
+   {
+      const input_port_keys_t *k = input_port_keys_get(input, data, port);
+      uint16_t joykey  = (binds[new_id].joykey != NO_BTN)
+         ? binds[new_id].joykey
+         : input_autoconf_binds[port][new_id].joykey;
+      uint32_t joyaxis = (binds[new_id].joyaxis != AXIS_NONE)
+         ? binds[new_id].joyaxis
+         : input_autoconf_binds[port][new_id].joyaxis;
+
+      if (joypad && joykey != NO_BTN && joypad->button
+            && joypad->button(joypad_info->joy_idx, joykey))
+         *held = 1;
+      else if (joypad && joyaxis != AXIS_NONE && joypad->axis
+            && ((float)abs(joypad->axis(joypad_info->joy_idx, joyaxis))
+               / 0x8000) > joypad_info->axis_threshold)
+         *held = 1;
+      else if (  !keyboard_mapping_blocked
+              && (k->key_down[new_id >> 5] & (1u << (new_id & 31))))
+         *held = 1;
+      else if (input_gun_mouse_button_down(port, binds[new_id].mbutton))
+         *held = 1;
+   }
+   return true;
 }
 
 /* A value from what the driver published, or from the driver. */
@@ -1808,6 +1890,13 @@ static int32_t input_state_wrap(
       else if (  device == RETRO_DEVICE_ANALOG && binds
               && input && input->keys_down && _port < MAX_USERS)
          ret |= input_analog_from_keys(input, data, _port, idx, id);
+      else if (  device == RETRO_DEVICE_LIGHTGUN && binds
+              && input && input->keys_down && _port < MAX_USERS
+              && (input_pointers.flags & INPUT_POINTERS_GUN_BUTTONS_BOUND)
+              && input_gun_button_from_binds(input, data, joypad,
+                 joypad_info, binds[_port], keyboard_mapping_blocked,
+                 _port, id, &held))
+         ret |= held;
       else if (input && input->input_state)
          ret |= input->input_state(
                data,
