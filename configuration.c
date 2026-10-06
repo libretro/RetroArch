@@ -2878,7 +2878,6 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-   SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
 #ifdef HAVE_PSGL
    SETTING_BOOL("pal60_enable",                  &settings->bools.video_pal60_enable, true, DEFAULT_PAL60_ENABLE, false);
