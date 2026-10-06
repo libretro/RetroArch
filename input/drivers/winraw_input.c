@@ -323,6 +323,9 @@ typedef struct
    uint64_t      stale_sum;      /* microseconds, summed */
    uint32_t      stale_max;
    unsigned long stale_polls;
+   /* The menu is up or an overlay is configured: every mouse is placed
+    * by the cursor. Asked at the start of each poll. */
+   bool          cursor_for_all;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
@@ -1427,18 +1430,13 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
    {
       /* Menu and pointer require GetCursorPos() for
        * positioning, but using that always will
-       * break multiple mice positions */
-      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER) ? true : false;
-#ifdef HAVE_MENU
-      if (menu_driver_alive())
-         getcursorpos = true;
-#endif
-      /* Input overlay with mouse cursor must also use GetCursorPos() */
-      if (!getcursorpos)
-      {
-         if (input_config_overlay_configured())
-            getcursorpos = true;
-      }
+       * break multiple mice positions.
+       * Input overlay with mouse cursor must also use GetCursorPos().
+       * Whether the menu is up or an overlay is configured is asked
+       * once a poll (winraw_poll()), not once a report: a mouse sends
+       * a thousand of these a second, or eight thousand. */
+      bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER)
+         || wr->cursor_for_all;
 
       if (getcursorpos)
       {
@@ -2363,6 +2361,13 @@ static void winraw_poll(void *data)
    POINT crs_pos          = {0, 0};
    bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
+
+   /* asked here for every report read below, and until the next poll */
+   wr->cursor_for_all = input_config_overlay_configured();
+#ifdef HAVE_MENU
+   if (menu_driver_alive())
+      wr->cursor_for_all = true;
+#endif
 
    /* Everything the devices have sent up to now, before any of it is
     * looked at below. */
