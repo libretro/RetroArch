@@ -245,12 +245,6 @@ struct runloop
    struct retro_core_t        current_core;     /* uint64_t alignment */
 #if defined(HAVE_RUNAHEAD)
    uint64_t runahead_last_frame_count;          /* uint64_t alignment */
-   /* Measured cost of one core step inside runahead_run() (a core
-    * run plus its share of the save/load), IIR-averaged in usec; 0
-    * until the first sample. runahead_count_used is the frame count
-    * actually run last frame after the budget gate clamped it. */
-   retro_time_t runahead_unit_usec;
-   int runahead_count_used;
 #if defined(HAVE_DYNAMIC) || defined(HAVE_DYLIB)
    struct retro_core_t secondary_core;          /* uint64_t alignment */
 #endif
