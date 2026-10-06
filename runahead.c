@@ -33,7 +33,6 @@
 #include <streams/file_stream.h>
 #include <queues/task_queue.h>
 #include <time/rtime.h>
-#include <features/features_cpu.h>
 
 #include <compat/strl.h>
 
@@ -1710,104 +1709,6 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 
-/* ===== BEGIN runahead budget gate =====
- * Runahead is N + 1 core steps per visible frame, plus a serialize and
- * a deserialize whose cost is set by the core's state size, not by the
- * frontend. When that no longer fits in the frame, runahead does not
- * lower latency - it drops frames and stretches audio, which is worse
- * than not running ahead at all. So the cost of one step is measured
- * every frame (excluding frontend audio/video output, with the save
- * and load folded in), IIR-averaged, and the
- * frame count is clamped to what fits in RUNAHEAD_BUDGET_LOWER_PCT of
- * the core's frame period. The count only climbs back once it fits
- * within RUNAHEAD_BUDGET_RAISE_PCT, so a core sitting on the boundary
- * does not flip between N and N - 1 every frame. Samples above
- * RUNAHEAD_SAMPLE_CEIL_USEC (a JIT warm-up, a page-in) are dropped
- * rather than dragging the average. */
-#define RUNAHEAD_BUDGET_LOWER_PCT  70
-#define RUNAHEAD_BUDGET_RAISE_PCT  60
-#define RUNAHEAD_SAMPLE_CEIL_USEC  250000
-
-static retro_time_t runahead_frame_period_usec(video_driver_state_t *video_st)
-{
-   double fps = video_st->av_info.timing.fps;
-   if (fps <= 1.0 || fps > 1000.0)
-      fps = 60.0;
-   return (retro_time_t)(1000000.0 / fps);
-}
-
-static void runahead_budget_sample(runloop_state_t *runloop_st,
-      retro_time_t total_usec, int steps)
-{
-   retro_time_t unit;
-   if (steps <= 0 || total_usec < 0 || total_usec > RUNAHEAD_SAMPLE_CEIL_USEC)
-      return;
-   unit = total_usec / steps;
-   if (runloop_st->runahead_unit_usec == 0)
-      runloop_st->runahead_unit_usec = unit;
-   else
-      runloop_st->runahead_unit_usec +=
-         (unit - runloop_st->runahead_unit_usec) / 8;
-}
-
-/* Returns the frame count to run this frame: the requested count, or
- * fewer when the measured step cost says the request does not fit. 0
- * means run the core once with no lookahead. */
-static int runahead_budget_clamp(runloop_state_t *runloop_st,
-      video_driver_state_t *video_st, int requested, bool hide_warnings)
-{
-   retro_time_t unit   = runloop_st->runahead_unit_usec;
-   int used            = runloop_st->runahead_count_used;
-   int chosen          = used;
-   retro_time_t period, lower, raise;
-   int fits_lower, fits_raise;
-
-   if (unit <= 0)
-   {
-      /* No sample yet: run what was asked and measure it. */
-      runloop_st->runahead_count_used = requested;
-      return requested;
-   }
-   period     = runahead_frame_period_usec(video_st);
-   lower      = period * RUNAHEAD_BUDGET_LOWER_PCT / 100;
-   raise      = period * RUNAHEAD_BUDGET_RAISE_PCT / 100;
-   /* N frames of runahead is N + 1 core steps on either instance path. */
-   fits_lower = (int)(lower / unit) - 1;
-   fits_raise = (int)(raise / unit) - 1;
-   if (fits_lower < 0) fits_lower = 0;
-   if (fits_raise < 0) fits_raise = 0;
-
-   if (used > requested)
-      chosen = requested;
-   if (chosen > fits_lower)
-      chosen = fits_lower;
-   else if (chosen < requested && chosen < fits_raise)
-      chosen = (fits_raise < requested) ? fits_raise : requested;
-
-   if (chosen != used)
-   {
-      runloop_st->runahead_count_used = chosen;
-      if (chosen < requested)
-      {
-         char msg[128];
-         size_t _len = snprintf(msg, sizeof(msg),
-               "Run-Ahead: %d frame%s requested, %d fit%s the frame (%d us/step)",
-               requested, requested == 1 ? "" : "s",
-               chosen, chosen == 1 ? "s" : "",
-               (int)unit);
-         RARCH_WARN("[Run-Ahead] %s\n", msg);
-         if (!hide_warnings)
-            runloop_msg_queue_push(msg, _len, 0, 3 * 60, true, NULL,
-                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-      }
-      else
-         RARCH_LOG("[Run-Ahead] %d frame%s fit%s the frame again (%d us/step).\n",
-               chosen, chosen == 1 ? "" : "s", chosen == 1 ? "s" : "", (int)unit);
-   }
-   return chosen;
-}
-/* ===== END runahead budget gate ===== */
-
 void runahead_run(void *data,
       int runahead_count,
       bool runahead_hide_warnings,
@@ -1817,10 +1718,9 @@ void runahead_run(void *data,
    int frame_number        = 0;
    bool last_frame         = false;
    bool suspended_frame    = false;
-   settings_t *settings    = config_get_ptr();
-   bool performance_guard  = settings->bools.run_ahead_performance_guard;
 #if defined(HAVE_DYNAMIC)
    const bool have_dynamic = true;
+   settings_t *settings    = config_get_ptr();
 #else
    const bool have_dynamic = false;
 #endif
@@ -1835,18 +1735,8 @@ void runahead_run(void *data,
    audio_driver_state_t
       *audio_st            = audio_state_get_ptr();
 
-   int steps               = 0;
-
    if (      runahead_count <= 0
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_AVAILABLE))
-      goto force_input_dirty;
-
-   if (performance_guard)
-      runahead_count = runahead_budget_clamp(runloop_st, video_st,
-            runahead_count, runahead_hide_warnings);
-   else
-      runloop_st->runahead_unit_usec = 0;
-   if (runahead_count <= 0)
       goto force_input_dirty;
 
    if (!(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SAVE_STATE_SIZE_KNOWN))
@@ -1916,9 +1806,6 @@ void runahead_run(void *data,
    }
 #endif
 
-   runloop_st->runahead_start_usec = performance_guard
-         ? cpu_features_get_time_usec() : 0;
-
    if (     !use_secondary
          || !have_dynamic
          || !(runloop_st->flags & RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE)
@@ -1961,7 +1848,7 @@ void runahead_run(void *data,
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
-               goto end;
+               return;
             }
          }
 
@@ -1973,11 +1860,10 @@ void runahead_run(void *data,
                runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                      MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
                RARCH_WARN("[Run-Ahead] %s\n", _msg);
-               goto end;
+               return;
             }
          }
       }
-      steps = frame_number;
    }
    else
    {
@@ -2003,7 +1889,7 @@ void runahead_run(void *data,
             runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_WARN("[Run-Ahead] %s\n", _msg);
-            goto end;
+            return;
          }
 
          if (!runahead_load_state_secondary(runloop_st, settings))
@@ -2012,7 +1898,7 @@ void runahead_run(void *data,
             runloop_msg_queue_push(_msg, strlen(_msg), 0, 3 * 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
             RARCH_WARN("[Run-Ahead] %s\n", _msg);
-            goto end;
+            return;
          }
 
          for (frame_number = 0; frame_number < runahead_count - 1; frame_number++)
@@ -2036,25 +1922,14 @@ void runahead_run(void *data,
       else
          runloop_st->flags              &= ~RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE;
       AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED | AUDIO_FLAG_HARD_DISABLE);
-      steps = frame_number + 2;
 #endif
    }
    runloop_st->flags &= ~RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
-   goto end;
+   return;
 
 force_input_dirty:
-   runloop_st->runahead_start_usec = performance_guard
-         ? cpu_features_get_time_usec() : 0;
    core_run();
-   steps = 1;
    runloop_st->flags |=  RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
-
-end:
-   if (performance_guard && steps > 0)
-      runahead_budget_sample(runloop_st,
-            cpu_features_get_time_usec() - runloop_st->runahead_start_usec,
-            steps);
-   runloop_st->runahead_start_usec = 0;
 }
 
 /* Preemptive Frames */
@@ -2475,6 +2350,4 @@ void runahead_clear_variables(void *data)
                                           | RUNLOOP_FLAG_RUNAHEAD_SECONDARY_CORE_AVAILABLE
                                           | RUNLOOP_FLAG_RUNAHEAD_FORCE_INPUT_DIRTY;
    runloop_st->runahead_last_frame_count  = 0;
-   runloop_st->runahead_unit_usec         = 0;
-   runloop_st->runahead_count_used        = 0;
 }

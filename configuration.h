@@ -1063,7 +1063,6 @@ typedef struct settings
       bool run_ahead_enabled;
       bool run_ahead_secondary_instance;
       bool run_ahead_hide_warnings;
-      bool run_ahead_performance_guard;
       bool preemptive_frames_enable;
       bool pause_nonactive;
       bool pause_on_disconnect;
