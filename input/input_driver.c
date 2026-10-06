@@ -3658,6 +3658,86 @@ static int16_t input_state_device(
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT) \
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
 
+/* A port's sixteen RetroPad buttons for the core, in one go.
+ *
+ * input_state_device() is the rules a button goes through on its way
+ * to the core - the remap, what the mapper and the overlay hold, hold
+ * and turbo - and a read of the whole pad as a mask called it sixteen
+ * times, once a frame for every port. Hold and turbo keep state for
+ * each button and are the reason it is a button at a time. Where the
+ * port has neither going - nothing held, no turbo armed or running,
+ * which is nearly always - they do nothing to any button, and what is
+ * left is the same three masks for all sixteen.
+ *
+ * False, with nothing done, where that is not so: the caller goes
+ * through the buttons as before. */
+static bool input_state_device_mask_plain(
+      input_driver_state_t *input_st,
+      settings_t *settings,
+      input_mapper_t *handle,
+      int32_t ret, unsigned port, int16_t *out)
+{
+   unsigned id;
+   unsigned pass  = 0;  /* buttons the pad's and the keys' state reaches the core for */
+   unsigned ident = 0;  /* buttons remapped to themselves */
+   unsigned res;
+   const unsigned *remap_ids             = settings->uints.input_remap_ids[port];
+   const struct retro_keybind *binds     = input_st->libretro_input_binds[port]
+      ? *input_st->libretro_input_binds[port] : NULL;
+
+#ifdef HAVE_NETWORKGAMEPAD
+   /* the Remote RetroPad answers for a button in place of the binds */
+   if (input_st->remote)
+      return false;
+#endif
+   if (     input_st->hold_btns.frame_enable[port]
+         || input_st->hold_btns.enable[port]
+         || input_st->turbo_btns.frame_enable[port]
+         || input_st->turbo_btns.enable[port]
+         || input_st->turbo_btns.mode1_enable[port]
+         || input_st->turbo_btns.turbo_pressed[port])
+      return false;
+
+   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   {
+      bool same = (remap_ids[id] == id);
+      if (same)
+         ident |= (1u << id);
+      if (same || !binds || !RETRO_KEYBIND_VALID(&binds[id]))
+         pass  |= (1u << id);
+   }
+
+   res = ((unsigned)ret & pass)
+      | (handle->buttons[port].data[0] & 0xffff);
+
+#ifdef HAVE_OVERLAY
+   /* What the overlay holds, unless input_driver_poll() has already
+    * put it through the remap (see input_state_device()). */
+   if (     (port == 0)
+         && input_st->overlay_ptr
+         && (input_st->overlay_ptr->flags & INPUT_OVERLAY_ALIVE))
+   {
+      unsigned held = input_st->overlay_ptr->overlay_state.buttons.data[0]
+         & 0xffff;
+#ifdef HAVE_MENU
+      bool menu_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         ? true : false;
+#else
+      bool menu_alive = false;
+#endif
+      if (!menu_alive && settings->bools.input_remap_binds_enable)
+         held &= ident;
+      res |= held;
+   }
+#endif
+
+   /* as the hold rule leaves it with no modifier pressed */
+   input_st->hold_btns.hold_pressed[port] = 0;
+
+   *out = (int16_t)(res & 0xffff);
+   return true;
+}
+
 static int16_t input_state_internal(
       input_driver_state_t *input_st,
       settings_t *settings,
@@ -3865,13 +3945,19 @@ static int16_t input_state_internal(
 
          if (bitmask_enabled)
          {
-            uint8_t i;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               if (input_state_device(input_st,
-                        settings, handle,
-                        input_analog_dpad_mode, ret, mapped_port,
-                        device, idx, i, true))
-                  port_result |= (1 << i);
+            /* all sixteen at once where the port has nothing held or
+             * on turbo; a button at a time where it has */
+            if (!input_state_device_mask_plain(input_st, settings, handle,
+                     ret, mapped_port, &port_result))
+            {
+               uint8_t i;
+               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+                  if (input_state_device(input_st,
+                           settings, handle,
+                           input_analog_dpad_mode, ret, mapped_port,
+                           device, idx, i, true))
+                     port_result |= (1 << i);
+            }
          }
          else
             port_result = input_state_device(input_st,
