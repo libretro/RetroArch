@@ -2092,6 +2092,9 @@ MENU_NOINLINE static void input_event_osk_iterate(void *osk_grid, enum osk_type 
    }
 }
 
+/* The mouse has not been seen to move yet. */
+#define MENU_MOUSE_POS_NONE VIDEO_POS_PACK(-0x7fff, -0x7fff)
+
 MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       gfx_display_t *p_disp,
       menu_handle_t *menu,
@@ -2101,8 +2104,9 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
       menu_input_pointer_hw_state_t *hw_state)
 {
    struct menu_state *menu_st      = &menu_driver_state;
-   static int16_t last_x           = -0x7fff;
-   static int16_t last_y           = -0x7fff;
+   /* where the mouse last was: one word, one compare */
+   static uint32_t last_pos        = MENU_MOUSE_POS_NONE;
+   uint32_t now_pos                = 0;
    int x                           = 0;
    int y                           = 0;
    bool ignore_position            = false;
@@ -2126,7 +2130,7 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    if (menu_st->input_pointer_hw_state.flags & MENU_INP_PTR_FLG_RESET)
    {
       menu_st->input_pointer_hw_state.flags &= ~MENU_INP_PTR_FLG_RESET;
-      last_x = last_y = -0x7fff;
+      last_pos = MENU_MOUSE_POS_NONE;
    }
 
    /* Easiest to set inactive by default, and toggle
@@ -2150,18 +2154,18 @@ MENU_NOINLINE static void menu_input_get_mouse_hw_state(
    /* X/Y position */
    if (state_inited)
    {
-      x = VIDEO_POS_X(view->mouse_pos);
-      y = VIDEO_POS_Y(view->mouse_pos);
-      if (x != last_x || y != last_y)
+      now_pos = view->mouse_pos;
+      x       = VIDEO_POS_X(now_pos);
+      y       = VIDEO_POS_Y(now_pos);
+      if (now_pos != last_pos)
          hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
    }
 
    /* Start reading mouse position after moving it once */
-   if (last_x == -0x7fff && last_y == -0x7fff)
+   if (last_pos == MENU_MOUSE_POS_NONE)
       ignore_position = true;
 
-   last_x                          = x;
-   last_y                          = y;
+   last_pos                        = now_pos;
 
    /* > X/Y position adjustment */
    if (menu_has_fb)
@@ -2262,8 +2266,8 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    int pointer_device                           =
          (menu && menu->driver_ctx && menu->driver_ctx->set_texture) ?
                RETRO_DEVICE_POINTER : RARCH_DEVICE_POINTER_SCREEN;
-   static int16_t last_x                        = 0;
-   static int16_t last_y                        = 0;
+   static uint32_t last_pos                     = 0;
+   uint32_t now_pos;
    int x                                        = 0;
    int y                                        = 0;
    static bool last_select_pressed              = false;
@@ -2315,23 +2319,6 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    x            = ((pointer_x + 0x7fff) * (int)fb_width) / 0xFFFF;
    x           *= input_touch_scale;
 
-   /* > An annoyance - we get different starting positions
-    *   depending upon whether pointer_device is
-    *   RETRO_DEVICE_POINTER or RARCH_DEVICE_POINTER_SCREEN,
-    *   so different 'activity' checks are required to prevent
-    *   false positives on first run */
-   if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
-   {
-      if (x != last_x)
-         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_x = x;
-   }
-   else
-   {
-      if (pointer_x != last_x)
-         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_x = pointer_x;
-   }
 
    /* Y pos */
    if (state_inited)
@@ -2341,19 +2328,19 @@ MENU_NOINLINE static void menu_input_get_touchscreen_hw_state(
    y            = ((pointer_y + 0x7fff) * (int)fb_height) / 0xFFFF;
    y           *= input_touch_scale;
 
-   if (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
-   {
-      if (y != last_y)
-         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_y = y;
-   }
-   else
-   {
-      if (pointer_y != last_y)
-         hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
-      last_y = pointer_y;
-   }
    hw_state->pos = VIDEO_POS_PACK(x, y);
+
+   /* Whether it moved, both axes in one compare.
+    * > An annoyance - we get different starting positions
+    *   depending upon whether pointer_device is
+    *   RETRO_DEVICE_POINTER or RARCH_DEVICE_POINTER_SCREEN,
+    *   so different 'activity' checks are required to prevent
+    *   false positives on first run */
+   now_pos       = (pointer_device == RARCH_DEVICE_POINTER_SCREEN)
+      ? hw_state->pos : VIDEO_POS_PACK(pointer_x, pointer_y);
+   if (now_pos != last_pos)
+      hw_state->flags |= MENU_INP_PTR_FLG_ACTIVE;
+   last_pos      = now_pos;
 
    /* Select (touch screen contact)
     * Note that releasing select also counts as activity */
@@ -6238,10 +6225,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
 {
    menu_entry_t entry;
    static retro_time_t start_time                  = 0;
-   static int16_t start_x                          = 0;
-   static int16_t start_y                          = 0;
-   static int16_t last_x                           = 0;
-   static int16_t last_y                           = 0;
+   static uint32_t start_pos                       = 0;   /* VIDEO_POS_PACK */
+   static uint32_t last_pos                        = 0;
    static uint16_t dx_start_right_max              = 0;
    static uint16_t dx_start_left_max               = 0;
    static uint16_t dy_start_up_max                 = 0;
@@ -6325,10 +6310,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
 
             /* Initialise variables */
             start_time                = current_time;
-            start_x                   = x;
-            start_y                   = y;
-            last_x                    = x;
-            last_y                    = y;
+            start_pos                 = VIDEO_POS_PACK(x, y);
+            last_pos                  = start_pos;
             dx_start_right_max        = 0;
             dx_start_left_max         = 0;
             dy_start_up_max           = 0;
@@ -6371,8 +6354,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
                uint16_t dpi_threshold_drag =
                      (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_DRAG) + 0.5f);
 
-               int16_t dx_start            = x - start_x;
-               int16_t dy_start            = y - start_y;
+               int16_t dx_start            = x - VIDEO_POS_X(start_pos);
+               int16_t dy_start            = y - VIDEO_POS_Y(start_pos);
                uint16_t dx_start_abs       = dx_start < 0 ? dx_start * -1 : dx_start;
                uint16_t dy_start_abs       = dy_start < 0 ? dy_start * -1 : dy_start;
 
@@ -6414,7 +6397,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
                   {
                      /* Assign current deltas */
                      menu_input->pointer.delta           = VIDEO_POS_PACK(
-                           x - last_x, y - last_y);
+                           x - VIDEO_POS_X(last_pos), y - VIDEO_POS_Y(last_pos));
 
                      /* Update maximum start->current deltas */
                      if (dx_start > 0)
@@ -6543,8 +6526,7 @@ MENU_NOINLINE static int menu_input_post_iterate(
 
             /* > Update remaining variables */
             menu_input->pointer.press_duration = current_time - start_time;
-            last_x                             = x;
-            last_y                             = y;
+            last_pos                           = VIDEO_POS_PACK(x, y);
          }
       }
       else if (last_select_pressed)
@@ -6562,15 +6544,15 @@ MENU_NOINLINE static int menu_input_post_iterate(
              * current hardware x/y values. Instead, use
              * previous position from last time that a
              * press was active */
-            x          = last_x;
-            y          = last_y;
+            x          = VIDEO_POS_X(last_pos);
+            y          = VIDEO_POS_Y(last_pos);
          }
          else
          {
             /* Pointer is considered stationary,
              * so use start position */
-            x          = start_x;
-            y          = start_y;
+            x          = VIDEO_POS_X(start_pos);
+            y          = VIDEO_POS_Y(start_pos);
          }
 
          point.x       = x;
@@ -6666,8 +6648,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
                   uint16_t dpi_threshold_swipe_tangent =
                         (uint16_t)((dpi * MENU_INPUT_DPI_THRESHOLD_SWIPE_TANGENT) + 0.5f);
 
-                  int16_t dx_start                     = x - start_x;
-                  int16_t dy_start                     = y - start_y;
+                  int16_t dx_start                     = x - VIDEO_POS_X(start_pos);
+                  int16_t dy_start                     = y - VIDEO_POS_Y(start_pos);
                   uint16_t dx_start_right_final        = 0;
                   uint16_t dx_start_left_final         = 0;
                   uint16_t dy_start_up_final           = 0;
@@ -6724,10 +6706,8 @@ MENU_NOINLINE static int menu_input_post_iterate(
          }
 
          /* Reset variables */
-         start_x                             = 0;
-         start_y                             = 0;
-         last_x                              = 0;
-         last_y                              = 0;
+         start_pos                           = 0;
+         last_pos                            = 0;
          dx_start_right_max                  = 0;
          dx_start_left_max                   = 0;
          dy_start_up_max                     = 0;

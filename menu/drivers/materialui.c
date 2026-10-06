@@ -742,8 +742,7 @@ typedef struct materialui_handle
    float touch_feedback_alpha;
    float overscroll_velocity;
    float overscroll_target;
-   int16_t pointer_start_x;
-   int16_t pointer_start_y;
+   uint32_t pointer_start_pos;   /* VIDEO_POS_PACK */
    bool transition_alpha_lock;
    /* Set when a pending MUI_FLAG_NEED_COMPUTE was raised by something that
     * did not change the list contents - only entry geometry. The compute
@@ -4555,7 +4554,8 @@ static void materialui_render(void *data,
             mui->overscroll_velocity = 0.0f;
             mui->scroll_y = materialui_apply_overscroll(
                   mui->pointer_start_scroll_y -
-                  (float)(VIDEO_POS_Y(mui->pointer.pos) - mui->pointer_start_y),
+                  (float)(VIDEO_POS_Y(mui->pointer.pos)
+                     - VIDEO_POS_Y(mui->pointer_start_pos)),
                   scroll_y_max, overscroll_max);
          }
          else
@@ -11384,8 +11384,7 @@ static int materialui_pointer_down(void *userdata,
    materialui_kill_scroll_animation(mui, menu_st);
 
    /* Get initial pointer location and scroll position */
-   mui->pointer_start_x        = x;
-   mui->pointer_start_y        = y;
+   mui->pointer_start_pos      = VIDEO_POS_PACK(x, y);
    mui->pointer_start_scroll_y = mui->scroll_y;
 
    /* Initialise touch feedback animation

@@ -714,8 +714,7 @@ struct ozone_handle
     * that the clamping already done for drag scrolling applies
     * to them too. */
    int16_t wheel_notches;
-   int16_t cursor_x_old;
-   int16_t cursor_y_old;
+   uint32_t cursor_pos_old;   /* VIDEO_POS_PACK */
 
    uint16_t flags2;
 
@@ -10996,8 +10995,10 @@ static void ozone_render(void *data,
        *   becomes impossible... */
       if (ozone->pointer.type == MENU_POINTER_MOUSE)
       {
-         int16_t cursor_x_delta = VIDEO_POS_X(ozone->pointer.pos) - ozone->cursor_x_old;
-         int16_t cursor_y_delta = VIDEO_POS_Y(ozone->pointer.pos) - ozone->cursor_y_old;
+         int16_t cursor_x_delta = VIDEO_POS_X(ozone->pointer.pos)
+            - VIDEO_POS_X(ozone->cursor_pos_old);
+         int16_t cursor_y_delta = VIDEO_POS_Y(ozone->pointer.pos)
+            - VIDEO_POS_Y(ozone->cursor_pos_old);
 
          if (   (cursor_x_delta >  ozone->pointer_active_delta)
              || (cursor_x_delta < -ozone->pointer_active_delta)
@@ -11009,8 +11010,7 @@ static void ozone_render(void *data,
       /* On touchscreens, just check for any movement */
       else
       {
-         if (   (VIDEO_POS_X(ozone->pointer.pos) != ozone->cursor_x_old)
-             || (VIDEO_POS_Y(ozone->pointer.pos) != ozone->cursor_y_old))
+         if (ozone->pointer.pos != ozone->cursor_pos_old)
             ozone->flags |=  OZONE_FLAG_CURSOR_MODE;
       }
    }
@@ -11022,8 +11022,7 @@ static void ozone_render(void *data,
          || (menu_driver_get_current_time() - ozone->cursor_old_time
             > CURSOR_ACTIVE_WINDOW))
    {
-      ozone->cursor_x_old    = VIDEO_POS_X(ozone->pointer.pos);
-      ozone->cursor_y_old    = VIDEO_POS_Y(ozone->pointer.pos);
+      ozone->cursor_pos_old  = ozone->pointer.pos;
       ozone->cursor_old_time = menu_driver_get_current_time();
    }
 
@@ -12696,9 +12695,8 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
    {
       menu_input_get_pointer_state(&ozone->pointer);
 
-      ozone->cursor_x_old = VIDEO_POS_X(ozone->pointer.pos);
-      ozone->cursor_y_old = VIDEO_POS_Y(ozone->pointer.pos);
-      ozone->flags       &= ~OZONE_FLAG_FIRST_FRAME;
+      ozone->cursor_pos_old = ozone->pointer.pos;
+      ozone->flags         &= ~OZONE_FLAG_FIRST_FRAME;
 
       /* If ozone_render() hasn't run yet (which is the case at
        * startup when video_info->menu.startup_page != Main Menu —
