@@ -3924,7 +3924,7 @@ literals_done:
             /* the block's own: accuracy by the count, as the reference
              * picks it, capped by the table's maximum */
             alog = 5;
-            while (alog < log_max[t] && ((uint32_t)1 << alog) < nseq) alog++;
+            while (alog < log_max[t] && ((size_t)1 << alog) < nseq) alog++;
             if (rzstd_fse_normalize(hist[t], max + 1, (uint32_t)nseq, alog, norm[t]))
             {
                for (s = 0; s <= max; s++)

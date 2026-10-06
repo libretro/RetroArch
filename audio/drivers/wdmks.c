@@ -205,24 +205,17 @@ enum
  * pulls in for some toolchains and not for others - the griffin build
  * under MSVC gets neither - and including it here would drag the whole
  * device-control surface into a translation unit that holds every
- * driver in the tree. Three constants is the smaller thing to carry,
- * and they are as fixed as the rest of the interface above. */
-#ifndef METHOD_NEITHER
-#define METHOD_NEITHER 3
-#endif
-#ifndef FILE_ANY_ACCESS
-#define FILE_ANY_ACCESS 0
-#endif
-#ifndef FILE_WRITE_ACCESS
-#define FILE_WRITE_ACCESS 0x0002
-#endif
-#ifndef FILE_READ_ACCESS
-#define FILE_READ_ACCESS 0x0001
-#endif
+ * driver in the tree. Four constants is the smaller thing to carry,
+ * under their own names so a unit that also sees winioctl.h holds one
+ * definition of each. */
+#define RA_METHOD_NEITHER    3
+#define RA_FILE_ANY_ACCESS   0
+#define RA_FILE_WRITE_ACCESS 0x0002
+#define RA_FILE_READ_ACCESS  0x0001
 
 #define RA_FILE_DEVICE_KS 0x0000002f
 #define RA_KS_CTL_CODE(fn) \
-   (((RA_FILE_DEVICE_KS) << 16) | ((FILE_ANY_ACCESS) << 14) | ((fn) << 2) | (METHOD_NEITHER))
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_ANY_ACCESS) << 14) | ((fn) << 2) | (RA_METHOD_NEITHER))
 #define RA_IOCTL_KS_PROPERTY RA_KS_CTL_CODE(0x000)
 
 /* ---- structures -------------------------------------------------- */
@@ -386,13 +379,13 @@ typedef struct
 /* IOCTL_KS_WRITE_STREAM, built as the DDK builds it:
  * CTL_CODE(FILE_DEVICE_KS, 0x004, METHOD_NEITHER, FILE_WRITE_ACCESS). */
 #define RA_IOCTL_KS_WRITE_STREAM \
-   (((RA_FILE_DEVICE_KS) << 16) | ((FILE_WRITE_ACCESS) << 14) \
-    | ((0x004) << 2) | (METHOD_NEITHER))
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_WRITE_ACCESS) << 14) \
+    | ((0x004) << 2) | (RA_METHOD_NEITHER))
 /* IOCTL_KS_READ_STREAM:
  * CTL_CODE(FILE_DEVICE_KS, 0x005, METHOD_NEITHER, FILE_READ_ACCESS). */
 #define RA_IOCTL_KS_READ_STREAM \
-   (((RA_FILE_DEVICE_KS) << 16) | ((FILE_READ_ACCESS) << 14) \
-    | ((0x005) << 2) | (METHOD_NEITHER))
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_READ_ACCESS) << 14) \
+    | ((0x005) << 2) | (RA_METHOD_NEITHER))
 
 /* The audio property set, for the pin's own position. PlayOffset is
  * what the device has played, in bytes, and it is the hardware's

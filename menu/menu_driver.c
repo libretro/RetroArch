@@ -8836,10 +8836,19 @@ bool menu_input_dialog_start_search(void)
 
 /* The menu's text types are handed to the frontend as its own; they
  * have to stay in the same order. */
+enum
+{
+   MENU_TEXT_TYPE_CHECK_TEXT      = MENU_INPUT_DIALOG_KB_TYPE_TEXT,
+   MENU_TEXT_TYPE_CHECK_PASSWORD  = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD,
+   MENU_TEXT_TYPE_CHECK_NUMBER    = MENU_INPUT_DIALOG_KB_TYPE_NUMBER,
+   INPUT_TEXT_TYPE_CHECK_TEXT     = INPUT_TEXT_TYPE_TEXT,
+   INPUT_TEXT_TYPE_CHECK_PASSWORD = INPUT_TEXT_TYPE_PASSWORD,
+   INPUT_TEXT_TYPE_CHECK_NUMBER   = INPUT_TEXT_TYPE_NUMBER
+};
 typedef char menu_text_type_matches_input[
-      (   (int)MENU_INPUT_DIALOG_KB_TYPE_TEXT     == (int)INPUT_TEXT_TYPE_TEXT
-       && (int)MENU_INPUT_DIALOG_KB_TYPE_PASSWORD == (int)INPUT_TEXT_TYPE_PASSWORD
-       && (int)MENU_INPUT_DIALOG_KB_TYPE_NUMBER   == (int)INPUT_TEXT_TYPE_NUMBER)
+      (   MENU_TEXT_TYPE_CHECK_TEXT     == INPUT_TEXT_TYPE_CHECK_TEXT
+       && MENU_TEXT_TYPE_CHECK_PASSWORD == INPUT_TEXT_TYPE_CHECK_PASSWORD
+       && MENU_TEXT_TYPE_CHECK_NUMBER   == INPUT_TEXT_TYPE_CHECK_NUMBER)
       ? 1 : -1];
 
 bool menu_input_dialog_start(menu_input_ctx_line_t *line)

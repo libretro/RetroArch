@@ -1330,14 +1330,10 @@ int64_t retro_vfs_file_size_impl(libretro_vfs_implementation_file *stream)
  * The two control codes are the documented CTL_CODE expansions:
  *   FSCTL_SET_SPARSE    = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 49, METHOD_BUFFERED, FILE_SPECIAL_ACCESS)
  *   FSCTL_SET_ZERO_DATA = CTL_CODE(FILE_DEVICE_FILE_SYSTEM, 50, METHOD_BUFFERED, FILE_WRITE_DATA)
- * Each is guarded, so a translation unit that has already seen
- * winioctl.h through some other path keeps that header's definitions. */
-#ifndef FSCTL_SET_SPARSE
-#define FSCTL_SET_SPARSE 0x000900c4
-#endif
-#ifndef FSCTL_SET_ZERO_DATA
-#define FSCTL_SET_ZERO_DATA 0x000980c8
-#endif
+ * They carry their own names so a translation unit that also sees
+ * winioctl.h holds one definition of each. */
+#define RA_FSCTL_SET_SPARSE    0x000900c4
+#define RA_FSCTL_SET_ZERO_DATA 0x000980c8
 #ifndef FILE_ZERO_DATA_INFORMATION_DEFINED
 #define FILE_ZERO_DATA_INFORMATION_DEFINED
 typedef struct _RETRO_FILE_ZERO_DATA_INFORMATION
@@ -1549,13 +1545,13 @@ int retro_vfs_file_punch_hole_impl(libretro_vfs_implementation_file *stream,
        * zeroes, which is correct but saves nothing. Marking is idempotent. */
       {
          DWORD tmp = 0;
-         DeviceIoControl(handle, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &tmp, NULL);
+         DeviceIoControl(handle, RA_FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &tmp, NULL);
       }
 
       zero_info.FileOffset.QuadPart      = offset;
       zero_info.BeyondFinalZero.QuadPart = offset + len;
 
-      if (!DeviceIoControl(handle, FSCTL_SET_ZERO_DATA, &zero_info,
+      if (!DeviceIoControl(handle, RA_FSCTL_SET_ZERO_DATA, &zero_info,
                sizeof(zero_info), NULL, 0, &returned, NULL))
          return -1;
       return 0;

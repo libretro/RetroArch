@@ -3598,7 +3598,6 @@ gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
 {
    size_t j;
    unsigned i;
-   unsigned total_passes;
    bool last_pass_is_fbo;
    bool explicit_format;
    struct video_shader_parameter *itr;
@@ -3936,8 +3935,6 @@ gl3_filter_chain_t *gl3_filter_chain_create_deferred(
    unsigned i;
    unsigned total_passes;
    bool last_pass_is_fbo;
-   bool explicit_format;
-   struct video_shader_parameter *itr;
    struct gl3_filter_chain *chain;
    struct video_shader *shader = (struct video_shader*)calloc(1, sizeof(*shader));
    if (!shader)
