@@ -514,40 +514,7 @@ static int16_t x_input_state(
          /* The RetroPad's buttons and the hotkeys, where they are
           * bound to keys or mouse buttons, are the frontend's to answer:
           * it asks x_input_keys_down() for the keys once a poll. */
-         case RETRO_DEVICE_ANALOG:
-            if (binds)
-            {
-               int id_minus_key      = 0;
-               int id_plus_key       = 0;
-               unsigned id_minus     = 0;
-               unsigned id_plus      = 0;
-               int16_t ret           = 0;
-               bool id_plus_valid    = false;
-               bool id_minus_valid   = false;
-
-               input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-               id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-               id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-               id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-               id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-               if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-               {
-                  unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-                  if (x11->state[sym >> 3] & (1 << (sym & 7)))
-                     ret = 0x7fff;
-               }
-               if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-               {
-                  unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-                  if (x11->state[sym >> 3] & (1 << (sym & 7)))
-                     ret += -0x7fff;
-               }
-
-               return ret;
-            }
-            break;
+         /* ... and a stick's axes, where they are bound to keys. */
          case RETRO_DEVICE_KEYBOARD:
             return (id && id < RETROK_LAST) && x_keyboard_pressed(x11, id);
          /* The mouse, the pointer and the lightgun's aim are the

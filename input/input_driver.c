@@ -1615,6 +1615,27 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
    return 0;
 }
 
+/* A stick's axis from the keys bound to its two directions: all the way
+ * one way, the other, or neither when both are held. What each input
+ * driver's own code for RETRO_DEVICE_ANALOG worked out; an index that
+ * is not a stick maps to no pair of binds and reads as it did there. */
+static int16_t input_analog_from_keys(input_driver_t *input, void *data,
+      unsigned port, unsigned idx, unsigned id)
+{
+   const input_port_keys_t *k = input_port_keys_get(input, data, port);
+   unsigned id_minus          = 0;
+   unsigned id_plus           = 0;
+   int16_t ret                = 0;
+
+   input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
+
+   if (k->key_down[id_plus >> 5] & (1u << (id_plus & 31)))
+      ret  = 0x7fff;
+   if (k->key_down[id_minus >> 5] & (1u << (id_minus & 31)))
+      ret += -0x7fff;
+   return ret;
+}
+
 /* A value from what the driver published, or from the driver. */
 static int16_t input_frame_or_driver(input_driver_t *input, void *data,
       const input_device_driver_t *joypad,
@@ -1759,6 +1780,9 @@ static int32_t input_state_wrap(
               && input && input->keys_down && _port < MAX_USERS)
          ret |= input_joypad_from_keys(input, data, binds[_port],
                keyboard_mapping_blocked, _port, id);
+      else if (  device == RETRO_DEVICE_ANALOG && binds
+              && input && input->keys_down && _port < MAX_USERS)
+         ret |= input_analog_from_keys(input, data, _port, idx, id);
       else if (input && input->input_state)
          ret |= input->input_state(
                data,
@@ -10721,6 +10745,10 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
       return input_joypad_from_keys(input_st->current_driver,
             input_st->current_data, input_config_binds[port],
             (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0, port, id);
+   if (     device == RETRO_DEVICE_ANALOG && port < MAX_USERS
+         && input_st->current_driver->keys_down)
+      return input_analog_from_keys(input_st->current_driver,
+            input_st->current_data, port, idx, id);
 
    return input_st->current_driver->input_state(
          input_st->current_data,

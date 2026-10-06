@@ -2678,34 +2678,7 @@ static int16_t winraw_input_state(
          /* The RetroPad's buttons and the hotkeys, where they are bound
           * to keys or mouse buttons, are the frontend's to answer: it
           * asks winraw_keys_down() for the keys once a poll. */
-         case RETRO_DEVICE_ANALOG:
-            {
-               int id_minus_key      = 0;
-               int id_plus_key       = 0;
-               unsigned id_minus     = 0;
-               unsigned id_plus      = 0;
-               bool id_plus_valid    = false;
-               bool id_minus_valid   = false;
-
-               input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-               id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-               id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-               id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-               id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-               if (keys_ok && id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-               {
-                  if (WINRAW_PORT_KEY_PRESSED(wr, own, id_plus_key))
-                     ret = 0x7fff;
-               }
-               if (keys_ok && id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-               {
-                  if (WINRAW_PORT_KEY_PRESSED(wr, own, id_minus_key))
-                     ret += -0x7fff;
-               }
-            }
-            return ret;
+         /* ... and a stick's axes, where they are bound to keys. */
          case RETRO_DEVICE_KEYBOARD:
             return keys_ok && (id && id < RETROK_LAST) && WINRAW_PORT_KEY_PRESSED(wr, own, id);
          /* The mouse, the pointer and the lightgun's aim are the
