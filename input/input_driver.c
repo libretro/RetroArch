@@ -1615,6 +1615,31 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
    return 0;
 }
 
+/* The two binds - one for each way - behind an analog stick's axis.
+ * Only the frontend maps a stick's axis to its binds now: every input
+ * driver used to, for the keys bound to them. An index that is not a
+ * stick leaves both as they were. */
+#define input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus) \
+   switch ((idx << 1) | ident) \
+   { \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_LEFT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_LEFT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
+         ident_minus = RARCH_ANALOG_RIGHT_X_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS; \
+         break; \
+      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
+         ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS; \
+         ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
+         break; \
+   }
+
 /* A stick's axis from the keys bound to its two directions: all the way
  * one way, the other, or neither when both are held. What each input
  * driver's own code for RETRO_DEVICE_ANALOG worked out; an index that

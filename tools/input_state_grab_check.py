@@ -214,6 +214,37 @@ def bind_array_uses(root):
     return found
 
 
+# Which two binds are behind a stick's axis is the frontend's to know:
+# every input driver used to work a stick out from the keys bound to
+# it, each with the macro that maps the axis to its binds. The macro
+# lives in input/input_driver.c now and nothing else uses it.
+ANALOG_BIND_MACRO = re.compile(r'\binput_conv_analog_id_to_bind_id\b')
+
+
+def analog_bind_macro_uses(root):
+    found = {}
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root).replace(os.sep, '/') + '/'
+        if rel_d.startswith(('samples/', 'deps/', 'libretro-common/', 'pkg/', '.git/')):
+            dirs[:] = []
+            continue
+        for f in files:
+            if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
+                continue
+            path = os.path.join(d, f)
+            rel = os.path.relpath(path, root).replace(os.sep, '/')
+            if rel == 'input/input_driver.c':
+                continue
+            try:
+                text = open(path, encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(ANALOG_BIND_MACRO.findall(strip_comments(text)))
+            if n:
+                found[rel] = n
+    return found
+
+
 # The input state taken by the menu and the UI layer, which are being
 # moved onto named calls as the drivers were: what is left, file by
 # file. A file may not have more than its number, one that is not
@@ -297,6 +328,11 @@ def run(root, allowed, outside_allowed=None):
         print('%s: calls an input or joypad driver itself, %d time(s).\n'
               '  Ask the frontend: input_driver_device_state(), '
               'input_driver_capture_pad(), input_driver_poll_devices().' % (rel, n))
+        bad += 1
+    for rel, n in sorted(analog_bind_macro_uses(root).items()):
+        print('%s: maps a stick\'s axis to its binds itself, %d time(s).\n'
+              '  The frontend answers a stick from the keys bound to it: give it\n'
+              '  the keys (keys_down in the driver table).' % (rel, n))
         bad += 1
     for rel, n in sorted(bind_array_uses(root).items()):
         print('%s: names a bind array itself, %d time(s).\n'
@@ -405,10 +441,20 @@ def selftest():
             print('selftest: a menu file going through the calls was taken for one naming the arrays')
             bad += 1
         os.remove(os.path.join(root, 'menu', 'b.c'))
+        # a driver working a stick out from its binds itself
+        with open(os.path.join(root, 'input', 'drivers', 'an.c'), 'w') as f:
+            f.write('input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);\n')
+        with open(os.path.join(root, 'input', 'input_driver.c'), 'a') as f:
+            f.write('input_conv_analog_id_to_bind_id(idx, id, a, b);\n')
+        if analog_bind_macro_uses(root) != {'input/drivers/an.c': 1}:
+            print('selftest: a driver mapping a stick to its binds was not found, '
+                  'or the frontend was taken for one')
+            bad += 1
+        os.remove(os.path.join(root, 'input', 'drivers', 'an.c'))
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 9))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 10))
     return 0
 
 
