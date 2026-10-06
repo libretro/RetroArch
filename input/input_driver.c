@@ -1992,6 +1992,58 @@ static int16_t input_joypad_axis(
    return val;
 }
 
+/* What each "stick drives the D-pad" mode comes to. The modes keep the
+ * numbers the settings files have for them, so nothing can be read off
+ * the number itself; this says it once, where five switches said it:
+ *   bits 0-1  the sticks the mode takes for the D-pad (bit 0 the left
+ *             stick, bit 1 the right) - a taken stick reads as nothing
+ *             as a stick;
+ *   bit 2     forced: it stays on when the core has asked for analog
+ *             input, where a plain mode gives way;
+ *   bits 4-7  the mode it acts as: a forced mode acts as its plain one. */
+#define INPUT_DPAD_MODE(acts_as, sticks, forced) \
+   (uint8_t)(((acts_as) << 4) | ((forced) << 2) | (sticks))
+static const uint8_t input_analog_dpad_modes[ANALOG_DPAD_LAST] = {
+   INPUT_DPAD_MODE(ANALOG_DPAD_NONE,      0, 0),   /* NONE */
+   INPUT_DPAD_MODE(ANALOG_DPAD_LSTICK,    1, 0),   /* LSTICK */
+   INPUT_DPAD_MODE(ANALOG_DPAD_RSTICK,    2, 0),   /* RSTICK */
+   INPUT_DPAD_MODE(ANALOG_DPAD_LSTICK,    1, 1),   /* LSTICK_FORCED */
+   INPUT_DPAD_MODE(ANALOG_DPAD_RSTICK,    2, 1),   /* RSTICK_FORCED */
+   INPUT_DPAD_MODE(ANALOG_DPAD_LRSTICK,   3, 0),   /* LRSTICK */
+   INPUT_DPAD_MODE(ANALOG_DPAD_TWINSTICK, 3, 0),   /* TWINSTICK */
+   INPUT_DPAD_MODE(ANALOG_DPAD_LRSTICK,   3, 1),   /* LRSTICK_FORCED */
+   INPUT_DPAD_MODE(ANALOG_DPAD_TWINSTICK, 3, 1)    /* TWINSTICK_FORCED */
+};
+
+/* The rows above are in the modes' own order: held at compile time. */
+typedef char input_analog_dpad_modes_in_order[(
+         ANALOG_DPAD_NONE == 0             && ANALOG_DPAD_LSTICK == 1
+      && ANALOG_DPAD_RSTICK == 2           && ANALOG_DPAD_LSTICK_FORCED == 3
+      && ANALOG_DPAD_RSTICK_FORCED == 4    && ANALOG_DPAD_LRSTICK == 5
+      && ANALOG_DPAD_TWINSTICK == 6        && ANALOG_DPAD_LRSTICK_FORCED == 7
+      && ANALOG_DPAD_TWINSTICK_FORCED == 8 && ANALOG_DPAD_LAST == 9) ? 1 : -1];
+
+/* The mode in effect for a port: a plain mode gives way to NONE when
+ * the core has asked for analog input, a forced one acts as its plain
+ * one whatever the core asked. */
+static INLINE unsigned input_analog_dpad_mode_in_effect(unsigned mode,
+      bool analog_requested)
+{
+   unsigned m;
+   if (mode >= ANALOG_DPAD_LAST)
+      return mode;
+   m = input_analog_dpad_modes[mode];
+   if (m & 4)
+      return m >> 4;
+   return (analog_requested && (m & 3)) ? (unsigned)ANALOG_DPAD_NONE : mode;
+}
+
+/* Whether a mode in effect has taken stick @idx for the D-pad. */
+#define INPUT_ANALOG_DPAD_TAKES_STICK(mode, idx) \
+   (   (mode) < ANALOG_DPAD_LAST && (idx) <= RETRO_DEVICE_INDEX_ANALOG_RIGHT \
+    && !(input_analog_dpad_modes[mode] & 4) \
+    && ((input_analog_dpad_modes[mode] >> (idx)) & 1))
+
 /**
  * input_joypad_analog_button:
  * @drv                     : Input device driver handle.
@@ -2109,26 +2161,9 @@ static int16_t input_joypad_analog_axis(
    if (!drv)
       return 0;
 
-   /* Skip analog input with analog_dpad_mode */
-   switch (input_analog_dpad_mode)
-   {
-      case ANALOG_DPAD_LSTICK:
-         if (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
-            return 0;
-         break;
-      case ANALOG_DPAD_RSTICK:
-         if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-            return 0;
-         break;
-      case ANALOG_DPAD_LRSTICK:
-      case ANALOG_DPAD_TWINSTICK:
-         if (     idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
-               || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-            return 0;
-         break;
-      default:
-         break;
-   }
+   /* a stick the mode has taken for the D-pad reads as nothing */
+   if (INPUT_ANALOG_DPAD_TAKES_STICK(input_analog_dpad_mode, idx))
+      return 0;
 
    /* Not a stick's axis: it has no binds. (The first bind stood in
     * for both ways and both axes before, which came to nothing.) */
@@ -2310,26 +2345,9 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
    if (!drv)
       return false;
 
-   /* Skip analog input with analog_dpad_mode */
-   switch (input_analog_dpad_mode)
-   {
-      case ANALOG_DPAD_LSTICK:
-         if (idx == RETRO_DEVICE_INDEX_ANALOG_LEFT)
-            return false;
-         break;
-      case ANALOG_DPAD_RSTICK:
-         if (idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-            return false;
-         break;
-      case ANALOG_DPAD_LRSTICK:
-      case ANALOG_DPAD_TWINSTICK:
-         if (     idx == RETRO_DEVICE_INDEX_ANALOG_LEFT
-               || idx == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-            return false;
-         break;
-      default:
-         break;
-   }
+   /* a stick the mode has taken for the D-pad reads as nothing */
+   if (INPUT_ANALOG_DPAD_TAKES_STICK(input_analog_dpad_mode, idx))
+      return false;
 
    /* a stick's four binds are in a row from its x */
    if (idx > RETRO_DEVICE_INDEX_ANALOG_RIGHT)
@@ -3455,30 +3473,8 @@ static int16_t input_state_internal(
 
       /* If core has requested analog input, disable
        * analog to dpad mapping (unless forced) */
-      switch (input_analog_dpad_mode)
-      {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-         case ANALOG_DPAD_LRSTICK:
-         case ANALOG_DPAD_TWINSTICK:
-            if (input_driver_analog_requested)
-               input_analog_dpad_mode = ANALOG_DPAD_NONE;
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_RSTICK;
-            break;
-         case ANALOG_DPAD_LRSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_LRSTICK;
-            break;
-         case ANALOG_DPAD_TWINSTICK_FORCED:
-            input_analog_dpad_mode = ANALOG_DPAD_TWINSTICK;
-            break;
-         default:
-            break;
-      }
+      input_analog_dpad_mode = (uint8_t)input_analog_dpad_mode_in_effect(
+            input_analog_dpad_mode, input_driver_analog_requested);
 
       /* TODO/FIXME: This code is gibberish - a mess of nested
        * refactors that make no sense whatsoever. The entire
@@ -11270,33 +11266,12 @@ void input_driver_poll(void)
          ? settings->floats.input_osk_overlay_opacity
          : settings->floats.input_overlay_opacity;
 
-      switch (input_analog_dpad_mode)
       {
-         case ANALOG_DPAD_LSTICK:
-         case ANALOG_DPAD_RSTICK:
-         case ANALOG_DPAD_LRSTICK:
-         case ANALOG_DPAD_TWINSTICK:
-            {
-               unsigned mapped_port      = settings->uints.input_remap_ports[0];
-               if (     mapped_port < MAX_USERS
-                     && input_st->analog_requested[mapped_port])
-                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
-            }
-            break;
-         case ANALOG_DPAD_LSTICK_FORCED:
-            input_analog_dpad_mode       = ANALOG_DPAD_LSTICK;
-            break;
-         case ANALOG_DPAD_RSTICK_FORCED:
-            input_analog_dpad_mode       = ANALOG_DPAD_RSTICK;
-            break;
-         case ANALOG_DPAD_LRSTICK_FORCED:
-            input_analog_dpad_mode       = ANALOG_DPAD_LRSTICK;
-            break;
-         case ANALOG_DPAD_TWINSTICK_FORCED:
-            input_analog_dpad_mode       = ANALOG_DPAD_TWINSTICK;
-            break;
-         default:
-            break;
+         unsigned mapped_port   = settings->uints.input_remap_ports[0];
+         input_analog_dpad_mode = input_analog_dpad_mode_in_effect(
+               input_analog_dpad_mode,
+               mapped_port < MAX_USERS
+               && input_st->analog_requested[mapped_port]);
       }
 
       /* Under threaded video the pack's textures arrive after the
@@ -11507,31 +11482,10 @@ void input_driver_poll(void)
           * clearing it. */
          BIT256_CLEAR_ALL_PTR(&current_inputs);
 
-         switch (input_analog_dpad_mode)
-         {
-            case ANALOG_DPAD_LSTICK:
-            case ANALOG_DPAD_RSTICK:
-            case ANALOG_DPAD_LRSTICK:
-            case ANALOG_DPAD_TWINSTICK:
-               if (     mapped_port < MAX_USERS
-                     && input_st->analog_requested[mapped_port])
-                  input_analog_dpad_mode = ANALOG_DPAD_NONE;
-               break;
-            case ANALOG_DPAD_LSTICK_FORCED:
-               input_analog_dpad_mode    = ANALOG_DPAD_LSTICK;
-               break;
-            case ANALOG_DPAD_RSTICK_FORCED:
-               input_analog_dpad_mode    = ANALOG_DPAD_RSTICK;
-               break;
-            case ANALOG_DPAD_LRSTICK_FORCED:
-               input_analog_dpad_mode    = ANALOG_DPAD_LRSTICK;
-               break;
-            case ANALOG_DPAD_TWINSTICK_FORCED:
-               input_analog_dpad_mode    = ANALOG_DPAD_TWINSTICK;
-               break;
-            default:
-               break;
-         }
+         input_analog_dpad_mode = input_analog_dpad_mode_in_effect(
+               input_analog_dpad_mode,
+               mapped_port < MAX_USERS
+               && input_st->analog_requested[mapped_port]);
 
          switch (device)
          {
