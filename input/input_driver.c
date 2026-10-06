@@ -12460,7 +12460,9 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 {
    input_driver_state_t
       *input_st                = &input_driver_st;
-   settings_t *settings        = config_get_ptr();
+   /* asked for where it is needed: a button read from the frame's view,
+    * which is most reads, needs no setting */
+   settings_t *settings        = NULL;
    int16_t result              = 0;
 
    /* The port comes from the core, and indexes per-port arrays here
@@ -12503,10 +12505,15 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
       {
          /* SOCD cleaning needs both directions of an axis, so with it
           * on the view is compiled on the frame's first button too */
-         unsigned socd_h      = settings->uints.input_socd_horizontal;
-         unsigned socd_v      = settings->uints.input_socd_vertical;
+         unsigned socd_h;
+         unsigned socd_v;
+         unsigned turns;
+
+         settings             = config_get_ptr();
+         socd_h               = settings->uints.input_socd_horizontal;
+         socd_v               = settings->uints.input_socd_vertical;
          /* and turning the D-Pad needs all four */
-         unsigned turns       = settings->uints.input_rotation
+         turns                = settings->uints.input_rotation
             ? input_rotation_turns(settings) : 0;
 
          if (     id == RETRO_DEVICE_ID_JOYPAD_MASK
@@ -12542,6 +12549,7 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
    }
    else
    {
+      settings = config_get_ptr();
       result = input_state_internal(input_st, settings, port, device, idx, id);
       /* a stick, turned as the D-Pad is: it takes the other axis too */
       if (     settings->uints.input_rotation
@@ -12630,6 +12638,8 @@ int16_t input_driver_state_wrapper(unsigned port, unsigned device,
 #endif
 
 #ifdef HAVE_GAME_AI
+   if (!settings)
+      settings = config_get_ptr();
    if (settings->bools.game_ai_override_p1 && port == 0)
       result |= game_ai_input(port, device, idx, id, result);
    if (settings->bools.game_ai_override_p2 && port == 1)
