@@ -705,6 +705,13 @@ static void udev_input_kb_free(struct udev_input *udev)
 #endif
 }
 
+/* The viewport, asked for once a poll. A mouse's every motion event
+ * and every read of it needs one, and each used to ask the video
+ * driver itself: once an axis event - some thirty a frame from a
+ * 1000 Hz mouse - once a button read, twice a pointer read. */
+static video_viewport_t udev_vp;
+static bool udev_vp_ok;
+
 static udev_input_mouse_t *udev_get_mouse(
       struct udev_input *udev, unsigned port)
 {
@@ -727,7 +734,7 @@ static udev_input_mouse_t *udev_get_mouse(
 
 static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 {
-    video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
 
    if (abs)
    {
@@ -737,7 +744,7 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
    else
    {
       VIDEO_POS_ADD(mouse->rel, x, 0);
-      if (video_driver_get_viewport_info(&vp))
+      if (udev_vp_ok)
       {
          mouse->x_abs += x;
 
@@ -751,11 +758,11 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 
 static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
    double src_width;
    double x;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return 0;
 
    if (mouse->abs) /* mouse coords are absolute */
@@ -770,7 +777,7 @@ static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
 
 static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
 
    if (abs)
    {
@@ -780,7 +787,7 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
    else
    {
       VIDEO_POS_ADD(mouse->rel, 0, y);
-      if (video_driver_get_viewport_info(&vp))
+      if (udev_vp_ok)
       {
          mouse->y_abs += y;
 
@@ -794,11 +801,11 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 
 static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
    double src_height;
    double y;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return 0;
 
    if (mouse->abs) /* mouse coords are absolute */
@@ -814,13 +821,13 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
 static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
             bool screen, bool confined, uint32_t *ret_pos)
 {
-   struct video_viewport vp    = {0};
+   struct video_viewport vp    = udev_vp;
    int16_t scaled_x;
    int16_t scaled_y;
    uint32_t res_pos               = 0;
    uint32_t res_screen_pos = 0;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return false;
 
    /* mouse coords are absolute? */
@@ -837,20 +844,10 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
       scaled_y = mouse->y_abs;
    }
 
-   if (confined && video_driver_translate_coord_viewport_confined_wrap(
-            &vp, scaled_x, scaled_y,
-            &res_pos, &res_screen_pos))
-   {
-   }
-   else if (!confined && video_driver_translate_coord_viewport_wrap(
-            &vp, scaled_x, scaled_y,
-            &res_pos, &res_screen_pos))
-   {
-   }
-   else
-   {
+   /* held to the viewport's edge, or -0x8000 outside it */
+   if (!video_driver_translate_coord_viewport(&vp, scaled_x, scaled_y,
+            &res_pos, &res_screen_pos, !confined))
       return false;
-   }
 
    if (screen)
    {
@@ -1833,7 +1830,7 @@ static void udev_sync_touch(udev_input_device_t *dev)
  *
  * @param src_touch Information concerning the source touch panel.
  * @param target_vp Information about the target panel. Pre-filled
- *   with the video_driver_get_viewport_info function.
+ *   with the video_driver_get_viewport_info function (the poll's).
  * @param pointer_pos_x Input x-coordinate on the touch panel.
  * @param pointer_pos_y Input y-coordinate on the touch panel.
  * @param pointer_ma_pos Output position on the target panel, packed.
@@ -1870,9 +1867,9 @@ static bool udev_translate_touch_pos(
    *pointer_ma_pos    = VIDEO_POS_PACK(ma_pos_x, ma_pos_y);
 
    /* Main panel -> Screen and Viewport; on failure both are left */
-   return video_driver_translate_coord_viewport_wrap(target_vp,
+   return udev_vp_ok && video_driver_translate_coord_viewport(target_vp,
          VIDEO_POS_X(*pointer_ma_pos), VIDEO_POS_Y(*pointer_ma_pos),
-         pointer_vp_pos, pointer_scr_pos);
+         pointer_vp_pos, pointer_scr_pos, true);
 }
 
 /**
@@ -2279,8 +2276,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
    udev_slot_state_t *slot_curr;
    udev_slot_state_t *slot_prev;
 
-   /* Get main panel information for coordinate translation */
-   video_driver_get_viewport_info(&vp);
+   /* Main panel information for coordinate translation: the poll's */
+   vp = udev_vp;
    /* Get current time for measurements */
    udev_touch_ts_now(&now);
 
@@ -3643,8 +3640,8 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
    static int noX11DispX = 0;
    static int noX11DispY = 0;
 
-   struct video_viewport view;
-   bool r = video_driver_get_viewport_info(&view);
+   const struct video_viewport view = udev_vp;
+   bool r = udev_vp_ok;
    int dx = udev_mouse_get_x(mouse);
    int dy = udev_mouse_get_y(mouse);
    if (      r
@@ -3693,6 +3690,10 @@ static void udev_input_poll(void *data)
 #endif
    udev_input_mouse_t *mouse = NULL;
    udev_input_t *udev        = (udev_input_t*)data;
+
+   /* this poll's viewport, for every event and read until the next */
+   memset(&udev_vp, 0, sizeof(udev_vp));
+   udev_vp_ok = video_driver_get_viewport_info(&udev_vp);
 
 #ifdef HAVE_X11
    udev_input_get_pointer_position(&udev->os_pointer_pos);
@@ -3768,8 +3769,8 @@ static void udev_input_poll(void *data)
 static bool udev_pointer_is_off_window(const udev_input_t *udev)
 {
 #ifdef HAVE_X11
-   struct video_viewport view;
-   bool r = video_driver_get_viewport_info(&view);
+   const struct video_viewport view = udev_vp;
+   bool r = udev_vp_ok;
    if (r)
       return (VIDEO_POS_X(udev->os_pointer_pos) < 0
            || VIDEO_POS_X(udev->os_pointer_pos) >= (int)VIDEO_SCALE_W(view.full_dims)
