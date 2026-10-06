@@ -216,9 +216,11 @@ def bind_array_uses(root):
 
 # Which two binds are behind a stick's axis is the frontend's to know:
 # every input driver used to work a stick out from the keys bound to
-# it, each with the macro that maps the axis to its binds. The macro
-# lives in input/input_driver.c now and nothing else uses it.
-ANALOG_BIND_MACRO = re.compile(r'\binput_conv_analog_id_to_bind_id\b')
+# it, each with the macro that maps the axis to its binds. That lives
+# in input/input_driver.c now (INPUT_ANALOG_AXIS_BIND: the binds are
+# numbered in a row, so it is arithmetic) and nothing else uses it, by
+# its old name or its new one.
+ANALOG_BIND_MACRO = re.compile(r'\b(?:input_conv_analog_id_to_bind_id|INPUT_ANALOG_AXIS_BIND)\b')
 
 
 def analog_bind_macro_uses(root):
