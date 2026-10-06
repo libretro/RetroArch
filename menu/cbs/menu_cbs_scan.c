@@ -212,7 +212,7 @@ static int action_scan_input_desc(const char *path,
    else
       key = input_config_translate_str_to_bind_id(label);
 
-   target = input_config_bind(user_idx, key);
+   target = input_config_bind_edit(user_idx, key);
 
    if (target)
    {

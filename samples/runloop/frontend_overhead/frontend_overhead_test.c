@@ -3260,6 +3260,85 @@ static void lane_menu_repeat_rates(void)
 #endif
 }
 
+/* What a port's mapping is made from is counted each time it changes,
+ * so that what is compiled from it can tell without looking at a bind.
+ * Each way of changing it counts; frames in which nothing changes do
+ * not, or a mapping would be compiled every frame; and every frame the
+ * menu is open does, which is what covers the menu's own writes. */
+static void lane_binds_change_count(void)
+{
+   retro_keybind_set *sets = (retro_keybind_set*)calloc(MAX_USERS, sizeof(*sets));
+   settings_t *settings    = config_get_ptr();
+   unsigned had            = failures;
+   unsigned g;
+
+   run_loop_frames(3);
+   g = input_config_binds_generation();
+   run_loop_frames(10);
+   CHECK(input_config_binds_generation() == g,
+         "binds change count: it moved over frames in which nothing changed");
+
+#define COUNTS(what, stmt) do { \
+      g = input_config_binds_generation(); \
+      stmt; \
+      CHECK(input_config_binds_generation() != g, \
+            "binds change count: not counted: " what); \
+   } while (0)
+
+   COUNTS("a user's bind handed out to be written",
+         (void)input_config_bind_edit(1, RETRO_DEVICE_ID_JOYPAD_B));
+   COUNTS("a pad's autoconfig bind handed out to be written",
+         (void)input_autoconf_bind_edit(15, RETRO_DEVICE_ID_JOYPAD_B));
+   if (sets)
+   {
+      input_config_binds_copy_out(sets);
+      COUNTS("every user's binds copied in", input_config_binds_copy_in(sets));
+   }
+   COUNTS("the pad a port has",
+         input_config_set_joypad_index(15, settings->uints.input_joypad_index[15]));
+   COUNTS("the kind of device a port has",
+         input_config_set_device(15, settings->uints.input_libretro_device[15]));
+   COUNTS("a pad's autoconfig binds cleared",
+         input_config_reset_autoconfig_binds(15));
+   COUNTS("the port map made again", input_remapping_update_port_map());
+#undef COUNTS
+
+   /* reading one is not a change */
+   g = input_config_binds_generation();
+   (void)input_config_bind(0, RETRO_DEVICE_ID_JOYPAD_B);
+   (void)input_autoconf_bind(0, RETRO_DEVICE_ID_JOYPAD_B);
+   if (sets)
+      input_config_binds_copy_out(sets);
+   CHECK(input_config_binds_generation() == g,
+         "binds change count: reading a bind counted as a change");
+
+#ifdef HAVE_MENU
+   /* every frame the menu is open */
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(2);
+   if (menu_is_up())
+   {
+      g = input_config_binds_generation();
+      run_loop_frames(5);
+      CHECK(input_config_binds_generation() - g >= 5,
+            "binds change count: frames with the menu open were not counted");
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      run_loop_frames(3);
+      g = input_config_binds_generation();
+      run_loop_frames(10);
+      CHECK(input_config_binds_generation() == g,
+            "binds change count: it kept moving after the menu closed");
+   }
+#endif
+   free(sets);
+
+   if (failures == had)
+      printf("[pass] binds change count: each way of changing a port's"
+            " mapping is counted, a frame in which nothing changes is not,"
+            " and every frame the menu is open is\n");
+}
+
 /* The pointers an input driver publishes at its poll are the frontend's
  * to answer for: the mouse, the pointer and the lightgun's aim, the same
  * for every reader of the frame - a wheel notch is not used up by being
@@ -4673,6 +4752,7 @@ int main(int argc, char *argv[])
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();
+      lane_binds_change_count();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

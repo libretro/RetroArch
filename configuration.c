@@ -7565,6 +7565,8 @@ static bool config_load_file(const char *path, settings_t *settings)
    }
 
    config_read_keybinds_conf(conf);
+   /* the binds, and the device settings read above */
+   input_config_binds_changed();
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility(settings))
@@ -8004,7 +8006,7 @@ static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
          if (input_autoconf_bind_labels[i][j].joyaxis)
             free(input_autoconf_bind_labels[i][j].joyaxis);
 
-         memcpy(input_autoconf_bind(i, j), &bkp->autoconf_binds[i][j],
+         memcpy(input_autoconf_bind_edit(i, j), &bkp->autoconf_binds[i][j],
                sizeof(struct retro_keybind));
          /* String ownership moves back to input_autoconf_bind_labels */
          input_autoconf_bind_labels[i][j] = bkp->autoconf_labels[i][j];
@@ -8692,8 +8694,8 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    /* Pre-fill existing autoconf binds for empty binds */
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
-      struct retro_keybind *bind      = input_config_bind(user, i);
-      struct retro_keybind *auto_bind = input_autoconf_bind(dev, i);
+      struct retro_keybind *bind            = input_config_bind_edit(user, i);
+      const struct retro_keybind *auto_bind = input_autoconf_bind(dev, i);
       struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
       struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
 
@@ -10357,6 +10359,9 @@ bool input_remapping_load_file(void *data, const char *path)
          || (!path || !*path))
       return false;
 
+   /* the remaps are part of what a port's mapping is made from */
+   input_config_binds_changed();
+
    if (runloop_st->name.remapfile && *runloop_st->name.remapfile)
       input_remapping_deinit(false);
 
@@ -10864,9 +10869,10 @@ void input_config_reset_autoconfig_binds(unsigned port)
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_autoconf_bind(port, i)->joykey  = NO_BTN;
-      input_autoconf_bind(port, i)->joyaxis = AXIS_NONE;
-      RETRO_KEYBIND_SET_VALID(input_autoconf_bind(port, i), false);
+      struct retro_keybind *bind = input_autoconf_bind_edit(port, i);
+      bind->joykey  = NO_BTN;
+      bind->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(bind, false);
 
       if (input_autoconf_bind_labels[port][i].joykey)
       {
@@ -10888,6 +10894,9 @@ void input_config_reset_autoconfig_binds(unsigned port)
       map.axes[i].sign   = 1;
    }
    input_driver_set_sensor_map(port, &map);
+   /* counted again once written: this can run on a task's thread while
+    * the frontend polls */
+   input_config_binds_changed();
 }
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
@@ -10906,7 +10915,7 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    if ((port >= MAX_USERS) || !config)
       return;
 
-   binds  = input_autoconf_bind(port, 0);
+   binds  = input_autoconf_bind_edit(port, 0);
    labels = input_autoconf_bind_labels[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -10948,6 +10957,9 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
       }
    }
    input_driver_set_sensor_map(port, &map);
+   /* counted again once written: this can run on a task's thread while
+    * the frontend polls */
+   input_config_binds_changed();
 }
 
 void input_config_parse_mouse_button(char *s,

@@ -229,6 +229,7 @@ const unsigned input_config_bind_order[24] = {
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
+retro_atomic_int_t input_binds_generation;
 input_bind_label_set input_config_bind_labels[MAX_USERS];
 input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
@@ -7713,6 +7714,7 @@ void input_config_reset(void)
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
+   input_config_binds_changed();
    memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
 
    for (i = 1; i < MAX_USERS; i++)
@@ -7743,6 +7745,7 @@ void input_config_reset(void)
 void input_config_set_device(unsigned port, unsigned id)
 {
    settings_t        *settings = config_get_ptr();
+   input_config_binds_changed();
    if (settings && (port < MAX_USERS))
       configuration_set_uint(settings,
             settings->uints.input_libretro_device[port], id);
@@ -9854,6 +9857,7 @@ bool input_config_get_touch_vmouse_gesture(void)
 void input_config_set_joypad_index(unsigned port, unsigned idx)
 {
    settings_t *settings = config_get_ptr();
+   input_config_binds_changed();
    if (settings && port < MAX_USERS)
       settings->uints.input_joypad_index[port] = idx;
 }
@@ -12005,6 +12009,8 @@ void input_remapping_restore_global_config(bool clear_cache, bool restore_analog
    settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
 
+   input_config_binds_changed();
+
    if (!(input_st->flags & INP_FLAG_REMAPPING_CACHE_ACTIVE))
       goto end;
 
@@ -12196,6 +12202,8 @@ void input_remapping_update_port_map(void)
    input_driver_state_t *input_st     = &input_driver_st;
    bool unmapped                      = false;
 
+   input_config_binds_changed();
+
    /* First pass: 'reset' port map */
    for (i = 0; i < MAX_USERS; i++)
       for (j = 0; j < (MAX_USERS + 1); j++)
@@ -12264,6 +12272,8 @@ void input_remapping_set_defaults(bool clear_cache)
    settings_t *settings           = config_get_ptr();
    input_driver_state_t *input_st = &input_driver_st;
    bool first_press               = input_first_press_enabled();
+
+   input_config_binds_changed();
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -12337,6 +12347,14 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #endif
 
    input_st->system_buttons_not_overlay = 0;
+
+#ifdef HAVE_MENU
+   /* While the menu is open its settings write binds, remaps and
+    * device assignments through pointers they hold. They are counted
+    * here, each frame it is open, where nothing else would count them. */
+   if (menu_is_alive)
+      input_config_binds_changed();
+#endif
 
    /* Hotkeys and menu navigation read the controllers through the
     * stand-in while they are gated, the same as the core does. */

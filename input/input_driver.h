@@ -2160,20 +2160,60 @@ extern hid_driver_t wiiu_hid;
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
 
+/* What a port's mapping is made from - the users' binds, the binds a
+ * pad's autoconfig profile gave it, which pad, mouse and kind of device
+ * a port has, the remaps - is counted each time it changes. Anything
+ * compiled from them keeps the count it was compiled at, and is made
+ * again when the count has moved; nothing has to look at the binds to
+ * know. A change that is not counted is a mapping that goes stale, so
+ * the ways to change them are few and each counts:
+ * - the calls below that hand out a bind to be written;
+ * - the input code's own setters, and the configuration's loads;
+ * - every frame the menu is open, which covers whatever the menu and
+ *   its settings write through pointers they hold.
+ * The frontend harness watches for a change the count missed. */
+extern retro_atomic_int_t input_binds_generation;
+
+static INLINE void input_config_binds_changed(void)
+{
+   retro_atomic_fetch_add_int(&input_binds_generation, 1);
+}
+
+static INLINE unsigned input_config_binds_generation(void)
+{
+   return (unsigned)retro_atomic_load_acquire_int(&input_binds_generation);
+}
+
 /* How everything outside input/ gets at a bind: a user's, and the one
  * a pad's autoconfig profile gave it. The arrays are the input code's
  * own, and how the binds are kept is its to change; a check holds that
- * nothing else names them (tools/input_state_grab_check.py). These
- * compile to the indexing they stand for. */
-static INLINE struct retro_keybind *input_config_bind(
+ * nothing else names them (tools/input_state_grab_check.py). To read
+ * one, these; to write one, the _edit calls, which count the change. */
+static INLINE const struct retro_keybind *input_config_bind(
       unsigned user, unsigned id)
 {
    return &input_config_binds[user][id];
 }
 
-static INLINE struct retro_keybind *input_autoconf_bind(
+static INLINE const struct retro_keybind *input_autoconf_bind(
       unsigned pad, unsigned id)
 {
+   return &input_autoconf_binds[pad][id];
+}
+
+/* A bind to be written, now. A pointer kept and written later is not
+ * counted here: the menu's are covered by its being open. */
+static INLINE struct retro_keybind *input_config_bind_edit(
+      unsigned user, unsigned id)
+{
+   input_config_binds_changed();
+   return &input_config_binds[user][id];
+}
+
+static INLINE struct retro_keybind *input_autoconf_bind_edit(
+      unsigned pad, unsigned id)
+{
+   input_config_binds_changed();
    return &input_autoconf_binds[pad][id];
 }
 
@@ -2186,6 +2226,7 @@ static INLINE void input_config_binds_copy_out(retro_keybind_set *sets)
 static INLINE void input_config_binds_copy_in(retro_keybind_set *sets)
 {
    memcpy(input_config_binds, sets, sizeof(input_config_binds));
+   input_config_binds_changed();
 }
 extern input_bind_label_set input_config_bind_labels[MAX_USERS];
 extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];

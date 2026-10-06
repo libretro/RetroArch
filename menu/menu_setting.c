@@ -2801,7 +2801,7 @@ static int setting_action_ok_bind_all_save_autoconfig(
       size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
-      struct retro_keybind *target = input_config_bind(index_offset, 0);
+      struct retro_keybind *target = input_config_bind_edit(index_offset, 0);
 
       config_get_autoconf_profile_filename(name, map, buf, sizeof(buf));
       _len = snprintf(msg, sizeof(msg),
@@ -2843,7 +2843,7 @@ static int setting_action_ok_bind_defaults(
    if (!setting)
       return -1;
 
-   target             =  input_config_bind(setting->index_offset, 0);
+   target             =  input_config_bind_edit(setting->index_offset, 0);
    def_binds          =  (setting->index_offset)
                         ? retro_keybinds_rest
                         : retro_keybinds_1;
@@ -11851,7 +11851,7 @@ static bool setting_append_list_input_player_options(
 
          CONFIG_BIND_ALT(
                list, list_info,
-               input_config_bind(user, i),
+               input_config_bind_edit(user, i),
                user + 1,
                user,
                name,
@@ -16052,7 +16052,7 @@ static void settings_build_input_hotkey(
 #endif
             CONFIG_BIND_ALT(
                   list, list_info,
-                  input_config_bind(0, i),
+                  input_config_bind_edit(0, i),
                   0, 0,
                   input_config_bind_map_get_base(i),
                   input_config_bind_map_get_desc(i),

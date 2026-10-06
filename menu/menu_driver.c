@@ -1697,7 +1697,7 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
             binds->begin             = MENU_SETTINGS_BIND_BEGIN
                   + input_config_bind_order[0];
             binds->last              = MENU_SETTINGS_BIND_LAST;
-            binds->output            = input_config_bind(setting->index_offset, 0)
+            binds->output            = input_config_bind_edit(setting->index_offset, 0)
                   + input_config_bind_order[0];
             binds->buffer            = *(binds->output);
 
@@ -5283,7 +5283,7 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
 
          /* Next bind */
          new_binds.output                    =
-                 input_config_bind(new_binds.port, 0)
+                 input_config_bind_edit(new_binds.port, 0)
                + input_config_bind_order[new_binds.order];
          new_binds.buffer = *(new_binds.output);
          new_binds.timer_hold   .timeout_us  = input_bind_hold_us;
