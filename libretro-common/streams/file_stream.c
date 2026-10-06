@@ -1871,6 +1871,16 @@ void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb)
    filestream_mapped_ptr_cb = cb;
 }
 
+void filestream_prefetch(RFILE *stream, uint64_t offset, uint64_t len)
+{
+   if (!stream || !stream->hfile)
+      return;
+   if (filestream_read_cb)
+      return;   /* no such request in the libretro VFS interface */
+   retro_vfs_file_prefetch_impl(
+         (libretro_vfs_implementation_file*)stream->hfile, offset, len);
+}
+
 const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len)
 {
    if (len)

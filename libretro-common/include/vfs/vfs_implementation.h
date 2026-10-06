@@ -85,6 +85,21 @@ const char *retro_vfs_file_get_path_impl(libretro_vfs_implementation_file *strea
 const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
       libretro_vfs_implementation_file *stream, int64_t *len);
 
+/**
+ * retro_vfs_file_prefetch_impl:
+ * @offset : first byte of the range about to be read
+ * @len    : bytes of it
+ *
+ * Asks the OS to start bringing the range into memory, so a read or a
+ * touch of the mapping that follows finds it resident instead of
+ * stalling on the disk. Returns at once: madvise(MADV_WILLNEED) or
+ * PrefetchVirtualMemory() on a mapped file, posix_fadvise(WILLNEED) on
+ * a descriptor; a no-op where neither exists, on a scheme that is not
+ * a local file, or when the OS declines. A hint, never an error. */
+void retro_vfs_file_prefetch_impl(
+      libretro_vfs_implementation_file *stream, uint64_t offset,
+      uint64_t len);
+
 int retro_vfs_stat_impl(const char *path, int32_t *size);
 
 int retro_vfs_stat_64_impl(const char *path, int64_t *size);

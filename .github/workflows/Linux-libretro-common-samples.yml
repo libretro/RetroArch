@@ -144,6 +144,7 @@ jobs:
             net_ifinfo
             vfs_read_overflow_test
             vfs_mapped_ptr_test
+            vfs_prefetch_test
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test

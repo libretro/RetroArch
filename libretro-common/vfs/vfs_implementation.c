@@ -2288,6 +2288,96 @@ const char *retro_vfs_file_get_path_impl(
    return stream->orig_path;
 }
 
+#if defined(_WIN32) && !defined(_XBOX) && !defined(HAVE_MMAP)
+/* PrefetchVirtualMemory is Windows 8 and later; resolved by name so the
+ * binary still loads where it is absent. */
+typedef struct
+{
+   PVOID  VirtualAddress;
+   SIZE_T NumberOfBytes;
+} vfs_win32_memory_range_t;
+typedef BOOL (WINAPI *vfs_prefetch_t)(HANDLE, ULONG_PTR,
+      vfs_win32_memory_range_t*, ULONG);
+
+static vfs_prefetch_t vfs_win32_prefetch(void)
+{
+   static vfs_prefetch_t p_prefetch;
+   static int            resolved;
+
+   if (!resolved)
+   {
+      HMODULE k32 = GetModuleHandleA("kernel32.dll");
+
+      resolved = 1;
+      if (k32)
+         p_prefetch = (vfs_prefetch_t)GetProcAddress(k32,
+               "PrefetchVirtualMemory");
+   }
+   return p_prefetch;
+}
+#endif
+
+void retro_vfs_file_prefetch_impl(
+      libretro_vfs_implementation_file *stream, uint64_t offset,
+      uint64_t len)
+{
+   if (!stream || !len)
+      return;
+   if (stream->scheme != VFS_SCHEME_NONE)
+      return;
+
+#ifdef VFS_HAVE_FILE_MAPPING
+   if (stream->mapped
+         && (stream->hints & RETRO_VFS_FILE_ACCESS_HINT_FREQUENT_ACCESS))
+   {
+      size_t page;
+      size_t lo, hi;
+
+      if (offset >= stream->mapsize)
+         return;
+      if (len > stream->mapsize - offset)
+         len = stream->mapsize - offset;
+#if defined(HAVE_MMAP)
+      {
+         long sz = sysconf(_SC_PAGESIZE);
+         page    = sz > 0 ? (size_t)sz : 0;
+      }
+#else
+      {
+         SYSTEM_INFO si;
+         GetSystemInfo(&si);
+         page = si.dwPageSize;
+      }
+#endif
+      if (!page)
+         return;
+      lo = (size_t)offset & ~(page - 1);
+      hi = (size_t)(offset + len);
+#if defined(HAVE_MMAP)
+      madvise(stream->mapped + lo, hi - lo, MADV_WILLNEED);
+#else
+      {
+         vfs_prefetch_t            prefetch = vfs_win32_prefetch();
+         vfs_win32_memory_range_t  range;
+
+         if (!prefetch)
+            return;
+         range.VirtualAddress = stream->mapped + lo;
+         range.NumberOfBytes  = hi - lo;
+         prefetch(GetCurrentProcess(), 1, &range, 0);
+      }
+#endif
+      return;
+   }
+#endif
+
+#if defined(POSIX_FADV_WILLNEED) && !defined(_WIN32)
+   if (stream->fd >= 0)
+      posix_fadvise(stream->fd, (off_t)offset, (off_t)len,
+            POSIX_FADV_WILLNEED);
+#endif
+}
+
 const uint8_t *retro_vfs_file_get_mapped_ptr_impl(
       libretro_vfs_implementation_file *stream, int64_t *len)
 {

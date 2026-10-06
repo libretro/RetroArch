@@ -6,6 +6,7 @@ TARGET_TEST4 := vfs_bulk_read_test
 TARGET_TEST5 := filestream_rbuf_fault_test
 TARGET_TEST6 := vfs_v5_metadata_test
 TARGET_TEST7 := vfs_rename_replace_test
+TARGET_TEST8 := vfs_prefetch_test
 
 LIBRETRO_COMM_DIR := ../../..
 
@@ -25,7 +26,8 @@ COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
 OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
-	vfs_v5_metadata_test.o vfs_rename_replace_test.o $(COMMON_OBJS)
+	vfs_v5_metadata_test.o vfs_rename_replace_test.o \
+	vfs_prefetch_test.o $(COMMON_OBJS)
 
 # filestream_rbuf_fault_test drives the two arms on which
 # filestream_rbuf_fill() gives up and hands the caller back to the
@@ -114,7 +116,7 @@ ifeq ($(UNAME_S),Linux)
 endif
 
 all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
-	$(TARGET_TEST5) $(TARGET_TEST6) $(RENAME_TARGET)
+	$(TARGET_TEST5) $(TARGET_TEST6) $(TARGET_TEST8) $(RENAME_TARGET)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -123,6 +125,9 @@ $(TARGET): vfs_read_overflow_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 $(TARGET_TEST): vfs_mapped_ptr_test.o $(COMMON_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(TARGET_TEST8): vfs_prefetch_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # vfs_large_file_test builds sparse fixtures of 3 GiB and 5 GiB.  They
@@ -172,7 +177,7 @@ $(TARGET_TEST7): vfs_rename_replace_test.o $(RENAME_OBJS)
 clean:
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
-		$(TARGET_TEST7) $(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ)
+		$(TARGET_TEST7) $(TARGET_TEST8) $(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ)
 	rm -rf v5_meta_dir
 	rm -f large_3gib.bin large_5gib.bin seek_small.bin seek_4gib.bin
 	rm -f rbuf_fault.txt
