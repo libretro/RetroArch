@@ -1805,9 +1805,15 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
 
    xmb_path_dynamic_wallpaper(xmb, path, sizeof(path));
 
-   if (!string_is_equal(path, xmb->bg_file_path) || reset)
+   /* No file: no wallpaper, as a NULL bg_file_path is */
+   if (!path_is_valid(path))
+      path[0] = '\0';
+
+   if (     !string_is_equal(path, xmb->bg_file_path
+               ? xmb->bg_file_path : "")
+         || reset)
    {
-      if (path_is_valid(path))
+      if (path[0])
       {
          if (reset)
          {
@@ -1819,8 +1825,6 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
                      gfx_surface_wants_rgba(), 0,
                      0,
                      menu_display_handle_wallpaper_upload, NULL);
-
-            gfx_display_init_white_texture();
          }
          else
             task_push_image_load(path,
@@ -10580,7 +10584,6 @@ static void xmb_context_bg_destroy(xmb_handle_t *xmb)
    gfx_display_texture_loads_cancel(&xmb->textures.bg,
          sizeof(xmb->textures.bg));
    video_driver_texture_unload(&xmb->textures.bg);
-   gfx_display_deinit_white_texture();
 }
 
 static bool xmb_load_image(void *userdata, void *data,
@@ -10594,16 +10597,14 @@ static bool xmb_load_image(void *userdata, void *data,
    switch (type)
    {
       case MENU_IMAGE_WALLPAPER:
-         xmb_context_bg_destroy(xmb);
+         /* Replaces the one up, once it is loaded */
          gfx_display_texture_load((struct texture_image*)data,
                gfx_display_texture_filter(),
                &xmb->textures.bg);
-         gfx_display_init_white_texture();
          break;
       case MENU_IMAGE_NONE:
       default:
          xmb_context_bg_destroy(xmb);
-         gfx_display_init_white_texture();
          break;
    }
 
@@ -10898,6 +10899,7 @@ static void xmb_context_destroy(void *data)
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
+   gfx_display_deinit_white_texture();
 
    font_driver_free(xmb->font);
    xmb->font  = NULL;

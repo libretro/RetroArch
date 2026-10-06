@@ -1405,6 +1405,22 @@ jobs:
           test -f gfx_thumbnail_anim_test.exe
           make clean TARGET=gfx_thumbnail_anim_test.exe
 
+      - name: Build and run gfx_display_texture_load_test (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/gfx/gfx_display_texture_load
+        run: |
+          set -eu
+          # A texture load into an occupied slot keeps the old texture
+          # until the new one lands (issue #19725), and the white
+          # texture loads once.
+          make clean
+          make EXTRA_CFLAGS="-fsanitize=address,undefined" LDFLAGS="-fsanitize=address,undefined"
+          make check
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_display_texture_load_test.exe
+          test -f gfx_display_texture_load_test.exe
+          make clean TARGET=gfx_display_texture_load_test.exe
+
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash
         working-directory: samples/cheevos/badge_cache

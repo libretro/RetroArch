@@ -1650,11 +1650,15 @@ static void gfx_display_tex_load_release(void *user, gfx_surface_t *s,
    if (*p)
       *p = e->next;
 
-   /* A handle of 0 is a load the driver refused or a teardown */
+   /* A handle of 0 is a load the driver refused or a teardown. The
+    * slot's old texture stays drawn until now. */
    if (!e->cancelled && s->handle)
    {
-      *e->item  = s->handle;
-      s->handle = 0;
+      uintptr_t old = *e->item;
+      *e->item      = s->handle;
+      s->handle     = 0;
+      if (old)
+         video_driver_texture_unload(&old);
    }
    gfx_surface_free(s);
    if (e->owned)
@@ -1720,8 +1724,11 @@ static bool gfx_display_texture_load_ex(struct texture_image *ti,
          }
          if (r == GFX_SURFACE_SUBMIT_DONE)
          {
-            *item     = s->handle;
-            s->handle = 0;
+            uintptr_t old = *item;
+            *item         = s->handle;
+            s->handle     = 0;
+            if (old)
+               video_driver_texture_unload(&old);
             gfx_surface_free(s);
             free(e);
             return true;
@@ -1731,7 +1738,20 @@ static bool gfx_display_texture_load_ex(struct texture_image *ti,
       gfx_surface_free(s);
    }
 #endif
-   return video_driver_texture_load(ti, filter, item);
+   {
+      uintptr_t tex = 0;
+      if (!video_driver_texture_load(ti, filter, &tex))
+         return false;
+      if (item)
+      {
+         uintptr_t old = *item;
+         gfx_display_texture_loads_cancel(item, sizeof(*item));
+         *item = tex;
+         if (old)
+            video_driver_texture_unload(&old);
+      }
+      return true;
+   }
 }
 
 bool gfx_display_texture_load(struct texture_image *ti,
@@ -1925,6 +1945,17 @@ void gfx_display_init_white_texture(void)
 {
    struct texture_image ti;
    static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
+
+   if (gfx_white_texture)
+      return;
+#ifdef HAVE_THREADS
+   {
+      gfx_display_tex_load_t *e;
+      for (e = gfx_display_tex_loads; e; e = e->next)
+         if (e->item == &gfx_white_texture && !e->cancelled)
+            return;
+   }
+#endif
 
    ti.width         = 1;
    ti.height        = 1;

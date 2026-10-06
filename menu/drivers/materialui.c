@@ -9780,7 +9780,6 @@ static void materialui_context_bg_destroy(materialui_handle_t *mui)
    gfx_display_texture_loads_cancel(&mui->textures.bg,
          sizeof(mui->textures.bg));
    video_driver_texture_unload(&mui->textures.bg);
-   gfx_display_deinit_white_texture();
 }
 
 static void materialui_reset_thumbnails(materialui_handle_t *mui)
@@ -9866,13 +9865,9 @@ static bool materialui_load_image(void *userdata,
    materialui_handle_t *mui = (materialui_handle_t*)userdata;
 
    if (type == MENU_IMAGE_WALLPAPER)
-   {
-      materialui_context_bg_destroy(mui);
+      /* Replaces the one up, once it is loaded */
       gfx_display_texture_load((struct texture_image*)data,
             gfx_display_texture_filter(), &mui->textures.bg);
-      gfx_display_deinit_white_texture();
-      gfx_display_init_white_texture();
-   }
 
    return true;
 }
