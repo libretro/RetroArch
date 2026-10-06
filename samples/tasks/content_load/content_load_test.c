@@ -2308,6 +2308,93 @@ static void lane_dummy_selected_core(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: focus that comes with the frames                             */
+/* ------------------------------------------------------------------ */
+
+/* A window given focus only once it presents, as an OpenXR session
+ * is: a core started from the dummy session is presented and runs,
+ * with Pause When Not Focused on. */
+#define FOCUS_AFTER_FRAMES 3
+#define FOCUS_LANE_FRAMES  30
+
+static video_driver_t focus_null;
+static unsigned focus_presented;
+
+static void *focus_init(const video_info_t *video)
+{
+   focus_presented = 0;
+   return focus_null.init(video);
+}
+
+static bool focus_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   focus_presented++;
+   return focus_null.frame(data, frame, dims, frame_count,
+         pitch, msg, video_info);
+}
+
+static bool focus_has(void *data)
+{
+   (void)data;
+   return focus_presented >= FOCUS_AFTER_FRAMES;
+}
+
+static void lane_focus_follows_frames(void)
+{
+   struct load_frame log[LOAD_FRAMES];
+   settings_t *settings        = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   bool saved_pause            = settings->bools.pause_nonactive;
+   unsigned i, n, runs;
+   unsigned had = failures;
+
+   configuration_set_bool(settings, settings->bools.pause_nonactive, true);
+   focus_null       = video_null;
+   video_null.init  = focus_init;
+   video_null.frame = focus_frame;
+   video_null.focus = focus_has;
+
+   /* as after starting RetroArch with no core: none has run a frame */
+   command_event(CMD_EVENT_UNLOAD_CORE, NULL);
+   pump(LOAD_FRAMES);
+   open_menu();
+   CHECK(runloop_st->current_core_type == CORE_TYPE_DUMMY,
+         "the core was not unloaded");
+
+   CHECK(task_push_load_contentless_core_from_menu(core_path),
+         "the load was not started");
+   n = run_load(log, LOAD_FRAMES);
+   CHECK(n < LOAD_FRAMES && core_is_up()
+         && runloop_st->current_core_type != CORE_TYPE_DUMMY,
+         "the load did not go through");
+   CHECK(!video_driver_has_focus(),
+         "the rebuilt window has focus before it presented");
+
+   runs = core_export("harness_core_runs");
+   for (i = 0; i < FOCUS_LANE_FRAMES; i++)
+   {
+      runloop_iterate();
+      task_queue_check();
+   }
+   CHECK(focus_presented >= FOCUS_AFTER_FRAMES,
+         "%u frames presented to the unfocused window in %u iterations: "
+         "it never gets its focus", focus_presented, FOCUS_LANE_FRAMES);
+   CHECK(core_export("harness_core_runs") > runs + FOCUS_LANE_FRAMES / 2,
+         "the core ran %u frames in %u iterations",
+         core_export("harness_core_runs") - runs, FOCUS_LANE_FRAMES);
+   CHECK(!(runloop_st->flags & RUNLOOP_FLAG_PAUSED),
+         "the core is still paused with the window focused");
+
+   video_null = focus_null;
+   configuration_set_bool(settings, settings->bools.pause_nonactive,
+         saved_pause);
+   if (failures == had)
+      fprintf(stderr, "[pass] focus follows frames lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 
 int main(int argc, char *argv[])
 {
@@ -2429,6 +2516,7 @@ int main(int argc, char *argv[])
    lane_queue_survives();
    lane_close_content();
    lane_dummy_selected_core();
+   lane_focus_follows_frames();
    lane_close_waits_for_save();
 #ifdef HAVE_NETWORKING
    lane_host_setup_deferred();

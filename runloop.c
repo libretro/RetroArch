@@ -8472,7 +8472,10 @@ static enum runloop_state_enum runloop_check_state(
 #ifdef HAVE_NETWORKING
    if (netplay_allow_pause)
 #endif
-   if (pause_nonactive)
+   /* A core that has run no frame cannot be paused, and waiting for
+    * focus instead would present nothing: OpenXR gives focus only to
+    * a session that presents. */
+   if (pause_nonactive && (runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
       focused                = is_focused;
 
    /* Check pause hotkey */
