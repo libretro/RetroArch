@@ -1282,6 +1282,20 @@ enum input_pointers_flags
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags);
 
+/* The viewport as of this poll: asked of the video driver the first
+ * time it is wanted after a poll, and that answer given until the
+ * next. For a driver that places its own touches or mouse, in its poll
+ * or as it is read - on the frontend's thread only. */
+bool input_driver_poll_viewport(struct video_viewport *vp);
+
+/* video_driver_translate_coord_viewport_wrap() and its confined twin,
+ * with the poll's viewport in place of one asked for each time. */
+#define input_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_pos, res_screen_pos) \
+   (input_driver_poll_viewport(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_pos, res_screen_pos, true) : false)
+
+#define input_driver_translate_coord_viewport_confined_wrap(vp, mouse_x, mouse_y, res_pos, res_screen_pos) \
+   (input_driver_poll_viewport(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_pos, res_screen_pos, false) : false)
+
 /* The kind of device (RETRO_DEVICE_MOUSE, RETRO_DEVICE_POINTER, ...)
  * published device @i was last read as, or 0: for a driver whose
  * handling of a mouse depends on how it is used. */

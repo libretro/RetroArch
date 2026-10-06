@@ -1465,6 +1465,14 @@ unsigned input_driver_pointer_read_as(unsigned i)
    return i < MAX_USERS ? input_pointers.read_as[i] : 0;
 }
 
+bool input_driver_poll_viewport(struct video_viewport *vp)
+{
+   if (!input_pointer_viewport())
+      return false;
+   *vp = input_pointers.vp;
+   return true;
+}
+
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
       unsigned down)
 {

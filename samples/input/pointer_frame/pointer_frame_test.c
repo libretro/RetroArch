@@ -24,7 +24,8 @@
  *    port's, and the lightgun aiming at the first touch;
  * 10. how many pointers are down;
  * 11. the pointer placed off-screen as the lightgun is;
- * 12. a touch read alone: a pen in the air. */
+ * 12. a touch read alone: a pen in the air;
+ * 13. the poll's viewport, asked for once a poll. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -375,6 +376,17 @@ int main(void)
    CHECK(rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == -2
       && rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == -2,
          "a poll in which nothing is published: the driver is to be asked");
+
+   /* 13: the poll's viewport, for a driver that places its own touches:
+    * asked for once however often it is wanted, and afresh each poll */
+   input_pointer_frames_clear();
+   vp_asked = 0;
+   CHECK(input_pointer_viewport() && input_pointer_viewport()
+         && input_pointer_viewport() && vp_asked == 1,
+         "the poll's viewport is asked for once");
+   input_pointer_frames_clear();
+   CHECK(input_pointer_viewport() && vp_asked == 2,
+         "and afresh after the next poll");
 
    if (failures)
    {

@@ -735,7 +735,7 @@ static int16_t rwebinput_input_state(
             else
                return 0;
 
-            if (!(video_driver_translate_coord_viewport_confined_wrap(
+            if (!(input_driver_translate_coord_viewport_confined_wrap(
                         &vp, x, y,
                         &res_pos, &res_screen_pos)))
                return 0;

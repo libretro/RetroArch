@@ -470,11 +470,11 @@ static void cocoa_input_poll(void *data)
 
       /* each position is written whole by the translation, and left as
        * it was if that fails */
-      video_driver_translate_coord_viewport_confined_wrap(
+      input_driver_translate_coord_viewport_confined_wrap(
             &vp, screen_x, screen_y,
             &touch->confined_pos, &touch->full_pos);
 
-      video_driver_translate_coord_viewport_wrap(
+      input_driver_translate_coord_viewport_wrap(
             &vp, screen_x, screen_y,
             &touch->fixed_pos, &touch->full_pos);
    }
@@ -495,7 +495,7 @@ static int16_t cocoa_lightgun_aiming_state(
    y *= cocoa_screen_get_backing_scale_factor();
 #endif
 
-   if (video_driver_translate_coord_viewport_wrap(
+   if (input_driver_translate_coord_viewport_wrap(
                &vp, x, y,
                &res_pos, &res_screen_pos))
    {

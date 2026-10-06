@@ -25,6 +25,7 @@
 #include "../../config.def.h"
 
 #include "../../retroarch.h"
+#include "../input_driver.h"
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
@@ -192,7 +193,7 @@ static void switch_input_poll(void *data)
          vp.dims                     = 0;
          vp.full_dims                = 0;
 
-         video_driver_translate_coord_viewport_wrap(
+         input_driver_translate_coord_viewport_wrap(
             &vp,
             touch_screen_state.touches[i].x,
             touch_screen_state.touches[i].y,

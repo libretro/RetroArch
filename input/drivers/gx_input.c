@@ -302,7 +302,7 @@ static int16_t rvl_input_state(
              * zero-initialiser above. The call dispatched through
              * the video vtable on every lightgun query - delete it. */
 
-            if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
+            if (input_driver_translate_coord_viewport_wrap(&vp, x, y,
                         &res_pos, &res_screen_pos))
             {
                switch (id)

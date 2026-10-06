@@ -707,7 +707,7 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    pointer_y                   = v.vec128[1];
 #endif
 
-   if (video_driver_translate_coord_viewport_wrap(&vp,
+   if (input_driver_translate_coord_viewport_wrap(&vp,
            center_x + ((pointer_x - ps3->adj_x) * sensitivity), center_y + ((pointer_y - ps3->adj_y) * sensitivity),
            &res_pos, &res_screen_pos))
    {

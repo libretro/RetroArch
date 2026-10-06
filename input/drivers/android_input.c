@@ -1316,7 +1316,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!y) y = VIDEO_POS_Y(android->mouse_pos) + VIDEO_POS_Y(android->mouse_delta);
 
    {
-      video_driver_translate_coord_viewport_confined_wrap(&vp,
+      input_driver_translate_coord_viewport_confined_wrap(&vp,
             (int) x, (int) y, &android->mouse_viewport_pos,
             &android->mouse_viewport_screen_pos);
    }
@@ -1337,9 +1337,9 @@ static void android_pointer_set(android_input_t *android, unsigned i,
       struct video_viewport *vp, float x, float y)
 {
    /* a translation that fails (no viewport) leaves what was there */
-   video_driver_translate_coord_viewport_confined_wrap(vp, x, y,
+   input_driver_translate_coord_viewport_confined_wrap(vp, x, y,
          &android->pointer[i].confined_pos, &android->pointer[i].full_pos);
-   video_driver_translate_coord_viewport_wrap(vp, x, y,
+   input_driver_translate_coord_viewport_wrap(vp, x, y,
          &android->pointer[i].pos, &android->pointer[i].full_pos);
 }
 

@@ -31,6 +31,7 @@
 
 
 #include "../../retroarch.h"
+#include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
@@ -75,7 +76,7 @@ struct input_pointer
 static void qnx_pointer_set(struct input_pointer *p,
       struct video_viewport *vp, int x, int y)
 {
-   video_driver_translate_coord_viewport_wrap(vp, x, y,
+   input_driver_translate_coord_viewport_wrap(vp, x, y,
          &p->pos, &p->full_pos);
 }
 

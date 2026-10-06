@@ -436,6 +436,8 @@ static void input_pointer_frames_clear(void)
 {
    input_pointers.count       = 0;
    input_pointers.touch_count = 0;
+   /* and the viewport is asked for afresh, by whoever wants it first */
+   input_pointers.vp_asked    = false;
 }
 
 #endif
