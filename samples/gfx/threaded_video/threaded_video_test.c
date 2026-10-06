@@ -1402,6 +1402,128 @@ static void lane_window_thread_present(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: async completions stay on the main thread while the window    */
+/*   thread presents                                                   */
+/*   A cached-frame present issued from the video thread re-enters     */
+/*   video_thread_frame() there. The uploads the worker finished are   */
+/*   delivered to their owners from that function too, and the owners  */
+/*   are main-thread code: gfx_display's registered loads, the icon    */
+/*   slots of the menu drivers. With alive() presenting from the video */
+/*   thread every few frames and a load posted every frame, every      */
+/*   done() still has to run on the thread that pushes frames.         */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        asyncwin_driver;
+static const video_driver_t *asyncwin_inner;
+static video_poke_interface_t asyncwin_poke;
+static const video_poke_interface_t *asyncwin_inner_poke;
+static unsigned  asyncwin_alive_calls;
+static unsigned  asyncwin_uploads;
+static unsigned  asyncwin_done;
+static unsigned  asyncwin_done_off_main;
+static uintptr_t asyncwin_main_thread;
+
+static uintptr_t asyncwin_load(void *data, void *img, bool threaded,
+      enum texture_filter_type filter)
+{
+   (void)data; (void)img; (void)threaded; (void)filter;
+   return 0x2000 + ++asyncwin_uploads;
+}
+
+static void asyncwin_unload(void *data, bool threaded, uintptr_t id)
+{
+   if (id > 0x2000 && id <= 0x2000 + 4096)
+      return;
+   if (asyncwin_inner_poke && asyncwin_inner_poke->unload_texture)
+      asyncwin_inner_poke->unload_texture(data, threaded, id);
+}
+
+static void asyncwin_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   asyncwin_inner->poke_interface(data, &asyncwin_inner_poke);
+   asyncwin_poke = *asyncwin_inner_poke;
+   asyncwin_poke.load_texture   = asyncwin_load;
+   asyncwin_poke.unload_texture = asyncwin_unload;
+   *iface = &asyncwin_poke;
+}
+
+static bool asyncwin_alive(void *data)
+{
+   asyncwin_alive_calls++;
+   if ((asyncwin_alive_calls % 3) == 0)
+      video_driver_cached_frame();
+   return asyncwin_inner->alive(data);
+}
+
+static void asyncwin_done_cb(void *user, uintptr_t handle)
+{
+   (void)user; (void)handle;
+   asyncwin_done++;
+   if (sthread_get_current_thread_id() != asyncwin_main_thread)
+      asyncwin_done_off_main++;
+}
+
+static void asyncwin_release_cb(void *img) { (void)img; }
+
+static void lane_async_done_main_thread(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   static struct texture_image img;
+   unsigned i, posted = 0;
+
+   asyncwin_main_thread   = sthread_get_current_thread_id();
+   asyncwin_alive_calls   = 0;
+   asyncwin_uploads       = 0;
+   asyncwin_done          = 0;
+   asyncwin_done_off_main = 0;
+
+   set_threaded_via_setting(true);
+   run_frames(3);
+   expect_wrapper(true, "async done main-thread lane");
+   thr = (thread_video_t*)video_st->data;
+
+   video_thread_wait_idle();
+   asyncwin_inner                = thr->driver;
+   asyncwin_driver               = *thr->driver;
+   asyncwin_driver.alive         = asyncwin_alive;
+   asyncwin_driver.poke_interface = asyncwin_get_poke;
+   set_driver(thr, &asyncwin_driver);
+   set_poke_from(thr, &asyncwin_driver);
+
+   img.width = img.height = 4;
+   img.pixels = (uint32_t*)&img;
+
+   for (i = 0; i < 120; i++)
+   {
+      if (video_driver_texture_load_async(&img, TEXTURE_FILTER_LINEAR,
+               asyncwin_done_cb, NULL, asyncwin_release_cb))
+         posted++;
+      run_frames(1);
+   }
+   video_thread_wait_idle();
+   run_frames(3);
+   video_thread_wait_idle();
+
+   CHECK(asyncwin_alive_calls >= 3,
+         "alive() never presented a cached frame from the video thread");
+   CHECK(asyncwin_done == posted, "%u of %u loads answered",
+         asyncwin_done, posted);
+   CHECK(asyncwin_done_off_main == 0,
+         "%u done() call(s) ran off the main thread", asyncwin_done_off_main);
+
+   set_driver(thr, asyncwin_inner);
+   set_poke_from(thr, asyncwin_inner);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] async done main-thread lane (%u loads, "
+            "%u ticks)\n", posted, asyncwin_alive_calls);
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: display-phase scheduling with a stale report                  */
 /*   The presenter schedules the next repeat from the driver's display */
 /*   timestamp. A driver whose report lags well behind the clock must  */
@@ -6383,6 +6505,7 @@ int main(int argc, char *argv[])
    lane_second_ring_waiter();
    lane_reentrant_from_frame();
    lane_window_thread_present();
+   lane_async_done_main_thread();
    if (!real_driver())
       lane_display_phase();
    lane_command_runs_once();

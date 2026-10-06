@@ -2912,10 +2912,6 @@ static bool video_thread_frame(void *data, const void *frame_,
    convert             = thr->convert_next;
    thr->convert_next   = 0;
 
-   /* Asynchronous uploads that finished since the last frame reach
-    * their owners before the frame that may draw with them. */
-   video_thread_async_deliver(thr);
-
    /* Already on the video thread: render straight through rather than
     * hand off to a thread that is here.  Two callers arrive this way --
     * a driver's read_viewport(), which renders a cached frame to get
@@ -2945,6 +2941,12 @@ static bool video_thread_frame(void *data, const void *frame_,
 
       return false;
    }
+
+   /* Asynchronous uploads that finished since the last frame reach
+    * their owners before the frame that may draw with them. Their
+    * owners are main-thread code, so this is after the video thread's
+    * own way in above. */
+   video_thread_async_deliver(thr);
 
    if (timed)
    {
