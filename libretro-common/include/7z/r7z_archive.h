@@ -204,6 +204,20 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
 int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
       uint8_t **out, size_t *out_len);
 
+/**
+ * r7z_archive_entry_borrow:
+ *
+ * The entry's bytes inside the decoded folder cache, decoding the folder
+ * first if it is not the one held. Nothing is copied: the pointer is
+ * owned by the archive and stays valid until a different folder is
+ * decoded, the folder is detached, or the archive is closed. The CRC is
+ * checked on every call, so a caller keeping the pointer calls once.
+ * A solid archive is one folder, so every member of it can be borrowed
+ * at the same time.
+ */
+int r7z_archive_entry_borrow(r7z_archive_t *a, uint32_t index,
+      const uint8_t **out, size_t *out_len);
+
 RETRO_END_DECLS
 
 #endif

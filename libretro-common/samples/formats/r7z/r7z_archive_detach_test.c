@@ -1,4 +1,5 @@
-/* r7z_archive_extract_detach() against a non-solid and a solid archive.
+/* r7z_archive_extract_detach() and r7z_archive_entry_borrow() against a
+ * non-solid and a solid archive.
  *
  * Both archives hold the same two members, a.bin (3000 bytes) and
  * b.bin (2000 bytes), with contents a test can regenerate:
@@ -12,7 +13,10 @@
  * must decode it again rather than read a buffer that was given away.
  * In the solid archive (7z a -ms=on -m0=lzma) both members share one
  * folder, so detach has to fall back to a copy and keep the folder
- * cached for the member after it.
+ * cached for the member after it. Borrowing hands out pointers into
+ * that cache: in the solid archive both members can be held at once
+ * and a detach of one of them (a copy, there) leaves them valid; in the
+ * non-solid archive a borrow after a detach decodes the folder again.
  *
  * Build: make -C libretro-common/samples/formats/r7z check
  */
@@ -249,8 +253,44 @@ static void check_member(r7z_archive_t *a, uint32_t index, const char *name,
    free(out);
 }
 
-static void check_archive(const uint8_t *data, size_t len, const char *what,
+static void check_borrow(r7z_archive_t *a, int solid,
       const uint8_t *a_want, const uint8_t *b_want)
+{
+   const uint8_t *pa = NULL, *pb = NULL;
+   size_t         la = 0, lb = 0;
+   uint8_t       *out = NULL;
+   size_t         out_len = 0;
+
+   check(r7z_archive_entry_borrow(a, 0, &pa, &la) == R7Z_OK && la == A_LEN
+         && !memcmp(pa, a_want, A_LEN), "a.bin: borrow");
+   check(r7z_archive_entry_borrow(a, 1, &pb, &lb) == R7Z_OK && lb == B_LEN
+         && !memcmp(pb, b_want, B_LEN), "b.bin: borrow");
+   if (solid)
+   {
+      /* one folder: both pointers live in it, and stay valid across a
+       * detach, which can only copy here */
+      check(!memcmp(pa, a_want, A_LEN), "a.bin: still valid after b.bin");
+      check(r7z_archive_extract_detach(a, 1, &out, &out_len) == R7Z_OK
+            && out_len == B_LEN && !memcmp(out, b_want, B_LEN),
+            "b.bin: detach beside borrows");
+      free(out);
+      check(!memcmp(pa, a_want, A_LEN) && !memcmp(pb, b_want, B_LEN),
+            "borrows valid after the detach");
+   }
+   else
+   {
+      /* a detach gives the folder away; borrowing it again decodes */
+      check(r7z_archive_extract_detach(a, 0, &out, &out_len) == R7Z_OK
+            && out_len == A_LEN && !memcmp(out, a_want, A_LEN),
+            "a.bin: detach");
+      free(out);
+      check(r7z_archive_entry_borrow(a, 0, &pa, &la) == R7Z_OK && la == A_LEN
+            && !memcmp(pa, a_want, A_LEN), "a.bin: borrow after detach");
+   }
+}
+
+static void check_archive(const uint8_t *data, size_t len, const char *what,
+      int solid, const uint8_t *a_want, const uint8_t *b_want)
 {
    r7z_archive_t *a = NULL;
    int            res = r7z_archive_open(&a, data, len);
@@ -259,6 +299,8 @@ static void check_archive(const uint8_t *data, size_t len, const char *what,
    check(res == R7Z_OK && a && r7z_archive_num_entries(a) == 2, "open");
    if (res != R7Z_OK || !a)
       return;
+
+   check_borrow(a, solid, a_want, b_want);
 
    /* detach, then extract the same member again: the buffer that was
     * handed over must not be the one the next extract reads */
@@ -282,9 +324,9 @@ int main(void)
    fill_b(b_want);
 
    check_archive(nonsolid_7z, sizeof(nonsolid_7z),
-         "non-solid: each member is its own folder", a_want, b_want);
+         "non-solid: each member is its own folder", 0, a_want, b_want);
    check_archive(solid_7z, sizeof(solid_7z),
-         "solid: both members in one folder", a_want, b_want);
+         "solid: both members in one folder", 1, a_want, b_want);
 
    printf("%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;

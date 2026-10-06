@@ -3109,3 +3109,51 @@ int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
    *out_len = (size_t)e->size;
    return R7Z_OK;
 }
+
+int r7z_archive_entry_borrow(r7z_archive_t *a, uint32_t index,
+      const uint8_t **out, size_t *out_len)
+{
+   const r7z_entry_t *e;
+   uint8_t           *folder_data;
+   int                res;
+
+   if (!a || !out || !out_len)
+      return R7Z_ERROR_PARAM;
+   if (index >= a->num_entries)
+      return R7Z_ERROR_PARAM;
+
+   e        = &a->entries[index];
+   *out     = NULL;
+   *out_len = 0;
+
+   if (e->is_dir)
+      return R7Z_ERROR_PARAM;
+   if (e->size == 0)
+      return R7Z_OK;
+   if (e->folder >= a->num_folders)
+      return R7Z_ERROR_DATA;
+
+   if (a->cached_folder == e->folder && a->cached_data)
+      folder_data = a->cached_data;
+   else
+   {
+      if ((res = decode_folder(a, e->folder, &folder_data)) != R7Z_OK)
+         return res;
+      free(a->cached_data);
+      a->cached_data   = folder_data;
+      a->cached_len    = (size_t)a->folders[e->folder].unpack_size;
+      a->cached_folder = e->folder;
+   }
+
+   if (e->offset_in_folder > a->cached_len
+         || e->size > a->cached_len - (size_t)e->offset_in_folder)
+      return R7Z_ERROR_DATA;
+
+   folder_data += (size_t)e->offset_in_folder;
+   if (e->has_crc && encoding_crc32(0, folder_data, (size_t)e->size) != e->crc)
+      return R7Z_ERROR_CRC;
+
+   *out     = folder_data;
+   *out_len = (size_t)e->size;
+   return R7Z_OK;
+}
