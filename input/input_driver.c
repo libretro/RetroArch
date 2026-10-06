@@ -1561,6 +1561,7 @@ typedef struct
    uint32_t key_down[INPUT_BIND_WORDS];  /* by bind: its key is down, this poll */
    uint32_t has_mbutton[INPUT_BIND_WORDS]; /* by bind: it names a mouse button */
    uint32_t has_pad[INPUT_BIND_WORDS];   /* by bind: a pad's button or axis may be bound to it */
+   bool     any_key_down;   /* key_down may hold a bit: it wants clearing when the keys go */
    uint16_t key[RARCH_BIND_LIST_END];    /* the n-th bind that names a key */
    uint8_t  bind[RARCH_BIND_LIST_END];   /* ... and which bind that is */
    unsigned binds_gen;                   /* the change count + 1 it was made at */
@@ -1625,15 +1626,31 @@ static void input_port_keys_refresh(input_port_keys_t *k,
    k->mouse_buttons     = (k->mouse_from_driver && k->any_mbutton)
       ? (uint16_t)input->bind_mouse_buttons(data, port) : 0;
 
+   /* A port none of whose binds names a key - most ports, with one
+    * keyboard - has none down: what is down was cleared when it last
+    * had keys, and there is nothing to ask or to go through. */
+   if (!k->count)
+   {
+      if (k->any_key_down)
+      {
+         memset(k->key_down, 0, sizeof(k->key_down));
+         k->pad_keys     = 0;
+         k->any_key_down = false;
+      }
+      k->poll_gen = input_poll_generation;
+      return;
+   }
+
    memset(down, 0, sizeof(down));
-   if (k->count)
-      input->keys_down(data, port, k->key, k->bind, k->count, down);
+   input->keys_down(data, port, k->key, k->bind, k->count, down);
    memset(k->key_down, 0, sizeof(k->key_down));
    for (i = 0; i < k->count; i++)
       if (down[i >> 5] & (1u << (i & 31)))
          k->key_down[k->bind[i] >> 5] |= (1u << (k->bind[i] & 31));
-   k->pad_keys = (uint16_t)k->key_down[0];
-   k->poll_gen = input_poll_generation;
+   k->pad_keys     = (uint16_t)k->key_down[0];
+   /* not "is any down" but "may the bits be other than clear" */
+   k->any_key_down = true;
+   k->poll_gen     = input_poll_generation;
 }
 
 static INLINE const input_port_keys_t *input_port_keys_get(
@@ -2069,6 +2086,29 @@ static INLINE int32_t input_state_wrap(
             return 1;
          return 0;
       }
+   }
+   /* The RetroPad's mask for a port none of whose sixteen a pad may be
+    * behind - with one controller, every port but one, and each of them
+    * is asked every frame: the pad drivers have nothing to say, so it
+    * is what the keys and the mouse hold, kept for the frame as the
+    * work above keeps it. */
+   else if (binds && device == RETRO_DEVICE_JOYPAD
+         && id == RETRO_DEVICE_ID_JOYPAD_MASK
+         && input && input->keys_down && _port < MAX_USERS
+         && !input_port_pad_bound_get(binds[_port]))
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      const input_port_keys_t *k     = input_port_keys_get(input, data, _port);
+      int32_t ret                    = keyboard_mapping_blocked ? 0 : k->pad_keys;
+      if (k->pad_mbuttons)
+         ret |= input_joypad_from_keys(input, data, binds[_port],
+               keyboard_mapping_blocked, _port, RETRO_DEVICE_ID_JOYPAD_MASK);
+      if (!(input_st->frame_valid.joypad_cache & (1 << _port)))
+      {
+         input_st->joypad_state_cache[_port]  = ret;
+         input_st->frame_valid.joypad_cache  |= (1 << _port);
+      }
+      return ret;
    }
    return input_state_wrap_slow(input, data, joypad, sec_joypad,
          joypad_info, binds, keyboard_mapping_blocked,
