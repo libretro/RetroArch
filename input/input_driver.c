@@ -9721,6 +9721,47 @@ static unsigned input_pad_buttons_other_sources(
    return held;
 }
 
+/* By bind: what something could be holding this frame. A bind is in it
+ * if its key is down, if a mouse button or a pad may be behind it, or
+ * if the overlay holds it; a bind that is not is held by nothing, and
+ * the hotkeys - some sixty, gone through one at a time each frame - are
+ * nearly all that. Every bind is in it where the keys are not the
+ * frontend's to know (a driver that does not give it its keys) or a
+ * command interface is open, whose presses are not kept as bits. */
+static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
+      unsigned port, uint32_t *maybe)
+{
+   unsigned w;
+   const unsigned words        = (RARCH_BIND_LIST_END + 31) / 32;
+   input_driver_t *input       = input_st->current_driver;
+   const input_port_keys_t *k  = NULL;
+   bool all                    = (!input || !input->keys_down || port >= MAX_USERS);
+#ifdef HAVE_COMMAND
+   int j;
+   for (j = 0; j < (int)ARRAY_SIZE(input_st->command); j++)
+      if (input_st->command[j])
+         all = true;
+#endif
+
+   if (all)
+   {
+      for (w = 0; w < words; w++)
+         maybe[w] = ~(uint32_t)0;
+      return;
+   }
+
+   k = input_port_keys_get(input, input_st->current_data, port);
+   for (w = 0; w < words; w++)
+   {
+      maybe[w] = k->key_down[w] | k->has_mbutton[w] | k->has_pad[w];
+#ifdef HAVE_OVERLAY
+      if (input_st->overlay_ptr)
+         maybe[w] |= input_st->overlay_ptr->overlay_state.buttons.data[w];
+#endif
+   }
+   maybe[RARCH_MENU_TOGGLE >> 5] |= (1u << (RARCH_MENU_TOGGLE & 31));
+}
+
 #define CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i) \
    if (     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) \
          && (  (i == RARCH_ENABLE_HOTKEY) \
@@ -9760,6 +9801,7 @@ static void input_keys_pressed(
       rarch_joypad_info_t *joypad_info,
       bool input_hotkey_device_merge)
 {
+   uint32_t maybe_held[(RARCH_BIND_LIST_END + 31) / 32];
    unsigned i;
    /* Autoconf binds are indexed by joy_idx, not frontend port */
    unsigned joy_idx               = joypad_info->joy_idx;
@@ -10084,10 +10126,21 @@ static void input_keys_pressed(
       block_hotkey[RARCH_GAME_FOCUS_TOGGLE] = false;
    }
 
+   /* Which hotkeys anything could be holding: all that is gone through
+    * below. The rest have nothing to do here - but for the menu toggle,
+    * which acts on being let go and is always among them. */
+   input_hotkeys_maybe_held(input_st, port, maybe_held);
+
    for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
    {
-      bool other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-      bool bit_pressed   = RETRO_KEYBIND_VALID(&binds[port][i])
+      bool other_pressed;
+      bool bit_pressed;
+
+      if (!(maybe_held[i >> 5] & (1u << (i & 31))))
+         continue;
+
+      other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
+      bit_pressed   = RETRO_KEYBIND_VALID(&binds[port][i])
             && input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
