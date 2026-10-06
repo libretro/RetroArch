@@ -6616,8 +6616,7 @@ size_t video_driver_stat_appendf(char *s, size_t len, const char *fmt, ...)
 VIDEO_NOINLINE static void video_driver_frame_statistics(
       video_driver_state_t *video_st, runloop_state_t *runloop_st,
       settings_t *settings, video_frame_info_t *video_info,
-      float last_fps, float frame_time, unsigned rotation,
-      bool menu_is_alive)
+      unsigned rotation, bool menu_is_alive)
 {
    struct retro_system_av_info *av_info   = &video_st->av_info;
    audio_driver_state_t *audio_st         = audio_state_get_ptr();
@@ -6681,7 +6680,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
             " Scale X/Y:  %2.2f/%2.2f\n"
             " Refresh:  %7.2f hz\n"
             " FrameRate:%7.2f fps\n"
-            " FrameTime:%7.2f ms (%s)\n"
+            " FrameTime %s:%5.2f ms\n"
             " -Deviation:%6.2f %%\n"
             " Frames:  %8" PRIu64"\n"
             " -Dropped:  %6u\n"
@@ -6709,9 +6708,9 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   ? (float)VIDEO_SCALE_W(cache_dims)
                   : (float)VIDEO_SCALE_H(cache_dims)),
             video_info->refresh_rate,
-            last_fps,
-            frame_time / 1000.0f,
-            video_st->frame_time_from_display ? "display" : "loop",
+            (runloop_st->pace_period_usec) ? 1000000.0f / (double)runloop_st->pace_period_usec : 0,
+            video_st->frame_time_from_display ? "D" : "L",
+            (runloop_st->pace_period_usec) ? runloop_st->pace_period_usec / 1000.0f : 0,
             100.0f * stddev,
             video_st->frame_count,
             video_st->frame_drop_count);
@@ -6724,11 +6723,11 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          video_thread_handoff_stats_t ho;
          if (video_thread_get_handoff_stats(&ho))
             __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                  " Handoff:  %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                  " -Copy:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
-                  " -Wait:    %" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                  " -Frames:  %u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
-                  " -Lend:    %u asked, %u lent, %u lapsed, %u ring, %u size\n",
+                  " Handoff:   %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                  " -Copy:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
+                  " -Wait:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+                  " -Frames: %3u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
+                  " -Lend:   %3u asked, %u lent, %u lapsed, %u ring, %u size\n",
                   ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
                   ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
                   ho.bytes_per_frame / 1024,
@@ -6784,7 +6783,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
                "AUDIO: %s %s\n"
                " SampleRate: %u %s\n"
-               " Speakers: %s\n"
+               " Speakers:   %s\n"
                ,
                audio_ident ? audio_ident : "n/a",
                (audio_st->stat_frontend_is_float) ? "FLOAT" : "INT16",
@@ -6799,14 +6798,15 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
             double device_ms = audio_driver_get_device_latency_ms();
             char   stage[24];
             if (buffer_ms > 0.0 && device_ms > 0.0)
-               snprintf(stage, sizeof(stage), "%.1f+%.1f", buffer_ms, device_ms);
+               snprintf(stage, sizeof(stage), "%.2f+%.2f", buffer_ms, device_ms);
             else if (buffer_ms > 0.0)
-               snprintf(stage, sizeof(stage), "%.1f", buffer_ms);
+               snprintf(stage, sizeof(stage), "%.2f", buffer_ms);
             else
                strlcpy(stage, "n/a", sizeof(stage));
             if (buffer_ms > 0.0 && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL))
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                     " Buffer/Held: %s/~%.0f ms\n",
+                     " Buffer:     %s ms\n"
+                     " -Held:      %.2f ms\n",
                      stage, buffer_ms / 2.0);
             else
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
@@ -6828,13 +6828,15 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                 * it says what the approximation would have cost. */
                double alt_ppm = audio_driver_get_sink_alt_ppm();
                __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                     " Sink/Src: %+.0f/%+.0f ppm\n -Bias:    %+.0f\n",
+                     " Sink:      %+6.0f ppm\n"
+                     " -Src:      %+6.0f ppm\n"
+                     " -Bias:     %+6.0f ppm\n",
                      (sink_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (source_hz / (double)settings->uints.audio_output_sample_rate - 1.0) * 1e6,
                      (sink_bias - 1.0) * 1e6);
                if (alt_ppm != 0.0)
                   __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                        " Clock vs events: %+.0f ppm\n", alt_ppm);
+                        " Clock/Events:%+4.0f ppm\n", alt_ppm);
                /* What the device's own clock says it is doing,
                 * where the driver can measure it - fitted from
                 * whatever pairing of position and time its API
@@ -6845,7 +6847,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   double dev_ppm = 0.0;
                   if (audio_driver_get_device_clock_ppm(&dev_ppm))
                      __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                           " Device clock: %+.0f ppm\n", dev_ppm);
+                           " DeviceClock:%+5.0f ppm\n", dev_ppm);
                }
             }
          }
@@ -6871,7 +6873,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
        * above that say how near the buffer came. */
       if (audio_st->current_audio && audio_st->current_audio->underruns)
          __len = video_driver_stat_appendf(video_st->stat_text, __len,
-               " Dropouts:%8u\n", (unsigned)audio_driver_get_underruns());
+               " -Dropped:%8u\n", (unsigned)audio_driver_get_underruns());
 
       __len = video_driver_stat_appendf(video_st->stat_text, __len, "LATENCY\n");
 
@@ -6914,7 +6916,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          if (     video_thread_pacing_stats(&display_pacing, &core_time, &render_time)
                && display_pacing)
             __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                  " Core Start: display (core %.2f ms, render %.2f ms)\n",
+                  " Core Start:  Display (core %.2f ms, render %.2f ms)\n",
                   core_time / 1000.0f, render_time / 1000.0f);
       }
       {
@@ -6922,7 +6924,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          bool lat_display;
          if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
             __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                  " Latency:    %.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
+                  " Latency:    %5.2f ms to vblank%s (worst %.2f ms, last 2 s)\n",
                   lat_avg / 1000.0f,
                   lat_display ? "" : " (est.)",
                   lat_max / 1000.0f);
@@ -6936,7 +6938,7 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
          retro_time_t in_avg, in_max;
          if (video_thread_input_age_stats(&in_avg, &in_max))
             __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                  " Input age:  %.2f ms poll to vblank (worst %.2f ms, last 2 s)\n",
+                  " Input age:  %5.2f ms poll to vblank (worst %.2f ms, last 2 s)\n",
                   in_avg / 1000.0f,
                   in_max / 1000.0f);
       }
@@ -7657,7 +7659,7 @@ void video_driver_frame(const void *data, unsigned width,
 
    if (render_frame && video_info.statistics_show)
       video_driver_frame_statistics(video_st, runloop_st, settings,
-            &video_info, last_fps, frame_time, rotation, menu_is_alive);
+            &video_info, rotation, menu_is_alive);
 
    if (video_info.scanline_sync && !video_info.input_driver_nonblock_state)
       video_driver_scanline_before_frame(video_st,
