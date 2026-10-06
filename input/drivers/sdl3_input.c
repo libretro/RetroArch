@@ -379,147 +379,9 @@ static int16_t sdl3_input_state(
             }
          }
          return ret;
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         if (input_config_get_mouse_index(port) == 0)
-         {
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return sdl->mouse_l;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return sdl->mouse_r;
-#ifdef WEBOS
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  /* Note: webOS wheel is reversed */
-                  if (sdl->mouse_wd != 0)
-                  {
-                      sdl->mouse_wd = 0;
-                      return 1;
-                  }
-                  break;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  if (sdl->mouse_wu != 0)
-                  {
-                      sdl->mouse_wu = 0;
-                      return 1;
-                  }
-                  break;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
-                   * RETRO_DEVICE_MOUSE stays relative for cores. */
-                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_x : VIDEO_POS_X(sdl->mouse_delta);
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_y : VIDEO_POS_Y(sdl->mouse_delta);
-#else
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return sdl->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return (int16_t)sdl->mouse_abs_x;
-                  return VIDEO_POS_X(sdl->mouse_delta);
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return (int16_t)sdl->mouse_abs_y;
-                  return VIDEO_POS_Y(sdl->mouse_delta);
-#endif
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  return sdl->mouse_wr;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  return sdl->mouse_wl;
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return sdl->mouse_m;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                  return sdl->mouse_b4;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                  return sdl->mouse_b5;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         {
-            video_viewport_t vp = {0};
-            bool screen = device == RARCH_DEVICE_POINTER_SCREEN;
-            uint32_t res_pos = 0;
-            uint32_t res_screen_pos = 0;
-            int abs_x = 0;
-            int abs_y = 0;
-            int16_t pressed = 0;
-
-            if (id == RETRO_DEVICE_ID_POINTER_COUNT)
-            {
-               if (sdl->num_touches)
-                  return sdl->num_touches;
-               if (sdl->pen_in_proximity)
-                  return sdl->pen_down ? 1 : 0;
-               return sdl->mouse_l ? 1 : 0;
-            }
-
-            if (!video_driver_get_viewport_info(&vp))
-               break;
-
-            /* Touch contacts take precedence; the mouse doubles as
-             * pointer 0 when no fingers are down (touch/pointer
-             * overlay support - input_poll_overlay walks pointer
-             * indices until PRESSED reads 0). */
-            if (sdl->num_touches > 0)
-            {
-               if ((int)idx >= sdl->num_touches)
-                  return 0;
-               abs_x = (int)(sdl->touches[idx].x * (float)VIDEO_SCALE_W(vp.full_dims));
-               abs_y = (int)(sdl->touches[idx].y * (float)VIDEO_SCALE_H(vp.full_dims));
-               pressed = 1;
-            }
-            else if (sdl->pen_in_proximity)
-            {
-               /* Reading the pen ahead of the mouse fallback dedups
-                * the mouse state SDL synthesizes from the pen; a real
-                * mouse click during pen hover is indistinguishable
-                * from that and reads as unpressed. */
-               if (idx != 0)
-                  return 0;
-               abs_x = (int)sdl->pen_abs_x;
-               abs_y = (int)sdl->pen_abs_y;
-               pressed = sdl->pen_down;
-            }
-            else
-            {
-               if (idx != 0)
-                  return 0;
-               abs_x = (int)sdl->mouse_abs_x;
-               abs_y = (int)sdl->mouse_abs_y;
-               pressed = sdl->mouse_l;
-            }
-
-            if (video_driver_translate_coord_viewport(
-                        &vp, abs_x, abs_y,
-                        &res_pos, &res_screen_pos,
-                        true))
-            {
-               if (screen)
-               {
-                  res_pos = res_screen_pos;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return VIDEO_POS_X(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return VIDEO_POS_Y(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return pressed;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-               }
-            }
-         }
-         break;
+      /* The mouse, the pointer and the lightgun's aim are the frontend's
+       * to answer: sdl3_input_poll() publishes the mouse, the touches
+       * and the pen. */
       case RETRO_DEVICE_KEYBOARD:
          /* While a text box is open, Ctrl is the clipboard-paste
           * modifier (see sdl3_paste_clipboard), so ignore acting
@@ -530,33 +392,6 @@ static int16_t sdl3_input_state(
       case RETRO_DEVICE_LIGHTGUN:
          switch (id)
          {
-            /* Aiming */
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               {
-                  video_viewport_t vp  = {0};
-                  uint32_t res_pos        = 0;
-                  uint32_t res_screen_pos = 0;
-
-                  if (video_driver_translate_coord_viewport_wrap(
-                              &vp, (int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y,
-                              &res_pos, &res_screen_pos))
-                  {
-                     switch (id)
-                     {
-                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                           return VIDEO_POS_X(res_pos);
-                        case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                           return VIDEO_POS_Y(res_pos);
-                        case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                           return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                        default:
-                           break;
-                     }
-                  }
-               }
-               break;
             /* Buttons */
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -603,11 +438,6 @@ static int16_t sdl3_input_state(
                   }
                }
                break;
-            /* Deprecated relative aiming */
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return VIDEO_POS_X(sdl->mouse_delta);
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return VIDEO_POS_Y(sdl->mouse_delta);
          }
          break;
    }
@@ -1085,6 +915,78 @@ bool SDL_webOSCursorVisibility(bool visible)
 }
 #endif
 
+/* The mouse's frame, the touches and the pen, handed to the frontend,
+ * which answers for the mouse, the pointer and the lightgun's aim. The
+ * mouse is the port's whose Mouse Index is 0; the pointer and the
+ * lightgun are every port's. Fingers are read before the pen, the pen
+ * before the mouse, which stands for one touch: its left button. A pen
+ * in the air is a pointer that is not pressed. */
+static void sdl3_publish_pointers(sdl3_input_t *sdl)
+{
+   input_pointer_frame_t frame;
+   uint32_t touch_pos[SDL3_MAX_TOUCH];
+   unsigned touches = 0;
+   unsigned down    = 0;
+   unsigned buttons = 0;
+
+   if (sdl->mouse_l)
+      buttons |= INPUT_POINTER_LEFT;
+   if (sdl->mouse_r)
+      buttons |= INPUT_POINTER_RIGHT;
+   if (sdl->mouse_m)
+      buttons |= INPUT_POINTER_MIDDLE;
+   if (sdl->mouse_b4)
+      buttons |= INPUT_POINTER_BUTTON_4;
+   if (sdl->mouse_b5)
+      buttons |= INPUT_POINTER_BUTTON_5;
+#ifdef WEBOS
+   /* Note: webOS wheel is reversed */
+   if (sdl->mouse_wd)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (sdl->mouse_wu)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+#else
+   if (sdl->mouse_wu)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (sdl->mouse_wd)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+#endif
+   if (sdl->mouse_wr)
+      buttons |= INPUT_POINTER_HWHEEL_UP;
+   if (sdl->mouse_wl)
+      buttons |= INPUT_POINTER_HWHEEL_DOWN;
+   frame.pos     = VIDEO_POS_PACK((int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y);
+   frame.rel     = sdl->mouse_delta;
+   frame.buttons = (uint16_t)buttons;
+
+   if (sdl->num_touches > 0)
+   {
+      /* a finger's place is a fraction of the output */
+      video_viewport_t vp = {0};
+      if (video_driver_get_viewport_info(&vp))
+      {
+         float w = (float)VIDEO_SCALE_W(vp.full_dims);
+         float h = (float)VIDEO_SCALE_H(vp.full_dims);
+         for (; touches < (unsigned)sdl->num_touches; touches++)
+            touch_pos[touches] = VIDEO_POS_PACK(
+                  (int)(sdl->touches[touches].x * w),
+                  (int)(sdl->touches[touches].y * h));
+         down = (1u << touches) - 1;
+      }
+   }
+   else if (sdl->pen_in_proximity)
+   {
+      touch_pos[0] = VIDEO_POS_PACK((int)sdl->pen_abs_x, (int)sdl->pen_abs_y);
+      touches      = 1;
+      down         = sdl->pen_down ? 1 : 0;
+   }
+
+   input_driver_publish_pointers(&frame, 1,
+           INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_POINTER_OFFSCREEN | INPUT_POINTERS_TOUCH_ALONE);
+   input_driver_publish_touches(touch_pos, touches, down);
+}
+
 static void sdl3_input_poll(void *data)
 {
    SDL_Event event;
@@ -1266,6 +1168,8 @@ static void sdl3_input_poll(void *data)
     * above (SDL_GetSensorData), so flush the events. */
    if (sdl->sensors_init)
       SDL_FlushEvent(SDL_EVENT_SENSOR_UPDATE);
+
+   sdl3_publish_pointers(sdl);
 }
 
 static void sdl3_grab_mouse(void *data, bool state)

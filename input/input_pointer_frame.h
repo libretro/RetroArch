@@ -40,9 +40,9 @@ static struct
    struct video_viewport vp;
    uint16_t have_confined;            /* a bit a device: done this poll */
    uint16_t have_viewport;
-   uint32_t touch0_viewport_pos;      /* the first touch, -0x8000 outside */
+   uint32_t touch_viewport_pos[INPUT_TOUCHES_MAX];  /* -0x8000 outside */
    uint16_t have_touch;               /* a bit a touch: done this poll */
-   bool     have_touch0_viewport;
+   uint16_t have_touch_viewport;
    uint16_t touch_down;
    uint8_t  count;
    uint8_t  touch_count;
@@ -73,7 +73,7 @@ static void input_pointer_touches_set(const uint32_t *pos, unsigned count,
    input_pointers.touch_count = (uint8_t)count;
    input_pointers.touch_down  = (uint16_t)down;
    input_pointers.have_touch  = 0;
-   input_pointers.have_touch0_viewport = false;
+   input_pointers.have_touch_viewport  = 0;
 }
 
 static bool input_pointer_viewport(void)
@@ -135,29 +135,50 @@ static bool input_pointer_place(unsigned i, bool confined,
    return true;
 }
 
-/* Touch @t's place in the viewport, held to its edges, and on the
- * screen; false when there is no viewport. */
-static bool input_touch_place(unsigned t, uint32_t *pos, uint32_t *screen_pos)
+/* Touch @t's place in the viewport - held to its edges, or -0x8000
+ * outside it - and on the screen; false when there is no viewport. */
+static bool input_touch_place(unsigned t, bool confined,
+      uint32_t *pos, uint32_t *screen_pos)
 {
-   uint16_t bit = (uint16_t)(1 << t);
+   uint16_t bit   = (uint16_t)(1 << t);
+   uint16_t *have = confined
+      ? &input_pointers.have_touch : &input_pointers.have_touch_viewport;
+   uint32_t *kept = confined
+      ? &input_pointers.touch_confined_pos[t]
+      : &input_pointers.touch_viewport_pos[t];
+
    if (!input_pointer_viewport())
       return false;
-   if (!(input_pointers.have_touch & bit))
+   if (!(*have & bit))
    {
       if (!video_driver_translate_coord_viewport(&input_pointers.vp,
                VIDEO_POS_X(input_pointers.touch_pos[t]),
                VIDEO_POS_Y(input_pointers.touch_pos[t]),
-               &input_pointers.touch_confined_pos[t],
-               &input_pointers.touch_screen_pos[t], false))
+               kept, &input_pointers.touch_screen_pos[t], !confined))
       {
          input_pointers.vp_ok = false;
          return false;
       }
-      input_pointers.have_touch |= bit;
+      *have |= bit;
    }
-   *pos        = input_pointers.touch_confined_pos[t];
+   *pos        = *kept;
    *screen_pos = input_pointers.touch_screen_pos[t];
    return true;
+}
+
+/* Whether mouse @f, standing for touch @idx, is down. */
+static bool input_pointer_mouse_down(const input_pointer_frame_t *f,
+      unsigned idx)
+{
+   if (!(input_pointers.flags & INPUT_POINTERS_MOUSE_3_TOUCHES))
+      return (f->buttons & INPUT_POINTER_LEFT) != 0;
+   if (idx == 0)
+      return (f->buttons & (INPUT_POINTER_LEFT
+               | INPUT_POINTER_RIGHT | INPUT_POINTER_MIDDLE)) != 0;
+   if (idx == 1)
+      return (f->buttons & (INPUT_POINTER_RIGHT
+               | INPUT_POINTER_MIDDLE)) != 0;
+   return (f->buttons & INPUT_POINTER_MIDDLE) != 0;
 }
 
 /* Pointer @idx of mouse @i: a real touch in that place if there is one,
@@ -172,28 +193,39 @@ static bool input_pointer_touch(unsigned i, unsigned idx,
                && input_pointers.touch_pos[idx] != 0;
    bool three   = (input_pointers.flags & INPUT_POINTERS_MOUSE_3_TOUCHES) != 0;
    bool mouse   = i < input_pointers.count && idx < (three ? 3u : 1u);
+   bool confined = !(input_pointers.flags & INPUT_POINTERS_POINTER_OFFSCREEN);
 
    if (!real && !mouse)
       return false;
    if (real
-         ? !input_touch_place(idx, pos, screen_pos)
-         : !input_pointer_place(i, true, pos, screen_pos))
+         ? !input_touch_place(idx, confined, pos, screen_pos)
+         : !input_pointer_place(i, confined, pos, screen_pos))
       return false;
    *down = real && (input_pointers.touch_down & (1 << idx));
-   if (!*down && mouse)
-   {
-      if (!three)
-         *down = (f->buttons & INPUT_POINTER_LEFT) != 0;
-      else if (idx == 0)
-         *down = (f->buttons & (INPUT_POINTER_LEFT
-                  | INPUT_POINTER_RIGHT | INPUT_POINTER_MIDDLE)) != 0;
-      else if (idx == 1)
-         *down = (f->buttons & (INPUT_POINTER_RIGHT
-                  | INPUT_POINTER_MIDDLE)) != 0;
-      else
-         *down = (f->buttons & INPUT_POINTER_MIDDLE) != 0;
-   }
+   if (     !*down && mouse
+         && !(real && (input_pointers.flags & INPUT_POINTERS_TOUCH_ALONE)))
+      *down = input_pointer_mouse_down(f, idx);
    return true;
+}
+
+/* How many pointers are down: the touches that are, or the mouse
+ * standing for one. */
+static unsigned input_pointer_count(unsigned i)
+{
+   unsigned n = 0;
+   unsigned t;
+   for (t = 0; t < input_pointers.touch_count; t++)
+      if (input_pointers.touch_down & (1 << t))
+         n++;
+   if (n)
+      return n;
+   if (     (input_pointers.flags & INPUT_POINTERS_TOUCH_ALONE)
+         && input_pointers.touch_count
+         && input_pointers.touch_pos[0] != 0)
+      return 0;
+   if (i < input_pointers.count)
+      return input_pointer_mouse_down(&input_pointers.frame[i], 0) ? 1 : 0;
+   return 0;
 }
 
 /* Where the lightgun of device @i aims: at the first touch, for a
@@ -204,24 +236,7 @@ static bool input_gun_place(unsigned i, uint32_t *pos)
    if (     (input_pointers.flags & INPUT_POINTERS_GUN_AT_TOUCH)
          && input_pointers.touch_count
          && input_pointers.touch_pos[0] != 0)
-   {
-      if (!input_pointer_viewport())
-         return false;
-      if (!input_pointers.have_touch0_viewport)
-      {
-         if (!video_driver_translate_coord_viewport(&input_pointers.vp,
-                  VIDEO_POS_X(input_pointers.touch_pos[0]),
-                  VIDEO_POS_Y(input_pointers.touch_pos[0]),
-                  &input_pointers.touch0_viewport_pos, &screen_pos, true))
-         {
-            input_pointers.vp_ok = false;
-            return false;
-         }
-         input_pointers.have_touch0_viewport = true;
-      }
-      *pos = input_pointers.touch0_viewport_pos;
-      return true;
-   }
+      return input_touch_place(0, false, pos, &screen_pos);
    if (i >= input_pointers.count)
       return false;
    return input_pointer_place(i, false, pos, &screen_pos);
@@ -359,6 +374,12 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
          {
             uint32_t screen_pos;
             bool down;
+            /* how many are down needs no place for them */
+            if (id == RETRO_DEVICE_ID_POINTER_COUNT)
+            {
+               *out = (int16_t)input_pointer_count(i);
+               break;
+            }
             if (!input_pointer_touch(i, idx, &pos, &screen_pos, &down))
                break;
             if (device == RARCH_DEVICE_POINTER_SCREEN)

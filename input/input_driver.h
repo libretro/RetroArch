@@ -1268,7 +1268,13 @@ enum input_pointers_flags
     * device. */
    INPUT_POINTERS_AIM_EVERY_PORT  = (1 << 2),
    /* The lightgun aims where the first touch is, when there is one. */
-   INPUT_POINTERS_GUN_AT_TOUCH    = (1 << 3)
+   INPUT_POINTERS_GUN_AT_TOUCH    = (1 << 3),
+   /* The pointer is placed as the lightgun is: -0x8000 outside the
+    * viewport, where it is otherwise held to the viewport's edge. */
+   INPUT_POINTERS_POINTER_OFFSCREEN = (1 << 4),
+   /* A place with a touch reads the touch alone: lifted - a pen in the
+    * air - it is not pressed, whatever the mouse's buttons say. */
+   INPUT_POINTERS_TOUCH_ALONE     = (1 << 5)
 };
 
 /* From the driver's poll. @count devices, at most MAX_USERS.

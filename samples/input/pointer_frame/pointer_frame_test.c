@@ -21,7 +21,10 @@
  * 8. ports reading by Mouse Index, a port with no mouse still reading a
  *    real touch, and the kind of device each mouse was last read as;
  * 9. only the mouse by index with the pointer and the lightgun every
- *    port's, and the lightgun aiming at the first touch. */
+ *    port's, and the lightgun aiming at the first touch;
+ * 10. how many pointers are down;
+ * 11. the pointer placed off-screen as the lightgun is;
+ * 12. a touch read alone: a pen in the air. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -305,6 +308,67 @@ int main(void)
    input_pointer_touches_set(touch, 1, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
          "a driver that does not say so: the lightgun stays on the mouse");
+
+   /* 10: how many pointers are down - the touches that are, else the
+    * mouse standing for one */
+   f[0].pos     = VIDEO_POS_PACK(40, 30);
+   f[0].buttons = INPUT_POINTER_LEFT;
+   touch[0]     = VIDEO_POS_PACK(60, 70);
+   touch[1]     = VIDEO_POS_PACK(80, 90);
+   input_pointer_frames_set(f, 1, 0);
+   input_pointer_touches_set(touch, 2, 3);
+   CHECK(rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 2,
+         "the count is the touches that are down");
+   input_pointer_touches_set(touch, 0, 0);
+   CHECK(rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
+         "with no touch the count is the mouse's, its button held");
+   f[0].buttons = 0;
+   input_pointer_frames_set(f, 1, 0);
+   vp_asked = translations = 0;
+   CHECK(rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0
+      && vp_asked == 0 && translations == 0,
+         "nothing down counts none, and the count places nothing");
+
+   /* 11: the pointer placed as the lightgun is - off-screen outside */
+   f[0].pos = VIDEO_POS_PACK(250, 30);
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_POINTER_OFFSCREEN);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == -0x8000
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == 30
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 1,
+         "an off-screen pointer says so where the driver has it so");
+   touch[0] = VIDEO_POS_PACK(60, 170);
+   input_pointer_touches_set(touch, 1, 1);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == -0x8000
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 1
+      &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RETRO_DEVICE_ID_POINTER_Y) == 1170,
+         "and so does a touch");
+   f[0].pos = VIDEO_POS_PACK(40, 30);
+
+   /* 12: a touch read alone - a pen in the air is not pressed by the
+    * mouse's button, and counts none */
+   f[0].buttons = INPUT_POINTER_LEFT;
+   touch[0]     = VIDEO_POS_PACK(60, 70);
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_TOUCH_ALONE);
+   input_pointer_touches_set(touch, 1, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
+         "a touch read alone: lifted, the mouse's button does not press it");
+   input_pointer_touches_set(touch, 1, 1);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
+         "a touch read alone: down, it is pressed");
+   input_pointer_touches_set(touch, 0, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 40
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0,
+         "a touch read alone: with none, the mouse stands for the first");
+   /* without the flag a lifted touch is pressed as the mouse says */
+   input_pointer_frames_set(f, 1, 0);
+   input_pointer_touches_set(touch, 1, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
+         "a driver that does not say so: a lifted touch is pressed as the mouse says");
 
    /* 7 */
    input_pointer_frames_clear();
