@@ -27,6 +27,7 @@
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
+#include <compat/intrinsics.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
