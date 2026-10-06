@@ -2584,6 +2584,39 @@ static void winraw_poll(void *data)
    }
 }
 
+/* Which of @keys are down for @port: bit n of @down for keys[n]. A
+ * port's controls answer to the one keyboard the port was given, if it
+ * was given one; a hotkey answers to every keyboard. In the background
+ * keys play the game only: they work no hotkey, and nothing while the
+ * menu is up. */
+static void winraw_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   winraw_input_t *wr = (winraw_input_t*)data;
+   const uint8_t *own = winraw_port_keys(wr, port);
+   bool keys_ok       = winraw_focus;
+   bool meta_ok       = winraw_focus;
+
+#ifdef HAVE_MENU
+   if (!keys_ok && wr->kb_background)
+      keys_ok = !menu_driver_alive();
+#else
+   if (wr->kb_background)
+      keys_ok = true;
+#endif
+
+   for (i = 0; i < count; i++)
+   {
+      bool pressed = (bind[i] >= RARCH_FIRST_META_KEY)
+         ? (meta_ok && WINRAW_KEYBOARD_PRESSED(wr, keys[i]))
+         : (keys_ok && WINRAW_PORT_KEY_PRESSED(wr, own, keys[i]));
+      if (pressed)
+         down[i >> 5] |= (1u << (i & 31));
+   }
+}
+
 static int16_t winraw_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -2642,57 +2675,9 @@ static int16_t winraw_input_state(
 
       switch (device)
       {
-         case RETRO_DEVICE_JOYPAD:
-            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            {
-               unsigned i;
-
-               if (mouse)
-               {
-                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  {
-                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                     {
-                        if (winraw_mouse_button_pressed(wr, mouse, port, binds[port][i].mbutton))
-                           ret |= (1 << i);
-                     }
-                  }
-               }
-
-               if (!keyboard_mapping_blocked && keys_ok)
-               {
-                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  {
-                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                     {
-                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                              && WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][i])))
-                           ret |= (1 << i);
-                     }
-                  }
-               }
-
-               return ret;
-            }
-
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][id]))
-               {
-                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                        /* a hotkey answers to every keyboard */
-                        && ((id >= RARCH_FIRST_META_KEY)
-                           ? WINRAW_KEYBOARD_PRESSED(wr, RETRO_KEYBIND_KEY(&binds[port][id]))
-                           : WINRAW_PORT_KEY_PRESSED(wr, own, RETRO_KEYBIND_KEY(&binds[port][id])))
-                        && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                        && ((id >= RARCH_FIRST_META_KEY) ? meta_ok : keys_ok)
-                     )
-                     return 1;
-                  else if (mouse && winraw_mouse_button_pressed(wr, mouse, port, binds[port][id].mbutton))
-                     return 1;
-               }
-            }
-            break;
+         /* The RetroPad's buttons and the hotkeys, where they are bound
+          * to keys or mouse buttons, are the frontend's to answer: it
+          * asks winraw_keys_down() for the keys once a poll. */
          case RETRO_DEVICE_ANALOG:
             {
                int id_minus_key      = 0;
@@ -2996,5 +2981,6 @@ input_driver_t input_winraw = {
    winraw_grab_mouse,
    NULL,
    NULL,
-   winraw_survives_video
+   winraw_survives_video,
+   winraw_keys_down
 };

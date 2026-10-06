@@ -353,18 +353,51 @@ static void key(HANDLE kb, unsigned scancode, bool down)
 
 static rarch_joypad_info_t joy_info;
 
+/* A bind's key as the frontend asks the driver for it: which of these
+ * keys are down, for this port, each with the bind it is for. */
+static int bind_key_down(unsigned port, unsigned bind)
+{
+   uint16_t key  = (uint16_t)RETRO_KEYBIND_KEY(&input_config_binds[port][bind]);
+   uint8_t  id   = (uint8_t)bind;
+   uint32_t down = 0;
+   if (!RETRO_KEYBIND_VALID(&input_config_binds[port][bind]) || !key)
+      return 0;
+   winraw_keys_down(wr, port, &key, &id, 1, &down);
+   return (int)(down & 1);
+}
+
 /* what a port's bind on RetroPad B reads */
 static int pad_b(unsigned port)
 {
-   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
-         false, port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_B);
+   return bind_key_down(port, RETRO_DEVICE_ID_JOYPAD_B);
 }
 
+/* the same asked with the RetroPad's other keys, as the frontend asks:
+ * all of a port's at once, B's among them */
 static int pad_mask_b(unsigned port)
 {
-   return (winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
-         false, port, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK)
-         >> RETRO_DEVICE_ID_JOYPAD_B) & 1;
+   uint16_t keys[RARCH_FIRST_CUSTOM_BIND];
+   uint8_t  ids[RARCH_FIRST_CUSTOM_BIND];
+   uint32_t down  = 0;
+   unsigned i, n  = 0, b_at = 0;
+   bool     has_b = false;
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      unsigned key = RETRO_KEYBIND_KEY(&input_config_binds[port][i]);
+      if (!RETRO_KEYBIND_VALID(&input_config_binds[port][i]) || !key)
+         continue;
+      if (i == RETRO_DEVICE_ID_JOYPAD_B)
+      {
+         b_at  = n;
+         has_b = true;
+      }
+      keys[n]  = (uint16_t)key;
+      ids[n++] = (uint8_t)i;
+   }
+   if (!has_b)
+      return 0;
+   winraw_keys_down(wr, port, keys, ids, n, &down);
+   return (int)((down >> b_at) & 1);
 }
 
 static int port_key(unsigned port, unsigned rk)
@@ -375,8 +408,7 @@ static int port_key(unsigned port, unsigned rk)
 
 static int hotkey(unsigned port)
 {
-   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
-         false, port, RETRO_DEVICE_JOYPAD, 0, RARCH_FAST_FORWARD_KEY);
+   return bind_key_down(port, RARCH_FAST_FORWARD_KEY);
 }
 
 static unsigned names(void)

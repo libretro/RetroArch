@@ -596,16 +596,21 @@ struct input_driver
     * driver without it (NULL, and now the last member) is asked for
     * each bind as before. A driver that has it also publishes its mice
     * (input_driver_publish_pointers()): binds to mouse buttons are
-    * read from those.
+    * read from those, from the mouse a port has.
     *
     * @param data   The input state struct
     * @param port   The port whose keyboard is asked
     * @param keys   @count key codes (enum retro_key)
+    * @param bind   The bind each key is for: a driver whose hotkeys
+    *               answer to other keyboards than a port's own needs
+    *               to tell them from the port's controls
+    *               (RARCH_FIRST_META_KEY and up are hotkeys)
     * @param down   Bit n is set for keys[n] if it is down; the caller
     *               has cleared it
     */
    void (*keys_down)(void *data, unsigned port,
-         const uint16_t *keys, unsigned count, uint32_t *down);
+         const uint16_t *keys, const uint8_t *bind, unsigned count,
+         uint32_t *down);
 };
 
 struct rarch_joypad_driver

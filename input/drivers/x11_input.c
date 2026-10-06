@@ -610,11 +610,13 @@ static int16_t x_input_state(
 
 /* Which of @keys are down: bit n of @down for keys[n]. */
 static void x_input_keys_down(void *data, unsigned port,
-      const uint16_t *keys, unsigned count, uint32_t *down)
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
 {
    unsigned i;
    x11_input_t *x11 = (x11_input_t*)data;
    (void)port;
+   (void)bind;
    for (i = 0; i < count; i++)
    {
       unsigned sym = rarch_keysym_lut[keys[i]];

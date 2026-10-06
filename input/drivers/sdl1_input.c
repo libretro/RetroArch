@@ -75,6 +75,20 @@ static bool sdl1_key_pressed(int key)
    return keymap[sym];
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void sdl1_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (sdl1_key_pressed(keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t sdl1_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -92,39 +106,9 @@ static int16_t sdl1_input_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && sdl1_key_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && sdl1_key_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-            }
-         }
-         break;
+      /* The RetroPad's buttons and the hotkeys, where they are bound to
+       * keys or mouse buttons, are the frontend's to answer: it asks
+       * sdl1_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_ANALOG:
          {
             int id_minus_key      = 0;
@@ -375,5 +359,7 @@ input_driver_t input_sdl1 = {
    "sdl",
    NULL,                   /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,
+   sdl1_keys_down
 };

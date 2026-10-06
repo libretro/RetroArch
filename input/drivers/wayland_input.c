@@ -164,6 +164,20 @@ static void input_wl_poll(void *data)
    }
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void input_wl_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (BIT_GET(wl->key_state, rarch_keysym_lut[keys[i]]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t input_wl_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -180,57 +194,9 @@ static int16_t input_wl_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][i]))
-               {
-                  /*if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
-                     ret |= (1 << i);
-                  */
-
-                  /* TODO: support custom mouse-to-retropad binds */
-               }
-            }
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && BIT_GET(wl->key_state, rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && BIT_GET(wl->key_state, rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])])
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-
-               /* TODO: support default mouse-to-retropad bindings */
-               /* else if (wl_mouse_button_pressed(udev, port, binds[port][i].mbutton))
-                  return 1;
-               */
-            }
-         }
-         break;
+      /* The RetroPad's buttons and the hotkeys, where they are bound to
+       * keys or mouse buttons, are the frontend's to answer: it asks
+       * input_wl_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_ANALOG:
          if (binds)
          {
@@ -358,5 +324,7 @@ input_driver_t input_wayland = {
    "wayland",
    input_wl_grab_mouse,          /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,
+   input_wl_keys_down
 };

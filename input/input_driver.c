@@ -1537,7 +1537,7 @@ static void input_port_keys_refresh(input_port_keys_t *k,
 
    memset(down, 0, sizeof(down));
    if (k->count)
-      input->keys_down(data, port, k->key, k->count, down);
+      input->keys_down(data, port, k->key, k->bind, k->count, down);
    memset(k->key_down, 0, sizeof(k->key_down));
    for (i = 0; i < k->count; i++)
       if (down[i >> 5] & (1u << (i & 31)))
@@ -1566,8 +1566,13 @@ static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
       INPUT_POINTER_HWHEEL_UP, INPUT_POINTER_HWHEEL_DOWN,
       INPUT_POINTER_BUTTON_4, INPUT_POINTER_BUTTON_5 };
    unsigned i;
-   if (     mbutton >= ARRAY_SIZE(bit)
-         || input_config_get_mouse_index(port) != 0)
+   if (mbutton >= ARRAY_SIZE(bit))
+      return false;
+   /* Which mouse a port has: where the driver lists its mice, the one
+    * at the port's Mouse Index; where it has the one, the port whose
+    * index is 0. */
+   if (     !(input_pointers.flags & INPUT_POINTERS_BY_MOUSE_INDEX)
+         && input_config_get_mouse_index(port) != 0)
       return false;
    i = input_pointer_of_port(port, RETRO_DEVICE_MOUSE);
    return i < input_pointers.count
