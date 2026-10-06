@@ -916,6 +916,78 @@ jobs:
           ./config_file_fuzz -max_len=512 -max_total_time=60 \
             -print_final_stats=1 corpus/
 
+  task-queue-mingw:
+    name: task_queue samples under mingw-w64 + Wine
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential gcc-mingw-w64-x86-64 wine wine64 && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential gcc-mingw-w64-x86-64 wine wine64
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run the task_queue samples under Wine
+        shell: bash
+        working-directory: libretro-common/samples/queues
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -u
+          set -o pipefail
+          # The samples job above runs these on Linux only. On Win32
+          # retro_sleep() is a function in time/rtime.c rather than a
+          # macro, so a Makefile that links on Linux can still fail to
+          # link for Windows; the threaded queue's Win32 paths in
+          # rthreads.c are not run anywhere else either.
+          fails=0
+          for d in task_queue_*; do
+            t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
+            printf '\n[build] %s\n' "$d"
+            if ! ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all ); then
+              printf '::error title=mingw build failed::%s does not build for Windows\n' "$d"
+              fails=$((fails+1))
+              continue
+            fi
+            printf '[run] %s.exe\n' "$t"
+            if ( cd "$d" && timeout 120 wine "./$t.exe" ); then
+              printf '[pass] %s\n' "$t"
+            else
+              rc=$?
+              printf '::error title=Test failed under Wine::%s exited with status %d\n' "$t" "$rc"
+              fails=$((fails+1))
+            fi
+          done
+          [[ $fails -eq 0 ]]
+
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest
