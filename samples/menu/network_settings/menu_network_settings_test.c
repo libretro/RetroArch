@@ -175,6 +175,9 @@ int main(int argc, char *argv[])
             "input_driver = \"null\"\ninput_joypad_driver = \"null\"\n"
             "menu_driver = \"rgui\"\nvideo_threaded = \"false\"\n"
             "smb_client_enable = \"true\"\n");
+#if defined(HAVE_CLOUDSYNC) && defined(HAVE_NFSCLIENT)
+      fprintf(cfg, "cloud_sync_nfs_subdir = \"retroarch\"\n");
+#endif
       fclose(cfg);
    }
    rarch_argv[rarch_argc++] = (char*)"retroarch";
@@ -249,6 +252,20 @@ int main(int argc, char *argv[])
       n = open_cloud_sync("nfs");
       CHECK(n > 0 && list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
             "Cloud Sync on NFS shows NFS Network Settings");
+      CHECK(list_has_label(MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR_STR),
+            "Cloud Sync on NFS shows its sync subdirectory");
+      CHECK(string_is_equal(config_get_ptr()->arrays.cloud_sync_nfs_subdir, "retroarch"),
+            "NFS sync subdirectory loads from config");
+      CHECK(config_save_file(cfg_path), "NFS sync settings save to config");
+      {
+         config_file_t *cfg = config_file_new_from_path_to_string(cfg_path);
+         char subdir[PATH_MAX_LENGTH];
+         CHECK(cfg && config_get_array(cfg, "cloud_sync_nfs_subdir", subdir, sizeof(subdir))
+               && string_is_equal(subdir, "retroarch"),
+               "NFS sync subdirectory is preserved in saved config");
+         if (cfg)
+            config_file_free(cfg);
+      }
       CHECK(nfs_ok && (cbs = entry_cbs(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR))
             && cbs->action_ok == nfs_ok,
             "... and it opens what the Network entry opens");
@@ -267,6 +284,8 @@ int main(int argc, char *argv[])
 #ifdef HAVE_NFSCLIENT
       CHECK(!list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
             "Cloud Sync on SMB does not show NFS Network Settings");
+      CHECK(!list_has_label(MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR_STR),
+            "Cloud Sync on SMB does not show NFS sync subdirectory");
 #endif
 #endif
       n = open_cloud_sync("webdav");
@@ -279,6 +298,8 @@ int main(int argc, char *argv[])
 #ifdef HAVE_NFSCLIENT
       CHECK(!list_has_label(MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS_STR),
             "Cloud Sync on WebDAV shows no NFS Network Settings");
+      CHECK(!list_has_label(MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR_STR),
+            "Cloud Sync on WebDAV shows no NFS sync subdirectory");
 #endif
 #endif
    }

@@ -2024,6 +2024,9 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("nfs_server",                            settings->arrays.nfs_server, false, NULL, true);
    SETTING_ARRAY("nfs_export",                            settings->arrays.nfs_export, false, NULL, true);
    SETTING_ARRAY("nfs_subdir",                            settings->arrays.nfs_subdir, false, NULL, true);
+#ifdef HAVE_CLOUDSYNC
+   SETTING_ARRAY("cloud_sync_nfs_subdir",                 settings->arrays.cloud_sync_nfs_subdir, false, NULL, true);
+#endif
 #endif
 #ifdef HAVE_SMBCLIENT
    SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);

@@ -42,7 +42,7 @@
 typedef struct
 {
    uint8_t io[64 * 1024];
-   char base[PATH_MAX_LENGTH];      /* <nfs_subdir>/cloud_sync */
+   char base[PATH_MAX_LENGTH];      /* <subdir>/cloud_sync */
    char remote[PATH_MAX_LENGTH];    /* the file on the server */
    char tmp[PATH_MAX_LENGTH];       /* <remote>.rauploading */
    char backup[PATH_MAX_LENGTH];    /* <remote>-<yymmdd-hhmmss>[-n] */
@@ -79,7 +79,9 @@ static void nfs_sync_capture(void)
          sizeof(nfs_set.server));
    strlcpy(nfs_set.export_path, settings->arrays.nfs_export,
          sizeof(nfs_set.export_path));
-   strlcpy(nfs_set.subdir, settings->arrays.nfs_subdir,
+   strlcpy(nfs_set.subdir,
+         string_is_empty(settings->arrays.cloud_sync_nfs_subdir)
+         ? settings->arrays.nfs_subdir : settings->arrays.cloud_sync_nfs_subdir,
          sizeof(nfs_set.subdir));
    nfs_set.timeout     = settings->uints.nfs_timeout;
    nfs_set.port        = settings->uints.nfs_port;
@@ -233,7 +235,7 @@ static bool nfs_sync_begin(cloud_sync_complete_handler_t cb,
       goto fail;
    }
 
-   /* <nfs_subdir>/cloud_sync with no empty components: leading,
+   /* <subdir>/cloud_sync with no empty components: leading,
     * trailing and repeated slashes in the setting are dropped */
    for (; subdir && *subdir; subdir++)
    {

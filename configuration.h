@@ -1332,6 +1332,9 @@ typedef struct settings
       char nfs_server[256];
       char nfs_export[PATH_MAX_LENGTH];
       char nfs_subdir[PATH_MAX_LENGTH];
+#ifdef HAVE_CLOUDSYNC
+      char cloud_sync_nfs_subdir[PATH_MAX_LENGTH];
+#endif
 #endif
 } arrays;
 

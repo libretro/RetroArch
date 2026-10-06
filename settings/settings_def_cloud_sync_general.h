@@ -67,3 +67,13 @@ S_UINT_EX(cloud_sync_sync_mode, CLOUD_SYNC_SYNC_MODE,
       "Sync Mode",
       "Automatic: Sync on RetroArch startup and when cores are unloaded. Manual: Only sync when 'Sync Now' button is manually triggered.")
 #endif
+
+#if (defined(HAVE_CLOUDSYNC) && defined(HAVE_NFSCLIENT)) || defined(SETTINGS_DEF_STRINGS_PASS)
+#ifndef SETTINGS_DEF_CONFIG_PASS
+S_STRING(cloud_sync_nfs_subdir, CLOUD_SYNC_NFS_SUBDIR,
+      "cloud_sync_nfs_subdir",
+      "", SD_FLAG_ALLOW_INPUT, 0, NULL, NULL, setting_generic_action_start_default, NULL, NULL, NULL, ST_UI_TYPE_STRING_LINE_EDIT,
+      "NFS Sync Subdirectory",
+      "Directory under the NFS export for cloud sync. Files are stored in its cloud_sync folder. Leave empty to use NFS Subdirectory, or enter / to use the export root.")
+#endif
+#endif
