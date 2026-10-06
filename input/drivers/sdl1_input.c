@@ -153,91 +153,15 @@ static int16_t sdl1_input_state(
             }
          }
          return ret;
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         if (input_config_get_mouse_index(port) == 0)
-         {
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return sdl->mouse_l;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return sdl->mouse_r;
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return sdl->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  return VIDEO_POS_X(sdl->mouse_rel);
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return VIDEO_POS_Y(sdl->mouse_rel);
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return sdl->mouse_m;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                  return sdl->mouse_b4;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                  return sdl->mouse_b5;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
-         {
-            video_viewport_t vp         = {0};
-            bool screen                 = device ==
-               RARCH_DEVICE_POINTER_SCREEN;
-            uint32_t res_pos               = 0;
-            uint32_t res_screen_pos        = 0;
-
-            if (video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, VIDEO_POS_X(sdl->mouse_abs), VIDEO_POS_Y(sdl->mouse_abs),
-                        &res_pos, &res_screen_pos))
-            {
-               if (screen)
-               {
-                  res_pos = res_screen_pos;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return VIDEO_POS_X(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return VIDEO_POS_Y(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return sdl->mouse_l;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-               }
-            }
-         }
-         break;
+      /* The mouse, the pointer and the lightgun's aim are the frontend's
+       * to answer: the poll publishes the mouse. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && sdl1_key_pressed(id);
       /* TODO: update button binds to match other input drivers */
       case RETRO_DEVICE_LIGHTGUN:
-      {
-         video_viewport_t vp         = {0};
-         uint32_t res_pos               = 0;
-         uint32_t res_screen_pos        = 0;
-
-         if (video_driver_translate_coord_viewport_wrap(
-                     &vp, VIDEO_POS_X(sdl->mouse_abs), VIDEO_POS_Y(sdl->mouse_abs),
-                     &res_pos, &res_screen_pos))
-
+         /* its buttons are the mouse's */
          switch (id)
          {
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               return VIDEO_POS_X(res_pos);
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               return VIDEO_POS_Y(res_pos);
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return VIDEO_POS_X(sdl->mouse_rel);
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return VIDEO_POS_Y(sdl->mouse_rel);
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return sdl->mouse_l;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -246,9 +170,10 @@ static int16_t sdl1_input_state(
                return sdl->mouse_r;
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return sdl->mouse_l && sdl->mouse_r;
+            default:
+               break;
          }
          break;
-      }
    }
 
    return 0;
@@ -350,6 +275,37 @@ static void sdl1_poll_mouse(sdl1_input_t *sdl)
    sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
 }
 
+/* The mouse's frame, handed to the frontend, which answers for the
+ * mouse, the pointer and the lightgun's aim. The mouse is the port's
+ * whose Mouse Index is 0; the pointer and the lightgun are every
+ * port's, and the mouse stands for one touch, its left button. */
+static void sdl1_publish_pointers(sdl1_input_t *sdl)
+{
+   input_pointer_frame_t frame;
+   unsigned buttons = 0;
+
+   if (sdl->mouse_l)
+      buttons |= INPUT_POINTER_LEFT;
+   if (sdl->mouse_r)
+      buttons |= INPUT_POINTER_RIGHT;
+   if (sdl->mouse_m)
+      buttons |= INPUT_POINTER_MIDDLE;
+   if (sdl->mouse_b4)
+      buttons |= INPUT_POINTER_BUTTON_4;
+   if (sdl->mouse_b5)
+      buttons |= INPUT_POINTER_BUTTON_5;
+   if (sdl->mouse_wu)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (sdl->mouse_wd)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+   frame.pos     = sdl->mouse_abs;
+   frame.rel     = sdl->mouse_rel;
+   frame.buttons = (uint16_t)buttons;
+
+   input_driver_publish_pointers(&frame, 1,
+         INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
+}
+
 static void sdl1_input_poll(void *data)
 {
    SDL_Event event;
@@ -393,6 +349,8 @@ static void sdl1_input_poll(void *data)
          }
       }
    }
+
+   sdl1_publish_pointers(sdl);
 }
 
 static uint64_t sdl1_get_capabilities(void *data)
