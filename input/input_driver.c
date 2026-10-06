@@ -1492,6 +1492,7 @@ typedef struct
 {
    uint32_t key_down[INPUT_BIND_WORDS];  /* by bind: its key is down, this poll */
    uint32_t has_mbutton[INPUT_BIND_WORDS]; /* by bind: it names a mouse button */
+   uint32_t has_pad[INPUT_BIND_WORDS];   /* by bind: a pad's button or axis may be bound to it */
    uint16_t key[RARCH_BIND_LIST_END];    /* the n-th bind that names a key */
    uint8_t  bind[RARCH_BIND_LIST_END];   /* ... and which bind that is */
    unsigned binds_gen;                   /* the change count + 1 it was made at */
@@ -1507,6 +1508,27 @@ typedef struct
 static input_port_keys_t input_port_keys[MAX_USERS];
 static unsigned input_poll_generation;
 
+/* By bind: some pad's autoconfig profile gives it a button or an axis.
+ * Which pad a read goes by is the caller's to say, so this is over all
+ * of them: a bind it leaves out has no pad behind it whichever is
+ * asked. Made again when the binds have changed. */
+static uint32_t input_autoconf_any_pad[INPUT_BIND_WORDS];
+static unsigned input_autoconf_any_pad_gen;
+
+static void input_autoconf_any_pad_refresh(unsigned gen)
+{
+   unsigned pad, i;
+   memset(input_autoconf_any_pad, 0, sizeof(input_autoconf_any_pad));
+   for (pad = 0; pad < MAX_USERS; pad++)
+   {
+      const struct retro_keybind *binds = input_autoconf_binds[pad];
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+         if (binds[i].joykey != NO_BTN || binds[i].joyaxis != AXIS_NONE)
+            input_autoconf_any_pad[i >> 5] |= (1u << (i & 31));
+   }
+   input_autoconf_any_pad_gen = gen;
+}
+
 /* Made again: the list when the binds have changed, what is down when
  * the driver has been polled. */
 static void input_port_keys_refresh(input_port_keys_t *k,
@@ -1518,13 +1540,21 @@ static void input_port_keys_refresh(input_port_keys_t *k,
    if (k->binds_gen != gen)
    {
       const struct retro_keybind *binds = input_config_binds[port];
+      if (input_autoconf_any_pad_gen != gen)
+         input_autoconf_any_pad_refresh(gen);
       k->count = 0;
       memset(k->has_mbutton, 0, sizeof(k->has_mbutton));
+      memset(k->has_pad, 0, sizeof(k->has_pad));
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
          unsigned key;
          if (!RETRO_KEYBIND_VALID(&binds[i]))
             continue;
+         /* its own pad button or axis, or one some profile gives it */
+         if (     binds[i].joykey  != NO_BTN
+               || binds[i].joyaxis != AXIS_NONE
+               || (input_autoconf_any_pad[i >> 5] & (1u << (i & 31))))
+            k->has_pad[i >> 5] |= (1u << (i & 31));
          key = RETRO_KEYBIND_KEY(&binds[i]);
          if (key && key < RETROK_LAST)
          {
@@ -1778,7 +1808,7 @@ static int16_t input_frame_or_driver(input_driver_t *input, void *data,
          keyboard_mapping_blocked, port, device, idx, id);
 }
 
-static int32_t input_state_wrap(
+INPUT_NOINLINE static int32_t input_state_wrap_slow(
       input_driver_t *input,
       void *data,
       const input_device_driver_t *joypad,
@@ -1949,6 +1979,53 @@ static int32_t input_state_wrap(
    }
 
    return ret;
+}
+
+/* A read of a device through the binds. Ahead of the work above, and
+ * inline where it is asked:
+ *
+ * a hotkey, or any bind past the RetroPad's sixteen, that no pad is
+ * bound to. A key and a mouse button are all that can hold it, and
+ * what the port's keys and mouse hold is already in hand, so it is a
+ * test of a bit or two. Most hotkeys are this, and each was a call
+ * into the work above - a dozen arguments, both pad drivers' binds
+ * walked to find nothing - sixty-odd times a frame. Where the driver
+ * gives the frontend its keys; another driver is asked as before. */
+static INLINE int32_t input_state_wrap(
+
+      input_driver_t *input,
+      void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      bool keyboard_mapping_blocked,
+      unsigned _port,
+      unsigned device,
+      unsigned idx,
+      unsigned id)
+{
+   if (     binds && device == RETRO_DEVICE_JOYPAD
+         && id >= RARCH_FIRST_CUSTOM_BIND && id < RARCH_BIND_LIST_END
+         && input && input->keys_down && _port < MAX_USERS)
+   {
+      const input_port_keys_t *k = input_port_keys_get(input, data, _port);
+      uint32_t bit               = (1u << (id & 31));
+      if (!(k->has_pad[id >> 5] & bit))
+      {
+         if (     (k->key_down[id >> 5] & bit)
+               && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
+            return 1;
+         if (     (k->has_mbutton[id >> 5] & bit)
+               && input_bind_mouse_button_down(k, _port,
+                  binds[_port][id].mbutton))
+            return 1;
+         return 0;
+      }
+   }
+   return input_state_wrap_slow(input, data, joypad, sec_joypad,
+         joypad_info, binds, keyboard_mapping_blocked,
+         _port, device, idx, id);
 }
 
 /* A pad axis's value, as read, through the deadzone and the
