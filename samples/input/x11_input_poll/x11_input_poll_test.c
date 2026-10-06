@@ -95,6 +95,17 @@ float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor)
 void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor,
       unsigned rate)
 { (void)sensor; (void)rate; }
+/* What the driver publishes at each poll, as the frontend is handed it. */
+static input_pointer_frame_t published[MAX_USERS];
+static unsigned published_count;
+static unsigned publishes;
+void input_driver_publish_pointers(const input_pointer_frame_t *frames,
+      unsigned count)
+{
+   memcpy(published, frames, count * sizeof(*frames));
+   published_count = count;
+   publishes++;
+}
 /* Every mouse port reads the first master pointer. */
 static settings_t stub_settings;
 settings_t *config_get_ptr(void) { return &stub_settings; }
@@ -219,7 +230,7 @@ static bool right_free(x11_input_t *x11) { return !x11->mouse_r[0]; }
 static bool b8_held(x11_input_t *x11) { return x11->mouse_4[0]; }
 static bool b8_free(x11_input_t *x11) { return !x11->mouse_4[0]; }
 static bool wheel_up(x11_input_t *x11)
-{ (void)x11; return x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_WHEELUP) != 0; }
+{ return (x11->wheel & INPUT_POINTER_WHEEL_UP) != 0; }
 
 static bool until(x11_input_t *x11, bool (*cond)(x11_input_t*))
 {
@@ -456,8 +467,14 @@ int main(void)
    button(4, true);
    button(4, false);
    CHECK(until(x11, wheel_up), "a wheel notch is latched");
+   CHECK(wheel_up(x11) && wheel_up(x11),
+         "and is there for every reader of the frame");
+   CHECK(published_count >= 1
+         && (published[0].buttons & INPUT_POINTER_WHEEL_UP),
+         "the frontend is handed it with the mouse's frame");
    frame(x11);
-   CHECK(!wheel_up(x11), "once");
+   CHECK(!wheel_up(x11)
+         && !(published[0].buttons & INPUT_POINTER_WHEEL_UP), "for one frame");
 
    /* Out of the window a button reads released, dragged or not. */
    button(1, true);

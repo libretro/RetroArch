@@ -1452,6 +1452,271 @@ bool input_driver_button_combo(
    return false;
 }
 
+/* The pointing devices an input driver published at this poll, and
+ * their places in the viewport, worked out the first time one is asked
+ * for after the poll and kept until the next. */
+static struct
+{
+   input_pointer_frame_t frame[MAX_USERS];
+   uint32_t confined_pos[MAX_USERS];  /* in the viewport, held to its edges */
+   uint32_t viewport_pos[MAX_USERS];  /* in the viewport, -0x8000 outside it */
+   uint32_t screen_pos[MAX_USERS];
+   struct video_viewport vp;
+   uint16_t have_confined;            /* a bit a device: done this poll */
+   uint16_t have_viewport;
+   uint8_t  count;
+   bool     vp_asked;
+   bool     vp_ok;
+} input_pointers;
+
+void input_driver_publish_pointers(const input_pointer_frame_t *frames,
+      unsigned count)
+{
+   if (count > MAX_USERS)
+      count = MAX_USERS;
+   memcpy(input_pointers.frame, frames, count * sizeof(*frames));
+   input_pointers.count         = (uint8_t)count;
+   input_pointers.have_confined = 0;
+   input_pointers.have_viewport = 0;
+   input_pointers.vp_asked      = false;
+}
+
+/* Device @i's place in the viewport and on the screen; false when there
+ * is no viewport to place it in. */
+static bool input_pointer_place(unsigned i, bool confined,
+      uint32_t *pos, uint32_t *screen_pos)
+{
+   uint16_t bit   = (uint16_t)(1 << i);
+   uint16_t *have = confined
+      ? &input_pointers.have_confined : &input_pointers.have_viewport;
+
+   if (!input_pointers.vp_asked)
+   {
+      memset(&input_pointers.vp, 0, sizeof(input_pointers.vp));
+      input_pointers.vp_ok    = video_driver_get_viewport_info(&input_pointers.vp);
+      input_pointers.vp_asked = true;
+   }
+   if (!input_pointers.vp_ok)
+      return false;
+   if (!(*have & bit))
+   {
+      uint32_t place = 0;
+      if (!video_driver_translate_coord_viewport(&input_pointers.vp,
+               VIDEO_POS_X(input_pointers.frame[i].pos),
+               VIDEO_POS_Y(input_pointers.frame[i].pos),
+               &place, &input_pointers.screen_pos[i], !confined))
+      {
+         input_pointers.vp_ok = false;
+         return false;
+      }
+      if (confined)
+         input_pointers.confined_pos[i] = place;
+      else
+         input_pointers.viewport_pos[i] = place;
+      *have |= bit;
+   }
+   *pos        = confined
+      ? input_pointers.confined_pos[i] : input_pointers.viewport_pos[i];
+   *screen_pos = input_pointers.screen_pos[i];
+   return true;
+}
+
+/* A mouse's, a pointer's or a lightgun aim's position, packed. False if
+ * the frontend does not hold it and the driver is to be asked. */
+static bool input_pointer_frame_pos(unsigned port, unsigned device,
+      uint32_t *pos)
+{
+   unsigned i = (input_pointers.count == 1) ? 0 : port;
+   uint32_t screen_pos;
+
+   if (!input_pointers.count)
+      return false;
+   *pos = 0;
+   if (i >= input_pointers.count)
+      return true;
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+         *pos = input_pointers.frame[i].rel;
+         return true;
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         *pos = input_pointers.frame[i].pos;
+         return true;
+      case RETRO_DEVICE_POINTER:
+         input_pointer_place(i, true, pos, &screen_pos);
+         return true;
+      case RARCH_DEVICE_POINTER_SCREEN:
+         if (input_pointer_place(i, true, &screen_pos, pos))
+            return true;
+         *pos = 0;
+         return true;
+      case RETRO_DEVICE_LIGHTGUN:
+         input_pointer_place(i, false, pos, &screen_pos);
+         return true;
+      default:
+         break;
+   }
+   return false;
+}
+
+/* One value of a mouse, a pointer or a lightgun's aim. False if the
+ * frontend does not hold it and the driver is to be asked. */
+static bool input_pointer_frame_read(unsigned port, unsigned device,
+      unsigned idx, unsigned id, int16_t *out)
+{
+   const input_pointer_frame_t *f;
+   unsigned i = (input_pointers.count == 1) ? 0 : port;
+   uint32_t pos;
+
+   if (!input_pointers.count)
+      return false;
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+      case RARCH_DEVICE_MOUSE_SCREEN:
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+         /* its aim; its buttons are binds, and the driver's */
+         if (     id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X
+               || id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y
+               || id == RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN
+               || id == RETRO_DEVICE_ID_LIGHTGUN_X
+               || id == RETRO_DEVICE_ID_LIGHTGUN_Y)
+            break;
+         return false;
+      default:
+         return false;
+   }
+   *out = 0;
+   if (i >= input_pointers.count)
+      return true;
+   f = &input_pointers.frame[i];
+
+   switch (device)
+   {
+      case RETRO_DEVICE_MOUSE:
+      case RARCH_DEVICE_MOUSE_SCREEN:
+         pos = (device == RETRO_DEVICE_MOUSE) ? f->rel : f->pos;
+         switch (id)
+         {
+            case RETRO_DEVICE_ID_MOUSE_X:
+               *out = VIDEO_POS_X(pos);
+               break;
+            case RETRO_DEVICE_ID_MOUSE_Y:
+               *out = VIDEO_POS_Y(pos);
+               break;
+            case RETRO_DEVICE_ID_MOUSE_LEFT:
+               *out = (f->buttons & INPUT_POINTER_LEFT) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_RIGHT:
+               *out = (f->buttons & INPUT_POINTER_RIGHT) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+               *out = (f->buttons & INPUT_POINTER_MIDDLE) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+               *out = (f->buttons & INPUT_POINTER_BUTTON_4) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+               *out = (f->buttons & INPUT_POINTER_BUTTON_5) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+               *out = (f->buttons & INPUT_POINTER_WHEEL_UP) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+               *out = (f->buttons & INPUT_POINTER_WHEEL_DOWN) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+               *out = (f->buttons & INPUT_POINTER_HWHEEL_UP) != 0;
+               break;
+            case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
+               *out = (f->buttons & INPUT_POINTER_HWHEEL_DOWN) != 0;
+               break;
+            default:
+               break;
+         }
+         break;
+      case RETRO_DEVICE_POINTER:
+      case RARCH_DEVICE_POINTER_SCREEN:
+         {
+            /* a mouse stands for up to three touches: its buttons */
+            uint32_t screen_pos;
+            if (idx >= 3 || !input_pointer_place(i, true, &pos, &screen_pos))
+               break;
+            if (device == RARCH_DEVICE_POINTER_SCREEN)
+               pos = screen_pos;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_POINTER_X:
+                  *out = VIDEO_POS_X(pos);
+                  break;
+               case RETRO_DEVICE_ID_POINTER_Y:
+                  *out = VIDEO_POS_Y(pos);
+                  break;
+               case RETRO_DEVICE_ID_POINTER_PRESSED:
+                  if (idx == 0)
+                     *out = (f->buttons & (INPUT_POINTER_LEFT
+                              | INPUT_POINTER_RIGHT | INPUT_POINTER_MIDDLE)) != 0;
+                  else if (idx == 1)
+                     *out = (f->buttons & (INPUT_POINTER_RIGHT
+                              | INPUT_POINTER_MIDDLE)) != 0;
+                  else
+                     *out = (f->buttons & INPUT_POINTER_MIDDLE) != 0;
+                  break;
+               case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
+                  *out = input_driver_pointer_is_offscreen(
+                        VIDEO_POS_X(pos), VIDEO_POS_Y(pos));
+                  break;
+               default:
+                  break;
+            }
+         }
+         break;
+      case RETRO_DEVICE_LIGHTGUN:
+         if (     id == RETRO_DEVICE_ID_LIGHTGUN_X
+               || id == RETRO_DEVICE_ID_LIGHTGUN_Y)
+         {
+            /* deprecated: the mouse's motion */
+            *out = (id == RETRO_DEVICE_ID_LIGHTGUN_X)
+               ? VIDEO_POS_X(f->rel) : VIDEO_POS_Y(f->rel);
+         }
+         else
+         {
+            uint32_t screen_pos;
+            if (!input_pointer_place(i, false, &pos, &screen_pos))
+               break;
+            if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
+               *out = VIDEO_POS_X(pos);
+            else if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y)
+               *out = VIDEO_POS_Y(pos);
+            else
+               *out = input_driver_pointer_is_offscreen(
+                     VIDEO_POS_X(pos), VIDEO_POS_Y(pos));
+         }
+         break;
+      default:
+         break;
+   }
+   return true;
+}
+
+/* A value from what the driver published, or from the driver. */
+static int16_t input_frame_or_driver(input_driver_t *input, void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds, bool keyboard_mapping_blocked,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   int16_t held;
+   if (input_pointer_frame_read(port, device, idx, id, &held))
+      return held;
+   return input->input_state(data, joypad, sec_joypad, joypad_info, binds,
+         keyboard_mapping_blocked, port, device, idx, id);
+}
+
 static int32_t input_state_wrap(
       input_driver_t *input,
       void *data,
@@ -1567,18 +1832,23 @@ static int32_t input_state_wrap(
          return ret;
    }
 
-   if (input && input->input_state)
-      ret |= input->input_state(
-            data,
-            joypad,
-            sec_joypad,
-            joypad_info,
-            binds,
-            keyboard_mapping_blocked,
-            _port,
-            device,
-            idx,
-            id);
+   {
+      int16_t held;
+      if (input_pointer_frame_read(_port, device, idx, id, &held))
+         ret |= held;
+      else if (input && input->input_state)
+         ret |= input->input_state(
+               data,
+               joypad,
+               sec_joypad,
+               joypad_info,
+               binds,
+               keyboard_mapping_blocked,
+               _port,
+               device,
+               idx,
+               id);
+   }
 
    /* Populate the per-port joypad cache from the MASK result so that
     * subsequent individual button queries (from hybrid or old-style
@@ -5046,9 +5316,9 @@ static void input_overlay_update_pointer_coords(
          & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
    {
       ptr_st->ptr[ptr_st->count] = VIDEO_POS_PACK(
-            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
                RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_X),
-            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
                RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_Y));
    }
 
@@ -5058,10 +5328,10 @@ static void input_overlay_update_pointer_coords(
    {
       ptr_st->mouse.prev_screen_pos = ptr_st->screen_pos;
       ptr_st->screen_pos            = VIDEO_POS_PACK(
-            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
                RARCH_DEVICE_POINTER_SCREEN, touch_idx,
                RETRO_DEVICE_ID_POINTER_X),
-            input->input_state(input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
                RARCH_DEVICE_POINTER_SCREEN, touch_idx,
                RETRO_DEVICE_ID_POINTER_Y));
    }
@@ -5157,7 +5427,7 @@ INPUT_NOINLINE static void input_poll_overlay(
        * touch arrays by idx and are not required to range-check it. */
       for (i = 0;
                (i < OVERLAY_MAX_TOUCH)
-            && input->input_state(
+            && input_frame_or_driver(input,
                input_data,
                joypad,
                sec_joypad,
@@ -5171,10 +5441,10 @@ INPUT_NOINLINE static void input_poll_overlay(
             i++)
       {
          ol_state->touch[i] = VIDEO_POS_PACK(
-               input->input_state(input_data, joypad, sec_joypad,
+               input_frame_or_driver(input, input_data, joypad, sec_joypad,
                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
                   device, i, RETRO_DEVICE_ID_POINTER_X),
-               input->input_state(input_data, joypad, sec_joypad,
+               input_frame_or_driver(input, input_data, joypad, sec_joypad,
                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
                   device, i, RETRO_DEVICE_ID_POINTER_Y));
       }
@@ -10448,7 +10718,12 @@ uint32_t input_driver_device_pos(unsigned port, unsigned device,
    bool mouse     = device == RARCH_DEVICE_MOUSE_SCREEN
                  || device == RETRO_DEVICE_MOUSE;
    bool blocked   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
+   uint32_t held;
    int16_t x, y;
+
+   /* published by the driver at the poll: one read, no call into it */
+   if (input_pointer_frame_pos(port, device, &held))
+      return (mouse || idx < 3) ? held : 0;
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -10476,6 +10751,10 @@ int16_t input_driver_device_state(unsigned port,
 #else
    const input_device_driver_t *sec_joypad = NULL;
 #endif
+   int16_t held;
+
+   if (input_pointer_frame_read(port, device, idx, id, &held))
+      return held;
 
    joypad_info.joy_idx        = 0;
    joypad_info.auto_binds     = NULL;
@@ -10785,6 +11064,9 @@ void input_driver_poll(void)
       joypad->poll();
    if (sec_joypad && sec_joypad->poll)
       sec_joypad->poll();
+   /* a driver that keeps its mice publishes them in its poll; one that
+    * does not is asked for them, as before */
+   input_pointers.count = 0;
    if (input && input->poll)
       input->poll(input_st->current_data);
    input_poll_generation++;

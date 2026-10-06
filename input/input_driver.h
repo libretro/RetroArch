@@ -1226,6 +1226,38 @@ enum input_pointer_view_flags
    INPUT_PTR_VIEW_SCR_BACK      = (1 << 10)
 };
 
+/* A pointing device's state for one frame. An input driver that keeps
+ * its mice says so by publishing each one once a poll
+ * (input_driver_publish_pointers()); the frontend then answers for the
+ * mouse, the pointer and the lightgun's aim itself - translating to the
+ * viewport once a poll, not once a value - and the driver has no code
+ * for them. A driver that publishes nothing is asked as before.
+ * A wheel bit is set for the one frame its notch came in. */
+enum input_pointer_buttons
+{
+   INPUT_POINTER_LEFT        = (1 << 0),
+   INPUT_POINTER_RIGHT       = (1 << 1),
+   INPUT_POINTER_MIDDLE      = (1 << 2),
+   INPUT_POINTER_BUTTON_4    = (1 << 3),
+   INPUT_POINTER_BUTTON_5    = (1 << 4),
+   INPUT_POINTER_WHEEL_UP    = (1 << 5),
+   INPUT_POINTER_WHEEL_DOWN  = (1 << 6),
+   INPUT_POINTER_HWHEEL_UP   = (1 << 7),
+   INPUT_POINTER_HWHEEL_DOWN = (1 << 8)
+};
+
+typedef struct input_pointer_frame
+{
+   uint32_t pos;       /* in the window: VIDEO_POS_PACK */
+   uint32_t rel;       /* motion since the last poll: VIDEO_POS_PACK */
+   uint16_t buttons;   /* enum input_pointer_buttons */
+} input_pointer_frame_t;
+
+/* From the driver's poll. @count devices, port n reading device n; with
+ * one device every port reads it. At most MAX_USERS. */
+void input_driver_publish_pointers(const input_pointer_frame_t *frames,
+      unsigned count);
+
 typedef struct input_pointer_view
 {
    uint32_t mouse_pos;          /* RARCH_DEVICE_MOUSE_SCREEN, VIDEO_POS_PACK */

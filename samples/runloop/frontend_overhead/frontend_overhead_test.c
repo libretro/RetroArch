@@ -3260,6 +3260,99 @@ static void lane_menu_repeat_rates(void)
 #endif
 }
 
+/* The pointers an input driver publishes at its poll are the frontend's
+ * to answer for: the mouse, the pointer and the lightgun's aim, the same
+ * for every reader of the frame - a wheel notch is not used up by being
+ * read - and placed in the viewport as the translation places them. A
+ * driver that publishes nothing is asked itself, as before. */
+static void lane_pointer_store(void)
+{
+   input_pointer_frame_t f[2];
+   struct video_viewport vp;
+   uint32_t want_confined = 0, want_viewport = 0, want_screen = 0, scr2 = 0;
+   unsigned had = failures;
+   bool placed;
+
+   run_loop_frames(2);
+   memset(f, 0, sizeof(f));
+   f[0].pos     = VIDEO_POS_PACK(40, 30);
+   f[0].rel     = VIDEO_POS_PACK(-3, 7);
+   f[0].buttons = INPUT_POINTER_RIGHT | INPUT_POINTER_WHEEL_DOWN;
+   f[1].pos     = VIDEO_POS_PACK(5, 6);
+   f[1].buttons = INPUT_POINTER_LEFT;
+   input_driver_publish_pointers(f, 2);
+
+   /* the mouse */
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == -3
+      && input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y) == 7,
+         "pointer store: the mouse's motion is not what was published");
+   CHECK(input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == 40
+      && input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_Y) == 30,
+         "pointer store: the mouse's place in the window is not what was published");
+   CHECK(input_driver_device_pos(0, RARCH_DEVICE_MOUSE_SCREEN, 0) == VIDEO_POS_PACK(40, 30)
+      && input_driver_device_pos(0, RETRO_DEVICE_MOUSE, 0) == VIDEO_POS_PACK(-3, 7),
+         "pointer store: the packed position is not the published word");
+   CHECK( input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT)
+      && !input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT)
+      && !input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_MIDDLE),
+         "pointer store: the mouse's buttons are not what was published");
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
+      && input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
+      && input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN),
+         "pointer store: a wheel notch was used up by being read");
+   CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP),
+         "pointer store: a wheel direction that did not turn reads as turned");
+   /* port 1 reads device 1 */
+   CHECK( input_driver_device_state(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT)
+      && !input_driver_device_state(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT)
+      &&  input_driver_device_state(1, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == 5,
+         "pointer store: the second port does not read the second device");
+   CHECK(!input_driver_device_state(2, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT)
+      && !input_driver_device_state(2, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT),
+         "pointer store: a port with no device reads one");
+
+   /* the pointer and the lightgun's aim, against the translation itself */
+   memset(&vp, 0, sizeof(vp));
+   placed = video_driver_get_viewport_info(&vp)
+      && video_driver_translate_coord_viewport(&vp, 40, 30, &want_confined, &want_screen, false)
+      && video_driver_translate_coord_viewport(&vp, 40, 30, &want_viewport, &scr2, true);
+   if (placed)
+   {
+      CHECK(input_driver_device_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == VIDEO_POS_X(want_confined)
+         && input_driver_device_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == VIDEO_POS_Y(want_confined)
+         && input_driver_device_pos(0, RETRO_DEVICE_POINTER, 0) == want_confined,
+            "pointer store: the pointer is not where the translation puts it");
+      CHECK(input_driver_device_state(0, RARCH_DEVICE_POINTER_SCREEN, 0, RETRO_DEVICE_ID_POINTER_X) == VIDEO_POS_X(want_screen)
+         && input_driver_device_pos(0, RARCH_DEVICE_POINTER_SCREEN, 0) == want_screen,
+            "pointer store: the screen pointer is not where the translation puts it");
+      CHECK(input_driver_device_state(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == VIDEO_POS_X(want_viewport)
+         && input_driver_device_state(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == VIDEO_POS_Y(want_viewport),
+            "pointer store: the lightgun does not aim where the translation puts it");
+   }
+   /* a mouse stands for three touches: any button, right or middle, middle */
+   CHECK( input_driver_device_state(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == (placed ? 1 : 0)
+      &&  input_driver_device_state(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == (placed ? 1 : 0)
+      && !input_driver_device_state(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_PRESSED)
+      && !input_driver_device_state(0, RETRO_DEVICE_POINTER, 3, RETRO_DEVICE_ID_POINTER_PRESSED),
+         "pointer store: the mouse's buttons do not stand for the three touches they did");
+   CHECK(input_driver_device_state(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_X) == -3,
+         "pointer store: the lightgun's old relative X is not the mouse's motion");
+
+   /* the next poll, by a driver that publishes nothing: asked itself */
+   run_loop_frames(2);
+   CHECK(!input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT)
+      && !input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELDOWN)
+      && input_driver_device_state(0, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) != 40,
+         "pointer store: what was published outlived the poll after it");
+
+   if (failures == had)
+      printf("[pass] pointer store: a published mouse answers for the mouse,"
+            " the pointer%s and three touches; a wheel notch reads the same"
+            " every time in its frame; the next poll by a driver that"
+            " publishes nothing is asked itself\n",
+            placed ? " and the lightgun's aim, placed as the translation places them" : "");
+}
+
 /* Aim From Analog Stick: a port's stick is where its lightgun or
  * pointer points. */
 static void lane_aim_stick(void)
@@ -4579,6 +4672,7 @@ int main(int argc, char *argv[])
       lane_menu_pause();
       lane_ai_presses();
       lane_menu_repeat_rates();
+      lane_pointer_store();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

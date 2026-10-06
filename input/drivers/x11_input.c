@@ -81,6 +81,9 @@ typedef struct x11_input
    /* The pointer is read from events rather than queried. */
    bool ptr_events;
 #endif
+   /* The wheel's notches taken at this poll: INPUT_POINTER_*WHEEL* bits,
+    * the same for every reader until the next. */
+   unsigned wheel;
    bool mouse_l[MAX_MOUSE_IDX];
    bool mouse_r[MAX_MOUSE_IDX];
    bool mouse_m[MAX_MOUSE_IDX];
@@ -474,12 +477,16 @@ static bool x_mouse_button_pressed(
          if (x11->di)
             return x11->mouse_5[mouse_port];
 #endif
-         /* fall through */
+         /* no device list: the window's own button events */
+         return x_mouse_state_wheel(key) != 0;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+         return (x11->wheel & INPUT_POINTER_WHEEL_UP) != 0;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+         return (x11->wheel & INPUT_POINTER_WHEEL_DOWN) != 0;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
+         return (x11->wheel & INPUT_POINTER_HWHEEL_UP) != 0;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return x_mouse_state_wheel(key);
+         return (x11->wheel & INPUT_POINTER_HWHEEL_DOWN) != 0;
    }
 
    return false;
@@ -500,15 +507,7 @@ static int16_t x_input_state(
 
    if (port < MAX_USERS)
    {
-      unsigned mouse_port  = port;
       x11_input_t *x11     = (x11_input_t*)data;
-
-#ifdef HAVE_XI2
-      if (!x11->di)
-         mouse_port = 0;
-#else
-      mouse_port = 0;
-#endif
 
       switch (device)
       {
@@ -599,102 +598,11 @@ static int16_t x_input_state(
             break;
          case RETRO_DEVICE_KEYBOARD:
             return (id && id < RETROK_LAST) && x_keyboard_pressed(x11, id);
-         case RETRO_DEVICE_MOUSE:
-         case RARCH_DEVICE_MOUSE_SCREEN:
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return x11->mouse_x[mouse_port];
-                  return x11->mouse_delta_x[mouse_port];
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  if (device == RARCH_DEVICE_MOUSE_SCREEN)
-                     return x11->mouse_y[mouse_port];
-                  return x11->mouse_delta_y[mouse_port];
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return x_mouse_button_pressed(x11, mouse_port, id);
-            }
-            break;
-         case RETRO_DEVICE_POINTER:
-         case RARCH_DEVICE_POINTER_SCREEN:
-            /* Map up to 3 touches to mouse buttons. */
-            if (idx < 3)
-            {
-               struct video_viewport vp    = {0};
-               bool screen                 =
-                  (device == RARCH_DEVICE_POINTER_SCREEN);
-               uint32_t res_pos               = 0;
-               uint32_t res_screen_pos        = 0;
-
-               if (video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, x11->mouse_x[mouse_port], x11->mouse_y[mouse_port],
-                        &res_pos, &res_screen_pos))
-               {
-                  if (screen)
-                  {
-                     res_pos = res_screen_pos;
-                  }
-
-                  switch (id)
-                  {
-                     case RETRO_DEVICE_ID_POINTER_X:
-                        return VIDEO_POS_X(res_pos);
-                     case RETRO_DEVICE_ID_POINTER_Y:
-                        return VIDEO_POS_Y(res_pos);
-                     case RETRO_DEVICE_ID_POINTER_PRESSED:
-                        if (idx == 0)
-                           return (x11->mouse_l[mouse_port]
-                                 | x11->mouse_r[mouse_port]
-                                 | x11->mouse_m[mouse_port]);
-                        else if (idx == 1)
-                           return (x11->mouse_r[mouse_port]
-                                 | x11->mouse_m[mouse_port]);
-                        else if (idx == 2)
-                           return x11->mouse_m[mouse_port];
-                     case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                  }
-               }
-            }
-            break;
+         /* The mouse, the pointer and the lightgun's aim are the
+          * frontend's to answer: x_input_poll() publishes each mouse. */
          case RETRO_DEVICE_LIGHTGUN:
             switch ( id )
             {
-               /*aiming*/
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  {
-                     struct video_viewport vp    = {0};
-                     uint32_t res_pos               = 0;
-                     uint32_t res_screen_pos        = 0;
-
-                     if (video_driver_translate_coord_viewport_wrap(&vp,
-                              x11->mouse_x[mouse_port], x11->mouse_y[mouse_port],
-                              &res_pos, &res_screen_pos))
-                     {
-                        switch ( id )
-                        {
-                           case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                              return VIDEO_POS_X(res_pos);
-                           case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                              return VIDEO_POS_Y(res_pos);
-                           case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                              return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                           default:
-                              break;
-                        }
-                     }
-                  }
-                  break;
                   /*buttons*/
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -740,11 +648,6 @@ static int16_t x_input_state(
                      }
                   }
                   break;
-                  /*deprecated*/
-               case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  return x11->mouse_delta_x[mouse_port];
-               case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  return x11->mouse_delta_y[mouse_port];
             }
             break;
       }
@@ -831,7 +734,7 @@ static float x_get_sensor_input(void *data, unsigned port, unsigned id)
    return 0.0f;
 }
 
-static void x_input_poll(void *data)
+static void x_input_poll_devices(void *data)
 {
    x11_input_t *x11         = (x11_input_t*)data;
    bool video_has_focus     = video_driver_has_focus();
@@ -1099,6 +1002,75 @@ static void x_input_poll(void *data)
          }
       }
    }
+}
+
+/* Each mouse's frame, handed to the frontend, which answers for the
+ * mouse, the pointer and the lightgun's aim from it. */
+static void x_input_poll(void *data)
+{
+   input_pointer_frame_t frame[MAX_MOUSE_IDX];
+   x11_input_t *x11 = (x11_input_t*)data;
+   unsigned count   = 1;
+   unsigned i;
+   bool xi          = false;
+
+   x_input_poll_devices(data);
+
+   /* a notch is taken once, here, and is every reader's for the frame */
+   x11->wheel = 0;
+   if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_WHEELUP))
+      x11->wheel |= INPUT_POINTER_WHEEL_UP;
+   if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_WHEELDOWN))
+      x11->wheel |= INPUT_POINTER_WHEEL_DOWN;
+   if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP))
+      x11->wheel |= INPUT_POINTER_HWHEEL_UP;
+   if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN))
+      x11->wheel |= INPUT_POINTER_HWHEEL_DOWN;
+
+#ifdef HAVE_XI2
+   /* with the devices listed, port n reads mouse n; without, every
+    * port reads the one pointer */
+   if (x11->di)
+   {
+      xi    = true;
+      count = MAX_MOUSE_IDX;
+   }
+#endif
+   if (count > MAX_USERS)
+      count = MAX_USERS;
+
+   for (i = 0; i < count; i++)
+   {
+      unsigned buttons = x11->wheel;
+      if (x11->mouse_l[i])
+         buttons |= INPUT_POINTER_LEFT;
+      if (x11->mouse_r[i])
+         buttons |= INPUT_POINTER_RIGHT;
+      if (x11->mouse_m[i])
+         buttons |= INPUT_POINTER_MIDDLE;
+#ifdef HAVE_XI2
+      if (xi)
+      {
+         if (x11->mouse_4[i])
+            buttons |= INPUT_POINTER_BUTTON_4;
+         if (x11->mouse_5[i])
+            buttons |= INPUT_POINTER_BUTTON_5;
+      }
+      else
+#endif
+      {
+         if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_BUTTON_4))
+            buttons |= INPUT_POINTER_BUTTON_4;
+         if (x_mouse_state_wheel(RETRO_DEVICE_ID_MOUSE_BUTTON_5))
+            buttons |= INPUT_POINTER_BUTTON_5;
+      }
+      frame[i].pos     = VIDEO_POS_PACK(x11->mouse_x[i], x11->mouse_y[i]);
+      frame[i].rel     = VIDEO_POS_PACK(x11->mouse_delta_x[i],
+            x11->mouse_delta_y[i]);
+      frame[i].buttons = (uint16_t)buttons;
+   }
+   (void)xi;
+   input_driver_publish_pointers(frame, count);
 }
 
 static void x_grab_mouse(void *data, bool state)
