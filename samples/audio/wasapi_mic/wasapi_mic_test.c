@@ -147,6 +147,18 @@ int main(void)
       CHECK(!float_fmt, "in the sample format asked for", float_fmt, 0);
       RELEASE(client);
 
+      /* A rate the engine does not run at is the converter's as well:
+       * the stream keeps the rate the core asked for. */
+      exclusive = false;
+      rate      = 32730;
+      client    = wasapi_init_client((IMMDevice*)mmdevice_init_device(NULL, 1),
+            &exclusive, &float_fmt, &rate, 64, 1, AUDIO_LAYOUT_STEREO, NULL, NULL);
+      fake_device_opened(&channels, &flags);
+      CHECK(client != NULL && !exclusive, "at 32730 Hz it opens shared too", exclusive, 0);
+      CHECK(flags & AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM, "with the engine converting", flags, 0);
+      CHECK(rate == 32730, "at the core's rate, not the engine's", rate, 32730);
+      RELEASE(client);
+
       /* The converter is the microphone's alone: a layout wider than
        * the endpoint's is still refused. */
       client = wasapi_init_client_sh((IMMDevice*)mmdevice_init_device(NULL, 1),
