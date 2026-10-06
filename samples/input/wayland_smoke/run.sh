@@ -51,6 +51,7 @@ ${CC:-cc} -shared -fPIC -O1 -Wall \
 export XDG_RUNTIME_DIR="$work/xdg"
 mkdir -p "$XDG_RUNTIME_DIR" && chmod 700 "$XDG_RUNTIME_DIR"
 export DISPLAY=:93
+started=$(date +%s)
 Xvfb :93 -screen 0 1280x720x24 > "$work/xvfb.log" 2>&1 &
 XVFB=$!
 # The X server is up when something can connect to it and be answered.
@@ -90,16 +91,60 @@ start_compositor() {
    WESTON=
    return 1
 }
+# the windows there are before the compositor has one
+windows_before=$(xdotool search --onlyvisible --name "" 2>/dev/null | tr '\n' ' ')
 start_compositor || { echo "starting the compositor again" >&2; sleep 2; start_compositor; } \
    || { echo "the compositor did not start" >&2
         echo "--- the X server's log:" >&2; cat "$work/xvfb.log" >&2; exit 1; }
+# The compositor's window on the X display is what the keys are sent
+# to, and a second window is what the focus is given to and taken back
+# from. Each is waited for until it is there: the compositor's socket
+# is up before its window is, and a fixed second after it was not
+# always long enough ("no windows to press keys in", with nothing to
+# say which). If one does not come, the test says which, and shows what
+# windows there are and the compositor's log.
+windows_missing() {  # $1: which
+   echo "no window to press keys in: $1" >&2
+   echo "--- visible windows on the X display:" >&2
+   for w in $(xdotool search --onlyvisible --name "" 2>/dev/null); do
+      echo "  $w '$(xdotool getwindowname "$w" 2>/dev/null)'" >&2
+   done
+   echo "--- weston's log:" >&2
+   cat "$work/weston.log" >&2
+   exit 1
+}
+# It is the visible window that was not there before the compositor was
+# started. "The last visible window" is what was asked for, and before
+# the compositor's is up that is a window of the X server's own: a wait
+# for it would end at once, on the wrong one. (Its title cannot be
+# asked for: it is set where xdotool's search by name does not look.)
+comp=
+for i in $(seq 1 240); do
+   for w in $(xdotool search --onlyvisible --name "" 2>/dev/null); do
+      case " $windows_before " in
+         *" $w "*) ;;
+         *) comp=$w ;;
+      esac
+   done
+   [ -n "$comp" ] && break
+   kill -0 $WESTON 2>/dev/null || break
+   sleep 0.25
+done
+[ -n "$comp" ] || windows_missing "the compositor's has not appeared"
 sleep 1
-# the compositor's window on the X display: what the keys are sent to
-comp=$(xdotool search --onlyvisible --name "" 2>/dev/null | tail -1)
 xclock -geometry 100x100+1150+600 > /dev/null 2>&1 &
-sleep 1
-other=$(xdotool search --class xclock 2>/dev/null | head -1)
-[ -n "$comp" ] && [ -n "$other" ] || { echo "no windows to press keys in" >&2; exit 1; }
+other=
+for i in $(seq 1 240); do
+   # there once one of its windows is on the screen; the one used is
+   # the one that always was, the first by its class
+   if [ -n "$(xdotool search --onlyvisible --class xclock 2>/dev/null | head -1)" ]; then
+      other=$(xdotool search --class xclock 2>/dev/null | head -1)
+      break
+   fi
+   sleep 0.25
+done
+[ -n "$other" ] || windows_missing "the second window (xclock) has not appeared"
+echo "[info] the compositor and both windows are up $(( $(date +%s) - started )) s after the X server was started"
 
 write_cfg() {  # $1: video_threaded
    cat > "$work/retroarch.cfg" <<CFG
