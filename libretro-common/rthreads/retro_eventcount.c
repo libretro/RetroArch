@@ -205,6 +205,22 @@ static void ec_switch_wake_all(retro_eventcount_t *ec)
 #include <3ds/svc.h>
 #include <3ds/synchronization.h>
 #include <3ds/result.h>
+#include <retro_inline.h>
+
+/* One call on the process's arbiter.  libctru 2 wraps it as
+ * syncArbitrateAddress[WithTimeout]; libctru 1.x has the arbiter and
+ * the svc but not the wrappers, so the call is made directly there,
+ * as rthreads.c does on the same toolchains. */
+static INLINE Result ec_3ds_arbitrate(s32 *addr, ArbitrationType type,
+      s32 value, s64 timeout_ns)
+{
+#if defined(_3DS) && !defined(USE_CTRULIB_2)
+   return svcArbitrateAddress(__sync_get_arbiter(), (u32)addr, type,
+         value, timeout_ns);
+#else
+   return syncArbitrateAddressWithTimeout(addr, type, value, timeout_ns);
+#endif
+}
 
 /* Waits while the epoch still reads @key, for @timeout_ns.  The
  * arbiter waits while the word is below the value given, and the epoch
@@ -216,15 +232,15 @@ static bool ec_3ds_park(retro_eventcount_t *ec, int key, s64 timeout_ns)
    Result rc;
    if (key == INT_MAX)
       return true;
-   rc = syncArbitrateAddressWithTimeout((s32*)&ec->epoch,
+   rc = ec_3ds_arbitrate((s32*)&ec->epoch,
          ARBITRATION_WAIT_IF_LESS_THAN_TIMEOUT, (s32)key + 1, timeout_ns);
    return R_DESCRIPTION(rc) != RD_TIMEOUT;
 }
 
 static void ec_3ds_wake_all(retro_eventcount_t *ec)
 {
-   syncArbitrateAddress((s32*)&ec->epoch, ARBITRATION_SIGNAL,
-         ARBITRATION_SIGNAL_ALL);
+   ec_3ds_arbitrate((s32*)&ec->epoch, ARBITRATION_SIGNAL,
+         ARBITRATION_SIGNAL_ALL, 0);
 }
 #endif
 
