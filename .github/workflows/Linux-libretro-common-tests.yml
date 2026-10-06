@@ -29,7 +29,10 @@ jobs:
   libretro-common-tests:
     name: Build and run libretro-common/Makefile.test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suites, the companion harnesses under mingw and Wine and the
+    # stack check have grown with the tree: a run reached the last step
+    # at fifteen minutes and was cancelled there.
+    timeout-minutes: 30
 
     steps:
       - name: Install dependencies
