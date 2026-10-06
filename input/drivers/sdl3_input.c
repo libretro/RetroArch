@@ -272,35 +272,6 @@ static bool sdl3_key_pressed(sdl3_input_t *sdl, int key)
    return sdl->kb_state[sym];
 }
 
-/* Resolves a retro_keybind mouse-button bind (bind->mbutton) against
- * the polled mouse state; used by the lightgun bind checks below. */
-static bool sdl3_mouse_button_pressed(sdl3_input_t *sdl, unsigned key)
-{
-   switch (key)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return sdl->mouse_l;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return sdl->mouse_r;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return sdl->mouse_m;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return sdl->mouse_b4;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return sdl->mouse_b5;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return sdl->mouse_wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return sdl->mouse_wd;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return sdl->mouse_wr;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return sdl->mouse_wl;
-   }
-
-   return false;
-}
-
 /* Which of @keys are down: bit n of @down for keys[n]. */
 static void sdl3_keys_down(void *data, unsigned port,
       const uint16_t *keys, const uint8_t *bind, unsigned count,

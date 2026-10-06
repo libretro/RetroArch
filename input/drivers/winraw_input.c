@@ -1356,32 +1356,6 @@ static void winraw_keyboards_refresh(winraw_input_t *wr)
    RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kg_cnt);
 }
 
-static bool winraw_mouse_button_pressed(
-      winraw_input_t *wr,
-      winraw_mouse_t *mouse,
-      unsigned port, unsigned key)
-{
-   switch (key)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_L) > 0);
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_R) > 0);
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_M) > 0);
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_B4) > 0);
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return ((mouse->flags & WRAW_MOUSE_FLG_BTN_B5) > 0);
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return (mouse->whl & WRAW_WHL_UP) != 0;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return (mouse->whl & WRAW_WHL_DOWN) != 0;
-   }
-
-   return false;
-}
-
 static void winraw_init_mouse_xy_mapping(winraw_input_t *wr)
 {
    struct video_viewport viewport;

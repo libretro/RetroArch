@@ -447,51 +447,6 @@ static bool x_keyboard_pressed(x11_input_t *x11, unsigned key)
    return x11->state[keycode >> 3] & (1 << (keycode & 7));
 }
 
-static bool x_mouse_button_pressed(
-      x11_input_t *x11, unsigned port, unsigned key)
-{
-   unsigned mouse_port = port;
-#ifdef HAVE_XI2
-   if (!x11->di)
-      mouse_port = 0;
-#else
-   mouse_port = 0;
-#endif
-
-   switch (key)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return x11->mouse_l[mouse_port];
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return x11->mouse_r[mouse_port];
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return x11->mouse_m[mouse_port];
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-#ifdef HAVE_XI2
-         if (x11->di)
-            return x11->mouse_4[mouse_port];
-#endif
-         /* fall through */
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-#ifdef HAVE_XI2
-         if (x11->di)
-            return x11->mouse_5[mouse_port];
-#endif
-         /* no device list: the window's own button events */
-         return x_mouse_state_wheel(key) != 0;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return (x11->wheel & INPUT_POINTER_WHEEL_UP) != 0;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return (x11->wheel & INPUT_POINTER_WHEEL_DOWN) != 0;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return (x11->wheel & INPUT_POINTER_HWHEEL_UP) != 0;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return (x11->wheel & INPUT_POINTER_HWHEEL_DOWN) != 0;
-   }
-
-   return false;
-}
-
 static int16_t x_input_state(
       void *data,
       const input_device_driver_t *joypad,

@@ -444,34 +444,6 @@ static void dinput_poll(void *data)
    dinput_publish_pointers(di);
 }
 
-static bool dinput_mouse_button_pressed(
-      struct dinput_input *di, unsigned port, unsigned key)
-{
-   switch (key)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return (di->flags & DINP_FLAG_MOUSE_L_BTN)  ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return (di->flags & DINP_FLAG_MOUSE_R_BTN)  ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-         return (di->flags & DINP_FLAG_MOUSE_M_BTN)  ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-         return (di->flags & DINP_FLAG_MOUSE_B4_BTN) ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return (di->flags & DINP_FLAG_MOUSE_B5_BTN) ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return (di->flags & DINP_FLAG_MOUSE_WU_BTN)  ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return (di->flags & DINP_FLAG_MOUSE_WD_BTN)  ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return (di->flags & DINP_FLAG_MOUSE_HWU_BTN) ? true : false;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return (di->flags & DINP_FLAG_MOUSE_HWD_BTN) ? true : false;
-   }
-
-   return false;
-}
-
 /* The mouse's frame and the touches, in the order they went down,
  * handed to the frontend, which answers for the mouse, the pointer and
  * the lightgun's aim. The mouse is the port's whose Mouse Index is 0;
