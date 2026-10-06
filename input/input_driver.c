@@ -887,6 +887,67 @@ static void input_trigger_learn(const input_device_driver_t *drv,
    input_st->trigger_rest[pad] |= (1 << a);
 }
 
+/* By bind: some pad's autoconfig profile gives it a button or an axis.
+ * Which pad a read goes by is the caller's to say, so this is over all
+ * of them: a bind it leaves out has no pad behind it whichever is
+ * asked. Made again when the binds have changed. */
+static uint32_t input_autoconf_any_pad[(RARCH_BIND_LIST_END + 31) / 32];
+static unsigned input_autoconf_any_pad_gen;
+
+static void input_autoconf_any_pad_refresh(unsigned gen)
+{
+   unsigned pad, i;
+   memset(input_autoconf_any_pad, 0, sizeof(input_autoconf_any_pad));
+   for (pad = 0; pad < MAX_USERS; pad++)
+   {
+      const struct retro_keybind *binds = input_autoconf_binds[pad];
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+         if (binds[i].joykey != NO_BTN || binds[i].joyaxis != AXIS_NONE)
+            input_autoconf_any_pad[i >> 5] |= (1u << (i & 31));
+   }
+   input_autoconf_any_pad_gen = gen;
+}
+
+/* By port: which of the RetroPad's sixteen binds a pad's button or axis
+ * may be behind - the port's own, or one some profile gives it. The
+ * rest have nothing for the loop below to look at, and with no
+ * controller that is all of them. Made again when the binds change. */
+static uint16_t input_port_pad_bound[MAX_USERS];
+static unsigned input_port_pad_bound_gen[MAX_USERS];
+
+static unsigned input_port_pad_bound_get(const struct retro_keybind *binds)
+{
+   const char *first = (const char*)input_config_binds;
+   const char *at    = (const char*)binds;
+   size_t      off;
+   unsigned    port, gen;
+
+   /* binds that are not a port's own set: every one is looked at */
+   if (at < first || at >= first + sizeof(input_config_binds))
+      return 0xffff;
+   off = (size_t)(at - first);
+   if (off % sizeof(input_config_binds[0]))
+      return 0xffff;
+   port = (unsigned)(off / sizeof(input_config_binds[0]));
+   gen  = input_config_binds_generation() + 1;
+
+   if (input_port_pad_bound_gen[port] != gen)
+   {
+      unsigned i;
+      uint16_t bound = 0;
+      if (input_autoconf_any_pad_gen != gen)
+         input_autoconf_any_pad_refresh(gen);
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+         if (     binds[i].joykey  != NO_BTN
+               || binds[i].joyaxis != AXIS_NONE
+               || (input_autoconf_any_pad[0] & (1u << i)))
+            bound |= (uint16_t)(1u << i);
+      input_port_pad_bound[port]     = bound;
+      input_port_pad_bound_gen[port] = gen;
+   }
+   return input_port_pad_bound[port];
+}
+
 /* The RetroPad mask from the binds: the loop every joypad driver's
  * state() is, against the copy. */
 static int16_t input_snapshot_state(unsigned b,
@@ -896,10 +957,17 @@ static int16_t input_snapshot_state(unsigned b,
    unsigned i;
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
-   bool full_range = config_get_ptr()->bools.input_trigger_full_range;
+   unsigned bound;
+   bool full_range;
 
    if (pad >= MAX_USERS)
       return 0;
+
+   /* nothing a pad could be behind: nothing to look at */
+   bound = input_port_pad_bound_get(binds);
+   if (!bound)
+      return 0;
+   full_range = config_get_ptr()->bools.input_trigger_full_range;
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
@@ -1507,27 +1575,6 @@ typedef struct
 
 static input_port_keys_t input_port_keys[MAX_USERS];
 static unsigned input_poll_generation;
-
-/* By bind: some pad's autoconfig profile gives it a button or an axis.
- * Which pad a read goes by is the caller's to say, so this is over all
- * of them: a bind it leaves out has no pad behind it whichever is
- * asked. Made again when the binds have changed. */
-static uint32_t input_autoconf_any_pad[INPUT_BIND_WORDS];
-static unsigned input_autoconf_any_pad_gen;
-
-static void input_autoconf_any_pad_refresh(unsigned gen)
-{
-   unsigned pad, i;
-   memset(input_autoconf_any_pad, 0, sizeof(input_autoconf_any_pad));
-   for (pad = 0; pad < MAX_USERS; pad++)
-   {
-      const struct retro_keybind *binds = input_autoconf_binds[pad];
-      for (i = 0; i < RARCH_BIND_LIST_END; i++)
-         if (binds[i].joykey != NO_BTN || binds[i].joyaxis != AXIS_NONE)
-            input_autoconf_any_pad[i >> 5] |= (1u << (i & 31));
-   }
-   input_autoconf_any_pad_gen = gen;
-}
 
 /* Made again: the list when the binds have changed, what is down when
  * the driver has been polled. */
@@ -8776,6 +8823,8 @@ void config_read_keybinds_conf(void *data)
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }
+   /* binds read from a file are binds changed */
+   input_config_binds_changed();
 }
 
 #ifdef HAVE_COMMAND

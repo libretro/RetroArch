@@ -236,9 +236,33 @@ static void (*core_input_edges)(long*, long*);
  * runs them. The input lanes need the queue - a pad's autoconfig is a
  * task - so they step frames this way; the lanes above measure the
  * iterate alone. */
+/* The lanes set binds by writing the arrays, which nothing in the
+ * frontend does: there every change to a bind is counted
+ * (input_config_binds_changed()), and what is compiled from the binds
+ * goes by the count. So that a lane's write is seen, the arrays are
+ * looked at here and a change in them is counted on the lane's behalf. */
+static void binds_written_by_a_lane(void)
+{
+   static uint32_t last;
+   uint32_t h             = 2166136261u;
+   const unsigned char *p = (const unsigned char*)input_config_binds;
+   size_t i;
+   for (i = 0; i < sizeof(input_config_binds); i++)
+      h = (h ^ p[i]) * 16777619u;
+   p = (const unsigned char*)input_autoconf_binds;
+   for (i = 0; i < sizeof(input_autoconf_binds); i++)
+      h = (h ^ p[i]) * 16777619u;
+   if (h != last)
+   {
+      last = h;
+      input_config_binds_changed();
+   }
+}
+
 static void run_loop_frames(unsigned n)
 {
    unsigned i;
+   binds_written_by_a_lane();
    for (i = 0; i < n; i++)
    {
       runloop_iterate();
