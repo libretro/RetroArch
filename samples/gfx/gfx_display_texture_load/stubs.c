@@ -22,7 +22,6 @@ void *image_transfer_set_buffer_ptr(void) { return NULL; }
 void *image_transfer_set_want_10bit(void) { return NULL; }
 void *image_transfer_start(void) { return NULL; }
 void *input_osk_native_active(void) { return NULL; }
-void *task_push_image_load(void) { return NULL; }
 void *video_context_driver_get_metrics(void) { return NULL; }
 void *video_driver_get_ident(void) { return NULL; }
 void *video_driver_get_ptr(void) { return NULL; }

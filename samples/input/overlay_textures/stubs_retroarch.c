@@ -174,6 +174,8 @@ unsigned stub_video_thread_run(void)
    return ran;
 }
 
+bool task_is_on_main_thread(void) { return true; }
+
 bool video_thread_async_post(video_thread_async_load_t *n)
 {
    if (!stub_thread_active || !n)

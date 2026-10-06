@@ -1,10 +1,13 @@
 /* gfx_display texture loads: a load into a slot that holds a texture
  * keeps that texture until the new one has landed, then unloads it,
- * under the threaded wrapper and without. Stub driver, simulated
- * wrapper. */
+ * under the threaded wrapper and without; a gfx_surface still keeps
+ * its texture across uploads, decodes and a free in flight. Stub
+ * driver, simulated wrapper and task queue. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <queues/task_queue.h>
 
 #include "gfx/gfx_display.h"
 #include "gfx/video_driver.h"
@@ -101,6 +104,48 @@ static void st_flush(void)
    }
 }
 
+/* The task queue: one decode held until the test answers it */
+static retro_task_callback_t st_decode_cb;
+static void                 *st_decode_user;
+static unsigned              st_decodes;
+
+bool task_push_image_load(const char *fullpath, bool supports_rgba,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      retro_task_callback_t cb, void *user_data)
+{
+   (void)fullpath; (void)supports_rgba; (void)upscale_threshold;
+   (void)downscale_cap;
+   st_decode_cb   = cb;
+   st_decode_user = user_data;
+   st_decodes++;
+   return true;
+}
+
+/* Answers the held decode with an image of @w x @w, or nothing */
+static void st_decode_done(unsigned w)
+{
+   retro_task_callback_t cb = st_decode_cb;
+   void *user               = st_decode_user;
+   struct texture_image *img = NULL;
+   st_decode_cb = NULL;
+   if (w)
+   {
+      img = (struct texture_image*)calloc(1, sizeof(*img));
+      img->width  = img->height = w;
+      img->pixels = (uint32_t*)calloc(w * w, 4);
+   }
+   if (cb)
+      cb(NULL, img, user, NULL);
+}
+
+static struct texture_image *st_image(unsigned w)
+{
+   struct texture_image *img = (struct texture_image*)calloc(1, sizeof(*img));
+   img->width  = img->height = w;
+   img->pixels = (uint32_t*)calloc(w * w, 4);
+   return img;
+}
+
 /* --- the test ---------------------------------------------------- */
 static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
@@ -168,6 +213,92 @@ int main(void)
 
    video_driver_texture_unload(&slot);
    CHECK(st_live == 0, "%d textures live at the end", st_live);
+
+   /* --- a still that owns its texture ------------------------------ */
+
+   /* 5. threaded: a same-size image updates the texture up in place
+    *    once landed, another size replaces it, and one given while
+    *    the first is in flight goes up after it */
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      int loads;
+      CHECK(s != NULL, "no still");
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "first image refused");
+      CHECK(s->handle == 0, "a queued image landed early");
+      st_flush();
+      a = s->handle;
+      CHECK(a != 0, "first image never landed");
+      loads = st_loads;
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "second image refused");
+      CHECK(gfx_surface_submit_image(s, st_image(16)),
+            "an image during the flight refused");
+      CHECK(s->handle == a && st_live == 1, "the texture up went early");
+      st_flush();
+      CHECK(s->handle == a && st_loads == loads,
+            "a same-size image did not update in place");
+      st_flush();
+      b = s->handle;
+      CHECK(b != 0 && b != a && VIDEO_SCALE_W(s->dims) == 16 && st_live == 1,
+            "the image given in flight did not go up after (%d live)",
+            st_live);
+      gfx_surface_free(s);
+      CHECK(st_live == 0, "%d textures live after the still went", st_live);
+   }
+
+   /* 6. a still freed with an upload in flight: the completion frees
+    *    it, texture and all */
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      CHECK(gfx_surface_submit_image(s, st_image(8)), "image refused");
+      gfx_surface_submit_image(s, st_image(8)); /* queued behind */
+      gfx_surface_free(s);
+      st_flush();
+      CHECK(st_live == 0, "a still freed in flight left %d live", st_live);
+   }
+
+   /* 7. a decode: the file's image goes up when the decode answers;
+    *    a newer path makes the older decode land nowhere; a free
+    *    while decoding is honoured at the answer */
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      retro_task_callback_t first_cb; void *first_user;
+      CHECK(gfx_surface_submit_path(s, "a.png", true), "decode refused");
+      first_cb   = st_decode_cb;
+      first_user = st_decode_user;
+      CHECK(gfx_surface_submit_path(s, "b.png", true), "second decode refused");
+      /* the first answers: stale, lands nowhere */
+      {
+         struct texture_image *img = st_image(4);
+         first_cb(NULL, img, first_user, NULL);
+      }
+      st_flush();
+      CHECK(s->handle == 0 && st_live == 0, "a stale decode landed");
+      st_decode_done(8);
+      st_flush();
+      CHECK(s->handle != 0 && VIDEO_SCALE_W(s->dims) == 8 && st_live == 1,
+            "the decode did not land");
+      CHECK(gfx_surface_submit_path(s, "c.png", true), "third decode refused");
+      gfx_surface_free(s);
+      CHECK(st_live == 1, "a still freed while decoding went at once");
+      st_decode_done(8);
+      st_flush();
+      CHECK(st_live == 0, "a still freed while decoding left %d live",
+            st_live);
+   }
+
+   /* 8. direct: the image goes up at once */
+   st_async = 0;
+   {
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
+      CHECK(gfx_surface_submit_image(s, st_image(8)) && s->handle != 0,
+            "direct image did not land");
+      a = s->handle;
+      CHECK(gfx_surface_submit_image(s, st_image(8)) && s->handle != a
+            && st_last_unloaded == a && st_live == 1,
+            "direct replacement left %d live", st_live);
+      gfx_surface_free(s);
+      CHECK(st_live == 0, "%d textures live at the end", st_live);
+   }
 
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;

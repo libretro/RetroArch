@@ -97,6 +97,7 @@ void gfx_display_blend_end(void *dispctx, void *data)
 bool gfx_animation_kill_by_tag(uintptr_t *tag) { (void)tag; return true; }
 
 /* ---- task queue ---- */
+bool task_is_on_main_thread(void) { return true; }
 bool task_push_image_load(const char *path, bool rgba, unsigned t,
       unsigned c, void *cb, void *ud)
 {

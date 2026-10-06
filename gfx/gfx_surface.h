@@ -73,6 +73,9 @@ enum gfx_surface_submit_result
 
 typedef struct gfx_surface gfx_surface_t;
 
+/* The texture of a surface that may not exist or not have one yet */
+#define GFX_SURFACE_HANDLE(s) ((s) ? (s)->handle : 0)
+
 /* Frees what a submit handed over with its pixels (the decoded image
  * they live in, say). Main thread. */
 typedef void (*gfx_surface_payload_free_t)(void *payload);
@@ -123,6 +126,11 @@ struct gfx_surface
    enum texture_filter_type filter;
    uint8_t inflight;
    uint8_t dying;      /* freed while in flight; the completion frees */
+   /* Decodes of this surface's image still on the task queue
+    * (gfx_surface_submit_path). Only the newest one lands, and a
+    * surface freed with one out stays until it is answered. */
+   uint8_t decoding;
+   uint8_t decode_gen;
    /* Format and channel order of the texture, one key: an in-place
     * update only ever writes the layout the texture was made with.
     * 0xff = none. */
@@ -136,6 +144,9 @@ struct gfx_surface
     * last such slot comes back. */
    uint8_t writing;
    uintptr_t retired_handle;
+   /* An image handed to a still while an upload of it was in flight:
+    * it goes up when that one completes, and replaces it. */
+   struct texture_image *next_img;
    uint8_t can_update; /* driver updates in place */
    /* Set while release() runs for a dropped submit. */
    uint8_t dropped;
@@ -271,6 +282,31 @@ bool gfx_surface_supports_compressed(enum texture_gpu_format fmt);
 gfx_surface_t *gfx_surface_new_static(unsigned dims,
       enum texture_filter_type filter);
 
+/* A still with no image yet: the texture a menu icon slot owns. Its
+ * size comes with each image it is given. NULL when out of memory. */
+gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter);
+
+/* Upload the image @img describes to a still, taking the image: its
+ * pixels are the surface's from here, freed once uploaded or when the
+ * surface goes. The texture up stays until the new one has landed; a
+ * second image given while the first is still on its way goes up
+ * after it. False when the image is unusable and was freed. Main
+ * thread. */
+bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img);
+
+/* Decode the image file at @path here and now and upload it as
+ * gfx_surface_submit_image does. False when it could not be read.
+ * Main thread. */
+bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
+      bool supports_rgba);
+
+/* Decode the image file at @path on the task queue, then upload it
+ * as gfx_surface_submit_image does. A newer path given before the
+ * decode is done wins. The surface may be freed meanwhile; the decode
+ * then lands nowhere. False when nothing was queued. Main thread. */
+bool gfx_surface_submit_path(gfx_surface_t *s, const char *path,
+      bool supports_rgba);
+
 /* Upload @src. For a surface made by gfx_surface_new_static. The
  * pixels must stay valid until the call has returned (DONE, FAILED,
  * BUSY) or, for QUEUED, until the completion: hand them over through
@@ -329,7 +365,8 @@ void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot);
 
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call; its
- * payload is still freed then. */
+ * payload is still freed then. A decode still queued likewise: the
+ * surface goes once it is answered. */
 void gfx_surface_free(gfx_surface_t *s);
 
 /* gfx_surface_free() for a surface whose submit was given pixels the

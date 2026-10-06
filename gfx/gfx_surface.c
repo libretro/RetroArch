@@ -18,6 +18,7 @@
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
+#include "../tasks/tasks_internal.h"
 
 /* Slots start on a cache line so a producer's row loops and the
  * driver's memcpy into staging run on aligned memory. */
@@ -152,6 +153,26 @@ gfx_surface_t *gfx_surface_new_static(unsigned dims,
    s->can_update = video_driver_texture_can_update() ? 1 : 0;
    GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
    return s;
+}
+
+gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter)
+{
+   gfx_surface_t *s;
+   if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
+      return NULL;
+   s->filter     = filter;
+   s->fmt        = GFX_SURFACE_FMT_NONE;
+   s->can_update = video_driver_texture_can_update() ? 1 : 0;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
+   return s;
+}
+
+/* A decoded image a still was given, pixels and descriptor */
+static void gfx_surface_image_free(void *payload)
+{
+   struct texture_image *img = (struct texture_image*)payload;
+   image_texture_free(img);
+   free(img);
 }
 
 /* Whether a 2101010 frame has to be narrowed for the driver up. */
@@ -365,10 +386,23 @@ static void gfx_surface_done(void *user, uintptr_t handle)
 
    if (s->dying)
    {
+      if (s->next_img)
+         gfx_surface_image_free(s->next_img);
+      s->next_img = NULL;
+      /* A decode still out answers to this surface: it frees it */
+      if (s->decoding)
+         return;
       if (s->handle)
          video_driver_texture_unload(&s->handle);
       free(s);
       return;
+   }
+   /* An image given while this one was on its way goes up now */
+   if (s->next_img)
+   {
+      struct texture_image *img = s->next_img;
+      s->next_img               = NULL;
+      gfx_surface_submit_image(s, img);
    }
    /* The last touch: a release may free the surface (gfx_display's
     * texture loads do). dropped is cleared on the next completion. */
@@ -539,20 +573,181 @@ void gfx_surface_free(gfx_surface_t *s)
    if (!s)
       return;
    GFX_INSTR_INC(GFX_INSTR_SURFACE_FREE);
-   if (s->inflight)
+   if (s->inflight || s->decoding)
    {
       /* The video thread still reads the slot and, for a load, will
-       * hand back a texture: the completion unloads and frees. */
+       * hand back a texture, or the task queue still decodes for it:
+       * the completion unloads and frees. */
       s->dying = 1;
       return;
    }
    gfx_surface_unlend(s);
+   if (s->next_img)
+      gfx_surface_image_free(s->next_img);
    if (s->handle)
       video_driver_texture_unload(&s->handle);
    /* Its producers are gone by now: a retired texture goes too */
    if (s->retired_handle)
       video_driver_texture_unload(&s->retired_handle);
    free(s);
+}
+
+bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
+{
+   bool ok;
+   uintptr_t tex = 0;
+
+   if (!img)
+      return false;
+   if (     !s || !img->width || !img->height
+         || (!img->pixels && !img->compressed))
+   {
+      gfx_surface_image_free(img);
+      return false;
+   }
+   if (s->inflight)
+   {
+      if (s->next_img)
+         gfx_surface_image_free(s->next_img);
+      s->next_img = img;
+      return true;
+   }
+   /* Another size is another texture: no update in place */
+   if (s->dims != VIDEO_SCALE_PACK(img->width, img->height))
+      s->fmt = GFX_SURFACE_FMT_NONE;
+   s->dims = VIDEO_SCALE_PACK(img->width, img->height);
+
+#ifdef HAVE_THREADS
+   if (     img->pixels && !img->compressed && !img->pix10 && !img->fp16
+         && VIDEO_SCALE_FITS(img->width, img->height)
+         && video_driver_thread_wrapper_active()
+         && task_is_on_main_thread())
+   {
+      gfx_surface_src_t src;
+      enum gfx_surface_submit_result r;
+      src.pixels       = img->pixels;
+      src.payload      = img;
+      src.payload_free = gfx_surface_image_free;
+      src.pixfmt       = GFX_SURFACE_PIXFMT_8888;
+      src.rgba         = img->supports_rgba;
+      r                = gfx_surface_submit_external(s, &src,
+            s->release, s->user);
+      if (r == GFX_SURFACE_SUBMIT_QUEUED)
+         return true;
+      if (r == GFX_SURFACE_SUBMIT_DONE)
+      {
+         gfx_surface_image_free(img);
+         return true;
+      }
+      /* Refused: the plain load takes it */
+   }
+#endif
+   ok = video_driver_texture_load(img, s->filter, &tex);
+   gfx_surface_image_free(img);
+   if (!ok || !tex)
+      return false;
+   if (s->handle)
+      video_driver_texture_unload(&s->handle);
+   s->handle = tex;
+   /* A plain load's texture is not one an in-place update knows */
+   s->fmt    = GFX_SURFACE_FMT_NONE;
+   return true;
+}
+
+bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
+      bool supports_rgba)
+{
+   struct texture_image *img;
+   if (!s || !path || !*path)
+      return false;
+   if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
+      return false;
+   img->supports_rgba = supports_rgba;
+   if (!image_texture_load(img, path))
+   {
+      free(img);
+      return false;
+   }
+   return gfx_surface_submit_image(s, img);
+}
+
+/* What the decode is told to answer to: the surface, and which of
+ * its submits asked */
+typedef struct
+{
+   gfx_surface_t *s;
+   uint8_t gen;
+} gfx_surface_decode_t;
+
+/* Main thread, the decode done */
+static void gfx_surface_decoded(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   struct texture_image *img = (struct texture_image*)task_data;
+   gfx_surface_decode_t *d   = (gfx_surface_decode_t*)user_data;
+   gfx_surface_t *s;
+   bool stale;
+   (void)task;
+   (void)error;
+
+   if (!d)
+   {
+      if (img)
+         gfx_surface_image_free(img);
+      return;
+   }
+   s     = d->s;
+   stale = d->gen != s->decode_gen;
+   free(d);
+   if (s->decoding)
+      s->decoding--;
+
+   if (s->dying)
+   {
+      if (img)
+         gfx_surface_image_free(img);
+      if (!s->decoding && !s->inflight)
+      {
+         gfx_surface_unlend(s);
+         if (s->next_img)
+            gfx_surface_image_free(s->next_img);
+         if (s->handle)
+            video_driver_texture_unload(&s->handle);
+         if (s->retired_handle)
+            video_driver_texture_unload(&s->retired_handle);
+         free(s);
+      }
+      return;
+   }
+   if (stale || !img)
+   {
+      if (img)
+         gfx_surface_image_free(img);
+      return;
+   }
+   gfx_surface_submit_image(s, img);
+}
+
+bool gfx_surface_submit_path(gfx_surface_t *s, const char *path,
+      bool supports_rgba)
+{
+   gfx_surface_decode_t *d;
+
+   if (!s || !path || !*path || s->decoding == 0xff)
+      return false;
+   if (!(d = (gfx_surface_decode_t*)malloc(sizeof(*d))))
+      return false;
+   d->s   = s;
+   d->gen = ++s->decode_gen;
+   s->decoding++;
+   if (!task_push_image_load(path, supports_rgba, 0, 0,
+            gfx_surface_decoded, d))
+   {
+      s->decoding--;
+      free(d);
+      return false;
+   }
+   return true;
 }
 
 uint32_t *gfx_surface_slot_begin(gfx_surface_t *s, unsigned slot)
