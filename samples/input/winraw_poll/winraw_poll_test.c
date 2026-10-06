@@ -150,8 +150,8 @@ void input_driver_publish_pointers(const input_pointer_frame_t *frames,
       unsigned count, unsigned flags)
 { (void)frames; (void)count; (void)flags; }
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
-      unsigned down)
-{ (void)pos; (void)count; (void)down; }
+      unsigned present, unsigned down)
+{ (void)pos; (void)count; (void)present; (void)down; }
 unsigned input_driver_pointer_read_as(unsigned i) { (void)i; return 0; }
 uintptr_t video_driver_window_get(void) { return 0; }
 void win32_clip_window(bool grab) { (void)grab; }

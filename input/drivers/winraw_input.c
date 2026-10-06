@@ -2377,7 +2377,9 @@ static void winraw_publish_pointers(winraw_input_t *wr)
       touch_pos[touches++] = touch->pointer_pos;
 
    input_driver_publish_pointers(frame, count, INPUT_POINTERS_BY_MOUSE_INDEX);
-   input_driver_publish_touches(touch_pos, touches, (1u << touches) - 1);
+   /* each one listed is there, and down */
+   input_driver_publish_touches(touch_pos, touches,
+         (1u << touches) - 1, (1u << touches) - 1);
 }
 
 static void winraw_poll(void *data)

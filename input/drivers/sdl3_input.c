@@ -926,6 +926,7 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
    input_pointer_frame_t frame;
    uint32_t touch_pos[SDL3_MAX_TOUCH];
    unsigned touches = 0;
+   unsigned present = 0;
    unsigned down    = 0;
    unsigned buttons = 0;
 
@@ -963,7 +964,7 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
    {
       /* a finger's place is a fraction of the output */
       video_viewport_t vp = {0};
-      if (video_driver_get_viewport_info(&vp))
+      if (input_driver_poll_viewport(&vp))
       {
          float w = (float)VIDEO_SCALE_W(vp.full_dims);
          float h = (float)VIDEO_SCALE_H(vp.full_dims);
@@ -971,20 +972,24 @@ static void sdl3_publish_pointers(sdl3_input_t *sdl)
             touch_pos[touches] = VIDEO_POS_PACK(
                   (int)(sdl->touches[touches].x * w),
                   (int)(sdl->touches[touches].y * h));
-         down = (1u << touches) - 1;
+         /* each finger listed is there, and down */
+         present = (1u << touches) - 1;
+         down    = present;
       }
    }
    else if (sdl->pen_in_proximity)
    {
       touch_pos[0] = VIDEO_POS_PACK((int)sdl->pen_abs_x, (int)sdl->pen_abs_y);
       touches      = 1;
+      /* in the air it is there, and not down */
+      present      = 1;
       down         = sdl->pen_down ? 1 : 0;
    }
 
    input_driver_publish_pointers(&frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_POINTER_OFFSCREEN | INPUT_POINTERS_TOUCH_ALONE);
-   input_driver_publish_touches(touch_pos, touches, down);
+   input_driver_publish_touches(touch_pos, touches, present, down);
 }
 
 static void sdl3_input_poll(void *data)

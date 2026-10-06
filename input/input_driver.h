@@ -1301,11 +1301,14 @@ bool input_driver_poll_viewport(struct video_viewport *vp);
  * handling of a mouse depends on how it is used. */
 unsigned input_driver_pointer_read_as(unsigned i);
 
-/* A driver with a touchscreen: where each touch is in the window, as
- * VIDEO_POS_PACK, 0 for a place with none, and a bit in @down for each
- * that is down. With the mice, in the driver's poll. At most 16. */
+/* A driver with a touchscreen, with the mice, in its poll. For each of
+ * @count places, at most 16: where the contact is in the window, as
+ * VIDEO_POS_PACK; a bit in @present if there is a contact there at
+ * all; a bit in @down if it is pressed. The three are separate: a
+ * contact at 0,0 is a contact, and one that has lifted may keep its
+ * place (@present without @down). */
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
-      unsigned down);
+      unsigned present, unsigned down);
 
 typedef struct input_pointer_view
 {

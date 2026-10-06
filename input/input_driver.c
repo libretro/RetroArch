@@ -1474,9 +1474,9 @@ bool input_driver_poll_viewport(struct video_viewport *vp)
 }
 
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,
-      unsigned down)
+      unsigned present, unsigned down)
 {
-   input_pointer_touches_set(pos, count, down);
+   input_pointer_touches_set(pos, count, present, down);
 }
 
 /* A value from what the driver published, or from the driver. */

@@ -25,7 +25,10 @@
  * 10. how many pointers are down;
  * 11. the pointer placed off-screen as the lightgun is;
  * 12. a touch read alone: a pen in the air;
- * 13. the poll's viewport, asked for once a poll. */
+ * 13. the poll's viewport, asked for once a poll;
+ * 14. a touch's place, its presence and whether it is down are three
+ *     things: a touch at 0,0, one lifted there, a place with none,
+ *     the viewport's edges, sparse places, the lightgun. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -76,6 +79,12 @@ unsigned input_mouse_port_index(unsigned port)
 { return port == 0 ? 1 : (port == 1 ? 0 : 7); }
 
 #include "input/input_pointer_frame.h"
+
+/* @count places, each with a contact; @down says which are pressed. */
+static void touches_set(const uint32_t *pos, unsigned count, unsigned down)
+{
+   input_pointer_touches_set(pos, count, (1u << count) - 1, down);
+}
 
 static int16_t rd(unsigned port, unsigned device, unsigned idx, unsigned id)
 {
@@ -207,7 +216,8 @@ int main(void)
    touch[2] = 0;
    f[0].buttons = INPUT_POINTER_MIDDLE;
    input_pointer_frames_set(f, 1, INPUT_POINTERS_MOUSE_3_TOUCHES);
-   input_pointer_touches_set(touch, 3, 1 << 0);
+   /* places 0 and 1 hold a contact; place 2 holds none */
+   input_pointer_touches_set(touch, 3, 3, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == 70
       &&  rd(0, RARCH_DEVICE_POINTER_SCREEN, 0, RETRO_DEVICE_ID_POINTER_Y) == 1070
@@ -226,7 +236,8 @@ int main(void)
          "the packed pointer position, and one mouse is every port's");
    f[0].buttons = 0;
    input_pointer_frames_set(f, 1, INPUT_POINTERS_MOUSE_3_TOUCHES);
-   input_pointer_touches_set(touch, 3, 1 << 0);
+   /* places 0 and 1 hold a contact; place 2 holds none */
+   input_pointer_touches_set(touch, 3, 3, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
          "with no button held only the touch that is down is pressed");
@@ -235,7 +246,7 @@ int main(void)
    f[0].buttons = INPUT_POINTER_RIGHT;
    f[1].buttons = INPUT_POINTER_LEFT;
    input_pointer_frames_set(f, 2, INPUT_POINTERS_BY_MOUSE_INDEX);
-   input_pointer_touches_set(touch, 1, 1 << 0);
+   touches_set(touch, 1, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1
       &&  rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 0
       &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == 1
@@ -251,7 +262,7 @@ int main(void)
       &&  input_pointer_frame_pos(2, RETRO_DEVICE_POINTER, 0, &pos)
       &&  pos == VIDEO_POS_PACK(60, 70),
          "a port with no mouse still reads a real touch, and only that");
-   input_pointer_touches_set(touch, 0, 0);
+   touches_set(touch, 0, 0);
    CHECK( rd(2, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
       &&  rd(2, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0,
          "with no mouse and no touch a pointer reads nothing");
@@ -273,7 +284,7 @@ int main(void)
    f[0].buttons = INPUT_POINTER_LEFT;
    input_pointer_frames_set(f, 1, INPUT_POINTERS_BY_MOUSE_INDEX
          | INPUT_POINTERS_AIM_EVERY_PORT | INPUT_POINTERS_GUN_AT_TOUCH);
-   input_pointer_touches_set(touch, 0, 0);
+   touches_set(touch, 0, 0);
    CHECK( rd(2, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
       &&  rd(2, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == 0
       &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1,
@@ -286,7 +297,7 @@ int main(void)
    /* the gun at the first touch while there is one; out of the viewport
     * it is off-screen */
    touch[0] = VIDEO_POS_PACK(60, 70);
-   input_pointer_touches_set(touch, 1, 1 << 0);
+   touches_set(touch, 1, 1 << 0);
    vp_asked = translations = 0;
    CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 60
       &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == 70
@@ -296,17 +307,17 @@ int main(void)
       &&  vp_asked == 0 && translations == 1,
          "the lightgun aims at the first touch: one translation, the poll's viewport");
    touch[0] = VIDEO_POS_PACK(260, 70);
-   input_pointer_touches_set(touch, 1, 1 << 0);
+   touches_set(touch, 1, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 1
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 199,
          "a touch out of the viewport: the gun is off-screen, the pointer at the edge");
-   input_pointer_touches_set(touch, 0, 0);
+   touches_set(touch, 0, 0);
    CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
          "with no touch the lightgun aims at the mouse");
    /* without the flag a touch does not move the gun */
    touch[0] = VIDEO_POS_PACK(60, 70);
    input_pointer_frames_set(f, 1, INPUT_POINTERS_MOUSE_3_TOUCHES);
-   input_pointer_touches_set(touch, 1, 1 << 0);
+   touches_set(touch, 1, 1 << 0);
    CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
          "a driver that does not say so: the lightgun stays on the mouse");
 
@@ -317,10 +328,10 @@ int main(void)
    touch[0]     = VIDEO_POS_PACK(60, 70);
    touch[1]     = VIDEO_POS_PACK(80, 90);
    input_pointer_frames_set(f, 1, 0);
-   input_pointer_touches_set(touch, 2, 3);
+   touches_set(touch, 2, 3);
    CHECK(rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 2,
          "the count is the touches that are down");
-   input_pointer_touches_set(touch, 0, 0);
+   touches_set(touch, 0, 0);
    CHECK(rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
          "with no touch the count is the mouse's, its button held");
    f[0].buttons = 0;
@@ -338,7 +349,7 @@ int main(void)
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 1,
          "an off-screen pointer says so where the driver has it so");
    touch[0] = VIDEO_POS_PACK(60, 170);
-   input_pointer_touches_set(touch, 1, 1);
+   touches_set(touch, 1, 1);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == -0x8000
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN) == 1
@@ -351,23 +362,23 @@ int main(void)
    f[0].buttons = INPUT_POINTER_LEFT;
    touch[0]     = VIDEO_POS_PACK(60, 70);
    input_pointer_frames_set(f, 1, INPUT_POINTERS_TOUCH_ALONE);
-   input_pointer_touches_set(touch, 1, 0);
+   touches_set(touch, 1, 0);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 60
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
          "a touch read alone: lifted, the mouse's button does not press it");
-   input_pointer_touches_set(touch, 1, 1);
+   touches_set(touch, 1, 1);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
          "a touch read alone: down, it is pressed");
-   input_pointer_touches_set(touch, 0, 0);
+   touches_set(touch, 0, 0);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 40
       &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
       &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 0,
          "a touch read alone: with none, the mouse stands for the first");
    /* without the flag a lifted touch is pressed as the mouse says */
    input_pointer_frames_set(f, 1, 0);
-   input_pointer_touches_set(touch, 1, 0);
+   touches_set(touch, 1, 0);
    CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1,
          "a driver that does not say so: a lifted touch is pressed as the mouse says");
 
@@ -376,6 +387,90 @@ int main(void)
    CHECK(rd(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_RIGHT) == -2
       && rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == -2,
          "a poll in which nothing is published: the driver is to be asked");
+
+   /* 14: where a touch is, whether it is there, and whether it is down
+    * are three things. The mouse is at 40,30 with no button held. */
+   f[0].pos     = VIDEO_POS_PACK(40, 30);
+   f[0].buttons = 0;
+   /* a touch down at the window's origin is a touch */
+   touch[0] = VIDEO_POS_PACK(0, 0);
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, 1, 1, 1);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1
+      &&  input_pointer_frame_pos(0, RETRO_DEVICE_POINTER, 0, &pos)
+      &&  pos == VIDEO_POS_PACK(0, 0),
+         "a touch down at 0,0 is pressed and at 0,0, not the mouse's");
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == 0,
+         "the lightgun aims at a touch at 0,0, not at the mouse");
+   /* lifted at the origin, its place kept: there, not pressed */
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, 1, 1, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 0,
+         "a touch lifted at 0,0 keeps its place and is not pressed");
+   /* not there at all: the mouse answers, whatever the place holds */
+   touch[0] = VIDEO_POS_PACK(60, 70);
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, 1, 0, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 40
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
+         "a place with no contact reads the mouse, whatever position it holds");
+   /* down said without there: not a touch */
+   input_pointer_frames_set(f, 1, 0);
+   input_pointer_touches_set(touch, 1, 0, 1);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
+         "a place that is down but not there is not a touch");
+   /* at the viewport's edges: its first and last pixel, both down */
+   touch[0] = VIDEO_POS_PACK(0, 99);
+   touch[1] = VIDEO_POS_PACK(199, 0);
+   input_pointer_frames_set(f, 1, 0);
+   input_pointer_touches_set(touch, 2, 3, 3);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_Y) == 99
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_X) == 199
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_Y) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 2,
+         "touches on the viewport's edges, an axis at 0 each");
+   /* sparse places: 0 empty, 1 down at the origin, 2 empty. The mouse
+    * stands for three touches and its middle button is held. */
+   touch[0]     = VIDEO_POS_PACK(0, 0);
+   touch[1]     = VIDEO_POS_PACK(0, 0);
+   touch[2]     = VIDEO_POS_PACK(0, 0);
+   f[0].buttons = INPUT_POINTER_MIDDLE;
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_MOUSE_3_TOUCHES);
+   input_pointer_touches_set(touch, 3, 1 << 1, 1 << 1);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 40
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 1, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_X) == 40
+      &&  rd(0, RETRO_DEVICE_POINTER, 2, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 1,
+         "sparse places: the one with a contact reads it, the others the mouse");
+   /* the lightgun goes by the first place only */
+   f[0].buttons = 0;
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, 3, 1 << 1, 1 << 1);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
+         "the lightgun aims at the first place's touch, and with none there at the mouse");
+   /* a pen in the air at the origin, read alone */
+   f[0].buttons = INPUT_POINTER_LEFT;
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_TOUCH_ALONE);
+   input_pointer_touches_set(touch, 1, 1, 0);
+   CHECK( rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 0
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_COUNT) == 0,
+         "a pen in the air at 0,0 is there, at 0,0, and not pressed by the mouse");
+   f[0].buttons = 0;
 
    /* 13: the poll's viewport, for a driver that places its own touches:
     * asked for once however often it is wanted, and afresh each poll */

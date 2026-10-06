@@ -115,6 +115,7 @@ static void input_wl_poll(void *data)
    {
       input_pointer_frame_t frame;
       uint32_t touch_pos[MAX_TOUCHES];
+      unsigned present = 0;
       unsigned down    = 0;
       unsigned buttons = 0;
 
@@ -148,13 +149,18 @@ static void input_wl_poll(void *data)
       for (id = 0; id < MAX_TOUCHES; id++)
       {
          touch_pos[id] = VIDEO_POS_PACK(wl->touches[id].x, wl->touches[id].y);
+         /* A place at 0,0 is not a touch here: a mouse button is
+          * reported on the desktop as one there, and the mouse answers
+          * for it. A touch that has lifted keeps its place. */
+         if (wl->touches[id].x || wl->touches[id].y)
+            present   |= (1 << id);
          if (wl->touches[id].active)
             down      |= (1 << id);
       }
       /* the one mouse is every port's; it stands for three touches */
       input_driver_publish_pointers(&frame, 1,
             INPUT_POINTERS_MOUSE_3_TOUCHES);
-      input_driver_publish_touches(touch_pos, MAX_TOUCHES, down);
+      input_driver_publish_touches(touch_pos, MAX_TOUCHES, present, down);
    }
 }
 

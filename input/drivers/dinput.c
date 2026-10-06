@@ -530,7 +530,8 @@ static void dinput_publish_pointers(struct dinput_input *di)
    input_driver_publish_pointers(&frame, 1,
            INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
          | INPUT_POINTERS_GUN_AT_TOUCH);
-   input_driver_publish_touches(touch_pos, n, (1u << n) - 1);
+   /* each one listed is there, and down */
+   input_driver_publish_touches(touch_pos, n, (1u << n) - 1, (1u << n) - 1);
 }
 
 static int16_t dinput_input_state(

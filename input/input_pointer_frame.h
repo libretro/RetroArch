@@ -43,7 +43,8 @@ static struct
    uint32_t touch_viewport_pos[INPUT_TOUCHES_MAX];  /* -0x8000 outside */
    uint16_t have_touch;               /* a bit a touch: done this poll */
    uint16_t have_touch_viewport;
-   uint16_t touch_down;
+   uint16_t touch_present;            /* a bit a touch: a contact is there */
+   uint16_t touch_down;               /* ... and is pressed */
    uint8_t  count;
    uint8_t  touch_count;
    uint8_t  flags;                    /* enum input_pointers_flags */
@@ -64,15 +65,22 @@ static void input_pointer_frames_set(const input_pointer_frame_t *frames,
    input_pointers.vp_asked      = false;
 }
 
+/* Where a touch is, whether there is one, and whether it is down are
+ * three things. A place can hold a contact that has lifted - the last
+ * place of a finger, a pen in the air - and a contact can be at 0,0,
+ * the window's corner: neither is told by the position. */
 static void input_pointer_touches_set(const uint32_t *pos, unsigned count,
-      unsigned down)
+      unsigned present, unsigned down)
 {
+   unsigned all;
    if (count > INPUT_TOUCHES_MAX)
       count = INPUT_TOUCHES_MAX;
+   all = (1u << count) - 1;
    memcpy(input_pointers.touch_pos, pos, count * sizeof(*pos));
-   input_pointers.touch_count = (uint8_t)count;
-   input_pointers.touch_down  = (uint16_t)down;
-   input_pointers.have_touch  = 0;
+   input_pointers.touch_count   = (uint8_t)count;
+   input_pointers.touch_present = (uint16_t)(present & all);
+   input_pointers.touch_down    = (uint16_t)(down & present & all);
+   input_pointers.have_touch    = 0;
    input_pointers.have_touch_viewport  = 0;
 }
 
@@ -190,7 +198,7 @@ static bool input_pointer_touch(unsigned i, unsigned idx,
    const input_pointer_frame_t *f = &input_pointers.frame[
       i < input_pointers.count ? i : 0];
    bool real    = idx < input_pointers.touch_count
-               && input_pointers.touch_pos[idx] != 0;
+               && (input_pointers.touch_present & (1 << idx));
    bool three   = (input_pointers.flags & INPUT_POINTERS_MOUSE_3_TOUCHES) != 0;
    bool mouse   = i < input_pointers.count && idx < (three ? 3u : 1u);
    bool confined = !(input_pointers.flags & INPUT_POINTERS_POINTER_OFFSCREEN);
@@ -220,8 +228,7 @@ static unsigned input_pointer_count(unsigned i)
    if (n)
       return n;
    if (     (input_pointers.flags & INPUT_POINTERS_TOUCH_ALONE)
-         && input_pointers.touch_count
-         && input_pointers.touch_pos[0] != 0)
+         && (input_pointers.touch_present & 1))
       return 0;
    if (i < input_pointers.count)
       return input_pointer_mouse_down(&input_pointers.frame[i], 0) ? 1 : 0;
@@ -234,8 +241,7 @@ static bool input_gun_place(unsigned i, uint32_t *pos)
 {
    uint32_t screen_pos;
    if (     (input_pointers.flags & INPUT_POINTERS_GUN_AT_TOUCH)
-         && input_pointers.touch_count
-         && input_pointers.touch_pos[0] != 0)
+         && (input_pointers.touch_present & 1))
       return input_touch_place(0, false, pos, &screen_pos);
    if (i >= input_pointers.count)
       return false;
