@@ -100,9 +100,9 @@ static input_pointer_frame_t published[MAX_USERS];
 static unsigned published_count;
 static unsigned publishes;
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
-      unsigned count, unsigned mouse_touches)
+      unsigned count, unsigned flags)
 {
-   (void)mouse_touches;
+   (void)flags;
    memcpy(published, frames, count * sizeof(*frames));
    published_count = count;
    publishes++;

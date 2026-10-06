@@ -1253,13 +1253,27 @@ typedef struct input_pointer_frame
    uint16_t buttons;   /* enum input_pointer_buttons */
 } input_pointer_frame_t;
 
-/* From the driver's poll. @count devices, port n reading device n; with
- * one device every port reads it. At most MAX_USERS.
- * @mouse_touches: how many touches a mouse stands for when it is read
- * as a pointer and no real touch is in that place - 3 (any button; the
- * right or the middle; the middle) or 1 (the left button). */
+enum input_pointers_flags
+{
+   /* Read as a pointer with no real touch in a place, a mouse stands
+    * for three touches - any button; the right or the middle; the
+    * middle. Without this it stands for one: its left button. */
+   INPUT_POINTERS_MOUSE_3_TOUCHES = (1 << 0),
+   /* A port reads the device at its Mouse Index, or where its pinned
+    * mouse is (input_mouse_port_index()). Without this port n reads
+    * device n, and one device is every port's. */
+   INPUT_POINTERS_BY_MOUSE_INDEX  = (1 << 1)
+};
+
+/* From the driver's poll. @count devices, at most MAX_USERS.
+ * @flags: enum input_pointers_flags. */
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
-      unsigned count, unsigned mouse_touches);
+      unsigned count, unsigned flags);
+
+/* The kind of device (RETRO_DEVICE_MOUSE, RETRO_DEVICE_POINTER, ...)
+ * published device @i was last read as, or 0: for a driver whose
+ * handling of a mouse depends on how it is used. */
+unsigned input_driver_pointer_read_as(unsigned i);
 
 /* A driver with a touchscreen: where each touch is in the window, as
  * VIDEO_POS_PACK, 0 for a place with none, and a bit in @down for each

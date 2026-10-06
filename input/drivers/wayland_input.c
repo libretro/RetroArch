@@ -152,7 +152,8 @@ static void input_wl_poll(void *data)
             down      |= (1 << id);
       }
       /* the one mouse is every port's; it stands for three touches */
-      input_driver_publish_pointers(&frame, 1, 3);
+      input_driver_publish_pointers(&frame, 1,
+            INPUT_POINTERS_MOUSE_3_TOUCHES);
       input_driver_publish_touches(touch_pos, MAX_TOUCHES, down);
    }
 }

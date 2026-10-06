@@ -1070,7 +1070,8 @@ static void x_input_poll(void *data)
       frame[i].buttons = (uint16_t)buttons;
    }
    (void)xi;
-   input_driver_publish_pointers(frame, count, 3);
+   input_driver_publish_pointers(frame, count,
+         INPUT_POINTERS_MOUSE_3_TOUCHES);
 }
 
 static void x_grab_mouse(void *data, bool state)

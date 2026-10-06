@@ -1353,34 +1353,6 @@ static void winraw_keyboards_refresh(winraw_input_t *wr)
    RARCH_LOG("[WinRaw] Keyboard list made again: %u.\n", wr->kg_cnt);
 }
 
-static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
-      winraw_mouse_t *mouse,
-      unsigned port, unsigned id)
-{
-   struct video_viewport vp = {0};
-   uint32_t res_pos         = 0;
-   uint32_t res_screen_pos  = 0;
-
-   if ((video_driver_translate_coord_viewport_wrap(
-               &vp, mouse->x, mouse->y,
-               &res_pos, &res_screen_pos)))
-   {
-      switch (id)
-      {
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return VIDEO_POS_X(res_pos);
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return VIDEO_POS_Y(res_pos);
-         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-         default:
-            break;
-      }
-   }
-
-   return 0;
-}
-
 static bool winraw_mouse_button_pressed(
       winraw_input_t *wr,
       winraw_mouse_t *mouse,
@@ -2347,6 +2319,56 @@ error:
    return NULL;
 }
 
+/* Each mouse's frame and the touches, handed to the frontend, which
+ * answers for the mouse, the pointer and the lightgun's aim: a port
+ * reads the mouse at its Mouse Index, a touch in a place is read
+ * before the mouse, and a mouse stands for one touch, its left button.
+ * How a mouse's reports are taken depends on what it is read as, which
+ * the frontend now knows and this asks. */
+static void winraw_publish_pointers(winraw_input_t *wr)
+{
+   input_pointer_frame_t frame[MAX_USERS];
+   uint32_t touch_pos[16];
+   unsigned i;
+   unsigned touches                     = 0;
+   unsigned count                       = wr->mouse_cnt;
+   struct winraw_pointer_status *touch  = wr->pointer_head.next;
+
+   if (count > MAX_USERS)
+      count = MAX_USERS;
+   for (i = 0; i < count; i++)
+   {
+      const winraw_mouse_t *m = &wr->mice[i];
+      unsigned buttons        = 0;
+      unsigned read_as        = input_driver_pointer_read_as(i);
+
+      if (read_as)
+         g_mice[i].device     = (int)read_as;
+      if (m->flags & WRAW_MOUSE_FLG_BTN_L)
+         buttons |= INPUT_POINTER_LEFT;
+      if (m->flags & WRAW_MOUSE_FLG_BTN_R)
+         buttons |= INPUT_POINTER_RIGHT;
+      if (m->flags & WRAW_MOUSE_FLG_BTN_M)
+         buttons |= INPUT_POINTER_MIDDLE;
+      if (m->flags & WRAW_MOUSE_FLG_BTN_B4)
+         buttons |= INPUT_POINTER_BUTTON_4;
+      if (m->flags & WRAW_MOUSE_FLG_BTN_B5)
+         buttons |= INPUT_POINTER_BUTTON_5;
+      if (m->whl_u)
+         buttons |= INPUT_POINTER_WHEEL_UP;
+      if (m->whl_d)
+         buttons |= INPUT_POINTER_WHEEL_DOWN;
+      frame[i].pos     = VIDEO_POS_PACK(m->x, m->y);
+      frame[i].rel     = VIDEO_POS_PACK(m->dlt_x, m->dlt_y);
+      frame[i].buttons = (uint16_t)buttons;
+   }
+   for (; touch && touches < 16; touch = touch->next)
+      touch_pos[touches++] = touch->pointer_pos;
+
+   input_driver_publish_pointers(frame, count, INPUT_POINTERS_BY_MOUSE_INDEX);
+   input_driver_publish_touches(touch_pos, touches, (1u << touches) - 1);
+}
+
 static void winraw_poll(void *data)
 {
    unsigned i;
@@ -2524,6 +2546,8 @@ static void winraw_poll(void *data)
       wr->mice[i].flags   = g_mice[i].flags;
    }
 
+   winraw_publish_pointers(wr);
+
    /* devices came or went: the keyboards are listed again */
    if (     retro_atomic_load_relaxed_int(&winraw_devices_changed)
          && retro_atomic_exchange_int(&winraw_devices_changed, 0))
@@ -2691,116 +2715,12 @@ static int16_t winraw_input_state(
             return ret;
          case RETRO_DEVICE_KEYBOARD:
             return keys_ok && (id && id < RETROK_LAST) && WINRAW_PORT_KEY_PRESSED(wr, own, id);
-         case RETRO_DEVICE_MOUSE:
-         case RARCH_DEVICE_MOUSE_SCREEN:
-            if (mouse)
-            {
-               bool abs = (device == RARCH_DEVICE_MOUSE_SCREEN);
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_MOUSE_X:
-                     return abs ? mouse->x : mouse->dlt_x;
-                  case RETRO_DEVICE_ID_MOUSE_Y:
-                     return abs ? mouse->y : mouse->dlt_y;
-                  case RETRO_DEVICE_ID_MOUSE_LEFT:
-                     if ((mouse->flags & WRAW_MOUSE_FLG_BTN_L) > 0)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                     if ((mouse->flags & WRAW_MOUSE_FLG_BTN_R) > 0)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                     if (mouse->whl_u)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                     if (mouse->whl_d)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                     if ((mouse->flags & WRAW_MOUSE_FLG_BTN_M) > 0)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                     if ((mouse->flags & WRAW_MOUSE_FLG_BTN_B4) > 0)
-                        return 1;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                     if ((mouse->flags & WRAW_MOUSE_FLG_BTN_B5) > 0)
-                        return 1;
-                     break;
-               }
-            }
-            break;
-         case RETRO_DEVICE_POINTER:
-         case RARCH_DEVICE_POINTER_SCREEN:
-            {
-               struct video_viewport vp    = {0};
-               bool pointer_down           = false;
-               int x                       = 0;
-               int y                       = 0;
-               uint32_t res_pos               = 0;
-               uint32_t res_screen_pos        = 0;
-               unsigned num                = 0;
-               struct winraw_pointer_status *
-                  check_pos                = wr->pointer_head.next;
-
-               while (check_pos && num < idx)
-               {
-                  num++;
-                  check_pos    = check_pos->next;
-               }
-               if (!check_pos && idx > 0) /* idx = 0 has mouse fallback. */
-                  return 0;
-
-               if (mouse)
-               {
-                  x            = mouse->x;
-                  y            = mouse->y;
-                  pointer_down = (mouse->flags & (WRAW_MOUSE_FLG_BTN_L)) > 0;
-               }
-
-               if (check_pos)
-               {
-                  x            = VIDEO_POS_X(check_pos->pointer_pos);
-                  y            = VIDEO_POS_Y(check_pos->pointer_pos);
-                  pointer_down = true;
-               }
-
-               if (!(video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
-                           &res_pos, &res_screen_pos)))
-                  return 0;
-
-               if (device == RARCH_DEVICE_POINTER_SCREEN)
-               {
-                  res_pos        = res_screen_pos;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return VIDEO_POS_X(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return VIDEO_POS_Y(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return pointer_down;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                  default:
-                     break;
-               }
-            }
-            break;
+         /* The mouse, the pointer and the lightgun's aim are the
+          * frontend's to answer: winraw_poll() publishes each mouse
+          * and the touches. */
          case RETRO_DEVICE_LIGHTGUN:
             switch (id)
             {
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  if (mouse)
-                     return winraw_lightgun_aiming_state(wr, mouse, port, id);
-                  break;
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
                case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
@@ -2847,15 +2767,6 @@ static int16_t winraw_input_state(
                         }
                      }
                   }
-                  break;
-                  /*deprecated*/
-               case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  if (mouse)
-                     return mouse->dlt_x;
-                  break;
-               case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  if (mouse)
-                     return mouse->dlt_y;
                   break;
             }
             break;

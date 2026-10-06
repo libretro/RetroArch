@@ -33,6 +33,7 @@ static struct
    uint32_t confined_pos[MAX_USERS];  /* in the viewport, held to its edges */
    uint32_t viewport_pos[MAX_USERS];  /* in the viewport, -0x8000 outside it */
    uint32_t screen_pos[MAX_USERS];
+   uint32_t read_as[MAX_USERS];       /* the device kind last read as */
    uint32_t touch_pos[INPUT_TOUCHES_MAX];      /* in the window; 0: none */
    uint32_t touch_confined_pos[INPUT_TOUCHES_MAX];
    uint32_t touch_screen_pos[INPUT_TOUCHES_MAX];
@@ -43,19 +44,19 @@ static struct
    uint16_t touch_down;
    uint8_t  count;
    uint8_t  touch_count;
-   uint8_t  mouse_touches;
+   uint8_t  flags;                    /* enum input_pointers_flags */
    bool     vp_asked;
    bool     vp_ok;
 } input_pointers;
 
 static void input_pointer_frames_set(const input_pointer_frame_t *frames,
-      unsigned count, unsigned mouse_touches)
+      unsigned count, unsigned flags)
 {
    if (count > MAX_USERS)
       count = MAX_USERS;
    memcpy(input_pointers.frame, frames, count * sizeof(*frames));
    input_pointers.count         = (uint8_t)count;
-   input_pointers.mouse_touches = (uint8_t)mouse_touches;
+   input_pointers.flags         = (uint8_t)flags;
    input_pointers.have_confined = 0;
    input_pointers.have_viewport = 0;
    input_pointers.vp_asked      = false;
@@ -81,6 +82,14 @@ static bool input_pointer_viewport(void)
       input_pointers.vp_asked = true;
    }
    return input_pointers.vp_ok;
+}
+
+/* The published device a port reads. */
+static unsigned input_pointer_of_port(unsigned port)
+{
+   if (input_pointers.flags & INPUT_POINTERS_BY_MOUSE_INDEX)
+      return input_mouse_port_index(port);
+   return (input_pointers.count == 1) ? 0 : port;
 }
 
 /* Device @i's place in the viewport and on the screen; false when there
@@ -143,15 +152,17 @@ static bool input_touch_place(unsigned t, uint32_t *pos, uint32_t *screen_pos)
 }
 
 /* Pointer @idx of mouse @i: a real touch in that place if there is one,
- * else the mouse standing for it. False if there is neither, or no
- * viewport to place it in. */
+ * else the mouse standing for it - if the port has a mouse. False if
+ * there is neither, or no viewport to place it in. */
 static bool input_pointer_touch(unsigned i, unsigned idx,
       uint32_t *pos, uint32_t *screen_pos, bool *down)
 {
-   const input_pointer_frame_t *f = &input_pointers.frame[i];
+   const input_pointer_frame_t *f = &input_pointers.frame[
+      i < input_pointers.count ? i : 0];
    bool real    = idx < input_pointers.touch_count
                && input_pointers.touch_pos[idx] != 0;
-   bool mouse   = idx < input_pointers.mouse_touches;
+   bool three   = (input_pointers.flags & INPUT_POINTERS_MOUSE_3_TOUCHES) != 0;
+   bool mouse   = i < input_pointers.count && idx < (three ? 3u : 1u);
 
    if (!real && !mouse)
       return false;
@@ -162,7 +173,7 @@ static bool input_pointer_touch(unsigned i, unsigned idx,
    *down = real && (input_pointers.touch_down & (1 << idx));
    if (!*down && mouse)
    {
-      if (input_pointers.mouse_touches == 1)
+      if (!three)
          *down = (f->buttons & INPUT_POINTER_LEFT) != 0;
       else if (idx == 0)
          *down = (f->buttons & (INPUT_POINTER_LEFT
@@ -181,14 +192,18 @@ static bool input_pointer_touch(unsigned i, unsigned idx,
 static bool input_pointer_frame_pos(unsigned port, unsigned device,
       unsigned idx, uint32_t *pos)
 {
-   unsigned i = (input_pointers.count == 1) ? 0 : port;
+   unsigned i;
    uint32_t screen_pos;
 
    if (!input_pointers.count)
       return false;
    *pos = 0;
-   if (i >= input_pointers.count)
-      return true;
+   i    = input_pointer_of_port(port);
+   if (i < input_pointers.count)
+      input_pointers.read_as[i] = device;
+   else if (  device != RETRO_DEVICE_POINTER
+           && device != RARCH_DEVICE_POINTER_SCREEN)
+      return true;   /* no mouse here; a pointer may still be a touch */
    switch (device)
    {
       case RETRO_DEVICE_MOUSE:
@@ -222,7 +237,7 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
       unsigned idx, unsigned id, int16_t *out)
 {
    const input_pointer_frame_t *f;
-   unsigned i = (input_pointers.count == 1) ? 0 : port;
+   unsigned i;
    uint32_t pos;
 
    if (!input_pointers.count)
@@ -247,9 +262,13 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
          return false;
    }
    *out = 0;
-   if (i >= input_pointers.count)
-      return true;
-   f = &input_pointers.frame[i];
+   i    = input_pointer_of_port(port);
+   if (i < input_pointers.count)
+      input_pointers.read_as[i] = device;
+   else if (  device != RETRO_DEVICE_POINTER
+           && device != RARCH_DEVICE_POINTER_SCREEN)
+      return true;   /* no mouse here; a pointer may still be a touch */
+   f = &input_pointers.frame[i < input_pointers.count ? i : 0];
 
    switch (device)
    {

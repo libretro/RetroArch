@@ -1455,9 +1455,14 @@ bool input_driver_button_combo(
 #include "input_pointer_frame.h"
 
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
-      unsigned count, unsigned mouse_touches)
+      unsigned count, unsigned flags)
 {
-   input_pointer_frames_set(frames, count, mouse_touches);
+   input_pointer_frames_set(frames, count, flags);
+}
+
+unsigned input_driver_pointer_read_as(unsigned i)
+{
+   return i < MAX_USERS ? input_pointers.read_as[i] : 0;
 }
 
 void input_driver_publish_touches(const uint32_t *pos, unsigned count,

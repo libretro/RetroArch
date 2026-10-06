@@ -134,6 +134,14 @@ bool video_driver_translate_coord_viewport(struct video_viewport *vp,
    (void)res_screen_pos; (void)report_oob;
    return false;
 }
+/* The driver hands its mice and touches to the frontend at its poll. */
+void input_driver_publish_pointers(const input_pointer_frame_t *frames,
+      unsigned count, unsigned flags)
+{ (void)frames; (void)count; (void)flags; }
+void input_driver_publish_touches(const uint32_t *pos, unsigned count,
+      unsigned down)
+{ (void)pos; (void)count; (void)down; }
+unsigned input_driver_pointer_read_as(unsigned i) { (void)i; return 0; }
 uintptr_t video_driver_window_get(void) { return 0; }
 void win32_clip_window(bool grab) { (void)grab; }
 uint16_t win32_get_keyboard_mods(void) { return 0; }
