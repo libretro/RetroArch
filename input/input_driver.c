@@ -12533,6 +12533,84 @@ void input_remapping_set_defaults(bool clear_cache)
    input_remapping_restore_global_config(clear_cache, true);
 }
 
+#ifdef HAVE_MENU
+/* The stick values past which the menu takes a stick for a direction.
+ *
+ * The menu compared a stick's value, divided by 0x7fff as a float,
+ * with the axis threshold: less than minus the threshold one way, more
+ * than it the other. A stick reads one of 65536 values, and the
+ * division only ever grows with the value, so each comparison holds
+ * from some value on: these are those two values - the greatest still
+ * below, the least already above - found by bisection with that very
+ * comparison, so what the menu takes is the same value for value, and
+ * a deflected stick costs two integer compares where it cost four
+ * divisions. Worked out again only when the threshold changes; with
+ * none that any value passes, they are one outside what a stick reads. */
+#define INPUT_MENU_STICK_IS_BELOW(v, threshold) ((float)(int16_t)(v) / 0x7fff < -(threshold))
+#define INPUT_MENU_STICK_IS_ABOVE(v, threshold) ((float)(int16_t)(v) / 0x7fff >  (threshold))
+
+/* The D-pad's four are numbered up, down, left, right, which is what
+ * lets a direction be worked out from the axis and the way. */
+typedef char input_menu_dpad_ids_in_a_row[(
+         RETRO_DEVICE_ID_JOYPAD_DOWN  == RETRO_DEVICE_ID_JOYPAD_UP   + 1
+      && RETRO_DEVICE_ID_JOYPAD_LEFT  == RETRO_DEVICE_ID_JOYPAD_UP   + 2
+      && RETRO_DEVICE_ID_JOYPAD_RIGHT == RETRO_DEVICE_ID_JOYPAD_LEFT + 1) ? 1 : -1];
+
+static void input_menu_stick_limits(float threshold, int *below, int *above)
+{
+   static float for_threshold;
+   static int   lim_below;
+   static int   lim_above;
+   static bool  have;
+
+   if (!have || for_threshold != threshold)
+   {
+      int lo, hi;
+
+      /* the greatest value below: it holds for every value up to it */
+      if (!INPUT_MENU_STICK_IS_BELOW(-0x8000, threshold))
+         lim_below = -0x8000 - 1;
+      else
+      {
+         lo = -0x8000;
+         hi =  0x7fff;
+         while (lo < hi)
+         {
+            int mid = lo + (hi - lo + 1) / 2;
+            if (INPUT_MENU_STICK_IS_BELOW(mid, threshold))
+               lo = mid;
+            else
+               hi = mid - 1;
+         }
+         lim_below = lo;
+      }
+
+      /* the least value above: it holds for every value from it */
+      if (!INPUT_MENU_STICK_IS_ABOVE(0x7fff, threshold))
+         lim_above = 0x7fff + 1;
+      else
+      {
+         lo = -0x8000;
+         hi =  0x7fff;
+         while (lo < hi)
+         {
+            int mid = lo + (hi - lo) / 2;
+            if (INPUT_MENU_STICK_IS_ABOVE(mid, threshold))
+               hi = mid;
+            else
+               lo = mid + 1;
+         }
+         lim_above = lo;
+      }
+
+      for_threshold = threshold;
+      have          = true;
+   }
+   *below = lim_below;
+   *above = lim_above;
+}
+#endif
+
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
@@ -12601,6 +12679,11 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
       {
          uint8_t s;
          uint8_t a;
+         int stick_below;
+         int stick_above;
+
+         input_menu_stick_limits(joypad_info.axis_threshold,
+               &stick_below, &stick_above);
 
          /* Read input from analog sticks according to settings. */
          for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
@@ -12646,33 +12729,19 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      }
                   }
 
-                  if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff < -joypad_info.axis_threshold)
+                  /* Past the threshold one way or the other: the
+                   * direction of the D-pad, or in a playlist the right
+                   * stick's own bind for that way. The four were
+                   * written out, each dividing the value to compare
+                   * it; the limits are the same comparison's, found
+                   * once (input_menu_stick_limits()). */
+                  if (ret <= stick_below || ret >= stick_above)
                   {
-                     if (playlist)
-                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_MINUS);
-                     else
-                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_UP);
-                  }
-                  else if (a == RETRO_DEVICE_ID_ANALOG_Y && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                  {
-                     if (playlist)
-                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_Y_PLUS);
-                     else
-                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_DOWN);
-                  }
-                  if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff < -joypad_info.axis_threshold)
-                  {
-                     if (playlist)
-                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_MINUS);
-                     else
-                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_LEFT);
-                  }
-                  else if (a == RETRO_DEVICE_ID_ANALOG_X && (float)ret / 0x7fff > joypad_info.axis_threshold)
-                  {
-                     if (playlist)
-                        BIT256_SET_PTR(current_bits, RARCH_ANALOG_RIGHT_X_PLUS);
-                     else
-                        BIT256_SET_PTR(current_bits, RETRO_DEVICE_ID_JOYPAD_RIGHT);
+                     unsigned neg = (ret <= stick_below) ? 1 : 0;
+                     BIT256_SET_PTR(current_bits, playlist
+                           ? INPUT_ANALOG_AXIS_BIND(
+                                 RETRO_DEVICE_INDEX_ANALOG_RIGHT, a) + neg
+                           : (RETRO_DEVICE_ID_JOYPAD_LEFT - 2 * a) + !neg);
                   }
                }
             }
