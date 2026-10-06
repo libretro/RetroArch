@@ -46,6 +46,12 @@ static int hw_mode;
  * frontend then does on the strength of an optional extension is a
  * validation error here. */
 static int hw_own_device;
+/* HARNESS_CORE_HW_VULKAN=3: the core caches its context across a video
+ * reinit (hw_render.cache_context), as Azahar does: the frontend keeps
+ * the instance and device and calls neither context_destroy nor
+ * context_reset. */
+static int hw_cache_context;
+static unsigned hw_resets;
 static const struct retro_hw_render_interface_vulkan *hw_vk;
 static struct retro_hw_render_callback hw_cb;
 static struct retro_vulkan_image hw_image;
@@ -422,6 +428,7 @@ static int hw_ring_send(void)
 
 static void hw_context_reset(void)
 {
+   hw_resets++;
    hw_vk = NULL;
    if (     !environ_cb(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE, (void*)&hw_vk)
          || !hw_vk
@@ -565,6 +572,11 @@ RETRO_API unsigned harness_core_hw_active(void)
    return (hw_mode && hw_vk && hw_have_image) ? 1 : 0;
 }
 
+RETRO_API unsigned harness_core_hw_cached(void) { return hw_cache_context; }
+
+/* context_reset calls so far: a cached context takes none on a reinit. */
+RETRO_API unsigned harness_core_hw_resets(void) { return hw_resets; }
+
 /* Withdraw the image and destroy it; retro_run pushes dupes until
  * harness_core_hw_restore(). */
 RETRO_API unsigned harness_core_hw_withdraw(void)
@@ -602,8 +614,9 @@ void retro_set_environment(retro_environment_t cb)
    environ_cb = cb;
    {
       const char *hw = getenv("HARNESS_CORE_HW_VULKAN");
-      hw_mode       = (hw && *hw) ? 1 : 0;
-      hw_own_device = (hw && *hw == '2') ? 1 : 0;
+      hw_mode          = (hw && *hw) ? 1 : 0;
+      hw_own_device    = (hw && *hw == '2') ? 1 : 0;
+      hw_cache_context = (hw && *hw == '3') ? 1 : 0;
    }
    /* RGB565 by default; XRGB8888 with HARNESS_CORE_XRGB8888 set. The
     * two take different paths through a driver - Vulkan converts
@@ -807,6 +820,7 @@ bool retro_load_game(const struct retro_game_info *game)
       hw_cb.version_major   = VK_MAKE_VERSION(1, 0, 18);
       hw_cb.context_reset   = hw_context_reset;
       hw_cb.context_destroy = hw_context_destroy;
+      hw_cb.cache_context   = hw_cache_context ? true : false;
       /* Refused (another driver): a software core after all. */
       if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_cb))
          hw_mode = 0;

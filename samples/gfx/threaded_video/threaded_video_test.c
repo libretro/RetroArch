@@ -49,6 +49,7 @@
 #include "../../../tasks/task_content.h"
 #ifdef HAVE_VULKAN
 #include <libretro_vulkan.h>
+#include "../../../gfx/common/vulkan_common.h"
 #endif
 
 #ifdef HAVE_X11
@@ -5986,6 +5987,70 @@ static void hwring_on_clear(uint64_t image)
       hwring_overlaps++;
 }
 
+#ifdef HAVE_VULKAN
+/* The Vulkan context the driver is on now; the context driver's data
+ * is replaced by a reinit, so it is fetched again after each. */
+static vulkan_context_t *hwcached_context(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   if (!video_st->context_data || !video_st->current_video_context.get_context_data)
+      return NULL;
+   return (vulkan_context_t*)video_st->current_video_context.get_context_data(
+         video_st->context_data);
+}
+#endif
+
+/* A core that caches its context has the instance reused on a reinit,
+ * never re-probed: what the instance was created with must come back
+ * with it. The ICD here may not offer the colorspace extension, so the
+ * flag is set by hand before the reinit; the lane holds the carry-over,
+ * not the probe. */
+static void lane_hw_cached_context(void)
+{
+#ifdef HAVE_VULKAN
+   unsigned had = failures;
+   unsigned i;
+   vulkan_context_t *ctx;
+
+   if (!hwlane_core_call("harness_core_hw_cached"))
+   {
+      CHECK(0, "hw cached context: the harness core does not cache its context");
+      return;
+   }
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   hwlane_pump(5);
+   CHECK(hwlane_core_call("harness_core_hw_active"),
+         "hw cached context: the core has no image to hand over");
+   ctx = hwcached_context();
+   if (!ctx)
+   {
+      CHECK(0, "hw cached context: no Vulkan context data from the context driver");
+      return;
+   }
+   for (i = 0; i < 3; i++)
+   {
+      int flags       = DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK;
+      unsigned resets = hwlane_core_call("harness_core_hw_resets");
+      ctx->flags     |= VK_CTX_FLAG_HDR_SUPPORT;
+      command_event(CMD_EVENT_REINIT, &flags);
+      hwlane_pump(5);
+      CHECK(hwlane_core_call("harness_core_hw_resets") == resets,
+            "hw cached context: reinit %u called context_reset on a cached context", i + 1);
+      ctx = hwcached_context();
+      CHECK(ctx != NULL, "hw cached context: no context data after reinit %u", i + 1);
+      if (!ctx)
+         return;
+      CHECK(ctx->flags & VK_CTX_FLAG_HDR_SUPPORT,
+            "hw cached context: HDR support lost with the reused instance, reinit %u", i + 1);
+      CHECK(hwlane_core_call("harness_core_hw_active"),
+            "hw cached context: the core's image did not survive reinit %u", i + 1);
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] hw cached context lane (HDR support kept over 3 reinits)\n");
+#endif
+}
+
 static void lane_hw_ring_sync(void)
 {
    unsigned had = failures;
@@ -6233,8 +6298,13 @@ int main(int argc, char *argv[])
    /* The harness core as a hardware core: its own lanes, alone. */
    if (getenv("HARNESS_CORE_HW_VULKAN"))
    {
-      lane_hw_ring_sync();
-      lane_hw_image_lifetime(core_path);
+      if (hwlane_core_call("harness_core_hw_cached"))
+         lane_hw_cached_context();
+      else
+      {
+         lane_hw_ring_sync();
+         lane_hw_image_lifetime(core_path);
+      }
       goto shutdown;
    }
 

@@ -245,6 +245,11 @@ jobs:
           # else. The filter chain's mirror-clamp samplers were.
           HARNESS_CORE_HW_VULKAN=2 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
+          # And as a core that caches its context across a video reinit
+          # (Azahar): the instance comes back from the cache with what
+          # it was created with, HDR support included.
+          HARNESS_CORE_HW_VULKAN=3 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
+          make -C samples/gfx/threaded_video clean
 
   vulkan-validation-sample:
     name: vulkan_validation sample (lavapipe, validation layer)
