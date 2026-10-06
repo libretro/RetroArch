@@ -204,10 +204,10 @@ typedef struct android_input
    int64_t stylus_proximity_until_ns;
    android_stylus_state_t stylus;      /* What the pen is holding (android_stylus_map.h) */
    state_device_t pad_states[MAX_USERS];        /* int alignment */
-   int mouse_x, mouse_y;
+   uint32_t mouse_pos;     /* VIDEO_POS_PACK */
    uint32_t mouse_viewport_screen_pos;   /* VIDEO_POS_PACK */
    uint32_t mouse_viewport_pos;          /* VIDEO_POS_PACK */
-   int mouse_x_delta, mouse_y_delta;
+   uint32_t mouse_delta;   /* VIDEO_POS_PACK */
    int mouse_l, mouse_r, mouse_m, mouse_wu, mouse_wd;
    bool mouse_activated;
    unsigned pads_connected;
@@ -1310,11 +1310,10 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
       }
    }
 
-   android->mouse_x_delta = x_delta;
-   android->mouse_y_delta = y_delta;
+   android->mouse_delta = VIDEO_POS_PACK(x_delta, y_delta);
 
-   if (!x) x = android->mouse_x + android->mouse_x_delta;
-   if (!y) y = android->mouse_y + android->mouse_y_delta;
+   if (!x) x = VIDEO_POS_X(android->mouse_pos) + VIDEO_POS_X(android->mouse_delta);
+   if (!y) y = VIDEO_POS_Y(android->mouse_pos) + VIDEO_POS_Y(android->mouse_delta);
 
    {
       video_driver_translate_coord_viewport_confined_wrap(&vp,
@@ -1329,8 +1328,7 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (y < y_min) y = y_min;
    else if (y > y_max) y = y_max;
 
-   android->mouse_x = x;
-   android->mouse_y = y;
+   android->mouse_pos = VIDEO_POS_PACK(x, y);
 }
 
 /* Touch @i at screen @x, @y: the confined variant for the pointer
@@ -3084,16 +3082,16 @@ static int16_t android_input_state(
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return VIDEO_POS_X(android->mouse_viewport_screen_pos);
 
-                  val = android->mouse_x_delta;
-                  android->mouse_x_delta = 0;
+                  val = VIDEO_POS_X(android->mouse_delta);
+                  VIDEO_POS_PUT_X(android->mouse_delta, 0);
                   /* flush delta after it has been read */
                   return val;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (device == RARCH_DEVICE_MOUSE_SCREEN)
                      return VIDEO_POS_Y(android->mouse_viewport_screen_pos);
 
-                  val = android->mouse_y_delta;
-                  android->mouse_y_delta = 0;
+                  val = VIDEO_POS_Y(android->mouse_delta);
+                  VIDEO_POS_PUT_Y(android->mouse_delta, 0);
                   /* flush delta after it has been read */
                   return val;
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
@@ -3128,13 +3126,13 @@ static int16_t android_input_state(
                   return 0;
                /* Deprecated relative lightgun. */
                case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  val                    = android->mouse_x_delta;
-                  android->mouse_x_delta = 0;
+                  val                    = VIDEO_POS_X(android->mouse_delta);
+                  VIDEO_POS_PUT_X(android->mouse_delta, 0);
                   /* flush delta after it has been read */
                   return val;
                case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  val                    = android->mouse_y_delta;
-                  android->mouse_y_delta = 0;
+                  val                    = VIDEO_POS_Y(android->mouse_delta);
+                  VIDEO_POS_PUT_Y(android->mouse_delta, 0);
                   /* flush delta after it has been read */
                   return val;
                case RETRO_DEVICE_ID_LIGHTGUN_CURSOR:

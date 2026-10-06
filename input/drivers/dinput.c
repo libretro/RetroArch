@@ -126,10 +126,8 @@ struct dinput_input
    struct dinput_pointer_slot pointers[DINPUT_MAX_POINTERS];
    retro_atomic_int_t pointer_order;  /* the window procedure's */
    retro_atomic_int_t msg_flags;      /* enum dinput_msg_flags */
-   int mouse_rel_x;
-   int mouse_rel_y;
-   int mouse_x;
-   int mouse_y;
+   uint32_t mouse_rel;   /* VIDEO_POS_PACK */
+   uint32_t mouse_pos;   /* VIDEO_POS_PACK */
    uint16_t flags;
    uint8_t state[256];
 };
@@ -353,8 +351,7 @@ static void dinput_poll(void *data)
          }
       }
 
-      di->mouse_rel_x = mouse_state.lX;
-      di->mouse_rel_y = mouse_state.lY;
+      di->mouse_rel = VIDEO_POS_PACK(mouse_state.lX, mouse_state.lY);
 
       if (swap_mouse_buttons)
       {
@@ -426,8 +423,7 @@ static void dinput_poll(void *data)
       {
          GetCursorPos(&point);
          ScreenToClient((HWND)video_driver_window_get(), &point);
-         di->mouse_x = point.x;
-         di->mouse_y = point.y;
+         di->mouse_pos = VIDEO_POS_PACK(point.x, point.y);
       }
 
       /* Ignore application focusing mouse clicks */
@@ -529,8 +525,8 @@ static int16_t dinput_lightgun_aiming_state(
    uint32_t res_pos               = 0;
    uint32_t res_screen_pos        = 0;
 
-   int x                       = di->mouse_x;
-   int y                       = di->mouse_y;
+   int x                       = VIDEO_POS_X(di->mouse_pos);
+   int y                       = VIDEO_POS_Y(di->mouse_pos);
 
    if (!dinput_pointer_get(di, idx, &x, &y) && idx > 0)
       return 0; /* idx = 0 has mouse fallback. */
@@ -668,9 +664,9 @@ static int16_t dinput_input_state(
             switch (id)
             {
                case RETRO_DEVICE_ID_MOUSE_X:
-                  return di->mouse_x;
+                  return VIDEO_POS_X(di->mouse_pos);
                case RETRO_DEVICE_ID_MOUSE_Y:
-                  return di->mouse_y;
+                  return VIDEO_POS_Y(di->mouse_pos);
                default:
                   break;
             }
@@ -681,9 +677,9 @@ static int16_t dinput_input_state(
                switch (id)
                {
                   case RETRO_DEVICE_ID_MOUSE_X:
-                     return di->mouse_rel_x;
+                     return VIDEO_POS_X(di->mouse_rel);
                   case RETRO_DEVICE_ID_MOUSE_Y:
-                     return di->mouse_rel_y;
+                     return VIDEO_POS_Y(di->mouse_rel);
                   case RETRO_DEVICE_ID_MOUSE_LEFT:
                      return (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                   case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -739,8 +735,8 @@ static int16_t dinput_input_state(
                uint32_t res_screen_pos        = 0;
                bool touched;
 
-               x               = di->mouse_x;
-               y               = di->mouse_y;
+               x               = VIDEO_POS_X(di->mouse_pos);
+               y               = VIDEO_POS_Y(di->mouse_pos);
                touched         = dinput_pointer_get(di, idx, &x, &y);
                if (!touched && idx > 0) /* idx = 0 has mouse fallback. */
                   return 0;
@@ -830,9 +826,9 @@ static int16_t dinput_input_state(
                   break;
                   /*deprecated*/
                case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  return di->mouse_rel_x;
+                  return VIDEO_POS_X(di->mouse_rel);
                case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  return di->mouse_rel_y;
+                  return VIDEO_POS_Y(di->mouse_rel);
             }
             break;
       }

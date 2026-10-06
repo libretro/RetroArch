@@ -77,28 +77,26 @@ static void input_wl_poll(void *data)
    /* the input queue's events, here on the frontend's thread */
    wayland_input_dispatch(wl);
 
-   wl->mouse.last_x             = wl->mouse.x;
-   wl->mouse.last_y             = wl->mouse.y;
+   wl->mouse.last_pos = wl->mouse.pos;
 
    if (!wl->mouse.focus)
    {
-      wl->mouse.delta_x         = 0;
-      wl->mouse.delta_y         = 0;
+      wl->mouse.delta = 0;
    }
 
    if (wl->gfx->locked_pointer)
    {
       /* Clamp X */
-      if (wl->mouse.x < 0)
-         wl->mouse.x = 0;
-      if (wl->mouse.x >= (int)VIDEO_SCALE_W(wl->gfx->buffer_dims))
-         wl->mouse.x = ((int)VIDEO_SCALE_W(wl->gfx->buffer_dims) - 1);
+      if (VIDEO_POS_X(wl->mouse.pos) < 0)
+         VIDEO_POS_PUT_X(wl->mouse.pos, 0);
+      if (VIDEO_POS_X(wl->mouse.pos) >= (int)VIDEO_SCALE_W(wl->gfx->buffer_dims))
+         VIDEO_POS_PUT_X(wl->mouse.pos, ((int)VIDEO_SCALE_W(wl->gfx->buffer_dims) - 1));
 
       /* Clamp Y */
-      if (wl->mouse.y < 0)
-         wl->mouse.y = 0;
-      if (wl->mouse.y >= (int)VIDEO_SCALE_H(wl->gfx->buffer_dims))
-         wl->mouse.y = ((int)VIDEO_SCALE_H(wl->gfx->buffer_dims) - 1);
+      if (VIDEO_POS_Y(wl->mouse.pos) < 0)
+         VIDEO_POS_PUT_Y(wl->mouse.pos, 0);
+      if (VIDEO_POS_Y(wl->mouse.pos) >= (int)VIDEO_SCALE_H(wl->gfx->buffer_dims))
+         VIDEO_POS_PUT_Y(wl->mouse.pos, ((int)VIDEO_SCALE_H(wl->gfx->buffer_dims) - 1));
    }
 
    for (id = 0; id < MAX_TOUCHES; id++)
@@ -280,12 +278,12 @@ static int16_t input_wl_state(
                   wl->mouse.wd = false;
                   return state;
                case RETRO_DEVICE_ID_MOUSE_X:
-                  x = screen ? wl->mouse.x : wl->mouse.delta_x;
-                  wl->mouse.delta_x = 0;
+                  x = screen ? VIDEO_POS_X(wl->mouse.pos) : VIDEO_POS_X(wl->mouse.delta);
+                  VIDEO_POS_PUT_X(wl->mouse.delta, 0);
                   return x;
                case RETRO_DEVICE_ID_MOUSE_Y:
-                  y = screen ? wl->mouse.y : wl->mouse.delta_y;
-                  wl->mouse.delta_y = 0;
+                  y = screen ? VIDEO_POS_Y(wl->mouse.pos) : VIDEO_POS_Y(wl->mouse.delta);
+                  VIDEO_POS_PUT_Y(wl->mouse.delta, 0);
                   return y;
                case RETRO_DEVICE_ID_MOUSE_LEFT:
                   return wl->mouse.left;
@@ -329,7 +327,7 @@ static int16_t input_wl_state(
             uint32_t res_screen_pos        = 0;
 
             if (video_driver_translate_coord_viewport_confined_wrap(&vp,
-                        wl->mouse.x, wl->mouse.y,
+                        VIDEO_POS_X(wl->mouse.pos), VIDEO_POS_Y(wl->mouse.pos),
                         &res_pos, &res_screen_pos))
             {
                if (screen)
@@ -366,15 +364,15 @@ static int16_t input_wl_state(
             uint32_t res_screen_pos     = 0;
 
             if (video_driver_translate_coord_viewport_wrap(&vp,
-                        wl->mouse.x, wl->mouse.y,
+                        VIDEO_POS_X(wl->mouse.pos), VIDEO_POS_Y(wl->mouse.pos),
                         &res_pos, &res_screen_pos))
             {
                switch (id)
                {
                   case RETRO_DEVICE_ID_LIGHTGUN_X:
-                     return wl->mouse.delta_x;
+                     return VIDEO_POS_X(wl->mouse.delta);
                   case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                     return wl->mouse.delta_y;
+                     return VIDEO_POS_Y(wl->mouse.delta);
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
                      return VIDEO_POS_X(res_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:

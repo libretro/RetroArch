@@ -45,10 +45,8 @@ typedef struct sdl2_input
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
    linux_illuminance_sensor_t *illuminance_sensor;
 #endif
-   int mouse_x;
-   int mouse_y;
-   int mouse_abs_x;
-   int mouse_abs_y;
+   uint32_t mouse_rel;   /* VIDEO_POS_PACK */
+   uint32_t mouse_abs;   /* VIDEO_POS_PACK */
    int mouse_l;
    int mouse_r;
    int mouse_m;
@@ -304,19 +302,19 @@ static int16_t sdl2_input_state(
                   /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
                    * RETRO_DEVICE_MOUSE stays relative for cores. */
                   return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_x : sdl->mouse_x;
+                        ? VIDEO_POS_X(sdl->mouse_abs) : VIDEO_POS_X(sdl->mouse_rel);
                case RETRO_DEVICE_ID_MOUSE_Y:
                   return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_y : sdl->mouse_y;
+                        ? VIDEO_POS_Y(sdl->mouse_abs) : VIDEO_POS_Y(sdl->mouse_rel);
 #else
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
                   return sdl->mouse_wu;
                case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
                   return sdl->mouse_wd;
                case RETRO_DEVICE_ID_MOUSE_X:
-                  return sdl->mouse_x;
+                  return VIDEO_POS_X(sdl->mouse_rel);
                case RETRO_DEVICE_ID_MOUSE_Y:
-                  return sdl->mouse_y;
+                  return VIDEO_POS_Y(sdl->mouse_rel);
 #endif
                case RETRO_DEVICE_ID_MOUSE_MIDDLE:
                   return sdl->mouse_m;
@@ -342,7 +340,7 @@ static int16_t sdl2_input_state(
             uint32_t res_screen_pos        = 0;
 
             if (video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+                        &vp, VIDEO_POS_X(sdl->mouse_abs), VIDEO_POS_Y(sdl->mouse_abs),
                         &res_pos, &res_screen_pos))
             {
                if (screen)
@@ -374,7 +372,7 @@ static int16_t sdl2_input_state(
          uint32_t res_screen_pos        = 0;
 
          if (video_driver_translate_coord_viewport_wrap(
-                     &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
+                     &vp, VIDEO_POS_X(sdl->mouse_abs), VIDEO_POS_Y(sdl->mouse_abs),
                      &res_pos, &res_screen_pos))
 
          switch (id)
@@ -386,9 +384,9 @@ static int16_t sdl2_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
             case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return sdl->mouse_x;
+               return VIDEO_POS_X(sdl->mouse_rel);
             case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return sdl->mouse_y;
+               return VIDEO_POS_Y(sdl->mouse_rel);
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return sdl->mouse_l;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -490,9 +488,12 @@ static void sdl2_input_grab_mouse(void *data, bool state)
 
 static void sdl2_poll_mouse(sdl2_input_t *sdl)
 {
-   Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   int rx = 0, ry = 0, ax = 0, ay = 0;
+   Uint8 btn     = SDL_GetRelativeMouseState(&rx, &ry);
 
-   SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
+   SDL_GetMouseState(&ax, &ay);
+   sdl->mouse_rel = VIDEO_POS_PACK(rx, ry);
+   sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
    sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;

@@ -119,10 +119,8 @@ typedef struct switch_input
    bool keyboard_state[SWITCH_MAX_SCANCODE + 1];
 
    /* physical mouse */
-   int32_t mouse_x;
-   int32_t mouse_y;
-   int32_t mouse_x_delta;
-   int32_t mouse_y_delta;
+   uint32_t mouse_pos;     /* VIDEO_POS_PACK */
+   uint32_t mouse_delta;   /* VIDEO_POS_PACK */
    int32_t mouse_wheel;
    bool mouse_button_left;
    bool mouse_button_right;
@@ -268,11 +266,9 @@ static void switch_input_poll(void *data)
    sw->mouse_previous_buttons = mouse_state.buttons;
 
    /* physical mouse position */
-   sw->mouse_x_delta = mouse_state.delta_x;
-   sw->mouse_y_delta = mouse_state.delta_y;
+   sw->mouse_delta = VIDEO_POS_PACK(mouse_state.delta_x, mouse_state.delta_y);
 
-   sw->mouse_x       = mouse_state.x;
-   sw->mouse_y       = mouse_state.y;
+   sw->mouse_pos = VIDEO_POS_PACK(mouse_state.x, mouse_state.y);
 
    /* touch mouse events
     * switch_handle_touch_mouse will update sw->mouse_* variables
@@ -281,15 +277,15 @@ static void switch_input_poll(void *data)
     * supported touch gestures */
    switch_handle_touch_mouse(sw);
 
-   if (sw->mouse_x < 0)
-      sw->mouse_x  = 0;
-   else if (sw->mouse_x > MOUSE_MAX_X)
-      sw->mouse_x  = MOUSE_MAX_X;
+   if (VIDEO_POS_X(sw->mouse_pos) < 0)
+      VIDEO_POS_PUT_X(sw->mouse_pos, 0);
+   else if (VIDEO_POS_X(sw->mouse_pos) > MOUSE_MAX_X)
+      VIDEO_POS_PUT_X(sw->mouse_pos, MOUSE_MAX_X);
 
-   if (sw->mouse_y < 0) 
-      sw->mouse_y  = 0;
-   else if (sw->mouse_y > MOUSE_MAX_Y)
-      sw->mouse_y  = MOUSE_MAX_Y;
+   if (VIDEO_POS_Y(sw->mouse_pos) < 0)
+      VIDEO_POS_PUT_Y(sw->mouse_pos, 0);
+   else if (VIDEO_POS_Y(sw->mouse_pos) > MOUSE_MAX_Y)
+      VIDEO_POS_PUT_Y(sw->mouse_pos, MOUSE_MAX_Y);
 
    sw->mouse_wheel = mouse_state.wheel_delta_y;
 }
@@ -335,18 +331,18 @@ static int16_t switch_input_state(
                   return sw->mouse_button_middle;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (screen)
-                     return sw->mouse_x;
+                     return VIDEO_POS_X(sw->mouse_pos);
 
-                  val                = sw->mouse_x_delta;
-                  sw->mouse_x_delta  = 0;
+                  val                = VIDEO_POS_X(sw->mouse_delta);
+                  VIDEO_POS_PUT_X(sw->mouse_delta, 0);
                   /* flush delta after it has been read */
                   break;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (screen)
-                     return sw->mouse_y;
+                     return VIDEO_POS_Y(sw->mouse_pos);
 
-                  val                = sw->mouse_y_delta;
-                  sw->mouse_y_delta  = 0;
+                  val                = VIDEO_POS_Y(sw->mouse_delta);
+                  VIDEO_POS_PUT_Y(sw->mouse_delta, 0);
                   /* flush delta after it has been read */
                   break;
                case RETRO_DEVICE_ID_MOUSE_WHEELUP:
@@ -607,10 +603,8 @@ static void switch_process_touch_mouse_finger_up(switch_input_t *sw, TouchEvent 
                int x;
                int y;
                switch_normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
-               sw->mouse_x_delta = x - sw->mouse_x;
-               sw->mouse_y_delta = y - sw->mouse_y;
-               sw->mouse_x       = x;
-               sw->mouse_y       = y;
+               sw->mouse_delta = VIDEO_POS_PACK(x - VIDEO_POS_X(sw->mouse_pos), y - VIDEO_POS_Y(sw->mouse_pos));
+               sw->mouse_pos = VIDEO_POS_PACK(x, y);
             }
             simulated_button = TOUCH_MOUSE_BUTTON_LEFT;
             /* need to raise the button later */
@@ -716,10 +710,8 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
       int x;
       int y;
       switch_normalized_to_screen_xy(&x, &y, event->tfinger.x, event->tfinger.y);
-      sw->mouse_x_delta = x - sw->mouse_x;
-      sw->mouse_y_delta = y - sw->mouse_y;
-      sw->mouse_x       = x;
-      sw->mouse_y       = y;
+      sw->mouse_delta = VIDEO_POS_PACK(x - VIDEO_POS_X(sw->mouse_pos), y - VIDEO_POS_Y(sw->mouse_pos));
+      sw->mouse_pos = VIDEO_POS_PACK(x, y);
    }
    else
    {
@@ -734,10 +726,8 @@ static void switch_process_touch_mouse_finger_motion(switch_input_t *sw, TouchEv
       int y_rel     = sw->hires_dy / 256;
       if (x_rel || y_rel)
       {
-         sw->mouse_x_delta  = x_rel;
-         sw->mouse_y_delta  = y_rel;
-         sw->mouse_x       += x_rel;
-         sw->mouse_y       += y_rel;
+         sw->mouse_delta = VIDEO_POS_PACK(x_rel, y_rel);
+         VIDEO_POS_ADD(sw->mouse_pos, x_rel, y_rel);
       }
       sw->hires_dx         %= 256;
       sw->hires_dy         %= 256;
@@ -810,8 +800,7 @@ static void* switch_input_init(const char *joypad_driver)
    for (i = 0; i <= SWITCH_MAX_SCANCODE; i++)
       sw->keyboard_state[i]     = false;
 
-   sw->mouse_x                  = 0;
-   sw->mouse_y                  = 0;
+   sw->mouse_pos = 0;
    sw->mouse_previous_buttons   = 0;
 
    /* touch mouse init */

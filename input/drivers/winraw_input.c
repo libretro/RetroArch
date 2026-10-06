@@ -176,8 +176,7 @@ struct winraw_pointer_status
 {
    struct winraw_pointer_status *next;
    int pointer_id;
-   int pointer_x;
-   int pointer_y;
+   uint32_t pointer_pos;   /* VIDEO_POS_PACK */
 };
 
 /* Key events held until the end of a poll. A frame's worth is a
@@ -2764,8 +2763,8 @@ static int16_t winraw_input_state(
 
                if (check_pos)
                {
-                  x            = check_pos->pointer_x;
-                  y            = check_pos->pointer_y;
+                  x            = VIDEO_POS_X(check_pos->pointer_pos);
+                  y            = VIDEO_POS_Y(check_pos->pointer_pos);
                   pointer_down = true;
                }
 

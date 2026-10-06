@@ -50,8 +50,8 @@ void gx_joypad_read_mouse(unsigned port,
 
 typedef struct
 {
-   int x_abs, y_abs;
-   int x_last, y_last;
+   uint32_t abs_pos;    /* VIDEO_POS_PACK */
+   uint32_t last_pos;   /* VIDEO_POS_PACK */
    uint32_t button;
 } gx_input_mouse_t;
 #endif
@@ -265,10 +265,10 @@ static int16_t rvl_input_state(
             unsigned input_mouse_scale = input_config_get_mouse_scale();
             int x_scale                = input_mouse_scale;
             int y_scale                = input_mouse_scale;
-            int x                      = (gx->mouse[joy_idx].x_abs
-                  - gx->mouse[joy_idx].x_last) * x_scale;
-            int y                      = (gx->mouse[joy_idx].y_abs
-                  - gx->mouse[joy_idx].y_last) * y_scale;
+            int x                      = (VIDEO_POS_X(gx->mouse[joy_idx].abs_pos)
+                  - VIDEO_POS_X(gx->mouse[joy_idx].last_pos)) * x_scale;
+            int y                      = (VIDEO_POS_Y(gx->mouse[joy_idx].abs_pos)
+                  - VIDEO_POS_Y(gx->mouse[joy_idx].last_pos)) * y_scale;
 
             switch (id)
             {
@@ -293,8 +293,8 @@ static int16_t rvl_input_state(
             uint16_t joy_idx            = joypad_info->joy_idx;
             uint32_t res_pos               = 0;
             uint32_t res_screen_pos        = 0;
-            int16_t x                   = gx->mouse[joy_idx].x_abs;
-            int16_t y                   = gx->mouse[joy_idx].y_abs;
+            int16_t x                   = VIDEO_POS_X(gx->mouse[joy_idx].abs_pos);
+            int16_t y                   = VIDEO_POS_Y(gx->mouse[joy_idx].abs_pos);
 
             /* Pre-patch had a video_driver_get_viewport_info(&vp)
              * call here, immediately followed by six lines that
@@ -366,10 +366,10 @@ static void rvl_input_poll(void *data)
       return;
    for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      gx->mouse[i].x_last = gx->mouse[i].x_abs;
-      gx->mouse[i].y_last = gx->mouse[i].y_abs;
-      gx_joypad_read_mouse(i, &gx->mouse[i].x_abs, &gx->mouse[i].y_abs,
-            &gx->mouse[i].button);
+      int x = 0, y = 0;
+      gx->mouse[i].last_pos = gx->mouse[i].abs_pos;
+      gx_joypad_read_mouse(i, &x, &y, &gx->mouse[i].button);
+      gx->mouse[i].abs_pos  = VIDEO_POS_PACK(x, y);
    }
 #ifdef GX_KEYBOARD
    kbd_poll(gx);

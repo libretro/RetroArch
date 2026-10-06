@@ -78,12 +78,9 @@ typedef struct rwebinput_mouse_states
    double pending_scroll_y;
    double scroll_x;
    double scroll_y;
-   int x;
-   int y;
-   int pending_delta_x;
-   int pending_delta_y;
-   int delta_x;
-   int delta_y;
+   uint32_t pos;             /* VIDEO_POS_PACK */
+   uint32_t pending_delta;   /* VIDEO_POS_PACK */
+   uint32_t delta;           /* VIDEO_POS_PACK */
    uint8_t buttons;
 } rwebinput_mouse_state_t;
 
@@ -308,8 +305,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    // note: movementX/movementY are pre-scaled in chromium (but not firefox)
    // see https://github.com/w3c/pointerlock/issues/42
 
-   rwebinput->mouse.pending_delta_x += mouse_event->movementX;
-   rwebinput->mouse.pending_delta_y += mouse_event->movementY;
+   VIDEO_POS_ADD(rwebinput->mouse.pending_delta, mouse_event->movementX, mouse_event->movementY);
 
    if (rwebinput->pointerlock_active)
    {
@@ -319,26 +315,24 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
       video_width = VIDEO_SCALE_W(out_dims);
       video_height = VIDEO_SCALE_H(out_dims);
 
-      rwebinput->mouse.x += mouse_event->movementX;
-      rwebinput->mouse.y += mouse_event->movementY;
+      VIDEO_POS_ADD(rwebinput->mouse.pos, mouse_event->movementX, mouse_event->movementY);
 
       /* Clamp X */
-      if (rwebinput->mouse.x < 0)
-         rwebinput->mouse.x = 0;
-      if (rwebinput->mouse.x >= video_width)
-         rwebinput->mouse.x = (int)(video_width - 1);
+      if (VIDEO_POS_X(rwebinput->mouse.pos) < 0)
+         VIDEO_POS_PUT_X(rwebinput->mouse.pos, 0);
+      if (VIDEO_POS_X(rwebinput->mouse.pos) >= video_width)
+         VIDEO_POS_PUT_X(rwebinput->mouse.pos, (int)(video_width - 1));
 
       /* Clamp Y */
-      if (rwebinput->mouse.y < 0)
-         rwebinput->mouse.y = 0;
-      if (rwebinput->mouse.y >= video_height)
-         rwebinput->mouse.y = (int)(video_height - 1);
+      if (VIDEO_POS_Y(rwebinput->mouse.pos) < 0)
+         VIDEO_POS_PUT_Y(rwebinput->mouse.pos, 0);
+      if (VIDEO_POS_Y(rwebinput->mouse.pos) >= video_height)
+         VIDEO_POS_PUT_Y(rwebinput->mouse.pos, (int)(video_height - 1));
    }
    else
    {
       double dpr = platform_emscripten_get_dpr();
-      rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
-      rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
+      rwebinput->mouse.pos = VIDEO_POS_PACK((int)(mouse_event->targetX * dpr), (int)(mouse_event->targetY * dpr));
    }
 
    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
@@ -579,9 +573,9 @@ static int16_t rwebinput_mouse_state(
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return (int16_t)(screen ? mouse->x : mouse->delta_x);
+         return (int16_t)(screen ? VIDEO_POS_X(mouse->pos) : VIDEO_POS_X(mouse->delta));
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return (int16_t)(screen ? mouse->y : mouse->delta_y);
+         return (int16_t)(screen ? VIDEO_POS_Y(mouse->pos) : VIDEO_POS_Y(mouse->delta));
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -733,8 +727,8 @@ static int16_t rwebinput_input_state(
             }
             else if (idx == 0)
             {
-               x = mouse->x;
-               y = mouse->y;
+               x = VIDEO_POS_X(mouse->pos);
+               y = VIDEO_POS_Y(mouse->pos);
                pointer_down = !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
                pointer_count = 1;
             }
@@ -926,10 +920,8 @@ static void rwebinput_input_poll(void *data)
 
    rwebinput->keyboard.count         = 0;
 
-   rwebinput->mouse.delta_x          = rwebinput->mouse.pending_delta_x;
-   rwebinput->mouse.delta_y          = rwebinput->mouse.pending_delta_y;
-   rwebinput->mouse.pending_delta_x  = 0;
-   rwebinput->mouse.pending_delta_y  = 0;
+   rwebinput->mouse.delta = rwebinput->mouse.pending_delta;
+   rwebinput->mouse.pending_delta = 0;
 
    rwebinput->mouse.scroll_x         = rwebinput->mouse.pending_scroll_x;
    rwebinput->mouse.scroll_y         = rwebinput->mouse.pending_scroll_y;
