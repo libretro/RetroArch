@@ -197,10 +197,8 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
 struct input_pointer
 {
    int id;
-   int16_t x;
-   int16_t y;
-   int16_t full_x;
-   int16_t full_y;
+   uint32_t pos;        /* x, y in the viewport: VIDEO_POS_PACK */
+   uint32_t full_pos;   /* x, y in the whole screen */
    bool isInContact;
 };
 
@@ -695,10 +693,8 @@ void App::OnPointer(CoreWindow const& sender, PointerEventArgs const& args)
             &vp,
             ConvertDipsToPixels(args.CurrentPoint().Position().X, dpi),
             ConvertDipsToPixels(args.CurrentPoint().Position().Y, dpi),
-            &uwp_next_input.touch[i].x,
-            &uwp_next_input.touch[i].y,
-            &uwp_next_input.touch[i].full_x,
-            &uwp_next_input.touch[i].full_y);
+            &uwp_next_input.touch[i].pos,
+            &uwp_next_input.touch[i].full_pos);
 
       uwp_next_input.touch[i].isInContact = args.CurrentPoint().IsInContact();
 
@@ -1133,13 +1129,13 @@ extern "C" {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return screen
-               ? uwp_current_input.touch[idx].full_x
-               : uwp_current_input.touch[idx].x;
+            return VIDEO_POS_X(screen
+               ? uwp_current_input.touch[idx].full_pos
+               : uwp_current_input.touch[idx].pos);
          case RETRO_DEVICE_ID_POINTER_Y:
-            return screen
-               ? uwp_current_input.touch[idx].full_y
-               : uwp_current_input.touch[idx].y;
+            return VIDEO_POS_Y(screen
+               ? uwp_current_input.touch[idx].full_pos
+               : uwp_current_input.touch[idx].pos);
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             return uwp_current_input.touch[idx].isInContact;
          case RETRO_DEVICE_ID_POINTER_COUNT:
