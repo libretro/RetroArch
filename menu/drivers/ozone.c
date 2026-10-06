@@ -3877,16 +3877,13 @@ OZONE_NOINLINE static void ozone_draw_sidebar(
 
          gfx_display_set_alpha(col, ozone->animations.alpha);
 
-         /* Icon — if node->icon is still 0 (explore view entry whose
-          * cursor texture hadn't loaded during list build), retry now. */
+         /* node->icon holds only a texture the node owns; an entry
+          * without one (an explore view, a playlist icon not landed)
+          * draws the cursor, which stays the icon set's. */
          {
             uintptr_t icon_tex = node->icon;
-            if (!icon_tex
-                  && icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR])
-            {
-               icon_tex   = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
-               node->icon = icon_tex;
-            }
+            if (!icon_tex)
+               icon_tex = icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
             ozone_draw_icon(
                   p_disp,
                   userdata,
@@ -5430,7 +5427,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
          if (node->console_name)
             free(node->console_name);
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
-         node->icon = ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CURSOR];
       }
    }
 }

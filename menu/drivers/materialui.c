@@ -2353,6 +2353,8 @@ static void materialui_context_reset_playlist_icons(
 static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
 {
    size_t i;
+   /* Icons still uploading into the array land nowhere */
+   mui_icon_load_gen++;
    for (i = 0; i < mui->textures.playlist.size; i++)
    {
       /* Ensure that any textures are unloaded
@@ -9851,6 +9853,8 @@ static void materialui_context_destroy(void *data)
 
    /* Free background/wallpaper textures */
    materialui_context_bg_destroy(mui);
+
+   gfx_display_deinit_white_texture();
 
    /* Destroy screensaver context */
    menu_screensaver_context_destroy(mui->screensaver);

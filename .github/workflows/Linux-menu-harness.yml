@@ -24,6 +24,8 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
+      - 'samples/menu/menu_icon_ownership/**'
+      - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
@@ -42,6 +44,8 @@ on:
       - 'samples/menu/playlist_nav/**'
       - 'samples/menu/nav_repeat_stall/**'
       - 'samples/menu/mouse_click/**'
+      - 'samples/menu/menu_icon_ownership/**'
+      - 'gfx/gfx_display.c'
       - 'runloop.c'
       - 'samples/menu/network_settings/**'
       - 'intl/msg_hash_lbl.h'
@@ -218,6 +222,25 @@ jobs:
           samples/menu/nav_repeat_stall/build.sh
           ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
           make -C samples/menu/nav_repeat_stall clean
+
+      - name: Build and run menu_icon_ownership_test
+        shell: bash
+        run: |
+          set -eu
+          # Every texture handle the menu drivers hold, accounted for
+          # against a counting null driver: a handle unloaded twice or
+          # still live at deinit fails the lane. Ozone's sidebar wrote
+          # the shared cursor texture into a playlist node whose own
+          # icon had not landed, and the context destroy then freed the
+          # cursor twice - a heap-corruption crash at startup under
+          # threaded video. MaterialUI's playlist icon array could be
+          # rebuilt under a decode still in flight. Shares the non-Qt
+          # build made above; one binary, one run per menu driver.
+          samples/menu/menu_icon_ownership/build.sh
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test ozone
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test xmb
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test materialui
+          make -C samples/menu/menu_icon_ownership clean
 
       - name: Build and run menu_mouse_click_test
         shell: bash

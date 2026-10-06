@@ -3763,7 +3763,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
          if (node->console_name)
             free(node->console_name);
          node->console_name = strdup(path + strlen(msg_hash_to_str(MENU_ENUM_LABEL_EXPLORE_VIEW)) + 2);
-         node->icon         = xmb->textures.list[XMB_TEXTURE_CURSOR];
       }
    }
 
@@ -9623,15 +9622,10 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
             float y;
             float scale_factor;
 
-            /* Fallback for nodes whose icon hasn't resolved yet
-             * (e.g. .lvw nodes when CURSOR wasn't loaded during
-             * list build, or .lpl nodes with an in-flight async
-             * load). Use the shared CURSOR texture for this frame
-             * only — do NOT write it back into node->icon, or
-             * xmb_context_destroy_horizontal_list will later
-             * double-free it when it unloads the node's icon
-             * alongside tex_list[CURSOR]. */
-            if (!texture && tex_list[XMB_TEXTURE_CURSOR])
+            /* node->icon holds only a texture the node owns; an
+             * explore view, or a playlist whose icon has not landed,
+             * draws the cursor, which stays the list's. */
+            if (!texture)
                texture = tex_list[XMB_TEXTURE_CURSOR];
 
             x                        = xmb->x + xmb->categories_x_pos
