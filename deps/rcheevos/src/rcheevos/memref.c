@@ -2,6 +2,11 @@
 
 #include <stdlib.h> /* malloc/realloc */
 #include <string.h> /* memcpy */
+#include <float.h>  /* FLT_RADIX/FLT_MANT_DIG/FLT_MAX_EXP */
+
+#if FLT_RADIX == 2 && FLT_MANT_DIG == 24 && FLT_MAX_EXP == 128
+#define RC_FLOAT_IS_BINARY32
+#endif
 
 #define MEMREF_PLACEHOLDER_ADDRESS 0xFFFFFFFF
 
@@ -322,11 +327,13 @@ int rc_parse_memref(const char** memaddr, uint8_t* size, uint32_t* address) {
   return RC_OK;
 }
 
+#ifdef RC_FLOAT_IS_BINARY32
 static float rc_float_from_bits(uint32_t bits) {
   float result;
   memcpy(&result, &bits, sizeof(result));
   return result;
 }
+#endif
 
 static float rc_build_float(uint32_t mantissa_bits, int32_t exponent, int sign) {
   /* 32-bit float has a 23-bit mantissa and 8-bit exponent */
@@ -336,12 +343,16 @@ static float rc_build_float(uint32_t mantissa_bits, int32_t exponent, int sign) 
 
   if (exponent > 127) {
     /* exponent above 127 is a special number: infinity when the mantissa is
-     * zero, NaN otherwise. Assemble it from the IEEE encoding so the result
-     * does not depend on the compiler's floating-point mode. */
+     * zero, NaN otherwise */
+#ifdef RC_FLOAT_IS_BINARY32
     uint32_t bits = 0x7F800000U | (mantissa_bits == 0 ? 0 : 0x00400000U);
     if (sign)
       bits |= 0x80000000U;
     return rc_float_from_bits(bits);
+#else
+    /* no inf/NaN encoding in this float format: the largest value stands in */
+    dbl = FLT_MAX;
+#endif
   }
   else if (exponent > 0) {
     /* exponent from 1 to 127 is a number greater than 1 */
