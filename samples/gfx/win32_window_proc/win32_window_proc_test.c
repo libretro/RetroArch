@@ -153,6 +153,24 @@ static void script(HWND hwnd)
    send_msg(hwnd, "WM_CLOSE",              WM_CLOSE,      0, 0);
 }
 
+/* The focus loss a window that has the focus gets as it is destroyed,
+ * sent as the desktop would, ahead of its WM_DESTROY: the window is
+ * subclassed for its last moments. */
+static WNDPROC  focus_loss_chain;
+static unsigned focus_loss_reached; /* the input driver, from that loss */
+
+static LRESULT CALLBACK focus_loss_proc(HWND hwnd, UINT message,
+      WPARAM wparam, LPARAM lparam)
+{
+   if (message == WM_DESTROY)
+   {
+      unsigned before = stub_input_focus_msgs;
+      CallWindowProc(focus_loss_chain, hwnd, WM_KILLFOCUS, 0, 0);
+      focus_loss_reached += stub_input_focus_msgs - before;
+   }
+   return CallWindowProc(focus_loss_chain, hwnd, message, wparam, lparam);
+}
+
 int main(int argc, char **argv)
 {
    int fam, in, takes;
@@ -411,6 +429,80 @@ int main(int argc, char **argv)
          trace_on = true;
          trace("== fullscreen toggles on one window: no window\n");
       }
+   }
+#endif
+
+#ifndef W32T_OLD
+   /* A window left up for the next driver, which does not take it: a
+    * Vulkan window kept, a Direct3D window made, the kept one released
+    * once the new one is up. The kept window has the focus as it goes
+    * down - a thread's focus window is its own - and the WM_KILLFOCUS
+    * DestroyWindow sends it comes after the new window's WM_SETFOCUS.
+    * The input driver keeps one focus for the process, so that late
+    * loss would clear it. Nothing from the window on its way out may
+    * reach the input driver. */
+   {
+      WNDCLASSEX wndclass;
+      HWND kept = NULL, next = NULL;
+      bool was_kept = false;
+      unsigned during;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_VK, IN_WINRAW);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         kept = win32_get_window();
+         pump();
+         /* as a driver leaves it: kept, not torn down */
+         was_kept = win32_window_keep();
+         pump();
+         /* The kept window has the focus as it goes: on a desktop
+          * DestroyWindow sends the focus window WM_KILLFOCUS on its
+          * way to WM_DESTROY. No window is the foreground one on a
+          * headless server, so the loss is sent by a subclass as the
+          * window is destroyed, where the desktop would send it. */
+         focus_loss_chain   = (WNDPROC)SetWindowLongPtr(kept, GWLP_WNDPROC,
+               (LONG_PTR)focus_loss_proc);
+         focus_loss_reached = 0;
+
+         win32_window_reset();
+         win32_monitor_init();
+         memset(&wndclass, 0, sizeof(wndclass));
+         wndclass.lpfnWndProc = proc_for(FAM_D3D, IN_WINRAW);
+         if (     win32_window_init(&wndclass, true, NULL)
+               && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+         {
+            next = win32_get_window();
+            pump();
+         }
+
+         win32_window_release_kept();
+         pump();
+         during = focus_loss_reached;
+
+         if (next)
+         {
+            win32_monitor_from_window();
+            win32_destroy_window();
+            pump();
+         }
+      }
+
+      trace_on = true;
+      trace("== a window left up and not taken\n");
+      trace(" kept %s, next made %s, kept gone %s\n",
+            was_kept ? "yes" : "no", next ? "yes" : "no",
+            (kept && !IsWindow(kept)) ? "yes" : "no");
+      trace(" focus messages from the window going down reached the input driver: %s\n",
+            during ? "yes" : "no");
    }
 #endif
 

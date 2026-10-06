@@ -96,8 +96,12 @@ bool dinput_handle_message(void *dinput, UINT message,
    return stub_input_takes;
 }
 
+unsigned stub_input_focus_msgs;
+
 bool winraw_handle_message(UINT message, WPARAM wParam, LPARAM lParam)
 {
+   if (message == WM_SETFOCUS || message == WM_KILLFOCUS)
+      stub_input_focus_msgs++;
    trace("  winraw_handle_message msg=0x%04x wparam=0x%llx -> %d\n",
          (unsigned)message, (unsigned long long)wParam,
          (int)stub_input_takes);

@@ -916,6 +916,64 @@ static void lane_viewport_publish(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the context API behind the wrapper                           */
+/*   A driver without a context driver of its own - Direct3D - is     */
+/*   known by its ident, and the frontend asks the current driver.    */
+/*   Behind the wrapper that is the wrapper, whose ident is not the   */
+/*   driver's, so the API read as NONE and the GPU names keyed on     */
+/*   the API were not found. The query sees the wrapped driver.       */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t        apilane_driver;
+static const video_driver_t *apilane_inner;
+
+static void lane_context_api_behind_wrapper(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   struct string_list *names;
+   union string_list_elem_attr attr;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "context api lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+
+   video_thread_wait_idle();
+   apilane_inner       = thr->driver;
+   apilane_driver      = *thr->driver;
+   apilane_driver.ident = "d3d11";
+   set_driver(thr, &apilane_driver);
+
+   CHECK(!strcmp(video_driver_get_ident(), "d3d11"),
+         "ident behind the wrapper: %s", video_driver_get_ident());
+   CHECK(video_context_driver_get_api() == GFX_CTX_DIRECT3D11_API,
+         "context api behind the wrapper: %d, wanted %d",
+         (int)video_context_driver_get_api(), (int)GFX_CTX_DIRECT3D11_API);
+
+   /* and the GPU names the driver published are found by it */
+   attr.i = 0;
+   names  = string_list_new();
+   string_list_append(names, "harness adapter", attr);
+   video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, names);
+   CHECK(video_driver_get_gpu_api_devices(video_context_driver_get_api()) == names,
+         "the GPU names are not found by the api the wrapper reports");
+   video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, NULL);
+   string_list_free(names);
+
+   video_thread_wait_idle();
+   set_driver(thr, apilane_inner);
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] context api behind the wrapper lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: presenter repeats                                            */
 /*   With video_threaded_present_repeat on and a driver that can      */
 /*   present its last frame again (the null driver can), a stalled    */
@@ -6317,6 +6375,7 @@ int main(int argc, char *argv[])
    lane_stats_snapshot();
    lane_stat_text_bounds();
    lane_viewport_publish();
+   lane_context_api_behind_wrapper();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

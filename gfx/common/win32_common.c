@@ -1422,7 +1422,14 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
       win32_clip_window((route & WIN32_ROUTE_CLIP_ON) != 0);
 #endif
 
+   /* A window left up for a driver that did not take it loses the
+    * focus as it goes down, after the window that replaced it has
+    * taken the focus; the input driver keeps one focus for the
+    * process, and that late loss would clear it until the next
+    * Alt-Tab. Nothing from a window on its way out reaches the
+    * input driver. */
    if (     (route & WIN32_ROUTE_INPUT)
+         && hwnd != win32_retiring_hwnd
          && win32_wnd_input_message(message, wparam, lparam))
       return 0;
 

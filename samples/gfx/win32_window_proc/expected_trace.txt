@@ -2698,3 +2698,6 @@
  a window grown to fit a bigger core: grew yes, driver told its real size yes
  exclusive fullscreen left to a restart: yes
  destroyed: window gone
+== a window left up and not taken
+ kept yes, next made yes, kept gone yes
+ focus messages from the window going down reached the input driver: no

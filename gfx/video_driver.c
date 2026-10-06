@@ -5754,7 +5754,6 @@ bool video_context_driver_set_flags(gfx_ctx_flags_t *flags)
 enum gfx_ctx_api video_context_driver_get_api(void)
 {
    video_driver_state_t *video_st   = &video_driver_st;
-   const video_driver_t *vid        = video_st->current_video;
    const gfx_ctx_driver_t *ctx      = &video_st->current_video_context;
    void *ctx_data                   = (void*)video_st->context_data;
    enum gfx_ctx_api         ctx_api = ctx_data
@@ -5762,7 +5761,10 @@ enum gfx_ctx_api video_context_driver_get_api(void)
       : GFX_CTX_NONE;
    if (ctx_api == GFX_CTX_NONE)
    {
-      const char *video_ident  = (vid) ? vid->ident : NULL;
+      /* The driver behind the threaded wrapper, not the wrapper */
+      const char *video_ident  = video_driver_get_ident();
+      if (!video_ident)
+         return GFX_CTX_NONE;
       if (string_starts_with_size(video_ident, "d3d", STRLEN_CONST("d3d")))
       {
          if (!strcmp(video_ident, "d3d9_hlsl"))

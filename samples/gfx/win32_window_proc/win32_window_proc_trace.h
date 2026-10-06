@@ -10,6 +10,8 @@ extern bool   stub_input_takes;
 extern bool   trace_on;
 /* which of the video families' creation steps ran: 1 GL, 2 Vulkan */
 extern unsigned stub_create_steps;
+/* WM_SETFOCUS and WM_KILLFOCUS offered to the input driver */
+extern unsigned stub_input_focus_msgs;
 void trace(const char *fmt, ...);
 void stubs_init(void);
 void stub_set_geometry(unsigned width, unsigned height);
