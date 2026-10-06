@@ -12481,11 +12481,6 @@ static const setting_desc_t vid_desc_20[] = {
 static const setting_desc_t sync_desc[] = {
 /* GENERATED: rows come from settings_def_video_sync.h in order. */
 #include "../settings/settings_def_video_sync.h"
-#ifdef HAVE_D3DKMT
-   SDESC_BOOL_ROW(video_scanline_sync, VIDEO_SCANLINE_SYNC,
-         DEFAULT_SCANLINE_SYNC,
-         SD_FLAG_NONE, 0, CMD_EVENT_NONE),
-#endif
 };
 
 static const setting_desc_t avsync_desc[] = {

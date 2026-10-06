@@ -168,9 +168,9 @@ enum video_driver_state_flags
 
 enum video_driver_scanline
 {
-   SCANLINE_NEXT = 0,
-   SCANLINE_PREV,
+   SCANLINE_TARGET = 0,
    SCANLINE_ACTIVE,
+   SCANLINE_OFFSET,
    SCANLINE_TOTAL,
    SCANLINE_HOLD,
    SCANLINE_LAST

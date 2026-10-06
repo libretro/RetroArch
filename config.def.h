@@ -407,7 +407,11 @@
 
 /* Video VSYNC (recommended) */
 #define DEFAULT_VSYNC true
-#define DEFAULT_SCANLINE_SYNC false
+
+/* Scanline Sync specific */
+#define DEFAULT_SCANLINE_SYNC        false
+#define DEFAULT_SCANLINE_SYNC_OFFSET 0
+#define MAXIMUM_SCANLINE_SYNC_OFFSET 3000
 
 /* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3

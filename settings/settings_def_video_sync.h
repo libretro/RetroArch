@@ -87,3 +87,13 @@ S_UINT_H(video_hard_sync_frames, VIDEO_HARD_SYNC_FRAMES,
       DEFAULT_HARD_SYNC_FRAMES, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, MINIMUM_HARD_SYNC_FRAMES, MAXIMUM_HARD_SYNC_FRAMES, 1, 0, setting_action_ok_uint, NULL,
       "Hard GPU Sync Frames",
       "Set how many frames the CPU can run ahead of the GPU when using 'Hard GPU Sync'.")
+S_BOOL(video_scanline_sync, VIDEO_SCANLINE_SYNC,
+      "video_scanline_sync",
+      DEFAULT_SCANLINE_SYNC, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      "Scanline Sync",
+      "Synchronize video presentation to scanline position prediction based on core time. Requirements: VSync off, Frame Delay off, display Hz near 1x core FPS and GPU at max clocks.")
+S_UINT(video_scanline_sync_offset, VIDEO_SCANLINE_SYNC_OFFSET,
+      "video_scanline_sync_offset",
+      DEFAULT_SCANLINE_SYNC_OFFSET, SD_FLAG_NONE, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0, MAXIMUM_SCANLINE_SYNC_OFFSET, 1, 0, setting_action_ok_uint, NULL,
+      "Scanline Sync Offset",
+      "Adjust Scanline Sync offset manually. Otherwise offset is calculated based on vertical blanking and frame cache sizes.")
