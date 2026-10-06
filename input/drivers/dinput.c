@@ -231,6 +231,8 @@ static void *dinput_init(const char *joypad_driver)
    return di;
 }
 
+static void dinput_publish_pointers(struct dinput_input *di);
+
 static void dinput_poll(void *data)
 {
    struct dinput_input *di = (struct dinput_input*)data;
@@ -299,6 +301,9 @@ static void dinput_poll(void *data)
             ~(DINP_MSG_WHEEL_UP | DINP_MSG_WHEEL_DOWN
              | DINP_MSG_HWHEEL_UP | DINP_MSG_HWHEEL_DOWN
              | DINP_MSG_MOUSE_IGNORE | DINP_MSG_DBCLK_TITLE));
+      /* a notch is this frame's: every reader's until the next poll */
+      di->flags &= ~(DINP_FLAG_MOUSE_WU_BTN | DINP_FLAG_MOUSE_WD_BTN
+            | DINP_FLAG_MOUSE_HWU_BTN | DINP_FLAG_MOUSE_HWD_BTN);
       if (msg & DINP_MSG_WHEEL_UP)
          di->flags |= DINP_FLAG_MOUSE_WU_BTN;
       if (msg & DINP_MSG_WHEEL_DOWN)
@@ -435,6 +440,8 @@ static void dinput_poll(void *data)
             di->flags &= ~DINP_FLAG_MOUSE_IGNORE;
       }
    }
+
+   dinput_publish_pointers(di);
 }
 
 static bool dinput_mouse_button_pressed(
@@ -453,102 +460,77 @@ static bool dinput_mouse_button_pressed(
       case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
          return (di->flags & DINP_FLAG_MOUSE_B5_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
-         {
-            di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
-            return true;
-         }
-         break;
+         return (di->flags & DINP_FLAG_MOUSE_WU_BTN)  ? true : false;
       case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
-         {
-            di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
-            return true;
-         }
-         break;
+         return (di->flags & DINP_FLAG_MOUSE_WD_BTN)  ? true : false;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
-         {
-            di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
-            return true;
-         }
-         break;
+         return (di->flags & DINP_FLAG_MOUSE_HWU_BTN) ? true : false;
       case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
-         {
-            di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
-            return true;
-         }
-         break;
+         return (di->flags & DINP_FLAG_MOUSE_HWD_BTN) ? true : false;
    }
 
    return false;
 }
 
-/* The touch given out @idx-th, in the order they went down. */
-static bool dinput_pointer_get(struct dinput_input *di, unsigned idx,
-      int *x, int *y)
+/* The mouse's frame and the touches, in the order they went down,
+ * handed to the frontend, which answers for the mouse, the pointer and
+ * the lightgun's aim. The mouse is the port's whose Mouse Index is 0;
+ * the pointer and the lightgun are every port's, a touch read before
+ * the mouse, which stands for one touch: its left button. */
+static void dinput_publish_pointers(struct dinput_input *di)
 {
-   unsigned i, n = 0;
-   int order[DINPUT_MAX_POINTERS], pos[DINPUT_MAX_POINTERS];
+   input_pointer_frame_t frame;
+   uint32_t touch_pos[DINPUT_MAX_POINTERS];
+   int order[DINPUT_MAX_POINTERS];
+   unsigned i, n    = 0;
+   unsigned buttons = 0;
 
+   if (di->flags & DINP_FLAG_MOUSE_L_BTN)
+      buttons |= INPUT_POINTER_LEFT;
+   if (di->flags & DINP_FLAG_MOUSE_R_BTN)
+      buttons |= INPUT_POINTER_RIGHT;
+   if (di->flags & DINP_FLAG_MOUSE_M_BTN)
+      buttons |= INPUT_POINTER_MIDDLE;
+   if (di->flags & DINP_FLAG_MOUSE_B4_BTN)
+      buttons |= INPUT_POINTER_BUTTON_4;
+   if (di->flags & DINP_FLAG_MOUSE_B5_BTN)
+      buttons |= INPUT_POINTER_BUTTON_5;
+   if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+   if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
+      buttons |= INPUT_POINTER_HWHEEL_UP;
+   if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
+      buttons |= INPUT_POINTER_HWHEEL_DOWN;
+   frame.pos     = di->mouse_pos;
+   frame.rel     = di->mouse_rel;
+   frame.buttons = (uint16_t)buttons;
+
+   /* the touches that are down, earliest first: a handful, so an
+    * insertion as each is taken is enough */
    for (i = 0; i < DINPUT_MAX_POINTERS; i++)
    {
+      unsigned j;
+      int o, p;
       if (!retro_atomic_load_acquire_int(&di->pointers[i].id_plus1))
          continue;
-      order[n] = retro_atomic_load_relaxed_int(&di->pointers[i].order);
-      pos[n]   = retro_atomic_load_relaxed_int(&di->pointers[i].pos);
+      o = retro_atomic_load_relaxed_int(&di->pointers[i].order);
+      p = retro_atomic_load_relaxed_int(&di->pointers[i].pos);
+      for (j = n; j > 0 && o - order[j - 1] < 0; j--)
+      {
+         order[j]     = order[j - 1];
+         touch_pos[j] = touch_pos[j - 1];
+      }
+      order[j]     = o;
+      touch_pos[j] = (uint32_t)p;
       n++;
    }
-   if (idx >= n)
-      return false;
-   /* the idx-th earliest: n is a handful, a selection is enough */
-   for (i = 0; i <= idx; i++)
-   {
-      unsigned j, min = i;
-      int t;
-      for (j = i + 1; j < n; j++)
-         if (order[j] - order[min] < 0)
-            min = j;
-      t = order[i]; order[i] = order[min]; order[min] = t;
-      t = pos[i];   pos[i]   = pos[min];   pos[min]   = t;
-   }
-   *x = VIDEO_POS_X(pos[idx]);
-   *y = VIDEO_POS_Y(pos[idx]);
-   return true;
-}
 
-static int16_t dinput_lightgun_aiming_state(
-      struct dinput_input *di, unsigned idx, unsigned id)
-{
-   struct video_viewport vp    = {0};
-   uint32_t res_pos               = 0;
-   uint32_t res_screen_pos        = 0;
-
-   int x                       = VIDEO_POS_X(di->mouse_pos);
-   int y                       = VIDEO_POS_Y(di->mouse_pos);
-
-   if (!dinput_pointer_get(di, idx, &x, &y) && idx > 0)
-      return 0; /* idx = 0 has mouse fallback. */
-
-   if (video_driver_translate_coord_viewport_wrap(
-               &vp, x, y,
-               &res_pos, &res_screen_pos))
-   {
-      switch (id)
-      {
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return VIDEO_POS_X(res_pos);
-         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return VIDEO_POS_Y(res_pos);
-         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-         default:
-            break;
-      }
-   }
-
-   return 0;
+   input_driver_publish_pointers(&frame, 1,
+           INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT
+         | INPUT_POINTERS_GUN_AT_TOUCH);
+   input_driver_publish_touches(touch_pos, n, (1u << n) - 1);
 }
 
 static int16_t dinput_input_state(
@@ -657,123 +639,12 @@ static int16_t dinput_input_state(
                return ret;
             }
             break;
-         case RARCH_DEVICE_MOUSE_SCREEN:
-            if (input_config_get_mouse_index(port) != 0)
-               break;
-
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  return VIDEO_POS_X(di->mouse_pos);
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return VIDEO_POS_Y(di->mouse_pos);
-               default:
-                  break;
-            }
-            /* fall-through */
-         case RETRO_DEVICE_MOUSE:
-            if (input_config_get_mouse_index(port) == 0)
-            {
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_MOUSE_X:
-                     return VIDEO_POS_X(di->mouse_rel);
-                  case RETRO_DEVICE_ID_MOUSE_Y:
-                     return VIDEO_POS_Y(di->mouse_rel);
-                  case RETRO_DEVICE_ID_MOUSE_LEFT:
-                     return (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
-                  case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                     return (di->flags & DINP_FLAG_MOUSE_R_BTN) > 0;
-                  case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                     if (di->flags & DINP_FLAG_MOUSE_WU_BTN)
-                     {
-                        di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
-                        return 1;
-                     }
-                     di->flags &= ~DINP_FLAG_MOUSE_WU_BTN;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                     if (di->flags & DINP_FLAG_MOUSE_WD_BTN)
-                     {
-                        di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
-                        return 1;
-                     }
-                     di->flags &= ~DINP_FLAG_MOUSE_WD_BTN;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                     if (di->flags & DINP_FLAG_MOUSE_HWU_BTN)
-                     {
-                        di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
-                        return 1;
-                     }
-                     di->flags &= ~DINP_FLAG_MOUSE_HWU_BTN;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                     if (di->flags & DINP_FLAG_MOUSE_HWD_BTN)
-                     {
-                        di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
-                        return 1;
-                     }
-                     di->flags &= ~DINP_FLAG_MOUSE_HWD_BTN;
-                     break;
-                  case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                     return (di->flags & DINP_FLAG_MOUSE_M_BTN) > 0;
-                  case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                     return (di->flags & DINP_FLAG_MOUSE_B4_BTN) > 0;
-                  case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                     return (di->flags & DINP_FLAG_MOUSE_B5_BTN) > 0;
-               }
-            }
-            break;
-         case RETRO_DEVICE_POINTER:
-         case RARCH_DEVICE_POINTER_SCREEN:
-            {
-               struct video_viewport vp    = {0};
-               int x                       = 0;
-               int y                       = 0;
-               uint32_t res_pos               = 0;
-               uint32_t res_screen_pos        = 0;
-               bool touched;
-
-               x               = VIDEO_POS_X(di->mouse_pos);
-               y               = VIDEO_POS_Y(di->mouse_pos);
-               touched         = dinput_pointer_get(di, idx, &x, &y);
-               if (!touched && idx > 0) /* idx = 0 has mouse fallback. */
-                  return 0;
-
-               if (video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
-                           &res_pos, &res_screen_pos))
-               {
-                  if (device == RARCH_DEVICE_POINTER_SCREEN)
-                  {
-                     res_pos        = res_screen_pos;
-                  }
-
-                  switch (id)
-                  {
-                     case RETRO_DEVICE_ID_POINTER_X:
-                        return VIDEO_POS_X(res_pos);
-                     case RETRO_DEVICE_ID_POINTER_Y:
-                        return VIDEO_POS_Y(res_pos);
-                     case RETRO_DEVICE_ID_POINTER_PRESSED:
-                        return touched ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
-                     case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                     default:
-                        break;
-                  }
-               }
-            }
-            break;
+         /* The mouse, the pointer and the lightgun's aim are the
+          * frontend's to answer: dinput_poll() publishes the mouse and
+          * the touches. */
          case RETRO_DEVICE_LIGHTGUN:
             switch (id)
             {
-               /*aiming*/
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                  return dinput_lightgun_aiming_state(di, idx, id);
-
                   /*buttons*/
                case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -824,11 +695,6 @@ static int16_t dinput_input_state(
                      }
                   }
                   break;
-                  /*deprecated*/
-               case RETRO_DEVICE_ID_LIGHTGUN_X:
-                  return VIDEO_POS_X(di->mouse_rel);
-               case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                  return VIDEO_POS_Y(di->mouse_rel);
             }
             break;
       }

@@ -19,7 +19,9 @@
  * 6. one viewport fetch a poll, one translation a device and kind;
  * 7. a poll in which nothing is published: the driver is to be asked;
  * 8. ports reading by Mouse Index, a port with no mouse still reading a
- *    real touch, and the kind of device each mouse was last read as. */
+ *    real touch, and the kind of device each mouse was last read as;
+ * 9. only the mouse by index with the pointer and the lightgun every
+ *    port's, and the lightgun aiming at the first touch. */
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -260,6 +262,49 @@ int main(void)
    CHECK(input_pointers.read_as[1] == RETRO_DEVICE_MOUSE
       && input_pointers.read_as[0] == RARCH_DEVICE_POINTER_SCREEN,
          "and keeps it over the next poll");
+
+   /* 9: only the mouse by index; the pointer and the gun every port's.
+    * Port 2's mouse is not there, port 1's index is 0. */
+   f[0].pos     = VIDEO_POS_PACK(40, 30);
+   f[0].buttons = INPUT_POINTER_LEFT;
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_BY_MOUSE_INDEX
+         | INPUT_POINTERS_AIM_EVERY_PORT | INPUT_POINTERS_GUN_AT_TOUCH);
+   input_pointer_touches_set(touch, 0, 0);
+   CHECK( rd(2, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 0
+      &&  rd(2, RARCH_DEVICE_MOUSE_SCREEN, 0, RETRO_DEVICE_ID_MOUSE_X) == 0
+      &&  rd(1, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_LEFT) == 1,
+         "aim every port's: the mouse still goes by the port's index");
+   CHECK( rd(2, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 40
+      &&  rd(2, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_PRESSED) == 1
+      &&  rd(2, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40
+      &&  rd(2, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == 30,
+         "aim every port's: the pointer and the lightgun read the mouse on any port");
+   /* the gun at the first touch while there is one; out of the viewport
+    * it is off-screen */
+   touch[0] = VIDEO_POS_PACK(60, 70);
+   input_pointer_touches_set(touch, 1, 1 << 0);
+   vp_asked = translations = 0;
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 60
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y) == 70
+      &&  rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 0
+      &&  input_pointer_frame_pos(0, RETRO_DEVICE_LIGHTGUN, 0, &pos)
+      &&  pos == VIDEO_POS_PACK(60, 70)
+      &&  vp_asked == 0 && translations == 1,
+         "the lightgun aims at the first touch: one translation, the poll's viewport");
+   touch[0] = VIDEO_POS_PACK(260, 70);
+   input_pointer_touches_set(touch, 1, 1 << 0);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN) == 1
+      &&  rd(0, RETRO_DEVICE_POINTER, 0, RETRO_DEVICE_ID_POINTER_X) == 199,
+         "a touch out of the viewport: the gun is off-screen, the pointer at the edge");
+   input_pointer_touches_set(touch, 0, 0);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
+         "with no touch the lightgun aims at the mouse");
+   /* without the flag a touch does not move the gun */
+   touch[0] = VIDEO_POS_PACK(60, 70);
+   input_pointer_frames_set(f, 1, INPUT_POINTERS_MOUSE_3_TOUCHES);
+   input_pointer_touches_set(touch, 1, 1 << 0);
+   CHECK( rd(0, RETRO_DEVICE_LIGHTGUN, 0, RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X) == 40,
+         "a driver that does not say so: the lightgun stays on the mouse");
 
    /* 7 */
    input_pointer_frames_clear();

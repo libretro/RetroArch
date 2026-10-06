@@ -1262,7 +1262,13 @@ enum input_pointers_flags
    /* A port reads the device at its Mouse Index, or where its pinned
     * mouse is (input_mouse_port_index()). Without this port n reads
     * device n, and one device is every port's. */
-   INPUT_POINTERS_BY_MOUSE_INDEX  = (1 << 1)
+   INPUT_POINTERS_BY_MOUSE_INDEX  = (1 << 1),
+   /* With BY_MOUSE_INDEX: only the mouse goes by the port's index. The
+    * pointer and the lightgun's aim are every port's, from the first
+    * device. */
+   INPUT_POINTERS_AIM_EVERY_PORT  = (1 << 2),
+   /* The lightgun aims where the first touch is, when there is one. */
+   INPUT_POINTERS_GUN_AT_TOUCH    = (1 << 3)
 };
 
 /* From the driver's poll. @count devices, at most MAX_USERS.

@@ -40,7 +40,9 @@ static struct
    struct video_viewport vp;
    uint16_t have_confined;            /* a bit a device: done this poll */
    uint16_t have_viewport;
+   uint32_t touch0_viewport_pos;      /* the first touch, -0x8000 outside */
    uint16_t have_touch;               /* a bit a touch: done this poll */
+   bool     have_touch0_viewport;
    uint16_t touch_down;
    uint8_t  count;
    uint8_t  touch_count;
@@ -71,6 +73,7 @@ static void input_pointer_touches_set(const uint32_t *pos, unsigned count,
    input_pointers.touch_count = (uint8_t)count;
    input_pointers.touch_down  = (uint16_t)down;
    input_pointers.have_touch  = 0;
+   input_pointers.have_touch0_viewport = false;
 }
 
 static bool input_pointer_viewport(void)
@@ -84,11 +87,17 @@ static bool input_pointer_viewport(void)
    return input_pointers.vp_ok;
 }
 
-/* The published device a port reads. */
-static unsigned input_pointer_of_port(unsigned port)
+/* The published device a port reads as @device. */
+static unsigned input_pointer_of_port(unsigned port, unsigned device)
 {
    if (input_pointers.flags & INPUT_POINTERS_BY_MOUSE_INDEX)
+   {
+      if (     (input_pointers.flags & INPUT_POINTERS_AIM_EVERY_PORT)
+            && device != RETRO_DEVICE_MOUSE
+            && device != RARCH_DEVICE_MOUSE_SCREEN)
+         return 0;
       return input_mouse_port_index(port);
+   }
    return (input_pointers.count == 1) ? 0 : port;
 }
 
@@ -187,6 +196,37 @@ static bool input_pointer_touch(unsigned i, unsigned idx,
    return true;
 }
 
+/* Where the lightgun of device @i aims: at the first touch, for a
+ * driver that has it so and while there is one, else at the mouse. */
+static bool input_gun_place(unsigned i, uint32_t *pos)
+{
+   uint32_t screen_pos;
+   if (     (input_pointers.flags & INPUT_POINTERS_GUN_AT_TOUCH)
+         && input_pointers.touch_count
+         && input_pointers.touch_pos[0] != 0)
+   {
+      if (!input_pointer_viewport())
+         return false;
+      if (!input_pointers.have_touch0_viewport)
+      {
+         if (!video_driver_translate_coord_viewport(&input_pointers.vp,
+                  VIDEO_POS_X(input_pointers.touch_pos[0]),
+                  VIDEO_POS_Y(input_pointers.touch_pos[0]),
+                  &input_pointers.touch0_viewport_pos, &screen_pos, true))
+         {
+            input_pointers.vp_ok = false;
+            return false;
+         }
+         input_pointers.have_touch0_viewport = true;
+      }
+      *pos = input_pointers.touch0_viewport_pos;
+      return true;
+   }
+   if (i >= input_pointers.count)
+      return false;
+   return input_pointer_place(i, false, pos, &screen_pos);
+}
+
 /* A mouse's, a pointer's or a lightgun aim's position, packed. False if
  * the frontend does not hold it and the driver is to be asked. */
 static bool input_pointer_frame_pos(unsigned port, unsigned device,
@@ -198,7 +238,7 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
    if (!input_pointers.count)
       return false;
    *pos = 0;
-   i    = input_pointer_of_port(port);
+   i    = input_pointer_of_port(port, device);
    if (i < input_pointers.count)
       input_pointers.read_as[i] = device;
    else if (  device != RETRO_DEVICE_POINTER
@@ -223,7 +263,7 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
          }
          return true;
       case RETRO_DEVICE_LIGHTGUN:
-         input_pointer_place(i, false, pos, &screen_pos);
+         input_gun_place(i, pos);
          return true;
       default:
          break;
@@ -262,7 +302,7 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
          return false;
    }
    *out = 0;
-   i    = input_pointer_of_port(port);
+   i    = input_pointer_of_port(port, device);
    if (i < input_pointers.count)
       input_pointers.read_as[i] = device;
    else if (  device != RETRO_DEVICE_POINTER
@@ -353,8 +393,7 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
          }
          else
          {
-            uint32_t screen_pos;
-            if (!input_pointer_place(i, false, &pos, &screen_pos))
+            if (!input_gun_place(i, &pos))
                break;
             if (id == RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X)
                *out = VIDEO_POS_X(pos);
