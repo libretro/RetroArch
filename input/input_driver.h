@@ -563,8 +563,7 @@ struct input_driver
     * keys itself: the frontend keeps the keys a port's binds name,
     * compiled when the binds change, asks for them all at once, once a
     * poll, and answers every RetroPad button and hotkey from that. A
-    * driver without it (NULL, and now the last member) is asked for
-    * each bind as before. A driver that has it also publishes its mice
+    * driver without it (NULL) is asked for each bind as before. A driver that has it also publishes its mice
     * (input_driver_publish_pointers()): binds to mouse buttons are
     * read from those, from the mouse a port has.
     *
@@ -581,6 +580,20 @@ struct input_driver
    void (*keys_down)(void *data, unsigned port,
          const uint16_t *keys, const uint8_t *bind, unsigned count,
          uint32_t *down);
+
+   /**
+    * The buttons of the mouse a port's controls bound to mouse buttons
+    * read, as INPUT_POINTER_* bits.
+    *
+    * For a driver that has keys_down and does not publish its mice:
+    * which mouse a port has, and when it counts, stay the driver's own
+    * rule. Asked once a poll, and only of a port with such a bind.
+    * NULL - and now the last member - reads the published mice.
+    *
+    * @param data   The input state struct
+    * @param port   The port asked for
+    */
+   unsigned (*bind_mouse_buttons)(void *data, unsigned port);
 };
 
 struct rarch_joypad_driver

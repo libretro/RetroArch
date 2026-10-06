@@ -1498,7 +1498,10 @@ typedef struct
    unsigned poll_gen;                    /* the poll key_down[] is from */
    uint16_t pad_keys;                    /* key_down for the RetroPad's sixteen */
    uint16_t pad_mbuttons;                /* has_mbutton for them */
+   uint16_t mouse_buttons;               /* the driver's answer for binds, this poll */
    uint8_t  count;
+   bool     any_mbutton;                 /* some bind names a mouse button */
+   bool     mouse_from_driver;           /* ... and the driver answers for it */
 } input_port_keys_t;
 
 static input_port_keys_t input_port_keys[MAX_USERS];
@@ -1532,8 +1535,18 @@ static void input_port_keys_refresh(input_port_keys_t *k,
             k->has_mbutton[i >> 5] |= (1u << (i & 31));
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
+      k->any_mbutton  = false;
+      for (i = 0; i < INPUT_BIND_WORDS; i++)
+         if (k->has_mbutton[i])
+            k->any_mbutton = true;
       k->binds_gen    = gen;
    }
+
+   /* a driver that keeps its mice to itself says what the port's is
+    * holding, where a bind wants to know */
+   k->mouse_from_driver = (input->bind_mouse_buttons != NULL);
+   k->mouse_buttons     = (k->mouse_from_driver && k->any_mbutton)
+      ? (uint16_t)input->bind_mouse_buttons(data, port) : 0;
 
    memset(down, 0, sizeof(down));
    if (k->count)
@@ -1569,13 +1582,18 @@ static unsigned input_mbutton_bit(unsigned mbutton)
    return (mbutton < ARRAY_SIZE(bit)) ? bit[mbutton] : 0;
 }
 
-/* A bind's mouse button, from the mouse the driver published. */
-static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
+/* A bind's mouse button, from the mouse the driver published - or, of
+ * a driver that keeps its mice to itself, from what it said the
+ * port's is holding. */
+static bool input_bind_mouse_button_down(const input_port_keys_t *k,
+      unsigned port, unsigned mbutton)
 {
    unsigned i;
    unsigned bit = input_mbutton_bit(mbutton);
    if (!bit)
       return false;
+   if (k->mouse_from_driver)
+      return (k->mouse_buttons & bit) != 0;
    /* Which mouse a port has: where the driver lists its mice, the one
     * at the port's Mouse Index; where it has the one, the port whose
     * index is 0. */
@@ -1620,7 +1638,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
       /* the few, if any, bound to a mouse button */
       unsigned mouse = k->pad_mbuttons;
       for (i = 0; mouse; i++, mouse >>= 1)
-         if ((mouse & 1) && input_bind_mouse_button_down(port, binds[i].mbutton))
+         if ((mouse & 1) && input_bind_mouse_button_down(k, port, binds[i].mbutton))
             ret |= (1u << i);
       return (int16_t)ret;
    }
@@ -1632,7 +1650,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
             && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
          return 1;
       if (     (k->has_mbutton[id >> 5] & bit)
-            && input_bind_mouse_button_down(port, binds[id].mbutton))
+            && input_bind_mouse_button_down(k, port, binds[id].mbutton))
          return 1;
    }
    return 0;
