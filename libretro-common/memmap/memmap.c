@@ -59,6 +59,18 @@
 #define FILE_MAP_EXECUTE 0x0020
 #endif
 
+/* A UWP build's headers leave MapViewOfFileEx out, and C takes a call
+ * to a function it has not seen declared to return int: on a 64-bit
+ * build the address it hands back loses its upper half. The function
+ * is there to link against; this is the declaration the desktop
+ * headers give it. */
+#if defined(WINAPI_FAMILY) && defined(WINAPI_FAMILY_APP) \
+   && (WINAPI_FAMILY == WINAPI_FAMILY_APP)
+WINBASEAPI LPVOID WINAPI MapViewOfFileEx(HANDLE hFileMappingObject,
+      DWORD dwDesiredAccess, DWORD dwFileOffsetHigh, DWORD dwFileOffsetLow,
+      SIZE_T dwNumberOfBytesToMap, LPVOID lpBaseAddress);
+#endif
+
 /* Map POSIX prot bits to a PAGE_* protection constant.  Windows has
  * no write-only or exec-only protections; those requests take the
  * nearest expressible superset, as every mman shim does. */
