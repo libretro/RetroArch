@@ -294,15 +294,6 @@
 		92B9EBB224E0518700E6CFB2 /* file_stream_transforms.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = file_stream_transforms.h; sourceTree = "<group>"; };
 		92B9EBB324E0518700E6CFB2 /* interface_stream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = interface_stream.h; sourceTree = "<group>"; };
 		92B9EBB424E0518700E6CFB2 /* fastcpy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = fastcpy.h; sourceTree = "<group>"; };
-		92B9EBB624E0518700E6CFB2 /* lzma.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = lzma.h; sourceTree = "<group>"; };
-		92B9EBB724E0518700E6CFB2 /* minmax.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = minmax.h; sourceTree = "<group>"; };
-		92B9EBB824E0518700E6CFB2 /* flac.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = flac.h; sourceTree = "<group>"; };
-		92B9EBB924E0518700E6CFB2 /* bitstream.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bitstream.h; sourceTree = "<group>"; };
-		92B9EBBA24E0518700E6CFB2 /* cdrom.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = cdrom.h; sourceTree = "<group>"; };
-		92B9EBBB24E0518700E6CFB2 /* chd.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = chd.h; sourceTree = "<group>"; };
-		92B9EBBC24E0518700E6CFB2 /* libchdr_zlib.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = libchdr_zlib.h; sourceTree = "<group>"; };
-		92B9EBBD24E0518700E6CFB2 /* huffman.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = huffman.h; sourceTree = "<group>"; };
-		92B9EBBE24E0518700E6CFB2 /* coretypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = coretypes.h; sourceTree = "<group>"; };
 		92B9EBC024E0518700E6CFB2 /* features_cpu.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = features_cpu.h; sourceTree = "<group>"; };
 		92B9EBC224E0518700E6CFB2 /* md5.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = md5.h; sourceTree = "<group>"; };
 		92B9EBC324E0518700E6CFB2 /* retro_miscellaneous.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = retro_miscellaneous.h; sourceTree = "<group>"; };
@@ -616,7 +607,6 @@
 				92B9EB8224E0518700E6CFB2 /* formats */,
 				92B9EBE824E0518700E6CFB2 /* gfx */,
 				92B9EB8F24E0518700E6CFB2 /* glsym */,
-				92B9EBB524E0518700E6CFB2 /* libchdr */,
 				92B9EB6324E0518700E6CFB2 /* libco.h */,
 				92B9EBE624E0518700E6CFB2 /* libretro_d3d.h */,
 				92B9EB5C24E0518700E6CFB2 /* libretro_dspfilter.h */,
@@ -830,22 +820,6 @@
 				92B9EBB324E0518700E6CFB2 /* interface_stream.h */,
 			);
 			path = streams;
-			sourceTree = "<group>";
-		};
-		92B9EBB524E0518700E6CFB2 /* libchdr */ = {
-			isa = PBXGroup;
-			children = (
-				92B9EBB624E0518700E6CFB2 /* lzma.h */,
-				92B9EBB724E0518700E6CFB2 /* minmax.h */,
-				92B9EBB824E0518700E6CFB2 /* flac.h */,
-				92B9EBB924E0518700E6CFB2 /* bitstream.h */,
-				92B9EBBA24E0518700E6CFB2 /* cdrom.h */,
-				92B9EBBB24E0518700E6CFB2 /* chd.h */,
-				92B9EBBC24E0518700E6CFB2 /* libchdr_zlib.h */,
-				92B9EBBD24E0518700E6CFB2 /* huffman.h */,
-				92B9EBBE24E0518700E6CFB2 /* coretypes.h */,
-			);
-			path = libchdr;
 			sourceTree = "<group>";
 		};
 		92B9EBBF24E0518700E6CFB2 /* features */ = {
