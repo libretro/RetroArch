@@ -708,6 +708,7 @@ static const struct
    char s_52dea05d[17];
    char s_7ec63ffc[38];
    char s_7f004a36[153];
+   char s_fcd0c0d6[221];
    char s_a3825f18[13];
    char s_ef2d0a03[19];
    char s_ad17a194[12];
@@ -1031,6 +1032,7 @@ static const struct
    char s_88226df7[31];
    char s_4c92f60e[27];
    char s_9c702ee1[38];
+   char s_b8abf5ac[28];
    char s_b8b18b90[14];
    char s_efa8d516[47];
    char s_d7c1d887[27];
@@ -1088,6 +1090,7 @@ static const struct
    char s_ff1b8ce5[21];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[32];
    char s_19f5e3bc[45];
 #endif
 #endif
@@ -3084,6 +3087,7 @@ static const struct
    char s_47df0525[63];
    char s_03e272fc[61];
    char s_5c2cc60f[79];
+   char s_d6d33eda[189];
    char s_d6d8d4be[140];
    char s_e86d2704[81];
    char s_dda608b5[312];
@@ -3132,6 +3136,7 @@ static const struct
    char s_eaa7274b[59];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_2172fd53[348];
    char s_bb34fe6a[274];
 #endif
 #endif
@@ -4265,6 +4270,7 @@ static const struct
    char s_51df877a[49];
    char s_136098cd[29];
    char s_f482576f[46];
+   char s_d2b9475b[83];
    char s_0408afc3[18];
    char s_654f5308[24];
    char s_c4a8e97c[12];
@@ -5485,6 +5491,9 @@ static const struct
    "Nom\303\251s es pot llegir una part de EDID",
    "Un panell integrat de port\303\240til o d'ordinador \302\253tot en un\302\273 no disposa d'EDID."
    " En canvi, una pantalla externa connectada mitjan\303\247ant DDC s\303\255 que en t\303\251.",
+   "Android no permet que les aplicacions llegeixin l'EDID de la pantalla integrada d'un tel\303\250"
+   "fon o tauleta. Un dispositiu de tipus TV box que controla una pantalla mitjan\303\247ant HDMI l'"
+   "exposa all\303\240 on el dispositiu ho permet.",
    "Versi\303\263 EDID",
    "Mostra informaci\303\263",
    "Orientaci\303\263",
@@ -5808,6 +5817,7 @@ static const struct
    "Sortir (combinaci\303\263 de botons)",
    "Reassignacions d\342\200\231entrada",
    "Re-mapeja els controls d'aquest nucli",
+   "Troba un bot\303\263 en clicar-lo",
    "Port assignat",
    "Endre\303\247a les assignacions per cada controlador",
    "Assignacions dels RetroPad",
@@ -5865,6 +5875,7 @@ static const struct
    "Controls del port %u",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Llums de jugador al controlador",
    "XInput per controladors Xbox (Cal reiniciar)",
 #endif
 #endif
@@ -8193,6 +8204,9 @@ static const struct
    "Combinaci\303\263 de botons del controlador per sortir de RetroArch.",
    "Les reassignacions d\342\200\231entrada es desen en aquest directori.",
    "Sobreescriu les assignacions d'entrada amb les establertes per a aquest nucli.",
+   "Prem un bot\303\263 o mou una palanca del comandament d'aquesta adaptaci\303\263 \342\200\224o b"
+   "\303\251 prem una tecla assignada a alguna d'aquestes accions\342\200\224 i la llista de sota sa"
+   "ltar\303\240 a l'element corresponent.",
    "Especificia quin port del nucli rebr\303\240 l'entrada des del port del controlador %u del front"
    "-end. 'Cap' envia la senyal a cap port del nucli.",
    "Les assignacions s'aplicaran nom\303\251s al controlador actiu en el qual s'han desat.",
@@ -8282,6 +8296,10 @@ static const struct
    "Canvia les assignacions d'entrada espec\303\255fiques pel nucli.",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Amb el controlador de comandament \302\253raw\302\273, mostra el port de cada comandament mitjan"
+   "\303\247ant els seus propis indicadors lluminosos: els llums de jugador del DualSense o el color"
+   " de la barra de llum del DualShock 4 (blau, vermell, verd, rosa). Aquests indicadors segueixen e"
+   "l comandament quan en canvia el port i s'apaguen quan el comandament s'apaga.",
    "Amb el controlador de dispositius \302\253raw\302\273, els comandaments compatibles amb Xbox es "
    "llegeixen mitjan\303\247ant XInput: els gallets es tracten per separat i s'utilitza la disposici"
    "\303\263 de botons d'XInput. La resta de comandaments es continuen llegint mitjan\303\247ant l'e"
@@ -10035,6 +10053,7 @@ static const struct
    "Introdueix el nom del fitxer de personalitzaci\303\263",
    "Introdueix el nom del fitxer",
    "Introdueix el nom del fitxer de reassignaci\303\263",
+   "Clica un bot\303\263 o mou una palanca del controlador del port %u\n(Retard de %u segons)",
    "Reanomenar t\303\255tol",
    "Instal\302\267lant el nucli: ",
    "Interf\303\255cie",
@@ -10358,7 +10377,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (228637u
+      (sizeof(msg_hash_ca_blob) == (229158u
 #ifdef ANDROID
        + 281u
 #endif
@@ -10439,6 +10458,7 @@ typedef char msg_hash_ca_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 32u
        + 45u
 #endif
 #endif
@@ -10696,6 +10716,7 @@ typedef char msg_hash_ca_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 348u
        + 274u
 #endif
 #endif
@@ -11601,6 +11622,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -11924,6 +11946,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -11981,6 +12004,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -13970,6 +13994,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
@@ -14018,6 +14043,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -15148,6 +15174,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERFACE,

@@ -685,6 +685,7 @@ static const struct
    char s_52dea05d[15];
    char s_7ec63ffc[44];
    char s_7f004a36[150];
+   char s_fcd0c0d6[217];
    char s_a3825f18[13];
    char s_ef2d0a03[27];
    char s_ad17a194[12];
@@ -2323,7 +2324,7 @@ static const struct
    char s_6665b7fc[51];
    char s_2e6ad26e[10];
    char s_43e9897c[31];
-   char s_7fbf0860[7];
+   char s_7fbf0860[9];
    char s_f417f6f1[16];
    char s_020e2bc5[14];
    char s_59f183c8[15];
@@ -3767,7 +3768,7 @@ static const struct
    char s_15cad80e_1[37];
    char s_01e5fbea[372];
    char s_0653bf6a_0[500];
-   char s_0653bf6a_1[15];
+   char s_0653bf6a_1[17];
    char s_123f401f[125];
    char s_0d96ed73[35];
    char s_9f0fd076[125];
@@ -5366,6 +5367,9 @@ static const struct
    "Nur ein Teil der EDID konnte gelesen werden",
    "Ein in einen Laptop oder All-in-One-PC integriertes Display verf\303\274gt \303\274ber keine EDI"
    "D. Ein \303\274ber DDC angeschlossenes externes Display hingegen schon.",
+   "Android erlaubt Apps nicht, die EDID des integrierten Bildschirms eines Smartphones oder Tablets"
+   " auszulesen. Eine TV-Box, die ein Display \303\274ber HDMI ansteuert, stellt die EDID bereit, so"
+   "fern das Ger\303\244t dies zul\303\244sst.",
    "EDID-Version",
    "Informationen des Displays",
    "Ausrichtung",
@@ -7015,7 +7019,7 @@ static const struct
    "Bildwiederholrate nur in stabilem Zustand erfassen",
    "Erzwungen",
    "Exklusive Vollbild-Verhandlung",
-   "Locker",
+   "Tolerant",
    "Vollbildanzeige",
    "Vollbildmodus",
    "Vollbildbreite",
@@ -9182,13 +9186,13 @@ static const struct
    " Diagnoseanzeige wird so zu einem realen Signal, allerdings auf Kosten einer langsameren Konverg"
    "enz nach dem Laden des Inhalts.",
    "Es ist schwer, den Treiber um den exklusiven Vollbildmodus zu ersuchen, wenn der \342\200\236Win"
-   "dowed Fullscreen Mode\342\200\234 deaktiviert ist. Die Option \342\200\236Locker\342\200\234 l"
+   "dowed Fullscreen Mode\342\200\234 deaktiviert ist. Die Option \342\200\236Tolerant\342\200\234 l"
    "\303\244sst dies lediglich zu, doch der Treiber kann es ablehnen; beim Vulkan-Treiber ist dies e"
    "in Hinweis, den der Treiber bekannterma\303\237en ignoriert, wodurch die Swapchain auf dem \342"
    "\200\236Independent-Flip\342\200\234-Pfad des Compositors verbleibt. Die Option \342\200\236Erzw"
    "ungen\342\200\234 aktiviert den exklusiven Modus explizit und h\303\244lt ihn aufrecht. Erforder"
-   "t VK_EXT_full_scr",
-   "een_exclusive.",
+   "t VK_EXT_full_s",
+   "creen_exclusive.",
    "Anzeige im Vollbild. L\303\244sst sich w\303\244hrend der Laufzeit \303\244ndern. Kann \303\274b"
    "er einen Kommandozeilenschalter \303\274bersteuert werden.",
    "Die Vollbildeinstellungen \303\244ndern.",
@@ -10051,7 +10055,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (217883u
+      (sizeof(msg_hash_de_blob) == (218104u
 #ifdef ANDROID
        + 358u
 #endif
@@ -11269,6 +11273,7 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,

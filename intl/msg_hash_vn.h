@@ -726,6 +726,7 @@ static const struct
    char s_146c6f57[11];
    char s_7ec63ffc[61];
    char s_7f004a36[146];
+   char s_fcd0c0d6[215];
    char s_a3825f18[18];
    char s_ef2d0a03[22];
    char s_ad17a194[20];
@@ -1051,6 +1052,7 @@ static const struct
    char s_88226df7[42];
    char s_4c92f60e[17];
    char s_9c702ee1[61];
+   char s_b8abf5ac[40];
    char s_b8b18b90[17];
    char s_efa8d516[31];
    char s_d7c1d887[25];
@@ -1108,6 +1110,7 @@ static const struct
    char s_ff1b8ce5[20];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[42];
    char s_19f5e3bc[55];
 #endif
 #endif
@@ -2609,6 +2612,7 @@ static const struct
    char s_e0609921[12];
    char s_b3c7fa93[19];
    char s_f6a0db44[19];
+   char s_a9af29b1[39];
    char s_4eecff92[44];
    char s_0ca1128d[34];
    char s_65e6ea7c[7];
@@ -3163,6 +3167,7 @@ static const struct
    char s_47df0525[57];
    char s_03e272fc[54];
    char s_5c2cc60f[116];
+   char s_d6d33eda[207];
    char s_d6d8d4be[279];
    char s_e86d2704[92];
    char s_dda608b5[405];
@@ -3211,6 +3216,7 @@ static const struct
    char s_eaa7274b[60];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_2172fd53[346];
    char s_bb34fe6a[264];
 #endif
 #endif
@@ -4064,6 +4070,7 @@ static const struct
    char s_6ac06624[172];
    char s_f765b650[76];
    char s_7059a595[47];
+   char s_c7d672df[459];
    char s_6d1448c0[45];
    char s_cf0b487b[127];
    char s_840f4569[50];
@@ -4276,6 +4283,7 @@ static const struct
    char s_b0e4eb88[48];
    char s_9589cc66[66];
    char s_a0cd3533[25];
+   char s_29ffdb0d[65];
    char s_135957cd[45];
    char s_96b546df[56];
    char s_731e9836[33];
@@ -4362,6 +4370,7 @@ static const struct
    char s_51df877a[20];
    char s_136098cd[22];
    char s_f482576f[28];
+   char s_d2b9475b[111];
    char s_0408afc3[24];
    char s_654f5308[39];
    char s_c4a8e97c[12];
@@ -6112,6 +6121,11 @@ static const struct
    "\241y t\303\255nh all-in-one kh\303\264ng c\303\263 EDID. Ng\306\260\341\273\243c l\341\272\241i"
    ", M\303\240n h\303\254nh ngo\303\240i k\341\272\277t n\341\273\221i qua DDC th\303\254 c\303\263"
    ".",
+   "Android kh\303\264ng cho ph\303\251p \341\273\251ng d\341\273\245ng \304\221\341\273\215c EDID c"
+   "\341\273\247a m\303\240n h\303\254nh t\303\255ch h\341\273\243p tr\303\252n \304\221i\341\273"
+   "\207n tho\341\272\241i ho\341\272\267c m\303\241y t\303\255nh b\341\272\243ng. H\341\273\231p TV"
+   " xu\341\272\245t h\303\254nh \341\272\243nh qua HDMI s\341\272\275 cung c\341\272\245p EDID n"
+   "\341\272\277u thi\341\272\277t b\341\273\213 cho ph\303\251p.",
    "Phi\303\252n b\341\272\243n EDID",
    "Th\303\264ng tin m\303\240n h\303\254nh",
    "H\306\260\341\273\233ng m\303\240n h\303\254nh",
@@ -6477,6 +6491,7 @@ static const struct
    "G\303\241n l\341\272\241i ph\303\255m",
    "G\303\241n l\341\272\241i ph\303\255m \304\221i\341\273\201u khi\341\273\203n cho tr\303\254nh g"
    "i\341\272\243 l\341\272\255p n\303\240y",
+   "T\303\254m n\303\272t b\341\272\261ng c\303\241ch nh\341\272\245n n\303\272t \304\221\303\263",
    "C\341\273\225ng \304\221\303\243 g\303\241n",
    "G\303\241n l\341\272\241i Ph\303\255m cho tay c\341\272\247m",
    "G\303\241n Ph\303\255m cho tay c\341\272\247m",
@@ -6543,6 +6558,7 @@ static const struct
    "Tay c\341\272\247m c\341\273\225ng %u",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "\304\220\303\250n b\303\241o ng\306\260\341\273\235i ch\306\241i tr\303\252n tay c\341\272\247m",
    "XInput cho tay c\341\272\247m Xbox (C\341\272\247n kh\341\273\237i \304\221\341\273\231ng l\341"
    "\272\241i)",
 #endif
@@ -8280,6 +8296,8 @@ static const struct
    "B\341\272\255t Wi-Fi",
    "K\341\272\277t n\341\273\221i m\341\272\241ng",
    "K\341\272\277t n\341\273\221i m\341\272\241ng",
+   "Ch\341\272\277 \304\221\341\273\231 ngu\341\273\223n \304\221\341\273\231 tr\341\273\205 th\341"
+   "\272\245p",
    "H\341\273\207 s\341\273\221 \304\221\341\273\231 m\341\273\235 c\341\273\247a giao di\341\273"
    "\207n m\303\240u",
    "Bi\341\273\203u t\306\260\341\273\243ng Menu hi\341\273\207n t\341\272\241i",
@@ -9959,6 +9977,11 @@ static const struct
    "Ghi \304\221\303\250 c\341\272\245u h\303\254nh \304\221i\341\273\201u khi\341\273\203n b\341"
    "\272\261ng thi\341\272\277t l\341\272\255p g\303\241n ph\303\255m \304\221\303\243 l\306\260u ch"
    "o tr\303\254nh gi\341\272\243 l\341\272\255p hi\341\273\207n t\341\272\241i.",
+   "Nh\341\272\245n m\341\273\231t n\303\272t ho\341\272\267c di chuy\341\273\203n c\341\272\247n an"
+   "alog tr\303\252n tay c\341\272\247m c\341\273\247a c\341\273\225ng n\303\240y, ho\341\272\267c n"
+   "h\341\272\245n m\341\273\231t ph\303\255m \304\221\303\243 \304\221\306\260\341\273\243c g\303"
+   "\241n cho m\341\273\231t n\303\272t, danh s\303\241ch b\303\252n d\306\260\341\273\233i s\341"
+   "\272\275 t\341\273\261 chuy\341\273\203n \304\221\341\272\277n n\303\272t \304\221\303\263.",
    "Ch\341\273\211 \304\221\341\273\213nh c\341\273\225ng \304\221i\341\273\201u khi\341\273\203n c"
    "\341\273\247a nh\303\242n gi\341\272\243 l\341\272\255p n\303\240o s\341\272\275 nh\341\272\255n"
    " d\341\273\257 li\341\273\207u \304\221\341\272\247u v\303\240o t\341\273\253 c\341\273\225ng ta"
@@ -10131,6 +10154,14 @@ static const struct
    "i\341\272\243 l\341\272\255p.",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "V\341\273\233i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n tay c\341\272\247m 'th\303"
+   "\264', hi\341\273\203n th\341\273\213 c\341\273\225ng c\341\273\247a t\341\273\253ng tay c\341"
+   "\272\247m b\341\272\261ng \304\221\303\250n ri\303\252ng: \304\221\303\250n b\303\241o ng\306"
+   "\260\341\273\235i ch\306\241i c\341\273\247a DualSense, m\303\240u c\341\273\247a d\341\272\243i"
+   " \304\221\303\250n tr\303\252n DualShock 4 (xanh d\306\260\306\241ng, \304\221\341\273\217, xanh"
+   " l\303\241, h\341\273\223ng). \304\220\303\250n s\341\272\275 \304\221i theo tay c\341\272\247m "
+   "khi c\341\273\225ng c\341\273\247a n\303\263 thay \304\221\341\273\225i v\303\240 t\341\272\257t"
+   " khi t\303\271y ch\341\273\215n n\303\240y \304\221\306\260\341\273\243c t\341\272\257t.",
    "V\341\273\233i tr\303\254nh \304\221i\341\273\201u khi\341\273\203n tay c\341\272\247m 'th\303"
    "\264', \304\221\341\273\215c c\303\241c tay c\341\272\247m t\306\260\306\241ng th\303\255ch Xbox"
    " th\303\264ng qua XInput: t\303\241ch ri\303\252ng hai n\303\272t c\303\262 v\303\240 s\341\273"
@@ -12845,6 +12876,17 @@ static const struct
    "\245ng. (C\341\272\247n kh\341\273\237i \304\221\341\273\231ng l\341\272\241i)",
    "Qu\303\251t c\303\241c m\341\272\241ng kh\303\264ng d\303\242y v\303\240 k\341\272\277t n\341"
    "\273\221i.",
+   "Chuy\341\273\203n sang m\341\273\231t b\341\272\243n sao c\341\273\247a ch\341\272\277 \304\221"
+   "\341\273\231 ngu\341\273\223n Windows \304\221ang ho\341\272\241t \304\221\341\273\231ng, gi\341"
+   "\273\257 b\341\273\231 x\341\273\255 l\303\275 \341\273\237 t\341\273\221c \304\221\341\273\231 "
+   "t\341\273\221i \304\221a, kh\303\264ng cho l\303\265i chuy\341\273\203n sang tr\341\272\241ng th"
+   "\303\241i ngh\341\273\211 v\303\240 ki\341\273\203m tra l\341\272\241i tr\341\272\241ng th\303"
+   "\241i hi\341\273\207u n\304\203ng sau m\341\273\227i 5 gi\303\242y thay v\303\254 m\341\273\227i"
+   " 15 mili gi\303\242y, gi\303\272p gi\341\272\243m ho\341\272\241t \304\221\341\273\231ng ng\341"
+   "\272\257t c\341\273\247a nh\303\242n h\341\273\207 \304\221i\341\273\201u h\303\240nh. Ch\341"
+   "\273\211 \303\241p d\341\273\245ng khi \304\221ang c\341\272\257m ngu\341\273\223n. Ch\341\272"
+   "\277 \304\221\341\273\231 ngu\341\273\223n ban \304\221\341\272\247u s\341\272\275 \304\221\306"
+   "\260\341\273\243c kh\303\264i ph\341\273\245c khi tho\303\241t.",
    "H\341\273\207 s\341\273\221 \304\221\341\273\231 m\341\273\235 c\341\273\247a ch\341\273\247 "
    "\304\221\341\273\201 m\303\240u.",
    "Bi\341\273\203u t\306\260\341\273\243ng menu hi\341\273\207n t\341\272\241i c\303\263 th\341\273"
@@ -13215,6 +13257,8 @@ static const struct
    "Kh\303\264ng c\341\272\245p ph\303\241t \304\221\306\260\341\273\243c b\341\273\231 nh\341\273"
    "\233 cho n\341\273\231i dung \304\221\303\243 v\303\241...",
    "Kh\303\264ng th\341\273\203 th\303\252m \304\221\304\251a",
+   "Kh\303\264ng th\341\273\203 k\303\255ch ho\341\272\241t ch\341\272\277 \304\221\341\273\231 ngu"
+   "\341\273\223n \304\221\341\273\231 tr\341\273\205 th\341\272\245p",
    "Kh\303\264ng \303\241p d\341\273\245ng \304\221\306\260\341\273\243c b\341\273\231 \304\221\341"
    "\273\225 b\303\263ng.",
    "\303\201p d\341\273\245ng thi\341\272\277t l\341\272\255p b\341\273\231 \304\221\341\273\225 b"
@@ -13330,6 +13374,9 @@ static const struct
    "T\303\252n t\341\273\207p Ghi \304\220\303\250",
    "T\303\252n t\341\273\207p C\303\240i S\341\272\265n",
    "T\303\252n t\341\273\207p g\303\241n l\341\272\241i ph\303\255m",
+   "Nh\341\272\245n m\341\273\231t n\303\272t ho\341\272\267c di chuy\341\273\203n c\341\272\247n an"
+   "alog tr\303\252n tay c\341\272\247m c\341\273\247a C\341\273\225ng %u\n(Th\341\273\235i gian ch"
+   "\341\273\235 %u gi\303\242y)",
    "\304\220\341\273\225i T\303\252n Ti\303\252u \304\220\341\273\201",
    "\304\220ang c\303\240i \304\221\341\272\267t tr\303\254nh gi\341\272\243 l\341\272\255p: ",
    "Giao Di\341\273\207n",
@@ -13786,7 +13833,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (264111u
+      (sizeof(msg_hash_vn_blob) == (265247u
 #ifdef ANDROID
        + 373u
 #endif
@@ -13864,6 +13911,7 @@ typedef char msg_hash_vn_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 42u
        + 55u
 #endif
 #endif
@@ -14136,6 +14184,7 @@ typedef char msg_hash_vn_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 346u
        + 264u
 #endif
 #endif
@@ -15051,6 +15100,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -15376,6 +15426,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -15433,6 +15484,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -16933,6 +16985,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -17473,6 +17526,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
@@ -17521,6 +17575,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -18358,6 +18413,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
@@ -18570,6 +18626,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
@@ -18656,6 +18713,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERFACE,

@@ -119,7 +119,7 @@ static const struct
 #endif
    char s_285ad699[32];
    char s_a6f4e7fa[56];
-   char s_0cd5a7bf[96];
+   char s_0cd5a7bf[102];
    char s_bd0f864d[89];
    char s_a6f51628[53];
    char s_8598f359[407];
@@ -705,7 +705,7 @@ static const struct
    char s_cab4e5d1[11];
    char s_f3b9b113[16];
    char s_b6d851f0[32];
-   char s_ab49119c[16];
+   char s_ab49119c[22];
    char s_94ab8f8c[19];
    char s_deed0812[18];
    char s_dfa3c8c3[5];
@@ -713,6 +713,7 @@ static const struct
    char s_146c6f57[6];
    char s_7ec63ffc[42];
    char s_7f004a36[150];
+   char s_fcd0c0d6[228];
    char s_a3825f18[13];
    char s_ef2d0a03[26];
    char s_ddf679b9[14];
@@ -828,6 +829,7 @@ static const struct
    char s_d81bf7a9[13];
    char s_af315ae7[68];
    char s_87994f40[27];
+   char s_19bdcb0b[31];
    char s_6f199f35[42];
    char s_b1e1d992[21];
    char s_798643f5[30];
@@ -842,6 +844,10 @@ static const struct
 #ifdef ANDROID
    char s_b573f90c[29];
 #endif
+   char s_ed300063[53];
+   char s_28ea7dfa[17];
+   char s_b9dacc8a[18];
+   char s_e7afbcd6[56];
    char s_e28bc72f[26];
    char s_0b2a8528[54];
    char s_ea5757a0[10];
@@ -891,6 +897,9 @@ static const struct
    char s_56e1b335[16];
    char s_56e1b336[18];
    char s_313d15c0[10];
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_392e7967[35];
+#endif
    char s_e9f0dd82[32];
    char s_b58b86df[17];
    char s_1b46171b[19];
@@ -1025,9 +1034,12 @@ static const struct
    char s_88226df7[30];
    char s_4c92f60e[24];
    char s_9c702ee1[46];
+   char s_b8abf5ac[38];
    char s_b8b18b90[14];
    char s_efa8d516[33];
    char s_d7c1d887[29];
+   char s_ac419de7[22];
+   char s_d87f977f[23];
    char s_8c49943c[27];
    char s_d2c6b214[41];
 #ifdef HAVE_SDL3
@@ -1043,6 +1055,12 @@ static const struct
    char s_a7da7dc1[34];
    char s_980ef0e8[9];
    char s_fcf05466[16];
+   char s_172a1f47[34];
+   char s_ebede389[82];
+   char s_941bb4f3[34];
+   char s_e8e3269a[7];
+   char s_8f104024[23];
+   char s_60523ef9[77];
    char s_da16c634[19];
 #ifdef ANDROID
    char s_4c636851[26];
@@ -1060,6 +1078,7 @@ static const struct
    char s_9c91e6ef[44];
    char s_f03621e7[45];
 #endif
+   char s_9d47ac69[43];
    char s_75851363[10];
    char s_a60a77f9[57];
    char s_f07432ff[18];
@@ -1071,6 +1090,12 @@ static const struct
    char s_feaf16c5[30];
    char s_dedb2642[28];
    char s_ff1b8ce5[19];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[44];
+   char s_19f5e3bc[52];
+#endif
+#endif
    char s_bd07998f[15];
    char s_4e2f19db[20];
    char s_9e66791a[10];
@@ -1393,6 +1418,7 @@ static const struct
    char s_d48223f9[40];
    char s_28adc26d[47];
    char s_0b9c6082[50];
+   char s_8974ac0f[30];
    char s_b80a2fc4[30];
    char s_02b33f2e[34];
    char s_d3b03946[12];
@@ -1421,7 +1447,11 @@ static const struct
    char s_89920317[21];
    char s_9e49780c[43];
    char s_5703c323[24];
+   char s_00fcd264[55];
+   char s_ae7e624b[57];
+   char s_c1870a3a[74];
    char s_ce445b41[43];
+   char s_972c382e[43];
    char s_87d88aa2[8];
    char s_aadf6541[44];
 #ifdef _3DS
@@ -2533,6 +2563,7 @@ static const struct
    char s_e0609921[17];
    char s_b3c7fa93[24];
    char s_f6a0db44[24];
+   char s_a9af29b1[52];
    char s_4eecff92[40];
    char s_0ca1128d[22];
    char s_65e6ea7c[7];
@@ -2939,12 +2970,15 @@ static const struct
    char s_9eb26572[38];
    char s_50707595[85];
    char s_976074ee[152];
+   char s_2269a679[366];
    char s_5c8a1d63[120];
    char s_744c0f80[83];
    char s_2aa39081[48];
 #ifdef ANDROID
    char s_50f43cfa[246];
 #endif
+   char s_b65270d1[389];
+   char s_27fda584[249];
    char s_e85b309d[71];
    char s_cd94bb16[228];
    char s_a17a67e1[74];
@@ -2970,6 +3004,9 @@ static const struct
    char s_09f2837b[311];
    char s_512d7a8b[92];
    char s_2c4c27eb[303];
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_f07df655[388];
+#endif
    char s_bb6fb70d[430];
    char s_85147d5c[82];
    char s_0b56ad4c[68];
@@ -3076,8 +3113,11 @@ static const struct
    char s_47df0525[61];
    char s_03e272fc[71];
    char s_5c2cc60f[103];
+   char s_d6d33eda[221];
+   char s_d6d8d4be[159];
    char s_e86d2704[99];
    char s_dda608b5[384];
+   char s_bc08c395[344];
    char s_6f5a032a[52];
    char s_9530e802[134];
 #ifdef HAVE_SDL3
@@ -3092,6 +3132,8 @@ static const struct
    char s_aaa55caa[111];
    char s_6a44b3af[81];
    char s_a7d61696[55];
+   char s_ae581977[352];
+   char s_493a2167[397];
 #ifdef ANDROID
    char s_354b4abf[158];
    char s_21594ec5[253];
@@ -3106,6 +3148,7 @@ static const struct
    char s_65b4575d[100];
    char s_dda6a015[131];
 #endif
+   char s_5d044397[411];
    char s_b5bb6ba7[143];
    char s_0e9b7c2d[100];
    char s_2447fa4c[44];
@@ -3117,6 +3160,12 @@ static const struct
    char s_a7fd96b0[75];
    char s_1d42d613[125];
    char s_eaa7274b[53];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_2172fd53[329];
+   char s_bb34fe6a[249];
+#endif
+#endif
    char s_10994fc9[101];
    char s_bde8a108[54];
    char s_420308fb[332];
@@ -3336,14 +3385,21 @@ static const struct
    char s_da518d67[195];
    char s_1195a4db[52];
    char s_ce069670[38];
+   char s_8f44157d[183];
    char s_77c6c6f2[59];
    char s_126432dc[142];
+   char s_7b4c2ad6[375];
+   char s_c0817362[459];
    char s_bc33055d[91];
    char s_be8c2b47[47];
    char s_02526a85[64];
    char s_8b64010b[152];
+   char s_09c9a0f9[405];
    char s_7279e585[65];
    char s_8bb9f63a[142];
+   char s_196df911[469];
+   char s_ca1f42d2[319];
+   char s_9d10685c[200];
    char s_a5ffd3d0[49];
 #ifdef _3DS
    char s_0d834bc5[76];
@@ -3954,6 +4010,7 @@ static const struct
    char s_6ac06624[185];
    char s_f765b650[48];
    char s_7059a595[57];
+   char s_c7d672df[407];
    char s_6d1448c0[57];
    char s_cf0b487b[101];
    char s_840f4569[48];
@@ -4122,6 +4179,8 @@ static const struct
    char s_d50c6bf1[32];
    char s_64a038aa[29];
    char s_697f59c0[48];
+   char s_10e46c37[44];
+   char s_2a722735[32];
    char s_05437279[30];
    char s_c0cae103[27];
    char s_71d52dde[62];
@@ -4161,6 +4220,7 @@ static const struct
    char s_b0e4eb88[43];
    char s_9589cc66[59];
    char s_a0cd3533[28];
+   char s_29ffdb0d[64];
    char s_135957cd[35];
    char s_96b546df[53];
    char s_731e9836[35];
@@ -4247,6 +4307,7 @@ static const struct
    char s_51df877a[58];
    char s_136098cd[42];
    char s_f482576f[50];
+   char s_d2b9475b[104];
    char s_0408afc3[22];
    char s_654f5308[25];
    char s_5317d41c[17];
@@ -4258,6 +4319,7 @@ static const struct
    char s_01a4c762[16];
    char s_ba4d8b17[35];
    char s_ffed014a[31];
+   char s_cc3fcff6[37];
    char s_68bd6ae1[41];
    char s_599fa4bb[39];
    char s_406b377c[41];
@@ -4718,8 +4780,8 @@ static const struct
 #endif
    "Pilote de manettes DirectInput.",
    "Pilote de dispositif d'interface humaine de bas niveau.",
-   "Le pilote Linux brut, utilise une API manette obsol\303\250te. Utilisez udev \303\240 la place s"
-   "i possible.",
+   "Le pilote Linux brut (raw), utilise une API manette obsol\303\250te. Utilisez udev \303\240 la p"
+   "lace si possible.",
    "Pilote Linux pour manettes connect\303\251es au port parall\303\250le via des adaptateurs sp\303"
    "\251ciaux.",
    "Pilote de manettes bas\303\251 sur les biblioth\303\250ques SDL.",
@@ -5499,7 +5561,7 @@ static const struct
    "pr\303\251f\303\251r\303\251",
    "Code de produit",
    "Limites de la plage d'affichage",
-   "Donn\303\251es brutes",
+   "Donn\303\251es brutes (raw)",
    "Taille de l'\303\251cran",
    "Num\303\251ro de s\303\251rie",
    "Lire",
@@ -5508,6 +5570,9 @@ static const struct
    "Seule une partie de l'EDID a pu \303\252tre lue",
    "L'\303\251cran int\303\251gr\303\251 d'un ordinateur portable ou d'un syst\303\250me tout-en-un "
    "ne comporte pas d'EDID, contrairement \303\240 un \303\251cran externe connect\303\251 via DDC.",
+   "Android ne permet pas aux applications de lire l'EDID de l'\303\251cran int\303\251gr\303\251 d'"
+   "un t\303\251l\303\251phone ou d'une tablette. En revanche, une box TV pilotant un \303\251cran v"
+   "ia HDMI rend cette information accessible lorsque l'appareil le permet.",
    "Version EDID",
    "Informations sur l'\303\251cran",
    "Sortie vid\303\251o",
@@ -5623,6 +5688,7 @@ static const struct
    "Informations",
    "Charger automatiquement les fichiers d'indexation du disque initial",
    "Analogique vers num\303\251rique",
+   "Viser avec le stick analogique",
    "Tous les utilisateurs contr\303\264lent le menu",
    "Deadzone analogique ",
    "Analogique gauche X- (gauche)",
@@ -5637,6 +5703,10 @@ static const struct
 #ifdef ANDROID
    "Utiliser le clavier syst\303\250me",
 #endif
+   "Clavier lors de la premi\303\250re pression sur une touche",
+   "Affecte son port",
+   "Attend sa manette",
+   "Affecter les ports lors du premier appui sur une touche",
    "Configuration automatique",
    "Active automatiquement le mode de jeu au premier plan",
    "D\303\251tecter",
@@ -5687,6 +5757,9 @@ static const struct
    "Bouton X (haut)",
    "Bouton Y (gauche)",
    "Touche %s",
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Saisie au clavier en arri\303\250re-plan",
+#endif
    "Type de mappage clavier manette",
    "Index du clavier",
    "%s (non connect\303\251)",
@@ -5822,9 +5895,12 @@ static const struct
    "Quitter (combinaison manette)",
    "Remappages des touches ",
    "Remapper les assignations d'entr\303\251es du c\305\223ur",
+   "Trouvez une touche en appuyant dessus",
    "Port affect\303\251",
    "Trier les remappages par manette",
    "Affectations de RetroManette",
+   "Rotation des entr\303\251es",
+   "Auto (rotation vid\303\251o)",
    "Intensit\303\251 de la vibration",
    "Enregistrer la configuration automatique",
 #ifdef HAVE_SDL3
@@ -5840,6 +5916,14 @@ static const struct
    "D\303\251tecteurs de mouvement/lumi\303\250re",
    "Entr\303\251es",
    "Clavier minimal",
+   "Priorit\303\251 \303\240 la premi\303\250re entr\303\251e",
+   "Nettoyage SOCD (Gauche + Droite) \342\200\224 directions cardinales oppos\303\251es simultan\303"
+   "\251es",
+   "Priorit\303\251 \303\240 la derni\303\250re entr\303\251e",
+   "Neutre",
+   "Priorit\303\251 vers le haut",
+   "Nettoyage SOCD (Haut + Bas) \342\200\224 directions cardinales oppos\303\251es simultan\303\251e"
+   "s",
    "Joy-Con d\303\251tach\303\251s",
 #ifdef ANDROID
    "Prise en charge du stylet",
@@ -5858,6 +5942,7 @@ static const struct
    "Utiliser la VMouse tactile en mode trackpad",
    "Utiliser la VMouse tactile en mode trackball",
 #endif
+   "G\303\242chettes analogiques \303\240 pleine amplitude",
    "Tir turbo",
    "Turbo autorise les directions de la croix directionnelle",
    "Affectation turbo",
@@ -5869,6 +5954,12 @@ static const struct
    "D\303\251lai d'activation du turbo ",
    "Contr\303\264les du menu unifi\303\251s",
    "Touches du port %u",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Voyants lumineux du joueur sur les manettes",
+   "XInput pour les manettes Xbox (red\303\251marrage requis)",
+#endif
+#endif
    "JIT disponible",
    "Profils de manettes",
    "Manettes ",
@@ -6192,6 +6283,7 @@ static const struct
    "Annoncer le jeu en r\303\251seau publiquement",
    "Rafra\303\256chir la liste des LAN de jeu en r\303\251seau",
    "Rafra\303\256chir la liste des h\303\264tes de jeu en r\303\251seau",
+   "Demander les p\303\251riph\303\251riques ",
    "Demander le p\303\251riph\303\251rique %u",
    "Interdire les clients non passifs",
    "Pseudo : %s",
@@ -6220,7 +6312,11 @@ static const struct
    "Informations r\303\251seau",
    "T\303\251l\303\251charger les miniatures \303\240 la demande",
    "RetroManette en r\303\251seau",
+   "RetroManette en r\303\251seau : Premier \303\251metteur uniquement",
+   "RetroManette en r\303\251seau %u : port %u, depuis %u.%u.%u.%u",
+   "RetroManette en r\303\251seau %u : port %u, aucun p\303\251riph\303\251rique pour l'instant",
    "Port de base de la RetroManette en r\303\251seau",
+   "Utilisateurs de la RetroManette en r\303\251seau",
    "R\303\251seau",
    "RetroManette en r\303\251seau de l'utilisateur %d",
 #ifdef _3DS
@@ -7348,6 +7444,7 @@ static const struct
    "Activer le Wi-Fi",
    "Se connecter au r\303\251seau",
    "Se connecter au r\303\251seau",
+   "Mode de gestion de l'alimentation \303\240 faible latence",
    "Facteur d'opacit\303\251 du th\303\250me de couleur",
    "Ic\303\264ne du menu actuel",
    "Aucune",
@@ -8021,6 +8118,11 @@ static const struct
    "Changer pour le dernier disque utilis\303\251 lors du d\303\251marrage de contenu multi-disques.",
    "Utiliser le stick analogique sp\303\251cifi\303\251 pour l'entr\303\251e croix directionnelle. L"
    "es modes '(Forc\303\251)' remplacent les entr\303\251es analogiques natives du c\305\223ur.",
+   "Permet d'utiliser un stick analogique pour viser avec le pistolet ou le pointeur sur ce port : l"
+   "a position du stick d\303\251termine le point de vis\303\251e \303\240 l'\303\251cran, le centre"
+   " du stick correspondant au centre de l'\303\251cran. Plusieurs joueurs peuvent ainsi viser simul"
+   "tan\303\251ment sans avoir besoin de souris. Les touches du pistolet sont assign\303\251es ci-de"
+   "ssous comme d'habitude.",
    "Permettre \303\240 tous les utilisateurs de contr\303\264ler le menu. Si d\303\251sactiv\303\251"
    ", seul l'utilisateur 1 peut contr\303\264ler le menu.",
    "Ignorer les mouvements des sticks analogiques en dessous de la valeur de deadzone.",
@@ -8030,6 +8132,15 @@ static const struct
    "uel int\303\251gr\303\251. Permet le collage depuis le presse-papiers et l'utilisation d'un gest"
    "ionnaire de mots de passe. N\303\251cessite un \303\251cran tactile ou une manette.",
 #endif
+   "Avec l'option 'Affecter les ports lors du premier appui sur une touche' : ce qui se passe lorsqu"
+   "'une touche de clavier est associ\303\251e aux touches d'un port. 'Affecte son port' attribue au"
+   " port son port du c\305\223ur, tout comme le ferait une touche de la manette correspondante. 'At"
+   "tend sa manette' laisse cette t\303\242che aux touches de la manette, sauf si aucune manette n'e"
+   "st connect\303\251e au port.",
+   "Au lancement de contenu, aucune manette n'est associ\303\251e \303\240 un port du c\305\223ur ; "
+   "chaque manette se voit attribuer le prochain port du c\305\223ur disponible d\303\250s qu'une to"
+   "uche est press\303\251e sur celui-ci. S'applique \303\240 partir du prochain lancement de conten"
+   "u.",
    "Tente de configurer automatiquement les manettes, style Plug-and-Play.",
    "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lo"
    "rsque r\303\251gl\303\251 sur 'D\303\251tecter', l'option sera activ\303\251e si le c\305\223ur "
@@ -8079,6 +8190,13 @@ static const struct
    "Si cette option est d\303\251sactiv\303\251e, les manettes sont ignor\303\251es lorsque l'applic"
    "ation n'est pas au premier plan : le menu, les raccourcis clavier et le contenu en cours d'ex"
    "\303\251cution ne r\303\251agissent pas \303\240 leurs commandes.",
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Avec le pilote d'entr\303\251e 'brut (raw)', permettre au contenu en cours d'ex\303\251cution de"
+   " lire les entr\303\251es clavier m\303\252me lorsque RetroArch n'est pas la fen\303\252tre activ"
+   "e. Les touches de raccourcis et le menu n\303\251cessitent toujours que la fen\303\252tre soit a"
+   "ctive. Le contenu doit continuer \303\240 tourner : l'option 'Mettre en pause le contenu lors de"
+   " la mise en arri\303\250re-plan' doit \303\252tre d\303\251sactiv\303\251e.",
+#endif
    "Le clavier dont sont lues les affectations de touches pour ce port. 'Tous' traite tous les clavi"
    "ers comme une seule unit\303\251. Il est possible de s\303\251lectionner un clavier sp\303\251ci"
    "fique si le pilote d'entr\303\251e permet de les distinguer ; il est m\303\251moris\303\251 en f"
@@ -8266,6 +8384,12 @@ static const struct
    "Les fichiers de remappage des touches sont conserv\303\251s dans ce dossier.",
    "Remplacer les assignations des touches par les assignations remapp\303\251es d\303\251finies pou"
    "r le c\305\223ur actuel.",
+   "Appuyez sur une touche ou d\303\251placez le stick de la manette connect\303\251e \303\240 ce po"
+   "rt, ou utilisez une touche clavier associ\303\251e \303\240 l'une de ces actions, et la liste ci"
+   "-dessous sautera directement \303\240 l'\303\251l\303\251ment correspondant.",
+   "Sp\303\251cifie quel port du c\305\223ur recevra les donn\303\251es depuis le port de manette %u"
+   " de l'interface graphique. 'Aucun' n'envoie les donn\303\251es \303\240 aucun port du c\305\223u"
+   "r.",
    "Les remappages ne s'appliqueront qu'\303\240 la manette active pour laquelle ils ont \303\251t"
    "\303\251 sauvegard\303\251s.",
    "Change la fa\303\247on dont la RetroManette virtuelle est mapp\303\251e \303\240 un p\303\251rip"
@@ -8273,6 +8397,11 @@ static const struct
    "connu et configur\303\251 correctement automatiquement, les utilisateurs n'ont probablement pas "
    "besoin d'utiliser ce menu.\nRemarque : pour les changements d'entr\303\251es sp\303\251cifiques "
    "au c\305\223urs, utilisez le sous-menu 'Commandes' du menu rapide \303\240 la place.",
+   "Fait pivoter les entr\303\251es de la croix directionnelle et des sticks analogiques per\303\247"
+   "ues par le c\305\223ur, afin de correspondre \303\240 l'affichage pivot\303\251 du contenu. L'an"
+   "gle appliqu\303\251 est celui d\303\251fini par le r\303\251glage de Rotation vid\303\251o : "
+   "\303\240 90 degr\303\251s, gauche sur la manette correspond \303\240 haut dans le jeu. 'Auto' su"
+   "it le r\303\251glage de Rotation vid\303\251o.",
    "Sp\303\251cifier l'ampleur des effets de retour haptique.",
    "Enregistre un fichier de configuration automatique appliqu\303\251 automatiquement chaque fois q"
    "ue cette manette est d\303\251tect\303\251e \303\240 nouveau.",
@@ -8296,6 +8425,17 @@ static const struct
    "Modifier les r\303\251glages de l'acc\303\251l\303\251rom\303\250tre, du gyroscope et de l'\303"
    "\251clairement.",
    "Modifier les r\303\251glages de manettes, clavier et souris.",
+   "Ce qu'un c\305\223ur per\303\247oit de la croix directionnelle lorsque les touches gauche et dro"
+   "ite sont maintenues enfonc\303\251es simultan\303\251ment : 'OFF' transmet les deux signaux. 'Ne"
+   "utre' n'en transmet aucun, 'Priorit\303\251 \303\240 la derni\303\250re entr\303\251e' privil"
+   "\303\251gie la touche press\303\251e en dernier, et 'Priorit\303\251 \303\240 la premi\303\250re"
+   " entr\303\251e' privil\303\251gie celle press\303\251e en premier.",
+   "Ce qu'un c\305\223ur per\303\247oit de la croix directionnelle lorsque les touches haut et bas s"
+   "ont maintenues enfonc\303\251es simultan\303\251ment : 'OFF' transmet les deux signaux. 'Neutre'"
+   " n'en transmet aucun, 'Priorit\303\251 \303\240 la derni\303\250re entr\303\251e' privil\303\251"
+   "gie la touche press\303\251e en dernier, 'Priorit\303\251 \303\240 la premi\303\250re entr\303"
+   "\251e' privil\303\251gie celle press\303\251e en premier; et 'Priorit\303\251 vers le haut' acti"
+   "ve toujours le haut.",
 #ifdef ANDROID
    "Activer les appareils \303\240 stylet. Fournit une saisie pr\303\251cise pour les jeux de dessin"
    " et de pointage. D\303\251sactivez cette option en cas de conflits d\342\200\231entr\303\251e.",
@@ -8325,6 +8465,11 @@ static const struct
    "Activez cette option avec l'option souris pour utiliser l'\303\251cran tactile en tant que track"
    "ball, ajoutant de l'inertie au pointeur.",
 #endif
+   "Pour les g\303\242chettes L2 et R2 fonctionnant sur un axe dont la position de repos se situe "
+   "\303\240 une extr\303\251mit\303\251 de son amplitude : mesurer la pression \303\240 partir de c"
+   "ette position de repos. Une pression compl\303\250te couvre alors toute la plage analogique, tan"
+   "dis qu'une demi-pression active la touche. Lorsque cette option est d\303\251sactiv\303\251e, se"
+   "ule la seconde moiti\303\251 de la pression est prise en compte, comme auparavant.",
    "Si activ\303\251, les entr\303\251es num\303\251riques directionnelles (aussi connues sous le no"
    "m de croix ou 'pav\303\251 directionnel') peuvent \303\252tre en mode turbo.",
    "Affectation RetroManette activant le Turbo. Laisser vide utilise l'affectation sp\303\251cifique"
@@ -8341,6 +8486,17 @@ static const struct
    "Change la fa\303\247on dont la RetroManette virtuelle est mapp\303\251e \303\240 votre p\303\251"
    "riph\303\251rique d'entr\303\251e physique pour ce port virtuel.",
    "Change les mappages de touche sp\303\251cifiques au c\305\223ur.",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Avec le pilote de manette 'brut (raw)', indique le port de chaque manette via ses propres voyant"
+   "s : les voyants de joueur d'une DualSense ou la couleur de la barre lumineuse d'une DualShock 4 "
+   "(bleu, rouge, vert, rose). Ces indicateurs suivent la manette lorsque son port change et s'\303"
+   "\251teignent lorsqu'elle est mise hors tension.",
+   "Avec le pilote de manettes 'brut (raw)', les manettes compatibles Xbox sont lues via XInput : le"
+   "s g\303\242chettes sont dissoci\303\251es et la disposition des boutons suit la norme XInput. Le"
+   "s autres manettes continuent d'\303\252tre lues via l'entr\303\251e brute (raw).",
+#endif
+#endif
    "Les profils de manettes utilis\303\251s pour la configuration automatique sont conserv\303\251s "
    "dans ce dossier.",
    "Pilote de manettes \303\240 utiliser. (Red\303\251marrage requis)",
@@ -8740,18 +8896,50 @@ static const struct
    " que d'utiliser le salon public.",
    "Rechercher des h\303\264tes de jeu en r\303\251seau sur le LAN.",
    "Recherche d'h\303\264tes de jeu en r\303\251seau.",
+   "Les emplacements joueur \303\240 demander \303\240 l'h\303\264te lors de la participation \303"
+   "\240 une session de jeu en r\303\251seau. Si aucun n'est s\303\251lectionn\303\251, l'h\303\264t"
+   "e attribue le premier emplacement libre.",
    "Demander \303\240 jouer avec le p\303\251riph\303\251rique d'entr\303\251e donn\303\251.",
    "Interdit les connexions qui ne sont pas en mode passif. Non recommand\303\251 sauf pour les r"
    "\303\251seaux tr\303\250s rapides avec des machines tr\303\250s faibles.",
+   "Pour un emplacement de joueur partag\303\251 avec d'autres clients de jeu en r\303\251seau : mod"
+   "e de combinaison des sticks analogiques. 'Maximum' : la valeur la plus \303\251lev\303\251e l'em"
+   "porte. 'Moyenne' : la moyenne de toutes les valeurs. Si cette option est utilis\303\251e alors q"
+   "ue le partage des entr\303\251es num\303\251riques est r\303\251gl\303\251 sur 'Ne pas partager'"
+   ", un emplacement d\303\251di\303\251 vous sera demand\303\251.",
+   "Pour un emplacement de joueur partag\303\251 avec d'autres clients de jeu en r\303\251seau : com"
+   "ment leurs touches se combinent. 'Partager' : activ\303\251es si l'un des joueurs appuie dessus."
+   " 'Saisir' : activ\303\251es si un nombre impair de joueurs appuie dessus. 'Voter' : activ\303"
+   "\251es si la majorit\303\251 des joueurs appuie dessus. Si ce param\303\250tre est utilis\303"
+   "\251 alors que le partage des entr\303\251es analogiques est r\303\251gl\303\251 sur 'Ne pas par"
+   "tager', un emplacement d\303\251di\303\251 vous sera demand\303\251.",
    "Mot de passe utilis\303\251 par les clients pour se connecter \303\240 l'h\303\264te en tant que"
    " spectateur.",
    "D\303\251marre le jeu en r\303\251seau en mode spectateur.",
    "Port de l'adresse IP de l'h\303\264te. Peut \303\252tre un port TCP ou UDP.",
    "Transf\303\251rer les connexions de jeu en r\303\251seau via un serveur interm\303\251diaire. Ut"
    "ile si l'h\303\264te est derri\303\250re un pare-feu ou a des probl\303\250mes de NAT/UPnP.",
+   "Recevoir des commandes d'autres programmes via UDP, sur le Port des commandes r\303\251seau : po"
+   "ur d\303\251clencher des actions associ\303\251es \303\240 des touches de raccourcis ou effectue"
+   "r d'autres op\303\251rations, comme le chargement de contenu ou la lecture de la m\303\251moire "
+   "d'un c\305\223ur. Aucune authentification n'est requise de la part de l'\303\251metteur, veillez"
+   " donc \303\240 utiliser cette fonctionnalit\303\251 sur un r\303\251seau de confiance.",
    "Voir la ou les interfaces r\303\251seau et les adresses IP associ\303\251es.",
    "T\303\251l\303\251charge automatiquement les miniatures manquantes lors de la navigation dans le"
    "s listes de lecture. Affecte grandement les performances.",
+   "Utiliser un autre appareil comme manette via le r\303\251seau : une instance de RetroArch ex\303"
+   "\251cutant l'option 'D\303\251marrer la RetroManette \303\240 distance' transmet les entr\303"
+   "\251es de ses touches et sticks vers cet appareil par UDP. Chaque utilisateur activ\303\251 ci-d"
+   "essous est \303\240 l'\303\251coute sur son propre port, en partant du port de base et en les in"
+   "cr\303\251mentant. Aucune authentification n'est requise c\303\264t\303\251 \303\251metteur, vei"
+   "llez donc \303\240 utiliser cette option sur un r\303\251seau de confiance.",
+   "La RetroManette en r\303\251seau de chaque utilisateur accepte les signaux du premier appareil q"
+   "ui lui envoie des donn\303\251es et ignore tous les autres, jusqu'au red\303\251marrage de Retro"
+   "Arch. Un second appareil ne peut pas prendre le contr\303\264le de la manette. Cette option ne p"
+   "ermet pas de bloquer un appareil qui usurpe l'adresse.",
+   "En tant que quels utilisateurs un autre appareil peut participer via le r\303\251seau. Chaque in"
+   "stance s\303\251lectionn\303\251e \303\251coute sur son propre port, d\303\251termin\303\251 par"
+   " incr\303\251mentation \303\240 partir du port de base.",
    "Modifier les r\303\251glages de serveur et de r\303\251seau.",
 #ifdef _3DS
    "Activer la vitesse d'horloge de la New3DS (804MHz) et le cache de niveau 2.",
@@ -9863,6 +10051,11 @@ static const struct
    " (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Pilote Wi-Fi \303\240 utiliser. (Red\303\251marrage requis)",
    "Analyser les r\303\251seaux sans fil et \303\251tablir la connexion.",
+   "Passe \303\240 une copie du mode de gestion de l'alimentation Windows actif qui maintient le pro"
+   "cesseur \303\240 pleine vitesse, sans mise en veille de c\305\223urs, et r\303\251\303\251value "
+   "les \303\251tats de performance toutes les 5 secondes au lieu de toutes les 15 ms, r\303\251duis"
+   "ant ainsi l'activit\303\251 des interruptions du noyau. Ne s'applique que lorsque l'appareil est"
+   " branch\303\251 sur secteur. Le mode d'origine est r\303\251tabli \303\240 la fermeture.",
    "Modifier le pourcentage d'opacit\303\251 du th\303\250me de couleur.",
    "L'ic\303\264ne du menu actuel peut \303\252tre masqu\303\251e, sous le menu horizontal ou dans l"
    "e titre de l'en-t\303\252te.",
@@ -10056,6 +10249,8 @@ static const struct
    "D\303\251compression d\303\251j\303\240 en cours.",
    "\303\211chec \303\240 la d\303\251compression.",
    "Taille de la fen\303\252tre d'affichage d\303\251tect\303\251e de",
+   "%s et clavier affect\303\251s au port du c\305\223ur %u",
+   "%s affect\303\251 au port du c\305\223ur %u",
    "%s configur\303\251 dans le port %u",
    "%s d\303\251connect\303\251 du port %u",
    "%s (%u/%u) non configur\303\251, utilisation du recours par d\303\251faut",
@@ -10097,6 +10292,7 @@ static const struct
    "\303\211chec \303\240 l'accueil du spectateur entrant.",
    "\303\211chec d'allocation de m\303\251moire pour le contenu patch\303\251...",
    "\303\211chec de l'ajout du disque",
+   "\303\211chec de l'activation du mode d'alimentation \303\240 faible latence",
    "\303\211chec \303\240 l'application du shader.",
    "\303\211chec \303\240 l'application du pr\303\251r\303\251glage de shaders :",
    "\303\211chec \303\240 l'attribution du socket.",
@@ -10185,6 +10381,8 @@ static const struct
    "Saisir le nom du fichier de remplacement de configuration",
    "Saisir le nom du fichier de pr\303\251r\303\251glages",
    "Saisir le nom du fichier de remappage des touches",
+   "Appuyez sur une touche ou d\303\251placez un stick de la manette du port %u\n(D\303\251lai d'att"
+   "ente de %u secondes)",
    "Entrez le nouveau nom",
    "Installation du c\305\223ur : ",
    "Stockage interne",
@@ -10196,6 +10394,7 @@ static const struct
    "en m\303\251gaoctets ",
    "La souris tactile est d\303\251sactiv\303\251e",
    "La souris tactile est activ\303\251e",
+   "Clavier affect\303\251 au port du c\305\223ur %u",
    "Phrase secr\303\250te du trousseau supprim\303\251e.",
    "Phrase secr\303\250te du trousseau d\303\251finie.",
    "Phrase secr\303\250te du trousseau incorrecte.",
@@ -10504,7 +10703,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (241808u
+      (sizeof(msg_hash_fr_blob) == (248903u
 #ifdef ANDROID
        + 373u
 #endif
@@ -10557,6 +10756,9 @@ typedef char msg_hash_fr_blob_check[
 #ifdef ANDROID
        + 29u
 #endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 35u
+#endif
 #ifdef GEKKO
        + 22u
 #endif
@@ -10579,6 +10781,12 @@ typedef char msg_hash_fr_blob_check[
        + 32u
        + 44u
        + 45u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 44u
+       + 52u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 30u
@@ -10808,6 +11016,9 @@ typedef char msg_hash_fr_blob_check[
 #ifdef ANDROID
        + 246u
 #endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 388u
+#endif
 #ifdef GEKKO
        + 59u
 #endif
@@ -10833,6 +11044,12 @@ typedef char msg_hash_fr_blob_check[
        + 84u
        + 100u
        + 131u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 329u
+       + 249u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 55u
@@ -11737,6 +11954,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
@@ -11852,6 +12070,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
@@ -11866,6 +12085,10 @@ static const uint32_t msg_hash_fr_ids[] =
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_ASSIGNS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_WAITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -11915,6 +12138,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_BACKGROUND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT,
@@ -12049,9 +12275,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -12067,6 +12296,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_LAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_NEUTRAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
@@ -12084,6 +12319,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TRIGGER_FULL_RANGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -12095,6 +12331,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
@@ -12417,6 +12659,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
@@ -12445,7 +12688,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_FIRST_SENDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_HEARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_WAITING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
 #ifdef _3DS
@@ -13556,6 +13803,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -13950,12 +14198,15 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -13981,6 +14232,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_BACKGROUND,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
@@ -14087,8 +14341,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -14103,6 +14360,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_VERTICAL,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
@@ -14117,6 +14376,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TRIGGER_FULL_RANGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
@@ -14128,6 +14388,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_KEYCHAIN_PASSPHRASE,
@@ -14347,14 +14613,21 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SHARE_ANALOG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SHARE_DIGITAL,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_CMD_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_FIRST_SENDER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
@@ -14955,6 +15228,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
@@ -15123,6 +15397,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,
    (uint32_t)MSG_DETECTED_VIEWPORT_OF,
+   (uint32_t)MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
+   (uint32_t)MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR,
    (uint32_t)MSG_DEVICE_CONFIGURED_IN_PORT_NR,
    (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
@@ -15162,6 +15438,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
@@ -15248,6 +15525,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERNAL_STORAGE,
@@ -15259,6 +15537,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
+   (uint32_t)MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_REMOVED,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_SET,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_WRONG,
