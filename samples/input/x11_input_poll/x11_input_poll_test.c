@@ -79,11 +79,11 @@ bool input_driver_pointer_is_offscreen(int16_t x, int16_t y)
 bool video_driver_get_viewport_info(struct video_viewport *viewport)
 { (void)viewport; return false; }
 bool video_driver_translate_coord_viewport(struct video_viewport *vp,
-      int mouse_x, int mouse_y, int16_t *res_x, int16_t *res_y,
-      int16_t *res_screen_x, int16_t *res_screen_y, bool report_oob)
+      int mouse_x, int mouse_y, uint32_t *res_pos, uint32_t *res_screen_pos,
+      bool report_oob)
 {
-   (void)vp; (void)mouse_x; (void)mouse_y; (void)res_x; (void)res_y;
-   (void)res_screen_x; (void)res_screen_y; (void)report_oob;
+   (void)vp; (void)mouse_x; (void)mouse_y; (void)res_pos;
+   (void)res_screen_pos; (void)report_oob;
    return false;
 }
 linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)

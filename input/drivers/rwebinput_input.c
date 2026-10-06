@@ -722,10 +722,8 @@ static int16_t rwebinput_input_state(
             unsigned pointer_count      = rwebinput->pointer_count;
             int x                       = 0;
             int y                       = 0;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
+            uint32_t res_pos               = 0;
+            uint32_t res_screen_pos        = 0;
 
             if (pointer_count && idx < pointer_count)
             {
@@ -745,27 +743,26 @@ static int16_t rwebinput_input_state(
 
             if (!(video_driver_translate_coord_viewport_confined_wrap(
                         &vp, x, y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y)))
+                        &res_pos, &res_screen_pos)))
                return 0;
 
             if (device == RARCH_DEVICE_POINTER_SCREEN)
             {
-               res_x = res_screen_x;
-               res_y = res_screen_y;
+               res_pos = res_screen_pos;
             }
 
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
-                  return res_x;
+                  return VIDEO_POS_X(res_pos);
                case RETRO_DEVICE_ID_POINTER_Y:
-                  return res_y;
+                  return VIDEO_POS_Y(res_pos);
                case RETRO_DEVICE_ID_POINTER_PRESSED:
-                  return (pointer_down && !input_driver_pointer_is_offscreen(res_x, res_y));
+                  return (pointer_down && !input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos)));
                case RETRO_DEVICE_ID_POINTER_COUNT:
                   return pointer_count;
                case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                  return input_driver_pointer_is_offscreen(res_x, res_y);
+                  return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                default:
                   break;
             }

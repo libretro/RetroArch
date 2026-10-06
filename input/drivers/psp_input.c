@@ -532,10 +532,8 @@ static int16_t vita_input_state(
                struct video_viewport vp    = {0};
                bool screen                 =
                   (device == RARCH_DEVICE_POINTER_SCREEN);
-               int16_t res_x               = 0;
-               int16_t res_y               = 0;
-               int16_t res_screen_x        = 0;
-               int16_t res_screen_y        = 0;
+               uint32_t res_pos               = 0;
+               uint32_t res_screen_pos        = 0;
                float tmp_x, tmp_y;
 
                video_driver_get_viewport_info(&vp);
@@ -546,24 +544,23 @@ static int16_t vita_input_state(
                         &vp,
                         (int)tmp_x,
                         (int)tmp_y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
                {
                   if (screen)
                   {
-                     res_x = res_screen_x;
-                     res_y = res_screen_y;
+                     res_pos = res_screen_pos;
                   }
 
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return res_x;
+                        return VIDEO_POS_X(res_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return res_y;
+                        return VIDEO_POS_Y(res_pos);
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
                         return (idx < psp->touch[0].reportNum);
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(res_x, res_y);
+                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return psp->touch[0].reportNum;
                   }

@@ -631,27 +631,24 @@ static int16_t x_input_state(
                struct video_viewport vp    = {0};
                bool screen                 =
                   (device == RARCH_DEVICE_POINTER_SCREEN);
-               int16_t res_x               = 0;
-               int16_t res_y               = 0;
-               int16_t res_screen_x        = 0;
-               int16_t res_screen_y        = 0;
+               uint32_t res_pos               = 0;
+               uint32_t res_screen_pos        = 0;
 
                if (video_driver_translate_coord_viewport_confined_wrap(
                         &vp, x11->mouse_x[mouse_port], x11->mouse_y[mouse_port],
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
                {
                   if (screen)
                   {
-                     res_x = res_screen_x;
-                     res_y = res_screen_y;
+                     res_pos = res_screen_pos;
                   }
 
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return res_x;
+                        return VIDEO_POS_X(res_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return res_y;
+                        return VIDEO_POS_Y(res_pos);
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
                         if (idx == 0)
                            return (x11->mouse_l[mouse_port]
@@ -663,7 +660,7 @@ static int16_t x_input_state(
                         else if (idx == 2)
                            return x11->mouse_m[mouse_port];
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(res_x, res_y);
+                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                   }
                }
             }
@@ -677,23 +674,21 @@ static int16_t x_input_state(
                case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                   {
                      struct video_viewport vp    = {0};
-                     int16_t res_x               = 0;
-                     int16_t res_y               = 0;
-                     int16_t res_screen_x        = 0;
-                     int16_t res_screen_y        = 0;
+                     uint32_t res_pos               = 0;
+                     uint32_t res_screen_pos        = 0;
 
                      if (video_driver_translate_coord_viewport_wrap(&vp,
                               x11->mouse_x[mouse_port], x11->mouse_y[mouse_port],
-                              &res_x, &res_y, &res_screen_x, &res_screen_y))
+                              &res_pos, &res_screen_pos))
                      {
                         switch ( id )
                         {
                            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                              return res_x;
+                              return VIDEO_POS_X(res_pos);
                            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                              return res_y;
+                              return VIDEO_POS_Y(res_pos);
                            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                              return input_driver_pointer_is_offscreen(res_x, res_y);
+                              return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                            default:
                               break;
                         }

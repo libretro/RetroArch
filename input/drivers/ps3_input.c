@@ -659,10 +659,8 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    float center_x              = 0.0f;
    const int edge_detect       = 32700;
    bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos               = 0;
+   uint32_t res_screen_pos        = 0;
    float sensitivity           = 1.0f;
    if (!ps3->gem_connected || !ps3->gem_init)
       return 0;
@@ -711,13 +709,13 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
 
    if (video_driver_translate_coord_viewport_wrap(&vp,
            center_x + ((pointer_x - ps3->adj_x) * sensitivity), center_y + ((pointer_y - ps3->adj_y) * sensitivity),
-           &res_x, &res_y, &res_screen_x, &res_screen_y))
+           &res_pos, &res_screen_pos))
    {
 
-      inside = (res_x >= -edge_detect)
-            && (res_y >= -edge_detect)
-            && (res_x <= edge_detect)
-            && (res_y <= edge_detect);
+      inside = (VIDEO_POS_X(res_pos) >= -edge_detect)
+            && (VIDEO_POS_Y(res_pos) >= -edge_detect)
+            && (VIDEO_POS_X(res_pos) <= edge_detect)
+            && (VIDEO_POS_Y(res_pos) <= edge_detect);
 
       switch (id)
       {
@@ -761,11 +759,11 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             if (inside)
-               return res_x;
+               return VIDEO_POS_X(res_pos);
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             if (inside)
-               return ~res_y;
+               return ~VIDEO_POS_Y(res_pos);
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
             return !inside;

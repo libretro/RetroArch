@@ -291,10 +291,8 @@ static int16_t rvl_input_state(
          {
             struct video_viewport vp    = {0};
             uint16_t joy_idx            = joypad_info->joy_idx;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
+            uint32_t res_pos               = 0;
+            uint32_t res_screen_pos        = 0;
             int16_t x                   = gx->mouse[joy_idx].x_abs;
             int16_t y                   = gx->mouse[joy_idx].y_abs;
 
@@ -305,14 +303,14 @@ static int16_t rvl_input_state(
              * the video vtable on every lightgun query - delete it. */
 
             if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
             {
                switch (id)
                {
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                     return res_screen_x;
+                     return VIDEO_POS_X(res_screen_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                     return res_screen_y;
+                     return VIDEO_POS_Y(res_screen_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                      return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);

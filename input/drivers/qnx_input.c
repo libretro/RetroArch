@@ -75,13 +75,8 @@ struct input_pointer
 static void qnx_pointer_set(struct input_pointer *p,
       struct video_viewport *vp, int x, int y)
 {
-   int16_t px = 0, py = 0, fx = 0, fy = 0;
-   if (video_driver_translate_coord_viewport_wrap(vp, x, y,
-            &px, &py, &fx, &fy))
-   {
-      p->pos      = VIDEO_POS_PACK(px, py);
-      p->full_pos = VIDEO_POS_PACK(fx, fy);
-   }
+   video_driver_translate_coord_viewport_wrap(vp, x, y,
+         &p->pos, &p->full_pos);
 }
 
 #define QNX_MAX_KEYS (65535 + 7) / 8

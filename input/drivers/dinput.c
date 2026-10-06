@@ -526,10 +526,8 @@ static int16_t dinput_lightgun_aiming_state(
       struct dinput_input *di, unsigned idx, unsigned id)
 {
    struct video_viewport vp    = {0};
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos               = 0;
+   uint32_t res_screen_pos        = 0;
 
    int x                       = di->mouse_x;
    int y                       = di->mouse_y;
@@ -539,16 +537,16 @@ static int16_t dinput_lightgun_aiming_state(
 
    if (video_driver_translate_coord_viewport_wrap(
                &vp, x, y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y))
+               &res_pos, &res_screen_pos))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }
@@ -737,10 +735,8 @@ static int16_t dinput_input_state(
                struct video_viewport vp    = {0};
                int x                       = 0;
                int y                       = 0;
-               int16_t res_x               = 0;
-               int16_t res_y               = 0;
-               int16_t res_screen_x        = 0;
-               int16_t res_screen_y        = 0;
+               uint32_t res_pos               = 0;
+               uint32_t res_screen_pos        = 0;
                bool touched;
 
                x               = di->mouse_x;
@@ -750,24 +746,23 @@ static int16_t dinput_input_state(
                   return 0;
 
                if (video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
-                           &res_x, &res_y, &res_screen_x, &res_screen_y))
+                           &res_pos, &res_screen_pos))
                {
                   if (device == RARCH_DEVICE_POINTER_SCREEN)
                   {
-                     res_x        = res_screen_x;
-                     res_y        = res_screen_y;
+                     res_pos        = res_screen_pos;
                   }
 
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return res_x;
+                        return VIDEO_POS_X(res_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return res_y;
+                        return VIDEO_POS_Y(res_pos);
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
                         return touched ? 1 : (di->flags & DINP_FLAG_MOUSE_L_BTN) > 0;
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(res_x, res_y);
+                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                      default:
                         break;
                   }

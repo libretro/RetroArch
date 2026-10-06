@@ -1359,23 +1359,21 @@ static int16_t winraw_lightgun_aiming_state(winraw_input_t *wr,
       unsigned port, unsigned id)
 {
    struct video_viewport vp = {0};
-   int16_t res_x         = 0;
-   int16_t res_y         = 0;
-   int16_t res_screen_x  = 0;
-   int16_t res_screen_y  = 0;
+   uint32_t res_pos         = 0;
+   uint32_t res_screen_pos  = 0;
 
    if ((video_driver_translate_coord_viewport_wrap(
                &vp, mouse->x, mouse->y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y)))
+               &res_pos, &res_screen_pos)))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }
@@ -2743,10 +2741,8 @@ static int16_t winraw_input_state(
                bool pointer_down           = false;
                int x                       = 0;
                int y                       = 0;
-               int16_t res_x               = 0;
-               int16_t res_y               = 0;
-               int16_t res_screen_x        = 0;
-               int16_t res_screen_y        = 0;
+               uint32_t res_pos               = 0;
+               uint32_t res_screen_pos        = 0;
                unsigned num                = 0;
                struct winraw_pointer_status *
                   check_pos                = wr->pointer_head.next;
@@ -2774,25 +2770,24 @@ static int16_t winraw_input_state(
                }
 
                if (!(video_driver_translate_coord_viewport_confined_wrap(&vp, x, y,
-                           &res_x, &res_y, &res_screen_x, &res_screen_y)))
+                           &res_pos, &res_screen_pos)))
                   return 0;
 
                if (device == RARCH_DEVICE_POINTER_SCREEN)
                {
-                  res_x        = res_screen_x;
-                  res_y        = res_screen_y;
+                  res_pos        = res_screen_pos;
                }
 
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
+                     return VIDEO_POS_X(res_pos);
                   case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
+                     return VIDEO_POS_Y(res_pos);
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return pointer_down;
                   case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
+                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                   default:
                      break;
                }

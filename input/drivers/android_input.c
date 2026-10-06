@@ -1268,10 +1268,6 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    float y_max   = (float)video_height;
 
    struct video_viewport vp = {0};
-   int16_t res_x            = 0;
-   int16_t res_y            = 0;
-   int16_t res_screen_x     = 0;
-   int16_t res_screen_y     = 0;
 
    /* AINPUT_SOURCE_MOUSE_RELATIVE is available on Oreo (SDK 26) and newer,
     * it passes the relative coordinates in the regular X and Y parts.
@@ -1321,13 +1317,9 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
    if (!y) y = android->mouse_y + android->mouse_y_delta;
 
    {
-      int16_t vx = 0, vy = 0, sx = 0, sy = 0;
-      if (video_driver_translate_coord_viewport_confined_wrap(&vp,
-               (int) x, (int) y, &vx, &vy, &sx, &sy))
-      {
-         android->mouse_viewport_pos        = VIDEO_POS_PACK(vx, vy);
-         android->mouse_viewport_screen_pos = VIDEO_POS_PACK(sx, sy);
-      }
+      video_driver_translate_coord_viewport_confined_wrap(&vp,
+            (int) x, (int) y, &android->mouse_viewport_pos,
+            &android->mouse_viewport_screen_pos);
    }
 
    /* x and y are used for the screen mouse, so we want
@@ -1346,21 +1338,11 @@ static INLINE void android_mouse_calculate_deltas(android_input_t *android,
 static void android_pointer_set(android_input_t *android, unsigned i,
       struct video_viewport *vp, float x, float y)
 {
-   int16_t px = 0, py = 0, cx = 0, cy = 0, fx = 0, fy = 0;
-
    /* a translation that fails (no viewport) leaves what was there */
-   if (video_driver_translate_coord_viewport_confined_wrap(vp, x, y,
-            &cx, &cy, &fx, &fy))
-   {
-      android->pointer[i].confined_pos = VIDEO_POS_PACK(cx, cy);
-      android->pointer[i].full_pos     = VIDEO_POS_PACK(fx, fy);
-   }
-   if (video_driver_translate_coord_viewport_wrap(vp, x, y,
-            &px, &py, &fx, &fy))
-   {
-      android->pointer[i].pos          = VIDEO_POS_PACK(px, py);
-      android->pointer[i].full_pos     = VIDEO_POS_PACK(fx, fy);
-   }
+   video_driver_translate_coord_viewport_confined_wrap(vp, x, y,
+         &android->pointer[i].confined_pos, &android->pointer[i].full_pos);
+   video_driver_translate_coord_viewport_wrap(vp, x, y,
+         &android->pointer[i].pos, &android->pointer[i].full_pos);
 }
 
 /* The pen's position, written to pointer 0. */

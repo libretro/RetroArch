@@ -1390,10 +1390,8 @@ const char *pixel_format_name(enum retro_pixel_format pix_fmt)
  * video_driver_translate_coord_viewport:
  * @mouse_x                        : Pointer X coordinate.
  * @mouse_y                        : Pointer Y coordinate.
- * @res_x                          : Scaled  X coordinate.
- * @res_y                          : Scaled  Y coordinate.
- * @res_screen_x                   : Scaled screen X coordinate.
- * @res_screen_y                   : Scaled screen Y coordinate.
+ * @res_pos                        : Scaled position, VIDEO_POS_PACK.
+ * @res_screen_pos                 : Scaled screen position, VIDEO_POS_PACK.
  * @report_oob                     : Out-of-bounds report mode
  *
  * Translates pointer [X,Y] coordinates into scaled screen
@@ -1407,8 +1405,7 @@ const char *pixel_format_name(enum retro_pixel_format pix_fmt)
 bool video_driver_translate_coord_viewport(
       struct video_viewport *vp,
       int mouse_x,           int mouse_y,
-      int16_t *res_x,        int16_t *res_y,
-      int16_t *res_screen_x, int16_t *res_screen_y,
+      uint32_t *res_pos,     uint32_t *res_screen_pos,
       bool report_oob)
 {
    int norm_vp_width         = (int)VIDEO_SCALE_W(vp->dims);
@@ -1474,10 +1471,8 @@ bool video_driver_translate_coord_viewport(
          scaled_y =  0x7fff;
    }
 
-   *res_x             = scaled_x;
-   *res_y             = scaled_y;
-   *res_screen_x      = scaled_screen_x;
-   *res_screen_y      = scaled_screen_y;
+   *res_pos           = VIDEO_POS_PACK(scaled_x, scaled_y);
+   *res_screen_pos    = VIDEO_POS_PACK(scaled_screen_x, scaled_screen_y);
    return true;
 }
 

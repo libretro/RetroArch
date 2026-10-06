@@ -812,15 +812,13 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
 }
 
 static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
-            bool screen, bool confined, int16_t *ret_x, int16_t *ret_y)
+            bool screen, bool confined, uint32_t *ret_pos)
 {
    struct video_viewport vp    = {0};
    int16_t scaled_x;
    int16_t scaled_y;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos               = 0;
+   uint32_t res_screen_pos = 0;
 
    if (!video_driver_get_viewport_info(&vp))
       return false;
@@ -841,12 +839,12 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
 
    if (confined && video_driver_translate_coord_viewport_confined_wrap(
             &vp, scaled_x, scaled_y,
-            &res_x, &res_y, &res_screen_x, &res_screen_y))
+            &res_pos, &res_screen_pos))
    {
    }
    else if (!confined && video_driver_translate_coord_viewport_wrap(
             &vp, scaled_x, scaled_y,
-            &res_x, &res_y, &res_screen_x, &res_screen_y))
+            &res_pos, &res_screen_pos))
    {
    }
    else
@@ -856,13 +854,11 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
 
    if (screen)
    {
-      *ret_x = res_screen_x;
-      *ret_y = res_screen_y;
+      *ret_pos = res_screen_pos;
    }
    else
    {
-      *ret_x = res_x;
-      *ret_y = res_y;
+      *ret_pos = res_pos;
    }
    return true;
 }
@@ -1856,7 +1852,7 @@ static bool udev_translate_touch_pos(
         uint32_t *pointer_ma_pos, uint32_t *pointer_ma_rel,
         uint32_t *pointer_scr_pos, uint32_t *pointer_vp_pos)
 {
-   int16_t vp_x = 0, vp_y = 0, scr_x = 0, scr_y = 0;
+
    /* Touch panel -> Main panel */
    /*
     * TODO - This keeps the precision, but might result in +-1 pixel difference
@@ -1874,13 +1870,9 @@ static bool udev_translate_touch_pos(
    *pointer_ma_pos    = VIDEO_POS_PACK(ma_pos_x, ma_pos_y);
 
    /* Main panel -> Screen and Viewport; on failure both are left */
-   if (!video_driver_translate_coord_viewport_wrap(target_vp,
-            VIDEO_POS_X(*pointer_ma_pos), VIDEO_POS_Y(*pointer_ma_pos),
-            &vp_x, &vp_y, &scr_x, &scr_y))
-      return false;
-   *pointer_vp_pos  = VIDEO_POS_PACK(vp_x, vp_y);
-   *pointer_scr_pos = VIDEO_POS_PACK(scr_x, scr_y);
-   return true;
+   return video_driver_translate_coord_viewport_wrap(target_vp,
+         VIDEO_POS_X(*pointer_ma_pos), VIDEO_POS_Y(*pointer_ma_pos),
+         pointer_vp_pos, pointer_scr_pos);
 }
 
 /**
@@ -3792,19 +3784,18 @@ static int16_t udev_lightgun_aiming_state(
 {
 
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
-   int16_t res_x;
-   int16_t res_y;
+   uint32_t res_pos;
 
-   if (mouse && udev_mouse_get_pointer(mouse, false, false, &res_x, &res_y))
+   if (mouse && udev_mouse_get_pointer(mouse, false, false, &res_pos))
    {
       switch ( id )
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }
@@ -3942,17 +3933,16 @@ static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned idx, unsigned id, bool screen)
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-   int16_t res_x;
-   int16_t res_y;
+   uint32_t res_pos;
 
-   if (mouse && udev_mouse_get_pointer(mouse, screen, true, &res_x, &res_y))
+   if (mouse && udev_mouse_get_pointer(mouse, screen, true, &res_pos))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_POINTER_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             if (mouse->abs == 1)
             {
@@ -3969,7 +3959,7 @@ static int16_t udev_pointer_state(udev_input_t *udev,
             else if (idx == 2)
                return mouse->m;
          case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
       }
    }
 

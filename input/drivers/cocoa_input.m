@@ -465,28 +465,18 @@ static void cocoa_input_poll(void *data)
       cocoa_touch_data_t *touch = &apple->touches[i];
       int screen_x              = COCOA_POS_X(touch->screen_pos) * backing_scale_factor;
       int screen_y              = COCOA_POS_Y(touch->screen_pos) * backing_scale_factor;
-      int16_t confined_x        = COCOA_POS_X(touch->confined_pos);
-      int16_t confined_y        = COCOA_POS_Y(touch->confined_pos);
-      int16_t fixed_x           = COCOA_POS_X(touch->fixed_pos);
-      int16_t fixed_y           = COCOA_POS_Y(touch->fixed_pos);
-      int16_t full_x            = COCOA_POS_X(touch->full_pos);
-      int16_t full_y            = COCOA_POS_Y(touch->full_pos);
 
       memset(&vp, 0, sizeof(vp));
 
-      /* each pair is written whole, as it was read: a translation that
-       * fails leaves it as it was */
+      /* each position is written whole by the translation, and left as
+       * it was if that fails */
       video_driver_translate_coord_viewport_confined_wrap(
             &vp, screen_x, screen_y,
-            &confined_x, &confined_y, &full_x, &full_y);
+            &touch->confined_pos, &touch->full_pos);
 
       video_driver_translate_coord_viewport_wrap(
             &vp, screen_x, screen_y,
-            &fixed_x, &fixed_y, &full_x, &full_y);
-
-      touch->confined_pos = COCOA_POS_PACK(confined_x, confined_y);
-      touch->fixed_pos    = COCOA_POS_PACK(fixed_x, fixed_y);
-      touch->full_pos     = COCOA_POS_PACK(full_x, full_y);
+            &touch->fixed_pos, &touch->full_pos);
    }
 }
 
@@ -494,10 +484,8 @@ static int16_t cocoa_lightgun_aiming_state(
       cocoa_input_data_t *apple, unsigned idx, unsigned id)
 {
    struct video_viewport vp    = {0};
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos            = 0;
+   uint32_t res_screen_pos     = 0;
 
    int16_t x = COCOA_POS_X(apple->window_pos);
    int16_t y = COCOA_POS_Y(apple->window_pos);
@@ -509,16 +497,16 @@ static int16_t cocoa_lightgun_aiming_state(
 
    if (video_driver_translate_coord_viewport_wrap(
                &vp, x, y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y))
+               &res_pos, &res_screen_pos))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }

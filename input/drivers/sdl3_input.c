@@ -445,10 +445,8 @@ static int16_t sdl3_input_state(
          {
             video_viewport_t vp = {0};
             bool screen = device == RARCH_DEVICE_POINTER_SCREEN;
-            int16_t res_x = 0;
-            int16_t res_y = 0;
-            int16_t res_screen_x = 0;
-            int16_t res_screen_y = 0;
+            uint32_t res_pos = 0;
+            uint32_t res_screen_pos = 0;
             int abs_x = 0;
             int abs_y = 0;
             int16_t pressed = 0;
@@ -500,25 +498,24 @@ static int16_t sdl3_input_state(
 
             if (video_driver_translate_coord_viewport(
                         &vp, abs_x, abs_y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y,
+                        &res_pos, &res_screen_pos,
                         true))
             {
                if (screen)
                {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
+                  res_pos = res_screen_pos;
                }
 
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
+                     return VIDEO_POS_X(res_pos);
                   case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
+                     return VIDEO_POS_Y(res_pos);
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      return pressed;
                   case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
+                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                }
             }
          }
@@ -539,23 +536,21 @@ static int16_t sdl3_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                {
                   video_viewport_t vp  = {0};
-                  int16_t res_x        = 0;
-                  int16_t res_y        = 0;
-                  int16_t res_screen_x = 0;
-                  int16_t res_screen_y = 0;
+                  uint32_t res_pos        = 0;
+                  uint32_t res_screen_pos = 0;
 
                   if (video_driver_translate_coord_viewport_wrap(
                               &vp, (int)sdl->mouse_abs_x, (int)sdl->mouse_abs_y,
-                              &res_x, &res_y, &res_screen_x, &res_screen_y))
+                              &res_pos, &res_screen_pos))
                   {
                      switch (id)
                      {
                         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                           return res_x;
+                           return VIDEO_POS_X(res_pos);
                         case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                           return res_y;
+                           return VIDEO_POS_Y(res_pos);
                         case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                           return input_driver_pointer_is_offscreen(res_x, res_y);
+                           return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                         default:
                            break;
                      }

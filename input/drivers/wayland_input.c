@@ -118,10 +118,8 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
    if (idx <= MAX_TOUCHES)
    {
       struct video_viewport vp    = {0};
-      int16_t res_x               = 0;
-      int16_t res_y               = 0;
-      int16_t res_screen_x        = 0;
-      int16_t res_screen_y        = 0;
+      uint32_t res_pos               = 0;
+      uint32_t res_screen_pos        = 0;
 
       /* Shortcut: mouse button events will be reported on desktop with 0/0 coordinates. *
        * Skip these, mouse handling will catch it elsewhere.                             */
@@ -130,20 +128,19 @@ static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
 
       if (video_driver_translate_coord_viewport_confined_wrap(&vp,
                   wl->touches[idx].x, wl->touches[idx].y,
-                  &res_x, &res_y, &res_screen_x, &res_screen_y))
+                  &res_pos, &res_screen_pos))
       {
          if (screen)
          {
-            res_x = res_screen_x;
-            res_y = res_screen_y;
+            res_pos = res_screen_pos;
          }
 
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               return res_x;
+               return VIDEO_POS_X(res_pos);
             case RETRO_DEVICE_ID_POINTER_Y:
-               return res_y;
+               return VIDEO_POS_Y(res_pos);
             case RETRO_DEVICE_ID_POINTER_PRESSED:
                return wl->touches[idx].active;
          }
@@ -328,27 +325,24 @@ static int16_t input_wl_state(
             struct video_viewport vp    = {0};
             bool screen                 =
                (device == RARCH_DEVICE_POINTER_SCREEN);
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
+            uint32_t res_pos               = 0;
+            uint32_t res_screen_pos        = 0;
 
             if (video_driver_translate_coord_viewport_confined_wrap(&vp,
                         wl->mouse.x, wl->mouse.y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
             {
                if (screen)
                {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
+                  res_pos = res_screen_pos;
                }
 
                switch (id)
                {
                   case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
+                     return VIDEO_POS_X(res_pos);
                   case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
+                     return VIDEO_POS_Y(res_pos);
                   case RETRO_DEVICE_ID_POINTER_PRESSED:
                      if (idx == 0)
                         return (wl->mouse.left | wl->mouse.right | wl->mouse.middle);
@@ -357,7 +351,7 @@ static int16_t input_wl_state(
                      else if (idx == 2)
                         return wl->mouse.middle;
                   case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
+                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                   default:
                      break;
                }
@@ -368,14 +362,12 @@ static int16_t input_wl_state(
          /* All ports report the same lightgun state. See notes at mouse case. */
          {
             struct video_viewport vp = {0};
-            int16_t res_x            = 0;
-            int16_t res_y            = 0;
-            int16_t res_screen_x     = 0;
-            int16_t res_screen_y     = 0;
+            uint32_t res_pos            = 0;
+            uint32_t res_screen_pos     = 0;
 
             if (video_driver_translate_coord_viewport_wrap(&vp,
                         wl->mouse.x, wl->mouse.y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
             {
                switch (id)
                {
@@ -384,9 +376,9 @@ static int16_t input_wl_state(
                   case RETRO_DEVICE_ID_LIGHTGUN_Y:
                      return wl->mouse.delta_y;
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                     return res_x;
+                     return VIDEO_POS_X(res_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                     return res_y;
+                     return VIDEO_POS_Y(res_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                      return wl->mouse.left;
                   case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -396,7 +388,7 @@ static int16_t input_wl_state(
                   case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                      return wl->mouse.left && wl->mouse.right;
                   case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
+                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:        /* TODO */
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:        /* TODO */
                   case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:        /* TODO */

@@ -109,10 +109,9 @@ typedef struct switch_input
    /* pointer */
    bool touch_state[MULTITOUCH_LIMIT];
    bool previous_touch_state[MULTITOUCH_LIMIT];
-   int16_t touch_x_viewport[MULTITOUCH_LIMIT]; /* used for POINTER device */
-   int16_t touch_y_viewport[MULTITOUCH_LIMIT]; /* used for POINTER device */
-   int16_t touch_x_screen[MULTITOUCH_LIMIT]; /* used for POINTER_SCREEN device */
-   int16_t touch_y_screen[MULTITOUCH_LIMIT]; /* used for POINTER_SCREEN device */
+   /* x, y as VIDEO_POS_PACK */
+   uint32_t touch_viewport_pos[MULTITOUCH_LIMIT]; /* used for POINTER device */
+   uint32_t touch_screen_pos[MULTITOUCH_LIMIT];   /* used for POINTER_SCREEN device */
    uint32_t touch_x[MULTITOUCH_LIMIT]; /* used for touch mouse */
    uint32_t touch_y[MULTITOUCH_LIMIT]; /* used for touch mouse */
    uint32_t touch_previous_x[MULTITOUCH_LIMIT];
@@ -199,10 +198,8 @@ static void switch_input_poll(void *data)
             &vp,
             touch_screen_state.touches[i].x,
             touch_screen_state.touches[i].y,
-            &sw->touch_x_viewport[i],
-            &sw->touch_y_viewport[i],
-            &sw->touch_x_screen[i],
-            &sw->touch_y_screen[i]);
+            &sw->touch_viewport_pos[i],
+            &sw->touch_screen_pos[i]);
       }
    }
 
@@ -379,9 +376,9 @@ static int16_t switch_input_state(
                case RETRO_DEVICE_ID_POINTER_PRESSED:
                   return sw->touch_state[idx];
                case RETRO_DEVICE_ID_POINTER_X:
-                  return sw->touch_x_viewport[idx];
+                  return VIDEO_POS_X(sw->touch_viewport_pos[idx]);
                case RETRO_DEVICE_ID_POINTER_Y:
-                  return sw->touch_y_viewport[idx];
+                  return VIDEO_POS_Y(sw->touch_viewport_pos[idx]);
             }
          }
          break;
@@ -393,9 +390,9 @@ static int16_t switch_input_state(
                case RETRO_DEVICE_ID_POINTER_PRESSED:
                   return sw->touch_state[idx];
                case RETRO_DEVICE_ID_POINTER_X:
-                  return sw->touch_x_screen[idx];
+                  return VIDEO_POS_X(sw->touch_screen_pos[idx]);
                case RETRO_DEVICE_ID_POINTER_Y:
-                  return sw->touch_y_screen[idx];
+                  return VIDEO_POS_Y(sw->touch_screen_pos[idx]);
             }
          }
          break;
