@@ -41,6 +41,8 @@ on:
       - 'input/drivers_joypad/winraw_joypad.c'
       - 'gfx/common/win32_common.c'
       - 'gfx/common/win32_msg_route.h'
+      - 'gfx/common/win32_ime.h'
+      - 'samples/input/win32_ime/**'
       - 'gfx/display_servers/dispserv_win32.c'
       - 'gfx/drivers/gdi_gfx.c'
       - 'gfx/drivers_context/wgl_ctx.c'
@@ -60,6 +62,8 @@ on:
       - 'input/drivers_joypad/winraw_joypad.c'
       - 'gfx/common/win32_common.c'
       - 'gfx/common/win32_msg_route.h'
+      - 'gfx/common/win32_ime.h'
+      - 'samples/input/win32_ime/**'
       - 'gfx/display_servers/dispserv_win32.c'
       - 'gfx/drivers/gdi_gfx.c'
       - 'gfx/video_driver.c'
@@ -129,6 +133,19 @@ jobs:
           key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
           restore-keys: |
             ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Build and run win32_ime_test under Wine
+        shell: bash
+        run: |
+          set -eu
+          # The window has its input context (the IME) only while a line
+          # of text is open: gfx/common/win32_ime.h, driven from another
+          # thread as the frontend does, the window asked on its own.
+          Xvfb :97 -screen 0 640x480x24 > /dev/null 2>&1 &
+          trap 'kill $! 2>/dev/null; wineserver -k >/dev/null 2>&1 || true' EXIT
+          export DISPLAY=:97
+          make -C samples/input/win32_ime check
+          make -C samples/input/win32_ime clean
 
       - name: Build retroarch.exe with mingw-w64 (GDI and raw input, the rest off)
         shell: bash
