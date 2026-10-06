@@ -5456,11 +5456,11 @@ static void lane_x11_event_pump(void)
       for (spin = 0; spin < 200; spin++)
       {
          input_st->current_driver->poll(input_st->current_data);
-         (void)input_st->current_driver->input_state(
-               input_st->current_data, NULL, NULL, NULL, NULL, false, 0,
+         /* the driver published its mouse in that poll; the frontend
+          * answers for it */
+         (void)input_driver_device_state(0,
                RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
-         if (input_st->current_driver->input_state(
-                  input_st->current_data, NULL, NULL, NULL, NULL, false, 0,
+         if (input_driver_device_state(0,
                   RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_WHEELUP))
          {
             wheel_seen++;
@@ -5577,12 +5577,12 @@ static void lane_x11_grabbed_mouse(void)
       if (sent > most)
          most = sent;
 
-      dx = input_st->current_driver->input_state(input_st->current_data,
-            NULL, NULL, NULL, NULL, false, 0,
-            RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X);
-      dy = input_st->current_driver->input_state(input_st->current_data,
-            NULL, NULL, NULL, NULL, false, 0,
-            RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_Y);
+      /* the motion the driver published in that poll, one packed word */
+      {
+         uint32_t rel = input_driver_device_pos(0, RETRO_DEVICE_MOUSE, 0);
+         dx           = VIDEO_POS_X(rel);
+         dy           = VIDEO_POS_Y(rel);
+      }
       /* The first poll may still be taking the pointer to the centre. */
       if (i > 0)
          CHECK(dx == 7 && dy == -3,

@@ -4208,7 +4208,11 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
 
    if (!audio_driver_st.current_audio || !audio_driver_st.current_audio->init)
    {
-      RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
+      /* The null driver has nothing to start. It was asked for - by a
+       * test, or a user who wants no sound - so it is no failure, and
+       * not worth an error each time the drivers are started again. */
+      if (!audio_driver_st.current_audio)
+         RARCH_ERR("Failed to initialize audio driver. Will continue without audio.\n");
       AUDIO_FLAGS_CLEAR(&audio_driver_st, AUDIO_FLAG_ACTIVE);
       return false;
    }
