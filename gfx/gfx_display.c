@@ -1606,24 +1606,25 @@ void gfx_display_draw_keyboard(
    }
 }
 
-/* ---- Still images through a surface, for callers that own the handle
+/* ---- Still images into a slot the caller owns
  *
- * Under threaded video a plain texture load is a round trip: the main
- * thread posts it and waits for the video thread's reply, and a theme's
- * icons are dozens of them. On the main thread with the wrapper running
- * the load is a surface submit instead, queued, and the handle is
- * written into the caller's slot when the upload completes - the caller
- * owns the texture as before. A slot reset or freed while its load is
- * in flight is cancelled first (gfx_display_texture_loads_cancel), and
- * the completion then unloads the texture rather than write it. Without
- * the wrapper, off the main thread, and for an image the plain load
- * treats specially (compressed, 10-bit), nothing changes. */
-#ifdef HAVE_THREADS
+ * A load into a caller's uintptr_t slot is a registered load from the
+ * moment it is asked for until its texture is in the slot: the decode
+ * of a file on the task queue, then the upload. Under threaded video
+ * the upload is a surface submit, queued, and the handle is written
+ * into the slot when it completes - never a round trip per icon on the
+ * main thread. The slot keeps the texture it holds until the new one
+ * has landed. A slot reset or freed while a load is in flight is
+ * cancelled first (gfx_display_texture_loads_cancel); a cancelled load
+ * frees what it decoded and unloads what it uploaded, and writes
+ * nothing. Off the main thread, without the wrapper, and for an image
+ * the plain load treats specially (compressed, 10-bit), the upload is
+ * the plain load. */
 typedef struct gfx_display_tex_load
 {
    struct gfx_display_tex_load *next;
    uintptr_t                   *item;
-   /* The pixels, until the upload has read them */
+   /* The pixels, once decoded, until the upload has read them */
    struct texture_image         img;
    /* img.pixels are freed at the completion; false for a borrowed
     * buffer that outlives the load */
@@ -1631,75 +1632,89 @@ typedef struct gfx_display_tex_load
    bool                         cancelled;
 } gfx_display_tex_load_t;
 
-/* Main thread only, as surface submits and their completions are */
+/* Main thread only, as task callbacks, surface submits and their
+ * completions are */
 static gfx_display_tex_load_t *gfx_display_tex_loads;
 
-static void gfx_display_tex_load_release(void *user, gfx_surface_t *s,
-      unsigned slot)
+static void gfx_display_tex_load_unlink(gfx_display_tex_load_t *e)
 {
-   gfx_display_tex_load_t  *e = (gfx_display_tex_load_t*)user;
    gfx_display_tex_load_t **p = &gfx_display_tex_loads;
-   (void)slot;
-
    while (*p && *p != e)
       p = &(*p)->next;
    if (*p)
       *p = e->next;
+}
+
+static void gfx_display_tex_load_free(gfx_display_tex_load_t *e)
+{
+   if (e->owned)
+      image_texture_free(&e->img);
+   free(e);
+}
+
+/* The new texture into the slot, the old one out */
+static void gfx_display_tex_load_land(uintptr_t *item, uintptr_t tex)
+{
+   uintptr_t old = *item;
+   *item         = tex;
+   if (old)
+      video_driver_texture_unload(&old);
+}
+
+#ifdef HAVE_THREADS
+static void gfx_display_tex_load_release(void *user, gfx_surface_t *s,
+      unsigned slot)
+{
+   gfx_display_tex_load_t *e = (gfx_display_tex_load_t*)user;
+   (void)slot;
+
+   gfx_display_tex_load_unlink(e);
 
    /* A handle of 0 is a load the driver refused or a teardown. The
     * slot's old texture stays drawn until now. */
    if (!e->cancelled && s->handle)
    {
-      uintptr_t old = *e->item;
-      *e->item      = s->handle;
-      s->handle     = 0;
-      if (old)
-         video_driver_texture_unload(&old);
+      gfx_display_tex_load_land(e->item, s->handle);
+      s->handle = 0;
    }
    gfx_surface_free(s);
-   if (e->owned)
-      image_texture_free(&e->img);
-   free(e);
+   gfx_display_tex_load_free(e);
 }
 #endif
 
 void gfx_display_texture_loads_cancel(const void *base, size_t len)
 {
-#ifdef HAVE_THREADS
    const char             *lo = (const char*)base;
    const char             *hi = lo + len;
    gfx_display_tex_load_t *e;
    for (e = gfx_display_tex_loads; e; e = e->next)
       if ((const char*)e->item >= lo && (const char*)e->item < hi)
          e->cancelled = true;
-#else
-   (void)base;
-   (void)len;
-#endif
 }
 
-static bool gfx_display_texture_load_ex(struct texture_image *ti,
-      enum texture_filter_type filter, uintptr_t *item, bool owned)
+/* Uploads e->img into e->item. e is not on the list; it is relinked
+ * for a queued upload and freed otherwise. */
+static bool gfx_display_tex_load_submit(gfx_display_tex_load_t *e,
+      enum texture_filter_type filter)
 {
+   struct texture_image *ti = &e->img;
+   uintptr_t tex            = 0;
+
+   /* A newer load for the same slot replaces one in flight */
+   gfx_display_texture_loads_cancel(e->item, sizeof(*e->item));
+
 #ifdef HAVE_THREADS
-   if (     ti && item && ti->pixels && !ti->compressed && !ti->pix10
+   if (     ti->pixels && !ti->compressed && !ti->pix10
          && VIDEO_SCALE_FITS(ti->width, ti->height)
          && video_driver_thread_wrapper_active()
          && task_is_on_main_thread())
    {
-      gfx_surface_t          *s = gfx_surface_new_static(
+      gfx_surface_t *s = gfx_surface_new_static(
             VIDEO_SCALE_PACK(ti->width, ti->height), filter);
-      gfx_display_tex_load_t *e = s
-         ? (gfx_display_tex_load_t*)calloc(1, sizeof(*e)) : NULL;
-      if (e)
+      if (s)
       {
          enum gfx_surface_submit_result r;
          gfx_surface_src_t src;
-         /* A newer load for the same slot replaces one in flight */
-         gfx_display_texture_loads_cancel(item, sizeof(*item));
-         e->item          = item;
-         e->img           = *ti;
-         e->owned         = owned;
          /* The entry frees the pixels from its release, which always
           * runs: a display load's surface is only freed there. */
          src.pixels       = ti->pixels;
@@ -1713,41 +1728,45 @@ static bool gfx_display_texture_load_ex(struct texture_image *ti,
          {
             e->next               = gfx_display_tex_loads;
             gfx_display_tex_loads = e;
-            /* The load frees them now; the caller's free skips them */
-            if (owned)
-               ti->pixels         = NULL;
             return true;
          }
          if (r == GFX_SURFACE_SUBMIT_DONE)
          {
-            uintptr_t old = *item;
-            *item         = s->handle;
-            s->handle     = 0;
-            if (old)
-               video_driver_texture_unload(&old);
+            gfx_display_tex_load_land(e->item, s->handle);
+            s->handle = 0;
             gfx_surface_free(s);
-            free(e);
+            gfx_display_tex_load_free(e);
             return true;
          }
+         gfx_surface_free(s);
       }
-      free(e);
-      gfx_surface_free(s);
    }
 #endif
+   if (!video_driver_texture_load(ti, filter, &tex))
    {
-      uintptr_t tex = 0;
-      if (!video_driver_texture_load(ti, filter, &tex))
-         return false;
-      if (item)
-      {
-         uintptr_t old = *item;
-         gfx_display_texture_loads_cancel(item, sizeof(*item));
-         *item = tex;
-         if (old)
-            video_driver_texture_unload(&old);
-      }
-      return true;
+      gfx_display_tex_load_free(e);
+      return false;
    }
+   gfx_display_tex_load_land(e->item, tex);
+   gfx_display_tex_load_free(e);
+   return true;
+}
+
+static bool gfx_display_texture_load_ex(struct texture_image *ti,
+      enum texture_filter_type filter, uintptr_t *item, bool owned)
+{
+   gfx_display_tex_load_t *e;
+   if (!ti || !item)
+      return false;
+   if (!(e = (gfx_display_tex_load_t*)calloc(1, sizeof(*e))))
+      return false;
+   e->item  = item;
+   e->img   = *ti;
+   e->owned = owned;
+   /* The load frees the pixels now; the caller's free skips them */
+   if (owned)
+      ti->pixels = NULL;
+   return gfx_display_tex_load_submit(e, filter);
 }
 
 bool gfx_display_texture_load(struct texture_image *ti,
@@ -1903,28 +1922,76 @@ enum texture_filter_type gfx_display_texture_filter_latched(void)
          ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
 }
 
-bool gfx_display_load_icon(
-      const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr)
+/* Main thread, the decode done: the load goes on to its upload, or
+ * ends here when its slot went away meanwhile */
+static void gfx_display_icon_decoded(retro_task_t *task,
+      void *task_data, void *user_data, const char *error)
+{
+   struct texture_image   *img = (struct texture_image*)task_data;
+   gfx_display_tex_load_t *e   = (gfx_display_tex_load_t*)user_data;
+   (void)task;
+   (void)error;
+
+   if (!e)
+   {
+      if (img)
+      {
+         image_texture_free(img);
+         free(img);
+      }
+      return;
+   }
+
+   gfx_display_tex_load_unlink(e);
+
+   if (e->cancelled || !img || img->width < 1 || img->height < 1
+         || !img->pixels)
+   {
+      if (img)
+      {
+         image_texture_free(img);
+         free(img);
+      }
+      free(e);
+      return;
+   }
+
+   e->img   = *img;
+   e->owned = true;
+   free(img);
+   gfx_display_tex_load_submit(e, gfx_display_texture_filter());
+}
+
+bool gfx_display_load_icon(const char *fullpath,
+      bool supports_rgba, uintptr_t *target_texture)
 {
 #ifdef GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
-   /* Synchronous path - identical to pre-async behavior.
-    * Generation counter is irrelevant: the load completes
-    * before this function returns, so there is no in-flight
-    * callback that could write to a freed pointer. */
    (void)supports_rgba;
-   (void)generation;
-   (void)generation_ptr;
    return gfx_display_reset_icon_texture(
          fullpath, target_texture,
          gfx_display_texture_filter());
 #else
-   return task_push_icon_load(
-         fullpath, supports_rgba,
-         target_texture, generation, generation_ptr);
+   gfx_display_tex_load_t *e;
+
+   if (!fullpath || !target_texture)
+      return false;
+   if (!(e = (gfx_display_tex_load_t*)calloc(1, sizeof(*e))))
+      return false;
+   e->item = target_texture;
+   /* A newer load for the same slot replaces one in flight */
+   gfx_display_texture_loads_cancel(target_texture,
+         sizeof(*target_texture));
+   e->next               = gfx_display_tex_loads;
+   gfx_display_tex_loads = e;
+
+   if (!task_push_image_load(fullpath, supports_rgba, 0, 0,
+            gfx_display_icon_decoded, e))
+   {
+      gfx_display_tex_load_unlink(e);
+      free(e);
+      return false;
+   }
+   return true;
 #endif
 }
 

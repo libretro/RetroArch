@@ -312,14 +312,6 @@ bool task_image_detach_video_stream(retro_task_t *task,
  * already answer. */
 int task_image_png_probe(retro_task_t *task);
 
-/* Async icon/texture loading.  generation_ptr must point to a static
- * variable in the calling module (not a heap struct field). */
-bool task_push_icon_load(const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr);
-
 #ifdef HAVE_LIBRETRODB
 /* Scans @fullpath, a directory or a single file, against the content
  * databases; the database and playlist directories come from the

@@ -245,6 +245,9 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
    if (!state || !state->icons)
       return;
 
+   /* Icons still uploading into them land nowhere */
+   gfx_display_texture_loads_cancel(&state->icons->fallback,
+         sizeof(state->icons->fallback));
    if (state->icons->fallback)
       video_driver_texture_unload(&state->icons->fallback);
 
@@ -257,6 +260,7 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
          if (!icon)
             continue;
 
+         gfx_display_texture_loads_cancel(icon, sizeof(*icon));
          video_driver_texture_unload(icon);
          free(icon);
       }
@@ -266,9 +270,6 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
    free(state->icons);
    state->icons = NULL;
 }
-
-/* File-static generation counter for async icon loads */
-static uint64_t contentless_icon_load_gen = 0;
 
 static void contentless_cores_load_icons(contentless_cores_state_t *state)
 {
@@ -283,9 +284,6 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
    /* Unload any existing icons */
    contentless_cores_unload_icons(state);
-
-   /* Invalidate any in-flight async icon loads */
-   contentless_icon_load_gen++;
 
    if (!state->icons_enabled)
       return;
@@ -308,8 +306,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 
    if (path_is_valid(icon_path))
       gfx_display_load_icon(icon_path, rgba_supported,
-            &state->icons->fallback, contentless_icon_load_gen,
-            &contentless_icon_load_gen);
+            &state->icons->fallback);
 
    /* Get icons for all contentless cores */
    core_info_get_list(&core_info_list);
@@ -352,8 +349,7 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
                   core_info->core_file_id.str, icon);
 
             gfx_display_load_icon(icon_path, rgba_supported,
-                  icon, contentless_icon_load_gen,
-                  &contentless_icon_load_gen);
+                  icon);
          }
       }
    }
@@ -382,11 +378,7 @@ void menu_contentless_cores_context_init(void)
 void menu_contentless_cores_context_deinit(void)
 {
    if (contentless_cores_state)
-   {
-      /* Invalidate in-flight async icon loads before unloading */
-      contentless_icon_load_gen++;
       contentless_cores_unload_icons(contentless_cores_state);
-   }
 }
 
 void menu_contentless_cores_free(void)
@@ -394,8 +386,6 @@ void menu_contentless_cores_free(void)
    if (!contentless_cores_state)
       return;
 
-   /* Invalidate in-flight async icon loads before freeing */
-   contentless_icon_load_gen++;
    contentless_cores_free_info_entries(contentless_cores_state);
    contentless_cores_unload_icons(contentless_cores_state);
    free(contentless_cores_state);

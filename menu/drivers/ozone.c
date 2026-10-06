@@ -3032,18 +3032,13 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
    for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
    {
       ozone_theme_t *theme = ozone_themes[j];
+      /* Still uploading into them: land nowhere */
+      gfx_display_texture_loads_cancel(theme->textures,
+            sizeof(theme->textures));
       for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
             video_driver_texture_unload(&theme->textures[i]);
    }
 }
-
-/* File-static generation counter for async icon loads.
- * NOT inside ozone_handle_t — must outlive the struct.
- * Two counters: one for context_reset static textures,
- * one for horizontal list playlist icons. Separate because
- * horizontal list rebuilds must not invalidate context textures. */
-static uint64_t ozone_icon_load_gen     = 0;
-static uint64_t ozone_ctx_icon_load_gen = 0;
 
 static void ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
@@ -5341,9 +5336,6 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
 
    RHMAP_FREE(ozone->playlist_db_node_map);
 
-   /* Invalidate any in-flight async icon loads from a previous call */
-   ozone_icon_load_gen++;
-
    for (i = 0; i < list_size; i++)
    {
       const char *path         = NULL;
@@ -5399,8 +5391,7 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                   "content.png", '-', sizeof(texturepath));
 
          gfx_display_load_icon(texturepath, supports_rgba,
-               &node->content_icon, ozone_icon_load_gen,
-               &ozone_icon_load_gen);
+               &node->content_icon);
 
          /* Console name */
          console_name = ozone->horizontal_list.list[i].alt
@@ -10003,10 +9994,6 @@ static void ozone_free(void *data)
    {
       /* Theme textures still uploading land nowhere */
       gfx_display_texture_loads_cancel(ozone, sizeof(*ozone));
-      /* Invalidate any in-flight async icon loads before freeing
-       * the nodes they would write into */
-      ozone_icon_load_gen++;
-      ozone_ctx_icon_load_gen++;
 
       video_coord_array_free(&ozone->fonts.footer.raster_block.carr);
       video_coord_array_free(&ozone->fonts.title.raster_block.carr);
@@ -10516,9 +10503,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
       ozone_set_layout(ozone, settings->paths.directory_assets,
             settings->bools.ozone_collapse_sidebar, is_threaded);
 
-      /* Invalidate in-flight context texture loads */
-      ozone_ctx_icon_load_gen++;
-
       /* Textures init */
       for (i = 0; i < OZONE_TEXTURE_LAST; i++)
       {
@@ -10652,10 +10636,6 @@ static void ozone_context_destroy(void *data)
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
    ozone->context_generation++;
-
-   /* Invalidate in-flight async icon loads before unloading */
-   ozone_icon_load_gen++;
-   ozone_ctx_icon_load_gen++;
 
    /* Theme */
    ozone_unload_theme_textures(ozone);

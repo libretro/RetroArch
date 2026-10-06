@@ -347,8 +347,6 @@ static void gfx_widget_volume_layout(
    }
 }
 
-static uint64_t volume_icon_load_gen = 0;
-
 static void gfx_widget_volume_context_reset(bool is_threaded,
       unsigned dims, bool fullscreen,
       const char *dir_assets, char *font_path,
@@ -359,16 +357,13 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
    bool supports_rgba                    = gfx_surface_wants_rgba();
    gfx_widget_volume_state_t *state      = &p_w_volume_st;
 
-   volume_icon_load_gen++;
-
    for (i = 0; i < ICON_LAST; i++)
    {
       char texpath[PATH_MAX_LENGTH];
       fill_pathname_join_special(texpath,
             menu_png_path, ICONS_NAMES[i], sizeof(texpath));
       gfx_display_load_icon(texpath, supports_rgba,
-            &state->textures[i], volume_icon_load_gen,
-            &volume_icon_load_gen);
+            &state->textures[i]);
    }
 }
 
@@ -377,8 +372,9 @@ static void gfx_widget_volume_context_destroy(void)
    size_t i;
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
 
-   volume_icon_load_gen++;
-
+   /* Icons still uploading into them land nowhere */
+   gfx_display_texture_loads_cancel(state->textures,
+         sizeof(state->textures));
    for (i = 0; i < ICON_LAST; i++)
       video_driver_texture_unload(&state->textures[i]);
 }

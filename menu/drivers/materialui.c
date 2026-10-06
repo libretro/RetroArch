@@ -2314,15 +2314,15 @@ static const char *materialui_texture_path(unsigned id)
  * Playlist icons START
  * ============================== */
 
+/* The icons out of the array, those still uploading into it included */
 static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
 {
    size_t i;
+   gfx_display_texture_loads_cancel(mui->textures.playlist.icons,
+         mui->textures.playlist.size * sizeof(*mui->textures.playlist.icons));
    for (i = 0; i < mui->textures.playlist.size; i++)
       video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
 }
-
-/* File-static generation counter for async icon loads */
-static uint64_t mui_icon_load_gen = 0;
 
 static void materialui_context_reset_playlist_icons(
       materialui_handle_t *mui)
@@ -2345,24 +2345,16 @@ static void materialui_context_reset_playlist_icons(
             mui->sysicons_path, image_file,
             sizeof(texpath));
       gfx_display_load_icon(texpath, supports_rgba,
-            &mui->textures.playlist.icons[i].image,
-            mui_icon_load_gen, &mui_icon_load_gen);
+            &mui->textures.playlist.icons[i].image);
    }
 }
 
 static void materialui_free_playlist_icon_list(materialui_handle_t *mui)
 {
    size_t i;
-   /* Icons still uploading into the array land nowhere */
-   mui_icon_load_gen++;
+   materialui_context_destroy_playlist_icons(mui);
    for (i = 0; i < mui->textures.playlist.size; i++)
    {
-      /* Ensure that any textures are unloaded
-       * > Note: This should never be required.
-       *   Loaded icons will always be 'freed' by
-       *   materialui_context_destroy_playlist_icons() */
-      if (mui->textures.playlist.icons[i].image)
-         video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
 
       /* Free file names */
       if (mui->textures.playlist.icons[i].playlist_file)
@@ -9758,8 +9750,6 @@ static void materialui_free(void *data)
 
    /* Theme textures still uploading land nowhere */
    gfx_display_texture_loads_cancel(mui, sizeof(*mui));
-   /* Invalidate in-flight async icon loads */
-   mui_icon_load_gen++;
 
    video_coord_array_free(&mui->font_data.title.raster_block.carr);
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
@@ -9822,9 +9812,6 @@ static void materialui_context_destroy(void *data)
     * Under threaded video, materialui_frame() may be mid-render
     * on the video thread when this runs on the main thread. */
    mui->context_generation++;
-
-   /* Invalidate in-flight async icon loads before freeing targets */
-   mui_icon_load_gen++;
 
    /* Free standard menu textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)

@@ -419,18 +419,17 @@ static void explore_add_unique_string(
    }
 }
 
+/* Icons still uploading into the array land nowhere */
 static void explore_unload_icons(explore_state_t *state)
 {
    unsigned i;
    if (!state)
       return;
+   gfx_display_texture_loads_cancel(state->icons, RBUF_SIZEOF(state->icons));
    for (i = 0; i != RBUF_LEN(state->icons); i++)
       if (state->icons[i])
          video_driver_texture_unload(&state->icons[i]);
 }
-
-/* File-static generation counter for async icon loads */
-static uint64_t explore_icon_load_gen = 0;
 
 static void explore_load_icons(explore_state_t *state)
 {
@@ -445,9 +444,6 @@ static void explore_load_icons(explore_state_t *state)
 
    /* unload any icons that could exist from a previous call to this */
    explore_unload_icons(state);
-
-   /* Invalidate any in-flight async icon loads */
-   explore_icon_load_gen++;
 
    /* RBUF_RESIZE leaves memory uninitialised,
       have to zero it 'manually' */
@@ -472,8 +468,7 @@ static void explore_load_icons(explore_state_t *state)
          continue;
 
       gfx_display_load_icon(path, supports_rgba,
-            &state->icons[i], explore_icon_load_gen,
-            &explore_icon_load_gen);
+            &state->icons[i]);
    }
 }
 
@@ -2206,11 +2201,7 @@ void menu_explore_context_init(void)
 void menu_explore_context_deinit(void)
 {
    if (explore_state)
-   {
-      /* Invalidate in-flight async icon loads before unloading */
-      explore_icon_load_gen++;
       explore_unload_icons(explore_state);
-   }
 }
 
 void menu_explore_free_state(explore_state_t *state)
@@ -2227,8 +2218,6 @@ void menu_explore_free_state(explore_state_t *state)
       playlist_free(state->playlists[i]);
    RBUF_FREE(state->playlists);
 
-   /* Invalidate in-flight async icon loads before freeing */
-   explore_icon_load_gen++;
    explore_unload_icons(state);
    RBUF_FREE(state->icons);
 

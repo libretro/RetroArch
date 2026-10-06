@@ -803,6 +803,9 @@ static void xmb_free_node(xmb_node_t *node)
    if (!node)
       return;
 
+   /* Icons still uploading into it land nowhere */
+   gfx_display_texture_loads_cancel(node, sizeof(*node));
+
    /* Shared with every other node of the same list; released by
     * reference, never with free(). */
    if (node->fullpath)
@@ -3528,6 +3531,7 @@ static void xmb_context_destroy_horizontal_list(xmb_handle_t *xmb)
          continue;
       if (string_ends_with_size(path, ".lpl", strlen(path), STRLEN_CONST(".lpl")))
       {
+         gfx_display_texture_loads_cancel(node, sizeof(*node));
          video_driver_texture_unload(&node->icon);
          video_driver_texture_unload(&node->content_icon);
       }
@@ -3649,13 +3653,6 @@ static void xmb_toggle_horizontal_list(xmb_handle_t *xmb)
    }
 }
 
-/* File-static generation counters for async icon loads.
- * Two counters: one for horizontal list playlist icons,
- * one for context_reset static textures. Separate because
- * horizontal list rebuilds must not invalidate context textures. */
-static uint64_t xmb_icon_load_gen     = 0;
-static uint64_t xmb_ctx_icon_load_gen = 0;
-
 static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
 {
    unsigned i;
@@ -3681,9 +3678,6 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
    xmb->x                          = xmb->icon_size * (xmb->use_ps3_layout ? 1.1f : 0.7f) * -(depth * 2 - 2);
 
    RHMAP_FREE(xmb->playlist_db_node_map);
-
-   /* Invalidate any in-flight async icon loads */
-   xmb_icon_load_gen++;
 
    fill_pathname_application_special(iconpath, sizeof(iconpath),
          APPLICATION_SPECIAL_DIRECTORY_ASSETS_XMB_ICONS);
@@ -3725,8 +3719,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
          }
 
          gfx_display_load_icon(texturepath, supports_rgba,
-               &node->icon, xmb_icon_load_gen,
-               &xmb_icon_load_gen);
+               &node->icon);
 
          strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
          fill_pathname_join_special(texturepath, iconpath, sysname,
@@ -3737,8 +3730,7 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(texturepath));
 
          gfx_display_load_icon(texturepath, supports_rgba,
-               &node->content_icon, xmb_icon_load_gen,
-               &xmb_icon_load_gen);
+               &node->content_icon);
 
          console_name = xmb->horizontal_list.list[i].alt
                       ? xmb->horizontal_list.list[i].alt
@@ -7732,9 +7724,6 @@ static void xmb_context_reset_textures(
 {
    unsigned i;
 
-   /* Invalidate in-flight context texture loads */
-   xmb_ctx_icon_load_gen++;
-
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
    {
       char texpath[PATH_MAX_LENGTH];
@@ -10539,10 +10528,6 @@ static void xmb_free(void *data)
    {
       /* Theme textures still uploading land nowhere */
       gfx_display_texture_loads_cancel(xmb, sizeof(*xmb));
-      /* Invalidate any in-flight async icon loads before freeing
-       * the nodes they would write into */
-      xmb_icon_load_gen++;
-      xmb_ctx_icon_load_gen++;
 
       /* See comment in xmb_refresh_horizontal_list: free the
        * db_node_map before the nodes its values point into. */
@@ -10869,10 +10854,6 @@ static void xmb_context_destroy(void *data)
     * Under threaded video, xmb_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
    xmb->context_generation++;
-
-   /* Invalidate in-flight async icon loads before unloading */
-   xmb_icon_load_gen++;
-   xmb_ctx_icon_load_gen++;
 
    for (i = 0; i < XMB_TEXTURE_LAST; i++)
       video_driver_texture_unload(&xmb->textures.list[i]);

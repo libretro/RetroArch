@@ -54,7 +54,6 @@
 #define MSG_QUEUE_FONT_SIZE 20.0f
 
 static dispgfx_widget_t dispwidget_st = {0};
-static uint64_t widget_icon_load_gen  = 0;
 
 /* Set by gfx_widgets_reload_assets() on the thread that asks; taken by
  * the next layout pass on the thread that drives the widgets, which
@@ -2458,9 +2457,6 @@ static void gfx_widgets_load_icons(dispgfx_widget_t *p_dispwidget)
    size_t i;
    bool supports_rgba = gfx_surface_wants_rgba();
 
-   /* Invalidate any in-flight async icon loads */
-   widget_icon_load_gen++;
-
    /* Start with no-icons layout — text positions are correct for
     * text-only rendering.  When loads complete (immediately on sync
     * platforms, via callback on async), the frame-loop detects
@@ -2475,8 +2471,7 @@ static void gfx_widgets_load_icons(dispgfx_widget_t *p_dispwidget)
             gfx_widgets_icons_names[i],
             sizeof(texpath));
       gfx_display_load_icon(texpath, supports_rgba,
-            &p_dispwidget->gfx_widgets_icons_textures[i],
-            widget_icon_load_gen, &widget_icon_load_gen);
+            &p_dispwidget->gfx_widgets_icons_textures[i]);
    }
 }
 
@@ -2726,9 +2721,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
    }
 
    /* TODO: Dismiss onscreen notifications that have been freed */
-
-   /* Invalidate in-flight async widget icon loads */
-   widget_icon_load_gen++;
 
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)

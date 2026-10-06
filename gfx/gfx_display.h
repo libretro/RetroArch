@@ -546,25 +546,13 @@ bool gfx_display_reset_icon_texture(
       const char *texture_path,
       uintptr_t *item, enum texture_filter_type filter_type);
 
-/* Platform-adaptive icon/texture loading.
- *
- * On platforms where async task-based image loading is detrimental
- * to performance (e.g. Android with SAF I/O overhead), falls back
- * to synchronous loading identical to the pre-async behavior.
- *
- * All menu drivers and gfx_widgets should call this instead of
- * task_push_icon_load() directly so that adding a new platform
- * to the synchronous path requires changing only one place.
- *
- * |generation| / |generation_ptr| are only used on the async path
- * to guard against stale callbacks; on the synchronous path they
- * are ignored (the load completes before the function returns). */
-bool gfx_display_load_icon(
-      const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr);
+/* Decodes the image at @fullpath on the task queue and lands the
+ * texture in @target_texture, replacing the one it holds once the new
+ * one is up; the load is registered from here on, and cancelling the
+ * slot's range ends it. Platforms where the task queue costs more than
+ * it saves (GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS) load in place. */
+bool gfx_display_load_icon(const char *fullpath,
+      bool supports_rgba, uintptr_t *target_texture);
 
 bool gfx_display_reset_textures_list_buffer(
         uintptr_t *item,

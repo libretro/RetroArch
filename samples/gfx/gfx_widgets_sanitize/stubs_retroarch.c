@@ -239,10 +239,9 @@ bool gfx_display_reset_textures_list_buffer(uintptr_t *item,
 }
 
 bool gfx_display_load_icon(const char *fullpath, bool supports_rgba,
-      uintptr_t *target_texture, uint64_t generation,
-      uint64_t *generation_ptr)
+      uintptr_t *target_texture)
 { (void)fullpath; (void)supports_rgba; (void)target_texture;
-  (void)generation; (void)generation_ptr; return false; }
+  return false; }
 
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp, char *fontpath,
       float font_size, bool is_threaded)
