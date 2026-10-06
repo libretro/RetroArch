@@ -1480,6 +1480,136 @@ void input_driver_publish_touches(const uint32_t *pos, unsigned count,
    input_pointer_touches_set(pos, count, present, down);
 }
 
+/* The keys a port's binds name, compiled when the binds change, and
+ * which of them are down, asked of the input driver once a poll for
+ * all of them. Every RetroPad button and hotkey bound to a key is
+ * answered from this: one call into the driver a port a poll, where
+ * each hotkey was a call of its own, and a bind with no key or mouse
+ * button costs a test of one bit. */
+#define INPUT_BIND_WORDS ((RARCH_BIND_LIST_END + 31) / 32)
+
+typedef struct
+{
+   uint32_t key_down[INPUT_BIND_WORDS];  /* by bind: its key is down, this poll */
+   uint32_t has_mbutton[INPUT_BIND_WORDS]; /* by bind: it names a mouse button */
+   uint16_t key[RARCH_BIND_LIST_END];    /* the n-th bind that names a key */
+   uint8_t  bind[RARCH_BIND_LIST_END];   /* ... and which bind that is */
+   unsigned binds_gen;                   /* the change count + 1 it was made at */
+   unsigned poll_gen;                    /* the poll key_down[] is from */
+   uint16_t pad_keys;                    /* key_down for the RetroPad's sixteen */
+   uint16_t pad_mbuttons;                /* has_mbutton for them */
+   uint8_t  count;
+} input_port_keys_t;
+
+static input_port_keys_t input_port_keys[MAX_USERS];
+static unsigned input_poll_generation;
+
+/* Made again: the list when the binds have changed, what is down when
+ * the driver has been polled. */
+static void input_port_keys_refresh(input_port_keys_t *k,
+      input_driver_t *input, void *data, unsigned port, unsigned gen)
+{
+   unsigned i;
+   uint32_t down[INPUT_BIND_WORDS];
+
+   if (k->binds_gen != gen)
+   {
+      const struct retro_keybind *binds = input_config_binds[port];
+      k->count = 0;
+      memset(k->has_mbutton, 0, sizeof(k->has_mbutton));
+      for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      {
+         unsigned key;
+         if (!RETRO_KEYBIND_VALID(&binds[i]))
+            continue;
+         key = RETRO_KEYBIND_KEY(&binds[i]);
+         if (key && key < RETROK_LAST)
+         {
+            k->key[k->count]    = (uint16_t)key;
+            k->bind[k->count++] = (uint8_t)i;
+         }
+         if (binds[i].mbutton <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+            k->has_mbutton[i >> 5] |= (1u << (i & 31));
+      }
+      k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
+      k->binds_gen    = gen;
+   }
+
+   memset(down, 0, sizeof(down));
+   if (k->count)
+      input->keys_down(data, port, k->key, k->count, down);
+   memset(k->key_down, 0, sizeof(k->key_down));
+   for (i = 0; i < k->count; i++)
+      if (down[i >> 5] & (1u << (i & 31)))
+         k->key_down[k->bind[i] >> 5] |= (1u << (k->bind[i] & 31));
+   k->pad_keys = (uint16_t)k->key_down[0];
+   k->poll_gen = input_poll_generation;
+}
+
+static INLINE const input_port_keys_t *input_port_keys_get(
+      input_driver_t *input, void *data, unsigned port)
+{
+   input_port_keys_t *k = &input_port_keys[port];
+   unsigned gen         = input_config_binds_generation() + 1;
+   if (k->binds_gen != gen || k->poll_gen != input_poll_generation)
+      input_port_keys_refresh(k, input, data, port, gen);
+   return k;
+}
+
+/* A bind's mouse button, from the mouse the driver published. */
+static bool input_bind_mouse_button_down(unsigned port, unsigned mbutton)
+{
+   static const uint16_t bit[] = {
+      /* RETRO_DEVICE_ID_MOUSE_X .. _BUTTON_5, in the order they are numbered */
+      0, 0, INPUT_POINTER_LEFT, INPUT_POINTER_RIGHT,
+      INPUT_POINTER_WHEEL_UP, INPUT_POINTER_WHEEL_DOWN, INPUT_POINTER_MIDDLE,
+      INPUT_POINTER_HWHEEL_UP, INPUT_POINTER_HWHEEL_DOWN,
+      INPUT_POINTER_BUTTON_4, INPUT_POINTER_BUTTON_5 };
+   unsigned i;
+   if (     mbutton >= ARRAY_SIZE(bit)
+         || input_config_get_mouse_index(port) != 0)
+      return false;
+   i = input_pointer_of_port(port, RETRO_DEVICE_MOUSE);
+   return i < input_pointers.count
+      && (input_pointers.frame[i].buttons & bit[mbutton]) != 0;
+}
+
+/* The RetroPad buttons, or one bind, of @port from the keys and mouse
+ * buttons bound to them: what an input driver's own code for
+ * RETRO_DEVICE_JOYPAD worked out. Keys do not count while the keyboard
+ * is the core's (@keyboard_mapping_blocked), but for the bind that
+ * gives it back. */
+static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
+      const struct retro_keybind *binds, bool keyboard_mapping_blocked,
+      unsigned port, unsigned id)
+{
+   const input_port_keys_t *k = input_port_keys_get(input, data, port);
+
+   if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
+   {
+      unsigned i;
+      unsigned ret   = keyboard_mapping_blocked ? 0 : k->pad_keys;
+      /* the few, if any, bound to a mouse button */
+      unsigned mouse = k->pad_mbuttons;
+      for (i = 0; mouse; i++, mouse >>= 1)
+         if ((mouse & 1) && input_bind_mouse_button_down(port, binds[i].mbutton))
+            ret |= (1u << i);
+      return (int16_t)ret;
+   }
+
+   if (id < RARCH_BIND_LIST_END)
+   {
+      uint32_t bit = (1u << (id & 31));
+      if (     (k->key_down[id >> 5] & bit)
+            && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
+         return 1;
+      if (     (k->has_mbutton[id >> 5] & bit)
+            && input_bind_mouse_button_down(port, binds[id].mbutton))
+         return 1;
+   }
+   return 0;
+}
+
 /* A value from what the driver published, or from the driver. */
 static int16_t input_frame_or_driver(input_driver_t *input, void *data,
       const input_device_driver_t *joypad,
@@ -1543,7 +1673,13 @@ static int32_t input_state_wrap(
                cached |= joypad->state(joypad_info, binds[_port], _port);
             if (sec_joypad)
                cached |= sec_joypad->state(joypad_info, binds[_port], _port);
-            if (input && input->input_state)
+            /* the keys and mouse buttons bound to them: the frontend's
+             * own answer where the driver hands it the keys */
+            if (input && input->keys_down)
+               cached |= input_joypad_from_keys(input, data, binds[_port],
+                     keyboard_mapping_blocked, _port,
+                     RETRO_DEVICE_ID_JOYPAD_MASK);
+            else if (input && input->input_state)
                cached |= input->input_state(
                      data, joypad, sec_joypad, joypad_info, binds,
                      keyboard_mapping_blocked,
@@ -1614,6 +1750,10 @@ static int32_t input_state_wrap(
       int16_t held;
       if (input_pointer_frame_read(_port, device, idx, id, &held))
          ret |= held;
+      else if (  device == RETRO_DEVICE_JOYPAD && binds
+              && input && input->keys_down && _port < MAX_USERS)
+         ret |= input_joypad_from_keys(input, data, binds[_port],
+               keyboard_mapping_blocked, _port, id);
       else if (input && input->input_state)
          ret |= input->input_state(
                data,
@@ -10421,7 +10561,7 @@ void input_driver_set_platform_menu_button(bool held)
  *
  * Whether there is a driver to read at all. */
 /* The pointer view is compiled once per poll. */
-static unsigned input_poll_generation = 1;
+static unsigned input_poll_generation = 1;   /* declared above, for the keys */
 
 const input_pointer_view_t *input_driver_pointer_view(void)
 {
@@ -10571,6 +10711,12 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
    joypad_info.joy_idx        = joy_idx;
    joypad_info.auto_binds     = input_autoconf_binds[joy_idx];
 
+   if (     device == RETRO_DEVICE_JOYPAD && port < MAX_USERS
+         && input_st->current_driver->keys_down)
+      return input_joypad_from_keys(input_st->current_driver,
+            input_st->current_data, input_config_binds[port],
+            (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0, port, id);
+
    return input_st->current_driver->input_state(
          input_st->current_data,
          joypad, sec_joypad, &joypad_info,
@@ -10657,6 +10803,8 @@ void input_driver_poll_devices(void)
       sec_joypad->poll();
    if (input_st->current_driver && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
+   /* what was asked of the driver at the poll before is stale */
+   input_poll_generation++;
 }
 
 /* A controller's profile is looked up again, as if it had just been

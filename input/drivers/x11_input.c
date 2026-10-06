@@ -511,57 +511,9 @@ static int16_t x_input_state(
 
       switch (device)
       {
-         case RETRO_DEVICE_JOYPAD:
-            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            {
-               unsigned i;
-               int16_t ret = 0;
-
-               if (input_config_get_mouse_index(port) == 0)
-               {
-                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  {
-                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                     {
-                        if (x_mouse_button_pressed(x11, port, binds[port][i].mbutton))
-                           ret |= (1 << i);
-                     }
-                  }
-               }
-
-               if (!keyboard_mapping_blocked)
-               {
-                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  {
-                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                     {
-                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                              && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][i])))
-                           ret |= (1 << i);
-                     }
-                  }
-               }
-
-               return ret;
-            }
-
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][id]))
-               {
-                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                        && x_keyboard_pressed(x11, RETRO_KEYBIND_KEY(&binds[port][id]))
-                        && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                     )
-                     return 1;
-                  else if (input_config_get_mouse_index(port) == 0)
-                  {
-                     if (x_mouse_button_pressed(x11, port, binds[port][id].mbutton))
-                        return 1;
-                  }
-               }
-            }
-            break;
+         /* The RetroPad's buttons and the hotkeys, where they are
+          * bound to keys or mouse buttons, are the frontend's to answer:
+          * it asks x_input_keys_down() for the keys once a poll. */
          case RETRO_DEVICE_ANALOG:
             if (binds)
             {
@@ -654,6 +606,21 @@ static int16_t x_input_state(
    }
 
    return 0;
+}
+
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void x_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, unsigned count, uint32_t *down)
+{
+   unsigned i;
+   x11_input_t *x11 = (x11_input_t*)data;
+   (void)port;
+   for (i = 0; i < count; i++)
+   {
+      unsigned sym = rarch_keysym_lut[keys[i]];
+      if (x11->state[sym >> 3] & (1 << (sym & 7)))
+         down[i >> 5] |= (1u << (i & 31));
+   }
 }
 
 static void x_input_free(void *data)
@@ -1109,5 +1076,7 @@ input_driver_t input_x = {
    "x",
    x_grab_mouse,
    NULL,
-   NULL
+   NULL,
+   NULL,                /* survives_video */
+   x_input_keys_down
 };

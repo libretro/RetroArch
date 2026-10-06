@@ -575,8 +575,8 @@ struct input_driver
     * driver, its window or its thread, and it needs no restart to notice
     * anything a restart used to make it notice. The joypad driver in use
     * is its to answer for as well, since the two are kept or restarted
-    * together. NULL, the last member and so what every driver that does
-    * not name it has, means no: the driver is freed with the video driver
+    * together. NULL, which every driver that does not name it has, means
+    * no: the driver is freed with the video driver
     * and started again, as it always was. See
     * input_driver_keep_for_video_restart().
     *
@@ -585,6 +585,27 @@ struct input_driver
     * @return True if the driver can stay.
     */
    bool (*survives_video)(void *data);
+
+   /**
+    * Which of some keys are down on a port's keyboard.
+    *
+    * A driver that has this no longer works out the controls bound to
+    * keys itself: the frontend keeps the keys a port's binds name,
+    * compiled when the binds change, asks for them all at once, once a
+    * poll, and answers every RetroPad button and hotkey from that. A
+    * driver without it (NULL, and now the last member) is asked for
+    * each bind as before. A driver that has it also publishes its mice
+    * (input_driver_publish_pointers()): binds to mouse buttons are
+    * read from those.
+    *
+    * @param data   The input state struct
+    * @param port   The port whose keyboard is asked
+    * @param keys   @count key codes (enum retro_key)
+    * @param down   Bit n is set for keys[n] if it is down; the caller
+    *               has cleared it
+    */
+   void (*keys_down)(void *data, unsigned port,
+         const uint16_t *keys, unsigned count, uint32_t *down);
 };
 
 struct rarch_joypad_driver
