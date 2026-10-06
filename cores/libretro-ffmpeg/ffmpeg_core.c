@@ -4402,7 +4402,7 @@ bool CORE_PREFIX(retro_unserialize)(const void *data, size_t len)
       AUDIO_STREAM_IDX_SET(info.audio_streams_ptr);
       SUBTITLE_STREAM_IDX_SET(info.subtitle_streams_ptr);
 
-      seek_frame(info.frame_cnt - g_ctx.decoded_frame_cnt);
+      seek_frame((int)(info.frame_cnt - g_ctx.decoded_frame_cnt));
 
       return true;
    }

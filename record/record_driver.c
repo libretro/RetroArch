@@ -357,7 +357,7 @@ bool recording_init(void)
    if (  video_gpu_record
       && video_st->current_video->read_viewport)
    {
-      unsigned gpu_size;
+      size_t gpu_size;
       struct video_viewport vp;
 
       vp.pos                      = VIDEO_POS_PACK(0, 0);

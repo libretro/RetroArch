@@ -6565,7 +6565,7 @@ static void rgui_render(void *data, unsigned dims,
 
          rgui_blit_line(rgui,
                fb_width,
-               term_end_x - (len * rgui->font_width_stride),
+               (int)(term_end_x - (len * rgui->font_width_stride)),
                sublabel_y,
                rgui->entry_index_str,
                rgui->colors.hover_color,
@@ -6581,7 +6581,7 @@ static void rgui_render(void *data, unsigned dims,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = (rgui->term_layout.width - sublabel_len) * rgui->font_width_stride;
+            ticker_smooth.field_width = (unsigned)((rgui->term_layout.width - sublabel_len) * rgui->font_width_stride);
             ticker_smooth.src_str     = rgui->menu_sublabel;
             ticker_smooth.dst_str     = sublabel_buf;
             ticker_smooth.dst_str_len = MENU_LABEL_MAX_LENGTH;
@@ -6619,7 +6619,7 @@ static void rgui_render(void *data, unsigned dims,
          if (use_smooth_ticker)
          {
             ticker_smooth.selected    = true;
-            ticker_smooth.field_width = (rgui->term_layout.width - sublabel_len) * rgui->font_width_stride;
+            ticker_smooth.field_width = (unsigned)((rgui->term_layout.width - sublabel_len) * rgui->font_width_stride);
             ticker_smooth.src_str     = core_title;
             ticker_smooth.dst_str     = core_title_buf;
             ticker_smooth.dst_str_len = sizeof(core_title_buf);
@@ -8245,7 +8245,7 @@ static void rgui_navigation_set(void *data, bool scroll)
       return;
 
    menu_st->entries.begin = start;
-   rgui->scroll_y         = start * rgui->font_height_stride;
+   rgui->scroll_y         = (int32_t)(start * rgui->font_height_stride);
 }
 
 static void rgui_navigation_set_last(void *data)

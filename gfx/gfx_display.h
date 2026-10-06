@@ -228,6 +228,10 @@ enum gfx_display_stat
    GFX_DISPLAY_STAT_LAST = GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_LAST
 };
 
+/* Index into gfx_display_stats_t::v for a flush reason. */
+#define GFX_DISPLAY_STAT_FLUSH_IDX(reason) \
+   ((unsigned)GFX_DISPLAY_STAT_FLUSH + (unsigned)(reason))
+
 typedef struct gfx_display_stats
 {
    unsigned v[GFX_DISPLAY_STAT_LAST];

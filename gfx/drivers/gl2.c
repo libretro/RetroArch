@@ -2408,7 +2408,7 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
 {
    const uint8_t *ptr = NULL;
 #ifdef HAVE_OPENGLES3
-   unsigned num_pixels = VIDEO_SCALE_AREA(gl->vp.dims);
+   size_t num_pixels = VIDEO_SCALE_AREA(gl->vp.dims);
 #endif
 
    /* Don't readback if we're in menu mode.
@@ -2471,7 +2471,7 @@ static bool gl2_renderchain_read_viewport(
       gl2_t *gl,
       uint8_t *buffer, bool is_idle)
 {
-   unsigned num_pixels    = 0;
+   size_t num_pixels      = 0;
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);

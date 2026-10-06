@@ -1608,7 +1608,7 @@ static void gfx_widgets_draw_task_msg(
    float *msg_queue_current_progress;
 
    size_t _len                       = 0;
-   size_t task_percentage_offset     = 0;
+   unsigned task_percentage_offset   = 0;
    char task_percentage[16]          = "";
    bool draw_msg_new                 = false;
    bool msg_alternative              = msg->alternative_look;
@@ -1625,7 +1625,7 @@ static void gfx_widgets_draw_task_msg(
       _len = snprintf(task_percentage, sizeof(task_percentage),
             "%i%%", msg->task_progress);
 
-   task_percentage_offset = p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * _len;
+   task_percentage_offset = (unsigned)(p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * _len);
    rect_width             = (msg_alternative)
          ? video_width
          : p_dispwidget->simple_widget_padding + msg->width + (p_dispwidget->msg_queue_icon_size_x / 2) + task_percentage_offset;

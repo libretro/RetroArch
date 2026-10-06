@@ -2544,7 +2544,7 @@ static void xmb_selection_pointer_changed(
 
       if (end > 1)
       {
-         xmb_update_savestate_thumbnail_path(xmb, selection);
+         xmb_update_savestate_thumbnail_path(xmb, (unsigned)selection);
          xmb_update_savestate_thumbnail_image(xmb);
       }
    }
@@ -6343,7 +6343,7 @@ XMB_NOINLINE static int xmb_draw_item(
       else if (xmb->depth == 2 && entry_type == FILE_TYPE_PLAYLIST_COLLECTION)
       {
          xmb_node_t *sidebar_node = NULL;
-         unsigned offset          = list->list[i].entry_idx;
+         size_t offset            = list->list[i].entry_idx;
 
          /* Search for sorted icon order */
          if (((video_info->menu.flags & VIDEO_MENU_FLAG_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME) ? true : false))

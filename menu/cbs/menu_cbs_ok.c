@@ -7850,7 +7850,7 @@ static int action_ok_push_dropdown_item_video_shader_param_generic(const char *p
    val                  = MIN(MAX(param_prev->minimum, val),
          param_prev->maximum);
    video_shader_driver_set_parameter(shader_info.data,
-         entry_idx - offset, val);
+         (unsigned)(entry_idx - offset), val);
    param_menu->current  = val;
 
    shader->flags       |= SHDR_FLAG_MODIFIED;

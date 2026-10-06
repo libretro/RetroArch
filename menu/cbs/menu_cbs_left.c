@@ -76,7 +76,6 @@ static int shader_action_parameter_left_internal(unsigned type, const char *labe
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param_menu = NULL;
-   struct video_shader_parameter *param_prev = NULL;
 
    int ret = 0;
 

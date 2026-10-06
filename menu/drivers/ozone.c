@@ -6497,7 +6497,7 @@ border_iterate:
             else if (ozone->depth == 2 && e->type == FILE_TYPE_PLAYLIST_COLLECTION)
             {
                ozone_node_t *sidebar_node = NULL;
-               unsigned offset            = old_list ? ozone->entries_old[i].entry_idx : selection_buf->list[i].entry_idx;
+               size_t offset              = old_list ? ozone->entries_old[i].entry_idx : selection_buf->list[i].entry_idx;
 
                /* Search for sorted icon order */
                if (((video_info->menu.flags & VIDEO_MENU_FLAG_OZONE_SORT_AFTER_TRUNCATE_PLAYLIST_NAME) ? true : false))

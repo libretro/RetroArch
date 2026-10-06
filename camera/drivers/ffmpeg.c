@@ -772,7 +772,7 @@ static void ffmpeg_camera_poll_thread(void *data)
 
       ret = av_image_copy_to_buffer(
          (uint8_t*)retro_triple_buffer_back(&ffmpeg->frames),
-         ffmpeg->target_buffer_length,
+         (int)ffmpeg->target_buffer_length,
          (const uint8_t *const *)ffmpeg->target_planes,
          ffmpeg->target_linesizes,
          AV_PIX_FMT_BGRA,

@@ -40,7 +40,7 @@
 
 /* Returns the running OS version, APPLE_RUNTIME_VER-encoded.
  * Resolved once; the benign race on the static is idempotent. */
-static int apple_runtime_os_version(void)
+static inline int apple_runtime_os_version(void)
 {
    static int ver = -1;
    if (ver == -1)

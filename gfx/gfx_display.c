@@ -340,7 +340,7 @@ static void gfx_display_flush_as(gfx_display_t *p_disp,
       enum gfx_display_flush_reason reason)
 {
    if (p_disp && p_disp->batch_quads)
-      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + reason]++;
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH_IDX(reason)]++;
    gfx_display_flush_impl(p_disp);
 }
 
@@ -1053,7 +1053,7 @@ void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
 void gfx_display_flush_batch(gfx_display_t *p_disp)
 {
    if (p_disp && p_disp->batch_quads)
-      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT]++;
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH_IDX(GFX_DISPLAY_FLUSH_EXPLICIT)]++;
    gfx_display_flush_impl(p_disp);
 }
 

@@ -11047,7 +11047,6 @@ unsigned menu_displaylist_build_list(
          break;
       case DISPLAYLIST_NETWORK_SETTINGS_LIST:
          {
-            unsigned user;
             bool netplay_allow_slaves    = settings->bools.netplay_allow_slaves;
             bool netplay_use_mitm_server = settings->bools.netplay_use_mitm_server;
             bool network_cmd_enable      = settings->bools.network_cmd_enable;
