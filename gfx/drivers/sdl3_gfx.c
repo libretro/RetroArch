@@ -1053,11 +1053,9 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
    col = draw->coords->color;
 
    /* The texture handle is a uintptr_t cast of an SDL_Texture*
-    * registered via sdl3_load_texture (poke->load_texture). For
-    * gfx_display_draw_quad calls without an explicit texture the
-    * caller substitutes gfx_white_texture, so passing this through
-    * directly is safe; if SDL_RenderGeometry receives NULL we get
-    * flat-shaded geometry, which is a reasonable degraded path. */
+    * registered via sdl3_load_texture (poke->load_texture). A quad
+    * with no texture hands SDL_RenderGeometry NULL: the per-vertex
+    * colour alone, a solid fill. */
    tex = (SDL_Texture*)(uintptr_t)draw->texture;
 
    /* Path 1: gfx_display_draw_quad - vtx is NULL, geometry comes

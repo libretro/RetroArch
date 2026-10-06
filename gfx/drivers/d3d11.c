@@ -492,6 +492,8 @@ typedef struct
       D3D11Buffer    hdr_cb;
 #endif
       D3D11Buffer    vbo;
+      /* Sampled by a quad drawn with no texture: solid colour */
+      d3d11_texture_t white;
       int            offset;
       int            capacity;
    } sprites;
@@ -972,7 +974,7 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    bool linear          = false;
 #endif
 
-   if (!d3d11 || !draw || !draw->texture)
+   if (!d3d11 || !draw)
       return;
 
    switch (draw->pipeline_id)
@@ -1109,7 +1111,8 @@ static void gfx_display_d3d11_draw(gfx_display_ctx_draw_t *draw,
    }
 
    {
-      d3d11_texture_t *texture = (d3d11_texture_t*)draw->texture;
+      d3d11_texture_t *texture = draw->texture
+         ? (d3d11_texture_t*)draw->texture : &d3d11->sprites.white;
       d3d11->context->lpVtbl->PSSetShaderResources(
             d3d11->context, 0, 1, &texture->view);
       d3d11->context->lpVtbl->PSSetSamplers(
@@ -1236,14 +1239,15 @@ static bool gfx_display_d3d11_mesh_draw(void *data, unsigned video_dims,
    UINT stride              = sizeof(gfx_display_mesh_vertex_t);
    UINT offset              = 0;
    d3d11_video_t *d3d11     = (d3d11_video_t*)data;
-   d3d11_texture_t *tex     = (d3d11_texture_t*)texture;
+   d3d11_texture_t *tex;
    D3D11DeviceContext ctx;
    int slot;
 
    (void)video_dims;
-   if (     !d3d11 || !mesh || !tex || !d3d11->mesh_ubo
+   if (     !d3d11 || !mesh || !d3d11->mesh_ubo
          || !d3d11->mesh_shader.vs || !d3d11->mesh_shader.ps)
       return false;
+   tex = texture ? (d3d11_texture_t*)texture : &d3d11->sprites.white;
    if ((slot = d3d11_mesh_slot(d3d11, mesh)) < 0)
       return false;
    d3d11->meshes[slot].last_draw = ++d3d11->mesh_draws;
@@ -3427,6 +3431,7 @@ static void d3d11_gfx_free(void* data)
 
    d3d11_release_texture(&d3d11->menu.texture);
    Release(d3d11->menu.vbo);
+   d3d11_release_texture(&d3d11->sprites.white);
 
 #ifdef HAVE_DXGI_HDR
    Release(d3d11->hdr.ubo);
@@ -4154,6 +4159,19 @@ static void *d3d11_gfx_init(const video_info_t* video)
    }
 
    d3d11_set_filtering(d3d11, 0, video->smooth, video->ctx_scaling);
+
+   {
+      static const uint32_t white = 0xffffffff;
+      d3d11->sprites.white.desc.Width  = 1;
+      d3d11->sprites.white.desc.Height = 1;
+      d3d11->sprites.white.desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      d3d11->sprites.white.sampler     =
+         d3d11->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+      d3d11_init_texture(d3d11->device, &d3d11->sprites.white);
+      if (d3d11->sprites.white.staging)
+         d3d11_update_texture(d3d11->context, 1, 1, 0,
+               DXGI_FORMAT_B8G8R8A8_UNORM, &white, &d3d11->sprites.white);
+   }
 
    {
       D3D11_BUFFER_DESC desc;

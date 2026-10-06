@@ -985,14 +985,8 @@ static void sdl2_grab_mouse_toggle(void *data)
 static uint32_t sdl2_get_flags(void *data) { return 0; }
 
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-/* Texture upload hook for menu icons, the gfx_display white texture,
- * and any other gfx_display-driven texture loads. Without this hook,
- * gfx_display_init_white_texture is a no-op (gfx_white_texture stays
- * 0), which means every menu/widget quad that doesn't bind its own
- * texture passes NULL to SDL_RenderGeometry - and widgets in
- * particular rely heavily on the white texture for their tinted
- * backgrounds and panels. So the menu/widgets are visibly broken
- * until this is wired up.
+/* Texture upload hook for menu icons and any other gfx_display-driven
+ * texture loads.
  *
  * Pixel format: sdl2_get_flags returns 0 (no VIDEO_FLAG_USE_RGBA),
  * so the image task gives us pixels in BGRA byte order packed into
@@ -1252,11 +1246,9 @@ static void gfx_display_sdl2_draw(gfx_display_ctx_draw_t *draw,
    col = draw->coords->color;
 
    /* The texture handle is a uintptr_t cast of an SDL_Texture*
-    * registered via sdl2_load_texture (poke->load_texture). For
-    * gfx_display_draw_quad calls without an explicit texture the
-    * caller substitutes gfx_white_texture, so passing this through
-    * directly is safe; if SDL_RenderGeometry receives NULL we get
-    * flat-shaded geometry, which is a reasonable degraded path. */
+    * registered via sdl2_load_texture (poke->load_texture). A quad
+    * with no texture hands SDL_RenderGeometry NULL: the per-vertex
+    * colour alone, a solid fill. */
    tex = (SDL_Texture*)(uintptr_t)draw->texture;
 
    if (!sdl2_display_geometry_reserve(vid, n, (n > 2) ? ((n - 2) * 3) : 6))

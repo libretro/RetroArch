@@ -9889,8 +9889,6 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
     * away. */
    p_disp->framebuf_dims   = out_dims;
 
-   gfx_display_init_white_texture();
-
    ozone->horizontal_list.list                  = NULL;
    ozone->horizontal_list.capacity              = 0;
    ozone->horizontal_list.size                  = 0;
@@ -10032,8 +10030,6 @@ static void ozone_free(void *data)
 
       menu_screensaver_free(ozone->screensaver);
    }
-
-   gfx_display_deinit_white_texture();
 }
 
 static void ozone_update_thumbnail_image(void *data)
@@ -10571,9 +10567,6 @@ static void ozone_context_reset(void *data, bool is_threaded)
                &ozone->icons_textures[i], gfx_display_texture_filter());
       }
 
-      gfx_display_deinit_white_texture();
-      gfx_display_init_white_texture();
-
       /* Horizontal list */
       ozone_context_reset_horizontal_list(ozone);
 
@@ -10682,8 +10675,6 @@ static void ozone_context_destroy(void *data)
 
    /* Thumbnails */
    ozone_unload_thumbnail_textures(ozone);
-
-   gfx_display_deinit_white_texture();
 
    /* Fonts */
    ozone_font_free(&ozone->fonts.footer);

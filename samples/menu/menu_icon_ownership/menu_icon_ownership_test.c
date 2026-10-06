@@ -231,11 +231,23 @@ static bool fixture_make(const char *menu_driver)
    if (string_is_equal(menu_driver, "materialui"))
    {
       /* MaterialUI's lane needs the playlist's icon to exist, so
-       * that a decode is queued for it */
+       * that a decode is queued for it, and one icon of its own set
+       * under <assets>/glui */
       fill_pathname_join_special(path, icons_dir,
             "Harness System.png", sizeof(path));
       if (!write_file(path, png_1x1, sizeof(png_1x1)))
          return false;
+      {
+         char glui_dir[768];
+         fill_pathname_join_special(glui_dir, assets_dir, "glui",
+               sizeof(glui_dir));
+         if (!path_mkdir(glui_dir))
+            return false;
+         fill_pathname_join_special(path, glui_dir, "settings.png",
+               sizeof(path));
+         if (!write_file(path, png_1x1, sizeof(png_1x1)))
+            return false;
+      }
    }
 
    fill_pathname_join_special(cfg_path, fixture_dir, "harness.cfg",
@@ -347,7 +359,6 @@ int main(int argc, char *argv[])
          "fixture: menu driver is %s, want %s",
          (menu_st->driver_ctx && menu_st->driver_ctx->ident)
             ? menu_st->driver_ctx->ident : "(none)", menu_driver);
-   CHECK(loads > 0, "fixture: the menu loaded no texture at all");
 
    if (string_is_equal(menu_driver, "materialui"))
    {
@@ -381,6 +392,7 @@ int main(int argc, char *argv[])
    CHECK(live_count == 0,
          "%u texture(s) still live after deinit (%u loaded, %u unloaded)",
          live_count, loads, unloads);
+   CHECK(loads > 0, "fixture: the menu loaded no texture at all");
 
    fixture_remove();
 

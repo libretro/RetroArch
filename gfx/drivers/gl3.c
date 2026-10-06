@@ -113,6 +113,8 @@ typedef struct gl3
 
    GLuint vao;
    GLuint menu_texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   GLuint white_texture;
    GLuint pbo_readback[GL_CORE_NUM_PBOS];
 
    /* Render chain for non-Slang shaders only. */
@@ -1001,7 +1003,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
    if (gl->chain.active)
    {
       glActiveTexture(GL_TEXTURE0);
-      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+      glBindTexture(GL_TEXTURE_2D, draw->texture
+            ? (GLuint)draw->texture : gl->white_texture);
 
       gl->chain.shader->set_coords(gl->chain.shader_data, &coords);
       gl->chain.shader->set_mvp(gl->chain.shader_data,
@@ -1019,7 +1022,8 @@ static void gfx_display_gl3_draw(gfx_display_ctx_draw_t *draw,
          *loc                   = NULL;
 
       glActiveTexture(GL_TEXTURE1);
-      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+      glBindTexture(GL_TEXTURE_2D, draw->texture
+            ? (GLuint)draw->texture : gl->white_texture);
 
       switch (draw->pipeline_id)
       {
@@ -1216,7 +1220,7 @@ static bool gfx_display_gl3_mesh_draw(void *data, unsigned video_dims,
    glUseProgram(gl->pipelines.mesh);
    glUniform4fv(gl->pipelines.mesh_loc.flat_ubo_vertex, 5, ubo);
    glActiveTexture(GL_TEXTURE1);
-   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
 
    /* Read as stored: three floats, two 16-bit and four 8-bit
     * normalised integers */
@@ -2135,6 +2139,8 @@ static void gl3_destroy_resources(gl3_t *gl)
 
    if (gl->menu_texture != 0)
       glDeleteTextures(1, &gl->menu_texture);
+   if (gl->white_texture != 0)
+      glDeleteTextures(1, &gl->white_texture);
 
 #ifdef HAVE_SLANG
    if (gl->pipelines.alpha_blend)
@@ -3659,6 +3665,21 @@ static void *gl3_init(const video_info_t *video)
    glGenVertexArrays(1, &gl->vao);
    glBindVertexArray(gl->vao);
    glBindVertexArray(0);
+
+   {
+      static const uint32_t white = 0xffffffff;
+      glGenTextures(1, &gl->white_texture);
+      glBindTexture(GL_TEXTURE_2D, gl->white_texture);
+      glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGBA8, 1, 1);
+      glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA,
+            GL_UNSIGNED_BYTE, &white);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glBindTexture(GL_TEXTURE_2D, 0);
+   }
 
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          && !gl3_core_context_is_mains(gl))

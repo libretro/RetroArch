@@ -1411,8 +1411,7 @@ jobs:
         run: |
           set -eu
           # A texture load into an occupied slot keeps the old texture
-          # until the new one lands (issue #19725), and the white
-          # texture loads once.
+          # until the new one lands (issue #19725).
           make clean
           make EXTRA_CFLAGS="-fsanitize=address,undefined" LDFLAGS="-fsanitize=address,undefined"
           make check

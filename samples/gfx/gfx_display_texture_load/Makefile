@@ -1,7 +1,7 @@
 # gfx_display's texture loads against a stub driver and a simulated
 # threaded wrapper: a load into an occupied slot replaces its texture
-# only once the new one has landed, and the white texture is loaded
-# once. gfx_display.c is linked whole; only the load path is called.
+# only once the new one has landed. gfx_display.c is linked whole; only
+# the load path is called.
 RA     := ../../..
 CC     ?= gcc
 CFLAGS += -Wall -Wextra -g -O1 -std=gnu99 -I$(RA) -I$(RA)/libretro-common/include \

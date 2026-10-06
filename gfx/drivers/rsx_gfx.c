@@ -149,6 +149,8 @@ typedef struct
 #endif
    rsx_texture_t texture[RSX_MAX_TEXTURES];
    rsx_texture_t menu_texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   rsx_texture_t *white_texture;
    rsx_vertex_t *vertices;
    rsx_vertex_t *texture_vertices;
    int tex_index;
@@ -351,7 +353,8 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
    if (!rsx || !draw)
       return;
 
-   texture                  = (rsx_texture_t *)draw->texture;
+   texture                  = draw->texture
+      ? (rsx_texture_t *)draw->texture : rsx->white_texture;
    vertex                   = draw->coords->vertex;
    tex_coord                = draw->coords->tex_coord;
    color                    = draw->coords->color;
@@ -360,7 +363,7 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       vertex                = &rsx_vertexes[0];
    if (!tex_coord)
       tex_coord             = &rsx_tex_coords[0];
-   if (!draw->texture)
+   if (!texture)
       return;
 
    vp.pos                   = VIDEO_POS_PACK(abs(VIDEO_POS_X(draw->pos)),
@@ -1465,6 +1468,9 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->bgcolor[RSX_SHADER_STOCK_BLEND]     = rsxFragmentProgramGetConst(rsx->fpo[RSX_SHADER_STOCK_BLEND], "bgcolor");
 }
 
+static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
+      enum texture_filter_type filter_type);
+
 static void* rsx_init(const video_info_t* video)
 {
    int i;
@@ -1514,6 +1520,17 @@ static void* rsx_init(const video_info_t* video)
 
    rsx_init_shader(rsx);
    rsx_init_vertices(rsx);
+
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels       = (uint32_t*)&white;
+      image.width        = 1;
+      image.height       = 1;
+      rsx->white_texture = (rsx_texture_t*)rsx_load_texture_internal(rsx,
+            &image, TEXTURE_FILTER_NEAREST);
+   }
 
    rsx_flip(rsx->context, RSX_MAX_BUFFERS - 1);
 
@@ -2363,6 +2380,8 @@ static void rsx_free(void* data)
    }
    if (gcm->menu_texture.data)
      rsxFree(gcm->menu_texture.data);
+   if (gcm->white_texture)
+     rsx_unload_texture_internal(gcm, (uintptr_t)gcm->white_texture);
    for (i = 0; i < RSX_MAX_BUFFERS; i++)
      rsxFree(gcm->buffers[i].ptr);
 #if defined(HAVE_MENU_BUFFER)

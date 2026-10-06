@@ -166,6 +166,8 @@ struct vita_overlay_data
 typedef struct vita_video
 {
    gxm_texture_t *texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   gxm_texture_t *white_texture;
    SceGxmTextureFormat format;
    /* The size of the frame the core last handed over, packed. */
    unsigned dims;
@@ -336,6 +338,8 @@ static void *vertex_usse_alloc(unsigned int size, SceUID *uid,
       unsigned int *usse_offset);
 static void vertex_usse_free(SceUID uid);
 static void gxm_render_overlay(void *data);
+static uintptr_t gxm_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
 static void gxm_set_projection(vita_video_t *vita,
       struct video_ortho *ortho, bool allow_rotate);
 
@@ -1562,7 +1566,8 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    if (!vita || !draw)
       return;
 
-   texture            = (gxm_texture_t*)draw->texture;
+   texture            = draw->texture
+      ? (gxm_texture_t*)draw->texture : vita->white_texture;
    vertex             = draw->coords->vertex;
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
@@ -1955,6 +1960,16 @@ static void *gxm_gfx_init(const video_info_t *video)
    vita->menu.texture = NULL;
    vita->menu.active  = 0;
    vita->menu.dims    = 0;
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels        = (uint32_t*)&white;
+      image.width         = 1;
+      image.height        = 1;
+      vita->white_texture = (gxm_texture_t*)gxm_load_texture(vita, &image,
+            false, TEXTURE_FILTER_NEAREST);
+   }
 
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
@@ -2360,6 +2375,11 @@ static void gxm_free(void *data)
       vita->texture = NULL;
    }
 
+   if (vita->white_texture)
+   {
+      gxm_free_texture(vita->white_texture);
+      vita->white_texture = NULL;
+   }
 }
 
 static void gxm_set_projection(vita_video_t *vita,

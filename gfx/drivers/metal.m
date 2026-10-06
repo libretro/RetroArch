@@ -3222,6 +3222,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    uint32_t _meshId[4];
    uint64_t _meshLast[4];
    uint64_t _meshDraws;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   Texture *_white;
 }
 
 - (instancetype)initWithContext:(Context *)context
@@ -3247,10 +3249,26 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    }
    [_meshState release];
    [_meshStateF16 release];
+   [_white release];
    [_context release];
    [super dealloc];
 }
 #endif
+
+- (Texture *)_whiteTexture
+{
+   if (!_white)
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels = (uint32_t *)&white;
+      image.width  = 1;
+      image.height = 1;
+      _white = [_context newTexture:image filter:TEXTURE_FILTER_NEAREST];
+   }
+   return _white;
+}
 
 + (const float *)defaultVertices
 {
@@ -3494,7 +3512,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
    unsigned c;
    int slot;
    MTLPrimitiveType prim;
-   Texture *tex                    = (__bridge Texture *)(void *)texture;
+   Texture *tex                    = texture
+      ? (__bridge Texture *)(void *)texture : [self _whiteTexture];
    id<MTLRenderCommandEncoder> rce = _context.rce;
 
    if (!mesh || tex == nil || !rce)
@@ -3641,7 +3660,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
          break;
    }
 
-   Texture *tex = (__bridge Texture *)(void *)draw->texture;
+   Texture *tex = draw->texture
+      ? (__bridge Texture *)(void *)draw->texture : [self _whiteTexture];
    if (tex == nil)
       return;
 

@@ -247,6 +247,8 @@ typedef struct
       d3d10_shader_t shader;
       d3d10_shader_t shader_font;
       D3D10Buffer    vbo;
+      /* Sampled by a quad drawn with no texture: solid colour */
+      d3d10_texture_t white;
       int            offset;
       int            capacity;
    } sprites;
@@ -696,7 +698,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
    int vertex_count        = 1;
    d3d10_video_t* d3d10    = (d3d10_video_t*)data;
 
-   if (!d3d10 || !draw || !draw->texture)
+   if (!d3d10 || !draw)
       return;
 
    switch (draw->pipeline_id)
@@ -822,8 +824,8 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       d3d10->sprites.vbo->lpVtbl->Unmap(d3d10->sprites.vbo);
    }
 
-   d3d10_set_texture_and_sampler(d3d10->device, 0,
-         (d3d10_texture_t*)draw->texture);
+   d3d10_set_texture_and_sampler(d3d10->device, 0, draw->texture
+         ? (d3d10_texture_t*)draw->texture : &d3d10->sprites.white);
    d3d10->device->lpVtbl->Draw(d3d10->device, vertex_count,
          d3d10->sprites.offset);
    d3d10->sprites.offset += vertex_count;
@@ -918,14 +920,15 @@ static bool gfx_display_d3d10_mesh_draw(void *data, unsigned video_dims,
    UINT stride              = sizeof(gfx_display_mesh_vertex_t);
    UINT offset              = 0;
    d3d10_video_t *d3d10     = (d3d10_video_t*)data;
-   d3d10_texture_t *tex     = (d3d10_texture_t*)texture;
+   d3d10_texture_t *tex;
    D3D10Device dev;
    int slot;
 
    (void)video_dims;
-   if (     !d3d10 || !mesh || !tex || !d3d10->mesh_ubo
+   if (     !d3d10 || !mesh || !d3d10->mesh_ubo
          || !d3d10->mesh_shader.vs || !d3d10->mesh_shader.ps)
       return false;
+   tex = texture ? (d3d10_texture_t*)texture : &d3d10->sprites.white;
    if ((slot = d3d10_mesh_slot(d3d10, mesh)) < 0)
       return false;
    d3d10->meshes[slot].last_draw = ++d3d10->mesh_draws;
@@ -2374,6 +2377,7 @@ static void d3d10_gfx_free(void* data)
 
    d3d10_release_texture(&d3d10->menu.texture);
    Release(d3d10->menu.vbo);
+   d3d10_release_texture(&d3d10->sprites.white);
 
    d3d10_release_shader(&d3d10->sprites.shader);
    d3d10_release_shader(&d3d10->sprites.shader_font);
@@ -2677,6 +2681,19 @@ static void *d3d10_gfx_init(const video_info_t* video)
    }
 
    d3d10_set_filtering(d3d10, 0, video->smooth, video->ctx_scaling);
+
+   {
+      static const uint32_t white = 0xffffffff;
+      d3d10->sprites.white.desc.Width  = 1;
+      d3d10->sprites.white.desc.Height = 1;
+      d3d10->sprites.white.desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      d3d10->sprites.white.sampler     =
+         d3d10->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+      d3d10_init_texture(d3d10->device, &d3d10->sprites.white);
+      if (d3d10->sprites.white.staging)
+         d3d10_update_texture(d3d10->device, 1, 1, 0,
+               DXGI_FORMAT_B8G8R8A8_UNORM, &white, &d3d10->sprites.white);
+   }
 
    {
       D3D10_BUFFER_DESC desc;

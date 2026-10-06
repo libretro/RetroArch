@@ -45,7 +45,6 @@
 #define OZONE_SIDEBAR_WIDTH 408
 
 /* Small 1x1 white texture used for blending purposes */
-static uintptr_t gfx_white_texture;
 
 /* ptr alignment */
 static gfx_display_t dispgfx_st = {0};
@@ -547,10 +546,9 @@ void gfx_display_draw_bg(
    draw->scale_factor                = 1.0f;
    draw->rotation                    = 0.0f;
 
+   /* A quad with no texture is a solid colour to the display driver */
    if (draw->texture)
       add_opacity_to_wallpaper       = true;
-   else
-      draw->texture                  = gfx_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
@@ -984,8 +982,8 @@ static void gfx_display_mesh_draw_cpu(gfx_display_t *p_disp,
    draw.pos             = VIDEO_POS_PACK(0, 0);
    draw.dims            = video_dims;
    draw.matrix_data     = NULL;
-   draw.texture         = (md->program == GFX_MESH_PROGRAM_TEXTURED && md->texture)
-      ? md->texture : gfx_white_texture;
+   draw.texture         = (md->program == GFX_MESH_PROGRAM_TEXTURED)
+      ? md->texture : 0;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -1024,8 +1022,8 @@ void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
          0.5f, 0.5f, 0.0f, 1.0f };
       float mvp[16];
       float tint[4];
-      uintptr_t texture = (md->program == GFX_MESH_PROGRAM_TEXTURED
-            && md->texture) ? md->texture : gfx_white_texture;
+      uintptr_t texture = (md->program == GFX_MESH_PROGRAM_TEXTURED)
+            ? md->texture : 0;
       unsigned r, c, k;
       for (k = 0; k < 4; k++)
          tint[k] = md->color ? md->color[k] : 1.0f;
@@ -1153,9 +1151,7 @@ void gfx_display_draw_quad(
    draw.dims            = dims;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture && *texture)
-      ? *texture
-      : gfx_white_texture;
+   draw.texture         = texture ? *texture : 0;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -1930,47 +1926,6 @@ bool gfx_display_load_icon(
          fullpath, supports_rgba,
          target_texture, generation, generation_ptr);
 #endif
-}
-
-void gfx_display_deinit_white_texture(void)
-{
-   gfx_display_texture_loads_cancel(&gfx_white_texture,
-         sizeof(gfx_white_texture));
-   if (gfx_white_texture)
-      video_driver_texture_unload(&gfx_white_texture);
-   gfx_white_texture = 0;
-}
-
-void gfx_display_init_white_texture(void)
-{
-   struct texture_image ti;
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
-
-   if (gfx_white_texture)
-      return;
-#ifdef HAVE_THREADS
-   {
-      gfx_display_tex_load_t *e;
-      for (e = gfx_display_tex_loads; e; e = e->next)
-         if (e->item == &gfx_white_texture && !e->cancelled)
-            return;
-   }
-#endif
-
-   ti.width         = 1;
-   ti.height        = 1;
-   ti.pixels        = (uint32_t*)&white_data;
-   ti.compressed    = NULL; /* raw pixels, not a loaded compressed texture */
-   ti.pix10         = false; /* 8-bit white; must not be read as 10-bit */
-   ti.fp16          = false;
-   /* Four 0xff bytes read either way, but the drivers read this field
-    * and it is the caller's to set: nothing here fills the struct
-    * beforehand, so an unset one is whatever the stack held. */
-   ti.supports_rgba = gfx_surface_wants_rgba();
-
-   /* The pixel is static: lent to the load, never freed by it */
-   gfx_display_texture_load_ex(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_white_texture, false);
 }
 
 void gfx_display_free(void)

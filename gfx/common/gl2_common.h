@@ -128,6 +128,8 @@ struct gl2
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   GLuint white_texture;
    /* Copy of the last presented backbuffer, taken with
     * glCopyTexSubImage2D before the swap of a frame() that asked for it
     * (retain_output), plus the group that frame put on screen for

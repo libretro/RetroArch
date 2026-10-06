@@ -963,7 +963,7 @@ static void gfx_display_d3d8_draw(gfx_display_ctx_draw_t *draw,
     * texture sample by the per-vertex DIFFUSE colour, but the
     * alpha channel ignores DIFFUSE entirely and just selects the
     * texture's alpha.  For an opaque texture (the common case —
-    * gfx_white_texture, icon atlases, the Ozone cursor texture)
+    * icon atlases, the Ozone cursor texture)
     * that means a draw whose only opacity comes from per-vertex
     * alpha (e.g. a fading-out "old" cursor at alpha=0, or a
     * semi-transparent footer fill) renders fully opaque instead

@@ -103,6 +103,8 @@ typedef struct
       bool enable;
       sprite_vertex_t* v;
    } menu;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   GX2Texture *white_texture;
 
 #ifdef HAVE_OVERLAY
    struct gx2_overlay_data *overlay;
@@ -495,8 +497,9 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          v[i].color.a = draw->coords->color[(i << 2) + 3];
       }
 
-      if (draw->texture)
-         GX2SetPixelTexture((GX2Texture*)draw->texture, tex_shader.ps.samplerVars[0].location);
+      GX2SetPixelTexture(draw->texture
+            ? (GX2Texture*)draw->texture : wiiu->white_texture,
+            tex_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, wiiu->vertex_cache_tex.current, 1);
       wiiu->vertex_cache_tex.current += 4;
@@ -522,8 +525,9 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
             0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
             0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
 
-      if (draw->texture)
-         GX2SetPixelTexture((GX2Texture*)draw->texture, sprite_shader.ps.samplerVars[0].location);
+      GX2SetPixelTexture(draw->texture
+            ? (GX2Texture*)draw->texture : wiiu->white_texture,
+            sprite_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, wiiu->vertex_cache.current, 1);
       wiiu->vertex_cache.current ++;
@@ -1028,6 +1032,8 @@ static void gx2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static uint32_t gx2_get_flags(void *data);
+static uintptr_t gx2_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
 
 static void *gx2_init(const video_info_t *video)
 {
@@ -1179,6 +1185,17 @@ static void *gx2_init(const video_info_t *video)
    memset(wiiu->menu.texture.surface.image, 0x0, wiiu->menu.texture.surface.imageSize);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
+
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels        = (uint32_t*)&white;
+      image.width         = 1;
+      image.height        = 1;
+      wiiu->white_texture = (GX2Texture*)gx2_load_texture(wiiu, &image,
+            false, TEXTURE_FILTER_NEAREST);
+   }
 
    wiiu->v                             = MEM2_alloc(
          4 * sizeof(*wiiu->v), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -1537,6 +1554,11 @@ static void gx2_free(void *data)
    MEM2_free(wiiu->cmd_buffer);
    MEM2_free(wiiu->texture.surface.image);
    MEM2_free(wiiu->menu.texture.surface.image);
+   if (wiiu->white_texture)
+   {
+      MEM2_free(wiiu->white_texture->surface.image);
+      free(wiiu->white_texture);
+   }
    MEM2_free(wiiu->v);
    MEM2_free(wiiu->menu.v);
    MEM2_free(wiiu->vertex_cache.v);

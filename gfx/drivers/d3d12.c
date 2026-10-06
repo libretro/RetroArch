@@ -507,6 +507,8 @@ typedef struct
 #endif 
       D3D12Resource            vbo;
       D3D12_VERTEX_BUFFER_VIEW vbo_view;
+      /* Sampled by a quad drawn with no texture: solid colour */
+      d3d12_texture_t          white;
       int                      offset;
       int                      capacity;
    } sprites;
@@ -1504,7 +1506,7 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    bool linear          = false;
 #endif
 
-   if (!d3d12 || !draw || !draw->texture)
+   if (!d3d12 || !draw)
       return;
 
    cmd                  = d3d12->queue.cmd;
@@ -1622,7 +1624,8 @@ static void gfx_display_d3d12_draw(gfx_display_ctx_draw_t *draw,
    }
 
    {
-      d3d12_texture_t* texture = (d3d12_texture_t*)draw->texture;
+      d3d12_texture_t* texture = draw->texture
+         ? (d3d12_texture_t*)draw->texture : &d3d12->sprites.white;
       if (texture->dirty)
       {
          d3d12_upload_texture(cmd, texture, d3d12);
@@ -1798,14 +1801,14 @@ static bool gfx_display_d3d12_mesh_draw(void *data, unsigned video_dims,
    math_matrix_4x4 user;
    D3D12GraphicsCommandList cmd;
    d3d12_video_t *d3d12  = (d3d12_video_t*)data;
-   d3d12_texture_t *tex  = (d3d12_texture_t*)texture;
+   d3d12_texture_t *tex;
    unsigned cb;
    int slot;
 
    (void)video_dims;
-   if (     !d3d12 || !mesh || !tex || !d3d12->mesh_pipe
-         || !d3d12->mesh_cb_mapped)
+   if (!d3d12 || !mesh || !d3d12->mesh_pipe || !d3d12->mesh_cb_mapped)
       return false;
+   tex = texture ? (d3d12_texture_t*)texture : &d3d12->sprites.white;
 #ifdef HAVE_DXGI_HDR
    /* Built for the swapchain's own format: an HDR target streams */
    if (     (d3d12->chain.current_rt_format == DXGI_FORMAT_R10G10B10A2_UNORM)
@@ -4556,6 +4559,7 @@ static void d3d12_gfx_free(void* data)
    Release(d3d12->menu.vbo);
    Release(d3d12->menu.texture.handle);
    Release(d3d12->menu.texture.upload_buffer);
+   d3d12_release_texture(&d3d12->sprites.white);
 
 #ifdef HAVE_DXGI_HDR
    d3d12_release_texture(&d3d12->chain.back_buffer);
@@ -5541,6 +5545,20 @@ static void *d3d12_gfx_init(const video_info_t* video)
 
    d3d12_init_samplers(d3d12);
    d3d12_set_filtering(d3d12, 0, video->smooth, video->ctx_scaling);
+
+   {
+      static const uint32_t white = 0xffffffff;
+      d3d12->sprites.white.desc.Width  = 1;
+      d3d12->sprites.white.desc.Height = 1;
+      d3d12->sprites.white.desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+      d3d12->sprites.white.srv_heap    = &d3d12->desc.srv_heap;
+      d3d12->sprites.white.sampler     =
+         d3d12->samplers[RARCH_FILTER_NEAREST][RARCH_WRAP_EDGE];
+      d3d12_init_texture(d3d12->device, &d3d12->sprites.white);
+      if (d3d12->sprites.white.upload_buffer)
+         d3d12_update_texture(1, 1, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
+               &white, &d3d12->sprites.white);
+   }
 
    d3d12_create_fullscreen_quad_vbo(d3d12->device, d3d12->cpu_write_heap, &d3d12->frame.vbo_view, &d3d12->frame.vbo);
    d3d12_create_fullscreen_quad_vbo(d3d12->device, d3d12->cpu_write_heap, &d3d12->menu.vbo_view, &d3d12->menu.vbo);

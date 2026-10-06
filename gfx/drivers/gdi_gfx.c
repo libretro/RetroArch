@@ -725,8 +725,8 @@ static void gdi_blit_rgui_alpha(gdi_t *gdi,
  * The menu drivers (XMB, Ozone, MaterialUI) and gfx_widgets issue
  * draw calls in three flavours:
  *
- *   1. Solid-colour rectangle (texture is gfx_white_texture, a 1x1
- *      white pixel).  By far the most common: backgrounds, panels,
+ *   1. Solid-colour rectangle (no texture).  By far the most
+ *      common: backgrounds, panels,
  *      separator lines.  Per-vertex colour from coords->color.
  *      We render this with FillRect + cached SolidBrush.
  *
@@ -1232,10 +1232,8 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
          return;
    }
 
-   /* gfx_white_texture is a 1x1 white pixel; the menu code uses
-    * "draw a textured quad with the white texture" as its idiom
-    * for solid-colour rectangles.  Detect that case so we can
-    * skip the (much more expensive) blit path entirely. */
+   /* A quad with no texture is a solid-colour rectangle; so is one
+    * with a 1x1 texture. Neither takes the blit path. */
    is_white_texture = (!texture
          || (   VIDEO_SCALE_W(texture->dims) <= 1
              && VIDEO_SCALE_H(texture->dims) <= 1));

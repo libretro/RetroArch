@@ -7950,8 +7950,6 @@ static void xmb_context_reset_internal(xmb_handle_t *xmb,
 
    if (reinit_textures)
    {
-      gfx_display_deinit_white_texture();
-      gfx_display_init_white_texture();
       xmb->assets_missing     = false;
       xmb_context_reset_textures(xmb, iconpath, menu_xmb_theme);
 
@@ -10476,8 +10474,6 @@ static void *xmb_init(void **userdata, bool video_is_threaded)
     * away. */
    p_disp->framebuf_dims   = out_dims;
 
-   gfx_display_init_white_texture();
-
    xmb->horizontal_list.list        = NULL;
    xmb->horizontal_list.capacity    = 0;
    xmb->horizontal_list.size        = 0;
@@ -10568,8 +10564,6 @@ static void xmb_free(void *data)
 
       menu_screensaver_free(xmb->screensaver);
    }
-
-   gfx_display_deinit_white_texture();
 }
 
 static void xmb_context_bg_destroy(xmb_handle_t *xmb)
@@ -10895,7 +10889,6 @@ static void xmb_context_destroy(void *data)
 
    xmb_context_destroy_horizontal_list(xmb);
    xmb_context_bg_destroy(xmb);
-   gfx_display_deinit_white_texture();
 
    font_driver_free(xmb->font);
    xmb->font  = NULL;

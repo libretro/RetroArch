@@ -7081,8 +7081,7 @@ static bool d3d9_hlsl_initialize(
    if (!d3d->menu_display.buffer)
       return false;
 
-   /* Create a 1x1 white fallback texture for draws with no texture
-    * (e.g. widget background quads when gfx_white_texture is not loaded) */
+   /* Sampled by a quad drawn with no texture: solid colour */
    if (!d3d9_hlsl_white_texture)
    {
       IDirect3DDevice9_CreateTexture(d3d->dev, 1, 1, 1,

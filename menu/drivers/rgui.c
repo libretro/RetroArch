@@ -40,10 +40,6 @@
 #include "../../config.h"
 #endif
 
-#ifdef HAVE_GFX_WIDGETS
-#include "../../gfx/gfx_widgets.h"
-#endif
-
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
@@ -286,7 +282,6 @@ enum rgui_flags
    RGUI_FLAG_IS_PLAYLIST               = (1 << 15),
    RGUI_FLAG_IS_EXPLORE_LIST           = (1 << 16),
    RGUI_FLAG_IS_STATE_SLOT             = (1 << 17),
-   RGUI_FLAG_WIDGETS_SUPPORTED         = (1 << 18),
    RGUI_FLAG_THUMBNAIL_LOAD_PENDING    = (1 << 19),
    RGUI_FLAG_ASPECT_UPDATE_PENDING     = (1 << 20),
    RGUI_FLAG_ENTRY_HAS_THUMBNAIL       = (1 << 21),
@@ -7377,21 +7372,6 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 
    *userdata = rgui;
 
-#ifdef HAVE_GFX_WIDGETS
-   /* We have to be somewhat careful here, since some
-    * platforms do not like video_driver_texture-related
-    * operations (e.g. 3DS). We would hope that these
-    * platforms will always have HAVE_GFX_WIDGETS disabled,
-    * but for extra safety we will only permit display widget
-    * additions when the current gfx driver reports that it
-    * has widget support */
-   if (gfx_widgets_ready())
-   {
-      rgui->flags |= RGUI_FLAG_WIDGETS_SUPPORTED;
-      gfx_display_init_white_texture();
-   }
-#endif
-
    rgui->menu_title[0]              = '\0';
    rgui->menu_sublabel[0]           = '\0';
    rgui->flags                     &= ~RGUI_FLAG_IS_PLAYLIST;
@@ -7516,11 +7496,6 @@ static void rgui_free(void *data)
 
    if (!rgui)
       return;
-
-#ifdef HAVE_GFX_WIDGETS
-   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
-      gfx_display_deinit_white_texture();
-#endif
 
    rgui_fonts_free(rgui);
    rgui_buffers_free(rgui);
@@ -8983,27 +8958,7 @@ static void rgui_context_reset(void *data, bool is_threaded)
    if (!rgui)
       return;
 
-#ifdef HAVE_GFX_WIDGETS
-   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
-   {
-      gfx_display_deinit_white_texture();
-      gfx_display_init_white_texture();
-   }
-#endif
    video_driver_monitor_reset();
-}
-
-static void rgui_context_destroy(void *data)
-{
-   rgui_t *rgui = (rgui_t*)data;
-
-   if (!rgui)
-      return;
-
-#ifdef HAVE_GFX_WIDGETS
-   if (rgui->flags & RGUI_FLAG_WIDGETS_SUPPORTED)
-      gfx_display_deinit_white_texture();
-#endif
 }
 
 static void rgui_thumbnail_cycle_dupe(rgui_t *rgui)
@@ -9306,7 +9261,7 @@ menu_ctx_driver_t menu_ctx_rgui = {
    rgui_init,
    rgui_free,
    rgui_context_reset,
-   rgui_context_destroy,
+   NULL, /* context_destroy */
    rgui_populate_entries,
    rgui_toggle,
    rgui_navigation_clear,

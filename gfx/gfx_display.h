@@ -586,10 +586,6 @@ float gfx_display_get_dpi_scale(
       bool fullscreen,
       bool is_widget);
 
-void gfx_display_deinit_white_texture(void);
-
-void gfx_display_init_white_texture(void);
-
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);
 

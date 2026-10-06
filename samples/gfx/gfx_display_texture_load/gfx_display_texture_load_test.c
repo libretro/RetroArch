@@ -1,7 +1,7 @@
 /* gfx_display texture loads: a load into a slot that holds a texture
  * keeps that texture until the new one has landed, then unloads it,
- * under the threaded wrapper and without; the white texture loads
- * once. Stub driver, simulated wrapper. */
+ * under the threaded wrapper and without. Stub driver, simulated
+ * wrapper. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -158,24 +158,8 @@ int main(void)
    CHECK(slot != a && st_last_unloaded == a && st_live == 1,
          "direct replacement left %d live", st_live);
 
-   /* 4. the white texture: loaded once, however often it is asked for */
+   /* 4. a cancelled load lands nowhere and leaks nothing */
    st_async = 1;
-   gfx_display_deinit_white_texture();
-   {
-      int loads = st_loads, live = st_live;
-      gfx_display_init_white_texture();
-      gfx_display_init_white_texture();
-      st_flush();
-      CHECK(st_loads == loads + 1 && st_live == live + 1,
-            "the white texture loaded %d times", st_loads - loads);
-      gfx_display_init_white_texture();
-      st_flush();
-      CHECK(st_loads == loads + 1, "a loaded white texture loaded again");
-      gfx_display_deinit_white_texture();
-      CHECK(st_live == live, "deinit left the white texture");
-   }
-
-   /* 5. a cancelled load lands nowhere and leaks nothing */
    CHECK(load(&slot), "load before cancel refused");
    gfx_display_texture_loads_cancel(&slot, sizeof(slot));
    a = slot;

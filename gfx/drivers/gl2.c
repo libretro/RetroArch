@@ -675,7 +675,8 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos),
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
-   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   glBindTexture(GL_TEXTURE_2D, draw->texture
+         ? (GLuint)draw->texture : gl->white_texture);
 
    gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
@@ -870,7 +871,7 @@ static bool gfx_display_gl2_mesh_draw(void *data, unsigned video_dims,
 
    /* The whole display, as draw() sets it for a strip at the origin */
    glViewport(0, 0, VIDEO_SCALE_W(video_dims), VIDEO_SCALE_H(video_dims));
-   glBindTexture(GL_TEXTURE_2D, (GLuint)texture);
+   glBindTexture(GL_TEXTURE_2D, texture ? (GLuint)texture : gl->white_texture);
    /* Meshes are drawn blended, as every driver draws them */
    blend = glIsEnabled(GL_BLEND);
    glEnable(GL_BLEND);
@@ -5049,6 +5050,8 @@ static void gl2_free(void *data)
    if (gl->menu_texture)
       glDeleteTextures(1, &gl->menu_texture);
 #endif
+   if (gl->white_texture)
+      glDeleteTextures(1, &gl->white_texture);
    if (gl->retained_texture)
       glDeleteTextures(1, &gl->retained_texture);
 
@@ -5917,6 +5920,14 @@ static void *gl2_init(const video_info_t *video)
 
    gl2_init_textures(gl);
    gl2_init_textures_data(gl);
+
+   {
+      static const uint32_t white = 0xffffffff;
+      glGenTextures(1, &gl->white_texture);
+      gl_load_texture_data(gl->white_texture, RARCH_WRAP_EDGE,
+            TEXTURE_FILTER_NEAREST, 4, 1, 1, &white,
+            sizeof(uint32_t), false);
+   }
 
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data);

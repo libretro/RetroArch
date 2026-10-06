@@ -9765,8 +9765,6 @@ static void materialui_free(void *data)
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
    video_coord_array_free(&mui->font_data.hint.raster_block.carr);
 
-   gfx_display_deinit_white_texture();
-
    materialui_free_playlist_icon_list(mui);
 
    p_anim->updatetime_cb = NULL;
@@ -9853,8 +9851,6 @@ static void materialui_context_destroy(void *data)
 
    /* Free background/wallpaper textures */
    materialui_context_bg_destroy(mui);
-
-   gfx_display_deinit_white_texture();
 
    /* Destroy screensaver context */
    menu_screensaver_context_destroy(mui->screensaver);
@@ -10589,8 +10585,6 @@ static void materialui_context_reset(void *data, bool is_threaded)
 
    materialui_layout(mui, menu_st, p_disp, settings, is_threaded);
    materialui_context_bg_destroy(mui);
-   gfx_display_deinit_white_texture();
-   gfx_display_init_white_texture();
    materialui_context_reset_textures(mui);
 
    if (path_is_valid(path_menu_wallpaper))

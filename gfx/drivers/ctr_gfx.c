@@ -126,6 +126,8 @@ typedef struct ctr_video
       void* bottom;
    }drawbuffers;
    void* depthbuffer;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   struct ctr_texture* white_texture;
 
    struct
    {
@@ -260,6 +262,8 @@ static bool ctr_bottom_screen_enabled  = true;
 
 #ifdef HAVE_OVERLAY
 static void ctr_render_overlay(ctr_video_t *ctr);
+static uintptr_t ctr_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
 #endif
 static void ctr_set_bottom_screen_enable(bool enabled, bool idle);
 
@@ -281,7 +285,8 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
    if (!ctr || !draw)
       return;
 
-   texture            = (struct ctr_texture*)draw->texture;
+   texture            = draw->texture
+      ? (struct ctr_texture*)draw->texture : ctr->white_texture;
    color              = draw->coords->color;
 
    if (!texture)
@@ -1708,6 +1713,17 @@ static void* ctr_init(const video_info_t* video)
 
    ctr->menu.frame_coords          = linearAlloc(sizeof(ctr_vertex_t));
 
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels       = (uint32_t*)&white;
+      image.width        = 1;
+      image.height       = 1;
+      ctr->white_texture = (struct ctr_texture*)ctr_load_texture(ctr,
+            &image, false, TEXTURE_FILTER_NEAREST);
+   }
+
    ctr->menu.frame_coords->x0      = 40;
    ctr->menu.frame_coords->y0      = 0;
    ctr->menu.frame_coords->x1      = CTR_TOP_FRAMEBUFFER_WIDTH - 40;
@@ -2465,6 +2481,11 @@ static void ctr_free(void* data)
    linearFree(ctr->menu.texture_swizzled);
    linearFree(ctr->menu.frame_coords);
    linearFree(ctr->vertex_cache.buffer);
+   if (ctr->white_texture)
+   {
+      linearFree(ctr->white_texture->data);
+      free(ctr->white_texture);
+   }
    linearFree(ctr);
 #if 0
    gfxExit();

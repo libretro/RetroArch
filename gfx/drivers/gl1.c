@@ -517,14 +517,17 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
       coords.tex_coord             = &gl1_menu_tex_coords[0];
    if (!coords.lut_tex_coord)
       coords.lut_tex_coord         = &gl1_menu_tex_coords[0];
-   if (!draw->texture)
-      return;
 
    glViewport(VIDEO_POS_X(draw->pos), VIDEO_POS_Y(draw->pos), VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
 
-   glEnable(GL_TEXTURE_2D);
-
-   glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   /* No texture: the fixed function draws the vertex colours */
+   if (draw->texture)
+   {
+      glEnable(GL_TEXTURE_2D);
+      glBindTexture(GL_TEXTURE_2D, (GLuint)draw->texture);
+   }
+   else
+      glDisable(GL_TEXTURE_2D);
 
    mvp_matrix = draw->matrix_data ? (const GLfloat*)draw->matrix_data
       : (const GLfloat*)&gl1->mvp_no_rot;
@@ -557,6 +560,9 @@ static void gfx_display_gl1_draw(gfx_display_ctx_draw_t *draw,
    glDisableClientState(GL_COLOR_ARRAY);
    glDisableClientState(GL_TEXTURE_COORD_ARRAY);
    glDisableClientState(GL_VERTEX_ARRAY);
+
+   if (!draw->texture)
+      glEnable(GL_TEXTURE_2D);
 
    glMatrixMode(GL_MODELVIEW);
    glPopMatrix();
