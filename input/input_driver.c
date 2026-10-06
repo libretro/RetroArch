@@ -9408,6 +9408,41 @@ static bool input_keys_pressed_other_sources(
    return false;
 }
 
+/* The RetroPad's sixteen buttons as the other sources hold them, in
+ * one word: a command interface and the remote pad - whose buttons are
+ * not the overlay's alone, which is noted - and then the overlay. */
+static unsigned input_pad_buttons_other_sources(
+      input_driver_state_t *input_st)
+{
+   unsigned held = 0;
+#ifdef HAVE_COMMAND
+   int j;
+   for (j = 0; j < (int)ARRAY_SIZE(input_st->command); j++)
+      if (input_st->command[j])
+      {
+         unsigned i;
+         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            if (input_st->command[j]->state[i])
+               held |= (1u << i);
+      }
+#endif
+
+#ifdef HAVE_NETWORKGAMEPAD
+   /* Only process key presses related to game input if using Remote RetroPad */
+   if (input_st->remote)
+      held |= (unsigned)(input_st->remote_st_ptr.buttons[0] & 0xffff);
+#endif
+
+   input_st->system_buttons_not_overlay |= (uint16_t)held;
+
+#ifdef HAVE_OVERLAY
+   if (input_st->overlay_ptr)
+      held |= input_st->overlay_ptr->overlay_state.buttons.data[0] & 0xffff;
+#endif
+
+   return held;
+}
+
 #define CHECK_GAME_FOCUS_ENABLE_HOTKEY_COMBO(i) \
    if (     (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) \
          && (  (i == RARCH_ENABLE_HOTKEY) \
@@ -9532,23 +9567,25 @@ static void input_keys_pressed(
    /* what a controller or a key holds is not the overlay's alone */
    input_st->system_buttons_not_overlay |= (uint16_t)ret;
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      if (     (ret & (UINT64_C(1) << i))
-            || input_keys_pressed_other_sources(input_st, i, p_new_state))
-      {
-         any_pressed = true;
-         held_now   |= (uint16_t)(1u << i);
-         /* Only the buttons the wait was armed against are held
-          * back; a button pressed after arming is delivered, so a
-          * button that stays down (rear-touch triggers, a stuck or
-          * remapped key) cannot lock out the rest of the pad. */
-         if (     (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
-               && (input_st->wait_release_mask[port] & (1u << i)))
-            continue;
+      /* The RetroPad's sixteen in one word: what the controller and
+       * the keys hold, and what a command interface, the remote pad or
+       * the overlay holds. They were gone through a button at a time,
+       * each asking every other source in turn. */
+      unsigned held    = ((unsigned)ret & 0xffff)
+         | input_pad_buttons_other_sources(input_st);
+      unsigned deliver = held;
 
-         BIT256_SET_PTR(p_new_state, i);
-      }
+      if (held)
+         any_pressed   = true;
+      held_now        |= (uint16_t)held;
+      /* Only the buttons the wait was armed against are held
+       * back; a button pressed after arming is delivered, so a
+       * button that stays down (rear-touch triggers, a stuck or
+       * remapped key) cannot lock out the rest of the pad. */
+      if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+         deliver      &= ~(unsigned)input_st->wait_release_mask[port];
+      p_new_state->data[0] |= deliver;
    }
 
    /* Drop released buttons from the captured set; on the arming
