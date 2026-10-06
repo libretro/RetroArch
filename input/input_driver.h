@@ -832,14 +832,27 @@ typedef struct
     * word, kept together so that invalidating all of it is one store:
     *   joypad_cache - joypad_state_cache[port] holds this frame's mask
     *   view         - frame_view_joypad[port] has been compiled
-    *   asked        - the port's first button of the frame was read */
+    *   asked        - the port's first button of the frame was read
+    *   sticks       - stick_cache[port][n] holds this frame's read of a
+    *                  stick; n is the pad driver (primary, secondary)
+    *                  and the stick (left, right) */
    struct
    {
       uint16_t joypad_cache;
       uint16_t view;
       uint16_t asked;
       uint16_t snapshot[2]; /* pads snapshotted: primary, secondary driver */
+      uint16_t sticks[4];
    } frame_valid;
+
+   /* A port's sticks as the core is given them, each read whole once a
+    * frame: x and y, for each pad driver and stick as in
+    * frame_valid.sticks. A core asks for an axis at a time, and each
+    * axis asked for was its own reads of the pad - six, with a
+    * deadzone. The mode is the stick-drives-the-D-pad mode the read was
+    * made under: a read under another is made again. */
+   int16_t stick_cache[MAX_USERS][4][2];
+   uint8_t stick_cache_mode[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */

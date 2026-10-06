@@ -1951,15 +1951,14 @@ static int32_t input_state_wrap(
    return ret;
 }
 
-static int16_t input_joypad_axis(
+/* A pad axis's value, as read, through the deadzone and the
+ * sensitivity. Apart from the read, so that an axis already read - for
+ * the stick's magnitude - is not read again for this. */
+static int16_t input_joypad_axis_scaled(
       float input_analog_deadzone,
       float input_analog_sensitivity,
-      const input_device_driver_t *drv,
-      unsigned port, uint32_t joyaxis, float normal_mag)
+      int16_t val, float normal_mag)
 {
-   int16_t val = ((joyaxis != AXIS_NONE) && drv && drv->axis)
-      ? drv->axis(port, joyaxis) : 0;
-
    if (input_analog_deadzone)
    {
       /* If below deadzone, short-circuit immediately */
@@ -1990,6 +1989,19 @@ static int16_t input_joypad_axis(
    }
 
    return val;
+}
+
+static int16_t input_joypad_axis(
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      unsigned port, uint32_t joyaxis, float normal_mag)
+{
+   return input_joypad_axis_scaled(input_analog_deadzone,
+         input_analog_sensitivity,
+         ((joyaxis != AXIS_NONE) && drv && drv->axis)
+            ? drv->axis(port, joyaxis) : 0,
+         normal_mag);
 }
 
 /* What each "stick drives the D-pad" mode comes to. The modes keep the
@@ -2436,21 +2448,29 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
          ? joypad_info->auto_binds[id_stick + 2].joyaxis
          : stick[2].joyaxis;
 
+      /* The stick's four pad axes, each read once: for the magnitude
+       * where there is a deadzone, and for the axis itself. An axis the
+       * keys have answered is not read unless the magnitude wants it. */
+      bool    need_x = input_analog_deadzone || !*out_x;
+      bool    need_y = input_analog_deadzone || !*out_y;
+      int16_t raw_x_plus  = (need_x && x_axis_plus  != AXIS_NONE && drv->axis)
+         ? drv->axis(joypad_info->joy_idx, x_axis_plus)  : 0;
+      int16_t raw_x_minus = (need_x && x_axis_minus != AXIS_NONE && drv->axis)
+         ? drv->axis(joypad_info->joy_idx, x_axis_minus) : 0;
+      int16_t raw_y_plus  = (need_y && y_axis_plus  != AXIS_NONE && drv->axis)
+         ? drv->axis(joypad_info->joy_idx, y_axis_plus)  : 0;
+      int16_t raw_y_minus = (need_y && y_axis_minus != AXIS_NONE && drv->axis)
+         ? drv->axis(joypad_info->joy_idx, y_axis_minus) : 0;
+
       /* Compute radial magnitude ONCE for this stick */
       if (input_analog_deadzone)
       {
-         float x    = 0.0f;
-         float y    = 0.0f;
+         float x    = (float)raw_x_plus;
+         float y    = (float)raw_y_plus;
          float mag_sq;
-         if (x_axis_plus != AXIS_NONE && drv->axis)
-            x  = drv->axis(joypad_info->joy_idx, x_axis_plus);
-         if (x_axis_minus != AXIS_NONE && drv->axis)
-            x += drv->axis(joypad_info->joy_idx, x_axis_minus);
-         if (y_axis_plus != AXIS_NONE && drv->axis)
-            y  = drv->axis(joypad_info->joy_idx, y_axis_plus);
-         if (y_axis_minus != AXIS_NONE && drv->axis)
-            y += drv->axis(joypad_info->joy_idx, y_axis_minus);
 
+         x     += raw_x_minus;
+         y     += raw_y_minus;
          mag_sq = x * x + y * y;
          {
             float dz_raw = input_analog_deadzone * 0x7fff;
@@ -2466,14 +2486,12 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (!*out_x)
       {
          int16_t x_val;
-         x_val  = abs(input_joypad_axis(
+         x_val  = abs(input_joypad_axis_scaled(
                input_analog_deadzone, input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
-               x_axis_plus, normal_mag));
-         x_val -= abs(input_joypad_axis(
+               raw_x_plus, normal_mag));
+         x_val -= abs(input_joypad_axis_scaled(
                input_analog_deadzone, input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
-               x_axis_minus, normal_mag));
+               raw_x_minus, normal_mag));
 
          if (x_val == 0)
          {
@@ -2495,14 +2513,12 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (!*out_y)
       {
          int16_t y_val;
-         y_val  = abs(input_joypad_axis(
+         y_val  = abs(input_joypad_axis_scaled(
                input_analog_deadzone, input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
-               y_axis_plus, normal_mag));
-         y_val -= abs(input_joypad_axis(
+               raw_y_plus, normal_mag));
+         y_val -= abs(input_joypad_axis_scaled(
                input_analog_deadzone, input_analog_sensitivity,
-               drv, joypad_info->joy_idx,
-               y_axis_minus, normal_mag));
+               raw_y_minus, normal_mag));
 
          if (y_val == 0)
          {
@@ -2522,6 +2538,57 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
    }
 
    return true;
+}
+
+/* A stick's axis for a port's core, out of one read of the whole stick
+ * a frame. @which is the pad driver: 0 the primary, 1 the secondary.
+ * What is read is what input_joypad_analog_axis() reads, axis for axis;
+ * a core that asks for x and then y - they all do - has the second from
+ * the first's read, and a core run more than once a frame has both. */
+static int16_t input_port_stick_axis(input_driver_state_t *input_st,
+      unsigned which,
+      unsigned input_analog_dpad_mode,
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      const input_device_driver_t *drv,
+      rarch_joypad_info_t *joypad_info,
+      unsigned port, unsigned idx, unsigned ident,
+      const struct retro_keybind *binds)
+{
+   unsigned slot;
+   uint16_t bit;
+
+   if (port >= MAX_USERS || !INPUT_ANALOG_AXIS_IS_STICK(idx, ident))
+      return input_joypad_analog_axis(input_analog_dpad_mode,
+            input_analog_deadzone, input_analog_sensitivity,
+            drv, joypad_info, idx, ident, binds);
+
+   slot = (which << 1) | idx;
+   bit  = (uint16_t)(1u << port);
+
+   /* read under another mode - the core has just asked for analog
+    * input for the first time, which a plain mode gives way to */
+   if (input_st->stick_cache_mode[port] != input_analog_dpad_mode)
+   {
+      input_st->frame_valid.sticks[0]  &= ~bit;
+      input_st->frame_valid.sticks[1]  &= ~bit;
+      input_st->frame_valid.sticks[2]  &= ~bit;
+      input_st->frame_valid.sticks[3]  &= ~bit;
+      input_st->stick_cache_mode[port]  = (uint8_t)input_analog_dpad_mode;
+   }
+
+   if (!(input_st->frame_valid.sticks[slot] & bit))
+   {
+      int16_t x = 0;
+      int16_t y = 0;
+      input_joypad_analog_stick(input_analog_dpad_mode,
+            input_analog_deadzone, input_analog_sensitivity,
+            drv, joypad_info, idx, binds, &x, &y);
+      input_st->stick_cache[port][slot][0]  = x;
+      input_st->stick_cache[port][slot][1]  = y;
+      input_st->frame_valid.sticks[slot]   |= bit;
+   }
+   return input_st->stick_cache[port][slot][ident];
 }
 
 void input_keyboard_line_append(struct input_keyboard_line *kb_line,
@@ -3587,24 +3654,27 @@ static int16_t input_state_internal(
             }
             else
             {
+               /* each stick is read whole, once a frame */
                if (sec_joypad)
-                  ret = input_joypad_analog_axis(
+                  ret = input_port_stick_axis(input_st, 1,
                         input_analog_dpad_mode,
                         input_analog_deadzone,
                         input_analog_sensitivity,
                         sec_joypad,
                         &joypad_info,
+                        mapped_port,
                         idx,
                         id,
                         (*input_st->libretro_input_binds[mapped_port]));
 
                if (joypad && (ret == 0))
-                  ret = input_joypad_analog_axis(
+                  ret = input_port_stick_axis(input_st, 0,
                         input_analog_dpad_mode,
                         input_analog_deadzone,
                         input_analog_sensitivity,
                         joypad,
                         &joypad_info,
+                        mapped_port,
                         idx,
                         id,
                         (*input_st->libretro_input_binds[mapped_port]));
@@ -12718,6 +12788,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          uint8_t a;
          int stick_below;
          int stick_above;
+         int16_t stick_xy[2];
 
          input_menu_stick_limits(joypad_info.axis_threshold,
                &stick_below, &stick_above);
@@ -12729,18 +12800,24 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                   || (settings->bools.menu_disable_right_analog && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT))
                continue;
 
+            /* the stick read whole: its two axes were each read on
+             * their own, the pad's four axes behind them twice over */
+            stick_xy[0] = 0;
+            stick_xy[1] = 0;
+            input_joypad_analog_stick(
+                  ANALOG_DPAD_NONE,
+                  settings->floats.input_analog_deadzone,
+                  settings->floats.input_analog_sensitivity,
+                  joypad,
+                  &joypad_info,
+                  s,
+                  (input_st->libretro_input_binds[port]
+                     ? *input_st->libretro_input_binds[port] : NULL),
+                  &stick_xy[0], &stick_xy[1]);
+
             for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
             {
-               int16_t ret = input_joypad_analog_axis(
-                     ANALOG_DPAD_NONE,
-                     settings->floats.input_analog_deadzone,
-                     settings->floats.input_analog_sensitivity,
-                     joypad,
-                     &joypad_info,
-                     s,
-                     a,
-                     (input_st->libretro_input_binds[port]
-                        ? *input_st->libretro_input_binds[port] : NULL));
+               int16_t ret = stick_xy[a];
 
                if (ret)
                {

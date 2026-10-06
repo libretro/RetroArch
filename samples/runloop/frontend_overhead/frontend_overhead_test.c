@@ -3260,6 +3260,116 @@ static void lane_menu_repeat_rates(void)
 #endif
 }
 
+/* A core asks for a stick an axis at a time, and each axis asked for
+ * was its own six goes at the pad with a deadzone: the stick's four
+ * axes for its magnitude, a square root, and the axis's two again. The
+ * first axis asked for in a frame now reads the whole stick, and the
+ * rest of the frame's reads of it are given what was read. (The pad is
+ * the frontend's own copy of it by then, so this cannot be counted at
+ * the driver: the lane looks at the frame's cache instead.) */
+static void lane_sticks_read_once(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8];
+   float saved_deadzone = settings->floats.input_analog_deadzone;
+   unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
+   unsigned had         = failures;
+   int16_t  v[2][4];
+   unsigned i, pass;
+   int      slot        = -1;
+
+   if (!joypad_real)
+   {
+      CHECK(false, "sticks read once: no joypad driver");
+      return;
+   }
+   /* the stand-in pad, with the sticks on its axes 0-3 */
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone = 0.2f;
+   /* the sticks as sticks: a mode that gives one to the D-pad would
+    * have the first read of all come back empty */
+   settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
+   syn_axes[0] =  20000;
+   syn_axes[1] = -15000;
+   syn_axes[2] =   9000;
+   syn_axes[3] =  30000;
+
+   run_loop_frames(2);
+   input_driver_poll();
+   CHECK(!(  (input_st->frame_valid.sticks[0] | input_st->frame_valid.sticks[1]
+            | input_st->frame_valid.sticks[2] | input_st->frame_valid.sticks[3]) & 1),
+         "sticks read once: a stick's read was kept across the poll");
+
+   /* what a core does: x and y of each stick, and all of it once more,
+    * as a core run again in the frame would */
+   for (pass = 0; pass < 2; pass++)
+      for (i = 0; i < 4; i++)
+         v[pass][i] = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+               i >> 1, i & 1);
+
+   CHECK(v[0][0] > 0 && v[0][1] < 0 && v[0][2] > 0 && v[0][3] > 0,
+         "sticks read once: the four axes do not read the way the pad holds them");
+   CHECK(!memcmp(v[0], v[1], sizeof(v[0])),
+         "sticks read once: a second read in the frame gave another value");
+
+   /* the left stick's read is kept, x and y both, from the one read */
+   for (i = 0; i < 4; i += 2)
+      if (input_st->frame_valid.sticks[i] & 1)
+         slot = (int)i;
+   CHECK(slot >= 0 && input_st->stick_cache[0][slot][0] == v[0][0]
+                   && input_st->stick_cache[0][slot][1] == v[0][1],
+         "sticks read once: the left stick's two axes were not kept from one read");
+   if (slot >= 0)
+   {
+      /* ... and is what the next read of it in the frame is given */
+      input_st->stick_cache[0][slot][1] = 1234;
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) == 1234,
+            "sticks read once: a read later in the frame went to the pad again");
+      /* until the next poll */
+      input_driver_poll();
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) == v[0][1],
+            "sticks read once: the read was kept past the next poll");
+   }
+
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone = saved_deadzone;
+   settings->uints.input_analog_dpad_mode[0] = saved_mode;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] sticks read once: a stick's two axes come from one read of"
+            " it a frame, later reads in the frame are given that read, and the"
+            " poll drops it\n");
+#else
+   printf("[skip] sticks read once: no test drivers in this build\n");
+#endif
+}
+
 /* What a port's mapping is made from is counted each time it changes,
  * so that what is compiled from it can tell without looking at a bind.
  * Each way of changing it counts; frames in which nothing changes do
@@ -4753,6 +4863,7 @@ int main(int argc, char *argv[])
       lane_menu_repeat_rates();
       lane_pointer_store();
       lane_binds_change_count();
+      lane_sticks_read_once();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
