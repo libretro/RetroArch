@@ -1254,9 +1254,18 @@ typedef struct input_pointer_frame
 } input_pointer_frame_t;
 
 /* From the driver's poll. @count devices, port n reading device n; with
- * one device every port reads it. At most MAX_USERS. */
+ * one device every port reads it. At most MAX_USERS.
+ * @mouse_touches: how many touches a mouse stands for when it is read
+ * as a pointer and no real touch is in that place - 3 (any button; the
+ * right or the middle; the middle) or 1 (the left button). */
 void input_driver_publish_pointers(const input_pointer_frame_t *frames,
-      unsigned count);
+      unsigned count, unsigned mouse_touches);
+
+/* A driver with a touchscreen: where each touch is in the window, as
+ * VIDEO_POS_PACK, 0 for a place with none, and a bit in @down for each
+ * that is down. With the mice, in the driver's poll. At most 16. */
+void input_driver_publish_touches(const uint32_t *pos, unsigned count,
+      unsigned down);
 
 typedef struct input_pointer_view
 {

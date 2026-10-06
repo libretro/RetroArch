@@ -452,6 +452,30 @@ jobs:
           make clean
           echo "[pass] key_lane_test"
 
+      - name: Build and run pointer_frame_test (plain, ASan, UBSan)
+        shell: bash
+        working-directory: samples/input/pointer_frame
+        run: |
+          set -eu
+          # What the frontend keeps of the mice and touches an input
+          # driver publishes at its poll (input/input_pointer_frame.h),
+          # and its answers for the mouse, the pointer and the
+          # lightgun's aim. The test includes that header with a
+          # viewport and a translation that count how often they are
+          # asked: one fetch a poll and one translation a device,
+          # however many values are read; a wheel notch the same for
+          # every reader of the frame; real touches and the mouse
+          # standing for them.
+          make clean all
+          timeout 60 ./pointer_frame_test
+          make clean all SANITIZER=address
+          timeout 60 ./pointer_frame_test
+          make clean all SANITIZER=undefined
+          UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./pointer_frame_test
+          make clean
+          echo "[pass] pointer_frame_test"
+
       - name: Build and run device_registry_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/device_registry

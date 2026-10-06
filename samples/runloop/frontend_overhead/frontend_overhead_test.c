@@ -3280,7 +3280,7 @@ static void lane_pointer_store(void)
    f[0].buttons = INPUT_POINTER_RIGHT | INPUT_POINTER_WHEEL_DOWN;
    f[1].pos     = VIDEO_POS_PACK(5, 6);
    f[1].buttons = INPUT_POINTER_LEFT;
-   input_driver_publish_pointers(f, 2);
+   input_driver_publish_pointers(f, 2, 3);
 
    /* the mouse */
    CHECK(input_driver_device_state(0, RETRO_DEVICE_MOUSE, 0, RETRO_DEVICE_ID_MOUSE_X) == -3

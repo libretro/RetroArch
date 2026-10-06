@@ -108,44 +108,53 @@ static void input_wl_poll(void *data)
       wl->touches[id].x         = touch_x;
       wl->touches[id].y         = touch_y;
    }
-}
 
-static int16_t input_wl_touch_state(input_ctx_wayland_data_t *wl,
-      unsigned idx, unsigned id, bool screen)
-{
-   if (idx <= MAX_TOUCHES)
+   /* The mouse's frame and the touches, handed to the frontend, which
+    * answers for the mouse, the pointer and the lightgun's aim. The
+    * motion and the wheel are taken here, once, for every reader. */
    {
-      struct video_viewport vp    = {0};
-      uint32_t res_pos               = 0;
-      uint32_t res_screen_pos        = 0;
+      input_pointer_frame_t frame;
+      uint32_t touch_pos[MAX_TOUCHES];
+      unsigned down    = 0;
+      unsigned buttons = 0;
 
-      /* Shortcut: mouse button events will be reported on desktop with 0/0 coordinates. *
-       * Skip these, mouse handling will catch it elsewhere.                             */
-      if (wl->touches[idx].x == 0 && wl->touches[idx].y == 0)
-         return 0;
+      if (wl->mouse.left)
+         buttons |= INPUT_POINTER_LEFT;
+      if (wl->mouse.right)
+         buttons |= INPUT_POINTER_RIGHT;
+      if (wl->mouse.middle)
+         buttons |= INPUT_POINTER_MIDDLE;
+      if (wl->mouse.side)
+         buttons |= INPUT_POINTER_BUTTON_4;
+      if (wl->mouse.extra)
+         buttons |= INPUT_POINTER_BUTTON_5;
+      if (wl->mouse.wu)
+         buttons |= INPUT_POINTER_WHEEL_UP;
+      if (wl->mouse.wd)
+         buttons |= INPUT_POINTER_WHEEL_DOWN;
+      if (wl->mouse.wr)
+         buttons |= INPUT_POINTER_HWHEEL_UP;
+      if (wl->mouse.wl)
+         buttons |= INPUT_POINTER_HWHEEL_DOWN;
+      frame.pos        = wl->mouse.pos;
+      frame.rel        = wl->mouse.delta;
+      frame.buttons    = (uint16_t)buttons;
+      wl->mouse.delta  = 0;
+      wl->mouse.wu     = false;
+      wl->mouse.wd     = false;
+      wl->mouse.wl     = false;
+      wl->mouse.wr     = false;
 
-      if (video_driver_translate_coord_viewport_confined_wrap(&vp,
-                  wl->touches[idx].x, wl->touches[idx].y,
-                  &res_pos, &res_screen_pos))
+      for (id = 0; id < MAX_TOUCHES; id++)
       {
-         if (screen)
-         {
-            res_pos = res_screen_pos;
-         }
-
-         switch (id)
-         {
-            case RETRO_DEVICE_ID_POINTER_X:
-               return VIDEO_POS_X(res_pos);
-            case RETRO_DEVICE_ID_POINTER_Y:
-               return VIDEO_POS_Y(res_pos);
-            case RETRO_DEVICE_ID_POINTER_PRESSED:
-               return wl->touches[idx].active;
-         }
+         touch_pos[id] = VIDEO_POS_PACK(wl->touches[id].x, wl->touches[id].y);
+         if (wl->touches[id].active)
+            down      |= (1 << id);
       }
+      /* the one mouse is every port's; it stands for three touches */
+      input_driver_publish_pointers(&frame, 1, 3);
+      input_driver_publish_touches(touch_pos, MAX_TOUCHES, down);
    }
-
-   return 0;
 }
 
 static int16_t input_wl_state(
@@ -161,7 +170,6 @@ static int16_t input_wl_state(
       unsigned id)
 {
    input_ctx_wayland_data_t *wl = (input_ctx_wayland_data_t*)data;
-   int x, y = 0;
 
    switch (device)
    {
@@ -260,143 +268,25 @@ static int16_t input_wl_state(
          }
 #endif
          return (id && id < RETROK_LAST) && BIT_GET(wl->key_state, rarch_keysym_lut[(enum retro_key)id]);
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         /* The system-wide mouse is reported for all ports. *
-          * Multi-mouse may be implemented using different wayland seats, see issue #16886 */
-         {
-            bool state  = false;
-            bool screen = (device == RARCH_DEVICE_MOUSE_SCREEN);
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  state        = wl->mouse.wu;
-                  wl->mouse.wu = false;
-                  return state;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  state        = wl->mouse.wd;
-                  wl->mouse.wd = false;
-                  return state;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  x = screen ? VIDEO_POS_X(wl->mouse.pos) : VIDEO_POS_X(wl->mouse.delta);
-                  VIDEO_POS_PUT_X(wl->mouse.delta, 0);
-                  return x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  y = screen ? VIDEO_POS_Y(wl->mouse.pos) : VIDEO_POS_Y(wl->mouse.delta);
-                  VIDEO_POS_PUT_Y(wl->mouse.delta, 0);
-                  return y;
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return wl->mouse.left;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return wl->mouse.right;
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return wl->mouse.middle;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                  return wl->mouse.side;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                  return wl->mouse.extra;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  state        = wl->mouse.wl;
-                  wl->mouse.wl = false;
-                  return state;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  state        = wl->mouse.wr;
-                  wl->mouse.wr = false;
-                  return state;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         /* All ports report the same pointer state. See notes at mouse case. */
-         if (idx < MAX_TOUCHES)
-         {
-            int16_t touch_state = input_wl_touch_state(wl, idx, id,
-                  device == RARCH_DEVICE_POINTER_SCREEN);
-            /* Touch state is only reported if it is meaningful. */
-            if (touch_state)
-               return touch_state;
-         }
-         /* Fall through to system pointer emulating max. 3 touches. */
-         if (idx < 3)
-         {
-            struct video_viewport vp    = {0};
-            bool screen                 =
-               (device == RARCH_DEVICE_POINTER_SCREEN);
-            uint32_t res_pos               = 0;
-            uint32_t res_screen_pos        = 0;
-
-            if (video_driver_translate_coord_viewport_confined_wrap(&vp,
-                        VIDEO_POS_X(wl->mouse.pos), VIDEO_POS_Y(wl->mouse.pos),
-                        &res_pos, &res_screen_pos))
-            {
-               if (screen)
-               {
-                  res_pos = res_screen_pos;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return VIDEO_POS_X(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return VIDEO_POS_Y(res_pos);
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     if (idx == 0)
-                        return (wl->mouse.left | wl->mouse.right | wl->mouse.middle);
-                     else if (idx == 1)
-                        return (wl->mouse.right | wl->mouse.middle);
-                     else if (idx == 2)
-                        return wl->mouse.middle;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                  default:
-                     break;
-               }
-            }
-         }
-         break;
+      /* The mouse, the pointer and the lightgun's aim are the frontend's
+       * to answer: input_wl_poll() publishes the mouse and the touches.
+       * The one system-wide mouse is every port's; several would be
+       * several Wayland seats, see issue #16886. */
       case RETRO_DEVICE_LIGHTGUN:
-         /* All ports report the same lightgun state. See notes at mouse case. */
+         /* All ports report the same lightgun: its buttons are the
+          * mouse's. */
+         switch (id)
          {
-            struct video_viewport vp = {0};
-            uint32_t res_pos            = 0;
-            uint32_t res_screen_pos     = 0;
-
-            if (video_driver_translate_coord_viewport_wrap(&vp,
-                        VIDEO_POS_X(wl->mouse.pos), VIDEO_POS_Y(wl->mouse.pos),
-                        &res_pos, &res_screen_pos))
-            {
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_LIGHTGUN_X:
-                     return VIDEO_POS_X(wl->mouse.delta);
-                  case RETRO_DEVICE_ID_LIGHTGUN_Y:
-                     return VIDEO_POS_Y(wl->mouse.delta);
-                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                     return VIDEO_POS_X(res_pos);
-                  case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                     return VIDEO_POS_Y(res_pos);
-                  case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-                     return wl->mouse.left;
-                  case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-                     return wl->mouse.middle;
-                  case RETRO_DEVICE_ID_LIGHTGUN_START:
-                     return wl->mouse.right;
-                  case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-                     return wl->mouse.left && wl->mouse.right;
-                  case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
-                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:        /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:        /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:        /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:      /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:    /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:    /* TODO */
-                  case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:   /* TODO */
-                     break;
-               }
-            }
+            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
+               return wl->mouse.left;
+            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
+               return wl->mouse.middle;
+            case RETRO_DEVICE_ID_LIGHTGUN_START:
+               return wl->mouse.right;
+            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
+               return wl->mouse.left && wl->mouse.right;
+            default:
+               break;
          }
          break;
    }
