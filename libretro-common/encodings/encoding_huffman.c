@@ -399,7 +399,7 @@ int rhuff_read_tree_packed(rhuff_dec_t *d, rhuff_bits_t *b)
     * 8 KiB task-thread stack. */
    struct rhuff_small_scr
    {
-      rhuff_dec_t small;
+      rhuff_dec_t lens;
       uint16_t    small_lookup[1 << RHUFF_SMALL_BITS];
    } *scr;
    uint32_t     start;
@@ -416,7 +416,7 @@ int rhuff_read_tree_packed(rhuff_dec_t *d, rhuff_bits_t *b)
    if (!(scr = (struct rhuff_small_scr*)malloc(sizeof(*scr))))
       return RHUFF_ERROR_MEM;
 
-   if ((err = rhuff_dec_init(&scr->small, RHUFF_SMALL_CODES,
+   if ((err = rhuff_dec_init(&scr->lens, RHUFF_SMALL_CODES,
                RHUFF_SMALL_BITS, scr->small_lookup,
                RHUFF_LOOKUP_ENTRIES(RHUFF_SMALL_BITS)))
          != RHUFF_OK)
@@ -424,7 +424,7 @@ int rhuff_read_tree_packed(rhuff_dec_t *d, rhuff_bits_t *b)
 
    /* The first length stands alone; the value after it says which index
     * the rest resume at, so leading unused symbols cost nothing. */
-   scr->small.lengths[0] = (uint8_t)rhuff_bits_read(b, RHUFF_SMALL_WIDTH);
+   scr->lens.lengths[0] = (uint8_t)rhuff_bits_read(b, RHUFF_SMALL_WIDTH);
    start            = rhuff_bits_read(b, RHUFF_SMALL_WIDTH) + 1;
 
    for (index = start; index < RHUFF_SMALL_CODES; index++)
@@ -434,13 +434,13 @@ int rhuff_read_tree_packed(rhuff_dec_t *d, rhuff_bits_t *b)
       if (value == RHUFF_SMALL_END)
          break;
 
-      scr->small.lengths[index] = (uint8_t)value;
+      scr->lens.lengths[index] = (uint8_t)value;
    }
 
    if (rhuff_bits_overflow(b))
       { free(scr); return RHUFF_ERROR_DATA; }
 
-   if ((err = rhuff_dec_build(&scr->small)) != RHUFF_OK)
+   if ((err = rhuff_dec_build(&scr->lens)) != RHUFF_OK)
       { free(scr); return err; }
 
    /* Width of the extended run count, scaled to the alphabet being
@@ -464,7 +464,7 @@ int rhuff_read_tree_packed(rhuff_dec_t *d, rhuff_bits_t *b)
 
    while (curcode < d->num_codes)
    {
-      uint32_t value = rhuff_dec_decode_one(&scr->small, b);
+      uint32_t value = rhuff_dec_decode_one(&scr->lens, b);
 
       if (rhuff_bits_overflow(b))
          { free(scr); return RHUFF_ERROR_DATA; }

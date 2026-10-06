@@ -674,7 +674,7 @@ static int rchd_parse_header(rchd_t *chd, const uint8_t *h)
    }
 
    if (!chd->info.hunk_bytes
-         || chd->info.hunk_bytes > (version >= 5 ? RCHD_MAX_HUNK_BYTES_V5
+         || chd->info.hunk_bytes > (uint32_t)(version >= 5 ? RCHD_MAX_HUNK_BYTES_V5
                                                  : RCHD_MAX_HUNK_BYTES_OLD))
       return RCHD_ERROR_DATA;
    if (!chd->info.hunk_count || chd->info.hunk_count > RCHD_MAX_HUNK_COUNT)
