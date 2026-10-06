@@ -2232,6 +2232,7 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_SETTINGS_SHOW_FILE_BROWSER:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_ENUM_LABEL_GLOBAL_CORE_OPTIONS:
+      case MENU_ENUM_LABEL_CONFIG_SAVE_MINIMAL:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_AI_SERVICE:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_ACCESSIBILITY:
       case MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE:
@@ -2272,7 +2273,6 @@ static uintptr_t ozone_entries_icon_get_texture(
       case MENU_ENUM_LABEL_DEFERRED_LATENCY_SETTINGS_LIST:
       case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
-      case MENU_ENUM_LABEL_MENU_FRAME_RATE:
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:
       case MENU_ENUM_LABEL_DEFERRED_SAVING_SETTINGS_LIST:
@@ -2655,6 +2655,8 @@ static uintptr_t ozone_entries_icon_get_texture(
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_ROOM_RELAY];
 #endif
       case MENU_SETTING_ACTION:
+         if (enum_idx == MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES)
+            break;
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_SETTING];
       case MENU_SETTINGS_INPUT_LIBRETRO_DEVICE:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
@@ -2696,7 +2698,7 @@ static uintptr_t ozone_entries_icon_get_texture(
          else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_MOUSE];
          else if (string_ends_with_size(enum_label, "_keyboard_index", enum_label_len, STRLEN_CONST("_keyboard_index")))
-            return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_SETTINGS];
+            return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_FILE];
          else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_ADC];
          else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))
@@ -2708,7 +2710,8 @@ static uintptr_t ozone_entries_icon_get_texture(
          else if (string_ends_with_size(enum_label, "_turbo", enum_label_len, STRLEN_CONST("_turbo"))
                || string_ends_with_size(enum_label, "_hold", enum_label_len, STRLEN_CONST("_hold")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_TURBO];
-         else if (strstr(enum_label, "_gun_"))
+         else if (strstr(enum_label, "_gun_")
+               || strstr(enum_label, "_aim_"))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_LGUN];
          else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
             return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_OVERRIDE];

@@ -4573,7 +4573,6 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_LATENCY_SETTINGS:
       case MENU_ENUM_LABEL_CONTENT_SHOW_LATENCY:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_LATENCY:
-      case MENU_ENUM_LABEL_MENU_FRAME_RATE:
          return xmb->textures.list[XMB_TEXTURE_LATENCY];
       case MENU_ENUM_LABEL_SAVING_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_SAVING:
@@ -4704,6 +4703,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
       case MENU_ENUM_LABEL_NETPLAY_REFRESH_LAN:
          return xmb->textures.list[XMB_TEXTURE_RELOAD];
 #endif
+      case MENU_ENUM_LABEL_NETPLAY_REQUEST_DEVICES:
+         return xmb->textures.list[XMB_TEXTURE_SUBSETTING];
       case MENU_ENUM_LABEL_NETWORK_INFORMATION:
       case MENU_ENUM_LABEL_NETWORK_SETTINGS:
       case MENU_ENUM_LABEL_SETTINGS_SHOW_NETWORK:
@@ -4974,7 +4975,7 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          else if (string_ends_with_size(enum_label, "_mouse_index", enum_label_len, STRLEN_CONST("_mouse_index")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_MOUSE];
          else if (string_ends_with_size(enum_label, "_keyboard_index", enum_label_len, STRLEN_CONST("_keyboard_index")))
-            return xmb->textures.list[XMB_TEXTURE_INPUT_SETTINGS];
+            return xmb->textures.list[XMB_TEXTURE_FILE];
          else if (string_ends_with_size(enum_label, "_analog_dpad_mode", enum_label_len, STRLEN_CONST("_analog_dpad_mode")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_ADC];
          else if (string_ends_with_size(enum_label, "_bind_all", enum_label_len, STRLEN_CONST("_bind_all")))
@@ -4986,7 +4987,8 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
          else if (string_ends_with_size(enum_label, "_turbo", enum_label_len, STRLEN_CONST("_turbo"))
                || string_ends_with_size(enum_label, "_hold", enum_label_len, STRLEN_CONST("_hold")))
             return xmb->textures.list[XMB_TEXTURE_INPUT_TURBO];
-         else if (strstr(enum_label, "_gun_"))
+         else if (strstr(enum_label, "_gun_")
+               || strstr(enum_label, "_aim_"))
             return xmb->textures.list[XMB_TEXTURE_INPUT_LGUN];
          else if (string_starts_with_size(enum_label, "input_device_reserv", STRLEN_CONST("input_device_reserv")))
             return xmb->textures.list[XMB_TEXTURE_OVERRIDE];
