@@ -192,6 +192,18 @@ int r7z_archive_extract_slice(r7z_archive_t *a, uint32_t index,
 int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
       uint8_t **out, size_t *out_len);
 
+/**
+ * r7z_archive_extract_detach:
+ *
+ * The same as r7z_archive_extract(), except that an entry which is its
+ * folder's entire output - every member of a non-solid archive - is
+ * handed over as the decoded folder buffer itself, with nothing copied
+ * and nothing left in the folder cache. Any other entry extracts
+ * exactly as r7z_archive_extract() does.
+ */
+int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *out_len);
+
 RETRO_END_DECLS
 
 #endif

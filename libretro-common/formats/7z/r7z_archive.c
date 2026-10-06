@@ -3059,3 +3059,53 @@ int r7z_archive_extract(r7z_archive_t *a, uint32_t index,
    *out_len = (size_t)e->size;
    return R7Z_OK;
 }
+
+int r7z_archive_extract_detach(r7z_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *out_len)
+{
+   const r7z_entry_t *e;
+   uint8_t           *buf;
+   int                res;
+
+   if (!a || !out || !out_len)
+      return R7Z_ERROR_PARAM;
+   if (index >= a->num_entries)
+      return R7Z_ERROR_PARAM;
+
+   e = &a->entries[index];
+
+   if (e->is_dir || e->size == 0 || e->folder >= a->num_folders
+         || e->offset_in_folder != 0
+         || e->size != a->folders[e->folder].unpack_size)
+      return r7z_archive_extract(a, index, out, out_len);
+
+   *out     = NULL;
+   *out_len = 0;
+
+   if (a->cached_folder == e->folder && a->cached_data)
+      buf = a->cached_data;
+   else
+   {
+      free(a->cached_data);
+      a->cached_data   = NULL;
+      a->cached_folder = 0xFFFFFFFFu;
+      if ((res = decode_folder(a, e->folder, &buf)) != R7Z_OK)
+         return res;
+   }
+
+   /* The folder's output is the member: hand the buffer over rather
+    * than keep it cached and copy it. */
+   a->cached_data   = NULL;
+   a->cached_len    = 0;
+   a->cached_folder = 0xFFFFFFFFu;
+
+   if (e->has_crc && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
+   {
+      free(buf);
+      return R7Z_ERROR_CRC;
+   }
+
+   *out     = buf;
+   *out_len = (size_t)e->size;
+   return R7Z_OK;
+}
