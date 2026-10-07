@@ -8,13 +8,14 @@
 
 #include <string>
 #include <unordered_map>
-#include <mutex>
+
+#include "loader_locking.hpp"
 
 namespace {
 
-std::mutex& GetOverridePropertiesMutex() {
-    static std::mutex override_properties_mutex;
-    return override_properties_mutex;
+slock_t* GetOverridePropertiesMutex() {
+    static LoaderLazySlock override_properties_mutex;
+    return override_properties_mutex.Get();
 }
 
 std::unordered_map<std::string, std::string>& GetOverrideProperties() {
@@ -40,7 +41,7 @@ const std::string* TryGetPropertyOverride(const std::string& name) {
 namespace LoaderProperty {
 
 std::string Get(const std::string& name) {
-    std::scoped_lock<std::mutex> lock(GetOverridePropertiesMutex());
+    LoaderScopedSlock lock(GetOverridePropertiesMutex());
     const std::string* propertyOverride = TryGetPropertyOverride(name);
     if (propertyOverride != nullptr) {
         return *propertyOverride;
@@ -50,7 +51,7 @@ std::string Get(const std::string& name) {
 }
 
 std::string GetSecure(const std::string& name) {
-    std::scoped_lock<std::mutex> lock(GetOverridePropertiesMutex());
+    LoaderScopedSlock lock(GetOverridePropertiesMutex());
     const std::string* propertyOverride = TryGetPropertyOverride(name);
     if (propertyOverride != nullptr) {
         return *propertyOverride;
@@ -60,19 +61,19 @@ std::string GetSecure(const std::string& name) {
 }
 
 bool IsSet(const std::string& name) {
-    std::scoped_lock<std::mutex> lock(GetOverridePropertiesMutex());
+    LoaderScopedSlock lock(GetOverridePropertiesMutex());
     const std::string* propertyOverride = TryGetPropertyOverride(name);
     return propertyOverride != nullptr || PlatformUtilsGetEnvSet(name.c_str());
 }
 
 void SetOverride(std::string name, std::string value) {
-    std::scoped_lock<std::mutex> lock(GetOverridePropertiesMutex());
+    LoaderScopedSlock lock(GetOverridePropertiesMutex());
     auto& overrideProperties = GetOverrideProperties();
     overrideProperties.insert(std::make_pair(std::move(name), std::move(value)));
 }
 
 void ClearOverrides() {
-    std::scoped_lock<std::mutex> lock(GetOverridePropertiesMutex());
+    LoaderScopedSlock lock(GetOverridePropertiesMutex());
     auto& overrideProperties = GetOverrideProperties();
     overrideProperties.clear();
 }

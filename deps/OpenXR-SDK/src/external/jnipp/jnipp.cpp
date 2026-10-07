@@ -15,7 +15,7 @@
 #include <jni.h>
 
 // Standard Dependencies
-#include <atomic>
+#include <retro_atomic.h>
 #include <string>
 #include <vector>
 
@@ -25,7 +25,7 @@
 namespace jni
 {
     // Static Variables
-    static std::atomic_bool isVm(false);
+    static retro_atomic_int_t isVm = RETRO_ATOMIC_INT_INITIALIZER(0);
     static JavaVM* javaVm = nullptr;
 
     static bool getEnv(JavaVM *vm, JNIEnv **env) {
@@ -273,9 +273,7 @@ namespace jni
 
     void init(JNIEnv* env)
     {
-        bool expected = false;
-
-        if (isVm.compare_exchange_strong(expected, true))
+        if (retro_atomic_cas_int(&isVm, 0, 1))
         {
             if (javaVm == nullptr && env->GetJavaVM(&javaVm) != 0)
                 throw InitializationException("Could not acquire Java VM");
@@ -283,9 +281,7 @@ namespace jni
     }
 
     void init(JavaVM* vm) {
-        bool expected = false;
-
-        if (isVm.compare_exchange_strong(expected, true))
+        if (retro_atomic_cas_int(&isVm, 0, 1))
         {
             javaVm = vm;
         }
@@ -1472,13 +1468,11 @@ namespace jni
 
     Vm::Vm(const char* path_)
     {
-        bool expected = false;
-
         std::string path = path_ ? path_ : detectJvmPath();
 
         if (path.length() == 0)
             throw InitializationException("Could not locate Java Virtual Machine");
-        if (!isVm.compare_exchange_strong(expected, true))
+        if (!retro_atomic_cas_int(&isVm, 0, 1))
             throw InitializationException("Java Virtual Machine already initialized");
 
         if (javaVm == nullptr)
@@ -1493,7 +1487,7 @@ namespace jni
 
             if (lib == NULL)
             {
-                isVm.store(false);
+                retro_atomic_store_release_int(&isVm, 0);
                 throw InitializationException("Could not load JVM library");
             }
 
@@ -1505,7 +1499,7 @@ namespace jni
              */
             if (JNI_CreateJavaVM == NULL || JNI_CreateJavaVM(&javaVm, (void**) &env, &args) != 0)
             {
-                isVm.store(false);
+                retro_atomic_store_release_int(&isVm, 0);
                 ::FreeLibrary(lib);
                 throw InitializationException("Java Virtual Machine failed during creation");
             }
@@ -1516,7 +1510,7 @@ namespace jni
 
             if (lib == NULL)
             {
-                isVm.store(false);
+                retro_atomic_store_release_int(&isVm, 0);
                 throw InitializationException("Could not load JVM library");
             }
 
@@ -1524,7 +1518,7 @@ namespace jni
 
             if (JNI_CreateJavaVM == NULL || JNI_CreateJavaVM(&javaVm, (void**) &env, &args) != 0)
             {
-                isVm.store(false);
+                retro_atomic_store_release_int(&isVm, 0);
                 ::dlclose(lib);
                 throw InitializationException("Java Virtual Machine failed during creation");
             }
@@ -1540,7 +1534,7 @@ namespace jni
             DestroyJavaVM(), you can't then call JNI_CreateJavaVM() again.
             So, instead we just flag it as "gone".
          */
-        isVm.store(false);
+        retro_atomic_store_release_int(&isVm, 0);
     }
 
     // Forward Declarations

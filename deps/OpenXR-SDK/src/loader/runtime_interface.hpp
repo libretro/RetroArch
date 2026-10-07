@@ -16,8 +16,9 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
-#include <mutex>
 #include <memory>
+
+#include "loader_locking.hpp"
 
 namespace Json {
 class Value;
@@ -66,9 +67,13 @@ class RuntimeInterface {
 
     LoaderPlatformLibraryHandle _runtime_library;
     PFN_xrGetInstanceProcAddr _get_instance_proc_addr;
-    std::unordered_map<XrInstance, std::unique_ptr<XrGeneratedDispatchTableCore>> _dispatch_table_map;
-    std::mutex _dispatch_table_mutex;
+    // The loader supports exactly one live runtime XrInstance, so the
+    // dispatch table lives in a single lock-free slot (a heap
+    // RuntimeDispatchSlot, defined in runtime_interface.cpp): CreateInstance
+    // publishes it with a release-store and GetDispatchTable acquire-loads
+    // it, replacing the mutex-guarded one-entry map this used to be.
+    retro_atomic_ptr_t _dispatch_slot;
     std::unordered_map<XrDebugUtilsMessengerEXT, XrInstance> _messenger_to_instance_map;
-    std::mutex _messenger_to_instance_mutex;
+    slock_t* _messenger_lock;
     std::vector<std::string> _supported_extensions;
 };

@@ -19,9 +19,15 @@
 #include "loader_properties.hpp"
 #include "xr_generated_dispatch_table_core.h"
 
+// One live runtime XrInstance and its dispatch table; published as a whole
+// through RuntimeInterface::_dispatch_slot.
+struct RuntimeDispatchSlot {
+    XrInstance instance;
+    XrGeneratedDispatchTableCore table;
+};
+
 #include <cstring>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -274,19 +280,18 @@ XrResult RuntimeInterface::GetInstanceProcAddr(XrInstance instance, const char* 
 }
 
 const XrGeneratedDispatchTableCore* RuntimeInterface::GetDispatchTable(XrInstance instance) {
-    XrGeneratedDispatchTableCore* table = nullptr;
-    std::scoped_lock<std::mutex> mlock(GetInstance()->_dispatch_table_mutex);
-    auto it = GetInstance()->_dispatch_table_map.find(instance);
-    if (it != GetInstance()->_dispatch_table_map.end()) {
-        table = it->second.get();
+    const RuntimeDispatchSlot* slot =
+        static_cast<const RuntimeDispatchSlot*>(retro_atomic_load_acquire_ptr(&GetInstance()->_dispatch_slot));
+    if (slot && slot->instance == instance) {
+        return &slot->table;
     }
-    return table;
+    return nullptr;
 }
 
 const XrGeneratedDispatchTableCore* RuntimeInterface::GetDebugUtilsMessengerDispatchTable(XrDebugUtilsMessengerEXT messenger) {
     XrInstance runtime_instance = XR_NULL_HANDLE;
     {
-        std::scoped_lock<std::mutex> mlock(GetInstance()->_messenger_to_instance_mutex);
+        LoaderScopedSlock mlock(GetInstance()->_messenger_lock);
         auto it = GetInstance()->_messenger_to_instance_map.find(messenger);
         if (it != GetInstance()->_messenger_to_instance_map.end()) {
             runtime_instance = it->second;
@@ -296,7 +301,10 @@ const XrGeneratedDispatchTableCore* RuntimeInterface::GetDebugUtilsMessengerDisp
 }
 
 RuntimeInterface::RuntimeInterface(LoaderPlatformLibraryHandle runtime_library, PFN_xrGetInstanceProcAddr get_instance_proc_addr)
-    : _runtime_library(runtime_library), _get_instance_proc_addr(get_instance_proc_addr) {}
+    : _runtime_library(runtime_library), _get_instance_proc_addr(get_instance_proc_addr) {
+    retro_atomic_ptr_init(&_dispatch_slot, NULL);
+    _messenger_lock = slock_new();
+}
 
 RuntimeInterface::~RuntimeInterface() {
     try {
@@ -310,9 +318,11 @@ RuntimeInterface::~RuntimeInterface() {
     }
 
     {
-        std::scoped_lock<std::mutex> mlock(_dispatch_table_mutex);
-        _dispatch_table_map.clear();
+        RuntimeDispatchSlot* slot =
+            static_cast<RuntimeDispatchSlot*>(retro_atomic_exchange_ptr(&_dispatch_slot, NULL));
+        delete slot;
     }
+    slock_free(_messenger_lock);
     LoaderPlatformLibraryClose(_runtime_library);
 }
 
@@ -360,10 +370,14 @@ XrResult RuntimeInterface::CreateInstance(const XrInstanceCreateInfo* info, XrIn
     res = rt_xrCreateInstance(info, instance);
     if (XR_SUCCEEDED(res)) {
         create_succeeded = true;
-        auto dispatch_table = std::make_unique<XrGeneratedDispatchTableCore>();
-        GeneratedXrPopulateDispatchTableCore(dispatch_table.get(), *instance, _get_instance_proc_addr);
-        std::scoped_lock<std::mutex> mlock(_dispatch_table_mutex);
-        _dispatch_table_map[*instance] = std::move(dispatch_table);
+        RuntimeDispatchSlot* slot = new RuntimeDispatchSlot();
+        slot->instance = *instance;
+        GeneratedXrPopulateDispatchTableCore(&slot->table, *instance, _get_instance_proc_addr);
+        // The loader enforces a single live instance, so the previous slot is
+        // always null here; swap just in case and drop any stale one.
+        RuntimeDispatchSlot* previous =
+            static_cast<RuntimeDispatchSlot*>(retro_atomic_exchange_ptr(&_dispatch_slot, slot));
+        delete previous;
     }
 
     // If the failure occurred during the populate, clean up the instance we had picked up from the runtime
@@ -379,31 +393,35 @@ XrResult RuntimeInterface::CreateInstance(const XrInstanceCreateInfo* info, XrIn
 
 XrResult RuntimeInterface::DestroyInstance(XrInstance instance) {
     if (XR_NULL_HANDLE != instance) {
-        // Destroy the dispatch table for this instance first
-        {
-            std::scoped_lock<std::mutex> mlock(_dispatch_table_mutex);
-            auto map_iter = _dispatch_table_map.find(instance);
-            if (map_iter != _dispatch_table_map.end()) {
-                _dispatch_table_map.erase(map_iter);
-            }
+        // Unpublish the dispatch table for this instance first, then delete
+        // it only after the runtime's xrDestroyInstance returns; destroying
+        // an instance is externally synchronized against its other uses, so
+        // no lookup can still be handing the table out at that point.
+        RuntimeDispatchSlot* slot =
+            static_cast<RuntimeDispatchSlot*>(retro_atomic_exchange_ptr(&_dispatch_slot, NULL));
+        if (slot && slot->instance != instance) {
+            // Not ours (should never happen): put it back.
+            retro_atomic_store_release_ptr(&_dispatch_slot, slot);
+            slot = NULL;
         }
         // Now delete the instance
         PFN_xrDestroyInstance rt_xrDestroyInstance;
         _get_instance_proc_addr(instance, "xrDestroyInstance", reinterpret_cast<PFN_xrVoidFunction*>(&rt_xrDestroyInstance));
         rt_xrDestroyInstance(instance);
+        delete slot;
     }
     return XR_SUCCESS;
 }
 
 bool RuntimeInterface::TrackDebugMessenger(XrInstance instance, XrDebugUtilsMessengerEXT messenger) {
-    std::scoped_lock<std::mutex> mlock(_messenger_to_instance_mutex);
+    LoaderScopedSlock mlock(_messenger_lock);
     _messenger_to_instance_map[messenger] = instance;
     return true;
 }
 
 void RuntimeInterface::ForgetDebugMessenger(XrDebugUtilsMessengerEXT messenger) {
     if (XR_NULL_HANDLE != messenger) {
-        std::scoped_lock<std::mutex> mlock(_messenger_to_instance_mutex);
+        LoaderScopedSlock mlock(_messenger_lock);
         _messenger_to_instance_map.erase(messenger);
     }
 }

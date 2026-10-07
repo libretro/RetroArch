@@ -27,18 +27,19 @@
 
 #include <cstring>
 #include <memory>
-#include <mutex>
 #include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "loader_locking.hpp"
+
 // Global loader lock to:
 //   1. Ensure ActiveLoaderInstance get and set operations are done atomically.
 //   2. Ensure RuntimeInterface isn't used to unload the runtime while the runtime is in use.
-static std::mutex &GetGlobalLoaderMutex() {
-    static std::mutex loader_mutex;
-    return loader_mutex;
+static slock_t *GetGlobalLoaderMutex() {
+    static LoaderLazySlock loader_mutex;
+    return loader_mutex.Get();
 }
 
 // Prototypes for the debug utils calls used internally.
@@ -90,7 +91,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrEnumerateApiLayerProperties(uint32
     LoaderLogger::LogVerboseMessage("xrEnumerateApiLayerProperties", "Entering loader trampoline");
 
     // Make sure only one thread is attempting to read the JSON files at a time.
-    std::unique_lock<std::mutex> loader_lock(GetGlobalLoaderMutex());
+    LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
 
     XrResult result = ApiLayerInterface::GetApiLayerProperties("xrEnumerateApiLayerProperties", propertyCapacityInput,
                                                                propertyCountOutput, properties);
@@ -124,7 +125,7 @@ LoaderXrEnumerateInstanceExtensionProperties(const char *layerName, uint32_t pro
 
     {
         // Make sure the runtime isn't unloaded while this call is in progress.
-        std::unique_lock<std::mutex> loader_lock(GetGlobalLoaderMutex());
+        LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
 
         // Get the layer extension properties
         result = ApiLayerInterface::GetInstanceExtensionProperties("xrEnumerateInstanceExtensionProperties", layerName,
@@ -234,7 +235,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCre
     }
 
     // Make sure the ActiveLoaderInstance::IsAvailable check is done atomically with RuntimeInterface::LoadRuntime.
-    std::unique_lock<std::mutex> instance_lock(GetGlobalLoaderMutex());
+    LoaderScopedSlock instance_lock(GetGlobalLoaderMutex());
 
     // Check if there is already an XrInstance that is alive. If so, another instance cannot be created.
     // The loader does not support multiple simultaneous instances because the loader is intended to be
@@ -322,7 +323,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instanc
     }
 
     // Make sure the runtime isn't unloaded while it is being used by xrEnumerateInstanceExtensionProperties.
-    std::unique_lock<std::mutex> loader_lock(GetGlobalLoaderMutex());
+    LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
 
     LoaderInstance *loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroyInstance");

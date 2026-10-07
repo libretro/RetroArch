@@ -29,8 +29,6 @@
 
 #pragma once
 #include <unordered_map>
-#include <thread>
-#include <mutex>
 
 #include "xr_dependencies.h"
 #include "openxr/openxr.h"

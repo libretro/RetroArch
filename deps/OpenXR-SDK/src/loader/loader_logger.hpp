@@ -10,14 +10,14 @@
 #pragma once
 
 #include <memory>
-#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 #include <set>
 #include <map>
-#include <shared_mutex>
+
+#include "loader_locking.hpp"
 
 #include <openxr/openxr.h>
 
@@ -172,11 +172,35 @@ class LoaderLogger {
 
    private:
     LoaderLogger();
+    ~LoaderLogger();
 
-    std::shared_timed_mutex _mutex;
+    // The LogMessage paths are wait-free readers: they acquire-load the
+    // immutable snapshot below and walk it, with no lock and no atomic RMW.
+    // Writers serialize on _write_lock, rebuild the recorder array, publish
+    // it with a release-store and retire the superseded snapshot / removed
+    // recorders onto the lists below, which the destructor frees, so a
+    // reader that loaded an old snapshot never touches freed memory.  One
+    // behavioural delta from the shared_timed_mutex this replaces: a
+    // removal no longer waits for in-flight readers, so a log call racing
+    // the removal can reach the removed recorder once more before it drops
+    // out of view (the recorder object itself stays alive).
+    struct RecorderSnapshot {
+        size_t count;
+        LoaderLogRecorder** items;
+    };
+
+    const RecorderSnapshot* CurrentSnapshot() {
+        return static_cast<const RecorderSnapshot*>(retro_atomic_load_acquire_ptr(&_snapshot));
+    }
+    void PublishRecordersLocked();
+
+    retro_atomic_ptr_t _snapshot;
+    slock_t* _write_lock;
 
     // List of *all* available recorder objects (including created specifically for an Instance)
     std::vector<std::unique_ptr<LoaderLogRecorder>> _recorders;
+    std::vector<std::unique_ptr<LoaderLogRecorder>> _retired_recorders;
+    std::vector<RecorderSnapshot*> _retired_snapshots;
 
     // List of recorder objects only created specifically for an XrInstance
     std::unordered_map<XrInstance, std::unordered_set<uint64_t>> _recordersByInstance;
