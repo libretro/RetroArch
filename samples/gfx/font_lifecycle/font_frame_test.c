@@ -156,6 +156,29 @@ int main(void)
             atlas->height);
    }
    drv->free(h);
+
+   /* A cell never used goes before any glyph is evicted: a glyph new
+    * to a font in a later frame takes an empty cell, and the ones
+    * rasterized when it was made stay. Nothing is looked up first, as
+    * that would make the looked-up glyphs the newest. */
+   if (!font_renderer_create_default(&drv, &h, dejavu, 16,
+            FONT_ATLAS_FORMAT_A8))
+      return 1;
+   {
+      struct font_atlas *atlas = drv->get_atlas(h);
+      unsigned cp;
+      atlas->dirty = false;
+      font_driver_frame_begin();
+      CHECK(drv->get_glyph(h, 0x0391) && atlas->dirty
+            && atlas->dirty_xy0 != 0,
+            "unused cells: a new glyph takes one past the first");
+      atlas->dirty = false;
+      for (cp = 32; cp < 127; cp++)
+         drv->get_glyph(h, cp);
+      CHECK(!atlas->dirty, "unused cells: every ASCII glyph still cached");
+   }
+   drv->free(h);
+
    if (fails)
       printf("%d failure(s)\n", fails);
    else

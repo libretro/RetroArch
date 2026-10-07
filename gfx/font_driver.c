@@ -895,6 +895,8 @@ static font_cache_t *font_cache_new(const font_rasterizer_t *rast,
          c->slots[i].charcode             = FONT_CACHE_NO_CODE;
          c->slots[i].glyph.atlas_offset_x = x * (cell_w + FONT_CACHE_PADDING);
          c->slots[i].glyph.atlas_offset_y = y * (cell_h + FONT_CACHE_PADDING);
+         /* Unused: older than any cell in use */
+         c->slots[i].last_used            = c->usage_counter - 0x80000000u;
       }
    }
 
