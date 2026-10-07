@@ -10112,6 +10112,31 @@ static void input_hotkeys_maybe_held(input_driver_state_t *input_st,
 }
 
 
+/* The hotkeys' own binds, for the port the hotkeys are read on: which
+ * are usable, which have a pad's button or axis of the port's own
+ * (not its controller's profile's), and each one's key. The pass asks
+ * the first of every hotkey it goes through, and the blocking rules
+ * ask all three of a hotkey that is pressed; they read the bind table
+ * for it. One set, since the hotkeys are read on one port, made when a
+ * bind changes or the hotkeys move to another port: the port's own
+ * kept answers say whether the set is its and current
+ * (INPUT_HK_HAS_SET), so a frame tests a bit of a byte it has in hand
+ * already. */
+#define INPUT_HOT_FIRST_WORD (RARCH_FIRST_META_KEY >> 5)
+#define INPUT_HOT_WORDS      (((RARCH_BIND_LIST_END + 31) / 32) - INPUT_HOT_FIRST_WORD)
+#define INPUT_HOT_BIT(mask, i) \
+   (((mask)[((i) >> 5) - INPUT_HOT_FIRST_WORD] >> ((i) & 31)) & 1)
+
+typedef struct
+{
+   unsigned port_plus1; /* the port it was made for, and one */
+   uint32_t valid[INPUT_HOT_WORDS];
+   uint32_t own_pad[INPUT_HOT_WORDS];
+   uint16_t key[RARCH_BIND_LIST_END - RARCH_FIRST_META_KEY];
+} input_hotkey_set_t;
+
+static input_hotkey_set_t input_hotkey_set;
+
 /* What it takes to say whether a hotkey is blocked: see
  * input_hotkey_blocked(). */
 typedef struct
@@ -10163,8 +10188,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
       /* No 'enable_hotkey' in joypad */
       if (!b->libretro_hotkey_set)
       {
-         if (     binds[port][i].joykey  != NO_BTN
-               || binds[port][i].joyaxis != AXIS_NONE)
+         if (INPUT_HOT_BIT(input_hotkey_set.own_pad, i))
          {
             /* Allow blocking if keyboard hotkey is pressed */
             if (input_state_wrap(
@@ -10175,7 +10199,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                   port, RETRO_DEVICE_KEYBOARD, 0,
-                  RETRO_KEYBIND_KEY(&input_config_binds[port][i])))
+                  input_hotkey_set.key[i - RARCH_FIRST_META_KEY]))
             {
                keyboard_hotkey_pressed = true;
 
@@ -10206,7 +10230,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
       /* No 'enable_hotkey' in keyboard */
       if (!b->keyboard_hotkey_set)
       {
-         if (RETRO_KEYBIND_KEY(&binds[port][i]) != RETROK_UNKNOWN)
+         if (input_hotkey_set.key[i - RARCH_FIRST_META_KEY] != RETROK_UNKNOWN)
          {
             /* Deny blocking if keyboard hotkey is pressed */
             if (input_state_wrap(
@@ -10217,7 +10241,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                   port, RETRO_DEVICE_KEYBOARD, 0,
-                  RETRO_KEYBIND_KEY(&input_config_binds[port][i])))
+                  input_hotkey_set.key[i - RARCH_FIRST_META_KEY]))
             {
                keyboard_hotkey_pressed = true;
 
@@ -10273,7 +10297,7 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
    /* Never block Game Focus toggle hotkey */
    if (     i == RARCH_GAME_FOCUS_TOGGLE
          && !b->is_menu
-         && RETRO_KEYBIND_VALID(&binds[port][RARCH_GAME_FOCUS_TOGGLE]))
+         && INPUT_HOT_BIT(input_hotkey_set.valid, RARCH_GAME_FOCUS_TOGGLE))
       blocked = false;
 
    return blocked;
@@ -10293,8 +10317,8 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
  * time. Worked out when a bind changes, or the port is read by another
  * controller's profile, and kept by port: a frame looks at one byte.
  *
- * Which hotkeys are usable is kept beside it, for the port the
- * hotkeys are read on - that one alone goes through them. */
+ * Which hotkeys are usable is the hotkeys' port's alone to ask, and is
+ * in its set (input_hotkey_set_t). */
 enum
 {
    INPUT_HK_PAD_ENABLER     = (1 << 0), /* a pad's button or axis is the enabler */
@@ -10303,15 +10327,13 @@ enum
    INPUT_HK_MENU_BYPASS     = (1 << 3), /* the menu toggle's button needs no enabler */
    INPUT_HK_MENU_VALID      = (1 << 4), /* the menu toggle is usable */
    INPUT_HK_MENU_SHARES_KEY = (1 << 5), /* ... and has the enabler's key, or both none */
-   INPUT_HK_HAS_VALID       = (1 << 6)  /* valid_hot is made */
+   INPUT_HK_HAS_SET         = (1 << 6)  /* input_hotkey_set is this port's, and current */
 };
 
 typedef struct
 {
    unsigned gen;                        /* the change count + 1 it was made at */
    const struct retro_keybind *autob;   /* the profile it was made for */
-   /* by bind, for the two words the hotkeys are in: usable */
-   uint32_t valid_hot[((RARCH_BIND_LIST_END + 31) / 32) - (RARCH_FIRST_META_KEY >> 5)];
    uint16_t menu_key;                   /* the menu toggle's key */
    uint8_t  flags;                      /* INPUT_HK_* */
 } input_port_hotkeys_t;
@@ -10320,7 +10342,7 @@ static input_port_hotkeys_t input_port_hotkeys[MAX_USERS];
 
 /* Made again: off the path of a frame, which only compares. */
 INPUT_NOINLINE static void input_port_hotkeys_make(unsigned port,
-      unsigned gen, const struct retro_keybind *autob, bool with_valid)
+      unsigned gen, const struct retro_keybind *autob)
 {
    input_port_hotkeys_t *hot          = &input_port_hotkeys[port];
    const struct retro_keybind *binds  = input_config_binds[port];
@@ -10351,34 +10373,49 @@ INPUT_NOINLINE static void input_port_hotkeys_make(unsigned port,
    if (RETRO_KEYBIND_KEY(menu) == RETRO_KEYBIND_KEY(en))
       flags |= INPUT_HK_MENU_SHARES_KEY;
 
-   if (with_valid)
-   {
-      unsigned i;
-      memset(hot->valid_hot, 0, sizeof(hot->valid_hot));
-      for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
-         if (RETRO_KEYBIND_VALID(&binds[i]))
-            hot->valid_hot[(i >> 5) - (RARCH_FIRST_META_KEY >> 5)]
-               |= (1u << (i & 31));
-      flags |= INPUT_HK_HAS_VALID;
-   }
-
    hot->menu_key = (uint16_t)RETRO_KEYBIND_KEY(menu);
    hot->flags    = (uint8_t)flags;
    hot->autob    = autob;
    hot->gen      = gen;
 }
 
-/* @with_valid: for the port the hotkeys are read on. */
 static INLINE const input_port_hotkeys_t *input_port_hotkeys_get(
-      unsigned port, const struct retro_keybind *autob, bool with_valid)
+      unsigned port, const struct retro_keybind *autob)
 {
    input_port_hotkeys_t *hot = &input_port_hotkeys[port];
    unsigned gen              = input_config_binds_generation() + 1;
    if (     hot->gen   != gen
-         || hot->autob != autob
-         || (with_valid && !(hot->flags & INPUT_HK_HAS_VALID)))
-      input_port_hotkeys_make(port, gen, autob, with_valid);
+         || hot->autob != autob)
+      input_port_hotkeys_make(port, gen, autob);
    return hot;
+}
+
+/* The hotkeys' set for @port, made when its kept answers say it has
+ * none: off the path of a frame, which tests the bit. The port that had
+ * the set is told it no longer has; a port whose answers are worked out
+ * again has lost the bit with them. */
+INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
+{
+   unsigned i;
+   input_hotkey_set_t *set           = &input_hotkey_set;
+   const struct retro_keybind *binds = input_config_binds[port];
+
+   if (set->port_plus1)
+      input_port_hotkeys[set->port_plus1 - 1].flags &= ~INPUT_HK_HAS_SET;
+
+   memset(set->valid,   0, sizeof(set->valid));
+   memset(set->own_pad, 0, sizeof(set->own_pad));
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      uint32_t bit = (1u << (i & 31));
+      if (RETRO_KEYBIND_VALID(&binds[i]))
+         set->valid[(i >> 5) - INPUT_HOT_FIRST_WORD]   |= bit;
+      if (binds[i].joykey != NO_BTN || binds[i].joyaxis != AXIS_NONE)
+         set->own_pad[(i >> 5) - INPUT_HOT_FIRST_WORD] |= bit;
+      set->key[i - RARCH_FIRST_META_KEY] = (uint16_t)RETRO_KEYBIND_KEY(&binds[i]);
+   }
+   set->port_plus1                    = port + 1;
+   input_port_hotkeys[port].flags    |= INPUT_HK_HAS_SET;
 }
 
 static void input_keys_pressed(
@@ -10413,7 +10450,7 @@ static void input_keys_pressed(
       return;
 
    hk                  = input_port_hotkeys_get(port,
-         joypad_info->auto_binds, port == hotkey_port);
+         joypad_info->auto_binds);
    libretro_hotkey_set = (hk->flags & INPUT_HK_PAD_ENABLER) != 0;
    keyboard_hotkey_set = (hk->flags & INPUT_HK_KEY_ENABLER) != 0;
 
@@ -10592,6 +10629,10 @@ static void input_keys_pressed(
     * one by one where only one of them has. Which it is, is settled
     * here; whether a hotkey is blocked is asked when one is pressed
     * (input_hotkey_blocked()). */
+   /* the hotkeys' own binds, for this port */
+   if (!(hk->flags & INPUT_HK_HAS_SET))
+      input_hotkey_set_make(port);
+
    blk.input_st            = input_st;
    blk.binds               = binds;
    blk.joypad              = joypad;
@@ -10631,8 +10672,7 @@ static void input_keys_pressed(
          i = (hot_word << 5) + (unsigned)compat_ctz(hot);
 
          other_pressed = input_keys_pressed_other_sources(input_st, i, p_new_state);
-         bit_pressed   = ((hk->valid_hot[(i >> 5) - (RARCH_FIRST_META_KEY >> 5)]
-                           >> (i & 31)) & 1)
+         bit_pressed   = INPUT_HOT_BIT(input_hotkey_set.valid, i)
                && input_state_wrap(
                      input_st->current_driver,
                      input_st->current_data,

@@ -2913,6 +2913,42 @@ static void lane_hotkey_facts(void)
    CHECK(!hf_paused(), "hotkey facts: the port was given its first controller back,"
          " and the pause hotkey paused without that profile's enabler");
 
+   /* The hotkeys' own binds are kept as one set, for the port the
+    * hotkeys are read on. Moved to another port and back by a setting
+    * alone - "Hotkeys Follow Player 1" - the set must be the port's it
+    * is read for each time: the second port's pause hotkey is unusable
+    * here, the first's is not. */
+   {
+      bool saved_follow    = settings->bools.input_hotkey_follows_player1;
+      unsigned saved_map   = settings->uints.input_remap_port_map[0][0];
+      struct retro_keybind saved_p1 = input_config_binds[1][RARCH_PAUSE_TOGGLE];
+
+      input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joykey = NO_BTN;
+      input_config_binds[1][RARCH_PAUSE_TOGGLE].joykey    = 20;
+      RETRO_KEYBIND_SET_VALID(&input_config_binds[1][RARCH_PAUSE_TOGGLE], false);
+      binds_written_by_a_lane();
+      hf_press(0, pause_bit);
+      CHECK(hf_paused(), "hotkey facts: on the first port, the pause hotkey did not pause");
+      hf_press(0, pause_bit);
+      CHECK(!hf_paused(), "hotkey facts: on the first port, the pause hotkey did not unpause");
+
+      settings->bools.input_hotkey_follows_player1 = true;
+      settings->uints.input_remap_port_map[0][0]   = 1;
+      hf_press(0, pause_bit);
+      CHECK(!hf_paused(), "hotkey facts: with the hotkeys moved to the second port,"
+            " whose pause hotkey is unusable, the first port's button paused");
+      settings->uints.input_remap_port_map[0][0]   = 0;
+      hf_press(0, pause_bit);
+      CHECK(hf_paused(), "hotkey facts: with the hotkeys moved back to the first port,"
+            " its pause hotkey did not pause");
+      hf_press(0, pause_bit);
+      CHECK(!hf_paused(), "hotkey facts: ... and did not unpause");
+
+      settings->bools.input_hotkey_follows_player1 = saved_follow;
+      settings->uints.input_remap_port_map[0][0]   = saved_map;
+      input_config_binds[1][RARCH_PAUSE_TOGGLE]    = saved_p1;
+   }
+
    input_config_binds[0][RARCH_PAUSE_TOGGLE]     = saved_pause;
    input_config_binds[0][RARCH_ENABLE_HOTKEY]    = saved_en;
    input_autoconf_binds[0][RARCH_ENABLE_HOTKEY]  = saved_auto0;
