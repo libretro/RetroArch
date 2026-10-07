@@ -286,6 +286,11 @@ gfx_surface_t *gfx_surface_new_static(unsigned dims,
  * size comes with each image it is given. NULL when out of memory. */
 gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter);
 
+/* The still in @slot, made on first use; its filter is @filter from
+ * here, for the next image it is given. NULL when out of memory. */
+gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
+      enum texture_filter_type filter);
+
 /* Upload the image @img describes to a still, taking the image: its
  * pixels are the surface's from here, freed once uploaded or when the
  * surface goes. The texture up stays until the new one has landed; a
@@ -298,6 +303,12 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img);
  * move to the surface and @img is left without them, for the caller
  * to free as before. Main thread. */
 bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img);
+
+/* Decode the image of @type held in @buf here and now and upload it
+ * as gfx_surface_submit_image does. Main thread. */
+bool gfx_surface_submit_buffer(gfx_surface_t *s,
+      enum image_type_enum type, const void *buf, size_t len,
+      bool supports_rgba);
 
 /* Decode the image file at @path here and now and upload it as
  * gfx_surface_submit_image does. False when it could not be read.

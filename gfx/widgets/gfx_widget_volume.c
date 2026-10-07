@@ -48,7 +48,7 @@ static const char* const ICONS_NAMES[ICON_LAST] = {
 struct gfx_widget_volume_state
 {
    uintptr_t tag;
-   uintptr_t textures[ICON_LAST];
+   gfx_surface_t *textures[ICON_LAST];
 
    unsigned widget_width;
    unsigned widget_height;
@@ -112,7 +112,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       float* backdrop_orig                 = p_dispwidget->backdrop_orig;
 
       uintptr_t volume_icon                = 0;
-      unsigned icon_size                   = state->textures[ICON_MED] ? state->widget_height : padding;
+      unsigned icon_size                   = GFX_SURFACE_HANDLE(state->textures[ICON_MED]) ? state->widget_height : padding;
       unsigned text_color                  = COLOR_TEXT_ALPHA(TEXT_COLOR_INFO, (unsigned)(state->text_alpha*255.0f));
       unsigned text_color_db               = COLOR_TEXT_ALPHA(TEXT_COLOR_FAINT, (unsigned)(state->text_alpha*255.0f));
 
@@ -139,13 +139,13 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       percentage_msg[0]                    = '\0';
 
       if (state->mute)
-         volume_icon                       = state->textures[ICON_MUTE];
+         volume_icon                       = GFX_SURFACE_HANDLE(state->textures[ICON_MUTE]);
       else if (state->percent <= 1.0f)
       {
          if (state->percent <= 0.5f)
-            volume_icon                    = state->textures[ICON_MIN];
+            volume_icon                    = GFX_SURFACE_HANDLE(state->textures[ICON_MIN]);
          else
-            volume_icon                    = state->textures[ICON_MED];
+            volume_icon                    = GFX_SURFACE_HANDLE(state->textures[ICON_MED]);
 
          bar_background                    = state->bar_background;
          bar_foreground                    = state->bar_normal;
@@ -153,7 +153,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       }
       else if (state->percent > 1.0f && state->percent <= 2.0f)
       {
-         volume_icon                       = state->textures[ICON_MAX];
+         volume_icon                       = GFX_SURFACE_HANDLE(state->textures[ICON_MAX]);
 
          bar_background                    = state->bar_normal;
          bar_foreground                    = state->bar_loud;
@@ -161,7 +161,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
       }
       else
       {
-         volume_icon                       = state->textures[ICON_MAX];
+         volume_icon                       = GFX_SURFACE_HANDLE(state->textures[ICON_MAX]);
 
          bar_background                    = state->bar_loud;
          bar_foreground                    = state->bar_loudest;
@@ -211,7 +211,7 @@ static void gfx_widget_volume_frame(void* data, void *user_data)
 
       if (state->mute)
       {
-         if (!state->textures[ICON_MUTE])
+         if (!GFX_SURFACE_HANDLE(state->textures[ICON_MUTE]))
          {
             const char *text  = msg_hash_to_str(MSG_AUDIO_MUTED);
             gfx_widgets_draw_text(font_regular,
@@ -362,8 +362,10 @@ static void gfx_widget_volume_context_reset(bool is_threaded,
       char texpath[PATH_MAX_LENGTH];
       fill_pathname_join_special(texpath,
             menu_png_path, ICONS_NAMES[i], sizeof(texpath));
-      gfx_display_load_icon(texpath, supports_rgba,
-            &state->textures[i]);
+      gfx_surface_submit_path(
+            gfx_surface_still(&state->textures[i],
+               gfx_display_texture_filter()),
+            texpath, supports_rgba);
    }
 }
 
@@ -372,11 +374,11 @@ static void gfx_widget_volume_context_destroy(void)
    size_t i;
    gfx_widget_volume_state_t *state     = &p_w_volume_st;
 
-   /* Icons still uploading into them land nowhere */
-   gfx_display_texture_loads_cancel(state->textures,
-         sizeof(state->textures));
    for (i = 0; i < ICON_LAST; i++)
-      video_driver_texture_unload(&state->textures[i]);
+   {
+      gfx_surface_free(state->textures[i]);
+      state->textures[i] = NULL;
+   }
 }
 
 static void gfx_widget_volume_free(void)

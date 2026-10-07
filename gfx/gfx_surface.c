@@ -654,6 +654,34 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
    return true;
 }
 
+gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
+      enum texture_filter_type filter)
+{
+   if (!*slot)
+      *slot = gfx_surface_new_still(filter);
+   else
+      (*slot)->filter = filter;
+   return *slot;
+}
+
+bool gfx_surface_submit_buffer(gfx_surface_t *s,
+      enum image_type_enum type, const void *buf, size_t len,
+      bool supports_rgba)
+{
+   struct texture_image *img;
+   if (!s || !buf || !len)
+      return false;
+   if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
+      return false;
+   img->supports_rgba = supports_rgba;
+   if (!image_texture_load_buffer(img, type, (void*)buf, len))
+   {
+      free(img);
+      return false;
+   }
+   return gfx_surface_submit_image(s, img);
+}
+
 bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img)
 {
    struct texture_image *own;

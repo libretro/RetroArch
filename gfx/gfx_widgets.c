@@ -87,7 +87,7 @@ static void gfx_widgets_update_icon_layout(dispgfx_widget_t *p_dispwidget)
    p_dispwidget->msg_queue_regular_text_start     = p_dispwidget->msg_queue_rect_start_x + p_dispwidget->msg_queue_icon_size_x + (p_dispwidget->simple_widget_padding / 2.5f);
    p_dispwidget->msg_queue_task_text_start_x      = p_dispwidget->msg_queue_rect_start_x + (p_dispwidget->msg_queue_height / 2.0f) + (p_dispwidget->simple_widget_padding / 2.0f);
 
-   if (!p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS])
+   if (!GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_HOURGLASS]))
       p_dispwidget->msg_queue_task_text_start_x  -= p_dispwidget->gfx_widget_fonts.msg_queue.glyph_width * 2.0f;
 
    p_dispwidget->msg_queue_default_rect_width     = VIDEO_SCALE_W(p_dispwidget->last_video_dims)
@@ -1744,7 +1744,7 @@ static void gfx_widgets_draw_task_msg(
             p_disp,
             video_dims,
             VIDEO_SCALE_PACK(msg_queue_height / 2.5f, msg_queue_height / 2.5f),
-            p_dispwidget->gfx_widgets_icons_textures[texture],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[texture]),
             rect_x + (msg_queue_height / 12.0f) + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
             rect_y + (msg_queue_height / MSG_QUEUE_FONT_SIZE),
             radians,
@@ -1926,7 +1926,7 @@ static void gfx_widgets_draw_regular_msg(
             p_disp,
             video_dims,
             VIDEO_SCALE_PACK(icon_size, icon_size),
-            p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_INFO]),
             p_dispwidget->msg_queue_rect_start_x
                   + (p_dispwidget->msg_queue_height / 10.0f),
             video_height - msg->offset_y - p_dispwidget->msg_queue_icon_offset_y,
@@ -2033,7 +2033,7 @@ static void gfx_widgets_frame_state(void *data)
       bool all_loaded = true;
       for (_i = 0; _i < MENU_WIDGETS_ICON_LAST; _i++)
       {
-         if (!p_dispwidget->gfx_widgets_icons_textures[_i])
+         if (!GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[_i]))
          {
             all_loaded = false;
             break;
@@ -2099,7 +2099,7 @@ static void gfx_widgets_frame_state(void *data)
       }
       gfx_display_set_alpha(p_dispwidget->pure_white, 1.0f);
 
-      if (p_dispwidget->ai_service_overlay_texture)
+      if (GFX_SURFACE_HANDLE(p_dispwidget->ai_service_overlay_texture))
       {
          gfx_display_blend_begin(dispctx, userdata);
          gfx_widgets_draw_icon(
@@ -2107,7 +2107,7 @@ static void gfx_widgets_frame_state(void *data)
                p_disp,
                video_info->dims,
                VIDEO_SCALE_PACK(overlay_width, overlay_height),
-               p_dispwidget->ai_service_overlay_texture,
+               GFX_SURFACE_HANDLE(p_dispwidget->ai_service_overlay_texture),
                overlay_x,
                overlay_y,
                0.0f, /* rad                         */
@@ -2240,8 +2240,8 @@ static void gfx_widgets_frame_state(void *data)
             dispctx,
             userdata,
             video_info->dims,
-            p_dispwidget->gfx_widgets_icons_textures[
-            MENU_WIDGETS_ICON_PAUSED],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+            MENU_WIDGETS_ICON_PAUSED]),
             (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_PAUSED);
@@ -2253,8 +2253,8 @@ static void gfx_widgets_frame_state(void *data)
             dispctx,
             userdata,
             video_info->dims,
-            p_dispwidget->gfx_widgets_icons_textures[
-            MENU_WIDGETS_ICON_FAST_FORWARD],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+            MENU_WIDGETS_ICON_FAST_FORWARD]),
             (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_FAST_FORWARD);
@@ -2266,8 +2266,8 @@ static void gfx_widgets_frame_state(void *data)
             dispctx,
             userdata,
             video_info->dims,
-            p_dispwidget->gfx_widgets_icons_textures[
-            MENU_WIDGETS_ICON_REWIND],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+            MENU_WIDGETS_ICON_REWIND]),
             (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_REWINDING);
@@ -2280,8 +2280,8 @@ static void gfx_widgets_frame_state(void *data)
             dispctx,
             userdata,
             video_info->dims,
-            p_dispwidget->gfx_widgets_icons_textures[
-            MENU_WIDGETS_ICON_SLOW_MOTION],
+            GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+            MENU_WIDGETS_ICON_SLOW_MOTION]),
             (onscreen_panels ? p_dispwidget->simple_widget_height : 0),
             top_right_x_advance,
             MSG_SLOW_MOTION);
@@ -2470,8 +2470,10 @@ static void gfx_widgets_load_icons(dispgfx_widget_t *p_dispwidget)
             p_dispwidget->monochrome_png_path,
             gfx_widgets_icons_names[i],
             sizeof(texpath));
-      gfx_display_load_icon(texpath, supports_rgba,
-            &p_dispwidget->gfx_widgets_icons_textures[i]);
+      gfx_surface_submit_path(
+            gfx_surface_still(&p_dispwidget->gfx_widgets_icons_textures[i],
+               gfx_display_texture_filter()),
+            texpath, supports_rgba);
    }
 }
 
@@ -2538,9 +2540,6 @@ void gfx_widgets_reload_assets(void)
 #endif
 
    gfx_widgets_state_lock();
-   for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
-      video_driver_texture_unload(
-            &p_dispwidget->gfx_widgets_icons_textures[i]);
    gfx_widgets_load_icons(p_dispwidget);
 
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
@@ -2709,9 +2708,6 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 {
    size_t i;
 
-   /* Icons still uploading land nowhere */
-   gfx_display_texture_loads_cancel(p_dispwidget, sizeof(*p_dispwidget));
-
    for (i = 0; i < ARRAY_SIZE(widgets); i++)
    {
       const gfx_widget_t* widget = widgets[i];
@@ -2724,7 +2720,10 @@ static void gfx_widgets_context_destroy(dispgfx_widget_t *p_dispwidget)
 
    /* Textures */
    for (i = 0; i < MENU_WIDGETS_ICON_LAST; i++)
-      video_driver_texture_unload(&p_dispwidget->gfx_widgets_icons_textures[i]);
+   {
+      gfx_surface_free(p_dispwidget->gfx_widgets_icons_textures[i]);
+      p_dispwidget->gfx_widgets_icons_textures[i] = NULL;
+   }
 
    /* Fonts */
    gfx_widgets_font_free(&p_dispwidget->gfx_widget_fonts.regular);
@@ -2824,14 +2823,13 @@ bool gfx_widgets_ai_service_overlay_load(
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (gfx_widgets_ai_service_overlay_get_state() == 0)
    {
-      unsigned dims                 = 0;
-      if (!gfx_display_reset_textures_list_buffer(
-               &p_dispwidget->ai_service_overlay_texture,
-               gfx_display_texture_filter(),
-               (void *) buffer, buffer_len, image_type,
-               &dims))
+      gfx_surface_t *s = gfx_surface_still(
+            &p_dispwidget->ai_service_overlay_texture,
+            gfx_display_texture_filter());
+      if (!gfx_surface_submit_buffer(s, image_type, buffer, buffer_len,
+               gfx_surface_wants_rgba()))
          return false;
-      p_dispwidget->ai_service_overlay_dims = dims;
+      p_dispwidget->ai_service_overlay_dims = s->dims;
       gfx_widgets_ai_service_overlay_set_state(1);
    }
    return true;
@@ -2842,9 +2840,8 @@ void gfx_widgets_ai_service_overlay_unload(void)
    dispgfx_widget_t *p_dispwidget   = &dispwidget_st;
    if (gfx_widgets_ai_service_overlay_get_state() == 1)
    {
-      gfx_display_texture_loads_cancel(&p_dispwidget->ai_service_overlay_texture, sizeof(p_dispwidget->ai_service_overlay_texture));
-      video_driver_texture_unload(&p_dispwidget->ai_service_overlay_texture);
-      p_dispwidget->ai_service_overlay_texture = 0;
+      gfx_surface_free(p_dispwidget->ai_service_overlay_texture);
+      p_dispwidget->ai_service_overlay_texture = NULL;
       gfx_widgets_ai_service_overlay_set_state(0);
    }
 }

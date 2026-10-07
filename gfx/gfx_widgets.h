@@ -32,6 +32,7 @@
 
 #include "gfx_animation.h"
 #include "gfx_display.h"
+#include "gfx_surface.h"
 
 #define DEFAULT_BACKDROP               0.75f
 
@@ -260,12 +261,12 @@ typedef struct dispgfx_widget
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
 #ifdef HAVE_TRANSLATE
-   uintptr_t ai_service_overlay_texture;
+   gfx_surface_t *ai_service_overlay_texture;
 #endif
    uintptr_t msg_queue_icon;
    uintptr_t msg_queue_icon_outline;
    uintptr_t msg_queue_icon_rect;
-   uintptr_t gfx_widgets_icons_textures[
+   gfx_surface_t *gfx_widgets_icons_textures[
    MENU_WIDGETS_ICON_LAST];
    uintptr_t gfx_widgets_generic_tag;
 

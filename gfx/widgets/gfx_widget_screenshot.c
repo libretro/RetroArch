@@ -28,7 +28,7 @@
 
 struct gfx_widget_screenshot_state
 {
-   uintptr_t texture;
+   gfx_surface_t *texture;
 
    unsigned video_height;
    unsigned texture_dims;
@@ -109,9 +109,8 @@ static void gfx_widget_screenshot_dispose(void *userdata)
    gfx_widget_screenshot_state_t *state = &p_w_screenshot_st;
 
    state->loaded  = false;
-   gfx_display_texture_loads_cancel(&state->texture, sizeof(state->texture));
-   video_driver_texture_unload(&state->texture);
-   state->texture = 0;
+   gfx_surface_free(state->texture);
+   state->texture = NULL;
 }
 
 static void gfx_widgets_play_screenshot_flash(void *data)
@@ -304,14 +303,14 @@ static void gfx_widget_screenshot_frame(void* data, void *user_data)
 
       state->video_height = VIDEO_SCALE_H(video_info->dims);
 
-      if (state->texture)
+      if (GFX_SURFACE_HANDLE(state->texture))
       {
          gfx_widgets_draw_icon(
                userdata,
                p_disp,
                video_info->dims,
                state->thumbnail_dims,
-               state->texture,
+               GFX_SURFACE_HANDLE(state->texture),
                0,
                state->y,
                0.0f, /* rad */
@@ -410,16 +409,14 @@ static void gfx_widget_screenshot_iterate(
       video_driver_state_t *video_st = video_state_get_ptr();
       gfx_timer_ctx_entry_t timer;
 
-      gfx_display_texture_loads_cancel(&state->texture, sizeof(state->texture));
-      video_driver_texture_unload(&state->texture);
-
-      state->texture = 0;
+      gfx_surface_free(state->texture);
+      state->texture = gfx_surface_new_still(
+            gfx_display_texture_filter_latched());
       state->y       = 0.0f;
 
-      gfx_display_reset_textures_list(state->filename,
-            "", &state->texture,
-            gfx_display_texture_filter_latched(),
-            &state->texture_dims);
+      gfx_surface_submit_file(state->texture, state->filename,
+            gfx_surface_wants_rgba());
+      state->texture_dims = state->texture ? state->texture->dims : 0;
 
       state->dims   = VIDEO_SCALE_PACK(VIDEO_SCALE_W(dims),
             font_regular->line_height * 4);
