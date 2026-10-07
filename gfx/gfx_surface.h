@@ -318,6 +318,26 @@ bool gfx_surface_submit_buffer(gfx_surface_t *s,
 bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       bool supports_rgba);
 
+/* Decode the image files at @paths, @n of them, across the cores at
+ * once, then upload each as gfx_surface_submit_image does, to the
+ * still of the same index in @slots (a NULL slot takes nothing). A
+ * file that cannot be read is skipped. Returns how many went up. Main
+ * thread; it returns once every upload has been given to its still. */
+unsigned gfx_surface_submit_files(gfx_surface_t *const *slots,
+      const char *const *paths, unsigned n, bool supports_rgba);
+
+/* Writes the path of the file for slot @i into @buf, @len bytes;
+ * leaves it empty for a slot that gets no file */
+typedef void (*gfx_surface_path_t)(unsigned i, void *ud, char *buf,
+      size_t len);
+
+/* gfx_surface_submit_files for a set of slots whose stills are made on
+ * first use with @filter and whose files @path names one by one: an
+ * icon set at a context reset. Returns how many went up. */
+unsigned gfx_surface_submit_named(gfx_surface_t **slots, unsigned n,
+      enum texture_filter_type filter, gfx_surface_path_t path, void *ud,
+      bool supports_rgba);
+
 /* Decode the image file at @path on the task queue, then upload it
  * as gfx_surface_submit_image does. A newer path given before the
  * decode is done wins. The surface may be freed meanwhile; the decode

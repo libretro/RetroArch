@@ -7725,25 +7725,21 @@ static void xmb_sync_wideglyph(xmb_handle_t *xmb)
    xmb_compute_wideglyph(xmb);
 }
 
+static void xmb_texture_file_path(unsigned i, void *ud, char *buf,
+      size_t len)
+{
+   fill_pathname_join_special(buf, (const char*)ud, xmb_texture_path(i), len);
+}
+
 static void xmb_context_reset_textures(
       xmb_handle_t *xmb,
       const char *iconpath,
       unsigned menu_xmb_theme)
 {
-   unsigned i;
-   bool supports_rgba = gfx_surface_wants_rgba();
-
-   for (i = 0; i < XMB_TEXTURE_LAST; i++)
-   {
-      char texpath[PATH_MAX_LENGTH];
-      const char *texture_path = xmb_texture_path(i);
-
-      fill_pathname_join_special(texpath,
-            iconpath, texture_path, sizeof(texpath));
-      gfx_surface_submit_file(gfx_surface_still(&xmb->textures.list[i],
-            gfx_display_texture_filter()),
-            texpath, supports_rgba);
-   }
+   /* The set decoded across the cores, then up in order */
+   gfx_surface_submit_named(xmb->textures.list, XMB_TEXTURE_LAST,
+         gfx_display_texture_filter(), xmb_texture_file_path,
+         (void*)iconpath, gfx_surface_wants_rgba());
 
    /* The tabs draw the list's stills */
    xmb->main_menu_node.icon              = xmb->textures.list[XMB_TEXTURE_MAIN_MENU];

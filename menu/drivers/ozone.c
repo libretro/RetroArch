@@ -3072,16 +3072,79 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
    }
 }
 
+static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
+   "switch.png",
+   "check.png",
+
+   "cursor_noborder.png",
+   "cursor_static.png"
+};
+
+static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
+   "retroarch.png", /* MAIN_MENU */
+   "settings.png",  /* SETTINGS_TAB */
+   "history.png",   /* HISTORY_TAB */
+   "favorites.png", /* FAVORITES_TAB */
+   "image.png",     /* IMAGES_TAB */
+   "music.png",     /* MUSIC_TAB */
+   "video.png",     /* VIDEO_TAB */
+   "netplay.png",   /* NETPLAY_TAB */
+   "add.png",       /* ADD_TAB */
+   "core.png",      /* CONTENTLESS_CORES_TAB */
+   "database.png"   /* EXPLORE_TAB */
+};
+
+static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST] = {
+   "retroarch.png",
+   "cursor_border.png"
+};
+
+/* The icon sets at a context reset, each decoded across the cores:
+ * where the file of slot @i is */
+static void ozone_theme_texture_path(unsigned i, void *ud, char *buf,
+      size_t len)
+{
+   fill_pathname_join_special(buf, (const char*)ud,
+         OZONE_THEME_TEXTURES_FILES[i], len);
+}
+
+static void ozone_texture_path(unsigned i, void *ud, char *buf, size_t len)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)ud;
+   fill_pathname_join_special(buf, ozone->png_path,
+         OZONE_TEXTURES_FILES[i], len);
+}
+
+static void ozone_tab_texture_path(unsigned i, void *ud, char *buf,
+      size_t len)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)ud;
+   switch (i)
+   {
+      /* Exceptions for icons that don't exist in 'png/sidebar/' */
+      case OZONE_TAB_TEXTURE_CONTENTLESS_CORES:
+      case OZONE_TAB_TEXTURE_EXPLORE:
+         fill_pathname_join_special(buf, ozone->icons_path,
+               OZONE_TAB_TEXTURES_FILES[i], len);
+         break;
+      default:
+         fill_pathname_join_special(buf, ozone->tab_path,
+               OZONE_TAB_TEXTURES_FILES[i], len);
+         break;
+   }
+}
+
+static void ozone_entries_icon_path(unsigned i, void *ud, char *buf,
+      size_t len)
+{
+   ozone_handle_t *ozone = (ozone_handle_t*)ud;
+   fill_pathname_join_special(buf, ozone->icons_path,
+         ozone_entries_icon_texture_path(i), len);
+}
+
 static void ozone_reset_theme_textures(ozone_handle_t *ozone)
 {
-   static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
-      "switch.png",
-      "check.png",
-
-      "cursor_noborder.png",
-      "cursor_static.png"
-   };
-   unsigned i, j;
+   unsigned j;
    char theme_path[NAME_MAX_LENGTH];
    bool supports_rgba = gfx_surface_wants_rgba();
 
@@ -3099,16 +3162,9 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
             sizeof(theme_path)
       );
 
-      for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
-      {
-         char texpath[PATH_MAX_LENGTH];
-         fill_pathname_join_special(texpath,
-               theme_path, OZONE_THEME_TEXTURES_FILES[i],
-               sizeof(texpath));
-         gfx_surface_submit_file(gfx_surface_still(&theme->textures[i],
-               gfx_display_texture_filter()),
-               texpath, supports_rgba);
-      }
+      gfx_surface_submit_named(theme->textures, OZONE_THEME_TEXTURE_LAST,
+            gfx_display_texture_filter(), ozone_theme_texture_path,
+            theme_path, supports_rgba);
    }
 }
 
@@ -10509,24 +10565,6 @@ static void ozone_set_layout(
 
 static void ozone_context_reset(void *data, bool is_threaded)
 {
-   static const char *OZONE_TAB_TEXTURES_FILES[OZONE_TAB_TEXTURE_LAST] = {
-      "retroarch.png", /* MAIN_MENU */
-      "settings.png",  /* SETTINGS_TAB */
-      "history.png",   /* HISTORY_TAB */
-      "favorites.png", /* FAVORITES_TAB */
-      "image.png",     /* IMAGES_TAB */
-      "music.png",     /* MUSIC_TAB */
-      "video.png",     /* VIDEO_TAB */
-      "netplay.png",   /* NETPLAY_TAB */
-      "add.png",       /* ADD_TAB */
-      "core.png",      /* CONTENTLESS_CORES_TAB */
-      "database.png"   /* EXPLORE_TAB */
-   };
-   static const char *OZONE_TEXTURES_FILES[OZONE_TEXTURE_LAST]         = {
-      "retroarch.png",
-      "cursor_border.png"
-   };
-   unsigned i;
    ozone_handle_t *ozone      = (ozone_handle_t*) data;
 
    if (ozone)
@@ -10543,55 +10581,22 @@ static void ozone_context_reset(void *data, bool is_threaded)
             settings->bools.ozone_collapse_sidebar, is_threaded);
 
       /* Textures init */
-      for (i = 0; i < OZONE_TEXTURE_LAST; i++)
-      {
-         char texpath[PATH_MAX_LENGTH];
-         fill_pathname_join_special(texpath,
-               ozone->png_path, OZONE_TEXTURES_FILES[i],
-               sizeof(texpath));
-         gfx_surface_submit_file(gfx_surface_still(&ozone->textures[i],
-               gfx_display_texture_filter()),
-               texpath, supports_rgba);
-      }
+      gfx_surface_submit_named(ozone->textures, OZONE_TEXTURE_LAST,
+            gfx_display_texture_filter(), ozone_texture_path, ozone,
+            supports_rgba);
 
       /* Sidebar textures */
-      for (i = 0; i < OZONE_TAB_TEXTURE_LAST; i++)
-      {
-         char texpath[PATH_MAX_LENGTH];
-         switch (i)
-         {
-            /* Exceptions for icons that don't exist in 'png/sidebar/' */
-            case OZONE_TAB_TEXTURE_CONTENTLESS_CORES:
-            case OZONE_TAB_TEXTURE_EXPLORE:
-               fill_pathname_join_special(texpath,
-                     ozone->icons_path, OZONE_TAB_TEXTURES_FILES[i],
-                     sizeof(texpath));
-               break;
-            default:
-               fill_pathname_join_special(texpath,
-                     ozone->tab_path, OZONE_TAB_TEXTURES_FILES[i],
-                     sizeof(texpath));
-               break;
-         }
-         gfx_surface_submit_file(gfx_surface_still(&ozone->tab_textures[i],
-               gfx_display_texture_filter()),
-               texpath, supports_rgba);
-      }
+      gfx_surface_submit_named(ozone->tab_textures, OZONE_TAB_TEXTURE_LAST,
+            gfx_display_texture_filter(), ozone_tab_texture_path, ozone,
+            supports_rgba);
 
       /* Theme textures */
       ozone_reset_theme_textures(ozone);
 
       /* Icons textures init */
-      for (i = 0; i < OZONE_ENTRIES_ICONS_TEXTURE_LAST; i++)
-      {
-         char texpath[PATH_MAX_LENGTH];
-         fill_pathname_join_special(texpath,
-               ozone->icons_path, ozone_entries_icon_texture_path(i),
-               sizeof(texpath));
-         gfx_surface_submit_file(gfx_surface_still(&ozone->icons_textures[i],
-               gfx_display_texture_filter()),
-               texpath, supports_rgba);
-      }
+      gfx_surface_submit_named(ozone->icons_textures,
+            OZONE_ENTRIES_ICONS_TEXTURE_LAST, gfx_display_texture_filter(),
+            ozone_entries_icon_path, ozone, supports_rgba);
 
       /* Horizontal list */
       ozone_context_reset_horizontal_list(ozone);

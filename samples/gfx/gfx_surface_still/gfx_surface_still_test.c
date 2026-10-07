@@ -1,11 +1,16 @@
 /* gfx_surface stills: a still keeps its texture across uploads,
  * decodes and a free in flight, under the threaded wrapper and
- * without. Stub driver, simulated wrapper and task queue. */
+ * without, and a set of files is decoded across threads and goes up
+ * in order. Stub driver, simulated wrapper, task queue and image
+ * decoder. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <queues/task_queue.h>
+#include <rthreads/rthreads.h>
+#include <retro_timers.h>
+#include <features/features_cpu.h>
 
 #include "gfx/video_driver.h"
 #include "gfx/video_thread_wrapper.h"
@@ -118,6 +123,54 @@ static void st_flush(void)
    }
 }
 
+/* The image decoder: a file "<w>.png" is a w by w image; any other
+ * name is no file. Each decode takes a moment and notes the thread
+ * it ran on. */
+#define ST_DECODE_THREADS 64
+static uintptr_t st_decode_thread[ST_DECODE_THREADS];
+static unsigned  st_decode_threads;
+static slock_t  *st_decode_lock;
+
+bool image_texture_load(struct texture_image *img, const char *path)
+{
+   unsigned w = (unsigned)atoi(path);
+   if (!w)
+      return false;
+   retro_sleep(2);
+   img->width  = img->height = w;
+   img->pixels = (uint32_t*)calloc(w * w, 4);
+   slock_lock(st_decode_lock);
+   {
+      uintptr_t id = sthread_get_current_thread_id();
+      unsigned i;
+      for (i = 0; i < st_decode_threads; i++)
+         if (st_decode_thread[i] == id)
+            break;
+      if (i == st_decode_threads && i < ST_DECODE_THREADS)
+         st_decode_thread[st_decode_threads++] = id;
+   }
+   slock_unlock(st_decode_lock);
+   return true;
+}
+
+bool image_texture_load_buffer(struct texture_image *img,
+      enum image_type_enum type, void *s, size_t len)
+{
+   (void)img; (void)type; (void)s; (void)len;
+   return false;
+}
+
+void image_texture_narrow_10bit(struct texture_image *img) { (void)img; }
+
+void image_texture_free(struct texture_image *img)
+{
+   if (!img)
+      return;
+   free(img->pixels);
+   img->pixels = NULL;
+   img->width  = img->height = 0;
+}
+
 /* The task queue: one decode held until the test answers it */
 static retro_task_callback_t st_decode_cb;
 static void                 *st_decode_user;
@@ -165,10 +218,22 @@ static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
    printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
 
+/* The path of slot @i in the set lane: "<8 + i>.png", but slot 3's
+ * file does not exist and slot 5 has no still */
+static void st_set_path(unsigned i, void *ud, char *buf, size_t len)
+{
+   (void)ud;
+   if (i == 3)
+      snprintf(buf, len, "missing.png");
+   else
+      snprintf(buf, len, "%u.png", 8 + i);
+}
+
 int main(void)
 {
    uintptr_t a, b;
 
+   st_decode_lock = slock_new();
    st_async = 1;
 
    /* 1. threaded: a same-size image updates the texture up in place
@@ -292,7 +357,44 @@ int main(void)
       CHECK(st_live == 0, "%d live after the still went", st_live);
    }
 
-   /* 7. direct: the image goes up at once */
+   /* 7. threaded: a set of files is decoded across threads and goes
+    *    up in slot order; a file that is not there and a slot that is
+    *    not there are skipped */
+   {
+      enum { SET_N = 70 };
+      gfx_surface_t *slots[SET_N];
+      unsigned i, up, loads = st_loads;
+      memset(slots, 0, sizeof(slots));
+      slots[5] = (gfx_surface_t*)NULL;
+      st_decode_threads = 0;
+      up = gfx_surface_submit_named(slots, SET_N, TEXTURE_FILTER_NEAREST,
+            st_set_path, NULL, true);
+      CHECK(up == SET_N - 1, "%u of %u files went up, wanted all but the missing one",
+            up, SET_N);
+      CHECK(slots[5] != NULL, "a slot with no still was not given one");
+      CHECK(slots[3] && slots[3]->handle == 0 && slots[3]->dims == 0,
+            "the missing file's slot got an image");
+      st_flush();
+      CHECK(st_loads - loads == SET_N - 1, "%d textures loaded for the set",
+            st_loads - loads);
+      for (i = 0; i < SET_N; i++)
+      {
+         if (i == 3)
+            continue;
+         CHECK(slots[i] && VIDEO_SCALE_W(slots[i]->dims) == 8 + i,
+               "slot %u holds a %u-wide image, wanted %u", i,
+               slots[i] ? VIDEO_SCALE_W(slots[i]->dims) : 0, 8 + i);
+      }
+      if (cpu_features_get_core_amount() > 1)
+         CHECK(st_decode_threads > 1,
+               "the set was decoded on one thread with %u cores",
+               cpu_features_get_core_amount());
+      for (i = 0; i < SET_N; i++)
+         gfx_surface_free(slots[i]);
+      CHECK(st_live == 0, "%d live after the set went", st_live);
+   }
+
+   /* 8. direct: the image goes up at once */
    st_async = 0;
    {
       gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);

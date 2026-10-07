@@ -2638,22 +2638,19 @@ static void materialui_update_savestate_thumbnail_image(void *data)
    mui->thumbnails.savestate.flags |= GFX_THUMB_FLAG_CORE_ASPECT | GFX_THUMB_FLAG_BG_ONLY;
 }
 
+static void materialui_texture_file_path(unsigned i, void *ud, char *buf,
+      size_t len)
+{
+   fill_pathname_join_special(buf, (const char*)ud,
+         materialui_texture_path(i), len);
+}
+
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
-   int i;
-   bool supports_rgba = gfx_surface_wants_rgba();
-
-   /* Loop through all textures */
-   for (i = 0; i < MUI_TEXTURE_LAST; i++)
-   {
-      char texpath[PATH_MAX_LENGTH];
-      fill_pathname_join_special(texpath,
-            mui->icons_path, materialui_texture_path(i),
-            sizeof(texpath));
-      gfx_surface_submit_file(gfx_surface_still(&mui->textures.list[i],
-            gfx_display_texture_filter()),
-            texpath, supports_rgba);
-   }
+   /* The set decoded across the cores, then up in order */
+   gfx_surface_submit_named(mui->textures.list, MUI_TEXTURE_LAST,
+         gfx_display_texture_filter(), materialui_texture_file_path,
+         mui->icons_path, gfx_surface_wants_rgba());
 }
 
 static void materialui_draw_icon(

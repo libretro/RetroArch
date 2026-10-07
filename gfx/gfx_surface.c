@@ -16,6 +16,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
+#include <retro_atomic.h>
+#ifdef HAVE_GCD
+#include <dispatch/dispatch.h>
+#elif defined(HAVE_THREADS)
+#include <rthreads/rthreads.h>
+#endif
+
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
 #include "../tasks/tasks_internal.h"
@@ -712,6 +721,165 @@ bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       return false;
    }
    return gfx_surface_submit_image(s, img);
+}
+
+/* A set of files decoded together: the next index a worker takes,
+ * and the images they come back as */
+typedef struct
+{
+   const char *const    *paths;
+   struct texture_image *imgs;
+   retro_atomic_int_t    next;
+   unsigned              n;
+   bool                  supports_rgba;
+} gfx_surface_decode_set_t;
+
+static void gfx_surface_decode_one(gfx_surface_decode_set_t *set,
+      unsigned i)
+{
+   struct texture_image *img = &set->imgs[i];
+   img->supports_rgba        = set->supports_rgba;
+   if (!set->paths[i] || !*set->paths[i]
+         || !image_texture_load(img, set->paths[i]))
+      img->pixels            = NULL;
+}
+
+#if !defined(HAVE_GCD) && defined(HAVE_THREADS)
+static void gfx_surface_decode_set_run(void *data)
+{
+   gfx_surface_decode_set_t *set = (gfx_surface_decode_set_t*)data;
+   for (;;)
+   {
+      unsigned i = (unsigned)retro_atomic_fetch_add_int(&set->next, 1);
+      if (i >= set->n)
+         return;
+      gfx_surface_decode_one(set, i);
+   }
+}
+#endif
+
+/* The set, decoded: on Apple over the dispatch pool the task queue's
+ * decodes already run on, elsewhere on threads of its own, and on one
+ * thread where there is only one */
+static void gfx_surface_decode_set(gfx_surface_decode_set_t *set)
+{
+#ifdef HAVE_GCD
+   if (set->n > 1)
+   {
+      gfx_surface_decode_set_t *at = set;
+      dispatch_apply(set->n,
+            dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
+            ^(size_t i) { gfx_surface_decode_one(at, (unsigned)i); });
+      return;
+   }
+#elif defined(HAVE_THREADS)
+   {
+      unsigned workers = cpu_features_get_core_amount();
+      if (workers > 8)
+         workers = 8;
+      if (workers > 1 && set->n > 1)
+      {
+         /* This thread decodes alongside the others; a worker that
+          * could not be made costs nothing but its share */
+         sthread_t *thread[8];
+         unsigned t, spawned = workers - 1;
+         if (spawned > set->n - 1)
+            spawned = set->n - 1;
+         for (t = 0; t < spawned; t++)
+            thread[t] = sthread_create(gfx_surface_decode_set_run, set);
+         gfx_surface_decode_set_run(set);
+         for (t = 0; t < spawned; t++)
+            if (thread[t])
+               sthread_join(thread[t]);
+         return;
+      }
+   }
+#endif
+   {
+      unsigned i;
+      for (i = 0; i < set->n; i++)
+         gfx_surface_decode_one(set, i);
+   }
+}
+
+/* At most this many decodes in hand before they go up, whatever
+ * the set's size: a theme's icons are small, but there are many */
+#define GFX_SURFACE_DECODE_BATCH 32
+
+unsigned gfx_surface_submit_files(gfx_surface_t *const *slots,
+      const char *const *paths, unsigned n, bool supports_rgba)
+{
+   struct texture_image imgs[GFX_SURFACE_DECODE_BATCH];
+   gfx_surface_decode_set_t set;
+   unsigned done = 0, first;
+
+   if (!slots || !paths)
+      return 0;
+
+   set.imgs          = imgs;
+   set.supports_rgba = supports_rgba;
+
+   for (first = 0; first < n; first += GFX_SURFACE_DECODE_BATCH)
+   {
+      unsigned i;
+      unsigned count = n - first;
+      if (count > GFX_SURFACE_DECODE_BATCH)
+         count = GFX_SURFACE_DECODE_BATCH;
+      memset(imgs, 0, count * sizeof(*imgs));
+      set.paths = paths + first;
+      set.n     = count;
+      retro_atomic_int_init(&set.next, 0);
+      gfx_surface_decode_set(&set);
+
+      /* Up, in order, on this thread */
+      for (i = 0; i < count; i++)
+      {
+         struct texture_image *img;
+         if (!imgs[i].pixels && !imgs[i].compressed)
+            continue;
+         if (     !slots[first + i]
+               || !(img = (struct texture_image*)malloc(sizeof(*img))))
+         {
+            image_texture_free(&imgs[i]);
+            continue;
+         }
+         *img = imgs[i];
+         if (gfx_surface_submit_image(slots[first + i], img))
+            done++;
+      }
+   }
+   return done;
+}
+
+unsigned gfx_surface_submit_named(gfx_surface_t **slots, unsigned n,
+      enum texture_filter_type filter, gfx_surface_path_t path, void *ud,
+      bool supports_rgba)
+{
+   char        *buf;
+   const char **paths;
+   unsigned     i, done;
+
+   if (!slots || !n)
+      return 0;
+   if (!(buf = (char*)malloc((size_t)n * PATH_MAX_LENGTH)))
+      return 0;
+   if (!(paths = (const char**)malloc((size_t)n * sizeof(*paths))))
+   {
+      free(buf);
+      return 0;
+   }
+   for (i = 0; i < n; i++)
+   {
+      char *at = buf + (size_t)i * PATH_MAX_LENGTH;
+      gfx_surface_still(&slots[i], filter);
+      *at      = '\0';
+      path(i, ud, at, PATH_MAX_LENGTH);
+      paths[i] = at;
+   }
+   done = gfx_surface_submit_files(slots, paths, n, supports_rgba);
+   free(paths);
+   free(buf);
+   return done;
 }
 
 /* What the decode is told to answer to: the surface, and which of
