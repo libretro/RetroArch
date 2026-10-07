@@ -728,8 +728,10 @@ static bool metal_display_supports_edr(void)
        * produce if EDR were enabled, not what's being used right now.
        * That's the right signal for "is HDR an available mode".  SDR-only
        * displays return exactly 1.0. */
+      /* CGFloat, a double: Metal builds are 64-bit only */
       if (screen)
-         return screen.maximumPotentialExtendedDynamicRangeColorComponentValue > 1.0;
+         return apple_rt_get_double(screen, sel_registerName(
+                  "maximumPotentialExtendedDynamicRangeColorComponentValue")) > 1.0;
    }
 #elif defined(HAVE_COCOATOUCH)
    /* TARGET_OS_TV / TARGET_OS_IOS are always defined to 0 or 1, not
@@ -1036,7 +1038,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
 #endif
       /* Configure drawable pool for triple-buffering */
       if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 4), APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(13, 0, 0)))
-         _layer.maximumDrawableCount = MAX_INFLIGHT;
+         apple_rt_send_long(_layer,
+               sel_registerName("setMaximumDrawableCount:"), MAX_INFLIGHT);
       _library                   = RARCH_RETAIN(l);
       _commandQueue              = [_device newCommandQueue];
       _clearColor                = MTLClearColorMake(0, 0, 0, 1);

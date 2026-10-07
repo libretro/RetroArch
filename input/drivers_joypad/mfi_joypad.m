@@ -57,6 +57,32 @@ static CHHapticEngine *deviceHapticEngine IPHONE_RUMBLE_AVAIL;
 static id<CHHapticPatternPlayer> deviceWeakPlayer IPHONE_RUMBLE_AVAIL;
 static id<CHHapticPatternPlayer> deviceStrongPlayer IPHONE_RUMBLE_AVAIL;
 static CFAbsoluteTime deviceHapticRetryTime;
+
+/* The phone's own haptics are iOS 14 CoreHaptics: kept in a class with
+ * that availability so its methods use the API directly, and reached
+ * by selector from the driver, which checks the OS first. */
+IPHONE_RUMBLE_AVAIL
+@interface RADeviceHaptics : NSObject
++ (void)setup;
++ (void)teardown;
++ (bool)stopQuietPlayers:(CFAbsoluteTime)now;
++ (void)playStrength:(uint16_t)strength strong:(bool)strong;
+@end
+
+#define MFI_DEVICE_HAPTICS_STOP_QUIET(t) \
+   ((bool (*)(id, SEL, CFAbsoluteTime))objc_msgSend)(mfi_device_haptics(), \
+         @selector(stopQuietPlayers:), (t))
+#define MFI_DEVICE_HAPTICS_PLAY(level, is_strong) \
+   ((void (*)(id, SEL, uint16_t, bool))objc_msgSend)(mfi_device_haptics(), \
+         @selector(playStrength:strong:), (level), (is_strong))
+
+static id mfi_device_haptics(void)
+{
+   static id cls;
+   if (!cls)
+      cls = apple_rt_class("RADeviceHaptics");
+   return cls;
+}
 #endif
 
 @class MFIRumbleController;
@@ -127,7 +153,15 @@ static struct
    SEL button_home;
    SEL set_gesture_state;
    SEL localized_name;
+   SEL left_stick_button;
+   SEL right_stick_button;
+   SEL button_options;
+   SEL button_menu;
+   SEL product_category;
 } mfi_sel;
+
+#define MFI_GP_PRESSED(gp, sel) \
+   [(GCControllerButtonInput *)apple_rt_get_id((gp), (sel)) isPressed]
 
 #define MFI_PROFILE_PRESSED(pb, k) \
    [(GCControllerButtonInput *)[(pb) objectForKey:mfi_key[(k)]] isPressed]
@@ -147,6 +181,11 @@ static void mfi_runtime_init(void)
    mfi_sel.button_home            = sel_registerName("buttonHome");
    mfi_sel.set_gesture_state      = sel_registerName("setPreferredSystemGestureState:");
    mfi_sel.localized_name         = sel_registerName("localizedName");
+   mfi_sel.left_stick_button      = sel_registerName("leftThumbstickButton");
+   mfi_sel.right_stick_button     = sel_registerName("rightThumbstickButton");
+   mfi_sel.button_options         = sel_registerName("buttonOptions");
+   mfi_sel.button_menu            = sel_registerName("buttonMenu");
+   mfi_sel.product_category       = sel_registerName("productCategory");
 }
 
 /* How long a haptic player is kept playing at zero intensity before
@@ -278,19 +317,16 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
         *buttons             |= gp.rightShoulder.pressed   ? (1 << RETRO_DEVICE_ID_JOYPAD_R)     : 0;
         *buttons             |= gp.leftTrigger.pressed     ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)    : 0;
         *buttons             |= gp.rightTrigger.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)    : 0;
-#if TARGET_OS_OSX || __IPHONE_OS_VERSION_MAX_ALLOWED >= 120100 || __TV_OS_VERSION_MAX_ALLOWED >= 120100
         if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), APPLE_RUNTIME_VER(12, 1, 0), APPLE_RUNTIME_VER(12, 1, 0)))
         {
-            *buttons         |= gp.leftThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
-            *buttons         |= gp.rightThumbstickButton.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+            *buttons         |= MFI_GP_PRESSED(gp, mfi_sel.left_stick_button)  ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+            *buttons         |= MFI_GP_PRESSED(gp, mfi_sel.right_stick_button) ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
         }
-#endif
 
-#if TARGET_OS_OSX || __IPHONE_OS_VERSION_MAX_ALLOWED >= 130000 || __TV_OS_VERSION_MAX_ALLOWED >= 130000
         if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(13, 0, 0)))
         {
-            *buttons             |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-            *buttons             |= gp.buttonMenu.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
+            *buttons             |= MFI_GP_PRESSED(gp, mfi_sel.button_options) ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+            *buttons             |= MFI_GP_PRESSED(gp, mfi_sel.button_menu)    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
             if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
                 *buttons         |= [(GCControllerButtonInput *)apple_rt_get_id(gp,
                       mfi_sel.button_home) isPressed] ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
@@ -302,7 +338,7 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
                 * LT + Menu => L3
                 * RT + Menu => R3
                 */
-               if (gp.buttonMenu.pressed )
+               if (MFI_GP_PRESSED(gp, mfi_sel.button_menu))
                {
                   if (gp.leftShoulder.pressed)
                      *buttons     |= 1 << RETRO_DEVICE_ID_JOYPAD_SELECT;
@@ -315,7 +351,6 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
                }
             }
         }
-#endif
 
         mfi_axes[slot][0]         = gp.leftThumbstick.xAxis.value * 32767.0f;
         mfi_axes[slot][1]         = gp.leftThumbstick.yAxis.value * 32767.0f;
@@ -377,8 +412,10 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
         id            profile = apple_rt_get_id(controller, mfi_sel.physical_input_profile);
         NSDictionary *pb      = apple_rt_get_id(profile, mfi_sel.buttons);
-        apple_rt_send_long(gp.buttonOptions, mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
-        apple_rt_send_long(gp.buttonMenu,    mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long(apple_rt_get_id(gp, mfi_sel.button_options),
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long(apple_rt_get_id(gp, mfi_sel.button_menu),
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
         apple_rt_send_long(apple_rt_get_id(gp, mfi_sel.button_home),
               mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
         /* A message to a missing (nil) element does nothing */
@@ -606,6 +643,7 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
 @property (nonatomic, strong, readonly) id<CHHapticPatternPlayer> weakPlayer MFI_RUMBLE_AVAIL;
 @property (nonatomic, assign) CFAbsoluteTime hapticRetryTime;
 - (void)attachController:(GCController*)controller MFI_RUMBLE_AVAIL;
+- (void)releaseEngines MFI_RUMBLE_AVAIL;
 - (bool)setStrength:(uint16_t)strength strong:(bool)strong MFI_RUMBLE_AVAIL;
 - (bool)stopQuietPlayers:(CFAbsoluteTime)now MFI_RUMBLE_AVAIL;
 - (void)forgetPlayback;
@@ -767,23 +805,25 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
 - (void)shutdown
 {
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
-    {
-        /* When controller disconnects, the haptic engine is already stopped
-         * by the system, so don't bother trying to cancel players - just
-         * clear the handlers and release everything. */
-        NSMutableSet *engines = apple_rt_get_id(self, @selector(engines));
-        for (CHHapticEngine *eng in engines)
-        {
-            eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-            eng.resetHandler = ^{};
-            [eng stopWithCompletionHandler:nil];
-        }
-        [engines removeAllObjects];
+        apple_rt_send_void(self, @selector(releaseEngines));
+}
 
-        _weakPlayer = nil;
-        _strongPlayer = nil;
-        [self forgetPlayback];
+/* When controller disconnects, the haptic engine is already stopped
+ * by the system, so don't bother trying to cancel players - just
+ * clear the handlers and release everything. */
+- (void)releaseEngines MFI_RUMBLE_AVAIL
+{
+    for (CHHapticEngine *eng in self.engines)
+    {
+        eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+        eng.resetHandler = ^{};
+        [eng stopWithCompletionHandler:nil];
     }
+    [self.engines removeAllObjects];
+
+    _weakPlayer = nil;
+    _strongPlayer = nil;
+    [self forgetPlayback];
 }
 
 @end
@@ -821,7 +861,8 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
     {
         RARCH_DBG("[MFI] New controller connected:\n");
         RARCH_DBG("[MFI]    name: %s\n", [controller.vendorName UTF8String]);
-        RARCH_DBG("[MFI]    category: %s\n", [controller.productCategory UTF8String]);
+        RARCH_DBG("[MFI]    category: %s\n", [(NSString *)apple_rt_get_id(controller,
+                 mfi_sel.product_category) UTF8String]);
         RARCH_DBG("[MFI]    has battery info: %s\n", apple_rt_get_id(controller, sel_registerName("battery")) != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    has haptics: %s\n", apple_rt_get_id(controller, sel_registerName("haptics")) != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    has light: %s\n", apple_rt_get_id(controller, sel_registerName("light")) != nil ? "yes" : "no");
@@ -1010,6 +1051,82 @@ static id<CHHapticPatternPlayer> apple_gamecontroller_device_haptics_weak_player
         deviceWeakPlayer = apple_gamecontroller_device_haptics_create_player(MFI_WEAK_RUMBLE);
     return deviceWeakPlayer;
 }
+
+@implementation RADeviceHaptics
+
++ (void)setup
+{
+    apple_gamecontroller_device_haptics_setup();
+}
+
++ (void)teardown
+{
+   if (deviceHapticEngine)
+   {
+      CHHapticEngine *engine = deviceHapticEngine;
+
+      /* Clear the globals here, on the caller's thread, rather
+       * than from the stop completion handler. The handler runs
+       * on a CoreHaptics queue an arbitrary time later, by which
+       * point a rumble request may already have built a fresh
+       * engine via apple_gamecontroller_device_haptics_setup() -
+       * the stale handler would then nil out the new engine and
+       * its players. Dropping them up front also guarantees any
+       * such request builds a new engine instead of reusing the
+       * one being torn down. The block keeps `engine` alive
+       * until the stop completes. */
+      deviceWeakPlayer   = nil;
+      deviceStrongPlayer = nil;
+      deviceHapticEngine = nil;
+
+      engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+      engine.resetHandler   = ^{};
+      [engine stopWithCompletionHandler:^(NSError *error) {}];
+   }
+}
+
+/* Returns true while a player is still waiting to be stopped. */
++ (bool)stopQuietPlayers:(CFAbsoluteTime)now
+{
+    bool strong = apple_gamecontroller_haptic_stop_if_quiet(deviceStrongPlayer,
+          &mfi_device_haptic_state[0], now);
+    bool weak   = apple_gamecontroller_haptic_stop_if_quiet(deviceWeakPlayer,
+          &mfi_device_haptic_state[1], now);
+    return strong || weak;
+}
+
++ (void)playStrength:(uint16_t)strength strong:(bool)strong
+{
+    /* CoreHaptics raises an NSException (Haptic_RaiseException)
+     * instead of populating the error out-param when a player or
+     * engine method is invoked while the engine is not running,
+     * e.g. after it auto-stops on backgrounding / audio-session
+     * interruption and a rumble request races in before the
+     * stopped/reset handler tears down the stale player. There is
+     * no public API to query the running state, so guard the whole
+     * acquire+play sequence (the lazy player getters start/recreate
+     * the engine and can throw too) and fail the rumble silently. */
+    @try
+    {
+        id<CHHapticPatternPlayer> player = (strong
+              ? apple_gamecontroller_device_haptics_strong_player()
+              : apple_gamecontroller_device_haptics_weak_player());
+        if (player)
+            apple_gamecontroller_haptic_set_level(player,
+                  &mfi_device_haptic_state[
+                     strong ? 0 : 1],
+                  strength);
+    }
+    @catch (NSException *exception)
+    {
+        /* The engine is not running, so no player is playing. */
+        memset(mfi_device_haptic_state, 0, sizeof(mfi_device_haptic_state));
+        RARCH_ERR("[MFI] Device haptics exception: %s\n",
+              [[exception reason] UTF8String]);
+    }
+}
+
+@end
 #endif
 
 /* From the poll, while some player waits out its quiet time: stop
@@ -1024,11 +1141,7 @@ static void apple_gamecontroller_haptics_idle(void)
         CFAbsoluteTime now = CFAbsoluteTimeGetCurrent();
 
 #if TARGET_OS_IOS
-        if (apple_gamecontroller_haptic_stop_if_quiet(deviceStrongPlayer,
-                 &mfi_device_haptic_state[0], now))
-            pending = true;
-        if (apple_gamecontroller_haptic_stop_if_quiet(deviceWeakPlayer,
-                 &mfi_device_haptic_state[1], now))
+        if (MFI_DEVICE_HAPTICS_STOP_QUIET(now))
             pending = true;
 #endif
 
@@ -1051,7 +1164,7 @@ void *apple_gamecontroller_joypad_init(void *data)
 
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      apple_gamecontroller_device_haptics_setup();
+      apple_rt_send_void(mfi_device_haptics(), @selector(setup));
 #endif
 
    if (!apple_gamecontroller_available())
@@ -1080,30 +1193,7 @@ static void apple_gamecontroller_joypad_destroy(void)
 {
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-   {
-      if (deviceHapticEngine)
-      {
-         CHHapticEngine *engine = deviceHapticEngine;
-
-         /* Clear the globals here, on the caller's thread, rather
-          * than from the stop completion handler. The handler runs
-          * on a CoreHaptics queue an arbitrary time later, by which
-          * point a rumble request may already have built a fresh
-          * engine via apple_gamecontroller_device_haptics_setup() -
-          * the stale handler would then nil out the new engine and
-          * its players. Dropping them up front also guarantees any
-          * such request builds a new engine instead of reusing the
-          * one being torn down. The block keeps `engine` alive
-          * until the stop completes. */
-         deviceWeakPlayer   = nil;
-         deviceStrongPlayer = nil;
-         deviceHapticEngine = nil;
-
-         engine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-         engine.resetHandler   = ^{};
-         [engine stopWithCompletionHandler:^(NSError *error) {}];
-      }
-   }
+      apple_rt_send_void(mfi_device_haptics(), @selector(teardown));
 #endif
 }
 
@@ -1187,33 +1277,7 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
     {
         if (enable_device_vibration && pad == 0)
         {
-            /* CoreHaptics raises an NSException (Haptic_RaiseException)
-             * instead of populating the error out-param when a player or
-             * engine method is invoked while the engine is not running,
-             * e.g. after it auto-stops on backgrounding / audio-session
-             * interruption and a rumble request races in before the
-             * stopped/reset handler tears down the stale player. There is
-             * no public API to query the running state, so guard the whole
-             * acquire+play sequence (the lazy player getters start/recreate
-             * the engine and can throw too) and fail the rumble silently. */
-            @try
-            {
-                id<CHHapticPatternPlayer> player = (type == RETRO_RUMBLE_STRONG
-                      ? apple_gamecontroller_device_haptics_strong_player()
-                      : apple_gamecontroller_device_haptics_weak_player());
-                if (player)
-                    apple_gamecontroller_haptic_set_level(player,
-                          &mfi_device_haptic_state[
-                             (type == RETRO_RUMBLE_STRONG) ? 0 : 1],
-                          strength);
-            }
-            @catch (NSException *exception)
-            {
-                /* The engine is not running, so no player is playing. */
-                memset(mfi_device_haptic_state, 0, sizeof(mfi_device_haptic_state));
-                RARCH_ERR("[MFI] Device haptics exception: %s\n",
-                      [[exception reason] UTF8String]);
-            }
+            MFI_DEVICE_HAPTICS_PLAY(strength, (type == RETRO_RUMBLE_STRONG));
         }
     }
 #endif

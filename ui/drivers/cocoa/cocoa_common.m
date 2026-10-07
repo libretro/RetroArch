@@ -269,16 +269,16 @@ void rarch_stop_draw_observer(void)
 #if TARGET_OS_IPHONE
       view.displayLink = [CADisplayLink displayLinkWithTarget:view selector:@selector(step:)];
       {
-         float hz = (float)[UIScreen mainScreen].maximumFramesPerSecond;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
+         /* -[UIScreen maximumFramesPerSecond] is iOS 10.3 / tvOS 10.2;
+          * before it every screen is 60 Hz */
+         float hz = 60.0f;
+         if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
+            hz = (float)apple_rt_get_long([UIScreen mainScreen],
+                  sel_registerName("maximumFramesPerSecond"));
          if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-            [view.displayLink setPreferredFrameRateRange:
-               CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz)];
+            COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
          else
             view.displayLink.preferredFramesPerSecond = hz;
-#else
-         view.displayLink.preferredFramesPerSecond = hz;
-#endif
       }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
@@ -366,7 +366,8 @@ void rarch_stop_draw_observer(void)
 {
     /* Are these presses that controllers send? */
     if (apple_runtime_available(0, 0, APPLE_RUNTIME_VER(14, 3, 0)))
-        if (type == UIPressTypePageUp || type == UIPressTypePageDown)
+        /* UIPressTypePageUp / UIPressTypePageDown (tvOS 14.3), by value */
+        if (type == (UIPressType)30 || type == (UIPressType)31)
             return true;
 
     NSArray<GCController*>* controllers = [GCController controllers];
@@ -577,10 +578,18 @@ void rarch_stop_draw_observer(void)
 
 -(void)showDocumentPicker
 {
-   UIDocumentPickerViewController *documentPicker = [[UIDocumentPickerViewController alloc]
-                                                     initWithDocumentTypes:@[(NSString *)kUTTypeDirectory,
-                                                                             (NSString *)kUTTypeItem]
-                                                     inMode:UIDocumentPickerModeImport];
+   /* -initWithDocumentTypes:inMode: and the kUTType names are
+    * deprecated (iOS 14 / 15) and still what reaches back to iOS 8;
+    * the call goes by selector and the type names by symbol. Mode 0 is
+    * UIDocumentPickerModeImport. */
+   void   **dir   = apple_rt_constant_addr("kUTTypeDirectory");
+   void   **item  = apple_rt_constant_addr("kUTTypeItem");
+   NSArray *types = [NSArray arrayWithObjects:
+         dir  ? apple_rt_obj_at(dir)  : @"public.directory",
+         item ? apple_rt_obj_at(item) : @"public.item", nil];
+   UIDocumentPickerViewController *documentPicker = apple_rt_init_id_long(
+         [UIDocumentPickerViewController alloc],
+         sel_registerName("initWithDocumentTypes:inMode:"), types, 0);
    documentPicker.delegate = self;
    documentPicker.modalPresentationStyle = UIModalPresentationFormSheet;
    [self presentViewController:documentPicker animated:YES completion:nil];
@@ -762,7 +771,9 @@ void rarch_stop_draw_observer(void)
       }
       /* 0 == unknown */
       if (orientation == (UIInterfaceOrientation)0)
-         orientation = [[UIApplication sharedApplication] statusBarOrientation];
+         orientation = (UIInterfaceOrientation)apple_rt_get_long(
+               [UIApplication sharedApplication],
+               sel_registerName("statusBarOrientation"));
 
       switch (orientation)
       {
@@ -1385,10 +1396,8 @@ float cocoa_get_refresh_rate(void)
       CADisplayLink *dl = [CocoaView get].displayLink;
       if (dl)
       {
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000 || __TV_OS_VERSION_MAX_ALLOWED >= 150000
          if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-            return dl.preferredFrameRateRange.preferred;
-#endif
+            return COCOA_DISPLAY_LINK_PREFERRED_RATE(dl);
 #if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
          if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), APPLE_RUNTIME_VER(10, 0, 0)))
             return dl.preferredFramesPerSecond;
@@ -1652,7 +1661,7 @@ bool cocoa_get_metrics(
    float   physical_width        = screen_rect.size.width  * scale;
    float   physical_height       = screen_rect.size.height * scale;
    float   dpi                   = 160                     * scale;
-   NSInteger idiom_type          = UI_USER_INTERFACE_IDIOM();
+   NSInteger idiom_type          = [[UIDevice currentDevice] userInterfaceIdiom];
 
    switch (idiom_type)
    {
@@ -2074,7 +2083,8 @@ static void topshelfProcessPending(NSArray *pending, NSDictionary *contentDict, 
       if (updated)
       {
          [ud setObject:contentDict forKey:@"topshelf"];
-         [TVTopShelfContentProvider topShelfContentDidChange];
+         apple_rt_send_void(apple_rt_class("TVTopShelfContentProvider"),
+               sel_registerName("topShelfContentDidChange"));
       }
       topshelfPruneCache(cacheDir, hashes);
       if (completion)
@@ -2130,7 +2140,8 @@ void update_topshelf(void)
       free(thumbnail_path_data);
 
       [ud setObject:contentDict forKey:@"topshelf"];
-      [TVTopShelfContentProvider topShelfContentDidChange];
+      apple_rt_send_void(apple_rt_class("TVTopShelfContentProvider"),
+               sel_registerName("topShelfContentDidChange"));
 
       if ([pending count] && cacheDir)
       {

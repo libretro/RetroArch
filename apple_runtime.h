@@ -166,6 +166,37 @@ static inline __attribute__((unused)) int apple_runtime_os_version(void)
    (((T (*)(id, SEL))objc_msgSend_stret)((id)(obj), (sel)))
 #endif
 
+/* A struct of 9 to 16 bytes (a CAFrameRateRange, an NSPoint of
+ * doubles): x86_64 and arm64 return it in registers through
+ * objc_msgSend, armv7, i386 and PPC in memory through _stret. */
+#if defined(__arm64__) || defined(__aarch64__) || defined(__x86_64__)
+#define apple_rt_get_mid_struct(T, obj, sel) \
+   (((T (*)(id, SEL))objc_msgSend)((id)(obj), (sel)))
+#else
+#define apple_rt_get_mid_struct(T, obj, sel) \
+   (((T (*)(id, SEL))objc_msgSend_stret)((id)(obj), (sel)))
+#endif
+
+/* An -init... sent by selector to the result of +alloc. The cast
+ * carries the init family's ownership - the receiver is consumed and
+ * the result comes back +1 - so ARC emits exactly what it does for
+ * [[cls alloc] init...]; under MRC that is what the call does anyway. */
+#if __has_feature(objc_arc)
+#define APPLE_RT_CONSUMED         __attribute__((ns_consumed))
+#define APPLE_RT_RETURNS_RETAINED __attribute__((ns_returns_retained))
+#else
+#define APPLE_RT_CONSUMED
+#define APPLE_RT_RETURNS_RETAINED
+#endif
+typedef id (*apple_rt_init_id_fn)(APPLE_RT_CONSUMED id, SEL, id)
+   APPLE_RT_RETURNS_RETAINED;
+typedef id (*apple_rt_init_id_long_fn)(APPLE_RT_CONSUMED id, SEL, id, long)
+   APPLE_RT_RETURNS_RETAINED;
+#define apple_rt_init_id(obj, sel, a) \
+   ((apple_rt_init_id_fn)objc_msgSend)((obj), (sel), (id)(a))
+#define apple_rt_init_id_long(obj, sel, a, l) \
+   ((apple_rt_init_id_long_fn)objc_msgSend)((obj), (sel), (id)(a), (long)(l))
+
 /* i386 returns floating point on the x87 stack and needs the _fpret
  * entry; every other ABI returns it in a register through objc_msgSend. */
 #if defined(__i386__)

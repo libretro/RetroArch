@@ -233,7 +233,7 @@ void get_ios_version(int *major, int *minor)
 
 bool ios_running_on_ipad(void)
 {
-   return (UI_USER_INTERFACE_IDIOM() == UIUserInterfaceIdiomPad);
+   return ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad);
 }
 
 /* Input helpers: This is kept here because it needs ObjC */
@@ -459,7 +459,8 @@ enum
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
       ch = (NSString*)press.key.characters;
-      mods = event.modifierFlags;
+      /* -[UIEvent modifierFlags], iOS / tvOS 13.4 */
+      mods = (NSUInteger)apple_rt_get_long(event, sel_registerName("modifierFlags"));
    }
 
    if (mods & UIKeyModifierAlphaShift)
@@ -543,7 +544,8 @@ enum
    [super sendEvent:event];
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 4, 0), APPLE_RUNTIME_VER(13, 4, 0)))
    {
-      if (event.type == UIEventTypeHover)
+      /* UIEventTypeHover (iOS / tvOS 13.4), by value */
+      if (event.type == (UIEventType)11)
          return;
    }
    if (event.allTouches.count)
@@ -748,7 +750,9 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
        * statement-only macro (it expands to ((void)0) under ARC)
        * so it must appear on its own line rather than wrapping the
        * rvalue. */
-      UIPointerInteraction *interaction = [[UIPointerInteraction alloc] initWithDelegate:self];
+      id interaction = apple_rt_init_id(
+            apple_rt_get_id(apple_rt_class("UIPointerInteraction"), @selector(alloc)),
+            sel_registerName("initWithDelegate:"), self);
       RARCH_AUTORELEASE(interaction);
       [_renderView addInteraction:interaction];
       _renderView.userInteractionEnabled = YES;
@@ -1160,33 +1164,47 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
 
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 0, 0), 0))
-      [MXMetricManager.sharedManager addSubscriber:self];
+      apple_rt_send_id(apple_rt_get_id(apple_rt_class("MXMetricManager"),
+               sel_registerName("sharedManager")),
+            sel_registerName("addSubscriber:"), self);
 #endif
 
 #ifdef HAVE_MFI
    extern void *apple_gamecontroller_joypad_init(void *data);
    apple_gamecontroller_joypad_init(NULL);
-   if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
    {
-      [[NSNotificationCenter defaultCenter] addObserverForName:GCMouseDidConnectNotification
-                                                        object:nil
-                                                         queue:[NSOperationQueue mainQueue]
-                                                    usingBlock:^(NSNotification *note)
-       {
-         GCMouse *mouse = note.object;
-         mouse.mouseInput.mouseMovedHandler = ^(GCMouseInput * _Nonnull mouse, float delta_x, float delta_y)
-         {
-            cocoa_input_mouse_moved_by((int16_t)delta_x, -(int16_t)delta_y);
-         };
-         mouse.mouseInput.leftButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
-         {
-            cocoa_input_mouse_button(0, pressed, false);
-         };
-         mouse.mouseInput.rightButton.pressedChangedHandler = ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
-         {
-            cocoa_input_mouse_button(1, pressed, false);
-         };
-      }];
+      /* GCMouse is macOS 11 / iOS 14: its notification is looked up by
+       * name, and the mouse is driven by selector; the buttons are plain
+       * GCControllerButtonInputs. */
+      void **mouse_note = apple_rt_constant_addr("GCMouseDidConnectNotification");
+      if (mouse_note && apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
+      {
+         [[NSNotificationCenter defaultCenter] addObserverForName:apple_rt_obj_at(mouse_note)
+                                                           object:nil
+                                                            queue:[NSOperationQueue mainQueue]
+                                                       usingBlock:^(NSNotification *note)
+          {
+            id mouse_input = apple_rt_get_id(note.object, sel_registerName("mouseInput"));
+            /* GCMouseMoved: (GCMouseInput *, float, float) */
+            apple_rt_send_id(mouse_input, sel_registerName("setMouseMovedHandler:"),
+                  ^(id mouse, float delta_x, float delta_y)
+            {
+               cocoa_input_mouse_moved_by((int16_t)delta_x, -(int16_t)delta_y);
+            });
+            ((GCControllerButtonInput *)apple_rt_get_id(mouse_input,
+                  sel_registerName("leftButton"))).pressedChangedHandler =
+               ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+            {
+               cocoa_input_mouse_button(0, pressed, false);
+            };
+            ((GCControllerButtonInput *)apple_rt_get_id(mouse_input,
+                  sel_registerName("rightButton"))).pressedChangedHandler =
+               ^(GCControllerButtonInput * _Nonnull button, float value, BOOL pressed)
+            {
+               cocoa_input_mouse_button(1, pressed, false);
+            };
+         }];
+      }
    }
 #endif
 }

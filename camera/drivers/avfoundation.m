@@ -74,6 +74,73 @@
 }
 @end
 
+/* Camera authorization is macOS 10.14 (iOS 7): its calls live in a
+ * class with that availability, so they are made directly there, and
+ * the camera reaches it by selector once it has checked the OS. */
+API_AVAILABLE(macos(10.14), ios(7.0))
+@interface RACameraAuthorization : NSObject
++ (void)authorizeWithCompletion:(void (^)(BOOL granted))completion;
++ (BOOL)requestBlocking;
+@end
+
+@implementation RACameraAuthorization
+
++ (void)authorizeWithCompletion:(void (^)(BOOL granted))completion
+{
+    AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
+
+    switch (status) {
+    case AVAuthorizationStatusAuthorized: {
+        RARCH_LOG("[Camera] Camera access already authorized.\n");
+        completion(YES);
+        break;
+    }
+
+    case AVAuthorizationStatusNotDetermined: {
+
+        RARCH_LOG("[Camera] Requesting camera authorization...\n");
+        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo
+                                 completionHandler:^(BOOL granted) {
+            RARCH_LOG("[Camera] Authorization %s.\n", granted ? "granted" : "denied");
+            completion(granted);
+        }];
+        break;
+    }
+
+    case AVAuthorizationStatusDenied: {
+        RARCH_ERR("[Camera] Camera access denied by user.\n");
+        completion(NO);
+        break;
+    }
+
+    case AVAuthorizationStatusRestricted: {
+        RARCH_ERR("[Camera] Camera access restricted (parental controls?).\n");
+        completion(NO);
+        break;
+    }
+
+    default: {
+        RARCH_ERR("[Camera] Unknown authorization status.\n");
+        completion(NO);
+        break;
+    }
+    }
+}
+
++ (BOOL)requestBlocking
+{
+    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
+    __block BOOL granted = NO;
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
+        granted = g;
+        dispatch_semaphore_signal(sema);
+    }];
+    dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+    return granted;
+}
+
+@end
+
 @implementation AVCameraManager
 
 + (AVCameraManager *)sharedInstance {
@@ -91,44 +158,8 @@
     /* AVCaptureDevice authorization gating exists on macOS 10.14+ (and iOS 7+).
      * Earlier macOS had no camera TCC prompt, so access is implicitly granted. */
     if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), 0, 0)) {
-        AVAuthorizationStatus status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeVideo];
-
-        switch (status) {
-        case AVAuthorizationStatusAuthorized: {
-            RARCH_LOG("[Camera] Camera access already authorized.\n");
-            completion(YES);
-            break;
-        }
-
-        case AVAuthorizationStatusNotDetermined: {
-
-            RARCH_LOG("[Camera] Requesting camera authorization...\n");
-            [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo
-                                     completionHandler:^(BOOL granted) {
-                RARCH_LOG("[Camera] Authorization %s.\n", granted ? "granted" : "denied");
-                completion(granted);
-            }];
-            break;
-        }
-
-        case AVAuthorizationStatusDenied: {
-            RARCH_ERR("[Camera] Camera access denied by user.\n");
-            completion(NO);
-            break;
-        }
-
-        case AVAuthorizationStatusRestricted: {
-            RARCH_ERR("[Camera] Camera access restricted (parental controls?).\n");
-            completion(NO);
-            break;
-        }
-
-        default: {
-            RARCH_ERR("[Camera] Unknown authorization status.\n");
-            completion(NO);
-            break;
-        }
-        }
+        apple_rt_send_id(apple_rt_class("RACameraAuthorization"),
+              @selector(authorizeWithCompletion:), completion);
     } else {
         /* Pre-10.14 macOS: no camera authorization API; access is implicit. */
         RARCH_LOG("[Camera] Authorization API unavailable on this OS; assuming granted.\n");
@@ -466,7 +497,11 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     // Ultra-wide was added in iOS 13; the deployment target may be lower, so
     // it needs a runtime availability guard.
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(13, 0, 0), 0))
-        [deviceTypes addObject:AVCaptureDeviceTypeBuiltInUltraWideCamera];
+    {
+        void **ultra = apple_rt_constant_addr("AVCaptureDeviceTypeBuiltInUltraWideCamera");
+        if (ultra)
+            [deviceTypes addObject:apple_rt_obj_at(ultra)];
+    }
 
     //  AVCaptureDeviceTypeBuiltInDualCamera,
     //  AVCaptureDeviceTypeBuiltInDualWideCamera,
@@ -634,15 +669,11 @@ static void *avfoundation_init(const char *device, uint64_t caps,
     avf->manager.height = height;
 
     /* Synchronously request camera authorization */
-    dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-    __block BOOL granted = NO;
+    BOOL granted = NO;
     RARCH_LOG("[Camera] Requesting camera authorization synchronously.\n");
     if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), 0, 0)) {
-        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeVideo completionHandler:^(BOOL g) {
-            granted = g;
-            dispatch_semaphore_signal(sema);
-        }];
-        dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
+        granted = apple_rt_get_bool(apple_rt_class("RACameraAuthorization"),
+              @selector(requestBlocking));
     } else {
         /* Pre-10.14 macOS: no authorization gate; access is implicit. */
         granted = YES;

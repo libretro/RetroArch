@@ -887,6 +887,47 @@ static bool frontend_darwin_is_narrator_running(void)
 #endif
 }
 
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+/* AVSpeechSynthesizer is macOS 10.14 (iOS 7, tvOS 9): the speaking is
+ * done in a class with that availability and reached by selector once
+ * the OS has been checked. */
+API_AVAILABLE(macos(10.14), ios(7.0), tvos(9.0))
+@interface RASpeech : NSObject
++ (bool)speak:(const char *)speak_text speed:(int)speed priority:(int)priority;
+@end
+
+@implementation RASpeech
+
++ (bool)speak:(const char *)speak_text speed:(int)speed priority:(int)priority
+{
+   static dispatch_once_t once;
+   static AVSpeechSynthesizer *synth;
+   AVSpeechUtterance *utterance;
+   const char *language;
+   dispatch_once(&once, ^{
+      synth = [[AVSpeechSynthesizer alloc] init];
+   });
+   if ([synth isSpeaking])
+   {
+      if (priority < 10)
+         return true;
+      else
+         [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+   }
+
+   utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
+   if (!utterance)
+      return false;
+   utterance.rate = (float)speed / 10.0f;
+   language = get_user_language_iso639_1(false);
+   utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
+   [synth speakUtterance:utterance];
+   return true;
+}
+
+@end
+#endif
+
 static bool frontend_darwin_accessibility_speak(int speed,
       const char* speak_text, int priority)
 {
@@ -897,29 +938,9 @@ static bool frontend_darwin_accessibility_speak(int speed,
 
 #if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
-   {
-      static dispatch_once_t once;
-      static AVSpeechSynthesizer *synth;
-      dispatch_once(&once, ^{
-         synth = [[AVSpeechSynthesizer alloc] init];
-      });
-      if ([synth isSpeaking])
-      {
-         if (priority < 10)
-            return true;
-         else
-            [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
-      }
-
-      AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
-      if (!utterance)
-         return false;
-      utterance.rate = (float)speed / 10.0f;
-      const char *language = get_user_language_iso639_1(false);
-      utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
-      [synth speakUtterance:utterance];
-      return true;
-   }
+      return ((bool (*)(id, SEL, const char *, int, int))objc_msgSend)(
+            apple_rt_class("RASpeech"), @selector(speak:speed:priority:),
+            speak_text, speed, priority);
 #endif
 
 #if TARGET_OS_OSX

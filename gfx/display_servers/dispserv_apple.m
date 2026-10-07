@@ -318,11 +318,9 @@ static bool apple_display_server_set_resolution(void *data,
 
    /* iOS: Only refresh rate changes */
    RARCH_DBG("[Video] Setting refresh rate to %.3f Hz\n", hz);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-    if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
+      COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
    else
-#endif
       view.displayLink.preferredFramesPerSecond = hz;
     return true;
 }
@@ -497,11 +495,9 @@ static void *apple_display_server_get_resolution_list(
    CGRect nativeBounds = mainScreen.nativeBounds;
    dims = VIDEO_SCALE_PACK((unsigned)nativeBounds.size.width,
          (unsigned)nativeBounds.size.height);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-      currentRate = [CocoaView get].displayLink.preferredFrameRateRange.preferred;
+      currentRate = COCOA_DISPLAY_LINK_PREFERRED_RATE([CocoaView get].displayLink);
    else
-#endif
       currentRate = [CocoaView get].displayLink.preferredFramesPerSecond;
 
    /* Detect ProMotion displays and available refresh rates */
@@ -644,12 +640,9 @@ static void *apple_display_server_init(void)
          if (view && view.displayLink)
          {
             RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
             if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-               view.displayLink.preferredFrameRateRange =
-                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+               COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
             else
-#endif
                view.displayLink.preferredFramesPerSecond = hz;
          }
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000

@@ -101,7 +101,7 @@
 @property(readwrite) UIInterfaceOrientation lockInterfaceOrientation;
 #endif
 
-@property(nonatomic,readwrite) CADisplayLink *displayLink;
+@property(nonatomic,readwrite,retain) CADisplayLink *displayLink;
 
 + (CocoaView*)get;
 @end
@@ -144,6 +144,12 @@ typedef struct
    float maximum;
    float preferred;
 } cocoa_frame_rate_range_t;
+
+/* The preferred rate of a display link's range, read by selector: the
+ * 12-byte range comes back the way apple_rt_get_mid_struct says. */
+#define COCOA_DISPLAY_LINK_PREFERRED_RATE(link) \
+   (apple_rt_get_mid_struct(cocoa_frame_rate_range_t, (link), \
+      sel_registerName("preferredFrameRateRange")).preferred)
 
 #define COCOA_DISPLAY_LINK_SET_RATE(link, hz) do { \
    cocoa_frame_rate_range_t cocoa_range_; \

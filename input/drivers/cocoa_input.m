@@ -86,7 +86,25 @@ static CHHapticEngine *keypressHapticEngine KEYPRESS_HAPTIC_AVAIL;
 static id<CHHapticPatternPlayer> keypressHapticPlayer KEYPRESS_HAPTIC_AVAIL;
 /* Fallback for iOS 10-13 */
 static UISelectionFeedbackGenerator *feedbackGenerator;
-static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL;
+
+/* The keypress haptics are iOS 14 CoreHaptics. They live in a class
+ * carrying that availability, so its methods use the API directly, and
+ * the driver - which checks the OS first - reaches them by selector
+ * through the class looked up once. */
+KEYPRESS_HAPTIC_AVAIL
+@interface RAKeypressHaptics : NSObject
++ (void)startEngine;
++ (void)vibrate;
++ (void)stopEngine;
+@end
+
+static id cocoa_keypress_haptics(void)
+{
+   static id cls;
+   if (!cls)
+      cls = apple_rt_class("RAKeypressHaptics");
+   return cls;
+}
 #endif
 #endif
 
@@ -414,7 +432,7 @@ static void *cocoa_input_init(const char *joypad_driver)
 
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      cocoa_input_init_haptic_engine();
+      apple_rt_send_void(cocoa_keypress_haptics(), @selector(startEngine));
    else
    {
       /* Fallback for iOS 10-13 */
@@ -718,17 +736,7 @@ static void cocoa_input_free(void *data)
 
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-   {
-      if (keypressHapticEngine)
-      {
-         keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-         keypressHapticEngine.resetHandler = ^{};
-         [keypressHapticEngine stopWithCompletionHandler:^(NSError *error) {
-            keypressHapticPlayer = nil;
-            keypressHapticEngine = nil;
-         }];
-      }
-   }
+      apple_rt_send_void(cocoa_keypress_haptics(), @selector(stopEngine));
    else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
       feedbackGenerator = nil;
 #endif
@@ -773,7 +781,9 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
                && !apple_rt_get_bool(controller.motion,
                   sel_registerName("hasGravityAndUserAcceleration")))
             break;
-         if (action == RETRO_SENSOR_GYROSCOPE_ENABLE && !controller.motion.hasAttitudeAndRotationRate)
+         if (action == RETRO_SENSOR_GYROSCOPE_ENABLE
+               && !(  apple_rt_get_bool(controller.motion, sel_registerName("hasAttitude"))
+                   && apple_rt_get_bool(controller.motion, sel_registerName("hasRotationRate"))))
             break;
          if (apple_rt_get_bool(controller.motion,
                   sel_registerName("sensorsRequireManualActivation")))
@@ -841,11 +851,15 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
          sel_geometry    = sel_registerName("effectiveGeometry");
          sel_orientation = sel_registerName("interfaceOrientation");
       }
-      geometry = apple_rt_get_id(window.windowScene, sel_geometry);
+      geometry = apple_rt_get_id(apple_rt_get_id(window,
+               sel_registerName("windowScene")), sel_geometry);
       orient   = (UIInterfaceOrientation)apple_rt_get_long(geometry,
             sel_orientation);
    } else {
-      orient = [[UIApplication sharedApplication] statusBarOrientation];
+      /* Deprecated in iOS 13 and the only source before it */
+      orient = (UIInterfaceOrientation)apple_rt_get_long(
+            [UIApplication sharedApplication],
+            sel_registerName("statusBarOrientation"));
    }
    switch (orient)
    {
@@ -955,7 +969,9 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 #if TARGET_OS_IOS
-static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
+@implementation RAKeypressHaptics
+
++ (void)startEngine
 {
    if (!keypressHapticEngine && CHHapticEngine.capabilitiesForHardware.supportsHaptics)
    {
@@ -979,78 +995,96 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
    }
 }
 
++ (void)vibrate
+{
+   /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
+   if (!keypressHapticEngine)
+      [self startEngine];
+
+   if (!keypressHapticEngine)
+      return;
+
+   /* Ensure engine is started (may have been stopped by backgrounding) */
+   NSError *error;
+   [keypressHapticEngine startAndReturnError:&error];
+   if (error)
+   {
+      /* Engine couldn't start - recreate it */
+      keypressHapticEngine = nil;
+      keypressHapticPlayer = nil;
+      [self startEngine];
+      if (!keypressHapticEngine)
+         return;
+   }
+   unsigned rumble_gain = input_config_get_rumble_gain();
+   float intensity = (float)rumble_gain / 100.0f;
+
+   /* Create player on first use */
+   if (!keypressHapticPlayer)
+   {
+      CHHapticEventParameter *intense;
+      CHHapticEventParameter *sharp;
+      CHHapticEvent *event;
+      CHHapticPattern *pattern;
+
+      intense = [[CHHapticEventParameter alloc]
+                 initWithParameterID:CHHapticEventParameterIDHapticIntensity
+                 value:intensity];
+      sharp   = [[CHHapticEventParameter alloc]
+                 initWithParameterID:CHHapticEventParameterIDHapticSharpness
+                 value:1.0];
+      event   = [[CHHapticEvent alloc]
+               initWithEventType:CHHapticEventTypeHapticTransient
+               parameters:[NSArray arrayWithObjects:intense, sharp, nil]
+               relativeTime:0];
+      pattern = [[CHHapticPattern alloc]
+                 initWithEvents:[NSArray arrayWithObject:event]
+                 parameters:[[NSArray alloc] init]
+                 error:&error];
+
+      if (error)
+         return;
+
+      keypressHapticPlayer = [keypressHapticEngine createPlayerWithPattern:pattern error:&error];
+      if (error)
+         return;
+   }
+   else
+   {
+      /* Update intensity for existing player */
+      if (keypressHapticPlayer)
+      {
+         CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
+            initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                          value:intensity
+                   relativeTime:0];
+         [keypressHapticPlayer sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
+      }
+   }
+
+   if (keypressHapticPlayer)
+      [keypressHapticPlayer startAtTime:0 error:&error];
+}
+
++ (void)stopEngine
+{
+   if (keypressHapticEngine)
+   {
+      keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+      keypressHapticEngine.resetHandler = ^{};
+      [keypressHapticEngine stopWithCompletionHandler:^(NSError *error) {
+         keypressHapticPlayer = nil;
+         keypressHapticEngine = nil;
+      }];
+   }
+}
+
+@end
+
 static void cocoa_input_keypress_vibrate(void)
 {
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-   {
-      /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
-      if (!keypressHapticEngine)
-         cocoa_input_init_haptic_engine();
-
-      if (!keypressHapticEngine)
-         return;
-
-      /* Ensure engine is started (may have been stopped by backgrounding) */
-      NSError *error;
-      [keypressHapticEngine startAndReturnError:&error];
-      if (error)
-      {
-         /* Engine couldn't start - recreate it */
-         keypressHapticEngine = nil;
-         keypressHapticPlayer = nil;
-         cocoa_input_init_haptic_engine();
-         if (!keypressHapticEngine)
-            return;
-      }
-      unsigned rumble_gain = input_config_get_rumble_gain();
-      float intensity = (float)rumble_gain / 100.0f;
-
-      /* Create player on first use */
-      if (!keypressHapticPlayer)
-      {
-         CHHapticEventParameter *intense;
-         CHHapticEventParameter *sharp;
-         CHHapticEvent *event;
-         CHHapticPattern *pattern;
-
-         intense = [[CHHapticEventParameter alloc]
-                    initWithParameterID:CHHapticEventParameterIDHapticIntensity
-                    value:intensity];
-         sharp   = [[CHHapticEventParameter alloc]
-                    initWithParameterID:CHHapticEventParameterIDHapticSharpness
-                    value:1.0];
-         event   = [[CHHapticEvent alloc]
-                  initWithEventType:CHHapticEventTypeHapticTransient
-                  parameters:[NSArray arrayWithObjects:intense, sharp, nil]
-                  relativeTime:0];
-         pattern = [[CHHapticPattern alloc]
-                    initWithEvents:[NSArray arrayWithObject:event]
-                    parameters:[[NSArray alloc] init]
-                    error:&error];
-
-         if (error)
-            return;
-
-         keypressHapticPlayer = [keypressHapticEngine createPlayerWithPattern:pattern error:&error];
-         if (error)
-            return;
-      }
-      else
-      {
-         /* Update intensity for existing player */
-         if (keypressHapticPlayer)
-         {
-            CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
-               initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
-                             value:intensity
-                      relativeTime:0];
-            [keypressHapticPlayer sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
-         }
-      }
-
-      if (keypressHapticPlayer)
-         [keypressHapticPlayer startAtTime:0 error:&error];
-   }
+      apple_rt_send_void(cocoa_keypress_haptics(), @selector(vibrate));
    else
    {
       /* Fallback for iOS 10-13 */
@@ -1099,7 +1133,8 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    apple->mouse_grabbed = state;
 
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
+      apple_rt_send_void([CocoaView get],
+            sel_registerName("setNeedsUpdateOfPrefersPointerLocked"));
 }
 #endif
 

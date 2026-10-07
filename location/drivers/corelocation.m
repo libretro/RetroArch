@@ -26,6 +26,9 @@
 @property (assign) double latitude;
 @property (assign) double longitude;
 @property (assign) bool authorized;
+/* What the authorization callback does, for the request to call
+ * directly rather than through the deprecated delegate method. */
+- (void)applyAuthorizationStatus:(CLAuthorizationStatus)status;
 @end
 
 @implementation CoreLocationManager
@@ -66,7 +69,8 @@
     if (status == kCLAuthorizationStatusNotDetermined)
     {
         if (apple_runtime_available(APPLE_RUNTIME_VER(10, 15, 0), 0, 0))
-            [_locationManager requestWhenInUseAuthorization];
+            apple_rt_send_void(_locationManager,
+                  sel_registerName("requestWhenInUseAuthorization"));
 #if TARGET_OS_OSX
         else
             /* Pre-10.15 macOS has no explicit when-in-use request API; starting
@@ -75,7 +79,7 @@
 #endif
     }
     else
-        [self locationManager:_locationManager didChangeAuthorizationStatus:status];
+        [self applyAuthorizationStatus:status];
 }
 
 - (void)locationManager:(CLLocationManager *)manager didUpdateLocations:(NSArray<CLLocation *> *)locations {
@@ -90,6 +94,10 @@
 }
 
 - (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
+    [self applyAuthorizationStatus:status];
+}
+
+- (void)applyAuthorizationStatus:(CLAuthorizationStatus)status {
 #if TARGET_OS_OSX
     if (apple_runtime_available(APPLE_RUNTIME_VER(10, 12, 0), 0, 0))
         self.authorized = (status == kCLAuthorizationStatusAuthorizedAlways);
