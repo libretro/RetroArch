@@ -35,13 +35,19 @@
 #include <jni.h>
 #include <android/native_activity.h>
 #include <android/keycodes.h>
+#ifndef XR_USE_PLATFORM_ANDROID
 #define XR_USE_PLATFORM_ANDROID
+#endif
+#ifndef XR_USE_GRAPHICS_API_OPENGL_ES
 #define XR_USE_GRAPHICS_API_OPENGL_ES
+#endif
 #ifdef HAVE_VULKAN
 /* openxr_platform.h is include-guarded, so in the single griffin TU this
  * first inclusion decides which API sections exist; enable the Vulkan one
  * for the Vulkan OpenXR context that follows, with the types it needs. */
+#ifndef XR_USE_GRAPHICS_API_VULKAN
 #define XR_USE_GRAPHICS_API_VULKAN
+#endif
 #include "../common/vulkan_common.h"
 #endif
 

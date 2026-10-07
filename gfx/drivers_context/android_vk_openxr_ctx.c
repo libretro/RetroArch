@@ -29,10 +29,16 @@
 
 #include <android/native_activity.h>
 #include <android/keycodes.h>
+#ifndef XR_USE_PLATFORM_ANDROID
 #define XR_USE_PLATFORM_ANDROID
+#endif
+#ifndef XR_USE_GRAPHICS_API_VULKAN
 #define XR_USE_GRAPHICS_API_VULKAN
+#endif
 #ifdef HAVE_OPENGLES
+#ifndef XR_USE_GRAPHICS_API_OPENGL_ES
 #define XR_USE_GRAPHICS_API_OPENGL_ES
+#endif
 #endif
 #include "../common/vulkan_common.h"
 
