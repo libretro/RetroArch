@@ -156,7 +156,6 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    CGRect bounds;
    CGSize advance;
    CGContextRef offscreen;
-   void *bitmap;
    UniChar utf16[2];
    CFIndex utf16_len;
    CFStringRef glyph_cfstr;
@@ -194,34 +193,27 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    glyph->advance_x     = (int)floor(advance.width + 0.5);
    glyph->advance_y     = (int)floor(advance.height + 0.5);
 
-   if (!(bitmap = calloc(cell_h, (size_t)cell_w * esz)))
-      return false;
-
+   /* Drawn straight into the cell: rows run top first in memory, as
+    * the atlas's do, and a context writes only its own width of each */
    if (fmt16)
    {
       /* 16 bits-per-component DeviceGray, host byte order:
-       * white-on-transparent gray is copied out as 16-bit coverage */
+       * white-on-transparent gray is 16-bit coverage */
       CGColorSpaceRef gray = CGColorSpaceCreateDeviceGray();
       if (!gray)
-      {
-         free(bitmap);
          return false;
-      }
-      offscreen = CGBitmapContextCreate(bitmap, cell_w, cell_h,
-            16, (size_t)cell_w * 2, gray,
+      offscreen = CGBitmapContextCreate(dst, cell_w, cell_h,
+            16, (size_t)pitch * 2, gray,
             kCGImageAlphaNone | kCGBitmapByteOrder16Host);
       CGColorSpaceRelease(gray);
    }
    else
       /* 8-bit alpha-only coverage */
-      offscreen = CGBitmapContextCreate(bitmap, cell_w, cell_h,
-            8, cell_w, NULL, kCGImageAlphaOnly);
+      offscreen = CGBitmapContextCreate(dst, cell_w, cell_h,
+            8, pitch, NULL, kCGImageAlphaOnly);
 
    if (!offscreen)
-   {
-      free(bitmap);
       return false;
-   }
 
    /* Fill color for kCTForegroundColorFromContextAttributeName:
     * full-white coverage in the gray context, ignored by the
@@ -230,11 +222,11 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    CGContextSetTextMatrix(offscreen, CGAffineTransformIdentity);
 
    /* Each CF/CT allocation is checked: passing NULL onwards or
-    * CFRelease(NULL) would crash rather than fail. */
+    * CFRelease(NULL) would crash rather than fail. Nothing is
+    * written to the cell until all of them are had. */
    if (!(glyph_cfstr = CFStringCreateWithCharacters(NULL, utf16, utf16_len)))
    {
       CGContextRelease(offscreen);
-      free(bitmap);
       return false;
    }
    attr_string = CFAttributedStringCreate(NULL, glyph_cfstr, self->attr_dict);
@@ -242,7 +234,6 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    if (!attr_string)
    {
       CGContextRelease(offscreen);
-      free(bitmap);
       return false;
    }
    line = CTLineCreateWithAttributedString(attr_string);
@@ -250,21 +241,16 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    if (!line)
    {
       CGContextRelease(offscreen);
-      free(bitmap);
       return false;
    }
+
+   for (r = 0; r < cell_h; r++)
+      memset(dst + (size_t)r * pitch * esz, 0, (size_t)cell_w * esz);
 
    CGContextSetTextPosition(offscreen, -bounds.origin.x, -bounds.origin.y);
    CTLineDraw(line, offscreen);
    CFRelease(line);
-
-   for (r = 0; r < cell_h; r++)
-      memcpy(dst + (size_t)r * pitch * esz,
-            (const uint8_t*)bitmap + (size_t)r * cell_w * esz,
-            (size_t)cell_w * esz);
-
    CGContextRelease(offscreen);
-   free(bitmap);
    return true;
 }
 
