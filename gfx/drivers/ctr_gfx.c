@@ -186,6 +186,8 @@ typedef struct ctr_video
 #ifdef HAVE_OVERLAY
    bool overlay_enabled;
    bool overlay_full_screen;
+   /* overlay[].texture are the overlay pack's (load_textures) */
+   bool overlay_borrowed;
 #endif
    bool rgb32;
    bool vsync;
@@ -843,12 +845,14 @@ static void ctr_free_overlay(ctr_video_t *ctr)
    for (i = 0; i < ctr->overlays; i++)
    {
       linearFree(ctr->overlay[i].frame_coords);
-      linearFree(ctr->overlay[i].texture.data);
+      if (!ctr->overlay_borrowed)
+         linearFree(ctr->overlay[i].texture.data);
    }
 
    free(ctr->overlay);
-   ctr->overlay  = NULL;
-   ctr->overlays = 0;
+   ctr->overlay          = NULL;
+   ctr->overlays         = 0;
+   ctr->overlay_borrowed = false;
 }
 #endif
 
@@ -2897,6 +2901,56 @@ static bool ctr_overlay_load(void *data,
    return true;
 }
 
+/* A page of the pack's textures: ctr_load_texture's, in the layout
+ * load()'s own have, uploaded once for every page */
+static bool ctr_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned int i;
+   ctr_video_t *ctr = (ctr_video_t *)data;
+
+   if (!ctr)
+      return false;
+
+   ctr_free_overlay(ctr);
+
+   if (!num_textures)
+      return true;
+   if (!(ctr->overlay = (struct ctr_overlay_data *)calloc(num_textures,
+         sizeof(*ctr->overlay))))
+      return false;
+   ctr->overlays         = num_textures;
+   ctr->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      ctr_scale_vector_t    *vec = NULL;
+      struct ctr_overlay_data *o = &ctr->overlay[i];
+
+      if (!(o->frame_coords = linearAlloc(sizeof(ctr_vertex_t))))
+      {
+         ctr_free_overlay(ctr);
+         return false;
+      }
+      if (textures[i])
+         o->texture = *(const ctr_texture_t*)textures[i];
+
+      ctr_overlay_tex_geom(ctr, i, 0, 0, 1, 1);
+      ctr_overlay_vertex_geom(ctr, i, 0, 0, 1, 1);
+
+      vec = &o->scale_vector;
+      CTR_SET_SCALE_VECTOR(vec,
+                       CTR_TOP_FRAMEBUFFER_WIDTH,
+                       CTR_TOP_FRAMEBUFFER_HEIGHT,
+                       o->texture.width,
+                       o->texture.height);
+
+      o->alpha_mod = 1.0f;
+   }
+
+   return true;
+}
+
 static void ctr_overlay_enable(void *data, bool state)
 {
    ctr_video_t *ctr = (ctr_video_t *)data;
@@ -2920,6 +2974,8 @@ static void ctr_render_overlay(ctr_video_t *ctr)
 
    for (i = 0; i < ctr->overlays; i++)
    {
+      if (!ctr->overlay[i].frame_coords || !ctr->overlay[i].texture.data)
+         continue;
       ctrGuSetTexture(GPU_TEXUNIT0, VIRT_TO_PHYS(ctr->overlay[i].texture.data), ctr->overlay[i].texture.width, ctr->overlay[i].texture.height,
                       GPU_TEXTURE_MAG_FILTER(GPU_LINEAR) | GPU_TEXTURE_MIN_FILTER(GPU_LINEAR) |
                       GPU_TEXTURE_WRAP_S(GPU_CLAMP_TO_EDGE) | GPU_TEXTURE_WRAP_T(GPU_CLAMP_TO_EDGE),
@@ -2949,7 +3005,7 @@ static void ctr_render_overlay(ctr_video_t *ctr)
 static const video_overlay_interface_t ctr_overlay = {
    ctr_overlay_enable,
    ctr_overlay_load,
-   NULL, /* load_textures */
+   ctr_overlay_load_textures,
    ctr_overlay_tex_geom,
    ctr_overlay_vertex_geom,
    ctr_overlay_full_screen,

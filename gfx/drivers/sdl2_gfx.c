@@ -2052,14 +2052,36 @@ static void sdl2_overlay_free(sdl2_video_t *vid)
    unsigned i;
    if (!vid || !vid->overlays)
       return;
-   for (i = 0; i < vid->overlays_size; i++)
-   {
-      if (vid->overlays[i].tex)
-         SDL_DestroyTexture(vid->overlays[i].tex);
-   }
+   if (!vid->overlays_borrowed)
+      for (i = 0; i < vid->overlays_size; i++)
+      {
+         if (vid->overlays[i].tex)
+            SDL_DestroyTexture(vid->overlays[i].tex);
+      }
    free(vid->overlays);
-   vid->overlays      = NULL;
-   vid->overlays_size = 0;
+   vid->overlays          = NULL;
+   vid->overlays_size     = 0;
+   vid->overlays_borrowed = false;
+}
+
+static void sdl2_overlay_defaults(struct sdl2_overlay *o,
+      SDL_Texture *tex, unsigned w, unsigned h)
+{
+   o->tex            = tex;
+   o->tex_w          = w;
+   o->tex_h          = h;
+   o->alpha_mod      = 1.0f;
+   o->fullscreen     = false;
+   /* Default to whole-texture / whole-target until vertex_geom
+    * and tex_geom set the real values. */
+   o->tex_coords[0]  = 0.0f;
+   o->tex_coords[1]  = 0.0f;
+   o->tex_coords[2]  = 1.0f;
+   o->tex_coords[3]  = 1.0f;
+   o->vert_coords[0] = 0.0f;
+   o->vert_coords[1] = 0.0f;
+   o->vert_coords[2] = 1.0f;
+   o->vert_coords[3] = 1.0f;
 }
 
 static bool sdl2_overlay_load(void *data,
@@ -2109,21 +2131,40 @@ static bool sdl2_overlay_load(void *data,
       SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
       SDL_UpdateTexture(tex, NULL, imgs[i].pixels, (int)(w * 4));
 
-      o->tex            = tex;
-      o->tex_w          = w;
-      o->tex_h          = h;
-      o->alpha_mod      = 1.0f;
-      o->fullscreen     = false;
-      /* Default to whole-texture / whole-target until vertex_geom
-       * and tex_geom set the real values. */
-      o->tex_coords[0]  = 0.0f;
-      o->tex_coords[1]  = 0.0f;
-      o->tex_coords[2]  = 1.0f;
-      o->tex_coords[3]  = 1.0f;
-      o->vert_coords[0] = 0.0f;
-      o->vert_coords[1] = 0.0f;
-      o->vert_coords[2] = 1.0f;
-      o->vert_coords[3] = 1.0f;
+      sdl2_overlay_defaults(o, tex, w, h);
+   }
+
+   return true;
+}
+
+static bool sdl2_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   sdl2_video_t *vid = (sdl2_video_t*)data;
+
+   if (!vid)
+      return false;
+
+   sdl2_overlay_free(vid);
+
+   if (num_textures == 0 || !textures)
+      return true;
+
+   if (!(vid->overlays = (struct sdl2_overlay*)calloc(num_textures,
+         sizeof(*vid->overlays))))
+      return false;
+   vid->overlays_size     = num_textures;
+   vid->overlays_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      int w = 0, h = 0;
+      SDL_Texture *tex = (SDL_Texture*)textures[i];
+      if (!tex || SDL_QueryTexture(tex, NULL, NULL, &w, &h) != 0)
+         continue;
+      sdl2_overlay_defaults(&vid->overlays[i], tex,
+            (unsigned)w, (unsigned)h);
    }
 
    return true;
@@ -2278,7 +2319,7 @@ static void sdl2_overlays_render(sdl2_video_t *vid)
 static const video_overlay_interface_t sdl2_overlay_iface = {
    sdl2_overlay_enable,
    sdl2_overlay_load,
-   NULL, /* load_textures */
+   sdl2_overlay_load_textures,
    sdl2_overlay_tex_geom,
    sdl2_overlay_vertex_geom,
    sdl2_overlay_full_screen,

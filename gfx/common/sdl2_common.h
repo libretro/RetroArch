@@ -104,6 +104,8 @@ typedef struct _sdl2_video
    struct sdl2_overlay *overlays;
    unsigned overlays_size;
    bool overlays_enabled;
+   /* overlays[].tex are the overlay pack's (load_textures) */
+   bool overlays_borrowed;
 #endif
 
    /* What a display draw hands SDL_RenderGeometry. Grown as needed and

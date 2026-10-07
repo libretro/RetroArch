@@ -3531,14 +3531,36 @@ static void gdi_overlay_free(gdi_t *gdi)
    unsigned i;
    if (!gdi || !gdi->overlays)
       return;
-   for (i = 0; i < gdi->overlays_size; i++)
-   {
-      if (gdi->overlays[i].bmp)
-         DeleteObject(gdi->overlays[i].bmp);
-   }
+   if (!gdi->overlays_borrowed)
+      for (i = 0; i < gdi->overlays_size; i++)
+      {
+         if (gdi->overlays[i].bmp)
+            DeleteObject(gdi->overlays[i].bmp);
+      }
    free(gdi->overlays);
-   gdi->overlays      = NULL;
-   gdi->overlays_size = 0;
+   gdi->overlays          = NULL;
+   gdi->overlays_size     = 0;
+   gdi->overlays_borrowed = false;
+}
+
+static void gdi_overlay_defaults(struct gdi_overlay *o, HBITMAP bmp,
+      unsigned dims)
+{
+   o->bmp            = bmp;
+   o->tex_dims       = dims;
+   o->alpha_mod      = 1.0f;
+   o->fullscreen     = false;
+   /* Stretch to the full target rect by default.  The overlay
+    * descriptor drives subsequent vertex_geom calls before
+    * anything is actually drawn. */
+   o->tex_coords[0]  = 0.0f;
+   o->tex_coords[1]  = 0.0f;
+   o->tex_coords[2]  = 1.0f;
+   o->tex_coords[3]  = 1.0f;
+   o->vert_coords[0] = 0.0f;
+   o->vert_coords[1] = 0.0f;
+   o->vert_coords[2] = 1.0f;
+   o->vert_coords[3] = 1.0f;
 }
 
 static bool gdi_overlay_load(void *data,
@@ -3570,9 +3592,6 @@ static bool gdi_overlay_load(void *data,
       BITMAPINFO bmi;
       void              *bits = NULL;
       HBITMAP            bmp;
-      const uint32_t    *src;
-      uint32_t          *dst;
-      size_t             j, total;
       struct gdi_overlay *o = &gdi->overlays[i];
       unsigned           w  = imgs[i].width;
       unsigned           h  = imgs[i].height;
@@ -3597,52 +3616,45 @@ static bool gdi_overlay_load(void *data,
          continue;
       }
 
-      /* Premultiply alpha at load: AlphaBlend with AC_SRC_ALPHA
-       * needs premultiplied RGB or transparent pixels bleed
-       * background colour through their fringes.  Source pixels
-       * are 0xAARRGGBB (BGRA in memory order, the GDI default
-       * when supports_rgba is false). */
-      src   = imgs[i].pixels;
-      dst   = (uint32_t*)bits;
-      total = (size_t)w * (size_t)h;
-      for (j = 0; j < total; j++)
-      {
-         uint32_t s  = src[j];
-         uint8_t  sa = (uint8_t)((s >> 24) & 0xFF);
-         uint8_t  sr = (uint8_t)((s >> 16) & 0xFF);
-         uint8_t  sg = (uint8_t)((s >>  8) & 0xFF);
-         uint8_t  sb = (uint8_t)( s        & 0xFF);
-         uint8_t  pr, pg, pb;
+      /* AlphaBlend with AC_SRC_ALPHA needs premultiplied RGB or
+       * transparent pixels bleed background colour through their
+       * fringes. */
+      gdi_texture_premultiply((uint32_t*)bits, imgs[i].pixels,
+            (size_t)w * (size_t)h);
+      gdi_overlay_defaults(o, bmp, VIDEO_SCALE_PACK(w, h));
+   }
 
-         if (sa == 255)      { pr = sr; pg = sg; pb = sb; }
-         else if (sa == 0)   { pr = pg = pb = 0; }
-         else
-         {
-            pr = (uint8_t)GDI_DIV255((unsigned)sr * sa);
-            pg = (uint8_t)GDI_DIV255((unsigned)sg * sa);
-            pb = (uint8_t)GDI_DIV255((unsigned)sb * sa);
-         }
-         dst[j] = ((uint32_t)sa << 24)
-                | ((uint32_t)pr << 16)
-                | ((uint32_t)pg <<  8)
-                |  (uint32_t)pb;
-      }
+   return true;
+}
 
-      o->bmp           = bmp;
-      o->tex_dims      = VIDEO_SCALE_PACK(w, h);
-      o->alpha_mod     = 1.0f;
-      o->fullscreen    = false;
-      /* Stretch to the full target rect by default.  The overlay
-       * descriptor drives subsequent vertex_geom calls before
-       * anything is actually drawn. */
-      o->tex_coords[0]  = 0.0f;
-      o->tex_coords[1]  = 0.0f;
-      o->tex_coords[2]  = 1.0f;
-      o->tex_coords[3]  = 1.0f;
-      o->vert_coords[0] = 0.0f;
-      o->vert_coords[1] = 0.0f;
-      o->vert_coords[2] = 1.0f;
-      o->vert_coords[3] = 1.0f;
+/* A page of the pack's textures: each one's DIB, realized here once
+ * for every page it is on */
+static bool gdi_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   gdi_t *gdi = (gdi_t*)data;
+
+   if (!gdi)
+      return false;
+
+   gdi_overlay_free(gdi);
+
+   if (num_textures == 0 || !textures)
+      return true;
+
+   if (!(gdi->overlays = (struct gdi_overlay*)calloc(num_textures,
+         sizeof(*gdi->overlays))))
+      return false;
+   gdi->overlays_size     = num_textures;
+   gdi->overlays_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      gdi_texture_t *texture = (gdi_texture_t*)textures[i];
+      if (texture && gdi_texture_realize(gdi, texture))
+         gdi_overlay_defaults(&gdi->overlays[i], texture->bmp,
+               texture->dims);
    }
 
    return true;
@@ -3821,7 +3833,7 @@ static void gdi_overlays_render(gdi_t *gdi,
 static const video_overlay_interface_t gdi_overlay_interface = {
    gdi_overlay_enable,
    gdi_overlay_load,
-   NULL, /* load_textures */
+   gdi_overlay_load_textures,
    gdi_overlay_tex_geom,
    gdi_overlay_vertex_geom,
    gdi_overlay_full_screen,

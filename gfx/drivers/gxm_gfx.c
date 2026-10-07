@@ -190,6 +190,8 @@ typedef struct vita_video
 #ifdef HAVE_OVERLAY
    bool overlay_enable;
    bool overlay_full_screen;
+   /* overlay[].tex are the overlay pack's (load_textures) */
+   bool overlay_borrowed;
 #endif
    bool fullscreen;
    bool vsync;
@@ -1999,14 +2001,18 @@ static void gxm_free_overlay(vita_video_t *vita)
 {
    unsigned i;
 
-   if (gxm_initialized)
-      sceGxmFinish(gxm_context);
+   if (!vita->overlay_borrowed)
+   {
+      if (gxm_initialized)
+         sceGxmFinish(gxm_context);
 
-   for (i = 0; i < vita->overlays; i++)
-      gxm_free_texture(vita->overlay[i].tex);
+      for (i = 0; i < vita->overlays; i++)
+         gxm_free_texture(vita->overlay[i].tex);
+   }
    free(vita->overlay);
-   vita->overlay = NULL;
-   vita->overlays = 0;
+   vita->overlay          = NULL;
+   vita->overlays         = 0;
+   vita->overlay_borrowed = false;
 }
 #endif
 
@@ -2935,6 +2941,46 @@ static void gxm_overlay_vertex_geom(void *data, unsigned image,
    }
 }
 
+/* A page of the pack's textures: gxm_load_texture's, uploaded once
+ * for every page; no texture of the page's own, so nothing to wait
+ * for on a switch */
+static bool gxm_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   vita_video_t *vita = (vita_video_t*)data;
+
+   if (!vita)
+      return false;
+
+   gxm_free_overlay(vita);
+   if (!num_textures)
+      return true;
+   if (!(vita->overlay = (struct vita_overlay_data*)calloc(num_textures,
+         sizeof(*vita->overlay))))
+      return false;
+   vita->overlays         = num_textures;
+   vita->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      struct vita_overlay_data *o = &vita->overlay[i];
+      gxm_texture_t *tex          = (gxm_texture_t*)textures[i];
+
+      if (!tex)
+         continue;
+      o->tex       = tex;
+      o->dims      = VIDEO_SCALE_PACK(
+            sceGxmTextureGetWidth(&tex->gxm_tex),
+            sceGxmTextureGetHeight(&tex->gxm_tex));
+      gxm_overlay_tex_geom(vita, i, 0, 0, 1, 1); /* Default. Stretch to whole screen. */
+      gxm_overlay_vertex_geom(vita, i, 0, 0, 1, 1);
+      o->alpha_mod = 1.0f;
+   }
+
+   return true;
+}
+
 static void gxm_overlay_enable(void *data, bool state)
 {
    vita_video_t *vita   = (vita_video_t*)data;
@@ -2963,6 +3009,9 @@ static void gxm_render_overlay(void *data)
    vita_video_t *vita = (vita_video_t*)data;
 
    for (i = 0; i < vita->overlays; i++)
+   {
+      if (!vita->overlay[i].tex)
+         continue;
       gxm_draw_texture_tint_part_scale(vita->overlay[i].tex,
             vita->overlay[i].x,
             vita->overlay[i].y,
@@ -2973,12 +3022,13 @@ static void gxm_render_overlay(void *data)
             vita->overlay[i].w,
             vita->overlay[i].h,
             RGBA8(0xFF,0xFF,0xFF,(uint8_t)VIDEO_ALPHA_BYTE(vita->overlay[i].alpha_mod)));
+   }
 }
 
 static const video_overlay_interface_t gxm_overlay_interface = {
    gxm_overlay_enable,
    gxm_overlay_load,
-   NULL, /* load_textures */
+   gxm_overlay_load_textures,
    gxm_overlay_tex_geom,
    gxm_overlay_vertex_geom,
    gxm_overlay_full_screen,

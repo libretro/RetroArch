@@ -111,6 +111,8 @@ typedef struct
    unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
+   /* overlay[].tex are the overlay pack's (load_textures) */
+   bool overlay_borrowed;
 #endif
 
    GX2Sampler sampler_nearest[RARCH_WRAP_MAX];
@@ -1382,12 +1384,14 @@ static void gx2_free_overlay(wiiu_video_t *gx2)
 {
    unsigned i;
 
-   for (i = 0; i < gx2->overlays; i++)
-      MEM2_free(gx2->overlay[i].tex.surface.image);
+   if (!gx2->overlay_borrowed)
+      for (i = 0; i < gx2->overlays; i++)
+         MEM2_free(gx2->overlay[i].tex.surface.image);
 
    free(gx2->overlay);
-   gx2->overlay = NULL;
-   gx2->overlays = 0;
+   gx2->overlay          = NULL;
+   gx2->overlays         = 0;
+   gx2->overlay_borrowed = false;
 
 }
 
@@ -1444,6 +1448,46 @@ static bool gx2_overlay_load(void *data,
    return true;
 }
 
+/* A page of the pack's textures: gx2_load_texture's, drawn from a
+ * copy of each GX2Texture, uploaded once for every page */
+static bool gx2_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   wiiu_video_t *gx2 = (wiiu_video_t *)data;
+
+   if (!gx2)
+      return false;
+
+   gx2_free_overlay(gx2);
+   if (!num_textures)
+      return true;
+   if (!(gx2->overlay = (struct gx2_overlay_data *)calloc(num_textures,
+         sizeof(*gx2->overlay))))
+      return false;
+   gx2->overlays         = num_textures;
+   gx2->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      struct gx2_overlay_data *o = &gx2->overlay[i];
+
+      if (!textures[i])
+         continue;
+      o->tex = *(const GX2Texture*)textures[i];
+
+      /* Default. Stretch to whole screen. */
+      gx2_overlay_tex_geom(gx2, i, 0, 0, 1, 1);
+      gx2_overlay_vertex_geom(gx2, i, 0, 0, 1, 1);
+      o->alpha_mod = 1.0f;
+      o->v.color   = 0xFFFFFFFF;
+
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, &o->v, sizeof(o->v));
+   }
+
+   return true;
+}
+
 static void gx2_overlay_enable(void *data, bool state)
 {
    wiiu_video_t *gx2 = (wiiu_video_t *)data;
@@ -1480,6 +1524,8 @@ static void gx2_render_overlay(void *data)
 
    for (i = 0; i < gx2->overlays; i++)
    {
+      if (!gx2->overlay[i].tex.surface.image)
+         continue;
 
       GX2SetAttribBuffer(0, sizeof(gx2->overlay[i].v), sizeof(gx2->overlay[i].v), &gx2->overlay[i].v);
 
@@ -1496,7 +1542,7 @@ static const video_overlay_interface_t gx2_overlay_interface =
 {
    gx2_overlay_enable,
    gx2_overlay_load,
-   NULL, /* load_textures */
+   gx2_overlay_load_textures,
    gx2_overlay_tex_geom,
    gx2_overlay_vertex_geom,
    gx2_overlay_full_screen,

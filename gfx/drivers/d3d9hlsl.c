@@ -7339,13 +7339,15 @@ static void d3d9_hlsl_free_overlays(d3d9_video_t *d3d)
 
    for (i = 0; i < d3d->overlays_size; i++)
    {
-      if ((LPDIRECT3DTEXTURE9)d3d->overlays[i].tex)
+      if (     (LPDIRECT3DTEXTURE9)d3d->overlays[i].tex
+            && !d3d->overlays_borrowed)
          IDirect3DTexture9_Release((LPDIRECT3DTEXTURE9)d3d->overlays[i].tex);
       d3d9_vertex_buffer_free(d3d->overlays[i].vert_buf, NULL);
    }
    free(d3d->overlays);
-   d3d->overlays      = NULL;
-   d3d->overlays_size = 0;
+   d3d->overlays          = NULL;
+   d3d->overlays_size     = 0;
+   d3d->overlays_borrowed = false;
 }
 
 static void d3d9_hlsl_overlay_tex_geom(
@@ -7450,6 +7452,44 @@ static bool d3d9_hlsl_overlay_load(void *data,
    return true;
 }
 
+/* A page of the pack's textures: d3d9_hlsl_load_texture's, in the same
+ * format and pool as load()'s own, uploaded once for every page */
+static bool d3d9_hlsl_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   d3d9_video_t *d3d = (d3d9_video_t*)data;
+
+   if (!d3d)
+      return false;
+
+   d3d9_hlsl_free_overlays(d3d);
+   if (!num_textures)
+      return true;
+   if (!(d3d->overlays = (overlay_t*)calloc(num_textures,
+         sizeof(*d3d->overlays))))
+      return false;
+   d3d->overlays_size     = num_textures;
+   d3d->overlays_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      D3DSURFACE_DESC desc;
+      LPDIRECT3DTEXTURE9 tex = (LPDIRECT3DTEXTURE9)textures[i];
+
+      if (!tex || FAILED(IDirect3DTexture9_GetLevelDesc(tex, 0, &desc)))
+         continue;
+      d3d->overlays[i].tex      = tex;
+      d3d->overlays[i].tex_dims = VIDEO_SCALE_PACK(desc.Width, desc.Height);
+
+      /* Default. Stretch to whole screen. */
+      d3d9_hlsl_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
+      d3d9_hlsl_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
+   }
+
+   return true;
+}
+
 static void d3d9_hlsl_overlay_enable(void *data, bool state)
 {
    d3d9_video_t            *d3d = (d3d9_video_t*)data;
@@ -7486,7 +7526,7 @@ static void d3d9_hlsl_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t d3d9_hlsl_overlay_interface = {
    d3d9_hlsl_overlay_enable,
    d3d9_hlsl_overlay_load,
-   NULL, /* load_textures */
+   d3d9_hlsl_overlay_load_textures,
    d3d9_hlsl_overlay_tex_geom,
    d3d9_hlsl_overlay_vertex_geom,
    d3d9_hlsl_overlay_full_screen,

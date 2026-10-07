@@ -132,7 +132,9 @@ enum gl1_flags
    /* GL_UNSIGNED_SHORT_5_6_5 is GL 1.2 core only; GL_EXT_packed_pixels
     * does not have it.  Without it RGB565 core frames are expanded to
     * BGRA8888 on the CPU. */
-   GL1_FLAG_SUPPORTS_RGB565         = (1 << 14)
+   GL1_FLAG_SUPPORTS_RGB565         = (1 << 14),
+   /* overlay_tex holds the overlay pack's names (load_textures) */
+   GL1_FLAG_OVERLAY_BORROWED        = (1 << 15)
 };
 
 /* Layout of the pixels handed to gl1_draw_tex. */
@@ -1184,7 +1186,9 @@ static void gl1_render_overlay(gl1_t *gl,
 
 static void gl1_free_overlay(gl1_t *gl)
 {
-   glDeleteTextures(gl->overlays, gl->overlay_tex);
+   if (gl->overlay_tex && !(gl->flags & GL1_FLAG_OVERLAY_BORROWED))
+      glDeleteTextures(gl->overlays, gl->overlay_tex);
+   gl->flags &= ~GL1_FLAG_OVERLAY_BORROWED;
 
    /* The three coordinate arrays are views into the overlay_tex block. */
    free(gl->overlay_tex);
@@ -3332,18 +3336,14 @@ static unsigned gl1_get_alignment(unsigned pitch)
    return 8;
 }
 
-static bool gl1_overlay_load(void *data,
-      const void *image_data, unsigned num_images)
+/* A page's names and geometry; @textures are the overlay pack's, or
+ * NULL for names of the driver's own */
+static bool gl1_overlay_alloc(gl1_t *gl, unsigned num_images,
+      const uintptr_t *textures)
 {
    size_t o_vertex, o_tex, o_color;
    size_t i;
    int j;
-   gl1_t *gl = (gl1_t*)data;
-   const struct texture_image *images =
-      (const struct texture_image*)image_data;
-
-   if (!gl)
-      return false;
 
    gl1_free_overlay(gl);
    /* The texture names and the vertex, texture and colour coordinate
@@ -3363,7 +3363,38 @@ static bool gl1_overlay_load(void *data,
    gl->overlay_color_coord  = (GLfloat*)((uint8_t*)gl->overlay_tex + o_color);
 
    gl->overlays             = num_images;
-   glGenTextures(num_images, gl->overlay_tex);
+   if (textures)
+   {
+      for (i = 0; i < num_images; i++)
+         gl->overlay_tex[i] = (GLuint)textures[i];
+      gl->flags |= GL1_FLAG_OVERLAY_BORROWED;
+   }
+   else
+      glGenTextures(num_images, gl->overlay_tex);
+
+   for (i = 0; i < num_images; i++)
+   {
+      /* Default. Stretch to whole screen. */
+      gl1_overlay_tex_geom(gl, i, 0, 0, 1, 1);
+      gl1_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
+
+      for (j = 0; j < 16; j++)
+         gl->overlay_color_coord[16 * i + j] = 1.0f;
+   }
+
+   return true;
+}
+
+static bool gl1_overlay_load(void *data,
+      const void *image_data, unsigned num_images)
+{
+   size_t i;
+   gl1_t *gl = (gl1_t*)data;
+   const struct texture_image *images =
+      (const struct texture_image*)image_data;
+
+   if (!gl || !gl1_overlay_alloc(gl, num_images, NULL))
+      return false;
 
    for (i = 0; i < num_images; i++)
    {
@@ -3375,16 +3406,20 @@ static bool gl1_overlay_load(void *data,
             alignment,
             images[i].width, images[i].height, images[i].pixels,
             sizeof(uint32_t));
-
-      /* Default. Stretch to whole screen. */
-      gl1_overlay_tex_geom(gl, i, 0, 0, 1, 1);
-      gl1_overlay_vertex_geom(gl, i, 0, 0, 1, 1);
-
-      for (j = 0; j < 16; j++)
-         gl->overlay_color_coord[16 * i + j] = 1.0f;
    }
 
    return true;
+}
+
+/* A page of the pack's textures: gl1_load_texture's names, uploaded
+ * once for every page */
+static bool gl1_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   gl1_t *gl = (gl1_t*)data;
+   if (!gl)
+      return false;
+   return gl1_overlay_alloc(gl, num_textures, textures);
 }
 
 static void gl1_overlay_enable(void *data, bool state)
@@ -3436,7 +3471,7 @@ static void gl1_overlay_set_alpha(void *data, unsigned image, float mod)
 static const video_overlay_interface_t gl1_overlay_interface = {
    gl1_overlay_enable,
    gl1_overlay_load,
-   NULL, /* load_textures */
+   gl1_overlay_load_textures,
    gl1_overlay_tex_geom,
    gl1_overlay_vertex_geom,
    gl1_overlay_full_screen,

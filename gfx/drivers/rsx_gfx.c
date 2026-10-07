@@ -188,6 +188,8 @@ typedef struct
    unsigned overlays;
    bool overlay_enable;
    bool overlay_full_screen;
+   /* overlay[].texture are the overlay pack's (load_textures) */
+   bool overlay_borrowed;
 #endif
 
    unsigned rotation;
@@ -2149,15 +2151,16 @@ static void rsx_free_overlay(rsx_t *rsx)
 
    for (i = 0; i < rsx->overlays; i++)
    {
-      if (rsx->overlay[i].texture.data)
+      if (rsx->overlay[i].texture.data && !rsx->overlay_borrowed)
          rsxFree(rsx->overlay[i].texture.data);
       if (rsx->overlay[i].vertices)
          rsxFree(rsx->overlay[i].vertices);
    }
 
    free(rsx->overlay);
-   rsx->overlay = NULL;
-   rsx->overlays = 0;
+   rsx->overlay          = NULL;
+   rsx->overlays         = 0;
+   rsx->overlay_borrowed = false;
 }
 
 static bool rsx_overlay_load(void *data,
@@ -2195,6 +2198,54 @@ static bool rsx_overlay_load(void *data,
       o->texture.width = images[i].width;
       rsx_load_texture_data(rsx, &o->texture, images[i].pixels, images[i].width, images[i].height, images[i].width*4,
                             true, false, TEXTURE_FILTER_LINEAR);
+   }
+
+   return true;
+}
+
+/* A page of the pack's textures: rsx_load_texture's, drawn from a
+ * copy of each rsx_texture_t, uploaded once for every page */
+static bool rsx_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i, j;
+   rsx_t *rsx = (rsx_t *)data;
+
+   if (!rsx)
+      return false;
+
+   rsx_free_overlay(rsx);
+   if (!num_textures)
+      return true;
+   if (!(rsx->overlay = (rsx_overlay_t *)calloc(num_textures,
+         sizeof(rsx_overlay_t))))
+      return false;
+   rsx->overlays         = num_textures;
+   rsx->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      rsx_overlay_t *o = &rsx->overlay[i];
+
+      if (!(o->vertices = (rsx_vertex_t *)rsxMemalign(128,
+            sizeof(rsx_vertex_t) * RSX_MAX_VERTICES)))
+      {
+         rsx_free_overlay(rsx);
+         return false;
+      }
+      if (textures[i])
+         o->texture = *(const rsx_texture_t*)textures[i];
+
+      /* Default. Stretch to whole screen. */
+      rsx_overlay_tex_geom(rsx, i, 0, 0, 1, 1);
+      rsx_overlay_vertex_geom(rsx, i, 0, 0, 1, 1);
+      for (j = 0; j < RSX_MAX_VERTICES; j++)
+      {
+         o->vertices[j].r = 1.0f;
+         o->vertices[j].g = 1.0f;
+         o->vertices[j].b = 1.0f;
+         o->vertices[j].a = 1.0f;
+      }
    }
 
    return true;
@@ -2238,6 +2289,8 @@ static void rsx_render_overlay(void *data)
 
    for (i = 0; i < rsx->overlays; i++)
    {
+      if (!rsx->overlay[i].vertices || !rsx->overlay[i].texture.data)
+         continue;
       rsx_set_texture(rsx, &rsx->overlay[i].texture);
       rsx_draw_overlay_vertices(rsx, i);
    }
@@ -2247,7 +2300,7 @@ static const video_overlay_interface_t rsx_overlay_interface =
 {
    rsx_overlay_enable,
    rsx_overlay_load,
-   NULL, /* load_textures */
+   rsx_overlay_load_textures,
    rsx_overlay_tex_geom,
    rsx_overlay_vertex_geom,
    rsx_overlay_full_screen,

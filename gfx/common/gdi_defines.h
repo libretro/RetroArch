@@ -191,6 +191,8 @@ typedef struct gdi
    struct gdi_overlay *overlays;
    unsigned overlays_size;
    bool overlays_enabled;
+   /* overlays[].bmp are the overlay pack's (load_textures) */
+   bool overlays_borrowed;
 #endif
 } gdi_t;
 

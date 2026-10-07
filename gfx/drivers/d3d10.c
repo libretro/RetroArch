@@ -263,6 +263,9 @@ typedef struct
        * at most one map. */
       d3d10_sprite_t*  shadow;
       int              count;
+      /* textures are copies of the overlay pack's (load_textures):
+       * drawn from, never released here. */
+      bool             borrowed;
       bool             dirty;
    } overlays;
 #endif
@@ -1465,8 +1468,10 @@ static bool d3d10_font_get_line_metrics(void* data,
 static void d3d10_free_overlays(d3d10_video_t* d3d10)
 {
    size_t i;
-   for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
-      d3d10_release_texture(&d3d10->overlays.textures[i]);
+   if (!d3d10->overlays.borrowed)
+      for (i = 0; i < (unsigned)d3d10->overlays.count; i++)
+         d3d10_release_texture(&d3d10->overlays.textures[i]);
+   d3d10->overlays.borrowed = false;
    /* The array as well as what it holds: every page load made a new
     * one over this one. */
    free(d3d10->overlays.textures);
@@ -1537,22 +1542,15 @@ static void d3d10_overlay_set_alpha(void* data, unsigned index, float mod)
    sprite->colors[3] = sprite->colors[0];
 }
 
-static bool d3d10_overlay_load(void* data,
-      const void* image_data, unsigned num_images)
+/* A page of @num_images: the texture array, the sprites at their
+ * defaults and the buffer they are drawn from */
+static bool d3d10_overlay_alloc(d3d10_video_t* d3d10, unsigned num_images)
 {
    size_t i;
    D3D10_BUFFER_DESC desc;
-   d3d10_sprite_t*             sprites = NULL;
-   d3d10_video_t*              d3d10   = (d3d10_video_t*)data;
-   const struct texture_image* images  = (const struct texture_image*)
-      image_data;
-
-   if (!d3d10)
-      return false;
+   d3d10_sprite_t* sprites = NULL;
 
    d3d10_free_overlays(d3d10);
-   if (!num_images)
-      return true;
    d3d10->overlays.textures = (d3d10_texture_t*)calloc(
          num_images, sizeof(d3d10_texture_t));
    d3d10->overlays.shadow   = (d3d10_sprite_t*)malloc(
@@ -1583,21 +1581,6 @@ static bool d3d10_overlay_load(void* data,
 
    for (i = 0; i < (unsigned)num_images; i++)
    {
-
-      d3d10->overlays.textures[i].desc.Width  = images[i].width;
-      d3d10->overlays.textures[i].desc.Height = images[i].height;
-      d3d10->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-
-      d3d10_release_texture(&d3d10->overlays.textures[i]);
-      d3d10_init_texture(d3d10->device, &d3d10->overlays.textures[i]);
-
-      if (d3d10->overlays.textures[i].staging)
-         d3d10_update_texture(
-               d3d10->device,
-               images[i].width,
-               images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
-               images[i].pixels, &d3d10->overlays.textures[i]);
-
       sprites[i].pos.x           = 0.0f;
       sprites[i].pos.y           = 0.0f;
       sprites[i].pos.w           = 1.0f;
@@ -1616,6 +1599,72 @@ static bool d3d10_overlay_load(void* data,
       sprites[i].colors[2]       = sprites[i].colors[0];
       sprites[i].colors[3]       = sprites[i].colors[0];
    }
+
+   return true;
+}
+
+static bool d3d10_overlay_load(void* data,
+      const void* image_data, unsigned num_images)
+{
+   size_t i;
+   d3d10_video_t*              d3d10   = (d3d10_video_t*)data;
+   const struct texture_image* images  = (const struct texture_image*)
+      image_data;
+
+   if (!d3d10)
+      return false;
+
+   if (!num_images)
+   {
+      d3d10_free_overlays(d3d10);
+      return true;
+   }
+   if (!d3d10_overlay_alloc(d3d10, num_images))
+      return false;
+
+   for (i = 0; i < (unsigned)num_images; i++)
+   {
+      d3d10->overlays.textures[i].desc.Width  = images[i].width;
+      d3d10->overlays.textures[i].desc.Height = images[i].height;
+      d3d10->overlays.textures[i].desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+
+      d3d10_release_texture(&d3d10->overlays.textures[i]);
+      d3d10_init_texture(d3d10->device, &d3d10->overlays.textures[i]);
+
+      if (d3d10->overlays.textures[i].staging)
+         d3d10_update_texture(
+               d3d10->device,
+               images[i].width,
+               images[i].height, 0, DXGI_FORMAT_B8G8R8A8_UNORM,
+               images[i].pixels, &d3d10->overlays.textures[i]);
+   }
+
+   return true;
+}
+
+/* A page of the pack's textures: copies of d3d10_gfx_load_texture's
+ * d3d10_texture_t per image to draw from, nothing uploaded, created
+ * or released but the page's sprite buffer. */
+static bool d3d10_overlay_load_textures(void* data,
+      const uintptr_t* textures, unsigned num_textures)
+{
+   unsigned       i;
+   d3d10_video_t* d3d10 = (d3d10_video_t*)data;
+
+   if (!d3d10)
+      return false;
+
+   if (!num_textures)
+   {
+      d3d10_free_overlays(d3d10);
+      return true;
+   }
+   if (!d3d10_overlay_alloc(d3d10, num_textures))
+      return false;
+   d3d10->overlays.borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+      d3d10->overlays.textures[i] = *(const d3d10_texture_t*)textures[i];
 
    return true;
 }
@@ -1650,7 +1699,8 @@ static void d3d10_overlay_full_screen(void* data, bool enable)
 static void d3d10_get_overlay_interface(void* data, const video_overlay_interface_t** iface)
 {
    static const video_overlay_interface_t overlay_interface = {
-      d3d10_overlay_enable,      d3d10_overlay_load, NULL, /* load_textures */        d3d10_overlay_tex_geom,
+      d3d10_overlay_enable,      d3d10_overlay_load,        d3d10_overlay_load_textures,
+      d3d10_overlay_tex_geom,
       d3d10_overlay_vertex_geom, d3d10_overlay_full_screen, d3d10_overlay_set_alpha,
    };
 

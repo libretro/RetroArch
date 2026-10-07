@@ -148,6 +148,8 @@ typedef struct d3d8_video
    bool quitting;
    bool needs_restore;
    bool overlays_enabled;
+   /* overlays[].tex are the overlay pack's (load_textures) */
+   bool overlays_borrowed;
    /* Only used for Xbox */
    bool widescreen_mode;
 
@@ -2544,10 +2546,15 @@ static void d3d8_free_overlays(d3d8_video_t *d3d)
       return;
 
    for (i = 0; i < d3d->overlays_size; i++)
+   {
+      if (d3d->overlays_borrowed)
+         d3d->overlays[i].tex = NULL;
       d3d8_free_overlay(d3d, &d3d->overlays[i]);
+   }
    free(d3d->overlays);
-   d3d->overlays      = NULL;
-   d3d->overlays_size = 0;
+   d3d->overlays          = NULL;
+   d3d->overlays_size     = 0;
+   d3d->overlays_borrowed = false;
 }
 #endif
 
@@ -2705,6 +2712,44 @@ static bool d3d8_overlay_load(void *data,
    return true;
 }
 
+/* A page of the pack's textures: d3d8_load_texture's, in the same
+ * format and pool as load()'s own, uploaded once for every page */
+static bool d3d8_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   d3d8_video_t *d3d = (d3d8_video_t*)data;
+
+   if (!d3d)
+      return false;
+
+   d3d8_free_overlays(d3d);
+   if (!num_textures)
+      return true;
+   if (!(d3d->overlays = (overlay_t*)calloc(num_textures,
+         sizeof(*d3d->overlays))))
+      return false;
+   d3d->overlays_size     = num_textures;
+   d3d->overlays_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      D3DSURFACE_DESC desc;
+      LPDIRECT3DTEXTURE8 tex = (LPDIRECT3DTEXTURE8)textures[i];
+
+      if (!tex || FAILED(IDirect3DTexture8_GetLevelDesc(tex, 0, &desc)))
+         continue;
+      d3d->overlays[i].tex      = tex;
+      d3d->overlays[i].tex_dims = VIDEO_SCALE_PACK(desc.Width, desc.Height);
+
+      /* Default. Stretch to whole screen. */
+      d3d8_overlay_tex_geom(d3d, i, 0, 0, 1, 1);
+      d3d8_overlay_vertex_geom(d3d, i, 0, 0, 1, 1);
+   }
+
+   return true;
+}
+
 static void d3d8_overlay_enable(void *data, bool state)
 {
    d3d8_video_t            *d3d = (d3d8_video_t*)data;
@@ -2741,7 +2786,7 @@ static void d3d8_overlay_set_alpha(void *data, unsigned index, float mod)
 static const video_overlay_interface_t d3d8_overlay_interface = {
    d3d8_overlay_enable,
    d3d8_overlay_load,
-   NULL, /* load_textures */
+   d3d8_overlay_load_textures,
    d3d8_overlay_tex_geom,
    d3d8_overlay_vertex_geom,
    d3d8_overlay_full_screen,

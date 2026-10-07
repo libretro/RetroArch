@@ -89,6 +89,8 @@ typedef struct d3d9_video
    bool quitting;
    bool needs_restore;
    bool overlays_enabled;
+   /* overlays[].tex are the overlay pack's (load_textures) */
+   bool overlays_borrowed;
    /* Only used for Xbox */
    bool widescreen_mode;
 
