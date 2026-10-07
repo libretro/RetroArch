@@ -33,7 +33,7 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends \
             gcc-mingw-w64-i686 g++-mingw-w64-i686 \
-            gcc-mingw-w64-x86-64 wine64 pulseaudio
+            gcc-mingw-w64-x86-64 wine64 pulseaudio xvfb
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -72,3 +72,27 @@ jobs:
           grep -q "PASS waveout_test" waveout.log
           make clean
           rm -f waveout.log
+
+      - name: Run the plain Win32 input driver against a window (Wine)
+        working-directory: samples/input/win32_input
+        shell: bash
+        run: |
+          set -eu
+          # The input driver the Visual C++ 6 project uses: keys from
+          # the window's messages, the mouse from where the cursor is.
+          # Run against a real window: its key map, keys down and up,
+          # nothing down with another window in front, the mouse's
+          # place and motion. A part it had to skip - no window, or one
+          # that would not come to the front - checks nothing, and is a
+          # failure here.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
+          make clean all
+          WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee win32_input.log
+          grep -q "PASS win32_input_test" win32_input.log
+          if grep -q "^\[skip\]" win32_input.log; then
+            echo "a part of the test was skipped"
+            exit 1
+          fi
+          make clean
+          rm -f win32_input.log
