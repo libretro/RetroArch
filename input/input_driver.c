@@ -949,6 +949,12 @@ typedef struct
     * controller it goes by with the same pointer, so "is this read by
     * the port's own controller" is one compare */
    const struct retro_keybind *autob;
+   /* The RetroPad's sixteen, resolved: the button and the axis behind
+    * each - the port's own bind where it names one, the controller's
+    * profile's where it does not. That choice was made for every one
+    * of them at every read; it is made here, when a bind changes. */
+   uint32_t axis16[RARCH_FIRST_CUSTOM_BIND];
+   uint16_t key16[RARCH_FIRST_CUSTOM_BIND];
 } input_port_pads_t;
 
 static input_port_pads_t input_port_pads[MAX_USERS];
@@ -976,6 +982,13 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
             || autob[i].joykey  != NO_BTN
             || autob[i].joyaxis != AXIS_NONE)
          pads->has_pad[i >> 5] |= (1u << (i & 31));
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      pads->key16[i]  = (binds[i].joykey  != NO_BTN)
+         ? binds[i].joykey  : autob[i].joykey;
+      pads->axis16[i] = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : autob[i].joyaxis;
+   }
    pads->autob = autob;
    pads->gen   = gen;
 }
@@ -1044,28 +1057,24 @@ INPUT_NOINLINE static bool input_port_pad_behind_none(unsigned port,
    return pads && !(pads->has_pad[0] & 0xffff);
 }
 
-/* Which of the RetroPad's sixteen a pad is behind, for a read of
- * @binds by @joypad_info; all of them where that cannot be said. */
-static unsigned input_port_pad_bound_get(const struct retro_keybind *binds,
+/* The pads of the port @binds are, for a read of them by
+ * @joypad_info; NULL where they are not a port's own set, or the read
+ * is by another controller than the port's own. */
+static const input_port_pads_t *input_port_pads_of(
+      const struct retro_keybind *binds,
       const rarch_joypad_info_t *joypad_info)
 {
    const char *first = (const char*)input_config_binds;
    const char *at    = (const char*)binds;
-   const input_port_pads_t *pads;
    size_t      off;
 
-   /* binds that are not a port's own set: every one is looked at */
    if (at < first || at >= first + sizeof(input_config_binds))
-      return 0xffff;
+      return NULL;
    off = (size_t)(at - first);
    if (off % sizeof(input_config_binds[0]))
-      return 0xffff;
-   /* ... and so is a read by another controller than the port's own */
-   pads = input_port_pads_for(
+      return NULL;
+   return input_port_pads_for(
          (unsigned)(off / sizeof(input_config_binds[0])), joypad_info);
-   if (!pads)
-      return 0xffff;
-   return pads->has_pad[0] & 0xffff;
 }
 
 /* The RetroPad mask from the binds: the loop every joypad driver's
@@ -1074,30 +1083,48 @@ static int16_t input_snapshot_state(unsigned b,
       rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds)
 {
-   unsigned i;
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
    unsigned bound;
    bool full_range;
+   const input_port_pads_t *pads;
 
    if (pad >= MAX_USERS)
       return 0;
 
-   /* nothing a pad could be behind: nothing to look at */
-   bound = input_port_pad_bound_get(binds, joypad_info);
+   /* The port's pads, where this is a read of a port's binds by its
+    * own controller: only the binds a pad is behind are looked at, and
+    * with what is behind each already resolved. Nothing a pad is
+    * behind: nothing to look at. Any other read goes through all
+    * sixteen, choosing between the bind and the profile as it goes. */
+   pads  = input_port_pads_of(binds, joypad_info);
+   bound = pads ? (pads->has_pad[0] & 0xffff) : 0xffff;
    if (!bound)
       return 0;
    full_range = config_get_ptr()->bools.input_trigger_full_range;
 
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   for (; bound; bound &= bound - 1)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      if (     (uint16_t)joykey != NO_BTN
-            && input_snapshot_button(b, pad, (uint16_t)joykey))
+      unsigned i = (unsigned)compat_ctz(bound);
+      uint16_t joykey;
+      uint32_t joyaxis;
+
+      if (pads)
+      {
+         joykey  = pads->key16[i];
+         joyaxis = pads->axis16[i];
+      }
+      else
+      {
+         /* Auto-binds are per joypad, not per user. */
+         joykey  = (binds[i].joykey != NO_BTN)
+            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+         joyaxis = (binds[i].joyaxis != AXIS_NONE)
+            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      }
+
+      if (     joykey != NO_BTN
+            && input_snapshot_button(b, pad, joykey))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE)
       {
