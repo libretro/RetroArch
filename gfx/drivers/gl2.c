@@ -1192,10 +1192,10 @@ static void gl2_raster_font_render_message(gl2_t *gl,
    { \
       int off_x   = (glyph)->draw_offset_x; \
       int off_y   = (glyph)->draw_offset_y; \
-      int tex_x   = (glyph)->atlas_offset_x; \
-      int tex_y   = (glyph)->atlas_offset_y; \
-      int width   = (glyph)->width; \
-      int height  = (glyph)->height; \
+      int tex_x   = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      int tex_y   = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      int width   = VIDEO_SCALE_W((glyph)->dims); \
+      int height  = VIDEO_SCALE_H((glyph)->dims); \
       int delta_x = (pen_x); \
       int delta_y = -(pen_y); \
       GL_RASTER_FONT_EMIT(0, 0, 1); /* Bottom-left */ \

@@ -430,12 +430,10 @@ enum shader_program_type
 
 struct font_glyph
 {
-   unsigned width;
-   unsigned height;
-
-   /* Texel coordinate offset for top-left pixel of this glyph. */
-   unsigned atlas_offset_x;
-   unsigned atlas_offset_y;
+   /* Width and height, and the texel offset of the glyph's top-left
+    * pixel in the atlas, each a pair in VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
+   unsigned atlas_pos;
 
    /* When drawing this glyph, apply an offset to
     * current X/Y draw coordinate. */

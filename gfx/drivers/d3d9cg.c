@@ -930,7 +930,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       {
          float cx     = (x1 + x2) * 0.5f;
          float cy     = (y1 + y2) * 0.5f;
-         float half_w = VIDEO_SCALE_W(draw->dims)  * 0.5f;
+         float half_w = VIDEO_SCALE_W(draw->dims) * 0.5f;
          float half_h = VIDEO_SCALE_H(draw->dims) * 0.5f;
          if (draw->scale_factor && draw->scale_factor != 1.0f)
          {
@@ -1727,12 +1727,12 @@ static void d3d9_cg_font_render_msg(
       d3d9_cg_font_emit_quad(dst, \
             ((px) + (glyph)->draw_offset_x * scale) * inv_vp_w, \
             ((py) + (glyph)->draw_offset_y * scale) * inv_vp_h, \
-            (glyph)->width  * scale * inv_vp_w, \
-            (glyph)->height * scale * inv_vp_h, \
-            (glyph)->atlas_offset_x * inv_tex_w, \
-            (glyph)->atlas_offset_y * inv_tex_h, \
-            (glyph)->width  * inv_tex_w, \
-            (glyph)->height * inv_tex_h, \
+            VIDEO_SCALE_W((glyph)->dims) * scale * inv_vp_w, \
+            VIDEO_SCALE_H((glyph)->dims) * scale * inv_vp_h, \
+            VIDEO_SCALE_W((glyph)->atlas_pos) * inv_tex_w, \
+            VIDEO_SCALE_H((glyph)->atlas_pos) * inv_tex_h, \
+            VIDEO_SCALE_W((glyph)->dims) * inv_tex_w, \
+            VIDEO_SCALE_H((glyph)->dims) * inv_tex_h, \
             col)
 #define FONT_LAYOUT_ALIGNED (text_align == TEXT_ALIGN_RIGHT \
             || text_align == TEXT_ALIGN_CENTER)

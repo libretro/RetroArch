@@ -1338,12 +1338,14 @@ static void d3d10_font_render_msg(
       { \
          (dst)->pos.x           = ((px) + ((glyph)->draw_offset_x * scale)) * inv_viewport_w; \
          (dst)->pos.y           = ((py) + ((glyph)->draw_offset_y * scale)) * inv_viewport_h; \
-         (dst)->pos.w           = (glyph)->width  * scale * inv_viewport_w; \
-         (dst)->pos.h           = (glyph)->height * scale * inv_viewport_h; \
-         (dst)->coords.u        = (glyph)->atlas_offset_x * inv_tex_w; \
-         (dst)->coords.v        = (glyph)->atlas_offset_y * inv_tex_h; \
-         (dst)->coords.w        = (glyph)->width  * inv_tex_w; \
-         (dst)->coords.h        = (glyph)->height * inv_tex_h; \
+         (dst)->pos.w           = VIDEO_SCALE_W((glyph)->dims) \
+            * scale * inv_viewport_w; \
+         (dst)->pos.h           = VIDEO_SCALE_H((glyph)->dims) \
+            * scale * inv_viewport_h; \
+         (dst)->coords.u        = VIDEO_SCALE_W((glyph)->atlas_pos) * inv_tex_w; \
+         (dst)->coords.v        = VIDEO_SCALE_H((glyph)->atlas_pos) * inv_tex_h; \
+         (dst)->coords.w        = VIDEO_SCALE_W((glyph)->dims) * inv_tex_w; \
+         (dst)->coords.h        = VIDEO_SCALE_H((glyph)->dims) * inv_tex_h; \
          (dst)->params.scaling  = 1; \
          (dst)->params.rotation = 0; \
          (dst)->colors[0]       = (col); \

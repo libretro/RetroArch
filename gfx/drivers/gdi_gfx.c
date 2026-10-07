@@ -1993,16 +1993,16 @@ static void gdi_font_render_line(
       if (plain_white) \
       { \
          int gx, gy, gw, gh; \
-         gw = (int)((float)(gl)->width  * scale); \
-         gh = (int)((float)(gl)->height * scale); \
+         gw = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gh = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
          if (gw > 0 && gh > 0) \
          { \
             gx = line_x + x_offset + (int)((float)(gl)->draw_offset_x * scale); \
             gy = line_y           + (int)((float)(gl)->draw_offset_y * scale); \
             AlphaBlend(dst_dc, gx, gy, gw, gh, \
                   atlas_dc, \
-                  (gl)->atlas_offset_x, (gl)->atlas_offset_y, \
-                  (gl)->width, (gl)->height, \
+                  VIDEO_SCALE_W((gl)->atlas_pos), VIDEO_SCALE_H((gl)->atlas_pos), \
+                  VIDEO_SCALE_W((gl)->dims), VIDEO_SCALE_H((gl)->dims), \
                   blend); \
          } \
       } \
@@ -2010,13 +2010,13 @@ static void gdi_font_render_line(
       { \
          int gx_dst, gy_dst, gw, gh; \
          int gx_src, gy_src; \
-         gw     = (int)((float)(gl)->width  * scale); \
-         gh     = (int)((float)(gl)->height * scale); \
+         gw     = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gh     = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
          gx_dst = x_offset + (int)((float)(gl)->draw_offset_x * scale); \
          gy_dst = (metrics ? (int)(metrics->ascender * scale + 0.5f) : 0) \
                 + (int)((float)(gl)->draw_offset_y * scale); \
-         gx_src = (int)(gl)->atlas_offset_x; \
-         gy_src = (int)(gl)->atlas_offset_y; \
+         gx_src = (int)VIDEO_SCALE_W((gl)->atlas_pos); \
+         gy_src = (int)VIDEO_SCALE_H((gl)->atlas_pos); \
          if (gw > 0 && gh > 0) \
          { \
             int yy, xx; \
@@ -2028,8 +2028,8 @@ static void gdi_font_render_line(
                const uint8_t *src_row; \
                if (dst_y2 < 0 || dst_y2 >= (int)VIDEO_SCALE_H(font->scratch_dims)) \
                   continue; \
-               src_y2  = gy_src + (int)((float)yy * (float)(gl)->height \
-                     / (float)gh); \
+               src_y2  = gy_src + (int)((float)yy \
+                     * (float)VIDEO_SCALE_H((gl)->dims) / (float)gh); \
                if (src_y2 < 0 || src_y2 >= (int)VIDEO_SCALE_H(font->atlas_dims)) \
                   continue; \
                dst_row = font->scratch_pixels \
@@ -2044,8 +2044,8 @@ static void gdi_font_render_line(
                   uint32_t out_a, out_r, out_g, out_b; \
                   if (dst_x2 < 0 || dst_x2 >= (int)VIDEO_SCALE_W(font->scratch_dims)) \
                      continue; \
-                  src_x2 = gx_src + (int)((float)xx * (float)(gl)->width \
-                        / (float)gw); \
+                  src_x2 = gx_src + (int)((float)xx \
+                        * (float)VIDEO_SCALE_W((gl)->dims) / (float)gw); \
                   if (src_x2 < 0 || src_x2 >= (int)VIDEO_SCALE_W(font->atlas_dims)) \
                      continue; \
                   alpha = src_row[src_x2]; \

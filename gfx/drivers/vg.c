@@ -52,7 +52,9 @@
 typedef struct
 {
    VGImage image;
-   unsigned short x, y, w, h;
+   /* The atlas rectangle it covers, as the glyph has it */
+   unsigned atlas_pos;
+   unsigned dims;
 } vg_glyph_image_t;
 
 typedef struct
@@ -336,27 +338,27 @@ static VGImage vg_font_glyph_image(vg_t *vg, const struct font_glyph *glyph)
    vg_glyph_image_t *e;
    uint32_t hash;
 
-   if (!glyph->width || !glyph->height)
+   if (!VIDEO_SCALE_W(glyph->dims) || !VIDEO_SCALE_H(glyph->dims))
       return VG_INVALID_HANDLE;
 
-   hash = ((uint32_t)glyph->atlas_offset_x * 0x9E3779B1u)
-        ^ ((uint32_t)glyph->atlas_offset_y * 0x85EBCA77u);
+   hash = ((uint32_t)VIDEO_SCALE_W(glyph->atlas_pos) * 0x9E3779B1u)
+        ^ ((uint32_t)VIDEO_SCALE_H(glyph->atlas_pos) * 0x85EBCA77u);
    e    = &vg->font_glyphs[(hash >> 16) & (VG_FONT_CHILDREN - 1)];
 
    if (     e->image != VG_INVALID_HANDLE
-         && e->x == glyph->atlas_offset_x && e->y == glyph->atlas_offset_y
-         && e->w == glyph->width          && e->h == glyph->height)
+         && e->atlas_pos == glyph->atlas_pos
+         && e->dims      == glyph->dims)
       return e->image;
 
    if (e->image != VG_INVALID_HANDLE)
       vgDestroyImage(e->image);
-   e->x     = (unsigned short)glyph->atlas_offset_x;
-   e->y     = (unsigned short)glyph->atlas_offset_y;
-   e->w     = (unsigned short)glyph->width;
-   e->h     = (unsigned short)glyph->height;
-   e->image = vgChildImage(vg->font_atlas,
-         (VGint)glyph->atlas_offset_x, (VGint)glyph->atlas_offset_y,
-         (VGint)glyph->width, (VGint)glyph->height);
+   e->atlas_pos = glyph->atlas_pos;
+   e->dims      = glyph->dims;
+   e->image     = vgChildImage(vg->font_atlas,
+         (VGint)VIDEO_SCALE_W(glyph->atlas_pos),
+         (VGint)VIDEO_SCALE_H(glyph->atlas_pos),
+         (VGint)VIDEO_SCALE_W(glyph->dims),
+         (VGint)VIDEO_SCALE_H(glyph->dims));
    return e->image;
 }
 

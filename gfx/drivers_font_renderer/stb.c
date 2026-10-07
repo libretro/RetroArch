@@ -1499,8 +1499,8 @@ static bool font_rasterizer_stb_render_builtin(stb_face_t *self,
       }
    }
 
-   glyph->width         = FONT_WIDTH  * scale;
-   glyph->height        = FONT_HEIGHT * scale;
+   glyph->dims          = VIDEO_SCALE_PACK(FONT_WIDTH * scale,
+         FONT_HEIGHT * scale);
    glyph->draw_offset_x = 0;
    glyph->draw_offset_y = 1 - FONT_HEIGHT_BASELINE_OFFSET * (int)scale;
    glyph->advance_x     = FONT_WIDTH_STRIDE * scale;
@@ -1547,8 +1547,7 @@ static bool font_rasterizer_stb_render_glyph(void *data, uint32_t code,
          memset(dst + (size_t)row * pitch * esz, 0, (size_t)cell_w * esz);
    }
 
-   glyph->width          = cell_w;
-   glyph->height         = cell_h;
+   glyph->dims           = cell_dims;
 
    /* advance_x must always be rounded to the
     * *nearest* integer */

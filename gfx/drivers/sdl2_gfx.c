@@ -252,14 +252,14 @@ static void sdl2_render_msg(sdl2_video_t *vid, const char *msg,
    if (vid->font.tex) \
    { \
       SDL_Rect src_rect, dst_rect; \
-      src_rect.x = (glyph)->atlas_offset_x; \
-      src_rect.y = (glyph)->atlas_offset_y; \
-      src_rect.w = (int)(glyph)->width; \
-      src_rect.h = (int)(glyph)->height; \
+      src_rect.x = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      src_rect.y = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      src_rect.w = (int)VIDEO_SCALE_W((glyph)->dims); \
+      src_rect.h = (int)VIDEO_SCALE_H((glyph)->dims); \
       dst_rect.x = line_x + (pen_x) + (glyph)->draw_offset_x; \
       dst_rect.y = line_y - (pen_y) + (glyph)->draw_offset_y; \
-      dst_rect.w = (int)(glyph)->width; \
-      dst_rect.h = (int)(glyph)->height; \
+      dst_rect.w = (int)VIDEO_SCALE_W((glyph)->dims); \
+      dst_rect.h = (int)VIDEO_SCALE_H((glyph)->dims); \
       SDL_RenderCopy(vid->renderer, vid->font.tex, &src_rect, &dst_rect); \
    }
 #include "../font_layout.h"
@@ -1818,12 +1818,12 @@ static void sdl2_raster_font_render_message(
          break; \
       gx = x + (glyph)->draw_offset_x * scale; \
       gy = y + (glyph)->draw_offset_y * scale; \
-      gw = (glyph)->width  * scale; \
-      gh = (glyph)->height * scale; \
-      u0 = (float)(glyph)->atlas_offset_x * inv_w; \
-      v0 = (float)(glyph)->atlas_offset_y * inv_h; \
-      u1 = u0 + (float)(glyph)->width     * inv_w; \
-      v1 = v0 + (float)(glyph)->height    * inv_h; \
+      gw = VIDEO_SCALE_W((glyph)->dims) * scale; \
+      gh = VIDEO_SCALE_H((glyph)->dims) * scale; \
+      u0 = (float)VIDEO_SCALE_W((glyph)->atlas_pos) * inv_w; \
+      v0 = (float)VIDEO_SCALE_H((glyph)->atlas_pos) * inv_h; \
+      u1 = u0 + (float)VIDEO_SCALE_W((glyph)->dims) * inv_w; \
+      v1 = v0 + (float)VIDEO_SCALE_H((glyph)->dims) * inv_h; \
       base = n_glyphs * 4; \
       verts[base + 0].position.x  = gx; \
       verts[base + 0].position.y  = gy; \

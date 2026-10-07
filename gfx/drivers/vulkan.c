@@ -3489,10 +3489,10 @@ static INLINE void vulkan_font_update_glyph(
       vulkan_raster_t *font, const struct font_glyph *glyph)
 {
    unsigned row;
-   unsigned gx_min = glyph->atlas_offset_x;
-   unsigned gy_min = glyph->atlas_offset_y;
-   unsigned gx_max = gx_min + glyph->width;
-   unsigned gy_max = gy_min + glyph->height;
+   unsigned gx_min = VIDEO_SCALE_W(glyph->atlas_pos);
+   unsigned gy_min = VIDEO_SCALE_H(glyph->atlas_pos);
+   unsigned gx_max = gx_min + VIDEO_SCALE_W(glyph->dims);
+   unsigned gy_max = gy_min + VIDEO_SCALE_H(glyph->dims);
 
    /* A cell past the textures' size - the atlas grew and they could
     * not be made again - has nowhere to go */
@@ -3510,7 +3510,7 @@ static INLINE void vulkan_font_update_glyph(
          uint8_t *dst = (uint8_t*)font->texture.mapped
                + (size_t)row * font->texture.stride
                + (size_t)gx_min * esz;
-         memcpy(dst, src, (size_t)glyph->width * esz);
+         memcpy(dst, src, (size_t)VIDEO_SCALE_W(glyph->dims) * esz);
       }
    }
 
@@ -4119,13 +4119,13 @@ static void vulkan_font_render_msg(
       do \
       { \
          /* Texture coordinates - shared between shadow and fg */ \
-         float ftx = (glyph)->atlas_offset_x * inv_tex_size_x; \
-         float fty = (glyph)->atlas_offset_y * inv_tex_size_y; \
-         float ftw = (glyph)->width  * inv_tex_size_x; \
-         float fth = (glyph)->height * inv_tex_size_y; \
+         float ftx = VIDEO_SCALE_W((glyph)->atlas_pos) * inv_tex_size_x; \
+         float fty = VIDEO_SCALE_H((glyph)->atlas_pos) * inv_tex_size_y; \
+         float ftw = VIDEO_SCALE_W((glyph)->dims) * inv_tex_size_x; \
+         float fth = VIDEO_SCALE_H((glyph)->dims) * inv_tex_size_y; \
          /* Pre-scaled glyph size and per-glyph offset */ \
-         float fw  = (glyph)->width  * scale_iww; \
-         float fh  = (glyph)->height * scale_iwh; \
+         float fw  = VIDEO_SCALE_W((glyph)->dims) * scale_iww; \
+         float fh  = VIDEO_SCALE_H((glyph)->dims) * scale_iwh; \
          float gox = ((glyph)->draw_offset_x + (pen_x)) * scale_iww; \
          float goy = ((glyph)->draw_offset_y + (pen_y)) * scale_iwh; \
          if (has_drop) \

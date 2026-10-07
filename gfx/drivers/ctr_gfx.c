@@ -615,10 +615,10 @@ static void ctr_font_render_message(
    { \
       int off_x  = (glyph)->draw_offset_x; \
       int off_y  = (glyph)->draw_offset_y; \
-      int tex_x  = (glyph)->atlas_offset_x; \
-      int tex_y  = (glyph)->atlas_offset_y; \
-      int g_w    = (glyph)->width; \
-      int g_h    = (glyph)->height; \
+      int tex_x  = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      int tex_y  = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      int g_w    = VIDEO_SCALE_W((glyph)->dims); \
+      int g_h    = VIDEO_SCALE_H((glyph)->dims); \
       v->x0      = x + (off_x + (pen_x)) * scale; \
       v->y0      = y + (off_y + (pen_y)) * scale; \
       v->u0      = tex_x; \

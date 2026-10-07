@@ -522,31 +522,32 @@ static bool render_msg(oga_video_t* vid, const char* msg)
          if (full) \
             break; \
          if (vid->msg_height == 0) \
-            vid->msg_height = (g)->height; \
+            vid->msg_height = VIDEO_SCALE_H((g)->dims); \
          if (dest_x + (g)->advance_x > surf_w) \
          { \
             dest_x           = 0; \
-            dest_y          += (g)->height; \
-            vid->msg_height += (g)->height; \
+            dest_y          += VIDEO_SCALE_H((g)->dims); \
+            vid->msg_height += VIDEO_SCALE_H((g)->dims); \
          } \
          if (     (g)->advance_x > surf_w \
-               || dest_y + (int)(g)->height > surf_h) \
+               || dest_y + (int)VIDEO_SCALE_H((g)->dims) > surf_h) \
          { \
             full = true; \
             break; \
          } \
-         source = atlas->buffer + (g)->atlas_offset_y * \
-            atlas->width  + (g)->atlas_offset_x; \
+         source = atlas->buffer + VIDEO_SCALE_H((g)->atlas_pos) * \
+            atlas->width  + VIDEO_SCALE_W((g)->atlas_pos); \
          dest   = fb + dest_y * dest_stride + dest_x; \
-         for (y = 0; y < (int)(g)->height; y++) \
+         for (y = 0; y < (int)VIDEO_SCALE_H((g)->dims); y++) \
          { \
             for (x = 0; x < (int)(g)->advance_x; x++) \
             { \
-               uint32_t px = (x < (int)(g)->width) ? *(source++) : 0x00; \
+               uint32_t px = (x < (int)VIDEO_SCALE_W((g)->dims)) \
+                  ? *(source++) : 0x00; \
                *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px; \
             } \
             dest   += dest_stride - (g)->advance_x; \
-            source += atlas->width - (g)->width; \
+            source += atlas->width - VIDEO_SCALE_W((g)->dims); \
          } \
          dest_x += (g)->advance_x; \
          if (vid->msg_width < dest_x) \

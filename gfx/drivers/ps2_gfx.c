@@ -261,10 +261,10 @@ static void ps2_font_render_message(
       float x1, y1, u1, v1, x2, y2, u2, v2; \
       int off_x   = (glyph)->draw_offset_x; \
       int off_y   = (glyph)->draw_offset_y; \
-      int tex_x   = (glyph)->atlas_offset_x; \
-      int tex_y   = (glyph)->atlas_offset_y; \
-      int g_w     = (glyph)->width; \
-      int g_h     = (glyph)->height; \
+      int tex_x   = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      int tex_y   = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      int g_w     = VIDEO_SCALE_W((glyph)->dims); \
+      int g_h     = VIDEO_SCALE_H((glyph)->dims); \
       int delta_x = (pen_x); \
       int delta_y = (pen_y); \
       /* The -0.5 is needed to achieve pixel perfect. \

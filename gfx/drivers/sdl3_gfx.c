@@ -1515,12 +1515,12 @@ static void sdl3_raster_font_render_message(
          break; \
       gx = x + (glyph)->draw_offset_x * scale; \
       gy = y + (glyph)->draw_offset_y * scale; \
-      gw = (glyph)->width  * scale; \
-      gh = (glyph)->height * scale; \
-      u0 = (float)(glyph)->atlas_offset_x * inv_w; \
-      v0 = (float)(glyph)->atlas_offset_y * inv_h; \
-      u1 = u0 + (float)(glyph)->width     * inv_w; \
-      v1 = v0 + (float)(glyph)->height    * inv_h; \
+      gw = VIDEO_SCALE_W((glyph)->dims) * scale; \
+      gh = VIDEO_SCALE_H((glyph)->dims) * scale; \
+      u0 = (float)VIDEO_SCALE_W((glyph)->atlas_pos) * inv_w; \
+      v0 = (float)VIDEO_SCALE_H((glyph)->atlas_pos) * inv_h; \
+      u1 = u0 + (float)VIDEO_SCALE_W((glyph)->dims) * inv_w; \
+      v1 = v0 + (float)VIDEO_SCALE_H((glyph)->dims) * inv_h; \
       base = n_glyphs * 4; \
       verts[base + 0].position.x  = gx; \
       verts[base + 0].position.y  = gy; \

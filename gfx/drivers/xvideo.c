@@ -912,10 +912,10 @@ static void xv_render_msg(xv_t *xv, const char *msg,
           * so the indices are correct. */ \
          base_x          = ((line_x + (pen_x)) + glyph->draw_offset_x + 1) & ~1; \
          base_y          = (line_y + (pen_y)) + glyph->draw_offset_y; \
-         glyph_width     = glyph->width; \
-         glyph_height    = glyph->height; \
-         src             = atlas->buffer + glyph->atlas_offset_x + \
-                           glyph->atlas_offset_y * atlas->width; \
+         glyph_width     = VIDEO_SCALE_W(glyph->dims); \
+         glyph_height    = VIDEO_SCALE_H(glyph->dims); \
+         src             = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) + \
+                           VIDEO_SCALE_H(glyph->atlas_pos) * atlas->width; \
          if (base_x < 0) \
          { \
             src          -= base_x; \

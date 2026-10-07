@@ -88,11 +88,11 @@ int main(void)
       atlas->dirty = false;
       font_driver_frame_begin();
       a  = drv->get_glyph(h, 0x0391);
-      ax = a ? a->atlas_offset_x : 0;
-      ay = a ? a->atlas_offset_y : 0;
+      ax = a ? VIDEO_SCALE_W(a->atlas_pos) : 0;
+      ay = a ? VIDEO_SCALE_H(a->atlas_pos) : 0;
       b  = drv->get_glyph(h, 0x03A9);
-      bx = b ? b->atlas_offset_x : 0;
-      by = b ? b->atlas_offset_y : 0;
+      bx = b ? VIDEO_SCALE_W(b->atlas_pos) : 0;
+      by = b ? VIDEO_SCALE_H(b->atlas_pos) : 0;
       CHECK(a && b && atlas->dirty, "dirty: two new glyphs mark the atlas");
       CHECK(   VIDEO_SCALE_W(atlas->dirty_xy0) == (ax < bx ? ax : bx)
             && VIDEO_SCALE_H(atlas->dirty_xy0) == (ay < by ? ay : by),
@@ -121,8 +121,8 @@ int main(void)
 
       font_driver_frame_begin();
       g  = drv->get_glyph(h, 'A');
-      ax = g->atlas_offset_x;
-      ay = g->atlas_offset_y;
+      ax = VIDEO_SCALE_W(g->atlas_pos);
+      ay = VIDEO_SCALE_H(g->atlas_pos);
       undrawn = frame(drv, h, 0x0100, &moved);
       CHECK(undrawn > 0, "growing: the first frame still runs out");
       CHECK(drv->get_atlas(h)->width == w0,
@@ -137,7 +137,7 @@ int main(void)
                atlas->height),
             "growing: all of it marked for upload");
       g = drv->get_glyph(h, 'A');
-      CHECK(g->atlas_offset_x == ax && g->atlas_offset_y == ay,
+      CHECK(VIDEO_SCALE_W(g->atlas_pos) == ax && VIDEO_SCALE_H(g->atlas_pos) == ay,
             "growing: an earlier glyph keeps its cell");
       undrawn = frame(drv, h, 0x0100, &moved);
       CHECK(undrawn == 0 && !moved, "growing: the frame draws everything");

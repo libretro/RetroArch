@@ -179,10 +179,10 @@ static void switch_font_render_message(
       int ty; \
       int off_x  = x + (glyph)->draw_offset_x + (pen_x); \
       int off_y  = y + (glyph)->draw_offset_y + (pen_y); \
-      int g_w    = (glyph)->width; \
-      int g_h    = (glyph)->height; \
-      int tex_x  = (glyph)->atlas_offset_x; \
-      int tex_y  = (glyph)->atlas_offset_y; \
+      int g_w    = VIDEO_SCALE_W((glyph)->dims); \
+      int g_h    = VIDEO_SCALE_H((glyph)->dims); \
+      int tex_x  = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      int tex_y  = VIDEO_SCALE_H((glyph)->atlas_pos); \
       if (!line_ok) \
          break; \
       for (ty = tex_y; ty < tex_y + g_h; ty++) \

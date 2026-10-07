@@ -679,8 +679,9 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
    esz    = (c->atlas.format == FONT_ATLAS_FORMAT_A16)
       ? sizeof(uint16_t) : sizeof(uint8_t);
    dst    = c->atlas.buffer
-      + ((size_t)slot->glyph.atlas_offset_x
-      +  (size_t)slot->glyph.atlas_offset_y * c->atlas.width) * esz;
+      + ((size_t)VIDEO_SCALE_W(slot->glyph.atlas_pos)
+      +  (size_t)VIDEO_SCALE_H(slot->glyph.atlas_pos) * c->atlas.width)
+      * esz;
 
    if (!rast->render_glyph(face, code, gi, dst, c->atlas.width,
             c->cell_dims, c->atlas.format, &slot->glyph))
@@ -695,9 +696,7 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
    slot->next                   = c->map[FONT_CACHE_HASH(code)];
    c->map[FONT_CACHE_HASH(code)] = slot;
    slot->last_used              = c->usage_counter++;
-   font_cache_dirty_cell(&c->atlas,
-         VIDEO_SCALE_PACK(slot->glyph.atlas_offset_x,
-            slot->glyph.atlas_offset_y), c->cell_dims);
+   font_cache_dirty_cell(&c->atlas, slot->glyph.atlas_pos, c->cell_dims);
    return &slot->glyph;
 }
 
@@ -767,8 +766,9 @@ static bool font_cache_grow(font_cache_t *c)
          if (x < c->cols && y < c->rows)
             continue;
          blk[i].charcode             = FONT_CACHE_NO_CODE;
-         blk[i].glyph.atlas_offset_x = x * (cell_w + FONT_CACHE_PADDING);
-         blk[i].glyph.atlas_offset_y = y * (cell_h + FONT_CACHE_PADDING);
+         blk[i].glyph.atlas_pos      = VIDEO_SCALE_PACK(
+               x * (cell_w + FONT_CACHE_PADDING),
+               y * (cell_h + FONT_CACHE_PADDING));
          /* Unused: older than any cell in use */
          blk[i].last_used            = c->usage_counter - 0x80000000u;
          i++;
@@ -893,8 +893,9 @@ static font_cache_t *font_cache_new(const font_rasterizer_t *rast,
       for (x = 0; x < FONT_CACHE_COLS; x++, i++)
       {
          c->slots[i].charcode             = FONT_CACHE_NO_CODE;
-         c->slots[i].glyph.atlas_offset_x = x * (cell_w + FONT_CACHE_PADDING);
-         c->slots[i].glyph.atlas_offset_y = y * (cell_h + FONT_CACHE_PADDING);
+         c->slots[i].glyph.atlas_pos      = VIDEO_SCALE_PACK(
+               x * (cell_w + FONT_CACHE_PADDING),
+               y * (cell_h + FONT_CACHE_PADDING));
          /* Unused: older than any cell in use */
          c->slots[i].last_used            = c->usage_counter - 0x80000000u;
       }

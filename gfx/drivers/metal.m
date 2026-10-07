@@ -4260,14 +4260,17 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    if (_atlas->dirty)
    {
       unsigned row;
-      for (row = glyph->atlas_offset_y; row < (glyph->atlas_offset_y + glyph->height); row++)
+      unsigned x  = VIDEO_SCALE_W(glyph->atlas_pos);
+      unsigned y0 = VIDEO_SCALE_H(glyph->atlas_pos);
+      unsigned y1 = y0 + VIDEO_SCALE_H(glyph->dims);
+      for (row = y0; row < y1; row++)
       {
          uint8_t *src = _atlas->buffer
-               + ((size_t)row * _atlas->width + glyph->atlas_offset_x) * _esz;
+               + ((size_t)row * _atlas->width + x) * _esz;
          uint8_t *dst = (uint8_t *)_buffer.contents
                + (size_t)row * _stride
-               + (size_t)glyph->atlas_offset_x * _esz;
-         memcpy(dst, src, (size_t)glyph->width * _esz);
+               + (size_t)x * _esz;
+         memcpy(dst, src, (size_t)VIDEO_SCALE_W(glyph->dims) * _esz);
       }
 
 #if !defined(HAVE_COCOATOUCH)
@@ -4278,8 +4281,8 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
        * overlapped the actually-modified rows on managed-storage
        * devices, producing stale/garbled glyphs until the entire
        * atlas was invalidated by some other path. */
-      NSUInteger offset = (NSUInteger)glyph->atlas_offset_y * _stride;
-      NSUInteger len    = (NSUInteger)glyph->height         * _stride;
+      NSUInteger offset = (NSUInteger)y0 * _stride;
+      NSUInteger len    = (NSUInteger)VIDEO_SCALE_H(glyph->dims) * _stride;
       [_buffer didModifyRange:NSMakeRange(offset, len)];
 #endif
 
@@ -4464,10 +4467,10 @@ static INLINE void write_quad6(SpriteVertex *pv,
    { \
       int off_x  = (glyph)->draw_offset_x; \
       int off_y  = (glyph)->draw_offset_y; \
-      int tex_x  = (glyph)->atlas_offset_x; \
-      int tex_y  = (glyph)->atlas_offset_y; \
-      int g_w    = (glyph)->width; \
-      int g_h    = (glyph)->height; \
+      int tex_x  = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      int tex_y  = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      int g_w    = VIDEO_SCALE_W((glyph)->dims); \
+      int g_h    = VIDEO_SCALE_H((glyph)->dims); \
       write_quad6(v, \
             (x + (off_x + (pen_x)) * scale) * inv_win_width, \
             (y + (off_y + (pen_y)) * scale) * inv_win_height, \

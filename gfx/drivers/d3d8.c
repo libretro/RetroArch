@@ -1561,12 +1561,12 @@ static void d3d8_font_render_msg(
       d3d8_font_emit_quad(dst, \
             ((px) + (glyph)->draw_offset_x * scale) * inv_viewport_w, \
             ((py) + (glyph)->draw_offset_y * scale) * inv_viewport_h, \
-            (glyph)->width  * scale * inv_viewport_w, \
-            (glyph)->height * scale * inv_viewport_h, \
-            (glyph)->atlas_offset_x * inv_tex_w, \
-            (glyph)->atlas_offset_y * inv_tex_h, \
-            (glyph)->width  * inv_tex_w, \
-            (glyph)->height * inv_tex_h, \
+            VIDEO_SCALE_W((glyph)->dims) * scale * inv_viewport_w, \
+            VIDEO_SCALE_H((glyph)->dims) * scale * inv_viewport_h, \
+            VIDEO_SCALE_W((glyph)->atlas_pos) * inv_tex_w, \
+            VIDEO_SCALE_H((glyph)->atlas_pos) * inv_tex_h, \
+            VIDEO_SCALE_W((glyph)->dims) * inv_tex_w, \
+            VIDEO_SCALE_H((glyph)->dims) * inv_tex_h, \
             col)
 #define D3D8_FONT_CULLED(ly) \
       (d3d->menu_display.scissor_active \

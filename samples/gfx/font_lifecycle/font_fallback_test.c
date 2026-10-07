@@ -45,7 +45,7 @@ static void *worker(void *arg)
       for (spins = 0; spins < 5000; spins++)
       {
          const struct font_glyph *g = drv->get_glyph(handle, codes[i]);
-         if (g && g->width && g->height)
+         if (g && VIDEO_SCALE_W(g->dims) && VIDEO_SCALE_H(g->dims))
          {
             w->got++;
             break;

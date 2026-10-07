@@ -140,8 +140,7 @@ static void ct_render_missing(ct_face_t *self, uint8_t *dst,
       }
    }
 
-   glyph->width         = cell_w;
-   glyph->height        = cell_h;
+   glyph->dims          = cell_dims;
    glyph->draw_offset_x = 0;
    glyph->draw_offset_y = (int)floor(-self->cached_ascent);
    glyph->advance_x     = cell_w;
@@ -183,8 +182,7 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    CTFontGetAdvancesForGlyphs(self->font_face, (CTFontOrientation)0,
          glyphs, &advance, 1);
 
-   glyph->width         = cell_w;
-   glyph->height        = cell_h;
+   glyph->dims          = cell_dims;
    glyph->draw_offset_x = (int)ceil(bounds.origin.x);
    glyph->draw_offset_y = (int)floor(-bounds.origin.y)
       - (int)floor(self->cached_ascent) + 1;

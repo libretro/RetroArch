@@ -1802,8 +1802,8 @@ static void gxm_font_render_message(
       gxm_draw_texture_tint_part_scale(font->texture, \
             x + ((glyph)->draw_offset_x + (pen_x)) * scale, \
             y + ((glyph)->draw_offset_y + (pen_y)) * scale, \
-            (glyph)->atlas_offset_x, (glyph)->atlas_offset_y, \
-            (glyph)->width, (glyph)->height, \
+            VIDEO_SCALE_W((glyph)->atlas_pos), VIDEO_SCALE_H((glyph)->atlas_pos), \
+            VIDEO_SCALE_W((glyph)->dims), VIDEO_SCALE_H((glyph)->dims), \
             scale, \
             scale, \
             color); \

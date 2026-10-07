@@ -822,12 +822,12 @@ static void gx2_font_render_message(
          break; \
       v->pos.x        = x + (glyph)->draw_offset_x * scale; \
       v->pos.y        = y + (glyph)->draw_offset_y * scale; \
-      v->pos.width    = (glyph)->width * scale; \
-      v->pos.height   = (glyph)->height * scale; \
-      v->coord.u      = (glyph)->atlas_offset_x; \
-      v->coord.v      = (glyph)->atlas_offset_y; \
-      v->coord.width  = (glyph)->width; \
-      v->coord.height = (glyph)->height; \
+      v->pos.width    = VIDEO_SCALE_W((glyph)->dims) * scale; \
+      v->pos.height   = VIDEO_SCALE_H((glyph)->dims) * scale; \
+      v->coord.u      = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      v->coord.v      = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      v->coord.width  = VIDEO_SCALE_W((glyph)->dims); \
+      v->coord.height = VIDEO_SCALE_H((glyph)->dims); \
       v->color        = color; \
       v++; \
       x              += (glyph)->advance_x * scale; \

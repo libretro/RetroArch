@@ -239,11 +239,11 @@ static int glyph_lands(uint32_t code, float pen_x, float base_y,
       (*missing)++;
       return 0;
    }
-   for (v = 0; v < g->height; v++)
-      for (u = 0; u < g->width; u++)
+   for (v = 0; v < VIDEO_SCALE_H(g->dims); v++)
+      for (u = 0; u < VIDEO_SCALE_W(g->dims); u++)
       {
-         uint8_t a = atlas->buffer[(size_t)(g->atlas_offset_y + v) * atlas->width
-               + g->atlas_offset_x + u];
+         uint8_t a = atlas->buffer[(size_t)(VIDEO_SCALE_H(g->atlas_pos) + v)
+               * atlas->width + VIDEO_SCALE_W(g->atlas_pos) + u];
          int sx    = (int)floorf(pen_x + g->draw_offset_x + u + 0.5f);
          int sy    = (int)floorf(base_y - g->draw_offset_y - v - 0.5f);
          if (!a)

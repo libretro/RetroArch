@@ -186,12 +186,12 @@ static void sdl_render_msg(
          int base_x, base_y, max_width, max_height; \
          uint32_t             *out      = NULL; \
          const uint8_t             *src = NULL; \
-         glyph_width  = glyph->width; \
-         glyph_height = glyph->height; \
+         glyph_width  = VIDEO_SCALE_W(glyph->dims); \
+         glyph_height = VIDEO_SCALE_H(glyph->dims); \
          base_x       = (line_x + (pen_x)) + glyph->draw_offset_x; \
          base_y       = (line_y + (pen_y)) + glyph->draw_offset_y; \
-         src          = atlas->buffer + glyph->atlas_offset_x \
-            + glyph->atlas_offset_y * atlas->width; \
+         src          = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) \
+            + VIDEO_SCALE_H(glyph->atlas_pos) * atlas->width; \
          if (base_x < 0) \
          { \
             src         -= base_x; \

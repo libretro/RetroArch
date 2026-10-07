@@ -70,11 +70,11 @@ static int glyph_lands(uint32_t code, int pen_x, int pen_y, int *missing)
       (*missing)++;
       return 0;
    }
-   for (v = 0; v < g->height; v++)
-      for (u = 0; u < g->width; u++)
+   for (v = 0; v < VIDEO_SCALE_H(g->dims); v++)
+      for (u = 0; u < VIDEO_SCALE_W(g->dims); u++)
       {
-         if (!atlas->buffer[(size_t)(g->atlas_offset_y + v) * atlas->width
-               + g->atlas_offset_x + u])
+         if (!atlas->buffer[(size_t)(VIDEO_SCALE_H(g->atlas_pos) + v)
+               * atlas->width + VIDEO_SCALE_W(g->atlas_pos) + u])
             continue;
          if (lit(pen_x + g->draw_offset_x + (int)u, pen_y + g->draw_offset_y + (int)v))
             found++;

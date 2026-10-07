@@ -1165,9 +1165,10 @@ static int exynos_render_msg(struct exynos_video *vid,
          base_y       = (line_y + (pen_y)) + glyph->draw_offset_y; \
          max_width    = dst->width - base_x; \
          max_height   = dst->height - base_y; \
-         glyph_width  = glyph->width; \
-         glyph_height = glyph->height; \
-         src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width; \
+         glyph_width  = VIDEO_SCALE_W(glyph->dims); \
+         glyph_height = VIDEO_SCALE_H(glyph->dims); \
+         src = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) \
+            + VIDEO_SCALE_H(glyph->atlas_pos) * atlas->width; \
          if (base_x < 0) \
          { \
             src -= base_x; \

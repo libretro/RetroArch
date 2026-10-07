@@ -2506,12 +2506,12 @@ static void d3d12_font_render_msg(
          /* Position and texcoord once, shared with the shadow */ \
          gx  = (lx + ((glyph)->draw_offset_x * scale)) * inv_vp_w; \
          gy  = (ly + ((glyph)->draw_offset_y * scale)) * inv_vp_h; \
-         gw  = (glyph)->width  * scale * inv_vp_w; \
-         gh  = (glyph)->height * scale * inv_vp_h; \
-         gu  = (glyph)->atlas_offset_x * inv_tex_w; \
-         gv  = (glyph)->atlas_offset_y * inv_tex_h; \
-         gtw = (glyph)->width          * inv_tex_w; \
-         gth = (glyph)->height         * inv_tex_h; \
+         gw  = VIDEO_SCALE_W((glyph)->dims) * scale * inv_vp_w; \
+         gh  = VIDEO_SCALE_H((glyph)->dims) * scale * inv_vp_h; \
+         gu  = VIDEO_SCALE_W((glyph)->atlas_pos) * inv_tex_w; \
+         gv  = VIDEO_SCALE_H((glyph)->atlas_pos) * inv_tex_h; \
+         gtw = VIDEO_SCALE_W((glyph)->dims) * inv_tex_w; \
+         gth = VIDEO_SCALE_H((glyph)->dims) * inv_tex_h; \
          if (has_shadow) \
          { \
             v->pos.x           = gx + shadow_dx; \

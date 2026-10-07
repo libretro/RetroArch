@@ -25,7 +25,7 @@ static int drawn(const font_renderer_driver_t *drv, void *h, uint32_t code)
    for (spins = 0; spins < 5000; spins++)
    {
       const struct font_glyph *g = drv->get_glyph(h, code);
-      if (g && g->width && g->height)
+      if (g && VIDEO_SCALE_W(g->dims) && VIDEO_SCALE_H(g->dims))
          return 1;
       usleep(1000);
    }
