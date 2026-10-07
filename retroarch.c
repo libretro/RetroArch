@@ -5752,6 +5752,10 @@ bool command_event(enum event_command cmd, void *data)
                         video_driver_window_dims(new_fullscreen_state),
                         new_fullscreen_state))
                command_event(CMD_EVENT_REINIT, NULL);
+            /* The key that asked for this is likely still down, and the
+             * window loses the focus for a moment either way: it is not
+             * to ask again when the focus is back. */
+            input_driver_hold_over_window_change();
             /* fullscreen hides the cursor, and exclusive fullscreen
              * grabs; leaving it lets go of that and of nothing else */
             input_pointer_capture_set_fullscreen(video_fullscreen,

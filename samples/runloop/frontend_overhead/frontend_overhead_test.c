@@ -3693,6 +3693,63 @@ static void lane_quit_combo(void)
 #endif
 }
 
+/* A hotkey held through a video driver restart is one press.
+ *
+ * F toggles fullscreen, which restarts the driver and may replace the
+ * window. The new window is not focused the moment it is made, and an
+ * input driver that reads no keys without the focus gives F as up for
+ * a frame, then as down again: a press, and another restart, for as
+ * long as the key stays down. After a restart nothing counts until the
+ * window has had the focus for a few checks (or half a second has
+ * passed), and what is down then is held back until it is let go. */
+static void lane_restart_hold(void)
+{
+   input_bits_t bits;
+   unsigned had = failures;
+   unsigned i, counted = 0;
+   bool enabler_kept;
+
+   input_driver_hold_over_window_change();
+
+   /* the frame the key reads as up, with the hotkey enabler held */
+   BIT256_CLEAR_ALL(bits);
+   BIT256_SET(bits, RARCH_ENABLE_HOTKEY);
+   input_driver_hold_bits(&bits);
+   enabler_kept = BIT256_GET(bits, RARCH_ENABLE_HOTKEY) != 0;
+   CHECK(enabler_kept, "restart hold: the hotkey enabler was held back");
+
+   /* ... and the key down again, kept down past the wait whether the
+    * harness's window has the focus or not */
+   for (i = 0; i < 300; i++)
+   {
+      BIT256_CLEAR_ALL(bits);
+      BIT256_SET(bits, RARCH_FULLSCREEN_TOGGLE_KEY);
+      input_driver_hold_bits(&bits);
+      if (BIT256_GET(bits, RARCH_FULLSCREEN_TOGGLE_KEY))
+         counted++;
+      retro_sleep(2);
+   }
+   CHECK(counted == 0,
+         "restart hold: a key held through a restart counted as pressed");
+
+   /* let go, and pressed again: that one counts */
+   BIT256_CLEAR_ALL(bits);
+   input_driver_hold_bits(&bits);
+   BIT256_CLEAR_ALL(bits);
+   BIT256_SET(bits, RARCH_FULLSCREEN_TOGGLE_KEY);
+   input_driver_hold_bits(&bits);
+   CHECK(BIT256_GET(bits, RARCH_FULLSCREEN_TOGGLE_KEY) != 0,
+         "restart hold: a press after the key was let go did not count");
+   BIT256_CLEAR_ALL(bits);
+   input_driver_hold_bits(&bits);
+   input_driver_hold_clear();
+
+   if (failures == had)
+      printf("[pass] restart hold: a hotkey held through a video driver"
+            " restart does not count again until it has been let go, and"
+            " then does; the hotkey enabler is not held back\n");
+}
+
 /* What a port's mapping is made from is counted each time it changes,
  * so that what is compiled from it can tell without looking at a bind.
  * Each way of changing it counts; frames in which nothing changes do
@@ -5188,6 +5245,7 @@ int main(int argc, char *argv[])
       lane_binds_change_count();
       lane_mapping_changes();
       lane_quit_combo();
+      lane_restart_hold();
       lane_sticks_read_once();
       lane_aim_stick();
       lane_core_view();

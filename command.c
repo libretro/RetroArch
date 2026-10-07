@@ -3625,6 +3625,10 @@ void command_event_reinit(const int flags)
 
    video_driver_reinit(flags);
 
+   /* The hotkey that asked for this may still be down, and is not to
+    * ask again when the new window gets the focus. */
+   input_driver_hold_over_window_change();
+
    /* Restore the snapshot and ask the new driver to replay it so the
     * paused-core background appears in the first post-reinit frame.
     * The buffer stays live across subsequent frame_cb calls from the

@@ -635,6 +635,15 @@ struct input_keyboard_ctx_wait
    input_keyboard_press_t cb;
 };
 
+/* input_driver_state_t.held_bits_phase: the hold's phase, and beside it
+ * two bits for a hotkey found down while input waits to be let go -
+ * found this frame, and found the frame before. The first becomes the
+ * second each frame (input_driver_hold_bits()), so the mark lasts as
+ * long as the hotkey is found, and one frame more. */
+#define INPUT_HELD_PHASE       0x3f
+#define INPUT_HELD_HOTKEY      0x80
+#define INPUT_HELD_HOTKEY_WAS  0x40
+
 typedef struct
 {
 #if defined(HAVE_NETWORKING) && defined(HAVE_NETWORKGAMEPAD)
@@ -803,6 +812,10 @@ typedef struct
     * bits and the hotkeys: 1 takes what is down at the next frame, 2
     * holds it back, 0 is no hold. */
    input_bits_t held_bits;
+   /* The hold's phase in the low bits (INPUT_HELD_PHASE), and the mark
+    * of a hotkey found down while input waited to be let go
+    * (INPUT_HELD_HOTKEY): either keeps the wait up, and the one test
+    * there is for the phase sees both. */
    uint8_t held_bits_phase;
 
    /* The frame's view of each port's RetroPad buttons, as a core is
@@ -1175,6 +1188,11 @@ bool input_driver_overlay_active_page(void);
  * once. For the menu as it opens and closes, a bind or a text entry
  * ends, or the mouse clicks: the press that did it does nothing more. */
 void input_driver_hold_held_input(void);
+
+/* The window has changed - fullscreen toggled, the video driver
+ * restarted: what is down is not to count again until it has been let
+ * go. See the definition. */
+void input_driver_hold_over_window_change(void);
 /* Nothing is held back any more: for the menu going away. */
 void input_driver_hold_clear(void);
 /* The run loop's bits for the frame: what the hold holds back is taken

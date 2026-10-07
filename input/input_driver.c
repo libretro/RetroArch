@@ -10598,8 +10598,24 @@ static void input_keys_pressed(
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))
          {
             any_pressed = true;
+            /* Down while input waits to be let go: passed over, as it
+             * was - and the wait goes on for it. The wait ended when
+             * the RetroPad's buttons were up, whatever the hotkeys
+             * were doing, and a hotkey still down then was taken as
+             * pressed: F held through a change to fullscreen changed
+             * it back. Not the enabler, which is held to reach the
+             * others. */
             if (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE)
+            {
+#ifdef HAVE_MENU
+               /* kept in the hold's own byte, which the wait is armed
+                * from each frame: nothing is added to a frame on which
+                * no hotkey is down under a wait */
+               if (i != RARCH_ENABLE_HOTKEY)
+                  input_st->held_bits_phase |= INPUT_HELD_HOTKEY;
+#endif
                continue;
+            }
 
             if (libretro_hotkey_set || keyboard_hotkey_set)
             {
@@ -11230,6 +11246,36 @@ void input_driver_hold_clear(void)
    input_driver_st.held_bits_phase = 0;
 }
 
+/* A hotkey that changes the window - fullscreen, with F - fired again
+ * when the change was made, with the key still down. Going to
+ * fullscreen and back restyles the window or replaces it, and either
+ * way it is without the focus for a moment. An input driver that reads
+ * no keys without the focus (X11 resets them) gave the key as up for a
+ * frame and then as down again, which is a press. Held a little longer
+ * than the change takes, the key toggled fullscreen again and again:
+ * eight times in a second under a test server.
+ *
+ * So after such a change nothing counts until the window has been found
+ * focused on three checks running - one for the focus, and a poll or
+ * two for the keys to be read with it - or half a second has passed
+ * for a window that is not going to be; and what is down then is held
+ * back until it is let go, as for the menu. The hotkeys and the menu's
+ * buttons only: what the core reads is left alone, and a direction
+ * held through a restart is still held after it. */
+/* The checks in a row that found the window focused, and when the wait
+ * for that is given up. Here and not in the input state: they are
+ * looked at for a few frames after a change of window and never on any
+ * other, and in the state they moved what the poll clears every frame. */
+static uint8_t input_held_focused;
+static retro_time_t input_held_deadline;
+
+void input_driver_hold_over_window_change(void)
+{
+   input_driver_st.held_bits_phase = 3;
+   input_held_focused              = 0;
+   input_held_deadline             = cpu_features_get_time_usec() + 500000;
+}
+
 /* The first frame takes what is down; after that each bit drops out of
  * the hold as it is let go. The hotkey-enable button is never held
  * back: holding it is how other hotkeys are reached. */
@@ -11237,16 +11283,49 @@ bool input_driver_hold_bits(input_bits_t *bits)
 {
    input_driver_state_t *input_st = &input_driver_st;
    bool held                      = false;
-   unsigned w;
+   unsigned w, phase, hotkey;
 
    if (!input_st->held_bits_phase)
       return false;
-   if (input_st->held_bits_phase == 1)
+   /* The phase, apart from the hotkey's mark beside it. The mark of
+    * this frame is kept as the last frame's, which arms the wait once
+    * more; one from the frame before, not made again, goes. */
+   hotkey = (input_st->held_bits_phase & INPUT_HELD_HOTKEY)
+      ? INPUT_HELD_HOTKEY_WAS : 0;
+   phase  = input_st->held_bits_phase & INPUT_HELD_PHASE;
+   if (!phase)
+   {
+      input_st->held_bits_phase = (uint8_t)hotkey;
+      return false;
+   }
+   if (phase == 3)
+   {
+      /* after a restart: see input_driver_hold_over_window_change() */
+      if (video_driver_has_focus())
+      {
+         if (input_held_focused < 3)
+            input_held_focused++;
+      }
+      else
+         input_held_focused = 0;
+      if (     input_held_focused < 3
+            && cpu_features_get_time_usec() < input_held_deadline)
+      {
+         bool enabler = BIT256_GET_PTR(bits, RARCH_ENABLE_HOTKEY) != 0;
+         BIT256_CLEAR_ALL_PTR(bits);
+         if (enabler)
+            BIT256_SET_PTR(bits, RARCH_ENABLE_HOTKEY);
+         return true;
+      }
+      phase = 1;
+   }
+   if (phase == 1)
    {
       input_st->held_bits = *bits;
       BIT256_CLEAR(input_st->held_bits, RARCH_ENABLE_HOTKEY);
-      input_st->held_bits_phase = 2;
+      phase = 2;
    }
+   input_st->held_bits_phase = (uint8_t)(phase | hotkey);
    for (w = 0; w < ARRAY_SIZE(bits->data); w++)
    {
       input_st->held_bits.data[w] &= bits->data[w];
@@ -11255,7 +11334,7 @@ bool input_driver_hold_bits(input_bits_t *bits)
          held = true;
    }
    if (!held)
-      input_st->held_bits_phase = 0;
+      input_st->held_bits_phase = (uint8_t)hotkey;
    return held;
 }
 
