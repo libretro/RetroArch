@@ -2242,10 +2242,14 @@ extern retro_keybind_set input_autoconf_binds[MAX_USERS];
  *   its settings write through pointers they hold.
  * The frontend harness watches for a change the count missed. */
 extern retro_atomic_int_t input_binds_generation;
+extern unsigned input_keys_ports_at_poll;
 
 static INLINE void input_config_binds_changed(void)
 {
    retro_atomic_fetch_add_int(&input_binds_generation, 1);
+   /* what the poll made current no longer is: see
+    * input_port_keys_get() in input_driver.c */
+   input_keys_ports_at_poll = 0;
 }
 
 static INLINE unsigned input_config_binds_generation(void)

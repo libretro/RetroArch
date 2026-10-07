@@ -4561,6 +4561,86 @@ static void lane_mask_and_buttons(void)
 #endif
 }
 
+/* A port's keys are made current once, at the poll, and the reads of
+ * the frame take them as they are without asking whether they still
+ * are. A bind changing is what makes them not: from then until the
+ * next poll a read has to ask again, or it answers from the binds as
+ * they were. Held to that with a keyboard that has one key down: the
+ * RetroPad's B on that key reads; moved to another key after a poll,
+ * the read that follows does not, and moved back it does; and the key
+ * let go is seen at the next poll. */
+static bool kc_g_down;
+static void kc_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data; (void)bind;
+   for (i = 0; i < count; i++)
+      if (port == 0 && kc_g_down && keys[i] == RETROK_g)
+         down[i >> 5] |= (1u << (i & 31));
+}
+
+static void lane_keys_current(void)
+{
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_t *saved_input    = input_st->current_driver;
+   static input_driver_t kc_input;
+   struct retro_keybind *b        = &input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind saved_b   = *b;
+   unsigned had                   = failures;
+#define KC_B() ((input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, \
+            RETRO_DEVICE_ID_JOYPAD_MASK) >> RETRO_DEVICE_ID_JOYPAD_B) & 1)
+
+   if (!saved_input)
+   {
+      CHECK(false, "keys current: no input driver");
+      return;
+   }
+   kc_input                 = *saved_input;
+   kc_input.keys_down       = kc_keys_down;
+   input_st->current_driver = &kc_input;
+   RETRO_KEYBIND_SET_KEY(b, RETROK_g);
+   RETRO_KEYBIND_SET_VALID(b, true);
+   binds_written_by_a_lane();
+   kc_g_down = true;
+   run_loop_frames(2);
+
+   input_driver_poll();
+   CHECK(KC_B(), "keys current: B on a key that is down does not read");
+   CHECK(KC_B(), "keys current: ... nor at a second read in the frame");
+
+   /* The bind changes after a poll and before the frame's first read.
+    * (A read later in the frame would not do: a port's pad is put
+    * together for the core once a frame, at its first read, and the
+    * reads after it are given that.) */
+   input_driver_poll();
+   RETRO_KEYBIND_SET_KEY(b, RETROK_h);
+   binds_written_by_a_lane();
+   CHECK(!KC_B(), "keys current: B moved to a key that is not down still reads"
+         " at the first read after: it went by the binds as they were at the poll");
+   input_driver_poll();
+   RETRO_KEYBIND_SET_KEY(b, RETROK_g);
+   binds_written_by_a_lane();
+   CHECK(KC_B(), "keys current: B moved back to the key that is down does not"
+         " read at the first read after");
+
+   /* the key let go: the next poll has it */
+   kc_g_down = false;
+   input_driver_poll();
+   CHECK(!KC_B(), "keys current: the key let go still reads after a poll");
+
+   *b = saved_b;
+   input_st->current_driver = saved_input;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+#undef KC_B
+
+   if (failures == had)
+      printf("[pass] keys current: a port's keys are the poll's, and a bind"
+            " changed since the poll is the bind a read goes by\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -5888,6 +5968,7 @@ int main(int argc, char *argv[])
       lane_sticks_read_once();
       lane_stick_sources();
       lane_mask_and_buttons();
+      lane_keys_current();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

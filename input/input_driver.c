@@ -235,6 +235,9 @@ const unsigned input_config_bind_order[24] = {
 retro_keybind_set input_config_binds[MAX_USERS];
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 retro_atomic_int_t input_binds_generation;
+/* The ports whose keys the last poll made current: see
+ * input_port_keys_get(). Taken back to none by a change to a bind. */
+unsigned input_keys_ports_at_poll;
 input_bind_label_set input_config_bind_labels[MAX_USERS];
 input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
@@ -1944,14 +1947,47 @@ static void input_port_keys_refresh(input_port_keys_t *k,
    k->poll_gen     = input_poll_generation;
 }
 
+/* A port's keys, current.
+ *
+ * Every read of them asked whether they still were: the binds' change
+ * count against the one they were made at, and the poll's against the
+ * one their keys are from - two loads and two compares, some fifty
+ * times a frame. The poll makes the keys of every port in use current
+ * itself, once (input_port_keys_at_poll()), and says how many ports
+ * that was; a read of one of those asks nothing more. A bind changing
+ * takes the count back to none (input_config_binds_changed()), so
+ * that reads go back to asking until the next poll. */
 static INLINE const input_port_keys_t *input_port_keys_get(
       input_driver_t *input, void *data, unsigned port)
 {
    input_port_keys_t *k = &input_port_keys[port];
-   unsigned gen         = input_config_binds_generation() + 1;
-   if (k->binds_gen != gen || k->poll_gen != input_poll_generation)
-      input_port_keys_refresh(k, input, data, port, gen);
+   if (port >= input_keys_ports_at_poll)
+   {
+      unsigned gen      = input_config_binds_generation() + 1;
+      if (k->binds_gen != gen || k->poll_gen != input_poll_generation)
+         input_port_keys_refresh(k, input, data, port, gen);
+   }
    return k;
+}
+
+/* At the poll, after the driver's own: the keys of the ports in use,
+ * made current for the frame's reads. */
+static void input_port_keys_at_poll(input_driver_t *input, void *data,
+      unsigned ports)
+{
+   unsigned port;
+   unsigned gen = input_config_binds_generation() + 1;
+
+   input_keys_ports_at_poll = 0;
+   /* a driver that gives no list of keys keeps none */
+   if (!input || !input->keys_down)
+      return;
+   for (port = 0; port < ports; port++)
+      input_port_keys_refresh(&input_port_keys[port], input, data, port, gen);
+   /* a bind changed while that was done, from another thread: the
+    * reads ask, as before, and the next poll has it */
+   if (input_config_binds_generation() + 1 == gen)
+      input_keys_ports_at_poll = ports;
 }
 
 /* The bit a mouse button bound to a control has in a published frame;
@@ -12011,8 +12047,10 @@ void input_driver_poll_devices(void)
       joypad->poll();
    if (input_st->current_driver && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
-   /* what was asked of the driver at the poll before is stale */
+   /* what was asked of the driver at the poll before is stale, and
+    * nothing is made current here: reads ask until a full poll */
    input_poll_generation++;
+   input_keys_ports_at_poll = 0;
 }
 
 /* A controller's profile is looked up again, as if it had just been
@@ -12189,6 +12227,8 @@ void input_driver_poll(void)
    if (input && input->poll)
       input->poll(input_st->current_data);
    input_poll_generation++;
+   input_port_keys_at_poll(input_st->current_driver,
+         input_st->current_data, max_users);
 
 #ifdef HAVE_THREADS
    /* the keys another thread has reported since the last poll */
