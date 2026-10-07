@@ -99,7 +99,7 @@
          while (fl_scan < fl_delim)
          {
             const struct font_glyph *fl_g;
-            uint32_t fl_code = utf8_walk(&fl_scan);
+            uint32_t fl_code = utf8_walk_inline(&fl_scan);
 
             if (!(fl_g = get_glyph(font_data, fl_code)))
                if (!(fl_g = glyph_q))
@@ -120,7 +120,7 @@
       while (fl_scan < fl_delim)
       {
          const struct font_glyph *fl_g;
-         uint32_t fl_code = utf8_walk(&fl_scan);
+         uint32_t fl_code = utf8_walk_inline(&fl_scan);
 
          if (!(fl_g = get_glyph(font_data, fl_code)))
             if (!(fl_g = glyph_q))

@@ -100,6 +100,20 @@ const char *utf8skip(const char *str, size_t chars);
  **/
 uint32_t utf8_walk(const char **string);
 
+/* utf8_walk with its ASCII case inline, for loops that walk text a
+ * codepoint at a time every frame: a call per character is most of
+ * what such a loop costs when the text is ASCII. */
+static INLINE uint32_t utf8_walk_inline(const char **string)
+{
+   const uint8_t *s = (const uint8_t*)*string;
+   if (*s < 0x80)
+   {
+      *string = (const char*)(s + 1);
+      return *s;
+   }
+   return utf8_walk(string);
+}
+
 /**
  * utf16_to_char_string:
  **/

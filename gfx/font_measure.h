@@ -50,7 +50,7 @@
    while (fm_s < fm_end && *fm_s)
    {
       const struct font_glyph *fm_g;
-      uint32_t fm_code = utf8_walk(&fm_s);
+      uint32_t fm_code = utf8_walk_inline(&fm_s);
 
       if (!(fm_g = get_glyph(font_data, fm_code)))
          if (!(fm_g = glyph_q))
