@@ -174,6 +174,7 @@ GENERIC_DEFERRED_PUSH(deferred_push_video_synchronization_settings_list,    DISP
 GENERIC_DEFERRED_PUSH(deferred_push_video_output_settings_list,    DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_scaling_settings_list,    DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_video_hdr_settings_list,        DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST)
+GENERIC_DEFERRED_PUSH(deferred_push_video_stereo_settings_list,     DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_crt_switchres_settings_list,    DISPLAYLIST_CRT_SWITCHRES_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_configuration_settings_list,    DISPLAYLIST_CONFIGURATION_SETTINGS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_saving_settings_list,           DISPLAYLIST_SAVING_SETTINGS_LIST)
@@ -560,6 +561,7 @@ GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list, PUSH_DEFAULT, DIS
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_special, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_SPECIAL)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_RESOLUTION)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_crt_super_resolution, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION)
+GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_headset_refresh_rate, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_HEADSET_REFRESH_RATE)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_audio_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_AUDIO_DEVICE)
 GENERIC_DEFERRED_PUSH_GENERAL(deferred_push_dropdown_box_list_midi_device, PUSH_DEFAULT, DISPLAYLIST_DROPDOWN_LIST_MIDI_DEVICE)
 #ifdef HAVE_MICROPHONE
@@ -615,6 +617,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_SPECIAL, deferred_push_dropdown_box_list_special},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_RESOLUTION, deferred_push_dropdown_box_list_resolution},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_CRT_SUPER_RESOLUTION, deferred_push_dropdown_box_list_crt_super_resolution},
+      {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE, deferred_push_dropdown_box_list_headset_refresh_rate},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_AUDIO_DEVICE, deferred_push_dropdown_box_list_audio_device},
       {MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST_MIDI_DEVICE, deferred_push_dropdown_box_list_midi_device},
 #ifdef HAVE_MICROPHONE
@@ -736,6 +739,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list},
+      {MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SETTINGS_LIST, deferred_push_audio_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_AUDIO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_audio_synchronization_settings_list},
@@ -948,6 +952,7 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_SYNCHRONIZATION_SETTINGS_LIST, deferred_push_video_synchronization_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_OUTPUT_SETTINGS_LIST, deferred_push_video_output_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_HDR_SETTINGS_LIST, deferred_push_video_hdr_settings_list },
+         { MENU_ENUM_LABEL_DEFERRED_VIDEO_STEREO_SETTINGS_LIST, deferred_push_video_stereo_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_VIDEO_SCALING_SETTINGS_LIST, deferred_push_video_scaling_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_CRT_SWITCHRES_SETTINGS_LIST, deferred_push_crt_switchres_settings_list },
          { MENU_ENUM_LABEL_DEFERRED_CONFIGURATION_SETTINGS_LIST, deferred_push_configuration_settings_list },

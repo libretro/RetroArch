@@ -131,6 +131,7 @@ void android_app_set_window_settings(bool notch_write_over,
 #endif
 #include "../retroarch.h"
 #include "../gfx/video_display_server.h"
+#include "../gfx/video_views.h"
 #ifdef HAVE_MODELINE
 #include "../gfx/video_crt_switch.h"
 #endif
@@ -3437,6 +3438,155 @@ static size_t setting_get_string_representation_video_hdr_subpixel_layout(
       }
    }
    return 0;
+}
+
+static size_t setting_get_string_representation_video_stereo_mode(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_STEREO_MODE_2D:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_2D), len);
+         case VIDEO_STEREO_MODE_SBS_HALF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF), len);
+         case VIDEO_STEREO_MODE_SBS_FULL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL), len);
+         case VIDEO_STEREO_MODE_TOP_BOTTOM:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM), len);
+         case VIDEO_STEREO_MODE_ANAGLYPH:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH), len);
+         case VIDEO_STEREO_MODE_INTERLACED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_screen_layout(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_SCREEN_LAYOUT_VERTICAL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL), len);
+         case VIDEO_SCREEN_LAYOUT_HORIZONTAL:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_openxr_controllers(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_CONTROLLERS_COMBINED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED), len);
+         case VIDEO_OPENXR_CONTROLLERS_SEPARATE:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_openxr_laser(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_LASER_AUTO:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO), len);
+         case VIDEO_OPENXR_LASER_ALWAYS:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS), len);
+         case VIDEO_OPENXR_LASER_OFF:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF), len);
+      }
+   }
+   return 0;
+}
+
+static size_t setting_get_string_representation_video_openxr_refresh_rate(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (!setting)
+      return 0;
+   switch (*setting->value.target.unsigned_integer)
+   {
+      case VIDEO_OPENXR_REFRESH_AUTO:
+         return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO), len);
+      case VIDEO_OPENXR_REFRESH_HEADSET:
+         return strlcpy(s, msg_hash_to_str(
+                  MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET), len);
+   }
+   return snprintf(s, len, "%u Hz", *setting->value.target.unsigned_integer);
+}
+
+static int setting_action_ok_video_openxr_refresh_rate(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   if (!setting)
+      return -1;
+   generic_action_ok_displaylist_push(
+         NULL, NULL, NULL, 0, idx, 0,
+         ACTION_OK_DL_DROPDOWN_BOX_LIST_HEADSET_REFRESH_RATE);
+   return 0;
+}
+
+/* The next or previous choice, round; a rate the headset doesn't list
+ * steps to the first or the last. */
+static int setting_uint_step_video_openxr_refresh_rate(
+      rarch_setting_t *setting, bool forward)
+{
+   unsigned values[2 + VIDEO_HEADSET_MAX_RATES];
+   unsigned i, n, cur;
+   if (!setting)
+      return -1;
+   n   = video_driver_headset_rate_choices(values,
+         sizeof(values) / sizeof(values[0]));
+   cur = *setting->value.target.unsigned_integer;
+   if (!n)
+      return -1;
+   for (i = 0; i < n && values[i] != cur; i++) { }
+   if (i == n)
+      i = forward ? n - 1 : 0;
+   i = forward ? (i + 1) % n : (i + n - 1) % n;
+   *setting->value.target.unsigned_integer = values[i];
+   return 0;
+}
+
+static int setting_uint_action_left_video_openxr_refresh_rate(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_refresh_rate(setting, false);
+}
+
+static int setting_uint_action_right_video_openxr_refresh_rate(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_uint_step_video_openxr_refresh_rate(setting, true);
 }
 
 static size_t setting_get_string_representation_state_slot(
@@ -12502,6 +12652,16 @@ static const setting_desc_t hdr_desc2[] = {
 #include "../settings/settings_def_video_hdr_toggles.h"
 };
 
+static const setting_desc_t stereo_desc[] = {
+/* GENERATED: rows come from settings_def_video_stereo.h in order. */
+#include "../settings/settings_def_video_stereo.h"
+};
+
+static const setting_desc_t headset_desc[] = {
+/* GENERATED: rows come from settings_def_video_headset.h in order. */
+#include "../settings/settings_def_video_headset.h"
+};
+
 static const setting_desc_t vid_desc_20[] = {
 /* GENERATED: rows come from settings_def_screen_brightness.h in order. */
 #include "../settings/settings_def_screen_brightness.h"
@@ -15411,6 +15571,18 @@ static void settings_build_video(
 
             END_SUB_GROUP(list, list_info, parent_group);
          }
+
+         START_SUB_GROUP(list, list_info, "Stereo 3D & Screens", &group_info, &subgroup_info, parent_group);
+
+         ADD_DESC(stereo_desc);
+
+         END_SUB_GROUP(list, list_info, parent_group);
+
+         START_SUB_GROUP(list, list_info, "Headset", &group_info, &subgroup_info, parent_group);
+
+         ADD_DESC(headset_desc);
+
+         END_SUB_GROUP(list, list_info, parent_group);
 
          START_SUB_GROUP(
                list,

@@ -9182,6 +9182,11 @@ unsigned menu_displaylist_build_list(
                /* Hidden items */
                else if (key == RARCH_OVERLAY_NEXT)
                   continue;
+#ifndef HAVE_OPENXR
+               else if (     key == RARCH_HEADSET_RECENTER
+                          || key == RARCH_LASER_POINTER_TOGGLE)
+                  continue;
+#endif
                /* Show combo entries before normal binds */
                else if (key == RARCH_MENU_TOGGLE)
                {
@@ -9750,6 +9755,7 @@ unsigned menu_displaylist_build_list(
                   { MENU_ENUM_LABEL_VIDEO_FULLSCREEN_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_WINDOWED_MODE_SETTINGS, PARSE_ACTION, false },
                   { MENU_ENUM_LABEL_VIDEO_HDR_SETTINGS, PARSE_ACTION, false },
+                  { MENU_ENUM_LABEL_VIDEO_STEREO_SETTINGS, PARSE_ACTION, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_6, (unsigned)ARRAY_SIZE(dl_rows_6));
@@ -10454,6 +10460,47 @@ unsigned menu_displaylist_build_list(
                   menu_st->selection_ptr    = i;
                }
             }
+         }
+         break;
+      case DISPLAYLIST_DROPDOWN_LIST_HEADSET_REFRESH_RATE:
+         menu_entries_clear(list);
+         {
+            unsigned values[2 + VIDEO_HEADSET_MAX_RATES];
+            unsigned i, n, current;
+            rarch_setting_t *setting = menu_setting_find_enum(
+                  MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE);
+
+            if (!setting)
+               break;
+            current = setting_uint_get(setting);
+            n       = video_driver_headset_rate_choices(values,
+                  sizeof(values) / sizeof(values[0]));
+            /* Each row carries its value; its name is the setting's own. */
+            for (i = 0; i < n; i++)
+            {
+               char val_d[16];
+               char val_s[NAME_MAX_LENGTH];
+               setting_uint_set(setting, values[i]);
+               setting->actions->repr(setting, val_s, sizeof(val_s));
+               snprintf(val_d, sizeof(val_d), "%u", values[i]);
+               if (menu_entries_append(list,
+                        val_s,
+                        val_d,
+                        MENU_ENUM_LABEL_NO_ITEMS,
+                        MENU_SETTING_DROPDOWN_ITEM_HEADSET_REFRESH_RATE,
+                        values[i], 0, NULL))
+                  count++;
+
+               if (values[i] == current)
+               {
+                  menu_file_list_cbs_t *cbs = (menu_file_list_cbs_t*)
+                     list->list[i].actiondata;
+                  if (cbs)
+                     cbs->checked           = true;
+                  menu_st->selection_ptr    = i;
+               }
+            }
+            setting_uint_set(setting, current);
          }
          break;
       case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
@@ -12138,6 +12185,57 @@ unsigned menu_displaylist_build_list(
                }
             }
          }
+         break;
+      case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
+#ifdef HAVE_OPENXR
+         /* A headset gives each eye its own image (Vulkan only). */
+         if (     !settings->bools.video_openxr_enable
+               || !string_is_equal(settings->arrays.video_driver, "vulkan"))
+#endif
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_STEREO_MODE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_STEREO_SWAP_EYES,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_VIDEO_SCREEN_LAYOUT,
+                  PARSE_ONLY_UINT, false) == 0)
+            count++;
+#ifdef HAVE_OPENXR
+         /* Headset output is the Vulkan driver's. */
+         if (string_is_equal(settings->arrays.video_driver, "vulkan"))
+         {
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH,
+                     PARSE_ONLY_FLOAT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_VIDEO_OPENXR_LASER,
+                     PARSE_ONLY_UINT, false) == 0)
+               count++;
+         }
+#endif
          break;
       case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          {
@@ -16652,6 +16750,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_VIDEO_WINDOWED_MODE_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_OUTPUT_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_HDR_SETTINGS_LIST:
+         case DISPLAYLIST_VIDEO_STEREO_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SYNCHRONIZATION_SETTINGS_LIST:
          case DISPLAYLIST_VIDEO_SCALING_SETTINGS_LIST:
          case DISPLAYLIST_OPTIONS_DISK:
@@ -16674,6 +16773,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_NETWORK_INFO:
          case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
          case DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION:
+         case DISPLAYLIST_DROPDOWN_LIST_HEADSET_REFRESH_RATE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
          case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:
@@ -16770,6 +16870,7 @@ static bool menu_displaylist_ctl_internal(
                   case DISPLAYLIST_ADD_CONTENT_LIST:
                   case DISPLAYLIST_DROPDOWN_LIST_RESOLUTION:
                   case DISPLAYLIST_DROPDOWN_LIST_CRT_SUPER_RESOLUTION:
+                  case DISPLAYLIST_DROPDOWN_LIST_HEADSET_REFRESH_RATE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_DEFAULT_CORE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_LABEL_DISPLAY_MODE:
                   case DISPLAYLIST_DROPDOWN_LIST_PLAYLIST_RIGHT_THUMBNAIL_MODE:

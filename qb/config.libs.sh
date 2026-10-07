@@ -890,6 +890,10 @@ else
    check_lib '' VULKAN -lvulkan vkCreateInstance
 fi
 
+check_platform Linux OPENXR 'OpenXR is' true
+check_enabled VULKAN OPENXR OpenXR 'Vulkan is' false
+check_enabled THREADS OPENXR OpenXR 'Threads are' false
+
 if [ "$HAVE_MENU" != 'no' ]; then
    if [ "$HAVE_OPENGL" = 'no' ]      &&
       [ "$HAVE_OPENGL1" = 'no' ]     &&

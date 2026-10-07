@@ -1,0 +1,13 @@
+{
+    "file_format_version": "1.0.0",
+    "api_layer": {
+        "name": "XR_APILAYER_RETROARCH_test_frame",
+        "library_path": "./libxr_test_layer.so",
+        "api_version": "1.0",
+        "implementation_version": "1",
+        "description": "The test recorder, offering the Steam Frame's controller profile as its runtime does",
+        "instance_extensions": [
+            { "name": "XR_VALVE_frame_controller_interaction", "extension_version": "1" }
+        ]
+    }
+}

@@ -1871,6 +1871,17 @@ size_t input_config_get_device_name_size(unsigned port);
 
 unsigned input_driver_lightgun_id_convert(unsigned id);
 
+#ifdef HAVE_OPENXR
+/* The Analog to Digital mode user port's sticks follow: none while the
+ * core reads that port's sticks, unless the mode is forced. */
+unsigned input_driver_analog_dpad_mode(unsigned port);
+
+/* The RetroPad buttons an Analog to Digital mode makes of analog (left
+ * x, left y, right x, right y). */
+uint16_t input_driver_analog_dpad_buttons(unsigned mode,
+      const int16_t *analog, float axis_threshold);
+#endif
+
 bool input_driver_pointer_is_offscreen(int16_t x, int16_t y);
 
 bool input_driver_button_combo(

@@ -165,6 +165,10 @@
 #endif
 
 #include "input/input_remapping.h"
+#ifdef HAVE_OPENXR
+#include "input/common/input_openxr.h"
+#include "gfx/video_xr.h"
+#endif
 
 #ifdef HAVE_CHEEVOS
 #include "cheevos/cheevos.h"
@@ -363,6 +367,8 @@ struct rarch_state
    struct retro_perf_counter *perf_counters_rarch[MAX_COUNTERS];
 
    unsigned perf_ptr_rarch;
+   /* Laser Pointer's mode before its toggle turned it Off; 0 is Auto. */
+   unsigned laser_last;
    uint32_t flags;
 
    char error_string[NAME_MAX_LENGTH];
@@ -1479,6 +1485,30 @@ static float audio_driver_monitor_adjust_system_rates(
    return inp_sample_rate;
 }
 
+#ifdef HAVE_OPENXR
+/* Once per content and rate: a headset whose rate doesn't fit the core
+ * judders, and only its runtime can change the rate. */
+static void driver_headset_notice(runloop_state_t *runloop_st,
+      video_driver_state_t *video_st, unsigned fit, double input_fps)
+{
+   char msg[512];
+   size_t _len;
+   unsigned hz = (unsigned)(video_st->headset_hz + 0.5f);
+   if (     fit || !hz || input_fps <= 0.0
+         || runloop_st->current_core_type == CORE_TYPE_DUMMY
+         || (     hz        == video_st->headset_notice_hz
+               && input_fps == video_st->headset_notice_fps))
+      return;
+   video_st->headset_notice_hz  = hz;
+   video_st->headset_notice_fps = input_fps;
+   _len = snprintf(msg, sizeof(msg),
+         msg_hash_to_str(MSG_OPENXR_RATE_MISFIT), hz, input_fps);
+   RARCH_WARN("[OpenXR] %s\n", msg);
+   runloop_msg_queue_push(msg, _len, 2, 480, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+}
+#endif
+
 static void driver_adjust_system_rates(
       runloop_state_t *runloop_st,
       video_driver_state_t *video_st,
@@ -1495,11 +1525,35 @@ static void driver_adjust_system_rates(
    bool video_adaptive_vsync              = settings->bools.video_adaptive_vsync;
    unsigned sync_plan                     = RUNLOOP_SYNC_VSYNC_HOLDS
          | (vrr_runloop_enable ? RUNLOOP_SYNC_EXACT_RATE : 0);
+#ifdef HAVE_OPENXR
+   unsigned headset_fit                   = video_xr_pace_interval(
+         video_st->headset_hz, (float)input_fps, audio_max_timing_skew,
+         MAXIMUM_SWAP_INTERVAL);
+#endif
 
    /* Update video swap interval if automatic
     * switching is enabled */
    runloop_set_video_swap_interval(settings);
    video_swap_interval = runloop_get_video_swap_interval(video_swap_interval);
+
+#ifdef HAVE_OPENXR
+   /* A headset whose rate fits the core paces it in the window's place:
+    * its rate and interval stand in for the display's. */
+   video_st->headset_vsync    = settings->bools.video_vsync;
+   video_st->headset_interval = video_st->headset_vsync ? headset_fit : 0;
+   if (video_st->headset_interval)
+   {
+      video_refresh_rate    = video_st->headset_hz;
+      video_swap_interval   = video_st->headset_interval;
+      black_frame_insertion = 0;
+      shader_subframes      = 1;
+      vrr_runloop_enable    = false;
+      sync_plan             = RUNLOOP_SYNC_VSYNC_HOLDS;
+      RARCH_LOG("[Video] The headset paces the core: %.2f Hz / %u.\n",
+            video_st->headset_hz, video_st->headset_interval);
+   }
+   driver_headset_notice(runloop_st, video_st, headset_fit, input_fps);
+#endif
 
    if (input_fps > 0.0)
    {
@@ -1659,6 +1713,10 @@ void drivers_init(
 
       video_st->frame_time_count = 0;
 
+#ifdef HAVE_OPENXR
+      /* Before video makes a headset session. */
+      input_openxr_register();
+#endif
       video_driver_lock_new();
 #ifdef HAVE_VIDEO_FILTER
       video_driver_filter_free();
@@ -6165,6 +6223,42 @@ bool command_event(enum event_command cmd, void *data)
                   &settings->floats.video_refresh_rate);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 100, false, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+         }
+         break;
+      case CMD_EVENT_HEADSET_RECENTER:
+         video_driver_headset_recenter();
+         break;
+      case CMD_EVENT_LASER_POINTER_TOGGLE:
+         {
+            char msg[256];
+            size_t _len;
+            enum msg_hash_enums value =
+               MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO;
+            unsigned laser            = settings->uints.video_openxr_laser;
+            if (laser != VIDEO_OPENXR_LASER_OFF)
+            {
+               p_rarch->laser_last = laser;
+               laser               = VIDEO_OPENXR_LASER_OFF;
+            }
+            else
+               laser               = p_rarch->laser_last;
+            configuration_set_uint(settings,
+                  settings->uints.video_openxr_laser, laser);
+            if (laser == VIDEO_OPENXR_LASER_ALWAYS)
+               value = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS;
+            else if (laser == VIDEO_OPENXR_LASER_OFF)
+               value = MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF;
+            _len = snprintf(msg, sizeof(msg),
+                  msg_hash_to_str(MSG_OPENXR_LASER_POINTER),
+                  msg_hash_to_str(value));
+            RARCH_LOG("[OpenXR] %s\n", msg);
+            runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+                  MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+#ifdef HAVE_MENU
+            /* As a menu setting change does: the list shows the value. */
+            menu_st->flags |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
+                            | MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
          }
          break;
       case CMD_EVENT_NONE:

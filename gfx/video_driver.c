@@ -38,6 +38,9 @@
 
 #include "video_driver.h"
 #include "gfx_instrument.h"
+#ifdef HAVE_OPENXR
+#include "video_xr.h"
+#endif
 
 #ifdef HAVE_OPENXR
 #if defined(ANDROID)
@@ -384,11 +387,10 @@ static uint32_t video_vr_frame_flags;
 static uint32_t vr_ctx_id;
 static video_vr_content_info_t vr_saved_info;
 static bool video_driver_set_vr_content_info(video_vr_content_info_t *info);
+static int video_driver_vr_ctx(void);
 
-/* The converged core-facing surface: a view map. Only the shape the
- * headset path consumes today - two full-height eye views side by
- * side on screen 0 - reaches the sink; anything else is refused
- * honestly until a consumer lands. */
+/* The shape a headset renders natively: two full-height eye views
+ * side by side on screen 0. Any other map is drawn flat. */
 static bool video_views_is_sbs(const struct retro_video_views *v)
 {
    const struct retro_video_view *l;
@@ -418,45 +420,6 @@ static bool video_views_is_sbs(const struct retro_video_views *v)
    return true;
 }
 
-bool video_driver_set_video_views(struct retro_video_views *views)
-{
-   video_vr_content_info_t info;
-
-   if (!views || !views->num_views)
-      return video_driver_set_vr_content_info(NULL);
-   if (!video_views_is_sbs(views))
-   {
-      RARCH_ERR("[XR] Unsupported view map (%u views).\n",
-            views->num_views);
-      return false;
-   }
-
-   memset(&info, 0, sizeof(info));
-   info.stereo_native   = true;
-   info.request_flat    =
-      (views->flags & RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT) != 0;
-   info.ipd_hint_m      = views->ipd_hint_m;
-   info.reference_space = views->reference_space;
-
-   if (!video_driver_set_vr_content_info(&info))
-      return false;
-
-   views->recommended_view_width  = info.recommended_eye_width;
-   views->recommended_view_height = info.recommended_eye_height;
-   return true;
-}
-
-bool video_driver_get_video_views_status(unsigned *flags)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   *flags = 0;
-   if (     video_st->current_video
-         && video_st->current_video->get_video_views_status)
-      *flags = video_st->current_video->get_video_views_status(
-            video_st->data);
-   return true;
-}
 static bool vr_saved_valid;
 #endif
 
@@ -1549,6 +1512,19 @@ bool video_driver_translate_coord_viewport(
             / (norm_full_vp_height - 1)) - 0x8000;
    else if (mouse_y == 0)
       scaled_screen_y = -0x7fff;
+
+   {
+      video_driver_state_t *video_st     = &video_driver_st;
+      const video_views_layout_t *layout = video_driver_get_views_layout();
+      if (     layout
+            && video_views_map_point(layout,
+               &video_st->views_core, video_st->views_frame_dims,
+               mouse_x, mouse_y, report_oob, res_pos))
+      {
+         *res_screen_pos = VIDEO_POS_PACK(scaled_screen_x, scaled_screen_y);
+         return true;
+      }
+   }
 
    mouse_x           -= VIDEO_POS_X(vp->pos);
    mouse_y           -= VIDEO_POS_Y(vp->pos);
@@ -2711,6 +2687,17 @@ void video_driver_free_hw_context(void)
     * a core may present once more on its way out (one that runs ahead
     * of the frontend drains the frame it had queued). */
    video_driver_invalidate_hw_render_cache();
+   /* From here to its unload the core may wait on the device without
+    * the queue lock: no frame of ours may be in flight meanwhile. */
+   if (video_st->hw_render.context_type != RETRO_HW_CONTEXT_NONE)
+   {
+#ifdef HAVE_THREADS
+      video_thread_wait_idle();
+#endif
+      if (     video_st->data && video_st->poke
+            && video_st->poke->hw_context_destroying)
+         video_st->poke->hw_context_destroying(video_st->data);
+   }
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
    video_driver_invalidate_hw_render_cache();
@@ -2812,7 +2799,11 @@ void video_driver_free_internal(void)
     * down runs video_driver_get_viewport_info(), which calls
     * viewport_info(video_st->data, ...), and every GL, Vulkan and D3D
     * implementation dereferences that argument on entry. */
-   video_st->data = NULL;
+   video_st->data               = NULL;
+   video_st->views_driver_count = 0;
+   /* The next driver's headset, if any, is measured afresh. */
+   video_st->headset_hz         = 0.0f;
+   video_st->headset_interval   = 0;
 
    /* The poke interface is a pointer into the driver's static vtable, so
     * unlike video_st->data it survives free "working" - and
@@ -2977,6 +2968,341 @@ unsigned video_driver_get_output_dims(void)
 void video_driver_set_output_dims(unsigned dims)
 {
    retro_atomic_store_release_int(&video_driver_st.output_dims, (int)dims);
+}
+
+#ifdef HAVE_OPENXR
+/* An SBS map reaches the headset sink as native stereo; anything else
+ * clears it so the headset shows the flat frame. */
+static void video_driver_views_to_headset(struct retro_video_views *views)
+{
+   video_vr_content_info_t info;
+
+   if (video_driver_vr_ctx() == VR_CTX_NONE)
+      return;
+   if (!views->num_views || !video_views_is_sbs(views))
+   {
+      if (vr_saved_valid)
+         video_driver_set_vr_content_info(NULL);
+      return;
+   }
+
+   memset(&info, 0, sizeof(info));
+   info.stereo_native   = true;
+   info.request_flat    =
+      (views->flags & RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT) != 0;
+   info.ipd_hint_m      = views->ipd_hint_m;
+   info.reference_space = views->reference_space;
+
+   if (!video_driver_set_vr_content_info(&info))
+      return;
+
+   views->recommended_view_width  = info.recommended_eye_width;
+   views->recommended_view_height = info.recommended_eye_height;
+}
+#endif
+
+bool video_driver_set_views(struct retro_video_views *views)
+{
+   video_views_map_t map;
+   video_driver_state_t *video_st = &video_driver_st;
+   if (!views || !video_views_validate(views->views, views->num_views, &map))
+      return false;
+   if (memcmp(&map, &video_st->views, sizeof(map)))
+   {
+      video_st->views = map;
+      RARCH_LOG("[Video] View map: %u views, %u screens.\n",
+            map.num_views, map.num_screens);
+   }
+#ifdef HAVE_OPENXR
+   video_driver_views_to_headset(views);
+#endif
+   return true;
+}
+
+bool video_driver_vr_content_active(void)
+{
+#ifdef HAVE_OPENXR
+   return vr_saved_valid;
+#else
+   return false;
+#endif
+}
+
+/* Main thread only: a driver parses its shader preset for the view
+ * chains inside set_view_count. */
+static void video_driver_views_set_count(video_driver_state_t *video_st,
+      unsigned count)
+{
+   if (count == video_st->views_driver_count)
+      return;
+   if (video_st->data && video_st->poke && video_st->poke->set_view_count)
+      video_st->poke->set_view_count(video_st->data, count);
+   video_st->views_driver_count = count;
+}
+
+void video_driver_clear_views(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   video_driver_views_set_count(video_st, 0);
+   memset(&video_st->views,        0, sizeof(video_st->views));
+   memset(&video_st->views_core,   0, sizeof(video_st->views_core));
+   memset(&video_st->views_frame,  0, sizeof(video_st->views_frame));
+   memset(&video_st->views_layout, 0, sizeof(video_st->views_layout));
+   video_st->views_frame_dims = 0;
+   video_st->views_presented  = false;
+   video_st->views_fallback   = false;
+}
+
+unsigned video_driver_views_status(void)
+{
+   settings_t *settings = config_get_ptr();
+   unsigned status      = 0;
+#ifdef HAVE_OPENXR
+   video_driver_state_t *video_st = &video_driver_st;
+   if (     video_st->current_video
+         && video_st->current_video->get_video_views_status)
+      status = video_st->current_video->get_video_views_status(
+            video_st->data);
+#endif
+   if (!video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS))
+      return status;
+   status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
+   /* A headset shows both eyes whatever the window's mode. */
+   if (     settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
+         || video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET))
+      status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
+   return status;
+}
+
+bool video_driver_views_status_changed(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   unsigned status                = video_driver_views_status();
+   if (status == video_st->views_status_seen)
+      return false;
+   video_st->views_status_seen = status;
+   return true;
+}
+
+unsigned video_driver_get_ui_dims(void)
+{
+   return video_views_ui_dims(video_driver_get_views_layout(),
+         video_driver_get_output_dims());
+}
+
+const video_views_layout_t *video_driver_get_views_layout(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   return (video_st->views_presented && !video_st->views_fallback)
+      ? &video_st->views_layout : NULL;
+}
+
+#ifdef HAVE_OPENXR
+bool video_driver_get_views_core(const video_views_map_t **map,
+      unsigned *frame_dims)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   if (video_st->views_presented)
+   {
+      *map        = &video_st->views_core;
+      *frame_dims = video_st->views_frame_dims;
+      return true;
+   }
+   *map = NULL;
+   return video_driver_cached_frame_info(frame_dims, NULL, NULL);
+}
+#endif
+
+void video_driver_headset_recenter(void)
+{
+   video_driver_st.headset_recenter++;
+   RARCH_LOG("[Video] Headset recenter requested.\n");
+}
+
+void video_driver_headset_exit_request(void)
+{
+   retro_atomic_store_release_int(&video_driver_st.headset_exit, 1);
+}
+
+unsigned video_driver_headset_rate_choices(unsigned *values, unsigned cap)
+{
+   static const unsigned fixed[] = { 72, 90, 120, 144 };
+   float rates[VIDEO_HEADSET_MAX_RATES];
+   unsigned i, j;
+   unsigned count                 = 0;
+   unsigned n                     = 0;
+   video_driver_state_t *video_st = &video_driver_st;
+
+   if (cap < 2)
+      return 0;
+   if (     video_st->data && video_st->poke
+         && video_st->poke->get_headset_refresh)
+      video_st->poke->get_headset_refresh(video_st->data, rates,
+            VIDEO_HEADSET_MAX_RATES, &count);
+   if (count > VIDEO_HEADSET_MAX_RATES)
+      count = VIDEO_HEADSET_MAX_RATES;
+   values[n++] = VIDEO_OPENXR_REFRESH_AUTO;
+   values[n++] = VIDEO_OPENXR_REFRESH_HEADSET;
+   if (!count)
+   {
+      for (i = 0; i < sizeof(fixed) / sizeof(fixed[0]) && n < cap; i++)
+         values[n++] = fixed[i];
+      return n;
+   }
+   for (i = 0; i < count && n < cap; i++)
+   {
+      unsigned hz = (unsigned)(rates[i] + 0.5f);
+      bool seen   = (hz <= VIDEO_OPENXR_REFRESH_HEADSET);
+      for (j = 2; j < n && !seen; j++)
+         seen = (values[j] == hz);
+      if (seen)
+         continue;
+      for (j = n++; j > 2 && values[j - 1] > hz; j--)
+         values[j] = values[j - 1];
+      values[j] = hz;
+   }
+   return n;
+}
+
+#ifdef HAVE_OPENXR
+void video_driver_headset_poll(void)
+{
+   float rates[VIDEO_HEADSET_MAX_RATES];
+   unsigned count                 = 0;
+   float hz                       = 0.0f;
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+
+   if (retro_atomic_load_acquire_int(&video_st->headset_exit))
+   {
+      retro_atomic_store_release_int(&video_st->headset_exit, 0);
+      /* Steam's Exit Game kills a game that keeps running: quit first,
+       * saving what a quit saves. */
+      if (!string_is_empty(getenv("SteamAppId")))
+      {
+         RARCH_LOG("[Video] The headset asked to exit; quitting for Steam.\n");
+         command_event(CMD_EVENT_QUIT, NULL);
+         return;
+      }
+      RARCH_LOG("[Video] The headset asked to exit; the window keeps running.\n");
+   }
+
+   if (     video_st->data && video_st->poke
+         && video_st->poke->get_headset_refresh)
+      hz = video_st->poke->get_headset_refresh(video_st->data, rates,
+            VIDEO_HEADSET_MAX_RATES, &count);
+   video_st->headset_request_hz = video_xr_request_rate(
+         settings->uints.video_openxr_refresh_rate, rates, count,
+         (float)video_st->av_info.timing.fps, MAXIMUM_SWAP_INTERVAL);
+   if (     hz == video_st->headset_hz
+         && (!hz || settings->bools.video_vsync == video_st->headset_vsync))
+      return;
+   video_st->headset_hz = hz;
+   /* The configured rate again, so nothing is saved: the rates are
+    * adjusted with the headset's standing in. */
+   driver_ctl(RARCH_DRIVER_CTL_SET_REFRESH_RATE,
+         &settings->floats.video_refresh_rate);
+}
+#endif
+
+static void video_driver_views_layout(settings_t *settings,
+      const video_views_map_t *map, unsigned dims,
+      video_views_layout_t *out)
+{
+   video_views_layout_params_t params;
+   video_views_rect_t custom;
+   unsigned aspect_idx  = settings->uints.video_aspect_ratio_idx;
+
+   params.map           = map;
+   params.custom_vp     = NULL;
+   params.single_aspect = 0.0f;
+   params.stretch       = !settings->bools.video_force_aspect;
+   params.dims          = dims;
+   params.stereo_mode   = settings->uints.video_stereo_mode;
+   params.screen_layout = settings->uints.video_screen_layout;
+   params.rotation      = retroarch_get_rotation() % 4;
+   params.swap_eyes     = settings->bools.video_stereo_swap_eyes;
+   params.scale_integer = settings->bools.video_scale_integer;
+
+   /* The core's geometry covers the whole packed frame, so "core
+    * provided" and square pixels mean each view's own aspect. */
+   if (aspect_idx == ASPECT_RATIO_CUSTOM)
+   {
+      custom.pos  = settings->video_vp_custom.pos;
+      custom.dims = settings->video_vp_custom.dims;
+      if (VIDEO_SCALE_W(custom.dims) && VIDEO_SCALE_H(custom.dims))
+         params.custom_vp = &custom;
+   }
+   else if (aspect_idx != ASPECT_RATIO_CORE
+         && aspect_idx != ASPECT_RATIO_SQUARE)
+      params.single_aspect = video_driver_get_aspect_ratio();
+
+   video_views_layout(&params, out);
+}
+
+/* Fills the frame's views and layout. A repeated frame (no data), or one
+ * that will not be presented (frameskip), reuses the last map, since the
+ * driver's last presented (or repeated) textures still match it. */
+static void video_driver_views_frame(video_driver_state_t *video_st,
+      settings_t *settings, const void *data, bool render_frame,
+      unsigned core_dims, unsigned dims,
+      video_frame_info_t *video_info)
+{
+   gfx_ctx_flags_t flags;
+   bool allowed;
+   bool presented;
+   bool redraw = false;
+#ifdef HAVE_THREADS
+   /* A Win32 window drag has the video thread redraw the cached frame
+    * beside the main thread, whose state this is: it lays out what was
+    * last presented and writes nothing. */
+   redraw      = video_thread_is_video_thread();
+#endif
+   flags.flags = 0;
+   if (video_st->views.num_views)
+      video_context_driver_get_flags(&flags);
+   allowed     = video_st->views.num_views
+      && BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+   memset(&video_info->views,        0, sizeof(video_info->views));
+   memset(&video_info->views_layout, 0, sizeof(video_info->views_layout));
+   presented   = allowed && video_st->views_presented;
+   if (allowed && data && render_frame && !redraw)
+   {
+      presented = video_views_snapshot(&video_st->views,
+            core_dims, dims, &video_st->views_frame);
+      if (presented)
+      {
+         video_st->views_core       = video_st->views;
+         video_st->views_frame_dims = core_dims;
+      }
+   }
+   if (presented)
+   {
+      /* Laid out from the core's own map: a CPU filter's scaling must
+       * not change a view's shape. The indices match the scaled map. */
+      video_info->views = video_st->views_frame;
+      video_driver_views_layout(settings, &video_st->views_core,
+            video_info->dims, &video_info->views_layout);
+      if (!redraw)
+         video_st->views_layout = video_info->views_layout;
+      /* The menu was laid out whole for this frame. */
+      if (video_st->views_fallback)
+         video_info->views_layout.ui_per_eye = false;
+   }
+   if (redraw)
+      return;
+   video_st->views_presented = presented;
+   /* For the frames after this one. The driver still gets the map, and
+    * clears the flag once it draws views again. */
+   video_st->views_fallback = presented
+      && BIT32_GET(flags.flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   /* From the accepted map, not this frame: a frame that doesn't fit
+    * it would otherwise free every chain, and the next rebuild them.
+    * A map set during a staged content load is for the driver the load
+    * is about to build, not the one presenting until then. */
+   if (!runloop_is_content_switching())
+      video_driver_views_set_count(video_st,
+            allowed ? video_st->views.num_views : 0);
 }
 
 #ifdef HAVE_OVERLAY
@@ -4546,9 +4872,11 @@ void video_driver_cached_frame(void)
        * the tuple read here. */
       frame_cache_snapshot(&data, &dims, &pitch);
 
+      video_driver_st.frame_repeat = true;
       cbs->frame_cb(
             (data != RETRO_HW_FRAME_BUFFER_VALID) ? data : NULL,
             VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
+      video_driver_st.frame_repeat = false;
    }
 
    recording_st->data             = recording;
@@ -5011,6 +5339,11 @@ bool video_driver_has_focus(void)
    return VIDEO_HAS_FOCUS(video_st);
 }
 
+bool video_driver_headset_focused(void)
+{
+   return video_driver_test_all_flags(GFX_CTX_FLAGS_HEADSET_FOCUSED);
+}
+
 /* The window title crosses from the main thread, which builds it, to
  * the video thread, which applies it. Where the atomics have pointer
  * ops it crosses as an immutable heap copy through a one-slot atomic
@@ -5179,9 +5512,19 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->crt_switch_porch_adjust     = settings->ints.crt_switch_porch_adjust;
    video_info->crt_switch_vert_adjust      = settings->ints.crt_switch_vertical_adjust;
    video_info->crt_switch_hires_menu       = settings->bools.crt_switch_hires_menu;
-   video_info->black_frame_insertion       = settings->uints.video_black_frame_insertion;
+   video_info->black_frame_insertion       = video_st->headset_interval
+      ? 0 : settings->uints.video_black_frame_insertion;
    video_info->bfi_dark_frames             = settings->uints.video_bfi_dark_frames;
-   video_info->shader_subframes            = settings->uints.video_shader_subframes;
+   video_info->shader_subframes            = video_st->headset_interval
+      ? 1 : settings->uints.video_shader_subframes;
+   video_info->headset_distance            = settings->floats.video_openxr_distance;
+   video_info->headset_width               = settings->floats.video_openxr_width;
+   video_info->headset_recenter            = video_st->headset_recenter;
+   video_info->headset_interval            = video_st->headset_interval;
+   video_info->headset_request_hz          = video_st->headset_request_hz;
+   video_info->screen_layout               = settings->uints.video_screen_layout;
+   video_info->stereo_swap_eyes            = settings->bools.video_stereo_swap_eyes;
+   video_info->frame_repeat                = video_st->frame_repeat;
    video_info->current_subframe            = 0;
 #ifdef HAVE_THREADS
    /* The video thread owns and stamps this under the wrapper. */
@@ -6512,7 +6855,8 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       font_driver_init_osd(video_st->data, &video,
             video.is_threaded, video_st->current_video->font_backend);
 
-   video_st->poke = NULL;
+   video_st->poke               = NULL;
+   video_st->views_driver_count = 0;
    if (video_st->current_video->poke_interface)
       video_st->current_video->poke_interface(
             video_st->data, &video_st->poke);
@@ -7166,6 +7510,11 @@ void video_driver_frame(const void *data, unsigned width,
    retro_time_t new_time;
    video_frame_info_t video_info;
    size_t _len                    = 0;
+   unsigned core_dims;
+   unsigned view_dims;
+#if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
+   bool filter_deferred           = false;
+#endif
    video_driver_state_t *video_st = &video_driver_st;
    const video_driver_t *vid      = video_st->current_video;
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
@@ -7220,6 +7569,8 @@ void video_driver_frame(const void *data, unsigned width,
     * the lock -- they're on the runloop thread same as the
     * producer here, so there's no race for them to lose. */
    video_driver_cached_frame_publish(data, dims, pitch);
+
+   core_dims = dims;
 
    if (
             video_st->scaler_ptr
@@ -7744,8 +8095,8 @@ void video_driver_frame(const void *data, unsigned width,
          && data
          && video_st->state_filter
 #ifdef HAVE_THREADS
-         && !video_driver_filter_on_worker(video_st,
-               video_info.post_filter_record, recording_st)
+         && !(filter_deferred = video_driver_filter_on_worker(video_st,
+               video_info.post_filter_record, recording_st))
 #endif
       )
    {
@@ -7774,6 +8125,17 @@ void video_driver_frame(const void *data, unsigned width,
       pitch  = output_pitch;
    }
 #endif
+
+   /* A frame deferred to the worker is still raw here; scale the map to
+    * the filter's output size. */
+   view_dims = dims;
+#if defined(HAVE_VIDEO_FILTER) && defined(HAVE_THREADS)
+   if (filter_deferred)
+      rarch_softfilter_get_output_size(video_st->state_filter,
+            &view_dims, dims);
+#endif
+   video_driver_views_frame(video_st, settings, data, render_frame,
+         core_dims, view_dims, &video_info);
 
    if (runloop_st->msg_queue_delay > 0)
       runloop_st->msg_queue_delay--;

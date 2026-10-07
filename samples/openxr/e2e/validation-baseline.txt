@@ -1,0 +1,15 @@
+# The validation messages run.py --validate expects without RetroArch's
+# headset code: a VUID, then text its message must contain. Seen with
+# gamescope 3.16, Monado 25.1, Mesa 26.2 and validation layers 1.4.357;
+# other versions may raise others.
+# gamescope's WSI layer, which adds extensions without what they need:
+VUID-vkCreateDevice-ppEnabledExtensionNames-01387 device extension VK_EXT_swapchain_maintenance1:
+VUID-vkCreateInstance-ppEnabledExtensionNames-01388 - VK_KHR_surface
+# RetroArch's window swapchain under gamescope, with the headset off too:
+VUID-VkSwapchainCreateInfoKHR-presentMode-02839 vkCreateSwapchainKHR(): pCreateInfo->minImageCount
+VUID-VkSwapchainPresentModeInfoKHR-swapchainCount-07760 vkQueuePresentKHR(): pPresentInfo->pNext<VkSwapchainPresentModeInfoKHR>.swapchainCount (0)
+VUID-VkSwapchainPresentModeInfoKHR-swapchainCount-arraylength vkQueuePresentKHR(): pPresentInfo->pNext<VkSwapchainPresentModeInfoKHR>.swapchainCount must
+# Monado's client tearing down its own objects:
+VUID-vkDestroyCommandPool-commandPool-00041 [client_vk_swapchain release command buffer]
+VUID-vkDestroyImage-image-01000 [client_vk_swapchain release command buffer].
+VUID-vkDestroySemaphore-semaphore-05149 [timeline semaphore]

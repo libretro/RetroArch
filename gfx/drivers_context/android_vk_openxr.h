@@ -4,6 +4,17 @@
 #include <stdint.h>
 #include <boolean.h>
 #include <libretro.h>
+#include <retro_inline.h>
+
+#ifndef ANDROID
+/* The projection-layer context is Android's: elsewhere the shared
+ * driver's path for it folds away. */
+static INLINE bool android_vk_openxr_begin_frame(void) { return false; }
+static INLINE void android_vk_openxr_end_frame(bool stereo_layer) { (void)stereo_layer; }
+static INLINE unsigned android_vk_openxr_get_backbuffer_index(int eye) { (void)eye; return 0; }
+static INLINE bool android_vk_openxr_is_session_ready(void) { return false; }
+static INLINE bool android_vk_openxr_get_eye_state(struct retro_vr_eye_state out[2]) { (void)out; return false; }
+#else
 
 /* Direct entry points into the XR frame loop, called from vulkan.c */
 bool android_vk_openxr_begin_frame(void);
@@ -42,5 +53,7 @@ XrSystemId android_vk_openxr_xr_system_id(void);
 #endif
 
 bool android_vk_openxr_get_eye_state(struct retro_vr_eye_state out[2]);
+
+#endif /* ANDROID */
 
 #endif

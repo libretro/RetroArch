@@ -7512,7 +7512,7 @@ MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_EXPAND_GAMUT_SUPER,
    "Super"
    )
-/* GENERATED REGION: HDR toggle group (see settings_def_video_hdr_toggles.h). */
+/* GENERATED REGION: HDR toggle group, stereo 3D & screens group and headset group (see settings_def_video_hdr_toggles.h, settings_def_video_stereo.h and settings_def_video_headset.h). */
 #define SETTINGS_DEF_STRINGS_PASS
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us) \
@@ -7590,6 +7590,8 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_ACTION_EX_NS(T, n, sd, ok, rp, c, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_hdr_toggles.h"
+#include "../settings/settings_def_video_stereo.h"
+#include "../settings/settings_def_video_headset.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_BOOL_H
@@ -7686,6 +7688,66 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT_BGR,
    "BGR"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_2D,
+   "2D"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
+   "Side by Side (Half)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
+   "Side by Side (Full)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
+   "Top-Bottom"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH,
+   "Anaglyph (Red/Cyan)"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED,
+   "Interlaced"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
+   "Vertical"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   "Horizontal"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   "Combined"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
+   "Separate"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   "Auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   "Always"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   "Off"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
+   "Auto"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   "Headset's Choice"
    )
 
 
@@ -12254,6 +12316,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_META_VIDEO_FILTER_TOGGLE,
    "Switches software 'Video Filter' on/off."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
+   "Recenter Headset Screens"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   "Places the headset's screens in front of where you are looking now."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
+   "Laser Pointer (Toggle)"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
+   "Switches the headset's Laser Pointer between Off and its last mode."
    )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_INPUT_META_FPS_TOGGLE,
@@ -33789,6 +33867,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_VIDEO_FILTER_ENABLE_OFF,
    "Video-Filter: Disable"
+   )
+MSG_HASH(
+   MSG_OPENXR_UNAVAILABLE,
+   "Headset output is off: no OpenXR runtime or headset was found."
+   )
+MSG_HASH(
+   MSG_OPENXR_FAILED,
+   "Headset output could not start. The window shows the output."
+   )
+MSG_HASH(
+   MSG_OPENXR_SESSION_ENDED,
+   "The headset session ended. Turn Headset Output off and on to try again."
+   )
+MSG_HASH(
+   MSG_OPENXR_NEEDS_RELOAD,
+   "Headset output starts when the content is loaded again."
+   )
+MSG_HASH(
+   MSG_OPENXR_RATE_MISFIT,
+   "The headset runs at %u Hz, which doesn't fit this game's %.2f fps; its motion will judder. Set the headset's refresh rate for RetroArch to a multiple of the game's rate (in SteamVR: VR Video Settings)."
+   )
+MSG_HASH(
+   MSG_OPENXR_LASER_POINTER,
+   "Laser Pointer: %s"
    )
 
 

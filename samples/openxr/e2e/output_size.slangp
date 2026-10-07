@@ -1,0 +1,9 @@
+shaders = 2
+
+shader0 = output_size.slang
+scale_type0 = viewport
+scale0 = 0.5
+filter_linear0 = false
+
+shader1 = output_size.slang
+filter_linear1 = false

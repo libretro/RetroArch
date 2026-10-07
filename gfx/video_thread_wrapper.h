@@ -85,6 +85,8 @@ enum thread_cmd
    CMD_POKE_SET_HDR_SUBPIXEL_LAYOUT,
    CMD_SET_NONBLOCK,
    CMD_SUPPRESS_SCREENSAVER,
+   CMD_POKE_SET_VIEW_COUNT,
+   CMD_POKE_HW_CONTEXT_DESTROYING,
 
    CMD_DUMMY = INT_MAX
 };
@@ -997,6 +999,10 @@ bool video_thread_lend_ready(int idx);
  * no wrapper is up. video_driver_texture_can_update() asks this so a
  * wrapper forwarder is never mistaken for a capability. */
 bool video_thread_texture_can_update(void);
+
+/* Whether the caller is the video thread; false while no wrapper is
+ * up. */
+bool video_thread_is_video_thread(void);
 
 /* Deliver completed asynchronous uploads to their done() callbacks.
  * Main thread; video_thread_frame() calls it, callers that upload
