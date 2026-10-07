@@ -4255,38 +4255,34 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
    return YES;
 }
 
-- (void)updateGlyph:(const struct font_glyph *)glyph
+/* Copies the atlas's dirty region into the buffer the texture is made
+ * on. Whole cells go across, so no texel of a cell's earlier glyph is
+ * left beside a smaller one for filtering to pick up. */
+- (void)updateDirty
 {
    if (_atlas->dirty)
    {
       unsigned row;
-      unsigned x  = VIDEO_SCALE_W(glyph->atlas_pos);
-      unsigned y0 = VIDEO_SCALE_H(glyph->atlas_pos);
-      unsigned y1 = y0 + VIDEO_SCALE_H(glyph->dims);
+      unsigned x0 = VIDEO_SCALE_W(_atlas->dirty_xy0);
+      unsigned y0 = VIDEO_SCALE_H(_atlas->dirty_xy0);
+      unsigned x1 = VIDEO_SCALE_W(_atlas->dirty_xy1);
+      unsigned y1 = VIDEO_SCALE_H(_atlas->dirty_xy1);
+      _atlas->dirty = false;
+      if (     x1 <= x0 || y1 <= y0
+            || x1 > _atlas->width || y1 > _atlas->height)
+         return;
       for (row = y0; row < y1; row++)
-      {
-         uint8_t *src = _atlas->buffer
-               + ((size_t)row * _atlas->width + x) * _esz;
-         uint8_t *dst = (uint8_t *)_buffer.contents
-               + (size_t)row * _stride
-               + (size_t)x * _esz;
-         memcpy(dst, src, (size_t)VIDEO_SCALE_W(glyph->dims) * _esz);
-      }
+         memcpy((uint8_t *)_buffer.contents
+                  + (size_t)row * _stride + (size_t)x0 * _esz,
+               _atlas->buffer
+                  + ((size_t)row * _atlas->width + x0) * _esz,
+               (size_t)(x1 - x0) * _esz);
 
 #if !defined(HAVE_COCOATOUCH)
-      /* didModifyRange takes a BYTE range, not a row index.
-       * Every other call site in this file (lines 958, 1664, 1681,
-       * 3082, 3550) passes bytes. Previously offset was the row
-       * index, which meant the invalidated range almost never
-       * overlapped the actually-modified rows on managed-storage
-       * devices, producing stale/garbled glyphs until the entire
-       * atlas was invalidated by some other path. */
-      NSUInteger offset = (NSUInteger)y0 * _stride;
-      NSUInteger len    = (NSUInteger)VIDEO_SCALE_H(glyph->dims) * _stride;
-      [_buffer didModifyRange:NSMakeRange(offset, len)];
+      /* didModifyRange takes a byte range */
+      [_buffer didModifyRange:NSMakeRange((NSUInteger)y0 * _stride,
+            (NSUInteger)(y1 - y0) * _stride)];
 #endif
-
-      _atlas->dirty = false;
    }
 }
 
@@ -4311,8 +4307,9 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
     * its cell, so no cell is stranded when an unrelated glyph clears
     * the dirty flag. */
    if (glyph_q)
-      [self updateGlyph:glyph_q];
-#define FONT_MEASURE_DIRTY(glyph) [self updateGlyph:(glyph)]
+      [self updateDirty];
+#define FONT_MEASURE_DIRTY(glyph) \
+   do { (void)(glyph); [self updateDirty]; } while (0)
 #define FONT_MEASURE_SUM width
 #include "../font_measure.h"
    return (int)(width * scale);
@@ -4325,7 +4322,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
       return NULL;
    glyph = _font_driver->get_glyph(_font_data, code);
    if (glyph)
-      [self updateGlyph:glyph];
+      [self updateDirty];
    return glyph;
 }
 
@@ -4443,13 +4440,14 @@ static INLINE void write_quad6(SpriteVertex *pv,
 
    glyph_q          = get_glyph(font_data, '?');
    if (glyph_q)
-      [self updateGlyph:glyph_q];
+      [self updateDirty];
 
    v                = (SpriteVertex *)_range.data + _vertices;
 
 #define FONT_LAYOUT_ALIGNED (aligned == TEXT_ALIGN_RIGHT \
       || aligned == TEXT_ALIGN_CENTER)
-#define FONT_LAYOUT_DIRTY(glyph) [self updateGlyph:(glyph)]
+#define FONT_LAYOUT_DIRTY(glyph) \
+   do { (void)(glyph); [self updateDirty]; } while (0)
 #define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
    do \
    { \
