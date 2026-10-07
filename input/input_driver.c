@@ -622,7 +622,7 @@ typedef struct
    input_pad_snapshot_t         pads[MAX_USERS];
 } input_snapshot_bridge_t;
 
-static input_snapshot_bridge_t input_snapshot_bridge[2];
+static input_snapshot_bridge_t input_snapshot_bridge;
 static bool                    input_snapshot_forced;
 
 void input_driver_set_snapshot_bridge(bool on)
@@ -632,8 +632,7 @@ void input_driver_set_snapshot_bridge(bool on)
     * decided */
    if (input_snapshot_forced != on)
    {
-      input_snapshot_bridge[0].real = NULL;
-      input_snapshot_bridge[1].real = NULL;
+      input_snapshot_bridge.real = NULL;
    }
    input_snapshot_forced = on;
 }
@@ -745,10 +744,10 @@ static void input_snapshot_fetch_hat(const input_device_driver_t *real,
 /* The pad's copy for this frame, taken now if this is the first read
  * since the poll. */
 /* Takes the copy of a pad for this poll. */
-INPUT_NOINLINE static void input_snapshot_pad_take(unsigned b, unsigned pad)
+INPUT_NOINLINE static void input_snapshot_pad_take(unsigned pad)
 {
    unsigned i;
-   input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
+   input_snapshot_bridge_t *bridge = &input_snapshot_bridge;
    input_pad_snapshot_t *snap      = &bridge->pads[pad];
 
    /* Copy what was read out of the last copy, and no more: a
@@ -767,22 +766,22 @@ INPUT_NOINLINE static void input_snapshot_pad_take(unsigned b, unsigned pad)
    for (i = 0; i < INPUT_SNAPSHOT_HATS; i++)
       if (snap->hats_known & (1 << i))
          input_snapshot_fetch_hat(bridge->real, snap, pad, i);
-   input_driver_st.frame_valid.snapshot[b] |= (1 << pad);
+   input_driver_st.frame_valid.snapshot |= (1 << pad);
 }
 
 /* A pad's copy, taken if this is the poll's first look at it. Whether
  * it is, is one test, here where it is asked - it is asked for every
  * axis and hat read. */
-static INLINE input_pad_snapshot_t *input_snapshot_pad(unsigned b, unsigned pad)
+static INLINE input_pad_snapshot_t *input_snapshot_pad(unsigned pad)
 {
-   if (!(input_driver_st.frame_valid.snapshot[b] & (1 << pad)))
-      input_snapshot_pad_take(b, pad);
-   return &input_snapshot_bridge[b].pads[pad];
+   if (!(input_driver_st.frame_valid.snapshot & (1 << pad)))
+      input_snapshot_pad_take(pad);
+   return &input_snapshot_bridge.pads[pad];
 }
 
-static int32_t input_snapshot_button(unsigned b, unsigned pad, uint16_t joykey)
+static int32_t input_snapshot_button(unsigned pad, uint16_t joykey)
 {
-   const input_device_driver_t *real = input_snapshot_bridge[b].real;
+   const input_device_driver_t *real = input_snapshot_bridge.real;
    input_pad_snapshot_t *snap;
    uint16_t dir                      = GET_HAT_DIR(joykey);
 
@@ -806,7 +805,7 @@ static int32_t input_snapshot_button(unsigned b, unsigned pad, uint16_t joykey)
       if (h >= INPUT_SNAPSHOT_HATS)
          return real->button(pad, joykey);
 
-      snap = input_snapshot_pad(b, pad);
+      snap = input_snapshot_pad(pad);
       if (!(snap->hats_known & (1 << h)))
       {
          input_snapshot_fetch_hat(real, snap, pad, h);
@@ -819,13 +818,13 @@ static int32_t input_snapshot_button(unsigned b, unsigned pad, uint16_t joykey)
    if (joykey >= 256)
       return real->button(pad, joykey);
 
-   snap = input_snapshot_pad(b, pad);
+   snap = input_snapshot_pad(pad);
    return BIT256_GET(snap->buttons, joykey) ? 1 : 0;
 }
 
-static int16_t input_snapshot_axis(unsigned b, unsigned pad, uint32_t joyaxis)
+static int16_t input_snapshot_axis(unsigned pad, uint32_t joyaxis)
 {
-   const input_device_driver_t *real = input_snapshot_bridge[b].real;
+   const input_device_driver_t *real = input_snapshot_bridge.real;
    input_pad_snapshot_t *snap;
    bool     negative                 = AXIS_NEG_GET(joyaxis) < INPUT_SNAPSHOT_AXES;
    unsigned i                        = negative
@@ -835,7 +834,7 @@ static int16_t input_snapshot_axis(unsigned b, unsigned pad, uint32_t joyaxis)
    if (pad >= MAX_USERS || i >= INPUT_SNAPSHOT_AXES)
       return real->axis(pad, joyaxis);
 
-   snap = input_snapshot_pad(b, pad);
+   snap = input_snapshot_pad(pad);
    if (!(snap->axes_known & (1 << i)))
    {
       input_snapshot_fetch_axis(real, snap, pad, i);
@@ -1006,8 +1005,7 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
    pads->autob = autob;
    pads->gen   = gen;
    /* the masks worked out from what it held before */
-   input_driver_st.frame_valid.pad_state[0] &= ~(1 << port);
-   input_driver_st.frame_valid.pad_state[1] &= ~(1 << port);
+   input_driver_st.frame_valid.pad_state &= ~(1 << port);
 }
 
 static INLINE const input_port_pads_t *input_port_pads_get(unsigned port)
@@ -1096,9 +1094,9 @@ static const input_port_pads_t *input_port_pads_of(
 
 /* The RetroPad mask from the binds: the loop every joypad driver's
  * state() is, against the copy. */
-static int16_t input_snapshot_state(unsigned b,
+static int16_t input_snapshot_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds)
+      const struct retro_keybind *binds, unsigned unused_port)
 {
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
@@ -1130,15 +1128,15 @@ static int16_t input_snapshot_state(unsigned b,
    {
       input_driver_state_t *input_st = &input_driver_st;
       unsigned port                  = (unsigned)(pads - input_port_pads);
-      if (     (input_st->frame_valid.pad_state[b] & (1 << port))
-            && (((input_st->frame_valid.pad_state_full[b] >> port) & 1)
+      if (     (input_st->frame_valid.pad_state & (1 << port))
+            && (((input_st->frame_valid.pad_state_full >> port) & 1)
                == (full_range ? 1 : 0))
-            && input_st->pad_state_thr[b][port] == joypad_info->axis_threshold)
-         return input_st->pad_state_cache[b][port];
+            && input_st->pad_state_thr[port] == joypad_info->axis_threshold)
+         return input_st->pad_state_cache[port];
    }
 
    /* the copy of the pad, taken now if this is the poll's first look */
-   snap = input_snapshot_pad(b, pad);
+   snap = input_snapshot_pad(pad);
 
    for (; bound; bound &= bound - 1)
    {
@@ -1167,7 +1165,7 @@ static int16_t input_snapshot_state(unsigned b,
       if (     joykey != NO_BTN
             && ((!GET_HAT_DIR(joykey) && joykey < 256)
                ? (BIT256_GET(snap->buttons, joykey) != 0)
-               : (input_snapshot_button(b, pad, joykey) != 0)))
+               : (input_snapshot_button(pad, joykey) != 0)))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE)
       {
@@ -1177,14 +1175,14 @@ static int16_t input_snapshot_state(unsigned b,
                && (   i == RETRO_DEVICE_ID_JOYPAD_L2
                    || i == RETRO_DEVICE_ID_JOYPAD_R2))
          {
-            const input_device_driver_t *drv = &input_snapshot_bridge[b].adapter;
+            const input_device_driver_t *drv = &input_snapshot_bridge.adapter;
             input_trigger_learn(drv, joypad_info, binds, pad, joyaxis);
             value = input_trigger_rests_far(pad, joyaxis)
                ? input_trigger_pull(drv, pad, joyaxis)
-               : abs(input_snapshot_axis(b, pad, joyaxis));
+               : abs(input_snapshot_axis(pad, joyaxis));
          }
          else
-            value = abs(input_snapshot_axis(b, pad, joyaxis));
+            value = abs(input_snapshot_axis(pad, joyaxis));
          if (((float)value / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }
@@ -1194,58 +1192,34 @@ static int16_t input_snapshot_state(unsigned b,
    {
       input_driver_state_t *input_st = &input_driver_st;
       unsigned port                  = (unsigned)(pads - input_port_pads);
-      input_st->pad_state_cache[b][port]   = ret;
-      input_st->pad_state_thr[b][port]     = joypad_info->axis_threshold;
-      input_st->frame_valid.pad_state[b]  |= (1 << port);
+      input_st->pad_state_cache[port]   = ret;
+      input_st->pad_state_thr[port]     = joypad_info->axis_threshold;
+      input_st->frame_valid.pad_state  |= (1 << port);
       if (full_range)
-         input_st->frame_valid.pad_state_full[b] |=  (1 << port);
+         input_st->frame_valid.pad_state_full |=  (1 << port);
       else
-         input_st->frame_valid.pad_state_full[b] &= ~(1 << port);
+         input_st->frame_valid.pad_state_full &= ~(1 << port);
    }
    return ret;
 }
 
-static void input_snapshot_get_buttons(unsigned b, unsigned pad,
+static void input_snapshot_get_buttons(unsigned pad,
       input_bits_t *state)
 {
    if (pad >= MAX_USERS)
    {
-      input_snapshot_bridge[b].real->get_buttons(pad, state);
+      input_snapshot_bridge.real->get_buttons(pad, state);
       return;
    }
-   *state = input_snapshot_pad(b, pad)->buttons;
+   *state = input_snapshot_pad(pad)->buttons;
 }
-
-/* A driver's functions take no context, so each bridge has its own. */
-static int32_t input_snapshot0_button(unsigned pad, uint16_t joykey)
-{ return input_snapshot_button(0, pad, joykey); }
-static int16_t input_snapshot0_axis(unsigned pad, uint32_t joyaxis)
-{ return input_snapshot_axis(0, pad, joyaxis); }
-static int16_t input_snapshot0_state(rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds, unsigned port)
-{ return input_snapshot_state(0, joypad_info, binds); }
-static void input_snapshot0_get_buttons(unsigned pad, input_bits_t *state)
-{ input_snapshot_get_buttons(0, pad, state); }
-
-static int32_t input_snapshot1_button(unsigned pad, uint16_t joykey)
-{ return input_snapshot_button(1, pad, joykey); }
-static int16_t input_snapshot1_axis(unsigned pad, uint32_t joyaxis)
-{ return input_snapshot_axis(1, pad, joyaxis); }
-static int16_t input_snapshot1_state(rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds, unsigned port)
-{ return input_snapshot_state(1, joypad_info, binds); }
-static void input_snapshot1_get_buttons(unsigned pad, input_bits_t *state)
-{ input_snapshot_get_buttons(1, pad, state); }
 
 /* The bridge for @drv, set up if it is not the driver it last stood in
  * for; NULL if @drv is to be read directly. */
 static const input_device_driver_t *input_snapshot_for(
       input_driver_state_t *st, const input_device_driver_t *drv)
 {
-   /* the one joypad driver there is: the second bridge was the
-    * secondary joypad's, which nothing set */
-   const unsigned b = 0;
-   input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
+   input_snapshot_bridge_t *bridge = &input_snapshot_bridge;
 
    /* The driver it stands in for already: that was decided below when
     * it was set up, and nothing that decides it has changed since (the
@@ -1262,26 +1236,18 @@ static const input_device_driver_t *input_snapshot_for(
    if (bridge->real != drv)
    {
       memset(bridge->pads, 0, sizeof(bridge->pads));
-      st->frame_valid.snapshot[b]  = 0;
-      st->frame_valid.pad_state[b] = 0;
+      st->frame_valid.snapshot  = 0;
+      st->frame_valid.pad_state = 0;
       bridge->real                = drv;
       bridge->adapter             = *drv;
       bridge->adapter.init        = NULL;
       bridge->adapter.destroy     = NULL;
-      if (b == 0)
-      {
-         bridge->adapter.button      = input_snapshot0_button;
-         bridge->adapter.axis        = input_snapshot0_axis;
-         bridge->adapter.state       = input_snapshot0_state;
-         bridge->adapter.get_buttons = input_snapshot0_get_buttons;
-      }
-      else
-      {
-         bridge->adapter.button      = input_snapshot1_button;
-         bridge->adapter.axis        = input_snapshot1_axis;
-         bridge->adapter.state       = input_snapshot1_state;
-         bridge->adapter.get_buttons = input_snapshot1_get_buttons;
-      }
+      /* there is the one bridge, so its functions are the driver's
+       * own shape and stand in the table themselves */
+      bridge->adapter.button      = input_snapshot_button;
+      bridge->adapter.axis        = input_snapshot_axis;
+      bridge->adapter.state       = input_snapshot_state;
+      bridge->adapter.get_buttons = input_snapshot_get_buttons;
    }
    return &bridge->adapter;
 }
@@ -1290,17 +1256,13 @@ static const input_device_driver_t *input_snapshot_for(
  * says nothing about this one. */
 static void input_snapshot_forget_pad(unsigned slot)
 {
-   unsigned b;
    if (slot >= MAX_USERS)
       return;
-   for (b = 0; b < 2; b++)
-   {
-      memset(&input_snapshot_bridge[b].pads[slot], 0,
-            sizeof(input_snapshot_bridge[b].pads[slot]));
-      input_driver_st.frame_valid.snapshot[b] &= ~(1 << slot);
-      /* and any port's mask worked out from it */
-      input_driver_st.frame_valid.pad_state[b] = 0;
-   }
+   memset(&input_snapshot_bridge.pads[slot], 0,
+         sizeof(input_snapshot_bridge.pads[slot]));
+   input_driver_st.frame_valid.snapshot &= ~(1 << slot);
+   /* and any port's mask worked out from it */
+   input_driver_st.frame_valid.pad_state = 0;
 }
 
 static const input_device_driver_t *input_joypad_for_read_(
@@ -2962,12 +2924,11 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
 }
 
 /* A stick's axis for a port's core, out of one read of the whole stick
- * a frame. @which is the pad driver: 0 the primary, 1 the secondary.
+ * a frame.
  * What is read is what input_joypad_analog_axis() reads, axis for axis;
  * a core that asks for x and then y - they all do - has the second from
  * the first's read, and a core run more than once a frame has both. */
 static int16_t input_port_stick_axis(input_driver_state_t *input_st,
-      unsigned which,
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
@@ -2984,7 +2945,7 @@ static int16_t input_port_stick_axis(input_driver_state_t *input_st,
             input_analog_deadzone, input_analog_sensitivity,
             drv, joypad_info, idx, ident, binds);
 
-   slot = (which << 1) | idx;
+   slot = idx;
    bit  = (uint16_t)(1u << port);
 
    /* read under another mode - the core has just asked for analog
@@ -2993,8 +2954,6 @@ static int16_t input_port_stick_axis(input_driver_state_t *input_st,
    {
       input_st->frame_valid.sticks[0]  &= ~bit;
       input_st->frame_valid.sticks[1]  &= ~bit;
-      input_st->frame_valid.sticks[2]  &= ~bit;
-      input_st->frame_valid.sticks[3]  &= ~bit;
       input_st->stick_cache_mode[port]  = (uint8_t)input_analog_dpad_mode;
    }
 
@@ -4139,7 +4098,7 @@ static int16_t input_state_internal(
                /* each stick is read whole, once a frame */
 
                if (joypad && (ret == 0))
-                  ret = input_port_stick_axis(input_st, 0,
+                  ret = input_port_stick_axis(input_st,
                         input_analog_dpad_mode,
                         input_analog_deadzone,
                         input_analog_sensitivity,

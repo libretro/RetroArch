@@ -855,17 +855,16 @@ typedef struct
     *   view         - frame_view_joypad[port] has been compiled
     *   asked        - the port's first button of the frame was read
     *   sticks       - stick_cache[port][n] holds this frame's read of a
-    *                  stick; n is the pad driver (primary, secondary)
-    *                  and the stick (left, right) */
+    *                  stick; n is the stick (left, right) */
    struct
    {
       uint16_t joypad_cache;
       uint16_t view;
       uint16_t asked;
-      uint16_t snapshot[2]; /* pads snapshotted: primary, secondary driver */
-      uint16_t sticks[4];
-      uint16_t pad_state[2]; /* pad_state_cache[n][port] holds this poll's mask */
-      uint16_t pad_state_full[2]; /* ... worked out with full-range triggers on */
+      uint16_t snapshot;    /* pads snapshotted */
+      uint16_t sticks[2];
+      uint16_t pad_state;   /* pad_state_cache[port] holds this poll's mask */
+      uint16_t pad_state_full; /* ... worked out with full-range triggers on */
    } frame_valid;
 
    /* A port's RetroPad mask as its controller holds it, worked out
@@ -873,18 +872,17 @@ typedef struct
     * worked out again for every reader of the port's mask - the
     * hotkeys, the frame's view for the core, the poll's own - three or
     * four times a frame from a copy that does not change between
-    * them. By pad driver (primary, secondary) and port; the threshold
-    * is the one it was worked out with. */
-   int16_t pad_state_cache[2][MAX_USERS];
-   float   pad_state_thr[2][MAX_USERS];
+    * them. By port; the threshold is the one it was worked out with. */
+   int16_t pad_state_cache[MAX_USERS];
+   float   pad_state_thr[MAX_USERS];
 
    /* A port's sticks as the core is given them, each read whole once a
-    * frame: x and y, for each pad driver and stick as in
+    * frame: x and y, for each stick as in
     * frame_valid.sticks. A core asks for an axis at a time, and each
     * axis asked for was its own reads of the pad - six, with a
     * deadzone. The mode is the stick-drives-the-D-pad mode the read was
     * made under: a read under another is made again. */
-   int16_t stick_cache[MAX_USERS][4][2];
+   int16_t stick_cache[MAX_USERS][2][2];
    uint8_t stick_cache_mode[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
