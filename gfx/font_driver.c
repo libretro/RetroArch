@@ -275,6 +275,8 @@ static void font_file_ref_release(font_file_ref_t *entry)
 #define FONT_CACHE_SLOTS     (FONT_CACHE_ROWS * FONT_CACHE_COLS)
 /* Each growth doubles the columns and rows: 1024, then 4096 cells */
 #define FONT_CACHE_GROWTHS   2
+/* The oldest cells a search for one to take remembers */
+#define FONT_CACHE_CANDIDATES 32
 /* Padding between cells, so linear filtering does not bleed one
  * glyph into the next */
 #define FONT_CACHE_PADDING   1
@@ -347,6 +349,12 @@ typedef struct font_cache
    font_cache_slot_t slots[FONT_CACHE_SLOTS];
    /* The cells each growth added, so no cell ever moves */
    font_cache_slot_t *grown[FONT_CACHE_GROWTHS];
+   /* The oldest cells the last search found, oldest first, with when
+    * each was last used then: a later miss in the frame the search ran
+    * in takes the first still untouched instead of searching again.
+    * Every other cell was younger, or looked up in that frame. */
+   font_cache_slot_t *cand[FONT_CACHE_CANDIDATES];
+   unsigned cand_used[FONT_CACHE_CANDIDATES];
    unsigned grown_len[FONT_CACHE_GROWTHS];
    unsigned growths;
    unsigned cols;
@@ -354,6 +362,13 @@ typedef struct font_cache
    /* A frame wanted more cells than there were: grow when the next one
     * asks for the atlas */
    unsigned grow_frame;
+   unsigned cand_count;
+   unsigned cand_next;
+   unsigned cand_frame;
+   /* The frame a search found every cell looked up in, when full_set:
+    * no cell is free again before the next one */
+   unsigned full_frame;
+   bool full_set;
    bool grow_wanted;
    struct font_atlas atlas;
    const font_rasterizer_t *rast;
@@ -555,18 +570,12 @@ void font_driver_frame_begin(void)
    retro_atomic_fetch_add_int(&font_frame_epoch, 1);
 }
 
-/* The least recently used cell not looked up in this frame, taken out
- * of the hash; NULL when every cell is in use this frame */
-static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
+/* Searches every cell for the least recently used one not looked up
+ * in @frame, keeping the oldest few in c->cand for the misses after */
+static font_cache_slot_t *font_cache_search(font_cache_t *c, unsigned frame)
 {
-   unsigned i;
-   unsigned frame      = (unsigned)retro_atomic_load_relaxed_int(
-         &font_frame_epoch);
-   unsigned oldest_age = 0;
-   font_cache_slot_t **link;
-
-   font_cache_slot_t *victim = NULL;
-   unsigned b;
+   unsigned i, b, k;
+   unsigned n = 0;
 
    for (b = 0; b <= c->growths; b++)
    {
@@ -578,16 +587,62 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
          unsigned age = c->usage_counter - blk[i].last_used;
          if (frame && blk[i].last_frame == frame)
             continue;
-         if (!victim || age > oldest_age)
+         if (     n == FONT_CACHE_CANDIDATES
+               && age <= c->usage_counter - c->cand_used[n - 1])
+            continue;
+         /* After any of the same age, so the first found goes first */
+         for (k = (n < FONT_CACHE_CANDIDATES) ? n++ : n - 1;
+               k > 0 && age > c->usage_counter - c->cand_used[k - 1]; k--)
          {
-            oldest_age = age;
-            victim     = &blk[i];
+            c->cand[k]      = c->cand[k - 1];
+            c->cand_used[k] = c->cand_used[k - 1];
          }
+         c->cand[k]      = &blk[i];
+         c->cand_used[k] = blk[i].last_used;
       }
    }
 
+   c->cand_count = n;
+   c->cand_next  = n ? 1 : 0;
+   c->cand_frame = frame;
+   return n ? c->cand[0] : NULL;
+}
+
+/* The least recently used cell not looked up in this frame, taken out
+ * of the hash; NULL when every cell is in use this frame */
+static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
+{
+   unsigned frame            = (unsigned)retro_atomic_load_relaxed_int(
+         &font_frame_epoch);
+   font_cache_slot_t *victim = NULL;
+   font_cache_slot_t **link;
+
+   if (c->full_set && c->full_frame == frame)
+      return NULL;
+
+   if (c->cand_frame == frame)
+   {
+      while (c->cand_next < c->cand_count)
+      {
+         font_cache_slot_t *s = c->cand[c->cand_next];
+         unsigned        used = c->cand_used[c->cand_next++];
+         if (s->last_used == used && !(frame && s->last_frame == frame))
+         {
+            victim = s;
+            break;
+         }
+      }
+   }
+   if (!victim)
+      victim = font_cache_search(c, frame);
+
    if (!victim)
    {
+      if (frame)
+      {
+         c->full_set   = true;
+         c->full_frame = frame;
+      }
       /* Room is made at the start of a later frame, when nothing drawn
        * from the atlas at its present size is still waiting */
       if (c->atlas.max_dims && c->growths < FONT_CACHE_GROWTHS)
@@ -690,6 +745,7 @@ VIDEO_NOINLINE static const struct font_glyph *font_cache_miss(
       /* Nothing to draw: the cell goes back as the oldest there is */
       slot->last_used  = c->usage_counter - 0x80000000u;
       slot->last_frame--;
+      c->cand_count    = 0;
       return NULL;
    }
 
@@ -784,6 +840,7 @@ static bool font_cache_grow(font_cache_t *c)
    c->grown_len[c->growths++]  = added;
    c->cols                     = cols;
    c->rows                     = rows;
+   c->cand_count               = 0;
    /* All of it, for a consumer making its texture anew */
    c->atlas.dirty              = true;
    c->atlas.dirty_xy0          = 0;

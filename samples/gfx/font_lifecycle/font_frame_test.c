@@ -179,6 +179,45 @@ int main(void)
    }
    drv->free(h);
 
+   /* Misses take cells least recently used first, with hits between
+    * them and across more of them than one search of the cells keeps
+    * in hand: 256 glyphs fill the cells; a new glyph takes the oldest,
+    * glyph 0's, the next 99 are looked up again, and 99 more new ones
+    * take exactly the cells of the 99 after those */
+   if (!font_renderer_create_default(&drv, &h, dejavu, 16,
+            FONT_ATLAS_FORMAT_A8))
+      return 1;
+   {
+      static unsigned pos[256];
+      unsigned i, j, misplaced = 0;
+      const struct font_glyph *g;
+      font_driver_frame_begin();
+      for (i = 0; i < 256; i++)
+      {
+         g      = drv->get_glyph(h, 0x0100 + i);
+         pos[i] = g ? g->atlas_pos : 0;
+      }
+      font_driver_frame_begin();
+      g = drv->get_glyph(h, 0x0400);
+      CHECK(g && g->atlas_pos == pos[0], "lru: the oldest cell goes first");
+      for (i = 1; i < 100; i++)
+         drv->get_glyph(h, 0x0100 + i);
+      for (i = 1; i < 100; i++)
+      {
+         g = drv->get_glyph(h, 0x0400 + i);
+         for (j = 100; j < 199 && (!g || pos[j] != g->atlas_pos); j++);
+         if (j == 199)
+            misplaced++;
+      }
+      CHECK(misplaced == 0, "lru: new glyphs take the least recent cells");
+      drv->get_atlas(h)->dirty = false;
+      for (i = 1; i < 100; i++)
+         drv->get_glyph(h, 0x0100 + i);
+      CHECK(!drv->get_atlas(h)->dirty,
+            "lru: the glyphs looked up again stayed cached");
+   }
+   drv->free(h);
+
    if (fails)
       printf("%d failure(s)\n", fails);
    else
