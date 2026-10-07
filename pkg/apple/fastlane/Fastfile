@@ -167,7 +167,10 @@ private_lane :ra_build_app do |options|
     xcconfig: options[:xcconfig],
     xcargs: "CURRENT_PROJECT_VERSION=#{options[:versions][:build_number]} " \
             "MARKETING_VERSION=#{options[:versions][:version_number]}",
-    xcodebuild_formatter: 'xcbeautify --renderer github-actions',
+    # Errors only on the CI stream: a GitLab job log is cut off at 4 MB,
+    # and a build's warnings alone were enough to push the error that
+    # failed it past the cut.  The full xcodebuild log is in buildlog/.
+    xcodebuild_formatter: 'xcbeautify --quieter',
     buildlog_path: "buildlog",
     derived_data_path: "build/DerivedData",
     archive_path: "build/RetroArch.xcarchive",
