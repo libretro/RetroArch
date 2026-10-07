@@ -543,30 +543,24 @@ static int16_t cocoa_lightgun_aiming_state(
    return 0;
 }
 
-static bool cocoa_mouse_button_pressed(
-      cocoa_input_data_t *apple, unsigned port, unsigned key)
+/* What the mouse is holding, for the controls bound to its buttons.
+ * There is the one mouse, and it is the port's whose Mouse Index is 0:
+ * the rule the lightgun's buttons went by here. Left, right and the
+ * wheel; the other buttons are not kept. */
+static unsigned cocoa_bind_mouse_buttons(void *data, unsigned port)
 {
-   switch (key)
-   {
-      case RETRO_DEVICE_ID_MOUSE_LEFT:
-         return apple->mouse_buttons & 1;
-      case RETRO_DEVICE_ID_MOUSE_RIGHT:
-         return apple->mouse_buttons & 2;
-      case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-      case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-         return false;
-      case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-         return apple->mouse_wu;
-      case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-         return apple->mouse_wd;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-         return apple->mouse_wl;
-      case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-         return apple->mouse_wr;
-   }
+   cocoa_input_data_t *apple = (cocoa_input_data_t*)data;
+   unsigned held             = 0;
 
-   return false;
+   if (!apple || input_config_get_mouse_index(port) != 0)
+      return 0;
+   if (apple->mouse_buttons & 1) held |= INPUT_POINTER_LEFT;
+   if (apple->mouse_buttons & 2) held |= INPUT_POINTER_RIGHT;
+   if (apple->mouse_wu)          held |= INPUT_POINTER_WHEEL_UP;
+   if (apple->mouse_wd)          held |= INPUT_POINTER_WHEEL_DOWN;
+   if (apple->mouse_wl)          held |= INPUT_POINTER_HWHEEL_UP;
+   if (apple->mouse_wr)          held |= INPUT_POINTER_HWHEEL_DOWN;
+   return held;
 }
 
 /* Which of @keys are down: bit n of @down for keys[n]. */
@@ -683,52 +677,11 @@ static int16_t cocoa_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                return cocoa_lightgun_aiming_state(apple, idx, id);
-            /*buttons*/
-            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-            case RETRO_DEVICE_ID_LIGHTGUN_START:
-            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE:
-               {
-                  unsigned new_id                = input_driver_lightgun_id_convert(id);
-                  const uint32_t bind_joykey     = input_config_bind(port, new_id)->joykey;
-                  const uint32_t bind_joyaxis    = input_config_bind(port, new_id)->joyaxis;
-                  const uint32_t autobind_joykey = input_autoconf_bind(port, new_id)->joykey;
-                  const uint32_t autobind_joyaxis= input_autoconf_bind(port, new_id)->joyaxis;
-                  uint16_t joyport               = joypad_info->joy_idx;
-                  float axis_threshold           = joypad_info->axis_threshold;
-                  const uint32_t joykey          = (bind_joykey != NO_BTN) ? bind_joykey  : autobind_joykey;
-                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE) ? bind_joyaxis : autobind_joyaxis;
-
-                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
-                  {
-                     if ((uint16_t)joykey != NO_BTN && joypad->button(joyport, (uint16_t)joykey))
-                        return 1;
-                     if (joyaxis != AXIS_NONE &&
-                         ((float)abs(joypad->axis(joyport, joyaxis))
-                          / 0x8000) > axis_threshold)
-                        return 1;
-                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
-                              && !keyboard_mapping_blocked
-                              && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][new_id])]])
-                        return 1;
-                     else
-                     {
-                        if (input_config_get_mouse_index(port) == 0)
-                        {
-                           if (cocoa_mouse_button_pressed(apple, port, RETRO_KEYBIND_MBUTTON(&binds[port][new_id])))
-                              return 1;
-                        }
-                     }
-                  }
-               }
+            /* The buttons are what they are bound to - a pad's
+             * button or axis, a key, a mouse button - and are the
+             * frontend's to answer: it has the pad and the keys, and
+             * asks cocoa_bind_mouse_buttons() for the mouse. */
+            default:
                break;
          }
          break;
@@ -1170,7 +1123,7 @@ input_driver_t input_cocoa = {
 #endif
    NULL,                         /* survives_video */
    cocoa_keys_down,
-   NULL                          /* bind_mouse_buttons */
+   cocoa_bind_mouse_buttons
 };
 
 /* What the Apple UI hands the Cocoa input driver.

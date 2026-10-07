@@ -592,6 +592,9 @@ struct input_driver
     * which mouse a port has, and when it counts, stay the driver's own
     * rule. Asked once a poll, and only of a port with such a bind.
     * NULL - and now the last member - reads the published mice.
+    * A driver that has this has its lightgun's bound buttons answered
+    * by the frontend as well, with this for the mouse buttons among
+    * them.
     *
     * @param data   The input state struct
     * @param port   The port asked for

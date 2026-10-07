@@ -2032,7 +2032,12 @@ static int16_t input_analog_from_keys(input_driver_t *input, void *data,
 /* A lightgun's button, from what it is bound to: a pad's button or
  * axis, a key, a mouse button, in that order - what each input driver's
  * own code for the lightgun's buttons worked out. @held is left alone
- * for an id that is not one of them (the aim is answered elsewhere). */
+ * for an id that is not one of them (the aim is answered elsewhere).
+ *
+ * For a driver that publishes its mice and says so
+ * (INPUT_POINTERS_GUN_BUTTONS_BOUND), and for one that keeps its mice
+ * and says what a port's is holding (bind_mouse_buttons): udev, Cocoa.
+ * No driver reads a bind for these any more. */
 static bool input_gun_button_from_binds(input_driver_t *input, void *data,
       const input_device_driver_t *joypad, rarch_joypad_info_t *joypad_info,
       const struct retro_keybind *binds, bool keyboard_mapping_blocked,
@@ -2082,7 +2087,11 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
       else if (  !keyboard_mapping_blocked
               && (k->key_down[new_id >> 5] & (1u << (new_id & 31))))
          *held = 1;
-      else if (input_gun_mouse_button_down(port, RETRO_KEYBIND_MBUTTON(&binds[new_id])))
+      else if (k->mouse_from_driver
+            ? input_bind_mouse_button_down(k, port,
+               RETRO_KEYBIND_MBUTTON(&binds[new_id]))
+            : input_gun_mouse_button_down(port,
+               RETRO_KEYBIND_MBUTTON(&binds[new_id])))
          *held = 1;
    }
    return true;
@@ -2237,7 +2246,8 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
          ret |= input_analog_from_keys(input, data, _port, idx, id);
       else if (  device == RETRO_DEVICE_LIGHTGUN && binds
               && input && input->keys_down && _port < MAX_USERS
-              && (input_pointers.flags & INPUT_POINTERS_GUN_BUTTONS_BOUND)
+              && (  (input_pointers.flags & INPUT_POINTERS_GUN_BUTTONS_BOUND)
+                 || input->bind_mouse_buttons)
               && input_gun_button_from_binds(input, data, joypad,
                  joypad_info, binds[_port], keyboard_mapping_blocked,
                  _port, id, &held))

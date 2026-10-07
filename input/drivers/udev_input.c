@@ -3896,40 +3896,6 @@ static bool udev_port_key_pressed(udev_input_t *udev,
    return false;
 }
 
-static bool udev_mouse_button_pressed(
-      udev_input_t *udev, unsigned port, unsigned key)
-{
-   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-
-   if (mouse)
-   {
-      /* TODO/FIXME - add multi touch button check pointer devices */
-      switch ( key )
-      {
-         case RETRO_DEVICE_ID_MOUSE_LEFT:
-            return mouse->l;
-         case RETRO_DEVICE_ID_MOUSE_RIGHT:
-            return mouse->r;
-         case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-            return mouse->m;
-         case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-            return mouse->b4;
-         case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-            return mouse->b5;
-         case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-            return mouse->wu;
-         case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-            return mouse->wd;
-         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-            return mouse->whu;
-         case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-            return mouse->whd;
-      }
-   }
-
-   return false;
-}
-
 static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned idx, unsigned id, bool screen)
 {
@@ -4073,51 +4039,10 @@ static int16_t udev_input_state(
             case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
                return udev_lightgun_aiming_state( udev, port, id );
 
-               /*buttons*/
-            case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
-            case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_A:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_B:
-            case RETRO_DEVICE_ID_LIGHTGUN_AUX_C:
-            case RETRO_DEVICE_ID_LIGHTGUN_START:
-            case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_UP:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_DOWN:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_LEFT:
-            case RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT:
-            case RETRO_DEVICE_ID_LIGHTGUN_PAUSE: /* deprecated */
-               {
-                  unsigned new_id                = input_driver_lightgun_id_convert(id);
-                  const uint64_t bind_joykey     = input_config_bind(port, new_id)->joykey;
-                  const uint64_t bind_joyaxis    = input_config_bind(port, new_id)->joyaxis;
-                  const uint64_t autobind_joykey = input_autoconf_bind(port, new_id)->joykey;
-                  const uint64_t autobind_joyaxis= input_autoconf_bind(port, new_id)->joyaxis;
-                  uint16_t joyport               = joypad_info->joy_idx;
-                  float axis_threshold           = joypad_info->axis_threshold;
-                  const uint64_t joykey          = (bind_joykey != NO_BTN)
-                     ? bind_joykey  : autobind_joykey;
-                  const uint32_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-                     ? bind_joyaxis : autobind_joyaxis;
-
-                  if (RETRO_KEYBIND_VALID(&binds[port][new_id]))
-                  {
-                     if ((uint16_t)joykey != NO_BTN && joypad->button(
-                              joyport, (uint16_t)joykey))
-                        return 1;
-                     if (joyaxis != AXIS_NONE &&
-                           ((float)abs(joypad->axis(joyport, joyaxis))
-                            / 0x8000) > axis_threshold)
-                        return 1;
-                     else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
-                           && !keyboard_mapping_blocked
-                           && udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][new_id]))
-                        )
-                        return 1;
-                     else if (udev_mouse_button_pressed(udev, port, RETRO_KEYBIND_MBUTTON(&binds[port][new_id])))
-                        return 1;
-                  }
-               }
-               break;
+               /* The buttons are what they are bound to - a pad's
+                * button or axis, a key, a mouse button - and are the
+                * frontend's to answer: it has the pad and the keys,
+                * and asks udev_bind_mouse_buttons() for the mouse. */
                /*deprecated*/
             case RETRO_DEVICE_ID_LIGHTGUN_X:
                {

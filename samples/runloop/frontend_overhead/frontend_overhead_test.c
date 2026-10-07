@@ -2772,6 +2772,164 @@ static bool pm_menu_settled(void)
    return false;
 }
 
+/* --- The lightgun's bound buttons, for a driver that keeps its mice ---
+ *
+ * A lightgun's buttons are what they are bound to: a pad's button, a
+ * key, a mouse button. The frontend answers them for a driver that
+ * publishes its mice and says so; udev and Cocoa keep their mice and
+ * worked the buttons out themselves, from the binds they were handed.
+ * Now the frontend answers for them too - a driver that has
+ * bind_mouse_buttons - and the driver is never asked.
+ *
+ * An input driver that publishes no mouse, has a key down and a mouse
+ * button held when told to, and notes being asked for a button. */
+static input_driver_t gk_input;
+static bool           gk_key_down;
+static unsigned       gk_mouse;
+static unsigned       gk_asked;
+static int16_t gk_input_state(void *data,
+      const input_device_driver_t *joypad,
+      const input_device_driver_t *sec_joypad,
+      rarch_joypad_info_t *joypad_info,
+      const retro_keybind_set *binds,
+      bool keyboard_mapping_blocked,
+      unsigned port, unsigned device, unsigned idx, unsigned id)
+{
+   (void)data; (void)joypad; (void)sec_joypad; (void)joypad_info;
+   (void)binds; (void)keyboard_mapping_blocked; (void)port; (void)idx;
+   if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_LIGHTGUN
+         && (   id == RETRO_DEVICE_ID_LIGHTGUN_TRIGGER
+             || id == RETRO_DEVICE_ID_LIGHTGUN_RELOAD
+             || id == RETRO_DEVICE_ID_LIGHTGUN_AUX_A))
+      gk_asked++;
+   return 0;
+}
+static void gk_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data; (void)bind;
+   for (i = 0; i < count; i++)
+      if (port == 0 && gk_key_down && keys[i] == RETROK_g)
+         down[i >> 5] |= (1u << (i & 31));
+}
+static unsigned gk_bind_mouse_buttons(void *data, unsigned port)
+{
+   (void)data;
+   return port == 0 ? gk_mouse : 0;
+}
+static void gk_poll(void *data)
+{
+   input_pointer_frame_t none;
+   (void)data;
+   memset(&none, 0, sizeof(none));
+   input_driver_publish_pointers(&none, 0, 0);
+}
+
+static void lane_gun_buttons_kept_mice(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_driver_t *saved_input    = input_st->current_driver;
+   struct retro_keybind saved[3];
+   static const unsigned bind_id[3] = {
+      RARCH_LIGHTGUN_TRIGGER, RARCH_LIGHTGUN_RELOAD, RARCH_LIGHTGUN_AUX_A };
+   static const unsigned gun_id[3]  = {
+      RETRO_DEVICE_ID_LIGHTGUN_TRIGGER, RETRO_DEVICE_ID_LIGHTGUN_RELOAD,
+      RETRO_DEVICE_ID_LIGHTGUN_AUX_A };
+   static const char *what[3] = { "a key", "a mouse button", "a pad's button" };
+   unsigned had = failures;
+   unsigned i, c;
+
+   if (!saved_input || !joypad_real)
+   {
+      CHECK(false, "gun buttons: no input driver or no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   gk_input                    = *saved_input;
+   gk_input.input_state        = gk_input_state;
+   gk_input.poll               = gk_poll;
+   gk_input.keys_down          = gk_keys_down;
+   gk_input.bind_mouse_buttons = gk_bind_mouse_buttons;
+   gk_key_down                 = false;
+   gk_mouse                    = 0;
+   input_st->current_driver    = &gk_input;
+
+   /* the trigger on a key, reload on the right mouse button, the first
+    * auxiliary button on a button of the pad */
+   for (i = 0; i < 3; i++)
+   {
+      struct retro_keybind *b = input_config_bind_edit(0, bind_id[i]);
+      saved[i]   = *b;
+      b->joykey  = NO_BTN;
+      b->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_KEY(b, RETROK_UNKNOWN);
+      RETRO_KEYBIND_SET_MBUTTON(b, NO_BTN);
+      RETRO_KEYBIND_SET_VALID(b, true);
+   }
+   RETRO_KEYBIND_SET_KEY(input_config_bind_edit(0, bind_id[0]), RETROK_g);
+   RETRO_KEYBIND_SET_MBUTTON(input_config_bind_edit(0, bind_id[1]),
+         RETRO_DEVICE_ID_MOUSE_RIGHT);
+   input_config_bind_edit(0, bind_id[2])->joykey = 22;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+   gk_asked = 0;
+
+   /* nothing held, then each alone, then nothing again */
+   for (c = 0; c < 5; c++)
+   {
+      int only = (c >= 1 && c <= 3) ? (int)c - 1 : -1;
+      char msg[200];
+      gk_key_down = (only == 0);
+      gk_mouse    = (only == 1) ? INPUT_POINTER_RIGHT : 0;
+      syn_buttons = (only == 2) ? (1u << 22) : 0;
+      run_loop_frames(2);
+      for (i = 0; i < 3; i++)
+      {
+         int got = input_driver_state_wrapper(0, RETRO_DEVICE_LIGHTGUN, 0, gun_id[i]);
+         snprintf(msg, sizeof(msg), "gun buttons, kept mice: with %s held,"
+               " the button bound to %s reads %d",
+               only < 0 ? "nothing" : what[only], what[i], got);
+         CHECK(got == ((int)i == only ? 1 : 0), msg);
+      }
+   }
+   /* a left click is not the right button */
+   gk_mouse = INPUT_POINTER_LEFT;
+   run_loop_frames(2);
+   CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_LIGHTGUN, 0, gun_id[1]) == 0,
+         "gun buttons, kept mice: the button bound to the right mouse button"
+         " read as held with the left one down");
+   gk_mouse = 0;
+   {
+      char msg[120];
+      snprintf(msg, sizeof(msg), "gun buttons, kept mice: the driver was"
+            " asked for a bound button %u time(s)", gk_asked);
+      CHECK(gk_asked == 0, msg);
+   }
+
+   for (i = 0; i < 3; i++)
+      *input_config_bind_edit(0, bind_id[i]) = saved[i];
+   binds_written_by_a_lane();
+   input_st->current_driver = saved_input;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] gun-buttons lane (a driver that keeps its mice)\n");
+#endif
+}
+
 /* an input driver that has one key down, RETROK_RETURN, the mouse's
  * left button down, or the pointer pressed, when told to */
 static input_driver_t pm_input;
@@ -5239,6 +5397,7 @@ int main(int argc, char *argv[])
       lane_pointer_capture();
       lane_menu_combo_gate();
       lane_menu_pause();
+      lane_gun_buttons_kept_mice();
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();
