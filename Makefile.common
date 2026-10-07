@@ -814,6 +814,14 @@ ifeq ($(HAVE_DSOUND), 1)
    LIBS += -ldsound
 endif
 
+# The multimedia library's wave output: what a Windows with no DirectX
+# has. Not on by default anywhere but the Visual C++ 6 project.
+ifeq ($(HAVE_WAVEOUT), 1)
+   OBJ += audio/drivers/waveout.o
+   DEFINES += -DHAVE_WAVEOUT
+   LIBS += -lwinmm
+endif
+
 ifeq ($(HAVE_WASAPI), 1)
 	HAVE_MMDEVAPI = 1
    OBJ += audio/drivers/wasapi.o

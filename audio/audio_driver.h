@@ -1461,6 +1461,7 @@ extern audio_driver_t audio_xa;
 extern audio_driver_t audio_pulse;
 extern audio_driver_t audio_pipewire;
 extern audio_driver_t audio_dsound;
+extern audio_driver_t audio_waveout;
 extern audio_driver_t audio_wasapi;
 extern audio_driver_t audio_wdmks;
 #ifdef HAVE_ASIO

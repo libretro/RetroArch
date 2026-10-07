@@ -181,6 +181,7 @@ enum audio_driver_enum
    AUDIO_PULSE,
    AUDIO_EXT,
    AUDIO_DSOUND,
+   AUDIO_WAVEOUT,
    AUDIO_WASAPI,
    AUDIO_COREAUDIO,
    AUDIO_PS3,
@@ -585,6 +586,8 @@ static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WASAPI;
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_XAUDIO;
 #elif defined(HAVE_DSOUND)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_DSOUND;
+#elif defined(HAVE_WAVEOUT)
+static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_WAVEOUT;
 #elif defined(HAVE_AL)
 static const enum audio_driver_enum AUDIO_DEFAULT_DRIVER = AUDIO_AL;
 #elif defined(HAVE_SL)
@@ -1265,6 +1268,8 @@ const char *config_get_default_audio(void)
          return "sdl3";
       case AUDIO_DSOUND:
          return "dsound";
+      case AUDIO_WAVEOUT:
+         return "waveout";
       case AUDIO_WASAPI:
          return "wasapi";
       case AUDIO_XAUDIO:

@@ -1098,6 +1098,10 @@ AUDIO
 #include "../audio/drivers/dsound.c"
 #endif
 
+#ifdef HAVE_WAVEOUT
+#include "../audio/drivers/waveout.c"
+#endif
+
 #ifdef HAVE_WASAPI
 #include "../audio/drivers/wasapi.c"
 #endif

@@ -307,6 +307,9 @@ audio_driver_t *audio_drivers[] = {
 #ifdef HAVE_DSOUND
    &audio_dsound,
 #endif
+#ifdef HAVE_WAVEOUT
+   &audio_waveout,
+#endif
 #ifdef HAVE_SDL
    &audio_sdl1,
 #endif
