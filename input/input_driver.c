@@ -1091,6 +1091,7 @@ static int16_t input_snapshot_state(unsigned b,
    unsigned bound;
    bool full_range;
    const input_port_pads_t *pads;
+   const input_pad_snapshot_t *snap;
 
    if (pad >= MAX_USERS)
       return 0;
@@ -1122,6 +1123,9 @@ static int16_t input_snapshot_state(unsigned b,
          return input_st->pad_state_cache[b][port];
    }
 
+   /* the copy of the pad, taken now if this is the poll's first look */
+   snap = input_snapshot_pad(b, pad);
+
    for (; bound; bound &= bound - 1)
    {
       unsigned i = (unsigned)compat_ctz(bound);
@@ -1142,8 +1146,14 @@ static int16_t input_snapshot_state(unsigned b,
             ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
       }
 
+      /* A plain button is a bit of the copy, which is in hand; a hat's
+       * direction, or a button past the copy's, is asked for the long
+       * way. Each button was asked for that way, which looks the copy
+       * up again for every one. */
       if (     joykey != NO_BTN
-            && input_snapshot_button(b, pad, joykey))
+            && ((!GET_HAT_DIR(joykey) && joykey < 256)
+               ? (BIT256_GET(snap->buttons, joykey) != 0)
+               : (input_snapshot_button(b, pad, joykey) != 0)))
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE)
       {
