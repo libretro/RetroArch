@@ -939,15 +939,24 @@ static GLuint gl3_effect_program(gl3_t *gl, unsigned pipeline_id,
 /* The names of the half-float textures loaded: linear scRGB, which the
  * HDR composite shows through the linear program rather than as SDR.
  * Loaded, drawn and deleted on the context's own thread, so the table
- * needs no lock; past its size a texture is drawn as any other. */
-#define GL3_FP16_TEXTURES 32
-static GLuint   gl3_fp16_tex[GL3_FP16_TEXTURES];
+ * needs no lock; it grows with them, so none is ever drawn as SDR for
+ * want of a place in it. */
+static GLuint  *gl3_fp16_tex;
 static unsigned gl3_fp16_count;
+static unsigned gl3_fp16_cap;
 
 static void gl3_fp16_remember(GLuint id)
 {
-   if (gl3_fp16_count < GL3_FP16_TEXTURES)
-      gl3_fp16_tex[gl3_fp16_count++] = id;
+   if (gl3_fp16_count == gl3_fp16_cap)
+   {
+      unsigned cap  = gl3_fp16_cap ? gl3_fp16_cap * 2 : 32;
+      GLuint *grown = (GLuint*)realloc(gl3_fp16_tex, cap * sizeof(*grown));
+      if (!grown)
+         return;
+      gl3_fp16_tex = grown;
+      gl3_fp16_cap = cap;
+   }
+   gl3_fp16_tex[gl3_fp16_count++] = id;
 }
 
 static void gl3_fp16_forget(GLuint id)
@@ -959,6 +968,15 @@ static void gl3_fp16_forget(GLuint id)
          gl3_fp16_tex[i] = gl3_fp16_tex[--gl3_fp16_count];
          return;
       }
+}
+
+/* With the context: its names are gone with it */
+static void gl3_fp16_forget_all(void)
+{
+   free(gl3_fp16_tex);
+   gl3_fp16_tex   = NULL;
+   gl3_fp16_count = 0;
+   gl3_fp16_cap   = 0;
 }
 
 static bool gl3_fp16_is(GLuint id)
@@ -3934,6 +3952,7 @@ static void gl3_free(void *data)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    gl3_destroy_resources(gl);
+   gl3_fp16_forget_all();
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
