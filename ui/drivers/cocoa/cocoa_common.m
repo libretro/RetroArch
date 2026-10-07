@@ -27,6 +27,7 @@
 #include <CoreFoundation/CoreFoundation.h>
 
 #include <retro_atomic.h>
+#include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
 #include <compat/apple_compat.h>
@@ -212,9 +213,58 @@ void rarch_stop_draw_observer(void)
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
+#if TARGET_OS_OSX
+/* The display's last vertical blank, on the clock
+ * cpu_features_get_time_usec() keeps; 0 while none is known.
+ *
+ * The threaded presenter lays its vblanks from the time a driver gives
+ * it for its last present, and paces the core to them. On macOS no
+ * driver had one to give: the OpenGL and Vulkan contexts had no such
+ * report, and Metal's comes from a drawable's presented time, which is
+ * not always there. Without it the presenter guesses - a period after
+ * the frame call returned - so the latency it shows is a period and
+ * more whatever the pacing does, and "Display" pacing has no display
+ * to go by.
+ *
+ * The view's display link (macOS 14 and later) is called for each
+ * vblank and carries its time. The time is the link's own, not when
+ * the call arrived: the main thread may be in a core, or asleep in the
+ * presenter's hold, when the vblank passes. */
+#ifdef RETRO_ATOMIC_HAS_64
+static retro_atomic_64_t cocoa_vblank_at;
+#endif
+
+retro_time_t cocoa_last_vblank_time(void)
+{
+#ifdef RETRO_ATOMIC_HAS_64
+   retro_time_t at = (retro_time_t)retro_atomic_load_acquire_64(&cocoa_vblank_at);
+   /* a link that has stopped - the window hidden, the display asleep -
+    * has nothing to say about the display now */
+   if (at > 0 && cpu_features_get_time_usec() - at < 250000)
+      return at;
+#endif
+   return 0;
+}
+#endif
+
 #if !TARGET_OS_OSX || __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
 -(void)step:(CADisplayLink*)target API_AVAILABLE(macos(14.0), ios(3.1), tvos(3.1))
 {
+#if TARGET_OS_OSX && defined(RETRO_ATOMIC_HAS_64)
+   /* host time to the frontend's clock by one paired read, as the Metal
+    * driver does for a drawable's presented time */
+   {
+      CFTimeInterval at = [target timestamp];
+      if (at > 0.0)
+      {
+         retro_time_t   now = cpu_features_get_time_usec();
+         CFTimeInterval age = CACurrentMediaTime() - at;
+         if (age >= 0.0 && age < 1.0)
+            retro_atomic_store_release_64(&cocoa_vblank_at,
+                  (int64_t)(now - (retro_time_t)(age * 1000000.0)));
+      }
+   }
+#endif
 #if TARGET_OS_IPHONE
    if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive)
       return;

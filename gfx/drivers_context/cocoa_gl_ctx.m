@@ -751,6 +751,19 @@ static bool cocoa_gl_gfx_ctx_presentable(void *data)
    return true;
 }
 
+#if TARGET_OS_OSX
+/* The display's last vblank, from the view's display link
+ * (ui/drivers/cocoa/cocoa_common.m): what the threaded presenter lays
+ * its vblanks from. */
+retro_time_t cocoa_last_vblank_time(void);
+
+static retro_time_t cocoa_gl_gfx_ctx_last_present_time(void *data)
+{
+   (void)data;
+   return cocoa_last_vblank_time();
+}
+#endif
+
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_init,
    cocoa_gl_gfx_ctx_destroy,
@@ -793,5 +806,10 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* make_current */
    NULL, /* create_surface */
    NULL, /* destroy_surface */
-   cocoa_gl_gfx_ctx_presentable
+   cocoa_gl_gfx_ctx_presentable,
+#if TARGET_OS_OSX
+   cocoa_gl_gfx_ctx_last_present_time
+#else
+   NULL  /* last_present_time */
+#endif
 };

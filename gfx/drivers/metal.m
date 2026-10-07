@@ -2960,7 +2960,17 @@ static float metal_hdr_pq_to_nits(float pq)
 - (retro_time_t)lastPresentTime
 {
 #ifdef RETRO_ATOMIC_HAS_64
-   return (retro_time_t)retro_atomic_load_acquire_64(&metal_presented_at);
+   retro_time_t at = (retro_time_t)retro_atomic_load_acquire_64(&metal_presented_at);
+   if (at > 0)
+      return at;
+#endif
+#if TARGET_OS_OSX
+   /* No drawable has said when it was shown: the display's last vblank,
+    * from the view's display link, where there is one. */
+   {
+      retro_time_t cocoa_last_vblank_time(void);
+      return cocoa_last_vblank_time();
+   }
 #else
    return 0;
 #endif
