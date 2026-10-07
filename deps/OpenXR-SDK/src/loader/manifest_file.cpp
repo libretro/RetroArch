@@ -58,13 +58,6 @@
 #include <android/asset_manager.h>
 #endif
 
-#ifdef XRLOADER_DISABLE_EXCEPTION_HANDLING
-#if JSON_USE_EXCEPTIONS
-#error \
-    "Loader is configured to not catch exceptions, but jsoncpp was built with exception-throwing enabled, which could violate the C ABI. One of those two things needs to change."
-#endif  // JSON_USE_EXCEPTIONS
-#endif  // !XRLOADER_DISABLE_EXCEPTION_HANDLING
-
 #include "runtime_interface.hpp"
 
 // Utility functions for finding files in the appropriate paths

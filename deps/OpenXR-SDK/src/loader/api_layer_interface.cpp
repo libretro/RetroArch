@@ -453,16 +453,9 @@ ApiLayerInterface::ApiLayerInterface(const std::string& layer_name, LoaderPlatfo
       _supported_extensions(supported_extensions) {}
 
 ApiLayerInterface::~ApiLayerInterface() {
-    try {
-        std::string info_message = "ApiLayerInterface being destroyed for layer ";
-        info_message += _layer_name;
-        LoaderLogger::LogInfoMessage("", info_message);
-    }
-    // NOLINTNEXTLINE(bugprone-empty-catch)
-    catch (...) {
-        // Need a try catch here to avoid concerns about exceptions in a destructor
-        // If logging fails here there isn't much we can do so left intentionally empty
-    }
+    std::string info_message = "ApiLayerInterface being destroyed for layer ";
+    info_message += _layer_name;
+    LoaderLogger::LogInfoMessage("", info_message);
 
     LoaderPlatformLibraryClose(_layer_library);
 }

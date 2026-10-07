@@ -30,7 +30,6 @@
 #include "xr_generated_loader.hpp"
 
 #include "api_layer_interface.hpp"
-#include "exception_handling.hpp"
 #include "hex_and_handles.h"
 #include "loader_instance.hpp"
 #include "loader_logger.hpp"
@@ -52,7 +51,7 @@
 // Automatically generated instance trampolines and terminators
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetInstanceProperties(
     XrInstance                                  instance,
-    XrInstanceProperties*                       instanceProperties) XRLOADER_ABI_TRY {
+    XrInstanceProperties*                       instanceProperties) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetInstanceProperties");
     if (XR_SUCCEEDED(result)) {
@@ -60,11 +59,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetInstanceProperties(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrPollEvent(
     XrInstance                                  instance,
-    XrEventDataBuffer*                          eventData) XRLOADER_ABI_TRY {
+    XrEventDataBuffer*                          eventData) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrPollEvent");
     if (XR_SUCCEEDED(result)) {
@@ -72,12 +70,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrPollEvent(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrResultToString(
     XrInstance                                  instance,
     XrResult                                    value,
-    char                                        buffer[XR_MAX_RESULT_STRING_SIZE]) XRLOADER_ABI_TRY {
+    char                                        buffer[XR_MAX_RESULT_STRING_SIZE]) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrResultToString");
     if (XR_SUCCEEDED(result)) {
@@ -85,12 +82,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrResultToString(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStructureTypeToString(
     XrInstance                                  instance,
     XrStructureType                             value,
-    char                                        buffer[XR_MAX_STRUCTURE_NAME_SIZE]) XRLOADER_ABI_TRY {
+    char                                        buffer[XR_MAX_STRUCTURE_NAME_SIZE]) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrStructureTypeToString");
     if (XR_SUCCEEDED(result)) {
@@ -98,12 +94,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStructureTypeToString(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetSystem(
     XrInstance                                  instance,
     const XrSystemGetInfo*                      getInfo,
-    XrSystemId*                                 systemId) XRLOADER_ABI_TRY {
+    XrSystemId*                                 systemId) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetSystem");
     if (XR_SUCCEEDED(result)) {
@@ -111,12 +106,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetSystem(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetSystemProperties(
     XrInstance                                  instance,
     XrSystemId                                  systemId,
-    XrSystemProperties*                         properties) XRLOADER_ABI_TRY {
+    XrSystemProperties*                         properties) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetSystemProperties");
     if (XR_SUCCEEDED(result)) {
@@ -124,7 +118,6 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetSystemProperties(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateEnvironmentBlendModes(
     XrInstance                                  instance,
@@ -132,7 +125,7 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateEnvironmentBl
     XrViewConfigurationType                     viewConfigurationType,
     uint32_t                                    environmentBlendModeCapacityInput,
     uint32_t*                                   environmentBlendModeCountOutput,
-    XrEnvironmentBlendMode*                     environmentBlendModes) XRLOADER_ABI_TRY {
+    XrEnvironmentBlendMode*                     environmentBlendModes) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateEnvironmentBlendModes");
     if (XR_SUCCEEDED(result)) {
@@ -140,12 +133,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateEnvironmentBl
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateSession(
     XrInstance                                  instance,
     const XrSessionCreateInfo*                  createInfo,
-    XrSession*                                  session) XRLOADER_ABI_TRY {
+    XrSession*                                  session) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateSession");
     if (XR_SUCCEEDED(result)) {
@@ -153,10 +145,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateSession(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySession(
-    XrSession                                   session) XRLOADER_ABI_TRY {
+    XrSession                                   session) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroySession");
     if (XR_SUCCEEDED(result)) {
@@ -164,13 +155,12 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySession(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateReferenceSpaces(
     XrSession                                   session,
     uint32_t                                    spaceCapacityInput,
     uint32_t*                                   spaceCountOutput,
-    XrReferenceSpaceType*                       spaces) XRLOADER_ABI_TRY {
+    XrReferenceSpaceType*                       spaces) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateReferenceSpaces");
     if (XR_SUCCEEDED(result)) {
@@ -178,12 +168,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateReferenceSpac
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateReferenceSpace(
     XrSession                                   session,
     const XrReferenceSpaceCreateInfo*           createInfo,
-    XrSpace*                                    space) XRLOADER_ABI_TRY {
+    XrSpace*                                    space) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateReferenceSpace");
     if (XR_SUCCEEDED(result)) {
@@ -191,12 +180,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateReferenceSpace(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetReferenceSpaceBoundsRect(
     XrSession                                   session,
     XrReferenceSpaceType                        referenceSpaceType,
-    XrExtent2Df*                                bounds) XRLOADER_ABI_TRY {
+    XrExtent2Df*                                bounds) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetReferenceSpaceBoundsRect");
     if (XR_SUCCEEDED(result)) {
@@ -204,12 +192,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetReferenceSpaceBound
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateActionSpace(
     XrSession                                   session,
     const XrActionSpaceCreateInfo*              createInfo,
-    XrSpace*                                    space) XRLOADER_ABI_TRY {
+    XrSpace*                                    space) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateActionSpace");
     if (XR_SUCCEEDED(result)) {
@@ -217,13 +204,12 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateActionSpace(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateSpace(
     XrSpace                                     space,
     XrSpace                                     baseSpace,
     XrTime                                      time,
-    XrSpaceLocation*                            location) XRLOADER_ABI_TRY {
+    XrSpaceLocation*                            location) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrLocateSpace");
     if (XR_SUCCEEDED(result)) {
@@ -231,10 +217,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateSpace(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySpace(
-    XrSpace                                     space) XRLOADER_ABI_TRY {
+    XrSpace                                     space) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroySpace");
     if (XR_SUCCEEDED(result)) {
@@ -242,14 +227,13 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySpace(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateViewConfigurations(
     XrInstance                                  instance,
     XrSystemId                                  systemId,
     uint32_t                                    viewConfigurationTypeCapacityInput,
     uint32_t*                                   viewConfigurationTypeCountOutput,
-    XrViewConfigurationType*                    viewConfigurationTypes) XRLOADER_ABI_TRY {
+    XrViewConfigurationType*                    viewConfigurationTypes) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateViewConfigurations");
     if (XR_SUCCEEDED(result)) {
@@ -257,13 +241,12 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateViewConfigura
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetViewConfigurationProperties(
     XrInstance                                  instance,
     XrSystemId                                  systemId,
     XrViewConfigurationType                     viewConfigurationType,
-    XrViewConfigurationProperties*              configurationProperties) XRLOADER_ABI_TRY {
+    XrViewConfigurationProperties*              configurationProperties) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetViewConfigurationProperties");
     if (XR_SUCCEEDED(result)) {
@@ -271,7 +254,6 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetViewConfigurationPr
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateViewConfigurationViews(
     XrInstance                                  instance,
@@ -279,7 +261,7 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateViewConfigura
     XrViewConfigurationType                     viewConfigurationType,
     uint32_t                                    viewCapacityInput,
     uint32_t*                                   viewCountOutput,
-    XrViewConfigurationView*                    views) XRLOADER_ABI_TRY {
+    XrViewConfigurationView*                    views) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateViewConfigurationViews");
     if (XR_SUCCEEDED(result)) {
@@ -287,13 +269,12 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateViewConfigura
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateSwapchainFormats(
     XrSession                                   session,
     uint32_t                                    formatCapacityInput,
     uint32_t*                                   formatCountOutput,
-    int64_t*                                    formats) XRLOADER_ABI_TRY {
+    int64_t*                                    formats) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateSwapchainFormats");
     if (XR_SUCCEEDED(result)) {
@@ -301,12 +282,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateSwapchainForm
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateSwapchain(
     XrSession                                   session,
     const XrSwapchainCreateInfo*                createInfo,
-    XrSwapchain*                                swapchain) XRLOADER_ABI_TRY {
+    XrSwapchain*                                swapchain) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateSwapchain");
     if (XR_SUCCEEDED(result)) {
@@ -314,10 +294,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateSwapchain(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySwapchain(
-    XrSwapchain                                 swapchain) XRLOADER_ABI_TRY {
+    XrSwapchain                                 swapchain) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroySwapchain");
     if (XR_SUCCEEDED(result)) {
@@ -325,13 +304,12 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroySwapchain(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateSwapchainImages(
     XrSwapchain                                 swapchain,
     uint32_t                                    imageCapacityInput,
     uint32_t*                                   imageCountOutput,
-    XrSwapchainImageBaseHeader*                 images) XRLOADER_ABI_TRY {
+    XrSwapchainImageBaseHeader*                 images) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateSwapchainImages");
     if (XR_SUCCEEDED(result)) {
@@ -339,12 +317,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateSwapchainImag
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrAcquireSwapchainImage(
     XrSwapchain                                 swapchain,
     const XrSwapchainImageAcquireInfo*          acquireInfo,
-    uint32_t*                                   index) XRLOADER_ABI_TRY {
+    uint32_t*                                   index) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrAcquireSwapchainImage");
     if (XR_SUCCEEDED(result)) {
@@ -352,11 +329,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrAcquireSwapchainImage(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrWaitSwapchainImage(
     XrSwapchain                                 swapchain,
-    const XrSwapchainImageWaitInfo*             waitInfo) XRLOADER_ABI_TRY {
+    const XrSwapchainImageWaitInfo*             waitInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrWaitSwapchainImage");
     if (XR_SUCCEEDED(result)) {
@@ -364,11 +340,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrWaitSwapchainImage(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrReleaseSwapchainImage(
     XrSwapchain                                 swapchain,
-    const XrSwapchainImageReleaseInfo*          releaseInfo) XRLOADER_ABI_TRY {
+    const XrSwapchainImageReleaseInfo*          releaseInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrReleaseSwapchainImage");
     if (XR_SUCCEEDED(result)) {
@@ -376,11 +351,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrReleaseSwapchainImage(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrBeginSession(
     XrSession                                   session,
-    const XrSessionBeginInfo*                   beginInfo) XRLOADER_ABI_TRY {
+    const XrSessionBeginInfo*                   beginInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrBeginSession");
     if (XR_SUCCEEDED(result)) {
@@ -388,10 +362,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrBeginSession(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEndSession(
-    XrSession                                   session) XRLOADER_ABI_TRY {
+    XrSession                                   session) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEndSession");
     if (XR_SUCCEEDED(result)) {
@@ -399,10 +372,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEndSession(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrRequestExitSession(
-    XrSession                                   session) XRLOADER_ABI_TRY {
+    XrSession                                   session) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrRequestExitSession");
     if (XR_SUCCEEDED(result)) {
@@ -410,12 +382,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrRequestExitSession(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrWaitFrame(
     XrSession                                   session,
     const XrFrameWaitInfo*                      frameWaitInfo,
-    XrFrameState*                               frameState) XRLOADER_ABI_TRY {
+    XrFrameState*                               frameState) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrWaitFrame");
     if (XR_SUCCEEDED(result)) {
@@ -423,11 +394,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrWaitFrame(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrBeginFrame(
     XrSession                                   session,
-    const XrFrameBeginInfo*                     frameBeginInfo) XRLOADER_ABI_TRY {
+    const XrFrameBeginInfo*                     frameBeginInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrBeginFrame");
     if (XR_SUCCEEDED(result)) {
@@ -435,11 +405,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrBeginFrame(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEndFrame(
     XrSession                                   session,
-    const XrFrameEndInfo*                       frameEndInfo) XRLOADER_ABI_TRY {
+    const XrFrameEndInfo*                       frameEndInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEndFrame");
     if (XR_SUCCEEDED(result)) {
@@ -447,7 +416,6 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEndFrame(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateViews(
     XrSession                                   session,
@@ -455,7 +423,7 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateViews(
     XrViewState*                                viewState,
     uint32_t                                    viewCapacityInput,
     uint32_t*                                   viewCountOutput,
-    XrView*                                     views) XRLOADER_ABI_TRY {
+    XrView*                                     views) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrLocateViews");
     if (XR_SUCCEEDED(result)) {
@@ -463,12 +431,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateViews(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStringToPath(
     XrInstance                                  instance,
     const char*                                 pathString,
-    XrPath*                                     path) XRLOADER_ABI_TRY {
+    XrPath*                                     path) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrStringToPath");
     if (XR_SUCCEEDED(result)) {
@@ -476,14 +443,13 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStringToPath(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrPathToString(
     XrInstance                                  instance,
     XrPath                                      path,
     uint32_t                                    bufferCapacityInput,
     uint32_t*                                   bufferCountOutput,
-    char*                                       buffer) XRLOADER_ABI_TRY {
+    char*                                       buffer) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrPathToString");
     if (XR_SUCCEEDED(result)) {
@@ -491,12 +457,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrPathToString(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateActionSet(
     XrInstance                                  instance,
     const XrActionSetCreateInfo*                createInfo,
-    XrActionSet*                                actionSet) XRLOADER_ABI_TRY {
+    XrActionSet*                                actionSet) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateActionSet");
     if (XR_SUCCEEDED(result)) {
@@ -504,10 +469,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateActionSet(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroyActionSet(
-    XrActionSet                                 actionSet) XRLOADER_ABI_TRY {
+    XrActionSet                                 actionSet) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroyActionSet");
     if (XR_SUCCEEDED(result)) {
@@ -515,12 +479,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroyActionSet(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateAction(
     XrActionSet                                 actionSet,
     const XrActionCreateInfo*                   createInfo,
-    XrAction*                                   action) XRLOADER_ABI_TRY {
+    XrAction*                                   action) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrCreateAction");
     if (XR_SUCCEEDED(result)) {
@@ -528,10 +491,9 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrCreateAction(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroyAction(
-    XrAction                                    action) XRLOADER_ABI_TRY {
+    XrAction                                    action) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroyAction");
     if (XR_SUCCEEDED(result)) {
@@ -539,11 +501,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrDestroyAction(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrSuggestInteractionProfileBindings(
     XrInstance                                  instance,
-    const XrInteractionProfileSuggestedBinding* suggestedBindings) XRLOADER_ABI_TRY {
+    const XrInteractionProfileSuggestedBinding* suggestedBindings) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrSuggestInteractionProfileBindings");
     if (XR_SUCCEEDED(result)) {
@@ -551,11 +512,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrSuggestInteractionProf
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrAttachSessionActionSets(
     XrSession                                   session,
-    const XrSessionActionSetsAttachInfo*        attachInfo) XRLOADER_ABI_TRY {
+    const XrSessionActionSetsAttachInfo*        attachInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrAttachSessionActionSets");
     if (XR_SUCCEEDED(result)) {
@@ -563,12 +523,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrAttachSessionActionSet
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetCurrentInteractionProfile(
     XrSession                                   session,
     XrPath                                      topLevelUserPath,
-    XrInteractionProfileState*                  interactionProfile) XRLOADER_ABI_TRY {
+    XrInteractionProfileState*                  interactionProfile) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetCurrentInteractionProfile");
     if (XR_SUCCEEDED(result)) {
@@ -576,12 +535,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetCurrentInteractionP
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateBoolean(
     XrSession                                   session,
     const XrActionStateGetInfo*                 getInfo,
-    XrActionStateBoolean*                       state) XRLOADER_ABI_TRY {
+    XrActionStateBoolean*                       state) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetActionStateBoolean");
     if (XR_SUCCEEDED(result)) {
@@ -589,12 +547,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateBoolean(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateFloat(
     XrSession                                   session,
     const XrActionStateGetInfo*                 getInfo,
-    XrActionStateFloat*                         state) XRLOADER_ABI_TRY {
+    XrActionStateFloat*                         state) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetActionStateFloat");
     if (XR_SUCCEEDED(result)) {
@@ -602,12 +559,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateFloat(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateVector2f(
     XrSession                                   session,
     const XrActionStateGetInfo*                 getInfo,
-    XrActionStateVector2f*                      state) XRLOADER_ABI_TRY {
+    XrActionStateVector2f*                      state) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetActionStateVector2f");
     if (XR_SUCCEEDED(result)) {
@@ -615,12 +571,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStateVector2f
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStatePose(
     XrSession                                   session,
     const XrActionStateGetInfo*                 getInfo,
-    XrActionStatePose*                          state) XRLOADER_ABI_TRY {
+    XrActionStatePose*                          state) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetActionStatePose");
     if (XR_SUCCEEDED(result)) {
@@ -628,11 +583,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetActionStatePose(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrSyncActions(
     XrSession                                   session,
-    const XrActionsSyncInfo*                    syncInfo) XRLOADER_ABI_TRY {
+    const XrActionsSyncInfo*                    syncInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrSyncActions");
     if (XR_SUCCEEDED(result)) {
@@ -640,14 +594,13 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrSyncActions(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateBoundSourcesForAction(
     XrSession                                   session,
     const XrBoundSourcesForActionEnumerateInfo* enumerateInfo,
     uint32_t                                    sourceCapacityInput,
     uint32_t*                                   sourceCountOutput,
-    XrPath*                                     sources) XRLOADER_ABI_TRY {
+    XrPath*                                     sources) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrEnumerateBoundSourcesForAction");
     if (XR_SUCCEEDED(result)) {
@@ -655,14 +608,13 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrEnumerateBoundSourcesF
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetInputSourceLocalizedName(
     XrSession                                   session,
     const XrInputSourceLocalizedNameGetInfo*    getInfo,
     uint32_t                                    bufferCapacityInput,
     uint32_t*                                   bufferCountOutput,
-    char*                                       buffer) XRLOADER_ABI_TRY {
+    char*                                       buffer) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrGetInputSourceLocalizedName");
     if (XR_SUCCEEDED(result)) {
@@ -670,12 +622,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrGetInputSourceLocalize
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrApplyHapticFeedback(
     XrSession                                   session,
     const XrHapticActionInfo*                   hapticActionInfo,
-    const XrHapticBaseHeader*                   hapticFeedback) XRLOADER_ABI_TRY {
+    const XrHapticBaseHeader*                   hapticFeedback) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrApplyHapticFeedback");
     if (XR_SUCCEEDED(result)) {
@@ -683,11 +634,10 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrApplyHapticFeedback(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStopHapticFeedback(
     XrSession                                   session,
-    const XrHapticActionInfo*                   hapticActionInfo) XRLOADER_ABI_TRY {
+    const XrHapticActionInfo*                   hapticActionInfo) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrStopHapticFeedback");
     if (XR_SUCCEEDED(result)) {
@@ -695,12 +645,11 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrStopHapticFeedback(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateSpaces(
     XrSession                                   session,
     const XrSpacesLocateInfo*                   locateInfo,
-    XrSpaceLocations*                           spaceLocations) XRLOADER_ABI_TRY {
+    XrSpaceLocations*                           spaceLocations) {
     LoaderInstance* loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrLocateSpaces");
     if (XR_SUCCEEDED(result)) {
@@ -708,6 +657,5 @@ extern "C" LOADER_EXPORT XRAPI_ATTR XrResult XRAPI_CALL xrLocateSpaces(
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 

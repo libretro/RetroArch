@@ -12,7 +12,6 @@
 #endif  // defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 
 #include "api_layer_interface.hpp"
-#include "exception_handling.hpp"
 #include "hex_and_handles.h"
 #include "loader_init_data.hpp"
 #include "loader_instance.hpp"
@@ -79,15 +78,14 @@ inline bool IsMissingNullTerminator(const char (&str)[max_length]) {
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *);
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrInitializeLoaderKHR(const XrLoaderInitInfoBaseHeaderKHR *loaderInitInfo)
-    XRLOADER_ABI_TRY {
+    {
     LoaderLogger::LogVerboseMessage("xrInitializeLoaderKHR", "Entering loader trampoline");
     return InitializeLoaderInitData(loaderInitInfo);
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrEnumerateApiLayerProperties(uint32_t propertyCapacityInput,
                                                                           uint32_t *propertyCountOutput,
-                                                                          XrApiLayerProperties *properties) XRLOADER_ABI_TRY {
+                                                                          XrApiLayerProperties *properties) {
     LoaderLogger::LogVerboseMessage("xrEnumerateApiLayerProperties", "Entering loader trampoline");
 
     // Make sure only one thread is attempting to read the JSON files at a time.
@@ -101,11 +99,10 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrEnumerateApiLayerProperties(uint32
 
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL
 LoaderXrEnumerateInstanceExtensionProperties(const char *layerName, uint32_t propertyCapacityInput, uint32_t *propertyCountOutput,
-                                             XrExtensionProperties *properties) XRLOADER_ABI_TRY {
+                                             XrExtensionProperties *properties) {
     bool just_layer_properties = false;
     LoaderLogger::LogVerboseMessage("xrEnumerateInstanceExtensionProperties", "Entering loader trampoline");
 
@@ -206,10 +203,9 @@ LoaderXrEnumerateInstanceExtensionProperties(const char *layerName, uint32_t pro
     LoaderLogger::LogVerboseMessage("xrEnumerateInstanceExtensionProperties", "Completed loader trampoline");
     return XR_SUCCESS;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCreateInfo *info,
-                                                             XrInstance *instance) XRLOADER_ABI_TRY {
+                                                             XrInstance *instance) {
     LoaderLogger::LogVerboseMessage("xrCreateInstance", "Entering loader trampoline");
     if (nullptr == info) {
         LoaderLogger::LogValidationErrorMessage("VUID-xrCreateInstance-info-parameter", "xrCreateInstance", "must be non-NULL");
@@ -312,9 +308,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCre
 
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
-static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instance) XRLOADER_ABI_TRY {
+static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instance) {
     LoaderLogger::LogVerboseMessage("xrDestroyInstance", "Entering loader trampoline");
     // Runtimes may detect XR_NULL_HANDLE provided as a required handle parameter and return XR_ERROR_HANDLE_INVALID. - 2.9
     if (XR_NULL_HANDLE == instance) {
@@ -354,7 +349,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instanc
 
     return XR_SUCCESS;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // ---- Core 1.0 manual loader terminator functions
 
@@ -409,7 +403,7 @@ static XrResult ValidateInstanceCreateInfo(const XrInstanceCreateInfo *info) {
 }
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateInstance(const XrInstanceCreateInfo *createInfo,
-                                                                 XrInstance *instance) XRLOADER_ABI_TRY {
+                                                                 XrInstance *instance) {
     LoaderLogger::LogVerboseMessage("xrCreateInstance", "Entering loader terminator");
     XrResult result = ValidateInstanceCreateInfo(createInfo);
     if (XR_FAILED(result)) {
@@ -421,7 +415,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateInstance(const XrInstanc
     LoaderLogger::LogVerboseMessage("xrCreateInstance", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateApiLayerInstance(const XrInstanceCreateInfo *info,
                                                                          const struct XrApiLayerCreateInfo * /*apiLayerInfo*/,
@@ -429,17 +422,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateApiLayerInstance(const X
     return LoaderXrTermCreateInstance(info, instance);
 }
 
-static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyInstance(XrInstance instance) XRLOADER_ABI_TRY {
+static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyInstance(XrInstance instance) {
     LoaderLogger::LogVerboseMessage("xrDestroyInstance", "Entering loader terminator");
     LoaderLogger::GetInstance().RemoveLogRecordersForXrInstance(instance);
     XrResult result = RuntimeInterface::GetRuntime().DestroyInstance(instance);
     LoaderLogger::LogVerboseMessage("xrDestroyInstance", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermGetInstanceProcAddr(XrInstance instance, const char *name,
-                                                                      PFN_xrVoidFunction *function) XRLOADER_ABI_TRY {
+                                                                      PFN_xrVoidFunction *function) {
     // A few instance commands need to go through a loader terminator.
     // Otherwise, go directly to the runtime version of the command if it exists.
     // But first set the function pointer to NULL so that the fall-through below actually works.
@@ -473,13 +465,12 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermGetInstanceProcAddr(XrInstance
 
     return RuntimeInterface::GetInstanceProcAddr(instance, name, function);
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // ---- Extension manual loader trampoline functions
 
 static XRAPI_ATTR XrResult XRAPI_CALL
 LoaderTrampolineCreateDebugUtilsMessengerEXT(XrInstance instance, const XrDebugUtilsMessengerCreateInfoEXT *createInfo,
-                                             XrDebugUtilsMessengerEXT *messenger) XRLOADER_ABI_TRY {
+                                             XrDebugUtilsMessengerEXT *messenger) {
     LoaderLogger::LogVerboseMessage("xrCreateDebugUtilsMessengerEXT", "Entering loader trampoline");
 
     if (instance == XR_NULL_HANDLE) {
@@ -497,10 +488,9 @@ LoaderTrampolineCreateDebugUtilsMessengerEXT(XrInstance instance, const XrDebugU
     LoaderLogger::LogVerboseMessage("xrCreateDebugUtilsMessengerEXT", "Completed loader trampoline");
     return result;
 }
-XRLOADER_ABI_CATCH_BAD_ALLOC_OOM XRLOADER_ABI_CATCH_FALLBACK
 
     static XRAPI_ATTR XrResult XRAPI_CALL
-    LoaderTrampolineDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger) XRLOADER_ABI_TRY {
+    LoaderTrampolineDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger) {
     // TODO: get instance from messenger in loader
     // Also, is the loader really doing all this every call?
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Entering loader trampoline");
@@ -520,10 +510,9 @@ XRLOADER_ABI_CATCH_BAD_ALLOC_OOM XRLOADER_ABI_CATCH_FALLBACK
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Completed loader trampoline");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL
-LoaderTrampolineSessionBeginDebugUtilsLabelRegionEXT(XrSession session, const XrDebugUtilsLabelEXT *labelInfo) XRLOADER_ABI_TRY {
+LoaderTrampolineSessionBeginDebugUtilsLabelRegionEXT(XrSession session, const XrDebugUtilsLabelEXT *labelInfo) {
     if (session == XR_NULL_HANDLE) {
         LoaderLogger::LogErrorMessage("xrSessionBeginDebugUtilsLabelRegionEXT", "Session handle is XR_NULL_HANDLE.");
         return XR_ERROR_HANDLE_INVALID;
@@ -548,9 +537,8 @@ LoaderTrampolineSessionBeginDebugUtilsLabelRegionEXT(XrSession session, const Xr
     }
     return XR_SUCCESS;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
-static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineSessionEndDebugUtilsLabelRegionEXT(XrSession session) XRLOADER_ABI_TRY {
+static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineSessionEndDebugUtilsLabelRegionEXT(XrSession session) {
     if (session == XR_NULL_HANDLE) {
         LoaderLogger::LogErrorMessage("xrSessionEndDebugUtilsLabelRegionEXT", "Session handle is XR_NULL_HANDLE.");
         return XR_ERROR_HANDLE_INVALID;
@@ -569,10 +557,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineSessionEndDebugUtilsLabelR
     }
     return XR_SUCCESS;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 static XRAPI_ATTR XrResult XRAPI_CALL
-LoaderTrampolineSessionInsertDebugUtilsLabelEXT(XrSession session, const XrDebugUtilsLabelEXT *labelInfo) XRLOADER_ABI_TRY {
+LoaderTrampolineSessionInsertDebugUtilsLabelEXT(XrSession session, const XrDebugUtilsLabelEXT *labelInfo) {
     if (session == XR_NULL_HANDLE) {
         LoaderLogger::LogErrorMessage("xrSessionInsertDebugUtilsLabelEXT", "Session handle is XR_NULL_HANDLE.");
         return XR_ERROR_HANDLE_INVALID;
@@ -600,11 +587,10 @@ LoaderTrampolineSessionInsertDebugUtilsLabelEXT(XrSession session, const XrDebug
 
     return XR_SUCCESS;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // No-op trampoline needed for xrGetInstanceProcAddr. Work done in terminator.
 static XRAPI_ATTR XrResult XRAPI_CALL
-LoaderTrampolineSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUtilsObjectNameInfoEXT *nameInfo) XRLOADER_ABI_TRY {
+LoaderTrampolineSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUtilsObjectNameInfoEXT *nameInfo) {
     LoaderInstance *loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrSetDebugUtilsObjectNameEXT");
     if (XR_SUCCEEDED(result)) {
@@ -612,12 +598,11 @@ LoaderTrampolineSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUti
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // No-op trampoline needed for xrGetInstanceProcAddr. Work done in terminator.
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineSubmitDebugUtilsMessageEXT(
     XrInstance instance, XrDebugUtilsMessageSeverityFlagsEXT messageSeverity, XrDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const XrDebugUtilsMessengerCallbackDataEXT *callbackData) XRLOADER_ABI_TRY {
+    const XrDebugUtilsMessengerCallbackDataEXT *callbackData) {
     LoaderInstance *loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrSubmitDebugUtilsMessageEXT");
     if (XR_SUCCEEDED(result)) {
@@ -626,13 +611,12 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineSubmitDebugUtilsMessageEXT
     }
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // ---- Extension manual loader terminator functions
 
 XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateDebugUtilsMessengerEXT(XrInstance instance,
                                                                         const XrDebugUtilsMessengerCreateInfoEXT *createInfo,
-                                                                        XrDebugUtilsMessengerEXT *messenger) XRLOADER_ABI_TRY {
+                                                                        XrDebugUtilsMessengerEXT *messenger) {
     LoaderLogger::LogVerboseMessage("xrCreateDebugUtilsMessengerEXT", "Entering loader terminator");
     if (nullptr == messenger) {
         LoaderLogger::LogValidationErrorMessage("VUID-xrCreateDebugUtilsMessengerEXT-messenger-parameter",
@@ -656,9 +640,8 @@ XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermCreateDebugUtilsMessengerEXT(XrInstan
     LoaderLogger::LogVerboseMessage("xrCreateDebugUtilsMessengerEXT", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
-XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger) XRLOADER_ABI_TRY {
+XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyDebugUtilsMessengerEXT(XrDebugUtilsMessengerEXT messenger) {
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Entering loader terminator");
     const XrGeneratedDispatchTableCore *dispatch_table = RuntimeInterface::GetDebugUtilsMessengerDispatchTable(messenger);
     XrResult result = XR_SUCCESS;
@@ -674,11 +657,10 @@ XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyDebugUtilsMessengerEXT(XrDebug
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermSubmitDebugUtilsMessageEXT(
     XrInstance instance, XrDebugUtilsMessageSeverityFlagsEXT messageSeverity, XrDebugUtilsMessageTypeFlagsEXT messageTypes,
-    const XrDebugUtilsMessengerCallbackDataEXT *callbackData) XRLOADER_ABI_TRY {
+    const XrDebugUtilsMessengerCallbackDataEXT *callbackData) {
     LoaderLogger::LogVerboseMessage("xrSubmitDebugUtilsMessageEXT", "Entering loader terminator");
     const XrGeneratedDispatchTableCore *dispatch_table = RuntimeInterface::GetDispatchTable(instance);
     XrResult result = XR_SUCCESS;
@@ -692,10 +674,9 @@ XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermSubmitDebugUtilsMessageEXT(
     LoaderLogger::LogVerboseMessage("xrSubmitDebugUtilsMessageEXT", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 XRAPI_ATTR XrResult XRAPI_CALL
-LoaderXrTermSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUtilsObjectNameInfoEXT *nameInfo) XRLOADER_ABI_TRY {
+LoaderXrTermSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUtilsObjectNameInfoEXT *nameInfo) {
     LoaderLogger::LogVerboseMessage("xrSetDebugUtilsObjectNameEXT", "Entering loader terminator");
     const XrGeneratedDispatchTableCore *dispatch_table = RuntimeInterface::GetDispatchTable(instance);
     XrResult result = XR_SUCCESS;
@@ -706,10 +687,9 @@ LoaderXrTermSetDebugUtilsObjectNameEXT(XrInstance instance, const XrDebugUtilsOb
     LoaderLogger::LogVerboseMessage("xrSetDebugUtilsObjectNameEXT", "Completed loader terminator");
     return result;
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 XRAPI_ATTR XrResult XRAPI_CALL LoaderXrGetInstanceProcAddr(XrInstance instance, const char *name,
-                                                           PFN_xrVoidFunction *function) XRLOADER_ABI_TRY {
+                                                           PFN_xrVoidFunction *function) {
     if (nullptr == function) {
         LoaderLogger::LogValidationErrorMessage("VUID-xrGetInstanceProcAddr-function-parameter", "xrGetInstanceProcAddr",
                                                 "Invalid Function pointer");
@@ -816,7 +796,6 @@ XRAPI_ATTR XrResult XRAPI_CALL LoaderXrGetInstanceProcAddr(XrInstance instance, 
     // If the function is not supported by the loader, call down to the next layer.
     return loader_instance->GetInstanceProcAddr(name, function);
 }
-XRLOADER_ABI_CATCH_FALLBACK
 
 // Exported loader functions
 //

@@ -306,15 +306,8 @@ RuntimeInterface::RuntimeInterface(LoaderPlatformLibraryHandle runtime_library, 
 }
 
 RuntimeInterface::~RuntimeInterface() {
-    try {
-        std::string info_message = "RuntimeInterface being destroyed.";
-        LoaderLogger::LogInfoMessage("", info_message);
-    }
-    // NOLINTNEXTLINE(bugprone-empty-catch)
-    catch (...) {
-        // Need a try catch here to avoid concerns about exceptions in a destructor
-        // If logging fails here there isn't much we can do so left intentionally empty
-    }
+    std::string info_message = "RuntimeInterface being destroyed.";
+    LoaderLogger::LogInfoMessage("", info_message);
 
     {
         RuntimeDispatchSlot* slot =
