@@ -8161,6 +8161,23 @@ static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_
    return true;
 }
 
+/* How long the frame's present and the taking of the next image took.
+ * Where the swapchain makes the driver wait for an image - on Metal's
+ * layer under MoltenVK, or with two images anywhere - that is waiting,
+ * not drawing, and the threaded presenter is told so: it holds the core
+ * back by the drawing time before each vblank, and counted the wait in.
+ *
+ * Whether the frame is on the display as the call returns is not said:
+ * with a queue it depends on how deep the queue was, which this does
+ * not know. The frame is counted to the next vblank as before. */
+static retro_time_t vulkan_present_wait;
+
+static retro_time_t vulkan_get_last_present_wait(void *data, bool *shown)
+{
+   *shown = false;
+   return data ? vulkan_present_wait : 0;
+}
+
 static retro_time_t vulkan_get_last_present_time(void *data)
 {
    retro_time_t t;
@@ -9844,8 +9861,14 @@ static bool vulkan_frame(void *data, const void *frame,
 
    vulkan_await_frame_before_present(vk, frame_index);
 
+   vulkan_present_wait = 0;
    if (vk->ctx_driver->swap_buffers)
+   {
+      /* timed: see vulkan_get_last_present_wait() */
+      retro_time_t swap_at = cpu_features_get_time_usec();
       vk->ctx_driver->swap_buffers(vk->ctx_data);
+      vulkan_present_wait = cpu_features_get_time_usec() - swap_at;
+   }
 
    /* Retire unloaded textures whose deferral window has elapsed. */
    vulkan_deferred_textures_tick(vk);
@@ -11049,7 +11072,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_update_texture,
    NULL, /* get_swap_interval_cap */
    vulkan_texture_lend,
-   vulkan_texture_lend_ready
+   vulkan_texture_lend_ready,
+   vulkan_get_last_present_wait
 };
 
 static void vulkan_get_poke_interface(void *data,

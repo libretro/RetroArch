@@ -4394,6 +4394,24 @@ static unsigned gl2_present_last(void *data)
    return done;
 }
 
+/* The frame's swap: how long it took, and whether it was one that
+ * waits for the vertical blank (a swap interval set). With a swap
+ * interval the swap returns when the frame is out, so that time is
+ * waiting, not drawing, and the frame is shown: what the threaded
+ * presenter needs to hold the core to the drawing time alone and to
+ * count the frame to the vblank it met. As glcore says it. */
+static retro_time_t gl2_present_wait;
+static bool gl2_present_vsynced;
+
+static retro_time_t gl2_get_last_present_wait(void *data, bool *shown)
+{
+   *shown = false;
+   if (!data || !gl2_present_vsynced)
+      return 0;
+   *shown = true;
+   return gl2_present_wait;
+}
+
 static retro_time_t gl2_get_last_present_time(void *data)
 {
    gl2_t *gl = (gl2_t*)data;
@@ -4896,8 +4914,14 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
     gl2_hw_ring_drawn(gl);
+    gl2_present_wait = 0;
     if (gl->ctx_driver->swap_buffers)
-        gl->ctx_driver->swap_buffers(gl->ctx_data);
+    {
+       /* timed: see gl2_get_last_present_wait() */
+       retro_time_t swap_at = cpu_features_get_time_usec();
+       gl->ctx_driver->swap_buffers(gl->ctx_data);
+       gl2_present_wait = cpu_features_get_time_usec() - swap_at;
+    }
 
  /* Emscripten has to do black frame insertion in its main loop */
 #ifndef __EMSCRIPTEN__
@@ -5132,6 +5156,7 @@ static void gl2_set_nonblock_state(
       if (interval == 1 && adaptive_vsync_enabled)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+      gl2_present_vsynced = (interval != 0);
    }
 
    if (     (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
@@ -5602,6 +5627,7 @@ static void *gl2_init(const video_info_t *video)
       if (adaptive_vsync_enabled && interval == 1)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+      gl2_present_vsynced = (interval != 0);
    }
 
    win_dims    = video->dims;
@@ -6896,7 +6922,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_hw_ring_context_new,
    gl2_hw_ring_context_free,
    gl2_hw_ring_framebuffer,
-   gl2_update_texture
+   gl2_update_texture,
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   gl2_get_last_present_wait
 };
 
 static void gl2_get_poke_interface(void *data,
