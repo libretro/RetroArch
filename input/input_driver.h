@@ -1172,6 +1172,26 @@ void input_driver_set_keyboard_textbox_focus(bool focus);
 /* The capture of a bind and text entry: keys kept from the binds, a
  * wait for everything to be let go, a callback for each key. */
 void input_driver_set_keyboard_mapping_blocked(bool blocked);
+
+/* Who has the keyboard in place of the binds and the hotkeys. Each
+ * holds and releases under its own name; the keys are the binds' again
+ * when nobody holds. See input_keyboard_capture_hold(). */
+enum input_keyboard_capture
+{
+   /* Game Focus: the keys are the core's alone */
+   INPUT_KEYBOARD_CAPTURE_GAME_FOCUS = (1 << 0),
+   /* a line of text is being typed */
+   INPUT_KEYBOARD_CAPTURE_TEXT       = (1 << 1),
+   /* the menu is waiting for the key to bind */
+   INPUT_KEYBOARD_CAPTURE_BIND       = (1 << 2),
+   INPUT_KEYBOARD_CAPTURE_ALL        = (1 << 3) - 1
+};
+
+void input_keyboard_capture_hold(unsigned reasons);
+void input_keyboard_capture_release(unsigned reasons);
+/* A line of text is being typed (and not merely the keys kept from
+ * the binds, which Game Focus does too). */
+bool input_driver_text_entry_active(void);
 void input_driver_set_wait_input_release(bool wait);
 bool input_driver_waiting_input_release(void);
 void input_driver_set_keyboard_press_cb(input_keyboard_press_t cb,

@@ -8586,9 +8586,12 @@ void input_driver_free_with_video(const void *video_data)
    if (input_st->current_data == video_data)
       return;
 
+   /* The driver goes, or is kept across the restart: whoever had the
+    * keyboard has it no longer, as it always was here. Game Focus takes
+    * it again when it is reapplied. */
    if (input_st->kept_driver)
    {
-      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_ALL);
       return;
    }
 
@@ -8601,7 +8604,7 @@ void input_driver_free_with_video(const void *video_data)
       input_st->primary_joypad           = NULL;
       tmp->destroy();
    }
-   input_st->flags       &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+   input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_ALL);
    input_st->current_data = NULL;
 }
 
@@ -11583,7 +11586,7 @@ const char **input_driver_text_entry_open(void *userdata,
 
    buffer = input_keyboard_start_line(userdata,
          &input_driver_st.keyboard_line, cb);
-   input_driver_st.flags |= INP_FLAG_KB_MAPPING_BLOCKED;
+   input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_TEXT);
 
 #if defined(HAVE_COCOATOUCH)
    ios_keyboard_start((char**)buffer,
@@ -11648,14 +11651,55 @@ void input_driver_set_keyboard_textbox_focus(bool focus)
    input_driver_st.osk_textbox_focus = focus;
 }
 
-/* The keys go to text, or to a capture, and not to the binds and the
- * hotkeys. */
-void input_driver_set_keyboard_mapping_blocked(bool blocked)
+/* Who has the keyboard, when it is not the binds and the hotkeys.
+ *
+ * "Keyboard mapping blocked" was one flag that three things set and
+ * five places cleared: Game Focus, a line of text being typed, and the
+ * menu waiting for the key to bind. Whichever ended first cleared it
+ * for the others - typing a line with Game Focus on gave the keys back
+ * to the binds with Game Focus still on, and turning Game Focus off
+ * gave them back in the middle of a line. It is the pointer's capture
+ * over again (input_pointer_capture_hold()), and is kept the same way:
+ * each holder holds and releases under its own name, and the flag -
+ * which is what every reader still tests, at no more cost - is set
+ * while anyone holds. */
+static uint8_t input_keyboard_capture_reasons;
+
+static void input_keyboard_capture_apply(void)
 {
-   if (blocked)
+   if (input_keyboard_capture_reasons)
       input_driver_st.flags |=  INP_FLAG_KB_MAPPING_BLOCKED;
    else
       input_driver_st.flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+}
+
+void input_keyboard_capture_hold(unsigned reasons)
+{
+   input_keyboard_capture_reasons |= (uint8_t)reasons;
+   input_keyboard_capture_apply();
+}
+
+void input_keyboard_capture_release(unsigned reasons)
+{
+   input_keyboard_capture_reasons &= (uint8_t)~reasons;
+   input_keyboard_capture_apply();
+}
+
+/* A line of text is being typed - and not Game Focus, nor the menu
+ * waiting for a key: for a driver that shows a keyboard on screen. */
+bool input_driver_text_entry_active(void)
+{
+   return (input_keyboard_capture_reasons & INPUT_KEYBOARD_CAPTURE_TEXT) != 0;
+}
+
+/* The menu is waiting for the key to bind, or is done waiting: the
+ * keys are not the binds' and the hotkeys' meanwhile. */
+void input_driver_set_keyboard_mapping_blocked(bool blocked)
+{
+   if (blocked)
+      input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_BIND);
+   else
+      input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_BIND);
 }
 
 /* Every key and button is to be let go before input counts again. */
@@ -12008,7 +12052,7 @@ void input_driver_keyboard_line_set(const char *utf8, size_t len)
 void input_driver_keyboard_line_end(void)
 {
    input_keyboard_line_free(&input_driver_st);
-   input_driver_st.flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+   input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_TEXT);
 }
 
 bool input_driver_pointer_input_blocked(void)
@@ -14470,9 +14514,9 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
          return;
       input_st->keyboard_press_cb    = NULL;
       input_st->keyboard_press_data  = NULL;
-      input_st->flags               &= ~(INP_FLAG_KB_MAPPING_BLOCKED
-                                     |   INP_FLAG_DEFERRED_WAIT_KEYS
-                                       );
+      input_st->flags               &= ~INP_FLAG_DEFERRED_WAIT_KEYS;
+      /* the key the menu waited for has come and gone */
+      input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_BIND);
    }
    else if (input_st->keyboard_press_cb)
    {
@@ -14542,8 +14586,8 @@ static void input_keyboard_event_now_act(bool down, unsigned code,
       /* Line is complete, can free it now. */
       input_keyboard_line_free(input_st);
 
-      /* Unblock all hotkeys. */
-      input_st->flags &= ~INP_FLAG_KB_MAPPING_BLOCKED;
+      /* The line has the keyboard no longer. */
+      input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_TEXT);
    }
    else
    {

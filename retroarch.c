@@ -6054,12 +6054,22 @@ bool command_event(enum event_command cmd, void *data)
                else
                   input_pointer_capture_release(INPUT_CAPTURE_GAME_FOCUS);
 
+               /* ... and the keyboard, under its own name: a line of
+                * text or the menu's wait for a key may have it as
+                * well, and each lets go of its own */
                if (input_st->game_focus_state.enabled)
-                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY
-                                   |  INP_FLAG_KB_MAPPING_BLOCKED;
+               {
+                  input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+                  input_st->flags |=  INP_FLAG_BLOCK_HOTKEY;
+               }
                else
-                  input_st->flags &= ~(INP_FLAG_BLOCK_HOTKEY
-                                     | INP_FLAG_KB_MAPPING_BLOCKED);
+               {
+                  input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+                  /* the hotkeys are back unless someone else still
+                   * has the keyboard */
+                  if (!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+                     input_st->flags &= ~INP_FLAG_BLOCK_HOTKEY;
+               }
 
                if (show_message)
                {

@@ -4641,6 +4641,68 @@ static void lane_keys_current(void)
             " changed since the poll is the bind a read goes by\n");
 }
 
+/* Who has the keyboard. Game Focus, a line of text being typed and the
+ * menu's wait for a key each keep the keys from the binds, and each
+ * lets go of its own hold: one ending does not give the keys back
+ * while another still has them. (It was one flag, and whichever ended
+ * first cleared it for the others.) */
+static void kh_line_done(void *userdata, const char *line)
+{
+   (void)userdata; (void)line;
+}
+
+static void lane_keyboard_holders(void)
+{
+   unsigned had = failures;
+
+   CHECK(!input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: the keys are kept from the binds before anyone holds them");
+
+   /* Game Focus, and a line typed and ended under it */
+   input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   CHECK(input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: Game Focus does not keep the keys from the binds");
+   CHECK(!input_driver_text_entry_active(),
+         "keyboard holders: Game Focus reads as a line being typed");
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   CHECK(input_driver_keyboard_mapping_blocked() && input_driver_text_entry_active(),
+         "keyboard holders: a line being typed does not read as one");
+   input_driver_keyboard_line_end();
+   CHECK(input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: ending a line gave the keys back to the binds with Game Focus on");
+   CHECK(!input_driver_text_entry_active(),
+         "keyboard holders: a line that has ended still reads as being typed");
+   input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   CHECK(!input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: with Game Focus off and no line the keys are still kept");
+
+   /* a line being typed, and Game Focus on and off under it */
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   CHECK(input_driver_keyboard_mapping_blocked() && input_driver_text_entry_active(),
+         "keyboard holders: Game Focus going off gave the keys back in the middle of a line");
+   input_driver_keyboard_line_end();
+   CHECK(!input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: the line ended and the keys are still kept");
+
+   /* the menu's wait for a key, and a line under it */
+   input_driver_set_keyboard_mapping_blocked(true);
+   CHECK(input_driver_keyboard_mapping_blocked() && !input_driver_text_entry_active(),
+         "keyboard holders: the wait for a key does not keep the keys, or reads as a line");
+   input_driver_text_entry_open(NULL, kh_line_done, "test", (enum input_text_type)0);
+   input_driver_keyboard_line_end();
+   CHECK(input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: ending a line gave the keys back during the wait for a key");
+   input_driver_set_keyboard_mapping_blocked(false);
+   CHECK(!input_driver_keyboard_mapping_blocked(),
+         "keyboard holders: the wait is over and the keys are still kept");
+
+   if (failures == had)
+      printf("[pass] keyboard holders: Game Focus, a line of text and the wait"
+            " for a key each hold the keyboard and let go of their own hold\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -5969,6 +6031,7 @@ int main(int argc, char *argv[])
       lane_stick_sources();
       lane_mask_and_buttons();
       lane_keys_current();
+      lane_keyboard_holders();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
