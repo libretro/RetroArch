@@ -237,7 +237,7 @@ retro_keybind_set input_autoconf_binds[MAX_USERS];
 retro_atomic_int_t input_binds_generation;
 /* The ports whose keys the last poll made current: see
  * input_port_keys_get(). Taken back to none by a change to a bind. */
-unsigned input_keys_ports_at_poll;
+static unsigned input_keys_ports_at_poll;
 input_bind_label_set input_config_bind_labels[MAX_USERS];
 input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 
@@ -1056,11 +1056,27 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
    input_driver_st.frame_valid.pad_state &= ~(1 << port);
 }
 
-static INLINE const input_port_pads_t *input_port_pads_get(unsigned port)
+/* A port's resolved pads, current.
+ *
+ * Each read loaded the binds' change count and compared it with the
+ * one the pads were made at. A change to a bind now says so itself, to
+ * every port's (input_binds_kept_invalidate() noughts the count they
+ * were made at), so a read looks at the one field, in the structure it
+ * is about to hand out, and makes the pads again where it is nought. */
+INPUT_NOINLINE static void input_port_pads_remake(unsigned port)
 {
    unsigned gen = input_config_binds_generation() + 1;
-   if (input_port_pads[port].gen != gen)
-      input_port_pads_make(port, gen);
+   input_port_pads_make(port, gen);
+   /* a bind changed while that was done, from another thread: not
+    * current after all, and the next read makes it again */
+   if (input_config_binds_generation() + 1 != gen)
+      input_port_pads[port].gen = 0;
+}
+
+static INLINE const input_port_pads_t *input_port_pads_get(unsigned port)
+{
+   if (!input_port_pads[port].gen)
+      input_port_pads_remake(port);
    return &input_port_pads[port];
 }
 
@@ -10566,15 +10582,42 @@ INPUT_NOINLINE static void input_port_hotkeys_make(unsigned port,
    hot->gen      = gen;
 }
 
+/* As for the resolved pads: a change to a bind noughts the count the
+ * answers were made at, and a read looks at that instead of loading
+ * the binds' count to compare. Which profile the port is read by is
+ * the caller's to say each time, and is compared each time. */
+INPUT_NOINLINE static void input_port_hotkeys_remake(unsigned port,
+      const struct retro_keybind *autob)
+{
+   unsigned gen = input_config_binds_generation() + 1;
+   input_port_hotkeys_make(port, gen, autob);
+   if (input_config_binds_generation() + 1 != gen)
+      input_port_hotkeys[port].gen = 0;
+}
+
 static INLINE const input_port_hotkeys_t *input_port_hotkeys_get(
       unsigned port, const struct retro_keybind *autob)
 {
    input_port_hotkeys_t *hot = &input_port_hotkeys[port];
-   unsigned gen              = input_config_binds_generation() + 1;
-   if (     hot->gen   != gen
+   if (     !hot->gen
          || hot->autob != autob)
-      input_port_hotkeys_make(port, gen, autob);
+      input_port_hotkeys_remake(port, autob);
    return hot;
+}
+
+/* A bind has changed: what is kept by port and made from the binds is
+ * not current. Called by input_config_binds_changed(), with the count.
+ * Sixteen ports' worth of noughts, where every read of any of it
+ * compared the count. */
+void input_binds_kept_invalidate(void)
+{
+   unsigned port;
+   input_keys_ports_at_poll = 0;
+   for (port = 0; port < MAX_USERS; port++)
+   {
+      input_port_pads[port].gen     = 0;
+      input_port_hotkeys[port].gen  = 0;
+   }
 }
 
 /* The hotkeys' set for @port, made when its kept answers say it has
