@@ -73,6 +73,8 @@ typedef struct _sdl2_video
 
    void *font_data;
    const font_renderer_driver_t *font_driver;
+   /* The OSD font's atlas as ARGB, its texture's source */
+   uint32_t *font_staging;
 
    uint8_t font_r;
    uint8_t font_g;

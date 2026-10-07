@@ -77,56 +77,80 @@ static INLINE void sdl_tex_zero(sdl2_tex_t *t)
    t->pitch = 0;
 }
 
-/* Makes the OSD font's texture from its atlas, as it stands: at init,
- * and again whenever glyphs are new to the atlas or it has grown. */
+/* Brings the OSD font's texture up to its atlas: made at the atlas's
+ * size at init and whenever it grows, otherwise sent only the region
+ * drawn into since. A texel is the coverage as grey, opaque where
+ * there is any, so additive blending lights the glyphs alone. */
 static void sdl2_font_upload(sdl2_video_t *vid, struct font_atlas *atlas)
 {
-   int i;
-   SDL_Color colors[256];
-   SDL_Surface *tmp = NULL;
-   SDL_Palette *pal = NULL;
+   unsigned x, y, x0, y0, x1, y1;
+   SDL_Rect rect;
+   bool     whole = false;
+   unsigned dims  = VIDEO_SCALE_PACK(atlas->width, atlas->height);
+   unsigned w     = atlas->width;
 
-   if (vid->font.tex)
+   if (!vid->font.tex || vid->font.dims != dims)
    {
-      SDL_DestroyTexture(vid->font.tex);
-      vid->font.tex    = NULL;
-      vid->font.active = false;
-   }
+      if (vid->font.tex)
+      {
+         SDL_DestroyTexture(vid->font.tex);
+         vid->font.tex    = NULL;
+         vid->font.active = false;
+      }
 
-   tmp = SDL_CreateRGBSurfaceFrom(
-         atlas->buffer, atlas->width,
-         atlas->height, 8, atlas->width,
-         0, 0, 0, 0);
-   if (!tmp)
-      return;
+      free(vid->font_staging);
+      if (     !(vid->font_staging = (uint32_t*)malloc(
+                  VIDEO_SCALE_AREA(dims) * sizeof(uint32_t)))
+            || !(vid->font.tex = SDL_CreateTexture(vid->renderer,
+                  SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC,
+                  (int)atlas->width, (int)atlas->height)))
+      {
+         RARCH_WARN("[SDL2] Failed to initialize font texture: %s\n",
+               SDL_GetError());
+         atlas->dirty = false;
+         return;
+      }
 
-   for (i = 0; i < 256; ++i)
-   {
-      colors[i].r = colors[i].g = colors[i].b = i;
-      colors[i].a = 255;
-   }
-
-   pal = SDL_AllocPalette(256);
-   SDL_SetPaletteColors(pal, colors, 0, 256);
-   SDL_SetSurfacePalette(tmp, pal);
-   SDL_SetColorKey(tmp, SDL_TRUE, 0);
-
-   vid->font.tex  = SDL_CreateTextureFromSurface(vid->renderer, tmp);
-
-   if (vid->font.tex)
-   {
-      vid->font.dims   = VIDEO_SCALE_PACK(atlas->width, atlas->height);
+      vid->font.dims   = dims;
       vid->font.active = true;
-
       SDL_SetTextureBlendMode(vid->font.tex, SDL_BLENDMODE_ADD);
       SDL_SetTextureColorMod(vid->font.tex,
             vid->font_r, vid->font_g, vid->font_b);
+      whole = true;
    }
-   else
-      RARCH_WARN("[SDL2] Failed to initialize font texture: %s\n", SDL_GetError());
 
-   SDL_FreePalette(pal);
-   SDL_FreeSurface(tmp);
+   x0 = VIDEO_SCALE_W(atlas->dirty_xy0);
+   y0 = VIDEO_SCALE_H(atlas->dirty_xy0);
+   x1 = VIDEO_SCALE_W(atlas->dirty_xy1);
+   y1 = VIDEO_SCALE_H(atlas->dirty_xy1);
+   if (     whole
+         || !atlas->dirty
+         || x1 <= x0 || y1 <= y0 || x1 > w || y1 > atlas->height)
+   {
+      x0 = 0;
+      y0 = 0;
+      x1 = w;
+      y1 = atlas->height;
+   }
+
+   for (y = y0; y < y1; y++)
+   {
+      const uint8_t *src = atlas->buffer + (size_t)y * w + x0;
+      uint32_t      *dst = vid->font_staging + (size_t)y * w + x0;
+      for (x = x0; x < x1; x++)
+      {
+         uint32_t c = *src++;
+         *dst++     = c ? (0xFF000000u | (c * 0x010101u)) : 0;
+      }
+   }
+
+   rect.x = (int)x0;
+   rect.y = (int)y0;
+   rect.w = (int)(x1 - x0);
+   rect.h = (int)(y1 - y0);
+   SDL_UpdateTexture(vid->font.tex, &rect,
+         vid->font_staging + (size_t)y0 * w + x0,
+         (int)(w * sizeof(uint32_t)));
    atlas->dirty = false;
 }
 
@@ -844,6 +868,7 @@ static void sdl2_gfx_free(void *data)
 
    if (vid->font_data)
       vid->font_driver->free(vid->font_data);
+   free(vid->font_staging);
 
    free(vid);
 }
