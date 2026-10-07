@@ -1,6 +1,7 @@
 TARGET := libxr_test_layer.so
 
-CFLAGS  += -O2 -g -fPIC -Wall -std=gnu11 -fvisibility=hidden
+CFLAGS  += -O2 -g -fPIC -Wall -std=gnu11 -fvisibility=hidden \
+           -I../../../deps/OpenXR-SDK/include
 # nodelete: the loader unloads layers at xrDestroyInstance, which would
 # restart the recording and replay the script for the next instance.
 LDFLAGS += -shared -Wl,--no-undefined -Wl,-z,nodelete -lvulkan -lz -lpthread -lm

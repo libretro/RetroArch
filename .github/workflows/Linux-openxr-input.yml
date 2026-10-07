@@ -1,4 +1,4 @@
-name: CI OpenXR input (stand-in runtime)
+name: CI OpenXR (stand-in runtime, desktop headset path)
 
 on:
   push:
@@ -46,3 +46,60 @@ jobs:
           grep -q "PASS openxr_input_test" openxr_input.log
           make clean
           rm -f openxr_input.log
+
+  openxr-desktop:
+    name: Desktop headset output with the in-tree loader
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq build-essential pkg-config \
+            libgl1-mesa-dev libgles2-mesa-dev libegl1-mesa-dev \
+            libx11-dev libxext-dev libxrandr-dev libxinerama-dev \
+            libxxf86vm-dev libxv-dev libxkbcommon-dev \
+            libwayland-dev wayland-protocols libdrm-dev libgbm-dev \
+            libasound2-dev libpulse-dev libudev-dev libusb-1.0-0-dev \
+            libvulkan-dev libdbus-1-dev zlib1g-dev
+
+      - name: Build RetroArch with OpenXR
+        shell: bash
+        run: |
+          set -eu
+          # OpenXR is auto on Linux with Vulkan and threads: the vendored
+          # Khronos loader is built into the tree, so nothing has to be
+          # installed. Qt has to go: the menu harness below replaces
+          # main(), which lives in ui_qt.o with Qt enabled.
+          ./configure --disable-qt
+          grep -q '^HAVE_OPENXR = 1' config.mk
+          make -j$(nproc)
+
+      - name: Build and run stereo_headset_test
+        shell: bash
+        run: |
+          set -eu
+          # The Stereo 3D & Screens list, with Headset Output off and
+          # on, against the shipping menu objects.
+          samples/menu/stereo_headset/build.sh
+          ./samples/menu/stereo_headset/stereo_headset_test
+          make -C samples/menu/stereo_headset clean
+
+      - name: Build the OpenXR test layer and the video_views core
+        shell: bash
+        run: |
+          set -eu
+          # The API layer the Monado end-to-end check records through,
+          # against the vendored headers, and the core it drives.
+          make -C samples/openxr/test_layer clean all
+          test -f samples/openxr/test_layer/libxr_test_layer.so
+          make -C samples/cores/video_views clean all
+          test -f samples/cores/video_views/video_views_libretro.so
+          make -C samples/openxr/test_layer clean
+          make -C samples/cores/video_views clean
