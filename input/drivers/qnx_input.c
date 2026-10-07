@@ -726,6 +726,20 @@ static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
    return 0;
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void qnx_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   qnx_input_t *qnx = (qnx_input_t*)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (qnx_keyboard_pressed(qnx, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t qnx_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -742,40 +756,11 @@ static int16_t qnx_input_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (qnx_keyboard_pressed(qnx, key))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (
-                     ((id == RARCH_GAME_FOCUS_TOGGLE) ||
-                      !keyboard_mapping_blocked) &&
-                     qnx_keyboard_pressed(qnx, key)
-                  )
-                  return 1;
-            }
-         }
-         break;
+      /* The RetroPad's buttons and the hotkeys, where they are bound
+       * to keys, are the frontend's to answer: it asks
+       * qnx_keys_down() for the keys once a poll. What was here read
+       * the binds it was handed and then asked for a key it never
+       * named - it did not compile. */
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
@@ -816,7 +801,9 @@ input_driver_t input_qnx = {
    NULL,
    qnx_input_get_capabilities,
    "qnx_input",
+   NULL,                         /* grab_mouse */
    NULL,
    NULL,
-   NULL
+   NULL,                         /* survives_video */
+   qnx_keys_down
 };

@@ -229,6 +229,35 @@ def bind_array_uses(root):
 ANALOG_BIND_MACRO = re.compile(r'\b(?:input_conv_analog_id_to_bind_id|INPUT_ANALOG_AXIS_BIND)\b')
 
 
+# An input driver is handed the binds with every question it is asked,
+# and none reads them: the pad's buttons, the keys and the mouse
+# buttons a control is bound to are the frontend's to put together
+# (keys_down and bind_mouse_buttons in the driver table give it the
+# keys and the mouse). So how the binds are kept - how many a user has,
+# what a record holds - is no driver's business. A driver may pass the
+# set on; it may not look inside.
+HANDED_BIND_READ = re.compile(r'\b(?:binds|retro_keybinds)\s*\[')
+
+
+def handed_bind_reads(root):
+    found = {}
+    d = os.path.join(root, 'input', 'drivers')
+    if not os.path.isdir(d):
+        return found
+    for f in sorted(os.listdir(d)):
+        if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
+            continue
+        path = os.path.join(d, f)
+        try:
+            text = open(path, encoding='utf-8', errors='replace').read()
+        except OSError:
+            continue
+        n = len(HANDED_BIND_READ.findall(strip_comments(text)))
+        if n:
+            found['input/drivers/' + f] = n
+    return found
+
+
 def analog_bind_macro_uses(root):
     found = {}
     for d, dirs, files in os.walk(root):
@@ -341,6 +370,11 @@ def run(root, allowed, outside_allowed=None):
         print('%s: maps a stick\'s axis to its binds itself, %d time(s).\n'
               '  The frontend answers a stick from the keys bound to it: give it\n'
               '  the keys (keys_down in the driver table).' % (rel, n))
+        bad += 1
+    for rel, n in sorted(handed_bind_reads(root).items()):
+        print('%s: reads the binds it is handed, %d time(s).\n'
+              '  The frontend answers what is bound: give it the keys and the\n'
+              '  mouse (keys_down, bind_mouse_buttons in the driver table).' % (rel, n))
         bad += 1
     for rel, n in sorted(bind_array_uses(root).items()):
         print('%s: names a bind array itself, %d time(s).\n'
@@ -463,6 +497,14 @@ def selftest():
             f.write('input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);\n')
         with open(os.path.join(root, 'input', 'input_driver.c'), 'a') as f:
             f.write('input_conv_analog_id_to_bind_id(idx, id, a, b);\n')
+        # a driver looking inside the binds it is handed; passing them on is not
+        with open(os.path.join(root, 'input', 'drivers', 'hb.c'), 'w') as f:
+            f.write('if (binds[port][id].joykey != NO_BTN) return 1;\n'
+                    'return other_state(udev, binds, port); /* binds[port] */\n')
+        if handed_bind_reads(root) != {'input/drivers/hb.c': 1}:
+            print('selftest: a driver reading the binds it is handed was not the one read counted')
+            bad += 1
+        os.remove(os.path.join(root, 'input', 'drivers', 'hb.c'))
         if analog_bind_macro_uses(root) != {'input/drivers/an.c': 1}:
             print('selftest: a driver mapping a stick to its binds was not found, '
                   'or the frontend was taken for one')
@@ -471,7 +513,7 @@ def selftest():
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 10))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 11))
     return 0
 
 
