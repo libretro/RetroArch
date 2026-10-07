@@ -618,7 +618,7 @@ static void gdi_upload_core_frame_to_menu(gdi_t *gdi,
 }
 #endif
 
-#ifdef GDI_HAS_ALPHABLEND
+#if GDI_HAS_ALPHABLEND
 /* Composite RGUI's RGBA4444 menu_frame onto bmp_menu using
  * source-over alpha blending.
  *
@@ -2902,7 +2902,7 @@ static bool gdi_frame(void *data, const void *frame,
           *     transparency degrades to opaque, RGUI's chequer
           *     becomes solid, which is the same behaviour
           *     non-transparency-capable backends give. */
-#ifdef GDI_HAS_ALPHABLEND
+#if GDI_HAS_ALPHABLEND
          if (frame_to_copy == gdi->menu_frame && bits == 16)
          {
             gdi_blit_rgui_alpha(gdi, frame_to_copy, width, height,
