@@ -390,6 +390,56 @@ int main(void)
             games_nice_before, games_nice_raised, games_nice_after);
    }
 
+   printf("8. the overlay line\n");
+   {
+      char line[96];
+      char small[10];
+      thread_elevation_token_t none;
+      memset(&none, 0, sizeof(none));
+      thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note_power_plan(false, false);
+      line[0] = 'x';
+      check("nothing raised or applied: no line",
+            thread_elevation_status(line, sizeof(line)) == 0 && line[0] == 'x');
+
+      thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN,
+            THREAD_ELEVATION_REFUSED, NULL, true);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO,
+            THREAD_ELEVATION_GRANTED, &none, true);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+            THREAD_ELEVATION_PENDING, NULL, true);
+      thread_elevation_note_power_plan(true, true);
+      check("one line naming each thread and the plan",
+            thread_elevation_status(line, sizeof(line))
+               == strlen(" Priority:   main no, video high, audio ask, plan+idle\n")
+            && !strcmp(line,
+               " Priority:   main no, video high, audio ask, plan+idle\n"));
+      printf("        (%.*s)\n", (int)strlen(line) - 1, line);
+
+      thread_elevation_note_power_plan(true, false);
+      thread_elevation_status(line, sizeof(line));
+      check("the plan without idle disable",
+            strstr(line, ", plan\n") != NULL);
+      check("a short buffer is cut and terminated",
+            thread_elevation_status(small, sizeof(small)) == sizeof(small) - 1
+            && small[sizeof(small) - 1] == '\0');
+
+      thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
+      thread_elevation_note_power_plan(false, false);
+      check("everything back off: the line goes away",
+            thread_elevation_status(line, sizeof(line)) == 0);
+   }
+
    slock_free(calls_lock);
    if (failures)
    {

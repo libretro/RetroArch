@@ -1937,10 +1937,16 @@ static void video_thread_loop(void *data)
    if (video_thread_prefer_fast_cores && sthread_prefer_fast_cores())
       RARCH_LOG("[Video] Video thread placed on the performance cores.\n");
    memset(&elevation, 0, sizeof(elevation));
-   if (     video_thread_raise_priority
-         && thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
-               &elevation, NULL, NULL) == THREAD_ELEVATION_GRANTED)
-      RARCH_LOG("[Video] Video thread priority raised.\n");
+   {
+      enum thread_elevation_result r = THREAD_ELEVATION_REFUSED;
+      if (video_thread_raise_priority)
+         r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
+               &elevation, NULL, NULL);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO, r, &elevation,
+            video_thread_raise_priority);
+      if (r == THREAD_ELEVATION_GRANTED)
+         RARCH_LOG("[Video] Video thread priority raised.\n");
+   }
 
    for (;;)
    {
@@ -2028,6 +2034,8 @@ static void video_thread_loop(void *data)
       if (have_cmd && video_thread_handle_packet(thr, &pkt))
       {
          thread_elevation_lower_current(&elevation);
+         thread_elevation_note(THREAD_ELEVATION_SLOT_VIDEO,
+               THREAD_ELEVATION_REFUSED, NULL, false);
          return;
       }
 

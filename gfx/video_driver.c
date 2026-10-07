@@ -129,6 +129,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "video_thread_wrapper.h"
 #include "video_thread_hw.h"
 #include "font_driver.h"
+#include "../frontend/thread_elevation.h"
 #endif
 
 #ifdef HAVE_MENU
@@ -6941,6 +6942,12 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   " Input age:  %5.2f ms poll to vblank (worst %.2f ms, last 2 s)\n",
                   in_avg / 1000.0f,
                   in_max / 1000.0f);
+      }
+      {
+         char sched[96];
+         if (thread_elevation_status(sched, sizeof(sched)))
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
+                  "%s", sched);
       }
 #endif
 

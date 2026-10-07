@@ -9298,12 +9298,15 @@ static thread_elevation_token_t retroarch_main_elevation;
 void retroarch_main_thread_priority(bool raise)
 {
 #ifdef HAVE_THREADS
+   enum thread_elevation_result r = THREAD_ELEVATION_REFUSED;
    if (!raise)
       thread_elevation_lower_current(&retroarch_main_elevation);
-   else if (thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
-            &retroarch_main_elevation, NULL, NULL)
+   else if ((r = thread_elevation_raise_current(THREAD_ELEVATION_TASK_GAMES,
+            &retroarch_main_elevation, NULL, NULL))
          == THREAD_ELEVATION_GRANTED)
       RARCH_LOG("[Core] Main thread priority raised.\n");
+   thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN, r,
+         &retroarch_main_elevation, raise);
 #endif
 }
 

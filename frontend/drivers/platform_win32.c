@@ -58,6 +58,9 @@
 #include "../../gfx/common/win32_common.h"
 
 #include "platform_win32.h"
+#ifdef HAVE_THREADS
+#include "../thread_elevation.h"
+#endif
 
 /* Only needed for MSVC 2005/2010 */
 #ifdef _MSC_VER
@@ -1038,6 +1041,9 @@ static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
    win32_power_plan_flags &= ~(WIN32_POWER_PLAN_APPLIED
          | WIN32_POWER_PLAN_IDLE_APPLIED);
 
+#ifdef HAVE_THREADS
+   thread_elevation_note_power_plan(false, false);
+#endif
    if (!on)
    {
       win32_power_plan_restore(p);
@@ -1051,6 +1057,9 @@ static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
    win32_power_plan_flags |= WIN32_POWER_PLAN_APPLIED;
    if (idle_disable)
       win32_power_plan_flags |= WIN32_POWER_PLAN_IDLE_APPLIED;
+#ifdef HAVE_THREADS
+   thread_elevation_note_power_plan(true, idle_disable);
+#endif
    return true;
 }
 

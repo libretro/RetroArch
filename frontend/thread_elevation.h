@@ -15,6 +15,7 @@
 #ifndef __FRONTEND_THREAD_ELEVATION_H
 #define __FRONTEND_THREAD_ELEVATION_H
 
+#include <stddef.h>
 #include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
@@ -102,6 +103,36 @@ enum thread_elevation_result thread_elevation_raise_current(
  * are not recorded and stay until the thread ends.
  */
 void thread_elevation_lower_current(thread_elevation_token_t *token);
+
+/* What each thread was granted, for the statistics overlay */
+enum thread_elevation_slot
+{
+   THREAD_ELEVATION_SLOT_MAIN = 0,
+   THREAD_ELEVATION_SLOT_VIDEO,
+   THREAD_ELEVATION_SLOT_AUDIO,
+   THREAD_ELEVATION_SLOT_COUNT
+};
+
+/**
+ * Records how a raise of the thread in 'slot' ended: the result and
+ * token from thread_elevation_raise_current(), or a NULL token and
+ * REFUSED for a thread that was not raised or has been lowered.
+ * Called by the thread itself; read from any thread.
+ */
+void thread_elevation_note(enum thread_elevation_slot slot,
+      enum thread_elevation_result result,
+      const thread_elevation_token_t *token, bool asked);
+
+/* Records whether the low-latency power plan is active, and with
+ * idle states held off. */
+void thread_elevation_note_power_plan(bool active, bool idle_disable);
+
+/**
+ * Writes one overlay line, newline included, naming what each thread
+ * was granted and whether the low-latency power plan is active.
+ * Writes nothing and returns 0 when nothing was raised or applied.
+ */
+size_t thread_elevation_status(char *s, size_t len);
 
 /**
  * For a brokered backend refused after answering PENDING: tries the

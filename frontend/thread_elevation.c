@@ -17,9 +17,12 @@
 #endif
 
 #include <stddef.h>
+#include <stdio.h>
 #include <stdint.h>
 
 #include <boolean.h>
+#include <retro_atomic.h>
+#include <compat/msvc.h>
 #include <rthreads/rthreads.h>
 
 #include "thread_elevation.h"
@@ -43,6 +46,24 @@ extern long syscall(long number, ...);
 #if defined(__APPLE__) && defined(__MACH__)
 #include <dlfcn.h>
 #endif
+
+enum thread_elevation_state
+{
+   THREAD_ELEVATION_STATE_OFF = 0,
+   THREAD_ELEVATION_STATE_REFUSED,
+   THREAD_ELEVATION_STATE_PENDING,
+   THREAD_ELEVATION_STATE_RAISED,
+   THREAD_ELEVATION_STATE_MMCSS
+};
+
+/* One per slot, then the power plan: 0 off, 1 on, 2 on with idle
+ * states held off. Each written by one thread, read by the overlay. */
+static retro_atomic_int_t thread_elevation_states[THREAD_ELEVATION_SLOT_COUNT + 1] = {
+   RETRO_ATOMIC_INT_INITIALIZER(0),
+   RETRO_ATOMIC_INT_INITIALIZER(0),
+   RETRO_ATOMIC_INT_INITIALIZER(0),
+   RETRO_ATOMIC_INT_INITIALIZER(0)
+};
 
 enum thread_elevation_token_kind
 {
@@ -327,4 +348,70 @@ void thread_elevation_continue(uint64_t tid, unsigned next)
       if (b->raise(tid, i + 1) != THREAD_ELEVATION_REFUSED)
          return;
    }
+}
+
+void thread_elevation_note(enum thread_elevation_slot slot,
+      enum thread_elevation_result result,
+      const thread_elevation_token_t *token, bool asked)
+{
+   int state = THREAD_ELEVATION_STATE_OFF;
+
+   if (asked)
+   {
+      if (result == THREAD_ELEVATION_PENDING)
+         state = THREAD_ELEVATION_STATE_PENDING;
+      else if (result != THREAD_ELEVATION_GRANTED)
+         state = THREAD_ELEVATION_STATE_REFUSED;
+      else if (token && token->kind == THREAD_ELEVATION_TOKEN_MMCSS)
+         state = THREAD_ELEVATION_STATE_MMCSS;
+      else
+         state = THREAD_ELEVATION_STATE_RAISED;
+   }
+   retro_atomic_store_release_int(&thread_elevation_states[slot], state);
+}
+
+void thread_elevation_note_power_plan(bool active, bool idle_disable)
+{
+   retro_atomic_store_release_int(
+         &thread_elevation_states[THREAD_ELEVATION_SLOT_COUNT],
+         active ? (idle_disable ? 2 : 1) : 0);
+}
+
+size_t thread_elevation_status(char *s, size_t len)
+{
+   /* -: not asked, no: refused, ask: a broker is still on it */
+   static const char *const names[] = { "-", "no", "ask", "high", "MMCSS" };
+   static const char *const plans[] = { "", ", plan", ", plan+idle" };
+   int st[THREAD_ELEVATION_SLOT_COUNT];
+   int plan;
+   int ret;
+   unsigned i;
+   bool any;
+
+   plan = retro_atomic_load_acquire_int(
+         &thread_elevation_states[THREAD_ELEVATION_SLOT_COUNT]);
+   if (plan < 0 || plan > 2)
+      plan = 0;
+   any  = plan != 0;
+   for (i = 0; i < THREAD_ELEVATION_SLOT_COUNT; i++)
+   {
+      st[i] = retro_atomic_load_acquire_int(&thread_elevation_states[i]);
+      if (st[i] < 0 || st[i] > THREAD_ELEVATION_STATE_MMCSS)
+         st[i] = THREAD_ELEVATION_STATE_OFF;
+      any  |= st[i] != THREAD_ELEVATION_STATE_OFF;
+   }
+   if (!any || !len)
+      return 0;
+
+   ret = snprintf(s, len, " Priority:   main %s, video %s, audio %s%s\n",
+         names[st[THREAD_ELEVATION_SLOT_MAIN]],
+         names[st[THREAD_ELEVATION_SLOT_VIDEO]],
+         names[st[THREAD_ELEVATION_SLOT_AUDIO]],
+         plans[plan]);
+   if (ret < 0)
+   {
+      s[0] = '\0';
+      return 0;
+   }
+   return (size_t)ret < len ? (size_t)ret : len - 1;
 }

@@ -148,12 +148,16 @@ static void audio_thread_loop(void *data)
    memset(&elevation, 0, sizeof(elevation));
 
    /* Best effort and never fatal: a refusal leaves the default. */
+   thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+         THREAD_ELEVATION_REFUSED, NULL, false);
    if (thr->raise_priority)
    {
       const char *via   = NULL;
       const char *added = NULL;
-      switch (thread_elevation_raise_current(THREAD_ELEVATION_TASK_AUDIO,
-               &elevation, &via, &added))
+      enum thread_elevation_result r = thread_elevation_raise_current(
+            THREAD_ELEVATION_TASK_AUDIO, &elevation, &via, &added);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO, r, &elevation, true);
+      switch (r)
       {
          case THREAD_ELEVATION_GRANTED:
             RARCH_LOG("[Audio] Audio thread priority raised.\n");
@@ -198,6 +202,8 @@ static void audio_thread_loop(void *data)
       retro_eventcount_free(&thr->ec);
       free(thr);
       thread_elevation_lower_current(&elevation);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
       return;
    }
    retro_eventcount_notify(&thr->ec);
@@ -205,6 +211,8 @@ static void audio_thread_loop(void *data)
    if (!thr->driver_data)
    {
       thread_elevation_lower_current(&elevation);
+      thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+            THREAD_ELEVATION_REFUSED, NULL, false);
       return;
    }
 
@@ -262,6 +270,8 @@ static void audio_thread_loop(void *data)
    audio_driver_pipeline_consumer_exit();
    thr->driver->free(thr->driver_data);
    thread_elevation_lower_current(&elevation);
+   thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
+         THREAD_ELEVATION_REFUSED, NULL, false);
 }
 
 /**
