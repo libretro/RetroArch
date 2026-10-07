@@ -3,7 +3,7 @@
           xmlns:tools="http://schemas.android.com/tools"
     android:versionCode="1597175272"
     android:versionName="1.22.2"
-    android:installLocation="auto">
+    android:installLocation="internalOnly">
     <uses-feature android:glEsVersion="0x00020000" />
     <uses-feature android:name="android.hardware.type.pc" android:required="false"/>
     <uses-feature android:name="android.hardware.touchscreen" android:required="false"/>
@@ -29,7 +29,6 @@
         android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="false"
         tools:ignore="UnusedAttribute">
-        <meta-data android:name="com.oculus.app_id" android:value="1361809223675054" />
         <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture" android:exported="true" android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|orientation|screenLayout|uiMode|screenSize|smallestScreenSize|fontScale" android:theme="@android:style/Theme.NoTitleBar.Fullscreen" android:launchMode="singleInstance">
             <meta-data android:name="android.app.lib_name" android:value="retroarch-activity" />
             <meta-data android:name="android.app.func_name" android:value="ANativeActivity_onCreate" />

@@ -6,6 +6,7 @@
     <uses-feature android:name="oculus.software.handtracking" android:required="false" />
     <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
     <application>
+        <meta-data android:name="com.oculus.app_id" android:value="1361809223675054" />
         <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
