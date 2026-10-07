@@ -61,7 +61,14 @@ static FcConfig *fc_config = NULL;
 #endif
 
 #include FT_FREETYPE_H
+#include FT_OUTLINE_H
 #include "../font_driver.h"
+
+/* From 2.10, FT_Load_Glyph presets where its bitmap goes and how big
+ * it is, so the outline can be rendered straight into the cell */
+#if FREETYPE_MAJOR > 2 || (FREETYPE_MAJOR == 2 && FREETYPE_MINOR >= 10)
+#define FT_RASTER_IN_CELL 1
+#endif
 
 typedef struct freetype_face
 {
@@ -174,6 +181,57 @@ static unsigned font_rasterizer_ft_glyph_index(void *data, uint32_t code)
    return (unsigned)FT_Get_Char_Index(((ft_face_t*)data)->face, code);
 }
 
+#ifdef FT_RASTER_IN_CELL
+/* Renders the loaded outline into the top-left @copy_w x @copy_h of
+ * the cell, which is clear, placed as FT_Render_Glyph places it. A16
+ * coverage is rendered as 8 bits at the start of each row, then
+ * widened in place from the right. */
+static bool ft_render_in_cell(ft_face_t *self, uint8_t *dst,
+      unsigned pitch, unsigned copy_w, unsigned copy_h, bool fmt16)
+{
+   unsigned x, y;
+   FT_Bitmap        target;
+   FT_Raster_Params params;
+   FT_GlyphSlot     slot = self->face->glyph;
+   FT_Pos           dx   = -64 * (FT_Pos)slot->bitmap_left;
+   FT_Pos           dy   = 64 * ((FT_Pos)copy_h - slot->bitmap_top);
+   FT_Error         err;
+
+   memset(&target, 0, sizeof(target));
+   target.rows       = copy_h;
+   target.width      = copy_w;
+   target.pitch      = (int)(pitch * (fmt16 ? 2 : 1));
+   target.buffer     = dst;
+   target.num_grays  = 256;
+   target.pixel_mode = FT_PIXEL_MODE_GRAY;
+
+   memset(&params, 0, sizeof(params));
+   params.target = &target;
+   params.source = &slot->outline;
+   params.flags  = FT_RASTER_FLAG_AA;
+
+   FT_Outline_Translate(&slot->outline, dx, dy);
+   err = FT_Outline_Render(self->lib, &slot->outline, &params);
+   FT_Outline_Translate(&slot->outline, -dx, -dy);
+   if (err)
+      return false;
+
+   if (fmt16)
+   {
+      /* FreeType emits 256 coverage levels; v * 257 upconverts
+       * them losslessly to the 16-bit range (0xFF -> 0xFFFF) */
+      for (y = 0; y < copy_h; y++)
+      {
+         uint8_t  *row8  = dst + (size_t)y * pitch * 2;
+         uint16_t *row16 = (uint16_t*)(void*)row8;
+         for (x = copy_w; x-- > 0; )
+            row16[x] = (uint16_t)((unsigned)row8[x] * 257u);
+      }
+   }
+   return true;
+}
+#endif
+
 static bool font_rasterizer_ft_render_glyph(void *data, uint32_t code,
       unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_dims,
       enum font_atlas_format fmt, struct font_glyph *glyph)
@@ -191,41 +249,64 @@ static bool font_rasterizer_ft_render_glyph(void *data, uint32_t code,
 
    if (FT_Load_Glyph(self->face, gi, FT_LOAD_DEFAULT))
       return false;
-   if (FT_Render_Glyph(self->face->glyph, FT_RENDER_MODE_NORMAL))
-      return false;
+   slot = self->face->glyph;
 
-   slot   = self->face->glyph;
-   copy_w = slot->bitmap.width;
-   copy_h = slot->bitmap.rows;
-   if (!slot->bitmap.buffer)
-      copy_w = copy_h = 0;
-   if (copy_w > cell_w)
-      copy_w = cell_w;
-   if (copy_h > cell_h)
-      copy_h = cell_h;
-
-   src = (const uint8_t*)slot->bitmap.buffer;
-   for (y = 0; y < cell_h; y++)
+#ifdef FT_RASTER_IN_CELL
+   /* Overlapping contours are rendered oversampled by FT_Render_Glyph,
+    * and the rasterizer's own clipping rounds the edge row differently
+    * from cutting its bitmap: those, a glyph larger than the cell and
+    * anything not an outline take the copy below */
+   if (     slot->format == FT_GLYPH_FORMAT_OUTLINE
+#ifdef FT_OUTLINE_OVERLAP
+         && !(slot->outline.flags & FT_OUTLINE_OVERLAP)
+#endif
+         && slot->bitmap.width <= cell_w
+         && slot->bitmap.rows  <= cell_h)
    {
-      uint8_t *row = dst + (size_t)y * pitch * esz;
-      if (y < copy_h)
+      copy_w = slot->bitmap.width;
+      copy_h = slot->bitmap.rows;
+      for (y = 0; y < cell_h; y++)
+         memset(dst + (size_t)y * pitch * esz, 0, (size_t)cell_w * esz);
+      if (     copy_w && copy_h
+            && !ft_render_in_cell(self, dst, pitch, copy_w, copy_h, fmt16))
+         return false;
+   }
+   else
+#endif
+   {
+      if (FT_Render_Glyph(slot, FT_RENDER_MODE_NORMAL))
+         return false;
+
+      copy_w = slot->bitmap.width;
+      copy_h = slot->bitmap.rows;
+      if (!slot->bitmap.buffer)
+         copy_w = copy_h = 0;
+      if (copy_w > cell_w)
+         copy_w = cell_w;
+      if (copy_h > cell_h)
+         copy_h = cell_h;
+
+      src = (const uint8_t*)slot->bitmap.buffer;
+      for (y = 0; y < cell_h; y++)
       {
-         if (fmt16)
+         uint8_t *row = dst + (size_t)y * pitch * esz;
+         if (y < copy_h)
          {
-            /* FreeType emits 256 coverage levels; v * 257 upconverts
-             * them losslessly to the 16-bit range (0xFF -> 0xFFFF) */
-            uint16_t *row16 = (uint16_t*)(void*)row;
-            for (x = 0; x < copy_w; x++)
-               row16[x] = (uint16_t)((unsigned)src[x] * 257u);
+            if (fmt16)
+            {
+               uint16_t *row16 = (uint16_t*)(void*)row;
+               for (x = 0; x < copy_w; x++)
+                  row16[x] = (uint16_t)((unsigned)src[x] * 257u);
+            }
+            else
+               memcpy(row, src, copy_w);
+            memset(row + (size_t)copy_w * esz, 0,
+                  (size_t)(cell_w - copy_w) * esz);
+            src += slot->bitmap.pitch;
          }
          else
-            memcpy(row, src, copy_w);
-         memset(row + (size_t)copy_w * esz, 0,
-               (size_t)(cell_w - copy_w) * esz);
-         src += slot->bitmap.pitch;
+            memset(row, 0, (size_t)cell_w * esz);
       }
-      else
-         memset(row, 0, (size_t)cell_w * esz);
    }
 
    /* Some glyphs can be blank. */
