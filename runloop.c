@@ -7603,24 +7603,31 @@ static enum runloop_state_enum runloop_check_state(
    /* Check quit hotkey */
    if (!(input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE))
    {
-      static bool quit_key     = false;
-      static bool old_quit_key = false;
-      static bool runloop_exec = false;
+      static bool quit_key       = false;
+      static bool old_quit_key   = false;
+      static bool old_quit_combo = false;
+      static bool runloop_exec   = false;
+      bool quit_combo;
       bool trig_quit_key;
 
       quit_key                 = BIT256_GET(current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
 
-      /* Check for quit gamepad combo */
-      if (     !trig_quit_key
-            && quit_gamepad_combo != INPUT_COMBO_NONE
+      /* Check for quit gamepad combo.  It reports true on every frame
+       * it is held, so like the key it counts only on the frame it is
+       * first held: otherwise one press is also the second press that
+       * 'confirm_quit' asks for. */
+      quit_combo               =
+               quit_gamepad_combo != INPUT_COMBO_NONE
             && input_driver_button_combo(
                   quit_gamepad_combo,
                   current_time,
-                  &current_bits))
+                  &current_bits);
+      if (quit_combo && !old_quit_combo)
          trig_quit_key = true;
 
       old_quit_key             = quit_key;
+      old_quit_combo           = quit_combo;
 
       /* Check double press if enabled */
       if (     trig_quit_key
