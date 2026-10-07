@@ -33,6 +33,9 @@ bool android_vk_openxr_is_session_ready(void);
  * state. */
 bool android_vk_openxr_owns_vk_context(const void *vk_data);
 
+/* True while this context driver is current (its XR instance exists). */
+bool android_vk_openxr_active(void);
+
 #ifdef XR_VERSION_1_0
 XrInstance android_vk_openxr_xr_instance(void);
 XrSystemId android_vk_openxr_xr_system_id(void);

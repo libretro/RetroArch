@@ -116,6 +116,13 @@ bool android_vk_openxr_owns_vk_context(const void *vk_data)
    return vk_data == (const void*)&android_vk_openxr_ctx.vk;
 }
 
+/* True from context init until destroy: the XR instance lives exactly
+ * as long as this context driver is the current one. */
+bool android_vk_openxr_active(void)
+{
+   return android_vk_openxr_ctx.instance != XR_NULL_HANDLE;
+}
+
 XrInstance android_vk_openxr_xr_instance(void)
 {
    return android_vk_openxr_ctx.instance;

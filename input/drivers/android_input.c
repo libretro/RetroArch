@@ -48,6 +48,9 @@
 #include "android_kbd_route.h"
 #ifdef HAVE_OPENXR
 #include "openxr_input.h"
+#ifdef HAVE_VULKAN
+#include "../../gfx/drivers_context/android_vk_openxr.h"
+#endif
 #endif
 #include "android_key_state.h"
 #include "android_stylus_map.h"
@@ -825,14 +828,12 @@ static void android_input_poll_main_cmd(void)
 
       case APP_CMD_INIT_WINDOW:
          android_lifecycle_window_set(&android_app->lc, msg.arg);
-#ifdef HAVE_OPENXR
-         {
-            video_driver_state_t *state = video_state_get_ptr();
-            if (!(state->current_video_context.ident
-                  && string_is_equal(state->current_video_context.ident,
-                        "android_vk_openxr")))
-               android_app->reinitRequested = 1;
-         }
+#if defined(HAVE_OPENXR) && defined(HAVE_VULKAN)
+         /* The XR context keeps its session across window recreation,
+          * so a new window must not tear it down. Asked of the context
+          * driver by name: input code takes nothing from video state. */
+         if (!android_vk_openxr_active())
+            android_app->reinitRequested = 1;
 #else
          android_app->reinitRequested = 1;
 #endif
