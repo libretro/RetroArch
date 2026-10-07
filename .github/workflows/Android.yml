@@ -48,3 +48,4 @@ jobs:
         path: |
           pkg/android/phoenix/build/outputs/apk/normal/debug/phoenix-normal-debug.apk
           pkg/android/phoenix/build/outputs/apk/aarch64/debug/phoenix-aarch64-debug.apk
+          pkg/android/phoenix/build/outputs/apk/quest/debug/phoenix-quest-debug.apk

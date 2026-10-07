@@ -47,6 +47,11 @@
 #include <compat/strl.h>
 #endif
 
+#ifdef HAVE_OPENXR
+#include <openxr/openxr_platform.h>
+#include "../drivers_context/android_vk_openxr.h"
+#endif
+
 #define VENDOR_ID_AMD 0x1002
 #define VENDOR_ID_NV 0x10DE
 #define VENDOR_ID_INTEL 0x8086
@@ -767,6 +772,150 @@ static const char *vulkan_optional_device_extensions[] = {
 #endif
 };
 
+#ifdef HAVE_OPENXR
+static VkDevice vulkan_create_openxr_vulkan_device(
+      VkInstance vk_instance, VkPhysicalDevice gpu,
+      const VkDeviceCreateInfo *create_info)
+{
+   XrInstance xr_instance = android_vk_openxr_xr_instance();
+   PFN_xrCreateVulkanDeviceKHR create_vulkan_device = NULL;
+   PFN_xrGetVulkanGraphicsDevice2KHR get_vulkan_device = NULL;
+   XrVulkanDeviceCreateInfoKHR xr_device_info =
+      { XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR };
+   XrVulkanGraphicsDeviceGetInfoKHR get_device_info =
+      { XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR };
+   XrResult xr_result;
+   VkResult vulkan_result = VK_ERROR_INITIALIZATION_FAILED;
+   VkPhysicalDevice xr_gpu = VK_NULL_HANDLE;
+   VkDevice device = VK_NULL_HANDLE;
+
+   xr_result = xrGetInstanceProcAddr(
+         xr_instance,
+         "xrGetVulkanGraphicsDevice2KHR",
+         (PFN_xrVoidFunction*)&get_vulkan_device);
+
+   if (xr_result != XR_SUCCESS || !get_vulkan_device)
+   {
+      RARCH_ERR("[Vulkan] Failed to get xrGetVulkanGraphicsDevice2KHR (%d).\n",
+            xr_result);
+      return VK_NULL_HANDLE;
+   }
+
+   get_device_info.systemId = android_vk_openxr_xr_system_id();
+   get_device_info.vulkanInstance = vk_instance;
+
+   xr_result = get_vulkan_device(
+         xr_instance,
+         &get_device_info,
+         &xr_gpu);
+
+   if (xr_result != XR_SUCCESS || xr_gpu == VK_NULL_HANDLE)
+   {
+      char result_str[XR_MAX_RESULT_STRING_SIZE];
+
+      xrResultToString(xr_instance,
+            xr_result, result_str);
+
+      RARCH_ERR("[Vulkan] xrGetVulkanGraphicsDevice2KHR failed: %s (%d).\n",
+            result_str, xr_result);
+      return VK_NULL_HANDLE;
+   }
+
+   if (xr_gpu != gpu)
+   {
+      RARCH_ERR("[XR] OpenXR selected a different VkPhysicalDevice.\n");
+      return VK_NULL_HANDLE;
+   }
+
+   xr_result = xrGetInstanceProcAddr(
+         xr_instance,
+         "xrCreateVulkanDeviceKHR",
+         (PFN_xrVoidFunction*)&create_vulkan_device);
+
+   if (xr_result != XR_SUCCESS || !create_vulkan_device)
+   {
+      RARCH_ERR("[Vulkan] Failed to get xrCreateVulkanDeviceKHR (%d).\n",
+            xr_result);
+      return VK_NULL_HANDLE;
+   }
+
+   xr_device_info.systemId = android_vk_openxr_xr_system_id();
+   xr_device_info.pfnGetInstanceProcAddr =
+      vulkan_symbol_wrapper_instance_proc_addr();
+   xr_device_info.vulkanCreateInfo = create_info;
+   xr_device_info.vulkanPhysicalDevice = xr_gpu;
+   xr_device_info.vulkanAllocator = NULL;
+
+   xr_result = create_vulkan_device(
+         xr_instance,
+         &xr_device_info,
+         &device,
+         &vulkan_result);
+
+   if (xr_result != XR_SUCCESS || vulkan_result != VK_SUCCESS)
+   {
+      char result_str[XR_MAX_RESULT_STRING_SIZE];
+
+      xrResultToString(xr_instance,
+            xr_result, result_str);
+
+      RARCH_ERR("[Vulkan] xrCreateVulkanDeviceKHR failed: %s (%d), Vulkan result=%d.\n",
+            result_str, xr_result, vulkan_result);
+
+      return VK_NULL_HANDLE;
+   }
+
+   return device;
+}
+
+static VkResult vulkan_create_openxr_vulkan_instance(
+      const VkInstanceCreateInfo *info, VkInstance *instance)
+{
+   XrVulkanInstanceCreateInfoKHR xr_create_info =
+      { XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR };
+   VkResult vulkan_result = VK_ERROR_INITIALIZATION_FAILED;
+   PFN_xrCreateVulkanInstanceKHR create_vulkan_instance = NULL;
+   XrInstance xr_instance = android_vk_openxr_xr_instance();
+   XrResult xr_result;
+
+   xr_result = xrGetInstanceProcAddr(
+         xr_instance,
+         "xrCreateVulkanInstanceKHR",
+         (PFN_xrVoidFunction*)&create_vulkan_instance);
+
+   if (xr_result != XR_SUCCESS || !create_vulkan_instance)
+   {
+      RARCH_ERR("[Vulkan] Failed to get xrCreateVulkanInstanceKHR (%d).\n",
+            xr_result);
+      return VK_ERROR_INITIALIZATION_FAILED;
+   }
+
+   xr_create_info.systemId               = android_vk_openxr_xr_system_id();
+   xr_create_info.pfnGetInstanceProcAddr = vulkan_symbol_wrapper_instance_proc_addr();
+   xr_create_info.vulkanCreateInfo       = info;
+   xr_create_info.vulkanAllocator        = NULL;
+
+   xr_result = create_vulkan_instance(
+         xr_instance,
+         &xr_create_info,
+         instance,
+         &vulkan_result);
+
+   if (xr_result != XR_SUCCESS)
+   {
+      char result_str[XR_MAX_RESULT_STRING_SIZE];
+
+      xrResultToString(xr_instance, xr_result, result_str);
+
+      RARCH_ERR("[Vulkan] xrCreateVulkanInstanceKHR failed: %s (%d), Vulkan result=%d.\n",
+            result_str, xr_result, vulkan_result);
+      return VK_ERROR_INITIALIZATION_FAILED;
+   }
+
+   return vulkan_result;
+}
+#endif
+
 static VkDevice vulkan_context_create_device_wrapper(
       VkPhysicalDevice gpu, void *opaque,
       const VkDeviceCreateInfo *create_info)
@@ -794,6 +943,12 @@ static VkDevice vulkan_context_create_device_wrapper(
    }
 
    /* When we get around to using fancier features we can chain in PDF2 stuff. */
+#ifdef HAVE_OPENXR
+   if (android_vk_openxr_owns_vk_context(opaque))
+      device = vulkan_create_openxr_vulkan_device(
+            ((gfx_ctx_vulkan_data_t*)opaque)->context.instance, gpu, &info);
+   else
+#endif
    if ((res = vkCreateDevice(gpu, &info, NULL, &device)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create device (%d).\n", res);
@@ -859,6 +1014,17 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       else
          RARCH_LOG("[Vulkan] Got HW context negotiation interface %u.\n", iface->interface_version);
    }
+
+#ifdef HAVE_OPENXR
+   if (android_vk_openxr_owns_vk_context(vk) && iface
+         && (iface->interface_version < 2 || !iface->create_device2))
+      RARCH_WARN("[Vulkan] Legacy core device negotiation not compatible with OpenXR: "
+            "iface=%p type=%u version=%u create_device2=%p\n",
+            (void*)iface,
+            iface->interface_type,
+            iface->interface_version,
+            (void*)iface->create_device2);
+#endif
 
    if (!vulkan_context_init_gpu(vk))
       return false;
@@ -1014,6 +1180,12 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          VkQueueFlags required = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
          VkBool32 supported    = VK_FALSE;
+#ifdef HAVE_OPENXR
+         /* Headless (XR): no surface, nothing to present to. */
+         if (vk->vk_surface == VK_NULL_HANDLE)
+            supported = VK_TRUE;
+         else
+#endif
          vkGetPhysicalDeviceSurfaceSupportKHR(
                vk->context.gpu, i,
                vk->vk_surface, &supported);
@@ -1101,11 +1273,20 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
          video_driver_cache_context_ack_set();
          RARCH_LOG("[Vulkan] Using cached Vulkan context.\n");
       }
-      else if (vkCreateDevice(vk->context.gpu, &device_info,
-               NULL, &vk->context.device) != VK_SUCCESS)
+      else
       {
-         RARCH_ERR("[Vulkan] Failed to create device.\n");
-         return false;
+#ifdef HAVE_OPENXR
+         if (android_vk_openxr_owns_vk_context(vk))
+            vk->context.device = vulkan_create_openxr_vulkan_device(
+                  vk->context.instance, vk->context.gpu, &device_info);
+         else
+#endif
+         if (vkCreateDevice(vk->context.gpu, &device_info,
+                  NULL, &vk->context.device) != VK_SUCCESS)
+         {
+            RARCH_ERR("[Vulkan] Failed to create device.\n");
+            return false;
+         }
       }
    }
 
@@ -1159,6 +1340,49 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 
    return true;
 }
+
+#ifdef HAVE_OPENXR
+bool vulkan_context_init_headless_device(gfx_ctx_vulkan_data_t *vk)
+{
+   return vulkan_context_init_device(vk);
+}
+#endif
+
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+bool vulkan_context_create_android_surface(gfx_ctx_vulkan_data_t *vk,
+      void *window)
+{
+   VkAndroidSurfaceCreateInfoKHR surf_info;
+   PFN_vkCreateAndroidSurfaceKHR create;
+
+   if (!vk || !window || vk->context.instance == VK_NULL_HANDLE)
+   {
+      RARCH_ERR("[Vulkan] Cannot create OpenXR core surface: Vulkan instance or Android window is missing.\n");
+      return false;
+   }
+
+   if (!VULKAN_SYMBOL_WRAPPER_LOAD_INSTANCE_SYMBOL(vk->context.instance,
+            "vkCreateAndroidSurfaceKHR", create))
+   {
+      RARCH_ERR("[Vulkan] vkCreateAndroidSurfaceKHR is unavailable for OpenXR core negotiation.\n");
+      return false;
+   }
+
+   surf_info.sType  = VK_STRUCTURE_TYPE_ANDROID_SURFACE_CREATE_INFO_KHR;
+   surf_info.pNext  = NULL;
+   surf_info.flags  = 0;
+   surf_info.window = (ANativeWindow*)window;
+
+   if (create(vk->context.instance, &surf_info, NULL, &vk->vk_surface)
+         != VK_SUCCESS)
+   {
+      RARCH_ERR("[Vulkan] Failed to create Android surface for OpenXR core negotiation.\n");
+      return false;
+   }
+
+   return true;
+}
+#endif
 
 #ifdef VULKAN_HDR_SWAPCHAIN
 #define VULKAN_COLORSPACE_EXTENSION_NAME "VK_EXT_swapchain_colorspace"
@@ -1323,6 +1547,18 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
       }
    }
 
+#ifdef HAVE_OPENXR
+   if (android_vk_openxr_owns_vk_context(vk))
+   {
+      if ((res = vulkan_create_openxr_vulkan_instance(&info, &instance))
+            != VK_SUCCESS)
+      {
+         instance = VK_NULL_HANDLE;
+         goto end;
+      }
+   }
+   else
+#endif
    if ((res = vkCreateInstance(&info, NULL, &instance)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create Vulkan instance (%d).\n", res);
@@ -1832,6 +2068,16 @@ static void vulkan_acquire_wait_fences(gfx_ctx_vulkan_data_t *vk)
       ctx->swapchain_num_wait_semaphores[index] = 0;
    }
 }
+
+#ifdef HAVE_OPENXR
+void vulkan_context_advance_frame(gfx_ctx_vulkan_data_t *vk)
+{
+   if (!vk || !vk->context.num_swapchain_images)
+      return;
+
+   vulkan_acquire_wait_fences(vk);
+}
+#endif
 
 unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
       unsigned frame_index, VkSemaphore *sems,

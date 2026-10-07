@@ -2918,6 +2918,263 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/**
+ * Notifies the frontend that this core can render stereoscopic VR content
+ * and describes what it needs from the frontend to do so.
+ *
+ * Should be called from retro_load_game(), after RETRO_ENVIRONMENT_SET_HW_RENDER
+ * if hardware rendering is used. VR content requires hardware rendering in
+ * practice, since the frontend provides a hardware framebuffer containing
+ * both eye images.
+ *
+ * A core that supports both a flat and a VR presentation of the same
+ * content should call this unconditionally and let the frontend's return
+ * value decide: returning false means no VR session is available (headset
+ * build not active, or the platform does not support VR), in which case
+ * the core continues exactly as if the call had never been made.
+ *
+ * When VR is requested successfully, the core must report its VR framebuffer
+ * geometry through retro_get_system_av_info(): the base and maximum geometry
+ * must both be 2W by H, where W and H are the dimensions of one eye.
+ *
+ * The frontend uses this geometry when allocating the hardware framebuffer;
+ * recommended_eye_width and recommended_eye_height do not determine the
+ * framebuffer allocation.
+ *
+ * If RETRO_VR_FRAME_TARGET_RESIZED is subsequently reported, the eye target
+ * dimensions have changed. The core must call this environment command again
+ * and update its system AV info so that the base and maximum geometry are
+ * again 2W by H. Otherwise the new stereo framebuffer may exceed the
+ * currently allocated maximum geometry.
+ *
+ * The frontend samples the eye poses and field of view once per frame and
+ * passes that same sample to the core through
+ * RETRO_ENVIRONMENT_GET_VR_FRAME_STATE. When submitting the compositor
+ * layer for that frame, the frontend must use the same eye poses and FOV
+ * that were supplied to the core. This keeps the compositor submission
+ * synchronized with the sample used to render the eye images and avoids
+ * reprojection errors caused by using a different pose sample.
+ *
+ * @param[in,out] data <tt>struct retro_vr_content_info *</tt>.
+ * If non-NULL, requests VR presentation using the supplied content
+ * information. If NULL, disables the current VR presentation.
+ *
+ * @returns true if the requested operation was accepted and successfully
+ * applied, false if VR is unavailable or the request cannot be satisfied.
+ *
+ * @see retro_vr_content_info
+ * @see RETRO_ENVIRONMENT_GET_VR_FRAME_STATE
+ */
+#define RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+enum retro_vr_layout {
+   /* Core renders both eyes into the frontend framebuffer (the one from
+    * retro_hw_render_callback::get_current_framebuffer), left eye in
+    * x=[0,W), right eye in x=[W,2W), and calls retro_video_refresh_t ONCE per
+    * retro_run() with RETRO_HW_FRAME_BUFFER_VALID, width=2W, height=H.
+    * Origin follows hw_render.bottom_left_origin. Alpha is ignored. */
+   RETRO_VR_LAYOUT_SIDE_BY_SIDE = 0,
+   RETRO_VR_LAYOUT_DUMMY = INT_MAX
+};
+
+enum retro_vr_reference_space {
+   RETRO_VR_REFERENCE_SPACE_LOCAL = 0,  /* seated: origin = head at session start/recenter */
+   RETRO_VR_REFERENCE_SPACE_STAGE = 1,  /* standing: origin = floor */
+   RETRO_VR_REFERENCE_SPACE_DUMMY = INT_MAX
+};
+
+/**
+ * Details a core provides when requesting a VR session via
+ * RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO.
+ */
+struct retro_vr_content_info
+{
+   /**
+    * true if the core renders both eyes natively into the VR
+    * framebuffer using the layout specified by layout
+    *
+    * false if the core renders mono content and the frontend
+    * derives the stereo presentation.
+    */
+   bool stereo_native;
+
+   /**
+    * A core has requested a flat presentation of its content, even if it
+    * is capable of producing VR output.
+    */
+   bool request_flat;
+
+   /**
+    * Requested interpupillary distance in meters, used only if the
+    * frontend cannot obtain one from the runtime/HMD itself.
+    *
+    * 0.0f means "use whatever the frontend/runtime already knows".
+    */
+   float ipd_hint_m;
+
+   enum retro_vr_layout layout;
+   enum retro_vr_reference_space reference_space;
+
+   /**
+    * Output: recommended width of one eye's render target.
+    *
+    * The core must not use this value to determine its system AV geometry.
+    * The VR framebuffer geometry is reported separately through
+    * retro_get_system_av_info() as 2W x H.
+    */
+   unsigned recommended_eye_width;
+
+   /**
+    * Output: recommended height of one eye's render target.
+    */
+   unsigned recommended_eye_height;
+};
+
+#define RETRO_VR_FRAME_RECENTERED     (1u << 0)  /* user recentered: re-capture any reference */
+#define RETRO_VR_FRAME_TARGET_RESIZED (1u << 1)  /* eye size changed: call SET_VR_CONTENT_INFO again */
+
+/**
+ * Retrieves the per-eye state plus per-frame event flags
+ * (RETRO_VR_FRAME_RECENTERED / RETRO_VR_FRAME_TARGET_RESIZED) for the
+ * current retro_run() call.
+ *
+ * The frontend samples both eye states once per frame, immediately before
+ * retro_run(), and returns that same sample for the duration of that
+ * retro_run() call.
+ *
+ * The position and orientation in each eye state are the eye-to-tracking
+ * transforms used for that frame. The FOV values are the same values the
+ * frontend must use when submitting the compositor layer for the
+ * corresponding frame.
+ *
+ * @param[out] data <tt>struct retro_vr_frame_state *</tt>.
+ * @return false if no VR session exists or no valid sample is available.
+ */
+#define RETRO_ENVIRONMENT_GET_VR_FRAME_STATE (96 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+
+/**
+ * Identifies which eye a \ref retro_vr_eye_state describes, and the index
+ * of that eye within the two-element array passed to
+ * RETRO_ENVIRONMENT_GET_VR_FRAME_STATE.
+ */
+enum retro_vr_eye
+{
+   RETRO_VR_EYE_LEFT  = 0,
+   RETRO_VR_EYE_RIGHT = 1,
+
+   /** @private Defined to ensure <tt>sizeof(retro_vr_eye) == sizeof(int)</tt>. Do not use. */
+   RETRO_VR_EYE_DUMMY = INT_MAX
+};
+
+/**
+ * One eye's head-tracked pose and asymmetric field of view for the current
+ * frame, in the frontend's tracking space (meters, right-handed, Y up).
+ *
+ * position and orientation describe the eye-to-tracking-space transform,
+ * not its inverse.
+ *
+ * The quaternion is stored in (x, y, z, w) order. This is intentionally
+ * different from APIs such as GLM where glm::quat is constructed as
+ * (w, x, y, z).
+ *
+ * @see RETRO_ENVIRONMENT_GET_VR_FRAME_STATE
+ */
+struct retro_vr_eye_state
+{
+   /**
+    * Eye position in tracking space, in meters.
+    */
+   float position[3];
+
+   /**
+    * Eye orientation in tracking space, as a quaternion (x, y, z, w).
+    *
+    * This is the orientation of the eye relative to tracking space, not
+    * the inverse/view orientation.
+    */
+   float orientation[4];
+
+   /**
+    * Tangent of the positive half-angle from the eye's forward axis to
+    * each frustum edge, in the order:
+    *
+    *   [0] left
+    *   [1] right
+    *   [2] up
+    *   [3] down
+    *
+    * All four values are positive magnitudes. They describe the distance
+    * of each frustum edge from the forward axis in tangent space; they are
+    * not signed OpenXR angles.
+    *
+    * The four values are independent because HMD eye frustums are normally
+    * asymmetric.
+    *
+    * For example, if the left and right tangent values are l and r, and
+    * the up and down tangent values are u and d, the projection frustum
+    * spans:
+    *
+    *   left   = -l
+    *   right  =  r
+    *   bottom = -d
+    *   top    =  u
+    *
+    * A frontend converting from APIs that represent the corresponding
+    * angles as signed values must use their magnitudes.
+    */
+   float fov_tan[4];
+};
+
+struct retro_vr_frame_state {
+   struct retro_vr_eye_state eyes[2];
+   uint32_t flags;
+};
+
+/**
+ * Retrieves the current head-tracked pose.
+ *
+ * The frontend samples the HMD once per frame, immediately before
+ * retro_run(), and returns the same sample for the duration of that
+ * retro_run() call.
+ */
+#define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (97 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+#define RETRO_VR_HEAD_POSE_POSITION_VALID    (1u << 0)
+#define RETRO_VR_HEAD_POSE_ORIENTATION_VALID (1u << 1)
+#define RETRO_VR_HEAD_POSE_VELOCITY_VALID    (1u << 2)
+
+/**
+ * Head pose and motion in the frontend's tracking space (meters,
+ * seconds, right-handed, Y up).
+ *
+ * position and orientation describe the head-to-tracking-space transform,
+ * not its inverse. The orientation quaternion rotates vectors from head
+ * space into tracking space.
+ *
+ * linear_velocity is the velocity of the head-space origin, expressed in
+ * tracking-space coordinates. angular_velocity is the head's angular
+ * velocity, expressed in tracking-space coordinates. Velocity fields are
+ * valid only when RETRO_VR_HEAD_POSE_VELOCITY_VALID is set.
+ */
+struct retro_vr_head_pose
+{
+   /** Head position in tracking space, in meters. */
+   float position[3];
+
+   /** Head orientation in tracking space, quaternion (x, y, z, w). */
+   float orientation[4];
+
+   /** Linear velocity in meters/second. */
+   float linear_velocity[3];
+
+   /** Angular velocity in radians/second. */
+   float angular_velocity[3];
+
+   /* orientation/position are valid */
+   uint32_t flags;
+};
+
 /* Speaker positions, as bits of a layout mask; a frame's channels are
  * interleaved in ascending bit order. The bits are those of the
  * WAVEFORMATEXTENSIBLE channel mask. */

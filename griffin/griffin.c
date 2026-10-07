@@ -309,8 +309,16 @@ VIDEO CONTEXT
 
 #if defined(ANDROID)
 #include "../gfx/drivers_context/android_ctx.c"
+#if defined(HAVE_OPENXR)
+#include "../input/drivers/openxr_input.c"
+#include "../gfx/drivers_context/gl_android_openxr_ctx.c"
+#include "../deps/OpenXR-SDK/src/xr_generated_dispatch_table_core.c"
+#endif
 #if defined(HAVE_VULKAN)
 #include "../gfx/drivers_context/android_vk_ctx.c"
+#if defined(HAVE_OPENXR)
+#include "../gfx/drivers_context/android_vk_openxr_ctx.c"
+#endif
 #endif
 #include "../gfx/display_servers/dispserv_android.c"
 #elif defined(__QNX__)
@@ -1401,6 +1409,9 @@ FRONTEND
 #include "../frontend/drivers/platform_qnx.c"
 #elif defined(__linux__) || (defined(BSD) && !defined(__MACH__))
 #include "../frontend/drivers/platform_unix.c"
+#if defined(ANDROID)
+#include "../libretro-common/jni/rjni.c"
+#endif
 #elif defined(DJGPP)
 #include "../frontend/drivers/platform_dos.c"
 #endif

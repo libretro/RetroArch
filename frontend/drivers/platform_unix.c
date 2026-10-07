@@ -119,8 +119,6 @@ enum platform_android_flags
    PLAT_ANDROID_FLAG_XPERIA_PLAY_DEVICE  = (1 << 2)
 };
 
-static sthread_tls_t thread_key;
-static bool thread_key_inited            = false;
 static char app_dir[DIR_MAX_LENGTH];
 static char apk_dir[DIR_MAX_LENGTH];
 static char android_config_path[PATH_MAX_LENGTH];
@@ -582,57 +580,11 @@ static void onContentRectChanged(ANativeActivity *activity,
    retro_atomic_store_release_int(&instance->content_rect.changed, 1);
 }
 
+/* Kept as the tree-wide entry point name; the caching, the attach and
+ * the detach-at-thread-exit all live in libretro-common's rjni now. */
 JNIEnv *jni_thread_getenv(void)
 {
-   JNIEnv *env;
-   struct android_app* android_app;
-   int status;
-
-   /* Fast path. A JNIEnv is valid for the entire lifetime of the thread
-    * it was handed to, and this is called on only two threads (the app
-    * thread and, via the activity callbacks, the Java UI thread), so the
-    * cached pointer answers virtually every call.
-    *
-    * AttachCurrentThread on an already-attached thread is not free: it
-    * still crosses into the VM to look the thread up. The TLS slot was
-    * already being written below but never read back, so every one of
-    * the ~25 call sites - including the per-keystroke KeyCharacterMap
-    * lookup - paid for an attach it did not need. */
-   if (thread_key_inited)
-      if ((env = (JNIEnv*)sthread_tls_get(&thread_key)))
-         return env;
-
-   android_app = (struct android_app*)g_android;
-   status      = (*android_app->activity->vm)->
-      AttachCurrentThread(android_app->activity->vm, &env, 0);
-
-   if (status < 0)
-   {
-      RARCH_ERR("jni_thread_getenv: Failed to attach current thread.\n");
-      return NULL;
-   }
-
-   /* Without a key there is nowhere to cache, and jni_thread_destruct
-    * will never run to detach - but the env is still usable, so return
-    * it rather than failing the call. */
-   if (thread_key_inited)
-      sthread_tls_set(&thread_key, (void*)env);
-
-   return env;
-}
-
-static void jni_thread_destruct(void *value)
-{
-   JNIEnv *env = (JNIEnv*)value;
-   struct android_app *android_app = (struct android_app*)g_android;
-
-   if (!env)
-      return;
-
-   if (android_app)
-      (*android_app->activity->vm)->
-         DetachCurrentThread(android_app->activity->vm);
-   sthread_tls_set(&thread_key, NULL);
+   return rjni_env();
 }
 
 static void android_app_entry(void *data)
@@ -816,10 +768,7 @@ void ANativeActivity_onCreate(ANativeActivity* activity,
    ANativeActivity_setWindowFlags(activity, AWINDOW_FLAG_KEEP_SCREEN_ON
          | AWINDOW_FLAG_FULLSCREEN, 0);
 
-   if (sthread_tls_create_with_dtor(&thread_key, jni_thread_destruct))
-      thread_key_inited = true;
-   else
-      RARCH_ERR("Error initializing thread-local storage key.\n");
+   rjni_set_vm(activity->vm);
 
    activity->instance = android_app_create(activity,
          savedState, savedStateSize);

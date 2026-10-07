@@ -131,7 +131,11 @@ enum vk_flags
    /* Held across creating a frame texture to lend the core: it stays in
     * cached system memory, never video memory, because the core and the
     * frontend may read a lent frame back. */
-   VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21)
+   VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21),
+   /* frontend uses openxr */
+   VK_FLAG_OPEN_XR              = (1 << 22),
+   /* core opted into VR via SET_VR_CONTENT_INFO */
+   VK_FLAG_XR_STEREO            = (1 << 23)
 };
 
 enum vk_texture_type
@@ -458,6 +462,15 @@ void vulkan_debug_mark_buffer(VkDevice device, VkBuffer buffer);
 
 bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type);
+
+#ifdef HAVE_OPENXR
+bool vulkan_context_init_headless_device(gfx_ctx_vulkan_data_t *vk);
+#endif
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+bool vulkan_context_create_android_surface(gfx_ctx_vulkan_data_t *vk,
+   void *window);
+void vulkan_context_advance_frame(gfx_ctx_vulkan_data_t *vk);
+#endif
 
 #ifdef __APPLE__
 /* Returns the version string of the MoltenVK implementation in use,

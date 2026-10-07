@@ -1214,7 +1214,21 @@ typedef struct video_driver
     * initializers leave it zero (== DONT_CARE) without shifting any
     * other vtable slot. */
    const struct font_renderer *font_backend;
+
+#ifdef HAVE_OPENXR
+   bool (*get_vr_frame_state)(void *data, struct retro_vr_frame_state *out);
+   bool (*set_vr_content_info)(void *data, const struct retro_vr_content_info *info);
+#endif
+
 } video_driver_t;
+
+#ifdef HAVE_OPENXR
+void video_driver_vr_content_clear(void);
+bool video_driver_vr_sample_tracking(void);
+bool video_driver_set_vr_content_info(struct retro_vr_content_info *info);
+bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);
+bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
+#endif
 
 /* Slots of video_driver_state_t::vp_params_bits in use. The array has
  * headroom above this so a parameter can be added without moving
@@ -2339,6 +2353,8 @@ extern const gfx_ctx_driver_t gfx_ctx_mali_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_vivante_fbdev;
 extern const gfx_ctx_driver_t gfx_ctx_android;
 extern const gfx_ctx_driver_t gfx_ctx_vk_android;
+extern const gfx_ctx_driver_t gfx_ctx_android_vk_openxr;
+extern const gfx_ctx_driver_t gfx_ctx_gl_android_openxr;
 extern const gfx_ctx_driver_t gfx_ctx_ps3;
 extern const gfx_ctx_driver_t gfx_ctx_w_vk;
 extern const gfx_ctx_driver_t gfx_ctx_wgl;

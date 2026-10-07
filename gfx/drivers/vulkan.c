@@ -62,6 +62,10 @@
 #include "../../retroarch.h"
 #include "../../verbosity.h"
 
+#ifdef HAVE_OPENXR
+#include "../drivers_context/android_vk_openxr.h"
+#endif
+
 /* Write 4 unique vertices per quad for use with indexed drawing.
  * Vertex layout:  0(TL)---2(TR)
  *                  |  / |
@@ -504,6 +508,15 @@ typedef struct vk
    } hdr;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+#ifdef HAVE_OPENXR
+   struct
+   {
+      bool stereo_native;
+      struct retro_vr_eye_state eye[2];
+      int active_eye;
+   } xr;
+#endif /* HAVE_OPENXR */
+
    struct
    {
       struct vk_texture textures[VULKAN_MAX_SWAPCHAIN_IMAGES];
@@ -615,6 +628,12 @@ static unsigned vk_count;
 static unsigned track_seq;
 #endif
 
+#ifdef HAVE_OPENXR
+static bool vulkan_frame_eye(void *data, const void *frame,
+   unsigned dims, uint64_t frame_count, unsigned pitch,
+   const char *msg, video_frame_info_t *video_info, int eye);
+#endif
+
 /*
  * VULKAN COMMON
  */
@@ -652,6 +671,7 @@ static INLINE unsigned vulkan_format_to_bpp(VkFormat format)
    {
       case VK_FORMAT_R16G16B16A16_SFLOAT:
          return 8;
+      case VK_FORMAT_R8G8B8A8_UNORM:
       case VK_FORMAT_B8G8R8A8_UNORM:
       case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
       case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
@@ -4429,6 +4449,9 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
    &gfx_ctx_w_vk,
 #endif
 #if defined(ANDROID)
+#if defined(HAVE_OPENXR)
+   &gfx_ctx_android_vk_openxr,
+#endif
    &gfx_ctx_vk_android,
 #endif
 #if defined(HAVE_WAYLAND)
@@ -6864,6 +6887,48 @@ static void *vulkan_init(const video_info_t *video)
 
    *(void**)&vk->context = vk->ctx_driver->get_context_data(vk->ctx_data);
 
+#ifdef HAVE_OPENXR
+   if (!vk->context
+         && vk->ctx_driver
+         && string_is_equal(vk->ctx_driver->ident, "android_vk_openxr"))
+   {
+      /* Session creation failed after init() otherwise succeeded (e.g.
+       * the runtime accepted the instance/system probe but then
+       * rejected this specific device/queue combination for a Vulkan
+       * session). Retry */
+      uint32_t runloop_flags = runloop_get_flags();
+
+      RARCH_WARN("[Vulkan] OpenXR session unavailable, falling back to flat vk_android.\n");
+
+      if (vk->ctx_driver->destroy)
+         vk->ctx_driver->destroy(vk->ctx_data);
+      video_context_driver_free();
+
+      vk->ctx_driver = vk_context_driver_init_first(
+            runloop_flags, settings, vk, "vk_android",
+            GFX_CTX_VULKAN_API, 1, 0, false, &vk->ctx_data);
+
+      if (vk->ctx_driver)
+      {
+         video_context_driver_set((const gfx_ctx_driver_t*)vk->ctx_driver);
+         if (vk->ctx_driver->get_context_data)
+            *(void**)&vk->context = vk->ctx_driver->get_context_data(vk->ctx_data);
+      }
+   }
+#endif
+
+   if (!vk->context)
+   {
+      RARCH_ERR("[Vulkan] Failed to get context data.\n");
+      goto error;
+   }
+
+#ifdef HAVE_OPENXR
+   /* This driver has no flat KHR swapchain!*/
+   if (vk->ctx_driver && string_is_equal(vk->ctx_driver->ident, "android_vk_openxr"))
+      vk->flags |= VK_FLAG_OPEN_XR;
+#endif
+
    if (video->vsync)
       vk->flags         |=  VK_FLAG_VSYNC;
    else
@@ -7592,6 +7657,19 @@ static bool vulkan_set_shader(void *data,
 static void vulkan_set_projection(vk_t *vk,
       struct video_ortho *ortho, bool allow_rotate)
 {
+#ifdef HAVE_OPENXR
+   if (vk->flags & VK_FLAG_OPEN_XR)
+   {
+      matrix_4x4_ortho(vk->mvp_no_rot,
+         ortho->left, ortho->right,
+         ortho->bottom, ortho->top,
+         ortho->znear, ortho->zfar);
+
+      vk->mvp      = vk->mvp_no_rot;
+      vk->mvp_menu = vk->mvp_no_rot;
+      return;
+   }
+#endif
    float radians, cosine, sine;
    static math_matrix_4x4 rot     = {
       {  0.0f,     0.0f,    0.0f,    0.0f ,
@@ -7611,6 +7689,71 @@ static void vulkan_set_projection(vk_t *vk,
          0.0f,     0.0f,    1.0f,    0.0f ,
          0.0f,     0.0f,    0.0f,    1.0f }
    };
+
+#ifdef HAVE_OPENXR
+   if ((vk->flags & VK_FLAG_XR_STEREO) && vk->xr.stereo_native)
+   {
+      /* Stereo path: build the eye's off-axis projection from
+       * fov_tan directly into vk->mvp/mvp_no_rot/mvp_menu, and skip
+       * the flat ortho construction entirely. */
+      const struct retro_vr_eye_state *eye = &vk->xr.eye[vk->xr.active_eye];
+      math_matrix_4x4 proj, view, eye_mvp;
+      float l = eye->fov_tan[0], r = eye->fov_tan[1];
+      float u = eye->fov_tan[2], d = eye->fov_tan[3];
+      float nearz = 0.05f, farz = 100.0f;
+      float w = r - l, h = u - d;
+      float qx = eye->orientation[0], qy = eye->orientation[1],
+            qz = eye->orientation[2], qw = eye->orientation[3];
+      /* Inverse of the eye's pose quaternion, for building a view
+       * matrix from an orientation (view = inverse(pose)). */
+      float ix = -qx, iy = -qy, iz = -qz, iw = qw;
+      float xx = ix * ix, yy = iy * iy, zz = iz * iz;
+      float xy = ix * iy, xz = ix * iz, yz = iy * iz;
+      float wx = iw * ix, wy = iw * iy, wz = iw * iz;
+
+      matrix_4x4_identity(proj);
+      MAT_ELEM_4X4(proj, 0, 0) = 2.0f / w;
+      MAT_ELEM_4X4(proj, 1, 1) = 2.0f / h;
+      MAT_ELEM_4X4(proj, 2, 0) = (r + l) / w;
+      MAT_ELEM_4X4(proj, 2, 1) = (u + d) / h;
+      MAT_ELEM_4X4(proj, 2, 2) = -(farz + nearz) / (farz - nearz);
+      MAT_ELEM_4X4(proj, 2, 3) = -1.0f;
+      MAT_ELEM_4X4(proj, 3, 2) = -(2.0f * farz * nearz) / (farz - nearz);
+
+      /* Rotation part of the view matrix (inverse of eye orientation) */
+      matrix_4x4_identity(view);
+      MAT_ELEM_4X4(view, 0, 0) = 1 - 2 * (yy + zz);
+      MAT_ELEM_4X4(view, 0, 1) = 2 * (xy + wz);
+      MAT_ELEM_4X4(view, 0, 2) = 2 * (xz - wy);
+      MAT_ELEM_4X4(view, 1, 0) = 2 * (xy - wz);
+      MAT_ELEM_4X4(view, 1, 1) = 1 - 2 * (xx + zz);
+      MAT_ELEM_4X4(view, 1, 2) = 2 * (yz + wx);
+      MAT_ELEM_4X4(view, 2, 0) = 2 * (xz + wy);
+      MAT_ELEM_4X4(view, 2, 1) = 2 * (yz - wx);
+      MAT_ELEM_4X4(view, 2, 2) = 1 - 2 * (xx + yy);
+      MAT_ELEM_4X4(view, 3, 0) =
+         -(MAT_ELEM_4X4(view, 0, 0) * eye->position[0]
+         + MAT_ELEM_4X4(view, 1, 0) * eye->position[1]
+         + MAT_ELEM_4X4(view, 2, 0) * eye->position[2]);
+      MAT_ELEM_4X4(view, 3, 1) =
+         -(MAT_ELEM_4X4(view, 0, 1) * eye->position[0]
+         + MAT_ELEM_4X4(view, 1, 1) * eye->position[1]
+         + MAT_ELEM_4X4(view, 2, 1) * eye->position[2]);
+      MAT_ELEM_4X4(view, 3, 2) =
+         -(MAT_ELEM_4X4(view, 0, 2) * eye->position[0]
+         + MAT_ELEM_4X4(view, 1, 2) * eye->position[1]
+         + MAT_ELEM_4X4(view, 2, 2) * eye->position[2]);
+
+      matrix_4x4_multiply(eye_mvp, view, proj);
+
+      vk->mvp        = eye_mvp;
+      vk->mvp_no_rot = eye_mvp;
+      /* Menu/OSD compositing during a stereo frame reuses the same
+       * eye projection */
+      vk->mvp_menu   = eye_mvp;
+      return;
+   }
+#endif
 
    MAT_ELEM_4X4(trn, 0, 3) = vk->translate_x / (float)VIDEO_SCALE_W(vk->vp.dims);
    MAT_ELEM_4X4(trn, 1, 3) = vk->translate_y / (float)VIDEO_SCALE_H(vk->vp.dims);
@@ -7942,10 +8085,15 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
  * asynchronous present; those paths are exactly as they were. */
 static void vulkan_await_frame_before_present(vk_t *vk, unsigned frame_index)
 {
-   if (     (vk->flags & VK_FLAG_HW_ENABLE)
-         && video_driver_thread_wrapper_active()
+   if (     (
+#ifdef HAVE_OPENXR
+               (vk->flags & VK_FLAG_OPEN_XR) ||
+#endif
+               (   (vk->flags & VK_FLAG_HW_ENABLE)
+                && video_driver_thread_wrapper_active()))
          && vk->context->swapchain_fences_signalled[frame_index]
          && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
+
       vkWaitForFences(vk->context->device, 1,
             &vk->context->swapchain_fences[frame_index], true, UINT64_MAX);
 }
@@ -8814,6 +8962,39 @@ static void vulkan_apply_pending_resize(vk_t *vk,
 
 }
 
+#ifdef HAVE_OPENXR
+/* SBS stereo content: left half -> eye 0, right half -> eye 1 */
+static void vulkan_draw_xr_eye(vk_t *vk, unsigned eye)
+{
+   struct vk_texture tex;
+   struct vk_draw_triangles call;
+   struct vk_buffer_range range;
+   struct vk_vertex *pv;
+
+   vulkan_set_viewport(vk, vk->context->swapchain_dims, true, false);
+
+   memset(&tex, 0, sizeof(tex));          /* .image NULL: no transition */
+   tex.view   = vk->hw.image->image_view;
+   tex.layout = vk->hw.image->image_layout;
+
+   if (!vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            4 * sizeof(struct vk_vertex), &range))
+      return;
+   pv = (struct vk_vertex*)range.data;
+   VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f,
+         eye * 0.5f, 0.0f, 0.5f, 1.0f, RGBA16_WHITE);
+
+   call.pipeline     = vk->display.pipelines[0];   /* strip, no blend */
+   call.texture      = &tex;
+   call.sampler      = vk->samplers.linear;
+   call.uniform      = &vk->mvp_no_rot;
+   call.uniform_size = sizeof(math_matrix_4x4);
+   call.vbo          = &range;
+   call.vertices     = 4;
+   vulkan_draw_triangles(vk, &call);
+}
+#endif
+
 static bool vulkan_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -8866,6 +9047,25 @@ static bool vulkan_frame(void *data, const void *frame,
    struct vk_buffer_chain *buff_chain_ubo;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool use_offscreen_buffer                     = false;
+#endif
+
+#ifdef HAVE_OPENXR
+   bool xr_stereo        = (vk->flags & VK_FLAG_OPEN_XR) != 0;
+   unsigned xr_eye_count = xr_stereo ? 2 : 1;
+   unsigned xr_eye;
+
+   if (xr_stereo)
+   {
+      if (!android_vk_openxr_begin_frame())
+      {
+         android_vk_openxr_end_frame(false);
+         return true;
+      }
+
+      /* XR acquired the swapchain images, so allow the normal
+       * Vulkan rendering path to run. */
+      vk->context->flags |= VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+   }
 #endif
 
    /* A swapchain the context makes while this frame draws is made from
@@ -9379,6 +9579,19 @@ static bool vulkan_frame(void *data, const void *frame,
       backbuffer = &vk->offscreen_buffer;
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
+#ifdef HAVE_OPENXR
+   for (xr_eye = 0; xr_eye < xr_eye_count; xr_eye++)
+   {
+      if (xr_stereo)
+      {
+         vulkan_frame_eye(data, frame, dims, frame_count, pitch,
+               msg, video_info, xr_eye);
+
+         swapchain_index = vk->context->current_swapchain_index;
+         backbuffer      = &vk->backbuffers[swapchain_index];
+      }
+#endif
+
    if (     (backbuffer->image != VK_NULL_HANDLE)
          && (backbuffer->framebuffer == VK_NULL_HANDLE))
    {
@@ -9416,6 +9629,13 @@ static bool vulkan_frame(void *data, const void *frame,
       /* Begin render pass and set up viewport */
       vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
 
+#ifdef HAVE_OPENXR
+      if (   xr_stereo && (vk->flags & VK_FLAG_XR_STEREO)
+          && (vk->flags & VK_FLAG_HW_ENABLE)
+          && vk->hw.image && vk->hw.image->image_view != VK_NULL_HANDLE)
+         vulkan_draw_xr_eye(vk, xr_eye);
+      else
+#endif
       vulkan_filter_chain_build_viewport_pass(
             (vulkan_filter_chain_t*)filter_chain, vk->cmd,
             &vk->video_vp, vk->mvp.data);
@@ -9634,6 +9854,10 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
    }
 
+#ifdef HAVE_OPENXR
+   }
+#endif
+
    /* End the filter chain frame.
     * This must happen outside a render pass.
     */
@@ -9724,19 +9948,31 @@ static bool vulkan_frame(void *data, const void *frame,
 
          vulkan_readback(vk, readback_source);
 
-         /* Prepare for presentation after transfers are complete. */
-         VULKAN_IMAGE_LAYOUT_TRANSITION(
-               vk->cmd,
-               backbuffer->image,
-               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-               VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-               0,
-               VK_ACCESS_MEMORY_READ_BIT,
-               VK_PIPELINE_STAGE_TRANSFER_BIT,
-               VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+#ifdef HAVE_OPENXR
+         if (!(vk->flags & VK_FLAG_OPEN_XR))
+#endif
+         {
+            /* Prepare for presentation after transfers are complete. */
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  backbuffer->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                  VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                  0,
+                  VK_ACCESS_MEMORY_READ_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+         }
 
          vk->flags &= ~VK_FLAG_READBACK_PENDING;
       }
+#ifdef HAVE_OPENXR
+      if (vk->flags & VK_FLAG_OPEN_XR)
+      {
+         /* OpenXR owns presentation of its swapchain images.
+          * Do not transition them to PRESENT_SRC_KHR. */
+      }
+#endif
       else
       {
          /* Prepare backbuffer for presentation. */
@@ -9818,6 +10054,16 @@ static bool vulkan_frame(void *data, const void *frame,
             vk->hw.wait_dst_stages + submit_info.waitSemaphoreCount,
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
    }
+#ifdef HAVE_OPENXR
+   else if (!xr_stereo
+         && (submit_info.waitSemaphoreCount = vulkan_context_take_acquire_waits(
+            vk->context, frame_index, wait_sems, wait_stages,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)))
+   {
+      submit_info.pWaitSemaphores    = wait_sems;
+      submit_info.pWaitDstStageMask  = wait_stages;
+   }
+#else
    else if ((submit_info.waitSemaphoreCount = vulkan_context_take_acquire_waits(
          vk->context, frame_index, wait_sems, wait_stages,
          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)))
@@ -9825,6 +10071,7 @@ static bool vulkan_frame(void *data, const void *frame,
       submit_info.pWaitSemaphores    = wait_sems;
       submit_info.pWaitDstStageMask  = wait_stages;
    }
+#endif
    else
    {
       submit_info.waitSemaphoreCount = 0;
@@ -9834,10 +10081,20 @@ static bool vulkan_frame(void *data, const void *frame,
 
    submit_info.signalSemaphoreCount  = 0;
 
+#ifdef HAVE_OPENXR
+   if (!xr_stereo
+         && (vk->context->swapchain_semaphores[swapchain_index]
+            != VK_NULL_HANDLE)
+         && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      signal_semaphores[submit_info.signalSemaphoreCount++] =
+         vk->context->swapchain_semaphores[swapchain_index];
+#else
    if ((vk->context->swapchain_semaphores[swapchain_index]
          != VK_NULL_HANDLE)
          && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
-      signal_semaphores[submit_info.signalSemaphoreCount++] = vk->context->swapchain_semaphores[swapchain_index];
+      signal_semaphores[submit_info.signalSemaphoreCount++] =
+         vk->context->swapchain_semaphores[swapchain_index];
+#endif
 
    if (vk->hw.signal_semaphore != VK_NULL_HANDLE)
    {
@@ -9862,12 +10119,17 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_await_frame_before_present(vk, frame_index);
 
    vulkan_present_wait = 0;
-   if (vk->ctx_driver->swap_buffers)
+#ifdef HAVE_OPENXR
+   if (!xr_stereo)
+#endif
    {
-      /* timed: see vulkan_get_last_present_wait() */
-      retro_time_t swap_at = cpu_features_get_time_usec();
-      vk->ctx_driver->swap_buffers(vk->ctx_data);
-      vulkan_present_wait = cpu_features_get_time_usec() - swap_at;
+      if (vk->ctx_driver->swap_buffers)
+      {
+         /* timed: see vulkan_get_last_present_wait() */
+         retro_time_t swap_at = cpu_features_get_time_usec();
+         vk->ctx_driver->swap_buffers(vk->ctx_data);
+         vulkan_present_wait = cpu_features_get_time_usec() - swap_at;
+      }
    }
 
    /* Retire unloaded textures whose deferral window has elapsed. */
@@ -9898,6 +10160,9 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_is_paused
          && !(vk->context->swap_interval > 1)
          && !(video_info->shader_subframes > 1)
+#ifdef HAVE_OPENXR
+         && !(vk->flags & VK_FLAG_OPEN_XR)
+#endif
          && (!(vk->flags & VK_FLAG_MENU_ENABLE)))
    {
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
@@ -9983,6 +10248,9 @@ static bool vulkan_frame(void *data, const void *frame,
    if (      (vk->context->swap_interval > 1)
          &&  !(video_info->shader_subframes > 1)
          &&  !black_frame_insertion
+#ifdef HAVE_OPENXR
+         &&  !(vk->flags & VK_FLAG_OPEN_XR)
+#endif
          &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
    {
       vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
@@ -9998,8 +10266,93 @@ static bool vulkan_frame(void *data, const void *frame,
       vk->context->flags &= ~VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
    }
 
+#ifdef HAVE_OPENXR
+   if (vk->flags & VK_FLAG_OPEN_XR)
+      android_vk_openxr_end_frame((vk->flags & VK_FLAG_XR_STEREO) != 0);
+#endif
+
    return true;
 }
+
+#ifdef HAVE_OPENXR
+static bool vulkan_set_vr_content_info(void *data,
+      const struct retro_vr_content_info *info)
+{
+   vk_t *vk = (vk_t*)data;
+
+   if (!vk)
+      return false;
+
+   /* VR content is only ever available when android_vk_openxr is the live
+    * context driver AND its session and reached a usable state. */
+   if (     !vk->ctx_driver
+         || !string_is_equal(vk->ctx_driver->ident, "android_vk_openxr")
+         || !android_vk_openxr_is_session_ready())
+   {
+      if (info)
+         vk->flags &= ~VK_FLAG_XR_STEREO;
+      return false;
+   }
+
+   if (!info)
+   {
+      /* NULL disables the current VR presentation. */
+      vk->xr.stereo_native = false;
+      vk->flags &= ~VK_FLAG_XR_STEREO;
+      return true;
+   }
+
+   if (!info->stereo_native)
+   {
+      RARCH_WARN("[Vulkan] SET_VR_CONTENT_INFO: mono reprojection requested, "
+            "not supported by android_vk_openxr.\n");
+      return false;
+   }
+
+   vk->xr.stereo_native = true;
+   vk->flags |= VK_FLAG_XR_STEREO;
+
+   return true;
+}
+
+/* Renders one eye */
+static bool vulkan_frame_eye(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch,
+      const char *msg, video_frame_info_t *video_info, int eye)
+{
+   vk_t *vk = (vk_t*)data;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
+
+   vk->xr.active_eye = eye;
+   vk->context->current_swapchain_index = android_vk_openxr_get_backbuffer_index(eye);
+
+   vulkan_set_projection(vk, &ortho, false);
+
+   /* Build the eye's off-axis projection from tangents rather than
+    * calling vulkan_set_projection's symmetric-frustum path */
+   /*{
+      math_matrix_4x4 proj;
+      float l = vk->xr.eye[eye].fov_tan[0], r = vk->xr.eye[eye].fov_tan[1];
+      float u = vk->xr.eye[eye].fov_tan[2], d = vk->xr.eye[eye].fov_tan[3];
+      float nearz = 0.05f, farz = 100.0f;
+      float w = r - l, h = u - d;
+
+      matrix_4x4_identity(proj);
+      MAT_ELEM_4X4(proj, 0, 0) = 2.0f / w;
+      MAT_ELEM_4X4(proj, 1, 1) = 2.0f / h;
+      MAT_ELEM_4X4(proj, 2, 0) = (r + l) / w;
+      MAT_ELEM_4X4(proj, 2, 1) = (u + d) / h;
+      MAT_ELEM_4X4(proj, 2, 2) = -(farz + nearz) / (farz - nearz);
+      MAT_ELEM_4X4(proj, 2, 3) = -1.0f;
+      MAT_ELEM_4X4(proj, 3, 2) = -(2.0f * farz * nearz) / (farz - nearz);
+
+      // Head-relative eye translation folds into the same matrix
+      vk->mvp = proj;
+   }*/
+
+   return true;
+}
+#endif /* HAVE_OPENXR */
 
 static void vulkan_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
@@ -12143,6 +12496,15 @@ static font_renderer_t vulkan_raster_font = {
    vulkan_font_get_line_metrics
 };
 
+#ifdef HAVE_OPENXR
+static bool vulkan_get_vr_frame_state(void *data, struct retro_vr_frame_state *out)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !out || !(vk->flags & VK_FLAG_OPEN_XR))
+      return false;
+   return android_vk_openxr_get_eye_state(out->eyes);
+}
+#endif
 
 video_driver_t video_vulkan = {
    vulkan_init,
@@ -12175,7 +12537,11 @@ video_driver_t video_vulkan = {
 #else
    NULL, /* read_viewport_hdr */
 #endif
-   &vulkan_raster_font
+   &vulkan_raster_font,
+#ifdef HAVE_OPENXR
+   vulkan_get_vr_frame_state,
+   vulkan_set_vr_content_info,
+#endif
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {

@@ -1,0 +1,53 @@
+Copyright (c) 2017-2026 The Khronos Group Inc.
+
+This Specification is protected by copyright laws and contains material
+proprietary to Khronos.
+Except as described by these terms, it or any components may not be
+reproduced, republished, distributed, transmitted, displayed, broadcast or
+otherwise exploited in any manner without the express prior written
+permission of Khronos.
+
+Khronos grants a conditional copyright license to use and reproduce the
+unmodified Specification for any purpose, without fee or royalty, EXCEPT no
+licenses to any patent, trademark or other intellectual property rights are
+granted under these terms.
+
+Khronos makes no, and expressly disclaims any, representations or
+warranties, express or implied, regarding this Specification, including,
+without limitation: merchantability, fitness for a particular purpose,
+non-infringement of any intellectual property, correctness, accuracy,
+completeness, timeliness, and reliability.
+Under no circumstances will Khronos, or any of its Promoters, Contributors
+or Members, or their respective partners, officers, directors, employees,
+agents or representatives be liable for any damages, whether direct,
+indirect, special or consequential damages for lost revenues, lost profits,
+or otherwise, arising from or in connection with these materials.
+
+The Khronos Intellectual Property Rights Policy defines the terms 'Scope',
+'Compliant Portion', and 'Necessary Patent Claims'.
+
+Some parts of this Specification are purely informative and so are EXCLUDED
+from the Scope of this Specification.
+The <<introduction-document-conventions,Document Conventions>> section of
+the <<introduction>> defines how these parts of the Specification are
+identified.
+
+Where this Specification uses technical terminology, defined in the
+<<glossary, Glossary>> or otherwise, that refer to enabling technologies
+that are not expressly set forth in this Specification, those enabling
+technologies are EXCLUDED from the Scope of this Specification.
+For clarity, enabling technologies not disclosed with particularity in this
+Specification (e.g. semiconductor manufacturing technology, hardware
+architecture, processor architecture or microarchitecture, memory
+architecture, compiler technology, object oriented technology, basic
+operating system technology, compression technology, algorithms, and so on)
+are NOT to be considered expressly set forth; only those application program
+interfaces and data structures disclosed with particularity are included in
+the Scope of this Specification.
+
+For purposes of the Khronos Intellectual Property Rights Policy as it
+relates to the definition of Necessary Patent Claims, all recommended or
+optional features, behaviors and functionality set forth in this
+Specification, if implemented, are considered to be included as Compliant
+Portions.
+

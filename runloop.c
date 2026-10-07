@@ -4438,6 +4438,30 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             }
          }
          break;
+#ifdef HAVE_OPENXR
+      case RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO:
+         {
+            struct retro_vr_content_info *vr_info =
+               (struct retro_vr_content_info*)data;
+            bool session_active = video_driver_set_vr_content_info(vr_info);
+
+            runloop_st->core_vr_content = session_active && vr_info;
+            RARCH_LOG("[Environ] SET_VR_CONTENT_INFO: %s.\n",
+                  session_active ? "VR session active" : "unavailable");
+            return session_active;
+         }
+
+      case RETRO_ENVIRONMENT_GET_VR_HEAD_POSE:
+         if (!data || !runloop_st->core_vr_content)
+            return false;
+         return video_driver_get_vr_head_pose((struct retro_vr_head_pose*)data);
+
+      case RETRO_ENVIRONMENT_GET_VR_FRAME_STATE:
+         if (!data || !runloop_st->core_vr_content)
+            return false;
+         return video_driver_get_vr_frame_state(
+               (struct retro_vr_frame_state*)data);
+#endif
       default:
          RARCH_LOG("[Environ] UNSUPPORTED (#%u).\n", cmd);
          return false;
@@ -5115,6 +5139,11 @@ static void uninit_libretro_symbols(
 #ifdef HAVE_DYNAMIC
    if (lib_handle_local)
       dylib_close(lib_handle_local);
+#endif
+
+#ifdef HAVE_OPENXR
+   runloop_st->core_vr_content = false;
+   video_driver_vr_content_clear();
 #endif
 
    runloop_st->flags &= ~RUNLOOP_FLAG_CORE_SET_SHARED_CONTEXT;
@@ -9499,6 +9528,11 @@ int runloop_iterate(void)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
             camera_st->cb.frame_opengl_texture);
+
+#ifdef HAVE_OPENXR
+   if (runloop_st->core_vr_content)
+      video_driver_vr_sample_tracking();
+#endif
 
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();

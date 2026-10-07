@@ -392,6 +392,11 @@ struct runloop
     * iteration (see menu_core_due_ns), so nothing that counts the
     * core's frames - achievements - steps either. Main thread only. */
    bool menu_core_skipped;
+   /* Set/cleared by RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO, read by
+    * the GET_VR_FRAME_STATE/GET_VR_HEAD_POSE environment calls. */
+#ifdef HAVE_OPENXR
+   bool core_vr_content;
+#endif
 };
 
 /* Frame pacing sources.

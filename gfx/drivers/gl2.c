@@ -95,6 +95,10 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #endif
 #endif
 
+#ifdef HAVE_OPENXR
+#include "../drivers_context/gl_android_openxr.h"
+#endif
+
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
 #endif
@@ -566,7 +570,11 @@ static void gl2_set_viewport(gl2_t *gl,
 void glkitview_bind_fbo(void);
 #define gl2_renderchain_bind_backbuffer() glkitview_bind_fbo()
 #else
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+#define gl2_renderchain_bind_backbuffer() gl2_bind_fb(gl_android_openxr_get_framebuffer())
+#else
 #define gl2_renderchain_bind_backbuffer() gl2_bind_fb(0)
+#endif
 #endif
 
 /* Defined with the scRGB helpers further down; referenced from the
@@ -1693,6 +1701,14 @@ static void gl2_set_viewport(gl2_t *gl,
       bool force_full, bool allow_rotate)
 {
    gl->vp.full_dims   = dims;
+#ifdef HAVE_OPENXR
+   if (gl_android_openxr_stereo_active())
+   {
+      gl->vp.pos  = VIDEO_POS_PACK(0, 0);
+      gl->vp.dims = dims;
+   }
+   else
+#endif
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);
 
@@ -4774,6 +4790,14 @@ static bool gl2_frame(void *data, const void *frame,
 
    gl->shader->use(gl, gl->shader_data, 1, true);
 
+#ifdef HAVE_OPENXR
+   if (gl_android_openxr_active())
+   {
+      gl_android_openxr_begin_frame();
+      gl2_bind_fb(gl_android_openxr_get_framebuffer());
+   }
+#endif
+
 #if TARGET_OS_IPHONE
    /* Apparently the viewport is lost each frame, thanks Apple. */
    gl2_set_viewport(gl, VIDEO_SCALE_PACK(width, height), false, true);
@@ -7463,6 +7487,25 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
    return true;
 }
 
+#ifdef HAVE_OPENXR
+static bool gl2_set_vr_content_info(void *data,
+      const struct retro_vr_content_info *info)
+{
+   (void)data;
+   /* VR is only available while the OpenXR context owns a live session;
+    * on the flat fallback context it must be reported unavailable. */
+   if (!gl_android_openxr_is_session_ready())
+      return false;
+   return true;
+}
+
+static bool gl2_get_vr_frame_state(void *data, struct retro_vr_frame_state *out)
+{
+   (void)data;
+   return gl_android_openxr_get_eye_state(out->eyes);
+}
+#endif
+
 static font_renderer_t gl2_raster_font = {
    gl2_raster_font_init,
    gl2_raster_font_free,
@@ -7502,7 +7545,11 @@ video_driver_t video_gl2 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    gl2_read_viewport_hdr,
-   &gl2_raster_font
+   &gl2_raster_font,
+#ifdef HAVE_OPENXR
+   gl2_get_vr_frame_state,
+   gl2_set_vr_content_info
+#endif
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+    <!-- Package-visibility declaration for the OpenXR runtime brokers: the
+         vendored loader resolves the active runtime through ContentProviders
+         at these two authorities (android_utilities.cpp), and with
+         targetSdkVersion >= 30 an undeclared authority is simply invisible. -->
+    <queries>
+        <provider android:authorities="org.khronos.openxr.runtime_broker;org.khronos.openxr.system_runtime_broker" />
+    </queries>
+
+    <!-- Normal-protection broker permissions: auto-granted at install, never
+         user-prompted. Meta's broker does not enforce them; the Khronos
+         installable broker does. -->
+    <uses-permission android:name="org.khronos.openxr.permission.OPENXR" />
+    <uses-permission android:name="org.khronos.openxr.permission.OPENXR_SYSTEM" />
+
+    <!-- Meta-store-mandated, and it must stay in this quest overlay:
+         required="true" in the shared manifest would delist the app for
+         every non-VR device on the Play store. -->
+    <uses-feature android:name="android.hardware.vr.headtracking" android:required="true" android:version="1" />
+    <uses-feature android:name="com.oculus.feature.PASSTHROUGH" android:required="false" />
+    <uses-feature android:name="oculus.software.handtracking" android:required="false" />
+    <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
+    <application>
+        <meta-data android:name="com.oculus.app_id" android:value="1361809223675054" />
+        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+        </activity>
+        <activity-alias android:name="com.retroarch.browser.mainmenu.MainMenuActivity"
+            android:targetActivity="com.retroarch.browser.retroactivity.RetroActivityFuture">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="com.oculus.intent.category.VR" />
+            </intent-filter>
+        </activity-alias>
+    </application>
+</manifest>
