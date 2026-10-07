@@ -176,6 +176,25 @@ static void kbd_poll(gx_input_t *gx)
 #endif
 
 #ifdef HW_RVL
+#ifdef GX_KEYBOARD
+/* The keys the frontend asks about, for a port's binds: which are
+ * down. The driver evaluated the binds itself; the frontend does that
+ * for every driver that hands it the keys. */
+static void rvl_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   const gx_input_t *gx = (const gx_input_t*)data;
+   (void)bind;
+   if (!gx || port >= DEFAULT_MAX_PADS)
+      return;
+   for (i = 0; i < count; i++)
+      if (kbd_pressed(gx, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+#endif
+
 static int16_t rvl_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -197,27 +216,10 @@ static int16_t rvl_input_state(
    switch (device)
    {
 #ifdef GX_KEYBOARD
+      /* The RetroPad's buttons, where they are bound to keys, are the
+       * frontend's to answer: it asks rvl_input_keys_down() for the
+       * keys once a poll. */
       case RETRO_DEVICE_JOYPAD:
-         /* The keyboard's binds */
-         if (!binds)
-            break;
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-            if (!keyboard_mapping_blocked)
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  if (     RETRO_KEYBIND_VALID(&binds[port][i])
-                        && kbd_pressed(gx, RETRO_KEYBIND_KEY(&binds[port][i])))
-                     ret |= (1 << i);
-            return ret;
-         }
-         if (     id < RARCH_BIND_LIST_END
-               && RETRO_KEYBIND_VALID(&binds[port][id])
-               && kbd_pressed(gx, RETRO_KEYBIND_KEY(&binds[port][id]))
-               && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
-            return 1;
-         break;
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
@@ -418,5 +420,11 @@ input_driver_t input_gx = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+#if defined(HW_RVL) && defined(GX_KEYBOARD)
+   rvl_input_keys_down
+#else
+   NULL                          /* keys_down */
+#endif
 };
