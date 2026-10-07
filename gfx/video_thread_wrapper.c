@@ -1228,6 +1228,90 @@ static void video_thread_read_stats(thread_video_t *thr,
    }
 }
 
+/* Video thread: how much a frame had to spare, for a driver whose
+ * present waits for the vblank and comes back with the frame out.
+ *
+ * The hold aims the frame at its vblank with the drawing time and a
+ * margin in hand - an eighth of the drawing time, half a millisecond
+ * at least. For a present that queues, a frame a little late is seen
+ * by nobody here. For one that waits it is seen exactly: the wait is
+ * what the frame had to spare, and a wait of most of a period is a
+ * frame that arrived after its vblank and sat out the next - a period
+ * late on screen. Half a millisecond is not always there to be had: on
+ * a loaded machine the video thread is not woken that fast, and every
+ * frame missed.
+ *
+ * So the margin is learned from the waits:
+ * - a frame that missed adds a millisecond, at once;
+ * - while no frame misses, the least any frame had to spare over two
+ *   seconds says whether there is too much: over a millisecond and a
+ *   half, half of what is over a millisecond is given back.
+ * Never below nothing - the hold's own margin stays - and never over a
+ * quarter of a period. Only misses raise it, and only a present that
+ * waits can show one: a swap that does not wait, whatever it reports,
+ * is left as it was.
+ *
+ * And one miss does not end with itself. The thread sits in the missed
+ * frame's swap until the next vblank, the core's next frame arrives in
+ * that time and is drawn only when the swap comes back - just after
+ * the vblank it was meant for, so it misses too, and so does every
+ * frame after it: each one on time, each one a period late on screen,
+ * for good. No margin gets out of that; one skipped period does. The
+ * second miss in a row asks the hold for it, the way a queue that ran
+ * a frame deep does (drain_pending), and the frames after go out on
+ * their own vblank again. */
+static void video_thread_margin_learn(thread_video_t *thr, retro_time_t waited)
+{
+   retro_time_t period = thr->present_period;
+   retro_time_t now;
+   int extra;
+
+   /* Only while the hold is steering frames at the vblank. Without it
+    * a present that waits simply waits out each period, which is no
+    * miss. */
+   if (period <= 0 || !retro_atomic_load_relaxed_int(&thr->display_pacing_pub))
+      return;
+   extra = retro_atomic_load_relaxed_int(&thr->margin_extra_us);
+   now   = cpu_features_get_time_usec();
+
+   if (waited > period / 2)
+   {
+      /* missed its vblank: the first of a run for want of margin, the
+       * rest for being behind the first */
+      if (++thr->miss_run == 1)
+         extra += 1000;
+      else if (!thr->drain_cooldown)
+      {
+         retro_atomic_store_release_int(&thr->drain_pending, 1);
+         thr->drain_cooldown = 4;
+      }
+      thr->slack_min       = period;
+      thr->slack_window_at = now;
+   }
+   else
+   {
+      thr->miss_run = 0;
+      if (thr->slack_window_at <= 0)
+      {
+         thr->slack_min       = period;
+         thr->slack_window_at = now;
+      }
+      if (waited < thr->slack_min)
+         thr->slack_min = waited;
+      if (now - thr->slack_window_at < 2000000)
+         return;
+      if (thr->slack_min > 1500)
+         extra -= (int)((thr->slack_min - 1000) / 2);
+      thr->slack_min       = period;
+      thr->slack_window_at = now;
+   }
+   if (extra < 0)
+      extra = 0;
+   if (extra > (int)(period / 4))
+      extra = (int)(period / 4);
+   retro_atomic_store_release_int(&thr->margin_extra_us, extra);
+}
+
 /* Called on the video thread after a present. Sets when a repeat falls
  * due: a period after the display's own timestamp for that present when
  * the driver reports one, else after now; and never at or before now,
@@ -2217,6 +2301,8 @@ static void video_thread_loop(void *data)
                      render_took       -= waited;
                      thr->present_shown = shown;
                   }
+                  if (shown)
+                     video_thread_margin_learn(thr, waited);
                   /* for the statistics, averaged as the render time is */
                   thr->present_wait = thr->present_wait
                      ? (thr->present_wait * 7 + waited) / 8 : waited;
@@ -2770,6 +2856,9 @@ static VIDEO_NOINLINE void video_thread_pace_hold(thread_video_t *thr,
       double fps = thr->video_st->av_info.timing.fps;
       if (margin < 500)
          margin = 500;
+      /* and what a present that waits has been found to need */
+      margin += (retro_time_t)
+         retro_atomic_load_acquire_int(&thr->margin_extra_us);
       /* The snapshot's vblank was the next one when the video thread
        * last presented.  With nothing presented since - the loop
        * stalled, or the display idled - it has passed, and a target
@@ -3451,6 +3540,7 @@ static bool video_thread_init(thread_video_t *thr,
    retro_atomic_int_init(&thr->core_time_us, 0);
    retro_atomic_int_init(&thr->display_pacing_pub, 0);
    retro_atomic_int_init(&thr->content_period_us, 0);
+   retro_atomic_int_init(&thr->margin_extra_us, 0);
    thr->last_time            = cpu_features_get_time_usec();
 
    if (!(thr->thread = video_thread_host_run(thr)))

@@ -426,6 +426,9 @@ typedef struct thread_video
     * returned. Both main-thread only. */
    retro_time_t render_time;
    retro_time_t present_wait; /* the wait in the driver's present, averaged as render_time is */
+   retro_time_t slack_min;       /* the least a frame had to spare in the window */
+   retro_time_t slack_window_at;  /* when the window began */
+   unsigned miss_run;            /* frames in a row that missed their vblank */
    retro_time_t core_time;
    /* The last frame presented had queued behind another: the next
     * hold runs a period longer to drain it. Video thread only. */
@@ -483,6 +486,11 @@ typedef struct thread_video
    retro_atomic_int_t core_time_us;
    retro_atomic_int_t display_pacing_pub;
    retro_atomic_int_t content_period_us;
+   /* What the hold adds to its margin for a driver whose present waits
+    * for the vblank, in microseconds: written by the video thread, which
+    * sees each frame's wait, and read by the hold. See
+    * video_thread_margin_learn(). */
+   retro_atomic_int_t margin_extra_us;
 
    /* The synchronous command channel takes no lock. A poster holds
     * the poster slot from send to reply; the mailbox below is its

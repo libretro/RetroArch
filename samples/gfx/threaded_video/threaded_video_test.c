@@ -2056,6 +2056,7 @@ static retro_time_t blk_vblank;
 static retro_time_t blk_wait;
 static retro_time_t blk_wait_sum;
 static unsigned blk_frames;
+static unsigned blk_missed;
 static bool blk_tells;
 
 static bool blk_frame(void *data, const void *frame, unsigned dims,
@@ -2074,6 +2075,8 @@ static bool blk_frame(void *data, const void *frame, unsigned dims,
    blk_wait      = now - at;
    blk_wait_sum += blk_wait;
    blk_frames++;
+   if (blk_wait > BLK_PERIOD / 2)
+      blk_missed++;
    blk_vblank    = v;
    return ret;
 }
@@ -2112,6 +2115,7 @@ static void lane_blocking_present(void)
    retro_time_t lat_untold, lat_told, render_untold, render_told;
    retro_time_t off_untold;
    unsigned i, met = 0;
+   unsigned missed_first, missed_after;
 
    settings->bools.video_threaded_display_pacing = true;
    settings->floats.video_refresh_rate           = 60.0f;
@@ -2142,18 +2146,35 @@ static void lane_blocking_present(void)
    render_untold = thr->render_time;
    off_untold    = thr->last_present_end - blk_vblank;
 
-   /* and one that does */
+   /* and one that does. Told the waits, the presenter learns what
+    * margin this machine wants (video_thread_margin_learn()): a frame
+    * that misses its vblank adds to it. Time to learn, then a count. */
    blk_tells    = true;
+   blk_missed   = 0;
+   blk_frames   = 0;
    run_frames(60);
+   video_thread_wait_idle();
+   missed_first = blk_missed;
+   run_frames(240);
    video_thread_wait_idle();
    blk_wait_sum = 0;
    blk_frames   = 0;
+   blk_missed   = 0;
    run_frames(120);
    video_thread_wait_idle();
+   missed_after = blk_missed;
    lat_told    = thr->latency_avg;
    render_told = thr->render_time;
-   fprintf(stderr, "   blocking present, told: the swap waited %.2f ms on average over %u frames\n",
-         blk_frames ? blk_wait_sum / 1000.0 / blk_frames : 0.0, blk_frames);
+   fprintf(stderr, "   blocking present, told: %u of the first 60 frames missed their vblank;"
+         " after learning, %u of 120, the swap waiting %.2f ms on average,"
+         " with %.2f ms added to the margin\n",
+         missed_first, missed_after,
+         blk_frames ? blk_wait_sum / 1000.0 / blk_frames : 0.0,
+         retro_atomic_load_acquire_int(&thr->margin_extra_us) / 1000.0);
+   /* a machine that keeps missing has learned nothing */
+   CHECK(missed_after <= 30,
+         "blocking present: %u frames of 120 still miss their vblank after"
+         " the margin was learned", missed_after);
 
    /* What is checked is the accounting, frame by frame, not where the
     * frames landed. The hold aims a frame half a millisecond ahead of
