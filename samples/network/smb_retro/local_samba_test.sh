@@ -14,7 +14,17 @@ make -s smb_test vfs_test vfs_threads_test smb_idle_test
 RUN=${RUNNER:-}
 EXE=${EXE:-}
 D=$(mktemp -d); chmod 755 $D; mkdir -p $D/share $D/priv $D/run /run/samba
-stop() { pkill -f "smbd -s $D/smb.conf" 2>/dev/null || true; pkill -f "configfile=$D/smb.conf" 2>/dev/null || true; }
+# smbd and samba-dcerpcd each lead a session; notifyd, cleanupd and
+# the rpcd workers in them keep writing into $D/run until they exit
+stop() {
+   me=$(ps -o sid= -p $$ | tr -d ' ')
+   sids=$(for p in $(pgrep -f "$D/smb.conf"); do ps -o sid= -p $p; done | tr -d ' ' | sort -u | grep -vx "$me" | paste -sd, -)
+   [ -n "$sids" ] || return 0
+   for s in $(echo $sids | tr , ' '); do pkill -s $s 2>/dev/null || true; done
+   i=0; while ps -o stat= -s $sids | grep -qv Z && [ $i -lt 50 ]; do sleep 0.1; i=$((i + 1)); done
+   for s in $(echo $sids | tr , ' '); do pkill -KILL -s $s 2>/dev/null || true; done
+   i=0; while ps -o stat= -s $sids | grep -qv Z && [ $i -lt 20 ]; do sleep 0.1; i=$((i + 1)); done
+}
 # Port 445 must be ours: a distribution smbd started by the package
 # (the CI runner's samba comes up as a service) answers every case
 # instead of the one this script configured - it maps the unknown
@@ -166,7 +176,7 @@ restart_round() { # binary order label
    $RUN ./$1$EXE 127.0.0.1 share rsmbtest 'Sekret1!' RETRO 10 $2 >$D/out 2>&1 &
    idler=$!
    sleep 3
-   stop; i=0; while pgrep -f "smbd -s $D/smb.conf" >/dev/null 2>&1 && [ $i -lt 30 ]; do sleep 0.2; i=$((i + 1)); done
+   stop
    smbd -s $D/smb.conf -D
    if wait $idler; then
       echo "ok:   $3: files read and written across a server restart ($2 first)"
