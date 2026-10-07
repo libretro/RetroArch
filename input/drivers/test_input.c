@@ -304,6 +304,23 @@ static void test_keyboard_free(void)
          test_key_state[i][j] = 0;
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. The first
+ * port's only, as this driver has always answered. */
+static void test_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)bind;
+   if (port || !test_key_state)
+      return;
+   for (i = 0; i < count; i++)
+      if (     keys[i] && keys[i] < RETROK_LAST
+            && test_key_state[DEFAULT_MAX_PADS][keys[i]])
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t test_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -316,52 +333,16 @@ static int16_t test_input_state(
       unsigned idx,
       unsigned id)
 {
-   if (port <= 0)
-   {
-      switch (device)
-      {
-/* TODO: something clear here */
-         case RETRO_DEVICE_JOYPAD:
-            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            {
-               unsigned i;
-               int16_t ret = 0;
-
-               if (!keyboard_mapping_blocked && id < RARCH_BIND_LIST_END)
-               {
-                  for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-                  {
-                     if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                     {
-                        if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                              && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])])
-                           ret |= (1 << i);
-                     }
-                  }
-               }
-               return ret;
-            }
-
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][id]))
-               {
-                  if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                        && test_key_state[DEFAULT_MAX_PADS][RETRO_KEYBIND_KEY(&binds[port][id])]
-                        && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                     )
-                     return 1;
-
-               }
-            }
-            break;
-
-         case RETRO_DEVICE_KEYBOARD:
-            if (id && id < RETROK_LAST)
-               return (test_key_state[DEFAULT_MAX_PADS][id]);
-            break;
-      }
-   }
+   /* The RetroPad's buttons and the hotkeys, where they are bound to
+    * keys, are the frontend's to answer: it asks test_keys_down() for
+    * the keys once a poll. This worked them out from the binds it was
+    * handed - and for the whole pad read the set at the number that
+    * asks for the whole pad, far past its end. */
+   if (     port <= 0
+         && device == RETRO_DEVICE_KEYBOARD
+         && test_key_state
+         && id && id < RETROK_LAST)
+      return (test_key_state[DEFAULT_MAX_PADS][id]);
 
    return 0;
 }
@@ -571,5 +552,7 @@ input_driver_t input_test = {
    "test",
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   test_keys_down
 };

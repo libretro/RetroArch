@@ -97,7 +97,7 @@ static int16_t wiiu_input_state(
       unsigned idx,
       unsigned id)
 {
-   if (!(port < DEFAULT_MAX_PADS) || !binds || !binds[port])
+   if (!(port < DEFAULT_MAX_PADS) || !binds)
       return 0;
 
    switch (device)
