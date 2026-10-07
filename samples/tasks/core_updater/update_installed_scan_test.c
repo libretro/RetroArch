@@ -41,7 +41,11 @@
  *
  * Gathers are paced 17 ms apart, as frames are: the window refills
  * once per 16.67 ms period, and pumping faster would only measure the
- * one-item floor.
+ * one-item floor.  The window is a time budget, so how many items fit
+ * in it depends on how fast the machine runs - several times fewer
+ * under a sanitizer.  The gather bound is therefore checked with the
+ * window held open: one handler call must then take the whole list,
+ * which a handler doing an item per call fails at any speed.
  *
  * The cancel lanes retire the parent task while a child it waits on
  * is still pending - the loopback server holds the child's HTTP
@@ -219,6 +223,8 @@ int64_t __wrap_intfstream_crc_step(intfstream_t *s, uint32_t *acc, size_t c)
 /* ---------------- the I/O window, forced to its floor ------------ */
 
 static retro_atomic_int_t force_floor;
+/* The window never closes: every item is within budget */
+static retro_atomic_int_t force_open;
 
 bool __real_task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
 bool __wrap_task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
@@ -227,6 +233,8 @@ bool __wrap_task_nbio_slice_within_budget(void *ud, size_t avail, size_t len)
    bool ret   = __real_task_nbio_slice_within_budget(ud, avail, len);
    if (retro_atomic_load_acquire_int(&force_floor))
       return floor;
+   if (retro_atomic_load_acquire_int(&force_open))
+      return true;
    return ret;
 }
 
@@ -407,7 +415,7 @@ static bool find_any(retro_task_t *task, void *user_data)
    return true;
 }
 
-static void run_lane(bool threaded)
+static void run_lane(bool threaded, bool open_window)
 {
    char url[128];
    char name[128];
@@ -416,7 +424,8 @@ static void run_lane(bool threaded)
    long gathers         = 0;
    int stats;
 
-   printf("[lane threaded=%d]\n", (int)threaded);
+   printf("[lane threaded=%d%s]\n", (int)threaded,
+         open_window ? ", window held open" : "");
 
    task_queue_init(threaded, NULL);
 
@@ -429,6 +438,7 @@ static void run_lane(bool threaded)
 
    retro_atomic_store_release_int(&n_path_is_valid, 0);
    retro_atomic_store_release_int(&n_info_reads, 0);
+   retro_atomic_store_release_int(&force_open, open_window ? 1 : 0);
    task_push_update_installed_cores(false, 0, g_dir, NULL);
 
    find_data.func     = find_any;
@@ -445,8 +455,9 @@ static void run_lane(bool threaded)
    printf("  %ld gathers, %d path_is_valid() for %d entries, %d installed\n",
          gathers, stats, NUM_ENTRIES, NUM_INSTALLED);
 
+   retro_atomic_store_release_int(&force_open, 0);
    CHECK(gathers < 4 * NUM_ENTRIES, "update installed cores completed");
-   if (!threaded)
+   if (open_window)
    {
       snprintf(name, sizeof(name),
             "scan finished in fewer than %d gathers", NUM_ENTRIES / 4);
@@ -945,8 +956,9 @@ int main(void)
       char url[128];
       char empty_dir[] = "/tmp/update_installed_empty_XXXXXX";
 
-      run_lane(false);
-      run_lane(true);
+      run_lane(false, false);
+      run_lane(false, true);
+      run_lane(true, false);
       run_refused_download_lane();
       run_cache_lane();
 
