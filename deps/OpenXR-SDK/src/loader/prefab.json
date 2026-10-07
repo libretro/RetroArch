@@ -1,6 +1,0 @@
-{
-    "schema_version": 1,
-    "name": "OpenXR",
-    "version": "@MAJOR@.@MINOR@.@PATCH@",
-    "dependencies": []
-}

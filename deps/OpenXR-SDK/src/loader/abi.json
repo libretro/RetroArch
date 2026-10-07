@@ -1,6 +1,0 @@
-{
-    "abi": "@ANDROID_ABI@",
-    "api": @CMAKE_SYSTEM_VERSION@,
-    "ndk": @NDK_MAJOR_VERSION@,
-    "stl": "none"
-}
