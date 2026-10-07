@@ -2547,9 +2547,15 @@ static void d3d8_free_overlays(d3d8_video_t *d3d)
 
    for (i = 0; i < d3d->overlays_size; i++)
    {
-      if (d3d->overlays_borrowed)
-         d3d->overlays[i].tex = NULL;
-      d3d8_free_overlay(d3d, &d3d->overlays[i]);
+      /* The pack's textures are the pack's: only the vertex buffer */
+      if (!d3d->overlays_borrowed)
+         d3d8_free_overlay(d3d, &d3d->overlays[i]);
+      else if (d3d->overlays[i].vert_buf)
+      {
+         IDirect3DVertexBuffer8_Release(
+               (LPDIRECT3DVERTEXBUFFER8)d3d->overlays[i].vert_buf);
+         d3d->overlays[i].vert_buf = NULL;
+      }
    }
    free(d3d->overlays);
    d3d->overlays          = NULL;

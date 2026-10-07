@@ -42,7 +42,10 @@ CLEARED_BY = {
     "vulkan.c": r"memset\s*\(\s*&vk->overlay\s*,\s*0\s*,",
 }
 
-MARKER = r"(?:\b\w*OVERLAY_BORROWED\b|(?:\.|->)borrowed\b)"
+# A flag bit, an overlay struct's own "borrowed", or a driver-level
+# overlay_borrowed / overlays_borrowed field.
+FIELD  = r"(?:\.|->)(?:overlays?_)?borrowed\b"
+MARKER = r"(?:\b\w*OVERLAY_BORROWED\b|" + FIELD + r")"
 
 
 def strip_comments(src):
@@ -57,11 +60,11 @@ def check(name, src):
                 "its free path cannot tell the pack's textures from its own"]
 
     is_set = re.search(r"\|=\s*\w*OVERLAY_BORROWED\b", code) \
-          or re.search(r"(?:\.|->)borrowed\s*=\s*true\b", code)
+          or re.search(FIELD + r"\s*=\s*true\b", code)
     tested = re.search(r"!\s*\(\s*[\w>.\-]+\s*&\s*\w*OVERLAY_BORROWED\s*\)", code) \
-          or re.search(r"!\s*[\w>.\-]+(?:\.|->)borrowed\b", code)
+          or re.search(r"!\s*[\w>.\-]+" + FIELD, code)
     clear  = re.search(r"&=\s*~\s*\(?\s*\w*OVERLAY_BORROWED\b", code) \
-          or re.search(r"(?:\.|->)borrowed\s*=\s*false\b", code) \
+          or re.search(FIELD + r"\s*=\s*false\b", code) \
           or (name in CLEARED_BY and re.search(CLEARED_BY[name], code))
 
     if not is_set:
