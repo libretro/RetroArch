@@ -428,10 +428,6 @@ struct input_driver
     * particular driver/platform.
     *
     * @param joypad_data      Input state struct, defined by the input driver
-    * @param sec_joypad_data  Input state struct for secondary input devices (eg
-    *                         MFi controllers), defined by a secondary driver.
-    *                         Queried state to be returned is the logical OR of
-    *                         joypad_data and sec_joypad_data. May be NULL.
     * @param joypad_info      Info struct for the controller to be queried,
     *                         with hardware device ID and autoconfig mapping.
     * @param retro_keybinds   Structure for control mappings for all libretro
@@ -452,7 +448,6 @@ struct input_driver
     */
    int16_t (*input_state)(void *data,
          const input_device_driver_t *joypad_data,
-         const input_device_driver_t *sec_joypad_data,
          rarch_joypad_info_t *joypad_info,
          const retro_keybind_set *retro_keybinds,
          bool keyboard_mapping_blocked,

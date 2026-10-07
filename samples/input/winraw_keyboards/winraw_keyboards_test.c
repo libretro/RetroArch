@@ -402,7 +402,7 @@ static int pad_mask_b(unsigned port)
 
 static int port_key(unsigned port, unsigned rk)
 {
-   return winraw_input_state(wr, NULL, NULL, &joy_info, input_config_binds,
+   return winraw_input_state(wr, NULL, &joy_info, input_config_binds,
          false, port, RETRO_DEVICE_KEYBOARD, 0, rk);
 }
 

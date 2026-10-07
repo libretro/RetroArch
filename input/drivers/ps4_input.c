@@ -41,7 +41,6 @@ typedef struct ps4_input
  * handed, and the two answers were or'ed together. */
 int16_t ps4_input_state(void *data,
          const input_device_driver_t *joypad_data,
-         const input_device_driver_t *sec_joypad_data,
          rarch_joypad_info_t *joypad_info,
          const retro_keybind_set *retro_keybinds,
          bool keyboard_mapping_blocked,
@@ -49,7 +48,6 @@ int16_t ps4_input_state(void *data,
 {
    (void)data;
    (void)joypad_data;
-   (void)sec_joypad_data;
    (void)joypad_info;
    (void)retro_keybinds;
    (void)keyboard_mapping_blocked;

@@ -1589,7 +1589,6 @@ static bool fp_query_pad(unsigned pad) { return fp_pad_there && pad == 0; }
 
 static int16_t fp_input_state(void *data,
       const input_device_driver_t *joypad_data,
-      const input_device_driver_t *sec_joypad_data,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *retro_keybinds,
       bool keyboard_mapping_blocked,
@@ -2944,13 +2943,12 @@ static unsigned       gk_mouse;
 static unsigned       gk_asked;
 static int16_t gk_input_state(void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   (void)data; (void)joypad; (void)sec_joypad; (void)joypad_info;
+   (void)data; (void)joypad; (void)joypad_info;
    (void)binds; (void)keyboard_mapping_blocked; (void)port; (void)idx;
    if (     (device & RETRO_DEVICE_MASK) == RETRO_DEVICE_LIGHTGUN
          && (   id == RETRO_DEVICE_ID_LIGHTGUN_TRIGGER
@@ -3093,13 +3091,12 @@ static bool           pm_click_down;
 static bool           pm_touch_down;
 static int16_t pm_input_state(void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
-   (void)data; (void)joypad; (void)sec_joypad; (void)joypad_info;
+   (void)data; (void)joypad; (void)joypad_info;
    (void)binds; (void)keyboard_mapping_blocked;
    if (port != 0)
       return 0;

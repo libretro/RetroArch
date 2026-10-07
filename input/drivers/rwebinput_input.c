@@ -656,7 +656,6 @@ static unsigned rwebinput_bind_mouse_buttons(void *data, unsigned port)
 static int16_t rwebinput_input_state(
       void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
