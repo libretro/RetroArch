@@ -62,12 +62,58 @@ single string parameter, `argument`, written as the command expects it:
 `<core path>|<content path>`. The tool's result is what the command
 answers; commands that answer nothing report `Done.`.
 
+Not every command is a tool. `HELP` and `VERSION` are not, because
+`tools/list` already lists the commands and every answer names the
+server's version, and neither are the toggle hotkeys or
+`GET_CONFIG_PARAM`, whose work `SET_OPTION` and `GET_OPTION` do below.
+All of them are still commands on the network and stdin interfaces.
+
+## Options
+
+A hotkey toggle is of little use to an assistant: `FAST_FORWARD` turns
+fast-forward on or off depending on what it already was, which cannot be
+known without asking. Two tools replace the toggles with something that
+can be asked and told:
+
+- `GET_OPTION [option]` reports every option and its value, name and
+  value tab separated, one per line; with a name, that option's line
+  alone.
+- `SET_OPTION <option> on|off` puts an option in a state. Asking for the
+  state it is already in changes nothing and succeeds, so the same
+  request twice is one change.
+
+Each option is read where its state lives rather than from the setting
+behind it, so `GET_OPTION` reports what is true now and not what was
+configured. Which options a build has depends on what it was built with,
+so `GET_OPTION` with no argument is the list: it covers what is on or off
+(pausing, fast-forward, mute, the menu, the shader, recording), what the
+frontend is doing (the frame count, the state and replay slots, whether
+content is loading), and the configured directories. Some only report,
+and `SET_OPTION` says so for them.
+
+`fast_forward` and `slow_motion` have no setter in the frontend - their
+whole path is the runloop's hotkey handling - so setting them presses
+that hotkey, the change lands on the frame after, and `SET_OPTION`
+answers that the press went out rather than what came of it. Every other
+option takes effect at once and is read back before answering, so an
+option that cannot change right now - `pause` with no content running -
+is an error and not a quiet success.
+
+A hotkey tool that is still a tool answers `<NAME> pressed` for the same
+reason as the two above: the press goes out on the next poll, and what it
+changed is read back with `GET_OPTION`.
+
 To find something to play, an assistant lists the playlists with
 `LIST_PLAYLISTS`, reads one with `GET_PLAYLIST` (index, label, content
 path and core path per entry, 200 at a time; `MORE <next>` gives the
-argument for the next page, as in `Nintendo - SNES 200`), and loads an
-entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES` gives
-the installed cores and their paths.
+argument for the next page, as in `Nintendo - SNES.lpl 200`), and loads
+an entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES`
+gives the installed cores and their paths.
+
+Name the playlist as `LIST_PLAYLISTS` gives it, `.lpl` and all. A
+trailing number alone is the entry to start at, so `Atari - 2600` reads
+as the playlist `Atari -` from entry 2600, while `Atari - 2600.lpl`
+cannot be read as anything but the playlist.
 
 A tool whose work runs over later frames answers once that work is
 through, with what came of it, or with the command's name, `ERROR` and
@@ -84,6 +130,12 @@ the reason:
 - `SET_SHADER`: the preset's path once it has compiled.
 - `AI_SERVICE`: one translation of the screen, answered with the
   service's text.
+
+A tool that fails says why, as `<NAME> ERROR <reason>`, and the result
+is marked `isError`. Whether a reply is a failure is the command's own
+word, not something read out of its text: a screenshot path that holds
+`ERROR` - a game named so - is no error, and a failure whose text says
+nothing about one still is.
 
 Work that takes longer than ten seconds, such as a slow load, is
 answered with an error saying so; the work goes on, and `GET_STATUS`
@@ -105,6 +157,9 @@ Every tool carries hints for the client:
 - **destructive**: can lose unsaved progress or data, or loads code
   (`QUIT`, `RESET`, `LOAD_STATE_SLOT`, `WRITE_CORE_MEMORY`, `LOAD_CORE`,
   `LOAD_CONTENT`).
+
+`SET_OPTION` is neither: it writes, but only to the options `GET_OPTION`
+lists, and none of them loses progress.
 
 Most clients ask before running a destructive tool. Keep that on.
 

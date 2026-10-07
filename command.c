@@ -17,6 +17,7 @@
 
 #include "input/input_driver.h"
 #include <stdio.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <locale.h>
@@ -64,6 +65,7 @@
 #include "dynamic.h"
 #include "list_special.h"
 #include "paths.h"
+#include "record/record_driver.h"
 #include "retroarch.h"
 #include "runloop.h"
 #include "verbosity.h"
@@ -82,6 +84,43 @@
 #endif
 
 #define CMD_BUF_SIZE 4096
+
+/* Replies with a failure and why, and marks the reply as one: a line
+ * client reads the text, a structured one is told outright. The text
+ * opens with @name and ERROR, as a deferred reply's does. */
+void command_reply_error(command_t *cmd, const char *name,
+      const char *fmt, ...)
+{
+   char    msg[512];
+   int     n;
+   size_t  _len;
+   va_list ap;
+
+   if (!cmd || !cmd->replier)
+      return;
+
+   /* Both of these report the length they wanted rather than the one
+    * they wrote, so each is brought back inside the buffer before the
+    * next writes past its end. */
+   if ((n = snprintf(msg, sizeof(msg), "%s ERROR ", name)) < 0)
+      return;
+   _len = (size_t)n;
+   if (_len >= sizeof(msg))
+      _len = sizeof(msg) - 1;
+
+   va_start(ap, fmt);
+   n = vsnprintf(msg + _len, sizeof(msg) - _len, fmt, ap);
+   va_end(ap);
+   if (n > 0)
+   {
+      _len += (size_t)n;
+      if (_len >= sizeof(msg))
+         _len = sizeof(msg) - 1;
+   }
+
+   cmd->error = true;
+   cmd->replier(cmd, msg, _len);
+}
 
 static void command_post_state_loaded(void)
 {
@@ -165,6 +204,8 @@ static void command_parse_sub_msg(command_t *handle, const char *tok)
 {
    const char *arg = NULL;
    unsigned index  = 0;
+
+   handle->error   = false;
 
    if (command_get_arg(tok, &arg, &index))
    {
@@ -538,89 +579,6 @@ command_t* command_emscripten_new(void)
 }
 #endif
 
-bool command_get_config_param(command_t *cmd, const char* arg)
-{
-   size_t _len;
-   char reply[8192];
-#ifdef HAVE_BSV_MOVIE
-   char value_dynamic[256];
-#endif
-   const char *value              = "unsupported";
-   settings_t *settings           = config_get_ptr();
-   bool       video_fullscreen    = settings->bools.video_fullscreen;
-   const char *dir_runtime_log    = settings->paths.directory_runtime_log;
-   const char *log_dir            = settings->paths.log_dir;
-   const char *directory_cache    = settings->paths.directory_cache;
-   const char *directory_system   = settings->paths.directory_system;
-   const char *path_username      = settings->paths.username;
-   if (memcmp(arg, "video_fullscreen", sizeof("video_fullscreen")) == 0)
-   {
-      if (video_fullscreen)
-         value = "true";
-      else
-         value = "false";
-   }
-   else if (memcmp(arg, "savefile_directory", sizeof("savefile_directory")) == 0)
-      value = dir_get_ptr(RARCH_DIR_SAVEFILE);
-   else if (memcmp(arg, "savestate_directory", sizeof("savestate_directory")) == 0)
-      value = dir_get_ptr(RARCH_DIR_SAVESTATE);
-   else if (memcmp(arg, "runtime_log_directory", sizeof("runtime_log_directory")) == 0)
-      value = dir_runtime_log;
-   else if (memcmp(arg, "log_dir", sizeof("log_dir")) == 0)
-      value = log_dir;
-   else if (memcmp(arg, "cache_directory", sizeof("cache_directory")) == 0)
-      value = directory_cache;
-   else if (memcmp(arg, "system_directory", sizeof("system_directory")) == 0)
-      value = directory_system;
-   else if (memcmp(arg, "netplay_nickname", sizeof("netplay_nickname")) == 0)
-      value = path_username;
-#ifdef HAVE_BSV_MOVIE
-   else if (memcmp(arg, "active_replay", sizeof("active_replay")) == 0)
-   {
-      input_driver_state_t *input_st = input_state_get_ptr();
-      value            = value_dynamic;
-      value_dynamic[0] = '\0';
-      if (input_st->bsv_movie_state_handle)
-      {
-         bsv_movie_t *movie = input_st->bsv_movie_state_handle;
-         snprintf(value_dynamic, sizeof(value_dynamic), "%lld %u %lld",
-               (long long)(movie->identifier),
-                  input_st->bsv_movie_state.flags,
-                  (long long)(movie->frame_counter));
-      }
-      else
-         strlcpy_lit(value_dynamic, "0 0 0", sizeof(value_dynamic));
-   }
-   #endif
-#ifdef HAVE_MENU
-   else if (memcmp(arg, "menu_active", sizeof("menu_active")) == 0)
-   {
-      struct menu_state* menu_st = menu_state_get_ptr();
-      if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
-         value = "true";
-      else
-         value = "false";
-   }
-#endif
-#ifdef HAVE_CHEEVOS
-   else if (memcmp(arg, "cheevos_enable", sizeof("cheevos_enable")) == 0)
-   {
-      if (settings->bools.cheevos_enable)
-         value = "true";
-      else
-         value = "false";
-   }
-#endif
-   /* TODO: query any string */
-   _len  = strlcpy_lit(reply, "GET_CONFIG_PARAM ", sizeof(reply));
-   _len += strlcpy(reply + _len, arg, sizeof(reply)  - _len);
-   reply[  _len] = ' ';
-   reply[++_len] = '\0';
-   _len += strlcpy(reply + _len, value, sizeof(reply) - _len);
-   cmd->replier(cmd, reply, _len);
-   return true;
-}
-
 #if defined(HAVE_LAKKA)
 #include <sys/un.h>
 #define MAX_USER_CONNECTIONS  4
@@ -828,12 +786,15 @@ static void command_deferred_take(command_deferred_t *d, command_t *cmd)
 }
 
 /* Sends @msg (none when NULL) and releases @d.  Dropped, unsent, if the
- * interface was torn down meanwhile (the command generation moved). */
+ * interface was torn down meanwhile (the command generation moved).
+ * @is_error says the reply reports a failure, so the interface sending
+ * it is told rather than left to read the text. */
 static void command_deferred_send(command_deferred_t *d,
-      const char *msg, size_t len)
+      const char *msg, size_t len, bool is_error)
 {
    if (msg && input_driver_command_generation() == d->gen)
    {
+      d->cmd->error = is_error;
       if (d->cmd->reply_to && d->dest)
          d->cmd->reply_to(d->cmd, d->dest, msg, len);
       else if (!d->cmd->reply_dest)
@@ -854,7 +815,7 @@ static void command_screenshot_done(retro_task_t *task, void *task_data,
    {
       snprintf(msg, sizeof(msg), "SCREENSHOT ERROR %s",
             error ? error : "no result");
-      command_deferred_send(d, msg, strlen(msg));
+      command_deferred_send(d, msg, strlen(msg), true);
    }
    else if (r->png_base64 && d->cmd->reply_image_to && d->dest
          && input_driver_command_generation() == d->gen)
@@ -862,12 +823,12 @@ static void command_screenshot_done(retro_task_t *task, void *task_data,
       /* the picture itself, with its path, where the interface takes one */
       d->cmd->reply_image_to(d->cmd, d->dest, r->path, strlen(r->path),
             "image/png", r->png_base64, r->png_base64_len);
-      command_deferred_send(d, NULL, 0);
+      command_deferred_send(d, NULL, 0, false);
    }
    else
    {
       strlcpy(msg, r->path, sizeof(msg));
-      command_deferred_send(d, msg, strlen(msg));
+      command_deferred_send(d, msg, strlen(msg), false);
    }
    free(d);
 }
@@ -949,7 +910,7 @@ static void command_reply_done(retro_task_t *task, void *task_data,
       if (r->state_loaded)
          command_post_state_loaded();
    }
-   command_deferred_send(&r->deferred, msg, strlen(msg));
+   command_deferred_send(&r->deferred, msg, strlen(msg), error != NULL);
    free(r);
 }
 
@@ -1041,6 +1002,7 @@ static bool command_content_reply(command_t *cmd, const char *name,
 bool command_run(command_t *handle, const char *name, const char *arg)
 {
    unsigned i;
+   handle->error = false;
    for (i = 0; i < ARRAY_SIZE(action_map); i++)
       if (string_is_equal(name, action_map[i].str))
          return action_map[i].action(handle, arg ? arg : "");
@@ -1078,6 +1040,31 @@ bool command_run(command_t *handle, const char *name, const char *arg)
 #endif
          else
             handle->state[map[i].id] = true;
+         /* The press goes out on the next poll and the hotkey acts a
+          * frame later, so there is nothing yet to report but that it
+          * was sent. A structured client is told that much rather than
+          * a bare "done": what the hotkey changed is read back with
+          * GET_OPTION. MENU_TOGGLE is the one that has already acted,
+          * above, and reports the menu instead. */
+         if (handle->structured)
+         {
+            char   reply[NAME_MAX_LENGTH + 16];
+            size_t _len;
+#ifdef HAVE_MENU
+            if (map[i].id == RARCH_MENU_TOGGLE)
+            {
+               struct menu_state *menu_st = menu_state_get_ptr();
+               _len = (size_t)snprintf(reply, sizeof(reply), "%s %s\n",
+                     map[i].str,
+                     (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+                        ? "open" : "closed");
+            }
+            else
+#endif
+               _len = (size_t)snprintf(reply, sizeof(reply), "%s pressed\n",
+                     map[i].str);
+            handle->replier(handle, reply, _len);
+         }
          return true;
       }
    return false;
@@ -1234,6 +1221,27 @@ bool command_show_osd_msg(command_t *cmd, const char* arg)
 }
 
 
+/* A whole number and nothing after it but spaces, into @out. "3xyz" is
+ * not one: it used to come out as 3, and a save then overwrote that
+ * slot on an argument its sender had got wrong. */
+static bool command_arg_uint(const char *arg, unsigned *out)
+{
+   char         *end = NULL;
+   unsigned long v;
+
+   if (!arg || !*arg)
+      return false;
+   v = strtoul(arg, &end, 10);
+   if (end == arg)
+      return false;
+   while (*end == ' ')
+      end++;
+   if (*end)
+      return false;
+   *out = (unsigned)v;
+   return true;
+}
+
 static bool command_load_state_start(struct command_reply *r)
 {
    return content_load_state_notify(r->path, false, false,
@@ -1258,14 +1266,19 @@ static bool command_save_state_start(struct command_reply *r)
  * through. */
 static bool command_state_slot(command_t *cmd, const char *arg, bool load)
 {
-   char reply[128];
-   size_t _len;
    const char *name             = load ? "LOAD_STATE_SLOT" : "SAVE_STATE_SLOT";
-   unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
+   unsigned int slot            = 0;
    bool savestates_enabled      = core_info_current_supports_savestate();
-   struct command_reply *r      = command_reply_new(name);
+   struct command_reply *r;
 
-   if (r)
+   if (!command_arg_uint(arg, &slot))
+   {
+      command_reply_error(cmd, name, "a slot number, not %s",
+            (arg && *arg) ? arg : "nothing");
+      return false;
+   }
+
+   if ((r = command_reply_new(name)))
    {
       runloop_get_savestate_path(r->path, sizeof(r->path), slot);
       /* For LOADING, an existing state file outranks metadata and
@@ -1284,10 +1297,14 @@ static bool command_state_slot(command_t *cmd, const char *arg, bool load)
          return command_reply_push(cmd, r);
       }
       free(r);
+      command_reply_error(cmd, name,
+            load ? "no state in slot %u, and this core cannot restore one"
+                 : "this core cannot save a state to slot %u right now",
+            slot);
+      return false;
    }
 
-   _len = (size_t)snprintf(reply, sizeof(reply), "%s %u", name, slot);
-   cmd->replier(cmd, reply, _len);
+   command_reply_error(cmd, name, "out of memory");
    return false;
 }
 
@@ -1305,8 +1322,14 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
 {
 #ifdef HAVE_BSV_MOVIE
    char replay_path[16384];
-   unsigned int slot            = (unsigned int)strtoul(arg, NULL, 10);
+   unsigned int slot            = 0;
    struct command_reply *r      = NULL;
+   if (!command_arg_uint(arg, &slot))
+   {
+      command_reply_error(cmd, "PLAY_REPLAY_SLOT", "a slot number, not %s",
+            (arg && *arg) ? arg : "nothing");
+      return false;
+   }
    if (     core_info_current_supports_savestate()
          && (r = command_reply_new("PLAY_REPLAY_SLOT")))
    {
@@ -1320,10 +1343,16 @@ bool command_play_replay_slot(command_t *cmd, const char *arg)
          return true;
       }
       free(r);
+      command_reply_error(cmd, "PLAY_REPLAY_SLOT",
+            "no replay in slot %u", slot);
+      return false;
    }
-   cmd->replier(cmd, "", 0);
+   command_reply_error(cmd, "PLAY_REPLAY_SLOT",
+         "this core cannot play a replay");
    return false;
 #else
+   command_reply_error(cmd, "PLAY_REPLAY_SLOT",
+         "this build has no replay support");
    return false;
 #endif
 }
@@ -1334,79 +1363,88 @@ bool command_seek_replay(command_t *cmd, const char *arg)
    char reply[32];
    char *endptr  = NULL;
    size_t _len;
-   bool ret      = true;
    int64_t frame = arg ? (int64_t)strtoll(arg, &endptr, 10) : 0;
    input_driver_state_t *input_st = input_state_get_ptr();
    struct command_reply *r;
-   /* strtoll always writes a valid pointer, so the end pointer is
-    * never NULL - an empty or non-numeric argument shows up as no
-    * characters consumed. */
-   if (!arg || endptr == arg)
-      ret = false;
+   /* strtoll always writes a valid pointer, so an empty or non-numeric
+    * argument shows up as no characters consumed; anything but spaces
+    * after the number means it was not one. */
+   if (arg && endptr != arg)
+      while (*endptr == ' ')
+         endptr++;
+   if (!arg || endptr == arg || *endptr)
+   {
+      command_reply_error(cmd, "SEEK_REPLAY", "a frame number, not %s",
+            (arg && *arg) ? arg : "nothing");
+      return false;
+   }
    if (!(input_st->bsv_movie_state.flags & (BSV_FLAG_MOVIE_PLAYBACK | BSV_FLAG_MOVIE_RECORDING)))
-      ret = false;
+   {
+      command_reply_error(cmd, "SEEK_REPLAY",
+            "no replay is playing or recording");
+      return false;
+   }
 #ifdef HAVE_CHEEVOS
    if (rcheevos_hardcore_active())
-      ret = false;
-#endif
-   if (ret)
-      ret = movie_seek_to_frame(input_st, frame);
-   if (ret)
    {
-      /* A structured request is answered once the seek has run, on a
-       * later frame; a line-based one at once, as it always was. */
-      if (cmd->structured && (r = command_reply_new("SEEK_REPLAY")))
-      {
-         snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
-               input_st->bsv_movie_state.seek_target_frame);
-         task_notify_set(&input_st->bsv_movie_op, command_reply_done, r);
-         command_deferred_take(&r->deferred, cmd);
-         return true;
-      }
-      _len = (size_t)snprintf(reply, sizeof(reply), "OK %" PRId64 "\n",
+      command_reply_error(cmd, "SEEK_REPLAY",
+            "achievements hardcore mode forbids seeking");
+      return false;
+   }
+#endif
+   if (!movie_seek_to_frame(input_st, frame))
+   {
+      command_reply_error(cmd, "SEEK_REPLAY",
+            "the replay could not be seeked to frame %" PRId64, frame);
+      return false;
+   }
+   /* A structured request is answered once the seek has run, on a
+    * later frame; a line-based one at once, as it always was. */
+   if (cmd->structured && (r = command_reply_new("SEEK_REPLAY")))
+   {
+      snprintf(r->ok, sizeof(r->ok), "OK %" PRId64,
             input_st->bsv_movie_state.seek_target_frame);
-      cmd->replier(cmd, reply, _len);
+      task_notify_set(&input_st->bsv_movie_op, command_reply_done, r);
+      command_deferred_take(&r->deferred, cmd);
       return true;
    }
-   _len = strlcpy_lit(reply, "NO", sizeof(reply));
-   reply[_len] = '\n';
-   reply[++_len] = '\0';
+   _len = (size_t)snprintf(reply, sizeof(reply), "OK %" PRId64 "\n",
+         input_st->bsv_movie_state.seek_target_frame);
    cmd->replier(cmd, reply, _len);
-   return false;
+   return true;
 #else
-   cmd->replier(cmd, "NO\n", 4);
+   command_reply_error(cmd, "SEEK_REPLAY",
+         "this build has no replay support");
    return false;
 #endif
 }
 
 bool command_save_savefiles(command_t *cmd, const char* arg)
 {
-   char reply[4];
-   bool ret;
-   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
-   reply[  _len] = '\n';
-   reply[++_len] = '\0';
    /* In the future, this should probably send each saved file path
       to the replier. */
-   ret = command_event(CMD_EVENT_SAVE_FILES, NULL);
-   if (!ret)
-     _len = strlcpy_lit(reply, "NO\n", sizeof(reply));
-   cmd->replier(cmd, reply, _len);
-   return ret;
+   if (!command_event(CMD_EVENT_SAVE_FILES, NULL))
+   {
+      command_reply_error(cmd, "SAVE_FILES",
+            "nothing to save: no content is loaded, or the core has no "
+            "save files");
+      return false;
+   }
+   cmd->replier(cmd, "OK\n", 3);
+   return true;
 }
 
 bool command_load_savefiles(command_t *cmd, const char* arg)
 {
-   char reply[4];
-   bool ret;
-   size_t  _len  = strlcpy_lit(reply, "OK", sizeof(reply));
-   reply[  _len] = '\n';
-   reply[++_len] = '\0';
-   ret = command_event(CMD_EVENT_LOAD_FILES, NULL);
-   if (!ret)
-     _len = strlcpy_lit(reply, "NO\n", sizeof(reply));
-   cmd->replier(cmd, reply, _len);
-   return ret;
+   if (!command_event(CMD_EVENT_LOAD_FILES, NULL))
+   {
+      command_reply_error(cmd, "LOAD_FILES",
+            "nothing to load: no content is loaded, or the core has no "
+            "save files");
+      return false;
+   }
+   cmd->replier(cmd, "OK\n", 3);
+   return true;
 }
 
 /* Largest byte count READ_CORE_RAM / READ_CORE_MEMORY will serve. The
@@ -1428,7 +1466,12 @@ bool command_read_ram(command_t *cmd, const char *arg)
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
 
    if (!(end && *end == ' ' && nbytes > 0 && nbytes <= COMMAND_READ_NBYTES_MAX))
+   {
+      command_reply_error(cmd, "READ_CORE_RAM",
+            "an achievement address in hexadecimal, a space, and a byte "
+            "count from 1 to %u", COMMAND_READ_NBYTES_MAX);
       return false;
+   }
    {
       size_t _len             = 0;
       char *reply_at          = NULL;
@@ -1447,8 +1490,8 @@ bool command_read_ram(command_t *cmd, const char *arg)
       
       if (!reply)
       {
-         cmd->replier(cmd, "READ_CORE_RAM ERROR: OUT OF MEMORY\n", 34);
-         return true;
+         command_reply_error(cmd, "READ_CORE_RAM", "out of memory");
+         return false;
       }
       
       reply[0]                = '\0';
@@ -1465,13 +1508,16 @@ bool command_read_ram(command_t *cmd, const char *arg)
       }
       else
       {
+         /* no achievement memory at this address; " -1" is what line
+          * clients have always read */
          strlcpy_lit(reply_at, " -1\n", alloc_size - (size_t)(reply_at - reply));
          _len = reply_at + STRLEN_CONST(" -1\n") - reply;
+         cmd->error = true;
       }
       cmd->replier(cmd, reply, _len);
       free(reply);
    }
-   return true;
+   return !cmd->error;
 }
 
 bool command_write_ram(command_t *cmd, const char *arg)
@@ -1479,9 +1525,15 @@ bool command_write_ram(command_t *cmd, const char *arg)
    unsigned int addr    = (unsigned int)strtoul(arg, (char**)&arg, 16);
    unsigned int avail   = 0;
    uint8_t *data        = (uint8_t *)rcheevos_patch_address_avail(addr, &avail);
+   const uint8_t *start = data;
 
    if (!data)
+   {
+      command_reply_error(cmd, "WRITE_CORE_RAM",
+            "no achievement memory at %x; a game with achievements must "
+            "be running", addr);
       return false;
+   }
 
    if (rcheevos_hardcore_active())
    {
@@ -1500,6 +1552,12 @@ bool command_write_ram(command_t *cmd, const char *arg)
    if (*arg)
       RARCH_WARN("[Command] WRITE_CORE_RAM at %x reached the end of the "
             "memory region; remainder of the payload ignored.\n", addr);
+   {
+      char   reply[64];
+      size_t _len = (size_t)snprintf(reply, sizeof(reply),
+            "WRITE_CORE_RAM %x %u\n", addr, (unsigned)(data - start));
+      cmd->replier(cmd, reply, _len);
+   }
    return true;
 }
 #endif
@@ -1510,6 +1568,567 @@ bool command_write_ram(command_t *cmd, const char *arg)
  * command port; lists stop short of it and say where to go on. */
 #define COMMAND_LIST_REPLY_MAX 60000
 #define COMMAND_PLAYLIST_PAGE  200
+
+/* ------------------------------------------------------------------ */
+/* Options: what GET_OPTION reports and SET_OPTION writes              */
+
+/* Which option a row of the table below is. Every one has a case in
+ * command_option_read(), and no default, so that one added here without
+ * a case is a warning rather than an option that reports nothing. */
+enum cmd_option_id
+{
+   /* on or off */
+   CMD_OPT_PAUSE = 0,
+   CMD_OPT_FAST_FORWARD,
+   CMD_OPT_SLOW_MOTION,
+   CMD_OPT_MUTE,
+   CMD_OPT_FPS,
+   CMD_OPT_STATISTICS,
+   CMD_OPT_FULLSCREEN,
+   CMD_OPT_MENU,
+   CMD_OPT_SHADER,
+   CMD_OPT_VIDEO_FILTER,
+   CMD_OPT_REWIND,
+   CMD_OPT_RUNAHEAD,
+   CMD_OPT_PREEMPT,
+   CMD_OPT_VRR_RUNLOOP,
+   CMD_OPT_TURBO_FIRE,
+   CMD_OPT_GRAB_MOUSE,
+   CMD_OPT_GAME_FOCUS,
+   CMD_OPT_RECORDING,
+   CMD_OPT_STREAMING,
+   CMD_OPT_CHEEVOS_HARDCORE,
+   CMD_OPT_CHEEVOS_ENABLE,
+   CMD_OPT_LOADING,
+   /* a value they report */
+   CMD_OPT_FRAME_COUNT,
+   CMD_OPT_STATE_SLOT,
+   CMD_OPT_REPLAY_SLOT,
+   CMD_OPT_ACTIVE_REPLAY,
+   CMD_OPT_SYSTEM,
+   CMD_OPT_CONTENT,
+   CMD_OPT_DIR_SAVEFILE,
+   CMD_OPT_DIR_SAVESTATE,
+   CMD_OPT_DIR_RUNTIME_LOG,
+   CMD_OPT_DIR_LOG,
+   CMD_OPT_DIR_CACHE,
+   CMD_OPT_DIR_SYSTEM,
+   CMD_OPT_NICKNAME
+};
+
+/* An option GET_OPTION reports and SET_OPTION writes.
+ *
+ * @alias is the name GET_CONFIG_PARAM knew the option by, kept so that
+ * interface answers what it always did; NULL where there was none.
+ *
+ * SET_OPTION is asked for a state, not a change, and writes only when
+ * the option is not already in it, so sending the same value twice is
+ * one change and then nothing. That is why @event, the single event the
+ * hotkey toggles the option with, is enough for most of them; the few
+ * the frontend does differently are @settable with no event, and
+ * command_option_set() has them by @id. */
+struct cmd_option_map
+{
+   const char        *str;
+   const char        *alias;
+   enum cmd_option_id id;
+   bool               settable;
+   enum event_command event;
+   const char        *desc;
+};
+
+/* Whether @o is on, and its value into @s - @yes or @no for one that is
+ * on or off, else what it reports - unless @s is NULL.
+ *
+ * Every option is read where its state lives rather than from the
+ * setting behind it: a setting says what was configured, and this says
+ * what is true now. An option a build does not have never reaches here,
+ * having no row in the table, but its case is still compiled: what the
+ * state would be read from may not exist. */
+static bool command_option_read(const struct cmd_option_map *o,
+      char *s, size_t len, const char *yes, const char *no)
+{
+   settings_t *settings = config_get_ptr();
+   const char *text     = NULL;
+   bool        on       = false;
+   char        num[64];
+
+   switch (o->id)
+   {
+      case CMD_OPT_PAUSE:
+         on   = (runloop_get_flags() & RUNLOOP_FLAG_PAUSED) != 0;
+         break;
+      case CMD_OPT_FAST_FORWARD:
+         on   = (runloop_get_flags() & RUNLOOP_FLAG_FASTMOTION) != 0;
+         break;
+      case CMD_OPT_SLOW_MOTION:
+         on   = (runloop_get_flags() & RUNLOOP_FLAG_SLOWMOTION) != 0;
+         break;
+      case CMD_OPT_MUTE:
+         on   = audio_state_get_ptr()->mute_enable;
+         break;
+      case CMD_OPT_FPS:
+         on   = settings->bools.video_fps_show;
+         break;
+      case CMD_OPT_STATISTICS:
+         on   = settings->bools.video_statistics_show;
+         break;
+      case CMD_OPT_FULLSCREEN:
+         on   = settings->bools.video_fullscreen;
+         break;
+      case CMD_OPT_MENU:
+#ifdef HAVE_MENU
+         {
+            struct menu_state *menu_st = menu_state_get_ptr();
+            on = menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE);
+         }
+#endif
+         break;
+      case CMD_OPT_SHADER:
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         on   = settings->bools.video_shader_enable;
+#endif
+         break;
+      case CMD_OPT_VIDEO_FILTER:
+#ifdef HAVE_VIDEO_FILTER
+         on   = settings->bools.video_filter_enable;
+#endif
+         break;
+      case CMD_OPT_REWIND:
+#ifdef HAVE_REWIND
+         on   = settings->bools.rewind_enable;
+#endif
+         break;
+      case CMD_OPT_RUNAHEAD:
+#ifdef HAVE_RUNAHEAD
+         on   = settings->bools.run_ahead_enabled;
+#endif
+         break;
+      case CMD_OPT_PREEMPT:
+#ifdef HAVE_RUNAHEAD
+         on   = settings->bools.preemptive_frames_enable;
+#endif
+         break;
+      case CMD_OPT_VRR_RUNLOOP:
+         on   = settings->bools.vrr_runloop_enable;
+         break;
+      case CMD_OPT_TURBO_FIRE:
+         on   = settings->bools.input_turbo_enable;
+         break;
+      case CMD_OPT_GRAB_MOUSE:
+         on   = input_driver_mouse_grabbed();
+         break;
+      case CMD_OPT_GAME_FOCUS:
+         on   = input_driver_game_focus_enabled();
+         break;
+      /* Both are the recorder running; the stream is the one that has
+       * somewhere to send it. */
+      case CMD_OPT_RECORDING:
+      case CMD_OPT_STREAMING:
+         {
+            const recording_state_t *rec_st = recording_state_get_ptr();
+            on = rec_st && rec_st->enable
+               && (rec_st->streaming_enable == (o->id == CMD_OPT_STREAMING));
+         }
+         break;
+      case CMD_OPT_CHEEVOS_HARDCORE:
+#ifdef HAVE_CHEEVOS
+         on   = settings->bools.cheevos_hardcore_mode_enable;
+#endif
+         break;
+      case CMD_OPT_CHEEVOS_ENABLE:
+#ifdef HAVE_CHEEVOS
+         on   = settings->bools.cheevos_enable;
+#endif
+         break;
+      case CMD_OPT_LOADING:
+         on   = command_interfaces_held();
+         break;
+
+      case CMD_OPT_FRAME_COUNT:
+         snprintf(num, sizeof(num), "%" PRIu64,
+               video_driver_get_frame_count());
+         text = num;
+         break;
+      case CMD_OPT_STATE_SLOT:
+         snprintf(num, sizeof(num), "%d", settings->ints.state_slot);
+         text = num;
+         break;
+      case CMD_OPT_REPLAY_SLOT:
+         snprintf(num, sizeof(num), "%d", settings->ints.replay_slot);
+         text = num;
+         break;
+      /* the replay's identifier, its state flags and the frame it is
+       * on, as GET_CONFIG_PARAM has always given them */
+      case CMD_OPT_ACTIVE_REPLAY:
+         text = "0 0 0";
+#ifdef HAVE_BSV_MOVIE
+         {
+            input_driver_state_t *input_st = input_state_get_ptr();
+            if (input_st->bsv_movie_state_handle)
+            {
+               bsv_movie_t *movie = input_st->bsv_movie_state_handle;
+               snprintf(num, sizeof(num), "%lld %u %lld",
+                     (long long)movie->identifier,
+                     input_st->bsv_movie_state.flags,
+                     (long long)movie->frame_counter);
+               text = num;
+            }
+         }
+#endif
+         break;
+      case CMD_OPT_SYSTEM:
+         {
+            core_info_t     *core_info  = NULL;
+            runloop_state_t *runloop_st = runloop_state_get_ptr();
+            core_info_get_current_core(&core_info);
+            if (core_info && core_info->system_id)
+               text = core_info->system_id;
+            else
+               text = runloop_st->system.info.library_name;
+         }
+         break;
+      case CMD_OPT_CONTENT:
+         text = path_get(RARCH_PATH_BASENAME);
+         break;
+      case CMD_OPT_DIR_SAVEFILE:
+         text = dir_get_ptr(RARCH_DIR_SAVEFILE);
+         break;
+      case CMD_OPT_DIR_SAVESTATE:
+         text = dir_get_ptr(RARCH_DIR_SAVESTATE);
+         break;
+      case CMD_OPT_DIR_RUNTIME_LOG:
+         text = settings->paths.directory_runtime_log;
+         break;
+      case CMD_OPT_DIR_LOG:
+         text = settings->paths.log_dir;
+         break;
+      case CMD_OPT_DIR_CACHE:
+         text = settings->paths.directory_cache;
+         break;
+      case CMD_OPT_DIR_SYSTEM:
+         text = settings->paths.directory_system;
+         break;
+      case CMD_OPT_NICKNAME:
+         text = settings->paths.username;
+         break;
+   }
+
+   if (s)
+      strlcpy(s, text ? text : (on ? yes : no), len);
+   return on;
+}
+
+/* Puts @o in state @on, which it is not already in. */
+static bool command_option_set(const struct cmd_option_map *o,
+      command_t *cmd, bool on)
+{
+   switch (o->id)
+   {
+      case CMD_OPT_PAUSE:
+         command_event(on ? CMD_EVENT_PAUSE : CMD_EVENT_UNPAUSE, NULL);
+         break;
+      case CMD_OPT_RECORDING:
+         command_event(on ? CMD_EVENT_RECORD_INIT
+                          : CMD_EVENT_RECORD_DEINIT, NULL);
+         break;
+      case CMD_OPT_GAME_FOCUS:
+         {
+            enum input_game_focus_cmd_type type = on
+               ? GAME_FOCUS_CMD_ON : GAME_FOCUS_CMD_OFF;
+            command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &type);
+         }
+         break;
+      /* These two the frontend changes nowhere but in the runloop's own
+       * hotkey handling, with the netplay, audio and nonblock work that
+       * goes with it, so the hotkey is pressed: the change lands on the
+       * frame after, leaving nothing to read back. */
+      case CMD_OPT_FAST_FORWARD:
+         cmd->state[RARCH_FAST_FORWARD_KEY] = true;
+         return true;
+      case CMD_OPT_SLOW_MOTION:
+         cmd->state[RARCH_SLOWMOTION_KEY] = true;
+         return true;
+      default:
+         command_event(o->event, NULL);
+         break;
+   }
+   /* An event that cannot act now - pausing with no core running, the
+    * video filter likewise - does nothing and reports success all the
+    * same, so what it reached is read back. */
+   return command_option_read(o, NULL, 0, NULL, NULL) == on;
+}
+
+static const struct cmd_option_map option_map[] = {
+   { "pause", NULL, CMD_OPT_PAUSE, true, CMD_EVENT_NONE,
+      "The content is paused." },
+   { "fast_forward", NULL, CMD_OPT_FAST_FORWARD, true, CMD_EVENT_NONE,
+      "Fast-forward is running." },
+   { "slow_motion", NULL, CMD_OPT_SLOW_MOTION, true, CMD_EVENT_NONE,
+      "Slow motion is running." },
+   { "mute", NULL, CMD_OPT_MUTE, true, CMD_EVENT_AUDIO_MUTE_TOGGLE,
+      "Audio is muted." },
+   { "fps", NULL, CMD_OPT_FPS, true, CMD_EVENT_FPS_TOGGLE,
+      "The framerate is shown on screen." },
+   { "statistics", NULL, CMD_OPT_STATISTICS, true,
+      CMD_EVENT_STATISTICS_TOGGLE,
+      "The technical statistics are shown on screen." },
+   { "fullscreen", "video_fullscreen", CMD_OPT_FULLSCREEN, true,
+      CMD_EVENT_FULLSCREEN_TOGGLE, "The window is fullscreen." },
+#ifdef HAVE_MENU
+   { "menu", "menu_active", CMD_OPT_MENU, true, CMD_EVENT_MENU_TOGGLE,
+      "The menu is open." },
+#endif
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+   { "shader", NULL, CMD_OPT_SHADER, true, CMD_EVENT_SHADER_TOGGLE,
+      "The shader preset is applied." },
+#endif
+#ifdef HAVE_VIDEO_FILTER
+   { "video_filter", NULL, CMD_OPT_VIDEO_FILTER, true,
+      CMD_VIDEO_FILTER_TOGGLE, "The video filter is applied." },
+#endif
+#ifdef HAVE_REWIND
+   { "rewind", NULL, CMD_OPT_REWIND, true, CMD_EVENT_REWIND_TOGGLE,
+      "Rewind is available." },
+#endif
+#ifdef HAVE_RUNAHEAD
+   { "runahead", NULL, CMD_OPT_RUNAHEAD, true, CMD_EVENT_RUNAHEAD_TOGGLE,
+      "Run-ahead is on." },
+   { "preempt", NULL, CMD_OPT_PREEMPT, true, CMD_EVENT_PREEMPT_TOGGLE,
+      "Preemptive frames are on." },
+#endif
+   { "vrr_runloop", NULL, CMD_OPT_VRR_RUNLOOP, true,
+      CMD_EVENT_VRR_RUNLOOP_TOGGLE,
+      "The runloop syncs to the exact content framerate." },
+   { "turbo_fire", NULL, CMD_OPT_TURBO_FIRE, true,
+      CMD_EVENT_TURBO_FIRE_TOGGLE, "Turbo fire is on." },
+   { "grab_mouse", NULL, CMD_OPT_GRAB_MOUSE, true,
+      CMD_EVENT_GRAB_MOUSE_TOGGLE, "The mouse is grabbed." },
+   { "game_focus", NULL, CMD_OPT_GAME_FOCUS, true, CMD_EVENT_NONE,
+      "The game has all keyboard input, rather than the hotkeys." },
+   { "recording", NULL, CMD_OPT_RECORDING, true, CMD_EVENT_NONE,
+      "Video is being recorded to a file." },
+   { "streaming", NULL, CMD_OPT_STREAMING, true,
+      CMD_EVENT_STREAMING_TOGGLE, "The session is being streamed." },
+#ifdef HAVE_CHEEVOS
+   { "cheevos_hardcore", NULL, CMD_OPT_CHEEVOS_HARDCORE, true,
+      CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE,
+      "Achievements hardcore mode is on: it forbids states, rewind and "
+      "frame advance." },
+   { "cheevos_enable", "cheevos_enable", CMD_OPT_CHEEVOS_ENABLE, false,
+      CMD_EVENT_NONE, "Achievements are enabled." },
+#endif
+   /* Reported, never set. */
+   { "loading", NULL, CMD_OPT_LOADING, false, CMD_EVENT_NONE,
+      "Content is loading: a command that needs the core waits for it." },
+   { "frame_count", NULL, CMD_OPT_FRAME_COUNT, false, CMD_EVENT_NONE,
+      "Frames shown since the video driver started." },
+   { "state_slot", NULL, CMD_OPT_STATE_SLOT, false, CMD_EVENT_NONE,
+      "The save state slot LOAD_STATE and SAVE_STATE use." },
+   { "replay_slot", NULL, CMD_OPT_REPLAY_SLOT, false, CMD_EVENT_NONE,
+      "The replay slot PLAY_REPLAY and RECORD_REPLAY use." },
+   { "active_replay", "active_replay", CMD_OPT_ACTIVE_REPLAY, false,
+      CMD_EVENT_NONE,
+      "The open replay: its identifier, state flags and frame, or zeroes." },
+   { "system", NULL, CMD_OPT_SYSTEM, false, CMD_EVENT_NONE,
+      "The running core's system, or empty when none is loaded." },
+   { "content", NULL, CMD_OPT_CONTENT, false, CMD_EVENT_NONE,
+      "The running content's path, or empty when none is loaded." },
+   { "savefile_directory", "savefile_directory", CMD_OPT_DIR_SAVEFILE,
+      false, CMD_EVENT_NONE, "Where save files are written." },
+   { "savestate_directory", "savestate_directory", CMD_OPT_DIR_SAVESTATE,
+      false, CMD_EVENT_NONE, "Where save states are written." },
+   { "runtime_log_directory", "runtime_log_directory",
+      CMD_OPT_DIR_RUNTIME_LOG, false, CMD_EVENT_NONE,
+      "Where runtime logs are written." },
+   { "log_dir", "log_dir", CMD_OPT_DIR_LOG, false, CMD_EVENT_NONE,
+      "Where the log is written." },
+   { "cache_directory", "cache_directory", CMD_OPT_DIR_CACHE, false,
+      CMD_EVENT_NONE, "Where extracted content is cached." },
+   { "system_directory", "system_directory", CMD_OPT_DIR_SYSTEM, false,
+      CMD_EVENT_NONE, "Where cores look for system files." },
+   { "netplay_nickname", "netplay_nickname", CMD_OPT_NICKNAME, false,
+      CMD_EVENT_NONE, "The name shown to netplay peers." }
+};
+
+/* The option @name, by its own name or the one GET_CONFIG_PARAM knows
+ * it by when @alias, or NULL. */
+static const struct cmd_option_map *command_option_find(const char *name,
+      bool alias)
+{
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(option_map); i++)
+   {
+      if (string_is_equal(name, option_map[i].str))
+         return &option_map[i];
+      if (     alias && option_map[i].alias
+            && string_is_equal(name, option_map[i].alias))
+         return &option_map[i];
+   }
+   return NULL;
+}
+
+/* GET_OPTION [option]
+ *
+ * Every option and its value, name and value tab separated, one per
+ * line; with a name, that option's line alone. */
+bool command_get_option(command_t *cmd, const char *arg)
+{
+   char   value[PATH_MAX_LENGTH];
+   size_t i;
+   size_t _len  = 0;
+   bool   found = false;
+   bool   one;
+   size_t cap;
+   char  *reply;
+
+   while (arg && *arg == ' ')
+      arg++;
+   one = arg && *arg;
+   /* one line needs room for one; the whole table stops short of what a
+    * reply can carry, as the other lists do */
+   cap = one ? NAME_MAX_LENGTH + PATH_MAX_LENGTH + 2
+             : COMMAND_LIST_REPLY_MAX;
+
+   if (!(reply = (char*)malloc(cap + 1)))
+   {
+      command_reply_error(cmd, "GET_OPTION", "out of memory");
+      return false;
+   }
+   reply[0] = '\0';
+
+   for (i = 0; i < ARRAY_SIZE(option_map); i++)
+   {
+      int n;
+      if (one && !string_is_equal(arg, option_map[i].str))
+         continue;
+      found = true;
+      command_option_read(&option_map[i], value, sizeof(value), "on", "off");
+      n = snprintf(reply + _len, cap - _len, "%s\t%s\n",
+            option_map[i].str, value);
+      /* Short of a reply holding every option, half the list would be
+       * read as the whole of it, so say so instead. */
+      if (n < 0 || (size_t)n >= cap - _len)
+      {
+         free(reply);
+         command_reply_error(cmd, "GET_OPTION",
+               "the options did not fit one reply, stopping at %s",
+               option_map[i].str);
+         return false;
+      }
+      _len += (size_t)n;
+   }
+
+   if (!found)
+   {
+      free(reply);
+      command_reply_error(cmd, "GET_OPTION",
+            "no such option %s; GET_OPTION with no argument lists them", arg);
+      return false;
+   }
+
+   cmd->replier(cmd, reply, _len);
+   free(reply);
+   return true;
+}
+
+/* SET_OPTION <option> on|off
+ *
+ * Asking for the state the option is already in changes nothing and
+ * succeeds, so the same request twice is one change. */
+bool command_set_option(command_t *cmd, const char *arg)
+{
+   char   reply[NAME_MAX_LENGTH + 32];
+   size_t _len;
+   const struct cmd_option_map *o;
+   const char *sp;
+   char   name[NAME_MAX_LENGTH];
+   bool   on;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg || !*arg || !(sp = strchr(arg, ' ')))
+   {
+      command_reply_error(cmd, "SET_OPTION",
+            "an option and on or off, as in SET_OPTION pause on");
+      return false;
+   }
+   if ((size_t)(sp - arg) >= sizeof(name))
+   {
+      command_reply_error(cmd, "SET_OPTION", "no such option");
+      return false;
+   }
+   memcpy(name, arg, (size_t)(sp - arg));
+   name[sp - arg] = '\0';
+   while (*sp == ' ')
+      sp++;
+
+   if (string_is_equal(sp, "on"))
+      on = true;
+   else if (string_is_equal(sp, "off"))
+      on = false;
+   else
+   {
+      command_reply_error(cmd, "SET_OPTION",
+            "%s takes on or off, not %s", name, sp);
+      return false;
+   }
+
+   if (!(o = command_option_find(name, false)))
+   {
+      command_reply_error(cmd, "SET_OPTION",
+            "no such option %s; GET_OPTION with no argument lists them",
+            name);
+      return false;
+   }
+   if (!o->settable)
+   {
+      command_reply_error(cmd, "SET_OPTION", "%s only reports", o->str);
+      return false;
+   }
+   if (     command_option_read(o, NULL, 0, NULL, NULL) != on
+         && !command_option_set(o, cmd, on))
+   {
+      command_reply_error(cmd, "SET_OPTION", "%s could not be turned %s",
+            o->str, on ? "on" : "off");
+      return false;
+   }
+
+   /* the shape GET_OPTION gives, so one reading serves both */
+   _len = (size_t)snprintf(reply, sizeof(reply), "%s\t%s\n", o->str,
+         on ? "on" : "off");
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
+/* GET_CONFIG_PARAM <param name>
+ *
+ * The option that goes by this name, which GET_OPTION also reports;
+ * "unsupported" for one this build does not have, as it always was.
+ * Booleans are true and false here, the words this interface has always
+ * answered, where GET_OPTION says on and off. */
+bool command_get_config_param(command_t *cmd, const char* arg)
+{
+   char   value[PATH_MAX_LENGTH];
+   char   reply[PATH_MAX_LENGTH + NAME_MAX_LENGTH];
+   size_t _len;
+   const struct cmd_option_map *o;
+
+   while (arg && *arg == ' ')
+      arg++;
+   if (!arg)
+      arg = "";
+   if ((o = command_option_find(arg, true)))
+      command_option_read(o, value, sizeof(value), "true", "false");
+   else
+      strlcpy(value, "unsupported", sizeof(value));
+
+   _len = (size_t)snprintf(reply, sizeof(reply), "GET_CONFIG_PARAM %s %s",
+         arg, value);
+   cmd->replier(cmd, reply, _len);
+   return true;
+}
+
 
 /* LIST_CORES
  *
@@ -1559,6 +2178,8 @@ struct command_query
    char       dir[PATH_MAX_LENGTH];
    char       name[NAME_MAX_LENGTH];
    bool       list_playlists;
+   /* the reply reports a failure: no such playlist */
+   bool       error;
    /* the playlist format settings, taken on the main thread */
    bool       old_format;
    bool       compress;
@@ -1625,7 +2246,10 @@ static void command_query_handler(retro_task_t *task)
             q->portable_paths ? q->content_dir : NULL);
 
       if (!path_is_valid(path) || !(pl = playlist_init(&config)))
+      {
+         q->error = true;
          command_query_append(q, &cap, "GET_PLAYLIST ERROR no such playlist\n");
+      }
       else
       {
          size_t i, n = playlist_size(pl);
@@ -1668,7 +2292,7 @@ static void command_query_callback(retro_task_t *task, void *task_data,
 {
    struct command_query *q = (struct command_query*)task->state;
    if (q)
-      command_deferred_send(&q->deferred, q->reply, q->reply_len);
+      command_deferred_send(&q->deferred, q->reply, q->reply_len, q->error);
 }
 
 static void command_query_cleanup(retro_task_t *task)
@@ -1701,21 +2325,30 @@ static bool command_query_push(command_t *cmd, bool list_playlists,
          sizeof(q->content_dir));
    if (!list_playlists)
    {
-      /* "<name> [first]": the name may hold spaces; a trailing number
-       * is the first entry wanted */
+      /* "<name> [first]": the name may hold spaces, so a last word that
+       * is a number and nothing else is the first entry wanted. It has
+       * to be the whole word: a playlist whose name ends in one, as
+       * "Atari - 2600" and "Sony - PlayStation 2" do, was read as a
+       * name without it and an entry to start at. */
       const char *sp;
       while (*arg == ' ')
          arg++;
       strlcpy(q->name, arg, sizeof(q->name));
       if ((sp = strrchr(q->name, ' ')) && sp[1] >= '0' && sp[1] <= '9')
       {
-         q->first = (size_t)strtoul(sp + 1, NULL, 10);
-         q->name[sp - q->name] = '\0';
+         char         *end   = NULL;
+         unsigned long first = strtoul(sp + 1, &end, 10);
+         /* the whole word, or it belongs to the name */
+         if (end && !*end)
+         {
+            q->first              = (size_t)first;
+            q->name[sp - q->name] = '\0';
+         }
       }
       if (!*q->name || strchr(q->name, '/') || strchr(q->name, '\\'))
       {
-         const char *msg = "GET_PLAYLIST ERROR a playlist name, as LIST_PLAYLISTS gives\n";
-         cmd->replier(cmd, msg, strlen(msg));
+         command_reply_error(cmd, "GET_PLAYLIST",
+               "a playlist name, as LIST_PLAYLISTS gives");
          free(q);
          return false;
       }
@@ -2182,10 +2815,18 @@ bool command_read_memory(command_t *cmd, const char *arg)
       char *end       = NULL;
       address         = (unsigned int)strtoul(arg, &end, 16);
       if (!(end && *end == ' '))
+      {
+         command_reply_error(cmd, "READ_CORE_MEMORY",
+               "a hexadecimal address, a space and a byte count");
          return false;
+      }
       nbytes          = (unsigned int)strtoul(end + 1, NULL, 10);
       if (nbytes == 0 || nbytes > COMMAND_READ_NBYTES_MAX)
+      {
+         command_reply_error(cmd, "READ_CORE_MEMORY",
+               "a byte count from 1 to %u", COMMAND_READ_NBYTES_MAX);
          return false;
+      }
    }
 
    /* Ensure large enough to return all requested bytes or an error message */
@@ -2194,8 +2835,8 @@ bool command_read_memory(command_t *cmd, const char *arg)
    
    if (!reply)
    {
-      cmd->replier(cmd, "READ_CORE_MEMORY ERROR: OUT OF MEMORY\n", 37);
-      return true;
+      command_reply_error(cmd, "READ_CORE_MEMORY", "out of memory");
+      return false;
    }
    
    reply_at   = reply + snprintf(reply, alloc_size - 1, "READ_CORE_MEMORY %x", address);
@@ -2214,11 +2855,16 @@ bool command_read_memory(command_t *cmd, const char *arg)
       _len                 = reply_at + 3 * nbytes + 1 - reply;
    }
    else
+   {
+      /* command_memory_get_pointer() has put the reason in the reply,
+       * in the form line clients have always read */
       _len                 = strlen(reply);
+      cmd->error           = true;
+   }
 
    cmd->replier(cmd, reply, _len);
    free(reply);
-   return true;
+   return !cmd->error;
 }
 
 bool command_write_memory(command_t *cmd, const char *arg)
@@ -2254,9 +2900,13 @@ bool command_write_memory(command_t *cmd, const char *arg)
       }
 #endif
    }
+   else
+      /* command_memory_get_pointer() has put the reason in the reply,
+       * in the form line clients have always read; nothing was written */
+      cmd->error = true;
 
    cmd->replier(cmd, reply, strlen(reply));
-   return true;
+   return !cmd->error;
 }
 #endif
 
@@ -3061,7 +3711,11 @@ bool command_set_shader(command_t *cmd, const char *arg)
       video_context_driver_get_flags(&flags);
 
       if (!BIT32_GET(flags.flags, video_shader_type_to_flag(type)))
+      {
+         command_reply_error(cmd, "SET_SHADER",
+               "the video driver cannot run this kind of shader");
          return false;
+      }
 
       /* rebase on shader directory */
       if (!path_is_absolute(arg))
@@ -3073,11 +3727,20 @@ bool command_set_shader(command_t *cmd, const char *arg)
       /* drivers fall back to the stock shader for a preset they
        * cannot read, and call that success */
       if (!path_is_valid(arg))
+      {
+         command_reply_error(cmd, "SET_SHADER", "no shader preset at %s",
+               arg);
          return false;
+      }
    }
 
    if (!video_shader_apply_shader(settings, type, arg, true))
+   {
+      command_reply_error(cmd, "SET_SHADER",
+            apply_new_shader ? "the preset could not be applied"
+                             : "the shader could not be turned off");
       return false;
+   }
 
 #ifdef HAVE_COMMAND
    /* A deferred load compiles over the next frames: answered once it
