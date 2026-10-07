@@ -7,13 +7,21 @@
 // Initial Authors: Mark Young <marky@lunarg.com>
 //                  Nat Brown <natb@valvesoftware.com>
 //
-// RetroArch: reimplemented on libretro-common file_path/retro_dirent,
-// matching the std::filesystem semantics this build previously used,
-// so <filesystem> and the per-platform fallbacks are gone. Two
-// deliberate deltas: FindFilesInPath and GetCanonicalPath return false
-// instead of throwing on a missing path, and ParsePathList no longer
-// corrupts the middle entries of lists with three or more paths (an
-// upstream substr count bug in every branch).
+// RetroArch: every function here is a libretro-common call where one
+// with these semantics exists - path_is_valid, path_is_directory,
+// path_is_absolute, path_stat, path_resolve_realpath,
+// fill_pathname_join_special, retro_opendir/retro_readdir, and the
+// PATH_CHAR_IS_SLASH / PATH_DEFAULT_SLASH_C separator macros. What
+// remains hand-written differs from libretro-common's contracts on
+// purpose, keeping the std::filesystem semantics this build shipped:
+// GetParentPath ("a.json" -> "", not fill_pathname_basedir's "./";
+// trailing slashes belong to the last component), GetAbsolutePath
+// (no dot normalisation, which path_resolve_realpath without symlink
+// resolution would apply), and ParsePathList (empty entries survive,
+// where string_split's strtok collapses them). FindFilesInPath wants
+// bare names, so the dirent primitives fit where dir_list_new's full
+// paths would not. ParsePathList also no longer corrupts the middle
+// entries of three-or-more-path lists, an upstream substr count bug.
 
 #include "filesystem_utils.hpp"
 
@@ -26,17 +34,15 @@
 
 #if defined(XR_OS_WINDOWS)
 #include <direct.h>
-#define PATH_SEPARATOR ';'
-#define DIRECTORY_SYMBOL '\\'
-static bool isDirSep(char c) { return c == '\\' || c == '/'; }
+#define PATH_SEPARATOR ';' /* env path-list separator; no libretro-common equivalent */
 #else
 #include <unistd.h>
 #define PATH_SEPARATOR ':'
-#define DIRECTORY_SYMBOL '/'
-static bool isDirSep(char c) { return c == '/'; }
 #endif
 
 bool FileSysUtilsIsRegularFile(const std::string& path) {
+    // No single libretro-common predicate: regular excludes directories
+    // and character devices, like std::filesystem::is_regular_file.
     int flags = path_stat(path.c_str());
     return (flags & RETRO_VFS_STAT_IS_VALID) && !(flags & RETRO_VFS_STAT_IS_DIRECTORY) &&
            !(flags & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL);
@@ -44,43 +50,30 @@ bool FileSysUtilsIsRegularFile(const std::string& path) {
 
 bool FileSysUtilsIsDirectory(const std::string& path) { return path_is_directory(path.c_str()); }
 
-bool FileSysUtilsPathExists(const std::string& path) { return (path_stat(path.c_str()) & RETRO_VFS_STAT_IS_VALID) != 0; }
+bool FileSysUtilsPathExists(const std::string& path) { return path_is_valid(path.c_str()); }
 
 bool FileSysUtilsIsAbsolutePath(const std::string& path) { return path_is_absolute(path.c_str()); }
-
-bool FileSysUtilsGetCurrentPath(std::string& path) {
-    std::string buf(PATH_MAX_LENGTH, '\0');
-#if defined(XR_OS_WINDOWS)
-    if (_getcwd(&buf[0], (int)buf.size() - 1) == NULL) return false;
-#else
-    if (getcwd(&buf[0], buf.size() - 1) == NULL) return false;
-#endif
-    path.assign(buf.c_str());
-    return true;
-}
 
 // std::filesystem::path::parent_path(): trailing separators belong to
 // the last component ("a/b/" -> "a/b"), a bare filename has an empty
 // parent, and the root keeps itself.
 bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent_path) {
     std::string::size_type end = file_path.size();
-    bool had_trailing_sep = end > 0 && isDirSep(file_path[end - 1]);
-    while (end > 0 && isDirSep(file_path[end - 1])) end--;
+    bool had_trailing_sep = end > 0 && PATH_CHAR_IS_SLASH(file_path[end - 1]);
+    while (end > 0 && PATH_CHAR_IS_SLASH(file_path[end - 1])) end--;
     if (had_trailing_sep) {
-        // "a/b/" decomposes as "a/b" plus an empty final element, and the
-        // root is its own parent.
         parent_path = (end == 0) ? file_path.substr(0, 1) : file_path.substr(0, end);
         return true;
     }
     std::string::size_type pos = end;
-    while (pos > 0 && !isDirSep(file_path[pos - 1])) pos--;
+    while (pos > 0 && !PATH_CHAR_IS_SLASH(file_path[pos - 1])) pos--;
     if (pos == 0) {
         parent_path.clear();
         return true;
     }
     // strip the separator run, but keep the root ("/", "C:\")
     std::string::size_type root = pos;
-    while (root > 1 && isDirSep(file_path[root - 1]) && isDirSep(file_path[root - 2])) root--;
+    while (root > 1 && PATH_CHAR_IS_SLASH(file_path[root - 1]) && PATH_CHAR_IS_SLASH(file_path[root - 2])) root--;
     if (root >= 2 && file_path[root - 2] == ':') {
         parent_path = file_path.substr(0, root);  // "C:\"
         return true;
@@ -93,6 +86,17 @@ bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent
     return true;
 }
 
+static bool currentPath(std::string& path) {
+    std::string buf(PATH_MAX_LENGTH, '\0');
+#if defined(XR_OS_WINDOWS)
+    if (_getcwd(&buf[0], (int)buf.size() - 1) == NULL) return false;
+#else
+    if (getcwd(&buf[0], buf.size() - 1) == NULL) return false;
+#endif
+    path.assign(buf.c_str());
+    return true;
+}
+
 // std::filesystem::absolute(): current_path()/p for a relative path,
 // with no dot normalisation or symlink resolution.
 bool FileSysUtilsGetAbsolutePath(const std::string& path, std::string& absolute) {
@@ -101,7 +105,7 @@ bool FileSysUtilsGetAbsolutePath(const std::string& path, std::string& absolute)
         return true;
     }
     std::string cwd;
-    if (!FileSysUtilsGetCurrentPath(cwd)) return false;
+    if (!currentPath(cwd)) return false;
     return FileSysUtilsCombinePaths(cwd, path, absolute);
 }
 
@@ -127,9 +131,9 @@ bool FileSysUtilsCombinePaths(const std::string& parent, const std::string& chil
         combined = child;
         return true;
     }
-    std::string::size_type parent_len = parent.size();
-    if (isDirSep(parent[parent_len - 1])) parent_len--;
-    combined = parent.substr(0, parent_len) + DIRECTORY_SYMBOL + child;
+    std::string buf(PATH_MAX_LENGTH, '\0');
+    fill_pathname_join_special(&buf[0], parent.c_str(), child.c_str(), buf.size());
+    combined.assign(buf.c_str());
     return true;
 }
 

@@ -21,9 +21,6 @@ bool FileSysUtilsIsDirectory(const std::string& path);
 // Determine if the provided path exists on the filesystem
 bool FileSysUtilsPathExists(const std::string& path);
 
-// Get the current directory
-bool FileSysUtilsGetCurrentPath(std::string& path);
-
 // Get the parent path of a file
 bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent_path);
 
