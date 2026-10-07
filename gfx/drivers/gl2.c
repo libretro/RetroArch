@@ -120,8 +120,8 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 static GLuint  *gl2_fp16_tex;
 static unsigned gl2_fp16_count;
 static unsigned gl2_fp16_cap;
-/* One was loaded since init: the SDR layer turns RGBA16F for good, so
- * a session with no linear texture keeps the 8-bit layer */
+/* One was loaded since init: the UI's layer turns RGBA16F for good,
+ * so a session with no linear texture keeps the 8-bit layer */
 static bool     gl2_fp16_loaded;
 
 static void gl2_fp16_remember(GLuint id)
@@ -4228,7 +4228,7 @@ static bool gl2_scrgb_init_program(gl2_t *gl)
 
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
 /* An RGBA16F texture is linear scRGB: 1.0 is 80 nits, the 709
- * primaries. Drawn into the SDR layer, which the encode (sdrToScrgb
+ * primaries. Drawn into the UI's layer, which the encode (sdrToScrgb
  * above) shows as k2020to709 * M * v^2.4 at the menu nits, M the
  * expand-gamut matrix. This writes the exact inverse, so the encode
  * shows the texture at the luminance it was graded at; above menu
@@ -4329,7 +4329,7 @@ static GLuint gl2_linear_program(gl2_t *gl)
    return prog;
 }
 
-/* Whether an RGBA16F texture can be the SDR layer's target, tried once
+/* Whether an RGBA16F texture can be the UI layer's target, tried once
  * at init on the context that will draw it */
 static bool gl2_fp16_target_ok(void)
 {
@@ -4367,14 +4367,15 @@ static bool gl2_needs_pq_downconvert(gl2_t *gl)
  * should bind: the offscreen under scRGB or PQ content, 0 otherwise. */
 static GLuint gl2_frame_target_fbo(gl2_t *gl)
 {
-   /* RGBA16F once a linear texture has been loaded, so it keeps what is
-    * above menu white - but not while recording reads the layer back
-    * each frame, which RGBA8 hands over without converting */
+   /* The layer the UI draws into - the frame's for SDR content, its
+    * own for PQ - is RGBA16F once a linear texture has been loaded, so
+    * it keeps what is above menu white; but not while recording reads
+    * the layer back each frame, which RGBA8 hands over without
+    * converting */
    bool want_fp16 = false;
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    want_fp16      =    gl->scrgb.fp16_ok
                     && gl->scrgb.active
-                    && !gl->video_info.source_hdr10
                     && gl2_fp16_loaded
                     && !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE);
 #endif
@@ -4384,7 +4385,7 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
 
    if (     !gl->scrgb.fbo
          || gl->scrgb.dims != gl->video_dims
-         || gl->scrgb.tex_fp16 != want_fp16)
+         || gl->scrgb.fp16_made != want_fp16)
    {
       if (gl->scrgb.fbo)
          gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -4431,7 +4432,8 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
          return 0;
       }
       gl2_bind_fb(0);
-      gl->scrgb.dims   = gl->video_dims;
+      gl->scrgb.dims      = gl->video_dims;
+      gl->scrgb.fp16_made = want_fp16;
 
       /* UI layer, sized and lifetimed with the content offscreen.
        * Only the scRGB PQ composite needs it; the downconvert path
@@ -4450,6 +4452,13 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
       {
          glGenTextures(1, &gl->scrgb.ui_tex);
          glBindTexture(GL_TEXTURE_2D, gl->scrgb.ui_tex);
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+         if ((gl->scrgb.tex_fp16 = want_fp16))
+            glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+                  VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
+                  GL_RGBA, GL_HALF_FLOAT, NULL);
+         else
+#endif
          glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
                VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
                RARCH_GL_TEXTURE_TYPE32, RARCH_GL_FORMAT32, NULL);
@@ -4467,8 +4476,9 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
             RARCH_ERR("[GL] scRGB UI layer FBO incomplete; UI will be composited with the frame.\n");
             gl2_delete_fb(1, &gl->scrgb.ui_fbo);
             glDeleteTextures(1, &gl->scrgb.ui_tex);
-            gl->scrgb.ui_fbo = 0;
-            gl->scrgb.ui_tex = 0;
+            gl->scrgb.ui_fbo   = 0;
+            gl->scrgb.ui_tex   = 0;
+            gl->scrgb.tex_fp16 = false;
          }
          gl2_bind_fb(0);
       }
@@ -5290,6 +5300,7 @@ static void gl2_scrgb_deinit(gl2_t *gl)
    }
    gl->scrgb.lin_tried = false;
    gl->scrgb.tex_fp16  = false;
+   gl->scrgb.fp16_made = false;
    if (gl->scrgb.fbo)
    {
       gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -6072,7 +6083,6 @@ static void *gl2_init(const video_info_t *video)
    gl->scrgb.fp16_ok = gl->fp16_textures
          && (gl->flags & GL2_FLAG_HAVE_FBO)
          && gl->scrgb.active
-         && !video->source_hdr10
          && gl2_fp16_target_ok();
 #endif
 

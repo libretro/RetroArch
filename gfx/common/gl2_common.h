@@ -222,8 +222,10 @@ struct gl2
       /* At init: the SDR layer can be RGBA16F, so a linear texture
        * keeps what is above menu white (TEXTURE_GPU_FORMAT_SCRGB) */
       bool     fp16_ok;
-      /* The SDR layer is RGBA16F */
+      /* The layer the UI draws into is RGBA16F */
       bool     tex_fp16;
+      /* The layers were last made for an RGBA16F UI layer */
+      bool     fp16_made;
       /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
       bool   pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the
