@@ -1458,6 +1458,23 @@ static void vulkan_deferred_cmd_release(vk_t *vk,
    free(node);
 }
 
+/* A submission that came back VK_ERROR_DEVICE_LOST: the device is gone
+ * for good - a TDR, a GPU reset - and every frame after would fail the
+ * same way while the window keeps the last good present. The runloop
+ * rebuilds the video driver on its own thread when it sees the flag;
+ * this is the video thread under the wrapper, and can only ask. */
+static void vulkan_check_device_lost(vk_t *vk, VkResult res)
+{
+   if (res != VK_ERROR_DEVICE_LOST)
+      return;
+   if (!(vk->flags & VK_FLAG_DEVICE_LOST_REPORTED))
+   {
+      vk->flags |= VK_FLAG_DEVICE_LOST_REPORTED;
+      RARCH_ERR("[Vulkan] The device was lost (VK_ERROR_DEVICE_LOST).\n");
+      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+   }
+}
+
 /* The batch's command buffer, open for recording; a new one is begun
  * when none is. VK_NULL_HANDLE when one could not be made. */
 static VkCommandBuffer vulkan_upload_batch_cmd(vk_t *vk)
@@ -1489,39 +1506,47 @@ static VkCommandBuffer vulkan_upload_batch_cmd(vk_t *vk)
    begin_info.pNext            = NULL;
    begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    begin_info.pInheritanceInfo = NULL;
-   vkBeginCommandBuffer(node->cmd, &begin_info);
+   if (vkBeginCommandBuffer(node->cmd, &begin_info) != VK_SUCCESS)
+   {
+      vkFreeCommandBuffers(vk->context->device, vk->staging_pool, 1,
+            &node->cmd);
+      free(node);
+      return VK_NULL_HANDLE;
+   }
    vk->upload_batch            = node;
    return node->cmd;
 }
 
-/* What the batch's commands read from, released with it once its
- * fence has signalled. Without a batch open, or memory to remember
- * it, the copy was never recorded or cannot be waited for: it goes
- * now. */
-static void vulkan_upload_batch_keep(vk_t *vk,
-      const struct vk_texture *tex, VkBuffer buffer,
-      VkDeviceMemory memory)
+/* A place on the open batch for what an upload will read from,
+ * taken before the copy is recorded: a command that names a
+ * resource the batch cannot keep is never recorded. NULL when there
+ * is none, with no batch command buffer handed out. */
+static struct vk_deferred_staging *vulkan_upload_batch_reserve(vk_t *vk,
+      VkCommandBuffer *cmd)
 {
-   struct vk_deferred_staging *stage = vk->upload_batch
-      ? (struct vk_deferred_staging*)malloc(sizeof(*stage)) : NULL;
-   if (!stage)
+   struct vk_deferred_staging *stage;
+   if ((*cmd = vulkan_upload_batch_cmd(vk)) == VK_NULL_HANDLE)
+      return NULL;
+   if (!(stage = (struct vk_deferred_staging*)calloc(1, sizeof(*stage))))
    {
-      VkDevice device = vk->context->device;
-      if (tex)
-         vulkan_destroy_texture(device, (struct vk_texture*)tex);
-      if (buffer != VK_NULL_HANDLE)
-         vkDestroyBuffer(device, buffer, NULL);
-      if (memory != VK_NULL_HANDLE)
-         vkFreeMemory(device, memory, NULL);
-      return;
+      *cmd = VK_NULL_HANDLE;
+      return NULL;
    }
+   stage->tex.memory = VK_NULL_HANDLE;
+   return stage;
+}
+
+/* What the recorded copy reads from goes on the place reserved for
+ * it, released with the batch once its fence has signalled. */
+static void vulkan_upload_batch_keep(vk_t *vk,
+      struct vk_deferred_staging *stage, const struct vk_texture *tex,
+      VkBuffer buffer, VkDeviceMemory memory)
+{
    if (tex)
       stage->tex = *tex;
-   else
-      stage->tex.memory = VK_NULL_HANDLE;
-   stage->buffer           = buffer;
-   stage->memory           = memory;
-   stage->next             = vk->upload_batch->staging;
+   stage->buffer             = buffer;
+   stage->memory             = memory;
+   stage->next               = vk->upload_batch->staging;
    vk->upload_batch->staging = stage;
 }
 
@@ -1534,11 +1559,18 @@ static void vulkan_upload_batch_submit(vk_t *vk)
    VkSubmitInfo submit_info;
    struct vk_deferred_cmd *node = vk->upload_batch;
    VkFence fence;
+   VkResult res;
 
    if (!node)
       return;
    vk->upload_batch = NULL;
-   vkEndCommandBuffer(node->cmd);
+   if (vkEndCommandBuffer(node->cmd) != VK_SUCCESS)
+   {
+      /* Never submitted: nothing on the GPU reads what it kept */
+      node->fence = VK_NULL_HANDLE;
+      vulkan_deferred_cmd_release(vk, node);
+      return;
+   }
 
    fence = vulkan_deferred_fence_acquire(vk);
    if (fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
@@ -1560,11 +1592,22 @@ static void vulkan_upload_batch_submit(vk_t *vk)
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 1, &submit_info, fence);
+   res = vkQueueSubmit(vk->context->queue, 1, &submit_info, fence);
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
    GFX_INSTR_INC(GFX_INSTR_UPLOAD_SUBMIT);
+   if (res != VK_SUCCESS)
+   {
+      /* Refused, so nothing waits on the fence: the batch goes now,
+       * and a lost device is noted as the frame's submit notes it */
+      vulkan_check_device_lost(vk, res);
+      if (fence != VK_NULL_HANDLE && fence != vk->sync_fence)
+         vulkan_deferred_fence_recycle(vk, fence);
+      node->fence = VK_NULL_HANDLE;
+      vulkan_deferred_cmd_release(vk, node);
+      return;
+   }
 
    if (fence == VK_NULL_HANDLE || fence == vk->sync_fence)
    {
@@ -1772,23 +1815,6 @@ static void vulkan_wait_own_submissions(vk_t *vk)
       vkWaitForFences(vk->context->device, 1, &node->fence, VK_TRUE,
             UINT64_MAX);
    vulkan_deferred_cmds_tick(vk);
-}
-
-/* A submission that came back VK_ERROR_DEVICE_LOST: the device is gone
- * for good - a TDR, a GPU reset - and every frame after would fail the
- * same way while the window keeps the last good present. The runloop
- * rebuilds the video driver on its own thread when it sees the flag;
- * this is the video thread under the wrapper, and can only ask. */
-static void vulkan_check_device_lost(vk_t *vk, VkResult res)
-{
-   if (res != VK_ERROR_DEVICE_LOST)
-      return;
-   if (!(vk->flags & VK_FLAG_DEVICE_LOST_REPORTED))
-   {
-      vk->flags |= VK_FLAG_DEVICE_LOST_REPORTED;
-      RARCH_ERR("[Vulkan] The device was lost (VK_ERROR_DEVICE_LOST).\n");
-      video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
-   }
 }
 
 static struct vk_texture vulkan_create_texture(vk_t *vk,
@@ -2267,10 +2293,11 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                   (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
                   : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+               struct vk_deferred_staging *keep;
                struct vk_texture tmp                = vulkan_create_texture(vk, NULL,
                      width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
-               if ((staging = vulkan_upload_batch_cmd(vk)) == VK_NULL_HANDLE)
+               if (!(keep = vulkan_upload_batch_reserve(vk, &staging)))
                {
                   vulkan_destroy_texture(vk->context->device, &tmp);
                   break;
@@ -2362,7 +2389,7 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 
                /* The batch goes ahead of the frame that first samples
                 * the texture; the staging copy is released with it. */
-               vulkan_upload_batch_keep(vk, &tmp, VK_NULL_HANDLE,
+               vulkan_upload_batch_keep(vk, keep, &tmp, VK_NULL_HANDLE,
                      VK_NULL_HANDLE);
                tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
@@ -10436,6 +10463,7 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    VkCommandBufferBeginInfo begin_info;
    VkBufferImageCopy region;
    VkSubmitInfo submit_info;
+   VkResult res;
    VkDevice device;
    const uint8_t *src;
    uint8_t *dst;
@@ -10508,12 +10536,15 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    /* The slot's fence has signalled, so its last copy has run and the
     * command buffer is the slot's to record again. */
    cmd = st->cmd[slot];
-   vkResetCommandBuffer(cmd, 0);
    begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
    begin_info.pNext            = NULL;
    begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
    begin_info.pInheritanceInfo = NULL;
-   vkBeginCommandBuffer(cmd, &begin_info);
+   /* Refused leaves the slot as it was, its fence signalled, for the
+    * next update; the caller loads instead */
+   if (     vkResetCommandBuffer(cmd, 0) != VK_SUCCESS
+         || vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    VULKAN_IMAGE_LAYOUT_TRANSITION_LEVELS(cmd, texture->image, 1,
          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -10540,7 +10571,8 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
          VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED);
 
-   vkEndCommandBuffer(cmd);
+   if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    submit_info.pNext                = NULL;
@@ -10554,14 +10586,26 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
 
    /* The texture's own upload, if still batched, goes first */
    vulkan_upload_batch_submit(vk);
-   vkResetFences(device, 1, &st->fence[slot]);
+   if (vkResetFences(device, 1, &st->fence[slot]) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
-   vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
+   res = vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
+   /* Refused with the fence reset: nothing would signal it and the
+    * slot would stay busy, so an empty submission signals it instead;
+    * a device that refuses that too is lost. */
+   if (res != VK_SUCCESS)
+      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
+               NULL, st->fence[slot]));
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+   if (res != VK_SUCCESS)
+   {
+      vulkan_check_device_lost(vk, res);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
    return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
@@ -10708,6 +10752,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    VkBuffer                staging     = VK_NULL_HANDLE;
    VkDeviceMemory          staging_mem = VK_NULL_HANDLE;
    VkCommandBuffer         cmd         = VK_NULL_HANDLE;
+   struct vk_deferred_staging *keep    = NULL;
    size_t                  total       = 0;
    size_t                  off         = 0;
    void                   *ptr         = NULL;
@@ -10803,7 +10848,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    vkUnmapMemory(device, staging_mem);
 
    /* The copy: UNDEFINED -> TRANSFER_DST -> SHADER_READ_ONLY. */
-   if ((cmd = vulkan_upload_batch_cmd(vk)) == VK_NULL_HANDLE)
+   if (!(keep = vulkan_upload_batch_reserve(vk, &cmd)))
    {
       vkDestroyBuffer(device, staging, NULL);
       vkFreeMemory(device, staging_mem, NULL);
@@ -10827,7 +10872,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-   vulkan_upload_batch_keep(vk, NULL, staging, staging_mem);
+   vulkan_upload_batch_keep(vk, keep, NULL, staging, staging_mem);
 
    memset(&view, 0, sizeof(view));
    view.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
