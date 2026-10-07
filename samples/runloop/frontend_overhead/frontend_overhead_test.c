@@ -941,10 +941,12 @@ static input_device_driver_t syn_joypad;
 static unsigned long         syn_calls_state;
 static unsigned long         syn_calls_other;
 
+static unsigned syn_pad_index; /* the pad the stand-in is */
+
 static int32_t syn_button(unsigned pad, uint16_t joykey)
 {
    syn_calls_other++;
-   if (pad != 0)
+   if (pad != syn_pad_index)
       return 0;
    if (GET_HAT_DIR(joykey))
       return (GET_HAT(joykey) == 0 && (syn_hat & GET_HAT_DIR(joykey))) ? 1 : 0;
@@ -956,7 +958,7 @@ static int32_t syn_button(unsigned pad, uint16_t joykey)
 static int16_t syn_axis(unsigned pad, uint32_t joyaxis)
 {
    syn_calls_other++;
-   if (pad != 0)
+   if (pad != syn_pad_index)
       return 0;
    if (AXIS_NEG_GET(joyaxis) < 4)
    {
@@ -976,7 +978,7 @@ static void syn_get_buttons(unsigned pad, input_bits_t *state)
    unsigned i;
    syn_calls_other++;
    BIT256_CLEAR_ALL_PTR(state);
-   if (pad != 0)
+   if (pad != syn_pad_index)
       return;
    for (i = 0; i < 32; i++)
       if (syn_buttons & (1u << i))
@@ -3394,6 +3396,174 @@ static void lane_sticks_read_once(void)
 #endif
 }
 
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+/* one frame with the stand-in pad's buttons @down: what the core saw */
+static unsigned map_frame(uint32_t down, void (*trace_last)(unsigned*, int*))
+{
+   unsigned seen;
+   int axes[4];
+   syn_buttons = down;
+   run_loop_frames(1);
+   trace_last(&seen, axes);
+   return seen & 0xffff;
+}
+#endif
+
+/* The frontend keeps what it works out from a port's mapping: which of
+ * its binds a pad could be behind, the pad binds resolved between the
+ * user's and the controller's profile, the controller's mask for the
+ * poll. Kept things are only right while everything they were worked
+ * out from is as it was, and one that misses a change gives the core
+ * input that looks right and is not. So: every way a port's mapping
+ * changes, and what the core sees in the very next frame - read button
+ * by button and as a mask, with the controller read through the
+ * frontend's per-poll copy as the desktop drivers' are. */
+static void lane_mapping_changes(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   enum { A = RETRO_DEVICE_ID_JOYPAD_A, B = RETRO_DEVICE_ID_JOYPAD_B };
+   static const char *how[2]       = { "button by button", "as a mask" };
+   input_driver_state_t *input_st  = input_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   retro_keybind_set *saved_user   = (retro_keybind_set*)malloc(MAX_USERS * sizeof(*saved_user));
+   retro_keybind_set *saved_auto   = (retro_keybind_set*)malloc(MAX_USERS * sizeof(*saved_auto));
+   const input_device_driver_t *joypad_real;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned saved_index, saved_remap_a, m, seen;
+   char     why[160];
+
+   if (   !saved_user || !saved_auto
+       || !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !input_st->primary_joypad)
+   {
+      CHECK(false, "mapping changes: the harness core's trace entry points or the joypad driver");
+      free(saved_user);
+      free(saved_auto);
+      return;
+   }
+   memcpy(saved_user, input_config_binds,   MAX_USERS * sizeof(*saved_user));
+   memcpy(saved_auto, input_autoconf_binds, MAX_USERS * sizeof(*saved_auto));
+   saved_index   = settings->uints.input_joypad_index[0];
+   saved_remap_a = settings->uints.input_remap_ids[0][A];
+
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(true);
+
+#define MAP_SEES(down, want, what) do { \
+      seen = map_frame((down), trace_last) & ((1u << A) | (1u << B)); \
+      snprintf(why, sizeof(why), "mapping changes, read %s: %s", how[m], (what)); \
+      CHECK(seen == (unsigned)(want), why); \
+   } while (0)
+
+   for (m = 0; m < 2; m++)
+   {
+      trace((int)m + 1, 0);
+
+      /* where it starts: the controller's profile has A on button 3,
+       * the user has bound no pad button to it */
+      input_config_bind_edit(0, A)->joykey    = NO_BTN;
+      input_config_bind_edit(0, A)->joyaxis   = AXIS_NONE;
+      input_config_bind_edit(0, B)->joykey    = NO_BTN;
+      input_config_bind_edit(0, B)->joyaxis   = AXIS_NONE;
+      input_autoconf_bind_edit(0, A)->joykey  = 3;
+      input_autoconf_bind_edit(0, A)->joyaxis = AXIS_NONE;
+      input_autoconf_bind_edit(0, B)->joykey  = NO_BTN;
+      input_autoconf_bind_edit(0, B)->joyaxis = AXIS_NONE;
+      run_loop_frames(2);
+      MAP_SEES(1u << 3, 1u << A, "the profile's button is not A to begin with");
+
+      /* the user binds another button to it */
+      input_config_bind_edit(0, A)->joykey = 4;
+      MAP_SEES(1u << 3, 0,       "after the user's bind, the profile's button still presses A");
+      MAP_SEES(1u << 4, 1u << A, "after the user's bind, the button bound does not press A");
+      /* ... and takes the bind away again */
+      input_config_bind_edit(0, A)->joykey = NO_BTN;
+      MAP_SEES(1u << 4, 0,       "the user's bind cleared, its button still presses A");
+      MAP_SEES(1u << 3, 1u << A, "the user's bind cleared, the profile's button does not press A");
+
+      /* autoconfiguration gives the controller another profile */
+      input_autoconf_bind_edit(0, A)->joykey = 5;
+      MAP_SEES(1u << 3, 0,       "a new profile, the old profile's button still presses A");
+      MAP_SEES(1u << 5, 1u << A, "a new profile, its button does not press A");
+
+      /* another controller is chosen for the port (Device Index): the
+       * setting is written, as the menu writes it, and nothing is told */
+      input_autoconf_bind_edit(1, A)->joykey  = 6;
+      input_autoconf_bind_edit(1, A)->joyaxis = AXIS_NONE;
+      run_loop_frames(1);
+      settings->uints.input_joypad_index[0] = 1;
+      syn_pad_index                         = 1;
+      MAP_SEES(1u << 5, 0,       "another controller chosen, the first one's profile still presses A");
+      MAP_SEES(1u << 6, 1u << A, "another controller chosen, its profile's button does not press A");
+      settings->uints.input_joypad_index[0] = 0;
+      syn_pad_index                         = 0;
+      MAP_SEES(1u << 6, 0,       "the first controller chosen again, the other's profile still presses A");
+      MAP_SEES(1u << 5, 1u << A, "the first controller chosen again, its button does not press A");
+
+      /* the button is remapped: what the pad's A is to the core */
+      settings->uints.input_remap_ids[0][A] = B;
+      MAP_SEES(1u << 5, 1u << B, "remapped to B, the button does not press B alone");
+      settings->uints.input_remap_ids[0][A] = A;
+      MAP_SEES(1u << 5, 1u << A, "the remap undone, the button does not press A");
+
+      /* the controller is unplugged: its profile goes */
+      input_config_reset_autoconfig_binds(0);
+      MAP_SEES(1u << 5, 0,       "the controller unplugged, its profile's button still presses A");
+      /* ... and plugged in again */
+      input_autoconf_bind_edit(0, A)->joykey  = 5;
+      input_autoconf_bind_edit(0, A)->joyaxis = AXIS_NONE;
+      MAP_SEES(1u << 5, 1u << A, "the controller plugged in again, its button does not press A");
+
+      /* (A configuration being loaded goes through the same count as
+       * these; that it does is the lane before this one's to check.
+       * It is not done here: it also forgets which controllers are
+       * connected, which the lanes after this one need.) */
+
+      memcpy(input_config_binds,   saved_user, MAX_USERS * sizeof(*saved_user));
+      memcpy(input_autoconf_binds, saved_auto, MAX_USERS * sizeof(*saved_auto));
+      input_config_binds_changed();
+      syn_buttons = 0;
+      run_loop_frames(2);
+   }
+#undef MAP_SEES
+
+   settings->uints.input_joypad_index[0]    = saved_index;
+   settings->uints.input_remap_ids[0][A]    = saved_remap_a;
+   syn_pad_index                            = 0;
+   syn_buttons                              = 0;
+   trace(0, 0);
+   fast_forward(false);
+   run_loop_frames(5);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad = joypad_real;
+   dlclose(core);
+   free(saved_user);
+   free(saved_auto);
+   if (failures == had)
+      printf("[pass] mapping changes: the core sees each in the next frame, read"
+            " button by button and as a mask - the user's bind set and"
+            " cleared, a new profile, another controller chosen for the port"
+            " and the first again, a remap and its undoing, the controller"
+            " unplugged and plugged in\n");
+#else
+   printf("[skip] mapping changes: no test drivers in this build\n");
+#endif
+}
+
 /* What a port's mapping is made from is counted each time it changes,
  * so that what is compiled from it can tell without looking at a bind.
  * Each way of changing it counts; frames in which nothing changes do
@@ -4887,6 +5057,7 @@ int main(int argc, char *argv[])
       lane_menu_repeat_rates();
       lane_pointer_store();
       lane_binds_change_count();
+      lane_mapping_changes();
       lane_sticks_read_once();
       lane_aim_stick();
       lane_core_view();
