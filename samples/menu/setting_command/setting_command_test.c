@@ -101,6 +101,31 @@ static void lane(enum msg_hash_enums idx, const char *name, bool apply_auto)
    }
 }
 
+/* A row whose change handler picks the command itself, whatever the
+ * row's flags say: the video scale, which reinitialises while not
+ * fullscreen. Start resets it and runs the change handler, and
+ * menu_setting_generic() runs it again. */
+static void lane_start_picks(enum msg_hash_enums idx, const char *name)
+{
+   unsigned before;
+   rarch_setting_t *s = menu_setting_find_enum(idx);
+
+   CHECK(s != NULL, "fixture: %s is not a setting", name);
+   if (!s)
+      return;
+   CHECK(s->type == ST_UINT, "fixture: %s is not an unsigned setting", name);
+   *s->value.target.unsigned_integer = s->default_value.unsigned_integer + 1;
+   before                            = inits;
+
+   menu_action_handle_setting(s, 0, MENU_ACTION_START, false);
+
+   CHECK(*s->value.target.unsigned_integer == s->default_value.unsigned_integer,
+         "%s, Start: the setting was not reset", name);
+   CHECK(inits - before == 1,
+         "%s, Start: the video driver was initialised %u times, want 1",
+         name, inits - before);
+}
+
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
 {
@@ -179,6 +204,7 @@ int main(int argc, char *argv[])
    lane(MENU_ENUM_LABEL_VIDEO_SMOOTH, "video_smooth", false);
    lane(MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,
          "menu_texture_mipmapping", true);
+   lane_start_picks(MENU_ENUM_LABEL_VIDEO_SCALE, "video_scale");
 
    scratch_remove(dir);
 

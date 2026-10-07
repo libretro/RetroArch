@@ -689,8 +689,8 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
          {
             if (setting->value.target.string)
                strlcpy(setting->value.target.string, str, setting->size);
-            if (setting->actions->change)
-               setting->actions->change(setting);
+            /* menu_setting_generic() runs the change handler; it was
+             * run here as well, and the row's command fired twice */
             menu_setting_generic(setting, 0, false);
          }
       }
@@ -8322,6 +8322,15 @@ static void menu_settings_list_current_add_range(
    (*list)[idx].flags            |= SD_FLAG_HAS_RANGE;
 }
 
+/* The row whose handler menu_action_handle_setting() is running. A
+ * handler may run the change handler itself, and menu_setting_generic()
+ * runs it again after: the command a change handler fires is held for
+ * that row until then, so one press fires it once. Hiding the row's
+ * command flags (#19730) does that for a command the flags ask for; a
+ * command the change handler picks itself - the audio rows, the video
+ * scale, HDR - is fired whatever the flags say, and goes by this. */
+static const rarch_setting_t *setting_cmd_held_for;
+
 int menu_setting_generic(rarch_setting_t *setting, size_t idx, bool wraparound)
 {
    uint32_t flags = setting->flags;
@@ -8412,6 +8421,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                |  SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED);
 
             setting->flags               &= ~cmd_flags;
+            setting_cmd_held_for          = setting;
             switch (action)
             {
                case MENU_ACTION_UP:
@@ -8446,6 +8456,7 @@ int menu_action_handle_setting(rarch_setting_t *setting,
                   break;
             }
             setting->flags               |= cmd_flags;
+            setting_cmd_held_for          = NULL;
 
             if (ret == 0)
                return menu_setting_generic(setting, selection, wraparound);
@@ -9486,7 +9497,8 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
    }
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_VERBOSITY, NULL);
 
-   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
+   if (     setting != setting_cmd_held_for
+         && (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED)))
       command_event(rarch_cmd, NULL);
 }
 
@@ -10568,7 +10580,8 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
    }
 
-   if (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED))
+   if (     setting != setting_cmd_held_for
+         && (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED)))
       command_event(rarch_cmd, NULL);
 }
 

@@ -2388,8 +2388,8 @@ static int set_path_generic(const char *label, const char *action_path)
    {
       if (setting->value.target.string)
          strlcpy(setting->value.target.string, action_path, setting->size);
-      if (setting->actions->change)
-         setting->actions->change(setting);
+      /* menu_setting_generic() runs the change handler; it was run
+       * here as well, and the row's command fired twice */
       return menu_setting_generic(setting, 0, false);
    }
 
