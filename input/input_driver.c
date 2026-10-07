@@ -405,6 +405,9 @@ input_device_driver_t *joypad_drivers[] = {
 #ifdef HAVE_DINPUT
    &dinput_joypad,
 #endif
+#ifdef HAVE_WINMM_JOYPAD
+   &winmm_joypad,
+#endif
 #ifdef HAVE_UDEV
    &udev_joypad,
 #endif

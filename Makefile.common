@@ -1296,6 +1296,15 @@ ifeq ($(HAVE_WIN32INPUT), 1)
    OBJ += input/drivers/win32_input.o
 endif
 
+# Controllers through the multimedia library's joystick calls: for a
+# Windows with no DirectX. Not on by default anywhere but the Visual
+# C++ 6 project.
+ifeq ($(HAVE_WINMM_JOYPAD), 1)
+   DEFINES += -DHAVE_WINMM_JOYPAD
+   OBJ += input/drivers_joypad/winmm_joypad.o
+   LIBS += -lwinmm
+endif
+
 ifeq ($(HAVE_XINPUT), 1)
    DEFINES += -DHAVE_XINPUT
    HAVE_INPUT_OUTPUT_WRITER = 1

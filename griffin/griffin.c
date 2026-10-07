@@ -848,6 +848,10 @@ INPUT
 #include "../input/drivers/win32_input.c"
 #endif
 
+#ifdef HAVE_WINMM_JOYPAD
+#include "../input/drivers_joypad/winmm_joypad.c"
+#endif
+
 #ifdef HAVE_XINPUT
 #ifdef HAVE_DINPUT
 #include "../input/drivers_joypad/xinput_hybrid_joypad.c"

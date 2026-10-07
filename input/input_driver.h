@@ -2184,6 +2184,7 @@ extern input_driver_t input_wayland;
 extern input_driver_t input_test;
 
 extern input_device_driver_t dinput_joypad;
+extern input_device_driver_t winmm_joypad;
 extern input_device_driver_t linuxraw_joypad;
 extern input_device_driver_t parport_joypad;
 extern input_device_driver_t udev_joypad;

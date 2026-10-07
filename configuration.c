@@ -262,6 +262,7 @@ enum joypad_driver_enum
    JOYPAD_CTR,
    JOYPAD_SWITCH,
    JOYPAD_DINPUT,
+   JOYPAD_WINMM,
    JOYPAD_UDEV,
    JOYPAD_LINUXRAW,
    JOYPAD_ANDROID,
@@ -757,6 +758,8 @@ static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SWITCH;
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_SDL_DINGUX;
 #elif defined(HAVE_DINPUT)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_DINPUT;
+#elif defined(HAVE_WINMM_JOYPAD)
+static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_WINMM;
 #elif defined(HAVE_UDEV)
 static const enum joypad_driver_enum JOYPAD_DEFAULT_DRIVER = JOYPAD_UDEV;
 #elif defined(__linux) && !defined(ANDROID)
@@ -1614,6 +1617,8 @@ const char *config_get_default_joypad(void)
          return "switch";
       case JOYPAD_DINPUT:
          return "dinput";
+      case JOYPAD_WINMM:
+         return "winmm";
       case JOYPAD_UDEV:
          return "udev";
       case JOYPAD_LINUXRAW:
