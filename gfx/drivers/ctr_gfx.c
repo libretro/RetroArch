@@ -36,6 +36,7 @@
 #endif
 #ifdef HAVE_GFX_WIDGETS
 #include "../gfx_widgets.h"
+#include "../gfx_surface.h"
 #endif
 
 #include "../font_driver.h"
@@ -858,6 +859,27 @@ static void ctr_update_viewport(ctr_video_t* ctr)
    ctr->should_resize = false;
 }
 
+/* The png at @name under @dir, decoded here and uploaded through the
+ * driver's own load. False when there is no such file. */
+static bool ctr_load_png_texture(const char *name, const char *dir,
+      uintptr_t *tex)
+{
+   char path[PATH_MAX_LENGTH];
+   struct texture_image ti;
+   bool ok;
+
+   if (!name || !*name)
+      return false;
+   fill_pathname_join_special(path, dir, name, sizeof(path));
+   memset(&ti, 0, sizeof(ti));
+   ti.supports_rgba = gfx_surface_wants_rgba();
+   if (!image_texture_load(&ti, path))
+      return false;
+   ok = video_driver_texture_load(&ti, TEXTURE_FILTER_MIPMAP_LINEAR, tex);
+   image_texture_free(&ti);
+   return ok;
+}
+
 static const char *ctr_texture_path(unsigned id)
 {
    switch (id)
@@ -999,10 +1021,8 @@ static bool ctr_load_bottom_texture(void *data)
       else
          dir_assets = settings->paths.directory_bottom_assets;
 
-      if (gfx_display_reset_textures_list(
-         ctr_texture_path(i), dir_assets,
-         &ctr->bottom_textures[i].texture,
-         TEXTURE_FILTER_MIPMAP_LINEAR, NULL))
+      if (ctr_load_png_texture(ctr_texture_path(i), dir_assets,
+            &ctr->bottom_textures[i].texture))
       {
          struct ctr_bottom_texture_data *o = &ctr->bottom_textures[i];
          o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
@@ -1244,11 +1264,9 @@ static void ctr_bottom_menu_control(void* data,
 
       if (ctr_update_state_date_from_file(ctr))
       {
-         if (gfx_display_reset_textures_list(
+         if (ctr_load_png_texture(
                   ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
-                  dir_get_ptr(RARCH_DIR_SAVESTATE),
-                  &o->texture,
-                  TEXTURE_FILTER_MIPMAP_LINEAR, NULL))
+                  dir_get_ptr(RARCH_DIR_SAVESTATE), &o->texture))
          {
             o->frame_coords = linearAlloc(sizeof(ctr_vertex_t));
             ctr_state_thumbnail_geom(ctr);

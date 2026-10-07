@@ -1,15 +1,12 @@
-/* gfx_display texture loads: a load into a slot that holds a texture
- * keeps that texture until the new one has landed, then unloads it,
- * under the threaded wrapper and without; a gfx_surface still keeps
- * its texture across uploads, decodes and a free in flight. Stub
- * driver, simulated wrapper and task queue. */
+/* gfx_surface stills: a still keeps its texture across uploads,
+ * decodes and a free in flight, under the threaded wrapper and
+ * without. Stub driver, simulated wrapper and task queue. */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <queues/task_queue.h>
 
-#include "gfx/gfx_display.h"
 #include "gfx/video_driver.h"
 #include "gfx/video_thread_wrapper.h"
 #include "gfx/gfx_surface.h"
@@ -151,72 +148,13 @@ static int failures;
 #define CHECK(c, ...) do { if (!(c)) { failures++; \
    printf("[FAIL] " __VA_ARGS__); printf("\n"); } } while (0)
 
-static bool load(uintptr_t *slot)
-{
-   struct texture_image ti;
-   memset(&ti, 0, sizeof(ti));
-   ti.width  = 8;
-   ti.height = 8;
-   ti.pixels = (uint32_t*)calloc(64, 4);
-   if (!gfx_display_texture_load(&ti, TEXTURE_FILTER_NEAREST, slot))
-   {
-      free(ti.pixels);
-      return false;
-   }
-   free(ti.pixels); /* a load that took the pixels left NULL here */
-   return true;
-}
-
 int main(void)
 {
-   uintptr_t slot = 0, a, b;
+   uintptr_t a, b;
 
-   /* 1. threaded: the texture up stays until the new one lands */
    st_async = 1;
-   CHECK(load(&slot), "threaded first load refused");
-   CHECK(slot == 0, "a queued load wrote the slot early");
-   st_flush();
-   a = slot;
-   CHECK(a != 0, "threaded first load never landed");
-   CHECK(load(&slot), "threaded second load refused");
-   CHECK(slot == a && st_unloads == 0,
-         "the texture up went before the new one landed");
-   st_flush();
-   b = slot;
-   CHECK(b != 0 && b != a, "threaded second load never landed");
-   CHECK(st_unloads == 1 && st_last_unloaded == a && st_live == 1,
-         "the replaced texture was not unloaded once (%d unloads, %d live)",
-         st_unloads, st_live);
 
-   /* 2. threaded: two loads queued at once - the later wins, nothing
-    *    leaks */
-   CHECK(load(&slot) && load(&slot), "queued pair refused");
-   CHECK(slot == b, "a queued pair wrote the slot early");
-   st_flush();
-   CHECK(slot != 0 && slot != b && st_live == 1,
-         "a queued pair left %d textures live", st_live);
-
-   /* 3. direct: the old one goes at once, after the new one loaded */
-   st_async = 0;
-   a = slot;
-   CHECK(load(&slot), "direct load refused");
-   CHECK(slot != a && st_last_unloaded == a && st_live == 1,
-         "direct replacement left %d live", st_live);
-
-   /* 4. a cancelled load lands nowhere and leaks nothing */
-   st_async = 1;
-   CHECK(load(&slot), "load before cancel refused");
-   gfx_display_texture_loads_cancel(&slot, sizeof(slot));
-   a = slot;
-   st_flush();
-   CHECK(slot == a && st_live == 1, "a cancelled load wrote the slot");
-
-   video_driver_texture_unload(&slot);
-   CHECK(st_live == 0, "%d textures live at the end", st_live);
-
-   /* --- a still that owns its texture ------------------------------ */
-
-   /* 5. threaded: a same-size image updates the texture up in place
+   /* 1. threaded: a same-size image updates the texture up in place
     *    once landed, another size replaces it, and one given while
     *    the first is in flight goes up after it */
    {
@@ -245,7 +183,7 @@ int main(void)
       CHECK(st_live == 0, "%d textures live after the still went", st_live);
    }
 
-   /* 6. a still freed with an upload in flight: the completion frees
+   /* 2. a still freed with an upload in flight: the completion frees
     *    it, texture and all */
    {
       gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);
@@ -256,7 +194,7 @@ int main(void)
       CHECK(st_live == 0, "a still freed in flight left %d live", st_live);
    }
 
-   /* 7. a decode: the file's image goes up when the decode answers;
+   /* 3. a decode: the file's image goes up when the decode answers;
     *    a newer path makes the older decode land nowhere; a free
     *    while decoding is honoured at the answer */
    {
@@ -286,7 +224,7 @@ int main(void)
             st_live);
    }
 
-   /* 8. direct: the image goes up at once */
+   /* 4. direct: the image goes up at once */
    st_async = 0;
    {
       gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_NEAREST);

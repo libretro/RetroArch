@@ -3025,17 +3025,6 @@ static const char *ozone_entries_icon_texture_path(unsigned id)
    return NULL;
 }
 
-/* The still in a slot, made on first use; the filter is the current
- * setting's at every load */
-static gfx_surface_t *ozone_still(gfx_surface_t **slot)
-{
-   if (!*slot)
-      *slot = gfx_surface_new_still(gfx_display_texture_filter());
-   else
-      (*slot)->filter = gfx_display_texture_filter();
-   return *slot;
-}
-
 /* The slots' textures as one array of handles, for a frame that reads
  * them as one set */
 static void ozone_icons_snapshot(gfx_surface_t *const *slots,
@@ -3116,7 +3105,8 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
          fill_pathname_join_special(texpath,
                theme_path, OZONE_THEME_TEXTURES_FILES[i],
                sizeof(texpath));
-         gfx_surface_submit_file(ozone_still(&theme->textures[i]),
+         gfx_surface_submit_file(gfx_surface_still(&theme->textures[i],
+               gfx_display_texture_filter()),
                texpath, supports_rgba);
       }
    }
@@ -5422,7 +5412,8 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
                   sizeof(texturepath));
 
          /* Load sidebar playlist icons at once */
-         gfx_surface_submit_file(ozone_still(&node->icon),
+         gfx_surface_submit_file(gfx_surface_still(&node->icon,
+               gfx_display_texture_filter()),
                texturepath, supports_rgba);
 
          strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
@@ -5434,7 +5425,8 @@ static void ozone_context_reset_horizontal_list(ozone_handle_t *ozone)
             fill_pathname_join_delim(texturepath, ozone->icons_path_default,
                   "content.png", '-', sizeof(texturepath));
 
-         gfx_surface_submit_path(ozone_still(&node->content_icon),
+         gfx_surface_submit_path(gfx_surface_still(&node->content_icon,
+               gfx_display_texture_filter()),
                texturepath, supports_rgba);
 
          /* Console name */
@@ -10557,7 +10549,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->png_path, OZONE_TEXTURES_FILES[i],
                sizeof(texpath));
-         gfx_surface_submit_file(ozone_still(&ozone->textures[i]),
+         gfx_surface_submit_file(gfx_surface_still(&ozone->textures[i],
+               gfx_display_texture_filter()),
                texpath, supports_rgba);
       }
 
@@ -10580,7 +10573,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
                      sizeof(texpath));
                break;
          }
-         gfx_surface_submit_file(ozone_still(&ozone->tab_textures[i]),
+         gfx_surface_submit_file(gfx_surface_still(&ozone->tab_textures[i],
+               gfx_display_texture_filter()),
                texpath, supports_rgba);
       }
 
@@ -10594,7 +10588,8 @@ static void ozone_context_reset(void *data, bool is_threaded)
          fill_pathname_join_special(texpath,
                ozone->icons_path, ozone_entries_icon_texture_path(i),
                sizeof(texpath));
-         gfx_surface_submit_file(ozone_still(&ozone->icons_textures[i]),
+         gfx_surface_submit_file(gfx_surface_still(&ozone->icons_textures[i],
+               gfx_display_texture_filter()),
                texpath, supports_rgba);
       }
 

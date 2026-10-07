@@ -798,17 +798,6 @@ static void xmb_node_icons_free(xmb_node_t *node)
    node->thumbnail_icon = NULL;
 }
 
-/* The still in a slot, made on first use; the filter is the current
- * setting's at every load */
-static gfx_surface_t *xmb_still(gfx_surface_t **slot)
-{
-   if (!*slot)
-      *slot = gfx_surface_new_still(gfx_display_texture_filter());
-   else
-      (*slot)->filter = gfx_display_texture_filter();
-   return *slot;
-}
-
 static void xmb_node_free_icons(xmb_node_t *node)
 {
    gfx_surface_free(node->icon);
@@ -1840,7 +1829,8 @@ static void xmb_update_dynamic_wallpaper(xmb_handle_t *xmb, bool reset)
          {
             xmb_context_bg_destroy(xmb);
 
-            if (!gfx_surface_submit_file(xmb_still(&xmb->textures.bg),
+            if (!gfx_surface_submit_file(gfx_surface_still(&xmb->textures.bg,
+                  gfx_display_texture_filter()),
                   path, gfx_surface_wants_rgba()))
                task_push_image_load(path,
                      gfx_surface_wants_rgba(), 0,
@@ -3734,7 +3724,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             strlcpy_lit(texturepath + __len, ".png", sizeof(texturepath) - __len);
          }
 
-         gfx_surface_submit_path(xmb_still(&node->icon),
+         gfx_surface_submit_path(gfx_surface_still(&node->icon,
+               gfx_display_texture_filter()),
                texturepath, supports_rgba);
 
          strlcpy_lit(sysname + syslen, "-content.png", sizeof(sysname) - syslen);
@@ -3745,7 +3736,8 @@ static void xmb_context_reset_horizontal_list(xmb_handle_t *xmb)
             fill_pathname_join_delim(texturepath, icons_path_default,
                   FILE_PATH_CONTENT_BASENAME, '-', sizeof(texturepath));
 
-         gfx_surface_submit_path(xmb_still(&node->content_icon),
+         gfx_surface_submit_path(gfx_surface_still(&node->content_icon,
+               gfx_display_texture_filter()),
                texturepath, supports_rgba);
 
          console_name = xmb->horizontal_list.list[i].alt
@@ -7748,7 +7740,8 @@ static void xmb_context_reset_textures(
 
       fill_pathname_join_special(texpath,
             iconpath, texture_path, sizeof(texpath));
-      gfx_surface_submit_file(xmb_still(&xmb->textures.list[i]),
+      gfx_surface_submit_file(gfx_surface_still(&xmb->textures.list[i],
+            gfx_display_texture_filter()),
             texpath, supports_rgba);
    }
 
@@ -10589,7 +10582,8 @@ static bool xmb_load_image(void *userdata, void *data,
    {
       case MENU_IMAGE_WALLPAPER:
          /* Replaces the one up, once it is loaded */
-         gfx_surface_take_image(xmb_still(&xmb->textures.bg),
+         gfx_surface_take_image(gfx_surface_still(&xmb->textures.bg,
+               gfx_display_texture_filter()),
                (struct texture_image*)data);
          break;
       case MENU_IMAGE_NONE:

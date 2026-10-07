@@ -510,13 +510,6 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
-bool gfx_display_reset_textures_list(
-      const char *texture_path,
-      const char *iconpath,
-      uintptr_t *item,
-      enum texture_filter_type filter_type,
-      unsigned *dims);
-
 /* Returns the texture filter type used when uploading menu/UI
  * images (icons, thumbnails, wallpapers).  Mip-mapped filtering
  * keeps images smooth when drawn below their native size at the
@@ -527,40 +520,6 @@ enum texture_filter_type gfx_display_texture_filter(void);
 /* The latched variant, for texture loads issued off the main
  * thread; see gfx_display.c. */
 enum texture_filter_type gfx_display_texture_filter_latched(void);
-
-/* Load @ti into the texture the caller owns at @item. Under threaded
- * video, on the main thread, the upload is queued rather than waited
- * for, and @item is written when it completes - a frame later, 0 until
- * then - with the pixels taken from @ti (left NULL, so the caller's
- * image_texture_free() skips them). Otherwise as
- * video_driver_texture_load(). */
-bool gfx_display_texture_load(struct texture_image *ti,
-      enum texture_filter_type filter, uintptr_t *item);
-
-/* Before a texture slot in [@base, @base + @len) is reset or freed:
- * a load still in flight into it unloads its texture on completion
- * instead of writing the slot. */
-void gfx_display_texture_loads_cancel(const void *base, size_t len);
-
-bool gfx_display_reset_icon_texture(
-      const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type);
-
-/* Decodes the image at @fullpath on the task queue and lands the
- * texture in @target_texture, replacing the one it holds once the new
- * one is up; the load is registered from here on, and cancelling the
- * slot's range ends it. Platforms where the task queue costs more than
- * it saves (GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS) load in place. */
-bool gfx_display_load_icon(const char *fullpath,
-      bool supports_rgba, uintptr_t *target_texture);
-
-bool gfx_display_reset_textures_list_buffer(
-        uintptr_t *item,
-        enum texture_filter_type filter_type,
-        void* buffer,
-        unsigned buffer_len,
-        enum image_type_enum image_type,
-        unsigned *dims);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,

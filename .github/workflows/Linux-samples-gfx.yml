@@ -1415,20 +1415,21 @@ jobs:
           test -f gfx_thumbnail_anim_test.exe
           make clean TARGET=gfx_thumbnail_anim_test.exe
 
-      - name: Build and run gfx_display_texture_load_test (ASan + UBSan, mingw-w64)
+      - name: Build and run gfx_surface_still_test (ASan + UBSan, mingw-w64)
         shell: bash
-        working-directory: samples/gfx/gfx_display_texture_load
+        working-directory: samples/gfx/gfx_surface_still
         run: |
           set -eu
-          # A texture load into an occupied slot keeps the old texture
-          # until the new one lands (issue #19725).
+          # A still keeps the texture up until the new one has landed,
+          # updates a same-size image in place, and is freed by the
+          # completion of an upload or decode still out when it goes.
           make clean
           make EXTRA_CFLAGS="-fsanitize=address,undefined" LDFLAGS="-fsanitize=address,undefined"
           make check
           make clean
-          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_display_texture_load_test.exe
-          test -f gfx_display_texture_load_test.exe
-          make clean TARGET=gfx_display_texture_load_test.exe
+          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_surface_still_test.exe
+          test -f gfx_surface_still_test.exe
+          make clean TARGET=gfx_surface_still_test.exe
 
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash

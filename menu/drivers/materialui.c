@@ -2314,17 +2314,6 @@ static const char *materialui_texture_path(unsigned id)
  * Playlist icons START
  * ============================== */
 
-/* The still in a slot, made on first use; the filter is the current
- * setting's at every load */
-static gfx_surface_t *materialui_still(gfx_surface_t **slot)
-{
-   if (!*slot)
-      *slot = gfx_surface_new_still(gfx_display_texture_filter());
-   else
-      (*slot)->filter = gfx_display_texture_filter();
-   return *slot;
-}
-
 static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
 {
    size_t i;
@@ -2356,7 +2345,8 @@ static void materialui_context_reset_playlist_icons(
             mui->sysicons_path, image_file,
             sizeof(texpath));
       gfx_surface_submit_path(
-            materialui_still(&mui->textures.playlist.icons[i].image),
+            gfx_surface_still(&mui->textures.playlist.icons[i].image,
+                  gfx_display_texture_filter()),
             texpath, supports_rgba);
    }
 }
@@ -2660,7 +2650,8 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
       fill_pathname_join_special(texpath,
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
-      gfx_surface_submit_file(materialui_still(&mui->textures.list[i]),
+      gfx_surface_submit_file(gfx_surface_still(&mui->textures.list[i],
+            gfx_display_texture_filter()),
             texpath, supports_rgba);
    }
 }
@@ -9874,7 +9865,8 @@ static bool materialui_load_image(void *userdata,
 
    if (type == MENU_IMAGE_WALLPAPER)
       /* Replaces the one up, once it is loaded */
-      gfx_surface_take_image(materialui_still(&mui->textures.bg),
+      gfx_surface_take_image(gfx_surface_still(&mui->textures.bg,
+            gfx_display_texture_filter()),
             (struct texture_image*)data);
 
    return true;

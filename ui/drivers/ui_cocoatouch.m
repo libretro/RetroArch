@@ -44,6 +44,7 @@
 #include "cocoa/cocoa_audio_session.h"
 #endif
 #include "../../gfx/video_display_server.h"
+#include "../../gfx/gfx_surface.h"
 #include "../../configuration.h"
 #include "../../frontend/frontend.h"
 #include "../../input/drivers/cocoa_input.h"
@@ -178,7 +179,10 @@ static void ui_companion_cocoatouch_set_app_icon(const char *iconName)
  * lifetime deliberately, as the dock indicator in dispserv_apple.m is. */
 static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
 {
-   static NSMutableDictionary<NSString *, NSNumber *> *textures = nil;
+   /* Each icon's still, kept for the process lifetime; its texture is
+    * read at every call, since an upload under threaded video lands a
+    * frame after the submit */
+   static NSMutableDictionary<NSString *, NSValue *> *textures = nil;
    NSString *iconName;
 
    if (!textures)
@@ -200,14 +204,15 @@ static uintptr_t ui_companion_cocoatouch_get_app_icon_texture(const char *icon)
          return 0;
       }
 
-      uintptr_t item;
-      gfx_display_reset_textures_list_buffer(&item, TEXTURE_FILTER_MIPMAP_LINEAR,
-                                             (void*)[png bytes], (unsigned int)[png length], IMAGE_TYPE_PNG,
-                                             NULL);
-      textures[iconName] = [NSNumber numberWithUnsignedLong:item];
+      gfx_surface_t *s = gfx_surface_new_still(TEXTURE_FILTER_MIPMAP_LINEAR);
+      if (!s)
+         return 0;
+      gfx_surface_submit_buffer(s, IMAGE_TYPE_PNG, [png bytes],
+            (size_t)[png length], gfx_surface_wants_rgba());
+      textures[iconName] = [NSValue valueWithPointer:s];
    }
 
-   return [textures[iconName] unsignedLongValue];
+   return GFX_SURFACE_HANDLE((gfx_surface_t*)[textures[iconName] pointerValue]);
 }
 
 void get_ios_version(int *major, int *minor)
