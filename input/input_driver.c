@@ -2496,7 +2496,7 @@ static int16_t input_joypad_analog_button(
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (drv->button(joy_idx, key))
+      if (key != NO_BTN && drv->button(joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -2527,7 +2527,7 @@ static int16_t input_joypad_analog_button(
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (drv->button(joy_idx, key))
+      if (key != NO_BTN && drv->button(joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -2691,9 +2691,13 @@ static int16_t input_joypad_analog_axis(
       uint16_t key_plus     = (bind[0].joykey  == NO_BTN)
          ? joypad_info->auto_binds[id_axis].joykey
          : bind[0].joykey;
-      if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+      /* A stick at rest comes here every read, and with no button
+       * bound to its directions - the usual case - the pad was asked
+       * whether "no button" is down, each way, each axis. It is not a
+       * button, and is not asked about. */
+      if (key_plus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_plus))
          res  = 0x7fff;
-      if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+      if (key_minus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_minus))
          res += -0x7fff;
    }
 
@@ -2886,9 +2890,9 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             uint16_t key_plus  = (stick[0].joykey  == NO_BTN)
                ? joypad_info->auto_binds[id_stick].joykey
                : stick[0].joykey;
-            if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+            if (key_plus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_plus))
                x_val  = 0x7fff;
-            if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+            if (key_minus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_minus))
                x_val += -0x7fff;
          }
          *out_x = x_val;
@@ -2913,9 +2917,9 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
             uint16_t key_plus  = (stick[2].joykey  == NO_BTN)
                ? joypad_info->auto_binds[id_stick + 2].joykey
                : stick[2].joykey;
-            if (drv->button && drv->button(joypad_info->joy_idx, key_plus))
+            if (key_plus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_plus))
                y_val  = 0x7fff;
-            if (drv->button && drv->button(joypad_info->joy_idx, key_minus))
+            if (key_minus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_minus))
                y_val += -0x7fff;
          }
          *out_y = y_val;
