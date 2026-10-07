@@ -1916,8 +1916,8 @@ ifeq ($(HAVE_OPENXR), 1)
       -I$(DEPS_DIR)/OpenXR-SDK/src/loader
 
    # Vendored Khronos OpenXR loader, built from the tree like every other
-   # dependency.  The Android-only pieces (android_utilities, jnipp,
-   # android-jni-wrappers) are pulled in by griffin on Android instead.
+   # dependency.  The Android-only pieces (android_utilities,
+   #) are pulled in by griffin on Android instead.
    OPENXR_SOURCES := \
       $(DEPS_DIR)/OpenXR-SDK/src/common/object_info.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/common/filesystem_utils.cpp \

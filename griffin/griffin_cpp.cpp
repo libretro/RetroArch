@@ -132,10 +132,6 @@ VIDEO DRIVER
 #include "../deps/OpenXR-SDK/src/common/filesystem_utils.cpp"
 #include "../deps/OpenXR-SDK/src/loader/loader_json.cpp"
 #if defined(ANDROID)
-#include "../deps/OpenXR-SDK/src/external/jnipp/jnipp.cpp"
-#include "../deps/OpenXR-SDK/src/external/android-jni-wrappers/wrap/android.content.cpp"
-#include "../deps/OpenXR-SDK/src/external/android-jni-wrappers/wrap/android.database.cpp"
-#include "../deps/OpenXR-SDK/src/external/android-jni-wrappers/wrap/android.net.cpp"
 #include "../deps/OpenXR-SDK/src/loader/android_utilities.cpp"
 #endif
 #include "../deps/OpenXR-SDK/src/loader/api_layer_interface.cpp"

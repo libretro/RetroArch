@@ -8,16 +8,13 @@
 #pragma once
 #ifdef __ANDROID__
 
-#include "wrap/android.content.h"
+#include <jni.h>
 
-#include <string>
 namespace Json {
 class Value;
 }  // namespace Json
 
 namespace openxr_android {
-using wrap::android::content::Context;
-
 /*!
  * Find the single active OpenXR runtime on the system, and return a constructed JSON object representing it.
  *
@@ -26,7 +23,7 @@ using wrap::android::content::Context;
  *
  * @return 0 on success, something else on failure.
  */
-int getActiveRuntimeVirtualManifest(wrap::android::content::Context const &context, Json::Value &virtualManifest);
+int getActiveRuntimeVirtualManifest(jobject context, Json::Value &virtualManifest);
 }  // namespace openxr_android
 
 #endif  // __ANDROID__

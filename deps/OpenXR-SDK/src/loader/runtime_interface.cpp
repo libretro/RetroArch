@@ -37,13 +37,12 @@ struct RuntimeDispatchSlot {
 #include "loader_json.hpp"
 
 XrResult GetPlatformRuntimeVirtualManifest(Json::Value& out_manifest) {
-    using wrap::android::content::Context;
     auto& initData = LoaderInitData::instance();
     if (!initData.initialized()) {
         return XR_ERROR_INITIALIZATION_FAILED;
     }
-    auto context = Context(reinterpret_cast<jobject>(initData.getPlatformData().applicationContext));
-    if (context.isNull()) {
+    jobject context = reinterpret_cast<jobject>(initData.getPlatformData().applicationContext);
+    if (context == nullptr) {
         return XR_ERROR_INITIALIZATION_FAILED;
     }
     Json::Value virtualManifest;

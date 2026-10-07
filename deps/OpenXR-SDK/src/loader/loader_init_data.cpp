@@ -11,6 +11,9 @@
 #include "runtime_interface.hpp"
 #include "loader_instance.hpp"
 #include "loader_init_data.hpp"
+#ifdef XR_USE_PLATFORM_ANDROID
+#include <jni/rjni.h>
+#endif
 #include "loader_properties.hpp"
 
 XrResult LoaderInitData::initialize(const XrLoaderInitInfoBaseHeaderKHR* info) {
@@ -83,17 +86,55 @@ XrResult LoaderInitData::initializePlatform(const XrLoaderInitInfoBaseHeaderKHR*
             _platform_info = *cast_info;
             _platform_info.next = nullptr;  // Not safe to store next pointer since the memory may not exist later.
 
-            jni::init(static_cast<jni::JavaVM*>(_platform_info.applicationVM));
-            const jni::Object context = jni::Object{static_cast<jni::jobject>(_platform_info.applicationContext)};
+            // Raw JNI through rjni; one-shot lookups, so no caches needed.
+            rjni_set_vm(static_cast<JavaVM*>(_platform_info.applicationVM));
+            JNIEnv* env = rjni_env();
+            jobject context = static_cast<jobject>(_platform_info.applicationContext);
+            if (env == nullptr) {
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+
+            jclass context_class = env->GetObjectClass(context);
+            jmethodID get_assets = env->GetMethodID(context_class, "getAssets", "()Landroid/content/res/AssetManager;");
+            jmethodID get_app_info =
+                env->GetMethodID(context_class, "getApplicationInfo", "()Landroid/content/pm/ApplicationInfo;");
+            if (rjni_exception_clear(env) || get_assets == nullptr || get_app_info == nullptr) {
+                env->DeleteLocalRef(context_class);
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
 
             // Retrieve a reference to the Android AssetManager.
-            const auto assetManager = context.call<jni::Object>("getAssets()Landroid/content/res/AssetManager;");
-            _android_asset_manager = AAssetManager_fromJava(jni::env(), assetManager.getHandle());
+            jobject asset_manager = env->CallObjectMethod(context, get_assets);
+            if (rjni_exception_clear(env) || asset_manager == nullptr) {
+                env->DeleteLocalRef(context_class);
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+            _android_asset_manager = AAssetManager_fromJava(env, asset_manager);
+            env->DeleteLocalRef(asset_manager);
 
             // Retrieve the path to the native libraries.
-            const auto applicationContext = context.call<jni::Object>("getApplicationContext()Landroid/content/Context;");
-            const auto applicationInfo = context.call<jni::Object>("getApplicationInfo()Landroid/content/pm/ApplicationInfo;");
-            _android_native_library_path = applicationInfo.get<std::string>("nativeLibraryDir");
+            jobject app_info = env->CallObjectMethod(context, get_app_info);
+            env->DeleteLocalRef(context_class);
+            if (rjni_exception_clear(env) || app_info == nullptr) {
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+            jclass app_info_class = env->GetObjectClass(app_info);
+            jfieldID native_dir_field = env->GetFieldID(app_info_class, "nativeLibraryDir", "Ljava/lang/String;");
+            env->DeleteLocalRef(app_info_class);
+            if (rjni_exception_clear(env) || native_dir_field == nullptr) {
+                env->DeleteLocalRef(app_info);
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+            jstring native_dir = static_cast<jstring>(env->GetObjectField(app_info, native_dir_field));
+            env->DeleteLocalRef(app_info);
+            if (rjni_exception_clear(env) || native_dir == nullptr) {
+                return XR_ERROR_INITIALIZATION_FAILED;
+            }
+            if (const char* chars = env->GetStringUTFChars(native_dir, nullptr)) {
+                _android_native_library_path = chars;
+                env->ReleaseStringUTFChars(native_dir, chars);
+            }
+            env->DeleteLocalRef(native_dir);
 
             // Take only the first such struct.
             return XR_SUCCESS;

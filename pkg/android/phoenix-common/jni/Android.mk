@@ -252,9 +252,7 @@ OPENXR_DIR := $(RARCH_DIR)/deps/OpenXR-SDK
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/common \
-		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/loader \
-		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/jnipp \
-		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/android-jni-wrappers
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/loader
 # The vendored OpenXR loader is C++17; later -std wins over the global
 # gnu++11 above, and the rest of the C++ in this build compiles as 17.
 LOCAL_CPPFLAGS += -std=gnu++17

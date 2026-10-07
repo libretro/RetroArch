@@ -4,28 +4,29 @@
 // SPDX-License-Identifier:  Apache-2.0 OR MIT
 //
 // Initial Author: Rylie Pavlik <rylie.pavlik@collabora.com>
+//
+// RetroArch: rewritten on raw JNI through libretro-common's rjni layer.
+// The android-jni-wrappers and jnipp dependencies are gone, and with
+// them the only exception-throwing code in the loader, so this file is
+// now safe under -fno-exceptions unconditionally.
 
 #include "android_utilities.h"
 
 #ifdef __ANDROID__
-#include <wrap/android.net.h>
-#include <wrap/android.content.h>
-#include <wrap/android.database.h>
 #include "loader_json.hpp"
 
 #include <openxr/openxr.h>
 
+#include <jni/rjni.h>
+
 #include <dlfcn.h>
-#include <vector>
+#include <string>
 #include <android/log.h>
 
 #define LOG_TAG "OpenXR-Loader"
 #include "android_logging.h"
 
 namespace openxr_android {
-using wrap::android::database::Cursor;
-using wrap::android::net::Uri;
-using wrap::android::net::Uri_Builder;
 
 // Code in here corresponds roughly to the Java "BrokerContract" class and subclasses.
 namespace {
@@ -36,154 +37,224 @@ constexpr auto ABI_PATH = "abi";
 constexpr auto RUNTIMES_PATH = "runtimes";
 
 constexpr const char *getBrokerAuthority(bool systemBroker) { return systemBroker ? SYSTEM_AUTHORITY : AUTHORITY; }
+constexpr const char *getBrokerTypeName(bool systemBroker) { return systemBroker ? "system" : "installable"; }
 
-struct BaseColumns {
-    /**
-     * The unique ID for a row.
-     */
-    [[maybe_unused]] static constexpr auto ID = "_id";
-};
-
-/**
- * Contains details for the /openxr/[major_ver]/abi/[abi]/runtimes/active URI.
- * <p>
- * This URI represents a "table" containing at most one item, the currently active runtime. The
- * policy of which runtime is chosen to be active (if more than one is installed) is left to the
- * content provider.
- * <p>
- * No sort order is required to be honored by the content provider.
- */
 namespace active_runtime {
-/**
- * Final path component to this URI.
- */
-static constexpr auto TABLE_PATH = "active";
-
-/**
- * Create a content URI for querying the data on the active runtime for a
- * given major version of OpenXR.
- *
- * @param systemBroker If the system runtime broker (instead of the installable one) should be queried.
- * @param majorVer The major version of OpenXR.
- * @param abi The Android ABI name in use.
- * @return A content URI for a single item: the active runtime.
- */
-static Uri makeContentUri(bool systemBroker, int majorVersion, const char *abi) {
-    auto builder = Uri_Builder::construct();
-    builder.scheme("content")
-        .authority(getBrokerAuthority(systemBroker))
-        .appendPath(BASE_PATH)
-        .appendPath(std::to_string(majorVersion))
-        .appendPath(ABI_PATH)
-        .appendPath(abi)
-        .appendPath(RUNTIMES_PATH)
-        .appendPath(TABLE_PATH);
-    return builder.build();
-}
-
-struct Columns : BaseColumns {
-    /**
-     * Constant for the PACKAGE_NAME column name
-     */
-    static constexpr auto PACKAGE_NAME = "package_name";
-
-    /**
-     * Constant for the NATIVE_LIB_DIR column name
-     */
-    static constexpr auto NATIVE_LIB_DIR = "native_lib_dir";
-
-    /**
-     * Constant for the SO_FILENAME column name
-     */
-    static constexpr auto SO_FILENAME = "so_filename";
-
-    /**
-     * Constant for the HAS_FUNCTIONS column name.
-     * <p>
-     * If this column contains true, you should check the /functions/ URI for that runtime.
-     */
-    static constexpr auto HAS_FUNCTIONS = "has_functions";
-};
+/// Final path component of /openxr/[major_ver]/abi/[abi]/runtimes/active,
+/// a "table" of at most one row: the currently active runtime.
+constexpr auto TABLE_PATH = "active";
+namespace Columns {
+constexpr auto PACKAGE_NAME = "package_name";
+constexpr auto NATIVE_LIB_DIR = "native_lib_dir";
+constexpr auto SO_FILENAME = "so_filename";
+constexpr auto HAS_FUNCTIONS = "has_functions";
+}  // namespace Columns
 }  // namespace active_runtime
 
-/**
- * Contains details for the /openxr/[major_ver]/abi/[abi]/runtimes/[package]/functions URI.
- * <p>
- * This URI is for package-specific function name remapping. Since this is an optional field in
- * the corresponding JSON manifests for OpenXR, it is optional here as well. If the active
- * runtime contains "true" in its "has_functions" column, then this table must exist and be
- * queryable.
- * <p>
- * No sort order is required to be honored by the content provider.
- */
 namespace functions {
-/**
- * Final path component to this URI.
- */
-static constexpr auto TABLE_PATH = "functions";
-
-/**
- * Create a content URI for querying all rows of the runtime function remapping data for a given
- * runtime package and major version of OpenXR.
- *
- * @param systemBroker If the system runtime broker (instead of the installable one) should be queried.
- * @param majorVer    The major version of OpenXR.
- * @param packageName The package name of the runtime.
- * @param abi The Android ABI name in use.
- * @return A content URI for the entire table: the function remapping for that runtime.
- */
-static Uri makeRuntimeContentUri(bool systemBroker, int majorVersion, std::string const &packageName, const char *abi) {
-    auto builder = Uri_Builder::construct();
-    builder.scheme("content")
-        .authority(getBrokerAuthority(systemBroker))
-        .appendPath(BASE_PATH)
-        .appendPath(std::to_string(majorVersion))
-        .appendPath(ABI_PATH)
-        .appendPath(abi)
-        .appendPath(RUNTIMES_PATH)
-        .appendPath(packageName)
-        .appendPath(TABLE_PATH);
-    return builder.build();
-}
-
-struct Columns : BaseColumns {
-    /**
-     * Constant for the FUNCTION_NAME column name
-     */
-    static constexpr auto FUNCTION_NAME = "function_name";
-
-    /**
-     * Constant for the SYMBOL_NAME column name
-     */
-    static constexpr auto SYMBOL_NAME = "symbol_name";
-};
+/// Final path component of the per-package function-remapping table,
+/// /openxr/[major_ver]/abi/[abi]/runtimes/[package]/functions.
+constexpr auto TABLE_PATH = "functions";
+namespace Columns {
+constexpr auto FUNCTION_NAME = "function_name";
+constexpr auto SYMBOL_NAME = "symbol_name";
+}  // namespace Columns
 }  // namespace functions
 
-}  // namespace
-
-static inline jni::Array<std::string> makeArray(std::initializer_list<const char *> &&list) {
-    auto ret = jni::Array<std::string>{(long)list.size()};
-    long i = 0;
-    for (auto &&elt : list) {
-        ret.setElement(i, elt);
-        ++i;
-    }
-    return ret;
-}
-
 #if defined(__arm__)
-static constexpr auto ABI = "armeabi-v7l";
+constexpr auto ABI = "armeabi-v7l";
 #elif defined(__aarch64__)
-static constexpr auto ABI = "arm64-v8a";
+constexpr auto ABI = "arm64-v8a";
 #elif defined(__i386__)
-static constexpr auto ABI = "x86";
+constexpr auto ABI = "x86";
 #elif defined(__x86_64__)
-static constexpr auto ABI = "x86_64";
+constexpr auto ABI = "x86_64";
 #else
 #error "Unknown ABI!"
 #endif
 
-static inline Json::Value makeMinimumVirtualRuntimeManifest(const std::string &libraryPath) {
+// rjni once-caches: every class global reference and method ID below is
+// resolved exactly once per process, lock-free.
+rjni_ref cls_uri_builder, cls_uri, cls_context, cls_resolver, cls_cursor, cls_string;
+rjni_ref mid_builder_init, mid_scheme, mid_authority, mid_append_path, mid_build, mid_uri_to_string;
+rjni_ref mid_get_resolver, mid_query;
+rjni_ref mid_count, mid_move_first, mid_move_next, mid_col_index, mid_get_string, mid_get_int, mid_close;
+
+struct BrokerIds {
+    jclass uri_builder, uri, context, resolver, cursor, string;
+    jmethodID builder_init, scheme, authority, append_path, build, uri_to_string;
+    jmethodID get_resolver, query;
+    jmethodID count, move_first, move_next, col_index, get_string, get_int, close;
+};
+
+bool resolveBrokerIds(JNIEnv *env, BrokerIds &ids) {
+    if (!(ids.uri_builder = rjni_class(&cls_uri_builder, env, "android/net/Uri$Builder"))) return false;
+    if (!(ids.uri = rjni_class(&cls_uri, env, "android/net/Uri"))) return false;
+    if (!(ids.context = rjni_class(&cls_context, env, "android/content/Context"))) return false;
+    if (!(ids.resolver = rjni_class(&cls_resolver, env, "android/content/ContentResolver"))) return false;
+    if (!(ids.cursor = rjni_class(&cls_cursor, env, "android/database/Cursor"))) return false;
+    if (!(ids.string = rjni_class(&cls_string, env, "java/lang/String"))) return false;
+
+    ids.builder_init = rjni_method(&mid_builder_init, env, ids.uri_builder, "<init>", "()V");
+    ids.scheme = rjni_method(&mid_scheme, env, ids.uri_builder, "scheme", "(Ljava/lang/String;)Landroid/net/Uri$Builder;");
+    ids.authority = rjni_method(&mid_authority, env, ids.uri_builder, "authority", "(Ljava/lang/String;)Landroid/net/Uri$Builder;");
+    ids.append_path =
+        rjni_method(&mid_append_path, env, ids.uri_builder, "appendPath", "(Ljava/lang/String;)Landroid/net/Uri$Builder;");
+    ids.build = rjni_method(&mid_build, env, ids.uri_builder, "build", "()Landroid/net/Uri;");
+    ids.uri_to_string = rjni_method(&mid_uri_to_string, env, ids.uri, "toString", "()Ljava/lang/String;");
+    ids.get_resolver =
+        rjni_method(&mid_get_resolver, env, ids.context, "getContentResolver", "()Landroid/content/ContentResolver;");
+    ids.query = rjni_method(&mid_query, env, ids.resolver, "query",
+                            "(Landroid/net/Uri;[Ljava/lang/String;Ljava/lang/String;[Ljava/lang/String;Ljava/lang/String;)"
+                            "Landroid/database/Cursor;");
+    ids.count = rjni_method(&mid_count, env, ids.cursor, "getCount", "()I");
+    ids.move_first = rjni_method(&mid_move_first, env, ids.cursor, "moveToFirst", "()Z");
+    ids.move_next = rjni_method(&mid_move_next, env, ids.cursor, "moveToNext", "()Z");
+    ids.col_index = rjni_method(&mid_col_index, env, ids.cursor, "getColumnIndex", "(Ljava/lang/String;)I");
+    ids.get_string = rjni_method(&mid_get_string, env, ids.cursor, "getString", "(I)Ljava/lang/String;");
+    ids.get_int = rjni_method(&mid_get_int, env, ids.cursor, "getInt", "(I)I");
+    ids.close = rjni_method(&mid_close, env, ids.cursor, "close", "()V");
+
+    return ids.builder_init && ids.scheme && ids.authority && ids.append_path && ids.build && ids.uri_to_string &&
+           ids.get_resolver && ids.query && ids.count && ids.move_first && ids.move_next && ids.col_index && ids.get_string &&
+           ids.get_int && ids.close;
+}
+
+std::string toStdString(JNIEnv *env, jstring str) {
+    std::string out;
+    if (!str) return out;
+    if (const char *chars = env->GetStringUTFChars(str, nullptr)) {
+        out = chars;
+        env->ReleaseStringUTFChars(str, chars);
+    }
+    return out;
+}
+
+/// builder = builder.<method>(string); drops the returned duplicate
+/// local reference (Uri.Builder returns this).
+bool builderCallString(JNIEnv *env, jobject builder, jmethodID method, const char *arg) {
+    jstring jarg = env->NewStringUTF(arg);
+    if (!jarg) {
+        rjni_exception_clear(env);
+        return false;
+    }
+    jobject ret = env->CallObjectMethod(builder, method, jarg);
+    env->DeleteLocalRef(jarg);
+    if (rjni_exception_clear(env)) return false;
+    if (ret) env->DeleteLocalRef(ret);
+    return true;
+}
+
+/// Build the broker content URI
+/// /openxr/[major_ver]/abi/[abi]/runtimes[/package]/[table]; @packageName
+/// may be null. Returns a local reference or null.
+jobject makeBrokerUri(JNIEnv *env, const BrokerIds &ids, bool systemBroker, int majorVersion, const char *packageName,
+                      const char *tablePath) {
+    jobject uri = nullptr;
+    const std::string major = std::to_string(majorVersion);
+    jobject builder = env->NewObject(ids.uri_builder, ids.builder_init);
+    if (rjni_exception_clear(env) || !builder) return nullptr;
+
+    if (builderCallString(env, builder, ids.scheme, "content") &&
+        builderCallString(env, builder, ids.authority, getBrokerAuthority(systemBroker)) &&
+        builderCallString(env, builder, ids.append_path, BASE_PATH) &&
+        builderCallString(env, builder, ids.append_path, major.c_str()) &&
+        builderCallString(env, builder, ids.append_path, ABI_PATH) && builderCallString(env, builder, ids.append_path, ABI) &&
+        builderCallString(env, builder, ids.append_path, RUNTIMES_PATH) &&
+        (!packageName || builderCallString(env, builder, ids.append_path, packageName)) &&
+        builderCallString(env, builder, ids.append_path, tablePath)) {
+        uri = env->CallObjectMethod(builder, ids.build);
+        if (rjni_exception_clear(env)) uri = nullptr;
+    }
+    env->DeleteLocalRef(builder);
+    return uri;
+}
+
+std::string uriToString(JNIEnv *env, const BrokerIds &ids, jobject uri) {
+    jstring jstr = (jstring)env->CallObjectMethod(uri, ids.uri_to_string);
+    if (rjni_exception_clear(env)) return std::string();
+    std::string out = toStdString(env, jstr);
+    if (jstr) env->DeleteLocalRef(jstr);
+    return out;
+}
+
+/// A new String[] local reference holding @n UTF strings, or null.
+jobjectArray makeProjection(JNIEnv *env, const BrokerIds &ids, const char *const *names, int n) {
+    jobjectArray arr = env->NewObjectArray(n, ids.string, nullptr);
+    if (rjni_exception_clear(env) || !arr) return nullptr;
+    for (int i = 0; i < n; ++i) {
+        jstring s = env->NewStringUTF(names[i]);
+        if (!s) {
+            rjni_exception_clear(env);
+            env->DeleteLocalRef(arr);
+            return nullptr;
+        }
+        env->SetObjectArrayElement(arr, i, s);
+        env->DeleteLocalRef(s);
+    }
+    return arr;
+}
+
+jint getColumnIndex(JNIEnv *env, const BrokerIds &ids, jobject cursor, const char *name) {
+    jstring jname = env->NewStringUTF(name);
+    if (!jname) {
+        rjni_exception_clear(env);
+        return -1;
+    }
+    jint idx = env->CallIntMethod(cursor, ids.col_index, jname);
+    env->DeleteLocalRef(jname);
+    if (rjni_exception_clear(env)) return -1;
+    return idx;
+}
+
+std::string cursorString(JNIEnv *env, const BrokerIds &ids, jobject cursor, jint column) {
+    jstring jstr = (jstring)env->CallObjectMethod(cursor, ids.get_string, column);
+    if (rjni_exception_clear(env)) return std::string();
+    std::string out = toStdString(env, jstr);
+    if (jstr) env->DeleteLocalRef(jstr);
+    return out;
+}
+
+void closeCursor(JNIEnv *env, const BrokerIds &ids, jobject cursor) {
+    env->CallVoidMethod(cursor, ids.close);
+    rjni_exception_clear(env);
+    env->DeleteLocalRef(cursor);
+}
+
+/// Generic content resolver query function
+bool getCursor(JNIEnv *env, const BrokerIds &ids, jobject context, jobjectArray projection, jobject uri, bool systemBroker,
+               const char *contentDesc, jobject &out_cursor) {
+    out_cursor = nullptr;
+    ALOGI("getCursor: Querying URI: %s", uriToString(env, ids, uri).c_str());
+
+    jobject resolver = env->CallObjectMethod(context, ids.get_resolver);
+    if (rjni_exception_clear(env) || !resolver) {
+        ALOGI("Exception when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
+        return false;
+    }
+    jobject cursor =
+        env->CallObjectMethod(resolver, ids.query, uri, projection, (jobject) nullptr, (jobject) nullptr, (jobject) nullptr);
+    env->DeleteLocalRef(resolver);
+    if (rjni_exception_clear(env)) {
+        ALOGI("Exception when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
+        if (cursor) env->DeleteLocalRef(cursor);
+        return false;
+    }
+    if (!cursor) {
+        ALOGI("Null cursor when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
+        return false;
+    }
+    jint count = env->CallIntMethod(cursor, ids.count);
+    if (rjni_exception_clear(env) || count < 1) {
+        ALOGI("Non-null but empty cursor when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
+        closeCursor(env, ids, cursor);
+        return false;
+    }
+    out_cursor = cursor;
+    return true;
+}
+
+Json::Value makeMinimumVirtualRuntimeManifest(const std::string &libraryPath) {
     Json::Value root_node(Json::objectValue);
 
     root_node["file_format_version"] = "1.0.0";
@@ -194,138 +265,129 @@ static inline Json::Value makeMinimumVirtualRuntimeManifest(const std::string &l
     return root_node;
 }
 
-static constexpr const char *getBrokerTypeName(bool systemBroker) { return systemBroker ? "system" : "installable"; }
+int populateRuntimeFunctions(JNIEnv *env, const BrokerIds &ids, jobject context, bool systemBroker,
+                             const std::string &packageName, Json::Value &manifest) {
+    const char *const names[] = {functions::Columns::FUNCTION_NAME, functions::Columns::SYMBOL_NAME};
+    jobjectArray projection = makeProjection(env, ids, names, 2);
+    if (!projection) return -1;
 
-// The current file relies on android-jni-wrappers and jnipp, which may throw on failure.
-// This is problematic when the loader is compiled with exception handling disabled - the consumers can reasonably
-// expect that the compilation with -fno-exceptions will succeed, but the compiler will not accept the code that
-// uses `try` & `catch` keywords. We cannot use the `exception_handling.hpp` here since we're not at an ABI boundary,
-// so we define helper macros here. This is fine for now since the only occurrence of exception-handling code is in this file.
-#ifdef XRLOADER_DISABLE_EXCEPTION_HANDLING
-
-#define ANDROID_UTILITIES_TRY
-#define ANDROID_UTILITIES_CATCH_FALLBACK(...)
-
-#else
-
-#define ANDROID_UTILITIES_TRY try
-#define ANDROID_UTILITIES_CATCH_FALLBACK(...) \
-    catch (const std::exception &e) {         \
-        __VA_ARGS__                           \
-    }
-
-#endif  // XRLOADER_DISABLE_EXCEPTION_HANDLING
-
-/// Generic content resolver query function
-static bool getCursor(wrap::android::content::Context const &context, jni::Array<std::string> const &projection, Uri const &uri,
-                      bool systemBroker, const char *contentDesc, Cursor &out_cursor) {
-    ALOGI("getCursor: Querying URI: %s", uri.toString().c_str());
-
-    ANDROID_UTILITIES_TRY { out_cursor = context.getContentResolver().query(uri, projection); }
-    ANDROID_UTILITIES_CATCH_FALLBACK({
-        ALOGI("Exception when querying %s content resolver for %s: %s", getBrokerTypeName(systemBroker), contentDesc, e.what());
-        out_cursor = {};
-        return false;
-    })
-
-    if (out_cursor.isNull()) {
-        ALOGI("Null cursor when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
-        out_cursor = {};
-        return false;
-    }
-    if (out_cursor.getCount() < 1) {
-        ALOGI("Non-null but empty cursor when querying %s content resolver for %s.", getBrokerTypeName(systemBroker), contentDesc);
-        out_cursor.close();
-        out_cursor = {};
-        return false;
-    }
-    return true;
-}
-
-static int populateRuntimeFunctions(wrap::android::content::Context const &context, bool systemBroker,
-                                    const std::string &packageName, Json::Value &manifest) {
-    const jni::Array<std::string> projection = makeArray({functions::Columns::FUNCTION_NAME, functions::Columns::SYMBOL_NAME});
-
-    auto uri = functions::makeRuntimeContentUri(systemBroker, XR_VERSION_MAJOR(XR_CURRENT_API_VERSION), packageName, ABI);
-    ALOGI("populateFunctions: Querying URI: %s", uri.toString().c_str());
-    Cursor cursor;
-    if (!getCursor(context, projection, uri, systemBroker, "functions", cursor)) {
+    jobject uri = makeBrokerUri(env, ids, systemBroker, XR_VERSION_MAJOR(XR_CURRENT_API_VERSION), packageName.c_str(),
+                                functions::TABLE_PATH);
+    if (!uri) {
+        env->DeleteLocalRef(projection);
         return -1;
     }
+    ALOGI("populateFunctions: Querying URI: %s", uriToString(env, ids, uri).c_str());
 
-    auto functionIndex = cursor.getColumnIndex(functions::Columns::FUNCTION_NAME);
-    auto symbolIndex = cursor.getColumnIndex(functions::Columns::SYMBOL_NAME);
-    while (cursor.moveToNext()) {
-        manifest["functions"][cursor.getString(functionIndex)] = cursor.getString(symbolIndex);
+    jobject cursor = nullptr;
+    bool have = getCursor(env, ids, context, projection, uri, systemBroker, "functions", cursor);
+    env->DeleteLocalRef(uri);
+    env->DeleteLocalRef(projection);
+    if (!have) return -1;
+
+    jint functionIndex = getColumnIndex(env, ids, cursor, functions::Columns::FUNCTION_NAME);
+    jint symbolIndex = getColumnIndex(env, ids, cursor, functions::Columns::SYMBOL_NAME);
+    while (env->CallBooleanMethod(cursor, ids.move_next) && !rjni_exception_clear(env)) {
+        manifest["functions"][cursorString(env, ids, cursor, functionIndex)] = cursorString(env, ids, cursor, symbolIndex);
     }
 
-    cursor.close();
+    closeCursor(env, ids, cursor);
     return 0;
 }
 
 /// Get cursor for active runtime, parameterized by whether or not we use the system broker
-static bool getActiveRuntimeCursor(wrap::android::content::Context const &context, jni::Array<std::string> const &projection,
-                                   bool systemBroker, Cursor &cursor) {
-    auto uri = active_runtime::makeContentUri(systemBroker, XR_VERSION_MAJOR(XR_CURRENT_API_VERSION), ABI);
-    ALOGI("getActiveRuntimeCursor: Querying URI: %s", uri.toString().c_str());
-    return getCursor(context, projection, uri, systemBroker, "active runtime", cursor);
+bool getActiveRuntimeCursor(JNIEnv *env, const BrokerIds &ids, jobject context, jobjectArray projection, bool systemBroker,
+                            jobject &cursor) {
+    jobject uri = makeBrokerUri(env, ids, systemBroker, XR_VERSION_MAJOR(XR_CURRENT_API_VERSION), nullptr,
+                                active_runtime::TABLE_PATH);
+    if (!uri) {
+        cursor = nullptr;
+        return false;
+    }
+    ALOGI("getActiveRuntimeCursor: Querying URI: %s", uriToString(env, ids, uri).c_str());
+    bool ret = getCursor(env, ids, context, projection, uri, systemBroker, "active runtime", cursor);
+    env->DeleteLocalRef(uri);
+    return ret;
 }
+}  // namespace
 
-int getActiveRuntimeVirtualManifest(wrap::android::content::Context const &context, Json::Value &virtualManifest) {
-    jni::Array<std::string> projection = makeArray({active_runtime::Columns::PACKAGE_NAME, active_runtime::Columns::NATIVE_LIB_DIR,
-                                                    active_runtime::Columns::SO_FILENAME, active_runtime::Columns::HAS_FUNCTIONS});
+int getActiveRuntimeVirtualManifest(jobject context, Json::Value &virtualManifest) {
+    JNIEnv *env = rjni_env();
+    BrokerIds ids;
+
+    if (!env) {
+        ALOGW("getActiveRuntimeVirtualManifest: no JNIEnv for this thread.");
+        return -1;
+    }
+    if (!resolveBrokerIds(env, ids)) {
+        ALOGW("getActiveRuntimeVirtualManifest: could not resolve broker classes.");
+        return -1;
+    }
+
+    const char *const names[] = {active_runtime::Columns::PACKAGE_NAME, active_runtime::Columns::NATIVE_LIB_DIR,
+                                 active_runtime::Columns::SO_FILENAME, active_runtime::Columns::HAS_FUNCTIONS};
+    jobjectArray projection = makeProjection(env, ids, names, 4);
+    if (!projection) return -1;
 
     // First, try getting the installable broker's provider
     bool systemBroker = false;
-    Cursor cursor;
-    if (!getActiveRuntimeCursor(context, projection, systemBroker, cursor)) {
+    jobject cursor = nullptr;
+    if (!getActiveRuntimeCursor(env, ids, context, projection, systemBroker, cursor)) {
         // OK, try the system broker as a fallback.
         systemBroker = true;
-        getActiveRuntimeCursor(context, projection, systemBroker, cursor);
+        getActiveRuntimeCursor(env, ids, context, projection, systemBroker, cursor);
     }
+    env->DeleteLocalRef(projection);
 
-    if (cursor.isNull()) {
+    if (!cursor) {
         // Couldn't find either broker
         ALOGI("Could access neither the installable nor system runtime broker.");
         return -1;
     }
 
-    cursor.moveToFirst();
+    env->CallBooleanMethod(cursor, ids.move_first);
+    if (rjni_exception_clear(env)) {
+        closeCursor(env, ids, cursor);
+        return -1;
+    }
 
     do {
-        auto filename = cursor.getString(cursor.getColumnIndex(active_runtime::Columns::SO_FILENAME));
-        auto libDir = cursor.getString(cursor.getColumnIndex(active_runtime::Columns::NATIVE_LIB_DIR));
-        auto packageName = cursor.getString(cursor.getColumnIndex(active_runtime::Columns::PACKAGE_NAME));
+        std::string filename = cursorString(env, ids, cursor, getColumnIndex(env, ids, cursor, active_runtime::Columns::SO_FILENAME));
+        std::string libDir = cursorString(env, ids, cursor, getColumnIndex(env, ids, cursor, active_runtime::Columns::NATIVE_LIB_DIR));
+        std::string packageName =
+            cursorString(env, ids, cursor, getColumnIndex(env, ids, cursor, active_runtime::Columns::PACKAGE_NAME));
 
-        auto hasFunctions = cursor.getInt(cursor.getColumnIndex(active_runtime::Columns::HAS_FUNCTIONS)) == 1;
+        bool hasFunctions =
+            env->CallIntMethod(cursor, ids.get_int, getColumnIndex(env, ids, cursor, active_runtime::Columns::HAS_FUNCTIONS)) == 1;
+        if (rjni_exception_clear(env)) break;
         ALOGI("Got runtime: package: %s, so filename: %s, native lib dir: %s, has functions: %s", packageName.c_str(),
               filename.c_str(), libDir.c_str(), (hasFunctions ? "yes" : "no"));
 
-        auto lib_path = libDir + "/" + filename;
-        auto *lib = dlopen(lib_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
+        std::string lib_path = libDir + "/" + filename;
+        void *lib = dlopen(lib_path.c_str(), RTLD_LAZY | RTLD_LOCAL);
         if (lib) {
             // we found a runtime that we can dlopen, use it.
             dlclose(lib);
 
             Json::Value manifest = makeMinimumVirtualRuntimeManifest(lib_path);
             if (hasFunctions) {
-                int result = populateRuntimeFunctions(context, systemBroker, packageName, manifest);
+                int result = populateRuntimeFunctions(env, ids, context, systemBroker, packageName, manifest);
                 if (result != 0) {
                     ALOGW("Unable to populate functions from runtime: %s, checking for more records...", lib_path.c_str());
                     continue;
                 }
             }
             virtualManifest = manifest;
-            cursor.close();
+            closeCursor(env, ids, cursor);
             return 0;
         }
         // this runtime was not accessible, see if the broker has more runtimes on
         // offer.
         ALOGV("Unable to open broker provided runtime at %s, checking for more records...", lib_path.c_str());
-    } while (cursor.moveToNext());
+    } while (env->CallBooleanMethod(cursor, ids.move_next) && !rjni_exception_clear(env));
 
     ALOGW("Unable to open any of the broker provided runtimes.");
-    cursor.close();
+    closeCursor(env, ids, cursor);
     return -1;
 }
 }  // namespace openxr_android
