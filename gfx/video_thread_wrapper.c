@@ -4662,6 +4662,7 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* get_swap_interval_cap */
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
+   NULL, /* get_last_present_wait: read on the video thread */
    thread_set_view_count,
    thread_hw_context_destroying
 };
