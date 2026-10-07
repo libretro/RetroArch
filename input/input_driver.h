@@ -432,8 +432,6 @@ struct input_driver
     *                         with hardware device ID and autoconfig mapping.
     * @param retro_keybinds   Structure for control mappings for all libretro
     *                         input device abstractions
-    * @param keyboard_mapping_blocked
-    *                         If true, disregard custom keyboard mapping
     * @param port             Which RetroArch port is being polled
     * @param device           Which libretro abstraction is being polled
     *                         (RETRO_DEVICE_ID_RETROPAD, RETRO_DEVICE_ID_MOUSE)
@@ -450,7 +448,6 @@ struct input_driver
          const input_device_driver_t *joypad_data,
          rarch_joypad_info_t *joypad_info,
          const retro_keybind_set *retro_keybinds,
-         bool keyboard_mapping_blocked,
          unsigned port, unsigned device, unsigned index, unsigned id);
 
    /**

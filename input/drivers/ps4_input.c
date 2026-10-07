@@ -43,14 +43,12 @@ int16_t ps4_input_state(void *data,
          const input_device_driver_t *joypad_data,
          rarch_joypad_info_t *joypad_info,
          const retro_keybind_set *retro_keybinds,
-         bool keyboard_mapping_blocked,
          unsigned port, unsigned device, unsigned index, unsigned id)
 {
    (void)data;
    (void)joypad_data;
    (void)joypad_info;
    (void)retro_keybinds;
-   (void)keyboard_mapping_blocked;
    (void)port;
    (void)device;
    (void)index;

@@ -67,7 +67,7 @@ static bool key_listed_down(void *w32, unsigned key)
 
 static bool key_read_down(void *w32, unsigned key)
 {
-   return input_win32.input_state(w32, NULL, NULL, NULL, false, 0,
+   return input_win32.input_state(w32, NULL, NULL, NULL, 0,
          RETRO_DEVICE_KEYBOARD, 0, key) != 0;
 }
 

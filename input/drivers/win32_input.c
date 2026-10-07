@@ -184,7 +184,6 @@ static int16_t win32_input_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
       unsigned idx,
@@ -194,7 +193,6 @@ static int16_t win32_input_state(
    (void)joypad;
    (void)joypad_info;
    (void)binds;
-   (void)keyboard_mapping_blocked;
    (void)port;
    (void)idx;
    /* The RetroPad's buttons, the hotkeys, a stick's axes and the

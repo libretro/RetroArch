@@ -251,7 +251,6 @@ static int16_t input_null_input_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *retro_keybinds,
-      bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned index, unsigned id) { return 0; }
 static void input_null_free(void *data) { }
 static bool input_null_set_sensor_state(void *data, unsigned port,
@@ -2266,7 +2265,7 @@ static int16_t input_frame_or_driver(input_driver_t *input, void *data,
    if (input_pointer_frame_read(port, device, idx, id, &held))
       return held;
    return input->input_state(data, joypad, joypad_info, binds,
-         keyboard_mapping_blocked, port, device, idx, id);
+         port, device, idx, id);
 }
 
 INPUT_NOINLINE static int32_t input_state_wrap_slow(
@@ -2321,7 +2320,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
             else if (input && input->input_state)
                cached |= input->input_state(
                      data, joypad, joypad_info, binds,
-                     keyboard_mapping_blocked,
                      _port, RETRO_DEVICE_JOYPAD, 0,
                      RETRO_DEVICE_ID_JOYPAD_MASK);
             input_st->joypad_state_cache[_port]       = cached;
@@ -2425,7 +2423,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
                joypad,
                joypad_info,
                binds,
-               keyboard_mapping_blocked,
                _port,
                device,
                idx,
@@ -12165,7 +12162,6 @@ uint32_t input_driver_device_pos(unsigned port, unsigned device,
          input_st, input_st->primary_joypad);
    bool mouse     = device == RARCH_DEVICE_MOUSE_SCREEN
                  || device == RETRO_DEVICE_MOUSE;
-   bool blocked   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
    uint32_t held;
    int16_t x, y;
 
@@ -12178,10 +12174,10 @@ uint32_t input_driver_device_pos(unsigned port, unsigned device,
    joypad_info.axis_threshold = 0.0f;
 
    x = input_st->current_driver->input_state(input_st->current_data,
-         joypad, &joypad_info, NULL, blocked, port, device, idx,
+         joypad, &joypad_info, NULL, port, device, idx,
          mouse ? RETRO_DEVICE_ID_MOUSE_X : RETRO_DEVICE_ID_POINTER_X);
    y = input_st->current_driver->input_state(input_st->current_data,
-         joypad, &joypad_info, NULL, blocked, port, device, idx,
+         joypad, &joypad_info, NULL, port, device, idx,
          mouse ? RETRO_DEVICE_ID_MOUSE_Y : RETRO_DEVICE_ID_POINTER_Y);
    return VIDEO_POS_PACK(x, y);
 }
@@ -12206,7 +12202,6 @@ int16_t input_driver_device_state(unsigned port,
          input_st->current_data,
          joypad, &joypad_info,
          NULL,
-         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
          port, device, idx, id);
 }
 
@@ -12241,7 +12236,6 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
          input_st->current_data,
          joypad, &joypad_info,
          (*input_st->libretro_input_binds),
-         (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
          port, device, idx, id);
 }
 
@@ -14174,7 +14168,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      joypad,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
-                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
             {
@@ -14228,7 +14221,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                      joypad,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
-                     !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                      0,
                      RETRO_DEVICE_KEYBOARD, 0, ids[i][0]))
                BIT256_SET_PTR(current_bits, ids[i][1]);

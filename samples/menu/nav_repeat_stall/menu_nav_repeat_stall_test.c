@@ -79,11 +79,10 @@ static int16_t scripted_input_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned idx, unsigned id)
 {
    (void)data; (void)joypad; (void)joypad_info;
-   (void)binds; (void)keyboard_mapping_blocked; (void)idx;
+   (void)binds; (void)idx;
    if (port != 0 || device != RETRO_DEVICE_JOYPAD || !latched_down)
       return 0;
    if (id == RETRO_DEVICE_ID_JOYPAD_MASK)

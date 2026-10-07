@@ -2930,7 +2930,6 @@ static void udev_input_touch_state_gest(
  * @param udev Source UDev system.
  * @param dev The touch device being polled.
  * @param binds Bindings structure.
- * @param keyboard_mapping_blocked Block keyboard mapped inputs.
  * @param port Port (player) of the device being polled.
  * @param device Type of device RETRO_DEVICE_* being polled.
  * @param idx Index of the device being polled.
@@ -2941,7 +2940,6 @@ static int16_t udev_input_touch_state(
       udev_input_t *udev,
       udev_input_device_t *dev,
       const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
       unsigned idx,
@@ -3981,7 +3979,6 @@ static int16_t udev_input_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
       unsigned idx,
@@ -4007,7 +4004,7 @@ static int16_t udev_input_state(
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
-                     keyboard_mapping_blocked, port, device, idx, id);
+                     port, device, idx, id);
 #endif
          return udev_mouse_state(udev, port, id,
                device == RARCH_DEVICE_MOUSE_SCREEN);
@@ -4017,7 +4014,7 @@ static int16_t udev_input_state(
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
-                     keyboard_mapping_blocked, port, device, idx, id);
+                     port, device, idx, id);
 #endif
          if (idx < 3)
             return udev_pointer_state(udev, port, idx, id,
@@ -4028,7 +4025,7 @@ static int16_t udev_input_state(
 #ifdef UDEV_TOUCH_SUPPORT
          if (pointer_dev && pointer_dev->touch.is_touch_device)
              return udev_input_touch_state(udev, pointer_dev, binds,
-                     keyboard_mapping_blocked, port, device, idx, id);
+                     port, device, idx, id);
 #endif
          switch ( id )
          {

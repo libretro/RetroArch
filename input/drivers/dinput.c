@@ -525,7 +525,6 @@ static int16_t dinput_input_state(
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
-      bool keyboard_mapping_blocked,
       unsigned port,
       unsigned device,
       unsigned idx,
