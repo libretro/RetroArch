@@ -1242,8 +1242,9 @@ static void input_snapshot1_get_buttons(unsigned pad, input_bits_t *state)
 static const input_device_driver_t *input_snapshot_for(
       input_driver_state_t *st, const input_device_driver_t *drv)
 {
-   unsigned b = (drv == st->secondary_joypad && drv != st->primary_joypad)
-      ? 1 : 0;
+   /* the one joypad driver there is: the second bridge was the
+    * secondary joypad's, which nothing set */
+   const unsigned b = 0;
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
 
    /* The driver it stands in for already: that was decided below when
@@ -1411,20 +1412,15 @@ bool input_driver_set_rumble(
          enum retro_rumble_effect effect, uint16_t strength)
 {
    const input_device_driver_t  *primary_joypad;
-   const input_device_driver_t      *sec_joypad;
    bool rumble_state   = false;
 
    if (joy_idx >= MAX_USERS)
       return false;
 
    primary_joypad = input_driver_st.primary_joypad;
-   sec_joypad     = input_driver_st.secondary_joypad;
 
    if (primary_joypad && primary_joypad->set_rumble)
       rumble_state = primary_joypad->set_rumble(joy_idx, effect, strength);
-   /* if sec_joypad exists, this set_rumble() return value will replace primary_joypad's return */
-   if (sec_joypad     && sec_joypad->set_rumble)
-      rumble_state = sec_joypad->set_rumble(joy_idx, effect, strength);
 
    return rumble_state;
 }
@@ -2109,7 +2105,6 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
 /* A value from what the driver published, or from the driver. */
 static int16_t input_frame_or_driver(input_driver_t *input, void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds, bool keyboard_mapping_blocked,
       unsigned port, unsigned device, unsigned idx, unsigned id)
@@ -2117,7 +2112,7 @@ static int16_t input_frame_or_driver(input_driver_t *input, void *data,
    int16_t held;
    if (input_pointer_frame_read(port, device, idx, id, &held))
       return held;
-   return input->input_state(data, joypad, sec_joypad, joypad_info, binds,
+   return input->input_state(data, joypad, NULL, joypad_info, binds,
          keyboard_mapping_blocked, port, device, idx, id);
 }
 
@@ -2125,7 +2120,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
       input_driver_t *input,
       void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
@@ -2147,8 +2141,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
       {
          if (joypad)
             ret |= joypad->state(joypad_info, binds[_port], _port);
-         if (sec_joypad)
-            ret |= sec_joypad->state(joypad_info, binds[_port], _port);
       }
       else if (id < RARCH_FIRST_CUSTOM_BIND)
       {
@@ -2167,8 +2159,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
             int32_t cached = 0;
             if (joypad)
                cached |= joypad->state(joypad_info, binds[_port], _port);
-            if (sec_joypad)
-               cached |= sec_joypad->state(joypad_info, binds[_port], _port);
             /* the keys and mouse buttons bound to them: the frontend's
              * own answer where the driver hands it the keys */
             if (input && input->keys_down)
@@ -2177,7 +2167,7 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
                      RETRO_DEVICE_ID_JOYPAD_MASK);
             else if (input && input->input_state)
                cached |= input->input_state(
-                     data, joypad, sec_joypad, joypad_info, binds,
+                     data, joypad, NULL, joypad_info, binds,
                      keyboard_mapping_blocked,
                      _port, RETRO_DEVICE_JOYPAD, 0,
                      RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -2247,16 +2237,6 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
                       * inv_0x8000) > axis_threshold)
                   return 1;
             }
-            if (sec_joypad)
-            {
-               if ((uint16_t)joykey != NO_BTN && sec_joypad->button(
-                        port, (uint16_t)joykey))
-                  return 1;
-               if (joyaxis != AXIS_NONE &&
-                     ((float)abs(sec_joypad->axis(port, (uint32_t)joyaxis))
-                      * inv_0x8000) > axis_threshold)
-                  return 1;
-            }
          }
       }
    }
@@ -2290,7 +2270,7 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
          ret |= input->input_state(
                data,
                joypad,
-               sec_joypad,
+               NULL,
                joypad_info,
                binds,
                keyboard_mapping_blocked,
@@ -2335,7 +2315,6 @@ static INLINE int32_t input_state_wrap(
       input_driver_t *input,
       void *data,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       const retro_keybind_set *binds,
       bool keyboard_mapping_blocked,
@@ -2391,8 +2370,7 @@ static INLINE int32_t input_state_wrap(
          return ret;
       }
    }
-   return input_state_wrap_slow(input, data, joypad, sec_joypad,
-         joypad_info, binds, keyboard_mapping_blocked,
+   return input_state_wrap_slow(input, data, joypad,          joypad_info, binds, keyboard_mapping_blocked,
          _port, device, idx, id);
 }
 
@@ -2647,7 +2625,6 @@ static int16_t input_joypad_analog_axis(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
-            NULL,
             joypad_info,
             (*input_st->libretro_input_binds),
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -2658,7 +2635,6 @@ static int16_t input_joypad_analog_axis(
             input_st->current_driver,
             input_st->current_data,
             input_st->primary_joypad,
-            NULL,
             joypad_info,
             (*input_st->libretro_input_binds),
             !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -2831,8 +2807,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (RETRO_KEYBIND_KEY(&stick[0]) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
-            NULL, joypad_info,
+            input_st->primary_joypad, joypad_info,
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
@@ -2841,8 +2816,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (RETRO_KEYBIND_KEY(&stick[1]) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
-            NULL, joypad_info,
+            input_st->primary_joypad, joypad_info,
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
@@ -2860,8 +2834,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (RETRO_KEYBIND_KEY(&stick[2]) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
-            NULL, joypad_info,
+            input_st->primary_joypad, joypad_info,
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
@@ -2870,8 +2843,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       if (RETRO_KEYBIND_KEY(&stick[3]) && input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
-            input_st->primary_joypad,
-            NULL, joypad_info,
+            input_st->primary_joypad, joypad_info,
             (*input_st->libretro_input_binds),
             kb_blocked,
             0, RETRO_DEVICE_KEYBOARD, 0,
@@ -4027,12 +3999,6 @@ static int16_t input_state_internal(
          : (uint8_t)settings->uints.input_max_users;
    const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
          input_st, input_st->primary_joypad);
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
-         input_st, input_st->secondary_joypad);
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
    uint8_t mapped_port                     = 0;
    int16_t result                          = 0;
    /* What the menu leaves held as it closes is the core hold's to keep
@@ -4080,7 +4046,6 @@ static int16_t input_state_internal(
             input_st->current_driver,
             input_st->current_data,
             joypad,
-            sec_joypad,
             &joypad_info,
             (*input_st->libretro_input_binds),
             kb_mapping_blocked,
@@ -4115,7 +4080,6 @@ static int16_t input_state_internal(
                   input_st->current_driver,
                   input_st->current_data,
                   joypad,
-                  sec_joypad,
                   &joypad_info,
                   (*input_st->libretro_input_binds),
                   kb_mapping_blocked,
@@ -4128,10 +4092,6 @@ static int16_t input_state_internal(
                (settings->uints.input_aim_stick[mapped_port] == INPUT_AIM_STICK_RIGHT)
                ? RETRO_DEVICE_INDEX_ANALOG_RIGHT : RETRO_DEVICE_INDEX_ANALOG_LEFT;
             ret = 0;
-            if (sec_joypad)
-               ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
-                     sec_joypad, &joypad_info, stick, (unsigned)axis,
-                     (*input_st->libretro_input_binds[mapped_port]));
             if (joypad && !ret)
                ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
                      joypad, &joypad_info, stick, (unsigned)axis,
@@ -4160,13 +4120,6 @@ static int16_t input_state_internal(
 
                   if (valid_bind)
                   {
-                     if (sec_joypad)
-                        ret = input_joypad_analog_button(
-                              input_analog_deadzone,
-                              input_analog_sensitivity,
-                              sec_joypad, &joypad_info,
-                              id,
-                              &(*input_st->libretro_input_binds[mapped_port])[id]);
 
                      if (joypad && (ret == 0))
                         ret = input_joypad_analog_button(
@@ -4184,17 +4137,6 @@ static int16_t input_state_internal(
             else
             {
                /* each stick is read whole, once a frame */
-               if (sec_joypad)
-                  ret = input_port_stick_axis(input_st, 1,
-                        input_analog_dpad_mode,
-                        input_analog_deadzone,
-                        input_analog_sensitivity,
-                        sec_joypad,
-                        &joypad_info,
-                        mapped_port,
-                        idx,
-                        id,
-                        (*input_st->libretro_input_binds[mapped_port]));
 
                if (joypad && (ret == 0))
                   ret = input_port_stick_axis(input_st, 0,
@@ -6048,9 +5990,9 @@ static void input_overlay_update_pointer_coords(
          & ((1 << RETRO_DEVICE_LIGHTGUN) | (1 << RETRO_DEVICE_POINTER)))
    {
       ptr_st->ptr[ptr_st->count] = VIDEO_POS_PACK(
-            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, true, 0,
                RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_X),
-            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, true, 0,
                RETRO_DEVICE_POINTER, touch_idx, RETRO_DEVICE_ID_POINTER_Y));
    }
 
@@ -6060,10 +6002,10 @@ static void input_overlay_update_pointer_coords(
    {
       ptr_st->mouse.prev_screen_pos = ptr_st->screen_pos;
       ptr_st->screen_pos            = VIDEO_POS_PACK(
-            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, true, 0,
                RARCH_DEVICE_POINTER_SCREEN, touch_idx,
                RETRO_DEVICE_ID_POINTER_X),
-            input_frame_or_driver(input, input_data, NULL, NULL, NULL, NULL, true, 0,
+            input_frame_or_driver(input, input_data, NULL, NULL, NULL, true, 0,
                RARCH_DEVICE_POINTER_SCREEN, touch_idx,
                RETRO_DEVICE_ID_POINTER_Y));
    }
@@ -6157,13 +6099,6 @@ INPUT_NOINLINE static void input_poll_overlay(
          : RETRO_DEVICE_POINTER;
       const input_device_driver_t
          *joypad                      = input_st->primary_joypad;
-#ifdef HAVE_MFI
-      const input_device_driver_t
-         *sec_joypad                  = input_st->secondary_joypad;
-#else
-      const input_device_driver_t
-         *sec_joypad                  = NULL;
-#endif
 
       joypad_info.joy_idx             = 0;
       joypad_info.auto_binds          = NULL;
@@ -6178,7 +6113,6 @@ INPUT_NOINLINE static void input_poll_overlay(
             && input_frame_or_driver(input,
                input_data,
                joypad,
-               sec_joypad,
                &joypad_info,
                NULL,
                keyboard_mapping_blocked,
@@ -6189,11 +6123,9 @@ INPUT_NOINLINE static void input_poll_overlay(
             i++)
       {
          ol_state->touch[i] = VIDEO_POS_PACK(
-               input_frame_or_driver(input, input_data, joypad, sec_joypad,
-                  &joypad_info, NULL, keyboard_mapping_blocked, 0,
+               input_frame_or_driver(input, input_data, joypad,                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
                   device, i, RETRO_DEVICE_ID_POINTER_X),
-               input_frame_or_driver(input, input_data, joypad, sec_joypad,
-                  &joypad_info, NULL, keyboard_mapping_blocked, 0,
+               input_frame_or_driver(input, input_data, joypad,                   &joypad_info, NULL, keyboard_mapping_blocked, 0,
                   device, i, RETRO_DEVICE_ID_POINTER_Y));
       }
       ol_state->touch_count = i;
@@ -7377,15 +7309,6 @@ static void joypad_driver_reinit_now(void *data,
       tmp->poll();
       tmp->destroy();
    }
-#ifdef HAVE_MFI
-   if (input_driver_st.secondary_joypad)
-   {
-      const input_device_driver_t *tmp  = input_driver_st.secondary_joypad;
-      input_driver_st.secondary_joypad  = NULL;
-      tmp->poll();
-      tmp->destroy();
-   }
-#endif
    if (!input_driver_st.primary_joypad)
    {
       input_driver_registry_restart();
@@ -7737,7 +7660,6 @@ bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength)
 {
    const input_device_driver_t *primary_joypad;
-   const input_device_driver_t *sec_joypad;
    settings_t *settings     = config_get_ptr();
    uint16_t scaled_strength = strength;
    unsigned slot;
@@ -7750,7 +7672,6 @@ bool input_set_rumble_state(unsigned port,
       return false;
 
    primary_joypad = input_driver_st.primary_joypad;
-   sec_joypad     = input_driver_st.secondary_joypad;
 
    /* If gain setting is not supported, do software gain control */
    if (primary_joypad)
@@ -7768,8 +7689,7 @@ bool input_set_rumble_state(unsigned port,
    answer = retro_atomic_load_acquire_int(&input_rumble_answer[slot]);
    if (answer)
       return answer == 2;
-   return    (primary_joypad && primary_joypad->set_rumble)
-          || (sec_joypad     && sec_joypad->set_rumble);
+   return primary_joypad && primary_joypad->set_rumble;
 }
 
 /* Write what the core's rumble calls left this frame: one driver call
@@ -8342,14 +8262,6 @@ void input_driver_drop_kept(void)
       input_st->primary_joypad           = NULL;
       tmp->destroy();
    }
-#ifdef HAVE_MFI
-   if (input_st->secondary_joypad)
-   {
-      const input_device_driver_t *tmp   = input_st->secondary_joypad;
-      input_st->secondary_joypad         = NULL;
-      tmp->destroy();
-   }
-#endif
    if (input_st->current_data == data)
       input_st->current_data = NULL;
 }
@@ -8380,14 +8292,6 @@ void input_driver_free_with_video(const void *video_data)
       input_st->primary_joypad           = NULL;
       tmp->destroy();
    }
-#ifdef HAVE_MFI
-   if (input_st->secondary_joypad)
-   {
-      const input_device_driver_t *tmp   = input_st->secondary_joypad;
-      input_st->secondary_joypad         = NULL;
-      tmp->destroy();
-   }
-#endif
    input_st->flags       &= ~INP_FLAG_KB_MAPPING_BLOCKED;
    input_st->current_data = NULL;
 }
@@ -10252,7 +10156,6 @@ typedef struct
    input_driver_state_t *input_st;
    const retro_keybind_set *binds;
    const input_device_driver_t *joypad;
-   const input_device_driver_t *sec_joypad;
    rarch_joypad_info_t *joypad_info;
    unsigned port;
    uint8_t mode;              /* 0: none blocked, 1: all, 2: one by one */
@@ -10278,7 +10181,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
    bool blocked                             = false;
    const retro_keybind_set *binds           = b->binds;
    const input_device_driver_t *joypad      = b->joypad;
-   const input_device_driver_t *sec_joypad  = b->sec_joypad;
    rarch_joypad_info_t *joypad_info         = b->joypad_info;
    unsigned port                            = b->port;
 
@@ -10306,7 +10208,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   b->input_st->current_driver,
                   b->input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10324,7 +10225,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   b->input_st->current_driver,
                   b->input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10350,7 +10250,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   b->input_st->current_driver,
                   b->input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10369,7 +10268,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   b->input_st->current_driver,
                   b->input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(b->input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10400,7 +10298,6 @@ static bool input_hotkey_blocked(input_hotkey_block_t *b, unsigned i)
                   b->input_st->current_driver,
                   b->input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   true,
@@ -10530,7 +10427,6 @@ static void input_keys_pressed(
       input_bits_t *p_new_state,
       const retro_keybind_set *binds,
       const input_device_driver_t *joypad,
-      const input_device_driver_t *sec_joypad,
       rarch_joypad_info_t *joypad_info,
       bool input_hotkey_device_merge)
 {
@@ -10573,7 +10469,6 @@ static void input_keys_pressed(
             input_st->current_driver,
             input_st->current_data,
             joypad,
-            sec_joypad,
             joypad_info,
             binds,
             kb_blocked,
@@ -10613,7 +10508,6 @@ static void input_keys_pressed(
             input_st->current_driver,
             input_st->current_data,
             joypad,
-            sec_joypad,
             joypad_info,
             binds,
             kb_blocked,
@@ -10666,7 +10560,6 @@ static void input_keys_pressed(
                   input_st->current_driver,
                   input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10678,7 +10571,6 @@ static void input_keys_pressed(
                      input_st->current_driver,
                      input_st->current_data,
                      joypad,
-                     sec_joypad,
                      joypad_info,
                      binds,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10717,7 +10609,6 @@ static void input_keys_pressed(
                   input_st->current_driver,
                   input_st->current_data,
                   joypad,
-                  sec_joypad,
                   joypad_info,
                   binds,
                   !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -10741,7 +10632,6 @@ static void input_keys_pressed(
    blk.input_st            = input_st;
    blk.binds               = binds;
    blk.joypad              = joypad;
-   blk.sec_joypad          = sec_joypad;
    blk.joypad_info         = joypad_info;
    blk.port                = port;
    blk.enable_blocked      = -1;
@@ -10784,7 +10674,6 @@ static void input_keys_pressed(
                      input_st->current_driver,
                      input_st->current_data,
                      joypad,
-                     sec_joypad,
                      joypad_info,
                      binds,
                      kb_blocked,
@@ -11820,12 +11709,6 @@ uint32_t input_driver_device_pos(unsigned port, unsigned device,
    input_driver_state_t *input_st          = &input_driver_st;
    const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
          input_st, input_st->primary_joypad);
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
-         input_st, input_st->secondary_joypad);
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
    bool mouse     = device == RARCH_DEVICE_MOUSE_SCREEN
                  || device == RETRO_DEVICE_MOUSE;
    bool blocked   = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
@@ -11841,10 +11724,10 @@ uint32_t input_driver_device_pos(unsigned port, unsigned device,
    joypad_info.axis_threshold = 0.0f;
 
    x = input_st->current_driver->input_state(input_st->current_data,
-         joypad, sec_joypad, &joypad_info, NULL, blocked, port, device, idx,
+         joypad, NULL, &joypad_info, NULL, blocked, port, device, idx,
          mouse ? RETRO_DEVICE_ID_MOUSE_X : RETRO_DEVICE_ID_POINTER_X);
    y = input_st->current_driver->input_state(input_st->current_data,
-         joypad, sec_joypad, &joypad_info, NULL, blocked, port, device, idx,
+         joypad, NULL, &joypad_info, NULL, blocked, port, device, idx,
          mouse ? RETRO_DEVICE_ID_MOUSE_Y : RETRO_DEVICE_ID_POINTER_Y);
    return VIDEO_POS_PACK(x, y);
 }
@@ -11856,12 +11739,6 @@ int16_t input_driver_device_state(unsigned port,
    input_driver_state_t *input_st          = &input_driver_st;
    const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
          input_st, input_st->primary_joypad);
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
-         input_st, input_st->secondary_joypad);
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
    int16_t held;
 
    if (input_pointer_frame_read(port, device, idx, id, &held))
@@ -11873,7 +11750,7 @@ int16_t input_driver_device_state(unsigned port,
 
    return input_st->current_driver->input_state(
          input_st->current_data,
-         joypad, sec_joypad, &joypad_info,
+         joypad, NULL, &joypad_info,
          NULL,
          (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
          port, device, idx, id);
@@ -11889,11 +11766,6 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
    input_driver_state_t *input_st          = &input_driver_st;
    settings_t *settings                    = config_get_ptr();
    const input_device_driver_t *joypad     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
 
    if (joy_idx >= MAX_USERS)
       joy_idx                 = 0;
@@ -11913,7 +11785,7 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
 
    return input_st->current_driver->input_state(
          input_st->current_data,
-         joypad, sec_joypad, &joypad_info,
+         joypad, NULL, &joypad_info,
          (*input_st->libretro_input_binds),
          (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0,
          port, device, idx, id);
@@ -11925,30 +11797,19 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
  *
  * Each array is filled when it is given: @buttons with whether each
  * is down, @axes with each axis's position, and each of @hats has the
- * mask of its directions held OR-ed in. With @poll the joypad drivers
- * are polled first, as the capture does once a frame. Where there are
- * two joypad drivers the second is read after the first, over it. */
+ * mask of its directions held OR-ed in. With @poll the joypad driver
+ * is polled first, as the capture does once a frame. */
 void input_driver_capture_pad(unsigned pad, bool poll,
       bool *buttons, unsigned num_buttons,
       int16_t *axes, unsigned num_axes,
       uint16_t *hats, unsigned num_hats)
 {
-   unsigned i, d;
-   const input_device_driver_t *drivers[2];
+   unsigned i;
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
 
-   drivers[0] = input_driver_st.primary_joypad;
-#ifdef HAVE_MFI
-   drivers[1] = input_driver_st.secondary_joypad;
-#else
-   drivers[1] = NULL;
-#endif
-
-   for (d = 0; d < 2; d++)
+   if (!joypad)
+      return;
    {
-      const input_device_driver_t *joypad = drivers[d];
-
-      if (!joypad)
-         continue;
       if (poll && joypad->poll)
          joypad->poll();
 
@@ -11985,16 +11846,9 @@ void input_driver_poll_devices(void)
 {
    input_driver_state_t *input_st          = &input_driver_st;
    const input_device_driver_t *joypad     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = input_st->secondary_joypad;
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
 
    if (joypad && joypad->poll)
       joypad->poll();
-   if (sec_joypad && sec_joypad->poll)
-      sec_joypad->poll();
    if (input_st->current_driver && input_st->current_driver->poll)
       input_st->current_driver->poll(input_st->current_data);
    /* what was asked of the driver at the poll before is stale */
@@ -12029,12 +11883,6 @@ uint32_t input_driver_user_controls_bound(unsigned user)
    settings_t *settings                    = config_get_ptr();
    const input_device_driver_t *joypad     = INPUT_JOYPAD_FOR_READ(
          input_st, input_st->primary_joypad);
-#ifdef HAVE_MFI
-   const input_device_driver_t *sec_joypad = INPUT_JOYPAD_FOR_READ(
-         input_st, input_st->secondary_joypad);
-#else
-   const input_device_driver_t *sec_joypad = NULL;
-#endif
 
    if (user >= MAX_USERS || !input_st->current_driver)
       return 0;
@@ -12047,7 +11895,7 @@ uint32_t input_driver_user_controls_bound(unsigned user)
 
    held = (uint32_t)input_state_wrap(input_st->current_driver,
          input_st->current_data,
-         joypad, sec_joypad, &joypad_info,
+         joypad, &joypad_info,
          (*input_st->libretro_input_binds),
          false, user, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_MASK) & 0xFFFF;
@@ -12068,14 +11916,14 @@ uint32_t input_driver_user_controls_bound(unsigned user)
       if (!x)
          x = (int16_t)input_state_wrap(input_st->current_driver,
                input_st->current_data,
-               joypad, sec_joypad, &joypad_info,
+               joypad, &joypad_info,
                (*input_st->libretro_input_binds),
                false, user, RETRO_DEVICE_ANALOG, idx,
                RETRO_DEVICE_ID_ANALOG_X);
       if (!y)
          y = (int16_t)input_state_wrap(input_st->current_driver,
                input_st->current_data,
-               joypad, sec_joypad, &joypad_info,
+               joypad, &joypad_info,
                (*input_st->libretro_input_binds),
                false, user, RETRO_DEVICE_ANALOG, idx,
                RETRO_DEVICE_ID_ANALOG_Y);
@@ -12156,13 +12004,6 @@ void input_driver_poll(void)
    settings_t *settings           = config_get_ptr();
    const input_device_driver_t
       *joypad                     = input_st->primary_joypad;
-#ifdef HAVE_MFI
-   const input_device_driver_t
-      *sec_joypad                 = input_st->secondary_joypad;
-#else
-   const input_device_driver_t
-      *sec_joypad                 = NULL;
-#endif
    bool input_remap_binds_enable  = settings->bools.input_remap_binds_enable;
    float input_axis_threshold     = settings->floats.input_axis_threshold;
    /* Clamped: the arrays walked below are [MAX_USERS] and the setting
@@ -12177,16 +12018,11 @@ void input_driver_poll(void)
    if (joypad_driver_reinit_take())
    {
       joypad                      = input_st->primary_joypad;
-#ifdef HAVE_MFI
-      sec_joypad                  = input_st->secondary_joypad;
-#endif
    }
 #endif
 
    if (joypad && joypad->poll)
       joypad->poll();
-   if (sec_joypad && sec_joypad->poll)
-      sec_joypad->poll();
    /* a driver that keeps its mice publishes them in its poll; one that
     * does not is asked for them, as before */
    input_pointer_frames_clear();
@@ -12215,7 +12051,6 @@ void input_driver_poll(void)
     * below goes through the stand-in while controllers are gated. */
    input_driver_update_joypad_focus(input_st, settings);
    joypad                         = INPUT_JOYPAD_FOR_READ(input_st, joypad);
-   sec_joypad                     = INPUT_JOYPAD_FOR_READ(input_st, sec_joypad);
 
    /* Invalidate joypad state bitmask cache for the new frame */
    memset(&input_st->frame_valid, 0, sizeof(input_st->frame_valid));
@@ -12412,7 +12247,7 @@ void input_driver_poll(void)
                && turbo_enable ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
-                  joypad, sec_joypad, &joypad_info[i],
+                  joypad, &joypad_info[i],
                   (*input_st->libretro_input_binds),
                   kb_blocked,
                   (unsigned)i,
@@ -12432,7 +12267,7 @@ void input_driver_poll(void)
                   RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE]) ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
-                  joypad, sec_joypad, &joypad_info[i],
+                  joypad, &joypad_info[i],
                   (*input_st->libretro_input_binds),
                   kb_blocked,
                   (unsigned)i,
@@ -12460,7 +12295,7 @@ void input_driver_poll(void)
             uint32_t held = (uint32_t)input_state_wrap(
                   input_st->current_driver,
                   input_st->current_data,
-                  joypad, sec_joypad, &joypad_info[i],
+                  joypad, &joypad_info[i],
                   (*input_st->libretro_input_binds),
                   kb_blocked,
                   (unsigned)i, RETRO_DEVICE_JOYPAD,
@@ -12481,9 +12316,6 @@ void input_driver_poll(void)
                 * user's, and the notification says which it was */
                uint32_t pad = (uint32_t)joypad->state(&joypad_info[i],
                      (*input_st->libretro_input_binds)[i], (unsigned)i);
-               if (sec_joypad)
-                  pad |= (uint32_t)sec_joypad->state(&joypad_info[i],
-                        (*input_st->libretro_input_binds)[i], (unsigned)i);
                /* a key: not while the port's controller is there to
                 * be pressed, if the keyboard is to wait for it */
 #ifdef HAVE_NETWORKGAMEPAD
@@ -12559,7 +12391,6 @@ void input_driver_poll(void)
                         input_st->current_driver,
                         input_st->current_data,
                         joypad,
-                        sec_joypad,
                         &joypad_info[i],
                         (*input_st->libretro_input_binds),
                         kb_blocked,
@@ -13646,8 +13477,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    rarch_joypad_info_t joypad_info;
    input_driver_t *input               = input_st->current_driver;
    const input_device_driver_t *joypad = NULL;
-   const input_device_driver_t
-      *sec_joypad                      = NULL;
    unsigned block_delay                = settings->uints.input_hotkey_block_delay;
    /* Both of the arrays indexed below are [MAX_USERS]; the setting is
     * read from the config file and is not guaranteed to respect that. */
@@ -13680,10 +13509,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    input_driver_update_joypad_focus(input_st, settings);
    joypad                              = INPUT_JOYPAD_FOR_READ(
          input_st, input_st->primary_joypad);
-#ifdef HAVE_MFI
-   sec_joypad                          = INPUT_JOYPAD_FOR_READ(
-         input_st, input_st->secondary_joypad);
-#endif
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
@@ -13802,7 +13627,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             current_bits,
             (const retro_keybind_set *)input_config_binds,
             joypad,
-            sec_joypad,
             &joypad_info,
             settings->bools.input_hotkey_device_merge);
 
@@ -13874,7 +13698,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
-                     sec_joypad,
+                     NULL,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
@@ -13929,7 +13753,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             if (ids[i][0] && input->input_state(
                      input_st->current_data,
                      joypad,
-                     sec_joypad,
+                     NULL,
                      &joypad_info,
                      (const retro_keybind_set *)input_config_binds,
                      !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),

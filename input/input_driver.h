@@ -663,7 +663,6 @@ typedef struct
    input_driver_t                *current_driver;
    void                          *current_data;
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
-   const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
    const retro_keybind_set *libretro_input_binds[MAX_USERS];
    /* When the devices were last read, on cpu_features_get_time_usec()'s
     * clock; 0 while nothing asks for it. See input_driver_poll(). */
