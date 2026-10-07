@@ -4449,7 +4449,7 @@ static const gfx_ctx_driver_t *gfx_ctx_vk_drivers[] = {
    &gfx_ctx_w_vk,
 #endif
 #if defined(ANDROID)
-#if defined(HAVE_OPENXR) && !defined(HAVE_OPENXR_2D)
+#if defined(HAVE_OPENXR)
    &gfx_ctx_android_vk_openxr,
 #endif
    &gfx_ctx_vk_android,
@@ -8085,18 +8085,14 @@ static void vulkan_retain_backbuffer(vk_t *vk, struct vk_image *backbuffer)
  * asynchronous present; those paths are exactly as they were. */
 static void vulkan_await_frame_before_present(vk_t *vk, unsigned frame_index)
 {
+   if (     (
 #ifdef HAVE_OPENXR
-   if (     ((vk->flags & VK_FLAG_OPEN_XR)
-            || ((vk->flags & VK_FLAG_HW_ENABLE)
-         && video_driver_thread_wrapper_active()))
-         && vk->context->swapchain_fences_signalled[frame_index]
-         && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
-#else
-   if (     (vk->flags & VK_FLAG_HW_ENABLE)
-         && video_driver_thread_wrapper_active()
-         && vk->context->swapchain_fences_signalled[frame_index]
-         && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
+               (vk->flags & VK_FLAG_OPEN_XR) ||
 #endif
+               (   (vk->flags & VK_FLAG_HW_ENABLE)
+                && video_driver_thread_wrapper_active()))
+         && vk->context->swapchain_fences_signalled[frame_index]
+         && vk->context->swapchain_fences[frame_index] != VK_NULL_HANDLE)
 
       vkWaitForFences(vk->context->device, 1,
             &vk->context->swapchain_fences[frame_index], true, UINT64_MAX);
@@ -9054,8 +9050,10 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
 
 #ifdef HAVE_OPENXR
-   bool xr_stereo = (vk->flags & VK_FLAG_OPEN_XR) != 0;
+   bool xr_stereo        = (vk->flags & VK_FLAG_OPEN_XR) != 0;
    unsigned xr_eye_count = xr_stereo ? 2 : 1;
+   unsigned xr_eye;
+
    if (xr_stereo)
    {
       if (!android_vk_openxr_begin_frame())
@@ -9582,7 +9580,7 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif /* VULKAN_HDR_SWAPCHAIN */
 
 #ifdef HAVE_OPENXR
-   for (unsigned xr_eye = 0; xr_eye < xr_eye_count; xr_eye++)
+   for (xr_eye = 0; xr_eye < xr_eye_count; xr_eye++)
    {
       if (xr_stereo)
       {
@@ -10162,6 +10160,9 @@ static bool vulkan_frame(void *data, const void *frame,
          && !runloop_is_paused
          && !(vk->context->swap_interval > 1)
          && !(video_info->shader_subframes > 1)
+#ifdef HAVE_OPENXR
+         && !(vk->flags & VK_FLAG_OPEN_XR)
+#endif
          && (!(vk->flags & VK_FLAG_MENU_ENABLE)))
    {
       if (video_info->bfi_dark_frames > video_info->black_frame_insertion)
@@ -10247,6 +10248,9 @@ static bool vulkan_frame(void *data, const void *frame,
    if (      (vk->context->swap_interval > 1)
          &&  !(video_info->shader_subframes > 1)
          &&  !black_frame_insertion
+#ifdef HAVE_OPENXR
+         &&  !(vk->flags & VK_FLAG_OPEN_XR)
+#endif
          &&  (!(vk->context->flags & VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK)))
    {
       vk->context->flags |= VK_CTX_FLAG_SWAP_INTERVAL_EMULATION_LOCK;
@@ -10312,11 +10316,11 @@ static bool vulkan_frame_eye(void *data, const void *frame,
       const char *msg, video_frame_info_t *video_info, int eye)
 {
    vk_t *vk = (vk_t*)data;
+   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
 
    vk->xr.active_eye = eye;
    vk->context->current_swapchain_index = android_vk_openxr_get_backbuffer_index(eye);
 
-   struct video_ortho ortho = {0, 1, 0, 1, -1, 1};
    vulkan_set_projection(vk, &ortho, false);
 
    /* Build the eye's off-axis projection from tangents rather than

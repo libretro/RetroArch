@@ -104,6 +104,21 @@ static android_vk_openxr_t android_vk_openxr_ctx;
 
 static XrFrameState android_vk_openxr_frame_state;
 
+bool android_vk_openxr_owns_vk_context(const void *vk_data)
+{
+   return vk_data == (const void*)&android_vk_openxr_ctx.vk;
+}
+
+XrInstance android_vk_openxr_xr_instance(void)
+{
+   return android_vk_openxr_ctx.instance;
+}
+
+XrSystemId android_vk_openxr_xr_system_id(void)
+{
+   return android_vk_openxr_ctx.system;
+}
+
 bool android_vk_openxr_begin_frame(void)
 {
    android_vk_openxr_t *xr = &android_vk_openxr_ctx;
@@ -113,7 +128,11 @@ bool android_vk_openxr_begin_frame(void)
    XrViewState view_state = { XR_TYPE_VIEW_STATE };
    uint32_t view_count = 0;
    int eye;
-   // reset the state
+
+   /* Already bracketed this frame (end_frame has not run yet). */
+   if (xr->frame_began)
+      return xr->should_render;
+
    xr->frame_began = false;
    xr->views_valid = false;
 
@@ -920,7 +939,7 @@ static void android_vk_openxr_poll_events(android_vk_openxr_t *xr, bool *quit)
 
 /* ===================== gfx_ctx_driver_t entry points ===================== */
 
-// forward declaration
+/* forward declaration */
 static void android_vk_openxr_gfx_ctx_destroy(void *data);
 
 static void *android_vk_openxr_gfx_ctx_init(void *video_driver)
