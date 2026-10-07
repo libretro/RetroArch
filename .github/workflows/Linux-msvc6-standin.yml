@@ -96,3 +96,23 @@ jobs:
           fi
           make clean
           rm -f win32_input.log
+
+      - name: Run the winmm joypad driver against stand-in joystick calls (Wine)
+        working-directory: samples/input/winmm_joypad
+        shell: bash
+        run: |
+          set -eu
+          # The joypad driver the Visual C++ 6 project uses: the
+          # multimedia library's joystick calls. No controller can be
+          # scripted here, so the calls and the clock are the test's:
+          # axes across the controller's own ranges, thirty-two
+          # buttons, the hat's eight ways, the RetroPad mask, a
+          # controller pulled out and plugged in, and the controllers
+          # that are not there not asked at every poll.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
+          make clean all
+          WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee winmm_joypad.log
+          grep -q "PASS winmm_joypad_test" winmm_joypad.log
+          make clean
+          rm -f winmm_joypad.log
