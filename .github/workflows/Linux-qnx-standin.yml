@@ -1,0 +1,42 @@
+name: CI QNX input drivers (stand-in SDK)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  qnx-standin:
+    name: QNX input drivers compile against stand-ins for the SDK
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Compile qnx_input.c and qnx_joypad.c
+        shell: bash
+        run: |
+          set -eu
+          # The BlackBerry 10 SDK cannot be fetched here, so nothing
+          # built the QNX port and its input driver stopped compiling
+          # unseen. This compiles the two input files - declarations
+          # and syntax, nothing linked or run - against stand-ins for
+          # the SDK's headers. See the script for what that does and
+          # does not catch.
+          tools/qnx_standin_check.sh
