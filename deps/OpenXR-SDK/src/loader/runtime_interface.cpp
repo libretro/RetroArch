@@ -34,7 +34,7 @@ struct RuntimeDispatchSlot {
 #include <vector>
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_HAS_REQUIRED_PLATFORM_LOADER_INIT_STRUCT)
-#include <json/value.h>
+#include "loader_json.hpp"
 
 XrResult GetPlatformRuntimeVirtualManifest(Json::Value& out_manifest) {
     using wrap::android::content::Context;

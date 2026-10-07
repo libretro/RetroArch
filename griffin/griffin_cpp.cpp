@@ -130,9 +130,7 @@ VIDEO DRIVER
  * CMake artifact.  C++17. */
 #include "../deps/OpenXR-SDK/src/common/object_info.cpp"
 #include "../deps/OpenXR-SDK/src/common/filesystem_utils.cpp"
-#include "../deps/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_reader.cpp"
-#include "../deps/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_value.cpp"
-#include "../deps/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_writer.cpp"
+#include "../deps/OpenXR-SDK/src/loader/loader_json.cpp"
 #if defined(ANDROID)
 #include "../deps/OpenXR-SDK/src/external/jnipp/jnipp.cpp"
 #include "../deps/OpenXR-SDK/src/external/android-jni-wrappers/wrap/android.content.cpp"

@@ -253,7 +253,6 @@ LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/common \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/loader \
-		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/jsoncpp/include \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/jnipp \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/android-jni-wrappers
 # The vendored OpenXR loader is C++17; later -std wins over the global

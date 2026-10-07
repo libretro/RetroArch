@@ -11,7 +11,7 @@
 #include <wrap/android.net.h>
 #include <wrap/android.content.h>
 #include <wrap/android.database.h>
-#include <json/value.h>
+#include "loader_json.hpp"
 
 #include <openxr/openxr.h>
 

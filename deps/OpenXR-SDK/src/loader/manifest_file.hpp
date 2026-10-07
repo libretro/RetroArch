@@ -11,6 +11,8 @@
 
 #include <openxr/openxr.h>
 
+#include "loader_json.hpp"
+
 #include <memory>
 #include <string>
 #include <vector>

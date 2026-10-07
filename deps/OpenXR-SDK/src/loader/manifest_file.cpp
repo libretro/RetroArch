@@ -25,7 +25,7 @@
 #include "loader_logger.hpp"
 #include "unique_asset.h"
 
-#include <json/json.h>
+#include "loader_json.hpp"
 #include <openxr/openxr.h>
 
 #include <algorithm>
@@ -33,6 +33,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <iterator>
 #include <memory>
 #include <sstream>
 #include <stdexcept>
@@ -579,10 +580,10 @@ void RuntimeManifestFile::CreateIfValid(std::string const &filename,
         LoaderLogger::LogErrorMessage("", error_ss.str());
         return;
     }
-    Json::CharReaderBuilder builder;
+    std::string json_content((std::istreambuf_iterator<char>(json_stream)), std::istreambuf_iterator<char>());
     std::string errors;
-    Json::Value root_node = Json::nullValue;
-    if (!Json::parseFromStream(builder, json_stream, &root_node, &errors) || !root_node.isObject()) {
+    Json::Value root_node;
+    if (!Json::ParseString(json_content, root_node, errors) || !root_node.isObject()) {
         error_ss << "failed to parse " << filename << ".";
         if (!errors.empty()) {
             error_ss << " (Error message: " << errors << ")";
@@ -785,10 +786,10 @@ void ApiLayerManifestFile::CreateIfValid(ManifestFileType type, const std::strin
                                          LibraryLocator locate_library,
                                          std::vector<std::unique_ptr<ApiLayerManifestFile>> &manifest_files) {
     std::ostringstream error_ss("ApiLayerManifestFile::CreateIfValid ");
-    Json::CharReaderBuilder builder;
+    std::string json_content((std::istreambuf_iterator<char>(json_stream)), std::istreambuf_iterator<char>());
     std::string errors;
-    Json::Value root_node = Json::nullValue;
-    if (!Json::parseFromStream(builder, json_stream, &root_node, &errors) || !root_node.isObject()) {
+    Json::Value root_node;
+    if (!Json::ParseString(json_content, root_node, errors) || !root_node.isObject()) {
         error_ss << "failed to parse " << filename << ".";
         if (!errors.empty()) {
             error_ss << " (Error message: " << errors << ")";

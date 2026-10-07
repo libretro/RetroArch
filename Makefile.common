@@ -1913,8 +1913,7 @@ ifeq ($(HAVE_OPENXR), 1)
       -I$(DEPS_DIR)/OpenXR-SDK/include \
       -I$(DEPS_DIR)/OpenXR-SDK/src \
       -I$(DEPS_DIR)/OpenXR-SDK/src/common \
-      -I$(DEPS_DIR)/OpenXR-SDK/src/loader \
-      -I$(DEPS_DIR)/OpenXR-SDK/src/external/jsoncpp/include
+      -I$(DEPS_DIR)/OpenXR-SDK/src/loader
 
    # Vendored Khronos OpenXR loader, built from the tree like every other
    # dependency.  The Android-only pieces (android_utilities, jnipp,
@@ -1922,12 +1921,10 @@ ifeq ($(HAVE_OPENXR), 1)
    OPENXR_SOURCES := \
       $(DEPS_DIR)/OpenXR-SDK/src/common/object_info.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/common/filesystem_utils.cpp \
-      $(DEPS_DIR)/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_reader.cpp \
-      $(DEPS_DIR)/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_value.cpp \
-      $(DEPS_DIR)/OpenXR-SDK/src/external/jsoncpp/src/lib_json/json_writer.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/api_layer_interface.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_core.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_init_data.cpp \
+      $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_json.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_instance.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_logger.cpp \
       $(DEPS_DIR)/OpenXR-SDK/src/loader/loader_logger_recorders.cpp \

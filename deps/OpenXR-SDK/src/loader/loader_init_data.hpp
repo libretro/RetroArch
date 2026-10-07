@@ -13,7 +13,7 @@
 #include <openxr/openxr_platform.h>
 
 #if defined(XR_USE_PLATFORM_ANDROID)
-#include <json/value.h>
+#include "loader_json.hpp"
 #include <android/asset_manager_jni.h>
 #include "android_utilities.h"
 
