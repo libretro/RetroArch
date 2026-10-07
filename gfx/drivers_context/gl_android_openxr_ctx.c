@@ -38,7 +38,11 @@
 #define XR_USE_PLATFORM_ANDROID
 #define XR_USE_GRAPHICS_API_OPENGL_ES
 #ifdef HAVE_VULKAN
+/* openxr_platform.h is include-guarded, so in the single griffin TU this
+ * first inclusion decides which API sections exist; enable the Vulkan one
+ * for the Vulkan OpenXR context that follows, with the types it needs. */
 #define XR_USE_GRAPHICS_API_VULKAN
+#include "../common/vulkan_common.h"
 #endif
 
 #include <openxr/openxr.h>
@@ -381,7 +385,7 @@ bool gl_android_openxr_begin_frame(void)
    }
 
    glViewport(0, 0, xr->swap_width, xr->eye_height);
-   glClearColor(1.0f, 0.0f, 1.0f, 1.0f);
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glClear(GL_COLOR_BUFFER_BIT);
 
    xr->image_acquired = true;
@@ -399,6 +403,8 @@ static void gl_xr_end_frame(void)
    const XrView *vsrc = NULL;
    XrResult result;
    bool submit;
+   bool menu_is_alive = false;
+   bool stereo;
    int eye;
 
    if (!xr->frame_began)
@@ -407,12 +413,11 @@ static void gl_xr_end_frame(void)
 
    submit = xr->image_acquired && xr->should_render;
 
-   bool menu_is_alive = false;
 #ifdef HAVE_MENU
    menu_is_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   bool stereo = gl_xr_stereo &&
+   stereo = gl_xr_stereo &&
               xr->swap_width >= xr->eye_width * 2 &&
               !menu_is_alive;
 
@@ -483,7 +488,7 @@ static void gl_xr_end_frame(void)
 
       if (menu_is_alive)
       {
-         // render the menu in a square aspect ratio, so it doesn't get stretched
+         /* Render the menu in a square aspect ratio so it is not stretched. */
          quad.subImage.imageRect.extent.width  = xr->eye_width;
          quad.subImage.imageRect.extent.height = xr->eye_height;
 

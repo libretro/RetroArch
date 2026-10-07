@@ -34,6 +34,7 @@
 #ifdef HAVE_OPENGLES
 #define XR_USE_GRAPHICS_API_OPENGL_ES
 #endif
+#include "../common/vulkan_common.h"
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>

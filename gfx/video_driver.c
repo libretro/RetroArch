@@ -8770,6 +8770,17 @@ bool video_driver_set_vr_content_info(struct retro_vr_content_info *info)
          break;
    }
 
+   if (!w || !h)
+   {
+      RARCH_ERR("[XR] No eye target size available.\n");
+      video_st->current_video->set_vr_content_info(video_st->data, NULL);
+#if defined(ANDROID)
+      gl_android_openxr_set_stereo(false);
+#endif
+      vr_saved_valid = false;
+      return false;
+   }
+
    info->recommended_eye_width  = w;
    info->recommended_eye_height = h;
 

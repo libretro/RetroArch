@@ -7102,7 +7102,10 @@ static bool gl2_set_vr_content_info(void *data,
       const struct retro_vr_content_info *info)
 {
    (void)data;
-   (void)info;
+   /* VR is only available while the OpenXR context owns a live session;
+    * on the flat fallback context it must be reported unavailable. */
+   if (!gl_android_openxr_is_session_ready())
+      return false;
    return true;
 }
 

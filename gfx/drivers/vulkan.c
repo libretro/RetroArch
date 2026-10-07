@@ -10295,7 +10295,12 @@ static bool vulkan_set_vr_content_info(void *data,
    }
 
    if (!info)
-      return true; /* probe-only: session exists, so VR is available */
+   {
+      /* NULL disables the current VR presentation. */
+      vk->xr.stereo_native = false;
+      vk->flags &= ~VK_FLAG_XR_STEREO;
+      return true;
+   }
 
    if (!info->stereo_native)
    {
