@@ -190,12 +190,15 @@ private_lane :ra_prior_build_in_review do
   in_review = false
   begin
     app = Spaceship::ConnectAPI::App.find(app_id)
-    builds = Spaceship::ConnectAPI::Build.all(
-      app_id: app.id,
-      filter: { "preReleaseVersion.platform" => plat },
+    # Build.all takes no filter and pages through every build the app
+    # has; one page of the newest few, with their review submissions,
+    # is all this needs.
+    builds = Spaceship::ConnectAPI.get_builds(
+      filter: { app: app.id, "preReleaseVersion.platform" => plat },
+      includes: "preReleaseVersion,betaAppReviewSubmission",
       sort: "-uploadedDate",
       limit: 5
-    )
+    ).to_models
     in_review = builds.any? do |b|
       state = b.beta_app_review_submission&.beta_review_state
       state == "WAITING_FOR_REVIEW" || state == "IN_REVIEW"

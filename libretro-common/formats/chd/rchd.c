@@ -2656,10 +2656,14 @@ int rchd_read_extent(const rchd_t *chd, uint32_t lba, uint32_t count,
    if (!chd->track_count)
       return RCHD_ERROR_STATE;
 
+   /* Frame numbers are 32-bit: an extent running past the last one
+    * cannot be in the image. */
+   if ((uint64_t)lba + count > 0xFFFFFFFFu + (uint64_t)1)
+      return RCHD_ERROR_PARAM;
+
    for (i = 0; i < count; i++)
    {
-      const rchd_track_t *t = rchd_track_for_lba(chd,
-            (uint64_t)lba + i);
+      const rchd_track_t *t = rchd_track_for_lba(chd, lba + i);
 
       if (!t)
          return RCHD_ERROR_PARAM;

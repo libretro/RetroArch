@@ -4385,7 +4385,7 @@ static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
 static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
 {
    gl3_t *gl = (gl3_t*)data;
-   unsigned num_pixels = 0;
+   size_t num_pixels   = 0;
 
    if (!gl)
       return false;

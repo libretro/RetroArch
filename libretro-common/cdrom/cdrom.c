@@ -1362,7 +1362,7 @@ static int cdrom_read_track_info(libretro_vfs_implementation_file *stream, unsig
 
    pregap_lba_len = (toc->track[track - 1].audio ? 0 : (toc->track[track - 1].lba - toc->track[track - 1].lba_start));
 
-   toc->track[track - 1].track_bytes = (track_size - pregap_lba_len) * 2352;
+   toc->track[track - 1].track_bytes = (unsigned)((track_size - pregap_lba_len) * 2352);
    toc->track[track - 1].mode = buf[6] & 0xF;
 
 #ifdef CDROM_DEBUG

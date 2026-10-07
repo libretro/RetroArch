@@ -82,7 +82,7 @@ int64_t retro_vfs_file_seek_cdrom(
          &&  (ext[2] == 'n' || ext[2] == 'N')
          &&   ext[3] == '\0')
    {
-      int lba               = (offset / 2352);
+      int lba               = (int)(offset / 2352);
       unsigned char min     = 0;
       unsigned char sec     = 0;
       unsigned char frame   = 0;
@@ -99,7 +99,7 @@ int64_t retro_vfs_file_seek_cdrom(
                seek_type               = "SEEK_CUR";
 #endif
                stream->cdrom->byte_pos += offset;
-               new_lba                 = vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (stream->cdrom->byte_pos / 2352);
+               new_lba                 = vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (unsigned)(stream->cdrom->byte_pos / 2352);
                cdrom_lba_to_msf(new_lba, &min, &sec, &frame);
             }
             break;
@@ -112,7 +112,7 @@ int64_t retro_vfs_file_seek_cdrom(
 #ifdef CDROM_DEBUG
                seek_type              = "SEEK_END";
 #endif
-               cdrom_lba_to_msf(lba_len + lba, &min, &sec, &frame);
+               cdrom_lba_to_msf((unsigned)(lba_len + lba), &min, &sec, &frame);
                stream->cdrom->byte_pos = lba_len * 2352;
             }
             break;
@@ -123,7 +123,7 @@ int64_t retro_vfs_file_seek_cdrom(
                seek_type = "SEEK_SET";
 #endif
                stream->cdrom->byte_pos = offset;
-               cdrom_lba_to_msf(vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (stream->cdrom->byte_pos / 2352), &min, &sec, &frame);
+               cdrom_lba_to_msf(vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba + (unsigned)(stream->cdrom->byte_pos / 2352), &min, &sec, &frame);
             }
             break;
       }
@@ -604,7 +604,7 @@ int64_t retro_vfs_file_read_cdrom(libretro_vfs_implementation_file *stream,
       stream->cdrom->byte_pos += len;
       stream->cdrom->cur_lba   = 
          vfs_cdrom_toc.track[stream->cdrom->cur_track - 1].lba 
-         + (stream->cdrom->byte_pos / 2352);
+         + (unsigned)(stream->cdrom->byte_pos / 2352);
 
       cdrom_lba_to_msf(stream->cdrom->cur_lba,
             &stream->cdrom->cur_min,

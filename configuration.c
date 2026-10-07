@@ -10863,7 +10863,7 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 
 void input_config_reset_autoconfig_binds(unsigned port)
 {
-   size_t i;
+   unsigned i;
    input_sensor_map_t map;
 
    if (port >= MAX_USERS)

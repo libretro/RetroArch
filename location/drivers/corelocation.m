@@ -31,7 +31,27 @@
 - (void)applyAuthorizationStatus:(CLAuthorizationStatus)status;
 @end
 
+/* -locationManager:didChangeAuthorizationStatus:, which macOS 11 / iOS 14
+ * replaced with -locationManagerDidChangeAuthorization: and deprecated:
+ * installed by +initialize on the releases before, the only ones that
+ * call it. */
+static void corelocation_did_change_status(id self, SEL _cmd,
+      id manager, int status)
+{
+   [(CoreLocationManager*)self
+      applyAuthorizationStatus:(CLAuthorizationStatus)status];
+}
+
 @implementation CoreLocationManager
+
++ (void)initialize {
+    if (self != [CoreLocationManager class])
+        return;
+    if (!apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
+        apple_rt_add_method(self,
+              "locationManager:didChangeAuthorizationStatus:",
+              corelocation_did_change_status, "v@:@i");
+}
 
 + (instancetype)sharedInstance {
     static CoreLocationManager *sharedInstance = nil;
@@ -93,8 +113,9 @@
     NSLog(@"Location manager failed with error: %@", error);
 }
 
-- (void)locationManager:(CLLocationManager *)manager didChangeAuthorizationStatus:(CLAuthorizationStatus)status {
-    [self applyAuthorizationStatus:status];
+- (void)locationManagerDidChangeAuthorization:(CLLocationManager *)manager {
+    [self applyAuthorizationStatus:(CLAuthorizationStatus)apple_rt_get_int(
+          manager, @selector(authorizationStatus))];
 }
 
 - (void)applyAuthorizationStatus:(CLAuthorizationStatus)status {

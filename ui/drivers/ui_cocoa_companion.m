@@ -110,6 +110,32 @@ static NSString *companion_filenames_type(void)
 #endif
 }
 
+/* The generic folder icon. -iconForFileType: (10.0) is deprecated in
+ * 12.0 for -iconForContentType: and a UTType (11.0), so 11 on asks by
+ * content type and earlier releases by the 'fldr' HFS type (the named
+ * constant is in Carbon's Icons.h, not pulled in here); both by
+ * selector. Autoreleased, as both methods return it. */
+static NSImage *companion_folder_icon(void)
+{
+   NSWorkspace *ws = [NSWorkspace sharedWorkspace];
+#ifdef GNUSTEP
+   return [ws iconForFileType:NSFileTypeForHFSTypeCode('fldr')];
+#else
+   id utt;
+   if (     apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0)
+         && (utt = apple_rt_class("UTType")))
+   {
+      id folder = apple_rt_get_id_arg(utt,
+            sel_registerName("typeWithIdentifier:"), @"public.folder");
+      if (folder)
+         return apple_rt_get_id_arg(ws,
+               sel_registerName("iconForContentType:"), folder);
+   }
+   return apple_rt_get_id_arg(ws, sel_registerName("iconForFileType:"),
+         NSFileTypeForHFSTypeCode('fldr'));
+#endif
+}
+
 #include "../../command.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
@@ -894,10 +920,7 @@ static const companion_callbacks_t cc_callbacks = {
    if (wimp && playlistIcons)
    {
       size_t i, n = companion_core_playlist_count(wimp->core);
-      /* 'fldr' is the generic folder HFS type; the named constant lives
-       * in Carbon's Icons.h, which is not pulled in here. */
-      NSImage *folder = [[NSWorkspace sharedWorkspace] iconForFileType:
-         NSFileTypeForHFSTypeCode('fldr')];
+      NSImage *folder = companion_folder_icon();
       [playlistIcons removeAllObjects];
       for (i = 0; i < n; i++)
       {
@@ -1427,8 +1450,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       if (companion_core_folder_icon_path(wimp->core, icon, sizeof(icon)))
          folderIcon = [[NSImage alloc] initWithContentsOfFile:BOXSTRING(icon)];
       if (!folderIcon)
-         folderIcon = RETAIN_COMPAT([[NSWorkspace sharedWorkspace]
-               iconForFileType:NSFileTypeForHFSTypeCode('fldr')]);
+         folderIcon = RETAIN_COMPAT(companion_folder_icon());
    }
 
    browserTabs = [[NSTabView alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];

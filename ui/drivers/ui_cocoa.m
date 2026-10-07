@@ -75,6 +75,28 @@
 #include "../../steam/steam.h"
 #endif
 
+/* Selectors this file names with @selector() for methods newer than an
+ * old SDK (each call is behind -respondsToSelector: or a version
+ * check): declared for -Wundeclared-selector only where the SDK has
+ * none, and never implemented, so @selector() stays a constant. */
+#if !defined(MAC_OS_X_VERSION_10_6) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_6
+@interface NSObject (RetroArchSelectors106)
+- (void)setDirectoryURL:(NSURL *)url;
+- (void)setActivationPolicy:(NSInteger)policy;
+@end
+#endif
+#if !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
+@interface NSObject (RetroArchSelectors107)
+- (void)toggleFullScreen:(id)sender;
+@end
+#endif
+#if !defined(MAC_OS_X_VERSION_10_9) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_9
+@interface NSObject (RetroArchSelectors109)
+- (id)beginActivityWithOptions:(unsigned long long)options reason:(NSString *)reason;
+- (void)endActivity:(id)activity;
+@end
+#endif
+
 typedef struct ui_application_cocoa
 {
    void *empty;
@@ -214,7 +236,27 @@ static bool ui_browser_window_cocoa_open(ui_browser_window_state_t *state)
        * under ARC, required under MRC or the array leaks every time
        * the picker opens with a filter). */
       NSArray *filetypes = [[NSArray alloc] initWithObjects:BOXSTRING(state->filters), BOXSTRING(state->filters_title), nil];
-      [panel setAllowedFileTypes:filetypes];
+      id utt;
+      /* -setAllowedFileTypes: (10.3) is deprecated in 12.0 for
+       * -setAllowedContentTypes: and UTTypes (11.0): 11 on gives the
+       * panel content types, earlier releases the extensions; both by
+       * selector. */
+      if (     apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0)
+            && (utt = apple_rt_class("UTType")))
+      {
+         NSUInteger i;
+         NSMutableArray *types = [NSMutableArray array];
+         SEL by_ext            = sel_registerName("typeWithFilenameExtension:");
+         for (i = 0; i < [filetypes count]; i++)
+         {
+            id t = apple_rt_get_id_arg(utt, by_ext, [filetypes objectAtIndex:i]);
+            if (t)
+               [types addObject:t];
+         }
+         apple_rt_send_id(panel, sel_registerName("setAllowedContentTypes:"), types);
+      }
+      else
+         apple_rt_send_id(panel, sel_registerName("setAllowedFileTypes:"), filetypes);
       RARCH_RELEASE(filetypes);
    }
 
@@ -342,7 +384,7 @@ static enum ui_msg_window_response ui_msg_window_cocoa_dialog(ui_msg_window_stat
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
       [alert beginSheetModalForWindow:main_window
                         modalDelegate:apple_platform
-                       didEndSelector:@selector(alertDidEnd:returnCode:contextInfo:)
+                       didEndSelector:sel_registerName("alertDidEnd:returnCode:contextInfo:")
                           contextInfo:nil];
 #pragma GCC diagnostic pop
       response = [[NSApplication sharedApplication] runModalForWindow:[alert window]];
@@ -1333,7 +1375,9 @@ static void open_document_handler(
 {
    settings_t          *settings = config_get_ptr();
    const char *path_dir_libretro = settings->paths.directory_libretro;
-   [[NSWorkspace sharedWorkspace] openFile:BOXSTRING(path_dir_libretro)];
+   /* -openFile: is deprecated in 11.0; -openURL: with a file URL opens
+    * the folder the same way on every release. */
+   [[NSWorkspace sharedWorkspace] openURL:[NSURL fileURLWithPath:BOXSTRING(path_dir_libretro)]];
 }
 
 - (IBAction)basicEvent:(id)sender

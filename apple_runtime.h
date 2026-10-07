@@ -242,6 +242,23 @@ typedef id (*apple_rt_init_id_long_fn)(APPLE_RT_CONSUMED id, SEL, id, long)
 /* A class by name, nil when this OS (or this binary) does not have it. */
 #define apple_rt_class(name) ((id)objc_getClass(name))
 
+/* Gives a class a method at run time.  For a delegate method the SDK
+ * marks deprecated or unavailable that an older OS still calls: the
+ * class answers it only on the releases that need it, done once from
+ * +initialize, and implementing it does not warn.  @fn is a C function
+ * taking (id self, SEL _cmd, ...) and @types its Objective-C type
+ * encoding, which must outlive the call.  class_addMethod is 10.5 and
+ * the 10.4 binary may not import it at all, so it is found by name; on
+ * 10.4 nothing is added. */
+#define apple_rt_add_method(cls, name, fn, types) \
+   do { \
+      BOOL (*add_)(Class, SEL, IMP, const char *) = \
+            (BOOL (*)(Class, SEL, IMP, const char *)) \
+            dlsym(RTLD_DEFAULT, "class_addMethod"); \
+      if (add_) \
+         add_((Class)(cls), sel_registerName(name), (IMP)(fn), (types)); \
+   } while (0)
+
 /* The address of an exported object constant (an NSString * such as
  * AVCaptureDeviceTypeExternal) by name, NULL when this OS does not
  * export it; apple_rt_obj_at reads the object, which stays the

@@ -34,7 +34,7 @@
 static void media_zero_trailing_spaces(char *s, size_t len)
 {
    int i;
-   for (i = len - 1; i >= 0; i--)
+   for (i = (int)len - 1; i >= 0; i--)
    {
       if (s[i] == ' ')
          s[i] = '\0';

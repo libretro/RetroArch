@@ -130,12 +130,43 @@ static CocoaView* g_instance;
 void *glkitview_init(void);
 void cocoa_file_load_with_detect_core(const char *filename);
 
-@interface CocoaView()<GCDWebUploaderDelegate, GCDWebDAVServerDelegate, UIGestureRecognizerDelegate
+/* Not declared a UIDocumentPickerDelegate: SDKs before iOS 11 make
+ * -documentPicker:didPickDocumentAtURL: a required method, and the
+ * view gives itself that one at run time (see +initialize). The
+ * picker asks its delegate with -respondsToSelector:. */
+@interface CocoaView()<GCDWebUploaderDelegate, GCDWebDAVServerDelegate, UIGestureRecognizerDelegate>
 #if TARGET_OS_IOS
-,UIDocumentPickerDelegate
+- (void)importDocumentAtURL:(NSURL *)url;
 #endif
->
 @end
+#endif
+
+/* Methods a release before the deployment target's SDK still calls but
+ * the SDK marks deprecated or unavailable: +initialize installs each
+ * only on the releases that call it (apple_rt_add_method). */
+#if TARGET_OS_OSX
+/* NSView's own -layer:shouldInheritContentsScale:fromWindow: (10.7,
+ * asked when the view hosts a layer such as the Vulkan CAMetalLayer),
+ * deprecated in 11.0 for the NSViewLayerContentScaleDelegate method
+ * of the same name. */
+static BOOL cocoa_view_inherit_contents_scale(id self, SEL _cmd,
+      id layer, CGFloat scale, id window)
+{
+   return YES;
+}
+#elif TARGET_OS_IOS
+/* Before iOS 6 the only rotation question. */
+static BOOL cocoa_view_autorotate_to(id self, SEL _cmd, NSInteger orientation)
+{
+   return YES;
+}
+
+/* The iOS 8 - 10 document picker's answer; 11 sends the URL array. */
+static void cocoa_view_picked_document(id self, SEL _cmd,
+      id controller, NSURL *url)
+{
+   [(CocoaView*)self importDocumentAtURL:url];
+}
 #endif
 
 static CFRunLoopObserverRef iterate_observer;
@@ -205,11 +236,33 @@ void rarch_stop_draw_observer(void)
 
 @implementation CocoaView
 
++ (void)initialize
+{
+   if (self != [CocoaView class])
+      return;
 #if TARGET_OS_OSX
-/* CALayerDelegate, asked from 10.7 on when the view hosts a layer (the
- * Vulkan CAMetalLayer); a plain method that older releases never
- * call. */
-- (BOOL)layer:(CALayer *)layer shouldInheritContentsScale:(CGFloat)newScale fromWindow:(NSWindow *)window { return YES; }
+   if (apple_runtime_available(APPLE_RUNTIME_VER(10, 7, 0), 0, 0))
+   {
+      static char types[32];
+      snprintf(types, sizeof(types), "%s@:@%s@", @encode(BOOL), @encode(CGFloat));
+      apple_rt_add_method(self, "layer:shouldInheritContentsScale:fromWindow:",
+            cocoa_view_inherit_contents_scale, types);
+   }
+#elif TARGET_OS_IOS
+   if (!apple_runtime_available(0, APPLE_RUNTIME_VER(6, 0, 0), 0))
+   {
+      static char types[32];
+      snprintf(types, sizeof(types), "%s@:%s", @encode(BOOL), @encode(NSInteger));
+      apple_rt_add_method(self, "shouldAutorotateToInterfaceOrientation:",
+            cocoa_view_autorotate_to, types);
+   }
+   if (!apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
+      apple_rt_add_method(self, "documentPicker:didPickDocumentAtURL:",
+            cocoa_view_picked_document, "v@:@@");
+#endif
+}
+
+#if TARGET_OS_OSX
 - (void)scrollWheel:(NSEvent *)theEvent { }
 #endif
 
@@ -597,8 +650,16 @@ retro_time_t cocoa_last_vblank_time(void)
 #pragma mark UIDocumentPickerViewController
 
 /* The document picker is iOS 8: UIKit calls these only there, and
- * ios_show_file_sheet() checks the OS before it asks for one. */
--(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url API_AVAILABLE(ios(8.0))
+ * ios_show_file_sheet() checks the OS before it asks for one. iOS 11
+ * answers with an array; 8 - 10 with the one URL, through the method
+ * +initialize installs there. */
+-(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentsAtURLs:(NSArray *)urls API_AVAILABLE(ios(11.0))
+{
+   if ([urls count])
+      [self importDocumentAtURL:[urls objectAtIndex:0]];
+}
+
+-(void)importDocumentAtURL:(NSURL *)url
 {
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
@@ -639,7 +700,7 @@ retro_time_t cocoa_last_vblank_time(void)
    UIDocumentPickerViewController *documentPicker = apple_rt_init_id_long(
          [UIDocumentPickerViewController alloc],
          sel_registerName("initWithDocumentTypes:inMode:"), types, 0);
-   documentPicker.delegate = self;
+   documentPicker.delegate = (id<UIDocumentPickerDelegate>)self;
    documentPicker.modalPresentationStyle = UIModalPresentationFormSheet;
    [self presentViewController:documentPicker animated:YES completion:nil];
 }
@@ -894,20 +955,16 @@ retro_time_t cocoa_last_vblank_time(void)
     return NO;
   return YES;
 }
-
-/* NOTE: This version runs on iOS2-iOS5, but not iOS6+. */
-- (BOOL)shouldAutorotateToInterfaceOrientation:(UIInterfaceOrientation)interfaceOrientation
-{
-   return YES;
-}
 #endif
 
 #ifdef HAVE_COCOATOUCH
 
+#if !TARGET_OS_TV
 -(BOOL) prefersPointerLocked API_AVAILABLE(ios(14.0))
 {
    return cocoa_input_mouse_grabbed() ? YES : NO;
 }
+#endif
 
 #pragma mark - UIViewController Lifecycle
 
