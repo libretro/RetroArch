@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "../common/gl3_defines.h"
+#include "../common/gl_common.h"
 #include "../common/rgba16_pack.h"
 
 #include <encodings/utf.h>
@@ -263,6 +264,10 @@ typedef struct gl3
    math_matrix_4x4 mvp_no_rot_yflip;
 
    uint32_t flags;
+
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl_texture_lend_t *lend;
+#endif
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
    bool menu_texture_rgb32;
@@ -3960,6 +3965,9 @@ static void gl3_free(void *data)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    gl3_destroy_resources(gl);
    gl3_fp16_forget_all();
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl_texture_lend_free(&gl->lend);
+#endif
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
    video_context_driver_free();
@@ -5944,6 +5952,10 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
 
    glid = (GLuint)id;
    gl3_fp16_forget(glid);
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (gl)
+      gl_texture_lend_forget(&gl->lend, glid);
+#endif
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -5984,9 +5996,21 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
  * immutable storage stays, glTexSubImage2D rewrites level 0. Mip
  * levels are not regenerated; streaming textures are loaded with
  * TEXTURE_FILTER_LINEAR. */
-static void gl3_update_texture_internal(uintptr_t id,
-      const struct texture_image *ti)
+static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
+      uintptr_t id, const struct texture_image *ti)
 {
+   const void *pixels = ti->pixels;
+   int lent           = -1;
+#ifdef HAVE_GL_TEXTURE_LEND
+   /* A lent slot holding the frame: uploaded from its buffer */
+   if (gl && gl->lend
+         && (lent = gl_texture_lend_bind(gl->lend, (unsigned)id, pixels)) != -1)
+   {
+      if (lent < 0)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+      pixels = NULL;
+   }
+#endif
    glBindTexture(GL_TEXTURE_2D, (GLuint)id);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
@@ -5994,8 +6018,13 @@ static void gl3_update_texture_internal(uintptr_t id,
          GL_RGBA,
            ti->fp16  ? GL_HALF_FLOAT
          : ti->pix10 ? GL_UNSIGNED_INT_2_10_10_10_REV : GL_UNSIGNED_BYTE,
-         ti->pixels);
+         pixels);
    glBindTexture(GL_TEXTURE_2D, 0);
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (lent >= 0)
+      gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
+#endif
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
@@ -6007,9 +6036,8 @@ static uintptr_t video_texture_update_wrap_gl3(void *data)
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   gl3_update_texture_internal(cmd->handle,
+   return (uintptr_t)gl3_update_texture_internal(gl, cmd->handle,
          (const struct texture_image*)cmd->payload);
-   return 1;
 }
 #endif
 
@@ -6031,9 +6059,25 @@ static enum video_texture_update gl3_update_texture(void *video_data,
    }
 #endif
 
-   gl3_update_texture_internal(id, ti);
-   return VIDEO_TEXTURE_UPDATE_DONE;
+   return gl3_update_texture_internal((gl3_t*)video_data, id, ti);
 }
+
+#ifdef HAVE_GL_TEXTURE_LEND
+/* On the context's thread (see texture_lend in video_driver.h) */
+static void *gl3_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch)
+{
+   gl3_t *gl = (gl3_t*)data;
+   return gl ? gl_texture_lend(&gl->lend, (unsigned)id, slot, pitch) : NULL;
+}
+
+static bool gl3_texture_lend_ready(void *data, uintptr_t id,
+      unsigned slot)
+{
+   gl3_t *gl = (gl3_t*)data;
+   return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
+}
+#endif
 
 static void gl3_unload_texture(void *data, bool threaded,
       uintptr_t id)
@@ -6058,6 +6102,10 @@ static void gl3_unload_texture(void *data, bool threaded,
 
    glid = (GLuint)id;
    gl3_fp16_forget(glid);
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (data)
+      gl_texture_lend_forget(&((gl3_t*)data)->lend, glid);
+#endif
    glDeleteTextures(1, &glid);
 }
 
@@ -6584,8 +6632,13 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_hw_ring_framebuffer,
    gl3_update_texture,
    NULL, /* get_swap_interval_cap */
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl3_texture_lend,
+   gl3_texture_lend_ready,
+#else
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
+#endif
    gl3_get_last_present_wait
 };
 

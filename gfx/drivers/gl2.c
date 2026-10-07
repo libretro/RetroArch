@@ -5355,6 +5355,9 @@ static void gl2_free(void *data)
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    gl2_fp16_forget_all();
 #endif
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl_texture_lend_free(&gl->lend);
+#endif
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -6907,6 +6910,10 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    gl2_fp16_forget(glid);
 #endif
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (gl)
+      gl_texture_lend_forget(&gl->lend, glid);
+#endif
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -6968,6 +6975,10 @@ static void gl2_unload_texture(void *data,
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    gl2_fp16_forget(glid);
 #endif
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (data)
+      gl_texture_lend_forget(&((gl2_t*)data)->lend, glid);
+#endif
    glDeleteTextures(1, &glid);
 }
 
@@ -6975,24 +6986,41 @@ static void gl2_unload_texture(void *data,
  * the storage stays, glTexSubImage2D rewrites it. The pixel format is
  * the one gl_load_texture_data chose from the driver's RGBA flag, so
  * the caller's order is the order the texture was created with. */
-static void gl2_update_texture_internal(uintptr_t id,
-      const struct texture_image *ti)
+static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
+      uintptr_t id, const struct texture_image *ti)
 {
-   bool use_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   bool use_rgba      = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   const void *pixels = ti->pixels;
+   int lent           = -1;
+#ifdef HAVE_GL_TEXTURE_LEND
+   /* A lent slot holding the frame: uploaded from its buffer */
+   if (gl && gl->lend
+         && (lent = gl_texture_lend_bind(gl->lend, (unsigned)id, pixels)) != -1)
+   {
+      if (lent < 0)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+      pixels = NULL;
+   }
+#endif
    glBindTexture(GL_TEXTURE_2D, (GLuint)id);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (ti->fp16)
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
-            GL_RGBA, GL_HALF_FLOAT, ti->pixels);
+            GL_RGBA, GL_HALF_FLOAT, pixels);
    else if (ti->pix10)
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
-            GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, ti->pixels);
+            GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, pixels);
    else
 #endif
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
          use_rgba ? GL_RGBA : RARCH_GL_TEXTURE_TYPE32,
-         RARCH_GL_FORMAT32, ti->pixels);
+         RARCH_GL_FORMAT32, pixels);
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (lent >= 0)
+      gl_texture_lend_unbind(gl->lend, (unsigned)id, lent);
+#endif
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 #ifdef HAVE_THREADS
@@ -7004,7 +7032,7 @@ static uintptr_t video_texture_update_wrap_gl2(void *data)
    if (gl && gl->ctx_driver->make_current)
       gl->ctx_driver->make_current(false);
 
-   gl2_update_texture_internal((uintptr_t)cmd->handle,
+   gl2_update_texture_internal(gl, (uintptr_t)cmd->handle,
          (const struct texture_image*)cmd->payload);
    return 1;
 }
@@ -7039,9 +7067,25 @@ static enum video_texture_update gl2_update_texture(void *video_data,
    }
 #endif
 
-   gl2_update_texture_internal(id, ti);
-   return VIDEO_TEXTURE_UPDATE_DONE;
+   return gl2_update_texture_internal((gl2_t*)video_data, id, ti);
 }
+
+#ifdef HAVE_GL_TEXTURE_LEND
+/* On the context's thread (see texture_lend in video_driver.h) */
+static void *gl2_texture_lend(void *data, uintptr_t id, unsigned slot,
+      size_t pitch)
+{
+   gl2_t *gl = (gl2_t*)data;
+   return gl ? gl_texture_lend(&gl->lend, (unsigned)id, slot, pitch) : NULL;
+}
+
+static bool gl2_texture_lend_ready(void *data, uintptr_t id,
+      unsigned slot)
+{
+   gl2_t *gl = (gl2_t*)data;
+   return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
+}
+#endif
 
 static uint32_t gl2_get_flags(void *data)
 {
@@ -7265,8 +7309,13 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_hw_ring_framebuffer,
    gl2_update_texture,
    NULL, /* get_swap_interval_cap */
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl2_texture_lend,
+   gl2_texture_lend_ready,
+#else
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
+#endif
    gl2_get_last_present_wait
 };
 

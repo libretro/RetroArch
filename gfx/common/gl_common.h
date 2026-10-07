@@ -27,4 +27,41 @@ void gl_finish(void);
 
 void gl_flush(void);
 
+#if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL_CORE)) \
+      && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+#include <stddef.h>
+#include <boolean.h>
+
+#define HAVE_GL_TEXTURE_LEND
+
+/* A streamed texture's upload memory, lent (video_poke_interface_t
+ * texture_lend): two pixel unpack buffers per texture, mapped for good,
+ * each with the fence of the last upload from it. One list per driver
+ * instance, used on the thread that owns its context. */
+typedef struct gl_texture_lend gl_texture_lend_t;
+
+/* Slot @slot of texture @tex's upload memory when its rows are @pitch
+ * bytes apart; NULL, with nothing lent, otherwise */
+void *gl_texture_lend(gl_texture_lend_t **list, unsigned tex,
+      unsigned slot, size_t pitch);
+
+/* Whether lent slot @slot may be written: its last upload has run */
+bool gl_texture_lend_ready(gl_texture_lend_t *list, unsigned tex,
+      unsigned slot);
+
+/* For an upload of @pixels into @tex: when they are a lent slot, binds
+ * its buffer as the unpack source and returns the slot, which the
+ * upload then reads at offset 0 and gl_texture_lend_unbind() fences.
+ * -1 when they are not lent, -2 when they are but the slot's last
+ * upload has not run: written early, the frame is dropped. */
+int gl_texture_lend_bind(gl_texture_lend_t *list, unsigned tex,
+      const void *pixels);
+void gl_texture_lend_unbind(gl_texture_lend_t *list, unsigned tex,
+      int slot);
+
+/* With the texture, or with every texture */
+void gl_texture_lend_forget(gl_texture_lend_t **list, unsigned tex);
+void gl_texture_lend_free(gl_texture_lend_t **list);
+#endif
+
 #endif

@@ -4347,6 +4347,34 @@ static void lane_upload_batch(void)
 
 #include "../../../gfx/gfx_surface.h"
 #include "../../../input/input_overlay.h"
+#include "../../../gfx/common/gl_common.h"
+#ifdef HAVE_GL_TEXTURE_LEND
+#include <glsym/glsym.h>
+#ifndef GL_BGRA
+#define GL_BGRA 0x80E1
+#endif
+#ifndef GL_UNSIGNED_INT_8_8_8_8_REV
+#define GL_UNSIGNED_INT_8_8_8_8_REV 0x8367
+#endif
+
+/* What a GL driver holds in texture @id, read back in the words it was
+ * uploaded as; direct video only, where the context is this thread's.
+ * glcore uploads bytes R,G,B,A and swizzles at sampling, gl uploads
+ * the words as BGRA unless the frontend asked for RGBA. */
+static bool lend_gl_readback(const char *drv, uintptr_t id, bool rgba,
+      uint32_t *out)
+{
+   bool core = !strcmp(drv, "glcore");
+   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+   glPixelStorei(GL_PACK_ALIGNMENT, 4);
+   glGetTexImage(GL_TEXTURE_2D, 0,
+         (core || rgba) ? GL_RGBA : GL_BGRA,
+         (core || rgba) ? GL_UNSIGNED_BYTE : GL_UNSIGNED_INT_8_8_8_8_REV,
+         out);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   return glGetError() == GL_NO_ERROR;
+}
+#endif
 
 static unsigned surf_releases;
 static unsigned surf_last_slot;
@@ -4967,6 +4995,29 @@ static void lane_surface_lend(void)
          else if (s->can_update)
             CHECK(s->handle == first, "surface lend lane: frame %u "
                   "replaced the texture", k);
+#ifdef HAVE_GL_TEXTURE_LEND
+         /* The last frame, uploaded from a lent buffer where the driver
+          * lent one, is what the texture holds */
+         if (k == 7 && !threaded && s->lent)
+         {
+            const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+            uint32_t   *got = (uint32_t*)malloc(n * sizeof(uint32_t));
+            if (got && drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
+            {
+               size_t bad = n;
+               CHECK(lend_gl_readback(drv, s->handle, rgba, got),
+                     "surface lend lane: texture read back failed");
+               for (i = 0; i < n && bad == n; i++)
+                  if (got[i] != (0xff000000u
+                           | (uint32_t)(i * 2654435761u >> 8) | k))
+                     bad = i;
+               CHECK(bad == n, "surface lend lane: %s texture holds "
+                     "%08x at pixel %u, not the lent frame",
+                     drv, bad < n ? (unsigned)got[bad] : 0u, (unsigned)bad);
+            }
+            free(got);
+         }
+#endif
       }
       if (nslots == 1)
       {
@@ -4997,9 +5048,12 @@ static void lane_surface_lend(void)
    set_threaded_via_setting(false);
    run_frames(2);
    {
-      /* The drivers that lend: there the direct half must have. */
+      /* The drivers that lend: there the direct half must have. The
+       * GL drivers lend where buffers can be mapped for good (GL 4.4
+       * or ARB_buffer_storage), which llvmpipe has. */
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
-      if (drv && (!strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")))
+      if (drv && (     !strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")
+                    || !strcmp(drv, "gl")     || !strcmp(drv, "glcore")))
       {
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
          CHECK(lent_single, "surface lend lane: %s lent a one-slot "

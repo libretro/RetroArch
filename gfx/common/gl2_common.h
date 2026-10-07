@@ -32,6 +32,7 @@
 #include <formats/image.h>
 
 #include "../video_driver.h"
+#include "gl_common.h"
 
 RETRO_BEGIN_DECLS
 
@@ -186,6 +187,9 @@ struct gl2
    struct video_fbo_rect fbo_rect[GFX_MAX_SHADERS];   /* unsigned alignment */
 
    char device_str[128];
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl_texture_lend_t *lend;
+#endif
    bool pbo_readback_valid[4];
    /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */
    bool fp16_textures;
