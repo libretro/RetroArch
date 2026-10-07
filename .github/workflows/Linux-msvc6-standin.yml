@@ -1,0 +1,50 @@
+name: CI Visual C++ 6 project (stand-in compiler)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  msvc6-standin:
+    name: The Visual C++ 6 project's sources, defines and libraries, on mingw held to old C
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -eu
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends \
+            gcc-mingw-w64-i686 g++-mingw-w64-i686
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Compile and link what pkg/msvc/msvc-6 builds
+        shell: bash
+        run: |
+          set -eu
+          # Visual C++ 6 cannot be fetched here, so nothing built its
+          # project. This reads the project file - sources, defines,
+          # libraries - and builds the same with a 32-bit mingw
+          # compiler under old-C rules, at Windows NT 4.0's API, and
+          # links it. See the script for what that does and does not
+          # catch.
+          tools/msvc6_standin_check.sh
