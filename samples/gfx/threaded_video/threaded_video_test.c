@@ -4923,6 +4923,146 @@ static void lane_surface_external(void)
  * the surface's own memory is back before the texture goes. Threaded
  * video never lends. Only a driver with upload memory to lend
  * (texture_lend) is held to the direct half. */
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+#include "../../../gfx/common/gl2_common.h"
+
+/* gl2 under HDR output draws a half-float texture, linear scRGB, into
+ * an RGBA16F layer as the inverse of the encode at the menu nits. No
+ * runner has an HDR backbuffer, so this lends the driver one in name:
+ * scRGB marked active with no encode program, which leaves the frame
+ * in the offscreen layers to be read. A flat texel drawn over the whole
+ * layer must come out as the encode's inverse, for the plain gamut and
+ * for the one that rotates through Rec.2020 - into the frame's layer
+ * for an SDR source, into the UI's own for a PQ one. Direct video
+ * only, where the context is this thread's. */
+static void lane_gl2_linear(void)
+{
+   /* Red well above menu white: an 8-bit layer would clip it */
+   static const uint16_t texel[4] = { 0x4800, 0x3800, 0x3400, 0x3c00 };
+   static const double k709to2020[3][3] = {
+      { 0.6274040, 0.3292820, 0.0433136 },
+      { 0.0690970, 0.9195400, 0.0113612 },
+      { 0.0163916, 0.0880132, 0.8955950 } };
+   static const double lin[3] = { 8.0, 0.5, 0.25 };
+   video_driver_state_t *video_st = video_state_get_ptr();
+   unsigned had = failures, pass;
+   uint16_t px[4 * 4 * 4];
+   struct texture_image img;
+   uintptr_t tex = 0;
+   gl2_t *gl;
+   bool was_active, was_ok, was_pq;
+   unsigned i;
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+   gl = (gl2_t*)video_st->data;
+   if (!gl || !gl->fp16_textures)
+   {
+      fprintf(stderr, "[skip] gl2 linear lane (no half-float textures)\n");
+      return;
+   }
+   for (i = 0; i < 16; i++)
+      memcpy(&px[i * 4], texel, sizeof(texel));
+   memset(&img, 0, sizeof(img));
+   img.width  = 4;
+   img.height = 4;
+   img.pixels = (uint32_t*)px;
+   img.fp16   = true;
+   CHECK(video_driver_texture_load(&img, TEXTURE_FILTER_NEAREST, &tex)
+         && tex, "gl2 linear lane: no half-float texture");
+   if (!tex)
+      return;
+
+   was_active          = gl->scrgb.active;
+   was_ok              = gl->scrgb.fp16_ok;
+   was_pq              = gl->video_info.source_hdr10;
+   gl->scrgb.active    = true;
+   gl->scrgb.fp16_ok   = true;
+   run_frames(1);
+   CHECK(gl->scrgb.fbo && gl->scrgb.tex_fp16,
+         "gl2 linear lane: the layer is not RGBA16F after a linear load");
+
+   for (pass = 0; pass < 4 && gl->scrgb.fbo; pass++)
+   {
+      unsigned  w, h;
+      float    *out;
+      GLuint    fbo, layer;
+      double    want[3], t[3];
+      gfx_display_ctx_draw_t draw;
+      video_coords_t coords;
+      unsigned  c;
+
+      if (pass == 2)
+      {
+         /* A PQ source: the layers are made again, the UI its own */
+         gl->video_info.source_hdr10 = true;
+         gl->scrgb.dims              = 0;
+         run_frames(1);
+         CHECK(gl->scrgb.ui_fbo && gl->scrgb.tex_fp16,
+               "gl2 linear lane: a PQ source's UI layer is not RGBA16F");
+         if (!gl->scrgb.ui_fbo)
+            break;
+      }
+      fbo   = pass >= 2 ? gl->scrgb.ui_fbo : gl->scrgb.fbo;
+      layer = pass >= 2 ? gl->scrgb.ui_tex : gl->scrgb.tex;
+      w     = VIDEO_SCALE_W(gl->scrgb.dims);
+      h     = VIDEO_SCALE_H(gl->scrgb.dims);
+
+      memset(&coords, 0, sizeof(coords));
+      coords.vertices      = 4;
+      memset(&draw, 0, sizeof(draw));
+      draw.coords          = &coords;
+      draw.texture         = tex;
+      draw.dims            = gl->scrgb.dims;
+      draw.pos             = VIDEO_POS_PACK(0, 0);
+      gl->scrgb.menu_nits    = 200.0f;
+      gl->scrgb.expand_gamut = (pass & 1) ? 3 : 0;
+
+      glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+      gfx_display_ctx_gl.blend_begin(gl);
+      gfx_display_ctx_gl.draw(&draw, gl, gl->scrgb.dims);
+      gfx_display_ctx_gl.blend_end(gl);
+
+      for (c = 0; c < 3; c++)
+         t[c] = lin[c] * 80.0 / 200.0;
+      for (c = 0; c < 3; c++)
+         want[c] = (pass & 1)
+            ? k709to2020[c][0] * t[0] + k709to2020[c][1] * t[1]
+              + k709to2020[c][2] * t[2]
+            : t[c];
+      for (c = 0; c < 3; c++)
+         want[c] = pow(want[c], 1.0 / 2.4);
+
+      if (!(out = (float*)malloc((size_t)w * h * 4 * sizeof(float))))
+         break;
+      glBindTexture(GL_TEXTURE_2D, layer);
+      glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, out);
+      glBindTexture(GL_TEXTURE_2D, 0);
+      glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      {
+         const float *p = out + ((size_t)(h / 2) * w + w / 2) * 4;
+         CHECK(   fabs(p[0] - want[0]) < 4e-3 && fabs(p[1] - want[1]) < 4e-3
+               && fabs(p[2] - want[2]) < 4e-3 && fabs(p[3] - 1.0) < 4e-3,
+               "gl2 linear lane: %s source, gamut %u drew (%.4f %.4f %.4f "
+               "%.4f), the encode's inverse is (%.4f %.4f %.4f 1)",
+               pass >= 2 ? "PQ" : "SDR", (pass & 1) ? 3u : 0u,
+               p[0], p[1], p[2], p[3], want[0], want[1], want[2]);
+      }
+      free(out);
+   }
+
+   video_driver_texture_unload(&tex);
+   gl->scrgb.active            = was_active;
+   gl->scrgb.fp16_ok           = was_ok;
+   gl->video_info.source_hdr10 = was_pq;
+   gl->scrgb.dims              = 0;
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] gl2 linear lane (RGBA16F layers for SDR "
+            "and PQ sources, the encode's inverse for two gamuts)\n");
+}
+#endif
+
 static void lane_surface_lend(void)
 {
    unsigned had = failures;
@@ -6887,6 +7027,10 @@ int main(int argc, char *argv[])
    lane_surface_update();
    lane_surface_external();
    lane_surface_lend();
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
+      lane_gl2_linear();
+#endif
    if (real_driver())
       lane_surface_4k();
    /* The one driver that batches and counts its upload submissions */
