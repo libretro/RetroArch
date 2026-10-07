@@ -29,6 +29,7 @@
 #include <retro_atomic.h>
 #include <formats/image.h>
 #include <features/features_cpu.h>
+#include <rthreads/rthreads.h>
 
 #include "../../../gfx/gfx_anim_preview.h"
 #include "../../../ui/companion/companion_thumbs.h"
@@ -59,6 +60,29 @@ enum image_type_enum image_texture_get_type(const char *path)
    return IMAGE_TYPE_PNG;
 }
 
+/* A worker that decoded hands back its read pool before it ends:
+ * noted by thread, against the threads that decoded */
+#define MAX_THREADS 16
+static uintptr_t decode_thread[MAX_THREADS], flush_thread[MAX_THREADS];
+static unsigned  decode_threads, flush_threads;
+static slock_t  *thread_lock;
+static void note_thread(uintptr_t *list, unsigned *n)
+{
+   uintptr_t id = sthread_get_current_thread_id();
+   unsigned i;
+   slock_lock(thread_lock);
+   for (i = 0; i < *n; i++)
+      if (list[i] == id)
+         break;
+   if (i == *n && *n < MAX_THREADS)
+      list[(*n)++] = id;
+   slock_unlock(thread_lock);
+}
+void data_transfer_pool_flush(void)
+{
+   note_thread(flush_thread, &flush_threads);
+}
+
 bool image_texture_load_ex(struct texture_image *img, const char *path,
       bool (*should_abort)(void *ud), void *ud)
 {
@@ -76,6 +100,7 @@ bool image_texture_load_ex(struct texture_image *img, const char *path,
    for (i = 0; i < 40 * 30; i++)
       img->pixels[i] = c;
    retro_atomic_fetch_add_int(&still_decodes, 1);
+   note_thread(decode_thread, &decode_threads);
    return true;
 }
 
@@ -276,6 +301,7 @@ int main(void)
 
    signal(SIGALRM, watchdog);
    alarm(120);
+   thread_lock = slock_new();
    memset(&k, 0, sizeof(k));
    for (i = 0; i < 8; i++)
       k.last_frame[i] = -1;
@@ -426,6 +452,24 @@ int main(void)
    usleep(5000);
    companion_thumbs_free(t);
    printf("ok    free with decodes and an animation in flight\n");
+   {
+      unsigned i2, j, missing = 0;
+      for (i2 = 0; i2 < decode_threads; i2++)
+      {
+         bool found = false;
+         for (j = 0; j < flush_threads; j++)
+            if (flush_thread[j] == decode_thread[i2])
+               found = true;
+         if (!found)
+            missing++;
+      }
+      CHECK(decode_threads > 0 && !missing,
+            "a worker that decoded ended holding its read pool");
+      if (decode_threads > 0 && !missing)
+         printf("ok    %u decode workers handed back their read pools\n",
+               decode_threads);
+   }
+   slock_free(thread_lock);
 
    if (failures)
    {

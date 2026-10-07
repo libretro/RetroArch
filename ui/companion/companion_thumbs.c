@@ -21,6 +21,7 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <formats/image.h>
+#include <formats/data_transfer.h>
 #include <streams/file_stream.h>
 #include <time.h>          /* struct timespec, for retro_timers.h */
 #include <retro_timers.h>
@@ -988,6 +989,8 @@ static void ct_worker(void *ud)
       if (ct_quitting(t))
       {
          slock_unlock(t->lock);
+         /* The reads' pool is this thread's, which ends here */
+         data_transfer_pool_flush();
          return;
       }
       if ((got = ct_next_job(t, &job)))
