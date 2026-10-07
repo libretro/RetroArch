@@ -1595,7 +1595,9 @@ static void vulkan_upload_batch_submit(vk_t *vk)
    if (fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
    {
       fence = vk->sync_fence;
-      vkResetFences(vk->context->device, 1, &fence);
+      /* A fence still signalled is no fence to submit with */
+      if (vkResetFences(vk->context->device, 1, &fence) != VK_SUCCESS)
+         fence = VK_NULL_HANDLE;
    }
 
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1635,7 +1637,17 @@ static void vulkan_upload_batch_submit(vk_t *vk)
        * worse than leaving them to the device teardown. */
       if (fence == VK_NULL_HANDLE)
          return;
-      vkWaitForFences(vk->context->device, 1, &fence, VK_TRUE, UINT64_MAX);
+      /* A wait that failed has the device lost, or knows nothing of the
+       * upload: released only once it is known to have run, or the GPU
+       * is gone and reads nothing */
+      res = vkWaitForFences(vk->context->device, 1, &fence, VK_TRUE,
+            UINT64_MAX);
+      if (res != VK_SUCCESS)
+      {
+         vulkan_check_device_lost(vk, res);
+         if (res != VK_ERROR_DEVICE_LOST)
+            return;
+      }
       node->fence = VK_NULL_HANDLE;
       vulkan_deferred_cmd_release(vk, node);
       return;
@@ -2318,8 +2330,12 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
 
                if (!(keep = vulkan_upload_batch_reserve(vk, &staging)))
                {
+                  /* Nothing recorded the upload: an image left
+                   * undefined is no texture to hand out */
                   vulkan_destroy_texture(vk->context->device, &tmp);
-                  break;
+                  vulkan_destroy_texture(vk->context->device, &tex);
+                  memset(&tex, 0, sizeof(tex));
+                  return tex;
                }
 
                /* If doing mipmapping on upload, keep in general
@@ -10693,6 +10709,12 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
          texture->flags |= VK_TEX_FLAG_MIPMAP;
    }
 
+   /* Not made, or made and not uploaded: refused, not handed out */
+   if (texture->image == VK_NULL_HANDLE)
+   {
+      free(texture);
+      return 0;
+   }
    return (uintptr_t)texture;
 }
 

@@ -96,6 +96,10 @@ struct gl_texture_lend
    size_t   pitch;
    GLuint   pbo[GL_LEND_SLOTS];
    GLuint   tex;
+   /* An upload from the slot has been issued and not seen to finish.
+    * Kept apart from the fence, which can fail to be made: a slot with
+    * no fence is not thereby free. */
+   bool     busy[GL_LEND_SLOTS];
 };
 
 static gl_texture_lend_t *gl_texture_lend_find(gl_texture_lend_t *list,
@@ -207,13 +211,19 @@ static bool gl_texture_lend_slot_ready(gl_texture_lend_t *st,
       unsigned slot)
 {
    GLenum r;
-   if (!st->fence[slot])
+   if (!st->busy[slot])
       return true;
+   /* The upload's own fence could not be made: one made now follows
+    * it in the command stream, so its signal covers the upload too */
+   if (     !st->fence[slot]
+         && !(st->fence[slot] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0)))
+      return false;
    r = glClientWaitSync(st->fence[slot], 0, 0);
    if (r != GL_ALREADY_SIGNALED && r != GL_CONDITION_SATISFIED)
       return false;
    glDeleteSync(st->fence[slot]);
    st->fence[slot] = 0;
+   st->busy[slot]  = false;
    return true;
 }
 
@@ -250,7 +260,10 @@ void gl_texture_lend_unbind(gl_texture_lend_t *list, unsigned tex,
    gl_texture_lend_t *st = gl_texture_lend_find(list, tex);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    if (st && slot >= 0 && slot < GL_LEND_SLOTS)
+   {
+      st->busy[slot]  = true;
       st->fence[slot] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+   }
 }
 
 void gl_texture_lend_forget(gl_texture_lend_t **list, unsigned tex)

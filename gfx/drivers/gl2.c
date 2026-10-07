@@ -128,17 +128,25 @@ static unsigned gl2_fp16_cap;
  * so a session with no linear texture keeps the 8-bit layer */
 static bool     gl2_fp16_loaded;
 
+/* Room for one more name, made before the texture is: a half-float
+ * texture the set could not hold would be drawn as an SDR one, so the
+ * load is refused instead */
+static bool gl2_fp16_reserve(void)
+{
+   unsigned cap;
+   GLuint *grown;
+   if (gl2_fp16_count < gl2_fp16_cap)
+      return true;
+   cap = gl2_fp16_cap ? gl2_fp16_cap * 2 : 32;
+   if (!(grown = (GLuint*)realloc(gl2_fp16_tex, cap * sizeof(*grown))))
+      return false;
+   gl2_fp16_tex = grown;
+   gl2_fp16_cap = cap;
+   return true;
+}
+
 static void gl2_fp16_remember(GLuint id)
 {
-   if (gl2_fp16_count == gl2_fp16_cap)
-   {
-      unsigned cap  = gl2_fp16_cap ? gl2_fp16_cap * 2 : 32;
-      GLuint *grown = (GLuint*)realloc(gl2_fp16_tex, cap * sizeof(*grown));
-      if (!grown)
-         return;
-      gl2_fp16_tex = grown;
-      gl2_fp16_cap = cap;
-   }
    gl2_fp16_tex[gl2_fp16_count++] = id;
    gl2_fp16_loaded                = true;
 }
@@ -6857,17 +6865,21 @@ static void video_texture_load_gl2(
    unsigned width     = 0;
    unsigned height    = 0;
    const void *pixels = NULL;
-   /* Generate the OpenGL texture object */
-   glGenTextures(1, &id);
-   *idptr             = id;
-
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    if (ti && ti->fp16)
    {
+      *idptr = 0;
+      if (!gl2_fp16_reserve())
+         return;
+      glGenTextures(1, &id);
+      *idptr = id;
       gl2_load_texture_fp16(id, filter_type, ti);
       return;
    }
 #endif
+   /* Generate the OpenGL texture object */
+   glGenTextures(1, &id);
+   *idptr             = id;
 
    if (ti)
    {

@@ -955,17 +955,25 @@ static GLuint  *gl3_fp16_tex;
 static unsigned gl3_fp16_count;
 static unsigned gl3_fp16_cap;
 
+/* Room for one more name, made before the texture is: a half-float
+ * texture the set could not hold would be drawn as an SDR one, so the
+ * load is refused instead */
+static bool gl3_fp16_reserve(void)
+{
+   unsigned cap;
+   GLuint *grown;
+   if (gl3_fp16_count < gl3_fp16_cap)
+      return true;
+   cap = gl3_fp16_cap ? gl3_fp16_cap * 2 : 32;
+   if (!(grown = (GLuint*)realloc(gl3_fp16_tex, cap * sizeof(*grown))))
+      return false;
+   gl3_fp16_tex = grown;
+   gl3_fp16_cap = cap;
+   return true;
+}
+
 static void gl3_fp16_remember(GLuint id)
 {
-   if (gl3_fp16_count == gl3_fp16_cap)
-   {
-      unsigned cap  = gl3_fp16_cap ? gl3_fp16_cap * 2 : 32;
-      GLuint *grown = (GLuint*)realloc(gl3_fp16_tex, cap * sizeof(*grown));
-      if (!grown)
-         return;
-      gl3_fp16_tex = grown;
-      gl3_fp16_cap = cap;
-   }
    gl3_fp16_tex[gl3_fp16_count++] = id;
 }
 
@@ -3747,6 +3755,9 @@ static void video_texture_load_gl3(
    unsigned levels;
    GLenum mag_filter, min_filter;
 
+   *idptr = 0;
+   if (ti->fp16 && !gl3_fp16_reserve())
+      return;
    glGenTextures(1, &id);
    *idptr = id;
    glBindTexture(GL_TEXTURE_2D, id);

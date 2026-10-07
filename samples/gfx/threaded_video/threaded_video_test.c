@@ -3535,6 +3535,9 @@ extern void *__libc_realloc(void*, size_t);
 
 static unsigned long heap_calls;
 static bool          heap_counting;
+/* Fault injection: the first realloc of nothing to exactly this many
+ * bytes fails, once. 0 when unarmed. */
+static size_t        heap_fail_realloc_new;
 
 void *malloc(size_t n)
 {
@@ -3559,7 +3562,60 @@ void *realloc(void *p, size_t n)
 {
    if (heap_counting)
       heap_calls++;
+   if (!p && heap_fail_realloc_new && n == heap_fail_realloc_new)
+   {
+      heap_fail_realloc_new = 0;
+      return NULL;
+   }
    return __libc_realloc(p, n);
+}
+
+/* The GL drivers keep the names of their half-float textures in a set,
+ * and draw the rest as SDR: a texture the set cannot hold must not be
+ * handed out to be drawn wrong. Right after a video reinit the set is
+ * empty, so the half-float load's first growth of it is made to fail:
+ * the load must come back refused. */
+static void lane_gl_fp16_set_full(void)
+{
+   static uint16_t px[4 * 4 * 4];
+   struct texture_image img;
+   uintptr_t tex = 1;
+   unsigned had  = failures;
+
+   if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+   {
+      fprintf(stderr, "[skip] fp16 set lane (no half-float textures)\n");
+      return;
+   }
+   set_threaded_via_setting(true);
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   memset(&img, 0, sizeof(img));
+   img.width  = 4;
+   img.height = 4;
+   img.pixels = (uint32_t*)px;
+   img.fp16   = true;
+   heap_fail_realloc_new = 32 * sizeof(unsigned);
+   if (!video_driver_texture_load(&img, TEXTURE_FILTER_LINEAR, &tex))
+      tex = 0;
+   CHECK(heap_fail_realloc_new == 0,
+         "fp16 set lane: the load never grew the set");
+   heap_fail_realloc_new = 0;
+   CHECK(tex == 0, "fp16 set lane: a half-float texture the set could "
+         "not hold was handed out (%lx)", (unsigned long)tex);
+   if (tex)
+      video_driver_texture_unload(&tex);
+   /* and with room, it loads */
+   tex = 0;
+   video_driver_texture_load(&img, TEXTURE_FILTER_LINEAR, &tex);
+   CHECK(tex != 0, "fp16 set lane: no half-float texture with room");
+   if (tex)
+      video_driver_texture_unload(&tex);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] fp16 set lane (refused when the set cannot "
+            "grow)\n");
 }
 
 static unsigned long heap_calls_over(unsigned frames)
@@ -3607,6 +3663,11 @@ static void lane_frame_path_heap(void)
 static void lane_frame_path_heap(void)
 {
    fprintf(stderr, "[skip] frame-path heap lane (needs glibc, no allocator sanitizer)\n");
+}
+
+static void lane_gl_fp16_set_full(void)
+{
+   fprintf(stderr, "[skip] fp16 set lane (needs glibc, no allocator sanitizer)\n");
 }
 #endif
 
@@ -5063,6 +5124,77 @@ static void lane_gl2_linear(void)
 }
 #endif
 
+#ifdef HAVE_GL_TEXTURE_LEND
+static GLsync APIENTRY lend_fence_refused(GLenum cond, GLbitfield flags)
+{
+   (void)cond;
+   (void)flags;
+   return NULL;
+}
+
+/* A lent GL slot whose upload got no fence (glFenceSync can fail) is
+ * not free: the upload may still be reading it. With fences refused,
+ * the slot an upload just read from must stay unwritable; once fences
+ * can be made again, it comes back. Direct video only, where the
+ * context is this thread's. */
+static void lane_gl_lend_fence_refused(void)
+{
+   bool rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA) != 0;
+   size_t n  = (size_t)64 * 48;
+   RGLSYMGLFENCESYNCPROC real = __rglgen_glFenceSync;
+   gfx_surface_t *s;
+   unsigned k, tries;
+   bool came_back = false;
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+         GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+   CHECK(s != NULL, "lend fence lane: no surface");
+   if (!s)
+      return;
+   /* Two frames per slot: the first lends it, the second is read from
+    * the lent buffer */
+   for (k = 0; k < 4; k++)
+   {
+      unsigned slot = k & 1;
+      for (tries = 0; tries < 16 && !gfx_surface_slot_writable(s, slot);
+            tries++)
+         run_frames(1);
+      memset(s->slots[slot], 0x40 + k, n * sizeof(uint32_t));
+      gfx_surface_submit(s, slot, rgba);
+      run_frames(1);
+   }
+   CHECK(s->lent == 3, "lend fence lane: the surface was lent %u",
+         (unsigned)s->lent);
+   if (s->lent == 3)
+   {
+      for (tries = 0; tries < 16 && !gfx_surface_slot_writable(s, 0);
+            tries++)
+         run_frames(1);
+      memset(s->slots[0], 0x7f, n * sizeof(uint32_t));
+      __rglgen_glFenceSync = lend_fence_refused;
+      CHECK(gfx_surface_submit(s, 0, rgba) == GFX_SURFACE_SUBMIT_DONE,
+            "lend fence lane: the upload was not taken");
+      run_frames(2);
+      CHECK(!gfx_surface_slot_writable(s, 0),
+            "lend fence lane: a slot whose upload got no fence was handed "
+            "back as free");
+      __rglgen_glFenceSync = real;
+      for (tries = 0; tries < 16 && !came_back; tries++)
+      {
+         run_frames(1);
+         came_back = gfx_surface_slot_writable(s, 0);
+      }
+      CHECK(came_back, "lend fence lane: the slot never came back once "
+            "fences could be made");
+   }
+   __rglgen_glFenceSync = real;
+   gfx_surface_free(s);
+   run_frames(2);
+}
+#endif
+
 static void lane_surface_lend(void)
 {
    unsigned had = failures;
@@ -5212,6 +5344,13 @@ static void lane_surface_lend(void)
                "one-slot surface nothing under threaded video", drv);
       }
    }
+#ifdef HAVE_GL_TEXTURE_LEND
+   {
+      const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+      if (drv && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
+         lane_gl_lend_fence_refused();
+   }
+#endif
    if (failures == had)
       fprintf(stderr, "[pass] surface lend lane (direct %s, one slot %s; "
             "threaded %s, one slot %s)\n",
@@ -7045,6 +7184,10 @@ int main(int argc, char *argv[])
       lane_x11_wsi_connection();
    if (real_driver())
       lane_x11_grabbed_mouse();
+   if (     real_driver()
+         && (   !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl")
+             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")))
+      lane_gl_fp16_set_full();
    if (!real_driver())
    {
       lane_waiter_call();
