@@ -260,7 +260,9 @@ static bool input_pointer_frame_pos(unsigned port, unsigned device,
       return false;
    *pos = 0;
    i    = input_pointer_of_port(port, device);
-   if (i < input_pointers.count)
+   /* count never exceeds MAX_USERS (input_pointer_frames_set clamps
+    * it); the second test says so to the compiler. */
+   if (i < input_pointers.count && i < MAX_USERS)
       input_pointers.read_as[i] = device;
    else if (  device != RETRO_DEVICE_POINTER
            && device != RARCH_DEVICE_POINTER_SCREEN)
@@ -324,7 +326,9 @@ static bool input_pointer_frame_read(unsigned port, unsigned device,
    }
    *out = 0;
    i    = input_pointer_of_port(port, device);
-   if (i < input_pointers.count)
+   /* count never exceeds MAX_USERS (input_pointer_frames_set clamps
+    * it); the second test says so to the compiler. */
+   if (i < input_pointers.count && i < MAX_USERS)
       input_pointers.read_as[i] = device;
    else if (  device != RETRO_DEVICE_POINTER
            && device != RARCH_DEVICE_POINTER_SCREEN)

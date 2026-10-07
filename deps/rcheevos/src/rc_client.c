@@ -332,6 +332,9 @@ void rc_client_enable_logging(rc_client_t* client, int level, rc_client_message_
    #undef CLOCK_MONOTONIC
   #endif
  #endif
+ #ifndef CLOCK_MONOTONIC
+  #include <mach/mach_time.h>
+ #endif
 #endif
 
 static rc_clock_t rc_client_clock_get_now_millisecs(const rc_client_t* client)
@@ -364,6 +367,20 @@ static rc_clock_t rc_client_clock_get_now_millisecs(const rc_client_t* client)
     return 0;
 
   return (rc_clock_t)(ticks.QuadPart / freq.QuadPart);
+#elif defined(__APPLE__) && defined(__MACH__)
+  /* clock() counts CPU time, not time passing, and below a 10.5
+   * deployment target Darwin's CLOCKS_PER_SEC is CLK_TCK (100), which
+   * the clock() path below divides by 1000 to zero. Mach's monotonic
+   * tick count is there from 10.0 and iOS 2; scaled in double, as
+   * ticks * numer overflows 64 bits within minutes on PowerPC. */
+  static mach_timebase_info_data_t timebase;
+  (void)client;
+
+  if (!timebase.denom)
+    mach_timebase_info(&timebase);
+
+  return (rc_clock_t)((double)mach_absolute_time() * timebase.numer
+      / timebase.denom / 1000000.0);
 #else
   const clock_t clock_now = clock();
 

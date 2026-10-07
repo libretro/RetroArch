@@ -609,10 +609,13 @@ static void rmp3_L3_decode_scalefactors(const uint8_t *hdr, uint8_t *ist_pos, rm
     }
     rmp3_L3_read_scalefactors(iscf, ist_pos, scf_size, scf_partition, bs, scfsi);
 
-    if (gr->n_short_sfb)
+    /* n_short_sfb is a multiple of 3 and n_long_sfb + n_short_sfb at
+     * most 39 (rmp3_L3_read_side_info sets only 22+0, 0+39, 8+30 and
+     * 6+30); written so the compiler can see the writes stay in iscf. */
+    if (gr->n_short_sfb && gr->n_long_sfb + gr->n_short_sfb <= (int)sizeof(iscf))
     {
         int sh = 3 - scf_shift;
-        for (i = 0; i < gr->n_short_sfb; i += 3)
+        for (i = 0; i + 2 < gr->n_short_sfb; i += 3)
         {
             iscf[gr->n_long_sfb + i + 0] += gr->subblock_gain[0] << sh;
             iscf[gr->n_long_sfb + i + 1] += gr->subblock_gain[1] << sh;

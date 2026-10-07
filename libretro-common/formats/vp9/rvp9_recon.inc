@@ -1010,6 +1010,11 @@ static void rvp9_d135_predictor(RVP9_PIXEL *dst, int stride, int bs,
   RVP9_PIXEL border[32 + 32 - 1];  /* outer border from bottom-left to top-right */
 #endif
 
+  /* Blocks are at most 32 wide, so the border's last write is
+   * border[2 * 32 - 2]; said here so the compiler can see it. */
+  if (bs > 32)
+    return;
+
 /* dst(bs, bs - 2)[0], i.e., border starting at bottom-left */
   for (i = 0; i < bs - 2; ++i) {
     border[i] = RVP9_AVG3(left[bs - 3 - i], left[bs - 2 - i], left[bs - 1 - i]);

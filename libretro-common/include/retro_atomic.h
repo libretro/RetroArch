@@ -1555,9 +1555,21 @@ static INLINE int retro_atomic_load_seq_cst_int_fb_(retro_atomic_int_t *p)
  * word.  Every real backend can express these (OSAtomic and
  * Interlocked both have 64-bit CAS; cmpxchg8b covers 32-bit x86), but
  * old 32-bit __sync targets may not - RETRO_ATOMIC_HAS_64 gates.
- * Callers on the volatile fallback get nothing, as with CAS/PTR. */
+ * Callers on the volatile fallback get nothing, as with CAS/PTR.
+ *
+ * C11, C++11 and GCC __atomic accept an 8-byte operation on any target,
+ * but where the target has no 8-byte atomic instructions (32-bit
+ * PowerPC, MIPS32: the compiler reports 8-byte atomics as not always
+ * lock-free) each one compiles to a libatomic call (__atomic_load_8),
+ * which Darwin and the console toolchains do not ship, and the link
+ * fails.  There the 64-bit operations are left out, as on the 32-bit
+ * __sync targets. */
 
-#if defined(RETRO_ATOMIC_BACKEND_C11)
+#if (defined(RETRO_ATOMIC_BACKEND_C11) || defined(RETRO_ATOMIC_BACKEND_CXX11) \
+      || defined(RETRO_ATOMIC_BACKEND_GCC_NEW)) \
+      && defined(__GCC_ATOMIC_LLONG_LOCK_FREE) && __GCC_ATOMIC_LLONG_LOCK_FREE < 2
+/* RETRO_ATOMIC_HAS_64 stays undefined. */
+#elif defined(RETRO_ATOMIC_BACKEND_C11)
 
 #include <stdint.h>
 typedef _Atomic(int64_t) retro_atomic_64_t;

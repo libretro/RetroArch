@@ -1834,7 +1834,7 @@ static int task_database_iterate_serial_lookup(
 
    if (db_state->entry_index == 0)
    {
-      size_t query_len;
+      size_t query_len, serial_len;
       char  query_buf[128];
       char *query      = query_buf;
       char *serial_buf;
@@ -1905,9 +1905,10 @@ static int task_database_iterate_serial_lookup(
        * the common case on the stack and falling back to the heap for
        * a serial that does not fit - the same pattern
        * database_info_list_iterate_found_match() uses for db_crc. */
-      query_len = STRLEN_CONST("{'serial': b'")
-                + strlen(serial_buf)
-                + STRLEN_CONST("'}") + 1;
+      serial_len = strlen(serial_buf);
+      query_len  = STRLEN_CONST("{'serial': b'")
+                 + serial_len
+                 + STRLEN_CONST("'}") + 1;
 
       if (query_len > sizeof(query_buf))
          query = (char*)malloc(query_len);
@@ -1918,7 +1919,12 @@ static int task_database_iterate_serial_lookup(
          return SCAN_VERDICT_ERROR;
       }
 
-      snprintf(query, query_len, "{'serial': b'%s'}", serial_buf);
+      /* The pieces' lengths are known: copied in, rather than a
+       * snprintf whose output length the compiler cannot bound. */
+      memcpy(query, "{'serial': b'", STRLEN_CONST("{'serial': b'"));
+      memcpy(query + STRLEN_CONST("{'serial': b'"), serial_buf, serial_len);
+      memcpy(query + STRLEN_CONST("{'serial': b'") + serial_len, "'}",
+            STRLEN_CONST("'}") + 1);
 #ifdef DEBUG
       RARCH_DBG("[Scanner] Serial orig / decoded: \"%s\" / \"%s\".\n", db_state->serial, serial_buf);
 #endif

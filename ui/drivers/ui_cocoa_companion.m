@@ -113,13 +113,15 @@ static NSString *companion_filenames_type(void)
 /* The generic folder icon. -iconForFileType: (10.0) is deprecated in
  * 12.0 for -iconForContentType: and a UTType (11.0), so 11 on asks by
  * content type and earlier releases by the 'fldr' HFS type (the named
- * constant is in Carbon's Icons.h, not pulled in here); both by
+ * constant is in Carbon's Icons.h, not pulled in here; spelled as its
+ * value, as GCC warns on a multi-character constant); both by
  * selector. Autoreleased, as both methods return it. */
+#define COMPANION_HFS_FOLDER 0x666C6472u /* 'fldr' */
 static NSImage *companion_folder_icon(void)
 {
    NSWorkspace *ws = [NSWorkspace sharedWorkspace];
 #ifdef GNUSTEP
-   return [ws iconForFileType:NSFileTypeForHFSTypeCode('fldr')];
+   return [ws iconForFileType:NSFileTypeForHFSTypeCode(COMPANION_HFS_FOLDER)];
 #else
    id utt;
    if (     apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0)
@@ -132,7 +134,7 @@ static NSImage *companion_folder_icon(void)
                sel_registerName("iconForContentType:"), folder);
    }
    return apple_rt_get_id_arg(ws, sel_registerName("iconForFileType:"),
-         NSFileTypeForHFSTypeCode('fldr'));
+         NSFileTypeForHFSTypeCode(COMPANION_HFS_FOLDER));
 #endif
 }
 
@@ -4348,7 +4350,7 @@ static const char *cc_thumb_subdir(int t)
    owner   = [window frame];
    nameCol = [[coresTable tableColumns] objectAtIndex:0];
    verCol  = [[coresTable tableColumns] objectAtIndex:1];
-   font    = [[nameCol dataCell] font];
+   font    = [(NSCell *)[nameCol dataCell] font];
    if (!font)
       font = [NSFont systemFontOfSize:[NSFont systemFontSize]];
    rows    = [coresTable numberOfRows];
