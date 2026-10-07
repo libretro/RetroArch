@@ -156,8 +156,6 @@ bool android_vk_openxr_begin_frame(void)
       return false;
    }
 
-   openxr_input_sync(xr->session);
-
    android_vk_openxr_frame_state.type = XR_TYPE_FRAME_STATE;
 
    {
@@ -165,6 +163,14 @@ bool android_vk_openxr_begin_frame(void)
             xr->session,
             &wait_info,
             &android_vk_openxr_frame_state);
+
+      /* The controllers are read once the wait for the frame is over, not
+       * before it. The wait takes up what is left of the frame's period,
+       * and the frontend polls straight after this frame is handed in: read
+       * before the wait, what that poll gets is most of a period old; read
+       * after it, it is as old as the frame took to draw. Read whether or
+       * not the wait went well, as it was before. */
+      openxr_input_sync(xr->session);
 
       if (result != XR_SUCCESS)
       {

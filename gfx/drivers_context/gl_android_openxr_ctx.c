@@ -322,10 +322,17 @@ bool gl_android_openxr_begin_frame(void)
    if (!xr->running)
       return false;
 
+   result = xrWaitFrame(xr->session, &wait_info, &frame_state);
+
+   /* The controllers are read once the wait for the frame is over, not
+    * before it. The wait takes up what is left of the frame's period,
+    * and the frontend polls straight after this frame is handed in: read
+    * before the wait, what that poll gets is most of a period old; read
+    * after it, it is as old as the frame took to draw. Read whether or
+    * not the wait went well, as it was before. */
    openxr_input_sync(xr->session);
 
-   if ((result = xrWaitFrame(xr->session, &wait_info, &frame_state))
-         != XR_SUCCESS)
+   if (result != XR_SUCCESS)
    {
       RARCH_ERR("[XR] xrWaitFrame failed (%d).\n", result);
       return false;
