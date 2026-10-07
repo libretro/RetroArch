@@ -777,6 +777,9 @@ static const GUID win32_power_perf_check =
 static const GUID win32_power_throttle_min =
    { 0x893dee8e, 0x2bef, 0x41e0,
       { 0x89, 0xc6, 0xb5, 0x5d, 0x09, 0x29, 0x96, 0x4c } };
+static const GUID win32_power_throttle_max =
+   { 0xbc5038f7, 0x23e0, 0x4960,
+      { 0x96, 0xda, 0x33, 0xab, 0xaf, 0x59, 0x35, 0xec } };
 static const GUID win32_power_parking_min_cores =
    { 0x0cc5b647, 0xc1df, 0x4637,
       { 0x89, 0x1a, 0xde, 0xc3, 0x5c, 0x31, 0x85, 0x83 } };
@@ -925,10 +928,11 @@ static void win32_power_plan_restore(win32_powrprof_t *p)
 }
 
 /* Activates a copy of the current plan with processor performance
- * re-evaluation at its longest interval.  Minimum processor state and
- * unparked cores are pinned at 100% so there is nothing left for that
- * check to decide.  Only AC values change; on battery the copy behaves
- * like the original. */
+ * re-evaluation at its longest interval.  Minimum and maximum processor
+ * state and unparked cores are pinned at 100% - the original may cap
+ * the maximum - so there is nothing left for that check to decide.
+ * Only AC values change; on battery the copy behaves like the
+ * original. */
 static bool win32_power_plan_apply(win32_powrprof_t *p)
 {
    static const WCHAR name[] = L"RetroArch Low Latency";
@@ -964,6 +968,8 @@ static bool win32_power_plan_apply(win32_powrprof_t *p)
                      &win32_power_perf_check, 5000) == ERROR_SUCCESS
             && p->write_ac(NULL, &copy, &win32_power_sub_processor,
                      &win32_power_throttle_min, 100) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_throttle_max, 100) == ERROR_SUCCESS
             && p->write_ac(NULL, &copy, &win32_power_sub_processor,
                      &win32_power_parking_min_cores, 100) == ERROR_SUCCESS
             && p->set_active(NULL, &copy) == ERROR_SUCCESS;

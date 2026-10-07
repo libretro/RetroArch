@@ -11,5 +11,5 @@ S_BOOL(win32_power_plan, WIN32_POWER_PLAN,
       "win32_power_plan",
       DEFAULT_WIN32_POWER_PLAN, SD_FLAG_CMD_APPLY_AUTO, 0, 0,
       "Low-Latency Power Plan",
-      "Switches to a copy of the active Windows power plan that keeps the processor at full speed with no parked cores and re-evaluates performance states every 5 seconds instead of every 15 ms, cutting kernel interrupt activity. Only applies when plugged in. The original plan is restored on exit.")
+      "Switches to a copy of the active Windows power plan that keeps the processor at full speed - minimum and maximum processor state at 100% - with no parked cores and re-evaluates performance states every 5 seconds instead of every 15 ms, cutting kernel interrupt activity. Only applies when plugged in. The original plan is restored on exit.")
 #endif
