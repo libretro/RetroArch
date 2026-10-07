@@ -258,6 +258,34 @@ def handed_bind_reads(root):
     return found
 
 
+# A joypad driver, and an HID backend behind one, is handed no binds at
+# all. Its state call gets two lists - the pad's button and the pad's
+# axis behind each of the RetroPad's sixteen - that the frontend has
+# resolved: the port's own bind, or its controller's profile's. So no
+# file of theirs has a bind's record, a set of them or a profile's to
+# name.
+JOYPAD_BIND_NAME = re.compile(r'\b(?:retro_keybind|retro_keybind_set|binds|binds_data|auto_binds)\b')
+
+
+def joypad_bind_names(root):
+    found = {}
+    for sub in ('drivers_joypad', 'drivers_hid'):
+        top = os.path.join(root, 'input', sub)
+        for d, _, files in sorted(os.walk(top)):
+            for f in sorted(files):
+                if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
+                    continue
+                path = os.path.join(d, f)
+                try:
+                    text = open(path, encoding='utf-8', errors='replace').read()
+                except OSError:
+                    continue
+                n = len(JOYPAD_BIND_NAME.findall(strip_comments(text)))
+                if n:
+                    found[os.path.relpath(path, root).replace(os.sep, '/')] = n
+    return found
+
+
 def analog_bind_macro_uses(root):
     found = {}
     for d, dirs, files in os.walk(root):
@@ -370,6 +398,12 @@ def run(root, allowed, outside_allowed=None):
         print('%s: maps a stick\'s axis to its binds itself, %d time(s).\n'
               '  The frontend answers a stick from the keys bound to it: give it\n'
               '  the keys (keys_down in the driver table).' % (rel, n))
+        bad += 1
+    for rel, n in sorted(joypad_bind_names(root).items()):
+        print('%s: names binds, %d time(s).\n'
+              '  A joypad driver is handed what is behind each of the RetroPad\'s\n'
+              '  sixteen on its pad (joykeys, joyaxes in its state call), resolved\n'
+              '  by the frontend; it has no binds to read or to pass on.' % (rel, n))
         bad += 1
     for rel, n in sorted(handed_bind_reads(root).items()):
         print('%s: reads the binds it is handed, %d time(s).\n'
@@ -505,6 +539,21 @@ def selftest():
             print('selftest: a driver reading the binds it is handed was not the one read counted')
             bad += 1
         os.remove(os.path.join(root, 'input', 'drivers', 'hb.c'))
+        # a joypad driver choosing between a bind and the profile's, and an
+        # HID backend taking binds; one that goes by its two lists is neither
+        os.makedirs(os.path.join(root, 'input', 'drivers_joypad', 'sub'))
+        os.makedirs(os.path.join(root, 'input', 'drivers_hid'))
+        with open(os.path.join(root, 'input', 'drivers_joypad', 'sub', 'jb.c'), 'w') as f:
+            f.write('k = (binds[i].joykey != NO_BTN) ? binds[i].joykey\n'
+                    '   : joypad_info->auto_binds[i].joykey;\n')
+        with open(os.path.join(root, 'input', 'drivers_hid', 'hb.c'), 'w') as f:
+            f.write('static int16_t st(void *d, const void *binds_data) { return 0; }\n')
+        with open(os.path.join(root, 'input', 'drivers_joypad', 'ok.c'), 'w') as f:
+            f.write('/* no binds here */ k = joykeys[i]; a = joyaxes[i];\n')
+        if joypad_bind_names(root) != {'input/drivers_joypad/sub/jb.c': 3,
+                                       'input/drivers_hid/hb.c': 1}:
+            print('selftest: joypad and HID files naming binds were not the two counted')
+            bad += 1
         if analog_bind_macro_uses(root) != {'input/drivers/an.c': 1}:
             print('selftest: a driver mapping a stick to its binds was not found, '
                   'or the frontend was taken for one')
@@ -513,7 +562,7 @@ def selftest():
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 11))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 12))
     return 0
 
 

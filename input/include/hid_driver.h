@@ -42,7 +42,7 @@ struct hid_driver
    void (*free)(const void *handle);
    int16_t (*button)(void *handle, unsigned pad, uint16_t button);
    int16_t (*state)(void *data, rarch_joypad_info_t *joypad_info,
-         const void *binds_data, unsigned port);
+         const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port);
    void (*get_buttons)(void *handle, unsigned pad, input_bits_t *state);
    int16_t (*axis)(void *handle, unsigned pad, uint32_t axis);
    void (*poll)(void *handle);

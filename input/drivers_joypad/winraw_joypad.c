@@ -2063,7 +2063,8 @@ static int16_t winraw_joypad_joypad_axis(unsigned port, uint32_t joyaxis)
 /* This mirrors the xinput approach: pack hat state into high bits. */
 static int16_t winraw_joypad_joypad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    unsigned i;
@@ -2094,12 +2095,8 @@ static int16_t winraw_joypad_joypad_state(
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
       /* Auto-bind fallback */
-      const uint64_t joykey  = (binds[i].joykey  != NO_BTN)
-                             ?  binds[i].joykey
-                             :  joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-                             ?  binds[i].joyaxis
-                             :  joypad_info->auto_binds[i].joyaxis;
+      const uint64_t joykey  = joykeys[i];
+      const uint32_t joyaxis = joyaxes[i];
 
       /* --- Inlined button check --- */
       if ((uint16_t)joykey != NO_BTN)

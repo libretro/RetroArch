@@ -151,8 +151,22 @@ static unsigned bv_compare(const input_device_driver_t *drv, unsigned pad)
       for (t = 0; t < sizeof(thresholds) / sizeof(thresholds[0]); t++)
       {
          info.axis_threshold = thresholds[t];
-         if (drv->state(&info, binds, pad) != bv_state(drv, &info, binds))
-            bad++;
+         {
+            /* what is behind each of the sixteen, as the frontend
+             * resolves it: the bind's own, or the profile's */
+            unsigned b;
+            uint16_t keys[RARCH_FIRST_CUSTOM_BIND];
+            uint32_t axes[RARCH_FIRST_CUSTOM_BIND];
+            for (b = 0; b < RARCH_FIRST_CUSTOM_BIND; b++)
+            {
+               keys[b] = (binds[b].joykey != NO_BTN)
+                  ? binds[b].joykey  : autos[b].joykey;
+               axes[b] = (binds[b].joyaxis != AXIS_NONE)
+                  ? binds[b].joyaxis : autos[b].joyaxis;
+            }
+            if (drv->state(&info, keys, axes, pad) != bv_state(drv, &info, binds))
+               bad++;
+         }
       }
    }
    return bad;

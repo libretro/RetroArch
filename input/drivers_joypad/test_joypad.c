@@ -416,7 +416,8 @@ static int16_t test_joypad_axis(unsigned port_num, uint32_t joyaxis)
 
 static int16_t test_joypad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
 
@@ -428,9 +429,7 @@ static int16_t test_joypad_state(
    {
 	   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
 	   {
-		   /* Auto-binds are per joypad, not per user. */
-		   const uint16_t joykey  = (binds[i].joykey != NO_BTN)
-			   ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+		   const uint16_t joykey  = joykeys[i];
 		   /* Test input driver uses same button layout internally as RA, so no conversion is needed */
 		   if (joykey != NO_BTN && (test_joypads[port_idx].button_state & (1 << i)))
 			   ret |= ( 1 << i);

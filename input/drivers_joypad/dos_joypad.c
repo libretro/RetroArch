@@ -53,7 +53,8 @@ static int16_t dos_joypad_axis(unsigned port_num, uint32_t joyaxis) { return 0; 
 
 static int16_t dos_joypad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    int16_t ret       = 0;

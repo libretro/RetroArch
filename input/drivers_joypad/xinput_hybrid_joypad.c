@@ -387,7 +387,8 @@ static int16_t dinput_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static int16_t dinput_joypad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    unsigned i;
@@ -410,11 +411,8 @@ static int16_t dinput_joypad_state(
    threshold_int = (int16_t)(joypad_info->axis_threshold * 0x8000);
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey  != NO_BTN)
-         ? binds[i].joykey   : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis  != AXIS_NONE)
-         ? binds[i].joyaxis  : joypad_info->auto_binds[i].joyaxis;
+      const uint64_t joykey  = joykeys[i];
+      const uint32_t joyaxis = joyaxes[i];
 
       if (     (uint16_t)joykey != NO_BTN
             && dinput_joypad_button_state(pad, (uint16_t)joykey))
@@ -1150,7 +1148,8 @@ static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static int16_t xinput_joypad_state_func(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    int i;
@@ -1162,7 +1161,7 @@ static int16_t xinput_joypad_state_func(
    XINPUT_GAMEPAD *pad;
    int16_t threshold_int;
    if (xuser == -1)
-      return dinput_joypad_state(joypad_info, binds, port_idx);
+      return dinput_joypad_state(joypad_info, joykeys, joyaxes, port_idx);
    state = &g_xinput_states[xuser];
    pad   = &state->xstate.Gamepad;
    if (!state->connected)
@@ -1172,11 +1171,8 @@ static int16_t xinput_joypad_state_func(
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      const uint64_t joykey  = joykeys[i];
+      const uint32_t joyaxis = joyaxes[i];
       if (
                (uint16_t)joykey != NO_BTN
             && xinput_joypad_button_state(

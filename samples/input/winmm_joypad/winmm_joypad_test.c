@@ -120,6 +120,8 @@ int main(void)
       HAT_UP_MASK, HAT_DOWN_MASK, HAT_LEFT_MASK, HAT_RIGHT_MASK };
    struct retro_keybind binds[RARCH_BIND_LIST_END];
    struct retro_keybind autob[RARCH_BIND_LIST_END];
+   uint16_t t_keys[RARCH_FIRST_CUSTOM_BIND];
+   uint32_t t_axes[RARCH_FIRST_CUSTOM_BIND];
    rarch_joypad_info_t info;
    input_bits_t bits;
    unsigned i, d, before;
@@ -195,14 +197,21 @@ int main(void)
    info.joy_idx        = 0;
    info.auto_binds     = autob;
    info.axis_threshold = 0.5f;
+   /* the two lists the frontend hands a driver: what is behind each of
+    * the sixteen, the port's own bind or the profile's */
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      t_keys[i] = (binds[i].joykey != NO_BTN)   ? binds[i].joykey  : autob[i].joykey;
+      t_axes[i] = (binds[i].joyaxis != AXIS_NONE) ? binds[i].joyaxis : autob[i].joyaxis;
+   }
    pad0_centre();
    winmm_joypad.poll();
-   CHECK(winmm_joypad.state(&info, binds, 0) == 0, "the mask at rest is %04x", (unsigned)winmm_joypad.state(&info, binds, 0));
+   CHECK(winmm_joypad.state(&info, t_keys, t_axes, 0) == 0, "the mask at rest is %04x", (unsigned)winmm_joypad.state(&info, t_keys, t_axes, 0));
    t_info[0].dwButtons = 1u << 2;
    t_info[0].dwXpos    = 0;
    winmm_joypad.poll();
-   CHECK(winmm_joypad.state(&info, binds, 0) == ((1 << RETRO_DEVICE_ID_JOYPAD_B) | (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)),
-         "the mask with B and Left held is %04x", (unsigned)winmm_joypad.state(&info, binds, 0));
+   CHECK(winmm_joypad.state(&info, t_keys, t_axes, 0) == ((1 << RETRO_DEVICE_ID_JOYPAD_B) | (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)),
+         "the mask with B and Left held is %04x", (unsigned)winmm_joypad.state(&info, t_keys, t_axes, 0));
 
    /* ten polls inside one second: the controllers that are not there
     * are not asked */

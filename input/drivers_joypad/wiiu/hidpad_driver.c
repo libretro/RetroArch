@@ -66,7 +66,8 @@ static int16_t hidpad_axis(unsigned port, uint32_t axis)
 
 static int16_t hidpad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    int16_t ret                          = 0;
@@ -77,11 +78,8 @@ static int16_t hidpad_state(
       int i;
       for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
       {
-         /* Auto-binds are per joypad, not per user. */
-         const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-         const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+         const uint64_t joykey  = joykeys[i];
+         const uint32_t joyaxis = joyaxes[i];
          if (
                (uint16_t)joykey != NO_BTN
                && wiiu_hid.button(hid_driver_get_data(), port_idx, (uint16_t)joykey)

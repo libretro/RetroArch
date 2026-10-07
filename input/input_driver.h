@@ -603,8 +603,14 @@ struct rarch_joypad_driver
    bool (*query_pad)(unsigned);
    void (*destroy)(void);
    int32_t (*button)(unsigned, uint16_t);
+   /* The RetroPad's sixteen as a mask, from what is behind each on this
+    * pad: @joykeys[n] the pad's button for the n-th (NO_BTN for none)
+    * and @joyaxes[n] its axis (AXIS_NONE for none), sixteen of each.
+    * They are resolved by the frontend - the port's own bind, or its
+    * controller's profile's: a driver is not handed binds, and has none
+    * to choose between. */
    int16_t (*state)(rarch_joypad_info_t *joypad_info,
-         const struct retro_keybind *binds, unsigned port);
+         const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port);
    void (*get_buttons)(unsigned, input_bits_t *);
    int16_t (*axis)(unsigned, uint32_t);
    void (*poll)(void);

@@ -554,7 +554,8 @@ static int16_t sdl_dingux_joypad_axis(unsigned port, uint32_t joyaxis)
 
 static int16_t sdl_dingux_joypad_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds,
+      const uint16_t *joykeys,
+      const uint32_t *joyaxes,
       unsigned port)
 {
    dingux_joypad_t *joypad = (dingux_joypad_t*)&dingux_joypad;
@@ -567,12 +568,9 @@ static int16_t sdl_dingux_joypad_state(
 
    for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      /* Auto-binds are per joypad, not per user. */
-      const uint64_t joykey  = (binds[i].joykey != NO_BTN)
-         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      const uint64_t joykey  = joykeys[i];
 #if defined(SDL_DINGUX_HAS_ANALOG)
-      const uint32_t joyaxis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+      const uint32_t joyaxis = joyaxes[i];
 #endif
 
       if ((uint16_t)joykey != NO_BTN &&

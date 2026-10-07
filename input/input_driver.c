@@ -24,6 +24,7 @@
 #include <streams/interface_stream.h>
 #define _USE_MATH_DEFINES
 #include <math.h>
+#include <stddef.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
@@ -295,7 +296,8 @@ static input_device_driver_t null_joypad = {
 static bool idle_joypad_query(unsigned pad) { return false; }
 static int32_t idle_joypad_button(unsigned port, uint16_t joykey) { return 0; }
 static int16_t idle_joypad_state(rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds, unsigned port) { return 0; }
+      const uint16_t *joykeys, const uint32_t *joyaxes,
+      unsigned port) { return 0; }
 static void idle_joypad_get_buttons(unsigned port, input_bits_t *state)
 {
    BIT256_CLEAR_ALL_PTR(state);
@@ -356,7 +358,7 @@ static void null_hid_poll(void *data) { }
 static int16_t null_hid_joypad_state(
       void *data,
       rarch_joypad_info_t *joypad_info,
-      const void *binds_data,
+      const uint16_t *joykeys, const uint32_t *joyaxes,
       unsigned port) { return 0; }
 
 static hid_driver_t null_hid = {
@@ -878,13 +880,18 @@ static int16_t input_trigger_pull(const input_device_driver_t *drv,
    return (int16_t)((raw < 0) ? 0 : (raw > 0x7fff) ? 0x7fff : raw);
 }
 
+/* Whether anything of the port's is bound to a pad's axis: see below,
+ * with the port's resolved set. */
+struct input_port_pads;
+static bool input_trigger_other_bound(const struct input_port_pads *pads,
+      const uint32_t *joyaxes, uint32_t other);
+
 /* Learns it: the axis is at the far end, and its other direction is
  * bound to nothing (a combined axis has a trigger on each). */
 static void input_trigger_learn(const input_device_driver_t *drv,
-      rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds, unsigned pad, uint32_t joyaxis)
+      const struct input_port_pads *pads,
+      const uint32_t *joyaxes, unsigned pad, uint32_t joyaxis)
 {
-   unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
    bool negative = AXIS_NEG_GET(joyaxis) < 16;
    unsigned a    = negative ? AXIS_NEG_GET(joyaxis) : AXIS_POS_GET(joyaxis);
@@ -897,14 +904,14 @@ static void input_trigger_learn(const input_device_driver_t *drv,
    there = drv->axis(pad, other);
    if (there > -0x7000 && there < 0x7000)
       return;
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      if (     binds[i].joyaxis == other
-            || (   binds[i].joyaxis == AXIS_NONE
-                && joypad_info->auto_binds[i].joyaxis == other))
-      {
-         input_st->trigger_two_way[pad] |= (1 << a);
-         return;
-      }
+   /* anything of the port's bound to the other direction: all of its
+    * binds where this is the port's own set, the sixteen it was handed
+    * where it is not */
+   if (input_trigger_other_bound(pads, joyaxes, other))
+   {
+      input_st->trigger_two_way[pad] |= (1 << a);
+      return;
+   }
    input_st->trigger_rest[pad] |= (1 << a);
 }
 
@@ -953,7 +960,7 @@ INPUT_NOINLINE static void input_autoconf_any_pad_refresh(unsigned gen)
 
 /* By port: the binds its own bind, or its own controller's profile,
  * puts a pad behind. */
-typedef struct
+typedef struct input_port_pads
 {
    uint32_t has_pad[(RARCH_BIND_LIST_END + 31) / 32];
    unsigned gen;      /* the change count + 1 it was made at */
@@ -973,6 +980,32 @@ typedef struct
    uint32_t axis[RARCH_BIND_LIST_END];
    uint16_t key[RARCH_BIND_LIST_END];
 } input_port_pads_t;
+
+/* For learning a trigger's rest: is a pad's axis @other behind any
+ * bind? Every bind of the port's where @pads is its own set; the
+ * RetroPad's sixteen in @joyaxes where the read is another
+ * controller's and there is no set. */
+static bool input_trigger_other_bound(const struct input_port_pads *pads,
+      const uint32_t *joyaxes, uint32_t other)
+{
+   unsigned i;
+   if (pads)
+   {
+      unsigned w;
+      for (w = 0; w < (RARCH_BIND_LIST_END + 31) / 32; w++)
+      {
+         uint32_t m = pads->has_pad[w];
+         for (; m; m &= m - 1)
+            if (pads->axis[(w << 5) + (unsigned)compat_ctz(m)] == other)
+               return true;
+      }
+      return false;
+   }
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+      if (joyaxes[i] == other)
+         return true;
+   return false;
+}
 
 static input_port_pads_t input_port_pads[MAX_USERS];
 
@@ -1001,11 +1034,15 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
       uint32_t axis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : autob[i].joyaxis;
       /* nothing behind it - most binds: its place is not written, and
-       * not read either, its bit being clear */
-      if (key == NO_BTN && axis == AXIS_NONE)
+       * not read either, its bit being clear. The RetroPad's sixteen
+       * are written whatever is behind them: they are handed to the
+       * joypad driver's state call as they stand. */
+      if (key == NO_BTN && axis == AXIS_NONE && i >= RARCH_FIRST_CUSTOM_BIND)
          continue;
       pads->key[i]  = key;
       pads->axis[i] = axis;
+      if (key == NO_BTN && axis == AXIS_NONE)
+         continue;
       pads->has_pad[i >> 5] |= (1u << (i & 31));
       if (RETRO_KEYBIND_VALID(&binds[i]))
          pads->pad_ok[i >> 5] |= (1u << (i & 31));
@@ -1080,31 +1117,26 @@ INPUT_NOINLINE static bool input_port_pad_behind_none(unsigned port,
    return pads && !(pads->has_pad[0] & 0xffff);
 }
 
-/* The pads of the port @binds are, for a read of them by
- * @joypad_info; NULL where they are not a port's own set, or the read
- * is by another controller than the port's own. */
-static const input_port_pads_t *input_port_pads_of(
-      const struct retro_keybind *binds,
-      const rarch_joypad_info_t *joypad_info)
+/* The port's set that @joykeys is the buttons of; NULL where the two
+ * lists are not a port's own - a read by another controller, resolved
+ * for the call. */
+static const input_port_pads_t *input_port_pads_of(const uint16_t *joykeys)
 {
-   const char *first = (const char*)input_config_binds;
-   const char *at    = (const char*)binds;
-   size_t      off;
+   const char *first = (const char*)input_port_pads;
+   const char *at    = (const char*)joykeys - offsetof(input_port_pads_t, key);
 
-   if (at < first || at >= first + sizeof(input_config_binds))
+   if (at < first || at >= first + sizeof(input_port_pads))
       return NULL;
-   off = (size_t)(at - first);
-   if (off % sizeof(input_config_binds[0]))
+   if ((size_t)(at - first) % sizeof(input_port_pads[0]))
       return NULL;
-   return input_port_pads_for(
-         (unsigned)(off / sizeof(input_config_binds[0])), joypad_info);
+   return (const input_port_pads_t*)at;
 }
 
 /* The RetroPad mask from the binds: the loop every joypad driver's
  * state() is, against the copy. */
 static int16_t input_snapshot_state(
       rarch_joypad_info_t *joypad_info,
-      const struct retro_keybind *binds, unsigned unused_port)
+      const uint16_t *joykeys, const uint32_t *joyaxes, unsigned unused_port)
 {
    int16_t  ret = 0;
    uint16_t pad = joypad_info->joy_idx;
@@ -1120,8 +1152,8 @@ static int16_t input_snapshot_state(
     * own controller: only the binds a pad is behind are looked at, and
     * with what is behind each already resolved. Nothing a pad is
     * behind: nothing to look at. Any other read goes through all
-    * sixteen, choosing between the bind and the profile as it goes. */
-   pads  = input_port_pads_of(binds, joypad_info);
+    * sixteen of the two lists it was handed. */
+   pads  = input_port_pads_of(joykeys);
    bound = pads ? (pads->has_pad[0] & 0xffff) : 0xffff;
    if (!bound)
       return 0;
@@ -1152,19 +1184,8 @@ static int16_t input_snapshot_state(
       uint16_t joykey;
       uint32_t joyaxis;
 
-      if (pads)
-      {
-         joykey  = pads->key[i];
-         joyaxis = pads->axis[i];
-      }
-      else
-      {
-         /* Auto-binds are per joypad, not per user. */
-         joykey  = (binds[i].joykey != NO_BTN)
-            ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
-         joyaxis = (binds[i].joyaxis != AXIS_NONE)
-            ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
-      }
+      joykey  = joykeys[i];
+      joyaxis = joyaxes[i];
 
       /* A plain button is a bit of the copy, which is in hand; a hat's
        * direction, or a button past the copy's, is asked for the long
@@ -1184,7 +1205,7 @@ static int16_t input_snapshot_state(
                    || i == RETRO_DEVICE_ID_JOYPAD_R2))
          {
             const input_device_driver_t *drv = &input_snapshot_bridge.adapter;
-            input_trigger_learn(drv, joypad_info, binds, pad, joyaxis);
+            input_trigger_learn(drv, pads, joyaxes, pad, joyaxis);
             value = input_trigger_rests_far(pad, joyaxis)
                ? input_trigger_pull(drv, pad, joyaxis)
                : abs(input_snapshot_axis(pad, joyaxis));
@@ -1210,6 +1231,51 @@ static int16_t input_snapshot_state(
    }
    return ret;
 }
+
+/* The RetroPad's sixteen from @port's pad, as a mask: the joypad
+ * driver's state call, handed what is behind each of the sixteen. A
+ * driver was handed the port's binds for it and chose, for every one
+ * of them at every call, between the port's own bind and its
+ * controller's profile's. That is the port's resolved set, kept since
+ * the binds last changed; the driver gets its two lists. */
+INPUT_NOINLINE static int16_t input_joypad_port_state_other(
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info, unsigned port)
+{
+   /* a read by another controller than the port's own: resolved for
+    * this call, from the port's binds and that controller's profile */
+   unsigned i;
+   uint16_t keys[RARCH_FIRST_CUSTOM_BIND];
+   uint32_t axes[RARCH_FIRST_CUSTOM_BIND];
+   const struct retro_keybind *binds;
+
+   if (port >= MAX_USERS)
+      return 0;
+   binds = input_config_binds[port];
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      keys[i] = (binds[i].joykey != NO_BTN)
+         ? binds[i].joykey  : joypad_info->auto_binds[i].joykey;
+      axes[i] = (binds[i].joyaxis != AXIS_NONE)
+         ? binds[i].joyaxis : joypad_info->auto_binds[i].joyaxis;
+   }
+   return joypad->state(joypad_info, keys, axes, port);
+}
+
+static INLINE int16_t input_joypad_port_state(
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info, unsigned port)
+{
+   const input_port_pads_t *pads = (port < MAX_USERS)
+      ? input_port_pads_for(port, joypad_info) : NULL;
+   if (!pads)
+      return input_joypad_port_state_other(joypad, joypad_info, port);
+   /* no pad behind any of the sixteen: every driver's answer is none */
+   if (!(pads->has_pad[0] & 0xffff))
+      return 0;
+   return joypad->state(joypad_info, pads->key, pads->axis, port);
+}
+
 
 static void input_snapshot_get_buttons(unsigned pad,
       input_bits_t *state)
@@ -2151,7 +2217,7 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
       if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
       {
          if (joypad)
-            ret |= joypad->state(joypad_info, binds[_port], _port);
+            ret |= input_joypad_port_state(joypad, joypad_info, _port);
       }
       else if (id < RARCH_FIRST_CUSTOM_BIND)
       {
@@ -2169,7 +2235,7 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
          {
             int32_t cached = 0;
             if (joypad)
-               cached |= joypad->state(joypad_info, binds[_port], _port);
+               cached |= input_joypad_port_state(joypad, joypad_info, _port);
             /* the keys and mouse buttons bound to them: the frontend's
              * own answer where the driver hands it the keys */
             if (input && input->keys_down)
@@ -12386,8 +12452,8 @@ void input_driver_poll(void)
             {
                /* the user's controller, or its keys: both are this
                 * user's, and the notification says which it was */
-               uint32_t pad = (uint32_t)joypad->state(&joypad_info[i],
-                     (*input_st->libretro_input_binds)[i], (unsigned)i);
+               uint32_t pad = (uint32_t)input_joypad_port_state(joypad,
+                     &joypad_info[i], (unsigned)i);
                /* a key: not while the port's controller is there to
                 * be pressed, if the keyboard is to wait for it */
 #ifdef HAVE_NETWORKGAMEPAD
