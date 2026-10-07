@@ -151,8 +151,6 @@ static bool hover_guard_drop(float x, float y, int64_t now_ms, float eps_px)
 }
 
 
-#define ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds, id) (BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT], rarch_keysym_lut[RETRO_KEYBIND_KEY(&(binds)[(id)])]))
-
 #define ANDROID_KEYBOARD_INPUT_PRESSED(key) (BIT_GET(android_key_state[0], (key)))
 
 uint8_t *android_keyboard_state_get(unsigned port)
@@ -2980,6 +2978,26 @@ bool android_run_events(void *data)
    return true;
 }
 
+/* The keys the frontend asks about, for a port's binds: which are
+ * down. The driver evaluated the binds itself, for the RetroPad mask
+ * and for each button; the frontend does that for every driver that
+ * hands it the keys. */
+static void android_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)port;
+   (void)bind;
+   if (!data)
+      return;
+   for (i = 0; i < count; i++)
+      if (     keys[i] < RETROK_LAST
+            && BIT_GET(android_key_state[ANDROID_KEYBOARD_PORT],
+               rarch_keysym_lut[keys[i]]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t android_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -3003,40 +3021,10 @@ static int16_t android_input_state(
 
    switch (device)
    {
+      /* The RetroPad's buttons, where they are bound to keys, are the
+       * frontend's to answer: it asks android_input_keys_down() for the
+       * keys once a poll. */
       case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], i))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && ANDROID_KEYBOARD_PORT_INPUT_PRESSED(binds[port], id)
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                     )
-                  return 1;
-            }
-         }
-         break;
       case RETRO_DEVICE_ANALOG:
          break;
       case RETRO_DEVICE_KEYBOARD:
@@ -3492,5 +3480,7 @@ input_driver_t input_android = {
    "android",
    android_input_grab_mouse,
    NULL,
-   android_input_keypress_vibrate
+   android_input_keypress_vibrate,
+   NULL,                         /* survives_video */
+   android_input_keys_down
 };
