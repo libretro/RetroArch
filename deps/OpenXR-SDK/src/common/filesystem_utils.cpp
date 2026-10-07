@@ -7,289 +7,128 @@
 // Initial Authors: Mark Young <marky@lunarg.com>
 //                  Nat Brown <natb@valvesoftware.com>
 //
+// RetroArch: reimplemented on libretro-common file_path/retro_dirent,
+// matching the std::filesystem semantics this build previously used,
+// so <filesystem> and the per-platform fallbacks are gone. Two
+// deliberate deltas: FindFilesInPath and GetCanonicalPath return false
+// instead of throwing on a missing path, and ParsePathList no longer
+// corrupts the middle entries of lists with three or more paths (an
+// upstream substr count bug in every branch).
 
 #include "filesystem_utils.hpp"
 
-#include "platform_utils.hpp"
+#include <string.h>
 
-#include <cstring>
-#include <string>
+#include <file/file_path.h>
+#include <retro_dirent.h>
+#include <retro_miscellaneous.h>
+#include <vfs/vfs.h>
 
-#if defined DISABLE_STD_FILESYSTEM
-#define USE_EXPERIMENTAL_FS 0
-#define USE_FINAL_FS 0
-
-#else
-#include "stdfs_conditions.h"
-#endif
-
-#if USE_FINAL_FS == 1
-#include <filesystem>
-#define FS_PREFIX std::filesystem
-#elif USE_EXPERIMENTAL_FS == 1
-#include <experimental/filesystem>
-#define FS_PREFIX std::experimental::filesystem
-#elif defined(XR_USE_PLATFORM_WIN32)
-// Windows fallback includes
-#include <stdint.h>
+#if defined(XR_OS_WINDOWS)
 #include <direct.h>
-#else
-// Linux/Apple fallback includes
-#include <sys/stat.h>
-#include <unistd.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <dirent.h>
-#endif
-
-#if defined(XR_USE_PLATFORM_WIN32)
 #define PATH_SEPARATOR ';'
 #define DIRECTORY_SYMBOL '\\'
-#define ALTERNATE_DIRECTORY_SYMBOL '/'
+static bool isDirSep(char c) { return c == '\\' || c == '/'; }
 #else
+#include <unistd.h>
 #define PATH_SEPARATOR ':'
 #define DIRECTORY_SYMBOL '/'
+static bool isDirSep(char c) { return c == '/'; }
 #endif
 
-#if (USE_FINAL_FS == 1) || (USE_EXPERIMENTAL_FS == 1)
-// We can use one of the C++ filesystem packages
-
-bool FileSysUtilsIsRegularFile(const std::string& path) { return FS_PREFIX::is_regular_file(path); }
-
-bool FileSysUtilsIsDirectory(const std::string& path) { return FS_PREFIX::is_directory(path); }
-
-bool FileSysUtilsPathExists(const std::string& path) { return FS_PREFIX::exists(path); }
-
-bool FileSysUtilsIsAbsolutePath(const std::string& path) {
-    FS_PREFIX::path file_path(path);
-    return file_path.is_absolute();
+bool FileSysUtilsIsRegularFile(const std::string& path) {
+    int flags = path_stat(path.c_str());
+    return (flags & RETRO_VFS_STAT_IS_VALID) && !(flags & RETRO_VFS_STAT_IS_DIRECTORY) &&
+           !(flags & RETRO_VFS_STAT_IS_CHARACTER_SPECIAL);
 }
+
+bool FileSysUtilsIsDirectory(const std::string& path) { return path_is_directory(path.c_str()); }
+
+bool FileSysUtilsPathExists(const std::string& path) { return (path_stat(path.c_str()) & RETRO_VFS_STAT_IS_VALID) != 0; }
+
+bool FileSysUtilsIsAbsolutePath(const std::string& path) { return path_is_absolute(path.c_str()); }
 
 bool FileSysUtilsGetCurrentPath(std::string& path) {
-    FS_PREFIX::path cur_path = FS_PREFIX::current_path();
-    path = cur_path.string();
-    return true;
-}
-
-bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent_path) {
-    FS_PREFIX::path path_var(file_path);
-    parent_path = path_var.parent_path().string();
-    return true;
-}
-
-bool FileSysUtilsGetAbsolutePath(const std::string& path, std::string& absolute) {
-    absolute = FS_PREFIX::absolute(path).string();
-    return true;
-}
-
-bool FileSysUtilsGetCanonicalPath(const std::string& path, std::string& canonical) {
-#if defined(XR_USE_PLATFORM_WIN32)
-    // std::filesystem::canonical fails on UWP and must be avoided. Further, PathCchCanonicalize is not available on Windows 7 and
-    // PathCanonicalizeW is not available on UWP. However, symbolic links are not important on Windows since the loader uses the
-    // registry for indirection instead, and so this function can be a no-op on Windows.
-    canonical = path;
+    std::string buf(PATH_MAX_LENGTH, '\0');
+#if defined(XR_OS_WINDOWS)
+    if (_getcwd(&buf[0], (int)buf.size() - 1) == NULL) return false;
 #else
-    canonical = FS_PREFIX::canonical(path).string();
+    if (getcwd(&buf[0], buf.size() - 1) == NULL) return false;
 #endif
+    path.assign(buf.c_str());
     return true;
 }
 
-bool FileSysUtilsCombinePaths(const std::string& parent, const std::string& child, std::string& combined) {
-    FS_PREFIX::path parent_path(parent);
-    FS_PREFIX::path child_path(child);
-    FS_PREFIX::path full_path = parent_path / child_path;
-    combined = full_path.string();
-    return true;
-}
-
-bool FileSysUtilsParsePathList(std::string& path_list, std::vector<std::string>& paths) {
-    std::string::size_type start = 0;
-    std::string::size_type location = path_list.find(PATH_SEPARATOR);
-    while (location != std::string::npos) {
-        paths.push_back(path_list.substr(start, location));
-        start = location + 1;
-        location = path_list.find(PATH_SEPARATOR, start);
-    }
-    paths.push_back(path_list.substr(start, location));
-    return true;
-}
-
-bool FileSysUtilsFindFilesInPath(const std::string& path, std::vector<std::string>& files) {
-    for (auto& dir_iter : FS_PREFIX::directory_iterator(path)) {
-        files.push_back(dir_iter.path().filename().string());
-    }
-    return true;
-}
-
-#elif defined(XR_OS_WINDOWS)
-
-// For pre C++17 compiler that doesn't support experimental filesystem
-
-bool FileSysUtilsIsRegularFile(const std::string& path) {
-    const DWORD attr = GetFileAttributesW(utf8_to_wide(path).c_str());
-    return attr != INVALID_FILE_ATTRIBUTES && !(attr & FILE_ATTRIBUTE_DIRECTORY);
-}
-
-bool FileSysUtilsIsDirectory(const std::string& path) {
-    const DWORD attr = GetFileAttributesW(utf8_to_wide(path).c_str());
-    return attr != INVALID_FILE_ATTRIBUTES && (attr & FILE_ATTRIBUTE_DIRECTORY);
-}
-
-bool FileSysUtilsPathExists(const std::string& path) {
-    return (GetFileAttributesW(utf8_to_wide(path).c_str()) != INVALID_FILE_ATTRIBUTES);
-}
-
-bool FileSysUtilsIsAbsolutePath(const std::string& path) {
-    bool pathStartsWithDir = (path.size() >= 1) && ((path[0] == DIRECTORY_SYMBOL) || (path[0] == ALTERNATE_DIRECTORY_SYMBOL));
-
-    bool pathStartsWithDrive =
-        (path.size() >= 3) && (path[1] == ':' && (path[2] == DIRECTORY_SYMBOL || path[2] == ALTERNATE_DIRECTORY_SYMBOL));
-
-    return pathStartsWithDir || pathStartsWithDrive;
-}
-
-bool FileSysUtilsGetCurrentPath(std::string& path) {
-    wchar_t tmp_path[MAX_PATH];
-    if (nullptr != _wgetcwd(tmp_path, MAX_PATH - 1)) {
-        path = wide_to_utf8(tmp_path);
-        return true;
-    }
-    return false;
-}
-
+// std::filesystem::path::parent_path(): trailing separators belong to
+// the last component ("a/b/" -> "a/b"), a bare filename has an empty
+// parent, and the root keeps itself.
 bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent_path) {
-    std::string full_path;
-    if (FileSysUtilsGetAbsolutePath(file_path, full_path)) {
-        std::string::size_type lastSeparator = full_path.find_last_of(DIRECTORY_SYMBOL);
-        parent_path = (lastSeparator == 0) ? full_path : full_path.substr(0, lastSeparator);
+    std::string::size_type end = file_path.size();
+    bool had_trailing_sep = end > 0 && isDirSep(file_path[end - 1]);
+    while (end > 0 && isDirSep(file_path[end - 1])) end--;
+    if (had_trailing_sep) {
+        // "a/b/" decomposes as "a/b" plus an empty final element, and the
+        // root is its own parent.
+        parent_path = (end == 0) ? file_path.substr(0, 1) : file_path.substr(0, end);
         return true;
     }
-    return false;
+    std::string::size_type pos = end;
+    while (pos > 0 && !isDirSep(file_path[pos - 1])) pos--;
+    if (pos == 0) {
+        parent_path.clear();
+        return true;
+    }
+    // strip the separator run, but keep the root ("/", "C:\")
+    std::string::size_type root = pos;
+    while (root > 1 && isDirSep(file_path[root - 1]) && isDirSep(file_path[root - 2])) root--;
+    if (root >= 2 && file_path[root - 2] == ':') {
+        parent_path = file_path.substr(0, root);  // "C:\"
+        return true;
+    }
+    if (root == 1) {
+        parent_path = file_path.substr(0, 1);  // "/"
+        return true;
+    }
+    parent_path = file_path.substr(0, root - 1);
+    return true;
 }
 
+// std::filesystem::absolute(): current_path()/p for a relative path,
+// with no dot normalisation or symlink resolution.
 bool FileSysUtilsGetAbsolutePath(const std::string& path, std::string& absolute) {
-    wchar_t tmp_path[MAX_PATH];
-    if (0 != GetFullPathNameW(utf8_to_wide(path).c_str(), MAX_PATH, tmp_path, NULL)) {
-        absolute = wide_to_utf8(tmp_path);
+    if (path_is_absolute(path.c_str())) {
+        absolute = path;
         return true;
     }
-    return false;
-}
-
-bool FileSysUtilsGetCanonicalPath(const std::string& path, std::string& absolute) {
-    // PathCchCanonicalize is not available on Windows 7 and PathCanonicalizeW is not available on UWP. However, symbolic links are
-    // not important on Windows since the loader uses the registry for indirection instead, and so this function can be a no-op on
-    // Windows.
-    absolute = path;
-    return true;
-}
-
-bool FileSysUtilsCombinePaths(const std::string& parent, const std::string& child, std::string& combined) {
-    std::string::size_type parent_len = parent.length();
-    if (0 == parent_len || "." == parent || ".\\" == parent || "./" == parent) {
-        combined = child;
-        return true;
-    }
-    char last_char = parent[parent_len - 1];
-    if ((last_char == DIRECTORY_SYMBOL) || (last_char == ALTERNATE_DIRECTORY_SYMBOL)) {
-        parent_len--;
-    }
-    combined = parent.substr(0, parent_len) + DIRECTORY_SYMBOL + child;
-    return true;
-}
-
-bool FileSysUtilsParsePathList(std::string& path_list, std::vector<std::string>& paths) {
-    std::string::size_type start = 0;
-    std::string::size_type location = path_list.find(PATH_SEPARATOR);
-    while (location != std::string::npos) {
-        paths.push_back(path_list.substr(start, location));
-        start = location + 1;
-        location = path_list.find(PATH_SEPARATOR, start);
-    }
-    paths.push_back(path_list.substr(start, location));
-    return true;
-}
-
-bool FileSysUtilsFindFilesInPath(const std::string& path, std::vector<std::string>& files) {
-    std::string searchPath;
-    FileSysUtilsCombinePaths(path, "*", searchPath);
-
-    WIN32_FIND_DATAW file_data;
-    HANDLE file_handle = FindFirstFileW(utf8_to_wide(searchPath).c_str(), &file_data);
-    if (file_handle != INVALID_HANDLE_VALUE) {
-        do {
-            if (!(file_data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) {
-                files.push_back(wide_to_utf8(file_data.cFileName));
-            }
-        } while (FindNextFileW(file_handle, &file_data));
-        return true;
-    }
-    return false;
-}
-
-#else  // XR_OS_LINUX/XR_OS_APPLE fallback
-
-// simple POSIX-compatible implementation of the <filesystem> pieces used by OpenXR
-
-bool FileSysUtilsIsRegularFile(const std::string& path) {
-    struct stat path_stat;
-    stat(path.c_str(), &path_stat);
-    return S_ISREG(path_stat.st_mode);
-}
-
-bool FileSysUtilsIsDirectory(const std::string& path) {
-    struct stat path_stat;
-    stat(path.c_str(), &path_stat);
-    return S_ISDIR(path_stat.st_mode);
-}
-
-bool FileSysUtilsPathExists(const std::string& path) { return (access(path.c_str(), F_OK) != -1); }
-
-bool FileSysUtilsIsAbsolutePath(const std::string& path) { return (path[0] == DIRECTORY_SYMBOL); }
-
-bool FileSysUtilsGetCurrentPath(std::string& path) {
-    char tmp_path[PATH_MAX];
-    if (nullptr != getcwd(tmp_path, PATH_MAX - 1)) {
-        path = tmp_path;
-        return true;
-    }
-    return false;
-}
-
-bool FileSysUtilsGetParentPath(const std::string& file_path, std::string& parent_path) {
-    std::string full_path;
-    if (FileSysUtilsGetAbsolutePath(file_path, full_path)) {
-        std::string::size_type lastSeparator = full_path.find_last_of(DIRECTORY_SYMBOL);
-        parent_path = (lastSeparator == 0) ? full_path : full_path.substr(0, lastSeparator);
-        return true;
-    }
-    return false;
-}
-
-bool FileSysUtilsGetAbsolutePath(const std::string& path, std::string& absolute) {
-    // canonical path is absolute
-    return FileSysUtilsGetCanonicalPath(path, absolute);
+    std::string cwd;
+    if (!FileSysUtilsGetCurrentPath(cwd)) return false;
+    return FileSysUtilsCombinePaths(cwd, path, absolute);
 }
 
 bool FileSysUtilsGetCanonicalPath(const std::string& path, std::string& canonical) {
-    char buf[PATH_MAX];
-    if (nullptr != realpath(path.c_str(), buf)) {
-        canonical = buf;
-        return true;
-    }
-    return false;
+#if defined(XR_OS_WINDOWS)
+    // Symbolic links are not important on Windows since the loader uses
+    // the registry for indirection instead; keep the upstream no-op.
+    canonical = path;
+    return true;
+#else
+    std::string buf(PATH_MAX_LENGTH, '\0');
+    strlcpy(&buf[0], path.c_str(), buf.size());
+    if (!path_resolve_realpath(&buf[0], buf.size(), true)) return false;
+    canonical.assign(buf.c_str());
+    return true;
+#endif
 }
 
+// std::filesystem's operator/: an absolute child replaces the parent,
+// an empty parent yields the child unchanged.
 bool FileSysUtilsCombinePaths(const std::string& parent, const std::string& child, std::string& combined) {
-    std::string::size_type parent_len = parent.length();
-    if (0 == parent_len || "." == parent || "./" == parent) {
+    if (parent.empty() || path_is_absolute(child.c_str())) {
         combined = child;
         return true;
     }
-    char last_char = parent[parent_len - 1];
-    if (last_char == DIRECTORY_SYMBOL) {
-        parent_len--;
-    }
+    std::string::size_type parent_len = parent.size();
+    if (isDirSep(parent[parent_len - 1])) parent_len--;
     combined = parent.substr(0, parent_len) + DIRECTORY_SYMBOL + child;
     return true;
 }
@@ -298,25 +137,22 @@ bool FileSysUtilsParsePathList(std::string& path_list, std::vector<std::string>&
     std::string::size_type start = 0;
     std::string::size_type location = path_list.find(PATH_SEPARATOR);
     while (location != std::string::npos) {
-        paths.push_back(path_list.substr(start, location));
+        paths.push_back(path_list.substr(start, location - start));
         start = location + 1;
         location = path_list.find(PATH_SEPARATOR, start);
     }
-    paths.push_back(path_list.substr(start, location));
+    paths.push_back(path_list.substr(start));
     return true;
 }
 
 bool FileSysUtilsFindFilesInPath(const std::string& path, std::vector<std::string>& files) {
-    DIR* dir = opendir(path.c_str());
-    if (dir == nullptr) {
-        return false;
+    struct RDIR* dir = retro_opendir(path.c_str());
+    if (!dir) return false;
+    while (retro_readdir(dir)) {
+        const char* name = retro_dirent_get_name(dir);
+        if (!name || !strcmp(name, ".") || !strcmp(name, "..")) continue;
+        files.push_back(name);
     }
-    struct dirent* entry;
-    while ((entry = readdir(dir)) != nullptr) {
-        files.emplace_back(entry->d_name);
-    }
-    closedir(dir);
+    retro_closedir(dir);
     return true;
 }
-
-#endif
