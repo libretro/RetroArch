@@ -56,7 +56,11 @@
 #include "../audio/audio_driver.h"
 #endif
 
-#ifdef HAVE_THREADS
+/* The decode worker's queue is lock-free and needs the atomic pointer
+ * ops; a build whose atomic backend has none decodes in line, as a
+ * build without threads does. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define GFX_THUMB_ANIM_WORKER 1
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
 #include <rthreads/tpool.h>
@@ -447,10 +451,9 @@ typedef struct gfx_thumb_anim_job
                                         HDR source, 8 bytes a pixel    */
 } gfx_thumb_anim_job_t;
 
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
 /* ---- Animated-thumbnail decode worker ---- */
 
-#ifdef RETRO_ATOMIC_HAS_PTR
 /* The queue takes no lock. The main thread posts a job by pushing it
  * on the inbox; the worker takes the inbox whole and works through it
  * oldest first. A job released while it waits cannot be unlinked from
@@ -466,15 +469,6 @@ static retro_atomic_int_t     gfx_thumb_worker_die;
 /* The main thread's: blocks whose cancelled job the worker has yet to
  * let go, linked through job A. */
 static gfx_thumb_anim_job_t  *gfx_thumb_retired       = NULL;
-#else
-static slock_t               *gfx_thumb_worker_lock   = NULL;
-static scond_t               *gfx_thumb_worker_wake   = NULL; /* worker */
-static scond_t               *gfx_thumb_worker_done   = NULL; /* main   */
-static sthread_t             *gfx_thumb_worker_thread = NULL;
-static gfx_thumb_anim_job_t  *gfx_thumb_worker_head   = NULL;
-static gfx_thumb_anim_job_t  *gfx_thumb_worker_tail   = NULL;
-static bool                   gfx_thumb_worker_die    = false;
-#endif
 /* The colour-conversion pool the video streams band their blits
  * over (Animated Thumbnail Threads). The worker alone creates, uses
  * and destroys it; the poll only publishes how many bands are wanted
@@ -627,7 +621,6 @@ static bool gfx_thumbnail_anim_job_settled(const gfx_thumb_anim_job_t *job)
    return true;
 }
 
-#ifdef RETRO_ATOMIC_HAS_PTR
 static void gfx_thumbnail_anim_worker(void *unused)
 {
    (void)unused;
@@ -714,74 +707,6 @@ static bool gfx_thumbnail_anim_worker_init(void)
    }
    return true;
 }
-#else
-static void gfx_thumbnail_anim_worker(void *unused)
-{
-   (void)unused;
-   slock_lock(gfx_thumb_worker_lock);
-   for (;;)
-   {
-      gfx_thumb_anim_job_t *job;
-      bool alive;
-
-      while (!gfx_thumb_worker_die && !gfx_thumb_worker_head)
-         scond_wait(gfx_thumb_worker_wake, gfx_thumb_worker_lock);
-      if (gfx_thumb_worker_die)
-         break;
-
-      job                   = gfx_thumb_worker_head;
-      gfx_thumb_worker_head = job->next;
-      if (!gfx_thumb_worker_head)
-         gfx_thumb_worker_tail = NULL;
-      job->next             = NULL;
-      retro_atomic_store_relaxed_int(&job->status,
-            GFX_THUMB_JOB_RUNNING);
-
-      slock_unlock(gfx_thumb_worker_lock);
-      alive = gfx_thumbnail_anim_job_step(job);
-      slock_lock(gfx_thumb_worker_lock);
-
-      /* Release: publishes frame, duration_ms and loops_left to the
-       * poll's acquire load. The broadcast under the lock is for
-       * release()'s wait-out-RUNNING rendezvous. */
-      retro_atomic_store_release_int(&job->status,
-            alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED);
-      scond_broadcast(gfx_thumb_worker_done);
-   }
-   slock_unlock(gfx_thumb_worker_lock);
-}
-
-/* Lazily creates the worker. Returns false if thread primitives could
- * not be allocated; callers then use the synchronous path. */
-static bool gfx_thumbnail_anim_worker_init(void)
-{
-   if (gfx_thumb_worker_thread)
-      return true;
-   if (!gfx_thumb_worker_lock && !(gfx_thumb_worker_lock = slock_new()))
-      goto fail;
-   if (!gfx_thumb_worker_wake && !(gfx_thumb_worker_wake = scond_new()))
-      goto fail;
-   if (!gfx_thumb_worker_done && !(gfx_thumb_worker_done = scond_new()))
-      goto fail;
-   gfx_thumb_worker_die = false;
-   if (!(gfx_thumb_worker_thread = sthread_create(
-         gfx_thumbnail_anim_worker, NULL)))
-      goto fail;
-   return true;
-fail:
-   if (gfx_thumb_worker_done)
-      scond_free(gfx_thumb_worker_done);
-   if (gfx_thumb_worker_wake)
-      scond_free(gfx_thumb_worker_wake);
-   if (gfx_thumb_worker_lock)
-      slock_free(gfx_thumb_worker_lock);
-   gfx_thumb_worker_done = NULL;
-   gfx_thumb_worker_wake = NULL;
-   gfx_thumb_worker_lock = NULL;
-   return false;
-}
-
-#endif
 
 /* The threads the preview may use now: the setting, unless a core is
  * running under the menu - content loaded and not paused - in which
@@ -798,7 +723,6 @@ static int gfx_thumbnail_anim_threads_wanted(void)
    return wanted;
 }
 
-#ifdef RETRO_ATOMIC_HAS_PTR
 static void gfx_thumbnail_anim_retired_reap(void);
 
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
@@ -940,102 +864,10 @@ void gfx_thumbnail_anim_worker_deinit(void)
    retro_eventcount_free(&gfx_thumb_worker_wake);
 }
 #else
-static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
-{
-   retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
-         gfx_thumbnail_anim_threads_wanted());
-   slock_lock(gfx_thumb_worker_lock);
-   retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
-   job->next   = NULL;
-   if (gfx_thumb_worker_tail)
-      gfx_thumb_worker_tail->next = job;
-   else
-      gfx_thumb_worker_head       = job;
-   gfx_thumb_worker_tail          = job;
-   scond_signal(gfx_thumb_worker_wake);
-   slock_unlock(gfx_thumb_worker_lock);
-}
-
-/* Detach a job from the worker: unlink it if still queued, wait out the
- * decode if running. On return the worker holds no reference to it. */
-static void gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
-{
-   if (!gfx_thumb_worker_lock)
-      return;
-   slock_lock(gfx_thumb_worker_lock);
-   if (retro_atomic_load_relaxed_int(&job->status)
-         == GFX_THUMB_JOB_QUEUED)
-   {
-      gfx_thumb_anim_job_t **pp = &gfx_thumb_worker_head;
-      while (*pp && *pp != job)
-         pp = &(*pp)->next;
-      if (*pp)
-      {
-         *pp = job->next;
-         if (gfx_thumb_worker_tail == job)
-         {
-            gfx_thumb_anim_job_t *t = gfx_thumb_worker_head;
-            while (t && t->next)
-               t = t->next;
-            gfx_thumb_worker_tail = t;
-         }
-      }
-   }
-   while (retro_atomic_load_relaxed_int(&job->status)
-         == GFX_THUMB_JOB_RUNNING)
-      scond_wait(gfx_thumb_worker_done, gfx_thumb_worker_lock);
-   slock_unlock(gfx_thumb_worker_lock);
-}
-
-void gfx_thumbnail_anim_worker_deinit(void)
-{
-   if (!gfx_thumb_worker_thread)
-      return;
-   slock_lock(gfx_thumb_worker_lock);
-   gfx_thumb_worker_die  = true;
-   /* Orphan anything still queued: the jobs stay owned by their
-    * thumbnails (freed by gfx_thumbnail_reset); they simply never
-    * advance. Normal shutdown order resets thumbnails first, so the
-    * queue is expected to be empty here. */
-   gfx_thumb_worker_head = NULL;
-   gfx_thumb_worker_tail = NULL;
-   scond_signal(gfx_thumb_worker_wake);
-   slock_unlock(gfx_thumb_worker_lock);
-   sthread_join(gfx_thumb_worker_thread);
-   gfx_thumb_worker_thread = NULL;
-   /* Joined: the pool is nobody's but ours now. */
-   if (gfx_thumb_blit_pool)
-   {
-      tpool_destroy(gfx_thumb_blit_pool);
-      gfx_thumb_blit_pool = NULL;
-   }
-   gfx_thumb_blit_bands = 1;
-   scond_free(gfx_thumb_worker_done);
-   scond_free(gfx_thumb_worker_wake);
-   slock_free(gfx_thumb_worker_lock);
-   gfx_thumb_worker_done = NULL;
-   gfx_thumb_worker_wake = NULL;
-   gfx_thumb_worker_lock = NULL;
-}
-
-/* The locked queue unlinks a released job, so its block is free at once. */
-static void gfx_thumbnail_anim_jobs_free(gfx_thumb_anim_job_t *j0,
-      gfx_thumb_anim_job_t *j1)
-{
-   if (j1)
-      gfx_thumbnail_anim_job_release(j1);
-   if (j0)
-   {
-      gfx_thumbnail_anim_job_release(j0);
-      free(j0);
-   }
-}
-#endif
-#else
 void gfx_thumbnail_anim_worker_deinit(void) { }
 #endif
 
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
 /* Hand a job its slot - job one slot 0, job two slot 1 - and queue
  * it. The slot is read afresh: a submit may have lent it the driver's
  * upload memory, which the job then decodes into directly. A lent
@@ -1060,7 +892,7 @@ static bool gfx_thumbnail_anim_job_start(gfx_thumbnail_t *thumbnail,
 
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    /* Both jobs live in the block that anim_job addresses; pull each
     * off the queue, then free once. Their frames are the surface's
     * slots, which stay with the thumbnail: a slot the video thread
@@ -1417,7 +1249,7 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
    gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    gfx_thumb_anim_job_t *job  = (gfx_thumb_anim_job_t*)
          (slot ? thumbnail->anim_job2 : thumbnail->anim_job);
    /* A frame the driver dropped is still in its slot: sent again, so
@@ -1669,7 +1501,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
     * finished blob to hand over. */
 #endif
 
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    /* Threaded path: decode happens on the shared worker; this thread
     * only inspects job state, uploads READY frames, and re-enqueues.
     * A frame that is not ready when due is simply uploaded on a later
