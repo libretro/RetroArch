@@ -628,8 +628,20 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
       s->fmt = GFX_SURFACE_FMT_NONE;
    s->dims = VIDEO_SCALE_PACK(img->width, img->height);
 
+   /* Half floats have no narrower form: a driver that cannot sample
+    * them takes no still from this image. A 10-bit image for a driver
+    * that cannot is narrowed here, where it is ours to rewrite. */
+   if (     img->fp16
+         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+   {
+      gfx_surface_image_free(img);
+      return false;
+   }
+   if (img->pix10 && gfx_surface_must_narrow(GFX_SURFACE_PIXFMT_2101010))
+      image_texture_narrow_10bit(img);
+
 #ifdef HAVE_THREADS
-   if (     img->pixels && !img->compressed && !img->pix10 && !img->fp16
+   if (     img->pixels && !img->compressed
          && VIDEO_SCALE_FITS(img->width, img->height)
          && video_driver_thread_wrapper_active()
          && task_is_on_main_thread())
@@ -639,7 +651,9 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
       src.pixels       = img->pixels;
       src.payload      = img;
       src.payload_free = gfx_surface_image_free;
-      src.pixfmt       = GFX_SURFACE_PIXFMT_8888;
+      src.pixfmt       = img->fp16  ? GFX_SURFACE_PIXFMT_FP16
+                       : img->pix10 ? GFX_SURFACE_PIXFMT_2101010
+                                    : GFX_SURFACE_PIXFMT_8888;
       src.rgba         = img->supports_rgba;
       r                = gfx_surface_submit_external(s, &src,
             s->release, s->user);

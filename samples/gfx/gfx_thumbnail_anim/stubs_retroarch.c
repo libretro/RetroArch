@@ -274,9 +274,21 @@ int task_image_png_probe(void *t) { (void)t; return -1; }
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+/* Lane 14 captures the still load's callback and user data, to run
+ * the upload itself; without the capture there is no task queue. */
+void (*gt_still_cb)(void *task, void *data, void *user, const char *err);
+void *gt_still_ud;
+int   gt_still_capture;
 bool task_push_image_load_ex(const char *a, unsigned b, unsigned c,
       unsigned d, void *e, void *f)
-{ (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+{
+   (void)a; (void)b; (void)c; (void)d;
+   if (!gt_still_capture)
+      return false;
+   gt_still_cb = (void (*)(void*, void*, void*, const char*))e;
+   gt_still_ud = f;
+   return true;
+}
 
 /* gfx_thumbnail_draw() reaches the display driver through this rather
  * than through one of the helpers, so it needs its own stub even

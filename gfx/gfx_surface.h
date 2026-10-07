@@ -285,7 +285,9 @@ gfx_surface_t *gfx_surface_new_static(unsigned dims,
       enum texture_filter_type filter);
 
 /* A still with no image yet: the texture a menu icon slot owns. Its
- * size comes with each image it is given. NULL when out of memory. */
+ * size comes with each image it is given. A caller that has to know
+ * when an image has landed sets release/user on it; a still whose
+ * texture is read when drawn needs neither. NULL when out of memory. */
 gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter);
 
 /* The still in @slot, made on first use; its filter is @filter from
@@ -297,8 +299,11 @@ gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
  * pixels are the surface's from here, freed once uploaded or when the
  * surface goes. The texture up stays until the new one has landed; a
  * second image given while the first is still on its way goes up
- * after it. False when the image is unusable and was freed. Main
- * thread. */
+ * after it. A 10-bit image is narrowed for a driver that cannot sample
+ * it; a half-float one for such a driver is refused. True with the
+ * surface inflight when the upload is on its way to the video thread
+ * and release() will tell; true otherwise means the texture is up.
+ * False when the image is unusable and was freed. Main thread. */
 bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img);
 
 /* gfx_surface_submit_image for an image the caller keeps: the pixels

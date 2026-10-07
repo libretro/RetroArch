@@ -64,6 +64,7 @@
 #include <string.h>
 #include <retro_timers.h>
 #include <boolean.h>
+#include <queues/task_queue.h>
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
 #include "gfx/gfx_instrument.h"
@@ -112,10 +113,56 @@ static void reset_thumb(gfx_thumbnail_t *t)
 {
    memset(t, 0, sizeof(*t));
    /* what gfx_thumbnail_handle_upload leaves behind just before it
-    * reaches the animation block */
+    * reaches the animation block: a still shown, its texture the
+    * surface's */
    t->status  = GFX_THUMBNAIL_STATUS_AVAILABLE;
    t->dims    = VIDEO_SCALE_PACK(4, 4);
-   t->texture = 1;
+}
+
+/* Lane 14: the still load's callback, captured by the task stub */
+extern void (*gt_still_cb)(void *task, void *data, void *user,
+      const char *err);
+extern void *gt_still_ud;
+extern int   gt_still_capture;
+
+/* A decoded still as the load task would hand it over: 4x4, @seed
+ * telling one from another for the upload counter. */
+static struct texture_image *gt_still_image(uint32_t seed, int fp16)
+{
+   struct texture_image *img = (struct texture_image*)
+         calloc(1, sizeof(*img));
+   unsigned w;
+   if (!img)
+      return NULL;
+   img->width  = 4;
+   img->height = 4;
+   img->fp16   = fp16 ? true : false;
+   if (!(img->pixels = (uint32_t*)malloc(16 * sizeof(uint32_t)
+         * (fp16 ? 2 : 1))))
+   {
+      free(img);
+      return NULL;
+   }
+   for (w = 0; w < 16 * (fp16 ? 2u : 1u); w++)
+      img->pixels[w] = seed + w * 2654435761u;
+   return img;
+}
+
+/* The still path end to end on the real gfx_thumbnail.c: a request
+ * whose task is stubbed, its callback run with an image here. */
+static int gt_still_request(const char *path, gfx_thumbnail_t *th,
+      uint32_t seed, int fp16)
+{
+   struct texture_image *img;
+   gt_still_cb = NULL;
+   gfx_thumbnail_request_file(path, th, 0);
+   if (     !gt_still_cb
+         || (int)th->status != GFX_THUMBNAIL_STATUS_PENDING)
+      return 0;
+   if (!(img = gt_still_image(seed, fp16)))
+      return 0;
+   gt_still_cb(NULL, img, gt_still_ud, NULL);
+   return 1;
 }
 
 /* Lane 13: a release that frees its surface, as gfx_display's texture
@@ -757,6 +804,110 @@ int main(void)
          bad = 1;
       }
       gt_async_mode = 0;
+   }
+
+   /* 14. the still, through the thumbnail's own surface: under
+    *     threaded video it is queued and the thumbnail stays PENDING
+    *     until the upload lands; a second request while the first is
+    *     on its way shows the second; a reset while one is on its way
+    *     installs nothing; direct video shows it at once; a half-float
+    *     image the driver cannot sample is refused and freed. */
+   {
+      char still[256];
+      int ok14 = 1;
+      snprintf(still, sizeof(still), "/tmp/gfx_thumb_still_%d.bin",
+            (int)getpid());
+      {
+         FILE *f = fopen(still, "wb");
+         if (f)
+         {
+            fwrite("still", 1, 5, f);
+            fclose(f);
+         }
+      }
+      /* the still's submit asks whether it runs on the main thread */
+      task_queue_init(false, NULL);
+      gt_still_capture = 1;
+      gt_async_mode    = 1;
+      gt_async_posted  = gt_async_pending = 0;
+      gt_uploads       = 0;
+      gt_last_crc      = 0;
+      memset(&th, 0, sizeof(th));
+
+      if (!gt_still_request(still, &th, 0x1000u, 0))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_PENDING
+            || th.texture || !anim_inflight(&th) || gt_async_posted != 1
+            || th.dims != VIDEO_SCALE_PACK(4, 4))
+      {
+         printf("[FAIL] still: queued upload left status=%d texture=%lu "
+                "inflight=%d posted=%d\n", (int)th.status,
+                (unsigned long)th.texture, anim_inflight(&th),
+                gt_async_posted);
+         ok14 = 0;
+      }
+      /* a second request before the first lands */
+      if (!gt_still_request(still, &th, 0x2000u, 0))
+         ok14 = 0;
+      gt_async_flush();
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || th.texture != 2 || anim_inflight(&th) || gt_async_pending
+            || gt_uploads != 2)
+      {
+         printf("[FAIL] still: after two requests status=%d texture=%lu "
+                "inflight=%d pending=%d uploads=%d\n", (int)th.status,
+                (unsigned long)th.texture, anim_inflight(&th),
+                gt_async_pending, gt_uploads);
+         ok14 = 0;
+      }
+      /* reset with the still on its way: delivery installs nothing */
+      if (!gt_still_request(still, &th, 0x3000u, 0))
+         ok14 = 0;
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      if (     th.texture || th.anim_surface || gt_async_pending
+            || (int)th.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+      {
+         printf("[FAIL] still: delivery after reset left texture=%lu "
+                "surface=%p status=%d\n", (unsigned long)th.texture,
+                th.anim_surface, (int)th.status);
+         ok14 = 0;
+      }
+      /* direct video: shown from the callback */
+      gt_async_mode = 0;
+      if (!gt_still_request(still, &th, 0x4000u, 0))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || th.texture != 2 || gt_async_posted != 3)
+      {
+         printf("[FAIL] still: direct upload left status=%d texture=%lu "
+                "posted=%d\n", (int)th.status, (unsigned long)th.texture,
+                gt_async_posted);
+         ok14 = 0;
+      }
+      /* half floats the driver cannot sample: no still */
+      gt_async_mode = 1;
+      if (!gt_still_request(still, &th, 0x5000u, 1))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_MISSING
+            || th.texture || anim_inflight(&th) || gt_async_posted != 3)
+      {
+         printf("[FAIL] still: refused half floats left status=%d "
+                "texture=%lu posted=%d\n", (int)th.status,
+                (unsigned long)th.texture, gt_async_posted);
+         ok14 = 0;
+      }
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      gt_async_mode    = 0;
+      gt_still_capture = 0;
+      task_queue_deinit();
+      remove(still);
+      if (ok14)
+         printf("[ok]   still: queued, replaced in flight, dropped by a "
+                "reset, direct, and refused half floats\n");
+      else
+         bad = 1;
    }
 
    remove(path);

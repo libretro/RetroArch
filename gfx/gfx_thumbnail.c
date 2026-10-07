@@ -1360,8 +1360,7 @@ static bool gfx_thumbnail_try_video_open(gfx_thumbnail_t *thumbnail,
  * threaded video; the thumbnail only learns, on the main thread, that
  * a frame is showing and that a slot is free again. */
 
-/* The surface's texture is what the thumbnail draws: adopt it, and
- * let a still that arrived earlier go, since a frame is newer. On
+/* The surface's texture is what the thumbnail draws: adopt it. On
  * the first frame of a preview opened without a still decode this is
  * also what makes the thumbnail drawable and starts its fade. */
 static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
@@ -1371,12 +1370,6 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
 
    if (!s->handle)
       return;
-   if (!(thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE))
-   {
-      if (thumbnail->texture)
-         video_driver_texture_unload(&thumbnail->texture);
-      thumbnail->flags |= GFX_THUMB_FLAG_TEX_SURFACE;
-   }
    thumbnail->texture = s->handle;
    thumbnail->dims    = s->dims;
    /* Release-store pairs with the acquire-load in the draw path:
@@ -1395,19 +1388,10 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
  * again; the animation may also have closed meanwhile, in which case
  * there is no job and the surface simply keeps its last frame. */
 
-/* A still's upload, through the same surface ownership the animation
- * frames use: the image the load task decoded is handed to a surface
- * that holds the texture as its payload, and the surface frees the
- * image when the upload has been taken - also when the thumbnail
- * reset or replaced the surface meanwhile, which is when release()
- * never runs. */
-static void gfx_thumbnail_still_free(void *payload)
-{
-   struct texture_image *img = (struct texture_image*)payload;
-   image_texture_free(img);
-   free(img);
-}
-
+/* A still's upload has landed on the video thread: the image the
+ * load task decoded went to a still the thumbnail owns, which frees
+ * it once taken - also when the thumbnail reset or replaced the still
+ * meanwhile, which is when this never runs. */
 static void gfx_thumbnail_still_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
@@ -1452,10 +1436,11 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
 }
 
 /* The thumbnail's surface for a @width x @height animation with
- * @num_slots producer slots, made on first use. A surface of another
- * shape - a different animation on a thumbnail that was not reset -
- * is replaced; its texture goes with it, so the caller only asks for
- * one when a frame is about to be shown. */
+ * @num_slots producer slots, or with none the still its images go to,
+ * made on first use. A surface of another shape - a different
+ * animation on a thumbnail that was not reset - is replaced; its
+ * texture goes with it, so the caller only asks for one when a frame
+ * is about to be shown. */
 /* An animation's frames are linear scRGB half floats where its source
  * is HDR (PQ or HLG) and the driver shows such a texture as linear,
  * which it offers as GFX_SURFACE_PIXFMT_FP16 only while the output is
@@ -1479,16 +1464,12 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
    uint32_t pixfmt  = num_slots
       ? gfx_thumbnail_anim_pixfmt(thumbnail) : 0;
    if (     s
-         && (s->dims != dims
-            || s->num_slots < num_slots
-            || (!num_slots && s->num_slots)
-            || (num_slots && s->pixfmt != pixfmt)))
+         && (     (num_slots && s->dims != dims)
+               || s->num_slots < num_slots
+               || (!num_slots && s->num_slots)
+               || (num_slots && s->pixfmt != pixfmt)))
    {
-      if (thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE)
-      {
-         thumbnail->texture = 0;
-         thumbnail->flags  &= ~GFX_THUMB_FLAG_TEX_SURFACE;
-      }
+      thumbnail->texture = 0;
       gfx_surface_free(s);
       s = NULL;
       thumbnail->anim_surface = NULL;
@@ -1497,15 +1478,16 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
    {
       /* Animated thumbnails update every frame; always plain linear
        * filtering here, so no per-frame mip-map generation regardless
-       * of the menu_texture_mipmapping setting. num_slots 0 asks for
-       * a surface with no storage of its own: a still, whose pixels
-       * the load task owns until the upload has taken them. */
-      s = num_slots
-         ? gfx_surface_new(dims, num_slots, pixfmt,
+       * of the menu_texture_mipmapping setting. */
+      if (num_slots)
+         s = gfx_surface_new(dims, num_slots, pixfmt,
                TEXTURE_FILTER_LINEAR,
-               gfx_thumbnail_anim_slot_release, thumbnail)
-         : gfx_surface_new_static(dims,
-               gfx_display_texture_filter());
+               gfx_thumbnail_anim_slot_release, thumbnail);
+      else if ((s = gfx_surface_new_still(gfx_display_texture_filter())))
+      {
+         s->release = gfx_thumbnail_still_release;
+         s->user    = thumbnail;
+      }
       thumbnail->anim_surface = s;
    }
    return s;
@@ -2035,64 +2017,36 @@ static void gfx_thumbnail_handle_upload(
       goto end;
    }
 
-   /* The still goes to a surface the thumbnail owns: under threaded
-    * video the submit hands the image to the video thread and the
-    * status stays PENDING until the release installs the texture and
-    * starts the fade; without it the submit uploads here and now. The
-    * animation below is opened either way, and its first frame
-    * replaces the still if it arrives first. */
+   /* The still goes to a surface the thumbnail owns, which takes the
+    * image: under threaded video the status stays PENDING until the
+    * release installs the texture and starts the fade; without it the
+    * submit uploads here and now. The animation below is opened either
+    * way, and its first frame replaces the still if it arrives first.
+    * A driver that stopped sampling what was decoded (a reinit since)
+    * gets the image narrowed, or for half floats no still at all, and
+    * the animation brings the picture. */
    {
       gfx_surface_t *s = VIDEO_SCALE_FITS(img->width, img->height)
-         ? gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail,
-            VIDEO_SCALE_PACK(img->width, img->height), 0)
+         ? gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail, 0, 0)
          : NULL;
-      enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
+      /* Dimensions now, so layout does not wait for the handle. */
+      unsigned dims    = VIDEO_SCALE_PACK(img->width, img->height);
 
+      if (s && gfx_surface_submit_image(s, img))
+      {
+         thumbnail_tag->thumbnail->dims = dims;
+         if (!s->inflight)
+         {
+            fade_enabled = true;
+            gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
+         }
+         img = NULL;
+         goto open_anim;
+      }
       if (s)
-      {
-         gfx_surface_src_t src;
-         gfx_surface_requirements_t req;
-         /* A 10-bit decode for a driver that has since stopped
-          * sampling 10-bit (a reinit between decode and upload) is
-          * narrowed here, where the image is ours to rewrite. */
-         if (     img->pix10
-               && gfx_surface_query_requirements(0, &req)
-               && !(req.formats & GFX_SURFACE_PIXFMT_2101010))
-            image_texture_narrow_10bit(img);
-         src.pixels       = img->pixels;
-         src.payload      = img;
-         src.payload_free = gfx_thumbnail_still_free;
-         src.pixfmt       = img->fp16  ? GFX_SURFACE_PIXFMT_FP16
-                          : img->pix10 ? GFX_SURFACE_PIXFMT_2101010
-                                       : GFX_SURFACE_PIXFMT_8888;
-         src.rgba         = img->supports_rgba;
-         /* Half floats have no narrower form: a driver that stopped
-          * offering them since the decode (a reinit, HDR turned off)
-          * gets no still, and the animation that opens below brings
-          * the picture. */
-         if (     !img->fp16
-               || (     gfx_surface_query_requirements(0, &req)
-                     && (req.formats & GFX_SURFACE_PIXFMT_FP16)))
-            r = gfx_surface_submit_external(s, &src,
-                  gfx_thumbnail_still_release, thumbnail_tag->thumbnail);
-      }
-      if (r == GFX_SURFACE_SUBMIT_QUEUED)
-      {
-         /* Dimensions now, so layout does not wait for the handle. */
-         thumbnail_tag->thumbnail->dims   = VIDEO_SCALE_PACK(
-               img->width, img->height);
-         img = NULL;    /* the surface's payload now */
-         goto open_anim;
-      }
-      if (r == GFX_SURFACE_SUBMIT_DONE)
-      {
-         fade_enabled = true;
-         gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
-         goto open_anim;
-      }
+         img = NULL;    /* refused: freed by the surface */
       /* No surface, or the driver refused the upload: the thumbnail
-       * has nothing to show, and the fade below reports that. The
-       * image is still the task's and is freed at the end. */
+       * has nothing to show, and the fade below reports that. */
       GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
             GFX_THUMBNAIL_STATUS_MISSING);
       fade_enabled = true;
@@ -2574,17 +2528,13 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    /* Release any animation state (decoder + file buffer) */
    gfx_thumbnail_anim_close(thumbnail);
 
-   /* Unload texture: the surface's goes with the surface, which also
-    * outlives any frame of it still on its way to the video thread */
+   /* The texture goes with the surface, which also outlives any
+    * image of it still on its way to the video thread */
    if (thumbnail->anim_surface)
    {
       gfx_surface_free((gfx_surface_t*)thumbnail->anim_surface);
       thumbnail->anim_surface = NULL;
-      if (thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE)
-         thumbnail->texture = 0;
    }
-   if (thumbnail->texture)
-      video_driver_texture_unload(&thumbnail->texture);
 
    /* Ensure any 'fade in' animation is killed */
    if (thumbnail->flags & GFX_THUMB_FLAG_FADE_ACTIVE)
