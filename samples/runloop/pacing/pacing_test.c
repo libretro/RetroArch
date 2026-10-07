@@ -322,34 +322,129 @@ static void test_margin(void)
       margin = runloop_pace_margin_update(margin, 250 + (i & 1) * 50, period);
    check(margin >= 250 && margin <= 300,
          "a 250-300 us overshoot settles the margin between them");
+   /* Short periods may follow the timer past a quarter, never past
+    * the period itself. */
+   check(runloop_pace_margin_update(0, 100000, 4166) == 2000,
+         "240 Hz: the margin follows the timer to the floor");
+   check(runloop_pace_margin_update(0, 100000, 555) == 555,
+         "a period under the floor caps the margin at the period");
+}
+
+/* The limiter as runloop_iterate() runs it, over a sleep that lands
+ * @overshoot past what it was asked for - a coarse OS timer. Returns
+ * the achieved frames per second of loop time. */
+static double limiter_rate(retro_time_t period_us, retro_time_t work,
+      retro_time_t overshoot, unsigned frames)
+{
+   int64_t      anchor = 0;
+   retro_time_t margin = 0;
+   retro_time_t now    = 0;
+   unsigned     i;
+
+   for (i = 0; i < frames; i++)
+   {
+      retro_time_t to_sleep;
+      now     += work;
+      to_sleep = runloop_pace_schedule(&anchor, (int64_t)period_us * 1000,
+            now);
+      if (to_sleep > 0)
+      {
+         const retro_time_t deadline = anchor / 1000;
+         if (to_sleep > margin)
+         {
+            const retro_time_t asked_until = deadline - margin;
+            now    = asked_until + overshoot;
+            margin = runloop_pace_margin_update(margin,
+                  now - asked_until, period_us);
+         }
+         if (now < deadline)
+            now = deadline;
+      }
+   }
+   return (double)frames * 1000000.0 / (double)now;
+}
+
+static void test_fastforward_ratios(void)
+{
+   /* 60 fps content, a core that runs a frame in 50 us, and an OS
+    * timer from fine to the 2 ms a coarse one lands past its ask. At
+    * 2 ms the margin held to a quarter period slept every 30x frame
+    * past its slot, and 30x ran slower than 15x. */
+   const double fps = 60.0;
+   retro_time_t overshoot;
+
+   for (overshoot = 250; overshoot <= 2000; overshoot += 250)
+   {
+      double r15 = limiter_rate((retro_time_t)(1000000.0 / (fps * 15.0)),
+            50, overshoot, 6000);
+      double r30 = limiter_rate((retro_time_t)(1000000.0 / (fps * 30.0)),
+            50, overshoot, 6000);
+      double r60 = limiter_rate((retro_time_t)(1000000.0 / (fps * 60.0)),
+            50, overshoot, 6000);
+      char msg[160];
+
+      snprintf(msg, sizeof(msg), "%u us timer: 15x/30x/60x at %.0f/%.0f/%.0f fps,"
+            " wanted 900/1800/3600", (unsigned)overshoot, r15, r30, r60);
+      check(   r15 > fps * 15.0 * 0.97
+            && r30 > fps * 30.0 * 0.97
+            && r60 > fps * 60.0 * 0.97, msg);
+   }
+   /* And the ordinary frame still sleeps most of its period. */
+   check(limiter_rate(16683, 2000, 2000, 600) > 59.0,
+         "60 Hz with a 2 ms timer keeps 60");
+   printf("   fast-forward: 15x, 30x and 60x reach their rates on a "
+          "0.25-2 ms timer\n");
+}
+
+/* The video driver's blocking state, as every caller hands it over:
+ * vsync blocks only alone - never with Scanline Sync, a content rate
+ * vsync cannot hold, or fast-forward. */
+static void test_vsync_blocks(void)
+{
+   unsigned m;
+   for (m = 0; m < 16; m++)
+   {
+      bool vsync = (m & 1) != 0, scan = (m & 2) != 0;
+      bool force = (m & 4) != 0, ff   = (m & 8) != 0;
+      char msg[96];
+      snprintf(msg, sizeof(msg), "vsync %d scanline %d force %d ff %d",
+            vsync, scan, force, ff);
+      check(runloop_vsync_blocks(vsync, scan, force, ff)
+            == (vsync && !scan && !force && !ff), msg);
+   }
+   check(!runloop_vsync_blocks(true, true, false, false),
+         "Scanline Sync on: the swap never blocks as well (judder)");
 }
 
 
 /* The pace decision itself, as a table: what holds the loop in the
  * Quick Menu over a paused core, on a focused window, per combination
- * of the user's sync settings. Each row is a fact about the shipping
- * decision, not a wish; a row that changes is a behaviour change, and
- * should be a deliberate one. "Timer" as a setting is Sync to Exact
- * Content Framerate, with Menu Throttle Framerate at its default of
- * off, which is the menu path's early return. Audio never holds the
- * loop with the core paused: nothing writes blocking. */
-static runloop_pace_facts_t menu_facts(bool vsync, bool audio,
-      bool display, bool timer, bool scanline)
+ * of the user's sync settings and the Menu Frame Rate. Each row is a
+ * fact about the shipping decision, not a wish; a row that changes is a
+ * behaviour change, and should be a deliberate one. "VRR" is Sync to
+ * Exact Content Framerate. */
+enum menu_rate_row { AT_DISPLAY, AT_CONTENT };
+
+static runloop_pace_facts_t menu_facts(enum menu_rate_row rate,
+      bool vsync, bool audio, bool display, bool vrr, bool scanline)
 {
    /* A focused window, the menu up over a paused core (menu pause is
     * not RUNLOOP_FLAG_PAUSED), rate control on, a surface to present
     * to, and a frame limit - every menu path that reaches the block
-    * sets the refresh-rate one or leaves the content's from load.
-    * Audio never holds with the core paused: the menu writes silence,
-    * non-blocking. "Timer" is Sync to Exact Content Framerate with
-    * Menu Throttle Framerate off, the menu path's early return. */
+    * sets one: the display's period at 'Display Rate', the content's
+    * at 'Content Rate'. "Audio" is Audio Sync. At 'Display Rate' the
+    * menu's silence is written non-blocking and never holds; at
+    * 'Content Rate' it is written blocking when Audio Sync is on. */
    runloop_pace_facts_t f = PACE_FACT_FOCUSED | PACE_FACT_MENU_ALIVE
       | PACE_FACT_RATE_CONTROL | PACE_FACT_PRESENTABLE | PACE_FACT_FRAME_LIMIT;
+   f |= (rate == AT_DISPLAY) ? PACE_FACT_MENU_DISPLAY_RATE
+                             : PACE_FACT_MENU_CONTENT_RATE;
    if (vsync)    f |= PACE_FACT_VSYNC;
-   if (timer)    f |= PACE_FACT_VRR | PACE_FACT_MENU_EARLY_EXIT;
+   if (vrr)      f |= PACE_FACT_VRR;
    if (display)  f |= PACE_FACT_WRAPPER | PACE_FACT_DISPLAY_PACING;
    if (scanline) f |= PACE_FACT_SCANLINE_SYNC | PACE_FACT_SCANLINE_LOCKED;
-   (void)audio;
+   if (audio && rate == AT_CONTENT)
+      f |= PACE_FACT_AUDIO_HOLDING;
    return f;
 }
 
@@ -573,39 +668,73 @@ static void test_sync_plan(void)
                 * ARRAY_SIZE(multiples)));
 }
 
+#define MENU_ROW(rate, v, a, d, r, sc, want, what) \
+   check(runloop_pace_decide(menu_facts(rate, v, a, d, r, sc)) == (want), what)
+
 static void test_menu_table(void)
 {
-   {
-      check(runloop_pace_decide(menu_facts(false, false, true,  false, false)) == RUNLOOP_PACE_DISPLAY,
-            "menu: Display -> Display");
-      check(runloop_pace_decide(menu_facts(false, true,  true,  false, false)) == RUNLOOP_PACE_DISPLAY,
-            "menu: Display+Audio -> Display");
-      check(runloop_pace_decide(menu_facts(true,  false, true,  false, false)) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY),
-            "menu: Display+VSync -> VSync+Display");
-      check(runloop_pace_decide(menu_facts(true,  false, false, false, false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync -> VSync");
-      check(runloop_pace_decide(menu_facts(true,  true,  false, false, false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Audio -> VSync");
-      check(runloop_pace_decide(menu_facts(true,  true,  false, true,  false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Audio+Timer -> VSync (early return)");
-      check(runloop_pace_decide(menu_facts(true,  false, false, true,  false)) == RUNLOOP_PACE_VSYNC,
-            "menu: VSync+Timer -> VSync (early return)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, false, false)) == RUNLOOP_PACE_TIMER,
-            "menu: Audio -> Timer (the menu's refresh-rate timer)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Audio+Timer -> None (early return, nothing holds)");
-      /* The menu's refresh-rate timer stands aside only for vsync,
-       * focus and display pacing, not for scanline: two clocks. A
-       * fact, not an endorsement. */
-      check(runloop_pace_decide(menu_facts(false, false, false, false, true)) == (RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER),
-            "menu: Scanline -> Scanline+Timer");
-      check(runloop_pace_decide(menu_facts(false, false, false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer -> None (early return, nothing holds)");
-      check(runloop_pace_decide(menu_facts(false, true,  false, true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer+Audio -> None (early return)");
-      check(runloop_pace_decide(menu_facts(false, false, true,  true,  false)) == RUNLOOP_PACE_NONE,
-            "menu: Timer+Display -> None (early return; the hold runs but is not counted)");
-   }
+   /* 'Display Rate': the display's own pace - vsync, the display
+    * pacing hold, or the timer at the display's period - and never
+    * audio, never the content's period. */
+   MENU_ROW(AT_DISPLAY, 1, 0, 0, 0, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync -> VSync");
+   MENU_ROW(AT_DISPLAY, 1, 1, 0, 0, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync+Audio -> VSync (the silence does not block)");
+   MENU_ROW(AT_DISPLAY, 1, 1, 0, 1, 0, RUNLOOP_PACE_VSYNC,
+         "display rate: VSync+Audio+VRR -> VSync (no content-rate timer)");
+   MENU_ROW(AT_DISPLAY, 0, 1, 0, 0, 0, RUNLOOP_PACE_TIMER,
+         "display rate: Audio -> Timer (the display's period)");
+   MENU_ROW(AT_DISPLAY, 0, 0, 0, 1, 0, RUNLOOP_PACE_TIMER,
+         "display rate: VRR -> Timer (the display's period)");
+   MENU_ROW(AT_DISPLAY, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY,
+         "display rate: Display -> Display");
+   MENU_ROW(AT_DISPLAY, 1, 0, 1, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_DISPLAY,
+         "display rate: Display+VSync -> VSync+Display");
+   MENU_ROW(AT_DISPLAY, 0, 1, 1, 1, 0, RUNLOOP_PACE_DISPLAY,
+         "display rate: Display+Audio+VRR -> Display");
+   /* Threaded video without the display pacing hold: vsync blocks the
+    * video thread, not the runloop, so the timer holds the menu to the
+    * display's period. */
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 1, 1, 0, 0, 0)
+            | PACE_FACT_WRAPPER) == (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER),
+         "display rate: VSync+Audio, threaded -> VSync+Timer");
+   /* Scanline Sync holds the focused menu as vsync does: the frame
+    * limit the menu path leaves standing then is whatever fast-forward
+    * last set, and a timer on it ran the menu at the fast-forward
+    * ratio - below 1.0x, slower than the display. Between locks the
+    * gap limiter bridges at the display's period. */
+   MENU_ROW(AT_DISPLAY, 0, 0, 0, 0, 1, RUNLOOP_PACE_SCANLINE,
+         "display rate: Scanline -> Scanline (no fast-forward-period timer)");
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 0, 0, 0, 0, 1)
+            & ~PACE_FACT_SCANLINE_LOCKED) == RUNLOOP_PACE_TIMER,
+         "display rate: Scanline between locks -> Timer (the gap limiter, "
+         "at the display's period)");
+   check(runloop_pace_decide(menu_facts(AT_DISPLAY, 0, 0, 0, 0, 1)
+            & ~PACE_FACT_FOCUSED)
+            == (RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_TIMER),
+         "display rate: Scanline, unfocused -> Scanline+Timer (the menu "
+         "path sets the display's period there)");
+
+   /* 'Content Rate': held to the content's period by audio when it
+    * blocks, by the timer when it does not - one or the other, never
+    * both, except under VRR, which times every frame to the content
+    * as it does in play. */
+   MENU_ROW(AT_CONTENT, 1, 1, 0, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO,
+         "content rate: VSync+Audio -> VSync+Audio");
+   MENU_ROW(AT_CONTENT, 1, 0, 0, 0, 0, RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_TIMER,
+         "content rate: VSync -> VSync+Timer (the content's period)");
+   MENU_ROW(AT_CONTENT, 0, 1, 0, 0, 0, RUNLOOP_PACE_AUDIO,
+         "content rate: Audio -> Audio");
+   MENU_ROW(AT_CONTENT, 0, 0, 0, 0, 0, RUNLOOP_PACE_TIMER,
+         "content rate: nothing -> Timer (the content's period)");
+   MENU_ROW(AT_CONTENT, 1, 1, 0, 1, 0,
+         RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_TIMER,
+         "content rate: VSync+Audio+VRR -> VSync+Audio+Timer, as in play");
+   MENU_ROW(AT_CONTENT, 0, 1, 1, 0, 0, RUNLOOP_PACE_AUDIO | RUNLOOP_PACE_DISPLAY,
+         "content rate: Display+Audio -> Audio+Display");
+   MENU_ROW(AT_CONTENT, 0, 0, 1, 0, 0, RUNLOOP_PACE_DISPLAY,
+         "content rate: Display -> Display (the hold keeps the content's "
+         "period; a timer as well would beat against it)");
 }
 
 int main(void)
@@ -617,6 +746,8 @@ int main(void)
    test_sample_filter();
    test_schedule();
    test_margin();
+   test_fastforward_ratios();
+   test_vsync_blocks();
    test_swap_interval();
    test_sync_plan();
    test_menu_table();

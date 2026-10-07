@@ -49,6 +49,32 @@ TEST_HASH_SRC = test/hash/test_hash.c hash/lrc_hash.c \
 		file/file_path_io.c features/features_cpu.c \
 		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
 
+# net_krb5.c is the Kerberos client; its enctype vectors are in the
+# crypto suite, so the socket layer it talks to the KDC with comes too.
+TEST_CRYPTO_LRC_SRC = crypto/crypto.c crypto/kdf.c crypto/pk.c crypto/x509.c utils/md5.c \
+		net/net_krb5.c net/net_socket.c net/net_compat.c
+
+# Known-answer tests for every primitive (FIPS 197, RFC 4493, the GCM
+# spec vectors, RFC 8439, RFC 4231, RFC 5869, PBKDF2, FIPS 180-4), the
+# DRBG and the platform entropy source, and the public-key side (bignum,
+# RSA PKCS#1 v1.5 verify, P-256 ECDH / ECDSA) against reference vectors.
+TEST_CRYPTO = test/crypto/test_crypto
+TEST_CRYPTO_SRC = test/crypto/test_crypto.c $(TEST_CRYPTO_LRC_SRC) \
+		hash/lrc_hash.c encodings/encoding_base64.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c time/rtime.c string/stdstring.c encodings/encoding_utf.c
+
+TEST_KEYCHAIN = test/file/test_keychain
+TEST_KEYCHAIN_SRC = test/file/test_keychain.c file/keychain.c \
+		$(TEST_CRYPTO_LRC_SRC) hash/lrc_hash.c encodings/encoding_base64.c \
+		streams/file_stream.c vfs/vfs_implementation.c file/file_path.c \
+		string/rstrtod.c \
+		file/file_path_io.c features/features_cpu.c \
+		compat/compat_strl.c compat/compat_strldup.c time/rtime.c \
+		string/stdstring.c encodings/encoding_utf.c
+
 TEST_RWAV = test/formats/test_rwav
 TEST_RWAV_SRC = test/formats/test_rwav.c formats/wav/rwav.c
 
@@ -99,7 +125,6 @@ WINE          ?= wine
 
 # Every file that selects between A and W.
 WIN32_AW_SRC = compat/fopen_utf8.c dynamic/dylib.c file/file_path.c \
-	       file/nbio/nbio_stdio.c file/nbio/nbio_windowsmmap.c \
 	       vfs/vfs_implementation.c
 
 # What a runnable test needs linked in besides the file under test.
@@ -232,6 +257,17 @@ threads-samples:
 	$(MAKE) -C samples/rthreads/tpool_wait_test SANITIZER=$(CONCURRENCY_SAN)
 	cd samples/rthreads/tpool_wait_test && ./tpool_wait_test
 	$(MAKE) -C samples/rthreads/tpool_wait_test clean
+	# again as the pool that backends without lock-free atomics get,
+	# which nothing else here builds. Not under TSan, which rightly
+	# objects to a volatile int standing in for an atomic.
+	@if [ "$(CONCURRENCY_SAN)" != "thread" ]; then \
+	   CFLAGS="-DRETRO_ATOMIC_FORCE_VOLATILE -DRETRO_ATOMIC_SUPPRESS_WARNING" \
+	      $(MAKE) -C samples/rthreads/tpool_wait_test SANITIZER=$(CONCURRENCY_SAN) || exit 1; \
+	   (cd samples/rthreads/tpool_wait_test && ./tpool_wait_test) || exit 1; \
+	   $(MAKE) -C samples/rthreads/tpool_wait_test clean; \
+	else \
+	   echo "skipping the fallback pool under TSan"; \
+	fi
 	# runs its own second pass against the condition-variable backend,
 	# which is what macOS, the BSDs and the console ports get
 	$(MAKE) -C samples/rthreads/retro_eventcount_test clean
@@ -296,7 +332,7 @@ threads-samples:
 threads-samples-tsan:
 	$(MAKE) -f Makefile.test threads-samples CONCURRENCY_SAN=thread
 
-.PHONY: win32-configs vfs-samples threads-samples threads-samples-tsan \
+.PHONY: win32-waits-check win32-configs vfs-samples threads-samples threads-samples-tsan \
 	unit-tests all
 
 # The libcheck suites on their own: bounded work, and what CI's unit
@@ -432,6 +468,14 @@ unit-tests:
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_HASH_SRC) $(LIBCHECK_LIBS) -o $(TEST_HASH)
 	$(TEST_HASH)
 	lcov -c -d . -o `dirname $(TEST_HASH)`/coverage.info
+	# crypto
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_CRYPTO_SRC) $(LIBCHECK_LIBS) -o $(TEST_CRYPTO)
+	$(TEST_CRYPTO)
+	lcov -c -d . -o `dirname $(TEST_CRYPTO)`/coverage.info
+	# keychain
+	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_KEYCHAIN_SRC) $(LIBCHECK_LIBS) -o $(TEST_KEYCHAIN)
+	$(TEST_KEYCHAIN)
+	lcov -c -d . -o `dirname $(TEST_KEYCHAIN)`/coverage.info
 	# list
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_LINKED_LIST_SRC) $(LIBCHECK_LIBS) -o $(TEST_LINKED_LIST)
 	$(TEST_LINKED_LIST)
@@ -469,7 +513,156 @@ unit-tests:
 	# rwebm audio
 	$(CC) $(TEST_UNIT_CFLAGS) $(TEST_RWEBM_AUDIO_SRC) $(LIBCHECK_LIBS) -o $(TEST_RWEBM_AUDIO)
 	$(TEST_RWEBM_AUDIO)
-all: unit-tests console-libc-check darwin-floor-check
+# --- aarch64 cross run ---------------------------------------------
+#
+# The ARMv8 AES + PMULL path in crypto/crypto.c (and lrc_hash's SHA
+# path) only executes on ARM silicon; an x86 runner would build it and
+# never run it. With an aarch64 cross gcc and qemu-user on PATH the
+# crypto suite runs under emulation in two shapes: baseline armv8-a
+# (runtime dispatch on the hwcap) and armv8-a+crypto (the intrinsics
+# used unconditionally). libcheck is not installed for the target, so
+# the suite is built against test/check_shim.h. Both tools are
+# optional: absent, this says so and passes.
+AARCH64_CC   ?= aarch64-linux-gnu-gcc
+QEMU_AARCH64 ?= qemu-aarch64
+
+crypto-aarch64-check:
+	@if ! command -v $(AARCH64_CC) >/dev/null 2>&1; then echo "skip: $(AARCH64_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_AARCH64) >/dev/null 2>&1; then echo "skip: $(QEMU_AARCH64) not installed"; exit 0; fi; \
+	for arch in "-march=armv8-a" "-march=armv8-a+crypto"; do \
+	   $(AARCH64_CC) -static -O2 $$arch -DCHECK_SHIM -Iinclude -Wall \
+	      $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_aarch64 || exit 1; \
+	   $(QEMU_AARCH64) test/crypto/test_crypto_aarch64 || exit 1; \
+	   echo "ok:   crypto suite under qemu-aarch64 [$$arch]"; \
+	done
+
+# A 32-bit, strict-alignment target: size_t is 32 bits and a shift by
+# the word width is not the zero it silently is elsewhere (the AES-CCM
+# length check failed here and nowhere else), and a misaligned load
+# traps rather than costs a cycle. MIPS under qemu is the one such
+# target a Linux host can run; it stands in for the 32-bit ARM and x86
+# builds as well.
+MIPSEL_CC   ?= mipsel-linux-gnu-gcc
+QEMU_MIPSEL ?= qemu-mipsel
+
+# The crypto library first used from eight threads at once, under
+# TSan: a table built on first use or a cached CPU-feature check is a
+# reported race here on any runner, where a network test sees it only
+# when two connections happen to start together on two cores. Then the
+# x509 trust store, walked while it is replaced, under TSan and ASan.
+crypto-tsan-check:
+	$(CC) -O1 -g -fsanitize=thread -Iinclude test/crypto/crypto_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) -lpthread -lm \
+	   -o test/crypto/crypto_threads_test
+	TSAN_OPTIONS="halt_on_error=1 exitcode=66" test/crypto/crypto_threads_test
+	rm -f test/crypto/crypto_threads_test
+	$(CC) -O1 -g -fsanitize=thread -DHAVE_THREADS -Iinclude test/crypto/x509_store_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/crypto/x509_store_threads_test
+	TSAN_OPTIONS="halt_on_error=1 exitcode=66" test/crypto/x509_store_threads_test
+	$(CC) -O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -DHAVE_THREADS -Iinclude \
+	   test/crypto/x509_store_threads_test.c \
+	   $(filter-out test/crypto/test_crypto.c,$(TEST_CRYPTO_SRC)) rthreads/rthreads.c -lpthread -lm \
+	   -o test/crypto/x509_store_threads_test
+	test/crypto/x509_store_threads_test
+	rm -f test/crypto/x509_store_threads_test
+
+crypto-mips-check:
+	@if ! command -v $(MIPSEL_CC) >/dev/null 2>&1; then echo "skip: $(MIPSEL_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_MIPSEL) >/dev/null 2>&1; then echo "skip: $(QEMU_MIPSEL) not installed"; exit 0; fi; \
+	$(MIPSEL_CC) -static -O2 -march=mips32r2 -DCHECK_SHIM -Iinclude -Wall \
+	   $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_mipsel || exit 1; \
+	$(QEMU_MIPSEL) test/crypto/test_crypto_mipsel || exit 1; \
+	echo "ok:   crypto suite under qemu-mipsel (32-bit, strict alignment)"
+
+# 32-bit ARM in the two shapes the consoles take: ARMv7-A with NEON
+# (the Vita, 32-bit Android: the NEON ChaCha20) and ARMv6K with VFP only
+# (the 3DS: every portable path - software AES, the 32-bit X25519).
+ARMHF_CC  ?= arm-linux-gnueabihf-gcc
+QEMU_ARM  ?= qemu-arm
+crypto-arm-check:
+	@if ! command -v $(ARMHF_CC) >/dev/null 2>&1; then echo "skip: $(ARMHF_CC) not installed"; exit 0; fi; \
+	if ! command -v $(QEMU_ARM) >/dev/null 2>&1; then echo "skip: $(QEMU_ARM) not installed"; exit 0; fi; \
+	for shape in "armv7-a+neon:-march=armv7-a -mfpu=neon -mfloat-abi=hard" \
+	             "armv6k+vfp:-march=armv6k -mfpu=vfp -mfloat-abi=hard -marm"; do \
+	   name=$${shape%%:*}; flags=$${shape#*:}; \
+	   $(ARMHF_CC) -static -O2 $$flags -DCHECK_SHIM -Iinclude -Wall \
+	      $(TEST_CRYPTO_SRC) -o test/crypto/test_crypto_arm || exit 1; \
+	   $(QEMU_ARM) test/crypto/test_crypto_arm || exit 1; \
+	   echo "ok:   crypto suite under qemu-arm [$$name]"; \
+	done
+
+# The Windows builds actually run: the crypto and keychain suites as
+# MinGW binaries under Wine (RtlGenRandom, the MachineGuid identity, the
+# AES-NI dispatch through the Win32 cpu features), then the three network
+# matrices driving the MinGW tools against the local servers (Winsock,
+# the Win32 thread backend). Skips when MinGW or Wine is not installed.
+MINGW_CC ?= x86_64-w64-mingw32-gcc
+WINE     ?= wine
+# Wine makes a prefix that is not there, but not under a directory that
+# belongs to someone else: with WINEPREFIX=/tmp/wineprefix, as CI sets
+# it, the first tool stops at "wine: '/tmp' is not owned by you, refusing
+# to create a configuration directory there". A directory that exists
+# and is ours it takes, so it is made before the first tool runs.
+WINE_PREFIX_DIR = if [ -n "$${WINEPREFIX:-}" ]; then mkdir -p "$$WINEPREFIX" || exit 1; fi
+win32-wine-check:
+	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
+	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
+	export WINEDEBUG=-all; \
+	$(WINE_PREFIX_DIR); \
+	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_CRYPTO_SRC) compat/fopen_utf8.c \
+	   -lws2_32 -liphlpapi -o test/crypto/test_crypto_win32.exe || exit 1; \
+	$(WINE) test/crypto/test_crypto_win32.exe || exit 1; \
+	echo "ok:   crypto suite as a Windows binary under Wine"; \
+	$(MINGW_CC) -static -O2 -DCHECK_SHIM -Iinclude -Wall $(TEST_KEYCHAIN_SRC) compat/fopen_utf8.c \
+	   -lws2_32 -liphlpapi -ladvapi32 -o test/file/test_keychain_win32.exe || exit 1; \
+	$(WINE) test/file/test_keychain_win32.exe || exit 1; \
+	echo "ok:   keychain suite as a Windows binary under Wine"; \
+	rm -f test/crypto/test_crypto_win32.exe test/file/test_keychain_win32.exe
+
+# The Windows wait paths under Wine, which no Linux build takes: the
+# eventcount on each of its sleep tiers, then the eventcount's condition
+# variable tier, the asymmetric eventcount and the thread pool on each of
+# the condition variable's tiers - every one with bounded waits on the
+# high resolution timer and with the kernel timeout alone. Skips when
+# MinGW or Wine is not installed.
+WIN32_WAITS_SRC = rthreads/rthreads.c features/features_cpu.c time/rtime.c
+win32-waits-check:
+	@if ! command -v $(MINGW_CC) >/dev/null 2>&1; then echo "skip: $(MINGW_CC) not installed"; exit 0; fi; \
+	if ! command -v $(WINE) >/dev/null 2>&1; then echo "skip: $(WINE) not installed"; exit 0; fi; \
+	export WINEDEBUG=-all; \
+	$(WINE_PREFIX_DIR); \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/retro_eventcount_test/retro_eventcount_test.c \
+	   rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_ec_win32.exe || exit 1; \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/retro_asym_eventcount_test/retro_asym_eventcount_test.c \
+	   rthreads/retro_asym_eventcount.c rthreads/retro_procbarrier.c \
+	   rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_asym_win32.exe || exit 1; \
+	$(MINGW_CC) -static -O1 -DHAVE_THREADS -Iinclude -Wall \
+	   samples/rthreads/tpool_wait_test/tpool_wait_test.c \
+	   rthreads/tpool.c rthreads/retro_eventcount.c $(WIN32_WAITS_SRC) \
+	   -o /tmp/lrc_tpool_win32.exe || exit 1; \
+	for h in 1 0; do \
+	   for t in alert keyed event none; do \
+	      RETRO_EVENTCOUNT_HIRES=$$h RETRO_EVENTCOUNT_WIN32=$$t \
+	         $(WINE) /tmp/lrc_ec_win32.exe >/tmp/lrc_waits.log 2>&1 \
+	         || { echo "FAIL: eventcount, tier $$t, hires $$h"; cat /tmp/lrc_waits.log; exit 1; }; \
+	   done; \
+	   for t in alert keyed event; do \
+	      for exe in lrc_ec_win32 lrc_asym_win32 lrc_tpool_win32; do \
+	         RTHREADS_SCOND_HIRES=$$h RTHREADS_SCOND=$$t RETRO_EVENTCOUNT_WIN32=none \
+	            $(WINE) /tmp/$$exe.exe >/tmp/lrc_waits.log 2>&1 \
+	            || { echo "FAIL: $$exe, scond tier $$t, hires $$h"; cat /tmp/lrc_waits.log; exit 1; }; \
+	      done; \
+	   done; \
+	   echo "ok:   Windows wait tiers under Wine, hires $$h"; \
+	done; \
+	rm -f /tmp/lrc_ec_win32.exe /tmp/lrc_asym_win32.exe /tmp/lrc_tpool_win32.exe /tmp/lrc_waits.log
+
+all: unit-tests console-libc-check darwin-floor-check crypto-aarch64-check crypto-arm-check crypto-mips-check win32-wine-check win32-waits-check
 	# vfs samples: file size, seek and EOF boundaries, mapped and not
 	$(MAKE) -f Makefile.test vfs-samples
 	# concurrency samples: nothing else here compiles retro_spsc.c,
@@ -481,6 +674,8 @@ all: unit-tests console-libc-check darwin-floor-check
 	
 	lcov -o test/coverage.info \
 	     -a test/utils/coverage.info \
+	     -a test/crypto/coverage.info \
+	     -a test/file/coverage.info \
 	     -a test/string/coverage.info \
 	     -a test/lists/coverage.info \
 	     -a test/lists/file_list_coverage.info \
@@ -494,6 +689,7 @@ all: unit-tests console-libc-check darwin-floor-check
 clean:
 	rm -f *.gcda *.gcno
 	rm -f $(TEST_STDSTRING) $(TEST_UTILS) $(TEST_HASH) \
+	      $(TEST_CRYPTO) $(TEST_KEYCHAIN) test/crypto/test_crypto_aarch64 test/crypto/test_crypto_arm test/crypto/test_crypto_mipsel \
 	      $(TEST_LINKED_LIST) $(TEST_FILE_LIST) $(TEST_MEMPOOL) \
 	      $(TEST_MENU_STR) $(TEST_STRL) \
 	      $(TEST_GENERIC_QUEUE) \

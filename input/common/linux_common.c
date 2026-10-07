@@ -29,6 +29,9 @@
 #include <retro_assert.h>
 #include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#ifdef HAVE_THREADS
+#include <rthreads/retro_eventcount.h>
+#endif
 #include <features/features_cpu.h>
 
 #include <retro_dirent.h>
@@ -57,17 +60,17 @@ struct linux_illuminance_sensor
 {
 #ifdef HAVE_THREADS
    sthread_t *thread;
-   /* Guards poll_rate, rate_changed and done; the poll thread waits on
-    * cond between readings, so a rate change or close wakes it at
-    * once instead of after the rest of a sleep. */
-   slock_t   *lock;
-   scond_t   *cond;
-   bool       rate_changed;
-   bool       done;
+   /* The poll thread waits here between readings, so a rate change or
+    * close wakes it at once instead of after the rest of a sleep. No
+    * lock: the rate, the count of rate changes and done are one atomic
+    * word each, stored before the notify. */
+   retro_eventcount_t wake;
+   retro_atomic_int_t rate_gen;
+   retro_atomic_int_t done;
 #endif
 
    /* Poll rate in Hz (i.e. in queries per second) */
-   unsigned poll_rate;
+   retro_atomic_int_t poll_rate;
 
    /* The lux reading in millilux, so it can be published atomically
     * to the input driver without a lock. A little precision is lost,
@@ -137,7 +140,7 @@ static void linux_terminal_restore_signal(int sig)
 
 bool linux_terminal_disable_input(void)
 {
-   struct sigaction sa = {0};
+   struct sigaction sa;
 
    /* Avoid accidentally typing stuff. */
    if (!isatty(0))
@@ -152,6 +155,7 @@ bool linux_terminal_disable_input(void)
       return false;
    }
 
+   memset(&sa, 0, sizeof(sa));
    sa.sa_handler = linux_terminal_restore_signal;
    sa.sa_flags   = SA_RESTART | SA_RESETHAND;
    sigemptyset(&sa.sa_mask);
@@ -175,7 +179,7 @@ bool linux_terminal_disable_input(void)
  * sleeping a period after each read, so the rate holds however long a
  * read takes; a reader that falls behind skips ahead rather than
  * bursting to catch up. Between readings it waits on the sensor's
- * condition, which close and rate changes signal: close returns as
+ * eventcount, which close and rate changes notify: close returns as
  * soon as any read in progress does, and a new rate applies at once. */
 static void linux_poll_illuminance_sensor(void *data)
 {
@@ -187,47 +191,44 @@ static void linux_poll_illuminance_sensor(void *data)
 
    next = cpu_features_get_time_usec();
 
-   slock_lock(sensor->lock);
-   while (!sensor->done)
+   while (!retro_atomic_load_acquire_int(&sensor->done))
    {
       double       lux;
       retro_time_t now;
-      retro_time_t period = 1000000 / sensor->poll_rate;
-
-      sensor->rate_changed = false;
-      slock_unlock(sensor->lock);
+      /* The count before the rate: a change that lands between the two
+       * is seen as one and read again, never missed. */
+      int          gen    = retro_atomic_load_acquire_int(&sensor->rate_gen);
+      retro_time_t period = 1000000
+         / retro_atomic_load_acquire_int(&sensor->poll_rate);
 
       lux = linux_read_illuminance_sensor(sensor);
       retro_atomic_store_release_int(&sensor->millilux,
             (int)(lux * 1000.0));
 
-      slock_lock(sensor->lock);
       now   = cpu_features_get_time_usec();
       next += period;
       if (next <= now)
          next = now + period;
 
-      while (!sensor->done && !sensor->rate_changed && now < next)
+      while (now < next)
       {
-         scond_wait_timeout(sensor->cond, sensor->lock, next - now);
+         int key = retro_eventcount_prepare_wait(&sensor->wake);
+         if (     retro_atomic_load_acquire_int(&sensor->done)
+               || retro_atomic_load_acquire_int(&sensor->rate_gen) != gen)
+         {
+            retro_eventcount_cancel_wait(&sensor->wake);
+            break;
+         }
+         retro_eventcount_commit_wait_timeout(&sensor->wake, key, next - now);
          now = cpu_features_get_time_usec();
       }
 
       /* A new rate reads now and schedules from here. */
-      if (sensor->rate_changed)
+      if (retro_atomic_load_acquire_int(&sensor->rate_gen) != gen)
          next = now;
    }
-   slock_unlock(sensor->lock);
 
    RARCH_DBG("Illuminance sensor thread for %s exiting.\n", sensor->path);
-}
-
-static void linux_illuminance_sensor_free_sync(linux_illuminance_sensor_t *sensor)
-{
-   scond_free(sensor->cond);
-   slock_free(sensor->lock);
-   sensor->cond = NULL;
-   sensor->lock = NULL;
 }
 #endif
 
@@ -240,18 +241,17 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
    if (!sensor)
       goto error;
 
-   sensor->poll_rate = rate ? rate : DEFAULT_POLL_RATE;
-   if (sensor->poll_rate > MAX_POLL_RATE)
-      sensor->poll_rate = MAX_POLL_RATE;
+   rate              = rate ? rate : DEFAULT_POLL_RATE;
+   if (rate > MAX_POLL_RATE)
+      rate           = MAX_POLL_RATE;
+   retro_atomic_int_init(&sensor->poll_rate, (int)rate);
    sensor->path[0]   = '\0';
    retro_atomic_store_release_int(&sensor->millilux, 0);
 #ifdef HAVE_THREADS
    sensor->thread       = NULL; /* spawned once a sensor is found */
-   sensor->rate_changed = false;
-   sensor->done         = false;
-   sensor->lock         = slock_new();
-   sensor->cond         = scond_new();
-   if (!sensor->lock || !sensor->cond)
+   retro_atomic_int_init(&sensor->rate_gen, 0);
+   retro_atomic_int_init(&sensor->done, 0);
+   if (!retro_eventcount_init(&sensor->wake))
       goto error;
 #endif
 
@@ -294,7 +294,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
          /* Without threads, the first reading above is all the sensor
           * reports. */
 
-         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, sensor->poll_rate);
+         RARCH_LOG("Opened illuminance sensor at %s, polling at %u Hz.\n", sensor->path, rate);
          retro_closedir(device);
          return sensor;
       }
@@ -306,7 +306,7 @@ error:
 
 #ifdef HAVE_THREADS
    if (sensor)
-      linux_illuminance_sensor_free_sync(sensor);
+      retro_eventcount_free(&sensor->wake);
 #endif
    free(sensor);
 
@@ -323,15 +323,13 @@ void linux_close_illuminance_sensor(linux_illuminance_sensor_t *sensor)
    {
       /* Wakes the thread out of its wait between readings; the join
        * then lasts no longer than a read already in progress. */
-      slock_lock(sensor->lock);
-      sensor->done = true;
-      scond_signal(sensor->cond);
-      slock_unlock(sensor->lock);
+      retro_atomic_store_release_int(&sensor->done, 1);
+      retro_eventcount_notify(&sensor->wake);
 
       sthread_join(sensor->thread);
       /* sthread_join will free the thread */
    }
-   linux_illuminance_sensor_free_sync(sensor);
+   retro_eventcount_free(&sensor->wake);
 #endif
 
    free(sensor);
@@ -359,14 +357,11 @@ void linux_set_illuminance_sensor_rate(linux_illuminance_sensor_t *sensor, unsig
    if (rate > MAX_POLL_RATE)
       rate = MAX_POLL_RATE;
 
+   retro_atomic_store_release_int(&sensor->poll_rate, (int)rate);
 #ifdef HAVE_THREADS
-   slock_lock(sensor->lock);
-   sensor->poll_rate    = rate;
-   sensor->rate_changed = true;
-   scond_signal(sensor->cond);
-   slock_unlock(sensor->lock);
-#else
-   sensor->poll_rate = rate;
+   /* The rate, then the count that says it changed, then the wake. */
+   retro_atomic_fetch_add_int(&sensor->rate_gen, 1);
+   retro_eventcount_notify(&sensor->wake);
 #endif
 }
 

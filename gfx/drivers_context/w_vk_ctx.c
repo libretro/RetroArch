@@ -58,7 +58,6 @@ typedef struct gfx_ctx_w_vk_data
 
 /* TODO/FIXME - static globals */
 gfx_ctx_vulkan_data_t win32_vk;
-static void      *dinput_vk        = NULL;
 int              win32_vk_interval = 0;
 
 /* FORWARD DECLARATIONS */
@@ -135,10 +134,9 @@ static void gfx_ctx_w_vk_swap_buffers(void *data)
    vulkan_acquire_next_image(&win32_vk);
 }
 
-static bool gfx_ctx_w_vk_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool gfx_ctx_w_vk_set_resize(void *data, unsigned dims)
 {
-   if (vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval))
+   if (vulkan_create_swapchain(&win32_vk, dims, win32_vk_interval))
    {
       if (win32_vk.flags & VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN)
       {
@@ -164,7 +162,8 @@ static void gfx_ctx_w_vk_destroy(void *data)
       slock_free(win32_vk.context.queue_lock);
    memset(&win32_vk, 0, sizeof(win32_vk));
 
-   if (window)
+   /* left up for the driver that comes next, where it can be */
+   if (window && !win32_window_keep())
    {
       win32_monitor_from_window();
       win32_destroy_window();
@@ -197,18 +196,10 @@ static void *gfx_ctx_w_vk_init(void *video_driver)
    win32_window_reset();
    win32_monitor_init();
 
-   {
-      settings_t *settings     = config_get_ptr();
-      wndclass.lpfnWndProc     = wnd_proc_vk_common;
-#ifdef HAVE_DINPUT
-      if (string_is_equal(settings->arrays.input_driver, "dinput"))
-         wndclass.lpfnWndProc   = wnd_proc_vk_dinput;
-#endif
-#ifdef HAVE_WINRAWINPUT
-      if (string_is_equal(settings->arrays.input_driver, "raw"))
-         wndclass.lpfnWndProc   = wnd_proc_vk_winraw;
-#endif
-   }
+   /* one window procedure for every video and input driver; the
+    * family says what creating the window sets up */
+   wndclass.lpfnWndProc = win32_window_proc;
+   win32_window_proc_setup(WIN32_WINDOW_VULKAN);
    if (!win32_window_init(&wndclass, true, NULL))
       goto error;
 
@@ -227,18 +218,31 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   unsigned width  = VIDEO_SCALE_W(dims);
-   unsigned height = VIDEO_SCALE_H(dims);
+   /* With a window already up this is a fullscreen toggle on it: the
+    * window is restyled where it stands, and the swapchain follows
+    * when the resize reaches check_window, as for any resize. Where
+    * that is refused - exclusive fullscreen - this goes on as it
+    * always has. */
+   if (     win32_get_window()
+         && win32_window_set_fullscreen(dims, fullscreen))
+   {
+      if (fullscreen)
+         win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
+      else
+         win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
+      return true;
+   }
+
    if (fullscreen)
       win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
    else
       win32_vk.flags &= ~VK_DATA_FLAG_FULLSCREEN;
 
-   if (win32_set_video_mode(NULL, VIDEO_SCALE_PACK(width, height), fullscreen))
+   if (win32_set_video_mode(NULL, dims, fullscreen))
    {
       /* Create a new swapchain in order to prevent fullscreen
        * emulated mailbox crash caused by refresh rate change */
-      vulkan_create_swapchain(&win32_vk, width, height, win32_vk_interval);
+      vulkan_create_swapchain(&win32_vk, dims, win32_vk_interval);
 
       gfx_ctx_w_vk_swap_interval(data, win32_vk_interval);
       return true;
@@ -257,33 +261,11 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
 }
 
 static void gfx_ctx_w_vk_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
-#if _WIN32_WINNT >= 0x0501
-#ifdef HAVE_WINRAWINPUT
-   settings_t *settings     = config_get_ptr();
-   const char *input_driver = settings->arrays.input_driver;
-
-   /* winraw only available since XP */
-   if (string_is_equal(input_driver, "raw"))
-   {
-      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
-      if (*input_data)
-      {
-         *input        = &input_winraw;
-         dinput_vk     = NULL;
-         return;
-      }
-   }
-#endif
-#endif
-
-#ifdef HAVE_DINPUT
-   dinput_vk      = input_driver_init_wrap(&input_dinput, joypad_name);
-   *input         = dinput_vk ? &input_dinput : NULL;
-   *input_data    = dinput_vk;
-#endif
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 }
 
 static enum gfx_ctx_api gfx_ctx_w_vk_get_api(void *data) { return GFX_CTX_VULKAN_API; }
@@ -304,6 +286,18 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
    if (retro_atomic_load_acquire_int(
             &win32_vk.context.supports_adaptive_vsync))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+
+   /* A borderless fullscreen toggle restyles the window it has; the
+    * driver sees a resize (win32_window_set_fullscreen()). It was held
+    * back while a swapchain rebuilt at another size ended in a lost
+    * device with HDR on; that was the HDR off-screen buffers keeping
+    * the old size (vulkan_hdr_buffers_init()), and with that fixed the
+    * toggle has been seen to hold on the setup that showed it.
+    * RETROARCH_FULLSCREEN_IN_PLACE=0 in the environment turns it off,
+    * so that a toggle restarts the drivers as it used to, should it
+    * need telling apart from something else. */
+   if (win32_fullscreen_in_place())
+      BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);

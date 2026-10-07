@@ -481,6 +481,9 @@ static void main_loop(void)
 
    for (;;)
    {
+      /* The frame's vsync wait: tasks run until the swap has gone
+       * out, a frame at most.  Before there is a video driver there is
+       * nothing to draw, and the queue runs dry instead. */
       if (video_driver_get_ptr())
       {
          start_time = OSGetSystemTime();

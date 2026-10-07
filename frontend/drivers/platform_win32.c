@@ -58,6 +58,9 @@
 #include "../../gfx/common/win32_common.h"
 
 #include "platform_win32.h"
+#ifdef HAVE_THREADS
+#include "../thread_elevation.h"
+#endif
 
 /* Only needed for MSVC 2005/2010 */
 #ifdef _MSC_VER
@@ -81,7 +84,10 @@ enum platform_win32_flags
    PLAT_WIN32_FLAG_USE_NVDA_BRAILLE         = (1 << 2),
    PLAT_WIN32_FLAG_DWM_COMPOSITION_DISABLED = (1 << 3),
    PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE       = (1 << 4),
-   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5)
+   PLAT_WIN32_FLAG_PROCESS_INSTANCE_SET     = (1 << 5),
+   /* which C streams attach_console() put on the console */
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT       = (1 << 6),
+   PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR       = (1 << 7)
 };
 
 #ifdef HAVE_SAPI
@@ -104,7 +110,6 @@ static char win32_cpu_model_name[64] = {0};
  * it early seems to cause issues on some systems.
  */
 static dylib_t dwm_lib;
-static dylib_t shell32_lib;
 static dylib_t nvda_lib;
 #endif
 
@@ -202,55 +207,97 @@ static void gfx_dwm_shutdown(void)
 #ifdef HAVE_DYLIB
    if (dwm_lib)
       dylib_close(dwm_lib);
-   if (shell32_lib)
-      dylib_close(shell32_lib);
    dwm_lib     = NULL;
-   shell32_lib = NULL;
 #endif
 }
 
+static VOID (WINAPI *win32_shell_drag_accept_files)(HWND, BOOL);
+static BOOL (WINAPI *win32_msg_filter_ex)(HWND, UINT, DWORD, void*);
+static BOOL (WINAPI *win32_msg_filter)(UINT, DWORD);
+
+/* An elevated process gets no drops from Explorer unless WM_DROPFILES,
+ * WM_COPYDATA and WM_COPYGLOBALDATA are let through to the window:
+ * per window from Windows 7, per process on Vista. */
+static VOID WINAPI win32_drag_accept_files(HWND hwnd, BOOL accept)
+{
+   if (accept)
+   {
+      static const UINT msgs[3] = { 0x0233, 0x004A, 0x0049 };
+      size_t i;
+      for (i = 0; i < ARRAY_SIZE(msgs); i++)
+      {
+         if (win32_msg_filter_ex)
+            win32_msg_filter_ex(hwnd, msgs[i], 1 /* MSGFLT_ALLOW */, NULL);
+         else if (win32_msg_filter)
+            win32_msg_filter(msgs[i], 1 /* MSGFLT_ADD */);
+      }
+   }
+   win32_shell_drag_accept_files(hwnd, accept);
+}
+
+/* shell32 has had drag and drop since Windows 95 and is always linked,
+ * so this does not depend on dwmapi or on HAVE_DYLIB. */
+static void win32_drag_drop_init(void)
+{
+   HMODULE shell32 = GetModuleHandleA("shell32.dll");
+   HMODULE user32  = GetModuleHandleA("user32.dll");
+
+   if (shell32)
+      win32_shell_drag_accept_files = (VOID (WINAPI*)(HWND, BOOL))
+         GetProcAddress(shell32, "DragAcceptFiles");
+   if (user32)
+   {
+      win32_msg_filter_ex = (BOOL (WINAPI*)(HWND, UINT, DWORD, void*))
+         GetProcAddress(user32, "ChangeWindowMessageFilterEx");
+      win32_msg_filter    = (BOOL (WINAPI*)(UINT, DWORD))
+         GetProcAddress(user32, "ChangeWindowMessageFilter");
+   }
+
+   DragAcceptFiles_func = win32_shell_drag_accept_files
+      ? win32_drag_accept_files
+      : NULL;
+}
+
+/* Returns whether DWM is available; dwmapi exists from Vista on. */
 static bool gfx_init_dwm(void)
 {
-   HRESULT (WINAPI *mmcss)(BOOL);
+#ifdef HAVE_DYLIB
+   HRESULT (WINAPI *mmcss)(BOOL) = NULL;
+#endif
    static bool inited = false;
 
    if (inited)
-      return true;
+#ifdef HAVE_DYLIB
+      return dwm_lib != NULL;
+#else
+      return false;
+#endif
+   inited = true;
 
    atexit(gfx_dwm_shutdown);
+   win32_drag_drop_init();
 
 #ifdef HAVE_DYLIB
-   if (!(shell32_lib = dylib_load("shell32.dll")))
-   {
-      RARCH_WARN("Did not find shell32.dll.\n");
-   }
-
    if (!(dwm_lib = dylib_load("dwmapi.dll")))
    {
       RARCH_WARN("Did not find dwmapi.dll.\n");
       return false;
    }
 
-   DragAcceptFiles_func =
-      (VOID (WINAPI*)(HWND, BOOL))dylib_proc(shell32_lib, "DragAcceptFiles");
-
    mmcss =
       (HRESULT(WINAPI*)(BOOL))dylib_proc(dwm_lib, "DwmEnableMMCSS");
-#else
-   DragAcceptFiles_func = DragAcceptFiles;
-#endif
-
    if (mmcss)
       mmcss(TRUE);
-
-   inited = true;
    return true;
+#else
+   return false;
+#endif
 }
 
 static void gfx_set_dwm(void)
 {
    HRESULT ret;
-   HRESULT (WINAPI *composition_enable)(UINT);
+   HRESULT (WINAPI *composition_enable)(UINT) = NULL;
    settings_t *settings     = config_get_ptr();
    bool disable_composition = settings->bools.video_disable_composition;
 
@@ -646,11 +693,446 @@ static size_t frontend_win32_get_os(char *s, size_t len, int *major, int *minor)
    return _len;
 }
 
+#if defined(_WIN32) && !defined(_XBOX)
+/* Opts out of EcoQoS and keeps the timer resolution request honoured
+ * while the window is minimized or occluded.  Builds that predate the
+ * timer flag reject it, so retry with execution speed alone. */
+static void frontend_win32_disable_power_throttling(void)
+{
+   typedef struct
+   {
+      ULONG Version;
+      ULONG ControlMask;
+      ULONG StateMask;
+   } win32_power_throttling_t;
+   typedef BOOL (WINAPI *SetProcessInformation_t)(HANDLE, int,
+         LPVOID, DWORD);
+   win32_power_throttling_t state;
+   SetProcessInformation_t set_info;
+   HMODULE kernel32 = GetModuleHandleA("kernel32.dll");
+
+   if (!kernel32)
+      return;
+   if (!(set_info = (SetProcessInformation_t)GetProcAddress(
+               kernel32, "SetProcessInformation")))
+      return;
+
+   /* ProcessPowerThrottling; EXECUTION_SPEED | IGNORE_TIMER_RESOLUTION */
+   state.Version     = 1;
+   state.ControlMask = 0x1 | 0x4;
+   state.StateMask   = 0;
+   if (!set_info(GetCurrentProcess(), 4, &state, sizeof(state)))
+   {
+      state.ControlMask = 0x1;
+      set_info(GetCurrentProcess(), 4, &state, sizeof(state));
+   }
+}
+
+typedef DWORD (WINAPI *PowerGetActiveScheme_t)(HKEY, GUID**);
+typedef DWORD (WINAPI *PowerSetActiveScheme_t)(HKEY, const GUID*);
+typedef DWORD (WINAPI *PowerDuplicateScheme_t)(HKEY, const GUID*,
+      GUID**);
+typedef DWORD (WINAPI *PowerDeleteScheme_t)(HKEY, const GUID*);
+typedef DWORD (WINAPI *PowerWriteACValueIndex_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, DWORD);
+typedef DWORD (WINAPI *PowerWriteString_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, UCHAR*, DWORD);
+typedef DWORD (WINAPI *PowerReadDescription_t)(HKEY, const GUID*,
+      const GUID*, const GUID*, UCHAR*, DWORD*);
+
+typedef struct
+{
+   PowerGetActiveScheme_t   get_active;
+   PowerSetActiveScheme_t   set_active;
+   PowerDuplicateScheme_t   duplicate;
+   PowerDeleteScheme_t      remove;
+   PowerWriteACValueIndex_t write_ac;
+   PowerWriteString_t       write_name;
+   PowerWriteString_t       write_desc;
+   PowerReadDescription_t   read_desc;
+} win32_powrprof_t;
+
+enum win32_power_plan_flags
+{
+   WIN32_POWER_PLAN_LOADED       = (1 << 0),
+   WIN32_POWER_PLAN_APPLIED      = (1 << 1),
+   WIN32_POWER_PLAN_RECOVERED    = (1 << 2),
+   /* The applied copy keeps the processor out of its idle states */
+   WIN32_POWER_PLAN_IDLE_APPLIED = (1 << 3)
+};
+
+static win32_powrprof_t win32_powrprof;
+static uint8_t win32_power_plan_flags = 0;
+
+/* RetroArch's copy of the active plan.  Its description holds the
+ * plan it was copied from, so a run that ended without restoring is
+ * undone on the next start. */
+static const GUID win32_power_plan_guid =
+   { 0x56125c01, 0x3c55, 0x4c9b,
+      { 0xab, 0x33, 0x55, 0xf2, 0xdf, 0xe1, 0x34, 0x15 } };
+static const GUID win32_power_plan_balanced =
+   { 0x381b4222, 0xf694, 0x41f0,
+      { 0x96, 0x85, 0xff, 0x5b, 0xb2, 0x60, 0xdf, 0x2e } };
+static const GUID win32_power_sub_processor =
+   { 0x54533251, 0x82be, 0x4824,
+      { 0x96, 0xc1, 0x47, 0xb6, 0x0b, 0x74, 0x0d, 0x00 } };
+static const GUID win32_power_perf_check =
+   { 0x4d2b0152, 0x7d5c, 0x498b,
+      { 0x88, 0xe2, 0x34, 0x34, 0x53, 0x92, 0xa2, 0xc5 } };
+static const GUID win32_power_throttle_min =
+   { 0x893dee8e, 0x2bef, 0x41e0,
+      { 0x89, 0xc6, 0xb5, 0x5d, 0x09, 0x29, 0x96, 0x4c } };
+static const GUID win32_power_throttle_max =
+   { 0xbc5038f7, 0x23e0, 0x4960,
+      { 0x96, 0xda, 0x33, 0xab, 0xaf, 0x59, 0x35, 0xec } };
+static const GUID win32_power_parking_min_cores =
+   { 0x0cc5b647, 0xc1df, 0x4637,
+      { 0x89, 0x1a, 0xde, 0xc3, 0x5c, 0x31, 0x85, 0x83 } };
+static const GUID win32_power_perf_epp =
+   { 0x36687f9e, 0xe3a5, 0x4dbf,
+      { 0xb1, 0xdc, 0x15, 0xeb, 0x38, 0x1c, 0x68, 0x63 } };
+static const GUID win32_power_idle_disable =
+   { 0x5d76a2ca, 0xe8c0, 0x402f,
+      { 0xa1, 0x33, 0x21, 0x58, 0x49, 0x2d, 0x58, 0xad } };
+static const GUID win32_power_sub_pciexpress =
+   { 0x501a4d13, 0x42af, 0x4429,
+      { 0x9f, 0xd1, 0xa8, 0x21, 0x8c, 0x26, 0x8e, 0x20 } };
+static const GUID win32_power_aspm =
+   { 0xee12f906, 0xd277, 0x404b,
+      { 0xb6, 0xda, 0xe5, 0xfa, 0x1a, 0x57, 0x6d, 0xf5 } };
+static const GUID win32_power_sub_usb =
+   { 0x2a737441, 0x1930, 0x4402,
+      { 0x8d, 0x77, 0xb2, 0xbe, 0xbb, 0xa3, 0x08, 0xa3 } };
+static const GUID win32_power_usb_suspend =
+   { 0x48e6b7a6, 0x50f5, 0x4782,
+      { 0xa5, 0xd4, 0x53, 0xbb, 0x8f, 0x07, 0xe2, 0x26 } };
+
+/* Writes the 36 hex-and-dash characters of a GUID, no braces. */
+static void win32_power_guid_to_wstr(const GUID *g, WCHAR *s)
+{
+   static const char hex[] = "0123456789ABCDEF";
+   unsigned char b[16];
+   size_t i, j = 0;
+
+   b[0] = (unsigned char)(g->Data1 >> 24);
+   b[1] = (unsigned char)(g->Data1 >> 16);
+   b[2] = (unsigned char)(g->Data1 >>  8);
+   b[3] = (unsigned char)(g->Data1      );
+   b[4] = (unsigned char)(g->Data2 >>  8);
+   b[5] = (unsigned char)(g->Data2      );
+   b[6] = (unsigned char)(g->Data3 >>  8);
+   b[7] = (unsigned char)(g->Data3      );
+   for (i = 0; i < 8; i++)
+      b[8 + i] = g->Data4[i];
+
+   for (i = 0; i < 16; i++)
+   {
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+         s[j++] = L'-';
+      s[j++] = (WCHAR)hex[b[i] >> 4];
+      s[j++] = (WCHAR)hex[b[i] & 0xF];
+   }
+   s[j] = 0;
+}
+
+static bool win32_power_wstr_to_guid(const WCHAR *s, GUID *g)
+{
+   unsigned char b[16];
+   size_t i, j = 0;
+
+   for (i = 0; i < 16; i++)
+   {
+      unsigned v = 0;
+      size_t k;
+      if (i == 4 || i == 6 || i == 8 || i == 10)
+      {
+         if (s[j++] != L'-')
+            return false;
+      }
+      for (k = 0; k < 2; k++)
+      {
+         WCHAR c = s[j++];
+         v <<= 4;
+         if (c >= L'0' && c <= L'9')
+            v |= (unsigned)(c - L'0');
+         else if (c >= L'A' && c <= L'F')
+            v |= (unsigned)(c - L'A' + 10);
+         else if (c >= L'a' && c <= L'f')
+            v |= (unsigned)(c - L'a' + 10);
+         else
+            return false;
+      }
+      b[i] = (unsigned char)v;
+   }
+   if (s[j] != 0)
+      return false;
+
+   g->Data1 = ((unsigned long)b[0] << 24) | ((unsigned long)b[1] << 16)
+            | ((unsigned long)b[2] <<  8) |  (unsigned long)b[3];
+   g->Data2 = (unsigned short)((b[4] << 8) | b[5]);
+   g->Data3 = (unsigned short)((b[6] << 8) | b[7]);
+   for (i = 0; i < 8; i++)
+      g->Data4[i] = b[8 + i];
+   return true;
+}
+
+/* powrprof is resolved at runtime; it does not exist before Vista. */
+static win32_powrprof_t *win32_powrprof_get(void)
+{
+   HMODULE lib;
+   win32_powrprof_t *p = &win32_powrprof;
+
+   if (win32_power_plan_flags & WIN32_POWER_PLAN_LOADED)
+      return p->get_active ? p : NULL;
+   win32_power_plan_flags |= WIN32_POWER_PLAN_LOADED;
+
+   if (!(lib = LoadLibraryA("powrprof.dll")))
+      return NULL;
+
+   p->get_active = (PowerGetActiveScheme_t)GetProcAddress(lib,
+         "PowerGetActiveScheme");
+   p->set_active = (PowerSetActiveScheme_t)GetProcAddress(lib,
+         "PowerSetActiveScheme");
+   p->duplicate  = (PowerDuplicateScheme_t)GetProcAddress(lib,
+         "PowerDuplicateScheme");
+   p->remove     = (PowerDeleteScheme_t)GetProcAddress(lib,
+         "PowerDeleteScheme");
+   p->write_ac   = (PowerWriteACValueIndex_t)GetProcAddress(lib,
+         "PowerWriteACValueIndex");
+   p->write_name = (PowerWriteString_t)GetProcAddress(lib,
+         "PowerWriteFriendlyName");
+   p->write_desc = (PowerWriteString_t)GetProcAddress(lib,
+         "PowerWriteDescription");
+   p->read_desc  = (PowerReadDescription_t)GetProcAddress(lib,
+         "PowerReadDescription");
+
+   if (     !p->get_active || !p->set_active || !p->duplicate
+         || !p->remove     || !p->write_ac   || !p->write_name
+         || !p->write_desc || !p->read_desc)
+   {
+      p->get_active = NULL;
+      return NULL;
+   }
+   return p;
+}
+
+/* Whether a run left the copy behind, kept in the registry: read
+ * before powrprof is loaded at all, so a start with the setting off
+ * and nothing to undo never loads it. */
+#define WIN32_POWER_PLAN_KEY   "Software\\libretro\\RetroArch"
+#define WIN32_POWER_PLAN_VALUE "LowLatencyPowerPlan"
+
+static bool win32_power_plan_marked(void)
+{
+   HKEY  key;
+   DWORD type = 0, data = 0, size = sizeof(data);
+   bool  marked = false;
+
+   if (RegOpenKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0, KEY_READ,
+            &key) != ERROR_SUCCESS)
+      return false;
+   if (     RegQueryValueExA(key, WIN32_POWER_PLAN_VALUE, NULL, &type,
+               (LPBYTE)&data, &size) == ERROR_SUCCESS
+         && type == REG_DWORD)
+      marked = data != 0;
+   RegCloseKey(key);
+   return marked;
+}
+
+static void win32_power_plan_mark(bool on)
+{
+   HKEY key;
+   if (on)
+   {
+      DWORD one = 1;
+      if (RegCreateKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0, NULL,
+               0, KEY_WRITE, NULL, &key, NULL) != ERROR_SUCCESS)
+         return;
+      RegSetValueExA(key, WIN32_POWER_PLAN_VALUE, 0, REG_DWORD,
+            (const BYTE*)&one, sizeof(one));
+   }
+   else
+   {
+      if (RegOpenKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0,
+               KEY_WRITE, &key) != ERROR_SUCCESS)
+         return;
+      RegDeleteValueA(key, WIN32_POWER_PLAN_VALUE);
+   }
+   RegCloseKey(key);
+}
+
+/* Reactivates the plan RetroArch's copy was made from, if the copy
+ * is still active, then deletes the copy. */
+static void win32_power_plan_restore(win32_powrprof_t *p)
+{
+   GUID *active = NULL;
+
+   if (     p->get_active(NULL, &active) == ERROR_SUCCESS
+         && active)
+   {
+      if (!memcmp(active, &win32_power_plan_guid, sizeof(GUID)))
+      {
+         WCHAR desc[64];
+         DWORD size    = sizeof(desc);
+         GUID original = win32_power_plan_balanced;
+
+         if (p->read_desc(NULL, &win32_power_plan_guid, NULL, NULL,
+                  (UCHAR*)desc, &size) == ERROR_SUCCESS)
+         {
+            desc[ARRAY_SIZE(desc) - 1] = 0;
+            if (!win32_power_wstr_to_guid(desc, &original))
+               original = win32_power_plan_balanced;
+         }
+
+         if (     p->set_active(NULL, &original) != ERROR_SUCCESS
+               && memcmp(&original, &win32_power_plan_balanced,
+                  sizeof(GUID)))
+            p->set_active(NULL, &win32_power_plan_balanced);
+      }
+      LocalFree(active);
+   }
+
+   p->remove(NULL, &win32_power_plan_guid);
+   win32_power_plan_mark(false);
+}
+
+/* Activates a copy of the current plan with processor performance
+ * re-evaluation at its longest interval.  Minimum and maximum processor
+ * state and unparked cores are pinned at 100% - the original may cap
+ * the maximum - so there is nothing left for that check to decide.
+ * The energy preference favours performance, and PCI Express links and
+ * USB ports are kept out of low-power states they take time to wake
+ * from; a system without one of those settings goes without it.  With
+ * idle_disable the processor also never enters an idle state.  Only AC
+ * values change; on battery the copy behaves like the original. */
+static bool win32_power_plan_apply(win32_powrprof_t *p, bool idle_disable)
+{
+   static const WCHAR name[] = L"RetroArch Low Latency";
+   WCHAR desc[37];
+   GUID copy     = win32_power_plan_guid;
+   GUID *dst     = &copy;
+   GUID *active  = NULL;
+   bool ok       = false;
+
+   win32_power_plan_restore(p);
+
+   if (     p->get_active(NULL, &active) != ERROR_SUCCESS
+         || !active)
+      return false;
+
+   win32_power_guid_to_wstr(active, desc);
+
+   if (p->duplicate(NULL, active, &dst) == ERROR_SUCCESS)
+   {
+      /* A caller-supplied GUID is used as is; should a new one be
+       * allocated instead, work on that so nothing writes to a plan
+       * that does not exist. */
+      if (dst && dst != &copy)
+      {
+         copy = *dst;
+         LocalFree(dst);
+      }
+      ok =     p->write_name(NULL, &copy, NULL, NULL,
+                     (UCHAR*)name, sizeof(name)) == ERROR_SUCCESS
+            && p->write_desc(NULL, &copy, NULL, NULL,
+                     (UCHAR*)desc, sizeof(desc)) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_perf_check, 5000) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_throttle_min, 100) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_throttle_max, 100) == ERROR_SUCCESS
+            && p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_parking_min_cores, 100) == ERROR_SUCCESS;
+
+      if (ok)
+      {
+         p->write_ac(NULL, &copy, &win32_power_sub_processor,
+               &win32_power_perf_epp, 0);
+         p->write_ac(NULL, &copy, &win32_power_sub_pciexpress,
+               &win32_power_aspm, 0);
+         p->write_ac(NULL, &copy, &win32_power_sub_usb,
+               &win32_power_usb_suspend, 0);
+         if (idle_disable)
+            ok = p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_idle_disable, 1) == ERROR_SUCCESS;
+      }
+      ok = ok && p->set_active(NULL, &copy) == ERROR_SUCCESS;
+
+      if (!ok)
+         p->remove(NULL, &copy);
+   }
+
+   LocalFree(active);
+   return ok;
+}
+
+static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
+{
+   win32_powrprof_t *p;
+
+   if (     on
+         && (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
+         && idle_disable == !!(win32_power_plan_flags
+            & WIN32_POWER_PLAN_IDLE_APPLIED))
+      return true;
+   if (     !on
+         && !(win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED))
+   {
+      if (win32_power_plan_flags & WIN32_POWER_PLAN_RECOVERED)
+         return true;
+      /* Nothing a run left behind: nothing to load, either */
+      if (!win32_power_plan_marked())
+      {
+         win32_power_plan_flags |= WIN32_POWER_PLAN_RECOVERED;
+         return true;
+      }
+   }
+   if (!(p = win32_powrprof_get()))
+      return false;
+
+   win32_power_plan_flags |= WIN32_POWER_PLAN_RECOVERED;
+   win32_power_plan_flags &= ~(WIN32_POWER_PLAN_APPLIED
+         | WIN32_POWER_PLAN_IDLE_APPLIED);
+
+#ifdef HAVE_THREADS
+   thread_elevation_note_power_plan(false, false);
+#endif
+   if (!on)
+   {
+      win32_power_plan_restore(p);
+      return true;
+   }
+   if (!win32_power_plan_apply(p, idle_disable))
+   {
+      RARCH_WARN("[Power] Could not activate the low-latency power plan.\n");
+      return false;
+   }
+   win32_power_plan_flags |= WIN32_POWER_PLAN_APPLIED;
+   if (idle_disable)
+      win32_power_plan_flags |= WIN32_POWER_PLAN_IDLE_APPLIED;
+   win32_power_plan_mark(true);
+#ifdef HAVE_THREADS
+   thread_elevation_note_power_plan(true, idle_disable);
+#endif
+   return true;
+}
+
+static void frontend_win32_deinit(void *data)
+{
+   if (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
+      frontend_win32_set_power_plan(false, false);
+}
+#endif
+
 static void frontend_win32_init(void *data)
 {
    /* Initializes DPI awareness, accelerator table, and
     * prepares programmatic resources (replaces .rc file). */
    win32_resources_init();
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_disable_power_throttling();
+#endif
 }
 
 
@@ -912,10 +1394,10 @@ static void frontend_win32_attach_console(void)
 
       SetConsoleTitle("Log Console");
 
-      if (need_stdout)
-         freopen("CONOUT$", "w", stdout);
-      if (need_stderr)
-         freopen("CONOUT$", "w", stderr);
+      if (need_stdout && freopen("CONOUT$", "w", stdout))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT;
+      if (need_stderr && freopen("CONOUT$", "w", stderr))
+         g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR;
 
       g_plat_win32_flags |= PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
    }
@@ -929,11 +1411,39 @@ static void frontend_win32_detach_console(void)
 #ifdef _WIN32_WINNT_WINXP
    if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE)
    {
-      /* We don't reconnect stdout/stderr to anything here,
-       * because by definition, they weren't connected to
-       * anything in the first place. */
+      /* Since Windows 8 a console's handles are real handles, and
+       * FreeConsole() closes none of them: the C streams that
+       * attach_console() opened on CONOUT$ and the standard handles
+       * AllocConsole() gave the process all still refer to the
+       * console afterwards, and its window stays up for as long as
+       * they do - turning logging off left the log window open. So
+       * they are let go of first. The streams go to NUL rather than
+       * being closed: the log writes to stderr, and must have
+       * somewhere to write until logging is turned on again. */
+      static const DWORD ids[3] = {
+         STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE };
+      unsigned i;
+
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT)
+         freopen("NUL", "w", stdout);
+      if (g_plat_win32_flags & PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR)
+         freopen("NUL", "w", stderr);
+      for (i = 0; i < 3; i++)
+      {
+         DWORD mode;
+         HANDLE h = GetStdHandle(ids[i]);
+         /* only a handle that is a console's */
+         if (     h && h != INVALID_HANDLE_VALUE
+               && GetConsoleMode(h, &mode))
+         {
+            SetStdHandle(ids[i], NULL);
+            CloseHandle(h);
+         }
+      }
       FreeConsole();
-      g_plat_win32_flags &= ~PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE;
+      g_plat_win32_flags &= ~(  PLAT_WIN32_FLAG_CONSOLE_NEEDS_FREE
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDOUT
+                              | PLAT_WIN32_FLAG_CONSOLE_HAS_STDERR);
    }
 #endif
 #endif
@@ -1282,7 +1792,11 @@ static enum rarch_display_type frontend_win32_get_display_type(void)
 frontend_ctx_driver_t frontend_ctx_win32 = {
    frontend_win32_env_get,         /* env_get   */
    frontend_win32_init,            /* init      */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_deinit,          /* deinit    */
+#else
    NULL,                           /* deinit    */
+#endif
 #if defined(_WIN32) && !defined(_XBOX)
    frontend_win32_respawn,         /* exitspawn */
 #else
@@ -1323,7 +1837,13 @@ frontend_ctx_driver_t frontend_ctx_win32 = {
    NULL,                            /* set_gamemode        */
    frontend_win32_get_display_type,
    "win32",                         /* ident               */
-   NULL                             /* get_video_driver    */
+   NULL,                            /* get_video_driver    */
+   NULL,                            /* root_in_drive_list  */
+#if defined(_WIN32) && !defined(_XBOX)
+   frontend_win32_set_power_plan    /* set_power_plan      */
+#else
+   NULL                             /* set_power_plan      */
+#endif
 };
 
 /* Windows GUI-subsystem entry point.

@@ -32,6 +32,10 @@
 #include "config.h"
 #endif
 
+#ifdef HAVE_SSL
+#include <net/net_socket_ssl.h>
+#endif
+
 #include "file_path_special.h"
 #include "command.h"
 #include "configuration.h"
@@ -54,6 +58,15 @@
 #include "gfx/gfx_animation.h"
 
 #include "tasks/task_content.h"
+
+/* The keychain seals values with libretro-common/crypto, which the
+ * small consoles leave out; without it the file stays in the clear. */
+#if defined(HAVE_KEYCHAIN) && !defined(HAVE_CRYPTO)
+#undef HAVE_KEYCHAIN
+#endif
+#if defined(HAVE_CONFIGFILE) && defined(HAVE_KEYCHAIN)
+#include <file/keychain.h>
+#endif
 #include "tasks/tasks_internal.h"
 #include "accessibility.h"
 #ifdef ANDROID
@@ -103,7 +116,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #define SETTINGS_UINT_COUNT_MAX   320
 #define SETTINGS_FLOAT_COUNT_MAX  128
 #define SETTINGS_SIZE_COUNT_MAX     8
-#define SETTINGS_ARRAY_COUNT_MAX  (96 + MAX_USERS)
+/* (three a user: the reserved device, and the keyboard and the mouse
+ * a port is pinned to) */
+#define SETTINGS_ARRAY_COUNT_MAX  (96 + 3 * MAX_USERS)
 #define SETTINGS_PATH_COUNT_MAX   128
 
 enum video_driver_enum
@@ -938,18 +953,41 @@ struct config_path_setting
    uint8_t flags;
 };
 
+static void config_settings_list_full(const char *key, unsigned cap)
+{
+   RARCH_ERR("[Config] No room for the setting \"%s\": its list holds %u."
+         " It is neither loaded nor saved. Raise the list's"
+         " SETTINGS_*_COUNT_MAX in configuration.c.\n", key, cap);
+}
+
+/* A setting is added to the list being made, which holds @cap of
+ * them (the SETTINGS_*_COUNT_MAX the list was allocated with).
+ *
+ * The lists are of a fixed size, and adding a setting used to write
+ * to the next place whether there was one or not: one setting too
+ * many for its list wrote past the end of the allocation, and the
+ * process died of heap corruption at the next allocation - at
+ * startup, on every run. A setting there is no room for is now left
+ * out and said so, loudly; tools/settings_capacity_check.py, in CI,
+ * counts what each list is given against what it holds, so that it
+ * is found before anything is run. */
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \
 { \
-   tmp[count].ident      = key; \
-   tmp[count].ptr        = configval; \
-   if (default_enable) \
+   if (count < cap) \
    { \
-      tmp[count].flags |= CFG_BOOL_FLG_DEF_ENABLE; \
-      tmp[count].def    = default_setting; \
+      tmp[count].ident      = key; \
+      tmp[count].ptr        = configval; \
+      if (default_enable) \
+      { \
+         tmp[count].flags |= CFG_BOOL_FLG_DEF_ENABLE; \
+         tmp[count].def    = default_setting; \
+      } \
+      if (handle_setting) \
+         tmp[count].flags |= CFG_BOOL_FLG_HANDLE; \
+      count++; \
    } \
-   if (handle_setting) \
-      tmp[count].flags |= CFG_BOOL_FLG_HANDLE; \
-   count++; \
+   else \
+      config_settings_list_full(key, cap); \
 }
 
 #define SETTING_BOOL(key, configval, default_enable, default_setting, handle_setting) \
@@ -1003,7 +1041,7 @@ struct config_path_setting
 
 /* Forward declarations */
 #ifdef HAVE_CONFIGFILE
-static void config_parse_file(global_t *global);
+static void config_parse_file(void);
 static size_t config_get_credentials_path(char *s, size_t len);
 static bool config_save_credentials(
       config_file_t *main_conf,
@@ -1031,11 +1069,152 @@ static const char *config_sensitive_keys[] = {
    "kick_stream_key",
    "smb_client_username",
    "smb_client_password",
+   "mcp_server_token",
    "netplay_password",
    "netplay_spectate_password",
    "kiosk_mode_password",
    "content_show_settings_password"
 };
+
+#ifdef HAVE_KEYCHAIN
+/**
+ * config_keychain_init:
+ *
+ * Derives the keychain master key from the per-install key file that
+ * sits beside retroarch.cfg. Idempotent. Logging is left to the
+ * callers: the first config load runs before file logging is up.
+ *
+ * Returns: true when sealed values can be opened and written.
+ **/
+static bool config_keychain_init(void)
+{
+   char keyfile_path[PATH_MAX_LENGTH];
+   char config_directory[DIR_MAX_LENGTH];
+
+   if (keychain_is_ready())
+      return true;
+   if (path_is_empty(RARCH_PATH_CONFIG))
+      return false;
+
+   fill_pathname_basedir(config_directory,
+         path_get(RARCH_PATH_CONFIG), sizeof(config_directory));
+   fill_pathname_join_special(keyfile_path, config_directory,
+         "retroarch-keychain.key", sizeof(keyfile_path));
+   return keychain_init(keyfile_path);
+}
+
+/**
+ * config_keychain_open_entries:
+ *
+ * Replaces every sealed sensitive value in @conf with its plaintext so
+ * the rest of the loader reads it like any other setting. A value that
+ * cannot be opened (sealed on another machine or install, tampered)
+ * is left in place: the loader ignores it as an unknown value and the
+ * next save carries it through untouched, so nothing is destroyed by
+ * a key file that is temporarily out of reach.
+ *
+ * Returns: number of values that could not be opened.
+ **/
+/* Bit i set: config_sensitive_keys[i] was sealed and could not be
+ * opened at the last load. Only those are carried through a save
+ * untouched; any other empty value really is empty, and clearing a
+ * password has to reach the file. */
+static uint32_t config_keychain_unopened = 0;
+/* one bit per sensitive key: fails to compile past 32 of them */
+typedef char config_sensitive_keys_fit_mask[
+   (sizeof(config_sensitive_keys) / sizeof(config_sensitive_keys[0]) <= 32) ? 1 : -1];
+
+static int config_sensitive_key_index(const char *key)
+{
+   unsigned i;
+   for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+      if (string_is_equal(config_sensitive_keys[i], key))
+         return (int)i;
+   return -1;
+}
+
+static unsigned config_keychain_open_entries(config_file_t *conf)
+{
+   unsigned i;
+   unsigned failed = 0;
+
+   for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
+   {
+      char *plain;
+      const char *key = config_sensitive_keys[i];
+      struct config_entry_list *entry = config_get_entry(conf, key);
+      config_keychain_unopened &= ~((uint32_t)1 << i);
+      if (!entry || !keychain_value_is_sealed(entry->value))
+         continue;
+      if (!(plain = keychain_open_alloc(key, entry->value)))
+      {
+         config_keychain_unopened |= (uint32_t)1 << i;
+         /* Drop it from what the loader sees, or the blob itself
+          * would be read as the setting's value. The file on disk
+          * still has it; config_keychain_set() keeps it there. */
+         config_unset(conf, key);
+         failed++;
+         continue;
+      }
+      config_set_string(conf, key, plain);
+      free(plain);
+   }
+   return failed;
+}
+
+/* Sealed values the last save carried through unopened. */
+static unsigned config_keychain_carried = 0;
+/* Values set while the keychain was locked, left out of the save. */
+static unsigned config_keychain_withheld = 0;
+
+/**
+ * config_keychain_set:
+ *
+ * Writes @value for @key into the keychain file being built, sealed
+ * when the keychain is ready. An empty @value does not overwrite a
+ * sealed blob already in the file: that is the value this machine
+ * could not open at load time, and it belongs to whoever can.
+ **/
+static void config_keychain_set(config_file_t *conf,
+      const char *key, const char *value, bool from_settings)
+{
+   char *sealed;
+   const struct config_entry_list *have = config_get_entry(conf, key);
+
+   if (string_is_empty(value) && have
+         && keychain_value_is_sealed(have->value))
+   {
+      int idx = config_sensitive_key_index(key);
+      if (idx >= 0 && (config_keychain_unopened & ((uint32_t)1 << idx)))
+      {
+         config_keychain_carried++;
+         return;
+      }
+   }
+
+   /* A locked keychain (wrapped on another machine, passphrase not
+    * yet given) can seal nothing. A value set here in the meantime is
+    * not written in the clear; it is left out until the keychain is
+    * unlocked, and whatever the file held for it stays. Plaintext
+    * carried over from retroarch.cfg was already in the clear. */
+   if (from_settings && keychain_is_locked())
+   {
+      if (!string_is_empty(value))
+         config_keychain_withheld++;
+      return;
+   }
+
+   if (keychain_is_ready() && (sealed = keychain_seal_alloc(key, value)))
+   {
+      config_set_string(conf, key, sealed);
+      free(sealed);
+   }
+   else
+      config_set_string(conf, key, value);
+}
+#else
+#define config_keychain_set(conf, key, value, from_settings) config_set_string(conf, key, value)
+#endif
 #endif
 
 struct defaults g_defaults;
@@ -1700,6 +1879,7 @@ static struct config_array_setting *populate_settings_array(
 {
    unsigned i                           = 0;
    unsigned count                       = 0;
+   unsigned cap                         = SETTINGS_ARRAY_COUNT_MAX;
    struct config_array_setting  *tmp    = (struct config_array_setting*)calloc(SETTINGS_ARRAY_COUNT_MAX, sizeof(struct config_array_setting));
 
    if (!tmp)
@@ -1756,6 +1936,30 @@ static struct config_array_setting *populate_settings_array(
          SETTING_ARRAY(reserved_keys[i], settings->arrays.input_reserved_devices[i], false, NULL, true);
       }
    }
+   {
+      /* input_playerN_keyboard_device: the keyboard the port is given,
+       * by its identity; input_playerN_keyboard_index follows from it */
+      static char keyboard_keys[MAX_USERS][40];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy_lit(keyboard_keys[i], "input_player", sizeof(keyboard_keys[i]));
+         _len += snprintf(keyboard_keys[i] + _len, sizeof(keyboard_keys[i]) - _len, "%u", i + 1);
+         strlcpy_lit(keyboard_keys[i] + _len, "_keyboard_device", sizeof(keyboard_keys[i]) - _len);
+         SETTING_ARRAY(keyboard_keys[i], settings->arrays.input_keyboard_device[i], false, NULL, true);
+      }
+   }
+   {
+      /* input_playerN_mouse_device: the same for the port's mouse,
+       * set when a mouse is chosen for the port by hand */
+      static char mouse_keys[MAX_USERS][40];
+      for (i = 0; i < MAX_USERS; i++)
+      {
+         size_t _len  = strlcpy_lit(mouse_keys[i], "input_player", sizeof(mouse_keys[i]));
+         _len += snprintf(mouse_keys[i] + _len, sizeof(mouse_keys[i]) - _len, "%u", i + 1);
+         strlcpy_lit(mouse_keys[i] + _len, "_mouse_device", sizeof(mouse_keys[i]) - _len);
+         SETTING_ARRAY(mouse_keys[i], settings->arrays.input_mouse_device[i], false, NULL, true);
+      }
+   }
 
 #ifdef HAVE_MENU
    SETTING_ARRAY("menu_driver",                  settings->arrays.menu_driver, false, NULL, true);
@@ -1782,6 +1986,9 @@ static struct config_array_setting *populate_settings_array(
 #endif
 
 #ifdef HAVE_NETWORKING
+   SETTING_ARRAY("network_cmd_bind_address",              settings->arrays.network_cmd_bind_address, false, NULL, true);
+   SETTING_ARRAY("mcp_server_bind_address",               settings->arrays.mcp_server_bind_address, false, NULL, true);
+   SETTING_ARRAY_SENSITIVE("mcp_server_token",            settings->arrays.mcp_server_token, false, NULL, true);
    SETTING_ARRAY("netplay_mitm_server",                   settings->arrays.netplay_mitm_server, false, NULL, true);
 #ifdef HAVE_CLOUDSYNC
    SETTING_ARRAY("webdav_url",                            settings->arrays.webdav_url, false, NULL, true);
@@ -1798,6 +2005,12 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY_SENSITIVE("twitch_stream_key",           settings->arrays.twitch_stream_key, true, NULL, true);
    SETTING_ARRAY_SENSITIVE("facebook_stream_key",         settings->arrays.facebook_stream_key, true, NULL, true);
    SETTING_ARRAY_SENSITIVE("kick_stream_key",             settings->arrays.kick_stream_key, true, NULL, true);
+   SETTING_ARRAY("video_gpu_name_vulkan",                 settings->arrays.video_gpu_name_vulkan, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_gl",                     settings->arrays.video_gpu_name_gl, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d10",                  settings->arrays.video_gpu_name_d3d10, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d11",                  settings->arrays.video_gpu_name_d3d11, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_d3d12",                  settings->arrays.video_gpu_name_d3d12, false, NULL, true);
+   SETTING_ARRAY("video_gpu_name_metal",                  settings->arrays.video_gpu_name_metal, false, NULL, true);
    SETTING_ARRAY("discord_app_id",                        settings->arrays.discord_app_id, true, DEFAULT_DISCORD_APP_ID, true);
    SETTING_ARRAY("ai_service_url",                        settings->arrays.ai_service_url, true, DEFAULT_AI_SERVICE_URL, true);
 #endif
@@ -1806,9 +2019,18 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("smb_client_server_address",             settings->arrays.smb_client_server_address, false, NULL, true);
    SETTING_ARRAY("smb_client_share",                      settings->arrays.smb_client_share, false, NULL, true);
    SETTING_ARRAY("smb_client_subdir",                     settings->arrays.smb_client_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_NFSCLIENT
+   SETTING_ARRAY("nfs_server",                            settings->arrays.nfs_server, false, NULL, true);
+   SETTING_ARRAY("nfs_export",                            settings->arrays.nfs_export, false, NULL, true);
+   SETTING_ARRAY("nfs_subdir",                            settings->arrays.nfs_subdir, false, NULL, true);
+#endif
+#ifdef HAVE_SMBCLIENT
    SETTING_ARRAY_SENSITIVE("smb_client_username",         settings->arrays.smb_client_username, false, NULL, true);
    SETTING_ARRAY_SENSITIVE("smb_client_password",         settings->arrays.smb_client_password, false, NULL, true);
    SETTING_ARRAY("smb_client_workgroup",                  settings->arrays.smb_client_workgroup, false, NULL, true);
+   SETTING_ARRAY("smb_client_realm",                      settings->arrays.smb_client_realm, false, NULL, true);
+   SETTING_ARRAY("smb_client_kdc",                        settings->arrays.smb_client_kdc, false, NULL, true);
 #endif
 
 #ifdef HAVE_LAKKA
@@ -1826,6 +2048,7 @@ static struct config_path_setting *populate_settings_path(
 {
    unsigned count = 0;
    recording_state_t *recording_st     = recording_state_get_ptr();
+   unsigned cap                         = SETTINGS_PATH_COUNT_MAX;
    struct config_path_setting  *tmp    = (struct config_path_setting*)calloc(SETTINGS_PATH_COUNT_MAX, sizeof(struct config_path_setting));
 
    if (!tmp)
@@ -1951,6 +2174,7 @@ bool config_metal_arg_buffers_default(void)
 static struct config_bool_setting *populate_settings_bool(
       settings_t *settings, int *size)
 {
+   unsigned cap                         = SETTINGS_BOOL_COUNT_MAX;
    struct config_bool_setting  *tmp    = (struct config_bool_setting*)calloc(SETTINGS_BOOL_COUNT_MAX, sizeof(struct config_bool_setting));
    unsigned count                      = 0;
 
@@ -2114,10 +2338,11 @@ static struct config_bool_setting *populate_settings_bool(
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -2128,7 +2353,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -2429,13 +2654,14 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -2652,8 +2878,13 @@ static struct config_bool_setting *populate_settings_bool(
 #undef S_UINT_AT_EX_NS
 #undef S_UINT_AT_EX_H
 #undef S_UINT_AT_EX_NS_H
-   SETTING_BOOL("video_scanline_sync",           &settings->bools.video_scanline_sync, true, DEFAULT_SCANLINE_SYNC, false);
    SETTING_BOOL("video_notch_write_over_enable", &settings->bools.video_notch_write_over_enable, true, DEFAULT_NOTCH_WRITE_OVER_ENABLE, false);
+#ifdef HAVE_PSGL
+   SETTING_BOOL("pal60_enable",                  &settings->bools.video_pal60_enable, true, DEFAULT_PAL60_ENABLE, false);
+#endif
+#if defined(_XBOX1) || defined(HW_RVL)
+   SETTING_BOOL("soft_filter_enable",            &settings->bools.video_soft_filter, true, DEFAULT_SOFT_FILTER, false);
+#endif
 #if defined(__APPLE__) && defined(HAVE_VULKAN)
    SETTING_BOOL("video_use_metal_arg_buffers",   &settings->bools.video_use_metal_arg_buffers, true, config_metal_arg_buffers_default(), false);
 #endif
@@ -2740,6 +2971,11 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("netplay_request_device_p16",    &settings->bools.netplay_request_devices[15], true, false, false);
 #endif
 
+#ifdef ANDROID
+   SETTING_BOOL("input_stylus_enable", &settings->bools.input_stylus_enable, true, true, false);
+   SETTING_BOOL("input_stylus_require_contact_for_click", &settings->bools.input_stylus_require_contact_for_click, true, true, false);
+   SETTING_BOOL("input_stylus_hover_moves_pointer", &settings->bools.input_stylus_hover_moves_pointer, true, true, false);
+#endif
 
 #ifdef _3DS
    SETTING_BOOL("new3ds_speedup_enable",         &settings->bools.new3ds_speedup_enable, true, DEFAULT_NEW_3DS_SPEEDUP_ENABLE,      false);
@@ -2760,6 +2996,7 @@ static struct config_float_setting *populate_settings_float(
       settings_t *settings, int *size)
 {
    unsigned count = 0;
+   unsigned cap                         = SETTINGS_FLOAT_COUNT_MAX;
    struct config_float_setting  *tmp      = (struct config_float_setting*)calloc(SETTINGS_FLOAT_COUNT_MAX, sizeof(struct config_float_setting));
 
    if (!tmp)
@@ -2823,10 +3060,11 @@ static struct config_float_setting *populate_settings_float(
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -2837,7 +3075,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -3138,13 +3376,14 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -3392,12 +3631,21 @@ static struct config_uint_setting *populate_settings_uint(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_UINT_COUNT_MAX;
    struct config_uint_setting  *tmp   = (struct config_uint_setting*)calloc(SETTINGS_UINT_COUNT_MAX, sizeof(struct config_uint_setting));
 
    if (!tmp)
       return NULL;
 
    SETTING_UINT("frontend_log_level",            &settings->uints.frontend_log_level, true, DEFAULT_FRONTEND_LOG_LEVEL, false);
+#ifdef HAVE_NFSCLIENT
+   SETTING_UINT("nfs_timeout",                   &settings->uints.nfs_timeout, true, DEFAULT_NFS_TIMEOUT, false);
+   SETTING_UINT("nfs_num_contexts",              &settings->uints.nfs_num_contexts, true, DEFAULT_NFS_NUM_CONTEXTS, false);
+   SETTING_UINT("nfs_port",                      &settings->uints.nfs_port, true, DEFAULT_NFS_PORT, false);
+   SETTING_UINT("nfs_mount_port",                &settings->uints.nfs_mount_port, true, DEFAULT_NFS_MOUNT_PORT, false);
+   SETTING_UINT("nfs_version",                   &settings->uints.nfs_version, true, DEFAULT_NFS_VERSION, false);
+   SETTING_UINT("nfs_readahead",                 &settings->uints.nfs_readahead, true, DEFAULT_NFS_READAHEAD, false);
+#endif
    SETTING_UINT("core_updater_auto_backup_history_size", &settings->uints.core_updater_auto_backup_history_size, true, DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE, false);
    SETTING_UINT("run_ahead_frames",              &settings->uints.run_ahead_frames, true, DEFAULT_RUN_AHEAD_FRAMES,  false);
 #ifdef HAVE_MENU
@@ -3444,6 +3692,17 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #ifdef GEKKO
    SETTING_UINT("video_viwidth",                    &settings->uints.video_viwidth, true, DEFAULT_VIDEO_VI_WIDTH, false);
+#endif
+#if defined(GEKKO) || defined(_XBOX360)
+   SETTING_UINT("gamma_correction",                 &settings->uints.video_gamma, true, DEFAULT_GAMMA, false);
+#endif
+#ifdef PS2
+   /* An entry of the PS2 driver's mode table: its modes are told apart
+    * by more than their size. */
+   SETTING_UINT("current_resolution_id",            &settings->uints.video_ps2_mode, true, 0, false);
+#endif
+#ifdef _XBOX1
+   SETTING_UINT("flicker_filter_index",             &settings->uints.video_flicker_filter, true, DEFAULT_FLICKER_FILTER, false);
 #endif
    /* GENERATED: single-source setting rows (uint kind emits here) */
 #define S_BOOL(f, T, n, d, sd, df, c, us, sub)
@@ -3500,10 +3759,11 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -3514,7 +3774,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -3815,13 +4075,14 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -4050,9 +4311,10 @@ static struct config_uint_setting *populate_settings_uint(
 #endif
 
 #ifdef ANDROID
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 0, false);
+   SETTING_UINT("input_stylus_pressure_sensitivity", &settings->uints.input_stylus_pressure_sensitivity, true, DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 0, false);
 #else
-   SETTING_UINT("input_sensor_orientation", &settings->uints.input_sensor_orientation, true, 1, false);
+   SETTING_UINT("input_sensor_orientation",          &settings->uints.input_sensor_orientation, true, 1, false);
 #endif
 
 #if defined(HAVE_OVERLAY)
@@ -4126,6 +4388,7 @@ static struct config_size_setting *populate_settings_size(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_SIZE_COUNT_MAX;
    struct config_size_setting  *tmp   = (struct config_size_setting*)calloc(SETTINGS_SIZE_COUNT_MAX, sizeof(struct config_size_setting));
 
    if (!tmp)
@@ -4142,6 +4405,7 @@ static struct config_int_setting *populate_settings_int(
       settings_t *settings, int *size)
 {
    unsigned count                     = 0;
+   unsigned cap                         = SETTINGS_INT_COUNT_MAX;
    struct config_int_setting  *tmp    = (struct config_int_setting*)calloc(SETTINGS_INT_COUNT_MAX, sizeof(struct config_int_setting));
 
    if (!tmp)
@@ -4229,10 +4493,11 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -4243,7 +4508,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -4544,13 +4809,14 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -4823,10 +5089,11 @@ static struct config_int_setting *populate_settings_int(
 #endif
 #include "settings/settings_def_services_actions.h"
 #include "settings/settings_def_video_driver_actions.h"
-#include "settings/settings_def_gpu_index_vulkan.h"
-#include "settings/settings_def_gpu_index_gl.h"
+#include "settings/settings_def_gpu_index_metal.h"
 #include "settings/settings_def_gpu_index_d3d12.h"
 #include "settings/settings_def_gpu_index_d3d11.h"
+#include "settings/settings_def_gpu_index_d3d10.h"
+#include "settings/settings_def_gpu_index_egl_gl.h"
 #include "settings/settings_def_aspect_ratio.h"
 #include "settings/settings_def_viewport_size.h"
 #include "settings/settings_def_quit_visibility.h"
@@ -4837,7 +5104,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_cheevos_account.h"
 #include "settings/settings_def_menu_show_restart.h"
 #include "settings/settings_def_quit_restart.h"
-#include "settings/settings_def_menu_throttle.h"
+#include "settings/settings_def_menu_frame_rate.h"
 #include "settings/settings_def_video_ctx_scaling.h"
 #include "settings/settings_def_input_sensors_extra.h"
 #ifdef HAVE_NETWORKING
@@ -5138,13 +5405,14 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_updater_extract.h"
 #include "settings/settings_def_gamemode.h"
 #include "settings/settings_def_sustained_performance.h"
+#include "settings/settings_def_power_plan.h"
 #ifdef HAVE_MENU
 #include "settings/settings_def_quick_menu_shaders_view.h"
 #endif
 #ifdef HAVE_MENU
 #include "settings/settings_def_menu_online_updater_view.h"
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_MENU) && defined(HAVE_SMBCLIENT)
 #include "settings/settings_def_settings_show_smb.h"
 #endif
 #ifdef HAVE_MENU
@@ -5374,6 +5642,9 @@ static struct config_int_setting *populate_settings_int(
 #ifdef HAVE_VULKAN
    SETTING_INT("vulkan_gpu_index",               &settings->ints.vulkan_gpu_index, true, DEFAULT_VULKAN_GPU_INDEX, false);
 #endif
+#ifdef HAVE_EGL
+   SETTING_INT("gl_gpu_index",                   &settings->ints.gl_gpu_index, true, DEFAULT_GL_GPU_INDEX, false);
+#endif
 #ifdef HAVE_METAL
    SETTING_INT("metal_gpu_index",                &settings->ints.metal_gpu_index, true, DEFAULT_METAL_GPU_INDEX, false);
 #endif
@@ -5387,18 +5658,6 @@ static struct config_int_setting *populate_settings_int(
    *size = count;
 
    return tmp;
-}
-
-static void video_driver_default_settings(global_t *global)
-{
-   if (!global)
-      return;
-
-   global->console.screen.gamma_correction       = DEFAULT_GAMMA;
-   global->console.flickerfilter_enable          = false;
-   global->console.softfilter_enable             = false;
-
-   global->console.screen.resolutions.current.id = 0;
 }
 
 /* Moves built-in playlists from legacy location to 'playlists/builtin' */
@@ -5436,13 +5695,12 @@ static void video_driver_default_settings(global_t *global)
  *
  * Set 'default' configuration values.
  **/
-void config_set_defaults(void *data, settings_t *target)
+void config_set_defaults(settings_t *target)
 {
    size_t i;
 #ifdef HAVE_MENU
    static bool first_initialized   = true;
 #endif
-   global_t *global                 = (global_t*)data;
    settings_t *settings             = target;
    recording_state_t *recording_st  = recording_state_get_ptr();
    int bool_settings_size           = SETTINGS_BOOL_COUNT_MAX;
@@ -5612,6 +5870,11 @@ void config_set_defaults(void *data, settings_t *target)
       configuration_set_string(settings,
             settings->arrays.netplay_mitm_server,
             def_mitm);
+   /* Empty: bind on every interface, as before the setting existed. */
+   *settings->arrays.network_cmd_bind_address = '\0';
+   strlcpy(settings->arrays.mcp_server_bind_address, "127.0.0.1",
+         sizeof(settings->arrays.mcp_server_bind_address));
+   *settings->arrays.mcp_server_token = '\0';
 #ifdef HAVE_MENU
    if (def_menu)
       configuration_set_string(settings,
@@ -5753,6 +6016,8 @@ void config_set_defaults(void *data, settings_t *target)
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
       input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
       settings->uints.input_mouse_index[i] = (unsigned)i;
+      settings->uints.input_keyboard_index[i] = 0;
+      settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
    }
 
    custom_vp->dims   = 0;
@@ -5825,8 +6090,6 @@ void config_set_defaults(void *data, settings_t *target)
    *settings->paths.path_audio_dsp_plugin = '\0';
 
    *settings->paths.log_dir = '\0';
-
-   video_driver_default_settings(global);
 
    if (*g_defaults.dirs[DEFAULT_DIR_WALLPAPERS])
       configuration_set_string(settings,
@@ -6126,12 +6389,11 @@ void config_set_defaults(void *data, settings_t *target)
  * Loads a config file and reads all the values into memory.
  *
  */
-void config_load(void *data)
+void config_load(void)
 {
-   global_t *global = (global_t*)data;
-   config_set_defaults(global, config_st);
+   config_set_defaults(config_st);
 #ifdef HAVE_CONFIGFILE
-   config_parse_file(global);
+   config_parse_file();
 #endif
 }
 
@@ -6373,35 +6635,6 @@ static config_file_t *open_default_config_file(void)
    return conf;
 }
 
-#ifdef RARCH_CONSOLE
-static void video_driver_load_settings(global_t *global,
-      config_file_t *conf)
-{
-   bool               tmp_bool = false;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.gamma_correction, "gamma_correction");
-
-   if (config_get_bool(conf, "flicker_filter_enable",
-         &tmp_bool))
-      global->console.flickerfilter_enable = tmp_bool;
-
-   if (config_get_bool(conf, "soft_filter_enable",
-         &tmp_bool))
-      global->console.softfilter_enable = tmp_bool;
-
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.soft_filter_index,
-         "soft_filter_index");
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.resolutions.current.id,
-         "current_resolution_id");
-   CONFIG_GET_INT_BASE(conf, global,
-         console.screen.flicker_filter_index,
-         "flicker_filter_index");
-}
-#endif
-
 static void check_verbosity_settings(config_file_t *conf,
       settings_t *settings)
 {
@@ -6441,6 +6674,19 @@ static void check_verbosity_settings(config_file_t *conf,
    }
 }
 
+/* Turbo Bind and Turbo Button index the remap and bind tables
+ * directly, so a value read from a config or remap file has to stay
+ * inside their menu ranges: Turbo Bind is -1 (empty) or a RetroPad
+ * ID up to the analog binds, Turbo Button a digital RetroPad ID. */
+static void config_sanitize_turbo_binds(settings_t *settings)
+{
+   if (     settings->ints.input_turbo_bind < -1
+         || settings->ints.input_turbo_bind >= RARCH_ANALOG_BIND_LIST_END)
+      settings->ints.input_turbo_bind     = DEFAULT_TURBO_BIND;
+   if (settings->uints.input_turbo_button >= RARCH_FIRST_CUSTOM_BIND)
+      settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
+}
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -6450,8 +6696,7 @@ static void check_verbosity_settings(config_file_t *conf,
  * Loads a config file and reads all the values into memory.
  *
  */
-static bool config_load_file(global_t *global,
-      const char *path, settings_t *settings)
+static bool config_load_file(const char *path, settings_t *settings)
 {
    unsigned i;
    char tmp_str[PATH_MAX_LENGTH];
@@ -6549,6 +6794,15 @@ static bool config_load_file(global_t *global,
             && path_is_valid(credentials_path))
       {
          bool result = config_append_file(conf, credentials_path);
+#ifdef HAVE_KEYCHAIN
+         bool     keychain_ok = result && config_keychain_init();
+         /* Run whether or not the keychain is ready: with no key to
+          * open them, sealed values are still taken out of what the
+          * loader sees, or a setting would take the blob itself as its
+          * value (a locked keychain would log in with it). */
+         unsigned unopened    = result
+            ? config_keychain_open_entries(conf) : 0;
+#endif
          /* The first load runs before file logging is up; logging
           * here would go to the console. Same gate as the append
           * blocks below. */
@@ -6559,6 +6813,19 @@ static bool config_load_file(global_t *global,
             if (!result)
                RARCH_ERR("[Config] Failed to merge credentials from \"%s\".\n",
                      credentials_path);
+#ifdef HAVE_KEYCHAIN
+            else if (!keychain_ok && keychain_is_locked())
+               RARCH_WARN("[Config] Keychain was moved from another machine "
+                     "and is locked; enter its passphrase under "
+                     "Settings > User.\n");
+            else if (!keychain_ok)
+               RARCH_WARN("[Config] Keychain key file unavailable, "
+                     "credentials stay in the clear.\n");
+            else if (unopened)
+               RARCH_WARN("[Config] %u credential(s) were sealed on another "
+                     "machine or install and could not be opened.\n",
+                     unopened);
+#endif
          }
       }
    }
@@ -6753,6 +7020,14 @@ static bool config_load_file(global_t *global,
          strlcpy_lit(prefix + _len, "_mouse_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_mouse_index[i], prefix);
 
+         strlcpy_lit(prefix + _len, "_keyboard_index", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_keyboard_index[i], prefix);
+
+         strlcpy_lit(prefix + _len, "_aim_stick", sizeof(prefix) - _len);
+         CONFIG_GET_INT_BASE(conf, settings, uints.input_aim_stick[i], prefix);
+         if (settings->uints.input_aim_stick[i] >= INPUT_AIM_STICK_LAST)
+            settings->uints.input_aim_stick[i] = INPUT_AIM_STICK_NONE;
+
          strlcpy_lit(prefix + _len, "_joypad_index", sizeof(prefix) - _len);
          CONFIG_GET_INT_BASE(conf, settings, uints.input_joypad_index[i], prefix);
 
@@ -6824,11 +7099,6 @@ static bool config_load_file(global_t *global,
    if (config_get_path(conf, "libretro_directory", tmp_str, sizeof(tmp_str)))
       configuration_set_string(settings,
             settings->paths.directory_libretro, tmp_str);
-#endif
-
-#ifdef RARCH_CONSOLE
-   if (conf)
-      video_driver_load_settings(global, conf);
 #endif
 
    /* Post-settings load */
@@ -7176,6 +7446,22 @@ static bool config_load_file(global_t *global,
    }
 #endif
 
+   config_sanitize_turbo_binds(settings);
+
+   /* Menu Frame Rate took over from Throttle Menu Framerate, which
+    * only acted with Sync to Exact Content Framerate on, where its
+    * default held the menu to the content's rate. A configuration
+    * written before carries that choice; keep it. */
+   if (     settings->bools.vrr_runloop_enable
+         && !config_get_entry(conf, MENU_ENUM_LABEL_MENU_FRAME_RATE_STR))
+   {
+      bool menu_throttle = true;
+      config_get_bool(conf, "menu_throttle_framerate", &menu_throttle);
+      if (menu_throttle)
+         configuration_set_uint(settings,
+               settings->uints.menu_frame_rate, MENU_FRAME_RATE_CONTENT);
+   }
+
 #ifdef HAVE_CHEEVOS
    if (*settings->arrays.cheevos_leaderboards_enable)
    {
@@ -7278,6 +7564,8 @@ static bool config_load_file(global_t *global,
    }
 
    config_read_keybinds_conf(conf);
+   /* the binds, and the device settings read above */
+   input_config_binds_changed();
 
 #if defined(HAVE_MENU) && defined(HAVE_RGUI)
    if (!check_menu_driver_compatibility(settings))
@@ -7327,6 +7615,13 @@ static bool config_load_file(global_t *global,
 #endif
 
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   /* Also undoes a plan left active by a run that did not exit cleanly. */
+   if (     !frontend_driver_set_power_plan(settings->bools.win32_power_plan,
+               settings->bools.win32_power_plan_idle_disable)
+         && settings->bools.win32_power_plan_idle_disable)
+      frontend_driver_set_power_plan(settings->bools.win32_power_plan, false);
+#endif
 #ifdef HAVE_COMPRESSION
    rzipstream_set_write_codec(settings->uints.save_compression_codec == 1
          ? RZIP_CODEC_ZSTD : RZIP_CODEC_DEFLATE);
@@ -7380,6 +7675,18 @@ static bool config_load_file(global_t *global,
                tmp->key, tmp->value);
       }
    }
+
+#ifdef HAVE_SSL
+   /* Every load of the live settings comes through here: startup, a
+    * per-core or per-game override, and its unload. Hand the TLS
+    * verification mode to the SSL backend each time, so an override
+    * that changes it applies now, not after a restart. Only for the
+    * live settings: config_save_overrides() loads the base config into
+    * a scratch copy to diff against, and its mode must not reach the
+    * backend while the override's stays on screen. */
+   if (settings == config_st)
+      ssl_socket_set_verify_mode(settings->uints.tls_verify_mode);
+#endif
 
    if (conf)
       config_file_free(conf);
@@ -7568,7 +7875,7 @@ bool config_load_override(void *data)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
    a = path_get(RARCH_PATH_CONFIG_OVERRIDE);
@@ -7613,7 +7920,7 @@ bool config_load_override_file(const char *config_path)
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_unset(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
-   if (!config_load_file(global_get_ptr(), path_get(RARCH_PATH_CONFIG), settings))
+   if (!config_load_file(path_get(RARCH_PATH_CONFIG), settings))
       return false;
 
    if (settings->bools.notification_show_config_override_load)
@@ -7649,7 +7956,6 @@ typedef struct
 static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
 {
    unsigned i, j;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    bkp->autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS,
          sizeof(retro_keybind_set));
@@ -7669,7 +7975,7 @@ static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
    {
       for (j = 0; j < RARCH_BIND_LIST_END; j++)
       {
-         memcpy(&bkp->autoconf_binds[i][j], &input_autoconf_binds[i][j],
+         memcpy(&bkp->autoconf_binds[i][j], input_autoconf_bind(i, j),
                sizeof(struct retro_keybind));
          /* Duplicate allocated strings (don't share pointers!) */
          if (input_autoconf_bind_labels[i][j].joykey)
@@ -7681,15 +7987,13 @@ static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
       }
    }
 
-   memcpy(bkp->device_info, input_st->input_device_info,
-         sizeof(bkp->device_info));
+   input_driver_device_info_save(bkp->device_info);
    return true;
 }
 
 static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
 {
    unsigned i, j;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    if (!bkp->autoconf_binds || !bkp->autoconf_labels)
       return;
@@ -7704,15 +8008,14 @@ static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
          if (input_autoconf_bind_labels[i][j].joyaxis)
             free(input_autoconf_bind_labels[i][j].joyaxis);
 
-         memcpy(&input_autoconf_binds[i][j], &bkp->autoconf_binds[i][j],
+         memcpy(input_autoconf_bind_edit(i, j), &bkp->autoconf_binds[i][j],
                sizeof(struct retro_keybind));
          /* String ownership moves back to input_autoconf_bind_labels */
          input_autoconf_bind_labels[i][j] = bkp->autoconf_labels[i][j];
       }
    }
 
-   memcpy(input_st->input_device_info, bkp->device_info,
-         sizeof(bkp->device_info));
+   input_driver_device_info_restore(bkp->device_info);
 
    free(bkp->autoconf_binds);
    free(bkp->autoconf_labels);
@@ -7748,12 +8051,12 @@ bool config_unload_override(void)
    {
       input_autoconf_backup_t bkp;
       bool have_bkp = input_autoconf_state_save(&bkp);
-      config_set_defaults(global_get_ptr(), config_st);
+      config_set_defaults(config_st);
       if (have_bkp)
          input_autoconf_state_restore(&bkp);
    }
 
-   if (!config_load_file(global_get_ptr(),
+   if (!config_load_file(
             path_get(RARCH_PATH_CONFIG), config_st))
       return false;
 
@@ -7938,100 +8241,14 @@ success:
  * Loads a config file and reads all the values into memory.
  *
  */
-static void config_parse_file(global_t *global)
+static void config_parse_file(void)
 {
    const char *config_path = path_get(RARCH_PATH_CONFIG);
 
-   if (!config_load_file(global, config_path, config_st))
+   if (!config_load_file(config_path, config_st))
    {
       RARCH_ERR("[Config] Config not found at: \"%s\".\n",
             config_path);
-   }
-}
-
-static void video_driver_save_settings(global_t *global, config_file_t *conf,
-      bool minimal, global_t *defaults_global)
-{
-   /* gamma_correction */
-   if (   !minimal
-       || global->console.screen.gamma_correction !=
-          (defaults_global ? defaults_global->console.screen.gamma_correction : DEFAULT_GAMMA))
-   {
-      config_set_int(conf, "gamma_correction",
-            global->console.screen.gamma_correction);
-   }
-   else
-   {
-      config_unset(conf, "gamma_correction");
-   }
-
-   /* flicker_filter_enable */
-   if (   !minimal
-       || global->console.flickerfilter_enable !=
-          (defaults_global ? defaults_global->console.flickerfilter_enable : false))
-   {
-      config_set_string(conf, "flicker_filter_enable",
-              global->console.flickerfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_enable");
-   }
-
-   /* soft_filter_enable */
-   if (   !minimal
-       || global->console.softfilter_enable !=
-          (defaults_global ? defaults_global->console.softfilter_enable : false))
-   {
-      config_set_string(conf, "soft_filter_enable",
-              global->console.softfilter_enable
-            ? "true"
-            : "false");
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_enable");
-   }
-
-   /* soft_filter_index */
-   if (   !minimal
-       || global->console.screen.soft_filter_index !=
-          (defaults_global ? defaults_global->console.screen.soft_filter_index : 0))
-   {
-      config_set_int(conf, "soft_filter_index",
-            global->console.screen.soft_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "soft_filter_index");
-   }
-
-   /* current_resolution_id */
-   if (   !minimal
-       || global->console.screen.resolutions.current.id !=
-          (defaults_global ? defaults_global->console.screen.resolutions.current.id : 0))
-   {
-      config_set_int(conf, "current_resolution_id",
-            global->console.screen.resolutions.current.id);
-   }
-   else
-   {
-      config_unset(conf, "current_resolution_id");
-   }
-
-   /* flicker_filter_index */
-   if (   !minimal
-       || global->console.screen.flicker_filter_index !=
-          (defaults_global ? defaults_global->console.screen.flicker_filter_index : 0))
-   {
-      config_set_int(conf, "flicker_filter_index",
-            global->console.screen.flicker_filter_index);
-   }
-   else
-   {
-      config_unset(conf, "flicker_filter_index");
    }
 }
 
@@ -8224,7 +8441,7 @@ static void input_config_save_keybinds_user(config_file_t *conf, unsigned user)
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const char                 *base     = NULL;
 
       prefix[0]                            = '\0';
@@ -8271,7 +8488,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const char                 *base     = NULL;
 
       prefix[0]                            = '\0';
@@ -8321,7 +8538,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       const struct input_bind_map *keybind =
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
-      const struct retro_keybind *bind     = &input_config_binds[user][i];
+      const struct retro_keybind *bind     = input_config_bind(user, i);
       const struct retro_keybind *def_bind = &default_binds[i];
       const char                 *base     = NULL;
       bool differs_from_default            = false;
@@ -8409,12 +8626,14 @@ void config_get_autoconf_profile_filename(
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
+ * @user              : Port whose binds are saved
+ * Writes a controller autoconf file to disk for the
+ * device assigned to @user.
  **/
 bool config_save_autoconf_profile(const char *device_name, unsigned user)
 {
    unsigned i;
+   unsigned dev;
    char buf[PATH_MAX_LENGTH];
    char autoconf_file[PATH_MAX_LENGTH];
    const char *a = NULL;
@@ -8428,11 +8647,17 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    const char *joypad_driver_fallback   = settings->arrays.input_joypad_driver;
    const char *joypad_driver            = NULL;
 
-   if (!device_name || !*device_name)
+   if (!device_name || !*device_name || user >= MAX_USERS)
+      return false;
+
+   /* Binds and their labels are per port; the device's
+    * driver, identity and autoconf binds are per device */
+   dev = settings->uints.input_joypad_index[user];
+   if (dev >= MAX_USERS)
       return false;
 
    /* Get currently set joypad driver */
-   joypad_driver = input_config_get_device_joypad_driver(user);
+   joypad_driver = input_config_get_device_joypad_driver(dev);
    if (!joypad_driver || !*joypad_driver)
    {
       /* This cannot happen, but if we reach this
@@ -8445,8 +8670,18 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    }
 
    /* Generate autoconfig file path */
-   config_get_autoconf_profile_filename(device_name, user, buf, sizeof(buf));
+   config_get_autoconf_profile_filename(device_name, dev, buf, sizeof(buf));
    fill_pathname_join_special(autoconf_file, autoconf_dir, buf, sizeof(autoconf_file));
+
+   /* The directory only exists once profiles have been
+    * downloaded or bundled */
+   if (     *autoconf_dir
+         && !path_is_directory(autoconf_dir)
+         && !path_mkdir(autoconf_dir))
+   {
+      RARCH_ERR("[Autoconf] Failed creating directory \"%s\".\n", autoconf_dir);
+      return false;
+   }
 
    /* Open config file */
    if (     !(conf = config_file_new_from_path_to_string(autoconf_file))
@@ -8461,10 +8696,10 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    /* Pre-fill existing autoconf binds for empty binds */
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
-      struct retro_keybind *bind      = &input_config_binds[user][i];
-      struct retro_keybind *auto_bind = &input_autoconf_binds[user][i];
+      struct retro_keybind *bind            = input_config_bind_edit(user, i);
+      const struct retro_keybind *auto_bind = input_autoconf_bind(dev, i);
       struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
-      struct input_bind_label *albl   = &input_autoconf_bind_labels[user][i];
+      struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
 
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
@@ -8483,47 +8718,44 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
 
    /* Require at least directions (D-Pad or Left Analog) and South button,
     * otherwise the profile is completely useless */
-   if (input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_B].joykey == NO_BTN)
+   if (input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_B)->joykey == NO_BTN)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_UP].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_MINUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_UP)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_UP)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_MINUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_MINUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_DOWN].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_Y_PLUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_DOWN)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_DOWN)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_PLUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_Y_PLUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_LEFT].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_MINUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_LEFT)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_LEFT)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_MINUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_MINUS)->joyaxis == AXIS_NONE)
       valid = false;
 
-   if (     input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joykey  == NO_BTN
-         && input_config_binds[user][RETRO_DEVICE_ID_JOYPAD_RIGHT].joyaxis == AXIS_NONE
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joykey  == NO_BTN
-         && input_config_binds[user][RARCH_ANALOG_LEFT_X_PLUS].joyaxis == AXIS_NONE)
+   if (     input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_RIGHT)->joykey  == NO_BTN
+         && input_config_bind(user, RETRO_DEVICE_ID_JOYPAD_RIGHT)->joyaxis == AXIS_NONE
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_PLUS)->joykey  == NO_BTN
+         && input_config_bind(user, RARCH_ANALOG_LEFT_X_PLUS)->joyaxis == AXIS_NONE)
       valid = false;
 
    /* Update config file */
    config_set_string(conf, "input_driver",
          joypad_driver);
    config_set_string(conf, "input_device",
-         input_config_get_device_name(settings->uints.input_joypad_index[user]));
-   a =
-input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
+         input_config_get_device_name(dev));
+   a = input_config_get_device_display_name(dev);
    config_set_string(conf, "input_device_display_name",
-         (a && *a)
-            ? a
-            : input_config_get_device_name(settings->uints.input_joypad_index[user]));
+         (a && *a) ? a : input_config_get_device_name(dev));
 
-   pid_user = input_config_get_device_pid(settings->uints.input_joypad_index[user]);
-   vid_user = input_config_get_device_vid(settings->uints.input_joypad_index[user]);
+   pid_user = input_config_get_device_pid(dev);
+   vid_user = input_config_get_device_vid(dev);
 
    if (pid_user && vid_user)
    {
@@ -8534,7 +8766,7 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
    {
       unsigned id                      = input_config_bind_order[i];
-      const struct retro_keybind *bind = &input_config_binds[user][id];
+      const struct retro_keybind *bind = input_config_bind(user, id);
 
       if (RETRO_KEYBIND_VALID(bind))
       {
@@ -8546,7 +8778,7 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)
    {
       unsigned id                      = input_config_bind_order[i];
-      const struct retro_keybind *bind = &input_config_binds[user][id];
+      const struct retro_keybind *bind = input_config_bind(user, id);
       struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
 
       if (RETRO_KEYBIND_VALID(bind))
@@ -8555,12 +8787,14 @@ input_config_get_device_display_name(settings->uints.input_joypad_index[user]);
          {
             save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joykey);
+            lbl->joykey = NULL;
          }
 
          if (lbl->joyaxis && *lbl->joyaxis)
          {
             save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), lbl);
             free(lbl->joyaxis);
+            lbl->joyaxis = NULL;
          }
       }
    }
@@ -8681,15 +8915,28 @@ static bool config_save_credentials(
    if (!conf)
       return false;
 
+#ifdef HAVE_KEYCHAIN
+   config_keychain_carried  = 0;
+   config_keychain_withheld = 0;
+   if (config_keychain_init())
+      config_set_int(conf, "keychain_version", 1);
+   else if (keychain_is_locked())
+      RARCH_WARN("[Config] Keychain is locked: enter its passphrase under "
+            "Settings > User to open the saved credentials.\n");
+   else
+      RARCH_WARN("[Config] Keychain key file unavailable, "
+            "credentials are written in the clear.\n");
+#endif
+
    if (array_settings && (array_settings_size > 0))
    {
       for (i = 0; i < (unsigned)array_settings_size; i++)
       {
          if (!(array_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
             continue;
-         config_set_string(conf,
+         config_keychain_set(conf,
                array_settings[i].ident,
-               array_settings[i].ptr);
+               array_settings[i].ptr, true);
       }
    }
 
@@ -8699,15 +8946,18 @@ static bool config_save_credentials(
       {
          if (!(path_settings[i].flags & CFG_BOOL_FLG_SENSITIVE))
             continue;
-         config_set_path(conf,
+         config_keychain_set(conf,
                path_settings[i].ident,
-               path_settings[i].ptr);
+               path_settings[i].ptr, true);
       }
    }
 
    /* Secrets for features compiled out of this build have no
     * settings entry above; carry them over from retroarch.cfg
-    * as-is so they are not lost when it is stripped. */
+    * as-is so they are not lost when it is stripped. Anything
+    * already sealed in the keychain file (opened or not) is kept
+    * sealed; only plaintext still in retroarch.cfg gets sealed on
+    * its way over. */
    if (main_conf)
    {
       for (i = 0; i < ARRAY_SIZE(config_sensitive_keys); i++)
@@ -8718,18 +8968,31 @@ static bool config_save_credentials(
             continue;
          entry = config_get_entry(main_conf, key);
          if (entry && entry->value)
-            config_set_string(conf, key, entry->value);
+            config_keychain_set(conf, key, entry->value, false);
       }
    }
 
    ret = config_file_write(conf, credentials_path, true);
    config_file_free(conf);
 
+#ifdef HAVE_KEYCHAIN
+   /* Load-time logging is not up yet for the first config, so this
+    * is where the user hears about it. */
+   if (ret && config_keychain_carried)
+      RARCH_WARN("[Config] %u credential(s) in \"%s\" were sealed on "
+            "another machine or install, could not be opened here and "
+            "were kept as they are.\n",
+            config_keychain_carried, credentials_path);
+   if (ret && config_keychain_withheld)
+      RARCH_WARN("[Config] %u credential(s) set while the keychain was "
+            "locked were not saved; unlock it and set them again.\n",
+            config_keychain_withheld);
+#endif
+
    if (ret)
    {
-      /* The file holds plaintext secrets: make it owner-only.
-       * Not fatal on failure (e.g. FAT/exFAT media), the write
-       * itself succeeded. */
+      /* Sealed or not, make the file owner-only. Not fatal on
+       * failure (e.g. FAT/exFAT media), the write itself succeeded. */
       if (!path_set_private(credentials_path))
          RARCH_WARN("[Config] Could not restrict permissions on \"%s\".\n",
                credentials_path);
@@ -8749,6 +9012,68 @@ static bool config_save_credentials(
  *
  * Returns: true (1) on success, otherwise returns false (0).
  **/
+#ifdef HAVE_KEYCHAIN
+/**
+ * config_keychain_reapply:
+ *
+ * After the keychain is unlocked, opens the credentials that were
+ * sealed on another machine and puts them into the running settings,
+ * so accounts work without a restart. Settings the credentials file
+ * does not hold are left as they are.
+ *
+ * Returns: number of credentials put back.
+ **/
+unsigned config_keychain_reapply(void)
+{
+   char credentials_path[PATH_MAX_LENGTH];
+   settings_t                  *settings = config_st;
+   config_file_t               *conf;
+   struct config_array_setting *arrays;
+   struct config_path_setting  *paths;
+   int      arrays_size = 0;
+   int      paths_size  = 0;
+   int      i;
+   unsigned applied     = 0;
+
+   if (!keychain_is_ready())
+      return 0;
+   credentials_path[0] = '\0';
+   config_get_credentials_path(credentials_path, sizeof(credentials_path));
+   if (string_is_empty(credentials_path)
+         || !(conf = config_file_new_from_path_to_string(credentials_path)))
+      return 0;
+   config_keychain_open_entries(conf);
+
+   if ((arrays = populate_settings_array(settings, &arrays_size)))
+   {
+      for (i = 0; i < arrays_size; i++)
+         if ((arrays[i].flags & CFG_BOOL_FLG_SENSITIVE)
+               && config_get_entry(conf, arrays[i].ident)
+               && config_get_array(conf, arrays[i].ident,
+                     arrays[i].ptr, PATH_MAX_LENGTH))
+            applied++;
+      free(arrays);
+   }
+   if ((paths = populate_settings_path(settings, &paths_size)))
+   {
+      for (i = 0; i < paths_size; i++)
+      {
+         char tmp[PATH_MAX_LENGTH];
+         if ((paths[i].flags & CFG_BOOL_FLG_SENSITIVE)
+               && config_get_entry(conf, paths[i].ident)
+               && config_get_path(conf, paths[i].ident, tmp, sizeof(tmp)))
+         {
+            strlcpy(paths[i].ptr, tmp, PATH_MAX_LENGTH);
+            applied++;
+         }
+      }
+      free(paths);
+   }
+   config_file_free(conf);
+   return applied;
+}
+#endif
+
 bool config_save_file(const char *path)
 {
    float msg_color;
@@ -8775,7 +9100,6 @@ bool config_save_file(const char *path)
    uint32_t flags                                    = runloop_get_flags();
    config_file_t                              *conf  = config_file_new_from_path_to_string(path);
    settings_t                              *settings = config_st;
-   global_t *global                                  = global_get_ptr();
    int bool_settings_size                            = SETTINGS_BOOL_COUNT_MAX;
    int float_settings_size                           = SETTINGS_FLOAT_COUNT_MAX;
    int int_settings_size                             = SETTINGS_INT_COUNT_MAX;
@@ -8841,11 +9165,10 @@ bool config_save_file(const char *path)
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
-            /* Save current input_config_binds */
+            /* Save the current binds */
             saved_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
             if (saved_binds)
-               memcpy(saved_binds, input_config_binds,
-                     MAX_USERS * sizeof(retro_keybind_set));
+               input_config_binds_copy_out(saved_binds);
 
             /* Config-bind labels are saved and restored by value, exactly as
              * they were when they lived inside the bind struct. */
@@ -8860,16 +9183,15 @@ bool config_save_file(const char *path)
             /* Populate the local defaults struct directly: config_st
              * stays what every other thread's config_get_ptr() returns.
              * input_config_reset() inside sets the default keybinds. */
-            config_set_defaults(global, defaults);
+            config_set_defaults(defaults);
 
             /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
-            memcpy(defaults_binds, input_config_binds, MAX_USERS * sizeof(retro_keybind_set));
+            input_config_binds_copy_out(defaults_binds);
 
-            /* Restore input_config_binds */
+            /* Restore the binds */
             if (saved_binds)
             {
-               memcpy(input_config_binds, saved_binds,
-                     MAX_USERS * sizeof(retro_keybind_set));
+               input_config_binds_copy_in(saved_binds);
                free(saved_binds);
             }
 
@@ -9206,10 +9528,27 @@ bool config_save_file(const char *path)
       else
          config_unset(conf, cfg);
 
+      strlcpy_lit(cfg + _len, "_keyboard_index",    sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_keyboard_index[i] != defaults->uints.input_keyboard_index[i])
+         config_set_int(conf, cfg, settings->uints.input_keyboard_index[i]);
+      else
+         config_unset(conf, cfg);
+
+      strlcpy_lit(cfg + _len, "_aim_stick",         sizeof(cfg) - _len);
+      if (   !minimal
+          || settings->uints.input_aim_stick[i] != defaults->uints.input_aim_stick[i])
+         config_set_int(conf, cfg, settings->uints.input_aim_stick[i]);
+      else
+         config_unset(conf, cfg);
+
+      /* What the user configured, which is not what the setting holds
+       * while a driver restart has put controllers back on their
+       * ports. */
       strlcpy_lit(cfg + _len, "_joypad_index",      sizeof(cfg) - _len);
       if (   !minimal
-          || settings->uints.input_joypad_index[i] != defaults->uints.input_joypad_index[i])
-         config_set_int(conf, cfg, settings->uints.input_joypad_index[i]);
+          || input_config_get_saved_joypad_index(i) != defaults->uints.input_joypad_index[i])
+         config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
       else
          config_unset(conf, cfg);
 
@@ -9349,9 +9688,6 @@ bool config_save_file(const char *path)
       }
    }
 
-   if (conf)
-      video_driver_save_settings(global, conf, minimal, NULL);
-
 #ifdef HAVE_LAKKA
    if (settings->bools.ssh_enable)
       filestream_close(filestream_open(LAKKA_SSH_PATH,
@@ -9392,6 +9728,15 @@ bool config_save_file(const char *path)
    /* Remove unused "quit_press_twice" after migrating to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";
+      struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
+      if (tmp)
+         config_unset(conf, tmp->key);
+   }
+
+   /* Remove unused "menu_throttle_framerate" after migrating to
+    * "menu_frame_rate" */
+   {
+      const char *tmp_key = "menu_throttle_framerate";
       struct config_entry_list *tmp = config_get_entry(conf, tmp_key);
       if (tmp)
          config_unset(conf, tmp->key);
@@ -9551,10 +9896,10 @@ int8_t config_save_overrides(enum override_type type,
       path_mkdir(override_directory);
 
    /* Store current binds as override binds */
-   memcpy(input_override_binds, input_config_binds, sizeof(input_config_binds));
+   input_config_binds_copy_out(input_override_binds);
 
    /* Load the original config file in memory */
-   config_load_file(global_get_ptr(),
+   config_load_file(
          "without-overrides", settings);
 
    bool_settings       = populate_settings_bool(settings,   &bool_settings_size);
@@ -9793,12 +10138,30 @@ int8_t config_save_overrides(enum override_type type,
             RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_mouse_index[i]);
          }
 
+         if (settings->uints.input_keyboard_index[i]
+               != overrides->uints.input_keyboard_index[i])
+         {
+            strlcpy_lit(cfg + _len, "_keyboard_index", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_keyboard_index[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_keyboard_index[i]);
+         }
+
+         if (settings->uints.input_aim_stick[i]
+               != overrides->uints.input_aim_stick[i])
+         {
+            strlcpy_lit(cfg + _len, "_aim_stick", sizeof(cfg) - _len);
+            config_set_int(conf, cfg, overrides->uints.input_aim_stick[i]);
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_aim_stick[i]);
+         }
+
+         /* The live value is what the user configured, not a port a
+          * driver restart handed back. */
          if (settings->uints.input_joypad_index[i]
-               != overrides->uints.input_joypad_index[i])
+               != input_config_get_saved_joypad_index(i))
          {
             strlcpy_lit(cfg + _len, "_joypad_index",  sizeof(cfg) - _len);
-            config_set_int(conf, cfg, overrides->uints.input_joypad_index[i]);
-            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, overrides->uints.input_joypad_index[i]);
+            config_set_int(conf, cfg, input_config_get_saved_joypad_index(i));
+            RARCH_DBG("[Override] %s = \"%u\"\n", cfg, input_config_get_saved_joypad_index(i));
          }
 
          if (settings->uints.input_device_reservation_type[i]
@@ -9812,7 +10175,7 @@ int8_t config_save_overrides(enum override_type type,
          for (j = 0; j < RARCH_BIND_LIST_END; j++)
          {
             const struct retro_keybind *override_bind = &input_override_binds[i][j];
-            const struct retro_keybind *config_bind   = &input_config_binds[i][j];
+            const struct retro_keybind *config_bind   = input_config_bind(i, j);
 
             if (     config_bind->joyaxis != override_bind->joyaxis
                   || config_bind->joykey  != override_bind->joykey
@@ -9908,7 +10271,7 @@ int8_t config_save_overrides(enum override_type type,
    }
 
    /* Since config_load_file resets binds, restore overrides back to current binds */
-   memcpy(input_config_binds, input_override_binds, sizeof(input_config_binds));
+   input_config_binds_copy_in(input_override_binds);
 
    if (bool_settings)
       free(bool_settings);
@@ -9997,6 +10360,9 @@ bool input_remapping_load_file(void *data, const char *path)
    if (      !conf
          || (!path || !*path))
       return false;
+
+   /* the remaps are part of what a port's mapping is made from */
+   input_config_binds_changed();
 
    if (runloop_st->name.remapfile && *runloop_st->name.remapfile)
       input_remapping_deinit(false);
@@ -10115,6 +10481,11 @@ bool input_remapping_load_file(void *data, const char *path)
       _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
       strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
       CONFIG_GET_INT_BASE(conf, settings, uints.input_remap_ports[i], s1);
+      /* The mapped port indexes per-port arrays (libretro device,
+       * input descriptors, analog requests). MAX_USERS is 'None':
+       * the user feeds no core port, and no array is indexed. */
+      if (settings->uints.input_remap_ports[i] > MAX_USERS)
+         settings->uints.input_remap_ports[i] = i;
    }
 
    /* Turbo fire settings */
@@ -10125,13 +10496,14 @@ bool input_remapping_load_file(void *data, const char *path)
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_button, "input_turbo_button");
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_period, "input_turbo_period");
    CONFIG_GET_INT_BASE(conf, settings, uints.input_turbo_duty_cycle, "input_turbo_duty_cycle");
+   config_sanitize_turbo_binds(settings);
 
    input_remapping_update_port_map();
 
    /* Whenever a remap file is loaded, subsequent
     * changes to global remap-related parameters
     * must be reset at the next core deinitialisation */
-   input_state_get_ptr()->flags   |=  INP_FLAG_REMAPPING_CACHE_ACTIVE;
+   input_driver_set_remapping_cache_active();
 
    return true;
 }
@@ -10313,9 +10685,14 @@ bool input_remapping_save_file(const char *path)
       strlcpy_lit(s1 + _len, "_analog_dpad_mode", sizeof(s1) - _len);
       config_set_int(conf, s1, settings->uints.input_analog_dpad_mode[i]);
 
-      _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
-      strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
-      config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      /* a port a first press gave is not the user's choice: left
+       * out, so the next press decides again */
+      if (!input_first_press_assigned(i))
+      {
+         _len = strlcpy_lit(s1, "input_remap_port_p", sizeof(s1));
+         strlcpy(s1 + _len, formatted_number, sizeof(s1) - _len);
+         config_set_int(conf, s1, settings->uints.input_remap_ports[i]);
+      }
    }
 
    /* Turbo fire settings */
@@ -10487,17 +10864,17 @@ uint8_t input_config_bind_map_get_retro_key(unsigned bind_index)
 void input_config_reset_autoconfig_binds(unsigned port)
 {
    size_t i;
-   input_driver_state_t *input_st;
-   input_sensor_map_t *map;
+   input_sensor_map_t map;
 
    if (port >= MAX_USERS)
       return;
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      input_autoconf_binds[port][i].joykey  = NO_BTN;
-      input_autoconf_binds[port][i].joyaxis = AXIS_NONE;
-      RETRO_KEYBIND_SET_VALID(&input_autoconf_binds[port][i], false);
+      struct retro_keybind *bind = input_autoconf_bind_edit(port, i);
+      bind->joykey  = NO_BTN;
+      bind->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(bind, false);
 
       if (input_autoconf_bind_labels[port][i].joykey)
       {
@@ -10513,21 +10890,15 @@ void input_config_reset_autoconfig_binds(unsigned port)
    }
 
    /* Reset sensor axis map to default identity mapping */
-   input_st = input_state_get_ptr();
-   map      = &input_st->input_sensor_map[port];
    for (i = 0; i < 6; i++)
    {
-      map->axes[i].source = (int8_t)i;
-      map->axes[i].sign   = 1;
+      map.axes[i].source = (int8_t)i;
+      map.axes[i].sign   = 1;
    }
-}
-
-const input_sensor_map_t *input_config_get_sensor_map(unsigned port)
-{
-   input_driver_state_t *input_st = input_state_get_ptr();
-   if (port >= MAX_INPUT_DEVICES)
-      return NULL;
-   return &input_st->input_sensor_map[port];
+   input_driver_set_sensor_map(port, &map);
+   /* counted again once written: this can run on a task's thread while
+    * the frontend polls */
+   input_config_binds_changed();
 }
 
 void input_config_set_autoconfig_binds(unsigned port, void *data)
@@ -10540,13 +10911,13 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds     = NULL;
    struct input_bind_label *labels = NULL;
-   input_driver_state_t *input_st;
-   input_sensor_map_t *map;
+   const input_sensor_map_t *current;
+   input_sensor_map_t map;
 
    if ((port >= MAX_USERS) || !config)
       return;
 
-   binds  = input_autoconf_binds[port];
+   binds  = input_autoconf_bind_edit(port, 0);
    labels = input_autoconf_bind_labels[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -10567,8 +10938,9 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    }
 
    /* Parse sensor axis map overrides from autoconfig profile */
-   input_st = input_state_get_ptr();
-   map      = &input_st->input_sensor_map[port];
+   if (!(current = input_config_get_sensor_map(port)))
+      return;
+   map = *current;
    for (i = 0; i < 6; i++)
    {
       char tmp[16];
@@ -10580,12 +10952,16 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
             int code = (int)strtol(tmp + 1, NULL, 0);
             if (code >= 0 && code <= 5)
             {
-               map->axes[i].source = (int8_t)code;
-               map->axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
+               map.axes[i].source = (int8_t)code;
+               map.axes[i].sign   = (tmp[0] == '-') ? -1 : 1;
             }
          }
       }
    }
+   input_driver_set_sensor_map(port, &map);
+   /* counted again once written: this can run on a task's thread while
+    * the frontend polls */
+   input_config_binds_changed();
 }
 
 void input_config_parse_mouse_button(char *s,
@@ -10798,6 +11174,9 @@ void retroarch_config_deinit(void)
    if (config_st)
       free(config_st);
    config_st = NULL;
+#if defined(HAVE_CONFIGFILE) && defined(HAVE_KEYCHAIN)
+   keychain_deinit();
+#endif
 }
 
 void retroarch_config_init(void)

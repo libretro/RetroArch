@@ -18,17 +18,27 @@
 #include <boolean.h>
 
 #include <xenon_sound/sound.h>
+#include <time/time.h>
 
 #include <retro_inline.h>
 
 #include "../audio_driver.h"
 
 #define SOUND_FREQUENCY 48000
-#define MAX_BUFFER 2048
+#define FRAME_BYTES     4      /* int16 stereo */
+/* libxenon's ring and one of its 32 descriptors, in bytes. The queue is
+ * kept a descriptor short of the ring: xenon_sound_submit() copies in
+ * without looking at what is still unplayed. */
+#define XENON360_RING   65536
+#define XENON360_BLOCK  2048
+/* Frames converted per pass; a longer write goes in several. */
+#define XENON360_STAGE_FRAMES 2048
 
 typedef struct
 {
-   uint32_t buffer[2048];
+   /* Bytes the driver lets queue: the latency setting. */
+   size_t capacity;
+   uint32_t buffer[XENON360_STAGE_FRAMES];
    bool nonblock;
    bool is_paused;
 } xenon_audio_t;
@@ -38,6 +48,7 @@ static void *xenon360_audio_init(const char *device,
       unsigned *new_rate)
 {
    static bool inited = false;
+   xenon_audio_t *xa;
 
    if (!inited)
    {
@@ -47,7 +58,28 @@ static void *xenon360_audio_init(const char *device,
 
    *new_rate = SOUND_FREQUENCY;
 
-   return calloc(1, sizeof(xenon_audio_t));
+   if (!(xa = (xenon_audio_t*)calloc(1, sizeof(*xa))))
+      return NULL;
+
+   xa->capacity  = (size_t)SOUND_FREQUENCY * latency / 1000 * FRAME_BYTES;
+   if (xa->capacity < XENON360_BLOCK)
+      xa->capacity = XENON360_BLOCK;
+   if (xa->capacity > XENON360_RING - XENON360_BLOCK)
+      xa->capacity = XENON360_RING - XENON360_BLOCK;
+
+   return xa;
+}
+
+/* Bytes the queue takes now: the capacity less what is unplayed, in
+ * whole frames. */
+static size_t xenon360_audio_room(const xenon_audio_t *xa)
+{
+   int unplayed = xenon_sound_get_unplayed();
+   if (unplayed < 0)
+      unplayed = 0;
+   if ((size_t)unplayed >= xa->capacity)
+      return 0;
+   return (xa->capacity - (size_t)unplayed) & ~(size_t)(FRAME_BYTES - 1);
 }
 
 /* Full 32-bit byte reversal of a packed stereo frame.  On this
@@ -63,45 +95,51 @@ static INLINE uint32_t xenon360_bswap_32(uint32_t val)
       ((val >> 8) & 0xff00) | ((val << 8) & 0xff0000);
 }
 
-/* How many 50 us delays a blocking write waits for the queue to drain
- * before giving up on it (about a second). */
+/* How many 50 us delays a blocking write waits for room before giving
+ * up on it (about a second). */
 #define XENON360_AUDIO_WAIT_LAPS 20000
 
+/* Converts and submits in passes of at most the staging buffer, each no
+ * more than the room; non-blocking, that is exactly what write_avail()
+ * reported. */
 static ssize_t xenon360_audio_write(void *data, const void *s, size_t len)
 {
-   size_t _len = 0, i;
-   const uint32_t *in_buf = s;
-   xenon_audio_t *xa      = data;
+   size_t written         = 0;
+   int laps               = XENON360_AUDIO_WAIT_LAPS;
+   const uint32_t *in_buf = (const uint32_t*)s;
+   xenon_audio_t *xa      = (xenon_audio_t*)data;
 
-   for (i = 0; i < (len >> 2); i++)
-      xa->buffer[i] = xenon360_bswap_32(in_buf[i]);
+   len &= ~(size_t)(FRAME_BYTES - 1);
 
-   if (xa->nonblock)
+   while (written < len)
    {
-      if (xenon_sound_get_unplayed() < MAX_BUFFER)
+      size_t i, n;
+      size_t room = xenon360_audio_room(xa);
+
+      if (!room)
       {
-         xenon_sound_submit(xa->buffer, len);
-         _len = len;
-      }
-   }
-   else
-   {
-      /* Capped: a sound queue that stops draining never drops below the
-       * mark, and the write then returns having written nothing. */
-      int laps = XENON360_AUDIO_WAIT_LAPS;
-      while (xenon_sound_get_unplayed() >= MAX_BUFFER)
-      {
-         /* libxenon doesn't have proper
-          * synchronization primitives for this... */
+         /* Capped: a sound queue that stops draining never makes
+          * room, and the write then returns what it took. libxenon
+          * has no event to wait on. */
+         if (xa->nonblock || --laps < 0)
+            break;
          udelay(50);
-         if (--laps < 0)
-            return 0;
+         continue;
       }
 
-      xenon_sound_submit(xa->buffer, len);
-      _len = len;
+      n = len - written;
+      if (n > room)
+         n = room;
+      if (n > sizeof(xa->buffer))
+         n = sizeof(xa->buffer);
+
+      for (i = 0; i < n / FRAME_BYTES; i++)
+         xa->buffer[i] = xenon360_bswap_32(in_buf[written / FRAME_BYTES + i]);
+      xenon_sound_submit(xa->buffer, (int)n);
+      written += n;
    }
-   return _len;
+
+   return (ssize_t)written;
 }
 
 static bool xenon360_audio_stop(void *data)
@@ -143,6 +181,18 @@ static void xenon360_audio_free(void *data)
  * the driver byteswaps for it. There is no float path. */
 static bool xenon360_use_float(void *data) { return false; }
 
+static size_t xenon360_audio_write_avail(void *data)
+{
+   xenon_audio_t *xa = (xenon_audio_t*)data;
+   return xa ? xenon360_audio_room(xa) : 0;
+}
+
+static size_t xenon360_audio_buffer_size(void *data)
+{
+   xenon_audio_t *xa = (xenon_audio_t*)data;
+   return xa ? xa->capacity : 0;
+}
+
 audio_driver_t audio_xenon360 = {
    xenon360_audio_init,
    xenon360_audio_write,
@@ -155,10 +205,7 @@ audio_driver_t audio_xenon360 = {
    "xenon360",
    NULL,
    NULL,
-   /* write_avail - NULL disables rate control; a constant would
-    * instead feed it a fill that never changes. libxenon reports the
-    * unplayed bytes, so this could become a real measurement. */
-   NULL,
-   NULL, /* buffer_size */
+   xenon360_audio_write_avail,
+   xenon360_audio_buffer_size,
    NULL  /* write_raw */
 };

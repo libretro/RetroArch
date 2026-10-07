@@ -74,6 +74,22 @@ void input_remapping_restore_global_config(bool clear_cache, bool restore_analog
  */
 void input_remapping_update_port_map(void);
 
+/* First-press port assignment ("Assign Ports on First Button Press").
+ * Whether the policy applies now: the setting, and not in netplay. */
+bool input_first_press_enabled(void);
+/* Maps the users a press was seen on to the next free core ports.
+ * Called between frames, with the core off the stack. */
+void input_first_press_apply(void);
+/* The notification for @user having been given core port @port: it
+ * names everything the user has, its controller and its keys. */
+size_t input_first_press_describe(unsigned user, unsigned port,
+      char *s, size_t len);
+/* Whether @user's core port was given by a press: a remap file does
+ * not store such a port. */
+bool input_first_press_assigned(unsigned user);
+/* @user's mapped port was set in the menu: it is the user's choice. */
+void input_first_press_set_by_hand(unsigned user);
+
 /**
  * Frees runloop_st->name.remapfile and sets these runloop_state flags to false:
  * remaps_core_active, remaps_content_dir_active, and remaps_game_active.

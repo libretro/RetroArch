@@ -14,18 +14,12 @@
  *  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/* TODO/FIXME - set this once the kqueue codepath is implemented and working properly,
- * also remove libepoll-shim from the Makefile when that happens. */
-#if 1
-#define HAVE_EPOLL
-#else
-#ifdef __linux__
-#define HAVE_EPOLL 1
-#endif
-
-#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined (__NetBSD__)
+/* Linux multiplexes the evdev fds with epoll; the BSDs and macOS use
+ * kqueue natively so no libepoll-shim is needed there. */
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__) || defined(__DragonFly__)
 #define HAVE_KQUEUE 1
-#endif
+#else
+#define HAVE_EPOLL 1
 #endif
 
 #include <stdint.h>
@@ -43,6 +37,13 @@
 #include <sys/epoll.h>
 #elif defined(HAVE_KQUEUE)
 #include <sys/event.h>
+#include <sys/time.h>
+/* NetBSD declares kevent.udata as intptr_t, everyone else as void *. */
+#if defined(__NetBSD__)
+#define UDEV_KQ_UDATA(ptr) ((intptr_t)(ptr))
+#else
+#define UDEV_KQ_UDATA(ptr) ((void*)(ptr))
+#endif
 #endif
 #include <poll.h>
 
@@ -71,11 +72,19 @@
 
 #include "../input_keymaps.h"
 
+#ifdef __linux__
+/* The illuminance sensor reads sysfs IIO nodes, and linux_common.o is
+ * only built on Linux; libudev also exists on FreeBSD (libudev-devd). */
 #include "../common/linux_common.h"
+#endif
 
 #include "../../configuration.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
+#include "../common/input_keyboard_devices.h"
 
 #if defined(HAVE_XKBCOMMON) && defined(HAVE_KMS)
 #define UDEV_XKB_HANDLING
@@ -142,15 +151,15 @@
 /* Conversion factor from microseconds to nanoseconds */
 #define UDEV_INPUT_TOUCH_US_TO_NS 1000
 /* Default state of pointer simulation. */
-#define UDEV_INPUT_TOUCH_POINTER_EN settings->bools.input_touch_vmouse_pointer
+#define UDEV_INPUT_TOUCH_POINTER_EN input_config_get_touch_vmouse_pointer()
 /* Default state of mouse simulation. */
-#define UDEV_INPUT_TOUCH_MOUSE_EN settings->bools.input_touch_vmouse_mouse
+#define UDEV_INPUT_TOUCH_MOUSE_EN input_config_get_touch_vmouse_mouse()
 /* Default state of touchpad simulation. */
-#define UDEV_INPUT_TOUCH_TOUCHPAD_EN settings->bools.input_touch_vmouse_touchpad
+#define UDEV_INPUT_TOUCH_TOUCHPAD_EN input_config_get_touch_vmouse_touchpad()
 /* Default state of trackball simulation. */
-#define UDEV_INPUT_TOUCH_TRACKBALL_EN settings->bools.input_touch_vmouse_trackball
+#define UDEV_INPUT_TOUCH_TRACKBALL_EN input_config_get_touch_vmouse_trackball()
 /* Default state of gesture simulation. */
-#define UDEV_INPUT_TOUCH_GEST_EN settings->bools.input_touch_vmouse_gesture
+#define UDEV_INPUT_TOUCH_GEST_EN input_config_get_touch_vmouse_gesture()
 /* Default value of tap time in us. */
 #define UDEV_INPUT_TOUCH_MAX_TAP_TIME 250000
 /* Default value of tap distance - squared distance in 0x7fff space. */
@@ -224,7 +233,7 @@ typedef struct
    int32_t x_abs, y_abs;
    int32_t x_min, y_min;
    int32_t x_max, y_max;
-   int32_t x_rel, y_rel;
+   uint32_t rel;          /* x, y motion: VIDEO_POS_PACK */
    int32_t abs;
    bool l, r, m, b4, b5;
    bool wu, wd, whu, whd;
@@ -344,9 +353,8 @@ typedef struct
 {
    /* Unique tracking ID for this slot. UDEV_TRACKING_ID_NONE -> No touch. */
    int32_t tracking_id;
-   /* Current position of the tracked touch. */
-   int16_t pos_x;
-   int16_t pos_y;
+   /* Current position of the tracked touch: VIDEO_POS_PACK. */
+   uint32_t pos;
    /* Current major and minor axis. */
    int16_t minor;
    int16_t major;
@@ -356,9 +364,8 @@ typedef struct
    uint16_t change;
    /* Start timestamp of the current or last touch down. */
    udev_touch_ts_t td_time;
-   /* Start position of the current or last touch down. */
-   int16_t td_pos_x;
-   int16_t td_pos_y;
+   /* Start position of the current or last touch down: VIDEO_POS_PACK. */
+   uint32_t td_pos;
 } udev_slot_state_t;
 
 /* Type used to represent touch slot ID, UDEV_INPUT_TOUCH_SLOT_ID_NONE (-1) is used for none. */
@@ -406,37 +413,23 @@ typedef struct
 
    /* Simulated pointer / touchscreen */
    /* Pointer position in the touch panel coordinates. */
-   int32_t pointer_pos_x;
-   int32_t pointer_pos_y;
+   uint32_t pointer_pos;       /* VIDEO_POS_PACK */
    /* Pointer position in the main panel coordinates. */
-   int32_t pointer_ma_pos_x;
-   int32_t pointer_ma_pos_y;
+   uint32_t pointer_ma_pos;    /* VIDEO_POS_PACK */
    /* Pointer position delta in main panel pixels. */
-   int16_t pointer_ma_rel_x;
-   int16_t pointer_ma_rel_y;
+   uint32_t pointer_ma_rel;    /* VIDEO_POS_PACK */
    /* Pointer position mapped onto the primary screen (-0x7fff - 0x7fff). */
-   int16_t pointer_scr_pos_x;
-   int16_t pointer_scr_pos_y;
+   uint32_t pointer_scr_pos;   /* VIDEO_POS_PACK */
    /* Pointer position within the window, -0x7fff - 0x7fff -> inside. */
-   int16_t pointer_vp_pos_x;
-   int16_t pointer_vp_pos_y;
+   uint32_t pointer_vp_pos;    /* VIDEO_POS_PACK */
 
    /* Simulated mouse */
    /* Mouse position in the original pixel coordinates. */
-   int16_t mouse_pos_x;
-   int16_t mouse_pos_y;
-   /* Mouse position mapped onto the primary screen (-0x7fff - 0x7fff). */
-   int16_t mouse_scr_pos_x;
-   int16_t mouse_scr_pos_y;
-   /* Mouse position within the window, -0x7fff - 0x7fff -> inside. */
-   int16_t mouse_vp_pos_x;
-   int16_t mouse_vp_pos_y;
+   uint32_t mouse_pos;         /* VIDEO_POS_PACK */
    /* Mouse position delta in screen pixels. */
-   int16_t mouse_rel_x;
-   int16_t mouse_rel_y;
+   uint32_t mouse_rel;         /* VIDEO_POS_PACK */
    /* Mouse wheel delta in number of frames to hold that value. */
-   int16_t mouse_wheel_x;
-   int16_t mouse_wheel_y;
+   uint32_t mouse_wheel;       /* VIDEO_POS_PACK */
 
    /* Mouse touchpad simulation */
    /* Sensitivity of the touchpad mouse. */
@@ -481,8 +474,7 @@ typedef struct
    /* Step of scrolling for the scroll wheel gesture. */
    uint16_t gest_scroll_step;
    /* High resolution scroll. */
-   int16_t gest_scroll_x;
-   int16_t gest_scroll_y;
+   uint32_t gest_scroll;       /* VIDEO_POS_PACK */
    /* Percentage of screen considered as a corner. */
    uint16_t gest_corner;
    /* Time-delayed callbacks used for tap gesture automation. */
@@ -539,6 +531,16 @@ typedef struct udev_input_device
    udev_input_touch_t touch; /* State tracking for touch-type devices */
 #endif
    enum udev_input_dev_type type; /* Type of this device */
+   /* A keyboard's own keys, beside the one state every keyboard
+    * feeds (udev_input_t.state): what a port given this keyboard
+    * reads. Indexed as that state is. */
+   uint8_t keys[(KEY_MAX + 7) / 8];
+   /* Which device on the desk this is part of, and what kind of part
+    * (see input_keyboard_devices.h); kbdev.group is the listed
+    * keyboard it belongs to, set by udev_input_list_keyboards(). */
+   input_kbdev_t kbdev;
+   uint16_t vid;
+   uint16_t pid;
    char devnode[NAME_MAX_LENGTH]; /* Device node path */
    char ident[NAME_MAX_LENGTH]; /* Identifier of the device */
 } udev_input_device_t;
@@ -559,8 +561,7 @@ typedef struct udev_input
 
    int fd;
    /* OS pointer coords (zeros if we don't have X11) */
-   int pointer_x;
-   int pointer_y;
+   uint32_t os_pointer_pos;    /* VIDEO_POS_PACK */
 
    unsigned num_devices;
 
@@ -570,7 +571,9 @@ typedef struct udev_input
    bool xkb_handling;
 #endif
 
+#ifdef __linux__
    linux_illuminance_sensor_t *illuminance_sensor;
+#endif
 } udev_input_t;
 
 #ifdef UDEV_XKB_HANDLING
@@ -605,6 +608,22 @@ static unsigned input_unify_ev_key_code(unsigned code)
    return code;
 }
 
+/* Whether a keyboard other than @dev holds a key down. */
+static bool udev_key_held_elsewhere(udev_input_t *udev,
+      const udev_input_device_t *dev, unsigned keysym)
+{
+   unsigned i;
+   for (i = 0; i < udev->num_devices; i++)
+   {
+      const udev_input_device_t *other = udev->devices[i];
+      if (     other != dev
+            && other->type == UDEV_INPUT_KEYBOARD
+            && BIT_GET(other->keys, keysym))
+         return true;
+   }
+   return false;
+}
+
 static void udev_handle_keyboard(void *data,
       const struct input_event *event, udev_input_device_t *dev)
 {
@@ -616,9 +635,21 @@ static void udev_handle_keyboard(void *data,
       case EV_KEY:
          keysym = input_unify_ev_key_code(event->code);
          if (event->value && video_driver_has_focus())
+         {
+            BIT_SET(dev->keys, keysym);
             BIT_SET(udev->state, keysym);
+         }
          else
+         {
+            BIT_CLEAR(dev->keys, keysym);
+            /* Let go on this keyboard and still held on another: for
+             * the one state every keyboard feeds the key is still
+             * down, and there is no key-up to tell of. (It used to go
+             * up with the first keyboard to let go.) */
+            if (udev_key_held_elsewhere(udev, dev, keysym))
+               return;
             BIT_CLEAR(udev->state, keysym);
+         }
 
          /* TODO/FIXME: The udev driver is incomplete.
           * When calling input_keyboard_event() the
@@ -674,19 +705,25 @@ static void udev_input_kb_free(struct udev_input *udev)
 #endif
 }
 
+/* The viewport, asked for once a poll. A mouse's every motion event
+ * and every read of it needs one, and each used to ask the video
+ * driver itself: once an axis event - some thirty a frame from a
+ * 1000 Hz mouse - once a button read, twice a pointer read. */
+static video_viewport_t udev_vp;
+static bool udev_vp_ok;
+
 static udev_input_mouse_t *udev_get_mouse(
       struct udev_input *udev, unsigned port)
 {
    unsigned i;
    unsigned mouse_index      = 0;
    int dev_index             = -1;
-   settings_t *settings      = config_get_ptr();
-   udev_input_mouse_t *mouse = NULL;
 
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   mouse_index = settings->uints.input_mouse_index[port];
+   /* the port's Mouse Index, or where its pinned mouse is */
+   mouse_index = input_mouse_port_index(port);
    if (mouse_index < MAX_INPUT_DEVICES)
        dev_index = udev->pointers[mouse_index];
    if (dev_index < 0)
@@ -697,17 +734,17 @@ static udev_input_mouse_t *udev_get_mouse(
 
 static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 {
-    video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
 
    if (abs)
    {
-      mouse->x_rel += x - mouse->x_abs;
+      VIDEO_POS_ADD(mouse->rel, x - mouse->x_abs, 0);
       mouse->x_abs = x;
    }
    else
    {
-      mouse->x_rel += x;
-      if (video_driver_get_viewport_info(&vp))
+      VIDEO_POS_ADD(mouse->rel, x, 0);
+      if (udev_vp_ok)
       {
          mouse->x_abs += x;
 
@@ -721,11 +758,11 @@ static void udev_mouse_set_x(udev_input_mouse_t *mouse, int32_t x, bool abs)
 
 static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
    double src_width;
    double x;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return 0;
 
    if (mouse->abs) /* mouse coords are absolute */
@@ -733,24 +770,24 @@ static int16_t udev_mouse_get_x(const udev_input_mouse_t *mouse)
    else
       src_width = VIDEO_SCALE_W(vp.full_dims);
 
-   x = (double)VIDEO_SCALE_W(vp.dims) / src_width * mouse->x_rel;
+   x = (double)VIDEO_SCALE_W(vp.dims) / src_width * VIDEO_POS_X(mouse->rel);
 
    return x + (x < 0 ? -0.5 : 0.5);
 }
 
 static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
 
    if (abs)
    {
-      mouse->y_rel += y - mouse->y_abs;
+      VIDEO_POS_ADD(mouse->rel, 0, y - mouse->y_abs);
       mouse->y_abs = y;
    }
    else
    {
-      mouse->y_rel += y;
-      if (video_driver_get_viewport_info(&vp))
+      VIDEO_POS_ADD(mouse->rel, 0, y);
+      if (udev_vp_ok)
       {
          mouse->y_abs += y;
 
@@ -764,11 +801,11 @@ static void udev_mouse_set_y(udev_input_mouse_t *mouse, int32_t y, bool abs)
 
 static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
 {
-   video_viewport_t vp;
+   const video_viewport_t vp = udev_vp;
    double src_height;
    double y;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return 0;
 
    if (mouse->abs) /* mouse coords are absolute */
@@ -776,23 +813,21 @@ static int16_t udev_mouse_get_y(const udev_input_mouse_t *mouse)
    else
       src_height = VIDEO_SCALE_H(vp.full_dims);
 
-   y = (double)VIDEO_SCALE_H(vp.dims) / src_height * mouse->y_rel;
+   y = (double)VIDEO_SCALE_H(vp.dims) / src_height * VIDEO_POS_Y(mouse->rel);
 
    return y + (y < 0 ? -0.5 : 0.5);
 }
 
 static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
-            bool screen, bool confined, int16_t *ret_x, int16_t *ret_y)
+            bool screen, bool confined, uint32_t *ret_pos)
 {
-   struct video_viewport vp    = {0};
+   struct video_viewport vp    = udev_vp;
    int16_t scaled_x;
    int16_t scaled_y;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos               = 0;
+   uint32_t res_screen_pos = 0;
 
-   if (!video_driver_get_viewport_info(&vp))
+   if (!udev_vp_ok)
       return false;
 
    /* mouse coords are absolute? */
@@ -809,30 +844,18 @@ static bool udev_mouse_get_pointer(const udev_input_mouse_t *mouse,
       scaled_y = mouse->y_abs;
    }
 
-   if (confined && video_driver_translate_coord_viewport_confined_wrap(
-            &vp, scaled_x, scaled_y,
-            &res_x, &res_y, &res_screen_x, &res_screen_y))
-   {
-   }
-   else if (!confined && video_driver_translate_coord_viewport_wrap(
-            &vp, scaled_x, scaled_y,
-            &res_x, &res_y, &res_screen_x, &res_screen_y))
-   {
-   }
-   else
-   {
+   /* held to the viewport's edge, or -0x8000 outside it */
+   if (!video_driver_translate_coord_viewport(&vp, scaled_x, scaled_y,
+            &res_pos, &res_screen_pos, !confined))
       return false;
-   }
 
    if (screen)
    {
-      *ret_x = res_screen_x;
-      *ret_y = res_screen_y;
+      *ret_pos = res_screen_pos;
    }
    else
    {
-      *ret_x = res_x;
-      *ret_y = res_y;
+      *ret_pos = res_pos;
    }
    return true;
 }
@@ -1111,13 +1134,12 @@ static udev_input_device_t *udev_get_pointer_port_dev(
    uint16_t i;
    uint16_t pointer_index    = 0;
    int16_t dev_index         = -1;
-   settings_t *settings      = config_get_ptr();
    udev_input_mouse_t *mouse = NULL;
 
    if (port >= MAX_USERS || !video_driver_has_focus())
       return NULL;
 
-   pointer_index = settings->uints.input_mouse_index[port];
+   pointer_index = input_mouse_port_index(port);
    if (pointer_index < MAX_INPUT_DEVICES)
        dev_index = udev->pointers[pointer_index];
    if (dev_index < 0)
@@ -1253,8 +1275,8 @@ static void udev_dump_touch_slot(const char *label, const udev_slot_state_t *slo
    RARCH_DBG("[udev] %s\t(%u,%u) %d:%hdx%hd (@%hdx%hd) %hd <%hdx%hd> %s\n", label,
              slot_state->td_time.s, slot_state->td_time.us,
              slot_state->tracking_id,
-             slot_state->pos_x, slot_state->pos_y,
-             slot_state->td_pos_x, slot_state->td_pos_y,
+             VIDEO_POS_X(slot_state->pos), VIDEO_POS_Y(slot_state->pos),
+             VIDEO_POS_X(slot_state->td_pos), VIDEO_POS_Y(slot_state->td_pos),
              slot_state->pressure,
              slot_state->minor, slot_state->major,
              udev_touch_change_to_str(slot_state->change));
@@ -1336,10 +1358,10 @@ static void udev_dump_touch_dev(udev_input_device_t *dev)
    RARCH_DBG("[udev] \tmouse = {\n");
    RARCH_DBG("[udev] \t\tabs = %d\n", mouse->abs);
    RARCH_DBG("[udev] \t\tx -> %d~%d (%d-%d)\n",
-             mouse->x_abs, mouse->x_rel,
+             mouse->x_abs, VIDEO_POS_X(mouse->rel),
              mouse->x_min, mouse->x_max);
    RARCH_DBG("[udev] \t\ty -> %d~%d (%d-%d)\n",
-             mouse->y_abs, mouse->y_rel,
+             mouse->y_abs, VIDEO_POS_Y(mouse->rel),
              mouse->y_min, mouse->y_max);
    RARCH_DBG("[udev] \t\tL = %c | R = %c | M = %c | 4 = %c | 5 = %c\n",
              mouse->l ? 'X' : 'O', mouse->r ? 'X' : 'O',
@@ -1417,7 +1439,6 @@ static void udev_update_touch_dev_options(udev_input_device_t *dev, bool force)
    bool touchpad_en_new;
    bool trackball_en_new;
    bool gest_en_new;
-   settings_t *settings = config_get_ptr();
    bool pointer_en_new  = UDEV_INPUT_TOUCH_POINTER_EN;
    if (force || pointer_en_new != pointer_en)
    {
@@ -1465,7 +1486,6 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    struct input_absinfo abs_info;
    unsigned long xreq, yreq;
    udev_input_touch_t *touch = &dev->touch;
-   settings_t *settings      = config_get_ptr();
 
    RARCH_DBG("[udev] Initializing touch device \"%s\"\n", dev->ident);
 
@@ -1599,28 +1619,17 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->pointer_enabled   = UDEV_INPUT_TOUCH_POINTER_EN;
    touch->pointer_btn_pp    = false;
    touch->pointer_btn_pb    = false;
-   touch->pointer_pos_x     = 0;
-   touch->pointer_pos_y     = 0;
-   touch->pointer_ma_pos_x  = 0;
-   touch->pointer_ma_pos_y  = 0;
-   touch->pointer_ma_rel_x  = 0;
-   touch->pointer_ma_rel_y  = 0;
-   touch->pointer_scr_pos_x = 0;
-   touch->pointer_scr_pos_y = 0;
-   touch->pointer_vp_pos_x  = 0;
-   touch->pointer_vp_pos_y  = 0;
+   touch->pointer_pos = 0;
+   touch->pointer_ma_pos = 0;
+   touch->pointer_ma_rel = 0;
+   touch->pointer_scr_pos   = 0;
+   touch->pointer_vp_pos    = 0;
 
    /* Initialize mouse simulation */
    touch->mouse_enabled = UDEV_INPUT_TOUCH_MOUSE_EN;
    touch->mouse_freeze_cursor = false;
-   touch->mouse_scr_pos_x = 0;
-   touch->mouse_scr_pos_y = 0;
-   touch->mouse_vp_pos_x = 0;
-   touch->mouse_vp_pos_y = 0;
-   touch->mouse_rel_x = 0;
-   touch->mouse_rel_y = 0;
-   touch->mouse_wheel_x = 0;
-   touch->mouse_wheel_y = 0;
+   touch->mouse_rel = 0;
+   touch->mouse_wheel = 0;
    touch->mouse_btn_l = false;
    touch->mouse_btn_r = false;
    touch->mouse_btn_m = false;
@@ -1658,8 +1667,7 @@ static void udev_init_touch_dev(udev_input_device_t *dev)
    touch->gest_tap_possible = false;
    touch->gest_scroll_sensitivity = UDEV_INPUT_TOUCH_GEST_SCROLL_SENSITIVITY;
    touch->gest_scroll_step = UDEV_INPUT_TOUCH_GEST_SCROLL_STEP;
-   touch->gest_scroll_x = 0;
-   touch->gest_scroll_y = 0;
+   touch->gest_scroll = 0;
    touch->gest_corner = UDEV_INPUT_TOUCH_GEST_CORNER;
 
    for (iii = 0; iii < UDEV_TOUCH_TGEST_LAST; ++iii)
@@ -1755,9 +1763,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
    RARCH_DDBG("[udev] \tMT X-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
-      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pos_x, mt_req_values[iii]);
-      staging[iii].pos_x = mt_req_values[iii];
-      staging[iii].td_pos_x = mt_req_values[iii];
+      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, VIDEO_POS_X(staging[iii].pos), mt_req_values[iii]);
+      VIDEO_POS_PUT_X(staging[iii].pos, mt_req_values[iii]);
+      VIDEO_POS_PUT_X(staging[iii].td_pos, mt_req_values[iii]);
    }
 
    /* Request MT position on the y-axis for each slot */
@@ -1768,9 +1776,9 @@ static void udev_sync_touch(udev_input_device_t *dev)
    RARCH_DDBG("[udev] \tMT Y-Positions:\n");
    for (iii = 0; iii < slot_count; ++iii)
    {
-      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, staging[iii].pos_y, mt_req_values[iii]);
-      staging[iii].pos_y    = mt_req_values[iii];
-      staging[iii].td_pos_y = mt_req_values[iii];
+      RARCH_DDBG("[udev] \t\t%d: %d -> %d\n", iii, VIDEO_POS_Y(staging[iii].pos), mt_req_values[iii]);
+      VIDEO_POS_PUT_Y(staging[iii].pos, mt_req_values[iii]);
+      VIDEO_POS_PUT_Y(staging[iii].td_pos, mt_req_values[iii]);
    }
 
    /* Request minor axis for each slot */
@@ -1822,18 +1830,15 @@ static void udev_sync_touch(udev_input_device_t *dev)
  *
  * @param src_touch Information concerning the source touch panel.
  * @param target_vp Information about the target panel. Pre-filled
- *   with the video_driver_get_viewport_info function.
+ *   with the video_driver_get_viewport_info function (the poll's).
  * @param pointer_pos_x Input x-coordinate on the touch panel.
  * @param pointer_pos_y Input y-coordinate on the touch panel.
- * @param pointer_ma_pos_x Output x-coordinate on the target panel.
- * @param pointer_ma_pos_y Output y-coordinate on the target panel.
- * @param pointer_ma_rel_x Output x-coordinate change on the target panel.
- *   The resulting delta is added to this output!
- * @param pointer_ma_rel_y Output y-coordinate change on the target panel.
- *   The resulting delta is added to this output!
- * @param pointer_scr_pos_x Output x-coordinate on the target screen.
+ * @param pointer_ma_pos Output position on the target panel, packed.
+ * @param pointer_ma_rel Output position change on the target panel,
+ *   packed. The resulting delta is added to this output!
+ * @param pointer_scr_pos Output position on the target screen, packed.
  *   Uses the scaled coordinates -0x7fff - 0x7fff.
- * @param pointer_vp_pos_x Output x-coordinate on the target window.
+ * @param pointer_vp_pos Output position on the target window, packed.
  *   Uses the scaled coordinates -0x7fff - 0x7fff and -0x8000 when OOB.
  * @return Returns true on success.
  */
@@ -1841,11 +1846,10 @@ static bool udev_translate_touch_pos(
         const udev_input_touch_t *src_touch,
         video_viewport_t *target_vp,
         int32_t pointer_pos_x, int32_t pointer_pos_y,
-        int32_t *pointer_ma_pos_x, int32_t *pointer_ma_pos_y,
-        int16_t *pointer_ma_rel_x, int16_t *pointer_ma_rel_y,
-        int16_t *pointer_scr_pos_x, int16_t *pointer_scr_pos_y,
-        int16_t *pointer_vp_pos_x, int16_t *pointer_vp_pos_y)
+        uint32_t *pointer_ma_pos, uint32_t *pointer_ma_rel,
+        uint32_t *pointer_scr_pos, uint32_t *pointer_vp_pos)
 {
+
    /* Touch panel -> Main panel */
    /*
     * TODO - This keeps the precision, but might result in +-1 pixel difference
@@ -1856,23 +1860,16 @@ static bool udev_translate_touch_pos(
    int32_t ma_pos_y   = (((((pointer_pos_y + src_touch->info_y_limits.min) * 0x7fff) / src_touch->info_y_limits.range) * VIDEO_SCALE_H(target_vp->full_dims)) / 0x7fff);
 
    /* Calculate relative offsets. */
-   *pointer_ma_rel_x += ma_pos_x - *pointer_ma_pos_x;
-   *pointer_ma_rel_y += ma_pos_y - *pointer_ma_pos_y;
+   VIDEO_POS_ADD(*pointer_ma_rel, ma_pos_x - VIDEO_POS_X(*pointer_ma_pos),
+         ma_pos_y - VIDEO_POS_Y(*pointer_ma_pos));
 
    /* Set the new main panel positions. */
-   *pointer_ma_pos_x  = ma_pos_x;
-   *pointer_ma_pos_y  = ma_pos_y;
+   *pointer_ma_pos    = VIDEO_POS_PACK(ma_pos_x, ma_pos_y);
 
-   /* Main panel -> Screen and Viewport */
-   return video_driver_translate_coord_viewport_wrap(
-      target_vp,
-      *pointer_ma_pos_x,
-      *pointer_ma_pos_y,
-      pointer_vp_pos_x,
-      pointer_vp_pos_y,
-      pointer_scr_pos_x,
-      pointer_scr_pos_y
-   );
+   /* Main panel -> Screen and Viewport; on failure both are left */
+   return udev_vp_ok && video_driver_translate_coord_viewport(target_vp,
+         VIDEO_POS_X(*pointer_ma_pos), VIDEO_POS_Y(*pointer_ma_pos),
+         pointer_vp_pos, pointer_scr_pos, true);
 }
 
 /**
@@ -1930,8 +1927,7 @@ static void udev_input_touch_gest_reset_bool(void *touch, void *tgt)
 /* Callback used for resetting mouse_wheel_x/y variables to 0. */
 static void udev_input_touch_gest_reset_scroll(void *touch, void *none)
 {
-   ((udev_input_touch_t*)touch)->gest_scroll_x = 0;
-   ((udev_input_touch_t*)touch)->gest_scroll_y = 0;
+   ((udev_input_touch_t*)touch)->gest_scroll = 0;
 }
 
 /**
@@ -2035,7 +2031,7 @@ static void udev_input_touch_tgest_select(void *touch_ptr, void *data)
          case 3:
             /* Three taps -> Middle mouse button & Specials */
             if (!udev_input_touch_tgest_special(touch, &now,
-                        touch->pointer_pos_x, touch->pointer_pos_y))
+                        VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos)))
             {
                touch->mouse_btn_m = true;
                /* Setup callback to reset the button state. */
@@ -2232,17 +2228,14 @@ static void udev_input_touch_mgest_select(udev_input_touch_t *touch,
          break;
       case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
-         touch->gest_scroll_x +=
-            (
-               touch->pointer_ma_rel_x *
+         VIDEO_POS_ADD(touch->gest_scroll, (
+               VIDEO_POS_X(touch->pointer_ma_rel) *
                touch->gest_scroll_sensitivity
-            ) / touch->info_x_limits.range;
-         touch->gest_scroll_y +=
-            (
-               touch->pointer_ma_rel_y *
+            ) / touch->info_x_limits.range, (
+               VIDEO_POS_Y(touch->pointer_ma_rel) *
                touch->gest_scroll_sensitivity
-            ) / touch->info_y_limits.range;
-         RARCH_DDBG("[udev] MGesture: DF/NTD -> 3D Wheel: %hd x %hd | %hd\n", touch->gest_scroll_x, touch->gest_scroll_y, touch->gest_scroll_step);
+            ) / touch->info_y_limits.range);
+         RARCH_DDBG("[udev] MGesture: DF/NTD -> 3D Wheel: %hd x %hd | %hd\n", VIDEO_POS_X(touch->gest_scroll), VIDEO_POS_Y(touch->gest_scroll), touch->gest_scroll_step);
          break;
       case UDEV_TOUCH_MGEST_D_STAP_DRAG:
          /* Gesture for two finger single tap drag. */
@@ -2283,8 +2276,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
    udev_slot_state_t *slot_curr;
    udev_slot_state_t *slot_prev;
 
-   /* Get main panel information for coordinate translation */
-   video_driver_get_viewport_info(&vp);
+   /* Main panel information for coordinate translation: the poll's */
+   vp = udev_vp;
    /* Get current time for measurements */
    udev_touch_ts_now(&now);
 
@@ -2319,20 +2312,16 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             if (iii == touch->gest_primary_slot)
             {
                /* Use position of the primary touch point */
-               touch->pointer_pos_x = slot_curr->pos_x;
-               touch->pointer_pos_y = slot_curr->pos_y;
+               touch->pointer_pos = slot_curr->pos;
                udev_translate_touch_pos(
                   touch, &vp,
-                  touch->pointer_pos_x, touch->pointer_pos_y,
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
-                  &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
+                  VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos),
+                  &touch->pointer_ma_pos, &touch->pointer_ma_rel,
+                  &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
 
                /* Reset deltas after, since first touchdown has no delta. */
-               touch->pointer_ma_rel_x = 0;
-               touch->pointer_ma_rel_y = 0;
+               touch->pointer_ma_rel = 0;
             }
 
             /* Pointer section */
@@ -2346,14 +2335,13 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                if (touch->touchpad_enabled)
                {  /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Initialize touchpad position to the current mouse position */
-                  touch->touchpad_pos_x = (float) touch->mouse_pos_x;
-                  touch->touchpad_pos_y = (float) touch->mouse_pos_y;
+                  touch->touchpad_pos_x = (float) VIDEO_POS_X(touch->mouse_pos);
+                  touch->touchpad_pos_y = (float) VIDEO_POS_Y(touch->mouse_pos);
                }
                else
                {  /* Direct mode -> Direct virtual mouse. */
                   /* Initialize mouse position to the current pointer position */
-                  touch->mouse_pos_x = touch->pointer_ma_pos_x;
-                  touch->mouse_pos_y = touch->pointer_ma_pos_y;
+                  touch->mouse_pos = touch->pointer_ma_pos;
                }
 
                /* Trackball mode */
@@ -2425,8 +2413,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                if (touch->trackball_enabled)
                {
                   /* Update trackball position */
-                  touch->trackball_pos_x    = (float) touch->mouse_pos_x;
-                  touch->trackball_pos_y    = (float) touch->mouse_pos_y;
+                  touch->trackball_pos_x    = (float) VIDEO_POS_X(touch->mouse_pos);
+                  touch->trackball_pos_y    = (float) VIDEO_POS_Y(touch->mouse_pos);
                   /* The trackball is free to move */
                   touch->trackball_inertial = true;
                }
@@ -2441,8 +2429,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y,
-                     slot_curr->pos_x, slot_curr->pos_y,
+                     VIDEO_POS_X(slot_curr->td_pos), VIDEO_POS_Y(slot_curr->td_pos),
+                     VIDEO_POS_X(slot_curr->pos), VIDEO_POS_Y(slot_curr->pos),
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
@@ -2482,20 +2470,16 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
             if (iii == touch->gest_primary_slot)
             {
                /* Use position of the primary touch point */
-               touch->pointer_pos_x    = slot_curr->pos_x;
-               touch->pointer_pos_y    = slot_curr->pos_y;
+               touch->pointer_pos = slot_curr->pos;
 
                /* Reset deltas first, so we can get new change. */
-               touch->pointer_ma_rel_x = 0;
-               touch->pointer_ma_rel_y = 0;
+               touch->pointer_ma_rel = 0;
 
                udev_translate_touch_pos(
                   touch, &vp,
-                  touch->pointer_pos_x, touch->pointer_pos_y,
-                  &touch->pointer_ma_pos_x, &touch->pointer_ma_pos_y,
-                  &touch->pointer_ma_rel_x, &touch->pointer_ma_rel_y,
-                  &touch->pointer_scr_pos_x, &touch->pointer_scr_pos_y,
-                  &touch->pointer_vp_pos_x, &touch->pointer_vp_pos_y
+                  VIDEO_POS_X(touch->pointer_pos), VIDEO_POS_Y(touch->pointer_pos),
+                  &touch->pointer_ma_pos, &touch->pointer_ma_rel,
+                  &touch->pointer_scr_pos, &touch->pointer_vp_pos
                );
             }
 
@@ -2515,67 +2499,52 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                {
                   /* Touchpad mode -> Touchpad virtual mouse. */
                   /* Calculate high resolution positions and clip them. */
-                  touch->touchpad_pos_x   += touch->pointer_ma_rel_x * touch->touchpad_sensitivity;
+                  touch->touchpad_pos_x   += VIDEO_POS_X(touch->pointer_ma_rel) * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_x < 0.0f)
                      touch->touchpad_pos_x = 0.0f;
                   else if (touch->touchpad_pos_x > VIDEO_SCALE_W(vp.full_dims))
                      touch->touchpad_pos_x = VIDEO_SCALE_W(vp.full_dims);
-                  touch->touchpad_pos_y += touch->pointer_ma_rel_y * touch->touchpad_sensitivity;
+                  touch->touchpad_pos_y += VIDEO_POS_Y(touch->pointer_ma_rel) * touch->touchpad_sensitivity;
                   if (touch->touchpad_pos_y < 0.0f)
                      touch->touchpad_pos_y = 0.0f;
                   else if (touch->touchpad_pos_y > VIDEO_SCALE_H(vp.full_dims))
                      touch->touchpad_pos_y = VIDEO_SCALE_H(vp.full_dims);
 
                   /* Backup last values for delta. */
-                  last_mouse_pos_x   = touch->mouse_pos_x;
-                  last_mouse_pos_y   = touch->mouse_pos_y;
+                  last_mouse_pos_x   = VIDEO_POS_X(touch->mouse_pos);
+                  last_mouse_pos_y   = VIDEO_POS_Y(touch->mouse_pos);
 
                   /* Convert high resolution (sub-pixels) -> low resolution (pixels) */
-                  touch->mouse_pos_x = (int32_t) touch->touchpad_pos_x;
-                  touch->mouse_pos_y = (int32_t) touch->touchpad_pos_y;
-
-                  /* Translate the panel coordinates into normalized coordinates. */
-                  video_driver_translate_coord_viewport_wrap(
-                     &vp, touch->mouse_pos_x, touch->mouse_pos_y,
-                     &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
-                     &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
-                  );
+                  touch->mouse_pos = VIDEO_POS_PACK((int32_t) touch->touchpad_pos_x, (int32_t) touch->touchpad_pos_y);
 
                   /* Calculate cursor delta in screen space. */
-                  touch->mouse_rel_x += touch->mouse_pos_x - last_mouse_pos_x;
-                  touch->mouse_rel_y += touch->mouse_pos_y - last_mouse_pos_y;
+                  VIDEO_POS_ADD(touch->mouse_rel, VIDEO_POS_X(touch->mouse_pos) - last_mouse_pos_x, VIDEO_POS_Y(touch->mouse_pos) - last_mouse_pos_y);
                }
                else
                {
                   /* Direct mode -> Direct virtual mouse. */
                   /* Set mouse cursor position directly from the pointer. */
-                  last_mouse_pos_x       = touch->mouse_pos_x;
-                  last_mouse_pos_y       = touch->mouse_pos_y;
-                  touch->mouse_rel_x    += touch->pointer_ma_pos_x - touch->mouse_pos_x;
-                  touch->mouse_rel_y    += touch->pointer_ma_pos_y - touch->mouse_pos_y;
-                  touch->mouse_pos_x     = touch->pointer_ma_pos_x;
-                  touch->mouse_pos_y     = touch->pointer_ma_pos_y;
-                  touch->mouse_scr_pos_x = touch->pointer_scr_pos_x;
-                  touch->mouse_scr_pos_y = touch->pointer_scr_pos_y;
-                  touch->mouse_vp_pos_x  = touch->pointer_vp_pos_x;
-                  touch->mouse_vp_pos_y  = touch->pointer_vp_pos_y;
+                  last_mouse_pos_x       = VIDEO_POS_X(touch->mouse_pos);
+                  last_mouse_pos_y       = VIDEO_POS_Y(touch->mouse_pos);
+                  VIDEO_POS_ADD(touch->mouse_rel, VIDEO_POS_X(touch->pointer_ma_pos) - VIDEO_POS_X(touch->mouse_pos), VIDEO_POS_Y(touch->pointer_ma_pos) - VIDEO_POS_Y(touch->mouse_pos));
+                  touch->mouse_pos = touch->pointer_ma_pos;
                }
 
                /* Trackball mode */
                if (touch->trackball_enabled)
                {
                   /* Update trackball position */
-                  touch->trackball_pos_x = (float)touch->mouse_pos_x;
-                  touch->trackball_pos_y = (float)touch->mouse_pos_y;
+                  touch->trackball_pos_x = (float)VIDEO_POS_X(touch->mouse_pos);
+                  touch->trackball_pos_y = (float)VIDEO_POS_Y(touch->mouse_pos);
                   /* Accumulate trackball velocity */
                   touch->trackball_vel_x = \
                      touch->trackball_frict_x * touch->trackball_vel_x + \
                      touch->trackball_sensitivity_x * \
-                     (touch->mouse_pos_x - last_mouse_pos_x);
+                     (VIDEO_POS_X(touch->mouse_pos) - last_mouse_pos_x);
                   touch->trackball_vel_y = \
                      touch->trackball_frict_y * touch->trackball_vel_y + \
                      touch->trackball_sensitivity_y * \
-                     (touch->mouse_pos_y - last_mouse_pos_y);
+                     (VIDEO_POS_Y(touch->mouse_pos) - last_mouse_pos_y);
                }
             }
 
@@ -2588,8 +2557,8 @@ static void udev_report_touch(udev_input_t *udev, udev_input_device_t *dev)
                   ts_diff = udev_touch_ts_diff(&slot_curr->td_time, &now);
                   /* Distance and direction of start -> end touch point */
                   tp_diff = udev_touch_tp_diff(
-                     slot_curr->td_pos_x, slot_curr->td_pos_y,
-                     slot_curr->pos_x, slot_curr->pos_y,
+                     VIDEO_POS_X(slot_curr->td_pos), VIDEO_POS_Y(slot_curr->td_pos),
+                     VIDEO_POS_X(slot_curr->pos), VIDEO_POS_Y(slot_curr->pos),
                      &tp_diff_dir
                   );
                   /* Tap is possible only if neither time nor distance is over limit. */
@@ -2690,45 +2659,45 @@ static void udev_handle_touch(void *data,
             case ABS_X:
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_X to %d\n", event->value);
-               touch->staging[0].pos_x = event->value;
+               VIDEO_POS_PUT_X(touch->staging[0].pos, event->value);
 
                /* Low priority event, mark the change. */
                if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[0].td_pos_x = event->value;
+                  VIDEO_POS_PUT_X(touch->staging[0].td_pos, event->value);
                break;
             case ABS_MT_POSITION_X:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_X to %d\n", touch->current_slot, event->value);
-               touch->staging[touch->current_slot].pos_x = event->value;
+               VIDEO_POS_PUT_X(touch->staging[touch->current_slot].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[touch->current_slot].td_pos_x = event->value;
+                  VIDEO_POS_PUT_X(touch->staging[touch->current_slot].td_pos, event->value);
                break;
             case ABS_Y:
                /* TODO - Currently using single-touch events as touch with id 0 */
                RARCH_DDBG("[udev] handle_touch: [0] ST_Y to %d\n", event->value);
-               touch->staging[0].pos_y = event->value;
+               VIDEO_POS_PUT_Y(touch->staging[0].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[0].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[0].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[0].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[0].td_pos_y = event->value;
+                  VIDEO_POS_PUT_Y(touch->staging[0].td_pos, event->value);
                break;
             case ABS_MT_POSITION_Y:
                RARCH_DDBG("[udev] handle_touch: [%d] MT_Y to %d\n", touch->current_slot, event->value);
-               touch->staging[touch->current_slot].pos_y = event->value;
+               VIDEO_POS_PUT_Y(touch->staging[touch->current_slot].pos, event->value);
                /* Low priority event, mark the change. */
                if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_NONE)
                   touch->staging[touch->current_slot].change = UDEV_TOUCH_CHANGE_MOVE;
                /* Starting tracing, remember touchdown position. */
                else if (touch->staging[touch->current_slot].change == UDEV_TOUCH_CHANGE_DOWN)
-                  touch->staging[touch->current_slot].td_pos_y = event->value;
+                  VIDEO_POS_PUT_Y(touch->staging[touch->current_slot].td_pos, event->value);
                break;
             case ABS_MT_TOUCH_MINOR:
                RARCH_DDBG("[udev] handle_touch: [%d] MINOR to %d\n", touch->current_slot, event->value);
@@ -2809,7 +2778,6 @@ static void udev_input_touch_state_trackball(
         udev_input_touch_t *touch,
         const udev_touch_ts_t *now)
 {
-   video_viewport_t vp;
    float delta_x;
    float delta_y;
    float delta_t;
@@ -2833,21 +2801,10 @@ static void udev_input_touch_state_trackball(
          touch->trackball_pos_x += delta_x;
          touch->trackball_pos_y += delta_y;
          /* Update the real mouse position */
-         touch->mouse_pos_x = (int16_t) touch->trackball_pos_x;
-         touch->mouse_pos_y = (int16_t) touch->trackball_pos_y;
-
-         /* Get current viewport information */
-         video_driver_get_viewport_info(&vp);
-         /* Translate the raw coordinates into normalized coordinates. */
-         video_driver_translate_coord_viewport_wrap(
-            &vp, touch->mouse_pos_x, touch->mouse_pos_y,
-            &touch->mouse_vp_pos_x, &touch->mouse_vp_pos_y,
-            &touch->mouse_scr_pos_x, &touch->mouse_scr_pos_y
-         );
+         touch->mouse_pos = VIDEO_POS_PACK((int16_t) touch->trackball_pos_x, (int16_t) touch->trackball_pos_y);
 
          /* Add the movement to mouse delta */
-         touch->mouse_rel_x += delta_x;
-         touch->mouse_rel_y += delta_y;
+         VIDEO_POS_ADD(touch->mouse_rel, delta_x, delta_y);
       }
 
       /* Attenuate the velocity */
@@ -2925,31 +2882,31 @@ static void udev_input_touch_state_gest(
       case UDEV_TOUCH_MGEST_D_NTAP_DRAG:
          /* Gesture for two finger no tap drag. */
          /* Convert accumulated scrolls to mouse_wheel_x/y */
-         if (   touch->gest_scroll_x >  touch->gest_scroll_step
-             || touch->gest_scroll_x < -touch->gest_scroll_step)
+         if (   VIDEO_POS_X(touch->gest_scroll) >  touch->gest_scroll_step
+             || VIDEO_POS_X(touch->gest_scroll) < -touch->gest_scroll_step)
          { /* Add one scroll step. TODO - Add multiple? */
             /* Add if oriented the same or simply set to one. */
-            if (touch->gest_scroll_x * touch->mouse_wheel_x > 0)
-               touch->mouse_wheel_x += 1 * udev_touch_sign(touch->gest_scroll_x);
+            if (VIDEO_POS_X(touch->gest_scroll) * VIDEO_POS_X(touch->mouse_wheel) > 0)
+               VIDEO_POS_ADD(touch->mouse_wheel, 1 * udev_touch_sign(VIDEO_POS_X(touch->gest_scroll)), 0);
             else
-               touch->mouse_wheel_x  = 1 * udev_touch_sign(touch->gest_scroll_x);
+               VIDEO_POS_PUT_X(touch->mouse_wheel, 1 * udev_touch_sign(VIDEO_POS_X(touch->gest_scroll)));
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_x -= touch->gest_scroll_step *
-               udev_touch_sign(touch->gest_scroll_x);
+            VIDEO_POS_ADD(touch->gest_scroll, -(touch->gest_scroll_step *
+               udev_touch_sign(VIDEO_POS_X(touch->gest_scroll))), 0);
          }
-         if (   touch->gest_scroll_y > touch->gest_scroll_step
-             || touch->gest_scroll_y < -touch->gest_scroll_step)
+         if (   VIDEO_POS_Y(touch->gest_scroll) > touch->gest_scroll_step
+             || VIDEO_POS_Y(touch->gest_scroll) < -touch->gest_scroll_step)
          {
             /* Add one scroll step. TODO - Add multiple? */
             /* TODO - Note the -sign, the vertical scroll seems inverted. */
             /* Add if oriented the same or simply set to one. */
-            if (touch->gest_scroll_y * touch->mouse_wheel_x > 0)
-               touch->mouse_wheel_y += 1 * -udev_touch_sign(touch->gest_scroll_y);
+            if (VIDEO_POS_Y(touch->gest_scroll) * VIDEO_POS_Y(touch->mouse_wheel) > 0)
+               VIDEO_POS_ADD(touch->mouse_wheel, 0, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
             else
-               touch->mouse_wheel_y = 1 * -udev_touch_sign(touch->gest_scroll_y);
+               VIDEO_POS_PUT_Y(touch->mouse_wheel, 1 * -udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll)));
             /* Reset the scroll for the next delta */
-            touch->gest_scroll_y -= touch->gest_scroll_step *
-               udev_touch_sign(touch->gest_scroll_y);
+            VIDEO_POS_ADD(touch->gest_scroll, 0, -(touch->gest_scroll_step *
+               udev_touch_sign(VIDEO_POS_Y(touch->gest_scroll))));
          }
          break;
       case UDEV_TOUCH_MGEST_D_STAP_DRAG:
@@ -3023,20 +2980,20 @@ static int16_t udev_input_touch_state(
          {
             case RETRO_DEVICE_ID_MOUSE_X:
                if (screen)
-                  ret = touch->mouse_pos_x;
+                  ret = VIDEO_POS_X(touch->mouse_pos);
                else
                {
-                  ret = touch->mouse_rel_x;
-                  touch->mouse_rel_x = 0;
+                  ret = VIDEO_POS_X(touch->mouse_rel);
+                  VIDEO_POS_PUT_X(touch->mouse_rel, 0);
                }
                break;
             case RETRO_DEVICE_ID_MOUSE_Y:
                if (screen)
-                  ret = touch->mouse_pos_y;
+                  ret = VIDEO_POS_Y(touch->mouse_pos);
                else
                {
-                  ret = touch->mouse_rel_y;
-                  touch->mouse_rel_y = 0;
+                  ret = VIDEO_POS_Y(touch->mouse_rel);
+                  VIDEO_POS_PUT_Y(touch->mouse_rel, 0);
                }
                break;
             case RETRO_DEVICE_ID_MOUSE_LEFT:
@@ -3055,24 +3012,24 @@ static int16_t udev_input_touch_state(
                ret = touch->mouse_btn_b5;
                break;
             case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-               ret = touch->mouse_wheel_y > 0;
+               ret = VIDEO_POS_Y(touch->mouse_wheel) > 0;
                if (ret)
-                  touch->mouse_wheel_y--;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 0, -1);
                break;
             case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-               ret = touch->mouse_wheel_y < 0;
+               ret = VIDEO_POS_Y(touch->mouse_wheel) < 0;
                if (ret)
-                  touch->mouse_wheel_y++;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 0, 1);
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-               ret = touch->mouse_wheel_x > 0;
+               ret = VIDEO_POS_X(touch->mouse_wheel) > 0;
                if (ret)
-                  touch->mouse_wheel_x--;
+                  VIDEO_POS_ADD(touch->mouse_wheel, -1, 0);
                break;
             case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-               ret = touch->mouse_wheel_x < 0;
+               ret = VIDEO_POS_X(touch->mouse_wheel) < 0;
                if (ret)
-                  touch->mouse_wheel_x++;
+                  VIDEO_POS_ADD(touch->mouse_wheel, 1, 0);
                break;
             default:
                break;
@@ -3086,16 +3043,12 @@ static int16_t udev_input_touch_state(
          switch (id)
          {
             case RETRO_DEVICE_ID_POINTER_X:
-               if (screen)
-                  ret = touch->pointer_scr_pos_x;
-               else
-                  ret = touch->pointer_vp_pos_x;
+               ret = VIDEO_POS_X(screen
+                     ? touch->pointer_scr_pos : touch->pointer_vp_pos);
                break;
             case RETRO_DEVICE_ID_POINTER_Y:
-               if (screen)
-                  ret = touch->pointer_scr_pos_y;
-               else
-                  ret = touch->pointer_vp_pos_y;
+               ret = VIDEO_POS_Y(screen
+                     ? touch->pointer_scr_pos : touch->pointer_vp_pos);
                break;
             case RETRO_DEVICE_ID_POINTER_PRESSED:
                ret = touch->pointer_btn_pp;
@@ -3143,6 +3096,246 @@ static int16_t udev_input_touch_state(
 
 #define test_bit(array, bit)    (array[bit/8] & (1<<(bit%8)))
 
+/* One line of a sysfs file, without its newline; false if there is
+ * no such file. */
+static bool udev_input_sysfs_line(const char *file, char *s, size_t len)
+{
+   size_t n;
+   FILE *f = fopen(file, "r");
+   if (!f)
+      return false;
+   if (!fgets(s, (int)len, f))
+      s[0] = '\0';
+   fclose(f);
+   n = strlen(s);
+   while (n && (s[n - 1] == '\n' || s[n - 1] == ' '))
+      s[--n] = '\0';
+   return true;
+}
+
+/* What input_keyboard_devices.h wants to know of a device, for
+ * telling which of them are the keyboards on the desk:
+ *
+ * - which device it is part of. Every event node of one USB device
+ *   has the same physical path but for a last "/inputN"; over
+ *   Bluetooth that path is the adapter's, the same for every device
+ *   on it, and it is the device's own address that tells them apart;
+ * - whether it is a keyboard in its own right: it has every key from
+ *   Escape to D, which is the test udev itself goes by
+ *   (ID_INPUT_KEYBOARD). The power button and a headset's volume
+ *   keys have keys and are not keyboards;
+ * - whether its USB interface is a boot keyboard's or, for a pointer,
+ *   a boot mouse's. */
+static void udev_input_describe_device(udev_input_device_t *device,
+      enum udev_input_dev_type type, int fd, const char *devnode)
+{
+   char phys[64];
+   char uniq[64];
+   char file[128];
+   char line[16];
+   unsigned char keycaps[(KEY_MAX / 8) + 1];
+   struct input_id id;
+   const char *event = strrchr(devnode, '/');
+   input_kbdev_t *kb = &device->kbdev;
+   unsigned i;
+
+   memset(kb, 0, sizeof(*kb));
+   kb->boot    = -1;
+   kb->group   = INPUT_KBDEV_NONE;
+   kb->pointer = (type != UDEV_INPUT_KEYBOARD);
+   phys[0]     = uniq[0] = '\0';
+
+   if (ioctl(fd, EVIOCGID, &id) >= 0)
+   {
+      device->vid = id.vendor;
+      device->pid = id.product;
+   }
+
+   if (ioctl(fd, EVIOCGPHYS(sizeof(phys)), phys) < 0)
+      phys[0] = '\0';
+   if (ioctl(fd, EVIOCGUNIQ(sizeof(uniq)), uniq) < 0)
+      uniq[0] = '\0';
+   phys[sizeof(phys) - 1] = uniq[sizeof(uniq) - 1] = '\0';
+   if (!strncmp(phys, "usb-", 4))
+   {
+      char *part = strrchr(phys, '/');
+      if (part && !strncmp(part, "/input", 6))
+         *part   = '\0';
+      strlcpy(kb->key, phys, sizeof(kb->key));
+   }
+   else if (uniq[0])
+      strlcpy(kb->key, uniq, sizeof(kb->key));
+
+   kb->boot_mouse = -1;
+
+   if (!kb->pointer)
+   {
+      memset(keycaps, 0, sizeof(keycaps));
+      if (ioctl(fd, EVIOCGBIT(EV_KEY, sizeof(keycaps)), keycaps) >= 0)
+      {
+         kb->keyboard = true;
+         for (i = KEY_ESC; i <= KEY_D; i++)
+            if (!test_bit(keycaps, i))
+               kb->keyboard = false;
+      }
+   }
+
+   /* /sys/class/input/eventN/device is the input device, its
+    * "device" the HID device, and that one's parent the USB
+    * interface */
+   if (event && *++event)
+   {
+      snprintf(file, sizeof(file),
+            "/sys/class/input/%s/device/device/../bInterfaceSubClass", event);
+      if (udev_input_sysfs_line(file, line, sizeof(line)))
+      {
+         bool boot = string_is_equal(line, "01");
+         snprintf(file, sizeof(file),
+               "/sys/class/input/%s/device/device/../bInterfaceProtocol", event);
+         if (udev_input_sysfs_line(file, line, sizeof(line)))
+         {
+            /* protocol 1 is a boot keyboard's, 2 a boot mouse's */
+            if (kb->pointer)
+               kb->boot_mouse = (boot && string_is_equal(line, "02")) ? 1 : 0;
+            else
+               kb->boot       = (boot && string_is_equal(line, "01")) ? 1 : 0;
+         }
+      }
+   }
+}
+
+/* The mice, numbered as a port is given one (Mouse Index): made from
+ * the devices there are now, when the driver starts and whenever a
+ * device comes or goes.
+ *
+ * Every pointer was a mouse here, in the order the devices are in, so
+ * that a keyboard that can send pointer events could be "mouse 1" -
+ * the one the first port reads unless told otherwise.
+ * input_keyboard_devices.h says which pointers are mice on the desk;
+ * those are numbered first, in the order they had, and the rest
+ * after them, where they can still be chosen by number and are left
+ * out of the menu's lists. */
+static void udev_input_list_pointers(udev_input_t *udev)
+{
+   input_kbdev_t devs[64];
+   char pins[MAX_INPUT_DEVICES][64];
+   unsigned i, pass, mouse = 0, n = udev->num_devices;
+
+   memset(pins, 0, sizeof(pins));
+
+   if (n > ARRAY_SIZE(devs))
+      n = ARRAY_SIZE(devs);
+   for (i = 0; i < n; i++)
+      devs[i] = udev->devices[i]->kbdev;
+   input_kbdev_mice(devs, n);
+
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+   {
+      /* (Mouse Index shows this for an index with no mouse; it is
+       * not a mouse to list) */
+      input_config_set_mouse_display_name(i, "N/A");
+      input_config_set_mouse_device(i, "", 0, 0, true);
+      udev->pointers[i] = -1;
+   }
+
+   /* the mice on the desk, then the rest */
+   for (pass = 0; pass < 2; pass++)
+   {
+      for (i = 0; i < udev->num_devices && mouse < MAX_INPUT_DEVICES; i++)
+      {
+         bool is_mouse = (i < n) ? devs[i].mouse : true;
+         if (     udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+               || is_mouse != (pass == 0))
+            continue;
+         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
+         input_config_set_mouse_device(mouse, udev->devices[i]->kbdev.key,
+               udev->devices[i]->vid, udev->devices[i]->pid, !is_mouse);
+         udev->pointers[mouse] = (int32_t)i;
+         /* what a port is pinned to it by: its ids, or with none its
+          * name */
+         if (udev->devices[i]->vid || udev->devices[i]->pid)
+            snprintf(pins[mouse], sizeof(pins[mouse]), "%04x:%04x",
+                  udev->devices[i]->vid, udev->devices[i]->pid);
+         else
+            strlcpy(pins[mouse], udev->devices[i]->ident, sizeof(pins[mouse]));
+         RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s%s.\n",
+               mouse,
+               udev->devices[i]->ident,
+               udev->devices[i]->mouse.abs ? "ABS" : "REL",
+               udev->devices[i]->devnode,
+               is_mouse ? "" : ", not counted among the mice");
+         mouse++;
+      }
+   }
+   /* the ports' mice are looked up in the new list */
+   input_mouse_pins_set_devices((const char (*)[64])pins, mouse);
+}
+
+/* The keyboards that are listed and numbered for the menu, and that a
+ * port can be given: made from the devices there are now, when the
+ * driver starts and whenever a device comes or goes.
+ *
+ * Every device that has a key was a keyboard here - the power button,
+ * the video bus, a headset, a mouse with keys of its own - and one
+ * keyboard was as many as it has event nodes.
+ * input_keyboard_devices.h says which are the keyboards on the desk;
+ * each is listed once, under the name of the first of its parts that
+ * is a keyboard in its own right, and udev->keyboards[] is that
+ * part. Every device with keys goes on feeding the one key state. */
+static void udev_input_list_keyboards(udev_input_t *udev)
+{
+   input_kbdev_t devs[64];
+   char pins[MAX_INPUT_DEVICES][64];
+   unsigned i, n = udev->num_devices, groups;
+
+   memset(pins, 0, sizeof(pins));
+   if (n > ARRAY_SIZE(devs))
+      n = ARRAY_SIZE(devs);
+   for (i = 0; i < n; i++)
+      devs[i] = udev->devices[i]->kbdev;
+   groups = input_kbdev_group(devs, n, MAX_INPUT_DEVICES);
+
+   for (i = 0; i < MAX_INPUT_DEVICES; i++)
+      udev->keyboards[i] = -1;
+   for (i = 0; i < udev->num_devices; i++)
+      udev->devices[i]->kbdev.group = (i < n) ? devs[i].group : INPUT_KBDEV_NONE;
+
+   input_config_clear_keyboard_display_names();
+   for (i = 0; i < n; i++)
+   {
+      unsigned g = devs[i].group;
+      if (     g == INPUT_KBDEV_NONE
+            || !devs[i].keyboard
+            || udev->keyboards[g] >= 0)
+         continue;
+      udev->keyboards[g] = (int32_t)i;
+      input_config_set_keyboard_display_name(g, udev->devices[i]->ident);
+      input_config_set_keyboard_ids(g,
+            udev->devices[i]->vid, udev->devices[i]->pid);
+      RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%04x:%04x).\n", g + 1,
+            udev->devices[i]->ident,
+            udev->devices[i]->vid, udev->devices[i]->pid);
+      /* what a port is pinned to it by: its ids, or with none its name */
+      if (g < MAX_INPUT_DEVICES)
+      {
+         if (udev->devices[i]->vid || udev->devices[i]->pid)
+            snprintf(pins[g], sizeof(pins[g]), "%04x:%04x",
+                  udev->devices[i]->vid, udev->devices[i]->pid);
+         else
+            strlcpy(pins[g], udev->devices[i]->ident, sizeof(pins[g]));
+      }
+   }
+   /* the ports' keyboards are looked up in the new list */
+   input_keyboard_pins_set_devices((const char (*)[64])pins,
+         groups < MAX_INPUT_DEVICES ? groups : MAX_INPUT_DEVICES);
+   for (i = 0; i < n; i++)
+      if (     udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+            && devs[i].group == INPUT_KBDEV_NONE)
+         RARCH_DBG("[udev] Has keys, and is not listed as a keyboard: \"%s\" (%s).\n",
+               udev->devices[i]->ident, udev->devices[i]->devnode);
+   (void)groups;
+}
+
 static int udev_input_add_device(udev_input_t *udev,
       enum udev_input_dev_type type, const char *devnode, device_handle_cb cb)
 {
@@ -3183,6 +3376,8 @@ static int udev_input_add_device(udev_input_t *udev,
 
    if (ioctl(fd, EVIOCGNAME(sizeof(device->ident)), device->ident) < 0)
       device->ident[0] = '\0';
+
+   udev_input_describe_device(device, type, fd, devnode);
 
    /* UDEV_INPUT_MOUSE may report in absolute coords too */
    if (type == UDEV_INPUT_MOUSE || type == UDEV_INPUT_TOUCHPAD || type == UDEV_INPUT_TOUCHSCREEN )
@@ -3289,7 +3484,7 @@ static int udev_input_add_device(udev_input_t *udev,
             fd, strerror(errno));
    }
 #elif defined(HAVE_KQUEUE)
-   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, LISTENSOCKET);
+   EV_SET(&event, fd, EVFILT_READ, EV_ADD, 0, 0, UDEV_KQ_UDATA(device));
    if (kevent(udev->fd, &event, 1, NULL, 0, NULL) == -1)
    {
       RARCH_ERR("[udev] Failed to add FD (%d) to kqueue list (%s).\n",
@@ -3321,6 +3516,26 @@ static void udev_input_remove_device(udev_input_t *udev, const char *devnode)
       if (!string_is_equal(devnode, udev->devices[i]->devnode))
          continue;
 
+      /* A keyboard that goes sends no key-up for what was held on
+       * it: each such key that no other keyboard holds is let go, in
+       * the one key state and for whoever follows key events - or it
+       * would stay down. */
+      if (udev->devices[i]->type == UDEV_INPUT_KEYBOARD)
+      {
+         unsigned keysym;
+         for (keysym = 0; keysym <= KEY_MAX; keysym++)
+         {
+            if (     !BIT_GET(udev->devices[i]->keys, keysym)
+                  || udev_key_held_elsewhere(udev, udev->devices[i], keysym))
+               continue;
+            BIT_CLEAR(udev->state, keysym);
+            if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
+               input_keyboard_event(0,
+                     input_keymaps_translate_keysym_to_rk(keysym),
+                     0, 0, RETRO_DEVICE_KEYBOARD);
+         }
+      }
+
       close(udev->devices[i]->fd);
       free(udev->devices[i]);
       memmove(udev->devices + i, udev->devices + i + 1,
@@ -3339,10 +3554,7 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    const char *val_touchscreen       = NULL;
    const char *action                = NULL;
    const char *devnode               = NULL;
-   int mouse                         = 0;
-   int keyboard                      = 0;
    int check                         = 0;
-   int i                             = 0;
    struct udev_device *dev           = udev_monitor_receive_device(
          udev->monitor);
 
@@ -3395,59 +3607,41 @@ static void udev_input_handle_hotplug(udev_input_t *udev)
    /* we need to re index the mouse and keyboard indirection
     * structures when a device is hotplugged
     */
-   /* first clear all */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      input_config_set_mouse_display_name(i, "N/A");
-      udev->pointers[i]  = -1;
-      udev->keyboards[i] = -1;
-   }
-
-   /* Add what devices we have now */
-   for (i = 0; i < (int)udev->num_devices; i++)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      {
-         /* Pointers */
-         input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-         udev->pointers[mouse]     = i;
-         mouse++;
-      }
-      else
-      {
-         /* Keyboard */
-         udev->keyboards[keyboard] = i;
-         keyboard++;
-      }
-   }
+   /* the mice and the keyboards, from what devices there are now */
+   udev_input_list_pointers(udev);
+   udev_input_list_keyboards(udev);
 
 end:
    udev_device_unref(dev);
 }
 
 #ifdef HAVE_X11
-static void udev_input_get_pointer_position(int *x, int *y)
+/* @pos: VIDEO_POS_PACK; left as it is off X11. */
+static void udev_input_get_pointer_position(uint32_t *pos)
 {
    if (video_driver_display_type_get() == RARCH_DISPLAY_X11)
    {
       Window w;
       int p;
       unsigned m;
+      int x            = VIDEO_POS_X(*pos);
+      int y            = VIDEO_POS_Y(*pos);
       Display *display = (Display*)video_driver_display_get();
       Window window    = (Window)video_driver_window_get();
 
-      XQueryPointer(display, window, &w, &w, &p, &p, x, y, &m);
+      XQueryPointer(display, window, &w, &w, &p, &p, &x, &y, &m);
+      *pos             = VIDEO_POS_PACK(x, y);
    }
 }
 
 static void udev_input_adopt_rel_pointer_position_from_mouse(
-      int *x, int *y, udev_input_mouse_t *mouse)
+      uint32_t *pos, udev_input_mouse_t *mouse)
 {
    static int noX11DispX = 0;
    static int noX11DispY = 0;
 
-   struct video_viewport view;
-   bool r = video_driver_get_viewport_info(&view);
+   const struct video_viewport view = udev_vp;
+   bool r = udev_vp_ok;
    int dx = udev_mouse_get_x(mouse);
    int dy = udev_mouse_get_y(mouse);
    if (      r
@@ -3469,11 +3663,9 @@ static void udev_input_adopt_rel_pointer_position_from_mouse(
          noX11DispY = minY;
       if (noX11DispY > maxY)
          noX11DispY = maxY;
-      *x            = noX11DispX;
-      *y            = noX11DispY;
+      *pos          = VIDEO_POS_PACK(noX11DispX, noX11DispY);
    }
-   mouse->x_rel     = 0;
-   mouse->y_rel     = 0;
+   mouse->rel       = 0;
 }
 #endif
 
@@ -3499,8 +3691,12 @@ static void udev_input_poll(void *data)
    udev_input_mouse_t *mouse = NULL;
    udev_input_t *udev        = (udev_input_t*)data;
 
+   /* this poll's viewport, for every event and read until the next */
+   memset(&udev_vp, 0, sizeof(udev_vp));
+   udev_vp_ok = video_driver_get_viewport_info(&udev_vp);
+
 #ifdef HAVE_X11
-   udev_input_get_pointer_position(&udev->pointer_x, &udev->pointer_y);
+   udev_input_get_pointer_position(&udev->os_pointer_pos);
 #endif
 
    for (i = 0; i < (int)udev->num_devices; i++)
@@ -3511,10 +3707,9 @@ static void udev_input_poll(void *data)
       mouse = &udev->devices[i]->mouse;
 #ifdef HAVE_X11
       udev_input_adopt_rel_pointer_position_from_mouse(
-            &udev->pointer_x, &udev->pointer_y, mouse);
+            &udev->os_pointer_pos, mouse);
 #else
-      mouse->x_rel = 0;
-      mouse->y_rel = 0;
+      mouse->rel = 0;
 #endif
       mouse->wu    = false;
       mouse->wd    = false;
@@ -3534,8 +3729,9 @@ static void udev_input_poll(void *data)
    ret = epoll_wait(udev->fd, events, ARRAY_SIZE(events), 0);
 #elif defined(HAVE_KQUEUE)
    {
+      /* Zero timeout: drain what is pending, never block the frame. */
       struct timespec timeoutspec;
-      timeoutspec.tv_sec  = timeout;
+      timeoutspec.tv_sec  = 0;
       timeoutspec.tv_nsec = 0;
       ret                 = kevent(udev->fd, NULL, 0, events,
             ARRAY_SIZE(events), &timeoutspec);
@@ -3544,8 +3740,12 @@ static void udev_input_poll(void *data)
 
    for (i = 0; i < ret; i++)
    {
-      /* TODO/FIXME - add HAVE_EPOLL/HAVE_KQUEUE codepaths here */
+#if defined(HAVE_EPOLL)
       if (events[i].events & EPOLLIN)
+#elif defined(HAVE_KQUEUE)
+      if (     events[i].filter == EVFILT_READ
+            && !(events[i].flags & EV_ERROR))
+#endif
       {
          int j, len;
          struct input_event input_events[32];
@@ -3569,13 +3769,13 @@ static void udev_input_poll(void *data)
 static bool udev_pointer_is_off_window(const udev_input_t *udev)
 {
 #ifdef HAVE_X11
-   struct video_viewport view;
-   bool r = video_driver_get_viewport_info(&view);
+   const struct video_viewport view = udev_vp;
+   bool r = udev_vp_ok;
    if (r)
-      return (udev->pointer_x < 0
-           || udev->pointer_x >= (int)VIDEO_SCALE_W(view.full_dims)
-           || udev->pointer_y < 0
-           || udev->pointer_y >= (int)VIDEO_SCALE_H(view.full_dims));
+      return (VIDEO_POS_X(udev->os_pointer_pos) < 0
+           || VIDEO_POS_X(udev->os_pointer_pos) >= (int)VIDEO_SCALE_W(view.full_dims)
+           || VIDEO_POS_Y(udev->os_pointer_pos) < 0
+           || VIDEO_POS_Y(udev->os_pointer_pos) >= (int)VIDEO_SCALE_H(view.full_dims));
 #endif
    return false;
 }
@@ -3585,19 +3785,18 @@ static int16_t udev_lightgun_aiming_state(
 {
 
    udev_input_mouse_t *mouse   = udev_get_mouse(udev, port);
-   int16_t res_x;
-   int16_t res_y;
+   uint32_t res_pos;
 
-   if (mouse && udev_mouse_get_pointer(mouse, false, false, &res_x, &res_y))
+   if (mouse && udev_mouse_get_pointer(mouse, false, false, &res_pos))
    {
       switch ( id )
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }
@@ -3621,9 +3820,9 @@ static int16_t udev_mouse_state(udev_input_t *udev,
       switch (id)
       {
          case RETRO_DEVICE_ID_MOUSE_X:
-            return screen ? udev->pointer_x : udev_mouse_get_x(mouse);
+            return screen ? VIDEO_POS_X(udev->os_pointer_pos) : udev_mouse_get_x(mouse);
          case RETRO_DEVICE_ID_MOUSE_Y:
-            return screen ? udev->pointer_y : udev_mouse_get_y(mouse);
+            return screen ? VIDEO_POS_Y(udev->os_pointer_pos) : udev_mouse_get_y(mouse);
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             return mouse->l;
          case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -3652,6 +3851,49 @@ static bool udev_keyboard_pressed(udev_input_t *udev, unsigned key)
 {
    int bit = rarch_keysym_lut[key];
    return (key) ? BIT_GET(udev->state, bit) : false;
+}
+
+/* The keyboard a port reads its key binds and its keyboard from: the
+ * one the port's Keyboard Index names, or NULL for all of them as one
+ * - the setting's default, and what a port falls back to while the
+ * keyboard it names is not there. NULL as well while the menu is
+ * open: the menu is worked with the first port's binds and has to
+ * answer to every keyboard. Hotkeys never go through this. */
+static int udev_port_keys(udev_input_t *udev, unsigned port)
+{
+   /* which, the frontend says, from the keyboard each port is pinned
+    * to: 0 every keyboard, a keyboard's number, or -1 none - this
+    * port's is away and another port has its own */
+   int idx = input_keyboard_port_choice(port);
+
+   if (!idx)
+      return -1;
+#ifdef HAVE_MENU
+   if (menu_driver_alive())
+      return -1;
+#endif
+   if (idx < 0 || idx > MAX_INPUT_DEVICES || udev->keyboards[idx - 1] < 0)
+      return -2;
+   return idx - 1;
+}
+
+/* A key as a port sees it: on its own keyboard - any part of it - or
+ * with none on any (@own -1), or on no keyboard at all (@own -2). */
+static bool udev_port_key_pressed(udev_input_t *udev,
+      int own, unsigned key)
+{
+   unsigned i;
+   int bit = rarch_keysym_lut[key];
+   if (!key || own == -2)
+      return false;
+   if (own < 0)
+      return BIT_GET(udev->state, bit);
+   for (i = 0; i < udev->num_devices; i++)
+      if (     udev->devices[i]->kbdev.group == (uint8_t)own
+            && udev->devices[i]->type == UDEV_INPUT_KEYBOARD
+            && BIT_GET(udev->devices[i]->keys, bit))
+         return true;
+   return false;
 }
 
 static bool udev_mouse_button_pressed(
@@ -3692,17 +3934,16 @@ static int16_t udev_pointer_state(udev_input_t *udev,
       unsigned port, unsigned idx, unsigned id, bool screen)
 {
    udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
-   int16_t res_x;
-   int16_t res_y;
+   uint32_t res_pos;
 
-   if (mouse && udev_mouse_get_pointer(mouse, screen, true, &res_x, &res_y))
+   if (mouse && udev_mouse_get_pointer(mouse, screen, true, &res_pos))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_POINTER_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             if (mouse->abs == 1)
             {
@@ -3719,11 +3960,54 @@ static int16_t udev_pointer_state(udev_input_t *udev,
             else if (idx == 2)
                return mouse->m;
          case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
       }
    }
 
    return 0;
+}
+
+/* Which of @keys are down for @port: bit n of @down for keys[n]. A
+ * port's controls answer to the one keyboard the port was given, if it
+ * was given one; a hotkey answers to every keyboard. */
+static void udev_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   udev_input_t *udev = (udev_input_t*)data;
+   int own            = (port < MAX_USERS) ? udev_port_keys(udev, port) : -1;
+
+   for (i = 0; i < count; i++)
+   {
+      bool pressed = (bind[i] >= RARCH_FIRST_META_KEY)
+         ? udev_keyboard_pressed(udev, keys[i])
+         : udev_port_key_pressed(udev, own, keys[i]);
+      if (pressed)
+         down[i >> 5] |= (1u << (i & 31));
+   }
+}
+
+/* What the port's mouse is holding, for the controls bound to its
+ * buttons. This driver does not hand its mice to the frontend. */
+static unsigned udev_bind_mouse_buttons(void *data, unsigned port)
+{
+   udev_input_t *udev        = (udev_input_t*)data;
+   udev_input_mouse_t *mouse = udev_get_mouse(udev, port);
+   unsigned held             = 0;
+
+   if (!mouse)
+      return 0;
+   if (mouse->l)   held |= INPUT_POINTER_LEFT;
+   if (mouse->r)   held |= INPUT_POINTER_RIGHT;
+   if (mouse->m)   held |= INPUT_POINTER_MIDDLE;
+   if (mouse->b4)  held |= INPUT_POINTER_BUTTON_4;
+   if (mouse->b5)  held |= INPUT_POINTER_BUTTON_5;
+   if (mouse->wu)  held |= INPUT_POINTER_WHEEL_UP;
+   if (mouse->wd)  held |= INPUT_POINTER_WHEEL_DOWN;
+   if (mouse->whu) held |= INPUT_POINTER_HWHEEL_UP;
+   if (mouse->whd) held |= INPUT_POINTER_HWHEEL_DOWN;
+   return held;
 }
 
 static int16_t udev_input_state(
@@ -3742,90 +4026,17 @@ static int16_t udev_input_state(
 #ifdef UDEV_TOUCH_SUPPORT
    udev_input_device_t *pointer_dev = udev_get_pointer_port_dev(udev, port);
 #endif
+   /* the one keyboard this port was given, if it was given one */
+   int own                          = (port < MAX_USERS)
+      ? udev_port_keys(udev, port) : -1;
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][i]))
-               {
-                  if (udev_mouse_button_pressed(udev, port, binds[port][i].mbutton))
-                     ret |= (1 << i);
-               }
-            }
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][id]))
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-               else if (udev_mouse_button_pressed(udev, port, binds[port][id].mbutton))
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (binds)
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            int16_t ret           = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_plus_key];
-               if BIT_GET(udev->state, sym)
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               unsigned sym = rarch_keysym_lut[(enum retro_key)id_minus_key];
-               if (BIT_GET(udev->state, sym))
-                  ret += -0x7fff;
-            }
-
-            return ret;
-         }
-         break;
+      /* The RetroPad's buttons, the hotkeys and a stick's axes, where
+       * they are bound to keys or mouse buttons, are the frontend's to
+       * answer: it asks udev_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_KEYBOARD:
-         return (id && id < RETROK_LAST) && udev_keyboard_pressed(udev, id);
+         return (id && id < RETROK_LAST) && udev_port_key_pressed(udev, own, id);
       case RETRO_DEVICE_MOUSE:
       case RARCH_DEVICE_MOUSE_SCREEN:
 #ifdef UDEV_TOUCH_SUPPORT
@@ -3899,7 +4110,7 @@ static int16_t udev_input_state(
                         return 1;
                      else if ((RETRO_KEYBIND_KEY(&binds[port][new_id]) && RETRO_KEYBIND_KEY(&binds[port][new_id]) < RETROK_LAST)
                            && !keyboard_mapping_blocked
-                           && udev_keyboard_pressed(udev, RETRO_KEYBIND_KEY(&binds[port][new_id]))
+                           && udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                         )
                         return 1;
                      else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))
@@ -3960,7 +4171,9 @@ static void udev_input_free(void *data)
 
    udev_input_kb_free(udev);
 
+#ifdef __linux__
    linux_close_illuminance_sensor(udev->illuminance_sensor);
+#endif
 
    free(udev);
 }
@@ -3975,14 +4188,17 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
    switch (action)
    {
       case RETRO_SENSOR_ILLUMINANCE_DISABLE:
+#ifdef __linux__
          /* If already disabled, then do nothing */
          linux_close_illuminance_sensor(udev->illuminance_sensor); /* noop if NULL */
          udev->illuminance_sensor = NULL;
+#endif
       case RETRO_SENSOR_GYROSCOPE_DISABLE:
       case RETRO_SENSOR_ACCELEROMETER_DISABLE:
          /** Unimplemented sensor actions that probably shouldn't fail */
          return true;
 
+#ifdef __linux__
       case RETRO_SENSOR_ILLUMINANCE_ENABLE:
          if (udev->illuminance_sensor)
             /* If we already have a sensor, just set the rate */
@@ -3991,6 +4207,7 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
             udev->illuminance_sensor = linux_open_illuminance_sensor(rate);
 
          return udev->illuminance_sensor != NULL;
+#endif
       default:
          break;
    }
@@ -4000,6 +4217,7 @@ static bool udev_set_sensor_state(void *data, unsigned port, enum retro_sensor_a
 
 static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
 {
+#ifdef __linux__
    udev_input_t *udev = (udev_input_t*)data;
 
    if (!udev)
@@ -4013,6 +4231,7 @@ static float udev_get_sensor_input(void *data, unsigned port, unsigned id)
       default:
          break;
    }
+#endif
 
    return 0.0f;
 }
@@ -4081,10 +4300,7 @@ static bool open_devices(udev_input_t *udev,
 
 static void *udev_input_init(const char *joypad_driver)
 {
-   int mouse = 0;
-   int keyboard=0;
    int fd;
-   int i;
    unsigned denied = 0;
 #ifdef UDEV_XKB_HANDLING
    gfx_ctx_ident_t ctx_ident;
@@ -4147,7 +4363,6 @@ static void *udev_input_init(const char *joypad_driver)
     * we could lock ourselves out completely. */
    if (!udev->num_devices)
    {
-      settings_t *settings = config_get_ptr();
       RARCH_WARN("[udev] Couldn't open any keyboard, mouse or touchpad. Are permissions set correctly for /dev/input/event* and /run/udev/?\n");
       if (denied)
          RARCH_WARN("[udev] %u node(s) refused the open with EACCES. Keyboards and mice are not covered by the seat ACLs on most distributions, so the user needs read access to them by other means, typically membership of the \"input\" group.\n",
@@ -4156,7 +4371,7 @@ static void *udev_input_init(const char *joypad_driver)
        * on first startup without config file, so it should be good to catch
        * initial boots without udev devices available. */
 #if defined(__linux__) && !defined(ANDROID)
-      if (settings->bools.menu_show_start_screen)
+      if (input_driver_first_start_fallback("linuxraw"))
       {
          /* Force fallback to linuxraw. Driver reselection would happen even
           * without overwriting input_driver setting, but that would not be saved
@@ -4164,8 +4379,6 @@ static void *udev_input_init(const char *joypad_driver)
           * video context driver), and on next boot user would be stuck with a
           * possibly nonworking configuration.
           */
-         strlcpy_lit(settings->arrays.input_driver, "linuxraw",
-                 sizeof(settings->arrays.input_driver));
          RARCH_WARN("[udev] First boot and without input devices, forcing fallback to linuxraw.\n");
          goto error;
       }
@@ -4183,37 +4396,9 @@ static void *udev_input_init(const char *joypad_driver)
    RARCH_WARN("[udev] Fullscreen pointer won't be available.\n");
 #endif
 
-   /* Reset the indirection array */
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      udev->pointers[i] = -1;
-      udev->keyboards[i] = -1;
-   }
-
-   for (i = 0; i < (int)udev->num_devices; ++i)
-   {
-      if (udev->devices[i]->type != UDEV_INPUT_KEYBOARD)
-      {
-          RARCH_LOG("[udev] Mouse/Touch #%u: \"%s\" (%s) %s.\n",
-             mouse,
-             udev->devices[i]->ident,
-             udev->devices[i]->mouse.abs ? "ABS" : "REL",
-             udev->devices[i]->devnode);
-
-          input_config_set_mouse_display_name(mouse, udev->devices[i]->ident);
-          udev->pointers[mouse] = i;
-          mouse++;
-       }
-       else
-       {
-          RARCH_LOG("[udev] Keyboard #%u: \"%s\" (%s).\n",
-             keyboard,
-             udev->devices[i]->ident,
-             udev->devices[i]->devnode);
-          udev->keyboards[keyboard] = i;
-          keyboard++;
-       }
-   }
+   /* the mice and the keyboards, from what devices there are */
+   udev_input_list_pointers(udev);
+   udev_input_list_keyboards(udev);
 
    return udev;
 
@@ -4274,5 +4459,8 @@ input_driver_t input_udev = {
 #else
    NULL,
 #endif
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   udev_keys_down,
+   udev_bind_mouse_buttons
 };

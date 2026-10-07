@@ -34,7 +34,10 @@ enum state_manager_rewind_st_flags
    STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED     = (1 << 0),
    STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED        = (1 << 1),
    STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED    = (1 << 2),
-   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3)
+   STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED    = (1 << 3),
+   /* A load wants the buffer: it is set up on the frame after,
+    * before the core runs, rather than inside the load */
+   STATE_MGR_REWIND_ST_FLAG_INIT_PENDING          = (1 << 4)
 };
 
 struct state_manager

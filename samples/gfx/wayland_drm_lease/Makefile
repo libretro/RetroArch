@@ -18,14 +18,31 @@ GENERATED := drm-lease-v1-client-protocol.h \
              drm-lease-v1-server-protocol.h \
              drm-lease-v1-protocol.c
 
+# KWin's output protocols, which dispserv_wl.c reaches through
+# gfx/common/wayland_kwin_output.c
+KDE_XML  := $(REPO_ROOT)/deps/wayland-protocols/kde
+KDE_HDRS := $(REPO_ROOT)/gfx/common/wayland/kde-output-device-v2.h \
+            $(REPO_ROOT)/gfx/common/wayland/kde-output-management-v2.h
+KDE_CODE := kde-output-device-v2-protocol.c kde-output-management-v2-protocol.c
+# wlroots' output management, reached the same way
+WLR_XML  := $(REPO_ROOT)/deps/wayland-protocols/wlr
+WLR_HDRS := $(REPO_ROOT)/gfx/common/wayland/wlr-output-management-unstable-v1.h
+WLR_CODE := wlr-output-management-unstable-v1-protocol.c
 SOURCES := wayland_drm_lease_test.c \
            drm-lease-v1-protocol.c \
            $(REPO_ROOT)/gfx/display_servers/dispserv_wl.c \
            $(REPO_ROOT)/gfx/common/wayland_drm_lease.c \
+           $(REPO_ROOT)/gfx/common/wayland_kwin_output.c \
+           $(REPO_ROOT)/gfx/common/video_mode_select.c \
+           kde-output-device-v2-protocol.c \
+           kde-output-management-v2-protocol.c \
+           $(REPO_ROOT)/gfx/common/wayland_wlr_output.c \
+           wlr-output-management-unstable-v1-protocol.c \
+           $(LRC)/rthreads/rthreads.c \
            $(LRC)/compat/compat_strl.c
 
 CFLAGS  += -Wall -std=gnu99 -g -O0 \
-           -DRARCH_INTERNAL -DHAVE_WAYLAND \
+           -DRARCH_INTERNAL -DHAVE_WAYLAND -DHAVE_THREADS -D_GNU_SOURCE \
            -I. \
            -I$(REPO_ROOT) \
            -I$(LRC)/include \
@@ -63,6 +80,16 @@ $(OBJS): $(GENERATED) $(REPO_ROOT)/gfx/common/wayland/drm-lease-v1.h
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(REPO_ROOT)/gfx/common/wayland/kde-%.h: $(KDE_XML)/kde-%.xml
+	wayland-scanner client-header $< $@
+kde-%-protocol.c: $(KDE_XML)/kde-%.xml
+	wayland-scanner private-code $< $@
+$(REPO_ROOT)/gfx/common/wayland/wlr-%.h: $(WLR_XML)/wlr-%.xml
+	wayland-scanner client-header $< $@
+wlr-%-protocol.c: $(WLR_XML)/wlr-%.xml
+	wayland-scanner private-code $< $@
+$(OBJS): $(KDE_HDRS) $(WLR_HDRS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -70,6 +97,6 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -f $(TARGET) $(OBJS) $(GENERATED)
+	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE)
 
 .PHONY: all check clean

@@ -1125,8 +1125,9 @@ const struct rarch_key_map rarch_key_map_dinput[] = {
 struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];
 #endif
 
-#ifdef WIIU
-const struct rarch_key_map rarch_key_map_wiiu[] = {
+#if defined(WIIU) || defined(GEKKO_NATIVE)
+/* USB HID keyboard usages */
+const struct rarch_key_map rarch_key_map_hid[] = {
    { 4, RETROK_a },
    { 5, RETROK_b },
    { 6, RETROK_c },

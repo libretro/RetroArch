@@ -160,12 +160,11 @@ static bool gfx_ctx_emscripten_webgl_bind_api(void *data,
       enum gfx_ctx_api api, unsigned major, unsigned minor) { return true; }
 
 static void gfx_ctx_emscripten_webgl_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   void *rwebinput = input_driver_init_wrap(&input_rwebinput, name);
-   *input          = rwebinput ? &input_rwebinput : NULL;
-   *input_data     = rwebinput;
+   /* no input driver of this context's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 }
 
 static bool gfx_ctx_emscripten_webgl_has_focus(void *data)

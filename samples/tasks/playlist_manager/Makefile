@@ -19,6 +19,7 @@ SOURCES := pl_manager_budget_test.c \
            $(REPO_ROOT)/playlist.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
            $(LIBRETRO_COMM_DIR)/formats/json/rjson.c \
            $(LIBRETRO_COMM_DIR)/formats/m3u/rm3u.c \
            $(LIBRETRO_COMM_DIR)/file/file_path.c \

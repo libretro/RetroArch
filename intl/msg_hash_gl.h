@@ -893,6 +893,7 @@ static const struct
    char s_56e1b336[20];
    char s_313d15c0[9];
    char s_e9f0dd82[46];
+   char s_0bd714f7[5];
    char s_0bebb490[11];
    char s_72765a06[16];
    char s_72765a07[16];
@@ -1182,7 +1183,6 @@ static const struct
    char s_136eaaf4[26];
    char s_8d3a8b68[6];
    char s_68d27147[13];
-   char s_f02f73fc[50];
    char s_e5b971a0[7];
    char s_17615fcf[6];
    char s_3a0a3fef[24];
@@ -1237,7 +1237,6 @@ static const struct
    char s_d02afc79[32];
    char s_7a2033d4[20];
    char s_a6e5d0ee[23];
-   char s_f228c6c5[16];
    char s_645ae416[25];
    char s_df92f5b5[41];
    char s_dcbf8b04[25];
@@ -1787,6 +1786,18 @@ static const struct
    char s_4ceac87e[7];
    char s_f62d1074[8];
    char s_387a4176[18];
+   char s_131e934d[6];
+   char s_7745a38e[7];
+   char s_49e4b96c[9];
+   char s_2102d995[9];
+   char s_e69d6a8f[8];
+   char s_4e2cbad9[6];
+   char s_4e2cbb07[6];
+   char s_13ef7ee0[6];
+   char s_863f74bc[5];
+   char s_b28f6db3[9];
+   char s_6c9436e3[8];
+   char s_64ee333c[9];
    char s_28863bc1[18];
    char s_f751c497[21];
    char s_9329c64c[12];
@@ -1982,8 +1993,10 @@ static const struct
    char s_b160f7a1[31];
    char s_cd5ff0f5[20];
    char s_8b92e740[17];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[23];
+#endif
 #endif
    char s_aeef8db2[16];
    char s_14d20957[18];
@@ -2012,21 +2025,43 @@ static const struct
    char s_01a73130[33];
    char s_44ebca0d[32];
    char s_608ac5a1[28];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[27];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[32];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[22];
    char s_9b023eee[34];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[16];
 #endif
    char s_35808dba[38];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ad6e88de[13];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[27];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[31];
    char s_d21d875b[23];
    char s_ae86fed0[18];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[20];
    char s_1cbc2657[22];
 #endif
@@ -2894,7 +2929,6 @@ static const struct
    char s_74d87c7a[47];
    char s_12adb1e7[46];
    char s_070529d4[77];
-   char s_30d1fc05[42];
 #ifdef GEKKO
    char s_3180dcf5[65];
 #endif
@@ -2936,7 +2970,6 @@ static const struct
    char s_47df0525[64];
    char s_03e272fc[57];
    char s_5c2cc60f[86];
-   char s_d6d8d4be[86];
    char s_e86d2704[75];
    char s_dda608b5[335];
    char s_6f5a032a[68];
@@ -3032,7 +3065,6 @@ static const struct
    char s_193e1462[58];
    char s_6895dfd6[58];
    char s_788364f5[85];
-   char s_dd9ff22a[85];
    char s_db495a9d[53];
    char s_ddc672a7[56];
    char s_ccea261d[126];
@@ -3083,7 +3115,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[107];
-   char s_01efec73[45];
    char s_d3fc9970[52];
    char s_740bd7c4[54];
    char s_f052dae3[73];
@@ -3195,6 +3226,9 @@ static const struct
    char s_a5ffd3d0[42];
 #ifdef _3DS
    char s_0d834bc5[65];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[33];
 #endif
    char s_d2ae640b[81];
    char s_8e5bac99[94];
@@ -3467,8 +3501,10 @@ static const struct
    char s_bce9b94f[52];
    char s_d32f5a63[41];
    char s_9177176e[38];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[44];
+#endif
 #endif
    char s_97d77020[37];
    char s_59f05605[39];
@@ -3484,17 +3520,39 @@ static const struct
    char s_4b009af3[40];
    char s_46c57dde[64];
    char s_7eb20ecf[81];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[51];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[58];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_706ff4dc[335];
    char s_a0d1a85c[67];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[244];
    char s_907ef7cc[33];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[56];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_04624c88[164];
    char s_91976dbe[55];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[57];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_9bb85635[252];
    char s_22a05685[74];
 #endif
@@ -3537,7 +3595,6 @@ static const struct
    char s_ffd591e0[48];
    char s_a51ab538[32];
    char s_55d6cc44[35];
-   char s_5a8f7fb9[210];
    char s_f2963d2d[29];
    char s_4c592ae1[111];
    char s_52ac4fb9[123];
@@ -5414,6 +5471,7 @@ static const struct
    "Bot\303\263n Y (esquerda)",
    "Chave %s",
    "Tipo de asignaci\303\263n do controlador de teclado",
+   "Todo",
    "Teclado %s",
    "Arma Auxiliar A",
    "Arma Auxiliar B",
@@ -5703,7 +5761,6 @@ static const struct
    "Desactivar o modo quiosco",
    "Men\303\272",
    "Modo Quiosco",
-   "Velocidade de fotogramas do men\303\272 de aceleraci\303\263n",
    "Sempre",
    "Nunca",
    "Explorador de ficheiros",
@@ -5758,7 +5815,6 @@ static const struct
    "Mostrar \"Descargador principal\"",
    "Mostrar \"Dump Disc\"",
    "Amosar rutas completas",
-   "Mostrar \"Axuda\"",
    "Mostrar \"Cargar contido\"",
    "Notificaci\303\263n de inicio \"Cargar contido\"",
    "Mostrar \"Cargar n\303\272cleo\"",
@@ -6319,6 +6375,18 @@ static const struct
    "Editor",
    "Rexi\303\263n",
    "Mes de Lanzamento",
+   "Abril",
+   "Agosto",
+   "Decembro",
+   "Febreiro",
+   "Xaneiro",
+   "Xullo",
+   "Xu\303\261o",
+   "Marzo",
+   "Maio",
+   "Novembro",
+   "Outubro",
+   "Setembro",
    "Ano de lanzamento",
    "Vibraci\303\263n soportada",
    "Puntuaci\303\263n",
@@ -6514,8 +6582,10 @@ static const struct
    "Mostrar \"Xesti\303\263n de enerx\303\255a\"",
    "Amosar a gravaci\303\263n",
    "Mostrar \"Gardar\"",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Amosar \302\253Cliente SMB\302\273",
+#endif
 #endif
    "Mostrar 'Steam'",
    "Mostrar \"Usuario\"",
@@ -6544,21 +6614,43 @@ static const struct
    "Instalar ou restaurar un n\303\272cleo",
    "Instalaci\303\263n do n\303\272cleo exitosa",
    "Velocidade de c\303\241mara lenta",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Modo de autenticaci\303\263n SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Explorar recurso compartido SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Activar o cliente SMB",
    "N\303\272mero m\303\241ximo de conexi\303\263ns SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Contrasinal SMB",
 #endif
    "KRB se est\303\241 dispo\303\261ible, NTLM se non",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Servidor SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Configuraci\303\263n da rede SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome do recurso compartido SMB",
    "Recurso compartido SMB",
    "Subdirectorio SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Tempo de espera SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome de usuario SMB",
    "Grupo de traballo SMB",
 #endif
@@ -7689,7 +7781,6 @@ static const struct
    "Dimin\303\272e o nivel de volume de audio de sa\303\255da.",
    "Aumenta o nivel de volume de audio de sa\303\255da.",
    "Activa/desactiva a sincronizaci\303\263n coa taxa de fotogramas de contido exacta.",
-   "O rato f\303\255sico reco\303\261ecido por RetroArch.",
 #ifdef GEKKO
    "Axusta a escala x/y para a velocidade da pistola de luz Wiimote.",
 #endif
@@ -7757,7 +7848,6 @@ static const struct
    "Combinaci\303\263n de bot\303\263ns do controlador para sa\303\255r de RetroArch.",
    "Neste directorio g\303\241rdanse as reasignaci\303\263ns de entrada.",
    "Anular os enlaces de entrada cos enlaces reasignados definidos para o n\303\272cleo actual.",
-   "Especifica que porto principal recibir\303\241 entrada do porto do controlador frontend %u.",
    "As reasignaci\303\263ns s\303\263 se aplicar\303\241n ao mando activo no que foron gardadas.",
    "Cambia como se asigna o RetroPad virtual a un dispositivo de entrada f\303\255sico. Se un dispos"
    "itivo de entrada se reco\303\261ece e se configura automaticamente correctamente, probablemente "
@@ -7904,8 +7994,6 @@ static const struct
    "Amosa todas os axustes relacionados coas configuraci\303\263ns.",
    "Controlador de men\303\272 para usar. (O reinicio \303\251 necesario)",
    "Protexe a configuraci\303\263n ocultando todos os axustes relacionados coa configuraci\303\263n.",
-   "Aseg\303\272rate de que a taxa de fotogramas est\303\241 limitada mentres est\303\241 dentro do "
-   "men\303\272.",
    "Cambiar a configuraci\303\263n do explorador de ficheiros.",
    "Modifique a opacidade do fondo do men\303\272 predeterminado.",
    "Brillo do men\303\272 en cd/m\302\262 (nits) ao usar unha pantalla HDR. S\303\263 visible cando "
@@ -7996,7 +8084,6 @@ static const struct
 #endif
    "Amosa as rutas completas na configuraci\303\263n de directorios, en lugar de s\303\263 o nome do"
    " directorio escollido.",
-   "Mostra a opci\303\263n \"Axuda\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Informaci\303\263n\" no men\303\272 principal.",
    "Mostra a opci\303\263n \"Cargar contido\" no men\303\272 principal.",
    "Mostra unha breve animaci\303\263n de comentarios de inicio ao cargar contido.",
@@ -8165,6 +8252,9 @@ static const struct
    "Cambiar os axustes da rede e do servidor.",
 #ifdef _3DS
    "Activa a velocidade de reloxo de New3DS (804 Mhz) e a cach\303\251 L2.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Enderezo IP ou nome do servidor.",
 #endif
    "Mostra unha mensaxe en pantalla ao conectar/desconectar dispositivos de entrada.",
    "Amosar unha mensaxe na pantalla cando os dispositivos de entrada non poidan ser configurados.",
@@ -8598,8 +8688,10 @@ static const struct
    "Mostrar a configuraci\303\263n de \"Xesti\303\263n de enerx\303\255a\".",
    "Amosar a configuraci\303\263n de \"Grabaci\303\263n\".",
    "Mostrar a configuraci\303\263n de \"Gardar\".",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Amosar a configuraci\303\263n do \302\253Cliente SMB\302\273.",
+#endif
 #endif
    "Mostrar a configuraci\303\263n de \"Steam\".",
    "Mostrar a configuraci\303\263n de \"Usuario\".",
@@ -8616,23 +8708,45 @@ static const struct
    "Abre o men\303\272 de escritorio tradicional.",
    "Instala ou restaura un n\303\272cleo dende o directorio de Descargas.",
    "A velocidade coa que se reproducir\303\241 o contido cando se utiliza a c\303\241mara lenta.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Selecciona a autenticaci\303\263n usada no teu contorno.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Explorar ficheiros no recurso compartido SMB configurado.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Activar o acceso a recursos compartidos de rede SMB. Recom\303\251ndase encarecidamente Ethernet"
    " en lugar de Wi-Fi para obter unha conexi\303\263n m\303\241is fiable. Nota: os cambios entran e"
    "n vigor a pr\303\263xima vez que se explore un recurso compartido, e o contido que xa estea en e"
    "xecuci\303\263n dende un recurso compartido mant\303\251n a s\303\272a conexi\303\263n actual.",
    "Selecciona o n\303\272mero m\303\241ximo de conexi\303\263ns usadas no teu contorno.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Contrasinal para a autenticaci\303\263n. \303\211 opcional cando o acceso como convidado est\303"
    "\241 activado no servidor. Windows 10 e posteriores: o acceso como convidado est\303\241 desacti"
    "vado de maneira predeterminada, polo que aqu\303\255 \303\251 necesario un contrasinal.",
    "Enderezo IP ou nome do servidor.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Configura os axustes da carpeta compartida en rede SMB.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome do recurso compartido de rede ao que acceder. D\303\251ixao baleiro para listar t\303\263do"
    "los recursos compartidos que exporta o servidor e escoller un mentres exploras.",
    "Ruta do subdirectorio no recurso compartido. Opcional.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Selecciona o tempo de espera predeterminado en segundos.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Nome de usuario para a autenticaci\303\263n. \303\211 opcional cando o acceso como convidado est"
    "\303\241 activado no servidor. Windows 10 e posteriores: o acceso como convidado est\303\241 des"
    "activado de maneira predeterminada, polo que aqu\303\255 \303\251 necesario un nome de usuario.",
@@ -8679,9 +8793,6 @@ static const struct
    "Mostra informaci\303\263n espec\303\255fica do dispositivo.",
    "Captura unha imaxe da pantalla.",
    "Realiza tarefas nun f\303\255o separado.",
-   "Manter os f\303\255os principal e de son nos n\303\272cleos de CPU m\303\241is r\303\241pidos du"
-   "n procesador con n\303\272cleos de distinto tipo. Non ten efecto nos procesadores cuxos n\303"
-   "\272cleos son todos iguais. Entra en vigor ao reiniciar.",
    "Tipo de miniatura a mostrar.",
    "Neste directorio g\303\241rdanse as imaxes do cadro, as capturas de pantalla e as miniaturas da "
    "pantalla de t\303\255tulo.",
@@ -9669,7 +9780,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (213156u
+      (sizeof(msg_hash_gl_blob) == (212715u
 #ifdef ANDROID
        + 365u
 #endif
@@ -9791,19 +9902,41 @@ typedef char msg_hash_gl_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 23u
        + 27u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 32u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 22u
        + 34u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 16u
        + 13u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 27u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 31u
        + 23u
        + 18u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 20u
        + 22u
 #endif
@@ -9971,6 +10104,9 @@ typedef char msg_hash_gl_blob_check[
 #ifdef _3DS
        + 65u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 33u
+#endif
 #ifdef HAVE_GAME_AI
        + 31u
 #endif
@@ -9986,18 +10122,40 @@ typedef char msg_hash_gl_blob_check[
        + 57u
        + 49u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 44u
        + 51u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 58u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 335u
        + 67u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 244u
        + 33u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 56u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 164u
        + 55u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 57u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 252u
        + 74u
 #endif
@@ -10960,6 +11118,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -11249,7 +11408,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -11304,7 +11462,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_UPDATER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_DUMP_DISC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -11853,6 +12010,18 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_AUGUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_DECEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_NOVEMBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -12048,8 +12217,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -12078,21 +12249,43 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -12954,7 +13147,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12996,7 +13188,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -13092,7 +13283,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -13143,7 +13333,6 @@ static const uint32_t msg_hash_gl_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -13255,6 +13444,9 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -13527,8 +13719,10 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -13544,17 +13738,39 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13597,7 +13813,6 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,

@@ -52,7 +52,7 @@ struct gfx_widget_load_content_animation_state
 {
    /* Hot fields - accessed every frame in _frame() */
    gfx_display_t *p_disp;
-   uintptr_t icon_texture;
+   gfx_surface_t *icon_texture;
    unsigned bg_shadow_height;
    unsigned margin_shadow_width;
    unsigned icon_size;
@@ -123,7 +123,7 @@ typedef struct gfx_widget_load_content_animation_state gfx_widget_load_content_a
 
 static gfx_widget_load_content_animation_state_t p_w_load_content_animation_st = {
    NULL,                               /* p_disp */
-   0,                                  /* icon_texture */
+   NULL,                               /* icon_texture */
    0,                                  /* bg_shadow_height */
    0,                                  /* margin_shadow_width */
    0,                                  /* icon_size */
@@ -209,12 +209,8 @@ static void gfx_widget_load_content_animation_reset(void)
    state->content_name_len   = 0;
    state->system_name_len    = 0;
 
-   /* Unload any icon texture */
-   if (state->icon_texture)
-   {
-      video_driver_texture_unload(&state->icon_texture);
-      state->icon_texture = 0;
-   }
+   gfx_surface_free(state->icon_texture);
+   state->icon_texture = NULL;
 }
 
 static void gfx_widget_load_content_animation_load_icon(void)
@@ -222,18 +218,20 @@ static void gfx_widget_load_content_animation_load_icon(void)
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
    /* In all cases, unload any existing icon texture */
-   if (state->icon_texture)
-   {
-      video_driver_texture_unload(&state->icon_texture);
-      state->icon_texture = 0;
-   }
+   gfx_surface_free(state->icon_texture);
+   state->icon_texture = NULL;
 
    /* If widget has a valid icon set, load it */
    if (state->has_icon)
-      gfx_display_reset_textures_list(
-            state->icon_file, state->icon_directory,
-            &state->icon_texture,
-            gfx_display_texture_filter(), NULL);
+   {
+      char path[PATH_MAX_LENGTH];
+      fill_pathname_join_special(path, state->icon_directory,
+            state->icon_file, sizeof(path));
+      state->icon_texture = gfx_surface_new_still(
+            gfx_display_texture_filter());
+      gfx_surface_submit_file(state->icon_texture, path,
+            gfx_surface_wants_rgba());
+   }
 }
 
 /* Callbacks */
@@ -917,7 +915,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
       {
          gfx_display_set_alpha(icon_color, icon_alpha);
 
-         if (state->icon_texture)
+         if (GFX_SURFACE_HANDLE(state->icon_texture))
          {
             gfx_display_blend_begin(dispctx, userdata);
 
@@ -926,7 +924,7 @@ static void gfx_widget_load_content_animation_frame(void *data, void *user_data)
                   p_disp,
                   VIDEO_SCALE_PACK(video_width, video_height),
                   VIDEO_SCALE_PACK(state->icon_size, state->icon_size),
-                  state->icon_texture,
+                  GFX_SURFACE_HANDLE(state->icon_texture),
                   icon_x,
                   state->icon_y,
                   0.0f, /* rad */
@@ -1113,12 +1111,8 @@ static void gfx_widget_load_content_animation_context_destroy(void)
 {
    gfx_widget_load_content_animation_state_t *state = &p_w_load_content_animation_st;
 
-   /* Unload any icon texture */
-   if (state->icon_texture)
-   {
-      video_driver_texture_unload(&state->icon_texture);
-      state->icon_texture = 0;
-   }
+   gfx_surface_free(state->icon_texture);
+   state->icon_texture = NULL;
 }
 
 /* Widget free() */

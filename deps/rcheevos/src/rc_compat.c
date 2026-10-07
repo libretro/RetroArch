@@ -171,7 +171,7 @@ void rc_mutex_unlock(rc_mutex_t* mutex)
 
 #endif
 
-#elif defined(GEKKO)
+#elif defined(GEKKO) && !defined(GEKKO_NATIVE)
 
 /* https://github.com/libretro/RetroArch/pull/16116 */
 
@@ -247,6 +247,31 @@ void rc_mutex_lock(rc_mutex_t* mutex)
 void rc_mutex_unlock(rc_mutex_t* mutex)
 {
   sceKernelUnlockMutex(mutex->handle, 1);
+}
+
+#elif defined(GEKKO_NATIVE)
+
+/* RetroArch-local: os/gekko's recursive mutex. */
+
+void rc_mutex_init(rc_mutex_t* mutex)
+{
+  mutex->m.word = 0;
+  mutex->depth  = 0;
+}
+
+void rc_mutex_destroy(rc_mutex_t* mutex)
+{
+  (void)mutex;
+}
+
+void rc_mutex_lock(rc_mutex_t* mutex)
+{
+  gk_rmutex_lock(mutex);
+}
+
+void rc_mutex_unlock(rc_mutex_t* mutex)
+{
+  gk_rmutex_unlock(mutex);
 }
 
 #elif defined(WIIU)

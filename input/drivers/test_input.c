@@ -379,8 +379,6 @@ static void test_input_free_input(void *data)
 
 static void* test_input_init(const char *joypad_driver)
 {
-   settings_t *settings = config_get_ptr();
-
    if (!input_test_steps)
       input_test_steps = (input_test_step_t*)
             calloc(MAX_TEST_STEPS, sizeof(*input_test_steps));
@@ -392,7 +390,7 @@ static void* test_input_init(const char *joypad_driver)
 
    RARCH_DBG("[Test input] Start.\n");
 
-   input_test_file_read(settings->paths.test_input_file_general);
+   input_test_file_read(input_config_get_test_input_file(false));
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
 
@@ -425,8 +423,7 @@ static float test_input_unsigned_to_float_lux(unsigned i)
 
 static void test_input_poll(void *data)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
-   uint64_t curr_frame            = video_st->frame_count;
+   uint64_t curr_frame            = video_driver_get_frame_count();
    unsigned i;
 
    for (i=0; i<last_test_step; i++)

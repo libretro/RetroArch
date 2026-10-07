@@ -65,6 +65,9 @@ typedef struct pipewire_audio
     * for, so the whole buffer went out as silence. A short read is
     * not one: that hands the graph fewer frames, not silence. */
    retro_atomic_size_t underruns;
+   /* Process calls that found no buffer to take - and, capturing, a
+    * ring whose reader was behind or overtaken. */
+   retro_atomic_size_t xruns;
 
    /* The device clock, fitted from the time report the graph already
     * hands over.
@@ -182,9 +185,11 @@ static void pwire_capture_process_cb(void *data)
    uint32_t idx, offs, n_bytes;
    pipewire_microphone_t *mic = (pipewire_microphone_t*)data;
 
+   /* Out of buffers: counted with the overruns, on the graph's thread,
+    * and logged in the total when the microphone closes. */
    if (!(b = pw_stream_dequeue_buffer(mic->stream)))
    {
-      RARCH_ERR("[Microphone] [PipeWire] Out of buffers: %s.\n", strerror(errno));
+      retro_atomic_fetch_add_size(&mic->xruns, 1);
       pw_thread_loop_signal(mic->pw->thread_loop, false);
       return;
    }
@@ -199,14 +204,12 @@ static void pwire_capture_process_cb(void *data)
    offs    = MIN(buf->datas[0].chunk->offset, buf->datas[0].maxsize);
    n_bytes = MIN(buf->datas[0].chunk->size, buf->datas[0].maxsize - offs);
 
-   if ((filled = spa_ringbuffer_get_write_index(&mic->ring, &idx)) < 0)
-      RARCH_ERR("[Microphone] [PipeWire] %p: underrun write:%u filled:%d.\n", p, idx, filled);
-   else
-   {
-      if ((uint32_t)filled + n_bytes > RINGBUFFER_SIZE)
-         RARCH_ERR("[Microphone] [PipeWire] %p: overrun write:%u filled:%d + size:%u > max:%u.\n",
-                   p, idx, filled, n_bytes, RINGBUFFER_SIZE);
-   }
+   /* A ring the reader has fallen behind on, or one it has overtaken:
+    * counted here, on the graph's thread, and logged as one total when
+    * the microphone is closed. */
+   filled = spa_ringbuffer_get_write_index(&mic->ring, &idx);
+   if (filled < 0 || (uint32_t)filled + n_bytes > RINGBUFFER_SIZE)
+      retro_atomic_fetch_add_size(&mic->xruns, 1);
    spa_ringbuffer_write_data(&mic->ring,
          mic->buffer, RINGBUFFER_SIZE,
          idx & RINGBUFFER_MASK,
@@ -266,14 +269,7 @@ static void pwire_microphone_free(void *driver_context)
 
 static void *pwire_microphone_init(void)
 {
-   int res;
-   uint8_t buffer[1024];
-   uint64_t buf_samples;
-   const struct spa_pod *params[1];
-   struct pw_properties     *props = NULL;
-   const char               *error = NULL;
-   pipewire_core_t             *pw = NULL;
-   struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
+   pipewire_core_t *pw = NULL;
 
    if (!pipewire_core_init(&pw, "microphone_driver", &pwire_mic_registry_events))
       goto error;
@@ -300,10 +296,15 @@ static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
 
    if (pw && mic)
    {
+      size_t xruns;
       pw_thread_loop_lock(pw->thread_loop);
       pw_stream_destroy(mic->stream);
       mic->stream = NULL;
       pw_thread_loop_unlock(pw->thread_loop);
+      xruns = retro_atomic_load_acquire_size(&mic->xruns);
+      if (xruns)
+         RARCH_WARN("[Microphone] [PipeWire] %lu capture cycles overran, underran or found no buffer.\n",
+               (unsigned long)xruns);
       free(mic);
    }
 }
@@ -434,7 +435,6 @@ static void *pwire_microphone_open_mic(void *driver_context,
    uint8_t buffer[1024];
    const struct spa_pod *params[1];
    struct pw_properties *props = NULL;
-   const char           *error = NULL;
    struct spa_pod_builder    b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
    pipewire_microphone_t   *mic = NULL;
 
@@ -632,12 +632,14 @@ static void pwire_playback_process_cb(void *data)
    int32_t avail;
    struct pw_buffer *b;
    struct spa_buffer *buf;
-   uint32_t req, idx, n_bytes;
+   uint32_t idx, n_bytes;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
 
+   /* Out of buffers: counted on the graph's thread and logged in the
+    * total when the driver is freed. */
    if ((b = pw_stream_dequeue_buffer(audio->stream)) == NULL)
    {
-      RARCH_WARN("[PipeWire] Out of buffers: %s.\n", strerror(errno));
+      retro_atomic_fetch_add_size(&audio->xruns, 1);
       pw_thread_loop_signal(audio->pw->thread_loop, false);
       return;
    }
@@ -799,7 +801,6 @@ static void *pwire_init(const char *device, unsigned rate,
    const struct spa_pod *params[1];
    uint8_t             buffer[1024];
    struct pw_properties     *props = NULL;
-   const char               *error = NULL;
    pipewire_audio_t         *audio = (pipewire_audio_t*)calloc(1, sizeof(*audio));
    struct spa_pod_builder        b = SPA_POD_BUILDER_INIT(buffer, sizeof(buffer));
 
@@ -932,83 +933,67 @@ error:
 
 static ssize_t pwire_write(void *data, const void *buf_, size_t len)
 {
-   int32_t   filled, avail;
-   uint32_t            idx;
+   size_t written          = 0;
+   const uint8_t *buf      = (const uint8_t*)buf_;
    pipewire_audio_t *audio = (pipewire_audio_t*)data;
    const char       *error = NULL;
 
    if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
       return 0;  /* wait for stream to become ready */
 
-   if (len > audio->highwater_mark)
-   {
-      RARCH_ERR("[PipeWire] Buffer too small. Please try increasing the latency.\n");
-      return 0;
-   }
+   if (audio->frame_size)
+      len -= len % audio->frame_size;
 
    pw_thread_loop_lock(audio->pw->thread_loop);
 
-   for (;;)
+   /* As much as the ring has room for, in whole frames; blocking, the
+    * rest as the graph frees room, a write longer than the ring going
+    * in parts. */
+   while (written < len)
    {
-      filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
-      avail  = audio->highwater_mark - filled;
+      uint32_t idx;
+      size_t   n;
+      int32_t  filled = spa_ringbuffer_get_write_index(&audio->ring, &idx);
+      size_t   avail  = (filled >= 0 && (uint32_t)filled < audio->highwater_mark)
+            ? audio->highwater_mark - (uint32_t)filled : 0;
 
-#if 0  /* Useful for tracing */
-      RARCH_DBG("[PipeWire] Ringbuffer utilization: filled %d, avail %d, index %d, size %d.\n",
-                filled, avail, idx, len);
-#endif
+      if (audio->frame_size)
+         avail -= avail % audio->frame_size;
 
-      /* in non-blocking mode we play as much as we can
-       * in blocking mode we expect a freed buffer of at least the given size */
-      if (len > (size_t)avail)
+      if (!avail)
       {
          if (audio->pw->nonblock)
-         {
-            len = avail;
             break;
-         }
 
          /* The process callback signals every cycle. A graph that has
           * stopped scheduling the stream while it still reads as
           * streaming signals nothing; the bound turns that into a
-          * write of nothing this call rather than a thread held
-          * inside the driver. */
+          * write of what went rather than a thread held inside the
+          * driver. */
          if (!pipewire_loop_wait_ms(audio->pw->thread_loop, PIPEWIRE_STREAM_WAIT_MS))
-         {
-            pw_thread_loop_unlock(audio->pw->thread_loop);
-            return 0;
-         }
+            break;
          if (pw_stream_get_state(audio->stream, &error) != PW_STREAM_STATE_STREAMING)
          {
             pw_thread_loop_unlock(audio->pw->thread_loop);
-            return -1;
+            return written ? (ssize_t)written : -1;
          }
+         continue;
       }
-      else
-         break;
-   }
 
-#if 0
-   if (filled < 0)
-      RARCH_ERR("[Pipewire] %p: underrun write:%u filled:%d\n", audio, idx, filled);
-   else
-   {
-      if ((uint32_t) filled + len > RINGBUFFER_SIZE)
-      {
-         RARCH_ERR("[PipeWire] %p: overrun write:%u filled:%d + size:%zu > max:%u\n",
-         audio, idx, filled, len, RINGBUFFER_SIZE);
-      }
-   }
-#endif
+      n = len - written;
+      if (n > avail)
+         n = avail;
 
-   spa_ringbuffer_write_data(&audio->ring,
-         audio->buffer, RINGBUFFER_SIZE,
-         idx & RINGBUFFER_MASK, buf_, len);
-   idx += len;
-   spa_ringbuffer_write_update(&audio->ring, idx);
+      spa_ringbuffer_write_data(&audio->ring,
+            audio->buffer, RINGBUFFER_SIZE,
+            idx & RINGBUFFER_MASK, buf + written, (uint32_t)n);
+      idx += (uint32_t)n;
+      spa_ringbuffer_write_update(&audio->ring, idx);
+      written += n;
+   }
 
    pw_thread_loop_unlock(audio->pw->thread_loop);
-   return len;
+   return (ssize_t)written;
 }
 
 static bool pwire_stop(void *data)
@@ -1091,6 +1076,12 @@ static void pwire_free(void *data)
    else
       RARCH_LOG("[PipeWire] Graph clock: not enough usable time reports"
             " to fit one.\n");
+   {
+      size_t xruns = retro_atomic_load_acquire_size(&audio->xruns);
+      if (xruns)
+         RARCH_WARN("[PipeWire] %lu playback cycles found no buffer.\n",
+               (unsigned long)xruns);
+   }
 
    if (audio->stream)
    {

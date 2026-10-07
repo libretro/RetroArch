@@ -89,7 +89,10 @@ static void *caca_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
+   {
+      free(font);
       return NULL;
+   }
 
    return font;
 }
@@ -205,16 +208,13 @@ static void caca_create(caca_t *caca)
    video_driver_set_output_dims(VIDEO_SCALE_PACK(caca_get_canvas_width(caca->cv), caca_get_canvas_height(caca->cv)));
 }
 
-static void *caca_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *caca_init(const video_info_t *video)
 {
    caca_t *caca        = (caca_t*)calloc(1, sizeof(*caca));
 
    if (!caca)
       return NULL;
 
-   *input               = NULL;
-   *input_data          = NULL;
 
    caca->frame_width    = VIDEO_SCALE_W(video->dims);
    caca->frame_height   = VIDEO_SCALE_H(video->dims);
@@ -238,9 +238,11 @@ static void *caca_init(const video_info_t *video,
 }
 
 static bool caca_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    size_t _len               = 0;
    void *buffer              = NULL;
    const void *frame_to_copy = frame;

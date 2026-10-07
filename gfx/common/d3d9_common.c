@@ -38,6 +38,8 @@
 
 #ifdef _XBOX
 #include <xgraphics.h>
+
+#include "../../configuration.h"
 #endif
 
 #include "win32_common.h"
@@ -271,10 +273,8 @@ void d3d9_make_d3dpp(d3d9_video_t *d3d,
 {
    D3DPRESENT_PARAMETERS *d3dpp   = (D3DPRESENT_PARAMETERS*)_d3dpp;
 #ifdef _XBOX
-   /* TODO/FIXME - get rid of global state dependencies. */
-   global_t *global               = global_get_ptr();
-   int gamma_enable               = global ?
-      global->console.screen.gamma_correction : 0;
+   settings_t *settings           = config_get_ptr();
+   int gamma_enable               = settings->uints.video_gamma;
 #endif
    bool windowed_enable           = d3d9_is_windowed_enable(info->fullscreen);
 

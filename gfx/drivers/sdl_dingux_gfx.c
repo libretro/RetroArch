@@ -346,80 +346,7 @@ static void sdl_dingux_gfx_free(void *data)
    free(vid);
 }
 
-static void sdl_dingux_input_driver_init(
-      const char *input_drv_name, const char *joypad_drv_name,
-      input_driver_t **input, void **input_data)
-{
-   /* Sanity check */
-   if (!input || !input_data)
-      return;
-
-   *input      = NULL;
-   *input_data = NULL;
-
-   /* If input driver name is empty, cannot
-    * initialise anything... */
-   if (!input_drv_name || !*input_drv_name)
-      return;
-
-   if (string_is_equal(input_drv_name, "sdl_dingux"))
-   {
-      *input_data = input_driver_init_wrap(&input_sdl_dingux,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_sdl_dingux;
-
-      return;
-   }
-
-#if defined(HAVE_SDL) || defined(HAVE_SDL2)
-   if (string_is_equal(input_drv_name, "sdl"))
-   {
-#ifdef HAVE_SDL2
-      input_driver_t *sdl_drv = &input_sdl2;
-#else
-      input_driver_t *sdl_drv = &input_sdl1;
-#endif
-      *input_data = input_driver_init_wrap(sdl_drv,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = sdl_drv;
-
-      return;
-   }
-#endif
-
-#if defined(HAVE_UDEV)
-   if (string_is_equal(input_drv_name, "udev"))
-   {
-      *input_data = input_driver_init_wrap(&input_udev,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_udev;
-
-      return;
-   }
-#endif
-
-#if defined(__linux__)
-   if (string_is_equal(input_drv_name, "linuxraw"))
-   {
-      *input_data = input_driver_init_wrap(&input_linuxraw,
-            joypad_drv_name);
-
-      if (*input_data)
-         *input = &input_linuxraw;
-
-      return;
-   }
-#endif
-}
-
-static void *sdl_dingux_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sdl_dingux_gfx_init(const video_info_t *video)
 {
    sdl_dingux_video_t *vid                       = NULL;
    uint32_t sdl_subsystem_flags                  = SDL_WasInit(0);
@@ -435,8 +362,6 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 #endif
    enum dingux_ipu_filter_type ipu_filter_type   = (enum dingux_ipu_filter_type)
          settings->uints.video_dingux_ipu_filter_type;
-   const char *input_drv_name                    = settings->arrays.input_driver;
-   const char *joypad_drv_name                   = settings->arrays.input_joypad_driver;
    uint32_t surface_flags                        = (video->vsync)
          ? (SDL_HWSURFACE | SDL_TRIPLEBUF | SDL_FULLSCREEN)
          : (SDL_HWSURFACE | SDL_FULLSCREEN);
@@ -523,8 +448,10 @@ static void *sdl_dingux_gfx_init(const video_info_t *video,
 
    SDL_ShowCursor(SDL_DISABLE);
 
-   sdl_dingux_input_driver_init(input_drv_name,
-         joypad_drv_name, input, input_data);
+   /* No input driver of this driver's own: the frontend starts the
+    * one the setting names - which is what was done here, for the
+    * four it can be on these devices. */
+   input_driver_video_window(INPUT_WINDOW_OTHER, NULL);
 
    /* Initialise OSD font */
    sdl_dingux_init_font_color(vid);
@@ -760,9 +687,11 @@ static void sdl_dingux_blit_frame32(sdl_dingux_video_t *vid,
 }
 
 static bool sdl_dingux_gfx_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    sdl_dingux_video_t* vid = (sdl_dingux_video_t*)data;
 #ifdef HAVE_MENU
    bool menu_is_alive      = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;

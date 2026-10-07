@@ -94,6 +94,15 @@ static void sdl3_window_save_position(SDL_Window *win)
    settings->uints.window_position_dims = VIDEO_SCALE_PACK(w, h);
 }
 
+void sdl3_pump_input_events(void)
+{
+   /* Two threads pumping at once deadlock in the X11 backend. */
+   if (     video_driver_thread_wrapper_active()
+         && SDL_WasInit(SDL_INIT_VIDEO))
+      return;
+   SDL_PumpEvents();
+}
+
 void sdl3_pump_window_events(bool *quit, bool *resize)
 {
    SDL_Event event;
@@ -113,6 +122,11 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
 
       if (event.type == SDL_EVENT_WINDOW_RESIZED || event.type == SDL_EVENT_WINDOW_MOVED)
          sdl3_window_save_position(SDL_GetWindowFromID(event.window.windowID));
+
+      /* It may be on another display now */
+      if (     event.type == SDL_EVENT_WINDOW_MOVED
+            || event.type == SDL_EVENT_WINDOW_DISPLAY_CHANGED)
+         video_driver_window_output_changed();
    }
 
    while (SDL_PeepEvents(&event, 1, SDL_GETEVENT, SDL_EVENT_DISPLAY_FIRST, SDL_EVENT_DISPLAY_LAST) > 0)
@@ -123,7 +137,7 @@ void sdl3_pump_window_events(bool *quit, bool *resize)
 
     /* Clear out the input queue if we're not using the
      * SDL driver. */
-   if (input_state_get_ptr()->current_driver != &input_sdl3)
+   if (!input_driver_is_sdl3())
    {
       SDL_FlushEvents(SDL_EVENT_KEY_DOWN,         SDL_EVENT_MOUSE_REMOVED);
       SDL_FlushEvents(SDL_EVENT_FINGER_DOWN,      SDL_EVENT_FINGER_CANCELED);
@@ -388,61 +402,17 @@ bool sdl3_suppress_screensaver(void *data, bool enable)
    return enable ? SDL_DisableScreenSaver() : SDL_EnableScreenSaver();
 }
 
-/* Returns the configured input driver if it works alongside an SDL3
- * window, or NULL if the SDL3 input driver should be used instead.
- *
- * The udev, linuxraw, raw and dinput input drivers read input devices
- * directly, so they will function inside an SDL3 window. Drivers tied
- * to a windowing system like x, wayland, or cocoa however, should end
- * up using the SDL3 input driver. */
-static input_driver_t *sdl3_passthrough_input(const char *ident)
+void sdl3_input_driver(const char *joypad_name)
 {
-#ifdef HAVE_UDEV
-   if (string_is_equal(ident, "udev"))
-      return &input_udev;
-#endif
-#if defined(__linux__) && !defined(ANDROID)
-   if (string_is_equal(ident, "linuxraw"))
-      return &input_linuxraw;
-#endif
-#if defined(_WIN32) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
-#ifdef HAVE_WINRAWINPUT
-   if (string_is_equal(ident, "raw"))
-      return &input_winraw;
-#endif
-#endif
-#ifdef HAVE_DINPUT
-   if (string_is_equal(ident, "dinput"))
-      return &input_dinput;
-#endif
-   return NULL;
-}
-
-void sdl3_input_driver(const char *joypad_name,
-      input_driver_t **input, void **input_data)
-{
-   input_driver_t *passthrough = sdl3_passthrough_input(config_get_ptr()->arrays.input_driver);
-
-   if (passthrough)
-   {
-      if ((*input_data = input_driver_init_wrap(passthrough, joypad_name)))
-      {
-         *input = passthrough;
-         return;
-      }
-      /* The configured input driver failed, so fallback to SDL3. */
-   }
-
-   /* Use the SDL3 input driver, taking advantage of the window's event queue. */
-   *input_data = input_driver_init_wrap(&input_sdl3, joypad_name);
-   *input = *input_data ? &input_sdl3 : NULL;
+   /* no input driver of this window's own: the frontend starts the
+    * one that goes with an SDL 3 window */
+   input_driver_video_window(INPUT_WINDOW_SDL3, NULL);
 }
 
 void sdl3_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   sdl3_input_driver(name, input, input_data);
+   sdl3_input_driver(name);
 }
 
 bool sdl3_ctx_enabled(const char *ctx_ident)

@@ -89,6 +89,8 @@
 
 #define DEFAULT_TOUCH_SCALE 1
 
+#define DEFAULT_INPUT_STYLUS_PRESSURE_SENSITIVITY 70
+
 #if defined(RARCH_MOBILE) || defined(HAVE_LIBNX) || defined(__WINRT__) || defined(__EMSCRIPTEN__) || defined (VITA)
 #define DEFAULT_POINTER_ENABLE true
 #else
@@ -245,6 +247,16 @@
 #define DEFAULT_GAMMA 0
 #endif
 
+/* Wii and Xbox: soften the picture (on the Wii, the composite
+ * video trap filter). */
+#define DEFAULT_SOFT_FILTER false
+
+/* PS3: 720x576 output converted to 60 Hz. */
+#define DEFAULT_PAL60_ENABLE false
+
+/* Xbox: flicker filter strength, 0 (off) to 5. */
+#define DEFAULT_FLICKER_FILTER 0
+
 /* Windowed
  * Real x resolution = aspect * base_size * x scale
  * Real y resolution = base_size * y scale
@@ -395,7 +407,11 @@
 
 /* Video VSYNC (recommended) */
 #define DEFAULT_VSYNC true
-#define DEFAULT_SCANLINE_SYNC false
+
+/* Scanline Sync specific */
+#define DEFAULT_SCANLINE_SYNC        false
+#define DEFAULT_SCANLINE_SYNC_OFFSET 0
+#define MAXIMUM_SCANLINE_SYNC_OFFSET 3000
 
 /* Vulkan specific */
 #define DEFAULT_MAX_SWAPCHAIN_IMAGES 3
@@ -514,12 +530,17 @@
 #define MINIMUM_SWAP_INTERVAL 1
 #define MAXIMUM_SWAP_INTERVAL 16
 
+/* Worker threads a CPU video filter runs on; 0 (Automatic) uses one
+ * per detected CPU core. */
+#define DEFAULT_VIDEO_FILTER_THREADS 0
+#define MAXIMUM_VIDEO_FILTER_THREADS 16
+
 /* Threaded video: the core runs on one thread and the video driver
  * presents on another. Off by default, as it has always been; the
- * Switch keeps its own default. When it is on, hardware-rendered cores
- * follow it on every API that has a ring, with no setting of their
- * own. */
-#if defined(HAVE_LIBNX)
+ * Switch and Android keep their own default. When it is on,
+ * hardware-rendered cores follow it on every API that has a ring,
+ * with no setting of their own. */
+#if defined(HAVE_LIBNX) || defined(ANDROID)
 #define DEFAULT_VIDEO_THREADED true
 #else
 #define DEFAULT_VIDEO_THREADED false
@@ -558,6 +579,12 @@
  * cores of a mixed-core part trades battery for latency, so it is
  * the user's call. */
 #define DEFAULT_THREAD_PREFER_FAST_CORES false
+
+/* Schedule the threaded video thread ahead of ordinary threads, never
+ * real time; the main thread, which can run unthrottled, only when
+ * asked. */
+#define DEFAULT_VIDEO_THREAD_PRIORITY true
+#define DEFAULT_MAIN_THREAD_PRIORITY false
 
 /* Set to true if HW render cores should get their private context. */
 #define DEFAULT_VIDEO_SHARED_CONTEXT false
@@ -621,6 +648,11 @@
  * roughly what mid-range HDR panels reach, so it is a safe default for a value
  * the frontend cannot query - no platform exposes it portably. */
 #define DEFAULT_VIDEO_HDR_MAX_NITS 1000.0f
+/* Off: the Peak Brightness setting is used as set, as it always was */
+#define DEFAULT_VIDEO_HDR_USE_DISPLAY_PEAK false
+/* Off: the Wayland compositor is told the frame is Windows-scRGB and
+ * maps it as it always has */
+#define DEFAULT_VIDEO_HDR_SEND_LUMINANCE false
 
 /* Should we expand the colour gamut when using hdr */
 #define DEFAULT_VIDEO_HDR_EXPAND_GAMUT 0
@@ -880,7 +912,6 @@
 #endif
 #define DEFAULT_MENU_SHOW_INFORMATION true
 #define DEFAULT_MENU_SHOW_CONFIGURATIONS true
-#define DEFAULT_MENU_SHOW_HELP true
 #if defined(ANDROID)
 /* Android's navigation model expects the user to leave via Home or the
  * task switcher rather than an in-app control, and the Android TV
@@ -1572,6 +1603,11 @@
 
 #define DEFAULT_NETPLAY_SHARE_DIGITAL RARCH_NETPLAY_SHARE_DIGITAL_NO_SHARING
 #define DEFAULT_NETPLAY_SHARE_ANALOG  RARCH_NETPLAY_SHARE_ANALOG_NO_SHARING
+
+/* TLS certificate-verification policy - 0 == TLS_VERIFY_REQUIRED (the safe,
+ * fail-closed default; see network/tls_config.h). Literal here so config.def.h
+ * needn't pull in a network header. */
+#define DEFAULT_TLS_VERIFY_MODE 0
 #endif
 
 /* On save state load, block SRAM from being overwritten.
@@ -1674,6 +1710,9 @@
 /* Enable runloop for variable refresh rate screens. Force x1 speed while handling fast forward too. */
 #define DEFAULT_VRR_RUNLOOP_ENABLE false
 
+/* The menu runs at the display's refresh rate while content is loaded */
+#define DEFAULT_MENU_FRAME_RATE MENU_FRAME_RATE_DISPLAY
+
 /* Run core logic one or more frames ahead then load the state back to reduce perceived input lag. */
 #define DEFAULT_RUN_AHEAD_FRAMES 1
 
@@ -1686,6 +1725,10 @@
 /* Enable stdin/network command interface. */
 #define DEFAULT_NETWORK_CMD_ENABLE false
 #define DEFAULT_NETWORK_CMD_PORT 55355
+
+/* The MCP server: off, and only on this machine, unless chosen. */
+#define DEFAULT_MCP_SERVER_ENABLE false
+#define DEFAULT_MCP_SERVER_PORT 55357
 #define DEFAULT_NETWORK_REMOTE_BASE_PORT 55400
 #define DEFAULT_STDIN_CMD_ENABLE false
 
@@ -1705,6 +1748,9 @@
  * (oldest backup will be deleted when creating
  * a new one) */
 #define DEFAULT_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE 1
+/* Store automatic core backups compressed (off: the
+ * replaced core is moved into the backups as it is) */
+#define DEFAULT_CORE_UPDATER_AUTO_BACKUP_COMPRESS true
 
 #define DEFAULT_NETWORK_ON_DEMAND_THUMBNAILS false
 
@@ -1855,10 +1901,12 @@
 #define DEFAULT_INPUT_SENSORS_ENABLE true
 
 /* Use the Android system (IME) keyboard for menu text entry instead of
- * the built-in on-screen keyboard. Off by default so gamepad-only
- * and no-touch devices keep the navigable on-screen keyboard at
- * all times. */
-#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD false
+ * the built-in on-screen keyboard. On by default: it is the keyboard
+ * the device's users already know, and it brings clipboard paste and
+ * password managers. Gamepad-only and no-touch devices whose input
+ * method cannot be driven from a pad can turn it off to get the
+ * navigable on-screen keyboard back. */
+#define DEFAULT_INPUT_ANDROID_SYSTEM_KEYBOARD true
 
 /* Use the system screen keyboard for menu text entry on SDL3
  * platforms that provide one. Off by default so gamepad-only
@@ -2002,6 +2050,10 @@
 /* Only applies to Android 7.0 (API 24) and up */
 #define DEFAULT_SUSTAINED_PERFORMANCE_MODE false
 
+/* Windows: activate the low-latency copy of the power plan */
+#define DEFAULT_WIN32_POWER_PLAN false
+#define DEFAULT_WIN32_POWER_PLAN_IDLE_DISABLE false
+
 #if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_VIBRATE_ON_KEYPRESS true
 #else
@@ -2024,6 +2076,11 @@
 
 #ifdef HAVE_VULKAN
 #define DEFAULT_VULKAN_GPU_INDEX 0
+#endif
+
+#ifdef HAVE_EGL
+/* 0: the EGL implementation chooses, as before a GPU could be picked */
+#define DEFAULT_GL_GPU_INDEX 0
 #endif
 
 #ifdef HAVE_D3D10
@@ -2193,5 +2250,23 @@
 #define DEFAULT_SMB_CLIENT_NUM_CONTEXTS 4
 #define DEFAULT_SMB_CLIENT_MAX_CONTEXTS 20
 #define DEFAULT_SMB_CLIENT_TIMEOUT 5
-#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 20
+#define DEFAULT_SMB_CLIENT_MAX_TIMEOUT 60
+/* Read-ahead window per open file, KiB: small sequential reads are
+ * served from one pipelined fetch of this size. */
+#define DEFAULT_SMB_CLIENT_READAHEAD 0
+#define DEFAULT_SMB_CLIENT_MAX_READAHEAD 16384
 #endif
+
+/* NFS client (nfs://): pool size, timeout in seconds, and the NFS and
+ * MOUNT ports, 0 meaning ask the server's portmapper. */
+#define DEFAULT_NFS_NUM_CONTEXTS 4
+#define DEFAULT_NFS_TIMEOUT 5
+#define DEFAULT_NFS_PORT 0
+#define DEFAULT_NFS_MOUNT_PORT 0
+
+/* NFS protocol version for nfs://: 3 (default) or 4. Version 4 needs
+ * no portmapper or MOUNT service and takes the export as the server's
+ * pseudo-filesystem path. */
+#define DEFAULT_NFS_VERSION 3
+#define DEFAULT_NFS_READAHEAD 0
+#define DEFAULT_NFS_MAX_READAHEAD 16384

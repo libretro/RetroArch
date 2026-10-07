@@ -74,8 +74,13 @@
 #include <rthreads/retro_eventcount.h>
 #endif
 
+#include <queues/fifo_queue.h>
+#include <audio/conversion/float_to_s32.h>
+
 #include "../audio_upmix.h"
 #include "../audio_driver.h"
+#include "../microphone_driver.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 /* ---- identifiers ------------------------------------------------- */
@@ -200,21 +205,17 @@ enum
  * pulls in for some toolchains and not for others - the griffin build
  * under MSVC gets neither - and including it here would drag the whole
  * device-control surface into a translation unit that holds every
- * driver in the tree. Three constants is the smaller thing to carry,
- * and they are as fixed as the rest of the interface above. */
-#ifndef METHOD_NEITHER
-#define METHOD_NEITHER 3
-#endif
-#ifndef FILE_ANY_ACCESS
-#define FILE_ANY_ACCESS 0
-#endif
-#ifndef FILE_WRITE_ACCESS
-#define FILE_WRITE_ACCESS 0x0002
-#endif
+ * driver in the tree. Four constants is the smaller thing to carry,
+ * under their own names so a unit that also sees winioctl.h holds one
+ * definition of each. */
+#define RA_METHOD_NEITHER    3
+#define RA_FILE_ANY_ACCESS   0
+#define RA_FILE_WRITE_ACCESS 0x0002
+#define RA_FILE_READ_ACCESS  0x0001
 
 #define RA_FILE_DEVICE_KS 0x0000002f
 #define RA_KS_CTL_CODE(fn) \
-   (((RA_FILE_DEVICE_KS) << 16) | ((FILE_ANY_ACCESS) << 14) | ((fn) << 2) | (METHOD_NEITHER))
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_ANY_ACCESS) << 14) | ((fn) << 2) | (RA_METHOD_NEITHER))
 #define RA_IOCTL_KS_PROPERTY RA_KS_CTL_CODE(0x000)
 
 /* ---- structures -------------------------------------------------- */
@@ -378,8 +379,13 @@ typedef struct
 /* IOCTL_KS_WRITE_STREAM, built as the DDK builds it:
  * CTL_CODE(FILE_DEVICE_KS, 0x004, METHOD_NEITHER, FILE_WRITE_ACCESS). */
 #define RA_IOCTL_KS_WRITE_STREAM \
-   (((RA_FILE_DEVICE_KS) << 16) | ((FILE_WRITE_ACCESS) << 14) \
-    | ((0x004) << 2) | (METHOD_NEITHER))
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_WRITE_ACCESS) << 14) \
+    | ((0x004) << 2) | (RA_METHOD_NEITHER))
+/* IOCTL_KS_READ_STREAM:
+ * CTL_CODE(FILE_DEVICE_KS, 0x005, METHOD_NEITHER, FILE_READ_ACCESS). */
+#define RA_IOCTL_KS_READ_STREAM \
+   (((RA_FILE_DEVICE_KS) << 16) | ((RA_FILE_READ_ACCESS) << 14) \
+    | ((0x005) << 2) | (RA_METHOD_NEITHER))
 
 /* The audio property set, for the pin's own position. PlayOffset is
  * what the device has played, in bytes, and it is the hardware's
@@ -751,24 +757,33 @@ static ra_ksmultiple_item_t *wdmks_pin_property_multi(HANDLE filter,
 
 /* ---- what a pin will take ---------------------------------------- */
 
-/* A render pin, and the formats it said it would accept. The ranges a
- * pin reports are ranges rather than a list of formats: a minimum and
- * maximum rate, a minimum and maximum width, and a channel ceiling.
- * A pin may report several, and what this keeps is the widest of each
- * across all of them - a pin offering 44100-48000 stereo and
- * 44100-192000 8-channel is a pin that can do 192000 and 8, so the
- * ranges are collapsed here and the exact combination is settled when
- * the format is proposed. */
+/* One data range a pin reports: a minimum and maximum rate, a minimum
+ * and maximum width, a channel ceiling, and which sample type the
+ * three bound together. */
 typedef struct
 {
-   ULONG pin_id;
    ULONG max_channels;
    ULONG min_bits;
    ULONG max_bits;
    ULONG min_rate;
    ULONG max_rate;
-   bool  takes_pcm;
-   bool  takes_float;
+   bool  is_float;
+} wdmks_range_t;
+
+/* A render pin, and the formats it said it would accept. The ranges
+ * are kept apart, because each one binds its bounds together: a pin
+ * offering 44100-48000 stereo and 44100-192000 8-channel has not
+ * offered 192000 stereo, and a candidate is in the pin only when one
+ * range holds all of it at once. Past the cap the rest are folded into
+ * the last one kept, which widens it to the box the whole list would
+ * have been - still a pin the proposal settles. */
+#define WDMKS_MAX_RANGES 12
+
+typedef struct
+{
+   wdmks_range_t ranges[WDMKS_MAX_RANGES];
+   ULONG         pin_id;
+   unsigned      range_count;
 } wdmks_pin_t;
 
 /* One audio filter: the device path to open it by, the name to show,
@@ -779,35 +794,27 @@ typedef struct
 {
    WCHAR       *path;
    char        *name;
-   wdmks_pin_t  pins[WDMKS_MAX_PINS];
+   wdmks_pin_t *pins;
    unsigned     pin_count;
    bool         wavert;
 } wdmks_device_t;
 
-/* Reads one pin's data ranges and folds them into the pin record.
+/* Reads one pin's data ranges into the pin record, one kept per range.
  * Returns false where the pin reports nothing usable, which is the
  * normal answer for the many pins on a filter that are not audio
  * sinks at all. */
-static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
+static bool wdmks_pin_fold_ranges(const ra_ksmultiple_item_t *item,
       wdmks_pin_t *pin)
 {
-   ra_ksmultiple_item_t *item;
-   unsigned char        *walk;
-   unsigned char        *end;
-   ULONG                 i;
-   bool                  any = false;
-
-   if (!(item = wdmks_pin_property_multi(filter, pin_id,
-               RA_KSPROPERTY_PIN_DATARANGES)))
-      return false;
-
-   walk = (unsigned char*)(item + 1);
-   end  = (unsigned char*)item + item->Size;
+   const unsigned char *walk = (const unsigned char*)(item + 1);
+   const unsigned char *end  = (const unsigned char*)item + item->Size;
+   ULONG                i;
+   bool                 any  = false;
 
    for (i = 0; i < item->Count; i++)
    {
-      ra_ksdatarange_audio_t *r = (ra_ksdatarange_audio_t*)walk;
-      ULONG                   step;
+      const ra_ksdatarange_audio_t *r = (const ra_ksdatarange_audio_t*)walk;
+      ULONG                         step;
 
       /* Each range says its own length, and the next follows it
        * aligned to eight. A length that does not fit inside what the
@@ -831,48 +838,72 @@ static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
          bool flt   = !memcmp(&r->DataRange.f.SubFormat,
                &ra_ks_dataformat_subtype_float, sizeof(GUID));
 
-         if (pcm || flt)
+         if ((pcm || flt) && r->MaximumChannels && r->MaximumSampleFrequency)
          {
-            if (pcm)
-               pin->takes_pcm   = true;
-            if (flt)
-               pin->takes_float = true;
+            wdmks_range_t *k;
 
-            if (!any)
+            if (pin->range_count < WDMKS_MAX_RANGES)
             {
-               pin->max_channels = r->MaximumChannels;
-               pin->min_bits     = r->MinimumBitsPerSample;
-               pin->max_bits     = r->MaximumBitsPerSample;
-               pin->min_rate     = r->MinimumSampleFrequency;
-               pin->max_rate     = r->MaximumSampleFrequency;
+               k               = &pin->ranges[pin->range_count++];
+               k->max_channels = r->MaximumChannels;
+               k->min_bits     = r->MinimumBitsPerSample;
+               k->max_bits     = r->MaximumBitsPerSample;
+               k->min_rate     = r->MinimumSampleFrequency;
+               k->max_rate     = r->MaximumSampleFrequency;
+               k->is_float     = flt;
             }
             else
             {
-               if (r->MaximumChannels        > pin->max_channels)
-                  pin->max_channels = r->MaximumChannels;
-               if (r->MinimumBitsPerSample   < pin->min_bits)
-                  pin->min_bits     = r->MinimumBitsPerSample;
-               if (r->MaximumBitsPerSample   > pin->max_bits)
-                  pin->max_bits     = r->MaximumBitsPerSample;
-               if (r->MinimumSampleFrequency < pin->min_rate)
-                  pin->min_rate     = r->MinimumSampleFrequency;
-               if (r->MaximumSampleFrequency > pin->max_rate)
-                  pin->max_rate     = r->MaximumSampleFrequency;
+               unsigned j = WDMKS_MAX_RANGES;
+               k          = NULL;
+               while (j--)
+                  if (pin->ranges[j].is_float == flt)
+                  {
+                     k = &pin->ranges[j];
+                     break;
+                  }
+               if (k)
+               {
+                  if (r->MaximumChannels        > k->max_channels)
+                     k->max_channels = r->MaximumChannels;
+                  if (r->MinimumBitsPerSample   < k->min_bits)
+                     k->min_bits     = r->MinimumBitsPerSample;
+                  if (r->MaximumBitsPerSample   > k->max_bits)
+                     k->max_bits     = r->MaximumBitsPerSample;
+                  if (r->MinimumSampleFrequency < k->min_rate)
+                     k->min_rate     = r->MinimumSampleFrequency;
+                  if (r->MaximumSampleFrequency > k->max_rate)
+                     k->max_rate     = r->MaximumSampleFrequency;
+               }
             }
             any = true;
          }
       }
       walk += step;
    }
-
-   free(item);
-   return any && pin->max_channels > 0 && pin->max_rate > 0;
+   return any;
 }
 
-/* Finds the render pins on an open filter: the ones audio flows INTO
- * (a render filter's sink), that this side may be the source for, and
- * that report a usable audio range. */
-static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
+static bool wdmks_pin_read_ranges(HANDLE filter, ULONG pin_id,
+      wdmks_pin_t *pin)
+{
+   ra_ksmultiple_item_t *item;
+   bool                  any;
+
+   if (!(item = wdmks_pin_property_multi(filter, pin_id,
+               RA_KSPROPERTY_PIN_DATARANGES)))
+      return false;
+   any = wdmks_pin_fold_ranges(item, pin);
+   free(item);
+   return any;
+}
+
+/* Finds the streaming pins on an open filter: the ones audio flows
+ * through in the given direction - INTO a render filter, OUT of a
+ * capture one - that this side may connect to, and that report a
+ * usable audio range. */
+static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev,
+      ULONG flow_wanted)
 {
    ra_ksproperty_t prop;
    ULONG           pin_count = 0;
@@ -885,16 +916,19 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
          != sizeof(pin_count))
       return;
 
+   if (!(dev->pins = (wdmks_pin_t*)calloc(WDMKS_MAX_PINS, sizeof(*dev->pins))))
+      return;
+
    for (i = 0; i < pin_count && dev->pin_count < WDMKS_MAX_PINS; i++)
    {
-      ULONG       flow = 0;
-      ULONG       comm = 0;
-      wdmks_pin_t pin;
+      ULONG        flow = 0;
+      ULONG        comm = 0;
+      wdmks_pin_t *pin  = &dev->pins[dev->pin_count];
 
       if (wdmks_pin_property(filter, i, RA_KSPROPERTY_PIN_DATAFLOW,
                &flow, sizeof(flow)) != sizeof(flow))
          continue;
-      if (flow != RA_KSPIN_DATAFLOW_IN)
+      if (flow != flow_wanted)
          continue;
 
       if (wdmks_pin_property(filter, i, RA_KSPROPERTY_PIN_COMMUNICATION,
@@ -904,12 +938,12 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
             && comm != RA_KSPIN_COMMUNICATION_BOTH)
          continue;
 
-      memset(&pin, 0, sizeof(pin));
-      pin.pin_id = i;
-      if (!wdmks_pin_read_ranges(filter, i, &pin))
+      memset(pin, 0, sizeof(*pin));
+      pin->pin_id = i;
+      if (!wdmks_pin_read_ranges(filter, i, pin))
          continue;
 
-      dev->pins[dev->pin_count++] = pin;
+      dev->pin_count++;
    }
 }
 
@@ -923,9 +957,12 @@ static void wdmks_filter_read_pins(HANDLE filter, wdmks_device_t *dev)
  * skipped without complaint: a machine has several of these - the
  * capture side of a card, a filter that is busy, a virtual device
  * whose driver declines - and they are not errors. */
-static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
+static wdmks_device_t *wdmks_devices_scan(unsigned *count_out,
+      bool capture)
 {
    HANDLE          list;
+   const GUID     *alias_guid = capture
+      ? &ra_ks_category_capture : &ra_ks_category_render;
    wdmks_device_t *devices = NULL;
    unsigned        count   = 0;
    unsigned        cap     = 0;
@@ -962,7 +999,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
        * topology node, and is not asked anything further. */
       memset(&alias, 0, sizeof(alias));
       alias.cbSize = sizeof(alias);
-      if (!g_setupapi.get_alias(list, &iface, &ra_ks_category_render, &alias))
+      if (!g_setupapi.get_alias(list, &iface, alias_guid, &alias))
          continue;
       if (!(alias.Flags & 0x00000001) || (alias.Flags & 0x00000002))
          continue;   /* not active, or removed */
@@ -1011,13 +1048,15 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
          free(detail);
          continue;
       }
-      wdmks_filter_read_pins(filter, &dev);
+      wdmks_filter_read_pins(filter, &dev,
+            capture ? RA_KSPIN_DATAFLOW_OUT : RA_KSPIN_DATAFLOW_IN);
       CloseHandle(filter);
 
       if (!dev.pin_count)
       {
-         RARCH_DBG("[WDM-KS] A filter opened but offers no render pin"
-               " this driver can write to.\n");
+         RARCH_DBG("[WDM-KS] A filter opened but offers no %s pin"
+               " this driver can use.\n", capture ? "capture" : "render");
+         free(dev.pins);
          free(detail);
          continue;
       }
@@ -1050,6 +1089,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
 
       if (!dev.path)
       {
+         free(dev.pins);
          free(dev.name);
          continue;
       }
@@ -1061,6 +1101,7 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
                next * sizeof(*devices));
          if (!grow)
          {
+            free(dev.pins);
             free(dev.path);
             free(dev.name);
             break;
@@ -1072,8 +1113,8 @@ static wdmks_device_t *wdmks_devices_scan(unsigned *count_out)
    }
 
    g_setupapi.destroy_list(list);
-   RARCH_DBG("[WDM-KS] %u render filter(s) usable of %u interface(s) seen.\n",
-         count, (unsigned)index);
+   RARCH_DBG("[WDM-KS] %u %s filter(s) usable of %u interface(s) seen.\n",
+         count, capture ? "capture" : "render", (unsigned)index);
    *count_out = count;
    return devices;
 }
@@ -1085,6 +1126,7 @@ static void wdmks_devices_free(wdmks_device_t *devices, unsigned count)
       return;
    for (i = 0; i < count; i++)
    {
+      free(devices[i].pins);
       free(devices[i].path);
       free(devices[i].name);
    }
@@ -1106,7 +1148,7 @@ static void *wdmks_device_list_new(void *data)
       return NULL;
 
    attr.i  = 0;
-   devices = wdmks_devices_scan(&count);
+   devices = wdmks_devices_scan(&count, false);
 
    for (i = 0; i < count; i++)
    {
@@ -1187,20 +1229,29 @@ typedef struct
 static const unsigned wdmks_rate_order[] =
 { 48000, 44100, 96000, 88200, 192000, 32000, 22050, 16000, 11025, 8000 };
 
+/* Whether one range holds every bound of a candidate at once. */
+static bool wdmks_format_in_range(const wdmks_range_t *r,
+      const wdmks_format_t *fmt)
+{
+   if (r->is_float != fmt->is_float)
+      return false;
+   if (fmt->rate < r->min_rate || fmt->rate > r->max_rate)
+      return false;
+   if (fmt->channels > r->max_channels || fmt->channels == 0)
+      return false;
+   if (fmt->bits < r->min_bits || fmt->bits > r->max_bits)
+      return false;
+   return true;
+}
+
 static bool wdmks_format_in_pin(const wdmks_pin_t *pin,
       const wdmks_format_t *fmt)
 {
-   if (fmt->rate < pin->min_rate || fmt->rate > pin->max_rate)
-      return false;
-   if (fmt->channels > pin->max_channels || fmt->channels == 0)
-      return false;
-   if (fmt->bits < pin->min_bits || fmt->bits > pin->max_bits)
-      return false;
-   if (fmt->is_float && !pin->takes_float)
-      return false;
-   if (!fmt->is_float && !pin->takes_pcm)
-      return false;
-   return true;
+   unsigned i;
+   for (i = 0; i < pin->range_count; i++)
+      if (wdmks_format_in_range(&pin->ranges[i], fmt))
+         return true;
+   return false;
 }
 
 /* Fills a WAVEFORMATEX for a format. Mono and stereo go out as the
@@ -1289,7 +1340,7 @@ typedef struct
  * the device does not want, and is how the ranges are turned into
  * fact. */
 static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
-      const wdmks_format_t *fmt, bool looped)
+      const wdmks_format_t *fmt, bool looped, DWORD access)
 {
    /* Big enough for either form. The extensible one is a
     * WAVEFORMATEX with twenty-two bytes behind it, and the data
@@ -1346,7 +1397,7 @@ static HANDLE wdmks_pin_try(HANDLE filter, ULONG pin_id,
       return INVALID_HANDLE_VALUE;
 
    {
-      DWORD res = g_ks_create_pin(filter, connect, GENERIC_WRITE, &pin);
+      DWORD res = g_ks_create_pin(filter, connect, access, &pin);
       if (res != 0)
       {
          /* Only the first refusal per pin is said, and at a level
@@ -1432,29 +1483,70 @@ static HANDLE wdmks_pin_try_ac3(HANDLE filter, ULONG pin_id,
    return pin;
 }
 
+/* The sample shapes proposed, in preference order: float first (the
+ * frontend's own pipeline is float), then the integer widths this
+ * driver converts into - 32, 24 in 32 - and 16 last. 24-in-32 and
+ * 32-bit integer are the same size as float, so the conversion is a
+ * copy that changes nothing else about a write or a read. */
+typedef struct
+{
+   unsigned bits;
+   unsigned container_bits;
+   bool     is_float;
+} wdmks_shape_t;
+
+static const wdmks_shape_t wdmks_shape_order[] =
+{
+   { 32, 32, true  },
+   { 32, 32, false },
+   { 24, 32, false },
+   { 16, 16, false }
+};
+
+/* Whether a 32-bit-wide range exists at all, of either type: a pin
+ * advertising only 32-bit PCM has taken 32-bit float when proposed. */
+static bool wdmks_pin_has_wide(const wdmks_pin_t *pin, unsigned rate,
+      unsigned channels)
+{
+   unsigned i;
+   for (i = 0; i < pin->range_count; i++)
+   {
+      const wdmks_range_t *r = &pin->ranges[i];
+      if (     rate >= r->min_rate && rate <= r->max_rate
+            && channels <= r->max_channels
+            && r->min_bits <= 32 && r->max_bits >= 32)
+         return true;
+   }
+   return false;
+}
+
+static const char *wdmks_shape_name(const wdmks_format_t *fmt)
+{
+   if (fmt->is_float)
+      return "32-bit float";
+   if (fmt->container_bits == 16)
+      return "16-bit integer";
+   return fmt->bits == 24 ? "24-in-32-bit integer" : "32-bit integer";
+}
+
 /* Opens the best format a pin will actually take, rather than the
- * best its ranges claim. Preference order: the rate asked for before
- * any other, float before integer where the pin says it takes both
- * (the frontend's own pipeline is float, so that is one conversion
- * fewer), and the widest integer before the narrowest. */
+ * best its ranges claim: the rate asked for before any other, and the
+ * shapes in wdmks_shape_order. A pin whose ranges name no float
+ * subtype is still offered float once, as a last resort where it has
+ * a 32-bit-wide range: the ranges some class drivers report are
+ * narrower than what their pins accept, and a refusal costs one call. */
 static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
-      unsigned wanted_rate, unsigned channels, bool looped,
+      unsigned wanted_rate, unsigned channels, bool looped, DWORD access,
       wdmks_stream_t *out)
 {
    unsigned r;
+   unsigned pass;
 
+   for (pass = 0; pass < 2; pass++)
    for (r = 0; r <= sizeof(wdmks_rate_order) / sizeof(*wdmks_rate_order); r++)
    {
       unsigned rate = (r == 0) ? wanted_rate : wdmks_rate_order[r - 1];
       unsigned b;
-      /* Only what the frontend can hand over: 32-bit float, or
-       * 16-bit integer. It sends one or the other according to what
-       * use_float() says, and nothing here converts - so a pin opened
-       * at 24 or 32-bit integer is a pin being fed samples half the
-       * width it is reading, which plays at the wrong pitch rather
-       * than failing. Those two widths belong here only once
-       * something converts into them. */
-      static const unsigned bits_order[] = { 32, 16 };
 
       if (!rate)
          continue;
@@ -1463,21 +1555,28 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
       if (r > 0 && rate == wanted_rate)
          continue;
 
-      for (b = 0; b < sizeof(bits_order) / sizeof(*bits_order); b++)
+      for (b = 0; b < sizeof(wdmks_shape_order) / sizeof(*wdmks_shape_order); b++)
       {
          wdmks_format_t fmt;
          HANDLE         h;
 
-         fmt.rate     = rate;
-         fmt.channels = channels;
-         fmt.bits     = bits_order[b];
-         fmt.is_float = (b == 0);
-         fmt.container_bits = fmt.bits;
+         fmt.rate           = rate;
+         fmt.channels       = channels;
+         fmt.bits           = wdmks_shape_order[b].bits;
+         fmt.container_bits = wdmks_shape_order[b].container_bits;
+         fmt.is_float       = wdmks_shape_order[b].is_float;
 
-         if (!wdmks_format_in_pin(pin, &fmt))
+         if (pass == 0)
+         {
+            if (!wdmks_format_in_pin(pin, &fmt))
+               continue;
+         }
+         else if (     !fmt.is_float
+                    || wdmks_format_in_pin(pin, &fmt)
+                    || !wdmks_pin_has_wide(pin, rate, channels))
             continue;
 
-         h = wdmks_pin_try(filter, pin->pin_id, &fmt, looped);
+         h = wdmks_pin_try(filter, pin->pin_id, &fmt, looped, access);
          if (h == INVALID_HANDLE_VALUE)
             continue;
 
@@ -1486,16 +1585,17 @@ static bool wdmks_pin_open(HANDLE filter, const wdmks_pin_t *pin,
          out->fmt    = fmt;
          out->looped = looped;
          RARCH_LOG("[WDM-KS] Pin %u opened %s at %u Hz, %u channel(s),"
-               " %s, %u-byte frame.\n",
+               " %s, %u-byte frame%s.\n",
                (unsigned)pin->pin_id, looped ? "(WaveRT)" : "(WaveCyclic)",
-               fmt.rate, fmt.channels,
-               fmt.is_float ? "32-bit float" : "16-bit integer",
-               fmt.channels * (fmt.container_bits / 8));
+               fmt.rate, fmt.channels, wdmks_shape_name(&fmt),
+               fmt.channels * (fmt.container_bits / 8),
+               pass ? ", outside the ranges it reported" : "");
          return true;
       }
    }
    return false;
 }
+
 
 /* The pin's state. A pin is driven STOP to ACQUIRE to PAUSE to RUN on
  * the way up and back down the same way: the transitions are ordered
@@ -1575,6 +1675,11 @@ typedef struct
     * fill. */
    unsigned char  *rt_buf;
    size_t          rt_size;
+   /* How much audio is held ahead of the hardware's fetch point: the
+    * latency setting.  The loop itself is larger - see the request in
+    * wdmks_init - so that a late pass has laps to spare before the
+    * position is ambiguous, and so the margin the FIFO needs fits. */
+   size_t          rt_ahead;
    size_t          rt_write;
 #ifdef HAVE_THREADS
    /* The refill thread's estate, threaded looped pins only. The
@@ -1593,10 +1698,20 @@ typedef struct
    retro_eventcount_t  rt_park;
    sthread_t          *rt_thread;
    retro_atomic_int_t  rt_run;
+   retro_atomic_int_t  rt_grant;   /* enum audio_thread_grant */
+   /* How the thread woke, kept by it and read once it has joined: the
+    * longest gap between two of its passes and how many gaps were a
+    * loop or more, which is the count of laps the position could not
+    * be followed across. */
+   retro_time_t        rt_gap_max_usec;
+   size_t              rt_gaps_over;
+   size_t              rt_passes;
+   const char         *rt_sched;   /* what the refill thread ran under */
    retro_atomic_64_t   rt_frames_pub;  /* absolute frames played */
    retro_atomic_int_t  clk_ppm_pub;   /* AUDIO_CLOCK_PPM_NONE until known */
 #endif
-   volatile ULONG *rt_pos;      /* byte offset, updated by the device */
+   volatile ULONG *rt_pos;      /* byte position, updated by the device */
+   bool            rt_pos_wide; /* the register is 64 bits, not 32 */
    bool            rt_presentation;
    retro_time_t    rt_last_usec;  /* when the cursor was last read */
    HANDLE          rt_event;    /* signalled per notification, if offered */
@@ -1606,17 +1721,47 @@ typedef struct
     * and the play offset is read on every write, every write_avail
     * and every lap of the wait, which is far more often than once a
     * frame. It is still a poll, and a process the scheduler has
-    * stopped favouring can outrun it; that is the same shortcoming as
-    * the write path's, and the same answer - a thread of this
-    * driver's own - which is not here yet. */
+    * stopped favouring can outrun it; where threads are built the
+    * refill thread reads it at the device's pace instead, and
+    * wdmks_rt_advance() treats a gap longer than a lap as laps lost
+    * rather than as one step. */
    uint64_t        rt_played;
    /* The count is kept in bytes and converted on demand: a position
     * that lands mid-frame would otherwise lose its remainder to the
     * division on every read, and every read of free room takes one. */
    uint64_t        rt_played_bytes;
+   /* What has been placed in the loop, in the same units and against
+    * the same count: while it is ahead of rt_played_bytes the
+    * difference is what the hardware has still to play, and the
+    * moment it falls behind the hardware has run past the write
+    * cursor. That is the one condition the two positions cannot tell
+    * apart by themselves - a cursor a frame behind the write cursor
+    * is what a full loop looks like, and also what a loop the
+    * hardware has just overrun looks like. */
+   uint64_t        rt_written_bytes;
    ULONG           rt_last_pos;
    bool            rt_have_last;
+   /* The next sample of the register is the first after the hardware
+    * (re)started, so it says where the hardware is and nothing about
+    * what it played: the model starts over from it. Set when the
+    * buffer is mapped and on every start(), which takes the pin
+    * through ACQUIRE and so back to the start of the loop. */
+   bool            rt_origin;
    bool            rt_barrier;  /* writes need a barrier to be seen */
+   /* The hardware FIFO in bytes, from the pin's own latency report:
+    * how far ahead of the register the DMA has already fetched. Zero
+    * where the pin reports none. */
+   size_t          rt_fifo_bytes;
+   /* Whether audio has been placed in the loop since the last resync:
+    * the hardware running past the write cursor is a dropout only
+    * when there was audio to run out of. Once it has, every further
+    * sample of a pause finds it out again, and that is one gap in the
+    * audio, not one per sample. */
+   bool            rt_fed;
+   /* Gaps in the audio: times the hardware ran past the write cursor,
+    * or laps went by unobserved, while audio had been queued. One
+    * atomic add where it happens; read by the statistics each frame. */
+   retro_atomic_size_t rt_underruns;
 
    /* AC-3 over IEC 61937, where the device takes it and the frontend
     * asked for it: the frontend's float frames are gathered a block
@@ -1634,9 +1779,15 @@ typedef struct
     * one frame to the receiver and has to go out whole. */
    size_t          ac3_burst_len;
    size_t          ac3_burst_at;
+   /* Where the pin took 32- or 24-in-32-bit integer: the frontend's
+    * float frames are converted here on the way in, the same size. */
+   unsigned char  *cvt;
+   size_t          cvt_size;
    bool            running;
    retro_atomic_int_t dead;   /* an I/O failed; stop writing, still reclaim */
    bool            nonblock;
+   bool             thread_priority; /* audio_thread_priority */
+   bool             mmcss;           /* audio_wasapi_mmcss: the Pro Audio class */
    bool            is_float;
    uint32_t        layout;
 
@@ -1659,14 +1810,15 @@ static bool wdmks_position(wdmks_t *w, uint64_t *frames);
  * a later revision can wait on; the plain form is what every WaveRT
  * driver has. The buffer belongs to the driver - it is not freed
  * here, it goes away with the pin. */
-static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
+static bool wdmks_rt_buffer_request(HANDLE pin, size_t wanted,
+      ra_ksrtaudio_buffer_t *out)
 {
    ra_ksrtaudio_buffer_property_notify_t inn;
-   ra_ksrtaudio_buffer_t                 out;
+   ra_ksrtaudio_buffer_property_t        plain;
    DWORD                                 written = 0;
 
    memset(&inn, 0, sizeof(inn));
-   memset(&out, 0, sizeof(out));
+   memset(out,  0, sizeof(*out));
    inn.Property.Set      = ra_ks_propsetid_rtaudio;
    inn.Property.Id       = RA_KSPROPERTY_RTAUDIO_BUFFER_WITH_NOTIFICATION;
    inn.Property.Flags    = RA_KSPROPERTY_TYPE_GET;
@@ -1674,29 +1826,105 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    inn.RequestedBufferSize = (ULONG)wanted;
    inn.NotificationCount = 2;
 
-   if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
-            &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
-         || written < sizeof(out) || !out.BufferAddress)
-   {
-      ra_ksrtaudio_buffer_property_t plain;
-      memset(&plain, 0, sizeof(plain));
-      memset(&out,   0, sizeof(out));
-      plain.Property.Set   = ra_ks_propsetid_rtaudio;
-      plain.Property.Id    = RA_KSPROPERTY_RTAUDIO_BUFFER;
-      plain.Property.Flags = RA_KSPROPERTY_TYPE_GET;
-      plain.BaseAddress    = NULL;
-      plain.RequestedBufferSize = (ULONG)wanted;
+   if (DeviceIoControl(pin, RA_IOCTL_KS_PROPERTY,
+            &inn, sizeof(inn), out, sizeof(*out), &written, NULL)
+         && written >= sizeof(*out) && out->BufferAddress)
+      return true;
 
-      written = 0;
-      if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
-               &plain, sizeof(plain), &out, sizeof(out), &written, NULL)
-            || written < sizeof(out) || !out.BufferAddress)
-      {
-         RARCH_ERR("[WDM-KS] The pin would not give a buffer: 0x%08lx.\n",
-               (unsigned long)GetLastError());
-         return false;
-      }
+   memset(&plain, 0, sizeof(plain));
+   memset(out,    0, sizeof(*out));
+   plain.Property.Set   = ra_ks_propsetid_rtaudio;
+   plain.Property.Id    = RA_KSPROPERTY_RTAUDIO_BUFFER;
+   plain.Property.Flags = RA_KSPROPERTY_TYPE_GET;
+   plain.BaseAddress    = NULL;
+   plain.RequestedBufferSize = (ULONG)wanted;
+
+   written = 0;
+   if (DeviceIoControl(pin, RA_IOCTL_KS_PROPERTY,
+            &plain, sizeof(plain), out, sizeof(*out), &written, NULL)
+         && written >= sizeof(*out) && out->BufferAddress)
+      return true;
+
+   RARCH_ERR("[WDM-KS] The pin would not give a buffer: 0x%08lx.\n",
+         (unsigned long)GetLastError());
+   return false;
+}
+
+/* The position register, where the driver offers one: a pointer it
+ * updates with the byte position the hardware has reached. Reading a
+ * word is cheaper and steadier than an ioctl per query. Only a 32- or
+ * 64-bit register is taken. */
+static bool wdmks_rt_register_request(HANDLE pin,
+      ra_ksrtaudio_hwregister_t *out)
+{
+   ra_ksrtaudio_hwregister_property_t inn;
+   DWORD                              written = 0;
+
+   memset(&inn, 0, sizeof(inn));
+   memset(out,  0, sizeof(*out));
+   inn.Property.Set   = ra_ks_propsetid_rtaudio;
+   inn.Property.Id    = RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER;
+   inn.Property.Flags = RA_KSPROPERTY_TYPE_GET;
+   inn.BaseAddress    = NULL;
+
+   return DeviceIoControl(pin, RA_IOCTL_KS_PROPERTY,
+            &inn, sizeof(inn), out, sizeof(*out), &written, NULL)
+         && written >= sizeof(*out) && out->Register
+         && (out->Width == 32 || out->Width == 64);
+}
+
+/* The event the driver signals as it passes each notification point,
+ * or NULL where the pin offers none. */
+static HANDLE wdmks_rt_event_register(HANDLE pin)
+{
+   ra_ksrtaudio_notification_event_property_t p;
+   DWORD  written = 0;
+   HANDLE ev;
+
+   if (!(ev = CreateEvent(NULL, FALSE, FALSE, NULL)))
+      return NULL;
+
+   memset(&p, 0, sizeof(p));
+   p.Property.Set        = ra_ks_propsetid_rtaudio;
+   p.Property.Id         = RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT;
+   p.Property.Flags      = RA_KSPROPERTY_TYPE_SET;
+   p.NotificationEvent   = ev;
+
+   if (DeviceIoControl(pin, RA_IOCTL_KS_PROPERTY,
+            &p, sizeof(p), &p, sizeof(p), &written, NULL))
+      return ev;
+   CloseHandle(ev);
+   return NULL;
+}
+
+static void wdmks_rt_event_unregister(HANDLE pin, HANDLE ev)
+{
+   ra_ksrtaudio_notification_event_property_t p;
+   DWORD written = 0;
+
+   if (!ev)
+      return;
+   if (pin != INVALID_HANDLE_VALUE)
+   {
+      memset(&p, 0, sizeof(p));
+      p.Property.Set      = ra_ks_propsetid_rtaudio;
+      p.Property.Id       = RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT;
+      p.Property.Flags    = RA_KSPROPERTY_TYPE_SET;
+      p.NotificationEvent = ev;
+      DeviceIoControl(pin, RA_IOCTL_KS_PROPERTY,
+            &p, sizeof(p), &p, sizeof(p), &written, NULL);
    }
+   CloseHandle(ev);
+}
+
+static size_t wdmks_rt_ring_bytes(size_t ahead);
+
+static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
+{
+   ra_ksrtaudio_buffer_t out;
+
+   if (!wdmks_rt_buffer_request(w->stream.handle, wanted, &out))
+      return false;
 
    w->rt_buf     = (unsigned char*)out.BufferAddress;
    w->rt_size    = (size_t)out.ActualBufferSize;
@@ -1725,13 +1953,22 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
    memset(w->rt_buf, 0, w->rt_size);
    w->rt_write    = 0;
    w->rt_played   = 0;
-   w->rt_played_bytes = 0;
+   w->rt_played_bytes  = 0;
+   w->rt_written_bytes = 0;
    w->rt_have_last = false;
+   w->rt_origin    = true;
+   w->rt_fed       = false;
+   retro_atomic_size_init(&w->rt_underruns, 0);
 #ifdef HAVE_THREADS
    /* One device loop's worth of frontend ring: the only frontend
     * buffer, per the notes - packets or the mapped loop stay the
     * device's. */
-   w->rt_ring_size = w->rt_size;
+   /* Two fragments of ring, not one: the refill moves the ring into
+    * the loop once per notification, so a ring of one fragment feeds
+    * exactly what a fragment plays and a pass that comes late leaves
+    * a deficit nothing repays - every fourth pass short, for good.
+    * With two, a pass can move the fragment and the deficit. */
+   w->rt_ring_size = wdmks_rt_ring_bytes(w->rt_ahead);
    if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
       return false;
    if (!retro_eventcount_init(&w->rt_park))
@@ -1802,23 +2039,40 @@ static void wdmks_rt_probe_presentation(wdmks_t *w)
 
 static void wdmks_rt_get_position_register(wdmks_t *w)
 {
-   ra_ksrtaudio_hwregister_property_t inn;
-   ra_ksrtaudio_hwregister_t          out;
-   DWORD                              written = 0;
+   ra_ksrtaudio_hwregister_t out;
 
-   memset(&inn, 0, sizeof(inn));
-   memset(&out, 0, sizeof(out));
-   inn.Property.Set   = ra_ks_propsetid_rtaudio;
-   inn.Property.Id    = RA_KSPROPERTY_RTAUDIO_POSITIONREGISTER;
-   inn.Property.Flags = RA_KSPROPERTY_TYPE_GET;
-   inn.BaseAddress    = NULL;
-
-   if (DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
-            &inn, sizeof(inn), &out, sizeof(out), &written, NULL)
-         && written >= sizeof(out) && out.Register)
-      w->rt_pos = (volatile ULONG*)out.Register;
+   if (wdmks_rt_register_request(w->stream.handle, &out))
+   {
+      w->rt_pos      = (volatile ULONG*)out.Register;
+      w->rt_pos_wide = (out.Width == 64);
+   }
    else
       RARCH_LOG("[WDM-KS] No position register; asking the pin instead.\n");
+}
+
+/* A register's value, brought into the loop. A 64-bit register is a
+ * byte count the low word alone cannot place once it passes 2^32 on a
+ * loop that is not a power of two, so the whole of it is read; the
+ * high word is taken twice so a 32-bit build cannot see it torn. */
+static ULONG wdmks_rt_register_value(volatile ULONG *reg, bool wide,
+      size_t loop)
+{
+   ULONG lo, hi, hi2;
+
+   if (!wide)
+      return *reg;
+   do
+   {
+      hi  = reg[1];
+      lo  = reg[0];
+      hi2 = reg[1];
+   } while (hi != hi2);
+   return (ULONG)((((uint64_t)hi << 32) | lo) % loop);
+}
+
+static ULONG wdmks_rt_register_read(const wdmks_t *w)
+{
+   return wdmks_rt_register_value(w->rt_pos, w->rt_pos_wide, w->rt_size);
 }
 
 /* What the hardware adds after this driver's buffer: the FIFO the
@@ -1863,8 +2117,11 @@ static void wdmks_rt_report_latency(wdmks_t *w)
          (unsigned)out.ChipsetDelay, (unsigned)out.CodecDelay);
 
    if (w->frame_bytes && out.FifoSize)
+   {
+      w->rt_fifo_bytes = (size_t)out.FifoSize;
       audio_driver_set_device_latency(
             (size_t)(out.FifoSize / w->frame_bytes));
+   }
 }
 
 /* Waits for the device to free room, for as long as one period is
@@ -1882,6 +2139,8 @@ static void wdmks_rt_report_latency(wdmks_t *w)
  * core.
  */
 static size_t wdmks_rt_free(wdmks_t *w);
+static size_t wdmks_rt_room(const wdmks_t *w);
+static size_t wdmks_rt_margin(const wdmks_t *w);
 static bool   wdmks_rt_play_offset(wdmks_t *w, ULONG *offset);
 static DWORD  wdmks_watchdog_ms(const wdmks_t *w, size_t bytes);
 static void   wdmks_clock_sample_qpc(wdmks_t *w, uint64_t frames,
@@ -1928,11 +2187,7 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
       size_t have = 0;
 
       if (wdmks_rt_play_offset(w, &play))
-      {
-         size_t gap = (size_t)((play + w->rt_size - w->rt_write)
-               % w->rt_size);
-         have = (gap > w->frame_bytes) ? gap - w->frame_bytes : 0;
-      }
+         have = wdmks_rt_room(w);
       if (want > have)
       {
          size_t short_by = want - have;
@@ -2017,47 +2272,116 @@ static void wdmks_rt_wait_room(wdmks_t *w, size_t want)
  * notification form first so that those which do will accept it. */
 static void wdmks_rt_register_event(wdmks_t *w)
 {
-   ra_ksrtaudio_notification_event_property_t p;
-   DWORD written = 0;
-
-   if (!(w->rt_event = CreateEvent(NULL, FALSE, FALSE, NULL)))
-      return;
-
-   memset(&p, 0, sizeof(p));
-   p.Property.Set        = ra_ks_propsetid_rtaudio;
-   p.Property.Id         = RA_KSPROPERTY_RTAUDIO_REGISTER_NOTIFICATION_EVENT;
-   p.Property.Flags      = RA_KSPROPERTY_TYPE_SET;
-   p.NotificationEvent   = w->rt_event;
-
-   if (!DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
-            &p, sizeof(p), &p, sizeof(p), &written, NULL))
+   /* The event fires twice a loop, and the waits that sleep on it
+    * sleep until it does.  That paces a refill while a notification
+    * is no further apart than what is held ahead of the hardware -
+    * the two-fragment loop, where each one is the hardware leaving a
+    * fragment for the refill to fill.  A driver that gave a larger
+    * loop than asked for would put them further apart than that, and
+    * a refill waiting on them would run the held audio out first; the
+    * timer path paces there, on a cadence from what is held. */
+   if (w->rt_size > 2 * w->rt_ahead)
    {
-      CloseHandle(w->rt_event);
       w->rt_event = NULL;
+      RARCH_LOG("[WDM-KS] The loop the driver gave is more than two"
+            " fragments; the position is read on a timer, not the"
+            " notification.\n");
+      return;
+   }
+   if (!(w->rt_event = wdmks_rt_event_register(w->stream.handle)))
       RARCH_LOG("[WDM-KS] No notification event; the write path will"
             " poll, which is worse when backgrounded.\n");
-   }
 }
 
 static void wdmks_rt_unregister_event(wdmks_t *w)
 {
-   ra_ksrtaudio_notification_event_property_t p;
-   DWORD written = 0;
-
-   if (!w->rt_event)
-      return;
-   if (w->stream.handle != INVALID_HANDLE_VALUE)
-   {
-      memset(&p, 0, sizeof(p));
-      p.Property.Set      = ra_ks_propsetid_rtaudio;
-      p.Property.Id       = RA_KSPROPERTY_RTAUDIO_UNREGISTER_NOTIFICATION_EVENT;
-      p.Property.Flags    = RA_KSPROPERTY_TYPE_SET;
-      p.NotificationEvent = w->rt_event;
-      DeviceIoControl(w->stream.handle, RA_IOCTL_KS_PROPERTY,
-            &p, sizeof(p), &p, sizeof(p), &written, NULL);
-   }
-   CloseHandle(w->rt_event);
+   wdmks_rt_event_unregister(w->stream.handle, w->rt_event);
    w->rt_event = NULL;
+}
+
+/* Silence in the loop from one offset forward to another, wrapping
+ * where the loop wraps. What the hardware has played is spent, and
+ * the loop is a loop: a byte that is not overwritten before the
+ * cursor comes round again is played again. The frontend stops
+ * writing on every pause, every menu the core is silent behind and
+ * every stall, and it does so on the understanding that a device with
+ * nothing to play plays nothing - which is what a packet pin does and
+ * what a mapped loop does not. So every byte is cleared as soon as it
+ * has been played: from then until it is written again it holds
+ * silence, and whatever the hardware reads past the end of the audio
+ * is silence rather than the last loop of it, over and over. */
+static void wdmks_rt_scrub(wdmks_t *w, ULONG from, ULONG to)
+{
+   size_t n;
+
+   if (from == to)
+      return;
+   n = (size_t)((to + w->rt_size - from) % w->rt_size);
+   if (from + n <= w->rt_size)
+      memset(w->rt_buf + from, 0, n);
+   else
+   {
+      memset(w->rt_buf + from, 0, w->rt_size - from);
+      memset(w->rt_buf, 0, n - (w->rt_size - from));
+   }
+   if (w->rt_barrier)
+      MemoryBarrier();
+}
+
+/* How far ahead of the cursor a write lands after the hardware has
+ * run past the write cursor: enough that the bytes are in place before
+ * the hardware fetches them. The register says where the DMA is
+ * reading; the FIFO the pin reports is how far past that it has
+ * already fetched, so a write inside it is a write into bytes that
+ * are gone. The margin is that FIFO and half a millisecond for the
+ * write itself. Where the pin reports no FIFO it is two milliseconds,
+ * a guess that covers what the reports seen so far say - and this is
+ * also the floor the reported latency can reach on the loop, so a
+ * guess is only as good as the hardware it stays above. Kept under
+ * half the loop so a fragment is left to fill, and whole frames. */
+static size_t wdmks_rt_margin(const wdmks_t *w)
+{
+   size_t bytes;
+
+   if (w->rt_fifo_bytes)
+      bytes = w->rt_fifo_bytes + (size_t)w->rate / 2000 * w->frame_bytes;
+   else
+      bytes = (size_t)w->rate * 2 / 1000 * w->frame_bytes;
+   /* Under half the loop: a margin past that leaves less than a
+    * fragment to hold, but a quarter cut it under the FIFO on a loop
+    * of two small fragments, and a resync then wrote into bytes the
+    * hardware had already fetched. */
+   if (bytes > w->rt_size / 2)
+      bytes = w->rt_size / 2;
+   bytes -= bytes % w->frame_bytes;
+   if (bytes < w->frame_bytes)
+      bytes = w->frame_bytes;
+   return bytes;
+}
+
+/* The hardware has run past the write cursor. Writing on at the
+ * cursor where it was would put the next audio behind the hardware,
+ * to be played when it comes round again - a whole loop late, and
+ * for good, because nothing after that closes the gap. The cursor is
+ * moved to a little ahead of the hardware instead, and the count is
+ * taken up with it. The bytes between are silence: on an overrun the
+ * scrub has already cleared everything played, and on lost laps -
+ * where the cursor could not be watched round - the whole loop is
+ * cleared, because what played in the meantime was never seen. */
+static void wdmks_rt_resync(wdmks_t *w, ULONG v, bool whole)
+{
+   size_t margin = wdmks_rt_margin(w);
+
+   if (whole)
+   {
+      memset(w->rt_buf, 0, w->rt_size);
+      if (w->rt_barrier)
+         MemoryBarrier();
+   }
+   w->rt_write         = (size_t)((v + margin) % w->rt_size);
+   w->rt_written_bytes = w->rt_played_bytes + margin;
+   /* The margin is silence, not audio: it does not count as fed. */
+   w->rt_fed           = false;
 }
 
 /* Where the hardware is, as a byte offset into the buffer. The
@@ -2074,6 +2398,20 @@ static void wdmks_rt_unregister_event(wdmks_t *w)
  * by up to a frame per read, which the sink estimate reads as drift. */
 static void wdmks_rt_advance(wdmks_t *w, ULONG v)
 {
+   bool lost = false;
+
+   if (w->rt_origin)
+   {
+      /* Nothing before this sample counts: the hardware started, or
+       * started again from the top of the loop, and whatever the loop
+       * held was for the cursor as it was. A start is not a gap in
+       * the audio, so it is not counted as one below. */
+      w->rt_origin    = false;
+      w->rt_have_last = false;
+      w->rt_fed       = false;
+      lost            = true;
+   }
+
    /* How long since the last read, against how long the ring takes to
     * go round. Past that, the step between two cursor readings is
     * ambiguous - the hardware may have gone round once or five times
@@ -2097,6 +2435,7 @@ static void wdmks_rt_advance(wdmks_t *w, ULONG v)
          w->rt_have_last    = false;
          w->clk_have_anchor = false;
          w->clk_n           = 0.0;
+         lost               = true;
       }
       w->rt_last_usec = now_usec;
    }
@@ -2111,15 +2450,28 @@ static void wdmks_rt_advance(wdmks_t *w, ULONG v)
    else
       w->rt_played_bytes += (uint64_t)(v + w->rt_size - w->rt_last_pos);
 
+   /* What was just played is cleared behind the cursor, before any
+    * write this sample leads to lands on top of it. */
+   wdmks_rt_scrub(w, w->rt_last_pos, v);
+
    w->rt_last_pos = v;
    w->rt_played   = w->rt_played_bytes / w->frame_bytes;
+
+   /* Round more than once unobserved is an overrun whatever the loop
+    * held, since it held less than one lap; the count says the rest. */
+   if (lost || w->rt_written_bytes < w->rt_played_bytes)
+   {
+      if (w->rt_fed)
+         retro_atomic_fetch_add_size(&w->rt_underruns, 1);
+      wdmks_rt_resync(w, v, lost);
+   }
 }
 
 static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
 {
    if (w->rt_pos)
    {
-      ULONG v = *w->rt_pos;
+      ULONG v = wdmks_rt_register_read(w);
       if (v >= (ULONG)w->rt_size)
          v %= (ULONG)w->rt_size;
 
@@ -2142,20 +2494,36 @@ static bool wdmks_rt_play_offset(wdmks_t *w, ULONG *offset)
    }
 }
 
-/* Free space: from where this side will write, forward to where the
- * hardware is reading. One frame is kept back so a full buffer is
- * never mistaken for an empty one. */
+/* Free space, from the count rather than from the two positions: the
+ * loop less what has been placed in it and not yet played, with one
+ * frame kept back so the write cursor never comes round onto the
+ * hardware's. The positions alone could not say which of full and
+ * empty a loop with the two cursors together was - which is how the
+ * loop started life full in the model's eyes, so the first audio was
+ * only ever placed behind the hardware as it moved off, one loop late.
+ * As read here it is what the last sample of the register left; the
+ * sample itself is taken by wdmks_rt_free(). */
+static size_t wdmks_rt_room(const wdmks_t *w)
+{
+   uint64_t queued = w->rt_written_bytes - w->rt_played_bytes;
+   /* Held ahead of the hardware: the margin its FIFO needs and the
+    * latency setting's worth of audio beyond it, never the loop - the
+    * loop is larger than that on purpose. */
+   size_t   limit  = wdmks_rt_margin(w) + w->rt_ahead;
+   if (limit + w->frame_bytes > w->rt_size)
+      limit = w->rt_size - w->frame_bytes;
+   if (queued >= limit)
+      return 0;
+   return (size_t)(limit - queued);
+}
+
 static size_t wdmks_rt_free(wdmks_t *w)
 {
-   ULONG  play = 0;
-   size_t gap;
+   ULONG play = 0;
 
    if (!w->rt_buf || !wdmks_rt_play_offset(w, &play))
       return 0;
-   gap = (size_t)((play + w->rt_size - w->rt_write) % w->rt_size);
-   if (gap < w->frame_bytes)
-      return 0;
-   return gap - w->frame_bytes;
+   return wdmks_rt_room(w);
 }
 
 static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
@@ -2260,9 +2628,11 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
       if (w->rt_barrier)
          MemoryBarrier();
 
-      w->rt_write = (w->rt_write + chunk) % w->rt_size;
-      done       += chunk;
-      room       -= chunk;
+      w->rt_write          = (w->rt_write + chunk) % w->rt_size;
+      w->rt_written_bytes += chunk;
+      w->rt_fed            = true;
+      done                += chunk;
+      room                -= chunk;
    }
    return (ssize_t)done;
    }
@@ -2314,13 +2684,79 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
       retro_spsc_read(&w->rt_ring, w->rt_buf + w->rt_write, first);
       if (w->rt_barrier)
          MemoryBarrier();
-      w->rt_write = (w->rt_write + first) % w->rt_size;
-      moved      += first;
-      have       -= first;
+      w->rt_write          = (w->rt_write + first) % w->rt_size;
+      w->rt_written_bytes += first;
+      w->rt_fed            = true;
+      moved               += first;
+      have                -= first;
    }
    if (moved)
       retro_eventcount_notify(&w->rt_park);
    return moved;
+}
+
+/* The Pro Audio scheduling class, from avrt.dll by name: the DLL is
+ * Vista and newer, and the driver runs on older systems than that.
+ * NULL where it is not asked for, not present, or refused. */
+typedef HANDLE (WINAPI *wdmks_av_set_t)(LPCWSTR, LPDWORD);
+typedef BOOL   (WINAPI *wdmks_av_revert_t)(HANDLE);
+
+static HANDLE wdmks_mmcss_begin(HMODULE *avrt, bool enable)
+{
+   wdmks_av_set_t set;
+   HANDLE         task = NULL;
+   DWORD          idx  = 0;
+
+   *avrt = NULL;
+   if (!enable)
+      return NULL;
+   if (!(*avrt = LoadLibraryA("avrt.dll")))
+      return NULL;
+   if ((set = (wdmks_av_set_t)GetProcAddress(*avrt,
+               "AvSetMmThreadCharacteristicsW")))
+      task = set(L"Pro Audio", &idx);
+   if (!task || task == INVALID_HANDLE_VALUE)
+   {
+      FreeLibrary(*avrt);
+      *avrt = NULL;
+      return NULL;
+   }
+   return task;
+}
+
+static void wdmks_mmcss_end(HMODULE avrt, HANDLE task)
+{
+   if (avrt)
+   {
+      wdmks_av_revert_t revert = (wdmks_av_revert_t)GetProcAddress(
+            avrt, "AvRevertMmThreadCharacteristics");
+      if (revert && task)
+         revert(task);
+      FreeLibrary(avrt);
+   }
+}
+
+/* The loop's geometry from the latency setting, in one place so the
+ * harness runs the numbers the driver runs.  ahead is what is held
+ * ahead of the hardware - the setting, floored at 64 frames; loop is
+ * what is asked of the driver - two fragments of that.  The ring the
+ * frontend writes is two fragments too (wdmks_rt_ring_bytes): the
+ * refill moves it once per notification, and a ring of one fragment
+ * feeds exactly what a fragment plays, so a late pass leaves a deficit
+ * nothing repays. */
+static void wdmks_rt_geometry(unsigned latency, unsigned rate,
+      unsigned frame_bytes, size_t *ahead, size_t *loop)
+{
+   size_t a = (size_t)latency * rate / 1000 * frame_bytes;
+   if (a < (size_t)frame_bytes * 64)
+      a = (size_t)frame_bytes * 64;
+   *ahead = a;
+   *loop  = a * 2;
+}
+
+static size_t wdmks_rt_ring_bytes(size_t ahead)
+{
+   return ahead * 2;
 }
 
 /* The thread the register was waiting for: it samples and refills at
@@ -2331,25 +2767,73 @@ static size_t wdmks_rt_pump_once(wdmks_t *w)
  * frontend on ring room, not this side on the pin. */
 static void wdmks_rt_refill_thread(void *data)
 {
-   wdmks_t *w = (wdmks_t*)data;
-
-   /* Sampling cadence for a pin that refused a notification event:
-    * half the loop's duration, so the register is read at least
-    * twice per wrap, floored where wdmks_rt_wait_room floors its
-    * own interval. The high-resolution timer keeps it honest -
-    * Sleep(1) was a 15.6 ms tick, longer than a typical loop.
-    * Bounded residual on join: at most one slice. */
+   wdmks_t     *w          = (wdmks_t*)data;
+   retro_time_t loop_usec  = 0;
+   retro_time_t last       = 0;
    retro_time_t slice_usec = 1000;
+   HMODULE      avrt       = NULL;
+   HANDLE       mmtask     = NULL;
+
+   /* A pass a loop late is a lap the position cannot be followed
+    * across, and at a loop of a few milliseconds that is one ordinary
+    * scheduling delay next to a busy core.  So this thread is raised
+    * where the setting asks for the audio thread to be, as the WASAPI
+    * pump is under the same settings: it is the one thread here with
+    * a deadline the hardware sets.  The Pro Audio class where that
+    * setting is on too - time-critical is 15 in the normal class, and
+    * a display driver's workers sit above it; the class runs in the
+    * twenties - and time-critical otherwise, or where the class is
+    * refused. */
+   w->rt_sched = "normal priority";
+   retro_atomic_store_release_int(&w->rt_grant, AUDIO_THREAD_GRANT_NORMAL);
+   if (w->thread_priority)
+   {
+      HANDLE task = wdmks_mmcss_begin(&avrt, w->mmcss);
+      int grant   = AUDIO_THREAD_GRANT_REFUSED;
+      if (task)
+      {
+         w->rt_sched = "Pro Audio";
+         grant       = AUDIO_THREAD_GRANT_MMCSS;
+      }
+      else if (SetThreadPriority(GetCurrentThread(),
+               THREAD_PRIORITY_TIME_CRITICAL))
+      {
+         w->rt_sched = "time-critical";
+         grant       = AUDIO_THREAD_GRANT_RAISED;
+      }
+      retro_atomic_store_release_int(&w->rt_grant, grant);
+      mmtask = task;
+   }
+
+   /* Sampling cadence for a pin that refused a notification event: a
+    * quarter of the loop's duration, so a sample that lands late by
+    * up to three quarters of a loop is still inside the lap, floored
+    * where wdmks_rt_wait_room floors its own interval.  Half the loop
+    * left a 2 ms loop one late millisecond from losing a lap.  Under
+    * the floor the cadence is no longer a quarter of the loop - a
+    * loop shorter than 2 ms would be sampled fewer than four times a
+    * lap - but no such loop is asked for: the frontend floors the
+    * latency at 2 ms before the driver sizes the loop from it.  The
+    * high-resolution timer keeps it honest - Sleep(1) was a 15.6 ms
+    * tick, longer than a typical loop.  Bounded residual on join: at
+    * most one slice. */
    if (w->frame_bytes && w->rate)
    {
-      slice_usec = (retro_time_t)(w->rt_size / w->frame_bytes)
-            * 1000000 / w->rate / 2;
+      size_t held = w->rt_ahead < w->rt_size ? w->rt_ahead : w->rt_size;
+      loop_usec  = (retro_time_t)(w->rt_size / w->frame_bytes)
+            * 1000000 / w->rate;
+      /* A quarter of what is held ahead, not of the loop: the loop is
+       * larger than that, and it is the held audio a late pass runs
+       * out of. */
+      slice_usec = (retro_time_t)(held / w->frame_bytes)
+            * 1000000 / w->rate / 4;
       if (slice_usec < 500)
          slice_usec = 500;
    }
 
    while (retro_atomic_load_acquire_int(&w->rt_run))
    {
+      retro_time_t now;
       if (w->rt_event)
          WaitForSingleObject(w->rt_event,
                wdmks_watchdog_ms(w, w->rt_size));
@@ -2357,8 +2841,23 @@ static void wdmks_rt_refill_thread(void *data)
          retro_sleep_us((unsigned)slice_usec);
       if (!retro_atomic_load_acquire_int(&w->rt_run))
          break;
+      /* The gap since the last pass, which is what the position's
+       * wrap window is measured against. */
+      now = cpu_features_get_time_usec();
+      if (last)
+      {
+         retro_time_t gap = now - last;
+         if (gap > w->rt_gap_max_usec)
+            w->rt_gap_max_usec = gap;
+         if (loop_usec && gap >= loop_usec)
+            w->rt_gaps_over++;
+      }
+      last = now;
+      w->rt_passes++;
       wdmks_rt_pump_once(w);
    }
+   wdmks_mmcss_end(avrt, mmtask);
+   retro_atomic_store_release_int(&w->rt_grant, AUDIO_THREAD_GRANT_NONE);
 }
 
 /* Producer-side ring room, capped to the size that was asked for
@@ -2484,6 +2983,22 @@ static ssize_t wdmks_write(void *data, const void *buf, size_t size)
       return -1;
    if (retro_atomic_load_acquire_int(&w->dead))
       return -1;
+
+   if (w->cvt)
+   {
+      if (size > w->cvt_size)
+      {
+         unsigned char *grow = (unsigned char*)realloc(w->cvt, size);
+         if (!grow)
+            return -1;
+         w->cvt      = grow;
+         w->cvt_size = size;
+      }
+      convert_float_to_s32((int32_t*)w->cvt, (const float*)src,
+            size / sizeof(float), w->stream.fmt.bits);
+      src = w->cvt;
+   }
+
    if (w->stream.looped)
       return wdmks_rt_write(w, src, size);
 
@@ -2785,6 +3300,28 @@ static size_t wdmks_frames_consumed(void *data)
    return 0;
 }
 
+/* Gaps in the audio on the loop. The packet path has nothing to say:
+ * a packet the device found nothing behind is the port driver's to
+ * fill, and it does not report doing so. */
+static size_t wdmks_underruns(void *data)
+{
+   wdmks_t *w = (wdmks_t*)data;
+   if (!w || !w->stream.looped)
+      return 0;
+   return retro_atomic_load_acquire_size(&w->rt_underruns);
+}
+
+static enum audio_thread_grant wdmks_thread_grant(void *data)
+{
+#ifdef HAVE_THREADS
+   wdmks_t *w = (wdmks_t*)data;
+   if (w)
+      return (enum audio_thread_grant)retro_atomic_load_acquire_int(
+            &w->rt_grant);
+#endif
+   return AUDIO_THREAD_GRANT_NONE;
+}
+
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
 {
    wdmks_t *w = (wdmks_t*)data;
@@ -2861,7 +3398,7 @@ static size_t wdmks_wait_writable(void *data, size_t len)
        || retro_atomic_load_acquire_int(&w->dead))
       return 0;
 
-   cap = (w->stream.looped ? w->rt_size : w->packet_bytes * WDMKS_PACKETS) / 2;
+   cap = (w->stream.looped ? w->rt_ahead : w->packet_bytes * WDMKS_PACKETS) / 2;
    if (len > cap)
       len = cap;
 
@@ -2935,7 +3472,7 @@ static size_t wdmks_buffer_size(void *data)
    if (!w)
       return 0;
    return wdmks_caller_bytes(w, w->stream.looped
-         ? w->rt_size : w->packet_bytes * WDMKS_PACKETS);
+         ? w->rt_ahead : w->packet_bytes * WDMKS_PACKETS);
 }
 
 static bool wdmks_start(void *data, bool is_shutdown)
@@ -2950,6 +3487,12 @@ static bool wdmks_start(void *data, bool is_shutdown)
          || !wdmks_pin_set_state(&w->stream, RA_KSSTATE_PAUSE)
          || !wdmks_pin_set_state(&w->stream, RA_KSSTATE_RUN))
       return false;
+   /* Through ACQUIRE the pin is back at the top of its loop, so
+    * where the hardware is now has nothing to do with where the
+    * write cursor was left: the model starts over from the first
+    * sample after this. */
+   if (w->stream.looped)
+      w->rt_origin = true;
 #ifdef HAVE_THREADS
    if (w->stream.looped && !w->rt_thread)
    {
@@ -3036,6 +3579,17 @@ static void wdmks_free(void *data)
       w->rt_thread = NULL;
       retro_eventcount_notify(&w->rt_park);
    }
+   /* How the refill thread woke, said once the thread is gone: the
+    * worst gap between two passes against the loop it was following,
+    * and which scheduling it ran under, so two runs can be put beside
+    * each other. */
+   if (w->rt_passes)
+      RARCH_LOG("[WDM-KS] Refill (%s): %u pass%s, %.2f ms between two at"
+            " worst, %u a loop or more apart.\n",
+            w->rt_sched ? w->rt_sched : "normal priority",
+            (unsigned)w->rt_passes, w->rt_passes == 1 ? "" : "es",
+            (double)w->rt_gap_max_usec / 1000.0,
+            (unsigned)w->rt_gaps_over);
 #endif
 
    if (w->clk_ppm != AUDIO_CLOCK_PPM_NONE)
@@ -3135,6 +3689,7 @@ static void wdmks_free(void *data)
    if (w->ac3)
       rac3_encoder_free(w->ac3);
    free(w->ac3_in);
+   free(w->cvt);
 
    if (w->filter && w->filter != INVALID_HANDLE_VALUE)
       CloseHandle(w->filter);
@@ -3151,7 +3706,7 @@ static void *wdmks_init(const char *device, unsigned rate,
    unsigned        chosen = 0;
    bool            opened = false;
 
-   if (!(devices = wdmks_devices_scan(&count)) || !count)
+   if (!(devices = wdmks_devices_scan(&count, false)) || !count)
    {
       RARCH_LOG("[WDM-KS] No kernel-streaming render device.\n");
       wdmks_devices_free(devices, count);
@@ -3187,6 +3742,12 @@ static void *wdmks_init(const char *device, unsigned rate,
    w->stream.handle = INVALID_HANDLE_VALUE;
    w->filter        = INVALID_HANDLE_VALUE;
    w->clk_ppm       = AUDIO_CLOCK_PPM_NONE;
+   w->thread_priority = config_get_ptr()->bools.audio_thread_priority;
+#ifdef HAVE_WASAPI
+   /* The same knob the WASAPI pump uses for the class; the two run
+    * on the same machines and the choice is about the machine. */
+   w->mmcss           = config_get_ptr()->bools.audio_wasapi_mmcss;
+#endif
 
    for (i = chosen; i < count && !opened; i++)
    {
@@ -3244,7 +3805,8 @@ static void *wdmks_init(const char *device, unsigned rate,
                continue;
             for (p = 0; p < devices[i].pin_count && !opened; p++)
                opened = wdmks_pin_open(w->filter, &devices[i].pins[p],
-                     rate, widths[c], devices[i].wavert, &w->stream);
+                     rate, widths[c], devices[i].wavert, GENERIC_WRITE,
+                     &w->stream);
 
             /* A wider layout the pin will not take as PCM is tried as
              * AC-3 over IEC 61937 before narrowing, which is what the
@@ -3338,9 +3900,24 @@ static void *wdmks_init(const char *device, unsigned rate,
    }
 
    w->rate        = w->stream.fmt.rate;
-   w->is_float    = w->stream.fmt.is_float;
+   /* An integer pin wider than 16 is fed float and converted here, so
+    * the frontend is told float either way. */
+   w->is_float    = w->stream.fmt.is_float
+      || w->stream.fmt.container_bits == 32;
    w->frame_bytes = w->stream.fmt.channels
       * (w->stream.fmt.container_bits / 8);
+   if (w->is_float && !w->stream.fmt.is_float)
+   {
+      w->cvt_size = (size_t)latency * w->rate / 1000 * w->frame_bytes;
+      if (w->cvt_size < 4096)
+         w->cvt_size = 4096;
+      if (!(w->cvt = (unsigned char*)malloc(w->cvt_size)))
+      {
+         wdmks_free(w);
+         return NULL;
+      }
+      convert_float_to_s32_init_simd();
+   }
    /* The pin's own channel count, except on the bit-stream path, where
     * what the frontend hands over is the encoder's layout and the pin
     * only carries it. */
@@ -3368,14 +3945,39 @@ static void *wdmks_init(const char *device, unsigned rate,
 
    if (w->stream.looped)
    {
-      /* The whole latency setting is the loop, not a quarter of it:
-       * there are no packets to divide it between. */
-      size_t wanted = (size_t)latency * w->rate / 1000 * w->frame_bytes;
-      if (wanted < w->frame_bytes * 64)
-         wanted = w->frame_bytes * 64;
-
-      if (     !wdmks_rt_get_buffer(w, wanted)
-            || !wdmks_start(w, false))
+      /* Two fragments, each the latency setting's worth: what is held
+       * ahead of the hardware is one fragment, the loop is both.  The
+       * driver's two notifications a loop then land once a fragment,
+       * as the hardware leaves it, and the refill fills what it left
+       * - the hardware's own clock, no timer - so the position it
+       * reports can be stale by no more than a fragment, and a pass
+       * late by up to a fragment is still inside the lap.  A loop the
+       * size of the setting alone had none of that: a 2 ms setting on
+       * a 2 ms loop lost a lap to one pass 2.5 ms late, and a loop
+       * four times the setting put the notification two settings'
+       * worth apart. */
+      size_t ahead, wanted;
+      wdmks_rt_geometry(latency, w->rate, w->frame_bytes, &ahead, &wanted);
+      w->rt_ahead = ahead;
+      if (!wdmks_rt_get_buffer(w, wanted))
+      {
+         RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
+         wdmks_free(w);
+         return NULL;
+      }
+      /* A driver that gave less than asked: hold no more than fits */
+      if (w->rt_ahead + w->frame_bytes > w->rt_size)
+      {
+         w->rt_ahead     = w->rt_size - w->frame_bytes;
+#ifdef HAVE_THREADS
+         w->rt_ring_size = wdmks_rt_ring_bytes(w->rt_ahead);
+#endif
+      }
+      /* Before the pin runs: the first sample after a start resyncs
+       * the write cursor a margin ahead of the hardware, and the
+       * margin is sized from the FIFO this reports. */
+      wdmks_rt_report_latency(w);
+      if (!wdmks_start(w, false))
       {
          RARCH_ERR("[WDM-KS] The WaveRT pin would not start.\n");
          wdmks_free(w);
@@ -3384,7 +3986,6 @@ static void *wdmks_init(const char *device, unsigned rate,
       wdmks_rt_probe_presentation(w);
       wdmks_rt_get_position_register(w);
       wdmks_rt_register_event(w);
-      wdmks_rt_report_latency(w);
 
       {
          uint64_t probe = 0;
@@ -3393,9 +3994,11 @@ static void *wdmks_init(const char *device, unsigned rate,
                w->rt_pos ? "yes" : "no",
                wdmks_position(w, &probe) ? "yes" : "no");
       }
-      RARCH_LOG("[WDM-KS] WaveRT buffer of %u bytes, %u ms%s.\n",
+      RARCH_LOG("[WDM-KS] WaveRT loop of %u bytes, %u ms; %u ms held"
+            " ahead of the hardware%s.\n",
             (unsigned)w->rt_size,
             (unsigned)(w->rt_size * 1000 / (w->frame_bytes * w->rate)),
+            (unsigned)(w->rt_ahead * 1000 / (w->frame_bytes * w->rate)),
             w->rt_barrier ? ", writes need a barrier" : "");
       return w;
    }
@@ -3442,8 +4045,716 @@ audio_driver_t audio_wdmks = {
    NULL, /* write_raw */
    wdmks_wait_writable,
    wdmks_frames_consumed,
-   NULL, /* underruns */
+   wdmks_underruns,
    wdmks_layout,
    NULL, /* frames_consumed_fallback */
-   wdmks_device_clock_ppm
+   wdmks_device_clock_ppm,
+   wdmks_thread_grant
+};
+
+/* ---- capture ------------------------------------------------------ */
+
+/* The microphone driver: the same filters, enumerated under the
+ * capture alias, and a pin audio flows OUT of, opened for reading.
+ * WaveCyclic pins are read with IOCTL_KS_READ_STREAM packets;
+ * WaveRT pins through the mapped loop the hardware fills, read from
+ * behind its position. What the frontend takes is mono, so a pin that
+ * only captures stereo is folded on the way into the fifo. */
+
+typedef struct
+{
+   bool nonblock;
+} wdmks_mic_driver_t;
+
+typedef struct
+{
+   wdmks_stream_t   stream;
+   HANDLE           filter;
+   fifo_buffer_t   *fifo;          /* mono, in the frontend's format */
+   wdmks_packet_t   packets[WDMKS_PACKETS];
+   /* WaveRT: the loop the hardware fills and the register that says
+    * how far it has got; rt_read is where this side reads on from. */
+   unsigned char   *rt_buf;
+   volatile ULONG  *rt_pos;
+   HANDLE           rt_event;
+   size_t           packet_bytes;
+   size_t           rt_size;
+   size_t           rt_read;
+   uint64_t         rt_captured;   /* bytes the hardware has written */
+   uint64_t         rt_taken;      /* of those, bytes read out */
+   retro_time_t     rt_last_usec;
+   ULONG            rt_last_pos;
+   unsigned         next;          /* the packet that completes next */
+   unsigned         frame_bytes;   /* the pin's frame */
+   unsigned         out_bytes;     /* one mono sample as handed over */
+   unsigned         rate;
+   bool             rt_have_last;
+   bool             rt_pos_wide;
+   bool             rt_barrier;
+   bool             running;
+   bool             is_float;   /* what is handed over */
+   bool             pin_s32;    /* the pin's integer samples become float */
+} wdmks_mic_t;
+
+static void *wdmks_mic_init(void)
+{
+   wdmks_mic_driver_t *d = (wdmks_mic_driver_t*)calloc(1, sizeof(*d));
+   if (!d)
+      return NULL;
+   d->nonblock = !config_get_ptr()->bools.audio_sync;
+   return d;
+}
+
+static void wdmks_mic_free(void *driver_context)
+{
+   free(driver_context);
+}
+
+static struct string_list *wdmks_mic_device_list_new(const void *driver_context)
+{
+   union string_list_elem_attr attr;
+   struct string_list *list;
+   wdmks_device_t     *devices;
+   unsigned            count = 0;
+   unsigned            i;
+
+   (void)driver_context;
+   if (!(list = string_list_new()))
+      return NULL;
+
+   attr.i  = 0;
+   devices = wdmks_devices_scan(&count, true);
+   for (i = 0; i < count; i++)
+      string_list_append(list,
+            devices[i].name ? devices[i].name : "WDM-KS device", attr);
+   wdmks_devices_free(devices, count);
+   return list;
+}
+
+static void wdmks_mic_device_list_free(const void *driver_context,
+      struct string_list *devices)
+{
+   (void)driver_context;
+   if (devices)
+      string_list_free(devices);
+}
+
+/* Moves captured frames into the fifo in the frontend's shape: the
+ * pin's sample width is kept, a stereo pin is averaged down. Whole
+ * output samples only; returns the pin bytes consumed. */
+static size_t wdmks_mic_fold(wdmks_mic_t *m, const unsigned char *src,
+      size_t bytes)
+{
+   size_t frames = bytes / m->frame_bytes;
+   size_t room   = FIFO_WRITE_AVAIL(m->fifo) / m->out_bytes;
+   size_t i;
+
+   if (frames > room)
+      frames = room;
+   if (!frames)
+      return 0;
+
+   if (m->frame_bytes == m->out_bytes && !m->pin_s32)
+   {
+      fifo_write(m->fifo, src, frames * m->out_bytes);
+      return frames * m->frame_bytes;
+   }
+
+   for (i = 0; i < frames; i++)
+   {
+      const unsigned char *f = src + i * m->frame_bytes;
+      if (m->pin_s32)
+      {
+         int32_t l, r;
+         float   o;
+         memcpy(&l, f, sizeof(l));
+         if (m->frame_bytes == 8)
+         {
+            memcpy(&r, f + 4, sizeof(r));
+            o = ((float)l + (float)r) * (0.5f / 2147483648.0f);
+         }
+         else
+            o = (float)l * (1.0f / 2147483648.0f);
+         fifo_write(m->fifo, &o, sizeof(o));
+      }
+      else if (m->is_float)
+      {
+         float l, r, o;
+         memcpy(&l, f,     sizeof(l));
+         memcpy(&r, f + 4, sizeof(r));
+         o = (l + r) * 0.5f;
+         fifo_write(m->fifo, &o, sizeof(o));
+      }
+      else
+      {
+         int16_t l, r, o;
+         memcpy(&l, f,     sizeof(l));
+         memcpy(&r, f + 2, sizeof(r));
+         o = (int16_t)(((int)l + (int)r) / 2);
+         fifo_write(m->fifo, &o, sizeof(o));
+      }
+   }
+   return frames * m->frame_bytes;
+}
+
+/* ---- capture, packets --------------------------------------------- */
+
+static bool wdmks_mic_packet_submit(wdmks_mic_t *m, wdmks_packet_t *p)
+{
+   DWORD written = 0;
+
+   memset(&p->header, 0, sizeof(p->header));
+   p->header.Size        = sizeof(p->header);
+   p->header.Data        = p->data;
+   p->header.FrameExtent = (ULONG)m->packet_bytes;
+   p->header.DataUsed    = 0;
+
+   ResetEvent(p->overlapped.hEvent);
+   if (DeviceIoControl(m->stream.handle, RA_IOCTL_KS_READ_STREAM,
+            NULL, 0, &p->header, sizeof(p->header), &written,
+            &p->overlapped))
+   {
+      /* Completed inline: the data is there to take on the next look. */
+      p->pending = true;
+      SetEvent(p->overlapped.hEvent);
+      return true;
+   }
+   if (GetLastError() == ERROR_IO_PENDING)
+   {
+      p->pending = true;
+      return true;
+   }
+   return false;
+}
+
+/* Takes what the packets that have come back hold, in order, and hands
+ * each one back to the pin. Stops at the first still out, or when the
+ * fifo cannot take a whole packet - a packet left completed keeps its
+ * data until the fifo has drained. */
+static bool wdmks_mic_packets_drain(wdmks_mic_t *m)
+{
+   unsigned i;
+
+   for (i = 0; i < WDMKS_PACKETS; i++)
+   {
+      wdmks_packet_t *p     = &m->packets[m->next];
+      DWORD           moved = 0;
+
+      if (!p->pending)
+         return false;
+      if (!GetOverlappedResult(m->stream.handle, &p->overlapped, &moved, FALSE))
+      {
+         if (GetLastError() == ERROR_IO_INCOMPLETE)
+            return true;
+         return false;
+      }
+      if (p->header.DataUsed > m->packet_bytes)
+         p->header.DataUsed = (ULONG)m->packet_bytes;
+      if (FIFO_WRITE_AVAIL(m->fifo)
+            < (size_t)(p->header.DataUsed / m->frame_bytes) * m->out_bytes)
+         return true;
+      wdmks_mic_fold(m, p->data, p->header.DataUsed);
+      p->pending = false;
+      if (!wdmks_mic_packet_submit(m, p))
+         return false;
+      m->next = (m->next + 1) % WDMKS_PACKETS;
+   }
+   return true;
+}
+
+/* ---- capture, WaveRT ---------------------------------------------- */
+
+/* Where the hardware has written to. Every read advances the count, and
+ * a gap longer than the loop between two reads means laps went by
+ * unseen: what they held is gone, so the read cursor is moved up to
+ * the hardware and the count with it. */
+static bool wdmks_mic_rt_sample(wdmks_mic_t *m)
+{
+   ULONG        v;
+   retro_time_t now_usec  = cpu_features_get_time_usec();
+   retro_time_t ring_usec = (retro_time_t)(m->rt_size / m->frame_bytes)
+      * 1000000 / m->rate;
+   bool         lost      = false;
+
+   if (m->rt_pos)
+      v = wdmks_rt_register_value(m->rt_pos, m->rt_pos_wide, m->rt_size);
+   else
+   {
+      ra_ksproperty_t       prop;
+      ra_ksaudio_position_t pos;
+      DWORD                 written = 0;
+
+      memset(&prop, 0, sizeof(prop));
+      memset(&pos,  0, sizeof(pos));
+      prop.Set   = ra_ks_propsetid_audio;
+      prop.Id    = RA_KSPROPERTY_AUDIO_POSITION;
+      prop.Flags = RA_KSPROPERTY_TYPE_GET;
+      if (!DeviceIoControl(m->stream.handle, RA_IOCTL_KS_PROPERTY,
+               &prop, sizeof(prop), &pos, sizeof(pos), &written, NULL)
+            || written < sizeof(pos))
+         return false;
+      v = (ULONG)(pos.PlayOffset % m->rt_size);
+   }
+   if (v >= (ULONG)m->rt_size)
+      v %= (ULONG)m->rt_size;
+
+   if (m->rt_have_last && now_usec - m->rt_last_usec > ring_usec)
+      lost = true;
+   m->rt_last_usec = now_usec;
+
+   if (!m->rt_have_last)
+   {
+      m->rt_last_pos  = v;
+      m->rt_have_last = true;
+      m->rt_read      = v;
+      m->rt_captured  = m->rt_taken = 0;
+      return true;
+   }
+   if (v >= m->rt_last_pos)
+      m->rt_captured += (uint64_t)(v - m->rt_last_pos);
+   else
+      m->rt_captured += (uint64_t)(v + m->rt_size - m->rt_last_pos);
+   m->rt_last_pos = v;
+
+   /* Unread bytes cannot exceed the loop: past it the hardware has
+    * written over what was not yet read, and only what is behind the
+    * cursor now is real. */
+   if (lost || m->rt_captured - m->rt_taken >= m->rt_size)
+   {
+      m->rt_taken = m->rt_captured;
+      m->rt_read  = v;
+   }
+   return true;
+}
+
+/* Moves what the hardware has written and this side has not read into
+ * the fifo, as much as the fifo will take. */
+static bool wdmks_mic_rt_drain(wdmks_mic_t *m)
+{
+   size_t unread;
+   size_t first;
+   size_t took;
+
+   if (!wdmks_mic_rt_sample(m))
+      return false;
+   unread  = (size_t)(m->rt_captured - m->rt_taken);
+   unread -= unread % m->frame_bytes;
+   if (!unread)
+      return true;
+
+   if (m->rt_barrier)
+      MemoryBarrier();
+   first = m->rt_size - m->rt_read;
+   if (first > unread)
+      first = unread;
+   took = wdmks_mic_fold(m, m->rt_buf + m->rt_read, first);
+   if (took == first && unread > first)
+      took += wdmks_mic_fold(m, m->rt_buf, unread - first);
+   m->rt_read  = (m->rt_read + took) % m->rt_size;
+   m->rt_taken += took;
+   return true;
+}
+
+/* Waits for the device to deliver, bounded: the notification event or
+ * the packet that completes next where there is one, a slice of the
+ * loop against the register otherwise. */
+static DWORD wdmks_mic_watchdog_ms(const wdmks_mic_t *m, size_t bytes)
+{
+   uint64_t ms = (uint64_t)(bytes / m->frame_bytes) * 2000 / m->rate;
+   if (ms < 4)
+      ms = 4;
+   else if (ms > 100)
+      ms = 100;
+   return (DWORD)ms;
+}
+
+static void wdmks_mic_wait(wdmks_mic_t *m)
+{
+   if (m->stream.looped)
+   {
+      if (m->rt_event)
+         WaitForSingleObject(m->rt_event, wdmks_mic_watchdog_ms(m, m->rt_size));
+      else
+      {
+         retro_time_t slice = (retro_time_t)(m->rt_size / m->frame_bytes)
+            * 1000000 / m->rate / 4;
+         retro_sleep_us(slice < 500 ? 500 : (unsigned)slice);
+      }
+      return;
+   }
+   {
+      wdmks_packet_t *p = &m->packets[m->next];
+      if (p->pending)
+         WaitForSingleObject(p->overlapped.hEvent,
+               wdmks_mic_watchdog_ms(m, m->packet_bytes));
+   }
+}
+
+static bool wdmks_mic_drain(wdmks_mic_t *m)
+{
+   return m->stream.looped
+      ? wdmks_mic_rt_drain(m) : wdmks_mic_packets_drain(m);
+}
+
+static size_t wdmks_mic_wait_readable(void *driver_context,
+      void *mic_context, size_t len)
+{
+   wdmks_mic_t *m    = (wdmks_mic_t*)mic_context;
+   unsigned     laps = WDMKS_WAIT_LAPS;
+   size_t       avail;
+
+   (void)driver_context;
+   if (!m || !m->running)
+      return 0;
+
+   for (;;)
+   {
+      if (!wdmks_mic_drain(m))
+         return 0;
+      avail = FIFO_READ_AVAIL(m->fifo);
+      if (avail >= len)
+         return avail;
+      if (!laps--)
+         return avail;
+      wdmks_mic_wait(m);
+   }
+}
+
+static int wdmks_mic_read(void *driver_context, void *mic_context,
+      void *buffer, size_t len)
+{
+   wdmks_mic_driver_t *d    = (wdmks_mic_driver_t*)driver_context;
+   wdmks_mic_t        *m    = (wdmks_mic_t*)mic_context;
+   unsigned char      *dst  = (unsigned char*)buffer;
+   size_t              done = 0;
+   unsigned            laps = WDMKS_WAIT_LAPS;
+
+   if (!d || !m || !buffer || m->stream.handle == INVALID_HANDLE_VALUE)
+      return -1;
+
+   len -= len % m->out_bytes;
+   while (done < len)
+   {
+      size_t avail;
+      if (!wdmks_mic_drain(m))
+         return done ? (int)done : -1;
+      avail = FIFO_READ_AVAIL(m->fifo);
+      if (avail)
+      {
+         size_t take = len - done;
+         if (take > avail)
+            take = avail;
+         take -= take % m->out_bytes;
+         fifo_read(m->fifo, dst + done, take);
+         done += take;
+         continue;
+      }
+      if (d->nonblock || !m->running || !laps--)
+         break;
+      wdmks_mic_wait(m);
+   }
+   return (int)done;
+}
+
+static bool wdmks_mic_start(void *driver_context, void *mic_context)
+{
+   wdmks_mic_t *m = (wdmks_mic_t*)mic_context;
+   unsigned     i;
+
+   (void)driver_context;
+   if (!m)
+      return false;
+   if (m->running)
+      return true;
+   if (     !wdmks_pin_set_state(&m->stream, RA_KSSTATE_ACQUIRE)
+         || !wdmks_pin_set_state(&m->stream, RA_KSSTATE_PAUSE)
+         || !wdmks_pin_set_state(&m->stream, RA_KSSTATE_RUN))
+      return false;
+   if (m->stream.looped)
+      m->rt_have_last = false;
+   else
+      for (i = 0; i < WDMKS_PACKETS; i++)
+         if (!m->packets[i].pending && !wdmks_mic_packet_submit(m, &m->packets[i]))
+            return false;
+   m->running = true;
+   return true;
+}
+
+static bool wdmks_mic_stop(void *driver_context, void *mic_context)
+{
+   wdmks_mic_t *m = (wdmks_mic_t*)mic_context;
+
+   (void)driver_context;
+   if (!m)
+      return false;
+   if (!m->running)
+      return true;
+   if (!wdmks_pin_set_state(&m->stream, RA_KSSTATE_PAUSE))
+      return false;
+   m->running = false;
+   return true;
+}
+
+static bool wdmks_mic_alive(const void *driver_context, const void *mic_context)
+{
+   const wdmks_mic_t *m = (const wdmks_mic_t*)mic_context;
+   (void)driver_context;
+   return m && m->running;
+}
+
+static bool wdmks_mic_use_float(const void *driver_context,
+      const void *mic_context)
+{
+   const wdmks_mic_t *m = (const wdmks_mic_t*)mic_context;
+   (void)driver_context;
+   return m && m->is_float;
+}
+
+static void wdmks_mic_close(void *driver_context, void *mic_context)
+{
+   wdmks_mic_t *m = (wdmks_mic_t*)mic_context;
+   unsigned     i;
+
+   (void)driver_context;
+   if (!m)
+      return;
+
+   if (m->stream.handle != INVALID_HANDLE_VALUE && m->stream.looped)
+   {
+      wdmks_rt_event_unregister(m->stream.handle, m->rt_event);
+      wdmks_pin_close(&m->stream);
+   }
+   else if (m->stream.handle != INVALID_HANDLE_VALUE)
+   {
+      /* The same reclaim as the render side: a packet the kernel has
+       * not given back is memory the device may still be writing. */
+      retro_time_t deadline = cpu_features_get_time_usec() + 1000000;
+
+      CancelIo(m->stream.handle);
+      for (i = 0; i < WDMKS_PACKETS; i++)
+         while (m->packets[i].pending)
+         {
+            DWORD        moved = 0;
+            retro_time_t left;
+            if (GetOverlappedResult(m->stream.handle,
+                     &m->packets[i].overlapped, &moved, FALSE))
+            {
+               m->packets[i].pending = false;
+               break;
+            }
+            if (GetLastError() != ERROR_IO_INCOMPLETE)
+               break;
+            if ((left = deadline - cpu_features_get_time_usec()) <= 0)
+               break;
+            if (WaitForSingleObject(m->packets[i].overlapped.hEvent,
+                     (DWORD)(left / 1000) + 1) == WAIT_TIMEOUT)
+               break;
+         }
+      wdmks_pin_close(&m->stream);
+   }
+
+   for (i = 0; i < WDMKS_PACKETS; i++)
+   {
+      if (m->packets[i].pending)
+      {
+         RARCH_WARN("[WDM-KS] A capture packet did not come back;"
+               " leaking its buffer.\n");
+         continue;
+      }
+      if (m->packets[i].overlapped.hEvent)
+         CloseHandle(m->packets[i].overlapped.hEvent);
+      free(m->packets[i].data);
+   }
+   if (m->fifo)
+      fifo_free(m->fifo);
+   if (m->filter != INVALID_HANDLE_VALUE)
+      CloseHandle(m->filter);
+   free(m);
+}
+
+static void *wdmks_mic_open(void *driver_context, const char *device,
+      unsigned rate, unsigned latency, unsigned *new_rate)
+{
+   wdmks_mic_t    *m;
+   wdmks_device_t *devices;
+   unsigned        count  = 0;
+   unsigned        chosen = 0;
+   unsigned        i;
+   bool            opened = false;
+
+   (void)driver_context;
+   if (!(devices = wdmks_devices_scan(&count, true)) || !count)
+   {
+      RARCH_LOG("[WDM-KS] No kernel-streaming capture device.\n");
+      wdmks_devices_free(devices, count);
+      return NULL;
+   }
+
+   if (device && *device)
+   {
+      bool found = false;
+      for (i = 0; i < count; i++)
+         if (devices[i].name && string_is_equal(devices[i].name, device))
+         {
+            chosen = i;
+            found  = true;
+            break;
+         }
+      if (!found)
+      {
+         RARCH_ERR("[WDM-KS] No capture device named \"%s\".\n", device);
+         wdmks_devices_free(devices, count);
+         return NULL;
+      }
+   }
+
+   if (!(m = (wdmks_mic_t*)calloc(1, sizeof(*m))))
+   {
+      wdmks_devices_free(devices, count);
+      return NULL;
+   }
+   m->stream.handle = INVALID_HANDLE_VALUE;
+   m->filter        = INVALID_HANDLE_VALUE;
+
+   for (i = chosen; i < count && !opened; i++)
+   {
+      unsigned p, c;
+
+      m->filter = CreateFileW(devices[i].path,
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_OVERLAPPED, NULL);
+      if (m->filter == INVALID_HANDLE_VALUE)
+      {
+         RARCH_WARN("[WDM-KS] \"%s\" would not open: 0x%08lx.\n",
+               devices[i].name ? devices[i].name : "unnamed device",
+               (unsigned long)GetLastError());
+         if (device && *device)
+            break;
+         continue;
+      }
+
+      /* Mono first, since that is what is wanted; stereo folded down
+       * where the pin will not capture mono. */
+      for (c = 1; c <= 2 && !opened; c++)
+         for (p = 0; p < devices[i].pin_count && !opened; p++)
+            opened = wdmks_pin_open(m->filter, &devices[i].pins[p],
+                  rate, c, devices[i].wavert, GENERIC_READ, &m->stream);
+
+      if (!opened)
+      {
+         CloseHandle(m->filter);
+         m->filter = INVALID_HANDLE_VALUE;
+         if (device && *device)
+            break;
+      }
+      else
+         RARCH_LOG("[WDM-KS] Capturing from \"%s\".\n",
+               devices[i].name ? devices[i].name : "unnamed device");
+   }
+   wdmks_devices_free(devices, count);
+
+   if (!opened)
+   {
+      RARCH_ERR("[WDM-KS] No capture pin would take a format.\n");
+      free(m);
+      return NULL;
+   }
+
+   m->rate        = m->stream.fmt.rate;
+   m->pin_s32     = !m->stream.fmt.is_float
+      && m->stream.fmt.container_bits == 32;
+   m->is_float    = m->stream.fmt.is_float || m->pin_s32;
+   m->frame_bytes = m->stream.fmt.channels * (m->stream.fmt.container_bits / 8);
+   m->out_bytes   = m->stream.fmt.container_bits / 8;
+   if (new_rate)
+      *new_rate   = m->rate;
+
+   /* The fifo holds several latencies' worth so a late reader loses
+    * nothing the device still has to deliver. */
+   {
+      size_t frames = (size_t)latency * m->rate / 1000;
+      if (frames < 64)
+         frames = 64;
+      if (!(m->fifo = fifo_new(frames * 4 * m->out_bytes)))
+      {
+         wdmks_mic_close(NULL, m);
+         return NULL;
+      }
+   }
+
+   if (m->stream.looped)
+   {
+      ra_ksrtaudio_buffer_t     buf;
+      ra_ksrtaudio_hwregister_t reg;
+      size_t wanted = (size_t)latency * m->rate / 1000 * m->frame_bytes;
+
+      if (wanted < m->frame_bytes * 64)
+         wanted = m->frame_bytes * 64;
+      if (!wdmks_rt_buffer_request(m->stream.handle, wanted, &buf)
+            || !buf.ActualBufferSize
+            || buf.ActualBufferSize % m->frame_bytes)
+      {
+         RARCH_ERR("[WDM-KS] The WaveRT capture pin would not start.\n");
+         wdmks_mic_close(NULL, m);
+         return NULL;
+      }
+      m->rt_buf     = (unsigned char*)buf.BufferAddress;
+      m->rt_size    = (size_t)buf.ActualBufferSize;
+      m->rt_barrier = buf.CallMemoryBarrier ? true : false;
+      if (wdmks_rt_register_request(m->stream.handle, &reg))
+      {
+         m->rt_pos      = (volatile ULONG*)reg.Register;
+         m->rt_pos_wide = (reg.Width == 64);
+      }
+      m->rt_event = wdmks_rt_event_register(m->stream.handle);
+      RARCH_LOG("[WDM-KS] WaveRT capture loop of %u bytes, %u ms;"
+            " register %s, event %s.\n",
+            (unsigned)m->rt_size,
+            (unsigned)(m->rt_size * 1000 / (m->frame_bytes * m->rate)),
+            m->rt_pos ? "yes" : "no", m->rt_event ? "yes" : "no");
+      return m;
+   }
+
+   {
+      size_t total = (size_t)latency * m->rate / 1000 * m->frame_bytes;
+      size_t each  = total / WDMKS_PACKETS;
+      size_t floor_bytes = (size_t)(m->rate / 1000) * m->frame_bytes;
+
+      if (each < floor_bytes)
+         each = floor_bytes;
+      each -= each % m->frame_bytes;
+      if (!each)
+         each = m->frame_bytes;
+      m->packet_bytes = each;
+   }
+   for (i = 0; i < WDMKS_PACKETS; i++)
+   {
+      m->packets[i].data = (unsigned char*)calloc(1, m->packet_bytes);
+      m->packets[i].overlapped.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
+      if (!m->packets[i].data || !m->packets[i].overlapped.hEvent)
+      {
+         wdmks_mic_close(NULL, m);
+         return NULL;
+      }
+   }
+   RARCH_LOG("[WDM-KS] Capture: %u packet(s) of %u bytes.\n",
+         (unsigned)WDMKS_PACKETS, (unsigned)m->packet_bytes);
+   return m;
+}
+
+microphone_driver_t microphone_wdmks = {
+   wdmks_mic_init,
+   wdmks_mic_free,
+   wdmks_mic_read,
+   "wdmks",
+   wdmks_mic_device_list_new,
+   wdmks_mic_device_list_free,
+   wdmks_mic_open,
+   wdmks_mic_close,
+   wdmks_mic_alive,
+   wdmks_mic_start,
+   wdmks_mic_stop,
+   wdmks_mic_use_float,
+   wdmks_mic_wait_readable
 };

@@ -778,10 +778,26 @@ static void test_scaler(void)
       CHECK(out && r > 0x30 && r < 0xd0, "4-tap downscale averages the checkerboard to grey (got 0x%08x)", p);
    }
    free(out);
-   /* enlarging keeps nearest: a 2x2 source to 8x8 has hard edges */
+   /* enlarging is bilinear: a 2x2 source to 8x8 keeps its corners and
+    * blends between them */
    src[0] = 0xffff0000u; src[1] = 0xff00ff00u; src[sw] = 0xff0000ffu; src[sw + 1] = 0xffffffffu;
    out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(2, 2), VIDEO_SCALE_PACK(8, 8), 0, false);
-   CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging is nearest (corners 0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
+   CHECK(out && out[0] == 0xffff0000u && out[7] == 0xff00ff00u, "enlarging keeps the corners (0x%08x 0x%08x)", out ? out[0] : 0, out ? out[7] : 0);
+   CHECK(out && out[3] == 0xff9f6000u, "enlarging blends between pixels (got 0x%08x)", out ? out[3] : 0);
+   free(out);
+   /* transparent black beside opaque white, enlarged: the blend must
+    * be premultiplied, or black bleeds into the white as a grey halo.
+    * Over an opaque white background every pixel stays white; with
+    * transparency kept, the colour stays white and only alpha ramps. */
+   src[0] = 0x00000000u; src[1] = 0xffffffffu; src[sw] = 0x00000000u; src[sw + 1] = 0xffffffffu;
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(2, 2), VIDEO_SCALE_PACK(8, 8), 0xffffffffu, false);
+   CHECK(out && out[2] == 0xffffffffu && out[3] == 0xffffffffu && out[4] == 0xffffffffu,
+         "no dark halo next to a transparent pixel (got 0x%08x 0x%08x 0x%08x)",
+         out ? out[2] : 0, out ? out[3] : 0, out ? out[4] : 0);
+   free(out);
+   out = companion_thumbs_scale_ex(src, VIDEO_SCALE_PACK(2, 2), VIDEO_SCALE_PACK(8, 8), 0, false);
+   CHECK(out && (out[3] & 0x00ffffffu) == 0x00ffffffu && (out[3] >> 24) > 0 && (out[3] >> 24) < 0xff,
+         "transparent edge keeps its colour and ramps alpha (got 0x%08x)", out ? out[3] : 0);
    free(out);
    free(src);
 }

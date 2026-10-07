@@ -84,6 +84,36 @@ S_BOOL(input_remap_sort_by_controller_enable, INPUT_REMAP_SORT_BY_CONTROLLER_ENA
       false, SD_FLAG_ADVANCED, 0, 0,
       "Sort Remaps By Gamepad",
       "Remaps will only apply to the active gamepad in which they were saved.")
+S_BOOL(input_assign_ports_on_button_press, INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
+      "input_assign_ports_on_button_press",
+      false, SD_FLAG_ADVANCED, 0, 0,
+      "Assign Ports on First Button Press",
+      "When content starts, no controller is mapped to a core port; each is given the next free core port when a button is first pressed on it. Applies from the next content start.")
+S_UINT_EX(input_assign_ports_keyboard, INPUT_ASSIGN_PORTS_KEYBOARD,
+      "input_assign_ports_keyboard",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_assign_ports_keyboard, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Keyboard on First Button Press",
+      "With 'Assign Ports on First Button Press': what a key bound to a port's controls does. 'Assigns its Port' gives the port its core port, as a button of its controller would. 'Waits for its Controller' leaves that to the controller's buttons, unless the port has no controller connected.")
+S_BOOL(input_trigger_full_range, INPUT_TRIGGER_FULL_RANGE,
+      "input_trigger_full_range",
+      true, SD_FLAG_ADVANCED, 0, 0,
+      "Full-Range Analog Triggers",
+      "For L2 and R2 on an axis that rests at one end of its range: count the pull from where the trigger rests. A full pull then gives the whole analog range and half a pull presses the button. When off only the second half of the pull counts, as before.")
+S_UINT_EX(input_rotation, INPUT_ROTATION,
+      "input_rotation",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_input_rotation, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Input Rotation",
+      "Turns the D-Pad and the analog sticks a core sees, for content shown rotated. The angle is the one Video Rotation would be set to: at 90 degrees, left on the controller is up in the game. 'Auto' follows the Video Rotation setting.")
+S_UINT_EX(input_socd_horizontal, INPUT_SOCD_HORIZONTAL,
+      "input_socd_horizontal",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 3, 1, 0, setting_action_ok_uint, setting_get_string_representation_socd, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "SOCD Cleaning (Left + Right)",
+      "What a core sees of the D-Pad when left and right are held together. 'OFF' passes both on. 'Neutral' gives neither, 'Last Input Priority' the one pressed later, 'First Input Priority' the one pressed first.")
+S_UINT_EX(input_socd_vertical, INPUT_SOCD_VERTICAL,
+      "input_socd_vertical",
+      0, SD_FLAG_ADVANCED, SDESC_RANGE_MINMAX, 0, 0, 4, 1, 0, setting_action_ok_uint, setting_get_string_representation_socd, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "SOCD Cleaning (Up + Down)",
+      "What a core sees of the D-Pad when up and down are held together. 'OFF' passes both on. 'Neutral' gives neither, 'Last Input Priority' the one pressed later, 'First Input Priority' the one pressed first, 'Up Priority' always up.")
 S_BOOL(input_autodetect_enable, INPUT_AUTODETECT_ENABLE,
       "input_autodetect_enable",
       DEFAULT_INPUT_AUTODETECT_ENABLE, SD_FLAG_ADVANCED, 0, 0,

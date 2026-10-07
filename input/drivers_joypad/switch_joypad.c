@@ -19,9 +19,6 @@
 /* TODO/FIXME - weird header include */
 #include "string.h"
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 /* TODO/FIXME - static globals */
 static uint16_t button_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][2][2];
@@ -228,7 +225,6 @@ static void switch_joypad_destroy(void)
 static void switch_joypad_poll(void)
 {
    int i, handheld;
-   settings_t *settings = config_get_ptr();
 
    for(i = 0; i < DEFAULT_MAX_PADS; i++)
       padUpdate(&pad_states[i]);
@@ -244,7 +240,7 @@ static void switch_joypad_poll(void)
          for (i = 0; i < MAX_USERS; i += 2)
          {
             unsigned input_split_joycon =
-               settings->uints.input_split_joycon[i];
+               input_config_get_split_joycon(i);
 
             if (input_split_joycon)
             {
@@ -261,7 +257,7 @@ static void switch_joypad_poll(void)
       }
       previous_handheld = handheld;
       for (i = 0; i < MAX_USERS; i += 2)
-         previous_split_joycon_setting[i] = settings->uints.input_split_joycon[i];
+         previous_split_joycon_setting[i] = input_config_get_split_joycon(i);
    }
 
    if (!handheld && previous_handheld)
@@ -270,7 +266,7 @@ static void switch_joypad_poll(void)
        * joycons are correctly split. */
       for (i = 0; i < MAX_USERS; i += 2)
       {
-         unsigned input_split_joycon = settings->uints.input_split_joycon[i];
+         unsigned input_split_joycon = input_config_get_split_joycon(i);
 
          /* CONTROLLER_PLAYER_X, X == i++ */
          if (input_split_joycon)
@@ -291,7 +287,7 @@ static void switch_joypad_poll(void)
       /* split or join joycons every time the user changes a setting */
       for (i = 0; i < MAX_USERS; i += 2)
       {
-         unsigned input_split_joycon = settings->uints.input_split_joycon[i];
+         unsigned input_split_joycon = input_config_get_split_joycon(i);
          if (input_split_joycon
                && !previous_split_joycon_setting[i])
          {
@@ -309,7 +305,7 @@ static void switch_joypad_poll(void)
    }
 
    for (i = 0; i < MAX_USERS; i += 2)
-      previous_split_joycon_setting[i] = settings->uints.input_split_joycon[i];
+      previous_split_joycon_setting[i] = input_config_get_split_joycon(i);
 
    previous_handheld = handheld;
 
@@ -317,7 +313,7 @@ static void switch_joypad_poll(void)
    {
       HidAnalogStickState stick_left_state  = padGetStickPos(&pad_states[i], 0);
       HidAnalogStickState stick_right_state = padGetStickPos(&pad_states[i], 1);
-      unsigned input_split_joycon = settings->uints.input_split_joycon[i];
+      unsigned input_split_joycon = input_config_get_split_joycon(i);
       int pad_button              = padGetButtons(&pad_states[i]);
       if (input_split_joycon && !handheld)
       {

@@ -47,6 +47,56 @@ typedef struct font_renderer
    bool (*get_line_metrics)(void* data, struct font_line_metrics **metrics);
 } font_renderer_t;
 
+/* A font rasterizer: one face, drawn one glyph at a time into a cell
+ * it is handed. The glyph cache, the atlas, eviction and fallback faces
+ * are font_driver.c's; a rasterizer keeps none of them and does no file
+ * I/O. */
+typedef struct font_rasterizer
+{
+   /* Opens a face on @data, the bytes of the chosen font, at @font_size
+    * pixels to the em. A rasterizer with borrows_font_data set only
+    * reads the bytes, which outlive the face; one without owns them
+    * from the moment init() is called, success or not. NULL @data means
+    * no file was found: use an internal or system source if there is
+    * one (stb's built-in glyphs, the WiiU shared font), or fail. */
+   void *(*init)(uint8_t *data, size_t len, unsigned face_index,
+         float font_size);
+
+   void (*free)(void *face);
+
+   /* Nonzero when the face has a glyph for @code, 0 when it has none.
+    * The value is the face's own and is passed back to render_glyph. */
+   unsigned (*glyph_index)(void *face, uint32_t code);
+
+   /* Draws glyph @gi (for codepoint @code; 0 asks for the face's
+    * missing-glyph mark) into the cell at @dst, @cell_dims in
+    * VIDEO_SCALE_PACK's layout, whose rows are @pitch samples apart,
+    * covering the whole cell, and fills dims, draw_offset_x/y
+    * and advance_x/y of @glyph, leaving its atlas offset alone.
+    * Returns false when nothing can be drawn for @gi; nothing is then
+    * drawn from the cell until another glyph is put in it. */
+   bool (*render_glyph)(void *face, uint32_t code, unsigned gi,
+         uint8_t *dst, unsigned pitch, unsigned cell_dims,
+         enum font_atlas_format fmt, struct font_glyph *glyph);
+
+   /* The cell every glyph of this face is drawn into, packed with
+    * VIDEO_SCALE_PACK. */
+   unsigned (*cell_dims)(void *face);
+
+   void (*get_line_metrics)(void *face, struct font_line_metrics *metrics);
+
+   /* Candidate paths for the requested font, best first, NULL
+    * terminated; NULL to take the request as it stands. An empty entry
+    * means the rasterizer needs no file. @face_index is written with
+    * the face to use within whichever candidate is taken. */
+   const char * const *(*get_default_fonts)(const char *requested,
+         unsigned *face_index);
+
+   const char *ident;
+
+   bool borrows_font_data;
+} font_rasterizer_t;
+
 /* NOTE: All functions are required to be implemented for font_renderer_driver */
 
 typedef struct font_renderer_driver
@@ -179,6 +229,43 @@ void font_driver_render_msg(void *data,
       const char *msg, size_t msg_len,
       const struct font_params *params, void *font_data);
 
+/* Marks the start of a video frame for the glyph caches: a cell looked
+ * up during a frame is not given to another codepoint before the next
+ * one begins. */
+void font_driver_frame_begin(void);
+
+/* What a video driver's font draws a message with: the caller's
+ * font_params, or for the on-screen message (NULL params) the message
+ * position and colour from the settings, left aligned and full screen,
+ * opaque, under the shadow every driver used to fill in by hand (2 px
+ * down and left, at 0.3 of the colour). */
+typedef struct font_params_resolved
+{
+   const float *color_hp;  /* The caller's float colour, or NULL */
+   float x;
+   float y;
+   float scale;
+   float drop_mod;
+   float drop_alpha;
+   float color[4];         /* RGBA, 0..1, from the packed colour */
+   unsigned rgba[4];       /* The same, as bytes */
+   int drop_x;
+   int drop_y;
+   enum text_alignment text_align;
+   bool full_screen;
+} font_params_resolved_t;
+
+void font_driver_resolve_params(const struct font_params *params,
+      font_params_resolved_t *out);
+
+/* The width a video driver's font gives msg at scale, through the glyph
+ * cache @renderer_data that @renderer created: what a driver's
+ * get_message_width returns, unless it uploads atlas cells as glyphs
+ * are looked up (see gfx/font_measure.h). */
+int font_renderer_get_message_width(
+      const font_renderer_driver_t *renderer, void *renderer_data,
+      const char *msg, size_t msg_len, float scale);
+
 int font_driver_get_message_width(void *font_data, const char *msg, size_t len, float scale);
 
 /* Would rebuilding this font at this path and size produce the font
@@ -292,9 +379,9 @@ void font_driver_init_osd(
  * next init. */
 void font_driver_free_osd_for(void *video_data);
 
-extern font_renderer_driver_t stb_font_renderer;
-extern font_renderer_driver_t freetype_font_renderer;
-extern font_renderer_driver_t coretext_font_renderer;
+extern const font_rasterizer_t stb_font_rasterizer;
+extern const font_rasterizer_t freetype_font_rasterizer;
+extern const font_rasterizer_t coretext_font_rasterizer;
 
 RETRO_END_DECLS
 

@@ -10,10 +10,17 @@
 #include <string.h>
 
 #include "../../../audio/drivers/sdl3_audio.c"
+/* The park the driver waits on, built into this one translation unit
+ * like the driver itself. */
+#include "../../../libretro-common/rthreads/rthreads.c"
+#include "../../../libretro-common/rthreads/retro_eventcount.c"
 
-void RARCH_ERR(const char *fmt, ...) { (void)fmt; }
-void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
-void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
+/* Counted: the capture read is asked every frame and is to say
+ * nothing, even failing. */
+static unsigned log_lines;
+void RARCH_ERR(const char *fmt, ...) { (void)fmt; log_lines++; }
+void RARCH_LOG(const char *fmt, ...) { (void)fmt; log_lines++; }
+void RARCH_WARN(const char *fmt, ...) { (void)fmt; log_lines++; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 settings_t *config_get_ptr(void) { static settings_t settings; return &settings; }
 
@@ -41,8 +48,7 @@ static void mic_open(sdl3_audio_t *mic, int period_frames)
    mic->spec.channels = 1;
    mic->spec.freq     = MIC_RATE;
    mic->stream        = SDL_CreateAudioStream(&mic->spec, &mic->spec);
-   mic->lock          = SDL_CreateMutex();
-   mic->cond          = SDL_CreateCondition();
+   mic->park_init     = retro_eventcount_init(&mic->park);
    mic->period_frames = period_frames;
    mic->buffer_size   = 1u << 20;
    SDL_SetAudioStreamPutCallback(mic->stream, sdl3_microphone_stream_cb, mic);
@@ -51,8 +57,7 @@ static void mic_open(sdl3_audio_t *mic, int period_frames)
 static void mic_close(sdl3_audio_t *mic)
 {
    SDL_DestroyAudioStream(mic->stream);
-   SDL_DestroyCondition(mic->cond);
-   SDL_DestroyMutex(mic->lock);
+   retro_eventcount_free(&mic->park);
 }
 
 /* Puts a period after a delay, the way the device would. */
@@ -69,10 +74,8 @@ static int SDLCALL producer_remove(void *data)
 {
    sdl3_audio_t *mic = (sdl3_audio_t*)data;
    SDL_Delay(30);
-   SDL_LockMutex(mic->lock);
    SDL_SetAtomicInt(&mic->device_removed, 1);
-   SDL_SignalCondition(mic->cond);
-   SDL_UnlockMutex(mic->lock);
+   retro_eventcount_notify(&mic->park);
    return 0;
 }
 
@@ -104,7 +107,7 @@ int main(void)
 
    mic_open(&mic, PERIOD_SHORT);
    mic_open(&slow, PERIOD_LONG);
-   if (!mic.stream || !mic.lock || !mic.cond || !slow.stream)
+   if (!mic.stream || !mic.park_init || !slow.stream || !slow.park_init)
    {
       fprintf(stderr, "SDL stream: %s\n", SDL_GetError());
       return 1;
@@ -143,9 +146,6 @@ int main(void)
    /* An unplug ends a parked wait, and is answered with nothing rather
     * than with what is left in the stream. */
    SDL_ClearAudioStream(slow.stream);
-   SDL_LockMutex(slow.lock);
-   slow.data_moved = false;
-   SDL_UnlockMutex(slow.lock);
    thread  = SDL_CreateThread(producer_remove, "remove", &slow);
    t0      = SDL_GetTicks();
    got     = sdl3_microphone_wait_readable(NULL, &slow, WORKER_SLICE);
@@ -158,6 +158,21 @@ int main(void)
    t0 = SDL_GetTicks();
    CHECK(sdl3_microphone_wait_readable(NULL, &slow, WORKER_SLICE) == 0);
    CHECK(SDL_GetTicks() - t0 < 50);
+
+   /* A stream that fails: every read comes back -1, and a second of
+    * frames asking says nothing. */
+   {
+      sdl3_audio_t broken;
+      int16_t      frame[PERIOD_SHORT];
+      int          dummy_driver, i, rc = 0;
+      memset(&broken, 0, sizeof(broken));
+      broken.stream = NULL;   /* SDL_GetAudioStreamData fails on it */
+      log_lines     = 0;
+      for (i = 0; i < 60; i++)
+         rc |= sdl3_microphone_read(&dummy_driver, &broken, frame, sizeof(frame)) != -1;
+      CHECK(rc == 0);
+      CHECK(log_lines == 0);
+   }
 
    mic_close(&slow);
    mic_close(&mic);

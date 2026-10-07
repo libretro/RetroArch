@@ -555,6 +555,8 @@ void menu_screensaver_iterate(
       uint32_t particle_tint, unsigned dims,
       const char *dir_assets)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    size_t i;
    uint32_t tint_r;
    uint32_t tint_g;
@@ -620,11 +622,11 @@ void menu_screensaver_iterate(
             /* Reset particle if it has fallen off screen */
             if (particle->x < -particle_size_px)
             {
-               particle->x   = (float)VIDEO_SCALE_W(dims) + particle_size_px;
+               particle->x   = (float)width + particle_size_px;
                update_symbol = true;
             }
 
-            if (particle->y > (float)VIDEO_SCALE_H(dims) + particle_size_px)
+            if (particle->y > (float)height + particle_size_px)
             {
                particle->y   = -particle_size_px;
                update_symbol = true;
@@ -636,11 +638,11 @@ void menu_screensaver_iterate(
          break;
       case MENU_SCREENSAVER_STARFIELD:
          {
-            float max_depth            = (float)(VIDEO_SCALE_W(dims) > VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
+            float max_depth            = (float)(width > height ? width : height);
             float initial_speed_factor = 0.02f * max_depth / 240.0f;
             float focal_length         = max_depth * 2.0f;
-            float x_centre             = (float)(VIDEO_SCALE_W(dims) >> 1);
-            float y_centre             = (float)(VIDEO_SCALE_H(dims) >> 1);
+            float x_centre             = (float)(width >> 1);
+            float y_centre             = (float)(height >> 1);
             float particle_size_px;
             float luminosity;
 
@@ -661,15 +663,15 @@ void menu_screensaver_iterate(
                 * - Dropped off the edge of the screen
                 * - Reached the screen depth */
                if (   (particle->x < -particle_size_px)
-                   || (particle->x > (float)VIDEO_SCALE_W(dims) + particle_size_px)
+                   || (particle->x > (float)width + particle_size_px)
                    || (particle->y < -particle_size_px)
-                   || (particle->y > (float)VIDEO_SCALE_H(dims) + particle_size_px)
+                   || (particle->y > (float)height + particle_size_px)
                    || (particle->c <= 0.0f))
                {
                   /* x pos ('physical' space) */
-                  particle->a = (float)(menu_ss_rand() % VIDEO_SCALE_W(dims));
+                  particle->a = (float)(menu_ss_rand() % width);
                   /* y pos ('physical' space) */
-                  particle->b = (float)(menu_ss_rand() % VIDEO_SCALE_H(dims));
+                  particle->b = (float)(menu_ss_rand() % height);
                   /* depth */
                   particle->c = max_depth;
                   /* speed */
@@ -705,11 +707,11 @@ void menu_screensaver_iterate(
          break;
       case MENU_SCREENSAVER_VORTEX:
          {
-            float min_screen_dimension = (float)(VIDEO_SCALE_W(dims) < VIDEO_SCALE_H(dims) ? VIDEO_SCALE_W(dims) : VIDEO_SCALE_H(dims));
-            float max_radius           = (float)sqrt((double)((VIDEO_SCALE_W(dims) * VIDEO_SCALE_W(dims)) + (VIDEO_SCALE_H(dims) * VIDEO_SCALE_H(dims)))) / 2.0f;
+            float min_screen_dimension = (float)(width < height ? width : height);
+            float max_radius           = (float)sqrt((double)((width * width) + (height * height))) / 2.0f;
             float radial_speed_factor  = 0.001f * min_screen_dimension / 240.0f;
-            float x_centre             = (float)(VIDEO_SCALE_W(dims) >> 1);
-            float y_centre             = (float)(VIDEO_SCALE_H(dims) >> 1);
+            float x_centre             = (float)(width >> 1);
+            float y_centre             = (float)(height >> 1);
             float r_speed;
             float theta_speed;
             float size_factor;

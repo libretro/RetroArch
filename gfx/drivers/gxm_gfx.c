@@ -166,6 +166,8 @@ struct vita_overlay_data
 typedef struct vita_video
 {
    gxm_texture_t *texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   gxm_texture_t *white_texture;
    SceGxmTextureFormat format;
    /* The size of the frame the core last handed over, packed. */
    unsigned dims;
@@ -201,6 +203,11 @@ typedef struct
 {
    vita_video_t *vita;
    gxm_texture_t *texture;
+   /* Textures the atlas outgrew: a frame in flight may still draw from
+    * them, and freeing one means waiting for the GPU, so they go when
+    * the font does - the atlas grows at most twice */
+   gxm_texture_t *retired[2];
+   unsigned retired_count;
    const font_renderer_driver_t *font_driver;
    void *font_data;
    struct font_atlas *atlas;
@@ -331,6 +338,8 @@ static void *vertex_usse_alloc(unsigned int size, SceUID *uid,
       unsigned int *usse_offset);
 static void vertex_usse_free(SceUID uid);
 static void gxm_render_overlay(void *data);
+static uintptr_t gxm_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
 static void gxm_set_projection(vita_video_t *vita,
       struct video_ortho *ortho, bool allow_rotate);
 
@@ -608,6 +617,8 @@ static void gxm_make_fragment_programs(gxm_fragment_programs_t *out,
       blend_info,
       textureTintVertexProgramGxp,
       &out->textureTint);
+   /* The results have never been acted on here */
+   (void)err;
 }
 
 static void gxm_set_blend_mode_add(int enable)
@@ -1555,7 +1566,8 @@ static void gfx_display_gxm_draw(gfx_display_ctx_draw_t *draw,
    if (!vita || !draw)
       return;
 
-   texture            = (gxm_texture_t*)draw->texture;
+   texture            = draw->texture
+      ? (gxm_texture_t*)draw->texture : vita->white_texture;
    vertex             = draw->coords->vertex;
    tex_coord          = draw->coords->tex_coord;
    color              = draw->coords->color;
@@ -1624,14 +1636,44 @@ static void gfx_display_gxm_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
+/* A texture holding all of @atlas, at its size */
+static gxm_texture_t *gxm_font_make_texture(struct font_atlas *atlas)
+{
+   unsigned j, k;
+   unsigned stride;
+   uint8_t *tex32;
+   const uint8_t *frame32;
+   unsigned pitch;
+   gxm_texture_t *texture = gxm_create_empty_texture_format(
+         atlas->width,
+         atlas->height,
+         SCE_GXM_TEXTURE_FORMAT_U8_R111);
+
+   if (!texture)
+      return NULL;
+
+   gxm_texture_set_filters(texture,
+         SCE_GXM_TEXTURE_FILTER_POINT,
+         SCE_GXM_TEXTURE_FILTER_LINEAR);
+
+   stride  = gxm_texture_get_stride(texture);
+   tex32   = sceGxmTextureGetData(&texture->gxm_tex);
+   frame32 = atlas->buffer;
+   pitch   = atlas->width;
+
+   for (j = 0; j < atlas->height; j++)
+      for (k = 0; k < atlas->width; k++)
+         tex32[k + j * stride] = frame32[k + j * pitch];
+
+   atlas->dirty = false;
+   return texture;
+}
+
 static void *gxm_font_init(void *data,
       const char *font_path, float font_size,
       bool is_threaded)
 {
-   unsigned int stride, pitch, j, k;
-   const uint8_t         *frame32 = NULL;
-   uint8_t                 *tex32 = NULL;
-   const struct font_atlas *atlas = NULL;
+   struct font_atlas *atlas = NULL;
    vita_font_t              *font = (vita_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -1650,26 +1692,11 @@ static void *gxm_font_init(void *data,
    if (!atlas)
       goto error;
 
-   font->texture = gxm_create_empty_texture_format(
-         atlas->width,
-         atlas->height,
-         SCE_GXM_TEXTURE_FORMAT_U8_R111);
+   /* The atlas may grow; the texture follows it */
+   atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
 
-   if (!font->texture)
+   if (!(font->texture = gxm_font_make_texture(atlas)))
       goto error;
-
-   gxm_texture_set_filters(font->texture,
-         SCE_GXM_TEXTURE_FILTER_POINT,
-         SCE_GXM_TEXTURE_FILTER_LINEAR);
-
-   stride  = gxm_texture_get_stride(font->texture);
-   tex32   = sceGxmTextureGetData(&font->texture->gxm_tex);
-   frame32 = atlas->buffer;
-   pitch   = atlas->width;
-
-   for (j = 0; j < atlas->height; j++)
-      for (k = 0; k < atlas->width; k++)
-         tex32[k + j * stride] = frame32[k + j*pitch];
 
    font->atlas->dirty = false;
 
@@ -1692,6 +1719,11 @@ static void gxm_font_free(void *data, bool is_threaded)
    if (gxm_initialized)
       sceGxmFinish(gxm_context);
    gxm_free_texture(font->texture);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         gxm_free_texture(font->retired[i]);
+   }
 
    free(font);
 }
@@ -1699,181 +1731,84 @@ static void gxm_font_free(void *data, bool is_threaded)
 static int gxm_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   int i;
-   const struct font_glyph* glyph_q = NULL;
-   int delta_x       = 0;
    vita_font_t *font = (vita_font_t*)data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                     = font->font_driver->get_glyph;
-   void *font_data   = font->font_data;
-
    if (!font)
       return 0;
-
-   glyph_q = get_glyph(font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph *glyph = NULL;
-      const char *msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
-}
-
-static void gxm_font_render_line(
-      vita_video_t *vita,
-      vita_font_t *font,
-      const struct font_glyph* glyph_q,
-      const char *msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
-      float pos_y,
-      unsigned width,
-      unsigned height,
-      int pre_x,
-      unsigned text_align)
-{
-   int i;
-   int x           = pre_x;
-   int y           = roundf((1.0f - pos_y) * height);
-   int delta_x     = 0;
-   int delta_y     = 0;
-   const char* msg_end = msg + msg_len;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t)
-                     = font->font_driver->get_glyph;
-   void *font_data   = font->font_data;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that gxm_font_get_message_width 
-    * would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum      = 0;
-      const char *scan     = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   for (i = 0; i < msg_len; i++)
-   {
-      int j;
-      int off_x, off_y, tex_x, tex_y, width, height;
-      const struct font_glyph *glyph = NULL;
-      const char *msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      off_x  = glyph->draw_offset_x;
-      off_y  = glyph->draw_offset_y;
-      tex_x  = glyph->atlas_offset_x;
-      tex_y  = glyph->atlas_offset_y;
-      width  = glyph->width;
-      height = glyph->height;
-
-      if (font->atlas->dirty)
-      {
-        unsigned int stride    = gxm_texture_get_stride(font->texture);
-        uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex);
-        const uint8_t *frame32 = font->atlas->buffer;
-        unsigned int pitch     = font->atlas->width;
-        /* Copy only the dirty rectangle tracked by the font
-         * renderers, one row at a time */
-        unsigned int x0        = font->atlas->dirty_x0;
-        unsigned int y0        = font->atlas->dirty_y0;
-        unsigned int x1        = font->atlas->dirty_x1;
-        unsigned int y1        = font->atlas->dirty_y1;
-
-        if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height)
-        {
-           x0 = 0;
-           y0 = 0;
-           x1 = pitch;
-           y1 = font->atlas->height;
-        }
-
-        for (j = y0; j < y1; j++)
-           memcpy(tex32 + x0 + j * stride,
-                  frame32 + x0 + j * pitch, x1 - x0);
-
-         font->atlas->dirty = false;
-      }
-
-      gxm_draw_texture_tint_part_scale(font->texture,
-            x + (off_x + delta_x) * scale,
-            y + (off_y + delta_y) * scale,
-            tex_x, tex_y, width, height,
-            scale,
-            scale,
-            color);
-
-      delta_x += glyph->advance_x;
-      delta_y += glyph->advance_y;
-   }
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static void gxm_font_render_message(
       vita_video_t *vita,
-      vita_font_t *font, const char *msg, float scale,
+      vita_font_t *font, const char *msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
-   int x                                  = roundf(pos_x * width);
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
+   int pre_x                              = roundf(pos_x * width);
+   int x                                  = 0;
+   int y                                  = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / VIDEO_SCALE_H(vita->vp.dims);
-   for (;;)
-   {
-      size_t msg_len;
-      const char *delim = msg;
-      while (*delim && *delim != '\n')
-         delim++;
-      msg_len = delim - msg;
-      /* Draw the line */
-      gxm_font_render_line(vita, font, glyph_q, msg, msg_len,
-            scale, color, pos_x, pos_y - (float)lines * line_height,
-            width, height, x, text_align);
-      if (!*delim)
-         break;
-      msg += msg_len + 1;
-      lines++;
-   }
+
+#define FONT_LAYOUT_ALIGNED aligned
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      x = pre_x; \
+      y = roundf((1.0f - (pos_y - (float)(line) * line_height)) * height); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      if (font->atlas->dirty) \
+      { \
+         unsigned j; \
+         unsigned int stride    = gxm_texture_get_stride(font->texture); \
+         uint8_t *tex32         = sceGxmTextureGetData(&font->texture->gxm_tex); \
+         const uint8_t *frame32 = font->atlas->buffer; \
+         unsigned int pitch     = font->atlas->width; \
+         /* Copy only the dirty rectangle tracked by the font \
+          * renderers, one row at a time */ \
+         unsigned int x0        = VIDEO_SCALE_W(font->atlas->dirty_xy0); \
+         unsigned int y0        = VIDEO_SCALE_H(font->atlas->dirty_xy0); \
+         unsigned int x1        = VIDEO_SCALE_W(font->atlas->dirty_xy1); \
+         unsigned int y1        = VIDEO_SCALE_H(font->atlas->dirty_xy1); \
+         if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height) \
+         { \
+            x0 = 0; \
+            y0 = 0; \
+            x1 = pitch; \
+            y1 = font->atlas->height; \
+         } \
+         for (j = y0; j < y1; j++) \
+            memcpy(tex32 + x0 + j * stride, \
+                  frame32 + x0 + j * pitch, x1 - x0); \
+         font->atlas->dirty = false; \
+      } \
+      gxm_draw_texture_tint_part_scale(font->texture, \
+            x + ((glyph)->draw_offset_x + (pen_x)) * scale, \
+            y + ((glyph)->draw_offset_y + (pen_y)) * scale, \
+            VIDEO_SCALE_W((glyph)->atlas_pos), VIDEO_SCALE_H((glyph)->atlas_pos), \
+            VIDEO_SCALE_W((glyph)->dims), VIDEO_SCALE_H((glyph)->dims), \
+            scale, \
+            scale, \
+            color); \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void gxm_set_viewport_wrapper(void *data, unsigned dims,
@@ -1897,6 +1832,7 @@ static void gxm_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    int drop_x, drop_y;
    unsigned color, r, g, b, alpha;
    enum text_alignment text_align;
@@ -1910,48 +1846,40 @@ static void gxm_font_render_msg(
    if (!font || !msg || !*msg)
       return;
 
-   if (params)
+   /* Asked for before anything is laid out: when it has grown, a
+    * texture at its size takes the old one's place */
+   if (font->font_driver && font->font_data)
    {
-      x                       = params->x;
-      y                       = params->y;
-      scale                   = params->scale;
-      full_screen             = params->full_screen;
-      text_align              = params->text_align;
-      drop_x                  = params->drop_x;
-      drop_y                  = params->drop_y;
-      drop_mod                = params->drop_mod;
-      drop_alpha              = params->drop_alpha;
-      r              = FONT_COLOR_GET_RED(params->color);
-      g              = FONT_COLOR_GET_GREEN(params->color);
-      b              = FONT_COLOR_GET_BLUE(params->color);
-      alpha               = FONT_COLOR_GET_ALPHA(params->color);
-      color               = RGBA8(r,g,b,alpha);
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count < 2
+            && (   sceGxmTextureGetWidth(&font->texture->gxm_tex)  != font->atlas->width
+                || sceGxmTextureGetHeight(&font->texture->gxm_tex) != font->atlas->height))
+      {
+         gxm_texture_t *texture = gxm_font_make_texture(font->atlas);
+         if (texture)
+         {
+            font->retired[font->retired_count++] = font->texture;
+            font->texture                        = texture;
+         }
+      }
    }
-   else
-   {
-      settings_t *settings    = config_get_ptr();
-      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
-      float video_msg_color_r = settings->floats.video_msg_color_r;
-      float video_msg_color_g = settings->floats.video_msg_color_g;
-      float video_msg_color_b = settings->floats.video_msg_color_b;
-      x                       = video_msg_pos_x;
-      y                       = video_msg_pos_y;
-      scale                   = 1.0f;
-      full_screen             = true;
-      text_align              = TEXT_ALIGN_LEFT;
 
-      r                       = (video_msg_color_r * 255);
-      g                       = (video_msg_color_g * 255);
-      b                       = (video_msg_color_b * 255);
-      alpha          = 255;
-      color            = RGBA8(r,g,b,alpha);
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha           = rp.rgba[3];
+   full_screen = rp.full_screen;
+   color      = RGBA8(r,g,b,alpha);
 
-      drop_x                  = -2;
-      drop_y                  = -2;
-      drop_mod                = 0.3f;
-      drop_alpha              = 1.0f;
-   }
 
    gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(width, height), full_screen, false);
 
@@ -1963,12 +1891,12 @@ static void gxm_font_render_msg(
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = RGBA8(r_dark,g_dark,b_dark,alpha_dark);
 
-      gxm_font_render_message(vita, font, msg, scale, color_dark,
+      gxm_font_render_message(vita, font, msg, msg_len, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, width, height, text_align);
    }
 
-   gxm_font_render_message(vita, font, msg, scale,
+   gxm_font_render_message(vita, font, msg, msg_len, scale,
          color, x, y, width, height, text_align);
 }
 
@@ -1997,8 +1925,7 @@ static bool gxm_font_get_line_metrics(void* data,
  * VIDEO DRIVER
  */
 
-static void *gxm_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gxm_gfx_init(const video_info_t *video)
 {
    unsigned int color;
    unsigned temp_width                    = PSP_FB_WIDTH;
@@ -2009,8 +1936,6 @@ static void *gxm_gfx_init(const video_info_t *video,
    if (!vita)
       return NULL;
 
-   *input             = NULL;
-   *input_data        = NULL;
 
    gxm_init_internal((1 * 1024 * 1024), SCE_GXM_MULTISAMPLE_4X,
    (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITATV)
@@ -2034,6 +1959,16 @@ static void *gxm_gfx_init(const video_info_t *video,
    vita->menu.texture = NULL;
    vita->menu.active  = 0;
    vita->menu.dims    = 0;
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels        = (uint32_t*)&white;
+      image.width         = 1;
+      image.height        = 1;
+      vita->white_texture = (gxm_texture_t*)gxm_load_texture(vita, &image,
+            false, TEXTURE_FILTER_NEAREST);
+   }
 
    vita->vsync        = video->vsync;
    vita->rgb32        = video->rgb32;
@@ -2046,14 +1981,9 @@ static void *gxm_gfx_init(const video_info_t *video,
    video_driver_set_output_dims(VIDEO_SCALE_PACK(temp_width, temp_height));
    gxm_set_viewport_wrapper(vita, VIDEO_SCALE_PACK(temp_width, temp_height), false, true);
 
-   if (input && input_data)
-   {
-      settings_t *settings = config_get_ptr();
-      void *pspinput       = input_driver_init_wrap(&input_psp,
-            settings->arrays.input_joypad_driver);
-      *input               = pspinput ? &input_psp : NULL;
-      *input_data          = pspinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    vita->keep_aspect        = true;
    vita->should_resize      = true;
@@ -2139,9 +2069,11 @@ static void gxm_common_dialog_update(void)
 }
 
 static bool gxm_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    void *tex_p;
    gxm_display_data_t displayData;
    vita_video_t *vita                     = (vita_video_t *)data;
@@ -2163,7 +2095,7 @@ static bool gxm_frame(void *data, const void *frame,
          unsigned i;
          unsigned int stride;
 
-         if (vita->dims != VIDEO_SCALE_PACK(width, height) && vita->texture)
+         if (vita->dims != dims && vita->texture)
          {
             if (gxm_initialized)
                sceGxmFinish(gxm_context);
@@ -2173,7 +2105,7 @@ static bool gxm_frame(void *data, const void *frame,
 
          if (!vita->texture)
          {
-            vita->dims    = VIDEO_SCALE_PACK(width, height);
+            vita->dims    = dims;
             vita->texture = gxm_create_empty_texture_format(width, height,
                   vita->format);
             gxm_texture_set_filters(vita->texture, vita->tex_filter,
@@ -2442,6 +2374,11 @@ static void gxm_free(void *data)
       vita->texture = NULL;
    }
 
+   if (vita->white_texture)
+   {
+      gxm_free_texture(vita->white_texture);
+      vita->white_texture = NULL;
+   }
 }
 
 static void gxm_set_projection(vita_video_t *vita,

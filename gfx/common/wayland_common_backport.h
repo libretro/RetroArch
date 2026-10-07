@@ -48,6 +48,9 @@ extern void FALLBACK_wl_display_cancel_read(struct wl_display *display);
 #define wl_display_prepare_read                WRAPPER_wl_display_prepare_read
 #define wl_display_read_events                 WRAPPER_wl_display_read_events
 #define wl_display_cancel_read                 WRAPPER_wl_display_cancel_read
+#define wl_display_dispatch_queue_pending      WRAPPER_wl_display_dispatch_queue_pending
+#define wl_display_prepare_read_queue          WRAPPER_wl_display_prepare_read_queue
+#define wl_proxy_set_queue                     WRAPPER_wl_proxy_set_queue
 
 extern uint32_t WEBOS_wl_proxy_get_version(struct wl_proxy *proxy);
 extern struct wl_proxy *WEBOS_wl_proxy_marshal_constructor(
@@ -56,7 +59,7 @@ extern struct wl_proxy *WEBOS_wl_proxy_marshal_constructor(
    const struct wl_interface *interface,
    ...);
 
-extern struct wl_proxy *WRAPPER__wl_proxy_marshal_constructor_versioned(
+extern struct wl_proxy *WRAPPER_wl_proxy_marshal_constructor_versioned(
    struct wl_proxy *proxy,
    uint32_t opcode,
    const struct wl_interface *interface,
@@ -66,3 +69,11 @@ extern struct wl_proxy *WRAPPER__wl_proxy_marshal_constructor_versioned(
 extern int WRAPPER_wl_display_prepare_read(struct wl_display *display);
 extern int WRAPPER_wl_display_read_events(struct wl_display *display);
 extern void WRAPPER_wl_display_cancel_read(struct wl_display *display);
+
+struct wl_event_queue;
+extern int WRAPPER_wl_display_dispatch_queue_pending(
+   struct wl_display *display, struct wl_event_queue *queue);
+extern int WRAPPER_wl_display_prepare_read_queue(
+   struct wl_display *display, struct wl_event_queue *queue);
+extern void WRAPPER_wl_proxy_set_queue(struct wl_proxy *proxy,
+   struct wl_event_queue *queue);

@@ -71,6 +71,17 @@ void rwebm_video_blit_i420_10bit(uint32_t *dst, unsigned dst_stride,
       unsigned matrix, unsigned transfer, unsigned range,
       unsigned max_cll);
 
+/* HDR variant: a PQ (transfer 16) or HLG (transfer 18) source as linear
+ * scRGB - 80 nits is 1.0, the 709 primaries, components outside 709
+ * kept negative - in RGBA half floats, 8 bytes a pixel, memory order
+ * R,G,B,A with A 1.0. No tone map: for a display that shows HDR. dst_stride
+ * is in pixels. Returns 0, writing nothing, for any other transfer, which
+ * is not HDR and takes the 8-bit or 10-bit paths above. */
+int rwebm_video_blit_i420_fp16(uint16_t *dst, unsigned dst_stride,
+      unsigned w, unsigned h, const uint16_t *y, int ys,
+      const uint16_t *u, const uint16_t *v, int uvs,
+      unsigned matrix, unsigned transfer, unsigned range);
+
 bool rwebm_video_set_buf_ptr(rwebm_video_t *webm, void *data, size_t len);
 
 /* Request packed XRGB2101010 (10-bit) output for 10-bit HDR sources; 8-bit
@@ -87,6 +98,14 @@ void rwebm_video_set_avail(rwebm_video_t *webm, size_t avail);
 
 /* True if the last rwebm_video_process_image() produced XRGB2101010. */
 bool rwebm_video_is_10bit(const rwebm_video_t *webm);
+
+/* Half floats for an HDR still: with want set, a PQ or HLG source's
+ * first frame is decoded as linear scRGB (rwebm_video_blit_i420_fp16)
+ * straight into the frame process hands out, 8 bytes a pixel; is_fp16
+ * says whether the last one came out so. Any other source decodes as
+ * it always did. */
+void rwebm_video_set_want_fp16(rwebm_video_t *webm, int want);
+bool rwebm_video_is_fp16(const rwebm_video_t *webm);
 
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
@@ -162,6 +181,17 @@ void rwebm_video_stream_set_argb(rwebm_video_stream_t *stream, int argb);
  * next call that decodes has returned. */
 void rwebm_video_stream_set_output(rwebm_video_stream_t *stream,
       uint32_t *out);
+
+/* Linear scRGB half floats for an HDR source: a 10-bit PQ or HLG frame
+ * decoded into the caller's frame (rwebm_video_stream_set_output),
+ * which then holds 8 bytes a pixel, through rwebm_video_blit_i420_fp16
+ * - no tone map. Every other frame, and every frame without a caller's
+ * output, takes the paths it always did. is_fp16 answers for the last
+ * frame decoded; is_hdr for the source, from its track's transfer. */
+void rwebm_video_stream_set_want_fp16(rwebm_video_stream_t *stream,
+      int want);
+int rwebm_video_stream_is_fp16(const rwebm_video_stream_t *stream);
+int rwebm_video_stream_is_hdr(const rwebm_video_stream_t *stream);
 
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one

@@ -314,6 +314,16 @@ void string_replace_all_chars(char *str, char find, char replace);
 unsigned string_to_unsigned(const char *str);
 
 /**
+ * string_percent_decode:
+ *
+ * Decode %XX escapes from @src into @s.  A '%' not followed by two
+ * hex digits is copied as is; '+' is left alone.  @s may equal @src.
+ * Returns the decoded length, or -1 when @s is too small (@s holds
+ * the truncated, terminated prefix).
+ **/
+int string_percent_decode(char *s, size_t len, const char *src);
+
+/**
  * string_hex_to_unsigned:
  * @str                : input string (must be non-NULL, otherwise UB)
  *

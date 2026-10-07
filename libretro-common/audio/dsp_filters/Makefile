@@ -42,7 +42,7 @@ ifeq (debug,$(build))
    extra_flags += -O0 -g
 endif
 
-ldflags := $(LDFLAGS) -shared -lm -Wl,--version-script=link.T
+ldflags := $(LDFLAGS) -shared -Wl,--version-script=link.T
 
 ifeq ($(platform), unix)
    DYLIB = so
@@ -115,8 +115,10 @@ all: build;
 %.o: %.c
 	$(CC) -c -o $@ $(flags) $<
 
+# Libraries go after the objects: with --as-needed, a library named
+# before the objects that use it is dropped from the link.
 %.$(DYLIB): %.o
-	$(CC) -o $@ $(ldflags) $(flags) $^
+	$(CC) -o $@ $(ldflags) $(flags) $^ $(LIBS) -lm
 
 build: $(targets)
 

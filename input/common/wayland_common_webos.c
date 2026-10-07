@@ -29,7 +29,6 @@
 #include "../../frontend/frontend_driver.h"
 #include "../../gfx/common/wayland_common.h"
 #include "../../gfx/video_driver.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../input_keymaps.h"
 
@@ -263,6 +262,14 @@ static void wl_registry_handle_global_webos(void *data,
       if (!si)
          return;
       si->seat = (struct wl_seat*)wl_registry_bind(reg, id, &wl_seat_interface, MIN(version, 4));
+      /* The seat goes on the input queue, and the keyboard and pointer
+       * made from it follow it there, so only the input driver's poll
+       * handles their events (wayland_input_dispatch()). Nothing has
+       * been read off the connection since the bind - this is the
+       * registry's handler - so no event of the seat's is on the
+       * default queue. */
+      if (wl->input.queue)
+         wl_proxy_set_queue((struct wl_proxy*)si->seat, wl->input.queue);
       si->global_id = id;
       si->wl = wl;
       wl_seat_add_listener(si->seat, &webos_seat_listener, si);
@@ -371,219 +378,12 @@ void gfx_ctx_wl_get_video_size_webos(void *data, unsigned *dims)
             VIDEO_SCALE_H(wl->dims) * wl->buffer_scale);
 }
 
-/* webOS hands the screen back to the Home dashboard the moment a native
- * app destroys its only wl_surface, and RetroArch tears the Wayland
- * context down and builds a new one on every content load. Keep the
- * display connection and the shell surfaces across that reinit, so the
- * compositor never sees a zero-surface app; the shutdown pass destroys
- * them for real. Only one context exists at a time, so one cache is
- * enough. */
-static struct
-{
-   struct wl_display *dpy;
-   struct wl_registry *registry;
-   struct wl_compositor *compositor;
-   struct wl_shm *shm;
-   struct wl_shell *shell;
-   struct wl_shell_surface *shell_surface;
-   struct wl_webos_shell *webos_shell;
-   struct wl_webos_shell_surface *webos_shell_surface;
-   struct wl_surface *surface;
-   struct wl_surface *cursor_surface;
-   struct wl_seat *seat;
-   struct wl_data_device_manager *data_device_manager;
-   struct wl_list all_outputs;
-   struct wl_list current_outputs;
-   struct wl_list all_seats;
-   int fd;
-   bool valid;
-} s_webos_keep;
-
-/* Move the live objects out of wl into the cache (reinit) or destroy
- * them (shutdown). Returns true when the objects were stashed and the
- * caller must skip its own teardown of them. */
-static bool gfx_ctx_wl_webos_keep_or_destroy(gfx_ctx_wayland_data_t *wl,
-      bool reinit)
-{
-   if (!wl)
-      return false;
-
-   if (reinit)
-   {
-      /* Stash. The seat/output lists are moved wholesale; their nodes
-       * stay allocated and are re-adopted by the next context. */
-      s_webos_keep.dpy                 = wl->input.dpy;
-      s_webos_keep.registry            = wl->registry;
-      s_webos_keep.compositor          = wl->compositor;
-      s_webos_keep.shm                 = wl->shm;
-      s_webos_keep.shell               = wl->shell;
-      s_webos_keep.shell_surface       = wl->shell_surface;
-      s_webos_keep.webos_shell         = wl->webos_shell;
-      s_webos_keep.webos_shell_surface = wl->webos_shell_surface;
-      s_webos_keep.surface             = wl->surface;
-      s_webos_keep.cursor_surface      = wl->cursor.surface;
-      s_webos_keep.seat                = wl->seat;
-      s_webos_keep.data_device_manager = wl->data_device_manager;
-      s_webos_keep.fd                  = wl->input.fd;
-
-      wl_list_init(&s_webos_keep.all_outputs);
-      wl_list_init(&s_webos_keep.current_outputs);
-      wl_list_init(&s_webos_keep.all_seats);
-      /* wl_list_insert_list moves every node out of the source list,
-       * leaving it empty, so the per-context teardown below (skipped
-       * when kept) will not double-free them. */
-      wl_list_insert_list(&s_webos_keep.all_outputs, &wl->all_outputs);
-      wl_list_insert_list(&s_webos_keep.current_outputs, &wl->current_outputs);
-      wl_list_insert_list(&s_webos_keep.all_seats, &wl->all_seats);
-
-      s_webos_keep.valid = true;
-      RARCH_LOG("[Wayland/webOS] Keeping surface across video reinit.\n");
-      return true;
-   }
-
-   /* Shutdown: destroy any previously stashed objects for real. */
-   if (s_webos_keep.valid)
-   {
-      if (s_webos_keep.shell_surface)
-         wl_shell_surface_destroy(s_webos_keep.shell_surface);
-      if (s_webos_keep.webos_shell_surface)
-         wl_webos_shell_surface_destroy(s_webos_keep.webos_shell_surface);
-      if (s_webos_keep.surface)
-         wl_surface_destroy(s_webos_keep.surface);
-      if (s_webos_keep.cursor_surface)
-         wl_surface_destroy(s_webos_keep.cursor_surface);
-      if (s_webos_keep.seat)
-         wl_seat_destroy(s_webos_keep.seat);
-      if (s_webos_keep.webos_shell)
-         wl_webos_shell_destroy(s_webos_keep.webos_shell);
-      if (s_webos_keep.data_device_manager)
-         wl_data_device_manager_destroy(s_webos_keep.data_device_manager);
-      if (s_webos_keep.shm)
-         wl_shm_destroy(s_webos_keep.shm);
-      if (s_webos_keep.compositor)
-         wl_compositor_destroy(s_webos_keep.compositor);
-      if (s_webos_keep.registry)
-         wl_registry_destroy(s_webos_keep.registry);
-      if (s_webos_keep.dpy)
-      {
-         wl_display_flush(s_webos_keep.dpy);
-         wl_display_disconnect(s_webos_keep.dpy);
-      }
-      memset(&s_webos_keep, 0, sizeof(s_webos_keep));
-   }
-   return false;
-}
-
-/* Build a fresh context around a previously stashed set of objects.
- * Returns true when a cache was present and adopted, leaving the
- * context as ready to use as a cold init would. */
-static bool gfx_ctx_wl_webos_adopt(gfx_ctx_wayland_data_t *wl)
-{
-   int i;
-   seat_info_t *si;
-
-   if (!wl || !s_webos_keep.valid)
-      return false;
-
-   wl->input.dpy          = s_webos_keep.dpy;
-   wl->registry           = s_webos_keep.registry;
-   wl->compositor         = s_webos_keep.compositor;
-   wl->shm                = s_webos_keep.shm;
-   wl->shell              = s_webos_keep.shell;
-   wl->shell_surface      = s_webos_keep.shell_surface;
-   wl->webos_shell        = s_webos_keep.webos_shell;
-   wl->webos_shell_surface= s_webos_keep.webos_shell_surface;
-   wl->surface            = s_webos_keep.surface;
-   wl->cursor.surface     = s_webos_keep.cursor_surface;
-   wl->seat               = s_webos_keep.seat;
-   wl->data_device_manager= s_webos_keep.data_device_manager;
-   wl->input.fd           = s_webos_keep.fd;
-
-   wl_list_insert_list(&wl->all_outputs, &s_webos_keep.all_outputs);
-   wl_list_insert_list(&wl->current_outputs, &s_webos_keep.current_outputs);
-   wl_list_insert_list(&wl->all_seats, &s_webos_keep.all_seats);
-
-   /* Every kept proxy still hands the freed context to its listener:
-    * libwayland stores that pointer inside the proxy at add_listener
-    * time. Key presses would land in the dead context's key_state, so
-    * the live input driver never sees a hotkey, and the write is a
-    * use-after-free. Re-point the proxies rather than re-add the
-    * listeners, which Wayland forbids. */
-   if (wl->registry)
-      wl_registry_set_user_data(wl->registry, wl);
-   if (wl->webos_shell_surface)
-      wl_webos_shell_surface_set_user_data(wl->webos_shell_surface, wl);
-
-   wl_list_for_each(si, &wl->all_seats, link)
-   {
-      /* The seat keeps its node, but that node caches the context it
-       * hands to keyboards/pointers it creates later, on a capability
-       * change. */
-      si->wl = wl;
-      if (si->wl_keyboard)
-         wl_keyboard_set_user_data(si->wl_keyboard, wl);
-      if (si->wl_pointer)
-         wl_pointer_set_user_data(si->wl_pointer, wl);
-      if (si->wl_touch)
-         wl_touch_set_user_data(si->wl_touch, wl);
-   }
-
-   /* What the cold path sets up once its surface exists. */
-   wl->buffer_scale          = 1;
-   wl->floating_dims         = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
-         DEFAULT_WINDOW_HEIGHT);
-   wl->configured            = true;
-   wl->input.keyboard_focus  = true;
-   wl->input.mouse.focus     = true;
-   /* No second pointer enter arrives for a surface that never went
-    * away, and the button listener drops clicks whose focus surface is
-    * not wl->surface. */
-   wl->input.mouse.surface   = wl->surface;
-   /* The theme went with the old context; its surface was kept. */
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
-   if (wl->cursor.theme)
-      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(
-            wl->cursor.theme, "left_ptr");
-
-   wl->num_active_touches = 0;
-   for (i = 0; i < MAX_TOUCHES; i++)
-   {
-      wl->active_touch_positions[i].active = false;
-      wl->active_touch_positions[i].id     = -1;
-      wl->active_touch_positions[i].x      = 0;
-      wl->active_touch_positions[i].y      = 0;
-   }
-
-   memset(&s_webos_keep, 0, sizeof(s_webos_keep));
-   flush_wayland_fd(&wl->input);
-   RARCH_LOG("[Wayland/webOS] Adopted cached surface after reinit.\n");
-   return true;
-}
-
 void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
 {
-   /* A content load reinits video without shutting the runloop down,
-    * and that is the pass whose surface has to survive. */
-   bool reinit = !(runloop_get_flags() & RUNLOOP_FLAG_SHUTDOWN_INITIATED);
-   bool kept   = gfx_ctx_wl_webos_keep_or_destroy(wl, reinit);
-
-   /* A frame callback outstanding on a kept surface would fire into
-    * this context after it is freed. */
-   if (wl->frame_cb)
-   {
-      wl_callback_destroy(wl->frame_cb);
-      wl->frame_cb = NULL;
-   }
+   wl_frame_destroy(&wl->frame);
 
    if (wl->cursor.theme)
       wl_cursor_theme_destroy(wl->cursor.theme);
-
-   /* The cache owns the rest now. The keymap in particular arrives
-    * once per wl_keyboard, so a kept keyboard never resends it:
-    * freeing the xkb state would leave modifier handling dead for the
-    * rest of the session. */
-   if (kept)
-      goto clear;
 
 #ifdef HAVE_XKBCOMMON
    free_xkb();
@@ -659,13 +459,18 @@ void gfx_ctx_wl_destroy_resources_webos(gfx_ctx_wayland_data_t *wl)
    if (wl->registry)
       wl_registry_destroy(wl->registry);
 
+   /* after the seats and their devices, which were on it, and before
+    * the connection */
+   if (wl->input.queue)
+      wl_event_queue_destroy(wl->input.queue);
+   wl->input.queue              = NULL;
+
    if (wl->input.dpy)
    {
       wl_display_flush(wl->input.dpy);
       wl_display_disconnect(wl->input.dpy);
    }
 
-clear:
    wl->input.dpy                = NULL;
    wl->registry                 = NULL;
    wl->compositor               = NULL;
@@ -707,15 +512,21 @@ bool gfx_ctx_wl_init_webos(
    int i;
    gfx_ctx_wayland_data_t *wl;
 
+#ifdef HAVE_USERLAND
+   RegisterApp();
+#endif
+
+   /* webOS hands the screen back to the Home dashboard the moment a
+    * native app destroys its only wl_surface, so a content load takes
+    * back the window the previous context kept. */
+   if ((*wwl = gfx_ctx_wl_take_kept(driver_configure_handler)))
+      return true;
+
    *wwl = calloc(1, sizeof(gfx_ctx_wayland_data_t));
    wl = *wwl;
 
    if (!wl)
       return false;
-
-#ifdef HAVE_USERLAND
-   RegisterApp();
-#endif
 
    wl_list_init(&wl->all_outputs);
    wl_list_init(&wl->current_outputs);
@@ -723,13 +534,20 @@ bool gfx_ctx_wl_init_webos(
 
    frontend_driver_destroy_signal_handler_state();
 
-   /* Only connect and create objects on a cold start; a reinit reuses
-    * what the previous context left behind. */
-   if (gfx_ctx_wl_webos_adopt(wl))
-      return true;
-
    wl->input.dpy       = wl_display_connect(NULL);
    wl->buffer_scale    = 1;
+   /* The seat's events get a queue of their own, which only the input
+    * driver's poll dispatches, as on other Wayland compositors.
+    * RETROARCH_WAYLAND_INPUT_QUEUE=0 in the environment leaves them on
+    * the default queue, where with threaded video the video thread and
+    * the poll both dispatched them. */
+   wl->input.queue     = NULL;
+   if (wl->input.dpy)
+   {
+      const char *off = getenv("RETROARCH_WAYLAND_INPUT_QUEUE");
+      if (!off || off[0] != '0')
+         wl->input.queue = wl_display_create_queue(wl->input.dpy);
+   }
    wl->floating_dims   = VIDEO_SCALE_PACK(DEFAULT_WINDOW_WIDTH,
          DEFAULT_WINDOW_HEIGHT);
 
@@ -747,6 +565,16 @@ bool gfx_ctx_wl_init_webos(
    wl_display_dispatch(wl->input.dpy);
    /* second roundtrip for listeners on bound globals (wl_output, wl_seat) */
    wl_display_roundtrip(wl->input.dpy);
+   /* the seat's events that roundtrip read were sorted into the input
+    * queue: its capabilities, and with them the keyboard and the
+    * pointer, are wanted before the window is set up. The input driver
+    * is not polling yet, so nothing else dispatches this queue. */
+   if (wl->input.queue)
+   {
+      wl_display_dispatch_queue_pending(wl->input.dpy, wl->input.queue);
+      wl_display_roundtrip(wl->input.dpy);
+      wl_display_dispatch_queue_pending(wl->input.dpy, wl->input.queue);
+   }
 
    if (!wl->compositor)
    {
@@ -832,10 +660,7 @@ bool gfx_ctx_wl_init_webos(
    wl->input.mouse.focus    = true;
 
    wl->cursor.surface        = wl_compositor_create_surface(wl->compositor);
-   wl->cursor.theme          = wl_cursor_theme_load(NULL, 16, wl->shm);
-
-   if (wl->cursor.theme)
-      wl->cursor.default_cursor = wl_cursor_theme_get_cursor(wl->cursor.theme, "left_ptr");
+   gfx_ctx_wl_cursor_load(wl);
 
    wl->num_active_touches = 0;
 
@@ -901,7 +726,6 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    enum rjson_type t;
    HContext response_ctx;
    bool suspend_screensaver;
-   settings_t *settings;
    rjsonwriter_t *w = NULL;
    rjson_t *json    = NULL;
    const char *key  = NULL, *val = NULL;
@@ -939,8 +763,7 @@ static bool screenSaverCallback(LSHandle* sh, LSMessage* reply, void* context)
    if (strcmp(state, "Active") != 0)
       return true;
 
-   settings            = config_get_ptr();
-   suspend_screensaver = settings->bools.ui_suspend_screensaver_enable;
+   suspend_screensaver = input_config_get_suspend_screensaver_enable();
 
    w                   = rjsonwriter_open_memory();
    rjsonwriter_raw(w, "{", 1);
@@ -1037,7 +860,6 @@ void wl_keyboard_handle_key_webos(void *data,
    int value = (state == WL_KEYBOARD_KEY_STATE_PRESSED) ? 1 : 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
    uint32_t keysym            = key;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    /* Handle 'duplicate' inputs that correspond
     * to the same RETROK_* key */
@@ -1077,7 +899,7 @@ void wl_keyboard_handle_key_webos(void *data,
 
    /* OSK: D-pad / Enter navigate and confirm the grid; do not inject
     * text-cursor moves or '\n' line submission from those keys. */
-   if (input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+   if (input_driver_keyboard_mapping_blocked())
    {
       switch (keysym)
       {

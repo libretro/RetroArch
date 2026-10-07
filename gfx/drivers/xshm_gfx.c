@@ -47,8 +47,7 @@ typedef struct xshm
    bool use_shm;
 } xshm_t;
 
-static void *xshm_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *xshm_init(const video_info_t *video)
 {
    xshm_t* xshm = (xshm_t*)malloc(sizeof(xshm_t));
    Window parent;
@@ -114,19 +113,9 @@ static void *xshm_init(const video_info_t *video,
    if (!x11_input_ctx_new(true))
       goto error;
 
-   if (input && input_data)
-   {
-      settings_t *settings                   = config_get_ptr();
-      void *xinput                           = input_driver_init_wrap(&input_x,
-            settings->arrays.input_joypad_driver);
-      if (xinput)
-      {
-         *input = &input_x;
-         *input_data = xinput;
-      }
-      else
-         *input = NULL;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with an X11 window */
+   input_driver_video_window(INPUT_WINDOW_X11, NULL);
 
    return xshm;
  error:
@@ -134,10 +123,12 @@ static void *xshm_init(const video_info_t *video,
    return NULL;
 }
 
-static bool xshm_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool xshm_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned y;
    xshm_t      *xshm  = (xshm_t*)data;
 #ifdef HAVE_MENU

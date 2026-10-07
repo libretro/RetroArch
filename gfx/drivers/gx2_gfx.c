@@ -103,6 +103,8 @@ typedef struct
       bool enable;
       sprite_vertex_t* v;
    } menu;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   GX2Texture *white_texture;
 
 #ifdef HAVE_OVERLAY
    struct gx2_overlay_data *overlay;
@@ -180,6 +182,12 @@ typedef struct
    const font_renderer_driver_t* font_driver;
    void* font_data;
    struct font_atlas* atlas;
+   /* Images and texture-size blocks the atlas outgrew: a frame in
+    * flight may still draw from them, and freeing one means waiting for
+    * the GPU, so they go when the font does - the atlas grows at most
+    * twice */
+   void* retired[4];
+   unsigned retired_count;
 } gx2_font_t;
 
 /* Temporary workaround for GX2 not being able to poll flags during init */
@@ -312,9 +320,8 @@ static bool gx2_set_shader(void *data,
       for (i = 0; i < wiiu->shader_preset->luts; i++)
       {
          struct texture_image image;
-         image.pixels               = NULL;
-         image.width                = 0;
-         image.height               = 0;
+         /* pix10 is a request the load reads: cleared with the rest */
+         memset(&image, 0, sizeof(image));
          image.supports_rgba        = false;
 
          if (image_texture_load(&image, wiiu->shader_preset->lut[i].path))
@@ -490,8 +497,9 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          v[i].color.a = draw->coords->color[(i << 2) + 3];
       }
 
-      if (draw->texture)
-         GX2SetPixelTexture((GX2Texture*)draw->texture, tex_shader.ps.samplerVars[0].location);
+      GX2SetPixelTexture(draw->texture
+            ? (GX2Texture*)draw->texture : wiiu->white_texture,
+            tex_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_TRIANGLE_STRIP, 4, wiiu->vertex_cache_tex.current, 1);
       wiiu->vertex_cache_tex.current += 4;
@@ -517,8 +525,9 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
             0xFF * draw->coords->color[0], 0xFF * draw->coords->color[1],
             0xFF * draw->coords->color[2], 0xFF * draw->coords->color[3]);
 
-      if (draw->texture)
-         GX2SetPixelTexture((GX2Texture*)draw->texture, sprite_shader.ps.samplerVars[0].location);
+      GX2SetPixelTexture(draw->texture
+            ? (GX2Texture*)draw->texture : wiiu->white_texture,
+            sprite_shader.ps.samplerVars[0].location);
 
       GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, 1, wiiu->vertex_cache.current, 1);
       wiiu->vertex_cache.current ++;
@@ -550,7 +559,7 @@ static void gfx_display_wiiu_draw_pipeline(
       gfx_display_t *p_disp,
       void *data, unsigned video_dims)
 {
-   video_coord_array_t *ca        = NULL;
+   struct video_coords *ca        = NULL;
    wiiu_video_t             *wiiu = (wiiu_video_t*)data;
 
    if (!wiiu || !draw)
@@ -560,16 +569,17 @@ static void gfx_display_wiiu_draw_pipeline(
    {
       case VIDEO_SHADER_MENU:
       case VIDEO_SHADER_MENU_2:
-         ca = &p_disp->dispca;
+         if (!(ca = gfx_display_effect_coords(p_disp)))
+            return;
          if (!wiiu->menu_shader_vbo)
          {
-            wiiu->menu_shader_vbo = MEM2_alloc(ca->coords.vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
-            memcpy(wiiu->menu_shader_vbo, ca->coords.vertex, ca->coords.vertices * 2 * sizeof(float));
-            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->coords.vertices * 2 * sizeof(float));
+            wiiu->menu_shader_vbo = MEM2_alloc(ca->vertices * 2 * sizeof(float), GX2_VERTEX_BUFFER_ALIGNMENT);
+            memcpy(wiiu->menu_shader_vbo, ca->vertex, ca->vertices * 2 * sizeof(float));
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, wiiu->menu_shader_vbo, ca->vertices * 2 * sizeof(float));
          }
 
          draw->coords->vertex             = wiiu->menu_shader_vbo;
-         draw->coords->vertices           = ca->coords.vertices;
+         draw->coords->vertices           = ca->vertices;
          GX2SetAttribBuffer(0,
                draw->coords->vertices * 2 * sizeof(float),
                2 * sizeof(float), wiiu->menu_shader_vbo);
@@ -640,10 +650,64 @@ static void gfx_display_wiiu_scissor_end(void *data, unsigned video_dims)
  * FONT DRIVER
  */
 
+/* The texture image and its size block, made at the atlas's size and
+ * filled with all of it: at init, and when the atlas has grown, the
+ * pair it replaces going to font->retired. False, with nothing
+ * changed, when MEM1 has no room. */
+static bool gx2_font_make_texture(gx2_font_t *font)
+{
+   unsigned i;
+   GX2Texture texture;
+   GX2_vec2 *ubo_tex;
+
+   memset(&texture, 0, sizeof(texture));
+   texture.surface.width    = font->atlas->width;
+   texture.surface.height   = font->atlas->height;
+   texture.surface.depth    = 1;
+   texture.surface.dim      = GX2_SURFACE_DIM_TEXTURE_2D;
+   texture.surface.tileMode = GX2_TILE_MODE_LINEAR_ALIGNED;
+   texture.viewNumSlices    = 1;
+   texture.surface.format   = GX2_SURFACE_FORMAT_UNORM_R8;
+   texture.compMap          = GX2_COMP_SEL(_1, _1, _1, _R);
+
+   GX2CalcSurfaceSizeAndAlignment(&texture.surface);
+   GX2InitTextureRegs(&texture);
+   if (!(texture.surface.image = MEM1_alloc(texture.surface.imageSize,
+               texture.surface.alignment)))
+      return false;
+   if (!(ubo_tex = (GX2_vec2*)MEM1_alloc(sizeof(*ubo_tex),
+               GX2_UNIFORM_BLOCK_ALIGNMENT)))
+   {
+      MEM1_free(texture.surface.image);
+      return false;
+   }
+
+   for (i = 0; (i < font->atlas->height) && (i < texture.surface.height); i++)
+      memcpy((uint8_t*)texture.surface.image
+            + (i * texture.surface.pitch),
+            font->atlas->buffer + (i * font->atlas->width),
+            font->atlas->width);
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture.surface.image, texture.surface.imageSize);
+
+   ubo_tex->width  = texture.surface.width;
+   ubo_tex->height = texture.surface.height;
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, ubo_tex,
+         sizeof(*ubo_tex));
+
+   if (font->texture.surface.image)
+      font->retired[font->retired_count++] = font->texture.surface.image;
+   if (font->ubo_tex)
+      font->retired[font->retired_count++] = font->ubo_tex;
+   font->texture      = texture;
+   font->ubo_tex      = ubo_tex;
+   font->atlas->dirty = false;
+   return true;
+}
+
 static void* gx2_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
-   uint32_t i;
    gx2_font_t* font = (gx2_font_t*)calloc(1, sizeof(*font));
 
    if (!font)
@@ -658,38 +722,14 @@ static void* gx2_font_init(void* data, const char* font_path,
    }
 
    font->atlas                       = font->font_driver->get_atlas(font->font_data);
-   font->texture.surface.width       = font->atlas->width;
-   font->texture.surface.height      = font->atlas->height;
-   font->texture.surface.depth       = 1;
-   font->texture.surface.dim         = GX2_SURFACE_DIM_TEXTURE_2D;
-   font->texture.surface.tileMode    = GX2_TILE_MODE_LINEAR_ALIGNED;
-   font->texture.viewNumSlices       = 1;
-
-   font->texture.surface.format      = GX2_SURFACE_FORMAT_UNORM_R8;
-   font->texture.compMap             = GX2_COMP_SEL(_1, _1, _1, _R);
-
-   GX2CalcSurfaceSizeAndAlignment(&font->texture.surface);
-   GX2InitTextureRegs(&font->texture);
-   font->texture.surface.image       = MEM1_alloc(
-         font->texture.surface.imageSize,
-         font->texture.surface.alignment);
-
-   for (i = 0; (i < font->atlas->height) && (i < font->texture.surface.height); i++)
-      memcpy((uint8_t*)font->texture.surface.image
-            + (i * font->texture.surface.pitch),
-            font->atlas->buffer + (i * font->atlas->width),
-            font->atlas->width);
-
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
-         font->texture.surface.image,
-         font->texture.surface.imageSize);
-
-   font->atlas->dirty    = false;
-   font->ubo_tex         = MEM1_alloc(sizeof(*font->ubo_tex), GX2_UNIFORM_BLOCK_ALIGNMENT);
-   font->ubo_tex->width  = font->texture.surface.width;
-   font->ubo_tex->height = font->texture.surface.height;
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_UNIFORM_BLOCK, font->ubo_tex,
-                 sizeof(*font->ubo_tex));
+   /* The atlas may grow, kept modest for the 32 MB of MEM1 */
+   font->atlas->max_dims = VIDEO_SCALE_PACK(1024, 1024);
+   if (!gx2_font_make_texture(font))
+   {
+      font->font_driver->free(font->font_data);
+      free(font);
+      return NULL;
+   }
 
    return font;
 }
@@ -712,212 +752,135 @@ static void gx2_font_free(void* data, bool is_threaded)
       MEM1_free(font->texture.surface.image);
    if (font->ubo_tex)
       MEM1_free(font->ubo_tex);
+   {
+      unsigned i;
+      for (i = 0; i < font->retired_count; i++)
+         MEM1_free(font->retired[i]);
+   }
    free(font);
 }
 
-static int gx2_font_get_message_width(void* data, const char* msg,
+static int gx2_font_get_message_width(void *data, const char *msg,
       size_t msg_len, float scale)
 {
-   int i;
-   int delta_x = 0;
-   void *font_data;
-   const struct font_glyph* (*get_glyph)(void*, uint32_t);
-   const struct font_glyph* glyph_q = NULL;
-   gx2_font_t                *font  = (gx2_font_t*)data;
-
+   gx2_font_t *font = (gx2_font_t*)data;
    if (!font)
       return 0;
-
-   get_glyph = font->font_driver->get_glyph;
-   font_data = font->font_data;
-   glyph_q   = get_glyph(font_data, '?');
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      const char* msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-
-      delta_x += glyph->advance_x;
-   }
-
-   return delta_x * scale;
-}
-
-static void gx2_font_render_line(
-      wiiu_video_t *wiiu,
-      gx2_font_t* font,
-      const struct font_glyph* glyph_q,
-      const char* msg, size_t msg_len,
-      float scale, const unsigned int color, float pos_x,
-      float pos_y,
-      unsigned width, unsigned height,
-      int pre_x,
-      unsigned text_align)
-{
-   int i;
-   int count;
-   sprite_vertex_t *v;
-   const char* msg_end              = msg + msg_len;
-   int x                            = pre_x;
-   int y                            = roundf((1.0 - pos_y) * height);
-   const struct font_glyph* (*get_glyph)(void*, uint32_t) = font->font_driver->get_glyph;
-   void *font_data      = font->font_data;
-
-   /* For right/center alignment, compute width with a lightweight pass
-    * that only accumulates advance_x — avoids the redundant glyph lookups
-    * and atlas dirty checks that gx2_font_get_message_width would repeat. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int width_accum     = 0;
-      const char *scan    = msg;
-      const char *scan_end = msg_end;
-      while (scan < scan_end)
-      {
-         const struct font_glyph *glyph;
-         uint32_t code       = utf8_walk(&scan);
-         if (!(glyph = get_glyph(font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-         width_accum += glyph->advance_x;
-      }
-
-      if (text_align == TEXT_ALIGN_RIGHT)
-         x -= (int)(width_accum * scale);
-      else
-         x -= (int)(width_accum * scale) / 2;
-   }
-
-   v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
-
-   for (i = 0; i < msg_len; i++)
-   {
-      const struct font_glyph* glyph;
-      const char* msg_tmp            = &msg[i];
-      unsigned code                  = utf8_walk(&msg_tmp);
-      unsigned skip                  = msg_tmp - &msg[i];
-
-      if (skip > 1)
-         i += skip - 1;
-
-      /* Do something smarter here ... */
-      if (!(glyph = get_glyph(font_data, code)))
-         if (!(glyph  = glyph_q))
-            continue;
-
-      v->pos.x        = x + glyph->draw_offset_x * scale;
-      v->pos.y        = y + glyph->draw_offset_y * scale;
-      v->pos.width    = glyph->width * scale;
-      v->pos.height   = glyph->height * scale;
-
-      v->coord.u      = glyph->atlas_offset_x;
-      v->coord.v      = glyph->atlas_offset_y;
-      v->coord.width  = glyph->width;
-      v->coord.height = glyph->height;
-
-      v->color        = color;
-
-      v++;
-
-      x              += glyph->advance_x * scale;
-      y              += glyph->advance_y * scale;
-   }
-
-   count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current;
-
-   if (!count)
-      return;
-
-   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER,
-         wiiu->vertex_cache.v + wiiu->vertex_cache.current,
-         count * sizeof(wiiu->vertex_cache.v));
-
-   if (font->atlas->dirty)
-   {
-      /* Copy and invalidate only the dirty row band tracked by the
-       * font renderers instead of the whole atlas */
-      unsigned y0 = font->atlas->dirty_y0;
-      unsigned y1 = font->atlas->dirty_y1;
-      if (y1 > font->atlas->height)
-         y1 = font->atlas->height;
-      if (y1 > font->texture.surface.height)
-         y1 = font->texture.surface.height;
-
-      for (i = y0; i < y1; i++)
-         memcpy(font->texture.surface.image
-               + (i * font->texture.surface.pitch),
-                font->atlas->buffer + (i * font->atlas->width),
-                font->atlas->width);
-
-      if (y1 > y0)
-         GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
-               font->texture.surface.image
-                     + (y0 * font->texture.surface.pitch),
-               (y1 - y0) * font->texture.surface.pitch);
-      font->atlas->dirty = false;
-   }
-
-   GX2SetPixelTexture(&font->texture,
-         sprite_shader.ps.samplerVars[0].location);
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
-         sprite_shader.vs.uniformBlocks[1].size,
-         font->ubo_tex);
-
-   GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, count, wiiu->vertex_cache.current, 1);
-
-   GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset,
-         sprite_shader.vs.uniformBlocks[1].size,
-         wiiu->ubo_tex);
-
-   wiiu->vertex_cache.current = v - wiiu->vertex_cache.v;
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static void gx2_font_render_message(
       wiiu_video_t *wiiu,
-      gx2_font_t* font, const char* msg, float scale,
+      gx2_font_t* font, const char* msg, size_t msg_len, float scale,
       const unsigned int color, float pos_x, float pos_y,
       unsigned width, unsigned height, unsigned text_align)
 {
    float line_height;
    struct font_line_metrics *line_metrics = NULL;
-   int lines                              = 0;
-   const struct font_glyph* glyph_q       = font->font_driver->get_glyph(font->font_data, '?');
-   int x                                  = roundf(pos_x * width);
+   sprite_vertex_t *v                     = NULL;
+   bool line_ok                           = false;
+   int pre_x                              = roundf(pos_x * width);
+   int x                                  = 0;
+   int y                                  = 0;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                          = font->font_driver->get_glyph;
+   void *font_data                        = font->font_data;
+   const struct font_glyph* glyph_q       = get_glyph(font_data, '?');
+   bool aligned                           = (text_align == TEXT_ALIGN_RIGHT
+                                         || text_align == TEXT_ALIGN_CENTER);
+
    font->font_driver->get_line_metrics(font->font_data, &line_metrics);
    line_height = line_metrics->height * scale / VIDEO_SCALE_H(wiiu->vp.dims);
-   for (;;)
-   {
-      size_t msg_len = 0;
-      while (msg[msg_len] && msg[msg_len] != '\n')
-         msg_len++;
-      /* Draw the line */
-      if ((wiiu->vertex_cache.current + (msg_len * 4)
-              <= wiiu->vertex_cache.size))
-         gx2_font_render_line(wiiu,
-               font,
-               glyph_q,
-               msg, msg_len,
-               scale, color,
-               pos_x,
-               pos_y - (float)lines * line_height,
-               width,
-               height,
-               x,
-               text_align);
-      if (!msg[msg_len])
-         break;
-      msg += msg_len + 1;
-      lines++;
-   }
+
+#define FONT_LAYOUT_ALIGNED aligned
+   /* A line the vertex cache cannot take is not looked up either */
+#define FONT_LAYOUT_SKIP(line, bytes) \
+   (wiiu->vertex_cache.current + ((bytes) * 4) > wiiu->vertex_cache.size)
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(count); \
+      line_ok = (wiiu->vertex_cache.current + ((bytes) * 4) \
+            <= wiiu->vertex_cache.size); \
+      x       = pre_x; \
+      y       = roundf((1.0 - (pos_y - (float)(line) * line_height)) \
+            * height); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         x -= (int)((line_width) * scale); \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         x -= (int)((line_width) * scale) / 2; \
+      v       = wiiu->vertex_cache.v + wiiu->vertex_cache.current; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+   do \
+   { \
+      /* This driver keeps its own truncating pen */ \
+      (void)(pen_x); \
+      (void)(pen_y); \
+      if (!line_ok) \
+         break; \
+      v->pos.x        = x + (glyph)->draw_offset_x * scale; \
+      v->pos.y        = y + (glyph)->draw_offset_y * scale; \
+      v->pos.width    = VIDEO_SCALE_W((glyph)->dims) * scale; \
+      v->pos.height   = VIDEO_SCALE_H((glyph)->dims) * scale; \
+      v->coord.u      = VIDEO_SCALE_W((glyph)->atlas_pos); \
+      v->coord.v      = VIDEO_SCALE_H((glyph)->atlas_pos); \
+      v->coord.width  = VIDEO_SCALE_W((glyph)->dims); \
+      v->coord.height = VIDEO_SCALE_H((glyph)->dims); \
+      v->color        = color; \
+      v++; \
+      x              += (glyph)->advance_x * scale; \
+      y              += (glyph)->advance_y * scale; \
+   } while (0)
+#define FONT_LAYOUT_LINE_END() \
+   do \
+   { \
+      int count; \
+      if (!line_ok) \
+         break; \
+      count = v - wiiu->vertex_cache.v - wiiu->vertex_cache.current; \
+      if (!count) \
+         break; \
+      GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, \
+            wiiu->vertex_cache.v + wiiu->vertex_cache.current, \
+            count * sizeof(wiiu->vertex_cache.v)); \
+      if (font->atlas->dirty) \
+      { \
+         /* Copy and invalidate only the dirty row band tracked by \
+          * the font renderers instead of the whole atlas */ \
+         unsigned j; \
+         unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0); \
+         unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1); \
+         if (y1 > font->atlas->height) \
+            y1 = font->atlas->height; \
+         if (y1 > font->texture.surface.height) \
+            y1 = font->texture.surface.height; \
+         for (j = y0; j < y1; j++) \
+            memcpy(font->texture.surface.image \
+                  + (j * font->texture.surface.pitch), \
+                   font->atlas->buffer + (j * font->atlas->width), \
+                   font->atlas->width); \
+         if (y1 > y0) \
+            GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, \
+                  font->texture.surface.image \
+                        + (y0 * font->texture.surface.pitch), \
+                  (y1 - y0) * font->texture.surface.pitch); \
+         font->atlas->dirty = false; \
+      } \
+      GX2SetPixelTexture(&font->texture, \
+            sprite_shader.ps.samplerVars[0].location); \
+      GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, \
+            sprite_shader.vs.uniformBlocks[1].size, \
+            font->ubo_tex); \
+      GX2DrawEx(GX2_PRIMITIVE_MODE_POINTS, count, \
+            wiiu->vertex_cache.current, 1); \
+      GX2SetVertexUniformBlock(sprite_shader.vs.uniformBlocks[1].offset, \
+            sprite_shader.vs.uniformBlocks[1].size, \
+            wiiu->ubo_tex); \
+      wiiu->vertex_cache.current = v - wiiu->vertex_cache.v; \
+   } while (0)
+#include "../font_layout.h"
 }
 
 static void gx2_font_render_msg(
@@ -926,6 +889,7 @@ static void gx2_font_render_msg(
       const char* msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float x, y, scale, drop_mod, drop_alpha;
    int drop_x, drop_y;
    enum text_alignment text_align;
@@ -938,47 +902,35 @@ static void gx2_font_render_msg(
    if (!font || !wiiu || !msg || !*msg)
       return;
 
-   if (params)
+   /* Asked for before anything is laid out: when it has grown, an image
+    * of its size takes the old one's place */
+   if (font->font_driver && font->font_data)
    {
-      x                       = params->x;
-      y                       = params->y;
-      scale                   = params->scale;
-      text_align              = params->text_align;
-      drop_x                  = params->drop_x;
-      drop_y                  = params->drop_y;
-      drop_mod                = params->drop_mod;
-      drop_alpha              = params->drop_alpha;
-
-      r                       = FONT_COLOR_GET_RED(params->color);
-      g                       = FONT_COLOR_GET_GREEN(params->color);
-      b                       = FONT_COLOR_GET_BLUE(params->color);
-      alpha                   = FONT_COLOR_GET_ALPHA(params->color);
-      color                   = params->color;
+      font->atlas = font->font_driver->get_atlas(font->font_data);
+      if (     font->retired_count + 2 <= sizeof(font->retired)
+               / sizeof(font->retired[0])
+            && (   font->texture.surface.width  != font->atlas->width
+                || font->texture.surface.height != font->atlas->height))
+         gx2_font_make_texture(font);
    }
-   else
-   {
-      settings_t *settings    = config_get_ptr();
-      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
-      float video_msg_color_r = settings->floats.video_msg_color_r;
-      float video_msg_color_g = settings->floats.video_msg_color_g;
-      float video_msg_color_b = settings->floats.video_msg_color_b;
-      x                       = video_msg_pos_x;
-      y                       = video_msg_pos_y;
-      scale                   = 1.0f;
-      text_align              = TEXT_ALIGN_LEFT;
 
-      r                       = (video_msg_color_r * 255);
-      g                       = (video_msg_color_g * 255);
-      b                       = (video_msg_color_b * 255);
-      alpha                   = 255;
-      color                   = COLOR_RGBA(r, g, b, alpha);
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   alpha           = rp.rgba[3];
+   /* The caller's colour as packed; the message colour in the
+    * Wii U's own order */
+   color      = params ? params->color : COLOR_RGBA(r, g, b, alpha);
 
-      drop_x                  = -2;
-      drop_y                  = -2;
-      drop_mod                = 0.3f;
-      drop_alpha              = 1.0f;
-   }
 
    if (drop_x || drop_y)
    {
@@ -987,12 +939,12 @@ static void gx2_font_render_msg(
       unsigned b_dark         = b * drop_mod;
       unsigned alpha_dark     = alpha * drop_alpha;
       unsigned color_dark     = COLOR_RGBA(r_dark, g_dark, b_dark, alpha_dark);
-      gx2_font_render_message(wiiu, font, msg, scale, color_dark,
+      gx2_font_render_message(wiiu, font, msg, msg_len, scale, color_dark,
             x + scale * drop_x / width, y +
             scale * drop_y / height, width, height, text_align);
    }
 
-   gx2_font_render_message(wiiu, font, msg, scale,
+   gx2_font_render_message(wiiu, font, msg, msg_len, scale,
          color, x, y, width, height, text_align);
 }
 
@@ -1079,32 +1031,26 @@ static void gx2_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 }
 
 static uint32_t gx2_get_flags(void *data);
+static uintptr_t gx2_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type);
 
-static void *gx2_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gx2_init(const video_info_t *video)
 {
    unsigned i;
    float refresh_rate              = 60.0f / 1.001f;
    u32 size                        = 0;
    u32 tmp                         = 0;
-   void *wiiuinput                 = NULL;
    wiiu_video_t *wiiu              = (wiiu_video_t*)calloc(1, sizeof(*wiiu));
    settings_t *settings            = config_get_ptr();
-   const char *input_joypad_driver = settings->arrays.input_joypad_driver;
    bool prefer_drc                 = settings->bools.video_wiiu_prefer_drc;
 
    if (!wiiu)
       return NULL;
 
-   *input                          = NULL;
-   *input_data                     = NULL;
 
-   if (input && input_data)
-   {
-      wiiuinput                    = input_driver_init_wrap(&input_wiiu, input_joypad_driver);
-      *input                       = wiiuinput ? &input_wiiu : NULL;
-      *input_data                  = wiiuinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    /* video initialize */
    wiiu->cmd_buffer                = MEM2_alloc(0x400000, 0x40);
@@ -1238,6 +1184,17 @@ static void *gx2_init(const video_info_t *video,
    memset(wiiu->menu.texture.surface.image, 0x0, wiiu->menu.texture.surface.imageSize);
    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, wiiu->menu.texture.surface.image,
                  wiiu->menu.texture.surface.imageSize);
+
+   {
+      static const uint32_t white = 0xffffffffu;
+      struct texture_image image;
+      memset(&image, 0, sizeof(image));
+      image.pixels        = (uint32_t*)&white;
+      image.width         = 1;
+      image.height        = 1;
+      wiiu->white_texture = (GX2Texture*)gx2_load_texture(wiiu, &image,
+            false, TEXTURE_FILTER_NEAREST);
+   }
 
    wiiu->v                             = MEM2_alloc(
          4 * sizeof(*wiiu->v), GX2_VERTEX_BUFFER_ALIGNMENT);
@@ -1596,6 +1553,11 @@ static void gx2_free(void *data)
    MEM2_free(wiiu->cmd_buffer);
    MEM2_free(wiiu->texture.surface.image);
    MEM2_free(wiiu->menu.texture.surface.image);
+   if (wiiu->white_texture)
+   {
+      MEM2_free(wiiu->white_texture->surface.image);
+      free(wiiu->white_texture);
+   }
    MEM2_free(wiiu->v);
    MEM2_free(wiiu->menu.v);
    MEM2_free(wiiu->vertex_cache.v);
@@ -1965,9 +1927,11 @@ static void gx2_update_uniform_block(wiiu_video_t *wiiu,
 }
 
 static bool gx2_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    uint32_t i;
    wiiu_video_t *wiiu             = (wiiu_video_t *) data;
 #ifdef HAVE_MENU

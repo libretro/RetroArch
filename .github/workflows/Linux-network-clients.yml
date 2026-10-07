@@ -1,0 +1,257 @@
+name: CI Linux network clients
+
+# The built-in TLS, SMB2/3 and NFSv3 clients against real servers:
+# openssl s_server, Samba, unfs3, nfs-ganesha and a MIT KDC on the runner, natively, as Windows
+# builds under Wine, under ASan + UBSan + LSan, plus libFuzzer over the
+# parsers. Its own job so the libretro-common unit-test job keeps its
+# short budget.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  network-clients:
+    name: TLS, SMB and NFS clients against local servers
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 25
+        run: |
+          sudo apt-get update -y
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          # tshark's dumpcap asks whether to be setuid: no, runs are root
+          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections
+          export DEBIAN_FRONTEND=noninteractive
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only --no-install-recommends build-essential clang \
+              gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
+              nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
+              samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y --no-install-recommends build-essential clang \
+            gcc-mingw-w64-x86-64 openssl samba libtirpc-dev flex bison autoconf automake wine wine64 \
+            nfs-ganesha nfs-ganesha-vfs krb5-kdc krb5-admin-server krb5-user winbind \
+            samba-dsdb-modules samba-ad-provision samba-vfs-modules acl smbclient tshark
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Built-in TLS client against a local openssl server
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_socket_ssl_retro.c end to end: every cipher suite, both
+          # curves, RSA / P-256 / P-384 certificates under a CA made on
+          # the spot, verify required / optional / disabled, and the
+          # refusals that must happen (wrong hostname, untrusted CA). An
+          # IP address matches only an iPAddress SAN entry, never the
+          # same address written as a DNS name.
+          samples/network/tls_retro/local_server_test.sh
+          # The same tool cross-linked for Windows: the sample's link
+          # line has to carry Winsock, which nothing on Linux checks.
+          make -C samples/network/tls_retro clean
+
+
+      - name: Built-in SMB2/3 client against a local smbd
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_smb2.c end to end against Samba on the loopback: every
+          # dialect 2.0.2 to 3.1.1 with signing mandatory, AES-CCM and
+          # AES-GCM sealing required, and a refused logon. Root for
+          # port 445; the script itself skips without smbd.
+          sudo samples/network/smb_retro/local_samba_test.sh
+          # and with Kerberos against a Samba AD DC provisioned on the
+          # spot, NTLM disabled on it so only a ticket can log in
+          sudo samples/network/smb_retro/local_ad_dc_test.sh
+          sudo make -C samples/network/smb_retro clean
+
+      - name: Embedded MCP server over the loopback
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # network/mcp_server.c as it ships, in front of a stub command
+          # table: the handshake, the tool list and its hints, answers now
+          # and later, the JSON-RPC errors, the HTTP gate (method, path,
+          # Origin, the bearer token it will not start without), an
+          # oversized body, a request in pieces, and teardown with a
+          # request waiting
+          make -C samples/network/mcp_server clean
+          make -C samples/network/mcp_server SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            make -C samples/network/mcp_server check
+          make -C samples/network/mcp_server clean
+
+
+      - name: Windows builds under Wine
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The MinGW builds run, not just link: the crypto and keychain
+          # suites, then the three server matrices with the Windows tools
+          # talking to the same local openssl, Samba and unfs3.
+          export WINEDEBUG=-all WINEPREFIX=$RUNNER_TEMP/wineprefix
+          # the tools below are run through wine, so it must be there
+          command -v wine >/dev/null
+          # One wineserver for the whole step. Ubuntu's wrapper starts
+          # it with -p0: it exits with each tool and the next tool
+          # starts another. A tool that starts while the last server
+          # is still on its way out is cut off by it before main()
+          # ("wine client error:0: recvmsg: Connection reset by peer")
+          # and the lane fails with nothing wrong in the tree. The
+          # first process brings up Wine's services, which keep its
+          # output for as long as they live, so it is given none.
+          mkdir -p "$WINEPREFIX"
+          wineserver -p
+          trap 'wineserver -k || true; sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineserver -k || true' EXIT
+          wine cmd /c exit > /dev/null 2>&1 < /dev/null
+          make -C libretro-common -f Makefile.test win32-wine-check
+          # the MCP server on Winsock
+          make -C samples/network/mcp_server clean
+          make -C samples/network/mcp_server compiler=x86_64-w64-mingw32-gcc
+          (cd samples/network/mcp_server && wine ./mcp_server_test.exe)
+          make -C samples/network/mcp_server clean
+          export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
+          make -C samples/network/tls_retro clean
+          samples/network/tls_retro/local_server_test.sh
+          make -C samples/network/tls_retro clean
+          make -C samples/network/smb_retro clean
+          # smbd needs root for port 445, and Wine refuses both a prefix
+          # owned by someone else and creating one inside a directory it
+          # does not own ($RUNNER_TEMP belongs to the runner user), so the
+          # root run gets a prefix under /tmp with root's own HOME
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root sh -c 'mkdir -p "$WINEPREFIX" && wineserver -p'
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root wineboot -u > /dev/null 2>&1 < /dev/null
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_samba_test.sh
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/smb_retro/local_ad_dc_test.sh
+          sudo make -C samples/network/smb_retro clean
+          make -C samples/network/nfs_retro clean
+          samples/network/nfs_retro/local_unfs3_test.sh
+          make -C samples/network/nfs_retro clean
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_ganesha_test.sh
+          sudo make -C samples/network/nfs_retro clean
+          sudo -E env HOME=/root WINEPREFIX=/tmp/wineprefix-root samples/network/nfs_retro/local_read_plus_test.sh
+          sudo make -C samples/network/nfs_retro clean
+          make -C samples/network/krb5_retro clean
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
+
+
+      - name: Fuzz the network parsers
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # libFuzzer over the X.509 parser and the TLS, SMB and NFS
+          # clients' receive paths (a listener in the harness answers the
+          # client with the fuzzer's input), under ASan + UBSan, from a
+          # seed corpus recorded off real servers. Any crash, timeout or
+          # leak artifact fails the step.
+          make -C libretro-common/test/fuzz fuzz-run FUZZ_SECONDS=30
+          if ls libretro-common/test/fuzz/crash-* libretro-common/test/fuzz/leak-* libretro-common/test/fuzz/timeout-* >/dev/null 2>&1; then
+            echo "fuzzer artifacts found"; exit 1
+          fi
+          make -C libretro-common/test/fuzz clean
+
+
+      - name: Network client matrices under ASan + UBSan + LSan
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The three server matrices again, with the clients built under
+          # the sanitizers: every code path a real server drives, checked
+          # for memory errors, undefined behaviour and leaks. UBSan found
+          # a NULL memcpy in the SHA-2 stream updates on the SHA-384 PRF
+          # path the first time this ran.
+          export CFLAGS="-O1 -g -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          export LDFLAGS="-fsanitize=address,undefined"
+          export ASAN_OPTIONS=detect_leaks=1:strict_string_checks=1
+          export UBSAN_OPTIONS=print_stacktrace=1
+          make -C samples/network/tls_retro clean
+          samples/network/tls_retro/local_server_test.sh
+          make -C samples/network/tls_retro clean
+          make -C samples/network/smb_retro clean
+          sudo -E samples/network/smb_retro/local_samba_test.sh
+          sudo -E samples/network/smb_retro/local_ad_dc_test.sh
+          make -C samples/network/smb_retro clean
+          make -C samples/network/nfs_retro clean
+          samples/network/nfs_retro/local_unfs3_test.sh
+          make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_ganesha_test.sh
+          sudo make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_read_plus_test.sh
+          sudo make -C samples/network/nfs_retro clean
+          make -C samples/network/krb5_retro clean
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
+
+
+      - name: Built-in NFSv3 client against unfs3
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_nfs3.c end to end against a user-space NFSv3 server built
+          # from unfs3's repository (Ubuntu no longer packages it), on
+          # fixed ports without a portmapper: mount, write, read, seek,
+          # stat, mkdir, rename, truncate, list, unlink, refused export.
+          samples/network/nfs_retro/local_unfs3_test.sh
+          # NFSv4.0 (one COMPOUND per operation, no portmapper or MOUNT,
+          # pseudo-filesystem export) against nfs-ganesha from apt
+          sudo -E samples/network/nfs_retro/local_ganesha_test.sh
+          # NFSv4.2 READ_PLUS against a fake server reporting the holes
+          # the filesystem really holds, its replies checked by
+          # Wireshark's own dissector
+          sudo make -C samples/network/nfs_retro clean
+          sudo -E samples/network/nfs_retro/local_read_plus_test.sh
+          # and its Windows link line, cross-linked
+          sudo make -C samples/network/nfs_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/nfs_retro nfs_test
+          make -C samples/network/nfs_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/tls_retro tls_fetch
+          make -C samples/network/tls_retro clean
+
+      - name: Built-in Kerberos client against a MIT KDC
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # net_krb5.c against krb5kdc on a fixed port: AS with and
+          # without PA-ENC-TIMESTAMP, TGS for a cifs/ service with the
+          # ticket checked against the service's keytab key, wrong
+          # password and unknown service refused.
+          samples/network/krb5_retro/local_kdc_test.sh
+          make -C samples/network/krb5_retro clean
+          CC=x86_64-w64-mingw32-gcc make -C samples/network/krb5_retro krb5_test
+          make -C samples/network/krb5_retro clean

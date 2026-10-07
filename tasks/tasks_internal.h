@@ -96,10 +96,14 @@ bool task_nbio_slice_within_budget(void *ud, size_t avail, size_t len);
 void task_window_progress_cb(retro_task_t *task);
 
 #ifdef HAVE_NETWORKING
+#include <net/net_http.h>
 typedef struct
 {
    char *data;
-   struct string_list *headers;
+   /* Response headers, one block of NUL-terminated "Name: value"
+    * lines ending in an empty line; walk with net_http_header_next().
+    * Owned here, freed with free(). */
+   char *headers;
    size_t len;
    int status;
 } http_transfer_data_t;
@@ -131,8 +135,13 @@ void *task_push_webdav_stat(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_mkdir(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
-void *task_push_webdav_put(const char *url, const void *put_data, size_t len, bool mute, const char *headers,
-      retro_task_callback_t cb, void *userdata);
+/* PUT a body of @len bytes pulled from @source as the socket takes
+ * them, holding one send buffer rather than the whole file. @rewind
+ * restarts the body for a replay on a fresh connection; NULL means the
+ * request is never replayed. */
+void *task_push_webdav_put_stream(const char *url, net_http_source_t source,
+      net_http_source_rewind_t rewind, void *source_data, size_t len, bool mute,
+      const char *headers, retro_task_callback_t cb, void *user_data);
 void *task_push_webdav_delete(const char *url, bool mute, const char *headers,
       retro_task_callback_t cb, void *userdata);
 void *task_push_webdav_move(const char *url, const char *dest, bool mute, const char *headers,
@@ -141,6 +150,7 @@ void *task_push_webdav_copy(const char *url, const char *dest, bool mute, const 
       retro_task_callback_t cb, void *userdata);
 
 bool task_push_bluetooth_scan(retro_task_callback_t cb);
+
 
 bool task_push_wifi_scan(retro_task_callback_t cb);
 bool task_push_wifi_enable(retro_task_callback_t cb);
@@ -200,6 +210,13 @@ bool task_push_pl_thumbnail_download(
 
 #endif
 
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+/* Unlocks a keychain moved from another machine with @passphrase, or
+ * sets it as the keychain's passphrase; empty removes the passphrase.
+ * The key derivation runs as a task, the result is a notification. */
+bool task_push_keychain_passphrase(const char *passphrase);
+#endif
+
 /* Core backup/restore tasks */
 
 /* NOTE 1: If CRC is set to 0, CRC of core_path file will
@@ -208,12 +225,29 @@ bool task_push_pl_thumbnail_download(
  * name will be determined automatically
  * > core_display_name *must* be set to a non-empty
  *   string if task_push_core_backup() is *not* called
- *   on the main thread */
+ *   on the main thread
+ * NOTE 3: @cb, if set, is called with @user_data when the
+ * task retires, on the thread that retires the queue, once
+ * for every task this returns */
 void *task_push_core_backup(
       const char *core_path, const char *core_display_name,
       uint32_t crc, enum core_backup_mode backup_mode,
       size_t auto_backup_history_size,
-      const char *dir_core_assets, bool mute);
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data);
+
+/* An automatic backup that also installs a new core: @staged_path,
+ * extracted on the same volume as @core_path, replaces @core_path,
+ * and the core it replaces is moved into the backups as it is rather
+ * than compressed into them; where it cannot be moved it is copied as
+ * task_push_core_backup() would.  @cb gets an error exactly when the
+ * new core could not be installed. */
+void *task_push_core_backup_install(
+      const char *core_path, const char *staged_path,
+      const char *core_display_name, uint32_t crc,
+      size_t auto_backup_history_size,
+      const char *dir_core_assets, bool mute,
+      retro_task_callback_t cb, void *user_data);
 
 /* NOTE: If 'core_loaded' is true, menu stack should be
  * flushed if task_push_core_restore() returns true */
@@ -234,6 +268,23 @@ bool task_push_pl_manager_clean_playlist(const playlist_config_t *playlist_confi
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       unsigned downscale_cap,
+      retro_task_callback_t cb, void *userdata);
+
+enum task_image_load_flags
+{
+   /* Decode in R,G,B,A memory order rather than ARGB words */
+   TASK_IMAGE_LOAD_RGBA = (1 << 0),
+   /* The caller uploads the image and takes RGBA half floats - linear
+    * scRGB, ->fp16 set - which an HDR video still is then decoded as
+    * wherever the driver offers GFX_SURFACE_PIXFMT_FP16. Such a still
+    * is never resampled: upscale_threshold and downscale_cap pass it
+    * by. Without the flag no load returns half floats. */
+   TASK_IMAGE_LOAD_HDR  = (1 << 1)
+};
+
+/* task_push_image_load with its options as TASK_IMAGE_LOAD_* bits. */
+bool task_push_image_load_ex(const char *fullpath, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
       retro_task_callback_t cb, void *userdata);
 
 /* For an image-load task whose file is a video (WEBM/MP4): take
@@ -261,21 +312,11 @@ bool task_image_detach_video_stream(retro_task_t *task,
  * already answer. */
 int task_image_png_probe(retro_task_t *task);
 
-/* Async icon/texture loading.  generation_ptr must point to a static
- * variable in the calling module (not a heap struct field). */
-bool task_push_icon_load(const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr);
-
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(
-      const char *playlist_directory,
-      const char *content_database,
-      const char *fullpath,
-      bool directory, bool show_hidden_files,
-      retro_task_callback_t cb);
+/* Scans @fullpath, a directory or a single file, against the content
+ * databases; the database and playlist directories come from the
+ * settings. */
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb);
 #endif
 
 bool task_push_manual_content_scan(
@@ -339,6 +380,30 @@ bool take_screenshot(
       const char *path, bool silence,
       bool has_valid_framebuffer, bool fullpath, bool use_thread);
 
+/* What take_screenshot_notify()'s callback is told, as its task_data */
+struct screenshot_result
+{
+   const char *path;
+   /* The PNG, base64, read back on the task's thread once written; NULL
+    * past SCREENSHOT_IMAGE_MAX, for another format, or written without a
+    * task */
+   const char *png_base64;
+   size_t      png_base64_len;
+};
+
+/* The largest PNG handed back to the callback */
+#define SCREENSHOT_IMAGE_MAX (4 * 1024 * 1024)
+
+/* @cb, when it returns true, is told once the screenshot is written:
+ * task_data is a struct screenshot_result, and error is set if it could
+ * not be. Without @use_thread that is before this returns, with no task
+ * and no image. */
+bool take_screenshot_notify(
+      const char *screenshot_dir,
+      const char *path, bool silence,
+      bool has_valid_framebuffer, bool fullpath, bool use_thread,
+      retro_task_callback_t cb, void *user_data);
+
 bool event_load_save_files(bool is_sram_load_disabled);
 
 bool content_savefile_is_live(const char *path);
@@ -394,6 +459,9 @@ bool input_autoconfigure_connect_ex(
 bool input_autoconfigure_disconnect(
       unsigned port, const char *name);
 bool input_autoconfigure_reconnect(unsigned port);
+#ifdef HAVE_TEST_DRIVERS
+bool input_autoconfigure_pending(void);
+#endif
 
 void set_save_state_in_background(bool state);
 void set_save_state_disable_undo(bool disable);

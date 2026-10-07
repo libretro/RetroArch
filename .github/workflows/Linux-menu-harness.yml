@@ -22,7 +22,19 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/mouse_click/**'
+      - 'samples/menu/menu_icon_ownership/**'
+      - 'gfx/gfx_display.c'
+      - 'runloop.c'
+      - 'samples/menu/network_settings/**'
+      - 'intl/msg_hash_lbl.h'
+      - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/menu/setting_command/**'
+      - 'samples/settings/packed_rows/**'
+      - 'setting_list.h'
+      - 'gfx/video_defines.h'
       - '.github/workflows/Linux-menu-harness.yml'
   pull_request:
     paths:
@@ -31,7 +43,19 @@ on:
       - 'playlist.h'
       - 'tasks/task_content*'
       - 'samples/menu/playlist_nav/**'
+      - 'samples/menu/nav_repeat_stall/**'
+      - 'samples/menu/mouse_click/**'
+      - 'samples/menu/menu_icon_ownership/**'
+      - 'gfx/gfx_display.c'
+      - 'runloop.c'
+      - 'samples/menu/network_settings/**'
+      - 'intl/msg_hash_lbl.h'
+      - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/menu/setting_command/**'
+      - 'samples/settings/packed_rows/**'
+      - 'setting_list.h'
+      - 'gfx/video_defines.h'
       - '.github/workflows/Linux-menu-harness.yml'
   workflow_dispatch:
 
@@ -47,7 +71,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential zlib1g-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -59,6 +83,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -100,10 +141,12 @@ jobs:
           #
           # Qt in particular has to go: with it enabled main() lives
           # in ui_qt.o, and the harness replaces main().
+          # Networking stays on: the network settings harness below
+          # needs the SMB and NFS client screens compiled in.
           ./configure --disable-qt --disable-x11 \
                       --disable-opengl --disable-opengl_core \
                       --disable-opengl1 --disable-vulkan \
-                      --disable-cheevos --disable-networking \
+                      --disable-cheevos \
                       --disable-ffmpeg
           make -j$(nproc)
 
@@ -125,6 +168,23 @@ jobs:
           samples/runloop/content_closing/build.sh
           ./samples/runloop/content_closing/content_closing_test
           make -C samples/runloop/content_closing clean
+
+      - name: Build and run cloudsync_unload_test
+        shell: bash
+        run: |
+          set -eu
+          # Closing content with Cloud Sync in automatic mode asks for
+          # a sync; it has to start once the content's save RAM is on
+          # disk and no core owns the file, which a close from the
+          # menu reaches a frame or more later.  The real retroarch.c,
+          # a core with save RAM, and task_push_cloud_sync wrapped at
+          # link time to record what the save file held when the sync
+          # was asked for.  No server is contacted.
+          #
+          # Shares the non-Qt build made above.
+          samples/runloop/cloudsync_unload/build.sh
+          ./samples/runloop/cloudsync_unload/cloudsync_unload_test
+          make -C samples/runloop/cloudsync_unload clean
 
       - name: Build and run menu_playlist_nav_test
         shell: bash
@@ -148,6 +208,79 @@ jobs:
           ./samples/menu/playlist_nav/menu_playlist_nav_test
           make -C samples/menu/playlist_nav clean
 
+      - name: Build and run menu_nav_repeat_stall_test
+        shell: bash
+        run: |
+          set -eu
+          # One press on a menu entry whose frame stalls - Ozone and
+          # XMB build a large playlist synchronously when the selection
+          # lands on it - has to move the selection once. The menu acts
+          # on input one poll old, so the hold time has to be measured
+          # between polls or the stall fires an auto-repeat. Drives the
+          # real runloop with a scripted input driver; also checks that
+          # a hold across the stall still repeats and that a steady hold
+          # waits out the initial scroll delay. Shares the non-Qt build
+          # made above.
+          samples/menu/nav_repeat_stall/build.sh
+          ./samples/menu/nav_repeat_stall/menu_nav_repeat_stall_test
+          make -C samples/menu/nav_repeat_stall clean
+
+      - name: Build and run menu_icon_ownership_test
+        shell: bash
+        run: |
+          set -eu
+          # Every texture handle the menu drivers hold, accounted for
+          # against a counting null driver: a handle unloaded twice or
+          # still live at deinit fails the lane. Ozone's sidebar wrote
+          # the shared cursor texture into a playlist node whose own
+          # icon had not landed, and the context destroy then freed the
+          # cursor twice - a heap-corruption crash at startup under
+          # threaded video. MaterialUI's playlist icon array could be
+          # rebuilt under a decode still in flight. The contentless
+          # cores list's icons, fallback and per core, go at deinit.
+          # Shares the non-Qt build made above; one binary, one run per
+          # lane.
+          samples/menu/menu_icon_ownership/build.sh
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test ozone
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test xmb
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test materialui
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test contentless
+          make -C samples/menu/menu_icon_ownership clean
+
+      - name: Build and run menu_mouse_click_test
+        shell: bash
+        run: |
+          set -eu
+          # A left click in the menu has to select the entry under the
+          # pointer. The pen support gave every pointer that is not a
+          # touchscreen no gesture on release, and a mouse's left click
+          # reaches the menu drivers as a tap gesture, so the click was
+          # thrown away in every menu driver while movement, the wheel
+          # and the right button kept working. Drives the real runloop
+          # with a scripted mouse: points at Settings by asking the menu
+          # which entry is under the pointer, opens it with a left
+          # click, scrolls its list with the wheel, goes back with a
+          # right click, and checks a long press is not a click. Shares
+          # the non-Qt build made above.
+          samples/menu/mouse_click/build.sh
+          ./samples/menu/mouse_click/menu_mouse_click_test
+          make -C samples/menu/mouse_click clean
+
+      - name: Build and run menu_network_settings_test
+        shell: bash
+        run: |
+          set -eu
+          # The NFS Network Settings entry opened an empty "null"
+          # browser: the label its deferred list is pushed with had no
+          # row in msg_hash_lbl.h, so it resolved to "null" and the
+          # push found nothing. The harness resolves the SMB and NFS
+          # labels, opens Settings > Network and both screens through
+          # the real dispatch, and checks the Quick Menu no longer
+          # carries the two entries.
+          samples/menu/network_settings/build.sh
+          ./samples/menu/network_settings/menu_network_settings_test
+          make -C samples/menu/network_settings clean
+
       - name: Build and run resolution_reset_test
         shell: bash
         run: |
@@ -160,6 +293,33 @@ jobs:
           ./samples/menu/resolution_reset/resolution_reset_test
           make -C samples/menu/resolution_reset clean
 
+      - name: Build and run packed_rows_test
+        shell: bash
+        run: |
+          set -eu
+          # Settings rows that each own one half of a packed settings_t
+          # word - the custom viewport's origin and size, the window
+          # size pair - driven through their display strings, a right
+          # press and the dropdown list. Each row has to show and set
+          # its own axis and leave its partner as it stands. Shares the
+          # non-Qt build made above.
+          samples/settings/packed_rows/build.sh
+          ./samples/settings/packed_rows/packed_rows_test
+          make -C samples/settings/packed_rows clean
+
+      - name: Build and run setting_command_test
+        shell: bash
+        run: |
+          set -eu
+          # A press on a settings row whose command reinitialises the
+          # video driver has to bring the driver up once, on the first
+          # press and on every later one, whether or not the row
+          # applies its command by itself. Shares the non-Qt build
+          # made above.
+          samples/menu/setting_command/build.sh
+          ./samples/menu/setting_command/setting_command_test
+          make -C samples/menu/setting_command clean
+
       - name: Hot function budget
         shell: bash
         run: |
@@ -170,6 +330,17 @@ jobs:
           # slower frame on someone's machine. Uses the release objects
           # this job already built.
           .github/workflows/scripts/hot-function-budget.sh
+
+      - name: Lock budget
+        shell: bash
+        run: |
+          set -eu
+          # Lock acquisitions on the paths meant to take none, or a
+          # counted few, against tools/lock_acquire_budget.ref: a lock
+          # put back on a per-frame path passes every lane and shows up
+          # only as a slower frame. Same release objects as above; this
+          # build has no Vulkan, so the Vulkan entries report SKIP.
+          tools/lock_acquire_budget.sh
 
       - name: Build and run threaded_video_test
         shell: bash
@@ -188,3 +359,29 @@ jobs:
           samples/gfx/threaded_video/build.sh
           ./samples/gfx/threaded_video/threaded_video_test 3
           make -C samples/gfx/threaded_video clean
+
+      - name: Build and run content_load_test
+        shell: bash
+        run: |
+          set -eu
+          # The content load as a chain of main-thread tasks, against the
+          # real runloop on the same non-Qt menu build: frames presented
+          # between stages, one load at a time, a core's reinit deferred
+          # to the load's driver stage, the dummy-core fallback, a
+          # hardware-render request carried across the driver rebuild,
+          # the task queue surviving the load, and the close waiting out
+          # a save state from the frame loop.
+          samples/tasks/content_load/build.sh
+          ./samples/tasks/content_load/content_load_test
+          make -C samples/tasks/content_load clean
+
+      - name: Build and run explore_build_test
+        shell: bash
+        run: |
+          set -eu
+          # The Explore index built in steps: one item per step hashes
+          # the same as the build in one go, and the explore task returns
+          # unfinished across checks with Threaded Tasks off.
+          samples/menu/explore_build/build.sh
+          ./samples/menu/explore_build/explore_build_test
+          make -C samples/menu/explore_build clean

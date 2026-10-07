@@ -172,6 +172,9 @@ static bool image_texture_load_internal(
    }
 
    out_img->pix10 = image_transfer_is_10bit(img, type);
+   /* No decoder emits half floats: an answer, never an ask, and the
+    * caller's struct may hold anything there. */
+   out_img->fp16  = false;
 
    /* GPU-native fast path: if the loader can hand back BCn blocks for
     * direct upload, copy the source (so the mip pointers survive the
@@ -327,21 +330,91 @@ void image_texture_narrow_10bit(struct texture_image *img)
       return;
    px = img->pixels;
    n  = (size_t)img->width * img->height;
-   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to 8-bit ARGB8888
-    * (0xAARRGGBB, opaque) in place, for drivers without native 10-bit
-    * texture support. Matches the >> 2 narrowing used elsewhere. */
-   for (i = 0; i < n; i++)
+   /* Narrow packed XRGB2101010 (R[29:20] G[19:10] B[9:0]) to opaque 8-bit
+    * in place, in the order supports_rgba names - so the descriptor is
+    * right as it stands and no caller swizzles after. Matches the >> 2
+    * narrowing used elsewhere. */
+   if (img->supports_rgba)
    {
-      uint32_t p = px[i];
-      uint32_t r = (p >> 20) & 0x3ff;
-      uint32_t g = (p >> 10) & 0x3ff;
-      uint32_t b =  p        & 0x3ff;
-      px[i] = 0xff000000u
-            | ((r >> 2) << 16)
-            | ((g >> 2) <<  8)
-            |  (b >> 2);
+      uint8_t *d = (uint8_t*)px;
+      for (i = 0; i < n; i++, d += 4)
+      {
+         uint32_t p = px[i];
+         d[0] = (uint8_t)(p >> 22);
+         d[1] = (uint8_t)(p >> 12);
+         d[2] = (uint8_t)(p >>  2);
+         d[3] = 0xff;
+      }
    }
+   else
+      for (i = 0; i < n; i++)
+      {
+         uint32_t p = px[i];
+         px[i] = 0xff000000u
+               | ((p >>  6) & 0xff0000u)
+               | ((p >>  4) & 0x00ff00u)
+               | ((p >>  2) & 0x0000ffu);
+      }
    img->pix10 = false;
+}
+
+/* See image.h. The scratch is four source rows, not the image: the rows a tile
+ * band overwrites are copied out before it is written, which is what
+ * makes it safe to source from the destination. The source pitch is
+ * taken from the unmasked width and the tile width from the masked
+ * one, so where the width is not a multiple of four the writes trail
+ * the reads rather than running ahead of them. False, with @img
+ * untouched, when the scratch cannot be had. */
+bool image_texture_tile_gx(struct texture_image *img)
+{
+   unsigned src_pitch, width2, i;
+   size_t   bandsz;
+   uint16_t *band;
+   uint16_t *dst;
+
+   if (!img || !img->pixels || !img->width || !img->height)
+      return false;
+
+   src_pitch = (unsigned)(((size_t)img->width * sizeof(uint32_t)) >> 1);
+   bandsz    = (size_t)src_pitch * 4 * sizeof(uint16_t);
+   if (!(band = (uint16_t*)malloc(bandsz)))
+      return false;
+
+   img->width  &= ~3u;
+   img->height &= ~3u;
+   width2       = img->width << 1;
+   dst          = (uint16_t*)img->pixels;
+
+   for (i = 0; i < img->height; i += 4, dst += 4 * width2)
+   {
+      const uint16_t *src = band;
+      unsigned row;
+
+      memcpy(band, (const uint16_t*)img->pixels + (size_t)i * src_pitch,
+            bandsz);
+
+      for (row = 0; row < 4; row++, src += src_pitch)
+      {
+         unsigned x;
+         unsigned off           = row * 4;
+         const uint16_t *s      = src;
+         uint16_t       *d      = dst;
+         for (x = 0; x < width2 >> 3; x++, s += 8, d += 32)
+         {
+            d[ 0 + off] = s[0];
+            d[16 + off] = s[1];
+            d[ 1 + off] = s[2];
+            d[17 + off] = s[3];
+            d[ 2 + off] = s[4];
+            d[18 + off] = s[5];
+            d[ 3 + off] = s[6];
+            d[19 + off] = s[7];
+         }
+      }
+   }
+
+   free(band);
+   return true;
 }
 
 bool image_texture_load_buffer(struct texture_image *out_img,
@@ -403,6 +476,7 @@ bool image_texture_load_ex(struct texture_image *out_img,
    out_img->height        = 0;
    out_img->compressed    = NULL;
    out_img->pix10         = false;
+   out_img->fp16          = false;
 
    return false;
 }

@@ -62,8 +62,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <retro_timers.h>
 #include <boolean.h>
+#include <queues/task_queue.h>
 #include "gfx/gfx_thumbnail.h"
 #include "gfx/gfx_surface.h"
 #include "gfx/gfx_instrument.h"
@@ -90,8 +91,13 @@ static const unsigned char anim_webp[] = {
 int      gt_uploads;
 unsigned gt_last_crc;
 extern int gt_async_mode, gt_async_posted, gt_async_pending;
-extern int gt_can_update, gt_updates;
+extern int gt_can_update, gt_updates, gt_drop_updates, gt_drop_retried;
+extern int gt_lend_mode, gt_lends, gt_lend_violations, gt_lent_uploads,
+       gt_lend_stale;
+extern void gt_lend_reset(void);
+extern int  gt_lend_owned, gt_update_fail, gt_lend_freed, gt_lend_refuse;
 void gt_async_flush(void);
+int gt_surface_outcome_test(void);
 
 /* Whether the thumbnail's animation surface has a frame on its way to
  * the video thread. */
@@ -107,10 +113,70 @@ static void reset_thumb(gfx_thumbnail_t *t)
 {
    memset(t, 0, sizeof(*t));
    /* what gfx_thumbnail_handle_upload leaves behind just before it
-    * reaches the animation block */
+    * reaches the animation block: a still shown, its texture the
+    * surface's */
    t->status  = GFX_THUMBNAIL_STATUS_AVAILABLE;
    t->dims    = VIDEO_SCALE_PACK(4, 4);
-   t->texture = 1;
+}
+
+/* Lane 14: the still load's callback, captured by the task stub */
+extern void (*gt_still_cb)(void *task, void *data, void *user,
+      const char *err);
+extern void *gt_still_ud;
+extern int   gt_still_capture;
+
+/* A decoded still as the load task would hand it over: 4x4, @seed
+ * telling one from another for the upload counter. */
+static struct texture_image *gt_still_image(uint32_t seed, int fp16)
+{
+   struct texture_image *img = (struct texture_image*)
+         calloc(1, sizeof(*img));
+   unsigned w;
+   if (!img)
+      return NULL;
+   img->width  = 4;
+   img->height = 4;
+   img->fp16   = fp16 ? true : false;
+   if (!(img->pixels = (uint32_t*)malloc(16 * sizeof(uint32_t)
+         * (fp16 ? 2 : 1))))
+   {
+      free(img);
+      return NULL;
+   }
+   for (w = 0; w < 16 * (fp16 ? 2u : 1u); w++)
+      img->pixels[w] = seed + w * 2654435761u;
+   return img;
+}
+
+/* The still path end to end on the real gfx_thumbnail.c: a request
+ * whose task is stubbed, its callback run with an image here. */
+static int gt_still_request(const char *path, gfx_thumbnail_t *th,
+      uint32_t seed, int fp16)
+{
+   struct texture_image *img;
+   gt_still_cb = NULL;
+   gfx_thumbnail_request_file(path, th, 0);
+   if (     !gt_still_cb
+         || (int)th->status != GFX_THUMBNAIL_STATUS_PENDING)
+      return 0;
+   if (!(img = gt_still_image(seed, fp16)))
+      return 0;
+   gt_still_cb(NULL, img, gt_still_ud, NULL);
+   return 1;
+}
+
+/* Lane 13: a release that frees its surface, as gfx_display's texture
+ * loads do; after it the completion may not touch the surface. */
+static int gt_free_next, gt_freed_in_release;
+static void gt_release_frees(void *user, gfx_surface_t *s, unsigned slot)
+{
+   (void)user;
+   (void)slot;
+   if (!gt_free_next)
+      return;
+   gt_free_next = 0;
+   gt_freed_in_release++;
+   gfx_surface_free(s);
 }
 
 int main(void)
@@ -179,7 +245,7 @@ int main(void)
       for (i = 0; i < 240 && gt_uploads < 3; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       if (gt_uploads >= 2)
          printf("[ok]   real path: %d distinct frames uploaded in %d "
@@ -215,13 +281,13 @@ int main(void)
       for (i = 0; i < 120 && gt_async_posted < 1; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       /* keep animating without delivering: nothing more may be posted */
       for (i = 0; i < 20; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       posted_before_flush = gt_async_posted;
       if (posted_before_flush != 1 || gt_uploads != 0 || !anim_inflight(&th))
@@ -243,7 +309,7 @@ int main(void)
       for (i = 0; i < 120 && gt_async_posted < 2; i++)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
-         usleep(16666);
+         retro_sleep(17);
       }
       if (gt_async_posted != 2)
       {
@@ -286,7 +352,7 @@ int main(void)
       {
          gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
          gt_async_flush();
-         usleep(16666);
+         retro_sleep(17);
       }
       frames  = gfx_instrument_get(GFX_INSTR_ANIM_FRAME);
       direct  = gfx_instrument_get(GFX_INSTR_ANIM_DIRECT);
@@ -371,7 +437,7 @@ int main(void)
          {
             gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
             gt_async_flush();
-            usleep(16666);
+            retro_sleep(17);
          }
          if (gt_uploads < 3 || th.texture != 2
                || (route == 0 && gt_updates < 2)
@@ -391,6 +457,457 @@ int main(void)
          gt_async_mode = 0;
       }
       gt_can_update = 1;
+   }
+
+   /* 6. thumbnails closed while their jobs still wait for the worker.
+    *    A waiting job cannot be pulled out from under the worker, so
+    *    it is cancelled and its block kept until the worker has let it
+    *    go: freed any sooner, the worker walks into freed memory. The
+    *    worker must pass every one of them over and still serve the
+    *    thumbnail that comes after. */
+   {
+      static gfx_thumbnail_t many[24];
+      int r, k, opened = 0;
+      for (r = 0; r < 20; r++)
+      {
+         for (k = 0; k < 24; k++)
+         {
+            reset_thumb(&many[k]);
+            gfx_thumbnail_anim_open(&many[k], path);
+            if (many[k].anim)
+               opened++;
+            gfx_thumbnail_animate(&many[k], cpu_features_get_time_usec());
+         }
+         for (k = 0; k < 24; k++)
+            gfx_thumbnail_reset(&many[k]);
+      }
+      reset_thumb(&th);
+      gt_uploads  = 0;
+      gt_last_crc = 0;
+      gfx_thumbnail_anim_open(&th, path);
+      for (i = 0; i < 240 && gt_uploads < 3; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         retro_sleep(17);
+      }
+      if (opened && gt_uploads >= 2)
+         printf("[ok]   %d animations closed with a job waiting; the "
+                "next one still animates\n", opened);
+      else
+      {
+         printf("[FAIL] after %d animations closed with a job waiting, "
+                "the next uploaded %d frames\n", opened, gt_uploads);
+         bad = 1;
+      }
+      gfx_thumbnail_reset(&th);
+   }
+   /* 7. direct video lends the job pipeline's slots the driver's
+    *    upload memory: jobs decode straight into it, are handed a slot
+    *    only once the GPU is done with it, and every upload from it
+    *    carries a frame a job wrote there. */
+   reset_thumb(&th);
+   gt_async_mode = 0;
+   gt_can_update = 1;
+   gt_lend_mode  = 1;
+   gt_lends = gt_lend_violations = gt_lent_uploads = gt_lend_stale = 0;
+   gt_uploads    = 0;
+   gt_last_crc   = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   for (i = 0; i < 480 && gt_lent_uploads < 6; i++)
+   {
+      gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+      retro_sleep(17);
+   }
+   if (     th.anim && gt_lends >= 2 && gt_lent_uploads >= 6
+         && !gt_lend_violations && !gt_lend_stale)
+      printf("[ok]   lent slots: %d lends, %d uploads from lent memory, "
+             "none written early or stale\n", gt_lends, gt_lent_uploads);
+   else
+   {
+      printf("[FAIL] lent slots: %d lends, %d lent uploads, %d written "
+             "while on the GPU, %d stale\n", gt_lends, gt_lent_uploads,
+             gt_lend_violations, gt_lend_stale);
+      bad = 1;
+   }
+   gfx_thumbnail_reset(&th);
+   gt_lend_mode = 0;
+   gt_lend_reset();
+
+   /* 8. a texture owns the memory it lends, and a producer holding a
+    *    slot keeps it valid: with both slots lent, slot 0 is taken as a
+    *    job takes it, an in-place update is refused so the texture is
+    *    replaced, and the taken memory is written after - the old
+    *    texture must survive until the slot comes back, then go.
+    *    Unloading it at the replacement would free memory still being
+    *    written, which AddressSanitizer reports. */
+   {
+      gfx_surface_t *s8;
+      uint32_t      *held;
+      unsigned       k, n8 = 64u * 48u;
+      int            freed_at_replace;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_freed  = 0;
+      gt_update_fail = 0;
+      s8 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
+            GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+      if (!s8)
+      {
+         printf("[FAIL] lane 8: no surface\n");
+         bad = 1;
+      }
+      else
+      {
+         for (k = 0; k < 4; k++) /* load, update, then each slot lent */
+         {
+            unsigned slot = k & 1, w;
+            for (w = 0; w < n8; w++)
+               s8->slots[slot][w] = 0xff000000u | (k * 0x10101u + w);
+            gfx_surface_submit(s8, slot, false);
+         }
+         held = gfx_surface_slot_begin(s8, 0);
+         gt_update_fail = 1;
+         gfx_surface_submit(s8, 1, false);
+         freed_at_replace = gt_lend_freed;
+         for (k = 0; k < n8; k++)
+            held[k] = 0xff123456u; /* the job, still writing */
+         gfx_surface_slot_end(s8, 0);
+         if (     s8->lent == 0 && gt_update_fail == 0
+               && freed_at_replace == 0 && gt_lend_freed >= 1
+               && !s8->retired_handle)
+            printf("[ok]   a texture replaced while a slot it lent was "
+                   "taken kept that memory until the slot came back "
+                   "(%d buffers freed then)\n", gt_lend_freed);
+         else
+         {
+            printf("[FAIL] replacement under a taken lent slot: lent %u, "
+                   "refusal %s, %d buffers freed at the replacement, %d "
+                   "after, retired %s\n", (unsigned)s8->lent,
+                   gt_update_fail ? "never reached" : "taken",
+                   freed_at_replace, gt_lend_freed,
+                   s8->retired_handle ? "still held" : "gone");
+            bad = 1;
+         }
+         gfx_surface_free(s8);
+      }
+      gt_lend_mode  = 0;
+      gt_lend_owned = 0;
+      gt_lend_reset();
+   }
+
+   /* 9. partial lending: the driver lends one slot and refuses the
+    *    other. A two-slot surface lends just the slot it was given and
+    *    copies into the other; a one-slot surface, which needs both to
+    *    stay double buffered, lends neither. Every frame still lands. */
+   {
+      unsigned nslots, k, w, n9 = 64u * 48u;
+      int      ok9 = 1;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_refuse = 1;
+      for (nslots = 2; nslots >= 1; nslots--)
+      {
+         gfx_surface_t *s9 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48),
+               nslots, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               NULL, NULL);
+         int up0 = gt_uploads;
+         if (!s9)
+         {
+            ok9 = 0;
+            break;
+         }
+         for (k = 0; k < 6; k++)
+         {
+            unsigned slot = k % nslots;
+            for (w = 0; w < n9; w++)
+               s9->slots[slot][w] = 0xff000000u
+                  | ((nslots * 64u + k) * 0x01030507u + w);
+            if (gfx_surface_submit(s9, slot, false)
+                  != GFX_SURFACE_SUBMIT_DONE)
+               ok9 = 0;
+         }
+         if (     gt_uploads - up0 != 6
+               || s9->lent != (nslots == 2 ? 1u : 0u))
+         {
+            printf("[FAIL] partial lending, %u slot(s): lent %u, %d of 6 "
+                   "frames uploaded\n", nslots, (unsigned)s9->lent,
+                   gt_uploads - up0);
+            ok9 = 0;
+         }
+         gfx_surface_free(s9);
+      }
+      if (ok9)
+         printf("[ok]   a driver lending one slot of two: a two-slot "
+                "surface lent that one, a one-slot surface neither; every "
+                "frame landed\n");
+      else
+         bad = 1;
+      gt_lend_refuse = -1;
+      gt_lend_mode   = 0;
+      gt_lend_owned  = 0;
+      gt_lend_reset();
+   }
+
+   /* 10. cancellation and teardown under lending: an animation is
+    *     closed over and over with its jobs queued or decoding into
+    *     memory its texture lent (the GPU is never behind here, so jobs
+    *     start the moment they may). Closing waits a running decode out
+    *     and keeps a queued one from starting, before the surface and
+    *     texture go: a job writing after them writes freed memory,
+    *     which AddressSanitizer reports. */
+   {
+      int closes = 0, lent_closes = 0, round;
+      gt_async_mode  = 0;
+      gt_can_update  = 1;
+      gt_lend_mode   = 1;
+      gt_lend_owned  = 1;
+      gt_lend_freed  = 0;
+      for (round = 0; round < 60; round++)
+      {
+         reset_thumb(&th);
+         gfx_thumbnail_anim_open(&th, path);
+         for (i = 0; i < 6 + (round % 6); i++)
+         {
+            gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+            retro_sleep(4);
+         }
+         if (th.anim)
+            closes++;
+         if (     th.anim_surface
+               && ((gfx_surface_t*)th.anim_surface)->lent)
+            lent_closes++;
+         gfx_thumbnail_reset(&th);
+      }
+      if (closes >= 50 && lent_closes >= 20 && gt_lend_freed >= 20)
+         printf("[ok]   %d animations closed, %d while lending, with jobs "
+                "on lent memory; %d lent buffers freed after them\n",
+                closes, lent_closes, gt_lend_freed);
+      else
+      {
+         printf("[FAIL] closing under lending: %d closes, %d while "
+                "lending, %d lent buffers freed\n", closes, lent_closes,
+                gt_lend_freed);
+         bad = 1;
+      }
+      gt_lend_mode  = 0;
+      gt_lend_owned = 0;
+      gt_lend_reset();
+   }
+
+   /* 11. threaded video, an update the video thread's driver drops:
+    *     the frame comes back to the slot's release, which sends the
+    *     same frame again rather than leaving the texture behind. */
+   reset_thumb(&th);
+   gt_async_mode   = 1;
+   gt_can_update   = 1;
+   gt_async_posted = gt_async_pending = 0;
+   gt_drop_retried = 0;
+   gfx_thumbnail_anim_open(&th, path);
+   {
+      int posted, updates;
+      /* the first frame loads, the second goes in place */
+      for (i = 0; i < 240 && gt_async_posted < 2; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         if (gt_async_pending)
+            gt_async_flush();
+         retro_sleep(17);
+      }
+      for (i = 0; i < 240 && !gt_async_pending; i++)
+      {
+         gfx_thumbnail_animate(&th, cpu_features_get_time_usec());
+         retro_sleep(17);
+      }
+      posted          = gt_async_posted;
+      updates         = gt_updates;
+      gt_drop_updates = 1;
+      gt_async_flush();               /* dropped: sent again from release */
+      if (     gt_async_posted != posted + 1 || !anim_inflight(&th)
+            || gt_drop_updates != 0)
+      {
+         printf("[FAIL] threaded drop: %d posted after the drop (want %d), "
+                "inflight=%d\n", gt_async_posted, posted + 1,
+                anim_inflight(&th));
+         bad = 1;
+      }
+      gt_async_flush();               /* and lands */
+      if (gt_drop_retried == 1 && gt_updates == updates + 1)
+         printf("[ok]   threaded drop: the dropped frame was sent again "
+                "and landed\n");
+      else
+      {
+         printf("[FAIL] threaded drop: retried %d, %d updates landed\n",
+               gt_drop_retried, gt_updates - updates);
+         bad = 1;
+      }
+   }
+   gfx_thumbnail_reset(&th);
+   gt_async_flush();
+   gt_async_mode = 0;
+
+   gfx_thumbnail_anim_worker_deinit();
+
+   /* 12. the surface's direct-video outcomes, slot by slot */
+   gt_lend_mode = 0;
+   if (gt_surface_outcome_test())
+      bad = 1;
+
+   /* 13. threaded video, a release that frees its surface - a load's
+    *     completion, then a dropped update's, whose release reads
+    *     dropped: the completion's last touch is the release, so
+    *     AddressSanitizer sees nothing write the surface after it. */
+   {
+      unsigned w, n13 = 64u * 48u;
+      int ok13 = 1, round;
+      gt_async_mode = 1;
+      gt_can_update = 1;
+      gt_lend_mode  = 0;
+      gt_freed_in_release = 0;
+      for (round = 0; round < 2; round++)
+      {
+         gfx_surface_t *s13 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,
+               GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               gt_release_frees, NULL);
+         if (!s13)
+         {
+            ok13 = 0;
+            break;
+         }
+         for (w = 0; w < n13; w++)
+            s13->slots[0][w] = 0xff000000u | (w * 2654435761u >> 8);
+         if (round == 1)
+         {
+            /* the load first, kept; then an update that drops */
+            gfx_surface_submit(s13, 0, false);
+            gt_async_flush();
+            for (w = 0; w < n13; w++)
+               s13->slots[0][w] ^= 0x00ffffffu;
+            gt_drop_updates = 1;
+         }
+         gt_free_next = 1;
+         if (gfx_surface_submit(s13, 0, false) != GFX_SURFACE_SUBMIT_QUEUED)
+            ok13 = 0;
+         gt_async_flush();             /* done -> release frees */
+         gt_drop_updates = 0;
+      }
+      if (ok13 && gt_freed_in_release == 2)
+         printf("[ok]   threaded completions whose release freed the "
+                "surface: a load's and a dropped update's\n");
+      else
+      {
+         printf("[FAIL] release-frees lane: %d freed in release (want 2)\n",
+               gt_freed_in_release);
+         bad = 1;
+      }
+      gt_async_mode = 0;
+   }
+
+   /* 14. the still, through the thumbnail's own surface: under
+    *     threaded video it is queued and the thumbnail stays PENDING
+    *     until the upload lands; a second request while the first is
+    *     on its way shows the second; a reset while one is on its way
+    *     installs nothing; direct video shows it at once; a half-float
+    *     image the driver cannot sample is refused and freed. */
+   {
+      char still[256];
+      int ok14 = 1;
+      snprintf(still, sizeof(still), "/tmp/gfx_thumb_still_%d.bin",
+            (int)getpid());
+      {
+         FILE *f = fopen(still, "wb");
+         if (f)
+         {
+            fwrite("still", 1, 5, f);
+            fclose(f);
+         }
+      }
+      /* the still's submit asks whether it runs on the main thread */
+      task_queue_init(false, NULL);
+      gt_still_capture = 1;
+      gt_async_mode    = 1;
+      gt_async_posted  = gt_async_pending = 0;
+      gt_uploads       = 0;
+      gt_last_crc      = 0;
+      memset(&th, 0, sizeof(th));
+
+      if (!gt_still_request(still, &th, 0x1000u, 0))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_PENDING
+            || th.texture || !anim_inflight(&th) || gt_async_posted != 1
+            || th.dims != VIDEO_SCALE_PACK(4, 4))
+      {
+         printf("[FAIL] still: queued upload left status=%d texture=%lu "
+                "inflight=%d posted=%d\n", (int)th.status,
+                (unsigned long)th.texture, anim_inflight(&th),
+                gt_async_posted);
+         ok14 = 0;
+      }
+      /* a second request before the first lands */
+      if (!gt_still_request(still, &th, 0x2000u, 0))
+         ok14 = 0;
+      gt_async_flush();
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || th.texture != 2 || anim_inflight(&th) || gt_async_pending
+            || gt_uploads != 2)
+      {
+         printf("[FAIL] still: after two requests status=%d texture=%lu "
+                "inflight=%d pending=%d uploads=%d\n", (int)th.status,
+                (unsigned long)th.texture, anim_inflight(&th),
+                gt_async_pending, gt_uploads);
+         ok14 = 0;
+      }
+      /* reset with the still on its way: delivery installs nothing */
+      if (!gt_still_request(still, &th, 0x3000u, 0))
+         ok14 = 0;
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      if (     th.texture || th.anim_surface || gt_async_pending
+            || (int)th.status != GFX_THUMBNAIL_STATUS_UNKNOWN)
+      {
+         printf("[FAIL] still: delivery after reset left texture=%lu "
+                "surface=%p status=%d\n", (unsigned long)th.texture,
+                th.anim_surface, (int)th.status);
+         ok14 = 0;
+      }
+      /* direct video: shown from the callback */
+      gt_async_mode = 0;
+      if (!gt_still_request(still, &th, 0x4000u, 0))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_AVAILABLE
+            || th.texture != 2 || gt_async_posted != 3)
+      {
+         printf("[FAIL] still: direct upload left status=%d texture=%lu "
+                "posted=%d\n", (int)th.status, (unsigned long)th.texture,
+                gt_async_posted);
+         ok14 = 0;
+      }
+      /* half floats the driver cannot sample: no still */
+      gt_async_mode = 1;
+      if (!gt_still_request(still, &th, 0x5000u, 1))
+         ok14 = 0;
+      if (     (int)th.status != GFX_THUMBNAIL_STATUS_MISSING
+            || th.texture || anim_inflight(&th) || gt_async_posted != 3)
+      {
+         printf("[FAIL] still: refused half floats left status=%d "
+                "texture=%lu posted=%d\n", (int)th.status,
+                (unsigned long)th.texture, gt_async_posted);
+         ok14 = 0;
+      }
+      gfx_thumbnail_reset(&th);
+      gt_async_flush();
+      gt_async_mode    = 0;
+      gt_still_capture = 0;
+      task_queue_deinit();
+      remove(still);
+      if (ok14)
+         printf("[ok]   still: queued, replaced in flight, dropped by a "
+                "reset, direct, and refused half floats\n");
+      else
+         bad = 1;
    }
 
    remove(path);

@@ -17,6 +17,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 SOURCES := \
 	core_backup_io_test.c \
 	$(CORE_DIR)/tasks/task_core_backup.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(CORE_DIR)/core_backup.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/lists/dir_list.c \
@@ -25,6 +26,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(CORE_DIR)/verbosity.c \
 	$(LIBRETRO_COMM_DIR)/streams/interface_stream.c \
 	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \

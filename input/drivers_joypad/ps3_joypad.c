@@ -218,7 +218,7 @@ static void ps3_joypad_poll(void)
          *state_cur |= (state_tmp.button[CELL_PAD_BTN_OFFSET_DIGITAL2] & CELL_PAD_CTRL_SQUARE) ? (UINT64_C(1) << RETRO_DEVICE_ID_JOYPAD_Y) : 0;
 
 #ifdef HAVE_MENU
-         if (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         if (menu_driver_alive())
          {
             int value = 0;
             if (cellSysutilGetSystemParamInt(CELL_SYSUTIL_SYSTEMPARAM_ID_ENTER_BUTTON_ASSIGN, &value) == 0)

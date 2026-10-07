@@ -125,7 +125,7 @@ static const struct
    char s_5702032d[61];
    char s_131d086f[275];
    char s_ddad8b7f[327];
-   char s_99bfa829[336];
+   char s_99bfa829[339];
    char s_b14a1674[129];
    char s_54241480[195];
    char s_ceafef5e[125];
@@ -163,7 +163,7 @@ static const struct
    char s_9eebc6cc[42];
    char s_5fdad539[295];
    char s_353c64eb_0[500];
-   char s_353c64eb_1[95];
+   char s_353c64eb_1[129];
    char s_33a76811[76];
    char s_e180f55d[106];
    char s_11aa0e91[58];
@@ -191,19 +191,21 @@ static const struct
    char s_2d9d0a50[244];
    char s_0e7699a6[233];
    char s_16721de3[196];
-   char s_abab74fb[163];
+   char s_abab74fb[179];
    char s_c0a60ee2[198];
    char s_14a6bfe2[268];
    char s_4b0e8809[192];
    char s_efd6795c_0[500];
    char s_efd6795c_1[23];
    char s_7a7a3d56[188];
-   char s_378ad7dc[182];
+   char s_378ad7dc[194];
    char s_95f467be[306];
    char s_49088c17[163];
    char s_ae87ea53[264];
-   char s_9834febe[433];
-   char s_93805cc8[488];
+   char s_9834febe[437];
+   char s_93805cc8_0[500];
+   char s_93805cc8_1[20];
+   char s_b495662b[375];
    char s_9953f4e2[260];
    char s_de76d2dc[21];
    char s_79e212bd[8];
@@ -218,8 +220,8 @@ static const struct
    char s_fc24216f[21];
    char s_728aa9b3[22];
    char s_929e8e7a[23];
-   char s_51edb70d[24];
-   char s_9b914f7f[26];
+   char s_51edb70d[33];
+   char s_9b914f7f[33];
    char s_4ad41e20[25];
    char s_24c106e6[6];
    char s_1fcf06c4[15];
@@ -262,32 +264,39 @@ static const struct
    char s_d9a51d02[17];
    char s_12e77e8f[7];
    char s_98760b94[31];
+   char s_b81eb68d[24];
    char s_da068369[11];
    char s_daead8a5[5];
    char s_48c208ee[20];
    char s_a38cafbb[29];
    char s_dcf2e800[5];
    char s_f7e668f4[12];
+   char s_cf4d4f28[58];
    char s_f4740f16[40];
    char s_d95f1db1[43];
    char s_3c9950ad[56];
    char s_aafc147d[16];
    char s_734f5242[45];
    char s_55404857[12];
+   char s_f08d700c[45];
    char s_792e0069[23];
+   char s_9908b98a[34];
    char s_a9d2227f[26];
    char s_76e73138[15];
    char s_c82d0aee[12];
    char s_e2062515[40];
    char s_ad791974[8];
+   char s_079ba7c7[39];
    char s_b271ae95[27];
    char s_fb84857a[8];
    char s_3943c7ae[40];
    char s_5b2d8d2f[17];
+   char s_6fd9b032[36];
    char s_affd948c[23];
    char s_d2d4c381[28];
    char s_a95aa0fc[40];
    char s_49b0b12a[5];
+   char s_532d60d5[26];
    char s_13d32d54[10];
    char s_91e41658[14];
    char s_30375dfa[29];
@@ -295,9 +304,14 @@ static const struct
    char s_8c7495e3[17];
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
+   char s_35dcde4f[27];
+   char s_ce7da552[38];
+   char s_6b5e88c4[46];
+   char s_79fff0ec[47];
    char s_04b30c51[27];
    char s_e5aeacf9[24];
    char s_24976a5b[48];
+   char s_59512220[47];
    char s_5209cc72[48];
    char s_9f1f3534[60];
    char s_e66b1cb9[40];
@@ -332,7 +346,7 @@ static const struct
    char s_b819d3cc[10];
    char s_c2f41987[15];
    char s_327b2550[11];
-   char s_bbb615a1[20];
+   char s_bbb615a1[26];
    char s_314539a4[23];
    char s_8fc168f0[22];
    char s_213c44cf[16];
@@ -556,7 +570,7 @@ static const struct
    char s_16eade0c[27];
    char s_a49f04f3[23];
    char s_a4a09683[24];
-   char s_b95e3404[15];
+   char s_b95e3404[17];
    char s_734d2a61[6];
    char s_a7a97316[37];
    char s_8b421107[27];
@@ -566,6 +580,7 @@ static const struct
 #endif
    char s_543b5a62[23];
    char s_d1dc5a72[36];
+   char s_b72aa8dd[41];
    char s_1d9a045d[32];
    char s_9ada0438[43];
    char s_eb66d46b[24];
@@ -590,11 +605,14 @@ static const struct
    char s_beaf53f1[22];
    char s_c3fd1e84[18];
    char s_0f2da3af[22];
+   char s_a89a965a[9];
    char s_f4875576[30];
    char s_df3def90[38];
    char s_22600fe7[24];
+   char s_dd6afca3[23];
    char s_4bcbcc14[32];
    char s_e97bb565[26];
+   char s_47e8dc21[34];
    char s_da7a38eb[28];
 #ifdef _3DS
    char s_9db0c321[30];
@@ -605,7 +623,26 @@ static const struct
    char s_f0ce97f7[19];
    char s_704e200c[12];
    char s_a82728ec[23];
+   char s_2fab99c4[71];
+   char s_cce25e3a[70];
    char s_7ca0c97c[34];
+   char s_a85293bc[55];
+   char s_e05e1cdf[41];
+   char s_fb4bba8f[53];
+   char s_6e8d7d8d[54];
+   char s_b3ffd267[58];
+   char s_ab72ef00[55];
+   char s_b65fb6ee[61];
+   char s_ed8d3608[31];
+   char s_95e923ca[63];
+   char s_c36b0d98[56];
+   char s_cbaa86a1[43];
+   char s_00602cda[39];
+   char s_ac5d5951[40];
+   char s_ce501285[38];
+   char s_3d9f9d8c[38];
+   char s_62302004[32];
+   char s_62302005[32];
    char s_328dfd67[16];
    char s_6831e4b8[20];
    char s_b48bf607[13];
@@ -619,11 +656,18 @@ static const struct
    char s_15f24ff4[13];
    char s_ec7e8026[7];
    char s_5d29b870[20];
+   char s_3cc9b420[21];
    char s_bdea22f3[23];
    char s_54250975[22];
    char s_558faf3a[12];
    char s_5fb85af7[12];
+   char s_5fbcf86a[10];
+   char s_575c05fd[17];
    char s_6996339b[5];
+   char s_9104dbe7[10];
+   char s_b4e9520b[27];
+   char s_12bd74ce[14];
+   char s_12c0a864[22];
    char s_bfba8cdb[11];
    char s_08e9410c[22];
    char s_d95824aa[22];
@@ -632,24 +676,40 @@ static const struct
    char s_77b74366[13];
    char s_5266be65[19];
    char s_8aeea24b[5];
+   char s_a18bec42[15];
+   char s_bf07df5b[22];
+   char s_b6df3202[13];
+   char s_bf5d5d76[15];
+   char s_0ec02c87[24];
+   char s_c07d4ce0[19];
    char s_146397b0[10];
+   char s_c8d6f855[21];
+   char s_fda5cd4a[17];
+   char s_8e5cb774[21];
+   char s_d3deb2af[19];
    char s_2821fa51[8];
    char s_a10cbab5[5];
+   char s_a10cbbd0[15];
    char s_a1381a82[12];
    char s_f3a18a9f[9];
    char s_14691293[16];
    char s_cab4e5d1[13];
    char s_f3b9b113[14];
+   char s_b6d851f0[15];
    char s_ab49119c[8];
    char s_94ab8f8c[20];
    char s_deed0812[18];
    char s_dfa3c8c3[10];
+   char s_52dea05d[24];
+   char s_7ec63ffc[40];
+   char s_7f004a36[122];
    char s_a3825f18[12];
    char s_ef2d0a03[22];
    char s_ad17a194[12];
    char s_ddf679b9[8];
    char s_7137e7c2[23];
-   char s_f9fe3b9c[10];
+   char s_f9fe3b9c[13];
+   char s_e62892df[20];
    char s_3b7e9d77[12];
    char s_10342503[12];
    char s_d31f6d88[16];
@@ -693,6 +753,7 @@ static const struct
    char s_db16b335[23];
    char s_10358d4e[19];
    char s_0ad18744[16];
+   char s_7a3aee46[23];
    char s_0b7c8e91[20];
    char s_0bf63b67[17];
    char s_36b2a31c[13];
@@ -753,7 +814,7 @@ static const struct
    char s_96ee0cfb[10];
    char s_ae50c550[10];
    char s_a39026ee[29];
-   char s_1480c7fc[29];
+   char s_1480c7fc[28];
    char s_2e7dbc66[18];
    char s_74eeda27[15];
    char s_b30d3e14[9];
@@ -805,8 +866,10 @@ static const struct
    char s_0b32f489[45];
    char s_1c82054d[38];
    char s_d458f013[33];
+   char s_6e1d0b9d[21];
    char s_56e1b31e[21];
    char s_56e1b31f[19];
+   char s_267cbe7d[30];
    char s_597c4715[17];
    char s_56e1b329[21];
    char s_3318187b[27];
@@ -823,6 +886,8 @@ static const struct
    char s_56e1b336[21];
    char s_313d15c0[11];
    char s_e9f0dd82[37];
+   char s_b58b86df[18];
+   char s_0bd714f7[8];
    char s_0bebb490[15];
    char s_72765a06[18];
    char s_72765a07[18];
@@ -972,6 +1037,12 @@ static const struct
    char s_980ef0e8[6];
    char s_fcf05466[18];
    char s_da16c634[18];
+#ifdef ANDROID
+   char s_4c636851[16];
+   char s_10996997[37];
+   char s_a8f7398d[27];
+   char s_16430f5d[33];
+#endif
    char s_d042d680[6];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -995,6 +1066,9 @@ static const struct
    char s_bd07998f[14];
    char s_4e2f19db[28];
    char s_9e66791a[10];
+   char s_3e958bb3[26];
+   char s_3e981328[19];
+   char s_591b268d[18];
    char s_168d155d[21];
    char s_c64d260f[8];
 #ifdef HAVE_LAKKA_SWITCH
@@ -1088,6 +1162,9 @@ static const struct
    char s_d3574e33[14];
    char s_9d0bdde1[18];
    char s_eded64b9[15];
+   char s_337429c4[11];
+   char s_4c78a5a2[17];
+   char s_dbd59c7e[18];
    char s_e22edcd8[8];
    char s_d86adca1[28];
    char s_a17f6a67[55];
@@ -1099,14 +1176,16 @@ static const struct
 #endif
    char s_136eaaf4[24];
    char s_68d27147[14];
-   char s_f02f73fc[37];
+   char s_b5721b90[28];
    char s_e5b971a0[6];
+   char s_8f27c71e[15];
    char s_17615fcf[6];
    char s_3a0a3fef[18];
    char s_1b6ed818[21];
    char s_89a75c21[22];
    char s_9439ec8b[24];
    char s_1e09db79[17];
+   char s_6735ad12[29];
    char s_0d2d8eef[4];
    char s_400523e5[24];
    char s_989836e4[35];
@@ -1161,7 +1240,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[22];
-   char s_f228c6c5[18];
    char s_11926382[24];
    char s_645ae416[29];
    char s_df92f5b5[43];
@@ -1173,6 +1251,7 @@ static const struct
    char s_b4c3612a[36];
    char s_f638f238[21];
    char s_f3358a59[26];
+   char s_f8098721[51];
    char s_0d7d9688[31];
    char s_b00815b8[13];
    char s_1ef8917a[31];
@@ -1184,6 +1263,7 @@ static const struct
    char s_54d6b95e[14];
    char s_1ad09b45[19];
    char s_774e2332[29];
+   char s_1c9e1ceb[31];
    char s_87064238[27];
    char s_2a273dd7[24];
    char s_5e5fc0ee[29];
@@ -1294,7 +1374,7 @@ static const struct
    char s_7567faa8[32];
    char s_ea0de502[8];
    char s_fe173d74[31];
-   char s_fc6b5794[9];
+   char s_fc6b5794[10];
    char s_c4a36191[10];
    char s_89d6704c[8];
    char s_51f16286[8];
@@ -1320,6 +1400,25 @@ static const struct
    char s_aadf6541[37];
 #ifdef _3DS
    char s_4b1915d7[49];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_2ab94c3e[23];
+   char s_3225c36e[11];
+   char s_eaf7de23[28];
+   char s_f11cbd53[33];
+   char s_46d3d8b1[9];
+   char s_6b12cfdb[28];
+   char s_51775f83[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_9155967d[21];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_528fd575[18];
+   char s_d64e8d73[19];
+   char s_675071f2[11];
 #endif
    char s_c3168ee5[4];
    char s_e2f5e678[8];
@@ -1355,6 +1454,7 @@ static const struct
    char s_d9d847b8[34];
    char s_7a6a492f[17];
    char s_cf28bcf5[31];
+   char s_d3e7cd81[13];
    char s_821edb57[30];
    char s_5f080876[28];
    char s_9358d8ba[27];
@@ -1501,6 +1601,7 @@ static const struct
    char s_77155e0f[15];
    char s_3936fe87[96];
    char s_393985fc[30];
+   char s_57110ba8[42];
    char s_56e21ee1[19];
    char s_b152eb42[30];
    char s_f70406ce[19];
@@ -1660,7 +1761,7 @@ static const struct
    char s_198913d1[47];
    char s_9a4eff21[36];
    char s_3b5c8db2[34];
-   char s_bbfba1e6[28];
+   char s_bbfba1e6[37];
    char s_5df4f448[39];
    char s_cb2c6b22[20];
    char s_4931fd42[29];
@@ -1671,7 +1772,7 @@ static const struct
    char s_f5b2df8f[22];
    char s_d61df2ba[22];
    char s_8c9d24c7[17];
-   char s_260261d6[13];
+   char s_260261d6[15];
    char s_3e2bdc96[30];
    char s_95cf0994[10];
    char s_4fc73be8[17];
@@ -1687,12 +1788,12 @@ static const struct
    char s_d58bd5c3[19];
    char s_06650b16[10];
    char s_6c06b558[23];
-   char s_00966fb4[25];
-   char s_00dfe961[23];
+   char s_00966fb4[26];
+   char s_00dfe961[24];
    char s_2742a469[17];
    char s_a708b2f4[23];
    char s_17983560[16];
-   char s_3af38d58[28];
+   char s_3af38d58[29];
    char s_b2865f23[11];
    char s_e8ad0320[13];
    char s_9251b4c1[8];
@@ -1708,6 +1809,15 @@ static const struct
    char s_4ceac87e[11];
    char s_f62d1074[8];
    char s_387a4176[23];
+   char s_131e934d[7];
+   char s_2102d995[9];
+   char s_e69d6a8f[8];
+   char s_4e2cbad9[5];
+   char s_4e2cbb07[5];
+   char s_13ef7ee0[6];
+   char s_863f74bc[5];
+   char s_6c9436e3[9];
+   char s_64ee333c[10];
    char s_28863bc1[20];
    char s_f751c497[19];
    char s_9329c64c[7];
@@ -1747,7 +1857,7 @@ static const struct
    char s_b7b13f3e[55];
    char s_ef4c4376[17];
    char s_632691cf[27];
-   char s_1938dce6[39];
+   char s_1938dce6[32];
    char s_59980356[9];
    char s_f1f74dd3[13];
    char s_d0314ba5[17];
@@ -1805,9 +1915,9 @@ static const struct
    char s_085b8f97[15];
    char s_0ea29469[28];
    char s_25e87d9d[9];
-   char s_f5d28451[25];
-   char s_b5310903[23];
-   char s_7cfd93a9[23];
+   char s_f5d28451[30];
+   char s_b5310903[25];
+   char s_7cfd93a9[25];
    char s_9a0b2e21[16];
    char s_3b95fccc[29];
    char s_00119310[27];
@@ -1821,7 +1931,7 @@ static const struct
    char s_8dec52be[49];
    char s_8fa632ab[18];
    char s_7614d29f[43];
-   char s_827ceb62[34];
+   char s_827ceb62[38];
    char s_b191aa47[41];
    char s_71fe510f[37];
    char s_7201eede[35];
@@ -1831,6 +1941,7 @@ static const struct
    char s_53b632e1[59];
    char s_f246e141[22];
    char s_dff02a9f[27];
+   char s_5b997f85[17];
    char s_87ee250e[30];
    char s_91e11405[34];
    char s_04681a15[23];
@@ -1842,6 +1953,8 @@ static const struct
    char s_e7a63560[10];
    char s_42066550[12];
    char s_fcac9b51[19];
+   char s_3b1a2a90[27];
+   char s_6aa6b870[26];
    char s_68fc7d61[21];
    char s_a511a1be[11];
    char s_0500fecc[19];
@@ -1852,6 +1965,8 @@ static const struct
    char s_1532af95[53];
    char s_03fb590d[23];
    char s_7c2f8b04[33];
+   char s_fdbd73a3[30];
+   char s_4ad9adf8[29];
    char s_6cead93e[19];
    char s_3ea0b950[25];
    char s_7de07c51[23];
@@ -1888,8 +2003,10 @@ static const struct
    char s_b160f7a1[31];
    char s_cd5ff0f5[20];
    char s_8b92e740[22];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[27];
+#endif
 #endif
    char s_aeef8db2[18];
    char s_14d20957[26];
@@ -1917,18 +2034,58 @@ static const struct
    char s_01a73130[35];
    char s_44ebca0d[35];
    char s_608ac5a1[31];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[30];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[21];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_ef0cd939[21];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_9b023eee[27];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[10];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   char s_6e573f56[28];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_e62744f8[25];
+#endif
+   char s_35808dba[36];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ad6e88de[11];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[21];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[22];
    char s_d21d875b[15];
    char s_ae86fed0[16];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[19];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[9];
    char s_1cbc2657[12];
 #endif
@@ -1943,6 +2100,7 @@ static const struct
    char s_d7fc4c9c[29];
    char s_d21c686b[23];
    char s_f465878a[15];
+   char s_3aa6b936[26];
    char s_a35a9e13[22];
    char s_8406d44c[5];
    char s_64a91b83[15];
@@ -2005,9 +2163,11 @@ static const struct
    char s_6d353bd6[11];
    char s_3f874a40[11];
    char s_da093426[17];
+   char s_d9b00fbd[25];
    char s_0a008a9d[8];
    char s_9c6ed9ca[19];
    char s_68664e16[18];
+   char s_9ad2e88b[31];
    char s_d4aabe7f[21];
    char s_4674fab3[11];
    char s_904219cb[19];
@@ -2040,6 +2200,10 @@ static const struct
    char s_db01e988[5];
    char s_e1c715da[4];
    char s_9a981aa0[11];
+   char s_b4d6cb93[29];
+   char s_ee1c318a[27];
+   char s_32b51618[27];
+   char s_a2906bd3[29];
    char s_e2f93e68[7];
    char s_47d26662[21];
    char s_0ca3b319[10];
@@ -2050,6 +2214,7 @@ static const struct
    char s_f808254b[32];
    char s_77e3256e[18];
    char s_eea0ed20[17];
+   char s_a2cb8534[22];
    char s_a4d3948f[14];
    char s_7f75b005[35];
    char s_c7e66e0a[34];
@@ -2078,6 +2243,7 @@ static const struct
    char s_a158a19e[41];
    char s_1d39f4b7[39];
    char s_c512fde9[56];
+   char s_2b39eb60[28];
    char s_e8636306[25];
 #ifdef _3DS
    char s_c54d8fa1[22];
@@ -2097,7 +2263,7 @@ static const struct
    char s_0ef856cb[43];
    char s_22ee45f4[39];
    char s_4577a14d[45];
-   char s_4bceefff[26];
+   char s_4bceefff[28];
    char s_752ce8b2[38];
 #ifdef HAVE_ODROIDGO2
 #else
@@ -2122,20 +2288,24 @@ static const struct
 #endif
    char s_f4341e25[38];
    char s_b9d37039[165];
+   char s_d0a04fe4[13];
    char s_c682e4e2[13];
    char s_cf6bc52a[22];
    char s_05c5a263[16];
    char s_ed22c5f1[24];
+   char s_32c41d0e[21];
    char s_49f9815b[25];
    char s_ddc4f021[19];
    char s_ddc6b80f[22];
    char s_f5ab35c0[30];
    char s_3c70d08d[27];
-   char s_6083fff7[16];
-   char s_44e1c38f[29];
+   char s_6083fff7[20];
+   char s_44e1c38f[33];
    char s_57047267[11];
+   char s_8a600be0[36];
    char s_6665b7fc[44];
    char s_2e6ad26e[11];
+   char s_43e9897c[55];
    char s_7fbf0860[11];
    char s_f417f6f1[23];
    char s_020e2bc5[26];
@@ -2143,6 +2313,7 @@ static const struct
    char s_59f183c9[27];
    char s_6b395e21[11];
    char s_00ab7f5e[38];
+   char s_71747541[10];
    char s_b45e4c28[25];
    char s_e92f8e07[25];
    char s_e9bca139[27];
@@ -2155,7 +2326,9 @@ static const struct
    char s_8fc1e4da[9];
    char s_14ed14d0[4];
    char s_5c87e95b[19];
+   char s_fad361a0[22];
    char s_bb929824[23];
+   char s_fe2ec9bd[27];
    char s_5741c1d0[18];
    char s_a1a7717d[25];
    char s_e6ca3876[32];
@@ -2169,6 +2342,7 @@ static const struct
    char s_0571321b[29];
    char s_4b582a0b[36];
    char s_4b582a0c[34];
+   char s_61213f1d[15];
    char s_95e4b29f[66];
    char s_317b17ed[8];
    char s_94c8d15f[8];
@@ -2178,6 +2352,7 @@ static const struct
    char s_0e2c0fca[26];
    char s_93ac5ec8[26];
    char s_6cdf4f07[33];
+   char s_a03f132e[37];
    char s_b3d1e989[9];
    char s_50eb4c56[8];
    char s_a023adce[13];
@@ -2192,7 +2367,7 @@ static const struct
    char s_74dcbca5[20];
    char s_3ea80887[20];
    char s_c0cdc638[35];
-   char s_afd69a70[38];
+   char s_afd69a70[45];
    char s_22735e37[54];
 #ifdef HAVE_ODROIDGO2
    char s_05359d58[17];
@@ -2210,8 +2385,9 @@ static const struct
    char s_69b801ef[13];
    char s_a40653a7[25];
    char s_52e3d6ea[43];
+   char s_c992346c[36];
    char s_a9c8430e[14];
-   char s_f5911f43[24];
+   char s_f5911f43[25];
    char s_9017e0d3[14];
    char s_55f488d2[13];
    char s_d5901b68[18];
@@ -2246,6 +2422,8 @@ static const struct
    char s_730df420[16];
    char s_bcddf275[7];
    char s_258060bf[17];
+   char s_3bbc8b05[42];
+   char s_e595f6df[39];
    char s_f90edcc2[53];
 #if defined(RARCH_MOBILE)
    char s_774121c7[49];
@@ -2277,8 +2455,10 @@ static const struct
    char s_68190518[38];
    char s_b9e24170[27];
    char s_30140cb5[13];
-   char s_25a21976[72];
+   char s_25a21976[75];
    char s_95a59dc0[18];
+   char s_24244577[15];
+   char s_39143931[20];
    char s_7f2380a0[9];
    char s_e0609921[15];
    char s_b3c7fa93[18];
@@ -2362,8 +2542,8 @@ static const struct
    char s_703e1cd4[151];
    char s_78309ded[47];
    char s_17385b20[71];
-   char s_816633c1[152];
-   char s_06d75b77[64];
+   char s_816633c1[156];
+   char s_06d75b77[68];
    char s_bd956922[54];
 #ifndef HAVE_DYNAMIC
    char s_08ce894f[169];
@@ -2372,38 +2552,54 @@ static const struct
    char s_f7cc6630[26];
    char s_310ec7bd[70];
    char s_5832a2c2[103];
+   char s_6f6e337b[400];
    char s_20cc6597[108];
    char s_21b0bad3[52];
    char s_66e9521c[87];
    char s_a95c1929[45];
    char s_23b8ca2e[24];
    char s_daf6d7e2[49];
+   char s_708c69d6[316];
    char s_042502c4[66];
    char s_90ae9a9f[96];
    char s_81b79d5b_0[500];
    char s_81b79d5b_1[126];
    char s_c9235dab[50];
    char s_330be970_0[500];
-   char s_330be970_1[47];
+   char s_330be970_1[53];
+   char s_014d553a[320];
    char s_98b02857[200];
+   char s_81f09bf8_0[500];
+   char s_81f09bf8_1[22];
    char s_6c3c586d[215];
    char s_950e7a66[27];
    char s_ce113b1c[33];
    char s_272471c3[122];
    char s_cb649822[14];
+   char s_f0838a35_0[500];
+   char s_f0838a35_1[57];
    char s_95821d83[41];
    char s_bdeebb68[33];
    char s_f9005edc[174];
    char s_6ade80dd[38];
+   char s_ec7aa7a0[451];
    char s_b5ccfdfa[166];
    char s_8a24406f[39];
    char s_8c6b0fea[62];
    char s_5977d6d8[39];
+   char s_f46c7b83_0[499];
+   char s_f46c7b83_1[73];
    char s_cb67f2a4[35];
    char s_3c3598a9[41];
+   char s_3bac47bd[436];
+   char s_90e7db40[423];
+   char s_b07cd572_0[500];
+   char s_b07cd572_1[54];
+   char s_1b3f0b9a[370];
    char s_4b78ee7f[99];
    char s_aed11d67[143];
    char s_dbe6e749[115];
+   char s_9e6f6ece[407];
    char s_ed8a1060[90];
    char s_822fa422[82];
    char s_a8d552a7[45];
@@ -2521,7 +2717,7 @@ static const struct
    char s_5a07751b[118];
    char s_544da5c1[62];
    char s_7f1e2e0a[80];
-   char s_66517e7d[187];
+   char s_66517e7d[188];
    char s_040bd4cf[42];
    char s_45f51ee3[30];
    char s_a16db3aa[42];
@@ -2567,6 +2763,7 @@ static const struct
    char s_48e88dc4[145];
    char s_3d233cd0[63];
    char s_9198f1a0[169];
+   char s_dfe733cb[297];
    char s_165e564b[272];
    char s_c3968f26[85];
    char s_a2b65159[64];
@@ -2575,14 +2772,30 @@ static const struct
    char s_79b8ce4a[71];
    char s_a1a8257e[132];
    char s_282f7955[94];
+   char s_d5231783[194];
    char s_a68d6d11[66];
    char s_74022c02[95];
    char s_8abad013[91];
+   char s_0a53120f[393];
    char s_a39ca959[91];
    char s_16b9856e[43];
    char s_0ef5e125[21];
    char s_b714023a[48];
    char s_b0d3045a[50];
+   char s_b50332b2[94];
+   char s_5239f728[97];
+   char s_7175042a[40];
+   char s_a2c852cd[43];
+   char s_32ab82b6[60];
+   char s_d6370c78[39];
+   char s_400c0506[48];
+   char s_d733484f[17];
+   char s_c9829d48[75];
+   char s_bc0e4cff[23];
+   char s_6f8f2d33[85];
+   char s_f4ef1a7a[85];
+   char s_249a55f2[82];
+   char s_249a55f3[82];
    char s_fe3fb37b[49];
    char s_d11127dc[114];
    char s_7b51019e[48];
@@ -2591,6 +2804,8 @@ static const struct
    char s_aa6534cc[24];
    char s_51d334ea[38];
    char s_95de8c94[39];
+   char s_f43bec66[120];
+   char s_d814ec71[92];
    char s_f2a19576[59];
    char s_b2a8d230[46];
    char s_11c7fa0c[93];
@@ -2644,7 +2859,7 @@ static const struct
    char s_752f291c[44];
    char s_9eb26572[34];
    char s_50707595[81];
-   char s_976074ee[115];
+   char s_976074ee[120];
    char s_5c8a1d63[115];
    char s_744c0f80[66];
    char s_2aa39081[42];
@@ -2674,6 +2889,8 @@ static const struct
    char s_6da9b571[269];
    char s_c2827177[127];
    char s_09f2837b[276];
+   char s_512d7a8b[71];
+   char s_2c4c27eb[190];
    char s_85147d5c[83];
    char s_0b56ad4c[53];
    char s_c312b1ca[35];
@@ -2722,6 +2939,8 @@ static const struct
    char s_d9153542[44];
    char s_8e48ec69[35];
    char s_cd43c108[80];
+   char s_cd46e260[324];
+   char s_cd482ffe[341];
    char s_49336383[39];
    char s_e92351d4[104];
    char s_8e22cdce[62];
@@ -2735,7 +2954,6 @@ static const struct
    char s_74d87c7a[44];
    char s_12adb1e7[44];
    char s_070529d4[58];
-   char s_30d1fc05[39];
 #ifdef GEKKO
    char s_3180dcf5[61];
 #endif
@@ -2777,11 +2995,13 @@ static const struct
    char s_47df0525[60];
    char s_03e272fc[49];
    char s_5c2cc60f[64];
-   char s_d6d8d4be[73];
    char s_e86d2704[70];
    char s_dda608b5[302];
    char s_6f5a032a[48];
    char s_9530e802[115];
+#ifdef HAVE_SDL3
+   char s_5b9036af[271];
+#endif
 #ifdef ANDROID
    char s_e8eeac31[68];
 #endif
@@ -2791,6 +3011,12 @@ static const struct
    char s_aaa55caa[83];
    char s_6a44b3af[57];
    char s_a7d61696[52];
+#ifdef ANDROID
+   char s_354b4abf[136];
+   char s_21594ec5[192];
+   char s_d1b3c47b[195];
+   char s_27919f0b[198];
+#endif
    char s_f9db39ef[112];
 #ifdef UDEV_TOUCH_SUPPORT
    char s_d46604e4[96];
@@ -2812,6 +3038,7 @@ static const struct
    char s_eaa7274b[47];
    char s_10994fc9[108];
    char s_bde8a108[61];
+   char s_420308fb[235];
 #ifdef HAVE_LAKKA_SWITCH
    char s_c4b1f676[55];
 #endif
@@ -2862,6 +3089,9 @@ static const struct
    char s_c220b5bb[155];
    char s_bcca484f[102];
    char s_1205716b[264];
+   char s_168498b2[277];
+   char s_55248110[22];
+   char s_f9fce5ac[127];
    char s_b3c6310f[61];
    char s_b1305e15[87];
    char s_2b2a7762[79];
@@ -2871,9 +3101,10 @@ static const struct
    char s_193e1462[55];
    char s_6895dfd6[51];
    char s_788364f5[81];
-   char s_dd9ff22a[57];
+   char s_ff7d19fe[175];
    char s_db495a9d[41];
    char s_ddc672a7[54];
+   char s_6fe18880[270];
    char s_ccea261d[116];
    char s_f754a0d3[75];
    char s_4fe7b3d2[115];
@@ -2922,7 +3153,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[94];
-   char s_01efec73[47];
    char s_d3fc9970[49];
    char s_740bd7c4[54];
    char s_f052dae3[77];
@@ -2934,12 +3164,14 @@ static const struct
    char s_7de5d198[61];
    char s_3b573ee6[28];
    char s_dc1d6cc7[53];
+   char s_28543dcf[62];
    char s_aebcb136[132];
    char s_8b636a26[30];
    char s_8f707459[41];
    char s_5aa622cc[181];
    char s_2b908073[254];
    char s_64bea160[186];
+   char s_2826de99[295];
    char s_97c62766[148];
    char s_6f458a85[100];
    char s_41702fdc[55];
@@ -3034,6 +3266,25 @@ static const struct
    char s_a5ffd3d0[36];
 #ifdef _3DS
    char s_0d834bc5[71];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_0dc9bb2c[50];
+   char s_1536325c[240];
+   char s_ad621411[53];
+   char s_f6ec26c1[50];
+   char s_4f7fb41f[51];
+   char s_70f70009[376];
+   char s_3487ce71[43];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   char s_7a3d78eb[21];
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_35a04463[53];
+   char s_1b6cda21[68];
+   char s_ac6ebea0[213];
 #endif
    char s_d2ae640b[81];
    char s_8e5bac99[84];
@@ -3137,6 +3388,19 @@ static const struct
    char s_0e319bcf[39];
    char s_c11a10f0[136];
    char s_e8bf64a4[30];
+   char s_1e8b7442[129];
+   char s_bbc238b8[128];
+   char s_a71a2320[78];
+   char s_3a5444c9[58];
+   char s_e24628cd[109];
+   char s_5587ebcb[95];
+   char s_992f7725[51];
+   char s_d17500b1[61];
+   char s_bd5d9b57[102];
+   char s_f373722c[76];
+   char s_00544646[103];
+   char s_8594f008[128];
+   char s_72a5ea43[137];
    char s_b4bf3f71[52];
    char s_b91e9f23[45];
    char s_66664762[51];
@@ -3247,6 +3511,7 @@ static const struct
    char s_98d47f8f[271];
    char s_9385fbef[33];
    char s_efb7504d[69];
+   char s_6b4a7333[411];
    char s_70d6077c[44];
    char s_31124733[178];
    char s_2d24a503[150];
@@ -3276,8 +3541,8 @@ static const struct
    char s_e8aee6c7[21];
    char s_9754ee6e[38];
    char s_59a0ee82[33];
-   char s_b4265580[35];
-   char s_96924038[30];
+   char s_b4265580[34];
+   char s_96924038[28];
    char s_611059be[35];
    char s_59e667cf[30];
    char s_8fb7e97b[33];
@@ -3293,8 +3558,10 @@ static const struct
    char s_bce9b94f[39];
    char s_d32f5a63[32];
    char s_9177176e[34];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[39];
+#endif
 #endif
    char s_97d77020[31];
    char s_59f05605[38];
@@ -3310,15 +3577,54 @@ static const struct
    char s_4b009af3[46];
    char s_46c57dde[69];
    char s_7eb20ecf[78];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[59];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   char s_706ff4dc[277];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_fed3fee7[104];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[71];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b5966528[183];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   char s_743b6f84[376];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_044e8e26[218];
    char s_907ef7cc[43];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[53];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   char s_04624c88[176];
    char s_91976dbe[49];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_f6492edc[49];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_9bb85635[211];
    char s_22a05685[70];
 #endif
@@ -3332,6 +3638,7 @@ static const struct
 #endif
    char s_9b51352c[27];
    char s_12510638[44];
+   char s_407622a4[47];
    char s_ac067981[47];
    char s_82d064b1[29];
 #ifdef HAVE_MIST
@@ -3360,6 +3667,7 @@ static const struct
    char s_ffd591e0[51];
    char s_a51ab538[27];
    char s_55d6cc44[42];
+   char s_5a8f7fb9[205];
    char s_f2963d2d[29];
    char s_4c592ae1[88];
    char s_52ac4fb9[107];
@@ -3371,6 +3679,8 @@ static const struct
    char s_f77f7a41[74];
 #endif
    char s_e7cb5685[50];
+   char s_bd82a701[414];
+   char s_8bb367a2[135];
    char s_2beab583[27];
    char s_a1c071eb[69];
    char s_0d9ceefa[68];
@@ -3392,7 +3702,7 @@ static const struct
    char s_d4fe834f[190];
    char s_f64dfe3c[131];
 #endif
-   char s_dcdfbf2c[215];
+   char s_dcdfbf2c[223];
    char s_74a4dfd9[153];
    char s_f815af2a[85];
    char s_8759e741[33];
@@ -3423,14 +3733,17 @@ static const struct
    char s_e4aa2e10[64];
    char s_b853a798[106];
    char s_d60aa85f[55];
+   char s_38a84d3c[353];
    char s_2d09f049[34];
    char s_e670cb8f[44];
    char s_e672937d[128];
    char s_055c296e[103];
    char s_fc2d67bb[150];
    char s_43946ee5[59];
-   char s_5492b73d[47];
+   char s_5492b73d[53];
+   char s_15cad80e[412];
    char s_01e5fbea[296];
+   char s_0653bf6a[439];
    char s_123f401f[105];
    char s_0d96ed73[45];
    char s_9f0fd076[114];
@@ -3446,8 +3759,10 @@ static const struct
    char s_cfa51e8c[423];
    char s_b62c2f7e[288];
    char s_456fcbc9[305];
+   char s_ba8ff8ce[242];
    char s_82fab47a[28];
    char s_72e21512[200];
+   char s_9f6de46b[230];
    char s_66f2b57e[51];
    char s_a776daeb[75];
    char s_88095324[75];
@@ -3466,6 +3781,8 @@ static const struct
    char s_1eebf4f8[179];
    char s_2f2ca2b6[177];
    char s_2c9be635[121];
+   char s_c8fb9e1c[284];
+   char s_05ec12e6[217];
    char s_b5a603de[51];
    char s_d9c2db25[53];
 #ifdef HAVE_ODROIDGO2
@@ -3474,9 +3791,11 @@ static const struct
    char s_7c07f6fc[90];
    char s_36667d81[127];
    char s_eec252b5[124];
-   char s_f4e4e921[227];
+   char s_f4e4e921[242];
    char s_7968f59d[31];
+   char s_8cee3615[222];
    char s_58c80718[304];
+   char s_894ecb9a[336];
    char s_67d549fd[33];
    char s_afac733c[34];
    char s_3aaf6bf1[140];
@@ -3500,12 +3819,17 @@ static const struct
    char s_261210b3[77];
    char s_3a4b246c[106];
    char s_2ceab671[133];
+   char s_977f8e82[270];
    char s_3c679f0a[304];
    char s_5b059407[144];
    char s_36033606[169];
    char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
+   char s_3547866d_0[500];
+   char s_3547866d_1[35];
+   char s_d73ccef3[388];
+   char s_81163acd[400];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[162];
@@ -3575,6 +3899,7 @@ static const struct
    char s_25e53d33[28];
    char s_26cce51e[25];
    char s_07dd4745[19];
+   char s_72293658[114];
    char s_aaaaf898[35];
    char s_4173591b[15];
    char s_c2b63d3e[15];
@@ -3617,6 +3942,7 @@ static const struct
    char s_8db0184a[49];
    char s_08abd26f[17];
    char s_48f0233f[57];
+   char s_63ab0b54[17];
    char s_510c1140[43];
    char s_3b592d2d[15];
    char s_ec5751c3[34];
@@ -3699,6 +4025,8 @@ static const struct
    char s_5eafa434[43];
    char s_7f1e25bf[40];
    char s_ed9e4f6f[197];
+   char s_ecbaddbe[58];
+   char s_c860f446[63];
    char s_30da3845[28];
    char s_d50c6bf1[26];
    char s_64a038aa[21];
@@ -3819,6 +4147,8 @@ static const struct
    char s_a9f3b2c3[14];
    char s_0e7aca8a[18];
    char s_ab1afe7c[19];
+   char s_b6b13e9f[18];
+   char s_1492e328[48];
    char s_026b7f11[14];
    char s_3b7c0dd8[18];
    char s_b43a100a[19];
@@ -3836,6 +4166,13 @@ static const struct
    char s_01a4c762[14];
    char s_ba4d8b17[29];
    char s_ffed014a[28];
+   char s_68bd6ae1[32];
+   char s_599fa4bb[30];
+   char s_406b377c[30];
+   char s_66e729cd[34];
+   char s_c826cb6b[24];
+   char s_cd004b60[27];
+   char s_5c253665[60];
    char s_1295b61f[43];
    char s_debd302d[15];
    char s_8bd09b44[26];
@@ -3873,6 +4210,8 @@ static const struct
    char s_3c214e5f[36];
    char s_2ada2134[22];
    char s_00fc26e4[8];
+   char s_d66d432f[18];
+   char s_15c0f14a[20];
    char s_7c4c8dd7[84];
    char s_45fa49af[59];
    char s_143f28c7[119];
@@ -4101,7 +4440,7 @@ static const struct
    char s_2dbb6496[31];
 } msg_hash_sk_blob =
 {
-   "Backend AI Service",
+   "Backend slu\305\276by AI",
    "Emul\303\241tor",
    "1-Bit, maxim\303\241lna hodnota = 0x01",
    "16-Bit, maxim\303\241lna hodnota = 0xFFFF",
@@ -4310,12 +4649,12 @@ static const struct
    "na\304\215\303\255tan\303\275 \305\276iadny konfigura\304\215n\303\275 s\303\272bor, hist\303"
    "\263ria sa nebude uklada\305\245 ani na\304\215\303\255tava\305\245 a nebude existova\305\245 v "
    "hlavnej ponuke.",
-   "Prehliada\305\245 obsah. Na na\304\215\303\255tanie obsahu potrebujete 'Core' a s\303\272bor obs"
-   "ahu.\nAk chcete ur\304\215i\305\245, kde menu za\304\215ne h\304\276ada\305\245 obsah, nastavte "
-   "'Adres\303\241r prehliada\304\215a s\303\272borov'. Ak nie je nastaven\303\275, za\304\215ne v k"
-   "oreni.\nPrehliada\304\215 filtruje pr\303\255pony pre posledn\303\275 core nastaven\303\275 v 'N"
-   "a\304\215\303\255ta\305\245 Core' a tento core pou\305\276ije pri na\304\215\303\255tan\303\255 "
-   "obsahu.",
+   "Prehliada\305\245 obsah. Na na\304\215\303\255tanie obsahu potrebujete 'Jadro' a s\303\272bor ob"
+   "sahu.\nAk chcete ur\304\215i\305\245, kde menu za\304\215ne h\304\276ada\305\245 obsah, nastavte"
+   " 'Adres\303\241r prehliada\304\215a s\303\272borov'. Ak nie je nastaven\303\275, za\304\215ne v "
+   "koreni.\nPrehliada\304\215 filtruje pr\303\255pony pre posledn\303\251 jadro nastaven\303\251 v "
+   "'Na\304\215\303\255ta\305\245 jadro' a toto jadro pou\305\276ije pri na\304\215\303\255tan\303"
+   "\255 obsahu.",
    "Na\304\215\303\255ta\305\245 ulo\305\276en\303\275 stav z aktu\303\241lne vybran\303\251ho slotu"
    ". Pozn\303\241mka: nemus\303\255 fungova\305\245, ak bol stav ulo\305\276en\303\275 s inou verzi"
    "ou core.",
@@ -4439,12 +4778,13 @@ static const struct
    "jasnos\305\245 pohybu. Pou\305\276ite iba mo\305\276nos\305\245 ur\304\215en\303\272 pre va\305"
    "\241u aktu\303\241lnu obnovovaciu frekvenciu displeja. Nepou\305\276\303\255vajte pri obnovovac"
    "\303\255ch frekvenci\303\241ch, ktor\303\251 nie s\303\272 n\303\241sobkami 60 Hz, ako 144 Hz, 1"
-   "65 Hz at\304\217. Nekombinujte so Swap Interval > 1, sub-frames, Frame Delay alebo Sync to Exact"
-   " Content Framerate. Syst\303\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303"
-   "\251, len nie toto nastavenie. Ak si v\305\241imnete -ak\303\251ko\304\276vek- do\304\215asn\303"
-   "\251 pretrv\303\241vanie obrazu, mali",
-   " by ste vypn\303\272\305\245 pri 120 Hz a pri vy\305\241\305\241\303\255ch Hz upravi\305\245 nas"
-   "tavenie tmav\303\275ch sn\303\255mok ni\305\276\305\241ie.",
+   "65 Hz at\304\217. Nekombinujte so Swap Interval > 1, podsn\303\255mkami, Oneskoren\303\255m sn"
+   "\303\255mky ani Synchroniz\303\241ciou s presnou sn\303\255mkovou frekvenciou obsahu. Syst\303"
+   "\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303\251, len nie toto nastavenie. "
+   "Ak si v\305\241imnete -ak\303\251ko\304\276vek- do",
+   "\304\215asn\303\251 pretrv\303\241vanie obrazu, mali by ste vypn\303\272\305\245 pri 120 Hz a pr"
+   "i vy\305\241\305\241\303\255ch Hz upravi\305\245 nastavenie tmav\303\275ch sn\303\255mok ni\305"
+   "\276\305\241ie.",
    "Vyn\303\272tene vypn\303\272\305\245 kompoz\303\255ciu. Vypnutie je platn\303\251 iba na Windows"
    " Vista/7.",
    "Ovl\303\241da\304\215 LibCACA. Produkuje znakov\303\275 v\303\275stup namiesto grafiky. Neodpor"
@@ -4505,9 +4845,9 @@ static const struct
    "\303\241cii videa. Zni\305\276uje latenciu za cenu vy\305\241\305\241ieho rizika trhania.\nHodno"
    "ty 20 a vy\305\241\305\241ie sa pova\305\276uj\303\272 za percent\303\241 \304\215asu sn\303\255"
    "mky.",
-   "Pok\303\272si sa udr\305\276a\305\245 po\305\276adovan\303\275 cie\304\276 'Frame Delay' a minim"
-   "alizova\305\245 vynechan\303\251 sn\303\255mky. V\303\275chodiskov\303\275 bod je 3/4 \304\215as"
-   "u sn\303\255mky, ke\304\217 je 'Frame Delay' 0 (Auto).",
+   "Pok\303\272si sa udr\305\276a\305\245 po\305\276adovan\303\275 cie\304\276 'Oneskorenie sn\303"
+   "\255mky' a minimalizova\305\245 vynechan\303\251 sn\303\255mky. V\303\275chodiskov\303\275 bod j"
+   "e 3/4 \304\215asu sn\303\255mky, ke\304\217 je 'Oneskorenie sn\303\255mky' 0 (Auto).",
    "Nastav\303\255, ko\304\276ko sn\303\255mok m\303\264\305\276e CPU be\305\276a\305\245 pred GPU p"
    "ri pou\305\276it\303\255 'GPU Hard Sync'. Maximum je 3.\n 0: Synchronizova\305\245 s GPU okam"
    "\305\276ite.\n 1: Synchronizova\305\245 s predch\303\241dzaj\303\272cou sn\303\255mkou.\n 2: At"
@@ -4533,9 +4873,9 @@ static const struct
    "Simuluje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303"
    "\255mok rozdelen\303\255m obrazovky vertik\303\241lne a vykres\304\276ovan\303\255m ka\305\276de"
    "j \304\215asti obrazovky pod\304\276a po\304\215tu pod-sn\303\255mok zhora nadol.",
-   "Hardv\303\251rov\303\275 filter pre tento pass. Ak je nastaven\303\251 'Default', filter bude bu"
-   "\304\217 'Linear' alebo 'Nearest' v z\303\241vislosti od nastavenia 'Biline\303\241rne filtrovan"
-   "ie' v nastaveniach videa.",
+   "Hardv\303\251rov\303\275 filter pre tento pass. Ak je nastaven\303\251 'Predvolen\303\251', filt"
+   "er bude bu\304\217 'Line\303\241rny' alebo 'Najbli\305\276\305\241ie' v z\303\241vislosti od nas"
+   "tavenia 'Biline\303\241rne filtrovanie' v nastaveniach videa.",
    "RetroArch umo\305\276\305\210uje mie\305\241a\305\245 a kombinova\305\245 r\303\264zne shadery s"
    " \304\276ubovo\304\276n\303\275mi shader passmi, s vlastn\303\275mi hardv\303\251rov\303\275mi f"
    "iltrami a faktormi mierky.\nT\303\241to mo\305\276nos\305\245 ur\304\215uje po\304\215et shader "
@@ -4551,17 +4891,24 @@ static const struct
    "Mierka pre tento pass. Faktor mierky sa kumuluje, t.j. 2x pre prv\303\275 pass a 2x pre druh\303"
    "\275 pass d\303\241va celkov\303\272 mierku 4x.\nAk je faktor mierky pre posledn\303\275 pass, v"
    "\303\275sledok sa natiahne na obrazovku s predvolen\303\275m filtrom v z\303\241vislosti od nast"
-   "avenia Biline\303\241rne filtrovanie v nastaveniach videa.\nAk je nastaven\303\251 'Default', po"
-   "u\305\276ije sa bu\304\217 mierka 1x alebo natiahnutie na cel\303\272 obrazovku v z\303\241vislo"
-   "sti od toho, \304\215i ide o posledn\303\275 pass.",
+   "avenia Biline\303\241rne filtrovanie v nastaveniach videa.\nAk je nastaven\303\251 'Predvolen"
+   "\303\251', pou\305\276ije sa bu\304\217 mierka 1x alebo natiahnutie na cel\303\272 obrazovku v z"
+   "\303\241vislosti od toho, \304\215i ide o posledn\303\275 pass.",
    "Vklad\303\241 extra shader sn\303\255mku (sn\303\255mky) medzi sn\303\255mky pre pr\303\255padn"
    "\303\251 shader efekty navrhnut\303\251 pre r\303\275chlej\305\241\303\255 beh ne\305\276 frekve"
    "ncia obsahu. Pou\305\276ite iba mo\305\276nos\305\245 ur\304\215en\303\272 pre va\305\241u aktu"
    "\303\241lnu obnovovaciu frekvenciu displeja. Nepou\305\276\303\255vajte pri obnovovac\303\255ch "
    "frekvenci\303\241ch, ktor\303\251 nie s\303\272 n\303\241sobkami 60 Hz, ako 144 Hz, 165 Hz at"
-   "\304\217. Nekombinujte so Swap Interval > 1, BFI, Frame Delay alebo Sync to Exact Content Framer"
-   "ate. Syst\303\251mov\303\251 VRR m\303\264\305\276ete necha\305\245 zapnut\303\251, len nie toto"
-   " nastavenie.",
+   "\304\217. Nekombinujte so Swap Interval > 1, BFI, Oneskoren\303\255m sn\303\255mky ani Synchroni"
+   "z\303\241ciou s presnou sn\303\255mkovou frekvenciou obsahu. Syst\303\251mov\303\251 VRR m\303"
+   "\264\305\276ete necha\305\245 zapnut\303\251, len n",
+   "ie toto nastavenie.",
+   "Sp\303\272\305\241\305\245a video ovl\303\241da\304\215 v samostatnom vl\303\241kne. Displej si "
+   "udr\305\276\303\255 rytmus, ke\304\217 sa jadro zasekne, a jadro sprac\303\272va \304\217al\305"
+   "\241iu sn\303\255mku, k\303\275m t\303\241 posledn\303\241 prech\303\241dza re\305\245azcom shad"
+   "erov a zobrazen\303\255m. S vo\304\276bou '\304\214asovanie zobrazenia vo Vl\303\241knovom videu"
+   "' sa jadro sp\303\272\305\241\305\245a tak neskoro, ako to \304\217al\305\241ie obnovenie dovol"
+   "\303\255, \304\215o dr\305\276\303\255 oneskorenie na \303\272rovni Oneskorenia sn\303\255mky.",
    "Synchronizova\305\245 s presnou frekvenciou obsahu. T\303\241to mo\305\276nos\305\245 je ekvival"
    "entom vyn\303\272tenia x1 r\303\275chlosti pri zachovan\303\255 mo\305\276nosti r\303\275chleho "
    "prev\303\255jania. \305\275iadna odch\303\275lka od obnovovacej frekvencie po\305\276adovanej co"
@@ -4579,8 +4926,8 @@ static const struct
    "< hodnota vibr\303\241ci\303\255",
    "!= hodnota vibr\303\241ci\303\255",
    "Povoli\305\245 pr\303\255stupnos\305\245",
-   "N\303\241stroj Text-to-Speech",
-   "R\303\275chlos\305\245 Text-to-Speech",
+   "N\303\241stroj na prevod textu na re\304\215",
+   "R\303\275chlos\305\245 prevodu textu na re\304\215",
    "Zjednodu\305\241enie pr\303\255stupu",
    "Heslo",
    "\303\232\304\215ty Cheevos",
@@ -4604,7 +4951,7 @@ static const struct
    "Prida\305\245 do mix\303\251ra a prehra\305\245",
    "Prida\305\245 do mix\303\251ra a prehra\305\245",
    "Prida\305\245 do hern\303\251ho zoznamu",
-   "Backend AI Service",
+   "Backend slu\305\276by AI",
    "AI slu\305\276ba povolen\303\241",
    "Re\305\276im obrazu",
    "V\303\275stup slu\305\276by AI",
@@ -4623,32 +4970,39 @@ static const struct
    "Ikona aplik\303\241cie",
    "Assety",
    "Otvori\305\245 ovl\303\241dac\303\255 panel ASIO",
+   "V\303\275stupn\303\251 kan\303\241ly ASIO",
    "Zariadenie",
    "Zvuk",
    "DPS z\303\241suvn\303\275 modul",
    "Odstr\303\241ni\305\245 DSP roz\305\241\303\255renie",
    "Zvuk",
    "Zmie\305\241ava\304\215",
+   "R\303\275chle pret\303\241\304\215anie ovplyvn\303\255 zvuk zo sp\303\244tn\303\251ho volania",
    "Stlmenie zvuku pri r\303\275chlom prev\303\255jan\303\255",
    "Zr\303\275chlenie zvuku pri r\303\275chlom prev\303\255jan\303\255",
    "Prevzorkova\305\245 v celo\304\215\303\255selnom form\303\241te (odpor\303\272\304\215anie)",
    "Zvukov\303\251 filtre",
    "Vyjedn\303\241vanie form\303\241tu zvuku (odpor\303\272\304\215anie)",
    "Pl\303\241vaj\303\272ce",
+   "Virtu\303\241lny priestorov\303\275 zvuk pre sl\303\272chadl\303\241",
    "Oneskorenie zvuku (ms)",
+   "Minim\303\241lne oneskorenie zvuku (ms)",
    "Maxim\303\241lny \304\215asov\303\275 posun",
    "Stlmi\305\245 mix\303\251r",
    "Zmie\305\241ava\304\215",
    "Zosilnenie hlasitosti zmie\305\241ava\304\215a (dB)",
    "Stlmi\305\245",
+   "Rozlo\305\276enie v\303\275stupn\303\275ch reproduktorov",
    "V\303\275stupn\303\241 frekvencia (Hz)",
    "V\303\275stup",
    "Dynamick\303\251 regulovanie r\303\275chlosti zvuku",
    "Vzorkova\304\215 zvuku",
+   "Vysokokvalitn\303\251 prevzorkovanie sinc",
    "Kvalita prevzorkovania",
    "Re\305\241pektova\305\245 tich\303\275 re\305\276im",
    "Stlmenie zvuku pri sp\303\244tnom prev\303\255jan\303\255",
    "Zvuk",
+   "Odhad r\303\275chlosti v\303\275stupu",
    "Stav: N/A",
    "Stav: Hr\303\241 sa",
    "Stav: Prehr\303\241va sa (slu\304\215ka)",
@@ -4656,9 +5010,14 @@ static const struct
    "Stav: Zastaven\303\251",
    "Synchroniz\303\241cia",
    "Synchroniz\303\241cia",
+   "Viacvl\303\241knov\303\251 spracovanie",
+   "Zv\303\275\305\241i\305\245 prioritu zvukov\303\251ho vl\303\241kna",
+   "Zmeny r\303\275chlosti so zachovan\303\255m v\303\275\305\241ky t\303\263nu",
+   "Dolnopriepustn\303\275 filter viazan\303\275 na r\303\275chlos\305\245",
    "Zosilnenie hlasitosti (dB)",
    "WASAPI exkluz\303\255vny m\303\263d",
    "Form\303\241t WASAPI s pohyblivou desatinnou \304\215iarkou",
+   "Uprednostni\305\245 profesion\303\241lne pl\303\241novanie zvuku",
    "D\304\272\305\276ka zdie\304\276anej vyrovn\303\241vacej pam\303\244te WASAPI",
    "S\303\272bor ulo\305\276enia: interval automatick\303\251ho ukladania SaveRAM",
    "Automaticky na\304\215\303\255ta\305\245 override s\303\272bory",
@@ -4670,7 +5029,7 @@ static const struct
    "Posun\303\272\305\245 dolu",
    "Posun\303\272\305\245 hore",
    "\305\240tart",
-   "Otvori\305\245 / Zatvori\305\245 Kl\303\241vesnicu",
+   "Otvori\305\245 / zatvori\305\245 kl\303\241vesnicu",
    "Otvori\305\245 / Zatvori\305\245 hlavn\303\251 menu",
    "Zobrazi\305\245 \303\272rove\305\210 bat\303\251rie",
    "S\303\272bor ulo\305\276enia: neprepisova\305\245 SaveRAM pri na\304\215\303\255tan\303\255 save"
@@ -4694,7 +5053,7 @@ static const struct
    "URL cesta",
    "Prejs\305\245 na URL",
    "Pripojen\303\251",
-   "URL Buildbot Assets",
+   "URL s\303\272borov na Buildbote",
    "Identifik\303\241tor bal\303\255ka",
    "Vyrovn\303\241vacia pam\303\244\305\245",
    "Povoli\305\245 kameru",
@@ -4874,9 +5233,9 @@ static const struct
    "Prevzat\303\251",
    "Cheaty",
    "Po\304\215\303\255tadl\303\241 jadra",
-   "Z\303\241lohova\305\245 Jadro",
-   "Vymaza\305\245 Jadro",
-   "Vymaza\305\245 Z\303\241lohu",
+   "Z\303\241lohova\305\245 jadro",
+   "Vymaza\305\245 jadro",
+   "Vymaza\305\245 z\303\241lohu",
    "Zobrazi\305\245 n\303\241zov jadra",
 #ifdef HAVE_GAME_AI
    "Hern\303\251 AI",
@@ -4885,8 +5244,8 @@ static const struct
    "Autori",
    "Cache info s\303\272borov core",
    "Kateg\303\263rie",
-   "\305\240t\303\255tok Jadra",
-   "N\303\241zov Jadra",
+   "\305\240t\303\255tok jadra",
+   "N\303\241zov jadra",
    "Cel\303\241 cesta",
    "Verzia jadra",
    "Firmv\303\251r(y)",
@@ -4910,7 +5269,7 @@ static const struct
    "Ovl\303\241danie",
    "Na\304\215\303\255ta\305\245 jadro",
    "Odna\304\215\303\255ta\305\245 jadro",
-   "Uzamkn\303\272\305\245 Nain\305\241talovan\303\251 Jadro",
+   "Uzamkn\303\272\305\245 nain\305\241talovan\303\251 jadro",
    "Spravova\305\245 jadr\303\241",
 #ifdef HAVE_MIST
    "Spravova\305\245 jadr\303\241",
@@ -4921,7 +5280,7 @@ static const struct
    "Kateg\303\263rie mo\305\276nost\303\255 core",
    "Akt\303\255vny s\303\272bor volieb",
    "Spravova\305\245 vo\304\276by jadra",
-   "Obnova Z\303\241lohy",
+   "Obnovi\305\245 z\303\241lohu",
    "Jadro",
    "Vyl\303\272\304\215i\305\245 z menu 'Cores bez obsahu'",
    "Spusti\305\245 jadro automaticky",
@@ -4931,6 +5290,7 @@ static const struct
 #endif
    "V\305\276dy navrhova\305\245 cores",
    "Z\303\241lohova\305\245 cores pri aktualiz\303\241cii",
+   "Komprimova\305\245 automatick\303\251 z\303\241lohy jadier",
    "Ve\304\276kos\305\245 hist\303\263rie z\303\241loh core",
    "Automaticky extrahova\305\245 stiahnut\303\275 arch\303\255v",
    "URL jadier na buildbote",
@@ -4955,11 +5315,14 @@ static const struct
    "Maxim\303\241lna frekvencia",
    "Regul\303\241tor ponuky",
    "Minim\303\241lna frekvencia",
+   "vl\303\241kien",
    "Vytvori\305\245 nov\303\275 hern\303\275 zoznam",
    "Pou\305\276i\305\245 menu vo vysokom rozl\303\255\305\241en\303\255",
    "Horizont\303\241lna ve\304\276kos\305\245",
+   "CRT super rozl\303\255\305\241enie",
    "Vlastn\303\241 obnovovacia frekvencia",
    "Vertik\303\241lne vycentrovanie",
+   "Zap\303\255sa\305\245 EDID pre predvo\304\276bu CRT",
    "Horizont\303\241lne vycentrovanie",
 #ifdef _3DS
    "2D (efekt pixelovej mrie\305\276ky)",
@@ -4970,7 +5333,26 @@ static const struct
    "Spr\303\241vca datab\303\241zy",
    "Odstr\303\241ni\305\245",
    "Vymaza\305\245 hrac\303\255 zoznam",
+   "Ponuka pracovnej plochy: Max. po\304\215et v mrie\305\276ke V\305\241etky hracie zoznamy",
+   "Ponuka pracovnej plochy: Max. po\304\215et v zozname V\305\241etky hracie zoznamy",
    "Desktop menu (vy\305\276aduje re\305\241tart)",
+   "Ponuka pracovnej plochy: Pribl\303\255\305\276enie zobrazenia ikon",
+   "Ponuka pracovnej plochy: Posledn\303\241 karta",
+   "Ponuka pracovnej plochy: Pam\303\244ta\305\245 si geometriu okna",
+   "Ponuka pracovnej plochy: Pam\303\244ta\305\245 si posledn\303\272 kartu",
+   "Ponuka pracovnej plochy: Potvrdi\305\245 dokon\304\215enie skenovania",
+   "Ponuka pracovnej plochy: Zobrazi\305\245 uv\303\255taciu obrazovku",
+   "Ponuka pracovnej plochy: Najprv navrhn\303\272\305\245 na\304\215\303\255tan\303\251 jadro",
+   "Ponuka pracovnej plochy: T\303\251ma",
+   "Ponuka pracovnej plochy: Limit vyrovn\303\241vacej pam\303\244te miniat\303\272r",
+   "Ponuka pracovnej plochy: Maxim\303\241lna ve\304\276kos\305\245 miniat\303\272r",
+   "Ponuka pracovnej plochy: Kvalita miniat\303\272r",
+   "Ponuka pracovnej plochy: Typ miniat\303\272r",
+   "Ponuka pracovnej plochy: Typ zobrazenia",
+   "Ponuka pracovnej plochy: V\303\275\305\241ka okna",
+   "Ponuka pracovnej plochy: \305\240\303\255rka okna",
+   "Ponuka pracovnej plochy: X okna",
+   "Ponuka pracovnej plochy: Y okna",
    "Aktu\303\241lne jadro",
    "\305\275iadna rezerv\303\241cia",
    "Preferovan\303\251",
@@ -4984,11 +5366,18 @@ static const struct
    "Pozastaven\303\251",
    "Hranie",
    "Inform\303\241cie o disku",
+   "Origin\303\241lny disk: %s",
    "D\303\241tum uverejnenia: %s",
    "S\303\251riov\303\251 \304\215\303\255slo: %s",
    "Syst\303\251m: %s",
    "Titulok: %s",
+   "Stopa %d:",
+   "Po\304\215et st\303\264p: %d",
    "Zvuk",
+   "Re\305\276im %d",
+   " - D\304\272\305\276ka: %02d:%02d.%02d",
+   " - Re\305\276im: %s",
+   " - Ve\304\276kos\305\245: %.1f MB",
    "Verzia: %s",
    "Na\304\215\303\255ta\305\245 nov\303\275 disk",
    "Aktu\303\241lny index disku",
@@ -4997,24 +5386,41 @@ static const struct
    "Vlo\305\276te disk",
    "Kontroln\303\275 s\303\272\304\215et",
    "Zl\303\251",
+   "Chromatickos\305\245",
+   "Zvukov\303\251 form\303\241ty CTA",
+   "Kolorimetria",
+   "Schopnosti CTA",
+   "Statick\303\251 metad\303\241ta HDR",
+   "Video form\303\241ty CTA",
    "Vyroben\303\251",
+   "Podrobn\303\251 \304\215asovanie",
+   "Sekcie DisplayID",
+   "Zaveden\303\251 \304\215asovanie",
+   "Roz\305\241iruj\303\272ci blok",
    "Funkcie",
    "Gama",
+   "Farebn\303\275 gamut",
    "Vstup videa",
    "V\303\275robca",
    "N\303\241zov monitora",
    "preferovan\303\251",
    "K\303\263d produktu",
+   "Limity rozsahu",
    "\304\214ist\303\251",
    "Ve\304\276kos\305\245 obrazovky",
    "S\303\251riov\303\251 \304\215\303\255slo",
    "\304\214\303\255tanie",
+   "\305\240tandardn\303\251 \304\215asovanie",
+   "Podarilo sa pre\304\215\303\255ta\305\245 len \304\215as\305\245 EDID",
+   "Vstavan\303\275 panel notebooku alebo po\304\215\303\255ta\304\215a typu v\305\241etko v jednom "
+   "nenesie EDID. Extern\303\275 displej pripojen\303\275 cez DDC \303\241no.",
    "Verzia EDID",
    "Zobrazi\305\245 inform\303\241cie",
    "Orient\303\241cia",
    "V\303\275stup",
    "Obnovovacia frekvencia",
-   "Rie\305\241enie",
+   "Rozl\303\255\305\241enie",
+   "Zobrazovac\303\255 server",
    "Predvolen\303\251",
    "S\305\245ahovanie",
    "Stiahnu\305\245 jadro",
@@ -5058,6 +5464,7 @@ static const struct
    "Pod\304\276a po\304\215tu hr\303\241\304\215ov",
    "Pod\304\276a vydavate\304\276a",
    "Pod\304\276a regi\303\263nu",
+   "Pod\304\276a mesiaca vydania",
    "Pod\304\276a roku vydania",
    "Pod\304\276a vibr\303\241cie",
    "Pod\304\276a bodov",
@@ -5118,7 +5525,7 @@ static const struct
    "Hist\303\263ria",
    "Hist\303\263ria",
    "Podr\305\276a\305\245 Select (2 sekundy)",
-   "Podr\305\276a\305\245 \305\240tart (2 sekundy)",
+   "Podr\305\276a\305\245 Start (2 sekundy)",
    "Vodorovn\303\241 ponuka",
    "N\303\241h\304\276ad ikony",
    "Obr\303\241zky",
@@ -5170,8 +5577,10 @@ static const struct
    "Zl\303\272\304\215enie typu zariadenia hor\303\272cich kl\303\241ves",
    "Hor\303\272ce kl\303\241vesy nasleduj\303\272 hr\303\241\304\215a 1",
    "Mapovanie ovl\303\241da\304\215a kl\303\241vesnice",
+   "Inform\303\241cie o vstupe",
    "Tla\304\215idlo A (vpravo)",
    "Tla\304\215idlo B (dolu)",
+   "Vstup z ovl\303\241da\304\215a na pozad\303\255",
    "Smer. ovl. nadol",
    "L tla\304\215idlo (rameno)",
    "R2 tla\304\215idlo (sp\303\272\305\241\305\245a\304\215)",
@@ -5188,6 +5597,8 @@ static const struct
    "Tla\304\215idlo Y (v\304\276avo)",
    "Kl\303\241ves %s",
    "Typ mapovania ovl\303\241da\304\215a kl\303\241vesnice",
+   "Index kl\303\241vesnice",
+   "V\305\241etko",
    "Kl\303\241vesnica %s",
    "Pomocn\303\241 zbra\305\210 A",
    "Pomocn\303\241 zbra\305\210 B",
@@ -5337,6 +5748,12 @@ static const struct
    "Vstup",
    "Mal\303\241 kl\303\241vesnica",
    "Rozdeli\305\245 Joy-Con",
+#ifdef ANDROID
+   "Podpora stylusu",
+   "Stylus nad obrazovkou pos\303\272va kurzor",
+   "Citlivos\305\245 stylusu na tlak",
+   "Stylus vy\305\276aduje dotyk obrazovky",
+#endif
    "Dotyk",
    "Stupnica dotyku",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5360,6 +5777,9 @@ static const struct
    "JIT dostupn\303\251",
    "Profily hern\303\251ho ovl\303\241da\304\215a",
    "Ovl\303\241da\304\215",
+   "VID/PID zariadenia: %d/%d",
+   "Kl\303\241vesnica %d: %s",
+   "Heslo k\304\276\303\272\304\215enky",
    "K\304\276\303\272\304\215 streamu Kick",
    "Slu\305\276by",
 #ifdef HAVE_LAKKA_SWITCH
@@ -5453,10 +5873,13 @@ static const struct
    "Du\303\241lna ikona",
    "Zoznam (stredn\303\275)",
    "Zoznam (mal\303\275)",
+   "Server MCP",
+   "Port servera MCP",
+   "Token servera MCP",
    "M\303\251di\303\241",
    "Zobrazi\305\245 vyu\305\276itie pam\303\244te",
    "Interval aktualiz\303\241cie pou\305\276itia pam\303\244te (v sn\303\255mkach)",
-   "Hlavn\303\251 Menu",
+   "Hlavn\303\251 menu",
    "Ponuka hrac\303\255ch zoznamov",
    "Povoli\305\245 n\303\241vrat z kariet",
 #ifdef _3DS
@@ -5464,14 +5887,16 @@ static const struct
 #endif
    "Zak\303\241za\305\245 re\305\276im kiosku",
    "Re\305\276im kiosku",
-   "Obmedzi\305\245 sn\303\255mkov\303\272 frekvenciu menu",
+   "Zobrazenie pr\303\255pon s\303\272borov",
    "V\305\276dy",
+   "Len duplik\303\241ty",
    "Nikdy",
    "Spr\303\241vca s\303\272borov",
    "Farba p\303\255sma: modr\303\241",
    "Farba p\303\255sma: zelen\303\241",
    "Farba p\303\255sma: \304\215erven\303\241",
    "Neprieh\304\276adnos\305\245",
+   "Sn\303\255mkov\303\241 frekvencia ponuky",
    "Jas",
    "Horizont\303\241lna anim\303\241cia",
    "Prehodi\305\245 tla\304\215idl\303\241 OK a Zru\305\241i\305\245",
@@ -5526,7 +5951,6 @@ static const struct
 #endif
 #endif
    "Zobrazi\305\245 cel\303\251 cesty",
-   "Zobrazi\305\245 'Pomoc'",
    "Zobrazi\305\245 'Inform\303\241cia'",
    "Zobrazi\305\245 'Na\304\215\303\255ta\305\245 obsah'",
    "\305\240tartovacie ozn\303\241menie 'Na\304\215\303\255ta\305\245 obsah'",
@@ -5538,6 +5962,7 @@ static const struct
    "Zobrazi\305\245 'Re\305\241tartova\305\245 RetroArch'",
    "Zobrazi\305\245 'Vypn\303\272\305\245'",
    "Zobrazi\305\245 pod-popisy menu",
+   "Zobrazi\305\245 pod-popisy menu len pre aktu\303\241lny v\303\275ber",
    "Zoznamy skladieb na jeden klik",
    "Zvuky ponuky",
    "Povoli\305\245 zvuk hudby na pozad\303\255",
@@ -5549,6 +5974,7 @@ static const struct
    "MIP mapovanie",
    "Pozadia n\303\241h\304\276adov",
    "Zvuk animovan\303\275ch n\303\241h\304\276adov",
+   "Vl\303\241kna animovan\303\275ch miniat\303\272r",
    "Prah upscalingu n\303\241h\304\276adov",
    "Plynul\303\275 roluj\303\272ci text",
    "R\303\275chlos\305\245 roluj\303\272ceho textu",
@@ -5661,7 +6087,7 @@ static const struct
    "Zdie\304\276anie anal\303\263gov\303\251ho vstupu",
    "Priemer",
    "Zdie\304\276anie digit\303\241lneho vstupu",
-   "Zdiela\305\245",
+   "Zdie\304\276a\305\245",
    "Hlasova\305\245",
    "Z\303\241pasy",
    "\305\275iadne",
@@ -5687,6 +6113,25 @@ static const struct
    "Sie\305\245ov\303\275 RetroPad pou\305\276\303\255vate\304\276a %d",
 #ifdef _3DS
    "Povoli\305\245 New3DS Clock / L2 vyrovn\303\241vaciu pam\303\244\305\245",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Prehliada\305\245 export NFS",
+   "Export NFS",
+   "Port pripojenia NFS (MOUNT)",
+   "Maxim\303\241lny po\304\215et pripojen\303\255 NFS",
+   "Port NFS",
+   "\304\214\303\255tanie dopredu NFS (KiB)",
+   "Server NFS",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "Nastavenia siete NFS",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Podprie\304\215inok NFS",
+   "\304\214asov\303\275 limit NFS",
+   "Verzia NFS",
 #endif
    "Nie",
    "\305\275iadne",
@@ -5722,6 +6167,7 @@ static const struct
    "\305\275iadne dostupn\303\251 mo\305\276nosti jadra",
    "Nezistil sa disk",
    "\305\275iadne polo\305\276ky na zobrazenie",
+   "bez pr\303\255pony",
    "\305\275iadne dostupn\303\251 ob\304\276\303\272ben\303\251",
    "\305\275iadna dostupn\303\241 hist\303\263ria",
    "\305\275iadne dostupn\303\251 obr\303\241zky",
@@ -5870,6 +6316,7 @@ static const struct
    "Zobrazen\303\275 n\303\241zov zariadenia: %s\nKonfigura\304\215n\303\275 n\303\241zov zariadenia"
    ": %s\nVID/PID zariadenia: %d/%d",
    "Port %d n\303\241zov zariadenia: %s",
+   "\305\275iadny profil automatickej konfigur\303\241cie",
    "Spr\303\241va nap\303\241jania",
    "Po\304\215et preempt\303\255vnych sn\303\255mok",
    "Teraz volite\304\276n\303\251:",
@@ -6039,7 +6486,7 @@ static const struct
    "Zobrazi\305\245 'Ulo\305\276i\305\245 override adres\303\241ra obsahu'",
    "Zobrazi\305\245 'Ulo\305\276i\305\245 prepisy jadier'",
    "Zobrazi\305\245 'Ulo\305\276i\305\245 prepisy hier'",
-   "Zobrazi\305\245 'Save/Load State'",
+   "Zobrazi\305\245 'Ulo\305\276i\305\245/na\304\215\303\255ta\305\245 stav'",
    "Zobrazi\305\245 'Nastavi\305\245 asoci\303\241ciu jadra'",
    "Zobrazi\305\245 'Shadery'",
    "Zobrazi\305\245 'Spusti\305\245 z\303\241znam'",
@@ -6050,28 +6497,28 @@ static const struct
    "Spusti\305\245 streamovanie",
    "Zastavi\305\245 nahr\303\241vanie",
    "Ukon\304\215i\305\245 stream",
-   "R\303\275chle Menu",
+   "R\303\275chla ponuka",
    "Ukon\304\215i\305\245 pri zavret\303\255 obsahu",
    "Ukon\304\215i\305\245",
    "N\303\241hodn\303\275 v\303\275ber",
    "\303\232spechy",
-   "Anal\303\263gov\303\241 Podpora",
-   "BBFC Hodnotenie",
+   "Anal\303\263gov\303\241 podpora",
+   "Hodnotenie BBFC",
    "Kateg\303\263ria",
-   "CERO Hodnotenie",
+   "Hodnotenie CERO",
    "Exkluz\303\255vne pre konzolu",
    "Ovl\303\241danie",
-   "Co-op Podpora",
+   "Podpora co-op",
    "Popis",
    "Polo\305\276ka datab\303\241zy",
    "V\303\275voj\303\241r",
-   "Edge Magazine Probl\303\251m",
-   "Edge Magazine Hodnotenie",
-   "Edge Magazine Recenzia",
-   "ELSPA Hodnotenie",
-   "Vylep\305\241ovac\303\255 Hardv\303\251r",
-   "ESRB Hodnotenie",
-   "Famitsu Magazine Hodnotenie",
+   "\304\214\303\255slo \304\215asopisu Edge",
+   "Hodnotenie \304\215asopisu Edge",
+   "Recenzia \304\215asopisu Edge",
+   "Hodnotenie ELSPA",
+   "Vylep\305\241uj\303\272ci hardv\303\251r",
+   "Hodnotenie ESRB",
+   "Hodnotenie \304\215asopisu Famitsu",
    "Fran\305\241\303\255za",
    "Hrate\304\276nos\305\245",
    "\305\275\303\241ner",
@@ -6081,18 +6528,27 @@ static const struct
    "Narat\303\255v",
    "P\303\264vod",
    "Pokrok",
-   "PEGI Hodnotenie",
+   "Hodnotenie PEGI",
    "Perspekt\303\255va",
    "Exkluz\303\255vne pre platformu",
    "Vydavate\304\276",
    "Regi\303\263n",
    "Mesiac d\303\241tumu vydania",
+   "Apr\303\255l",
+   "Febru\303\241r",
+   "Janu\303\241r",
+   "J\303\272l",
+   "J\303\272n",
+   "Marec",
+   "M\303\241j",
+   "Okt\303\263ber",
+   "Septembra",
    "Rok d\303\241tumu vydania",
-   "Podpora Vibr\303\241c\303\255i",
+   "Podpora vibr\303\241ci\303\255",
    "Sk\303\263re",
    "S\303\251riov\303\251 \304\214.",
    "Nastavenie",
-   "TGDB Hodnotenie",
+   "Hodnotenie TGDB",
    "Vozidlo",
    "Vzh\304\276ad",
    "Re\305\241tart",
@@ -6126,7 +6582,7 @@ static const struct
    "Replay: maxim\303\241lny po\304\215et auto-zv\303\275\305\241en\303\255 na uchovanie",
    "Z\303\241znamov\303\275 slot",
    "Resetova\305\245 priradenie core",
-   "Resetova\305\245 do Predvolen\303\275ch Nastaven\303\255",
+   "Obnovi\305\245 predvolen\303\251 nastavenia",
    "Re\305\241tart",
    "Pokra\304\215ova\305\245",
    "RetroKl\303\241vesnica",
@@ -6184,9 +6640,9 @@ static const struct
    "Prav\303\275 anal\303\263g",
    "Prav\303\275 anal\303\263g (vyn\303\272ten\303\251)",
    "Spusti\305\245",
-   "Re\305\276im Preemptive Frames",
-   "Re\305\276im Second Instance",
-   "Re\305\276im Single Instance",
+   "Re\305\276im preempt\303\255vnych sn\303\255mok",
+   "Re\305\276im druhej in\305\241tancie",
+   "Re\305\276im jednej in\305\241tancie",
    "Logy \304\215asu behu",
    "Po\304\215et sn\303\255mok pre Run-Ahead",
    "Skry\305\245 varovania Run-Ahead",
@@ -6200,7 +6656,7 @@ static const struct
    "S\303\272bor ulo\305\276enia: zapisova\305\245 do adres\303\241ra obsahu",
    "S\303\272bory ulo\305\276enia",
    "Save state: zapisova\305\245 do adres\303\241ra obsahu",
-   "Save State: Automatick\303\275 interval",
+   "Ulo\305\276en\303\275 stav: automatick\303\275 interval",
    "Save state: automaticky zvy\305\241ova\305\245 index",
    "Save state: automatick\303\251 na\304\215\303\255tanie",
    "Save state: automatick\303\251 ukladanie",
@@ -6210,17 +6666,20 @@ static const struct
    "Save state: maxim\303\241lny po\304\215et auto-zv\303\275\305\241en\303\255 na uchovanie",
    "Save state: n\303\241h\304\276ady",
    "Ulo\305\276i\305\245 konfigur\303\241ciu ako",
-   "Ulo\305\276i\305\245 Aktu\303\241lne Nastavenia",
+   "Kompresn\303\275 kodek",
+   "Ulo\305\276i\305\245 aktu\303\241lne nastavenia",
    "Ulo\305\276i\305\245 prepisy adres\303\241ra obsahu",
    "Ulo\305\276i\305\245 prepisy jadra",
    "Ulo\305\276i\305\245 prepisy hry",
    "S\303\272bor ulo\305\276enia: kompresia",
    "Ulo\305\276i\305\245 hlavn\303\272 konfigur\303\241ciu",
-   "Ulo\305\276i\305\245 Nov\303\251 Nastavenia",
+   "Ulo\305\276i\305\245 nov\303\251 nastavenia",
    "Ulo\305\276i\305\245 stav",
    "Ukladanie",
    "\305\240k\303\241lova\305\245",
    "Datab\303\241za na zhodu",
+   "<Automaticky/\304\276ubovo\304\276n\303\251>",
+   "<Automaticky/prv\303\241 zhoda>",
    "Preh\304\276ada\305\245 adres\303\241r",
    "Vyh\304\276ada\305\245",
    "Preh\304\276ada\305\245 s\303\272bor",
@@ -6231,6 +6690,8 @@ static const struct
    "Skenovanie kontroluje CRC pri mo\305\276n\303\275ch duplik\303\241toch",
    "Skenova\305\245 jeden s\303\272bor",
    "Zoznam skladieb na aktualiz\303\241ciu",
+   "<Automaticky/n\303\241zov syst\303\251mu>",
+   "<Skenova\305\245 tento prie\304\215inok>",
    "Kontrola datab\303\241zy",
    "Vlastn\303\275 DAT (striktn\303\275)",
    "Vlastn\303\275 DAT (vo\304\276n\303\275)",
@@ -6240,7 +6701,7 @@ static const struct
    "H\304\276ada\305\245 bez zhody jadra",
    "Screenshot: zapisova\305\245 do adres\303\241ra obsahu",
    "Sn\303\255mky obrazovky",
-   "Orient\303\241cia Obrazovky",
+   "Orient\303\241cia obrazovky",
    "Rozl\303\255\305\241enie obrazovky",
    "R\303\275chlo",
    "Norm\303\241lne",
@@ -6250,7 +6711,7 @@ static const struct
    "Nastavenia",
    "Zobrazi\305\245 'Pr\303\255stupnos\305\245'",
    "Zobrazi\305\245 '\303\232spechy'",
-   "Zobrazi\305\245 'AI Service'",
+   "Zobrazi\305\245 'Slu\305\276ba AI'",
    "Zobrazi\305\245 'Zvuk'",
    "Zobrazi\305\245 'Nastavenie'",
    "Zobrazi\305\245 'Jadro'",
@@ -6267,8 +6728,10 @@ static const struct
    "Zobrazi\305\245 'Spr\303\241va nap\303\241jania'",
    "Zobrazi\305\245 'Z\303\241znam'",
    "Zobrazi\305\245 'Ukladanie'",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Zobrazi\305\245 \342\200\236SMB klient\342\200\234",
+#endif
 #endif
    "Zobrazi\305\245 'Steam'",
    "Zobrazi\305\245 'Pou\305\276\303\255vate\304\276'",
@@ -6296,18 +6759,58 @@ static const struct
    "In\305\241tal\303\241cia alebo obnovenie jadra",
    "In\305\241tal\303\241cia jadra bola \303\272spe\305\241n\303\241",
    "Frekvencia spomalen\303\251ho pohybu",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Re\305\276im overenia SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Preh\304\276ad\303\241va\305\245 SMB zdie\304\276anie",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Povoli\305\245 SMB klienta",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "KDC Kerberos pre SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Max. po\304\215et pripojen\303\255 SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB heslo",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   "\304\214\303\255tanie dopredu SMB (KiB)",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Oblas\305\245 Kerberos pre SMB",
+#endif
+   "KRB, ak je k dispoz\303\255cii, inak NTLM",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB server",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Nastavenia siete SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "N\303\241zov zdie\304\276ania SMB",
    "SMB zdie\304\276anie",
    "SMB podadres\303\241r",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "\304\214asov\303\275 limit SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "SMB meno",
    "SMB skupina",
 #endif
@@ -6320,9 +6823,10 @@ static const struct
    "Zvuk",
    "\305\240pecifik\303\241cie",
    "Spusti\305\245 jadro",
-   "Spusti\305\245 Dia\304\276kov\303\275 RetroPad",
+   "Spusti\305\245 vzdialen\303\275 RetroPad",
    "Spusti\305\245 videoprocesor",
    "Ulo\305\276en\303\275 stav",
+   "Skry\305\245 \305\241tatistiky v menu",
    "Zobrazi\305\245 \305\241tatistiku",
    "Stav",
    "stdin pr\303\255kazy",
@@ -6369,25 +6873,27 @@ static const struct
    "D\303\241tum zostavenia",
    "Vlastnosti CPU",
    "Model CPU",
-   "DPI Obrazovky",
-   "V\303\275\305\241ka Obrazovky (mm)",
-   "\305\240\303\255rka Obrazovky (mm)",
+   "DPI obrazovky",
+   "V\303\275\305\241ka obrazovky (mm)",
+   "\305\240\303\255rka obrazovky (mm)",
    "Identifik\303\241tor klientskeho rozhrania",
    "N\303\241zov frontendu",
-   "Opera\304\215n\303\275 Syst\303\251m",
+   "Opera\304\215n\303\275 syst\303\251m",
    "Verzia Git",
    "Verzia Lakka",
    "Verzia MoltenVK",
    "Pokrok",
-   "Zdroj Energie",
+   "Zdroj energie",
    "Nabit\303\251",
    "Nab\303\255janie",
    "Vyb\303\255janie",
    "Bez zdroja",
    "Verzia RetroArch",
+   "Ovl\303\241da\304\215 video kontextu",
    "Syst\303\251m",
    "Urobi\305\245 screenshot",
    "Vl\303\241knov\303\251 \303\272lohy",
+   "Uprednostni\305\245 v\303\275konn\303\251 jadr\303\241",
    "Prim\303\241rna miniat\303\272ra",
    "Miniat\303\272ry",
    "Prim\303\241rny n\303\241h\304\276ad",
@@ -6420,6 +6926,10 @@ static const struct
    "roky",
    "rok",
    "\304\214asovanie",
+   "Overovanie certifik\303\241tov TLS",
+   "Vypnut\303\251 (nezabezpe\304\215en\303\251)",
+   "Volite\304\276n\303\251 (len varova\305\245)",
+   "Vy\305\276adovan\303\251 (odpor\303\272\304\215an\303\251)",
    "Pravda",
    "Polovi\304\215n\303\241 peri\303\263da",
    "Klasick\303\251",
@@ -6430,6 +6940,7 @@ static const struct
    "Twin-Stick anal\303\263g (vyn\303\272ten\303\251)",
    "Twitch stream key",
    "Port streamu UDP",
+   "Sprievodn\303\251 rozhranie",
    "UI sprievodca",
    "Spusti\305\245 UI sprievodcu pri \305\241tarte",
    "Otvori\305\245 desktop menu pri \305\241tarte",
@@ -6459,6 +6970,7 @@ static const struct
    "Pou\305\276i\305\245 vstavan\303\275 prehr\303\241va\304\215 m\303\251di\303\255",
    "Pam\303\244ta\305\245 si naposledy pou\305\276it\303\275 po\304\215iato\304\215n\303\275 adres"
    "\303\241r",
+   "<Pou\305\276i\305\245 tento prie\304\215inok>",
    "Vibrova\305\245 pri stla\304\215en\303\255",
 #ifdef _3DS
    "Re\305\276im zobrazenia 3DS",
@@ -6478,7 +6990,7 @@ static const struct
    "Iba v exkluz\303\255vnom re\305\276ime celej obrazovky",
    "Iba v okenovom re\305\276ime celej obrazovky",
    "Vkladanie \304\215iernych sn\303\255mok - Tmav\303\251 sn\303\255mky",
-   "Vlo\305\276enie \304\214ierneho R\303\241mu",
+   "Vkladanie \304\215iernych sn\303\255mok",
    "Oreza\305\245 overscan (vy\305\276aduje re\305\241tart)",
 #ifdef HAVE_ODROIDGO2
 #else
@@ -6505,20 +7017,24 @@ static const struct
    "V\303\241\305\241 grafick\303\275 ovl\303\241da\304\215 nie je kompatibiln\303\275 s aktu\303"
    "\241lnym video ovl\303\241da\304\215om v RetroArch, prep\303\255na sa na ovl\303\241da\304\215 %"
    "s. Pre uplatnenie zmien re\305\241tartujte RetroArch.",
+   "Video filter",
    "Video filtre",
    "Povoli\305\245 video filter",
    "Filter blikania",
    "Odstr\303\241ni\305\245 videofilter",
+   "Vl\303\241kna video filtra",
    "Upozornenia na obrazovke",
    "P\303\255smo upozornen\303\255",
    "Ve\304\276kos\305\245 upozornen\303\255",
    "Vyn\303\272ti\305\245 rozl\303\255\305\241enie na UWP",
    "Natvrdo zak\303\241za\305\245 sRGB FBO",
-   "Trvanie sn\303\255mky",
-   "Automatick\303\251 trvanie sn\303\255mky",
+   "Oneskorenie sn\303\255mky",
+   "Automatick\303\251 oneskorenie sn\303\255mky",
    "efekt\303\255vne",
+   "Mera\305\245 \304\215as sn\303\255mky pod\304\276a displeja",
    "Vzorkova\305\245 frame time len v stabilnom stave",
    "Vyn\303\272ten\303\251",
+   "Vyjedn\303\241vanie exkluz\303\255vneho celoobrazovkov\303\251ho re\305\276imu",
    "Uvo\304\276nen\303\251",
    "Re\305\276im celej obrazovky",
    "Re\305\276im na cel\303\272 obrazovku",
@@ -6526,6 +7042,7 @@ static const struct
    "V\303\275\305\241ka na cel\303\272 obrazovku",
    "Video gama",
    "Priama podpora SPIR-V (odpor\303\272\304\215anie)",
+   "Index GPU",
    "Pou\305\276i\305\245 GPU nahr\303\241vanie",
    "Screenshot: pou\305\276i\305\245 GPU",
    "Pevn\303\241 synchroniz\303\241cia GPU",
@@ -6538,7 +7055,9 @@ static const struct
    "Vypn\303\272\305\245",
    "Jas",
    "Vidite\304\276n\303\251 riadky",
+   "Posiela\305\245 jas sn\303\255mky",
    "Rozlo\305\276enie subpixelov",
+   "Pou\305\276i\305\245 \305\241pi\304\215ku displeja",
    "Rozlo\305\276enie videa",
    "Max. oneskorenie sn\303\255mky",
    "Max. po\304\215et obr\303\241zkov swapchain",
@@ -6552,6 +7071,7 @@ static const struct
    "Farba ozn\303\241menia (\304\215erven\303\241)",
    "Poz\303\255cia ozn\303\241menia (horizont\303\241lna)",
    "Poz\303\255cia ozn\303\241menia (vertik\303\241lna)",
+   "Index monitora",
    "Povoli\305\245 cel\303\272 obrazovku cez v\303\275rez na zariadeniach Android a iOS",
    "180 st.",
    "270 st.",
@@ -6561,6 +7081,7 @@ static const struct
    "Korekcia overscanu (dole)",
    "Korekcia overscanu (hore)",
    "Pou\305\276i\305\245 nahr\303\241vanie po filtroch",
+   "\304\214asova\305\245 opakovania pod\304\276a displeja",
    "Vlastn\303\251",
    "Vysok\303\251",
    "Bezstratov\303\251",
@@ -6574,13 +7095,13 @@ static const struct
    "Stredn\303\251",
    "Kvalita nahr\303\241vania",
    "Vl\303\241kna nahr\303\241vania",
-   "Vertik\303\241lna Obnovovacia Frekvencia",
-   "Odhadovan\303\241 Miera Obnovenia Obrazovky",
+   "Vertik\303\241lna obnovovacia frekvencia",
+   "Odhadovan\303\241 obnovovacia frekvencia obrazovky",
    "Nastavi\305\245 obnovovaciu frekvenciu hl\303\241sen\303\272 obrazovkou",
 #ifdef HAVE_ODROIDGO2
    "RGA \305\241k\303\241lovanie",
 #endif
-   "Video Rot\303\241cia",
+   "Rot\303\241cia videa",
    "180 st.",
    "270 st.",
    "90 st.",
@@ -6593,8 +7114,9 @@ static const struct
    "\305\240k\303\241lovanie",
    "Synchroniz\303\241cia scanline",
    "Simul\303\241cia roluj\303\272ceho skenovacieho riadku",
+   "Prep\303\255nanie re\305\276imov zobrazenia SDL",
    "Video shadery",
-   "Auto-Shader Oneskorenie",
+   "Oneskorenie auto-shadera",
    "Video shadery",
    "Shader passy",
    "Parametre shadera",
@@ -6617,7 +7139,7 @@ static const struct
    "Pam\303\244ta\305\245 si naposledy pou\305\276it\303\275 adres\303\241r shaderov",
    "Pod-sn\303\255mky shaderov",
    "Hardv\303\251rov\303\275 zdie\304\276an\303\275 kontext",
-   "Biline\303\241rne Filtrovanie",
+   "Biline\303\241rne filtrovanie",
    "M\303\244kk\303\275 filter",
    "Vlastn\303\251",
    "Hranie na Facebooku",
@@ -6628,7 +7150,9 @@ static const struct
    "Interval v\303\275meny VSync",
    "Synchroniz\303\241cia",
    "Vide\303\241",
-   "Vl\303\241knov\303\251 Video",
+   "Vl\303\241knov\303\251 video",
+   "\304\214asovanie zobrazenia vo Vl\303\241knovom videu",
+   "Opakovanie sn\303\255mok vo Vl\303\241knovom videu",
    "Pou\305\276i\305\245 Metal Argument Buffers (vy\305\276aduje re\305\241tart)",
 #if defined(RARCH_MOBILE)
    "Sklon kotvy viewportu X (orient\303\241cia na v\303\275\305\241ku)",
@@ -6649,7 +7173,7 @@ static const struct
 #endif
 #endif
    "Maximalizovan\303\251 okno",
-   "Re\305\276im v Okne",
+   "Re\305\276im v okne",
    "Maxim\303\241lna v\303\275\305\241ka okna",
    "Maxim\303\241lna \305\241\303\255rka okna",
    "Pou\305\276i\305\245 vlastn\303\272 ve\304\276kos\305\245 okna",
@@ -6660,9 +7184,10 @@ static const struct
    "Zapam\303\244ta\305\245 poz\303\255ciu a ve\304\276kos\305\245 okna",
    "Zobrazi\305\245 dekor\303\241cie okien",
    "\305\240\303\255rka okna",
-   "Synchronizova\305\245 na presn\303\272 r\303\275chlos\305\245 sn\303\255kov obsahu (G-Sync, Free"
-   "Sync)",
+   "Synchronizova\305\245 s presnou sn\303\255mkovou frekvenciou obsahu (G-Sync, FreeSync)",
    "Oneskorenie zvuku",
+   "Buffer klienta",
+   "Peri\303\263da zariadenia",
    "Odpoji\305\245",
    "Povoli\305\245 Wi-Fi",
    "Pripoji\305\245 k sieti",
@@ -6763,10 +7288,11 @@ static const struct
    "\215 ako NVDA (Narrator).",
    "Pozastavi\305\245 core, k\303\275m sa prelo\305\276\303\255 obrazovka.",
    "Zmeni\305\245 nastavenia AI slu\305\276by (preklad/prevod textu na re\304\215/ostatn\303\251).",
-   "Jazyk, z ktor\303\251ho slu\305\276ba preklad\303\241. Pri nastaven\303\255 'Default' sa pok\303"
-   "\272si automaticky detegova\305\245 jazyk. Nastavenie konkr\303\251tneho jazyka spresn\303\255 p"
-   "reklad.",
-   "Jazyk, do ktor\303\251ho slu\305\276ba preklad\303\241. 'Default' je angli\304\215tina.",
+   "Jazyk, z ktor\303\251ho slu\305\276ba preklad\303\241. Pri nastaven\303\255 'Predvolen\303\251' "
+   "sa pok\303\272si automaticky detegova\305\245 jazyk. Nastavenie konkr\303\251tneho jazyka spresn"
+   "\303\255 preklad.",
+   "Jazyk, do ktor\303\251ho slu\305\276ba preklad\303\241. 'Predvolen\303\251' je angli\304\215tina"
+   ".",
    "URL http:// adresa ukazuj\303\272ca na prekladov\303\272 slu\305\276bu.",
 #ifndef HAVE_DYNAMIC
    "Re\305\241tartova\305\245 RetroArch pri spusten\303\255 obsahu, aj ke\304\217 je po\305\276adova"
@@ -6781,6 +7307,12 @@ static const struct
    "dres\303\241ri.",
    "Otvor\303\255 ovl\303\241dac\303\255 panel ovl\303\241da\304\215a ASIO na konfigur\303\241ciu sm"
    "erovania zariadenia a nastaven\303\255 bufferov.",
+   "Cez ktor\303\251 dva v\303\275stupy zvukov\303\251ho zariadenia RetroArch prehr\303\241va. Zaria"
+   "denie ASIO uv\303\241dza svoje v\303\275stupy v \304\215\303\255slovan\303\275ch p\303\241roch; "
+   "pri zariaden\303\255 s viac ako dvoma v\303\275stupmi prv\303\275 p\303\241r nemus\303\255 by"
+   "\305\245 ten, na ktorom s\303\272 va\305\241e reproduktory alebo sl\303\272chadl\303\241. Vybert"
+   "e p\303\241r, ktor\303\275 zodpoved\303\241 konektorom, cez ktor\303\251 po\304\215\303\272vate,"
+   " tak ako ich pomen\303\272va zariadenie. Zariadenia s dvoma v\303\275stupmi maj\303\272 len 1-2.",
    "Prep\303\255sa\305\245 predvolen\303\251 zvukov\303\251 zariadenie, ktor\303\251 pou\305\276\303"
    "\255va ovl\303\241da\304\215 zvuku. Z\303\241vis\303\255 od ovl\303\241da\304\215a zvuku.",
    "Ak\303\275 ovl\303\241da\304\215 zvuku pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
@@ -6789,6 +7321,11 @@ static const struct
    "Odobra\305\245 akt\303\255vne zvukov\303\251 DSP roz\305\241\303\255renie.",
    "Povoli\305\245 v\303\275stup zvuku.",
    "Prehr\303\241va\305\245 s\303\272\304\215asne zvukov\303\251 toky aj v ponuke.",
+   "Pou\305\276ije spracovanie zvuku pri r\303\275chlom pret\303\241\304\215an\303\255 aj pre jadr"
+   "\303\241, ktor\303\251 vykres\304\276uj\303\272 zvuk cez vlastn\303\251 sp\303\244tn\303\251 vol"
+   "anie. Tieto jadr\303\241 vytv\303\241raj\303\272 zvuk v re\303\241lnom \304\215ase, tak\305\276e"
+   " r\303\275chlos\305\245 sa berie z dosiahnutej frekvencie videa. Vypnut\303\251 ponech\303\241 i"
+   "ch zvuk v re\303\241lnom \304\215ase, ako to stabiln\303\275 RetroArch robil v\305\276dy.",
    "Automatick\303\251 stlmenie zvuku pri pou\305\276it\303\255 r\303\275chleho posunu vpred.",
    "Zr\303\275chli zvuk pri r\303\275chlom prev\303\255jan\303\255 vpred. Predch\303\241dza praskani"
    "u, ale pos\303\272va v\303\275\305\241ku t\303\263nu.",
@@ -6805,19 +7342,33 @@ static const struct
    "\303\251ho DSP filtra sa vr\303\241ti k pl\303\241vaj\303\272cej desatinnej \304\215iarke.",
    "Audio DSP filtre s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Form\303\241t vzoriek, ktor\303\275 zvukov\303\275 ovl\303\241da\304\215 po\305\276aduje od v"
-   "\303\275stupn\303\251ho zariadenia. 'Float' \305\276iada 32-bitov\303\272 pl\303\241vaj\303\272c"
-   "u desatinn\303\272 \304\215iarku, 'Int16' 16-bitov\303\251 cel\303\251 \304\215\303\255sla. T"
-   "\303\275ka sa len ovl\303\241da\304\215ov, ktor\303\251 vedia form\303\241t vyjedn\303\241va\305"
-   "\245 (WASAPI, DirectSound, XAudio2, ALSA, SDL2); ostatn\303\251 pou\305\276\303\255vaj\303\272 s"
-   "voj pevn\303\275 form\303\241t. Ide len o odpor\303\272\304\215anie: ak zariadenie po\305\276ado"
-   "van\303\275 form\303\241t odmietne, ovl\303\241da\304\215 sa vr\303\241ti k in\303\251mu. 'Int16"
-   "' sa sp\303\241ja s odpor\303\272\304\215an\303\255m 'Prevzorkova\305\245 v celo\304\215\303\255"
-   "selnom form\303\241te', ab",
-   "y cel\303\241 zvukov\303\241 cesta zostala celo\304\215\303\255seln\303\241.",
+   "\303\275stupn\303\251ho zariadenia. 'Pl\303\241vaj\303\272ce' \305\276iada 32-bitov\303\272 pl"
+   "\303\241vaj\303\272cu desatinn\303\272 \304\215iarku, 'Int16' 16-bitov\303\251 cel\303\251 \304"
+   "\215\303\255sla. T\303\275ka sa len ovl\303\241da\304\215ov, ktor\303\251 vedia form\303\241t vy"
+   "jedn\303\241va\305\245 (WASAPI, DirectSound, XAudio2, ALSA, SDL2); ostatn\303\251 pou\305\276"
+   "\303\255vaj\303\272 svoj pevn\303\275 form\303\241t. Ide len o odpor\303\272\304\215anie: ak zar"
+   "iadenie po\305\276adovan\303\275 form\303\241t odmietne, ovl\303\241da\304\215 sa vr\303\241ti k"
+   " in\303\251mu. 'Int16' sa sp\303\241ja s odpor\303\272\304\215an\303\255m 'Prevzorkova\305\245 v"
+   " celo\304\215\303\255selnom form\303\241t",
+   "e', aby cel\303\241 zvukov\303\241 cesta zostala celo\304\215\303\255seln\303\241.",
+   "Na stereo zariaden\303\255 roz\305\241\303\255ri mix na virtu\303\241lne 5.1 a vykresl\303\255 h"
+   "o pre dve u\305\241i tak, ako by hlava po\304\215ula tieto reproduktory: zadn\303\275 p\303\241r"
+   " za posluch\303\241\304\215om a mierne prel\303\255nanie predn\303\275ch kan\303\241lov. Pre sl"
+   "\303\272chadl\303\241; na reproduktoroch len z\303\272\305\276i stereo. Nem\303\241 vplyv, ke"
+   "\304\217 je zariadenie otvoren\303\251 so \305\241ir\305\241\303\255m rozlo\305\276en\303\255m.",
    "Maxim\303\241lna latencia zvuku v milisekund\303\241ch. Ovl\303\241da\304\215 sa sna\305\276\303"
    "\255 udr\305\276a\305\245 skuto\304\215n\303\272 latenciu na 50 % tejto hodnoty. Nemus\303\255 b"
    "y\305\245 dodr\305\276an\303\251, ak ovl\303\241da\304\215 zvuku nedok\303\241\305\276e poskytn"
    "\303\272\305\245 dan\303\272 latenciu.",
+   "Najni\305\276\305\241ie oneskorenie zvuku, o ktor\303\251 RetroArch po\305\276iada ovl\303\241da"
+   "\304\215. Predvolene osem milisek\303\272nd, na \304\215om bolo dlho napevno: nastavenie nula sa"
+   " predt\303\275m dostalo a\305\276 k ovl\303\241da\304\215om a tie ho spracovali nekonzistentne. "
+   "Ovl\303\241da\304\215e, ktor\303\251 komunikuj\303\272 so zariaden\303\255m priamo \342\200\223 "
+   "WASAPI v exkluz\303\255vnom re\305\276ime, ASIO, WDM-KS \342\200\223 si \304\215asto vedia dohod"
+   "n\303\272\305\245 krat\305\241iu peri\303\263du, a zn\303\255\305\276enie tejto hodnoty im to um"
+   "o\305\276n\303\255. Ovl\303\241da\304\215, ktor\303\275 ni\305\276\305\241ie \303\255s\305\245 n"
+   "evie, nep\303\264jde; v ka\305\276dom pr\303\255pade si ponech\303\241 vlastn\303\251 ",
+   "hardv\303\251rov\303\251 minimum.",
    "Maxim\303\241lna frekven\304\215n\303\241 odch\303\275lka zvukov\303\251ho sign\303\241lu. Zv"
    "\303\275\305\241enie hodnoty v\303\275razne ovplyv\305\210uje zmeny \304\215asovania, ale v\303"
    "\275sledkom je nepresn\303\241 v\303\275\305\241ka t\303\263nu (napr\303\255klad pri spusten\303"
@@ -6827,12 +7378,29 @@ static const struct
    "Glob\303\241lna hlasitos\305\245 zmie\305\241ava\304\215a zvuku (v dB). 0 dB je norm\303\241lna "
    "hlasitos\305\245 a nepou\305\276\303\255va sa pri nej \305\276iadne zosilnenie.",
    "Stlmi\305\245 zvuk.",
+   "Rozlo\305\276enie reproduktorov, s ktor\303\275m sa otvor\303\255 v\303\275stupn\303\251 zariade"
+   "nie. 'Stereo' je spracovanie tak, ako bolo v\305\276dy. \305\240ir\305\241ie rozlo\305\276enia o"
+   "tvoria \305\241ir\305\241ie zariadenie, kde to ovl\303\241da\304\215 dovol\303\255, a stereo mix"
+   " sa na\305\210 v poslednom kroku roz\305\241\303\255ri: predn\303\251 kan\303\241ly ostan\303"
+   "\272, stredn\303\275 vznikne ich s\303\272\304\215tom, zadn\303\275 p\303\241r m\303\241 -3 dB a"
+   " basy id\303\272 do LFE. '5.1' d\303\241 zadn\303\275 p\303\241r dozadu, '5.1 Surround' do str"
+   "\303\241n; zariadenie, ktor\303\251 ich poh\303\241\305\210a z druhej polohy, to nahl\303\241si "
+   "a spracuje sa pod\304\276a toho. Ovl\303\241da\304\215e, ktor",
+   "\303\251 nevedia otvori\305\245 viac ako stereo, ostan\303\272 pri sterei.",
    "V\303\275stupn\303\241 vzorkovacia frekvencia zvuku.",
    "Zmena nastaven\303\255 audio v\303\275stupu.",
    "Pom\303\241ha odstr\303\241ni\305\245 nedokonalosti v na\304\215asovan\303\255 pri synchroniz"
    "\303\241cii zvuku a videa. Uvedomte si, \305\276e ak je vypnut\303\241, spr\303\241vnu synchroni"
    "z\303\241ciu je takmer nemo\305\276n\303\251 dosiahnu\305\245.",
    "Pou\305\276i\305\245 ovl\303\241da\304\215 vzorkova\304\215a zvuku.",
+   "Pou\305\276ije dlh\305\241\303\255 filter sinc, ke\304\217 je nastaven\303\241 v\303\275stupn"
+   "\303\241 frekvencia aspo\305\210 dvojn\303\241sobkom frekvencie obsahu. Prep\303\255\305\241e Kv"
+   "alitu prevzorkovania len pre sinc. Zvy\305\241uje vyu\305\276itie CPU, pam\303\244te a oneskoren"
+   "ie filtra, najm\303\244 pri viacer\303\275ch kan\303\241loch. K\303\275m je akt\303\255vne, pou"
+   "\305\276\303\255va softv\303\251rov\303\251 prevzorkovanie namiesto prevzorkovania v ovl\303\241"
+   "da\304\215i. Vy\305\276aduje vysok\303\272 v\303\275stupn\303\272 frekvenciu; r\303\275chle pret"
+   "\303\241\304\215anie m\303\264\305\276e skuto\304\215n\303\275 pomer prevzorkovania zn\303\255"
+   "\305\276i\305\245.",
    "Zn\303\255\305\276en\303\255m tejto hodnoty uprednostn\303\255te v\303\275kon/ni\305\276\305\241"
    "iu latenciu pred kvalitou zvuku, zv\303\275\305\241en\303\255m z\303\255skate lep\305\241iu kval"
    "itu zvuku na \303\272kor v\303\275konu/ni\305\276\305\241ej latencie.",
@@ -6840,8 +7408,48 @@ static const struct
    "Automaticky stlm\303\255 zvuk pri pou\305\276it\303\255 sp\303\244tn\303\251ho prev\303\255jania"
    ".",
    "Zmena vstupno-v\303\275stupn\303\275ch nastaven\303\255.",
+   "Zmeria, ako r\303\275chlo zvukov\303\251 zariadenie skuto\304\215ne spotreb\303\272va vzorky vo"
+   "\304\215i syst\303\251mov\303\275m hodin\303\241m, a o t\303\272to hodnotu uprav\303\255 prevzor"
+   "kova\304\215. Kry\305\241t\303\241l ka\305\276dej zvukovej karty sa o nieko\304\276ko mili\303"
+   "\263nt odchy\304\276uje; pri vypnutej Synchroniz\303\241cii to ni\304\215 in\303\251 neoprav\303"
+   "\255 a buffer sa pomaly pos\303\272va a\305\276 k v\303\275padku, ktor\303\275 nevylie\304\215i "
+   "\305\276iadna ve\304\276kos\305\245 buffera. Korekcia je nepatrn\303\241 a nepo\304\215ute\304"
+   "\276n\303\241. Pri zapnutej Synchroniz\303\241cii jadro u\305\276 zariadenie nasleduje a ni\304"
+   "\215 sa neuplatn\303\255. Z\303\272\304\215ast\305\210uj\303\272 sa len ovl\303\241da",
+   "\304\215e, ktor\303\251 hl\303\241sia spotrebu; prekrytie zobrazuje r\303\275chlos\305\245 ako '"
+   "Sink'.",
    "Synchronizuje zvuk. Odpor\303\272\304\215a sa.",
    "Zmen\303\255 nastavenia synchroniz\303\241cie zvuku.",
+   "Prevzorkuje, filtruje a mie\305\241a zvuk vo zvukovom vl\303\241kne namiesto vo vn\303\272tri ka"
+   "\305\276dej sn\303\255mky. Rovnak\303\251 oneskorenie ako pri spracovan\303\255 synchronizovanom"
+   " so sn\303\255mkami pri akomko\304\276vek nastaven\303\255 Oneskorenia zvuku, s riaden\303\255m "
+   "r\303\275chlosti meran\303\275m vlastn\303\275m tempom zariadenia a s prevzorkova\304\215om mimo"
+   " rozpo\304\215tu sn\303\255mky. Zvukov\303\251 ovl\303\241da\304\215e, ktor\303\251 sa nevedia p"
+   "rebudi\305\245 pod\304\276a zariadenia, ponechaj\303\272 spracovanie synchronizovan\303\251 so s"
+   "n\303\255mkami.",
+   "Po\305\276iada opera\304\215n\303\275 syst\303\251m, aby pl\303\241noval zvukov\303\251 vl\303"
+   "\241kno pred zvy\305\241kom frontendu, aby n\303\241ro\304\215n\303\241 sn\303\255mka menej prav"
+   "depodobne vyhladovala zvukov\303\251 zariadenie. Umo\305\276n\303\255 zn\303\255\305\276i\305"
+   "\245 Oneskorenie zvuku v syst\303\251moch, ktor\303\251 to povolia; syst\303\251m, ktor\303\275 "
+   "to odmietne, ponech\303\241 predvolen\303\272 prioritu a ni\304\215 in\303\251 sa nezmen\303\255"
+   ". T\303\275ka sa zvukov\303\251ho vl\303\241kna, na ktorom be\305\276\303\255 Viacvl\303\241knov"
+   "\303\251 spracovanie a zvukov\303\251 sp\303\244tn\303\251 volania jadra.",
+   "Zachov\303\241 v\303\275\305\241ku t\303\263nu pri spomalen\303\255 a r\303\275chlom pret\303"
+   "\241\304\215an\303\255. Podporuje vl\303\241knov\303\251 aj so sn\303\255mkami synchronizovan"
+   "\303\251 prehr\303\241vanie vr\303\241tane dohodnut\303\251ho viackan\303\241lov\303\251ho zvuku"
+   ". K\303\275m je zapnut\303\251, prid\303\241va v\303\275po\304\215tov\303\272 z\303\241\305\245a"
+   "\305\276, pam\303\244\305\245 a vyrovn\303\241vanie. Vy\305\276aduje frekvenciu obsahu 8000-1920"
+   "00 Hz. Nepodporovan\303\251 r\303\275chlosti alebo zdrojov\303\251 form\303\241ty pou\305\276ij"
+   "\303\272 be\305\276n\303\251 prehr\303\241vanie. Zmeny rozlo\305\276enia po\304\215as prehr\303"
+   "\241vania vypr\303\241zdnia zvuk vo vyrovn\303\241vacej pam\303\244ti. Vl\303\241knov\303\251 pr"
+   "ehr\303\241vanie obnov\303\255 zachov\303\241v",
+   "anie v\303\275\305\241ky t\303\263nu, ke\304\217 sa zvuk vo fronte vy\304\215erp\303\241.",
+   "Zjemn\303\255 vysok\303\251 frekvencie pri zr\303\275chlenom prehr\303\241van\303\255, so Zmenam"
+   "i r\303\275chlosti so zachovan\303\255m v\303\275\305\241ky t\303\263nu aj bez nich. Podporuje r"
+   "ovnak\303\251 frekvencie obsahu a zdrojov\303\251 form\303\241ty. K\303\275m je zapnut\303\275, "
+   "prid\303\241va spracovanie a pripraven\303\272 pam\303\244\305\245; prehr\303\241vanie norm\303"
+   "\241lnou r\303\275chlos\305\245ou sa nefiltruje. Tento volite\304\276n\303\275 efekt nenahr\303"
+   "\241dza antialiasingov\303\275 filter prevzorkova\304\215a.",
    "Hlasitos\305\245 zvuku (v dB). 0 dB je norm\303\241lna hlasitos\305\245 a nepou\305\276\303\255v"
    "a sa pri nej \305\276iadne zosilnenie.",
    "Umo\305\276ni\305\245 ovl\303\241da\304\215u WASAPI prevzia\305\245 v\303\275hradn\303\272 kontr"
@@ -6849,6 +7457,13 @@ static const struct
    "ie\304\276an\303\275 re\305\276im.",
    "Pou\305\276ije form\303\241t s pohyblivou desatinnou \304\215iarkou pre ovl\303\241da\304\215 WA"
    "SAPI, ak ho va\305\241e zvukov\303\251 zariadenie podporuje.",
+   "Odovzd\303\241 vl\303\241kno zariadenia WASAPI pl\303\241nova\304\215u multimedi\303\241lnych tr"
+   "ied Windows namiesto priameho zv\303\275\305\241enia jeho priority. Ur\304\215en\303\251 pre ve"
+   "\304\276mi n\303\255zke nastavenia Oneskorenia zvuku; nie je v\305\276dy lep\305\241ie z t\303"
+   "\275chto dvoch a v niektor\303\275ch syst\303\251moch zhor\305\241\303\255 najhor\305\241iu sn"
+   "\303\255mku, preto je vypnut\303\251, k\303\275m sa to nezmeria. Ovl\303\241da\304\215 pri ukon"
+   "\304\215en\303\255 zvuku nahl\303\241si, ako neskoro sa preb\303\272dzal a ak\303\251 pl\303\241"
+   "novanie pou\305\276il.",
    "Ve\304\276kos\305\245 medzipam\303\244te (v r\303\241mcoch) pri pou\305\276it\303\255 ovl\303"
    "\241da\304\215a WASAPI v zdie\304\276anom re\305\276ime.",
    "Automaticky ulo\305\276i\305\245 non-volatile SaveRAM v pravidelnom intervale (v sekund\303\241c"
@@ -7034,9 +7649,9 @@ static const struct
    " v hre.",
    "Zobrazi\305\245 polo\305\276ku 'Importova\305\245 obsah' v hlavnom menu alebo zoznamoch skladieb"
    ".",
-   "Ur\304\215i\305\245 typ core (ak nejak\303\275), ktor\303\275 sa m\303\241 zobrazi\305\245 v men"
-   "u 'Cores bez obsahu'. Pri nastaven\303\255 'Custom' mo\305\276no vidite\304\276nos\305\245 jedno"
-   "tliv\303\275ch cores prep\303\255na\305\245 cez menu 'Spravova\305\245 cores'.",
+   "Ur\304\215\303\255 typ jadier (ak nejak\303\251), ktor\303\251 sa zobrazia v menu 'Bezobsahov"
+   "\303\251 jadr\303\241'. Pri nastaven\303\255 'Vlastn\303\251' mo\305\276no vidite\304\276nos\305"
+   "\245 jednotliv\303\275ch jadier prep\303\255na\305\245 v menu 'Spravova\305\245 jadr\303\241'.",
    "Zobrazi\305\245 mo\305\276nos\305\245 prieskumn\303\255ka obsahu.",
    "Zobrazi\305\245 menu 'Ob\304\276\303\272ben\303\251'.",
    "Zobrazi\305\245 'Ob\304\276\303\272ben\303\251' pred 'Hist\303\263ria'.",
@@ -7110,6 +7725,11 @@ static const struct
    "Automaticky vytvori\305\245 z\303\241lohu nain\305\241talovan\303\275ch cores pri online aktuali"
    "z\303\241cii. Umo\305\276\305\210uje jednoduch\303\275 n\303\241vrat k funguj\303\272cemu core, "
    "ak aktualiz\303\241cia sp\303\264sob\303\255 regresiu.",
+   "Uklada\305\245 z\303\241lohu jadra, ktor\303\272 vytv\303\241ra online aktualiz\303\241cia, komp"
+   "rimovan\303\272, pribli\305\276ne na polovicu ve\304\276kosti jadra. Ke\304\217 je vypnut\303"
+   "\251, nahraden\303\251 jadro sa presunie do z\303\241loh tak, ako je: aktualiz\303\241cia nestr"
+   "\303\241vi \304\215as jeho komprimovan\303\255m, ale ka\305\276d\303\241 z\303\241loha zaberie p"
+   "ribli\305\276ne dvojn\303\241sobok miesta.",
    "Ur\304\215i\305\245, ko\304\276ko automaticky generovan\303\275ch z\303\241loh sa m\303\241 pre "
    "ka\305\276d\303\275 nain\305\241talovan\303\275 core uchova\305\245. Pri dosiahnut\303\255 tohto"
    " limitu vytvorenie novej z\303\241lohy cez online aktualiz\303\241ciu odstr\303\241ni najstar"
@@ -7129,18 +7749,47 @@ static const struct
    "an\303\275 \305\276iaden obsah.",
    "Cyklujte cez tieto mo\305\276nosti pre \303\272pravu horizont\303\241lnych nastaven\303\255 a zm"
    "enu ve\304\276kosti obrazu.",
+   "Vytvor\303\255 video re\305\276im zodpovedaj\303\272ci rozl\303\255\305\241eniu a obnovovacej fr"
+   "ekvencii obsahu. 15/31 KHz s\303\272 pre CRT; Pod\304\276a displeja a Len pod\304\276a obnovovac"
+   "ej frekvencie ber\303\272 svoje limity z EDID displeja.",
    "Prep\303\255nanie medzi nat\303\255vnym a ultra\305\241irok\303\275m super rozl\303\255\305\241e"
    "n\303\255m.",
    "V pr\303\255pade potreby pou\305\276ite vlastn\303\272 obnovovaciu frekvenciu uveden\303\272 v k"
    "onfigura\304\215nom s\303\272bore.",
    "Ak obraz nie je spr\303\241vne vycentrovan\303\275 na displeji, m\303\264\305\276ete prenastavi"
    "\305\245 tieto mo\305\276nosti.",
+   "Zap\303\255\305\241e do prie\304\215inka s nastaveniami blok EDID popisuj\303\272ci zvolen\303"
+   "\272 predvo\304\276bu CRT. Na\304\215\303\255tan\303\275 ako firmv\303\251rov\303\251 EDID v Lin"
+   "uxe (drm.edid_firmware) alebo ako prep\303\255sanie EDID vo Windows umo\305\276n\303\255 displej"
+   "u bez DDC nahl\303\241si\305\245 svoje limity synchroniz\303\241cie, tak\305\276e syst\303\251m "
+   "na\305\241tartuje vo frekvencii, ktor\303\272 CRT vie zobrazi\305\245. Ni\304\215 sa nein\305"
+   "\241taluje; z\303\241znam uv\303\241dza, kde je s\303\272bor a ako ho pou\305\276i\305\245.",
    "Ak obraz nie je spr\303\241vne vycentrovan\303\275 na displeji, m\303\264\305\276ete prenastavi"
    "\305\245 tieto mo\305\276nosti.",
    "Zobrazi\305\245 predch\303\241dzaj\303\272ce vyh\304\276ad\303\241vania.",
    "Zobrazi\305\245 datab\303\241zy.",
    "Odstr\303\241ni\305\245 t\303\272to polo\305\276ku zo zoznamu skladieb.",
    "Odstr\303\241ni\305\245 zoznam skladieb zo syst\303\251mu s\303\272borov.",
+   "Po\304\215et polo\305\276iek zobrazen\303\275ch pre V\305\241etky hracie zoznamy v zobrazen\303"
+   "\255 ikon; 0 = neobmedzen\303\251.",
+   "Po\304\215et polo\305\276iek zobrazen\303\275ch pre V\305\241etky hracie zoznamy v zobrazen\303"
+   "\255 zoznamu; 0 = neobmedzen\303\251.",
+   "\303\232rove\305\210 pribl\303\255\305\276enia zobrazenia ikon.",
+   "0 = hracie zoznamy, 1 = spr\303\241vca s\303\272borov.",
+   "0 = predvolen\303\251 syst\303\251mom, 1 = tmav\303\241, 2 = vlastn\303\275 \305\241t\303\275l.",
+   "Po\304\215et miniat\303\272r dr\305\276an\303\275ch v pam\303\244ti.",
+   "Najdlh\305\241ia strana v pixeloch; 0 = neobmedzen\303\251.",
+   "0 = predvolen\303\251.",
+   "0 = obal krabice, 1 = sn\303\255mka obrazovky, 2 = tituln\303\241 obrazovka, 3 = logo.",
+   "0 = zoznam, 1 = ikony.",
+   "Ulo\305\276en\303\241 ve\304\276kos\305\245 okna; pou\305\276ije sa, ke\304\217 je zapnut\303"
+   "\251 Pam\303\244ta\305\245 si geometriu okna.",
+   "Ulo\305\276en\303\241 ve\304\276kos\305\245 okna; pou\305\276ije sa, ke\304\217 je zapnut\303"
+   "\251 Pam\303\244ta\305\245 si geometriu okna.",
+   "Ulo\305\276en\303\241 poloha okna; pou\305\276ije sa, ke\304\217 je zapnut\303\251 Pam\303\244ta"
+   "\305\245 si geometriu okna.",
+   "Ulo\305\276en\303\241 poloha okna; pou\305\276ije sa, ke\304\217 je zapnut\303\251 Pam\303\244ta"
+   "\305\245 si geometriu okna.",
    "Zmeni\305\245 v\303\275chodzie zlo\305\276ky umiestnenia s\303\272borov.",
    "Umo\305\276n\303\255 aplik\303\241cii Discord zobrazova\305\245 \303\272daje o prehr\303\241vano"
    "m obsahu. Dostupn\303\251 iba s nat\303\255vnym desktop klientom.",
@@ -7152,6 +7801,10 @@ static const struct
    "Spr\303\241va obrazov diskov.",
    "Otvori\305\245 virtu\303\241lny z\303\241sobn\303\255k disku.",
    "Zatvori\305\245 virtu\303\241lny z\303\241sobn\303\255k disku.",
+   "Zobraz\303\255 EDID, ktor\303\251 hl\303\241si pou\305\276\303\255van\303\275 displej: identitu,"
+   " schopnosti, podporovan\303\251 \304\215asovania a roz\305\241iruj\303\272ce bloky.",
+   "Zobraz\303\255 zobrazovac\303\255 server, v\303\275stup, re\305\276im a fyzick\303\272 ve\304"
+   "\276kos\305\245 pou\305\276\303\255van\303\251ho displeja.",
    "Stiahnite si a nain\305\241talujte jadro z online aktualiz\303\241cie.",
    "Stiahnu\305\245 slobodn\303\275 obsah pre vybran\303\251 jadro.",
    "Stiahnite si pomocn\303\251 syst\303\251mov\303\251 s\303\272bory potrebn\303\251 na spr\303\241"
@@ -7243,7 +7896,8 @@ static const struct
    "Pri spusten\303\255 obsahu s viacer\303\275mi diskami prepn\303\272\305\245 na naposledy pou\305"
    "\276it\303\275 disk.",
    "Pou\305\276ije zadan\303\272 anal\303\263gov\303\272 p\303\241\304\215ku pre vstup D-Padu. Re"
-   "\305\276imy 'Forced' prep\303\255\305\241u nat\303\255vny anal\303\263gov\303\275 vstup core.",
+   "\305\276imy 'Vyn\303\272ten\303\251' prep\303\255\305\241u nat\303\255vny anal\303\263gov\303"
+   "\275 vstup jadra.",
    "Umo\305\276ni\305\245 ktor\303\251muko\304\276vek pou\305\276\303\255vate\304\276ovi ovl\303\241"
    "da\305\245 menu. Pri vypnut\303\255 m\303\264\305\276e menu ovl\303\241da\305\245 iba Pou\305"
    "\276\303\255vate\304\276 1.",
@@ -7306,13 +7960,18 @@ static const struct
    "\241vesov\303\251 hor\303\272ce kl\303\241vesy nebud\303\272 fungova\305\245, ak je port 1 core "
    "remapovan\303\275 na ak\303\251hoko\304\276vek pou\305\276\303\255vate\304\276a > 1 (kl\303\241v"
    "esov\303\275 vstup je od pou\305\276\303\255vate\304\276a 1).",
+   "Zobrazi\305\245 ovl\303\241da\304\215 v ka\305\276dom porte a konfigur\303\241ciu, ktor\303\272 "
+   "pou\305\276\303\255va.",
+   "Prij\303\255ma vstup z ovl\303\241da\304\215a, aj ke\304\217 RetroArch nie je akt\303\255vne okn"
+   "o. Ke\304\217 je vypnut\303\251, ovl\303\241da\304\215e sa bez zamerania ignoruj\303\272: menu, "
+   "kl\303\241vesov\303\251 skratky ani spusten\303\275 obsah na ne nereaguj\303\272.",
    "Maxim\303\241lny po\304\215et pou\305\276\303\255vate\304\276ov podporovan\303\275ch RetroArchom"
    ". (Vy\305\276aduje re\305\241tart)",
    "Kombin\303\241cia tla\304\215idiel kontroleru na prepnutie menu.",
    "Zmen\303\255 nastavenia ovl\303\241dania menu.",
    "Zachyt\303\255 obraz aktu\303\241lneho obsahu na preklad a/alebo nahlas pre\304\215\303\255tanie"
-   " textu na obrazovke. 'AI Service' mus\303\255 by\305\245 povolen\303\275 a nakonfigurovan\303"
-   "\275.",
+   " textu na obrazovke. 'Slu\305\276ba AI' mus\303\255 by\305\245 povolen\303\241 a nakonfigurovan"
+   "\303\241.",
    "Zn\303\255\305\276i aktu\303\241lne vybran\303\275 index cheatu.",
    "Zv\303\275\305\241i aktu\303\241lne vybran\303\275 index cheatu.",
    "Zapne/vypne aktu\303\241lne vybran\303\275 cheat.",
@@ -7382,6 +8041,17 @@ static const struct
    "Zachyt\303\255 obraz aktu\303\241lneho obsahu.",
    "Dr\305\276\303\255 aktu\303\241lne vybran\303\275 shader zapnut\303\275/vypnut\303\275 po\304"
    "\215as stl\303\241\304\215ania kl\303\241vesy.",
+   "Na\304\215\303\255ta a pou\305\276ije \304\217al\305\241iu predvo\304\276bu shadera v prie\304"
+   "\215inku aktu\303\241lnej predvo\304\276by. Po poslednej prejde na \304\217al\305\241\303\255 pr"
+   "ie\304\215inok na rovnakej \303\272rovni. Ke\304\217 je 'Pam\303\244ta\305\245 si naposledy pou"
+   "\305\276it\303\275 adres\303\241r shaderov' vypnut\303\251, namiesto toho cyklicky prech\303\241"
+   "dza predvo\304\276bami v koreni prie\304\215inka 'Video shadery', ak nejak\303\251 obsahuje.",
+   "Na\304\215\303\255ta a pou\305\276ije predch\303\241dzaj\303\272cu predvo\304\276bu shadera v pr"
+   "ie\304\215inku aktu\303\241lnej predvo\304\276by. Pred prvou sa vr\303\241ti na predch\303\241dz"
+   "aj\303\272ci prie\304\215inok na rovnakej \303\272rovni. Ke\304\217 je 'Pam\303\244ta\305\245 si"
+   " naposledy pou\305\276it\303\275 adres\303\241r shaderov' vypnut\303\251, namiesto toho cyklicky"
+   " prech\303\241dza predvo\304\276bami v koreni prie\304\215inka 'Video shadery', ak nejak\303\251"
+   " obsahuje.",
    "Zapne/vypne aktu\303\241lne vybran\303\275 shader.",
    "Povol\303\255 spomalen\303\275 pohyb po\304\215as dr\305\276ania. Obsah be\305\276\303\255 norm"
    "\303\241lnou r\303\275chlos\305\245ou pri uvo\304\276nen\303\255 kl\303\241vesy.",
@@ -7398,7 +8068,6 @@ static const struct
    "Zn\303\255\305\276i \303\272rove\305\210 hlasitosti v\303\275stupu zvuku.",
    "Zv\303\275\305\241i \303\272rove\305\210 hlasitosti v\303\275stupu zvuku.",
    "Zapne/vypne synchroniz\303\241ciu s presnou frekvenciou obsahu.",
-   "Fyzick\303\241 my\305\241 rozpoznan\303\241 RetroArchom.",
 #ifdef GEKKO
    "Upravi\305\245 mierku x/y pre r\303\275chlos\305\245 svetelnej zbrane Wiimote.",
 #endif
@@ -7472,7 +8141,6 @@ static const struct
    "Kombin\303\241cia tla\304\215idiel kontroleru na ukon\304\215enie RetroArchu.",
    "Vstupn\303\251 remapy s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Prep\303\255\305\241e zmeny pomocou upraven\303\275ch volieb pre aktu\303\241lne jadro.",
-   "Ur\304\215uje, ktor\303\275 port core dostane vstup z portu kontroleru frontendu %u.",
    "Remapy sa pou\305\276ij\303\272 iba na akt\303\255vny gamepad, v ktorom boli ulo\305\276en\303"
    "\251.",
    "Zmen\303\255, ako je virtu\303\241lny RetroPad mapovan\303\275 na fyzick\303\251 vstupn\303\251 "
@@ -7483,6 +8151,12 @@ static const struct
    "Ur\304\215uje silu efektov haptickej sp\303\244tnej v\303\244zby.",
    "Ulo\305\276\303\255 s\303\272bor autokonfigur\303\241cie, ktor\303\275 sa automaticky aplikuje v"
    "\305\276dy, ke\304\217 je tento kontroler znova rozpoznan\303\275.",
+#ifdef HAVE_SDL3
+   "Na zad\303\241vanie textu v menu pou\305\276ije obrazovkov\303\272 kl\303\241vesnicu zariadenia "
+   "namiesto vstavanej kl\303\241vesnice na obrazovke. Plat\303\255 len vtedy, ke\304\217 syst\303"
+   "\251m obrazovkov\303\272 kl\303\241vesnicu poskytuje. Vy\305\276aduje dotykov\303\272 obrazovku "
+   "alebo met\303\263du vstupu, ktor\303\272 mo\305\276no ovl\303\241da\305\245 gamepadom.",
+#endif
 #ifdef ANDROID
    "Pou\305\276i\305\245 toto zariadenie ako fyzick\303\272 kl\303\241vesnicu, nie ako gamepad.",
 #endif
@@ -7495,6 +8169,20 @@ static const struct
    "nia.",
    "Zmen\303\255 nastavenia akcelerometra, gyroskopu a osvetlenia.",
    "Zmeni\305\245 nastavenia ovl\303\241da\304\215a, kl\303\241vesnice a my\305\241i.",
+#ifdef ANDROID
+   "Povoli\305\245 zariadenia so stylusom. Poskytuje presn\303\275 vstup pre kreslenie a hry s ukazo"
+   "van\303\255m. Vypnite, ak doch\303\241dza ku konfliktom vstupu.",
+   "Povoli\305\245, aby stylus podr\305\276an\303\275 nad obrazovkou (bez dotyku) pos\303\272val kur"
+   "zor. Nevyhnutn\303\251 pre kreslenie, ma\304\276ovanie a hry so svetelnou pi\305\241to\304\276ou"
+   ". Vypnite, ak sa kurzor neo\304\215ak\303\241vane pohybuje.",
+   "Citlivos\305\245 dotyku stylusu. Vy\305\241\305\241ie hodnoty = citlivej\305\241\303\255 (sta"
+   "\304\215\303\255 \304\276ah\305\241\303\255 dotyk). Predvolen\303\241 hodnota 70 vyhovuje v\303"
+   "\244\304\215\305\241ine zariaden\303\255. Pri ochrannej f\303\263lii na obrazovke ju zn\303\255"
+   "\305\276te (40-50).",
+   "ZAP: Stylus sa mus\303\255 fyzicky dotkn\303\272\305\245 obrazovky, aby sa zaregistrovalo kliknu"
+   "tie. VYP: Stylus m\303\264\305\276e klikn\303\272\305\245 dotykom obrazovky ALEBO podr\305\276an"
+   "\303\255m nad obrazovkou a stla\304\215en\303\255m bo\304\215n\303\251ho tla\304\215idla.",
+#endif
    "Upravi\305\245 mierku x/y s\303\272radn\303\255c dotykovej obrazovky pre prisp\303\264sobenie sa"
    " \305\241k\303\241lovaniu zobrazenia na \303\272rovni OS.",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -7529,6 +8217,10 @@ static const struct
    "trolerov s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Ak\303\275 ovl\303\241da\304\215 pre kontrolery pou\305\276i\305\245. (Vy\305\276aduje re\305"
    "\241tart)",
+   "Chr\303\241ni k\304\276\303\272\304\215 k\304\276\303\272\304\215enky, ktor\303\241 uchov\303"
+   "\241va ulo\305\276en\303\251 hesl\303\241, heslom, aby sa dali znova otvori\305\245 aj po presun"
+   "e konfigur\303\241cie na in\303\275 po\304\215\303\255ta\304\215. Po takom presune sem heslo raz"
+   " zadajte. Nechajte pr\303\241zdne, ak chcete heslo odstr\303\241ni\305\245.",
 #ifdef HAVE_LAKKA_SWITCH
    "Spravova\305\245 mo\305\276nosti \305\241pecifick\303\251 pre Nintendo Switch.",
 #endif
@@ -7623,6 +8315,14 @@ static const struct
    "zobrazenia pre v\305\241etky obr\303\241zky a vylep\305\241\303\255 vzh\304\276ad ponuky pri zob"
    "razovan\303\255 zmie\305\241an\303\275ch n\303\241h\304\276adov obsahu s r\303\264znymi z\303"
    "\241kladn\303\275mi rozmermi.",
+   "Umo\305\276n\303\255 AI asistentom ovl\303\241da\305\245 RetroArch cez Model Context Protocol: k"
+   "a\305\276d\303\275 sie\305\245ov\303\275 pr\303\255kaz sa stane n\303\241strojom. Server po\304"
+   "\215\303\272va len na tomto po\304\215\303\255ta\304\215i na adrese http://127.0.0.1:<port>/mcp "
+   "a prijme len klientov, ktor\303\255 po\305\241l\303\272 token ni\305\276\305\241ie. Prejav\303"
+   "\255 sa po re\305\241tarte.",
+   "TCP port servera MCP.",
+   "Token (bearer), ktor\303\275 mus\303\255 klient MCP posla\305\245. Vytvor\303\255 sa pri prvom s"
+   "pusten\303\255 servera; zadajte ho do konfigur\303\241cie klienta.",
    "Zobrazi\305\245 pou\305\276it\303\251 a celkov\303\251 mno\305\276stvo pam\303\244te v syst\303"
    "\251me.",
    "Zobrazenie pou\305\276itia pam\303\244te sa bude aktualizova\305\245 v nastavenom intervale v sn"
@@ -7636,9 +8336,15 @@ static const struct
    "Ak\303\275 ovl\303\241da\304\215 menu pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
    "Chr\303\241ni nastavenie skryt\303\255m v\305\241etk\303\275ch nastaven\303\255 s\303\272visiaci"
    "ch s konfigur\303\241ciou.",
-   "Zaist\303\255, \305\276e sn\303\255mkov\303\241 frekvencia je obmedzen\303\241 v menu.",
+   "Ur\304\215\303\255, kedy sa pri prehliadan\303\255 obsahu zobrazia pr\303\255pony s\303\272borov"
+   ". V\303\275bery s\303\272borov pre shadery, prekrytia, konfigur\303\241cie a \304\217al\305\241i"
+   "e s\303\272bory nastaven\303\255 ich zobrazuj\303\272 v\305\276dy.",
    "Zmen\303\255 nastavenia prehliada\304\215a s\303\272borov.",
    "Upravi\305\245 neprieh\304\276adnos\305\245 predvolen\303\251ho pozadia menu.",
+   "Frekvencia, s akou be\305\276\303\255 ponuka, ke\304\217 je na\304\215\303\255tan\303\275 obsah."
+   " 'Frekvencia displeja' spust\303\255 ponuku pri obnovovacej frekvencii displeja; obsah, ktor\303"
+   "\275 be\305\276\303\255 za ponukou, si ponech\303\241 vlastn\303\272 frekvenciu. 'Frekvencia obs"
+   "ahu' spust\303\255 ponuku pri sn\303\255mkovej frekvencii obsahu.",
    "Jas menu v cd/m2 (nity) pri pou\305\276it\303\255 HDR displeja. Vidite\304\276n\303\251 iba ak j"
    "e HDR povolen\303\251 v Nastavenia > Video > HDR.",
    "Povoli\305\245 horizont\303\241lnu anim\303\241ciu pre ponuku. Bude to ma\305\245 dopad na v\303"
@@ -7738,7 +8444,6 @@ static const struct
 #endif
    "Zobrazova\305\245 pri nastaveniach adres\303\241rov cel\303\251 cesty namiesto iba n\303\241zvu "
    "vybran\303\251ho adres\303\241ra.",
-   "Zobrazi\305\245 vo\304\276bu 'Pomocn\303\255k' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Inform\303\241cia' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Na\304\215\303\255ta\305\245 obsah' v hlavnej ponuke.",
    "Zobrazi\305\245 stru\304\215n\303\272 sp\303\244tn\303\272 anim\303\241ciu pri spusten\303\255 p"
@@ -7751,6 +8456,7 @@ static const struct
    "Zobrazi\305\245 vo\304\276bu 'Re\305\241tartova\305\245 RetroArch' v hlavnej ponuke.",
    "Zobrazi\305\245 vo\304\276bu 'Vypn\303\272t'.",
    "Zobrazi\305\245 dodato\304\215n\303\251 inform\303\241cie pre polo\305\276ky menu.",
+   "Zobraz\303\255 pod-popis len pre pr\303\241ve zv\303\275raznen\303\272 polo\305\276ku menu.",
    "Presko\304\215i\305\245 menu 'Spusti\305\245' pri sp\303\272\305\241\305\245an\303\255 polo\305"
    "\276iek zoznamu skladieb. Stla\304\215te D-Pad a dr\305\276te OK pre pr\303\255stup k menu 'Spus"
    "ti\305\245'.",
@@ -7767,6 +8473,12 @@ static const struct
    "Prehr\303\241va zvukov\303\272 stopu animovan\303\275ch n\303\241h\304\276adov WebM, k\303\275m "
    "s\303\272 zobrazen\303\251. Podporovan\303\275 je zvuk Vorbis a Opus. Zvuk sa opakuje spolu s an"
    "im\303\241ciou a zastav\303\255 sa po zatvoren\303\255 n\303\241h\304\276adu.",
+   "Na ko\304\276k\303\275ch vl\303\241knach m\303\264\305\276e animovan\303\241 miniat\303\272ra de"
+   "k\303\263dova\305\245. Jedno dr\305\276\303\255 cel\303\251 dek\303\263dovanie vo vlastnom vl"
+   "\303\241kne. Viac ho rozlo\305\276\303\255 na jadr\303\241, v\304\217aka \304\215omu sa aj ve"
+   "\304\276k\303\275 n\303\241h\304\276ad prehr\303\241 plnou r\303\275chlos\305\245ou. K\303\275m "
+   "be\305\276\303\255 jadro, n\303\241h\304\276ad pou\305\276\303\255va len jedno vl\303\241kno, ab"
+   "y hre ostali jej jadr\303\241.",
    "Automaticky upscalova\305\245 obr\303\241zky n\303\241h\304\276adov so \305\241\303\255rkou/v"
    "\303\275\305\241kou men\305\241ou ako zadan\303\241 hodnota. Zlep\305\241uje kvalitu obrazu. M"
    "\303\241 mierny vplyv na v\303\275kon.",
@@ -7926,6 +8638,37 @@ static const struct
 #ifdef _3DS
    "Povoli\305\245 r\303\275chlos\305\245 hod\303\255n New3DS (804MHz) a L2 vyrovn\303\241vaciu pam"
    "\303\244\305\245.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Preh\304\276ad\303\241 nastaven\303\275 export NFS a h\304\276ad\303\241 obsah.",
+   "Cesta, ktor\303\272 server exportuje, napr. /export/roms. Cesta k prie\304\215inku na serveri fu"
+   "nguje aj pre NFS verzie 4, kde ju server m\303\264\305\276e pon\303\272ka\305\245 pod krat\305"
+   "\241\303\255m menom. Nechajte pr\303\241zdne, ak export zad\303\241te v adrese ako nfs://server/"
+   "export/cesta.",
+   "Port slu\305\276by MOUNT. 0 sa op\303\275ta portmappera servera.",
+   "Pripojenia, ktor\303\251 sa k serveru dr\305\276ia otvoren\303\251.",
+   "Port slu\305\276by NFS. 0 sa op\303\275ta portmappera servera.",
+   "D\303\241ta na\304\215\303\255tan\303\251 dopredu, ke\304\217 hra \304\215\303\255ta s\303\272bo"
+   "r po mal\303\275ch k\303\272skoch, pri\304\215om vl\303\241kno na pozad\303\255 priebe\305\276ne"
+   " pripravuje \304\217al\305\241ie okno. M\303\264\305\276e zjemni\305\245 ve\304\276k\303\251 obr"
+   "azy diskov cez pomal\303\251 pripojenie; stoj\303\255 to\304\276ko pam\303\244te a jedno pripoje"
+   "nie navy\305\241e na ka\305\276d\303\275 otvoren\303\275 s\303\272bor. 0 ho vypne: ka\305\276d"
+   "\303\251 \304\215\303\255tanie je jedna po\305\276iadavka, ako predt\303\275m, ne\305\276 existo"
+   "valo \304\215\303\255tanie dopredu.",
+   "IP adresa alebo n\303\241zov hostite\304\276a servera.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   "Nastav\303\255 export NFS.",
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Cesta k podprie\304\215inku v r\303\241mci exportu. Volite\304\276n\303\251.",
+   "Po\304\215et sek\303\272nd, ko\304\276ko sa pri ka\305\276dej po\305\276iadavke \304\215ak\303"
+   "\241 na server.",
+   "3 pou\305\276\303\255va portmapper a slu\305\276bu MOUNT; 4 sa pripoj\303\255 priamo na port NFS"
+   " a export berie ako cestu v pseudo-s\303\272borovom syst\303\251me servera, pri\304\215om pou"
+   "\305\276ije najnov\305\241iu z verzi\303\255 4.2, 4.1 a 4.0, ktor\303\272 server pon\303\272ka.",
 #endif
    "Zobrazi\305\245 spr\303\241vu na obrazovke pri prip\303\241jan\303\255/odp\303\241jan\303\255 vs"
    "tupn\303\275ch zariaden\303\255.",
@@ -8129,6 +8872,33 @@ static const struct
    " v hran\303\255 ako jitter, ak sa prekro\304\215\303\255 po\304\215et vn\303\272torn\303\275ch l"
    "ag sn\303\255mok hry.",
    "Zmeni\305\245 nastavenia s\303\272kromia.",
+   "Najv\303\244\304\215\305\241\303\255 po\304\215et polo\305\276iek, ktor\303\251 zobrazenie V\305"
+   "\241etky hracie zoznamy uk\303\241\305\276e v re\305\276ime mrie\305\276ky. 0 zobraz\303\255 v"
+   "\305\241etky polo\305\276ky.",
+   "Najv\303\244\304\215\305\241\303\255 po\304\215et polo\305\276iek, ktor\303\251 zobrazenie V\305"
+   "\241etky hracie zoznamy uk\303\241\305\276e v re\305\276ime zoznamu. 0 zobraz\303\255 v\305\241e"
+   "tky polo\305\276ky.",
+   "S\303\272bor so \305\241t\303\275lom, ktor\303\275 sa pou\305\276ije, ke\304\217 je t\303\251ma "
+   "nastaven\303\241 na Vlastn\303\251.",
+   "Farba zv\303\275raznenia vybran\303\251ho riadku vo form\303\241te #rrggbb.",
+   "Obnov\303\255 okno ponuky pracovnej plochy na polohu a ve\304\276kos\305\245, ktor\303\272 malo "
+   "pri poslednom ukon\304\215en\303\255 RetroArchu.",
+   "Otvor\303\255 prehliada\304\215 obsahu na karte, ktor\303\241 bola vybran\303\241 pri poslednom "
+   "ukon\304\215en\303\255 RetroArchu.",
+   "Zobraz\303\255 spr\303\241vu po dokon\304\215en\303\255 skenovania obsahu.",
+   "Zobraz\303\255 v spr\303\241vcovi s\303\272borov skryt\303\251 s\303\272bory a prie\304\215inky.",
+   "Hrac\303\255 zoznam, ktor\303\275 sa zobraz\303\255 pri otvoren\303\255 ponuky pracovnej plochy."
+   " Nechajte pr\303\241zdne pre prv\303\275.",
+   "Ak je u\305\276 jadro na\304\215\303\255tan\303\251, pon\303\272kne ho pri sp\303\272\305\241"
+   "\305\245an\303\255 obsahu ako prv\303\251.",
+   "Farebn\303\241 t\303\251ma ponuky pracovnej plochy: pod\304\276a syst\303\251mu, vstavan\303\241"
+   " tmav\303\241 t\303\251ma alebo vlastn\303\275 \305\241t\303\275l.",
+   "Pam\303\244\305\245 pre dek\303\263dovan\303\251 miniat\303\272ry v megabajtoch. Vy\305\241\305"
+   "\241ie hodnoty zlep\305\241ia plynulos\305\245 pos\303\272vania ve\304\276k\303\275ch hrac\303"
+   "\255ch zoznamov.",
+   "Najdlh\305\241ia strana v pixeloch, na ktor\303\272 sa zmen\305\241\303\255 obr\303\241zok preti"
+   "ahnut\303\275 na miniat\303\272ru pred ulo\305\276en\303\255m. 0 ponech\303\241 p\303\264vodn"
+   "\303\272 ve\304\276kos\305\245.",
    "Mo\305\276nosti pre prep\303\255sanie glob\303\241lnej konfigur\303\241cie.",
    "Zobrazi\305\245 vo\304\276bu 'Prida\305\245 do ob\304\276\303\272ben\303\275ch'.",
    "Zobrazi\305\245 mo\305\276nos\305\245 'Prida\305\245 do zoznamu skladieb'.",
@@ -8309,6 +9079,14 @@ static const struct
    "Zobrazi\305\245 n\303\241h\304\276ady save states.",
    "Ulo\305\276i\305\245 aktu\303\241lnu konfigur\303\241ciu ako vlastn\303\275 konfigura\304\215n"
    "\303\275 s\303\272bor.",
+   "Kodek, ktor\303\275m sa zapisuje ka\305\276d\303\275 komprimovan\303\275 s\303\272bor vr\303\241"
+   "tane ulo\305\276en\303\275ch hier, ulo\305\276en\303\275ch stavov, hrac\303\255ch zoznamov, z"
+   "\303\241loh jadier a vyrovn\303\241vacej pam\303\244te inform\303\241ci\303\255 o jadr\303\241ch"
+   ". Zstandard sa na\304\215\303\255tava nieko\304\276kon\303\241sobne r\303\275chlej\305\241ie ako"
+   " Deflate a uklad\303\241 o nie\304\215o r\303\275chlej\305\241ie, za cenu o nie\304\215o v\303"
+   "\244\304\215\305\241\303\255ch s\303\272borov. S\303\272bory zap\303\255san\303\251 ktor\303\275"
+   "mko\304\276vek kodekom sa na\304\215\303\255taj\303\272; zmenia sa len nov\303\251 s\303\272bory"
+   ".",
    "Prep\303\255sa\305\245 aktu\303\241lny s\303\272bor s nastaveniami.",
    "Ulo\305\276\303\255 s\303\272bor s prepisom konfigur\303\241cie, ktor\303\275 sa pou\305\276ije "
    "pre v\305\241etok obsah na\304\215\303\255tan\303\275 z rovnak\303\251ho adres\303\241ra ako akt"
@@ -8366,8 +9144,8 @@ static const struct
    "Nastavenie programu.",
    "Zobrazi\305\245 nastavenia 'Pr\303\255stupnos\305\245'.",
    "Zobrazi\305\245 nastavenia '\303\232spechy'.",
-   "Zobrazi\305\245 nastavenia 'AI Service'.",
-   "Zobrazi\305\245 nastavenia 'Audio'.",
+   "Zobraz\303\255 nastavenia 'Slu\305\276ba AI'.",
+   "Zobraz\303\255 nastavenia 'Zvuk'.",
    "Zobrazi\305\245 nastavenia 'Nastavenie'.",
    "Zobrazi\305\245 nastavenia 'Jadro'.",
    "Zobrazi\305\245 nastavenia 'Adres\303\241r'.",
@@ -8383,8 +9161,10 @@ static const struct
    "Zmeni\305\245 nastavenia spr\303\241vy nap\303\241jania.",
    "Zobrazi\305\245 nastavenia 'Z\303\241znam'.",
    "Zobrazi\305\245 nastavenia 'Ukladanie'.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Zobrazi\305\245 nastavenia \342\200\236SMB klient\342\200\234.",
+#endif
 #endif
    "Zobrazi\305\245 nastavenia 'Stream'.",
    "Zobrazi\305\245 nastavenia 'Pou\305\276\303\255vate\304\276'.",
@@ -8404,18 +9184,73 @@ static const struct
    "Nain\305\241talujte alebo obnovte jadro z adres\303\241ra \" Stiahnut\303\251 s\303\272bory\".",
    "Frekvencia, akou sa bude obsah prehr\303\241va\305\245 pri pou\305\276it\303\255 spomalen\303"
    "\251ho pohybu.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Vyberte overenie pou\305\276it\303\251 vo va\305\241om prostred\303\255.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Preh\304\276ad\303\241va\305\245 s\303\272bory na nakonfigurovanom SMB zdie\304\276an\303\255.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   "Zapne pr\303\255stup k sie\305\245ov\303\275m zdie\304\276aniam SMB. Pre spo\304\276ahlivej\305"
+   "\241ie pripojenie sa d\303\264razne odpor\303\272\304\215a Ethernet namiesto Wi-Fi. Pozn\303\241"
+   "mka: zmeny sa prejavia pri najbli\305\276\305\241om prehliadan\303\255 zdie\304\276ania a obsah,"
+   " ktor\303\275 u\305\276 zo zdie\304\276ania be\305\276\303\255, si ponech\303\241 svoje aktu\303"
+   "\241lne pripojenie.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Hostite\304\276 centra distrib\303\272cie k\304\276\303\272\304\215ov Kerberos. Nechajte pr\303"
+   "\241zdne, ak je server SMB radi\304\215om dom\303\251ny.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Vyberte maxim\303\241lny po\304\215et pripojen\303\255 pou\305\276it\303\275ch vo va\305\241om p"
    "rostred\303\255.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Heslo na overenie. Je volite\304\276n\303\251, ak je na serveri povolen\303\275 hos\305\245ovsk"
    "\303\275 pr\303\255stup. Windows 10 a nov\305\241\303\255: hos\305\245ovsk\303\275 pr\303\255stu"
    "p je predvolene zak\303\241zan\303\275, tak\305\276e heslo je tu potrebn\303\251.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   "D\303\241ta na\304\215\303\255tan\303\251 dopredu, ke\304\217 hra \304\215\303\255ta s\303\272bo"
+   "r po mal\303\275ch k\303\272skoch, pri\304\215om vl\303\241kno na pozad\303\255 priebe\305\276ne"
+   " pripravuje \304\217al\305\241ie okno. M\303\264\305\276e zjemni\305\245 ve\304\276k\303\251 obr"
+   "azy diskov cez pomal\303\251 pripojenie; stoj\303\255 to\304\276ko pam\303\244te a jedno pripoje"
+   "nie navy\305\241e na ka\305\276d\303\275 otvoren\303\275 s\303\272bor. 0 ho vypne: ka\305\276d"
+   "\303\251 \304\215\303\255tanie je jedna po\305\276iadavka, ako predt\303\275m, ne\305\276 existo"
+   "valo \304\215\303\255tanie dopredu.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "Oblas\305\245 (realm) Kerberos pre overovanie l\303\255stkami, napr\303\255klad dom\303\251na Ac"
+   "tive Directory ve\304\276k\303\275mi p\303\255smenami (EXAMPLE.COM). Nechajte pr\303\241zdne pre"
+   " overovanie heslom (NTLMSSP). Server mus\303\255 by\305\245 zadan\303\275 menom hostite\304\276a"
+   ".",
    "IP adresa alebo n\303\241zov hostite\304\276a servera.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Konfigurova\305\245 nastavenia sie\305\245ov\303\251ho zdie\304\276ania SMB.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   "N\303\241zov sie\305\245ov\303\251ho zdie\304\276ania, ku ktor\303\251mu sa pristupuje. Nechajte"
+   " pr\303\241zdne, ak chcete zobrazi\305\245 v\305\241etky zdie\304\276ania, ktor\303\251 server p"
+   "oskytuje, a jedno vybra\305\245 pri prehliadan\303\255.",
    "Cesta k podadres\303\241ru na zdie\304\276an\303\255. Volite\304\276n\303\251.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Vyberte predvolen\303\275 \304\215asov\303\275 limit v sekund\303\241ch.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Meno pou\305\276\303\255vate\304\276a na overenie. Je volite\304\276n\303\251, ak je na serveri "
    "povolen\303\275 hos\305\245ovsk\303\275 pr\303\255stup. Windows 10 a nov\305\241\303\255: hos"
    "\305\245ovsk\303\275 pr\303\255stup je predvolene zak\303\241zan\303\275, tak\305\276e meno pou"
@@ -8438,6 +9273,7 @@ static const struct
 #endif
    "Spusti\305\245 jadro bez obsahu.",
    "Zmena aktu\303\241lne vybran\303\251ho slotu so stavom.",
+   "Nekresl\303\255 \305\241tatistiky, k\303\275m je menu otvoren\303\251.",
    "Zobrazi\305\245 technick\303\251 \305\241tatistiky na obrazovke.",
    "stdin pr\303\255kazov\303\251 rozhranie.",
 #ifdef HAVE_MIST
@@ -8470,6 +9306,10 @@ static const struct
    "Zobrazi\305\245 inform\303\241cie \305\241pecifick\303\251 pre zariadenie.",
    "Zachyti\305\245 obraz obrazovky.",
    "Vykon\303\241va\305\245 \303\272lohy v samostatnom vl\303\241kne.",
+   "Dr\305\276\303\255 hlavn\303\251 vl\303\241kno a vl\303\241kna videa, zvuku a \303\272loh na naj"
+   "r\303\275chlej\305\241\303\255ch jadr\303\241ch CPU procesora so zmie\305\241an\303\275mi jadram"
+   "i. Nem\303\241 vplyv na procesory, ktor\303\275ch jadr\303\241 s\303\272 rovnak\303\251. Prejav"
+   "\303\255 sa po re\305\241tarte.",
    "Typ n\303\241h\304\276adu na zobrazenie.",
    "N\303\241h\304\276ady obalov, screenshotov a tituln\303\275ch obrazoviek s\303\272 ulo\305\276en"
    "\303\251 v tomto adres\303\241ri.",
@@ -8488,6 +9328,15 @@ static const struct
    "\276a va\305\241ej polohy.",
 #endif
    "Zobrazi\305\245 aktu\303\241lny \304\215as v preferovanom form\303\241te.",
+   "Ur\304\215uje, ako sa kontroluj\303\272 certifik\303\241ty servera pri zabezpe\304\215en\303\275"
+   "ch (HTTPS) pripojeniach, ktor\303\251 pou\305\276\303\255va Cloud synchroniz\303\241cia, RetroAc"
+   "hievements a Online aktualiz\303\241cie. 'Vy\305\276adovan\303\251' odmietne ned\303\264veryhodn"
+   "\303\251 certifik\303\241ty a chr\303\241ni pred \303\272tokmi typu man-in-the-middle. Zn\303"
+   "\255\305\276te to, len ak sa prip\303\241jate cez firemn\303\275 proxy server alebo k d\303\264v"
+   "eryhodn\303\251mu hostite\304\276ovi s vlastnoru\304\215ne podp\303\255san\303\275m certifik\303"
+   "\241tom.",
+   "Ovl\303\241da\304\215 sprievodn\303\251ho rozhrania pracovnej plochy, ktor\303\275 sa pou\305"
+   "\276ije, ke\304\217 je zapnut\303\241 Ponuka pracovnej plochy. (Vy\305\276aduje re\305\241tart)",
    "Zobrazi\305\245 panel menu okna.",
    "Ak bol stav na\304\215\303\255tan\303\275, obsah sa vr\303\241ti do stavu pred na\304\215\303"
    "\255tan\303\255m.",
@@ -8536,7 +9385,7 @@ static const struct
    "VSync je povolen\303\275, k\303\275m v\303\275kon neklesne pod cie\304\276ov\303\272 obnovovaciu"
    " frekvenciu. M\303\264\305\276e minimalizova\305\245 trhanie pri poklese v\303\275konu pod re"
    "\303\241lny \304\215as a by\305\245 energeticky efekt\303\255vnej\305\241\303\255. Nekompatibiln"
-   "\303\251 s 'Frame Delay'.",
+   "\303\251 s 'Oneskorenie sn\303\255mky'.",
    "Umo\305\276n\303\255 cores nastavi\305\245 rot\303\241ciu. Pri vypnut\303\255 sa po\305\276iadav"
    "ky na rot\303\241ciu ignoruj\303\272. U\305\276ito\304\215n\303\251 pre nastavenia, ktor\303\251"
    " obrazovku ot\303\241\304\215aj\303\272 manu\303\241lne.",
@@ -8596,6 +9445,12 @@ static const struct
    "Pou\305\276i\305\245 video filter. Ide o odpor\303\272\304\215anie, ktor\303\251 ovl\303\241da"
    "\304\215 grafickej karty nemus\303\255 nutne re\305\241pektova\305\245.",
    "Zru\305\241i\305\245 v\305\241etky akt\303\255vne videofiltre poh\303\241\305\210an\303\251 CPU.",
+   "Na ko\304\276k\303\275ch vl\303\241knach m\303\264\305\276e be\305\276a\305\245 CPU video filter"
+   ". 'Automaticky' pou\305\276ije jadr\303\241, ktor\303\251 ostan\303\272, ke\304\217 si svoje vez"
+   "m\303\272 vl\303\241kna emul\303\241cie, videa, zvuku a \303\272loh, najviac 8, a menej pre \304"
+   "\276ahk\303\251 filtre, ktor\303\251 s\303\272 pri rozlo\305\276en\303\255 pomal\305\241ie. Z vi"
+   "acer\303\275ch vl\303\241kien najviac z\303\255skaj\303\272 n\303\241ro\304\215n\303\251 filtre "
+   "ako NTSC. Spusten\303\275 filter zmenu prevezme okam\305\276ite.",
    "Zobrazova\305\245 spr\303\241vy na obrazovke.",
    "Vybra\305\245 p\303\255smo pre ozn\303\241menia na obrazovke.",
    "Ur\304\215i\305\245 ve\304\276kos\305\245 p\303\255sma v bodoch. Pri pou\305\276it\303\255 widge"
@@ -8607,12 +9462,27 @@ static const struct
    "Windows maj\303\272 video probl\303\251my so sRGB FBO. Povolenie m\303\264\305\276e probl\303"
    "\251m ob\303\255s\305\245.",
    "Zni\305\276uje latenciu za cenu vy\305\241\305\241ieho rizika trhania videa.",
-   "Dynamicky upravova\305\245 efekt\303\255vne 'Frame Delay'.",
+   "Dynamicky upravuje efekt\303\255vne 'Oneskorenie sn\303\255mky'.",
+   "\304\214\303\255ta 'Odhadovan\303\241 obnovovacia frekvencia obrazovky' z hl\303\241senia disple"
+   "ja o tom, kedy k nemu dorazila ka\305\276d\303\241 sn\303\255mka, namiesto merania slu\304\215ky"
+   " sn\303\255mok frontendu. Men\303\255 sa len zobrazen\303\241 hodnota: prestane ju skres\304\276"
+   "ova\305\245 sn\303\255mkov\303\241 frekvencia jadra a \305\241um \304\215asovania slu\304\215ky."
+   " Neovplyv\305\210uje, ako sa sn\303\255mky \304\215asuj\303\272 ani zobrazuj\303\272. Plat\303"
+   "\255 tam, kde to video ovl\303\241da\304\215 vie hl\303\241si\305\245; inak sa meria slu\304\215"
+   "ka sn\303\255mok.",
    "Obmedz\303\255 vzorkovanie 'Odhadovanej Miery Obnovenia Obrazovky' len na sn\303\255mky, kde obs"
    "ah be\305\276\303\255 \304\215isto (nie menu, nie pozastaven\303\251, nie r\303\275chly posun vp"
    "red, frame time v rozumn\303\275ch medziach). Diagnostick\303\275 \303\272daj sa tak stane re"
    "\303\241lnym sign\303\241lom za cenu pomal\305\241ej konvergencie po na\304\215\303\255tan\303"
    "\255 obsahu.",
+   "Ako d\303\264razne \305\276iada\305\245 ovl\303\241da\304\215 o exkluz\303\255vny celoobrazovkov"
+   "\303\275 re\305\276im, ke\304\217 je Maximalizovan\303\251 okno vypnut\303\251. 'Uvo\304\276nen"
+   "\303\251' ho len povol\303\255 a ovl\303\241da\304\215 ho m\303\264\305\276e odmietnu\305\245; p"
+   "ri ovl\303\241da\304\215i Vulkan je to len n\303\241poveda, ktor\303\272 ovl\303\241da\304\215 p"
+   "od\304\276a sk\303\272senost\303\255 ignoruje, a swapchain ostane na ceste nez\303\241visl\303"
+   "\251ho prevr\303\241tenia kompozitora. 'Vyn\303\272ten\303\251' si exkluz\303\255vny re\305\276i"
+   "m vy\305\276iada v\303\275slovne a podr\305\276\303\255 ho. Vy\305\276aduje VK_EXT_full_screen_e"
+   "xclusive.",
    "Zobrazi\305\245 na cel\303\272 obrazovku. Mo\305\276no zmeni\305\245 za behu. Mo\305\276no prep"
    "\303\255sa\305\245 parametrom pr\303\255kazov\303\251ho riadku.",
    "Zmena nastaven\303\255 re\305\276imu na cel\303\272 obrazovku.",
@@ -8659,10 +9529,18 @@ static const struct
    "na v\303\244\304\215\305\241inu obrazovky a HDR obnovuje \304\215as\305\245 straten\303\251ho ja"
    "su. Ak potrebujete v\303\244\304\215\305\241iu kontrolu nad scanlines, pozrite sa na vlastn\303"
    "\251 shadery, ktor\303\251 RetroArch poskytuje.",
+   "Ozn\303\241mi kompozitoru Wayland rozsah jasu, ktor\303\275 sn\303\255mka nesie, aby mapoval obs"
+   "ah HDR pod\304\276a toho, \304\215o v sn\303\255mke je, a nie pod\304\276a predpokladu. Vypnut"
+   "\303\251 popisuje sn\303\255mku ako Windows-scRGB ako doteraz. Prejav\303\255 sa po re\305\241ta"
+   "rte video ovl\303\241da\304\215a.",
    "Zmena nastavenia videa HDR.",
    "Vyberte rozlo\305\276enie subpixelov v\303\241\305\241ho displeja, toto ovplyv\305\210uje iba sc"
    "anlines. Ak neviete, ak\303\251 je rozlo\305\276enie subpixelov v\303\241\305\241ho displeja, po"
    "zrite Rtings.com pre 'subpixel layout' v\303\241\305\241ho displeja",
+   "Pou\305\276ije \305\241pi\304\215kov\303\275 jas, ktor\303\275 hl\303\241si displej, namiesto "
+   "\305\240pi\304\215kov\303\251ho jasu, ak ho displej hl\303\241si: to sa oznamuje jadr\303\241m a"
+   " to nes\303\272 metad\303\241ta HDR posielan\303\251 do displeja. Vypnut\303\251 pou\305\276ije "
+   "\305\240pi\304\215kov\303\275 jas tak, ako je nastaven\303\275.",
    "Video rozlo\305\276enia s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Povie video ovl\303\241da\304\215u, aby explicitne pou\305\276il zadan\303\275 re\305\276im buff"
    "rovania.",
@@ -8697,6 +9575,15 @@ static const struct
    "). M\303\264\305\276e sp\303\264sobi\305\245 artefakty \305\241k\303\241lovania.",
    "Zachyt\303\255 obraz po aplik\303\241cii filtrov (ale nie shaderov). Video bude vyzera\305\245 t"
    "ak pekne ako to, \304\215o vid\303\255te na obrazovke.",
+   "\304\214asuje opakovan\303\251 sn\303\255mky pod\304\276a toho, kedy displej hl\303\241si, \305"
+   "\276e zobrazenie ho naozaj dosiahlo, a nie pod\304\276a vlastn\303\275ch hod\303\255n frontendu."
+   " Plat\303\255 tam, kde to video ovl\303\241da\304\215 vie hl\303\241si\305\245; inde a v\305\241"
+   "ade, kde hl\303\241senie zastar\303\241, sa pou\305\276ij\303\272 hodiny. Vypnut\303\255m sa v"
+   "\305\276dy pou\305\276ij\303\272 hodiny.",
+   "Vertik\303\241lna obnovovacia frekvencia va\305\241ej obrazovky. Pou\305\276\303\255va sa na v"
+   "\303\275po\304\215et vhodnej vstupnej frekvencie zvuku a ako peri\303\263da displeja, pod\304"
+   "\276a ktorej \304\215asuje Vl\303\241knov\303\251 video tam, kde ju ovl\303\241da\304\215 nevie "
+   "nahl\303\241si\305\245.",
    "Odhadovan\303\241 obnovovacia frekvencia obrazovky v Hz.",
    "Obnovovacia frekvencia hl\303\241sen\303\241 ovl\303\241da\304\215om obrazu.",
 #ifdef HAVE_ODROIDGO2
@@ -8712,15 +9599,25 @@ static const struct
    "e. Polovi\304\215n\303\251 kroky sa uplat\305\210uj\303\272 iba na zdroje s vysok\303\275m rozl"
    "\303\255\305\241en\303\255m.",
    "Zaokr\303\272hli\305\245 nadol alebo nahor na najbli\305\276\305\241ie cel\303\251 \304\215\303"
-   "\255slo. 'Smart' prejde na pod\305\241k\303\241lovanie, ke\304\217 je obraz pr\303\255li\305\241"
-   " orezan\303\275, a nakoniec sa vr\303\241ti k nececel\303\251mu \305\241k\303\241lovaniu, ak s"
-   "\303\272 pod\305\241k\303\241lovacie okraje pr\303\255li\305\241 ve\304\276k\303\251.",
+   "\255slo. 'Inteligentn\303\251' prejde na pod\305\241k\303\241lovanie, ke\304\217 je obraz pr\303"
+   "\255li\305\241 orezan\303\275, a nakoniec sa vr\303\241ti k necelo\304\215\303\255seln\303\251mu"
+   " \305\241k\303\241lovaniu, ak s\303\272 pod\305\241k\303\241lovacie okraje pr\303\255li\305\241 "
+   "ve\304\276k\303\251.",
    "Zmena nastavenia \305\241k\303\241lovania.",
+   "Synchronizuje zobrazenie videa s predpove\304\217ou polohy riadku (scanline) pod\304\276a \304"
+   "\215asu jadra. Po\305\276iadavky: VSync vypnut\303\275, Oneskorenie sn\303\255mky vypnut\303\251"
+   ", frekvencia displeja bl\303\255zka 1x FPS jadra a GPU na maxim\303\241lnych taktoch.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
    "k rozdelen\303\255m obrazovky vertik\303\241lne a vykres\304\276ovan\303\255m ka\305\276dej \304"
    "\215asti obrazovky pod\304\276a po\304\215tu pod-sn\303\255mok.",
+   "Umo\305\276n\303\255 oknu SDL prep\303\255na\305\245 medzi re\305\276imami zobrazenia, ktor\303"
+   "\251 uv\303\241dza. 'Auto' ho pou\305\276ije len vtedy, ke\304\217 nat\303\255vny zobrazovac\303"
+   "\255 server nevie prep\303\255na\305\245 re\305\276imy. 'V\305\276dy' prep\303\255\305\241e nat"
+   "\303\255vny server: CRT SwitchRes potom vyber\303\241 z uveden\303\275ch re\305\276imov vr\303"
+   "\241tane t\303\275ch bez zn\303\241mych \304\215asovan\303\255 a vlastn\303\251 \304\215asovania"
+   " CRT nie s\303\272 k dispoz\303\255cii.",
    "Zmena nastaven\303\255 video v\303\275stupu.",
    "Povoli\305\245 pipeline video shaderov.",
    "Oneskori\305\245 automatick\303\251 na\304\215\303\255tavanie shaderu (v ms). M\303\264\305\276e"
@@ -8764,6 +9661,11 @@ static const struct
    "Ulo\305\276i\305\245 predvo\304\276bu shadera s odkazom na p\303\264vodne na\304\215\303\255tan"
    "\303\272 predvo\304\276bu, ktor\303\241 obsahuje iba zmeny parametrov, ktor\303\251 ste vykonali"
    ".",
+   "Pri na\304\215\303\255tavan\303\255 predvolieb a prechodov shaderov otvor\303\255 Spr\303\241vcu"
+   " s\303\272borov v naposledy pou\305\276itom prie\304\215inku. Kl\303\241vesov\303\251 skratky "
+   "\304\216al\305\241\303\255/Predo\305\241l\303\275 shader potom postupuj\303\272 od aktu\303\241l"
+   "nej predvo\304\276by namiesto cyklick\303\251ho prech\303\241dzania kore\305\210a prie\304\215in"
+   "ka 'Video shadery'.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
@@ -8787,6 +9689,27 @@ static const struct
    "\305\241ie tempo sn\303\255mok pri spusten\303\255 napr. 30 fps obsahu na 60 Hz displeji alebo 6"
    "0 fps obsahu na 120 Hz displeji.",
    "Zmena nastavenia synchroniz\303\241cie videa.",
+   "Sp\303\272\305\241\305\245a jadro a video ovl\303\241da\304\215 v samostatn\303\275ch vl\303\241"
+   "knach, tak\305\276e displej si udr\305\276\303\255 svoj rytmus, ke\304\217 sa jadro zasekne, a j"
+   "adro sa prekr\303\275va s re\305\245azcom shaderov a zobrazen\303\255m. S vo\304\276bou '\304"
+   "\214asovanie zobrazenia vo Vl\303\241knovom videu' sa jadro sp\303\272\305\241\305\245a tak nesk"
+   "oro, ako to \304\217al\305\241ie obnovenie dovol\303\255, \304\215o zodpoved\303\241 oneskoreniu"
+   " pri Oneskoren\303\255 sn\303\255mky. Jadr\303\241, ktor\303\251 vykres\304\276uj\303\272 na GPU"
+   ", be\305\276ia vl\303\241knovo s ovl\303\241da\304\215mi Vulkan, Direct3D 11, Direct3D 12 a gl; "
+   "s ostatn\303\275mi ovl\303\241da\304\215mi be\305\276ia nevl\303\241kno",
+   "vo bez oh\304\276adu na toto nastavenie.",
+   "Pri Vl\303\241knovom videu spust\303\255 ka\305\276d\303\272 sn\303\255mku jadra tak neskoro, ak"
+   "o to \304\217al\305\241ie obnovenie displeja dovol\303\255, pod\304\276a nameran\303\275ch \304"
+   "\215asov jadra a vykres\304\276ovania, namiesto pevn\303\251ho \304\215asova\304\215a. Zn\303"
+   "\255\305\276i oneskorenie na \303\272rove\305\210, ktor\303\272 dosahuje Oneskorenie sn\303\255m"
+   "ky pri nevl\303\241knovom videu, a sn\303\255mka, ktor\303\241 trv\303\241 dlh\305\241ie, sa zop"
+   "akuje namiesto vynechania. Vypnut\303\251: \304\215asuje \304\215asova\304\215 ako doteraz.",
+   "Pri Vl\303\241knovom videu zobrazuje posledn\303\272 sn\303\255mku \304\217alej v obnovovacej fr"
+   "ekvencii displeja, ke\304\217 jadro zaost\303\241va, namiesto ponechania predch\303\241dzaj\303"
+   "\272ceho zobrazenia na obrazovke. Udr\305\276\303\255 Vkladanie \304\215iernych sn\303\255mok a "
+   "efekty shaderov viazan\303\251 na obnovovaciu frekvenciu stabiln\303\251 aj pri zasek\303\241van"
+   "\303\255 jadra. Plat\303\255 tam, kde video ovl\303\241da\304\215 vie zopakova\305\245 sn\303"
+   "\255mku; nepou\305\276ije sa pri podsn\303\255mkach shaderov.",
    "Pok\303\272si sa zlep\305\241i\305\245 v\303\275kon pou\305\276it\303\255m Metal argument buffer"
    "ov. Niektor\303\251 cores to m\303\264\305\276u vy\305\276adova\305\245. Toto m\303\264\305\276e"
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
@@ -8892,6 +9815,8 @@ static const struct
    "Aplikuj\303\272 sa zmeny cheatov.",
    "Aplikuje sa z\303\241plata: %s",
    "Aplikuje sa shader",
+   "ASIO zatia\304\276 nie je spusten\303\275 zvukov\303\275 ovl\303\241da\304\215. Re\305\241tartuj"
+   "te RetroArch, aby ste otvorili jeho ovl\303\241dac\303\255 panel.",
    "Glob\303\241lna hlasitos\305\245 audio mix\303\251ra",
    "Zvuk stlmen\303\275.",
    "Zvuk zapnut\303\275.",
@@ -8938,6 +9863,7 @@ static const struct
    "Vyh\304\276ad\303\241vanie nebolo inicializovan\303\251/spusten\303\251.",
    "Kontrola jadra: ",
    "V\305\241etk\303\275ch %d \303\272spechov aktivovan\303\275ch pre t\303\272to rel\303\241ciu",
+   "Pr\303\255le\305\276itostn\303\275",
    "Zmena m\303\251dia RetroAchievements zlyhala: %s",
    "Dokon\304\215en\303\251 %s",
    "T\303\241to hra nem\303\241 \305\276iadne \303\272spechy.",
@@ -9036,6 +9962,9 @@ static const struct
    "\276en\303\275m kontroln\303\275m s\303\272\304\215tom obsahu v hlavi\304\215ke s\303\272boru re"
    "play. Pri prehr\303\241van\303\255 replay je vysoko pravdepodobn\303\241 desynchroniz\303\241cia"
    ".",
+   "Nepodarilo sa zap\303\255sa\305\245 EDID pre zvolen\303\272 predvo\304\276bu CRT.",
+   "EDID zap\303\255san\303\251 do %s. Ako ho na\304\215\303\255ta\305\245, n\303\241jdete v z\303"
+   "\241zname.",
    "Zadan\303\251 vlastn\303\251 \304\215asovanie",
    "Dekompresia u\305\276 prebieha.",
    "Dekompresia zlyhala.",
@@ -9160,6 +10089,8 @@ static const struct
    "Zadajte heslo",
    "Nespr\303\241vne heslo.",
    "Heslo je spr\303\241vne.",
+   "Heslo k\304\276\303\272\304\215enky",
+   "Nov\303\251 heslo k\304\276\303\272\304\215enky (pr\303\241zdne ho odstr\303\241ni)",
    "Zadajte heslo",
    "Nespr\303\241vne heslo.",
    "Heslo je spr\303\241vne.",
@@ -9177,6 +10108,14 @@ static const struct
    "v megabajtoch",
    "Dotykov\303\241 my\305\241 je zak\303\241zan\303\241",
    "Dotykov\303\241 my\305\241 je povolen\303\241",
+   "Heslo k\304\276\303\272\304\215enky odstr\303\241nen\303\251.",
+   "Heslo k\304\276\303\272\304\215enky nastaven\303\251.",
+   "Nespr\303\241vne heslo k\304\276\303\272\304\215enky.",
+   "Nastavuje sa heslo k\304\276\303\272\304\215enky...",
+   "K\304\276\303\272\304\215enka odomknut\303\241.",
+   "Odomyk\303\241 sa k\304\276\303\272\304\215enka...",
+   "Nepodarilo sa aktualizova\305\245 s\303\272bor s k\304\276\303\272\304\215om k\304\276\303\272"
+   "\304\215enky.",
    "Najnov\305\241ia verzia je u\305\276 nain\305\241talovan\303\241: ",
    "Najlep\305\241ie: %s",
    "Pokus o rebr\303\255\304\215ek zlyhal",
@@ -9219,6 +10158,8 @@ static const struct
    "Kontroluj\303\272 sa aktu\303\241lne polo\305\276ky: ",
    "Preh\304\276ad\303\241vam obsah: ",
    "Pam\303\244\305\245",
+   "Frekvencia obsahu",
+   "Frekvencia displeja",
    "Varovanie: Ch\303\275baj\303\272ce prostriedky, pou\305\276ite Online aktualiz\303\241tor, ak je"
    " dostupn\303\275.",
    "Vstupn\303\275 s\303\272bor filmu replay nie je platn\303\275 s\303\272bor REPLAY.",
@@ -9475,7 +10416,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (179149u
+      (sizeof(msg_hash_sk_blob) == (199865u
 #ifdef ANDROID
        + 389u
 #endif
@@ -9539,6 +10480,10 @@ typedef char msg_hash_sk_blob_check[
 #endif
 #ifdef ANDROID
        + 29u
+       + 16u
+       + 37u
+       + 27u
+       + 33u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
        + 21u
@@ -9591,6 +10536,25 @@ typedef char msg_hash_sk_blob_check[
 #ifdef _3DS
        + 49u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 23u
+       + 11u
+       + 28u
+       + 33u
+       + 9u
+       + 28u
+       + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 21u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 18u
+       + 19u
+       + 11u
+#endif
 #ifdef HAVE_QT
        + 664u
 #endif
@@ -9602,19 +10566,56 @@ typedef char msg_hash_sk_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 27u
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 30u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 21u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 21u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 27u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 10u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 28u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 25u
        + 11u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 21u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 22u
        + 15u
        + 16u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 19u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 9u
        + 12u
 #endif
@@ -9731,8 +10732,15 @@ typedef char msg_hash_sk_blob_check[
 #if defined(ANDROID)
        + 124u
 #endif
+#ifdef HAVE_SDL3
+       + 271u
+#endif
 #ifdef ANDROID
        + 68u
+       + 136u
+       + 192u
+       + 195u
+       + 198u
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
        + 96u
@@ -9782,6 +10790,25 @@ typedef char msg_hash_sk_blob_check[
 #ifdef _3DS
        + 71u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 50u
+       + 240u
+       + 53u
+       + 50u
+       + 51u
+       + 376u
+       + 43u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+       + 21u
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+       + 53u
+       + 68u
+       + 213u
+#endif
 #ifdef HAVE_GAME_AI
        + 35u
 #endif
@@ -9797,16 +10824,55 @@ typedef char msg_hash_sk_blob_check[
        + 49u
        + 52u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 39u
        + 49u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 59u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 277u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 104u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 71u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 183u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+       + 376u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 218u
        + 43u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 53u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+       + 176u
        + 49u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 49u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 211u
        + 70u
 #endif
@@ -10082,6 +11148,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_PRESET,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SCALE_PASS,
    (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_SHADER_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_HELP_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_HELP_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_MIXER_STREAM,
    (uint32_t)MENU_ENUM_LABEL_RUMBLE_PORT_16,
@@ -10140,32 +11207,39 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_FORMAT_NEGOTIATION_FLOAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_PLAYING_LOOPED,
@@ -10173,9 +11247,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_STREAM_STATE_STOPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
@@ -10444,6 +11523,7 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CORE_UPDATER_BUILDBOT_URL,
@@ -10468,11 +11548,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MAX_FREQ,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MENU_GOVERNOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_POLICY_MIN_FREQ,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CPU_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CREATE_NEW_PLAYLIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CRT_SWITCH_X_AXIS_CENTERING,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_CTR_VIDEO_MODE_2D_400X240,
@@ -10483,7 +11566,26 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SHOW_WELCOME_SCREEN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DETECT_CORE_LIST_OK_CURRENT_CORE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED,
@@ -10497,11 +11599,18 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PAUSED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISCORD_STATUS_PLAYING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFORMATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_GENUINE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_RELEASE_DATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SERIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_SYSTEM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TITLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_DATA_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_LENGTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_TRACK_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISC_INFO_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_IMAGE_APPEND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_INDEX,
@@ -10510,24 +11619,40 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISK_TRAY_INSERT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHECKSUM_BAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CHROMATICITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_COLORIMETRY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_FLAGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_HDR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_CTA_VIDEO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DETAILED_TIMING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_DID_SECTIONS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_ESTABLISHED_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_FEATURES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMMA,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_GAMUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_MANUFACTURER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PREFERRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_PRODUCT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RANGE_LIMITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_RAW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SCREEN_SIZE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SERIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_SOURCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_RESOLUTION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DONT_CARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOADED_FILE_DETECT_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DOWNLOAD_CORE,
@@ -10571,6 +11696,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PLAYER_COUNT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_REGION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_MONTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_EXPLORE_BY_SCORE,
@@ -10683,8 +11809,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ICADE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_DOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_L2,
@@ -10701,6 +11829,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
@@ -10850,6 +11980,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -10873,6 +12009,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYCHAIN_PASSPHRASE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
 #ifdef HAVE_LAKKA_SWITCH
@@ -10966,6 +12105,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_DUAL_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_MEDIUM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MCP_SERVER_TOKEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MEMORY_UPDATE_INTERVAL,
@@ -10977,14 +12119,16 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_DUPLICATES_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_BLUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_GREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FONT_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FRAME_RATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_HORIZONTAL_ANIMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INPUT_SWAP_OK_CANCEL,
@@ -11039,7 +12183,6 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -11051,6 +12194,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SOUND_BGM,
@@ -11062,6 +12206,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_TICKER_SPEED,
@@ -11199,6 +12344,25 @@ static const uint32_t msg_hash_sk_ids[] =
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_NEW3DS_SPEEDUP_ENABLE,
 #endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_READAHEAD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NFS_CLIENT_VERSION,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NOTIFICATION_SHOW_AUTOCONFIG,
@@ -11233,6 +12397,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_CORE_OPTIONS_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_DISK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_ENTRIES_TO_DISPLAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NO_EXTENSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_FAVORITES_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_HISTORY_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NO_IMAGES_AVAILABLE,
@@ -11379,6 +12544,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PRESENT_OPTIONAL,
@@ -11585,6 +12751,15 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_PUBLISHER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_REGION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_APRIL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_FEBRUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JULY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JUNE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MARCH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_MAY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_OCTOBER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_SEPTEMBER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_YEAR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RUMBLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_RDB_ENTRY_SCORE,
@@ -11708,6 +12883,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -11719,6 +12895,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SAVING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DB_SELECT_AUTO_FIRST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_ENTRY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_FILE,
@@ -11729,6 +12907,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SERIAL_AND_CRC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_SINGLE_FILE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_TARGET_PLAYLIST_AUTO_ANY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_THIS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SCAN_USE_DB_CUSTOM_DAT_LOOSE,
@@ -11765,8 +12945,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -11794,18 +12976,58 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_KDC,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_READAHEAD,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_REALM,
+#endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SEC_KRB_OR_NTLM,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -11820,6 +13042,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_VIDEO_PROCESSOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATE_SLOT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STATUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_STDIN_CMD_ENABLE,
@@ -11882,9 +13105,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_DISCHARGING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_POWER_SOURCE_NO_SOURCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_RETROARCH_VERSION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_INFO_VIDEO_CONTEXT_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SYSTEM_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_THUMBNAILS_MATERIALUI,
@@ -11917,6 +13142,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_PLURAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIME_UNIT_YEARS_SINGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TIMING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_DISABLED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_OPTIONAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_TLS_VERIFY_MODE_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TRUE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_DUTY_CYCLE_HALF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TURBO_MODE_CLASSIC,
@@ -11927,6 +13156,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWINSTICK_ANALOG_FORCED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_TWITCH_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UDP_STREAM_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_START_ON_BOOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_UI_COMPANION_TOGGLE,
@@ -11955,6 +13185,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_IMAGE_VIEWER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_BUILTIN_PLAYER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_USE_LAST_START_DIRECTORY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_USE_THIS_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIBRATE_ON_KEYPRESS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_3DS_DISPLAY_MODE,
@@ -11999,10 +13230,12 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DISABLE_COMPOSITION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_DRIVER_FALLBACK,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_FLICKER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FONT_SIZE,
@@ -12011,8 +13244,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_DELAY_EFFECTIVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FRAME_TIME_SAMPLE_GATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_FORCED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FSE_RELAXED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_MODE_SETTINGS,
@@ -12020,6 +13255,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GAMMA,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GL_DIRECT_SPIRV,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_SCREENSHOT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
@@ -12032,7 +13268,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_MODE_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -12046,6 +13284,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
@@ -12055,6 +13294,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY,
@@ -12087,6 +13327,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -12123,6 +13364,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -12156,6 +13399,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_WINDOW_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_CLIENT_BUFFER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WASAPI_SH_BUFFER_DEVICE_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_DISCONNECT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
@@ -12249,36 +13494,48 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_APPICON_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_ASSETS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_CONTROL_PANEL,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ASIO_OUTPUT_CHANNEL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DEVICE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_DSP_PLUGIN_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_ENABLE_MENU,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_CALLBACK,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTFORWARD_SPEEDUP,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FASTPATH_S16,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_FORMAT_NEGOTIATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_HEADPHONE_VIRTUAL_SURROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_LATENCY_FLOOR,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MAX_TIMING_SKEW,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MIXER_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_MUTE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RATE_CONTROL_DELTA,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_RESPECT_SILENT_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_REWIND_MUTE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SINK_RATE_ESTIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREADED_PIPELINE,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_THREAD_PRIORITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_TIME_STRETCH_LOWPASS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_EXCLUSIVE_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_MMCSS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_SH_BUFFER_LENGTH,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTOSAVE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
@@ -12442,6 +13699,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SET_STANDALONE_EXEMPT,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_SUGGEST_ALWAYS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP,
+   (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_COMPRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_BACKUP_HISTORY_SIZE,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_AUTO_EXTRACT_ARCHIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CORE_UPDATER_BUILDBOT_URL,
@@ -12450,14 +13708,30 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCHRES_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_HIRES_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_PORCH_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_SUPER,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_RESOLUTION_USE_CUSTOM_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_VERTICAL_ADJUST,
+   (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_WRITE_EDID,
    (uint32_t)MENU_ENUM_SUBLABEL_CRT_SWITCH_X_AXIS_CENTERING,
    (uint32_t)MENU_ENUM_SUBLABEL_CURSOR_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DATABASE_MANAGER,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_ENTRY,
    (uint32_t)MENU_ENUM_SUBLABEL_DELETE_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_ICON_VIEW_ZOOM,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_MAX_SIZE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_QUALITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_THUMBNAIL_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_VIEW_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_HEIGHT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_WIDTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_X,
+   (uint32_t)MENU_ENUM_SUBLABEL_DESKTOP_MENU_WINDOW_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_DIRECTORY_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISCORD_ALLOW,
    (uint32_t)MENU_ENUM_SUBLABEL_DISC_INFORMATION,
@@ -12466,6 +13740,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_EJECT,
    (uint32_t)MENU_ENUM_SUBLABEL_DISK_TRAY_INSERT,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_EDID_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_DOWNLOAD_CORE_SYSTEM_FILES,
@@ -12549,6 +13825,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_BLOCK_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_DEVICE_MERGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -12597,6 +13875,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SAVE_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_NEXT,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_PREV,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SHADER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_HOLD_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_SLOWMOTION_KEY,
@@ -12610,7 +13890,6 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12652,11 +13931,13 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
+#ifdef HAVE_SDL3
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SDL3_SYSTEM_KEYBOARD,
+#endif
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SELECT_PHYSICAL_KEYBOARD,
 #endif
@@ -12666,6 +13947,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+#ifdef ANDROID
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_PRESSURE_SENSITIVITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_GESTURE,
@@ -12687,6 +13974,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_KEYCHAIN_PASSPHRASE,
 #ifdef HAVE_LAKKA_SWITCH
    (uint32_t)MENU_ENUM_SUBLABEL_LAKKA_SWITCH_OPTIONS,
 #endif
@@ -12737,6 +14025,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SHOW_NAV_BAR,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_SWITCH_ICONS,
    (uint32_t)MENU_ENUM_SUBLABEL_MATERIALUI_THUMBNAIL_BACKGROUND_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MCP_SERVER_TOKEN,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_MEMORY_UPDATE_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ALLOW_TABS_BACK,
@@ -12746,9 +14037,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_EXTENSION_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAME_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_INPUT_SWAP_OK_CANCEL,
@@ -12797,7 +14089,6 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12809,12 +14100,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_RESTART_RETROARCH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SHUTDOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_SUBLABELS_CURRENT_SELECTION_ONLY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SINGLECLICK_PLAYLISTS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SOUNDS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_STARTUP_PAGE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TEXTURE_MIPMAPPING,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_BACKGROUND_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_AUDIO,
+   (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_PREVIEW_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_THUMBNAIL_UPSCALE_THRESHOLD,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_TICKER_SPEED,
@@ -12909,6 +14202,25 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_BROWSE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_EXPORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_MOUNT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_NUM_CONTEXTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_PORT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_READAHEAD,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SETTINGS,
+#endif
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SUBDIR,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_TIMEOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_VERSION,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -13012,6 +14324,19 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_POWER_MANAGEMENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_PREEMPT_FRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_PRIVACY_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_GRID_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_ALL_PLAYLISTS_LIST_MAX_COUNT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_CUSTOM_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_HIGHLIGHT_COLOR,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_GEOMETRY,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SAVE_LAST_TAB,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SCAN_FINISH_CONFIRM,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SHOW_HIDDEN_FILES,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_STARTUP_PLAYLIST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_SUGGEST_LOADED_CORE_FIRST,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THEME,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_CACHE_LIMIT,
+   (uint32_t)MENU_ENUM_SUBLABEL_QT_MENU_VIEW_OPTIONS_THUMBNAIL_DROP_SIZE_LIMIT,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_OVERRIDE_OPTIONS,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_FAVORITES,
    (uint32_t)MENU_ENUM_SUBLABEL_QUICK_MENU_SHOW_ADD_TO_PLAYLIST,
@@ -13122,6 +14447,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_MAX_KEEP,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVESTATE_THUMBNAIL_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_AS_CONFIG,
+   (uint32_t)MENU_ENUM_SUBLABEL_SAVE_COMPRESSION_CODEC,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CONTENT_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_SAVE_CURRENT_CONFIG_OVERRIDE_CORE,
@@ -13168,8 +14494,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -13185,15 +14513,54 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_ENABLE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_KDC,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_PASSWORD,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_READAHEAD,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_REALM,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+   (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SUBDIR,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_WORKGROUP,
 #endif
@@ -13207,6 +14574,7 @@ static const uint32_t msg_hash_sk_ids[] =
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_START_CORE,
    (uint32_t)MENU_ENUM_SUBLABEL_STATE_SLOT,
+   (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_HIDE_IN_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_STATISTICS_SHOW,
    (uint32_t)MENU_ENUM_SUBLABEL_STDIN_CMD_ENABLE,
 #ifdef HAVE_MIST
@@ -13235,6 +14603,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SYSTEM_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_TAKE_SCREENSHOT,
    (uint32_t)MENU_ENUM_SUBLABEL_THREADED_DATA_RUNLOOP_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_THREAD_PREFER_FAST_CORES,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_THUMBNAILS_MATERIALUI,
@@ -13246,6 +14615,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_TIMEZONE,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_TIME_SHOW,
+   (uint32_t)MENU_ENUM_SUBLABEL_TLS_VERIFY_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_UI_COMPANION_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_UI_MENUBAR_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_LOAD_STATE,
    (uint32_t)MENU_ENUM_SUBLABEL_UNDO_SAVE_STATE,
@@ -13298,6 +14669,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_REMOVE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FILTER_THREADS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_PATH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FONT_SIZE,
@@ -13305,7 +14677,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FORCE_SRGB_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_DELAY_AUTO,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_FROM_DISPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FRAME_TIME_SAMPLE_GATED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FSE_NEGOTIATION,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_MODE_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_FULLSCREEN_X,
@@ -13321,8 +14695,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_MAX_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_PAPER_WHITE_NITS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SCANLINES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SEND_LUMINANCE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_SUBPIXEL_LAYOUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_HDR_USE_DISPLAY_PEAK,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_LAYOUT_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_FRAME_LATENCY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MAX_SWAPCHAIN_IMAGES,
@@ -13341,6 +14717,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_POST_FILTER_RECORD,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_AUTO,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_REFRESH_RATE_POLLED,
 #ifdef HAVE_ODROIDGO2
@@ -13351,7 +14729,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_AXIS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_DELAY,
@@ -13375,12 +14755,16 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_GLOBAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_PARENT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_PRESET_SAVE_REFERENCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_REMEMBER_LAST_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13450,6 +14834,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_APPLYING_CHEAT,
    (uint32_t)MSG_APPLYING_PATCH,
    (uint32_t)MSG_APPLYING_SHADER,
+   (uint32_t)MSG_AUDIO_ASIO_NOT_RUNNING,
    (uint32_t)MSG_AUDIO_MIXER_VOLUME,
    (uint32_t)MSG_AUDIO_MUTED,
    (uint32_t)MSG_AUDIO_UNMUTED,
@@ -13492,6 +14877,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_CHEAT_SEARCH_NOT_INITIALIZED,
    (uint32_t)MSG_CHECKING_CORE,
    (uint32_t)MSG_CHEEVOS_ALL_ACHIEVEMENTS_ACTIVATED,
+   (uint32_t)MSG_CHEEVOS_CASUAL_MODE,
    (uint32_t)MSG_CHEEVOS_CHANGE_MEDIA_FAILED,
    (uint32_t)MSG_CHEEVOS_COMPLETED_GAME,
    (uint32_t)MSG_CHEEVOS_GAME_HAS_NO_ACHIEVEMENTS,
@@ -13574,6 +14960,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_COULD_NOT_READ_MOVIE_HEADER,
    (uint32_t)MSG_COULD_NOT_READ_STATE_FROM_MOVIE,
    (uint32_t)MSG_CRC32_CHECKSUM_MISMATCH,
+   (uint32_t)MSG_CRT_SWITCH_EDID_FAILED,
+   (uint32_t)MSG_CRT_SWITCH_EDID_WRITTEN,
    (uint32_t)MSG_CUSTOM_TIMING_GIVEN,
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,
@@ -13694,6 +15082,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_KEYCHAIN_PASSPHRASE,
+   (uint32_t)MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
@@ -13711,6 +15101,13 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_REMOVED,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_SET,
+   (uint32_t)MSG_KEYCHAIN_PASSPHRASE_WRONG,
+   (uint32_t)MSG_KEYCHAIN_SETTING_PASSPHRASE,
+   (uint32_t)MSG_KEYCHAIN_UNLOCKED,
+   (uint32_t)MSG_KEYCHAIN_UNLOCKING,
+   (uint32_t)MSG_KEYCHAIN_WRITE_FAILED,
    (uint32_t)MSG_LATEST_CORE_INSTALLED,
    (uint32_t)MSG_LEADERBOARD_BEST,
    (uint32_t)MSG_LEADERBOARD_FAILED,
@@ -13748,6 +15145,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_PLAYLIST_CLEANUP,
    (uint32_t)MSG_MANUAL_CONTENT_SCAN_START,
    (uint32_t)MSG_MEMORY,
+   (uint32_t)MSG_MENU_FRAME_RATE_CONTENT,
+   (uint32_t)MSG_MENU_FRAME_RATE_DISPLAY,
    (uint32_t)MSG_MISSING_ASSETS,
    (uint32_t)MSG_MOVIE_FILE_IS_NOT_A_VALID_REPLAY_FILE,
    (uint32_t)MSG_MOVIE_FORMAT_DIFFERENT_SERIALIZER_VERSION,

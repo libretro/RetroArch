@@ -219,6 +219,22 @@ enum text_alignment
  * without having to remember the cast. */
 #define VIDEO_SCALE_AREA(d) ((size_t)VIDEO_SCALE_W(d) * VIDEO_SCALE_H(d))
 
+/* Each axis of two pairs at its least or greatest, staying packed: a
+ * half compares with the other one masked off. */
+#define VIDEO_SCALE_HI_MASK (VIDEO_SCALE_DIM_MAX << 16)
+#define VIDEO_SCALE_HALF_MIN(a, b, m) \
+   (((unsigned)(a) & (m)) < ((unsigned)(b) & (m)) \
+    ? ((unsigned)(a) & (m)) : ((unsigned)(b) & (m)))
+#define VIDEO_SCALE_HALF_MAX(a, b, m) \
+   (((unsigned)(a) & (m)) > ((unsigned)(b) & (m)) \
+    ? ((unsigned)(a) & (m)) : ((unsigned)(b) & (m)))
+#define VIDEO_SCALE_MIN(a, b) \
+   (  VIDEO_SCALE_HALF_MIN(a, b, VIDEO_SCALE_HI_MASK) \
+    | VIDEO_SCALE_HALF_MIN(a, b, VIDEO_SCALE_DIM_MAX))
+#define VIDEO_SCALE_MAX(a, b) \
+   (  VIDEO_SCALE_HALF_MAX(a, b, VIDEO_SCALE_HI_MASK) \
+    | VIDEO_SCALE_HALF_MAX(a, b, VIDEO_SCALE_DIM_MAX))
+
 /* An alpha modulation as an 8-bit channel, saturated. An overlay's
  * alpha is its opacity times a per-desc alpha_mod, which packs set
  * above 1 to brighten a pressed button; packed straight into a byte
@@ -249,6 +265,12 @@ enum text_alignment
     | ((unsigned)VIDEO_POS_CLAMP(y) & 0xffffu))
 #define VIDEO_POS_X(p) ((int)(int16_t)(((unsigned)(p) >> 16) & 0xffffu))
 #define VIDEO_POS_Y(p) ((int)(int16_t)( (unsigned)(p)        & 0xffffu))
+/* One axis of a packed position set, or both moved by a delta, the
+ * other half kept. */
+#define VIDEO_POS_PUT_X(p, x) ((p) = VIDEO_POS_PACK((x), VIDEO_POS_Y(p)))
+#define VIDEO_POS_PUT_Y(p, y) ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p), (y)))
+#define VIDEO_POS_ADD(p, dx, dy) \
+   ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p) + (dx), VIDEO_POS_Y(p) + (dy)))
 
 /* One axis of an origin, leaving the other half as it stands. */
 #define VIDEO_POS_PUT_X(p, x) \
@@ -367,7 +389,15 @@ enum display_flags
    /* Set by a context driver whose default framebuffer is FP16 scRGB
     * (linear, 1.0 = 80 nits): the video driver must encode SDR content
     * for HDR output itself (paper-white scaling etc.). */
-   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER
+   GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER,
+   /* Set by a context driver whose default framebuffer is 10-bit
+    * Rec.2020 PQ (HDR10, e.g. a KMS scanout with HDR metadata): the
+    * video driver encodes its frame to PQ instead of scRGB. */
+   GFX_CTX_FLAGS_HDR10_FRAMEBUFFER,
+   /* The window can go between windowed and borderless fullscreen where
+    * it stands, through set_video_mode, with the driver seeing only a
+    * resize: a fullscreen toggle need not restart the drivers. */
+   GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE
 };
 
 enum shader_uniform_type
@@ -400,12 +430,10 @@ enum shader_program_type
 
 struct font_glyph
 {
-   unsigned width;
-   unsigned height;
-
-   /* Texel coordinate offset for top-left pixel of this glyph. */
-   unsigned atlas_offset_x;
-   unsigned atlas_offset_y;
+   /* Width and height, and the texel offset of the glyph's top-left
+    * pixel in the atlas, each a pair in VIDEO_SCALE_PACK's layout. */
+   unsigned dims;
+   unsigned atlas_pos;
 
    /* When drawing this glyph, apply an offset to
     * current X/Y draw coordinate. */
@@ -434,14 +462,21 @@ struct font_atlas
    unsigned width;
    unsigned height;
    /* Dirty region in pixels, covering every glyph cell updated since
-    * the consumer last cleared the dirty flag; x1/y1 are exclusive
-    * and the values are only meaningful while dirty is set.
-    * Consumers may upload just this region (or any superset of it,
-    * such as the full-width row band) instead of the whole atlas. */
-   unsigned dirty_x0;
-   unsigned dirty_y0;
-   unsigned dirty_x1;
-   unsigned dirty_y1;
+    * the consumer last cleared the dirty flag: its top-left corner and
+    * its exclusive bottom-right one, each x and y in VIDEO_SCALE_PACK's
+    * layout (read with VIDEO_SCALE_W/H), only meaningful while dirty is
+    * set. Consumers may upload just this region (or any superset of
+    * it, such as the full-width row band) instead of the whole atlas. */
+   unsigned dirty_xy0;
+   unsigned dirty_xy1;
+   /* Set by the consumer to the largest texture it can make, packed
+    * with VIDEO_SCALE_PACK. When a frame needs more glyphs than the
+    * atlas has cells for, the next get_atlas() call in a later frame
+    * grows the atlas - width and height, never past these - and the
+    * consumer remakes its texture at the new size. Zero, the default,
+    * keeps the atlas at its first size. Cells only ever get added: a
+    * glyph's offsets never change. */
+   unsigned max_dims;
    enum font_atlas_format format;
    bool dirty;
 };

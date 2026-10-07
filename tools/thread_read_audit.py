@@ -26,7 +26,10 @@ about that function, reviewed like the allowlist pairs.
 
 Entries are found in the source (sthread_create/pthread_create argument
 symbols, task->handler assignments, task_set_handler calls) so a new
-thread or handler is audited the day it lands; the call graph comes
+thread or handler is audited the day it lands. A handler assigned in a
+function that also sets RETRO_TASK_FLG_MAIN_THREAD on the task runs on
+the main thread and is not an entry, unless its file ever clears that
+flag or the same handler is also assigned without it; the call graph comes
 from `objdump -d` of the binary, so what is audited is what ships in
 that configuration.  Functions the configuration compiles out are not
 seen: run against the fullest builds available.
@@ -67,6 +70,14 @@ PTHREAD_RE = re.compile(
 HANDLER_RE = re.compile(
     r"(?:task->handler\s*=\s*|task_set_handler\s*\([^,]+,\s*)"
     r"([a-z_][a-z_0-9]*)")
+MAIN_SET_RE = re.compile(
+    r"flags\s*\|=[^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b"
+    r"|task_set_flags\s*\([^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b[^;]*,"
+    r"\s*true\s*\)")
+MAIN_CLEAR_RE = re.compile(
+    r"&=\s*~[^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b"
+    r"|task_set_flags\s*\([^;]*\bRETRO_TASK_FLG_MAIN_THREAD\b[^;]*,"
+    r"\s*false\s*\)")
 SKIP_DIRS = {".git", "deps", "obj-unix", "pkg", "media", "samples"}
 CALLBACK_ENTRIES = ("audio_driver_callback",)
 # Driver frame-context functions: under the threaded wrapper these run
@@ -144,6 +155,124 @@ FRAME_CONTEXT_ENTRIES = (
     "d3d12_gfx_frame",
 )
 
+# The context driver callbacks the frame-context functions above call
+# through their gfx_ctx_driver_t (ctx_driver->swap_buffers and the
+# rest): another indirect edge the binary walk cannot follow, one level
+# below the wrapper's.  Whatever function a context driver's table puts
+# in one of these slots runs inside the frame context, so it is an entry
+# too.  The slots are found by field name in gfx/video_driver.h and the
+# functions in them from every gfx_ctx_driver_t table in the tree.
+FRAME_CONTEXT_CTX_SLOTS = (
+    "update_window_title",
+    "set_resize",
+    "swap_buffers",
+    "bind_hw_render",
+)
+
+C_COMMENT_RE = re.compile(r"/\*.*?\*/|//[^\n]*", re.S)
+CTX_TABLE_RE = re.compile(
+    r"\bgfx_ctx_driver_t\s+[A-Za-z_][A-Za-z_0-9]*\s*=\s*\{")
+IDENT_RE = re.compile(r"^[A-Za-z_][A-Za-z_0-9]*$")
+
+
+def first_arm(text):
+    """Preprocessor lines dropped, keeping only each conditional's first
+    arm: a table's #ifdef X / #else arms fill the same slot, so one arm
+    is enough to number the slots."""
+    keep, stack = [], []
+    for line in text.split("\n"):
+        d = line.strip()
+        if d.startswith("#"):
+            word = d[1:].strip().split(None, 1)[0] if d[1:].strip() else ""
+            if word in ("if", "ifdef", "ifndef"):
+                stack.append(all(stack) if stack else True)
+            elif word in ("elif", "else") and stack:
+                stack[-1] = False
+            elif word == "endif" and stack:
+                stack.pop()
+            continue
+        if not stack or all(stack):
+            keep.append(line)
+    return "\n".join(keep)
+
+
+def ctx_struct_fields(header_text):
+    """gfx_ctx_driver_t's fields, in order."""
+    m = re.search(r"typedef\s+struct\s+gfx_ctx_driver\s*\{(.*?)\}\s*"
+                  r"gfx_ctx_driver_t\s*;", C_COMMENT_RE.sub(" ", header_text),
+                  re.S)
+    if not m:
+        return []
+    fields = []
+    for decl in first_arm(m.group(1)).split(";"):
+        decl = " ".join(decl.split())
+        if not decl:
+            continue
+        f = re.search(r"\(\s*\*\s*([A-Za-z_][A-Za-z_0-9]*)\s*\)", decl)
+        if not f:
+            f = re.search(r"([A-Za-z_][A-Za-z_0-9]*)\s*$", decl)
+        if f:
+            fields.append(f.group(1))
+    return fields
+
+
+def ctx_table_slots(fields, source_text, slots):
+    """The functions every gfx_ctx_driver_t table in source_text puts in
+    the named slots, positional or designated."""
+    found = set()
+    text = C_COMMENT_RE.sub(" ", source_text)
+    for m in CTX_TABLE_RE.finditer(text):
+        depth, i = 1, m.end()
+        while i < len(text) and depth:
+            depth += {"{": 1, "}": -1}.get(text[i], 0)
+            i += 1
+        body = first_arm(text[m.end():i - 1])
+        items, depth, cur = [], 0, []
+        for ch in body:
+            if ch in "({[":
+                depth += 1
+            elif ch in ")}]":
+                depth -= 1
+            if ch == "," and depth == 0:
+                items.append("".join(cur).strip())
+                cur = []
+            else:
+                cur.append(ch)
+        if "".join(cur).strip():
+            items.append("".join(cur).strip())
+        for pos, item in enumerate(items):
+            d = re.match(r"^\.([A-Za-z_][A-Za-z_0-9]*)\s*=\s*(.*)$", item, re.S)
+            if d:
+                field, value = d.group(1), d.group(2).strip()
+            elif pos < len(fields):
+                field, value = fields[pos], item
+            else:
+                continue
+            value = re.sub(r"^\(\s*[A-Za-z_][A-Za-z_0-9 *]*\)\s*", "", value)
+            if (field in slots and IDENT_RE.match(value)
+                    and value not in ("NULL", "true", "false")):
+                found.add(value)
+    return found
+
+
+def ctx_callback_entries(root):
+    try:
+        with open(os.path.join(root, "gfx", "video_driver.h"),
+                  errors="replace") as f:
+            fields = ctx_struct_fields(f.read())
+    except OSError:
+        return set()
+    found = set()
+    for path in iter_sources(root):
+        try:
+            with open(path, errors="replace") as f:
+                text = f.read()
+        except OSError:
+            continue
+        if "gfx_ctx_driver_t" in text:
+            found |= ctx_table_slots(fields, text, FRAME_CONTEXT_CTX_SLOTS)
+    return found
+
 
 def iter_sources(root):
     for base, dirs, files in os.walk(root):
@@ -153,8 +282,18 @@ def iter_sources(root):
                 yield os.path.join(base, f)
 
 
-def source_entries(root):
+def enclosing_function(text, pos):
+    """The body of the function containing pos: from the column-0 brace
+    that opens it to the column-0 brace that closes it."""
+    start = text.rfind("\n{", 0, pos)
+    end = text.find("\n}", pos)
+    return text[start if start >= 0 else 0:end if end >= 0 else len(text)]
+
+
+def source_entries(root, main_thread=None):
     entries = {}
+    # handler name -> [path, every assignment flagged main-thread]
+    handlers = {}
     for path in iter_sources(root):
         rel = os.path.relpath(path, root)
         try:
@@ -177,8 +316,18 @@ def source_entries(root):
                          text):
                 continue
             entries.setdefault(m.group(1), rel)
+        clears = MAIN_CLEAR_RE.search(text) is not None
         for m in HANDLER_RE.finditer(text):
-            entries.setdefault(m.group(1), rel)
+            main = (not clears and MAIN_SET_RE.search(
+                enclosing_function(text, m.start())) is not None)
+            site = handlers.setdefault(m.group(1), [rel, True])
+            site[1] = site[1] and main
+    for name, (rel, main) in handlers.items():
+        if main:
+            if main_thread is not None:
+                main_thread[name] = rel
+        else:
+            entries.setdefault(name, rel)
     for name in CALLBACK_ENTRIES:
         entries.setdefault(name, "(pipeline callback)")
     for name in DEVICE_CALLBACK_ENTRIES:
@@ -186,6 +335,8 @@ def source_entries(root):
     if INCLUDE_FRAME_CONTEXT:
         for name in FRAME_CONTEXT_ENTRIES:
             entries.setdefault(name, "(threaded frame context)")
+        for name in sorted(ctx_callback_entries(root)):
+            entries.setdefault(name, "(context callback in a frame)")
     return entries
 
 
@@ -263,7 +414,8 @@ def load_allow(path):
 
 def run(binary, root, allow_path, list_unaudited=False,
         objdump="objdump"):
-    entries = source_entries(root)
+    main_thread = {}
+    entries = source_entries(root, main_thread)
     try:
         out = subprocess.run([objdump, "-d", binary],
                              capture_output=True, text=True, check=True)
@@ -291,18 +443,34 @@ def run(binary, root, allow_path, list_unaudited=False,
         for e in absent:
             print("  %s  (%s)" % (e, entries[e]))
     print("thread read audit: %d entr%s in binary, %d finding(s), "
-          "%d allowlisted pair(s), %d boundar%s"
+          "%d allowlisted pair(s), %d boundar%s, "
+          "%d main-thread task handler(s) not entries"
           % (audited, "y" if audited == 1 else "ies",
              len(findings), len(allow),
-             len(boundaries), "y" if len(boundaries) == 1 else "ies"),
+             len(boundaries), "y" if len(boundaries) == 1 else "ies",
+             len(main_thread)),
           file=sys.stderr)
     return 1 if findings else 0
 
 
 FIXTURE = """
 #include <pthread.h>
+#define RETRO_TASK_FLG_MAIN_THREAD (1 << 5)
+typedef struct retro_task retro_task_t;
+struct retro_task { void (*handler)(retro_task_t *task); unsigned flags; };
 void *config_get_ptr(void) { static int s; return &s; }
 static void leaf_reads(void) { config_get_ptr(); }
+static void main_handler(retro_task_t *task) { (void)task; leaf_reads(); }
+static void pool_handler(retro_task_t *task) { (void)task; leaf_reads(); }
+static void push_main(retro_task_t *task)
+{
+   task->handler = main_handler;
+   task->flags  |= RETRO_TASK_FLG_MAIN_THREAD;
+}
+static void push_pool(retro_task_t *task)
+{
+   task->handler = pool_handler;
+}
 static void *bad_worker(void *p) { leaf_reads(); return p; }
 static void crossing(void) { leaf_reads(); }
 static void *deferring_worker(void *p) { crossing(); return p; }
@@ -310,6 +478,11 @@ static void *good_worker(void *p) { return p; }
 int main(void)
 {
    pthread_t a, b, c;
+   retro_task_t m = {0, 0}, w = {0, 0};
+   push_main(&m);
+   push_pool(&w);
+   m.handler(&m);
+   w.handler(&w);
    pthread_create(&a, 0, bad_worker, 0);
    pthread_create(&b, 0, good_worker, 0);
    pthread_create(&c, 0, deferring_worker, 0);
@@ -331,6 +504,20 @@ def selftest():
             f.write("void *ghost_worker(void *p);\n"
                     "void ghost_spawn(void *t)\n"
                     "{ pthread_create(t, 0, ghost_worker, 0); }\n")
+        # A main-thread task whose file clears the flag again: it may
+        # run on a worker, so its handler stays an entry.
+        with open(os.path.join(td, "unpin.c"), "w") as f:
+            f.write("static void flip_handler(retro_task_t *task);\n"
+                    "static void push_flip(retro_task_t *task)\n"
+                    "{\n"
+                    "   task->handler = flip_handler;\n"
+                    "   task->flags  |= RETRO_TASK_FLG_MAIN_THREAD;\n"
+                    "}\n"
+                    "static void unpin(retro_task_t *task)\n"
+                    "{\n"
+                    "   task_set_flags(task, RETRO_TASK_FLG_MAIN_THREAD,"
+                    " false);\n"
+                    "}\n")
         if subprocess.run(["gcc", "-O0", src, "-o", binp,
                            "-lpthread"]).returncode:
             print("selftest: fixture build failed")
@@ -340,9 +527,12 @@ def selftest():
                              capture_output=True, text=True, check=True)
         calls, defined = call_graph(out.stdout.splitlines())
         findings, audited = audit(calls, defined, entries, set())
-        ok = (audited == 3
+        ok = (audited == 4
               and any(e == "bad_worker" and r == "config_get_ptr"
                       for e, _, r in findings)
+              and any(e == "pool_handler" for e, _, _ in findings)
+              and "main_handler" not in entries
+              and "flip_handler" in entries
               and any(e == "deferring_worker" for e, _, _ in findings)
               and not any(e == "good_worker" for e, _, _ in findings)
               and "ghost_worker" in entries
@@ -351,7 +541,35 @@ def selftest():
             print("selftest: FAIL entries=%d findings=%r"
                   % (audited, findings))
             return 1
-        allow = {("bad_worker", "config_get_ptr")}
+        fields = ctx_struct_fields(
+            "typedef struct gfx_ctx_driver {\n"
+            "   void* (*init)(void *video_driver);\n"
+            "   update_window_title_cb update_window_title;\n"
+            "   bool has_windowed;\n"
+            "   void (*swap_buffers)(void*);\n"
+            "   const char *ident;\n"
+            "   void (*bind_hw_render)(void *data, bool enable);\n"
+            "} gfx_ctx_driver_t;\n")
+        slots = ctx_table_slots(fields,
+            "const gfx_ctx_driver_t a = {\n"
+            "   a_init,\n"
+            "#ifdef HAVE_X\n"
+            "   a_title, /* update_window_title */\n"
+            "#else\n"
+            "   NULL,\n"
+            "#endif\n"
+            "   true,\n"
+            "   a_swap,\n"
+            "   \"a\",\n"
+            "   NULL\n"
+            "};\n"
+            "gfx_ctx_driver_t b = { .swap_buffers = b_swap, .init = b_init };\n",
+            FRAME_CONTEXT_CTX_SLOTS)
+        if slots != {"a_title", "a_swap", "b_swap"}:
+            print("selftest: FAIL context table slots %r" % sorted(slots))
+            return 1
+        allow = {("bad_worker", "config_get_ptr"),
+                 ("pool_handler", "config_get_ptr")}
         findings, _ = audit(calls, defined, entries, allow,
                             {"crossing"})
         if findings:

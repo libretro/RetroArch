@@ -217,7 +217,6 @@ static const struct
    char s_9da5609f[16];
    char s_136eaaf4[22];
    char s_8d3a8b68[6];
-   char s_f02f73fc[42];
    char s_3a0a3fef[19];
    char s_ba248c4b[39];
    char s_35c29e50[45];
@@ -369,7 +368,7 @@ static const struct
    char s_93bae0e3[11];
    char s_ed013a05[24];
    char s_01a73130[31];
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_d21d875b[21];
 #endif
    char s_d7fc4c9c[23];
@@ -568,7 +567,6 @@ static const struct
    char s_2f5a9518[112];
    char s_aadb028d[33];
    char s_193e1462[60];
-   char s_dd9ff22a[98];
    char s_a67ad98a[69];
    char s_823a7f9e[234];
    char s_ad131006[175];
@@ -921,7 +919,6 @@ static const struct
    "Men\303\272 principal",
    "Desactivar mode Kiosc",
    "Men\303\272",
-   "Limitar velocitat de fotogrames del men\303\272",
    "Navegador d'arxius",
    "Reprendre contingut al canviar de disc",
    "Recordar selecci\303\263 al canviar entre seccions",
@@ -1073,7 +1070,7 @@ static const struct
    "Un sol \303\272s",
    "Vore men\303\272 d'escriptori",
    "Instal\302\267la o restaura un nucli",
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Xarxa compartida SMB",
 #endif
    "Iniciar RetroPad remot",
@@ -1307,8 +1304,6 @@ static const struct
    "nucli) per a usar-lo amb el disc.",
    "Canvia els ajustos del registre.",
    "Vore totes les configuracions relacionades amb els ajustos.",
-   "Assegura una limitaci\303\263 de la velocitat de fotogrames per segon mentres s'est\303\240 a di"
-   "ns del men\303\272.",
    "Afegix un poc de desenfocament al men\303\272 per suavitzar la pixelaci\303\263.",
    "Selecciona la relaci\303\263 d'aspecte del men\303\272. Una relaci\303\263 panor\303\240mica inc"
    "rementar\303\240 la resoluci\303\263 horitzontal de la interf\303\255cie del men\303\272 (podria"
@@ -1519,7 +1514,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25504u
+      (sizeof(msg_hash_val_blob) == (25364u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -1551,7 +1546,7 @@ typedef char msg_hash_val_blob_check[
        + 77u
 #endif
 #endif
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 21u
 #endif
 #if defined(DINGUX)
@@ -1819,7 +1814,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_INSERT_DISK_RESUME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_REMEMBER_SELECTION,
@@ -1971,7 +1965,7 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_CONTENTLESS_CORES_SINGLE_PURPOSE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SHOW_WIMP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
-#ifdef HAVE_SMBCLIENT
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_START_NET_RETROPAD,
@@ -2170,7 +2164,6 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOAD_DISC,
    (uint32_t)MENU_ENUM_SUBLABEL_LOGGING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_LINEAR_FILTER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_RGUI_ASPECT_RATIO_LOCK,

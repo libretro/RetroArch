@@ -69,11 +69,9 @@ static size_t allocation_size(void *p)
    return 0;
 }
 static unsigned realloc_calls;
-static bool record_fail_alloc;
 static void *tracked_realloc(void *ptr, size_t bytes)
 {
    realloc_calls++;
-   if (record_fail_alloc) return NULL;
    return realloc(ptr, bytes);
 }
 #define realloc tracked_realloc
@@ -833,6 +831,11 @@ static void check_record_chunks(void)
             record_direct = !lane && from == to ? input : NULL;
             record_expected = expected;
             memset(&st, 0, sizeof(st));
+            /* Init carves the remap staging out of the int16 arena; the
+             * stand-up carves it here, and the push must never grow it. */
+            st.record_remap = (int16_t*)malloc(2 * AUDIO_RECORD_REMAP_INT16S * sizeof(int16_t));
+            st.record_remap_frames = AUDIO_RECORD_REMAP_INT16S;
+            before = realloc_calls;
             for (size = 0; size < 4; size++)
             {
                size_t frames = sizes[size];
@@ -843,26 +846,28 @@ static void check_record_chunks(void)
                audio_driver_record_push(&st, input, frames, channels, layouts[from], lane);
                CHECK(record_made == frames);
                CHECK(record_calls == (record_direct ? 1 : (frames + 1023) / 1024));
-               CHECK(st.record_remap_frames <= 1024 * (channels > record_state.channels ? channels : record_state.channels));
-               if (record_direct) CHECK(!st.record_remap);
+               CHECK(realloc_calls == before);
+               CHECK(st.record_remap_frames == AUDIO_RECORD_REMAP_INT16S);
             }
-            before = realloc_calls;
             record_made = record_calls = 0;
             audio_driver_record_push(&st, input, 5000, channels, layouts[from], lane);
             CHECK(realloc_calls == before && record_made == 5000);
             free(st.record_remap);
          }
+   /* No staging carved (a driver that never initialised): the push
+    * drops the audio rather than allocating on the callback. */
    memset(&st, 0, sizeof(st));
    record_state.layout = AUDIO_LAYOUT_STEREO; record_state.channels = 2;
    record_direct = NULL; record_made = record_calls = 0;
-   record_fail_alloc = true;
+   before = realloc_calls;
    audio_driver_record_push(&st, input_f, 5000, 2, AUDIO_LAYOUT_STEREO, true);
-   CHECK(!record_calls && !st.record_remap && !st.record_remap_frames);
-   record_fail_alloc = false;
-   convert_float_to_s16(expected, input_f, 10000);
-   audio_driver_record_push(&st, input_f, 5000, 2, AUDIO_LAYOUT_STEREO, true);
-   CHECK(record_made == 5000);
-   free(st.record_remap);
+   CHECK(!record_calls && !st.record_remap && !st.record_remap_frames && realloc_calls == before);
+   /* The int16 same-layout bypass needs no staging at all */
+   record_direct = input_i; record_limit = 5000;
+   audio_layout_remap_s16(expected, AUDIO_LAYOUT_STEREO, input_i, AUDIO_LAYOUT_STEREO, 5000);
+   audio_driver_record_push(&st, input_i, 5000, 2, AUDIO_LAYOUT_STEREO, false);
+   CHECK(record_made == 5000 && record_calls == 1);
+   record_direct = NULL;
    memset(&st, 0, sizeof(st));
    record_state.data = NULL;
    before = realloc_calls; record_calls = 0;

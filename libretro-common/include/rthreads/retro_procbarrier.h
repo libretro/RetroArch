@@ -83,22 +83,35 @@ RETRO_BEGIN_DECLS
  *      trick fences nothing there.
  *
  *   RETRO_PROCBARRIER_SIGNAL
- *      Any Linux, any macOS including Apple Silicon, any Android: send a
- *      signal to every thread currently running on another CPU and wait
- *      for each to acknowledge from its handler. The kernel delivers a
- *      signal to a running thread by IPI, and entering the kernel is a
- *      fence on every architecture. Threads that are not on a CPU are
- *      skipped -- a context switch already drained them. Cost is a
- *      syscall per running thread; correct everywhere, fastest nowhere.
+ *      Linux 2.6.31+, any macOS including Apple Silicon, any Android:
+ *      interrupt every thread currently running on another CPU and wait
+ *      until each has been through the kernel. On Linux that is a queued
+ *      real-time signal per thread, each acknowledged from its handler;
+ *      the kernel delivers a signal to a running thread by IPI. On Darwin
+ *      it is thread_get_state, which stops the thread off its CPU and
+ *      releases it. Entering the kernel is a fence on every architecture.
+ *      Threads that are not on a CPU are skipped -- a context switch
+ *      already drained them. Cost is a syscall per running thread;
+ *      correct everywhere, fastest nowhere.
  *
  *   RETRO_PROCBARRIER_NONE
  *      Nothing available. retro_procbarrier() returns 0 and the caller
  *      must use a symmetric primitive instead. This is where the
  *      multi-core consoles land.
  *
- * The signal tier needs a signal number. The default is SIGRTMAX-1 where
- * real-time signals exist and SIGUSR2 otherwise; pass another to init if
- * the application uses those.
+ * The Linux signal tier needs a real-time signal number, since only
+ * those queue. The default is SIGRTMAX-1; pass another real-time signal
+ * to init if the application uses that one. Darwin sends no signal.
+ *
+ * On Linux that tier skips any thread with the signal blocked, which is
+ * what a GL or Vulkan driver does to every thread it creates, and stops
+ * waiting on one that blocks it after being picked. So a thread whose
+ * stores the barrier must drain -- one that notifies an asymmetric
+ * eventcount -- must not block it. Threads started through rthreads
+ * inherit an unblocked mask and qualify.
+ *
+ * Every tier is safe for any number of concurrent callers, and no
+ * caller waits for another.
  */
 
 enum retro_procbarrier_tier

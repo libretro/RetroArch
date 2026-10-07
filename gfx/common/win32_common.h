@@ -82,6 +82,10 @@ extern float g_win32_refresh_rate;
 extern ui_window_win32_t main_window;
 extern HACCEL window_accelerators;
 
+/* A line of text has been opened in the frontend, or closed: the main
+ * window has its IME input context only while one is open. */
+void win32_text_entry(bool active);
+
 void win32_monitor_get_info(void);
 
 void win32_monitor_info(void *data, void *hm_data, unsigned *mon_id);
@@ -104,6 +108,18 @@ void win32_monitor_init(void);
 bool win32_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen);
+
+/* Takes the existing window between windowed and borderless fullscreen
+ * without destroying it. False if there is no window, or fullscreen is
+ * the exclusive kind. Call on the thread that owns the window. */
+bool win32_window_set_fullscreen(unsigned dims, bool fullscreen);
+
+/* Whether a borderless fullscreen toggle is to restyle the window in
+ * place (win32_window_set_fullscreen()) rather than restart the
+ * drivers: yes, unless RETROARCH_FULLSCREEN_IN_PLACE=0 is in the
+ * environment. For a driver or context to offer
+ * GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE by. */
+bool win32_fullscreen_in_place(void);
 
 bool win32_suspend_screensaver(void *data, bool enable);
 
@@ -159,12 +175,45 @@ void win32_check_window(void *data,
       bool *quit,
       bool *resize, unsigned *dims);
 
+/* The menu bar kept while the window has none is dropped, so that the
+ * next windowed window gets one built anew: for when what is in it
+ * has changed (the language). */
+void win32_menu_kept_drop(void);
+
 void win32_set_window(unsigned *width, unsigned *height,
       bool fullscreen, bool windowed_full, void *rect_data);
 
 void win32_window_reset(void);
 
 void win32_destroy_window(void);
+
+/* Leaves the window up for the video driver that comes next instead of
+ * destroying it; win32_set_video_mode() then takes it rather than make
+ * one. False if it cannot be left - the caller destroys it as before. */
+bool win32_window_keep(void);
+
+/* The size the window's client area really is, which is not always
+ * the size win32_set_video_mode() was asked for; @dims with no window.
+ * For the swap chain a driver makes on it. */
+unsigned win32_window_client_dims(unsigned dims);
+
+/* A window left up that the next driver did not take goes. Called
+ * once that driver is up, or has failed to come up. */
+void win32_window_release_kept(void);
+
+/* Called after win32_window_proc_setup() by a Direct3D driver whose
+ * window may be left up for the next driver of the same tag, and taken
+ * by it: see win32_window_keep() in win32_common.c for what the driver
+ * undertakes by it. */
+void win32_window_tag(const char *tag);
+
+/* True if the window win32_set_video_mode() gave this driver is one
+ * the last driver left up. */
+bool win32_window_was_taken(void);
+
+/* Destroys the window and makes a new one, for a driver that cannot
+ * use the one it took. */
+bool win32_window_remake(void *data, unsigned dims, bool fullscreen);
 
 uint8_t win32_get_flags(void);
 
@@ -177,32 +226,21 @@ uint16_t win32_update_keyboard_mods(void);
  * Safe from any thread. */
 uint16_t win32_get_keyboard_mods(void);
 
-#if defined(HAVE_D3D8) || defined(HAVE_D3D9) || defined (HAVE_D3D10) || defined (HAVE_D3D11) || defined (HAVE_D3D12)
-LRESULT CALLBACK wnd_proc_d3d_dinput(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_d3d_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_d3d_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-#endif
+/* The video family a window belongs to: what creating it sets up. */
+enum win32_window_family
+{
+   WIN32_WINDOW_D3D = 0,
+   WIN32_WINDOW_WGL,
+   WIN32_WINDOW_VULKAN,
+   WIN32_WINDOW_GDI
+};
 
-#if defined(HAVE_VULKAN)
-LRESULT CALLBACK wnd_proc_vk_dinput(HWND hwnd, UINT message,
+/* The window procedure, for every video driver. A driver registers it
+ * for its window class and says which family the window is before
+ * creating it. */
+LRESULT CALLBACK win32_window_proc(HWND hwnd, UINT message,
       WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_vk_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_vk_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-#endif
-
-#if defined(HAVE_GDI)
-LRESULT CALLBACK wnd_proc_gdi_dinput(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_gdi_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_gdi_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-#endif
+void win32_window_proc_setup(enum win32_window_family family);
 
 #ifdef _XBOX
 BOOL IsIconic(HWND hwnd);

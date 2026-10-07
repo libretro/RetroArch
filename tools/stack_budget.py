@@ -49,6 +49,7 @@ byte count is not.
 import os
 import re
 import subprocess
+import concurrent.futures
 import sys
 import tempfile
 
@@ -140,7 +141,7 @@ def toolchains():
     return found
 
 
-def stack_usage(path, workdir, cc='gcc'):
+def stack_usage(path, workdir, cc='gcc', tag='o'):
     """Compile one TU and return ([(func, bytes)], gcc stderr).
 
     Frames are None when the TU did not build, and the stderr is
@@ -159,8 +160,10 @@ def stack_usage(path, workdir, cc='gcc'):
     # built from abspath(__file__); a path typed on the command line is
     # relative more often than not.
     path = os.path.abspath(path)
-    obj = os.path.join(workdir, 'o.o')
-    su  = os.path.join(workdir, 'o.su')
+    # @tag keeps one compile's object and .su apart from another's:
+    # measure() runs several at once.
+    obj = os.path.join(workdir, tag + '.o')
+    su  = os.path.join(workdir, tag + '.su')
     if os.path.exists(su):
         os.remove(su)
     # The define set has to be at least as wide as a real build, or
@@ -191,6 +194,9 @@ def stack_usage(path, workdir, cc='gcc'):
     if r.returncode != 0 or not os.path.exists(su):
         # Did not compile on this host (platform-specific TU, missing
         # dependency).  Report it rather than counting it as scanned.
+        for leftover in (obj, su):
+            if os.path.exists(leftover):
+                os.remove(leftover)
         return None, r.stderr.decode('utf-8', 'replace')
     out = []
     with open(su) as f:
@@ -203,6 +209,10 @@ def stack_usage(path, workdir, cc='gcc'):
                 out.append((name, int(parts[1])))
             except ValueError:
                 pass
+    # one object a TU would otherwise pile up for the whole walk
+    for leftover in (obj, su):
+        if os.path.exists(leftover):
+            os.remove(leftover)
     return out, ''
 
 
@@ -260,7 +270,18 @@ def measure(cc, is_host, argv, tmp):
     frames  = []
     scanned = 0
     skipped = 0
-    for path, named in sources(argv):
+    todo    = list(sources(argv))
+    # Each TU is its own compiler process, so they are run as many at a
+    # time as there are processors: one after another, the walk had
+    # grown to several minutes a toolchain. The results are taken in
+    # the walk's order, so what is reported, and which named file an
+    # error is about, do not depend on which compile finished first.
+    with concurrent.futures.ThreadPoolExecutor(
+            max_workers=max(1, os.cpu_count() or 1)) as pool:
+        measured = list(pool.map(
+            lambda it: stack_usage(it[1][0], tmp, cc, 'o%d' % it[0]),
+            enumerate(todo)))
+    for (path, named), (found, err) in zip(todo, measured):
         named = named and is_host
         if named and not os.path.exists(path):
             raise Fatal('error: %s: no such file' % path)
@@ -269,7 +290,6 @@ def measure(cc, is_host, argv, tmp):
         # nothing to say about why.
         if named and not path.endswith('.c'):
             raise Fatal('error: %s: not a .c translation unit' % path)
-        found, err = stack_usage(path, tmp, cc)
         if found is None:
             if named:
                 raise Fatal('error: %s did not compile; nothing was '

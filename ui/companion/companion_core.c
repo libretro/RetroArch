@@ -130,17 +130,20 @@ struct companion_core
    struct companion_browse_job
    {
       char dir[PATH_MAX_LENGTH];
-      unsigned gen;
       struct string_list *list;
       uint64_t *size;
       int64_t  *mtime;
-      bool done, ok;
+      int gen;
+      /* Stored by the worker, release, after everything above. */
+      retro_atomic_int_t done;
+      bool ok;
    } *browse_job;
-   unsigned browse_gen;
+   /* Written by the UI thread only; the worker reads it between
+    * entries to see whether its job has been superseded. */
+   retro_atomic_int_t browse_gen;
    enum companion_browse_column browse_sort_col;
    bool browse_sort_desc;
 #ifdef HAVE_THREADS
-   slock_t   *browse_lock;
    sthread_t *browse_thread;
 #endif
 
@@ -1712,26 +1715,17 @@ static void companion_core_scan_finished(retro_task_t *task,
 }
 #endif
 
-bool companion_core_request_scan(companion_core_t *core, const char *path,
-      bool directory, bool show_hidden_files)
+bool companion_core_request_scan(companion_core_t *core, const char *path)
 {
 #ifdef HAVE_LIBRETRODB
-   settings_t *settings = config_get_ptr();
-
    if (!core || string_is_empty(path))
       return false;
 
    companion_core_scan_owner = core;
-   return task_push_dbscan(
-         settings->paths.directory_playlist,
-         settings->paths.path_content_database,
-         path, directory, show_hidden_files,
-         companion_core_scan_finished);
+   return task_push_dbscan(path, companion_core_scan_finished);
 #else
    (void)core;
    (void)path;
-   (void)directory;
-   (void)show_hidden_files;
    return false;
 #endif
 }
@@ -1772,11 +1766,6 @@ const char *companion_core_pref_initial_playlist(companion_core_t *core)
 bool companion_core_pref_suggest_loaded_core_first(companion_core_t *core)
 {
    return core && config_get_ptr()->bools.desktop_menu_suggest_loaded_core_first;
-}
-
-bool companion_core_pref_show_hidden_files(companion_core_t *core)
-{
-   return core && config_get_ptr()->bools.show_hidden_files;
 }
 
 int companion_core_pref_last_tab(companion_core_t *core)
@@ -2493,7 +2482,7 @@ static void companion_core_stat(const char *path, bool is_dir,
 /* Enumerate @job->dir into the job (list sorted folders first, then
  * per-entry size / mtime). Runs on the worker; between entries it
  * checks whether it has been superseded and stops early if so. Sets
- * job->done last. @core is only read for the generation under the lock. */
+ * job->done last. @core is only read for the generation. */
 static void companion_core_browse_enumerate(companion_core_t *core,
       struct companion_browse_job *job)
 {
@@ -2550,22 +2539,12 @@ static void companion_core_browse_enumerate(companion_core_t *core,
 #endif
       companion_core_stat(p,
             list->elems[i].attr.i == RARCH_DIRECTORY, &job->size[i], &job->mtime[i]);
-      /* superseded? stop enumerating this directory */
-      if ((i & 63) == 63)
+      /* superseded? stop enumerating this directory, after one stat
+       * at most, so the UI thread's join returns at once */
+      if (retro_atomic_load_acquire_int(&core->browse_gen) != job->gen)
       {
-         bool stale;
-#ifdef HAVE_THREADS
-         slock_lock(core->browse_lock);
-#endif
-         stale = core->browse_gen != job->gen;
-#ifdef HAVE_THREADS
-         slock_unlock(core->browse_lock);
-#endif
-         if (stale)
-         {
-            string_list_free(list);
-            goto fail;
-         }
+         string_list_free(list);
+         goto fail;
       }
    }
    job->list = list;
@@ -2579,16 +2558,13 @@ fail:
 static void companion_core_browse_thread(void *ud)
 {
    companion_core_t *core = (companion_core_t*)ud;
-   struct companion_browse_job *job;
-   slock_lock(core->browse_lock);
-   job = core->browse_job;
-   slock_unlock(core->browse_lock);
+   /* Set before this thread was created and left alone until it is
+    * joined. */
+   struct companion_browse_job *job = core->browse_job;
    if (!job)
       return;
    companion_core_browse_enumerate(core, job);
-   slock_lock(core->browse_lock);
-   job->done = true;
-   slock_unlock(core->browse_lock);
+   retro_atomic_store_release_int(&job->done, 1);
 }
 #endif
 
@@ -2610,16 +2586,10 @@ static void companion_core_browse_worker_stop(companion_core_t *core)
    if (core->browse_thread)
    {
       /* Make whatever it is doing stale so it stops between entries. */
-      slock_lock(core->browse_lock);
-      core->browse_gen++;
-      slock_unlock(core->browse_lock);
+      retro_atomic_store_release_int(&core->browse_gen,
+            retro_atomic_load_relaxed_int(&core->browse_gen) + 1);
       sthread_join(core->browse_thread);
       core->browse_thread = NULL;
-   }
-   if (core->browse_lock)
-   {
-      slock_free(core->browse_lock);
-      core->browse_lock = NULL;
    }
 #endif
    companion_core_browse_job_free(core->browse_job);
@@ -2786,11 +2756,9 @@ static void companion_core_browse_poll(companion_core_t *core)
 #ifdef HAVE_THREADS
    if (!core->browse_job)
       return;
-   slock_lock(core->browse_lock);
    job     = core->browse_job;
-   done    = job->done;
-   current = (job->gen == core->browse_gen);
-   slock_unlock(core->browse_lock);
+   done    = retro_atomic_load_acquire_int(&job->done) != 0;
+   current = (job->gen == retro_atomic_load_relaxed_int(&core->browse_gen));
    if (!done)
       return;
    sthread_join(core->browse_thread);
@@ -2838,17 +2806,12 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
    strlcpy(job->dir, dir_buf, sizeof(job->dir));
 
 #ifdef HAVE_THREADS
-   if (!core->browse_lock)
-      core->browse_lock = slock_new();
-   if (core->browse_lock)
    {
       /* Supersede whatever is running: it stops between entries and
        * its result is discarded in poll(); this one starts once it has
        * been joined (a second thread is never spawned alongside). */
-      slock_lock(core->browse_lock);
-      core->browse_gen++;
-      job->gen = core->browse_gen;
-      slock_unlock(core->browse_lock);
+      job->gen = retro_atomic_load_relaxed_int(&core->browse_gen) + 1;
+      retro_atomic_store_release_int(&core->browse_gen, job->gen);
       if (core->browse_thread)
       {
          sthread_join(core->browse_thread);  /* returns promptly: stale */
@@ -2864,7 +2827,7 @@ bool companion_core_browse_open(companion_core_t *core, const char *path)
       core->browse_job = NULL;
    }
 #endif
-   job->gen = core->browse_gen;
+   job->gen = retro_atomic_load_relaxed_int(&core->browse_gen);
    companion_core_browse_enumerate(core, job);
    if (job->ok)
    {
@@ -3192,7 +3155,7 @@ void companion_core_prepare_show_window(companion_core_t *core)
    if (!core)
       return;
 
-   if (input_state_get_ptr()->flags & INP_FLAG_GRAB_MOUSE_STATE)
+   if (input_driver_mouse_grabbed())
       command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
    if (video_st && video_st->poke && video_st->poke->show_mouse)
       video_st->poke->show_mouse(video_st->data, true);

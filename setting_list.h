@@ -16,9 +16,15 @@
 #ifndef __SETTING_LIST_H
 #define __SETTING_LIST_H
 
+#include <stdint.h>
+#include <stddef.h>
+
 #include <boolean.h>
 
 #include <retro_common_api.h>
+#include <retro_inline.h>
+
+#include "gfx/video_defines.h"
 
 #include "command.h"
 #include "msg_hash.h"
@@ -103,12 +109,14 @@ enum settings_free_flags
     * target that addresses a packed word rather than a value of its
     * own, and the bit says which half of it the row edits: the high
     * half for a width or an x, the low half for a height or a y.
-    * Set on the custom viewport's four rows, whose settings_t pair
-    * is one word each for the origin and the size.
+    * Set on every row whose settings_t value shares one word with a
+    * partner axis: the custom viewport's origin and size, the window
+    * size pairs and the desktop menu window geometry.
     *
-    * Reads and writes of such a row go through setting_uint_get /
-    * setting_uint_set and the signed pair, never through
-    * value.target directly. */
+    * Anything that can reach such a row - the generic ST_UINT and
+    * ST_INT handlers, the dropdown lists and the desktop UIs - reads
+    * and writes it through setting_uint_get / setting_uint_set and
+    * the signed pair below, never through value.target directly. */
    SD_FREE_FLAG_PACKED_HI       = (1 << 4),
    SD_FREE_FLAG_PACKED_LO       = (1 << 5)
 };
@@ -219,6 +227,49 @@ struct rarch_setting
    uint8_t              free_flags;
    uint8_t              index;
 };
+
+/* An ST_UINT or ST_INT row's value. Most rows own the word their
+ * target addresses; a row flagged SD_FREE_FLAG_PACKED_HI or _LO owns
+ * one half of it, in VIDEO_SCALE_PACK's layout for a uint row and
+ * VIDEO_POS_PACK's for an int row, and a write leaves the partner
+ * half as it stands. */
+static INLINE unsigned setting_uint_get(const rarch_setting_t *setting)
+{
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
+      return VIDEO_SCALE_W(*setting->value.target.unsigned_integer);
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
+      return VIDEO_SCALE_H(*setting->value.target.unsigned_integer);
+   return *setting->value.target.unsigned_integer;
+}
+
+static INLINE void setting_uint_set(rarch_setting_t *setting, unsigned v)
+{
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
+      VIDEO_SCALE_PUT_W(*setting->value.target.unsigned_integer, v);
+   else if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
+      VIDEO_SCALE_PUT_H(*setting->value.target.unsigned_integer, v);
+   else
+      *setting->value.target.unsigned_integer = v;
+}
+
+static INLINE int setting_int_get(const rarch_setting_t *setting)
+{
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
+      return VIDEO_POS_X(*setting->value.target.integer);
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
+      return VIDEO_POS_Y(*setting->value.target.integer);
+   return *setting->value.target.integer;
+}
+
+static INLINE void setting_int_set(rarch_setting_t *setting, int v)
+{
+   if (setting->free_flags & SD_FREE_FLAG_PACKED_HI)
+      VIDEO_POS_PUT_X(*setting->value.target.integer, v);
+   else if (setting->free_flags & SD_FREE_FLAG_PACKED_LO)
+      VIDEO_POS_PUT_Y(*setting->value.target.integer, v);
+   else
+      *setting->value.target.integer = v;
+}
 
 RETRO_END_DECLS
 

@@ -10,9 +10,11 @@
  * the neighbours still alias, and that the hole can be mapped again.
  *
  * Every failure mode here is silent corruption rather than a crash: a
- * placeholder split that loses a range makes the next Map fail, and a
+ * placeholder split that loses a range makes the next Map fail, a
  * coalesce that runs over its neighbour unmaps memory that is still in
- * use. The neighbours are read back after every step for that reason.
+ * use, and a map or unmap that does not match what is mapped replaces
+ * or removes part of a live mapping. The neighbours are read back after
+ * every step for that reason.
  *
  * On Windows this exercises whichever path the system supports.
  * Building the library with MEMSHM_AREA_FORCE_LEGACY selects the
@@ -128,6 +130,49 @@ int main(void)
          memshm_area_unmap(area, (void*)d, shm_len);
    }
 
+   /* Ranges inside the area that map and unmap must still refuse,
+    * because of what is mapped there. With 1 and 5 live and 3 a hole:
+    * a second map over 1, a map straddling into 1, an unmap of the hole,
+    * and an unmap of half of 1. Unchecked on POSIX, the first two
+    * MAP_FIXED over the live mapping and the last two write PROT_NONE
+    * over a hole or half a mapping - each one returns success, and the
+    * area goes on believing in mappings it no longer has. The mapping at
+    * slot 1 is read back afterwards, through its far half too. */
+   {
+      unsigned char *one  = base + slot * 1;
+      size_t         half = shm_len / 2;
+      void          *r;
+      int            good;
+
+      r    = memshm_area_map(area, h, 0, one, shm_len, PROT_READ | PROT_WRITE);
+      good = (r == NULL);
+      printf("  %s: map refuses a range already mapped\n", good ? "ok" : "FAIL");
+      ok  &= good;
+
+      r    = memshm_area_map(area, h, 0, one + half, shm_len, PROT_READ | PROT_WRITE);
+      good = (r == NULL);
+      printf("  %s: map refuses a range overlapping a mapping\n", good ? "ok" : "FAIL");
+      ok  &= good;
+
+      good = !memshm_area_unmap(area, base + slot * 3, shm_len);
+      printf("  %s: unmap refuses a range with nothing mapped\n", good ? "ok" : "FAIL");
+      ok  &= good;
+
+      good = !memshm_area_unmap(area, one, half);
+      printf("  %s: unmap refuses the first half of a mapping\n", good ? "ok" : "FAIL");
+      ok  &= good;
+
+      good = !memshm_area_unmap(area, one + half, half);
+      printf("  %s: unmap refuses the second half of a mapping\n", good ? "ok" : "FAIL");
+      ok  &= good;
+
+      ((volatile uint32_t*)(c))[half / 4] = 0x33333333u;
+      good = (a[0] == 0x11111111u)
+          && (((volatile uint32_t*)(a))[half / 4] == 0x33333333u);
+      printf("  %s: and the mapping they aimed at is whole\n", good ? "ok" : "FAIL");
+      ok  &= good;
+   }
+
    /* Addresses and lengths the area does not cover. The contract says
     * @at is within the reservation, and on POSIX the map is MAP_FIXED,
     * which replaces whatever is already mapped over the range -- so an
@@ -219,16 +264,37 @@ int main(void)
    memshm_area_unmap(area, (void*)a, shm_len);
    memshm_area_unmap(area, (void*)c, shm_len);
 
-   /* Nothing is mapped now, so one more unmap has nothing to answer to.
-    * Taken at face value it wraps the mapping count, and the area's own
-    * teardown is what reads it. (An unbalanced unmap while other
-    * mappings are live is not distinguishable here -- the count is the
-    * only thing to check it against.) */
+   /* Nothing is mapped now, so one more unmap has nothing to answer to. */
    {
       int good = !memshm_area_unmap(area, base + slot * 1, shm_len);
       printf("  %s: an unmap with nothing mapped is refused\n",
             good ? "ok" : "FAIL");
       ok &= good;
+   }
+
+   /* A fastmem window maps a page at a time, thousands of them, side
+    * by side: every one is tracked, and each unmaps on its own. */
+   {
+      const unsigned many = 600;
+      memshm_area_t *big  = memshm_area_create((size_t)slot * many);
+      unsigned i, mapped = 0, unmapped = 0;
+      if (!big)
+         printf("  ok: (no room for a %u-slot area)\n", many);
+      else
+      {
+         unsigned char *b = memshm_area_base(big);
+         for (i = 0; i < many; i++)
+            if (memshm_area_map(big, h, 0, b + (size_t)slot * i, shm_len,
+                     PROT_READ | PROT_WRITE))
+               mapped++;
+         for (i = 0; i < many; i++)
+            if (memshm_area_unmap(big, b + (size_t)slot * i, shm_len))
+               unmapped++;
+         printf("  %s: %u side-by-side mappings made and unmapped one by one\n",
+               (mapped == many && unmapped == many) ? "ok" : "FAIL", many);
+         ok &= (mapped == many && unmapped == many);
+         memshm_area_free(big);
+      }
    }
 
    memshm_destroy(h);

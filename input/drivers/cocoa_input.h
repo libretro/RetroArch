@@ -29,12 +29,19 @@
 /* Input responder */
 #define MAX_TOUCHES  16
 
+/* A position in the window - the pointer's, a touch's - or a motion, x
+ * and y packed in one word: written in one store, so the two always go
+ * together. The packing is the one the rest of the frontend uses. */
+#define COCOA_POS_PACK(x, y) VIDEO_POS_PACK(x, y)
+#define COCOA_POS_X(p)       VIDEO_POS_X(p)
+#define COCOA_POS_Y(p)       VIDEO_POS_Y(p)
+
 typedef struct
 {
-   int16_t screen_x, screen_y;
-   int16_t fixed_x, fixed_y;
-   int16_t full_x, full_y;
-   int16_t confined_x, confined_y;
+   uint32_t screen_pos;      /* COCOA_POS_PACK(x, y) */
+   uint32_t fixed_pos;       /* in the viewport, -0x8000 outside */
+   uint32_t full_pos;        /* on the whole screen */
+   uint32_t confined_pos;    /* in the viewport, held to its edges */
 } cocoa_touch_data_t;
 
 typedef struct
@@ -42,18 +49,28 @@ typedef struct
    uint32_t touch_count;
 
    uint32_t mouse_buttons;
-   cocoa_touch_data_t touches[MAX_TOUCHES]; /* int16_t alignment */
-   int16_t mouse_x_last;
-   int16_t mouse_y_last;
-   int16_t window_pos_x;
-   int16_t window_pos_y;
-   int16_t mouse_rel_x;
-   int16_t mouse_rel_y;
+   cocoa_touch_data_t touches[MAX_TOUCHES];
+   uint32_t mouse_last;      /* the pointer at the last poll, packed */
+   uint32_t window_pos;      /* COCOA_POS_PACK(x, y) */
+   uint32_t mouse_rel;       /* the mouse's motion, packed */
    int16_t mouse_wu;
    int16_t mouse_wd;
    int16_t mouse_wl;
    int16_t mouse_wr;
    bool mouse_grabbed;
 } cocoa_input_data_t;
+
+/* What the Apple UI hands this driver: its mouse, pointer and touch
+ * events. The UI calls these and does not write the driver's data
+ * itself. On the main thread; nothing happens while the Cocoa driver
+ * is not the one in use. */
+void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y);
+void cocoa_input_mouse_moved_by(int16_t dx, int16_t dy);
+void cocoa_input_mouse_button(unsigned number, bool down, bool as_touch);
+void cocoa_input_pointer_at(int16_t x, int16_t y);
+void cocoa_input_touches_begin(void);
+bool cocoa_input_touch_add(int16_t x, int16_t y);
+void cocoa_input_touches_reset(void);
+bool cocoa_input_mouse_grabbed(void);
 
 #endif

@@ -379,8 +379,13 @@ static bool core_backup_add_entry(core_backup_list_t *backup_list,
       return false;
 
    backup_filename = strdup(path_basename(backup_path));
-   if (!backup_filename || !*backup_filename)
+   if (!backup_filename)
       return false;
+   if (!*backup_filename)
+   {
+      free(backup_filename);
+      return false;
+   }
 
    /* Ensure base backup filename matches core */
    if (!string_starts_with(backup_filename, core_filename))

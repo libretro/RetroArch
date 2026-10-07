@@ -76,7 +76,6 @@ static int shader_action_parameter_left_internal(unsigned type, const char *labe
    video_shader_ctx_t shader_info;
    struct video_shader *shader          = menu_shader_get();
    struct video_shader_parameter *param_menu = NULL;
-   struct video_shader_parameter *param_prev = NULL;
 
    int ret = 0;
 
@@ -157,6 +156,9 @@ static int action_left_input_desc(unsigned type, const char *label,
       unsigned btn_idx     = (type - MENU_SETTINGS_INPUT_DESC_BEGIN) - RARCH_ANALOG_BIND_LIST_END * user_idx;
       unsigned mapped_port = settings->uints.input_remap_ports[user_idx];
       unsigned remap_idx   = settings->uints.input_remap_ids[user_idx][btn_idx];
+
+      if (mapped_port >= MAX_USERS)
+         return 0;
 
       for (bind_idx = 0; bind_idx < RARCH_ANALOG_BIND_LIST_END; bind_idx++)
       {
@@ -1013,6 +1015,24 @@ static int action_left_video_gpu_index(unsigned type, const char *label,
                      settings->ints.vulkan_gpu_index,
                      (int)list->size - 1);
             }
+         }
+
+         break;
+      }
+#endif
+#ifdef HAVE_EGL
+      case GFX_CTX_OPENGL_API:
+      case GFX_CTX_OPENGL_ES_API:
+      {
+         struct string_list *list = video_driver_get_gpu_api_devices(api);
+
+         if (list)
+         {
+            settings_t *settings = config_get_ptr();
+            int gl_gpu_index     = settings->ints.gl_gpu_index;
+            configuration_set_int(settings,
+                  settings->ints.gl_gpu_index,
+                  gl_gpu_index > 0 ? gl_gpu_index - 1 : (int)list->size - 1);
          }
 
          break;

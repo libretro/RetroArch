@@ -179,11 +179,14 @@ static int rzstd_cpu_bmi2(void)
 
    if (have < 0)
    {
-      unsigned a, b, c, d;
+      unsigned a, b = 0, c, d;
 
-      /* Both racers write the same answer, so the race is benign. */
-      have = (__get_cpuid_count(7, 0, &a, &b, &c, &d) && (b & (1u << 8)))
-           ? 1 : 0;
+      /* __get_cpuid_count only exists from GCC 7; __get_cpuid_max and
+       * __cpuid_count are in every cpuid.h this branch accepts. Both
+       * racers write the same answer, so the race is benign. */
+      if (__get_cpuid_max(0, NULL) >= 7)
+         __cpuid_count(7, 0, a, b, c, d);
+      have = (b & (1u << 8)) ? 1 : 0;
    }
    return have;
 }
@@ -3875,11 +3878,10 @@ literals_done:
       int16_t  (*norm)[RZSTD_FSE_MAX_SYMBOLS] = st->norm;
       static const uint32_t nsym_of[3] = { 36, 53, 29 };
       static const uint32_t log_max[3] = { 9, 9, 8 };
-      static const int16_t *predef[3];
+      static const int16_t *const predef[3] = {
+         rzstd_ll_default, rzstd_ml_default, rzstd_of_default
+      };
       uint32_t modes = 0, t;
-      predef[0] = rzstd_ll_default;
-      predef[1] = rzstd_ml_default;
-      predef[2] = rzstd_of_default;
       memset(st->hist, 0, sizeof(st->hist));
       for (i = 0; fit_tables && i < nseq; i++)
       {
@@ -3922,7 +3924,7 @@ literals_done:
             /* the block's own: accuracy by the count, as the reference
              * picks it, capped by the table's maximum */
             alog = 5;
-            while (alog < log_max[t] && ((uint32_t)1 << alog) < nseq) alog++;
+            while (alog < log_max[t] && ((size_t)1 << alog) < nseq) alog++;
             if (rzstd_fse_normalize(hist[t], max + 1, (uint32_t)nseq, alog, norm[t]))
             {
                for (s = 0; s <= max; s++)

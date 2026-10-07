@@ -81,6 +81,24 @@ static void pump(int frames)
    }
 }
 
+/* The widget a task's updates reach, on screen or waiting for room:
+ * the owner finds it by the key the task carries. */
+static disp_widget_msg_t *task_widget(const retro_task_t *task)
+{
+   size_t i;
+   dispgfx_widget_t *p = dispwidget_get_ptr();
+   uintptr_t key       = (uintptr_t)task->frontend_userdata;
+   if (!key)
+      return NULL;
+   for (i = 0; i < p->current_msgs_size; i++)
+      if (p->current_msgs[i] && p->current_msgs[i]->task_key == key)
+         return p->current_msgs[i];
+   for (i = 0; i < p->task_pending_size; i++)
+      if (p->task_pending[i]->task_key == key)
+         return p->task_pending[i];
+   return NULL;
+}
+
 static void task_push(retro_task_t *task)
 {
    gfx_widgets_msg_queue_push(task, NULL, 0, 0, NULL,
@@ -224,8 +242,8 @@ static void test_title_churn(bool alternative)
    gfx_widgets_deinit(false);
 }
 
-/* Tear down with task widgets still outstanding, so msg_queue_free
- * runs against a live task->frontend_userdata. */
+/* Tear down with task widgets still outstanding: no widget may go on
+ * answering to a task afterwards. */
 static void test_deinit_with_live_tasks(void)
 {
    int c, i;
@@ -248,24 +266,169 @@ static void test_deinit_with_live_tasks(void)
       pump(3);
       gfx_widgets_deinit((c & 1) ? true : false);
 
-      /* The widgets are gone; the tasks must not still point at them. */
+      /* Gone, or cut loose: the tasks' keys must find nothing. */
       for (i = 0; i < 4; i++)
-         CHECK(tasks[i].frontend_userdata == NULL,
-               "task kept a pointer into a freed widget after deinit");
+         CHECK(task_widget(&tasks[i]) == NULL,
+               "a widget still answered to its task after deinit");
    }
+}
+
+static void completion_push(retro_task_t *task, const char *msg,
+      unsigned prio, unsigned duration, bool flush)
+{
+   (void)prio;
+   (void)duration;
+   (void)flush;
+   CHECK(msg && !*msg, "suppressed completion produced notification text");
+   task_push(task);
+}
+
+static void finish_silent_task(retro_task_t *task)
+{
+   if (!(task_get_flags(task) & RETRO_TASK_FLG_MUTE))
+      task_free_title(task);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+static void test_suppressed_completion(void)
+{
+   unsigned muted;
+   task_queue_deinit();
+   task_queue_init(false, completion_push);
+   for (muted = 0; muted < 2; muted++)
+   {
+      retro_task_t *task;
+      disp_widget_msg_t *widget;
+      if (!widgets_up())
+         break;
+      task = task_init();
+      CHECK(task != NULL, "could not allocate completion task");
+      if (!task)
+         break;
+      task->title = strdup("finishing task");
+      task->progress = 37;
+      task->handler = finish_silent_task;
+      task_push(task);
+      pump(2);
+      widget = task_widget(task);
+      CHECK(widget != NULL, "completion task has no widget");
+      if (muted)
+         task_set_flags(task, RETRO_TASK_FLG_MUTE, true);
+      task_queue_push(task);
+      task_queue_check();
+      /* task has been retired; its last update is the owner's to apply */
+      pump(2);
+      if (widget)
+         CHECK(widget->flags & DISPWIDG_FLAG_TASK_FINISHED,
+               "widget never learned its task had finished");
+      gfx_widgets_deinit(false);
+   }
+}
+
+/* No extraction progress is published during the delay. The widget
+ * must already belong to the new task before any frame is iterated. */
+extern uintptr_t stub_last_killed_animation_tag;
+
+static void test_delayed_handoff(void)
+{
+   unsigned displayed, publish;
+   for (displayed = 0; displayed < 2; displayed++)
+      for (publish = 0; publish < 2; publish++)
+      {
+         retro_task_t download, extraction;
+         disp_widget_msg_t *widget;
+         if (!widgets_up())
+            return;
+         harness_task_init(&download, 100, "download", 100, true);
+         download.flags |= RETRO_TASK_FLG_FINISHED | RETRO_TASK_FLG_CANCELLED;
+         download.error = "old download error";
+         task_push(&download);
+         widget = NULL;
+         if (displayed)
+         {
+            pump(2);
+            widget = task_widget(&download);
+            CHECK(widget != NULL, "download has no handoff widget");
+            if (!widget)
+            {
+               gfx_widgets_deinit(false);
+               continue;
+            }
+            CHECK(widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED,
+                  "finished download did not arm expiration");
+         }
+         harness_task_init(&extraction, 101, "extraction", 0, true);
+         stub_last_killed_animation_tag = 0;
+#ifdef WIDGET_HANDOFF_DEFECT
+         extraction.frontend_userdata = download.frontend_userdata;
+         download.frontend_userdata = NULL;
+#else
+         gfx_widgets_task_transfer(&download, &extraction);
+#endif
+         /* The owner's next frame takes the handoff before anything
+          * else: with nothing displayed yet, the download's update and
+          * the handoff arrive together. */
+         pump(1);
+         if (displayed)
+            CHECK(stub_last_killed_animation_tag ==
+                  (uintptr_t)&widget->expiration_timer,
+                  "handoff did not cancel the old expiration callback");
+         CHECK(!download.frontend_userdata, "download kept ownership");
+         CHECK(!displayed || task_widget(&extraction) == widget,
+               "handoff moved the task to another widget");
+         widget = task_widget(&extraction);
+         CHECK(widget != NULL, "extraction has no handoff widget");
+         if (!widget)
+         {
+            gfx_widgets_deinit(false);
+            continue;
+         }
+         CHECK(widget->task_ident == 101,
+               "handoff waits for extraction progress to bind its owner");
+         CHECK(!(widget->flags & (DISPWIDG_FLAG_TASK_FINISHED |
+                     DISPWIDG_FLAG_TASK_CANCELLED | DISPWIDG_FLAG_TASK_ERROR |
+                     DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED)),
+               "handoff retained download lifetime state");
+         /* The download pushing once more gets a widget of its own */
+         task_push(&download);
+         pump(1);
+         CHECK(task_widget(&download) != widget
+               && !(widget->flags & DISPWIDG_FLAG_TASK_FINISHED),
+               "the old owner's push reached the widget it handed on");
+         pump(180);
+         CHECK(!(widget->flags & DISPWIDG_FLAG_EXPIRATION_TIMER_STARTED),
+               "delayed extraction armed inherited expiration");
+         if (publish)
+         {
+            extraction.progress = 37;
+            task_push(&extraction);
+            pump(1);
+            CHECK(task_widget(&extraction) == widget
+                  && widget->task_progress == 37,
+                  "extraction progress did not update the inherited widget");
+         }
+         gfx_widgets_deinit(false);
+         CHECK(task_widget(&extraction) == NULL,
+               "teardown left a widget answering to extraction");
+      }
 }
 
 int main(void)
 {
+   task_queue_init(false, NULL);
    test_two_concurrent_task_bars();
    test_title_churn(true);
    test_title_churn(false);
    test_deinit_with_live_tasks();
+   test_suppressed_completion();
+   test_delayed_handoff();
 
    printf("pushes=%d frames=%d\n", pushes, iterations);
 
    CHECK(pushes > 0,     "no task was ever pushed");
    CHECK(iterations > 0, "no frame was ever iterated");
+
+   task_queue_deinit();
 
    if (failures)
    {

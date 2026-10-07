@@ -118,11 +118,8 @@ static bool cocoa_vk_gfx_ctx_suppress_screensaver(void *data, bool disable)
 }
 
 static void cocoa_vk_gfx_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 #if TARGET_OS_OSX
@@ -320,8 +317,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
             VULKAN_WSI_MVK_MACOS,
             NULL,
             (BRIDGE void *)g_view.layer,
-            VIDEO_SCALE_W(args->dims),
-            VIDEO_SCALE_H(args->dims),
+            args->dims,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -415,8 +411,7 @@ static void cocoa_vk_gfx_ctx_set_video_mode_mainthread(void *userdata)
                               VULKAN_WSI_MVK_IOS,
                               NULL,
                               (BRIDGE void *)((MetalLayerView*)g_view).metalLayer,
-                              VIDEO_SCALE_W(args->dims),
-                              VIDEO_SCALE_H(args->dims),
+                              args->dims,
                               cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to create surface.\n");
@@ -502,8 +497,7 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    cocoa_vk_set_resize_args_t *args = (cocoa_vk_set_resize_args_t*)userdata;
    cocoa_vk_ctx_data_t *cocoa_ctx   = args->ctx;
 
-   if (!vulkan_create_swapchain(&cocoa_ctx->vk,
-            VIDEO_SCALE_W(args->dims), VIDEO_SCALE_H(args->dims),
+   if (!vulkan_create_swapchain(&cocoa_ctx->vk, args->dims,
             cocoa_ctx->swap_interval))
    {
       RARCH_ERR("[Vulkan] Failed to update swapchain.\n");
@@ -520,12 +514,12 @@ static void cocoa_vk_gfx_ctx_set_resize_mainthread(void *userdata)
    args->ok                       = true;
 }
 
-static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoa_vk_gfx_ctx_set_resize(void *data, unsigned dims)
 {
    cocoa_vk_set_resize_args_t args;
 
    args.ctx    = (cocoa_vk_ctx_data_t*)data;
-   args.dims   = VIDEO_SCALE_PACK(width, height);
+   args.dims   = dims;
    args.ok     = false;
 
    cocoa_main_thread_sync(cocoa_vk_gfx_ctx_set_resize_mainthread, &args);
@@ -542,6 +536,19 @@ static void cocoa_vk_gfx_ctx_get_video_output_size(void *data,
     * directly, bypassing dispserv_apple. */
    cocoa_get_video_output_size(dims, desc, desc_len);
 }
+
+#if TARGET_OS_OSX
+/* The display's last vblank, from the view's display link
+ * (ui/drivers/cocoa/cocoa_common.m), for when the device has no
+ * display timing of its own to report. */
+retro_time_t cocoa_last_vblank_time(void);
+
+static retro_time_t cocoa_vk_gfx_ctx_last_present_time(void *data)
+{
+   (void)data;
+   return cocoa_last_vblank_time();
+}
+#endif
 
 const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    cocoa_vk_gfx_ctx_init,
@@ -585,5 +592,10 @@ const gfx_ctx_driver_t gfx_ctx_cocoavk = {
    NULL, /* make_current */
    NULL, /* create_surface */
    NULL  /* destroy_surface */,
-   cocoa_vk_gfx_ctx_presentable
+   cocoa_vk_gfx_ctx_presentable,
+#if TARGET_OS_OSX
+   cocoa_vk_gfx_ctx_last_present_time
+#else
+   NULL  /* last_present_time */
+#endif
 };

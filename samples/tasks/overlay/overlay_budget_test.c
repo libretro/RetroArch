@@ -116,6 +116,14 @@ void image_texture_free(struct texture_image *img)
       img->pixels = NULL;
 }
 
+/* The loader tiles only for a driver whose requirements ask for GX
+ * tiles, which this build (no RARCH_INTERNAL, no driver) never does. */
+bool image_texture_tile_gx(struct texture_image *img)
+{
+   (void)img;
+   return true;
+}
+
 static void release_tracked_images(void)
 {
    unsigned i;
@@ -163,12 +171,12 @@ void input_overlay_free_overlay(struct overlay *overlay)
    overlay->descs       = NULL;
 }
 
-/* The loader reads input_st only for eightway bind defaults; an
- * all-zero state is a valid one for that purpose. */
-void *input_state_get_ptr(void)
+/* The loader asks the frontend where an eight-way area's slopes are
+ * kept; zeroes are valid slopes for this test. */
+float *input_driver_overlay_eightway_slopes(bool abxy)
 {
-   static char st[4096];
-   return st;
+   static float slopes[2][2];
+   return slopes[abxy ? 1 : 0];
 }
 
 void ui_companion_driver_notify_refresh(void) { }

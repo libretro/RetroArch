@@ -38,10 +38,8 @@ typedef struct sdl1_input
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
    linux_illuminance_sensor_t *illuminance_sensor;
 #endif
-   int mouse_x;
-   int mouse_y;
-   int mouse_abs_x;
-   int mouse_abs_y;
+   uint32_t mouse_rel;   /* VIDEO_POS_PACK */
+   uint32_t mouse_abs;   /* VIDEO_POS_PACK */
    int mouse_l;
    int mouse_r;
    int mouse_m;
@@ -77,6 +75,20 @@ static bool sdl1_key_pressed(int key)
    return keymap[sym];
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void sdl1_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (sdl1_key_pressed(keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t sdl1_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -89,162 +101,21 @@ static int16_t sdl1_input_state(
       unsigned idx,
       unsigned id)
 {
-   int16_t       ret = 0;
    sdl1_input_t *sdl = (sdl1_input_t*)data;
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && sdl1_key_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && sdl1_key_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (sdl1_key_pressed(id_plus_key))
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (sdl1_key_pressed(id_minus_key))
-                  ret += -0x7fff;
-            }
-         }
-         return ret;
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
-         {
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return sdl->mouse_l;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return sdl->mouse_r;
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return sdl->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  return sdl->mouse_x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return sdl->mouse_y;
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return sdl->mouse_m;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                  return sdl->mouse_b4;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                  return sdl->mouse_b5;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
-         {
-            video_viewport_t vp         = {0};
-            bool screen                 = device ==
-               RARCH_DEVICE_POINTER_SCREEN;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
-
-            if (video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
-            {
-               if (screen)
-               {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return sdl->mouse_l;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
-               }
-            }
-         }
-         break;
+      /* The RetroPad's buttons and the hotkeys, where they are bound to
+       * keys or mouse buttons, are the frontend's to answer: it asks
+       * sdl1_keys_down() for the keys once a poll. */
+      /* ... and a stick's axes, where they are bound to keys. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && sdl1_key_pressed(id);
       /* TODO: update button binds to match other input drivers */
       case RETRO_DEVICE_LIGHTGUN:
-      {
-         video_viewport_t vp         = {0};
-         int16_t res_x               = 0;
-         int16_t res_y               = 0;
-         int16_t res_screen_x        = 0;
-         int16_t res_screen_y        = 0;
-
-         if (video_driver_translate_coord_viewport_wrap(
-                     &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-                     &res_x, &res_y, &res_screen_x, &res_screen_y))
-
+         /* its buttons are the mouse's */
          switch (id)
          {
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               return res_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               return res_y;
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return input_driver_pointer_is_offscreen(res_x, res_y);
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return sdl->mouse_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return sdl->mouse_y;
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return sdl->mouse_l;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -253,9 +124,10 @@ static int16_t sdl1_input_state(
                return sdl->mouse_r;
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return sdl->mouse_l && sdl->mouse_r;
+            default:
+               break;
          }
          break;
-      }
    }
 
    return 0;
@@ -341,9 +213,12 @@ static float sdl1_get_sensor_input(void *data, unsigned port, unsigned id)
 
 static void sdl1_poll_mouse(sdl1_input_t *sdl)
 {
-   Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   int rx = 0, ry = 0, ax = 0, ay = 0;
+   Uint8 btn     = SDL_GetRelativeMouseState(&rx, &ry);
 
-   SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
+   SDL_GetMouseState(&ax, &ay);
+   sdl->mouse_rel = VIDEO_POS_PACK(rx, ry);
+   sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
    sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
@@ -352,6 +227,37 @@ static void sdl1_poll_mouse(sdl1_input_t *sdl)
    sdl->mouse_b5 = (SDL_BUTTON(SDL_BUTTON_X2)        & btn) ? 1 : 0;
    sdl->mouse_wu = (SDL_BUTTON(SDL_BUTTON_WHEELUP)   & btn) ? 1 : 0;
    sdl->mouse_wd = (SDL_BUTTON(SDL_BUTTON_WHEELDOWN) & btn) ? 1 : 0;
+}
+
+/* The mouse's frame, handed to the frontend, which answers for the
+ * mouse, the pointer and the lightgun's aim. The mouse is the port's
+ * whose Mouse Index is 0; the pointer and the lightgun are every
+ * port's, and the mouse stands for one touch, its left button. */
+static void sdl1_publish_pointers(sdl1_input_t *sdl)
+{
+   input_pointer_frame_t frame;
+   unsigned buttons = 0;
+
+   if (sdl->mouse_l)
+      buttons |= INPUT_POINTER_LEFT;
+   if (sdl->mouse_r)
+      buttons |= INPUT_POINTER_RIGHT;
+   if (sdl->mouse_m)
+      buttons |= INPUT_POINTER_MIDDLE;
+   if (sdl->mouse_b4)
+      buttons |= INPUT_POINTER_BUTTON_4;
+   if (sdl->mouse_b5)
+      buttons |= INPUT_POINTER_BUTTON_5;
+   if (sdl->mouse_wu)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (sdl->mouse_wd)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+   frame.pos     = sdl->mouse_abs;
+   frame.rel     = sdl->mouse_rel;
+   frame.buttons = (uint16_t)buttons;
+
+   input_driver_publish_pointers(&frame, 1,
+         INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
 }
 
 static void sdl1_input_poll(void *data)
@@ -397,6 +303,8 @@ static void sdl1_input_poll(void *data)
          }
       }
    }
+
+   sdl1_publish_pointers(sdl);
 }
 
 static uint64_t sdl1_get_capabilities(void *data)
@@ -421,5 +329,7 @@ input_driver_t input_sdl1 = {
    "sdl",
    NULL,                   /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,
+   sdl1_keys_down
 };

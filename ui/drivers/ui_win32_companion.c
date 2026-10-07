@@ -79,6 +79,534 @@
 #include "../companion/companion_thumbs.h"
 #include "ui_win32.h"
 
+#include <encodings/utf.h>
+
+/* Text crosses into Windows as UTF-16 through the W entry points, so
+ * names in any script show and paths in any script open; Windows does
+ * the font fallback. A legacy (Win9x) build has no W entry points and
+ * goes through the A ones in the local code page instead. The core's
+ * strings are UTF-8 either way: everything below converts at the edge,
+ * and the A and W twins of a message or a struct are picked here. */
+#ifdef LEGACY_WIN32
+typedef char cw_tchar;
+#define CW_AW(a, w) a
+#else
+typedef wchar_t cw_tchar;
+#define CW_AW(a, w) w
+#endif
+
+#define CwDefWindowProc    CW_AW(DefWindowProcA, DefWindowProcW)
+#define CwCallWindowProc   CW_AW(CallWindowProcA, CallWindowProcW)
+#define CwSetWindowLongPtr CW_AW(SetWindowLongPtrA, SetWindowLongPtrW)
+#define CwSendMessage      CW_AW(SendMessageA, SendMessageW)
+
+#define CW_LVN_GETDISPINFO    CW_AW(LVN_GETDISPINFOA, LVN_GETDISPINFOW)
+#define CW_LVN_GETINFOTIP     CW_AW(LVN_GETINFOTIPA, LVN_GETINFOTIPW)
+#define CW_LVN_BEGINLABELEDIT CW_AW(LVN_BEGINLABELEDITA, LVN_BEGINLABELEDITW)
+#define CW_LVN_ENDLABELEDIT   CW_AW(LVN_ENDLABELEDITA, LVN_ENDLABELEDITW)
+typedef CW_AW(NMLVDISPINFOA, NMLVDISPINFOW)     cw_nmlvdispinfo_t;
+typedef CW_AW(NMLVGETINFOTIPA, NMLVGETINFOTIPW) cw_nmlvgetinfotip_t;
+typedef CW_AW(LVITEMA, LVITEMW)                 cw_lvitem_t;
+
+/* A malloc'd copy of @utf8 in the native string type */
+static cw_tchar *cw_t(const char *utf8)
+{
+#ifdef LEGACY_WIN32
+   return utf8_to_local_string_alloc(utf8 ? utf8 : "");
+#else
+   return utf8_to_utf16_string_alloc(utf8 ? utf8 : "");
+#endif
+}
+
+/* @utf8 into a native buffer of @cap characters, cut short to fit */
+static void cw_t_into(cw_tchar *dst, int cap, const char *utf8)
+{
+   if (!dst || cap <= 0)
+      return;
+   dst[0] = 0;
+   if (!utf8)
+      return;
+#ifdef LEGACY_WIN32
+   {
+      char *local = utf8_to_local_string_alloc(utf8);
+      if (local)
+      {
+         strlcpy(dst, local, (size_t)cap);
+         free(local);
+      }
+   }
+#else
+   if (!MultiByteToWideChar(CP_UTF8, 0, utf8, -1, dst, cap))
+   {
+      /* Too long: as much as fits, at a character boundary */
+      int n = MultiByteToWideChar(CP_UTF8, 0, utf8, -1, NULL, 0);
+      if (n > 0)
+      {
+         wchar_t *all = (wchar_t*)malloc((size_t)n * sizeof(wchar_t));
+         if (all)
+         {
+            MultiByteToWideChar(CP_UTF8, 0, utf8, -1, all, n);
+            memcpy(dst, all, (size_t)(cap - 1) * sizeof(wchar_t));
+            free(all);
+         }
+      }
+      dst[cap - 1] = 0;
+   }
+#endif
+}
+
+/* Native @src into a UTF-8 buffer of @cap bytes */
+static void cw_u8_into(char *dst, size_t cap, const cw_tchar *src)
+{
+   char *u8;
+   if (!dst || !cap)
+      return;
+   dst[0] = '\0';
+   if (!src)
+      return;
+#ifdef LEGACY_WIN32
+   u8 = local_to_utf8_string_alloc(src);
+#else
+   u8 = utf16_to_utf8_string_alloc(src);
+#endif
+   if (u8)
+   {
+      strlcpy(dst, u8, cap);
+      free(u8);
+   }
+}
+
+/* A malloc'd UTF-8 copy of native @src */
+static char *cw_u8(const cw_tchar *src)
+{
+   if (!src)
+      return NULL;
+#ifdef LEGACY_WIN32
+   return local_to_utf8_string_alloc(src);
+#else
+   return utf16_to_utf8_string_alloc(src);
+#endif
+}
+
+/* The message carrying a native string for the ANSI one named */
+static UINT cw_msg(UINT msg)
+{
+#ifndef LEGACY_WIN32
+   switch (msg)
+   {
+      case SB_SETTEXTA:       return SB_SETTEXTW;
+      case LVM_INSERTITEMA:   return LVM_INSERTITEMW;
+      case LVM_SETITEMTEXTA:  return LVM_SETITEMTEXTW;
+      case LVM_SETITEMA:      return LVM_SETITEMW;
+      case LVM_INSERTCOLUMNA: return LVM_INSERTCOLUMNW;
+      case LVM_EDITLABELA:    return LVM_EDITLABELW;
+      case TCM_INSERTITEMA:   return TCM_INSERTITEMW;
+      default:                break;
+   }
+#endif
+   return msg;
+}
+
+static HWND cw_create(DWORD ex_style, const char *cls, const char *text,
+      DWORD style, int x, int y, int width, int height, HWND parent,
+      HMENU menu, HINSTANCE inst, void *param)
+{
+   HWND      hwnd;
+   cw_tchar *c = cw_t(cls);
+   cw_tchar *t = cw_t(text);
+   hwnd = CW_AW(CreateWindowExA, CreateWindowExW)(ex_style, c, t, style,
+         x, y, width, height, parent, menu, inst, param);
+   free(c);
+   free(t);
+   return hwnd;
+}
+
+static ATOM cw_register_class(const WNDCLASSA *wc)
+{
+#ifdef LEGACY_WIN32
+   return RegisterClassA(wc);
+#else
+   ATOM      atom;
+   WNDCLASSW w;
+   wchar_t  *name = utf8_to_utf16_string_alloc(wc->lpszClassName);
+   w.style         = wc->style;
+   w.lpfnWndProc   = wc->lpfnWndProc;
+   w.cbClsExtra    = wc->cbClsExtra;
+   w.cbWndExtra    = wc->cbWndExtra;
+   w.hInstance     = wc->hInstance;
+   w.hIcon         = wc->hIcon;
+   w.hCursor       = wc->hCursor;
+   w.hbrBackground = wc->hbrBackground;
+   w.lpszMenuName  = NULL;
+   w.lpszClassName = name;
+   atom            = RegisterClassW(&w);
+   free(name);
+   return atom;
+#endif
+}
+
+static BOOL cw_unregister_class(const char *cls, HINSTANCE inst)
+{
+   BOOL      ok;
+   cw_tchar *c = cw_t(cls);
+   ok = CW_AW(UnregisterClassA, UnregisterClassW)(c, inst);
+   free(c);
+   return ok;
+}
+
+static void cw_set_text(HWND hwnd, const char *utf8)
+{
+   cw_tchar *t = cw_t(utf8);
+   CW_AW(SetWindowTextA, SetWindowTextW)(hwnd, t);
+   free(t);
+}
+
+/* The window's text as UTF-8, into @cap bytes; its length */
+static int cw_get_text(HWND hwnd, char *buf, int cap)
+{
+   int       n = CW_AW(GetWindowTextLengthA, GetWindowTextLengthW)(hwnd);
+   cw_tchar *t = (cw_tchar*)calloc((size_t)n + 1, sizeof(cw_tchar));
+   if (!buf || cap <= 0)
+   {
+      free(t);
+      return 0;
+   }
+   buf[0] = '\0';
+   if (t)
+   {
+      CW_AW(GetWindowTextA, GetWindowTextW)(hwnd, t, n + 1);
+      cw_u8_into(buf, (size_t)cap, t);
+      free(t);
+   }
+   return (int)strlen(buf);
+}
+
+/* A message whose lParam is a string */
+static LRESULT cw_send_text(HWND hwnd, UINT msg, WPARAM wparam,
+      const char *utf8)
+{
+   LRESULT   r;
+   cw_tchar *t = cw_t(utf8);
+   r = CwSendMessage(hwnd, cw_msg(msg), wparam, (LPARAM)t);
+   free(t);
+   return r;
+}
+
+/* A list view item message, @it built with UTF-8 text */
+static LRESULT cw_lv_item(HWND lv, UINT msg, WPARAM wparam,
+      const LVITEMA *it)
+{
+#ifdef LEGACY_WIN32
+   LRESULT r;
+   LVITEMA a  = *it;
+   char   *t  = NULL;
+   if ((a.mask & LVIF_TEXT) && a.pszText && a.pszText != LPSTR_TEXTCALLBACKA)
+      a.pszText = t = utf8_to_local_string_alloc(a.pszText);
+   r = SendMessageA(lv, msg, wparam, (LPARAM)&a);
+   free(t);
+   return r;
+#else
+   LRESULT  r;
+   LVITEMW  w;
+   wchar_t *t = NULL;
+   memcpy(&w, it, sizeof(w) < sizeof(*it) ? sizeof(w) : sizeof(*it));
+   if (it->mask & LVIF_TEXT)
+   {
+      if (it->pszText == LPSTR_TEXTCALLBACKA)
+         w.pszText = LPSTR_TEXTCALLBACKW;
+      else if (it->pszText)
+         w.pszText = t = utf8_to_utf16_string_alloc(it->pszText);
+   }
+   r = SendMessageW(lv, cw_msg(msg), wparam, (LPARAM)&w);
+   free(t);
+   return r;
+#endif
+}
+
+/* A list view column message, @c built with UTF-8 text */
+static LRESULT cw_lv_column(HWND lv, UINT msg, WPARAM wparam,
+      const LVCOLUMNA *c)
+{
+#ifdef LEGACY_WIN32
+   LRESULT  r;
+   LVCOLUMNA a = *c;
+   char    *t  = NULL;
+   if ((a.mask & LVCF_TEXT) && a.pszText)
+      a.pszText = t = utf8_to_local_string_alloc(a.pszText);
+   r = SendMessageA(lv, msg, wparam, (LPARAM)&a);
+   free(t);
+   return r;
+#else
+   LRESULT   r;
+   LVCOLUMNW w;
+   wchar_t  *t = NULL;
+   memcpy(&w, c, sizeof(w) < sizeof(*c) ? sizeof(w) : sizeof(*c));
+   if ((c->mask & LVCF_TEXT) && c->pszText)
+      w.pszText = t = utf8_to_utf16_string_alloc(c->pszText);
+   r = SendMessageW(lv, cw_msg(msg), wparam, (LPARAM)&w);
+   free(t);
+   return r;
+#endif
+}
+
+/* A tab control item message, @ti built with UTF-8 text */
+static LRESULT cw_tab_item(HWND tab, UINT msg, WPARAM wparam,
+      const TCITEMA *ti)
+{
+#ifdef LEGACY_WIN32
+   LRESULT r;
+   TCITEMA a = *ti;
+   char   *t = NULL;
+   if ((a.mask & TCIF_TEXT) && a.pszText)
+      a.pszText = t = utf8_to_local_string_alloc(a.pszText);
+   r = SendMessageA(tab, msg, wparam, (LPARAM)&a);
+   free(t);
+   return r;
+#else
+   LRESULT  r;
+   TCITEMW  w;
+   wchar_t *t = NULL;
+   memcpy(&w, ti, sizeof(w) < sizeof(*ti) ? sizeof(w) : sizeof(*ti));
+   if ((ti->mask & TCIF_TEXT) && ti->pszText)
+      w.pszText = t = utf8_to_utf16_string_alloc(ti->pszText);
+   r = SendMessageW(tab, cw_msg(msg), wparam, (LPARAM)&w);
+   free(t);
+   return r;
+#endif
+}
+
+static BOOL cw_append_menu(HMENU menu, UINT flags, UINT_PTR id,
+      const char *utf8)
+{
+   BOOL      ok;
+   cw_tchar *t;
+   if (flags & (MF_SEPARATOR | MF_BITMAP | MF_OWNERDRAW))
+      return CW_AW(AppendMenuA, AppendMenuW)(menu, flags, id, NULL);
+   t  = cw_t(utf8);
+   ok = CW_AW(AppendMenuA, AppendMenuW)(menu, flags, id, t);
+   free(t);
+   return ok;
+}
+
+static int cw_message_box(HWND hwnd, const char *text,
+      const char *caption, UINT type)
+{
+   int       r;
+   cw_tchar *t = cw_t(text);
+   cw_tchar *c = cw_t(caption);
+   r = CW_AW(MessageBoxA, MessageBoxW)(hwnd, t, c, type);
+   free(t);
+   free(c);
+   return r;
+}
+
+static int cw_draw_text(HDC hdc, const char *utf8, int len, RECT *rc,
+      UINT format)
+{
+   int       r;
+   char     *cut = NULL;
+   cw_tchar *t;
+   if (len >= 0)
+   {
+      if ((cut = (char*)malloc((size_t)len + 1)))
+      {
+         memcpy(cut, utf8, (size_t)len);
+         cut[len] = '\0';
+      }
+      utf8 = cut;
+   }
+   t = cw_t(utf8);
+   r = CW_AW(DrawTextA, DrawTextW)(hdc, t, -1, rc, format);
+   free(t);
+   free(cut);
+   return r;
+}
+
+/* GetOpenFileName with a UTF-8 result in @out (@cap bytes): one full
+ * path, or with OFN_ALLOWMULTISELECT the directory and then each file,
+ * each NUL-terminated and the list ended by an empty one. @filter is
+ * ASCII, its pairs NUL-separated and the list ending in two NULs. */
+static bool cw_open_file(HWND owner, const char *filter, const char *title,
+      DWORD flags, char *out, size_t cap)
+{
+#ifdef LEGACY_WIN32
+   OPENFILENAMEA ofn;
+   bool          ok;
+   char         *t = utf8_to_local_string_alloc(title ? title : "");
+   memset(&ofn, 0, sizeof(ofn));
+   ofn.lStructSize = sizeof(ofn);
+   ofn.hwndOwner   = owner;
+   ofn.lpstrFilter = filter;
+   ofn.lpstrFile   = out;
+   ofn.nMaxFile    = (DWORD)cap;
+   ofn.lpstrTitle  = t;
+   ofn.Flags       = flags;
+   out[0]          = '\0';
+   ok              = GetOpenFileNameA(&ofn) && out[0];
+   free(t);
+   if (ok)
+   {
+      /* The names are in the local code page; the core wants UTF-8 */
+      char  *conv = (char*)calloc(1, cap);
+      size_t o    = 0;
+      const char *p = out;
+      if (!conv)
+         return false;
+      while (*p && o + 1 < cap)
+      {
+         char *u = local_to_utf8_string_alloc(p);
+         if (u)
+         {
+            size_t n = strlen(u);
+            if (o + n + 2 > cap)
+            {
+               free(u);
+               break;
+            }
+            memcpy(conv + o, u, n + 1);
+            o += n + 1;
+            free(u);
+         }
+         p += strlen(p) + 1;
+      }
+      memcpy(out, conv, cap);
+      free(conv);
+   }
+   return ok;
+#else
+   OPENFILENAMEW ofn;
+   bool          ok;
+   size_t        flen = 0;
+   wchar_t      *wf   = NULL;
+   wchar_t      *wt   = utf8_to_utf16_string_alloc(title ? title : "");
+   wchar_t      *buf  = (wchar_t*)calloc(cap, sizeof(wchar_t));
+   if (!buf)
+   {
+      free(wt);
+      return false;
+   }
+   /* The filter's length, both NULs at its end included */
+   while (filter[flen] || filter[flen + 1])
+      flen++;
+   flen += 2;
+   if ((wf = (wchar_t*)calloc(flen, sizeof(wchar_t))))
+      MultiByteToWideChar(CP_UTF8, 0, filter, (int)flen, wf, (int)flen);
+   memset(&ofn, 0, sizeof(ofn));
+   ofn.lStructSize = sizeof(ofn);
+   ofn.hwndOwner   = owner;
+   ofn.lpstrFilter = wf;
+   ofn.lpstrFile   = buf;
+   ofn.nMaxFile    = (DWORD)cap;
+   ofn.lpstrTitle  = wt;
+   ofn.Flags       = flags;
+   out[0]          = '\0';
+   ok              = GetOpenFileNameW(&ofn) && buf[0];
+   if (ok)
+   {
+      size_t o = 0;
+      const wchar_t *p = buf;
+      while (*p)
+      {
+         int n = WideCharToMultiByte(CP_UTF8, 0, p, -1, out + o,
+               (int)(cap - o - 1), NULL, NULL);
+         if (n <= 0)
+            break;
+         o += (size_t)n;
+         p += wcslen(p) + 1;
+      }
+      out[o < cap ? o : cap - 1] = '\0';
+   }
+   free(buf);
+   free(wf);
+   free(wt);
+   return ok && out[0];
+#endif
+}
+
+/* The folder picker; the chosen directory as UTF-8 in @out */
+static bool cw_pick_folder(HWND owner, const char *title, char *out,
+      size_t cap)
+{
+   bool         ok = false;
+   LPITEMIDLIST pidl;
+#ifdef LEGACY_WIN32
+   BROWSEINFOA bi;
+   char        dir[MAX_PATH];
+   char       *t = utf8_to_local_string_alloc(title ? title : "");
+   memset(&bi, 0, sizeof(bi));
+   bi.hwndOwner = owner;
+   bi.lpszTitle = t;
+   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
+   pidl         = SHBrowseForFolderA(&bi);
+   free(t);
+   if (!pidl)
+      return false;
+   dir[0] = '\0';
+   if (SHGetPathFromIDListA(pidl, dir) && dir[0])
+   {
+      char *u = local_to_utf8_string_alloc(dir);
+      if (u)
+      {
+         strlcpy(out, u, cap);
+         free(u);
+         ok = true;
+      }
+   }
+#else
+   BROWSEINFOW bi;
+   wchar_t     dir[MAX_PATH];
+   wchar_t    *t = utf8_to_utf16_string_alloc(title ? title : "");
+   memset(&bi, 0, sizeof(bi));
+   bi.hwndOwner = owner;
+   bi.lpszTitle = t;
+   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
+   pidl         = SHBrowseForFolderW(&bi);
+   free(t);
+   if (!pidl)
+      return false;
+   dir[0] = 0;
+   if (SHGetPathFromIDListW(pidl, dir) && dir[0])
+   {
+      cw_u8_into(out, cap, dir);
+      ok = out[0] != '\0';
+   }
+#endif
+   CoTaskMemFree(pidl);
+   return ok;
+}
+
+/* The number of files dropped, or file @i's path as UTF-8 in @out */
+static UINT cw_drop_count(HDROP drop)
+{
+   return CW_AW(DragQueryFileA, DragQueryFileW)(drop, 0xFFFFFFFF, NULL, 0);
+}
+
+static void cw_drop_path(HDROP drop, UINT i, char *out, size_t cap)
+{
+   UINT      n = CW_AW(DragQueryFileA, DragQueryFileW)(drop, i, NULL, 0);
+   cw_tchar *t = (cw_tchar*)calloc((size_t)n + 1, sizeof(cw_tchar));
+   out[0] = '\0';
+   if (!t)
+      return;
+   CW_AW(DragQueryFileA, DragQueryFileW)(drop, i, t, n + 1);
+   cw_u8_into(out, cap, t);
+   free(t);
+}
+
+/* The system image list index for @path's icon, or 0 */
+static int cw_file_icon(const char *path, DWORD attrs, UINT flags)
+{
+   int       icon = 0;
+   cw_tchar *t    = cw_t(path);
+   CW_AW(SHFILEINFOA, SHFILEINFOW) sfi;
+   memset(&sfi, 0, sizeof(sfi));
+   if (t && CW_AW(SHGetFileInfoA, SHGetFileInfoW)(t, attrs, &sfi,
+            sizeof(sfi), flags))
+      icon = sfi.iIcon;
+   free(t);
+   return icon;
+}
+
 #ifndef IDI_ICON
 #define IDI_ICON 1
 #endif
@@ -281,7 +809,7 @@ static ui_companion_win32_wimp_t *g_win32_wimp = NULL;
 static void cw_status_set(ui_companion_win32_wimp_t *w, const char *msg)
 {
    if (w && w->status)
-      SendMessageA(w->status, SB_SETTEXTA, 0, (LPARAM)(msg ? msg : ""));
+      cw_send_text(w->status, SB_SETTEXTA, 0, (msg ? msg : ""));
 }
 
 /* Case-insensitive substring test against the current filter; empty
@@ -354,7 +882,7 @@ static void cw_playlists_rebuild(ui_companion_win32_wimp_t *w)
       item.iItem   = (int)i;
       item.iImage  = img;
       item.pszText = (LPSTR)(name ? name : "");
-      SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      cw_lv_item(w->playlists, LVM_INSERTITEMA, 0, &item);
    }
    SendMessageA(w->playlists, WM_SETREDRAW, TRUE, 0);
    /* One column, sized to the pane. */
@@ -845,7 +1373,6 @@ static int cw_browse_icon_get(ui_companion_win32_wimp_t *w, size_t row)
    size_t bi;
    const char *fp;
    bool is_dir, is_drive;
-   SHFILEINFOA sfi;
    if (!w->browse_icon || row >= w->row_count)
       return 0;
    if (w->browse_icon[row] >= 0)
@@ -855,13 +1382,11 @@ static int cw_browse_icon_get(ui_companion_win32_wimp_t *w, size_t row)
    is_dir   = companion_core_browse_is_dir(w->core, bi);
    is_drive = fp && strlen(fp) <= 3 && fp[1] == ':';
    w->browse_icon[row] = 0;
-   memset(&sfi, 0, sizeof(sfi));
-   if (fp && SHGetFileInfoA(fp,
+   if (fp)
+      w->browse_icon[row] = cw_file_icon(fp,
             is_dir ? FILE_ATTRIBUTE_DIRECTORY : FILE_ATTRIBUTE_NORMAL,
-            &sfi, sizeof(sfi),
             SHGFI_SYSICONINDEX | SHGFI_SMALLICON
-            | (is_drive ? 0 : SHGFI_USEFILEATTRIBUTES)))
-      w->browse_icon[row] = sfi.iIcon;
+            | (is_drive ? 0 : SHGFI_USEFILEATTRIBUTES));
    return w->browse_icon[row];
 }
 
@@ -894,7 +1419,7 @@ static void cw_entries_columns(ui_companion_win32_wimp_t *w, bool browse)
       else
       {
          c.mask = LVCF_TEXT | LVCF_WIDTH;
-         SendMessageA(w->entries, LVM_INSERTCOLUMNA, (WPARAM)i, (LPARAM)&c);
+         cw_lv_column(w->entries, LVM_INSERTCOLUMNA, (WPARAM)i, &c);
       }
    }
 }
@@ -1025,7 +1550,7 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
       item.iItem   = (int)i;
       item.iImage  = 0; /* folder */
       item.pszText = (LPSTR)(name ? name : "");
-      SendMessageA(w->playlists, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      cw_lv_item(w->playlists, LVM_INSERTITEMA, 0, &item);
    }
    SendMessageA(w->playlists, WM_SETREDRAW, TRUE, 0);
 
@@ -1066,7 +1591,7 @@ static void cw_browse_rebuild(ui_companion_win32_wimp_t *w)
          snprintf(buf, sizeof(buf), "%u", (unsigned)n);
    }
    if (w->items_label)
-      SetWindowTextA(w->items_label, buf);
+      cw_set_text(w->items_label, buf);
    cw_status_set(w, (dir && *dir) ? dir : "Computer");
 
    /* Qt shows no boxart for a file-browser selection. */
@@ -1165,7 +1690,7 @@ static void cw_entries_rebuild(ui_companion_win32_wimp_t *w)
          snprintf(buf, sizeof(buf), "%u", (unsigned)row);
    }
    if (w->items_label)
-      SetWindowTextA(w->items_label, buf);
+      cw_set_text(w->items_label, buf);
    /* The playlist has loaded; the status bar goes back to Qt's
     * "<version> - <core>" rather than staying on "Loading playlist...". */
    cw_status_default(w);
@@ -1385,11 +1910,11 @@ static HWND cw_float_window(ui_companion_win32_wimp_t *w, enum companion_dock_id
       wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
       wc.lpszClassName = COMPANION_WIN32_FLOAT_CLASS;
       wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
-      if (!RegisterClassA(&wc))
+      if (!cw_register_class(&wc))
          return NULL;
       w->float_class_registered = true;
    }
-   w->floats[p] = CreateWindowExA(WS_EX_TOOLWINDOW, COMPANION_WIN32_FLOAT_CLASS,
+   w->floats[p] = cw_create(WS_EX_TOOLWINDOW, COMPANION_WIN32_FLOAT_CLASS,
          cw_pane_title(p), WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
          CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, 300), CW_S(w, 240),
          w->hwnd, NULL, inst, NULL);
@@ -1642,7 +2167,7 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
       FillRect(hdc, &r, (HBRUSH)(COLOR_BTNFACE + 1));
       SetTextColor(hdc, GetSysColor(COLOR_BTNTEXT));
       r.left += CW_S(w, 6);
-      DrawTextA(hdc, cw_pane_title((enum companion_dock_id)i), -1, &r,
+      cw_draw_text(hdc, cw_pane_title((enum companion_dock_id)i), -1, &r,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
       cw_strip_glyphs(w, st, &fl, &cl);
       DrawFrameControl(hdc, &fl, DFC_CAPTION, DFCS_CAPTIONRESTORE | DFCS_FLAT);
@@ -1684,7 +2209,7 @@ static void cw_paint_docks(ui_companion_win32_wimp_t *w, HDC hdc)
             else
                DrawFrameControl(hdc, &r, DFC_BUTTON, DFCS_BUTTONPUSH);
             r.left += CW_S(w, 4); r.right -= CW_S(w, 4);
-            DrawTextA(hdc, cw_pane_title((enum companion_dock_id)m), -1, &r,
+            cw_draw_text(hdc, cw_pane_title((enum companion_dock_id)m), -1, &r,
                   DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
             x += tw;
             n++;
@@ -2067,7 +2592,7 @@ static LRESULT CALLBACK cw_float_wndproc(HWND hwnd, UINT msg,
       default:
          break;
    }
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 /* Core information pane: the rows companion_core_core_info_rows()
@@ -2113,7 +2638,7 @@ static void cw_info_fill(ui_companion_win32_wimp_t *w)
       item.mask     = LVIF_TEXT;
       item.iItem    = (int)i;
       item.pszText  = line;
-      SendMessageA(w->info, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      cw_lv_item(w->info, LVM_INSERTITEMA, 0, &item);
    }
    SendMessageA(w->info, WM_SETREDRAW, TRUE, 0);
 
@@ -2377,11 +2902,11 @@ static void cw_log_commit(ui_companion_win32_wimp_t *w, const char *line)
    {
       /* Drop the oldest half in one replacement. */
       SendMessageA(w->log, EM_SETSEL, 0, len / 2);
-      SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)"");
+      cw_send_text(w->log, EM_REPLACESEL, FALSE, "");
       len = SendMessageA(w->log, WM_GETTEXTLENGTH, 0, 0);
    }
    SendMessageA(w->log, EM_SETSEL, len, len);
-   SendMessageA(w->log, EM_REPLACESEL, FALSE, (LPARAM)line);
+   cw_send_text(w->log, EM_REPLACESEL, FALSE, line);
 }
 
 /* Any thread. Converts, copies and posts; the wndproc commits. A full
@@ -2555,7 +3080,7 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
 {
    POINT pt;
    RECT rc;
-   UINT i, n = DragQueryFileA(drop, 0xFFFFFFFF, NULL, 0);
+   UINT i, n = cw_drop_count(drop);
    char **paths;
    int over_pane = -1; /* the thumbnail pane dropped on, if any */
 
@@ -2583,7 +3108,7 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
    {
       paths[i] = (char*)malloc(PATH_MAX_LENGTH);
       if (paths[i])
-         DragQueryFileA(drop, i, paths[i], PATH_MAX_LENGTH);
+         cw_drop_path(drop, i, paths[i], PATH_MAX_LENGTH);
    }
    DragFinish(drop);
 
@@ -2632,7 +3157,6 @@ static void cw_drop_files(ui_companion_win32_wimp_t *w, HDROP drop)
 /* Qt's "Add Files...": a multi-select picker into the selected playlist. */
 static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
 {
-   OPENFILENAMEA ofn;
    char *buf = (char*)calloc(1, 65536);
    const char *pl = companion_core_selected_playlist_path(w->core);
    if (!buf || !pl || w->browse_mode)
@@ -2640,16 +3164,10 @@ static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
       free(buf);
       return;
    }
-   memset(&ofn, 0, sizeof(ofn));
-   ofn.lStructSize = sizeof(ofn);
-   ofn.hwndOwner   = w->hwnd;
-   ofn.lpstrFilter = "All files\0*.*\0";
-   ofn.lpstrFile   = buf;
-   ofn.nMaxFile    = 65536;
-   ofn.lpstrTitle  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES);
-   ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY
-                   | OFN_ALLOWMULTISELECT | OFN_EXPLORER;
-   if (GetOpenFileNameA(&ofn) && buf[0])
+   if (cw_open_file(w->hwnd, "All files\0*.*\0",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES),
+            OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY
+            | OFN_ALLOWMULTISELECT | OFN_EXPLORER, buf, 65536))
    {
       /* dir\0file1\0file2\0\0 (the first string is the directory), or
        * a single full path */
@@ -2711,7 +3229,7 @@ static LRESULT CALLBACK cw_search_proc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
    }
    if (w && msg == WM_CHAR && wparam == '\r')
       return 0;                    /* no beep for the swallowed Enter */
-   return CallWindowProcA(w ? w->search_proc : DefWindowProcA, hwnd, msg, wparam, lparam);
+   return CwCallWindowProc(w ? w->search_proc : CwDefWindowProc, hwnd, msg, wparam, lparam);
 }
 
 /* --- Core Options window (Qt's Core Options dialog) -------------------
@@ -2734,11 +3252,11 @@ static void cw_opts_fill(ui_companion_win32_wimp_t *w)
       it.mask    = LVIF_TEXT;
       it.iItem   = (int)i;
       it.pszText = (LPSTR)companion_core_option_desc(w->core, i);
-      SendMessageA(w->opts_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      cw_lv_item(w->opts_list, LVM_INSERTITEMA, 0, &it);
       it.iSubItem = 1;
       it.pszText  = (LPSTR)companion_core_option_value_label(w->core, i,
             companion_core_option_current(w->core, i));
-      SendMessageA(w->opts_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+      cw_lv_item(w->opts_list, LVM_SETITEMTEXTA, (WPARAM)i, &it);
    }
    if (!n)
    {
@@ -2746,7 +3264,7 @@ static void cw_opts_fill(ui_companion_win32_wimp_t *w)
       memset(&it, 0, sizeof(it));
       it.mask    = LVIF_TEXT;
       it.pszText = (LPSTR)"No core options available";
-      SendMessageA(w->opts_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      cw_lv_item(w->opts_list, LVM_INSERTITEMA, 0, &it);
    }
 }
 
@@ -2810,13 +3328,13 @@ static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPAR
          if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_OPTS_LIST)
          {
             NMHDR *hdr = (NMHDR*)lparam;
-            if (hdr->code == LVN_GETINFOTIPA)
+            if (hdr->code == CW_LVN_GETINFOTIP)
             {
-               NMLVGETINFOTIPA *tip = (NMLVGETINFOTIPA*)lparam;
+               cw_nmlvgetinfotip_t *tip = (cw_nmlvgetinfotip_t*)lparam;
                const char *info = companion_core_option_info(w->core,
                      (size_t)tip->iItem);
                if (tip->pszText && tip->cchTextMax > 0 && info && *info)
-                  strlcpy(tip->pszText, info, (size_t)tip->cchTextMax);
+                  cw_t_into(tip->pszText, tip->cchTextMax, info);
                return 0;
             }
             if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
@@ -2828,7 +3346,7 @@ static LRESULT CALLBACK cw_opts_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPAR
          }
          break;
    }
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 /* Shared shape of the two secondary windows: class, frame, list. */
@@ -2855,13 +3373,13 @@ static HWND cw_table_window(ui_companion_win32_wimp_t *w, const char *cls,
    wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
    wc.lpszClassName = cls;
-   RegisterClassA(&wc);
-   hwnd = CreateWindowExA(WS_EX_TOOLWINDOW, cls, title, WS_OVERLAPPEDWINDOW,
+   cw_register_class(&wc);
+   hwnd = cw_create(WS_EX_TOOLWINDOW, cls, title, WS_OVERLAPPEDWINDOW,
          CW_USEDEFAULT, CW_USEDEFAULT, CW_S(w, width), CW_S(w, 420),
          w->hwnd, NULL, inst, NULL);
    if (!hwnd)
       return NULL;
-   *list_out = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+   *list_out = cw_create(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
          0, 0, 0, 0, hwnd, (HMENU)(UINT_PTR_COMPAT)list_id, inst, NULL);
    SendMessageA(*list_out, LVM_SETEXTENDEDLISTVIEWSTYLE, 0, LVS_EX_FULLROWSELECT);
@@ -2876,13 +3394,13 @@ static void cw_table_column(ui_companion_win32_wimp_t *w, HWND list, int idx,
    col.mask    = LVCF_TEXT | LVCF_WIDTH;
    col.pszText = (LPSTR)title;
    col.cx      = CW_S(w, width);
-   SendMessageA(list, LVM_INSERTCOLUMNA, (WPARAM)idx, (LPARAM)&col);
+   cw_lv_column(list, LVM_INSERTCOLUMNA, (WPARAM)idx, &col);
 }
 
 static void cw_table_button(HWND parent, const char *text, int id, bool def)
 {
    HINSTANCE inst = GetModuleHandleA(NULL);
-   CreateWindowExA(0, "BUTTON", text,
+   cw_create(0, "BUTTON", text,
          WS_CHILD | WS_VISIBLE | WS_TABSTOP | (def ? BS_DEFPUSHBUTTON : BS_PUSHBUTTON),
          0, 0, 0, 0, parent, (HMENU)(UINT_PTR_COMPAT)id, inst, NULL);
 }
@@ -2941,14 +3459,14 @@ static void cw_shp_fill(ui_companion_win32_wimp_t *w)
       it.mask    = LVIF_TEXT;
       it.iItem   = (int)i;
       it.pszText = (LPSTR)companion_core_shader_param_desc(w->core, i);
-      SendMessageA(w->shp_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      cw_lv_item(w->shp_list, LVM_INSERTITEMA, 0, &it);
       snprintf(buf, sizeof(buf), "%g", (double)companion_core_shader_param_current(w->core, i));
       it.iSubItem = 1; it.pszText = buf;
-      SendMessageA(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+      cw_lv_item(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, &it);
       companion_core_shader_param_range(w->core, i, &mn, &mx, &st, &ini);
       snprintf(buf, sizeof(buf), "%g .. %g (step %g)", (double)mn, (double)mx, (double)st);
       it.iSubItem = 2; it.pszText = buf;
-      SendMessageA(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+      cw_lv_item(w->shp_list, LVM_SETITEMTEXTA, (WPARAM)i, &it);
    }
    if (!n)
    {
@@ -2956,7 +3474,7 @@ static void cw_shp_fill(ui_companion_win32_wimp_t *w)
       memset(&it, 0, sizeof(it));
       it.mask    = LVIF_TEXT;
       it.pszText = (LPSTR)"No shader parameters";
-      SendMessageA(w->shp_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      cw_lv_item(w->shp_list, LVM_INSERTITEMA, 0, &it);
    }
 }
 
@@ -2990,7 +3508,7 @@ static LRESULT CALLBACK cw_shp_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
                {
                   int sel = (int)SendMessageA(w->shp_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
                   char txt[64];
-                  GetWindowTextA(w->shp_edit, txt, sizeof(txt));
+                  cw_get_text(w->shp_edit, txt, sizeof(txt));
                   if (sel >= 0 && txt[0])
                      companion_core_shader_param_set(w->core, (size_t)sel, (float)atof(txt));
                   companion_core_shader_apply(w->core);
@@ -3021,12 +3539,12 @@ static LRESULT CALLBACK cw_shp_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
             {
                char buf[64];
                snprintf(buf, sizeof(buf), "%g", (double)companion_core_shader_param_current(w->core, (size_t)nm->iItem));
-               SetWindowTextA(w->shp_edit, buf);
+               cw_set_text(w->shp_edit, buf);
             }
          }
          break;
    }
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 static void cw_shp_show(ui_companion_win32_wimp_t *w)
@@ -3042,7 +3560,7 @@ static void cw_shp_show(ui_companion_win32_wimp_t *w)
       cw_table_column(w, w->shp_list, 0, "Parameter", 280);
       cw_table_column(w, w->shp_list, 1, "Value", 90);
       cw_table_column(w, w->shp_list, 2, "Range", 200);
-      w->shp_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+      w->shp_edit = cw_create(WS_EX_CLIENTEDGE, "EDIT", "",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
             0, 0, 0, 0, w->shp_hwnd, (HMENU)IDC_CW_SHP_EDIT, inst, NULL);
       cw_table_button(w->shp_hwnd, "Apply", IDC_CW_SHP_APPLY, true);
@@ -3075,7 +3593,7 @@ static void cw_set_fill(ui_companion_win32_wimp_t *w)
       it.mask    = LVIF_TEXT;
       it.iItem   = (int)i;
       it.pszText = (LPSTR)companion_core_setting_label(w->core, i);
-      SendMessageA(w->set_list, LVM_INSERTITEMA, 0, (LPARAM)&it);
+      cw_lv_item(w->set_list, LVM_INSERTITEMA, 0, &it);
       companion_core_setting_get(w->core, i, buf, sizeof(buf));
       if (companion_core_setting_kind(w->core, i) == COMPANION_SETTING_BOOL)
       {
@@ -3088,7 +3606,7 @@ static void cw_set_fill(ui_companion_win32_wimp_t *w)
       }
       it.iSubItem = 1;
       it.pszText  = buf;
-      SendMessageA(w->set_list, LVM_SETITEMTEXTA, (WPARAM)i, (LPARAM)&it);
+      cw_lv_item(w->set_list, LVM_SETITEMTEXTA, (WPARAM)i, &it);
    }
 }
 
@@ -3115,7 +3633,7 @@ static void cw_set_activate(ui_companion_win32_wimp_t *w, int item)
          }
          break;
       default:
-         SetWindowTextA(w->set_edit, buf);
+         cw_set_text(w->set_edit, buf);
          SetFocus(w->set_edit);
          SendMessageA(w->set_edit, EM_SETSEL, 0, -1);
          return;
@@ -3153,7 +3671,7 @@ static LRESULT CALLBACK cw_set_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
                {
                   int sel = (int)SendMessageA(w->set_list, LVM_GETNEXTITEM, (WPARAM)-1, MAKELPARAM(LVNI_SELECTED, 0));
                   char txt[PATH_MAX_LENGTH];
-                  GetWindowTextA(w->set_edit, txt, sizeof(txt));
+                  cw_get_text(w->set_edit, txt, sizeof(txt));
                   if (sel >= 0 && !companion_core_setting_set(w->core, (size_t)sel, txt))
                      MessageBeep(MB_ICONEXCLAMATION);
                   cw_set_fill(w);
@@ -3169,15 +3687,15 @@ static LRESULT CALLBACK cw_set_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
          if (w && ((NMHDR*)lparam)->idFrom == IDC_CW_SET_LIST)
          {
             NMHDR *hdr = (NMHDR*)lparam;
-            if (hdr->code == LVN_GETINFOTIPA)
+            if (hdr->code == CW_LVN_GETINFOTIP)
             {
                /* The tooltip for the hovered row: the same one-line help
                 * the Qt dialog shows. */
-               NMLVGETINFOTIPA *tip = (NMLVGETINFOTIPA*)lparam;
+               cw_nmlvgetinfotip_t *tip = (cw_nmlvgetinfotip_t*)lparam;
                const char *help = companion_core_setting_sublabel(w->core,
                      (size_t)tip->iItem);
                if (tip->pszText && tip->cchTextMax > 0 && help && *help)
-                  strlcpy(tip->pszText, help, (size_t)tip->cchTextMax);
+                  cw_t_into(tip->pszText, tip->cchTextMax, help);
                return 0;
             }
             if (hdr->code == NM_DBLCLK || hdr->code == NM_RETURN)
@@ -3193,13 +3711,13 @@ static LRESULT CALLBACK cw_set_wndproc(HWND hwnd, UINT msg, WPARAM wparam, LPARA
                {
                   char buf[PATH_MAX_LENGTH];
                   companion_core_setting_get(w->core, (size_t)nm->iItem, buf, sizeof(buf));
-                  SetWindowTextA(w->set_edit, buf);
+                  cw_set_text(w->set_edit, buf);
                }
             }
          }
          break;
    }
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 static void cw_set_show(ui_companion_win32_wimp_t *w)
@@ -3218,7 +3736,7 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
       SendMessageA(w->set_list, LVM_SETEXTENDEDLISTVIEWSTYLE,
             LVS_EX_INFOTIP, LVS_EX_INFOTIP);
       cw_infotip_wrap(w, w->set_list);
-      w->set_edit = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+      w->set_edit = cw_create(WS_EX_CLIENTEDGE, "EDIT", "",
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | ES_LEFT | ES_AUTOHSCROLL,
             0, 0, 0, 0, w->set_hwnd, (HMENU)IDC_CW_SET_EDIT, inst, NULL);
       cw_table_button(w->set_hwnd, "Apply", IDC_CW_SET_APPLY, true);
@@ -3236,18 +3754,11 @@ static void cw_set_show(ui_companion_win32_wimp_t *w)
  * window's button (@owner that window, which goes away on success). */
 static void cw_load_custom_core(ui_companion_win32_wimp_t *w, HWND owner)
 {
-   OPENFILENAMEA ofn;
    char path[PATH_MAX_LENGTH];
-   path[0] = '\0';
-   memset(&ofn, 0, sizeof(ofn));
-   ofn.lStructSize = sizeof(ofn);
-   ofn.hwndOwner   = owner;
-   ofn.lpstrFilter = "Core libraries (*.dll)\0*.dll\0All files\0*.*\0";
-   ofn.lpstrFile   = path;
-   ofn.nMaxFile    = sizeof(path);
-   ofn.lpstrTitle  = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE);
-   ofn.Flags       = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
-   if (GetOpenFileNameA(&ofn) && path[0]
+   if (cw_open_file(owner, "Core libraries (*.dll)\0*.dll\0All files\0*.*\0",
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE),
+            OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY,
+            path, sizeof(path))
          && companion_core_load_core(w->core, path)
          && owner == w->cores_hwnd)
       ShowWindow(w->cores_hwnd, SW_HIDE);
@@ -3291,7 +3802,7 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
 
    for (i = 0; i < n; i++)
    {
-      idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0, (LPARAM)opts[i].name);
+      idx = cw_send_text(w->core_combo, CB_ADDSTRING, 0, opts[i].name);
       if (idx >= 0 && idx < CW_COMBO_MAX)
       {
          SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
@@ -3299,8 +3810,7 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
          strlcpy(cw_combo_paths[idx], opts[i].path, PATH_MAX_LENGTH);
       }
    }
-   idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0,
-         (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
+   idx = cw_send_text(w->core_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_SELECTION_ASK));
    if (idx >= 0)
       SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
             (LPARAM)COMPANION_LAUNCH_ASK);
@@ -3308,7 +3818,7 @@ static void cw_core_combo_fill(ui_companion_win32_wimp_t *w, long entry)
       char label[64];
       snprintf(label, sizeof(label), "%s...",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CORE));
-      idx = SendMessageA(w->core_combo, CB_ADDSTRING, 0, (LPARAM)label);
+      idx = cw_send_text(w->core_combo, CB_ADDSTRING, 0, label);
       if (idx >= 0)
          SendMessageA(w->core_combo, CB_SETITEMDATA, (WPARAM)idx,
                (LPARAM)COMPANION_LAUNCH_LOAD_CORE);
@@ -3491,7 +4001,7 @@ static void cw_delete_selected(ui_companion_win32_wimp_t *w)
 
    if (idx < 0 || sel == (size_t)-1)
       return;
-   if (MessageBoxA(w->hwnd, "Delete this playlist entry?", COMPANION_WIN32_TITLE,
+   if (cw_message_box(w->hwnd, "Delete this playlist entry?", COMPANION_WIN32_TITLE,
             MB_YESNO | MB_ICONQUESTION) != IDYES)
       return;
 
@@ -3652,7 +4162,7 @@ static void cw_cores_fill(ui_companion_win32_wimp_t *w)
       item.pszText  = (LPSTR)(name ? name : "");
       /* LVS_SORTASCENDING files the row by name: the version goes on
        * the row the insert reports, not on row i. */
-      item.iItem    = (int)SendMessageA(w->cores_list, LVM_INSERTITEMA, 0, (LPARAM)&item);
+      item.iItem    = (int)cw_lv_item(w->cores_list, LVM_INSERTITEMA, 0, &item);
       if (item.iItem < 0)
          continue;
       item.mask     = LVIF_TEXT;
@@ -3793,7 +4303,7 @@ static LRESULT CALLBACK cw_cores_wndproc(HWND hwnd, UINT msg,
       default:
          break;
    }
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 static bool cw_cores_create(ui_companion_win32_wimp_t *w)
@@ -3812,13 +4322,13 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
    wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
    wc.lpszClassName = COMPANION_WIN32_CORES_CLASS;
    wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
-   if (!RegisterClassA(&wc))
+   if (!cw_register_class(&wc))
       return false;
    w->cores_class_registered = true;
 
    /* Owned by the companion window so it stays above it and hides with
     * it; WS_EX_TOOLWINDOW keeps it off the taskbar. */
-   w->cores_hwnd = CreateWindowExA(WS_EX_TOOLWINDOW, COMPANION_WIN32_CORES_CLASS,
+   w->cores_hwnd = cw_create(WS_EX_TOOLWINDOW, COMPANION_WIN32_CORES_CLASS,
          "Load Core", WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
          CW_USEDEFAULT, CW_USEDEFAULT,
          CW_S(w, COMPANION_WIN32_CORES_MIN_W), CW_S(w, COMPANION_WIN32_CORES_MIN_H),
@@ -3826,19 +4336,19 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
    if (!w->cores_hwnd)
       return false;
 
-   w->cores_list = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+   w->cores_list = cw_create(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL
          | LVS_SHOWSELALWAYS | LVS_SORTASCENDING,
          0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES, inst, NULL);
    {
-      HWND b = CreateWindowExA(0, "BUTTON",
+      HWND b = cw_create(0, "BUTTON",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE),
             WS_CHILD | WS_VISIBLE | WS_TABSTOP | BS_PUSHBUTTON,
             0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_CUSTOM, inst, NULL);
       if (b && w->font)
          SendMessageA(b, WM_SETFONT, (WPARAM)w->font, TRUE);
    }
-   w->cores_status = CreateWindowExA(0, "msctls_statusbar32", "",
+   w->cores_status = cw_create(0, "msctls_statusbar32", "",
          WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
          0, 0, 0, 0, w->cores_hwnd, (HMENU)IDC_CW_CORES_STATUS, inst, NULL);
    if (!w->cores_list)
@@ -3854,11 +4364,11 @@ static bool cw_cores_create(ui_companion_win32_wimp_t *w)
    col.pszText  = (LPSTR)"Name";
    col.cx       = 280;
    col.iSubItem = 0;
-   SendMessageA(w->cores_list, LVM_INSERTCOLUMNA, 0, (LPARAM)&col);
+   cw_lv_column(w->cores_list, LVM_INSERTCOLUMNA, 0, &col);
    col.pszText  = (LPSTR)"Version";
    col.cx       = 110;
    col.iSubItem = 1;
-   SendMessageA(w->cores_list, LVM_INSERTCOLUMNA, 1, (LPARAM)&col);
+   cw_lv_column(w->cores_list, LVM_INSERTCOLUMNA, 1, &col);
 
    SendMessageA(w->cores_hwnd, WM_SIZE, 0, 0);
    return true;
@@ -3885,7 +4395,7 @@ static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content)
       snprintf(buf, sizeof(buf), "\t\t%s - %s", PACKAGE_VERSION,
             (core && *core) ? core
             : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NO_CORE));
-      SendMessageA(w->cores_status, SB_SETTEXTA, 0, (LPARAM)buf);
+      cw_send_text(w->cores_status, SB_SETTEXTA, 0, buf);
    }
    ShowWindow(w->cores_hwnd, SW_SHOW);
    SetForegroundWindow(w->cores_hwnd);
@@ -3896,29 +4406,15 @@ static void cw_cores_show(ui_companion_win32_wimp_t *w, const char *content)
  * and in every later release; ANSI entry point, no BIF_NEWDIALOGSTYLE. */
 static void cw_scan_directory(ui_companion_win32_wimp_t *w)
 {
-   BROWSEINFOA bi;
-   LPITEMIDLIST pidl;
-   char dir[MAX_PATH];
+   char dir[PATH_MAX_LENGTH];
 
-   memset(&bi, 0, sizeof(bi));
-   bi.hwndOwner = w->hwnd;
-   bi.lpszTitle = "Select a directory to scan for content";
-   bi.ulFlags   = BIF_RETURNONLYFSDIRS;
-
-   pidl = SHBrowseForFolderA(&bi);
-   if (!pidl)
+   if (!cw_pick_folder(w->hwnd, "Select a directory to scan for content",
+            dir, sizeof(dir)))
       return;
-
-   dir[0] = '\0';
-   if (SHGetPathFromIDListA(pidl, dir) && dir[0])
-   {
-      if (companion_core_request_scan(w->core, dir, true,
-               companion_core_pref_show_hidden_files(w->core)))
-         cw_status_set(w, "Scanning...");
-      else
-         cw_status_set(w, "Scanning is not available in this build.");
-   }
-   CoTaskMemFree(pidl);
+   if (companion_core_request_scan(w->core, dir))
+      cw_status_set(w, "Scanning...");
+   else
+      cw_status_set(w, "Scanning is not available in this build.");
 }
 
 static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
@@ -3943,11 +4439,11 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
 
    if (from == w->entries)
    {
-      AppendMenuA(menu, MF_STRING, IDM_CW_RUN,          "&Run");
-      AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
-      AppendMenuA(menu, MF_STRING, IDM_CW_ADD_FILES,
+      cw_append_menu(menu, MF_STRING, IDM_CW_RUN,          "&Run");
+      cw_append_menu(menu, MF_SEPARATOR, 0, NULL);
+      cw_append_menu(menu, MF_STRING, IDM_CW_ADD_FILES,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES));
-      AppendMenuA(menu, MF_STRING, IDM_CW_DELETE_ENTRY, "&Delete Entry");
+      cw_append_menu(menu, MF_STRING, IDM_CW_DELETE_ENTRY, "&Delete Entry");
    }
    else if (from == w->playlists)
    {
@@ -3968,26 +4464,26 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
          if (n > (size_t)(IDM_CW_ASSOC_MAX - IDM_CW_ASSOC_BASE))
             n = (size_t)(IDM_CW_ASSOC_MAX - IDM_CW_ASSOC_BASE);
 
-         AppendMenuA(assoc, MF_STRING, IDM_CW_ASSOC_DETECT, "<Detect>");
+         cw_append_menu(assoc, MF_STRING, IDM_CW_ASSOC_DETECT, "<Detect>");
          if (n)
-            AppendMenuA(assoc, MF_SEPARATOR, 0, NULL);
+            cw_append_menu(assoc, MF_SEPARATOR, 0, NULL);
          for (i = 0; i < n; i++)
          {
             const char *name = companion_core_installed_core_name(w->core, i);
-            AppendMenuA(assoc, MF_STRING, IDM_CW_ASSOC_BASE + (UINT)i,
+            cw_append_menu(assoc, MF_STRING, IDM_CW_ASSOC_BASE + (UINT)i,
                   name ? name : "");
          }
-         AppendMenuA(menu, MF_POPUP, (UINT_PTR_COMPAT)assoc,
+         cw_append_menu(menu, MF_POPUP, (UINT_PTR_COMPAT)assoc,
                "&Associate Core");
       }
-      AppendMenuA(menu, MF_STRING, IDM_CW_NEW_PLAYLIST,
+      cw_append_menu(menu, MF_STRING, IDM_CW_NEW_PLAYLIST,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NEW_PLAYLIST));
-      AppendMenuA(menu, MF_STRING, IDM_CW_RENAME_PLAYLIST,
+      cw_append_menu(menu, MF_STRING, IDM_CW_RENAME_PLAYLIST,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_RENAME_PLAYLIST));
-      AppendMenuA(menu, MF_STRING, IDM_CW_DELETE_PLAYLIST,
+      cw_append_menu(menu, MF_STRING, IDM_CW_DELETE_PLAYLIST,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST));
-      AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
-      AppendMenuA(menu, MF_STRING, IDM_CW_HIDE_PLAYLIST,
+      cw_append_menu(menu, MF_SEPARATOR, 0, NULL);
+      cw_append_menu(menu, MF_STRING, IDM_CW_HIDE_PLAYLIST,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDE));
       /* Qt's "Hidden Playlists": each entry puts itself back. */
       {
@@ -3998,16 +4494,16 @@ static void cw_context_menu(ui_companion_win32_wimp_t *w, HWND from,
          for (hi = 0; hi < hn; hi++)
          {
             const char *nm = companion_core_hidden_name(w->core, hi);
-            AppendMenuA(hidden, MF_STRING, (UINT)(IDM_CW_UNHIDE_FIRST + hi),
+            cw_append_menu(hidden, MF_STRING, (UINT)(IDM_CW_UNHIDE_FIRST + hi),
                   nm ? nm : "");
          }
          if (!hn)
-            AppendMenuA(hidden, MF_STRING | MF_GRAYED, 0, "(none)");
-         AppendMenuA(menu, MF_POPUP, (UINT_PTR_COMPAT)hidden,
+            cw_append_menu(hidden, MF_STRING | MF_GRAYED, 0, "(none)");
+         cw_append_menu(menu, MF_POPUP, (UINT_PTR_COMPAT)hidden,
                msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_HIDDEN_PLAYLISTS));
       }
-      AppendMenuA(menu, MF_SEPARATOR, 0, NULL);
-      AppendMenuA(menu, MF_STRING, IDM_CW_REFRESH, "Re&fresh Playlists");
+      cw_append_menu(menu, MF_SEPARATOR, 0, NULL);
+      cw_append_menu(menu, MF_STRING, IDM_CW_REFRESH, "Re&fresh Playlists");
    }
 
    TrackPopupMenu(menu, TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON,
@@ -4041,7 +4537,7 @@ static void cw_playlist_new(ui_companion_win32_wimp_t *w)
             SetFocus(w->playlists);
             ListView_SetItemState(w->playlists, (int)i,
                   LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED);
-            SendMessageA(w->playlists, LVM_EDITLABELA, (WPARAM)i, 0);
+            CwSendMessage(w->playlists, cw_msg(LVM_EDITLABELA), (WPARAM)i, 0);
             break;
          }
    }
@@ -4059,7 +4555,7 @@ static void cw_playlist_delete(ui_companion_win32_wimp_t *w)
       return;
    snprintf(msg, sizeof(msg), "Delete \"%s\"?",
          companion_core_playlist_name(w->core, (size_t)sel));
-   if (MessageBoxA(w->hwnd, msg,
+   if (cw_message_box(w->hwnd, msg,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_DELETE_PLAYLIST),
             MB_YESNO | MB_ICONQUESTION) == IDYES
          && !companion_core_playlist_delete(w->core, p))
@@ -4208,12 +4704,12 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             for (i = 0; i < COMPANION_DOCK_COUNT; i++)
                if (cw_dock_hidden(w, i))
                {
-                  AppendMenuA(w->closed_docks_menu, MF_STRING,
+                  cw_append_menu(w->closed_docks_menu, MF_STRING,
                         IDM_CW_DOCK_FIRST + i, cw_pane_title((enum companion_dock_id)i));
                   n++;
                }
             if (!n)
-               AppendMenuA(w->closed_docks_menu, MF_STRING | MF_GRAYED, 0, "(none)");
+               cw_append_menu(w->closed_docks_menu, MF_STRING | MF_GRAYED, 0, "(none)");
             return 0;
          }
          break;
@@ -4267,7 +4763,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                }
                return 0;
             case IDC_CW_CLEAR:
-               SetWindowTextA(w->search, ""); /* EN_CHANGE re-filters */
+               cw_set_text(w->search, ""); /* EN_CHANGE re-filters */
                return 0;
             case IDC_CW_RUN_BTN:
                cw_run_with_combo(w);
@@ -4332,7 +4828,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                      NULL, NULL, SW_SHOWNORMAL);
                return 0;
             case IDM_CW_HELP_ABOUT:
-               MessageBoxA(hwnd, "RetroArch " PACKAGE_VERSION,
+               cw_message_box(hwnd, "RetroArch " PACKAGE_VERSION,
                      msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT),
                      MB_OK | MB_ICONINFORMATION);
                return 0;
@@ -4341,7 +4837,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                {
                   char raw[128];
                   size_t k;
-                  GetWindowTextA(w->search, raw, sizeof(raw));
+                  cw_get_text(w->search, raw, sizeof(raw));
                   for (k = 0; raw[k]; k++)
                      w->filter[k] = (char)tolower((unsigned char)raw[k]);
                   w->filter[k] = '\0';
@@ -4403,7 +4899,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                   if (sel >= 0 && !w->browse_mode)
                   {
                      SetFocus(w->playlists);
-                     SendMessageA(w->playlists, LVM_EDITLABELA, (WPARAM)sel, 0);
+                     CwSendMessage(w->playlists, cw_msg(LVM_EDITLABELA), (WPARAM)sel, 0);
                   }
                }
                return 0;
@@ -4477,12 +4973,14 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
             {
                switch (hdr->code)
                {
-                  case LVN_GETDISPINFOA: /* ANSI control, ANSI notification */
+                  case CW_LVN_GETDISPINFO:
                      {
                         /* Virtual list: text and image for one row, as
-                         * the control draws it. */
-                        LVITEMA *it = &((NMLVDISPINFOA*)lparam)->item;
-                        size_t row  = (size_t)it->iItem;
+                         * the control draws it, its text formed in UTF-8
+                         * and handed over in the control's own form. */
+                        cw_lvitem_t *it = &((cw_nmlvdispinfo_t*)lparam)->item;
+                        size_t row      = (size_t)it->iItem;
+                        char text[512];
                         if (row >= w->row_count)
                            return 0;
                         if (it->mask & LVIF_TEXT)
@@ -4497,16 +4995,16 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                               switch (it->iSubItem)
                               {
                                  case 1:
-                                    companion_core_browse_size_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
-                                    s = NULL;
+                                    companion_core_browse_size_str(w->core, bi, text, sizeof(text));
+                                    s = text;
                                     break;
                                  case 2:
-                                    companion_core_browse_type_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
-                                    s = NULL;
+                                    companion_core_browse_type_str(w->core, bi, text, sizeof(text));
+                                    s = text;
                                     break;
                                  case 3:
-                                    companion_core_browse_date_str(w->core, bi, it->pszText, (size_t)it->cchTextMax);
-                                    s = NULL;
+                                    companion_core_browse_date_str(w->core, bi, text, sizeof(text));
+                                    s = text;
                                     break;
                                  default:
                                     s = companion_core_browse_name(w->core, bi);
@@ -4526,7 +5024,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                                           : (e->path ? e->path : ""));
                            }
                            if (s)
-                              strlcpy(it->pszText, s, (size_t)it->cchTextMax);
+                              cw_t_into(it->pszText, it->cchTextMax, s);
                         }
                         if (it->mask & LVIF_IMAGE)
                         {
@@ -4611,22 +5109,26 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
                         && (nm->uNewState & LVIS_SELECTED))
                      cw_select_playlist(w);
                }
-               else if (hdr->code == LVN_ENDLABELEDITA)
+               else if (hdr->code == CW_LVN_ENDLABELEDIT)
                {
                   /* Qt's rename: the core moves the file; the list
                    * refreshes from the callback. FALSE keeps the old
                    * text when it is refused. */
-                  NMLVDISPINFOA *di = (NMLVDISPINFOA*)lparam;
+                  cw_nmlvdispinfo_t *di = (cw_nmlvdispinfo_t*)lparam;
                   const char *path;
+                  char *name;
+                  BOOL renamed = FALSE;
                   if (!di->item.pszText || !*di->item.pszText)
                      return FALSE;
                   path = companion_core_playlist_path(w->core, (size_t)di->item.iItem);
-                  if (path && companion_core_playlist_rename(w->core, path,
-                           di->item.pszText, NULL, 0))
-                     return TRUE;
-                  return FALSE;
+                  name = cw_u8(di->item.pszText);
+                  if (path && name && companion_core_playlist_rename(w->core,
+                           path, name, NULL, 0))
+                     renamed = TRUE;
+                  free(name);
+                  return renamed;
                }
-               else if (hdr->code == LVN_BEGINLABELEDITA)
+               else if (hdr->code == CW_LVN_BEGINLABELEDIT)
                   return w->browse_mode ? TRUE : FALSE; /* TRUE cancels */
             }
             else if (hdr->idFrom == IDC_CW_TABS)
@@ -4652,7 +5154,7 @@ static LRESULT CALLBACK cw_wndproc(HWND hwnd, UINT msg,
          break;
    }
 
-   return DefWindowProcA(hwnd, msg, wparam, lparam);
+   return CwDefWindowProc(hwnd, msg, wparam, lparam);
 }
 
 /* --- Window construction ---------------------------------------------- */
@@ -4663,35 +5165,35 @@ static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
    HMENU file = CreatePopupMenu();
    HMENU view = CreatePopupMenu();
 
-   AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CORE,    "Load &Core...");
-   AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CUSTOM_CORE,
+   cw_append_menu(file, MF_STRING, IDM_CW_LOAD_CORE,    "Load &Core...");
+   cw_append_menu(file, MF_STRING, IDM_CW_LOAD_CUSTOM_CORE,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE));
-   AppendMenuA(file, MF_STRING, IDM_CW_LOAD_CONTENT, "&Load Content...");
-   AppendMenuA(file, MF_STRING, IDM_CW_START_CORE,   "&Start Core");
-   AppendMenuA(file, MF_STRING, IDM_CW_UNLOAD_CORE,
+   cw_append_menu(file, MF_STRING, IDM_CW_LOAD_CONTENT, "&Load Content...");
+   cw_append_menu(file, MF_STRING, IDM_CW_START_CORE,   "&Start Core");
+   cw_append_menu(file, MF_STRING, IDM_CW_UNLOAD_CORE,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE_UNLOAD_CORE));
-   AppendMenuA(file, MF_SEPARATOR, 0, NULL);
-   AppendMenuA(file, MF_STRING, IDM_CW_BROWSE_FILES, "&Browse Files");
-   AppendMenuA(file, MF_STRING, IDM_CW_SCAN_DIR,     "Scan &Directory...");
-   AppendMenuA(file, MF_SEPARATOR, 0, NULL);
-   AppendMenuA(file, MF_STRING, IDM_CW_CLOSE,        "&Close Window");
-   AppendMenuA(file, MF_STRING, IDM_CW_QUIT,         "E&xit RetroArch");
+   cw_append_menu(file, MF_SEPARATOR, 0, NULL);
+   cw_append_menu(file, MF_STRING, IDM_CW_BROWSE_FILES, "&Browse Files");
+   cw_append_menu(file, MF_STRING, IDM_CW_SCAN_DIR,     "Scan &Directory...");
+   cw_append_menu(file, MF_SEPARATOR, 0, NULL);
+   cw_append_menu(file, MF_STRING, IDM_CW_CLOSE,        "&Close Window");
+   cw_append_menu(file, MF_STRING, IDM_CW_QUIT,         "E&xit RetroArch");
 
-   AppendMenuA(view, MF_STRING, IDM_CW_VIEW_LIST,    "&List");
-   AppendMenuA(view, MF_STRING, IDM_CW_VIEW_ICONS,   "&Icons");
-   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
-   AppendMenuA(view, MF_STRING, IDM_CW_RUN,          "&Run Selected\tEnter");
-   AppendMenuA(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
-   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
+   cw_append_menu(view, MF_STRING, IDM_CW_VIEW_LIST,    "&List");
+   cw_append_menu(view, MF_STRING, IDM_CW_VIEW_ICONS,   "&Icons");
+   cw_append_menu(view, MF_SEPARATOR, 0, NULL);
+   cw_append_menu(view, MF_STRING, IDM_CW_RUN,          "&Run Selected\tEnter");
+   cw_append_menu(view, MF_STRING, IDM_CW_REFRESH,      "Re&fresh Playlists\tF5");
+   cw_append_menu(view, MF_SEPARATOR, 0, NULL);
    w->closed_docks_menu = CreatePopupMenu();
-   AppendMenuA(view, MF_POPUP, (UINT_PTR_COMPAT)w->closed_docks_menu,
+   cw_append_menu(view, MF_POPUP, (UINT_PTR_COMPAT)w->closed_docks_menu,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_CLOSED_DOCKS));
-   AppendMenuA(view, MF_SEPARATOR, 0, NULL);
-   AppendMenuA(view, MF_STRING, IDM_CW_CORE_OPTIONS,
+   cw_append_menu(view, MF_SEPARATOR, 0, NULL);
+   cw_append_menu(view, MF_STRING, IDM_CW_CORE_OPTIONS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE_OPTIONS));
-   AppendMenuA(view, MF_STRING, IDM_CW_SHADER_PARAMS,
+   cw_append_menu(view, MF_STRING, IDM_CW_SHADER_PARAMS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_PARAMETERS));
-   AppendMenuA(view, MF_STRING, IDM_CW_OPTIONS,
+   cw_append_menu(view, MF_STRING, IDM_CW_OPTIONS,
          msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW_OPTIONS));
 
    {
@@ -4701,18 +5203,18 @@ static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
       char find[64];
       snprintf(find, sizeof(find), "%s\tCtrl+F",
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT_SEARCH));
-      AppendMenuA(edit, MF_STRING, IDM_CW_FIND, find);
-      AppendMenuA(help, MF_STRING, IDM_CW_HELP_DOCS,
+      cw_append_menu(edit, MF_STRING, IDM_CW_FIND, find);
+      cw_append_menu(help, MF_STRING, IDM_CW_HELP_DOCS,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_DOCUMENTATION));
-      AppendMenuA(help, MF_STRING, IDM_CW_HELP_ABOUT,
+      cw_append_menu(help, MF_STRING, IDM_CW_HELP_ABOUT,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP_ABOUT));
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)file,
+      cw_append_menu(bar, MF_POPUP, (UINT_PTR_COMPAT)file,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_FILE));
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)edit,
+      cw_append_menu(bar, MF_POPUP, (UINT_PTR_COMPAT)edit,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_EDIT));
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)view,
+      cw_append_menu(bar, MF_POPUP, (UINT_PTR_COMPAT)view,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_VIEW));
-      AppendMenuA(bar, MF_POPUP, (UINT_PTR_COMPAT)help,
+      cw_append_menu(bar, MF_POPUP, (UINT_PTR_COMPAT)help,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_MENU_HELP));
    }
    return bar;
@@ -4722,7 +5224,7 @@ static HMENU cw_build_menu(ui_companion_win32_wimp_t *w)
 static HWND cw_make(ui_companion_win32_wimp_t *w, const char *cls,
       const char *text, DWORD style, int id)
 {
-   HWND h = CreateWindowExA(0, cls, text, WS_CHILD | WS_VISIBLE | style,
+   HWND h = cw_create(0, cls, text, WS_CHILD | WS_VISIBLE | style,
          0, 0, 0, 0, w->hwnd, (HMENU)(UINT_PTR_COMPAT)id,
          GetModuleHandleA(NULL), NULL);
    if (h && w->font)
@@ -4785,7 +5287,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    wc.lpszClassName = COMPANION_WIN32_CLASS;
    wc.hIcon         = LoadIconA(inst, MAKEINTRESOURCEA(IDI_ICON));
 
-   if (!RegisterClassA(&wc))
+   if (!cw_register_class(&wc))
       return false;
    w->class_registered = true;
 
@@ -4842,7 +5344,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
          }
       }
 
-      w->hwnd = CreateWindowExA(0, COMPANION_WIN32_CLASS,
+      w->hwnd = cw_create(0, COMPANION_WIN32_CLASS,
             COMPANION_WIN32_TITLE, WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN,
             wx, wy, ww, wh, NULL, cw_build_menu(w), inst, NULL);
    }
@@ -4850,7 +5352,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       return false;
 
    /* Playlist list: a list view with a folder icon per row, like Qt's. */
-   w->playlists = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+   w->playlists = cw_create(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER
          | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_EDITLABELS,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_PLAYLISTS, inst, NULL);
@@ -4926,7 +5428,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       memset(&c, 0, sizeof(c));
       c.mask = LVCF_WIDTH;
       c.cx   = 180;
-      SendMessageA(w->playlists, LVM_INSERTCOLUMNA, 0, (LPARAM)&c);
+      cw_lv_column(w->playlists, LVM_INSERTCOLUMNA, 0, &c);
       SendMessageA(w->playlists, LVM_SETEXTENDEDLISTVIEWSTYLE,
             LVS_EX_FULLROWSELECT, LVS_EX_FULLROWSELECT);
    }
@@ -4954,9 +5456,9 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       memset(&ti, 0, sizeof(ti));
       ti.mask    = TCIF_TEXT;
       ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS);
-      SendMessageA(w->tabs, TCM_INSERTITEMA, 0, (LPARAM)&ti);
+      cw_tab_item(w->tabs, TCM_INSERTITEMA, 0, &ti);
       ti.pszText = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER);
-      SendMessageA(w->tabs, TCM_INSERTITEMA, 1, (LPARAM)&ti);
+      cw_tab_item(w->tabs, TCM_INSERTITEMA, 1, &ti);
    }
    w->core_combo    = cw_make(w, "COMBOBOX", "",
          CBS_DROPDOWNLIST | WS_VSCROLL, IDC_CW_CORE_COMBO);
@@ -4973,10 +5475,8 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->view_combo    = cw_make(w, "COMBOBOX", "", CBS_DROPDOWNLIST, IDC_CW_VIEW_COMBO);
    if (w->view_combo)
    {
-      SendMessageA(w->view_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
-      SendMessageA(w->view_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
+      cw_send_text(w->view_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_LIST));
+      cw_send_text(w->view_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_VIEW_TYPE_ICONS));
       SendMessageA(w->view_combo, CB_SETCURSEL, 0, 0);
    }
    /* Qt's footer also has a Zoom slider and a Thumbnail type combo. */
@@ -4993,34 +5493,30 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    w->thumb_combo = cw_make(w, "COMBOBOX", "", CBS_DROPDOWNLIST, IDC_CW_THUMB_COMBO);
    if (w->thumb_combo)
    {
-      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
-      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
-      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
-      SendMessageA(w->thumb_combo, CB_ADDSTRING, 0,
-            (LPARAM)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
+      cw_send_text(w->thumb_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_BOXART));
+      cw_send_text(w->thumb_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT));
+      cw_send_text(w->thumb_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_TITLE_SCREEN));
+      cw_send_text(w->thumb_combo, CB_ADDSTRING, 0, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_LOGO));
       SendMessageA(w->thumb_combo, CB_SETCURSEL,
             (WPARAM)companion_core_pref_thumbnail_type(w->core), 0);
    }
-   w->entries = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+   w->entries = cw_create(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS
          | LVS_OWNERDATA,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_ENTRIES, inst, NULL);
 
-   w->status = CreateWindowExA(0, "msctls_statusbar32", "",
+   w->status = cw_create(0, "msctls_statusbar32", "",
          WS_CHILD | WS_VISIBLE | SBARS_SIZEGRIP,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_STATUS, inst, NULL);
 
    /* Hidden until View > Log; ES_READONLY keeps the user out, the
     * companion appends through EM_REPLACESEL regardless. */
-   w->log = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+   w->log = cw_create(WS_EX_CLIENTEDGE, "EDIT", "",
          WS_CHILD | WS_VSCROLL | ES_MULTILINE | ES_READONLY
          | ES_AUTOVSCROLL | ES_LEFT,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_LOG, inst, NULL);
 
-   w->search = CreateWindowExA(WS_EX_CLIENTEDGE, "EDIT", "",
+   w->search = cw_create(WS_EX_CLIENTEDGE, "EDIT", "",
          WS_CHILD | WS_VISIBLE | ES_LEFT | ES_AUTOHSCROLL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_SEARCH, inst, NULL);
    if (w->search)
@@ -5028,7 +5524,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       /* Enter in the search box runs the focused entry (Qt's
        * onSearchEnterPressed); the edit is subclassed for the key. */
       SetWindowLongPtrA(w->search, GWLP_USERDATA, (LONG_PTR)w);
-      w->search_proc = (WNDPROC)SetWindowLongPtrA(w->search, GWLP_WNDPROC,
+      w->search_proc = (WNDPROC)CwSetWindowLongPtr(w->search, GWLP_WNDPROC,
             (LONG_PTR)cw_search_proc);
    }
 
@@ -5038,7 +5534,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       int t;
       for (t = 0; t < 4; t++)
       {
-         w->thumb_pane[t].ctl = CreateWindowExA(WS_EX_CLIENTEDGE, "STATIC", "",
+         w->thumb_pane[t].ctl = cw_create(WS_EX_CLIENTEDGE, "STATIC", "",
                WS_CHILD | WS_VISIBLE | SS_BITMAP | SS_CENTERIMAGE,
                0, 0, 0, 0, w->hwnd, (HMENU)(UINT_PTR_COMPAT)(IDC_CW_BOXART + t), inst, NULL);
          w->thumb_pane[t].entry = -1;
@@ -5046,7 +5542,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    }
    DragAcceptFiles(w->hwnd, TRUE);
 
-   w->info = CreateWindowExA(WS_EX_CLIENTEDGE, "SysListView32", "",
+   w->info = cw_create(WS_EX_CLIENTEDGE, "SysListView32", "",
          WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_NOCOLUMNHEADER | LVS_SINGLESEL,
          0, 0, 0, 0, w->hwnd, (HMENU)IDC_CW_INFO, inst, NULL);
 
@@ -5062,7 +5558,7 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
       icol.mask     = LVCF_WIDTH | LVCF_SUBITEM;
       icol.cx       = 800;
       icol.iSubItem = 0;
-      SendMessageA(w->info, LVM_INSERTCOLUMNA, 0, (LPARAM)&icol);
+      cw_lv_column(w->info, LVM_INSERTCOLUMNA, 0, &icol);
    }
 
    /* Full-row select is an IE3+ extended style; harmless where absent. */
@@ -5074,11 +5570,11 @@ static bool cw_create_window(ui_companion_win32_wimp_t *w)
    col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_NAME);
    col.cx       = 380;
    col.iSubItem = 0;
-   SendMessageA(w->entries, LVM_INSERTCOLUMNA, 0, (LPARAM)&col);
+   cw_lv_column(w->entries, LVM_INSERTCOLUMNA, 0, &col);
    col.pszText  = (LPSTR)msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_CORE);
    col.cx       = 180;
    col.iSubItem = 1;
-   SendMessageA(w->entries, LVM_INSERTCOLUMNA, 1, (LPARAM)&col);
+   cw_lv_column(w->entries, LVM_INSERTCOLUMNA, 1, &col);
 
    /* Every control in the GUI font (the ones created before the font was
     * chosen included). */
@@ -5121,7 +5617,7 @@ static void *ui_companion_win32_wimp_init(void)
       if (w->hwnd)
          DestroyWindow(w->hwnd);
       if (w->class_registered)
-         UnregisterClassA(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
+         cw_unregister_class(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
       companion_core_free(w->core);
       free(w);
       g_win32_wimp = NULL;
@@ -5175,12 +5671,12 @@ static void ui_companion_win32_wimp_deinit(void *data)
    if (w->set_hwnd)
       DestroyWindow(w->set_hwnd);
    if (w->cores_class_registered)
-      UnregisterClassA(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
+      cw_unregister_class(COMPANION_WIN32_CORES_CLASS, GetModuleHandleA(NULL));
    cw_log_drain(w->hwnd);
    if (w->hwnd)
       DestroyWindow(w->hwnd);
    if (w->class_registered)
-      UnregisterClassA(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
+      cw_unregister_class(COMPANION_WIN32_CLASS, GetModuleHandleA(NULL));
    w->hwnd = w->entries = w->cores_hwnd = w->cores_status = NULL;
 
    {
@@ -5192,7 +5688,7 @@ static void ui_companion_win32_wimp_deinit(void *data)
          if (w->floats[t])
             DestroyWindow(w->floats[t]);
       if (w->float_class_registered)
-         UnregisterClassA(COMPANION_WIN32_FLOAT_CLASS, GetModuleHandleA(NULL));
+         cw_unregister_class(COMPANION_WIN32_FLOAT_CLASS, GetModuleHandleA(NULL));
    }
    if (w->pl_icons)
       ImageList_Destroy(w->pl_icons);

@@ -47,6 +47,47 @@ static uint64_t uwp_input_get_capabilities(void *data)
          | (1 << RETRO_DEVICE_ANALOG);
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void uwp_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (uwp_keyboard_pressed(keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
+/* What the port's mouse is holding, for the controls bound to its
+ * buttons. This driver does not hand its mice to the frontend. */
+static unsigned uwp_bind_mouse_buttons(void *data, unsigned port)
+{
+   unsigned held = 0;
+   (void)data;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_LEFT, false))
+      held |= INPUT_POINTER_LEFT;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_RIGHT, false))
+      held |= INPUT_POINTER_RIGHT;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_MIDDLE, false))
+      held |= INPUT_POINTER_MIDDLE;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_BUTTON_4, false))
+      held |= INPUT_POINTER_BUTTON_4;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_BUTTON_5, false))
+      held |= INPUT_POINTER_BUTTON_5;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_WHEELUP, false))
+      held |= INPUT_POINTER_WHEEL_UP;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_WHEELDOWN, false))
+      held |= INPUT_POINTER_WHEEL_DOWN;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP, false))
+      held |= INPUT_POINTER_HWHEEL_UP;
+   if (uwp_mouse_state(port, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN, false))
+      held |= INPUT_POINTER_HWHEEL_DOWN;
+   return held;
+}
+
 static int16_t uwp_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -61,83 +102,9 @@ static int16_t uwp_input_state(
 {
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][i]))
-               {
-                  if (uwp_mouse_state(port, binds[port][i].mbutton, false))
-                     ret |= (1 << i);
-               }
-            }
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && uwp_keyboard_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && uwp_keyboard_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-               else if (uwp_mouse_state(port, binds[port][id].mbutton, false))
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            int16_t ret           = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(index, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (uwp_keyboard_pressed(id_plus_key))
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (uwp_keyboard_pressed(id_minus_key))
-                  ret += -0x7fff;
-            }
-
-            return ret;
-         }
-         break;
+      /* The RetroPad's buttons, the hotkeys and a stick's axes, where
+       * they are bound to keys or mouse buttons, are the frontend's to
+       * answer: it asks uwp_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && uwp_keyboard_pressed(id);
       case RETRO_DEVICE_MOUSE:
@@ -162,5 +129,8 @@ input_driver_t input_uwp = {
    "uwp",
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   uwp_keys_down,
+   uwp_bind_mouse_buttons
 };

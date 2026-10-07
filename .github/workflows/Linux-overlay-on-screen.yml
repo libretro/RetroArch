@@ -30,6 +30,11 @@ on:
       - 'menu/menu_driver.c'
       - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
+      - 'input/input_driver_choice.c'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'gfx/common/x11_common.c'
+      - 'samples/input/x11_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   pull_request:
     paths:
@@ -44,6 +49,11 @@ on:
       - 'menu/menu_driver.c'
       - 'input/drivers/x11_input.c'
       - 'samples/input/overlay_on_screen/**'
+      - 'input/input_driver_choice.c'
+      - 'gfx/drivers_context/x_ctx.c'
+      - 'gfx/common/x11_common.c'
+      - 'samples/input/x11_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
       - '.github/workflows/Linux-overlay-on-screen.yml'
   workflow_dispatch:
 
@@ -65,7 +75,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
@@ -73,10 +83,31 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential zlib1g-dev ccache python3 \
+              xvfb x11-apps xdotool libgl1-mesa-dri \
+              libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxtst6 \
+              libxxf86vm-dev libxrandr-dev libxinerama-dev \
+              libgl-dev libegl-dev && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             build-essential zlib1g-dev ccache python3 \
-            xvfb x11-apps libgl1-mesa-dri \
+            xvfb x11-apps xdotool libgl1-mesa-dri \
             libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxtst6 \
             libxxf86vm-dev libxrandr-dev libxinerama-dev \
             libgl-dev libegl-dev
@@ -150,11 +181,19 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # ledN_map names a slot of whatever page is loaded, so a config
-          # made for an LED overlay blanked a gamepad pack's d-pad arms,
-          # which then showed only while pressed. With the overlay LED
-          # driver on and Up held through XTEST: an LED image ("nul",
-          # mapped or named with _led) stays hidden, a control at a
-          # mapped slot stays shown, and a pack that names its LEDs is
-          # not mapped.
+          # With the overlay LED driver on and Up held through XTEST: an
+          # image at a ledN_map slot, "nul" or a control, stays hidden,
+          # as does one named with _led, and a pack that names its LEDs
+          # is not mapped.
           timeout 300 python3 samples/input/overlay_on_screen/overlay_led_hidden_test.py ./retroarch
+
+      - name: Run the X11 input scenarios (keys pressed in the window)
+        shell: bash
+        run: |
+          set -eu
+          # The same build, on a virtual display of its own, with the
+          # X11 input driver: keys are pressed in the window and a small
+          # core says in the log what reached it - before and after a
+          # fullscreen toggle restarts the video driver, with threaded
+          # video and without. See samples/input/x11_smoke/run.sh.
+          timeout 600 samples/input/x11_smoke/run.sh

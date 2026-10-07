@@ -113,8 +113,9 @@
  *                                 Dekker-shaped handshake needs, and
  *                                 retro_eventcount is the caller that
  *                                 needs it.
- *   (extended ops absent on the volatile fallback; gate with
- *    RETRO_ATOMIC_HAS_CAS / RETRO_ATOMIC_HAS_PTR)
+ *   (the volatile fallback offers exchange_int and cas_int as plain
+ *    read-then-write; the pointer ops are absent there, gate them
+ *    with RETRO_ATOMIC_HAS_PTR)
  *
  * Backend selection (in order):
  *   1. C11 <stdatomic.h>            (modern GCC/Clang/MSVC with /std:c11)
@@ -1073,6 +1074,9 @@ typedef volatile size_t retro_atomic_size_t;
  * are on a backend that has one. */
 #define retro_atomic_cas_int(p, expected, desired) \
    retro_atomic_cas_int_fb((p), (expected), (desired))
+/* Swap, the same plain read-then-write with the same caveat. */
+#define retro_atomic_exchange_int(p, v) \
+   retro_atomic_exchange_int_fb((p), (v))
 
 static INLINE int retro_atomic_fetch_add_int_fb(retro_atomic_int_t *p, int v)
 {
@@ -1099,6 +1103,13 @@ static INLINE int retro_atomic_fetch_and_int_fb(retro_atomic_int_t *p, int v)
 {
    int old = *p;
    *p      = old & v;
+   return old;
+}
+
+static INLINE int retro_atomic_exchange_int_fb(retro_atomic_int_t *p, int v)
+{
+   int old = *p;
+   *p      = v;
    return old;
 }
 

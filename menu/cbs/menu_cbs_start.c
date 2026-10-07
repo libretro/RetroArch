@@ -239,7 +239,7 @@ static int action_start_input_desc(
       /* Check whether core has defined this input */
       if (sys_info->input_desc_btn[mapped_port][btn_idx] && *sys_info->input_desc_btn[mapped_port][btn_idx])
       {
-         const struct retro_keybind *keyptr = &input_config_binds[user_idx][btn_idx];
+         const struct retro_keybind *keyptr = input_config_bind(user_idx, btn_idx);
          settings->uints.input_remap_ids[user_idx][btn_idx] = keyptr->id;
       }
       else
@@ -535,14 +535,11 @@ static int action_start_menu_wallpaper(
       unsigned type, size_t idx, size_t entry_idx)
 {
    settings_t *settings       = config_get_ptr();
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    settings->paths.path_menu_wallpaper[0] = '\0';
 
-   /* Reset wallpaper by menu context reset */
-   if (menu_st->driver_ctx && menu_st->driver_ctx->context_reset)
-      menu_st->driver_ctx->context_reset(menu_st->userdata,
-            video_driver_is_threaded());
+   /* Reset wallpaper by menu context rebuild */
+   menu_driver_context_rebuild();
 
    return 0;
 }
@@ -628,19 +625,23 @@ static int action_start_video_resolution(
       const char *path, const char *label,
       unsigned type, size_t idx, size_t entry_idx)
 {
-#if defined(GEKKO) || defined(PS2) || !defined(__PSL1GHT__) && !defined(__PS3__)
    unsigned dims = 0;
    char desc[64] = {0};
-   global_t *global = global_get_ptr();
+#if defined(PS2)
+   config_get_ptr()->uints.video_ps2_mode = 0;
+#else
+   settings_t *settings = config_get_ptr();
 
-   /*  Reset the resolution id to zero */
-   global->console.screen.resolutions.current.id = 0;
+   /* The display's own mode */
+   settings->uints.video_fullscreen_x = 0;
+   settings->uints.video_fullscreen_y = 0;
+#endif
 
    if (video_driver_get_video_output_size(&dims, desc, sizeof(desc)))
    {
       size_t _len;
       char msg[128];
-#if defined(GEKKO) || defined(PS2)
+#if defined(GEKKO) || defined(PS2) || defined(__PS3__)
       bool fullscreen = true;
 #else
       /* The window state the frontend is in, as driver init reads it */
@@ -649,9 +650,8 @@ static int action_start_video_resolution(
 #endif
       msg[0] = '\0';
 
-#if defined(_WIN32) || !defined(__PSL1GHT__) && !defined(__PS3__)
+      /* PS3: the video output is configured at video init */
       generic_action_ok_command(CMD_EVENT_REINIT);
-#endif
       video_driver_set_video_mode(dims, fullscreen);
 #ifdef GEKKO
       if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
@@ -670,7 +670,6 @@ static int action_start_video_resolution(
       runloop_msg_queue_push(msg, _len, 1, 100, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
    }
-#endif
 
    return 0;
 }

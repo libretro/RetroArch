@@ -31,6 +31,7 @@
 
 
 #include "../../retroarch.h"
+#include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
 
 #include "../../command.h"
@@ -66,9 +67,18 @@ struct input_pointer
 {
    int contact_id;
    int map;
-   int16_t x, y;
-   int16_t full_x, full_y;
+   uint32_t pos;       /* x, y in the viewport: VIDEO_POS_PACK */
+   uint32_t full_pos;  /* x, y in the whole screen */
 };
+
+/* A touch at screen @x, @y; a translation that fails (no viewport)
+ * leaves what was there. */
+static void qnx_pointer_set(struct input_pointer *p,
+      struct video_viewport *vp, int x, int y)
+{
+   input_driver_translate_coord_viewport_wrap(vp, x, y,
+         &p->pos, &p->full_pos);
+}
 
 #define QNX_MAX_KEYS (65535 + 7) / 8
 #define TRACKPAD_CPI 500
@@ -427,11 +437,7 @@ static void qnx_process_touch_event(
 
                qnx->pointer[i].contact_id  = contact_id;
 
-               video_driver_translate_coord_viewport_wrap(
-                     &vp,
-                     pos[0], pos[1],
-                     &qnx->pointer[i].x, &qnx->pointer[i].y,
-                     &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
+               qnx_pointer_set(&qnx->pointer[i], &vp, pos[0], pos[1]);
 
                /* Add this pointer to the map to signal it's valid. */
                qnx->pointer[i].map = qnx->pointer_count;
@@ -477,10 +483,7 @@ static void qnx_process_touch_event(
                vp.dims                     = 0;
                vp.full_dims                = 0;
 
-               video_driver_translate_coord_viewport_wrap(&vp,
-                     pos[0], pos[1],
-                     &qnx->pointer[i].x, &qnx->pointer[i].y,
-                     &qnx->pointer[i].full_x, &qnx->pointer[i].full_y);
+               qnx_pointer_set(&qnx->pointer[i], &vp, pos[0], pos[1]);
                break;
             }
          }
@@ -587,7 +590,7 @@ static void qnx_handle_navigator_event(
          }
          break;
       case NAVIGATOR_SWIPE_DOWN:
-         command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+         input_driver_platform_request(INPUT_PLATFORM_MENU_TOGGLE);
          break;
       case NAVIGATOR_WINDOW_STATE:
          switch(navigator_event_get_window_state(event))
@@ -624,7 +627,7 @@ static void qnx_handle_navigator_event(
    return;
 
 shutdown:
-   retroarch_ctl(RARCH_CTL_SET_SHUTDOWN, NULL);
+   input_driver_platform_request(INPUT_PLATFORM_SHUTDOWN);
 }
 
 static void *qnx_input_init(const char *joypad_driver)
@@ -699,13 +702,13 @@ static int16_t qnx_pointer_input_state(qnx_input_t *qnx,
 
    if (screen)
    {
-       x = qnx->pointer[idx].full_x;
-       y = qnx->pointer[idx].full_y;
+       x = VIDEO_POS_X(qnx->pointer[idx].full_pos);
+       y = VIDEO_POS_Y(qnx->pointer[idx].full_pos);
    }
    else
    {
-       x = qnx->pointer[idx].x;
-       y = qnx->pointer[idx].y;
+       x = VIDEO_POS_X(qnx->pointer[idx].pos);
+       y = VIDEO_POS_Y(qnx->pointer[idx].pos);
    }
 
    switch (id)

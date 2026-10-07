@@ -863,7 +863,7 @@ static struct buffer query_parse_table(
       struct invocation *invocation, const char **err)
 {
    unsigned i;
-   size_t _len;
+   size_t _len = 0;
    unsigned argi = 0;
    struct argument args[QUERY_MAX_ARGS];
    const char *ident_name = NULL;
@@ -963,7 +963,7 @@ static struct buffer query_parse_method_call(
       struct invocation *invocation, const char **err)
 {
    unsigned i;
-   size_t _len;
+   size_t _len = 0;
    struct argument args[QUERY_MAX_ARGS];
    unsigned argi              = 0;
    const char *func_name      = NULL;

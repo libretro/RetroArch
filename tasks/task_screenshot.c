@@ -30,6 +30,8 @@
 #include <compat/strl.h>
 #include <gfx/video_frame.h>
 #include <streams/file_stream.h>
+#include <encodings/base64.h>
+#include <string/stdstring.h>
 #include <streams/interface_stream.h>
 
 #ifdef HAVE_RBMP
@@ -66,7 +68,10 @@ enum screenshot_task_flags
    SS_TASK_FLAG_IS_PAUSED           = (1 << 3),
    SS_TASK_FLAG_HISTORY_LIST_ENABLE = (1 << 4),
    SS_TASK_FLAG_WIDGETS_READY       = (1 << 5),
-   SS_TASK_FLAG_HDR                 = (1 << 6)
+   SS_TASK_FLAG_HDR                 = (1 << 6),
+   SS_TASK_FLAG_WRITTEN             = (1 << 7),
+   /* the written PNG is read back for the callback */
+   SS_TASK_FLAG_WANT_IMAGE          = (1 << 8)
 };
 
 typedef struct screenshot_task_state screenshot_task_state_t;
@@ -83,13 +88,22 @@ struct screenshot_task_state
    unsigned out_dims;
    unsigned pixel_format_type;
 
-   uint8_t flags;
+   uint16_t flags;
 
+   retro_task_callback_t cb;
+   /* the PNG as written, base64 (SS_TASK_FLAG_WANT_IMAGE) */
+   char *image_b64;
+   int   image_b64_len;
    char filename[PATH_MAX_LENGTH];
    char shotname[NAME_MAX_LENGTH];
    /* Colour-space metadata for an HDR screenshot (SS_TASK_FLAG_HDR). The
     * frame buffer then holds three uint16_t per pixel (48-bit RGB). */
    struct rpng_hdr_metadata hdr;
+#if defined(HAVE_RPNG)
+   /* The encode in progress, from the handler's first call */
+   rpng_encoder_t *enc;
+   intfstream_t   *enc_s;
+#endif
 };
 
 /* The image encoders are pure (bytes in -> bytes out); this task owns
@@ -103,15 +117,12 @@ struct screenshot_task_state
  * straight into the file, which needs only a few rows of scratch. */
 
 #if defined(HAVE_RPNG)
-static bool screenshot_save_png(const char *path, const uint8_t *data,
-      unsigned dims, signed pitch,
+/* Opens the file and begins the encode: the header is written, the
+ * rows follow in steps. */
+static bool screenshot_png_begin(screenshot_task_state_t *state,
+      const uint8_t *data, unsigned dims, signed pitch,
       enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr)
 {
-   bool ret;
-   intfstream_t *intf_s = intfstream_open_file(path,
-         RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-
    /* Stream the encode straight into the file.  The VFS gives every
     * file a 64 KiB stdio buffer, so the encoder's 16 KiB IDAT chunks
     * already coalesce into large writes; measured at 4K, buffering the
@@ -120,15 +131,39 @@ static bool screenshot_save_png(const char *path, const uint8_t *data,
     * of magnitude) while costing a raw-frame-sized allocation that
     * no-overcommit platforms would have to commit up front.  Peak
     * scratch this way is a handful of rows plus the deflate window. */
-   if (!intf_s)
+   if (!(state->enc_s = intfstream_open_file(state->filename,
+         RETRO_VFS_FILE_ACCESS_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE)))
       return false;
+   if (!(state->enc = rpng_encode_begin(data, state->enc_s,
+         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch, fmt, hdr)))
+   {
+      intfstream_close(state->enc_s);
+      free(state->enc_s);
+      state->enc_s = NULL;
+      filestream_delete(state->filename);
+      return false;
+   }
+   return true;
+}
 
-   ret = rpng_save_image_stream_fmt(data, intf_s,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch, fmt, hdr);
-
-   intfstream_close(intf_s);
-   free(intf_s);
-   return ret;
+/* Closes the file and lets go of the encoder and the scaled copy.  A
+ * file not written through (@done false) is removed rather than left
+ * half-written. */
+static void screenshot_png_end(screenshot_task_state_t *state, bool done)
+{
+   rpng_encode_free(state->enc);
+   state->enc = NULL;
+   if (state->enc_s)
+   {
+      intfstream_close(state->enc_s);
+      free(state->enc_s);
+      state->enc_s = NULL;
+      if (!done)
+         filestream_delete(state->filename);
+   }
+   free(state->out_buffer);
+   state->out_buffer = NULL;
 }
 #elif defined(HAVE_RBMP)
 static bool screenshot_save_bmp(const char *path, const void *frame,
@@ -158,61 +193,42 @@ static bool screenshot_save_bmp(const char *path, const void *frame,
 }
 #endif
 
-static bool screenshot_dump_direct(screenshot_task_state_t *state)
-{
-   bool ret                      = false;
-
 #if defined(HAVE_RPNG)
+/* Chooses what the encoder reads - the source itself where no
+ * resampling is needed, the scaled BGR24 copy where it is - and begins
+ * the encode. */
+static bool screenshot_encode_begin(screenshot_task_state_t *state)
+{
    struct scaler_ctx *scaler     = (struct scaler_ctx*)&state->scaler;
    const uint8_t* input          = (const uint8_t*)state->frame
       + ((int)VIDEO_SCALE_H(state->dims) - 1) * state->pitch;
 
-   if (!input)
-      return ret;
+   if (!state->frame)
+      return false;
 
    /* HDR screenshot: the frame is 48-bit RGB (three uint16_t per pixel),
     * bottom-up, and carries colour-space metadata. Encode a 16-bit PNG
     * tagged with the HDR chunks, using the same negative-pitch top-down
     * trick as the BGR24 fast path. Never resampled. */
    if (state->flags & SS_TASK_FLAG_HDR)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
-            -state->pitch,
-            RPNG_PIXFMT_RGB48,
-            &state->hdr);
-      if (state->out_buffer)
-         free(state->out_buffer);
-      return ret;
-   }
+      return screenshot_png_begin(state, input, state->out_dims,
+            -state->pitch, RPNG_PIXFMT_RGB48, &state->hdr);
 
    /* Fast path: source is already BGR24 and no resampling is
     * needed, so hand the source buffer directly to the PNG
-    * encoder. rpng_save_image_stream walks rows via `data +=
-    * pitch` with a signed pitch, so a bottom-up source is
-    * encoded top-down for free by starting at the last row and
-    * passing a negative row stride (same trick take_screenshot_raw
-    * uses via screenshot_dump's pitch argument).
+    * encoder. The encoder walks rows via `data += pitch` with a
+    * signed pitch, so a bottom-up source is encoded top-down for
+    * free by starting at the last row and passing a negative row
+    * stride (same trick take_screenshot_raw uses via
+    * screenshot_dump's pitch argument).
     *
     * This avoids allocating a second full-frame BGR24 buffer and
     * the flip-and-copy the scaler would otherwise do between them;
     * at 4K that is ~48 MiB of allocation and copy per screenshot. */
    if (     (state->flags & SS_TASK_FLAG_BGR24)
          &&  state->out_dims == state->dims)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
-            -state->pitch,
-            RPNG_PIXFMT_BGR24,
-            NULL);
-      /* state->out_buffer is NULL in this path (see screenshot_dump);
-       * nothing to free. */
-      return ret;
-   }
+      return screenshot_png_begin(state, input, state->out_dims,
+            -state->pitch, RPNG_PIXFMT_BGR24, NULL);
 
    /* Same idea for the raw-framebuffer formats: when no resampling is
     * needed, feed the core's XRGB8888/RGB565 rows straight to the
@@ -222,20 +238,16 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
     * 4K), for output that is pixel-identical. */
    if (     !(state->flags & SS_TASK_FLAG_BGR24)
          &&  state->out_dims == state->dims)
-   {
-      ret = screenshot_save_png(
-            state->filename,
-            input,
-            state->out_dims,
+      return screenshot_png_begin(state, input, state->out_dims,
             -state->pitch,
             (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
                   ? RPNG_PIXFMT_XRGB8888
                   : RPNG_PIXFMT_RGB565,
             NULL);
-      /* state->out_buffer is NULL in this path (see screenshot_dump). */
-      return ret;
-   }
 
+   /* Resampled (a save state's thumbnail at the core's own size): the
+    * scaled copy is made here, in one go, and encoded in steps.  It is
+    * the output's size, which for a thumbnail is the core's. */
    if (state->flags & SS_TASK_FLAG_BGR24)
       scaler->in_fmt             = SCALER_FMT_BGR24;
    else if (state->pixel_format_type == RETRO_PIXEL_FORMAT_XRGB8888)
@@ -257,15 +269,21 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
 
    scaler_ctx_gen_reset(&state->scaler);
 
-   ret = screenshot_save_png(
-         state->filename,
-         state->out_buffer,
-         state->out_dims,
+   return screenshot_png_begin(state, state->out_buffer, state->out_dims,
          (signed)(VIDEO_SCALE_W(state->out_dims) * 3),
-         RPNG_PIXFMT_BGR24,
-         NULL);
+         RPNG_PIXFMT_BGR24, NULL);
+}
+#endif
 
-   free(state->out_buffer);
+/* The whole screenshot at once, for a caller that asked for no task. */
+static bool screenshot_dump_direct(screenshot_task_state_t *state)
+{
+   bool ret                      = false;
+
+#if defined(HAVE_RPNG)
+   if (screenshot_encode_begin(state))
+      ret = (rpng_encode_step(state->enc, NULL, NULL) == 1);
+   screenshot_png_end(state, ret);
 #elif defined(HAVE_RBMP)
    {
       enum rbmp_source_type bmp_type = RBMP_SOURCE_TYPE_DONT_CARE;
@@ -291,6 +309,13 @@ static bool screenshot_dump_direct(screenshot_task_state_t *state)
  *
  * Saves a screenshot to disk.
  **/
+#if defined(HAVE_RPNG)
+static bool screenshot_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+#endif
+
 static void task_screenshot_handler(retro_task_t *task)
 {
    uint8_t flg;
@@ -311,7 +336,29 @@ static void task_screenshot_handler(retro_task_t *task)
       goto task_finished;
 
    /* Take screenshot */
+#if defined(HAVE_RPNG)
+   /* Encoded a bounded number of rows per check under the shared
+    * per-frame I/O window, so a large screenshot does not hold the
+    * frame thread for the whole deflate with Threaded Tasks off. */
+   {
+      nbio_budget_t b;
+      int r = -1;
+      if (!state->enc && !screenshot_encode_begin(state))
+         r = -1;
+      else
+      {
+         task_nbio_slice_open(&b);
+         r = rpng_encode_step(state->enc, screenshot_within_budget, &b);
+         task_nbio_slice_close(&b);
+      }
+      if (r == 0)
+         return;
+      ret = (r == 1);
+      screenshot_png_end(state, ret);
+   }
+#else
    ret = screenshot_dump_direct(state);
+#endif
 
    /* Push screenshot to image history playlist */
 #ifdef HAVE_IMAGEVIEWER
@@ -332,6 +379,24 @@ static void task_screenshot_handler(retro_task_t *task)
 #endif
 
    task_set_progress(task, 100);
+
+   if (ret)
+      state->flags |= SS_TASK_FLAG_WRITTEN;
+
+   /* The PNG for the callback, read back here on the task's thread
+    * rather than on the main one: the encoder streams it into the
+    * file and keeps no copy, and the file has just been written */
+   if (     ret
+         && (state->flags & SS_TASK_FLAG_WANT_IMAGE)
+         && string_is_equal_noncase(path_get_extension(state->filename), "png"))
+   {
+      void    *png = NULL;
+      int64_t  len = 0;
+      if (     filestream_read_file(state->filename, &png, &len)
+            && len > 0 && len <= SCREENSHOT_IMAGE_MAX)
+         state->image_b64 = base64(png, (int)len, &state->image_b64_len);
+      free(png);
+   }
 
    /* Report any errors */
    if (!ret)
@@ -357,18 +422,20 @@ task_finished:
    if (task)
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
+#if defined(HAVE_RPNG)
+   /* Cancelled mid-encode: the partial file goes */
+   if (state && state->enc)
+      screenshot_png_end(state, false);
+#endif
+
    if (task->title)
       task_free_title(task);
 
    if (state && state->userbuf)
       free(state->userbuf);
 
-#if defined(HAVE_GFX_WIDGETS)
-   /* If display widgets are enabled, state is freed
-      in the callback after the notification
-      is displayed */
-   if (state && !(state->flags & SS_TASK_FLAG_WIDGETS_READY))
-#endif
+   /* With a callback, state is freed there */
+   if (state && !task->callback)
    {
       free(state);
       /* Must explicitly set task->state to NULL here,
@@ -378,7 +445,6 @@ task_finished:
    }
 }
 
-#if defined(HAVE_GFX_WIDGETS)
 static void task_screenshot_callback(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
@@ -391,18 +457,31 @@ static void task_screenshot_callback(retro_task_t *task,
    if (!(state = (screenshot_task_state_t*)task->state))
       return;
 
+#if defined(HAVE_GFX_WIDGETS)
    if (    !(state->flags & SS_TASK_FLAG_SILENCE)
          && (state->flags & SS_TASK_FLAG_WIDGETS_READY))
       gfx_widget_screenshot_taken(dispwidget_get_ptr(),
             state->shotname, state->filename);
+#endif
 
+   if (state->cb)
+   {
+      struct screenshot_result r;
+      r.path           = state->filename;
+      r.png_base64     = state->image_b64;
+      r.png_base64_len = state->image_b64 ? (size_t)state->image_b64_len : 0;
+      state->cb(task, &r, user_data,
+            (state->flags & SS_TASK_FLAG_WRITTEN)
+            ? NULL : msg_hash_to_str(MSG_FAILED_TO_TAKE_SCREENSHOT));
+   }
+
+   free(state->image_b64);
    free(state);
    /* Must explicitly set task->state to NULL here,
     * to avoid potential heap-use-after-free errors */
    state       = NULL;
    task->state = NULL;
 }
-#endif
 
 /**
  * screenshot_rotate:
@@ -489,7 +568,8 @@ static bool screenshot_dump(
       bool fullpath,
       bool use_thread,
       unsigned pixel_format_type,
-      const struct rpng_hdr_metadata *hdr)
+      const struct rpng_hdr_metadata *hdr,
+      retro_task_callback_t cb, void *user_data)
 {
    settings_t *settings           = config_get_ptr();
    bool history_list_enable       = settings->bools.history_list_enable;
@@ -520,6 +600,9 @@ static bool screenshot_dump(
    state->pitch                  = pitch;
    state->frame                  = frame;
    state->userbuf                = userbuf;
+   state->cb                     = cb;
+   if (cb)
+      state->flags              |= SS_TASK_FLAG_WANT_IMAGE;
 #if defined(HAVE_GFX_WIDGETS)
    if (gfx_widgets_ready())
       state->flags              |= SS_TASK_FLAG_WIDGETS_READY;
@@ -566,6 +649,9 @@ static bool screenshot_dump(
       else
       {
          char new_screenshot_dir[DIR_MAX_LENGTH];
+
+         /* Read below whether or not screenshot_dir was set. */
+         new_screenshot_dir[0] = '\0';
 
          if (screenshot_dir && *screenshot_dir)
          {
@@ -635,7 +721,10 @@ static bool screenshot_dump(
          /* Create screenshot directory, if required */
          if (!path_is_directory(new_screenshot_dir))
             if (!path_mkdir(new_screenshot_dir))
+            {
+               free(state);
                return false;
+            }
       }
    }
 
@@ -662,6 +751,14 @@ static bool screenshot_dump(
    {
       retro_task_t *task = task_init();
 
+      if (!task)
+      {
+         if (state->out_buffer)
+            free(state->out_buffer);
+         free(state);
+         return false;
+      }
+
       task->type         = TASK_TYPE_BLOCKING;
       task->state        = state;
       task->handler      = task_screenshot_handler;
@@ -669,12 +766,15 @@ static bool screenshot_dump(
          task->flags    |=  RETRO_TASK_FLG_MUTE;
       else
          task->flags    &= ~RETRO_TASK_FLG_MUTE;
+      task->user_data    = user_data;
+      if (     state->cb
 #if defined(HAVE_GFX_WIDGETS)
-      /* This callback is only required when
-       * widgets are enabled */
-      if (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+            || (state->flags & SS_TASK_FLAG_WIDGETS_READY)
+#endif
+         )
          task->callback  = task_screenshot_callback;
 
+#if defined(HAVE_GFX_WIDGETS)
       if ((state->flags & SS_TASK_FLAG_WIDGETS_READY) && !savestate)
          task_free_title(task);
       else
@@ -701,7 +801,24 @@ static bool screenshot_dump(
       return false;
    }
 
-   return screenshot_dump_direct(state);
+   {
+      /* Same ownership as the task path: the caller's buffer is ours
+       * once the screenshot is written, and stays the caller's to
+       * free if it is not. */
+      bool ret = screenshot_dump_direct(state);
+      if (ret && state->userbuf)
+         free(state->userbuf);
+      if (ret && state->cb)
+      {
+         struct screenshot_result r;
+         r.path           = state->filename;
+         r.png_base64     = NULL;
+         r.png_base64_len = 0;
+         state->cb(NULL, &r, user_data, NULL);
+      }
+      free(state);
+      return ret;
+   }
 }
 
 static bool take_screenshot_viewport(
@@ -711,7 +828,8 @@ static bool take_screenshot_viewport(
       uint32_t runloop_flags,
       bool fullpath,
       bool use_thread,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data)
 {
    struct video_viewport vp;
    unsigned output_size;
@@ -757,7 +875,7 @@ static bool take_screenshot_viewport(
                      hdr_buffer, vp.dims,
                      VIDEO_SCALE_W(vp.dims) * 6, false, hdr_buffer,
                      savestate, runloop_flags, fullpath, use_thread,
-                     pixel_format_type, &hdr))
+                     pixel_format_type, &hdr, cb, user_data))
                return true;
          }
          free(hdr_buffer);
@@ -784,7 +902,7 @@ static bool take_screenshot_viewport(
                buffer, vp.dims,
                VIDEO_SCALE_W(vp.dims) * 3, true, buffer,
                savestate, runloop_flags, fullpath, use_thread,
-               pixel_format_type, NULL))
+               pixel_format_type, NULL, cb, user_data))
          return true;
    }
 
@@ -831,7 +949,8 @@ static bool take_screenshot_raw(
       const char *name_base,
       bool savestate, uint32_t runloop_flags,
       bool fullpath, bool use_thread,
-      unsigned pixel_format_type)
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data)
 {
    /* Pull a heap-owned copy of the cached frame's pixels via the
     * lifetime-safe callback API.  The screenshot task is deferred
@@ -887,7 +1006,8 @@ static bool take_screenshot_raw(
             fullpath,
             use_thread,
             pixel_format_type,
-            NULL))
+            NULL,
+            cb, user_data))
       return true;
 
    /* screenshot_dump only takes ownership on success; on failure
@@ -906,7 +1026,8 @@ static bool take_screenshot_choice(
       bool fullpath,
       bool use_thread,
       bool supports_vp_read,
-      unsigned pixel_format_type
+      unsigned pixel_format_type,
+      retro_task_callback_t cb, void *user_data
       )
 {
    if (supports_vp_read)
@@ -919,13 +1040,13 @@ static bool take_screenshot_choice(
          video_driver_cached_frame();
       return take_screenshot_viewport(screenshot_dir,
             name_base, savestate, runloop_flags, fullpath, use_thread,
-            pixel_format_type);
+            pixel_format_type, cb, user_data);
    }
 
    if (!has_valid_framebuffer)
       return take_screenshot_raw(video_st, screenshot_dir,
             name_base, savestate, runloop_flags, fullpath, use_thread,
-            pixel_format_type);
+            pixel_format_type, cb, user_data);
 
    return false;
 }
@@ -935,6 +1056,17 @@ bool take_screenshot(
       const char *name_base,
       bool savestate, bool has_valid_framebuffer,
       bool fullpath, bool use_thread)
+{
+   return take_screenshot_notify(screenshot_dir, name_base, savestate,
+         has_valid_framebuffer, fullpath, use_thread, NULL, NULL);
+}
+
+bool take_screenshot_notify(
+      const char *screenshot_dir,
+      const char *name_base,
+      bool savestate, bool has_valid_framebuffer,
+      bool fullpath, bool use_thread,
+      retro_task_callback_t cb, void *user_data)
 {
    bool ret                       = false;
    uint32_t runloop_flags         = runloop_get_flags();
@@ -967,7 +1099,9 @@ bool take_screenshot(
          fullpath,
          use_thread,
          prefer_vp_read,
-         video_st->pix_fmt
+         video_st->pix_fmt,
+         cb,
+         user_data
          );
    if (       (runloop_flags & RUNLOOP_FLAG_PAUSED)
          && (!(runloop_flags & RUNLOOP_FLAG_IDLE)))

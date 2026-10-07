@@ -2,20 +2,16 @@
 #include "glslang_util.h"
 #include "slang_process.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
-#include <file/file_path.h>
-#include <streams/file_stream.h>
-#include <vfs/vfs.h>
-#include <compat/strl.h>
 #include <encodings/crc32.h>
 
-#include "../../configuration.h"
+#include "../video_shader_parse.h"
 #include "../../verbosity.h"
 
 #define SPIRV_CACHE_VERSION 1
-#define SPIRV_CACHE_SUBDIR  "spirv"
 
 /* Upper bounds applied when reading a cache file.  The cache lives in
  * the user's cache directory but is still parsed defensively: the
@@ -28,120 +24,70 @@
 #define SPIRV_CACHE_MAX_STAGE_WORDS (1u << 24)
 #define SPIRV_CACHE_MAX_PARAMETERS  GFX_MAX_PARAMETERS
 
-/**
- * Get the full path to the SPIR-V cache directory
- *
- * @param cache_dir_out Output buffer for the cache directory path (must be at least PATH_MAX_LENGTH)
- * @param cache_dir_out_len Size of the output buffer
- * @return true on success, false if cache dir is not configured
- */
-static bool spirv_cache_get_dir(char *cache_dir_out, size_t cache_dir_out_len)
+/* An entry is parsed where the cache hands it over, never past its
+ * end; each read either takes the bytes asked for or fails */
+typedef struct
 {
-   settings_t *settings = config_get_ptr();
+   const uint8_t *p;
+   const uint8_t *end;
+} spirv_cache_reader_t;
 
-   if (!settings || !settings->paths.directory_cache[0])
+static bool spirv_cache_read(spirv_cache_reader_t *r, void *out, size_t n)
+{
+   if ((size_t)(r->end - r->p) < n)
       return false;
-
-   /* Build the spirv subdirectory path */
-   fill_pathname_join_special(cache_dir_out,
-         settings->paths.directory_cache, SPIRV_CACHE_SUBDIR,
-         cache_dir_out_len);
-
+   memcpy(out, r->p, n);
+   r->p += n;
    return true;
 }
 
-/**
- * Ensure the SPIR-V cache directory exists
- *
- * @return true if directory exists or was created, false on error
- */
-static bool spirv_cache_ensure_dir(void)
-{
-   char cache_dir[PATH_MAX_LENGTH];
-
-   if (!spirv_cache_get_dir(cache_dir, sizeof(cache_dir)))
-      return false;
-
-   return path_mkdir(cache_dir);
-}
-
-/**
- * Get the full path to a cache file for a given hash
- *
- * @param hash Hash string (64 characters)
- * @param cache_file_out Output buffer for the full cache file path
- * @param cache_file_out_len Size of the output buffer
- * @return true on success, false on error
- */
-static bool spirv_cache_get_filename(const char *hash,
-      char *cache_file_out, size_t cache_file_out_len)
-{
-   char cache_dir[PATH_MAX_LENGTH];
-   char hash_filename[128];
-
-   if (!spirv_cache_get_dir(cache_dir, sizeof(cache_dir)))
-      return false;
-
-   snprintf(hash_filename, sizeof(hash_filename), "%s.spirv", hash);
-   fill_pathname_join_special(cache_file_out, cache_dir, hash_filename,
-         cache_file_out_len);
-
-   return true;
-}
-
-/**
- * Write a string to a file with a u32 length prefix (no terminator
- * on disk).
- *
- * @param file File pointer (opened in binary mode)
- * @param str  '\0'-terminated string to write (must not be NULL)
- * @return true on success, false on error
- */
-static bool spirv_cache_write_string(RFILE *file, const char *str)
-{
-   uint32_t _len;
-   size_t s_len = strlen(str);
-   if (s_len > UINT32_MAX)
-      return false;
-   _len = (uint32_t)s_len;
-
-   if (filestream_write(file, &_len, sizeof(uint32_t)) != sizeof(uint32_t))
-      return false;
-
-   if (_len > 0 && filestream_write(file, str, _len) != _len)
-      return false;
-
-   return true;
-}
-
-/**
- * Read a u32-length-prefixed string from a file into a fixed buffer.
- * A stored length that does not fit the buffer (terminator included)
- * is treated as corruption and rejected, never truncated: the data
- * model guarantees writers only ever store strings that fit.
- *
- * @param file        File pointer (opened in binary mode)
- * @param str_out     Output buffer
- * @param str_out_len Size of the output buffer
- * @return true on success, false on error
- */
-static bool spirv_cache_read_string(RFILE *file,
+/* A u32 length and that many bytes, into a fixed buffer. A length that
+ * does not fit it, terminator included, is corruption and rejected,
+ * never truncated: writers only ever store strings that fit. */
+static bool spirv_cache_read_string(spirv_cache_reader_t *r,
       char *str_out, size_t str_out_len)
 {
    uint32_t _len;
 
-   if (filestream_read(file, &_len, sizeof(uint32_t)) != sizeof(uint32_t))
+   if (!spirv_cache_read(r, &_len, sizeof(_len)) || _len >= str_out_len)
       return false;
-
-   if (_len >= str_out_len)
+   if (_len > 0 && !spirv_cache_read(r, str_out, _len))
       return false;
-
-   if (_len > 0 &&
-         filestream_read(file, str_out, _len) != (int64_t)_len)
-      return false;
-
    str_out[_len] = '\0';
    return true;
+}
+
+/* Words of SPIR-V for one stage, into a buffer of their own */
+static bool spirv_cache_read_stage(spirv_cache_reader_t *r,
+      uint32_t **words, size_t *words_len)
+{
+   uint32_t count;
+
+   if (     !spirv_cache_read(r, &count, sizeof(count))
+         || count > SPIRV_CACHE_MAX_STAGE_WORDS)
+      return false;
+   if (!count)
+      return true;
+   if ((size_t)(r->end - r->p) / sizeof(uint32_t) < count)
+      return false;
+   if (!(*words = (uint32_t*)malloc(count * sizeof(uint32_t))))
+      return false;
+   *words_len = count;
+   return spirv_cache_read(r, *words, count * sizeof(uint32_t));
+}
+
+static uint8_t *spirv_cache_put(uint8_t *w, const void *src, size_t n)
+{
+   memcpy(w, src, n);
+   return w + n;
+}
+
+static uint8_t *spirv_cache_put_string(uint8_t *w, const char *str,
+      size_t str_len)
+{
+   uint32_t _len = (uint32_t)str_len;
+   w = spirv_cache_put(w, &_len, sizeof(_len));
+   return spirv_cache_put(w, str, str_len);
 }
 
 #ifdef __cplusplus
@@ -185,69 +131,31 @@ bool spirv_cache_compute_hash(const char *vertex_source,
 
 bool spirv_cache_load(const char *hash, struct glslang_output *output)
 {
-   RFILE *file;
-   uint8_t version;
-   char cache_file[PATH_MAX_LENGTH];
-   uint32_t vertex_size, fragment_size, param_count, i;
+   video_shader_cache_view_t view;
+   spirv_cache_reader_t r;
+   uint8_t  version;
    uint16_t rt_format;
+   uint32_t param_count, i;
 
    if (!hash || !output)
       return false;
 
-   if (!spirv_cache_get_filename(hash, cache_file, sizeof(cache_file)))
-      return false;
+   if (!video_shader_cache_map(VIDEO_SHADER_CACHE_SPIRV, hash, &view))
+      return false; /* Not cached yet */
 
-   file = filestream_open(cache_file, RETRO_VFS_FILE_ACCESS_READ,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
-      return false; /* Cache file doesn't exist yet */
+   r.p   = view.data;
+   r.end = view.data + view.len;
 
-   /* Read version */
-   if (filestream_read(file, &version, sizeof(uint8_t)) != sizeof(uint8_t))
+   if (     !spirv_cache_read(&r, &version, sizeof(version))
+         || version != SPIRV_CACHE_VERSION)
       goto error;
 
-   if (version != SPIRV_CACHE_VERSION)
-      goto error; /* Version mismatch */
-
-   /* Read vertex SPIR-V */
-   if (filestream_read(file, &vertex_size, sizeof(uint32_t)) != sizeof(uint32_t))
+   if (     !spirv_cache_read_stage(&r, &output->vertex,   &output->vertex_len)
+         || !spirv_cache_read_stage(&r, &output->fragment, &output->fragment_len))
       goto error;
 
-   if (vertex_size > SPIRV_CACHE_MAX_STAGE_WORDS)
-      goto error;
-
-   if (vertex_size > 0)
-   {
-      output->vertex = (uint32_t*)malloc(vertex_size * sizeof(uint32_t));
-      if (!output->vertex)
-         goto error;
-      output->vertex_len = vertex_size;
-      if (filestream_read(file, output->vertex, vertex_size * sizeof(uint32_t)) != (int64_t)(vertex_size * sizeof(uint32_t)))
-         goto error;
-   }
-
-   /* Read fragment SPIR-V */
-   if (filestream_read(file, &fragment_size, sizeof(uint32_t)) != sizeof(uint32_t))
-      goto error;
-
-   if (fragment_size > SPIRV_CACHE_MAX_STAGE_WORDS)
-      goto error;
-
-   if (fragment_size > 0)
-   {
-      output->fragment = (uint32_t*)malloc(fragment_size * sizeof(uint32_t));
-      if (!output->fragment)
-         goto error;
-      output->fragment_len = fragment_size;
-      if (filestream_read(file, output->fragment, fragment_size * sizeof(uint32_t)) != (int64_t)(fragment_size * sizeof(uint32_t)))
-         goto error;
-   }
-
-   /* Read parameters count */
-   if (filestream_read(file, &param_count, sizeof(uint32_t)) != sizeof(uint32_t))
-      goto error;
-
-   if (param_count > SPIRV_CACHE_MAX_PARAMETERS)
+   if (     !spirv_cache_read(&r, &param_count, sizeof(param_count))
+         || param_count > SPIRV_CACHE_MAX_PARAMETERS)
       goto error;
 
    if (param_count > 0)
@@ -260,145 +168,104 @@ bool spirv_cache_load(const char *hash, struct glslang_output *output)
       output->meta.num_parameters = param_count;
    }
 
-   /* Read each parameter */
    for (i = 0; i < param_count; i++)
    {
       glslang_parameter *param = &output->meta.parameters[i];
 
-      if (!spirv_cache_read_string(file, param->id, sizeof(param->id)))
-         goto error;
-
-      if (!spirv_cache_read_string(file, param->desc, sizeof(param->desc)))
-         goto error;
-
-      if (filestream_read(file, &param->initial, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_read(file, &param->minimum, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_read(file, &param->maximum, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_read(file, &param->step, sizeof(float)) != sizeof(float))
+      if (     !spirv_cache_read_string(&r, param->id,   sizeof(param->id))
+            || !spirv_cache_read_string(&r, param->desc, sizeof(param->desc))
+            || !spirv_cache_read(&r, &param->initial, sizeof(float))
+            || !spirv_cache_read(&r, &param->minimum, sizeof(float))
+            || !spirv_cache_read(&r, &param->maximum, sizeof(float))
+            || !spirv_cache_read(&r, &param->step,    sizeof(float)))
          goto error;
    }
 
-   /* Read shader name */
-   if (!spirv_cache_read_string(file, output->meta.name,
-            sizeof(output->meta.name)))
-      goto error;
-
-   /* Read render target format */
-   if (filestream_read(file, &rt_format, sizeof(uint16_t)) != sizeof(uint16_t))
+   if (     !spirv_cache_read_string(&r, output->meta.name,
+               sizeof(output->meta.name))
+         || !spirv_cache_read(&r, &rt_format, sizeof(rt_format)))
       goto error;
    output->meta.rt_format = (enum glslang_format)rt_format;
 
-   filestream_close(file);
+   video_shader_cache_unmap(&view);
 
    RARCH_LOG("[Slang Cache] Loaded shader cache for hash: %.16s...\n", hash);
 
    return true;
 
 error:
-   filestream_close(file);
+   video_shader_cache_unmap(&view);
    glslang_output_free(output);
    return false;
 }
 
 bool spirv_cache_save(const char *hash, const struct glslang_output *output)
 {
-   RFILE *file;
+   uint8_t *buf, *w;
+   size_t   size, i;
+   uint8_t  version = SPIRV_CACHE_VERSION;
    uint16_t rt_format;
-   char cache_file[PATH_MAX_LENGTH];
-   uint8_t version = SPIRV_CACHE_VERSION;
-   uint32_t vertex_size, fragment_size, param_count, i;
+   uint32_t vertex_size, fragment_size, param_count;
+   bool     ok;
 
    if (!hash || !output)
       return false;
 
-   /* Ensure cache directory exists */
-   if (!spirv_cache_ensure_dir())
+   /* Nothing load would turn away goes in: then the sizes below cannot
+    * overflow either */
+   if (     output->vertex_len   > SPIRV_CACHE_MAX_STAGE_WORDS
+         || output->fragment_len > SPIRV_CACHE_MAX_STAGE_WORDS
+         || output->meta.num_parameters > SPIRV_CACHE_MAX_PARAMETERS)
       return false;
 
-   if (!spirv_cache_get_filename(hash, cache_file, sizeof(cache_file)))
-      return false;
-
-   file = filestream_open(cache_file, RETRO_VFS_FILE_ACCESS_WRITE,
-         RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   if (!file)
-      return false;
-
-   /* Write version */
-   if (filestream_write(file, &version, sizeof(uint8_t)) != sizeof(uint8_t))
-      goto error;
-
-   /* Write vertex SPIR-V */
-   if (output->vertex_len > UINT32_MAX)
-      goto error;
-   vertex_size = (uint32_t)output->vertex_len;
-   if (filestream_write(file, &vertex_size, sizeof(uint32_t)) != sizeof(uint32_t))
-      goto error;
-   if (vertex_size > 0)
-   {
-      if (filestream_write(file, output->vertex, vertex_size * sizeof(uint32_t)) != (int64_t)(vertex_size * sizeof(uint32_t)))
-         goto error;
-   }
-
-   /* Write fragment SPIR-V */
-   if (output->fragment_len > UINT32_MAX)
-      goto error;
+   vertex_size   = (uint32_t)output->vertex_len;
    fragment_size = (uint32_t)output->fragment_len;
-   if (filestream_write(file, &fragment_size, sizeof(uint32_t)) != sizeof(uint32_t))
-      goto error;
-   if (fragment_size > 0)
-   {
-      if (filestream_write(file, output->fragment, fragment_size * sizeof(uint32_t)) != (int64_t)(fragment_size * sizeof(uint32_t)))
-         goto error;
-   }
+   param_count   = (uint32_t)output->meta.num_parameters;
 
-   /* Write parameters */
-   if (output->meta.num_parameters > UINT32_MAX)
-      goto error;
-   param_count = (uint32_t)output->meta.num_parameters;
-   if (filestream_write(file, &param_count, sizeof(uint32_t)) != sizeof(uint32_t))
-      goto error;
+   /* The whole entry is laid out in one buffer and stored in one write */
+   size = sizeof(version)
+        + sizeof(uint32_t) + (size_t)vertex_size   * sizeof(uint32_t)
+        + sizeof(uint32_t) + (size_t)fragment_size * sizeof(uint32_t)
+        + sizeof(uint32_t)
+        + sizeof(uint32_t) + strlen(output->meta.name)
+        + sizeof(rt_format);
+   for (i = 0; i < param_count; i++)
+      size += 2 * sizeof(uint32_t) + 4 * sizeof(float)
+            + strlen(output->meta.parameters[i].id)
+            + strlen(output->meta.parameters[i].desc);
 
+   if (!(buf = (uint8_t*)malloc(size)))
+      return false;
+
+   w = spirv_cache_put(buf, &version, sizeof(version));
+   w = spirv_cache_put(w, &vertex_size, sizeof(vertex_size));
+   if (vertex_size)
+      w = spirv_cache_put(w, output->vertex, vertex_size * sizeof(uint32_t));
+   w = spirv_cache_put(w, &fragment_size, sizeof(fragment_size));
+   if (fragment_size)
+      w = spirv_cache_put(w, output->fragment, fragment_size * sizeof(uint32_t));
+   w = spirv_cache_put(w, &param_count, sizeof(param_count));
    for (i = 0; i < param_count; i++)
    {
       const glslang_parameter *param = &output->meta.parameters[i];
-
-      if (!spirv_cache_write_string(file, param->id))
-         goto error;
-      if (!spirv_cache_write_string(file, param->desc))
-         goto error;
-
-      if (filestream_write(file, &param->initial, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_write(file, &param->minimum, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_write(file, &param->maximum, sizeof(float)) != sizeof(float))
-         goto error;
-      if (filestream_write(file, &param->step, sizeof(float)) != sizeof(float))
-         goto error;
+      w = spirv_cache_put_string(w, param->id,   strlen(param->id));
+      w = spirv_cache_put_string(w, param->desc, strlen(param->desc));
+      w = spirv_cache_put(w, &param->initial, sizeof(float));
+      w = spirv_cache_put(w, &param->minimum, sizeof(float));
+      w = spirv_cache_put(w, &param->maximum, sizeof(float));
+      w = spirv_cache_put(w, &param->step,    sizeof(float));
    }
-
-   /* Write shader name */
-   if (!spirv_cache_write_string(file, output->meta.name))
-      goto error;
-
-   /* Write render target format */
+   w = spirv_cache_put_string(w, output->meta.name, strlen(output->meta.name));
    rt_format = (uint16_t)output->meta.rt_format;
-   if (filestream_write(file, &rt_format, sizeof(uint16_t)) != sizeof(uint16_t))
-      goto error;
+   w = spirv_cache_put(w, &rt_format, sizeof(rt_format));
 
-   filestream_close(file);
+   ok = (size_t)(w - buf) == size
+     && video_shader_cache_write(VIDEO_SHADER_CACHE_SPIRV, hash, buf, size);
+   free(buf);
 
-   RARCH_LOG("[Slang Cache] Saved shader cache for hash: %.16s...\n", hash);
-
-   return true;
-
-error:
-   filestream_close(file);
-   filestream_delete(cache_file); /* Clean up partial file on error */
-   return false;
+   if (ok)
+      RARCH_LOG("[Slang Cache] Saved shader cache for hash: %.16s...\n", hash);
+   return ok;
 }
 
 #ifdef __cplusplus

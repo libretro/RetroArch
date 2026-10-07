@@ -88,7 +88,7 @@ static webdav_cb_state_t *new_cb_state(const char *path, const char *file,
 }
 
 static void make_response(http_transfer_data_t *resp, int status,
-      struct string_list *headers, char *body, size_t len)
+      char *headers, char *body, size_t len)
 {
    memset(resp, 0, sizeof(*resp));
    resp->status  = status;
@@ -283,9 +283,13 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    static char body[] = "server-copy";
    done_t done = {0};
    http_transfer_data_t ok;
+   /* header block: NUL after each line, empty line at the end */
+   static char ok_headers[] = "Content-Length: 11\0";
    char got[32] = {0};
 
-   make_response(&ok, 200, NULL, body, sizeof(body) - 1);
+   /* A real 200 frames its body; the read callback refuses an unframed
+    * one as possibly truncated (net_http_body_is_framed). */
+   make_response(&ok, 200, ok_headers, body, sizeof(body) - 1);
 
    stub_reset();
    webdav_read_cb(NULL, challenge, new_cb_state("saves/a.srm", tmp, &done),
@@ -310,11 +314,48 @@ static void test_stale_nonce_recovers(http_transfer_data_t *challenge,
    }
 }
 
+/* The challenge is server input.  Each block is allocated to its exact
+ * size, so a parser reading past the end of the line is an ASan report,
+ * not a silent pass. */
+static bool parse_challenge(const char *line)
+{
+   http_transfer_data_t resp;
+   size_t n   = strlen(line);
+   char  *blk = (char*)malloc(n + 2);
+   bool   ok;
+   memcpy(blk, line, n + 1);
+   blk[n + 1] = '\0';
+   make_response(&resp, 401, blk, NULL, 0);
+   ok = webdav_needs_reauth(&resp);
+   webdav_cleanup_digest();
+   free(blk);
+   return ok;
+}
+
+static void test_malformed_challenges(void)
+{
+   CHECK(parse_challenge(digest_header),
+         "well-formed challenge: rejected");
+   CHECK(parse_challenge("WWW-Authenticate: Digest realm=\"dav\", "
+            "nonce=\"6f2a\", qop=\"auth-int, auth\", stale=FALSE"),
+         "qop list and a trailing unquoted parameter: rejected");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav"),
+         "realm without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", nonce=\"6f2a"),
+         "nonce without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", qop=\"auth"),
+         "qop without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", x=\"y"),
+         "unknown parameter without its closing quote: accepted");
+   CHECK(!parse_challenge("WWW-Authenticate: Digest realm=\"dav\", flag"),
+         "bare trailing token and no nonce: accepted");
+}
+
 int main(void)
 {
    settings_t           *settings  = config_get_ptr();
    webdav_state_t       *webdav_st = webdav_state_get_ptr();
-   struct string_list   *headers   = string_list_new();
+   static char           headers[512];
    http_transfer_data_t  challenge;
    char tmp[64];
 
@@ -326,8 +367,8 @@ int main(void)
          sizeof(settings->arrays.webdav_password));
    strlcpy(webdav_st->url, "http://127.0.0.1/dav/", sizeof(webdav_st->url));
 
-   string_list_append(headers, digest_header,
-         (union string_list_elem_attr){0});
+   /* one-line header block: the line, its NUL, the closing NUL */
+   strlcpy(headers, digest_header, sizeof(headers) - 1);
    make_response(&challenge, 401, headers, NULL, 0);
 
    test_options(&challenge);
@@ -337,10 +378,10 @@ int main(void)
    test_move(&challenge);
    test_mkcol(&challenge);
    test_stale_nonce_recovers(&challenge, tmp);
+   test_malformed_challenges();
 
    stub_reset();
    webdav_cleanup_digest();
-   string_list_free(headers);
    remove(tmp);
 
    if (failures)

@@ -29,6 +29,11 @@
 
 RETRO_BEGIN_DECLS
 
+/* Which geometry values the .switchres.ini override files set */
+#define CRT_INI_GEOM_H_SIZE  (1 << 0)
+#define CRT_INI_GEOM_H_SHIFT (1 << 1)
+#define CRT_INI_GEOM_V_SHIFT (1 << 2)
+
 /* State of the CRT consumer: the request last seen, the generator and
  * the display server ops it applies through, and a drmModeModeInfo
  * mirror the DRM context reads when KMS is the server. */
@@ -55,6 +60,13 @@ typedef struct videocrt_switch
    int tmp_porch_adjust;
    int tmp_center_adjust;
    int tmp_vert_adjust;
+   /* Geometry the core/directory/game .switchres.ini overrides
+    * set, and which of the three they set (CRT_INI_GEOM_*). An
+    * override holds until its own slider is moved. */
+   double ini_h_size;
+   int ini_h_shift;
+   int ini_v_shift;
+   unsigned ini_geom;
    int rtn;
    int interlace;
    int doublescan;

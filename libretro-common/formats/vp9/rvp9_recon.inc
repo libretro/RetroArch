@@ -2501,11 +2501,7 @@ static void rvp9_tile_job_run(void *arg)
    {
       /* the last job to finish wakes the caller */
       if (retro_atomic_fetch_sub_int(&j->group->left, 1) == 1)
-      {
-         slock_lock(rvp9_tile_lock);
-         scond_broadcast(rvp9_tile_cond);
-         slock_unlock(rvp9_tile_lock);
-      }
+         retro_eventcount_notify(&rvp9_tile_ec);
    }
 }
 #endif
@@ -2821,12 +2817,14 @@ static int rvp9_decode_frame_impl(rvp9_dec *d, const uint8_t *data,
           * queued work from the pool meanwhile rather than sit idle */
          while (retro_atomic_load_acquire_int(&group.left) > 0)
          {
+            int key;
             if (tpool_help((tpool_t*)d->tile_pool))
                continue;
-            slock_lock(rvp9_tile_lock);
+            key = retro_eventcount_prepare_wait(&rvp9_tile_ec);
             if (retro_atomic_load_acquire_int(&group.left) > 0)
-               scond_wait(rvp9_tile_cond, rvp9_tile_lock);
-            slock_unlock(rvp9_tile_lock);
+               retro_eventcount_commit_wait(&rvp9_tile_ec, key);
+            else
+               retro_eventcount_cancel_wait(&rvp9_tile_ec);
          }
 
          rc = jobs[0].rc;

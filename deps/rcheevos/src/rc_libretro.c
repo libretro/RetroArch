@@ -600,7 +600,7 @@ static void rc_libretro_memory_init_from_memory_map(rc_libretro_memory_regions_t
         /* if we need to extract a disconnect bit, the largest block we can read is up to
          * the next time that bit flips */
         /* https://stackoverflow.com/questions/12247186/find-the-lowest-set-bit */
-        disconnect_size = (desc->disconnect & -((int)desc->disconnect));
+        disconnect_size = (uint32_t)(desc->disconnect & ((size_t)0 - desc->disconnect));
         desc_size = disconnect_size - (real_address & (disconnect_size - 1));
       }
 

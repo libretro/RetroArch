@@ -67,9 +67,6 @@ static SceCtrlActuator actuators[DEFAULT_MAX_PADS] = {0};
 static uint64_t pad_state[DEFAULT_MAX_PADS];
 static int16_t analog_state[DEFAULT_MAX_PADS][3][2];
 
-/* TODO/FIXME - global referenced outside */
-extern uint64_t lifecycle_state;
-
 static const char *psp_joypad_name(unsigned pad)
 {
 #ifdef VITA
@@ -236,9 +233,8 @@ static void psp_joypad_poll(void)
    unsigned player;
    unsigned players_count      = DEFAULT_MAX_PADS;
 #if defined(VITA)
-   settings_t *settings        = config_get_ptr();
-   bool input_backtouch_enable = settings->bools.input_backtouch_enable;
-   bool input_backtouch_toggle = settings->bools.input_backtouch_toggle;
+   bool input_backtouch_enable = input_config_get_backtouch_enable();
+   bool input_backtouch_toggle = input_config_get_backtouch_toggle();
 #endif
 
 #ifdef PSP
@@ -280,8 +276,6 @@ static void psp_joypad_poll(void)
 
    CtrlSetSamplingMode(DEFAULT_SAMPLING_MODE);
 
-   BIT64_CLEAR(lifecycle_state, RARCH_MENU_TOGGLE);
-
    for (player = 0; player < players_count; player++)
    {
       unsigned j, k;
@@ -318,7 +312,7 @@ static void psp_joypad_poll(void)
       /* The system keyboard (psp_input.c) is modal and reads the pad
        * itself; the buttons that drive it must not also drive the
        * menu behind it. */
-      if (input_state_get_ptr()->flags & INP_FLAG_NATIVE_KB_SHOWN)
+      if (input_driver_native_keyboard_shown())
          continue;
       /* The touch panels stand in for L2/R2/L3/R3 in-game only.  In
        * the menu the front panel is the pointer and the rear one is
@@ -327,7 +321,7 @@ static void psp_joypad_poll(void)
       if (sceKernelGetModelForCDialog() == SCE_KERNEL_MODEL_VITA
          && input_backtouch_enable
 #ifdef HAVE_MENU
-         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
+         && !menu_driver_alive()
 #endif
          )
       {

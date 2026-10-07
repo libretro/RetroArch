@@ -171,7 +171,9 @@ enum db_state_flags_enum
     * zero-sized legitimately produces, and keying the probe off it
     * re-queries such a database for every content file, at two full
     * walks a time. */
-   DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4)
+   DB_STATE_FLAG_SIZE_CHECKED             = (1 << 4),
+   /* A core claiming this database matches archive members. */
+   DB_STATE_FLAG_ARCHIVE_MEMBER           = (1 << 5)
 };
 
 #ifdef HAVE_LIBRETRODB
@@ -253,6 +255,10 @@ typedef struct database_state_handle
    database_info_crc_index_t **crc_index;
    /* Likewise for the serial lookup disc content uses. */
    database_info_serial_index_t **serial_index;
+   /* The extensions of the cores claiming each database, resolved
+    * from core info when the scan starts, or NULL when no core
+    * claims it. The per-file test is then one lookup in that list. */
+   struct string_list **claim_exts;
    /* Bytes of index the scan may still allocate.  Indexes are held
     * for the whole scan, so without a ceiling a large database set
     * costs tens of megabytes.  See task_database_index_budget(). */
@@ -1208,8 +1214,8 @@ static enum scan_verdict database_info_list_iterate_found_match(
       fill_pathname_join_delim(entry_path_str,
             entry_path_str, archive_name, '#', str_len);
 
-   if (core_info_database_match_archive_member(
-         db_state->list->elems[db_state->list_index].data)
+   if (   (db_state->flags[db_state->list_index]
+            & DB_STATE_FLAG_ARCHIVE_MEMBER)
        && (hash = strchr(entry_path_str, '#')))
        *hash = '\0';
 
@@ -1261,6 +1267,8 @@ static enum scan_verdict database_info_list_iterate_found_match(
             db_state->crc_index[db_state->list_index];
          database_info_serial_index_t *si =
             db_state->serial_index[db_state->list_index];
+         struct string_list           *ce =
+            db_state->claim_exts[db_state->list_index];
 
          memmove(&db_state->crc_index[1],
                  &db_state->crc_index[0],
@@ -1268,9 +1276,13 @@ static enum scan_verdict database_info_list_iterate_found_match(
          memmove(&db_state->serial_index[1],
                  &db_state->serial_index[0],
                  sizeof(si) * db_state->list_index);
+         memmove(&db_state->claim_exts[1],
+                 &db_state->claim_exts[0],
+                 sizeof(ce) * db_state->list_index);
 
          db_state->crc_index[0]    = ci;
          db_state->serial_index[0] = si;
+         db_state->claim_exts[0]   = ce;
       }
 
       db_state->list->elems[0] = entry;
@@ -1306,6 +1318,7 @@ static enum scan_verdict database_info_list_iterate_next(
 static bool task_database_state_alloc_arrays(
       database_state_handle_t *db_state)
 {
+   size_t i;
    size_t count;
 
    if (!db_state || !db_state->list)
@@ -1325,14 +1338,28 @@ static bool task_database_state_alloc_arrays(
       calloc(count, sizeof(*db_state->crc_index));
    db_state->serial_index = (database_info_serial_index_t**)
       calloc(count, sizeof(*db_state->serial_index));
+   db_state->claim_exts = (struct string_list**)
+      calloc(count, sizeof(*db_state->claim_exts));
    db_state->index_budget = task_database_index_budget();
 
    if (   !db_state->min_sizes
        || !db_state->max_sizes
        || !db_state->flags
        || !db_state->crc_index
-       || !db_state->serial_index)
+       || !db_state->serial_index
+       || !db_state->claim_exts)
       return false;
+
+   /* Which cores claim a database does not depend on the file being
+    * scanned, so it is resolved once here for the whole scan. */
+   for (i = 0; i < count; i++)
+   {
+      bool archive_member     = false;
+      db_state->claim_exts[i] = core_info_database_claim(
+            db_state->list->elems[i].data, &archive_member);
+      if (archive_member)
+         db_state->flags[i]  |= DB_STATE_FLAG_ARCHIVE_MEMBER;
+   }
 
    return true;
 }
@@ -1503,16 +1530,26 @@ static enum scan_verdict task_database_iterate_crc_lookup(
     * shipped database directory.  Ask the cheap question first. */
    if (!(_db->flags & DB_HANDLE_FLAG_SCAN_WITHOUT_CORE_MATCH))
    {
-      if (!core_info_database_supports_content_path(
-            db_state->list->elems[db_state->list_index].data, name))
-         return database_info_list_iterate_next(db_state);
+      /* Every database the gate refuses is passed over in this one
+       * step, so a file costs a handler call per database it can
+       * match rather than one per database in the directory - under
+       * the regular task queue that is a frame each. */
+      const char *ext = path_get_extension(name);
+      bool skipped    = false;
 
-      if (!path_contains_compressed_file)
+      while (   db_state->list_index < db_state->list->size
+             && (   !string_list_find_elem(
+                        db_state->claim_exts[db_state->list_index], ext)
+                 || (   !path_contains_compressed_file
+                     && (db_state->flags[db_state->list_index]
+                        & DB_STATE_FLAG_ARCHIVE_MEMBER))))
       {
-         if (core_info_database_match_archive_member(
-               db_state->list->elems[db_state->list_index].data))
-            return database_info_list_iterate_next(db_state);
+         database_info_list_iterate_next(db_state);
+         skipped = true;
       }
+
+      if (skipped)
+         return SCAN_VERDICT_CONTINUE;
    }
 
    /* If size boundaries are not filled for this DB, run the queries */
@@ -2297,16 +2334,9 @@ static bool manual_scan_end_flush_tick(
 }
 
 #ifdef HAVE_LIBRETRODB
-bool task_push_dbscan(
-      const char *playlist_directory, /* always from settings */
-      const char *content_database,   /* always from settings */
-      const char *fullpath,
-      bool directory,
-      bool db_dir_show_hidden_files,  /* always from settings */
-      retro_task_callback_t cb)
+bool task_push_dbscan(const char *fullpath, retro_task_callback_t cb)
 {
    manual_content_scan_set_menu_content_dir(fullpath);
-   /*manual_content_scan_set_menu_scan_method(MANUAL_CONTENT_SCAN_METHOD_AUTOMATIC);*/
    return task_push_manual_content_scan(false, cb);
 }
 
@@ -2454,6 +2484,14 @@ static void free_manual_content_scan_handle(manual_scan_handle_t *manual_scan)
                database_info_serial_index_free(dbstate->serial_index[si]);
             free(dbstate->serial_index);
             dbstate->serial_index = NULL;
+         }
+         if (dbstate->claim_exts)
+         {
+            size_t ce;
+            for (ce = 0; ce < db_count; ce++)
+               string_list_free(dbstate->claim_exts[ce]);
+            free(dbstate->claim_exts);
+            dbstate->claim_exts = NULL;
          }
          if (dbstate->min_sizes)
             free(dbstate->min_sizes);

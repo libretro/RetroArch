@@ -1,0 +1,25 @@
+# Bounds on net_http's DNS cache and connection pool, and the socket
+# family fallback: net_http.c included whole, clock and sockets stubbed.
+TARGET := http_limits_test
+ROOT := ../../..
+THREADS ?= 1
+CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+          -I$(ROOT)/libretro-common/include
+LDFLAGS += -Wl,--gc-sections
+LDLIBS += -lpthread
+ifeq ($(THREADS),1)
+CFLAGS += -DHAVE_THREADS
+endif
+ifneq ($(SANITIZER),)
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+all: $(TARGET)
+$(TARGET): http_limits_test.c $(ROOT)/libretro-common/net/net_http.c
+	$(CC) $(CFLAGS) $< $(ROOT)/libretro-common/rthreads/rthreads.c $(ROOT)/libretro-common/rthreads/retro_eventcount.c $(LDFLAGS) $(LDLIBS) -o $@
+check: $(TARGET)
+	./$(TARGET)
+clean:
+	rm -f $(TARGET) $(TARGET).exe
+.PHONY: all check clean

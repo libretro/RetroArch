@@ -16,6 +16,7 @@ LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 SOURCES := \
 	http_task_lifetime_test.c \
 	$(CORE_DIR)/tasks/task_http.c \
+	$(CORE_DIR)/tasks/task_nbio_slice.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c \
 	$(LIBRETRO_COMM_DIR)/net/net_http.c \
 	$(LIBRETRO_COMM_DIR)/net/net_compat.c \
@@ -36,6 +37,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 OBJS := $(SOURCES:.c=.o)

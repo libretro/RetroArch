@@ -46,6 +46,8 @@
  * a different arm's code. */
 #if defined(_3DS)
 #define MEM_STATS_CTR         1
+#elif defined(GEKKO_NATIVE)
+#define MEM_STATS_GEKKO       1
 #elif defined(GEKKO)
 #define MEM_STATS_GX          1
 #elif defined(VITA)
@@ -75,9 +77,16 @@
 #include <3ds.h>
 /* osGetMemRegionSize/Free and MEMREGION_ALL are declared here */
 #include <3ds/os.h>
+#elif defined(MEM_STATS_GEKKO)
+/* os/gekko's heap grows through MEM1 and then (Wii) MEM2; what is not
+ * yet the heap is what the arenas still hold. */
+#include <malloc.h>
+#include <gekko/gekko.h>
+#define GEKKO_MEM1_SIZE 0x01800000u
+#define GEKKO_MEM2_SIZE 0x04000000u
 #elif defined(MEM_STATS_GX)
-/* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx.c and
- * gx_gfx.c both take it from here.  SYS_GetArena1Size is gccore's. */
+/* SYSMEM1_SIZE is RetroArch's own, not the SDK's - platform_gx_libogc.c and
+ * gx_gfx_libogc.c both take it from here.  SYS_GetArena1Size is gccore's. */
 #include <defines/gx_defines.h>
 #include <gccore.h>
 #include <ogcsys.h>
@@ -295,6 +304,12 @@ uint64_t mem_stats_total(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionSize(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+#ifdef HW_RVL
+   return GEKKO_MEM1_SIZE + GEKKO_MEM2_SIZE;
+#else
+   return GEKKO_MEM1_SIZE;
+#endif
 #elif defined(MEM_STATS_GX)
 #if defined(HW_RVL) && !defined(IS_SALAMANDER)
    return SYSMEM1_SIZE + gx_mem2_total();
@@ -379,11 +394,25 @@ uint64_t mem_stats_total(void)
    }
 #else /* the iOS family */
    {
+      uint64_t size = 0;
+      int    mib[2] = { CTL_HW, HW_MEMSIZE };
+      size_t len    = sizeof(size);
+#ifdef TASK_VM_INFO_REV4_COUNT
+      /* What this process may use: its footprint plus the headroom left
+       * before jetsam. limit_bytes_remaining is revision 4 of the
+       * structure (iOS 13): read where the SDK declares it and the
+       * running kernel filled it in, which the count it hands back
+       * says. */
       task_vm_info_data_t vm_info;
       mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-      if (task_info(mach_task_self(), TASK_VM_INFO,
-               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
+      if (     task_info(mach_task_self(), TASK_VM_INFO,
+                  (task_info_t)&vm_info, &count) == KERN_SUCCESS
+            && count >= TASK_VM_INFO_REV4_COUNT)
          return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
+#endif
+      /* Before that, the device's memory */
+      if (sysctl(mib, 2, &size, &len, NULL, 0) >= 0)
+         return size;
       return 0;
    }
 #endif
@@ -411,6 +440,12 @@ uint64_t mem_stats_free(void)
 {
 #if defined(MEM_STATS_CTR)
    return osGetMemRegionFree(MEMREGION_ALL);
+#elif defined(MEM_STATS_GEKKO)
+   {
+      struct mallinfo mi = mallinfo();
+      return (uint64_t)(gk_mem1.hi - gk_mem1.lo)
+         + (uint64_t)(gk_mem2.hi - gk_mem2.lo) + (uint64_t)mi.fordblks;
+   }
 #elif defined(MEM_STATS_GX)
    {
       /* SYS_GetArena1Size() reports remaining MEM1 directly. */
@@ -530,7 +565,19 @@ uint64_t mem_stats_free(void)
       return cached;
    }
 #elif defined(MEM_STATS_APPLE)
-#if !TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && defined(TASK_VM_INFO_REV4_COUNT)
+   /* iOS 13 on: the headroom left before jetsam, revision 4 of the
+    * structure - read only when the running kernel filled it in. Older
+    * systems take the page count below, as macOS does. */
+   {
+      task_vm_info_data_t vm_info;
+      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+      if (     task_info(mach_task_self(), TASK_VM_INFO,
+                  (task_info_t)&vm_info, &count) == KERN_SUCCESS
+            && count >= TASK_VM_INFO_REV4_COUNT)
+         return vm_info.limit_bytes_remaining;
+   }
+#endif
    /* Free plus reclaimable (inactive) pages, through the 32-bit
     * host_statistics interface: it exists back to 10.0 and runs on 10.5
     * kernels, unlike host_statistics64 (10.6+) or a task_vm_info
@@ -553,16 +600,6 @@ uint64_t mem_stats_free(void)
       mach_port_deallocate(mach_task_self(), host);
       return avail;
    }
-#else /* the iOS family */
-   {
-      task_vm_info_data_t vm_info;
-      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-      if (task_info(mach_task_self(), TASK_VM_INFO,
-               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
-         return vm_info.limit_bytes_remaining;
-      return 0;
-   }
-#endif
 #elif defined(MEM_STATS_PROC)
    {
       uint64_t avail = 0;

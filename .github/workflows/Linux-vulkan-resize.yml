@@ -1,0 +1,126 @@
+name: CI Linux Vulkan resize
+
+# The Vulkan driver through changes of the swapchain's size, run for
+# real: a retroarch built with Vulkan and X11, on a virtual display
+# with Mesa's software Vulkan driver, has its window resized four
+# times, with the menu closed and open.
+#
+# When a swapchain is replaced for nothing but its size, the driver
+# rebuilds the framebuffers on its images and keeps the rest - the
+# pipelines, render passes, samplers, pools, buffers and frame
+# textures it used to destroy and build again each time. This holds
+# that every size change takes that path, that the picture afterwards
+# is pixel for pixel the one a full rebuild draws, and that the
+# Vulkan validation layers have nothing to say about either. Then
+# the same with a two-pass shader preset: the shader chain, which used
+# to reflect and compile every pass again on each swapchain change, is
+# kept when only the size changed, and its picture is the one a full
+# rebuild draws. See samples/gfx/vulkan_resize/run.sh.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'gfx/drivers/vulkan.c'
+      - 'gfx/common/vulkan_common.*'
+      - 'gfx/drivers_context/x_vk_ctx.c'
+      - 'gfx/drivers_shader/shader_vulkan.*'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/gfx/vulkan_resize/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
+      - '.github/workflows/Linux-vulkan-resize.yml'
+  pull_request:
+    paths:
+      - 'gfx/drivers/vulkan.c'
+      - 'gfx/common/vulkan_common.*'
+      - 'gfx/drivers_context/x_vk_ctx.c'
+      - 'gfx/drivers_shader/shader_vulkan.*'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/gfx/vulkan_resize/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
+      - '.github/workflows/Linux-vulkan-resize.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only pull requests cancel a superseded run.  On master every push
+# gets its own group (keyed by the commit), so a burst of pushes queues
+# instead of cancelling the run for the commit before it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  linux-vulkan-resize:
+    name: Run retroarch on software Vulkan and resize its window
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential ccache xvfb xdotool x11-apps python3 libx11-dev libx11-xcb-dev libxcb1-dev libxext-dev libxxf86vm-dev libxinerama-dev libxrandr-dev libxv-dev libudev-dev zlib1g-dev libvulkan-dev mesa-vulkan-drivers vulkan-validationlayers"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 300 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Build retroarch with Vulkan and X11
+        shell: bash
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          ccache -M 1G
+          ccache -z
+          # (--enable-vulkan makes configure look for the Vulkan
+          # loader to link against: libvulkan-dev above)
+          ./configure --disable-qt --enable-vulkan --enable-x11 \
+                      --disable-wayland --disable-sdl2 --disable-pulse \
+                      --disable-alsa --disable-ffmpeg --disable-discord
+          make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
+          ccache -s
+          test -x retroarch
+
+      - name: Resize the window on both paths
+        shell: bash
+        run: |
+          set -eu
+          timeout 600 samples/gfx/vulkan_resize/run.sh

@@ -35,6 +35,8 @@
 #include <compat/strl.h>
 
 #include "../../config.def.h"
+#include "../../command.h"
+#include "../../configuration.h"
 #include "../../verbosity.h"
 #include "../input_driver.h"
 #include "../../tasks/tasks_internal.h"
@@ -48,6 +50,10 @@
 
 #define JOYPAD_TEST_COMMAND_ADD_CONTROLLER          1
 #define JOYPAD_TEST_COMMAND_REMOVE_CONTROLLER       2
+/* Save Controller Profile for the port in param_num, as the menu does */
+#define JOYPAD_TEST_COMMAND_SAVE_PROFILE            3
+/* Quit, once what the steps before it started has been applied */
+#define JOYPAD_TEST_COMMAND_QUIT                    4
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST     16
 #define JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST      31
 #define JOYPAD_TEST_COMMAND_BUTTON_RELEASE_FIRST   32
@@ -350,7 +356,6 @@ static void test_joypad_autodetect_remove(unsigned autoconf_pad)
 
 static void *test_joypad_init(void *data)
 {
-   settings_t *settings = config_get_ptr();
    unsigned i;
 
    if (!input_test_steps)
@@ -359,7 +364,7 @@ static void *test_joypad_init(void *data)
    if (!input_test_steps)
       return NULL;
 
-   input_test_file_read(settings->paths.test_input_file_joypad);
+   input_test_file_read(input_config_get_test_input_file(true));
    if (last_test_step > MAX_TEST_STEPS)
       last_test_step = 0;
 
@@ -439,8 +444,7 @@ static int16_t test_joypad_state(
 static void test_joypad_poll(void)
 {
 
-   video_driver_state_t *video_st = video_state_get_ptr();
-   uint64_t curr_frame            = video_st->frame_count;
+   uint64_t curr_frame            = video_driver_get_frame_count();
    unsigned i;
 
    for (i=0; i<last_test_step; i++)
@@ -457,6 +461,43 @@ static void test_joypad_poll(void)
          {
             test_joypad_autodetect_remove(input_test_steps[i].param_num);
             input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_SAVE_PROFILE)
+         {
+#ifdef HAVE_CONFIGFILE
+            unsigned port        = input_test_steps[i].param_num;
+            /* A controller added by an earlier step is only there
+             * once its autoconfig task has been applied, and frames
+             * do not wait for that.  The menu has no entry to save
+             * until then, so neither does the script: the step stays
+             * due and is taken on the first poll after, and the steps
+             * behind it wait their turn. */
+            if (input_autoconfigure_pending())
+               break;
+            if (port < MAX_USERS)
+            {
+               unsigned dev     = input_config_get_joypad_index(port);
+               const char *name = (dev < MAX_USERS)
+                  ? input_config_get_device_name(dev) : NULL;
+               RARCH_LOG("[Test joypad] Save profile for port %u: %s.\n",
+                     port + 1,
+                     (name && *name && config_save_autoconf_profile(name, port))
+                     ? "saved" : "failed");
+            }
+#endif
+            input_test_steps[i].handled = true;
+         }
+         else if (input_test_steps[i].action == JOYPAD_TEST_COMMAND_QUIT)
+         {
+            /* A script that ends here ends the run, instead of the
+             * run idling until something outside kills it.  A connect
+             * or disconnect still in flight is part of the script, so
+             * it is applied - and logged - first. */
+            if (input_autoconfigure_pending())
+               break;
+            input_test_steps[i].handled = true;
+            input_driver_platform_request(INPUT_PLATFORM_QUIT);
+            break;
          }
          else if (   input_test_steps[i].action >= JOYPAD_TEST_COMMAND_BUTTON_PRESS_FIRST
                   && input_test_steps[i].action <= JOYPAD_TEST_COMMAND_BUTTON_PRESS_LAST)

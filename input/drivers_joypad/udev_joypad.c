@@ -25,16 +25,23 @@
 #include <sys/stat.h>
 #include <poll.h>
 #include <libudev.h>
-#ifdef __linux__
+#if defined(__linux__)
 #include <linux/types.h>
-#endif
 #include <linux/input.h>
+#elif defined(__FreeBSD__)
+#include <dev/evdev/input.h>
+#else
+#include <linux/input.h>
+#endif
 
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
 #include "../input_driver.h"
+#include "../common/linux_not_joystick.h"
+#include "../common/output_writer.h"
 
 #include "../../configuration.h"
 #include "../../config.def.h"
@@ -87,24 +94,24 @@ struct udev_joypad
    bool neg_trigger[NUM_AXES];
 
    struct input_absinfo absinfo[NUM_AXES]; /* TODO/FIXME - unsure of alignment */
+   bool axis_reported[NUM_AXES];
    dev_t device;  /* TODO/FIXME - unsure of alignment */
 
    char *path;
 
    int num_effects;
-   int effects[2]; /* [0] - strong, [1] - weak  */
    int32_t vid;
    int32_t pid;
    /* Maps keycodes -> button/axes */
    uint8_t button_bind[KEY_MAX];
    uint8_t axes_bind[ABS_MAX];
+   /* what the frontend last asked for; what has been written is the
+    * writer's to know (udev_rumble_out) */
    uint16_t strength[2];
-   uint16_t configured_strength[2];
    unsigned rumble_gain;
 
    char ident[NAME_MAX_LENGTH];
    char phys[NAME_MAX_LENGTH];
-   bool has_set_ff[2];
 
    /* Sensor (IMU) support: sibling evdev node for accelerometer/gyroscope */
    int sensor_fd;
@@ -140,6 +147,244 @@ static void udev_pad_set_fd(unsigned p, int fd)
       udev_pads_active |=  (1u << p);
    else
       udev_pads_active &= ~(1u << p);
+}
+
+/* Rumble is written off the frontend's thread.
+ *
+ * Uploading an effect (EVIOCSFF) is answered by whatever is behind the
+ * pad. For a controller the kernel drives that is quick. For a
+ * virtual pad, made through uinput by another program, the call waits
+ * for that program to answer it, and the frame waited with it.
+ *
+ * The frontend's thread now only notes the strength asked for, and a
+ * thread of the driver's own writes it. Nothing is queued: the writer
+ * reads the strength wanted when it gets to it, so a pad that is slow
+ * to answer is given the latest and not each one in turn.
+ *
+ * There is no lock. What is wanted is an atomic a motor. A pad's
+ * descriptor reaches the writer as a dup of it left in a slot: either
+ * thread takes it out with an exchange, and whoever takes it out is
+ * the one to close it. A pad that goes has its slot emptied and then
+ * its generation raised; the writer, seeing the generation change,
+ * closes the descriptor it holds and takes what the slot has. The
+ * thread is the shared one of ../common/output_writer.h.
+ *
+ * Without threads, or if the thread cannot be started, the same code
+ * runs where it always did. */
+struct udev_rumble_out
+{
+   int      fd;            /* the writer's own descriptor, or -1 */
+   int      gen;           /* the pad generation it is for */
+   int      gain;          /* the gain written, or -1 */
+   int      effects[2];    /* [0] - strong, [1] - weak */
+   bool     has_set_ff[2];
+   uint16_t configured[2];
+   uint16_t playing[2];
+};
+
+static struct udev_rumble_out udev_rumble_out[MAX_USERS];
+static retro_atomic_int_t udev_rumble_want[MAX_USERS][2];
+static retro_atomic_int_t udev_rumble_want_gain[MAX_USERS];
+static retro_atomic_int_t udev_rumble_slot[MAX_USERS];
+static retro_atomic_int_t udev_rumble_gen[MAX_USERS];
+static input_output_writer_t *udev_rumble_writer = NULL;
+/* how many effect uploads and plays the writer has made: for the test */
+static retro_atomic_int_t udev_rumble_writes;
+
+/* One pad: its descriptor taken or let go if the pad changed, then
+ * what is wanted of it written if it differs from what was. On the
+ * writer's thread; on the frontend's only when there is no writer. */
+static void udev_rumble_write(unsigned p)
+{
+   unsigned effect;
+   struct udev_rumble_out *o = &udev_rumble_out[p];
+   int gen                   = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
+   int gain;
+
+   if (gen != o->gen)
+   {
+      if (o->fd >= 0)
+         close(o->fd);
+      memset(o, 0, sizeof(*o));
+      o->fd   = -1;
+      o->gen  = gen;
+      o->gain = -1;
+   }
+   if (o->fd < 0)
+   {
+      o->fd = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);
+      if (o->fd < 0)
+         return;
+   }
+
+#ifndef HAVE_LAKKA_SWITCH
+   gain = retro_atomic_load_acquire_int(&udev_rumble_want_gain[p]);
+   if (gain >= 0 && gain != o->gain)
+   {
+      struct input_event ie;
+      memset(&ie, 0, sizeof(ie));
+      ie.type  = EV_FF;
+      ie.code  = FF_GAIN;
+      ie.value = 0xFFFF * (gain / 100.0);
+      if (write(o->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
+         RARCH_ERR("[udev] Failed to set rumble gain on pad #%u.\n", p);
+      /* noted either way: a pad that refuses is not asked each time */
+      o->gain = gain;
+   }
+#else
+   (void)gain;
+#endif
+
+   for (effect = 0; effect < 2; effect++)
+   {
+      uint16_t strength = (uint16_t)retro_atomic_load_acquire_int(
+            &udev_rumble_want[p][effect]);
+      uint16_t old      = o->playing[effect];
+
+      if (strength == old)
+         continue;
+
+      if (strength && strength != o->configured[effect])
+      {
+         /* Create new or update old playing state. */
+         struct ff_effect e      = {0};
+         /* This defines the length of the effect and
+            the delay before playing it. This means there
+            is a limit on the maximum vibration time, but
+            it's hopefully sufficient for most cases. Maybe
+            there's a better way? */
+         struct ff_replay replay = {0xffff, 0};
+
+         e.type   = FF_RUMBLE;
+         e.id     = o->has_set_ff[effect] ? o->effects[effect] : -1;
+         e.replay = replay;
+         if (effect == RETRO_RUMBLE_STRONG)
+            e.u.rumble.strong_magnitude = strength;
+         else
+            e.u.rumble.weak_magnitude   = strength;
+
+         retro_atomic_inc_int(&udev_rumble_writes);
+         if (ioctl(o->fd, EVIOCSFF, &e) < 0)
+         {
+            RARCH_ERR("[udev] Failed to set rumble effect on pad #%u.\n", p);
+            /* not asked again until another strength is wanted */
+            o->playing[effect] = strength;
+            continue;
+         }
+
+         o->effects[effect]    = e.id;
+         o->has_set_ff[effect] = true;
+         o->configured[effect] = strength;
+      }
+      o->playing[effect] = strength;
+
+      /* It seems that we can update strength with EVIOCSFF atomically. */
+      if ((!!strength) != (!!old))
+      {
+         struct input_event play;
+
+         memset(&play, 0, sizeof(play));
+         play.type  = EV_FF;
+         play.code  = o->effects[effect];
+         play.value = !!strength;
+
+         retro_atomic_inc_int(&udev_rumble_writes);
+         if (write(o->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+            RARCH_ERR("[udev] Failed to play rumble effect #%u on pad #%u.\n",
+                  effect, p);
+      }
+   }
+}
+
+/* On the writer's thread, after each wake; at the last, what it wrote
+ * to is its own to close. */
+static void udev_rumble_writer_cb(void *userdata, bool last)
+{
+   unsigned p;
+
+   if (!last)
+   {
+      for (p = 0; p < MAX_USERS; p++)
+         udev_rumble_write(p);
+      return;
+   }
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      if (udev_rumble_out[p].fd >= 0)
+         close(udev_rumble_out[p].fd);
+      udev_rumble_out[p].fd = -1;
+   }
+}
+
+/* There is something for the writer to look at. Where there is no
+ * writer it is looked at here. */
+static void udev_rumble_wake(unsigned p)
+{
+   if (udev_rumble_writer)
+      input_output_writer_wake(udev_rumble_writer);
+   else
+      udev_rumble_write(p);
+}
+
+/* A pad that can rumble has arrived in slot @p: a descriptor of its
+ * own is left for the writer. */
+static void udev_rumble_attach(unsigned p, int fd)
+{
+   int old;
+   int own = dup(fd);
+
+   retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
+   retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+   old = retro_atomic_exchange_int(&udev_rumble_slot[p], own);
+   if (old >= 0)
+      close(old);
+   udev_rumble_wake(p);
+}
+
+/* The pad in slot @p is going. */
+static void udev_rumble_detach(unsigned p)
+{
+   int old = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);
+   if (old >= 0)
+      close(old);
+   retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
+   retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+   retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
+   retro_atomic_inc_int(&udev_rumble_gen[p]);
+   udev_rumble_wake(p);
+}
+
+static void udev_rumble_start(void)
+{
+   unsigned p;
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      memset(&udev_rumble_out[p], 0, sizeof(udev_rumble_out[p]));
+      udev_rumble_out[p].fd   = -1;
+      udev_rumble_out[p].gain = -1;
+      udev_rumble_out[p].gen  = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
+      retro_atomic_store_release_int(&udev_rumble_slot[p], -1);
+      retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
+      retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
+      retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+   }
+   udev_rumble_writer = input_output_writer_new(udev_rumble_writer_cb, NULL);
+}
+
+static void udev_rumble_stop(void)
+{
+   unsigned p;
+   input_output_writer_free(udev_rumble_writer);
+   udev_rumble_writer = NULL;
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      int old = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);
+      if (old >= 0)
+         close(old);
+      if (udev_rumble_out[p].fd >= 0)
+         close(udev_rumble_out[p].fd);
+      udev_rumble_out[p].fd = -1;
+   }
 }
 
 static INLINE int16_t udev_compute_axis(const struct input_absinfo *info, int value)
@@ -195,7 +440,6 @@ error:
 #ifndef HAVE_LAKKA_SWITCH
 static bool udev_set_rumble_gain(unsigned i, unsigned gain)
 {
-   struct input_event ie;
    struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
 
    /* Does not support > 100 gains */
@@ -206,17 +450,9 @@ static bool udev_set_rumble_gain(unsigned i, unsigned gain)
    if (pad->rumble_gain == gain)
       return true;
 
-   memset(&ie, 0, sizeof(ie));
-   ie.type = EV_FF;
-   ie.code = FF_GAIN;
-   ie.value = 0xFFFF * (gain/100.0);
-
-   if (write(pad->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
-   {
-      RARCH_ERR("[udev] Failed to set rumble gain on pad #%u.\n", i);
-      return false;
-   }
-
+   /* written by the rumble writer */
+   retro_atomic_store_release_int(&udev_rumble_want_gain[i], (int)gain);
+   udev_rumble_wake(i);
    pad->rumble_gain = gain;
 
    return true;
@@ -499,6 +735,17 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
    }
+
+   /* Not a controller, whatever udev says: leave the slot free. */
+   if (linux_input_is_not_joystick(pad->ident, pad->vid, pad->pid))
+   {
+      RARCH_LOG("[udev] Ignoring \"%s\" (%04x:%04x, %s): tagged as a"
+            " joystick, but it is not one.\n",
+            pad->ident, pad->vid, pad->pid, path);
+      pad->ident[0] = '\0';
+      pad->vid      = pad->pid = 0;
+      return -2;
+   }
    if (ioctl(fd, EVIOCGPHYS(sizeof(pad->phys)), pad->phys) < 0)
       pad->phys[0] = '\0';  /* Clear if unavailable */
    else
@@ -556,8 +803,9 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
                The actual work is done in udev_joypad_axis.
                All bets are off if you're sitting on it. Reinitialise it by unpluging
                and plugging back in. */
-            if (udev_compute_axis(abs, abs->value) < -1300)
-              pad->neg_trigger[i] = true;
+            if (     (i == ABS_Z || i == ABS_RZ)
+                  && udev_compute_axis(abs, abs->value) < -1300)
+              pad->neg_trigger[axes] = true;
             pad->axes_bind[i] = axes++;
          }
       }
@@ -595,15 +843,17 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
          RARCH_LOG(
                "[udev] Pad #%u (%s) supports %d force feedback effects.\n",
                p, path, pad->num_effects);
+
+      /* the rumble writer is given a descriptor of its own */
+      if (test_bit(FF_RUMBLE, ffbit) && pad->num_effects >= 2)
+         udev_rumble_attach(p, fd);
    }
 
 #ifndef HAVE_LAKKA_SWITCH
    /* Set rumble gain here, if supported */
    if (test_bit(FF_RUMBLE, ffbit))
    {
-      settings_t *settings = config_get_ptr();
-      unsigned rumble_gain = settings ? settings->uints.input_rumble_gain
-                                      : DEFAULT_RUMBLE_GAIN;
+      unsigned rumble_gain = input_config_get_rumble_gain();
       udev_set_rumble_gain(p, rumble_gain);
    }
 #endif
@@ -638,15 +888,19 @@ static void udev_check_device(struct udev_device *dev, const char *path)
    if ((fd = udev_open_joystick(path)) < 0)
       return;
 
-   if (udev_add_pad(dev, pad, fd, path) == -1)
+   /* -1: could not be read. -2: read, and found not to be a
+    * controller. Neither keeps the descriptor. */
+   if ((ret = udev_add_pad(dev, pad, fd, path)) < 0)
    {
-      RARCH_ERR("[udev] Failed to add pad: %s.\n", path);
+      if (ret == -1)
+         RARCH_ERR("[udev] Failed to add pad: %s.\n", path);
       close(fd);
    }
 }
 
 static void udev_free_pad(unsigned pad)
 {
+   udev_rumble_detach(pad);
    if (udev_pads[pad].fd >= 0)
       close(udev_pads[pad].fd);
    if (udev_pads[pad].sensor_fd >= 0)
@@ -757,6 +1011,9 @@ static void udev_joypad_destroy(void)
 {
    int i;
 
+   /* the writer first: it closes what it wrote to */
+   udev_rumble_stop();
+
    for (i = 0; i < MAX_USERS; i++)
       udev_free_pad(i);
 
@@ -773,74 +1030,21 @@ static void udev_joypad_destroy(void)
 static bool udev_set_rumble(unsigned i,
       enum retro_rumble_effect effect, uint16_t strength)
 {
-   uint16_t old_strength;
    struct udev_joypad *pad = (struct udev_joypad*)&udev_pads[i];
 
    if (pad->fd < 0)
       return false;
    if (pad->num_effects < 2)
       return false;
+   if (effect != RETRO_RUMBLE_STRONG && effect != RETRO_RUMBLE_WEAK)
+      return false;
 
-   old_strength = pad->strength[effect];
-   if (old_strength != strength)
+   /* noted here, written by the rumble writer */
+   if (pad->strength[effect] != strength)
    {
-      int old_effect = pad->has_set_ff[effect] ? pad->effects[effect] : -1;
-
-      if (strength && strength != pad->configured_strength[effect])
-      {
-         /* Create new or update old playing state. */
-         struct ff_effect e      = {0};
-         /* This defines the length of the effect and
-            the delay before playing it. This means there
-            is a limit on the maximum vibration time, but
-            it's hopefully sufficient for most cases. Maybe
-            there's a better way? */
-         struct ff_replay replay = {0xffff, 0};
-
-         e.type   = FF_RUMBLE;
-         e.id     = old_effect;
-         e.replay = replay;
-
-         switch (effect)
-         {
-            case RETRO_RUMBLE_STRONG:
-               e.u.rumble.strong_magnitude = strength;
-               break;
-            case RETRO_RUMBLE_WEAK:
-               e.u.rumble.weak_magnitude = strength;
-               break;
-            default:
-               return false;
-         }
-
-         if (ioctl(pad->fd, EVIOCSFF, &e) < 0)
-         {
-            RARCH_ERR("[udev] Failed to set rumble effect on pad #%u.\n", i);
-            return false;
-         }
-
-         pad->effects[effect]             = e.id;
-         pad->has_set_ff[effect]          = true;
-         pad->configured_strength[effect] = strength;
-      }
       pad->strength[effect] = strength;
-
-      /* It seems that we can update strength with EVIOCSFF atomically. */
-      if ((!!strength) != (!!old_strength))
-      {
-         struct input_event play;
-
-         play.type  = EV_FF;
-         play.code  = pad->effects[effect];
-         play.value = !!strength;
-
-         if (write(pad->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
-         {
-            RARCH_ERR("[udev] Failed to play rumble effect #%u on pad #%u.\n",
-                  effect, i);
-            return false;
-         }
-      }
+      retro_atomic_store_release_int(&udev_rumble_want[i][effect], strength);
+      udev_rumble_wake(i);
    }
 
    return true;
@@ -957,6 +1161,14 @@ static void udev_joypad_poll(void)
                            unsigned axis   = pad->axes_bind[code];
                            pad->axes[axis] = udev_compute_axis(
                                  &pad->absinfo[axis], value);
+                           /* A pad opened before its first report reads
+                            * every axis at minimum; a centred first
+                            * report means a stick, not a trigger. */
+                           if (     pad->neg_trigger[axis]
+                                 && !pad->axis_reported[axis]
+                                 && abs(pad->axes[axis]) < 0x2000)
+                              pad->neg_trigger[axis] = false;
+                           pad->axis_reported[axis] = true;
                            break;
                         }
                   }
@@ -1040,6 +1252,7 @@ static void *udev_joypad_init(void *data)
       udev_pad_set_fd(i, -1);
       udev_pads[i].sensor_fd = -1;
    }
+   udev_rumble_start();
 
    if (!(udev_joypad_fd = udev_new()))
       return NULL;
@@ -1150,10 +1363,7 @@ static int16_t udev_joypad_axis_state(
    {
       int16_t val = pad->axes[AXIS_NEG_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if ((
-               (AXIS_NEG_GET(joyaxis) == ABS_Z) ||
-               (AXIS_NEG_GET(joyaxis) == ABS_RZ))
-            && (pad->neg_trigger[AXIS_NEG_GET(joyaxis)]))
+      if (pad->neg_trigger[AXIS_NEG_GET(joyaxis)])
          val = (val + 0x7fff) / 2;
       if (val < 0)
          return val;
@@ -1162,10 +1372,7 @@ static int16_t udev_joypad_axis_state(
    {
       int16_t val = pad->axes[AXIS_POS_GET(joyaxis)];
       /* Deal with analog triggers that report -32767 to 32767 */
-      if ((
-               (AXIS_POS_GET(joyaxis) == ABS_Z) ||
-               (AXIS_POS_GET(joyaxis) == ABS_RZ))
-            && (pad->neg_trigger[AXIS_POS_GET(joyaxis)]))
+      if (pad->neg_trigger[AXIS_POS_GET(joyaxis)])
          val = (val + 0x7fff) / 2;
       if (val > 0)
          return val;

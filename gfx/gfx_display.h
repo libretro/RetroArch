@@ -109,6 +109,7 @@ enum gfx_display_driver_type
 };
 
 typedef struct gfx_display_ctx_draw gfx_display_ctx_draw_t;
+struct gfx_display_mesh;
 
 typedef struct gfx_display gfx_display_t;
 
@@ -148,6 +149,14 @@ typedef struct gfx_display_ctx_driver
    void (*scissor_begin)(void *data, unsigned video_dims,
          int x, int y, unsigned dims);
    void (*scissor_end)(void *data, unsigned video_dims);
+   /* Optional. Draws a mesh with a plain program from a buffer the
+    * driver keeps, returning false to have it transformed and streamed
+    * through draw() instead. @mvp (never NULL) takes the mesh to the
+    * display's 0..1 space, as draw()'s coordinates are; @texture is
+    * never 0; @tint is RGBA. */
+   bool (*mesh_draw)(void *data, unsigned video_dims,
+         const struct gfx_display_mesh *mesh, const float *mvp,
+         uintptr_t texture, const float *tint);
 } gfx_display_ctx_driver_t;
 
 struct gfx_display_ctx_draw
@@ -219,6 +228,10 @@ enum gfx_display_stat
    GFX_DISPLAY_STAT_LAST = GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_LAST
 };
 
+/* Index into gfx_display_stats_t::v for a flush reason. */
+#define GFX_DISPLAY_STAT_FLUSH_IDX(reason) \
+   ((unsigned)GFX_DISPLAY_STAT_FLUSH + (unsigned)(reason))
+
 typedef struct gfx_display_stats
 {
    unsigned v[GFX_DISPLAY_STAT_LAST];
@@ -227,7 +240,6 @@ typedef struct gfx_display_stats
 struct gfx_display
 {
    gfx_display_ctx_driver_t *dispctx;
-   video_coord_array_t dispca; /* ptr alignment */
 
    /* Pitch of the display framebuffer, and both its axes in one word
     * in VIDEO_SCALE_PACK's layout */
@@ -269,6 +281,14 @@ struct gfx_display
    bool      blend_on;
 
    uint8_t flags;
+
+   /* The menu effects' clock, in the step every driver used to keep
+    * for itself: 0.01 an effect drawn, wrapped at 65536. Read by the
+    * driver while it draws an effect, advanced once it has. */
+   float     effect_time;
+   /* The mesh an effect is being drawn over, for the driver's pipeline
+    * code to draw from; NULL outside that draw. */
+   const struct gfx_display_mesh *effect_mesh;
 
    /* What the batch did during the menu frame being drawn, counted
     * where it happens on the drawing thread and published as a whole
@@ -346,6 +366,101 @@ void gfx_display_draw_bg(
  * gone out yet. Anything that draws without going through this file -
  * text, above all - calls this first, or it lands underneath quads
  * that were asked for before it. */
+/* Meshes: geometry a menu driver builds once and draws every frame,
+ * with a program - plain, or one of the menu effects - and a 4x4
+ * transform, so it may be 3D. gfx_display owns them. Drivers that draw
+ * meshes themselves keep them on the GPU; on the others what a plain
+ * program draws is transformed here and streamed through draw(). There
+ * is no depth buffer: meshes draw in the order they are asked for. */
+enum gfx_display_mesh_program
+{
+   GFX_MESH_PROGRAM_TEXTURED = 0,  /* texture times vertex colour */
+   GFX_MESH_PROGRAM_COLORED,       /* vertex colour */
+   GFX_MESH_PROGRAM_BLEND,         /* the driver's stock blend */
+   GFX_MESH_PROGRAM_RIBBON,        /* the effects: the mesh animated */
+   GFX_MESH_PROGRAM_RIBBON_SIMPLE, /* by time in the vertex stage */
+   GFX_MESH_PROGRAM_SNOW_SIMPLE,   /* the effects: shaded per pixel */
+   GFX_MESH_PROGRAM_SNOW,          /* over the full-screen quad */
+   GFX_MESH_PROGRAM_BOKEH,
+   GFX_MESH_PROGRAM_SNOWFLAKE,
+   GFX_MESH_PROGRAM_LAST
+};
+
+enum gfx_display_mesh_topology
+{
+   GFX_MESH_TRIANGLES = 0,
+   GFX_MESH_TRIANGLE_STRIP
+};
+
+enum gfx_display_mesh_flags
+{
+   /* Keep the positions as plain x,y pairs too, for the drivers whose
+    * effect pipelines read them that way (see
+    * gfx_display_effect_coords) */
+   GFX_MESH_FLAG_POSITIONS = (1 << 0)
+};
+
+/* 20 bytes: position, texture coordinates in 1/65535ths, colour */
+typedef struct gfx_display_mesh_vertex
+{
+   float    x, y, z;
+   uint16_t u, v;
+   uint8_t  rgba[4];
+} gfx_display_mesh_vertex_t;
+
+typedef struct gfx_display_mesh_desc
+{
+   const gfx_display_mesh_vertex_t *vertices;
+   const uint16_t *indices;        /* NULL: drawn in vertex order */
+   unsigned vertex_count;
+   unsigned index_count;
+   enum gfx_display_mesh_topology topology;
+   unsigned flags;                 /* enum gfx_display_mesh_flags */
+} gfx_display_mesh_desc_t;
+
+/* Read by the drivers that draw meshes themselves. @id names the mesh
+ * for as long as the process runs and is never given to another, so a
+ * driver may keep a buffer for it and let the buffer age out once the
+ * mesh stops being drawn. */
+struct gfx_display_mesh
+{
+   gfx_display_mesh_vertex_t *vertices;
+   uint16_t *indices;
+   unsigned vertex_count;
+   unsigned index_count;
+   enum gfx_display_mesh_topology topology;
+   uint32_t id;
+   /* x,y of each vertex, for GFX_MESH_FLAG_POSITIONS; else NULL */
+   float *positions;
+};
+typedef struct gfx_display_mesh gfx_display_mesh_t;
+
+typedef struct gfx_display_mesh_draw
+{
+   /* Column-major, model to clip space; NULL leaves the mesh in clip
+    * space as it is */
+   const float *mvp;
+   /* Four corners' RGBA, as the quads take it: the tint of the plain
+    * programs (corner 0), and what the effects draw with */
+   float *color;
+   uintptr_t texture;
+   enum gfx_display_mesh_program program;
+} gfx_display_mesh_draw_t;
+
+gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc);
+void gfx_display_mesh_free(gfx_display_mesh_t *mesh);
+/* The quad covering the screen, which the per-pixel effects draw over.
+ * An effect is drawn over this or over a mesh made with
+ * GFX_MESH_FLAG_POSITIONS, and not drawn over any other. */
+const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void);
+/* While a driver's pipeline code draws an effect: the effect mesh's
+ * positions as coordinates, for drivers that stream them; NULL when
+ * the mesh keeps none. Drawing thread only. */
+struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp);
+void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
+      unsigned video_dims, const gfx_display_mesh_t *mesh,
+      const gfx_display_mesh_draw_t *draw);
+
 void gfx_display_flush_batch(gfx_display_t *p_disp);
 
 /* Publishes the counts of the menu frame just drawn and starts the
@@ -395,13 +510,6 @@ void gfx_display_rotate_z(gfx_display_t *p_disp,
 font_data_t *gfx_display_font_file(gfx_display_t *p_disp,
       char* fontpath, float font_size, bool is_threaded);
 
-bool gfx_display_reset_textures_list(
-      const char *texture_path,
-      const char *iconpath,
-      uintptr_t *item,
-      enum texture_filter_type filter_type,
-      unsigned *dims);
-
 /* Returns the texture filter type used when uploading menu/UI
  * images (icons, thumbnails, wallpapers).  Mip-mapped filtering
  * keeps images smooth when drawn below their native size at the
@@ -412,38 +520,6 @@ enum texture_filter_type gfx_display_texture_filter(void);
 /* The latched variant, for texture loads issued off the main
  * thread; see gfx_display.c. */
 enum texture_filter_type gfx_display_texture_filter_latched(void);
-
-bool gfx_display_reset_icon_texture(
-      const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type);
-
-/* Platform-adaptive icon/texture loading.
- *
- * On platforms where async task-based image loading is detrimental
- * to performance (e.g. Android with SAF I/O overhead), falls back
- * to synchronous loading identical to the pre-async behavior.
- *
- * All menu drivers and gfx_widgets should call this instead of
- * task_push_icon_load() directly so that adding a new platform
- * to the synchronous path requires changing only one place.
- *
- * |generation| / |generation_ptr| are only used on the async path
- * to guard against stale callbacks; on the synchronous path they
- * are ignored (the load completes before the function returns). */
-bool gfx_display_load_icon(
-      const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr);
-
-bool gfx_display_reset_textures_list_buffer(
-        uintptr_t *item,
-        enum texture_filter_type filter_type,
-        void* buffer,
-        unsigned buffer_len,
-        enum image_type_enum image_type,
-        unsigned *dims);
 
 /* Returns the OSK key at a given position */
 int gfx_display_osk_ptr_at_pos(void *data, int x, int y,
@@ -456,10 +532,6 @@ float gfx_display_get_dpi_scale(
       unsigned dims,
       bool fullscreen,
       bool is_widget);
-
-void gfx_display_deinit_white_texture(void);
-
-void gfx_display_init_white_texture(void);
 
 bool gfx_display_init_first_driver(gfx_display_t *p_disp,
       bool video_is_threaded);

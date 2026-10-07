@@ -27,9 +27,9 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
-          pkgs="build-essential libmbedtls-dev"
+          pkgs="build-essential libmbedtls-dev libbearssl-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -39,6 +39,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -107,6 +124,9 @@ jobs:
           # be retried and succeed. A retried PUT must send the file:
           # it used to re-read it from the end the first attempt left
           # it at and upload uninitialised memory in place of the save.
+          # A malformed challenge (a value with no closing quote, a
+          # trailing unquoted parameter) must be refused, not crash the
+          # parser or send it reading past the end of the line.
           make clean all SANITIZER=address,undefined
           test -x webdav_reauth_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
@@ -194,6 +214,33 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 ./smb_backup_test
           echo "[pass] smb_backup_test (TSan)"
 
+      - name: Build and run nfs_backup_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/nfs_backup
+        run: |
+          set -eu
+          # Includes network/cloud_sync/nfs.c and runs it against an
+          # in-memory export (fake_nfs.c) keeping net_nfs3.c's status
+          # contract. A download is written beside the local file and
+          # renamed over it once complete; only the server answering
+          # NOENT reads as "not there"; an upload is one RENAME over the
+          # old file, kept as <path>-<time>[-n] with destructive sync
+          # off. Covers failed opens and partial reads leaving the local
+          # save intact, unanswered stat/unlink failing instead of
+          # reporting a missing file or a delete, failed write, backup
+          # and final rename leaving the old file and no temporary, the
+          # manifest skipping the backup, refused over-long names, the
+          # subdirectory and a concurrent MKDIR.
+          make clean all SANITIZER=address,undefined
+          test -x nfs_backup_test
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 \
+             ./nfs_backup_test
+          echo "[pass] nfs_backup_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./nfs_backup_test
+          echo "[pass] nfs_backup_test (TSan)"
+
       - name: Build and run gdrive_backup_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/network/gdrive_backup
@@ -233,7 +280,12 @@ jobs:
           # from a realistic messy CA bundle (BearSSL), keep-alive pool
           # reuse, one-shot replay of a request on a pooled connection
           # the server closed while idle, and no replay once response
-          # bytes have been seen.
+          # bytes have been seen. Each TLS backend's non-blocking send
+          # must push a 12 MiB body past a server that stops reading for
+          # a second without ever blocking, and deliver every byte; and
+          # net_http must send the same upload a slice per update, plain
+          # and over TLS - it used to go out in one blocking send, a call
+          # of a second or more (spinning at 100% CPU on a plain socket).
           make clean all SANITIZER=address,undefined
           test -x cheevos_login_test
           ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
@@ -248,6 +300,12 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=mbed
           echo "[pass] cheevos_login_test (mbedTLS, ASan)"
+          # The built-in client, RetroArch's default backend.
+          make clean all SSL_BACKEND=retro SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             make check SSL_BACKEND=retro
+          echo "[pass] cheevos_login_test (built-in TLS, ASan)"
           # The runner's libmbedtls-dev is 2.28, which has no TLS 1.3,
           # so the leg above cannot see either TLS 1.3 failure.  Mbed
           # TLS 3.6.0 is the one release that shows both: it fails
@@ -272,3 +330,57 @@ jobs:
           else
              echo "::warning::Mbed TLS $mbed_ver download failed; TLS 1.3 leg skipped"
           fi
+
+      - name: Build and run net_http_semantics_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/network/net_http_semantics
+        run: |
+          set -eu
+          # HTTP/1.1 semantics of libretro-common/net/net_http.c against
+          # an in-process scripted server on 127.0.0.1, which logs which
+          # connection every request arrived on. Covers GET 200 framing
+          # and pool reuse, and responses without a body: HEAD, 204 and
+          # 304 on keep-alive used to sit waiting for a close that never
+          # came, a 1xx other than 100 was taken as the final status,
+          # and a 101 or stray bytes after a bodyless response left the
+          # socket in the pool. Connection and Transfer-Encoding are
+          # read as lists ("Keep-Alive, Close", "gzip, chunked"),
+          # HTTP/1.0 without keep-alive is not pooled, and a length
+          # after "chunked" does not reframe the body. Redirects: an
+          # absolute-path Location used to go out as "GET //foo", a
+          # 302 loop was followed forever (now 8 hops), a streamed PUT
+          # redirected by a 307 is rewound and resent whole, and a 3xx
+          # body no longer lands in the caller's sink. Bounds: a header
+          # block (1xx blocks included) over 64 KiB and a chunk size
+          # with no hex digits fail instead of growing the buffer or
+          # passing as the last chunk, a Content-Length buffer never
+          # grows past the body, and a pooled connection that dies
+          # after the status line is not replayed. A URL shorter than
+          # its scheme is rejected without an overread. Unit matrix for
+          # net_http_url_join() and net_http_urldecode(), including
+          # buffer bounds and in-place decoding; redirects resolved
+          # through it ("../", "?q", "//host", fragments dropped,
+          # %20 left encoded). The response header block: lookup and
+          # iteration, the legacy string_list accessor, and 64 header
+          # lines costing no per-line allocations. A Content-Length or
+          # "chunked" on a 1xx block does not frame the final response.
+          # A followed 3xx's body is dropped as it arrives, not
+          # buffered to its Content-Length, and bytes past a body's
+          # Content-Length end the connection, not the transfer.
+          # Every case has a
+          # deadline, so a hang fails the case instead of the job.
+          # net_http is lock-free by design (DNS cache and pool owned by
+          # the driving thread, resolvers publish with an atomic store);
+          # keep it that way.
+          if grep -nE '\b(slock|scond)_[a-z_]+\(' ../../../libretro-common/net/net_http.c; then
+             echo "::error title=net_http lock::net_http.c must not take locks"
+             exit 1
+          fi
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             ./net_http_semantics_test
+          echo "[pass] net_http_semantics_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./net_http_semantics_test
+          echo "[pass] net_http_semantics_test (TSan)"

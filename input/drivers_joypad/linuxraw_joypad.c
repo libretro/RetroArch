@@ -323,7 +323,9 @@ static void linuxraw_joypad_get_buttons(unsigned port, input_bits_t *state)
 
 	if (pad)
    {
-		BITS_COPY16_PTR(state, pad->buttons);
+		/* all thirty-two: button() reads that many, and this copied
+		 * sixteen - buttons 16 to 31 were not in what it handed over */
+		BITS_COPY32_PTR(state, pad->buttons);
 	}
    else
 		BIT256_CLEAR_ALL_PTR(state);

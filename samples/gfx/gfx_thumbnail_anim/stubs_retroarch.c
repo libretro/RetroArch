@@ -18,6 +18,20 @@
 extern int      gt_uploads;
 extern unsigned gt_last_crc;
 
+/* Lane 8: textures own their lent memory. Each load is a new texture,
+ * a lend buffer belongs to the texture it was lent from, and unloading
+ * a texture frees exactly its own buffers - so a producer writing lent
+ * memory of a texture already unloaded writes freed memory, which
+ * AddressSanitizer reports. gt_update_fail makes that many in-place
+ * updates refuse, forcing a replacement. */
+int gt_lend_owned;
+/* Lane 9: the slot the driver will not lend (-1: none) */
+int gt_lend_refuse = -1;
+int gt_update_fail;
+int gt_lend_freed;
+static uintptr_t gt_tex_next = 2;
+static void gt_lend_unload(uintptr_t id);
+
 /* --- the oracle --- */
 bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
 {
@@ -35,24 +49,73 @@ bool video_driver_texture_load(void *data, unsigned filter, uintptr_t *id)
          gt_last_crc = c;
       }
    }
-   *id = 2;
+   if (!gt_lend_owned)
+      *id = 2;
+   else if (!*id)
+      *id = ++gt_tex_next; /* a load; an update passes its own id */
    return true;
 }
-bool video_driver_texture_unload(uintptr_t *id) { *id = 0; return true; }
+bool video_driver_texture_unload(uintptr_t *id)
+{
+   if (gt_lend_owned && *id)
+      gt_lend_unload(*id);
+   *id = 0;
+   return true;
+}
 
 /* In-place update: the same oracle, on the same handle. gt_can_update
  * decides whether the surface takes this path or loads a replacement
  * per frame, so both are exercised. */
 int gt_can_update = 1;
 int gt_updates;
-bool video_driver_texture_update(uintptr_t id, void *data)
+static void gt_lend_uploaded(const void *px, unsigned w, unsigned h);
+/* Returns enum video_texture_update's values: 0 refused, 1 done, 2
+ * dropped. gt_drop_updates makes that many updates drop; gt_drop_retried
+ * counts updates that then carried the dropped frame's pixels. */
+int gt_drop_updates;
+int gt_drop_retried;
+static unsigned gt_drop_crc;
+static int      gt_drop_armed;
+static unsigned gt_crc(const void *px, unsigned w, unsigned h)
+{
+   unsigned c = 0, n = w * h, i;
+   const uint32_t *q = (const uint32_t*)px;
+   for (i = 0; q && i < n; i += 97)
+      c = c * 33 + q[i];
+   return c;
+}
+int video_driver_texture_update(uintptr_t id, void *data)
 {
    uintptr_t same = id;
+   struct { void *px; unsigned w, h; } *img = data;
    if (!id)
-      return false;
+      return 0;
+   if (gt_update_fail > 0)
+   {
+      gt_update_fail--;
+      return 0;
+   }
+   if (gt_drop_updates > 0)
+   {
+      gt_drop_updates--;
+      if (img)
+      {
+         gt_drop_crc   = gt_crc(img->px, img->w, img->h);
+         gt_drop_armed = 1;
+      }
+      return 2;
+   }
+   if (gt_drop_armed && img)
+   {
+      gt_drop_armed = 0;
+      if (gt_crc(img->px, img->w, img->h) == gt_drop_crc)
+         gt_drop_retried++;
+   }
    gt_updates++;
    video_driver_texture_load(data, 0, &same);
-   return true;
+   if (img)
+      gt_lend_uploaded(img->px, img->w, img->h);
+   return 1;
 }
 bool video_driver_texture_can_update(void) { return gt_can_update != 0; }
 
@@ -81,7 +144,7 @@ bool video_thread_texture_can_update(void)
 /* Caller-owned nodes (the surface's) are parked the same way and run
  * on flush by kind; they are never freed here. Layout of the node as
  * the wrapper declares it: next, img, user, done, release, handle,
- * filter, kind, caller_owned. */
+ * filter, kind, dropped, caller_owned. */
 typedef struct gt_post_node
 {
    struct gt_post_node *next;
@@ -92,6 +155,7 @@ typedef struct gt_post_node
    uintptr_t handle;
    int filter;
    uint8_t kind;
+   uint8_t dropped;
    uint8_t caller_owned;
 } gt_post_node_t;
 static gt_post_node_t *gt_post_head, *gt_post_tail;
@@ -156,7 +220,11 @@ void gt_async_flush(void)
       gt_post_node_t *next = p->next;
       uintptr_t id = 0;
       if (p->kind == 1)
-         id = video_driver_texture_update(p->handle, p->img) ? p->handle : 0;
+      {
+         int r      = video_driver_texture_update(p->handle, p->img);
+         id         = r ? p->handle : 0;
+         p->dropped = (r == 2);
+      }
       else
          video_driver_texture_load(p->img, 0, &id);
       gt_async_pending--;
@@ -206,6 +274,21 @@ int task_image_png_probe(void *t) { (void)t; return -1; }
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+/* Lane 14 captures the still load's callback and user data, to run
+ * the upload itself; without the capture there is no task queue. */
+void (*gt_still_cb)(void *task, void *data, void *user, const char *err);
+void *gt_still_ud;
+int   gt_still_capture;
+bool task_push_image_load_ex(const char *a, unsigned b, unsigned c,
+      unsigned d, void *e, void *f)
+{
+   (void)a; (void)b; (void)c; (void)d;
+   if (!gt_still_capture)
+      return false;
+   gt_still_cb = (void (*)(void*, void*, void*, const char*))e;
+   gt_still_ud = f;
+   return true;
+}
 
 /* gfx_thumbnail_draw() reaches the display driver through this rather
  * than through one of the helpers, so it needs its own stub even
@@ -239,3 +322,145 @@ bool video_driver_test_all_flags(int flags)
 { (void)flags; return false; }
 bool video_driver_supports_texture_format(int fmt)
 { (void)fmt; return false; }
+
+/* --- lending ---
+ * gt_lend_mode makes the driver lend each slot its own buffer, and
+ * after every upload from a lent slot keep that slot "on the GPU" for
+ * GT_LEND_BUSY readiness polls: the buffer is filled with a sentinel,
+ * and a producer writing before the slot is ready again shows up as a
+ * disturbed sentinel when it is. */
+#define GT_LEND_SLOTS 2
+#define GT_LEND_BUSY  3
+#define GT_LEND_BYTES (4096u * 1024u)
+#define GT_SENTINEL   0x5EA1ED00u
+int gt_lend_mode;
+int gt_lends;
+int gt_lend_violations;
+int gt_lent_uploads;
+int gt_lend_stale;  /* uploads from lent memory nobody wrote */
+static uint32_t *gt_lend_buf[GT_LEND_SLOTS];
+static int       gt_lend_busy[GT_LEND_SLOTS];
+static size_t    gt_lend_words[GT_LEND_SLOTS];
+
+#define GT_GRAVE 8
+static uintptr_t gt_lend_owner[GT_LEND_SLOTS];
+static uint32_t *gt_grave_buf[GT_GRAVE];
+static uintptr_t gt_grave_owner[GT_GRAVE];
+
+/* A texture's unload: its buffers - current or parked - are freed. */
+static void gt_lend_unload(uintptr_t id)
+{
+   unsigned k;
+   for (k = 0; k < GT_GRAVE; k++)
+      if (gt_grave_buf[k] && gt_grave_owner[k] == id)
+      {
+         free(gt_grave_buf[k]);
+         gt_grave_buf[k] = NULL;
+         gt_lend_freed++;
+      }
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+      if (gt_lend_buf[k] && gt_lend_owner[k] == id)
+      {
+         free(gt_lend_buf[k]);
+         gt_lend_buf[k]  = NULL;
+         gt_lend_busy[k] = 0;
+         gt_lend_freed++;
+      }
+}
+
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !pitch)
+      return NULL;
+   if ((int)slot == gt_lend_refuse)
+      return NULL;
+   /* Lent by another texture still alive: that one keeps it, parked
+    * until it is unloaded, and this texture gets memory of its own */
+   if (gt_lend_owned && gt_lend_buf[slot] && gt_lend_owner[slot] != id)
+   {
+      unsigned k;
+      for (k = 0; k < GT_GRAVE; k++)
+         if (!gt_grave_buf[k])
+         {
+            gt_grave_buf[k]   = gt_lend_buf[slot];
+            gt_grave_owner[k] = gt_lend_owner[slot];
+            break;
+         }
+      if (k == GT_GRAVE)
+         free(gt_lend_buf[slot]);
+      gt_lend_buf[slot] = NULL;
+   }
+   if (!gt_lend_buf[slot])
+      gt_lend_buf[slot] = (uint32_t*)calloc(1, GT_LEND_BYTES);
+   gt_lend_owner[slot] = id;
+   gt_lend_busy[slot]  = 0;
+   gt_lend_words[slot] = 0;
+   gt_lends++;
+   return gt_lend_buf[slot];
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   size_t i;
+   (void)id;
+   /* Lane 8: the GPU is never behind, so a job is handed its lent slot
+    * the moment it asks - before the next submit, not after */
+   if (gt_lend_owned)
+      return true;
+   if (!gt_lend_mode || slot >= GT_LEND_SLOTS || !gt_lend_busy[slot])
+      return true;
+   if (--gt_lend_busy[slot])
+      return false;
+   for (i = 0; i < gt_lend_words[slot]; i++)
+      if (gt_lend_buf[slot][i] != GT_SENTINEL)
+      {
+         gt_lend_violations++;
+         break;
+      }
+   return true;
+}
+
+/* Called by the update oracle: an upload from a lent slot puts it on
+ * the GPU. */
+static void gt_lend_uploaded(const void *px, unsigned w, unsigned h)
+{
+   unsigned k;
+   size_t i;
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+      if (gt_lend_buf[k] && px == gt_lend_buf[k])
+      {
+         gt_lent_uploads++;
+         /* Lane 8's GPU is never behind: no busy model to keep */
+         if (gt_lend_owned)
+            continue;
+         /* Still on the GPU: written and submitted without the slot
+          * ever having been ready. */
+         if (gt_lend_busy[k])
+            gt_lend_violations++;
+         if (gt_lend_words[k] && gt_lend_buf[k][0] == GT_SENTINEL
+               && gt_lend_buf[k][gt_lend_words[k] - 1] == GT_SENTINEL)
+            gt_lend_stale++;
+         gt_lend_words[k] = (size_t)w * h;
+         for (i = 0; i < gt_lend_words[k]; i++)
+            gt_lend_buf[k][i] = GT_SENTINEL;
+         gt_lend_busy[k] = GT_LEND_BUSY;
+      }
+}
+
+void gt_lend_reset(void)
+{
+   unsigned k;
+   for (k = 0; k < GT_LEND_SLOTS; k++)
+   {
+      free(gt_lend_buf[k]);
+      gt_lend_buf[k]   = NULL;
+      gt_lend_busy[k]  = 0;
+      gt_lend_words[k] = 0;
+      gt_lend_owner[k] = 0;
+   }
+   for (k = 0; k < GT_GRAVE; k++)
+   {
+      free(gt_grave_buf[k]);
+      gt_grave_buf[k] = NULL;
+   }
+}

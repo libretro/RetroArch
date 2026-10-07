@@ -138,7 +138,7 @@ typedef void (^GCDWebServerBodyReaderCompletionBlock)(NSData* _Nullable data, NS
  *
  *  The default value is nil.
  */
-@property(nonatomic, nullable) NSDate* lastModifiedDate;
+@property(nonatomic, strong, nullable) NSDate* lastModifiedDate;
 
 /**
  *  Sets the ETag for the response using the "ETag" header.

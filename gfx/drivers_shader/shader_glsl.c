@@ -60,6 +60,14 @@ struct cache_vbo
    size_t len_secondary;
    GLfloat *buffer_primary;
    GLfloat *buffer_secondary;
+   /* The static vertex array vbo_primary holds, for the ribbon
+    * pipelines: its address, length and first and last floats, so a
+    * rebuilt array at the same address is not taken for it. NULL when
+    * the buffer holds anything else. */
+   const GLfloat *static_src;
+   size_t static_vertices;
+   GLfloat static_head[4];
+   GLfloat static_tail[4];
 };
 
 struct shader_program_glsl_data
@@ -197,7 +205,72 @@ typedef struct glsl_shader_data
     * lifetime; it was malloc'd and freed on every such draw. */
    GLfloat *coord_scratch;
    size_t   coord_scratch_cap;
+   /* gfx_display meshes: made the first time one is drawn, and not
+    * tried again once it could not be */
+   GLuint mesh_prg;
+   GLint  mesh_mvp;
+   GLint  mesh_tint;
+   GLint  mesh_attr[3];
+   bool   mesh_failed;
+   /* The menu effects already compiled or tried, one bit each, so one
+    * that will not compile is not tried again every frame */
+   uint8_t menu_shaders_tried;
 } glsl_shader_data_t;
+
+/* A gfx_display mesh vertex: three floats, then texture coordinates and
+ * colour as normalised integers the vertex fetch widens */
+static const char *stock_vertex_mesh_legacy = GLSL(
+   attribute vec3 VertexCoord;
+   attribute vec2 TexCoord;
+   attribute vec4 Color;
+   uniform mat4 MVPMatrix;
+   uniform vec4 Tint;
+   varying vec2 tex_coord;
+   varying vec4 color;
+
+   void main() {
+      gl_Position = MVPMatrix * vec4(VertexCoord, 1.0);
+      tex_coord   = TexCoord;
+      color       = Color * Tint;
+   }
+);
+
+static const char *stock_fragment_mesh_legacy = GLSL(
+   uniform sampler2D Texture;
+   varying vec2 tex_coord;
+   varying vec4 color;
+
+   void main() {
+      gl_FragColor = color * texture2D(Texture, tex_coord);
+   }
+);
+
+static const char *stock_vertex_mesh_core = GLSL(
+   in vec3 VertexCoord;
+   in vec2 TexCoord;
+   in vec4 Color;
+   uniform mat4 MVPMatrix;
+   uniform vec4 Tint;
+   out vec2 tex_coord;
+   out vec4 color;
+
+   void main() {
+      gl_Position = MVPMatrix * vec4(VertexCoord, 1.0);
+      tex_coord   = TexCoord;
+      color       = Color * Tint;
+   }
+);
+
+static const char *stock_fragment_mesh_core = GLSL(
+   uniform sampler2D Texture;
+   in vec2 tex_coord;
+   in vec4 color;
+   out vec4 FragColor;
+
+   void main() {
+      FragColor = color * texture(Texture, tex_coord);
+   }
+);
 
 /* TODO/FIXME - static globals */
 static bool glsl_core;
@@ -294,78 +367,42 @@ static void gl_glsl_print_linker_log(GLuint obj)
 }
 
 #if defined(ORBIS)
-void glPigletGetShaderBinarySCE(GLuint program, GLsizei bufSize, GLsizei* length, GLenum* binaryFormat, void* binary);
-
-static const XXH64_hash_t gl_glsl_hash_shader(
+static XXH64_hash_t gl_glsl_hash_shader(
       const char **source, const int source_length)
 {
    int n;
-   XXH64_state_t* const state = XXH64_createState();
+   XXH64_hash_t hash;
+   XXH64_state_t *state = XXH64_createState();
 
    XXH64_reset(state, 0xAABBCCDDu);
-   for(n = 0; n < source_length; n++)
-   {
+   for (n = 0; n < source_length; n++)
       XXH64_update(state, source[n], strlen(source[n]));
-   }
-
-   XXH64_hash_t const hash = XXH64_digest(state);
-
+   hash = XXH64_digest(state);
    XXH64_freeState(state);
 
    return hash;
 }
 
-static bool gl_glsl_load_binary_shader(GLuint shader, char *save_path)
+/* The shader binary stored under @hash, if there is one */
+static bool gl_glsl_load_binary_shader(GLuint shader, XXH64_hash_t hash)
 {
-   GLsizei shader_size;
    GLint status;
-   FILE *shader_binary = fopen(save_path, "rb" );
+   char key[32];
+   video_shader_cache_view_t view;
 
-   if (shader_binary)
+   snprintf(key, sizeof(key), "%lx", (unsigned long)hash);
+   if (!video_shader_cache_map(VIDEO_SHADER_CACHE_ORBIS_BINARY, key, &view))
+      return false;
+   if (view.len > 0x7fffffff)
    {
-      char *shader_data = NULL;
-
-      fseek(shader_binary, 0, SEEK_END);
-      shader_size=ftell (shader_binary);
-      fseek(shader_binary, 0, SEEK_SET);
-
-      shader_data = (char*)malloc(shader_size);
-      fread(shader_data, shader_size, 1, shader_binary);
-      fclose(shader_binary);
-
-      glShaderBinary(1, &shader, 2, shader_data, shader_size);
-      free(shader_data);
-      glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
-      return status == GL_TRUE;
+      video_shader_cache_unmap(&view);
+      return false;
    }
-
-   return false;
+   glShaderBinary(1, &shader, 2, view.data, (GLsizei)view.len);
+   video_shader_cache_unmap(&view);
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+   return status == GL_TRUE;
 }
-
-#if 0
-static void gl_glsl_dump_shader(GLuint shader, char *save_path)
-{
-   FILE * fShader;
-   GLint length;
-   GLenum format;
-   GLsizei shader_size;
-   GLsizei bufferSize;
-   void *shaderBinary = NULL;
-
-   glGetShaderiv(shader, 0x8b89, &length);
-
-   bufferSize   = length;
-   shaderBinary = (void*)malloc(bufferSize);
-
-   memset(shaderBinary, 0, bufferSize);
-
-   glPigletGetShaderBinarySCE(shader, bufferSize, &shader_size, &format, shaderBinary);
-
-   fShader = fopen(save_path, "wb");
-   fwrite(shaderBinary, shader_size, 1, fShader);
-   fclose(fShader);
-}
-#endif
 #endif
 
 static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
@@ -459,15 +496,9 @@ static bool gl_glsl_compile_shader(glsl_shader_data_t *glsl,
    source[3] = program;
 
 #if defined(ORBIS)
-   {
-      char save_path[250];
-      XXH64_hash_t const hash =
-         gl_glsl_hash_shader(source, ARRAY_SIZE(source));
-      snprintf(save_path, sizeof(save_path),
-            "/data/retroarch/temp/%lx.sb", hash);
-      if (gl_glsl_load_binary_shader(shader, save_path))
-         return true;
-   }
+   if (gl_glsl_load_binary_shader(shader,
+            gl_glsl_hash_shader(source, ARRAY_SIZE(source))))
+      return true;
 #endif
 
    glShaderSource(shader, ARRAY_SIZE(source), source, NULL);
@@ -670,6 +701,9 @@ static void gl_glsl_reset_attrib(glsl_shader_data_t *glsl)
    glsl->attribs_index = 0;
 }
 
+/* Coords change from one draw to the next (each font flush, each menu
+ * quad), so the buffer is re-specified many times a frame: GL_STREAM_DRAW
+ * says so, and lets the driver keep it where the CPU writes it cheaply. */
 static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       const GLfloat *data, size_t elems)
 {
@@ -687,7 +721,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
       if (!new_buffer)
       {
          glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
-               data, GL_STATIC_DRAW);
+               data, GL_STREAM_DRAW);
          *buffer_elems = 0;
          return;
       }
@@ -697,7 +731,7 @@ static void gl_glsl_set_vbo(GLfloat **buffer, size_t *buffer_elems,
 
    memcpy(*buffer, data, elems * sizeof(GLfloat));
    glBufferData(GL_ARRAY_BUFFER, elems * sizeof(GLfloat),
-         data, GL_STATIC_DRAW);
+         data, GL_STREAM_DRAW);
    *buffer_elems = elems;
 }
 
@@ -885,6 +919,11 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    glUseProgram(0);
 
+   if (glsl->mesh_prg)
+      glDeleteProgram(glsl->mesh_prg);
+   glsl->mesh_prg    = 0;
+   glsl->mesh_failed = false;
+
    for (i = 0; i < GFX_MAX_SHADERS; i++)
    {
       if (glsl->prg[i].id == 0 || (i && glsl->prg[i].id == glsl->prg[0].id))
@@ -901,7 +940,8 @@ static void gl_glsl_destroy_resources(glsl_shader_data_t *glsl)
 
    memset(glsl->prg, 0, sizeof(glsl->prg));
    memset(glsl->uniforms, 0, sizeof(glsl->uniforms));
-   glsl->active_idx = 0;
+   glsl->active_idx         = 0;
+   glsl->menu_shaders_tried = 0;
 
    gl_glsl_deinit_shader(glsl);
 
@@ -934,15 +974,19 @@ static void gl_glsl_deinit(void *data)
    free(glsl);
 }
 
-static void gl_glsl_init_menu_shaders(void *data)
+/* One menu effect's program, made the first time the effect is used
+ * rather than all six at start: at most one is ever on screen */
+static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx)
 {
 #ifdef HAVE_SHADERPIPELINE
    struct shader_program_info shader_prog_info;
-   glsl_shader_data_t *glsl = (glsl_shader_data_t*)data;
 
    if (!glsl)
       return;
+   shader_prog_info.is_file = false;
 
+   if (idx == VIDEO_SHADER_MENU)
+   {
 #ifdef HAVE_OPENGLES
 #if defined(VITA)
    shader_prog_info.vertex = stock_vertex_xmb_ribbon_modern;
@@ -968,7 +1012,6 @@ static void gl_glsl_init_menu_shaders(void *data)
    shader_prog_info.vertex = glsl_core ? stock_vertex_xmb_ribbon_modern : stock_vertex_xmb_ribbon_legacy;
    shader_prog_info.fragment = glsl_core ? core_stock_fragment_xmb : stock_fragment_xmb;
 #endif
-   shader_prog_info.is_file = false;
 
    RARCH_LOG("[GLSL] Compiling ribbon shader...\n");
    gl_glsl_compile_program(
@@ -978,7 +1021,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU].id,
          &glsl->uniforms[VIDEO_SHADER_MENU]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_2)
+   {
 #if defined(VITA)
    shader_prog_info.vertex = stock_vertex_xmb_simple_modern;
    shader_prog_info.fragment = stock_fragment_xmb_ribbon_simple;
@@ -995,8 +1041,11 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_2].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_2]);
+   }
 
 #if !defined(VITA)
+   if (idx == VIDEO_SHADER_MENU_3)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_simple_snow;
@@ -1013,7 +1062,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_3].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_3]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_4)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_snow;
@@ -1030,7 +1082,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_4].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_4]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_5)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_bokeh;
@@ -1047,7 +1102,10 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_5].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_5]);
+   }
 
+   if (idx == VIDEO_SHADER_MENU_6)
+   {
 #if defined(HAVE_OPENGLES)
    shader_prog_info.vertex   = stock_vertex_xmb_snow;
    shader_prog_info.fragment = stock_fragment_xmb_snowflake;
@@ -1064,8 +1122,15 @@ static void gl_glsl_init_menu_shaders(void *data)
          &shader_prog_info);
    gl_glsl_find_uniforms(glsl, 0, glsl->prg[VIDEO_SHADER_MENU_6].id,
          &glsl->uniforms[VIDEO_SHADER_MENU_6]);
+   }
 #endif
 #endif
+}
+
+static void gl_glsl_init_menu_shaders(void *data)
+{
+   /* The menu effects are compiled when first used */
+   (void)data;
 }
 
 static void *gl_glsl_init(void *data, const char *path)
@@ -1721,6 +1786,7 @@ static bool gl_glsl_set_coords(void *shader_data,
    size_t               attribs_size = 0;
    size_t                       size = 0;
    GLfloat *buffer                   = short_buffer;
+   const GLfloat *static_src         = NULL;
    glsl_shader_data_t          *glsl = (glsl_shader_data_t*)shader_data;
    const struct shader_uniforms *uni = glsl
       ? &glsl->uniforms[glsl->active_idx] : NULL;
@@ -1767,6 +1833,46 @@ static bool gl_glsl_set_coords(void *shader_data,
    }
 #endif
 
+#ifdef HAVE_SHADERPIPELINE
+   /* The ribbon pipelines draw one grid the menu driver builds once and
+    * hands back every frame, as their only attribute. When the buffer
+    * already holds that array, bind it as it is: no copy into the
+    * scratch, no comparison against the last upload. */
+   if (     (  glsl->active_idx == VIDEO_SHADER_MENU
+            || glsl->active_idx == VIDEO_SHADER_MENU_2)
+         && uni->vertex_coord >= 0 && coords->vertex && coords->vertices >= 4
+         && (uni->tex_coord     < 0 || !coords->tex_coord)
+         && (uni->color         < 0 || !coords->color)
+         && (uni->lut_tex_coord < 0 || !coords->lut_tex_coord))
+   {
+      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
+      const GLfloat *tail     = coords->vertex + 2 * coords->vertices - 4;
+
+      if (     cache->static_src      == coords->vertex
+            && cache->static_vertices == coords->vertices
+            && !memcmp(cache->static_head, coords->vertex,
+               sizeof(cache->static_head))
+            && !memcmp(cache->static_tail, tail,
+               sizeof(cache->static_tail)))
+      {
+         if (glsl->attribs_index < ARRAY_SIZE(glsl->attribs_elems))
+         {
+            glBindBuffer(GL_ARRAY_BUFFER, cache->vbo_primary);
+            glEnableVertexAttribArray(uni->vertex_coord);
+            glVertexAttribPointer(uni->vertex_coord, 2, GL_FLOAT,
+                  GL_FALSE, 0, (const GLvoid*)0);
+            glsl->attribs_elems[glsl->attribs_index++] = uni->vertex_coord;
+            glBindBuffer(GL_ARRAY_BUFFER, 0);
+         }
+         return true;
+      }
+
+      /* Uploaded the usual way below, then known by its address */
+      static_src = coords->vertex;
+   }
+#endif
+
+
    if (uni->tex_coord >= 0 && coords->tex_coord)
    {
       gl_glsl_set_coord_array(attribs, uni->tex_coord,
@@ -1803,7 +1909,41 @@ static bool gl_glsl_set_coords(void *shader_data,
             buffer, size,
             attribs, attribs_size);
 
+   {
+      /* Whatever went in last is what the buffer holds now */
+      struct cache_vbo *cache = &glsl->vbo[glsl->active_idx];
+      cache->static_src       = static_src;
+      if (static_src)
+      {
+         cache->static_vertices = coords->vertices;
+         memcpy(cache->static_head, static_src, sizeof(cache->static_head));
+         memcpy(cache->static_tail, static_src + 2 * coords->vertices - 4,
+               sizeof(cache->static_tail));
+      }
+   }
+
    return true;
+}
+
+static void gl_glsl_compile_menu_shader(glsl_shader_data_t *glsl, unsigned idx);
+
+/* Which bit of menu_shaders_tried a menu effect has; 0 for anything else */
+static uint8_t gl_glsl_menu_shader_bit(unsigned idx)
+{
+#ifdef HAVE_SHADERPIPELINE
+   switch (idx)
+   {
+      case VIDEO_SHADER_MENU:   return 1 << 0;
+      case VIDEO_SHADER_MENU_2: return 1 << 1;
+      case VIDEO_SHADER_MENU_3: return 1 << 2;
+      case VIDEO_SHADER_MENU_4: return 1 << 3;
+      case VIDEO_SHADER_MENU_5: return 1 << 4;
+      case VIDEO_SHADER_MENU_6: return 1 << 5;
+      default:
+         break;
+   }
+#endif
+   return 0;
 }
 
 static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_active)
@@ -1816,6 +1956,14 @@ static void gl_glsl_use(void *data, void *shader_data, unsigned idx, bool set_ac
       if (!glsl)
          return;
 
+      {
+         uint8_t bit = gl_glsl_menu_shader_bit(idx);
+         if (bit && !(glsl->menu_shaders_tried & bit))
+         {
+            glsl->menu_shaders_tried |= bit;
+            gl_glsl_compile_menu_shader(glsl, idx);
+         }
+      }
       gl_glsl_reset_attrib(glsl);
       glsl->active_idx        = idx;
       id                      = glsl->prg[idx].id;
@@ -1920,6 +2068,84 @@ void gl_glsl_set_context_type(bool core_profile,
    glsl_minor = minor;
 }
 
+
+bool gl_glsl_draw_mesh(void *shader_data, unsigned vbo, unsigned ibo,
+      unsigned count, bool strip, const float *mvp, const float *tint)
+{
+   static const char *attr_names[3] = { "VertexCoord", "TexCoord", "Color" };
+   static const GLint attr_sizes[3] = { 3, 2, 4 };
+   static const GLenum attr_types[3] = { GL_FLOAT, GL_UNSIGNED_SHORT,
+      GL_UNSIGNED_BYTE };
+   static const size_t attr_offsets[3] = { 0, 12, 16 };
+   glsl_shader_data_t *glsl = (glsl_shader_data_t*)shader_data;
+   GLenum mode              = strip ? GL_TRIANGLE_STRIP : GL_TRIANGLES;
+   unsigned i;
+
+   if (!glsl || glsl->mesh_failed)
+      return false;
+   if (!glsl->mesh_prg)
+   {
+      struct shader_program_glsl_data program;
+      struct shader_program_info info;
+      memset(&program, 0, sizeof(program));
+      info.data     = NULL;
+      info.vertex   = glsl_core ? stock_vertex_mesh_core   : stock_vertex_mesh_legacy;
+      info.fragment = glsl_core ? stock_fragment_mesh_core : stock_fragment_mesh_legacy;
+      info.combined = NULL;
+      info.idx      = 0;
+      info.is_file  = false;
+      if (!gl_glsl_compile_program(glsl, 0, &program, &info) || !program.id)
+      {
+         glsl->mesh_failed = true;
+         return false;
+      }
+      glsl->mesh_prg  = program.id;
+      glsl->mesh_mvp  = glGetUniformLocation(program.id, "MVPMatrix");
+      glsl->mesh_tint = glGetUniformLocation(program.id, "Tint");
+      for (i = 0; i < 3; i++)
+         glsl->mesh_attr[i] = glGetAttribLocation(program.id, attr_names[i]);
+      if (glsl->mesh_mvp < 0 || glsl->mesh_attr[0] < 0)
+      {
+         glDeleteProgram(glsl->mesh_prg);
+         glsl->mesh_prg    = 0;
+         glsl->mesh_failed = true;
+         return false;
+      }
+   }
+
+   glUseProgram(glsl->mesh_prg);
+   glUniformMatrix4fv(glsl->mesh_mvp, 1, GL_FALSE, mvp);
+   if (glsl->mesh_tint >= 0)
+      glUniform4fv(glsl->mesh_tint, 1, tint);
+
+   /* Read as the mesh stores it, 20 bytes a vertex */
+   glBindBuffer(GL_ARRAY_BUFFER, vbo);
+   for (i = 0; i < 3; i++)
+   {
+      if (glsl->mesh_attr[i] < 0)
+         continue;
+      glEnableVertexAttribArray(glsl->mesh_attr[i]);
+      glVertexAttribPointer(glsl->mesh_attr[i], attr_sizes[i],
+            attr_types[i], i ? GL_TRUE : GL_FALSE, 20,
+            (const GLvoid*)(uintptr_t)attr_offsets[i]);
+   }
+   if (ibo)
+   {
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+      glDrawElements(mode, count, GL_UNSIGNED_SHORT, (const GLvoid*)0);
+      glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+   }
+   else
+      glDrawArrays(mode, 0, count);
+   for (i = 0; i < 3; i++)
+      if (glsl->mesh_attr[i] >= 0)
+         glDisableVertexAttribArray(glsl->mesh_attr[i]);
+   glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+   /* Whatever the caller draws next draws with its own program */
+   glUseProgram(glsl->prg[glsl->active_idx].id);
+   return true;
+}
 
 const shader_backend_t gl_glsl_backend = {
    gl_glsl_init,

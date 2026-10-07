@@ -21,12 +21,12 @@ jobs:
     timeout-minutes: 30
     steps:
       - name: Dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           # The gl2 arms compile against the desktop GL and EGL headers,
           # and the Dingux and RS90 video drivers against SDL 1.2's.
           # The Direct3D and WASAPI lanes cross-compile with mingw-w64.
-          pkgs="build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64"
+          pkgs="build-essential libgl-dev libegl-dev libgles-dev libsdl1.2-dev gcc-mingw-w64-x86-64 clang gcc-aarch64-linux-gnu gcc-mipsel-linux-gnu"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -36,6 +36,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \

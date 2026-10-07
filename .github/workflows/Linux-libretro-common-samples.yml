@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           # All three packages ship on the stock ubuntu-latest image, so
           # this step is a no-op there and apt is only contacted if the
@@ -44,6 +44,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential zlib1g-dev clang ffmpeg && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -93,21 +110,24 @@ jobs:
           # self-contained test and exits 0 on success / non-zero on
           # failure.  These are built AND executed.
           declare -a RUN_TARGETS=(
+            float_to_s32_test
             compat_fnmatch_test
             snprintf
             unbase64_test
             crc32_test
+            rinflate_window_test
             emscripten_mmap_test
             archive_zip_test
             archive_zstd_test
             config_file_test
             path_resolve_realpath_test
             fill_pathname_test
-            nbio_test
+            path_mkdir_test
             rpng
             rzip_chunk_size_test
             rzip_matches_buf_test
             rzip_codec_test
+            rzip_parallel_test
             data_transfer_source_test
             data_transfer_prefix_test
             data_transfer_window_test
@@ -118,16 +138,20 @@ jobs:
             rh265_lossless_test
             rh265_lossless_test_nothreads
             r7z_lzma_props_test
+            r7z_archive_detach_test
+            rzip_archive_test
             vcdiff_test
             net_ifinfo
             vfs_read_overflow_test
             vfs_mapped_ptr_test
+            vfs_prefetch_test
             vfs_large_file_test
             vfs_seek_contract_test
             vfs_bulk_read_test
             vfs_v5_metadata_test
             vfs_hybrid_test
             filestream_rbuf_fault_test
+            vfs_rename_replace_test
             cdrom_cuesheet_overflow_test
             cdfs_dir_record_test
             cdfs_pure_api_test
@@ -139,9 +163,15 @@ jobs:
             rtga_test
             rbmp_test
             rbmp_encode_test
+            # Every 16-bit input through each pixconv converter, with
+            # SSE2, with MMX only, and with no SIMD at all.
+            pixconv_test
+            pixconv_test_nosimd
+            pixconv_test_scalar
             rpng_chunk_overflow_test
             rpng_roundtrip_test
             rpng_decode_corpus_test
+            rpng_apng_bounds_test
             # Benchmark, not a pass/fail test, but it runs its default
             # 4K comparison and exits 0, so under this job's sanitizer
             # build it doubles as end-to-end ASan/UBSan smoke coverage
@@ -150,14 +180,24 @@ jobs:
             screenshot_io_bench
             word_wrap_overflow_test
             task_queue_title_error_test
+            task_queue_snapshot_test
             task_queue_init_failure_test
             # Stops the worker with a bound when a detachable
             # handler is stuck; waits ~1.5 s by design.
             task_queue_detach_test
+            task_queue_main_thread_test
+            task_queue_budget_test
+            # A switch to the threaded queue takes over the tasks
+            # already queued and counts them.
+            task_queue_switch_test
+            image_blit_bands_test
             tpool_wait_test
             # Four CPU-burning jobs on a pool of four must overlap;
             # on a one-core runner it notes that and still passes.
             tpool_parallel_test
+            # The pool's lock-free handoff with tpool.c's test yields
+            # on: no job posted is left unrun or run twice.
+            tpool_handoff_test
             data_transfer_pool_scrub_test
             retro_atomic_test
             retro_atomic_extern_c_linkage_test
@@ -167,17 +207,24 @@ jobs:
             retro_atomic_ps2_backend_test
             retro_spsc_test
             mpsc_stack_test
+            # A frame handoff where neither side waits: no read sees a
+            # buffer being filled, the reader ends on the last frame.
+            retro_triple_buffer_test
             retro_waitable_spsc_test
             retro_eventcount_test
             # retro_sleep_until_us must never return early against the
             # microsecond clock; the late bound is loose for a loaded
             # runner.
             retro_sleep_until_test
+            # localtime() from four threads, before rtime_init() as
+            # well as after: each must get its own fields back.
+            rtime_localtime_test
             # Runs its natural tier only here; procbarrier-tiers.yml
             # forces every tier on Linux, Windows and macOS runners.
             retro_procbarrier_test
             retro_asym_eventcount_test
             sthread_ex_test
+            fast_cores_test
             memshm_test
             fastjmp_test
             rdds_block_test
@@ -185,6 +232,10 @@ jobs:
             memshm_area_test
             msg_fifo_queue_test
             audio_mixer_loop_test
+            # Voice volume and gain set and read from two threads while
+            # a third mixes: every read and every block one of the
+            # values set.
+            audio_mixer_voice_threads_test
             audio_mixer_rate_guard_test
             # The AC-3 / E-AC-3 frame layer against ffmpeg's streams:
             # ffmpeg is in the package list above for it.
@@ -196,6 +247,12 @@ jobs:
             iec61937_test
             # The AC-3 arm of audio_transfer against ffmpeg's decode.
             audio_transfer_ac3_test
+            # The FLAC arm, sample-exact in every input mode, a grown
+            # demuxed packet set and a raised WebM wall both resuming.
+            audio_transfer_flac_test
+            # The HDR video blits: PQ and HLG to linear scRGB against
+            # double-precision references, and HLG tone-mapped as HDR.
+            image_hdr_blit_test
           )
 
           # Targets that are built but deliberately not executed, each
@@ -246,6 +303,9 @@ jobs:
             # binary, the scond variant, and being build-only covers
             # both without naming either.
             rthreads/retro_eventcount_bench
+            # What a short job costs to hand to the pool: a figure for
+            # a machine with cores to spare.
+            rthreads/tpool_bench
           )
 
           # Samples that are currently broken at build time on a stock
@@ -487,6 +547,51 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
 
+      - name: Run rtime_localtime_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/time/rtime_localtime_test
+        run: |
+          # rtime_localtime() guards the one struct localtime() fills;
+          # two callers let in together race on it, which TSan reports
+          # even on runs where neither hands back the other's fields.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./rtime_localtime_test
+
+      - name: Run retro_triple_buffer_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/queues/retro_triple_buffer_test
+        run: |
+          # The HUB75 driver's canvases and the ffmpeg camera's frames:
+          # a buffer handed over with one exchange and picked up with
+          # another, so a missing barrier is a race only TSan reports.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./retro_triple_buffer_test
+
+      - name: Run audio_mixer_voice_threads_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/audio/audio_mixer_voice_threads
+        run: |
+          # A voice's volume and gain are atomics the caller sets and
+          # reads with no lock while the audio thread mixes the voice;
+          # TSan reports any field the three threads share unordered.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./audio_mixer_voice_threads_test
+
       - name: Run mpsc_stack_test under Clang + ThreadSanitizer
         shell: bash
         working-directory: libretro-common/samples/queues/mpsc_stack_test
@@ -558,6 +663,26 @@ jobs:
 
           make clean
           CC=clang make check SANITIZER=thread
+
+      - name: Run rzip_parallel_test under Clang + ThreadSanitizer
+        shell: bash
+        working-directory: libretro-common/samples/streams/rzip
+        run: |
+          # rzip_stream.c's chunk-writer pool hands each slot between the
+          # writer and one worker on an acquire/release status word and
+          # parks both sides on retro_eventcount, with no lock anywhere.
+          # The value checks prove in-order emission; a weakened store
+          # or a lost wakeup still passes them on x86 TSO, and only TSan
+          # sees the missing barrier.  The test drives the pool at every
+          # width and through two hundred short lifetimes so the
+          # start / park / shutdown edges are exercised often.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make rzip_parallel_test SANITIZER=thread
+
+          TSAN_OPTIONS=halt_on_error=1 ./rzip_parallel_test
 
       - name: Run crc32_test under Clang + ThreadSanitizer
         shell: bash
@@ -695,7 +820,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           # clang ships on the stock ubuntu-latest image; apt is only
           # contacted if the image ever drops it.
@@ -708,6 +833,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              clang && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -777,6 +919,78 @@ jobs:
           ./config_file_fuzz -max_len=512 -max_total_time=60 \
             -print_final_stats=1 corpus/
 
+  task-queue-mingw:
+    name: task_queue samples under mingw-w64 + Wine
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential gcc-mingw-w64-x86-64 wine wine64 && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            build-essential gcc-mingw-w64-x86-64 wine wine64
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run the task_queue samples under Wine
+        shell: bash
+        working-directory: libretro-common/samples/queues
+        env:
+          WINEDEBUG: -all
+        run: |
+          set -u
+          set -o pipefail
+          # The samples job above runs these on Linux only. On Win32
+          # retro_sleep() is a function in time/rtime.c rather than a
+          # macro, so a Makefile that links on Linux can still fail to
+          # link for Windows; the threaded queue's Win32 paths in
+          # rthreads.c are not run anywhere else either.
+          fails=0
+          for d in task_queue_*; do
+            t=$(sed -nE 's/^TARGET[[:space:]]*:?=[[:space:]]*//p' "$d/Makefile")
+            printf '\n[build] %s\n' "$d"
+            if ! ( cd "$d" && make clean && make CC=x86_64-w64-mingw32-gcc all ); then
+              printf '::error title=mingw build failed::%s does not build for Windows\n' "$d"
+              fails=$((fails+1))
+              continue
+            fi
+            printf '[run] %s.exe\n' "$t"
+            if ( cd "$d" && timeout 120 wine "./$t.exe" ); then
+              printf '[pass] %s\n' "$t"
+            else
+              rc=$?
+              printf '::error title=Test failed under Wine::%s exited with status %d\n' "$t" "$rc"
+              fails=$((fails+1))
+            fi
+          done
+          [[ $fails -eq 0 ]]
+
   retro-atomic-cross:
     name: Cross-arch retro_atomic_test (${{ matrix.arch }})
     runs-on: ubuntu-latest
@@ -798,13 +1012,30 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -933,13 +1164,30 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           for i in 1 2 3; do
             sudo timeout 90 apt-get update -y \
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              build-essential ${{ matrix.apt_pkgs }} qemu-user-static && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -984,6 +1232,27 @@ jobs:
           set -u
           set -o pipefail
           ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./crc32_test
+
+      - name: Build and run pixconv_test under qemu-user
+        shell: bash
+        working-directory: libretro-common/samples/gfx/pixconv
+        run: |
+          set -euo pipefail
+          # The ARM legs are the only place the NEON converters run;
+          # PowerPC runs the scalar paths big-endian.  The armhf
+          # toolchain defaults to VFP without NEON, so armv7 builds a
+          # second time with NEON on.
+          make clean
+          CC="${{ matrix.cc }}" CFLAGS="${{ matrix.cflags }}" make all
+          for t in pixconv_test pixconv_test_nosimd pixconv_test_scalar; do
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./$t
+          done
+          if [ "${{ matrix.name }}" = armv7 ]; then
+             make clean
+             CC="${{ matrix.cc }}" CFLAGS="-mfpu=neon" make all
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./pixconv_test
+          fi
+          make clean
 
       - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
         shell: bash

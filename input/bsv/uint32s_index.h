@@ -64,6 +64,10 @@ struct uint32s_insert_result
 };
 typedef struct uint32s_insert_result uint32s_insert_result_t;
 
+/* The index uint32s_index_insert() reports when it could not store
+ * the object; the index is left as it was. */
+#define UINT32S_INDEX_NONE 0xFFFFFFFFu
+
 RETRO_BEGIN_DECLS
 
 uint32s_index_t *uint32s_index_new(size_t object_size, uint8_t commit_interval, uint8_t commit_threshold);

@@ -31,7 +31,6 @@ typedef struct
 #endif
    int native_window;
    bool resize;
-   unsigned width, height;
    float refresh_rate;
 } vita_ctx_data_t;
 
@@ -114,8 +113,6 @@ static bool vita_set_video_mode(void *data,
       EGL_NONE
    };
    vita_ctx_data_t *ctx_vita = (vita_ctx_data_t *)data;
-   ctx_vita->width           = ATTR_VITA_WIDTH;
-   ctx_vita->height          = ATTR_VITA_HEIGHT;
    ctx_vita->native_window   = VITA_WINDOW_960X544;
    ctx_vita->refresh_rate    = 60;
 
@@ -142,12 +139,9 @@ error:
 
 
 static void vita_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data) 
+      const char *name)
 {
 #if defined(HAVE_VITAGLES)
-    *input      = NULL;
-    *input_data = NULL;
 #endif
 }
 static bool vita_has_focus(void *data) { return true; }

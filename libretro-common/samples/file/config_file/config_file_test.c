@@ -603,6 +603,43 @@ static void test_config_file_pathless_reference_no_crash(void)
    config_file_free(cfg);
 }
 
+static void test_config_file_long_reference_kept(void)
+{
+   /* A '#reference' is recorded relative to (or abbreviated against)
+    * the referencing file; the recorded path must survive whole even
+    * when it is longer than a single path component limit. */
+   const char *tmp = "/tmp/cfg_long_ref.cfg";
+   char ref[320];
+   FILE *f;
+   config_file_t *cfg;
+   size_t i;
+
+   for (i = 0; i < 300; i++)
+      ref[i] = 'q';
+   strcpy(ref + 300, "/b.cfg");
+
+   if (!(f = fopen(tmp, "w")))
+      abort();
+   fprintf(f, "#reference \"%s\"\nfoo = \"bar\"\n", ref);
+   fclose(f);
+
+   if (!(cfg = config_file_new(tmp)))
+      abort();
+   if (     !cfg->references
+         || !cfg->references->path
+         || strcmp(cfg->references->path, ref))
+   {
+      printf("[FAILED] long #reference recorded as %zu bytes, wanted %zu\n",
+            (cfg->references && cfg->references->path)
+                  ? strlen(cfg->references->path) : (size_t)0,
+            strlen(ref));
+      abort();
+   }
+   printf("[SUCCESS] %zu-byte '#reference' recorded whole\n", strlen(ref));
+   config_file_free(cfg);
+   remove(tmp);
+}
+
 static void test_config_file_borrowed_entry_lifecycle(void)
 {
    /* Path-loaded entries borrow their strings from the adopted file
@@ -1642,6 +1679,7 @@ int main(void)
    test_config_file_stream_matches_from_string();
    test_config_file_stream_nul_ends_stream();
    test_config_file_pathless_reference_no_crash();
+   test_config_file_long_reference_kept();
    test_config_file_borrowed_entry_lifecycle();
    test_config_file_take_string();
    test_config_take_string();

@@ -1,0 +1,16 @@
+
+
+
+
+SET MAIN 1 0.5
+
+
+SET MAIN 0.5 0
+
+
+SET MAIN 0.5 0.5
+
+PRESS X
+PRESS Y
+SET L 1
+SET C 0.5 0

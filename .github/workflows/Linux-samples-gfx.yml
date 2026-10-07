@@ -75,6 +75,18 @@ jobs:
           # are migrated one at a time; a new one may not join them.
           python3 tools/surface_requirements_check.py
 
+      - name: texture_image request check
+        shell: bash
+        run: |
+          set -eu
+          # image_texture_load reads pix10 as the caller's request for a
+          # 10-bit decode, so a stack image filled field by field asks for
+          # whatever the stack held and a 16-bit PNG comes back as packed
+          # 10-bit words now and then. Every loaded image has its request
+          # set first; the self-test proves an unset one is caught.
+          python3 tools/texture_image_init_check.py --selftest
+          python3 tools/texture_image_init_check.py
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest
@@ -87,7 +99,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential libx11-dev libxrandr-dev libdrm-dev"
           pkgs="$pkgs xserver-xorg-core xserver-xorg-video-dummy x11-xserver-utils libsdl2-dev libxinerama-dev"
@@ -102,6 +114,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -359,20 +388,20 @@ jobs:
           set -eu
           # Regression test for the partial-init leak fix in
           # gfx/common/vulkan_common.c::vulkan_emulated_mailbox_init.
-          # Pre-fix the function had three sequential allocations
-          # (scond_new, slock_new, sthread_create) and on any of the
-          # latter two failures returned `false` directly, leaking
-          # the already-allocated cond and/or lock.  Both production
-          # call sites in vulkan_create_swapchain ignore the return
-          # value, so an init failure also left vk->mailbox.lock ==
-          # NULL and vk->mailbox.cond == NULL while VK_DATA_FLAG_
-          # EMULATING_MAILBOX was still set, setting up a NULL-deref
-          # the next time vulkan_acquire_next_image routed into
-          # vulkan_emulated_mailbox_acquire_next_image (slock_lock
-          # on a NULL pointer).  Fix routes every early failure
-          # through `goto error` to a single deinit call, which is
-          # null-safe and ends with a memset, leaving the struct in
-          # the same shape the deinit-on-shutdown path produces and
+          # The function brings up three things in sequence (two
+          # eventcounts and the acquire thread; a condition variable,
+          # a mutex and the thread when this was written) and used to
+          # return `false` directly when the second or third failed,
+          # leaking what the earlier ones had allocated.  Both
+          # production call sites in vulkan_create_swapchain ignore
+          # the return value, so an init failure also left the
+          # mailbox half built while VK_DATA_FLAG_EMULATING_MAILBOX
+          # was still set, setting up a crash the next time
+          # vulkan_acquire_next_image routed into the emulated path.
+          # Fix routes every early failure through `goto error` to a
+          # single deinit call, which is safe on a partly built
+          # mailbox and ends with a memset, leaving the struct in the
+          # same shape the deinit-on-shutdown path produces and
           # tripping the existing `mailbox.swapchain == VK_NULL_
           # HANDLE` guard at vulkan_acquire_next_image.  Build under
           # AddressSanitizer with leak detection so any
@@ -466,42 +495,19 @@ jobs:
         working-directory: samples/gfx/gfx_widgets_msg_queue_race
         run: |
           set -eu
-          # Regression test for the producer-producer race fix on
-          # dispgfx_widget_t::msg_queue in gfx/gfx_widgets.c.
-          # Pre-fix the FIFO had no dedicated lock: producers could
-          # be invoked from any thread (the threaded task system at
-          # libretro-common/queues/task_queue.c runs a worker
-          # thread; gfx/video_driver.c::video_driver_frame released
-          # RUNLOOP_MSG_QUEUE_LOCK before calling the producer, so
-          # main-thread producers ran unlocked) yet there was no
-          # lock dedicated to msg_queue itself.  Post-fix a
-          # msg_queue_lock is acquired around every fifo_write (in
-          # gfx_widgets_msg_queue_push), every fifo_read (in
-          # gfx_widgets_iterate), and the avail-check that gates
-          # them.  The outer fast-path FIFO_*_AVAIL checks that
-          # used to wrap the function bodies were dropped: reading
-          # the FIFO cursors outside the lock is itself a data
-          # race against the locked writes (TSan-detectable;
-          # benign on x86 TSO but real on weak-memory hardware).
-          #
-          # ThreadSanitizer is the right validator: it instruments
-          # every memory access on fifo_buffer_t::end and
-          # ::first and would flag a missing-lock regression as a
-          # data race on the producer side, the consumer side, or
-          # the avail check.  ASan/UBSan would not catch the lock
-          # removal at all.  halt_on_error=1 makes TSan exit
-          # non-zero on the first observed race, which is what we
-          # want for CI: any race here means the production
-          # locking discipline is broken.
-          #
-          # The test mirrors the post-fix locking protocol of
-          # gfx_widgets_msg_queue_push and gfx_widgets_iterate's
-          # FIFO interaction; the widget allocation, font
-          # measurement, and animation push that wrap the actual
-          # FIFO calls in production are not part of the race and
-          # are stripped from the test.  If gfx_widgets.c amends
-          # the locking around msg_queue, the verbatim copies in
-          # gfx_widgets_msg_queue_race_test.c must follow.
+          # The widget message ring in gfx/gfx_widgets.c is a lock-free
+          # single-producer / single-consumer queue: the main thread
+          # publishes through msg_queue_tail, the widgets' owner pops
+          # through msg_queue_head, each cursor released by its writer
+          # and acquired by the other side, and the slot pointer rides
+          # that pairing.  The test builds the production push and pop
+          # out of gfx_widgets.c itself and drives them from one producer
+          # thread and one consumer thread, checking order, loss, and the
+          # full-ring refusal.  ThreadSanitizer is the validator that
+          # matters: a store to the slot array outside the release /
+          # acquire pairing, or a cursor published before its slot is
+          # written, is a race it reports and the value checks may not.
+          # halt_on_error=1 fails the run on the first race.
           make clean all SANITIZER=thread
           test -x gfx_widgets_msg_queue_race_test
           TSAN_OPTIONS=halt_on_error=1 timeout 60 \
@@ -582,6 +588,16 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_sanitize_test
           echo "[pass] gfx_widgets_sanitize_test (TSan)"
+      - name: Build and run widget snapshot ownership test
+        shell: bash
+        working-directory: tests-other
+        run: |
+          set -eu
+          make -f Makefile.widget_snapshot clean
+          make -f Makefile.widget_snapshot
+          timeout 60 ./widget_snapshot_ownership_test
+          make -f Makefile.widget_snapshot clean
+
       - name: Build and run gfx_widgets_task_bar_stack_test (ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/gfx/gfx_widgets_task_bar_stack
@@ -596,6 +612,81 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_widgets_task_bar_stack_test
           echo "[pass] gfx_widgets_task_bar_stack_test (TSan)"
+      - name: Build and run gfx_widgets_task_gate_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_widgets_task_gate
+        run: |
+          set -eu
+          # A finished task retires through the widgets' push while
+          # the video thread frees the widget bound to it: the task
+          # queue must not read the link the widgets clear, and a
+          # muted task's empty retirement puts nothing up.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 timeout 120 ./gfx_widgets_task_gate_test
+          echo "[pass] gfx_widgets_task_gate_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./gfx_widgets_task_gate_test
+          echo "[pass] gfx_widgets_task_gate_test (TSan)"
+      - name: Build and run win32_msg_route_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_msg_route
+        run: |
+          set -eu
+          # What the Win32 window procedure does with a message.
+          # gfx/common/win32_common.c had twelve window procedures, one
+          # for each video family times each kind of input driver,
+          # built on three copies of one long switch. They are one
+          # procedure now, which asks win32_msg_route() what to do with
+          # a message. The three switches are written out in the test
+          # as they stood, and for every message - with and without the
+          # hotplug timer's id, on the desktop and on the Xbox, with
+          # and without threads - the route must be the steps the
+          # switch for that kind of input driver took. Raw input's
+          # keys made into keyboard events a second time, which is
+          # what routing them like another driver's would do, is put
+          # back and asserted to be caught.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./win32_msg_route_test
+          make clean
+          echo "[pass] win32_msg_route_test (ASan)"
+      - name: Build and run win32_screensaver_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_screensaver
+        run: |
+          set -eu
+          # win32_suspend_screensaver() from gfx/common/win32_common.c,
+          # compiled from the shipping text against a fake kernel32
+          # that counts power requests the way Windows does.  Every
+          # video driver init asks to hold the screensaver off, so the
+          # one request must be created once and set once however
+          # often it is asked, and turning the setting off must free
+          # the display.  Before Windows 7 the thread execution state
+          # must be continuous to hold anything.
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make SANITIZER=address,undefined check
+          make clean
+          echo "[pass] win32_screensaver_test (ASan)"
+      - name: Build and run win32_drag_drop_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/win32_drag_drop
+        run: |
+          set -eu
+          # Drag and drop from Windows 95 to current releases, through
+          # the setup in frontend/drivers/platform_win32.c and the drop
+          # handler in ui/drivers/ui_win32.c, compiled from the
+          # shipping text against a fake shell32, user32 and dwmapi.
+          # Drops must be switched on with or without dwmapi, DWM setup
+          # must run once, an elevated window must let the drop
+          # messages through where Windows filters them, and the files
+          # must arrive through DragQueryFileW or, where that is
+          # missing or reads nothing, DragQueryFileA.
+          make clean
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             make SANITIZER=address,undefined check
+          make clean
+          echo "[pass] win32_drag_drop_test (ASan)"
       - name: Build and run display_servers_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers
@@ -633,6 +724,55 @@ jobs:
           timeout 60 ./display_servers_test
           echo "[pass] display_servers_test"
 
+      - name: Build and run dispserv_gx_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/dispserv_gx
+        run: |
+          set -eu
+          # The GameCube/Wii display server (dispserv_gx.c and the mode
+          # rules in dispserv_gx_modes.c), linked as they ship against
+          # stubbed libogc queries, on every TV standard: the list holds
+          # only modes the standard shows, one of them current, and each
+          # entry - through the label the menu prints and the parse the
+          # menu does - selects exactly that mode, stores its config id
+          # and reports the refresh rate it listed.
+          #
+          # The menu's parse used to run strtoul() inside
+          # VIDEO_SCALE_PUT_H, whose PACK evaluates its argument twice;
+          # the second call returned 0 and every pick from the list
+          # went out as Wx0. Guard the shape as well as the behaviour.
+          if grep -nE 'VIDEO_SCALE_(PUT_[WH]|PACK)\([^;]*strto' \
+                ../../../menu/cbs/menu_cbs_ok.c; then
+             echo "::error::strtoul inside a VIDEO_SCALE macro runs twice"
+             exit 1
+          fi
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./dispserv_gx_test
+          make clean
+
+      - name: Build and run dispserv_ps3_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/dispserv_ps3
+        run: |
+          set -eu
+          # The PS3 display server (dispserv_ps3.c and the mode rules in
+          # dispserv_ps3_modes.c), linked as they ship against stubbed
+          # PSL1GHT video output queries, for displays taking different
+          # sets of modes with the system menu in each: the list holds
+          # exactly what the display takes with the mode in use marked,
+          # each entry - through the menu's label and parse - selects
+          # that mode and reinitialises the driver once, and
+          # ps3_display_server_resolution(), which the RSX driver
+          # configures the output from, follows the choice (before, the
+          # RSX driver ignored the setting and kept the system menu's
+          # mode) and falls back to the system mode when the display
+          # does not take it.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./dispserv_ps3_test
+          make clean
+
       - name: X11 window poll sends no requests (Xvfb, ASan + UBSan)
         shell: bash
         run: |
@@ -669,7 +809,10 @@ jobs:
           # cannot stand in).  The X11 sample runs the modeline engine
           # end to end - generate a 15 kHz timing, put it on the wire
           # through dispserv_x11, read the crtc back and compare every
-          # field, switch again, restore - and the SDL sample switches
+          # field, switch again, restore - then the Screen Resolution
+          # callbacks: the listed modes, a smaller, a larger and a
+          # rate-only switch with the framebuffer following, an
+          # unlisted size refused, and back.  The SDL sample switches
           # a real SDL2 window among the listed modes through
           # dispserv_sdl2 (and dispserv_sdl3 on an SDL3 build), for the
           # modeline path and the menu picker.
@@ -763,6 +906,65 @@ jobs:
           pkill openbox || true
           sudo kill "$XORG_PID" || true
 
+      - name: Screen Resolution through Mutter's DisplayConfig (ASan + UBSan, TSan)
+        shell: bash
+        run: |
+          set -eu
+          # Under GNOME's Wayland session the X11 driver runs on
+          # XWayland, which lists every mode at the desktop's current
+          # rate and only scales the window when "switched", and the
+          # Wayland driver had no resolution list at all; Mutter's
+          # org.gnome.Mutter.DisplayConfig D-Bus interface is the only
+          # way to the monitor's real modes.  mock_mutter.py carries
+          # Mutter's signatures and its ApplyMonitorsConfig checks; the
+          # test drives gfx/common/mutter_displayconfig.c directly and
+          # through dispserv_x11 (real Xorg dummy server, and Xwayland
+          # under a headless Weston) and dispserv_wl, with and without
+          # Mutter on the bus.  Without it every path must behave
+          # exactly as before: no session bus, a bus without Mutter, a
+          # real X server (Mutter is never asked), XWayland's own list,
+          # and no Wayland resolution list.  Last, a real headless Mutter
+          # and its XWayland: Mutter names XWayland's outputs after its
+          # connectors (DP-1, Meta-0), so only the XWAYLAND extension
+          # says what the server is.
+          sudo apt-get install -y -qq libdbus-1-dev dbus python3-dbus \
+             python3-gi weston xwayland mutter > /dev/null
+          (cd samples/gfx/mutter_displayconfig \
+             && make clean all SANITIZER=address,undefined \
+             && ASAN_OPTIONS=detect_leaks=1 \
+                UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+                XORG="sudo Xorg" timeout 300 ./run.sh)
+          # The worker publishes its state by swapping a pointer and
+          # frees the one it replaced once no reader is inside it, with
+          # no lock.  The threads case reads the list from four threads
+          # while the rate is switched back and forth; freeing the old
+          # state without waiting for the readers is a TSan data race.
+          # The bus cases alone: they need no display server.
+          (cd samples/gfx/mutter_displayconfig \
+             && make clean all SANITIZER=thread \
+             && TSAN_OPTIONS=halt_on_error=1 BUS_ONLY=1 \
+                setarch "$(uname -m)" -R timeout 120 ./run.sh)
+          echo "[pass] mutter_displayconfig_test"
+
+      - name: Build and run dbus_screensaver_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/dbus_screensaver
+        run: |
+          set -eu
+          # gfx/common/dbus_common.c's screensaver inhibit against a
+          # private session bus and a fake org.freedesktop.ScreenSaver:
+          # each request answered as itself and never with an older
+          # one's answer, three threads toggling leave what the last one
+          # asked, close and reopen release the old inhibit, and no
+          # service answers FAILED.
+          sudo apt-get install -y -qq libdbus-1-dev dbus > /dev/null
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 300 ./run.sh
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 300 ./run.sh
+          echo "[pass] dbus_screensaver_test"
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |
@@ -807,6 +1009,48 @@ jobs:
           sudo apt-get install -y -qq xvfb libvkd3d1 mesa-vulkan-drivers > /dev/null
           REQUIRE_D3D12=1 samples/gfx/d3d12_hw_interface_v2/run.sh
 
+      - name: D3D texture pokes marshal onto the video thread (mingw, object check)
+        shell: bash
+        run: |
+          set -eu
+          # Every texture poke a caller reaches with threaded=true that
+          # touches a device's queue or descriptor heaps goes through
+          # video_thread_texture_handle(); read off the compiled object's
+          # relocations, D3D12's compressed load included.
+          make -C samples/gfx/d3d_texture_marshal check
+
+      - name: Win32 window procedure on a real window (mingw + Wine, headless)
+        shell: bash
+        run: |
+          set -o pipefail
+          # gfx/common/win32_common.c had twelve window procedures and
+          # has one. This links the real file with stand-ins for what
+          # it calls, has it create its window for every video family
+          # and kind of input driver, sends each a script of messages,
+          # and compares every answer and every call made on the way
+          # with the trace the twelve old procedures gave on the same
+          # script - then makes and destroys the window through twenty
+          # fullscreen toggles. Any difference from the recorded trace
+          # fails.
+          sudo apt-get install -y -qq xvfb > /dev/null
+          samples/gfx/win32_window_proc/run.sh
+
+      - name: Build and run window_driver_test for Windows (Wine)
+        shell: bash
+        working-directory: samples/input/window_driver
+        run: |
+          set -eu
+          # Which input driver a Windows window gets
+          # (input_driver_init_windows() in
+          # input/input_driver_choice.c): raw input when it is the
+          # setting and it starts, DirectInput otherwise, including
+          # when raw input fails to start. Built with mingw-w64 and
+          # run under Wine, with stand-in drivers. The X11 and
+          # no-window-system choices run on the host in the input
+          # samples workflow.
+          make clean check-windows
+          make clean
+
       - name: Build and run display_servers_kms_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/display_servers_kms
@@ -842,6 +1086,122 @@ jobs:
           test -x display_servers_kms_test
           timeout 60 ./display_servers_kms_test
           echo "[pass] display_servers_kms_test"
+
+      - name: Build and run drm_hdr_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/drm_hdr
+        run: |
+          set -eu
+          # gfx/common/drm_hdr.c: which EDIDs take HDR10 and what they
+          # declare, malformed ones refused without an overread, and the
+          # HDR_OUTPUT_METADATA blob, whose layout must be the kernel's.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./drm_hdr_test
+          echo "[pass] drm_hdr_test"
+
+      - name: Build and run wayland_wlr_output_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_wlr_output
+        run: |
+          set -eu
+          # gfx/common/wayland_wlr_output.c, the Wayland display server's
+          # resolution list and mode switch on wlroots compositors, against
+          # an in-process compositor that checks every configuration names
+          # each head exactly once, as the protocol requires.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_wlr_output_test
+          echo "[pass] wayland_wlr_output_test"
+
+      - name: Build and run wayland_cursor_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_cursor
+        run: |
+          set -eu
+          # input/common/wayland_cursor.h: the size and scale the Wayland
+          # context loads its cursor theme at when the compositor has no
+          # cursor-shape-v1 - XCURSOR_SIZE honoured, fractional scales
+          # rounded up to a whole buffer scale.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_cursor_test
+          echo "[pass] wayland_cursor_test"
+
+      - name: Build and run wayland_resize_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_resize
+        run: |
+          set -eu
+          # gfx/common/wayland_resize.h, what the Wayland GL and Vulkan
+          # contexts do once their buffers are resized, against an
+          # in-process compositor: configures count again whatever the
+          # scaling, and the buffer scale goes only to a surface on the
+          # whole-scale path that is new enough to take it.
+          export XDG_RUNTIME_DIR=$(mktemp -d)
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_resize_test
+          echo "[pass] wayland_resize_test"
+
+      - name: Build and run video_mode_select_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/video_mode_select
+        run: |
+          set -eu
+          # gfx/common/video_mode_select.c: which listed mode a size and
+          # rate name, and the order a resolution list is shown in - the
+          # code every display server's mode switch goes through.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./video_mode_select_test
+          echo "[pass] video_mode_select_test"
+
+      - name: Build and run wayland_kwin_output_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_kwin_output
+        run: |
+          set -eu
+          # gfx/common/wayland_kwin_output.c, the Wayland display server's
+          # resolution list and mode switch on KWin, against an in-process
+          # compositor speaking KWin's output protocols in both the
+          # registry form and the older per-output globals.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_kwin_output_test
+          echo "[pass] wayland_kwin_output_test"
+
+      - name: Build and run wayland_color_management_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_color_management
+        run: |
+          set -eu
+          # gfx/common/wayland_color.c, which tags an HDR GL surface as
+          # Windows-scRGB, against an in-process compositor that records
+          # every fatal wp_color_manager_v1 rule the client could break.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_color_management_test
+          echo "[pass] wayland_color_management_test"
+
+      - name: Build and run wayland_present_test (TSan, ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/wayland_present
+        run: |
+          set -eu
+          # gfx/common/wayland_present.c against an in-process
+          # compositor: presentation feedback and the GL frame callback
+          # live on their own event queues, so the main thread
+          # dispatching input never runs them while the video thread
+          # requests, waits on and frees them.
+          # TSan catches a feedback event dispatched off that thread;
+          # ASan the feedback left behind at teardown.
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./wayland_present_test
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./wayland_present_test
+          echo "[pass] wayland_present_test"
 
       - name: Build and run wayland_drm_lease_test (ASan + UBSan)
         shell: bash
@@ -885,6 +1245,59 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 60 ./modeline_edid_parse_test
 
+      - name: Build and run integer_scale_axis_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/integer_scale_axis
+        run: |
+          set -eu
+          # video_viewport_get_scaled_integer(), pulled out of
+          # gfx/video_driver.c by extract_integer.awk, swept over
+          # viewport sizes, frame sizes, every axis mode that touches
+          # X and every scaling mode. Y+X has to be integer on both
+          # axes: the X axis was once multiplied from the
+          # aspect-corrected width (256x224 at 64:49 is 293), giving
+          # 1172x896 at 1080p - a 4.58x horizontal scale and uneven
+          # pixel columns - on every video driver.
+          make clean all SANITIZER=address,undefined
+          test -x integer_scale_axis_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./integer_scale_axis_test
+          make clean
+
+      - name: Build and run slang_cache_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/slang_cache
+        run: |
+          set -eu
+          # The SPIR-V cache: slang_cache.c serialises entries in
+          # memory and video_shader_parse.c stores them - mapped or read
+          # in one go, written whole by rename. The test round-trips an
+          # entry, checks the bytes are the layout caches have always
+          # had, turns away every truncated prefix and a set of corrupt
+          # entries, and keeps keys from naming anything outside the
+          # cache. Built mapped (HAVE_MMAP) and reading.
+          make clean all SAN=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 300 make check
+          make clean
+
+      - name: Build and run gfx_display_mesh_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/gfx_display_mesh
+        run: |
+          set -eu
+          # The menu mesh facility in gfx_display.c against a display
+          # driver that records what it is handed: mesh creation and
+          # its refusals, the CPU path a plain program takes on drivers
+          # that do not draw meshes (the transform, the perspective
+          # divide, triangles joined into one strip, triangles behind
+          # the eye dropped, the tint), each effect program reaching the
+          # driver's pipeline under its id, and nothing handed to a
+          # driver that takes no strips.
+          make clean all
+          timeout 120 make check
+          make clean
+
       - name: Build and run font_lifecycle_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/font_lifecycle
@@ -896,9 +1309,27 @@ jobs:
           # current on the main thread while the video thread holds it
           # is an X BadAccess. Nothing ran this sample, and it had the
           # older rule written into it.
+          # The fallback tests read DejaVu in place of the assets'
+          # fallback fonts: Sans for fallback-font.ttf, and Sans Mono
+          # and Sans as a general and a second face for the chain test.
+          # vg and sdl2 draw on-screen messages through the shipping
+          # OpenVG and SDL2 drivers - OpenVG onto a software OpenVG in
+          # the test, SDL2 through its own software renderer - and check
+          # every glyph texel lands where it should.
+          sudo apt-get install -y -qq fonts-dejavu-core fonts-dejavu-mono \
+             > /dev/null 2>&1 || sudo apt-get install -y -qq fonts-dejavu-core > /dev/null
           make clean all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=1:allocator_may_return_null=1 \
           UBSAN_OPTIONS=print_stacktrace=1 timeout 120 make check SANITIZER=address,undefined
+          make clean
+          # A fallback font is read on a thread of its own while two
+          # fonts on two threads ask for it, and a second face behind
+          # the first.
+          make fallback chain SAN=thread
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R \
+             timeout 120 ./fallback
+          TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R \
+             timeout 120 ./chain
           make clean
 
       - name: Build and run overlay_apng_test (ASan + UBSan, TSan)
@@ -972,6 +1403,33 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 120 \
              ./gfx_thumbnail_anim_test
           echo "[pass] gfx_thumbnail_anim_test (TSan)"
+
+      - name: Build gfx_thumbnail_anim_test with mingw-w64
+        shell: bash
+        working-directory: samples/gfx/gfx_thumbnail_anim
+        run: |
+          set -eu
+          # Regression tests build for Windows too.
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_thumbnail_anim_test.exe
+          test -f gfx_thumbnail_anim_test.exe
+          make clean TARGET=gfx_thumbnail_anim_test.exe
+
+      - name: Build and run gfx_surface_still_test (ASan + UBSan, mingw-w64)
+        shell: bash
+        working-directory: samples/gfx/gfx_surface_still
+        run: |
+          set -eu
+          # A still keeps the texture up until the new one has landed,
+          # updates a same-size image in place, and is freed by the
+          # completion of an upload or decode still out when it goes.
+          make clean
+          make EXTRA_CFLAGS="-fsanitize=address,undefined" LDFLAGS="-fsanitize=address,undefined"
+          make check
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=gfx_surface_still_test.exe
+          test -f gfx_surface_still_test.exe
+          make clean TARGET=gfx_surface_still_test.exe
 
       - name: Build and run badge_cache_test (ASan + UBSan)
         shell: bash
@@ -1086,7 +1544,7 @@ jobs:
           #
           # The windowed-animation harness below decodes its two
           # lossless fixtures three times each; they are sized just past
-          # what the feeder may keep resident (~40 MB and ~30 MB), and
+          # what the feeder may keep resident (~43 MB and ~39 MB), and
           # mkfixtures.py reuses an existing set, so the second
           # "make fixtures" (TSan pass) costs nothing.  ~55 s under
           # ASan on one core.
@@ -1106,6 +1564,22 @@ jobs:
           AUDIO_BYTES_PER_TICK=65536 FRAMES=120 timeout 300 \
              ./gfx_thumbnail_preview_test fixtures/*.mp4 fixtures/anim_lossless.webp
           echo "[pass] gfx_thumbnail_preview_test (ASan)"
+          # HDR previews: with HDR_OUTPUT the stub driver keeps half
+          # floats and shows them as linear scRGB, and the PQ-tagged
+          # fixture must animate as them on the PQ EOTF of its grey; its
+          # SDR twin, and the HDR one without HDR output, must not upload
+          # a single half-float frame. Both decode paths: the poll's own
+          # here, the worker's jobs in the threaded build below.
+          HDRFX=../../formats/video_hdr_fp16/fixtures
+          for bin in gfx_thumbnail_preview_test gfx_thumbnail_preview_test_threaded; do
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             HDR_OUTPUT=1 HDR_EXPECT=1 timeout 120 ./$bin $HDRFX/hdr_hevc.mp4
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             HDR_OUTPUT=1 timeout 120 ./$bin $HDRFX/sdr_hevc.mp4
+             ASAN_OPTIONS=detect_leaks=1 NOAUDIO=1 THREADS=4 FRAMES=60 \
+             timeout 120 ./$bin $HDRFX/hdr_hevc.mp4
+          done
+          echo "[pass] gfx_thumbnail_preview HDR lanes"
           # The same session with HAVE_THREADS: the thumbnail decodes on
           # its worker and the pool, the app's own path, paced at a
           # display's rate with a bound on the longest stall.
@@ -1221,3 +1695,25 @@ jobs:
              ./preview_audio_decode_test fixtures/trailing_large.mp4 1024 island
              ./preview_audio_decode_test fixtures/trailing_large.mp4 262144 island'
           echo "[pass] preview_audio_decode_test (TSan)"
+
+      - name: Build and run hw_ring_fence_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/gfx/hw_ring_fence
+        run: |
+          set -u
+          set -o pipefail
+          # The hardware ring's fence handoff between the video thread
+          # and the core's thread (gfx/video_thread_hw_fence.h), the
+          # tree's own header, with two threads at one slot: a fence is
+          # signalled only while idle, waited only once signalled, and
+          # never inside two calls at once - with no lock. The single
+          # re-signalled fence it replaced is built too and must fail.
+          make clean all SANITIZER=address,undefined
+          timeout 120 make check SANITIZER=address,undefined
+          echo "[pass] hw_ring_fence_test (ASan + UBSan)"
+          # The two threads share nothing but atomics, and TSan is
+          # what says so.
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 make check SANITIZER=thread
+          echo "[pass] hw_ring_fence_test (TSan)"
+          make clean

@@ -27,11 +27,9 @@
 #endif
 
 #include "../configuration.h"
-#include "../tasks/tasks_internal.h"
 #include "../verbosity.h"
 
 #include "../input/input_osk.h"
-#include "gfx_surface.h"
 
 /* Standard reference DPI value, used when determining
  * DPI-aware scaling factors */
@@ -42,7 +40,6 @@
 #define OZONE_SIDEBAR_WIDTH 408
 
 /* Small 1x1 white texture used for blending purposes */
-static uintptr_t gfx_white_texture;
 
 /* ptr alignment */
 static gfx_display_t dispgfx_st = {0};
@@ -337,7 +334,7 @@ static void gfx_display_flush_as(gfx_display_t *p_disp,
       enum gfx_display_flush_reason reason)
 {
    if (p_disp && p_disp->batch_quads)
-      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + reason]++;
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH_IDX(reason)]++;
    gfx_display_flush_impl(p_disp);
 }
 
@@ -544,10 +541,9 @@ void gfx_display_draw_bg(
    draw->scale_factor                = 1.0f;
    draw->rotation                    = 0.0f;
 
+   /* A quad with no texture is a solid colour to the display driver */
    if (draw->texture)
       add_opacity_to_wallpaper       = true;
-   else
-      draw->texture                  = gfx_white_texture;
 
    if (add_opacity_to_wallpaper)
       gfx_display_set_alpha(draw->color, override_opacity);
@@ -716,10 +712,341 @@ static void gfx_display_flush_impl(gfx_display_t *p_disp)
    }
 }
 
+/* The quad over the whole screen, in clip space, as a strip */
+static gfx_display_mesh_vertex_t gfx_display_mesh_fs_vertices[4] = {
+   { -1.0f, -1.0f, 0.0f,     0, 65535, { 255, 255, 255, 255 } },
+   {  1.0f, -1.0f, 0.0f, 65535, 65535, { 255, 255, 255, 255 } },
+   { -1.0f,  1.0f, 0.0f,     0,     0, { 255, 255, 255, 255 } },
+   {  1.0f,  1.0f, 0.0f, 65535,     0, { 255, 255, 255, 255 } }
+};
+static float gfx_display_mesh_fs_positions[8] = {
+   -1.0f, -1.0f,  1.0f, -1.0f,  -1.0f, 1.0f,  1.0f, 1.0f
+};
+static gfx_display_mesh_t gfx_display_mesh_fs = {
+   gfx_display_mesh_fs_vertices, NULL, 4, 0, GFX_MESH_TRIANGLE_STRIP, 1,
+   gfx_display_mesh_fs_positions
+};
+/* Mesh ids: 1 is the full-screen quad's, and none is ever reused */
+static uint32_t gfx_display_mesh_next_id = 2;
+
+/* Where the plain programs are transformed into on drivers that do not
+ * draw meshes themselves: positions, texture coordinates and colours,
+ * grown when a mesh needs more, never per frame */
+static float  *gfx_display_mesh_scratch     = NULL;
+static size_t  gfx_display_mesh_scratch_cap = 0;
+
+gfx_display_mesh_t *gfx_display_mesh_create(const gfx_display_mesh_desc_t *desc)
+{
+   gfx_display_mesh_t *mesh;
+   size_t vbytes, ibytes, pbytes;
+   unsigned i;
+
+   if (     !desc || !desc->vertices || !desc->vertex_count
+         || desc->vertex_count > 65536
+         || (desc->indices && !desc->index_count))
+      return NULL;
+   if (desc->indices)
+      for (i = 0; i < desc->index_count; i++)
+         if (desc->indices[i] >= desc->vertex_count)
+            return NULL;
+   if (     desc->topology == GFX_MESH_TRIANGLES
+         && ((desc->indices ? desc->index_count : desc->vertex_count) % 3))
+      return NULL;
+
+   vbytes = (size_t)desc->vertex_count * sizeof(gfx_display_mesh_vertex_t);
+   ibytes = desc->indices ? (size_t)desc->index_count * sizeof(uint16_t) : 0;
+   pbytes = (desc->flags & GFX_MESH_FLAG_POSITIONS)
+      ? 2 * sizeof(float) * (size_t)desc->vertex_count : 0;
+   /* One allocation: the header, the vertices, the positions, then the
+    * indices - in that order, which keeps each aligned for its type */
+   if (!(mesh = (gfx_display_mesh_t*)malloc(sizeof(*mesh)
+               + vbytes + pbytes + ibytes)))
+      return NULL;
+   mesh->vertices     = (gfx_display_mesh_vertex_t*)(mesh + 1);
+   mesh->positions    = pbytes ? (float*)((uint8_t*)mesh->vertices + vbytes) : NULL;
+   mesh->indices      = ibytes
+      ? (uint16_t*)((uint8_t*)mesh->vertices + vbytes + pbytes) : NULL;
+   mesh->vertex_count = desc->vertex_count;
+   mesh->index_count  = desc->indices ? desc->index_count : 0;
+   mesh->topology     = desc->topology;
+   mesh->id           = gfx_display_mesh_next_id++;
+   memcpy(mesh->vertices, desc->vertices, vbytes);
+   if (ibytes)
+      memcpy(mesh->indices, desc->indices, ibytes);
+
+   if (mesh->positions)
+      for (i = 0; i < desc->vertex_count; i++)
+      {
+         mesh->positions[2 * i]     = desc->vertices[i].x;
+         mesh->positions[2 * i + 1] = desc->vertices[i].y;
+      }
+   return mesh;
+}
+
+void gfx_display_mesh_free(gfx_display_mesh_t *mesh)
+{
+   free(mesh);
+}
+
+const gfx_display_mesh_t *gfx_display_mesh_fullscreen(void)
+{
+   return &gfx_display_mesh_fs;
+}
+
+struct video_coords *gfx_display_effect_coords(gfx_display_t *p_disp)
+{
+   static struct video_coords coords;
+   const gfx_display_mesh_t *mesh = p_disp ? p_disp->effect_mesh : NULL;
+   if (!mesh || !mesh->positions)
+      return NULL;
+   coords.vertex        = mesh->positions;
+   coords.tex_coord     = NULL;
+   coords.color         = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.vertices      = mesh->vertex_count;
+   return &coords;
+}
+
+/* An effect, drawn the way the driver draws its menu pipelines: over
+ * the background's draw state, with the pipeline's own geometry */
+static void gfx_display_mesh_draw_effect(gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx, void *userdata,
+      unsigned video_dims, const gfx_display_mesh_t *mesh,
+      const gfx_display_mesh_draw_t *md)
+{
+#ifdef HAVE_SHADERPIPELINE
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+
+   draw.pos          = VIDEO_POS_PACK(0, 0);
+   draw.texture      = md->texture;
+   draw.dims         = video_dims;
+   draw.color        = md->color;
+   draw.vertex       = NULL;
+   draw.tex_coord    = NULL;
+   draw.vertex_count = 4;
+   draw.pipeline_id  = 0;
+   /* The drivers that stream an effect's geometry read its positions */
+   if (!md->color || !mesh->positions)
+      return;
+   /* The colour keeps the alpha it carries */
+   gfx_display_draw_bg(p_disp, &draw, &coords, userdata, true,
+         md->color[3]);
+
+   switch (md->program)
+   {
+      case GFX_MESH_PROGRAM_RIBBON:
+         draw.pipeline_id = VIDEO_SHADER_MENU;
+         break;
+      case GFX_MESH_PROGRAM_RIBBON_SIMPLE:
+         draw.pipeline_id = VIDEO_SHADER_MENU_2;
+         break;
+      case GFX_MESH_PROGRAM_SNOW_SIMPLE:
+         draw.pipeline_id = VIDEO_SHADER_MENU_3;
+         break;
+      case GFX_MESH_PROGRAM_SNOW:
+         draw.pipeline_id = VIDEO_SHADER_MENU_4;
+         break;
+      case GFX_MESH_PROGRAM_BOKEH:
+         draw.pipeline_id = VIDEO_SHADER_MENU_5;
+         break;
+      case GFX_MESH_PROGRAM_SNOWFLAKE:
+         draw.pipeline_id = VIDEO_SHADER_MENU_6;
+         break;
+      default:
+         draw.pipeline_id = VIDEO_SHADER_STOCK_BLEND;
+         break;
+   }
+
+   p_disp->effect_mesh = mesh;
+   if (dispctx->draw_pipeline)
+      dispctx->draw_pipeline(&draw, p_disp, userdata, video_dims);
+   gfx_display_draw(dispctx, &draw, userdata, video_dims);
+   p_disp->effect_mesh = NULL;
+
+   /* Wrapped where the step is still exact: 0.01 stays representable
+    * to about 167772, and a wrap every 30 hours of menu is not seen */
+   p_disp->effect_time += 0.01f;
+   if (p_disp->effect_time > 65536.0f)
+      p_disp->effect_time -= 65536.0f;
+#endif
+}
+
+/* A plain program on a driver that does not draw meshes itself: every
+ * vertex transformed here into the display's 0..1 space and the whole
+ * mesh sent as one strip, triangles joined by repeated vertices */
+static void gfx_display_mesh_draw_cpu(gfx_display_t *p_disp,
+      gfx_display_ctx_driver_t *dispctx, void *userdata,
+      unsigned video_dims, const gfx_display_mesh_t *mesh,
+      const gfx_display_mesh_draw_t *md)
+{
+   gfx_display_ctx_draw_t draw;
+   struct video_coords coords;
+   const float *m   = md->mvp;
+   unsigned count   = mesh->indices ? mesh->index_count : mesh->vertex_count;
+   unsigned n_out   = (mesh->topology == GFX_MESH_TRIANGLES)
+      ? (count / 3) * 5 : count;
+   unsigned i, out  = 0;
+   float tint[4];
+   float *xy, *uv, *col;
+
+   if (!dispctx->handles_vertex_strip || !n_out)
+      return;
+   if ((size_t)n_out * 8 > gfx_display_mesh_scratch_cap)
+   {
+      float *grown = (float*)realloc(gfx_display_mesh_scratch,
+            (size_t)n_out * 8 * sizeof(float));
+      if (!grown)
+         return;
+      gfx_display_mesh_scratch     = grown;
+      gfx_display_mesh_scratch_cap = (size_t)n_out * 8;
+   }
+   xy  = gfx_display_mesh_scratch;
+   uv  = xy + 2 * (size_t)n_out;
+   col = uv + 2 * (size_t)n_out;
+
+   for (i = 0; i < 4; i++)
+      tint[i] = md->color ? md->color[i] : 1.0f;
+
+   for (i = 0; i < count; )
+   {
+      /* A triangle is five strip vertices, a b c with a and c twice;
+       * a strip is its vertices as they are */
+      unsigned take = (mesh->topology == GFX_MESH_TRIANGLES) ? 3 : 1;
+      unsigned k, j;
+      float cx[3], cy[3], cw[3];
+      const gfx_display_mesh_vertex_t *v[3];
+      bool behind = false;
+
+      for (k = 0; k < take; k++)
+      {
+         const gfx_display_mesh_vertex_t *p = &mesh->vertices[
+            mesh->indices ? mesh->indices[i + k] : i + k];
+         v[k] = p;
+         if (m)
+         {
+            cx[k] = m[0] * p->x + m[4] * p->y + m[8]  * p->z + m[12];
+            cy[k] = m[1] * p->x + m[5] * p->y + m[9]  * p->z + m[13];
+            cw[k] = m[3] * p->x + m[7] * p->y + m[11] * p->z + m[15];
+         }
+         else
+         {
+            cx[k] = p->x;
+            cy[k] = p->y;
+            cw[k] = 1.0f;
+         }
+         if (cw[k] <= 1e-6f)
+            behind = true;
+      }
+      i += take;
+
+      /* No near clipping: a triangle reaching behind the eye is not
+       * drawn rather than drawn inside out */
+      if (behind)
+      {
+         if (take == 1)
+            return;
+         continue;
+      }
+
+      for (j = 0; j < ((take == 3) ? 5u : 1u); j++)
+      {
+         static const unsigned tri_order[5] = { 0, 0, 1, 2, 2 };
+         unsigned c = (take == 3) ? tri_order[j] : 0;
+         const gfx_display_mesh_vertex_t *p = v[c];
+         xy [2 * out]     = (cx[c] / cw[c] + 1.0f) * 0.5f;
+         xy [2 * out + 1] = (cy[c] / cw[c] + 1.0f) * 0.5f;
+         uv [2 * out]     = p->u * (1.0f / 65535.0f);
+         uv [2 * out + 1] = p->v * (1.0f / 65535.0f);
+         col[4 * out]     = p->rgba[0] * (1.0f / 255.0f) * tint[0];
+         col[4 * out + 1] = p->rgba[1] * (1.0f / 255.0f) * tint[1];
+         col[4 * out + 2] = p->rgba[2] * (1.0f / 255.0f) * tint[2];
+         col[4 * out + 3] = p->rgba[3] * (1.0f / 255.0f) * tint[3];
+         out++;
+      }
+   }
+   if (out < 3)
+      return;
+
+   coords.vertices      = out;
+   coords.vertex        = xy;
+   coords.tex_coord     = uv;
+   coords.color         = col;
+   coords.lut_tex_coord = NULL;
+   draw.coords          = &coords;
+   draw.pos             = VIDEO_POS_PACK(0, 0);
+   draw.dims            = video_dims;
+   draw.matrix_data     = NULL;
+   draw.texture         = (md->program == GFX_MESH_PROGRAM_TEXTURED)
+      ? md->texture : 0;
+   draw.pipeline_id     = 0;
+   draw.scale_factor    = 1.0f;
+   draw.rotation        = 0.0f;
+   draw.color           = col;
+   draw.vertex          = NULL;
+   draw.tex_coord       = NULL;
+   draw.vertex_count    = out;
+   draw.backend_data    = NULL;
+   draw.backend_data_size = 0;
+   gfx_display_draw(dispctx, &draw, userdata, video_dims);
+}
+
+void gfx_display_mesh_draw(gfx_display_t *p_disp, void *userdata,
+      unsigned video_dims, const gfx_display_mesh_t *mesh,
+      const gfx_display_mesh_draw_t *md)
+{
+   gfx_display_ctx_driver_t *dispctx;
+
+   if (!p_disp || !mesh || !md || !(dispctx = p_disp->dispctx))
+      return;
+   if (md->program >= GFX_MESH_PROGRAM_BLEND)
+   {
+      gfx_display_mesh_draw_effect(p_disp, dispctx, userdata, video_dims,
+            mesh, md);
+      return;
+   }
+   if (dispctx->mesh_draw)
+   {
+      /* Clip space to the display's 0..1, before the perspective
+       * divide: x' = (x + w) / 2, so x'/w = (x/w + 1) / 2. Depth is
+       * flattened, as the streamed path flattens it. Column-major. */
+      static const float to_display[16] = {
+         0.5f, 0.0f, 0.0f, 0.0f,
+         0.0f, 0.5f, 0.0f, 0.0f,
+         0.0f, 0.0f, 0.0f, 0.0f,
+         0.5f, 0.5f, 0.0f, 1.0f };
+      float mvp[16];
+      float tint[4];
+      uintptr_t texture = (md->program == GFX_MESH_PROGRAM_TEXTURED)
+            ? md->texture : 0;
+      unsigned r, c, k;
+      for (k = 0; k < 4; k++)
+         tint[k] = md->color ? md->color[k] : 1.0f;
+      if (md->mvp)
+      {
+         for (c = 0; c < 4; c++)
+            for (r = 0; r < 4; r++)
+            {
+               float sum = 0.0f;
+               for (k = 0; k < 4; k++)
+                  sum += to_display[k * 4 + r] * md->mvp[c * 4 + k];
+               mvp[c * 4 + r] = sum;
+            }
+      }
+      else
+         memcpy(mvp, to_display, sizeof(mvp));
+      gfx_display_flush_as(p_disp, GFX_DISPLAY_FLUSH_DRAW);
+      if (dispctx->mesh_draw(userdata, video_dims, mesh, mvp, texture, tint))
+         return;
+   }
+   gfx_display_mesh_draw_cpu(p_disp, dispctx, userdata, video_dims,
+         mesh, md);
+}
+
 void gfx_display_flush_batch(gfx_display_t *p_disp)
 {
    if (p_disp && p_disp->batch_quads)
-      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH + GFX_DISPLAY_FLUSH_EXPLICIT]++;
+      p_disp->stats.v[GFX_DISPLAY_STAT_FLUSH_IDX(GFX_DISPLAY_FLUSH_EXPLICIT)]++;
    gfx_display_flush_impl(p_disp);
 }
 
@@ -819,9 +1146,7 @@ void gfx_display_draw_quad(
    draw.dims            = dims;
    draw.coords          = &coords;
    draw.matrix_data     = NULL;
-   draw.texture         = (texture && *texture)
-      ? *texture
-      : gfx_white_texture;
+   draw.texture         = texture ? *texture : 0;
    draw.pipeline_id     = 0;
    draw.scale_factor    = 1.0f;
    draw.rotation        = 0.0f;
@@ -1276,126 +1601,6 @@ void gfx_display_draw_keyboard(
    }
 }
 
-/* NOTE: Reads image from memory buffer */
-bool gfx_display_reset_textures_list_buffer(
-        uintptr_t *item, enum texture_filter_type filter_type,
-        void* buffer, unsigned buffer_len, enum image_type_enum image_type,
-        unsigned *dims)
-{
-   struct texture_image ti;
-
-   ti.width         = 0;
-   ti.height        = 0;
-   ti.pixels        = NULL;
-   ti.supports_rgba = gfx_surface_wants_rgba();
-   ti.pix10         = false;
-
-   if (image_texture_load_buffer(&ti, image_type, buffer, buffer_len))
-   {
-      if (dims)
-         *dims      = VIDEO_SCALE_PACK(ti.width, ti.height);
-
-      /* If the poke interface doesn't support 
-         texture load then free and return false */
-      if (!video_driver_texture_load(&ti, filter_type, item))
-      {
-         image_texture_free(&ti);
-         return false;
-      }
-
-      image_texture_free(&ti);
-      return true;
-   }
-   return false;
-}
-
-/* NOTE: Reads image from file */
-bool gfx_display_reset_textures_list(
-      const char *texture_path, const char *iconpath,
-      uintptr_t *item, enum texture_filter_type filter_type,
-      unsigned *dims)
-{
-   char texpath[PATH_MAX_LENGTH];
-   struct texture_image ti;
-
-   ti.width                      = 0;
-   ti.height                     = 0;
-   ti.pixels                     = NULL;
-   ti.supports_rgba              = gfx_surface_wants_rgba();
-   ti.pix10                      = false;
-
-   if (!texture_path || !*texture_path)
-      return false;
-
-   fill_pathname_join_special(texpath,
-         iconpath, texture_path, sizeof(texpath));
-
-   if (!image_texture_load(&ti, texpath))
-      return false;
-
-   if (dims)
-      *dims = VIDEO_SCALE_PACK(ti.width, ti.height);
-
-   if (!video_driver_texture_load(&ti,
-         filter_type, item))
-   {
-      image_texture_free(&ti);
-      return false;
-   }
-
-   image_texture_free(&ti);
-
-   return true;
-}
-
-bool gfx_display_reset_icon_texture(
-      const char *texture_path,
-      uintptr_t *item, enum texture_filter_type filter_type)
-{
-   struct texture_image ti;
-
-   ti.width                      = 0;
-   ti.height                     = 0;
-   ti.pixels                     = NULL;
-   ti.supports_rgba              = gfx_surface_wants_rgba();
-   ti.pix10                      = false;
-
-   if (!texture_path || !*texture_path)
-      return false;
-   if (!image_texture_load(&ti, texture_path))
-      return false;
-
-   if (!video_driver_texture_load(&ti, filter_type, item))
-   {
-      image_texture_free(&ti);
-      return false;
-   }
-
-   image_texture_free(&ti);
-
-   return true;
-}
-
-/* -----------------------------------------------------------------------
- * Platform-adaptive icon/texture loading
- *
- * Dispatches to either the synchronous (blocking) or asynchronous
- * (task-queue) icon loading path depending on the platform.
- *
- * Platforms that define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS get the
- * pre-async behavior: image_texture_load -> video_driver_texture_load
- * in one call, no task queue involvement.  This avoids frame-spread
- * I/O and GL context contention on platforms where the async path is
- * actually slower (e.g. Android behind SAF / fuse storage).
- *
- * To opt a new platform into the synchronous path, add it to the
- * ifdef below.
- * ----------------------------------------------------------------------- */
-
-#if 0 
-#define GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
-#endif
-
 /* The mipmap choice, published for the draw-thread texture loads:
  * every main-thread caller of the live read below refreshes it, and
  * main callers run at least per menu rebuild, so the latch tracks
@@ -1420,61 +1625,12 @@ enum texture_filter_type gfx_display_texture_filter_latched(void)
          ? TEXTURE_FILTER_MIPMAP_LINEAR : TEXTURE_FILTER_LINEAR;
 }
 
-bool gfx_display_load_icon(
-      const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr)
-{
-#ifdef GFX_DISPLAY_ICON_LOAD_SYNCHRONOUS
-   /* Synchronous path - identical to pre-async behavior.
-    * Generation counter is irrelevant: the load completes
-    * before this function returns, so there is no in-flight
-    * callback that could write to a freed pointer. */
-   (void)supports_rgba;
-   (void)generation;
-   (void)generation_ptr;
-   return gfx_display_reset_icon_texture(
-         fullpath, target_texture,
-         gfx_display_texture_filter());
-#else
-   return task_push_icon_load(
-         fullpath, supports_rgba,
-         target_texture, generation, generation_ptr);
-#endif
-}
-
-void gfx_display_deinit_white_texture(void)
-{
-   if (gfx_white_texture)
-      video_driver_texture_unload(&gfx_white_texture);
-   gfx_white_texture = 0;
-}
-
-void gfx_display_init_white_texture(void)
-{
-   struct texture_image ti;
-   static const uint8_t white_data[] = { 0xff, 0xff, 0xff, 0xff };
-
-   ti.width         = 1;
-   ti.height        = 1;
-   ti.pixels        = (uint32_t*)&white_data;
-   ti.compressed    = NULL; /* raw pixels, not a loaded compressed texture */
-   ti.pix10         = false; /* 8-bit white; must not be read as 10-bit */
-   /* Four 0xff bytes read either way, but the drivers read this field
-    * and it is the caller's to set: nothing here fills the struct
-    * beforehand, so an unset one is whatever the stack held. */
-   ti.supports_rgba = gfx_surface_wants_rgba();
-
-   video_driver_texture_load(&ti,
-         TEXTURE_FILTER_NEAREST, &gfx_white_texture);
-}
-
 void gfx_display_free(void)
 {
    gfx_display_t *p_disp       = &dispgfx_st;
-   video_coord_array_free(&p_disp->dispca);
+   free(gfx_display_mesh_scratch);
+   gfx_display_mesh_scratch     = NULL;
+   gfx_display_mesh_scratch_cap = 0;
 
    free(p_disp->batch_mem);
    p_disp->batch_mem           = NULL;
@@ -1495,13 +1651,11 @@ void gfx_display_free(void)
 void gfx_display_init(void)
 {
    gfx_display_t *p_disp         = &dispgfx_st;
-   video_coord_array_t *p_dispca = &p_disp->dispca;
 
    if (video_driver_has_windowed())
       p_disp->flags             |=  GFX_DISP_FLAG_HAS_WINDOWED;
    else
       p_disp->flags             &= ~GFX_DISP_FLAG_HAS_WINDOWED;
-   p_dispca->allocated           =  0;
    {
       unsigned i;
       for (i = 0; i < GFX_DISPLAY_STAT_LAST; i++)

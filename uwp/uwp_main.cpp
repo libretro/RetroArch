@@ -50,6 +50,7 @@
 #include "../frontend/frontend.h"
 #include "../input/input_keymaps.h"
 #include "../verbosity.h"
+#include "../gfx/video_defines.h"
 #include "uwp_func.h"
 #include "uwp_async.h"
 #include <compat/strl.h>
@@ -196,10 +197,8 @@ const struct rarch_key_map rarch_key_map_uwp[] = {
 struct input_pointer
 {
    int id;
-   int16_t x;
-   int16_t y;
-   int16_t full_x;
-   int16_t full_y;
+   uint32_t pos;        /* x, y in the viewport: VIDEO_POS_PACK */
+   uint32_t full_pos;   /* x, y in the whole screen */
    bool isInContact;
 };
 
@@ -694,10 +693,8 @@ void App::OnPointer(CoreWindow const& sender, PointerEventArgs const& args)
             &vp,
             ConvertDipsToPixels(args.CurrentPoint().Position().X, dpi),
             ConvertDipsToPixels(args.CurrentPoint().Position().Y, dpi),
-            &uwp_next_input.touch[i].x,
-            &uwp_next_input.touch[i].y,
-            &uwp_next_input.touch[i].full_x,
-            &uwp_next_input.touch[i].full_y);
+            &uwp_next_input.touch[i].pos,
+            &uwp_next_input.touch[i].full_pos);
 
       uwp_next_input.touch[i].isInContact = args.CurrentPoint().IsInContact();
 
@@ -821,8 +818,12 @@ extern "C" {
       return 0;
    }
 
-   bool win32_set_video_mode(void *data, unsigned width, unsigned height, bool fullscreen)
+   /* The size arrives as one word in VIDEO_SCALE_PACK's layout, as the
+    * prototype in win32_common.h says and every caller passes. */
+   bool win32_set_video_mode(void *data, unsigned dims, bool fullscreen)
    {
+      unsigned width  = VIDEO_SCALE_W(dims);
+      unsigned height = VIDEO_SCALE_H(dims);
       if (App::GetInstance()->IsInitialized())
       {
          if (fullscreen !=
@@ -872,25 +873,41 @@ extern "C" {
       return true;
    }
 
+   /* The UWP side of win32_window_client_dims(): the desktop one in
+    * win32_common.c is compiled out under __WINRT__. The swap chain
+    * is made on the CoreWindow, and TryResizeView() settles the view
+    * later, reporting it with the resize event SetWindowResized()
+    * sends; the size asked for stands until then, as before. */
+   unsigned win32_window_client_dims(unsigned dims)
+   {
+      return dims;
+   }
+
+   /* The UWP side of win32_check_window(): the desktop one in
+    * win32_common.c is compiled out under __WINRT__. Its size goes
+    * back as one word in VIDEO_SCALE_PACK's layout, the same as the
+    * prototype in win32_common.h and every caller. */
    void win32_check_window(void *data,
-         bool *quit, bool *resize, unsigned *width, unsigned *height)
+         bool *quit, bool *resize, unsigned *dims)
    {
       static bool is_xbox     = is_running_on_xbox();
       *quit                   = App::GetInstance()->IsWindowClosed();
       if (is_xbox)
       {
          settings_t* settings = config_get_ptr();
-         *width               = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
-         *height              = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
+         unsigned width       = settings->uints.video_fullscreen_x  != 0 ? settings->uints.video_fullscreen_x : uwp_get_width();
+         unsigned height      = settings->uints.video_fullscreen_y  != 0 ? settings->uints.video_fullscreen_y : uwp_get_height();
+         *dims                = VIDEO_SCALE_PACK(width, height);
          return;
       }
 
       *resize = App::GetInstance()->CheckWindowResized();
       if (*resize)
       {
-         float dpi = DisplayInformation::GetForCurrentView().LogicalDpi();
-         *width    = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Width, dpi);
-         *height   = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Height, dpi);
+         float dpi       = DisplayInformation::GetForCurrentView().LogicalDpi();
+         unsigned width  = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Width, dpi);
+         unsigned height = ConvertDipsToPixels(CoreWindow::GetForCurrentThread().Bounds().Height, dpi);
+         *dims           = VIDEO_SCALE_PACK(width, height);
       }
    }
 
@@ -1112,13 +1129,13 @@ extern "C" {
       switch (id)
       {
          case RETRO_DEVICE_ID_POINTER_X:
-            return screen
-               ? uwp_current_input.touch[idx].full_x
-               : uwp_current_input.touch[idx].x;
+            return VIDEO_POS_X(screen
+               ? uwp_current_input.touch[idx].full_pos
+               : uwp_current_input.touch[idx].pos);
          case RETRO_DEVICE_ID_POINTER_Y:
-            return screen
-               ? uwp_current_input.touch[idx].full_y
-               : uwp_current_input.touch[idx].y;
+            return VIDEO_POS_Y(screen
+               ? uwp_current_input.touch[idx].full_pos
+               : uwp_current_input.touch[idx].pos);
          case RETRO_DEVICE_ID_POINTER_PRESSED:
             return uwp_current_input.touch[idx].isInContact;
          case RETRO_DEVICE_ID_POINTER_COUNT:

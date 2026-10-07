@@ -36,6 +36,11 @@
 #include <stdlib.h>
 int  g_vk_validation_errors;
 int  g_vk_validation_warnings;
+/* When set, an error line containing it is printed nowhere and counted
+ * here instead: for a test whose scenario is itself what the layer
+ * objects to, and which must still be clean in every other respect. */
+const char *g_vk_validation_expect;
+int  g_vk_validation_expected;
 static void vk_log(const char *fmt, va_list ap)
 {
    char line[4096];
@@ -46,8 +51,13 @@ static void vk_log(const char *fmt, va_list ap)
     * which arrive at INFO severity, as warnings. */
    if (strstr(line, "ERROR Validation"))
    {
-      g_vk_validation_errors++;
-      fputs(line, stderr);
+      if (g_vk_validation_expect && strstr(line, g_vk_validation_expect))
+         g_vk_validation_expected++;
+      else
+      {
+         g_vk_validation_errors++;
+         fputs(line, stderr);
+      }
    }
    else if (strstr(line, "WARNING Validation"))
    {
@@ -81,3 +91,10 @@ uint32_t video_driver_get_disp_flags(void) { return 0; }
 /* The emulated mailbox derives its waits from this. */
 float video_driver_get_refresh_rate(void) { return 60.0f; }
 void video_driver_modify_disp_flags(uint32_t s, uint32_t c) { (void)s; (void)c; }
+/* No display peak known: HDR metadata keeps the driver's own value */
+float video_driver_hdr_metadata_peak(float driver_value) { return driver_value; }
+/* No devices published here: the index stands and nothing is listed */
+int video_driver_gpu_index_resolve(int api, int index, void *list)
+{ (void)api; (void)list; return index; }
+void *video_driver_get_gpu_api_devices(int api)
+{ (void)api; return NULL; }

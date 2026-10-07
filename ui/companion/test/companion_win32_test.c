@@ -38,6 +38,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 #include <retro_miscellaneous.h>
 
 #include "../../../configuration.h"
@@ -92,15 +93,28 @@ static void pump(void *data, int ms)
    } while (GetTickCount() < end);
 }
 
+/* A row's text as the control shows it - read as UTF-16, so whatever
+ * the script it comes back exact - converted to UTF-8 */
+/* [AI Generated] magic, Korean, Thai - in UTF-8 */
+#define CW_TEST_CJK_NAME "[AI Generated] \xe9\xad\x94\xe6\xb3\x95 \xed\x95\x9c\xea\xb5\xad\xec\x96\xb4 \xe0\xb8\xa0\xe0\xb8\xb2\xe0\xb8\xa9\xe0\xb8\xb2.nes"
+
 static void lv_text(HWND lv, int item, int sub, char *buf, int len)
 {
-   LVITEMA it;
+   LVITEMW it;
+   wchar_t wide[512];
+   char   *u8;
    memset(&it, 0, sizeof(it));
    it.iSubItem   = sub;
-   it.pszText    = buf;
-   it.cchTextMax = len;
-   buf[0] = '\0';
-   SendMessageA(lv, LVM_GETITEMTEXTA, (WPARAM)item, (LPARAM)&it);
+   it.pszText    = wide;
+   it.cchTextMax = 512;
+   wide[0]       = 0;
+   buf[0]        = '\0';
+   SendMessageW(lv, LVM_GETITEMTEXTW, (WPARAM)item, (LPARAM)&it);
+   if ((u8 = utf16_to_utf8_string_alloc(wide)))
+   {
+      strlcpy(buf, u8, (size_t)len);
+      free(u8);
+   }
 }
 
 static void send_command(HWND hwnd, int id) { SendMessageA(hwnd, WM_COMMAND, MAKEWPARAM(id, 0), 0); }
@@ -172,6 +186,22 @@ int main(void)
    pump(data, 200);
    CHECK(SendMessageA(entries, LVM_GETITEMCOUNT, 0, 0) == 3, "clear restores 3");
 
+   /* A file named in CJK, Hangul and Thai, for the browser to list: on
+    * an ANSI path its row came out as the name's UTF-8 bytes in the
+    * local code page */
+   {
+      char     cjk[PATH_MAX_LENGTH];
+      wchar_t *wpath;
+      snprintf(cjk, sizeof(cjk), "%s/content/%s", root, CW_TEST_CJK_NAME);
+      if ((wpath = utf8_to_utf16_string_alloc(cjk)))
+      {
+         HANDLE h = CreateFileW(wpath, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+               FILE_ATTRIBUTE_NORMAL, NULL);
+         if (h != INVALID_HANDLE_VALUE)
+            CloseHandle(h);
+         free(wpath);
+      }
+   }
    /* File Browser tab: the listing lands async; folders in the left list,
     * the whole listing in the content list with 4 columns */
    {
@@ -189,6 +219,16 @@ int main(void)
    CHECK(Header_GetItemCount(ListView_GetHeader(entries)) == 4, "Name / Size / Type / Date columns (%d)", Header_GetItemCount(ListView_GetHeader(entries)));
    lv_text(entries, 2, 2, buf, sizeof(buf));
    CHECK(strstr(buf, "File") != NULL, "Type column text for a file (%s)", buf);
+   {
+      int  row, rows = (int)SendMessageA(entries, LVM_GETITEMCOUNT, 0, 0);
+      bool found     = false;
+      for (row = 0; row < rows && !found; row++)
+      {
+         lv_text(entries, row, 0, buf, sizeof(buf));
+         found = string_is_equal(buf, CW_TEST_CJK_NAME);
+      }
+      CHECK(found, "a CJK / Hangul / Thai file name shows as itself");
+   }
    {
       HBITMAP bm = (HBITMAP)SendMessageA(GetDlgItem(hwnd, IDC_CW_BOXART), STM_GETIMAGE, IMAGE_BITMAP, 0);
       CHECK(bm == NULL, "boxart pane empty in the browser");

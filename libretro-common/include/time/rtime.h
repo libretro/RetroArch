@@ -35,7 +35,7 @@ RETRO_BEGIN_DECLS
  * to this file */
 
 /**
- * Must be called before using \c rtime_localtime().
+ * Must be called at program or core start.
  * May be called multiple times without ill effects,
  * but must only be called from the main thread.
  */

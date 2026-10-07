@@ -193,8 +193,8 @@ static void *avfoundation_record_init(const struct record_params *params)
       {
          unsigned scale = params->video_record_scale_factor > 0
                         ? params->video_record_scale_factor : 1;
-         handle->width  = params->out_width  * scale;
-         handle->height = params->out_height * scale;
+         handle->width  = VIDEO_SCALE_W(params->out_dims) * scale;
+         handle->height = VIDEO_SCALE_H(params->out_dims) * scale;
          /* H.264 requires even dimensions */
          handle->width  = (handle->width  + 1) & ~1;
          handle->height = (handle->height + 1) & ~1;

@@ -1319,6 +1319,10 @@ bool playlist_push_runtime(playlist_t *playlist,
       const struct playlist_entry *entry)
 {
    playlist_path_id_t *path_id = NULL;
+   char *new_path              = NULL;
+   char *new_core_path         = NULL;
+   char *new_runtime_str       = NULL;
+   char *new_last_played_str   = NULL;
    size_t i, _len;
    char real_core_path[PATH_MAX_LENGTH];
 
@@ -1383,6 +1387,27 @@ bool playlist_push_runtime(playlist_t *playlist,
    if (playlist->config.capacity == 0)
       goto error;
 
+   /* Everything the new entry owns is made before anything is moved:
+    * an allocation that fails then leaves the playlist as it was,
+    * rather than a shifted list with a half-built entry on top. */
+   if (path_id->real_path && *path_id->real_path)
+   {
+      if (!(new_path = strdup(path_id->real_path)))
+         goto error;
+   }
+   if (!(new_core_path = strdup(real_core_path)))
+      goto error;
+   if (entry->runtime_str && *entry->runtime_str)
+   {
+      if (!(new_runtime_str = strdup(entry->runtime_str)))
+         goto error;
+   }
+   if (entry->last_played_str && *entry->last_played_str)
+   {
+      if (!(new_last_played_str = strdup(entry->last_played_str)))
+         goto error;
+   }
+
    if (_len == playlist->config.capacity)
    {
       struct playlist_entry *last_entry = &playlist->entries[_len - 1];
@@ -1397,39 +1422,30 @@ bool playlist_push_runtime(playlist_t *playlist,
       RBUF_RESIZE(playlist->entries, _len + 1);
    }
 
-   if (playlist->entries)
-   {
-      memmove(playlist->entries + 1, playlist->entries,
-            _len * sizeof(struct playlist_entry));
+   memmove(playlist->entries + 1, playlist->entries,
+         _len * sizeof(struct playlist_entry));
 
-      /* Zero all fields to avoid stale data from shifted entries */
-      memset(&playlist->entries[0], 0, sizeof(struct playlist_entry));
+   /* Zero all fields to avoid stale data from shifted entries */
+   memset(&playlist->entries[0], 0, sizeof(struct playlist_entry));
 
-      if (path_id->real_path && *path_id->real_path)
-         playlist->entries[0].path            = strdup(path_id->real_path);
-      playlist->entries[0].path_id            = path_id;
-      path_id                                 = NULL;
+   playlist->entries[0].path            = new_path;
+   playlist->entries[0].path_id         = path_id;
+   playlist->entries[0].core_path       = new_core_path;
+   playlist->entries[0].runtime_str     = new_runtime_str;
+   playlist->entries[0].last_played_str = new_last_played_str;
+   path_id                              = NULL;
 
-      if (*real_core_path)
-         playlist->entries[0].core_path       = strdup(real_core_path);
-
-      PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
-            PLAYLIST_RUNTIME_STATUS(entry));
-      PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], PLAYLIST_RUNTIME_HOURS(entry));
-      PLAYLIST_SET_RUNTIME_MINUTES(&playlist->entries[0], PLAYLIST_RUNTIME_MINUTES(entry));
-      PLAYLIST_SET_RUNTIME_SECONDS(&playlist->entries[0], PLAYLIST_RUNTIME_SECONDS(entry));
-      PLAYLIST_SET_LAST_PLAYED_YEAR(&playlist->entries[0], PLAYLIST_LAST_PLAYED_YEAR(entry));
-      PLAYLIST_SET_LAST_PLAYED_MONTH(&playlist->entries[0], PLAYLIST_LAST_PLAYED_MONTH(entry));
-      PLAYLIST_SET_LAST_PLAYED_DAY(&playlist->entries[0], PLAYLIST_LAST_PLAYED_DAY(entry));
-      PLAYLIST_SET_LAST_PLAYED_HOUR(&playlist->entries[0], PLAYLIST_LAST_PLAYED_HOUR(entry));
-      PLAYLIST_SET_LAST_PLAYED_MINUTE(&playlist->entries[0], PLAYLIST_LAST_PLAYED_MINUTE(entry));
-      PLAYLIST_SET_LAST_PLAYED_SECOND(&playlist->entries[0], PLAYLIST_LAST_PLAYED_SECOND(entry));
-
-      if (entry->runtime_str && *entry->runtime_str)
-         playlist->entries[0].runtime_str     = strdup(entry->runtime_str);
-      if (entry->last_played_str && *entry->last_played_str)
-         playlist->entries[0].last_played_str = strdup(entry->last_played_str);
-   }
+   PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
+         PLAYLIST_RUNTIME_STATUS(entry));
+   PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], PLAYLIST_RUNTIME_HOURS(entry));
+   PLAYLIST_SET_RUNTIME_MINUTES(&playlist->entries[0], PLAYLIST_RUNTIME_MINUTES(entry));
+   PLAYLIST_SET_RUNTIME_SECONDS(&playlist->entries[0], PLAYLIST_RUNTIME_SECONDS(entry));
+   PLAYLIST_SET_LAST_PLAYED_YEAR(&playlist->entries[0], PLAYLIST_LAST_PLAYED_YEAR(entry));
+   PLAYLIST_SET_LAST_PLAYED_MONTH(&playlist->entries[0], PLAYLIST_LAST_PLAYED_MONTH(entry));
+   PLAYLIST_SET_LAST_PLAYED_DAY(&playlist->entries[0], PLAYLIST_LAST_PLAYED_DAY(entry));
+   PLAYLIST_SET_LAST_PLAYED_HOUR(&playlist->entries[0], PLAYLIST_LAST_PLAYED_HOUR(entry));
+   PLAYLIST_SET_LAST_PLAYED_MINUTE(&playlist->entries[0], PLAYLIST_LAST_PLAYED_MINUTE(entry));
+   PLAYLIST_SET_LAST_PLAYED_SECOND(&playlist->entries[0], PLAYLIST_LAST_PLAYED_SECOND(entry));
 
 success:
    if (path_id)
@@ -1438,6 +1454,10 @@ success:
    return true;
 
 error:
+   free(new_path);
+   free(new_core_path);
+   free(new_runtime_str);
+   free(new_last_played_str);
    if (path_id)
       playlist_path_id_free(path_id);
    return false;
@@ -2203,7 +2223,9 @@ void playlist_write_file(playlist_t *playlist)
     *   match requested
     * > Current playlist compression status does
     *   not match requested */
+#if defined(HAVE_COMPRESSION)
    bool pl_compressed   = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+#endif
    bool pl_old_fmt      = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
 
    if (   !playlist
@@ -3995,7 +4017,9 @@ static bool playlist_cached_is_reusable(const playlist_config_t *config)
  * mutation of playlist_cached. */
 static void playlist_init_cached_install(playlist_t *playlist)
 {
+#if defined(HAVE_COMPRESSION)
    bool pl_compressed = ((playlist->flags & CNT_PLAYLIST_FLG_COMPRESSED) > 0);
+#endif
    bool pl_old_fmt    = ((playlist->flags & CNT_PLAYLIST_FLG_OLD_FMT)    > 0);
    /* If playlist format/compression state
     * does not match requested settings, update

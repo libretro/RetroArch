@@ -1,0 +1,91 @@
+name: CI FreeBSD
+
+# Builds RetroArch inside a FreeBSD VM (GitHub has no FreeBSD runners)
+# with the same feature set the games/retroarch port enables by default,
+# minus Qt (very slow to install).  This is what kept the port carrying
+# patches on top of each release: libudev is FreeBSD's libudev-devd, the
+# input headers come from dev/evdev/, and there is no linux_common.o to
+# link against.
+#
+# Deliberately NOT installed: evdev-proto and v4l_compat (the Linux
+# compatibility headers).  A stock FreeBSD box must build udev + Wayland
+# from the dev/evdev/ headers in base, and configure must turn V4L2 off
+# on its own when libv4l is present but linux/videodev2.h is not.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    steps:
+      - name: Check Out Repo
+        uses: actions/checkout@v4
+
+      - name: Build in FreeBSD
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.3"
+          usesh: true
+          copyback: false
+          prepare: |
+            pkg install -y \
+              gmake pkgconf \
+              ffmpeg freetype2 openal-soft mesa-libs \
+              libudev-devd libxkbcommon wayland wayland-protocols \
+              libX11 libXext libXxf86vm libXinerama libXrandr libXv \
+              sdl2 pipewire alsa-lib pulseaudio libdrm libv4l
+          run: |
+            set -e
+            freebsd-version
+            NCPU=$(sysctl -n hw.ncpu)
+
+            # --disable-pipewire must not leave HAVE_PIPEWIRE_STABLE
+            # behind just because libpipewire is installed.
+            ./configure --disable-qt --disable-discord --disable-pipewire
+            grep -q '^HAVE_PIPEWIRE_STABLE = 0' config.mk
+            # libv4l2.pc is installed but linux/videodev2.h is not
+            # (v4l_compat): V4L2 must be auto-disabled, not left on to
+            # fail at compile time.
+            grep -q '^HAVE_V4L2 = 0' config.mk
+
+            # Real build: force the FreeBSD-specific paths on so a missing
+            # dependency fails configure instead of silently skipping them.
+            ./configure --disable-qt --disable-discord \
+              --enable-udev --enable-x11 --enable-wayland --enable-sdl2 \
+              --enable-ffmpeg --enable-pipewire --enable-alsa \
+              --enable-pulse --enable-oss
+            gmake -j$NCPU clean
+            gmake -j$NCPU info all
+            ./retroarch --version
+            # udev input must multiplex with kqueue here, so the binary
+            # must not need libepoll-shim's epoll_* at all.
+            if nm -u retroarch | grep -q 'epoll_'; then
+              echo "retroarch still references epoll (libepoll-shim)"; exit 1
+            fi
+
+            # A fresh RetroArch must pick up data sets the ports install
+            # under /usr/local/share/libretro (assets, info, shaders,
+            # autoconfig) without any retroarch.cfg edits.
+            sh samples/frontend/packaged_dirs/run.sh
+
+            # With v4l_compat the V4L2 camera and video processor core
+            # must still compile; only those two objects are rebuilt.
+            pkg install -y v4l_compat
+            ./configure --disable-qt --disable-discord --enable-v4l2
+            grep -q '^HAVE_V4L2 = 1' config.mk
+            gmake -j$NCPU camera/drivers/video4linux2.o \
+              cores/libretro-video-processor/video_processor_v4l2.o

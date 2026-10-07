@@ -89,10 +89,8 @@ typedef struct psp_input
 {
    int keyboard_hid_handle;
    int mouse_hid_handle;
-   int32_t mouse_x;
-   int32_t mouse_y;
-   int32_t mouse_x_delta;
-   int32_t mouse_y_delta;
+   uint32_t mouse_pos;     /* VIDEO_POS_PACK */
+   uint32_t mouse_delta;   /* VIDEO_POS_PACK */
    uint8_t prev_keys[6];
 #ifdef VITA
    SceTouchData touch[SCE_TOUCH_PORT_MAX_NUM];
@@ -167,23 +165,17 @@ static void vita_ime_utf8_to_utf16(SceWChar16 *out, size_t out_units,
 
 static void vita_ime_set_shown(bool shown)
 {
-   input_driver_state_t *input_st = input_state_get_ptr();
-
-   if (shown)
-      input_st->flags |=  INP_FLAG_NATIVE_KB_SHOWN;
-   else
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_SHOWN;
+   input_driver_set_native_keyboard_shown(shown);
 }
 
 static bool vita_ime_open(psp_input_t *psp)
 {
    SceImeDialogParam param;
-   struct menu_state *menu_st = menu_state_get_ptr();
 
    sceImeDialogParamInit(&param);
 
    vita_ime_utf8_to_utf16(psp->ime_title, ARRAY_SIZE(psp->ime_title),
-         menu_st->input_dialog_kb_label);
+         input_driver_text_entry_label());
    psp->ime_initial[0]  = 0;
    psp->ime_text[0]     = 0;
 
@@ -191,12 +183,12 @@ static bool vita_ime_open(psp_input_t *psp)
    param.dialogMode     = SCE_IME_DIALOG_DIALOG_MODE_WITH_CANCEL;
    param.textBoxMode    = SCE_IME_DIALOG_TEXTBOX_MODE_DEFAULT;
 
-   switch (menu_input_dialog_get_kb_text_type())
+   switch (input_driver_text_entry_type())
    {
-      case MENU_INPUT_DIALOG_KB_TYPE_PASSWORD:
+      case INPUT_TEXT_TYPE_PASSWORD:
          param.textBoxMode = SCE_IME_DIALOG_TEXTBOX_MODE_PASSWORD;
          break;
-      case MENU_INPUT_DIALOG_KB_TYPE_NUMBER:
+      case INPUT_TEXT_TYPE_NUMBER:
          param.type        = SCE_IME_TYPE_NUMBER;
          break;
       default:
@@ -215,7 +207,6 @@ static void vita_ime_commit(psp_input_t *psp)
 {
    size_t units                   = 0;
    size_t bytes                   = 0;
-   input_driver_state_t *input_st = input_state_get_ptr();
 
    while (units < VITA_IME_TEXT_MAX && psp->ime_text[units])
       units++;
@@ -225,24 +216,16 @@ static void vita_ime_commit(psp_input_t *psp)
    utf16_conv_utf8((uint8_t*)psp->ime_utf8, &bytes,
          (const uint16_t*)psp->ime_text, units);
 
-   input_keyboard_line_clear(input_st);
-   if (bytes)
-      input_keyboard_line_append(&input_st->keyboard_line,
-            psp->ime_utf8, bytes);
+   input_driver_keyboard_line_set(psp->ime_utf8, bytes);
 }
 
 static void vita_ime_poll(psp_input_t *psp)
 {
    SceImeDialogResult result;
-   input_driver_state_t *input_st = input_state_get_ptr();
    bool video_ready               = vita_ime_video_ready();
-   bool want                      = menu_input_dialog_get_display_kb()
-         && input_st->keyboard_line.enabled;
+   bool want                      = input_driver_keyboard_line_enabled();
 
-   if (video_ready)
-      input_st->flags |=  INP_FLAG_NATIVE_KB_AVAIL;
-   else
-      input_st->flags &= ~INP_FLAG_NATIVE_KB_AVAIL;
+   input_driver_set_native_keyboard_available(video_ready);
 
    if (!psp->ime_open)
    {
@@ -299,8 +282,8 @@ static void vita_ime_free(psp_input_t *psp)
       sceImeDialogTerm();
       psp->ime_open = false;
    }
-   input_state_get_ptr()->flags &=
-      ~(INP_FLAG_NATIVE_KB_SHOWN | INP_FLAG_NATIVE_KB_AVAIL);
+   input_driver_set_native_keyboard_shown(false);
+   input_driver_set_native_keyboard_available(false);
 }
 #endif
 
@@ -445,19 +428,17 @@ static void vita_input_poll(void *data)
       }
    }
 
-   psp->mouse_x_delta  = mouse_velocity_x;
-   psp->mouse_y_delta  = mouse_velocity_y;
-   psp->mouse_x       += mouse_velocity_x;
-   psp->mouse_y       += mouse_velocity_y;
-   if (psp->mouse_x < 0)
-      psp->mouse_x     = 0;
-   else if (psp->mouse_x > MOUSE_MAX_X)
-      psp->mouse_x     = MOUSE_MAX_X;
+   psp->mouse_delta = VIDEO_POS_PACK(mouse_velocity_x, mouse_velocity_y);
+   VIDEO_POS_ADD(psp->mouse_pos, mouse_velocity_x, mouse_velocity_y);
+   if (VIDEO_POS_X(psp->mouse_pos) < 0)
+      VIDEO_POS_PUT_X(psp->mouse_pos, 0);
+   else if (VIDEO_POS_X(psp->mouse_pos) > MOUSE_MAX_X)
+      VIDEO_POS_PUT_X(psp->mouse_pos, MOUSE_MAX_X);
 
-   if (psp->mouse_y < 0)
-      psp->mouse_y     = 0;
-   else if (psp->mouse_y > MOUSE_MAX_Y)
-      psp->mouse_y     = MOUSE_MAX_Y;
+   if (VIDEO_POS_Y(psp->mouse_pos) < 0)
+      VIDEO_POS_PUT_Y(psp->mouse_pos, 0);
+   else if (VIDEO_POS_Y(psp->mouse_pos) > MOUSE_MAX_Y)
+      VIDEO_POS_PUT_Y(psp->mouse_pos, MOUSE_MAX_Y);
 
    for(port = 0; port < VITA_MAX_TOUCH; port++){
       sceTouchPeek(port, &psp->touch[port], 1);
@@ -520,17 +501,17 @@ static int16_t vita_input_state(
                   return psp->mouse_button_middle;
                case RETRO_DEVICE_ID_MOUSE_X:
                   if (screen)
-                     return psp->mouse_x;
+                     return VIDEO_POS_X(psp->mouse_pos);
 
-                  val                = psp->mouse_x_delta;
-                  psp->mouse_x_delta = 0;
+                  val                = VIDEO_POS_X(psp->mouse_delta);
+                  VIDEO_POS_PUT_X(psp->mouse_delta, 0);
                   /* flush delta after it has been read */
                   break;
                case RETRO_DEVICE_ID_MOUSE_Y:
                   if (screen)
-                     return psp->mouse_y;
-                  val                = psp->mouse_y_delta;
-                  psp->mouse_y_delta = 0;
+                     return VIDEO_POS_Y(psp->mouse_pos);
+                  val                = VIDEO_POS_Y(psp->mouse_delta);
+                  VIDEO_POS_PUT_Y(psp->mouse_delta, 0);
                   /* flush delta after it has been read */
                   break;
             }
@@ -547,38 +528,35 @@ static int16_t vita_input_state(
                struct video_viewport vp    = {0};
                bool screen                 =
                   (device == RARCH_DEVICE_POINTER_SCREEN);
-               int16_t res_x               = 0;
-               int16_t res_y               = 0;
-               int16_t res_screen_x        = 0;
-               int16_t res_screen_y        = 0;
+               uint32_t res_pos               = 0;
+               uint32_t res_screen_pos        = 0;
                float tmp_x, tmp_y;
 
                video_driver_get_viewport_info(&vp);
                tmp_x = (psp->touch[0].report[idx].x - psp->panelInfo[0].minAaX) * VIDEO_SCALE_W(vp.dims)/(psp->panelInfo[0].maxAaX - psp->panelInfo[0].minAaX);
                tmp_y = (psp->touch[0].report[idx].y - psp->panelInfo[0].minAaY) * VIDEO_SCALE_H(vp.dims)/(psp->panelInfo[0].maxAaY - psp->panelInfo[0].minAaY);
 
-               if (video_driver_translate_coord_viewport_confined_wrap(
+               if (input_driver_translate_coord_viewport_confined_wrap(
                         &vp,
                         (int)tmp_x,
                         (int)tmp_y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+                        &res_pos, &res_screen_pos))
                {
                   if (screen)
                   {
-                     res_x = res_screen_x;
-                     res_y = res_screen_y;
+                     res_pos = res_screen_pos;
                   }
 
                   switch (id)
                   {
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return res_x;
+                        return VIDEO_POS_X(res_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return res_y;
+                        return VIDEO_POS_Y(res_pos);
                      case RETRO_DEVICE_ID_POINTER_PRESSED:
                         return (idx < psp->touch[0].reportNum);
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(res_x, res_y);
+                        return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return psp->touch[0].reportNum;
                   }
@@ -709,8 +687,7 @@ static void *vita_input_initialize(const char *joypad_driver)
       psp->keyboard_state[i] = false;
    for (i = 0; i < 6; i++)
       psp->prev_keys[i]      = 0;
-   psp->mouse_x              = 0;
-   psp->mouse_y              = 0;
+   psp->mouse_pos = 0;
 
    for(i = 0; i < SCE_TOUCH_PORT_MAX_NUM; i++){
       if (i < VITA_MAX_TOUCH)

@@ -61,7 +61,10 @@ enum image_flags_enum
 {
    IMAGE_FLAG_IS_BLOCKING                = (1 << 0),
    IMAGE_FLAG_IS_BLOCKING_ON_PROCESSING  = (1 << 1),
-   IMAGE_FLAG_IS_FINISHED                = (1 << 2)
+   IMAGE_FLAG_IS_FINISHED                = (1 << 2),
+   /* The caller takes half floats (TASK_IMAGE_LOAD_HDR): an HDR video
+    * still is asked for them where the driver offers FP16. */
+   IMAGE_FLAG_WANT_HDR                   = (1 << 3)
 };
 
 struct nbio_image_handle
@@ -189,6 +192,7 @@ static int task_image_process(struct nbio_image_handle *image)
    image->ti.width  = width;
    image->ti.height = height;
    image->ti.pix10  = image_transfer_is_10bit(image->handle, image->type);
+   image->ti.fp16   = image_transfer_is_fp16(image->handle, image->type);
 
    return retval;
 }
@@ -365,6 +369,12 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
        * assuming the driver's preference is reachable. */
       if (req.formats & GFX_SURFACE_PIXFMT_2101010)
          image_transfer_set_want_10bit(image->handle, image->type, 1);
+      /* Half floats only for a caller that said it takes them: nothing
+       * narrows them, and a consumer that reads the pixels itself
+       * (RGUI) has no use for linear light. */
+      if (     (image->flags & IMAGE_FLAG_WANT_HDR)
+            && (req.formats & GFX_SURFACE_PIXFMT_FP16))
+         image_transfer_set_want_fp16(image->handle, image->type, true);
    }
 
    /* Hand the byte order to the transfer layer now: the JPEG fused
@@ -854,7 +864,9 @@ bool task_image_load_handler(retro_task_t *task)
           * must be cleared explicitly or video_driver_texture_load() will
           * dereference a garbage pointer. */
          img->compressed = NULL;
-         if (image->upscale_threshold > 0)
+         /* The resamplers know 8-bit and packed 10-bit texels; a
+          * still of half floats is taken at its own size. */
+         if (image->upscale_threshold > 0 && !image->ti.fp16)
          {
             if (   ((image->ti.width  > 0)
                 &&  (image->ti.height > 0))
@@ -930,7 +942,7 @@ bool task_image_load_handler(retro_task_t *task)
           * 10-bit as well - a 16-bit PNG, which rpng packs as
           * XRGB2101010, is exactly the kind of file that gets this
           * large. */
-         if (image->downscale_cap > 0)
+         if (image->downscale_cap > 0 && !image->ti.fp16)
             downscale_image(image->downscale_cap, &image->ti);
 
          img->width         = image->ti.width;
@@ -938,6 +950,7 @@ bool task_image_load_handler(retro_task_t *task)
          img->pixels        = image->ti.pixels;
          img->supports_rgba = image->ti.supports_rgba;
          img->pix10         = image->ti.pix10;
+         img->fp16          = image->ti.fp16;
 
          /* Transfer pixel ownership to the output image so
           * cleanup does not double-free */
@@ -1044,6 +1057,16 @@ bool task_push_image_load(const char *fullpath,
       unsigned downscale_cap,
       retro_task_callback_t cb, void *user_data)
 {
+   return task_push_image_load_ex(fullpath,
+         supports_rgba ? TASK_IMAGE_LOAD_RGBA : 0,
+         upscale_threshold, downscale_cap, cb, user_data);
+}
+
+bool task_push_image_load_ex(const char *fullpath, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      retro_task_callback_t cb, void *user_data)
+{
+   bool supports_rgba = (load_flags & TASK_IMAGE_LOAD_RGBA) ? true : false;
    nbio_handle_t             *nbio   = NULL;
    struct nbio_image_handle   *image = NULL;
    retro_task_t                   *t = task_init();
@@ -1095,13 +1118,15 @@ bool task_push_image_load(const char *fullpath,
    image->handle                     = NULL;
    image->cb                         = NULL;
 
-   image->flags                      = 0;
+   image->flags                      = (load_flags & TASK_IMAGE_LOAD_HDR)
+      ? IMAGE_FLAG_WANT_HDR : 0;
 
    image->ti.width                   = 0;
    image->ti.height                  = 0;
    image->ti.pixels                  = NULL;
    image->ti.compressed              = NULL;
    image->ti.pix10                   = false;
+   image->ti.fp16                    = false;
    /* NOTE: Come back to this if this causes problems */
    image->ti.supports_rgba           = supports_rgba;
 
@@ -1146,142 +1171,3 @@ bool task_push_image_load(const char *fullpath,
    return true;
 }
 
-/* -----------------------------------------------------------------------
- * Async icon/texture loading
- *
- * Wraps task_push_image_load with a built-in callback that uploads the
- * decoded image to the GPU via video_driver_texture_load and stores the
- * resulting handle at *target_texture.
- *
- * A generation counter prevents stale callbacks from writing into freed
- * memory when the owning list is rebuilt or destroyed between queue and
- * completion.
- *
- * The generation counter must be a static local (or file-static) in the
- * calling module — NOT inside a heap-allocated struct that could be freed.
- * Each subsystem (ozone, xmb, explore, contentless) maintains its own
- * counter so bumping one doesn't invalidate another's in-flight loads.
- *
- * Usage (in caller):
- *   static uint64_t my_gen = 0;
- *   my_gen++;                    // invalidate previous batch
- *   for (i = 0; i < N; i++)
- *      task_push_icon_load(path, rgba, &node->icon, my_gen, &my_gen);
- * ----------------------------------------------------------------------- */
-
-typedef struct
-{
-   uintptr_t *target;          /* where to store the GPU texture handle  */
-   uint64_t   generation;      /* snapshot of gen counter at queue time  */
-   uint64_t  *generation_ptr;  /* pointer to the STATIC gen counter      */
-} icon_load_tag_t;
-
-static void icon_image_release(void *img)
-{
-   struct texture_image *ti = (struct texture_image*)img;
-   if (ti)
-   {
-      image_texture_free(ti);
-      free(ti);
-   }
-}
-
-/* Main thread, when the upload has a handle (or failed with 0). The
- * generation check lives here, not at queue time: the target may have
- * been freed while the upload was in flight. A stale result, or one
- * for a target that already got a newer handle, is unloaded rather
- * than leaked. */
-static void icon_load_done(void *user, uintptr_t handle)
-{
-   icon_load_tag_t *tag = (icon_load_tag_t*)user;
-   if (!tag)
-      return;
-   if (tag->generation != *tag->generation_ptr)
-   {
-      if (handle)
-         video_driver_texture_unload(&handle);
-   }
-   else if (handle)
-   {
-      if (*tag->target)
-         video_driver_texture_unload(tag->target);
-      *tag->target = handle;
-   }
-   free(tag);
-}
-
-static void cb_task_icon_load(retro_task_t *task,
-      void *task_data, void *user_data, const char *error)
-{
-   struct texture_image *img = (struct texture_image*)task_data;
-   icon_load_tag_t      *tag = (icon_load_tag_t*)user_data;
-
-   if (!tag)
-      goto end;
-
-   /* Generation check: if the counter was bumped since this task was
-    * queued, the target pointer may be invalid — skip the write.
-    * generation_ptr points to a static variable in the calling module
-    * so it is always valid (never freed). */
-   if (tag->generation != *tag->generation_ptr)
-      goto end;
-
-   if (!img || img->width < 1 || img->height < 1 || !img->pixels)
-      goto end;
-
-   /* Under threaded video the upload goes to the video thread's
-    * queue and the handle comes back through icon_load_done() at a
-    * later frame - never a blocking round trip to the video thread
-    * per icon, which costs up to one present each, on the main
-    * thread, dozens of times at startup; img and tag are theirs
-    * now. */
-   if (video_driver_texture_load_async(img, gfx_display_texture_filter(),
-            icon_load_done, tag, icon_image_release))
-      return;
-
-end:
-   if (img)
-   {
-      image_texture_free(img);
-      free(img);
-   }
-   free(tag);
-}
-
-bool task_push_icon_load(const char *fullpath,
-      bool supports_rgba,
-      uintptr_t *target_texture,
-      uint64_t generation,
-      uint64_t *generation_ptr)
-{
-   icon_load_tag_t *tag = NULL;
-
-   if (!fullpath || !target_texture || !generation_ptr)
-      return false;
-
-   /* Unload the previous texture now, while we are on the main
-    * thread and the video context is guaranteed alive.  Doing
-    * this in the async callback is unsafe because a context
-    * destroy/recreate cycle may have freed the handle between
-    * queue time and callback time. */
-   if (*target_texture)
-      video_driver_texture_unload(target_texture);
-
-   tag = (icon_load_tag_t*)malloc(sizeof(*tag));
-   if (!tag)
-      return false;
-
-   tag->target         = target_texture;
-   tag->generation     = generation;
-   tag->generation_ptr = generation_ptr;
-
-   if (!task_push_image_load(fullpath, supports_rgba, 0,
-         0,
-         cb_task_icon_load, tag))
-   {
-      free(tag);
-      return false;
-   }
-
-   return true;
-}

@@ -424,10 +424,11 @@ static char* s3_url_encode(const char *input)
 
       /* RFC 3986 unreserved characters: A-Z, a-z, 0-9, -, ., _, ~ */
       /* Path delimiters that should not be encoded: / */
-      /* Query parameter delimiters that should not be encoded: &, =, ? */
+      /* This encodes the object key only, so '&', '=' and '?' are
+       * key characters and must be encoded like any other. */
       if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
-          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' || 
-          c == '~' || c == '/' || c == '&' || c == '=' || c == '?')
+          (c >= '0' && c <= '9') || c == '-' || c == '.' || c == '_' ||
+          c == '~' || c == '/')
       {
          output[output_pos++] = c;
       }
@@ -484,7 +485,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
       /* Convert hex to binary */
       for (i = 0; i < 32; i++)
       {
-         char hex_byte[3] = {temp_hash[i*2], temp_hash[i*2+1], 0};
+         char hex_byte[3];
+         hex_byte[0] = temp_hash[i*2];
+         hex_byte[1] = temp_hash[i*2+1];
+         hex_byte[2] = '\0';
          key_hash[i] = (uint8_t)strtol(hex_byte, NULL, 16);
       }
       key = key_hash;
@@ -529,7 +533,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
 
    for (i = 0; i < 32; i++)
    {
-      char hex_byte[3] = {inner_hash_hex[i*2], inner_hash_hex[i*2+1], 0};
+      char hex_byte[3];
+      hex_byte[0] = inner_hash_hex[i*2];
+      hex_byte[1] = inner_hash_hex[i*2+1];
+      hex_byte[2] = '\0';
       inner_hash_bin[i] = (uint8_t)strtol(hex_byte, NULL, 16);
    }
 
@@ -555,7 +562,10 @@ static uint8_t* s3_hmac_sha256_bin(const uint8_t *key, size_t key_len, const cha
    /* Convert final result to binary */
    for (i = 0; i < 32; i++)
    {
-      char hex_byte[3] = {final_hash_hex[i*2], final_hash_hex[i*2+1], 0};
+      char hex_byte[3];
+      hex_byte[0] = final_hash_hex[i*2];
+      hex_byte[1] = final_hash_hex[i*2+1];
+      hex_byte[2] = '\0';
       output[i] = (uint8_t)strtol(hex_byte, NULL, 16);
    }
 
@@ -825,7 +835,7 @@ static char* s3_build_auth_header(const char *method, const char *canonical_uri,
 static void s3_log_http_failure(const char *path,
       http_transfer_data_t *data, const char *err)
 {
-   size_t i;
+   const char *h;
    /* No status means the transport failed before the server answered;
     * the task's error names the stage and its code, as in webdav.c. */
    if (data->status < 0 && err && *err)
@@ -834,8 +844,9 @@ static void s3_log_http_failure(const char *path,
    else
       RARCH_WARN(S3_PFX "Failed: %s: HTTP %d\n",
             path ? path : "<unknown>", data->status);
-   for (i = 0; data->headers && i < data->headers->size; i++)
-      RARCH_WARN(S3_PFX "%s\n", data->headers->elems[i].data);
+   for (h = net_http_header_next(data->headers, NULL); h;
+         h = net_http_header_next(data->headers, h))
+      RARCH_WARN(S3_PFX "%s\n", h);
    /* See webdav.c: the buffer is sized exactly to data->len, so
     * writing a terminator at data->data[data->len] overflows the
     * heap chunk by one byte.  Use the length-bounded form. */
@@ -1167,45 +1178,25 @@ static char* s3_extract_xml_tag_value(const char *xml, const char *tag_name)
 
 static char* s3_extract_header_value(http_transfer_data_t *data, const char *header_name)
 {
-   size_t i;
-   char prefix[64];
+   const char *start;
+   const char *end;
+   size_t len;
+   char *out;
 
-   if (!data || !data->headers || (!header_name || !*header_name))
+   if (!data || !header_name || !*header_name
+         || !(start = net_http_header_value(data->headers, header_name)))
       return NULL;
 
-   snprintf(prefix, sizeof(prefix), "%s:", header_name);
+   end = start + strlen(start);
+   while (end > start && (end[-1] == '\r' || end[-1] == '\n' || end[-1] == ' ' || end[-1] == '\t'))
+      end--;
 
-   for (i = 0; i < data->headers->size; i++)
-   {
-      const char *line = data->headers->elems[i].data;
-      const char *start = NULL;
-      const char *end = NULL;
-      size_t len = 0;
-      char *out = NULL;
-
-      if (!line || !*line)
-         continue;
-      if (!string_starts_with_case_insensitive(line, prefix))
-         continue;
-
-      start = line + strlen(prefix);
-      while (*start == ' ' || *start == '\t')
-         start++;
-
-      end = start + strlen(start);
-      while (end > start && (end[-1] == '\r' || end[-1] == '\n' || end[-1] == ' ' || end[-1] == '\t'))
-         end--;
-
-      len = (size_t)(end - start);
-      out = (char*)malloc(len + 1);
-      if (!out)
-         return NULL;
-      memcpy(out, start, len);
-      out[len] = '\0';
-      return out;
-   }
-
-   return NULL;
+   len = (size_t)(end - start);
+   if (!(out = (char*)malloc(len + 1)))
+      return NULL;
+   memcpy(out, start, len);
+   out[len] = '\0';
+   return out;
 }
 
 static void s3_multipart_free(s3_multipart_state_t *mp_st)
@@ -1273,22 +1264,23 @@ static bool s3_multipart_part_bounds(const s3_multipart_state_t *mp_st,
 static void s3_log_multipart_initiate_failure(
       s3_multipart_state_t *mp_st, http_transfer_data_t *data, const char *err)
 {
-   size_t i;
+   const char *h;
 
    if (!mp_st)
       return;
 
-   RARCH_WARN(S3_PFX "Multipart initiate diagnostic: path='%s' url_query='uploads=' canonical_query='uploads=' data=%s status=%d len=%zu headers=%zu err='%s'\n",
+   RARCH_WARN(S3_PFX "Multipart initiate diagnostic: path='%s' url_query='uploads=' canonical_query='uploads=' data=%s status=%d len=%zu headers=%s err='%s'\n",
          mp_st->cb_state ? mp_st->cb_state->path : "<unknown>",
          data ? "present" : "missing",
          data ? data->status : -1,
          data ? data->len : 0,
-         (data && data->headers) ? data->headers->size : 0,
+         (data && data->headers) ? "present" : "missing",
          (err && *err) ? err : "<none>");
 
-   if (data && data->headers)
-      for (i = 0; i < data->headers->size; i++)
-         RARCH_WARN(S3_PFX "Multipart initiate header[%zu]: %s\n", i, data->headers->elems[i].data);
+   if (data)
+      for (h = net_http_header_next(data->headers, NULL); h;
+            h = net_http_header_next(data->headers, h))
+         RARCH_WARN(S3_PFX "Multipart initiate header: %s\n", h);
 
    if (data && data->data && data->len > 0)
       RARCH_WARN(S3_PFX "Multipart initiate body: %.*s\n",
@@ -2238,5 +2230,6 @@ cloud_sync_driver_t cloud_sync_s3 = {
    s3_read,
    s3_update,
    s3_free,
-   "s3"
+   "s3",
+   0
 };

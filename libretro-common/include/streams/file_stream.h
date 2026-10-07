@@ -296,9 +296,9 @@ bool filestream_write_file(const char *path, const void *data, int64_t size);
  * length or checksum of its own, where a truncated file is worse than
  * an absent one.
  *
- * On targets whose rename refuses an existing destination, the target
- * is removed first and the rename retried, so on those the replacement
- * is not atomic.
+ * Under a frontend VFS whose rename refuses an existing destination,
+ * the target is removed first and the rename retried, so there the
+ * replacement is not atomic.
  *
  * @param path Path to the file that will be written to.
  * @param data The buffer to write to \c path.
@@ -308,6 +308,34 @@ bool filestream_write_file(const char *path, const void *data, int64_t size);
  * was and no temporary file remains.
  */
 bool filestream_write_file_atomic(const char *path, const void *data, int64_t size);
+
+/**
+ * Opens the sibling temporary file an atomic write of \c path goes
+ * through (\c path with ".tmp" appended), for a writer that produces
+ * the contents a piece at a time.  Finish with
+ * filestream_commit_atomic(), which closes it either way.
+ *
+ * @param path Path of the file that will be replaced.
+ * @return The temporary file, open for writing, or \c NULL on error.
+ */
+RFILE *filestream_open_atomic(const char *path);
+
+/**
+ * Closes a file from filestream_open_atomic() and, if \c ok and the
+ * close succeeded, renames it over \c path, exactly as
+ * filestream_write_file_atomic() does.
+ *
+ * @param file The file returned by filestream_open_atomic(); always
+ * closed and freed.
+ * @param path The same path it was opened for.
+ * @param ok Whether the caller wrote everything it meant to.
+ * @return 0 if \c path now holds the new contents; -1 if the write or
+ * close failed, in which case the temporary file is deleted and \c path
+ * is left as it was; 1 if the contents are complete in the temporary
+ * file but could not be renamed into place, in which case the temporary
+ * file is left for the caller to copy or delete.
+ */
+int filestream_commit_atomic(RFILE *file, const char *path, bool ok);
 
 /**
  * Writes a single character to the given file.
@@ -491,6 +519,14 @@ const uint8_t *filestream_get_mapped_ptr(RFILE *stream, int64_t *len);
 
 typedef const uint8_t *(*filestream_mapped_ptr_cb_t)(void *hfile, int64_t *len);
 void filestream_set_mapped_ptr_cb(filestream_mapped_ptr_cb_t cb);
+
+/**
+ * Ask the OS to start reading [offset, offset + len) of \c stream into
+ * memory ahead of a read or a touch of its mapping. A hint: it returns
+ * at once and does nothing on a frontend-supplied VFS or where the
+ * platform has no such request. See retro_vfs_file_prefetch_impl().
+ */
+void filestream_prefetch(RFILE *stream, uint64_t offset, uint64_t len);
 
 /**
  * Size of the window filestream_vscanf() reads and scans at a time,

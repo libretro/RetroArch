@@ -375,6 +375,20 @@ Bool XTranslateCoordinates(Display *dpy, Window src, Window dst,
    return False;
 }
 
+Status XGetGeometry(Display *dpy, Drawable d, Window *root, int *x, int *y,
+      unsigned int *w, unsigned int *h, unsigned int *border,
+      unsigned int *depth)
+{
+   (void)dpy; (void)d;
+   *root = 0;
+   *x = *y = 0;
+   *w = 1280;
+   *h = 720;
+   *border = 0;
+   *depth  = 24;
+   return 1;
+}
+
 GC XCreateGC(Display *dpy, Drawable d, unsigned long mask, XGCValues *v)
 {
    (void)dpy; (void)d; (void)mask; (void)v;
@@ -591,6 +605,12 @@ Status XRRSetCrtcConfig(Display *dpy, XRRScreenResources *res, RRCrtc crtc,
    return 0;
 }
 
+RROutput XRRGetOutputPrimary(Display *dpy, Window w)
+{
+   (void)dpy; (void)w;
+   return 0;
+}
+
 void XRRSetScreenSize(Display *dpy, Window w, int width, int height,
       int mmWidth, int mmHeight)
 {
@@ -654,6 +674,7 @@ size_t strlcpy_retro__(char *dest, const char *source, size_t size)
 void RARCH_DBG(const char *fmt, ...)  { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
+void RARCH_LOG(const char *fmt, ...)  { (void)fmt; }
 
 /* ------------------------------------------------------------------
  * Cases
@@ -748,6 +769,66 @@ static int test_refresh_rate_query_failures(void)
    }
 
    printf("[pass] get_refresh_rate survives every failing query\n");
+   return 0;
+}
+
+/* Screen Resolution (get_resolution_list / set_resolution): every
+ * failing query and a disconnected head must give an empty list and a
+ * refused switch - no crtc configured, every query freed. */
+static int test_resolution_query_failures(void)
+{
+   int i;
+
+   for (i = 0; i < 4; i++)
+   {
+      stub_cfg_t cfg;
+      void *data, *list;
+      unsigned n = 123;
+      bool set;
+      const char *what;
+
+      cfg_default(&cfg);
+      cfg.output_crtc_in_screen = 1;
+      switch (i)
+      {
+         case 0: cfg.fail_output_info      = 1; what = "output_info";      break;
+         case 1: cfg.fail_crtc_info        = 1; what = "crtc_info";        break;
+         case 2: cfg.output_connection     = RR_Disconnected;
+                 what = "disconnected"; break;
+         default: cfg.fail_screen_resources = 1; what = "screen_resources"; break;
+      }
+      stub_reset(&cfg);
+
+      data = dispserv_x11.init();
+      list = dispserv_x11.get_resolution_list
+         ? dispserv_x11.get_resolution_list(data, &n) : NULL;
+      set  = dispserv_x11.set_resolution
+         ? dispserv_x11.set_resolution(data, 0, 60, 60.0f, 0, 0, 0, 0) : false;
+      dispserv_x11.destroy(data);
+
+      if (!dispserv_x11.get_resolution_list || !dispserv_x11.set_resolution)
+      {
+         fprintf(stderr, "FAIL: dispserv_x11 has no resolution list/switch\n");
+         return 1;
+      }
+      if (list || n != 0 || set || s_log.set_crtc_config_calls)
+      {
+         fprintf(stderr, "FAIL: %s: list %p len %u, set %d, %d crtc config(s)\n",
+               what, list, n, set, s_log.set_crtc_config_calls);
+         free(list);
+         return 1;
+      }
+      if (s_log.bad_free)
+      {
+         fprintf(stderr, "FAIL: %s failure produced %d bad free(s)\n",
+               what, s_log.bad_free);
+         return 1;
+      }
+      if (stub_leaks(what))
+         return 1;
+   }
+
+   printf("[pass] get_resolution_list / set_resolution survive every failing query\n");
    return 0;
 }
 
@@ -1157,6 +1238,8 @@ int main(void)
    if (test_orientation_query_failures())
       return 1;
    if (test_refresh_rate_query_failures())
+      return 1;
+   if (test_resolution_query_failures())
       return 1;
    if (test_orientation_output_disconnected())
       return 1;

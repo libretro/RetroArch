@@ -116,6 +116,42 @@ int main(int argc, char *argv[])
    }
 
    /* Error path: free() of a partially built filter must be clean. */
+   /* The Automatic worker count: cores left after the reserve, one
+    * of headroom once above two, capped at RARCH_SOFTFILTER_AUTO_MAX
+    * and at the plugin's workload ceiling. */
+   {
+      static const struct { unsigned cores, reserved, want; const char *plug; } cases[] = {
+         { 4,  4, 1, "ntsc_crt" },  /* 4-core, everything threaded: nothing spare */
+         { 4,  2, 2, "ntsc_crt" },  /* 4-core, only main + tasks: two spare, no headroom yet */
+         { 4,  2, 1, "epx"      },  /* light filter runs alone whatever is spare */
+         { 3,  1, 2, "ntsc"     },
+         { 6,  1, 4, "no_such_plugin" }, /* unknown counts as heavy: 5, minus headroom */
+         { 16, 4, 8, "ntsc_crt" },  /* 9950X3D, everything threaded: 11, capped at 8 */
+         { 16, 4, 4, "2xsai"    },  /* medium stops at four */
+         { 16, 4, 1, "lq2x"     },
+         { 24, 4, 8, "2xbr"     },  /* 8P+16E: still 8 */
+         { 1,  1, 1, "ntsc"     },
+         { 2,  4, 1, "ntsc"     },  /* reserve larger than the machine */
+      };
+      unsigned i;
+      for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+      {
+         unsigned got = rarch_softfilter_auto_budget(cases[i].cores,
+               cases[i].reserved, cases[i].plug);
+         CHECK(got == cases[i].want,
+               "auto budget: %u cores, %u reserved, %s -> %u, want %u",
+               cases[i].cores, cases[i].reserved, cases[i].plug, got,
+               cases[i].want);
+      }
+      /* The live answer is within the same bounds. */
+      {
+         unsigned live = rarch_softfilter_auto_threads("ntsc_crt");
+         CHECK(live >= 1 && live <= RARCH_SOFTFILTER_AUTO_MAX,
+               "live auto count %u out of range", live);
+         printf("auto budget on this machine for a heavy filter: %u\n", live);
+      }
+   }
+
    CHECK(rarch_softfilter_new("/nonexistent/no_such.filt", 4,
             RETRO_PIXEL_FORMAT_XRGB8888, VIDEO_SCALE_PACK(SRC_W, SRC_H)) == NULL,
          "bogus path: expected NULL");

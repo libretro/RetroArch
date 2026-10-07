@@ -118,6 +118,8 @@ struct discord_state
    int64_t start_time;
    int64_t pause_time;
    int64_t elapsed_time;
+   /* When discord_poll() last ran the RPC pump, in usec. */
+   int64_t last_poll_us;
 
    DiscordRichPresence presence;       /* int64_t alignment */
 
@@ -157,6 +159,14 @@ char *discord_get_own_avatar(void);
 char *discord_get_own_username(void);
 
 discord_state_t *discord_state_get_ptr(void);
+
+/* The per-frame entry: runs the RPC pump (callbacks + connection
+ * read/write) at most every DISCORD_POLL_INTERVAL_US. Presence
+ * updates are queued by discord_update() and flushed on the next
+ * pump, so nothing is lost between pumps. now_us is the frame's
+ * cpu_features_get_time_usec(). */
+#define DISCORD_POLL_INTERVAL_US 100000
+void discord_poll(int64_t now_us);
 
 void discord_init(const char *discord_app_id, char *args);
 

@@ -161,7 +161,8 @@ endif
 
 ifeq ($(HAVE_THREADS), 1)
 SOURCES_C +=  \
-				 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
+				 $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+				 $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 DEFINES += -DHAVE_THREADS
 
 ifeq (,$(findstring MSYS,$(uname -s)))

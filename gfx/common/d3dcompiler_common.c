@@ -53,8 +53,11 @@ HRESULT WINAPI D3DCompile(
    static pD3DCompile fp;
    const char** dll_name = d3dcompiler_dll_list;
    while (!d3dcompiler_dll && *dll_name)
-      if (!(d3dcompiler_dll = dylib_load(*dll_name++)))
-         return TYPE_E_CANTLOADLIBRARY;
+      d3dcompiler_dll = dylib_load(*dll_name++);
+
+   if (!d3dcompiler_dll)
+      return TYPE_E_CANTLOADLIBRARY;
+
    if (!fp)
       if (!(fp = (pD3DCompile)dylib_proc(d3dcompiler_dll, "D3DCompile")))
          return TYPE_E_DLLFUNCTIONNOTFOUND;

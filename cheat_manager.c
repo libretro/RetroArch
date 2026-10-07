@@ -411,6 +411,7 @@ static void cheat_manager_free(void)
    cheat_st->num_memory_buffers        = 0;
    cheat_st->total_memory_size         = 0;
    cheat_st->memory_initialized        = false;
+   runloop_frame_work_set(RUNLOOP_WORK_CHEATS, false);
 }
 
 static void cheat_manager_new(unsigned size)
@@ -431,8 +432,10 @@ static void cheat_manager_new(unsigned size)
       cheat_st->buf_size       = 0;
       cheat_st->size           = 0;
       cheat_st->cheats         = NULL;
+      runloop_frame_work_set(RUNLOOP_WORK_CHEATS, false);
       return;
    }
+   runloop_frame_work_set(RUNLOOP_WORK_CHEATS, true);
 
    for (i = 0; i < cheat_st->size; i++)
    {
@@ -674,8 +677,10 @@ bool cheat_manager_realloc(unsigned new_size, unsigned default_handler)
    {
       cheat_st->buf_size = cheat_st->size = 0;
       cheat_st->cheats   = NULL;
+      runloop_frame_work_set(RUNLOOP_WORK_CHEATS, false);
       return false;
    }
+   runloop_frame_work_set(RUNLOOP_WORK_CHEATS, true);
 
    cheat_st->buf_size = new_size;
    cheat_st->size     = new_size;

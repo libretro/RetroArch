@@ -192,6 +192,18 @@ def read(path):
         return ""
 
 
+ROW_RE = re.compile(r"^([A-Za-z_]\w*)\s*\[\s*(\d+)\s*\]$")
+
+
+def distinct_rows(a, b):
+    """x[0] and x[1] passed as the buffers themselves, not their
+    addresses: rows of a two-dimensional array, which do not
+    overlap."""
+    ma, mb = ROW_RE.match(a.strip()), ROW_RE.match(b.strip())
+    return bool(ma and mb and ma.group(1) == mb.group(1)
+                and int(ma.group(2)) != int(mb.group(2)))
+
+
 def direct_findings(text, rel):
     """Yield (rel, line, func, dst, src, kind)."""
     for m in CALL_RE.finditer(text):
@@ -216,7 +228,7 @@ def direct_findings(text, rel):
             src = base_expr(args[1])
             if dst in ("NULL", "0", "nullptr"):
                 continue
-            if src and dst == src:
+            if src and dst == src and not distinct_rows(args[0], args[1]):
                 kind = ("exact-alias"
                         if args[0].strip() == args[1].strip()
                         else "same-base")
@@ -384,6 +396,14 @@ void g(struct info *a, int i, int count)
 }
 """
 
+FIXTURE_OK_ROWS = """
+void g(void)
+{
+   char rows[2][16];
+   memcpy(rows[1], rows[0], sizeof(rows[0]));
+}
+"""
+
 FIXTURE_OK_MEMMOVE = """
 void g(struct info *a, int i, int count)
 {
@@ -494,6 +514,9 @@ def selftest():
     ok &= check("overlapping shift flagged",
                 {"a.c": FIXTURE_BAD_SHIFT}, None,
                 ["[same-base]"], [])
+    ok &= check("two rows of an array not flagged",
+                {"a.c": FIXTURE_OK_ROWS}, None,
+                ["clean"], ["[same-base]"])
     ok &= check("memmove not flagged",
                 {"a.c": FIXTURE_OK_MEMMOVE}, None,
                 ["clean"], ["memmove"])

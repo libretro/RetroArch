@@ -108,8 +108,10 @@ audio_mixer_sound_t* audio_mixer_load_weba(void *buffer, size_t size);
 audio_mixer_sound_t* audio_mixer_load_weba_avail(void *buffer, size_t size,
       size_t avail);
 
-/* Compressed-byte read position of a stream voice's decoder (0 when
- * not a live buffer-mode stream voice).  Thread-safe. */
+/* Compressed-byte read position of a stream voice's decoder as of the
+ * last mix (0 when not a live buffer-mode stream voice).  Takes no
+ * lock; one thread per voice, the one that calls
+ * audio_mixer_voice_set_avail. */
 size_t audio_mixer_voice_buffer_tell(audio_mixer_voice_t *voice);
 
 void audio_mixer_destroy(audio_mixer_sound_t* sound);
@@ -133,8 +135,12 @@ void audio_mixer_sound_set_end_granule(audio_mixer_sound_t *sound,
  * decoder's container header parse at open.  0 = fully resident. */
 void audio_mixer_sound_set_avail(audio_mixer_sound_t *sound, size_t avail);
 
-/* Raise a live stream voice's resident prefix as the window slides.
- * Takes the voice lock, like audio_mixer_voice_buffer_tell. */
+/* Set a live stream voice's resident prefix as the window slides.
+ * Takes no lock: the mix applies it before its next decode.  A bound
+ * set after audio_mixer_voice_buffer_tell belongs to the position
+ * that call returned, and is dropped if the decoder has rewound since
+ * - call both again.  One set with no tell before it stands across
+ * rewinds. */
 void audio_mixer_voice_set_avail(audio_mixer_voice_t *voice, size_t avail);
 
 audio_mixer_voice_t* audio_mixer_play(audio_mixer_sound_t* sound,

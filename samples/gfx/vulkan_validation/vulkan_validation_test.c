@@ -102,14 +102,21 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <signal.h>
+#include <unistd.h>
 
 #include <X11/Xlib.h>
 
+#include <retro_timers.h>
+
 #include "../../../gfx/common/vulkan_common.h"
+#include "../../../configuration.h"
 
 /* Scored by the RARCH_LOG hook in stubs_retroarch.c. */
 extern int g_vk_validation_errors;
 extern int g_vk_validation_warnings;
+extern const char *g_vk_validation_expect;
+extern int g_vk_validation_expected;
 
 #define SKIP_EXIT_CODE 77
 
@@ -146,7 +153,7 @@ static int context_up(gfx_ctx_vulkan_data_t *vk)
       return 0;
 
    if (!vulkan_surface_create(vk, VULKAN_WSI_XLIB,
-            s_dpy, &s_win, 640, 480, 1))
+            s_dpy, &s_win, VIDEO_SCALE_PACK(640, 480), 1))
    {
       vulkan_context_destroy(vk, true);
       return 0;
@@ -279,6 +286,8 @@ static VkQueue  s_seq_queue[8];
 static unsigned s_seq_count[8];
 static unsigned s_num_queues;
 static int      s_hazards;
+static int      s_idle_waits;      /* vkQueueWaitIdle + vkDeviceWaitIdle calls */
+static int      s_fail_present;    /* the next presents report out-of-date */
 
 static PFN_vkQueuePresentKHR      s_real_present;
 static PFN_vkQueueSubmit          s_real_submit;
@@ -323,6 +332,14 @@ static VKAPI_ATTR VkResult VKAPI_CALL track_present_khr(VkQueue queue,
    unsigned *seq    = track_seq(queue);
    unsigned i;
    (*seq)++;
+   /* The present is made all the same - a failed one has still queued
+    * its semaphore wait - and then reported as failed. */
+   if (s_fail_present)
+   {
+      res = VK_ERROR_OUT_OF_DATE_KHR;
+      if (info->pResults)
+         info->pResults[0] = VK_ERROR_OUT_OF_DATE_KHR;
+   }
    for (i = 0; i < info->waitSemaphoreCount && s_num_pending < TRACK_MAX; i++)
    {
       s_pending[s_num_pending].queue     = queue;
@@ -383,6 +400,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL track_wait(VkDevice device,
 static VKAPI_ATTR VkResult VKAPI_CALL track_queue_idle(VkQueue queue)
 {
    VkResult res = s_real_queue_idle(queue);
+   s_idle_waits++;
    if (res == VK_SUCCESS)
       track_retire(queue, ~0u);
    return res;
@@ -391,6 +409,7 @@ static VKAPI_ATTR VkResult VKAPI_CALL track_queue_idle(VkQueue queue)
 static VKAPI_ATTR VkResult VKAPI_CALL track_device_idle(VkDevice device)
 {
    VkResult res = s_real_device_idle(device);
+   s_idle_waits++;
    if (res == VK_SUCCESS)
       track_retire(VK_NULL_HANDLE, ~0u);
    return res;
@@ -428,6 +447,8 @@ static void track_install(void)
 {
    s_num_pending = s_num_fences = s_num_queues = 0;
    s_hazards     = 0;
+   s_idle_waits  = 0;
+   s_fail_present = 0;
    s_real_present           = vkQueuePresentKHR;
    s_real_submit            = vkQueueSubmit;
    s_real_wait              = vkWaitForFences;
@@ -591,6 +612,491 @@ static int test_present_then_teardown(void)
    return report("a teardown right behind a present");
 }
 
+/* An acquire whose semaphore no submission waits on leaves a signal
+ * pending: the semaphore can neither be acquired with again nor
+ * destroyed. The driver keeps such semaphores on a list for the next
+ * frame to wait on, and when frames go unsubmitted-against for a whole
+ * swapchain's worth the list is full and has to be emptied on the
+ * spot. It used to do that with vkDeviceWaitIdle - on the thread that
+ * presents, without the queue lock, while a hardware core may be
+ * submitting on that queue from another thread; draining the core's
+ * work with its own; and without even waiting for the acquire signals,
+ * which are not queue work. It is a batch that waits on the list now,
+ * with a fence.
+ *
+ * So: frames are presented here without anything waiting on their
+ * acquires, for well over two lists' worth, and the driver must get
+ * through it without draining the queue or the device once.
+ *
+ * Presenting such a frame is the fault the list exists to survive, and
+ * the validation layer says so at every present (MissingAcquireWait).
+ * Those are this test's doing and are expected; anything else the
+ * layer says - about the batch that waits on the list, or the
+ * semaphores destroyed behind it - fails the test. */
+static int test_unsubmitted_acquires(void)
+{
+   gfx_ctx_vulkan_data_t vk;
+   VkSubmitInfo submit;
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier barrier;
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkCommandPool pool = VK_NULL_HANDLE;
+   VkCommandBuffer cmd[2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 5];
+   unsigned rounds    = 2 * VULKAN_MAX_SWAPCHAIN_IMAGES + 4;
+   unsigned i;
+   int idle_waits;
+   int fail = 0;
+
+   reset_counts();
+   g_vk_validation_expect   = "MissingAcquireWait";
+   g_vk_validation_expected = 0;
+
+   if (!context_up(&vk))
+   {
+      g_vk_validation_expect = NULL;
+      fputs("FAIL: context setup failed for the acquire test\n", stderr);
+      return 1;
+   }
+   track_install();
+
+   if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+   {
+      fputs("FAIL: surface create did not acquire an image\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      track_remove();
+      g_vk_validation_expect = NULL;
+      return 1;
+   }
+
+   /* The path under test is the one that acquires with a semaphore;
+    * the driver picks it per platform, so pick it here. */
+   vk.flags |= VK_DATA_FLAG_USE_WSI_SEMAPHORE;
+
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.queueFamilyIndex = vk.context.graphics_queue_index;
+   vkCreateCommandPool(vk.context.device, &pool_info, NULL, &pool);
+
+   memset(&cmd_info, 0, sizeof(cmd_info));
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.commandPool        = pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = rounds + 1;
+   vkAllocateCommandBuffers(vk.context.device, &cmd_info, cmd);
+
+   /* One more round than `rounds`: the last one does wait on the
+    * acquires, the way a frame does, so the list ends empty. */
+   for (i = 0; i <= rounds && !fail; i++)
+   {
+      unsigned index = vk.context.current_swapchain_index;
+      unsigned frame = vk.context.current_frame_index;
+
+      memset(&begin, 0, sizeof(begin));
+      begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+      begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+      vkBeginCommandBuffer(cmd[i], &begin);
+
+      memset(&barrier, 0, sizeof(barrier));
+      barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+      barrier.dstAccessMask               = VK_ACCESS_MEMORY_READ_BIT;
+      barrier.oldLayout                   = VK_IMAGE_LAYOUT_UNDEFINED;
+      barrier.newLayout                   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+      barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+      barrier.image                       = vk.context.swapchain_images[index];
+      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      barrier.subresourceRange.levelCount = 1;
+      barrier.subresourceRange.layerCount = 1;
+      vkCmdPipelineBarrier(cmd[i],
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            0, 0, NULL, 0, NULL, 1, &barrier);
+      vkEndCommandBuffer(cmd[i]);
+
+      memset(&submit, 0, sizeof(submit));
+      submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+      submit.commandBufferCount   = 1;
+      submit.pCommandBuffers      = &cmd[i];
+      if (i == rounds)
+      {
+         submit.waitSemaphoreCount = vulkan_context_take_acquire_waits(
+               &vk.context, frame, wait_sems, wait_stages,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+         submit.pWaitSemaphores    = wait_sems;
+         submit.pWaitDstStageMask  = wait_stages;
+      }
+      submit.signalSemaphoreCount = 1;
+      submit.pSignalSemaphores    = &vk.context.swapchain_semaphores[index];
+
+      vkQueueSubmit(vk.context.queue, 1, &submit,
+            vk.context.swapchain_fences[frame]);
+      vk.context.swapchain_fences_signalled[frame] = true;
+
+      vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+      vulkan_present(&vk, index);
+      if (i == rounds)
+         break;
+      vulkan_acquire_next_image(&vk);
+      if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      {
+         fprintf(stderr, "FAIL: no image acquired in round %u\n", i);
+         fail = 1;
+      }
+   }
+   idle_waits = s_idle_waits;
+
+   vulkan_surface_destroy(&vk);
+   vkDeviceWaitIdle(vk.context.device);
+   vkDestroyCommandPool(vk.context.device, pool, NULL);
+   vulkan_context_destroy(&vk, true);
+   track_remove();
+   g_vk_validation_expect = NULL;
+
+   if (fail)
+      return 1;
+   if (!g_vk_validation_expected)
+   {
+      fputs("FAIL: the acquire test never presented a frame whose"
+            " acquire nothing waited on\n", stderr);
+      return 1;
+   }
+   if (idle_waits)
+   {
+      fprintf(stderr, "FAIL: %d queue or device drain(s) while presenting"
+            " frames whose acquires nothing waited on\n", idle_waits);
+      return 1;
+   }
+   return report("frames whose acquires nothing waited on");
+}
+
+static void failed_present_timeout(int sig)
+{
+   static const char msg[] =
+      "FAIL: a failed present never returned - the swapchain teardown"
+      " behind it waits on the queue lock the present still holds\n";
+   (void)sig;
+   if (write(2, msg, sizeof(msg) - 1) < 0) { }
+   _exit(1);
+}
+
+/* A present that fails - out of date, on every resize - tears the
+ * swapchain down on the spot. The teardown has to outlive the present
+ * it follows, which it does with an empty fenced submission behind it,
+ * and a submission takes queue_lock. vulkan_present() still held
+ * queue_lock when it called the teardown: on every platform whose
+ * mutex is not recursive the thread waited on itself, for good.
+ *
+ * queue_lock is for the queue call. The present drops it before it
+ * looks at the result. */
+static int test_failed_present(void)
+{
+   gfx_ctx_vulkan_data_t vk;
+   VkSubmitInfo submit;
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier barrier;
+   VkCommandPool pool = VK_NULL_HANDLE;
+   VkCommandBuffer cmd = VK_NULL_HANDLE;
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned index;
+   unsigned frame;
+   int torn_down;
+
+   reset_counts();
+
+   if (!context_up(&vk))
+   {
+      fputs("FAIL: context setup failed for the failed-present test\n", stderr);
+      return 1;
+   }
+   track_install();
+
+   if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+   {
+      fputs("FAIL: surface create did not acquire an image\n", stderr);
+      vulkan_context_destroy(&vk, true);
+      track_remove();
+      return 1;
+   }
+
+   index = vk.context.current_swapchain_index;
+   frame = vk.context.current_frame_index;
+
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.queueFamilyIndex = vk.context.graphics_queue_index;
+   vkCreateCommandPool(vk.context.device, &pool_info, NULL, &pool);
+
+   memset(&cmd_info, 0, sizeof(cmd_info));
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.commandPool        = pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   vkAllocateCommandBuffers(vk.context.device, &cmd_info, &cmd);
+
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin);
+
+   memset(&barrier, 0, sizeof(barrier));
+   barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.dstAccessMask               = VK_ACCESS_MEMORY_READ_BIT;
+   barrier.oldLayout                   = VK_IMAGE_LAYOUT_UNDEFINED;
+   barrier.newLayout                   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = vk.context.swapchain_images[index];
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = 1;
+   barrier.subresourceRange.layerCount = 1;
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+         0, 0, NULL, 0, NULL, 1, &barrier);
+   vkEndCommandBuffer(cmd);
+
+   memset(&submit, 0, sizeof(submit));
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount   = 1;
+   submit.pCommandBuffers      = &cmd;
+   submit.waitSemaphoreCount   = vulkan_context_take_acquire_waits(
+         &vk.context, frame, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   submit.pWaitSemaphores      = wait_sems;
+   submit.pWaitDstStageMask    = wait_stages;
+   submit.signalSemaphoreCount = 1;
+   submit.pSignalSemaphores    = &vk.context.swapchain_semaphores[index];
+
+   vkQueueSubmit(vk.context.queue, 1, &submit,
+         vk.context.swapchain_fences[frame]);
+   vk.context.swapchain_fences_signalled[frame] = true;
+
+   vk.context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+
+   /* A thread waiting on itself does not come back; give it ten
+    * seconds to, and fail instead of hanging the job. */
+   signal(SIGALRM, failed_present_timeout);
+   alarm(10);
+   s_fail_present = 1;
+   vulkan_present(&vk, index);
+   s_fail_present = 0;
+   alarm(0);
+   signal(SIGALRM, SIG_DFL);
+
+   torn_down = (vk.swapchain == VK_NULL_HANDLE);
+
+   vulkan_surface_destroy(&vk);
+   vkDeviceWaitIdle(vk.context.device);
+   vkDestroyCommandPool(vk.context.device, pool, NULL);
+   vulkan_context_destroy(&vk, true);
+   track_remove();
+
+   if (!torn_down)
+   {
+      fputs("FAIL: a failed present left its swapchain standing\n", stderr);
+      return 1;
+   }
+   if (s_hazards)
+   {
+      fprintf(stderr, "FAIL: the teardown behind a failed present destroyed"
+            " %d object(s) the present still needed\n", s_hazards);
+      return 1;
+   }
+   return report("a present that fails");
+}
+
+/* One frame the way the driver makes one: the acquired image into the
+ * present layout, waiting on its acquire, signalling the swapchain
+ * semaphore, fenced - then the present. */
+static void mailbox_frame(gfx_ctx_vulkan_data_t *vk, VkCommandBuffer cmd)
+{
+   VkSubmitInfo submit;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier barrier;
+   VkSemaphore wait_sems[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   VkPipelineStageFlags wait_stages[VULKAN_MAX_SWAPCHAIN_IMAGES + 1];
+   unsigned index = vk->context.current_swapchain_index;
+   unsigned frame = vk->context.current_frame_index;
+
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin);
+
+   memset(&barrier, 0, sizeof(barrier));
+   barrier.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   barrier.dstAccessMask               = VK_ACCESS_MEMORY_READ_BIT;
+   barrier.oldLayout                   = VK_IMAGE_LAYOUT_UNDEFINED;
+   barrier.newLayout                   = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+   barrier.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   barrier.image                       = vk->context.swapchain_images[index];
+   barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   barrier.subresourceRange.levelCount = 1;
+   barrier.subresourceRange.layerCount = 1;
+   vkCmdPipelineBarrier(cmd,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+         0, 0, NULL, 0, NULL, 1, &barrier);
+   vkEndCommandBuffer(cmd);
+
+   memset(&submit, 0, sizeof(submit));
+   submit.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount   = 1;
+   submit.pCommandBuffers      = &cmd;
+   submit.waitSemaphoreCount   = vulkan_context_take_acquire_waits(
+         &vk->context, frame, wait_sems, wait_stages,
+         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+   submit.pWaitSemaphores      = wait_sems;
+   submit.pWaitDstStageMask    = wait_stages;
+   submit.signalSemaphoreCount = 1;
+   submit.pSignalSemaphores    = &vk->context.swapchain_semaphores[index];
+
+   vkQueueSubmit(vk->context.queue, 1, &submit,
+         vk->context.swapchain_fences[frame]);
+   vk->context.swapchain_fences_signalled[frame] = true;
+
+   vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+   vulkan_present(vk, index);
+}
+
+/* Emulated mailbox: with vsync on and a swap interval of 0 asked for
+ * (fast-forward), the swapchain stays in FIFO and a second thread does
+ * the acquiring, so the presenting thread never blocks on the display:
+ * it asks, and draws the frames for which an image has come back.
+ *
+ * The two threads pass a request and an answer back and forth. That
+ * was a mutex and a condition variable; it is three atomic words and
+ * two eventcounts now. What has to hold either way:
+ *
+ *   - frames keep coming: every request is answered, and the image it
+ *     names is one the presenting thread can render to and present
+ *     (the validation layer checks each one);
+ *   - switching emulation off, with a request possibly in flight, ends
+ *     with an image acquired and the acquire thread joined;
+ *   - so does tearing the swapchain down while it is on.
+ *
+ * Run under ThreadSanitizer this is also the check on the hand-over
+ * itself (make SANITIZER=thread). */
+static int test_emulated_mailbox(void)
+{
+   gfx_ctx_vulkan_data_t vk;
+   VkCommandPoolCreateInfo pool_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandPool pool   = VK_NULL_HANDLE;
+   VkCommandBuffer cmd  = VK_NULL_HANDLE;
+   unsigned frames      = 0;
+   unsigned asks        = 0;
+   unsigned round;
+   int fail             = 0;
+
+   reset_counts();
+
+   if (!context_up(&vk))
+   {
+      fputs("FAIL: context setup failed for the mailbox test\n", stderr);
+      return 1;
+   }
+   if (!(vk.flags & VK_DATA_FLAG_EMULATE_MAILBOX))
+   {
+      /* Not compiled in for this platform. */
+      vulkan_context_destroy(&vk, true);
+      puts("[skip] emulated mailbox is not available here");
+      return 0;
+   }
+
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+   pool_info.queueFamilyIndex = vk.context.graphics_queue_index;
+   vkCreateCommandPool(vk.context.device, &pool_info, NULL, &pool);
+   memset(&cmd_info, 0, sizeof(cmd_info));
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.commandPool        = pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   vkAllocateCommandBuffers(vk.context.device, &cmd_info, &cmd);
+
+   /* A swapchain is marked invalid when it is made, until the driver
+    * has rebuilt what hangs off it; only then are interval changes
+    * applied to it in place, which is where emulation is switched on
+    * and off. This test is the driver here. */
+   vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+
+   for (round = 0; round < 3 && !fail; round++)
+   {
+      unsigned want = frames + 40;
+
+      /* Fast-forward with vsync on: emulation comes up. The swapchain
+       * is made from the context's copy, as a frame would set it. */
+      vk.context.swapchain_settings.vsync = true;
+      if (     !vulkan_create_swapchain(&vk, vk.context.swapchain_dims, 0)
+            || !(vk.flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            || vk.mailbox.swapchain == VK_NULL_HANDLE)
+      {
+         fputs("FAIL: mailbox emulation did not come up\n", stderr);
+         fail = 1;
+         break;
+      }
+      vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+
+      while (frames < want && asks < 200000)
+      {
+         if (vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN)
+         {
+            /* The one command buffer is reused: wait out its last use. */
+            vkDeviceWaitIdle(vk.context.device);
+            mailbox_frame(&vk, cmd);
+            frames++;
+         }
+         /* Non-blocking: no image yet is a frame the driver skips. */
+         vulkan_acquire_next_image(&vk);
+         asks++;
+         if (!(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+            retro_sleep(1);
+      }
+      if (frames < want)
+      {
+         fprintf(stderr, "FAIL: only %u frame(s) got an image in %u asks\n",
+               frames, asks);
+         fail = 1;
+         break;
+      }
+
+      if (round == 2)
+         break;   /* the last round is torn down with emulation on */
+
+      /* Fast-forward released: emulation goes, with an image in hand. */
+      if (     !vulkan_create_swapchain(&vk, vk.context.swapchain_dims, 1)
+            || (vk.flags & VK_DATA_FLAG_EMULATING_MAILBOX)
+            || vk.mailbox.swapchain != VK_NULL_HANDLE
+            || !(vk.context.flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      {
+         fputs("FAIL: leaving mailbox emulation did not end with an"
+               " image acquired and the acquire thread gone\n", stderr);
+         fail = 1;
+      }
+      vk.context.flags &= ~VK_CTX_FLAG_INVALID_SWAPCHAIN;
+   }
+   vk.context.swapchain_settings.vsync = false;
+
+   vulkan_surface_destroy(&vk);
+   vkDeviceWaitIdle(vk.context.device);
+   vkDestroyCommandPool(vk.context.device, pool, NULL);
+   vulkan_context_destroy(&vk, true);
+
+   if (fail)
+      return 1;
+   printf("       emulated mailbox: %u frames from %u asks\n", frames, asks);
+   return report("emulated mailbox, on, off and torn down");
+}
+
 /* vulkan_find_memory_type() picks the heap for every allocation
  * the backend makes; a wrong answer is a validation error at the
  * first vkBindImageMemory rather than here, so check the
@@ -684,6 +1190,12 @@ int main(void)
    else if (test_memory_type_selection())
       ret = 1;
    else if (test_present_then_teardown())
+      ret = 1;
+   else if (test_unsubmitted_acquires())
+      ret = 1;
+   else if (test_failed_present())
+      ret = 1;
+   else if (test_emulated_mailbox())
       ret = 1;
 
    XDestroyWindow(s_dpy, s_win);

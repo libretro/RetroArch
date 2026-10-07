@@ -788,6 +788,7 @@ static const struct
    char s_56e1b336[18];
    char s_313d15c0[8];
    char s_e9f0dd82[33];
+   char s_0bd714f7[7];
    char s_72765a06[12];
    char s_72765a07[12];
    char s_72765a08[12];
@@ -1066,7 +1067,6 @@ static const struct
    char s_136eaaf4[34];
    char s_8d3a8b68[6];
    char s_68d27147[11];
-   char s_f02f73fc[28];
    char s_e5b971a0[6];
    char s_17615fcf[5];
    char s_3a0a3fef[20];
@@ -1118,7 +1118,6 @@ static const struct
    char s_5e519829[24];
 #endif
 #endif
-   char s_f228c6c5[18];
    char s_11926382[20];
    char s_645ae416[26];
    char s_df92f5b5[47];
@@ -2626,7 +2625,6 @@ static const struct
    char s_74d87c7a[47];
    char s_12adb1e7[45];
    char s_070529d4[57];
-   char s_30d1fc05[46];
 #ifdef GEKKO
    char s_3180dcf5[59];
 #endif
@@ -2667,7 +2665,6 @@ static const struct
    char s_47df0525[70];
    char s_03e272fc[40];
    char s_5c2cc60f[99];
-   char s_d6d8d4be[75];
    char s_e86d2704[83];
    char s_dda608b5[351];
    char s_6f5a032a[63];
@@ -2753,7 +2750,6 @@ static const struct
    char s_193e1462[50];
    char s_6895dfd6[60];
    char s_788364f5[67];
-   char s_dd9ff22a[69];
    char s_db495a9d[42];
    char s_ddc672a7[66];
    char s_f754a0d3[82];
@@ -2800,7 +2796,6 @@ static const struct
    char s_6435c857[52];
 #endif
 #endif
-   char s_01efec73[46];
    char s_d3fc9970[47];
    char s_740bd7c4[54];
    char s_f052dae3[77];
@@ -5017,6 +5012,7 @@ static const struct
    "Y D\303\274\304\237mesi (Sol)",
    "Tu\305\237 %s",
    "Klavye Kontrolc\303\274 E\305\237leme T\303\274r\303\274",
+   "T\303\274m\303\274",
    "Silah Aux A",
    "Silah Aux B",
    "Silah Aux C",
@@ -5297,7 +5293,6 @@ static const struct
    "Kiosk Kipini Devre D\304\261\305\237\304\261 B\304\261rak",
    "Men\303\274",
    "Kiosk Kipi",
-   "Men\303\274 Kare H\304\261z\304\261 S\304\261n\304\261r\304\261",
    "Daima",
    "Asla",
    "Dosya Taray\304\261c\304\261s\304\261",
@@ -5350,7 +5345,6 @@ static const struct
    "'Diski \303\207\304\261kar' G\303\266ster",
 #endif
 #endif
-   "'Yard\304\261m' G\303\266ster",
    "'Bilgileri' G\303\266ster",
    "'\304\260\303\247erik Y\303\274kle' G\303\266ster",
    "\"\304\260\303\247erik Y\303\274kle\" Ba\305\237lang\304\261\303\247 \342\200\213\342\200\213Bil"
@@ -7142,7 +7136,6 @@ static const struct
    "\303\207\304\261k\304\261\305\237 ses seviyesi seviyesini art\304\261r\304\261r.",
    "Tam i\303\247erik kare h\304\261z\304\261n\304\261 e\305\237itlemesini a\303\247ar/kapat\304\261"
    "r.",
-   "RetroArch taraf\304\261ndan tan\304\261nan fiziksel fare.",
 #ifdef GEKKO
    "Wiimote light gun h\304\261z\304\261 i\303\247in x/y \303\266l\303\247e\304\237ini ayarlay\304"
    "\261n.",
@@ -7223,8 +7216,6 @@ static const struct
    "Girdi e\305\237lemeleri bu dizinde saklan\304\261r.",
    "Mevcut \303\247ekirdek i\303\247in ayarlanm\304\261\305\237 yeniden e\305\237lenen ba\304\237lar"
    "la giri\305\237 ba\304\237lar\304\261n\304\261 \303\266zelle\305\237tirir.",
-   "Hangi \303\247ekirdeki\304\237in hangi port \303\274st\303\274nden girdi alaca\304\237\304\261n"
-   "\304\261 belirtir %u.",
    "E\305\237le\305\237meler yaln\304\261zca kaydedildikleri aktif kontrolc\303\274 i\303\247in ge"
    "\303\247erli olacakt\304\261r.",
    "Sanal RetroPad ile fiziksel bir giri\305\237 cihaz\304\261n\304\261n nas\304\261l e\305\237lendi"
@@ -7389,8 +7380,6 @@ static const struct
    "Kullan\304\261lacak men\303\274 s\303\274r\303\274c\303\274s\303\274. (Yeniden ba\305\237lat\304"
    "\261lmal\304\261)",
    "Yap\304\261land\304\261rmayla ilgili t\303\274m ayarlar\304\261 gizleyerek kurulumu korur.",
-   "Men\303\274n\303\274n i\303\247indeyken kare h\304\261z\304\261n\304\261n kapat\304\261ld\304"
-   "\261\304\237\304\261ndan emin olun.",
    "Dosya taray\304\261c\304\261 ayarlar\304\261n\304\261 de\304\237i\305\237tir.",
    "Varsay\304\261lan men\303\274 arka plan\304\261n\304\261n \305\237effafl\304\261\304\237\304\261"
    "n\304\261 de\304\237i\305\237tirin.",
@@ -7491,7 +7480,6 @@ static const struct
    "Ana Men\303\274de 'Diski \303\207\304\261kar' se\303\247ene\304\237ini g\303\266sterin.",
 #endif
 #endif
-   "Ana Men\303\274de 'Yard\304\261m' se\303\247ene\304\237ini g\303\266sterin.",
    "Ana Men\303\274de 'Bilgiler' se\303\247ene\304\237ini g\303\266sterin.",
    "Ana Men\303\274de '\304\260\303\247erik Y\303\274kle' se\303\247ene\304\237ini g\303\266sterin.",
    "\304\260\303\247erik y\303\274klerken k\304\261sa bir tan\304\261t\304\261m geri bildirimi anima"
@@ -9176,7 +9164,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_tr_blob_check[
-      (sizeof(msg_hash_tr_blob) == (170370u
+      (sizeof(msg_hash_tr_blob) == (170095u
 #ifdef ANDROID
        + 340u
 #endif
@@ -10323,6 +10311,7 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10601,7 +10590,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -10653,7 +10641,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12160,7 +12147,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12201,7 +12187,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -12287,7 +12272,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HORIZONTAL_ANIMATION,
@@ -12334,7 +12318,6 @@ static const uint32_t msg_hash_tr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_EJECT_DISC,
 #endif
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,

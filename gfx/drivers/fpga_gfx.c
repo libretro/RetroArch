@@ -130,16 +130,13 @@ static void fpga_create(fpga_t *fpga)
    fpga->framebuffer = ((volatile unsigned*)fpga->regOp.ptr);
 }
 
-static void *fpga_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *fpga_init(const video_info_t *video)
 {
    fpga_t *fpga                         = (fpga_t*)calloc(1, sizeof(*fpga));
 
    if (!fpga)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    fpga->frame_width                    = VIDEO_SCALE_W(video->dims);
    fpga->frame_height                   = VIDEO_SCALE_H(video->dims);
@@ -158,9 +155,11 @@ static void *fpga_init(const video_info_t *video,
 }
 
 static bool fpga_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;
@@ -231,7 +230,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGBX444 to XRGB8888 */
                   unsigned r = ((pixel & 0xF000) >> 12);
@@ -254,7 +256,10 @@ static bool fpga_frame(void *data, const void *frame,
                   /* scale incoming frame to fit the screen */
                   unsigned scaled_x    = (width * x) / FB_WIDTH;
                   unsigned scaled_y    = (height * y) / FB_HEIGHT;
-                  unsigned short pixel = ((unsigned short*)frame_to_copy)[width * scaled_y + scaled_x];
+                  /* Rows are pitch bytes apart, not width pixels. */
+                  unsigned short pixel = ((const unsigned short*)
+                        ((const unsigned char*)frame_to_copy
+                         + pitch * scaled_y))[scaled_x];
 
                   /* convert RGB565 to XRBG8888 */
                   unsigned r = ((pixel & 0xF800) >> 11);

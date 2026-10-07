@@ -100,6 +100,7 @@ measure gfx/video_thread_wrapper.o  thread_get_refresh_rate
 measure gfx/video_thread_wrapper.o  video_thread_viewport_info
 # The handoff itself: one region, and the ring is what it is for.
 measure gfx/video_thread_wrapper.o  video_thread_frame
+measure gfx/video_thread_wrapper.o  video_thread_loop
 
 # The audio thread's loop: the lock belongs to the pass that parks or
 # leaves, not to the passes that play audio.
@@ -109,11 +110,28 @@ measure audio/audio_thread_wrapper.o  audio_thread_loop
 # nothing in flight.
 measure libretro-common/queues/task_queue.o  retro_task_threaded_gather
 
+measure libretro-common/rthreads/tpool.o  tpool_worker
+measure libretro-common/rthreads/tpool.o  tpool_help
+measure libretro-common/rthreads/tpool.o  tpool_wait
+
+measure record/drivers/record_ffmpeg.o  ffmpeg_push_video
+measure record/drivers/record_ffmpeg.o  ffmpeg_push_audio
+measure record/drivers/record_ffmpeg.o  ffmpeg_thread
+
 # The frame and the batch. Neither takes a lock today, and the reason
 # to record that is how much runs under them.
 measure gfx/video_driver.o    video_driver_frame
 measure audio/audio_driver.o  audio_driver_sample_batch
 measure runloop.o             runloop_iterate
+
+# The Vulkan context. The emulated mailbox's two threads pass a
+# request and an answer through atomic words and eventcounts, and the
+# only lock anywhere near a frame is queue_lock, around the queue call:
+# the present takes it once, and the acquire takes it only in the path
+# that empties a full stale-acquire list.
+measure gfx/common/vulkan_common.o  vulkan_emulated_mailbox_loop
+measure gfx/common/vulkan_common.o  vulkan_present
+measure gfx/common/vulkan_common.o  vulkan_acquire_next_image
 
 if [ "$fail" = 1 ]; then
    echo

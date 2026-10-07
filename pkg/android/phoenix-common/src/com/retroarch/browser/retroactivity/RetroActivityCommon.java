@@ -921,6 +921,9 @@ public class RetroActivityCommon extends NativeActivity
     closeUsbConnection(deviceId);
     mUsbPermissionPending.remove(Integer.valueOf(deviceId));
     invalidateDeviceCaches(deviceId);
+    /* Tell the native input driver: no input event marks a removal, so
+     * this callback is the only way it learns that a pad is gone. */
+    inputDeviceRemoved(deviceId);
   }
 
   /** Drops every cached per-device lookup for an input device id. */
@@ -1486,6 +1489,32 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   @SuppressWarnings("deprecation")
+  /**
+   * The display's peak luminance in nits, as its HDR capabilities
+   * report it (API 24); 0 where the display reports none or is not HDR.
+   */
+  public float getHdrMaxLuminance()
+  {
+    try
+    {
+      Display display = getActiveDisplay();
+
+      if (display == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.N)
+        return 0.0f;
+
+      Display.HdrCapabilities caps = display.getHdrCapabilities();
+      if (caps == null || caps.getSupportedHdrTypes().length == 0)
+        return 0.0f;
+
+      float peak = caps.getDesiredMaxLuminance();
+      return (Float.isNaN(peak) || peak <= 0.0f) ? 0.0f : peak;
+    }
+    catch (Exception e)
+    {
+      return 0.0f;
+    }
+  }
+
   public float getRefreshRate()
   {
     try
@@ -1822,6 +1851,13 @@ public class RetroActivityCommon extends NativeActivity
    * @param finished true when the user confirmed (Done/Enter) or cancelled.
    */
   public native void onSystemKeyboardInput(String text, boolean finished);
+
+  /**
+   * Tells the native input driver that Android removed an input device.
+   *
+   * @param deviceId The id the device had.
+   */
+  public native void inputDeviceRemoved(int deviceId);
 
 
 

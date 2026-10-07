@@ -66,6 +66,10 @@
 
 #include <file/archive_file.h>
 #include <lists/string_list.h>
+#include <encodings/crc32.h>
+#include <encodings/deflate.h>
+#include <streams/file_stream.h>
+#include <file/file_path.h>
 
 static int failures = 0;
 
@@ -696,6 +700,247 @@ static void test_missing_backend_reports_failure(void)
    }
 }
 
+/* Members of different methods extracted through one transfer, which
+ * keeps its inflate stream and read buffer from member to member: a
+ * DEFLATE member spanning several 128 KiB input slices is followed by
+ * small DEFLATE and STORED ones, and every member must come out
+ * byte-exact.  Run again with every recorded CRC wrong, every member
+ * must be refused and none written. */
+#define SEQ_MEMBERS 6
+
+typedef struct
+{
+   uint8_t *data;
+   uint8_t *packed;
+   uint32_t size;
+   uint32_t csize;
+   uint32_t crc;
+   unsigned method;
+} seq_member_t;
+
+static bool seq_deflate(seq_member_t *m)
+{
+   size_t bound = m->size + m->size / 8 + 1024;
+   size_t done  = 0;
+   void *z      = rdeflate_new(6, -15);
+
+   if (!z || !(m->packed = (uint8_t*)malloc(bound)))
+   {
+      rdeflate_free(z);
+      return false;
+   }
+   rdeflate_set_in(z, m->data, m->size);
+   rdeflate_set_out(z, m->packed, bound);
+   rdeflate_finish(z);
+   for (;;)
+   {
+      size_t rd = 0, wr = 0;
+      int st    = rdeflate_process(z, &rd, &wr);
+      done     += wr;
+      if (st == RDEFLATE_PROCESS_END)
+         break;
+      if (st == RDEFLATE_PROCESS_ERROR || (rd == 0 && wr == 0))
+      {
+         rdeflate_free(z);
+         return false;
+      }
+   }
+   rdeflate_free(z);
+   m->csize = (uint32_t)done;
+   return true;
+}
+
+static int seq_extract_cb(const char *name, const char *valid_exts,
+      const uint8_t *cdata, unsigned cmode, uint32_t csize, uint32_t size,
+      uint32_t checksum, struct archive_extract_userdata *userdata)
+{
+   char out[64];
+   unsigned *n = (unsigned*)userdata->cb_data;
+
+   snprintf(out, sizeof(out), "rarch_zip_seq_out_%s", name);
+   if (file_archive_perform_mode(out, valid_exts, cdata, cmode,
+            csize, size, checksum, userdata))
+      (*n)++;
+   return 1;
+}
+
+static void member_sequence(bool corrupt)
+{
+   static const unsigned methods[SEQ_MEMBERS] = { 8, 0, 8, 8, 0, 8 };
+   static const uint32_t sizes[SEQ_MEMBERS]   =
+      { 3000, 777, 512 * 1024, 5000, 1, 1 };
+   const char *tmp_path = "rarch_zip_seq_test.zip";
+   seq_member_t m[SEQ_MEMBERS];
+   struct archive_extract_userdata userdata;
+   file_archive_transfer_t state;
+   uint32_t offsets[SEQ_MEMBERS];
+   uint32_t lcg      = 1;
+   uint8_t *buf      = NULL;
+   size_t len        = 0;
+   size_t cap        = 0;
+   size_t cd_start;
+   unsigned extracted = 0;
+   unsigned i;
+   bool ok           = true;
+   bool returnerr    = true;
+
+   memset(m, 0, sizeof(m));
+
+   for (i = 0; i < SEQ_MEMBERS; i++)
+   {
+      uint32_t j;
+      m[i].size   = sizes[i];
+      m[i].method = methods[i];
+      m[i].data   = (uint8_t*)malloc(m[i].size);
+      /* Text-like for the small members, noise for the large one so
+       * its compressed size spans several input slices. */
+      for (j = 0; j < m[i].size; j++)
+      {
+         lcg = lcg * 1103515245u + 12345u;
+         m[i].data[j] = (m[i].size > 65536)
+            ? (uint8_t)(lcg >> 16)
+            : (uint8_t)('a' + ((lcg >> 16) % 7) + i);
+      }
+      m[i].crc = encoding_crc32(0, m[i].data, m[i].size);
+      if (corrupt)
+         m[i].crc ^= 1;
+      if (m[i].method == 8)
+      {
+         if (!seq_deflate(&m[i]))
+            ok = false;
+      }
+      else
+         m[i].csize = m[i].size;
+      cap += 30 + 46 + 2 * 16 + m[i].csize;
+   }
+   cap += 22;
+
+   if (ok && m[2].csize <= 2 * 128 * 1024)
+   {
+      printf("FAIL  member sequence fixture: large member too small\n");
+      failures++;
+      ok = false;
+   }
+
+   if (ok && (buf = (uint8_t*)malloc(cap)))
+   {
+      char name[16];
+
+      for (i = 0; i < SEQ_MEMBERS; i++)
+      {
+         size_t nl;
+         snprintf(name, sizeof(name), "m%u.bin", i);
+         nl         = strlen(name);
+         offsets[i] = (uint32_t)len;
+         put_u32(buf + len + 0,  LFH_SIG);
+         put_u16(buf + len + 4,  20);
+         put_u16(buf + len + 6,  0);
+         put_u16(buf + len + 8,  (uint16_t)m[i].method);
+         put_u16(buf + len + 10, 0);
+         put_u16(buf + len + 12, 0);
+         put_u32(buf + len + 14, m[i].crc);
+         put_u32(buf + len + 18, m[i].csize);
+         put_u32(buf + len + 22, m[i].size);
+         put_u16(buf + len + 26, (uint16_t)nl);
+         put_u16(buf + len + 28, 0);
+         memcpy(buf + len + 30, name, nl);
+         memcpy(buf + len + 30 + nl,
+               m[i].method == 8 ? m[i].packed : m[i].data, m[i].csize);
+         len += 30 + nl + m[i].csize;
+      }
+
+      cd_start = len;
+      for (i = 0; i < SEQ_MEMBERS; i++)
+      {
+         size_t nl;
+         snprintf(name, sizeof(name), "m%u.bin", i);
+         nl = strlen(name);
+         len += write_stored_cfh(buf + len, name, m[i].size, m[i].crc,
+               offsets[i]);
+         /* write_stored_cfh writes method 0 and csize == size. */
+         put_u16(buf + len - 46 - nl + 10, (uint16_t)m[i].method);
+         put_u32(buf + len - 46 - nl + 20, m[i].csize);
+      }
+      len += write_eocd(buf + len, SEQ_MEMBERS,
+            (uint32_t)(len - cd_start), (uint32_t)cd_start);
+
+      write_file(tmp_path, buf, len);
+
+      memset(&state, 0, sizeof(state));
+      memset(&userdata, 0, sizeof(userdata));
+      state.type       = ARCHIVE_TRANSFER_INIT;
+      userdata.cb_data = &extracted;
+
+      while (file_archive_parse_file_iterate(&state, &returnerr, tmp_path,
+               NULL, seq_extract_cb, &userdata) == 0) { }
+
+      remove(tmp_path);
+
+      if (extracted != (corrupt ? 0 : SEQ_MEMBERS))
+         ok = false;
+
+      for (i = 0; i < SEQ_MEMBERS; i++)
+      {
+         char out[64];
+         void *got      = NULL;
+         int64_t gotlen = 0;
+
+         snprintf(out, sizeof(out), "rarch_zip_seq_out_m%u.bin", i);
+         if (corrupt)
+         {
+            if (path_is_valid(out))
+            {
+               printf("FAIL  member sequence: m%u.bin (method %u) "
+                      "written despite a wrong CRC\n", i, m[i].method);
+               ok = false;
+            }
+         }
+         else if (!filestream_read_file(out, &got, &gotlen)
+               || gotlen != (int64_t)m[i].size
+               || memcmp(got, m[i].data, m[i].size))
+         {
+            printf("FAIL  member sequence: m%u.bin (method %u) differs\n",
+                  i, m[i].method);
+            ok = false;
+         }
+         free(got);
+         remove(out);
+      }
+   }
+   else
+      ok = false;
+
+   free(buf);
+   for (i = 0; i < SEQ_MEMBERS; i++)
+   {
+      free(m[i].data);
+      free(m[i].packed);
+   }
+
+   if (!ok)
+   {
+      printf("FAIL  member sequence%s: %u of %u members extracted, "
+             "contents as reported above\n",
+             corrupt ? " (wrong CRCs)" : "", extracted, SEQ_MEMBERS);
+      failures++;
+   }
+   else if (corrupt)
+      printf("ok    members failing their recorded CRC are refused\n");
+   else
+      printf("ok    mixed DEFLATE/STORED members extract intact through "
+             "one transfer\n");
+}
+
+static void test_member_sequence_reuse(void)
+{
+   member_sequence(false);
+}
+
+static void test_member_crc_mismatch(void)
+{
+   member_sequence(true);
+}
+
 int main(void)
 {
    test_truncated_entry();
@@ -707,6 +952,8 @@ int main(void)
    test_init_failure_cleanup();
    test_missing_member_terminates();
    test_missing_backend_reports_failure();
+   test_member_sequence_reuse();
+   test_member_crc_mismatch();
 
    if (failures)
    {

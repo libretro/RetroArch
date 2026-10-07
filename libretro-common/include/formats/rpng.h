@@ -155,6 +155,27 @@ bool rpng_save_image_stream_fmt(const uint8_t *data,
       intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
       enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr);
 
+/* The same encode in steps, for a caller that must not hold its thread
+ * for the whole image: begin writes the header, each step encodes rows
+ * while within(userdata) returns true, asked before every row (the
+ * first row of a step runs whatever the answer; NULL means to the
+ * end), and the step that encodes the last row writes the rest of the
+ * file.  The output is byte-identical to the one-go
+ * encode.  data must stay valid until the encode is done.
+ *
+ * rpng_encode_begin returns NULL on failure; rpng_encode_step returns 0
+ * with rows left, 1 once the file is complete, -1 on an error; free the
+ * encoder with rpng_encode_free either way, done or abandoned.  The
+ * stream stays the caller's. */
+typedef struct rpng_encoder rpng_encoder_t;
+
+rpng_encoder_t *rpng_encode_begin(const uint8_t *data,
+      intfstream_t *intf_s, unsigned width, unsigned height, signed pitch,
+      enum rpng_pixfmt fmt, const struct rpng_hdr_metadata *hdr);
+int rpng_encode_step(rpng_encoder_t *e,
+      bool (*within)(void *userdata), void *userdata);
+void rpng_encode_free(rpng_encoder_t *e);
+
 /* Bytes-per-pixel variant of rpng_save_image_stream_fmt, kept for
  * callers that predate the format enum: 3 = BGR24, 4 = ARGB32,
  * 6 = RGB48.  RGBA32 is only reachable through the fmt entry point. */

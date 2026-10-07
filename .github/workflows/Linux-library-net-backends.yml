@@ -1,0 +1,157 @@
+name: CI Linux library network backends
+
+# The built-in TLS, SMB and NFS clients are the defaults and nothing is
+# bundled. A system mbedTLS or BearSSL can stand in for the TLS client
+# (--enable-mbedtls, --enable-bearssl) and a system libsmb2 for the SMB
+# client (--enable-libsmb). Each lane configures with its option, builds
+# RetroArch to the link, checks the binary carries that library's
+# backend and not the built-in client, and then operates the backend:
+# the TLS lanes run the cheevos login transport against a local HTTPS
+# server, the libsmb2 lane runs the SMB VFS tests against a local smbd.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  library-backends:
+    name: ${{ matrix.lane }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - lane: mbedtls
+            configure: --enable-mbedtls
+            present: mbedtls_ssl_handshake
+            absent: ' T ssl_socket_retro_was_resumed'
+          - lane: bearssl
+            configure: --enable-bearssl
+            present: br_ssl_client_init_full
+            absent: ' T ssl_socket_retro_was_resumed'
+          - lane: libsmb2
+            configure: --enable-libsmb
+            present: ' U smb2_connect_share'
+            absent: ' T rsmb_connect'
+
+    steps:
+      - name: Dependencies
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y build-essential pkg-config cmake \
+            libgl1-mesa-dev libx11-dev libxext-dev libasound2-dev libsdl2-dev \
+            zlib1g-dev libfreetype6-dev python3 openssl \
+            libmbedtls-dev libbearssl-dev samba
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ strategy.job-index }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ strategy.job-index }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
+
+      - name: libsmb2 from upstream (no Ubuntu package)
+        if: matrix.lane == 'libsmb2'
+        run: |
+          set -eu
+          git clone -q --depth 1 https://github.com/sahlberg/libsmb2.git "$RUNNER_TEMP/libsmb2"
+          cmake -S "$RUNNER_TEMP/libsmb2" -B "$RUNNER_TEMP/libsmb2/build" \
+            -DCMAKE_INSTALL_PREFIX=/usr/local -DBUILD_SHARED_LIBS=ON >/dev/null
+          make -C "$RUNNER_TEMP/libsmb2/build" -j"$(nproc)" >/dev/null
+          sudo make -C "$RUNNER_TEMP/libsmb2/build" install >/dev/null
+          sudo ldconfig
+          echo "PKG_CONFIG_PATH=/usr/local/lib/pkgconfig" >> "$GITHUB_ENV"
+          pkg-config --modversion libsmb2 || PKG_CONFIG_PATH=/usr/local/lib/pkgconfig pkg-config --modversion libsmb2
+
+      - name: Configure
+        run: |
+          set -eu
+          ./configure ${{ matrix.configure }} --disable-qt --disable-wayland --disable-ffmpeg
+          grep -E '^HAVE_(RETROSSL|MBEDTLS|BEARSSL|RETROSMB|SMBCLIENT|SSL) ' config.mk
+          case "${{ matrix.lane }}" in
+            mbedtls) grep -q '^HAVE_MBEDTLS = 1' config.mk; grep -q '^HAVE_RETROSSL = 0' config.mk ;;
+            bearssl) grep -q '^HAVE_BEARSSL = 1' config.mk; grep -q '^HAVE_RETROSSL = 0' config.mk ;;
+            libsmb2) grep -q '^HAVE_SMBCLIENT = 1' config.mk; grep -q '^HAVE_RETROSMB = 0' config.mk ;;
+          esac
+
+      - name: Build
+        run: make -j"$(nproc)"
+
+      - name: Check which backend linked
+        run: |
+          set -eu
+          nm retroarch | grep -q -- '${{ matrix.present }}'
+          if nm retroarch | grep -q -- '${{ matrix.absent }}'; then
+            echo "the built-in client is still linked in the ${{ matrix.lane }} build"; exit 1
+          fi
+          echo "[pass] ${{ matrix.lane }} backend linked, built-in client absent"
+
+      - name: Operate the TLS backend (cheevos login transport, ASan + UBSan)
+        if: matrix.lane != 'libsmb2'
+        working-directory: samples/network/cheevos_login
+        run: |
+          set -eu
+          case "${{ matrix.lane }}" in mbedtls) be=mbed ;; bearssl) be=bear ;; esac
+          make clean all SSL_BACKEND=$be SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
+             make check SSL_BACKEND=$be
+          echo "[pass] ${{ matrix.lane }}: cheevos login transport over a local HTTPS server"
+
+      - name: Operate the libsmb2 backend (SMB VFS against a local smbd)
+        if: matrix.lane == 'libsmb2'
+        run: |
+          set -eu
+          sudo -E env PATH="$PATH" PKG_CONFIG_PATH="$PKG_CONFIG_PATH" WITH_LIBSMB2=1 \
+             samples/network/smb_retro/local_samba_test.sh
+          sudo make -C samples/network/smb_retro clean
+
+      # libsmb2 keeps process-wide state (its list of live contexts) with
+      # no lock of its own; the VFS backend must serialise it. A race
+      # there needs two cores to show up by timing, so the same tests run
+      # again under TSan against a TSan-built libsmb2, which reports it on
+      # any runner, every time.
+      - name: Operate the libsmb2 backend under TSan (instrumented libsmb2)
+        if: matrix.lane == 'libsmb2'
+        run: |
+          set -eu
+          cmake -S "$RUNNER_TEMP/libsmb2" -B "$RUNNER_TEMP/libsmb2/build-tsan" \
+            -DCMAKE_INSTALL_PREFIX=/opt/libsmb2-tsan -DBUILD_SHARED_LIBS=ON \
+            -DCMAKE_C_FLAGS="-O1 -g -fsanitize=thread" \
+            -DCMAKE_SHARED_LINKER_FLAGS="-fsanitize=thread" >/dev/null
+          make -C "$RUNNER_TEMP/libsmb2/build-tsan" -j"$(nproc)" >/dev/null
+          sudo make -C "$RUNNER_TEMP/libsmb2/build-tsan" install >/dev/null
+          sudo -E env PATH="$PATH" \
+             PKG_CONFIG_PATH=/opt/libsmb2-tsan/lib/pkgconfig \
+             LD_LIBRARY_PATH=/opt/libsmb2-tsan/lib \
+             TSAN_OPTIONS="halt_on_error=1 exitcode=66" \
+             CFLAGS="-O1 -g -fsanitize=thread" LDLIBS="-fsanitize=thread" \
+             WITH_LIBSMB2=1 samples/network/smb_retro/local_samba_test.sh
+          sudo make -C samples/network/smb_retro clean

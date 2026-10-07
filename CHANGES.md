@@ -22,6 +22,7 @@
 - CHEEVOS: Download badges on demand only
 - CHEEVOS: Fix for PS2/PSP CHD hashing with RetroAchievements
 - CLOUDSYNC: Google Drive cloud sync driver
+- CLOUDSYNC: NFS cloud sync driver
 - CONFIG: Fix saving main configuration after load configuration
 - DOS: RetroArch for DOS can now start up and handle keyboard correctly
 - CLOUDSYNC: Conflict resolution options
@@ -39,7 +40,10 @@
 - INPUT/MFI: Controller disconnection fix
 - INPUT/SDL: Fix controller vid/pid detection on Windows
 - INPUT/SDL: Add wiimote sensor capabilities
+- INPUT: Remapped pressure sensitive buttons keep their pressure
+- INPUT/SDL: Enable pressure sensitive buttons for PS3 controllers when SDL_JOYSTICK_HIDAPI_PS3=1
 - INPUT/SDL3: Add SDL3 input driver
+- INPUT/SDL3: Enable pressure sensitive buttons for PS3 controllers when SDL_JOYSTICK_HIDAPI_PS3=1
 - INPUT/UDEV: Fix multi-touch detection
 - INPUT/UDEV: Gyroscope and accelerometer sensor support
 - INPUT/UDEV: Add wiimote sensor capabilities
@@ -90,6 +94,26 @@
 - MENU/XMB: Tab change possible by gestures
 - MENU/XMB: Horizontal menu is now optional
 - NETWORK: New network commands SAVE_STATE_SLOT N and GET_CONFIG_PARAM
+- NETWORK: HELP network command lists every command with what it does
+- NETWORK: LIST_CORES, LIST_PLAYLISTS and GET_PLAYLIST network commands, to find content and the core to load it with
+- NETWORK: MCP server: AI assistants can drive RetroArch through the Model Context Protocol, every network command a tool (off by default, see docs/mcp-server.md)
+- NETWORK: MCP server: tools whose work runs over later frames (content, states, replays, shaders, AI service) answer with its outcome once it is through, and the server stays up across content loads
+- NETWORK: Fix SAVE_STATE_SLOT freezing RetroArch with cores such as bsnes
+- NETWORK: Fix the SAVE_FILES and LOAD_FILES failure reply, and LOAD_CORE reporting a core that failed to load as loaded
+- NETWORK: Built-in TLS 1.2/1.3 client; mbedTLS and BearSSL are no longer bundled (--enable-mbedtls / --enable-bearssl use a system one)
+- NETWORK: Built-in SMB2/3 client with signing, AES-CCM/GCM encryption and Kerberos; libsmb2 is no longer bundled (--enable-libsmb uses a system one)
+- NETWORK: Built-in NFSv3 and NFSv4 (4.0, 4.1, 4.2) client for loading content from nfs:// exports
+- NETWORK: NFS files stay usable across a server restart, a dropped connection or a long pause: the client reconnects and reopens what it needs
+- 3DS/VITA/SWITCH/WIIU: nfs:// content through the built-in NFS client
+- 3DS/VITA/SWITCH: smb:// content through the built-in SMB client
+- WINDOWS/MSVC: the Visual Studio 2005 - 2017 projects build the TLS client, the keychain, SMB and NFS
+- NETWORK: SMB files stay usable across a server restart: the connection is mended and the file opened again where it was
+- NETWORK: NFSv4.2 reads use READ_PLUS: holes in sparse files no longer cross the network
+- 3DS/SWITCH: nfs:// content through the built-in NFS client
+- NETWORK: Optional SMB/NFS read-ahead with background prefetch, for large disc images over a slow link (off by default)
+- NETWORK: Saved passwords are encrypted in retroarch-keychain.cfg; an optional passphrase lets the keychain move to another machine (see docs/network-stack.md)
+- NETWORK: SMB 3.1.1 signs with AES-GMAC where the server offers it, several times faster than AES-CMAC on signed reads
+- NETWORK: HTTPS downloads whose length is set by the server closing the connection now finish instead of hanging
 - OVERLAY: Allow overlays to position the viewport
 - OVERLAY: Hold button function
 - OVERLAY: Allow interaction during next overlay swap

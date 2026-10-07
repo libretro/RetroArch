@@ -93,7 +93,10 @@ static void *sixel_font_init(void *data,
    if (!font_renderer_create_default(
             &font->font_driver,
             &font->font_data, font_path, font_size, FONT_ATLAS_FORMAT_A8))
+   {
+      free(font);
       return NULL;
+   }
 
    return font;
 }
@@ -253,19 +256,15 @@ static void scroll_on_demand(int pixelheight)
 #endif  /* HAVE_SYS_IOCTL_H */
 }
 
-static void *sixel_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *sixel_gfx_init(const video_info_t *video)
 {
    void *ctx_data                       = NULL;
    const char *scale_str                = NULL;
-   settings_t *settings                 = config_get_ptr();
    sixel_t *sixel                       = (sixel_t*)calloc(1, sizeof(*sixel));
 
    if (!sixel)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    sixel_video_bits                     = video->rgb32 ? 32 : 16;
 
@@ -285,27 +284,20 @@ static void *sixel_gfx_init(const video_info_t *video,
          sixel_video_scale = 1.0;
    }
 
-#ifdef HAVE_UDEV
-   *input_data    = input_driver_init_wrap(&input_udev,
-         settings->arrays.input_driver);
-
-   if (*input_data)
-      *input      = &input_udev;
-   else
-#endif
-   {
-      *input      = NULL;
-      *input_data = NULL;
-   }
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 
 
    return sixel;
 }
 
 static bool sixel_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;

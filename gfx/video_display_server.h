@@ -34,7 +34,11 @@ enum display_server_flags
    DISPSERV_CTX_FLAGS_NONE = 0,
    /* The server can apply a video_modeline_t through its modeline_*
     * ops (the bit the CRT consumer and the menu look for). */
-   DISPSERV_CTX_MODELINE
+   DISPSERV_CTX_MODELINE,
+   /* The server has resolution list callbacks but nothing to list them
+    * from right now (the Wayland server away from GNOME): the menu and
+    * the refresh rate autoswitch treat it as having none. */
+   DISPSERV_CTX_NO_RESOLUTION_LIST
 };
 
 /* One-cycle alias for the bit's previous name. */
@@ -155,6 +159,13 @@ typedef struct video_display_server
     * wait. */
    bool     (*idle_wait)(void *data, unsigned ms);
    const char *ident;
+   /* The refresh rate of the output the RetroArch window is on, or 0
+    * when the server cannot tell: on a desktop of several monitors at
+    * different rates, get_refresh_rate answers for one of them, not
+    * necessarily this one. Optional, and after ident so a server
+    * without it needs no entry; video_driver_get_window_refresh_rate()
+    * falls back to get_refresh_rate. */
+   float    (*get_window_refresh_rate)(void *data);
 } video_display_server_t;
 
 void* video_display_server_init(enum rarch_display_type type);
@@ -238,12 +249,18 @@ extern const video_display_server_t dispserv_win32;
 extern const video_display_server_t dispserv_uwp;
 extern const video_display_server_t dispserv_x11;
 extern const video_display_server_t dispserv_wl;
+/* Starts the Wayland display server's DRM lease report - a log line,
+ * worked out on a thread of its own - once per instance. Called where
+ * the log is on to show it. */
+void wl_display_server_report_lease(void *data);
 extern const video_display_server_t dispserv_kms;
 extern const video_display_server_t dispserv_videocore;
 extern const video_display_server_t dispserv_android;
 extern const video_display_server_t dispserv_apple;
 extern const video_display_server_t dispserv_sdl2;
 extern const video_display_server_t dispserv_sdl3;
+extern const video_display_server_t dispserv_gx;
+extern const video_display_server_t dispserv_ps3;
 
 RETRO_END_DECLS
 

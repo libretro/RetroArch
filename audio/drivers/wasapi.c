@@ -65,6 +65,12 @@
 #ifndef AUDCLNT_E_ENGINE_FORMAT_LOCKED
 #define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 #endif
+#ifndef AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM 0x80000000
+#endif
+#ifndef AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY 0x08000000
+#endif
 
 enum wasapi_flags
 {
@@ -111,6 +117,7 @@ typedef struct
    retro_eventcount_t  park;
    bool                park_inited;
    retro_atomic_int_t  pump_run;
+   retro_atomic_int_t  pump_grant;     /* enum audio_thread_grant */
    /* Periods the pump filled with silence for want of audio: one
     * atomic add on that path, read by the frontend's overlay. */
    retro_atomic_size_t underruns;
@@ -253,10 +260,10 @@ static bool wasapi_imm_start_thread(wasapi_t *w)
    {
 #ifdef HAVE_THREADS
       w->imm_thread = sthread_create(mmdevice_thread,
-            &audio_state_get_ptr()->reinit_request);
+            (void*)&audio_state_get_ptr()->reinit_request);
 #else
       w->imm_thread = CreateThread(NULL, 0, mmdevice_thread,
-            &audio_state_get_ptr()->reinit_request, 0, NULL);
+            (void*)&audio_state_get_ptr()->reinit_request, 0, NULL);
 #endif
       if (!w->imm_thread)
          return false;
@@ -523,7 +530,7 @@ static void wasapi_log_endpoint_formats(IAudioClient *client, AUDCLNT_SHAREMODE 
    }
 }
 
-static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout)
+static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClient *client, AUDCLNT_SHAREMODE mode, unsigned channels, uint32_t layout, bool *convert)
 {
    /* Try the requested sample format first, then try the other one. */
    WAVEFORMATEXTENSIBLE *suggested_format  = NULL;
@@ -552,6 +559,16 @@ static bool wasapi_select_device_format(WAVEFORMATEXTENSIBLE *format, IAudioClie
           * layout refused, and the caller decides what stereo costs. */
          if (suggested_format->Format.nChannels != channels)
          {
+            /* A microphone is read as mono, which the shared engine
+             * makes of a wider endpoint only through its converter. */
+            if (convert && channels == 1)
+            {
+               RARCH_LOG("[WASAPI] The endpoint has %u channels; the engine converts them to mono.\n",
+                     suggested_format->Format.nChannels);
+               *convert = true;
+               CoTaskMemFree(suggested_format);
+               return true;
+            }
             RARCH_WARN("[WASAPI] Windows offers %u channels for the %u requested; layout 0x%03x refused.\n",
                   suggested_format->Format.nChannels, channels, layout);
             break;
@@ -786,7 +803,7 @@ static IAudioClient *wasapi_init_client_ex(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_EXCLUSIVE, channels, layout, NULL))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       RELEASE(client);
@@ -878,6 +895,8 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
    unsigned sh_buffer_length      = settings->uints.audio_wasapi_sh_buffer_length;
    REFERENCE_TIME default_period  = 0;
    REFERENCE_TIME buffer_duration = 0;
+   DWORD stream_flags             = AUDCLNT_STREAMFLAGS_EVENTCALLBACK;
+   bool convert                   = false;
    HRESULT hr                     = _IMMDevice_Activate(device,
          IID_IAudioClient, CLSCTX_ALL, NULL, (void**)&client);
 
@@ -916,11 +935,15 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
          wf.Format.nSamplesPerSec,
          latency);
 
-   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels, layout))
+   if (!wasapi_select_device_format(&wf, client, AUDCLNT_SHAREMODE_SHARED, channels, layout, &convert))
    {
       RARCH_ERR("[WASAPI] Failed to select a suitable device format.\n");
       goto error;
    }
+
+   if (convert)
+      stream_flags |= AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM
+                    | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY;
 
    if (low_latency)
       *low_latency = false;
@@ -932,7 +955,9 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
     * grid several times finer - which, with audio_sync on, is the grid
     * the whole frame loop is released on. Any failure here falls
     * through to the IAudioClient path below on a fresh client, so a
-    * system that cannot do this behaves exactly as before. */
+    * system that cannot do this behaves exactly as before. The periods
+    * are for the engine's own format, so a converted stream skips it. */
+   if (!convert)
    {
       IAudioClient3 *client3 = NULL;
       hr = _IAudioClient_QueryInterface(client,
@@ -1017,7 +1042,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
 #endif
 
    hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-         AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+         stream_flags,
          buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
 
    if (hr == AUDCLNT_E_ALREADY_INITIALIZED)
@@ -1035,7 +1060,7 @@ static IAudioClient *wasapi_init_client_sh(IMMDevice *device,
       }
 
       hr = _IAudioClient_Initialize(client, AUDCLNT_SHAREMODE_SHARED,
-            AUDCLNT_STREAMFLAGS_EVENTCALLBACK,
+            stream_flags,
             buffer_duration, 0, (WAVEFORMATEX*)&wf, NULL);
    }
 
@@ -1196,6 +1221,17 @@ typedef struct wasapi_microphone
 {
    bool nonblock;
 } wasapi_microphone_t;
+
+/* The shared-mode capture FIFO, in bytes: the length the user set, but
+ * never less than the engine buffer. A packet goes into the FIFO whole
+ * or waits; one larger than the whole FIFO could never go in, and the
+ * microphone delivered nothing for the rest of the session. */
+static size_t wasapi_microphone_fifo_bytes(size_t frames, size_t frame_size,
+      size_t engine_bytes)
+{
+   size_t bytes = frames * frame_size;
+   return bytes < engine_bytes ? engine_bytes : bytes;
+}
 
 static void wasapi_microphone_close_mic(void *driver_context, void *mic_context)
 {
@@ -1576,13 +1612,18 @@ static void *wasapi_microphone_open_mic(void *driver_context, const char *device
           * Doubling it seems to work okay. Dunno why. */
       }
 
-      mic->buffer = fifo_new(sh_buffer_length * mic->frame_size);
-      if (!mic->buffer)
-         goto error;
+      {
+         size_t fifo_bytes = wasapi_microphone_fifo_bytes(sh_buffer_length,
+               mic->frame_size, mic->engine_buffer_size);
+         size_t fifo_frames = fifo_bytes / mic->frame_size;
 
-      RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
-                sh_buffer_length, (double)sh_buffer_length * 1000.0 / rate,
-                sh_buffer_length * mic->frame_size);
+         if (!(mic->buffer = fifo_new(fifo_bytes)))
+            goto error;
+
+         RARCH_LOG("[WASAPI] Intermediate shared-mode capture buffer length is %u frames (%.1fms, %u bytes).\n",
+                   (unsigned)fifo_frames, (double)fifo_frames * 1000.0 / rate,
+                   (unsigned)fifo_bytes);
+      }
    }
 
    if (!(mic->read_event = CreateEventA(NULL, FALSE, FALSE, NULL)))
@@ -2293,8 +2334,13 @@ static void wasapi_pump_thread(void *data)
     * thread has always run at - the two are not combined, since the
     * class carries its own priority. */
    w->mmcss = (mmtask != NULL);
-   if (!mmtask)
-      SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+   if (mmtask)
+      retro_atomic_store_release_int(&w->pump_grant, AUDIO_THREAD_GRANT_MMCSS);
+   else
+      retro_atomic_store_release_int(&w->pump_grant,
+            SetThreadPriority(GetCurrentThread(),
+               THREAD_PRIORITY_TIME_CRITICAL)
+            ? AUDIO_THREAD_GRANT_RAISED : AUDIO_THREAD_GRANT_REFUSED);
    if (w->rate)
    {
       /* Shared mode names the engine's period outright; exclusive
@@ -2399,6 +2445,7 @@ static void wasapi_pump_thread(void *data)
     * init the session makes, which on a driver that reinitialises per
     * content load is every one of them. */
    wasapi_pump_mmcss_end(avrt, mmtask);
+   retro_atomic_store_release_int(&w->pump_grant, AUDIO_THREAD_GRANT_NONE);
 }
 
 static bool wasapi_pump_start(wasapi_t *w)
@@ -3006,6 +3053,15 @@ static void wasapi_clock_fit(wasapi_t *w, UINT64 frames, UINT64 qpc)
    }
 }
 
+static enum audio_thread_grant wasapi_thread_grant(void *wh)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   if (!w)
+      return AUDIO_THREAD_GRANT_NONE;
+   return (enum audio_thread_grant)retro_atomic_load_acquire_int(
+         &w->pump_grant);
+}
+
 /* The device clock, for the statistics overlay. */
 static bool wasapi_device_clock_ppm(void *wh, double *ppm)
 {
@@ -3086,5 +3142,6 @@ audio_driver_t audio_wasapi = {
    wasapi_underruns,
    wasapi_layout,
    wasapi_frames_consumed_fallback,
-   wasapi_device_clock_ppm
+   wasapi_device_clock_ppm,
+   wasapi_thread_grant
 };

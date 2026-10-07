@@ -29,6 +29,7 @@
 
 #include <retro_common.h>
 #include <retro_common_api.h>
+#include <retro_atomic.h>
 
 #include <libretro.h>
 
@@ -86,7 +87,9 @@ typedef bool (*retro_task_finder_t)(retro_task_t *task,
       void *userdata);
 
 /**
- * Displays a message output by a task.
+ * Displays a message output by a task. An empty message signals
+ * completion to an attached frontend when notification text is suppressed.
+ * It must update task lifetime state without displaying a notification.
  */
 typedef void (*retro_task_queue_msg_t)(retro_task_t *task,
       const char *msg,
@@ -156,7 +159,19 @@ enum retro_task_flags
     * block in an OS call for arbitrarily long, such as a device
     * enumeration.
     */
-   RETRO_TASK_FLG_DETACHABLE       = (1 << 4)
+   RETRO_TASK_FLG_DETACHABLE       = (1 << 4),
+   /**
+    * Set by the pusher before \c task_queue_push: \c handler runs on
+    * the thread that calls \c task_queue_check - the frontend's main
+    * thread - under every runner, never on the worker.  For work that
+    * must happen there (calls into the core, the drivers, the menu)
+    * yet wants a task's lifetime: pushed, found, cancelled, retired
+    * through \c callback and \c cleanup like any other.  It runs
+    * inside the check's handler budget, so a handler that returns
+    * unfinished is called again on a later check, as on the
+    * unthreaded runner.  Not changed after the push.
+    */
+   RETRO_TASK_FLG_MAIN_THREAD      = (1 << 5)
 };
 
 /**
@@ -304,11 +319,12 @@ struct retro_task
     * -1 means the task is indefinite or not measured,
     * 0-100 is a percentage of the task's completion.
     *
-    * Set by the caller.
+    * Set by the caller. Atomic: once the task is pushed, use
+    * task_set_progress / task_get_progress.
     *
     * @see progress_cb
     */
-   int8_t progress;
+   retro_atomic_int_t progress;
 
    /**
     * A unique identifier assigned to a task when it's created.
@@ -323,7 +339,11 @@ struct retro_task
    enum task_type type;
    enum task_style style;
 
-   uint8_t flags;
+   /**
+    * \c retro_task_flags. Atomic: once the task is pushed, use
+    * task_set_flags / task_get_flags.
+    */
+   retro_atomic_int_t flags;
 };
 
 /**
@@ -454,6 +474,23 @@ void task_queue_retriever_info_free(task_retriever_info_t *list);
  * @see task_set_cancelled
  */
 void task_queue_cancel_task(void *task);
+
+typedef struct task_progress_snapshot
+{
+   char *title;
+   char *error;
+   uint8_t flags;
+   int8_t progress;
+} task_progress_snapshot_t;
+
+/* Copies display properties, the strings under their lock. The flags
+ * are read first, so a snapshot that shows a finished task has the
+ * error that task set before finishing. The caller must keep the
+ * task alive during this call and free the snapshot's title and error.
+ * On allocation failure returns false with both strings set to NULL;
+ * flags and progress remain valid. */
+bool task_get_progress_snapshot(const retro_task_t *task,
+      task_progress_snapshot_t *snapshot);
 
 void task_set_flags(retro_task_t *task, uint8_t flags, bool set);
 
@@ -633,6 +670,15 @@ void task_queue_unset_threaded(void);
 bool task_queue_is_threaded(void);
 
 /**
+ * Asks that the task worker thread, once spawned, be placed on the
+ * fast cores of a mixed-core processor (see sthread_prefer_fast_cores).
+ * Takes effect at the next task_queue_init(); a worker already running
+ * is not moved. Off by default. No effect where the queue runs on the
+ * caller's thread or on GCD.
+ */
+void task_queue_set_prefer_fast_cores(bool prefer);
+
+/**
  * Calls the function given in \c find_data for each task
  * until it returns \c true for one of them,
  * or until all tasks have been searched.
@@ -777,6 +823,35 @@ void task_queue_deinit(void);
 void task_queue_init(bool threaded, retro_task_queue_msg_t msg_push);
 
 /**
+ * Bounds what one task_queue_check() may do on the calling thread,
+ * which is the thread that also drives the frame loop.
+ *
+ * Retirement: finished tasks are retired (progress push, callback,
+ * cleanup, free) on the checking thread, and a burst of completions -
+ * a thumbnail scan, a bulk download - used to retire in one call
+ * however long the callbacks took. With a budget, a check retires at
+ * least one task, then stops once @retire_max tasks or @retire_usec
+ * microseconds have gone by; the rest stay queued, still findable,
+ * for the next check.
+ *
+ * Handlers (unthreaded queue only): task handlers run on the checking
+ * thread, one call per running task per check. With a budget, a check
+ * runs at least one due handler, then stops once @handler_usec has
+ * gone by; the tasks not run keep their place at the front of the
+ * queue so the list rotates rather than starving its tail. On the
+ * threaded queue handlers run on the worker and this bound is unused.
+ *
+ * Zero for any bound means unbounded, which is the default and the
+ * behaviour before budgets existed.
+ *
+ * task_queue_wait() and task_queue_wait_timeout() loop on the check,
+ * so a budget slows a blocking wait but never changes what it waits
+ * for.
+ */
+void task_queue_set_budget(retro_time_t retire_usec, unsigned retire_max,
+      retro_time_t handler_usec);
+
+/**
  * Called when a task handler occupies the calling thread for longer
  * than the configured budget.
  *
@@ -790,13 +865,14 @@ typedef void (*retro_task_slow_handler_t)(retro_task_t *task,
 /**
  * Report task handlers that occupy the calling thread too long.
  *
- * This measures the UNTHREADED queue only, which is the
- * configuration where task handlers run on the thread that also
- * drives the frame loop: there, a handler that does not return
- * within a frame's worth of time is a visible stall, and the
- * queue is the only place that can attribute one to a specific
- * task.  On the threaded queue handlers run on a worker, where
- * taking a long time is the point, so nothing is measured.
+ * This measures every handler that runs on the thread calling
+ * task_queue_check() - the frame loop's thread: all of them on the
+ * unthreaded queue, and the RETRO_TASK_FLG_MAIN_THREAD ones on the
+ * threaded queue.  There, a handler that does not return within a
+ * frame's worth of time is a visible stall, and the queue is the
+ * only place that can attribute one to a specific task.  Handlers
+ * on the worker are not measured: taking a long time there is the
+ * point.
  *
  * @param cb Called for each handler invocation exceeding
  * \c budget_usec, or \c NULL to disable the check (the default -

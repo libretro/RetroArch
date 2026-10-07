@@ -332,6 +332,19 @@ static int test_fails;
 static int cb_done;
 static int cb_bad_image;
 
+/* An 8-bit PNG says so in every format field: a driver reads a stray
+ * fp16 or pix10 as half floats or packed 10-bit and sizes the texture
+ * from it. The task's image is malloc'd, so under ASan a field it left
+ * unset holds the 0xbe fill - read here as the byte it is, since a bool
+ * holding anything but 0 or 1 may well test false. */
+static int image_format_fields_clear(const struct texture_image *img)
+{
+   unsigned char f, p;
+   memcpy(&f, &img->fp16,  1);
+   memcpy(&p, &img->pix10, 1);
+   return f == 0 && p == 0;
+}
+
 static void image_loaded_cb(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
@@ -339,7 +352,7 @@ static void image_loaded_cb(retro_task_t *task,
    (void)task;
    (void)user_data;
    if (error || !img || img->width != FIX_W || img->height != FIX_H
-         || !img->pixels)
+         || !img->pixels || !image_format_fields_clear(img))
       cb_bad_image++;
    else
    {

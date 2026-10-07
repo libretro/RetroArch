@@ -13,6 +13,33 @@
 #include <stdlib.h>
 #include <boolean.h>
 
+#ifdef _WIN32
+/* MinGW: the SDK's own types and constants. The Win32 calls the fake
+ * answers are renamed, so the driver's text and the fake bind to each
+ * other while the libretro-common units linked beside them keep
+ * kernel32's. */
+#include <windows.h>
+#include <mmreg.h>
+typedef LONGLONG REFERENCE_TIME; /* audioclient.h's, which is not included */
+#ifndef CLSCTX_ALL
+#define CLSCTX_ALL 23 /* objbase.h's, absent under WIN32_LEAN_AND_MEAN */
+#endif
+#undef PostThreadMessage
+#define CreateEventA        fake_CreateEventA
+#define CloseHandle         fake_CloseHandle
+#define SetEvent            fake_SetEvent
+#define WaitForSingleObject fake_WaitForSingleObject
+#define Sleep               fake_Sleep
+#define CoTaskMemFree       fake_CoTaskMemFree
+#define PostThreadMessage   fake_PostThreadMessage
+#define FormatMessageA      fake_FormatMessageA
+#define GetLastError        fake_GetLastError
+#define GetCurrentThread    fake_GetCurrentThread
+#define SetThreadPriority   fake_SetThreadPriority
+#define LoadLibraryA        fake_LoadLibraryA
+#define GetProcAddress      fake_GetProcAddress
+#define FreeLibrary         fake_FreeLibrary
+#else
 /* --- Windows scalar types ------------------------------------------ */
 typedef int32_t  HRESULT;
 typedef int32_t  LONG;
@@ -41,6 +68,7 @@ typedef WCHAR   *LPWSTR;
 
 typedef struct { uint32_t Data1; uint16_t Data2, Data3; uint8_t Data4[8]; } GUID;
 typedef const GUID *REFIID;
+#endif
 extern const GUID IID_IAudioClient, IID_IAudioRenderClient, IID_IAudioCaptureClient,
        mmdevice_IID_IAudioClient3, KSDATAFORMAT_SUBTYPE_IEEE_FLOAT, KSDATAFORMAT_SUBTYPE_PCM,
        mmdevice_IID_IAudioClock, mmdevice_IID_IAudioClock2;
@@ -58,10 +86,13 @@ unsigned long long fake_device_played(void);
 void fake_device_withhold_events(int on);
 
 /* --- Wave formats ---------------------------------------------------- */
-#define WAVE_FORMAT_PCM        1
-#define WAVE_FORMAT_EXTENSIBLE 0xFFFE
+#ifndef KSAUDIO_SPEAKER_MONO
 #define KSAUDIO_SPEAKER_MONO   0x4
 #define KSAUDIO_SPEAKER_STEREO 0x3
+#endif
+#ifndef _WIN32
+#define WAVE_FORMAT_PCM        1
+#define WAVE_FORMAT_EXTENSIBLE 0xFFFE
 typedef struct {
    WORD wFormatTag, nChannels; DWORD nSamplesPerSec, nAvgBytesPerSec;
    WORD nBlockAlign, wBitsPerSample, cbSize;
@@ -71,6 +102,7 @@ typedef struct {
    union { WORD wValidBitsPerSample, wSamplesPerBlock, wReserved; } Samples;
    DWORD dwChannelMask; GUID SubFormat;
 } WAVEFORMATEXTENSIBLE;
+#endif
 /* As mmdevice_common_inline.h defines them, for the driver's AC-3 path. */
 typedef struct
 {
@@ -86,6 +118,8 @@ static const GUID mmdevice_SUBTYPE_IEC61937_DOLBY_DIGITAL =
 typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } AUDCLNT_SHAREMODE;
 #define AUDCLNT_STREAMFLAGS_EVENTCALLBACK 0x00040000
 #define AUDCLNT_STREAMFLAGS_NOPERSIST     0x00080000
+#define AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY 0x08000000
+#define AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM      0x80000000
 #define AUDCLNT_BUFFERFLAGS_SILENT        0x2
 #define AUDCLNT_ERR(n) ((HRESULT)(0x88890000 | (n)))
 #define AUDCLNT_E_NOT_INITIALIZED          AUDCLNT_ERR(0x01)
@@ -102,7 +136,9 @@ typedef enum { AUDCLNT_SHAREMODE_SHARED = 0, AUDCLNT_SHAREMODE_EXCLUSIVE = 1 } A
 #define AUDCLNT_E_ENGINE_FORMAT_LOCKED AUDCLNT_ERR(0x029)
 
 /* --- COM objects: the vtable shapes the driver's macros dereference --- */
+#ifndef _WIN32
 typedef unsigned long long UINT64;
+#endif
 
 /* IAudioClock and IAudioClock2: the device's own position. The fake
  * advances it from the frames the scripted engine has actually
@@ -249,6 +285,12 @@ void fake_device_configure_engine(unsigned engine_min_frames, unsigned locked_pe
 /* The pin's PCM channel limit (0: any) and whether it takes AC-3 over
  * IEC 61937 in exclusive mode - a TV on HDMI: 2 and true. */
 void fake_device_configure_channels(unsigned max_channels, bool accept_iec61937_ac3);
+/* The channel count of the engine's mix format (0: it takes any). A
+ * shared stream of another count is offered the mix format instead,
+ * and opens only when it asks for the engine's converter. */
+void fake_device_configure_mix_channels(unsigned channels);
+/* The channel count and stream flags the last stream opened with. */
+void fake_device_opened(unsigned *channels, DWORD *flags);
 /* Keep every byte released to the device from now on; what was kept. */
 void   fake_device_capture(bool on);
 size_t fake_device_captured(const uint8_t **buf);
@@ -260,9 +302,20 @@ int  fake_com_refs(void);
 /* The device-notification thread the driver starts: the fake gives it
  * nothing to do, and the driver posts it WM_QUIT on stop. */
 extern DWORD IMMNotificationThreadId;
-#define WM_QUIT 0x12
 BOOL PostThreadMessage(DWORD id, unsigned msg, unsigned long wp, long lp);
+DWORD FormatMessageA(DWORD flags, const void *src, DWORD id, DWORD lang, char *buf, DWORD size, void *args);
+DWORD GetLastError(void);
+HANDLE GetCurrentThread(void);
+BOOL SetThreadPriority(HANDLE h, int prio);
+/* There is no multimedia class scheduler here, so LoadLibraryA
+ * answers no and the driver takes the fallback - which is the path
+ * this harness keeps honest. */
+void   *LoadLibraryA(const char *name);
+void   *GetProcAddress(void *m, const char *name);
+BOOL    FreeLibrary(void *m);
 
+#ifndef _WIN32
+#define WM_QUIT 0x12
 /* Error-string plumbing the driver's wasapi_error() uses. */
 #define FORMAT_MESSAGE_IGNORE_INSERTS 0x200
 #define FORMAT_MESSAGE_FROM_SYSTEM    0x1000
@@ -270,21 +323,12 @@ BOOL PostThreadMessage(DWORD id, unsigned msg, unsigned long wp, long lp);
 #define SUBLANG_DEFAULT 1
 #define MAKELANGID(p, s) ((((WORD)(s)) << 10) | (WORD)(p))
 typedef char *LPSTR;
-DWORD FormatMessageA(DWORD flags, const void *src, DWORD id, DWORD lang, LPSTR buf, DWORD size, void *args);
-DWORD GetLastError(void);
 #define THREAD_PRIORITY_TIME_CRITICAL 15
-HANDLE GetCurrentThread(void);
-BOOL SetThreadPriority(HANDLE h, int prio);
-/* There is no multimedia class scheduler here, so LoadLibraryA
- * answers no and the driver takes the fallback - which is the path
- * this harness keeps honest. */
 typedef void *HMODULE;
 typedef const wchar_t *LPCWSTR;
 typedef DWORD *LPDWORD;
 #define WINAPI
 #define INVALID_HANDLE_VALUE ((HANDLE)(intptr_t)-1)
-HMODULE LoadLibraryA(const char *name);
-void   *GetProcAddress(HMODULE m, const char *name);
-BOOL    FreeLibrary(HMODULE m);
+#endif
 
 #endif

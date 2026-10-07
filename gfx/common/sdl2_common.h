@@ -35,8 +35,7 @@ typedef struct sdl2_tex
 {
    SDL_Texture *tex;
 
-   unsigned w;
-   unsigned h;
+   unsigned dims;
    size_t pitch;
    bool active;
    bool rgb32;
@@ -74,6 +73,8 @@ typedef struct _sdl2_video
 
    void *font_data;
    const font_renderer_driver_t *font_driver;
+   /* The OSD font's atlas as ARGB, its texture's source */
+   uint32_t *font_staging;
 
    uint8_t font_r;
    uint8_t font_g;
@@ -114,6 +115,10 @@ typedef struct _sdl2_video
    int    *display_indices;
    size_t  display_indices_cap;
 } sdl2_video_t;
+
+/* Keeps the pointer in the SDL2 video driver's window, or lets it go.
+ * Nothing happens when that is not the video driver in use. */
+void sdl2_video_grab_window(bool state);
 
 void sdl2_set_handles(void *data, enum rarch_display_type 
       display_type);

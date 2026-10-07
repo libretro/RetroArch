@@ -24,7 +24,9 @@
 #include <retro_timers.h>
 #include <features/features_cpu.h>
 #ifdef HAVE_THREADS
+#include <retro_atomic.h>
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #endif
 
 #include "win32_modeline.h"
@@ -33,9 +35,11 @@
 /* Waiting for the driver to re-plug the monitor after a timing table
  * refresh takes two notifications: the monitor interface arrival and
  * the device-node change. A hidden window on its own thread receives
- * them and signals the waiter; the wait itself blocks on a condition
- * variable and gives up after RESYNC_TIMEOUT_MS so a driver that
- * never re-plugs cannot hang the mode switch. */
+ * them and notifies the waiter; the wait itself blocks on an
+ * eventcount and gives up after RESYNC_TIMEOUT_MS so a driver that
+ * never re-plugs cannot hang the mode switch. No lock: each of the
+ * two notifications, and the thread's "window is up", is one atomic
+ * word, stored before the notify. */
 #define RESYNC_TIMEOUT_MS 5000
 
 static const GUID guid_devinterface_monitor =
@@ -46,13 +50,13 @@ struct win32_modeline_resync
 {
 #ifdef HAVE_THREADS
    sthread_t *thread;
-   slock_t   *lock;
-   scond_t   *cond;
+   retro_eventcount_t wake;
+   retro_atomic_int_t notified_arrival;
+   retro_atomic_int_t notified_nodes;
+   retro_atomic_int_t ready;   /* hwnd is set, or never will be */
+   bool wake_ok;
 #endif
    HWND hwnd;
-   bool notified_arrival;
-   bool notified_nodes;
-   bool ready;
 };
 
 /* The window procedure has no user pointer before CreateWindowEx
@@ -62,13 +66,17 @@ static win32_modeline_resync_t *resync_instance = NULL;
 #ifdef HAVE_THREADS
 static void resync_signal(win32_modeline_resync_t *r, bool arrival)
 {
-   slock_lock(r->lock);
    if (arrival)
-      r->notified_arrival = true;
+      retro_atomic_store_release_int(&r->notified_arrival, 1);
    else
-      r->notified_nodes   = true;
-   scond_signal(r->cond);
-   slock_unlock(r->lock);
+      retro_atomic_store_release_int(&r->notified_nodes, 1);
+   retro_eventcount_notify(&r->wake);
+}
+
+static bool resync_both(win32_modeline_resync_t *r)
+{
+   return retro_atomic_load_acquire_int(&r->notified_arrival)
+       && retro_atomic_load_acquire_int(&r->notified_nodes);
 }
 
 static LRESULT CALLBACK resync_wnd_proc(HWND hwnd, UINT msg,
@@ -147,10 +155,8 @@ static void resync_thread(void *data)
    if (!notify)
       RARCH_ERR("[Resync] Error registering device notification\n");
 
-   slock_lock(r->lock);
-   r->ready = true;
-   scond_signal(r->cond);
-   slock_unlock(r->lock);
+   retro_atomic_store_release_int(&r->ready, 1);
+   retro_eventcount_notify(&r->wake);
 
    while (GetMessage(&msg, NULL, 0, 0))
    {
@@ -171,9 +177,10 @@ win32_modeline_resync_t *win32_modeline_resync_new(void)
    if (!r)
       return NULL;
 #ifdef HAVE_THREADS
-   r->lock = slock_new();
-   r->cond = scond_new();
-   if (!r->lock || !r->cond)
+   retro_atomic_int_init(&r->notified_arrival, 0);
+   retro_atomic_int_init(&r->notified_nodes, 0);
+   retro_atomic_int_init(&r->ready, 0);
+   if (!(r->wake_ok = retro_eventcount_init(&r->wake)))
    {
       win32_modeline_resync_free(r);
       return NULL;
@@ -186,10 +193,19 @@ win32_modeline_resync_t *win32_modeline_resync_new(void)
       return NULL;
    }
    /* The window must exist before the first wait can be signalled */
-   slock_lock(r->lock);
-   while (!r->ready)
-      scond_wait(r->cond, r->lock);
-   slock_unlock(r->lock);
+   for (;;)
+   {
+      int key;
+      if (retro_atomic_load_acquire_int(&r->ready))
+         break;
+      key = retro_eventcount_prepare_wait(&r->wake);
+      if (retro_atomic_load_acquire_int(&r->ready))
+      {
+         retro_eventcount_cancel_wait(&r->wake);
+         break;
+      }
+      retro_eventcount_commit_wait(&r->wake, key);
+   }
 #endif
    return r;
 }
@@ -207,10 +223,8 @@ void win32_modeline_resync_free(win32_modeline_resync_t *r)
    }
    if (resync_instance == r)
       resync_instance = NULL;
-   if (r->cond)
-      scond_free(r->cond);
-   if (r->lock)
-      slock_free(r->lock);
+   if (r->wake_ok)
+      retro_eventcount_free(&r->wake);
 #endif
    free(r);
 }
@@ -220,10 +234,8 @@ void win32_modeline_resync_arm(win32_modeline_resync_t *r)
 #ifdef HAVE_THREADS
    if (!r || !r->thread)
       return;
-   slock_lock(r->lock);
-   r->notified_arrival = false;
-   r->notified_nodes   = false;
-   slock_unlock(r->lock);
+   retro_atomic_store_release_int(&r->notified_arrival, 0);
+   retro_atomic_store_release_int(&r->notified_nodes, 0);
 #else
    (void)r;
 #endif
@@ -240,23 +252,31 @@ void win32_modeline_resync_wait(win32_modeline_resync_t *r)
 
    start = cpu_features_get_time_usec();
    now   = start;
-   slock_lock(r->lock);
-   while (!(r->notified_arrival && r->notified_nodes))
+   for (;;)
    {
-      int64_t left = limit_us - (now - start);
+      int key;
+      int64_t left;
+      if (resync_both(r))
+         break;
+      left = limit_us - (now - start);
       if (left <= 0)
       {
          RARCH_WARN("[Resync] No monitor re-plug notification within %d ms\n",
                RESYNC_TIMEOUT_MS);
          break;
       }
-      scond_wait_timeout(r->cond, r->lock, left);
+      key = retro_eventcount_prepare_wait(&r->wake);
+      if (resync_both(r))
+      {
+         retro_eventcount_cancel_wait(&r->wake);
+         break;
+      }
+      retro_eventcount_commit_wait_timeout(&r->wake, key, left);
       now = cpu_features_get_time_usec();
    }
    /* Consumed; the next arm/wait pair starts clean */
-   r->notified_arrival = false;
-   r->notified_nodes   = false;
-   slock_unlock(r->lock);
+   retro_atomic_store_release_int(&r->notified_arrival, 0);
+   retro_atomic_store_release_int(&r->notified_nodes, 0);
    RARCH_DBG("[Resync] Resync time elapsed %d ms\n",
          (int)((now - start) / 1000));
 #else

@@ -27,6 +27,7 @@
 #include <fcntl.h>
 #include <sys/utsname.h>
 #include <sys/resource.h>
+#include <sys/wait.h>
 
 #ifdef __linux__
 #include <linux/version.h>
@@ -146,7 +147,12 @@ static char unix_cpu_model_name[64]      = {0};
 
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
-static int speak_pid                     = 0;
+/* The narrator is a direct child, reaped with waitpid(WNOHANG): SIGCHLD
+ * keeps its default action, so every other child stays waitable. */
+static pid_t speak_pid                   = 0;
+/* Narrators sent SIGTERM that had not exited yet: reaped on later calls. */
+#define NARRATOR_STOPPING_MAX 4
+static pid_t speak_stopping[NARRATOR_STOPPING_MAX];
 #endif
 
 /* Counts SIGINT/SIGTERM. Written by the signal handler and read by
@@ -239,27 +245,43 @@ bool android_run_events(void *data);
 /* Returns false when the command could not be queued. No
  * acknowledgement for it will ever arrive in that case, so a caller
  * that blocks on one must not take a ticket for it. */
-bool android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+bool android_app_write_cmd_arg(struct android_app *android_app,
+      int8_t cmd, void *arg)
 {
+   struct android_app_msg msg;
    ssize_t ret;
 
    if (!android_app)
       return false;
 
+   memset(&msg, 0, sizeof(msg));
+   msg.cmd = cmd;
+   msg.arg = arg;
+
    /* ART suspends threads with a signal, and the handler is not
-    * guaranteed to carry SA_RESTART, so a one-byte pipe write can come
-    * back short. It cannot come back partial: PIPE_BUF-sized writes are
-    * atomic. */
+    * guaranteed to carry SA_RESTART, so a write can come back short.
+    * It cannot come back partial: PIPE_BUF-sized writes are atomic. */
    do
    {
-      ret = write(android_app->msgwrite, &cmd, sizeof(cmd));
+      ret = write(android_app->msgwrite, &msg, sizeof(msg));
    } while (ret < 0 && errno == EINTR);
 
-   if (ret == (ssize_t)sizeof(cmd))
+   if (ret == (ssize_t)sizeof(msg))
       return true;
 
    RARCH_ERR("[Android] Failed to queue app command %d.\n", (int)cmd);
    return false;
+}
+
+bool android_app_write_cmd(struct android_app *android_app, int8_t cmd)
+{
+   return android_app_write_cmd_arg(android_app, cmd, NULL);
+}
+
+static bool android_app_thread_gone(struct android_app *android_app)
+{
+   return (android_lifecycle_flags(&android_app->lc)
+         & ANDROID_LC_EXITED) != 0;
 }
 
 static void android_app_set_input(struct android_app *android_app,
@@ -270,25 +292,20 @@ static void android_app_set_input(struct android_app *android_app,
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   android_app->pendingInputQueue = inputQueue;
-   ticket                         = android_app->cmd_seq;
+   ticket = android_lifecycle_last_ticket(&android_app->lc);
+   if (     !android_app_thread_gone(android_app)
+         && android_app_write_cmd_arg(android_app, APP_CMD_INPUT_CHANGED,
+            inputQueue))
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   if (     !android_app->app_thread_exited
-         && android_app_write_cmd(android_app, APP_CMD_INPUT_CHANGED))
-      ticket = ++android_app->cmd_seq;
-
-   while (   !android_app->app_thread_exited
-          && (int)(android_app->done_seq - ticket) < 0)
-      scond_wait(android_app->cond, android_app->mutex);
-
-   slock_unlock(android_app->mutex);
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
+         (int)ticket, true, -1);
 }
 
 /* Replacing a live window posts two commands, so wait on the ticket of
  * the last one: the surface is only safe to hand back to the framework
  * once the app thread has worked through both. Posting neither leaves
- * 'ticket' at the current completion count and the wait falls through. */
+ * 'ticket' at the last one answered and the wait falls through. */
 static void android_app_set_window(struct android_app *android_app,
       ANativeWindow* window)
 {
@@ -297,26 +314,23 @@ static void android_app_set_window(struct android_app *android_app,
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   ticket = android_app->cmd_seq;
+   ticket = android_lifecycle_last_ticket(&android_app->lc);
 
-   if (     !android_app->app_thread_exited
-         && android_app->pendingWindow
+   if (     !android_app_thread_gone(android_app)
+         && android_app->posted_window
          && android_app_write_cmd(android_app, APP_CMD_TERM_WINDOW))
-      ticket = ++android_app->cmd_seq;
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   android_app->pendingWindow = window;
+   android_app->posted_window = window;
 
-   if (     !android_app->app_thread_exited
+   if (     !android_app_thread_gone(android_app)
          && window
-         && android_app_write_cmd(android_app, APP_CMD_INIT_WINDOW))
-      ticket = ++android_app->cmd_seq;
+         && android_app_write_cmd_arg(android_app, APP_CMD_INIT_WINDOW,
+            window))
+      ticket = android_lifecycle_ticket(&android_app->lc);
 
-   while (   !android_app->app_thread_exited
-          && (int)(android_app->done_seq - ticket) < 0)
-      scond_wait(android_app->cond, android_app->mutex);
-
-   slock_unlock(android_app->mutex);
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_DONE,
+         (int)ticket, true, -1);
 }
 
 /* Upper bound on how long a lifecycle callback will block waiting for the
@@ -326,10 +340,13 @@ static void android_app_set_window(struct android_app *android_app,
  * is an ANR. */
 #define ANDROID_ACTIVITY_STATE_TIMEOUT_US (3 * 1000 * 1000)
 
-/* START/RESUME/PAUSE/STOP are notifications: activityState is written by
- * the app thread and read by nothing else, so giving up on the
+/* START/RESUME/PAUSE/STOP are notifications: the acknowledged state is
+ * the app thread's and nothing acts on it but the waiter, so giving up on the
  * acknowledgement costs the caller nothing beyond returning before the app
- * thread has caught up.
+ * thread has caught up. PAUSE and STOP are acknowledged once SRAM, core
+ * options and the config have been written (see
+ * android_input_flush_pending_state()), so while the wait lasts the
+ * process cannot be killed with those unsaved.
  *
  * This does not generalise to android_app_set_window() or
  * android_app_set_input(), where returning early hands the framework an
@@ -338,19 +355,14 @@ static void android_app_set_window(struct android_app *android_app,
 static void android_app_set_activity_state(
       struct android_app *android_app, int8_t cmd)
 {
-   bool acked = true;
+   bool acked;
 
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
    android_app_write_cmd(android_app, cmd);
-   while (   !android_app->app_thread_exited
-          && android_app->activityState != cmd && acked)
-      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
-            ANDROID_ACTIVITY_STATE_TIMEOUT_US);
-   acked = (android_app->activityState == cmd);
-   slock_unlock(android_app->mutex);
+   acked = android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_STATE,
+         cmd, true, ANDROID_ACTIVITY_STATE_TIMEOUT_US);
 
    if (!acked)
       RARCH_ERR("[Android] App thread did not acknowledge activity state"
@@ -379,27 +391,14 @@ static void android_app_free(struct android_app* android_app)
    if (!android_app)
       return;
 
-   /* Nothing ever wrote APP_CMD_DESTROY, so destroyRequested was dead
-    * and the app thread was never told to stop - while this function
-    * joined it holding the very mutex the thread needs to finish. If
-    * onDestroy() arrived with the thread still running, the Java UI
-    * thread blocked here until ActivityManager gave up.
-    *
-    * Ask the thread to shut down, then wait on the condvar (which
-    * releases the mutex, so the thread can take it in
-    * android_app_destroy). */
-   slock_lock(android_app->mutex);
-
+   /* Ask the thread to shut down, then wait for android_app_destroy()
+    * to say it has finished. destroy_from_framework reaches the app
+    * thread with the command: the pipe orders the two. */
    android_app->destroy_from_framework = 1;
    android_app_write_cmd(android_app, APP_CMD_DESTROY);
 
-   acked = true;
-   while (!android_app->destroyed && acked)
-      acked = scond_wait_timeout(android_app->cond, android_app->mutex,
-            ANDROID_DESTROY_TIMEOUT_US);
-   acked = (android_app->destroyed != 0);
-
-   slock_unlock(android_app->mutex);
+   acked = android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_FLAGS,
+         ANDROID_LC_DESTROYED, false, ANDROID_DESTROY_TIMEOUT_US);
 
    /* If the thread did not acknowledge it may still be running and still
     * holding references into this struct. Returning without joining lets
@@ -418,8 +417,7 @@ static void android_app_free(struct android_app* android_app)
 
    close(android_app->msgread);
    close(android_app->msgwrite);
-   scond_free(android_app->cond);
-   slock_free(android_app->mutex);
+   android_lifecycle_free(&android_app->lc);
 
    free(android_app);
 }
@@ -576,13 +574,11 @@ static void onContentRectChanged(ANativeActivity *activity,
    int width                    = rect->right  - rect->left;
    int height                   = rect->bottom - rect->top;
 
-   /* Store the dimensions before publishing the flag, so a reader that
-    * observes @changed cannot still see the previous size and build a
-    * swapchain at the wrong resolution. The old code set @changed first
-    * and used plain stores, leaving both the ordering and the visibility
-    * to chance. */
-   retro_atomic_store_release_int(&instance->content_rect.width,  width);
-   retro_atomic_store_release_int(&instance->content_rect.height, height);
+   /* The size before the flag, so a reader that observes @changed
+    * cannot still see the previous size and build a swapchain at the
+    * wrong resolution. */
+   retro_atomic_store_release_int(&instance->content_rect.dims,
+         (int)VIDEO_SCALE_PACK(width, height));
    retro_atomic_store_release_int(&instance->content_rect.changed, 1);
 }
 
@@ -656,18 +652,14 @@ static void android_app_entry(void *data)
     * android_app_free() is already waiting out). This thread is the
     * sole consumer of the command pipe, so from here on no posted
     * command can ever be acknowledged: retire every outstanding
-    * ticket and mark the consumer gone, or the next synchronous
+    * ticket by marking the consumer gone, or the next synchronous
     * lifecycle callback - surfaceDestroyed() into
     * android_app_set_window(NULL) - parks the Java UI thread on the
-    * condvar until ActivityManager declares an ANR. The struct
-    * outlives this thread on every path: android_app_free() joins
-    * before freeing and deliberately leaks it when it orphans the
-    * thread instead. */
-   slock_lock(android_app->mutex);
-   android_app->app_thread_exited = 1;
-   android_app->done_seq          = android_app->cmd_seq;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+    * wait until ActivityManager declares an ANR. The struct outlives
+    * this thread on every path: android_app_free() joins before
+    * freeing and deliberately leaks it when it orphans the thread
+    * instead. */
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_EXITED);
 }
 
 static struct android_app* android_app_create(ANativeActivity* activity,
@@ -704,25 +696,11 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    android_app->activity = activity;
    g_android_early       = android_app;
 
-   android_app->mutex    = slock_new();
-   android_app->cond     = scond_new();
-   /* NULL-check slock_new / scond_new: both can fail on OOM.
-    * Without the guards here, a NULL mutex would silently turn
-    * every slock_lock/unlock below into a no-op (slock_lock
-    * NULL-tolerates by design), giving a race-prone android_app,
-    * and a NULL cond would NULL-deref in scond_wait below
-    * (pthread_cond_wait(&NULL->cond, ...)).  Fail the whole
-    * android_app construction so ANativeActivity_onCreate returns
-    * cleanly without half-initialised state. */
-   if (!android_app->mutex || !android_app->cond)
+   if (!android_lifecycle_init(&android_app->lc))
    {
-      if (android_app->mutex)
-         slock_free(android_app->mutex);
-      if (android_app->cond)
-         scond_free(android_app->cond);
       free(android_app);
       g_android_early = NULL;
-      RARCH_ERR("Failed to allocate android_app locks.\n");
+      RARCH_ERR("Failed to initialize android_app lifecycle state.\n");
       return NULL;
    }
 
@@ -747,8 +725,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    {
       if (android_app->savedState)
         free(android_app->savedState);
-      slock_free(android_app->mutex);
-      scond_free(android_app->cond);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       return NULL;
@@ -759,8 +736,8 @@ static struct android_app* android_app_create(ANativeActivity* activity,
 
    android_app->thread   = sthread_create(android_app_entry, android_app);
    /* NULL-check sthread_create: on OOM the thread won't be
-    * spawned and nothing will set android_app->running to true,
-    * so the scond_wait loop below would block indefinitely.
+    * spawned and nothing will set ANDROID_LC_RUNNING, so the wait
+    * below would block indefinitely.
     * Tear down the partially-constructed android_app (including
     * the just-created pipe fds) and bail. */
    if (!android_app->thread)
@@ -769,8 +746,7 @@ static struct android_app* android_app_create(ANativeActivity* activity,
       close(msgpipe[1]);
       if (android_app->savedState)
          free(android_app->savedState);
-      slock_free(android_app->mutex);
-      scond_free(android_app->cond);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       RARCH_ERR("Failed to spawn android_app thread.\n");
@@ -778,39 +754,33 @@ static struct android_app* android_app_create(ANativeActivity* activity,
    }
 
    /* Wait for the thread to start, or to leave without ever having
-    * started.  'running' is set in frontend_unix_init(), a long way
+    * started.  RUNNING is set in frontend_unix_init(), a long way
     * into rarch_main(); an init failure before that point returns from
-    * android_app_entry() with it still clear, and this wait - the only
-    * one on this condvar with neither a timeout nor an
-    * app_thread_exited test - then parks the Java UI thread inside
-    * ANativeActivity_onCreate() until ActivityManager kills the
-    * process.  The app thread sets the flag and broadcasts on its way
-    * out, so take that as the other way this wait can end.
+    * android_app_entry() with it still clear, so EXITED is the other
+    * way this wait ends.
     *
-    * 'running' is what decides the outcome, not the flag: a thread
-    * that started and then exited quickly can set both before the
-    * wait is even entered, and that is a successful create. */
-   slock_lock(android_app->mutex);
-   while (!android_app->running && !android_app->app_thread_exited)
-      scond_wait(android_app->cond, android_app->mutex);
-   started = (android_app->running != 0);
-   slock_unlock(android_app->mutex);
+    * RUNNING is what decides the outcome: a thread that started and
+    * then exited quickly can set both before the wait is even
+    * entered, and that is a successful create. */
+   android_lifecycle_wait(&android_app->lc, ANDROID_LC_UNTIL_FLAGS,
+         ANDROID_LC_RUNNING | ANDROID_LC_EXITED, false, -1);
+   started = (android_lifecycle_flags(&android_app->lc)
+         & ANDROID_LC_RUNNING) != 0;
 
    if (!started)
    {
       /* Nothing was initialised, so there is no teardown to
        * orchestrate - and no reason to hand the framework an
        * android_app it would keep delivering lifecycle callbacks to.
-       * The thread has released the mutex and touches nothing after
-       * that, so the join completes and the struct is ours to free. */
+       * The thread touches nothing after setting EXITED, so the join
+       * completes and the struct is ours to free. */
       RARCH_ERR("[Android] App thread exited before it started.\n");
       sthread_join(android_app->thread);
       close(android_app->msgread);
       close(android_app->msgwrite);
       if (android_app->savedState)
          free(android_app->savedState);
-      scond_free(android_app->cond);
-      slock_free(android_app->mutex);
+      android_lifecycle_free(&android_app->lc);
       free(android_app);
       g_android_early = NULL;
       return NULL;
@@ -1622,13 +1592,13 @@ JNIEXPORT void JNICALL Java_com_retroarch_browser_retroactivity_RetroActivityCom
    if (!android_app)
       return;
 
-   slock_lock(android_app->mutex);
-   android_app->permission_state |= PLAT_ANDROID_PERM_RESOLVED;
-   if (granted)
-      android_app->permission_state |= PLAT_ANDROID_PERM_GRANTED;
-   looper = android_app->looper;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_PERM_RESOLVED
+         | (granted ? ANDROID_LC_PERM_GRANTED : 0));
+   /* Against the app thread's store of the looper and its re-check of
+    * the flag: one side or the other sees the other's write. */
+   retro_atomic_thread_fence_seq_cst();
+   looper = (ALooper*)retro_atomic_load_acquire_ptr(
+         &android_app->looper_to_wake);
 
    if (looper)
       ALooper_wake(looper);
@@ -2468,6 +2438,33 @@ static void frontend_unix_set_screen_brightness(int value)
 }
 #endif
 
+#if !defined(ANDROID) && !defined(DINGUX)
+/* Distribution packages install the shared libretro data sets under
+ * <prefix>/share/libretro/<name> (FreeBSD ports: retroarch-assets,
+ * libretro-core-info; Debian and its derivatives use the same layout).
+ * Default to those when present so a locally built RetroArch finds the
+ * packaged assets, core info, shaders and joypad profiles without any
+ * retroarch.cfg edits.  Only what would otherwise fall back to an empty
+ * per-user directory is probed here; the per-user directory stays the
+ * default for anything writable. */
+static bool unix_find_packaged_dir(char *s, size_t len, const char *name)
+{
+   static const char *const prefixes[] = {
+      "/usr/local/share/libretro",
+      "/usr/share/libretro"
+   };
+   size_t i;
+   for (i = 0; i < sizeof(prefixes) / sizeof(prefixes[0]); i++)
+   {
+      fill_pathname_join(s, prefixes[i], name, len);
+      if (path_is_directory(s))
+         return true;
+   }
+   *s = '\0';
+   return false;
+}
+#endif
+
 static void frontend_unix_get_env(int *argc,
       char *argv[], void *data, void *params_data)
 {
@@ -3029,6 +3026,9 @@ static void frontend_unix_get_env(int *argc,
    if (libretro_directory && *libretro_directory)
       strlcpy(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], libretro_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_CORE_INFO],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]), "info"))
+      ;
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CORE_INFO], base_path,
             "cores", sizeof(g_defaults.dirs[DEFAULT_DIR_CORE_INFO]));
@@ -3037,6 +3037,11 @@ static void frontend_unix_get_env(int *argc,
       strlcpy(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
 	    libretro_autoconfig_directory,
             sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]), "autoconfig"))
+      ;
+#endif
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG], base_path,
             "autoconfig", sizeof(g_defaults.dirs[DEFAULT_DIR_AUTOCONFIG]));
@@ -3066,6 +3071,11 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS],
             "/usr/share/games/retroarch",
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_ASSETS],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]), "assets"))
+      ;
+#endif
    else
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_ASSETS], base_path,
             "assets", sizeof(g_defaults.dirs[DEFAULT_DIR_ASSETS]));
@@ -3157,6 +3167,11 @@ static void frontend_unix_get_env(int *argc,
        strlcpy(g_defaults.dirs[DEFAULT_DIR_SHADER],
 	       libretro_video_shader_directory,
 	       sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
+#if !defined(DINGUX)
+   else if (unix_find_packaged_dir(g_defaults.dirs[DEFAULT_DIR_SHADER],
+            sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]), "shaders"))
+      ;
+#endif
    else
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_SHADER], base_path,
              "shaders", sizeof(g_defaults.dirs[DEFAULT_DIR_SHADER]));
@@ -3201,6 +3216,15 @@ static void frontend_unix_get_env(int *argc,
       fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_CACHE], base_path,
          "temp", sizeof(g_defaults.dirs[DEFAULT_DIR_CACHE]));
    }
+
+#ifdef WEBOS
+   /* Start Load Content on the TV's shared storage, where users put
+    * their content. Only a fresh config picks this up; an existing
+    * retroarch.cfg keeps its saved rgui_browser_directory. */
+   if (path_is_directory("/media/internal"))
+      strlcpy(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT], "/media/internal",
+            sizeof(g_defaults.dirs[DEFAULT_DIR_MENU_CONTENT]));
+#endif
 #endif
 
 #ifndef IS_SALAMANDER
@@ -3215,16 +3239,12 @@ static void frontend_unix_get_env(int *argc,
 #ifdef ANDROID
 static void free_saved_state(struct android_app* android_app)
 {
-    slock_lock(android_app->mutex);
-
     if (android_app->savedState)
     {
         free(android_app->savedState);
         android_app->savedState     = NULL;
         android_app->savedStateSize = 0;
     }
-
-    slock_unlock(android_app->mutex);
 }
 
 static void android_app_destroy(struct android_app *android_app)
@@ -3236,8 +3256,6 @@ static void android_app_destroy(struct android_app *android_app)
 #endif
 
    free_saved_state(android_app);
-
-   slock_lock(android_app->mutex);
 
    env = jni_thread_getenv();
 
@@ -3261,9 +3279,7 @@ static void android_app_destroy(struct android_app *android_app)
       AInputQueue_detachLooper(android_app->inputQueue);
 
    AConfiguration_delete(android_app->config);
-   android_app->destroyed = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_DESTROYED);
    /* Can't touch android_app object after this. */
 }
 #endif
@@ -3375,16 +3391,15 @@ static void frontend_unix_init(void *data)
    looper = (ALooper*)ALooper_prepare(ALOOPER_PREPARE_ALLOW_NON_CALLBACKS);
    ALooper_addFd(looper, android_app->msgread, LOOPER_ID_MAIN,
          ALOOPER_EVENT_INPUT, NULL, NULL);
-   slock_lock(android_app->mutex);
-   android_app->looper  = looper;
-   android_app->running = 1;
-   scond_broadcast(android_app->cond);
-   slock_unlock(android_app->mutex);
+   android_app->looper = looper;
+   retro_atomic_store_release_ptr(&android_app->looper_to_wake, looper);
+   retro_atomic_thread_fence_seq_cst();
+   android_lifecycle_set_flags(&android_app->lc, ANDROID_LC_RUNNING);
 
    memset(&g_android, 0, sizeof(g_android));
    g_android = (struct android_app*)android_app;
 
-   while (!android_app->window)
+   while (!android_app_window(android_app))
    {
       if (!android_run_events(android_app))
       {
@@ -3406,10 +3421,8 @@ static void frontend_unix_init(void *data)
    {
       bool resolved;
 
-      slock_lock(android_app->mutex);
-      resolved = (android_app->permission_state
-            & PLAT_ANDROID_PERM_RESOLVED) != 0;
-      slock_unlock(android_app->mutex);
+      resolved = (android_lifecycle_flags(&android_app->lc)
+            & ANDROID_LC_PERM_RESOLVED) != 0;
       if (resolved)
          break;
 
@@ -3433,6 +3446,8 @@ static void frontend_unix_init(void *data)
          "isAndroidTV", "()Z");
    GET_METHOD_ID(env, android_app->getRefreshRate, class,
          "getRefreshRate", "()F");
+   GET_METHOD_ID(env, android_app->getHdrMaxLuminance, class,
+         "getHdrMaxLuminance", "()F");
    GET_METHOD_ID(env, android_app->getDisplayModes, class,
          "getDisplayModes", "()[I");
    GET_METHOD_ID(env, android_app->getCurrentDisplayModeId, class,
@@ -3528,6 +3543,23 @@ static void frontend_unix_init(void *data)
 #endif
 }
 
+/* Whether the drive list offers the filesystem root.  Play Store
+ * Android builds cannot read it under scoped storage, and on webOS
+ * the jailed root is not user storage - listing it has frozen the
+ * file browser - so both offer only their real storage locations. */
+#ifdef HAVE_MENU
+static bool frontend_unix_root_in_drive_list(void)
+{
+#if defined(ANDROID)
+   return !g_android->is_play_store_build;
+#elif defined(WEBOS)
+   return false;
+#else
+   return true;
+#endif
+}
+#endif
+
 static int frontend_unix_parse_drive_list(void *data, bool load_content)
 {
 #ifdef HAVE_MENU
@@ -3543,6 +3575,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    jstring jstr          = NULL;
 
    int volume_count = 0;
+   int i;
    /* The shared-storage path already appended below, so the volume
     * loop does not list the primary volume a second time. */
    const char *listed_storage_path = "";
@@ -3627,7 +3660,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
             msg_hash_to_str(MSG_APPLICATION_DIR),
             enum_idx,
             FILE_TYPE_DIRECTORY, 0, 0, NULL);
-   for (unsigned i=0; i < volume_count; i++)
+   for (i = 0; i < volume_count; i++)
    {
       static char aux_path[PATH_MAX_LENGTH];
       char index[2];
@@ -3747,11 +3780,7 @@ static int frontend_unix_parse_drive_list(void *data, bool load_content)
    }
 #endif
 
-#ifdef ANDROID
-   if (!g_android->is_play_store_build)
-#else
-   if (1)
-#endif
+   if (frontend_unix_root_in_drive_list())
    {
       menu_entries_append(list, "/",
             MENU_ENUM_LABEL_FILE_DETECT_CORE_LIST_PUSH_DIR_STR,
@@ -4053,9 +4082,47 @@ enum retro_language frontend_unix_get_user_language(void)
 }
 
 #if (defined(__linux__) || defined(__HAIKU__) || defined(__unix__)) && !defined(ANDROID)
+static void narrator_reap_stopping_unix(void)
+{
+   unsigned i;
+   for (i = 0; i < NARRATOR_STOPPING_MAX; i++)
+      if (speak_stopping[i] > 0 && waitpid(speak_stopping[i], NULL, WNOHANG) != 0)
+         speak_stopping[i] = 0;
+}
+
+/* Running while waitpid finds it unfinished; once it has exited it is
+ * reaped here, so a finished narrator never reads as running and its
+ * pid is never kept past its exit. */
 static bool is_narrator_running_unix(void)
 {
-   return (kill(speak_pid, 0) == 0);
+   narrator_reap_stopping_unix();
+   if (speak_pid <= 0)
+      return false;
+   if (waitpid(speak_pid, NULL, WNOHANG) == 0)
+      return true;
+   speak_pid = 0;
+   return false;
+}
+
+/* SIGTERM to the running narrator, reaped now if it has gone, else kept
+ * to reap on a later call: nothing here waits. */
+static void narrator_stop_unix(void)
+{
+   unsigned i;
+   if (speak_pid <= 0)
+      return;
+   kill(speak_pid, SIGTERM);
+   if (waitpid(speak_pid, NULL, WNOHANG) == 0)
+   {
+      narrator_reap_stopping_unix();
+      for (i = 0; i < NARRATOR_STOPPING_MAX; i++)
+         if (speak_stopping[i] <= 0)
+         {
+            speak_stopping[i] = speak_pid;
+            break;
+         }
+   }
+   speak_pid = 0;
 }
 
 static const char* accessibility_unix_language_code(const char* language)
@@ -4194,19 +4261,11 @@ static bool accessibility_speak_unix(int speed,
    speed_out[2] = '\0';
    strlcat(speed_out, speeds[speed-1], 6);
 
-   if (priority < 10 && speak_pid > 0)
-   {
-      /* check if old pid is running */
-      if (is_narrator_running_unix())
-         goto end;
-   }
+   /* a lower-priority message waits for the running narrator */
+   if (priority < 10 && is_narrator_running_unix())
+      goto end;
 
-   if (speak_pid > 0)
-   {
-      /* Kill the running narrator */
-      kill(speak_pid, SIGTERM);
-      speak_pid = 0;
-   }
+   narrator_stop_unix();
 
    pid = fork();
    switch (pid)
@@ -4252,12 +4311,10 @@ static bool accessibility_speak_unix(int speed,
          RARCH_ERR("Could not fork for narrator.\n");
       default:
          {
-            /* parent process */
-            speak_pid = pid;
-
-            /* Tell the system that we'll ignore the exit status of the child
-             * process.  This prevents zombie processes. */
-            signal(SIGCHLD, SIG_IGN);
+            /* parent process: the narrator is reaped by
+             * is_narrator_running_unix() and narrator_stop_unix() */
+            if (pid > 0)
+               speak_pid = pid;
          }
    }
 
@@ -4385,5 +4442,10 @@ frontend_ctx_driver_t frontend_ctx_unix = {
 #else
    "unix",                       /* ident               */
 #endif
-   NULL                          /* get_video_driver    */
+   NULL,                         /* get_video_driver    */
+#ifdef HAVE_MENU
+   frontend_unix_root_in_drive_list /* root_in_drive_list */
+#else
+   NULL                          /* root_in_drive_list  */
+#endif
 };

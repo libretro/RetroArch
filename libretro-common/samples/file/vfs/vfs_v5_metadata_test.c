@@ -405,6 +405,27 @@ static void rm_tree(const char *dir)
    retro_vfs_mkdir_impl(dir); /* no rmdir in the VFS; leave empty dirs */
 }
 
+/* path_rmdir: an empty directory goes; a directory with a file in it,
+ * a missing path and a plain file are refused and left as they were */
+static void test_rmdir(const char *dir)
+{
+   char sub[256], file[512];
+
+   snprintf(sub,  sizeof(sub),  "%s/rmdir_sub", dir);
+   snprintf(file, sizeof(file), "%s/file.bin",  sub);
+
+   CHECK(path_mkdir(sub), "subdirectory created");
+   CHECK(write_pattern(file, 16, 4), "file written inside it");
+   CHECK(!path_rmdir(sub), "rmdir of a non-empty directory fails");
+   CHECK(path_is_directory(sub), "non-empty directory left in place");
+   CHECK(!path_rmdir(file), "rmdir of a plain file fails");
+   CHECK(path_is_valid(file), "plain file left in place");
+   CHECK(filestream_delete(file) == 0, "file removed");
+   CHECK(path_rmdir(sub), "rmdir of the empty directory succeeds");
+   CHECK(!path_is_directory(sub), "empty directory gone");
+   CHECK(!path_rmdir(sub), "rmdir of a missing path fails");
+}
+
 int main(void)
 {
    const char *dir = DIR_NAME;
@@ -419,6 +440,7 @@ int main(void)
    test_mtime(dir);
    test_copy(dir);
    test_dirent_stat(dir);
+   test_rmdir(dir);
    rm_tree(dir);
    printf("%d failure(s), %d skip(s)\n", failures, skips);
    return failures ? 1 : 0;

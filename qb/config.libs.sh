@@ -3,6 +3,12 @@
 #
 # Only needed when check_enabled ($2), check_platform, check_lib, check_pkgconf,
 # check_header, check_macro and check_switch are not used.
+#
+# This file also runs once ahead of time in a subshell with QB_DRY set, to
+# find the compiles it will run (see qb_compile). Commands that act on
+# anything outside the shell, other than the check helpers, are skipped
+# when QB_DRY is set, and nothing here exports variables, since a compile
+# that ran ahead saw the environment configure started with.
 
 check_switch '' C99 -std=gnu99 ''
 
@@ -221,6 +227,7 @@ check_enabled RVP9 WEBMPLAYER 'the WebM player' 'RVP9 is' false
 check_enabled NETWORKING CHEEVOS cheevos 'Networking is' false
 check_enabled NETWORKING DISCORD discord 'Networking is' false
 check_enabled NETWORKING SSL ssl 'Networking is' false
+check_enabled NETWORKING MCP 'the MCP server' 'Networking is' false
 check_enabled NETWORKING TRANSLATE OCR 'Networking is' false
 check_enabled NETWORKING HAVE_NETPLAYDISCOVERY 'Netplay discovery' 'Networking is' false
 
@@ -418,8 +425,29 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
-check_val '' PIPEWIRE -lpipewire-0.3 '' libpipewire-0.3 '' '' false
-check_val '' PIPEWIRE_STABLE -lpipewire-0.3 '' libpipewire-0.3 1.0.0 '' false
+check_val '' PIPEWIRE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 '' '' false
+# PIPEWIRE_STABLE only qualifies PIPEWIRE (it gates the camera driver), so
+# it must not be probed when PipeWire itself is off: with --disable-pipewire
+# and libpipewire installed it used to end up defined on its own.
+if [ "$HAVE_PIPEWIRE" = 'no' ]; then
+   add_opt PIPEWIRE_STABLE no
+else
+   check_val '' PIPEWIRE_STABLE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 1.0.0 '' false
+fi
+
+# Without pkg-config the library check above cannot see the version, so
+# PIPEWIRE_STABLE takes it from the headers instead.
+if [ "$HAVE_PIPEWIRE_STABLE" = 'yes' ] && [ "$PKG_CONF_PATH" = 'none' ]; then
+   printf %s 'Checking PipeWire headers >= 1.0.0 ... '
+   if qb_compile "$TEMP_C" "#include <pipewire/version.h>$NL#if !PW_CHECK_VERSION(1, 0, 0)$NL#error PipeWire older than 1.0.0$NL#endif${NL}int main(void) { return 0; }$NL" \
+         $CC -o "$TEMP_EXE" "$TEMP_C" \
+         $BUILD_DIRS $CFLAGS $PIPEWIRE_STABLE_CFLAGS $LDFLAGS; then
+      printf %s\\n 'yes'
+   else
+      printf %s\\n 'no'
+      HAVE_PIPEWIRE_STABLE=no
+   fi
+fi
 check_val '' SDL -lSDL SDL sdl 1.2.10 '' true
 check_val '' SDL2 -lSDL2 SDL2 sdl2 2.0.0 '' true
 check_val '' SDL3 -lSDL3 SDL3 sdl3 3.2.20 '' true
@@ -449,12 +477,35 @@ check_enabled CXX QT 'Qt companion' 'The C++ compiler is' false
 if [ "$HAVE_QT" != 'no' ]; then
    _have_qt=$HAVE_QT
    if [ "$HAVE_CXX17" = 'yes' ]; then
-      check_pkgconf QT6CORE Qt6Core 6.2
-      check_pkgconf QT6GUI Qt6Gui 6.2
-      check_pkgconf QT6WIDGETS Qt6Widgets 6.2
+      check_pkgconf QT6CORE Qt6Core 6.2 '' '' nopkg
+      check_pkgconf QT6GUI Qt6Gui 6.2 '' '' nopkg
+      check_pkgconf QT6WIDGETS Qt6Widgets 6.2 '' '' nopkg
       #check_pkgconf QT6WEBENGINE Qt6WebEngine 6.2
 
-      # pkg-config is needed to reliably find Qt6 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 6)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT6CORE "$_ql -lQt6Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6GUI "$_ql -lQt6Gui -lQt6Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+         check_nopkg cxx QT6WIDGETS "$_ql -lQt6Widgets -lQt6Gui -lQt6Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX17_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT6CORE QT Qt 'Qt6Core is' user
       check_enabled QT6GUI QT Qt 'Qt6GUI is' user
@@ -472,12 +523,35 @@ if [ "$HAVE_QT" != 'no' ]; then
    fi
    if [ "$HAVE_QT6" != 'yes' ]; then
       HAVE_QT=$_have_qt
-      check_pkgconf QT5CORE Qt5Core 5.2
-      check_pkgconf QT5GUI Qt5Gui 5.2
-      check_pkgconf QT5WIDGETS Qt5Widgets 5.2
+      check_pkgconf QT5CORE Qt5Core 5.2 '' '' nopkg
+      check_pkgconf QT5GUI Qt5Gui 5.2 '' '' nopkg
+      check_pkgconf QT5WIDGETS Qt5Widgets 5.2 '' '' nopkg
       #check_pkgconf QT5WEBENGINE Qt6WebEngine 5.2
 
-      # pkg-config is needed to reliably find Qt5 libraries.
+      # Without pkg-config, Qt's own qmake answers for its headers and
+      # libraries.
+      if [ "$PKG_CONF_PATH" = 'none' ] && _qmake="$(nopkg_qmake 5)"; then
+         _qh="$("$_qmake" -query QT_INSTALL_HEADERS)"
+         _ql="-L$("$_qmake" -query QT_INSTALL_LIBS)"
+         _qspec="$("$_qmake" -query QT_INSTALL_ARCHDATA)/mkspecs/$("$_qmake" -query QMAKE_XSPEC)"
+         [ -d "$_qspec" ] || _qspec=''
+         check_nopkg cxx QT5CORE "$_ql -lQt5Core" \
+            "$_qh/QtCore $_qh -DQT_CORE_LIB $_qspec" \
+            '#include <QtCore/QCoreApplication>
+int main(int argc, char **argv) { QCoreApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5GUI "$_ql -lQt5Gui -lQt5Core" \
+            "$_qh/QtGui $_qh $_qh/QtCore -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtGui/QGuiApplication>
+int main(int argc, char **argv) { QGuiApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+         check_nopkg cxx QT5WIDGETS "$_ql -lQt5Widgets -lQt5Gui -lQt5Core" \
+            "$_qh/QtWidgets $_qh $_qh/QtCore $_qh/QtGui -DQT_WIDGETS_LIB -DQT_GUI_LIB -DQT_CORE_LIB $_qspec" \
+            '#include <QtWidgets/QApplication>
+int main(int argc, char **argv) { QApplication a(argc, argv); return 0; }' \
+            "$CXX11_CFLAGS -fPIC"
+      fi
+
 
       check_enabled QT5CORE QT Qt 'Qt5Core is' true
       check_enabled QT5GUI QT Qt 'Qt5GUI is' true
@@ -488,57 +562,65 @@ if [ "$HAVE_QT" != 'no' ]; then
    if [ "$HAVE_QT" != yes ]; then
       die : 'Notice: Qt support disabled, required libraries were not found.'
    fi
+   moc_start
 
-   check_pkgconf OPENSSL openssl 1.0.0
+   check_pkgconf OPENSSL openssl 1.0.0 '' '' nopkg
+   check_nopkg '' OPENSSL '-lssl -lcrypto' '' \
+      '#include <openssl/ssl.h>
+int main(void) { return SSL_new(NULL) != NULL; }'
 fi
 
 check_val '' FLAC '-lFLAC' '' flac '' '' false
 
 
-check_enabled SSL SYSTEMMBEDTLS 'system mbedtls' 'ssl is' false
-check_enabled SSL BUILTINMBEDTLS 'builtin mbedtls' 'ssl is' false
-check_enabled SSL BUILTINBEARSSL 'builtin bearssl' 'ssl is' false
+check_enabled SSL RETROSSL 'retro ssl' 'ssl is' false
+check_enabled CRYPTO RETROSSL 'retro ssl' 'crypto is' false
+check_enabled SSL MBEDTLS 'system mbedtls' 'ssl is' false
+check_enabled SSL BEARSSL 'system bearssl' 'ssl is' false
 
-if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then SYSTEMMBEDTLS_IS_AUTO=yes; else SYSTEMMBEDTLS_IS_AUTO=no; fi
-check_val '' SYSTEMMBEDTLS '-lmbedtls' 'mbedtls' mbedtls 2.5.1 '' true
-check_val '' SYSTEMMBEDX509 '-lmbedx509' 'mbedtls' mbedx509 2.5.1 '' true
-check_val '' SYSTEMMBEDCRYPTO '-lmbedcrypto' 'mbedtls' mbedcrypto 2.5.1 '' true
-if [ "$HAVE_SYSTEMMBEDTLS" = 'yes' ] && [ -z "$SYSTEMMBEDTLS_VERSION" ]; then
-  # Ancient versions (such as the one included in the Ubuntu version used for
-  # build checks) don't have this header
-  check_header '' SYSTEMMBEDTLS mbedtls/net_sockets.h
+# The built-in client is the default and needs no library. A system
+# mbedTLS or BearSSL replaces it when asked for, and is then required:
+# nothing is bundled any more, so a library asked for and not found is
+# an error rather than a silent fallback.
+if [ "$HAVE_MBEDTLS" = 'yes' ] && [ "$HAVE_BEARSSL" = 'yes' ]; then
+  die 1 "Can't enable multiple SSL backends"
 fi
-if [ "$HAVE_SYSTEMMBEDX509" = 'no' ] || [ "$HAVE_SYSTEMMBEDCRYPTO" = 'no' ]; then HAVE_SYSTEMMBEDTLS=no; fi
-if [ "$SYSTEMMBEDTLS_IS_AUTO" = "yes" ] && [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then HAVE_SYSTEMMBEDTLS=auto; fi
+if [ "$HAVE_MBEDTLS" = 'yes' ]; then
+  check_val '' MBEDTLS '-lmbedtls' 'mbedtls' mbedtls 2.5.1 '' true
+  check_val '' MBEDX509 '-lmbedx509' 'mbedtls' mbedx509 2.5.1 '' true
+  check_val '' MBEDCRYPTO '-lmbedcrypto' 'mbedtls' mbedcrypto 2.5.1 '' true
+  if [ "$HAVE_MBEDTLS" = 'yes' ] && [ -z "$MBEDTLS_VERSION" ]; then
+    # Ancient versions (such as the one included in the Ubuntu version used
+    # for build checks) don't have this header
+    check_header '' MBEDTLS mbedtls/net_sockets.h
+  fi
+  if [ "$HAVE_MBEDTLS" != 'yes' ] || [ "$HAVE_MBEDX509" != 'yes' ] || [ "$HAVE_MBEDCRYPTO" != 'yes' ]; then
+    die 1 'Error: --enable-mbedtls requires a system mbedTLS (mbedtls, mbedx509 and mbedcrypto), and none was found.'
+  fi
+  HAVE_RETROSSL=no
+fi
+if [ "$HAVE_BEARSSL" = 'yes' ]; then
+  check_lib '' BEARSSL -lbearssl br_ssl_client_init_full
+  check_header '' BEARSSL bearssl.h
+  if [ "$HAVE_BEARSSL" != 'yes' ]; then
+    die 1 'Error: --enable-bearssl requires a system BearSSL, and none was found.'
+  fi
+  HAVE_RETROSSL=no
+fi
 
 SSL_BACKEND_CHOSEN=no
-if [ "$HAVE_SYSTEMMBEDTLS" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
+if [ "$HAVE_RETROSSL" = "yes" ] || [ "$HAVE_MBEDTLS" = "yes" ] || [ "$HAVE_BEARSSL" = "yes" ]; then
   SSL_BACKEND_CHOSEN=yes
 fi
-if [ "$HAVE_BUILTINMBEDTLS" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
+# The built-in client comes first: no library to find, and the
+# one every main build ships.
+if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_RETROSSL" = "auto" ]; then
+  HAVE_RETROSSL=yes
   SSL_BACKEND_CHOSEN=yes
 fi
-if [ "$HAVE_BUILTINBEARSSL" = "yes" ]; then
-  if [ "$SSL_BACKEND_CHOSEN" = "yes" ]; then die 1 "Can't enable multiple SSL backends"; fi
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then
-  HAVE_SYSTEMMBEDTLS=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_BUILTINMBEDTLS" = "auto" ]; then
-  HAVE_BUILTINMBEDTLS=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$SSL_BACKEND_CHOSEN" = "no" ] && [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then
-  HAVE_BUILTINBEARSSL=yes
-  SSL_BACKEND_CHOSEN=yes
-fi
-if [ "$HAVE_SYSTEMMBEDTLS" = "auto" ]; then HAVE_SYSTEMMBEDTLS=no; fi
-if [ "$HAVE_BUILTINMBEDTLS" = "auto" ]; then HAVE_BUILTINMBEDTLS=no; fi
-if [ "$HAVE_BUILTINBEARSSL" = "auto" ]; then HAVE_BUILTINBEARSSL=no; fi
+if [ "$HAVE_RETROSSL" = "auto" ]; then HAVE_RETROSSL=no; fi
+if [ "$HAVE_MBEDX509" = "auto" ]; then HAVE_MBEDX509=no; fi
+if [ "$HAVE_MBEDCRYPTO" = "auto" ]; then HAVE_MBEDCRYPTO=no; fi
 
 if [ "$HAVE_SSL" = "auto" ]; then HAVE_SSL=$SSL_BACKEND_CHOSEN; fi
 if [ "$HAVE_SSL" = "yes" ] && [ "$SSL_BACKEND_CHOSEN" = "no" ]; then die 1 "error: SSL enabled, but all backends disabled"; fi
@@ -686,9 +768,17 @@ if [ "$HAVE_EGL" = "yes" ]; then
    check_val '' VG "-l${VC_PREFIX}OpenVG $EXTRA_GL_LIBS" '' "${VC_PREFIX}vg" '' '' false
 fi
 
-check_pkgconf DBUS dbus-1
+check_pkgconf DBUS dbus-1 '' '' '' nopkg
+check_nopkg '' DBUS -ldbus-1 'dbus-1.0 dbus-1.0/include' \
+   '#include <dbus/dbus.h>
+int main(void) { return dbus_bus_get(DBUS_BUS_SESSION, NULL) != NULL; }'
 check_val '' UDEV "-ludev" '' libudev '' '' false
 check_val '' V4L2 -lv4l2 '' libv4l2 '' '' false
+# libv4l2.pc can be installed without the kernel headers the sources
+# include (FreeBSD: libv4l is a package, linux/videodev2.h is v4l_compat).
+if [ "$HAVE_V4L2" = 'yes' ]; then
+   check_header '' V4L2 linux/videodev2.h
+fi
 check_val '' FREETYPE -lfreetype freetype2 freetype2 '' '' false
 check_val '' FONTCONFIG -lfontconfig fontconfig fontconfig '' '' false
 check_val '' X11 -lX11 '' x11 '' '' false
@@ -729,19 +819,45 @@ check_val '' XKBCOMMON -lxkbcommon '' xkbcommon 0.3.2 '' false
 check_val '' WAYLAND '-lwayland-egl -lwayland-client' '' wayland-egl 10.1.0 '' false
 check_val '' WAYLAND_CURSOR -lwayland-cursor '' wayland-cursor 1.12 '' false
 check_pkgconf WAYLAND_PROTOS wayland-protocols 1.43
-check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12'
+check_pkgconf WAYLAND_SCANNER wayland-scanner '1.15 1.12' '' '' nopkg
+
+# Without pkg-config the scanner still answers for its own version, and
+# the protocol generator falls back to deps/wayland-protocols.
+if [ "$PKG_CONF_PATH" = 'none' ] && [ "$TMP_WAYLAND_SCANNER" != 'no' ]; then
+   printf %s 'Checking for WAYLAND_SCANNER without pkg-config ... '
+   _wayscan="$(exists wayland-scanner || :)"
+   _wayscan_ver=''
+   [ "$_wayscan" ] && _wayscan_ver="$("$_wayscan" --version 2>&1 |
+      sed -n 's/.*wayland-scanner \([0-9][0-9.]*\).*/\1/p' | head -n 1)"
+   for _want in 1.15 1.12; do
+      if [ "$_wayscan_ver" ] && nopkg_version_ge "$_wayscan_ver" "$_want"; then
+         HAVE_WAYLAND_SCANNER='yes'
+         WAYLAND_SCANNER_VERSION="$_want"
+         break
+      fi
+   done
+   printf %s\\n "$HAVE_WAYLAND_SCANNER${_wayscan_ver:+ ($_wayscan_ver)}"
+   if [ "$HAVE_WAYLAND_SCANNER" != 'yes' ] && [ "${USER_WAYLAND_SCANNER:-}" = 'yes' ]; then
+      die 1 'Forced to build with WAYLAND_SCANNER, but it cannot be found without pkg-config. Exiting ...'
+   fi
+fi
 
 if [ "$HAVE_WAYLAND_SCANNER" = yes ] &&
    [ "$HAVE_WAYLAND_CURSOR" = yes ] &&
    [ "$HAVE_WAYLAND" = yes ]; then
-      ./gfx/common/wayland/generate_wayland_protos.sh \
+      [ "$QB_DRY" ] || ./gfx/common/wayland/generate_wayland_protos.sh \
          -c "$WAYLAND_SCANNER_VERSION" \
          -p "$HAVE_WAYLAND_PROTOS" \
          -s "$SHARE_DIR" ||
          die 1 'Error: Failed generating wayland protocols.'
 
-      check_pkgconf LIBDECOR libdecor-0
+      check_pkgconf LIBDECOR libdecor-0 '' '' '' nopkg
+      check_nopkg '' LIBDECOR -ldecor-0 libdecor-0 \
+         '#include <libdecor.h>
+int main(void) { return libdecor_new(NULL, NULL) != NULL; }'
 else
+    [ "${USER_WAYLAND:-}" = 'yes' ] &&
+       die 1 'Error: Forced to build with wayland, but its libraries or wayland-scanner were not found. Exiting ...'
     die : 'Notice: wayland libraries not found, disabling wayland support.'
     HAVE_WAYLAND='no'
 fi
@@ -942,31 +1058,36 @@ if [ "$HAVE_CXX11" = 'yes' ]; then
    fi
 fi
 
-# First try system libsmb2
-check_pkgconf SMBCLIENT libsmb2 0.0
-check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+check_enabled NETWORKING RETRONFS 'built-in NFS client' 'Networking is' false
+if [ "$HAVE_RETRONFS" = 'auto' ]; then HAVE_RETRONFS=yes; fi
 
-# --enable-libsmb is the umbrella switch for SMB support: it guarantees SMB
-# gets built in without the caller having to know which libsmb2 provider is
-# available.  A system libsmb2 is preferred when pkg-config found one, and
-# the copy bundled in deps/libsmb2 is used otherwise.  --enable-smbclient and
-# --enable-builtinsmbclient remain available for packagers who need to pin a
-# specific provider.
-if [ "$HAVE_LIBSMB" = 'yes' ]; then
-   check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
-fi
-
-if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
-   if [ "$USER_BUILTINSMBCLIENT" = 'no' ]; then
-      die 1 'Error: --enable-libsmb requires a libsmb2, but no system libsmb2 was found and the bundled one is disabled.'
+# The built-in client is used unless a system libsmb2 was asked for
+# (--enable-libsmb, or --enable-smbclient); nothing is bundled any more,
+# so libsmb2 asked for and not found is an error.
+check_enabled NETWORKING RETROSMB 'built-in SMB client' 'Networking is' false
+check_enabled CRYPTO RETROSMB 'built-in SMB client' 'crypto is' false
+if [ "$HAVE_RETROSMB" = 'auto' ]; then
+   if [ "$HAVE_SMBCLIENT" = 'yes' ] || [ "$HAVE_LIBSMB" = 'yes' ]; then
+      HAVE_RETROSMB=no
+   else
+      HAVE_RETROSMB=yes
    fi
-   HAVE_BUILTINSMBCLIENT=yes
 fi
-
-if [ "$HAVE_SMBCLIENT" = "yes" ]; then
-    echo "SMB support enabled (system libsmb2)"
-elif [ "$HAVE_BUILTINSMBCLIENT" = "yes" ] || [ "$HAVE_BUILTINSMBCLIENT" = "auto" ]; then
-    HAVE_BUILTINSMBCLIENT=yes
-    echo "SMB support - building bundled libsmb2"
-    add_dirs INCLUDE ./deps/libsmb2/include
+if [ "$HAVE_RETROSMB" = 'yes' ]; then
+   HAVE_SMBCLIENT=no
+   HAVE_LIBSMB=no
+   echo "SMB support enabled (built-in client)"
+else
+   if [ "$HAVE_LIBSMB" = 'yes' ]; then
+      check_enabled NETWORKING LIBSMB libsmb2 'Networking is' false
+      HAVE_SMBCLIENT=yes
+   fi
+   check_pkgconf SMBCLIENT libsmb2 0.0
+   check_enabled NETWORKING SMBCLIENT libsmb2 'SMB client support is' false
+   if [ "$HAVE_LIBSMB" = 'yes' ] && [ "$HAVE_SMBCLIENT" != 'yes' ]; then
+      die 1 'Error: --enable-libsmb requires a system libsmb2, and none was found.'
+   fi
+   if [ "$HAVE_SMBCLIENT" = 'yes' ]; then
+      echo "SMB support enabled (system libsmb2)"
+   fi
 fi

@@ -6,13 +6,12 @@ TARGET := gfx_widgets_task_bar_stack_test
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
-# gfx_widgets.c reaches for 64 symbols outside itself.  Eight resolve
-# to real libretro-common sources and are linked; the rest are in
-# stubs_retroarch.c, including dummies for the ten gfx_widget_t
-# instances that live in gfx/widgets/.
+# Link the real widget and task snapshot implementations; remaining
+# frontend dependencies are supplied by stubs_retroarch.c.
 SOURCES := gfx_widgets_task_bar_stack_test.c \
            stubs_retroarch.c \
            $(REPO_ROOT)/gfx/gfx_widgets.c \
+           $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \

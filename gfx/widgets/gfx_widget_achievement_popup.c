@@ -251,7 +251,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             NULL);
 
          /* Icon */
-         if (p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT])
+         if (GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[MENU_WIDGETS_ICON_ACHIEVEMENT]))
          {
             gfx_display_blend_begin(dispctx, video_info->userdata);
 
@@ -260,8 +260,8 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
                p_disp,
                VIDEO_SCALE_PACK(video_width, video_height),
                VIDEO_SCALE_PACK(state->height, state->height),
-               p_dispwidget->gfx_widgets_icons_textures[
-                  MENU_WIDGETS_ICON_ACHIEVEMENT],
+               GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+                  MENU_WIDGETS_ICON_ACHIEVEMENT]),
                screen_pos_x,
                screen_pos_y,
                0.0f, /* rad */

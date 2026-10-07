@@ -423,6 +423,108 @@ static int mix_repeating(audio_mixer_sound_t *sound, int s16,
    return 1;
 }
 
+#ifdef HAVE_RLPCM
+/* Mix a voice for some calls and report the furthest its decoder got. */
+static size_t feed_run(audio_mixer_voice_t *voice, int calls)
+{
+   float  out[MIX_SAMPLES];
+   size_t top = 0;
+   int    i;
+   for (i = 0; i < calls; i++)
+   {
+      size_t at;
+      memset(out, 0, sizeof(out));
+      audio_mixer_mix(out, MIX_FRAMES, 1.0f, false);
+      at = audio_mixer_voice_buffer_tell(voice);
+      if (at > top)
+         top = at;
+   }
+   return top;
+}
+
+/* The windowed feeder's two calls, which take no lock: the position is
+ * the one the mix published, and a bound is applied by the mix before
+ * its next decode - unless the decoder has rewound since the position
+ * the bound was worked out from, in which case the bytes it promises
+ * may be gone and it is dropped. */
+static int check_feed_bound(const uint8_t *lpcm, size_t len)
+{
+   const size_t b0 = len / 6, b1 = len / 2;
+   audio_mixer_sound_t *snd = audio_mixer_load_lpcm(dup_bytes(lpcm, len), len);
+   audio_mixer_voice_t *voice;
+   size_t top;
+   int ok = 1;
+
+   if (!snd)
+      return 0;
+   if (!(voice = audio_mixer_play(snd, true, 1.0f, NULL,
+               RESAMPLER_QUALITY_DONTCARE, NULL)))
+   {
+      audio_mixer_destroy(snd);
+      return 0;
+   }
+
+   /* a bound set with no position read stands on its own, across the
+    * loops this run makes */
+   audio_mixer_voice_set_avail(voice, b0);
+   top = feed_run(voice, 60);
+   if (top == 0 || top > b0)
+   {
+      printf("  the decoder reached %u under a bound of %u\n",
+            (unsigned)top, (unsigned)b0);
+      ok = 0;
+   }
+
+   /* a bound for the position just read: taken */
+   (void)audio_mixer_voice_buffer_tell(voice);
+   audio_mixer_voice_set_avail(voice, b1);
+   top = feed_run(voice, 120);
+   if (top <= b0 || top > b1)
+   {
+      printf("  a raised bound of %u left the decoder at %u\n",
+            (unsigned)b1, (unsigned)top);
+      ok = 0;
+   }
+
+   /* the voice loops after a position is read: a bound still worked
+    * out from that position is dropped */
+   (void)audio_mixer_voice_buffer_tell(voice);
+   {
+      float out[MIX_SAMPLES];
+      int   i;
+      for (i = 0; i < 120; i++)
+      {
+         memset(out, 0, sizeof(out));
+         audio_mixer_mix(out, MIX_FRAMES, 1.0f, false);
+      }
+   }
+   audio_mixer_voice_set_avail(voice, len);
+   top = feed_run(voice, 240);
+   if (top > b1)
+   {
+      printf("  a bound from before the loop was applied after it (%u)\n",
+            (unsigned)top);
+      ok = 0;
+   }
+
+   /* read again, set again: taken */
+   (void)audio_mixer_voice_buffer_tell(voice);
+   audio_mixer_voice_set_avail(voice, len);
+   top = feed_run(voice, 240);
+   if (top <= b1)
+   {
+      printf("  a fresh bound after the loop was not applied (%u)\n",
+            (unsigned)top);
+      ok = 0;
+   }
+   audio_mixer_stop(voice);
+   audio_mixer_destroy(snd);
+   if (ok)
+      printf("  bounds applied by the mix, a stale one dropped\n");
+   return ok;
+}
+#endif
+
 /* ------------------------------------------------------------------ */
 
 int main(void)
@@ -597,6 +699,18 @@ int main(void)
          audio_mixer_destroy(snd);
       }
       free(lpcm);
+   }
+   {
+      size_t   feed_len = 96000 * 4;
+      uint8_t *feed     = (uint8_t*)malloc(feed_len);
+      size_t   i;
+      for (i = 0; i < feed_len; i++)
+         feed[i] = (uint8_t)(i * 7 + 1);
+      printf("3f. audio_mixer: a windowed feeder's position and bound, without the lock\n");
+      current_case = "case 3f (feeder position and bound)";
+      if (!check_feed_bound(feed, feed_len))
+         fails++;
+      free(feed);
    }
 #endif
 

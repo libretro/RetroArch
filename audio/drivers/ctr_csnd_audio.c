@@ -42,6 +42,10 @@ typedef struct
 #define CTR_CSND_AUDIO_COUNT_MASK  (CTR_CSND_AUDIO_COUNT - 1u)
 #define CTR_CSND_AUDIO_SIZE        (CTR_CSND_AUDIO_COUNT * sizeof(int16_t))
 #define CTR_CSND_AUDIO_SIZE_MASK   (CTR_CSND_AUDIO_SIZE  - 1u)
+/* write_avail() and buffer_size() are in bytes of what write() takes:
+ * int16 stereo, interleaved. The ring holds CTR_CSND_AUDIO_COUNT of
+ * those frames, one int16 per channel buffer each. */
+#define CTR_CSND_AUDIO_FRAME_BYTES (2 * sizeof(int16_t))
 
 #define CTR_CSND_AUDIO_RATE              32730
 #define CTR_CSND_TICKS_PER_SAMPLE   2048
@@ -168,10 +172,15 @@ static void ctr_csnd_audio_free(void *data)
 static ssize_t ctr_csnd_audio_write(void *data, const void *buf, size_t len)
 {
    unsigned int i;
-   uint32_t samples_played      = 0;
-   uint64_t current_tick        = 0;
    const uint16_t          *src = buf;
    ctr_csnd_audio_t        *ctr = (ctr_csnd_audio_t*)data;
+
+   /* Half the ring a call at most, in whole frames: the room the waits
+    * below hold out for, where a longer write overwrote its own audio
+    * before it played. */
+   if (len > CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES)
+      len = CTR_CSND_AUDIO_COUNT / 2 * CTR_CSND_AUDIO_FRAME_BYTES;
+   len &= ~(size_t)3;
 
    ctr_csnd_audio_update_playpos(ctr);
 
@@ -314,12 +323,13 @@ static size_t ctr_csnd_audio_write_avail(void *data)
    ctr_csnd_audio_t* ctr = (ctr_csnd_audio_t*)data;
 
    ctr_csnd_audio_update_playpos(ctr);
-   return (ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK;
+   return ((ctr->playpos - ctr->pos) & CTR_CSND_AUDIO_COUNT_MASK)
+         * CTR_CSND_AUDIO_FRAME_BYTES;
 }
 
 static size_t ctr_csnd_audio_buffer_size(void *data)
 {
-   return CTR_CSND_AUDIO_COUNT;
+   return CTR_CSND_AUDIO_COUNT * CTR_CSND_AUDIO_FRAME_BYTES;
 }
 
 audio_driver_t audio_ctr_csnd = {

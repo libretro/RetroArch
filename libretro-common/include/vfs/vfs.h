@@ -89,7 +89,10 @@ typedef struct
  || defined(VITA) \
  || defined(_3DS) \
  || defined(WIIU) \
- || defined(__SWITCH__)
+ || defined(__SWITCH__) \
+ || defined(GEKKO) \
+ || defined(PSP) \
+ || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_IO 1
 #endif
 #endif
@@ -108,7 +111,7 @@ typedef struct
  * directory lookup, so a bulk extraction pays for all of it per
  * member. */
 #ifndef VFS_HAVE_DESCRIPTOR_WRITE
-#if defined(VITA)
+#if defined(VITA) || defined(GEKKO) || defined(PSP) || defined(PS2)
 #define VFS_HAVE_DESCRIPTOR_WRITE 1
 #endif
 #endif
@@ -118,7 +121,8 @@ enum vfs_scheme
    VFS_SCHEME_NONE = 0,
    VFS_SCHEME_CDROM,
    VFS_SCHEME_SAF,
-   VFS_SCHEME_SMB
+   VFS_SCHEME_SMB,
+   VFS_SCHEME_NFS
 };
 
 #if !(defined(__WINRT__) && defined(__cplusplus_winrt))
@@ -160,6 +164,14 @@ struct libretro_vfs_implementation_file
 #ifdef HAVE_SMBCLIENT
    intptr_t smb_fh;
    intptr_t smb_ctx;
+   intptr_t smb_slot;   /* pool slot held from open to close, 0 if private */
+   intptr_t smb_prefetch; /* struct smb_prefetch *, read-only opens with threads */
+   intptr_t smb_reopen;   /* struct smb_reopen *: how to open it again */
+#endif
+#ifdef HAVE_NFSCLIENT
+   intptr_t nfs_fh;
+   intptr_t nfs_ctx;
+   intptr_t nfs_prefetch; /* struct nfs_prefetch *, read-only opens with threads */
 #endif
 #if defined(HAVE_CDROM) && defined(__APPLE__)
    void *iokit_plugin;   /* IOCFPlugInInterface ** */

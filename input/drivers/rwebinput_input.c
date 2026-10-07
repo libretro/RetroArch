@@ -78,12 +78,9 @@ typedef struct rwebinput_mouse_states
    double pending_scroll_y;
    double scroll_x;
    double scroll_y;
-   int x;
-   int y;
-   int pending_delta_x;
-   int pending_delta_y;
-   int delta_x;
-   int delta_y;
+   uint32_t pos;             /* VIDEO_POS_PACK */
+   uint32_t pending_delta;   /* VIDEO_POS_PACK */
+   uint32_t delta;           /* VIDEO_POS_PACK */
    uint8_t buttons;
 } rwebinput_mouse_state_t;
 
@@ -308,8 +305,7 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
    // note: movementX/movementY are pre-scaled in chromium (but not firefox)
    // see https://github.com/w3c/pointerlock/issues/42
 
-   rwebinput->mouse.pending_delta_x += mouse_event->movementX;
-   rwebinput->mouse.pending_delta_y += mouse_event->movementY;
+   VIDEO_POS_ADD(rwebinput->mouse.pending_delta, mouse_event->movementX, mouse_event->movementY);
 
    if (rwebinput->pointerlock_active)
    {
@@ -319,26 +315,24 @@ static EM_BOOL rwebinput_mouse_cb(int event_type,
       video_width = VIDEO_SCALE_W(out_dims);
       video_height = VIDEO_SCALE_H(out_dims);
 
-      rwebinput->mouse.x += mouse_event->movementX;
-      rwebinput->mouse.y += mouse_event->movementY;
+      VIDEO_POS_ADD(rwebinput->mouse.pos, mouse_event->movementX, mouse_event->movementY);
 
       /* Clamp X */
-      if (rwebinput->mouse.x < 0)
-         rwebinput->mouse.x = 0;
-      if (rwebinput->mouse.x >= video_width)
-         rwebinput->mouse.x = (int)(video_width - 1);
+      if (VIDEO_POS_X(rwebinput->mouse.pos) < 0)
+         VIDEO_POS_PUT_X(rwebinput->mouse.pos, 0);
+      if (VIDEO_POS_X(rwebinput->mouse.pos) >= video_width)
+         VIDEO_POS_PUT_X(rwebinput->mouse.pos, (int)(video_width - 1));
 
       /* Clamp Y */
-      if (rwebinput->mouse.y < 0)
-         rwebinput->mouse.y = 0;
-      if (rwebinput->mouse.y >= video_height)
-         rwebinput->mouse.y = (int)(video_height - 1);
+      if (VIDEO_POS_Y(rwebinput->mouse.pos) < 0)
+         VIDEO_POS_PUT_Y(rwebinput->mouse.pos, 0);
+      if (VIDEO_POS_Y(rwebinput->mouse.pos) >= video_height)
+         VIDEO_POS_PUT_Y(rwebinput->mouse.pos, (int)(video_height - 1));
    }
    else
    {
       double dpr = platform_emscripten_get_dpr();
-      rwebinput->mouse.x = (int)(mouse_event->targetX * dpr);
-      rwebinput->mouse.y = (int)(mouse_event->targetY * dpr);
+      rwebinput->mouse.pos = VIDEO_POS_PACK((int)(mouse_event->targetX * dpr), (int)(mouse_event->targetY * dpr));
    }
 
    if (event_type ==  EMSCRIPTEN_EVENT_MOUSEDOWN)
@@ -425,18 +419,7 @@ static EM_BOOL rwebinput_pointerlockchange_cb(int event_type,
 
    if (!pointerlock_change_event->isActive)
    {
-      input_driver_state_t *input_st = input_state_get_ptr();
-
-      if (input_st->game_focus_state.enabled)
-      {
-         enum input_game_focus_cmd_type game_focus_cmd = GAME_FOCUS_CMD_OFF;
-         command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &game_focus_cmd);
-      }
-
-      if (input_st->flags & INP_FLAG_GRAB_MOUSE_STATE)
-      {
-         command_event(CMD_EVENT_GRAB_MOUSE_TOGGLE, NULL);
-      }
+      input_driver_platform_request(INPUT_PLATFORM_FOCUS_LOST);
    }
 
    return EM_TRUE;
@@ -590,9 +573,9 @@ static int16_t rwebinput_mouse_state(
    switch (id)
    {
       case RETRO_DEVICE_ID_MOUSE_X:
-         return (int16_t)(screen ? mouse->x : mouse->delta_x);
+         return (int16_t)(screen ? VIDEO_POS_X(mouse->pos) : VIDEO_POS_X(mouse->delta));
       case RETRO_DEVICE_ID_MOUSE_Y:
-         return (int16_t)(screen ? mouse->y : mouse->delta_y);
+         return (int16_t)(screen ? VIDEO_POS_Y(mouse->pos) : VIDEO_POS_Y(mouse->delta));
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          return !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
       case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -616,23 +599,58 @@ static int16_t rwebinput_mouse_state(
    return 0;
 }
 
-static int16_t rwebinput_is_pressed(
-      rwebinput_input_t *rwebinput,
-      const struct retro_keybind *binds,
-      unsigned port, unsigned id,
-      bool keyboard_mapping_blocked)
+/* Which of @keys are down: bit n of @down for keys[n]. A key bound to
+ * a stick's direction does not count while the keyboard is the core's
+ * (Game Focus) - this driver's own rule, kept. */
+static void rwebinput_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
 {
-   const struct retro_keybind *bind = &binds[id];
-   int key                          = RETRO_KEYBIND_KEY(bind);
+   unsigned i;
+   rwebinput_input_t *rwebinput = (rwebinput_input_t*)data;
+   bool blocked                 = input_driver_keyboard_mapping_blocked();
+   (void)port;
+   for (i = 0; i < count; i++)
+   {
+      if (     blocked
+            && bind[i] >= RARCH_ANALOG_LEFT_X_PLUS
+            && bind[i] <= RARCH_ANALOG_RIGHT_Y_MINUS)
+         continue;
+      if (rwebinput_key_pressed(rwebinput, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+   }
+}
 
-   if (     (key && key < RETROK_LAST)
-         && rwebinput_key_pressed(rwebinput, key)
-         && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-      )
-      return 1;
-   if (port == 0 && !!rwebinput_mouse_state(&rwebinput->mouse, bind->mbutton, false))
-      return 1;
-   return 0;
+/* What the mouse is holding, for the controls bound to its buttons:
+ * the first port's only. This driver does not hand its mouse to the
+ * frontend. */
+static unsigned rwebinput_bind_mouse_buttons(void *data, unsigned port)
+{
+   rwebinput_input_t *rwebinput   = (rwebinput_input_t*)data;
+   rwebinput_mouse_state_t *mouse = &rwebinput->mouse;
+   unsigned held                  = 0;
+
+   if (port != 0)
+      return 0;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_LEFT, false))
+      held |= INPUT_POINTER_LEFT;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_RIGHT, false))
+      held |= INPUT_POINTER_RIGHT;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_MIDDLE, false))
+      held |= INPUT_POINTER_MIDDLE;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_BUTTON_4, false))
+      held |= INPUT_POINTER_BUTTON_4;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_BUTTON_5, false))
+      held |= INPUT_POINTER_BUTTON_5;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_WHEELUP, false))
+      held |= INPUT_POINTER_WHEEL_UP;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_WHEELDOWN, false))
+      held |= INPUT_POINTER_WHEEL_DOWN;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP, false))
+      held |= INPUT_POINTER_HWHEEL_UP;
+   if (rwebinput_mouse_state(mouse, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN, false))
+      held |= INPUT_POINTER_HWHEEL_DOWN;
+   return held;
 }
 
 static int16_t rwebinput_input_state(
@@ -651,73 +669,9 @@ static int16_t rwebinput_input_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            int16_t ret = 0;
-            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-            {
-               if (RETRO_KEYBIND_VALID(&binds[port][i]))
-               {
-                  if (rwebinput_is_pressed(
-                           rwebinput, binds[port], port, i,
-                           keyboard_mapping_blocked))
-                     ret |= (1 << i);
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (rwebinput_is_pressed(rwebinput,
-                        binds[port],
-                        port, id,
-                        keyboard_mapping_blocked))
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         if (binds[port])
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            int16_t ret           = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (rwebinput_is_pressed(rwebinput,
-                        binds[port], idx, id_plus,
-                        keyboard_mapping_blocked))
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (rwebinput_is_pressed(rwebinput,
-                        binds[port], idx, id_minus,
-                        keyboard_mapping_blocked))
-                  ret += -0x7fff;
-            }
-
-            return ret;
-         }
-         break;
+      /* The RetroPad's buttons, the hotkeys and a stick's axes, where
+       * they are bound to keys or mouse buttons, are the frontend's to
+       * answer: it asks rwebinput_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && rwebinput->keys[id];
       case RETRO_DEVICE_MOUSE:
@@ -733,10 +687,8 @@ static int16_t rwebinput_input_state(
             unsigned pointer_count      = rwebinput->pointer_count;
             int x                       = 0;
             int y                       = 0;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
+            uint32_t res_pos               = 0;
+            uint32_t res_screen_pos        = 0;
 
             if (pointer_count && idx < pointer_count)
             {
@@ -746,37 +698,36 @@ static int16_t rwebinput_input_state(
             }
             else if (idx == 0)
             {
-               x = mouse->x;
-               y = mouse->y;
+               x = VIDEO_POS_X(mouse->pos);
+               y = VIDEO_POS_Y(mouse->pos);
                pointer_down = !!(mouse->buttons & (1 << RWEBINPUT_MOUSE_BTNL));
                pointer_count = 1;
             }
             else
                return 0;
 
-            if (!(video_driver_translate_coord_viewport_confined_wrap(
+            if (!(input_driver_translate_coord_viewport_confined_wrap(
                         &vp, x, y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y)))
+                        &res_pos, &res_screen_pos)))
                return 0;
 
             if (device == RARCH_DEVICE_POINTER_SCREEN)
             {
-               res_x = res_screen_x;
-               res_y = res_screen_y;
+               res_pos = res_screen_pos;
             }
 
             switch (id)
             {
                case RETRO_DEVICE_ID_POINTER_X:
-                  return res_x;
+                  return VIDEO_POS_X(res_pos);
                case RETRO_DEVICE_ID_POINTER_Y:
-                  return res_y;
+                  return VIDEO_POS_Y(res_pos);
                case RETRO_DEVICE_ID_POINTER_PRESSED:
-                  return (pointer_down && !input_driver_pointer_is_offscreen(res_x, res_y));
+                  return (pointer_down && !input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos)));
                case RETRO_DEVICE_ID_POINTER_COUNT:
                   return pointer_count;
                case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                  return input_driver_pointer_is_offscreen(res_x, res_y);
+                  return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
                default:
                   break;
             }
@@ -940,10 +891,8 @@ static void rwebinput_input_poll(void *data)
 
    rwebinput->keyboard.count         = 0;
 
-   rwebinput->mouse.delta_x          = rwebinput->mouse.pending_delta_x;
-   rwebinput->mouse.delta_y          = rwebinput->mouse.pending_delta_y;
-   rwebinput->mouse.pending_delta_x  = 0;
-   rwebinput->mouse.pending_delta_y  = 0;
+   rwebinput->mouse.delta = rwebinput->mouse.pending_delta;
+   rwebinput->mouse.pending_delta = 0;
 
    rwebinput->mouse.scroll_x         = rwebinput->mouse.pending_scroll_x;
    rwebinput->mouse.scroll_y         = rwebinput->mouse.pending_scroll_y;
@@ -980,5 +929,8 @@ input_driver_t input_rwebinput = {
    "rwebinput",
    rwebinput_grab_mouse,
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   rwebinput_keys_down,
+   rwebinput_bind_mouse_buttons
 };

@@ -94,7 +94,6 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_CDROM_DETAIL_INFO,
    DISPLAYLIST_INFO,
    DISPLAYLIST_HELP,
-   DISPLAYLIST_HELP_SCREEN_LIST,
    DISPLAYLIST_MAIN_MENU,
    DISPLAYLIST_GENERIC,
    DISPLAYLIST_SETTINGS_ALL,
@@ -173,6 +172,7 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_SYSTEM_INFO,
    DISPLAYLIST_DISPLAY_INFO,
    DISPLAYLIST_DISPLAY_EDID_INFO,
+   DISPLAYLIST_INPUT_INFO,
    DISPLAYLIST_ACHIEVEMENT_SUBMENU_LIST,
    DISPLAYLIST_ACHIEVEMENT_LIST,
    DISPLAYLIST_USER_BINDS_LIST,
@@ -209,6 +209,8 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_INPUT_TURBO_FIRE_SETTINGS_LIST,
    DISPLAYLIST_INPUT_HAPTIC_FEEDBACK_SETTINGS_LIST,
    DISPLAYLIST_INPUT_SENSOR_SETTINGS_LIST,
+   DISPLAYLIST_NETPLAY_REQUEST_DEVICES_LIST,
+   DISPLAYLIST_NETWORK_REMOTE_USERS_LIST,
    DISPLAYLIST_INPUT_MENU_SETTINGS_LIST,
    DISPLAYLIST_LATENCY_SETTINGS_LIST,
    DISPLAYLIST_INPUT_RETROPAD_BINDS_LIST,
@@ -222,6 +224,9 @@ enum menu_displaylist_ctl_state
    DISPLAYLIST_AI_SERVICE_SETTINGS_LIST,
 #ifdef HAVE_SMBCLIENT
    DISPLAYLIST_SMB_CLIENT_SETTINGS_LIST,
+#endif
+#ifdef HAVE_NFSCLIENT
+   DISPLAYLIST_NFS_CLIENT_SETTINGS_LIST,
 #endif
    DISPLAYLIST_ACCESSIBILITY_SETTINGS_LIST,
    DISPLAYLIST_ONSCREEN_DISPLAY_SETTINGS_LIST,
@@ -310,6 +315,9 @@ enum menu_displaylist_ctl_state
 #ifdef HAVE_SMBCLIENT
    DISPLAYLIST_OPTIONS_SMB_CLIENT,
 #endif
+#ifdef HAVE_NFSCLIENT
+   DISPLAYLIST_OPTIONS_NFS_CLIENT,
+#endif
    DISPLAYLIST_PENDING_CLEAR
 };
 
@@ -397,6 +405,9 @@ enum filebrowser_enums filebrowser_get_type(void);
 /* Writes smb://<server>[/<share>][/<subdir>] into 's', returning false when
  * the client is disabled or no server is configured. */
 bool menu_displaylist_build_smb_root(char *s, size_t len);
+#endif
+#ifdef HAVE_NFSCLIENT
+bool menu_displaylist_build_nfs_root(char *s, size_t len);
 #endif
 
 void filebrowser_clear_type(void);

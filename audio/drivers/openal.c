@@ -20,6 +20,12 @@
 #include <time.h>
 
 #ifdef __APPLE__
+/* Apple marks all of OpenAL deprecated from macOS 10.15 / iOS 13 but
+ * still ships it on every release; the headers take an empty marker,
+ * as the GL ones take GL_SILENCE_DEPRECATION. */
+#ifndef OPENAL_DEPRECATED
+#define OPENAL_DEPRECATED
+#endif
 #include <OpenAL/al.h>
 #include <OpenAL/alc.h>
 #else

@@ -85,6 +85,13 @@ enum crt_switch_type
    CRT_SWITCH_LCD
 };
 
+/* The rate the menu runs at while content is loaded */
+enum menu_frame_rate_mode
+{
+   MENU_FRAME_RATE_DISPLAY = 0,
+   MENU_FRAME_RATE_CONTENT
+};
+
 enum video_sdl_display_server_mode
 {
    VIDEO_SDL_DISPLAY_SERVER_OFF = 0,
@@ -150,6 +157,12 @@ typedef struct settings
       unsigned input_joypad_index[MAX_USERS];
       unsigned input_device[MAX_USERS];
       unsigned input_mouse_index[MAX_USERS];
+      /* The keyboard a port reads, where the input driver can tell
+       * keyboards apart: 0 for all of them as one (the default), N
+       * for the Nth the driver lists. */
+      unsigned input_keyboard_index[MAX_USERS];
+      /* 0 off, 1 the left stick, 2 the right: enum input_aim_stick */
+      unsigned input_aim_stick[MAX_USERS];
 
       unsigned input_libretro_device[MAX_USERS];
       unsigned input_analog_dpad_mode[MAX_USERS];
@@ -215,6 +228,10 @@ typedef struct settings
       unsigned input_menu_toggle_gamepad_combo;
       unsigned input_keyboard_gamepad_mapping_type;
       unsigned input_poll_type_behavior;
+      unsigned input_assign_ports_keyboard;
+      unsigned input_rotation;
+      unsigned input_socd_horizontal;
+      unsigned input_socd_vertical;
       unsigned input_rumble_gain;
       unsigned input_auto_game_focus;
       unsigned input_max_users;
@@ -228,6 +245,7 @@ typedef struct settings
       unsigned netplay_input_latency_frames_range;
       unsigned netplay_share_digital;
       unsigned netplay_share_analog;
+      unsigned tls_verify_mode;
       unsigned bundle_assets_extract_version_current;
       unsigned bundle_assets_extract_last_version;
       unsigned content_history_size;
@@ -242,6 +260,7 @@ typedef struct settings
       unsigned savestate_max_keep;
       unsigned save_compression_codec;
       unsigned network_cmd_port;
+      unsigned mcp_server_port;
       unsigned network_remote_base_port;
       unsigned keymapper_port;
       unsigned cloud_sync_sync_mode;
@@ -257,10 +276,15 @@ typedef struct settings
       unsigned video_scale_integer_axis;
       unsigned video_scale_integer_scaling;
       unsigned video_max_swapchain_images;
+      unsigned video_filter_threads;
       unsigned video_swap_interval;
       unsigned video_hard_sync_frames;
       unsigned video_frame_delay;
+      unsigned video_scanline_sync_offset;
       unsigned video_viwidth;
+      unsigned video_ps2_mode;
+      unsigned video_gamma;
+      unsigned video_flicker_filter;
       unsigned video_aspect_ratio_idx;
       unsigned video_rotation;
       unsigned video_fse_negotiation;
@@ -292,6 +316,7 @@ typedef struct settings
       unsigned accessibility_narrator_engine;
 
       unsigned menu_timedate_style;
+      unsigned menu_frame_rate;
       unsigned menu_timedate_date_separator;
       unsigned gfx_thumbnails;
       unsigned menu_left_thumbnails;
@@ -431,8 +456,20 @@ typedef struct settings
       unsigned smb_client_auth_mode;
       unsigned smb_client_num_contexts;
       unsigned smb_client_timeout;
+      unsigned smb_client_readahead;
+#endif
+#ifdef HAVE_NFSCLIENT
+      unsigned nfs_timeout;
+      unsigned nfs_num_contexts;
+      unsigned nfs_port;
+      unsigned nfs_mount_port;
+      unsigned nfs_version;
+      unsigned nfs_readahead;
 #endif
       unsigned input_sensor_orientation;
+#ifdef ANDROID
+      unsigned input_stylus_pressure_sensitivity;
+#endif
    } uints;
 
    struct
@@ -457,6 +494,9 @@ typedef struct settings
       int video_max_frame_latency;
 #ifdef HAVE_VULKAN
       int vulkan_gpu_index;
+#endif
+#ifdef HAVE_EGL
+      int gl_gpu_index;
 #endif
 #ifdef HAVE_D3D10
       int d3d10_gpu_index;
@@ -594,6 +634,8 @@ typedef struct settings
       bool video_hard_sync;
       bool video_waitable_swapchains;
       bool video_vfilter;
+      bool video_soft_filter;
+      bool video_pal60_enable;
       bool video_smooth;
       bool video_ctx_scaling;
       bool video_force_aspect;
@@ -635,6 +677,8 @@ typedef struct settings
       bool video_wiiu_prefer_drc;
       bool video_notch_write_over_enable;
       bool video_hdr_scanlines;
+      bool video_hdr_use_display_peak;
+      bool video_hdr_send_luminance;
       bool video_use_metal_arg_buffers;
 
       /* Accessibility */
@@ -681,6 +725,8 @@ typedef struct settings
       /* Input */
       bool input_remap_binds_enable;
       bool input_remap_sort_by_controller_enable;
+      bool input_assign_ports_on_button_press;
+      bool input_trigger_full_range;
       bool input_autodetect_enable;
       bool input_sensors_enable;
       bool input_android_system_keyboard;
@@ -712,12 +758,15 @@ typedef struct settings
       bool input_keyboard_gamepad_enable;
       bool input_auto_mouse_grab;
       bool input_joypad_background;
+      bool input_keyboard_background;
       bool input_turbo_enable;
       bool input_turbo_allow_dpad;
       bool input_hotkey_device_merge;
       bool input_hotkey_follows_player1;
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
       bool input_nowinkey_enable;
+      bool input_winraw_xinput_enable;
+      bool input_winraw_player_lights;
 #endif
 #ifdef UDEV_TOUCH_SUPPORT
       bool input_touch_vmouse_pointer;
@@ -787,7 +836,6 @@ typedef struct settings
 #endif
       bool menu_show_information;
       bool menu_show_configurations;
-      bool menu_show_help;
       bool menu_show_quit_retroarch;
       bool menu_show_restart_retroarch;
       bool menu_show_reboot;
@@ -924,6 +972,7 @@ typedef struct settings
       bool network_buildbot_show_experimental_cores;
       bool network_on_demand_thumbnails;
       bool core_updater_auto_backup;
+      bool core_updater_auto_backup_compress;
 
       /* UI */
       bool ui_menubar_enable;
@@ -1001,6 +1050,8 @@ typedef struct settings
       bool discord_enable;
       bool threaded_data_runloop_enable;
       bool thread_prefer_fast_cores;
+      bool video_thread_priority;
+      bool main_thread_priority;
       bool set_supports_no_game_enable;
       bool auto_screenshot_filename;
       bool history_list_enable;
@@ -1008,7 +1059,6 @@ typedef struct settings
       bool rewind_enable;
       bool fastforward_frameskip;
       bool vrr_runloop_enable;
-      bool menu_throttle_framerate;
       bool apply_cheats_after_toggle;
       bool apply_cheats_after_load;
       bool run_ahead_enabled;
@@ -1026,10 +1076,12 @@ typedef struct settings
       bool save_file_compression;
       bool savestate_file_compression;
       bool network_cmd_enable;
+      bool mcp_server_enable;
       bool stdin_cmd_enable;
       bool keymapper_enable;
       bool network_remote_enable;
       bool network_remote_enable_user[MAX_USERS];
+      bool network_remote_first_sender;
       bool load_dummy_on_core_shutdown;
       bool core_option_category_enable;
       bool core_info_cache_enable;
@@ -1117,6 +1169,8 @@ typedef struct settings
       bool ai_service_pause;
 
       bool gamemode_enable;
+      bool win32_power_plan;
+      bool win32_power_plan_idle_disable;
 #ifdef HAVE_BSV_MOVIE
       bool replay_checkpoint_deserialize;
 #endif
@@ -1128,6 +1182,9 @@ typedef struct settings
 
 #ifdef ANDROID
       bool android_input_disconnect_workaround;
+      bool input_stylus_enable;
+      bool input_stylus_require_contact_for_click;
+      bool input_stylus_hover_moves_pointer;
 #endif
 
 #if defined(HAVE_COCOATOUCH)
@@ -1217,6 +1274,12 @@ typedef struct settings
        * desktop_menu_save_geometry is on. */
       char desktop_menu_options_window[48];
       char camera_device[NAME_MAX_LENGTH];
+      /* Address the network command interface binds to. Empty means
+       * every interface (the historical behaviour); 127.0.0.1 limits
+       * it to this machine. */
+      char network_cmd_bind_address[NAME_MAX_LENGTH];
+      char mcp_server_bind_address[NAME_MAX_LENGTH];
+      char mcp_server_token[NAME_MAX_LENGTH];
       char netplay_mitm_server[NAME_MAX_LENGTH];
 #ifdef HAVE_NETWORKING
 #ifdef HAVE_CLOUDSYNC
@@ -1234,11 +1297,25 @@ typedef struct settings
 
       char crt_switch_timings[NAME_MAX_LENGTH];
       char input_reserved_devices[MAX_USERS][NAME_MAX_LENGTH];
+      /* the keyboard a port is given, by what it is: see
+       * input/common/input_device_pins.h */
+      char input_keyboard_device[MAX_USERS][64];
+      /* and the mouse */
+      char input_mouse_device[MAX_USERS][64];
 
       char youtube_stream_key[PATH_MAX_LENGTH];
       char twitch_stream_key[PATH_MAX_LENGTH];
       char facebook_stream_key[PATH_MAX_LENGTH];
       char kick_stream_key[PATH_MAX_LENGTH];
+      /* The device each GPU index named when it was chosen, so a list
+       * that has changed order since is noticed rather than silently
+       * selecting another GPU. */
+      char video_gpu_name_vulkan[NAME_MAX_LENGTH];
+      char video_gpu_name_gl[NAME_MAX_LENGTH];
+      char video_gpu_name_d3d10[NAME_MAX_LENGTH];
+      char video_gpu_name_d3d11[NAME_MAX_LENGTH];
+      char video_gpu_name_d3d12[NAME_MAX_LENGTH];
+      char video_gpu_name_metal[NAME_MAX_LENGTH];
       char discord_app_id[PATH_MAX_LENGTH];
       char ai_service_url[PATH_MAX_LENGTH];
 
@@ -1250,6 +1327,13 @@ typedef struct settings
       char smb_client_username[128];
       char smb_client_password[128];
       char smb_client_workgroup[64];
+      char smb_client_realm[128];
+      char smb_client_kdc[256];
+#endif
+#ifdef HAVE_NFSCLIENT
+      char nfs_server[256];
+      char nfs_export[PATH_MAX_LENGTH];
+      char nfs_subdir[PATH_MAX_LENGTH];
 #endif
 } arrays;
 
@@ -1506,8 +1590,9 @@ void config_get_autoconf_profile_filename(
 /**
  * config_save_autoconf_profile:
  * @device_name       : Input device name
- * @user              : Controller number to save
- * Writes a controller autoconf file to disk.
+ * @user              : Port whose binds are saved
+ * Writes a controller autoconf file to disk for the
+ * device assigned to @user.
  **/
 bool config_save_autoconf_profile(const char *device_name, unsigned user);
 
@@ -1520,6 +1605,12 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user);
  * Returns: true (1) on success, otherwise returns false (0).
  **/
 bool config_save_file(const char *path);
+
+#if defined(HAVE_KEYCHAIN) && defined(HAVE_CRYPTO) && defined(HAVE_CONFIGFILE)
+/* After a keychain unlock: open the credentials sealed on another
+ * machine and put them into the running settings. Returns how many. */
+unsigned config_keychain_reapply(void);
+#endif
 
 /**
  * config_save_overrides:
@@ -1544,9 +1635,9 @@ bool config_overlay_enable_default(void);
 bool config_metal_arg_buffers_default(void);
 #endif
 
-void config_set_defaults(void *data, settings_t *target);
+void config_set_defaults(settings_t *target);
 
-void config_load(void *data);
+void config_load(void);
 
 #if !defined(HAVE_DYNAMIC)
 /* Salamander config file contains a single

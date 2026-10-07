@@ -193,6 +193,8 @@ static bool bsv_movie_init_record(
 #ifdef HAVE_STATESTREAM
    handle->superblocks      = uint32s_index_new(superblock_size, handle->commit_interval, handle->commit_threshold);
    handle->blocks           = uint32s_index_new(block_size/4, handle->commit_interval, handle->commit_threshold);
+   if (!handle->superblocks || !handle->blocks)
+      return false;
 #endif
    if (state_size)
       return bsv_movie_reset_recording(handle);
@@ -251,6 +253,17 @@ static bsv_movie_t *bsv_movie_init_internal(const char *path, enum rarch_movie_t
    return handle;
 
 error:
+   /* The playback init path reads the first checkpoint and the first
+    * frame's events before the handle is installed.  On a short read
+    * those readers set BSV_FLAG_MOVIE_END on the global input state,
+    * but the handle is freed here and never enqueued, so the PLAYBACK
+    * flag is never set alongside it.  Left behind, MOVIE_END makes the
+    * run loop issue CMD_EVENT_PAUSE after every frame while
+    * movie_stop() has no PLAYBACK/RECORDING flag to clear it through:
+    * a permanent pause that survives Close Content and only ends with
+    * a process restart (#19622).  A handle that failed to initialise
+    * must not leave any flag behind. */
+   input_state_get_ptr()->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_END;
    if (handle)
       bsv_movie_free(handle);
    return NULL;
@@ -295,9 +308,14 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
       input_st->bsv_movie_state_handle. */
    if (!(state = bsv_movie_init_internal(path, RARCH_MOVIE_PLAYBACK)))
    {
-      RARCH_ERR("[Replay] %s: \"%s\".\n",
-            msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE),
-            path);
+      /* This runs from the task callback, after CMD_EVENT_PLAY_REPLAY
+       * has already returned success, so the command's own failure
+       * message never fires for an unreadable file.  Tell the user
+       * here, as the record path does. */
+      _msg = msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      RARCH_ERR("[Replay] %s: \"%s\".\n", _msg, path);
       return false;
    }
 
@@ -318,7 +336,11 @@ static bool bsv_movie_start_playback(input_driver_state_t *input_st, char *path)
    later we can replace the start_record/start_playback flags and
    remove the entirety of input_driver_st bsv_state, which is only
    needed due to mixing sync and async during initialization. */
-typedef struct bsv_state moviectl_task_state_t;
+typedef struct
+{
+   struct bsv_state bsv;
+   retro_task_callback_t cb; /* the caller's */
+} moviectl_task_state_t;
 
 /* True from the push of a playback-start task until its main-thread
  * callback has installed the replay handle.
@@ -355,11 +377,19 @@ static void moviectl_start_playback_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-  struct bsv_state *state        = (struct bsv_state *)task_data;
+  moviectl_task_state_t *state   = (moviectl_task_state_t *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
+  int64_t id                     = 0;
+  char id_str[24];
   movie_playback_start_pending   = false;
-  input_st->bsv_movie_state      = *state;
-  bsv_movie_start_playback(input_st, state->movie_start_path);
+  input_st->bsv_movie_state      = state->bsv;
+  if (   bsv_movie_start_playback(input_st, state->bsv.movie_start_path)
+      && input_st->bsv_movie_state_next_handle)
+     id = input_st->bsv_movie_state_next_handle->identifier;
+  snprintf(id_str, sizeof(id_str), "%lld", (long long)id);
+  if (state->cb)
+     state->cb(task, id_str, user_data, error ? error
+           : id ? NULL : msg_hash_to_str(MSG_FAILED_TO_LOAD_MOVIE_FILE));
   free(state);
 }
 
@@ -385,10 +415,14 @@ static void moviectl_start_record_cb(retro_task_t *task,
       void *task_data,
       void *user_data, const char *error)
 {
-  struct bsv_state *state        = (struct bsv_state *)task_data;
+  moviectl_task_state_t *state   = (moviectl_task_state_t *)task_data;
   input_driver_state_t *input_st = input_state_get_ptr();
-  input_st->bsv_movie_state      = *state;
-  bsv_movie_start_record(input_st, state->movie_start_path);
+  bool started;
+  input_st->bsv_movie_state      = state->bsv;
+  started = bsv_movie_start_record(input_st, state->bsv.movie_start_path);
+  if (state->cb)
+     state->cb(task, state->bsv.movie_start_path, user_data, error ? error
+           : started ? NULL : msg_hash_to_str(MSG_FAILED_TO_START_MOVIE_RECORD));
   free(state);
 }
 
@@ -427,6 +461,16 @@ bool movie_stop_record(input_driver_state_t *input_st)
    bsv_movie_t *movie = input_st->bsv_movie_state_handle;
    uint32_t frame_count;
    const char *_msg = msg_hash_to_str(MSG_MOVIE_RECORD_STOPPED);
+   /* The record task installs the handle as next_handle; the run loop
+    * promotes it on the next frame (bsv_movie_dequeue_next).  Halted
+    * before a frame has run - from the menu with the core paused, say
+    * - it is still pending, and stopping through the promoted handle
+    * alone returned false with the RECORDING flag and the pending
+    * handle both left in place: the session was stuck "recording" and
+    * every later Record/Play Replay refused.  A pending recording is
+    * a recording of zero frames; finish it like any other. */
+   if (!movie)
+      movie = input_st->bsv_movie_state_next_handle;
    if (!movie)
       return false;
    runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, true, NULL,
@@ -455,10 +499,16 @@ bool movie_stop_record(input_driver_state_t *input_st)
 
 bool movie_stop(input_driver_state_t *input_st)
 {
+   task_notify_fire(&input_st->bsv_movie_op, NULL, "The replay stopped.");
    if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_PLAYBACK)
       return movie_stop_playback(input_st);
    else if (input_st->bsv_movie_state.flags & BSV_FLAG_MOVIE_RECORDING)
       return movie_stop_record(input_st);
+   /* No movie is active, so nothing above cleared the flags.  Drop a
+    * stray MOVIE_END here too: the run loop pauses every frame while
+    * it is set, and this is also what Close Content calls, so it must
+    * not carry the flag into the next content. */
+   input_st->bsv_movie_state.flags &= ~BSV_FLAG_MOVIE_END;
    if (input_st->bsv_movie_state_handle)
       RARCH_ERR("[Replay] Didn't really stop movie!\n");
    return true;
@@ -466,18 +516,26 @@ bool movie_stop(input_driver_state_t *input_st)
 
 bool movie_start_playback(input_driver_state_t *input_st, char *path)
 {
+   return movie_start_playback_notify(input_st, path, NULL, NULL);
+}
+
+bool movie_start_playback_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data)
+{
   retro_task_t       *task      = task_init();
   moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
   bool file_exists              = filestream_exists(path);
 
   if (task && state && file_exists)
   {
-     *state                        = input_st->bsv_movie_state;
-     strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+     state->bsv                    = input_st->bsv_movie_state;
+     state->cb                     = cb;
+     strlcpy(state->bsv.movie_start_path, path, sizeof(state->bsv.movie_start_path));
      task->type                    = TASK_TYPE_NONE;
      task->state                   = state;
      task->handler                 = task_moviectl_playback_handler;
      task->callback                = moviectl_start_playback_cb;
+     task->user_data               = user_data;
      task->title                   = strdup(msg_hash_to_str(MSG_STARTING_MOVIE_PLAYBACK));
 
      movie_playback_start_pending  = true;
@@ -499,6 +557,12 @@ bool movie_start_playback(input_driver_state_t *input_st, char *path)
 
 bool movie_start_record(input_driver_state_t *input_st, char*path)
 {
+   return movie_start_record_notify(input_st, path, NULL, NULL);
+}
+
+bool movie_start_record_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data)
+{
    const char *_msg              = msg_hash_to_str(MSG_STARTING_MOVIE_RECORD_TO);
    retro_task_t       *task      = task_init();
    moviectl_task_state_t *state  = (moviectl_task_state_t *)calloc(1, sizeof(*state));
@@ -507,8 +571,9 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
    {
       size_t _len;
       char msg[128];
-      *state                     = input_st->bsv_movie_state;
-      strlcpy(state->movie_start_path, path, sizeof(state->movie_start_path));
+      state->bsv                 = input_st->bsv_movie_state;
+      state->cb                  = cb;
+      strlcpy(state->bsv.movie_start_path, path, sizeof(state->bsv.movie_start_path));
 
       _len                       = strlcpy(msg, _msg, sizeof(msg));
       snprintf(msg + _len, sizeof(msg) - _len, " \"%s\".", path);
@@ -517,6 +582,7 @@ bool movie_start_record(input_driver_state_t *input_st, char*path)
       task->state                = state;
       task->handler              = task_moviectl_record_handler;
       task->callback             = moviectl_start_record_cb;
+      task->user_data            = user_data;
 
       task->title                = strdup(msg);
 

@@ -119,7 +119,7 @@ static INLINE void init_item_file(struct item_file *item,
     item->label         = file_list_strdup(label);
     item->alt           = NULL;
     item->type          = type;
-    item->directory_ptr = directory_ptr;
+    item->directory_ptr = (uint32_t)directory_ptr;
     item->entry_idx     = entry_idx;
     item->userdata      = NULL;
     item->actiondata    = NULL;
@@ -165,7 +165,7 @@ bool file_list_append(file_list_t *list,
    list->list[idx].label         = NULL;
    list->list[idx].alt           = NULL;
    list->list[idx].type          = type;
-   list->list[idx].directory_ptr = directory_ptr;
+   list->list[idx].directory_ptr = (uint32_t)directory_ptr;
    list->list[idx].entry_idx     = entry_idx;
    list->list[idx].userdata      = NULL;
    list->list[idx].actiondata    = NULL;

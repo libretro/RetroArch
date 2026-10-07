@@ -369,6 +369,7 @@ static const struct
    char s_331819c2[49];
    char s_56e1b335[26];
    char s_56e1b336[34];
+   char s_0bd714f7[7];
    char s_72765a06[15];
    char s_72765a07[15];
    char s_72765a08[15];
@@ -2283,6 +2284,7 @@ static const struct
    "\316\232\316\277\317\205\316\274\317\200\316\257 X (\317\200\316\254\316\275\317\211)",
    "\316\232\316\277\317\205\316\274\317\200\316\257 Y (\316\261\317\201\316\271\317\203\317\204\316"
    "\265\317\201\317\214)",
+   "\316\214\316\273\316\261",
    "\316\214\317\200\316\273\316\277 Aux A",
    "\316\214\317\200\316\273\316\277 Aux B",
    "\316\214\317\200\316\273\316\277 Aux C",
@@ -4732,7 +4734,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68315u
+      (sizeof(msg_hash_el_blob) == (68322u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -5188,6 +5190,7 @@ static const uint32_t msg_hash_el_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_UP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,

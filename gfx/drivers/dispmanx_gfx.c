@@ -417,8 +417,7 @@ static void dispmanx_blank_console (struct dispmanx_video *_dispvars)
    dispmanx_surface_update_async(image, _dispvars->back_surface);
 }
 
-static void *dispmanx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *dispmanx_init(const video_info_t *video)
 {
    struct dispmanx_video *_dispvars = calloc(1, sizeof(struct dispmanx_video));
 
@@ -462,8 +461,6 @@ static void *dispmanx_init(const video_info_t *video,
    _dispvars->main_surface     = NULL;
    _dispvars->menu_surface     = NULL;
 
-   if (input && input_data)
-      *input = NULL;
 
    /* Enable/disable dispmanx bilinear filtering. */
    dispmanx_set_scaling(video->smooth);
@@ -475,10 +472,12 @@ static void *dispmanx_init(const video_info_t *video,
    return _dispvars;
 }
 
-static bool dispmanx_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool dispmanx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct dispmanx_video *_dispvars = data;
    float                     aspect = video_driver_get_aspect_ratio();
    unsigned    max_swapchain_images = video_info->max_swapchain_images;

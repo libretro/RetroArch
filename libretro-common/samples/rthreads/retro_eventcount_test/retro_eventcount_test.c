@@ -31,11 +31,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <rthreads/rthreads.h>
 #include <rthreads/retro_eventcount.h>
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
+#include <features/features_cpu.h>
 
 /* A plain pause, not the tree's sleep helper: on desktop Windows that
  * one lives in time/rtime.c on top of a waitable timer, and this
@@ -119,8 +121,15 @@ static void handoff_consumer(void *unused)
          continue;
       }
 
+      /* The flag is set after the last item: seeing it means a fresh
+       * look at the count is the final one */
       if (retro_atomic_load_acquire_int(&done_flag))
+      {
+         if (retro_atomic_load_acquire_size(&consumed)
+               < retro_atomic_load_acquire_size(&produced))
+            continue;
          return;
+      }
 
       key = retro_eventcount_prepare_wait(&ec);
 
@@ -426,6 +435,292 @@ static int lane_broadcast_stress(void)
    return 0;
 }
 
+
+/* ---- lane 5: bounded waits racing wakes --------------------------- */
+/* A bounded wait that expires while a notifier has already taken its
+ * block has a wake in flight, and the backends that sleep on something
+ * of the thread's own - a semaphore, an event - must consume it, or it
+ * carries into the thread's next park and ends that one at once.  The
+ * notifier here is paced to the consumer's bound so expiry and wake
+ * land together often, in bursts; after each burst it is held, and a
+ * bounded wait with nothing to wake it must then expire.  On the
+ * semaphore backend nothing else can end that wait, so any early
+ * return is a carried-over count and fails the lane.  The futex and
+ * condition-variable sleeps may return spuriously by their own
+ * contract, so there the probe is reported and not asserted on. */
+
+#define TIMED_RACE_BURSTS   200
+#define TIMED_RACE_ROUNDS   100
+#define TIMED_RACE_BOUND_US 50
+
+static retro_atomic_int_t timed_stop;
+static retro_atomic_int_t timed_hold;
+static retro_atomic_int_t timed_held;
+
+static void timed_spin_us(unsigned us)
+{
+   retro_time_t until = cpu_features_get_time_usec() + us;
+   while (cpu_features_get_time_usec() < until)
+      retro_cpu_relax();
+}
+
+static void timed_notifier(void *unused)
+{
+   unsigned n = 0;
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&timed_stop))
+   {
+      if (retro_atomic_load_acquire_int(&timed_hold))
+      {
+         retro_atomic_store_release_int(&timed_held, 1);
+         while (retro_atomic_load_acquire_int(&timed_hold))
+            retro_cpu_relax();
+         continue;
+      }
+      /* around the consumer's bound, on both sides of it */
+      timed_spin_us(TIMED_RACE_BOUND_US - 10 + (n++ % 21));
+      retro_eventcount_notify(&ec);
+   }
+}
+
+static int lane_timed_race(void)
+{
+   sthread_t *t;
+   int b, i;
+   int early = 0;
+   int expired = 0, woken = 0;
+   const char *backend = retro_eventcount_backend_name();
+
+   retro_atomic_int_init(&timed_stop, 0);
+   retro_atomic_int_init(&timed_hold, 0);
+   retro_atomic_int_init(&timed_held, 0);
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: timed_race: eventcount init\n");
+      return 1;
+   }
+
+   t = sthread_create(timed_notifier, NULL);
+
+   for (b = 0; b < TIMED_RACE_BURSTS; b++)
+   {
+      int key;
+      for (i = 0; i < TIMED_RACE_ROUNDS; i++)
+      {
+         key = retro_eventcount_prepare_wait(&ec);
+         if (retro_eventcount_commit_wait_timeout(&ec, key,
+                  TIMED_RACE_BOUND_US))
+            woken++;
+         else
+            expired++;
+      }
+
+      /* Hold the notifier, then a wait with nothing to wake it */
+      retro_atomic_store_release_int(&timed_held, 0);
+      retro_atomic_store_release_int(&timed_hold, 1);
+      while (!retro_atomic_load_acquire_int(&timed_held))
+         retro_cpu_relax();
+
+      key = retro_eventcount_prepare_wait(&ec);
+      if (retro_eventcount_commit_wait_timeout(&ec, key, 200))
+         early++;
+
+      retro_atomic_store_release_int(&timed_hold, 0);
+   }
+
+   retro_atomic_store_release_int(&timed_stop, 1);
+   retro_atomic_store_release_int(&timed_hold, 0);
+   sthread_join(t);
+   retro_eventcount_free(&ec);
+
+   printf("  timed_race %d bursts x %d bounded waits: %d woken, %d "
+         "expired; %d probe(s) ended early\n",
+         TIMED_RACE_BURSTS, TIMED_RACE_ROUNDS, woken, expired, early);
+   /* Whether a burst ever expires depends on the machine: a sleep
+    * with millisecond granularity (the win32 event tier) rounds the
+    * bound up past the notifier's period, and a loaded runner under a
+    * sanitizer wakes every wait before its bound.  The held probes are
+    * then what shows the bound is honoured, so only their all ending
+    * early, with no burst expiring either, says the bound is not. */
+   if (!woken || (!expired && early == TIMED_RACE_BURSTS))
+   {
+      fprintf(stderr, "FAIL: timed_race: the race was not exercised\n");
+      return 1;
+   }
+   if (early && strstr(backend, "semaphore"))
+   {
+      fprintf(stderr, "FAIL: timed_race: a wake carried over into a "
+            "later park on the %s backend\n", backend);
+      return 1;
+   }
+   return 0;
+}
+
+/* ---- lane 6: a crowd of waiters ----------------------------------- */
+/* More threads than the pooled semaphore backend has semaphores, all
+ * parking with a bound against a notifier that keeps moving.  Past the
+ * pool's size a park has nothing to sleep on and answers at once,
+ * which the callers of this primitive already tolerate as a spurious
+ * wake; what must hold is that every thread comes back, and that the
+ * semaphores the crowd hands back and forth are clean.  For the second
+ * part the notifier is held and the first CROWD_PROBERS threads take a
+ * bounded wait each, concurrently, so that many distinct semaphores are
+ * drawn: on a semaphore backend nothing can end those waits but their
+ * bound, so an early return is a count left on a semaphore by a park
+ * before it.  Other backends may wake spuriously by contract, and the
+ * probe is reported only. */
+
+#define CROWD_THREADS  96
+#define CROWD_ROUNDS   200
+#define CROWD_BOUND_US 50
+#define CROWD_PROBERS  32
+
+static retro_atomic_int_t crowd_stormed;
+static retro_atomic_int_t crowd_probe_go;
+static retro_atomic_int_t crowd_early;
+
+static void crowd_waiter(void *data)
+{
+   int i;
+   int me = (int)(intptr_t)data;
+
+   for (i = 0; i < CROWD_ROUNDS; i++)
+   {
+      int key = retro_eventcount_prepare_wait(&ec);
+      retro_eventcount_commit_wait_timeout(&ec, key, CROWD_BOUND_US);
+   }
+   retro_atomic_fetch_add_int(&crowd_stormed, 1);
+
+   if (me >= CROWD_PROBERS)
+      return;
+   while (!retro_atomic_load_acquire_int(&crowd_probe_go))
+      sthread_yield();
+   {
+      int key = retro_eventcount_prepare_wait(&ec);
+      if (retro_eventcount_commit_wait_timeout(&ec, key, 200))
+         retro_atomic_fetch_add_int(&crowd_early, 1);
+   }
+}
+
+static int lane_crowd(void)
+{
+   sthread_t *t[CROWD_THREADS];
+   sthread_t *n;
+   int i;
+   int early;
+   const char *backend = retro_eventcount_backend_name();
+
+   retro_atomic_int_init(&timed_stop, 0);
+   retro_atomic_int_init(&timed_hold, 0);
+   retro_atomic_int_init(&timed_held, 0);
+   retro_atomic_int_init(&crowd_stormed, 0);
+   retro_atomic_int_init(&crowd_probe_go, 0);
+   retro_atomic_int_init(&crowd_early, 0);
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: crowd: eventcount init\n");
+      return 1;
+   }
+
+   n = sthread_create(timed_notifier, NULL);
+   for (i = 0; i < CROWD_THREADS; i++)
+      t[i] = sthread_create(crowd_waiter, (void*)(intptr_t)i);
+
+   while (retro_atomic_load_acquire_int(&crowd_stormed) < CROWD_THREADS)
+      sthread_yield();
+
+   /* Hold the notifier, then the probes, all at once */
+   retro_atomic_store_release_int(&timed_hold, 1);
+   while (!retro_atomic_load_acquire_int(&timed_held))
+      retro_cpu_relax();
+   retro_atomic_store_release_int(&crowd_probe_go, 1);
+
+   for (i = 0; i < CROWD_THREADS; i++)
+      sthread_join(t[i]);
+   retro_atomic_store_release_int(&timed_stop, 1);
+   retro_atomic_store_release_int(&timed_hold, 0);
+   sthread_join(n);
+   retro_eventcount_free(&ec);
+
+   early = retro_atomic_load_acquire_int(&crowd_early);
+   printf("  crowd      %d threads x %d bounded waits; %d of %d probes "
+         "ended early\n", CROWD_THREADS, CROWD_ROUNDS, early, CROWD_PROBERS);
+   if (early && strstr(backend, "semaphore"))
+   {
+      fprintf(stderr, "FAIL: crowd: a semaphore came back to the pool "
+            "with a count on it (%s backend)\n", backend);
+      return 1;
+   }
+   return 0;
+}
+
+/* ---- lane 7: the epoch's wrap ------------------------------------- */
+/* The epoch is a counter that wraps, and a backend that compares it
+ * with anything but equality has an edge there: the 3DS arbiter waits
+ * while the word is below key + 1, and INT_MAX + 1 does not exist.
+ * A wait registered at INT_MAX must come back, promptly, rather than
+ * sleep its bound out - it is answered as a spurious wake - and a wait
+ * registered just past the wrap must still be woken by a notify. */
+
+static retro_atomic_int_t wrap_go;
+
+static void wrap_notifier(void *unused)
+{
+   (void)unused;
+   while (!retro_atomic_load_acquire_int(&wrap_go))
+      sthread_yield();
+   timed_spin_us(2000);
+   retro_eventcount_notify(&ec);
+}
+
+static int lane_wrap(void)
+{
+   sthread_t   *t;
+   int          key;
+   retro_time_t began, took;
+
+   if (!retro_eventcount_init(&ec))
+   {
+      fprintf(stderr, "FAIL: wrap: eventcount init\n");
+      return 1;
+   }
+   retro_atomic_int_init(&wrap_go, 0);
+
+   /* At the top: a bounded wait with nothing to wake it must not
+    * sleep its bound out on a backend that cannot express key + 1 */
+   retro_atomic_store_release_int(&ec.epoch, INT_MAX);
+   key   = retro_eventcount_prepare_wait(&ec);
+   began = cpu_features_get_time_usec();
+   retro_eventcount_commit_wait_timeout(&ec, key, 200000);
+   took  = cpu_features_get_time_usec() - began;
+   if (key != INT_MAX)
+   {
+      fprintf(stderr, "FAIL: wrap: the key is not the epoch\n");
+      return 1;
+   }
+
+   /* Over the top: a notify bumps it past INT_MAX, and a wait taken
+    * there is still woken by the next one */
+   retro_eventcount_notify(&ec);
+   t   = sthread_create(wrap_notifier, NULL);
+   key = retro_eventcount_prepare_wait(&ec);
+   retro_atomic_store_release_int(&wrap_go, 1);
+   if (!retro_eventcount_commit_wait_timeout(&ec, key, 2000000))
+   {
+      fprintf(stderr, "FAIL: wrap: a wait past the wrap was not woken\n");
+      sthread_join(t);
+      return 1;
+   }
+   sthread_join(t);
+   retro_eventcount_free(&ec);
+
+   printf("  wrap       wait at INT_MAX came back in %ld us; past it, woken\n",
+         (long)took);
+   return 0;
+}
+
 int main(void)
 {
    sthread_t *wd;
@@ -441,6 +736,9 @@ int main(void)
    rc |= lane_wakeup();
    rc |= lane_broadcast();
    rc |= lane_broadcast_stress();
+   rc |= lane_timed_race();
+   rc |= lane_crowd();
+   rc |= lane_wrap();
 
    retro_atomic_store_release_int(&watchdog_stop, 1);
    sthread_join(wd);

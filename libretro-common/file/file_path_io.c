@@ -200,6 +200,22 @@ int64_t path_get_size(const char *path)
 }
 
 /**
+ * path_rmdir:
+ * @dir                : directory path.
+ *
+ * Removes the empty directory @dir.  There is no libretro VFS entry
+ * for this, so it always goes through the built-in implementation.
+ *
+ * @return true if the directory was removed, otherwise false -
+ * including a directory that is not empty, and platforms with no
+ * directory removal, where an empty directory is simply left.
+ **/
+bool path_rmdir(const char *dir)
+{
+   return retro_vfs_rmdir_impl(dir) == 0;
+}
+
+/**
  * path_mkdir:
  * @dir                : directory
  *
@@ -209,6 +225,34 @@ int64_t path_get_size(const char *path)
  *
  * @return true if directory could be created, otherwise false.
  **/
+/* True for "dev:name", "dev:/name" and "dev:\name" (a trailing
+ * separator allowed): a directory whose parent is a device root.  The
+ * root cannot be probed everywhere - the PSP firmware refuses a stat of
+ * "ms0:/" - and path_parent_dir() turns it into a relative "./", but a
+ * mounted device's root always exists. */
+static bool path_parent_is_device_root(const char *p)
+{
+   const char *colon = strchr(p, ':');
+   const char *s;
+
+   if (!colon || colon == p)
+      return false;
+   for (s = p; s < colon; s++)
+      if (*s == '/' || *s == '\\')
+         return false;
+
+   s = colon + 1;
+   if (*s == '/' || *s == '\\')
+      s++;
+   if (!*s || *s == '/' || *s == '\\')
+      return false;
+   while (*s && *s != '/' && *s != '\\')
+      s++;
+   if (*s)
+      s++;
+   return *s == '\0';
+}
+
 bool path_mkdir(const char *dir)
 {
    bool norecurse     = false;
@@ -239,24 +283,29 @@ bool path_mkdir(const char *dir)
    if (path_is_directory(dir))
       return true;
 
-   /* Use heap. Real chance of stack 
-    * overflow if we recurse too hard. */
-   if (!(basedir = strdup(dir)))
-      return false;
-
-   path_parent_dir(basedir, strlen(basedir));
-
-   if (!*basedir || !strcmp(basedir, dir))
-   {
-      free(basedir);
-      return false;
-   }
-
-   if (     path_is_directory(basedir)
-         || path_mkdir(basedir))
+   if (path_parent_is_device_root(dir))
       norecurse = true;
+   else
+   {
+      /* Use heap. Real chance of stack
+       * overflow if we recurse too hard. */
+      if (!(basedir = strdup(dir)))
+         return false;
 
-   free(basedir);
+      path_parent_dir(basedir, strlen(basedir));
+
+      if (!*basedir || !strcmp(basedir, dir))
+      {
+         free(basedir);
+         return false;
+      }
+
+      if (     path_is_directory(basedir)
+            || path_mkdir(basedir))
+         norecurse = true;
+
+      free(basedir);
+   }
 
    if (norecurse)
    {

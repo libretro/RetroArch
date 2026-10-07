@@ -222,6 +222,59 @@ SRC(
          return SpriteEncodeHDR(float4(input.color.rgb,
                input.color.a * t0.Sample(s0, input.texcoord).a));
       };
+      /* ---- Linear scRGB sources ---------------------------------------
+       * An RGBA16F texture is HDR content in linear scRGB: 1.0 is 80
+       * nits, the 709 primaries. Mode 0 writes it into the UI layer as
+       * the value the menu composite's SDR branch takes back onto it:
+       * that branch shows To2020(v^2.4) * paper_white nits, scRGB and
+       * HDR10 alike, so v is the exact inverse at sprite_paper_white_nits
+       * (the menu nits), above 1.0 for anything brighter than menu white
+       * - the layer is FP16 once such a texture is drawn. Modes 2 and 1,
+       * straight into the swapchain, are scRGB as it is and absolute PQ.
+       * The composite's pow(abs()) keeps no sign, so in mode 0 a colour
+       * outside the chosen gamut is clamped to it. */
+      static const float3x3 kSprExpanded2020to709 =
+      {
+         { 1.635346f,  -0.5705700f, -0.0647755f },
+         {-0.0794803f,  1.0898049f, -0.0103244f },
+         { 0.0034352f, -0.0202070f,  1.0167713f }
+      };
+      static const float3x3 kSpr2020toP3 =
+      {
+         { 1.3435784f, -0.2821792f, -0.0613991f },
+         {-0.0652977f,  1.0757882f, -0.0104905f },
+         { 0.0028213f, -0.0195987f,  1.0167763f }
+      };
+
+      /* The inverse of SpriteTo2020 for the same sprite_expand_gamut. */
+      float3 SpriteFrom2020(const float3 rgb)
+      {
+         if (sprite_expand_gamut < 0.5f)
+            return mul(kSpr2020to709, rgb);
+         else if (sprite_expand_gamut < 1.5f)
+            return mul(kSprExpanded2020to709, rgb);
+         else if (sprite_expand_gamut < 2.5f)
+            return mul(kSpr2020toP3, rgb);
+         return rgb;
+      }
+
+      float4 PSMainLinearHDR(PSInput input) : SV_TARGET
+      {
+         float4 s   = t0.Sample(s0, input.texcoord);
+         float3 lin = input.color.rgb * s.rgb;
+         float  a   = input.color.a * s.a;
+         if (sprite_hdr_mode > 1.5f)
+            return float4(lin, a);
+         if (sprite_hdr_mode > 0.5f)
+            return float4(SpriteLinearToST2084(max(mul(kSpr709to2020, lin)
+                  * (kSprscRGBWhiteNits / kSprMaxNitsFor2084), 0.0f)), a);
+         {
+            float3 x = SpriteFrom2020(mul(kSpr709to2020, lin
+                  * (kSprscRGBWhiteNits / max(sprite_paper_white_nits, 1.0f))));
+            return float4(pow(max(x, 0.0f), 1.0f / 2.4f), a);
+         }
+      };
+
       /* 16-bit coverage font atlas (R16_UNORM): D3D11 SRVs have no
        * component swizzle, so the wider atlas is sampled from .r
        * explicitly. Same encode / mode-0 passthrough behavior as

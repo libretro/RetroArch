@@ -92,6 +92,18 @@ enum gl2_flags
 
 struct gl2
 {
+   /* gfx_display meshes kept on the GPU, by mesh id: vertices, and
+    * indices where the mesh has them. GL retires a deleted buffer once
+    * nothing in flight reads it, so the one drawn longest ago simply
+    * gives way when all are taken. */
+   struct
+   {
+      GLuint vbo;
+      GLuint ibo;
+      uint64_t last_draw;
+      uint32_t id;
+   } meshes[8];
+   uint64_t mesh_draws;
    const shader_backend_t *shader;
    void *shader_data;
    void *renderchain_data;
@@ -116,6 +128,8 @@ struct gl2
    GLuint pbo;
    GLuint *overlay_tex;
    GLuint menu_texture;
+   /* Sampled by a quad drawn with no texture: solid colour */
+   GLuint white_texture;
    /* Copy of the last presented backbuffer, taken with
     * glCopyTexSubImage2D before the swap of a frame() that asked for it
     * (retain_output), plus the group that frame put on screen for
@@ -133,6 +147,7 @@ struct gl2
     * this thread to wait before reading it. Sync objects are shared
     * between the two contexts. */
    void *hw_ring_sync[3];
+   void *hw_ring_done_sync; /* taken ahead of the swap */
 
    uint32_t flags;
 
@@ -184,8 +199,7 @@ struct gl2
       GLint  loc_tex;
       GLint  loc_nits;
       GLint  loc_expand;
-      unsigned width;
-      unsigned height;
+      unsigned dims;
       /* Separate layer for the SDR UI when the content is PQ: one
        * encode cannot treat some pixels as Rec.2020 PQ and others as
        * gamma. Mirrors the glcore driver's ui_fbo/ui_tex. */
@@ -194,7 +208,10 @@ struct gl2
       GLint    loc_ui_tex;
       GLint    loc_mode;
       GLint    loc_ui_nits;
+      GLint    loc_out_pq;
       bool   active;
+      /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
+      bool   pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the
        * thread that draws never reads what the menu writes */
       float    menu_nits;

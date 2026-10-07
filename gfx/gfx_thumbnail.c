@@ -56,8 +56,13 @@
 #include "../audio/audio_driver.h"
 #endif
 
-#ifdef HAVE_THREADS
+/* The decode worker's queue is lock-free and needs the atomic pointer
+ * ops; a build whose atomic backend has none decodes in line, as a
+ * build without threads does. */
+#if defined(HAVE_THREADS) && defined(RETRO_ATOMIC_HAS_PTR)
+#define GFX_THUMB_ANIM_WORKER 1
 #include <rthreads/rthreads.h>
+#include <rthreads/retro_eventcount.h>
 #include <rthreads/tpool.h>
 #endif
 
@@ -209,6 +214,12 @@ static bool gfx_thumbnail_use_rgba(void)
       return false;
    return req.rgba;
 }
+
+/* A thumbnail's still is uploaded through its surface, which takes
+ * half floats where the driver offers them: an HDR video's still may
+ * come as linear scRGB (TASK_IMAGE_LOAD_HDR). */
+#define GFX_THUMBNAIL_LOAD_FLAGS ((gfx_thumbnail_use_rgba() \
+      ? TASK_IMAGE_LOAD_RGBA : 0) | TASK_IMAGE_LOAD_HDR)
 
 static void gfx_thumbnail_init_fade(
       gfx_thumbnail_state_t *p_gfx_thumb,
@@ -392,11 +403,14 @@ enum gfx_thumb_anim_job_status
    GFX_THUMB_JOB_HELD,         /* frame handed to the video thread;
                                   its slot is not the worker's until
                                   the surface releases it            */
-   GFX_THUMB_JOB_IDLE          /* not owned by the worker, no pending
+   GFX_THUMB_JOB_IDLE,         /* not owned by the worker, no pending
                                   frame (fresh, or consumed).  QUEUED
                                   stays 0 so the calloc'd preview-audio
                                   job, which is enqueued immediately,
                                   keeps its meaning. */
+   GFX_THUMB_JOB_CANCELLED,    /* released while queued: the worker
+                                  still holds its place in the queue  */
+   GFX_THUMB_JOB_DROPPED       /* the worker came to it and let it go  */
 };
 
 /* The two jobs of an animation and their frame buffers come out of one
@@ -409,12 +423,14 @@ enum gfx_thumb_anim_job_status
 typedef struct gfx_thumb_anim_job
 {
    struct gfx_thumb_anim_job *next;  /* FIFO link (owned by the queue) */
+   struct gfx_thumb_anim_job *retired; /* job A only: the next block
+                                        waiting on a cancelled job    */
    void     *stream;                 /* borrowed from the thumbnail    */
    void     *sess;                   /* borrowed gfx_anim_preview_t,
                                         NULL when not windowed        */
    uint32_t *frame;                  /* a surface slot: upload-ready
                                         pixels, job i writes slot i   */
-   unsigned  width, height;
+   unsigned  dims;                   /* VIDEO_SCALE_PACK, the surface's */
    int       duration_ms;            /* of the READY frame             */
    int32_t   loops_left;             /* worker-maintained, -1 infinite */
    /* enum gfx_thumb_anim_job_status. Atomic: the per-vsync poll
@@ -424,25 +440,35 @@ typedef struct gfx_thumb_anim_job
     * acquire that sees READY sees the decode's results whole. Every
     * other field of a job is owned by whichever side the status
     * says may touch it: the worker between RUNNING and its release
-    * store, the main thread everywhere else. Queue membership and
-    * the release()'s wait-out-RUNNING rendezvous stay under
-    * gfx_thumb_worker_lock; status writes made there are atomic
-    * stores like the rest. */
+    * store, the main thread everywhere else. The queue link is the
+    * worker's from the post until the job leaves QUEUED, RUNNING or
+    * CANCELLED, which is what keeps a released job's block alive
+    * until then. */
    retro_atomic_int_t status;
    uint8_t   type;                   /* enum image_type_enum           */
    bool      use_rgba;               /* output word format             */
+   bool      fp16;                   /* half floats: linear scRGB of an
+                                        HDR source, 8 bytes a pixel    */
 } gfx_thumb_anim_job_t;
 
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
 /* ---- Animated-thumbnail decode worker ---- */
 
-static slock_t               *gfx_thumb_worker_lock   = NULL;
-static scond_t               *gfx_thumb_worker_wake   = NULL; /* worker */
-static scond_t               *gfx_thumb_worker_done   = NULL; /* main   */
+/* The queue takes no lock. The main thread posts a job by pushing it
+ * on the inbox; the worker takes the inbox whole and works through it
+ * oldest first. A job released while it waits cannot be unlinked from
+ * under the worker, so it is marked cancelled and its block kept until
+ * the worker has come to it and let it go. */
 static sthread_t             *gfx_thumb_worker_thread = NULL;
-static gfx_thumb_anim_job_t  *gfx_thumb_worker_head   = NULL;
-static gfx_thumb_anim_job_t  *gfx_thumb_worker_tail   = NULL;
-static bool                   gfx_thumb_worker_die    = false;
+static retro_atomic_ptr_t     gfx_thumb_worker_inbox;  /* newest first */
+static gfx_thumb_anim_job_t  *gfx_thumb_worker_local  = NULL; /* the worker's,
+                                                                 oldest first */
+static retro_eventcount_t     gfx_thumb_worker_wake;   /* worker */
+static retro_eventcount_t     gfx_thumb_worker_done;   /* main   */
+static retro_atomic_int_t     gfx_thumb_worker_die;
+/* The main thread's: blocks whose cancelled job the worker has yet to
+ * let go, linked through job A. */
+static gfx_thumb_anim_job_t  *gfx_thumb_retired       = NULL;
 /* The colour-conversion pool the video streams band their blits
  * over (Animated Thumbnail Threads). The worker alone creates, uses
  * and destroys it; the poll only publishes how many bands are wanted
@@ -534,8 +560,20 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
          return false;
    }
 
-   n = (size_t)job->width * job->height;
+   n = (size_t)VIDEO_SCALE_W(job->dims) * VIDEO_SCALE_H(job->dims);
    GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
+   /* Half floats come only from a decode into the slot itself; a frame
+    * that came out any other way is 32-bit, and a surface of half
+    * floats cannot show it: the animation ends on the last good one. */
+   if (job->fp16)
+   {
+      if (     !direct || frame != job->frame
+            || !image_transfer_anim_stream_is_fp16(job->stream, type))
+         return false;
+      GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
+      job->duration_ms = duration_ms;
+      return true;
+   }
    if (direct && frame == job->frame)
    {
       /* Decoded in place; every video stream honours the order request
@@ -566,40 +604,80 @@ static bool gfx_thumbnail_anim_job_step(gfx_thumb_anim_job_t *job)
    return true;
 }
 
+/* Whether a job has let go of its frame: neither queued, decoding nor
+ * still holding its place as cancelled. Both worker variants below. */
+static bool gfx_thumbnail_anim_job_settled(const gfx_thumb_anim_job_t *job)
+{
+   switch (retro_atomic_load_acquire_int(
+            (retro_atomic_int_t*)&job->status))
+   {
+      case GFX_THUMB_JOB_QUEUED:
+      case GFX_THUMB_JOB_RUNNING:
+      case GFX_THUMB_JOB_CANCELLED:
+         return false;
+      default:
+         break;
+   }
+   return true;
+}
+
 static void gfx_thumbnail_anim_worker(void *unused)
 {
    (void)unused;
-   slock_lock(gfx_thumb_worker_lock);
    for (;;)
    {
-      gfx_thumb_anim_job_t *job;
       bool alive;
+      gfx_thumb_anim_job_t *job = gfx_thumb_worker_local;
 
-      while (!gfx_thumb_worker_die && !gfx_thumb_worker_head)
-         scond_wait(gfx_thumb_worker_wake, gfx_thumb_worker_lock);
-      if (gfx_thumb_worker_die)
+      if (!job)
+      {
+         int key;
+         job = (gfx_thumb_anim_job_t*)retro_atomic_exchange_ptr(
+               &gfx_thumb_worker_inbox, NULL);
+         /* Posted newest first: turned round, oldest first. */
+         while (job)
+         {
+            gfx_thumb_anim_job_t *next = job->next;
+            job->next                  = gfx_thumb_worker_local;
+            gfx_thumb_worker_local     = job;
+            job                        = next;
+         }
+         if (gfx_thumb_worker_local)
+            continue;
+         if (retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
+            break;
+         key = retro_eventcount_prepare_wait(&gfx_thumb_worker_wake);
+         if (     retro_atomic_load_acquire_ptr(&gfx_thumb_worker_inbox)
+               || retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
+            retro_eventcount_cancel_wait(&gfx_thumb_worker_wake);
+         else
+            retro_eventcount_commit_wait(&gfx_thumb_worker_wake, key);
+         continue;
+      }
+      if (retro_atomic_load_acquire_int(&gfx_thumb_worker_die))
          break;
 
-      job                   = gfx_thumb_worker_head;
-      gfx_thumb_worker_head = job->next;
-      if (!gfx_thumb_worker_head)
-         gfx_thumb_worker_tail = NULL;
-      job->next             = NULL;
-      retro_atomic_store_relaxed_int(&job->status,
-            GFX_THUMB_JOB_RUNNING);
+      gfx_thumb_worker_local = job->next;
 
-      slock_unlock(gfx_thumb_worker_lock);
+      /* Released while it waited: let go unrun. After either store
+       * below the job may be freed, and is not touched again here. */
+      if (!retro_atomic_cas_int(&job->status,
+               GFX_THUMB_JOB_QUEUED, GFX_THUMB_JOB_RUNNING))
+      {
+         retro_atomic_store_release_int(&job->status,
+               GFX_THUMB_JOB_DROPPED);
+         continue;
+      }
+
       alive = gfx_thumbnail_anim_job_step(job);
-      slock_lock(gfx_thumb_worker_lock);
 
       /* Release: publishes frame, duration_ms and loops_left to the
-       * poll's acquire load. The broadcast under the lock is for
-       * release()'s wait-out-RUNNING rendezvous. */
+       * poll's acquire load, and wakes a release() waiting the decode
+       * out. */
       retro_atomic_store_release_int(&job->status,
             alive ? GFX_THUMB_JOB_READY : GFX_THUMB_JOB_FINISHED);
-      scond_broadcast(gfx_thumb_worker_done);
+      retro_eventcount_notify(&gfx_thumb_worker_done);
    }
-   slock_unlock(gfx_thumb_worker_lock);
 }
 
 /* Lazily creates the worker. Returns false if thread primitives could
@@ -608,28 +686,26 @@ static bool gfx_thumbnail_anim_worker_init(void)
 {
    if (gfx_thumb_worker_thread)
       return true;
-   if (!gfx_thumb_worker_lock && !(gfx_thumb_worker_lock = slock_new()))
-      goto fail;
-   if (!gfx_thumb_worker_wake && !(gfx_thumb_worker_wake = scond_new()))
-      goto fail;
-   if (!gfx_thumb_worker_done && !(gfx_thumb_worker_done = scond_new()))
-      goto fail;
-   gfx_thumb_worker_die = false;
+   if (!retro_eventcount_init(&gfx_thumb_worker_wake))
+   {
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
+   if (!retro_eventcount_init(&gfx_thumb_worker_done))
+   {
+      retro_eventcount_free(&gfx_thumb_worker_done);
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
+   retro_atomic_store_release_int(&gfx_thumb_worker_die, 0);
    if (!(gfx_thumb_worker_thread = sthread_create(
          gfx_thumbnail_anim_worker, NULL)))
-      goto fail;
+   {
+      retro_eventcount_free(&gfx_thumb_worker_done);
+      retro_eventcount_free(&gfx_thumb_worker_wake);
+      return false;
+   }
    return true;
-fail:
-   if (gfx_thumb_worker_done)
-      scond_free(gfx_thumb_worker_done);
-   if (gfx_thumb_worker_wake)
-      scond_free(gfx_thumb_worker_wake);
-   if (gfx_thumb_worker_lock)
-      slock_free(gfx_thumb_worker_lock);
-   gfx_thumb_worker_done = NULL;
-   gfx_thumb_worker_wake = NULL;
-   gfx_thumb_worker_lock = NULL;
-   return false;
 }
 
 /* The threads the preview may use now: the setting, unless a core is
@@ -647,102 +723,189 @@ static int gfx_thumbnail_anim_threads_wanted(void)
    return wanted;
 }
 
+static void gfx_thumbnail_anim_retired_reap(void);
+
 static void gfx_thumbnail_anim_job_enqueue(gfx_thumb_anim_job_t *job)
 {
+   void *head;
+   if (gfx_thumb_retired)
+      gfx_thumbnail_anim_retired_reap();
    retro_atomic_store_relaxed_int(&gfx_thumb_blit_wanted,
          gfx_thumbnail_anim_threads_wanted());
-   slock_lock(gfx_thumb_worker_lock);
    retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_QUEUED);
-   job->next   = NULL;
-   if (gfx_thumb_worker_tail)
-      gfx_thumb_worker_tail->next = job;
-   else
-      gfx_thumb_worker_head       = job;
-   gfx_thumb_worker_tail          = job;
-   scond_signal(gfx_thumb_worker_wake);
-   slock_unlock(gfx_thumb_worker_lock);
+   do
+   {
+      head      = retro_atomic_load_acquire_ptr(&gfx_thumb_worker_inbox);
+      job->next = (gfx_thumb_anim_job_t*)head;
+   } while (!retro_atomic_cas_ptr(&gfx_thumb_worker_inbox, head, job));
+   retro_eventcount_notify(&gfx_thumb_worker_wake);
 }
 
-/* Detach a job from the worker: unlink it if still queued, wait out the
- * decode if running. On return the worker holds no reference to it. */
-static void gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
+
+/* Detach a job from the worker: cancel it if still queued, wait out
+ * the decode if running. Returns false when the worker still holds its
+ * place in the queue - the job is not to be freed until the worker has
+ * let it go. */
+static bool gfx_thumbnail_anim_job_release(gfx_thumb_anim_job_t *job)
 {
-   if (!gfx_thumb_worker_lock)
-      return;
-   slock_lock(gfx_thumb_worker_lock);
-   if (retro_atomic_load_relaxed_int(&job->status)
-         == GFX_THUMB_JOB_QUEUED)
+   for (;;)
    {
-      gfx_thumb_anim_job_t **pp = &gfx_thumb_worker_head;
-      while (*pp && *pp != job)
-         pp = &(*pp)->next;
-      if (*pp)
+      int key;
+      int status = retro_atomic_load_acquire_int(&job->status);
+
+      if (status == GFX_THUMB_JOB_QUEUED)
       {
-         *pp = job->next;
-         if (gfx_thumb_worker_tail == job)
-         {
-            gfx_thumb_anim_job_t *t = gfx_thumb_worker_head;
-            while (t && t->next)
-               t = t->next;
-            gfx_thumb_worker_tail = t;
-         }
+         /* fails when the worker has just started on it */
+         if (retro_atomic_cas_int(&job->status,
+                  GFX_THUMB_JOB_QUEUED, GFX_THUMB_JOB_CANCELLED))
+            return false;
+         continue;
+      }
+      if (status == GFX_THUMB_JOB_CANCELLED)
+         return false;
+      if (status != GFX_THUMB_JOB_RUNNING)
+         return true;
+
+      key = retro_eventcount_prepare_wait(&gfx_thumb_worker_done);
+      if (retro_atomic_load_acquire_int(&job->status)
+            == GFX_THUMB_JOB_RUNNING)
+         retro_eventcount_commit_wait(&gfx_thumb_worker_done, key);
+      else
+         retro_eventcount_cancel_wait(&gfx_thumb_worker_done);
+   }
+}
+
+/* Free the retired blocks the worker has let go of. */
+static void gfx_thumbnail_anim_retired_reap(void)
+{
+   gfx_thumb_anim_job_t **pp = &gfx_thumb_retired;
+   while (*pp)
+   {
+      gfx_thumb_anim_job_t *j0 = *pp;
+      gfx_thumb_anim_job_t *j1 = (gfx_thumb_anim_job_t*)
+            ((uint8_t*)j0 + GFX_THUMB_ANIM_JOB_STRIDE);
+      if (     gfx_thumbnail_anim_job_settled(j0)
+            && gfx_thumbnail_anim_job_settled(j1))
+      {
+         *pp = j0->retired;
+         free(j0);
+      }
+      else
+         pp  = &j0->retired;
+   }
+}
+
+/* Release both jobs of an animation and free their block, now or once
+ * the worker has let go of a cancelled one. */
+static void gfx_thumbnail_anim_jobs_free(gfx_thumb_anim_job_t *j0,
+      gfx_thumb_anim_job_t *j1)
+{
+   bool free_now = true;
+   if (j1 && !gfx_thumbnail_anim_job_release(j1))
+      free_now = false;
+   if (j0)
+   {
+      if (!gfx_thumbnail_anim_job_release(j0))
+         free_now = false;
+      if (free_now)
+         free(j0);
+      else
+      {
+         j0->retired       = gfx_thumb_retired;
+         gfx_thumb_retired = j0;
       }
    }
-   while (retro_atomic_load_relaxed_int(&job->status)
-         == GFX_THUMB_JOB_RUNNING)
-      scond_wait(gfx_thumb_worker_done, gfx_thumb_worker_lock);
-   slock_unlock(gfx_thumb_worker_lock);
+   gfx_thumbnail_anim_retired_reap();
 }
 
 void gfx_thumbnail_anim_worker_deinit(void)
 {
+   gfx_thumb_anim_job_t *job;
    if (!gfx_thumb_worker_thread)
       return;
-   slock_lock(gfx_thumb_worker_lock);
-   gfx_thumb_worker_die  = true;
-   /* Orphan anything still queued: the jobs stay owned by their
-    * thumbnails (freed by gfx_thumbnail_reset); they simply never
-    * advance. Normal shutdown order resets thumbnails first, so the
-    * queue is expected to be empty here. */
-   gfx_thumb_worker_head = NULL;
-   gfx_thumb_worker_tail = NULL;
-   scond_signal(gfx_thumb_worker_wake);
-   slock_unlock(gfx_thumb_worker_lock);
+   retro_atomic_store_release_int(&gfx_thumb_worker_die, 1);
+   retro_eventcount_notify(&gfx_thumb_worker_wake);
    sthread_join(gfx_thumb_worker_thread);
    gfx_thumb_worker_thread = NULL;
-   /* Joined: the pool is nobody's but ours now. */
+
+   /* Joined: the queue is nobody's but ours now. Anything still in it
+    * goes back to its thumbnail and simply never advances - normal
+    * shutdown order resets thumbnails first, so it is expected to be
+    * empty here - and a cancelled job is let go as the worker would
+    * have. */
+   job = (gfx_thumb_anim_job_t*)retro_atomic_exchange_ptr(
+         &gfx_thumb_worker_inbox, NULL);
+   for (;;)
+   {
+      gfx_thumb_anim_job_t *next;
+      if (!job)
+      {
+         if (!(job = gfx_thumb_worker_local))
+            break;
+         gfx_thumb_worker_local = NULL;
+      }
+      next = job->next;
+      retro_atomic_store_release_int(&job->status,
+            retro_atomic_load_acquire_int(&job->status)
+               == GFX_THUMB_JOB_CANCELLED
+            ? GFX_THUMB_JOB_DROPPED : GFX_THUMB_JOB_IDLE);
+      job  = next;
+   }
+   gfx_thumbnail_anim_retired_reap();
+
+   /* The pool is nobody's but ours now. */
    if (gfx_thumb_blit_pool)
    {
       tpool_destroy(gfx_thumb_blit_pool);
       gfx_thumb_blit_pool = NULL;
    }
    gfx_thumb_blit_bands = 1;
-   scond_free(gfx_thumb_worker_done);
-   scond_free(gfx_thumb_worker_wake);
-   slock_free(gfx_thumb_worker_lock);
-   gfx_thumb_worker_done = NULL;
-   gfx_thumb_worker_wake = NULL;
-   gfx_thumb_worker_lock = NULL;
+   retro_eventcount_free(&gfx_thumb_worker_done);
+   retro_eventcount_free(&gfx_thumb_worker_wake);
 }
 #else
 void gfx_thumbnail_anim_worker_deinit(void) { }
 #endif
 
+#ifdef GFX_THUMB_ANIM_WORKER
+/* Hand a job its slot - job one slot 0, job two slot 1 - and queue
+ * it. The slot is read afresh: a submit may have lent it the driver's
+ * upload memory, which the job then decodes into directly. A lent
+ * slot the GPU still reads from is not handed out; the job stays IDLE
+ * and a later poll starts it. */
+static bool gfx_thumbnail_anim_job_start(gfx_thumbnail_t *thumbnail,
+      gfx_thumb_anim_job_t *job)
+{
+   gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   unsigned slot    = (job == (gfx_thumb_anim_job_t*)thumbnail->anim_job2)
+      ? 1 : 0;
+   if (!s || !gfx_surface_slot_writable(s, slot))
+      return false;
+   /* Taken until the job settles: the memory stays valid until then
+    * even if the texture behind it is replaced (gfx_surface_slot_end
+    * in the poll and on close). */
+   job->frame = gfx_surface_slot_begin(s, slot);
+   gfx_thumbnail_anim_job_enqueue(job);
+   return true;
+}
+#endif
+
 static void gfx_thumbnail_anim_close(gfx_thumbnail_t *thumbnail)
 {
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    /* Both jobs live in the block that anim_job addresses; pull each
     * off the queue, then free once. Their frames are the surface's
     * slots, which stay with the thumbnail: a slot the video thread
     * is still reading outlives the job that filled it. */
-   if (thumbnail->anim_job2)
-      gfx_thumbnail_anim_job_release(
-            (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
-   if (thumbnail->anim_job)
+   gfx_thumbnail_anim_jobs_free(
+         (gfx_thumb_anim_job_t*)thumbnail->anim_job,
+         (gfx_thumb_anim_job_t*)thumbnail->anim_job2);
+   /* Released: a running decode was waited out, a queued one will not
+    * run, so neither slot is written any more */
+   if (thumbnail->anim_surface)
    {
-      gfx_thumbnail_anim_job_release(
-            (gfx_thumb_anim_job_t*)thumbnail->anim_job);
-      free(thumbnail->anim_job);
+      gfx_surface_slot_end((gfx_surface_t*)thumbnail->anim_surface, 0);
+      gfx_surface_slot_end((gfx_surface_t*)thumbnail->anim_surface, 1);
    }
    thumbnail->anim_job  = NULL;
    thumbnail->anim_job2 = NULL;
@@ -1029,8 +1192,7 @@ static bool gfx_thumbnail_try_video_open(gfx_thumbnail_t *thumbnail,
  * threaded video; the thumbnail only learns, on the main thread, that
  * a frame is showing and that a slot is free again. */
 
-/* The surface's texture is what the thumbnail draws: adopt it, and
- * let a still that arrived earlier go, since a frame is newer. On
+/* The surface's texture is what the thumbnail draws: adopt it. On
  * the first frame of a preview opened without a still decode this is
  * also what makes the thumbnail drawable and starts its fade. */
 static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
@@ -1040,12 +1202,6 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
 
    if (!s->handle)
       return;
-   if (!(thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE))
-   {
-      if (thumbnail->texture)
-         video_driver_texture_unload(&thumbnail->texture);
-      thumbnail->flags |= GFX_THUMB_FLAG_TEX_SURFACE;
-   }
    thumbnail->texture = s->handle;
    thumbnail->dims    = s->dims;
    /* Release-store pairs with the acquire-load in the draw path:
@@ -1064,27 +1220,17 @@ static void gfx_thumbnail_anim_shown(gfx_thumbnail_t *thumbnail,
  * again; the animation may also have closed meanwhile, in which case
  * there is no job and the surface simply keeps its last frame. */
 
-/* A still's upload, through the same surface ownership the animation
- * frames use: the image the load task decoded is handed to a surface
- * that holds the texture, and the surface releases the image when the
- * upload has been taken. The thumbnail owns the surface, so a reset
- * while an upload is in flight frees it through the completion rather
- * than through a ticket of its own. Returns false when nothing was
- * uploaded. */
+/* A still's upload has landed on the video thread: the image the
+ * load task decoded went to a still the thumbnail owns, which frees
+ * it once taken - also when the thumbnail reset or replaced the still
+ * meanwhile, which is when this never runs. */
 static void gfx_thumbnail_still_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
    gfx_thumbnail_t *thumbnail         = (gfx_thumbnail_t*)user;
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
-   struct texture_image *img          = (struct texture_image*)s->user_img;
 
    (void)slot;
-   if (img)
-   {
-      image_texture_free(img);
-      free(img);
-      s->user_img = NULL;
-   }
    if (!s->handle)
    {
       if (GFX_THUMB_STATUS_LOAD(&thumbnail->status)
@@ -1103,9 +1249,17 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
       unsigned slot)
 {
    gfx_thumbnail_t *thumbnail = (gfx_thumbnail_t*)user;
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    gfx_thumb_anim_job_t *job  = (gfx_thumb_anim_job_t*)
          (slot ? thumbnail->anim_job2 : thumbnail->anim_job);
+   /* A frame the driver dropped is still in its slot: sent again, so
+    * the texture is not left a frame behind - the last frame of a
+    * finished animation included. The slot stays the surface's. */
+   if (     s->dropped
+         && gfx_surface_submit(s, slot,
+               job ? job->use_rgba : gfx_thumbnail_use_rgba())
+            == GFX_SURFACE_SUBMIT_QUEUED)
+      return;
    if (     job
          && retro_atomic_load_relaxed_int(&job->status) == GFX_THUMB_JOB_HELD)
       retro_atomic_store_relaxed_int(&job->status, GFX_THUMB_JOB_IDLE);
@@ -1114,24 +1268,40 @@ static void gfx_thumbnail_anim_slot_release(void *user, gfx_surface_t *s,
 }
 
 /* The thumbnail's surface for a @width x @height animation with
- * @num_slots producer slots, made on first use. A surface of another
- * shape - a different animation on a thumbnail that was not reset -
- * is replaced; its texture goes with it, so the caller only asks for
- * one when a frame is about to be shown. */
+ * @num_slots producer slots, or with none the still its images go to,
+ * made on first use. A surface of another shape - a different
+ * animation on a thumbnail that was not reset - is replaced; its
+ * texture goes with it, so the caller only asks for one when a frame
+ * is about to be shown. */
+/* An animation's frames are linear scRGB half floats where its source
+ * is HDR (PQ or HLG) and the driver shows such a texture as linear,
+ * which it offers as GFX_SURFACE_PIXFMT_FP16 only while the output is
+ * HDR; 8888 everywhere else, as they always were. */
+static uint32_t gfx_thumbnail_anim_pixfmt(const gfx_thumbnail_t *thumbnail)
+{
+   gfx_surface_requirements_t req;
+   if (     thumbnail->anim
+         && image_transfer_anim_stream_is_hdr(thumbnail->anim,
+               (enum image_type_enum)thumbnail->anim_type)
+         && gfx_surface_query_requirements(0, &req)
+         && (req.formats & GFX_SURFACE_PIXFMT_FP16))
+      return GFX_SURFACE_PIXFMT_FP16;
+   return GFX_SURFACE_PIXFMT_8888;
+}
+
 static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
       unsigned dims, unsigned num_slots)
 {
    gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
+   uint32_t pixfmt  = num_slots
+      ? gfx_thumbnail_anim_pixfmt(thumbnail) : 0;
    if (     s
-         && (s->dims != dims
-            || s->num_slots < num_slots
-            || (!num_slots && s->num_slots)))
+         && (     (num_slots && s->dims != dims)
+               || s->num_slots < num_slots
+               || (!num_slots && s->num_slots)
+               || (num_slots && s->pixfmt != pixfmt)))
    {
-      if (thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE)
-      {
-         thumbnail->texture = 0;
-         thumbnail->flags  &= ~GFX_THUMB_FLAG_TEX_SURFACE;
-      }
+      thumbnail->texture = 0;
       gfx_surface_free(s);
       s = NULL;
       thumbnail->anim_surface = NULL;
@@ -1140,14 +1310,16 @@ static gfx_surface_t *gfx_thumbnail_anim_surface(gfx_thumbnail_t *thumbnail,
    {
       /* Animated thumbnails update every frame; always plain linear
        * filtering here, so no per-frame mip-map generation regardless
-       * of the menu_texture_mipmapping setting. num_slots 0 asks for
-       * a surface with no storage of its own: a still, whose pixels
-       * the load task owns until the upload has taken them. */
-      s = num_slots
-         ? gfx_surface_new(dims, num_slots, TEXTURE_FILTER_LINEAR,
-               gfx_thumbnail_anim_slot_release, thumbnail)
-         : gfx_surface_new_static(dims,
-               gfx_display_texture_filter());
+       * of the menu_texture_mipmapping setting. */
+      if (num_slots)
+         s = gfx_surface_new(dims, num_slots, pixfmt,
+               TEXTURE_FILTER_LINEAR,
+               gfx_thumbnail_anim_slot_release, thumbnail);
+      else if ((s = gfx_surface_new_still(gfx_display_texture_filter())))
+      {
+         s->release = gfx_thumbnail_still_release;
+         s->user    = thumbnail;
+      }
       thumbnail->anim_surface = s;
    }
    return s;
@@ -1329,7 +1501,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
     * finished blob to hand over. */
 #endif
 
-#ifdef HAVE_THREADS
+#ifdef GFX_THUMB_ANIM_WORKER
    /* Threaded path: decode happens on the shared worker; this thread
     * only inspects job state, uploads READY frames, and re-enqueues.
     * A frame that is not ready when due is simply uploaded on a later
@@ -1384,8 +1556,6 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             }
             j0        = (gfx_thumb_anim_job_t*)block;
             j1        = (gfx_thumb_anim_job_t*)(block + GFX_THUMB_ANIM_JOB_STRIDE);
-            j0->frame = s->slots[0];
-            j1->frame = s->slots[1];
          }
          j0->stream     = thumbnail->anim;
          j1->stream     = thumbnail->anim;
@@ -1393,18 +1563,23 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          j1->sess       = thumbnail->anim_sess;
          j0->type       = thumbnail->anim_type;
          j1->type       = thumbnail->anim_type;
-         j0->width      = anim_w;
-         j1->width      = anim_w;
-         j0->height     = anim_h;
-         j1->height     = anim_h;
+         j0->dims       = VIDEO_SCALE_PACK(anim_w, anim_h);
+         j1->dims       = j0->dims;
          j0->loops_left = thumbnail->anim_loops_left;
          j0->use_rgba   = gfx_thumbnail_use_rgba();
+         /* The surface chose the format; no job runs yet, so the
+          * stream is told here, once, before the first one does. */
+         j0->fp16       = ((gfx_surface_t*)thumbnail->anim_surface)->pixfmt
+            == GFX_SURFACE_PIXFMT_FP16;
+         j1->fp16       = j0->fp16;
+         image_transfer_anim_stream_set_want_fp16(thumbnail->anim,
+               (enum image_type_enum)thumbnail->anim_type, j0->fp16);
          retro_atomic_store_relaxed_int(&j1->status,
                GFX_THUMB_JOB_IDLE);
          thumbnail->anim_job        = j0;
          thumbnail->anim_job2       = j1;
          thumbnail->anim_job_upload = 0;
-         gfx_thumbnail_anim_job_enqueue(j0);
+         gfx_thumbnail_anim_job_start(thumbnail, j0);
          return;
       }
 
@@ -1414,6 +1589,18 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
        * READY is done - the pair needs no joint snapshot. */
       su = retro_atomic_load_acquire_int(&ju->status);
       so = retro_atomic_load_acquire_int(&jo->status);
+      /* A job no longer queued or decoding writes its slot no more:
+       * the surface may let go of what it kept for it. */
+      if (thumbnail->anim_surface)
+      {
+         gfx_surface_t *ws = (gfx_surface_t*)thumbnail->anim_surface;
+         if (gfx_thumbnail_anim_job_settled(ju))
+            gfx_surface_slot_end(ws,
+                  ju == (gfx_thumb_anim_job_t*)thumbnail->anim_job2 ? 1 : 0);
+         if (gfx_thumbnail_anim_job_settled(jo))
+            gfx_surface_slot_end(ws,
+                  jo == (gfx_thumb_anim_job_t*)thumbnail->anim_job2 ? 1 : 0);
+      }
 
       /* Decode-ahead: the due-side job holds its frame, its sibling is
        * consumed - start the sibling on the following frame now, ahead
@@ -1424,7 +1611,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          thumbnail->anim_loops_left = ju->loops_left;
          jo->loops_left             = ju->loops_left;
          jo->use_rgba               = gfx_thumbnail_use_rgba();
-         gfx_thumbnail_anim_job_enqueue(jo);
+         gfx_thumbnail_anim_job_start(thumbnail, jo);
       }
 
       if ((thumbnail->anim_next_us != 0) && (now < thumbnail->anim_next_us))
@@ -1444,14 +1631,14 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
 
       /* READY and not queued: the worker holds no reference, so the
        * frame (the surface slot this job owns) can be submitted from
-       * where it is. A submit still in flight from the last poll
-       * means the video thread has not taken that one yet: keep this
-       * frame for the next poll rather than queue behind it. */
+       * where it is. A submit still in flight from the last poll, or
+       * one the driver dropped, keeps this frame for the next poll. */
       {
          gfx_surface_t *s = (gfx_surface_t*)thumbnail->anim_surface;
          enum gfx_surface_submit_result res = gfx_surface_submit(s,
                thumbnail->anim_job_upload, ju->use_rgba);
-         if (res == GFX_SURFACE_SUBMIT_BUSY)
+         if (     res == GFX_SURFACE_SUBMIT_BUSY
+               || res == GFX_SURFACE_SUBMIT_DROPPED)
             return;
          if (res == GFX_SURFACE_SUBMIT_DONE)
             gfx_thumbnail_anim_shown(thumbnail, s);
@@ -1478,7 +1665,7 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          thumbnail->anim_loops_left = jo->loops_left;
          ju->loops_left             = jo->loops_left;
          ju->use_rgba               = gfx_thumbnail_use_rgba();
-         gfx_thumbnail_anim_job_enqueue(ju);
+         gfx_thumbnail_anim_job_start(thumbnail, ju);
       }
       return;
    }
@@ -1527,10 +1714,13 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
             || !(sync_surface = gfx_thumbnail_anim_surface(thumbnail,
                   VIDEO_SCALE_PACK(anim_w, anim_h), 1)))
          return;
-      if (sync_surface->inflight)
+      if (     sync_surface->inflight
+            || !gfx_surface_slot_writable(sync_surface, 0))
          return;
       sync_direct = image_transfer_anim_stream_set_output(thumbnail->anim,
             type, sync_surface->slots[0]);
+      image_transfer_anim_stream_set_want_fp16(thumbnail->anim, type,
+            sync_surface->pixfmt == GFX_SURFACE_PIXFMT_FP16);
    }
 
    /* Keep the window straddling the decoder (see the worker's step
@@ -1579,6 +1769,17 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
       enum gfx_surface_submit_result res;
 
       GFX_INSTR_INC(GFX_INSTR_ANIM_FRAME);
+      /* A surface of half floats takes only a frame decoded into its
+       * slot as half floats; the animation ends on the last good one
+       * otherwise. */
+      if (     s->pixfmt == GFX_SURFACE_PIXFMT_FP16
+            && !(     sync_direct && frame == s->slots[0]
+                   && image_transfer_anim_stream_is_fp16(thumbnail->anim,
+                         type)))
+      {
+         gfx_thumbnail_anim_close(thumbnail);
+         return;
+      }
       if (sync_direct && frame == s->slots[0])
       {
          GFX_INSTR_INC(GFX_INSTR_ANIM_DIRECT);
@@ -1648,46 +1849,36 @@ static void gfx_thumbnail_handle_upload(
       goto end;
    }
 
-   /* The still goes to a surface the thumbnail owns: under threaded
-    * video the submit hands the image to the video thread and the
-    * status stays PENDING until the release installs the texture and
-    * starts the fade; without it the submit uploads here and now. The
-    * animation below is opened either way, and its first frame
-    * replaces the still if it arrives first. */
+   /* The still goes to a surface the thumbnail owns, which takes the
+    * image: under threaded video the status stays PENDING until the
+    * release installs the texture and starts the fade; without it the
+    * submit uploads here and now. The animation below is opened either
+    * way, and its first frame replaces the still if it arrives first.
+    * A driver that stopped sampling what was decoded (a reinit since)
+    * gets the image narrowed, or for half floats no still at all, and
+    * the animation brings the picture. */
    {
       gfx_surface_t *s = VIDEO_SCALE_FITS(img->width, img->height)
-         ? gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail,
-            VIDEO_SCALE_PACK(img->width, img->height), 0)
+         ? gfx_thumbnail_anim_surface(thumbnail_tag->thumbnail, 0, 0)
          : NULL;
-      enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
+      /* Dimensions now, so layout does not wait for the handle. */
+      unsigned dims    = VIDEO_SCALE_PACK(img->width, img->height);
 
+      if (s && gfx_surface_submit_image(s, img))
+      {
+         thumbnail_tag->thumbnail->dims = dims;
+         if (!s->inflight)
+         {
+            fade_enabled = true;
+            gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
+         }
+         img = NULL;
+         goto open_anim;
+      }
       if (s)
-      {
-         s->user_img = img;
-         r = gfx_surface_submit_external(s, img->pixels,
-               img->supports_rgba, gfx_thumbnail_still_release,
-               thumbnail_tag->thumbnail);
-      }
-      if (r == GFX_SURFACE_SUBMIT_QUEUED)
-      {
-         /* Dimensions now, so layout does not wait for the handle. */
-         thumbnail_tag->thumbnail->dims   = VIDEO_SCALE_PACK(
-               img->width, img->height);
-         img = NULL;    /* the surface frees it from its release */
-         goto open_anim;
-      }
-      if (r == GFX_SURFACE_SUBMIT_DONE)
-      {
-         s->user_img = NULL;
-         fade_enabled = true;
-         gfx_thumbnail_anim_shown(thumbnail_tag->thumbnail, s);
-         goto open_anim;
-      }
+         img = NULL;    /* refused: freed by the surface */
       /* No surface, or the driver refused the upload: the thumbnail
-       * has nothing to show, and the fade below reports that. The
-       * image is still the task's and is freed at the end. */
-      if (s)
-         s->user_img = NULL;
+       * has nothing to show, and the fade below reports that. */
       GFX_THUMB_STATUS_STORE(&thumbnail_tag->thumbnail->status,
             GFX_THUMBNAIL_STATUS_MISSING);
       fade_enabled = true;
@@ -1987,8 +2178,8 @@ void gfx_thumbnail_request(
 
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
-               if (task_push_image_load(
-                        thumbnail_path, gfx_thumbnail_use_rgba(),
+               if (task_push_image_load_ex(
+                        thumbnail_path, GFX_THUMBNAIL_LOAD_FLAGS,
                         gfx_thumbnail_upscale_threshold,
                         gfx_thumbnail_downscale_cap(),
                         gfx_thumbnail_handle_upload, thumbnail_tag))
@@ -2125,8 +2316,8 @@ void gfx_thumbnail_request_file(
 
    /* Would like to cancel any existing image load tasks
     * here, but can't see how to do it... */
-   if (task_push_image_load(
-         file_path, gfx_thumbnail_use_rgba(),
+   if (task_push_image_load_ex(
+         file_path, GFX_THUMBNAIL_LOAD_FLAGS,
          gfx_thumbnail_upscale_threshold,
          gfx_thumbnail_downscale_cap(),
          gfx_thumbnail_handle_upload, thumbnail_tag))
@@ -2169,17 +2360,13 @@ void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail)
    /* Release any animation state (decoder + file buffer) */
    gfx_thumbnail_anim_close(thumbnail);
 
-   /* Unload texture: the surface's goes with the surface, which also
-    * outlives any frame of it still on its way to the video thread */
+   /* The texture goes with the surface, which also outlives any
+    * image of it still on its way to the video thread */
    if (thumbnail->anim_surface)
    {
       gfx_surface_free((gfx_surface_t*)thumbnail->anim_surface);
       thumbnail->anim_surface = NULL;
-      if (thumbnail->flags & GFX_THUMB_FLAG_TEX_SURFACE)
-         thumbnail->texture = 0;
    }
-   if (thumbnail->texture)
-      video_driver_texture_unload(&thumbnail->texture);
 
    /* Ensure any 'fade in' animation is killed */
    if (thumbnail->flags & GFX_THUMB_FLAG_FADE_ACTIVE)
@@ -2588,17 +2775,19 @@ void gfx_thumbnail_get_draw_dimensions(
       unsigned dims, float scale_factor,
       float *draw_width, float *draw_height)
 {
-   unsigned width                 = VIDEO_SCALE_W(dims);
-   unsigned height                = VIDEO_SCALE_H(dims);
-   float core_aspect;
-   float display_aspect;
+   float width                    = (float)VIDEO_SCALE_W(dims);
+   float height                   = (float)VIDEO_SCALE_H(dims);
+   float thumb_w, thumb_h, dw, dh;
    float thumbnail_aspect;
+   /* thumbnail_aspect / core_aspect: 1 when the core's aspect is not
+    * applied, which leaves the sizes below as they are. */
+   float core_ratio               = 1.0f;
    video_driver_state_t *video_st = video_state_get_ptr();
 
    /* Sanity check */
    if (   !thumbnail
-       || (width             < 1)
-       || (height            < 1)
+       || (width  < 1.0f)
+       || (height < 1.0f)
        || (VIDEO_SCALE_W(thumbnail->dims) < 1)
        || (VIDEO_SCALE_H(thumbnail->dims) < 1))
    {
@@ -2609,48 +2798,35 @@ void gfx_thumbnail_get_draw_dimensions(
 
    /* Account for display/thumbnail/core aspect ratio
     * differences */
-   display_aspect   = (float)width            / (float)height;
-   thumbnail_aspect = (float)VIDEO_SCALE_W(thumbnail->dims)
-                    / (float)VIDEO_SCALE_H(thumbnail->dims);
-   core_aspect      = ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         && video_st && video_st->av_info.geometry.aspect_ratio > 0)
-               ? video_st->av_info.geometry.aspect_ratio
-               : thumbnail_aspect;
+   thumb_w          = (float)VIDEO_SCALE_W(thumbnail->dims);
+   thumb_h          = (float)VIDEO_SCALE_H(thumbnail->dims);
+   thumbnail_aspect = thumb_w / thumb_h;
+   if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+      core_ratio    = (video_st && video_st->av_info.geometry.aspect_ratio > 0)
+         ? thumbnail_aspect / video_st->av_info.geometry.aspect_ratio
+         : 1.0f;
 
-   if (thumbnail_aspect > display_aspect)
+   if (thumbnail_aspect > width / height)
    {
-      *draw_width  = (float)width;
-      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
+      dw = width;
+      dh = thumb_h * (dw / thumb_w) * core_ratio;
+      if ((thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT) && dh > height)
       {
-         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
-
-         if (*draw_height > height)
-         {
-            *draw_height = (float)height;
-            *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
-            *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
-         }
+         dh = height;
+         dw = thumb_w * (dh / thumb_h) / core_ratio;
       }
    }
    else
    {
-      *draw_height = (float)height;
-      *draw_width  = (float)VIDEO_SCALE_W(thumbnail->dims) * (*draw_height / (float)VIDEO_SCALE_H(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         *draw_width  = *draw_width / (thumbnail_aspect / core_aspect);
+      dh = height;
+      dw = thumb_w * (dh / thumb_h) / core_ratio;
    }
 
    /* Final overwidth check */
-   if (*draw_width > width)
+   if (dw > width)
    {
-      *draw_width  = (float)width;
-      *draw_height = (float)VIDEO_SCALE_H(thumbnail->dims) * (*draw_width / (float)VIDEO_SCALE_W(thumbnail->dims));
-
-      if (thumbnail->flags & GFX_THUMB_FLAG_CORE_ASPECT)
-         *draw_height = *draw_height * (thumbnail_aspect / core_aspect);
+      dw = width;
+      dh = thumb_h * (dw / thumb_w) * core_ratio;
    }
 
    /* Account for scale factor
@@ -2660,8 +2836,8 @@ void gfx_thumbnail_get_draw_dimensions(
     *   that extends beyond the bounding box. But even if
     *   it didn't, we can't get real screen dimensions
     *   without scaling manually... */
-   *draw_width  *= scale_factor;
-   *draw_height *= scale_factor;
+   *draw_width  = dw * scale_factor;
+   *draw_height = dh * scale_factor;
 }
 
 /* Draws specified thumbnail with specified alignment

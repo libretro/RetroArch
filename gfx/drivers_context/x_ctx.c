@@ -342,8 +342,7 @@ static void gfx_ctx_x_swap_buffers(void *data)
 #endif
 }
 
-static bool gfx_ctx_x_set_resize(void *data,
-      unsigned width, unsigned height)
+static bool gfx_ctx_x_set_resize(void *data, unsigned dims)
 {
    gfx_ctx_x_data_t *x = (gfx_ctx_x_data_t*)data;
 
@@ -357,7 +356,8 @@ static bool gfx_ctx_x_set_resize(void *data,
    if (x->is_fullscreen)
    {
       XMapRaised(g_x11_dpy, g_x11_win);
-      RARCH_LOG("[GLX] Resized fullscreen resolution to %dx%d.\n", width, height);
+      RARCH_LOG("[GLX] Resized fullscreen resolution to %ux%u.\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims));
    }
 
    return true;
@@ -1002,28 +1002,11 @@ error:
 }
 
 static void gfx_ctx_x_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
-   void *x_input            = NULL;
-#ifdef HAVE_UDEV
-   settings_t *settings     = config_get_ptr();
-   const char *input_driver = settings->arrays.input_driver;
-
-   if (string_is_equal(input_driver, "udev"))
-   {
-      *input_data = input_driver_init_wrap(&input_udev, joypad_name);
-      if (*input_data)
-      {
-         *input = &input_udev;
-         return;
-      }
-   }
-#endif
-
-   x_input      = input_driver_init_wrap(&input_x, joypad_name);
-   *input       = x_input ? &input_x : NULL;
-   *input_data  = x_input;
+   /* no input driver of this context's own: the frontend starts the
+    * one that goes with an X11 window */
+   input_driver_video_window(INPUT_WINDOW_X11, NULL);
 }
 
 static gfx_ctx_proc_t gfx_ctx_x_get_proc_address(const char *symbol)

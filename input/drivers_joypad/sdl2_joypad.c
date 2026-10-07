@@ -28,6 +28,7 @@
 #define SDL_SUPPORTS_RUMBLE  SDL_VERSION_ATLEAST(2, 0, 9)
 #define SDL_SUPPORTS_SENSORS SDL_VERSION_ATLEAST(2, 0, 14)
 #define SDL_SUPPORTS_HIDAPI_WII SDL_VERSION_ATLEAST(2, 26, 0)
+#define SDL_SUPPORTS_HIDAPI_PS3 SDL_VERSION_ATLEAST(2, 26, 0)
 
 typedef struct _sdl2_joypad
 {
@@ -81,9 +82,32 @@ static int16_t sdl2_pad_get_axis(sdl2_joypad_t *pad, unsigned axis)
 {
    /* TODO: see if a rarch <-> sdl translation is needed. */
    if (pad->controller)
+   {
+      /* SDL's HIDAPI driver for PS3 controllers exposes additional axes
+       * past the Controller API's six, representing pressure sensitive
+       * buttons. */
+      if (axis >= SDL_CONTROLLER_AXIS_MAX)
+      {
+         /* Ensure pressure sensitive buttons rest at 0, like triggers do. */
+         int32_t pressure = SDL_JoystickGetAxis(pad->joypad, axis);
+         return (int16_t)((pressure + 32768) / 2);
+      }
       return SDL_GameControllerGetAxis(pad->controller, (SDL_GameControllerAxis)axis);
+   }
    return SDL_JoystickGetAxis(pad->joypad, axis);
 }
+
+#if SDL_SUPPORTS_HIDAPI_PS3
+static bool sdl2_pad_has_pressure_axes(sdl2_joypad_t *pad,
+      int32_t vendor, int32_t product)
+{
+   /* 0x054c/0x0268 is a PS3 controller. */
+   return vendor  == 0x054c
+       && product == 0x0268
+       && SDL_GetHintBoolean(SDL_HINT_JOYSTICK_HIDAPI_PS3, SDL_FALSE)
+       && SDL_JoystickNumAxes(pad->joypad) > SDL_CONTROLLER_AXIS_MAX;
+}
+#endif
 
 static void sdl2_pad_connect(unsigned id)
 {
@@ -169,6 +193,14 @@ static void sdl2_pad_connect(unsigned id)
       pad->num_buttons = SDL_CONTROLLER_BUTTON_MAX;
       pad->num_hats    = 1;
       pad->num_balls   = 0;
+#if SDL_SUPPORTS_HIDAPI_PS3
+      if (sdl2_pad_has_pressure_axes(pad, vendor, product))
+      {
+         pad->num_axes = SDL_JoystickNumAxes(pad->joypad);
+         RARCH_LOG("[SDL] Pad #%u: reading %u pressure-sensitive button axes.\n",
+               id, pad->num_axes - SDL_CONTROLLER_AXIS_MAX);
+      }
+#endif
 
       /* SDL Device supports Game Controller API. */
    }
@@ -353,6 +385,29 @@ static int32_t sdl2_joypad_button(unsigned port, uint16_t joykey)
    if (port >= MAX_USERS)
       return 0;
    return sdl2_joypad_button_state(pad, port, joykey);
+}
+
+/* Every plain button of the pad at once, as sdl2_joypad_button()
+ * gives them one by one; hats are read through sdl2_joypad_button()
+ * with a hat key. This is what lets the frontend copy the pad once a
+ * poll (the snapshot bridge in input_driver.c): a core that reads its
+ * buttons one at a time made a call into SDL for each, and now this
+ * is the one walk of them a poll. */
+static void sdl2_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i, n;
+   sdl2_joypad_t *pad;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+   pad = (sdl2_joypad_t*)&sdl2_pads[port];
+   if (!pad->joypad)
+      return;
+   n = (pad->num_buttons < 256) ? pad->num_buttons : 256;
+   for (i = 0; i < n; i++)
+      if (sdl2_pad_get_button(pad, i))
+         BIT256_SET_PTR(state, i);
 }
 
 static int16_t sdl2_joypad_axis_state(
@@ -606,7 +661,7 @@ input_device_driver_t sdl2_joypad = {
    sdl2_joypad_destroy,
    sdl2_joypad_button,
    sdl2_joypad_state,
-   NULL,                   /* get_buttons */
+   sdl2_joypad_get_buttons,
    sdl2_joypad_axis,
    sdl2_joypad_poll,
    sdl2_joypad_set_rumble,

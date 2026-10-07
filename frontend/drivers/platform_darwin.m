@@ -39,7 +39,7 @@
 
 #ifdef __OBJC__
 #include <Foundation/NSPathUtilities.h>
-#include <objc/message.h>
+#import <objc/message.h>
 #endif
 
 #if TARGET_OS_OSX
@@ -461,11 +461,15 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     * exist and the runtime throws "unrecognized selector".  Guard
     * with respondsToSelector: and fall through to the existing
     * fill_pathname_join fallback on older systems, which simply
-    * won't do bundle-shipped filter auto-discovery. */
+    * won't do bundle-shipped filter auto-discovery. The send goes by
+    * selector, since a 10.5 SDK does not declare the method. */
+#define PLATFORM_DARWIN_BUNDLE_URL(sel, ext, subdir) \
+   ((NSURL *)((id (*)(id, SEL, id, id, id))objc_msgSend)( \
+      [NSBundle mainBundle], (sel), nil, (ext), (subdir)))
    NSURL *url = nil;
-   SEL url_for_resource_sel = @selector(URLForResource:withExtension:subdirectory:);
+   SEL url_for_resource_sel = sel_registerName("URLForResource:withExtension:subdirectory:");
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
-      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+      url = PLATFORM_DARWIN_BUNDLE_URL(url_for_resource_sel, @"dsp", @"filters/audio");
    if (url)
        /* URLForResource: with a nil name returns a URL pointing at
         * the first matching .dsp file.  What we want is the directory
@@ -483,7 +487,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    url = nil;
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
-      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+      url = PLATFORM_DARWIN_BUNDLE_URL(url_for_resource_sel, @"filt", @"filters/video");
    if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else
@@ -887,6 +891,47 @@ static bool frontend_darwin_is_narrator_running(void)
 #endif
 }
 
+#if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
+/* AVSpeechSynthesizer is macOS 10.14 (iOS 7, tvOS 9): the speaking is
+ * done in a class with that availability and reached by selector once
+ * the OS has been checked. */
+API_AVAILABLE(macos(10.14), ios(7.0), tvos(9.0))
+@interface RASpeech : NSObject
++ (bool)speak:(const char *)speak_text speed:(int)speed priority:(int)priority;
+@end
+
+@implementation RASpeech
+
++ (bool)speak:(const char *)speak_text speed:(int)speed priority:(int)priority
+{
+   static dispatch_once_t once;
+   static AVSpeechSynthesizer *synth;
+   AVSpeechUtterance *utterance;
+   const char *language;
+   dispatch_once(&once, ^{
+      synth = [[AVSpeechSynthesizer alloc] init];
+   });
+   if ([synth isSpeaking])
+   {
+      if (priority < 10)
+         return true;
+      else
+         [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
+   }
+
+   utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
+   if (!utterance)
+      return false;
+   utterance.rate = (float)speed / 10.0f;
+   language = get_user_language_iso639_1(false);
+   utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
+   [synth speakUtterance:utterance];
+   return true;
+}
+
+@end
+#endif
+
 static bool frontend_darwin_accessibility_speak(int speed,
       const char* speak_text, int priority)
 {
@@ -897,29 +942,9 @@ static bool frontend_darwin_accessibility_speak(int speed,
 
 #if !TARGET_OS_OSX || (MAC_OS_X_VERSION_MAX_ALLOWED >= 101400)
    if (apple_runtime_available(APPLE_RUNTIME_VER(10, 14, 0), APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
-   {
-      static dispatch_once_t once;
-      static AVSpeechSynthesizer *synth;
-      dispatch_once(&once, ^{
-         synth = [[AVSpeechSynthesizer alloc] init];
-      });
-      if ([synth isSpeaking])
-      {
-         if (priority < 10)
-            return true;
-         else
-            [synth stopSpeakingAtBoundary:AVSpeechBoundaryImmediate];
-      }
-
-      AVSpeechUtterance *utterance = [AVSpeechUtterance speechUtteranceWithString:[NSString stringWithUTF8String:speak_text]];
-      if (!utterance)
-         return false;
-      utterance.rate = (float)speed / 10.0f;
-      const char *language = get_user_language_iso639_1(false);
-      utterance.voice = [AVSpeechSynthesisVoice voiceWithLanguage:[NSString stringWithUTF8String:language]];
-      [synth speakUtterance:utterance];
-      return true;
-   }
+      return ((bool (*)(id, SEL, const char *, int, int))objc_msgSend)(
+            apple_rt_class("RASpeech"), @selector(speak:speed:priority:),
+            speak_text, speed, priority);
 #endif
 
 #if TARGET_OS_OSX
@@ -932,9 +957,9 @@ static bool frontend_darwin_accessibility_speak(int speed,
 static void frontend_darwin_content_loaded(void)
 {
 #ifdef HAVE_SWIFT
-   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
-      [RetroArchAppShortcuts contentLoaded];
-   }
+   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
+      apple_rt_send_void(apple_rt_class("RetroArchAppShortcuts"),
+            sel_registerName("contentLoaded"));
 #endif
 }
 

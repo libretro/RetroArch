@@ -124,8 +124,10 @@ unsigned cpu_features_get_core_amount_physical(void);
  *
  * Entries are operating system processor identifiers, the numbering an
  * affinity mask is built from, ordered by descending core performance
- * and with an SMT sibling placed after the processor it shares a core
- * with. Where the platform publishes no topology the order is simply
+ * (the fast class first, then the larger last-level cache, then the
+ * higher clock) and with an SMT sibling placed after the processor it
+ * shares a core with. Processors outside the calling thread's affinity
+ * mask are left out. Where the platform publishes no topology the order is simply
  * ascending, which names every processor exactly once and so remains
  * usable, just unranked.
  *

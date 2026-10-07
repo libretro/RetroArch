@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     container:
-      image: reallibretroretroarch/libretro-build-devkitpro:latest
+      image: devkitpro/devkitppc:latest
       options: --user root
 
     steps:
@@ -31,4 +31,4 @@ jobs:
     - name: Compile RA
       run: |
         make -f Makefile.ngc -j$(getconf _NPROCESSORS_ONLN) clean
-        make -f Makefile.ngc -j$(getconf _NPROCESSORS_ONLN) EXTERNAL_LIBOGC=1 GX_PTHREAD_LEGACY=0 HAVE_STATIC_DUMMY=1 info all
+        make -f Makefile.ngc -j$(getconf _NPROCESSORS_ONLN) HAVE_STATIC_DUMMY=1 info all

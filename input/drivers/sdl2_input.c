@@ -45,10 +45,8 @@ typedef struct sdl2_input
    /* Light sensors aren't exposed through SDL, and they're not usually part of controllers */
    linux_illuminance_sensor_t *illuminance_sensor;
 #endif
-   int mouse_x;
-   int mouse_y;
-   int mouse_abs_x;
-   int mouse_abs_y;
+   uint32_t mouse_rel;   /* VIDEO_POS_PACK */
+   uint32_t mouse_abs;   /* VIDEO_POS_PACK */
    int mouse_l;
    int mouse_r;
    int mouse_m;
@@ -175,8 +173,7 @@ static bool sdl2_key_pressed(int key)
       if (sdl2_webos_sticky_pressed(slot))
          return true;
 
-      if (input_state_get_ptr()
-            && (input_state_get_ptr()->flags & INP_FLAG_KB_MAPPING_BLOCKED))
+      if (input_driver_keyboard_mapping_blocked())
          return false;
    }
    if (key == RETROK_F1 && keymap[SDL_WEBOS_SCANCODE_EXIT])
@@ -197,6 +194,20 @@ static bool sdl2_key_pressed(int key)
    return keymap[sym];
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void sdl2_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (sdl2_key_pressed(keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t sdl2_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -209,192 +220,21 @@ static int16_t sdl2_input_state(
       unsigned idx,
       unsigned id)
 {
-   int16_t       ret = 0;
    sdl2_input_t *sdl = (sdl2_input_t*)data;
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                           && sdl2_key_pressed(RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-            }
-
-            return ret;
-         }
-
-         if (id < RARCH_BIND_LIST_END)
-         {
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && sdl2_key_pressed(RETRO_KEYBIND_KEY(&binds[port][id]))
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         {
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (sdl2_key_pressed(id_plus_key))
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (sdl2_key_pressed(id_minus_key))
-                  ret += -0x7fff;
-            }
-         }
-         return ret;
-      case RETRO_DEVICE_MOUSE:
-      case RARCH_DEVICE_MOUSE_SCREEN:
-         if (config_get_ptr()->uints.input_mouse_index[ port ] == 0)
-         {
-            switch (id)
-            {
-               case RETRO_DEVICE_ID_MOUSE_LEFT:
-                  return sdl->mouse_l;
-               case RETRO_DEVICE_ID_MOUSE_RIGHT:
-                  return sdl->mouse_r;
-#ifdef WEBOS
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  /* Note: webOS wheel is reversed */
-                  if (sdl->mouse_wd != 0)
-                  {
-                      sdl->mouse_wd = 0;
-                      return 1;
-                  }
-                  break;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  if (sdl->mouse_wu != 0)
-                  {
-                      sdl->mouse_wu = 0;
-                      return 1;
-                  }
-                  break;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  /* MOUSE_SCREEN must be absolute (menu/OSK hit-test);
-                   * RETRO_DEVICE_MOUSE stays relative for cores. */
-                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_x : sdl->mouse_x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return (device == RARCH_DEVICE_MOUSE_SCREEN)
-                        ? sdl->mouse_abs_y : sdl->mouse_y;
-#else
-               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
-                  return sdl->mouse_wu;
-               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
-                  return sdl->mouse_wd;
-               case RETRO_DEVICE_ID_MOUSE_X:
-                  return sdl->mouse_x;
-               case RETRO_DEVICE_ID_MOUSE_Y:
-                  return sdl->mouse_y;
-#endif
-               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
-                  return sdl->mouse_m;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
-                  return sdl->mouse_b4;
-               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
-                  return sdl->mouse_b5;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
-                  return sdl->mouse_wr;
-               case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-                  return sdl->mouse_wl;
-            }
-         }
-         break;
-      case RETRO_DEVICE_POINTER:
-      case RARCH_DEVICE_POINTER_SCREEN:
-         if (idx == 0)
-         {
-            video_viewport_t vp         = {0};
-            bool screen                 = device ==
-               RARCH_DEVICE_POINTER_SCREEN;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
-
-            if (video_driver_translate_coord_viewport_confined_wrap(
-                        &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
-            {
-               if (screen)
-               {
-                  res_x = res_screen_x;
-                  res_y = res_screen_y;
-               }
-
-               switch (id)
-               {
-                  case RETRO_DEVICE_ID_POINTER_X:
-                     return res_x;
-                  case RETRO_DEVICE_ID_POINTER_Y:
-                     return res_y;
-                  case RETRO_DEVICE_ID_POINTER_PRESSED:
-                     return sdl->mouse_l;
-                  case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                     return input_driver_pointer_is_offscreen(res_x, res_y);
-               }
-            }
-         }
-         break;
+      /* The RetroPad's buttons and the hotkeys, where they are bound to
+       * keys or mouse buttons, are the frontend's to answer: it asks
+       * sdl2_keys_down() for the keys once a poll. */
+      /* ... and a stick's axes, where they are bound to keys. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && sdl2_key_pressed(id);
       /* TODO: update button binds to match other input drivers */
       case RETRO_DEVICE_LIGHTGUN:
-      {
-         video_viewport_t vp         = {0};
-         int16_t res_x               = 0;
-         int16_t res_y               = 0;
-         int16_t res_screen_x        = 0;
-         int16_t res_screen_y        = 0;
-
-         if (video_driver_translate_coord_viewport_wrap(
-                     &vp, sdl->mouse_abs_x, sdl->mouse_abs_y,
-                     &res_x, &res_y, &res_screen_x, &res_screen_y))
-
+         /* its buttons are the mouse's */
          switch (id)
          {
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-               return res_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-               return res_y;
-            case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-               return input_driver_pointer_is_offscreen(res_x, res_y);
-            case RETRO_DEVICE_ID_LIGHTGUN_X:
-               return sdl->mouse_x;
-            case RETRO_DEVICE_ID_LIGHTGUN_Y:
-               return sdl->mouse_y;
             case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                return sdl->mouse_l;
             case RETRO_DEVICE_ID_LIGHTGUN_RELOAD:
@@ -403,9 +243,10 @@ static int16_t sdl2_input_state(
                return sdl->mouse_r;
             case RETRO_DEVICE_ID_LIGHTGUN_SELECT:
                return sdl->mouse_l && sdl->mouse_r;
+            default:
+               break;
          }
          break;
-      }
    }
 
    return 0;
@@ -490,28 +331,65 @@ static float sdl2_get_sensor_input(void *data, unsigned port, unsigned id)
 
 static void sdl2_input_grab_mouse(void *data, bool state)
 {
-   sdl2_video_t *video_ptr = NULL;
-
-   if (string_is_not_equal(video_driver_get_ident(), "sdl2"))
-      return;
-
-   video_ptr = (sdl2_video_t*)video_driver_get_ptr();
-
-   if (video_ptr)
-      SDL_SetWindowGrab(video_ptr->window, state ? SDL_TRUE : SDL_FALSE);
+   /* the window is the video driver's */
+   sdl2_video_grab_window(state);
 }
 
 static void sdl2_poll_mouse(sdl2_input_t *sdl)
 {
-   Uint8 btn     = SDL_GetRelativeMouseState(&sdl->mouse_x, &sdl->mouse_y);
+   int rx = 0, ry = 0, ax = 0, ay = 0;
+   Uint8 btn     = SDL_GetRelativeMouseState(&rx, &ry);
 
-   SDL_GetMouseState(&sdl->mouse_abs_x, &sdl->mouse_abs_y);
+   SDL_GetMouseState(&ax, &ay);
+   sdl->mouse_rel = VIDEO_POS_PACK(rx, ry);
+   sdl->mouse_abs = VIDEO_POS_PACK(ax, ay);
 
    sdl->mouse_l  = (SDL_BUTTON(SDL_BUTTON_LEFT)      & btn) ? 1 : 0;
    sdl->mouse_r  = (SDL_BUTTON(SDL_BUTTON_RIGHT)     & btn) ? 1 : 0;
    sdl->mouse_m  = (SDL_BUTTON(SDL_BUTTON_MIDDLE)    & btn) ? 1 : 0;
    sdl->mouse_b4 = (SDL_BUTTON(SDL_BUTTON_X1)        & btn) ? 1 : 0;
    sdl->mouse_b5 = (SDL_BUTTON(SDL_BUTTON_X2)        & btn) ? 1 : 0;
+}
+
+/* The mouse's frame, handed to the frontend, which answers for the
+ * mouse, the pointer and the lightgun's aim. The mouse is the port's
+ * whose Mouse Index is 0; the pointer and the lightgun are every
+ * port's, and the mouse stands for one touch, its left button. */
+static void sdl2_publish_pointers(sdl2_input_t *sdl)
+{
+   input_pointer_frame_t frame;
+   unsigned buttons = 0;
+
+   if (sdl->mouse_l)
+      buttons |= INPUT_POINTER_LEFT;
+   if (sdl->mouse_r)
+      buttons |= INPUT_POINTER_RIGHT;
+   if (sdl->mouse_m)
+      buttons |= INPUT_POINTER_MIDDLE;
+   if (sdl->mouse_b4)
+      buttons |= INPUT_POINTER_BUTTON_4;
+   if (sdl->mouse_b5)
+      buttons |= INPUT_POINTER_BUTTON_5;
+   if (sdl->mouse_wu)
+      buttons |= INPUT_POINTER_WHEEL_UP;
+   if (sdl->mouse_wd)
+      buttons |= INPUT_POINTER_WHEEL_DOWN;
+   if (sdl->mouse_wr)
+      buttons |= INPUT_POINTER_HWHEEL_UP;
+   if (sdl->mouse_wl)
+      buttons |= INPUT_POINTER_HWHEEL_DOWN;
+   frame.pos     = sdl->mouse_abs;
+   frame.rel     = sdl->mouse_rel;
+   frame.buttons = (uint16_t)buttons;
+   /* a notch is this frame's: it was kept until the next turn of the
+    * wheel, and read as held for as long */
+   sdl->mouse_wu = 0;
+   sdl->mouse_wd = 0;
+   sdl->mouse_wl = 0;
+   sdl->mouse_wr = 0;
+
+   input_driver_publish_pointers(&frame, 1,
+         INPUT_POINTERS_BY_MOUSE_INDEX | INPUT_POINTERS_AIM_EVERY_PORT);
 }
 
 static void sdl2_input_poll(void *data)
@@ -532,8 +410,7 @@ static void sdl2_input_poll(void *data)
          unsigned code = input_keymaps_translate_keysym_to_rk(
                event.key.keysym.sym);
 #ifdef WEBOS
-         input_driver_state_t *input_st = input_state_get_ptr();
-         bool osk_active = input_st && (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
+         bool osk_active = input_driver_keyboard_mapping_blocked();
 
          if (!osk_active)
             sdl2_webos_phys_kbd_typing = false;
@@ -654,13 +531,16 @@ static void sdl2_input_poll(void *data)
       }
       else if (event.type == SDL_MOUSEWHEEL)
       {
-         sdl->mouse_wu = event.wheel.y < 0;
-         sdl->mouse_wd = event.wheel.y > 0;
+         /* SDL's y is positive for a turn away from the user: up */
+         sdl->mouse_wu = event.wheel.y > 0;
+         sdl->mouse_wd = event.wheel.y < 0;
          sdl->mouse_wl = event.wheel.x < 0;
          sdl->mouse_wr = event.wheel.x > 0;
          break;
       }
    }
+
+   sdl2_publish_pointers(sdl);
 }
 
 static uint64_t sdl2_get_capabilities(void *data)
@@ -685,7 +565,9 @@ input_driver_t input_sdl2 = {
    "sdl2",
    sdl2_input_grab_mouse,
    NULL,
-   NULL
+   NULL,
+   NULL,
+   sdl2_keys_down
 };
 
 #ifdef WEBOS

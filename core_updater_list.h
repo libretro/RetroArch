@@ -64,9 +64,15 @@ typedef struct
    char *display_name;
    char *description;
    struct string_list *licenses_list;
+   /* Installed core's size and modification time, as the libretro
+    * directory walk of an installed-only parse saw them; valid only
+    * when local_metadata is set */
+   int64_t local_size;
+   int64_t local_mtime;
    core_updater_list_date_t date;   /* unsigned alignment */
    uint32_t crc;
    bool is_experimental;
+   bool local_metadata;
 } core_updater_list_entry_t;
 
 /* Prevent direct access to core_updater_list_t
@@ -88,6 +94,9 @@ void core_updater_list_reset(core_updater_list_t *core_list);
 
 /* Frees specified core updater list */
 void core_updater_list_free(core_updater_list_t *core_list);
+
+/* Exchanges the contents of two core updater lists */
+void core_updater_list_swap(core_updater_list_t *a, core_updater_list_t *b);
 
 /***************/
 /* Cached List */
@@ -144,9 +153,42 @@ bool core_updater_list_get_core(
 /* Setters */
 /***********/
 
+/* core_updater_list_parse_network_take() flags */
+enum core_updater_list_parse_flags
+{
+   /* Keep only cores installed in the libretro directory,
+    * and read core info for those alone.  The directory is
+    * walked once, and each entry's local_size/local_mtime
+    * are filled from the walk. */
+   CORE_UPDATER_LIST_PARSE_INSTALLED_ONLY = (1 << 0)
+};
+
+/* Starts an incremental parse of a buildbot core
+ * listing into @core_list, which is emptied first.
+ * Takes ownership of @data, a heap buffer of @len
+ * bytes (not necessarily NUL-terminated), and frees
+ * it even on failure.  @flags is a mask of
+ * core_updater_list_parse_flags.  Returns false on a
+ * missing listing or OOM. */
+bool core_updater_list_parse_network_take(
+      core_updater_list_t *core_list,
+      char *data, size_t len, unsigned flags);
+
+/* Parses listing lines, one per work item, while
+ * @within_budget(@budget, 0, 0) allows (NULL: to the
+ * end).  Returns true once the listing is exhausted,
+ * with the list sorted and typed. */
+bool core_updater_list_parse_network_step(
+      core_updater_list_t *core_list,
+      const char *path_dir_libretro,
+      const char *path_libretro_info,
+      const char *network_buildbot_url,
+      bool (*within_budget)(void *budget, size_t avail, size_t len),
+      void *budget);
+
 /* Reads the contents of a buildbot core list
  * network request into the specified
- * core_updater_list_t object.
+ * core_updater_list_t object in one go.
  * Returns false in the event of an error. */
 bool core_updater_list_parse_network_data(
       core_updater_list_t *core_list,

@@ -414,8 +414,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             if (!state->challenge_info[i].image)
             {
                /* default icon */
-               if (p_dispwidget->gfx_widgets_icons_textures[
-                     MENU_WIDGETS_ICON_ACHIEVEMENT])
+               if (GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+                     MENU_WIDGETS_ICON_ACHIEVEMENT]))
                {
                   gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
                   gfx_display_blend_begin(dispctx, video_info->userdata);
@@ -425,8 +425,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                         p_disp,
                         VIDEO_SCALE_PACK(video_width, video_height),
                         VIDEO_SCALE_PACK(widget_size, widget_size),
-                        p_dispwidget->gfx_widgets_icons_textures[
-                              MENU_WIDGETS_ICON_ACHIEVEMENT],
+                        GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+                              MENU_WIDGETS_ICON_ACHIEVEMENT]),
                         x,
                         y,
                         0.0f, /* rad */
@@ -503,8 +503,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
             if (!state->progress_tracker.image)
             {
                /* default icon */
-               if (p_dispwidget->gfx_widgets_icons_textures[
-                     MENU_WIDGETS_ICON_ACHIEVEMENT])
+               if (GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+                     MENU_WIDGETS_ICON_ACHIEVEMENT]))
                {
                   gfx_display_ctx_driver_t* dispctx = p_disp->dispctx;
                   gfx_display_blend_begin(dispctx, video_info->userdata);
@@ -514,8 +514,8 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                         p_disp,
                         VIDEO_SCALE_PACK(video_width, video_height),
                         VIDEO_SCALE_PACK(image_size, image_size),
-                        p_dispwidget->gfx_widgets_icons_textures[
-                              MENU_WIDGETS_ICON_ACHIEVEMENT],
+                        GFX_SURFACE_HANDLE(p_dispwidget->gfx_widgets_icons_textures[
+                              MENU_WIDGETS_ICON_ACHIEVEMENT]),
                         x,
                         y,
                         0.0f, /* rad */

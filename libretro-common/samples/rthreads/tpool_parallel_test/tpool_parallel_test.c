@@ -30,7 +30,7 @@ static retro_atomic_int_t done;
 /* A spell of work that costs CPU time rather than waiting for the
  * clock: a job that waited on the clock would finish on time however
  * many cores it shared, and say nothing. */
-static volatile unsigned sink;
+static retro_atomic_int_t sink;   /* keeps the loop from folding away */
 static unsigned spins_per_spell;
 
 static void spell(void)
@@ -38,7 +38,7 @@ static void spell(void)
    unsigned i, x = 1;
    for (i = 0; i < spins_per_spell; i++)
       x = x * 1664525u + 1013904223u;
-   sink = x;
+   retro_atomic_store_relaxed_int(&sink, (int)x);
 }
 
 static void job(void *arg)

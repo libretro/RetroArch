@@ -5029,7 +5029,56 @@ typedef struct rh264_pic_ctx
 } rh264_pic_ctx;
 
 #define RH264_MAX_CTX 8
-#define RH264_RBSP_POOL 32   /* unescape buffers kept between slices */
+#define RH264_RBSP_POOL 32   /* slice jobs kept between slices */
+
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
+static slock_t *rh264_slots_lock;
+#endif
+
+/* A pool slot holds a pointer or nothing, and changes hands in one
+ * atomic swap: whoever swaps a pointer out owns it. Backends with no
+ * pointer atomics keep the slots under a lock. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+typedef retro_atomic_ptr_t rh264_slot_t;
+#define rh264_slot_peek(s)    retro_atomic_load_relaxed_ptr(s)
+#define rh264_slot_take(s)    retro_atomic_exchange_ptr((s), NULL)
+#define rh264_slot_fill(s, p) retro_atomic_cas_ptr((s), NULL, (p))
+#else
+typedef void *rh264_slot_t;
+#define rh264_slot_peek(s)    (*(s))
+
+static void *rh264_slot_take(rh264_slot_t *s)
+{
+   void *p;
+#ifdef HAVE_THREADS
+   if (rh264_slots_lock)
+      slock_lock(rh264_slots_lock);
+#endif
+   p  = *s;
+   *s = NULL;
+#ifdef HAVE_THREADS
+   if (rh264_slots_lock)
+      slock_unlock(rh264_slots_lock);
+#endif
+   return p;
+}
+
+static int rh264_slot_fill(rh264_slot_t *s, void *p)
+{
+   int ok;
+#ifdef HAVE_THREADS
+   if (rh264_slots_lock)
+      slock_lock(rh264_slots_lock);
+#endif
+   if ((ok = !*s))
+      *s = p;
+#ifdef HAVE_THREADS
+   if (rh264_slots_lock)
+      slock_unlock(rh264_slots_lock);
+#endif
+   return ok;
+}
+#endif
 
 struct rh264_video
 {
@@ -5052,19 +5101,13 @@ struct rh264_video
     * one because the queue was full. */
    int            st_posted, st_inflight_sum, st_inflight_max;
    int            st_join_waits, st_pop_held, st_pop_waits;
-   /* Unescape buffers between uses: a slice is unescaped into the
-    * context's buffer and the queued job takes that very buffer, the
-    * context drawing its next from here; a finished job returns it.
-    * So a slice is unescaped once, into memory that is neither made
-    * nor copied per slice. Workers return, the submitter draws: under
-    * the blocks lock when there is a pool. */
-   uint8_t       *rbsp_free[RH264_RBSP_POOL];
-   size_t         rbsp_free_cap[RH264_RBSP_POOL];
-   int            rbsp_free_n;
-   /* and the slice jobs themselves, two kilobytes each with a B
-    * context inside: a finished one is kept for the next slice */
-   rh264_slice_job *job_free;
-   int              job_free_n;
+   /* Finished slice jobs between uses, each with the buffer its slice
+    * was unescaped into: a slice is unescaped into the context's
+    * buffer, the queued job takes that very buffer, and the context
+    * takes the one a pooled job came back with. So a slice is
+    * unescaped once, into memory that is neither made nor copied per
+    * slice. */
+   rh264_slot_t   job_pool[RH264_RBSP_POOL];
 
    /* unescaped-RBSP scratch for slice NALs, grown on demand and kept
     * for the decoder's lifetime */
@@ -5167,18 +5210,15 @@ struct rh264_video
  * megabytes: on an allocator that hands such sizes to the kernel and
  * back (the C runtime MinGW builds against does) that is a page-zeroed
  * mapping per picture, twice, where the swap it replaced allocated
- * nothing. A released block goes on a short free list keyed by its
- * length, and the next of that length comes from there. The list is
- * one per process and serialised nowhere: the decoders run one
- * picture at a time today, and frame threading will give each
- * decoder its own. */
+ * nothing. A released block is parked in one of a few slots, and the
+ * next of that length comes from there. The slots are one set per
+ * process, shared by every decoder and thread in it. */
 typedef struct rh264_block_hdr
 {
    /* Holders let go from pool threads and the sequence's thread alike:
     * the count is atomic, and the last one out frees or recycles. */
    retro_atomic_int_t refs;
    size_t len;
-   struct rh264_block_hdr *next_free;
    /* How many macroblock rows of the picture in this block are final:
     * reconstructed, filtered, and no longer written by anything -
     * counted up from the top by the row hook as each row's filtering
@@ -5236,48 +5276,38 @@ static void rh264_block_publish_rows(void *data, int rows)
 
 #define RH264_FREE_BLOCKS 16
 
-static rh264_block_hdr *rh264_free_blocks;
-static int              rh264_free_blocks_n;
+static rh264_slot_t rh264_free_blocks[RH264_FREE_BLOCKS];
 
-#ifdef HAVE_THREADS
-static slock_t *rh264_blocks_lock;   /* the free list, once there is a pool */
-#endif
-
-static void rh264_blocks_lock_take(void)
+static int rh264_block_park(rh264_block_hdr *b)
 {
-#ifdef HAVE_THREADS
-   if (rh264_blocks_lock)
-      slock_lock(rh264_blocks_lock);
-#endif
-}
-
-static void rh264_blocks_lock_drop(void)
-{
-#ifdef HAVE_THREADS
-   if (rh264_blocks_lock)
-      slock_unlock(rh264_blocks_lock);
-#endif
+   int i;
+   for (i = 0; i < RH264_FREE_BLOCKS; i++)
+      if (    !rh264_slot_peek(&rh264_free_blocks[i])
+            && rh264_slot_fill(&rh264_free_blocks[i], b))
+         return 1;
+   return 0;
 }
 
 static uint8_t *rh264_block_new(size_t len)
 {
-   rh264_block_hdr **pp, *b;
-   rh264_blocks_lock_take();
-   pp = &rh264_free_blocks;
-   while ((b = *pp))
+   int i;
+   rh264_block_hdr *b;
+   for (i = 0; i < RH264_FREE_BLOCKS; i++)
    {
+      if (     !rh264_slot_peek(&rh264_free_blocks[i])
+            || !(b = (rh264_block_hdr*)rh264_slot_take(&rh264_free_blocks[i])))
+         continue;
       if (b->len == len)
       {
-         *pp = b->next_free;
-         rh264_free_blocks_n--;
-         rh264_blocks_lock_drop();
          retro_atomic_store_release_int(&b->refs, 1);
          retro_atomic_store_release_int(&b->rows_final, 0);
          return (uint8_t*)b + RH264_PLANES_HDR;
       }
-      pp = &b->next_free;
+      /* another size: its length is only readable once owned */
+      if (     !rh264_slot_fill(&rh264_free_blocks[i], b)
+            && !rh264_block_park(b))
+         free(b);
    }
-   rh264_blocks_lock_drop();
    b = (rh264_block_hdr*)calloc(len + RH264_PLANES_HDR, 1);
    if (!b)
       return NULL;
@@ -5294,17 +5324,33 @@ static void rh264_block_release(void *data)
    b = (rh264_block_hdr*)((uint8_t*)data - RH264_PLANES_HDR);
    if (retro_atomic_fetch_sub_int(&b->refs, 1) != 1)
       return;
-   rh264_blocks_lock_take();
-   if (rh264_free_blocks_n < RH264_FREE_BLOCKS)
+   if (!rh264_block_park(b))
+      free(b);
+}
+
+static rh264_slice_job *rh264_job_take(rh264_video *v)
+{
+   int i;
+   for (i = 0; i < RH264_RBSP_POOL; i++)
    {
-      b->next_free = rh264_free_blocks;
-      rh264_free_blocks = b;
-      rh264_free_blocks_n++;
-      rh264_blocks_lock_drop();
-      return;
+      void *j;
+      if (     rh264_slot_peek(&v->job_pool[i])
+            && (j = rh264_slot_take(&v->job_pool[i])))
+         return (rh264_slice_job*)j;
    }
-   rh264_blocks_lock_drop();
-   free(b);
+   return NULL;
+}
+
+/* Back to the pool with its buffer, or freed when the pool is full. */
+static void rh264_job_park(rh264_video *v, rh264_slice_job *j)
+{
+   int i;
+   for (i = 0; i < RH264_RBSP_POOL; i++)
+      if (    !rh264_slot_peek(&v->job_pool[i])
+            && rh264_slot_fill(&v->job_pool[i], j))
+         return;
+   free(j->rbsp);
+   free(j);
 }
 
 static uint8_t *rh264_planes_new(size_t len)
@@ -5770,11 +5816,12 @@ void rh264_video_close(rh264_video *v)
       }
       for (i = 0; i < RH264_MAX_REFS; i++) rh264_frame_free(&v->dpb[i]);
       for (i = 0; i < RH264_OUT_SLOTS; i++) rh264_frame_free(&v->out[i]);
-      for (i = 0; i < v->rbsp_free_n; i++) free(v->rbsp_free[i]);
-      while (v->job_free)
+      for (;;)
       {
-         rh264_slice_job *j = v->job_free;
-         v->job_free = j->next;
+         rh264_slice_job *j = rh264_job_take(v);
+         if (!j)
+            break;
+         free(j->rbsp);
          free(j);
       }
    }
@@ -9450,9 +9497,8 @@ static int rh264_video_decode_idr(rh264_video *v, const uint8_t *nal, size_t len
 /* Remove list position j from the reference set. */
 static void rh264_dpb_unmark_at(rh264_video *v, int j)
 {
-   int m;
-   for (m = j; m < v->dpb_len - 1; m++)
-      v->dpb_slot[m] = v->dpb_slot[m + 1];
+   memmove(&v->dpb_slot[j], &v->dpb_slot[j + 1],
+         (size_t)(v->dpb_len - 1 - j) * sizeof(v->dpb_slot[0]));
    v->dpb_len--;
 }
 
@@ -10144,22 +10190,21 @@ static void rh264_ctx_complete_picture(rh264_pic_ctx *c)
 static rh264_slice_job *rh264_ctx_queue_slice(rh264_video *v, rh264_pic_ctx *c,
       const rh264_bits *b, const rh264_slice_hdr *sh, int kind, int cabac)
 {
-   rh264_slice_job *j;
-   rh264_blocks_lock_take();
-   if ((j = v->job_free))
-   {
-      v->job_free = j->next;
-      v->job_free_n--;
-   }
-   rh264_blocks_lock_drop();
+   uint8_t *spare     = NULL;
+   size_t spare_cap   = 0;
+   rh264_slice_job *j = rh264_job_take(v);
    if (j)
+   {
+      spare     = j->rbsp;
+      spare_cap = j->rbsp_cap;
       memset(j, 0, sizeof(*j));
+   }
    else if (!(j = (rh264_slice_job*)calloc(1, sizeof(*j))))
       return NULL;
    /* The slice was unescaped into the buffer of whichever context was
     * current at the time - the one before the rotation, when this
     * slice opened a picture - and the job takes that very buffer;
-    * its owner draws another from the pool. */
+    * its owner takes the one the pooled job came back with. */
    {
       rh264_pic_ctx *o = NULL;
       int k;
@@ -10172,29 +10217,28 @@ static rh264_slice_job *rh264_ctx_queue_slice(rh264_video *v, rh264_pic_ctx *c,
       if (!o)
       {
          /* not a context's buffer: copy, as a stranger's must be */
-         j->rbsp = (uint8_t*)malloc(b->size ? b->size : 1);
-         if (!j->rbsp)
+         size_t need = b->size ? b->size : 1;
+         if (spare_cap < need)
+         {
+            free(spare);
+            spare     = (uint8_t*)malloc(need);
+            spare_cap = need;
+         }
+         if (!spare)
          {
             free(j);
             return NULL;
          }
-         memcpy(j->rbsp, b->buf, b->size);
-         j->rbsp_cap = b->size ? b->size : 1;
+         memcpy(spare, b->buf, b->size);
+         j->rbsp     = spare;
+         j->rbsp_cap = spare_cap;
       }
       else
       {
          j->rbsp     = o->rbsp_scratch;
          j->rbsp_cap = o->rbsp_scratch_cap;
-         o->rbsp_scratch     = NULL;
-         o->rbsp_scratch_cap = 0;
-         rh264_blocks_lock_take();
-         if (v->rbsp_free_n > 0)
-         {
-            v->rbsp_free_n--;
-            o->rbsp_scratch     = v->rbsp_free[v->rbsp_free_n];
-            o->rbsp_scratch_cap = v->rbsp_free_cap[v->rbsp_free_n];
-         }
-         rh264_blocks_lock_drop();
+         o->rbsp_scratch     = spare;
+         o->rbsp_scratch_cap = spare_cap;
       }
    }
    j->rbsp_len = b->size;
@@ -10267,28 +10311,7 @@ static void rh264_ctx_run_slices(rh264_video *v, rh264_pic_ctx *c, const struct 
          else
             c->job_rc = rc;
       }
-      /* the buffer and the job go back to their pools, or are freed
-       * when the pools are full; the buffer is settled before the job
-       * is offered, since a pooled job is another thread's to take */
-      rh264_blocks_lock_take();
-      if (v->rbsp_free_n < RH264_RBSP_POOL)
-      {
-         v->rbsp_free[v->rbsp_free_n]     = j->rbsp;
-         v->rbsp_free_cap[v->rbsp_free_n] = j->rbsp_cap;
-         v->rbsp_free_n++;
-      }
-      else
-         free(j->rbsp);
-      j->rbsp = NULL;
-      if (v->job_free_n < RH264_RBSP_POOL)
-      {
-         j->next     = v->job_free;
-         v->job_free = j;
-         v->job_free_n++;
-         j = NULL;
-      }
-      rh264_blocks_lock_drop();
-      free(j);
+      rh264_job_park(v, j);
    }
    /* Completion is the picture's own affair, not the sequence's: it
     * does not ask pic_open, which the sequence clears when the next
@@ -10613,11 +10636,12 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
    }
    if (!rh264_rows_ec_ok)
    {
-      rh264_blocks_lock = slock_new();
-      if (!rh264_blocks_lock || !retro_eventcount_init(&rh264_rows_ec))
+#ifndef RETRO_ATOMIC_HAS_PTR
+      if (!rh264_slots_lock && !(rh264_slots_lock = slock_new()))
+         return;
+#endif
+      if (!retro_eventcount_init(&rh264_rows_ec))
       {
-         if (rh264_blocks_lock) slock_free(rh264_blocks_lock);
-         rh264_blocks_lock = NULL;
          retro_eventcount_free(&rh264_rows_ec);
          return;
       }

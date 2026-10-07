@@ -220,6 +220,7 @@ appstore_cores=(
     gpsp
     gw
     handy
+    hatarib
     holani
     jollycv
     kronos

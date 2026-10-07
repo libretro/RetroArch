@@ -65,7 +65,6 @@ typedef struct
 #endif
     SceWindow native_window;
     bool resize;
-    unsigned width, height;
     float refresh_rate;
 } orbis_ctx_data_t;
 
@@ -210,11 +209,8 @@ static bool orbis_ctx_set_video_mode(void *data,
 
     orbis_ctx_data_t *ctx_orbis     = (orbis_ctx_data_t *)data;
 
-    ctx_orbis->width                = ATTR_ORBISGL_WIDTH;
-    ctx_orbis->height               = ATTR_ORBISGL_HEIGHT;
-
-    ctx_orbis->native_window.width  = ctx_orbis->width;
-    ctx_orbis->native_window.height = ctx_orbis->height;
+    ctx_orbis->native_window.width  = ATTR_ORBISGL_WIDTH;
+    ctx_orbis->native_window.height = ATTR_ORBISGL_HEIGHT;
 
     ctx_orbis->refresh_rate = 60;
 
@@ -237,11 +233,8 @@ error:
 }
 
 static void orbis_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-    *input      = NULL;
-    *input_data = NULL;
 }
 
 static enum gfx_ctx_api orbis_ctx_get_api(void *data) { return GFX_CTX_OPENGL_API; }

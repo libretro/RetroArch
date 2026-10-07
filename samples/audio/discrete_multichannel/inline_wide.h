@@ -1249,7 +1249,7 @@ static void menu_timing_cases(void)
       video_state_get_ptr()->av_info.timing.sample_rate = rates[i];
       video_state_get_ptr()->av_info.timing.fps = fps[i];
       menu_recorded_frames = menu_recorded_calls = 0;
-      audio_driver_menu_sample();
+      audio_driver_menu_sample(false);
       CHECK(menu_recorded_frames == expected && (i >= 5 ? menu_recorded_calls != 0 : menu_recorded_calls == 0),
             "invalid menu timing emitted audio, or valid timing changed");
    }
@@ -1260,7 +1260,7 @@ static void menu_timing_cases(void)
       memcpy(i < 2 ? &video_state_get_ptr()->av_info.timing.sample_rate
             : &video_state_get_ptr()->av_info.timing.fps, &invalid[i & 1], sizeof(double));
       menu_recorded_frames = menu_recorded_calls = 0;
-      audio_driver_menu_sample();
+      audio_driver_menu_sample(false);
       CHECK(!menu_recorded_calls, "nonfinite menu timing reached recorder");
    }
    record->data = NULL; record->driver = NULL;

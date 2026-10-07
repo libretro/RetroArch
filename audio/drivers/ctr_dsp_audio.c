@@ -270,6 +270,12 @@ static ssize_t ctr_dsp_audio_write(void *data, const void *buf, size_t len)
    ctr_dsp_audio_t     *ctr = (ctr_dsp_audio_t*)data;
    uint32_t sample_pos      = ndspChnGetSamplePos(ctr->channel);
 
+   /* Half the ring a call at most, in whole frames: the room the waits
+    * below hold out for, where a longer write copied past the ring. */
+   if (len > CTR_DSP_AUDIO_SIZE / 2)
+      len = CTR_DSP_AUDIO_SIZE / 2;
+   len &= ~(size_t)3;
+
    if (  (((sample_pos  - ctr->pos)   & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 2))
       || (((ctr->pos    - sample_pos) & CTR_DSP_AUDIO_COUNT_MASK) < (CTR_DSP_AUDIO_COUNT >> 4))
       || (((sample_pos  - ctr->pos)   & CTR_DSP_AUDIO_COUNT_MASK) < (len >> 2)))

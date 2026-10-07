@@ -191,6 +191,18 @@ static int file_archive_parse_file_init(file_archive_transfer_t *state,
    return state->backend->archive_parse_file_init(state, path);
 }
 
+/* Drops the output of a member that will not complete: the temporary
+ * file beside the target goes, and the target is left as it was. */
+static void file_archive_pending_abandon(file_archive_transfer_t *state)
+{
+   if (state->pending_sink)
+   {
+      filestream_commit_atomic(state->pending_sink,
+            state->pending_path, false);
+      state->pending_sink = NULL;
+   }
+}
+
 void file_archive_parse_file_iterate_stop(file_archive_transfer_t *state)
 {
    if (!state || !state->archive_file)
@@ -309,6 +321,13 @@ deinit_error:
          if (returnerr)
             *returnerr = false;
       case ARCHIVE_TRANSFER_DEINIT:
+         /* A member still parked here is being dropped */
+         if (state->pending_active)
+         {
+            state->pending_active = false;
+            file_archive_pending_abandon(state);
+         }
+
          if (state->context)
          {
             if (state->backend->archive_parse_file_free)
@@ -525,6 +544,110 @@ struct string_list *file_archive_get_file_list(const char *path,
    return userdata.list;
 }
 
+
+/* Copies a complete temporary file over a target it could not be
+ * renamed onto, and removes it.  Only for filesystems that refuse the
+ * rename; an atomic replacement is no longer possible there, which is
+ * what writing the member in place always meant. */
+static bool file_archive_pending_copy_in_place(const char *temp_path,
+      const char *path)
+{
+   bool ok      = true;
+   uint8_t *buf;
+   RFILE *in;
+   RFILE *out;
+
+   if (!(buf = (uint8_t*)malloc(65536)))
+      return false;
+   if (!(in = filestream_open(temp_path, RETRO_VFS_FILE_ACCESS_READ,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      free(buf);
+      return false;
+   }
+   if (!(out = filestream_open(path, RETRO_VFS_FILE_ACCESS_WRITE,
+               RETRO_VFS_FILE_ACCESS_HINT_NONE)))
+   {
+      filestream_close(in);
+      free(buf);
+      return false;
+   }
+
+   for (;;)
+   {
+      int64_t rd = filestream_read(in, buf, 65536);
+      if (rd < 0)
+         ok = false;
+      if (rd <= 0)
+         break;
+      if (filestream_write(out, buf, rd) != rd)
+      {
+         ok = false;
+         break;
+      }
+   }
+
+   filestream_close(in);
+   if (filestream_close(out) != 0)
+      ok = false;
+   free(buf);
+   return ok;
+}
+
+/* Puts a completed member in place.  Written beside the file and
+ * renamed over it: an update stopped part way leaves the old file
+ * whole, and whoever has the old file open or mapped keeps reading
+ * what was there.  Where a file cannot be renamed into place, it is
+ * written in place as before.  Returns 1 or -1, as the step does. */
+static int file_archive_pending_commit(file_archive_transfer_t *state)
+{
+   int ret;
+   bool ok          = true;
+   RFILE *sink      = state->pending_sink;
+
+   state->pending_sink = NULL;
+
+   /* No temporary file could be opened: the whole member is in hand,
+    * so write it as the one-shot path always did */
+   if (!sink)
+   {
+      if (!state->pending_handle.data)
+         return -1;
+      if (     !filestream_write_file_atomic(state->pending_path,
+                  state->pending_handle.data, state->pending_size)
+            && !filestream_write_file(state->pending_path,
+                  state->pending_handle.data, state->pending_size))
+         return -1;
+      return 1;
+   }
+
+   /* A backend that decoded the whole member at once */
+   if (state->pending_handle.data)
+      ok = filestream_write(sink, state->pending_handle.data,
+            state->pending_size) == (int64_t)state->pending_size;
+
+   if ((ret = filestream_commit_atomic(sink, state->pending_path, ok)) == 0)
+      return 1;
+   if (ret == -1)
+      return -1;
+
+   /* Complete, but not renameable into place */
+   {
+      bool copied     = false;
+      size_t _len     = strlen(state->pending_path);
+      char *temp_path = (char*)malloc(_len + sizeof(".tmp"));
+      if (!temp_path)
+         return -1;
+      memcpy(temp_path, state->pending_path, _len);
+      memcpy(temp_path + _len, ".tmp", sizeof(".tmp"));
+      copied = file_archive_pending_copy_in_place(temp_path,
+            state->pending_path);
+      filestream_delete(temp_path);
+      free(temp_path);
+      return copied ? 1 : -1;
+   }
+}
+
 /* Finish a member whose decode is parked in the transfer, doing one
  * slice of work.
  *
@@ -547,13 +670,12 @@ int file_archive_perform_mode_step(file_archive_transfer_t *state)
    state->pending_active = false;
 
    if (ret == -1)
+   {
+      file_archive_pending_abandon(state);
       return -1;
+   }
 
-   if (!filestream_write_file(state->pending_path,
-            state->pending_handle.data, state->pending_size))
-      return -1;
-
-   return 1;
+   return file_archive_pending_commit(state);
 }
 
 /* Begin decoding a member into the transfer's pending slot.
@@ -579,12 +701,19 @@ int file_archive_perform_mode_start(const char *path, const char *valid_exts,
    state->pending_handle.data          = NULL;
    state->pending_handle.real_checksum = 0;
 
+   /* The output file comes first: a backend that can stream sees it
+    * at init and sizes its buffers for a window, not the member */
+   strlcpy(state->pending_path, path, sizeof(state->pending_path));
+   state->pending_sink = filestream_open_atomic(path);
+
    if (!state->backend->stream_decompress_data_to_file_init(
             state->context, &state->pending_handle,
             cdata, cmode, csize, size))
+   {
+      file_archive_pending_abandon(state);
       return -1;
+   }
 
-   strlcpy(state->pending_path, path, sizeof(state->pending_path));
    state->pending_size   = size;
    state->pending_active = true;
 

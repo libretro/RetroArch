@@ -9,7 +9,7 @@ extern "C" {
 #endif
 
 /* System headers may lack SMB2_SEC_ defines but
- * will clash with deps/libsmb2 if provided here
+ * will clash with libsmb2 if provided here
  */
 #define RETRO_SMB2_SEC_UNDEFINED 0
 #define RETRO_SMB2_SEC_NTLMSSP 1
@@ -27,6 +27,11 @@ struct smb_settings {
    unsigned    num_contexts;
    unsigned    auth_mode;
    const char *subdir;
+   /* Kerberos (built-in client): the realm, and the KDC when it is not
+    * the server itself; empty realm means NTLMSSP only */
+   const char *realm;
+   const char *kdc;
+   unsigned    readahead;       /* KiB per open file; 0: the client's default */
 };
 
 typedef struct smb_settings smb_settings_t;
@@ -45,9 +50,12 @@ struct smbc_dirent {
 typedef struct {
    struct smb2_context *ctx;
    struct smb2dir *dir;
+   void *slot;          /* the pool slot the listing holds, NULL if private */
    char **shares;
    unsigned share_count;
    unsigned share_index;
+   struct smbc_dirent ent;   /* the entry readdir returns; per handle, so
+                              * listings on different threads never share it */
 } smb_dir_handle;
 
 bool smb_init_cfg(const struct smb_settings *new_cfg);
@@ -77,6 +85,11 @@ int retro_vfs_file_error_smb(libretro_vfs_implementation_file *stream);
 
 /* Context management */
 void smb_shutdown(void);
+
+/* What read-ahead served from its windows and what it missed, in KiB,
+ * over the files closed since the last call; the counts are then reset.
+ * Both are 0 while read-ahead is off. */
+void smb_take_readahead_stats(unsigned *window_kib, unsigned *direct_kib);
 
 #ifdef __cplusplus
 }

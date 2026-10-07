@@ -11,7 +11,20 @@ HAVE_CHEEVOS := 1
 HAVE_FILE_LOGGER := 1
 HAVE_GFX_WIDGETS := 1
 HAVE_SAF := 1
-HAVE_BUILTINSMBCLIENT := 1
+# The cleanroom network stack, as on the desktop builds: the crypto,
+# the encrypted keychain, the TLS 1.2/1.3 client and the SMB2/3 client
+# with Kerberos. All of it needs nothing
+# but sockets; the NFSv3/v4 client and its nfs:// backend likewise.
+HAVE_CRYPTO   := 1
+HAVE_KEYCHAIN := 1
+HAVE_RETROSSL := 1
+HAVE_RETROSMB := 1
+HAVE_RETRONFS := 1
+# The video modeline engine, as on the desktop builds. Android drives
+# no modelines (its display server does not advertise DISPSERV_CTX_
+# MODELINE, so the CRT SwitchRes menu stays hidden); this is for the
+# EDID reader behind Information > Display Information > EDID.
+HAVE_MODELINE := 1
 
 INCFLAGS    :=
 DEFINES     :=
@@ -75,18 +88,18 @@ LOCAL_MODULE := retroarch-activity
 LOCAL_SRC_FILES  +=	$(RARCH_DIR)/griffin/griffin.c \
 							$(RARCH_DIR)/griffin/griffin_cpp.cpp
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   DEFINES += -DHAVE_BUILTINSMBCLIENT
-   DEFINES += "-D_U_=__attribute__((unused))"
-   DEFINES += -DHAVE_TIME_H -DHAVE_FCNTL_H -DHAVE_UNISTD_H
-   DEFINES += -DHAVE_STDLIB_H -DSTDC_HEADERS
-   DEFINES += -DHAVE_STRING_H
-   DEFINES += -DHAVE_LINGER
-   DEFINES += -DHAVE_SYS_UIO_H
-   DEFINES += -DHAVE_POLL_H -DHAVE_NETDB_H
-   DEFINES += -DHAVE_NETINET_TCP_H -DHAVE_NETINET_IN_H
-   DEFINES += -DHAVE_SYS_SOCKET_H -DHAVE_ARPA_INET_H
-   DEFINES += -DHAVE_SMBCLIENT
+ifeq ($(HAVE_CRYPTO),1)
+   DEFINES += -DHAVE_CRYPTO
+   ifeq ($(HAVE_KEYCHAIN),1)
+      DEFINES += -DHAVE_KEYCHAIN
+   endif
+   ifeq ($(HAVE_RETROSMB),1)
+      DEFINES += -DHAVE_SMBCLIENT -DHAVE_RETROSMB
+   endif
+endif
+
+ifeq ($(HAVE_MODELINE),1)
+   DEFINES += -DHAVE_MODELINE
 endif
 
 ifeq ($(HAVE_LOGGER), 1)
@@ -165,6 +178,7 @@ DEFINES += -DRARCH_MOBILE \
 	   -DHAVE_RFLAC \
 	   -DHAVE_RMP3 \
 	   -DHAVE_CHD \
+	   -DHAVE_RCHD \
 	   -DWANT_SUBCODE \
 	   -DWANT_RAW_DATA_SECTOR \
 	   -DHAVE_RUNAHEAD \
@@ -175,7 +189,11 @@ DEFINES += -DRARCH_MOBILE \
 	   -DWANT_IFADDRS \
 	   -DHAVE_XDELTA \
 	   -DHAVE_CORE_INFO_CACHE \
-	   -DHAVE_BUILTINMBEDTLS -DHAVE_SSL
+	   -DHAVE_SSL
+
+ifeq ($(HAVE_RETROSSL),1)
+   DEFINES += -DHAVE_RETROSSL
+endif
 
 ifeq ($(HAVE_GFX_WIDGETS),1)
 DEFINES += -DHAVE_GFX_WIDGETS
@@ -203,8 +221,8 @@ ifeq ($(HAVE_SAF),1)
    DEFINES += -DHAVE_SAF
 endif
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   DEFINES += -DHAVE_SMBCLIENT
+ifeq ($(HAVE_RETRONFS),1)
+   DEFINES += -DHAVE_NFSCLIENT -DHAVE_RETRONFS
 endif
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
@@ -227,11 +245,6 @@ ifeq ($(HAVE_CHEEVOS),1)
 INCLUDE_DIRS += -I$(LOCAL_PATH)/$(DEPS_DIR)/rcheevos/include
 endif
 
-ifeq ($(HAVE_BUILTINSMBCLIENT),1)
-   INCLUDE_DIRS += \
-      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include \
-      -I$(LOCAL_PATH)/$(DEPS_DIR)/libsmb2/include/smb2
-endif
 
 LOCAL_CFLAGS     += $(INCLUDE_DIRS)
 LOCAL_CPPFLAGS   += $(INCLUDE_DIRS)

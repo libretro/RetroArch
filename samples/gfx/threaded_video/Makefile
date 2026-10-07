@@ -70,6 +70,54 @@ check-vulkan: all
 	 if [ "$$errs" != "0" ]; then echo "check-vulkan: $$errs validation error(s)"; exit 1; fi; \
 	 exit $$rc
 
+# check-vulkan with a layer between the driver and the ICD that
+# reports the memory of a discrete card with resizable BAR: a large
+# device-local host-visible type (fake_rebar_layer.c). With either core
+# format every lane must still pass, CPU-written buffers must land in
+# that type, and so must frame textures where the format can be sampled
+# linear (XRGB8888 on lavapipe; RGB565 takes the staging copy), and no
+# frame lent to the core may be uncached. Then again with every
+# allocation in that type refused (FAKE_REBAR_REFUSE=1): nothing lands
+# there and every lane still passes on the fallback.
+ifeq ($(OS),Windows_NT)
+FR_LIB := fake_rebar_layer.dll
+else
+FR_LIB := libfake_rebar_layer.so
+endif
+
+$(FR_LIB): fake_rebar_layer.c
+	$(CC) -O2 -shared -fPIC -o $@ fake_rebar_layer.c
+
+fake_rebar_layer.json: Makefile
+	@printf '{\n "file_format_version": "1.1.2",\n "layer": {\n  "name": "VK_LAYER_RA_fake_rebar",\n  "type": "GLOBAL",\n  "library_path": "./%s",\n  "api_version": "1.3.0",\n  "implementation_version": "1",\n  "description": "Reports a resizable-BAR memory layout"\n }\n}\n' $(FR_LIB) > $@
+
+check-vulkan-rebar: all $(FR_LIB) fake_rebar_layer.json
+	@for run in 565 xrgb 565-refuse xrgb-refuse; do \
+	    case $$run in *xrgb*) xrgb=1;; *) xrgb=;; esac; \
+	    case $$run in *refuse) refuse=1;; *) refuse=;; esac; \
+	    echo "--- fake resizable BAR, $$run"; \
+	    VK_ADD_LAYER_PATH=. VK_INSTANCE_LAYERS=VK_LAYER_RA_fake_rebar \
+	    FAKE_REBAR_REFUSE=$$refuse HARNESS_CORE_XRGB8888=$$xrgb \
+	    $(MAKE) -s --no-print-directory check-vulkan > rebar.log 2>&1; rc=$$?; \
+	    grep -E 'all lanes|lent-window|FAIL|Validation|check-vulkan' rebar.log; \
+	    if [ $$rc -ne 0 ]; then cat rebar.log; rm -f rebar.log; exit $$rc; fi; \
+	    sums=$$(awk '/fake-rebar:/ { n++; bar += $$13; refused += $$17; images += $$NF } \
+	                 END { print n + 0, bar + 0, refused + 0, images + 0 }' rebar.log); \
+	    lent=$$(grep 'lent-window lane:.*uncached' rebar.log); \
+	    rm -f rebar.log; \
+	    set -- $$sums; devices=$$1; bar=$$2; refused=$$3; images=$$4; \
+	    echo "check-vulkan-rebar: $$devices devices, $$bar allocations in BAR memory ($$images images), $$refused refused"; \
+	    if [ "$$devices" = 0 ]; then echo "check-vulkan-rebar: the layer did not load"; exit 1; fi; \
+	    if [ -n "$$refuse" ]; then \
+	       if [ "$$bar" != 0 ] || [ "$$refused" = 0 ]; then echo "check-vulkan-rebar: refused run put $$bar allocations in BAR memory, $$refused refused"; exit 1; fi; \
+	    else \
+	       if [ "$$bar" = 0 ]; then echo "check-vulkan-rebar: nothing in BAR memory"; exit 1; fi; \
+	       if [ -n "$$xrgb" ] && [ "$$images" = 0 ]; then echo "check-vulkan-rebar: no frame texture in BAR memory"; exit 1; fi; \
+	       if [ -z "$$lent" ]; then echo "check-vulkan-rebar: the lent-window lane lent nothing"; exit 1; fi; \
+	       if ! echo "$$lent" | grep -q ': 0 of'; then echo "check-vulkan-rebar: $$lent"; exit 1; fi; \
+	    fi; \
+	 done; echo "check-vulkan-rebar: passed"
+
 # The same lanes on any real driver named in DRIVER (gl, glcore, ...),
 # through whatever context the display offers - in CI, llvmpipe under
 # Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
@@ -84,7 +132,7 @@ check-vulkan: all
 RUNNER := $(if $(filter 1,$(GDB)),gdb -q -batch -return-child-result -ex run -ex 'printf "--- fault site ---\n"' -ex 'x/i $$pc' -ex 'info symbol $$pc' -ex 'info registers rax rbx rcx rdx rsi rdi' -ex 'x/4i $$pc-12' -ex 'thread apply all bt 25' --args,)
 
 check-driver: all
-	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
+	@if [ -z "$$DISPLAY" ] && [ "$${OS:-}" != Windows_NT ] && [ "$$(uname -s)" != Darwin ]; then echo "check-driver: no DISPLAY, skipping"; exit 77; fi; \
 	 if [ -z "$(DRIVER)" ]; then echo "check-driver: DRIVER=<video driver> required"; exit 2; fi; \
 	 HARNESS_VIDEO_DRIVER=$(DRIVER) HARNESS_VERBOSE=1 \
 	 ASAN_OPTIONS=detect_leaks=0:abort_on_error=1 \
@@ -101,6 +149,7 @@ check-driver: all
 
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
-	      harness_main.o harness_main.d
+	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
+	      rebar.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
-.PHONY: all check check-vulkan check-driver clean
+.PHONY: all check check-vulkan check-vulkan-rebar check-driver clean

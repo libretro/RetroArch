@@ -282,13 +282,11 @@ static bool gfx_ctx_qnx_set_video_mode(void *data,
       unsigned dims, bool fullscreen) { return true; }
 
 static void gfx_ctx_qnx_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
-   void *qnxinput       = input_driver_init_wrap(&input_qnx, joypad_name);
-
-   *input               = qnxinput ? &input_qnx : NULL;
-   *input_data          = qnxinput;
+   /* no input driver of this context's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 }
 
 static enum gfx_ctx_api gfx_ctx_qnx_get_api(void *data) { return GFX_CTX_OPENGL_ES_API; }

@@ -6,6 +6,7 @@
 //
 
 #import "RetroArchPlaylistManager.h"
+#include "../../../apple_runtime.h"
 #include "../../../playlist.h"
 #include "../../../paths.h"
 #include "../../../retroarch.h"
@@ -263,7 +264,13 @@ typedef void (^PlaylistEntryBlock)(const struct playlist_entry *entry, playlist_
 
     /* URL-safe base64 (base64url) without padding, matching the encoding other
      * front-ends use for their library callbacks. */
-    NSString *encoded = [json base64EncodedStringWithOptions:0];
+    /* -base64EncodedStringWithOptions: is iOS 7 / macOS 10.9; before it
+     * the same encoding is -base64Encoding (deprecated since). */
+    NSString *encoded = apple_runtime_available(APPLE_RUNTIME_VER(10, 9, 0),
+          APPLE_RUNTIME_VER(7, 0, 0), APPLE_RUNTIME_VER(9, 0, 0))
+       ? ((id (*)(id, SEL, unsigned long))objc_msgSend)(json,
+             sel_registerName("base64EncodedStringWithOptions:"), 0UL)
+       : apple_rt_get_id(json, sel_registerName("base64Encoding"));
     encoded = [encoded stringByReplacingOccurrencesOfString:@"+" withString:@"-"];
     encoded = [encoded stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
     encoded = [encoded stringByReplacingOccurrencesOfString:@"=" withString:@""];

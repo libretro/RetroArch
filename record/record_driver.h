@@ -57,13 +57,11 @@ struct record_params
 
    const char *audio_resampler;
 
-   /* Desired output resolution. */
-   unsigned out_width;
-   unsigned out_height;
+   /* Desired output resolution, VIDEO_SCALE_PACK'd. */
+   unsigned out_dims;
 
-   /* Total size of framebuffer used in input. */
-   unsigned fb_width;
-   unsigned fb_height;
+   /* Total size of framebuffer used in input, VIDEO_SCALE_PACK'd. */
+   unsigned fb_dims;
 
    /* Audio channels. */
    unsigned channels;

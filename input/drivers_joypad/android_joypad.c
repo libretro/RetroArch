@@ -288,9 +288,8 @@ static void android_input_set_rumble_internal(
 static bool android_joypad_rumble(unsigned port,
       enum retro_rumble_effect type, uint16_t strength)
 {
-   settings_t *settings            = config_get_ptr();
    struct android_app *android_app = (struct android_app*)g_android;
-   bool enable_device_vibration    = settings->bools.enable_device_vibration;
+   bool enable_device_vibration    = input_config_get_device_vibration();
 
    if (!android_app || !android_app->doVibrate)
       return false;

@@ -13,3 +13,10 @@ S_BOOL(core_updater_auto_backup, CORE_UPDATER_AUTO_BACKUP,
       "Backup Cores When Updating",
       "Automatically create a backup of any installed cores when performing an online update. Enables easy rollback to a working core if an update introduces a regression.")
 #endif
+#if defined(HAVE_NETWORKING) && defined(HAVE_UPDATE_CORES) || defined(SETTINGS_DEF_STRINGS_PASS)
+S_BOOL(core_updater_auto_backup_compress, CORE_UPDATER_AUTO_BACKUP_COMPRESS,
+      "core_updater_auto_backup_compress",
+      DEFAULT_CORE_UPDATER_AUTO_BACKUP_COMPRESS, SD_FLAG_NONE, 0, 0,
+      "Compress Automatic Core Backups",
+      "Store the backup an online update takes of a core compressed, at about half the core's size. When disabled, the replaced core is moved into the backups as it is: updating takes no time compressing it, but each backup takes about twice the space.")
+#endif

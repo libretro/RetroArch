@@ -2,6 +2,7 @@ TARGET       := rzip
 TARGET_TEST  := rzip_chunk_size_test
 TARGET_TEST2 := rzip_matches_buf_test
 TARGET_TEST3 := rzip_codec_test
+TARGET_TEST4 := rzip_parallel_test
 
 LIBRETRO_COMM_DIR := ../../..
 LIBRETRO_DEPS_DIR := ../../../../deps
@@ -23,6 +24,12 @@ endif
 ifeq ($(UNAME), MSYS)
 	TARGET := rzip.exe
 endif
+
+# rzip_stream.c parks its chunk-writer pool on retro_eventcount, so a
+# HAVE_THREADS build links it alongside rthreads.
+THREAD_SOURCES := \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 
 COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
@@ -48,21 +55,25 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_rzstd.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
-	$(LIBRETRO_COMM_DIR)/time/rtime.c
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
+	$(THREAD_SOURCES)
 
 
 SOURCES      := rzip.c $(COMMON_SOURCES)
 SOURCES_TEST := rzip_chunk_size_test.c $(COMMON_SOURCES)
 SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
 SOURCES_TEST3 := rzip_codec_test.c $(COMMON_SOURCES)
+SOURCES_TEST4 := rzip_parallel_test.c $(COMMON_SOURCES)
 
 OBJS      := $(SOURCES:.c=.o)
 OBJS_TEST := $(SOURCES_TEST:.c=.o)
 OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
 OBJS_TEST3 := $(SOURCES_TEST3:.c=.o)
+OBJS_TEST4 := $(SOURCES_TEST4:.c=.o)
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
-CFLAGS += -DHAVE_COMPRESSION -DHAVE_RZSTD -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+CFLAGS += -DHAVE_COMPRESSION -DHAVE_RZSTD -DHAVE_THREADS -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
+LDFLAGS += -lpthread
 
 # Silence "ISO C does not support the 'I64' ms_printf length modifier"
 # warnings when using MinGW
@@ -84,7 +95,7 @@ else
 	CFLAGS += -O2 -DNDEBUG
 endif
 
-all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3)
+all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
@@ -101,7 +112,12 @@ $(TARGET_TEST2): $(OBJS_TEST2)
 $(TARGET_TEST3): $(OBJS_TEST3)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+# The pool sizes itself from cpu_features_get_core_amount(); the test
+# picks the width, so that one symbol is wrapped for this target only.
+$(TARGET_TEST4): $(OBJS_TEST4)
+	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=cpu_features_get_core_amount
+
 clean:
-	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2) $(OBJS_TEST3)
+	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2) $(OBJS_TEST3) $(OBJS_TEST4)
 
 .PHONY: clean

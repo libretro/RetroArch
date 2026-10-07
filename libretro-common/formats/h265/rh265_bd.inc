@@ -726,7 +726,9 @@ static void RH265_FN(deblock_rows)(rh265_dec *d, int y_lo, int y_hi)
    int beta_off = d->sh.beta_offset_div2 * 2;
    int tc_off   = d->sh.tc_offset_div2 * 2;
    int byp      = d->pps->transquant_bypass_enabled;
-   RH265_PEL keep[4 * 2 * 3];
+   /* written by edge_keep_save before edge_keep_restore reads it,
+    * both under the same kp/kq test the compiler cannot correlate */
+   RH265_PEL keep[4 * 2 * 3] = {0};
    int x, y, bs;
 
    if (d->sh.deblocking_filter_disabled)

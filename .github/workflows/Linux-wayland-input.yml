@@ -1,0 +1,141 @@
+name: CI Linux Wayland input
+
+# RetroArch's Wayland input path, run for real: a retroarch built with
+# Wayland and OpenGL is run under Weston - itself a window on a virtual
+# X display, drawing in software - keys are pressed and the pointer is
+# moved in it, and its log is read. It runs the small core of
+# samples/input/windows_wine_smoke, which writes to the log what
+# reaches it.
+#
+# What it holds: that the seat's events - keyboard, pointer - are
+# handled on the frontend's thread and nowhere else, with threaded
+# video and without. They are on an event queue of their own that only
+# the input driver's poll dispatches; on the one queue there used to
+# be, the video thread dispatched them as well. And that keys, the
+# pointer, a fullscreen toggle and the keyboard focus leaving and
+# coming back all still work that way. See
+# samples/input/wayland_smoke/run.sh.
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'input/input_driver.c'
+      - 'input/input_driver.h'
+      - 'input/drivers/wayland_input.c'
+      - 'input/common/wayland_common.*'
+      - 'gfx/common/wayland_common.*'
+      - 'gfx/drivers_context/wayland_ctx.c'
+      - 'gfx/drivers_context/wayland_vk_ctx.c'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/input/wayland_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
+      - '.github/workflows/Linux-wayland-input.yml'
+  pull_request:
+    paths:
+      - 'input/input_driver.c'
+      - 'input/input_driver.h'
+      - 'input/drivers/wayland_input.c'
+      - 'input/common/wayland_common.*'
+      - 'gfx/common/wayland_common.*'
+      - 'gfx/drivers_context/wayland_ctx.c'
+      - 'gfx/drivers_context/wayland_vk_ctx.c'
+      - 'gfx/video_driver.c'
+      - 'gfx/video_thread_wrapper.*'
+      - 'samples/input/wayland_smoke/**'
+      - 'samples/input/windows_wine_smoke/smoke_core.c'
+      - '.github/workflows/Linux-wayland-input.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Only pull requests cancel a superseded run.  On master every push
+# gets its own group (keyed by the commit), so a burst of pushes queues
+# instead of cancelling the run for the commit before it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  linux-wayland-input:
+    name: Run retroarch under Weston and press keys
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 20
+        run: |
+          pkgs="build-essential ccache weston xvfb xdotool x11-apps libwayland-dev wayland-protocols libxkbcommon-dev libdecor-0-dev libegl1-mesa-dev libgl1-mesa-dev libgl1-mesa-dri libudev-dev"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            echo "apt-get update failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 300 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
+          sudo apt-get install -y \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+            $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-
+
+      - name: Build retroarch with Wayland and OpenGL (the rest off)
+        shell: bash
+        run: |
+          set -eu
+          export CCACHE_DIR="$HOME/.ccache"
+          ccache -M 500M
+          ccache -z
+          # What the test runs has to be real: the Wayland context and
+          # input driver, OpenGL, the menu, threads. Everything else is
+          # build time.
+          ./configure --disable-qt --disable-x11 --enable-wayland \
+                      --disable-sdl --disable-sdl2 --disable-ffmpeg \
+                      --disable-vulkan --disable-pulse --disable-discord \
+                      --disable-networking --disable-cheevos \
+                      --disable-glslang --disable-slang \
+                      --disable-spirv_cross --disable-xmb \
+                      --disable-materialui --disable-ozone \
+                      --disable-7zip --disable-flac \
+                      --disable-audiomixer --disable-translate \
+                      --disable-accessibility --disable-crtswitchres \
+                      --disable-langextra --disable-libretrodb \
+                      --disable-video_filter --disable-dsp_filter
+          make -j$(nproc) CC="ccache gcc" CXX="ccache g++"
+          ccache -s
+          test -x retroarch
+
+      - name: Run the scenarios under Weston
+        shell: bash
+        run: |
+          set -eu
+          timeout 600 samples/input/wayland_smoke/run.sh

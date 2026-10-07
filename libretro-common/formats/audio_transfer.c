@@ -192,40 +192,26 @@ static size_t audio_transfer_ogg_page(const uint8_t *buf, size_t size,
  *     they do on a .flac file - none of what made the Vorbis arm's old
  *     Ogg synthesis wrong applies, that having had to invent framing
  *     and granules this does not.  Nor is the stream reassembled: it
- *     is served to the decoder through its own read callback, a block
- *     at a time out of the demuxer, so nothing beyond the frame being
- *     read is copied.
+ *     is handed to the decoder a block at a time where the demuxer
+ *     finds it, so nothing is copied.
  *     Ogg FLAC (RFC 5334) as well, and by the same means: an Ogg page
  *     body is packet bytes with no framing of its own, so the bodies
  *     end to end past the nine-byte mapping header on the first
- *     packet are the native stream, served through the same
- *     callbacks.
+ *     packet are the native stream, handed over the same way.
  *     And demuxed input: the fLaC header as setup and the frames as
  *     delimited packets, which is what the containers above are
- *     reduced to anyway, so it is the same callbacks again.  The
+ *     reduced to anyway, so it is the same feed again.  The
  *     packet set may be grown mid-stream - the bases are read fresh
  *     at every read rather than kept, so a realloc between reads is
  *     no obstacle.
- *   Does not: resume the demuxed path after it has run out of
- *     packets, which is where it falls short of the growth contract
- *     the other demuxed arms meet.  Those decode a packet at a time
- *     and can carry on; this one hands rflac a byte stream and lets
- *     it pull, and a short read is an end of stream to a decoder that
- *     pulls, which it will not take back.
- *
- *     Staying ahead is not simply a matter of growing before each
- *     read.  rflac reads ahead of what it has decoded, by an amount
- *     that is its own business, so a feeder adding one packet a read
- *     still starves - measured, stopping at 9216 frames of 88200 -
- *     while five a read completes.  Driving it from buffer_tell,
- *     three packets of headroom past the cursor was enough on the
- *     same file and two was not.  A feeder should keep a margin and
- *     measure it, which the cursor now permits: it reported nothing
- *     for any of the callback paths until this was looked into, the
- *     arm having read the memory reader's position, which is not the
- *     live source on any of them.
- *
- *     Nor report a length where the STREAMINFO does not state one:
+ *     Running dry is not the end of the stream on any of them: a
+ *     demuxed packet set that grows, or a windowed WebM whose wall is
+ *     raised, resumes at the next read, a frame split across the
+ *     boundary being held by the decoder until the rest arrives.  A
+ *     windowed WebM stalls at its wall (NEXT, nothing produced); the
+ *     demuxed arm, which cannot tell a pause from the end, returns END
+ *     unlatched, as the other demuxed arms do.
+ *   Does not: report a length where the STREAMINFO does not state one:
  *     Ogg FLAC never states one, and neither does a native file piped
  *     rather than seeked.  Seeking still works on those - it is only
  *     the total that is missing, and info() answers 0.
@@ -560,12 +546,11 @@ struct audio_transfer_flac
    size_t      size;
    rflac_t    *handle;  /* opened decoder, NULL until start() succeeds      */
    int         fed_hdr; /* setup bytes handed over                          */
-   int         drained; /* feeder reported end of input                     */
    size_t      cursor;  /* bytes of the logical stream handed to the decoder*/
    /* FLAC inside a container.  rflac wants a native fLaC stream; a
-    * container holds one taken apart, so it is served back to the
-    * decoder a read at a time rather than reassembled into a buffer.
-    * Nothing is copied but the bytes being read.
+    * container holds one taken apart, so it is handed to the decoder a
+    * span at a time where it lies rather than reassembled into a
+    * buffer.  Nothing is copied.
     *
     * Two containers, one shape.  Matroska keeps the header in
     * CodecPrivate and a frame per block.  Ogg (RFC 5334) needs even
@@ -594,6 +579,10 @@ struct audio_transfer_flac
 #ifdef HAVE_RWEBM
    rwebm_t       *demux;
    int            track_idx;
+   /* A windowed caller's resident prefix, given before start() so the
+    * demuxer opens behind it rather than walking the whole buffer; 0
+    * is the whole buffer, as for the other WebM arms. */
+   size_t         avail;
 #endif
    const uint8_t *hdr;
    size_t         hdr_size;
@@ -1963,14 +1952,11 @@ void audio_transfer_set_avail(void *data, enum audio_type_enum type,
 #ifdef HAVE_RFLAC
       case AUDIO_TYPE_FLAC:
       {
-         /* The FLAC arm was absent from this switch entirely, so the
-          * mixer's FLAC lane in voice_set_avail called through to a
-          * default: break - a windowed WEBA-FLAC voice kept whatever
-          * bound its demuxer captured at open, forever. */
          struct audio_transfer_flac *fl = (struct audio_transfer_flac*)data;
          if (!fl)
             return;
 #ifdef HAVE_RWEBM
+         fl->avail = avail;
          if (fl->demux)
             rwebm_set_avail(fl->demux, avail);
 #endif
@@ -2448,9 +2434,6 @@ static int audio_transfer_flac_next(struct audio_transfer_flac *fl)
    return 0;
 }
 
-/* The stream rflac reads: the CodecPrivate header, then every block
- * of the track end to end.  That is exactly a native fLaC stream, so
- * the decoder needs to know nothing about the container. */
 /* Hands the decoder its next span.  The decoder owns no reader of its
  * own, so this is the only thing that moves the stream forward: the
  * setup bytes first, then whatever the container yields, and for a
@@ -2521,16 +2504,12 @@ static size_t audio_transfer_flac_pull(struct audio_transfer_flac *fl,
 
       if (e == RFLAC_PROCESS_ERROR || e == RFLAC_PROCESS_END)
          break;
-      if (wr == 0)
-      {
-         if (fl->drained)
-            break;
-         if (!audio_transfer_flac_feed(fl))
-         {
-            fl->drained = 1;
-            break;
-         }
-      }
+      /* Nothing to give is not the end of the stream: a demuxed
+       * packet set may grow and a windowed WebM may raise its wall, and
+       * the next read picks up there. Every source answers this again
+       * cheaply, so nothing is latched. */
+      if (wr == 0 && !audio_transfer_flac_feed(fl))
+         break;
    }
 
    return produced;
@@ -2568,7 +2547,6 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
          rflac_set_in(fl->handle, (const uint8_t*)fl->data + at,
                fl->size - (size_t)at);
          fl->fed_hdr = 1;
-         fl->drained = 0;
          fl->cursor  = (size_t)at;
          /* The table names the boundary, not the frame; close the
           * remainder by decoding. */
@@ -2593,7 +2571,6 @@ static uint32_t audio_transfer_flac_seek_to(struct audio_transfer_flac *fl,
    /* Rewind every source this arm can have. */
    rflac_reset(fl->handle);
    fl->fed_hdr = 0;
-   fl->drained = 0;
    fl->cursor  = 0;
    fl->pg_off  = 0;
    fl->cur     = NULL;
@@ -2944,8 +2921,8 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
           * mapping header - 0x7F, "FLAC", a version and a packet
           * count - and the native stream follows it, so the page
           * bodies laid end to end past those nine bytes are what
-          * rflac reads.  Served through the same callbacks as the
-          * Matroska path, and nothing is reassembled. */
+          * rflac reads.  Fed the same way as the Matroska path, and
+          * nothing is reassembled. */
          if (fl->data && fl->size >= 28
                && !memcmp(fl->data, "OggS", 4))
          {
@@ -2992,7 +2969,7 @@ bool audio_transfer_start(void *data, enum audio_type_enum type)
             const rwebm_track *at = NULL;
             int                i;
             if (!(fl->demux = audio_transfer_webm_open(
-                        (const uint8_t*)fl->data, fl->size, 0)))
+                        (const uint8_t*)fl->data, fl->size, fl->avail)))
                return false;
             fl->track_idx = -1;
             for (i = 0; i < rwebm_num_tracks(fl->demux); i++)

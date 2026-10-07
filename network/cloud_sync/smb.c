@@ -18,8 +18,12 @@
 #include <string.h>
 #include <time.h>
 
+#ifdef HAVE_RETROSMB
+#include <net/net_smb2_compat.h>
+#else
 #include <smb2/smb2.h>
 #include <smb2/libsmb2.h>
+#endif
 
 #include <retro_miscellaneous.h>
 #include <streams/file_stream.h>
@@ -42,6 +46,20 @@ typedef struct
 } smb_sync_state_t;
 
 static smb_sync_state_t smb_st = {0};
+
+/* The settings, as cloud_sync_capture() found them. */
+static struct
+{
+   char server[256];
+   char share[256];
+   char subdir[PATH_MAX_LENGTH];
+   char user[128];
+   char password[128];
+   char workgroup[64];
+   unsigned auth_mode;
+   unsigned timeout;
+   bool destructive;
+} smb_set;
 
 /* ========== Helpers ========== */
 
@@ -136,17 +154,36 @@ static bool smb_sync_ensure_parent_dir(struct smb2_context *ctx, const char *pat
 
 /* ========== Driver functions ========== */
 
-static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
+static void smb_sync_capture(void)
 {
    settings_t *settings = config_get_ptr();
-   const char *server   = settings->arrays.smb_client_server_address;
-   const char *share    = settings->arrays.smb_client_share;
-   const char *user     = settings->arrays.smb_client_username;
-   const char *password = settings->arrays.smb_client_password;
-   const char *workgroup = settings->arrays.smb_client_workgroup;
-   const char *subdir   = settings->arrays.smb_client_subdir;
-   unsigned auth_mode   = settings->uints.smb_client_auth_mode;
-   unsigned timeout     = settings->uints.smb_client_timeout;
+   strlcpy(smb_set.server, settings->arrays.smb_client_server_address,
+         sizeof(smb_set.server));
+   strlcpy(smb_set.share, settings->arrays.smb_client_share,
+         sizeof(smb_set.share));
+   strlcpy(smb_set.subdir, settings->arrays.smb_client_subdir,
+         sizeof(smb_set.subdir));
+   strlcpy(smb_set.user, settings->arrays.smb_client_username,
+         sizeof(smb_set.user));
+   strlcpy(smb_set.password, settings->arrays.smb_client_password,
+         sizeof(smb_set.password));
+   strlcpy(smb_set.workgroup, settings->arrays.smb_client_workgroup,
+         sizeof(smb_set.workgroup));
+   smb_set.auth_mode   = settings->uints.smb_client_auth_mode;
+   smb_set.timeout     = settings->uints.smb_client_timeout;
+   smb_set.destructive = settings->bools.cloud_sync_destructive;
+}
+
+static bool smb_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
+{
+   const char *server   = smb_set.server;
+   const char *share    = smb_set.share;
+   const char *user     = smb_set.user;
+   const char *password = smb_set.password;
+   const char *workgroup = smb_set.workgroup;
+   const char *subdir   = smb_set.subdir;
+   unsigned auth_mode   = smb_set.auth_mode;
+   unsigned timeout     = smb_set.timeout;
    struct smb2_context *ctx;
    int rc;
 
@@ -405,7 +442,6 @@ static bool smb_update(const char *path, RFILE *rfile,
    char tmp_path[PATH_MAX_LENGTH];
    char backup_path[PATH_MAX_LENGTH];
    struct smb2_stat_64 st;
-   settings_t *settings = config_get_ptr();
    bool keep_old;
    bool had_old;
    int64_t file_size;
@@ -451,7 +487,7 @@ static bool smb_update(const char *path, RFILE *rfile,
 
    had_old  = smb2_stat(smb_st.ctx, smb_path, &st) >= 0;
    keep_old = had_old
-           && !settings->bools.cloud_sync_destructive
+           && !smb_set.destructive
            && !string_is_equal(path, CLOUD_SYNC_SERVER_MANIFEST);
 
    if (had_old)
@@ -499,7 +535,6 @@ static bool smb_free(const char *path,
 {
    char smb_path[PATH_MAX_LENGTH];
    struct smb2_stat_64 st;
-   settings_t *settings = config_get_ptr();
    int rc;
 
    smb_sync_build_path(smb_path, sizeof(smb_path), smb_st.subdir, path);
@@ -520,7 +555,7 @@ static bool smb_free(const char *path,
       return true;
    }
 
-   if (settings->bools.cloud_sync_destructive)
+   if (smb_set.destructive)
    {
       rc = smb2_unlink(smb_st.ctx, smb_path);
       if (rc < 0)
@@ -564,5 +599,7 @@ cloud_sync_driver_t cloud_sync_smb = {
    smb_read,
    smb_update,
    smb_free,
-   "smb"
+   "smb",
+   CLOUD_SYNC_DRIVER_FLG_BLOCKING,
+   smb_sync_capture
 };

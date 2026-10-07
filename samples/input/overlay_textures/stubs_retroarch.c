@@ -84,13 +84,21 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 bool video_driver_texture_can_update(void) { return true; }
 
-bool video_driver_texture_update(uintptr_t id, void *data)
+unsigned stub_drop_updates;
+
+enum video_texture_update video_driver_texture_update(uintptr_t id,
+      void *data)
 {
    const struct texture_image *img = (const struct texture_image*)data;
    if (!id || id > STUB_MAX_TEXTURES || !stub_tex[id - 1].live)
-      return false;
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (stub_drop_updates)
+   {
+      stub_drop_updates--;
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
    stub_tex[id - 1].checksum = stub_checksum(img);
-   return true;
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 uint32_t video_driver_get_disp_flags(void) { return 0; }
@@ -126,6 +134,8 @@ bool stub_thread_wins_race;
 
 static video_thread_async_load_t *stub_in_head,  *stub_in_tail;
 static video_thread_async_load_t *stub_out_head, *stub_out_tail;
+/* The node's list link, which the wrapper keeps first in the node. */
+#define STUB_NEXT(n) (*(video_thread_async_load_t**)&(n)->link.next)
 
 bool video_driver_thread_wrapper_active(void) { return stub_thread_active; }
 
@@ -136,7 +146,7 @@ unsigned stub_video_thread_run(void)
    stub_in_head = stub_in_tail  = NULL;
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = STUB_NEXT(n);
       /* This is where the video thread reads the poster's pixels. */
       if (n->kind == VIDEO_THREAD_ASYNC_LOAD)
       {
@@ -144,11 +154,17 @@ unsigned stub_video_thread_run(void)
          video_driver_texture_load(n->img, n->filter, &id);
          n->handle    = id;
       }
-      else if (!video_driver_texture_update(n->handle, n->img))
-         n->handle    = 0;
-      n->next = NULL;
+      else
+      {
+         enum video_texture_update r = video_driver_texture_update(
+               n->handle, n->img);
+         n->dropped   = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
+         if (r == VIDEO_TEXTURE_UPDATE_REFUSED)
+            n->handle = 0;
+      }
+      STUB_NEXT(n) = NULL;
       if (stub_out_tail)
-         stub_out_tail->next = n;
+         STUB_NEXT(stub_out_tail) = n;
       else
          stub_out_head       = n;
       stub_out_tail          = n;
@@ -158,14 +174,16 @@ unsigned stub_video_thread_run(void)
    return ran;
 }
 
+bool task_is_on_main_thread(void) { return true; }
+
 bool video_thread_async_post(video_thread_async_load_t *n)
 {
    if (!stub_thread_active || !n)
       return false;
-   n->next         = NULL;
+   STUB_NEXT(n)    = NULL;
    n->caller_owned = 1;
    if (stub_in_tail)
-      stub_in_tail->next = n;
+      STUB_NEXT(stub_in_tail) = n;
    else
       stub_in_head       = n;
    stub_in_tail          = n;
@@ -180,10 +198,23 @@ void video_thread_async_poll(void)
    stub_out_head = stub_out_tail = NULL;
    while (n)
    {
-      video_thread_async_load_t *next = n->next;
+      video_thread_async_load_t *next = STUB_NEXT(n);
       if (n->done)
          n->done(n->user, n->handle);
       n = next;
    }
 }
 #endif
+
+/* No driver lends upload memory here: every slot stays the surface's. */
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   (void)id; (void)slot; (void)pitch;
+   return NULL;
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   (void)id; (void)slot;
+   return true;
+}

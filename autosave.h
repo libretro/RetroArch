@@ -23,19 +23,13 @@
 
 RETRO_BEGIN_DECLS
 
-/**
- * autosave_lock:
- *
- * Lock autosave.
- **/
+/* Main-thread SRAM scopes may nest; the outermost unlock publishes
+ * a requested snapshot after core execution and post-frame updates. */
 void autosave_lock(void);
-
-/**
- * autosave_unlock:
- *
- * Unlocks autosave.
- **/
 void autosave_unlock(void);
+
+/* Service requests on the main thread even when no core frames run. */
+void autosave_check(void);
 
 bool autosave_init(bool compress_files, unsigned autosave_interval);
 

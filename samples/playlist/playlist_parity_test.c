@@ -1396,6 +1396,8 @@ static void lane_rebuild_reuses_deferred_install(void)
  * copies playlist.c makes while replacing an entry field are denied;
  * everything else the harness needs keeps working. */
 static bool deny_strdup;
+/* Or denied from the Nth copy on: -1 is off, 0 denies the next one. */
+static int  strdup_allowance = -1;
 
 char *__real_strdup(const char *s);
 
@@ -1403,6 +1405,12 @@ char *__wrap_strdup(const char *s)
 {
    if (deny_strdup)
       return NULL;
+   if (strdup_allowance >= 0)
+   {
+      if (strdup_allowance == 0)
+         return NULL;
+      strdup_allowance--;
+   }
    return __real_strdup(s);
 }
 
@@ -1477,6 +1485,99 @@ static void lane_update_survives_failed_copy(void)
       fprintf(stderr, "  [pass] a failed copy keeps the entry it could not replace\n");
 }
 
+/* playlist_push_runtime() shifted every entry up and then filled the
+ * new top one with strdup() results it never checked, so a copy that
+ * failed partway left the list one entry longer with no path or no
+ * core on top - and the next write put that on disk. The strings are
+ * now made first, and a push that cannot make them leaves the list as
+ * it was. Every point the copies can fail at is tried: for each, the
+ * push either reports failure with the list untouched, or lands
+ * complete. */
+static void lane_push_runtime_survives_failed_copy(void)
+{
+   unsigned had = failures;
+   int      allow;
+
+   for (allow = 0; allow < 8; allow++)
+   {
+      playlist_config_t cfg;
+      playlist_t *pl;
+      struct playlist_entry push;
+      struct playlist_entry rt;
+      const struct playlist_entry *got = NULL;
+      char path[512];
+      bool ok;
+
+      memset(&cfg, 0, sizeof(cfg));
+      snprintf(path, sizeof(path), "%s/oom_rt.lpl", fixture_dir);
+      strlcpy(cfg.path, path, sizeof(cfg.path));
+      cfg.capacity = 16;
+
+      if (!(pl = playlist_init(&cfg)))
+      {
+         CHECK(false, "playlist_init failed");
+         return;
+      }
+
+      memset(&push, 0, sizeof(push));
+      push.path      = (char*)"/games/first.bin";
+      push.label     = (char*)"First";
+      push.core_path = (char*)"/cores/core.so";
+      push.core_name = (char*)"Core";
+      playlist_push(pl, &push);
+      CHECK(playlist_size(pl) == 1, "the first entry was not pushed");
+
+      memset(&rt, 0, sizeof(rt));
+      rt.path            = (char*)"/games/second.bin";
+      rt.core_path       = (char*)"/cores/core.so";
+      rt.runtime_str     = (char*)"00:01:00";
+      rt.last_played_str = (char*)"2026-09-29 19:00:00";
+
+      strdup_allowance = allow;
+      ok = playlist_push_runtime(pl, &rt);
+      strdup_allowance = -1;
+
+      if (!ok)
+      {
+         CHECK(playlist_size(pl) == 1,
+               "after %d copies: a failed push changed the number of entries",
+               allow);
+         playlist_get_index(pl, 0, &got);
+         CHECK(got && got->path && !strcmp(got->path, "/games/first.bin"),
+               "after %d copies: a failed push disturbed the entry on top",
+               allow);
+      }
+      else
+      {
+         CHECK(playlist_size(pl) == 2,
+               "after %d copies: a push that reported success added nothing",
+               allow);
+         playlist_get_index(pl, 0, &got);
+         CHECK(got && got->path && !strcmp(got->path, "/games/second.bin"),
+               "after %d copies: a push that reported success has no path on top",
+               allow);
+         CHECK(got && got->core_path && !strcmp(got->core_path, "/cores/core.so"),
+               "after %d copies: a push that reported success has no core on top",
+               allow);
+         CHECK(got && got->runtime_str && !strcmp(got->runtime_str, "00:01:00"),
+               "after %d copies: a push that reported success lost its runtime",
+               allow);
+         CHECK(got && got->last_played_str
+               && !strcmp(got->last_played_str, "2026-09-29 19:00:00"),
+               "after %d copies: a push that reported success lost its last-played",
+               allow);
+         playlist_get_index(pl, 1, &got);
+         CHECK(got && got->path && !strcmp(got->path, "/games/first.bin"),
+               "after %d copies: the entry that was on top did not move down intact",
+               allow);
+      }
+      playlist_free(pl);
+   }
+
+   if (failures == had)
+      fprintf(stderr, "  [pass] a push that cannot copy its strings leaves the list alone\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1512,6 +1613,7 @@ int main(int argc, char *argv[])
    lane_pump_completes_without_input();
    lane_rebuild_reuses_deferred_install();
    lane_update_survives_failed_copy();
+   lane_push_runtime_survives_failed_copy();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

@@ -5,12 +5,14 @@
  * the whole pipeline runs with no camera attached: avformat opens the
  * source, the poll thread reads packets, the decoder decodes them,
  * swscale converts into the target buffer and the frontend's poll
- * takes it out under the buffer's lock.
+ * takes the newest finished one.
  *
  * That is what this drives. The cases are the ones the driver's
  * threading has to get right and that no eyeball on a webcam would
  * show: start and stop repeatedly, poll while the thread is running,
- * stop while it is mid-frame, and free without stopping first. */
+ * stop while it is mid-frame, free without stopping first, see the
+ * last frame decoded, and take a frame slowly without holding the
+ * thread up. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -31,6 +33,8 @@ static const char *current = "";
 static unsigned frames_seen;
 static unsigned last_width, last_height;
 static uint32_t checksum;
+static int last_px = -1;          /* blue of the first pixel */
+static useconds_t cb_sleep_us;    /* a core slow to take its frame */
 
 static void frame_raw_cb(const uint32_t *buffer, unsigned width,
       unsigned height, size_t pitch)
@@ -41,6 +45,9 @@ static void frame_raw_cb(const uint32_t *buffer, unsigned width,
    last_height = height;
    if (!buffer)
       return;
+   last_px = (int)(buffer[0] & 0xff);
+   if (cb_sleep_us)
+      usleep(cb_sleep_us);
    /* Touch every pixel: a buffer that was freed or is the wrong size
     * shows here under ASan rather than as a wrong-looking picture. */
    for (y = 0; y < height; y++)
@@ -157,6 +164,65 @@ int main(void)
        * without stopping the camera does exactly this. */
       camera_ffmpeg.free(h);
       printf("      freed with the thread still running\n");
+   }
+
+   /* A source of eight frames whose grey level is 16 per frame: once
+    * the thread has decoded the last, a poll hands out that one - the
+    * frame just finished, not the one before it. */
+   printf("   a poll hands out the newest finished frame\n");
+   current = "newest frame";
+   h = camera_ffmpeg.init(
+         "color=c=black:size=320x240:rate=25,format=gray,geq=lum='N*16',trim=end_frame=8",
+         CAPS, VIDEO_SCALE_PACK(320, 240));
+   CHECK(h != NULL, "the driver would not open the counting source");
+   if (h)
+   {
+      int seen = -1, stable = 0;
+      CHECK(camera_ffmpeg.start(h), "start failed");
+      for (i = 0; i < 300 && stable < 15; i++)
+      {
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+         if (last_px == seen)
+            stable++;
+         else
+            stable = 0;
+         seen = last_px;
+         usleep(20000);
+      }
+      printf("      settled on grey %d\n", seen);
+      CHECK(seen >= 7 * 16 - 4 && seen <= 7 * 16 + 4,
+            "the last frame is grey %d, the poll shows %d", 7 * 16, seen);
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
+   }
+
+   /* A core that takes its time over a frame: the thread goes on
+    * decoding meanwhile, so the next poll is many frames on. A thread
+    * held off for the length of the callback would be one frame on at
+    * most. */
+   printf("   a slow poll does not hold the thread up\n");
+   current = "slow poll";
+   h = camera_ffmpeg.init(
+         "color=c=black:size=320x240:rate=100,format=gray,geq=lum='mod(N,256)',realtime",
+         CAPS, VIDEO_SCALE_PACK(320, 240));
+   CHECK(h != NULL, "the driver would not open the paced source");
+   if (h)
+   {
+      int before, after, moved;
+      CHECK(camera_ffmpeg.start(h), "start failed");
+      CHECK(poll_until_frame(h, 100), "no frame arrived");
+      usleep(100000);
+      cb_sleep_us = 300000;
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      cb_sleep_us = 0;
+      before = last_px;
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      after = last_px;
+      moved = (after - before + 256) % 256;
+      printf("      %d frame(s) on after a 300 ms callback\n", moved);
+      CHECK(moved >= 5, "the thread decoded %d frame(s) during a 300 ms poll", moved);
+      camera_ffmpeg.stop(h);
+      camera_ffmpeg.free(h);
    }
 
    printf("   polling a camera that was never started\n");

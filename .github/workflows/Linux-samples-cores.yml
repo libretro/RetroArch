@@ -41,7 +41,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -53,6 +53,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -90,19 +107,22 @@ jobs:
           # format set to libavfilter, a filter graph is the device and
           # the whole pipeline runs with no camera attached - avformat
           # opens the source, the poll thread reads, the decoder
-          # decodes, swscale converts and poll() takes the frame out
-          # under the buffer's lock.
+          # decodes, swscale converts and poll() takes the newest
+          # finished frame.
           #
           # The cases are the ones the threading has to get right and
           # that no eyeball on a webcam would show: start and stop
           # repeatedly, stop while the thread is mid-frame, free
-          # without stopping, poll before starting, and a source that
-          # does not exist.
+          # without stopping, poll before starting, a source that
+          # does not exist, a poll that must show the last frame
+          # decoded, and a slow poll the thread must not wait on. Leak
+          # checking is on: a packet or plane kept per frame or per
+          # start is a leak report.
           make clean all
           ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test"
           make clean all SANITIZER=address,undefined
-          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
              timeout 600 ./ffmpeg_live_test
           echo "[pass] ffmpeg_live_test (ASan)"
           make clean all SANITIZER=thread
@@ -139,6 +159,32 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
              timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (TSan)"
+          # The standalone core's own makefiles: a link with
+          # --no-undefined is the check their source lists are whole,
+          # and a dry run with GL (no GL headers here) the check that
+          # the GL build's list resolves. The sample's objects share
+          # paths with the core's libretro-common ones: cleaned first.
+          make clean
+          make -n -C ../../../cores/libretro-ffmpeg OPENGL=1 >/dev/null
+          make -C ../../../cores/libretro-ffmpeg -j2 OPENGL=0 HAVE_SSA=0
+          make -C ../../../cores/libretro-ffmpeg clean OPENGL=0 HAVE_SSA=0
+          echo "[pass] standalone ffmpeg core links"
+
+      - name: Build and run ffmpeg_finished_wait_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/cores/ffmpeg_finished_wait
+        run: |
+          set -eu
+          # The main thread's wait for a finished video slot ends when
+          # the decode thread does, at the end of a clip, instead of
+          # holding retro_run() on a slot nothing will finish.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 60 ./ffmpeg_finished_wait_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=../ffmpeg_audio_pipe/tsan.supp \
+             timeout 60 ./ffmpeg_finished_wait_test
+          echo "[pass] ffmpeg_finished_wait_test"
 
       - name: Build and run ffmpeg_audio_pipe_test (ASan + UBSan, TSan)
         shell: bash

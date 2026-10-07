@@ -17,6 +17,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path.c \
 	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
 	$(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
@@ -32,9 +33,12 @@ SOURCES := \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_RPNG \
+# image_texture.c is here for the narrowing gfx_surface.c calls; its
+# loaders are dropped at the link rather than chased through the
+# transfer code.
+CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_RPNG -ffunction-sections \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include
-LDFLAGS += -lm
+LDFLAGS += -Wl,--gc-sections -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

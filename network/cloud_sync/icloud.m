@@ -328,5 +328,6 @@ cloud_sync_driver_t cloud_sync_icloud = {
    icloud_read,
    icloud_update,
    icloud_delete,
-   "icloud" /* ident */
+   "icloud", /* ident */
+   0 /* flags */
 };

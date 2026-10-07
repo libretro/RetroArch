@@ -75,10 +75,17 @@ else
 	HAVE_VITAGL		:= 0
    endif
 	HAVE_NETWORKING		:= 1
-	HAVE_BUILTINMBEDTLS	:= 1
+	# the cleanroom crypto, keychain and TLS client
+	HAVE_CRYPTO		:= 1
+	HAVE_KEYCHAIN		:= 1
+	HAVE_RETROSSL		:= 1
 	HAVE_IFINFO		:= 1
 	HAVE_NETPLAYDISCOVERY	:= 1
 	HAVE_SOCKET_LEGACY	:= 1
+	# the built-in NFS client (nfs://); it needs no crypto
+	HAVE_RETRONFS		:= 1
+	# the built-in SMB client (smb://), on the crypto above
+	HAVE_RETROSMB		:= 1
 	HAVE_MENU		:= 1
 	HAVE_MENU_COMMON	:= 1
 	HAVE_GFX_WIDGETS 	:= 1

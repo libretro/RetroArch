@@ -26,6 +26,10 @@
 #include <string/stdstring.h>
 #include <net/net_compat.h>
 
+#ifdef GEKKO_NATIVE
+#include <unistd.h>
+#endif
+
 #if defined(_WIN32) && !defined(_XBOX)
 #ifdef _MSC_VER
 #pragma comment(lib, "Iphlpapi")
@@ -215,7 +219,7 @@ failure:
       if (!R_SUCCEEDED(rc))
          return true;
    }
-#elif defined(_3DS)
+#elif defined(_3DS) || defined(GEKKO_NATIVE)
    addr = gethostid();
 #else
    addr = net_gethostip();

@@ -58,7 +58,14 @@ HAVE_RVORBIS = 1
 HAVE_RMODTRACKER = 1
 HAVE_CORE_INFO_CACHE = 1
 HAVE_CLOUDSYNC = 1
-HAVE_SSL = 1
+# The cleanroom crypto, keychain and TLS 1.2/1.3 client; nothing to link.
+HAVE_CRYPTO = 1
+HAVE_KEYCHAIN = 1
+HAVE_RETROSSL = 1
+# The built-in NFS client (nfs://); it needs no crypto.
+HAVE_RETRONFS = 1
+# The built-in SMB client (smb://), on the crypto above.
+HAVE_RETROSMB = 1
 
 # RetroArch libnx useful flags
 HAVE_THREADS = 1
@@ -150,7 +157,7 @@ LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,--allow-multiple-de
 # add things from Makefile.common
 CFLAGS += $(DEF_FLAGS)
 
-LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lmbedtls -lmbedx509 -lmbedcrypto -lnx -lm
+LIBS := -lswresample -lavformat -lavcodec -lavutil -lswscale -lstdc++ -lbz2 -lpng -lz -lnx -lvpx -lopus -llzma -lnx -lm
 
 ifeq ($(HAVE_OPENGL), 1)
   LIBS := -lEGL -lglapi -ldrm_nouveau $(LIBS)

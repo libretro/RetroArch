@@ -204,9 +204,6 @@ enum gfx_thumbnail_flags
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
    GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
    GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3),
-   /* 'texture' is the animation surface's, which owns and unloads it;
-    * clear while it is a still the thumbnail unloads itself. */
-   GFX_THUMB_FLAG_TEX_SURFACE = (1 << 4),
    /* The animation's decode is behind the file's rate and the stream
     * has been asked to pass over droppable pictures until it catches
     * up. Cleared the moment a frame lands on time. */
@@ -240,6 +237,7 @@ enum gfx_thumbnail_flags
  * happened; do not reintroduce it. */
 typedef struct
 {
+   /* The animation surface's, which owns and unloads it */
    uintptr_t texture;
    /* Animated thumbnail state (all main-thread only). 'anim' is a
     * streaming image_transfer handle which BORROWS 'anim_buf'; both
@@ -262,10 +260,11 @@ typedef struct
     * of the two uploads next. */
    void *anim_job;
    void *anim_job2;
-   /* The streaming GPU surface (gfx_surface_t*) the animation's frames
-    * are decoded into and shown from: one persistent texture updated
-    * per frame, kept after the animation ends so its last frame stays
-    * as the still. Freed by gfx_thumbnail_reset. */
+   /* The GPU surface (gfx_surface_t*) the still goes to, and the
+    * animation's frames are decoded into and shown from: one
+    * persistent texture updated per frame, kept after the animation
+    * ends so its last frame stays as the still. Freed by
+    * gfx_thumbnail_reset. */
    void *anim_surface;
    size_t anim_buf_len;    /* size of anim_buf                         */
    int64_t anim_next_us;   /* time the next frame is due (0 = at once) */

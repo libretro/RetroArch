@@ -31,12 +31,10 @@
  * calls into it - so the type has to exist there even though nothing
  * uses it. */
 #include <rthreads/retro_eventcount.h>
-#ifdef HAVE_THREADS
+/* Declarations only, with or without threads: the state holds lock and
+ * condition pointers either way. Declaring the types here instead would
+ * repeat typedefs a C89 compiler refuses once a file includes both. */
 #include <rthreads/rthreads.h>
-#else
-typedef struct slock slock_t;
-typedef struct scond scond_t;
-#endif
 #include <retro_inline.h>
 #include <libretro.h>
 #include <retro_miscellaneous.h>
@@ -119,6 +117,16 @@ typedef struct audio_mixer_stream_params
    size_t avail;
 } audio_mixer_stream_params_t;
 #endif
+
+/* What a driver's own device thread was scheduled under */
+enum audio_thread_grant
+{
+   AUDIO_THREAD_GRANT_NONE = 0, /* no such thread */
+   AUDIO_THREAD_GRANT_NORMAL,   /* not raised */
+   AUDIO_THREAD_GRANT_REFUSED,  /* asked, refused */
+   AUDIO_THREAD_GRANT_RAISED,   /* a higher priority */
+   AUDIO_THREAD_GRANT_MMCSS     /* the MMCSS Pro Audio class */
+};
 
 typedef struct audio_driver
 {
@@ -411,6 +419,11 @@ typedef struct audio_driver
     * shifts every driver's initialiser by one and the compiler will
     * not always say so; that has broken the Android build before. */
    bool (*device_clock_ppm)(void *data, double *ppm);
+
+   /* What the driver's own device thread was scheduled under, for the
+    * statistics overlay; read from any thread. NULL where a driver
+    * runs no thread of its own. */
+   enum audio_thread_grant (*thread_grant)(void *data);
 } audio_driver_t;
 
 /* What a driver's device-clock word holds until it has an estimate.
@@ -693,6 +706,15 @@ typedef struct
     * pipe's target then, not just a frame. Consumer thread only after
     * init. */
    bool     pipe_priming;
+   /* How the consumer fared against the core after priming, said once
+    * at teardown beside the driver's silence count: the passes that
+    * found the pipe short and had to wait for the core, the longest
+    * such wait, and the least the pipe held at the start of a pass
+    * (kept as frames + 1, so zero is no pass yet).  Consumer writes,
+    * the main thread reads at teardown. */
+   retro_atomic_size_t pipe_source_waits;
+   retro_atomic_size_t pipe_source_wait_max_us;
+   retro_atomic_size_t pipe_held_min1;
    /* The audio thread's own copy of AUDIO_FLAG_PIPELINE_THREADED. Set
     * before the wrapper thread is released and cleared after it is
     * joined, so the thread never reads the flags word - which the main
@@ -761,6 +783,13 @@ typedef struct
     * interval its audio takes at 1.0x */
    retro_time_t avg_flush_delta;
    double avg_expected_delta;
+
+   /* The menu's silence at Menu Frame Rate 'Display Rate' is measured
+    * out by the clock rather than by the content's frame: when it was
+    * last fed (0 = not feeding by the clock), and the fraction of a
+    * frame the last feed left owing. */
+   retro_time_t menu_feed_last;
+   double menu_feed_frac;
 
    /* Rate-limit state for the DRC compute.
     *
@@ -903,7 +932,7 @@ typedef struct
    unsigned      out_channels;
    /* The multi-channel batch entry (RETRO_ENVIRONMENT_GET_AUDIO_
     * SAMPLE_BATCH_MULTI): the layout the core last delivered, and
-    * the stereo fold of a batch, grown to the largest batch seen. The
+    * the stereo fold of a batch slice, a fixed region of arena_float. The
     * pipeline carries stereo; a core's wider frame is folded here at
     * the boundary, and the device's upmix widens the stereo again.
     * core_layout is stereo until the core delivers something else,
@@ -988,12 +1017,16 @@ typedef struct
     * has been published since. The core's first audio after a resume
     * starts at pipe_fade_in_at: the consumer never takes a chunk across
     * it and arms the resume ramp on reaching it, through pipe_arm_fade,
-    * consumer thread only. */
+    * consumer thread only. pipe_fade_in_mark is (sequence << 1) | armed,
+    * written by the main thread alone; the consumer records the sequence
+    * it has acted on in pipe_fade_in_seen instead of clearing the mark,
+    * so a mark published while it reads is never cleared unseen. */
    retro_atomic_size_t pipe_discard_to;
    retro_atomic_int_t  pipe_discard_gen;
    int                 pipe_discard_seen;
    retro_atomic_size_t pipe_fade_in_at;
-   retro_atomic_int_t  pipe_fade_in_set;
+   retro_atomic_int_t  pipe_fade_in_mark;
+   unsigned            pipe_fade_in_seen;
    bool                pipe_arm_fade;
    uint8_t pipe_transport_follow;
    /* Mutually exclusive with pipe_transport; shares its output storage. */
@@ -1398,7 +1431,18 @@ size_t audio_driver_sample_batch_rewind(
 #endif
 
 #ifdef HAVE_MENU
-void audio_driver_menu_sample(void);
+/**
+ * audio_driver_menu_sample:
+ * @by_clock : feed the silence the clock says has played since the last
+ *             feed, rather than one content frame of it.
+ *
+ * Feeds the device silence while the core is not running behind the
+ * menu, with the menu sounds, the mixer and thumbnail audio mixed in.
+ * One content frame per call holds a blocking writer to the content's
+ * rate; by the clock, with a non-blocking writer, the device is kept fed
+ * at whatever rate the menu runs.
+ **/
+void audio_driver_menu_sample(bool by_clock);
 #endif
 
 extern audio_driver_t audio_rsound;
@@ -1488,6 +1532,8 @@ void audio_driver_set_float_gate(audio_driver_float_gate_t gate);
 /* Periods the device played silence for want of audio since the driver
  * was initialised, where the driver counts them; 0 otherwise. */
 size_t audio_driver_get_underruns(void);
+
+enum audio_thread_grant audio_driver_get_thread_grant(void);
 
 /* Whether a driver has asked to be reinitialised since the last call;
  * clears the request. The runloop calls this once a frame, on the main

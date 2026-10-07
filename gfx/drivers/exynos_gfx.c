@@ -41,6 +41,8 @@
 #endif
 
 #include "../common/drm_common.h"
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 #include "../../verbosity.h"
 #include "../../configuration.h"
@@ -1079,6 +1081,13 @@ static int exynos_init_font(struct exynos_video *vid)
       vid->font_color = ((b < 0 ? 0 : (b > 15 ? 15 : b)) << 0) |
          ((g < 0 ? 0 : (g > 15 ? 15 : g)) << 4) |
          ((r < 0 ? 0 : (r > 15 ? 15 : r)) << 8);
+      /* The atlas may grow when a message needs more glyphs than it holds;
+       * the glyphs are blitted from it in memory, so there is no texture
+       * to make again */
+      {
+         struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+         grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+      }
    }
    else
    {
@@ -1119,61 +1128,76 @@ static int exynos_render_msg(struct exynos_video *vid,
 
    atlas = vid->font_driver->get_atlas(vid->font);
 
-   for (; *msg; ++msg)
    {
-      int base_x, base_y;
-      int glyph_width, glyph_height;
-      int max_width, max_height;
-      const uint8_t *src = NULL;
-      const struct font_glyph *glyph = vid->font_driver->get_glyph(vid->font, (uint8_t)*msg);
-      if (!glyph)
-         continue;
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int line_x                             = msg_base_x;
+      int line_y                             = msg_base_y;
 
-      base_x       = msg_base_x + glyph->draw_offset_x;
-      base_y       = msg_base_y + glyph->draw_offset_y;
-      max_width    = dst->width - base_x;
-      max_height   = dst->height - base_y;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      glyph_width  = glyph->width;
-      glyph_height = glyph->height;
-
-      src = atlas->buffer + glyph->atlas_offset_x + glyph->atlas_offset_y * atlas->width;
-
-      if (base_x < 0)
-      {
-         src -= base_x;
-         glyph_width += base_x;
-         base_x = 0;
-      }
-
-      if (base_y < 0)
-      {
-         src -= base_y * (int)atlas->width;
-         glyph_height += base_y;
-         base_y = 0;
-      }
-
-      if (max_width <= 0 || max_height <= 0)
-         continue;
-
-      if (glyph_width > max_width)
-         glyph_width = max_width;
-      if (glyph_height > max_height)
-         glyph_height = max_height;
-
-      exynos_put_glyph_rgba4444(pdata, src, vid->font_color,
-            glyph_width, glyph_height,
-            atlas->width, base_x, base_y);
-
-      msg_base_x += glyph->advance_x;
-      msg_base_y += glyph->advance_y;
+      /* UTF-8, each line one line height below the last */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         line_x = msg_base_x; \
+         line_y = msg_base_y + (line) * line_h; \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         int base_x, base_y; \
+         int glyph_width, glyph_height; \
+         int max_width, max_height; \
+         const uint8_t *src = NULL; \
+         base_x       = (line_x + (pen_x)) + glyph->draw_offset_x; \
+         base_y       = (line_y + (pen_y)) + glyph->draw_offset_y; \
+         max_width    = dst->width - base_x; \
+         max_height   = dst->height - base_y; \
+         glyph_width  = VIDEO_SCALE_W(glyph->dims); \
+         glyph_height = VIDEO_SCALE_H(glyph->dims); \
+         src = atlas->buffer + VIDEO_SCALE_W(glyph->atlas_pos) \
+            + VIDEO_SCALE_H(glyph->atlas_pos) * atlas->width; \
+         if (base_x < 0) \
+         { \
+            src -= base_x; \
+            glyph_width += base_x; \
+            base_x = 0; \
+         } \
+         if (base_y < 0) \
+         { \
+            src -= base_y * (int)atlas->width; \
+            glyph_height += base_y; \
+            base_y = 0; \
+         } \
+         if (max_width <= 0 || max_height <= 0) \
+            break; \
+         if (glyph_width > max_width) \
+            glyph_width = max_width; \
+         if (glyph_height > max_height) \
+            glyph_height = max_height; \
+         exynos_put_glyph_rgba4444(pdata, src, vid->font_color, \
+               glyph_width, glyph_height, \
+               atlas->width, base_x, base_y); \
+      } while (0)
+#include "../font_layout.h"
    }
 
    return exynos_blend_font(pdata);
 }
 
-static void *exynos_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *exynos_init(const video_info_t *video)
 {
    struct exynos_video *vid;
    const unsigned fb_bpp = 4; /* Use XRGB8888 framebuffer. */
@@ -1220,8 +1244,6 @@ static void *exynos_init(const video_info_t *video,
    exynos_perf_init(&vid->data->perf);
 #endif
 
-   if (input && input_data)
-      *input = NULL;
 
    if (exynos_init_font(vid) != 0)
    {
@@ -1283,10 +1305,12 @@ static void exynos_free(void *data)
    free(vid);
 }
 
-static bool exynos_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool exynos_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct exynos_video *vid = data;
    struct exynos_page *page = NULL;
 #ifdef HAVE_MENU
@@ -1298,7 +1322,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
 
    if (frame)
    {
-      if (vid->dims != VIDEO_SCALE_PACK(width, height))
+      if (vid->dims != dims)
       {
          /* Sanity check on new dimension parameters. */
          if (width == 0 || height == 0)
@@ -1309,7 +1333,7 @@ static bool exynos_frame(void *data, const void *frame, unsigned width,
                width, height);
          exynos_setup_scale(vid->data, width, height, vid->bytes_per_pixel);
 
-         vid->dims   = VIDEO_SCALE_PACK(width, height);
+         vid->dims   = dims;
       }
 
       page = exynos_free_page(vid->data);

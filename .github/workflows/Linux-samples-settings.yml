@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -39,6 +39,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -64,6 +81,22 @@ jobs:
           echo "/usr/lib/ccache" >> "$GITHUB_PATH"
           ccache -M 500M
           ccache -z
+
+      - name: Settings lists have room for what they are given
+        shell: bash
+        run: |
+          set -eu
+          # configuration.c builds each list of settings into an array
+          # of a fixed size. One setting too many for its list wrote
+          # past the end of the array, and RetroArch died of heap
+          # corruption at startup: two per-port string settings did it
+          # to the string list. The lists now refuse what they have no
+          # room for; this counts, in the preprocessed source and for
+          # each build profile, what every list is given against the
+          # size it is allocated with, so that the next one is found
+          # here.
+          timeout 300 python3 tools/settings_capacity_check.py
+          echo "[pass] settings_capacity_check"
 
       - name: Build and run pipeline_migration_test (ASan + UBSan)
         shell: bash

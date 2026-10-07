@@ -17,6 +17,9 @@
  *   writers. One call per line now, prefix, tag and formatted body
  *   together, and the "[WARN] :: " oddity gone.
  *
+ * The plain macros take any format, a variable as well as a literal,
+ * and also ship one formatted line with their prefix or level.
+ *
  * Build selects the region with -DIS_SALAMANDER / -DORBIS; the
  * build script runs all four combinations.
  */
@@ -120,8 +123,50 @@ static void drive_err_v(const char *fmt, ...)
    va_end(ap);
 }
 
+/* A format the compiler cannot see as a literal. */
+static const char *runtime_format(const char *fmt)
+{
+   return sink_calls < 1000 ? fmt : "";
+}
+
 int main(void)
 {
+   const char *fmt;
+
+   reset();
+   fmt = runtime_format("scan of \"%s\" failed\n");
+   RARCH_ERR(fmt, "a.lpl");
+   CHECK(sink_calls == 1,
+         "ERR with a variable format made %u sink calls, want 1",
+         sink_calls);
+   CHECK(strstr(sink_text, "scan of \"a.lpl\" failed") != NULL,
+         "ERR with a variable format not formatted: \"%.80s\"",
+         sink_text);
+#ifdef ORBIS
+   CHECK(sink_level == DEBUGNET_ERROR,
+         "ERR level %d, want DEBUGNET_ERROR", sink_level);
+#else
+   CHECK(strncmp(sink_text, "[ERROR] ", 8) == 0,
+         "ERR prefix missing: \"%.80s\"", sink_text);
+#endif
+
+   reset();
+   fmt = runtime_format("%d cores\n");
+   RARCH_LOG(fmt, 12);
+   CHECK(sink_calls == 1 && strstr(sink_text, "12 cores") != NULL,
+         "LOG with a variable format: %u calls, \"%.80s\"", sink_calls,
+         sink_text);
+#if defined(IS_SALAMANDER) && !defined(ORBIS)
+   CHECK(strncmp(sink_text, "RetroArch Salamander: ", 22) == 0,
+         "salamander LOG prefix missing: \"%.80s\"", sink_text);
+#endif
+
+   reset();
+   RARCH_WARN("plain %s\n", "literal");
+   CHECK(sink_calls == 1 && strstr(sink_text, "plain literal") != NULL,
+         "WARN with a literal: %u calls, \"%.80s\"", sink_calls,
+         sink_text);
+
    /* One call, formatted body present, tag present. */
    reset();
    drive_log_v("mode %ux%u set\n", 640u, 480u);

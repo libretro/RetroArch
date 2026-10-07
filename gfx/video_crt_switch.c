@@ -56,6 +56,7 @@
 
 /* Forward declarations */
 static void crt_adjust_ini(videocrt_switch_t *p_switch);
+static char *get_game_name(char *full_path);
 
 /* Global local variables */
 static bool ini_overrides_loaded = false;
@@ -504,6 +505,12 @@ static void switch_res_crt(
             path_get(RARCH_PATH_CONTENT),
             sizeof(current_content_dir));
 
+      /* The name crt_adjust_ini() records, so a content that has not
+       * changed is not taken for a new one on every mode change */
+      strlcpy(current_content_name,
+            get_game_name((char*)path_get(RARCH_PATH_BASENAME)),
+            sizeof(current_content_name));
+
       if (     !string_is_equal(core_name,   current_core_name)
             || !string_is_equal(content_dir, current_content_dir)
             || !string_is_equal(current_content_name ,content_name))
@@ -548,10 +555,26 @@ static void switch_res_crt(
       }
 #endif
 
-      /* Geometry sliders straight onto the generator policy */
-      gen->h_size  = 1 + ((float)p_switch->porch_adjust / 100.0);
-      gen->h_shift = p_switch->center_adjust;
-      gen->v_shift = p_switch->vert_adjust;
+      /* Geometry onto the generator policy: a value the
+       * core/directory/game .switchres.ini set holds until its own
+       * slider is moved, after which the slider wins. Written on
+       * every switch because the generator clamps them in place. */
+      if (p_switch->porch_adjust != p_switch->tmp_porch_adjust)
+         p_switch->ini_geom &= ~CRT_INI_GEOM_H_SIZE;
+      if (p_switch->center_adjust != p_switch->tmp_center_adjust)
+         p_switch->ini_geom &= ~CRT_INI_GEOM_H_SHIFT;
+      if (p_switch->vert_adjust != p_switch->tmp_vert_adjust)
+         p_switch->ini_geom &= ~CRT_INI_GEOM_V_SHIFT;
+
+      gen->h_size  = (p_switch->ini_geom & CRT_INI_GEOM_H_SIZE)
+                   ? p_switch->ini_h_size
+                   : 1 + ((float)p_switch->porch_adjust / 100.0);
+      gen->h_shift = (p_switch->ini_geom & CRT_INI_GEOM_H_SHIFT)
+                   ? p_switch->ini_h_shift
+                   : p_switch->center_adjust;
+      gen->v_shift = (p_switch->ini_geom & CRT_INI_GEOM_V_SHIFT)
+                   ? p_switch->ini_v_shift
+                   : p_switch->vert_adjust;
 
       RARCH_DBG("[CRT] %dx%d rotation: %d rotated: %d core rotation:%d\n", w, h, p_switch->rotated, flags & MODELINE_REQ_ROTATED, retroarch_get_rotation());
       mode = modeline_get(gen, &p_switch->ops, VIDEO_SCALE_PACK(w, h), rr, flags);
@@ -820,8 +843,23 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       ini_overrides_loaded = false;
    }
 
+   /* The RetroArch geometry sliders are the base the override files
+    * refine, so they go onto the generator first; whatever the files
+    * change is recorded and outlives the per-switch rewrite in
+    * switch_res_crt() until that slider is moved. The slider state
+    * is taken as seen, so a value carried in from the config does
+    * not count as a move on the first switch. */
+   p_switch->ini_geom          = 0;
+   p_switch->tmp_porch_adjust  = p_switch->porch_adjust;
+   p_switch->tmp_center_adjust = p_switch->center_adjust;
+   p_switch->tmp_vert_adjust   = p_switch->vert_adjust;
+   p_switch->gen->h_size       = 1 + ((float)p_switch->porch_adjust / 100.0);
+   p_switch->gen->h_shift      = p_switch->center_adjust;
+   p_switch->gen->v_shift      = p_switch->vert_adjust;
+
    if (core_name[0] != '\0')
    {
+      video_modeline_gen_t *gen = p_switch->gen;
       char config_directory[DIR_MAX_LENGTH];
       /* config/Core Name/Core Name.switchres.ini, then the content
        * directory, then the game */
@@ -834,5 +872,24 @@ static void crt_adjust_ini(videocrt_switch_t *p_switch)
       crt_load_overlay(p_switch, config_directory, content_dir, "content directory");
       crt_load_overlay(p_switch, config_directory, content_name, "game");
       crt_apply_server_policy(p_switch);
+
+      if (gen->h_size != 1 + ((float)p_switch->porch_adjust / 100.0))
+      {
+         p_switch->ini_h_size  = gen->h_size;
+         p_switch->ini_geom   |= CRT_INI_GEOM_H_SIZE;
+      }
+      if (gen->h_shift != p_switch->center_adjust)
+      {
+         p_switch->ini_h_shift = gen->h_shift;
+         p_switch->ini_geom   |= CRT_INI_GEOM_H_SHIFT;
+      }
+      if (gen->v_shift != p_switch->vert_adjust)
+      {
+         p_switch->ini_v_shift = gen->v_shift;
+         p_switch->ini_geom   |= CRT_INI_GEOM_V_SHIFT;
+      }
+      if (p_switch->ini_geom)
+         RARCH_LOG("[CRT] Geometry from switchres.ini overrides: h_size %.3f h_shift %d v_shift %d.\n",
+               gen->h_size, gen->h_shift, gen->v_shift);
    }
 }

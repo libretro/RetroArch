@@ -6,6 +6,6 @@
 
 S_BOOL(camera_allow, CAMERA_ALLOW,
       "camera_allow",
-      false, SD_FLAG_NONE, 0, 0,
+      false, SD_FLAG_NONE, 0, CMD_EVENT_CAMERA_ALLOW_APPLY,
       "Allow Camera",
       "Allow cores to access the camera.")

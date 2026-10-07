@@ -36,7 +36,7 @@
  *     { "Authorization", "Basic eA==", "Depth", "1", NULL }
  *
  * and hands response headers back as a single lower-cased blob that
- * has to be split into the "Name: Value" string_list that net_http.c
+ * has to become the "Name: Value" header block that net_http.c
  * produces, so that consumers such as network/cloud_sync/webdav.c see
  * the same shape on both backends.
  *
@@ -46,11 +46,13 @@
  * logged "Response headers not supported, webdav won't work" and did
  * exactly that.
  *
- * Both functions are static to task_http_emscripten.c and the file
- * only builds under emcc, so this test keeps behavioural copies as
- * the oracle -- the same convention http_method_match_test.c and
+ * The request side is static to task_http_emscripten.c and the file
+ * only builds under emcc, so this test keeps a behavioural copy of it
+ * as the oracle -- the same convention http_method_match_test.c and
  * archive_name_safety_test.c use.  If the backend changes how it
- * marshals headers, update the copies here to match.
+ * marshals request headers, update the copy here to match.  The
+ * response side is net_http_headers_compact() in net_http.c, which the
+ * backend calls and this test links: no copy to drift.
  *
  * The parsing is where the sharp edges are: hand-built blobs in
  * task_push_webdav_move() and task_push_http_transfer_with_content()
@@ -71,6 +73,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <net/net_http.h>
 
 static int failures;
 static int checks;
@@ -185,72 +188,30 @@ error:
    return NULL;
 }
 
-/* Response side: split the blob into "Name: Value" lines.  The real
- * one appends to a string_list; this collects into a plain array so
- * the test stays dependency-free. */
-static char **http_response_headers_split(const char *blob, size_t *count)
+/* Response side: the real net_http_headers_compact(), run as the
+ * backend runs it (a copy of the blob with one spare byte), and the
+ * resulting block indexed into lines that point into it.  The block is
+ * returned through *block for the caller to free. */
+static char **http_response_headers_split(const char *blob, size_t *count,
+      char **block)
 {
-   char  *raw;
-   char  *p;
-   char **out;
-   size_t cap = 16;
-   size_t n   = 0;
+   static char *lines[64];
+   const char *h;
    size_t len = blob ? strlen(blob) : 0;
+   size_t n   = 0;
 
    *count = 0;
-   if (!len)
+   *block = NULL;
+   if (!len || !(*block = (char*)malloc(len + 2)))
       return NULL;
-
-   if (!(raw = (char*)malloc(len + 1)))
-      return NULL;
-   memcpy(raw, blob, len + 1);
-
-   if (!(out = (char**)calloc(cap + 1, sizeof(char*))))
-   {
-      free(raw);
-      return NULL;
-   }
-
-   p = raw;
-   while (*p)
-   {
-      char *eol = strchr(p, '\n');
-      char *end;
-
-      if (!eol)
-         eol = p + strlen(p);
-      end = eol;
-      while (end > p && (end[-1] == '\r' || end[-1] == ' '))
-         end--;
-
-      if (end > p)
-      {
-         char save = *end;
-         *end = '\0';
-         if (n + 1 > cap)
-         {
-            char **tmp = (char**)realloc(out, (cap * 2 + 1) * sizeof(char*));
-            if (!tmp)
-               break;
-            memset(tmp + cap + 1, 0, cap * sizeof(char*));
-            out = tmp;
-            cap *= 2;
-         }
-         out[n] = (char*)malloc((size_t)(end - p) + 1);
-         if (!out[n])
-            break;
-         memcpy(out[n], p, (size_t)(end - p) + 1);
-         n++;
-         *end = save;
-      }
-
-      p = (*eol) ? eol + 1 : eol;
-   }
-
-   out[n]  = NULL;
-   *count  = n;
-   free(raw);
-   return out;
+   memcpy(*block, blob, len + 1);
+   net_http_headers_compact(*block);
+   for (h = net_http_header_next(*block, NULL); h && n < 63;
+         h = net_http_header_next(*block, h))
+      lines[n++] = (char*)h;
+   lines[n] = NULL;
+   *count   = n;
+   return lines;
 }
 
 /* ================================================================= */
@@ -426,10 +387,11 @@ static void test_req_degenerate(void)
 static void test_resp_split(void)
 {
    size_t n;
+   char *block;
    char **lines = http_response_headers_split(
          "content-length: 42\r\n"
          "www-authenticate: Digest realm=\"r\", nonce=\"n\"\r\n"
-         "content-type: text/plain\r\n", &n);
+         "content-type: text/plain\r\n", &n, &block);
 
    printf("  response: split into \"Name: Value\" lines\n");
 
@@ -445,14 +407,15 @@ static void test_resp_split(void)
             "line 2 mangled: \"%s\"", lines[2]);
    }
 
-   http_req_headers_free(lines);
+   free(block);
 }
 
 static void test_resp_trailing_and_blank(void)
 {
    size_t n;
+   char *block;
    char **lines = http_response_headers_split(
-         "a: 1\r\n\r\nb: 2\r\nc: 3", &n);
+         "a: 1\r\n\r\nb: 2\r\nc: 3", &n, &block);
 
    printf("  response: blank lines dropped, final line kept\n");
 
@@ -461,7 +424,7 @@ static void test_resp_trailing_and_blank(void)
       CHECK(strcmp(lines[2], "c: 3") == 0,
             "final line without trailing CRLF was dropped or mangled");
 
-   http_req_headers_free(lines);
+   free(block);
 }
 
 /* The browser lower-cases response header names, so consumers that
@@ -472,8 +435,9 @@ static void test_resp_trailing_and_blank(void)
 static void test_resp_lowercased_names(void)
 {
    size_t n;
+   char *block;
    char **lines = http_response_headers_split(
-         "www-authenticate: Digest realm=\"r\"\r\n", &n);
+         "www-authenticate: Digest realm=\"r\"\r\n", &n, &block);
    static const char want[] = "WWW-Authenticate: Digest ";
 
    printf("  response: lower-cased names need case-insensitive matching\n");
@@ -495,18 +459,20 @@ static void test_resp_lowercased_names(void)
             "digest parameters");
    }
 
-   http_req_headers_free(lines);
+   free(block);
 }
 
 static void test_resp_degenerate(void)
 {
    size_t n;
+   char *block;
    printf("  response: degenerate inputs\n");
 
-   CHECK(http_response_headers_split(NULL, &n) == NULL && n == 0,
+   CHECK(http_response_headers_split(NULL, &n, &block) == NULL && n == 0,
          "NULL blob must yield NULL/0");
-   CHECK(http_response_headers_split("", &n) == NULL && n == 0,
+   CHECK(http_response_headers_split("", &n, &block) == NULL && n == 0,
          "empty blob must yield NULL/0");
+   CHECK(net_http_headers_compact(NULL) == 0, "compact(NULL) must be 0");
 }
 
 /* ================================================================= */

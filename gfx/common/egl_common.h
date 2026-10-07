@@ -56,6 +56,10 @@ typedef struct
    EGLContext ctx;
    EGLContext hw_ctx;
    EGLSurface surf;
+   /* The core's context is current with this, on a thread that does
+    * not hold the window surface, where the display has no surfaceless
+    * contexts; see egl_bind_hw_render(). */
+   EGLSurface hw_surf;
    EGLDisplay dpy;
    EGLConfig config;
    int interval;
@@ -131,6 +135,34 @@ bool egl_get_config_attrib(EGLDisplay dpy, EGLConfig config,
 void egl_report_error(void);
 
 bool egl_has_config(egl_ctx_data_t *egl);
+
+/* Whether the display has an RGBA16F window config for desktop GL
+ * (EGL_EXT_pixel_format_float), as scRGB output needs; with 'apply' it
+ * becomes the context's config. */
+bool egl_choose_scrgb_config(egl_ctx_data_t *egl, bool apply);
+
+struct string_list;
+
+/* The GPUs a GL GPU index can choose, as menu labels: entry 0 is the
+ * implementation's own choice, the rest EGL's hardware devices.
+ * NULL where EGL cannot enumerate devices or make a display on one. */
+struct string_list *egl_gpu_list_new(void);
+
+/* The device behind entry 'index' of the last list, NULL for entry 0. */
+void *egl_gpu_device_at(int index);
+
+/* The DRM card node of entry 'index' (EGL_EXT_device_drm), NULL for
+ * entry 0 or a device that does not report one. */
+const char *egl_gpu_device_file(int index);
+
+/* The device the next display is made on, NULL for the default; a
+ * display the device cannot make falls back to the default. */
+void egl_set_display_device(void *device);
+
+/* The next window surface is presented opaque (EGL_EXT_present_opaque)
+ * where the display supports it: for a config with alpha the frame
+ * does not mean as transparency. */
+void egl_set_surface_opaque(bool opaque);
 
 RETRO_END_DECLS
 

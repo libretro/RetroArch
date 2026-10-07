@@ -124,10 +124,12 @@ void sthread_yield(void);
  * Asks the operating system to schedule the calling thread ahead of
  * ordinary threads - a time-critical class on Windows, the audio
  * priority band on Android, real-time round-robin where the POSIX
- * scheduler and the process's limits allow it. Best effort: where the
- * request is refused or the platform has no such thing, the thread
- * keeps its default priority and this returns false. Never fails the
- * thread. Meant for a thread that feeds an audio device on a deadline.
+ * scheduler and the process's limits allow it - on Linux clamped to
+ * RLIMIT_RTPRIO, else a lower nice value within RLIMIT_NICE. Best
+ * effort: where the request is refused or the platform has no such
+ * thing, the thread keeps its default priority and this returns
+ * false. Never fails the thread. Meant for a thread that feeds an
+ * audio device on a deadline.
  *
  * @return Whether the priority was changed.
  */
@@ -147,6 +149,28 @@ bool sthread_raise_current_priority(void);
  * @return Whether the thread was pinned.
  */
 bool sthread_prefer_fast_cores(void);
+
+/**
+ * sthread_get_core_topology:
+ *
+ * Counts the physical cores the calling thread may run on, split by
+ * class: the fast ones (the big cluster, the P-cores) and the slow
+ * ones (the little cluster, the E-cores). SMT siblings count once.
+ * On a homogeneous part every core is fast and slow is 0. The class
+ * comes from the same source sthread_prefer_fast_cores() pins by.
+ *
+ * Meant for sizing worker pools: the count of cores a pool may use
+ * once the frame-critical threads have theirs, and on a mixed part
+ * whether the pool would be spreading onto the slow cluster.
+ *
+ * @fast : receives the fast core count.
+ * @slow : receives the slow core count.
+ *
+ * Returns: true when the counts are known. On a platform with no
+ * topology information at all (the consoles) nothing is written and
+ * this returns false; the caller falls back to the thread count.
+ */
+bool sthread_get_core_topology(unsigned *fast, unsigned *slow);
 
 /**
  * Labels the calling thread for debuggers, crash dumps and system

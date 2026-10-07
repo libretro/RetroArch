@@ -43,7 +43,7 @@
 
 #include "../../verbosity.h"
 #ifdef HAVE_THREADS
-#include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include "../midi_driver.h"
@@ -210,30 +210,35 @@ typedef struct
    /* Events wait here between the thread that writes them and the one
     * that renders.
     *
-    * fmsynth_midi_write() used to apply a message straight into the
-    * voice table, from whichever thread the core calls it on - the
-    * frame. fmsynth_render() walks that same table, and once the
-    * threaded audio pipeline became the default it walks it on the
-    * audio thread. ThreadSanitizer reported twenty-four races between
-    * the two: every voice field, the channel state, the allocator.
+    * Applying a message means writing the voice table, and
+    * fmsynth_render() walks that same table on the audio thread. So
+    * writes queue and the renderer applies them, at the top of the
+    * block it is about to synthesise; a message arriving mid-block
+    * takes effect at the next one, as it would have anyway with a
+    * whole block rendered per call.
     *
-    * So writes queue and the renderer applies them, at the top of the
-    * block it is about to synthesise. The lock is held only for the
-    * copy in and the copy out, never across the synthesis, so a core
-    * writing a note never waits for a render. Applying at a block
-    * boundary is not a change in behaviour anyone can hear: the
-    * renderer already produced a whole block per call, so a message
-    * arriving mid-block took effect at the next one either way.
+    * The queue is a ring of slots with no lock, so neither a writer
+    * nor the audio thread ever waits. A writer claims the next
+    * sequence number and fills that slot under a per-slot sequence
+    * word: odd while it is writing, then even. The renderer takes the
+    * slots in order and checks each one's word against the number it
+    * expects: equal is the event, unchanged across the copy; newer
+    * means the ring went round and the event was overwritten; older,
+    * or odd, means a writer has the number and has not finished, and
+    * the renderer stops there until the next block.
     *
-    * A full queue drops the oldest message rather than the newest: a
+    * A full ring loses its oldest messages rather than the newest: a
     * dropped note-off leaves a voice stuck until its envelope ends,
     * while a dropped note-on is silence nobody notices. */
-   slock_t *event_lock;
-   uint8_t  event_buf[FMSYNTH_EVENT_QUEUE][FMSYNTH_EVENT_MAX];
-   uint8_t  event_len[FMSYNTH_EVENT_QUEUE];
-   unsigned event_head;
-   unsigned event_count;
-   unsigned event_dropped;
+   struct
+   {
+      retro_atomic_int_t seq;
+      retro_atomic_int_t len;
+      retro_atomic_int_t data[FMSYNTH_EVENT_MAX / 4];
+   } event_slot[FMSYNTH_EVENT_QUEUE];
+   retro_atomic_int_t event_head;    /* next number a writer claims  */
+   retro_atomic_int_t event_dropped; /* counted; logged at teardown  */
+   unsigned           event_tail;    /* the renderer's next number   */
 #endif
 } fmsynth_t;
 
@@ -654,6 +659,61 @@ static void fmsynth_handle_message(fmsynth_t *fm,
  * envelope math replace the memset in commit 2.
  * ----------------------------------------------------------------------- */
 
+#ifdef HAVE_THREADS
+/* The renderer: applies the queued events in order, up to the first a
+ * writer has not finished. See the queue on the struct. */
+static void fmsynth_apply_events(fmsynth_t *fm)
+{
+   unsigned head = (unsigned)retro_atomic_load_acquire_int(&fm->event_head);
+   unsigned n    = fm->event_tail;
+
+   /* Gone round since the last block: the oldest are overwritten. */
+   if (head - n > FMSYNTH_EVENT_QUEUE)
+   {
+      retro_atomic_fetch_add_int(&fm->event_dropped,
+            (int)(head - n - FMSYNTH_EVENT_QUEUE));
+      n = head - FMSYNTH_EVENT_QUEUE;
+   }
+
+   for (; n != head; n++)
+   {
+      unsigned i;
+      int      ahead;
+      uint32_t words[FMSYNTH_EVENT_MAX / 4];
+      size_t   len;
+      unsigned slot = n % FMSYNTH_EVENT_QUEUE;
+      unsigned want = n * 2u + 2u;
+      unsigned seq  = (unsigned)retro_atomic_load_acquire_int(
+            &fm->event_slot[slot].seq);
+
+      if (seq != want)
+      {
+         /* Newer: overwritten. Older, or odd: still being written. */
+         if ((ahead = (int)(seq - want)) > 0)
+         {
+            retro_atomic_fetch_add_int(&fm->event_dropped, 1);
+            continue;
+         }
+         break;
+      }
+      len = (size_t)retro_atomic_load_relaxed_int(&fm->event_slot[slot].len);
+      for (i = 0; i < FMSYNTH_EVENT_MAX / 4; i++)
+         words[i] = (uint32_t)retro_atomic_load_relaxed_int(
+               &fm->event_slot[slot].data[i]);
+      retro_atomic_thread_fence_acquire();
+      if ((unsigned)retro_atomic_load_relaxed_int(
+               &fm->event_slot[slot].seq) != want)
+      {
+         /* Overwritten under the copy. */
+         retro_atomic_fetch_add_int(&fm->event_dropped, 1);
+         continue;
+      }
+      fmsynth_handle_message(fm, (const uint8_t*)words, len);
+   }
+   fm->event_tail = n;
+}
+#endif
+
 static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
 {
    fmsynth_t *fm = (fmsynth_t*)p;
@@ -662,37 +722,9 @@ static bool fmsynth_render(void *p, float *out, size_t frames, unsigned rate)
    int      any = 0;
 
 #ifdef HAVE_THREADS
-   /* Apply what has arrived since the last block, then synthesise. The
-    * queue is copied out under the lock and the messages applied
-    * outside it, so a writer is never held for longer than the copy. */
-   if (fm && fm->event_lock)
-   {
-      uint8_t  batch[FMSYNTH_EVENT_QUEUE][FMSYNTH_EVENT_MAX];
-      uint8_t  batch_len[FMSYNTH_EVENT_QUEUE];
-      unsigned batch_count = 0;
-      unsigned dropped;
-
-      slock_lock(fm->event_lock);
-      while (fm->event_count)
-      {
-         memcpy(batch[batch_count], fm->event_buf[fm->event_head],
-               FMSYNTH_EVENT_MAX);
-         batch_len[batch_count] = fm->event_len[fm->event_head];
-         batch_count++;
-         fm->event_head = (fm->event_head + 1) % FMSYNTH_EVENT_QUEUE;
-         fm->event_count--;
-      }
-      dropped           = fm->event_dropped;
-      fm->event_dropped = 0;
-      slock_unlock(fm->event_lock);
-
-      for (i = 0; i < batch_count; i++)
-         fmsynth_handle_message(fm, batch[i], batch_len[i]);
-
-      if (dropped)
-         RARCH_WARN("[FM Synth] Dropped %u MIDI message(s): the event"
-               " queue filled between render blocks.\n", dropped);
-   }
+   /* Apply what has arrived since the last block, then synthesise. */
+   if (fm)
+      fmsynth_apply_events(fm);
 #endif
 
    if (!fm || !out)
@@ -1033,9 +1065,10 @@ static void *fmsynth_midi_init(const char *input, const char *output)
       return NULL;
 
 #ifdef HAVE_THREADS
-   /* Without it, write() applies messages directly, which is correct on
-    * a build where the renderer runs on the caller's thread. */
-   fm->event_lock = slock_new();
+   retro_atomic_int_init(&fm->event_head, 0);
+   retro_atomic_int_init(&fm->event_dropped, 0);
+   for (i = 0; i < FMSYNTH_EVENT_QUEUE; i++)
+      retro_atomic_int_init(&fm->event_slot[i].seq, 0);
 #endif
 
    fmsynth_init_sine();
@@ -1065,12 +1098,11 @@ static void fmsynth_midi_free(void *p)
 {
 #ifdef HAVE_THREADS
    {
-      fmsynth_t *fm_lock = (fmsynth_t*)p;
-      if (fm_lock && fm_lock->event_lock)
-      {
-         slock_free(fm_lock->event_lock);
-         fm_lock->event_lock = NULL;
-      }
+      fmsynth_t *fm = (fmsynth_t*)p;
+      int dropped   = fm ? retro_atomic_load_acquire_int(&fm->event_dropped) : 0;
+      if (dropped)
+         RARCH_WARN("[FM Synth] Dropped %d MIDI message(s): the event"
+               " queue filled between render blocks.\n", dropped);
    }
 #endif
    if (p)
@@ -1106,38 +1138,39 @@ static bool fmsynth_midi_write(void *p, const midi_event_t *event)
       return false;
 
 #ifdef HAVE_THREADS
-   if (fm->event_lock)
    {
-      size_t   len = event->data_size;
-      unsigned slot;
+      unsigned i;
+      size_t   len  = event->data_size;
+      unsigned n    = (unsigned)retro_atomic_fetch_add_int(&fm->event_head, 1);
+      unsigned slot = n % FMSYNTH_EVENT_QUEUE;
+      uint32_t words[FMSYNTH_EVENT_MAX / 4];
 
       if (len > FMSYNTH_EVENT_MAX)
          len = FMSYNTH_EVENT_MAX;
+      memset(words, 0, sizeof(words));
+      memcpy(words, event->data, len);
 
-      slock_lock(fm->event_lock);
-      if (fm->event_count == FMSYNTH_EVENT_QUEUE)
-      {
-         /* Full: drop the oldest, for the reason on the struct. */
-         fm->event_head = (fm->event_head + 1) % FMSYNTH_EVENT_QUEUE;
-         fm->event_count--;
-         fm->event_dropped++;
-      }
-      slot = (fm->event_head + fm->event_count) % FMSYNTH_EVENT_QUEUE;
-      memcpy(fm->event_buf[slot], event->data, len);
-      fm->event_len[slot] = (uint8_t)len;
-      fm->event_count++;
-      slock_unlock(fm->event_lock);
+      retro_atomic_store_relaxed_int(&fm->event_slot[slot].seq,
+            (int)(n * 2u + 1u));
+      retro_atomic_thread_fence_release();
+      retro_atomic_store_relaxed_int(&fm->event_slot[slot].len, (int)len);
+      for (i = 0; i < FMSYNTH_EVENT_MAX / 4; i++)
+         retro_atomic_store_relaxed_int(&fm->event_slot[slot].data[i],
+               (int)words[i]);
+      retro_atomic_store_release_int(&fm->event_slot[slot].seq,
+            (int)(n * 2u + 2u));
       return true;
    }
-#endif
-
+#else
    fmsynth_handle_message(fm, event->data, event->data_size);
    return true;
+#endif
 }
 
 static bool fmsynth_midi_flush(void *p)
 {
-   /* Events are applied immediately in write(); nothing is queued. */
+   /* Queued events are applied at the next render block; there is
+    * nothing to push. */
    return p != NULL;
 }
 

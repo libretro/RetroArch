@@ -176,12 +176,15 @@ bool memrearm(void *addr, size_t len);
  * memdecommit:
  * @addr       : start of the sub-range
  * @len        : bytes to release the physical pages of
- * @strict     : when true, also make the range fault on access rather
- *               than read back as zeroes. Costs an extra syscall on
- *               POSIX; useful for proving a consumer does not read
- *               behind itself.
+ * @strict     : when true, also make the range fault on access. Costs
+ *               an extra syscall on POSIX; useful for proving a
+ *               consumer does not read behind itself.
  *
- * The address space stays reserved either way; only the pages go.
+ * The address space stays reserved either way; only the pages go. What
+ * a non-strict range reads back as afterwards is not defined: zeroes on
+ * Linux and Windows, possibly the old contents on Darwin and the BSDs,
+ * where the advice given is only advice. Use memzero_pages() for a
+ * range whose contents must be zero.
  */
 void memdecommit(void *addr, size_t len, bool strict);
 
@@ -317,6 +320,8 @@ size_t         memshm_area_size(const memshm_area_t *area);
  * @len        : bytes.
  * @prot       : PROT_READ | PROT_WRITE | PROT_EXEC.
  *
+ * Refused when any part of the range is already mapped.
+ *
  * Returns: @at on success, NULL on failure.
  */
 unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
@@ -327,7 +332,10 @@ unsigned char *memshm_area_map(memshm_area_t *area, void *handle,
  * @at         : an address a previous memshm_area_map returned.
  * @len        : the length it was mapped with.
  *
- * Restores the reservation over that range. Returns true on success.
+ * Restores the reservation over that range. Refused, with nothing
+ * changed, unless @at and @len are exactly a mapping the area holds:
+ * part of one, a hole, or a range spanning several is not unmapped.
+ * Returns true on success.
  */
 bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len);
 
@@ -342,6 +350,37 @@ bool memshm_area_unmap(memshm_area_t *area, void *at, size_t len);
  */
 void memjit_write_begin(void);
 void memjit_write_end(void);
+
+/**
+ * memjit_alloc / memjit_free:
+ *
+ * A mapping the caller both writes code into and executes, of @len bytes:
+ * readable, writable and executable everywhere that grants it, and on
+ * macOS on Apple Silicon the MAP_JIT kind, which is executable until the
+ * writing thread brackets its writes with memjit_write_begin/end.
+ * Returns NULL where no such mapping can be had, including the platforms
+ * with no mmap at all. Free with memjit_free(), giving the same length.
+ */
+void *memjit_alloc(size_t len);
+void memjit_free(void *addr, size_t len);
+
+/**
+ * memzero_pages:
+ *
+ * Zeroes a page-aligned range of private anonymous memory as cheaply as
+ * the system allows: by handing the pages back and taking fresh ones
+ * where that is guaranteed to read as zeroes (Linux, Android, Windows),
+ * by mapping fresh pages over the range where the advice would only be
+ * advice (Darwin, the BSDs), and by memset where neither exists.
+ *
+ * Returns true when the range is zeroed and still mapped and readable.
+ * Returns false only on Windows, when the pages were handed back but
+ * fresh ones could not be committed in their place: the range is then
+ * decommitted and must not be read or written; the caller should treat
+ * the allocation as lost and release it. Every other path either
+ * succeeds or falls back to memset and returns true.
+ */
+bool memzero_pages(void *addr, size_t len);
 
 RETRO_END_DECLS
 

@@ -1,0 +1,24 @@
+CC ?= cc
+TARGET := widget_snapshot_ownership_test
+ROOT := ..
+CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+          -I$(ROOT) -I$(ROOT)/libretro-common/include
+LDFLAGS += -Wl,--gc-sections
+
+ifneq ($(SANITIZER),)
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+all: $(TARGET)
+
+$(TARGET): widget_snapshot_ownership_test.c $(ROOT)/gfx/gfx_widgets.c
+	$(CC) $(CFLAGS) $< $(LDFLAGS) -o $@
+
+check: $(TARGET)
+	./$(TARGET)
+
+clean:
+	rm -f $(TARGET) $(TARGET).exe
+
+.PHONY: all check clean

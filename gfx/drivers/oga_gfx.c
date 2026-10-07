@@ -42,6 +42,8 @@
 
 #include "frontend/frontend_driver.h"
 
+#include <encodings/utf.h>
+
 #include "../font_driver.h"
 #include "../video_driver.h"
 
@@ -346,8 +348,7 @@ static void oga_free(void *data)
    vid = NULL;
 }
 
-static void *oga_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *oga_init(const video_info_t *video)
 {
    int i;
    oga_video_t *vid                     = NULL;
@@ -358,18 +359,9 @@ static void *oga_init(const video_info_t *video,
 
    frontend_driver_install_signal_handler();
 
-   if (input && input_data)
-   {
-      void* udev = input_driver_init_wrap(
-            &input_udev, settings->arrays.input_joypad_driver);
-      if (udev)
-      {
-         *input       = &input_udev;
-         *input_data  = udev;
-      }
-      else
-         *input = NULL;
-   }
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 
    vid = (oga_video_t*)calloc(1, sizeof(*vid));
    if (!vid)
@@ -425,6 +417,14 @@ static void *oga_init(const video_info_t *video,
          vid->font_driver = NULL;
          vid->font        = NULL;
       }
+      else
+      {
+         /* The atlas may grow when a message needs more glyphs than it
+          * holds; the glyphs are blitted from it in memory, so there is
+          * no texture to make again */
+         struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
+         grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+      }
    }
 
    for (i = 0; i < NUM_PAGES; ++i)
@@ -459,7 +459,6 @@ static bool render_msg(oga_video_t* vid, const char* msg)
 {
    const struct font_atlas* atlas;
    uint32_t* fb;
-   const char *c    = msg;
    int dest_x       = 0;
    int dest_y       = 0;
    int dest_stride;
@@ -470,7 +469,7 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    if (strcmp(msg, vid->last_msg) == 0)
       return true;
 
-   strlcpy(vid->last_msg, c, sizeof(vid->last_msg));
+   strlcpy(vid->last_msg, msg, sizeof(vid->last_msg));
    rga_clear_surface(vid->msg_surface, 0);
 
    atlas          = vid->font_driver->get_atlas(vid->font);
@@ -478,46 +477,88 @@ static bool render_msg(oga_video_t* vid, const char* msg)
    dest_stride    = vid->msg_surface->pitch / 4;
    vid->msg_width = vid->msg_height = 0;
 
-   while (*c)
    {
-      int x, y;
-      uint32_t* dest             = NULL;
-      const uint8_t *source      = NULL;
-      const struct font_glyph* g = vid->font_driver->get_glyph(vid->font, *c);
+      const struct font_glyph* (*get_glyph)(void*, uint32_t)
+                                             = vid->font_driver->get_glyph;
+      void *font_data                        = vid->font;
+      const struct font_glyph *glyph_q       = get_glyph(font_data, '?');
+      struct font_line_metrics *line_metrics = NULL;
+      size_t msg_len                         = strlen(msg);
+      int line_h                             = 0;
+      int surf_w                             = vid->msg_surface->width;
+      int surf_h                             = vid->msg_surface->height;
+      bool full                              = false;
 
-      if (!g)
-         continue;
+      vid->font_driver->get_line_metrics(font_data, &line_metrics);
+      if (line_metrics)
+         line_h = (int)line_metrics->height;
 
-      if (vid->msg_height == 0)
-         vid->msg_height = g->height;
+      /* UTF-8; a line break starts a new row, as running out of width
+       * does. A glyph is laid in the surface whole or not at all: it
+       * wraps before it would cross the right edge, and nothing is
+       * drawn once a row would cross the bottom. */
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+         (void)(bytes); \
+         if (line) \
+         { \
+            dest_x           = 0; \
+            dest_y          += line_h; \
+            vid->msg_height += line_h; \
+         } \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(g, pen_x, pen_y) \
+      do \
+      { \
+         int x, y; \
+         uint32_t* dest        = NULL; \
+         const uint8_t *source = NULL; \
+         (void)(pen_x); \
+         (void)(pen_y); \
+         if (full) \
+            break; \
+         if (vid->msg_height == 0) \
+            vid->msg_height = VIDEO_SCALE_H((g)->dims); \
+         if (dest_x + (g)->advance_x > surf_w) \
+         { \
+            dest_x           = 0; \
+            dest_y          += VIDEO_SCALE_H((g)->dims); \
+            vid->msg_height += VIDEO_SCALE_H((g)->dims); \
+         } \
+         if (     (g)->advance_x > surf_w \
+               || dest_y + (int)VIDEO_SCALE_H((g)->dims) > surf_h) \
+         { \
+            full = true; \
+            break; \
+         } \
+         source = atlas->buffer + VIDEO_SCALE_H((g)->atlas_pos) * \
+            atlas->width  + VIDEO_SCALE_W((g)->atlas_pos); \
+         dest   = fb + dest_y * dest_stride + dest_x; \
+         for (y = 0; y < (int)VIDEO_SCALE_H((g)->dims); y++) \
+         { \
+            for (x = 0; x < (int)(g)->advance_x; x++) \
+            { \
+               uint32_t px = (x < (int)VIDEO_SCALE_W((g)->dims)) \
+                  ? *(source++) : 0x00; \
+               *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px; \
+            } \
+            dest   += dest_stride - (g)->advance_x; \
+            source += atlas->width - VIDEO_SCALE_W((g)->dims); \
+         } \
+         dest_x += (g)->advance_x; \
+         if (vid->msg_width < dest_x) \
+            vid->msg_width = MIN(dest_x, surf_w); \
+      } while (0)
+#include "../font_layout.h"
 
-      if (dest_x >= vid->drm_width)
-      {
-         dest_x = 0;
-         dest_y += g->height;
-         vid->msg_height += g->height;
-      }
-
-      source = atlas->buffer + g->atlas_offset_y *
-         atlas->width  + g->atlas_offset_x;
-      dest   = fb + dest_y * dest_stride + dest_x;
-
-      for (y = 0; y < (int)g->height; y++)
-      {
-         for (x = 0; x < (int)g->advance_x; x++)
-         {
-            uint32_t px = (x < (int)g->width) ? *(source++) : 0x00;
-            *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px;
-         }
-         dest   += dest_stride - g->advance_x;
-         source += atlas->width - g->width;
-      }
-
-      c++;
-      dest_x += g->advance_x;
-
-      if (vid->msg_width < dest_x)
-         vid->msg_width = MIN(dest_x, vid->msg_surface->width);
+      /* A row that did not fit counted towards the height before it was
+       * found not to; the blit takes no more than the surface holds */
+      if (vid->msg_height > surf_h)
+         vid->msg_height = surf_h;
    }
 
 
@@ -546,6 +587,53 @@ static void oga_blit(oga_surface_t* src, int sx, int sy, int sw, int sh,
    c_RkRgaBlit(&s, &d, NULL);
 }
 
+/* Where a pushed frame lies in the lent surface.
+ *
+ * A core that renders into the buffer
+ * GET_CURRENT_SOFTWARE_FRAMEBUFFER lends it may push back a pointer
+ * partway into that buffer, at the buffer's pitch, with the size of
+ * the window it wants shown: that is how an overscan crop is done by
+ * offset (beetle-psx renders its whole 700x480 scanout surface into
+ * the loan and pushes the visible part). The threaded wrapper accepts
+ * that as a lend since 9ed0db58c3 and the vulkan and d3d12 drivers
+ * since 7510039d5d; this is the same test for this driver's loan.
+ *
+ * True, with the window's pixel origin, when @frame lies inside
+ * @surface's mapping on that mapping's pitch and starts on a pixel.
+ * Anything else is a frame of the core's own and is copied in. */
+static bool oga_frame_window(const oga_surface_t *surface,
+      const void *frame, size_t pitch, int *x, int *y)
+{
+   uintptr_t base = (uintptr_t)surface->map;
+   uintptr_t p    = (uintptr_t)frame;
+   size_t    bpp  = (surface->rk_format == RK_FORMAT_BGRA_8888) ? 4 : 2;
+   size_t    off;
+   size_t    row;
+
+   if (!surface->map || surface->pitch <= 0 || surface->height <= 0)
+      return false;
+   if (p < base || (p - base) >= (uintptr_t)surface->pitch *
+         (uintptr_t)surface->height)
+      return false;
+
+   off = (size_t)(p - base);
+   row = off % (size_t)surface->pitch;
+
+   /* Inside the mapping but not addressable as a window: copying it
+    * would memcpy the surface onto itself and shred it, so show the
+    * loan from its origin instead. */
+   if (pitch != (size_t)surface->pitch || (row % bpp))
+   {
+      *x = 0;
+      *y = 0;
+      return true;
+   }
+
+   *y = (int)(off / (size_t)surface->pitch);
+   *x = (int)(row / bpp);
+   return true;
+}
+
 static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float aspect, float dar)
 {
    if (dar >= aspect)
@@ -564,10 +652,12 @@ static void oga_calc_bounds(oga_rect_t* r, int dw, int dh, int sw, int sh, float
    }
 }
 
-static bool oga_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count,
+static bool oga_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    oga_video_t *vid            = (oga_video_t*)data;
    oga_framebuf_t* page        = vid->pages[vid->cur_page];
    oga_surface_t *page_surface = page->surface;
@@ -614,18 +704,22 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       uint8_t* dst = (uint8_t*)vid->frame_surface->map;
       unsigned int blend = video_info->runloop_is_paused ? 0x800105 : 0;
       oga_rect_t r;
+      int sx       = 0;
+      int sy       = 0;
+      bool lent    = oga_frame_window(vid->frame_surface, frame,
+            (size_t)pitch, &sx, &sy);
 
       /* The surface holds the geometry declared at init. A core is
        * free to hand over more than it declared, so take what fits:
-       * the rows the surface has, and the bytes one of its rows
-       * holds. Both the copy below and the blit that follows read and
-       * write this allocation. */
-      if (width  > (unsigned)vid->frame_surface->width)
-         width  = (unsigned)vid->frame_surface->width;
-      if (height > (unsigned)vid->frame_surface->height)
-         height = (unsigned)vid->frame_surface->height;
+       * the rows the surface has from the window's origin, and the
+       * bytes one of its rows holds. Both the copy below and the blit
+       * that follows read and write this allocation. */
+      if (width  > (unsigned)(vid->frame_surface->width  - sx))
+         width  = (unsigned)(vid->frame_surface->width  - sx);
+      if (height > (unsigned)(vid->frame_surface->height - sy))
+         height = (unsigned)(vid->frame_surface->height - sy);
 
-      if (src != dst)
+      if (!lent)
       {
          int    dst_pitch = vid->frame_surface->pitch;
          size_t row       = (pitch < (unsigned)dst_pitch)
@@ -642,7 +736,7 @@ static bool oga_frame(void *data, const void *frame, unsigned width,
       }
 
       oga_calc_bounds(&r, vid->drm_width, vid->drm_height, width, height, aspect_ratio, vid->display_ar);
-      oga_blit(vid->frame_surface, 0, 0, width, height,
+      oga_blit(vid->frame_surface, sx, sy, width, height,
             page_surface, r.y, r.x, r.h, r.w, vid->rotation, vid->scale_mode, blend);
    }
 

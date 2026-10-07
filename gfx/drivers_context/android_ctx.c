@@ -93,6 +93,7 @@ static void *android_gfx_ctx_init(void *video_driver)
    };
 #endif
    struct android_app *android_app      = (struct android_app*)g_android;
+   ANativeWindow *window                = NULL;
    android_ctx_data_t        *and       = (android_ctx_data_t*)
       calloc(1, sizeof(*and));
 
@@ -128,17 +129,18 @@ static void *android_gfx_ctx_init(void *video_driver)
       goto error;
 #endif
 
-   slock_lock(android_app->mutex);
-   if (!android_app->window)
+   /* Held across the call, so the app thread cannot hand the window
+    * back to the framework under it. */
+   if (!(window = (ANativeWindow*)android_lifecycle_window_acquire(
+               &android_app->lc)))
    {
-      slock_unlock(android_app->mutex);
       android_gfx_ctx_destroy(and);
       return NULL;
    }
 
-   ANativeWindow_setBuffersGeometry(android_app->window, 0, 0, format);
+   ANativeWindow_setBuffersGeometry(window, 0, 0, format);
 
-   slock_unlock(android_app->mutex);
+   android_lifecycle_window_release(&android_app->lc);
    return and;
 
 error:
@@ -179,8 +181,7 @@ static void android_gfx_ctx_check_window(void *data, bool *quit,
    }
 }
 
-static bool android_gfx_ctx_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool android_gfx_ctx_set_resize(void *data, unsigned dims) { return false; }
 
 static bool android_gfx_ctx_set_video_mode(void *data,
       unsigned dims,
@@ -205,7 +206,7 @@ static bool android_gfx_ctx_set_video_mode(void *data,
          egl_report_error();
          return false;
       }
-      if (!egl_create_surface(&and->egl, android_app->window))
+      if (!egl_create_surface(&and->egl, android_app_window(android_app)))
          return false;
    }
 #endif
@@ -214,13 +215,11 @@ static bool android_gfx_ctx_set_video_mode(void *data,
 }
 
 static void android_gfx_ctx_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
-   void *androidinput   = input_driver_init_wrap(&input_android, joypad_name);
-
-   *input               = androidinput ? &input_android : NULL;
-   *input_data          = androidinput;
+   /* no input driver of this context's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 }
 
 static enum gfx_ctx_api android_gfx_ctx_get_api(void *data)
@@ -271,6 +270,15 @@ static void android_gfx_ctx_bind_hw_render(void *data, bool enable)
 #endif
 }
 
+static void android_gfx_ctx_release_current(void *data)
+{
+#ifdef HAVE_EGL
+   android_ctx_data_t *and  = (android_ctx_data_t*)data;
+   if (and)
+      egl_release_current(&and->egl);
+#endif
+}
+
 static uint32_t android_gfx_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
@@ -289,7 +297,7 @@ static bool android_gfx_ctx_create_surface(void *data)
 #ifdef HAVE_EGL
    struct android_app *android_app = (struct android_app*)g_android;
    android_ctx_data_t *and = (android_ctx_data_t*)data;
-   return egl_create_surface(&and->egl, android_app->window);
+   return egl_create_surface(&and->egl, android_app_window(android_app));
 #else
    return false;
 #endif
@@ -342,5 +350,8 @@ const gfx_ctx_driver_t gfx_ctx_android = {
    NULL,
    NULL,
    android_gfx_ctx_create_surface,
-   android_gfx_ctx_destroy_surface
+   android_gfx_ctx_destroy_surface,
+   NULL, /* presentable */
+   NULL, /* last_present_time */
+   android_gfx_ctx_release_current
 };

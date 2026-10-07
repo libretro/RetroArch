@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,6 +33,7 @@
 #endif
 
 #include "../video_driver.h"
+#include <queues/retro_triple_buffer.h>
 #include "../../configuration.h"
 #include "../../driver.h"
 #include "../../frontend/frontend_driver.h"
@@ -114,8 +116,10 @@ typedef struct hub75_overlay
 
 typedef struct hub75
 {
+   /* The canvas the video thread draws into: frames' back canvas. */
    hub75_color_t *pixels;
-   hub75_color_t *display_pixels;
+   hub75_color_t *canvas[3];
+   retro_triple_buffer_t frames;
    volatile uint32_t *rp1_map;
    hub75_gpio_ctrl_t *gpio_regs;
    volatile uint32_t *pad_regs;
@@ -123,7 +127,7 @@ typedef struct hub75
    hub75_rio_regs_t *rio_set;
    hub75_rio_regs_t *rio_clr;
    pthread_t refresh_thread;
-   pthread_mutex_t refresh_lock;
+   retro_atomic_int_t refresh_running;
    unsigned char *menu_frame;
    size_t menu_frame_cap;
    /* The panel chain's own size, in VIDEO_SCALE_PACK's layout. */
@@ -153,9 +157,7 @@ typedef struct hub75
    bool rgb32;
    bool menu_enabled;
    bool warned_hw_frame;
-   bool refresh_running;
    bool refresh_thread_started;
-   bool refresh_lock_initialized;
 } hub75_t;
 
 #ifdef HAVE_OVERLAY
@@ -228,21 +230,12 @@ static int hub75_env_int(const char *name, int min_value, int max_value)
    return (int)parsed;
 }
 
-static void hub75_input_driver(const char *joypad_driver,
-      input_driver_t **input, void **input_data)
+static void hub75_input_driver(const char *joypad_driver)
 {
-#ifdef HAVE_UDEV
-   *input_data = input_driver_init_wrap(&input_udev, joypad_driver);
-   if (*input_data)
-   {
-      *input = &input_udev;
-      return;
-   }
-#else
    (void)joypad_driver;
-#endif
-   *input      = NULL;
-   *input_data = NULL;
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 }
 
 static void hub75_gpio_delay(unsigned slowdown)
@@ -335,9 +328,9 @@ static uint32_t hub75_color_bits(const hub75_color_t *upper,
    return result;
 }
 
-static void hub75_refresh_once(hub75_t *hub75)
+static void hub75_refresh_once(hub75_t *hub75,
+      const hub75_color_t *pixels)
 {
-   const hub75_color_t *pixels = hub75->display_pixels;
    unsigned half_rows          = hub75->panel_rows / 2;
    unsigned first_bit          = 8 - hub75->pwm_bits;
    unsigned canvas_width       = VIDEO_SCALE_W(hub75->canvas_dims);
@@ -387,17 +380,11 @@ static void *hub75_refresh_main(void *data)
 {
    hub75_t *hub75 = (hub75_t*)data;
 
-   for (;;)
-   {
-      pthread_mutex_lock(&hub75->refresh_lock);
-      if (!hub75->refresh_running)
-      {
-         pthread_mutex_unlock(&hub75->refresh_lock);
-         break;
-      }
-      hub75_refresh_once(hub75);
-      pthread_mutex_unlock(&hub75->refresh_lock);
-   }
+   /* Each scan picks up the newest finished frame; the video thread
+    * never waits for one to end. */
+   while (retro_atomic_load_acquire_int(&hub75->refresh_running))
+      hub75_refresh_once(hub75,
+            (const hub75_color_t*)retro_triple_buffer_front(&hub75->frames));
    return NULL;
 }
 
@@ -462,12 +449,7 @@ static void hub75_free(void *data)
    if (!hub75)
       return;
 
-   if (hub75->refresh_lock_initialized)
-   {
-      pthread_mutex_lock(&hub75->refresh_lock);
-      hub75->refresh_running = false;
-      pthread_mutex_unlock(&hub75->refresh_lock);
-   }
+   retro_atomic_store_release_int(&hub75->refresh_running, 0);
    if (hub75->refresh_thread_started)
       pthread_join(hub75->refresh_thread, NULL);
    if (hub75->rio_out)
@@ -476,20 +458,18 @@ static void hub75_free(void *data)
       hub75->rio_clr->oe = hub75->used_gpio_mask;
    if (hub75->rp1_map)
       munmap((void*)(uintptr_t)hub75->rp1_map, HUB75_RP1_MAP_SIZE);
-   if (hub75->refresh_lock_initialized)
-      pthread_mutex_destroy(&hub75->refresh_lock);
 
 #ifdef HAVE_OVERLAY
    hub75_overlay_free(hub75);
 #endif
    free(hub75->menu_frame);
-   free(hub75->pixels);
-   free(hub75->display_pixels);
+   free(hub75->canvas[0]);
+   free(hub75->canvas[1]);
+   free(hub75->canvas[2]);
    free(hub75);
 }
 
-static void *hub75_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *hub75_init(const video_info_t *video)
 {
    settings_t *settings = config_get_ptr();
    hub75_t *hub75 = (hub75_t*)calloc(1, sizeof(*hub75));
@@ -499,8 +479,6 @@ static void *hub75_init(const video_info_t *video,
    int value;
    size_t pixel_count;
 
-   *input      = NULL;
-   *input_data = NULL;
    if (!hub75)
       return NULL;
 
@@ -530,15 +508,18 @@ static void *hub75_init(const video_info_t *video,
    }
 
    pixel_count = VIDEO_SCALE_AREA(hub75->canvas_dims);
-   hub75->pixels = (hub75_color_t*)calloc(pixel_count,
-         sizeof(*hub75->pixels));
-   hub75->display_pixels = (hub75_color_t*)calloc(pixel_count,
-         sizeof(*hub75->display_pixels));
-   if (!hub75->pixels || !hub75->display_pixels)
+   for (value = 0; value < 3; value++)
    {
-      hub75_free(hub75);
-      return NULL;
+      if (!(hub75->canvas[value] = (hub75_color_t*)calloc(pixel_count,
+                  sizeof(*hub75->pixels))))
+      {
+         hub75_free(hub75);
+         return NULL;
+      }
    }
+   retro_triple_buffer_init(&hub75->frames,
+         hub75->canvas[0], hub75->canvas[1], hub75->canvas[2]);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 
    value = hub75_env_int("HUB75_PWM_BITS", 1, 8);
    hub75->pwm_bits = value ? (unsigned)value : 8;
@@ -553,19 +534,12 @@ static void *hub75_init(const video_info_t *video,
    hub75->menu_enabled    = true;
    hub75->scaling         = hub75_get_scaling_mode();
 
-   if (pthread_mutex_init(&hub75->refresh_lock, NULL) != 0)
-   {
-      RARCH_ERR("[HUB75] Failed to create refresh mutex.\n");
-      hub75_free(hub75);
-      return NULL;
-   }
-   hub75->refresh_lock_initialized = true;
    if (!hub75_init_rp1(hub75))
    {
       hub75_free(hub75);
       return NULL;
    }
-   hub75->refresh_running = true;
+   retro_atomic_store_release_int(&hub75->refresh_running, 1);
    if (pthread_create(&hub75->refresh_thread, NULL,
             hub75_refresh_main, hub75) != 0)
    {
@@ -575,7 +549,7 @@ static void *hub75_init(const video_info_t *video,
    }
    hub75->refresh_thread_started = true;
 
-   hub75_input_driver(settings->arrays.input_joypad_driver, input, input_data);
+   hub75_input_driver(settings->arrays.input_joypad_driver);
    frontend_driver_install_signal_handler();
 
    RARCH_LOG("[HUB75] Initialized %ux%u Raspberry Pi 5 RP1 matrix "
@@ -604,21 +578,12 @@ static hub75_color_t hub75_read_pixel(const void *frame, unsigned pitch,
       const uint16_t *row = (const uint16_t*)((const uint8_t*)frame +
             (size_t)y * pitch);
       uint16_t pixel = row[x];
-      if (menu)
-      {
-         color.r = (uint8_t)(((pixel >> 12) & 0xf) * 17);
-         color.g = (uint8_t)(((pixel >> 8) & 0xf) * 17);
-         color.b = (uint8_t)(((pixel >> 4) & 0xf) * 17);
-      }
-      else
-      {
-         unsigned r = (pixel >> 11) & 0x1f;
-         unsigned g = (pixel >> 5) & 0x3f;
-         unsigned b = pixel & 0x1f;
-         color.r = (uint8_t)((r << 3) | (r >> 2));
-         color.g = (uint8_t)((g << 2) | (g >> 4));
-         color.b = (uint8_t)((b << 3) | (b >> 2));
-      }
+      uint32_t rgb   = menu
+            ? pixconv_rgba4444_to_argb8888(pixel)
+            : pixconv_rgb565_to_xrgb8888(pixel);
+      color.r        = (uint8_t)(rgb >> 16);
+      color.g        = (uint8_t)(rgb >>  8);
+      color.b        = (uint8_t)(rgb);
    }
 
    return color;
@@ -905,19 +870,16 @@ static void hub75_render(hub75_t *hub75, const void *frame,
    (void)render_overlays;
 #endif
 
-   pthread_mutex_lock(&hub75->refresh_lock);
-   {
-      hub75_color_t *swap_pixels = hub75->display_pixels;
-      hub75->display_pixels      = hub75->pixels;
-      hub75->pixels              = swap_pixels;
-   }
-   pthread_mutex_unlock(&hub75->refresh_lock);
+   retro_triple_buffer_publish(&hub75->frames);
+   hub75->pixels = (hub75_color_t*)retro_triple_buffer_back(&hub75->frames);
 }
 
 static bool hub75_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    hub75_t *hub75 = (hub75_t*)data;
    const void *source = frame;
    unsigned width;
@@ -950,7 +912,7 @@ static bool hub75_frame(void *data, const void *frame,
 
    if (frame_width > 4 && frame_height > 4)
    {
-      hub75->frame_dims   = VIDEO_SCALE_PACK(frame_width, frame_height);
+      hub75->frame_dims   = dims;
       hub75->frame_pitch  = pitch;
    }
 

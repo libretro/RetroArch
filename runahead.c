@@ -253,6 +253,9 @@ void runahead_secondary_core_destroy(void *data)
 {
    runloop_state_t *runloop_st      = (runloop_state_t*)data;
 
+   /* Nothing calls into the copy once it is closed */
+   runloop_st->secondary_key_event  = NULL;
+
    /* Drop any unconsumed async copy result (deleting its temp
     * file) and tell an in-flight copy task to discard its result;
     * this runs regardless of whether a secondary instance was
@@ -346,7 +349,11 @@ static char *get_tmpdir_alloc(const char *override_dir)
  * Duplicating the core binary for the secondary instance is pure
  * file IO sized by the core (MAME and friends run hundreds of
  * megabytes), so it must not run synchronously on the thread that
- * drives frames. The copy runs as a task; while it is in flight,
+ * drives frames. Neither should opening the copy: mapping the image,
+ * resolving its imports and running its constructors are the
+ * system loader's work, sized by the core again, and the copy's
+ * path is its own, so no other handle can share the instance. The
+ * copy and the open run as a task; while it is in flight,
  * secondary_core_create() reports 'pending' and run-ahead falls
  * back to the single-instance savestate method for those frames -
  * identical output, no stall - then upgrades to the secondary
@@ -364,6 +371,7 @@ static char *get_tmpdir_alloc(const char *override_dir)
 /* Result slot, published by the task callback (main thread) */
 static char *runahead_copy_slot_path     = NULL;
 static char *runahead_copy_slot_src      = NULL; /* identity of the copy */
+static dylib_t runahead_copy_slot_lib    = NULL; /* the copy, opened      */
 static bool  runahead_copy_slot_done     = false;
 static bool  runahead_copy_slot_failed   = false;
 /* Bumped by runahead_copy_reset(); a task publishes its result only
@@ -395,6 +403,8 @@ typedef struct runahead_copy_handle
     * copy has been closed. */
    struct retro_vfs_copy_handle *copy;
    char *copy_dst;   /* destination the open copy is writing to */
+   dylib_t lib;      /* out_path opened by the task; NULL if it
+                      * could not be, and the caller opens it */
    bool  started;    /* the open was attempted (once, on pass one) */
    bool  failed;
    unsigned generation;
@@ -608,6 +618,11 @@ static void runahead_copy_task_handler(retro_task_t *task)
       h->out_path = h->copy_dst;
       h->copy_dst = NULL;
       h->failed   = false;
+      /* On the worker under the threaded queue: the frame loop goes
+       * on while the loader maps the copy. A copy that will not
+       * open is still published; the main thread's own open of it
+       * then reports why. */
+      h->lib      = dylib_load(h->out_path);
    }
    else
    {
@@ -638,7 +653,13 @@ static void runahead_copy_task_cb(retro_task_t *task,
    if (h->generation != runahead_copy_generation)
    {
       /* Teardown happened while this copy was running (or after it
-       * finished but before this callback ran): discard. */
+       * finished but before this callback ran): discard.  Closed
+       * first: a library still open cannot be deleted on Windows. */
+      if (h->lib)
+      {
+         dylib_close(h->lib);
+         h->lib = NULL;
+      }
       if (h->out_path)
          filestream_delete(h->out_path);
       return;
@@ -646,6 +667,8 @@ static void runahead_copy_task_cb(retro_task_t *task,
 
    runahead_copy_slot_path   = h->out_path;
    h->out_path               = NULL;
+   runahead_copy_slot_lib    = h->lib;
+   h->lib                    = NULL;
    runahead_copy_slot_src    = h->src_path;
    h->src_path               = NULL;
    runahead_copy_slot_failed = h->failed;
@@ -663,6 +686,8 @@ static void runahead_copy_task_free(retro_task_t *task)
        * unfinished copy removes the partial destination. */
       if (h->copy)
          filestream_copy_close(h->copy);
+      if (h->lib)
+         dylib_close(h->lib);
       if (h->copy_dst)
          free(h->copy_dst);
       if (h->src_path)
@@ -686,6 +711,11 @@ static bool runahead_copy_in_flight(void)
  * an already-published (but unconsumed) temp file. */
 static void runahead_copy_reset(bool delete_file)
 {
+   if (runahead_copy_slot_lib)
+   {
+      dylib_close(runahead_copy_slot_lib);
+      runahead_copy_slot_lib = NULL;
+   }
    if (runahead_copy_slot_path)
    {
       if (delete_file)
@@ -715,10 +745,12 @@ static void runahead_copy_reset(bool delete_file)
  * - finished with failure -> UNAVAILABLE (slot reset, so a later
  *                            attempt starts a fresh copy)
  * - finished ok           -> READY; ownership of the temp path is
- *                            transferred to *out_path */
+ *                            transferred to *out_path, and of its
+ *                            open handle (NULL if the task could not
+ *                            open it) to *out_lib */
 static enum runahead_copy_status runahead_copy_poll(
       const char *core_path, const char *dir_libretro,
-      char **out_path)
+      char **out_path, dylib_t *out_lib)
 {
    /* A published result for a different core binary is stale
     * (e.g. core switched without an intervening teardown, or any
@@ -772,6 +804,8 @@ static enum runahead_copy_status runahead_copy_poll(
 
    *out_path               = runahead_copy_slot_path;
    runahead_copy_slot_path = NULL;
+   *out_lib                = runahead_copy_slot_lib;
+   runahead_copy_slot_lib  = NULL;
    runahead_copy_reset(false);
    return RUNAHEAD_COPY_READY;
    /* note: the generation bump in the reset above also invalidates
@@ -780,11 +814,67 @@ static enum runahead_copy_status runahead_copy_poll(
 }
 /* ===== END runahead core-copy fragment ===== */
 
+/* What run-ahead's second instance may not register.  The frontend
+ * holds one of each, keeps a pointer into the instance that declared
+ * it - a callback, a table or string in its image, its RAM - and the
+ * second instance is a copy of the running core, which has declared
+ * all of them already: taking the copy's would hand the running core's
+ * callbacks and memory to the copy, and leave them dangling once the
+ * copy is closed.
+ *
+ * Returns 1 to answer the declaration as accepted without storing it,
+ * 0 to refuse it (a hardware context is the running core's alone, so
+ * a hardware core has no second instance), -1 to pass it on. */
+#define RUNAHEAD_ENV_BASE(cmd) ((cmd) & ~RETRO_ENVIRONMENT_EXPERIMENTAL)
+static int runahead_secondary_env_filter(unsigned cmd)
+{
+   switch (RUNAHEAD_ENV_BASE(cmd))
+   {
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_RENDER):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_HW_SHARED_CONTEXT):
+         return 0;
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_DISK_CONTROL_EXT_INTERFACE):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_AUDIO_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_FRAME_TIME_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_AUDIO_BUFFER_STATUS_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_CORE_OPTIONS_UPDATE_DISPLAY_CALLBACK):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_MEMORY_MAPS):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_CONTROLLER_INFO):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_SUBSYSTEM_INFO):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_INPUT_DESCRIPTORS):
+      case RUNAHEAD_ENV_BASE(RETRO_ENVIRONMENT_SET_NETPACKET_INTERFACE):
+         return 1;
+      default:
+         break;
+   }
+   return -1;
+}
+#undef RUNAHEAD_ENV_BASE
+
 static bool runloop_environment_secondary_core_hook(
       unsigned cmd, void *data)
 {
    runloop_state_t *runloop_st    = runloop_state_get_ptr();
-   bool result                    = runloop_environment_cb(cmd, data);
+   int filtered                   = runahead_secondary_env_filter(cmd);
+   bool result;
+
+   if (filtered >= 0)
+      return filtered != 0;
+
+   /* The running core keeps its keyboard callback; the copy's has a
+    * slot of its own, emptied when the copy is closed */
+   if (     (cmd & ~RETRO_ENVIRONMENT_EXPERIMENTAL)
+         == RETRO_ENVIRONMENT_SET_KEYBOARD_CALLBACK)
+   {
+      const struct retro_keyboard_callback *info =
+         (const struct retro_keyboard_callback*)data;
+      runloop_st->secondary_key_event = info ? info->callback : NULL;
+      return true;
+   }
+
+   result                         = runloop_environment_cb(cmd, data);
 
    if (runloop_st->flags & RUNLOOP_FLAG_HAS_VARIABLE_UPDATE)
    {
@@ -815,6 +905,7 @@ static enum runahead_copy_status secondary_core_create(
 {
    enum runahead_copy_status copy_status;
    char *copied_path             = NULL;
+   dylib_t copied_lib            = NULL;
    const enum rarch_core_type
       last_core_type             = runloop_st->last_core_type;
    rarch_system_info_t *sys_info = &runloop_st->system;
@@ -830,13 +921,16 @@ static enum runahead_copy_status secondary_core_create(
     * single-instance fallback for the frame - no stall. */
    copy_status = runahead_copy_poll(
          path_get(RARCH_PATH_CORE), path_directory_libretro,
-         &copied_path);
+         &copied_path, &copied_lib);
    if (copy_status != RUNAHEAD_COPY_READY)
       return copy_status;
 
    if (runloop_st->secondary_library_path)
       free(runloop_st->secondary_library_path);
    runloop_st->secondary_library_path = copied_path;
+   /* Opened by the task; runloop_init_libretro_symbols takes it as
+    * it is and opens the path itself only when this is NULL. */
+   runloop_st->secondary_lib_handle   = copied_lib;
 
    /* Load Core */
    if (!runloop_init_libretro_symbols(runloop_st,
@@ -1601,7 +1695,17 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    cbs->poll_cb                           = old_poll_function;
    cbs->state_cb                          = old_input_function;
 
-   runloop_st->current_core.retro_set_input_poll(cbs->poll_cb);
+   /* The core gets back the poll callback it was given at load, which
+    * polls only when the poll mode says the core's call is the one
+    * that does. cbs->poll_cb is not that: it is the frontend's own
+    * "poll now", input_driver_poll(). Handing it to the core made the
+    * core's input_poll an unconditional poll from the first frame of
+    * run-ahead on, so under late or early polling every frame polled
+    * twice - and went on doing so after run-ahead was switched off,
+    * until the core was reloaded. Turbo counts polls, so it ran at
+    * twice its rate. */
+   runloop_st->current_core.retro_set_input_poll(
+         runloop_st->input_poll_callback_original);
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 }
 

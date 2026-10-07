@@ -659,10 +659,8 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    float center_x              = 0.0f;
    const int edge_detect       = 32700;
    bool inside                 = false;
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos               = 0;
+   uint32_t res_screen_pos        = 0;
    float sensitivity           = 1.0f;
    if (!ps3->gem_connected || !ps3->gem_init)
       return 0;
@@ -709,15 +707,15 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    pointer_y                   = v.vec128[1];
 #endif
 
-   if (video_driver_translate_coord_viewport_wrap(&vp,
+   if (input_driver_translate_coord_viewport_wrap(&vp,
            center_x + ((pointer_x - ps3->adj_x) * sensitivity), center_y + ((pointer_y - ps3->adj_y) * sensitivity),
-           &res_x, &res_y, &res_screen_x, &res_screen_y))
+           &res_pos, &res_screen_pos))
    {
 
-      inside = (res_x >= -edge_detect)
-            && (res_y >= -edge_detect)
-            && (res_x <= edge_detect)
-            && (res_y <= edge_detect);
+      inside = (VIDEO_POS_X(res_pos) >= -edge_detect)
+            && (VIDEO_POS_Y(res_pos) >= -edge_detect)
+            && (VIDEO_POS_X(res_pos) <= edge_detect)
+            && (VIDEO_POS_Y(res_pos) <= edge_detect);
 
       switch (id)
       {
@@ -761,11 +759,11 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
             if (inside)
-               return res_x;
+               return VIDEO_POS_X(res_pos);
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
             if (inside)
-               return ~res_y;
+               return ~VIDEO_POS_Y(res_pos);
             break;
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
             return !inside;
@@ -777,6 +775,27 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
    return 0;
 }
 #endif
+
+/* The keys the frontend asks about, for a port's binds: which are
+ * down. The driver evaluated the binds itself - and without the rule
+ * that keeps bound keys from the RetroPad while the keyboard is the
+ * core's (Game Focus), which every other driver applied; the frontend
+ * does the evaluating for every driver that hands it the keys, with
+ * the one set of rules. */
+static void ps3_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   (void)port;
+   (void)bind;
+   if (!ps3)
+      return;
+   for (i = 0; i < count; i++)
+      if (ps3_keyboard_port_input_pressed(ps3, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
 
 static int16_t ps3_input_state(
       void *data,
@@ -796,32 +815,10 @@ static int16_t ps3_input_state(
    {
       switch (device)
       {
+         /* The RetroPad's buttons, where they are bound to keys, are
+          * the frontend's to answer: it asks ps3_input_keys_down() for
+          * the keys once a poll. */
          case RETRO_DEVICE_JOYPAD:
-            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            {
-               int i;
-               int16_t ret = 0;
-
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (ps3_keyboard_port_input_pressed(
-                              ps3, RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-
-               return ret;
-            }
-
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (ps3_keyboard_port_input_pressed(
-                        ps3, RETRO_KEYBIND_KEY(&binds[port][id])))
-                  return 1;
-            }
-	    break;
          case RETRO_DEVICE_ANALOG:
             break;
          case RETRO_DEVICE_KEYBOARD:
@@ -982,5 +979,7 @@ input_driver_t input_ps3 = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   ps3_input_keys_down
 };

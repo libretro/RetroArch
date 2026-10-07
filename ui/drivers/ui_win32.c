@@ -51,6 +51,7 @@
 #include <compat/strl.h>
 #ifdef HAVE_THREADS
 #include <rthreads/rthreads.h>
+#include <retro_atomic.h>
 #endif
 
 #include "../ui_companion_driver.h"
@@ -58,6 +59,7 @@
 #include "../../paths.h"
 #include "../../configuration.h"
 #include "../../retroarch.h"
+#include "../../verbosity.h"
 #include "../../tasks/tasks_internal.h"
 #include "../../frontend/drivers/platform_win32.h"
 
@@ -80,6 +82,39 @@ static enum win32_browser_mode g_win32_browser_mode =
    WIN32_BROWSER_MODE_LOAD_CONTENT;
 #endif
 
+/* Menu-bar commands picked on a thread other than the main one.
+ *
+ * With threaded video the RetroArch window is created on the video
+ * thread, so its WM_COMMAND arrives there. The commands behind the
+ * menu bar are run-loop work - Window Scale reinits the drivers, which
+ * makes the video thread wait for itself to shut down and hangs the
+ * process (#19665) - so they are parked here and run by the main
+ * thread's pump. Each slot holds one command id or 0; ids are never 0.
+ * Clicks are seconds apart, so a handful of slots never fills; a full
+ * mailbox drops the click rather than run it on the wrong thread. */
+#define WIN32_MENU_DEFER_SLOTS 8
+static retro_atomic_int_t win32_menu_deferred[WIN32_MENU_DEFER_SLOTS];
+
+static bool win32_menu_defer(WPARAM mode)
+{
+   int i;
+   for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
+      if (retro_atomic_cas_int(&win32_menu_deferred[i], 0, (int)mode))
+         return true;
+   return false;
+}
+
+static void win32_menu_run_deferred(void)
+{
+   int i;
+   for (i = 0; i < WIN32_MENU_DEFER_SLOTS; i++)
+   {
+      int mode = retro_atomic_exchange_int(&win32_menu_deferred[i], 0);
+      if (mode)
+         win32_menu_loop(main_window.hwnd, (WPARAM)mode);
+   }
+}
+
 static void* ui_application_win32_initialize(void)
 {
    return NULL;
@@ -96,12 +131,63 @@ static void ui_application_win32_dispatch(MSG *msg)
    }
 }
 
+/* Raw input is Windows XP's: a build for anything older has no driver
+ * for it and, with the SDKs of that time, no WM_INPUT either, so what
+ * names it below is compiled only where the driver is. */
+#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+extern bool winraw_poll_owns_thread(void);
+extern void winraw_pump_done(void);
+#define WIN32_RAW_INPUT_PUMP
+#define WIN32_RAW_INPUT_PUMP_DONE() winraw_pump_done()
+#else
+#define WIN32_RAW_INPUT_PUMP_DONE() ((void)0)
+#endif
+
 static void ui_application_win32_process_events(void)
 {
    MSG msg;
 
-   while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
-      ui_application_win32_dispatch(&msg);
+#ifdef WIN32_RAW_INPUT_PUMP
+   if (winraw_poll_owns_thread())
+   {
+      /* The raw input driver reads this thread's reports in bulk when
+       * it polls (winraw_input.c, "Read by the poll"). Taking them out
+       * here, one WM_INPUT at a time, is the work that read exists to
+       * save, so this asks for everything below WM_INPUT and
+       * everything above it and leaves the reports in the queue. The
+       * two ranges take turns, so that neither waits for the other to
+       * run dry. */
+      for (;;)
+      {
+         bool any = false;
+         if (PeekMessage(&msg, 0, 0, WM_INPUT - 1, PM_REMOVE))
+         {
+            ui_application_win32_dispatch(&msg);
+            any = true;
+         }
+         if (PeekMessage(&msg, 0, WM_INPUT + 1, 0xFFFFFFFF, PM_REMOVE))
+         {
+            ui_application_win32_dispatch(&msg);
+            any = true;
+         }
+         if (!any)
+            break;
+      }
+   }
+   else
+#endif
+   {
+      while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+         ui_application_win32_dispatch(&msg);
+      /* The raw input driver, where this thread takes its reports:
+       * they are in its state as of now. */
+      WIN32_RAW_INPUT_PUMP_DONE();
+   }
+
+   /* The video thread pumps through here too (win32_check_window);
+    * only the main thread may run the parked commands. */
+   if (task_is_on_main_thread())
+      win32_menu_run_deferred();
 }
 
 static ui_application_t ui_application_win32 = {
@@ -660,29 +746,102 @@ bool win32_load_content_from_gui(const char *szFilename)
    return false;
 }
 
-#ifdef LEGACY_WIN32
-bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
+/* Windows 9x hands over ANSI paths, and DragQueryFileA has been in
+ * shell32 since Windows 95. */
+static bool win32_drag_query_file_ansi(HWND hwnd, WPARAM wparam)
 {
-   if (DragQueryFile((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   UINT count = DragQueryFileA((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   if (count)
    {
       char szFilename[1024];
+#ifdef HAVE_MENU
+      UINT i;
+      char utf8[1024];
+      union string_list_elem_attr attr;
+      struct string_list *files = string_list_new();
+      attr.i                    = 0;
+
+      for (i = 0; files && i < count; i++)
+      {
+         szFilename[0] = '\0';
+         DragQueryFileA((HDROP)wparam, i, szFilename, sizeof(szFilename));
+         if (     local_to_utf8_string(szFilename, utf8, sizeof(utf8))
+               && !string_list_append(files, utf8, attr))
+         {
+            string_list_free(files);
+            files = NULL;
+         }
+      }
+      if (files && menu_driver_drop(files))
+         return true;
+#endif
       szFilename[0]    = '\0';
-      DragQueryFile((HDROP)wparam, 0, szFilename, sizeof(szFilename));
+      DragQueryFileA((HDROP)wparam, 0, szFilename, sizeof(szFilename));
       return win32_load_content_from_gui(szFilename);
    }
    return false;
 }
+
+#ifdef LEGACY_WIN32
+bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
+{
+   return win32_drag_query_file_ansi(hwnd, wparam);
+}
 #else
 bool win32_drag_query_file(HWND hwnd, WPARAM wparam)
 {
-   if (DragQueryFileW((HDROP)wparam, 0xFFFFFFFF, NULL, 0))
+   typedef UINT (WINAPI *DragQueryFileW_t)(HDROP, UINT, LPWSTR, UINT);
+   static DragQueryFileW_t query_w = NULL;
+   static bool probed              = false;
+   UINT count                      = 0;
+
+   /* Resolved rather than imported, so the binary still loads on a
+    * shell32 without it; a drop it cannot read goes the ANSI way. */
+   if (!probed)
+   {
+      HMODULE shell32 = GetModuleHandleA("shell32.dll");
+      if (shell32)
+         query_w = (DragQueryFileW_t)GetProcAddress(shell32,
+               "DragQueryFileW");
+      probed = true;
+   }
+   if (query_w)
+      count = query_w((HDROP)wparam, 0xFFFFFFFF, NULL, 0);
+   if (!count)
+      return win32_drag_query_file_ansi(hwnd, wparam);
+
    {
       wchar_t wszFilename[4096];
       bool ret        = false;
       char *szFilename = NULL;
+#ifdef HAVE_MENU
+      UINT i;
+      union string_list_elem_attr attr;
+      struct string_list *files = string_list_new();
+      attr.i                    = 0;
+
+      for (i = 0; files && i < count; i++)
+      {
+         wszFilename[0] = L'\0';
+         query_w((HDROP)wparam, i, wszFilename,
+               sizeof(wszFilename) / sizeof(wszFilename[0]));
+         if ((szFilename = utf16_to_utf8_string_alloc(wszFilename)))
+         {
+            bool appended = string_list_append(files, szFilename, attr);
+            free(szFilename);
+            if (!appended)
+            {
+               string_list_free(files);
+               files = NULL;
+            }
+         }
+      }
+      if (files && menu_driver_drop(files))
+         return true;
+#endif
       wszFilename[0]   = L'\0';
 
-      DragQueryFileW((HDROP)wparam, 0, wszFilename,
+      query_w((HDROP)wparam, 0, wszFilename,
             sizeof(wszFilename) / sizeof(wszFilename[0]));
       szFilename = utf16_to_utf8_string_alloc(wszFilename);
       ret        = win32_load_content_from_gui(szFilename);
@@ -817,6 +976,14 @@ static bool win32_browser(
 LRESULT win32_menu_loop(HWND owner, WPARAM wparam)
 {
    WPARAM mode            = wparam & 0xffff;
+
+   if (!task_is_on_main_thread())
+   {
+      if (mode && !win32_menu_defer(mode))
+         RARCH_WARN("[Win32] Menu command %u dropped: too many pending.\n",
+               (unsigned)mode);
+      return 0L;
+   }
 
    switch (mode)
    {
@@ -1156,7 +1323,7 @@ static const char *win32_meta_key_to_name(unsigned int meta_key,
       char *buf, size_t buf_size)
 {
    int i = 0;
-   const struct retro_keybind* key = &input_config_binds[0][meta_key];
+   const struct retro_keybind* key = input_config_bind(0, meta_key);
    int key_code                    = RETRO_KEYBIND_KEY(key);
 
    for (;;)
@@ -1464,6 +1631,10 @@ void win32_menubar_rebuild(void)
 
    if (!hwnd)
       return;
+
+   /* one kept for a window that has none now (fullscreen) is in the
+    * old language too */
+   win32_menu_kept_drop();
 
    old_menu = GetMenu(hwnd);
    /* No menubar is currently attached (e.g. fullscreen, or menubar

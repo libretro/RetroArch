@@ -40,6 +40,8 @@
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
+#include "../../apple_runtime.h"
+#include <defines/cocoa_defines.h>
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
@@ -249,11 +251,8 @@ static enum gfx_ctx_api cocoa_gl_gfx_ctx_get_api(void *data) { return cocoagl_ap
 static bool cocoa_gl_gfx_ctx_suppress_screensaver(void *data, bool enable) { return false; }
 
 static void cocoa_gl_gfx_ctx_input_driver(void *data,
-      const char *name,
-      input_driver_t **input, void **input_data)
+      const char *name)
 {
-   *input      = NULL;
-   *input_data = NULL;
 }
 
 #if TARGET_OS_OSX
@@ -387,7 +386,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval             = (unsigned)i;
 #if TARGET_OS_OSX
    GLint value                   = interval ? 1 : 0;
-   [g_ctx setValues:&value forParameter:NSOpenGLCPSwapInterval];
+   [g_ctx setValues:&value forParameter:NSOpenGLContextParameterSwapInterval];
 #else
    cocoa_ctx_data_t *cocoa_ctx   = (cocoa_ctx_data_t*)data;
    /* < No way to disable Vsync on iOS? */
@@ -463,8 +462,11 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
    /* Render at the backing store's resolution rather than at point
     * size. 10.7, deprecated in 10.14 and still honoured; asked of the
     * view rather than of the build SDK. */
-   if ([g_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-      [g_view setWantsBestResolutionOpenGLSurface:YES];
+   {
+      SEL sel = sel_registerName("setWantsBestResolutionOpenGLSurface:");
+      if ([g_view respondsToSelector:sel])
+         apple_rt_send_bool(g_view, sel, YES);
+   }
 
    {
       NSOpenGLPixelFormat *fmt;
@@ -549,7 +551,9 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
       RELEASE(fmt);
    }
 
-   [g_ctx setView:g_view];
+   /* Deprecated with the rest of NSOpenGL and still how a context
+    * gets its drawable; sent by selector so it does not warn */
+   apple_rt_send_id(g_ctx, @selector(setView:), g_view);
    {
       /* -[NSWindow setColorSpace:] is NS_AVAILABLE_MAC(10_6).  On 10.5
        * Leopard the selector doesn't exist and the runtime throws
@@ -558,8 +562,9 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
        * anyway), so skip it on systems that lack the method.
        * +[NSColorSpace sRGBColorSpace] itself is 10.5+ and is safe. */
       NSWindow *win = [g_view window];
-      if ([win respondsToSelector:@selector(setColorSpace:)])
-         [win setColorSpace:[NSColorSpace sRGBColorSpace]];
+      SEL set_cs    = sel_registerName("setColorSpace:");
+      if ([win respondsToSelector:set_cs])
+         apple_rt_send_id(win, set_cs, [NSColorSpace sRGBColorSpace]);
    }
 
    /* Window and full-screen surgery lives with the application
@@ -710,7 +715,7 @@ static void *cocoa_gl_gfx_ctx_init(void *video_driver)
 }
 #endif
 
-static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned width, unsigned height)
+static bool cocoa_gl_gfx_ctx_set_resize(void *data, unsigned dims)
 {
    return true;
 }
@@ -746,6 +751,19 @@ static bool cocoa_gl_gfx_ctx_presentable(void *data)
 #endif
    return true;
 }
+
+#if TARGET_OS_OSX
+/* The display's last vblank, from the view's display link
+ * (ui/drivers/cocoa/cocoa_common.m): what the threaded presenter lays
+ * its vblanks from. */
+retro_time_t cocoa_last_vblank_time(void);
+
+static retro_time_t cocoa_gl_gfx_ctx_last_present_time(void *data)
+{
+   (void)data;
+   return cocoa_last_vblank_time();
+}
+#endif
 
 const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    cocoa_gl_gfx_ctx_init,
@@ -789,5 +807,10 @@ const gfx_ctx_driver_t gfx_ctx_cocoagl = {
    NULL, /* make_current */
    NULL, /* create_surface */
    NULL, /* destroy_surface */
-   cocoa_gl_gfx_ctx_presentable
+   cocoa_gl_gfx_ctx_presentable,
+#if TARGET_OS_OSX
+   cocoa_gl_gfx_ctx_last_present_time
+#else
+   NULL  /* last_present_time */
+#endif
 };

@@ -86,6 +86,10 @@ bool rcheevos_is_badge_available(const char* badge, bool locked);
 void rcheevos_update_badge_references(const char* badge_name);
 
 uint8_t* rcheevos_patch_address(unsigned address);
+/* As rcheevos_patch_address, and also reports how many bytes remain in
+ * the memory region from that address, so a caller can bound a read or
+ * write instead of running off the end of the region. */
+uint8_t* rcheevos_patch_address_avail(unsigned address, unsigned *avail);
 
 RETRO_END_DECLS
 

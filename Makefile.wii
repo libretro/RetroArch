@@ -58,9 +58,17 @@ endif
 
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
+# RetroArch's own system layer, os/gekko; HAVE_LIBOGC=1 builds on
+# devkitPro's libogc instead.  EXTERNAL_LIBOGC=1, which the core CI
+# templates pass when they relink the precompiled HAVE_LIBOGC=1 tree,
+# names devkitPro's libogc too and selects the same build.
+ifeq ($(EXTERNAL_LIBOGC), 1)
+HAVE_LIBOGC       ?= 1
+endif
+HAVE_LIBOGC       ?= 0
+ifeq ($(HAVE_LIBOGC), 1)
 libogc_platform    := 1
-
-EXTERNAL_LIBOGC   ?= 0
+endif
 HAVE_OGG_OGC      ?= 0
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -77,16 +85,15 @@ endif
 
 INCLUDE += -I.
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   CFLAGS   += -DEXTERNAL_LIBOGC
-   CXXFLAGS += -DEXTERNAL_LIBOGC
+ifeq ($(HAVE_LIBOGC), 0)
+   CFLAGS   += -DGEKKO_NATIVE
+   CXXFLAGS += -DGEKKO_NATIVE
+   INCLUDE  += -Ios/gekko/include
+else
+   CFLAGS   += -DHAVE_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/wii
    INCLUDE +=  -I$(DEVKITPRO)/libogc/include
-else
-   CFLAGS   += -DINTERNAL_LIBOGC
-   CXXFLAGS += -DINTERNAL_LIBOGC
-   LIBDIRS += -Lwii/libogc/libs/wii
-   INCLUDE += -Iwii/libogc/include
 endif
 
 
@@ -95,31 +102,38 @@ MACHDEP := -DHW_RVL -mrvl
 LIBDIRS += -L.
 MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
+# libogc 3 links with devkitPPC's own scripts and sizes the main stack
+# in C (platform_gx_libogc.c); older libogc takes the bootstrap/gx ones.
+LIBOGC_MAJOR := $(shell sed -n 's/^.define[[:space:]]*_V_MAJOR_[[:space:]]*\([0-9]*\).*/\1/p' $(DEVKITPRO)/libogc/include/ogc/libversion.h 2>/dev/null)
+ifneq ($(filter-out 0 1 2,$(LIBOGC_MAJOR)),)
+LIBOGC_OWN_LD := 1
+endif
+
+ifeq ($(HAVE_LIBOGC), 1)
 LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map,-wrap,malloc,-wrap,free,-wrap,memalign,-wrap,calloc,-wrap,realloc,-wrap,strdup,-wrap,strndup,-wrap,malloc_usable_size
 
-ifeq ($(BIG_STACK), 1)
+ifeq ($(BIG_STACK)$(LIBOGC_OWN_LD), 1)
    LDFLAGS += -T bootstrap/gx/rvl.ld
+endif
+else
+# os/gekko's heap runs from MEM1 into MEM2 by itself.
+LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map \
+           -T os/gekko/boot/rvl.ld -Los/gekko/boot
 endif
 
 ifeq ($(HAVE_OGG_OGC), 1)
    LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   LIBS += -lfat
-endif
-
-LIBS += -lwiiuse -lbte
+ifeq ($(HAVE_LIBOGC), 1)
+LIBS += -lfat -lwiiuse -lbte
 
 ifeq ($(USBGECKO), 1)
   LIBS += -ldb
 endif
  
-ifeq ($(HAVE_LOGGER), 1)
-  LIBS += -lbba
-endif
-
 LIBS += -logc
+endif
 
 CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
@@ -155,20 +169,31 @@ HAVE_STATIC_AUDIO_FILTERS := 1
 HAVE_STATIC_VIDEO_FILTERS := 1
 
 #HAVE_LANGEXTRA          := 1
-HAVE_WIIUSB_HID          := 1
-HAVE_HID                 := 1
-HAVE_RARCH_EXEC          := 1
 HAVE_RSOUND              := 0
 HAVE_XMB                 := 0
 HAVE_OZONE               := 0
 HAVE_RGUI                := 1
 HAVE_MATERIALUI          := 0
+
+ifeq ($(HAVE_LIBOGC), 1)
+HAVE_WIIUSB_HID          := 1
+HAVE_HID                 := 1
+HAVE_RARCH_EXEC          := 1
 HAVE_CHEEVOS             := 1
 
 CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
 
 APP_BOOTER_DIR = wii/app_booter
 PLATOBJS := $(APP_BOOTER_DIR)/app_booter.binobj
+else
+HAVE_WIIUSB_HID          := 0
+HAVE_HID                 := 1
+HAVE_RARCH_EXEC          := 0
+HAVE_CHEEVOS             := 1
+
+CFLAGS      += -DHAVE_SOCKET_LEGACY -DHAVE_CHEEVOS
+PLATOBJS :=
+endif
 
 ifeq ($(USBGECKO), 1)
    CFLAGS += -DUSBGECKO
@@ -179,10 +204,22 @@ INCLUDE += -I./libretro-common/include \
 	   -Ideps/rcheevos/include
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o libretro-common/memory/mem2_manager.o gfx/drivers/gx_gfx_vi_encoder.o frontend/drivers/platform_wii.o input/drivers_hid/wiiusb_hid.o
+ifeq ($(HAVE_LIBOGC), 1)
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o libretro-common/memory/mem2_manager_libogc.o gfx/drivers/gx_gfx_vi_encoder_libogc.o frontend/drivers/platform_wii_libogc.o input/drivers_hid/wiiusb_hid_libogc.o
+else
+GEKKO_DIR      := os/gekko
+GEKKO_PLATFORM := rvl
+include os/gekko/gekko.mk
+OBJ =  audio/drivers/gekko_audio.o gfx/drivers/gekko_gfx.o gfx/display_servers/dispserv_gekko.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gekko.o input/drivers_joypad/gekko_joypad.o $(addsuffix .o,$(basename $(GEKKO_SOURCES)))
+ifeq ($(HAVE_HID), 1)
+OBJ += input/drivers_hid/gekko_hid.o
+CFLAGS += -DHAVE_GEKKO_HID
+endif
+endif
 
-ifeq ($(EXTERNAL_LIBOGC), 0)
-   OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
+# Logs as UDP datagrams to PC_DEVELOPMENT_IP_ADDRESS:PC_DEVELOPMENT_UDP_PORT.
+ifeq ($(HAVE_LOGGER), 1)
+   HAVE_NETLOGGER = 1
 endif
 
 include Makefile.common
@@ -193,11 +230,6 @@ CFLAGS += $(DEFINES) -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\
 
 ifeq ($(WANT_GLSLANG), 1)
 	OBJ += griffin/griffin_glslang.o
-endif
-
-ifeq ($(HAVE_LOGGER), 1)
-   CFLAGS      += -DHAVE_LOGGER
-   CFLAGS      += -DPC_DEVELOPMENT_IP_ADDRESS=\"$(PC_DEVELOPMENT_IP_ADDRESS)\" -DPC_DEVELOPMENT_UDP_PORT=$(PC_DEVELOPMENT_UDP_PORT)
 endif
 
 ifeq ($(HAVE_KERNEL_PRX), 1)
@@ -308,7 +340,6 @@ $(EXT_INTER_TARGET): $(OBJ)
 	$(LD) -r -b binary $(OBJOUT)$@ $<
 
 $(APP_BOOTER_DIR)/app_booter.bin:
-	export EXTERNAL_LIBOGC
 	$(MAKE) -C $(APP_BOOTER_DIR)
 
 clean:
@@ -316,7 +347,9 @@ clean:
 	$(Q)rm -f $(EXT_TARGET)
 	$(Q)rm -f $(EXT_INTER_TARGET)
 	$(Q)rm -f $(OBJ)
+ifeq ($(HAVE_LIBOGC), 1)
 	$(Q)$(MAKE) -C $(APP_BOOTER_DIR) clean
+endif
 
 .PHONY: clean
 

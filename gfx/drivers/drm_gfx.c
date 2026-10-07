@@ -476,6 +476,7 @@ static void drm_plane_setup(struct drm_surface *surface)
    if (!plane_resources)
    {
       RARCH_ERR("[DRM] No scaling planes available.\n");
+      return;
    }
 
    RARCH_LOG("[DRM] Number of planes on FD %d is %d.\n",
@@ -639,7 +640,7 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
 static bool init_drm(void)
 {
    uint i;
-   drmModeConnector *connector;
+   drmModeConnector *connector = NULL;
    struct modeset_buf buf;
 
    drm.fd = open("/dev/dri/card0", O_RDWR);
@@ -734,8 +735,7 @@ static bool init_drm(void)
    return true;
 }
 
-static void *drm_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *drm_init(const video_info_t *video)
 {
    struct drm_video *_drmvars = (struct drm_video*)
       calloc(1, sizeof(struct drm_video));
@@ -761,8 +761,6 @@ static void *drm_init(const video_info_t *video,
    _drmvars->main_surface     = NULL;
    _drmvars->menu_surface     = NULL;
 
-   if (input && input_data)
-      *input = NULL;
 
    /* DRM Init */
    if (!init_drm())
@@ -780,22 +778,24 @@ static void *drm_init(const video_info_t *video,
    return _drmvars;
 }
 
-static bool drm_frame(void *data, const void *frame, unsigned width,
-      unsigned height, uint64_t frame_count, unsigned pitch, const char *msg,
+static bool drm_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count, unsigned pitch, const char *msg,
       video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    struct drm_video *_drmvars = data;
 #ifdef HAVE_MENU
    bool menu_is_alive         = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
 
-   if (_drmvars->core_dims != VIDEO_SCALE_PACK(width, height))
+   if (_drmvars->core_dims != dims)
    {
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
 
-      _drmvars->core_dims   = VIDEO_SCALE_PACK(width, height);
+      _drmvars->core_dims   = dims;
       _drmvars->core_pitch  = pitch;
 
       if (_drmvars->main_surface)
@@ -803,7 +803,7 @@ static bool drm_frame(void *data, const void *frame, unsigned width,
 
       /* We need to recreate the main surface and it's pages (buffers). */
       drm_surface_setup(_drmvars,
-            VIDEO_SCALE_PACK(width, height),
+            dims,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
             _drmvars->rgb32 ? DRM_FORMAT_XRGB8888 : DRM_FORMAT_RGB565,
@@ -845,6 +845,8 @@ static void drm_set_texture_enable(void *data, bool state, bool full_screen)
 static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       unsigned dims, float alpha)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned int i;
    struct drm_video    *_drmvars = data;
    struct drm_surface  *surface  = NULL;
@@ -860,7 +862,7 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    {
       drm_surface_setup(_drmvars,
             dims,
-            VIDEO_SCALE_W(dims) * 4,
+            width * 4,
             4,
             DRM_FORMAT_XRGB8888,
             210,
@@ -886,8 +888,8 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
    {
       unsigned int max_w = VIDEO_SCALE_W(surface->src_dims);
       unsigned int max_h = VIDEO_SCALE_H(surface->src_dims);
-      if (VIDEO_SCALE_W(dims)  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
-      if (VIDEO_SCALE_H(dims) > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
+      if (width  > max_w) VIDEO_SCALE_PUT_W(dims, max_w);
+      if (height > max_h) VIDEO_SCALE_PUT_H(dims, max_h);
    }
 
    if (rgb32)
@@ -895,10 +897,10 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
       /* Source is already XRGB8888 -- just copy row by row to handle
        * any difference between source stride and dst stride. */
       const uint8_t *src      = (const uint8_t*)frame;
-      unsigned int   src_pitch = VIDEO_SCALE_W(dims) * 4;
+      unsigned int   src_pitch = width * 4;
       unsigned int   row_bytes = (src_pitch < dst_pitch) ? src_pitch : dst_pitch;
 
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+      for (i = 0; i < height; i++)
          memcpy(dst_base + (dst_pitch * i), src + (src_pitch * i), row_bytes);
    }
    else
@@ -907,13 +909,13 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
        *   R = bits 15..12, G = 11..8, B = 7..4, A = 3..0
        * Expand each 4-bit channel to 8 bits via nibble replication
        * (x | (x << 4)) and pack into XRGB8888 for the dumb buffer. */
-      for (i = 0; i < VIDEO_SCALE_H(dims); i++)
+      for (i = 0; i < height; i++)
       {
-         const uint16_t *src_row = (const uint16_t*)frame + (VIDEO_SCALE_W(dims) * i);
+         const uint16_t *src_row = (const uint16_t*)frame + (width * i);
          uint32_t       *dst_row = (uint32_t*)(dst_base + (dst_pitch * i));
          unsigned int    j;
 
-         for (j = 0; j < VIDEO_SCALE_W(dims); j++)
+         for (j = 0; j < width; j++)
          {
             uint16_t src_pix = src_row[j];
             uint32_t r4      = (src_pix >> 12) & 0xF;

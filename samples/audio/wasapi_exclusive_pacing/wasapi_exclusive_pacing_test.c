@@ -19,6 +19,7 @@
 #include <math.h>
 #include <formats/rac3.h>
 #include <formats/iec61937.h>
+#include <features/features_cpu.h>
 #include "fake_wasapi.h"
 #include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
@@ -59,11 +60,12 @@ typedef struct
    size_t frame_bytes;
 } result_t;
 
-static void sleep_until(struct timespec *t, long ns)
+/* *t is a deadline in nanoseconds on cpu_features_get_time_usec()'s
+ * clock, advanced by ns and slept to. */
+static void sleep_until(int64_t *t, long ns)
 {
-   t->tv_nsec += ns;
-   while (t->tv_nsec >= 1000000000L) { t->tv_sec++; t->tv_nsec -= 1000000000L; }
-   clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, t, NULL);
+   *t += ns;
+   retro_sleep_until_us((retro_time_t)((*t + 999) / 1000));
 }
 
 static bool run(const scenario_t *sc, result_t *r)
@@ -76,7 +78,7 @@ static bool run(const scenario_t *sc, result_t *r)
    long     write_interval   = 16683000L;         /* ns */
    unsigned writes           = sc->seconds * 60;
    unsigned i;
-   struct timespec t;
+   int64_t t;
    void *buf;
 
    memset(r, 0, sizeof(*r));
@@ -102,7 +104,7 @@ static bool run(const scenario_t *sc, result_t *r)
    if (!sc->no_start)
       audio_wasapi.start(ctx, false);
 
-   clock_gettime(CLOCK_MONOTONIC, &t);
+   t = (int64_t)cpu_features_get_time_usec() * 1000;
    for (i = 0; i < writes; i++)
    {
       ssize_t n = audio_wasapi.write(ctx, buf, frames_per_write * frame_bytes);
@@ -378,7 +380,8 @@ static void ac3_bitstream_case(void)
    }
    /* let the pump drain the last bursts */
    {
-      struct timespec t; clock_gettime(CLOCK_MONOTONIC, &t); sleep_until(&t, 150000000L);
+      int64_t t = (int64_t)cpu_features_get_time_usec() * 1000;
+      sleep_until(&t, 150000000L);
    }
    audio_wasapi.stop(ctx);
    fake_device_stats(&st);

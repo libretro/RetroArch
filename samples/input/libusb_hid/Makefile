@@ -9,7 +9,6 @@ SOURCES := \
 	libusb_hid_test.c \
 	fake_libusb.c \
 	$(RARCH_DIR)/input/drivers_hid/libusb_hid.c \
-	$(LIBRETRO_COMM_DIR)/queues/fifo_queue.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 

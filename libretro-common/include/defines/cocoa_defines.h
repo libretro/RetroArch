@@ -104,8 +104,16 @@
 #define NSAlertStyleWarning  NSWarningAlertStyle
 #define NSEventModifierFlagCapsLock NSAlphaShiftKeyMask
 #define NSControlSizeRegular NSRegularControlSize
+#define NSEventMaskLeftMouseDragged NSLeftMouseDraggedMask
+#define NSEventMaskLeftMouseUp NSLeftMouseUpMask
+#define NSOpenGLContextParameterSwapInterval NSOpenGLCPSwapInterval
 #else
 #define HAS_MACOSX_10_12 1
+#endif
+
+/* Names the 10.14 SDK gave to older AppKit constants: the same values. */
+#if !defined(MAC_OS_X_VERSION_MAX_ALLOWED) || MAC_OS_X_VERSION_MAX_ALLOWED < 101400
+#define NSBezelStyleRounded NSRoundedBezelStyle
 #endif
 
 /* Window-related names the AppKit glue needs whatever SDK it is built

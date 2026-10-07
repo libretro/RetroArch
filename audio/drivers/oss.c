@@ -37,7 +37,9 @@
 #include "../../config.h"
 #endif
 
+#include <retro_miscellaneous.h>
 #include "../audio_driver.h"
+#include "../audio_device_label.h"
 #include "../../verbosity.h"
 
 #ifdef HAVE_OSS_BSD
@@ -81,11 +83,18 @@ static void *oss_init(const char *device,
       unsigned *new_out_rate)
 {
    int frags, frag, channels, format, new_rate;
+   char oss_device[PATH_MAX_LENGTH];
    oss_audio_t *ossaudio  = (oss_audio_t*)calloc(1, sizeof(oss_audio_t));
-   const char *oss_device = device ? device : DEFAULT_OSS_DEV;
 
    if (!ossaudio)
       return NULL;
+
+   /* The device may be a list entry, "/dev/dsp0 (card)": the path is
+    * what is opened. */
+   if (device)
+      audio_device_label_path(oss_device, sizeof(oss_device), device);
+   else
+      strlcpy(oss_device, DEFAULT_OSS_DEV, sizeof(oss_device));
 
    if ((ossaudio->fd = open(oss_device, O_WRONLY)) < 0)
    {
@@ -344,16 +353,15 @@ static void oss_free(void *data)
    free(data);
 }
 
+/* No room when the device cannot say: a device that has gone away
+ * fails this every frame, so it is not logged here. */
 static size_t oss_write_avail(void *data)
 {
    audio_buf_info info;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
    if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
-   {
-      RARCH_ERR("[OSS] SNDCTL_DSP_GETOSPACE failed.\n");
       return 0;
-   }
 
    return info.bytes;
 }
@@ -363,11 +371,10 @@ static size_t oss_buffer_size(void *data)
    audio_buf_info info;
    oss_audio_t *ossaudio  = (oss_audio_t*)data;
 
+   /* Zero when the device cannot say, which turns rate control off for
+    * the session, as audio_driver.h has it; the frontend logs that. */
    if (ioctl(ossaudio->fd, SNDCTL_DSP_GETOSPACE, &info) < 0)
-   {
-      RARCH_ERR("[OSS] SNDCTL_DSP_GETOSPACE failed.\n");
-      return 1; /* Return something non-zero to avoid SIGFPE. */
-   }
+      return 0;
 
    return info.fragsize * info.fragstotal;
 }

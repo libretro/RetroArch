@@ -35,6 +35,10 @@
  * via GetProcAddress when HAVE_DYLIB is set. Provide a fallback so
  * the code compiles on those toolchains; on a modern SDK this is a
  * no-op since the symbol is already defined in wingdi.h. */
+#ifndef QDC_ONLY_ACTIVE_PATHS
+#define QDC_ONLY_ACTIVE_PATHS 0x00000002
+#endif
+#define DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE_CUSTOM 1
 #ifndef QDC_DATABASE_CURRENT
 #define QDC_DATABASE_CURRENT 0x00000004
 #endif
@@ -760,7 +764,11 @@ static void win32_display_server_set_screen_orientation(void *data,
 }
 #endif
 
-static float win32_display_server_get_refresh_rate(void *data)
+/* The refresh rate of an active display path: the first path's when
+ * @origin is NULL, else the path whose source sits at @origin in desktop
+ * coordinates - which is how a monitor and a display path are matched
+ * without the device-name query, whose structs no older SDK carries. */
+static float win32_display_config_refresh_rate(const POINTL *origin)
 {
 #if _WIN32_WINNT >= 0x0601 || _WIN32_WINDOWS >= 0x0601 /* Win 7 */
    UINT32 TopologyID;
@@ -794,7 +802,7 @@ static float win32_display_server_get_refresh_rate(void *data)
       return 0.0f;
 
    if (pGetDisplayConfigBufferSizes(
-            QDC_DATABASE_CURRENT,
+            origin ? QDC_ONLY_ACTIVE_PATHS : QDC_DATABASE_CURRENT,
             &NumPathArrayElements,
             &NumModeInfoArrayElements) != ERROR_SUCCESS)
       return 0.0f;
@@ -812,16 +820,37 @@ static float win32_display_server_get_refresh_rate(void *data)
       return 0.0f;
    }
 
-   if (pQueryDisplayConfig(QDC_DATABASE_CURRENT,
+   if (pQueryDisplayConfig(
+            origin ? QDC_ONLY_ACTIVE_PATHS : QDC_DATABASE_CURRENT,
             &NumPathArrayElements,
             PathInfoArray,
             &NumModeInfoArrayElements,
             ModeInfoArray,
-            &TopologyID) == ERROR_SUCCESS
-       && NumPathArrayElements >= 1
-       && PathInfoArray[0].targetInfo.refreshRate.Denominator != 0)
-      refresh_rate = (float)PathInfoArray[0].targetInfo.refreshRate.Numerator
-         / PathInfoArray[0].targetInfo.refreshRate.Denominator;
+            origin ? NULL : &TopologyID) == ERROR_SUCCESS)
+   {
+      unsigned i;
+      for (i = 0; i < NumPathArrayElements; i++)
+      {
+         const DISPLAYCONFIG_PATH_INFO_CUSTOM *path = &PathInfoArray[i];
+         if (origin)
+         {
+            UINT32 idx = path->sourceInfo.dummyunionname.modeInfoIdx;
+            const DISPLAYCONFIG_SOURCE_MODE_CUSTOM *src;
+            if (     idx >= NumModeInfoArrayElements
+                  || ModeInfoArray[idx].infoType
+                     != DISPLAYCONFIG_MODE_INFO_TYPE_SOURCE_CUSTOM)
+               continue;
+            src = &ModeInfoArray[idx].dummyunionname.sourceMode;
+            if (     src->position.x != origin->x
+                  || src->position.y != origin->y)
+               continue;
+         }
+         if (path->targetInfo.refreshRate.Denominator != 0)
+            refresh_rate = (float)path->targetInfo.refreshRate.Numerator
+               / path->targetInfo.refreshRate.Denominator;
+         break;
+      }
+   }
 
    free(ModeInfoArray);
    free(PathInfoArray);
@@ -830,6 +859,46 @@ static float win32_display_server_get_refresh_rate(void *data)
 #else
    return 0.0f;
 #endif
+}
+
+static float win32_display_server_get_refresh_rate(void *data)
+{
+   return win32_display_config_refresh_rate(NULL);
+}
+
+/* The refresh rate of the monitor the window is on, which on a desktop
+ * of several is not the first display's. */
+static float win32_display_server_get_window_refresh_rate(void *data)
+{
+   MONITORINFOEX mon;
+   DEVMODE       dm;
+   HWND          hwnd = win32_get_window();
+   HMONITOR      hm;
+   float         rate;
+
+   if (!hwnd || !(hm = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST)))
+      return 0.0f;
+   memset(&mon, 0, sizeof(mon));
+   mon.cbSize = sizeof(mon);
+   if (!GetMonitorInfo(hm, (LPMONITORINFO)&mon))
+      return 0.0f;
+
+   {
+      POINTL origin;
+      origin.x = mon.rcMonitor.left;
+      origin.y = mon.rcMonitor.top;
+      if ((rate = win32_display_config_refresh_rate(&origin)) > 0.0f)
+         return rate;
+   }
+
+   /* No display configuration API (before Windows 7): the monitor's
+    * mode, in whole hertz */
+   memset(&dm, 0, sizeof(dm));
+   dm.dmSize = sizeof(dm);
+   if (     EnumDisplaySettings(mon.szDevice, ENUM_CURRENT_SETTINGS, &dm)
+         && dm.dmDisplayFrequency > 1)
+      return (float)dm.dmDisplayFrequency;
+   return 0.0f;
 }
 
 static void win32_display_server_get_video_output_size(void *data,
@@ -1499,15 +1568,38 @@ static int win32_display_server_get_edid(void *data, uint8_t *out, size_t max)
 #endif
 }
 
+#if defined(HAVE_WINRAWINPUT) && !defined(_XBOX) && _WIN32_WINNT >= 0x0501 && !defined(__WINRT__)
+extern bool winraw_poll_owns_thread(void);
+#define WIN32_RAW_INPUT_IS_POLLED() winraw_poll_owns_thread()
+#else
+#define WIN32_RAW_INPUT_IS_POLLED() false
+#endif
+
 /* The calling thread's own message queue is where every Win32 input
  * path begins. With no handles the wait is on the queue alone; with
  * QS_ALLINPUT and MWMO_INPUTAVAILABLE it returns for any message,
- * including one already queued, and removes nothing. */
+ * including one already queued, and removes nothing.
+ *
+ * Not for raw input, on a thread whose raw input the poll reads
+ * (winraw_input.c, "Read by the poll"). The reports of the keyboard,
+ * the mouse and the controllers are in this thread's queue then, and
+ * a controller that reports a thousand times a second - whether or
+ * not anything on it moves, and whether or not RetroArch has the
+ * focus - would end this wait within a millisecond every time: the
+ * paused or unfocused loop it paces would turn a thousand times a
+ * second instead of a hundred. Before the poll read them, those
+ * reports were in the video thread's queue and did not wake this one
+ * either; the loop still polls on every turn and sees them within
+ * the bound. */
 static bool win32_display_server_idle_wait(void *data, unsigned ms)
 {
+   DWORD wake = QS_ALLINPUT;
    (void)data;
-   MsgWaitForMultipleObjectsEx(0, NULL, ms, QS_ALLINPUT,
-         MWMO_INPUTAVAILABLE);
+#ifdef QS_RAWINPUT
+   if (WIN32_RAW_INPUT_IS_POLLED())
+      wake &= ~QS_RAWINPUT;
+#endif
+   MsgWaitForMultipleObjectsEx(0, NULL, ms, wake, MWMO_INPUTAVAILABLE);
    return true;
 }
 
@@ -1565,5 +1657,6 @@ const video_display_server_t dispserv_win32 = {
 #endif
    win32_display_server_get_edid,
    win32_display_server_idle_wait,
-   "win32"
+   "win32",
+   win32_display_server_get_window_refresh_rate
 };

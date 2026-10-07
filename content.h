@@ -26,6 +26,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <queues/task_queue.h>
 
 #include "frontend/frontend_driver.h"
 
@@ -51,11 +52,22 @@ bool content_ram_state_to_file(const char *path);
 /* Load a state from disk to memory. */
 bool content_load_state(const char* path, bool load_to_backup_buffer, bool autoload);
 
+/* @cb, when this returns true, is told once the state is applied:
+ * task_data is its path, and error is set if it was not. */
+bool content_load_state_notify(const char* path, bool load_to_backup_buffer,
+      bool autoload, retro_task_callback_t cb, void *user_data);
+
 /* Save a state from memory to disk. */
 bool content_save_state(const char *path, bool save_to_disk);
 
+/* @cb, when this returns true having saved to disk, is told once the
+ * state is written: task_data is its path, and error is set if it was
+ * not. */
+bool content_save_state_notify(const char *path, bool save_to_disk,
+      retro_task_callback_t cb, void *user_data);
+
 /* Automatically save a state if the interval has elapsed. */
-bool content_save_state_automatic(void);
+bool content_save_state_automatic(retro_time_t now_us);
 
 /* Save an automatic savestate to disk. */
 bool content_auto_save_state(const char *path);
@@ -83,6 +95,10 @@ bool content_save_state_in_progress(void* data);
 void content_wait_for_save_state_task(void);
 /* Waits for any in-progress load state tasks to finish */
 void content_wait_for_load_state_task(void);
+
+/* True from the moment a load state task is pushed until its
+ * main-thread callback has applied the state. */
+bool content_load_state_in_progress(void* data);
 
 /* Copy a save state. */
 bool content_rename_state(const char *origin, const char *dest);

@@ -40,7 +40,7 @@ static void wiiu_hid_report_hid_error(const char *msg, wiiu_adapter_t *adapter, 
 {
    int16_t hid_err_code = err & 0xffff;
    int16_t err_category = (err >> 16) & 0xffff;
-   const char *device   = (adapter->device_name && *adapter->device_name) ? adapter->device_name : "unknown";
+   const char *device   = *adapter->device_name ? adapter->device_name : "unknown";
 
    switch (hid_err_code)
    {
@@ -97,64 +97,88 @@ static bool wiiu_hid_joypad_query(void *data, unsigned slot)
    return slot < joypad_state.max_slot;
 }
 
+/* The pad in @slot, held until wiiu_hid_put_pad(): the polling thread
+ * tears pads down while these run on the frontend's. NULL, holding
+ * nothing, for none. */
 static joypad_connection_t *wiiu_hid_get_pad(wiiu_hid_t *hid, unsigned slot)
 {
    joypad_connection_t *result;
    if (!wiiu_hid_joypad_query(hid, slot))
       return NULL;
    result = &joypad_state.pads[slot];
-   if (!result->connected || !result->iface || !result->connection)
+   if (!pad_connection_acquire(result))
       return NULL;
+   if (!result->connected || !result->iface || !result->connection)
+   {
+      pad_connection_release(result);
+      return NULL;
+   }
    return result;
+}
+
+static void wiiu_hid_put_pad(joypad_connection_t *pad)
+{
+   pad_connection_release(pad);
 }
 
 static const char *wiiu_hid_joypad_name(void *data, unsigned slot)
 {
+   const char *name         = NULL;
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (!pad || !pad->iface->get_name)
+   if (!pad)
       return NULL;
-
-   return pad->iface->get_name(pad->connection);
+   if (pad->iface->get_name)
+      name = pad->iface->get_name(pad->connection);
+   wiiu_hid_put_pad(pad);
+   return name;
 }
 
 static void wiiu_hid_joypad_get_buttons(void *data, unsigned slot, input_bits_t *state)
 {
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (pad && pad->iface->get_buttons)
+   if (!pad)
+      return;
+   if (pad->iface->get_buttons)
       pad->iface->get_buttons(pad->connection, state);
+   wiiu_hid_put_pad(pad);
 }
 
 static int16_t wiiu_hid_joypad_button(void *data,
       unsigned slot, uint16_t joykey)
 {
-   joypad_connection_t *pad             = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
-   if (!pad || !pad->iface->button)
+   int16_t ret              = 0;
+   joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
+   if (!pad)
       return 0;
-   return pad->iface->button(pad->connection, joykey);
+   if (pad->iface->button)
+      ret = pad->iface->button(pad->connection, joykey);
+   wiiu_hid_put_pad(pad);
+   return ret;
 }
 
 static int16_t wiiu_hid_joypad_axis(void *data, unsigned slot, uint32_t joyaxis)
 {
+   int16_t ret              = 0;
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (pad)
+   if (!pad)
+      return 0;
+   if (AXIS_NEG_GET(joyaxis) < 4)
    {
-      if (AXIS_NEG_GET(joyaxis) < 4)
-      {
-         int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
-         if (val < 0)
-            return val;
-      }
-      else if (AXIS_POS_GET(joyaxis) < 4)
-      {
-         int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
-         if (val > 0)
-            return val;
-      }
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_NEG_GET(joyaxis));
+      if (val < 0)
+         ret = val;
    }
-   return 0;
+   else if (AXIS_POS_GET(joyaxis) < 4)
+   {
+      int16_t val = pad->iface->get_axis(pad->connection, AXIS_POS_GET(joyaxis));
+      if (val > 0)
+         ret = val;
+   }
+   wiiu_hid_put_pad(pad);
+   return ret;
 }
 
 static int16_t wiiu_hid_joypad_state(void *data,
@@ -187,6 +211,7 @@ static int16_t wiiu_hid_joypad_state(void *data,
              / 0x8000) > joypad_info->axis_threshold)
          ret |= (1 << i);
    }
+   wiiu_hid_put_pad(pad);
 
    return ret;
 }
@@ -196,10 +221,11 @@ static bool wiiu_hid_joypad_rumble(void *data, unsigned slot,
 {
    joypad_connection_t *pad = wiiu_hid_get_pad((wiiu_hid_t *)data, slot);
 
-   if (!pad || !pad->iface->set_rumble)
+   if (!pad)
       return false;
-
-   pad->iface->set_rumble(pad->connection, effect, strength);
+   if (pad->iface->set_rumble)
+      pad->iface->set_rumble(pad->connection, effect, strength);
+   wiiu_hid_put_pad(pad);
    return false;
 }
 
@@ -706,6 +732,7 @@ static uint8_t wiiu_hid_try_init_driver(wiiu_adapter_t *adapter)
    if (!adapter->pad_driver_data)
    {
       RARCH_LOG("[HID] wiiu_hid_try_init_driver: Pad init failed.\n");
+      pad_connection_release_slot(&joypad_state.pads[slot]);
       return ADAPTER_STATE_DONE;
    }
 

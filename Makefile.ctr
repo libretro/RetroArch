@@ -65,11 +65,8 @@ ifeq ($(GRIFFIN_BUILD), 1)
 	DEFINES += -DHAVE_OVERLAY
 	DEFINES += -DHAVE_CORE_INFO_CACHE
 	#DEFINES += -DHAVE_SOCKET_LEGACY
-	#-DHAVE_SSL -DHAVE_BUILTINMBEDTLS -DMBEDTLS_SSL_DEBUG_ALL
-	#ssl is currently incompatible with griffin due to use of the "static" flag on repeating functions that will conflict when included in one file
 	CFLAGS += -I. \
 		-Ideps \
-		-Ideps/mbedtls \
 		-Ideps/rcheevos/include \
 		-Ilibretro-common/include
 else
@@ -103,7 +100,14 @@ else
 	HAVE_IFINFO = 1
 	HAVE_CHEEVOS = 1
 	HAVE_THREADS = 1
-	HAVE_BUILTINMBEDTLS = 1
+	# the cleanroom crypto, keychain and TLS client
+	HAVE_CRYPTO = 1
+	HAVE_KEYCHAIN = 1
+	HAVE_RETROSSL = 1
+	# the built-in NFS client (nfs://); it needs no crypto
+	HAVE_RETRONFS = 1
+	# the built-in SMB client (smb://), on the crypto above
+	HAVE_RETROSMB = 1
 	HAVE_CORE_INFO_CACHE = 1
 	HAVE_CLOUDSYNC = 1
 

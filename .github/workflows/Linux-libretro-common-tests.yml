@@ -29,15 +29,18 @@ jobs:
   libretro-common-tests:
     name: Build and run libretro-common/Makefile.test
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # The suites, the companion harnesses under mingw and Wine and the
+    # stack check have grown with the tree: a run reached the last step
+    # at fifteen minutes and was cancelled there.
+    timeout-minutes: 30
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 8
+        timeout-minutes: 20
         run: |
           # ffmpeg: tools/companion_thumbs_test.sh builds its video-hover
           # fixture (a 2 KB Baseline MP4) with it.
-          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg"
+          pkgs="build-essential check pkg-config zlib1g-dev lcov gcc-mingw-w64-x86-64 gcc-mingw-w64-i686 wine wine64 ffmpeg gcc-aarch64-linux-gnu gcc-arm-linux-gnueabihf gcc-mipsel-linux-gnu qemu-user"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -47,6 +50,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -107,6 +127,19 @@ jobs:
              LIBCHECK_CFLAGS="$(pkg-config --cflags check)" \
              CFLAGS="$(pkg-config --cflags check)"
           echo "[pass] libretro-common unit test suites"
+          # The ARMv8 AES + PMULL path executes only on ARM; this
+          # runs the crypto suite under qemu-aarch64 in both the
+          # dispatched and the baseline-crypto shape.
+          make -f Makefile.test crypto-aarch64-check
+          make -f Makefile.test crypto-arm-check
+          make -f Makefile.test crypto-mips-check
+          # every lazily set up table or CPU check, first used by
+          # eight threads at once under TSan
+          make -f Makefile.test crypto-tsan-check
+          # the Windows wait tiers - eventcount and condition variable,
+          # high resolution timer and kernel timeout - as Windows
+          # binaries under wine
+          make -f Makefile.test win32-waits-check
 
       - name: Check VFS backend symbol parity
         shell: bash
@@ -122,6 +155,69 @@ jobs:
           # branch broken.  This is the same check at source level, for
           # free, on Linux.
           python3 tools/vfs_backend_parity.py
+
+      - name: Check every command describes itself
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # HELP prints command.h's tables, and interfaces that hand the
+          # commands to a client are generated from them: a command
+          # added without a description reaches all of those blank.
+          python3 tools/command_table_check.py
+
+      - name: Check video and input code stay out of each other's state
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The frontend starts the input driver; a video driver says
+          # only what kind of window it put up. What is still to be
+          # moved is listed in the check, file by file, and the lists
+          # only shrink: a video file that starts naming an input
+          # driver, or either side taking the other's state, fails.
+          python3 tools/input_video_separation_check.py --selftest
+          python3 tools/input_video_separation_check.py
+
+      - name: Check input drivers ask by name and do not take the frontend's state
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # A driver that needs something from the settings, the run
+          # loop, the menu or the input frontend asks for it by name;
+          # it does not take the whole state and pick a field out.
+          # What is still to be converted is listed in the check, file
+          # by file with a count, and the counts only go down.
+          python3 tools/input_state_grab_check.py --selftest
+          python3 tools/input_state_grab_check.py
+
+      - name: Check the GL drivers take the hardware ring's fence ahead of the swap
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # Taken after the swap, the fence completes only when a driver
+          # that queues swaps releases it, and a hardware rendered core
+          # fast-forwards at the display's rate.
+          python3 tools/gl_ring_fence_check.py --selftest
+          python3 tools/gl_ring_fence_check.py
+
+      - name: Check a setting's label exists wherever its translations name it
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          # The translation files name a label for every string they
+          # have, in every build. intl/json2h.py copies a row's feature
+          # guard into them, unless the guard line mentions a
+          # SETTINGS_DEF pass: that line it drops. A line that mentions
+          # a pass and still depends on a feature leaves the
+          # translations naming a label the build does not have, and
+          # nothing fails until the first translation arrives from
+          # Crowdin - then every build without the feature does.
+          python3 tools/settings_def_guard_check.py --selftest
+          python3 tools/settings_def_guard_check.py
 
       - name: Check no video driver deletes overlay textures it was lent
         shell: bash

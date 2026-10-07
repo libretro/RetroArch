@@ -5,5 +5,10 @@
   "param_num": 0,
   "param_str": "(dead:beef) Completely Unknown Pad",
   "frame": 0
+},
+{
+  "action": 4,
+  "param_num": 0,
+  "frame": 0
 }
 ]

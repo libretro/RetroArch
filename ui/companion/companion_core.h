@@ -267,13 +267,11 @@ size_t companion_core_playlist_default_core(companion_core_t *core,
       const char *name, char *s, size_t len);
 void companion_core_event_command(companion_core_t *core,
       enum event_command cmd);
-/* Scan @path (a directory when @directory, else a single file) against
- * the content databases into the playlist directory, on the task
- * queue. on_scan_finished fires when done, after the menu's horizontal
+/* Scan @path, a directory or a single file, against the content
+ * databases into the playlist directory, on the task queue. on_scan_finished fires when done, after the menu's horizontal
  * list has been reset. Returns false when no scan could be started
  * (no libretrodb in this build, or the task could not be pushed). */
-bool companion_core_request_scan(companion_core_t *core, const char *path,
-      bool directory, bool show_hidden_files);
+bool companion_core_request_scan(companion_core_t *core, const char *path);
 
 /* --- Companion settings (retroarch.cfg) ------------------------------- */
 
@@ -291,7 +289,6 @@ const char *companion_core_pref_thumbnail_subdir(companion_core_t *core);
 /* Playlist file to open at startup ("" = use History). */
 const char *companion_core_pref_initial_playlist(companion_core_t *core);
 bool companion_core_pref_suggest_loaded_core_first(companion_core_t *core);
-bool companion_core_pref_show_hidden_files(companion_core_t *core);
 /* Content-browser tab to restore: -1 when not remembering, else 0/1. */
 int companion_core_pref_last_tab(companion_core_t *core);
 void companion_core_pref_set_last_tab(companion_core_t *core, int tab);

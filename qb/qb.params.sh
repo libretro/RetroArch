@@ -2,14 +2,12 @@
 # $1 = HAVE_$1
 # $2 = value ['auto', 'no' or 'yes', checked only if non-empty]
 add_opt()
-{	setval="$(eval "printf %s \"\$USER_$1\"")"
+{	eval "setval=\${USER_$1}"
 	[ "${2:-}" ] && ! match "$setval" no yes && eval "HAVE_$1=\"$2\""
 
-	for opt in $(printf %s "$CONFIG_OPTS"); do
-		case "$opt" in
-			"$1") return 0 ;;
-		esac
-	done
+	case " $CONFIG_OPTS " in
+		*" $1 "*) return 0 ;;
+	esac
 
 	CONFIG_OPTS="${CONFIG_OPTS} $1"
 }

@@ -32,6 +32,8 @@
    wl_display_prepare_read
    wl_display_read_events
    wl_display_cancel_read
+   wl_display_dispatch_queue_pending
+   wl_display_prepare_read_queue
 */
 
 /* Function pointers for dynamic dispatch */
@@ -46,6 +48,10 @@ static struct wl_proxy *(*real_wl_proxy_marshal_constructor_versioned)(
 static int (*real_wl_display_prepare_read)(struct wl_display *) = NULL;
 static int (*real_wl_display_read_events)(struct wl_display *) = NULL;
 static void (*real_wl_display_cancel_read)(struct wl_display *) = NULL;
+static int (*real_wl_display_dispatch_queue_pending)(struct wl_display *,
+      struct wl_event_queue *) = NULL;
+static int (*real_wl_display_prepare_read_queue)(struct wl_display *,
+      struct wl_event_queue *) = NULL;
 
 static bool wayland_init_done = false;
 
@@ -74,6 +80,10 @@ static void wayland_init_fallbacks(void)
          dlsym(wl_handle, "wl_display_read_events");
       real_wl_display_cancel_read =
          dlsym(wl_handle, "wl_display_cancel_read");
+      real_wl_display_dispatch_queue_pending =
+         dlsym(wl_handle, "wl_display_dispatch_queue_pending");
+      real_wl_display_prepare_read_queue =
+         dlsym(wl_handle, "wl_display_prepare_read_queue");
 
       dlclose(wl_handle);
    }
@@ -171,6 +181,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor(
 {
    va_list ap;
    void *varargs[WL_CLOSURE_MAX_ARGS];
+   int i;
    int num_args;
    int new_id_index = -1;
    struct wl_interface *proxy_interface;
@@ -194,7 +205,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor(
 
    memset(varargs, 0, sizeof(varargs));
    va_start(ap, interface);
-   for (int i = 0; i < num_args; i++)
+   for (i = 0; i < num_args; i++)
       varargs[i] = va_arg(ap, void *);
    va_end(ap);
 
@@ -219,6 +230,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor_versioned(
 {
    va_list ap;
    void *varargs[WL_CLOSURE_MAX_ARGS];
+   int i;
    int num_args;
    int new_id_index = -1;
    struct wl_interface *proxy_interface;
@@ -244,7 +256,7 @@ struct wl_proxy *FALLBACK_wl_proxy_marshal_constructor_versioned(
 
    memset(varargs, 0, sizeof(varargs));
    va_start(ap, version);
-   for (int i = 0; i < num_args; i++)
+   for (i = 0; i < num_args; i++)
       varargs[i] = va_arg(ap, void *);
    va_end(ap);
 
@@ -369,4 +381,40 @@ void WRAPPER_wl_display_cancel_read(struct wl_display *display)
       real_wl_display_cancel_read(display);
    else
       FALLBACK_wl_display_cancel_read(display);
+}
+
+/* Without a way to read and dispatch one queue alone, proxies stay on
+ * the default queue and the queue calls work on that. */
+static bool wayland_has_queue_reads(void)
+{
+   wayland_init_fallbacks();
+   return real_wl_display_dispatch_queue_pending
+      && real_wl_display_prepare_read_queue;
+}
+
+int WRAPPER_wl_display_dispatch_queue_pending(struct wl_display *display,
+      struct wl_event_queue *queue)
+{
+   if (wayland_has_queue_reads())
+      return real_wl_display_dispatch_queue_pending(display, queue);
+   return wl_display_dispatch_pending(display);
+}
+
+int WRAPPER_wl_display_prepare_read_queue(struct wl_display *display,
+      struct wl_event_queue *queue)
+{
+   if (wayland_has_queue_reads())
+      return real_wl_display_prepare_read_queue(display, queue);
+   return WRAPPER_wl_display_prepare_read(display);
+}
+
+#undef wl_proxy_set_queue
+extern void wl_proxy_set_queue(struct wl_proxy *proxy,
+      struct wl_event_queue *queue);
+
+void WRAPPER_wl_proxy_set_queue(struct wl_proxy *proxy,
+      struct wl_event_queue *queue)
+{
+   if (wayland_has_queue_reads())
+      wl_proxy_set_queue(proxy, queue);
 }

@@ -70,6 +70,10 @@
 #endif
 
 #define _READ_CHUNK_SIZE   (128*1024)   /* Read 128KiB compressed chunks */
+/* Output window a deflated member is inflated through when it goes
+ * to a file: written out each time it fills, instead of the whole
+ * member being held in memory and written in one go */
+#define ZIP_STREAM_WINDOW  (256*1024)
 
 enum file_archive_compression_mode
 {
@@ -86,15 +90,25 @@ typedef struct
    uint8_t *directory_end;
    uint64_t fdoffset;
    uint32_t boffset, csize, usize;
+   uint32_t entry_crc;     /* central-directory CRC of the entry in hand */
+   uint32_t expect_crc;    /* CRC the member in progress has to match */
+   uint32_t crc;           /* CRC of the output produced so far */
+   uint32_t out_off;       /* bytes of output produced so far */
    unsigned cmode;
 #ifdef ARCHIVE_HAVE_ZLIB
-   z_stream *zstream;
+   z_stream *zstream;      /* kept across members */
 #else
-   void *zstream;          /* rinflate stream handle */
+   void *zstream;          /* rinflate stream handle, kept across members */
    int    out_bound;       /* output buffer already handed to the decoder */
 #endif
    uint8_t *tmpbuf;
+   size_t   tmpbuf_len;
+   /* The whole member, or a ZIP_STREAM_WINDOW of it when streaming */
    uint8_t *decompressed_data;
+   uint32_t win_len;       /* size of decompressed_data */
+   uint32_t win_pos;       /* bytes of it filled (rinflate) */
+   bool     inflating;     /* a DEFLATE member is in progress */
+   bool     streaming;     /* output goes to state->pending_sink */
 } zip_context_t;
 
 static INLINE uint32_t read_le(const uint8_t *data, size_t len)
@@ -119,21 +133,57 @@ static void zip_context_free_stream(
       rinflate_free(zip_context->zstream);
       zip_context->out_bound = 0;
 #endif
-      zip_context->fdoffset = 0;
-      zip_context->csize = 0;
-      zip_context->usize = 0;
       zip_context->zstream = NULL;
    }
+   zip_context->inflating = false;
+   zip_context->fdoffset  = 0;
+   zip_context->csize     = 0;
+   zip_context->usize     = 0;
    if (zip_context->tmpbuf)
    {
       free(zip_context->tmpbuf);
-      zip_context->tmpbuf = NULL;
+      zip_context->tmpbuf     = NULL;
+      zip_context->tmpbuf_len = 0;
    }
    if (zip_context->decompressed_data && !keep_decompressed)
    {
       free(zip_context->decompressed_data);
       zip_context->decompressed_data = NULL;
    }
+}
+
+/* Drops the member in progress, if any. The inflate stream and the
+ * read buffer stay for the next member. */
+static void zip_context_reset_member(zip_context_t *zip_context)
+{
+   zip_context->inflating = false;
+   zip_context->streaming = false;
+   zip_context->win_len   = 0;
+   zip_context->win_pos   = 0;
+#ifndef ARCHIVE_HAVE_ZLIB
+   zip_context->out_bound = 0;
+#endif
+   zip_context->fdoffset  = 0;
+   zip_context->csize     = 0;
+   zip_context->usize     = 0;
+   if (zip_context->decompressed_data)
+   {
+      free(zip_context->decompressed_data);
+      zip_context->decompressed_data = NULL;
+   }
+}
+
+static bool zip_context_reserve_tmpbuf(zip_context_t *zip_context,
+      size_t len)
+{
+   if (zip_context->tmpbuf_len >= len)
+      return true;
+   free(zip_context->tmpbuf);
+   zip_context->tmpbuf_len = 0;
+   if (!(zip_context->tmpbuf = (uint8_t*)malloc(len)))
+      return false;
+   zip_context->tmpbuf_len = len;
+   return true;
 }
 
 static bool zlib_stream_decompress_data_to_file_init(
@@ -144,11 +194,16 @@ static bool zlib_stream_decompress_data_to_file_init(
    uint8_t *local_header;
    uint32_t offsetNL, offsetEL;
    uint8_t local_header_buf[4];
+   bool mapped                = false;
    zip_context_t *zip_context = (zip_context_t *)context;
    struct file_archive_transfer *state = zip_context->state;
 
-   /* free previous data and stream if left unfinished */
-   zip_context_free_stream(zip_context, false);
+   /* free previous data if left unfinished */
+   zip_context_reset_member(zip_context);
+
+#ifdef VFS_HAVE_FILE_MAPPING
+   mapped = (state->archive_mmap_data != NULL);
+#endif
 
    /* seek past most of the local directory header */
 #ifdef VFS_HAVE_FILE_MAPPING
@@ -160,10 +215,7 @@ static bool zlib_stream_decompress_data_to_file_init(
        * it - a crafted offset near the end of the archive would
        * otherwise read past the mmap. */
       if ((int64_t)(size_t)cdata + 26 + 4 > state->archive_size)
-      {
-         zip_context_free_stream(zip_context, false);
          return false;
-      }
       local_header = state->archive_mmap_data + (size_t)cdata + 26;
    }
    else
@@ -171,10 +223,7 @@ static bool zlib_stream_decompress_data_to_file_init(
    {
       filestream_seek(state->archive_file, (int64_t)(size_t)cdata + 26, RETRO_VFS_SEEK_POSITION_START);
       if (filestream_read(state->archive_file, local_header_buf, 4) != 4)
-      {
-         zip_context_free_stream(zip_context, false);
          return false;
-      }
       local_header = local_header_buf;
    }
 
@@ -203,96 +252,122 @@ static bool zlib_stream_decompress_data_to_file_init(
          || (int64_t)csize        > state->archive_size - offsetData
          || (      cmode == ZIP_MODE_STORED
                && (int64_t)size   > state->archive_size - offsetData))
-   {
-      zip_context_free_stream(zip_context, false);
       return false;
-   }
 
    zip_context->fdoffset              = offsetData;
    zip_context->usize                 = size;
    zip_context->csize                 = csize;
    zip_context->boffset               = 0;
+   zip_context->expect_crc            = zip_context->entry_crc;
+   zip_context->crc                   = 0;
+   zip_context->out_off               = 0;
    zip_context->cmode                 = cmode;
-   zip_context->decompressed_data     = (uint8_t*)malloc(size);
-   zip_context->zstream               = NULL;
-   zip_context->tmpbuf                = NULL;
 
-   /* NULL-check the decompressed_data malloc: subsequent
-    * consumers (zip_context_iterate, and line 155 below where
-    * zstream->next_out = decompressed_data seeds the inflate
-    * output) unconditionally dereference it.  On OOM fail the
-    * whole context setup via zip_context_free_stream which is
-    * NULL-safe for both zstream and tmpbuf. */
-   if (!zip_context->decompressed_data)
-   {
-      zip_context_free_stream(zip_context, false);
+   /* A deflated member bound for a file is inflated through a window
+    * and written out as it goes; anything else is decoded whole */
+   zip_context->streaming = (cmode == ZIP_MODE_DEFLATED)
+         && state->pending_sink && (size > ZIP_STREAM_WINDOW);
+   zip_context->win_len   = zip_context->streaming
+         ? ZIP_STREAM_WINDOW : size;
+   zip_context->win_pos   = 0;
+
+   /* NULL-check the decompressed_data malloc: the iterate step and
+    * the inflate output binding below dereference it. */
+   if (!(zip_context->decompressed_data = (uint8_t*)malloc(
+               zip_context->win_len)))
       return false;
-   }
 
    if (cmode == ZIP_MODE_DEFLATED)
    {
-#ifdef ARCHIVE_HAVE_ZLIB
-      /* Initialize the zlib inflate machinery */
-      zip_context->zstream            = (z_stream*)malloc(sizeof(z_stream));
-      zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
-
-      /* NULL-check both mallocs: the zstream->next_in etc.
-       * field writes below NULL-deref on OOM for zstream, and
-       * inflate() later reads from tmpbuf.  Fail the context
-       * setup on either failure. */
-      if (!zip_context->zstream || !zip_context->tmpbuf)
+      /* A mapped archive is inflated straight out of the mapping. */
+      if (!mapped && !zip_context_reserve_tmpbuf(zip_context,
+               _READ_CHUNK_SIZE))
       {
-         zip_context_free_stream(zip_context, false);
+         zip_context_reset_member(zip_context);
+         return false;
+      }
+
+#ifdef ARCHIVE_HAVE_ZLIB
+      if (!zip_context->zstream)
+      {
+         if (!(zip_context->zstream = (z_stream*)calloc(1,
+                     sizeof(z_stream))))
+         {
+            zip_context_reset_member(zip_context);
+            return false;
+         }
+         if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK)
+         {
+            free(zip_context->zstream);
+            zip_context->zstream = NULL;
+            zip_context_reset_member(zip_context);
+            return false;
+         }
+      }
+      else if (inflateReset(zip_context->zstream) != Z_OK)
+      {
+         zip_context_reset_member(zip_context);
          return false;
       }
 
       zip_context->zstream->next_in   = NULL;
       zip_context->zstream->avail_in  = 0;
-      zip_context->zstream->total_in  = 0;
       zip_context->zstream->next_out  = zip_context->decompressed_data;
-      zip_context->zstream->avail_out = size;
-      zip_context->zstream->total_out = 0;
-
-      zip_context->zstream->zalloc    = NULL;
-      zip_context->zstream->zfree     = NULL;
-      zip_context->zstream->opaque    = NULL;
-
-      if (inflateInit2(zip_context->zstream, -MAX_WBITS) != Z_OK)
-      {
-         free(zip_context->zstream);
-         zip_context->zstream = NULL;
-         zip_context_free_stream(zip_context, false);
-         return false;
-      }
+      zip_context->zstream->avail_out = zip_context->win_len;
 #else
-      /* Initialize the built-in raw-DEFLATE decoder.  The output buffer
-       * (the full decompressed_data) is bound once on the first iterate
-       * call; only compressed input is fed incrementally after that. */
-      zip_context->zstream            = rinflate_new(-15);
-      zip_context->tmpbuf             = (uint8_t*)malloc(_READ_CHUNK_SIZE);
-      zip_context->out_bound          = 0;
-
-      if (!zip_context->zstream || !zip_context->tmpbuf)
+      /* The output buffer (the full decompressed_data) is bound once
+       * on the first iterate call; only compressed input is fed
+       * incrementally after that. */
+      if (!zip_context->zstream)
       {
-         zip_context_free_stream(zip_context, false);
-         return false;
+         if (!(zip_context->zstream = rinflate_new(-15)))
+         {
+            zip_context_reset_member(zip_context);
+            return false;
+         }
       }
+      else
+         rinflate_reset(zip_context->zstream, -15);
 #endif
+      zip_context->inflating = true;
    }
 #ifdef ZIP_HAVE_ZSTD
    else if (cmode == ZIP_MODE_ZSTD)
    {
-      /* Allocate a buffer to read compressed data into;
-       * decompression is done in one shot during iterate */
-      zip_context->tmpbuf = (uint8_t*)malloc(csize);
-      if (!zip_context->tmpbuf)
+      /* Compressed data is read whole and decompressed in one shot
+       * during iterate */
+      if (!mapped && !zip_context_reserve_tmpbuf(zip_context, csize))
       {
-         zip_context_free_stream(zip_context, false);
+         zip_context_reset_member(zip_context);
          return false;
       }
    }
 #endif
 
+   return true;
+}
+
+/* Writes the filled part of a streaming member's window to the
+ * pending sink and empties the window */
+static bool zip_context_flush_window(zip_context_t *zip_context)
+{
+   uint32_t filled;
+#ifdef ARCHIVE_HAVE_ZLIB
+   filled = zip_context->win_len - zip_context->zstream->avail_out;
+#else
+   filled = zip_context->win_pos;
+#endif
+   if (filled && filestream_write(zip_context->state->pending_sink,
+            zip_context->decompressed_data, filled) != (int64_t)filled)
+      return false;
+#ifdef ARCHIVE_HAVE_ZLIB
+   zip_context->zstream->next_out  = zip_context->decompressed_data;
+   zip_context->zstream->avail_out = zip_context->win_len;
+#else
+   zip_context->win_pos = 0;
+   rinflate_set_out(zip_context->zstream,
+         zip_context->decompressed_data, zip_context->win_len);
+#endif
    return true;
 }
 
@@ -322,6 +397,10 @@ static int zlib_stream_decompress_data_to_file_iterate(
             return -1;
       }
 
+      if (encoding_crc32(0, zip_context->decompressed_data,
+               zip_context->usize) != zip_context->expect_crc)
+         return -1;
+
       handle->data = zip_context->decompressed_data;
       return 1;
    }
@@ -330,7 +409,7 @@ static int zlib_stream_decompress_data_to_file_iterate(
       uint8_t *dptr;
       int to_read = MIN(zip_context->csize - zip_context->boffset, _READ_CHUNK_SIZE);
       /* File was uncompressed or decompression finished before */
-      if (!zip_context->zstream)
+      if (!zip_context->inflating)
          return 1;
 
 #ifdef VFS_HAVE_FILE_MAPPING
@@ -364,8 +443,45 @@ static int zlib_stream_decompress_data_to_file_iterate(
       zip_context->zstream->next_in   = dptr;
       zip_context->zstream->avail_in  = (uInt)rd;
 
-      if (inflate(zip_context->zstream, 0) < 0)
-         return -1;
+      for (;;)
+      {
+         /* The CRC runs over each slice's output while it is still
+          * in cache. */
+         int zret;
+         uint8_t *out;
+
+         /* A full window is written out before inflating more */
+         if (     zip_context->streaming
+               && zip_context->zstream->avail_out == 0
+               && !zip_context_flush_window(zip_context))
+            return -1;
+
+         out  = zip_context->zstream->next_out;
+         zret = inflate(zip_context->zstream, 0);
+         zip_context->crc     = encoding_crc32(zip_context->crc, out,
+               (size_t)(zip_context->zstream->next_out - out));
+         zip_context->out_off = (uint32_t)zip_context->zstream->total_out;
+
+         /* With the whole member as output, one call takes all the
+          * input */
+         if (!zip_context->streaming)
+         {
+            if (zret < 0)
+               return -1;
+            break;
+         }
+
+         /* Streaming: input used up and nothing more to drain */
+         if (zret == Z_BUF_ERROR && zip_context->zstream->avail_in == 0)
+            break;
+         if (zret < 0)
+            return -1;
+         if (zret == Z_STREAM_END)
+            break;
+         if (     zip_context->zstream->avail_in  == 0
+               && zip_context->zstream->avail_out != 0)
+            break;
+      }
 #else
       /* Bind the output buffer once, then feed this compressed chunk.  The
        * decoder keeps its own output cursor across calls, so set_out is only
@@ -373,18 +489,32 @@ static int zlib_stream_decompress_data_to_file_iterate(
       if (!zip_context->out_bound)
       {
          rinflate_set_out(zip_context->zstream,
-               zip_context->decompressed_data, zip_context->usize);
+               zip_context->decompressed_data, zip_context->win_len);
          zip_context->out_bound = 1;
+         zip_context->win_pos   = 0;
       }
       rinflate_set_in(zip_context->zstream, dptr, (size_t)rd);
 
       for (;;)
       {
          size_t got_in = 0, got_out = 0;
-         int    st     = rinflate_process(zip_context->zstream,
-               &got_in, &got_out);
+         int    st;
+
+         /* A full window is written out before inflating more; the
+          * decoder keeps its own back-reference history */
+         if (     zip_context->streaming
+               && zip_context->win_pos == zip_context->win_len
+               && !zip_context_flush_window(zip_context))
+            return -1;
+
+         st = rinflate_process(zip_context->zstream, &got_in, &got_out);
          if (st == RDEFLATE_PROCESS_ERROR)
             return -1;
+         zip_context->crc      = encoding_crc32(zip_context->crc,
+               zip_context->decompressed_data + zip_context->win_pos,
+               got_out);
+         zip_context->win_pos += (uint32_t)got_out;
+         zip_context->out_off += (uint32_t)got_out;
          /* END: stream finished.  NEXT with no further progress means this
           * input chunk is drained; fetch the next one on the outer loop. */
          if (st == RDEFLATE_PROCESS_END)
@@ -396,14 +526,22 @@ static int zlib_stream_decompress_data_to_file_iterate(
 
       if (zip_context->boffset >= zip_context->csize)
       {
-#ifdef ARCHIVE_HAVE_ZLIB
-         inflateEnd(zip_context->zstream);
-         free(zip_context->zstream);
-#else
-         rinflate_free(zip_context->zstream);
+         zip_context->inflating = false;
+#ifndef ARCHIVE_HAVE_ZLIB
          zip_context->out_bound = 0;
 #endif
-         zip_context->zstream = NULL;
+         if (     zip_context->out_off != zip_context->usize
+               || zip_context->crc     != zip_context->expect_crc)
+            return -1;
+
+         /* A streamed member is already in the sink, whole */
+         if (zip_context->streaming)
+         {
+            if (!zip_context_flush_window(zip_context))
+               return -1;
+            handle->data = NULL;
+            return 1;
+         }
 
          handle->data = zip_context->decompressed_data;
          return 1;
@@ -442,11 +580,19 @@ static int zlib_stream_decompress_data_to_file_iterate(
                != RZSTD_PROCESS_END);
       }
 
-      if (zerr)
+      if (     zerr
+            || result != zip_context->usize
+            || encoding_crc32(0, zip_context->decompressed_data,
+               zip_context->usize) != zip_context->expect_crc)
          return -1;
 
-      free(zip_context->tmpbuf);
-      zip_context->tmpbuf = NULL;
+      /* A whole-member buffer is not kept past its member. */
+      if (zip_context->tmpbuf_len > _READ_CHUNK_SIZE)
+      {
+         free(zip_context->tmpbuf);
+         zip_context->tmpbuf     = NULL;
+         zip_context->tmpbuf_len = 0;
+      }
 
       handle->data = zip_context->decompressed_data;
       return 1;
@@ -692,8 +838,20 @@ static int zip_parse_file_init(file_archive_transfer_t *state,
    zip_context->directory_entry   = zip_context->directory;
    zip_context->directory_end     = zip_context->directory + (size_t)directory_size;
    zip_context->zstream           = NULL;
+#ifndef ARCHIVE_HAVE_ZLIB
+   zip_context->out_bound         = 0;
+#endif
    zip_context->tmpbuf            = NULL;
+   zip_context->tmpbuf_len        = 0;
+   zip_context->entry_crc         = 0;
+   zip_context->expect_crc        = 0;
+   zip_context->crc               = 0;
+   zip_context->out_off           = 0;
    zip_context->decompressed_data = NULL;
+   zip_context->inflating         = false;
+   zip_context->fdoffset          = 0;
+   zip_context->csize             = 0;
+   zip_context->usize             = 0;
 
    filestream_seek(state->archive_file, directory_offset, RETRO_VFS_SEEK_POSITION_START);
    if (filestream_read(state->archive_file, zip_context->directory, directory_size) != directory_size)
@@ -826,6 +984,7 @@ static int zip_parse_file_iterate_step(void *context,
 
    userdata->crc  = checksum;
    userdata->size = size;
+   zip_context->entry_crc = checksum;
 
    if (file_cb && !file_cb(userdata->current_file_path, valid_exts, cdata, cmode,
             csize, size, checksum, userdata))

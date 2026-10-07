@@ -160,6 +160,7 @@ typedef struct
     * getter. The read stays a single benign per-tick poll of a
     * monotonic counter. */
    const uint64_t *frame_count;
+   retro_task_callback_t done_cb; /* the caller's */
    char path[PATH_MAX_LENGTH];
 } save_task_state_t;
 
@@ -195,13 +196,15 @@ static struct
 static struct ram_save_state_buf ram_buf;
 
 static bool save_state_in_background       = false;
-/* See content_load_state_in_progress() for why this is a flag and
- * not a task_queue_find(). */
+/* See content_load_state_in_progress() for why these are flags and
+ * not a task_queue_find().  Save tasks are TASK_TYPE_BLOCKING, so at
+ * most one is in flight. */
 static bool load_state_task_pending        = false;
+static bool save_state_task_pending        = false;
 static bool save_state_disable_undo        = false;
 
 /* Time tracking for automatic savestate interval */
-static time_t last_savestate_automatic_time = 0;
+static retro_time_t last_savestate_automatic_time = 0;
 
 typedef struct rastate_size_info
 {
@@ -394,6 +397,8 @@ static void undo_save_state_cb(retro_task_t *task,
 {
    save_task_state_t *state = (save_task_state_t*)task_data;
 
+   save_state_task_pending  = false;
+
    /* Wipe the save file buffer as it's intended to be one use only */
    undo_save_buf.path[0]  = '\0';
    undo_save_buf.size     = 0;
@@ -418,7 +423,6 @@ static void task_save_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
    uint8_t flg;
-   save_task_state_t *task_data = NULL;
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -428,25 +432,13 @@ static void task_save_handler_finished(retro_task_t *task,
    {
       intfstream_close(state->file);
       free(state->file);
+      state->file = NULL;
    }
 
    flg = task_get_flags(task);
 
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
-
-   task_data = (save_task_state_t*)calloc(1, sizeof(*task_data));
-   /* NULL-check: the memcpy below NULL-derefs on OOM.  The
-    * completion callbacks save_state_cb / undo_save_state_cb
-    * are NULL-tolerant to match this code path.  On OOM we leave
-    * task_data unset (NULL); task_set_data is skipped and the
-    * completion callback receives NULL for its task_data
-    * parameter. */
-   if (task_data)
-   {
-      memcpy(task_data, state, sizeof(*state));
-      task_set_data(task, task_data);
-   }
 
    if (state->data)
    {
@@ -458,8 +450,12 @@ static void task_save_handler_finished(retro_task_t *task,
    }
    free(state->fe_replay);
    free(state->fe_cheevos);
+   state->fe_replay  = NULL;
+   state->fe_cheevos = NULL;
 
-   free(state);
+   /* The state itself is the callback's task_data, which frees it:
+    * nothing is allocated here, so the callback always has it. */
+   task_set_data(task, state);
 }
 
 /* Align to 8-byte boundary */
@@ -504,7 +500,7 @@ static size_t content_get_rastate_size(rastate_size_info_t* size, bool rewind)
    /* 8-byte block header + content */
    if (!rewind)
    {
-      size->replay_size = replay_get_serialize_size();
+      size->replay_size = replay_get_serialize_size(input_state_get_ptr());
       if (size->replay_size > 0)
          size->total_size += 8 + CONTENT_ALIGN_SIZE(size->replay_size);
    }
@@ -588,7 +584,7 @@ static bool content_write_serialized_state(void* buffer,
        {
           content_write_block_header(output,
              RASTATE_REPLAY_BLOCK, size->replay_size);
-          if (replay_get_serialized_data(output + 8))
+          if (replay_get_serialized_data(input_st, output + 8))
           {
             CONTENT_ZERO_PADDING(output + 8, size->replay_size);
             output += CONTENT_ALIGN_SIZE(size->replay_size) + 8;
@@ -1001,9 +997,17 @@ static bool task_push_undo_save_state(const char *path, void *data, size_t len)
       else
          task->flags       &= ~RETRO_TASK_FLG_MUTE;
 
-      task_queue_push(task);
+      if (task_queue_push(task))
+      {
+         save_state_task_pending = true;
+         return true;
+      }
 
-      return true;
+      /* Another blocking task is already active: this one never runs,
+       * so nothing else frees what it holds */
+      task_free_title(task);
+      free(task);
+      task = NULL;
    }
 
    if (data)
@@ -1045,7 +1049,6 @@ static void task_load_handler_finished(retro_task_t *task,
       save_task_state_t *state)
 {
    uint8_t flg;
-   load_task_data_t *task_data = NULL;
 
    task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 
@@ -1053,6 +1056,7 @@ static void task_load_handler_finished(retro_task_t *task,
    {
       intfstream_close(state->file);
       free(state->file);
+      state->file = NULL;
    }
 
    flg = task_get_flags(task);
@@ -1060,26 +1064,10 @@ static void task_load_handler_finished(retro_task_t *task,
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
 
-   if (!(task_data = (load_task_data_t*)calloc(1, sizeof(*task_data))))
-   {
-      /* On OOM: set a task error (so the user sees 'load state
-       * failed' rather than silent failure), free state - an early
-       * return without the free leaks it - and return.  The completion
-       * callbacks handle NULL task_data via their own NULL-
-       * checks. */
-      if (!task_get_error(task))
-         task_set_error(task, strdup("Out of memory"));
-      if (state->data)
-         free(state->data);
-      free(state);
-      return;
-   }
-
-   memcpy(task_data, state, sizeof(*task_data));
-
-   task_set_data(task, task_data);
-
-   free(state);
+   /* The state, with the data read into it, is the callback's
+    * task_data, which frees both: nothing is allocated here, so the
+    * callback always has it. */
+   task_set_data(task, state);
 }
 
 /**
@@ -1348,7 +1336,8 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
 #else
          bool frame_is_reversed         = false;
 #endif
-         if (frame_is_reversed || replay_set_serialized_data((void*)input))
+         if (frame_is_reversed || replay_set_serialized_data(input_state_get_ptr(), (void*)input,
+               block_size))
             seen_replay = true;
          else
             return false;
@@ -1376,7 +1365,7 @@ static bool content_load_rastate1(unsigned char* input, size_t len)
       bool frame_is_reversed = false;
 #endif
       if (!seen_replay && !frame_is_reversed)
-         replay_set_serialized_data(NULL);
+         replay_set_serialized_data(input_state_get_ptr(), NULL, 0);
    }
 #endif
 
@@ -1411,7 +1400,7 @@ bool content_deserialize_state(const void *s, size_t len)
          bool frame_is_reversed = false;
 #endif
          if (!frame_is_reversed)
-            replay_set_serialized_data(NULL);
+            replay_set_serialized_data(input_state_get_ptr(), NULL, 0);
       }
 #endif
    }
@@ -1454,14 +1443,6 @@ static void content_load_state_cb(retro_task_t *task,
     * whichever way this callback exits. */
    load_state_task_pending     = false;
 
-   /* NULL-check load_data: task_load_handler_finished may fail
-    * to allocate the task_data copy on OOM and leave it NULL.
-    * Skip all processing - the emulator state is unchanged and
-    * the task error (set by the handler) surfaces the failure
-    * to the user. */
-   if (!load_data)
-      return;
-
    _len = load_data->size;
    buf  = load_data->data;
 
@@ -1493,6 +1474,8 @@ static void content_load_state_cb(retro_task_t *task,
       undo_save_buf.capacity = (size_t)_len;
       strlcpy(undo_save_buf.path, load_data->path, sizeof(undo_save_buf.path));
 
+      if (load_data->done_cb)
+         load_data->done_cb(task, load_data->path, user_data, NULL);
       free(load_data);
       return;
    }
@@ -1584,6 +1567,8 @@ static void content_load_state_cb(retro_task_t *task,
    if (!ret)
       goto error;
 
+   if (load_data->done_cb)
+      load_data->done_cb(task, load_data->path, user_data, NULL);
    free(buf);
    free(load_data);
 
@@ -1593,6 +1578,14 @@ error:
    RARCH_ERR("[State] %s \"%s\".\n",
          msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE),
          load_data->path);
+   if (load_data->done_cb)
+   {
+      char msg[PATH_MAX_LENGTH + 64];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_LOAD_STATE), load_data->path);
+      load_data->done_cb(task, load_data->path, user_data,
+            error ? error : msg);
+   }
    if (buf)
       free(buf);
    free(load_data);
@@ -1608,12 +1601,11 @@ static void save_state_cb(retro_task_t *task,
       void *user_data, const char *error)
 {
    save_task_state_t *state   = (save_task_state_t*)task_data;
-   /* NULL-check: task_save_handler_finished may fail to alloc
-    * the task_data copy on OOM and leave it NULL.  Skip the
-    * screenshot hook and free(state) on NULL - free(NULL) is a
-    * no-op but we can't read state->path / state->flags. */
-   if (!state)
-      return;
+
+   /* Out of the core whichever way this callback exits. */
+   save_state_task_pending    = false;
+   if (state->done_cb)
+      state->done_cb(task, state->path, user_data, error);
 #ifdef HAVE_SCREENSHOTS
    {
       char               *path   = strdup(state->path);
@@ -1647,10 +1639,10 @@ static void content_capture_frontend_blocks(save_task_state_t *state)
                & (BSV_FLAG_MOVIE_RECORDING | BSV_FLAG_MOVIE_PLAYBACK))
           && !frame_is_reversed)
       {
-         size_t _len = replay_get_serialize_size();
+         size_t _len = replay_get_serialize_size(input_st);
          if (_len > 0 && (state->fe_replay = malloc(_len)))
          {
-            if (replay_get_serialized_data(state->fe_replay))
+            if (replay_get_serialized_data(input_st, state->fe_replay))
                state->fe_replay_size = _len;
             else
             {
@@ -1687,7 +1679,8 @@ static void content_capture_frontend_blocks(save_task_state_t *state)
  *
  * Create a new task to save the content state.
  **/
-static void task_push_save_state(const char *path, void *data, size_t len, bool autosave)
+static bool task_push_save_state(const char *path, void *data, size_t len,
+      bool autosave, retro_task_callback_t cb, void *user_data)
 {
    settings_t     *settings        = config_get_ptr();
    retro_task_t       *task        = task_init();
@@ -1732,6 +1725,8 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    task->state                   = state;
    task->handler                 = task_save_handler;
    task->callback                = save_state_cb;
+   task->user_data               = user_data;
+   state->done_cb                = cb;
    task->title                   = strdup(msg_hash_to_str(MSG_SAVING_STATE));
 
    if (state->flags & SAVE_TASK_FLAG_MUTE)
@@ -1739,7 +1734,12 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
    else
       task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
-   if (!task_queue_push(task))
+   if (task_queue_push(task))
+   {
+      save_state_task_pending = true;
+      return true;
+   }
+   else
    {
       /* Another blocking task is already active. */
       if (data)
@@ -1750,7 +1750,7 @@ static void task_push_save_state(const char *path, void *data, size_t len, bool 
       free(state);
    }
 
-   return;
+   return false;
 
 error:
    if (data)
@@ -1763,6 +1763,7 @@ error:
          task_free_title(task);
       free(task);
    }
+   return false;
 }
 
 /**
@@ -1780,26 +1781,26 @@ static void content_load_and_save_state_cb(retro_task_t *task,
    void                  *data;
    size_t                 size;
    bool               autosave;
-
-   /* NULL-check load_data: task_load_handler_finished may have
-    * failed to allocate the task_data copy on OOM.  Delegate the
-    * NULL-safe no-op to content_load_state_cb (which already
-    * handles NULL via its own guard) and skip the subsequent
-    * save push which would NULL-deref ->path / ->undo_data. */
-   if (!load_data)
-   {
-      content_load_state_cb(task, task_data, user_data, error);
-      return;
-   }
+   retro_task_callback_t done_cb;
 
    path     = strdup(load_data->path);
    data     = load_data->undo_data;
    size     = load_data->undo_size;
    autosave = (load_data->flags & SAVE_TASK_FLAG_AUTOSAVE) ? true : false;
+   /* the caller asked about the save, not this backup load */
+   done_cb  = load_data->done_cb;
+   load_data->done_cb = NULL;
 
    content_load_state_cb(task, task_data, user_data, error);
 
-   task_push_save_state(path, data, size, autosave);
+   if (     !task_push_save_state(path, data, size, autosave, done_cb, user_data)
+         && done_cb)
+   {
+      char msg[PATH_MAX_LENGTH + 64];
+      snprintf(msg, sizeof(msg), "%s \"%s\".",
+            msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO), path);
+      done_cb(NULL, path, user_data, msg);
+   }
 
    free(path);
 }
@@ -1814,8 +1815,9 @@ static void content_load_and_save_state_cb(retro_task_t *task,
  * Create a new task to load current state first into a backup buffer (for undo)
  * and then save the content state.
  **/
-static void task_push_load_and_save_state(const char *path, void *data,
-      size_t len, bool load_to_backup_buffer, bool autosave)
+static bool task_push_load_and_save_state(const char *path, void *data,
+      size_t len, bool load_to_backup_buffer, bool autosave,
+      retro_task_callback_t cb, void *user_data)
 {
    retro_task_t      *task        = NULL;
    settings_t        *settings    = config_get_ptr();
@@ -1823,12 +1825,12 @@ static void task_push_load_and_save_state(const char *path, void *data,
       calloc(1, sizeof(*state));
 
    if (!state)
-      return;
+      return false;
 
    if (!(task = task_init()))
    {
       free(state);
-      return;
+      return false;
    }
 
 
@@ -1858,6 +1860,8 @@ static void task_push_load_and_save_state(const char *path, void *data,
    task->type                   = TASK_TYPE_BLOCKING;
    task->handler                = task_load_handler;
    task->callback               = content_load_and_save_state_cb;
+   task->user_data              = user_data;
+   state->done_cb               = cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    load_state_task_pending      = true;
@@ -1878,7 +1882,9 @@ static void task_push_load_and_save_state(const char *path, void *data,
          task_free_title(task);
       free(task);
       free(state);
+      return false;
    }
+   return true;
 }
 
 /**
@@ -1960,6 +1966,12 @@ bool content_auto_save_state(const char *path)
  * Returns: true if successful, false otherwise.
  **/
 bool content_save_state(const char *path, bool save_to_disk)
+{
+   return content_save_state_notify(path, save_to_disk, NULL, NULL);
+}
+
+bool content_save_state_notify(const char *path, bool save_to_disk,
+      retro_task_callback_t cb, void *user_data)
 {
    size_t _len;
    void *data  = NULL;
@@ -2050,12 +2062,10 @@ bool content_save_state(const char *path, bool save_to_disk)
       /* TODO/FIXME - Use msg_hash_to_str here */
       RARCH_LOG("[State] %s...\n",
             msg_hash_to_str(MSG_FILE_ALREADY_EXISTS_SAVING_TO_BACKUP_BUFFER));
-      task_push_load_and_save_state(path, data, _len, true, false);
+      return task_push_load_and_save_state(path, data, _len, true, false,
+            cb, user_data);
    }
-   else
-      task_push_save_state(path, data, _len, false);
-
-   return true;
+   return task_push_save_state(path, data, _len, false, cb, user_data);
 }
 
 /**
@@ -2069,26 +2079,19 @@ bool content_ram_state_pending(void)
    return ram_buf.to_write_file;
 }
 
-static bool task_save_state_finder(retro_task_t *task, void *user_data)
-{
-   return (task && task->handler == task_save_handler);
-}
-
-/* Returns true if a save state task is in progress */
-/* True while a save state task is in progress.
- *
- * Public because closing content needs to know whether the wait
- * below is going to block before it blocks, so it can say so. */
+/* True from the moment a save state task is pushed until its
+ * main-thread callback has run: the task is inside the core until
+ * then.  A flag, not a finder, for the reason given at
+ * content_load_state_in_progress() below - the close asks from
+ * inside a task handler, where a finder cannot see the save. */
 bool content_save_state_in_progress(void* data)
 {
-   task_finder_data_t find_data;
-
-   find_data.func     = task_save_state_finder;
-   find_data.userdata = data;
-
-   return task_queue_find(&find_data);
+   (void)data;
+   return save_state_task_pending;
 }
 
+/* Blocks until the state task is through.  For the exit, startup and
+ * init-failure paths only; CI keeps it out of menu/ and tasks/. */
 void content_wait_for_save_state_task(void)
 {
    task_queue_wait(content_save_state_in_progress, NULL);
@@ -2120,6 +2123,7 @@ bool content_load_state_in_progress(void* data)
    return load_state_task_pending;
 }
 
+/* As content_wait_for_save_state_task(), for a load. */
 void content_wait_for_load_state_task(void)
 {
    task_queue_wait(content_load_state_in_progress, NULL);
@@ -2135,6 +2139,14 @@ void content_wait_for_load_state_task(void)
  **/
 bool content_load_state(const char *path,
       bool load_to_backup_buffer, bool autoload)
+{
+   return content_load_state_notify(path, load_to_backup_buffer, autoload,
+         NULL, NULL);
+}
+
+bool content_load_state_notify(const char *path,
+      bool load_to_backup_buffer, bool autoload,
+      retro_task_callback_t cb, void *user_data)
 {
    retro_task_t       *task        = NULL;
    save_task_state_t *state        = NULL;
@@ -2182,6 +2194,8 @@ bool content_load_state(const char *path,
    task->state                  = state;
    task->handler                = task_load_handler;
    task->callback               = content_load_state_cb;
+   task->user_data              = user_data;
+   state->done_cb               = cb;
    task->title                  = strdup(msg_hash_to_str(MSG_LOADING_STATE));
 
    load_state_task_pending      = true;
@@ -2191,7 +2205,19 @@ bool content_load_state(const char *path,
    else
       task->flags               &= ~RETRO_TASK_FLG_MUTE;
 
-   task_queue_push(task);
+   if (!task_queue_push(task))
+   {
+      /* Another blocking task is already active. No callback will run
+       * for this task, so the load is not pending - left set, the
+       * flag would hold a content close and a movie recording waiting
+       * on a load that never comes - and nothing else frees what it
+       * holds. */
+      load_state_task_pending   = false;
+      task_free_title(task);
+      free(task);
+      free(state);
+      return false;
+   }
 
    return true;
 
@@ -2432,24 +2458,22 @@ void set_save_state_disable_undo(bool disable)
    save_state_disable_undo = disable;
 }
 
-bool content_save_state_automatic(void)
+bool content_save_state_automatic(retro_time_t now_us)
 {
-   time_t current_time;
    char savestate_path[PATH_MAX_LENGTH];
    settings_t *settings = config_get_ptr();
-   unsigned savestate_automatic_interval = 
+   unsigned savestate_automatic_interval =
       settings->uints.savestate_automatic_interval;
-   
+
    /* Return early if automatic savestate is disabled,
       safety checks already happen in content_auto_save_state() */
    if (savestate_automatic_interval == 0)
       return false;
-   
-   current_time = time(NULL);
-   
-   /* Check how long since last autosavestate */
-   if ((current_time - last_savestate_automatic_time) < 
-       (time_t)savestate_automatic_interval)
+
+   /* Check how long since last autosavestate, against the clock the
+    * frame already read - no time() call of its own per frame. */
+   if ((now_us - last_savestate_automatic_time)
+         < (retro_time_t)savestate_automatic_interval * 1000000)
       return false;
    
    /* Generate the savestate path */
@@ -2467,7 +2491,7 @@ bool content_save_state_automatic(void)
          savestate_path);
    
    /* Update the last savestate time, rinse/repeat */
-   last_savestate_automatic_time = current_time;
+   last_savestate_automatic_time = now_us;
    
    return content_auto_save_state(savestate_path);
 }

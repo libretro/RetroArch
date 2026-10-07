@@ -130,7 +130,7 @@ static audio_driver_t scripted = {
 
 /* Buffers the harness owns.
  *
- * In the frontend these six are slices of arena_int16, arena_float and
+ * In the frontend these are slices of arena_int16, arena_float and
  * pipe_arena: audio_driver_deinit_internal() frees the arenas as units
  * and then only NULLs the named pointers, because none of them is a
  * separate allocation there. A stand-up below hands the state plain
@@ -140,10 +140,31 @@ static audio_driver_t scripted = {
  * then. That leaked a set per case: 466 MB over a full run, enough
  * that the test cannot be run under LeakSanitizer.
  *
- * The buffers the frontend really does free - upmix_buf, upmix_i16,
- * pipe_wide, multi_fold, record_remap - are not here, and must not be:
- * deinit frees them and this would double it. */
-static void *owned[6];
+ * The fold staging and the recorder remap staging are arena regions
+ * too, carved at init to their fixed sizes - the batch callback no
+ * longer grows them - so the stand-up carves them as init does.  The
+ * buffers the frontend really does free - upmix_buf, upmix_i16,
+ * pipe_wide - are not here, and must not be: deinit frees them and
+ * this would double it. */
+static void *owned[8];
+
+/* The staging sizes init uses, from audio_driver.c */
+#define HARNESS_FOLD_FRAMES   (AUDIO_CHUNK_SIZE_NONBLOCKING >> 1)
+#define HARNESS_REMAP_INT16S  ((AUDIO_CHUNK_SIZE_NONBLOCKING >> 1) * 16)
+
+/* The two staging regions every stand-up gets, as init carves them:
+ * the fold's fronts, and the recorder's remap at the widest layout
+ * with a conversion half beside it. */
+static void owned_staging(audio_driver_state_t *st)
+{
+   st->multi_fold          = malloc(HARNESS_FOLD_FRAMES * 2 * sizeof(float));
+   st->multi_fold_frames   = HARNESS_FOLD_FRAMES;
+   st->record_remap        = (int16_t*)malloc(2 * HARNESS_REMAP_INT16S * sizeof(int16_t));
+   st->record_remap_frames = HARNESS_REMAP_INT16S;
+   owned[6]                = st->multi_fold;
+   owned[7]                = st->record_remap;
+}
+
 
 static void owned_free(void)
 {
@@ -185,6 +206,7 @@ static bool up(bool core_float, uint32_t layout, bool float_dev)
    owned[1]                   = st->output_samples_int16;
    owned[2]                   = st->input_data;
    owned[3]                   = st->input_data_int16;
+   owned_staging(st);
    st->core_float             = core_float;
    st->sink_bias              = 1.0;
    strcpy(st->resampler_ident, "sinc");
@@ -566,6 +588,7 @@ static void ac3_bitstream_case(void)
    owned[1]                 = st->output_samples_int16;
    owned[2]                 = st->input_data;
    owned[3]                 = st->input_data_int16;
+   owned_staging(st);
    st->core_float           = true;
    st->sink_bias            = 1.0;
    st->core_layout          = AUDIO_LAYOUT_STEREO;
@@ -910,7 +933,7 @@ static void suspended_multichannel_case(bool floating, bool discrete)
       ? audio_driver_sample_batch_multi_float(input_f, frames, 6, AUDIO_LAYOUT_5POINT1)
       : audio_driver_sample_batch_multi_int16(input_i, frames, 6, AUDIO_LAYOUT_5POINT1);
    CHECK(accepted == frames, "suspended frames not accepted");
-   CHECK(!st->multi_fold && !st->multi_fold_frames, "suspended batch allocated fold staging");
+   CHECK(st->multi_fold_frames == HARNESS_FOLD_FRAMES, "suspended batch touched the fold staging");
    CHECK(!st->extra.pending && !st->extra.channels, "suspended batch prepared extras");
    CHECK(!cap_frames, "suspended batch reached device");
    CHECK(st->core_layout == AUDIO_LAYOUT_5POINT1, "layout metadata was not retained");
@@ -1035,7 +1058,7 @@ static void record_stereo_entry_case(unsigned kind, uint32_t layout)
    if (rec_frames == frames)
       CHECK(!memcmp(rec_cap, expected, frames * rec_channels * sizeof(int16_t)),
             "record entry did not map stereo to the recorder layout");
-   CHECK(st->record_remap_frames <= 1024 * rec_channels, "record entry staging is unbounded");
+   CHECK(st->record_remap_frames == HARNESS_REMAP_INT16S, "record entry grew its staging");
    rs->driver = NULL; rs->data = NULL;
 end:
    free(expected); free(narrow); free(input_f); free(input);

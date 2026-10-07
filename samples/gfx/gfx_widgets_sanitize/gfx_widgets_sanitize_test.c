@@ -274,6 +274,7 @@ static void test_icon_draw_size(void)
 
 int main(void)
 {
+   task_queue_init(false, NULL);
    test_push_and_expire();
    test_titles();
    test_queue_overflow();
@@ -286,6 +287,8 @@ int main(void)
     * sweep nothing and report success. */
    CHECK(pushes > 0,     "no message was ever pushed");
    CHECK(iterations > 0, "no frame was ever iterated");
+
+   task_queue_deinit();
 
    if (failures)
    {

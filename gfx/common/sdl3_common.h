@@ -27,9 +27,12 @@
 
 enum sdl3_flags
 {
-   SDL3_FLAG_QUITTING       = (1 << 0),
-   SDL3_FLAG_SHOULD_RESIZE  = (1 << 1),
-   SDL3_FLAG_ADAPTIVE_VSYNC = (1 << 2)
+   SDL3_FLAG_QUITTING         = (1 << 0),
+   SDL3_FLAG_SHOULD_RESIZE    = (1 << 1),
+   SDL3_FLAG_ADAPTIVE_VSYNC   = (1 << 2),
+   /* The overlay textures are the overlay pack's (load_textures),
+    * not this driver's to destroy. */
+   SDL3_FLAG_OVERLAY_BORROWED = (1 << 3)
 };
 
 typedef struct sdl3_tex
@@ -41,6 +44,18 @@ typedef struct sdl3_tex
    bool active;
    bool rgb32;
 } sdl3_tex_t;
+
+#ifdef HAVE_OVERLAY
+/* On-screen overlay for SDL3. */
+struct sdl3_overlay
+{
+   SDL_Texture *tex;
+   SDL_FRect tex_coords; /* Normalized 0..1 for the source. */
+   SDL_FRect vert_coords; /* Normalized 0..1 within the base area. */
+   float alpha_mod;
+   bool fullscreen;
+};
+#endif
 
 typedef struct _sdl3_video
 {
@@ -55,6 +70,12 @@ typedef struct _sdl3_video
    sdl3_tex_t menu;  /* ptr alignment */
 
    SDL_Renderer *renderer;
+
+#ifdef HAVE_OVERLAY
+   struct sdl3_overlay *overlays;
+   unsigned overlays_size;
+   bool overlays_enabled;
+#endif
 
    uint8_t flags;
 } sdl3_video_t;
@@ -73,6 +94,10 @@ void sdl3_set_handles(SDL_Window *window);
  * events, etc. The keyboard/mouse events are left in the queue
  * for the SDL input driver to handle itself. */
 void sdl3_pump_window_events(bool *quit, bool *resize);
+
+/* Pumps the SDL event queue for the input drivers, unless the video
+ * thread owns the window and pumps it already. */
+void sdl3_pump_input_events(void);
 
 /* Creates or resizes the window, or toggles fullscreen. */
 bool sdl3_window_set_video_mode(SDL_Window **win,
@@ -98,12 +123,10 @@ bool sdl3_window_has_focus(SDL_Window *win);
 bool sdl3_suppress_screensaver(void *data, bool enable);
 
 /* Initializes the input driver paired with an SDL3 window. */
-void sdl3_input_driver(const char *joypad_name,
-      input_driver_t **input, void **input_data);
+void sdl3_input_driver(const char *joypad_name);
 
 /* gfx_ctx_driver_t input_driver callback wrapping sdl3_input_driver. */
-void sdl3_ctx_input_driver(void *data, const char *name,
-      input_driver_t **input, void **input_data);
+void sdl3_ctx_input_driver(void *data, const char *name);
 
 /* Determines whether or not an SDL3 context driver should be
  * initialized. Will return true when the user is using the

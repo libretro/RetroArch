@@ -336,15 +336,13 @@ static bool psp_build_row_blit(psp1_video_t *psp, const void *frame,
    return true;
 }
 
-static void *psp_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *psp_init(const video_info_t *video)
 {
    /* TODO : add ASSERT() checks or use main RAM if
     * VRAM is too low for desired video->input_scale. */
 
    int pixel_format, lut_pixel_format, lut_block_count;
    unsigned int red_shift, color_mask;
-   void *pspinput           = NULL;
    void *displayBuffer      = NULL;
    void *LUT_r              = NULL;
    void *LUT_b              = NULL;
@@ -548,14 +546,9 @@ static void *psp_init(const video_info_t *video,
 
    sceGuFinish();
 
-   if (input && input_data)
-   {
-      settings_t *settings = config_get_ptr();
-      pspinput             = input_driver_init_wrap(&input_psp,
-            settings->arrays.input_joypad_driver);
-      *input               = pspinput ? &input_psp : NULL;
-      *input_data          = pspinput;
-   }
+   /* no input driver of this driver's own: the frontend starts the
+    * platform's */
+   input_driver_video_window(INPUT_WINDOW_PLATFORM, NULL);
 
    psp->vblank_not_reached = true;
    sceKernelRegisterSubIntrHandler(PSP_VBLANK_INT, 0,
@@ -570,9 +563,11 @@ static void *psp_init(const video_info_t *video,
 }
 
 static bool psp_frame(void *data, const void *frame,
-      unsigned width, unsigned height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned width = VIDEO_SCALE_W(dims);
+   unsigned height = VIDEO_SCALE_H(dims);
    unsigned dest_stride    = 0;
    bool     rows_at_a_time  = false;
    psp1_video_t *psp  = (psp1_video_t*)data;

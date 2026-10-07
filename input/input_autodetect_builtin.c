@@ -124,6 +124,25 @@ DECL_AXIS_EX(r_y_plus,  -3, "Right Thumbstick Y+") /* SDL_GAMEPAD_AXIS_RIGHTY   
 DECL_AXIS_EX(r_y_minus, +3, "Right Thumbstick Y-") /* SDL_GAMEPAD_AXIS_RIGHTY           */ \
 DECL_MENU_EX(5, "Guide")                           /* SDL_GAMEPAD_BUTTON_GUIDE          */
 
+/* A PS3 controller under SDL's own driver for it (SDL_JOYSTICK_HIDAPI_PS3)
+ * reports how hard ten of its buttons are pressed, on axes after the
+ * gamepad's six, in the order SDL lists the buttons: the four face
+ * buttons, the shoulders, the D-Pad. Each is bound beside its button:
+ * the button says pressed, the axis says how hard. Without that
+ * driver the pad has six axes and these read nothing. */
+#define SDL3_PS3_BINDS \
+SDL3_DEFAULT_BINDS \
+DECL_AXIS(b,     +6)  /* Cross    */ \
+DECL_AXIS(a,     +7)  /* Circle   */ \
+DECL_AXIS(y,     +8)  /* Square   */ \
+DECL_AXIS(x,     +9)  /* Triangle */ \
+DECL_AXIS(l,     +10) /* L1       */ \
+DECL_AXIS(r,     +11) /* R1       */ \
+DECL_AXIS(up,    +12) \
+DECL_AXIS(down,  +13) \
+DECL_AXIS(left,  +14) \
+DECL_AXIS(right, +15)
+
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
 #define DINGUX_SDL_DEFAULT_BINDS \
 DECL_BTN_EX(a,           8, "A") \
@@ -604,6 +623,24 @@ DECL_AXIS_EX(r_x_minus,  -2, "R-Stick Left") \
 DECL_AXIS_EX(r_y_plus,  +3, "R-Stick Down") \
 DECL_AXIS_EX(r_y_minus,   -3, "R-Stick Up")
 
+/* Frets as on the guitars with face buttons in their colours. */
+#define GXINPUT_GUITAR_DEFAULT_BINDS \
+DECL_BTN_EX(b, 13, "Green") \
+DECL_BTN_EX(a, 14, "Red") \
+DECL_BTN_EX(x, 15, "Yellow") \
+DECL_BTN_EX(y, 16, "Blue") \
+DECL_BTN_EX(l, 22, "Orange") \
+DECL_BTN_EX(start, 17, "+") \
+DECL_BTN_EX(select, 18, "-") \
+DECL_BTN_EX(menu_toggle, 34, "Home") \
+DECL_BTN_EX(up, 24, "Strum Up") \
+DECL_BTN_EX(down, 25, "Strum Down") \
+DECL_AXIS_EX(l_x_plus,  +0, "Stick Right") \
+DECL_AXIS_EX(l_x_minus, -0, "Stick Left") \
+DECL_AXIS_EX(l_y_plus,  +1, "Stick Down") \
+DECL_AXIS_EX(l_y_minus, -1, "Stick Up") \
+DECL_AXIS_EX(r_x_plus,  +2, "Whammy Bar")
+
 #define PS3INPUT_DEFAULT_BINDS \
 DECL_BTN(a, 8) \
 DECL_BTN(b, 0) \
@@ -785,6 +822,9 @@ const char* const input_builtin_autoconfs[] =
 #endif
 #ifdef HAVE_SDL3
    DECL_AUTOCONF_DEVICE("Gamepad", "sdl3", SDL3_DEFAULT_BINDS),
+   /* named by tasks/task_autodetect.c for a PS3 controller, and not a
+    * name a controller gives itself */
+   DECL_AUTOCONF_DEVICE("SDL3 PS3 Gamepad", "sdl3", SDL3_PS3_BINDS),
 #endif
 #if defined(DINGUX) && defined(HAVE_SDL_DINGUX)
    DECL_AUTOCONF_DEVICE("Dingux Gamepad", "sdl_dingux", DINGUX_SDL_DEFAULT_BINDS),
@@ -819,6 +859,7 @@ const char* const input_builtin_autoconfs[] =
    DECL_AUTOCONF_DEVICE("Wiimote Controller", "gx", GXINPUT_WIIMOTE_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Nunchuk Controller", "gx", GXINPUT_NUNCHUK_DEFAULT_BINDS),
    DECL_AUTOCONF_DEVICE("Classic Controller", "gx", GXINPUT_CLASSIC_DEFAULT_BINDS),
+   DECL_AUTOCONF_DEVICE("Guitar Hero Guitar", "gx", GXINPUT_GUITAR_DEFAULT_BINDS),
 #endif
 #endif
 #ifdef WIIU

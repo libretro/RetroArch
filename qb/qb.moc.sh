@@ -1,53 +1,26 @@
 . qb/config.moc.sh
 
-TEMP_MOC=.moc.h
-TEMP_CPP=.moc.cpp
+add_define MAKEFILE QT_VERSION "$QT_VERSION"
 
 MOC="${MOC:-}"
-
-# Checking for working moc
-cat << EOF > "$TEMP_MOC"
-#include <QTimeZone>
-class Test : public QObject
-{
-public:
-   Q_OBJECT
-   QTimeZone tz;
-};
-EOF
 
 add_opt MOC no
 if [ "$HAVE_QT" = "yes" ]; then
 	printf %s 'Checking for moc ... '
 
-	moc_works=0
-	if [ "$MOC" ]; then
-		QT_SELECT="$QT_VERSION" \
-		"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 &&
-			$(printf %s "$CXX") -o "$TEMP_EXE" \
-			$(printf %s "$QT_FLAGS") -fPIC -c "$TEMP_CPP" \
-			>/dev/null 2>&1 &&
-		moc_works=1
-	else
-		if [ "$QT_VERSION" = "qt6" ]; then
-			QMAKE="$(exists qmake6)" || QMAKE="qmake"
-			$QMAKE -query QT_HOST_LIBEXECS && QT_HOST_LIBEXECS="$($QMAKE -query QT_HOST_LIBEXECS)/"
-		fi
-		for moc in "${QT_HOST_LIBEXECS}moc-$QT_VERSION" "${QT_HOST_LIBEXECS}moc"; do
-			MOC="$(exists "$moc")" || MOC=""
-			if [ "$MOC" ]; then
-				QT_SELECT="$QT_VERSION" \
-				"$MOC" -o "$TEMP_CPP" "$TEMP_MOC" >/dev/null 2>&1 ||
-					continue
-				if $(printf %s "$CXX") -o "$TEMP_EXE" \
-						$(printf %s "$QT_FLAGS") -fPIC -c \
-						"$TEMP_CPP" >/dev/null 2>&1; then
-					moc_works=1
-					break
-				fi
-			fi
-		done
+	# moc_start ran the check in the background once Qt was settled; it
+	# runs again here if nothing started it or Qt changed after it did.
+	if [ -n "$MOC_PID" ] && [ "$MOC_SIG" != "$CXX|$QT_VERSION|$QT_FLAGS" ]; then
+		wait "$MOC_PID"
+		MOC_PID=''
 	fi
+	[ -n "$MOC_PID" ] || moc_start
+
+	moc_works=0
+	wait "$MOC_PID" && moc_works=1
+	MOC_PID=''
+	read -r MOC < "$TEMP_MOC_RES"
+	cat "$TEMP_MOC_LOG" >> config.log
 
 	moc_status='does not work'
 	if [ "$moc_works" = '1' ]; then
@@ -64,5 +37,3 @@ if [ "$HAVE_QT" = "yes" ]; then
 		die : 'Warning: moc not found, Qt companion support will be disabled.'
 	fi
 fi
-
-rm -f -- "$TEMP_CPP" "$TEMP_EXE" "$TEMP_MOC"

@@ -181,12 +181,12 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
     * than sent. The constant needs no such care: cocoa_defines.h maps
     * NSWindowStyleMaskTitled to NSTitledWindowMask, its name before
     * 10.12, and that one is 10.0. */
-   if (![window respondsToSelector:@selector(setStyleMask:)])
+   if (![window respondsToSelector:sel_registerName("setStyleMask:")])
       return false;
-   if (on)
-      [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
-   else
-      [window setStyleMask:([window styleMask] & ~NSWindowStyleMaskTitled)];
+   /* -setStyleMask: is 10.6; sent by selector for the older SDKs */
+   apple_rt_send_long(window, sel_registerName("setStyleMask:"), on
+         ? ([window styleMask] |  NSWindowStyleMaskTitled)
+         : ([window styleMask] & ~NSWindowStyleMaskTitled));
    return true;
 }
 #endif
@@ -199,7 +199,7 @@ static bool apple_display_server_set_resolution(void *data,
    CocoaView *view = [CocoaView get];
    if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
    {
-      if (!view || !view.displayLink)
+      if (!view || !COCOA_VIEW_DISPLAY_LINK(view))
       {
          RARCH_WARN("[Video] CocoaView not ready, skipping refresh rate change to %.3f Hz\n", hz);
          return false;
@@ -301,7 +301,7 @@ static bool apple_display_server_set_resolution(void *data,
 
    /* Set refresh rate for display link */
    if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
-      view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+      COCOA_DISPLAY_LINK_SET_RATE(COCOA_VIEW_DISPLAY_LINK(view), hz);
    return true;
 }
 #elif TARGET_OS_IPHONE
@@ -318,12 +318,7 @@ static bool apple_display_server_set_resolution(void *data,
 
    /* iOS: Only refresh rate changes */
    RARCH_DBG("[Video] Setting refresh rate to %.3f Hz\n", hz);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-    if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-       view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
-   else
-#endif
-      view.displayLink.preferredFramesPerSecond = hz;
+   cocoa_display_link_set_rate(view.displayLink, hz);
     return true;
 }
 #endif
@@ -331,7 +326,9 @@ static bool apple_display_server_set_resolution(void *data,
 static void *apple_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
+#if !TARGET_OS_OSX || defined(RARCH_HAS_CGDISPLAYMODE_API)
    unsigned j                        = 0;
+#endif
    struct video_display_config *conf = NULL;
    double currentRate;
 
@@ -457,7 +454,7 @@ static void *apple_display_server_get_resolution_list(
 
    CFRelease(displayModes);
    CFRelease(currentMode);
-   RARCH_LOG("Found %u display modes on macOS\n", *len);
+   RARCH_LOG("Found %u display modes on macOS.\n", *len);
    return conf;
 #else
    /* pre-10.6 Leopard/Tiger fallback: CGDisplayModeRef doesn't exist
@@ -482,7 +479,7 @@ static void *apple_display_server_get_resolution_list(
    conf[0].idx              = 0;
    conf[0].current          = true;
    (void)currentRate;
-   RARCH_LOG("[Video] Legacy macOS: reporting current mode %ux%u only\n",
+   RARCH_LOG("[Video] Legacy macOS: reporting current mode %ux%u only.\n",
          VIDEO_SCALE_W(conf[0].dims), VIDEO_SCALE_H(conf[0].dims));
    return conf;
 #endif /* RARCH_HAS_CGDISPLAYMODE_API */
@@ -491,24 +488,17 @@ static void *apple_display_server_get_resolution_list(
    unsigned dims;
    NSMutableSet *rates = [NSMutableSet set];
 
-   /* Use nativeBounds to get physical screen resolution
-    * (works correctly in multitasking/Split View modes) */
-   UIScreen *mainScreen = [UIScreen mainScreen];
-   CGRect nativeBounds = mainScreen.nativeBounds;
-   dims = VIDEO_SCALE_PACK((unsigned)nativeBounds.size.width,
-         (unsigned)nativeBounds.size.height);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-      currentRate = [CocoaView get].displayLink.preferredFrameRateRange.preferred;
-   else
-#endif
-      currentRate = [CocoaView get].displayLink.preferredFramesPerSecond;
+   /* Physical screen resolution (nativeBounds from iOS 8, which works
+    * in multitasking/Split View; bounds * scale before it) */
+   cocoa_get_video_output_size(&dims, NULL, 0);
+   currentRate = cocoa_display_link_get_rate([CocoaView get].displayLink);
 
    /* Detect ProMotion displays and available refresh rates */
 #if !TARGET_OS_TV
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), 0))
    {
-      NSInteger maxFPS = mainScreen.maximumFramesPerSecond;
+      long maxFPS = apple_rt_get_long([UIScreen mainScreen],
+            sel_registerName("maximumFramesPerSecond"));
 
       /* ProMotion displays (120Hz) */
       if (maxFPS >= 120)
@@ -535,7 +525,7 @@ static void *apple_display_server_get_resolution_list(
 
    NSArray *sorted = [[rates allObjects] sortedArrayUsingSelector:@selector(compare:)];
    *len = (unsigned)[sorted count];
-   RARCH_LOG("Available screen refresh rates: %s\n", [[NSString stringWithFormat:@"%@", sorted] UTF8String]);
+   RARCH_LOG("[Video] Available screen refresh rates: %s\n", [[NSString stringWithFormat:@"%@", sorted] UTF8String]);
 
    if (!(conf = (struct video_display_config*)calloc(*len, sizeof(struct video_display_config))))
       return NULL;
@@ -578,12 +568,9 @@ static void apple_display_server_set_screen_orientation(void *data, enum rotatio
             [[CocoaView get] setShouldLockCurrentInterfaceOrientation:NO];
             break;
     }
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 160000
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0))
-    {
-        [[CocoaView get] setNeedsUpdateOfSupportedInterfaceOrientations];
-    }
-#endif
+        apple_rt_send_void([CocoaView get],
+              sel_registerName("setNeedsUpdateOfSupportedInterfaceOrientations"));
 }
 
 static enum rotation apple_display_server_get_screen_orientation(void *data)
@@ -619,14 +606,17 @@ static void *apple_display_server_init(void)
    if (!apple)
       return NULL;
 
+   /* Re-read the window's screen rate when the window or screen changes */
+   cocoa_watch_window_output();
+
 #if TARGET_OS_OSX && defined(RARCH_HAS_CGDISPLAYMODE_API)
    /* Store original display mode for restoration */
    apple->display_id = CGMainDisplayID();
    if ((apple->original_mode = CGDisplayCopyDisplayMode(apple->display_id)))
-      RARCH_LOG("[Video] Stored original display mode for restoration\n");
+      RARCH_LOG("[Video] Stored original display mode for restoration.\n");
    else
       RARCH_WARN("[Video] Could not read the current display mode;"
-            " it will not be restored on exit\n");
+            " it will not be restored on exit.\n");
 #endif
 
    /* Sync the display link to the configured refresh rate.
@@ -644,13 +634,7 @@ static void *apple_display_server_init(void)
          if (view && view.displayLink)
          {
             RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
-#if (TARGET_OS_IOS && __IPHONE_OS_VERSION_MAX_ALLOWED >= 150000) || (TARGET_OS_TV && __TV_OS_VERSION_MAX_ALLOWED >= 150000)
-            if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-               view.displayLink.preferredFrameRateRange =
-                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
-            else
-#endif
-               view.displayLink.preferredFramesPerSecond = hz;
+            cocoa_display_link_set_rate(view.displayLink, hz);
          }
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
          float hz        = settings->floats.video_refresh_rate;
@@ -660,8 +644,7 @@ static void *apple_display_server_init(void)
             if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
             {
                RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
-               view.displayLink.preferredFrameRateRange =
-                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+               COCOA_DISPLAY_LINK_SET_RATE(COCOA_VIEW_DISPLAY_LINK(view), hz);
             }
          }
 #endif
@@ -684,7 +667,7 @@ static void apple_display_server_destroy(void *data)
       CGError result = CGDisplaySetDisplayMode(apple->display_id, apple->original_mode, NULL);
       if (result == kCGErrorSuccess)
       {
-         RARCH_LOG("[Video] Restored original display mode\n");
+         RARCH_LOG("[Video] Restored original display mode.\n");
       }
       else
       {
@@ -704,6 +687,11 @@ static void apple_display_server_destroy(void *data)
 static float apple_display_server_get_refresh_rate(void *data)
 {
    return cocoa_get_refresh_rate();
+}
+
+static float apple_display_server_get_window_refresh_rate(void *data)
+{
+   return cocoa_get_window_refresh_rate();
 }
 
 static void apple_display_server_get_video_output_size(void *data,
@@ -1483,5 +1471,6 @@ const video_display_server_t dispserv_apple = {
    NULL, /* get_edid */
 #endif
    apple_display_server_idle_wait,
-   "apple"
+   "apple",
+   apple_display_server_get_window_refresh_rate
 };

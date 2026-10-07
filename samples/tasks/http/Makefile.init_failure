@@ -1,0 +1,26 @@
+TARGET := http_init_failure_test
+ROOT := ../../..
+THREADS ?= 1
+CFLAGS += -std=gnu89 -Wall -g -O1 -flto -ffunction-sections -fdata-sections \
+          -I$(ROOT)/libretro-common/include
+LDFLAGS += -Wl,--gc-sections
+LDLIBS += -lpthread
+ifeq ($(THREADS),1)
+CFLAGS += -DHAVE_THREADS
+endif
+ifneq ($(findstring mingw,$(shell $(CC) -dumpmachine)),)
+LDLIBS += -lws2_32
+endif
+ifneq ($(SANITIZER),)
+CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
+LDFLAGS += -fsanitize=$(SANITIZER)
+endif
+
+all: $(TARGET)
+$(TARGET): http_init_failure_test.c $(ROOT)/libretro-common/net/net_http.c
+	$(CC) $(CFLAGS) $< $(ROOT)/libretro-common/rthreads/rthreads.c $(ROOT)/libretro-common/rthreads/retro_eventcount.c $(LDFLAGS) $(LDLIBS) -o $@
+check: $(TARGET)
+	./$(TARGET)
+clean:
+	rm -f $(TARGET) $(TARGET).exe
+.PHONY: all check clean

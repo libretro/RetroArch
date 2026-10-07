@@ -21,9 +21,7 @@
 
 #include "../midi_driver.h"
 #include "../../verbosity.h"
-
-#define CORE_MIDI_QUEUE_SIZE 1024
-#define CORE_MIDI_MAX_EVENT_SIZE 256
+#include "coremidi_queue.h"
 
 /* Persistent CoreMIDI client shared across all driver instances.
  * This avoids XPC race conditions from rapid client dispose/recreate cycles.
@@ -32,27 +30,12 @@ static MIDIClientRef shared_midi_client = 0;
 
 typedef struct
 {
-    uint8_t data[CORE_MIDI_MAX_EVENT_SIZE]; /* Inline data buffer */
-    size_t data_size;
-    uint32_t delta_time;
-} coremidi_event_t;
-
-typedef struct
-{
-    coremidi_event_t events[CORE_MIDI_QUEUE_SIZE]; /* Event buffer */
-    int read_index;         /* Current read position */
-    int write_index;        /* Current write position */
-} coremidi_queue_t;
-
-typedef struct
-{
     MIDIClientRef client;            /* CoreMIDI client */
     MIDIPortRef input_port;          /* Input port for receiving MIDI data */
     MIDIPortRef output_port;         /* Output port for sending MIDI data */
     MIDIEndpointRef input_endpoint;  /* Selected input endpoint */
     MIDIEndpointRef output_endpoint; /* Selected output endpoint */
-    coremidi_queue_t input_queue;    /* Queue for incoming MIDI events */
-    slock_t *queue_lock;             /* Mutex for queue synchronization */
+    coremidi_queue_t input_queue;    /* Receive thread to read(), lock-free */
     volatile bool is_shutting_down;  /* Flag to prevent callbacks during shutdown */
 } coremidi_t;
 
@@ -60,13 +43,6 @@ typedef struct
 #define MAX_MIDI_INSTANCES 8
 static coremidi_t *active_instances[MAX_MIDI_INSTANCES];
 static slock_t *instances_lock = NULL;
-
-/* Clear the queue (must be called with lock held) */
-static void coremidi_queue_clear(coremidi_queue_t *q)
-{
-    q->read_index = 0;
-    q->write_index = 0;
-}
 
 /* Register a driver instance in the global list */
 static bool register_instance(coremidi_t *d)
@@ -138,12 +114,7 @@ static void midi_notify_callback(const MIDINotification *message, void *refCon)
                 {
                     RARCH_LOG("[MIDI] Input endpoint removed, clearing.\n");
                     d->input_endpoint = 0;
-                    if (d->queue_lock)
-                    {
-                        slock_lock(d->queue_lock);
-                        coremidi_queue_clear(&d->input_queue);
-                        slock_unlock(d->queue_lock);
-                    }
+                    coremidi_queue_clear(&d->input_queue);
                 }
                 if (notify->child == d->output_endpoint)
                 {
@@ -193,42 +164,16 @@ static bool coremidi_validate_endpoint(MIDIEndpointRef endpoint, bool is_source)
 }
 
 /* Write to the queue */
-static bool coremidi_queue_write(coremidi_queue_t *q, const midi_event_t *ev)
-{
-    size_t copy_size;
-    int next_write = (q->write_index + 1) % CORE_MIDI_QUEUE_SIZE;
-    if (next_write == q->read_index) /* Queue full */
-        return false;
-
-    /* Validate event data size */
-    if (!ev->data || ev->data_size == 0 || ev->data_size > CORE_MIDI_MAX_EVENT_SIZE)
-        return false;
-
-    /* Copy data inline instead of storing pointer */
-    copy_size = ev->data_size;
-    memcpy(q->events[q->write_index].data, ev->data, copy_size);
-    q->events[q->write_index].data_size = copy_size;
-    q->events[q->write_index].delta_time = ev->delta_time;
-
-    q->write_index = next_write;
-    return true;
-}
-
 /* MIDIReadProc callback function */
 static void midi_read_callback(const MIDIPacketList *pktlist,
    void *readProcRefCon, void *srcConnRefCon)
 {
     uint32_t i;
-    midi_event_t event;
     coremidi_t *d = (coremidi_t *)readProcRefCon;
     const MIDIPacket *packet;
 
     /* CRITICAL: Check shutdown flag immediately to prevent use-after-free */
     if (!d || d->is_shutting_down)
-        return;
-
-    /* Early validation */
-    if (!d->queue_lock)
         return;
 
     packet = &pktlist->packet[0];
@@ -245,14 +190,8 @@ static void midi_read_callback(const MIDIPacketList *pktlist,
             if (msg_size == 0 || msg_size > length)
                 break;
 
-            event.data       = (uint8_t*)data;
-            event.data_size  = msg_size;
-            event.delta_time = (uint32_t)timestamp;
-
-            /* Add to queue with lock protection */
-            slock_lock(d->queue_lock);
-            coremidi_queue_write(&d->input_queue, &event);
-            slock_unlock(d->queue_lock);
+            coremidi_queue_write(&d->input_queue, data, msg_size,
+                  (uint32_t)timestamp);
 
             data   += msg_size;
             length -= msg_size;
@@ -299,14 +238,7 @@ static void *coremidi_init(const char *input, const char *output)
         return NULL;
     }
 
-    /* Initialize synchronization primitives */
-    d->queue_lock = slock_new();
-    if (!d->queue_lock)
-    {
-        RARCH_ERR("[MIDI] Failed to create queue lock.\n");
-        free(d);
-        return NULL;
-    }
+    coremidi_queue_init(&d->input_queue);
 
     d->is_shutting_down = false;
 
@@ -317,7 +249,6 @@ static void *coremidi_init(const char *input, const char *output)
     if (!register_instance(d))
     {
         RARCH_ERR("[MIDI] Failed to register MIDI instance.\n");
-        slock_free(d->queue_lock);
         free(d);
         return NULL;
     }
@@ -331,7 +262,6 @@ static void *coremidi_init(const char *input, const char *output)
         {
             RARCH_ERR("[MIDI] MIDIInputPortCreate failed: %d.\n", err);
             unregister_instance(d);
-            slock_free(d->queue_lock);
             free(d);
             return NULL;
         }
@@ -349,7 +279,6 @@ static void *coremidi_init(const char *input, const char *output)
             if (d->input_port)
                 MIDIPortDispose(d->input_port);
             unregister_instance(d);
-            slock_free(d->queue_lock);
             free(d);
             return NULL;
         }
@@ -449,12 +378,7 @@ static bool coremidi_set_input(void *p, const char *input)
         d->input_endpoint = 0;
 
         /* Clear the input queue when disconnecting */
-        if (d->queue_lock)
-        {
-            slock_lock(d->queue_lock);
-            coremidi_queue_clear(&d->input_queue);
-            slock_unlock(d->queue_lock);
-        }
+        coremidi_queue_clear(&d->input_queue);
     }
 
     /* If input is NULL or "Off", just return success */
@@ -541,25 +465,11 @@ static bool coremidi_set_output(void *p, const char *output)
     return false;
 }
 
-/* Read from the queue */
-static bool coremidi_queue_read(coremidi_queue_t *q, midi_event_t *ev)
-{
-    if (q->read_index == q->write_index) /* Queue empty */
-        return false;
-
-    /* Return pointer to inline data buffer */
-    ev->data = q->events[q->read_index].data;
-    ev->data_size = q->events[q->read_index].data_size;
-    ev->delta_time = q->events[q->read_index].delta_time;
-
-    q->read_index = (q->read_index + 1) % CORE_MIDI_QUEUE_SIZE;
-    return true;
-}
-
 /* Read a MIDI event */
 static bool coremidi_read(void *p, midi_event_t *event)
 {
     bool result;
+    const coremidi_event_t *ev;
     coremidi_t *d = (coremidi_t *)p;
 
     if (!d || !event)
@@ -582,12 +492,15 @@ static bool coremidi_read(void *p, midi_event_t *event)
         return false;
     }
 
-    if (!d->queue_lock)
-        return false;
-
-    slock_lock(d->queue_lock);
-    result = coremidi_queue_read(&d->input_queue, event);
-    slock_unlock(d->queue_lock);
+    /* The event points into the queue slot, which stays intact until
+     * the next read. */
+    if ((ev = coremidi_queue_read(&d->input_queue)))
+    {
+        event->data       = (uint8_t*)ev->data;
+        event->data_size  = ev->data_size;
+        event->delta_time = ev->delta_time;
+    }
+    result = ev != NULL;
 
 #if DEBUG
     RARCH_LOG("[MIDI] Input queue read result: %d.\n", result);
@@ -703,10 +616,6 @@ static void coremidi_free(void *p)
     }
 
     /* Note: Don't dispose shared_midi_client, it's persistent */
-
-    /* Free synchronization primitives */
-    if (d->queue_lock)
-        slock_free(d->queue_lock);
 
     /* Finally, free the driver instance */
     free(d);

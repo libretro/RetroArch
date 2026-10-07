@@ -157,6 +157,9 @@ static XINPUT_VIBRATION    g_xinput_rumble_states[4];
 static xinput_joypad_state g_xinput_states[4];
 static bool xinput_active_port[4] = {0};
 
+/* the rumble writer, shared with the plain XInput driver */
+#include "xinput_rumble_writer.h"
+
 static unsigned xinput_hotplug_index = 0;
 static unsigned xinput_poll_counter = 0;
 
@@ -1057,6 +1060,10 @@ succeeded:
    /* non-hat button. */
    g_xinput_num_buttons = g_xinput_guide_button_supported ? 11 : 10;
 
+#ifdef XINPUT_RUMBLE_THREAD
+   xinput_rumble_start();
+#endif
+
    return (void*)-1;
 
 error:
@@ -1086,6 +1093,45 @@ static int32_t xinput_joypad_button(unsigned port, uint16_t joykey)
       return 0;
    btn_word = state->xstate.Gamepad.wButtons;
    return xinput_joypad_button_state(xuser, btn_word, port, joykey);
+}
+
+/* Every plain button of the pad at once: bit i is what
+ * xinput_joypad_button(port, i) answers. Hats are not buttons here;
+ * they are asked for by their own keys. The snapshot bridge in
+ * input_driver.c copies a pad through this once a poll. */
+static void xinput_joypad_get_buttons(unsigned port, input_bits_t *state)
+{
+   unsigned i;
+   int xuser;
+
+   BIT256_CLEAR_ALL_PTR(state);
+   if (port >= MAX_USERS)
+      return;
+
+   xuser = PAD_INDEX_TO_XUSER_INDEX(port);
+   if (xuser == -1)
+   {
+      /* a DirectInput pad */
+      const struct dinput_joypad_data *pad = &g_pads[port];
+
+      if (!pad->joypad)
+         return;
+      for (i = 0; i < ARRAY_SIZE_RGB_BUTTONS; i++)
+         if (pad->joy_state.rgbButtons[i])
+            BIT256_SET_PTR(state, i);
+   }
+   else
+   {
+      const xinput_joypad_state *xstate = &g_xinput_states[xuser];
+      uint16_t btn_word;
+
+      if (!xstate->connected)
+         return;
+      btn_word = xstate->xstate.Gamepad.wButtons;
+      for (i = 0; i < g_xinput_num_buttons; i++)
+         if (btn_word & button_index_to_bitmap_code[i])
+            BIT256_SET_PTR(state, i);
+   }
 }
 
 static int16_t xinput_joypad_axis(unsigned port, uint32_t joyaxis)
@@ -1321,12 +1367,29 @@ static bool xinput_joypad_rumble(unsigned pad,
        && (state->wRightMotorSpeed == prev.wRightMotorSpeed))
       return true;
 
+#ifdef XINPUT_RUMBLE_THREAD
+   /* noted here, written by the rumble writer */
+   if (xinput_rumble_writer)
+   {
+      retro_atomic_store_release_int(&xinput_rumble_want[xuser],
+            (int)(((uint32_t)state->wLeftMotorSpeed << 16)
+               | state->wRightMotorSpeed));
+      input_output_writer_wake(xinput_rumble_writer);
+      return g_XInputSetState != NULL;
+   }
+#endif
+
    return g_XInputSetState && (g_XInputSetState(xuser, state) == ERROR_SUCCESS);
 }
 
 static void xinput_joypad_destroy(void)
 {
    int i;
+
+#ifdef XINPUT_RUMBLE_THREAD
+   /* before the function it calls is let go of */
+   xinput_rumble_stop();
+#endif
 
    for (i = 0; i < 4; ++i)
    {
@@ -1353,7 +1416,7 @@ input_device_driver_t xinput_joypad = {
    xinput_joypad_destroy,
    xinput_joypad_button,
    xinput_joypad_state_func,
-   NULL,
+   xinput_joypad_get_buttons,
    xinput_joypad_axis,
    xinput_joypad_poll,
    xinput_joypad_rumble,

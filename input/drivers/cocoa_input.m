@@ -17,6 +17,7 @@
 #include <stdint.h>
 #include "../../apple_runtime.h"
 #include <unistd.h>
+#include <string.h>
 
 #include <retro_miscellaneous.h>
 
@@ -46,7 +47,11 @@ static CMMotionManager *motionManager;
 #ifdef HAVE_MFI
 #import <GameController/GameController.h>
 #endif
-#if TARGET_OS_IOS
+/* CoreHaptics needs an iOS 13 SDK. Built against an older one there is
+ * no RAKeypressHaptics class, its lookup answers nil, and keypresses
+ * take the feedback generator instead. */
+#if TARGET_OS_IOS && defined(__IPHONE_13_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_13_0)
+#define RARCH_SDK_COREHAPTICS 1
 #import <CoreHaptics/CoreHaptics.h>
 #endif
 
@@ -80,12 +85,39 @@ float cocoa_screen_get_backing_scale_factor(void);
 static bool small_keyboard_active = false;
 static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 #if TARGET_OS_IOS
+/* Fallback for iOS 10-13: a UISelectionFeedbackGenerator (iOS 10),
+ * made by class name and driven by selector */
+static id feedbackGenerator;
+
+#ifdef RARCH_SDK_COREHAPTICS
 #define KEYPRESS_HAPTIC_AVAIL API_AVAILABLE(ios(14.0))
 static CHHapticEngine *keypressHapticEngine KEYPRESS_HAPTIC_AVAIL;
 static id<CHHapticPatternPlayer> keypressHapticPlayer KEYPRESS_HAPTIC_AVAIL;
-/* Fallback for iOS 10-13 */
-static UISelectionFeedbackGenerator *feedbackGenerator;
-static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL;
+
+/* The keypress haptics are iOS 14 CoreHaptics. They live in a class
+ * carrying that availability, so its methods use the API directly, and
+ * the driver - which checks the OS first - reaches them by selector
+ * through the class looked up once. */
+KEYPRESS_HAPTIC_AVAIL
+@interface RAKeypressHaptics : NSObject
++ (void)startEngine;
++ (void)vibrate;
++ (void)stopEngine;
+@end
+#endif
+
+/* nil when this build has no CoreHaptics; looked up once either way */
+static id cocoa_keypress_haptics(void)
+{
+   static id  cls;
+   static int looked_up;
+   if (!looked_up)
+   {
+      cls       = apple_rt_class("RAKeypressHaptics");
+      looked_up = 1;
+   }
+   return cls;
+}
 #endif
 #endif
 
@@ -341,15 +373,14 @@ static bool apple_input_handle_icade_event(unsigned kb_type_idx, unsigned *code,
 void apple_input_keyboard_event(bool down,
       unsigned code, uint32_t character, uint32_t mod, unsigned device)
 {
-   settings_t *settings         = config_get_ptr();
-   bool keyboard_gamepad_enable = settings->bools.input_keyboard_gamepad_enable;
-   bool small_keyboard_enable   = settings->bools.input_small_keyboard_enable;
+   bool keyboard_gamepad_enable = input_config_get_keyboard_gamepad_enable();
+   bool small_keyboard_enable   = input_config_get_small_keyboard_enable();
    unsigned original_code       = code;
 
    if (keyboard_gamepad_enable)
    {
       if (apple_input_handle_icade_event(
-               settings->uints.input_keyboard_gamepad_mapping_type,
+               input_config_get_keyboard_gamepad_mapping_type(),
                &code, &down))
          character = 0;
       else
@@ -413,17 +444,14 @@ static void *cocoa_input_init(const char *joypad_driver)
 #endif
 
 #if TARGET_OS_IOS
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      cocoa_input_init_haptic_engine();
-   else
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("startEngine"));
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
    {
-      /* Fallback for iOS 10-13 */
-      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
-      {
-         if (!feedbackGenerator)
-            feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
-         [feedbackGenerator prepare];
-      }
+      if (!feedbackGenerator)
+         feedbackGenerator = [[apple_rt_class("UISelectionFeedbackGenerator") alloc] init];
+      apple_rt_send_void(feedbackGenerator, sel_registerName("prepare"));
    }
 #endif
 
@@ -450,35 +478,33 @@ static void cocoa_input_poll(void *data)
    if (!apple)
       return;
 
-   apple->mouse_rel_x = apple->window_pos_x - apple->mouse_x_last;
-   apple->mouse_x_last = apple->window_pos_x;
-
-   apple->mouse_rel_y = apple->window_pos_y - apple->mouse_y_last;
-   apple->mouse_y_last = apple->window_pos_y;
+   {
+      uint32_t pos        = apple->window_pos;
+      uint32_t last       = apple->mouse_last;
+      apple->mouse_rel    = COCOA_POS_PACK(
+            COCOA_POS_X(pos) - COCOA_POS_X(last),
+            COCOA_POS_Y(pos) - COCOA_POS_Y(last));
+      apple->mouse_last   = pos;
+   }
 
    for (i = 0; i < apple->touch_count || i == 0; i++)
    {
       struct video_viewport vp;
+      cocoa_touch_data_t *touch = &apple->touches[i];
+      int screen_x              = COCOA_POS_X(touch->screen_pos) * backing_scale_factor;
+      int screen_y              = COCOA_POS_Y(touch->screen_pos) * backing_scale_factor;
 
       memset(&vp, 0, sizeof(vp));
 
-      video_driver_translate_coord_viewport_confined_wrap(
-            &vp,
-            apple->touches[i].screen_x * backing_scale_factor,
-            apple->touches[i].screen_y * backing_scale_factor,
-            &apple->touches[i].confined_x,
-            &apple->touches[i].confined_y,
-            &apple->touches[i].full_x,
-            &apple->touches[i].full_y);
+      /* each position is written whole by the translation, and left as
+       * it was if that fails */
+      input_driver_translate_coord_viewport_confined_wrap(
+            &vp, screen_x, screen_y,
+            &touch->confined_pos, &touch->full_pos);
 
-      video_driver_translate_coord_viewport_wrap(
-            &vp,
-            apple->touches[i].screen_x * backing_scale_factor,
-            apple->touches[i].screen_y * backing_scale_factor,
-            &apple->touches[i].fixed_x,
-            &apple->touches[i].fixed_y,
-            &apple->touches[i].full_x,
-            &apple->touches[i].full_y);
+      input_driver_translate_coord_viewport_wrap(
+            &vp, screen_x, screen_y,
+            &touch->fixed_pos, &touch->full_pos);
    }
 }
 
@@ -486,31 +512,29 @@ static int16_t cocoa_lightgun_aiming_state(
       cocoa_input_data_t *apple, unsigned idx, unsigned id)
 {
    struct video_viewport vp    = {0};
-   int16_t res_x               = 0;
-   int16_t res_y               = 0;
-   int16_t res_screen_x        = 0;
-   int16_t res_screen_y        = 0;
+   uint32_t res_pos            = 0;
+   uint32_t res_screen_pos     = 0;
 
-   int16_t x = apple->window_pos_x;
-   int16_t y = apple->window_pos_y;
+   int16_t x = COCOA_POS_X(apple->window_pos);
+   int16_t y = COCOA_POS_Y(apple->window_pos);
 
 #if !TARGET_OS_IPHONE
    x *= cocoa_screen_get_backing_scale_factor();
    y *= cocoa_screen_get_backing_scale_factor();
 #endif
 
-   if (video_driver_translate_coord_viewport_wrap(
+   if (input_driver_translate_coord_viewport_wrap(
                &vp, x, y,
-               &res_x, &res_y, &res_screen_x, &res_screen_y))
+               &res_pos, &res_screen_pos))
    {
       switch (id)
       {
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-            return res_x;
+            return VIDEO_POS_X(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-            return res_y;
+            return VIDEO_POS_Y(res_pos);
          case RETRO_DEVICE_ID_LIGHTGUN_IS_OFFSCREEN:
-            return input_driver_pointer_is_offscreen(res_x, res_y);
+            return input_driver_pointer_is_offscreen(VIDEO_POS_X(res_pos), VIDEO_POS_Y(res_pos));
          default:
             break;
       }
@@ -545,6 +569,20 @@ static bool cocoa_mouse_button_pressed(
    return false;
 }
 
+/* Which of @keys are down: bit n of @down for keys[n]. */
+static void cocoa_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   (void)data;
+   (void)port;
+   (void)bind;
+   for (i = 0; i < count; i++)
+      if (apple_key_state[rarch_keysym_lut[keys[i]]])
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t cocoa_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -561,69 +599,9 @@ static int16_t cocoa_input_state(
 
    switch (device)
    {
-      case RETRO_DEVICE_JOYPAD:
-         if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-         {
-            unsigned i;
-            /* Do a bitwise OR to combine both input
-             * states together */
-            int16_t ret = 0;
-
-            if (!keyboard_mapping_blocked)
-            {
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (     (RETRO_KEYBIND_KEY(&binds[port][i]) && RETRO_KEYBIND_KEY(&binds[port][i]) < RETROK_LAST)
-                        && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][i])]])
-                     ret |= (1 << i);
-               }
-            }
-            return ret;
-         }
-
-         if (RETRO_KEYBIND_VALID(&binds[port][id]))
-         {
-            if (id < RARCH_BIND_LIST_END)
-            {
-               if (     (RETRO_KEYBIND_KEY(&binds[port][id]) && RETRO_KEYBIND_KEY(&binds[port][id]) < RETROK_LAST)
-                     && apple_key_state[rarch_keysym_lut[RETRO_KEYBIND_KEY(&binds[port][id])]]
-                     && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked)
-                  )
-                  return 1;
-            }
-         }
-         break;
-      case RETRO_DEVICE_ANALOG:
-         {
-            int16_t ret           = 0;
-            int id_minus_key      = 0;
-            int id_plus_key       = 0;
-            unsigned id_minus     = 0;
-            unsigned id_plus      = 0;
-            bool id_plus_valid    = false;
-            bool id_minus_valid   = false;
-
-            input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);
-
-            id_minus_valid        = RETRO_KEYBIND_VALID(&binds[port][id_minus]);
-            id_plus_valid         = RETRO_KEYBIND_VALID(&binds[port][id_plus]);
-            id_minus_key          = RETRO_KEYBIND_KEY(&binds[port][id_minus]);
-            id_plus_key           = RETRO_KEYBIND_KEY(&binds[port][id_plus]);
-
-            if (id_plus_valid && id_plus_key && id_plus_key < RETROK_LAST)
-            {
-               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_plus_key]])
-                  ret = 0x7fff;
-            }
-            if (id_minus_valid && id_minus_key && id_minus_key < RETROK_LAST)
-            {
-               if (apple_key_state[rarch_keysym_lut[(enum retro_key)id_minus_key]])
-                  ret += -0x7fff;
-            }
-            return ret;
-         }
-         break;
-
+      /* The RetroPad's buttons, the hotkeys and a stick's axes, where
+       * they are bound to keys or mouse buttons, are the frontend's to
+       * answer: it asks cocoa_keys_down() for the keys once a poll. */
       case RETRO_DEVICE_KEYBOARD:
          return (id && id < RETROK_LAST) && apple_key_state[rarch_keysym_lut[(enum retro_key)id]];
       case RETRO_DEVICE_MOUSE:
@@ -634,22 +612,22 @@ static int16_t cocoa_input_state(
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
 #if TARGET_OS_IPHONE
-               return apple->window_pos_x;
+               return COCOA_POS_X(apple->window_pos);
 #else
-               return apple->window_pos_x * cocoa_screen_get_backing_scale_factor();
+               return COCOA_POS_X(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
-            return apple->mouse_rel_x;
+            return COCOA_POS_X(apple->mouse_rel);
          case RETRO_DEVICE_ID_MOUSE_Y:
             if (device == RARCH_DEVICE_MOUSE_SCREEN)
             {
 #if TARGET_OS_IPHONE
-               return apple->window_pos_y;
+               return COCOA_POS_Y(apple->window_pos);
 #else
-               return apple->window_pos_y * cocoa_screen_get_backing_scale_factor();
+               return COCOA_POS_Y(apple->window_pos) * cocoa_screen_get_backing_scale_factor();
 #endif
             }
-            return apple->mouse_rel_y;
+            return COCOA_POS_Y(apple->mouse_rel);
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             return apple->mouse_buttons & 1;
          case RETRO_DEVICE_ID_MOUSE_RIGHT:
@@ -682,16 +660,16 @@ static int16_t cocoa_input_state(
                         if (!apple->touch_count)
                            return 0;
                         if (device == RARCH_DEVICE_POINTER_SCREEN)
-                           return (touch->full_x  != -0x8000) && (touch->full_y  != -0x8000); /* Inside? */
-                        return    (touch->fixed_x != -0x8000) && (touch->fixed_y != -0x8000); /* Inside? */
+                           return (COCOA_POS_X(touch->full_pos)  != -0x8000) && (COCOA_POS_Y(touch->full_pos)  != -0x8000); /* Inside? */
+                        return    (COCOA_POS_X(touch->fixed_pos) != -0x8000) && (COCOA_POS_Y(touch->fixed_pos) != -0x8000); /* Inside? */
                      case RETRO_DEVICE_ID_POINTER_X:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_x : touch->confined_x;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? COCOA_POS_X(touch->full_pos) : COCOA_POS_X(touch->confined_pos);
                      case RETRO_DEVICE_ID_POINTER_Y:
-                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? touch->full_y : touch->confined_y;
+                        return (device == RARCH_DEVICE_POINTER_SCREEN) ? COCOA_POS_Y(touch->full_pos) : COCOA_POS_Y(touch->confined_pos);
                      case RETRO_DEVICE_ID_POINTER_COUNT:
                         return apple->touch_count;
                      case RETRO_DEVICE_ID_POINTER_IS_OFFSCREEN:
-                        return input_driver_pointer_is_offscreen(touch->fixed_x, touch->fixed_y);
+                        return input_driver_pointer_is_offscreen(COCOA_POS_X(touch->fixed_pos), COCOA_POS_Y(touch->fixed_pos));
                   }
                }
             }
@@ -743,8 +721,7 @@ static int16_t cocoa_input_state(
                         return 1;
                      else
                      {
-                        settings_t *settings = config_get_ptr();
-                        if (settings->uints.input_mouse_index[port] == 0)
+                        if (input_config_get_mouse_index(port) == 0)
                         {
                            if (cocoa_mouse_button_pressed(apple, port, binds[port][new_id].mbutton))
                               return 1;
@@ -768,20 +745,14 @@ static void cocoa_input_free(void *data)
       return;
 
 #if TARGET_OS_IOS
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("stopEngine"));
+   else if (feedbackGenerator)
    {
-      if (keypressHapticEngine)
-      {
-         keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
-         keypressHapticEngine.resetHandler = ^{};
-         [keypressHapticEngine stopWithCompletionHandler:^(NSError *error) {
-            keypressHapticPlayer = nil;
-            keypressHapticEngine = nil;
-         }];
-      }
-   }
-   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
+      RARCH_RELEASE(feedbackGenerator);
       feedbackGenerator = nil;
+   }
 #endif
 
    memset(apple_key_state, 0, sizeof(apple_key_state));
@@ -818,19 +789,25 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
             continue;
          if (!controller.motion)
             break;
-         if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE && !controller.motion.hasGravityAndUserAcceleration)
+         /* GCMotion's activation API is macOS 11 / iOS 14, sent by
+          * selector behind the check above */
+         if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE
+               && !apple_rt_get_bool(controller.motion,
+                  sel_registerName("hasGravityAndUserAcceleration")))
             break;
-         if (action == RETRO_SENSOR_GYROSCOPE_ENABLE && !controller.motion.hasAttitudeAndRotationRate)
+         if (action == RETRO_SENSOR_GYROSCOPE_ENABLE
+               && !(  apple_rt_get_bool(controller.motion, sel_registerName("hasAttitude"))
+                   && apple_rt_get_bool(controller.motion, sel_registerName("hasRotationRate"))))
             break;
-         if (controller.motion.sensorsRequireManualActivation)
+         if (apple_rt_get_bool(controller.motion,
+                  sel_registerName("sensorsRequireManualActivation")))
          {
             /* This is a bug, we assume if you turn on/off either
              * you want both on/off */
-            if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
-                  || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))
-               controller.motion.sensorsActive = YES;
-            else
-               controller.motion.sensorsActive = NO;
+            apple_rt_send_bool(controller.motion,
+                  sel_registerName("setSensorsActive:"),
+                     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+                  || (action == RETRO_SENSOR_GYROSCOPE_ENABLE));
          }
          /* no such thing as update interval for GCController? */
          return true;
@@ -874,13 +851,29 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
    float rawX = *x, rawY = *y;
    UIInterfaceOrientation orient;
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0)) {
+      /* -[UIWindowScene effectiveGeometry].interfaceOrientation, both
+       * iOS 16; the selectors are looked up once. */
+      static SEL sel_geometry;
+      static SEL sel_orientation;
+      id geometry;
       UIWindow *window = [[UIApplication sharedApplication] delegate].window;
       if (!window) {
          return;
       }
-      orient = window.windowScene.effectiveGeometry.interfaceOrientation;
+      if (!sel_geometry)
+      {
+         sel_geometry    = sel_registerName("effectiveGeometry");
+         sel_orientation = sel_registerName("interfaceOrientation");
+      }
+      geometry = apple_rt_get_id(apple_rt_get_id(window,
+               sel_registerName("windowScene")), sel_geometry);
+      orient   = (UIInterfaceOrientation)apple_rt_get_long(geometry,
+            sel_orientation);
    } else {
-      orient = [[UIApplication sharedApplication] statusBarOrientation];
+      /* Deprecated in iOS 13 and the only source before it */
+      orient = (UIInterfaceOrientation)apple_rt_get_long(
+            [UIApplication sharedApplication],
+            sel_registerName("statusBarOrientation"));
    }
    switch (orient)
    {
@@ -902,6 +895,24 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
 }
 #endif
 
+#ifdef HAVE_MFI
+/* -[GCMotion acceleration] (macOS 11 / iOS 14) returns a GCAcceleration,
+ * three doubles; the layout is restated here so the file does not need
+ * an SDK that declares the type. */
+typedef struct
+{
+   double x, y, z;
+} cocoa_input_accel_t;
+
+static cocoa_input_accel_t cocoa_input_motion_acceleration(id motion)
+{
+   static SEL sel;
+   if (!sel)
+      sel = sel_registerName("acceleration");
+   return apple_rt_get_large_struct(cocoa_input_accel_t, motion, sel);
+}
+#endif
+
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
@@ -916,11 +927,11 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
          switch (id)
          {
             case RETRO_SENSOR_ACCELEROMETER_X:
-               return controller.motion.acceleration.x;
+               return cocoa_input_motion_acceleration(controller.motion).x;
             case RETRO_SENSOR_ACCELEROMETER_Y:
-               return controller.motion.acceleration.y;
+               return cocoa_input_motion_acceleration(controller.motion).y;
             case RETRO_SENSOR_ACCELEROMETER_Z:
-               return controller.motion.acceleration.z;
+               return cocoa_input_motion_acceleration(controller.motion).z;
             case RETRO_SENSOR_GYROSCOPE_X:
                return controller.motion.rotationRate.x;
             case RETRO_SENSOR_GYROSCOPE_Y:
@@ -972,7 +983,10 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 #if TARGET_OS_IOS
-static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
+#ifdef RARCH_SDK_COREHAPTICS
+@implementation RAKeypressHaptics
+
++ (void)startEngine
 {
    if (!keypressHapticEngine && CHHapticEngine.capabilitiesForHardware.supportsHaptics)
    {
@@ -996,90 +1010,102 @@ static void cocoa_input_init_haptic_engine(void) KEYPRESS_HAPTIC_AVAIL
    }
 }
 
-static void cocoa_input_keypress_vibrate(void)
++ (void)vibrate
 {
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-   {
-      /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
-      if (!keypressHapticEngine)
-         cocoa_input_init_haptic_engine();
+   /* Reinitialize engine if iOS stopped it (e.g., during backgrounding) */
+   if (!keypressHapticEngine)
+      [self startEngine];
 
-      settings_t *settings = config_get_ptr();
-      if (!settings || !keypressHapticEngine)
+   if (!keypressHapticEngine)
+      return;
+
+   /* Ensure engine is started (may have been stopped by backgrounding) */
+   NSError *error;
+   [keypressHapticEngine startAndReturnError:&error];
+   if (error)
+   {
+      /* Engine couldn't start - recreate it */
+      keypressHapticEngine = nil;
+      keypressHapticPlayer = nil;
+      [self startEngine];
+      if (!keypressHapticEngine)
+         return;
+   }
+   unsigned rumble_gain = input_config_get_rumble_gain();
+   float intensity = (float)rumble_gain / 100.0f;
+
+   /* Create player on first use */
+   if (!keypressHapticPlayer)
+   {
+      CHHapticEventParameter *intense;
+      CHHapticEventParameter *sharp;
+      CHHapticEvent *event;
+      CHHapticPattern *pattern;
+
+      intense = [[CHHapticEventParameter alloc]
+                 initWithParameterID:CHHapticEventParameterIDHapticIntensity
+                 value:intensity];
+      sharp   = [[CHHapticEventParameter alloc]
+                 initWithParameterID:CHHapticEventParameterIDHapticSharpness
+                 value:1.0];
+      event   = [[CHHapticEvent alloc]
+               initWithEventType:CHHapticEventTypeHapticTransient
+               parameters:[NSArray arrayWithObjects:intense, sharp, nil]
+               relativeTime:0];
+      pattern = [[CHHapticPattern alloc]
+                 initWithEvents:[NSArray arrayWithObject:event]
+                 parameters:[[NSArray alloc] init]
+                 error:&error];
+
+      if (error)
          return;
 
-      /* Ensure engine is started (may have been stopped by backgrounding) */
-      NSError *error;
-      [keypressHapticEngine startAndReturnError:&error];
+      keypressHapticPlayer = [keypressHapticEngine createPlayerWithPattern:pattern error:&error];
       if (error)
-      {
-         /* Engine couldn't start - recreate it */
-         keypressHapticEngine = nil;
-         keypressHapticPlayer = nil;
-         cocoa_input_init_haptic_engine();
-         if (!keypressHapticEngine)
-            return;
-      }
-      unsigned rumble_gain = settings->uints.input_rumble_gain;
-      float intensity = (float)rumble_gain / 100.0f;
-
-      /* Create player on first use */
-      if (!keypressHapticPlayer)
-      {
-         CHHapticEventParameter *intense;
-         CHHapticEventParameter *sharp;
-         CHHapticEvent *event;
-         CHHapticPattern *pattern;
-
-         intense = [[CHHapticEventParameter alloc]
-                    initWithParameterID:CHHapticEventParameterIDHapticIntensity
-                    value:intensity];
-         sharp   = [[CHHapticEventParameter alloc]
-                    initWithParameterID:CHHapticEventParameterIDHapticSharpness
-                    value:1.0];
-         event   = [[CHHapticEvent alloc]
-                  initWithEventType:CHHapticEventTypeHapticTransient
-                  parameters:[NSArray arrayWithObjects:intense, sharp, nil]
-                  relativeTime:0];
-         pattern = [[CHHapticPattern alloc]
-                    initWithEvents:[NSArray arrayWithObject:event]
-                    parameters:[[NSArray alloc] init]
-                    error:&error];
-
-         if (error)
-            return;
-
-         keypressHapticPlayer = [keypressHapticEngine createPlayerWithPattern:pattern error:&error];
-         if (error)
-            return;
-      }
-      else
-      {
-         /* Update intensity for existing player */
-         if (keypressHapticPlayer)
-         {
-            CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
-               initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
-                             value:intensity
-                      relativeTime:0];
-            [keypressHapticPlayer sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
-         }
-      }
-
-      if (keypressHapticPlayer)
-         [keypressHapticPlayer startAtTime:0 error:&error];
+         return;
    }
    else
    {
-      /* Fallback for iOS 10-13 */
-      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
+      /* Update intensity for existing player */
+      if (keypressHapticPlayer)
       {
-         if (feedbackGenerator)
-         {
-            [feedbackGenerator selectionChanged];
-            [feedbackGenerator prepare];
-         }
+         CHHapticDynamicParameter *param = [[CHHapticDynamicParameter alloc]
+            initWithParameterID:CHHapticDynamicParameterIDHapticIntensityControl
+                          value:intensity
+                   relativeTime:0];
+         [keypressHapticPlayer sendParameters:[NSArray arrayWithObject:param] atTime:0 error:&error];
       }
+   }
+
+   if (keypressHapticPlayer)
+      [keypressHapticPlayer startAtTime:0 error:&error];
+}
+
++ (void)stopEngine
+{
+   if (keypressHapticEngine)
+   {
+      keypressHapticEngine.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
+      keypressHapticEngine.resetHandler = ^{};
+      [keypressHapticEngine stopWithCompletionHandler:^(NSError *error) {
+         keypressHapticPlayer = nil;
+         keypressHapticEngine = nil;
+      }];
+   }
+}
+
+@end
+#endif
+
+static void cocoa_input_keypress_vibrate(void)
+{
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("vibrate"));
+   else if (feedbackGenerator)
+   {
+      apple_rt_send_void(feedbackGenerator, sel_registerName("selectionChanged"));
+      apple_rt_send_void(feedbackGenerator, sel_registerName("prepare"));
    }
 }
 #endif
@@ -1117,7 +1143,8 @@ static void cocoa_input_grab_mouse(void *data, bool state)
    apple->mouse_grabbed = state;
 
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      [[CocoaView get] setNeedsUpdateOfPrefersPointerLocked];
+      apple_rt_send_void([CocoaView get],
+            sel_registerName("setNeedsUpdateOfPrefersPointerLocked"));
 }
 #endif
 
@@ -1137,8 +1164,119 @@ input_driver_t input_cocoa = {
 #endif
    NULL,                         /* grab_stdin */
 #if TARGET_OS_IOS
-   cocoa_input_keypress_vibrate
+   cocoa_input_keypress_vibrate,
 #else
-   NULL                          /* vibrate */
+   NULL,                         /* vibrate */
 #endif
+   NULL,                         /* survives_video */
+   cocoa_keys_down,
+   NULL                          /* bind_mouse_buttons */
 };
+
+/* What the Apple UI hands the Cocoa input driver.
+ *
+ * The UI gets the platform's mouse, pointer and touch events and used
+ * to write them into this driver's data itself, which it took out of
+ * the input state. It calls these instead: the data is the driver's,
+ * and only the driver writes it. Each does what the UI's code did.
+ * All of them are on the main thread, where the UI's events arrive,
+ * and do nothing while the Cocoa driver is not the one in use. */
+static cocoa_input_data_t *cocoa_input_current(void)
+{
+   return (cocoa_input_data_t*)input_driver_current_data();
+}
+
+/* The mouse moved by @dx, @dy and is now at @x, @y in the window. */
+void cocoa_input_mouse_moved(int16_t dx, int16_t dy, int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   /* Relative */
+   apple->mouse_rel           = COCOA_POS_PACK(
+         COCOA_POS_X(apple->mouse_rel) + dx,
+         COCOA_POS_Y(apple->mouse_rel) + dy);
+   /* Absolute */
+   apple->touches[0].screen_pos = COCOA_POS_PACK(x, y);
+   if (apple->mouse_grabbed)
+      apple->window_pos       = COCOA_POS_PACK(
+            COCOA_POS_X(apple->window_pos) + dx,
+            COCOA_POS_Y(apple->window_pos) + dy);
+   else
+      apple->window_pos       = COCOA_POS_PACK(x, y);
+}
+
+/* A mouse with no position of its own moved the pointer by @dx, @dy
+ * (iOS, GCMouse). */
+void cocoa_input_mouse_moved_by(int16_t dx, int16_t dy)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->window_pos = COCOA_POS_PACK(
+         COCOA_POS_X(apple->window_pos) + dx,
+         COCOA_POS_Y(apple->window_pos) + dy);
+}
+
+/* Mouse button @number went down or up. With @as_touch it is the one
+ * touch of a pointer too, as a click is on macOS. */
+void cocoa_input_mouse_button(unsigned number, bool down, bool as_touch)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple || number >= 32)
+      return;
+   if (down)
+      apple->mouse_buttons |=  (1U << number);
+   else
+      apple->mouse_buttons &= ~(1U << number);
+   if (as_touch)
+      apple->touch_count     = down ? 1 : 0;
+}
+
+/* The pointer hovers at @x, @y, with nothing pressed (iOS, a trackpad
+ * or a mouse over the view). */
+void cocoa_input_pointer_at(int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->touches[0].screen_pos = COCOA_POS_PACK(x, y);
+   apple->window_pos          = COCOA_POS_PACK(x, y);
+}
+
+/* The touches on screen are given anew: none, then one call of
+ * cocoa_input_touch_add() for each, which says false once there is no
+ * room for more. */
+void cocoa_input_touches_begin(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (apple)
+      apple->touch_count = 0;
+}
+
+bool cocoa_input_touch_add(int16_t x, int16_t y)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple || apple->touch_count >= MAX_TOUCHES)
+      return false;
+   apple->touches[apple->touch_count++].screen_pos = COCOA_POS_PACK(x, y);
+   return true;
+}
+
+/* Every touch is let go and forgotten: the application lost the
+ * screen and will not see them end. */
+void cocoa_input_touches_reset(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   if (!apple)
+      return;
+   apple->touch_count = 0;
+   memset(apple->touches, 0, sizeof(apple->touches));
+}
+
+/* Whether the mouse is held in the window. */
+bool cocoa_input_mouse_grabbed(void)
+{
+   cocoa_input_data_t *apple = cocoa_input_current();
+   return apple && apple->mouse_grabbed;
+}

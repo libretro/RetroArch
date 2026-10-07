@@ -32,10 +32,14 @@
 
 #include "gfx_animation.h"
 #include "gfx_display.h"
+#include "gfx_surface.h"
 
 #define DEFAULT_BACKDROP               0.75f
 
 #define MSG_QUEUE_PENDING_MAX          32
+#if (MSG_QUEUE_PENDING_MAX & (MSG_QUEUE_PENDING_MAX - 1))
+#error "MSG_QUEUE_PENDING_MAX must be a power of two: the ring indexes by mask"
+#endif
 #define MSG_QUEUE_ONSCREEN_MAX         4
 
 #define MSG_QUEUE_ANIMATION_DURATION   330
@@ -125,8 +129,8 @@ enum disp_widget_flags_enum
    /* Size */
    DISPWIDG_FLAG_SMALL                     = (1 << 11),
    /* Was this widget spawned by a task? Sticky for the lifetime of
-    * the widget; unlike task_ptr, which is a liveness link that may
-    * legitimately be cleared while the widget is still on screen. */
+    * the widget; unlike task_key, which is cleared when the widget is
+    * cut loose from its task while still on screen. */
    DISPWIDG_FLAG_TASK                      = (1 << 12)
 };
 
@@ -135,7 +139,6 @@ enum disp_widget_flags_enum
 enum dispgfx_widget_flags
 {
    DISPGFX_WIDGET_FLAG_MSG_QUEUE_HAS_ICONS = (1 << 0),
-   DISPGFX_WIDGET_FLAG_PERSISTING          = (1 << 1),
    DISPGFX_WIDGET_FLAG_MOVING              = (1 << 2),
    DISPGFX_WIDGET_FLAG_INITED              = (1 << 3)
 };
@@ -172,9 +175,12 @@ typedef struct disp_widget_msg
 {
    char *msg;
    char *msg_new;
-   retro_task_t *task_ptr;
+   /* What a task's updates find this widget by: the value the task
+    * carries in frontend_userdata. Never a pointer to the task. */
+   uintptr_t task_key;
 
    uint32_t task_ident;
+   uint32_t seq;   /* arrival order, across plain and task messages */
    size_t   msg_len;
    unsigned duration;
    unsigned text_height;
@@ -196,18 +202,6 @@ typedef struct disp_widget_msg
 typedef struct dispgfx_widget
 {
 #ifdef HAVE_THREADS
-   /* Serialises producer and consumer access to msg_queue.
-    * Producers (gfx_widgets_msg_queue_push) can be called from
-    * any thread, and no caller holds any other lock across the
-    * call (the runloop message queue is main-thread state with no
-    * lock at all; its off-main producers ride a deferral).  The
-    * consumer is whichever thread owns the widgets: the threaded
-    * video worker when it draws them, the main thread otherwise.
-    * msg_queue_lock guards the pending ring (msg_queue[] /
-    * msg_queue_head / msg_queue_count) and is held across every
-    * push and pop of it.  The displayed messages (current_msgs[])
-    * belong to that same owning thread alone and take no lock. */
-   slock_t* msg_queue_lock;
    /* Everything the widgets draw. With the threaded video wrapper the
     * worker animates, iterates and draws it while the main thread's
     * setters, task updates and relayout change it, so both sides hold
@@ -232,29 +226,44 @@ typedef struct dispgfx_widget
    void *video_st;
    bool worker;
 #endif
-   /* Messages pushed but not yet on screen: a ring of pointers,
-    * pushed from any thread (gfx_widgets_msg_queue_push), popped by
-    * the thread that owns the widgets, one per frame.  Was a
-    * fifo_buffer_t carrying sizeof(pointer)-byte records: a heap
-    * buffer, byte arithmetic and a write that silently wrapped when
-    * full, for what is a bounded array of MSG_QUEUE_PENDING_MAX
-    * pointers.  Several producers, so this is not an SPSC ring and
-    * stays under msg_queue_lock.  msg_queue_count is written only
-    * under it; the consumer reads it without, so a frame with nothing
-    * pending takes no lock at all. */
+   /* Messages pushed but not yet on screen: a ring of pointers with
+    * one producer and one consumer, so it takes no lock.  The
+    * producer is the main thread - every gfx_widgets_msg_queue_push()
+    * caller is main-thread code (runloop_msg_queue_push() defers
+    * off-main callers before it gets here, and the task queue's
+    * progress push runs from its main-thread gather) - and the
+    * consumer is the thread that owns the widgets: the threaded video
+    * worker when it draws them, the main thread otherwise.  The
+    * producer owns msg_queue_tail and the consumer msg_queue_head;
+    * both are free-running counts, indexed modulo
+    * MSG_QUEUE_PENDING_MAX (a power of two), published with a release
+    * store and read across with an acquire load, the retro_spsc
+    * pairing.  Full is tail - head == MSG_QUEUE_PENDING_MAX. */
    disp_widget_msg_t* msg_queue[MSG_QUEUE_PENDING_MAX];
-   unsigned msg_queue_head;
-   retro_atomic_int_t msg_queue_count;
+   retro_atomic_int_t msg_queue_head;
+   retro_atomic_int_t msg_queue_tail;
+   /* Task updates on their way to the widgets' owner: the main thread
+    * pushes, the owner takes the lot once a frame. */
+#ifdef RETRO_ATOMIC_HAS_PTR
+   retro_atomic_ptr_t task_cmds;
+#else
+   void *task_cmds;
+#endif
+   retro_atomic_int_t task_cmds_count;
+   /* The owner's: task widgets waiting for room on screen. */
+   disp_widget_msg_t* task_pending[MSG_QUEUE_PENDING_MAX];
+   unsigned task_pending_size;
+   /* The main thread's: stamps messages in the order they are pushed,
+    * and the last key handed to a task. */
+   uint32_t msg_seq;
+   uintptr_t task_key_last;
    disp_widget_msg_t* current_msgs[MSG_QUEUE_ONSCREEN_MAX];
    gfx_widget_fonts_t gfx_widget_fonts; /* ptr alignment */
 
 #ifdef HAVE_TRANSLATE
-   uintptr_t ai_service_overlay_texture;
+   gfx_surface_t *ai_service_overlay_texture;
 #endif
-   uintptr_t msg_queue_icon;
-   uintptr_t msg_queue_icon_outline;
-   uintptr_t msg_queue_icon_rect;
-   uintptr_t gfx_widgets_icons_textures[
+   gfx_surface_t *gfx_widgets_icons_textures[
    MENU_WIDGETS_ICON_LAST];
    uintptr_t gfx_widgets_generic_tag;
 
@@ -313,6 +322,10 @@ typedef struct dispgfx_widget
     * reclaimed.  Its address is taken as an opaque animation tag in
     * retroarch.c -- only uniqueness matters there, not the value. */
    bool active;
+   /* Whether the widgets survive a driver reinit. Not in 'flags':
+    * the main thread sets it while the video thread is writing
+    * there. */
+   bool persisting;
 
    char gfx_widgets_status_text[NAME_MAX_LENGTH];
    /* Cached strlen of gfx_widgets_status_text, written by the
@@ -435,6 +448,13 @@ bool gfx_widgets_init(
       const char *dir_assets, char *font_path);
 
 void gfx_widgets_deinit(bool widgets_persisting);
+
+/* Reloads the widgets' icons and fonts from the assets directory, for
+ * when the files there have changed under a running video driver. */
+void gfx_widgets_reload_assets(void);
+
+/* Main thread: move an existing widget to a task with no frontend data. */
+void gfx_widgets_task_transfer(retro_task_t *from, retro_task_t *to);
 
 void gfx_widgets_msg_queue_push(
       retro_task_t *task, const char *msg,

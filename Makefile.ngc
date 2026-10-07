@@ -63,9 +63,17 @@ endif
 
 LIBS               := $(WHOLE_START) $(LIB_CORE) $(WHOLE_END)
 
+# RetroArch's own system layer, os/gekko; HAVE_LIBOGC=1 builds on
+# devkitPro's libogc instead.  EXTERNAL_LIBOGC=1, which the core CI
+# templates pass when they relink the precompiled HAVE_LIBOGC=1 tree,
+# names devkitPro's libogc too and selects the same build.
+ifeq ($(EXTERNAL_LIBOGC), 1)
+HAVE_LIBOGC       ?= 1
+endif
+HAVE_LIBOGC       ?= 0
+ifeq ($(HAVE_LIBOGC), 1)
 libogc_platform    := 1
-
-EXTERNAL_LIBOGC   ?= 0
+endif
 HAVE_OGG_OGC      ?= 0
 CC                 = $(DEVKITPPC)/bin/powerpc-eabi-gcc$(EXE_EXT)
 CXX                = $(DEVKITPPC)/bin/powerpc-eabi-g++$(EXE_EXT)
@@ -82,16 +90,15 @@ endif
 
 INCLUDE += -I.
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   CFLAGS   += -DEXTERNAL_LIBOGC
-   CXXFLAGS += -DEXTERNAL_LIBOGC
+ifeq ($(HAVE_LIBOGC), 0)
+   CFLAGS   += -DGEKKO_NATIVE
+   CXXFLAGS += -DGEKKO_NATIVE
+   INCLUDE  += -Ios/gekko/include
+else
+   CFLAGS   += -DHAVE_LIBOGC
+   CXXFLAGS += -DHAVE_LIBOGC
    LIBDIRS += -L$(DEVKITPRO)/libogc/lib/cube
    INCLUDE += -I$(DEVKITPRO)/libogc/include
-else
-   CFLAGS   += -DINTERNAL_LIBOGC
-   CXXFLAGS += -DINTERNAL_LIBOGC
-   LIBDIRS += -Lwii/libogc/libs/cube
-   INCLUDE += -Iwii/libogc/include
 endif
 
 
@@ -102,7 +109,16 @@ MACHDEP += -DGEKKO -mcpu=750 -meabi -mhard-float
 
 LDFLAGS += $(MACHDEP) -Wl,-Map,$(notdir $(EXT_INTER_TARGET)).map
 
-ifeq ($(BIG_STACK), 1)
+# libogc 3 links with devkitPPC's own scripts and sizes the main stack
+# in C (platform_gx_libogc.c); older libogc takes the bootstrap/gx ones.
+LIBOGC_MAJOR := $(shell sed -n 's/^.define[[:space:]]*_V_MAJOR_[[:space:]]*\([0-9]*\).*/\1/p' $(DEVKITPRO)/libogc/include/ogc/libversion.h 2>/dev/null)
+ifneq ($(filter-out 0 1 2,$(LIBOGC_MAJOR)),)
+LIBOGC_OWN_LD := 1
+endif
+
+ifeq ($(HAVE_LIBOGC), 0)
+   LDFLAGS += -T os/gekko/boot/dol.ld -Los/gekko/boot
+else ifeq ($(BIG_STACK)$(LIBOGC_OWN_LD), 1)
    LDFLAGS += -T bootstrap/gx/ogc.ld
 endif
 
@@ -110,32 +126,41 @@ ifeq ($(HAVE_OGG_OGC), 1)
    LIBS += -L$(DEVKITPRO)/portlibs/ppc/lib -lvorbisfile -lvorbis -logg
 endif
 
-ifeq ($(EXTERNAL_LIBOGC), 1)
-   LIBS += -lfat
-endif
+ifeq ($(HAVE_LIBOGC), 1)
+LIBS += -lfat
 
 ifeq ($(HAVE_LOGGER), 1)
   LIBS += -lbba
 endif
 
 LIBS += -logc
+endif
 
 CFLAGS += -DGEKKO -U__INT32_TYPE__ -U __UINT32_TYPE__ -D__INT32_TYPE__=int
 
-HAVE_RUNAHEAD            := 1
+# 24 MB of MEM1 makes resident code weight count, so features that cannot
+# do their job on this hardware are compiled out: runahead (the second
+# savestate never fits beside a running core), the webp/dds thumbnail
+# decoders, the mod/s3m/xm tracker, 7z (LZMA dictionaries alone outsize
+# the console's free RAM, so 7z archives could never extract anyway) and
+# libretrodb (defaulted on by Makefile.common; database scanning is
+# impractical here, and the explore menu goes with it).  Together these
+# return about 640 KB of MEM1 to content.
+HAVE_LIBRETRODB          := 0
+HAVE_RUNAHEAD            := 0
 HAVE_DSP_FILTER          := 1
 HAVE_VIDEO_FILTER        := 1
 HAVE_FILTERS_BUILTIN     := 1
 HAVE_THREADS             := 1
 HAVE_RPNG                := 1
-HAVE_RWEBP               := 1
-HAVE_RDDS                := 1
+HAVE_RWEBP               := 0
+HAVE_RDDS                := 0
 HAVE_RJPEG               := 1
 HAVE_RBMP                := 1
 HAVE_RTGA                := 1
-HAVE_RMODTRACKER                := 1
+HAVE_RMODTRACKER         := 0
 HAVE_OVERLAY             := 1
-HAVE_7ZIP                := 1
+HAVE_7ZIP                := 0
 HAVE_RZSTD               := 1
 HAVE_CONFIGFILE          := 1
 HAVE_PATCH               := 1
@@ -161,11 +186,15 @@ INCLUDE += -I./libretro-common/include \
            -Ideps
 CFLAGS += -Wall -std=gnu99 $(MACHDEP) $(PLATCFLAGS) $(INCLUDE)
 
-OBJ =  $(PLATOBJS) audio/drivers/gx_audio.o gfx/drivers/gx_gfx.o input/drivers/gx_input.o frontend/drivers/platform_gx.o input/drivers_joypad/gx_joypad.o
-
-ifeq ($(EXTERNAL_LIBOGC), 0)
-   OBJ += wii/libogc/libfat/libfat.o wii/libogc/libfat/fatfile.o wii/libogc/libfat/file_allocation_table.o wii/libogc/libfat/cache.o wii/libogc/libfat/fatdir.o wii/libogc/libfat/partition.o wii/libogc/libfat/directory.o wii/libogc/libfat/filetime.o wii/libogc/libfat/disc.o
+ifeq ($(HAVE_LIBOGC), 1)
+OBJ =  $(PLATOBJS) audio/drivers/gx_audio_libogc.o gfx/drivers/gx_gfx_libogc.o gfx/display_servers/dispserv_gx_libogc.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gx_libogc.o input/drivers_joypad/gx_joypad_libogc.o
+else
+GEKKO_DIR      := os/gekko
+GEKKO_PLATFORM := dol
+include os/gekko/gekko.mk
+OBJ =  audio/drivers/gekko_audio.o gfx/drivers/gekko_gfx.o gfx/display_servers/dispserv_gekko.o gfx/display_servers/dispserv_gx_modes.o input/drivers/gx_input.o frontend/drivers/platform_gekko.o input/drivers_joypad/gekko_joypad.o $(addsuffix .o,$(basename $(GEKKO_SOURCES)))
 endif
+
 
 include Makefile.common
 

@@ -1,0 +1,66 @@
+name: CI iOS 6 (armv7)
+
+# The iOS 6 build - RetroArch_iOS6.xcodeproj's defines, ARC, armv7,
+# a 6.0 deployment target - compiled against the iOS 9.3 SDK, the last
+# that takes a 6.0 floor. No runner Xcode can build armv7 or anything
+# below iOS 12 any more, so this runs clang on Linux against the SDK's
+# headers, as the PowerPC leg does for old macOS. Every warning is an
+# error: anything newer than iOS 6 has to be behind a runtime check,
+# and -Wunguarded-availability is what says so.
+#
+# The checking is .github/workflows/scripts/ios-legacy-check.sh, which
+# runs by hand the same way; this job fetches the SDK headers for it.
+#
+# SDK: theos/sdks, pinned to a commit; only the headers are checked out.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  repository_dispatch:
+    types: [run_build]
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+  SDKS_COMMIT: 0222fd5413cf4b9af096f37b4621afa2688572f7
+  SDK: iPhoneOS9.3.sdk
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+    - uses: actions/checkout@v5
+
+    - name: Install clang
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q clang-18
+        clang-18 --version | head -n 1
+
+    - name: Fetch the iOS SDK headers
+      run: |
+        set -e
+        git init -q "$RUNNER_TEMP/sdks"
+        cd "$RUNNER_TEMP/sdks"
+        git remote add origin https://github.com/theos/sdks.git
+        git config core.sparseCheckout true
+        printf '%s\n' \
+          "/$SDK/usr/include/" \
+          "/$SDK/System/Library/Frameworks/*/Headers/" \
+          "/$SDK/System/Library/Frameworks/*/Frameworks/*.framework/Headers/" \
+          > .git/info/sparse-checkout
+        git fetch -q --depth 1 --filter=blob:none origin "$SDKS_COMMIT"
+        git checkout -q FETCH_HEAD
+        du -sh "$SDK"
+
+    - name: iOS 6.0
+      run: CC=clang-18 .github/workflows/scripts/ios-legacy-check.sh "$RUNNER_TEMP/sdks/$SDK" 6.0

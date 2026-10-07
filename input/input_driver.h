@@ -17,6 +17,7 @@
 #ifndef __INPUT_DRIVER__H
 #define __INPUT_DRIVER__H
 
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -29,11 +30,13 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <streams/interface_stream.h>
+#include "../tasks/task_notify.h"
 #ifdef HAVE_CONFIG_H
 #include "../config.h"
 #endif /* HAVE_CONFIG_H */
 
 #include "input_defines.h"
+#include "../gfx/video_defines.h"
 #include "input_types.h"
 #ifdef HAVE_OVERLAY
 #include "input_overlay.h"
@@ -136,36 +139,6 @@
 */
 #define REPLAY_CHECKPOINT2_ENCODING_RAW 0
 #define REPLAY_CHECKPOINT2_ENCODING_STATESTREAM 1
-
-/**
- * Takes as input analog key identifiers and converts them to corresponding
- * bind IDs ident_minus and ident_plus.
- *
- * @param idx          Analog key index (eg RETRO_DEVICE_INDEX_ANALOG_LEFT)
- * @param ident        Analog key identifier (eg RETRO_DEVICE_ID_ANALOG_X)
- * @param ident_minus  Bind ID minus, will be set by function.
- * @param ident_plus   Bind ID plus,  will be set by function.
- */
-#define input_conv_analog_id_to_bind_id(idx, ident, ident_minus, ident_plus) \
-   switch ((idx << 1) | ident) \
-   { \
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
-         ident_minus = RARCH_ANALOG_LEFT_X_MINUS; \
-         ident_plus  = RARCH_ANALOG_LEFT_X_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_LEFT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
-         ident_minus = RARCH_ANALOG_LEFT_Y_MINUS; \
-         ident_plus  = RARCH_ANALOG_LEFT_Y_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_X: \
-         ident_minus = RARCH_ANALOG_RIGHT_X_MINUS; \
-         ident_plus  = RARCH_ANALOG_RIGHT_X_PLUS; \
-         break; \
-      case (RETRO_DEVICE_INDEX_ANALOG_RIGHT << 1) | RETRO_DEVICE_ID_ANALOG_Y: \
-         ident_minus = RARCH_ANALOG_RIGHT_Y_MINUS; \
-         ident_plus  = RARCH_ANALOG_RIGHT_Y_PLUS; \
-         break; \
-   }
 
 RETRO_BEGIN_DECLS
 
@@ -286,6 +259,7 @@ struct bsv_movie
    uint32s_index_t *superblocks;
    uint32s_index_t *blocks;
    uint32_t *superblock_seq;
+   size_t superblock_seq_len;
    uint8_t commit_interval, commit_threshold;
 #endif
 
@@ -315,8 +289,11 @@ typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
  * @param userdata User data which will be passed to subsequent callbacks.
  * @param line      the line of input, which can be NULL.
  **/
+#ifndef INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
+#define INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
 typedef void (*input_keyboard_line_complete_t)(void *userdata,
       const char *line);
+#endif
 
 struct input_keyboard_line
 {
@@ -366,7 +343,24 @@ struct remote_message
 typedef struct
 {
    char display_name[NAME_MAX_LENGTH];
+   /* For the menu's Input Information, where the driver says: which
+    * device on the desk this mouse is part of ("" if not known), its
+    * USB ids (both 0 if not known), and whether it is one to leave
+    * out - an index with no mouse behind it. */
+   char device[64];
+   uint16_t vid;
+   uint16_t pid;
+   bool hidden;
 } input_mouse_info_t;
+
+/* A keyboard the input driver can tell from the others: its name, for
+ * the menu. In the order the driver lists them. */
+typedef struct
+{
+   char display_name[NAME_MAX_LENGTH];
+   uint16_t vid; /* 0 with pid 0: not known */
+   uint16_t pid;
+} input_keyboard_info_t;
 
 typedef struct
 {
@@ -547,6 +541,62 @@ struct input_driver
     * set to NULL if haptic feedback / vibration is not supported.
     */
    void (*keypress_vibrate)(void);
+
+   /**
+    * Whether the driver, as it is running now, can be left running while
+    * the video driver is restarted: nothing it holds belongs to the video
+    * driver, its window or its thread, and it needs no restart to notice
+    * anything a restart used to make it notice. The joypad driver in use
+    * is its to answer for as well, since the two are kept or restarted
+    * together. NULL, which every driver that does not name it has, means
+    * no: the driver is freed with the video driver
+    * and started again, as it always was. See
+    * input_driver_keep_for_video_restart().
+    *
+    * @param data  The input state struct
+    *
+    * @return True if the driver can stay.
+    */
+   bool (*survives_video)(void *data);
+
+   /**
+    * Which of some keys are down on a port's keyboard.
+    *
+    * A driver that has this no longer works out the controls bound to
+    * keys itself: the frontend keeps the keys a port's binds name,
+    * compiled when the binds change, asks for them all at once, once a
+    * poll, and answers every RetroPad button and hotkey from that. A
+    * driver without it (NULL) is asked for each bind as before. A driver that has it also publishes its mice
+    * (input_driver_publish_pointers()): binds to mouse buttons are
+    * read from those, from the mouse a port has.
+    *
+    * @param data   The input state struct
+    * @param port   The port whose keyboard is asked
+    * @param keys   @count key codes (enum retro_key)
+    * @param bind   The bind each key is for: a driver whose hotkeys
+    *               answer to other keyboards than a port's own needs
+    *               to tell them from the port's controls
+    *               (RARCH_FIRST_META_KEY and up are hotkeys)
+    * @param down   Bit n is set for keys[n] if it is down; the caller
+    *               has cleared it
+    */
+   void (*keys_down)(void *data, unsigned port,
+         const uint16_t *keys, const uint8_t *bind, unsigned count,
+         uint32_t *down);
+
+   /**
+    * The buttons of the mouse a port's controls bound to mouse buttons
+    * read, as INPUT_POINTER_* bits.
+    *
+    * For a driver that has keys_down and does not publish its mice:
+    * which mouse a port has, and when it counts, stay the driver's own
+    * rule. Asked once a poll, and only of a port with such a bind.
+    * NULL - and now the last member - reads the published mice.
+    *
+    * @param data   The input state struct
+    * @param port   The port asked for
+    */
+   unsigned (*bind_mouse_buttons)(void *data, unsigned port);
 };
 
 struct rarch_joypad_driver
@@ -603,18 +653,41 @@ typedef struct
    const input_device_driver_t   *primary_joypad;        /* ptr alignment */
    const input_device_driver_t   *secondary_joypad;      /* ptr alignment */
    const retro_keybind_set *libretro_input_binds[MAX_USERS];
+   /* When the devices were last read, on cpu_features_get_time_usec()'s
+    * clock; 0 while nothing asks for it. See input_driver_poll(). */
+   retro_time_t poll_time_us;
+   /* The input driver left running across a video driver restart, from
+    * the video driver's teardown until its start-up hands it back.
+    * input_driver_keep_for_video_restart(). */
+   input_driver_t *kept_driver;
+   void *kept_data;
+   /* The joypad driver setting the joypad driver was started with. */
+   char joypad_setting_at_init[32];
+   /* The settings that decide which port a controller gets, as they
+    * were then (input_driver_detect_settings()). */
+   uint32_t detect_settings_at_init;
+   /* Something has thrown away what the drivers' start gives - the
+    * controllers' configuration - so the next restart is a restart of
+    * the input driver too, whatever it says.
+    * input_driver_restart_with_next_video_restart(). */
+   bool kept_not_next;
 #ifdef HAVE_COMMAND
    /* Bumped whenever the command interfaces below are torn down. A
-    * command that reinitialises the input driver - LOAD_CONTENT,
-    * DRIVERS_REINIT - frees the very object whose poll dispatched it;
+    * command that has them remade - LOAD_CONTENT, when the new
+    * session's settings for them differ - frees the very object whose
+    * poll dispatched it;
     * the dispatcher compares this before and after and stops when it
     * has changed rather than touch that object again. */
    unsigned command_generation;
    command_t *command[MAX_CMD_DRIVERS];
+   /* The settings the interfaces above were made from */
+   char command_config[NAME_MAX_LENGTH * 3 + 64];
 #endif
 #ifdef HAVE_BSV_MOVIE
    bsv_movie_t     *bsv_movie_state_handle;              /* ptr alignment */
    bsv_movie_t     *bsv_movie_state_next_handle;         /* ptr alignment */
+   /* told once the checkpoint or seek asked for has run */
+   task_notify_t    bsv_movie_op;
 #endif
 #ifdef HAVE_OVERLAY
    input_overlay_t *overlay_ptr;
@@ -633,19 +706,22 @@ typedef struct
     * rather than sitting past the input_device_info string tables
     * (~17 KB of cold data) as it used to. */
    unsigned input_hotkey_block_counter;
+   /* the users the poll's remap work ran for last time, one bit each:
+    * what it left in the mapper is cleared when it stops running */
+   uint32_t remap_worked;
 #ifdef HAVE_ACCESSIBILITY
    unsigned gamepad_input_override;
 #endif
 #ifdef HAVE_NETWORKGAMEPAD
    input_remote_t *remote;
 #endif
-   char    *osk_grid[45];                                /* ptr alignment */
 #if defined(HAVE_TRANSLATE)
 #if defined(HAVE_ACCESSIBILITY)
-   int ai_gamepad_state[MAX_USERS];
+   /* RetroPad buttons the AI service presses for user 1, one bit each,
+    * for the next poll: set by its reply, taken whole by the poll. */
+   retro_atomic_int_t ai_press_pending;
 #endif
 #endif
-   int osk_ptr;
    bool osk_textbox_focus;
    turbo_buttons_t turbo_btns; /* int32_t alignment */
    hold_buttons_t hold_btns;   /* int32_t alignment */
@@ -654,6 +730,18 @@ typedef struct
    input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
+   input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
+   /* the listed keyboards' identities, and what each port reads */
+   char     keyboard_identity[MAX_INPUT_DEVICES][64];
+   unsigned keyboard_identities;
+   int8_t   keyboard_choice[MAX_USERS];
+   uint16_t keyboard_absent;         /* a bit a port: pinned, not there */
+   /* the same for the mice */
+   char     mouse_identity[MAX_INPUT_DEVICES][64];
+   unsigned mouse_identities;
+   int16_t  mouse_choice[MAX_USERS];
+   uint16_t mouse_pinned;            /* a bit a port: mouse_choice holds */
+   uint16_t mouse_absent;
    input_sensor_map_t input_sensor_map[MAX_INPUT_DEVICES];
 
    /**
@@ -665,11 +753,13 @@ typedef struct
     * here, which costs at most 4 bytes.)
     */
    rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+   /* The hold combinations that have reported for the hold they are
+    * in, a bit each: see input_driver_button_combo_hold(). */
+   uint16_t combo_hold_reported;
 
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;
 
-   enum osk_type osk_idx;
 
 #ifdef HAVE_BSV_MOVIE
    struct bsv_state bsv_movie_state;            /* char alignment */
@@ -696,7 +786,91 @@ typedef struct
     * armed outside input_keys_pressed() starts from the previous
     * frame's held set. */
    uint16_t wait_release_mask[MAX_USERS];
-   bool    joypad_state_cache_valid[MAX_USERS];
+   /* The core's buttons held back after the menu closes: those that
+    * were down, each until it is let go (input_driver_hold_held_input()).
+    * One bit per RetroPad button, per port; core_hold_armed while any
+    * is set. */
+   uint16_t core_hold_mask[MAX_USERS];
+   /* and the keyboard's keys, one bit per RETROK_ code */
+   uint32_t core_hold_keys[(RETROK_LAST + 31) / 32];
+   /* and per port, the mouse's buttons and the lightgun's, one bit per
+    * RETRO_DEVICE_ID_, and the pointer being pressed (bit 0) */
+   uint16_t core_hold_mouse[MAX_USERS];
+   uint32_t core_hold_gun[MAX_USERS];
+   uint8_t  core_hold_pointer[MAX_USERS];
+   bool core_hold_armed;
+   /* The same for what the run loop and the menu see - the RetroPad
+    * bits and the hotkeys: 1 takes what is down at the next frame, 2
+    * holds it back, 0 is no hold. */
+   input_bits_t held_bits;
+   uint8_t held_bits_phase;
+
+   /* The frame's view of each port's RetroPad buttons, as a core is
+    * given them: after port mapping, remaps, turbo, hold, overlays and
+    * analog-to-d-pad.  Compiled when a core asks for the port's mask,
+    * or for a second button in the frame; from then on every button
+    * and mask query for the port reads this word.  Invalidated by
+    * input_driver_poll(), and when the core's first analog request
+    * changes analog-to-d-pad for the port. */
+   int16_t frame_view_joypad[MAX_USERS];
+   /* Full-range triggers, per controller, as bits by axis: axes bound
+    * to L2 or R2 that were seen resting at the far end from their
+    * bind (the pull is counted from there), and axes not to be looked
+    * at again because both their directions are bound. */
+   uint16_t trigger_rest[MAX_USERS];
+   /* Pointer capture: the reasons held (enum input_capture_reason),
+    * and whether the cursor was last hidden for them. */
+   uint8_t  capture_reasons;
+   /* The RetroPad buttons something other than the overlay held when
+    * the system's input was last collected: a controller, a key, a
+    * command, a network pad. What is pressed and not in here came from
+    * the overlay alone. */
+   uint16_t system_buttons_not_overlay;
+   bool     capture_cursor_hidden;
+   uint16_t trigger_two_way[MAX_USERS];
+   /* SOCD cleaning, per core port: the D-Pad as it was held when the
+    * port's view was last compiled, and for each axis the direction
+    * (as its RetroPad button bit) that has the say while both are held. */
+   uint8_t socd_held[MAX_USERS];
+   uint8_t socd_winner[MAX_USERS][2];
+
+   /* What input_driver_poll() invalidates, a bit per port in each
+    * word, kept together so that invalidating all of it is one store:
+    *   joypad_cache - joypad_state_cache[port] holds this frame's mask
+    *   view         - frame_view_joypad[port] has been compiled
+    *   asked        - the port's first button of the frame was read
+    *   sticks       - stick_cache[port][n] holds this frame's read of a
+    *                  stick; n is the pad driver (primary, secondary)
+    *                  and the stick (left, right) */
+   struct
+   {
+      uint16_t joypad_cache;
+      uint16_t view;
+      uint16_t asked;
+      uint16_t snapshot[2]; /* pads snapshotted: primary, secondary driver */
+      uint16_t sticks[4];
+      uint16_t pad_state[2]; /* pad_state_cache[n][port] holds this poll's mask */
+      uint16_t pad_state_full[2]; /* ... worked out with full-range triggers on */
+   } frame_valid;
+
+   /* A port's RetroPad mask as its controller holds it, worked out
+    * from the frontend's per-poll copy of the pad: once a poll. It was
+    * worked out again for every reader of the port's mask - the
+    * hotkeys, the frame's view for the core, the poll's own - three or
+    * four times a frame from a copy that does not change between
+    * them. By pad driver (primary, secondary) and port; the threshold
+    * is the one it was worked out with. */
+   int16_t pad_state_cache[2][MAX_USERS];
+   float   pad_state_thr[2][MAX_USERS];
+
+   /* A port's sticks as the core is given them, each read whole once a
+    * frame: x and y, for each pad driver and stick as in
+    * frame_valid.sticks. A core asks for an axis at a time, and each
+    * axis asked for was its own reads of the pad - six, with a
+    * deadzone. The mode is the stick-drives-the-D-pad mode the read was
+    * made under: a read under another is made again. */
+   int16_t stick_cache[MAX_USERS][4][2];
+   uint8_t stick_cache_mode[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
@@ -730,8 +904,24 @@ typedef struct
    retro_atomic_int_t sensor_snap_seq;
    retro_atomic_int_t sensor_snap_bits[9];
    bool frontend_sensors_enabled;
+   /* The snapshot shaders read holds noughts and no shader reads
+    * sensors: the poll has nothing to publish. The poll's own. */
+   bool sensor_snap_quiet;
+   /* the platform's own menu button is held
+    * (input_driver_set_platform_menu_button()) */
+   bool platform_menu_button;
    unsigned core_accel_rate; /* >0 means core wants accel at this rate */
    unsigned core_gyro_rate;  /* >0 means core wants gyro at this rate */
+   /* First-press port assignment, see input_first_press_apply():
+    * buttons seen released on a user with no core port, the users to
+    * map at the next frame boundary, and whether any of it is live. */
+   uint32_t first_press_released[MAX_USERS];
+   uint32_t first_press_pending;
+   /* users whose core port a press gave them, not the user */
+   uint32_t first_press_assigned;
+   /* the policy, as it stood when the remap defaults were last set */
+   bool     first_press_on;
+   bool     first_press_live;
 } input_driver_state_t;
 
 
@@ -836,6 +1026,488 @@ float input_driver_get_sensor(
 
 uint64_t input_driver_get_capabilities(void);
 
+/* A port's keyboard, kept by what the keyboard is
+ * (input/common/input_device_pins.h).
+ *
+ * An input driver that lists keyboards tells what it knows each by -
+ * its USB ids, or its name where it has none - whenever it has made
+ * its list, in the list's order: */
+void input_keyboard_pins_set_devices(const char (*base)[64], unsigned n);
+/* What a port reads now: 0 for every keyboard as one, a keyboard's
+ * number in the list, or -1 for none. Read on the input path. */
+int input_keyboard_port_choice(unsigned port);
+/* The port's Keyboard Index was changed by hand: the port is pinned
+ * to the keyboard that number names, or to none. */
+void input_keyboard_pin_from_index(unsigned port);
+/* The port is pinned to a keyboard that is not there. */
+bool input_keyboard_pin_absent(unsigned port);
+
+/* The same for a port's mouse. An input driver that lists mice tells
+ * what it knows each by, in the order of their Mouse Index: */
+void input_mouse_pins_set_devices(const char (*base)[64], unsigned n);
+/* The mouse a port reads now, as a Mouse Index: the port's own
+ * setting, the place its pinned mouse has in the list, or
+ * MAX_INPUT_DEVICES for none. Read on the input path, in place of
+ * the setting. */
+unsigned input_mouse_port_index(unsigned port);
+/* The port's Mouse Index was changed by hand: the port is pinned to
+ * the mouse that number names. @pin false removes the pin. */
+void input_mouse_pin_from_index(unsigned port, bool pin);
+bool input_mouse_pin_absent(unsigned port);
+
+/* The running input driver's name ("raw", "udev", "wayland"...), or
+ * an empty string when there is none. */
+const char *input_driver_get_ident(void);
+
+/* Whether the input driver can make the device vibrate on a key
+ * press. */
+bool input_driver_has_keypress_vibrate(void);
+
+/* Which input driver a window gets: input_driver_choice.c. */
+#if defined(_WIN32) || defined(_XBOX) || defined(__WINRT__)
+void input_driver_init_windows(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#endif
+#ifdef HAVE_X11
+void input_driver_init_x11(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#endif
+void input_driver_init_kms(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#ifdef HAVE_WAYLAND
+void input_driver_init_wayland(const char *joypad_name, void *window_data,
+      input_driver_t **input, void **input_data);
+#endif
+#if defined(HAVE_SDL) && !defined(HAVE_SDL2) && !defined(HAVE_SDL3)
+void input_driver_init_sdl1(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#endif
+/* The settings a driver reads, by name: a driver does not take the
+ * settings (config_get_ptr()) and pick a field out. */
+unsigned input_config_get_mouse_index(unsigned port);
+unsigned input_config_get_joypad_index(unsigned port);
+unsigned input_config_get_rumble_gain(void);
+bool input_config_get_nowinkey_enable(void);
+bool input_config_get_keyboard_background(void);
+bool input_config_get_winraw_xinput_enable(void);
+bool input_config_get_winraw_player_lights(void);
+bool input_config_get_sdl3_system_keyboard(void);
+bool input_config_overlay_configured(void);
+unsigned input_config_get_split_joycon(unsigned port);
+bool input_config_get_backtouch_enable(void);
+bool input_config_get_backtouch_toggle(void);
+bool input_config_get_keyboard_gamepad_enable(void);
+bool input_config_get_small_keyboard_enable(void);
+unsigned input_config_get_keyboard_gamepad_mapping_type(void);
+bool input_config_get_suspend_screensaver_enable(void);
+unsigned input_config_get_mouse_scale(void);
+bool input_config_get_touch_vmouse_pointer(void);
+bool input_config_get_touch_vmouse_mouse(void);
+bool input_config_get_touch_vmouse_touchpad(void);
+bool input_config_get_touch_vmouse_trackball(void);
+bool input_config_get_touch_vmouse_gesture(void);
+/* The two things a driver changes in the settings, each by name. */
+void input_config_set_joypad_index(unsigned port, unsigned idx);
+bool input_driver_first_start_fallback(const char *ident);
+bool input_config_get_sensors_enable(void);
+unsigned input_config_get_block_timeout(void);
+bool input_config_get_device_vibration(void);
+bool input_config_get_stylus_enable(void);
+bool input_config_get_stylus_require_contact_for_click(void);
+bool input_config_get_stylus_hover_moves_pointer(void);
+unsigned input_config_get_stylus_pressure_sensitivity(void);
+bool input_config_get_android_disconnect_workaround(void);
+const char *input_config_get_android_physical_keyboard(void);
+const char *input_config_get_joypad_driver(void);
+const char *input_config_get_keyboard_layout(void);
+const char *input_config_get_autoconfig_dir(void);
+const char *input_config_get_test_input_file(bool joypad);
+
+/* What a driver may ask the frontend, and tell it, without taking its
+ * state (input_state_get_ptr()): each is one thing, by name. */
+void input_driver_set_native_keyboard_available(bool available);
+void input_driver_set_native_keyboard_shown(bool shown);
+bool input_driver_native_keyboard_shown(void);
+bool input_driver_keyboard_mapping_blocked(void);
+bool input_driver_keyboard_line_enabled(void);
+void input_driver_keyboard_line_set(const char *utf8, size_t len);
+/* Text entry, for the menu: a line is opened for a callback and the
+ * keys go to it until it is closed; the platform keyboards edit it in
+ * place; the on-screen keyboard and the touch keyboards type into it. */
+/* What a line of text is for: the platform keyboards show a matching
+ * layout. In the order of the menu's own. */
+enum input_text_type
+{
+   INPUT_TEXT_TYPE_TEXT = 0,
+   INPUT_TEXT_TYPE_PASSWORD,
+   INPUT_TEXT_TYPE_NUMBER
+};
+const char **input_driver_text_entry_open(void *userdata,
+      input_keyboard_line_complete_t cb,
+      const char *label, enum input_text_type type);
+/* The open line's label and type, for a platform's keyboard that shows
+ * them; whether a line is open is input_driver_keyboard_line_enabled(). */
+const char *input_driver_text_entry_label(void);
+enum input_text_type input_driver_text_entry_type(void);
+size_t input_driver_keyboard_line_length(void);
+void input_driver_keyboard_line_clear(void);
+void input_driver_osk_press(enum osk_type *osk_idx, int ptr,
+      bool show_symbol_pages, const char *word, size_t len);
+void input_driver_keyboard_line_type(const char *word, size_t len);
+void input_driver_set_keyboard_textbox_focus(bool focus);
+/* The capture of a bind and text entry: keys kept from the binds, a
+ * wait for everything to be let go, a callback for each key. */
+void input_driver_set_keyboard_mapping_blocked(bool blocked);
+void input_driver_set_wait_input_release(bool wait);
+bool input_driver_waiting_input_release(void);
+void input_driver_set_keyboard_press_cb(input_keyboard_press_t cb,
+      void *data);
+bool input_driver_libretro_input_blocked(void);
+bool input_driver_hotkey_blocked(void);
+bool input_driver_game_focus_core_requested(void);
+bool input_driver_overlay_alive(void);
+bool input_driver_overlay_takes_input(void);
+bool input_driver_overlay_active_page(void);
+/* Whatever is down now is held back, control by control, until each is
+ * let go: from the core (its buttons, keys, mouse and lightgun buttons
+ * and the pointer press) and from what the run loop and the menu see
+ * (the RetroPad bits and the hotkeys). Everything else gets through at
+ * once. For the menu as it opens and closes, a bind or a text entry
+ * ends, or the mouse clicks: the press that did it does nothing more. */
+void input_driver_hold_held_input(void);
+/* Nothing is held back any more: for the menu going away. */
+void input_driver_hold_clear(void);
+/* The run loop's bits for the frame: what the hold holds back is taken
+ * out. True while it is holding something back. */
+bool input_driver_hold_bits(input_bits_t *bits);
+void input_driver_set_nonblocking(bool on);
+
+/* What a platform asks of the frontend through its input driver: the
+ * home or power button, a panic combination, the system closing the
+ * app, its window going away and coming back. The driver says what
+ * happened; the frontend decides what is done. */
+enum input_platform_request
+{
+   INPUT_PLATFORM_QUIT = 0,        /* quit as the Quit hotkey does */
+   INPUT_PLATFORM_SHUTDOWN,        /* the system is closing the app */
+   INPUT_PLATFORM_MENU_TOGGLE,     /* the platform's menu gesture */
+   INPUT_PLATFORM_REINIT_VIDEO,    /* the window's surface was lost */
+   INPUT_PLATFORM_FOCUS_LOST,      /* game focus off, mouse let go */
+   INPUT_PLATFORM_REQUEST_LAST
+};
+void input_driver_platform_request(enum input_platform_request req);
+void input_driver_set_remapping_cache_active(void);
+void input_driver_device_info_save(input_device_info_t *dst);
+void input_driver_device_info_restore(const input_device_info_t *src);
+void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map);
+#ifdef HAVE_OVERLAY
+float *input_driver_overlay_eightway_slopes(bool abxy);
+#endif
+#if defined(HAVE_TRANSLATE) && defined(HAVE_ACCESSIBILITY)
+/* The AI service: presses RetroPad button @id for user 1 for one poll;
+ * and the RetroPad buttons user 1 holds now, as bound, for its
+ * request. */
+void input_driver_ai_gamepad_press(unsigned id);
+uint16_t input_driver_ai_gamepad_held(void);
+#endif
+void input_driver_keyboard_line_append(const char *utf8, size_t len);
+/* The line of text being typed, for whoever draws it: its bytes or
+ * NULL, and where the cursor stands in them. And whether the text box
+ * has the focus, and not the on-screen keyboard. */
+const char *input_driver_keyboard_line_view(size_t *cursor);
+bool input_driver_keyboard_textbox_focus(void);
+void input_driver_keyboard_line_end(void);
+bool input_driver_pointer_input_blocked(void);
+bool input_driver_game_focus_enabled(void);
+bool input_driver_mouse_grabbed(void);
+void *input_driver_current_data(void);
+
+/* The platform's own menu button - one that is not a controller's and
+ * has no bind - is held, or is not. Held, it counts as the Menu Toggle
+ * hotkey held. For the driver that reads the button, on the frontend's
+ * thread. */
+void input_driver_set_platform_menu_button(bool held);
+
+/* Reads of the input driver for a consumer that is not the core - the
+ * menu. It asks here and holds neither the driver nor its data nor a
+ * joypad. The two reads are valid only while there is a driver to
+ * read, input_driver_has_device_state().
+ *
+ * input_driver_device_state(): a mouse, a pointer or a key; no binds
+ * go to the driver.
+ * input_driver_bind_capture_state(): the same with the frontend's
+ * binds and the pad @joy_idx, as the capture of a bind reads them. */
+bool input_driver_has_device_state(void);
+
+/* A device's position in one call, packed with VIDEO_POS_PACK: the X and Y of a mouse
+ * (RARCH_DEVICE_MOUSE_SCREEN, RETRO_DEVICE_MOUSE) or a pointer
+ * (RETRO_DEVICE_POINTER, RARCH_DEVICE_POINTER_SCREEN). Needs a driver
+ * that can be read, as input_driver_device_state() does. */
+uint32_t input_driver_device_pos(unsigned port, unsigned device,
+      unsigned idx);
+int16_t input_driver_device_state(unsigned port,
+      unsigned device, unsigned idx, unsigned id);
+int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
+      unsigned device, unsigned idx, unsigned id);
+
+/* Port 0's mouse and first touch, read from the driver once per poll,
+ * so every reader in a frame sees one state and a wheel notch once. */
+enum input_pointer_view_flags
+{
+   INPUT_PTR_VIEW_VALID         = (1 << 0), /* there was a driver to read */
+   INPUT_PTR_VIEW_MOUSE_LEFT    = (1 << 1),
+   INPUT_PTR_VIEW_MOUSE_RIGHT   = (1 << 2),
+   INPUT_PTR_VIEW_WHEEL_UP      = (1 << 3),
+   INPUT_PTR_VIEW_WHEEL_DOWN    = (1 << 4),
+   INPUT_PTR_VIEW_HWHEEL_UP     = (1 << 5),
+   INPUT_PTR_VIEW_HWHEEL_DOWN   = (1 << 6),
+   INPUT_PTR_VIEW_PTR_PRESSED   = (1 << 7),  /* RETRO_DEVICE_POINTER */
+   INPUT_PTR_VIEW_PTR_BACK      = (1 << 8),
+   INPUT_PTR_VIEW_SCR_PRESSED   = (1 << 9),  /* RARCH_DEVICE_POINTER_SCREEN */
+   INPUT_PTR_VIEW_SCR_BACK      = (1 << 10)
+};
+
+/* A pointing device's state for one frame. An input driver that keeps
+ * its mice says so by publishing each one once a poll
+ * (input_driver_publish_pointers()); the frontend then answers for the
+ * mouse, the pointer and the lightgun's aim itself - translating to the
+ * viewport once a poll, not once a value - and the driver has no code
+ * for them. A driver that publishes nothing is asked as before.
+ * A wheel bit is set for the one frame its notch came in. */
+enum input_pointer_buttons
+{
+   INPUT_POINTER_LEFT        = (1 << 0),
+   INPUT_POINTER_RIGHT       = (1 << 1),
+   INPUT_POINTER_MIDDLE      = (1 << 2),
+   INPUT_POINTER_BUTTON_4    = (1 << 3),
+   INPUT_POINTER_BUTTON_5    = (1 << 4),
+   INPUT_POINTER_WHEEL_UP    = (1 << 5),
+   INPUT_POINTER_WHEEL_DOWN  = (1 << 6),
+   INPUT_POINTER_HWHEEL_UP   = (1 << 7),
+   INPUT_POINTER_HWHEEL_DOWN = (1 << 8)
+};
+
+typedef struct input_pointer_frame
+{
+   uint32_t pos;       /* in the window: VIDEO_POS_PACK */
+   uint32_t rel;       /* motion since the last poll: VIDEO_POS_PACK */
+   uint16_t buttons;   /* enum input_pointer_buttons */
+} input_pointer_frame_t;
+
+enum input_pointers_flags
+{
+   /* Read as a pointer with no real touch in a place, a mouse stands
+    * for three touches - any button; the right or the middle; the
+    * middle. Without this it stands for one: its left button. */
+   INPUT_POINTERS_MOUSE_3_TOUCHES = (1 << 0),
+   /* A port reads the device at its Mouse Index, or where its pinned
+    * mouse is (input_mouse_port_index()). Without this port n reads
+    * device n, and one device is every port's. */
+   INPUT_POINTERS_BY_MOUSE_INDEX  = (1 << 1),
+   /* With BY_MOUSE_INDEX: only the mouse goes by the port's index. The
+    * pointer and the lightgun's aim are every port's, from the first
+    * device. */
+   INPUT_POINTERS_AIM_EVERY_PORT  = (1 << 2),
+   /* The lightgun aims where the first touch is, when there is one. */
+   INPUT_POINTERS_GUN_AT_TOUCH    = (1 << 3),
+   /* The pointer is placed as the lightgun is: -0x8000 outside the
+    * viewport, where it is otherwise held to the viewport's edge. */
+   INPUT_POINTERS_POINTER_OFFSCREEN = (1 << 4),
+   /* A place with a touch reads the touch alone: lifted - a pen in the
+    * air - it is not pressed, whatever the mouse's buttons say. */
+   INPUT_POINTERS_TOUCH_ALONE     = (1 << 5),
+   /* The lightgun's buttons are what they are bound to - a pad's
+    * button or axis, a key, a mouse button - and the frontend answers
+    * them. Without this the driver answers them itself (the Wayland and
+    * SDL1 and 2 drivers give them the mouse's buttons, bound or not). */
+   INPUT_POINTERS_GUN_BUTTONS_BOUND = (1 << 6),
+   /* ... and one bound to a mouse button reads the one mouse at every
+    * port, whatever each port's Mouse Index */
+   INPUT_POINTERS_GUN_BUTTONS_EVERY_PORT = (1 << 7)
+};
+
+/* From the driver's poll. @count devices, at most MAX_USERS.
+ * @flags: enum input_pointers_flags. */
+void input_driver_publish_pointers(const input_pointer_frame_t *frames,
+      unsigned count, unsigned flags);
+
+/* The viewport as of this poll: asked of the video driver the first
+ * time it is wanted after a poll, and that answer given until the
+ * next. For a driver that places its own touches or mouse, in its poll
+ * or as it is read - on the frontend's thread only. */
+bool input_driver_poll_viewport(struct video_viewport *vp);
+
+/* video_driver_translate_coord_viewport_wrap() and its confined twin,
+ * with the poll's viewport in place of one asked for each time. */
+#define input_driver_translate_coord_viewport_wrap(vp, mouse_x, mouse_y, res_pos, res_screen_pos) \
+   (input_driver_poll_viewport(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_pos, res_screen_pos, true) : false)
+
+#define input_driver_translate_coord_viewport_confined_wrap(vp, mouse_x, mouse_y, res_pos, res_screen_pos) \
+   (input_driver_poll_viewport(vp) ? video_driver_translate_coord_viewport(vp, mouse_x, mouse_y, res_pos, res_screen_pos, false) : false)
+
+/* The kind of device (RETRO_DEVICE_MOUSE, RETRO_DEVICE_POINTER, ...)
+ * published device @i was last read as, or 0: for a driver whose
+ * handling of a mouse depends on how it is used. */
+unsigned input_driver_pointer_read_as(unsigned i);
+
+/* A driver with a touchscreen, with the mice, in its poll. For each of
+ * @count places, at most 16: where the contact is in the window, as
+ * VIDEO_POS_PACK; a bit in @present if there is a contact there at
+ * all; a bit in @down if it is pressed. The three are separate: a
+ * contact at 0,0 is a contact, and one that has lifted may keep its
+ * place (@present without @down). */
+void input_driver_publish_touches(const uint32_t *pos, unsigned count,
+      unsigned present, unsigned down);
+
+typedef struct input_pointer_view
+{
+   uint32_t mouse_pos;          /* RARCH_DEVICE_MOUSE_SCREEN, VIDEO_POS_PACK */
+   uint32_t ptr_pos;            /* RETRO_DEVICE_POINTER */
+   uint32_t scr_pos;            /* RARCH_DEVICE_POINTER_SCREEN */
+   uint16_t flags;              /* enum input_pointer_view_flags */
+} input_pointer_view_t;
+
+const input_pointer_view_t *input_driver_pointer_view(void);
+
+/* A controller as the controller has it, for the capture of a bind:
+ * each array that is given is filled - @buttons with whether each is
+ * down, @axes with each axis's position, @hats with the directions
+ * held OR-ed in. @poll polls the joypad drivers first. */
+void input_driver_capture_pad(unsigned pad, bool poll,
+      bool *buttons, unsigned num_buttons,
+      int16_t *axes, unsigned num_axes,
+      uint16_t *hats, unsigned num_hats);
+
+/* The device drivers are polled and nothing else of a poll is done. */
+void input_driver_poll_devices(void);
+
+/* A controller's profile is looked up again, as if just connected. */
+void input_driver_autoconfigure_pad(unsigned pad);
+
+/* The RetroPad controls a user's controller and keys hold right now, as
+ * bound and before remaps: a bit each for the sixteen buttons, then
+ * for the sticks' eight directions (RARCH_ANALOG_LEFT_X_PLUS on).
+ * Reads the devices; for the menu while it waits for a press. */
+uint32_t input_driver_user_controls_bound(unsigned user);
+
+void input_driver_init_platform(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+#ifdef HAVE_SDL3
+void input_driver_init_sdl3(const char *joypad_name,
+      input_driver_t **input, void **input_data);
+/* Whether the input driver in use is the SDL 3 one, which reads the
+ * SDL window's event queue. For the code that pumps that queue. */
+bool input_driver_is_sdl3(void);
+#endif
+
+/* Leaving the input driver running across a video driver restart: see
+ * input_driver.c. */
+void input_driver_keep_for_video_restart(bool restart, const void *video_data);
+bool input_driver_take_kept(input_driver_t **input, void **input_data);
+void input_driver_drop_kept(void);
+void input_driver_restart_with_next_video_restart(void);
+
+/* For the video driver: see input_driver.c. */
+retro_time_t input_driver_get_poll_time(void);
+uint32_t input_driver_get_flags(void);
+input_driver_t *input_driver_get_current(void);
+/* For the video driver's start-up, before the driver's init: the
+ * window kind is not yet known and no input driver is current. */
+void input_driver_video_init_begin(void);
+void input_driver_free_with_video(const void *video_data);
+/* Why the pointer is captured. It used to be one flag that about ten
+ * places toggled or rewrote, each after looking at it, so what it
+ * ended up as went by the order they ran in: leaving fullscreen let
+ * go of a grab game focus still wanted, and game focus going off let
+ * go of one the user had asked for.
+ *
+ * Now each of them holds or releases its own reason, and the pointer
+ * is captured while any is held. INP_FLAG_GRAB_MOUSE_STATE is what
+ * that comes to, and is only written by input_pointer_capture_apply().
+ * The reasons are kept above the drivers, so a driver that restarts
+ * has them applied to it again. */
+enum input_capture_reason
+{
+   /* the hotkey, or a menu's entry */
+   INPUT_CAPTURE_USER              = (1 << 0),
+   /* "Automatic Mouse Grab", taken when the window gains focus */
+   INPUT_CAPTURE_AUTO_FOCUS        = (1 << 1),
+   INPUT_CAPTURE_GAME_FOCUS        = (1 << 2),
+   /* exclusive fullscreen */
+   INPUT_CAPTURE_FULLSCREEN        = (1 << 3),
+   /* any fullscreen: this one hides the cursor and grabs nothing */
+   INPUT_CAPTURE_FULLSCREEN_CURSOR = (1 << 4)
+};
+
+void input_pointer_capture_hold(unsigned reasons);
+void input_pointer_capture_release(unsigned reasons);
+
+/* What exclusive fullscreen adds, for the video mode there is now.
+ * Nothing is applied: input_pointer_capture_apply() follows. */
+void input_pointer_capture_set_fullscreen(bool fullscreen, bool exclusive);
+
+/* The user's toggle: captured, every reason is let go; not captured,
+ * the user's is held. False, and nothing changed, if the input driver
+ * cannot grab. */
+bool input_pointer_capture_toggle(void);
+
+/* Makes the grab and the cursor what the reasons come to. @force is
+ * for a driver that has just started and has been told nothing yet. */
+void input_pointer_capture_apply(bool force);
+
+/* The reasons held, for the tests. */
+unsigned input_pointer_capture_reasons(void);
+
+/* For a combination of RetroPad buttons that opens the menu: buttons
+ * held on the overlay alone are taken out of @bits when the overlay
+ * shown has a menu button of its own. A thumb resting on two overlay
+ * buttons otherwise opens the menu by accident, on an overlay that
+ * has a button for that anyway (issue #19472). An overlay with no
+ * menu button is left alone: the combination is its only way in. */
+void input_driver_menu_combo_source_gate(input_bits_t *bits);
+
+/* What kind of window a video driver put up, for the input driver that
+ * goes with it. */
+enum input_window_kind
+{
+   INPUT_WINDOW_OTHER = 0,
+   /* a Windows window (or UWP, or Xbox): input_driver_init_windows() */
+   INPUT_WINDOW_WINDOWS,
+   /* an X11 window: input_driver_init_x11() */
+   INPUT_WINDOW_X11,
+   /* no window system - KMS/DRM, a Vulkan display:
+    * input_driver_init_kms() */
+   INPUT_WINDOW_KMS,
+   /* a Wayland surface, whose seat's state the video context holds
+    * and hands over (input_driver_video_window()):
+    * input_driver_init_wayland() */
+   INPUT_WINDOW_WAYLAND,
+   /* an SDL 3 window: input_driver_init_sdl3() */
+   INPUT_WINDOW_SDL3,
+   /* an SDL 1.2 window: input_driver_init_sdl1() */
+   INPUT_WINDOW_SDL1,
+   /* a platform with one input driver of its own - a console,
+    * Android, the web: input_driver_init_platform() */
+   INPUT_WINDOW_PLATFORM
+};
+
+/* For a video driver's or a context's start-up: what kind of window it
+ * made, so that the frontend starts the input driver that goes with
+ * it. A video driver starts no input driver itself and is handed no
+ * slots to put one in. @window_data is, for a window system whose
+ * input state lives with the window in the video driver's own data
+ * (Wayland), that state - what the input driver the frontend starts is
+ * given; NULL otherwise. A driver that says nothing gets the input
+ * driver the setting names, as ever. */
+void input_driver_video_window(enum input_window_kind window,
+      void *window_data);
+
+/* Called once the video driver is up. If it brought an input driver of
+ * its own, that is the input driver. Otherwise one is started here:
+ * the one kept from before the restart; the one that goes with the
+ * kind of window the video driver named
+ * (input_driver_video_window()); failing those, the one the
+ * setting names. */
 bool video_driver_init_input(
       input_driver_t *tmp,
       settings_t *settings,
@@ -891,6 +1563,11 @@ void input_pad_connect(unsigned port, input_device_driver_t *driver);
 void input_keyboard_event(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device);
 
+/* Keyboard events reported from another thread wait for the poll in a
+ * queue (see input_keyboard_event() in input_driver.c); this is how
+ * many were dropped because it was full. */
+unsigned input_driver_key_events_dropped(void);
+
 input_driver_state_t *input_state_get_ptr(void);
 
 /*************************************/
@@ -942,6 +1619,46 @@ void input_config_set_device_name(unsigned port, const char *name);
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
+
+/* The mice, for the menu (Information > Input Information). A mouse is
+ * numbered by its Mouse Index, which is the input driver's own index
+ * and is not changed by any of this. A driver that knows more says it
+ * here: @device is what tells one device on the desk from another,
+ * the same for every part of it ("" if not known) - one mouse is
+ * often two or three of the system's mice, and they are listed on
+ * one line; @hidden is an index nothing on the desk is behind.
+ * Cleared, names included, whenever an input driver starts. Main
+ * thread. */
+void input_config_clear_mouse_info(void);
+void input_config_set_mouse_device(unsigned idx, const char *device,
+      uint16_t vid, uint16_t pid, bool hidden);
+const char *input_config_get_mouse_device(unsigned idx);
+/* Whether Mouse Index offers this index. Where the input driver
+ * lists its mice, the ones on the desk are offered - not an index
+ * with no mouse, and not one the driver says to leave out (a keyboard
+ * that can send pointer events, a mouse a program made). Under a
+ * driver that names no mice every index is offered, as it always
+ * was. */
+bool input_config_mouse_offered(unsigned idx);
+uint16_t input_config_get_mouse_vid(unsigned idx);
+uint16_t input_config_get_mouse_pid(unsigned idx);
+bool input_config_get_mouse_hidden(unsigned idx);
+
+/* The keyboards the input driver can tell apart, for the menu
+ * (Information > Input Information). A driver that lists its
+ * keyboards clears the names and sets one for each, in its own order,
+ * when it starts and whenever its list changes; a name that would be
+ * empty is stored as "N/A". Under a driver that cannot tell keyboards
+ * apart there are none. Main thread. */
+void input_config_clear_keyboard_display_names(void);
+void input_config_set_keyboard_display_name(unsigned idx, const char *name);
+/* NULL if there is no keyboard at that index */
+const char *input_config_get_keyboard_display_name(unsigned idx);
+/* a listed keyboard's USB ids, where the driver knows them; both 0
+ * where it does not */
+void input_config_set_keyboard_ids(unsigned idx, uint16_t vid, uint16_t pid);
+uint16_t input_config_get_keyboard_vid(unsigned idx);
+uint16_t input_config_get_keyboard_pid(unsigned idx);
 
 /**
  * Set the configuration name for the device in the specified port
@@ -1202,6 +1919,12 @@ input_remote_t *input_driver_init_remote(
       unsigned num_active_users);
 
 void input_remote_free(input_remote_t *handle, unsigned max_users);
+
+/* For Information > Input Information: whether @user has a Network
+ * RetroPad listening, the port it listens on, and the address of the
+ * device last heard from it (@heard false while there has been none). */
+bool input_remote_info(unsigned user, unsigned *port,
+      uint32_t *address, bool *heard);
 #endif
 
 void input_game_focus_free(void);
@@ -1237,6 +1960,38 @@ bool input_key_pressed(int key, bool keyboard_pressed);
 
 bool input_set_rumble_state(unsigned port,
       enum retro_rumble_effect effect, uint16_t strength);
+
+/* The device registry (input_registry.h): which controllers there are
+ * and which have been here before. It mirrors what the joypad drivers
+ * report; nothing is assigned from it yet. Main thread only. */
+const struct input_registry *input_driver_get_registry(void);
+
+/* A joypad driver's connect or disconnect has been applied to @slot. */
+void input_driver_registry_connect(unsigned slot, const char *provider,
+      const char *name, const char *phys, uint16_t vid, uint16_t pid);
+void input_driver_registry_disconnect(unsigned slot);
+
+/* The joypad driver is about to start over and report its controllers
+ * again. If it reports the ones it had, each goes back to the port it
+ * was on. */
+void input_driver_registry_restart(void);
+
+/* Read controllers through a snapshot taken once a poll, in place of
+ * calls into the joypad driver, whatever the driver. For the harness:
+ * drivers are switched over one at a time as each is checked. */
+void input_driver_set_snapshot_bridge(bool on);
+
+/* The pad index to write to the config file for @port: what the user
+ * configured, which is not what the setting holds while controllers
+ * have been put back on their ports after a driver restart. */
+unsigned input_config_get_saved_joypad_index(unsigned port);
+
+/* Write the rumble strengths a core's calls left this frame. Main
+ * thread, once the core has run. */
+void input_driver_flush_rumble(void);
+
+/* Stop every motor now and drop what was waiting to be written. */
+void input_driver_stop_rumble(void);
 
 bool input_set_rumble_gain(unsigned gain);
 
@@ -1275,6 +2030,11 @@ void input_driver_init_command(
       settings_t *settings);
 
 void input_driver_deinit_command(input_driver_state_t *input_st);
+
+/* Remakes the command interfaces only if their settings changed, so
+ * that they, and the replies they owe, outlive a content load. */
+void input_driver_refresh_command(input_driver_state_t *input_st,
+      settings_t *settings);
 #endif
 
 #ifdef HAVE_OVERLAY
@@ -1286,8 +2046,15 @@ void input_overlay_check_mouse_cursor(void);
 #endif
 
 #ifdef HAVE_BSV_MOVIE
-void bsv_movie_frame_rewind(void);
-void bsv_movie_next_frame(input_driver_state_t *input_st);
+void bsv_movie_frame_rewind(input_driver_state_t *input_st);
+
+/* The replay is over: said by the code that reads it, which is handed
+ * the replay and not the input state. */
+void bsv_movie_set_end(void);
+/* @checkpoint_interval and @checkpoint_deserialize are the two replay
+ * settings, handed over by the run loop, which has them. */
+void bsv_movie_next_frame(input_driver_state_t *input_st,
+      unsigned checkpoint_interval, bool checkpoint_deserialize);
 bool bsv_movie_read_next_events(bsv_movie_t *handle, replay_checkpoint_behavior checkpoint_behavior, bool end_movie_on_eof);
 bool bsv_movie_reset_playback(bsv_movie_t *handle);
 bool bsv_movie_reset_recording(bsv_movie_t *handle);
@@ -1302,18 +2069,28 @@ bool movie_skip_to_prev_checkpoint(input_driver_state_t *input_st);
 bool movie_skip_to_next_checkpoint(input_driver_state_t *input_st);
 bool movie_seek_to_frame(input_driver_state_t *input_st, int64_t frame);
 bool movie_start_playback(input_driver_state_t *input_st, char *path);
+/* @cb, when this returns true, is told once playback has started:
+ * task_data is the replay's identifier, as text, and error is set if it
+ * did not start. */
+bool movie_start_playback_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data);
 
 /* True while a playback-start task is pending, i.e. until its
  * callback has installed the replay handle. */
 bool movie_playback_start_in_progress(void *data);
 bool movie_start_record(input_driver_state_t *input_st, char *path);
+/* As movie_start_playback_notify(), told once recording has started:
+ * task_data is the replay's path. */
+bool movie_start_record_notify(input_driver_state_t *input_st, char *path,
+      retro_task_callback_t cb, void *user_data);
 bool movie_stop_playback(input_driver_state_t *input_st);
 bool movie_stop_record(input_driver_state_t *input_st);
 bool movie_stop(input_driver_state_t *input_st);
 
-size_t replay_get_serialize_size(void);
-bool replay_get_serialized_data(void* buffer);
-bool replay_set_serialized_data(void* buffer);
+size_t replay_get_serialize_size(input_driver_state_t *input_st);
+bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer);
+bool replay_set_serialized_data(input_driver_state_t *input_st,
+      void *buffer, size_t len);
 #endif
 
 /**
@@ -1424,11 +2201,81 @@ extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t wiiusb_hid;
+extern hid_driver_t gekko_hid;
 extern hid_driver_t wiiu_hid;
 #endif /* HAVE_HID */
 
 extern retro_keybind_set input_config_binds[MAX_USERS];
 extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+
+/* What a port's mapping is made from - the users' binds, the binds a
+ * pad's autoconfig profile gave it, which pad, mouse and kind of device
+ * a port has, the remaps - is counted each time it changes. Anything
+ * compiled from them keeps the count it was compiled at, and is made
+ * again when the count has moved; nothing has to look at the binds to
+ * know. A change that is not counted is a mapping that goes stale, so
+ * the ways to change them are few and each counts:
+ * - the calls below that hand out a bind to be written;
+ * - the input code's own setters, and the configuration's loads;
+ * - every frame the menu is open, which covers whatever the menu and
+ *   its settings write through pointers they hold.
+ * The frontend harness watches for a change the count missed. */
+extern retro_atomic_int_t input_binds_generation;
+
+static INLINE void input_config_binds_changed(void)
+{
+   retro_atomic_fetch_add_int(&input_binds_generation, 1);
+}
+
+static INLINE unsigned input_config_binds_generation(void)
+{
+   return (unsigned)retro_atomic_load_acquire_int(&input_binds_generation);
+}
+
+/* How everything outside input/ gets at a bind: a user's, and the one
+ * a pad's autoconfig profile gave it. The arrays are the input code's
+ * own, and how the binds are kept is its to change; a check holds that
+ * nothing else names them (tools/input_state_grab_check.py). To read
+ * one, these; to write one, the _edit calls, which count the change. */
+static INLINE const struct retro_keybind *input_config_bind(
+      unsigned user, unsigned id)
+{
+   return &input_config_binds[user][id];
+}
+
+static INLINE const struct retro_keybind *input_autoconf_bind(
+      unsigned pad, unsigned id)
+{
+   return &input_autoconf_binds[pad][id];
+}
+
+/* A bind to be written, now. A pointer kept and written later is not
+ * counted here: the menu's are covered by its being open. */
+static INLINE struct retro_keybind *input_config_bind_edit(
+      unsigned user, unsigned id)
+{
+   input_config_binds_changed();
+   return &input_config_binds[user][id];
+}
+
+static INLINE struct retro_keybind *input_autoconf_bind_edit(
+      unsigned pad, unsigned id)
+{
+   input_config_binds_changed();
+   return &input_autoconf_binds[pad][id];
+}
+
+/* Every user's binds, copied out to and back from @sets[MAX_USERS]. */
+static INLINE void input_config_binds_copy_out(retro_keybind_set *sets)
+{
+   memcpy(sets, input_config_binds, sizeof(input_config_binds));
+}
+
+static INLINE void input_config_binds_copy_in(retro_keybind_set *sets)
+{
+   memcpy(input_config_binds, sets, sizeof(input_config_binds));
+   input_config_binds_changed();
+}
 extern input_bind_label_set input_config_bind_labels[MAX_USERS];
 extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 

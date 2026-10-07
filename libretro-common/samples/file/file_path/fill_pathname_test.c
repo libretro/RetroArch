@@ -51,6 +51,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_miscellaneous.h>
+#include <compat/strl.h>
 #include <file/file_path.h>
 
 static int failures = 0;
@@ -257,6 +259,62 @@ static void test_join_truncation(void)
    free(region);
 }
 
+/* fill_pathname_abbreviated_or_relative() resolves a relative @in_path
+ * against @in_refpath's directory before choosing between the
+ * relative and abbreviated forms.  That join still carries its '..'
+ * segments, so it can be much longer than the result: a 256-byte
+ * output (config_file's '#reference' buffer) must still receive a
+ * short reference whose un-normalised join is past 256 bytes. */
+static void test_abbreviated_or_relative_long_join(void)
+{
+   char refpath[PATH_MAX_LENGTH];
+   char out[256];
+   const char *rel = "../../../../x/preset_b.slangp";
+   size_t _len     = 0;
+   size_t i;
+
+   setenv("HOME", "/nonexistent-home", 1);
+
+   _len = strlcpy(refpath, "/r/s/t/u/v/w/", sizeof(refpath));
+   for (i = 0; i < 230; i++)
+      refpath[_len++] = 'a';
+   strlcpy(refpath + _len, "/b/c/d/preset_a.slangp", sizeof(refpath) - _len);
+
+   _len = fill_pathname_abbreviated_or_relative(out, refpath, rel, sizeof(out));
+   if (_len != strlen(rel) || strcmp(out, rel))
+   {
+      printf("[FAILED] long-join reference gave \"%s\" (%zu)\n", out, _len);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] long-join reference kept intact\n");
+
+   /* Same reference from a shallow preset: the absolute form is
+    * shallower than the relative one, so it is chosen. */
+   _len = fill_pathname_abbreviated_or_relative(out,
+         "/r/a/b/c/d/preset_a.slangp", rel, sizeof(out));
+   if (     _len != strlen("/r/x/preset_b.slangp")
+         || strcmp(out, "/r/x/preset_b.slangp"))
+   {
+      printf("[FAILED] short reference gave \"%s\" (%zu)\n", out, _len);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] shallow preset resolves to the absolute path\n");
+
+   /* An absolute path sharing no directory with the preset stays
+    * absolute when the relative form would be deeper. */
+   _len = fill_pathname_abbreviated_or_relative(out,
+         "/r/a/b/c/d/preset_a.slangp", "/z/p.slangp", sizeof(out));
+   if (strcmp(out, "/z/p.slangp"))
+   {
+      printf("[FAILED] absolute reference gave \"%s\"\n", out);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] absolute reference preferred over deeper relative\n");
+}
+
 int main(void)
 {
    /* Documented semantics. */
@@ -276,6 +334,7 @@ int main(void)
    test_exact_fit_no_extension();
    test_overlong_input_no_dot();
    test_join_truncation();
+   test_abbreviated_or_relative_long_join();
 
    if (failures)
    {

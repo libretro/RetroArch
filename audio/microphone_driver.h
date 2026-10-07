@@ -738,6 +738,11 @@ extern microphone_driver_t microphone_sdl3;
 extern microphone_driver_t microphone_wasapi;
 
 /**
+ * The WDM-KS-backed microphone driver.
+ */
+extern microphone_driver_t microphone_wdmks;
+
+/**
  * The PipeWire-backed microphone driver.
  */
 extern microphone_driver_t microphone_pipewire;

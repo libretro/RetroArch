@@ -38,6 +38,8 @@
 #include <retro_inline.h>
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
+#include <retro_atomic.h>
+#include <rthreads/retro_eventcount.h>
 
 #include <libretro.h>
 #include <libretro_vulkan.h>
@@ -125,7 +127,11 @@ enum vk_flags
    VK_FLAG_GPU_RECORDING       = (1 << 19),
    /* VK_ERROR_DEVICE_LOST was seen and reported to the runloop once;
     * the frames until the reinit fail quietly. */
-   VK_FLAG_DEVICE_LOST_REPORTED = (1 << 20)
+   VK_FLAG_DEVICE_LOST_REPORTED = (1 << 20),
+   /* Held across creating a frame texture to lend the core: it stays in
+    * cached system memory, never video memory, because the core and the
+    * frontend may read a lent frame back. */
+   VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21)
 };
 
 enum vk_texture_type
@@ -178,14 +184,6 @@ enum vulkan_context_flags
    VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6)
 };
 
-enum vulkan_emulated_mailbox_flags
-{
-   VK_MAILBOX_FLAG_ACQUIRED            = (1 << 0),
-   VK_MAILBOX_FLAG_REQUEST_ACQUIRE     = (1 << 1),
-   VK_MAILBOX_FLAG_DEAD                = (1 << 2),
-   VK_MAILBOX_FLAG_HAS_PENDING_REQUEST = (1 << 3)
-};
-
 enum gfx_ctx_vulkan_data_flags
 {
    /* If set, prefer a path where we use
@@ -205,8 +203,27 @@ enum vk_texture_flags
 {
    VK_TEX_FLAG_DEFAULT_SMOOTH               = (1 << 0),
    VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT = (1 << 1),
-   VK_TEX_FLAG_MIPMAP                       = (1 << 2)
+   VK_TEX_FLAG_MIPMAP                       = (1 << 2),
+   /* Streamed texture in device-local host-visible memory: written by
+    * the CPU, never read by it. */
+   VK_TEX_FLAG_BAR_MAPPED                   = (1 << 3)
 };
+
+/* The settings a swapchain is made from.  The thread that draws can
+ * make one (a lost swapchain is remade on the next acquire), so it is
+ * made from this copy: seeded when the context is made, and taken
+ * from each frame after that, never read from the settings there. */
+typedef struct vulkan_swapchain_settings
+{
+   float    display_peak;        /* nits; 0 for the fixed metadata  */
+   unsigned hdr_mode;
+   unsigned bit_depth;           /* video_swapchain_bit_depth       */
+   unsigned max_images;
+   unsigned fse_negotiation;
+   bool     vsync;
+   bool     adaptive_vsync;
+   bool     windowed_fullscreen;
+} vulkan_swapchain_settings_t;
 
 typedef struct vulkan_context
 {
@@ -228,6 +245,12 @@ typedef struct vulkan_context
     * array above is rewritten by the thread that draws, while the main
     * thread is the one asking. */
    retro_atomic_int_t supports_adaptive_vsync;
+   /* Swapchains made and thrown away without a frame ever reaching the
+    * display: says the chosen GPU cannot present here, which no Vulkan
+    * query reports in advance. */
+   unsigned swapchain_never_presented;
+   /* The device in use, as the GPU list numbers it */
+   int gpu_index;
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
@@ -274,9 +297,9 @@ typedef struct vulkan_context
    uint32_t current_swapchain_index;
    uint32_t current_frame_index;
 
-   unsigned swapchain_width;
-   unsigned swapchain_height;
+   unsigned swapchain_dims;      /* VIDEO_SCALE_PACK */
    unsigned num_recycled_acquire_semaphores;
+   vulkan_swapchain_settings_t swapchain_settings;
    /* Present mode the current swapchain was created with; compared
     * against the mode a new swap_interval resolves to so a request
     * that would not change the swapchain does not recreate it. */
@@ -290,20 +313,38 @@ typedef struct vulkan_context
    bool present_pending;
 } vulkan_context_t;
 
+/* The acquire thread behind emulated mailbox, and the thread that
+ * presents. There is no lock between them: three words, each written
+ * by one side and taken by the other, and an eventcount each way.
+ *
+ *   request   the presenting thread wants an image; the acquire
+ *             thread takes it (exchange) and acquires
+ *   acquired  the acquire thread has an answer; result and index were
+ *             written before it was raised, and are not written again
+ *             until the presenting thread has lowered it and asked
+ *             again
+ *   dead      teardown
+ */
 struct vulkan_emulated_mailbox
 {
    sthread_t *thread;
-   slock_t *lock;
-   scond_t *cond;
    VkDevice device;              /* ptr alignment */
    VkSwapchainKHR swapchain;     /* ptr alignment */
    /* Every wait this object makes, from the display's rate; sampled at
     * init so the thread never reads video state. */
    int64_t timeout_us;
 
+   retro_eventcount_t work;      /* the acquire thread sleeps: request, dead */
+   retro_eventcount_t answered;  /* the presenting thread sleeps: acquired */
+   retro_atomic_int_t request;
+   retro_atomic_int_t acquired;
+   retro_atomic_int_t dead;
+
    unsigned index;
    VkResult result;              /* enum alignment */
-   uint8_t flags;
+   /* The presenting thread only: a request is out and its answer has
+    * not been taken yet. */
+   bool has_pending_request;
 };
 
 typedef struct gfx_ctx_vulkan_data
@@ -341,8 +382,7 @@ typedef struct gfx_ctx_vulkan_data
 
 struct vulkan_display_surface_info
 {
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK; 0 for the largest mode */
    unsigned monitor_index;
    unsigned refresh_rate_x1000;
 };
@@ -399,6 +439,16 @@ uint32_t vulkan_find_memory_type(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs);
 
+/* Allocates alloc->allocationSize for a buffer the CPU only writes and
+ * the GPU reads. alloc->memoryTypeIndex is the caller's host-visible
+ * choice; it is used as given unless the device maps all of its memory
+ * host-visible (resizable BAR, unified memory), where the device-local
+ * host-visible coherent type is tried first. */
+VkResult vulkan_allocate_cpu_write_memory(VkDevice device,
+      const VkPhysicalDeviceMemoryProperties *mem_props,
+      uint32_t type_bits, const VkMemoryAllocateInfo *alloc,
+      VkDeviceMemory *memory);
+
 uint32_t vulkan_find_memory_type_fallback(
       const VkPhysicalDeviceMemoryProperties *mem_props,
       uint32_t device_reqs, uint32_t host_reqs_first,
@@ -422,8 +472,7 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
       enum vulkan_wsi_type type,
       void *display, void *surface,
-      unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned dims, int8_t swap_interval);
 
 bool vulkan_surface_destroy(gfx_ctx_vulkan_data_t *vk);
 
@@ -451,9 +500,10 @@ unsigned vulkan_context_take_acquire_waits(struct vulkan_context *ctx,
       unsigned frame_index, VkSemaphore *sems,
       VkPipelineStageFlags *stages, VkPipelineStageFlags stage);
 
+/* dims is the size wanted, VIDEO_SCALE_PACK'd; used where the surface
+ * leaves the extent to the swapchain. */
 bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
-      unsigned width, unsigned height,
-      int8_t swap_interval);
+      unsigned dims, int8_t swap_interval);
 
 void vulkan_debug_mark_image(VkDevice device, VkImage image);
 void vulkan_debug_mark_memory(VkDevice device, VkDeviceMemory memory);

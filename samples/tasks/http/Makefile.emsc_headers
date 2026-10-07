@@ -7,10 +7,30 @@
 #   make -f Makefile.emsc_headers check SANITIZER=undefined
 
 TARGET  := http_emscripten_headers_test
-SOURCES := http_emscripten_headers_test.c
+# Links the real net_http.c: the response side is
+# net_http_headers_compact(), which the Emscripten backend calls.
+LIBRETRO_COMM_DIR := ../../../libretro-common
+SOURCES := http_emscripten_headers_test.c \
+	$(LIBRETRO_COMM_DIR)/net/net_http.c \
+	$(LIBRETRO_COMM_DIR)/net/net_compat.c \
+	$(LIBRETRO_COMM_DIR)/net/net_socket.c \
+	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
+	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
+	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
+	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
+	$(LIBRETRO_COMM_DIR)/time/rtime.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path.c \
+	$(LIBRETRO_COMM_DIR)/file/file_path_io.c \
+	$(LIBRETRO_COMM_DIR)/streams/file_stream.c \
+	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
+	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
 OBJS    := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -O0
+CFLAGS  += -Wall -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include -DHAVE_NETWORKING
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

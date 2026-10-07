@@ -39,7 +39,7 @@ void cdrom_macos_close(void *plugin, void *mmc, int fd);
 #endif
 
 /* TODO/FIXME - static global variable */
-static cdrom_toc_t vfs_cdrom_toc = {0};
+static cdrom_toc_t vfs_cdrom_toc;
 
 const cdrom_toc_t* retro_vfs_file_get_cdrom_toc(void)
 {

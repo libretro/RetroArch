@@ -22,15 +22,21 @@
 
 #include <boolean.h>
 #include <retro_miscellaneous.h>
-#include <retro_inline.h>
-#include <string/stdstring.h>
 
 #include <libretro.h>
 
 #include "../../config.def.h"
 
 #include "../input_driver.h"
+#include "../input_keymaps.h"
 #include "../../gfx/video_driver.h"
+
+#if defined(HW_RVL) && defined(GEKKO_NATIVE)
+#include <gekko/keyboard.h>
+#include <gekko/mouse.h>
+#define GX_KEYBOARD
+#define GX_USB_MOUSE
+#endif
 
 /* TODO/FIXME -
  * fix game focus toggle */
@@ -44,8 +50,8 @@ void gx_joypad_read_mouse(unsigned port,
 
 typedef struct
 {
-   int x_abs, y_abs;
-   int x_last, y_last;
+   uint32_t abs_pos;    /* VIDEO_POS_PACK */
+   uint32_t last_pos;   /* VIDEO_POS_PACK */
    uint32_t button;
 } gx_input_mouse_t;
 #endif
@@ -53,14 +59,142 @@ typedef struct
 typedef struct gx_input
 {
 #ifdef HW_RVL
-   gx_input_mouse_t *mouse;
-   int mouse_max;
+   /* One per port; the joypad driver says which point anywhere. */
+   gx_input_mouse_t mouse[DEFAULT_MAX_PADS];
 #else
    void *empty;
 #endif
+#ifdef GX_USB_MOUSE
+   gk_mouse_t usb_mouse;                     /* since the last poll */
+#endif
+#ifdef GX_KEYBOARD
+   uint8_t key_down[(RETROK_LAST + 7) / 8];  /* by RETROK_* */
+   uint8_t keys[6];                          /* USB keyboard usages */
+   uint8_t modifiers;
+   bool    caps_lock;
+#endif
 } gx_input_t;
 
+#ifdef GX_KEYBOARD
+/* US layout: usages 0x04 (a) to 0x38 (/), unshifted and shifted. */
+static const char kbd_chars[2][0x39 - 0x04 + 1] = {
+   "abcdefghijklmnopqrstuvwxyz1234567890\n\x1b\b\t -=[]\\#;'`,./",
+   "ABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()\n\x1b\b\t _+{}|~:\"~<>?"
+};
+
+static uint16_t kbd_mod(const gx_input_t *gx)
+{
+   uint16_t mod = 0;
+   if (gx->modifiers & (GK_KBD_LSHIFT | GK_KBD_RSHIFT))
+      mod |= RETROKMOD_SHIFT;
+   if (gx->modifiers & (GK_KBD_LCTRL | GK_KBD_RCTRL))
+      mod |= RETROKMOD_CTRL;
+   if (gx->modifiers & (GK_KBD_LALT | GK_KBD_RALT))
+      mod |= RETROKMOD_ALT;
+   if (gx->modifiers & (GK_KBD_LSUPER | GK_KBD_RSUPER))
+      mod |= RETROKMOD_META;
+   if (gx->caps_lock)
+      mod |= RETROKMOD_CAPSLOCK;
+   return mod;
+}
+
+static void kbd_key(gx_input_t *gx, uint8_t usage, bool down)
+{
+   uint32_t c    = 0;
+   unsigned code = input_keymaps_translate_keysym_to_rk(usage);
+   if (!code || code >= RETROK_LAST)
+      return;
+   if (down)
+      gx->key_down[code >> 3] |=  (uint8_t)(1 << (code & 7));
+   else
+      gx->key_down[code >> 3] &= ~(uint8_t)(1 << (code & 7));
+   if (down && code == RETROK_CAPSLOCK)
+      gx->caps_lock = !gx->caps_lock;
+   if (down && usage >= 0x04 && usage <= 0x38)
+   {
+      bool shift = (gx->modifiers & (GK_KBD_LSHIFT | GK_KBD_RSHIFT)) != 0;
+      /* Caps Lock shifts the letters only */
+      if (usage <= 0x1d && gx->caps_lock)
+         shift = !shift;
+      c = (uint8_t)kbd_chars[shift ? 1 : 0][usage - 0x04];
+   }
+   else if (down && usage == 0x4c)   /* Delete */
+      c = 0x7f;
+   input_keyboard_event(down, code, c, kbd_mod(gx), RETRO_DEVICE_KEYBOARD);
+}
+
+static bool kbd_pressed(const gx_input_t *gx, unsigned key)
+{
+   return key && key < RETROK_LAST
+      && (gx->key_down[key >> 3] & (1 << (key & 7)));
+}
+
+static bool kbd_held(const uint8_t *keys, uint8_t usage)
+{
+   unsigned i;
+   for (i = 0; i < 6; i++)
+      if (keys[i] == usage)
+         return true;
+   return false;
+}
+
+/* What changed between the keys and modifiers held before and now,
+ * as key events. */
+static void kbd_update(gx_input_t *gx, uint8_t modifiers,
+      const uint8_t *keys)
+{
+   unsigned i;
+   uint8_t changed = gx->modifiers ^ modifiers;
+   for (i = 0; i < 8; i++)
+      if (changed & (1 << i))
+      {
+         gx->modifiers ^= (uint8_t)(1 << i);
+         kbd_key(gx, (uint8_t)(0xe0 + i), (modifiers >> i) & 1);
+      }
+   for (i = 0; i < 6; i++)
+      if (gx->keys[i] && !kbd_held(keys, gx->keys[i]))
+         kbd_key(gx, gx->keys[i], false);
+   for (i = 0; i < 6; i++)
+      if (keys[i] && !kbd_held(gx->keys, keys[i]))
+         kbd_key(gx, keys[i], true);
+   memcpy(gx->keys, keys, sizeof(gx->keys));
+}
+
+static void kbd_poll(gx_input_t *gx)
+{
+   static const uint8_t none[6] = { 0 };
+   gk_kbd_event_t ev;
+   while (gk_kbd_read(&ev))
+   {
+      if (ev.type == GK_KBD_DISCONNECT)
+         kbd_update(gx, 0, none);
+      /* Too many keys at once reads as usage 1 everywhere */
+      else if (ev.type == GK_KBD_KEYS && ev.keys[0] != 0x01)
+         kbd_update(gx, ev.modifiers, ev.keys);
+   }
+}
+#endif
+
 #ifdef HW_RVL
+#ifdef GX_KEYBOARD
+/* The keys the frontend asks about, for a port's binds: which are
+ * down. The driver evaluated the binds itself; the frontend does that
+ * for every driver that hands it the keys. */
+static void rvl_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   const gx_input_t *gx = (const gx_input_t*)data;
+   (void)bind;
+   if (!gx || port >= DEFAULT_MAX_PADS)
+      return;
+   for (i = 0; i < count; i++)
+      if (kbd_pressed(gx, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+#endif
+
 static int16_t rvl_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -75,25 +209,68 @@ static int16_t rvl_input_state(
 {
    gx_input_t *gx             = (gx_input_t*)data;
 
-   if (port >= DEFAULT_MAX_PADS || !gx)
+   if (     port >= DEFAULT_MAX_PADS || !gx
+         || joypad_info->joy_idx >= DEFAULT_MAX_PADS)
       return 0;
 
    switch (device)
    {
+#ifdef GX_KEYBOARD
+      /* The RetroPad's buttons, where they are bound to keys, are the
+       * frontend's to answer: it asks rvl_input_keys_down() for the
+       * keys once a poll. */
       case RETRO_DEVICE_JOYPAD:
       case RETRO_DEVICE_ANALOG:
          break;
+      case RETRO_DEVICE_KEYBOARD:
+         return kbd_pressed(gx, id) ? 1 : 0;
+#else
+      case RETRO_DEVICE_JOYPAD:
+      case RETRO_DEVICE_ANALOG:
+         break;
+#endif
       case RETRO_DEVICE_MOUSE:
+#ifdef GX_USB_MOUSE
+         /* USB mice, all as one, are mouse 0 while there are any. */
+         if (     gx->usb_mouse.count
+               && input_config_get_mouse_index(port) == 0)
          {
-            settings_t *settings       = config_get_ptr();
+            const gk_mouse_t *m = &gx->usb_mouse;
+            switch (id)
+            {
+               case RETRO_DEVICE_ID_MOUSE_X:
+                  return (int16_t)m->dx;
+               case RETRO_DEVICE_ID_MOUSE_Y:
+                  return (int16_t)m->dy;
+               case RETRO_DEVICE_ID_MOUSE_LEFT:
+                  return (m->buttons & GK_MOUSE_LEFT) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_RIGHT:
+                  return (m->buttons & GK_MOUSE_RIGHT) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_MIDDLE:
+                  return (m->buttons & GK_MOUSE_MIDDLE) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_4:
+                  return (m->buttons & GK_MOUSE_4) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_BUTTON_5:
+                  return (m->buttons & GK_MOUSE_5) ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_WHEELUP:
+                  return m->wheel > 0 ? 1 : 0;
+               case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
+                  return m->wheel < 0 ? 1 : 0;
+               default:
+                  break;
+            }
+            break;
+         }
+#endif
+         {
             uint16_t joy_idx           = joypad_info->joy_idx;
-            unsigned input_mouse_scale = settings->uints.input_mouse_scale;
+            unsigned input_mouse_scale = input_config_get_mouse_scale();
             int x_scale                = input_mouse_scale;
             int y_scale                = input_mouse_scale;
-            int x                      = (gx->mouse[joy_idx].x_abs
-                  - gx->mouse[joy_idx].x_last) * x_scale;
-            int y                      = (gx->mouse[joy_idx].y_abs
-                  - gx->mouse[joy_idx].y_last) * y_scale;
+            int x                      = (VIDEO_POS_X(gx->mouse[joy_idx].abs_pos)
+                  - VIDEO_POS_X(gx->mouse[joy_idx].last_pos)) * x_scale;
+            int y                      = (VIDEO_POS_Y(gx->mouse[joy_idx].abs_pos)
+                  - VIDEO_POS_Y(gx->mouse[joy_idx].last_pos)) * y_scale;
 
             switch (id)
             {
@@ -116,12 +293,10 @@ static int16_t rvl_input_state(
          {
             struct video_viewport vp    = {0};
             uint16_t joy_idx            = joypad_info->joy_idx;
-            int16_t res_x               = 0;
-            int16_t res_y               = 0;
-            int16_t res_screen_x        = 0;
-            int16_t res_screen_y        = 0;
-            int16_t x                   = gx->mouse[joy_idx].x_abs;
-            int16_t y                   = gx->mouse[joy_idx].y_abs;
+            uint32_t res_pos               = 0;
+            uint32_t res_screen_pos        = 0;
+            int16_t x                   = VIDEO_POS_X(gx->mouse[joy_idx].abs_pos);
+            int16_t y                   = VIDEO_POS_Y(gx->mouse[joy_idx].abs_pos);
 
             /* Pre-patch had a video_driver_get_viewport_info(&vp)
              * call here, immediately followed by six lines that
@@ -129,15 +304,15 @@ static int16_t rvl_input_state(
              * zero-initialiser above. The call dispatched through
              * the video vtable on every lightgun query - delete it. */
 
-            if (video_driver_translate_coord_viewport_wrap(&vp, x, y,
-                        &res_x, &res_y, &res_screen_x, &res_screen_y))
+            if (input_driver_translate_coord_viewport_wrap(&vp, x, y,
+                        &res_pos, &res_screen_pos))
             {
                switch (id)
                {
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_X:
-                     return res_screen_x;
+                     return VIDEO_POS_X(res_screen_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_SCREEN_Y:
-                     return res_screen_y;
+                     return VIDEO_POS_Y(res_screen_pos);
                   case RETRO_DEVICE_ID_LIGHTGUN_TRIGGER:
                      return gx->mouse[joy_idx].button &
                         (1 << RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
@@ -172,129 +347,47 @@ static int16_t rvl_input_state(
 
 static void gx_input_free_input(void *data)
 {
-   gx_input_t *gx = (gx_input_t*)data;
-
-   if (!gx)
-      return;
-
-#ifdef HW_RVL
-   if (gx->mouse)
-      free(gx->mouse);
-#endif
-   free(gx);
+   free(data);
 }
 
 
 static void *gx_input_init(const char *joypad_driver)
 {
-   gx_input_t *gx = (gx_input_t*)calloc(1, sizeof(*gx));
-   if (!gx)
-      return NULL;
-
-#ifdef HW_RVL
-   /* Allocate at least 1 mouse at startup */
-   gx->mouse_max  = 1;
-   gx->mouse      = (gx_input_mouse_t*)calloc(
-         gx->mouse_max, sizeof(gx_input_mouse_t));
-   /* NULL-check: the RETRO_DEVICE_MOUSE input handler
-    * dereferences gx->mouse[joy_idx].x_abs etc. unconditionally.
-    * On OOM fail the whole driver init rather than leave the
-    * handler to NULL-deref on the first mouse event.  The free
-    * helper at line ~187 is NULL-safe so falling through to
-    * free(gx) would leak nothing - but free(gx) directly is
-    * minimal-diff. */
-   if (!gx->mouse)
-   {
-      free(gx);
-      return NULL;
-   }
+#ifdef GX_KEYBOARD
+   input_keymaps_init_keyboard_lut(rarch_key_map_hid);
 #endif
-
-   return gx;
+   return calloc(1, sizeof(gx_input_t));
 }
 
 #ifdef HW_RVL
-static INLINE int rvl_count_mouse(gx_input_t *gx)
-{
-   unsigned i;
-   int count = 0;
-
-   for (i = 0; i < DEFAULT_MAX_PADS; i++)
-   {
-      const char *joypad_name = joypad_driver_name(i);
-      if (joypad_name && *joypad_name)
-         if (string_is_equal(joypad_name, "Wiimote Controller"))
-            count++;
-   }
-
-   return count;
-}
-
 static void rvl_input_poll(void *data)
 {
+   unsigned i;
    gx_input_t *gx = (gx_input_t*)data;
-   if (gx && gx->mouse)
+   if (!gx)
+      return;
+   for (i = 0; i < DEFAULT_MAX_PADS; i++)
    {
-      int count = rvl_count_mouse(gx);
-
-      /* The outer `if (gx && gx->mouse)` already established gx != NULL. */
-      if (count > 0)
-      {
-         unsigned i;
-         if (count != gx->mouse_max)
-         {
-            gx_input_mouse_t *tmp = (gx_input_mouse_t*)realloc(
-                  gx->mouse, count * sizeof(gx_input_mouse_t));
-            if (!tmp)
-            {
-               /* Pre-patch bug: freed gx->mouse but left the
-                * dangling pointer and stale mouse_max in place.
-                * The subsequent 'for (i = 0; i < gx->mouse_max;
-                * i++)' loop would read/write through the freed
-                * pointer - UAF.  Clear both the pointer and the
-                * count so the outer gate 'if (gx && gx->mouse)'
-                * at line ~242 rejects subsequent calls, and the
-                * remaining loop in this call is skipped via the
-                * added 'mouse_max = 0'. */
-               free(gx->mouse);
-               gx->mouse     = NULL;
-               gx->mouse_max = 0;
-            }
-            else
-            {
-               int old_max   = gx->mouse_max;
-               gx->mouse     = tmp;
-               gx->mouse_max = count;
-
-               /* realloc-grow does NOT zero the new tail.
-                * Zero only the freshly-added entries so that the
-                * subsequent x_last = x_abs read does not pick up
-                * uninitialised heap data. Existing entries keep
-                * their last known position across hot-plug. */
-               if (count > old_max)
-                  memset(&gx->mouse[old_max], 0,
-                        (count - old_max) * sizeof(gx_input_mouse_t));
-            }
-         }
-
-         if (gx->mouse)
-         {
-            for (i = 0; i < (unsigned)gx->mouse_max; i++)
-            {
-               gx->mouse[i].x_last = gx->mouse[i].x_abs;
-               gx->mouse[i].y_last = gx->mouse[i].y_abs;
-               gx_joypad_read_mouse(i, &gx->mouse[i].x_abs,
-                     &gx->mouse[i].y_abs, &gx->mouse[i].button);
-            }
-         }
-      }
+      int x = 0, y = 0;
+      gx->mouse[i].last_pos = gx->mouse[i].abs_pos;
+      gx_joypad_read_mouse(i, &x, &y, &gx->mouse[i].button);
+      gx->mouse[i].abs_pos  = VIDEO_POS_PACK(x, y);
    }
+#ifdef GX_KEYBOARD
+   kbd_poll(gx);
+#endif
+#ifdef GX_USB_MOUSE
+   gk_mouse_read(&gx->usb_mouse);
+#endif
 }
 
 static uint64_t rvl_input_get_capabilities(void *data)
 {
    return   (1 << RETRO_DEVICE_JOYPAD)
           | (1 << RETRO_DEVICE_ANALOG)
+#ifdef GX_KEYBOARD
+          | (1 << RETRO_DEVICE_KEYBOARD)
+#endif
           | (1 << RETRO_DEVICE_MOUSE)
           | (1 << RETRO_DEVICE_LIGHTGUN);
 }
@@ -327,5 +420,11 @@ input_driver_t input_gx = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+#if defined(HW_RVL) && defined(GX_KEYBOARD)
+   rvl_input_keys_down
+#else
+   NULL                          /* keys_down */
+#endif
 };

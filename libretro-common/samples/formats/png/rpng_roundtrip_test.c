@@ -15,6 +15,10 @@
  *                                via the (unsigned)(-pitch) convention used
  *                                by task_screenshot's viewport fast path)
  *
+ *   - rpng_encode_begin/step    (every format, one row a step: the
+ *                                file must equal the one-go encode's
+ *                                byte for byte; and abandoned mid-way)
+ *
  * Exercised sizes: tiny (4x4), moderate non-power-of-two (37x29),
  * and screenshot-shaped (320x240). The last is big enough that a
  * streaming encoder would span multiple deflate output chunks.
@@ -38,7 +42,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include <file/nbio.h>
+#include <streams/file_stream.h>
 #include <libretro.h>
 #include <formats/rpng.h>
 #include <streams/interface_stream.h>
@@ -288,23 +292,17 @@ static bool load_argb(const char *path, uint32_t **data,
       unsigned *width, unsigned *height)
 {
    int retval;
-   size_t file_len       = 0;
+   int64_t file_len      = 0;
    bool ret              = true;
    rpng_t *rpng          = NULL;
    void *ptr             = NULL;
-   struct nbio_t *handle = (struct nbio_t*)nbio_open(path, NBIO_READ);
 
-   if (!handle)
+   if (!filestream_read_file(path, &ptr, &file_len) || !ptr)
       return false;
-
-   nbio_begin_read(handle);
-   while (!nbio_iterate(handle));
-   ptr = nbio_get_ptr(handle, &file_len);
-   if (!ptr)          { ret = false; goto done; }
 
    rpng = rpng_alloc();
    if (!rpng)         { ret = false; goto done; }
-   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr, file_len))
+   if (!rpng_set_buf_ptr(rpng, (uint8_t*)ptr, (size_t)file_len))
                       { ret = false; goto done; }
    if (!rpng_start(rpng))
                       { ret = false; goto done; }
@@ -315,15 +313,15 @@ static bool load_argb(const char *path, uint32_t **data,
    do
    {
       retval = rpng_process_image(rpng,
-            (void**)data, file_len, width, height, false);
+            (void**)data, (size_t)file_len, width, height, false);
    } while (retval == IMAGE_PROCESS_NEXT);
 
    if (retval == IMAGE_PROCESS_ERROR || retval == IMAGE_PROCESS_ERROR_END)
       ret = false;
 
 done:
-   if (handle) nbio_free(handle);
    if (rpng)   rpng_free(rpng);
+   free(ptr);
    if (!ret && *data) { free(*data); *data = NULL; }
    return ret;
 }
@@ -782,6 +780,160 @@ static const struct size_case large_fuzz[] = {
 };
 
 
+/* ---- stepped encode ---------------------------------------------- */
+
+static unsigned step_budget_calls;
+static bool step_one_row(void *userdata)
+{
+   (void)userdata;
+   step_budget_calls++;
+   return false;   /* refuse every ask: one row a step */
+}
+
+static uint8_t *read_whole(const char *path, size_t *len)
+{
+   FILE *f = fopen(path, "rb");
+   long n;
+   uint8_t *buf = NULL;
+   *len = 0;
+   if (!f)
+      return NULL;
+   if (fseek(f, 0, SEEK_END) == 0 && (n = ftell(f)) > 0
+         && fseek(f, 0, SEEK_SET) == 0
+         && (buf = (uint8_t*)malloc((size_t)n)))
+   {
+      if (fread(buf, 1, (size_t)n, f) == (size_t)n)
+         *len = (size_t)n;
+      else
+      {
+         free(buf);
+         buf = NULL;
+      }
+   }
+   fclose(f);
+   return buf;
+}
+
+/* Encodes src into path in one go (steps == 0) or one row a step,
+ * returning the step count through *steps. */
+static bool encode_to(const char *path, const uint8_t *base, unsigned w,
+      unsigned h, signed pitch, enum rpng_pixfmt fmt,
+      const struct rpng_hdr_metadata *hdr, bool stepped, unsigned *steps)
+{
+   int r = -1;
+   intfstream_t *intf_s = intfstream_open_file(path,
+         RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   if (!intf_s)
+      return false;
+   if (!stepped)
+      r = rpng_save_image_stream_fmt(base, intf_s, w, h, pitch, fmt, hdr) ? 1 : -1;
+   else
+   {
+      rpng_encoder_t *e = rpng_encode_begin(base, intf_s, w, h, pitch, fmt, hdr);
+      *steps = 0;
+      if (e)
+      {
+         while ((r = rpng_encode_step(e, step_one_row, NULL)) == 0)
+            (*steps)++;
+         (*steps)++;
+         rpng_encode_free(e);
+      }
+   }
+   intfstream_close(intf_s);
+   free(intf_s);
+   return r == 1;
+}
+
+/* The stepped encode writes exactly the file the one-go encode does,
+ * in one step per row; begun and abandoned, it frees what it took. */
+static void test_stepped_identical(const char *path, enum rpng_pixfmt fmt,
+      unsigned src_bpp, unsigned w, unsigned h, bool bottom_up, bool with_hdr)
+{
+   char path2[1024];
+   size_t stride = (size_t)w * src_bpp;
+   uint8_t *src  = (uint8_t*)malloc(stride * h + 1);
+   uint8_t *a = NULL, *b = NULL;
+   size_t alen = 0, blen = 0, i;
+   unsigned steps = 0;
+   const uint8_t *base;
+   signed pitch;
+   struct rpng_hdr_metadata hdr;
+   uint32_t seed = 0x9E3779B9u ^ (w * 131u + h * 7u + (unsigned)fmt);
+
+   snprintf(path2, sizeof(path2), "%s.stepped", path);
+   memset(&hdr, 0, sizeof(hdr));
+   hdr.colour_primaries      = 9;
+   hdr.transfer_function     = 16;
+   hdr.video_full_range_flag = 1;
+   hdr.max_cll               = 1000.0f;
+   hdr.max_fall              = 400.0f;
+   if (!src)
+   {
+      printf("[ERROR] stepped fmt %d %ux%u: OOM\n", (int)fmt, w, h);
+      failures++;
+      return;
+   }
+   /* Mostly smooth with noise, so every filter gets picked somewhere */
+   for (i = 0; i < stride * h; i++)
+   {
+      seed    = seed * 1664525u + 1013904223u;
+      src[i]  = (uint8_t)((i / src_bpp) % 251 + ((seed >> 28) & 3));
+   }
+   base  = bottom_up ? src + (size_t)(h - 1) * stride : src;
+   pitch = bottom_up ? -(signed)stride : (signed)stride;
+
+   step_budget_calls = 0;
+   if (   !encode_to(path,  base, w, h, pitch, fmt, with_hdr ? &hdr : NULL, false, NULL)
+       || !encode_to(path2, base, w, h, pitch, fmt, with_hdr ? &hdr : NULL, true, &steps))
+   {
+      printf("[ERROR] stepped fmt %d %ux%u: encode failed\n", (int)fmt, w, h);
+      failures++;
+      goto out;
+   }
+   a = read_whole(path,  &alen);
+   b = read_whole(path2, &blen);
+   if (!a || !b || alen != blen || memcmp(a, b, alen))
+   {
+      printf("[ERROR] stepped fmt %d %ux%u %s%s: %u bytes stepped, %u in one go, differ\n",
+            (int)fmt, w, h, bottom_up ? "bottom-up" : "top-down",
+            with_hdr ? " hdr" : "", (unsigned)blen, (unsigned)alen);
+      failures++;
+   }
+   else if (steps != (h ? h : 1))
+   {
+      printf("[ERROR] stepped fmt %d %ux%u: %u steps for %u rows\n",
+            (int)fmt, w, h, steps, h);
+      failures++;
+   }
+   else
+      printf("[SUCCESS] stepped fmt %d %ux%u %s%s: identical over %u steps\n",
+            (int)fmt, w, h, bottom_up ? "bottom-up" : "top-down",
+            with_hdr ? " hdr" : "", steps);
+
+   /* Abandoned after a few rows: freed, no file left half-open */
+   {
+      intfstream_t *intf_s = intfstream_open_file(path2,
+            RETRO_VFS_FILE_ACCESS_WRITE, RETRO_VFS_FILE_ACCESS_HINT_NONE);
+      if (intf_s)
+      {
+         rpng_encoder_t *e = rpng_encode_begin(base, intf_s, w, h, pitch, fmt, NULL);
+         unsigned k;
+         for (k = 0; e && k < 3; k++)
+            if (rpng_encode_step(e, step_one_row, NULL) != 0)
+               break;
+         rpng_encode_free(e);
+         intfstream_close(intf_s);
+         free(intf_s);
+      }
+   }
+
+out:
+   free(a);
+   free(b);
+   free(src);
+   remove(path2);
+}
+
 int main(int argc, char *argv[])
 {
    const char *path = "./rpng_roundtrip_tmp.png";
@@ -869,6 +1021,28 @@ int main(int argc, char *argv[])
          test_argb_roundtrip (path, w, h, PAT_PSEUDORANDOM);
          test_bgr24_roundtrip(path, w, h, PAT_PSEUDORANDOM, false);
          test_bgr24_roundtrip(path, w, h, PAT_PSEUDORANDOM, true);
+      }
+   }
+
+   /* The stepped encoder, every source format */
+   {
+      static const struct { enum rpng_pixfmt fmt; unsigned bpp; } fmts[] = {
+         { RPNG_PIXFMT_BGR24,    3 },
+         { RPNG_PIXFMT_ARGB32,   4 },
+         { RPNG_PIXFMT_RGBA32,   4 },
+         { RPNG_PIXFMT_XRGB8888, 4 },
+         { RPNG_PIXFMT_RGB565,   2 },
+         { RPNG_PIXFMT_RGB48,    6 },
+      };
+      size_t fi;
+      for (fi = 0; fi < sizeof(fmts) / sizeof(fmts[0]); fi++)
+      {
+         test_stepped_identical(path, fmts[fi].fmt, fmts[fi].bpp, 1, 1, false, false);
+         test_stepped_identical(path, fmts[fi].fmt, fmts[fi].bpp, 37, 29, true, false);
+         /* Several IDAT chunks, so chunk flushes fall between steps */
+         test_stepped_identical(path, fmts[fi].fmt, fmts[fi].bpp, 640, 480, true, false);
+         test_stepped_identical(path, fmts[fi].fmt, fmts[fi].bpp, 320, 240, false,
+               fmts[fi].fmt == RPNG_PIXFMT_RGB48);
       }
    }
 

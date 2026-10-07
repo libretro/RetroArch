@@ -154,6 +154,82 @@ static const struct softfilter_config softfilter_config = {
    config_userdata_free,
 };
 
+/* RARCH_SOFTFILTER_THREADS_AUTO: how many workers a filter gets when
+ * the user has not said.
+ *
+ * The old answer, one per logical CPU, is wrong twice over: the pool
+ * competes with the emulation, video, audio and task threads for the
+ * cores those need, and the light filters get slower as workers are
+ * added (EPX at 256x224 was ~26% slower on eight workers than one).
+ * A filter is on the frame's critical path - every worker has to
+ * finish before the frame can present - so fewer, unhindered workers
+ * beat many contended ones.
+ *
+ * Budget: physical cores the process may use, minus the reserved
+ * frame-critical threads, minus one for the GPU driver and the OS
+ * once there is room to spare, capped at RARCH_SOFTFILTER_AUTO_MAX
+ * and never below one. Then a per-filter ceiling by workload: the
+ * light filters run best alone, the medium ones stop gaining at four,
+ * only the heavy ones (NTSC, NTSC/CRT, 2xBR) use the whole budget. A
+ * plugin this table does not know counts as heavy. */
+static unsigned softfilter_auto_reserved = 1;
+
+void rarch_softfilter_set_auto_reserved(unsigned reserved_cores)
+{
+   softfilter_auto_reserved = reserved_cores;
+}
+
+static unsigned softfilter_workload_cap(const char *short_ident)
+{
+   /* Measured on the repository benchmark: 4 vs 8 workers. */
+   static const char *light[]  = { "epx", "lq2x", "crop_borders", "darken", NULL };
+   static const char *medium[] = { "2xsai", "super2xsai", "supereagle", "phosphor2x", NULL };
+   unsigned i;
+   if (short_ident)
+   {
+      for (i = 0; light[i]; i++)
+         if (string_is_equal(short_ident, light[i]))
+            return 1;
+      for (i = 0; medium[i]; i++)
+         if (string_is_equal(short_ident, medium[i]))
+            return 4;
+   }
+   return RARCH_SOFTFILTER_AUTO_MAX;
+}
+
+unsigned rarch_softfilter_auto_budget(unsigned cores, unsigned reserved,
+      const char *short_ident)
+{
+   unsigned cap = softfilter_workload_cap(short_ident);
+   unsigned budget;
+   if (cores <= reserved)
+      return 1;
+   budget = cores - reserved;
+   /* Headroom for the GPU driver and the OS, once there is any. */
+   if (budget > 2)
+      budget--;
+   if (budget > RARCH_SOFTFILTER_AUTO_MAX)
+      budget = RARCH_SOFTFILTER_AUTO_MAX;
+   if (budget > cap)
+      budget = cap;
+   return budget < 1 ? 1 : budget;
+}
+
+unsigned rarch_softfilter_auto_threads(const char *short_ident)
+{
+   unsigned cores = 0;
+   unsigned fast  = 0, slow = 0;
+
+#ifdef HAVE_THREADS
+   if (sthread_get_core_topology(&fast, &slow))
+      cores = fast + slow;
+#endif
+   if (!cores)
+      cores = cpu_features_get_core_amount_physical();
+   return rarch_softfilter_auto_budget(cores, softfilter_auto_reserved,
+         short_ident);
+}
+
 static bool create_softfilter_graph(rarch_softfilter_t *filt,
       enum retro_pixel_format in_pixel_format,
       unsigned max_dims,
@@ -231,8 +307,8 @@ static bool create_softfilter_graph(rarch_softfilter_t *filt,
          &softfilter_config, input_fmt, input_fmt,
          VIDEO_SCALE_W(max_dims), VIDEO_SCALE_H(max_dims),
          threads != RARCH_SOFTFILTER_THREADS_AUTO ? threads :
-         cpu_features_get_core_amount(), cpu_features,
-         &userdata);
+         rarch_softfilter_auto_threads(filt->impl->short_ident),
+         cpu_features, &userdata);
    if (!filt->impl_data)
    {
       RARCH_ERR("[SoftFilter] Failed to create softfilter state.\n");

@@ -48,9 +48,7 @@
 #include <retro_atomic.h>
 #include <compat/strl.h>
 
-#ifdef HAVE_DBUS
 #include "dbus_common.h"
-#endif
 
 #include "../../frontend/frontend_driver.h"
 #include "../../input/input_driver.h"
@@ -58,6 +56,10 @@
 #include "../../input/common/input_x11_common.h"
 #include "../../configuration.h"
 #include "../../verbosity.h"
+
+#ifdef HAVE_MENU
+#include "../../menu/menu_driver.h"
+#endif
 
 #define _NET_WM_STATE_ADD                    1
 #define MOVERESIZE_GRAVITY_CENTER            5
@@ -97,6 +99,26 @@ static Atom XA_NET_WM_STATE;
 static Atom XA_NET_WM_STATE_FULLSCREEN;
 static Atom XA_NET_MOVERESIZE_WINDOW;
 static Atom g_x11_quit_atom;
+#ifdef HAVE_MENU
+enum x11_dnd_atom
+{
+   X11_DND_AWARE = 0,
+   X11_DND_ENTER,
+   X11_DND_POSITION,
+   X11_DND_STATUS,
+   X11_DND_LEAVE,
+   X11_DND_DROP,
+   X11_DND_FINISHED,
+   X11_DND_SELECTION,
+   X11_DND_TYPE_LIST,
+   X11_DND_ACTION_COPY,
+   X11_DND_URI_LIST,
+   X11_DND_ATOM_LAST
+};
+static Atom   g_x11_dnd_atoms[X11_DND_ATOM_LAST];
+static Window g_x11_dnd_source              = None;
+static bool   g_x11_dnd_accept              = false;
+#endif
 static XIM g_x11_xim;
 static XIC g_x11_xic;
 
@@ -251,12 +273,9 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
      * file-scope g_x11_dpy here stays at its initial NULL --
      * it's only assigned in the xvideo / GL / X11-direct init
      * paths.  libX11's XQueryExtension() then SEGVs at a tiny
-     * offset off the NULL display pointer.  Most desktop builds
-     * never hit this because HAVE_DBUS is on and
-     * dbus_suspend_screensaver() short-circuits before this
-     * line; surfaced by the ASan+UBSan CI workflow's headless
-     * SDL2 smoke (b9777c8 + d967813), where dbus-1 isn't
-     * apt-installed but libXss is. */
+     * offset off the NULL display pointer.  Surfaced by the
+     * ASan+UBSan CI workflow's headless SDL2 smoke (b9777c8 +
+     * d967813), where dbus-1 isn't apt-installed but libXss is. */
     if (!dpy)
        return false;
     if (       !XScreenSaverQueryExtension(dpy, &dummy, &dummy)
@@ -272,6 +291,72 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable)
 static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
 #endif
 
+enum xdg_screensaver_de
+{
+   XDG_SCREENSAVER_DE_OTHER = 0,
+   XDG_SCREENSAVER_DE_KDE,
+   XDG_SCREENSAVER_DE_GNOME
+};
+
+/* The desktop xdg-screensaver will pick, read from the environment the
+ * way it reads it: the first XDG_CURRENT_DESKTOP entry it knows, then
+ * the classic session variables. Anything it would settle by asking a
+ * session bus, or an override, reads as OTHER. */
+static enum xdg_screensaver_de xdg_screensaver_desktop(void)
+{
+   static const struct
+   {
+      const char *name;
+      enum xdg_screensaver_de de;
+   } known[] =
+   {
+      { "KDE",           XDG_SCREENSAVER_DE_KDE   },
+      { "GNOME",         XDG_SCREENSAVER_DE_GNOME },
+      { "Cinnamon",      XDG_SCREENSAVER_DE_OTHER },
+      { "X-Cinnamon",    XDG_SCREENSAVER_DE_OTHER },
+      { "ENLIGHTENMENT", XDG_SCREENSAVER_DE_OTHER },
+      { "DEEPIN",        XDG_SCREENSAVER_DE_OTHER },
+      { "Deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "deepin",        XDG_SCREENSAVER_DE_OTHER },
+      { "DDE",           XDG_SCREENSAVER_DE_OTHER },
+      { "LXDE",          XDG_SCREENSAVER_DE_OTHER },
+      { "LXQt",          XDG_SCREENSAVER_DE_OTHER },
+      { "MATE",          XDG_SCREENSAVER_DE_OTHER },
+      { "XFCE",          XDG_SCREENSAVER_DE_OTHER },
+      { "Budgie",        XDG_SCREENSAVER_DE_OTHER },
+      { "X-Generic",     XDG_SCREENSAVER_DE_OTHER }
+   };
+   const char *env;
+   const char *cur;
+
+   if (     ((env = getenv("XDG_UTILS_OVERRIDE_DE")) && *env)
+         || ((env = getenv("XDG_UTILS_SCREENSAVER_OVERRIDE_DE")) && *env)
+         || access("/run/.toolboxenv", F_OK) == 0)
+      return XDG_SCREENSAVER_DE_OTHER;
+
+   if ((cur = getenv("XDG_CURRENT_DESKTOP")))
+   {
+      while (*cur)
+      {
+         size_t i;
+         size_t _len = strcspn(cur, ":");
+         for (i = 0; i < sizeof(known) / sizeof(known[0]); i++)
+            if (     strlen(known[i].name) == _len
+                  && !strncmp(cur, known[i].name, _len))
+               return known[i].de;
+         cur += _len;
+         if (*cur == ':')
+            cur++;
+      }
+   }
+
+   if ((env = getenv("KDE_FULL_SESSION")) && *env)
+      return XDG_SCREENSAVER_DE_KDE;
+   if ((env = getenv("GNOME_DESKTOP_SESSION_ID")) && *env)
+      return XDG_SCREENSAVER_DE_GNOME;
+   return XDG_SCREENSAVER_DE_OTHER;
+}
+
 /* Probe once for xdg-screensaver and its xset backend dependency.
  * xdg-screensaver's "X11" backend shells out to xset; if xset is missing
  * (common on minimal installs / containers / some WMs without
@@ -280,15 +365,45 @@ static bool xss_screensaver_inhibit(Display *dpy, bool enable) { return false; }
  * Check up front so we can silently no-op instead. */
 static bool xdg_screensaver_probe(void)
 {
+   const char *env;
+   int ret;
    /* Both are needed: xdg-screensaver itself, and xset which it execs.
     * `command -v` is a POSIX shell builtin so this works under /bin/sh
     * on every platform that has system(). Redirecting both streams
     * keeps the probe silent. */
-   int ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
+   ret = system("command -v xdg-screensaver >/dev/null 2>&1 && "
                 "command -v xset >/dev/null 2>&1");
    if (ret == -1 || WEXITSTATUS(ret) != 0)
    {
       RARCH_LOG("[X11] xdg-screensaver or xset not available; screensaver suspension disabled.\n");
+      return false;
+   }
+
+   /* On KDE 4 and later and on GNOME 3, "suspend" hands the inhibit to
+    * a Perl helper that talks D-Bus through Net::DBus and X11::Protocol.
+    * It runs detached, so a missing module fails it on stderr while
+    * xdg-screensaver itself still exits 0. */
+   switch (xdg_screensaver_desktop())
+   {
+      case XDG_SCREENSAVER_DE_KDE:
+         if (!(env = getenv("KDE_SESSION_VERSION")) || !*env)
+            return true;
+         ret = system("perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      case XDG_SCREENSAVER_DE_GNOME:
+         /* GNOME 2 is told apart by this tool and has its own backend. */
+         ret = system("command -v gnome-default-applications-properties "
+                      ">/dev/null 2>&1 || "
+                      "perl -MNet::DBus -MX11::Protocol -e 1 "
+                      ">/dev/null 2>&1");
+         break;
+      default:
+         return true;
+   }
+   if (ret == -1 || WEXITSTATUS(ret) != 0)
+   {
+      RARCH_LOG("[X11] xdg-screensaver needs Perl's Net::DBus and X11::Protocol on this desktop; screensaver suspension disabled.\n");
       return false;
    }
    return true;
@@ -360,33 +475,58 @@ static void xdg_screensaver_inhibit(Window wnd)
    }
 }
 
+/* xdg-screensaver, the last resort: its suspend lasts as long as the
+ * window, so it is only started when nothing else holds the
+ * screensaver. */
+static void x11_xdg_screensaver_fallback(Window wnd)
+{
+   static bool probed = false;
+   if (!xdg_screensaver_available)
+      return;
+   if (!probed)
+   {
+      xdg_screensaver_available = xdg_screensaver_probe();
+      probed = true;
+   }
+   if (xdg_screensaver_available)
+      xdg_screensaver_inhibit(wnd);
+}
+
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+/* Set while the D-Bus worker has not yet said whether it inhibited the
+ * screensaver and nothing else holds it; x11_check_window() then starts
+ * the xdg-screensaver fallback once D-Bus is known to have failed. */
+static bool g_x11_xdg_deferred = false;
+#endif
+
 bool x11_suspend_screensaver(void *data, bool enable)
 {
    Window wnd;
+   bool dbus_asked = false;
    if (video_driver_display_type_get() != RARCH_DISPLAY_X11)
       return false;
    wnd = video_driver_window_get();
-#ifdef HAVE_DBUS
-    if (dbus_suspend_screensaver(enable))
-       return true;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   /* D-Bus answers on its own worker; XScreenSaver is a request on this
+    * thread's display, so it is asked alongside rather than after. */
+   dbus_asked         = dbus_suspend_screensaver(enable);
+   g_x11_xdg_deferred = false;
 #endif
-    if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
-    {
-       if (xdg_screensaver_available)
-       {
-          static bool probed = false;
-          if (!probed)
-          {
-             xdg_screensaver_available = xdg_screensaver_probe();
-             probed = true;
-          }
-          if (!xdg_screensaver_available)
-             return true;
-          xdg_screensaver_inhibit(wnd);
-          return xdg_screensaver_available;
-       }
-    }
-    return true;
+   if (!xss_screensaver_inhibit(g_x11_dpy, enable) && enable)
+   {
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+      if (dbus_asked)
+      {
+         if (dbus_screensaver_state() == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(wnd);
+         else if (dbus_screensaver_state() == DBUS_SCREENSAVER_PENDING)
+            g_x11_xdg_deferred = true;
+         return true;
+      }
+#endif
+      x11_xdg_screensaver_fallback(wnd);
+   }
+   return true;
 }
 
 #ifdef HAVE_XF86VM
@@ -686,6 +826,115 @@ static void x11_handle_key_event(unsigned keycode, XEvent *event,
             chars[i], mod, RETRO_DEVICE_KEYBOARD);
 }
 
+#ifdef HAVE_MENU
+static void x11_dnd_send(Atom type, long l1, long l2, long l4)
+{
+   XEvent xev                 = {0};
+   xev.xclient.type           = ClientMessage;
+   xev.xclient.display        = g_x11_dpy;
+   xev.xclient.window         = g_x11_dnd_source;
+   xev.xclient.message_type   = type;
+   xev.xclient.format         = 32;
+   xev.xclient.data.l[0]      = (long)g_x11_win;
+   xev.xclient.data.l[1]      = l1;
+   xev.xclient.data.l[2]      = l2;
+   xev.xclient.data.l[4]      = l4;
+   XSendEvent(g_x11_dpy, g_x11_dnd_source, False, NoEventMask, &xev);
+}
+
+static bool x11_dnd_offers_uri_list(const XClientMessageEvent *m)
+{
+   int i;
+   Atom uri_list = g_x11_dnd_atoms[X11_DND_URI_LIST];
+
+   /* More than three types: the rest are on the source's type list. */
+   if (m->data.l[1] & 1)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+      bool found          = false;
+
+      if (     XGetWindowProperty(g_x11_dpy, (Window)m->data.l[0],
+                  g_x11_dnd_atoms[X11_DND_TYPE_LIST], 0, 1024, False,
+                  XA_ATOM, &type, &format, &n, &after, &data) == Success
+            && data)
+      {
+         unsigned long j;
+         for (j = 0; j < n && !found; j++)
+            found = ((Atom*)data)[j] == uri_list;
+      }
+      if (data)
+         XFree(data);
+      return found;
+   }
+
+   for (i = 2; i < 5; i++)
+      if ((Atom)m->data.l[i] == uri_list)
+         return true;
+   return false;
+}
+
+static void x11_dnd_client_message(const XClientMessageEvent *m)
+{
+   const Atom *a = g_x11_dnd_atoms;
+
+   if (m->message_type == a[X11_DND_ENTER])
+   {
+      g_x11_dnd_source = (Window)m->data.l[0];
+      g_x11_dnd_accept = x11_dnd_offers_uri_list(m);
+   }
+   else if ((Window)m->data.l[0] != g_x11_dnd_source)
+      return;
+   else if (m->message_type == a[X11_DND_POSITION])
+      x11_dnd_send(a[X11_DND_STATUS], g_x11_dnd_accept ? 1 : 0, 0,
+            g_x11_dnd_accept ? (long)a[X11_DND_ACTION_COPY] : None);
+   else if (m->message_type == a[X11_DND_LEAVE])
+      g_x11_dnd_source = None;
+   else if (m->message_type == a[X11_DND_DROP])
+   {
+      if (g_x11_dnd_accept)
+         XConvertSelection(g_x11_dpy, a[X11_DND_SELECTION],
+               a[X11_DND_URI_LIST], a[X11_DND_SELECTION], g_x11_win,
+               (Time)m->data.l[2]);
+      else
+      {
+         x11_dnd_send(a[X11_DND_FINISHED], 0, None, 0);
+         g_x11_dnd_source = None;
+      }
+   }
+}
+
+static void x11_dnd_selection(const XSelectionEvent *s)
+{
+   bool dropped = false;
+
+   if (s->property != None)
+   {
+      Atom type;
+      int format;
+      unsigned long n, after;
+      unsigned char *data = NULL;
+
+      /* Xlib terminates format 8 data with an extra NUL. */
+      if (     XGetWindowProperty(g_x11_dpy, g_x11_win, s->property,
+                  0, 65536, True, AnyPropertyType,
+                  &type, &format, &n, &after, &data) == Success
+            && data
+            && format == 8)
+         dropped = menu_driver_drop_uri_list((char*)data);
+      if (data)
+         XFree(data);
+   }
+
+   if (g_x11_dnd_source != None)
+      x11_dnd_send(g_x11_dnd_atoms[X11_DND_FINISHED], dropped ? 1 : 0,
+            dropped ? (long)g_x11_dnd_atoms[X11_DND_ACTION_COPY] : None, 0);
+   g_x11_dnd_source = None;
+}
+#endif
+
 bool x11_alive(void *data)
 {
 #ifdef HAVE_XRANDR
@@ -732,7 +981,20 @@ bool x11_alive(void *data)
             if (        event.xclient.window    == g_x11_win &&
                   (Atom)event.xclient.data.l[0] == g_x11_quit_atom)
                frontend_driver_set_signal_handler_state(1);
+#ifdef HAVE_MENU
+            else if (event.xclient.window == g_x11_win)
+               x11_dnd_client_message(&event.xclient);
+#endif
             break;
+
+#ifdef HAVE_MENU
+         case SelectionNotify:
+            if (     event.xselection.requestor == g_x11_win
+                  && event.xselection.selection
+                     == g_x11_dnd_atoms[X11_DND_SELECTION])
+               x11_dnd_selection(&event.xselection);
+            break;
+#endif
 
          case DestroyNotify:
             if (event.xdestroywindow.window == g_x11_win)
@@ -843,6 +1105,18 @@ void x11_check_window(void *data, bool *quit,
    bool *resize, unsigned *dims)
 {
    unsigned new_dims  = *dims;
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   if (g_x11_xdg_deferred)
+   {
+      enum dbus_screensaver_state st = dbus_screensaver_state();
+      if (st != DBUS_SCREENSAVER_PENDING)
+      {
+         g_x11_xdg_deferred = false;
+         if (st == DBUS_SCREENSAVER_FAILED)
+            x11_xdg_screensaver_fallback(video_driver_window_get());
+      }
+   }
+#endif
    x11_get_video_size(data, &new_dims);
 
    if (new_dims != *dims)
@@ -919,7 +1193,7 @@ bool x11_connect(void)
       if (!(g_x11_dpy = XOpenDisplay(NULL)))
          return false;
 
-#ifdef HAVE_DBUS
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
    dbus_ensure_connection();
 #endif
 
@@ -1001,9 +1275,9 @@ void x11_window_destroy(bool fullscreen)
    retro_atomic_store_relaxed_int(&g_x11_size, 0);
    retro_atomic_store_relaxed_int(&g_x11_focused, 0);
 
-#ifdef HAVE_DBUS
-    dbus_screensaver_uninhibit();
-    dbus_close_connection();
+#ifdef RARCH_HAVE_DBUS_SCREENSAVER
+   g_x11_xdg_deferred = false;
+   dbus_close_connection();
 #endif
 }
 
@@ -1022,6 +1296,21 @@ void x11_install_quit_atom(void)
          "WM_DELETE_WINDOW", False);
    if (g_x11_quit_atom)
       XSetWMProtocols(g_x11_dpy, g_x11_win, &g_x11_quit_atom, 1);
+#ifdef HAVE_MENU
+   {
+      static char *names[X11_DND_ATOM_LAST] = {
+         "XdndAware", "XdndEnter", "XdndPosition", "XdndStatus",
+         "XdndLeave", "XdndDrop", "XdndFinished", "XdndSelection",
+         "XdndTypeList", "XdndActionCopy", "text/uri-list" };
+      Atom version = 5;
+      g_x11_dnd_source = None;
+      if (XInternAtoms(g_x11_dpy, names, X11_DND_ATOM_LAST, False,
+               g_x11_dnd_atoms))
+         XChangeProperty(g_x11_dpy, g_x11_win,
+               g_x11_dnd_atoms[X11_DND_AWARE], XA_ATOM, 32,
+               PropModeReplace, (unsigned char*)&version, 1);
+   }
+#endif
 }
 
 static Bool x11_wait_notify(Display *d, XEvent *e, char *arg)

@@ -60,6 +60,8 @@ typedef struct
 {
    int channel;
    int status;
+   int count;    /* bytes in the device queue */
+   int free;     /* bytes the device queue has room for */
 } snd_pcm_channel_status_t;
 
 /* the mock's own controls, for the harness */

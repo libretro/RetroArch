@@ -28,7 +28,10 @@ void steam_init(void)
    MistResult result = mist_subprocess_init();
 
    if (MIST_IS_SUCCESS(result))
+   {
       mist_initialized = true;
+      runloop_frame_work_set(RUNLOOP_WORK_PRESENCE, true);
+   }
    else
       RARCH_ERR("[Steam] Failed to initialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }
@@ -520,7 +523,12 @@ void steam_deinit(void)
       steam_core_dlc_list_free(mist_dlc_list);
 
    if (MIST_IS_SUCCESS(result))
+   {
       mist_initialized = false;
+#ifndef HAVE_DISCORD
+      runloop_frame_work_set(RUNLOOP_WORK_PRESENCE, false);
+#endif
+   }
    else
       RARCH_ERR("[Steam] Failed to deinitialize mist subprocess (%d-%d).\n", MIST_UNPACK_RESULT(result));
 }

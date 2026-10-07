@@ -21,13 +21,26 @@ concurrency:
 
 jobs:
   autoconf-tests:
-    name: Build and run the autoconfig regression suite
+    name: Build and run the autoconfig regression suite (${{ matrix.lane }})
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: ${{ matrix.sanitizer == '' && 15 || 40 }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # The suite fails on any sanitizer report in any run, so the
+        # sanitized lanes hold the whole frontend it drives - runloop,
+        # task queue, autodetect - to the same bar as the assertions.
+        include:
+          - lane: plain
+            sanitizer: ''
+          - lane: ASan + UBSan
+            sanitizer: address,undefined
+          - lane: TSan
+            sanitizer: thread
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential zlib1g-dev libfreetype6-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -40,12 +53,47 @@ jobs:
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
           done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+          done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
             $pkgs
 
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ccache-${{ github.workflow }}-${{ github.job }}-${{ strategy.job-index }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ github.workflow }}-${{ github.job }}-${{ strategy.job-index }}-
+
+      - name: Enable ccache
+        run: |
+          set -eu
+          command -v ccache >/dev/null 2>&1 || sudo apt-get install -y -qq ccache
+          export CCACHE_DIR="$HOME/.ccache"
+          echo "CCACHE_DIR=$CCACHE_DIR" >> "$GITHUB_ENV"
+          echo "/usr/lib/ccache" >> "$GITHUB_PATH"
+          ccache -M 500M
+          ccache -z
 
       - name: Configure (headless, test drivers)
         run: |
@@ -59,11 +107,22 @@ jobs:
           grep -q '^HAVE_TEST_DRIVERS = 1' config.mk
 
       - name: Build
-        run: make -j"$(nproc)"
+        run: |
+          if [ -n "${{ matrix.sanitizer }}" ]; then
+            make -j"$(nproc)" SANITIZER=${{ matrix.sanitizer }} DEBUG=1
+          else
+            make -j"$(nproc)"
+          fi
 
       - name: Run autoconfig regression suite
         shell: bash
         run: |
           set -eu
           test -x ./retroarch
-          ./tests-other/test_autoconf.sh ./retroarch
+          if [ "${{ matrix.sanitizer }}" = thread ]; then
+            # TSan cannot map its shadow under the runner's ASLR
+            # entropy; setarch -R carries to every child the suite runs.
+            setarch "$(uname -m)" -R ./tests-other/test_autoconf.sh ./retroarch
+          else
+            ./tests-other/test_autoconf.sh ./retroarch
+          fi

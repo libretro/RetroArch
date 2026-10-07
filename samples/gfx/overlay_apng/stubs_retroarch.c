@@ -28,11 +28,12 @@ bool video_driver_texture_unload(uintptr_t *id)
 
 bool video_driver_texture_can_update(void) { return true; }
 
-bool video_driver_texture_update(uintptr_t id, void *data)
+enum video_texture_update video_driver_texture_update(uintptr_t id,
+      void *data)
 {
    (void)data;
    stub_updates++;
-   return id != 0;
+   return id ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
 }
 
 uint32_t video_driver_get_disp_flags(void) { return 0; }
@@ -52,4 +53,17 @@ bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
 enum texture_filter_type gfx_display_texture_filter(void)
 {
    return TEXTURE_FILTER_LINEAR;
+}
+
+/* No driver lends upload memory here: every slot stays the surface's. */
+void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
+{
+   (void)id; (void)slot; (void)pitch;
+   return NULL;
+}
+
+bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
+{
+   (void)id; (void)slot;
+   return true;
 }

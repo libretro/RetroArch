@@ -2,15 +2,13 @@
  * hides: input/input_overlay_alpha.c, built from the tree, and the
  * shipping led/drivers/led_overlay.c in front of it.
  *
- * ledN_map names a slot of whatever page is loaded. Applied to every
- * pack, a config made for an LED overlay blanked the controls at those
- * slots of a gamepad pack - the d-pad arms at slots 1-3 of neo-retropad
- * and of the flat Dreamcast pack, showing only while pressed. Now:
+ * ledN_map names a slot of whatever page is loaded:
  *
  *   1. the LED driver only reports the core's LEDs, as they come;
- *   2. a map entry reaches only the image of a "nul" desc - a control is
- *      never an LED - and an entry off the end of the page, as the
- *      config can say, is never handed to the video driver;
+ *   2. a map entry reaches the image at its slot whatever that desc
+ *      does when pressed - an LED pack may put its lights on keys or
+ *      buttons - and an entry off the end of the page, as the config
+ *      can say, is never handed to the video driver;
  *   3. a pack that names its LED images (_led) is not mapped at all:
  *      those images, and only those, show their LED's state;
  *   4. with the overlay LED driver off (no map), nothing is hidden.
@@ -112,9 +110,9 @@ static struct overlay      page;
 static input_overlay_t     pack;
 static unsigned            led_map[MAX_LEDS];
 
-/* A page of IMAGES descs, desc i showing image i: "nul" where @nul has
- * bit i, a control otherwise; @leds[i] the _led of desc i. */
-static void build(unsigned nul, const uint8_t *leds)
+/* A page of IMAGES descs, desc i showing image i; @leds[i] the _led of
+ * desc i. */
+static void build(const uint8_t *leds)
 {
    unsigned i;
 
@@ -127,8 +125,6 @@ static void build(unsigned nul, const uint8_t *leds)
       descs[i].image_index  = i;
       descs[i].image.width  = 16;
       descs[i].image.height = 16;
-      if (nul & (1u << i))
-         descs[i].flags |= OVERLAY_DESC_DISPLAY_ONLY;
       if (leds && leds[i])
       {
          descs[i].led = leds[i];
@@ -173,35 +169,36 @@ static bool hidden(unsigned image, uint32_t lit, const unsigned *map)
    return input_overlay_image_hidden(&pack, image, lit, map);
 }
 
-static void test_map_reaches_nul_images_only(void)
+static void test_map_reaches_its_slots(void)
 {
    printf("ledN_map on a pack that names no LEDs\n");
 
-   /* Images 0-3 are the controls of a gamepad pack; 4 is a "nul" LED. */
-   build(1u << 4, NULL);
+   /* Slots 1-4 are mapped, slot 0 is not. */
+   build(NULL);
    led_map[0] = 1;
    led_map[1] = 2;
    led_map[2] = 3;
    led_map[3] = 4;
 
-   check(!hidden(1, 0, led_map) && !hidden(2, 0, led_map)
-         && !hidden(3, 0, led_map),
-         "the controls at mapped slots 1-3 are not hidden");
-   check(hidden(4, 0, led_map), "the nul image at a mapped slot is hidden "
-         "while its LED is off");
-   check(!hidden(4, 1u << 3, led_map), "and shown while it is lit");
+   check(!hidden(0, 0, led_map), "an unmapped slot is not hidden");
+   check(hidden(1, 0, led_map) && hidden(2, 0, led_map)
+         && hidden(3, 0, led_map) && hidden(4, 0, led_map),
+         "every mapped slot is hidden while its LED is off");
+   check(!hidden(4, 1u << 3, led_map) && hidden(1, 1u << 3, led_map),
+         "and shown while its own LED is lit");
 
-   input_overlay_hide_leds(&pack, 0, led_map);
-   check(alpha[1] == 1.0f && alpha[2] == 1.0f && alpha[3] == 1.0f,
-         "hide_leds leaves the controls alone");
-   check(alpha[4] == 0.0f, "hide_leds hides the nul image");
+   input_overlay_hide_leds(&pack, 1u << 1, led_map);
+   check(alpha[0] == 1.0f && alpha[2] == 1.0f,
+         "hide_leds leaves the unmapped and the lit slots alone");
+   check(alpha[1] == 0.0f && alpha[3] == 0.0f && alpha[4] == 0.0f,
+         "hide_leds hides the unlit mapped slots");
 }
 
 static void test_map_off_the_page(void)
 {
    printf("ledN_map entries the page does not have\n");
 
-   build(0x1f, NULL);
+   build(NULL);
    led_map[0] = IMAGES;
    led_map[1] = 500;
    led_map[2] = (unsigned)-1;
@@ -218,13 +215,13 @@ static void test_named_leds(void)
 
    printf("a pack that names its LED images\n");
 
-   /* Image 1 is a control that shows LED 1; image 2 is a nul button
-    * ledN_map points at, which a pack naming its LEDs does not use. */
-   build(1u << 2, leds);
+   /* Image 1 shows LED 1; image 2 is a slot ledN_map points at, which
+    * a pack naming its LEDs does not use. */
+   build(leds);
    led_map[1] = 2;
 
    check(hidden(1, 0, led_map), "a desc's image is hidden while its LED "
-         "is off, control or not");
+         "is off");
    check(!hidden(1, 1u << 0, led_map), "and shown while it is lit");
    check(!hidden(2, 0, led_map), "ledN_map is not applied");
    check(hidden(4, 0, led_map) && !hidden(4, 1u << 31, led_map),
@@ -241,7 +238,7 @@ static void test_driver_off(void)
 
    printf("the overlay LED driver not in use\n");
 
-   build(0x1f, leds);
+   build(leds);
    check(!hidden(1, 0, NULL), "nothing is hidden without a map");
    input_overlay_hide_leds(&pack, 0, NULL);
    check(alpha[1] == 1.0f, "hide_leds does nothing without a map");
@@ -253,7 +250,7 @@ static void test_alpha_cache(void)
 
    printf("the alpha pass sets what changed\n");
 
-   build(0, NULL);
+   build(NULL);
    with_cache();
    descs[2].alpha_mod = 2.0f;
 
@@ -282,8 +279,8 @@ static void test_alpha_cache_leds(void)
 {
    printf("the alpha pass and the LED driver\n");
 
-   /* Image 4 is a nul LED image at led1_map's slot. */
-   build(1u << 4, NULL);
+   /* Image 4 is the LED image at led1_map's slot. */
+   build(NULL);
    with_cache();
    led_map[0] = 4;
 
@@ -302,7 +299,7 @@ static void test_alpha_no_cache(void)
 {
    printf("the alpha pass without its cache block\n");
 
-   build(0, NULL);
+   build(NULL);
    check(pass(0.7f, false, 0, NULL) == IMAGES
          && pass(0.7f, false, 0, NULL) == IMAGES,
          "every image is set every pass");
@@ -315,7 +312,7 @@ static void test_alpha_no_cache(void)
 int main(void)
 {
    test_led_driver();
-   test_map_reaches_nul_images_only();
+   test_map_reaches_its_slots();
    test_map_off_the_page();
    test_named_leds();
    test_driver_off();

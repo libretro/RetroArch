@@ -79,24 +79,15 @@ static bool network_rgb32                = false;
 static unsigned *network_video_temp_buf  = NULL;
 
 static void gfx_ctx_network_input_driver(
-      const char *joypad_driver,
-      input_driver_t **input, void **input_data)
+      const char *joypad_driver)
 {
-#ifdef HAVE_UDEV
-   *input_data = input_driver_init_wrap(&input_udev, joypad_driver);
-
-   if (*input_data)
-   {
-      *input = &input_udev;
-      return;
-   }
-#endif
-   *input      = NULL;
-   *input_data = NULL;
+   (void)joypad_driver;
+   /* no input driver of this driver's own: there is no window system
+    * here, and the frontend starts the one that goes with that */
+   input_driver_video_window(INPUT_WINDOW_KMS, NULL);
 }
 
-static void *network_gfx_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *network_gfx_init(const video_info_t *video)
 {
    int fd;
    struct addrinfo *addr = NULL, *next_addr = NULL;
@@ -105,8 +96,6 @@ static void *network_gfx_init(const video_info_t *video,
    network_video_t *network             = (network_video_t*)calloc(1, sizeof(*network));
    const char *joypad_driver            = settings->arrays.input_joypad_driver;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    network_rgb32                        = video->rgb32;
    network_video_bits                   = video->rgb32 ? 32 : 16;
@@ -116,8 +105,7 @@ static void *network_gfx_init(const video_info_t *video,
    else
       network_video_pitch = VIDEO_SCALE_W(video->dims) * 2;
 
-   gfx_ctx_network_input_driver(joypad_driver,
-         input, input_data);
+   gfx_ctx_network_input_driver(joypad_driver);
 
 
    strlcpy(network->address, xstr(NETWORK_VIDEO_HOST), sizeof(network->address));
@@ -175,9 +163,11 @@ try_connect:
 }
 
 static bool network_gfx_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    const void *frame_to_copy = frame;
    unsigned width            = 0;
    unsigned height           = 0;

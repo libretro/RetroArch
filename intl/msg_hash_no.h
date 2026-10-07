@@ -308,6 +308,7 @@ static const struct
    char s_0d5e69d1[28];
    char s_54e5819b[23];
    char s_009a10e3[8];
+   char s_0bd714f7[5];
    char s_0bebb490[11];
    char s_7c68a1ee[20];
    char s_f8b9e275[13];
@@ -403,7 +404,6 @@ static const struct
 #ifdef HAVE_MIST
    char s_53788998[23];
 #endif
-   char s_f228c6c5[12];
    char s_11926382[18];
    char s_645ae416[20];
    char s_dcbf8b04[19];
@@ -1028,7 +1028,6 @@ static const struct
 #ifdef HAVE_MIST
    char s_40e907c6[55];
 #endif
-   char s_01efec73[40];
    char s_d3fc9970[46];
    char s_740bd7c4[48];
    char s_c5a76d72[48];
@@ -1587,6 +1586,7 @@ static const struct
    "Deaktiver Informasjonsknapp",
    "Deaktiver s\303\270keknappen",
    "Inndata",
+   "Alle",
    "Tastatur%s",
    "Maks antall brukere",
    "Lukk innhold",
@@ -1682,7 +1682,6 @@ static const struct
 #ifdef HAVE_MIST
    "Vis 'Behandle kjerner'",
 #endif
-   "Vis 'Hjelp'",
    "Vis 'informasjon'",
    "Vis \"\303\205pne innhold\"",
    "Vis '\303\205pne Kjerne'",
@@ -2324,7 +2323,6 @@ static const struct
 #ifdef HAVE_MIST
    "Vis 'Administrere kjerner' alternativet i hovedmenyen.",
 #endif
-   "Vis alternativet 'Hjelp' i hovedmenyen.",
    "Vis alternativet 'Informasjon' i hovedmenyen.",
    "Vis alternativet '\303\205pne innhold' i hovedmenyen.",
    "Vis alternativet '\303\245pne kjernen' i hovedmenyen.",
@@ -2625,7 +2623,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29362u
+      (sizeof(msg_hash_no_blob) == (29315u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3063,6 +3061,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_INFO_BUTTON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DISABLE_SEARCH_BUTTON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DRIVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_CLOSE_CONTENT_KEY,
@@ -3158,7 +3157,6 @@ static const uint32_t msg_hash_no_ids[] =
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CORE,
@@ -3783,7 +3781,6 @@ static const uint32_t msg_hash_no_ids[] =
 #ifdef HAVE_MIST
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_CORE_MANAGER_STEAM,
 #endif
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CORE,

@@ -38,6 +38,20 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Check no input driver's table outgrows the structure
+        shell: bash
+        run: |
+          set -eu
+          # The step below compiles the drivers Linux can. The UWP,
+          # Cocoa and console input drivers are not among them, and a
+          # table with one entry more than struct input_driver has
+          # members is only a warning to gcc anyway - and C2078, a
+          # failed build, to MSVC. That reached master for the UWP
+          # driver. This counts the entries of every input driver's
+          # table in the source, whatever SDK the driver needs.
+          python3 tools/input_driver_table_check.py --selftest
+          python3 tools/input_driver_table_check.py
+
       - name: Compile each driver against its interface
         shell: bash
         run: |

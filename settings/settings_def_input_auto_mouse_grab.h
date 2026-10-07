@@ -15,3 +15,10 @@ S_BOOL(input_joypad_background, INPUT_JOYPAD_BACKGROUND,
       DEFAULT_INPUT_JOYPAD_BACKGROUND, SD_FLAG_NONE, 0, 0,
       "Background Controller Input",
       "Accept controller input while RetroArch is not the active window. When disabled, controllers are ignored while unfocused: the menu, hotkeys and running content do not react to them.")
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+S_BOOL(input_keyboard_background, INPUT_KEYBOARD_BACKGROUND,
+      "input_keyboard_background",
+      false, SD_FLAG_NONE, 0, 0,
+      "Background Keyboard Input",
+      "With the 'raw' input driver, let running content read the keyboard while RetroArch is not the active window. Hotkeys and the menu still need the window to be active. Content has to keep running: 'Pause Content When Not Active' off.")
+#endif

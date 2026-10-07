@@ -58,6 +58,7 @@ char stub_last_scan_dir[PATH_MAX_LENGTH];
 settings_t *config_get_ptr(void) { return &test_settings; }
 runloop_state_t *runloop_state_get_ptr(void) { return &test_runloop; }
 input_driver_state_t *input_state_get_ptr(void) { return &test_input; }
+bool input_driver_mouse_grabbed(void) { return (test_input.flags & INP_FLAG_GRAB_MOUSE_STATE) != 0; }
 video_driver_state_t *video_state_get_ptr(void) { return &test_video; }
 struct menu_state *menu_state_get_ptr(void) { return &test_menu; }
 bool menu_driver_ctl(enum rarch_menu_ctl_state state, void *data) { (void)state; (void)data; return true; }
@@ -208,10 +209,9 @@ bool task_push_load_content_with_current_core_from_companion_ui(
 
 bool task_push_start_current_core(content_ctx_info_t *ci) { (void)ci; stub_calls_start_core++; return true; }
 
-bool task_push_dbscan(const char *playlist_dir, const char *content_db,
-      const char *path, bool directory, bool show_hidden, retro_task_callback_t cb)
+bool task_push_dbscan(const char *path, retro_task_callback_t cb)
 {
-   (void)playlist_dir; (void)content_db; (void)directory; (void)show_hidden; (void)cb;
+   (void)cb;
    stub_calls_dbscan++;
    strlcpy(stub_last_scan_dir, path ? path : "", sizeof(stub_last_scan_dir));
    return true;

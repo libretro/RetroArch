@@ -29,6 +29,10 @@ retro_atomic_size_t mock_silent;
 retro_atomic_size_t mock_breaks;
 static uint32_t   expect;
 static int        primed;
+/* The window the device is playing: the one the last output call
+ * queued, still being read by the DMA. The next call plays it out
+ * before it queues its own. */
+static const uint32_t *playing;
 
 void mock_device_reset(void)
 {
@@ -37,21 +41,34 @@ void mock_device_reset(void)
    retro_atomic_size_init(&mock_breaks, 0);
    expect       = 0;
    primed       = 0;
+   playing      = 0;
 }
 
-/* A window of MOCK_GRAIN frames, read the way the hardware would. */
-static void mock_consume(const void *buf)
+/* One window's worth of playback: the DMA reads the frames as the
+ * period passes, in slices, so a writer that lands in the window
+ * after the call that queued it returned is caught the way the
+ * hardware catches it - part of the window played from before the
+ * write, part from after. */
+#define MOCK_SLICES 4u
+
+static void mock_play(const uint32_t *w)
 {
-   const uint32_t *w = (const uint32_t*)buf;
-   unsigned i;
+   unsigned i, slice;
    uint64_t acc = 0;
    int silent   = 1;
+   int primed_here = primed;
+   uint32_t exp = expect;
 
-   for (i = 0; i < MOCK_GRAIN; i++)
+   for (slice = 0; slice < MOCK_SLICES; slice++)
    {
-      acc += w[i];
-      if (w[i])
-         silent = 0;
+      usleep(MOCK_PERIOD_US / MOCK_SLICES);
+      for (i = slice * (MOCK_GRAIN / MOCK_SLICES);
+            i < (slice + 1) * (MOCK_GRAIN / MOCK_SLICES); i++)
+      {
+         acc += w[i];
+         if (w[i])
+            silent = 0;
+      }
    }
    sink += acc;
 
@@ -59,29 +76,40 @@ static void mock_consume(const void *buf)
       retro_atomic_fetch_add_size(&mock_silent, 1);
    else
    {
-      /* The first window seen sets the baseline: psp1 hands over the
-       * window after read_pos, so its first period is not frame 0. */
-      if (!primed)
+      /* The first window seen sets the baseline. */
+      if (!primed_here)
       {
-         expect = w[0];
+         exp = w[0];
          primed = 1;
       }
       for (i = 0; i < MOCK_GRAIN; i++)
       {
-         if (w[i] != expect)
+         if (w[i] != exp)
          {
             if (MOCK_READ(mock_breaks) < 4)
                fprintf(stderr,
                      "      break at frame %u of the window: got %u, "
-                     "expected %u\n", i, (unsigned)w[i], (unsigned)expect);
+                     "expected %u\n", i, (unsigned)w[i], (unsigned)exp);
             retro_atomic_fetch_add_size(&mock_breaks, 1);
-            expect = w[i];
+            exp = w[i];
          }
-         expect++;
+         exp++;
       }
+      expect = exp;
    }
    retro_atomic_fetch_add_size(&mock_periods, 1);
-   usleep(MOCK_PERIOD_US);
+}
+
+/* The output call as the SDKs document it: blocks until the window
+ * queued by the previous call has been output, then queues this one
+ * and returns with it still to be read. sceAudioOutOutput(port, NULL)
+ * is the documented way to wait for that last window, which is why a
+ * normal call cannot have. */
+static void mock_consume(const void *buf)
+{
+   if (playing)
+      mock_play(playing);
+   playing = (const uint32_t*)buf;
 }
 
 /* PSP1 */

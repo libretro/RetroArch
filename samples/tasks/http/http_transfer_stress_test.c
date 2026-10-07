@@ -73,13 +73,11 @@
  *    no leak -- which is what makes this worth running under
  *    ASan/LSan/UBSan.
  *
- * 5. Concurrency.  net_http.c keeps a process-global DNS cache and
- *    connection pool.  The concurrent test drives several transfers at
- *    once so TSan can see the shared-state accesses, including the
- *    lazy `if (!dns_cache_lock) dns_cache_lock = slock_new();` in
- *    net_http_new_socket() -- an unsynchronised first-use
- *    initialisation of the very lock that is supposed to serialise
- *    that cache.
+ * 5. Concurrency.  net_http.c keeps a DNS cache and connection pool
+ *    owned by the thread driving transfers, with resolver threads
+ *    publishing into the cache.  The concurrent test interleaves
+ *    several transfers on one thread, as the task queue does, so TSan
+ *    can watch the resolvers' publish against the owner's reads.
  *
  * DETERMINISM
  *
@@ -467,6 +465,39 @@ struct xfer_result
 /* Drive one transfer the way task_http_transfer_handler() does: build
  * the connection, then call net_http_update() once per tick until it
  * reports done. */
+/* A stand-in for the frontend's shared I/O window
+ * (tasks/task_nbio_slice.c): @g_window_items work items per update,
+ * 0 for plain net_http_update() */
+static int  g_window_items;
+static int  g_window_left;
+static long g_max_recv_per_update;
+
+static bool window_within_budget(void *budget, size_t avail, size_t len)
+{
+   (void)budget; (void)avail; (void)len;
+   if (g_window_left <= 0)
+      return false;
+   g_window_left--;
+   return true;
+}
+
+static bool window_update(struct http_t *h, size_t *pos, size_t *tot)
+{
+   long before = g_recv_calls;
+   bool done;
+   if (!g_window_items)
+      done = net_http_update(h, pos, tot);
+   else
+   {
+      g_window_left = g_window_items;
+      done = net_http_update_budget(h, pos, tot,
+            window_within_budget, NULL);
+   }
+   if (g_recv_calls - before > g_max_recv_per_update)
+      g_max_recv_per_update = g_recv_calls - before;
+   return done;
+}
+
 static int run_transfer_sink(int port, struct xfer_result *out,
       unsigned tick_us, net_http_sink_t sink, void *sink_data)
 {
@@ -504,7 +535,7 @@ static int run_transfer_sink(int port, struct xfer_result *out,
     * for connect, then sending the request -- none of which is
     * throughput.  Only the calls from the first body byte onward
     * measure how many task-queue ticks the payload costs. */
-   while (!net_http_update(h, &pos, &tot))
+   while (!window_update(h, &pos, &tot))
    {
       out->updates++;
       if (pos > 0)
@@ -551,6 +582,83 @@ static const char *frame_name(enum framing f)
 
 /* Body must reconstruct byte-for-byte under every framing, at every
  * chunk size, torn or not. */
+
+/* net_http_update_budget(): the caller's window decides how many reads
+ * a call makes.  A window granting one item per update must get
+ * exactly one read per update, however much the socket holds; an
+ * unbounded window must still clamp each read to the byte budget
+ * (256 KiB) and drain in fewer updates.  The body arrives intact
+ * either way. */
+static void test_window(void)
+{
+   size_t body = 2 * 1024 * 1024;
+   int    pass;
+   long   updates[2] = { 0, 0 };
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      struct srv_spec sp;
+      pthread_t th;
+      struct xfer_result r;
+
+      memset(&sp, 0, sizeof(sp));
+      sp.body  = body;
+      sp.frame = FRAME_LEN;
+
+      g_window_items        = pass == 0 ? 1 : 100000;
+      g_max_recv_per_update = 0;
+
+      printf("  window of %d item(s) per update, body=%lu\n",
+            g_window_items, (unsigned long)body);
+
+      if (!srv_start(&sp, &th))
+      {
+         printf("    SKIP: server start failed\n");
+         g_window_items = 0;
+         return;
+      }
+
+      record_reset(body);
+      if (!run_transfer(sp.port, &r, 1000))
+      {
+         printf("    SKIP: client setup failed\n");
+         record_stop();
+         pthread_join(th, NULL);
+         close(sp.listen_fd);
+         g_window_items = 0;
+         return;
+      }
+      record_stop();
+
+      printf("    %ld body updates, at most %ld read(s) in one update, "
+            "largest read window %lu\n", r.body_updates,
+            g_max_recv_per_update, (unsigned long)g_max_window);
+      updates[pass] = r.body_updates;
+
+      CHECK(r.len == body, "short body: got %lu of %lu",
+            (unsigned long)r.len, (unsigned long)body);
+      if (r.data && r.len == body)
+         CHECK(memcmp(r.data, g_pattern, body) == 0, "body content mismatch");
+      if (pass == 0)
+         CHECK(g_max_recv_per_update == 1,
+               "a one-item window made %ld reads in one update",
+               g_max_recv_per_update);
+      else
+         CHECK(g_max_window <= 256 * 1024,
+               "a read of %lu bytes outgrew the per-item clamp",
+               (unsigned long)g_max_window);
+
+      free(r.data);
+      pthread_join(th, NULL);
+      close(sp.listen_fd);
+   }
+   g_window_items = 0;
+
+   CHECK(updates[1] < updates[0],
+         "an unbounded window took %ld updates, the one-item window %ld",
+         updates[1], updates[0]);
+}
+
 static void test_framing(enum framing f, size_t body, size_t chunk,
       size_t dribble)
 {
@@ -756,61 +864,73 @@ static void test_malformed_head(const char *label, const char *head)
    close(sp.listen_fd);
 }
 
-/* Several transfers in flight at once, so TSan can watch the
- * process-global DNS cache and connection pool -- including the
- * unsynchronised lazy creation of the locks meant to protect them. */
+/* Several transfers in flight at once, interleaved on one thread the
+ * way the task queue runs them: each tick advances every unfinished
+ * one.  The DNS cache and pool are the driving thread's (see the
+ * threading model in net_http.c), so this is the concurrency there is;
+ * the resolver threads run alongside, and TSan watches their publish. */
 #define CONCURRENT_N 6
-
-struct conc_arg
-{
-   int    port;
-   size_t body;
-   int    ok;
-};
-
-static void *conc_thread(void *a)
-{
-   struct conc_arg *ca = (struct conc_arg*)a;
-   struct xfer_result r;
-   if (run_transfer(ca->port, &r, 0))
-   {
-      ca->ok = (r.len == ca->body
-            && r.data
-            && memcmp(r.data, g_pattern, ca->body) == 0);
-      free(r.data);
-   }
-   return NULL;
-}
 
 static void test_concurrent(void)
 {
    struct srv_spec  sp[CONCURRENT_N];
    pthread_t        srv[CONCURRENT_N];
-   pthread_t        cli[CONCURRENT_N];
-   struct conc_arg  ca[CONCURRENT_N];
+   struct http_t   *h[CONCURRENT_N];
+   int              done[CONCURRENT_N];
    size_t body = 256 * 1024;
-   int i, started = 0;
+   long ticks  = 0;
+   int i, started = 0, left;
 
    printf("  %d concurrent transfers\n", CONCURRENT_N);
 
    for (i = 0; i < CONCURRENT_N; i++)
    {
+      char url[128];
+      struct http_connection_t *conn;
       memset(&sp[i], 0, sizeof(sp[i]));
       sp[i].body  = body;
       sp[i].frame = FRAME_LEN;
       if (!srv_start(&sp[i], &srv[i]))
          break;
-      ca[i].port = sp[i].port;
-      ca[i].body = body;
-      ca[i].ok   = 0;
-      if (pthread_create(&cli[i], NULL, conc_thread, &ca[i]) != 0)
-         break;
+      snprintf(url, sizeof(url), "http://127.0.0.1:%d/payload", sp[i].port);
+      h[i]    = NULL;
+      done[i] = 0;
+      if ((conn = net_http_connection_new(url, "GET", NULL)))
+      {
+         net_http_connection_iterate(conn);
+         if (net_http_connection_done(conn))
+            h[i] = net_http_new(conn);
+         net_http_connection_free(conn);
+      }
       started++;
+      if (!h[i])
+         break;
+   }
+
+   for (left = started; left > 0 && ticks < 40000000L; ticks++)
+   {
+      for (i = 0; i < started; i++)
+      {
+         if (done[i] || !h[i])
+            continue;
+         if (net_http_update(h[i], NULL, NULL))
+         {
+            done[i] = 1;
+            left--;
+         }
+      }
    }
 
    for (i = 0; i < started; i++)
    {
-      pthread_join(cli[i], NULL);
+      size_t len = 0;
+      char  *data = h[i] ? (char*)net_http_data(h[i], &len, false) : NULL;
+      CHECK(done[i] && data && len == body
+            && memcmp(data, g_pattern, body) == 0,
+            "concurrent transfer %d did not reconstruct", i);
+      free(data);
+      if (h[i])
+         net_http_delete(h[i]);
       pthread_join(srv[i], NULL);
       close(sp[i].listen_fd);
    }
@@ -818,8 +938,6 @@ static void test_concurrent(void)
    CHECK(started == CONCURRENT_N,
          "only started %d of %d concurrent transfers", started,
          CONCURRENT_N);
-   for (i = 0; i < started; i++)
-      CHECK(ca[i].ok, "concurrent transfer %d did not reconstruct", i);
 }
 
 
@@ -1286,8 +1404,10 @@ static void t_wait_on_a_silent_peer_times_out(void)
    /* Drop any pooled connections first. An earlier test's server can
     * have left one for a loopback port the kernel then hands back to
     * the listener below, and reusing a dead connection would end this
-    * transfer before it ever had to wait. */
+    * transfer before it ever had to wait. net_http_init() recreates
+    * the DNS eventcount the deinit freed. */
    net_http_deinit();
+   net_http_init();
 
    if (!srv_start_with(&sp, &th, silent_server_thread))
    {
@@ -1389,6 +1509,9 @@ int main(void)
    test_framing(FRAME_EOF,     32 * 1024, 0,   3);
    test_framing(FRAME_CHUNKED, 32 * 1024, 1,   1);
    test_framing(FRAME_CHUNKED, 32 * 1024, 511, 5);
+
+   printf("\n[window]\n");
+   test_window();
 
    printf("\n[threaded wait]\n");
    t_wait_without_a_socket_does_not_block();

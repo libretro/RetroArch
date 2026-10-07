@@ -91,6 +91,21 @@ static void counting_owner_free(void *owner)
    owner_frees++;
 }
 
+/* A sound is built - a WAV converted and resampled whole - with the
+ * state lock free, so the audio thread mixes on meanwhile. The load
+ * stubs call this; a try-lock that fails means this thread holds it. */
+extern void (*stub_load_hook)(void);
+static unsigned loads_seen       = 0;
+static unsigned loads_under_lock = 0;
+static void lock_free_during_load(void)
+{
+   loads_seen++;
+   if (slock_try_lock(audio_driver_st.state_lock))
+      slock_unlock(audio_driver_st.state_lock);
+   else
+      loads_under_lock++;
+}
+
 static void fill_params(audio_mixer_stream_params_t *p, unsigned slot)
 {
    memset(p, 0, sizeof(*p));
@@ -144,11 +159,21 @@ int main(void)
    AUDIO_FLAGS_SET(&audio_driver_st, AUDIO_FLAG_MIXER_INITED);
 
    /* 1. The menu-sound load itself: an empty manual slot. This is the
-    *    call that deadlocked. */
+    *    call that deadlocked. The sound is built with the lock free. */
    STAGE(1);
    fill_params(&params, slot);
+   stub_load_hook = lock_free_during_load;
    CHECK(audio_driver_mixer_add_stream(&params),
          "add_stream into an empty manual slot failed");
+   fill_params(&params, slot);
+   params.type = AUDIO_MIXER_TYPE_WAV;
+   CHECK(audio_driver_mixer_add_stream(&params),
+         "add_stream of a WAV into a manual slot failed");
+   stub_load_hook = NULL;
+   CHECK(loads_seen == 2, "%u sounds built, want 2", loads_seen);
+   CHECK(loads_under_lock == 0,
+         "%u of %u sounds built with the state lock held",
+         loads_under_lock, loads_seen);
 
    /* 2. The same slot again, now occupied: add_stream must free the
     *    resident stream before taking the slot, which is the path

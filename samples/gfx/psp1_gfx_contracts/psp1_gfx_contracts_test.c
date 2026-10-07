@@ -53,14 +53,15 @@ static void *driver_init(void)
    vinfo.vsync = true;
    vinfo.rgb32 = false;
    vinfo.smooth = false;
-   return video_psp1.init(&vinfo, NULL, NULL);
+   return video_psp1.init(&vinfo);
 }
 
 static void driver_frame(void *psp, const void *frame, unsigned w,
       unsigned h, unsigned pitch, const char *msg)
 {
    memset(&finfo, 0, sizeof(finfo));
-   video_psp1.frame(psp, frame, w, h, 0, pitch, msg, &finfo);
+   video_psp1.frame(psp, frame, VIDEO_SCALE_PACK(w, h), 0, pitch, msg,
+         &finfo);
 }
 
 static const video_poke_interface_t *poke(void *psp)

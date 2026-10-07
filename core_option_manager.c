@@ -1151,7 +1151,8 @@ core_option_manager_t *core_option_manager_new(
    /* Create categories array */
    if (cats_size > 0)
    {
-      if (!(opt->cats = (struct core_category*)calloc(_len, sizeof(*opt->cats))))
+      if (!(opt->cats = (struct core_category*)calloc(cats_size,
+                  sizeof(*opt->cats))))
          goto error;
 
       opt->cats_size = cats_size;

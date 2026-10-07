@@ -2468,8 +2468,7 @@ void MainWindow::onFileBrowserTreeContextMenuRequested(const QPoint&)
    if (!(action = QMenu::exec(actions, QCursor::pos(), NULL, m_dirTree)))
       return;
 
-   companion_core_request_scan(ui_companion_qt_core(), fullpath, true,
-         config_get_ptr()->bools.show_hidden_files);
+   companion_core_request_scan(ui_companion_qt_core(), fullpath);
 #endif
 }
 
@@ -2485,8 +2484,7 @@ void MainWindow::onScanDirectoryClicked()
 
    dirArray = QDir::toNativeSeparators(dir).toUtf8();
    companion_core_request_scan(ui_companion_qt_core(),
-         dirArray.constData(), true,
-         config_get_ptr()->bools.show_hidden_files);
+         dirArray.constData());
 }
 
 void MainWindow::onQuitRetroArchClicked()

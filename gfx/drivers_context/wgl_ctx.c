@@ -135,14 +135,6 @@ WINGDIAPI BOOL WINAPI wglSwapBuffers(HDC);
 #endif
 #endif
 
-/* Forward declarations */
-LRESULT CALLBACK wnd_proc_wgl_common(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_dinput(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK wnd_proc_wgl_winraw(HWND hwnd, UINT message,
-      WPARAM wparam, LPARAM lparam);
-
 static BOOL (APIENTRY *p_swap_interval)(int);
 
 enum wgl_flags
@@ -160,7 +152,6 @@ static uint8_t wgl_flags;
 #ifdef HAVE_EGL
 static egl_ctx_data_t win32_egl;
 #endif
-static void             *dinput_wgl       = NULL;
 static unsigned         win32_major       = 0;
 static unsigned         win32_minor       = 0;
 static int              win32_interval    = 0;
@@ -547,8 +538,7 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    }
 }
 
-static bool gfx_ctx_wgl_set_resize(void *data,
-      unsigned width, unsigned height) { return false; }
+static bool gfx_ctx_wgl_set_resize(void *data, unsigned dims) { return false; }
 
 static void gfx_ctx_wgl_destroy(void *data)
 {
@@ -603,7 +593,13 @@ static void gfx_ctx_wgl_destroy(void *data)
    }
 
 #ifndef __WINRT__
-   if (window)
+   /* Left up for the next OpenGL driver, where it can be: it is taken
+    * back if the pixel format it has is still the one wanted
+    * (win32_window_keep()). Desktop OpenGL only; an EGL window goes
+    * as it did. */
+   if (     window
+         && !(   win32_api == GFX_CTX_OPENGL_API
+              && win32_window_keep()))
    {
       win32_monitor_from_window();
       win32_destroy_window();
@@ -663,15 +659,10 @@ static void *gfx_ctx_wgl_init(void *video_driver)
    win32_monitor_init();
 
 
-   wndclass.lpfnWndProc    = wnd_proc_wgl_common;
-#ifdef HAVE_DINPUT
-   if (string_is_equal(settings->arrays.input_driver, "dinput"))
-	   wndclass.lpfnWndProc = wnd_proc_wgl_dinput;
-#endif
-#ifdef HAVE_WINRAWINPUT
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-	   wndclass.lpfnWndProc = wnd_proc_wgl_winraw;
-#endif
+   /* one window procedure for every video and input driver; the
+    * family says what creating the window sets up */
+   wndclass.lpfnWndProc = win32_window_proc;
+   win32_window_proc_setup(WIN32_WINDOW_WGL);
 
    if (!win32_window_init(&wndclass, true, NULL))
    {
@@ -695,6 +686,17 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
+#ifndef __WINRT__
+   /* With a window already up this is a fullscreen toggle on it: the
+    * window is restyled where it stands, and the driver sees the new
+    * size through check_window, as for any resize. The context, and
+    * everything made in it, stays. Where that is refused - exclusive
+    * fullscreen - this goes on as it always has. */
+   if (     win32_get_window()
+         && win32_window_set_fullscreen(dims, fullscreen))
+      return true;
+#endif
+
    if (!win32_set_video_mode(NULL, dims, fullscreen))
    {
       RARCH_ERR("[WGL] win32_set_video_mode failed.\n");
@@ -711,53 +713,11 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
 }
 
 static void gfx_ctx_wgl_input_driver(void *data,
-      const char *joypad_name,
-      input_driver_t **input, void **input_data)
+      const char *joypad_name)
 {
-   settings_t *settings     = config_get_ptr();
-
-#if _WIN32_WINNT >= 0x0501
-#ifdef HAVE_WINRAWINPUT
-   const char *input_driver = settings->arrays.input_driver;
-
-   /* winraw only available since XP */
-   if (string_is_equal(input_driver, "raw"))
-   {
-      *input_data = input_driver_init_wrap(&input_winraw, joypad_name);
-      if (*input_data)
-      {
-         *input     = &input_winraw;
-         dinput_wgl = NULL;
-         return;
-      }
-   }
-#endif
-#endif
-
-#ifdef HAVE_DINPUT
-   dinput_wgl  = input_driver_init_wrap(&input_dinput, joypad_name);
-   *input      = dinput_wgl ? &input_dinput : NULL;
-   *input_data = dinput_wgl;
-#elif defined(__WINRT__)
-   /* Plain xinput is supported on UWP, but it
-    * supports joypad only (uwp driver was added later) */
-   if (string_is_equal(settings->arrays.input_driver, "xinput"))
-   {
-      void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
-      *input = xinput ? (input_driver_t*)&input_xinput : NULL;
-      *input_data = xinput;
-   }
-   else
-   {
-      void* uwp = input_driver_init_wrap(&input_uwp, joypad_name);
-      *input = uwp ? (input_driver_t*)&input_uwp : NULL;
-      *input_data = uwp;
-   }
-#elif defined(_XBOX)
-   void* xinput = input_driver_init_wrap(&input_xinput, joypad_name);
-   *input = xinput ? (input_driver_t*)&input_xinput : NULL;
-   *input_data = xinput;
-#endif
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 }
 
 static enum gfx_ctx_api gfx_ctx_wgl_get_api(void *data) { return win32_api; }
@@ -844,6 +804,10 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
 #ifndef __WINRT__
          if (win32_backbuffer_is_scrgb())
             BIT32_SET(flags, GFX_CTX_FLAGS_SCRGB_FRAMEBUFFER);
+         /* a borderless fullscreen toggle restyles the window; see
+          * gfx_ctx_wgl_set_video_mode() */
+         if (win32_fullscreen_in_place())
+            BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 #endif
 
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)

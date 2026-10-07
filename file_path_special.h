@@ -91,6 +91,7 @@ RETRO_BEGIN_DECLS
 #define FILE_PATH_DEFAULT_OSK_OVERLAY "keyboards/US-101/US-101.cfg"
 #endif
 #define FILE_PATH_CORE_INFO_CACHE "core_info.cache"
+#define FILE_PATH_CORE_PROBE_CACHE "core_probe.cache"
 #define FILE_PATH_CORE_INFO_CACHE_REFRESH "core_info.refresh"
 
 #ifdef HAVE_LAKKA

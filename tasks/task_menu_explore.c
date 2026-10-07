@@ -23,12 +23,14 @@
 #include <string/stdstring.h>
 
 #include "tasks_internal.h"
+#include "../msg_hash.h"
 
 #include "../menu/menu_driver.h"
 
 typedef struct menu_explore_init_handle
 {
    explore_state_t *state;
+   explore_build_t *build;      /* the index, between steps */
    char *directory_playlist;
    char *directory_database;
    unsigned generation;             /* stale-completion guard */
@@ -49,6 +51,12 @@ static void free_menu_explore_init_handle(
 {
    if (!menu_explore)
       return;
+
+   if (menu_explore->build)
+   {
+      menu_explore_build_abort(menu_explore->build);
+      menu_explore->build = NULL;
+   }
 
    if (menu_explore->directory_playlist)
    {
@@ -150,34 +158,64 @@ static void task_menu_explore_init_free(retro_task_t *task)
 /* Explore Menu Initialisation */
 /*******************************/
 
+static bool task_menu_explore_within_budget(void *ud)
+{
+   return task_nbio_slice_within_budget(ud, 0, 0);
+}
+
+/* Builds the index in steps under the shared per-frame I/O window:
+ * a playlist parsed, entries indexed, RDB items taken and categories
+ * sorted a bounded amount per check, so the frame loop keeps drawing
+ * while a large collection is indexed with Threaded Tasks off. */
 static void task_menu_explore_init_handler(retro_task_t *task)
 {
-   if (task)
+   menu_explore_init_handle_t *menu_explore = NULL;
+   nbio_budget_t b;
+   int r;
+
+   if (!task)
+      return;
+   if (!(menu_explore = (menu_explore_init_handle_t*)task->state))
    {
-      menu_explore_init_handle_t *menu_explore = NULL;
-      if ((menu_explore = (menu_explore_init_handle_t*)task->state))
-      {
-         uint8_t flg = task_get_flags(task);
-
-         if (!((flg & RETRO_TASK_FLG_CANCELLED) > 0))
-         {
-            /* TODO/FIXME: It could be beneficial to
-             * initialise the explore menu iteratively,
-             * but this would require a non-trivial rewrite
-             * of the menu_explore code. For now, we will
-             * do it in a single shot (the most important
-             * consideration here is to place this
-             * initialisation on a background thread) */
-            menu_explore->state = menu_explore_build_list(
-                  menu_explore->directory_playlist,
-                  menu_explore->directory_database);
-
-            task_set_progress(task, 100);
-         }
-      }
-
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
    }
+   if ((task_get_flags(task) & RETRO_TASK_FLG_CANCELLED) > 0)
+   {
+      if (menu_explore->build)
+         menu_explore_build_abort(menu_explore->build);
+      menu_explore->build = NULL;
+      task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+      return;
+   }
+
+   if (!menu_explore->build)
+   {
+      menu_explore->build = menu_explore_build_begin(
+            menu_explore->directory_playlist,
+            menu_explore->directory_database);
+      if (!menu_explore->build)
+      {
+         task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+         return;
+      }
+   }
+
+   task_nbio_slice_open(&b);
+   r = menu_explore_build_step(menu_explore->build,
+         task_menu_explore_within_budget, &b);
+   task_nbio_slice_close(&b);
+
+   if (r == 0)
+      return;
+
+   menu_explore->state = (r > 0)
+      ? menu_explore_build_end(menu_explore->build) : NULL;
+   if (r < 0)
+      menu_explore_build_abort(menu_explore->build);
+   menu_explore->build = NULL;
+   task_set_progress(task, 100);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
 }
 
 static bool task_menu_explore_init_finder(retro_task_t *task, void *user_data)
@@ -218,11 +256,14 @@ bool task_push_menu_explore_init(const char *directory_playlist,
    menu_explore->generation         = menu_explore_init_generation;
 
    /* Configure task
-    * > Note: This is silent task, with no title
-    *   and no user notification messages */
+    * > Note: This is a silent task, with no user
+    *   notification messages */
    task->handler  = task_menu_explore_init_handler;
    task->state    = menu_explore;
-   task->title    = NULL;
+   /* Muted, so never shown: it names the task to the slow-handler
+    * watchdog. */
+   task->title    = strdup(msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_EXPLORE_INITIALISING_LIST));
    task->progress = 0;
    task->callback = cb_task_menu_explore_init;
    task->cleanup  = task_menu_explore_init_free;

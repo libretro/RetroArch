@@ -26,9 +26,35 @@
 
 #define RARCH_SOFTFILTER_THREADS_AUTO 0
 
+/* Upper bound of workers RARCH_SOFTFILTER_THREADS_AUTO ever picks;
+ * an explicit count from the user may go higher. Past this the heavy
+ * filters gain little per extra worker and the pool is only taking
+ * cores from the GPU driver and the OS. */
+#define RARCH_SOFTFILTER_AUTO_MAX 8
+
 RETRO_BEGIN_DECLS
 
 typedef struct rarch_softfilter rarch_softfilter_t;
+
+/* Tells RARCH_SOFTFILTER_THREADS_AUTO how many physical cores the
+ * frontend's own frame-critical threads occupy (the emulation thread,
+ * plus the video, audio and task threads where each runs on its own
+ * thread), so the pool is sized from what is left. Default 1: the
+ * emulation thread. Read at rarch_softfilter_new(). */
+void rarch_softfilter_set_auto_reserved(unsigned reserved_cores);
+
+/* The worker count RARCH_SOFTFILTER_THREADS_AUTO resolves to for the
+ * plugin named by short_ident on this machine, given the reserve
+ * above; what rarch_softfilter_new() passes to the plugin. Exposed
+ * for tests. */
+unsigned rarch_softfilter_auto_threads(const char *short_ident);
+
+/* The arithmetic behind it, for a given physical core count and
+ * reserve: cores minus reserve, minus one of headroom once above two,
+ * capped at RARCH_SOFTFILTER_AUTO_MAX and at the plugin's workload
+ * ceiling (light filters 1, medium 4, heavy the cap); never below 1. */
+unsigned rarch_softfilter_auto_budget(unsigned cores, unsigned reserved,
+      const char *short_ident);
 
 rarch_softfilter_t *rarch_softfilter_new(
       const char *filter_path,

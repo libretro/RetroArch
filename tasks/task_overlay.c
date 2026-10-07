@@ -360,6 +360,13 @@ static bool task_overlay_load_image_texture(
       if (!image_texture_load(image, full_path))
          return false;
 
+      if (     (loader->flags & OVERLAY_LOADER_GX_TILE)
+            && !image_texture_tile_gx(image))
+      {
+         image_texture_free(image);
+         return false;
+      }
+
       attr.p = (void*)image;
       string_list_append(loader->image_list, rel_path, attr);
       if (pack_idx)
@@ -377,7 +384,8 @@ static bool task_overlay_load_image_texture(
          void *buf               = NULL;
 
          aattr.i = 0;
-         if (     !path_get_archive_delim(full_path)
+         if (     !(loader->flags & OVERLAY_LOADER_GX_TILE)
+               && !path_get_archive_delim(full_path)
                && filestream_read_file(full_path, &buf, &len)
                && buf && len > 0
                && rpng_is_apng((const uint8_t*)buf, (size_t)len)
@@ -461,7 +469,6 @@ static void task_overlay_desc_populate_eightway_config(
       unsigned ol_idx, unsigned desc_idx)
 {
    size_t _len;
-   input_driver_state_t *input_st = input_state_get_ptr();
    overlay_eightway_config_t *eightway;
    char conf_key[64];
    char *str;
@@ -492,8 +499,8 @@ static void task_overlay_desc_populate_eightway_config(
          BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_LEFT);
          BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_RIGHT);
 
-         eightway->slope_low  = &input_st->overlay_eightway_dpad_slopes[0];
-         eightway->slope_high = &input_st->overlay_eightway_dpad_slopes[1];
+         eightway->slope_low  = &input_driver_overlay_eightway_slopes(false)[0];
+         eightway->slope_high = &input_driver_overlay_eightway_slopes(false)[1];
          break;
 
       case OVERLAY_TYPE_ABXY_AREA:
@@ -502,8 +509,8 @@ static void task_overlay_desc_populate_eightway_config(
          BIT256_SET(eightway->left,  RETRO_DEVICE_ID_JOYPAD_Y);
          BIT256_SET(eightway->right, RETRO_DEVICE_ID_JOYPAD_A);
 
-         eightway->slope_low  = &input_st->overlay_eightway_abxy_slopes[0];
-         eightway->slope_high = &input_st->overlay_eightway_abxy_slopes[1];
+         eightway->slope_low  = &input_driver_overlay_eightway_slopes(true)[0];
+         eightway->slope_high = &input_driver_overlay_eightway_slopes(true)[1];
          break;
 
       default:
@@ -716,12 +723,7 @@ static bool task_overlay_load_desc(
 
    BIT16_SET(loader->overlay_types, desc->type);
    if (takes_input)
-   {
-      desc->flags          &= ~OVERLAY_DESC_DISPLAY_ONLY;
       input_overlay->flags |= OVERLAY_TAKES_INPUT;
-   }
-   else
-      desc->flags          |=  OVERLAY_DESC_DISPLAY_ONLY;
 
    width_mod  = 1.0f;
    height_mod = 1.0f;
@@ -1646,6 +1648,8 @@ bool task_push_overlay_load_default(
             loader->flags  |= OVERLAY_LOADER_RGBA_SUPPORT;
          if (req.formats & GFX_SURFACE_PIXFMT_2101010)
             loader->flags  |= OVERLAY_LOADER_10BIT;
+         if (req.preferred == GFX_SURFACE_PIXFMT_GX_RGBA8)
+            loader->flags  |= OVERLAY_LOADER_GX_TILE;
       }
    }
 #endif

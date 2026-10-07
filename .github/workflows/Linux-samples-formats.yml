@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Install dependencies
-        timeout-minutes: 5
+        timeout-minutes: 20
         run: |
           pkgs="build-essential ffmpeg"
           if dpkg -s $pkgs >/dev/null 2>&1; then
@@ -39,6 +39,23 @@ jobs:
               -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
             echo "apt-get update failed (attempt $i); retrying in 10s"
             sleep 10
+          done
+          # Fetch first, under a bound: a download is safe to stop and
+          # resumes, an install is not. A mirror that stalls is left for
+          # the main archive on the next attempt.
+          for i in 1 2 3; do
+            sudo timeout 240 apt-get install -y --download-only \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
+              $pkgs && break
+            [ $i = 3 ] && exit 1
+            echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
+              [ -f "$f" ] || continue
+              sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
+                -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
+            done
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
@@ -205,3 +222,35 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
              timeout 120 ./image_avail_test
           echo "[pass] image_avail_test"
+
+      - name: Build and run video_hdr_fp16_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/video_hdr_fp16
+        run: |
+          set -eu
+          # HDR10 video to linear scRGB half floats: HEVC Main10 in MP4
+          # and VP9 profile 2 in WebM, tagged PQ, decode flat grey onto
+          # the PQ EOTF when asked into the caller's frame; their
+          # SDR-tagged twins, and any stream decoding into its own
+          # canvas, keep the 32-bit paths. Fixtures made with ffmpeg
+          # (libx265, libvpx-vp9) from known 10-bit grey.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./video_hdr_fp16_test
+
+      - name: Build and run image_tile_gx_test (ASan + UBSan + LSan)
+        shell: bash
+        working-directory: samples/formats/image_tile_gx
+        run: |
+          set -eu
+          # The GameCube/Wii GX RGBA8 tiling the gx driver's overlays
+          # are sampled in, which runs nowhere but on the console. It
+          # is checked against the layout's definition and against
+          # the band conversion it replaced, over every size up to
+          # 70x44 so widths and heights off a multiple of four - where
+          # the source pitch and the tile width part ways - are all
+          # covered.
+          make clean all SANITIZER=address,undefined
+          test -x image_tile_gx_test
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1 \
+             timeout 120 ./image_tile_gx_test

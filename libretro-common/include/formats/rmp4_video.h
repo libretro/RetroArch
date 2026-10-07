@@ -61,6 +61,14 @@ void rmp4_video_set_avail(rmp4_video_t *mp4, size_t avail);
 /* True if the last rmp4_video_process_image() produced XRGB2101010. */
 bool rmp4_video_is_10bit(const rmp4_video_t *mp4);
 
+/* Half floats for an HDR still: with want set, a PQ or HLG source's
+ * first frame - VP9, H.264 or H.265 - is rendered as linear scRGB
+ * (rwebm_video_blit_i420_fp16) straight into the frame process hands
+ * out, 8 bytes a pixel; is_fp16 says whether the last one came out so.
+ * Any other source decodes as it always did. */
+void rmp4_video_set_want_fp16(rmp4_video_t *mp4, int want);
+bool rmp4_video_is_fp16(const rmp4_video_t *mp4);
+
 /* Decodes the first displayed frame of the first supported video track
  * into a freshly malloc'd buffer at *buf. Returns IMAGE_PROCESS_END on
  * success, IMAGE_PROCESS_ERROR on failure (no supported video track,
@@ -146,6 +154,18 @@ void *rmp4_video_stream_h265(rmp4_video_stream_t *stream);
 
 void rmp4_video_stream_set_output(rmp4_video_stream_t *stream,
       uint32_t *out);
+
+/* Linear scRGB half floats for an HDR source: a 10-bit PQ or HLG
+ * frame - VP9, H.264 or H.265 - decoded into the caller's frame
+ * (rmp4_video_stream_set_output), which then holds 8 bytes a pixel,
+ * through rwebm_video_blit_i420_fp16 - no tone map. Every other frame,
+ * and every frame without a caller's output, takes the paths it always
+ * did. is_fp16 answers for the last frame decoded; is_hdr for the
+ * source, from its colr transfer. */
+void rmp4_video_stream_set_want_fp16(rmp4_video_stream_t *stream,
+      int want);
+int rmp4_video_stream_is_fp16(const rmp4_video_stream_t *stream);
+int rmp4_video_stream_is_hdr(const rmp4_video_stream_t *stream);
 
 /* Convert decoded frames in @bands row bands on @pool (an rthreads
  * tpool_t of at least bands - 1 threads; the calling thread takes one

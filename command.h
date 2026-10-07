@@ -28,13 +28,14 @@
 #endif
 
 #include <streams/interface_stream.h>
+#include "tasks/task_notify.h"
 
 #include "retroarch_types.h"
 #include "input/input_defines.h"
 
 #include "configuration.h"
 
-#define MAX_CMD_DRIVERS              3
+#define MAX_CMD_DRIVERS              4
 #define DEFAULT_NETWORK_CMD_PORT 55355
 
 RETRO_BEGIN_DECLS
@@ -65,7 +66,8 @@ enum event_command
    CMD_EVENT_SAVE_STATE,
    CMD_EVENT_SAVE_STATE_DECREMENT,
    CMD_EVENT_SAVE_STATE_INCREMENT,
-   /* Replay hotkeys. */
+   /* Replay hotkeys. RECORD_REPLAY and the checkpoint events take a
+    * task_notify_t, told when their work is through, or NULL. */
    CMD_EVENT_PLAY_REPLAY,
    CMD_EVENT_RECORD_REPLAY,
    CMD_EVENT_HALT_REPLAY,
@@ -284,6 +286,9 @@ enum event_command
    CMD_EVENT_CONTROLLER_INIT,
    CMD_EVENT_DISCORD_INIT,
    CMD_EVENT_PRESENCE_UPDATE,
+   /* camera_allow changed: a running camera the user just disallowed
+    * is stopped here, so the frame path tests only its frame_work bit */
+   CMD_EVENT_CAMERA_ALLOW_APPLY,
    CMD_EVENT_OVERLAY_NEXT,
    CMD_EVENT_OSK_TOGGLE,
    CMD_EVENT_RELOAD_CONFIG,
@@ -306,10 +311,26 @@ enum cmd_source_t
    CMD_NETWORK
 };
 
+/* What a command does, for interfaces that describe the commands to a
+ * client: HELP, and tool annotations for clients that ask before they
+ * run anything. */
+enum cmd_info_flags
+{
+   /* Only reports; changes nothing. */
+   CMD_INFO_READ_ONLY   = (1 << 0),
+   /* May lose unsaved progress or data, or loads code from a path:
+    * quits, resets, loads or overwrites states and saves, writes core
+    * memory, loads or unloads cores and content. */
+   CMD_INFO_DESTRUCTIVE = (1 << 1)
+};
+
+/* A hotkey command: sending it presses the hotkey for one frame. */
 struct cmd_map
 {
    const char *str;
    unsigned id;
+   const char *desc;
+   unsigned flags;       /* enum cmd_info_flags */
 };
 
 struct command_handler;
@@ -317,6 +338,14 @@ struct command_handler;
 typedef void (*command_poller_t)(struct command_handler *cmd);
 typedef void (*command_replier_t)(struct command_handler *cmd, const char * data, size_t len);
 typedef void (*command_destructor_t)(struct command_handler *cmd);
+typedef void *(*command_reply_dest_t)(struct command_handler *cmd);
+typedef void (*command_reply_to_t)(struct command_handler *cmd,
+      void *dest, const char *data, size_t len);
+/* As reply_to, with an image alongside the text: @image is base64 of
+ * @mime */
+typedef void (*command_reply_image_to_t)(struct command_handler *cmd,
+      void *dest, const char *text, size_t len, const char *mime,
+      const char *image, size_t image_len);
 
 struct command_handler
 {
@@ -324,12 +353,24 @@ struct command_handler
    command_poller_t poll;
    /* Interface to reply */
    command_replier_t replier;
+   /* Where the reply to the command being handled goes, for a reply
+    * sent after the handler has returned: a heap copy, released with
+    * free().  NULL on an interface whose replies all go one way. */
+   command_reply_dest_t reply_dest;
+   /* Sends to a destination reply_dest returned. */
+   command_reply_to_t reply_to;
+   /* Sends a reply carrying an image, where the interface can; NULL on
+    * the others, which are sent the text alone */
+   command_reply_image_to_t reply_image_to;
    /* Interface to delete the underlying command */
    command_destructor_t destroy;
    /* Underlying command storage */
    void *userptr;
    /* State received */
    bool state[RARCH_BIND_LIST_END];
+   /* Requests are structured (MCP), not lines: given the replies a
+    * line-based client never had */
+   bool structured;
 };
 
 typedef struct command_handler command_t;
@@ -354,7 +395,9 @@ bool command_event(enum event_command action, void *data);
 
 /* Constructors for the supported drivers */
 #ifdef HAVE_NETWORK_CMD
-command_t* command_network_new(uint16_t port);
+/* bind_address may be NULL or empty to listen on every interface, or an
+ * IPv4 address such as "127.0.0.1" to restrict the interface to it. */
+command_t* command_network_new(uint16_t port, const char *bind_address);
 bool command_network_send(const char *cmd_);
 #endif
 #ifdef HAVE_STDIN_CMD
@@ -428,12 +471,35 @@ void command_event_init_cheats(
 #endif
 
 #if defined(HAVE_COMMAND)
+/* A command with its own handler; @arg_desc names the argument, or
+ * "No argument". */
 struct cmd_action_map
 {
    const char *str;
    bool (*action)(command_t* cmd, const char *arg);
    const char *arg_desc;
+   const char *desc;
+   unsigned flags;       /* enum cmd_info_flags */
 };
+
+/* HELP [command]: the commands, their arguments and what they do. */
+bool command_help(command_t *cmd, const char* arg);
+/* Queries for clients that browse and launch content. */
+bool command_list_cores(command_t *cmd, const char* arg);
+bool command_list_playlists(command_t *cmd, const char* arg);
+bool command_get_playlist(command_t *cmd, const char* arg);
+
+/* Runs one command by name; see command.c. */
+bool command_run(command_t *handle, const char *name, const char *arg);
+
+/* True once a command has started a content load: requests an
+ * interface has yet to take wait for the next poll, which comes once
+ * the load is through. */
+bool command_interfaces_held(void);
+
+/* Every command, for interfaces that describe them to a client. */
+const struct cmd_action_map *command_action_list(size_t *count);
+const struct cmd_map *command_hotkey_list(size_t *count);
 
 bool command_version(command_t *cmd, const char* arg);
 bool command_get_status(command_t *cmd, const char* arg);
@@ -461,121 +527,125 @@ bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
+   { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   { "SET_SHADER",       command_set_shader,       "<shader path>" },
+   { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0 },
 #endif
-   { "VERSION",          command_version,          "No argument"},
-   { "GET_STATUS",       command_get_status,       "No argument" },
-   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>" },
-   { "SHOW_MSG",         command_show_osd_msg,     "No argument" },
+   { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY },
+   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY },
+   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY },
+   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY },
+   { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0 },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
     * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
-   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>" },
-   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ..." },
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>" },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ..." },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE },
 
-   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>"},
-   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>"},
-   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>"},
-   { "SEEK_REPLAY",command_seek_replay, "<frame number>"},
+   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE },
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE },
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE },
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE },
 
-   { "SAVE_FILES", command_save_savefiles, "No argument"},
-   { "LOAD_FILES", command_load_savefiles, "No argument"},
+   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE },
+   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE },
 
-   { "LOAD_CORE", command_load_core, "<core path>"},
-   { "START_CORE", command_start_core, "No argument"},
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>"},
-   { "CLOSE_CONTENT", command_close_content, "No argument"},
-   { "UNLOAD_CORE", command_unload_core, "No argument"},
-   { "VIDEO_REINIT", command_video_reinit, "No argument"},
-   { "AUDIO_REINIT", command_audio_reinit, "No argument"},
-   { "DRIVERS_REINIT", command_drivers_reinit, "No argument"},
+   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE },
+   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE },
+   { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE },
+   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE },
+   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0 },
+   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", 0 },
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", 0 },
 };
 
 static const struct cmd_map map[] = {
-   { "MENU_TOGGLE",            RARCH_MENU_TOGGLE },
-   { "QUIT",                   RARCH_QUIT_KEY },
-   { "RESET",                  RARCH_RESET },
+   { "MENU_TOGGLE", RARCH_MENU_TOGGLE, "Open or close the menu.", 0 },
+   { "QUIT", RARCH_QUIT_KEY, "Quit RetroArch.", CMD_INFO_DESTRUCTIVE },
+   { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE },
 
-   { "FAST_FORWARD",           RARCH_FAST_FORWARD_KEY },
-   { "FAST_FORWARD_HOLD",      RARCH_FAST_FORWARD_HOLD_KEY },
-   { "SLOWMOTION",             RARCH_SLOWMOTION_KEY },
-   { "SLOWMOTION_HOLD",        RARCH_SLOWMOTION_HOLD_KEY },
-   { "REWIND",                 RARCH_REWIND },
-   { "PAUSE_TOGGLE",           RARCH_PAUSE_TOGGLE },
-   { "FRAMEADVANCE",           RARCH_FRAMEADVANCE },
+   { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", 0 },
+   { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", 0 },
+   { "SLOWMOTION", RARCH_SLOWMOTION_KEY, "Toggle slow motion.", 0 },
+   { "SLOWMOTION_HOLD", RARCH_SLOWMOTION_HOLD_KEY, "Slow motion while held (one frame when sent as a command).", 0 },
+   { "REWIND", RARCH_REWIND, "Rewind while held (one frame when sent as a command).", 0 },
+   { "PAUSE_TOGGLE", RARCH_PAUSE_TOGGLE, "Pause or resume the content.", 0 },
+   { "FRAMEADVANCE", RARCH_FRAMEADVANCE, "Advance one frame while paused.", 0 },
 
-   { "MUTE",                   RARCH_MUTE },
-   { "VOLUME_UP",              RARCH_VOLUME_UP },
-   { "VOLUME_DOWN",            RARCH_VOLUME_DOWN },
+   { "MUTE", RARCH_MUTE, "Mute or unmute audio.", 0 },
+   { "VOLUME_UP", RARCH_VOLUME_UP, "Raise the volume.", 0 },
+   { "VOLUME_DOWN", RARCH_VOLUME_DOWN, "Lower the volume.", 0 },
 
-   { "LOAD_STATE",             RARCH_LOAD_STATE_KEY },
-   { "SAVE_STATE",             RARCH_SAVE_STATE_KEY },
-   { "STATE_SLOT_PLUS",        RARCH_STATE_SLOT_PLUS },
-   { "STATE_SLOT_MINUS",       RARCH_STATE_SLOT_MINUS },
+   { "LOAD_STATE", RARCH_LOAD_STATE_KEY, "Load the save state in the current slot.", CMD_INFO_DESTRUCTIVE },
+   { "SAVE_STATE", RARCH_SAVE_STATE_KEY, "Save a state to the current slot.", CMD_INFO_DESTRUCTIVE },
+   { "STATE_SLOT_PLUS", RARCH_STATE_SLOT_PLUS, "Select the next save state slot.", 0 },
+   { "STATE_SLOT_MINUS", RARCH_STATE_SLOT_MINUS, "Select the previous save state slot.", 0 },
 
-   { "PLAY_REPLAY",            RARCH_PLAY_REPLAY_KEY },
-   { "RECORD_REPLAY",          RARCH_RECORD_REPLAY_KEY },
-   { "HALT_REPLAY",            RARCH_HALT_REPLAY_KEY },
-   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY },
-   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY },
-   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY },
-   { "REPLAY_SLOT_PLUS",       RARCH_REPLAY_SLOT_PLUS },
-   { "REPLAY_SLOT_MINUS",      RARCH_REPLAY_SLOT_MINUS },
+   { "PLAY_REPLAY", RARCH_PLAY_REPLAY_KEY, "Play back the replay in the current slot.", 0 },
+   { "RECORD_REPLAY", RARCH_RECORD_REPLAY_KEY, "Start recording a replay to the current slot.", CMD_INFO_DESTRUCTIVE },
+   { "HALT_REPLAY", RARCH_HALT_REPLAY_KEY, "Stop playing or recording the replay.", 0 },
+   { "SAVE_REPLAY_CHECKPOINT", RARCH_SAVE_REPLAY_CHECKPOINT_KEY, "Add a checkpoint to the replay being recorded.", 0 },
+   { "PREV_REPLAY_CHECKPOINT", RARCH_PREV_REPLAY_CHECKPOINT_KEY, "Seek the replay back to the previous checkpoint.", CMD_INFO_DESTRUCTIVE },
+   { "NEXT_REPLAY_CHECKPOINT", RARCH_NEXT_REPLAY_CHECKPOINT_KEY, "Seek the replay forward to the next checkpoint.", CMD_INFO_DESTRUCTIVE },
+   { "REPLAY_SLOT_PLUS", RARCH_REPLAY_SLOT_PLUS, "Select the next replay slot.", 0 },
+   { "REPLAY_SLOT_MINUS", RARCH_REPLAY_SLOT_MINUS, "Select the previous replay slot.", 0 },
 
-   { "DISK_EJECT_TOGGLE",      RARCH_DISK_EJECT_TOGGLE },
-   { "DISK_NEXT",              RARCH_DISK_NEXT },
-   { "DISK_PREV",              RARCH_DISK_PREV },
+   { "DISK_EJECT_TOGGLE", RARCH_DISK_EJECT_TOGGLE, "Eject or insert the virtual disc.", 0 },
+   { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", 0 },
+   { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", 0 },
 
-   { "SHADER_TOGGLE",          RARCH_SHADER_TOGGLE },
-   { "SHADER_HOLD",            RARCH_SHADER_HOLD },
-   { "SHADER_NEXT",            RARCH_SHADER_NEXT },
-   { "SHADER_PREV",            RARCH_SHADER_PREV },
+   { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", 0 },
+   { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", 0 },
+   { "SHADER_NEXT", RARCH_SHADER_NEXT, "Load the next shader preset in its directory.", 0 },
+   { "SHADER_PREV", RARCH_SHADER_PREV, "Load the previous shader preset in its directory.", 0 },
 
-   { "CHEAT_TOGGLE",           RARCH_CHEAT_TOGGLE },
-   { "CHEAT_INDEX_PLUS",       RARCH_CHEAT_INDEX_PLUS },
-   { "CHEAT_INDEX_MINUS",      RARCH_CHEAT_INDEX_MINUS },
+   { "CHEAT_TOGGLE", RARCH_CHEAT_TOGGLE, "Turn the selected cheat on or off.", 0 },
+   { "CHEAT_INDEX_PLUS", RARCH_CHEAT_INDEX_PLUS, "Select the next cheat.", 0 },
+   { "CHEAT_INDEX_MINUS", RARCH_CHEAT_INDEX_MINUS, "Select the previous cheat.", 0 },
 
-   { "SCREENSHOT",             RARCH_SCREENSHOT },
-   { "RECORDING_TOGGLE",       RARCH_RECORDING_TOGGLE },
-   { "STREAMING_TOGGLE",       RARCH_STREAMING_TOGGLE },
+   { "SCREENSHOT", RARCH_SCREENSHOT, "Take a screenshot.", 0 },
+   { "RECORDING_TOGGLE", RARCH_RECORDING_TOGGLE, "Start or stop recording video.", 0 },
+   { "STREAMING_TOGGLE", RARCH_STREAMING_TOGGLE, "Start or stop streaming.", 0 },
 
-   { "TURBO_FIRE_TOGGLE",      RARCH_TURBO_FIRE_TOGGLE },
-   { "GRAB_MOUSE_TOGGLE",      RARCH_GRAB_MOUSE_TOGGLE },
-   { "GAME_FOCUS_TOGGLE",      RARCH_GAME_FOCUS_TOGGLE },
-   { "FULLSCREEN_TOGGLE",      RARCH_FULLSCREEN_TOGGLE_KEY },
-   { "UI_COMPANION_TOGGLE",    RARCH_UI_COMPANION_TOGGLE },
+   { "TURBO_FIRE_TOGGLE", RARCH_TURBO_FIRE_TOGGLE, "Turn turbo fire on or off.", 0 },
+   { "GRAB_MOUSE_TOGGLE", RARCH_GRAB_MOUSE_TOGGLE, "Grab or release the mouse.", 0 },
+   { "GAME_FOCUS_TOGGLE", RARCH_GAME_FOCUS_TOGGLE, "Give the game all keyboard input, or hand it back to hotkeys.", 0 },
+   { "FULLSCREEN_TOGGLE", RARCH_FULLSCREEN_TOGGLE_KEY, "Switch between fullscreen and windowed.", 0 },
+   { "UI_COMPANION_TOGGLE", RARCH_UI_COMPANION_TOGGLE, "Show or hide the desktop companion window.", 0 },
 
-   { "VRR_RUNLOOP_TOGGLE",     RARCH_VRR_RUNLOOP_TOGGLE },
-   { "RUNAHEAD_TOGGLE",        RARCH_RUNAHEAD_TOGGLE },
-   { "PREEMPT_TOGGLE",         RARCH_PREEMPT_TOGGLE },
-   { "VIDEO_FILTER_TOGGLE",    RARCH_VIDEO_FILTER_TOGGLE },
-   { "FPS_TOGGLE",             RARCH_FPS_TOGGLE },
-   { "STATISTICS_TOGGLE",      RARCH_STATISTICS_TOGGLE },
-   { "AI_SERVICE",             RARCH_AI_SERVICE },
+   { "VRR_RUNLOOP_TOGGLE", RARCH_VRR_RUNLOOP_TOGGLE, "Turn sync to exact content framerate on or off.", 0 },
+   { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", 0 },
+   { "PREEMPT_TOGGLE", RARCH_PREEMPT_TOGGLE, "Turn preemptive frames on or off.", 0 },
+   { "VIDEO_FILTER_TOGGLE", RARCH_VIDEO_FILTER_TOGGLE, "Turn the video filter on or off.", 0 },
+   { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", 0 },
+   { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", 0 },
+   { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", 0 },
 
-   { "NETPLAY_PING_TOGGLE",    RARCH_NETPLAY_PING_TOGGLE },
-   { "NETPLAY_HOST_TOGGLE",    RARCH_NETPLAY_HOST_TOGGLE },
-   { "NETPLAY_GAME_WATCH",     RARCH_NETPLAY_GAME_WATCH },
-   { "NETPLAY_PLAYER_CHAT",    RARCH_NETPLAY_PLAYER_CHAT },
-   { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE },
+   { "NETPLAY_PING_TOGGLE", RARCH_NETPLAY_PING_TOGGLE, "Show or hide the netplay ping.", 0 },
+   { "NETPLAY_HOST_TOGGLE", RARCH_NETPLAY_HOST_TOGGLE, "Start or stop hosting netplay.", 0 },
+   { "NETPLAY_GAME_WATCH", RARCH_NETPLAY_GAME_WATCH, "Switch netplay between playing and spectating.", 0 },
+   { "NETPLAY_PLAYER_CHAT", RARCH_NETPLAY_PLAYER_CHAT, "Send a netplay chat message.", 0 },
+   { "NETPLAY_FADE_CHAT_TOGGLE", RARCH_NETPLAY_FADE_CHAT_TOGGLE, "Turn fading of netplay chat on or off.", 0 },
 
-   { "MENU_UP",                RETRO_DEVICE_ID_JOYPAD_UP },
-   { "MENU_DOWN",              RETRO_DEVICE_ID_JOYPAD_DOWN },
-   { "MENU_LEFT",              RETRO_DEVICE_ID_JOYPAD_LEFT },
-   { "MENU_RIGHT",             RETRO_DEVICE_ID_JOYPAD_RIGHT },
-   { "MENU_A",                 RETRO_DEVICE_ID_JOYPAD_A },
-   { "MENU_B",                 RETRO_DEVICE_ID_JOYPAD_B },
+   { "MENU_UP", RETRO_DEVICE_ID_JOYPAD_UP, "Menu: move up.", 0 },
+   { "MENU_DOWN", RETRO_DEVICE_ID_JOYPAD_DOWN, "Menu: move down.", 0 },
+   { "MENU_LEFT", RETRO_DEVICE_ID_JOYPAD_LEFT, "Menu: move left.", 0 },
+   { "MENU_RIGHT", RETRO_DEVICE_ID_JOYPAD_RIGHT, "Menu: move right.", 0 },
+   { "MENU_A", RETRO_DEVICE_ID_JOYPAD_A, "Menu: confirm (A).", 0 },
+   { "MENU_B", RETRO_DEVICE_ID_JOYPAD_B, "Menu: back (B).", 0 },
 
-   { "OVERLAY_NEXT",           RARCH_OVERLAY_NEXT },
-   { "OSK",                    RARCH_OSK },
+   { "OVERLAY_NEXT", RARCH_OVERLAY_NEXT, "Switch to the next overlay.", 0 },
+   { "OSK", RARCH_OSK, "Show or hide the on-screen keyboard.", 0 },
 
 #if 0
    /* Deprecated */
-   { "SEND_DEBUG_INFO",        RARCH_SEND_DEBUG_INFO },
+   { "SEND_DEBUG_INFO", RARCH_SEND_DEBUG_INFO, "Deprecated.", 0 },
 #endif
 };
 #endif

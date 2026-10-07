@@ -4,8 +4,8 @@
  * The poll thread used to sleep a whole period after every reading,
  * and close stopped it with pthread_cancel() into that sleep. A rate
  * change applied only after the current sleep ran out, and the thread
- * could only be ended by cancellation. It now waits on a condition
- * between readings that close and rate changes signal.
+ * could only be ended by cancellation. It now waits between readings
+ * on an eventcount that close and rate changes notify, with no lock.
  *
  * The contract this pins, against a fake sysfs tree:
  *

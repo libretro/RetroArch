@@ -3,7 +3,7 @@ TARGET       := smb_backup_test
 
 CORE_DIR = ../../..
 LIBRETRO_COMM_DIR = $(CORE_DIR)/libretro-common
-INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps/libsmb2/include
+INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -Iinclude
 
 CC      := $(compiler)
 flags   += -std=gnu99

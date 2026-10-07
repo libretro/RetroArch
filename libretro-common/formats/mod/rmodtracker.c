@@ -66,6 +66,9 @@ struct envelope {
 struct instrument {
 	int num_samples, vol_fadeout;
 	char name[ 32 ], key_to_sample[ 97 ];
+	/* IT keyboard: semitones from the played key to the note the sample
+	   sounds at ( 0, calloc's default, everywhere else ). */
+	signed char key_shift[ 97 ];
 	/* IT new-note action: 0 cut (every other format's behaviour and
 	   calloc's default), 1 continue, 2 note off, 3 fade. dct/dca are
 	   the duplicate check type and action. */
@@ -73,6 +76,9 @@ struct instrument {
 	/* IT initial filter cutoff/resonance (bit 7 = set) and the third
 	   envelope, which flag bit 7 repurposes as a filter envelope. */
 	char ifc, ifr, pitch_is_filter;
+	/* IT default pan + 1 ( 0, calloc's default: none ) and pitch-pan
+	   separation / centre. */
+	char def_pan, pps, pps_center;
 	struct envelope pitch_env;
 	char vib_type, vib_sweep, vib_depth, vib_rate;
 	struct envelope vol_env, pan_env;
@@ -93,6 +99,15 @@ struct module {
 	   diverge between ST3 and IT (Xxx panning). */
 	unsigned char *default_chan_vol;
 	char it_effects;
+	/* IT header flag 5: Gxx keeps its own memory instead of sharing
+	   Exx/Fxx's. */
+	char it_compat_gxx;
+	/* IT MIDI macros reduced to the filter controls the engine has:
+	   per SFx slot the parameter Zxx 00-7F sets (IT_MACRO_*), and per
+	   Z80-ZFF the parameter in the high byte and its fixed value in
+	   the low byte. */
+	unsigned char it_sfx_macro[ 16 ];
+	unsigned short it_zxx_macro[ 128 ];
 	int default_gvol, default_speed, default_tempo, c2_rate, gain;
 	int linear_periods, fast_vol_slides;
 	unsigned char *default_panning, *sequence;
@@ -152,8 +167,11 @@ struct channel {
 	   (the filter is linear, so filtering after panning with one
 	   coefficient set equals IT2's pre-pan mono filtering). */
 	int flt_cutoff, flt_q, flt_env, flt_key, flt_on;
+	int sfx_macro;
 	int flt_a, flt_b, flt_c;
 	int flt_y1l, flt_y2l, flt_y1r, flt_y2r;
+	/* The float path's own memory, in its buffer's units. */
+	float flt_fy1l, flt_fy2l, flt_fy1r, flt_fy2r;
 	int flt_errl, flt_errr;
 	int pitch_env_tick;
 	int period, porta_period, retrig_count, fx_count, av_count;
@@ -161,6 +179,15 @@ struct channel {
 	int fine_porta_up_param, fine_porta_down_param, xfine_porta_param;
 	int arpeggio_param, vol_slide_param, gvol_slide_param, pan_slide_param;
 	int fine_vslide_up_param, fine_vslide_down_param;
+	int vcol_slide_param;
+	/* IT S73-S76: the playing note's new-note action, overriding the
+	   instrument's; -1 when none is set. */
+	int nna_override;
+	/* The pitch envelope's offset, in 1/768ths of an octave. */
+	int pitch_env_ofs;
+	/* IT: the playing note's own pan ( -1: the channel's ), valid while
+	   the channel pan is still voice_pan_of. */
+	int voice_pan, voice_pan_of;
 	int retrig_volume, retrig_ticks, tremor_on_ticks, tremor_off_ticks;
 	int vibrato_type, vibrato_phase, vibrato_speed, vibrato_depth;
 	int tremolo_type, tremolo_phase, tremolo_speed, tremolo_depth;
@@ -174,7 +201,7 @@ struct channel {
    effects - so the amplitude model and both resamplers apply to it
    unchanged. The pool is global and the quietest voice is stolen
    when it fills. */
-#define RMT_NUM_GHOSTS 32
+#define RMT_NUM_GHOSTS 64
 
 struct replay {
 	int sample_rate, interpolation, global_vol;
@@ -377,9 +404,16 @@ static void sample_ping_pong( struct sample *sample ) {
 	int idx;
 	int loop_start = sample->loop_start;
 	int loop_length = sample->loop_length;
-	int loop_end = loop_start + loop_length;
+	int loop_end;
 	short *sample_data = sample->data;
-	short *new_data = calloc( loop_end + loop_length + 1, sizeof( short ) );
+	short *new_data;
+	/* The doubled loop and its sentinel must fit in an int. */
+	if( loop_start < 0 || loop_start >= INT_MAX || loop_length < 0
+		|| loop_length > ( INT_MAX - 1 - loop_start ) / 2 ) {
+		return;
+	}
+	loop_end = loop_start + loop_length;
+	new_data = calloc( loop_end + loop_length + 1, sizeof( short ) );
 	if( new_data ) {
 		memcpy( new_data, sample_data, loop_end * sizeof( short ) );
 		for( idx = 0; idx < loop_length; idx++ ) {
@@ -424,7 +458,9 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 	int delta_env, offset, next_offset, idx, entry;
 	int num_rows, num_notes, pat_data_len, pat_data_offset;
 	int sam, sam_head_offset, sam_data_bytes, sam_data_samples;
+	int sam_data_avail;
 	int num_samples, sam_loop_start, sam_loop_length, amp;
+	uint32_t sample_bytes, loop_start, loop_length;
 	int note, flags, key, ins, vol, fxc, fxp;
 	int point, point_tick, point_offset;
 	int looped, ping_pong, sixteen_bit, adpcm;
@@ -612,9 +648,15 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 			offset += num_samples * 40;
 			for( sam = 0; sam < num_samples; sam++ ) {
 				sample = &instrument->samples[ sam ];
-				sam_data_bytes = data_u32le( data, sam_head_offset );
-				sam_loop_start = data_u32le( data, sam_head_offset + 4 );
-				sam_loop_length = data_u32le( data, sam_head_offset + 8 );
+				sample_bytes = data_u32le( data, sam_head_offset );
+				loop_start = data_u32le( data, sam_head_offset + 4 );
+				loop_length = data_u32le( data, sam_head_offset + 8 );
+				/* The decoder and its allocation count use signed ints. */
+				if( sample_bytes > INT_MAX - 1 ) {
+					dispose_module( module );
+					return NULL;
+				}
+				sam_data_bytes = ( int ) sample_bytes;
 				sample->volume = data_u8( data, sam_head_offset + 12 );
 				sample->fine_tune = data_s8( data, sam_head_offset + 13 );
 				looped = ( data_u8( data, sam_head_offset + 14 ) & 0x3 ) > 0;
@@ -628,15 +670,35 @@ static struct module* module_load_xm( struct data *data, char *message ) {
 				adpcm = data_u8( data, sam_head_offset + 17 ) == 0xAD && !sixteen_bit;
 				data_ascii( data, sam_head_offset + 18, 22, sample->name );
 				sam_head_offset += 40;
+				/* Limit the sample to the data left in the file. A size
+				   the file cannot hold would cost a huge allocation for
+				   silence, and overflow the end-of-data checks in the
+				   sample readers and the offset sum below. */
+				sam_data_avail = ( offset >= 0 && offset < data->length )
+					? data->length - offset : 0;
+				if( adpcm ) {
+					/* 16-byte table, then two samples a byte. */
+					sam_data_avail = sam_data_avail > 16 ? sam_data_avail - 16 : 0;
+					if( ( sam_data_bytes + 1 ) >> 1 > sam_data_avail ) {
+						sam_data_bytes = sam_data_avail * 2;
+					}
+				} else if( sam_data_bytes > sam_data_avail ) {
+					sam_data_bytes = sam_data_avail;
+				}
 				sam_data_samples = sam_data_bytes;
 				if( sixteen_bit ) {
 					sam_data_samples = sam_data_samples >> 1;
-					sam_loop_start = sam_loop_start >> 1;
-					sam_loop_length = sam_loop_length >> 1;
+					loop_start >>= 1;
+					loop_length >>= 1;
 				}
-				if( !looped || ( sam_loop_start + sam_loop_length ) > sam_data_samples ) {
+				/* Compare before converting to int or adding the loop fields. */
+				if( !looped || loop_start > ( uint32_t ) sam_data_samples
+					|| loop_length > ( uint32_t ) sam_data_samples - loop_start ) {
 					sam_loop_start = sam_data_samples;
 					sam_loop_length = 0;
+				} else {
+					sam_loop_start = ( int ) loop_start;
+					sam_loop_length = ( int ) loop_length;
 				}
 				sample->loop_start = sam_loop_start;
 				sample->loop_length = sam_loop_length;
@@ -681,6 +743,7 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 	short *scratch;
 	int stereo_mode, default_pan, channel_map[ 32 ];
 	int sample_offset, sample_length, loop_start, loop_length;
+	unsigned int sam_length, sam_loop_start, sam_loop_end;
 	int pat_offset, note_offset, row, chan, token;
 	int key, ins, volume, effect, param, panning;
 	char *pattern_data;
@@ -764,9 +827,20 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 			if( data_u8( data, inst_offset ) == 1 && data_u16le( data, inst_offset + 76 ) == 0x4353 ) {
 				sample_offset = ( data_u8( data, inst_offset + 13 ) << 20 )
 					+ ( data_u16le( data, inst_offset + 14 ) << 4 );
-				sample_length = data_u32le( data, inst_offset + 16 );
-				loop_start = data_u32le( data, inst_offset + 20 );
-				loop_length = data_u32le( data, inst_offset + 24 ) - loop_start;
+				/* Keep the header fields unsigned until they are bounded:
+				   read into ints, large values turn negative and pass the
+				   checks below, indexing before the sample buffer. The
+				   length limit matches the IT loader's. */
+				sam_length = data_u32le( data, inst_offset + 16 );
+				sam_loop_start = data_u32le( data, inst_offset + 20 );
+				sam_loop_end = data_u32le( data, inst_offset + 24 );
+				if( sam_length > 0x1000000 ) {
+					sam_length = 0;
+				}
+				if( sam_loop_end > sam_length ) {
+					sam_loop_end = sam_length;
+				}
+				sample_length = ( int ) sam_length;
 				sample->volume = data_u8( data, inst_offset + 28 );
 				pack = data_u8( data, inst_offset + 30 );
 				adpcm = pack == 4;
@@ -775,12 +849,12 @@ static struct module* module_load_s3m( struct data *data, char *message ) {
 					dispose_module( module );
 					return NULL;
 				}
-				if( loop_start + loop_length > sample_length ) {
-					loop_length = sample_length - loop_start;
-				}
-				if( loop_length < 1 || !( data_u8( data, inst_offset + 31 ) & 0x1 ) ) {
+				if( sam_loop_start >= sam_loop_end || !( data_u8( data, inst_offset + 31 ) & 0x1 ) ) {
 					loop_start = sample_length;
 					loop_length = 0;
+				} else {
+					loop_start = ( int ) sam_loop_start;
+					loop_length = ( int ) ( sam_loop_end - sam_loop_start );
 				}
 				sample->loop_start = loop_start;
 				sample->loop_length = loop_length;
@@ -1167,10 +1241,15 @@ static int it_load_sample( struct data *data, int offset,
 	if( c5speed < 1 ) {
 		c5speed = 8363;
 	}
-	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12;
+	/* Rounded to the nearest 1/64 semitone, the step the period
+	   arithmetic keeps; truncating made every sample flat. */
+	tune = ( log_2( c5speed ) - log_2( 8363 ) ) * 12 + ( 1 << ( FP_SHIFT - 7 ) );
 	sample->rel_note = ( short ) ( tune >> FP_SHIFT );
 	sample->fine_tune = ( short ) ( ( tune & FP_MASK ) >> ( FP_SHIFT - 7 ) );
-	if( !( flg & 0x10 ) || loop_end <= loop_start || loop_end > frames ) {
+	/* loop_start comes from a 32-bit field; a negative one passes
+	   the other checks and indexes before the sample buffer. */
+	if( !( flg & 0x10 ) || loop_start < 0 || loop_end <= loop_start
+		|| loop_end > frames ) {
 		loop_start = frames;
 		loop_end = frames;
 	}
@@ -1320,6 +1399,210 @@ static void it_load_envelope( struct data *data, int offset,
 	}
 }
 
+#define IT_MACRO_NONE      0
+#define IT_MACRO_CUTOFF    1
+#define IT_MACRO_RESONANCE 2
+
+/* Reduces one 32-byte IT MIDI macro to a filter control. Only the
+   forms Impulse Tracker's own defaults use are recognised: "F0F000"
+   sets the cutoff and "F0F001" the resonance, followed by "z" (the
+   Zxx parameter) or two hex digits (a fixed value). Spaces are
+   ignored and case does not matter; anything else, including other
+   MIDI messages, is IT_MACRO_NONE. Returns the control, with the
+   fixed value in *value, or -1 there for "z". */
+static int it_parse_macro( struct data *data, int offset, int *value ) {
+	char macro[ 33 ];
+	int idx, len = 0, chr, hi, lo, type;
+	for( idx = 0; idx < 32; idx++ ) {
+		chr = data_u8( data, offset + idx );
+		if( chr == 0 ) {
+			break;
+		}
+		if( chr == ' ' ) {
+			continue;
+		}
+		if( chr >= 'a' && chr <= 'z' ) {
+			chr -= 'a' - 'A';
+		}
+		macro[ len++ ] = ( char ) chr;
+	}
+	macro[ len ] = 0;
+	*value = -1;
+	if( len < 7 || strncmp( macro, "F0F00", 5 ) != 0 ) {
+		return IT_MACRO_NONE;
+	}
+	if( macro[ 5 ] == '0' ) {
+		type = IT_MACRO_CUTOFF;
+	} else if( macro[ 5 ] == '1' ) {
+		type = IT_MACRO_RESONANCE;
+	} else {
+		return IT_MACRO_NONE;
+	}
+	if( len == 7 && macro[ 6 ] == 'Z' ) {
+		return type;
+	}
+	if( len == 8 ) {
+		hi = macro[ 6 ] <= '9' ? macro[ 6 ] - '0' : macro[ 6 ] - 'A' + 10;
+		lo = macro[ 7 ] <= '9' ? macro[ 7 ] - '0' : macro[ 7 ] - 'A' + 10;
+		if( hi >= 0 && hi < 16 && lo >= 0 && lo < 16 ) {
+			*value = ( ( hi << 4 ) | lo ) & 0x7F;
+			return type;
+		}
+	}
+	return IT_MACRO_NONE;
+}
+
+/* Fill the module's macro tables: Impulse Tracker's defaults (SF0
+   is the cutoff, Z80-Z8F set the resonance in steps of 8), or the
+   configuration the file embeds. The embedded block follows the
+   parapointers and the optional edit history: nine global macros,
+   then sixteen SFx and 128 Zxx macros of 32 bytes each. */
+static void it_load_macros( struct module *module, struct data *data,
+	int special, int ofs ) {
+	int idx, type, value;
+	memset( module->it_sfx_macro, 0, sizeof( module->it_sfx_macro ) );
+	memset( module->it_zxx_macro, 0, sizeof( module->it_zxx_macro ) );
+	if( !( special & 0x08 ) ) {
+		module->it_sfx_macro[ 0 ] = IT_MACRO_CUTOFF;
+		for( idx = 0; idx < 16; idx++ ) {
+			module->it_zxx_macro[ idx ] = ( unsigned short )
+				( ( IT_MACRO_RESONANCE << 8 ) | ( idx * 8 ) );
+		}
+		return;
+	}
+	if( special & 0x02 ) {
+		ofs += 2 + data_u16le( data, ofs ) * 8;
+	}
+	ofs += 9 * 32;
+	for( idx = 0; idx < 16; idx++ ) {
+		type = it_parse_macro( data, ofs + idx * 32, &value );
+		if( value < 0 ) {
+			module->it_sfx_macro[ idx ] = ( unsigned char ) type;
+		}
+	}
+	ofs += 16 * 32;
+	for( idx = 0; idx < 128; idx++ ) {
+		type = it_parse_macro( data, ofs + idx * 32, &value );
+		if( type != IT_MACRO_NONE && value >= 0 ) {
+			module->it_zxx_macro[ idx ] = ( unsigned short )
+				( ( type << 8 ) | value );
+		}
+	}
+}
+
+/* The volume envelope of an Impulse Tracker 1.x instrument: flags and
+   loop/sustain nodes at 0x11-0x15 as in the 2.x layout, but up to 25
+   nodes of an 8-bit tick and an 8-bit value at 0x1F8, ended by 0xFFFF. */
+static void it_load_old_envelope( struct data *data, int iofs,
+		struct envelope *env ) {
+	int flg = data_u8( data, iofs + 0x11 );
+	int lpb = data_u8( data, iofs + 0x12 );
+	int lpe = data_u8( data, iofs + 0x13 );
+	int sle = data_u8( data, iofs + 0x15 );
+	int num = 0, val;
+	while( num < 16 && data_u16le( data, iofs + 0x1F8 + num * 2 ) != 0xFFFF ) {
+		val = data_u8( data, iofs + 0x1F8 + num * 2 + 1 );
+		env->points_tick[ num ] = ( short ) data_u8( data, iofs + 0x1F8 + num * 2 );
+		env->points_ampl[ num ] = ( short ) ( val > 64 ? 64 : val );
+		num++;
+	}
+	if( num < 1 ) {
+		return;
+	}
+	env->num_points = ( char ) num;
+	env->enabled = ( flg & 0x01 ) > 0;
+	env->looped = ( flg & 0x02 ) > 0 && lpe < num;
+	env->sustain = ( flg & 0x04 ) > 0 && sle < num;
+	if( env->looped ) {
+		env->loop_start_tick = env->points_tick[ lpb < num ? lpb : 0 ];
+		env->loop_end_tick = env->points_tick[ lpe ];
+	}
+	if( env->sustain ) {
+		env->sustain_tick = env->points_tick[ sle ];
+	}
+}
+
+/* OpenMPT's song extension block ( "STPM" then fields of a 4-byte id
+   and a 16-bit size ) can store the mix-level mode ( "PMM." ) and
+   the sample pre-amp ( "SPA." ), which replaces the header's mix
+   volume. Sets whichever is present; ids are stored byte-reversed. */
+static void it_read_mpt_song_ext( struct data *data, int *mix_levels,
+		int *pre_amp ) {
+	int pos, id_ok, size, val, idx;
+	for( pos = data->length - 4; pos >= 0xC0; pos-- ) {
+		if( data->buffer[ pos ] == 'S' && data->buffer[ pos + 1 ] == 'T'
+				&& data->buffer[ pos + 2 ] == 'P' && data->buffer[ pos + 3 ] == 'M' ) {
+			break;
+		}
+	}
+	if( pos < 0xC0 ) {
+		return;
+	}
+	pos += 4;
+	while( pos + 6 <= data->length ) {
+		unsigned char *id = ( unsigned char * ) data->buffer + pos;
+		size = data_u16le( data, pos + 4 );
+		/* OpenMPT's own sanity test: printable ASCII, and it fits. */
+		id_ok = 1;
+		for( idx = 0; idx < 4; idx++ ) {
+			if( id[ idx ] & 0x80 ) {
+				id_ok = 0;
+			}
+		}
+		if( !id_ok || !( ( id[ 0 ] | id[ 1 ] | id[ 2 ] | id[ 3 ] ) & 0x60 )
+				|| ( id[ 0 ] == '2' && id[ 1 ] == '2' && id[ 2 ] == '8' )
+				|| pos + 6 + size > data->length ) {
+			break;
+		}
+		if( size >= 1 && size <= 4 ) {
+			val = 0;
+			for( idx = size - 1; idx >= 0; idx-- ) {
+				val = ( val << 8 ) | data_u8( data, pos + 6 + idx );
+			}
+			if( !memcmp( id, ".MMP", 4 ) ) {
+				*mix_levels = val;
+			} else if( !memcmp( id, ".APS", 4 ) ) {
+				*pre_amp = val;
+			}
+		}
+		pos += 6 + size;
+	}
+}
+
+/* Whether OpenMPT takes the file for one ModPlug Tracker ( or an old
+   OpenMPT in ModPlug mode ) wrote, from the header fields it uses. */
+static int it_modplug_made( struct data *data ) {
+	int cwt = data_u16le( data, 0x28 ), cmwt = data_u16le( data, 0x2A );
+	unsigned int reserved = data_u32le( data, 0x3C );
+	int highlight = data_u16le( data, 0x1E );
+	if( ( cwt & 0xF000 ) == 0x5000 ) {
+		return reserved == 0x54504D4F; /* "OMPT" */
+	}
+	if( cwt == 0x888 || cmwt == 0x888 ) {
+		return 1;
+	}
+	if( reserved != 0 ) {
+		return 0;
+	}
+	if( cwt == 0x217 && cmwt == 0x200 ) {
+		return 1;
+	}
+	if( cwt == 0x214 && cmwt == 0x202 ) {
+		return 1;
+	}
+	if( cwt == 0x300 && cmwt == 0x300 && data_u16le( data, 0x20 ) == 256
+			&& data_u8( data, 0x34 ) == 128 && data_u8( data, 0x35 ) == 0 ) {
+		return 1;
+	}
+	/* ModPlug 1.0 alpha / beta, but not an OpenSPC conversion */
+	if( cwt == 0x214 && cmwt == 0x200 && highlight == 0
+			&& !( data_u16le( data, 0x22 ) == 0 && data_u8( data, 0x31 ) == 100
+				&& data_u8( data, 0x32 ) == 1 ) ) {
+		return 1;
+	}
+	return 0;
+}
+
 static struct module* module_load_it( struct data *data, char *message ) {
 	int ord_num, ins_num, smp_num, pat_num, flags, use_instruments;
 	int idx, sub, ofs, key, ins, volume, effect, param, chan;
@@ -1359,14 +1642,15 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		pat_num = 255;
 	}
 	module->num_patterns = pat_num > 0 ? pat_num : 1;
-	module->default_gvol = ( gv > 128 ? 128 : gv ) >> 1;
+	/* IT keeps global volume in 0..128, as Vxx and Wxy use it. */
+	module->default_gvol = gv > 128 ? 128 : gv;
 	module->default_speed = tick_speed > 0 ? tick_speed : 6;
 	module->default_tempo = tempo > 31 ? tempo : 125;
 	module->c2_rate = 8363;
-	/* The S3M-style mapping of the mix-volume byte ran about 2 dB
-	   under libxmp's IT levels (geometric mean 0.77 over the
-	   real-world A/B corpus); scale by 4/3 to sit on it. */
-	module->gain = ( mv & 0x7F ) > 0 ? ( ( mv & 0x7F ) * 4 ) / 3 : 64;
+	/* The mix-volume byte, 0..128, maps straight onto the engine's
+	   gain: this sits within about half a dB of Impulse Tracker
+	   ( it2play ) and OpenMPT. 0 is treated as the default. */
+	module->gain = mv > 0 ? ( mv > 128 ? 128 : mv ) : 64;
 	module->sequence_len = 0;
 	module->sequence = calloc( ord_num > 0 ? ord_num : 1,
 		sizeof( unsigned char ) );
@@ -1428,6 +1712,51 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		}
 	}
 	module->num_channels = max_chan + 1;
+	{
+		/* Match OpenMPT's mix levels. Files it takes for ModPlug's play
+		   at ModPlug's level, which pre-attenuates by a table of the
+		   channel count; files OpenMPT saved can name the mode. Levels
+		   are relative to OpenMPT's "compatible" mode, which this gain
+		   already matches ( measured against libopenmpt on 40 files ). */
+		static const unsigned char pre_amp_table[ 16 ] = {
+			0x60, 0x60, 0x60, 0x70, 0x80, 0x88, 0x90, 0x98,
+			0xA0, 0xA4, 0xA8, 0xAC, 0xB0, 0xB4, 0xB8, 0xBC };
+		int mix_levels = it_modplug_made( data ) ? 0 : 4, pre_amp = -1;
+		int nch = module->num_channels < 1 ? 1
+			: module->num_channels > 31 ? 31 : module->num_channels;
+		int atten = pre_amp_table[ nch / 2 ];
+		it_read_mpt_song_ext( data, &mix_levels, &pre_amp );
+		if( pre_amp > 0 ) {
+			module->gain = pre_amp > 255 ? 255 : pre_amp;
+		}
+		switch( mix_levels ) {
+			case 0: /* original ModPlug */
+				module->gain = module->gain * 64 / atten;
+				break;
+			case 1: /* 1.17RC1 */
+				module->gain = module->gain * 8 / atten;
+				break;
+			case 2: /* 1.17RC2 */
+				module->gain = module->gain * 128 / atten;
+				break;
+			case 3: /* 1.17RC3: no pre-amp, one less attenuation step */
+				module->gain = module->gain * 2;
+				break;
+			case 5: /* compatible, FT2 pre-amp */
+				module->gain = module->gain * 3 / 4;
+				break;
+			default:
+				break;
+		}
+		if( module->gain < 1 ) {
+			module->gain = 1;
+		}
+		/* 255 keeps channel_calculate_ampl's fadeout product inside 32
+		   bits ( 64 * 255 * 4 * 32768 < 2^31 ). */
+		if( module->gain > 255 ) {
+			module->gain = 255;
+		}
+	}
 	module->default_panning = calloc( module->num_channels,
 		sizeof( unsigned char ) );
 	if( !module->default_panning ) {
@@ -1435,6 +1764,14 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		return NULL;
 	}
 	module->it_effects = 1;
+	/* Header flag 3 selects linear slides: pitch in 1/64ths of a
+	   semitone, Exx/Fxx/Gxx moving xx * 4 of them a tick - the units
+	   the XM linear period table already uses. Otherwise IT slides
+	   Amiga-style. */
+	module->linear_periods = ( flags & 0x08 ) ? 1 : 0;
+	module->it_compat_gxx = ( flags & 0x20 ) ? 1 : 0;
+	it_load_macros( module, data, data_u16le( data, 0x2E ),
+		ofs + ins_num * 4 + smp_num * 4 + pat_num * 4 );
 	module->default_chan_vol = calloc( module->num_channels,
 		sizeof( unsigned char ) );
 	for( idx = 0; idx < module->num_channels; idx++ ) {
@@ -1485,18 +1822,33 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		}
 	}
 	if( use_instruments ) {
+		/* Instruments saved for compatibility below 2.00 use the IT 1.x
+		   layout: NNA, DCT and fadeout ( in half the 2.x units ) sit
+		   elsewhere, and there is no DCA, global volume, filter, pan or
+		   pitch envelope. The name and keyboard are where 2.x has them. */
+		int old_ins = data_u16le( data, 0x2A ) < 0x200;
 		for( ins = 1; ins <= ins_num; ins++ ) {
 			int iofs = data_u32le( data, ofs + ( ins - 1 ) * 4 );
 			int fade, gbv, nos, local, want, kb_note, kb_smp;
 			int local_of[ 100 ];
 			instrument = &module->instruments[ ins ];
 			data_ascii( data, iofs + 0x20, 26, instrument->name );
-			instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
-			instrument->dct = ( char ) ( data_u8( data, iofs + 0x12 ) & 3 );
-			instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
-			fade = data_u16le( data, iofs + 0x14 );
-			gbv = data_u8( data, iofs + 0x18 );
-			fade = fade * 64;
+			if( old_ins ) {
+				instrument->nna = ( char ) ( data_u8( data, iofs + 0x1A ) & 3 );
+				instrument->dct = ( char ) ( data_u8( data, iofs + 0x1B ) & 3 );
+				instrument->dca = 0;
+				fade = data_u16le( data, iofs + 0x18 ) * 2;
+				gbv = 128;
+			} else {
+				instrument->nna = ( char ) ( data_u8( data, iofs + 0x11 ) & 3 );
+				instrument->dct = ( char ) ( data_u8( data, iofs + 0x12 ) & 3 );
+				instrument->dca = ( char ) ( data_u8( data, iofs + 0x13 ) & 3 );
+				fade = data_u16le( data, iofs + 0x14 );
+				gbv = data_u8( data, iofs + 0x18 );
+			}
+			/* IT subtracts the fadeout from 1024 each tick; the engine
+			   fades from 32768, so the step scales by 32. */
+			fade = fade * 32;
 			instrument->vol_fadeout = fade > 32768 ? 32768 : fade;
 			/* Gather the samples this instrument's keyboard uses and
 			   give the instrument private copies of them. */
@@ -1548,16 +1900,31 @@ static struct module* module_load_it( struct data *data, char *message ) {
 							}
 						}
 						instrument->key_to_sample[ kb_note ] = ( char ) want;
+						/* The keyboard's note byte: IT plays the sample at that
+						   note instead of the key pressed. */
+						instrument->key_shift[ kb_note ] = ( signed char )
+							( ( data_u8( data, iofs + 0x40 + idx * 2 ) % 120 ) - idx );
 					}
 				}
 			}
+			if( old_ins ) {
+				it_load_old_envelope( data, iofs, &instrument->vol_env );
+				continue;
+			}
 			it_load_envelope( data, iofs + 0x130, &instrument->vol_env, 0 );
-			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 0 );
+			/* Pan nodes are signed, -32 left .. 32 right, like pitch. */
+			it_load_envelope( data, iofs + 0x182, &instrument->pan_env, 32 );
 			it_load_envelope( data, iofs + 0x1D4, &instrument->pitch_env, 32 );
 			instrument->pitch_is_filter
 				= ( char ) ( ( data_u8( data, iofs + 0x1D4 ) & 0x80 ) >> 7 );
 			instrument->ifc = ( char ) data_u8( data, iofs + 0x3A );
 			instrument->ifr = ( char ) data_u8( data, iofs + 0x3B );
+			if( !( data_u8( data, iofs + 0x19 ) & 0x80 ) ) {
+				int dp = data_u8( data, iofs + 0x19 ) & 0x7F;
+				instrument->def_pan = ( char ) ( ( dp > 64 ? 32 : dp ) + 1 );
+			}
+			instrument->pps = ( char ) data_s8( data, iofs + 0x16 );
+			instrument->pps_center = ( char ) data_u8( data, iofs + 0x17 );
 		}
 	} else {
 		for( ins = 1; ins <= module->num_instruments; ins++ ) {
@@ -1583,7 +1950,8 @@ static struct module* module_load_it( struct data *data, char *message ) {
 		if( pofs > 0 ) {
 			pat_len = data_u16le( data, pofs );
 			num_rows = data_u16le( data, pofs + 2 );
-			if( num_rows < 1 || num_rows > 200 ) {
+			/* IT2 stops at 200 rows; OpenMPT writes up to 1024. */
+			if( num_rows < 1 || num_rows > 1024 ) {
 				num_rows = 64;
 			}
 		}
@@ -1657,12 +2025,16 @@ static struct module* module_load_it( struct data *data, char *message ) {
 					volume = 0x70 | ( entry - 85 );  /* vol slide up */
 				} else if( entry <= 104 ) {
 					volume = 0x60 | ( entry - 95 );  /* vol slide down */
+				} else if( entry <= 114 ) {
+					volume = 0x01 + ( entry - 105 ); /* pitch slide down */
+				} else if( entry <= 124 ) {
+					volume = 0x51 + ( entry - 115 ); /* pitch slide up */
 				} else if( entry >= 128 && entry <= 192 ) {
 					entry = ( entry - 128 ) >> 2;
 					volume = 0xC0 | ( entry > 15 ? 15 : entry );
 				} else if( entry >= 193 && entry <= 202 ) {
-					/* Tone porta; IT's rate table is coarser than the
-					   nibble this passes, an approximation. */
+					/* Tone porta; the playback side turns the nibble into
+					   IT's speed table. */
 					volume = 0xF0 | ( entry - 193 );
 				} else if( entry >= 203 && entry <= 212 ) {
 					volume = 0xB0 | ( entry - 203 );  /* vibrato depth */
@@ -2041,6 +2413,8 @@ static void channel_init( struct channel *channel, struct replay *replay, int id
 	channel->flt_cutoff = 127;
 	channel->flt_env = 255;
 	channel->flt_key = -1;
+	channel->nna_override = -1;
+	channel->voice_pan = -1;
 	channel->instrument = &replay->module->instruments[ 0 ];
 	channel->sample = &channel->instrument->samples[ 0 ];
 	/* Unsigned: the channel count comes from the file and is not
@@ -2244,6 +2618,23 @@ static void channel_retrig_vol_slide( struct channel *channel ) {
    arriving note's instrument asks for a new-note action other than
    cut. Runs at trigger entry, before the trigger overwrites the old
    instrument and envelope state. */
+/* Whether this row's note is a portamento target rather than a new
+   note. IT plays a tone portamento as an ordinary note when the
+   channel has nothing sounding to slide from. */
+static int channel_note_porta( struct channel *channel ) {
+	struct sample *sample = channel->sample;
+	int porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
+		channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
+		channel->note.effect == 0x87 || channel->note.effect == 0x8C;
+	if( porta && channel->replay->module->it_effects
+			&& ( !sample || channel->period <= 0 || channel->fadeout_vol <= 0
+				|| ( sample->loop_length <= 1
+					&& channel->sample_idx >= sample->loop_start ) ) ) {
+		porta = 0;
+	}
+	return porta;
+}
+
 static void channel_capture_ghost( struct channel *channel ) {
 	struct replay *replay = channel->replay;
 	struct channel *ghost;
@@ -2254,13 +2645,12 @@ static void channel_capture_ghost( struct channel *channel ) {
 	if( channel->note.key < 1 || channel->note.key > 96 ) {
 		return;
 	}
-	porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
-		channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
-		channel->note.effect == 0x87 || channel->note.effect == 0x8C;
+	porta = channel_note_porta( channel );
 	if( porta ) {
 		return;
 	}
-	nna = channel->instrument->nna;
+	nna = channel->nna_override >= 0 ? channel->nna_override
+		: channel->instrument->nna;
 	if( nna < 1 || nna > 3 ) {
 		return;
 	}
@@ -2321,17 +2711,71 @@ static void channel_capture_ghost( struct channel *channel ) {
 	}
 }
 
+/* IT's pitch-slide memory: Exx and Fxx share one value, and Gxx shares
+   it too unless the song asks for compatible Gxx. */
+static void channel_it_slide_memory( struct channel *channel, int param,
+		int is_tone_porta ) {
+	if( is_tone_porta || !channel->replay->module->it_compat_gxx ) {
+		channel->tone_porta_param = param;
+	}
+	if( !is_tone_porta || !channel->replay->module->it_compat_gxx ) {
+		channel->porta_up_param = channel->porta_down_param = param;
+	}
+}
+
+/* IT gives every new note its own pan, leaving the channel's alone:
+   the instrument's default pan if set, else the channel's; the
+   sample's default pan over either; then pitch-pan separation moves
+   it by ( note - centre ) * separation / 8. In IT's 0..64 units. */
+static void channel_it_voice_pan( struct channel *channel ) {
+	struct instrument *ins = channel->instrument;
+	int pan = ins->def_pan > 0 ? ins->def_pan - 1 : ( channel->panning + 2 ) >> 2;
+	int delta;
+	if( channel->sample && channel->sample->panning > 0 ) {
+		pan = ( channel->sample->panning - 1 + 2 ) >> 2;
+	}
+	if( ins->pps ) {
+		/* IT's arithmetic shift, spelled out for negative values */
+		delta = ( channel->note.key + 11 - ins->pps_center ) * ins->pps;
+		pan += delta >= 0 ? delta >> 3 : -( ( -delta + 7 ) >> 3 );
+	}
+	pan = pan < 0 ? 0 : pan > 64 ? 64 : pan;
+	channel->voice_pan = pan * 4 > 255 ? 255 : pan * 4;
+	channel->voice_pan_of = channel->panning;
+}
+
+/* The amount of a volume-column volume slide. IT's four slides ( fine
+   up/down, up/down ) share one memory that a 0 recalls; XM's have none. */
+static int channel_vcol_amount( struct channel *channel ) {
+	int amount = channel->note.volume & 0xF;
+	if( channel->replay->module->it_effects ) {
+		if( amount > 0 ) {
+			channel->vcol_slide_param = amount;
+		} else {
+			amount = channel->vcol_slide_param;
+		}
+	}
+	return amount;
+}
+
 static void channel_trigger( struct channel *channel ) {
-	int key, sam, porta, period, fine_tune, ins = channel->note.instrument;
+	int key, sam, period, fine_tune, ins = channel->note.instrument;
+	/* Decided on the channel as it stands, before this row changes it. */
+	int porta = channel_note_porta( channel );
 	struct sample *sample;
 	channel_capture_ghost( channel );
+	/* An override belongs to the note it was set on; a portamento
+	   keeps that note playing. */
+	if( channel->note.key >= 1 && channel->note.key <= 96 && !porta ) {
+		channel->nna_override = -1;
+	}
 	if( ins > 0 && ins <= channel->replay->module->num_instruments ) {
 		channel->instrument = &channel->replay->module->instruments[ ins ];
 		key = channel->note.key < 97 ? channel->note.key : 0;
 		sam = channel->instrument->key_to_sample[ key ];
 		sample = &channel->instrument->samples[ sam ];
 		channel->volume = sample->volume >= 64 ? 64 : sample->volume & 0x3F;
-		if( sample->panning > 0 ) {
+		if( sample->panning > 0 && !channel->replay->module->it_effects ) {
 			channel->panning = ( sample->panning - 1 ) & 0xFF;
 		}
 		if( channel->period > 0 && sample->loop_length > 1 ) {
@@ -2355,6 +2799,8 @@ static void channel_trigger( struct channel *channel ) {
 		}
 		channel->flt_y1l = channel->flt_y2l = 0;
 		channel->flt_y1r = channel->flt_y2r = 0;
+		channel->flt_fy1l = channel->flt_fy2l = 0.0f;
+		channel->flt_fy1r = channel->flt_fy2r = 0.0f;
 		channel->flt_errl = channel->flt_errr = 0;
 	}
 	if( channel->note.effect == 0x09 || channel->note.effect == 0x8F ) {
@@ -2365,18 +2811,30 @@ static void channel_trigger( struct channel *channel ) {
 		channel->sample_off = ( channel->offset_param << 8 )
 			+ channel->high_offset;
 	}
-	if( channel->note.volume >= 0x10 && channel->note.volume < 0x60 ) {
+	if( channel->note.volume >= 0x10 && channel->note.volume < 0x60
+			&& !( channel->replay->module->it_effects && channel->note.volume > 0x50 ) ) {
 		channel->volume = channel->note.volume < 0x50 ? channel->note.volume - 0x10 : 64;
 	}
+	if( channel->replay->module->it_effects ) {
+		/* IT volume-column Ex / Fx ( 0x01.. / 0x51.. ): a pitch slide of
+		   x * 4, sharing the Exx / Fxx memory; 0 recalls it. */
+		int v = channel->note.volume;
+		if( ( v >= 0x02 && v <= 0x0A ) || ( v >= 0x52 && v <= 0x5A ) ) {
+			channel_it_slide_memory( channel, ( ( v & 0xF ) - 1 ) * 4, 0 );
+		}
+	}
 	switch( channel->note.volume & 0xF0 ) {
+		case 0x60: case 0x70: /* Vol Slide: the row only sets the memory. */
+			channel_vcol_amount( channel );
+			break;
 		case 0x80: /* Fine Vol Down.*/
-			channel->volume -= channel->note.volume & 0xF;
+			channel->volume -= channel_vcol_amount( channel );
 			if( channel->volume < 0 ) {
 				channel->volume = 0;
 			}
 			break;
 		case 0x90: /* Fine Vol Up.*/
-			channel->volume += channel->note.volume & 0xF;
+			channel->volume += channel_vcol_amount( channel );
 			if( channel->volume > 64 ) {
 				channel->volume = 64;
 			}
@@ -2397,7 +2855,16 @@ static void channel_trigger( struct channel *channel ) {
 			break;
 		case 0xF0: /* Tone Porta.*/
 			if( ( channel->note.volume & 0xF ) > 0 ) {
-				channel->tone_porta_param = channel->note.volume & 0xF;
+				if( channel->replay->module->it_effects ) {
+					/* IT's volume-column Gx picks a speed from a table and
+					   shares Gxx's memory. */
+					static const unsigned char it_vcol_porta[ 10 ] =
+						{ 0, 1, 4, 8, 16, 32, 64, 96, 128, 255 };
+					channel_it_slide_memory( channel,
+						it_vcol_porta[ channel->note.volume & 0xF ], 1 );
+				} else {
+					channel->tone_porta_param = channel->note.volume & 0xF;
+				}
 			}
 			break;
 	}
@@ -2410,26 +2877,28 @@ static void channel_trigger( struct channel *channel ) {
 				channel->volume = 0;
 			}
 		} else {
-			porta = ( channel->note.volume & 0xF0 ) == 0xF0 ||
-				channel->note.effect == 0x03 || channel->note.effect == 0x05 ||
-				channel->note.effect == 0x87 || channel->note.effect == 0x8C;
 			if( !porta ) {
 				ins = channel->instrument->key_to_sample[ channel->note.key ];
 				channel->sample = &channel->instrument->samples[ ins ];
+				if( channel->replay->module->it_effects ) {
+					channel_it_voice_pan( channel );
+				}
 			}
 			fine_tune = channel->sample->fine_tune;
 			if( channel->note.effect == 0x75 || channel->note.effect == 0xF2 ) {
 				/* Set Fine Tune. */
 				fine_tune = ( ( channel->note.param & 0xF ) << 4 ) - 128;
 			}
-			key = channel->note.key + channel->sample->rel_note;
-			if( key < 1 ) {
-				key = 1;
+			key = channel->note.key + channel->instrument->key_shift[ channel->note.key ]
+				+ channel->sample->rel_note;
+			/* IT notes reach down to C-0, eleven below the engine's key 1. */
+			if( key < ( channel->replay->module->it_effects ? -11 : 1 ) ) {
+				key = channel->replay->module->it_effects ? -11 : 1;
 			}
 			if( key > 120 ) {
 				key = 120;
 			}
-			period = ( key << 6 ) + ( fine_tune >> 1 );
+			period = key * 64 + ( fine_tune >> 1 );
 			if( channel->replay->module->linear_periods ) {
 				channel->porta_period = 7744 - period;
 			} else {
@@ -2446,6 +2915,31 @@ static void channel_trigger( struct channel *channel ) {
 					channel->tremolo_phase = 0;
 				}
 				channel->retrig_count = channel->av_count = 0;
+				/* IT starts a new voice for every note, instrument
+				   column or not: the envelopes restart, the key goes
+				   down again, fadeout resets and the instrument's
+				   initial filter applies. Only the volume carries
+				   over. ( XM keeps all of these on a bare note, and an
+				   instrument-carrying note already did this above. ) */
+				if( channel->replay->module->it_effects
+						&& channel->note.instrument == 0 ) {
+					channel->vol_env_tick = channel->pan_env_tick = 0;
+					channel->pitch_env_tick = 0;
+					channel->fadeout_vol = 32768;
+					channel->key_on = 1;
+					channel->flt_env = 255;
+					if( channel->instrument->ifc & 0x80 ) {
+						channel->flt_cutoff = channel->instrument->ifc & 0x7F;
+					}
+					if( channel->instrument->ifr & 0x80 ) {
+						channel->flt_q = channel->instrument->ifr & 0x7F;
+					}
+					channel->flt_y1l = channel->flt_y2l = 0;
+					channel->flt_y1r = channel->flt_y2r = 0;
+					channel->flt_fy1l = channel->flt_fy2l = 0.0f;
+					channel->flt_fy1r = channel->flt_fy2r = 0.0f;
+					channel->flt_errl = channel->flt_errr = 0;
+				}
 			}
 		}
 	}
@@ -2487,13 +2981,15 @@ static void channel_filter_coeffs( struct channel *channel ) {
 	channel->flt_on = 1;
 }
 
-/* The per-tick work for the third envelope: as a pitch envelope it is
-   a cumulative linear slide of ( value * 32 ) / 768 octaves per tick,
-   folded into the period the engine recomputes pitch from; as a
-   filter envelope it scales the cutoff through flt_env ( value * 4,
-   0..255, 255 with the envelope off ). Values are stored biased +32.
-   Ghosts keep their filter envelopes running but their frequency is
-   frozen by design, so the pitch branch skips them. */
+/* The per-tick work for the third envelope: as a pitch envelope it
+   offsets the pitch by ( value * 32 ) / 768 octaves, up to 16
+   semitones either way, from the note's pitch each tick - IT resets
+   the frequency every tick and applies the envelope on top, it does
+   not accumulate it; as a filter envelope it scales the cutoff
+   through flt_env ( value * 4, 0..255, 255 with the envelope off ).
+   Values are stored biased +32. */
+static void channel_calculate_freq( struct channel *channel );
+
 static void channel_update_pitch_filter( struct channel *channel ) {
 	struct envelope *env = &channel->instrument->pitch_env;
 	int val, slide;
@@ -2504,16 +3000,18 @@ static void channel_update_pitch_filter( struct channel *channel ) {
 			channel->flt_env = val > 255 ? 255 : val;
 		} else if( channel->sample ) {
 			slide = ( val - 32 ) * 32;
-			if( slide != 0 && channel->period > 0 ) {
-				channel->period = ( channel->period * FP_ONE )
-					/ exp_2( ( slide * FP_ONE ) / 768 );
-				if( channel->period < 1 ) {
-					channel->period = 1;
-				}
+			if( slide != channel->pitch_env_ofs ) {
+				channel->pitch_env_ofs = slide;
+				channel_calculate_freq( channel );
 			}
 		}
 		channel->pitch_env_tick = envelope_next_tick( env,
 			channel->pitch_env_tick, channel->key_on );
+	}
+	if( ( !env->enabled || channel->instrument->pitch_is_filter )
+			&& channel->pitch_env_ofs ) {
+		channel->pitch_env_ofs = 0;
+		channel_calculate_freq( channel );
 	}
 	channel_filter_coeffs( channel );
 }
@@ -2524,11 +3022,12 @@ static void channel_update_envelopes( struct channel *channel ) {
 		struct envelope *env = &channel->instrument->vol_env;
 		int fade = !channel->key_on;
 		/* IT starts the fadeout as soon as a non-looping volume
-		   envelope reaches its final node, key on or not - a
-		   sustained envelope never reaches it while the key is held.
+		   envelope reaches its final node, key on or not. While the
+		   key is held a sustain loop keeps it from ending, even when
+		   the sustain point is the final node, so no fade then.
 		   XM holds the last node forever, so this is gated. */
 		if( !fade && channel->replay->module->it_effects
-				&& !env->looped && env->num_points > 0
+				&& !env->looped && !env->sustain && env->num_points > 0
 				&& channel->vol_env_tick
 					>= env->points_tick[ ( int ) env->num_points - 1 ] ) {
 			fade = 1;
@@ -2567,23 +3066,37 @@ static void channel_auto_vibrato( struct channel *channel ) {
 static void channel_calculate_freq( struct channel *channel ) {
 	int per = channel->period + channel->vibrato_add;
 	if( channel->replay->module->linear_periods ) {
-		per = per - ( channel->arpeggio_add << 6 );
-		if( per < 28 || per > 7680 ) {
-			per = 7680;
+		per = per - ( channel->arpeggio_add << 6 ) - channel->pitch_env_ofs;
+		{
+			/* the lowest note: IT's keys reach C-0, eleven below key 1 */
+			int lowest = channel->replay->module->it_effects ? 8448 : 7680;
+			if( per < 28 || per > lowest ) {
+				per = lowest;
+			}
 		}
 		/* FP_ONE is 1 << FP_SHIFT, so this is the same value for a
 		 * non-negative operand and defined for a negative one - and
 		 * 4608 - per is negative for any period above 4608. */
-		channel->freq = ( ( channel->replay->module->c2_rate >> 4 )
-			* exp_2( ( ( 4608 - per ) * FP_ONE ) / 768 ) ) >> ( FP_SHIFT - 4 );
+		/* c2_rate * 2^x in two parts to stay in 32 bits: dropping the
+		   low four bits of the rate outright ( 8363 -> 8352 ) left
+		   every linear-period note about 2.3 cents flat. */
+		{
+			int c2 = channel->replay->module->c2_rate;
+			int e  = exp_2( ( ( 4608 - per ) * FP_ONE ) / 768 );
+			channel->freq = ( ( c2 >> 4 ) * e
+				+ ( ( ( c2 & 15 ) * e ) >> 4 ) ) >> ( FP_SHIFT - 4 );
+		}
 	} else {
-		if( per > 29021 ) {
-			per = 29021;
+		if( per > ( channel->replay->module->it_effects ? 58042 : 29021 ) ) {
+			per = channel->replay->module->it_effects ? 58042 : 29021;
 		}
 		/* per is only clamped from above here; vibrato can carry it
 		 * below zero, and the "per < 28" guard underneath runs after
 		 * this line rather than before it. */
 		per = ( per * FP_ONE ) / exp_2( ( channel->arpeggio_add * FP_ONE ) / 12 );
+		if( channel->pitch_env_ofs ) {
+			per = ( per * FP_ONE ) / exp_2( ( channel->pitch_env_ofs * FP_ONE ) / 768 );
+		}
 		if( per < 28 ) {
 			per = 29021;
 		}
@@ -2611,12 +3124,25 @@ static void channel_calculate_ampl( struct channel *channel ) {
 		? channel->sample->glob_vol - 1 : 64 ) ) >> 6;
 	vol = ( vol * channel->replay->module->gain * FP_ONE ) >> 13;
 	vol = ( vol * channel->fadeout_vol ) >> 15;
-	channel->ampl = ( vol * channel->replay->global_vol * env_vol ) >> 12;
+	channel->ampl = ( vol * channel->replay->global_vol * env_vol )
+		>> ( channel->replay->module->it_effects ? 13 : 12 );
 	if( channel->instrument->pan_env.enabled ) {
 		env_pan = envelope_calculate_ampl( &channel->instrument->pan_env, channel->pan_env_tick );
 	}
-	range = ( channel->panning < 128 ) ? channel->panning : ( 255 - channel->panning );
-	channel->pann = channel->panning + ( range * ( env_pan - 32 ) >> 5 );
+	{
+		/* A pan effect sets the channel pan and, in IT, the playing
+		   note's with it, ending any note pan. */
+		int pan = channel->panning;
+		if( channel->voice_pan >= 0 ) {
+			if( channel->voice_pan_of == channel->panning ) {
+				pan = channel->voice_pan;
+			} else {
+				channel->voice_pan = -1;
+			}
+		}
+		range = ( pan < 128 ) ? pan : ( 255 - pan );
+		channel->pann = pan + ( range * ( env_pan - 32 ) >> 5 );
+	}
 }
 
 static void channel_tick( struct channel *channel ) {
@@ -2624,15 +3150,26 @@ static void channel_tick( struct channel *channel ) {
 	channel->fx_count++;
 	channel->retrig_count++;
 	if( !( channel->note.effect == 0x7D && channel->fx_count <= channel->note.param ) ) {
+		if( channel->replay->module->it_effects ) {
+			int v = channel->note.volume;
+			if( v >= 0x01 && v <= 0x0A && channel->period > 0 ) {
+				channel->period += channel->porta_down_param << 2;
+			} else if( v >= 0x51 && v <= 0x5A ) {
+				channel->period -= channel->porta_up_param << 2;
+				if( channel->period < 0 ) {
+					channel->period = 0;
+				}
+			}
+		}
 		switch( channel->note.volume & 0xF0 ) {
 			case 0x60: /* Vol Slide Down.*/
-				channel->volume -= channel->note.volume & 0xF;
+				channel->volume -= channel_vcol_amount( channel );
 				if( channel->volume < 0 ) {
 					channel->volume = 0;
 				}
 				break;
 			case 0x70: /* Vol Slide Up.*/
-				channel->volume += channel->note.volume & 0xF;
+				channel->volume += channel_vcol_amount( channel );
 				if( channel->volume > 64 ) {
 					channel->volume = 64;
 				}
@@ -2710,6 +3247,20 @@ static void channel_tick( struct channel *channel ) {
 			}
 			break;
 		case 0x11: case 0x97: /* Global Volume Slide. */
+			if( channel->replay->module->it_effects ) {
+				/* IT Wxy slides on the non-row ticks only for W0y and
+				   Wx0; WxF and WFy are fine slides, done on the row. */
+				int up = channel->gvol_slide_param >> 4;
+				int down = channel->gvol_slide_param & 0xF;
+				int gvol = channel->replay->global_vol;
+				if( up == 0 ) {
+					gvol -= down;
+				} else if( down == 0 ) {
+					gvol += up;
+				}
+				channel->replay->global_vol = gvol < 0 ? 0 : gvol > 128 ? 128 : gvol;
+				break;
+			}
 			channel->replay->global_vol = channel->replay->global_vol
 				+ ( channel->gvol_slide_param >> 4 )
 				- ( channel->gvol_slide_param & 0xF );
@@ -2721,9 +3272,21 @@ static void channel_tick( struct channel *channel ) {
 			}
 			break;
 		case 0x19: case 0x90: /* Panning Slide. */
-			channel->panning = channel->panning
-				+ ( channel->pan_slide_param >> 4 )
-				- ( channel->pan_slide_param & 0xF );
+			if( channel->replay->module->it_effects ) {
+				/* IT Pxy, in its 0..64 units: Px0 slides left, P0y
+				   right; PxF and PFy are fine slides on the row. */
+				int hi = channel->pan_slide_param >> 4;
+				int lo = channel->pan_slide_param & 0xF;
+				if( lo == 0 ) {
+					channel->panning -= hi * 4;
+				} else if( hi == 0 ) {
+					channel->panning += lo * 4;
+				}
+			} else {
+				channel->panning = channel->panning
+					+ ( channel->pan_slide_param >> 4 )
+					- ( channel->pan_slide_param & 0xF );
+			}
 			if( channel->panning < 0 ) {
 				channel->panning = 0;
 			}
@@ -2784,19 +3347,31 @@ static void channel_row( struct channel *channel, struct note *note ) {
 	switch( channel->note.effect ) {
 		case 0x01: case 0x86: /* Porta Up. */
 			if( channel->note.param > 0 ) {
-				channel->porta_up_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 0 );
+				} else {
+					channel->porta_up_param = channel->note.param;
+				}
 			}
 			channel_porta_up( channel, channel->porta_up_param );
 			break;
 		case 0x02: case 0x85: /* Porta Down. */
 			if( channel->note.param > 0 ) {
-				channel->porta_down_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 0 );
+				} else {
+					channel->porta_down_param = channel->note.param;
+				}
 			}
 			channel_porta_down( channel, channel->porta_down_param );
 			break;
 		case 0x03: case 0x87: /* Tone Porta. */
 			if( channel->note.param > 0 ) {
-				channel->tone_porta_param = channel->note.param;
+				if( channel->replay->module->it_effects ) {
+					channel_it_slide_memory( channel, channel->note.param, 1 );
+				} else {
+					channel->tone_porta_param = channel->note.param;
+				}
 			}
 			break;
 		case 0x04: case 0x88: /* Vibrato. */
@@ -2843,7 +3418,11 @@ static void channel_row( struct channel *channel, struct note *note ) {
 			channel->volume = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
 			break;
 		case 0x10: case 0x96: /* Set Global Volume. */
-			channel->replay->global_vol = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
+			if( channel->replay->module->it_effects ) {
+				channel->replay->global_vol = channel->note.param > 128 ? 128 : channel->note.param;
+			} else {
+				channel->replay->global_vol = channel->note.param >= 64 ? 64 : channel->note.param & 0x3F;
+			}
 			break;
 		case 0x8D: /* IT Set Channel Volume. */
 			if( channel->note.param <= 64 ) {
@@ -2867,6 +3446,17 @@ static void channel_row( struct channel *channel, struct note *note ) {
 			if( channel->note.param > 0 ) {
 				channel->gvol_slide_param = channel->note.param;
 			}
+			if( channel->replay->module->it_effects ) {
+				int up = channel->gvol_slide_param >> 4;
+				int down = channel->gvol_slide_param & 0xF;
+				int gvol = channel->replay->global_vol;
+				if( down == 0xF && up > 0 ) {
+					gvol += up;
+				} else if( up == 0xF && down > 0 ) {
+					gvol -= down;
+				}
+				channel->replay->global_vol = gvol < 0 ? 0 : gvol > 128 ? 128 : gvol;
+			}
 			break;
 		case 0x14: /* Key Off. */
 			channel->key_on = 0;
@@ -2877,6 +3467,17 @@ static void channel_row( struct channel *channel, struct note *note ) {
 		case 0x19: case 0x90: /* Panning Slide. */
 			if( channel->note.param > 0 ) {
 				channel->pan_slide_param = channel->note.param;
+			}
+			if( channel->replay->module->it_effects ) {
+				int hi = channel->pan_slide_param >> 4;
+				int lo = channel->pan_slide_param & 0xF;
+				if( lo == 0xF && hi > 0 ) {
+					channel->panning -= hi * 4;
+				} else if( hi == 0xF && lo > 0 ) {
+					channel->panning += lo * 4;
+				}
+				channel->panning = channel->panning < 0 ? 0
+					: channel->panning > 255 ? 255 : channel->panning;
 			}
 			break;
 		case 0x1B: case 0x91: /* Retrig + Vol Slide. */
@@ -2968,6 +3569,53 @@ static void channel_row( struct channel *channel, struct note *note ) {
 				channel->vibrato_depth = channel->note.param & 0xF;
 			}
 			channel_vibrato( channel, 1 );
+			break;
+		case 0xF7: /* IT S7x: past-note actions and NNA override. */
+			if( channel->replay->module->it_effects ) {
+				int x = channel->note.param & 0xF;
+				if( x <= 2 && channel->replay->ghosts ) {
+					/* S70 cut, S71 off, S72 fade the notes this channel
+					   moved to the background; fade is approximated as a
+					   release, as for the new-note action. */
+					int g;
+					for( g = 0; g < RMT_NUM_GHOSTS; g++ ) {
+						struct channel *ghost = &channel->replay->ghosts[ g ];
+						if( !ghost->sample || ghost->id != channel->id ) {
+							continue;
+						}
+						if( x == 0 ) {
+							ghost->sample = NULL;
+						} else {
+							ghost->key_on = 0;
+						}
+					}
+				} else if( x >= 3 && x <= 6 ) {
+					/* S73 cut, S74 continue, S75 off, S76 fade. */
+					channel->nna_override = x - 3;
+				}
+			}
+			break;
+		case 0xFF: /* IT SFx: choose the macro Zxx 00-7F runs. */
+			if( channel->replay->module->it_effects ) {
+				channel->sfx_macro = channel->note.param & 0xF;
+			}
+			break;
+		case 0x9A: /* IT Zxx: MIDI macro, here the filter controls. */
+			if( channel->replay->module->it_effects ) {
+				struct module *module = channel->replay->module;
+				int type, value = channel->note.param;
+				if( value < 0x80 ) {
+					type = module->it_sfx_macro[ channel->sfx_macro ];
+				} else {
+					type = module->it_zxx_macro[ value - 0x80 ] >> 8;
+					value = module->it_zxx_macro[ value - 0x80 ] & 0xFF;
+				}
+				if( type == IT_MACRO_CUTOFF ) {
+					channel->flt_cutoff = value;
+				} else if( type == IT_MACRO_RESONANCE ) {
+					channel->flt_q = value;
+				}
+			}
 			break;
 		case 0xFA: /* IT SAx: high sample offset, in 65536s. */
 			if( channel->replay->module->it_effects ) {
@@ -3425,12 +4073,28 @@ static void downsample( int *buf, int count ) {
    with throwaway state. Products stay within 32 bits: inputs are
    clamped to 16 bits, a is at most 16384 and a stable filter keeps
    |b| under two in Q14, at the cost of seven low bits per term. */
+/* IT2 filters the raw sample, scaled to 15 bits, and clamps the
+   result to 16 bits before the voice volume applies, so a resonant
+   peak clips at twice the sample's full scale. Here the filter runs
+   after the volume: a full-scale sample reaches the buffer at the
+   side's gain, so the same clip sits at twice that. */
+static int channel_filter_limit( struct channel *channel, int right ) {
+	int gain = channel->ampl * ( right ? channel->pann : 255 - channel->pann ) >> 8;
+	return gain < 0 ? 0 : gain;
+}
+
 static void channel_filter_run( struct channel *channel, int *buf,
 		int commit, int total ) {
 	int i, x, y, acc;
 	int y1l = channel->flt_y1l, y2l = channel->flt_y2l;
 	int y1r = channel->flt_y1r, y2r = channel->flt_y2r;
 	int errl = channel->flt_errl, errr = channel->flt_errr;
+	/* The clip in the filter's domain ( the buffer >> 2 ), capped at
+	   the state's 15 bits. */
+	int liml = channel_filter_limit( channel, 0 ) >> 1;
+	int limr = channel_filter_limit( channel, 1 ) >> 1;
+	if( liml > 32767 ) liml = 32767;
+	if( limr > 32767 ) limr = 32767;
 	for( i = 0; i < total; i++ ) {
 		/* One 14-bit shift per sample with first-order error
 		   feedback: the truncated remainder is carried into the
@@ -3448,22 +4112,22 @@ static void channel_filter_run( struct channel *channel, int *buf,
 		acc = x * channel->flt_a + y1l * channel->flt_b
 			+ y2l * channel->flt_c + errl;
 		y = acc >> 14;
-		errl = acc - ( y << 14 );
-		if( y > 32767 ) y = 32767;
-		if( y < -32768 ) y = -32768;
+		errl = acc - y * 16384;
+		if( y > liml ) y = liml;
+		if( y < -liml ) y = -liml;
 		y2l = y1l;
 		y1l = y;
-		buf[ i * 2 ] = y << 2;
+		buf[ i * 2 ] = y * 4;
 		x = buf[ i * 2 + 1 ] >> 2;
 		acc = x * channel->flt_a + y1r * channel->flt_b
 			+ y2r * channel->flt_c + errr;
 		y = acc >> 14;
-		errr = acc - ( y << 14 );
-		if( y > 32767 ) y = 32767;
-		if( y < -32768 ) y = -32768;
+		errr = acc - y * 16384;
+		if( y > limr ) y = limr;
+		if( y < -limr ) y = -limr;
 		y2r = y1r;
 		y1r = y;
-		buf[ i * 2 + 1 ] = y << 2;
+		buf[ i * 2 + 1 ] = y * 4;
 		if( i == commit - 1 ) {
 			channel->flt_y1l = y1l;
 			channel->flt_y2l = y2l;
@@ -3482,26 +4146,31 @@ static void channel_filter_run_f( struct channel *channel, float *buf,
 	float fa = ( float ) channel->flt_a * ( 1.0f / 16384.0f );
 	float fb = ( float ) channel->flt_b * ( 1.0f / 16384.0f );
 	float fc = ( float ) channel->flt_c * ( 1.0f / 16384.0f );
-	float y1l = channel->flt_y1l * ( 1.0f / 32768.0f );
-	float y2l = channel->flt_y2l * ( 1.0f / 32768.0f );
-	float y1r = channel->flt_y1r * ( 1.0f / 32768.0f );
-	float y2r = channel->flt_y2r * ( 1.0f / 32768.0f );
+	float y1l = channel->flt_fy1l, y2l = channel->flt_fy2l;
+	float y1r = channel->flt_fy1r, y2r = channel->flt_fy2r;
+	/* IT2's pre-volume clip, as in channel_filter_run. */
+	float liml = 2.0f * ( float ) channel_filter_limit( channel, 0 );
+	float limr = 2.0f * ( float ) channel_filter_limit( channel, 1 );
 	for( i = 0; i < total; i++ ) {
 		x = buf[ i * 2 ];
 		y = x * fa + y1l * fb + y2l * fc;
+		if( y > liml ) y = liml;
+		if( y < -liml ) y = -liml;
 		y2l = y1l;
 		y1l = y;
 		buf[ i * 2 ] = y;
 		x = buf[ i * 2 + 1 ];
 		y = x * fa + y1r * fb + y2r * fc;
+		if( y > limr ) y = limr;
+		if( y < -limr ) y = -limr;
 		y2r = y1r;
 		y1r = y;
 		buf[ i * 2 + 1 ] = y;
 		if( i == commit - 1 ) {
-			channel->flt_y1l = ( int ) ( y1l * 32768.0f );
-			channel->flt_y2l = ( int ) ( y2l * 32768.0f );
-			channel->flt_y1r = ( int ) ( y1r * 32768.0f );
-			channel->flt_y2r = ( int ) ( y2r * 32768.0f );
+			channel->flt_fy1l = y1l;
+			channel->flt_fy2l = y2l;
+			channel->flt_fy1r = y1r;
+			channel->flt_fy2r = y2r;
 		}
 	}
 }

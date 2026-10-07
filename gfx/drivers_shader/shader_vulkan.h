@@ -39,8 +39,7 @@ struct vulkan_filter_chain_texture
    VkImage image;
    VkImageView view;
    VkImageLayout layout;
-   unsigned width;
-   unsigned height;
+   unsigned dims;                /* VIDEO_SCALE_PACK */
    VkFormat format;
 };
 
@@ -94,18 +93,16 @@ struct vulkan_filter_chain_create_info
     * driver has made on `queue` has retired. The chain's resources are
     * only ever referenced by those submissions, so this is all a chain
     * rebuild or teardown needs to wait for. Called with
-    * queue_lock_handle. NULL falls back to vkDeviceWaitIdle under the
-    * lock, which also drains a hardware core's work and cannot complete
-    * while that core is itself parked on lock_queue. */
+    * queue_lock_handle. Required: a chain is not created without it.
+    * (The fallback it once had was vkDeviceWaitIdle under the lock,
+    * which also drains a hardware core's work and cannot complete
+    * while that core is itself parked on lock_queue.) */
    void (*wait_submissions)(void *handle);
    VkCommandPool command_pool;
    unsigned num_passes;
 
    VkFormat original_format;
-   struct
-   {
-      unsigned width, height;
-   } max_input_size;
+   unsigned max_input_dims;      /* VIDEO_SCALE_PACK */
    struct vulkan_filter_chain_swapchain_info swapchain;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_enabled;

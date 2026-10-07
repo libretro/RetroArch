@@ -103,7 +103,6 @@ typedef struct gdi_texture
 
 
 HDC          win32_gdi_hdc;
-static void *dinput_gdi;
 
 /* Forward declarations for static helpers used across the display
  * driver / video driver / font driver sections. */
@@ -726,8 +725,8 @@ static void gdi_blit_rgui_alpha(gdi_t *gdi,
  * The menu drivers (XMB, Ozone, MaterialUI) and gfx_widgets issue
  * draw calls in three flavours:
  *
- *   1. Solid-colour rectangle (texture is gfx_white_texture, a 1x1
- *      white pixel).  By far the most common: backgrounds, panels,
+ *   1. Solid-colour rectangle (no texture).  By far the most
+ *      common: backgrounds, panels,
  *      separator lines.  Per-vertex colour from coords->color.
  *      We render this with FillRect + cached SolidBrush.
  *
@@ -1233,10 +1232,8 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
          return;
    }
 
-   /* gfx_white_texture is a 1x1 white pixel; the menu code uses
-    * "draw a textured quad with the white texture" as its idiom
-    * for solid-colour rectangles.  Detect that case so we can
-    * skip the (much more expensive) blit path entirely. */
+   /* A quad with no texture is a solid-colour rectangle; so is one
+    * with a 1x1 texture. Neither takes the blit path. */
    is_white_texture = (!texture
          || (   VIDEO_SCALE_W(texture->dims) <= 1
              && VIDEO_SCALE_H(texture->dims) <= 1));
@@ -1692,10 +1689,10 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
     * freshly (re)created DIB has no previous contents and is
     * converted in full. */
    {
-      unsigned x0 = font->atlas->dirty_x0;
-      unsigned y0 = font->atlas->dirty_y0;
-      unsigned x1 = font->atlas->dirty_x1;
-      unsigned y1 = font->atlas->dirty_y1;
+      unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
+      unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+      unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
+      unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
 
       if (     recreated
             || x1 <= x0 || y1 <= y0
@@ -1807,6 +1804,9 @@ static void *gdi_font_init(void *data,
    }
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
+   /* The atlas may grow; the DIB mirroring it is made again whenever
+    * its size changes */
+   font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
 
    /* The atlas DIB is created lazily on first render_msg, since
     * gdi->memDC may not exist yet at font init time (font_driver
@@ -1832,31 +1832,14 @@ static void gdi_font_free(void *data, bool is_threaded)
    free(font);
 }
 
-static int gdi_font_get_message_width(void *data,
-      const char *msg, size_t msg_len, float scale)
+static int gdi_font_get_message_width(void *data, const char *msg,
+      size_t msg_len, float scale)
 {
-   const struct font_glyph *glyph_q = NULL;
    gdi_raster_t *font = (gdi_raster_t*)data;
-   const char *msg_end;
-   int delta_x = 0;
-
-   if (!font || !font->font_driver || !font->font_data || !msg)
+   if (!font)
       return 0;
-
-   msg_end = msg + msg_len;
-   glyph_q = font->font_driver->get_glyph(font->font_data, '?');
-
-   while (msg < msg_end)
-   {
-      const struct font_glyph *glyph;
-      unsigned code = utf8_walk(&msg);
-      if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-         if (!(glyph = glyph_q))
-            continue;
-      delta_x += glyph->advance_x;
-   }
-
-   return (int)(delta_x * scale);
+   return font_renderer_get_message_width(font->font_driver,
+         font->font_data, msg, msg_len, scale);
 }
 
 static const struct font_glyph *gdi_font_get_glyph(
@@ -1899,11 +1882,20 @@ static void gdi_font_render_line(
 {
 #if GDI_HAS_ALPHABLEND
    const struct font_glyph *glyph_q;
-   const char *msg_ptr;
-   const char *msg_end;
+   const struct font_glyph* (*get_glyph)(void*, uint32_t);
+   void    *font_data;
    HDC      atlas_dc;
    HBITMAP  atlas_old;
+   BLENDFUNCTION blend;
+   struct font_line_metrics *metrics = NULL;
+   uint32_t pre_a    = 0;
+   uint32_t pre_r    = 0;
+   uint32_t pre_g    = 0;
+   uint32_t pre_b    = 0;
+   int      line_w   = 0;
+   int      line_h   = 0;
    int      x_offset = 0;
+   bool     line_ok  = true;
    bool     plain_white;
 #endif
 
@@ -1934,219 +1926,223 @@ static void gdi_font_render_line(
       return;
 
    plain_white = (r == 255 && g == 255 && b == 255);
-   glyph_q     = font->font_driver->get_glyph(font->font_data, '?');
+   get_glyph   = font->font_driver->get_glyph;
+   font_data   = font->font_data;
+   glyph_q     = get_glyph(font_data, '?');
 
    atlas_dc = CreateCompatibleDC(dst_dc);
    if (!atlas_dc)
       return;
+
    atlas_old = (HBITMAP)SelectObject(atlas_dc, font->atlas_bmp);
 
-   /* Optimisation: handle alignment up front by pre-measuring the
-    * line.  The caller has already pre-positioned line_x for left-
-    * aligned text, but for centre/right we need the line width. */
-   if (text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
-   {
-      int line_w = gdi_font_get_message_width(font, msg, msg_len, scale);
-      if (text_align == TEXT_ALIGN_RIGHT)
-         line_x -= line_w;
-      else
-         line_x -= line_w / 2;
-   }
+   /* Untinted text is AlphaBlended a glyph at a time straight from the
+    * atlas; AC_SRC_ALPHA + SourceConstantAlpha=a gives per-glyph alpha
+    * modulated by the requested overall opacity. Tinted text is baked
+    * into the scratch DIB with the requested colour and the line
+    * AlphaBlended in one go, so it needs the line's width up front -
+    * as right and centred text does, for its position. */
+   blend.BlendOp             = AC_SRC_OVER;
+   blend.BlendFlags          = 0;
+   blend.SourceConstantAlpha = plain_white ? a : 255;
+   blend.AlphaFormat         = AC_SRC_ALPHA;
 
-   msg_ptr = msg;
-   msg_end = msg + msg_len;
+#define FONT_LAYOUT_ALIGNED (!plain_white \
+      || text_align == TEXT_ALIGN_RIGHT || text_align == TEXT_ALIGN_CENTER)
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+   do \
+   { \
+      (void)(line); \
+      (void)(count); \
+      (void)(bytes); \
+      line_w = (int)((line_width) * scale); \
+      if (text_align == TEXT_ALIGN_RIGHT) \
+         line_x -= line_w; \
+      else if (text_align == TEXT_ALIGN_CENTER) \
+         line_x -= line_w / 2; \
+      if (plain_white) \
+         break; \
+      /* The scratch DIB fits the line's pixel extent, descenders \
+       * included, cleared to fully transparent; the colour is \
+       * premultiplied here and by the atlas alpha per pixel */ \
+      line_ok = false; \
+      if (line_w <= 0) \
+         break; \
+      font->font_driver->get_line_metrics(font->font_data, &metrics); \
+      line_h = metrics ? (int)(metrics->height * scale + 0.5f) : 32; \
+      if (line_h <= 0) \
+         line_h = 32; \
+      if (!gdi_font_ensure_scratch(font, (unsigned)line_w, (unsigned)line_h)) \
+         break; \
+      memset(font->scratch_pixels, 0, \
+            VIDEO_SCALE_AREA(font->scratch_dims) * sizeof(uint32_t)); \
+      pre_a   = a; \
+      pre_r   = GDI_DIV255((uint32_t)r * a); \
+      pre_g   = GDI_DIV255((uint32_t)g * a); \
+      pre_b   = GDI_DIV255((uint32_t)b * a); \
+      line_ok = true; \
+   } while (0)
+#define FONT_LAYOUT_GLYPH(gl, pen_x, pen_y) \
+   do \
+   { \
+      /* This driver keeps its own truncating pen */ \
+      (void)(pen_x); \
+      (void)(pen_y); \
+      if (!line_ok) \
+         break; \
+      if (plain_white) \
+      { \
+         int gx, gy, gw, gh; \
+         gw = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gh = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
+         if (gw > 0 && gh > 0) \
+         { \
+            gx = line_x + x_offset + (int)((float)(gl)->draw_offset_x * scale); \
+            gy = line_y           + (int)((float)(gl)->draw_offset_y * scale); \
+            AlphaBlend(dst_dc, gx, gy, gw, gh, \
+                  atlas_dc, \
+                  VIDEO_SCALE_W((gl)->atlas_pos), VIDEO_SCALE_H((gl)->atlas_pos), \
+                  VIDEO_SCALE_W((gl)->dims), VIDEO_SCALE_H((gl)->dims), \
+                  blend); \
+         } \
+      } \
+      else \
+      { \
+         int gx_dst, gy_dst, gw, gh; \
+         int gx_src, gy_src; \
+         gw     = (int)((float)VIDEO_SCALE_W((gl)->dims) * scale); \
+         gh     = (int)((float)VIDEO_SCALE_H((gl)->dims) * scale); \
+         gx_dst = x_offset + (int)((float)(gl)->draw_offset_x * scale); \
+         gy_dst = (metrics ? (int)(metrics->ascender * scale + 0.5f) : 0) \
+                + (int)((float)(gl)->draw_offset_y * scale); \
+         gx_src = (int)VIDEO_SCALE_W((gl)->atlas_pos); \
+         gy_src = (int)VIDEO_SCALE_H((gl)->atlas_pos); \
+         if (gw > 0 && gh > 0) \
+         { \
+            int yy, xx; \
+            for (yy = 0; yy < gh; yy++) \
+            { \
+               int dst_y2 = gy_dst + yy; \
+               int src_y2; \
+               uint32_t *dst_row; \
+               const uint8_t *src_row; \
+               if (dst_y2 < 0 || dst_y2 >= (int)VIDEO_SCALE_H(font->scratch_dims)) \
+                  continue; \
+               src_y2  = gy_src + (int)((float)yy \
+                     * (float)VIDEO_SCALE_H((gl)->dims) / (float)gh); \
+               if (src_y2 < 0 || src_y2 >= (int)VIDEO_SCALE_H(font->atlas_dims)) \
+                  continue; \
+               dst_row = font->scratch_pixels \
+                  + (size_t)dst_y2 * VIDEO_SCALE_W(font->scratch_dims); \
+               src_row = font->atlas->buffer \
+                  + (size_t)src_y2 * font->atlas->width; \
+               for (xx = 0; xx < gw; xx++) \
+               { \
+                  int dst_x2 = gx_dst + xx; \
+                  int src_x2; \
+                  uint8_t  alpha; \
+                  uint32_t out_a, out_r, out_g, out_b; \
+                  if (dst_x2 < 0 || dst_x2 >= (int)VIDEO_SCALE_W(font->scratch_dims)) \
+                     continue; \
+                  src_x2 = gx_src + (int)((float)xx \
+                        * (float)VIDEO_SCALE_W((gl)->dims) / (float)gw); \
+                  if (src_x2 < 0 || src_x2 >= (int)VIDEO_SCALE_W(font->atlas_dims)) \
+                     continue; \
+                  alpha = src_row[src_x2]; \
+                  if (alpha == 0) \
+                     continue; \
+                  /* Premultiplied glyph pixel at the requested tint. \
+                   * Output alpha = atlas_a * tint_a; output RGB = \
+                   * tint_RGB premultiplied by output alpha. */ \
+                  out_a = GDI_DIV255((uint32_t)alpha * pre_a); \
+                  out_r = GDI_DIV255((uint32_t)alpha * pre_r); \
+                  out_g = GDI_DIV255((uint32_t)alpha * pre_g); \
+                  out_b = GDI_DIV255((uint32_t)alpha * pre_b); \
+                  /* Last-write wins where glyphs overlap: kerned \
+                   * fonts can produce overlapping bounding boxes, \
+                   * but the actual coverage rarely overlaps. */ \
+                  dst_row[dst_x2] = \
+                       (out_a << 24) \
+                     | (out_r << 16) \
+                     | (out_g <<  8) \
+                     |  out_b; \
+               } \
+            } \
+         } \
+      } \
+      x_offset += (int)((float)(gl)->advance_x * scale); \
+   } while (0)
+#define FONT_LAYOUT_LINE_END() \
+   do \
+   { \
+      if (plain_white || !line_ok) \
+         break; \
+      /* Bind scratch and AlphaBlend the whole line. */ \
+      { \
+         HDC scratch_dc = CreateCompatibleDC(dst_dc); \
+         HBITMAP scratch_old; \
+         if (!scratch_dc) \
+            break; \
+         scratch_old = (HBITMAP)SelectObject(scratch_dc, font->scratch_bmp); \
+         /* Compute Y offset: line_y was passed as the baseline \
+          * approximation; we drew with ascender baked in, so adjust \
+          * back so that line_y aligns with the glyph baseline. */ \
+         { \
+            int draw_y = line_y; \
+            if (metrics) \
+               draw_y = line_y - (int)(metrics->ascender * scale + 0.5f); \
+            blend.BlendOp             = AC_SRC_OVER; \
+            blend.BlendFlags          = 0; \
+            blend.SourceConstantAlpha = 255; \
+            blend.AlphaFormat         = AC_SRC_ALPHA; \
+            AlphaBlend(dst_dc, line_x, draw_y, line_w, line_h, \
+                  scratch_dc, 0, 0, line_w, line_h, blend); \
+         } \
+         SelectObject(scratch_dc, scratch_old); \
+         DeleteDC(scratch_dc); \
+      } \
+   } while (0)
+#include "../font_layout.h"
 
-   if (plain_white)
-   {
-      /* Hot path: no tint, AlphaBlend straight from the atlas.
-       * AC_SRC_ALPHA + SourceConstantAlpha=a gives us per-glyph
-       * alpha modulated by the requested overall opacity. */
-      BLENDFUNCTION blend;
-      blend.BlendOp             = AC_SRC_OVER;
-      blend.BlendFlags          = 0;
-      blend.SourceConstantAlpha = a;
-      blend.AlphaFormat         = AC_SRC_ALPHA;
-
-      while (msg_ptr < msg_end)
-      {
-         const struct font_glyph *glyph;
-         unsigned code = utf8_walk(&msg_ptr);
-         int gx, gy, gw, gh;
-
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-
-         gw = (int)((float)glyph->width  * scale);
-         gh = (int)((float)glyph->height * scale);
-
-         if (gw > 0 && gh > 0)
-         {
-            gx = line_x + x_offset + (int)((float)glyph->draw_offset_x * scale);
-            gy = line_y           + (int)((float)glyph->draw_offset_y * scale);
-
-            AlphaBlend(dst_dc, gx, gy, gw, gh,
-                  atlas_dc,
-                  glyph->atlas_offset_x, glyph->atlas_offset_y,
-                  glyph->width, glyph->height,
-                  blend);
-         }
-         x_offset += (int)((float)glyph->advance_x * scale);
-      }
-   }
-   else
-   {
-      /* Tinted path: bake the line into the scratch DIB with the
-       * requested RGB colour, then AlphaBlend the whole line in
-       * one go.  We size the scratch buffer to fit the line's
-       * pixel extent including descender height. */
-      struct font_line_metrics *metrics = NULL;
-      int line_w = gdi_font_get_message_width(font, msg, msg_len, scale);
-      int line_h;
-      uint32_t pre_a, pre_r, pre_g, pre_b;
-      BLENDFUNCTION blend;
-
-      if (line_w <= 0)
-         goto done;
-
-      font->font_driver->get_line_metrics(font->font_data, &metrics);
-      line_h = metrics ? (int)(metrics->height * scale + 0.5f) : 32;
-      if (line_h <= 0)
-         line_h = 32;
-
-      if (!gdi_font_ensure_scratch(font, (unsigned)line_w, (unsigned)line_h))
-         goto done;
-
-      /* Clear scratch pixels to fully transparent. */
-      {
-         size_t total = VIDEO_SCALE_AREA(font->scratch_dims);
-         memset(font->scratch_pixels, 0, total * sizeof(uint32_t));
-      }
-
-      /* Premultiply the requested colour.  We'll multiply by the
-       * atlas alpha per pixel below. */
-      pre_a = a;
-      pre_r = GDI_DIV255((uint32_t)r * a);
-      pre_g = GDI_DIV255((uint32_t)g * a);
-      pre_b = GDI_DIV255((uint32_t)b * a);
-
-      /* Composite glyphs into the scratch DIB.  Scale-1.0 fast path
-       * does direct A8 → premultiplied BGRA copy; scaled glyphs go
-       * through nearest-neighbour for simplicity (the menu fonts
-       * are pre-rasterised at the right size, so scale is almost
-       * always 1.0 in practice). */
-      while (msg_ptr < msg_end)
-      {
-         const struct font_glyph *glyph;
-         unsigned code = utf8_walk(&msg_ptr);
-         int gx_dst, gy_dst, gw, gh;
-         int gx_src, gy_src;
-
-         if (!(glyph = font->font_driver->get_glyph(font->font_data, code)))
-            if (!(glyph = glyph_q))
-               continue;
-
-         gw     = (int)((float)glyph->width  * scale);
-         gh     = (int)((float)glyph->height * scale);
-         gx_dst = x_offset + (int)((float)glyph->draw_offset_x * scale);
-         gy_dst = (metrics ? (int)(metrics->ascender * scale + 0.5f) : 0)
-                + (int)((float)glyph->draw_offset_y * scale);
-         gx_src = (int)glyph->atlas_offset_x;
-         gy_src = (int)glyph->atlas_offset_y;
-
-         if (gw > 0 && gh > 0)
-         {
-            int yy, xx;
-            for (yy = 0; yy < gh; yy++)
-            {
-               int dst_y2 = gy_dst + yy;
-               int src_y2;
-               uint32_t *dst_row;
-               const uint8_t *src_row;
-               if (dst_y2 < 0 || dst_y2 >= (int)VIDEO_SCALE_H(font->scratch_dims))
-                  continue;
-               src_y2  = gy_src + (int)((float)yy * (float)glyph->height
-                     / (float)gh);
-               if (src_y2 < 0 || src_y2 >= (int)VIDEO_SCALE_H(font->atlas_dims))
-                  continue;
-
-               dst_row = font->scratch_pixels
-                  + (size_t)dst_y2 * VIDEO_SCALE_W(font->scratch_dims);
-               src_row = font->atlas->buffer
-                  + (size_t)src_y2 * font->atlas->width;
-
-               for (xx = 0; xx < gw; xx++)
-               {
-                  int dst_x2 = gx_dst + xx;
-                  int src_x2;
-                  uint8_t  alpha;
-                  uint32_t out_a, out_r, out_g, out_b;
-                  if (dst_x2 < 0 || dst_x2 >= (int)VIDEO_SCALE_W(font->scratch_dims))
-                     continue;
-                  src_x2 = gx_src + (int)((float)xx * (float)glyph->width
-                        / (float)gw);
-                  if (src_x2 < 0 || src_x2 >= (int)VIDEO_SCALE_W(font->atlas_dims))
-                     continue;
-
-                  alpha = src_row[src_x2];
-                  if (alpha == 0)
-                     continue;
-
-                  /* Premultiplied glyph pixel at the requested tint.
-                   * Output alpha = atlas_a * tint_a; output RGB =
-                   * tint_RGB premultiplied by output alpha. */
-                  out_a = GDI_DIV255((uint32_t)alpha * pre_a);
-                  out_r = GDI_DIV255((uint32_t)alpha * pre_r);
-                  out_g = GDI_DIV255((uint32_t)alpha * pre_g);
-                  out_b = GDI_DIV255((uint32_t)alpha * pre_b);
-                  /* Last-write wins where glyphs overlap: kerned
-                   * fonts can produce overlapping bounding boxes,
-                   * but the actual coverage rarely overlaps. */
-                  dst_row[dst_x2] =
-                       (out_a << 24)
-                     | (out_r << 16)
-                     | (out_g <<  8)
-                     |  out_b;
-               }
-            }
-         }
-         x_offset += (int)((float)glyph->advance_x * scale);
-      }
-
-      /* Bind scratch and AlphaBlend the whole line. */
-      {
-         HDC scratch_dc = CreateCompatibleDC(dst_dc);
-         HBITMAP scratch_old;
-         if (!scratch_dc)
-            goto done;
-         scratch_old = (HBITMAP)SelectObject(scratch_dc, font->scratch_bmp);
-
-         /* Compute Y offset: line_y was passed as the baseline
-          * approximation; we drew with ascender baked in, so adjust
-          * back so that line_y aligns with the glyph baseline. */
-         {
-            int draw_y = line_y;
-            if (metrics)
-               draw_y = line_y - (int)(metrics->ascender * scale + 0.5f);
-
-            blend.BlendOp             = AC_SRC_OVER;
-            blend.BlendFlags          = 0;
-            blend.SourceConstantAlpha = 255;
-            blend.AlphaFormat         = AC_SRC_ALPHA;
-
-            AlphaBlend(dst_dc, line_x, draw_y, line_w, line_h,
-                  scratch_dc, 0, 0, line_w, line_h, blend);
-         }
-
-         SelectObject(scratch_dc, scratch_old);
-         DeleteDC(scratch_dc);
-      }
-   }
-
-done:
    SelectObject(atlas_dc, atlas_old);
    DeleteDC(atlas_dc);
 #endif /* GDI_HAS_ALPHABLEND */
+}
+
+/* Draws one line, its shadow run first (when it has one) and then its
+ * text run, with its top-left at (pixel_x, pixel_y). */
+static void gdi_font_render_runs(gdi_raster_t *font, HDC dst_dc,
+      const char *line, size_t line_len, int pixel_x, int pixel_y,
+      float scale, enum text_alignment text_align,
+      int drop_x, int drop_y, float drop_mod, float drop_alpha,
+      unsigned r, unsigned g, unsigned b, unsigned a,
+      unsigned width, unsigned height)
+{
+   if (!line_len)
+      return;
+
+   if (drop_x || drop_y)
+   {
+      unsigned dr = (unsigned)((float)r * drop_mod);
+      unsigned dg = (unsigned)((float)g * drop_mod);
+      unsigned db = (unsigned)((float)b * drop_mod);
+      unsigned da = (unsigned)((float)a * drop_alpha);
+      if (dr > 255) dr = 255;
+      if (dg > 255) dg = 255;
+      if (db > 255) db = 255;
+      if (da > 255) da = 255;
+      /* params->drop_y in the GL/D3D drivers is "up", we want
+       * "down" on a top-down surface, so subtract. */
+      gdi_font_render_line(font, dst_dc, line, line_len,
+            pixel_x + drop_x, pixel_y - drop_y, scale, text_align,
+            (uint8_t)dr, (uint8_t)dg, (uint8_t)db, (uint8_t)da,
+            (int)width, (int)height);
+   }
+
+   gdi_font_render_line(font, dst_dc, line, line_len,
+         pixel_x, pixel_y, scale, text_align,
+         (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a,
+         (int)width, (int)height);
 }
 
 static void gdi_font_render_msg(
@@ -2155,6 +2151,7 @@ static void gdi_font_render_msg(
       const char *msg, size_t msg_len,
       const struct font_params *params)
 {
+   font_params_resolved_t rp;
    float    x, y, scale, drop_mod, drop_alpha;
    int      drop_x, drop_y;
    unsigned r, g, b, a;
@@ -2167,8 +2164,6 @@ static void gdi_font_render_msg(
    unsigned      width, height;
    struct font_line_metrics *line_metrics = NULL;
    int           line_h;
-   const char   *line_start;
-   int           line_index = 0;
 
    if (!font || !msg || !*msg || !gdi)
       return;
@@ -2203,42 +2198,24 @@ static void gdi_font_render_msg(
    if (!dst_bmp || !width || !height)
       return;
 
-   if (params)
-   {
-      x          = params->x;
-      y          = params->y;
-      drop_x     = params->drop_x;
-      drop_y     = params->drop_y;
-      drop_mod   = params->drop_mod;
-      drop_alpha = params->drop_alpha;
-      scale      = params->scale;
-      text_align = params->text_align;
-      r          = FONT_COLOR_GET_RED  (params->color);
-      g          = FONT_COLOR_GET_GREEN(params->color);
-      b          = FONT_COLOR_GET_BLUE (params->color);
-      a          = FONT_COLOR_GET_ALPHA(params->color);
-   }
-   else
-   {
-      settings_t *settings    = config_get_ptr();
-      float video_msg_pos_x   = settings->floats.video_msg_pos_x;
-      float video_msg_pos_y   = settings->floats.video_msg_pos_y;
-      float video_msg_color_r = settings->floats.video_msg_color_r;
-      float video_msg_color_g = settings->floats.video_msg_color_g;
-      float video_msg_color_b = settings->floats.video_msg_color_b;
-      x          = video_msg_pos_x;
-      y          = video_msg_pos_y;
-      drop_x     = -2;
-      drop_y     = -2;
-      drop_mod   = 0.3f;
-      drop_alpha = 1.0f;
-      scale      = 1.0f;
-      text_align = TEXT_ALIGN_LEFT;
-      r          = (unsigned)(video_msg_color_r * 255.0f);
-      g          = (unsigned)(video_msg_color_g * 255.0f);
-      b          = (unsigned)(video_msg_color_b * 255.0f);
-      a          = 255;
-   }
+   font_driver_resolve_params(params, &rp);
+   x          = rp.x;
+   y          = rp.y;
+   scale      = rp.scale;
+   text_align = rp.text_align;
+   drop_x     = rp.drop_x;
+   drop_y     = rp.drop_y;
+   drop_mod   = rp.drop_mod;
+   drop_alpha = rp.drop_alpha;
+   r          = rp.rgba[0];
+   g          = rp.rgba[1];
+   b          = rp.rgba[2];
+   a               = rp.rgba[3];
+
+
+   /* Asked for first: it may have grown, which marks it dirty */
+   if (font->font_driver && font->font_data)
+      font->atlas = font->font_driver->get_atlas(font->font_data);
 
    /* Refresh the atlas if the backend reports new glyphs.  We do
     * this once per render_msg, before any line rendering, so the
@@ -2261,66 +2238,39 @@ static void gdi_font_render_msg(
    dst_dc  = gdi->memDC;
    dst_old = (HBITMAP)SelectObject(dst_dc, dst_bmp);
 
-   /* Iterate over '\n'-separated lines.  Coordinates are normalised
-    * 0..1 with Y from the bottom (gfx_display_draw_text passes
-    * params.y = 1 - y_pixels/height); convert to top-down pixels
-    * and apply per-line offsets. */
-   line_start = msg;
-   for (;;)
+   /* Coordinates are normalised 0..1 with Y from the bottom
+    * (gfx_display_draw_text passes params.y = 1 - y_pixels/height);
+    * convert to top-down pixels, successive lines stepping downward by
+    * line_h. Each line is drawn as its shadow run and then its text
+    * run, so the text lands on top; the shared layout hands each line
+    * over and gdi_font_render_line() walks its glyphs. */
    {
-      const char *line_end = line_start;
-      size_t      line_len;
-      int         pixel_x, pixel_y;
-      int         drop_pixel_x, drop_pixel_y;
-
-      while (*line_end && *line_end != '\n')
-         line_end++;
-      line_len = (size_t)(line_end - line_start);
-
-      if (line_len > 0)
-      {
-         /* Convert (x_norm, y_norm) -> pixel.  y_norm starts as
-          * (1 - y_pixels_from_top / height); invert.  Successive
-          * lines step downward by line_h. */
-         pixel_x = (int)(x * (float)width);
-         pixel_y = (int)((1.0f - y) * (float)height) + line_index * line_h;
-
-         /* Drop shadow pass (rendered first so the main glyph
-          * lands on top). */
-         if (drop_x || drop_y)
-         {
-            unsigned dr = (unsigned)((float)r * drop_mod);
-            unsigned dg = (unsigned)((float)g * drop_mod);
-            unsigned db = (unsigned)((float)b * drop_mod);
-            unsigned da = (unsigned)((float)a * drop_alpha);
-            if (dr > 255) dr = 255;
-            if (dg > 255) dg = 255;
-            if (db > 255) db = 255;
-            if (da > 255) da = 255;
-
-            /* params->drop_y in the GL/D3D drivers is "up", we want
-             * "down" on a top-down surface, so subtract. */
-            drop_pixel_x = pixel_x + drop_x;
-            drop_pixel_y = pixel_y - drop_y;
-
-            gdi_font_render_line(font, dst_dc,
-                  line_start, line_len,
-                  drop_pixel_x, drop_pixel_y, scale, text_align,
-                  (uint8_t)dr, (uint8_t)dg, (uint8_t)db, (uint8_t)da,
-                  (int)width, (int)height);
-         }
-
-         gdi_font_render_line(font, dst_dc,
-               line_start, line_len,
-               pixel_x, pixel_y, scale, text_align,
-               (uint8_t)r, (uint8_t)g, (uint8_t)b, (uint8_t)a,
-               (int)width, (int)height);
-      }
-
-      if (*line_end != '\n')
-         break;
-      line_start = line_end + 1;
-      line_index++;
+      int pixel_x = (int)(x * (float)width);
+      int pixel_y = (int)((1.0f - y) * (float)height);
+#define FONT_LAYOUT_ALIGNED 0
+#define FONT_LAYOUT_SKIP(line, bytes) \
+      (gdi_font_render_runs(font, dst_dc, fl_m, (bytes), pixel_x, \
+            pixel_y + (line) * line_h, scale, text_align, drop_x, drop_y, \
+            drop_mod, drop_alpha, r, g, b, a, width, height), 1)
+#define FONT_LAYOUT_LINE(line, line_width, count, bytes) \
+      do \
+      { \
+         (void)(line_width); \
+         (void)(count); \
+      } while (0)
+#define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
+      do \
+      { \
+         (void)(pen_x); \
+         (void)(pen_y); \
+      } while (0)
+      const struct font_glyph *glyph_q = NULL;
+      void *font_data                  = NULL;
+      const struct font_glyph* (*get_glyph)(void*, uint32_t) = NULL;
+#include "../font_layout.h"
+      (void)glyph_q;
+      (void)font_data;
+      (void)get_glyph;
    }
 
    SelectObject(dst_dc, dst_old);
@@ -2365,15 +2315,10 @@ static bool gfx_ctx_gdi_init(void)
    win32_window_reset();
    win32_monitor_init();
 
-   wndclass.lpfnWndProc   = wnd_proc_gdi_common;
-#ifdef HAVE_DINPUT
-   if (string_is_equal(settings->arrays.input_driver, "dinput"))
-      wndclass.lpfnWndProc   = wnd_proc_gdi_dinput;
-#endif
-#ifdef HAVE_WINRAWINPUT
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-      wndclass.lpfnWndProc   = wnd_proc_gdi_winraw;
-#endif
+   /* one window procedure for every video and input driver; the
+    * family says what creating the window sets up */
+   wndclass.lpfnWndProc = win32_window_proc;
+   win32_window_proc_setup(WIN32_WINDOW_GDI);
    if (!win32_window_init(&wndclass, true, NULL))
       return false;
    return true;
@@ -2389,7 +2334,8 @@ static void gfx_ctx_gdi_destroy(void)
       win32_gdi_hdc = NULL;
    }
 
-   if (window)
+   /* left up for the driver that comes next, where it can be */
+   if (window && !win32_window_keep())
    {
       win32_monitor_from_window();
       win32_destroy_window();
@@ -2417,36 +2363,6 @@ static bool gfx_ctx_gdi_set_video_mode(
    return true;
 }
 
-static void gfx_ctx_gdi_input_driver(
-      input_driver_t **input, void **input_data)
-{
-   settings_t *settings = config_get_ptr();
-#if _WIN32_WINNT >= 0x0501
-#ifdef HAVE_WINRAWINPUT
-   /* winraw only available since XP */
-   if (string_is_equal(settings->arrays.input_driver, "raw"))
-   {
-      *input_data = input_driver_init_wrap(&input_winraw, settings->arrays.input_driver);
-      if (*input_data)
-      {
-         *input     = &input_winraw;
-         dinput_gdi = NULL;
-         return;
-      }
-   }
-#endif
-#endif
-
-#ifdef HAVE_DINPUT
-   dinput_gdi  = input_driver_init_wrap(&input_dinput, settings->arrays.input_driver);
-   *input      = dinput_gdi ? &input_dinput : NULL;
-#else
-   dinput_gdi  = NULL;
-   *input      = NULL;
-#endif
-   *input_data = dinput_gdi;
-}
-
 static void gdi_create(gdi_t *gdi)
 {
    char os[64] = {0};
@@ -2469,8 +2385,7 @@ static void gdi_create(gdi_t *gdi)
    }
 }
 
-static void *gdi_init(const video_info_t *video,
-      input_driver_t **input, void **input_data)
+static void *gdi_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
    unsigned mode_dims = 0;
@@ -2482,8 +2397,6 @@ static void *gdi_init(const video_info_t *video,
    if (!gdi)
       return NULL;
 
-   *input                               = NULL;
-   *input_data                          = NULL;
 
    gdi->frame_dims = video->dims;
    gdi->rgb32                           = video->rgb32;
@@ -2545,7 +2458,9 @@ static void *gdi_init(const video_info_t *video,
    RARCH_LOG("[GDI] Using resolution %ux%u.\n",
          VIDEO_SCALE_W(temp_dims), VIDEO_SCALE_H(temp_dims));
 
-   gfx_ctx_gdi_input_driver(input, input_data);
+   /* no input driver of this driver's own: the frontend starts the
+    * one that goes with a Windows window */
+   input_driver_video_window(INPUT_WINDOW_WINDOWS, NULL);
 
 
    RARCH_LOG("[GDI] Init complete.\n");
@@ -2560,9 +2475,11 @@ error:
 }
 
 static bool gdi_frame(void *data, const void *frame,
-      unsigned frame_width, unsigned frame_height, uint64_t frame_count,
+      unsigned dims, uint64_t frame_count,
       unsigned pitch, const char *msg, video_frame_info_t *video_info)
 {
+   unsigned frame_width = VIDEO_SCALE_W(dims);
+   unsigned frame_height = VIDEO_SCALE_H(dims);
    struct bitmap_info info;
    unsigned mode_dims              = 0;
    const void *frame_to_copy        = frame;
@@ -2632,8 +2549,8 @@ static bool gdi_frame(void *data, const void *frame,
        * with whatever size the core has just announced. */
       gdi->bmp          = CreateCompatibleBitmap(
             gdi->winDC, frame_width, frame_height);
-      gdi->bmp_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
-      gdi->frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
+      gdi->bmp_dims     = dims;
+      gdi->frame_dims   = dims;
    }
 
    /* --- Step 2: figure out the on-screen surface size. */
@@ -2794,13 +2711,12 @@ static bool gdi_frame(void *data, const void *frame,
    /* --- Step 6: track core-frame size changes (needed for both the
     * RGUI-overlay path and the no-menu path).  We resize bmp here
     * if the core's announced dimensions changed. */
-   if (     (VIDEO_SCALE_W(gdi->frame_dims)  != frame_width)
-         || (VIDEO_SCALE_H(gdi->frame_dims) != frame_height)
-         || (gdi->frame_pitch  != pitch))
+   if (     (gdi->frame_dims  != dims)
+         || (gdi->frame_pitch != pitch))
    {
       if (frame_width > 4 && frame_height > 4)
       {
-         gdi->frame_dims = VIDEO_SCALE_PACK(frame_width, frame_height);
+         gdi->frame_dims   = dims;
          gdi->frame_pitch  = pitch;
       }
    }

@@ -17,6 +17,7 @@ static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
 
 static int16_t frame[512 * 2];
+static int16_t big[48 * 1024];
 
 int main(void)
 {
@@ -51,6 +52,46 @@ int main(void)
          "the device runs at %d and the frontend was told %u: everything plays at the wrong pitch",
          qsa_mock_device_rate(), new_rate);
    CHECK(drv->buffer_size(h) > 0, "buffer_size is zero");
+
+   printf("   write_avail is what a write takes, across the staging and the device queue\n");
+   {
+      /* audio_driver.h: buffer_size() is everything between write()
+       * returning and the device playing it, write_avail() what the
+       * driver takes right now without blocking, in the same bytes. The
+       * rate control steers the room to half the size, so a room that
+       * only ever sees the staging block - never more than a fraction
+       * of the size - reads as a buffer always full, and the pitch is
+       * pulled down for the session. */
+      static const size_t drains[] = { 1500, 4096, 777, 10000, 2048, 333, 65536 };
+      size_t size = drv->buffer_size(h), wa, k;
+      ssize_t w;
+      drv->set_nonblock_state(h, true);
+      wa = drv->write_avail(h);
+      printf("      buffer_size %u, write_avail empty %u\n", (unsigned)size, (unsigned)wa);
+      CHECK(wa == size, "an empty driver reports %u of %u bytes of room", (unsigned)wa, (unsigned)size);
+      for (k = 0; k < sizeof(drains) / sizeof(drains[0]); k++)
+      {
+         wa = drv->write_avail(h);
+         CHECK(wa <= size, "write_avail %u above buffer_size %u", (unsigned)wa, (unsigned)size);
+         /* asked for more than the room: it takes the room, no more */
+         w = drv->write(h, big, wa + 4096 <= sizeof(big) ? wa + 4096 : sizeof(big));
+         CHECK(w == (ssize_t)wa, "write_avail said %u and the write took %ld", (unsigned)wa, (long)w);
+         CHECK(drv->write_avail(h) == 0, "after a write of the room, write_avail says %u",
+               (unsigned)drv->write_avail(h));
+         /* the device plays some: the room comes back */
+         qsa_mock_drain(drains[k]);
+         /* and a partial write leaves the staging part-filled */
+         if (drv->write_avail(h) >= 1000)
+         {
+            wa = drv->write_avail(h);
+            w  = drv->write(h, big, 1000);
+            CHECK(w == 1000 && wa - drv->write_avail(h) == 1000,
+                  "a 1000-byte write took %ld and the room fell by %u",
+                  (long)w, (unsigned)(wa - drv->write_avail(h)));
+         }
+      }
+      qsa_mock_drain((size_t)-1);
+   }
 
    printf("   blocking writes reach the device\n");
    for (i = 0; i < 1024; i++) frame[i] = (int16_t)(i * 37);

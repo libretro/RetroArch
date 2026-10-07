@@ -10,6 +10,9 @@
 #
 #   tools/companion_win32_test.sh
 set -eu
+# Wine names files in the Unix locale's charset: the test makes one named in
+# CJK, Hangul and Thai, so the locale has to be able to hold it.
+export LC_ALL=C.UTF-8
 cd "$(dirname "$0")/.."
 
 CC=${CC:-x86_64-w64-mingw32-gcc}
@@ -43,7 +46,8 @@ CSRCS="ui/companion/companion_core.c \
        $LC/string/stdstring.c $LC/string/rstrtod.c $LC/compat/compat_strl.c $LC/compat/compat_strldup.c \
        $LC/compat/compat_posix_string.c $LC/compat/compat_strcasestr.c $LC/compat/fopen_utf8.c \
        $LC/encodings/encoding_utf.c $LC/encodings/encoding_crc32.c $LC/encodings/encoding_deflate.c \
-       $LC/hash/lrc_hash.c $LC/time/rtime.c $LC/features/features_cpu.c $LC/rthreads/rthreads.c"
+       $LC/hash/lrc_hash.c $LC/time/rtime.c $LC/features/features_cpu.c $LC/rthreads/rthreads.c \
+       $LC/rthreads/retro_eventcount.c"
 
 OBJS=""
 for f in $CSRCS ui/drivers/ui_win32_companion.c ui/companion/test/companion_win32_test.c; do

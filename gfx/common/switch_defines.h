@@ -13,7 +13,6 @@ typedef struct
    bool vsync;
    bool rgb32;
    bool smooth; /* bilinear */
-   unsigned width, height;
    unsigned rotation;
    struct video_viewport vp;
    struct texture_image *overlay;
@@ -60,8 +59,8 @@ typedef struct
    bool is_threaded;
 
    bool o_size;
-   uint32_t o_height;
-   uint32_t o_width;
+   /* The original size o_size shows the frame at, packed. */
+   uint32_t o_dims;
 
    NWindow *win;
    Framebuffer fb;
@@ -77,13 +76,6 @@ typedef struct
     egl_ctx_data_t egl;
 #endif
 
-    struct
-    {
-        unsigned short width;
-        unsigned short height;
-    } native_window;
-    bool resize;
-    unsigned width, height;
     float refresh_rate;
     NWindow *win;
 } switch_ctx_data_t;

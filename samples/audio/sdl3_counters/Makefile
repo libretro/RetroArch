@@ -12,7 +12,9 @@ SOURCES_C := sdl3_counters_test.c \
 	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
-	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
 OBJS      := $(SOURCES_C:.c=.o)
 
 SDL_CFLAGS ?= $(shell pkg-config --cflags sdl3)

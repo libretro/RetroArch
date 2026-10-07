@@ -818,6 +818,7 @@ static const struct
    char s_56e1b336[22];
    char s_313d15c0[9];
    char s_e9f0dd82[1];
+   char s_0bd714f7[6];
    char s_72765a06[14];
    char s_72765a07[14];
    char s_72765a08[14];
@@ -1107,7 +1108,6 @@ static const struct
    char s_136eaaf4[29];
    char s_8d3a8b68[6];
    char s_68d27147[16];
-   char s_f02f73fc[35];
    char s_e5b971a0[6];
    char s_17615fcf[7];
    char s_3a0a3fef[16];
@@ -1168,7 +1168,6 @@ static const struct
 #endif
 #endif
    char s_a6e5d0ee[30];
-   char s_f228c6c5[15];
    char s_11926382[18];
    char s_645ae416[24];
    char s_df92f5b5[30];
@@ -1932,8 +1931,10 @@ static const struct
    char s_b160f7a1[27];
    char s_cd5ff0f5[20];
    char s_8b92e740[20];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_e2415d78[24];
+#endif
 #endif
    char s_aeef8db2[15];
    char s_14d20957[16];
@@ -1962,17 +1963,39 @@ static const struct
    char s_01a73130[29];
    char s_44ebca0d[24];
    char s_608ac5a1[22];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3839f91d[32];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_86b07599[28];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_8d5f85ee[21];
    char s_9b023eee[27];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_ccae82ba[13];
    char s_ad6e88de[12];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_c7bc8298[20];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_e63b035a[25];
    char s_d21d875b[20];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b12ae22e[17];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_b2d073c7[17];
    char s_1cbc2657[18];
 #endif
@@ -2803,7 +2826,6 @@ static const struct
    char s_74d87c7a[46];
    char s_12adb1e7[43];
    char s_070529d4[55];
-   char s_30d1fc05[45];
 #ifdef GEKKO
    char s_3180dcf5[59];
 #endif
@@ -2845,7 +2867,6 @@ static const struct
    char s_47df0525[49];
    char s_03e272fc[59];
    char s_5c2cc60f[94];
-   char s_d6d8d4be[82];
    char s_e86d2704[86];
    char s_dda608b5[290];
    char s_6f5a032a[52];
@@ -2939,7 +2960,6 @@ static const struct
    char s_193e1462[47];
    char s_6895dfd6[41];
    char s_788364f5[75];
-   char s_dd9ff22a[64];
    char s_db495a9d[41];
    char s_ddc672a7[52];
    char s_ccea261d[125];
@@ -2989,7 +3009,6 @@ static const struct
 #endif
 #endif
    char s_acca011c[93];
-   char s_01efec73[44];
    char s_d3fc9970[47];
    char s_740bd7c4[53];
    char s_f052dae3[65];
@@ -3101,6 +3120,9 @@ static const struct
    char s_a5ffd3d0[39];
 #ifdef _3DS
    char s_0d834bc5[63];
+#endif
+#ifdef HAVE_NFSCLIENT
+   char s_3487ce71[39];
 #endif
    char s_d2ae640b[1];
    char s_8e5bac99[68];
@@ -3360,8 +3382,10 @@ static const struct
    char s_bce9b94f[37];
    char s_d32f5a63[29];
    char s_9177176e[30];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_a1fdf4a6[35];
+#endif
 #endif
    char s_97d77020[25];
    char s_59f05605[26];
@@ -3377,13 +3401,27 @@ static const struct
    char s_4b009af3[42];
    char s_46c57dde[60];
    char s_7eb20ecf[67];
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    char s_3e1e294b[49];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_69c0e487[57];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_a0d1a85c[51];
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    char s_907ef7cc[39];
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    char s_b0a46506[47];
    char s_f6492edc[45];
+#endif
 #endif
    char s_f3bfa8b9[97];
    char s_5fe2cee5[67];
@@ -5166,6 +5204,7 @@ static const struct
    "Butono Y (maldekstra)",
    "Klavo %s",
    "",
+   "\304\210iuj",
    "Pafila Akc. A",
    "Pafila Akc. B",
    "Pafila Akc. C",
@@ -5455,7 +5494,6 @@ static const struct
    "Malebligi envicigan re\304\235imon",
    "Menuo",
    "Publika re\304\235imo",
-   "Trafik-limigi menuan filmerrapidon",
    "\304\210iam",
    "Neniam",
    "Dosieresplorilo",
@@ -5516,7 +5554,6 @@ static const struct
 #endif
 #endif
    "Montri plenajn dosierindikojn",
-   "Montri \"Helpo\"",
    "Montri \"Informoj\"",
    "Montri \"\305\234argi enhavon\"",
    "Sciigo kiam \305\235argante enhavon",
@@ -6288,8 +6325,10 @@ static const struct
    "Montri \"Kurentomastrumado\"",
    "Montri \"Surbendigo\"",
    "Montri \"Konservado\"",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Montri \"Kliento de SMB\"",
+#endif
 #endif
    "Montri \"Steam\"",
    "Montri \"Uzanto\"",
@@ -6318,17 +6357,39 @@ static const struct
    "Instali a\305\255 resta\305\255ri kernon",
    "Sukcesis instali kernon",
    "Malrapidpluiga rapido",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "A\305\255tentokontrola re\304\235imo de SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Foliumi kunhaviga\304\265o de SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Ebligi klienton SMB.",
    "Maksimumaj konektoj de SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Pasvorto SMB",
    "Servilo SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Agordoj de reto SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Kunhaviga\304\265a nomo de SMB",
    "Kunhaviga\304\265o de SMB",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Tempolimo de SMB",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Uzantnomo de SMB",
    "Laborgrupo de SMB",
 #endif
@@ -7295,7 +7356,6 @@ static const struct
    "Malpliigas nivelon de la\305\255teco de sona eligo.",
    "Pliigas nivelon de la\305\255teco de sona eligo.",
    "Baskuligas sinkronigon al \304\235usta enhava filmer-ofteco.",
-   "La fizika muso, kiel agnoskita de RetroArch.",
 #ifdef GEKKO
    "Al\304\235ustigi skalon X/Y por rapido de \"light gun\" de Wiimote",
 #endif
@@ -7359,7 +7419,6 @@ static const struct
    "Enigaj reasignoj estas enmemorigitaj en \304\211i tiu dosierujo.",
    "Transpasi la enigajn klavasignadojn kontra\305\255 la reasignitaj klavasignoj por la kuranta ker"
    "no.",
-   "Specifas la kernan konektejon, kiu ricevos enigojn de fasada regila konektejo %u.",
    "Reasignadoj nur estos aplikitaj al la aktiva ludregilo, en kiu ili estis konservitaj.",
    "\305\234an\304\235i kiel la virtuala RetroPad estas asignita al fizika enigaparato. Se enigapara"
    "to estas agnoskita kaj a\305\255tomate konfigurita \304\235uste, uzantoj eble ne bezonos uzi "
@@ -7494,7 +7553,6 @@ static const struct
    "Montri \304\211iujn agordojn rilatajn kun konfiguro.",
    "Menua pelilo uzota. Bezonas restartigon.",
    "Protektas la agorda\304\265on ka\305\235ante \304\211iujn agordojn rilatantajn al konfiguro.",
-   "Certigas, ke la filmerrapido estu limigita dum ene de la menuo.",
    "\305\234an\304\235i agordojn pri la dosieresplorilo.",
    "Modifi la maldiafanecon de la defa\305\255lta menua fono.",
    "Brilo de la menuo je cd/m\302\262 (nits) kiam uzante ekranon de HDR. Nur videbla kiam HDR estas "
@@ -7568,7 +7626,6 @@ static const struct
 #endif
    "Montri plenajn dosierindikojn por dosierujaj agordojn, anstata\305\255 nur la elektita dosiernom"
    "o.",
-   "Montri la opcion \"Helpo\" en la \304\210efa menuo.",
    "Montri la opcion \"Informoj\" en la \304\210efa menuo.",
    "Montri la opcion \"\305\234argi enhavon\" en la \304\210efa menuo.",
    "Montri malda\305\255ran animacio por indiki, ke enhavo estas \305\235argata.",
@@ -7725,6 +7782,9 @@ static const struct
    "\305\234an\304\235i agordojn pri servilo kaj reto.",
 #ifdef _3DS
    "Ebligi horlo\304\235an rapidon de New3DS (804MHz) kaj ka\305\235memoro L2.",
+#endif
+#ifdef HAVE_NFSCLIENT
+   "Adreso IP a\305\255 gastiga nomo de servilo.",
 #endif
    "",
    "Montri surekranan mesa\304\235on kiam oni eraras konfiguri enigaparatojn.",
@@ -8102,8 +8162,10 @@ static const struct
    "Montri agordojn \"Kurentomastrumado\".",
    "Montri agordojn \"Surbendigo\"",
    "Montri agordojn \"Konservado\".",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Montri agordojn pri \"Kliento SMB\".",
+#endif
 #endif
    "Montri agordojn \"Steam\".",
    "Montri agordojn \"Uzanto\".",
@@ -8120,13 +8182,27 @@ static const struct
    "Malfermi la tradician labortablan menuon.",
    "Instali a\305\255 resta\305\255ri kernon el la dosierujo \"El\305\235uta\304\265oj\".",
    "La rapido, je kiu enhavo estos ludata kiam uzante malrapidpluigon.",
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    "Elekti la a\305\255tentokontrolon uzotan en via medio.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Foliumi dosierojn en la konfigurita kunhaviga\304\265o de SMB.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Elekti la maksimumaj konektoj uzotaj en via medio.",
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    "Adreso IP a\305\255 gastiga nomo de servilo.",
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    "Konfiguri agordojn pri kunhava\304\265o de reto SMB.",
    "Elekti la defa\305\255ltan tempolimon je sekundoj.",
+#endif
 #endif
    "Ordigi konservdosieroj en dosierujojn nomitaj la\305\255 la dosierujoj, en kiu la enhavo estas l"
    "okita.",
@@ -9056,7 +9132,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171855u
+      (sizeof(msg_hash_eo_blob) == (171576u
 #ifdef ANDROID
        + 312u
 #endif
@@ -9179,18 +9255,40 @@ typedef char msg_hash_eo_blob_check[
        + 77u
 #endif
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 24u
        + 32u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 28u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 21u
        + 27u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 13u
        + 12u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 20u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 25u
        + 20u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 17u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 17u
        + 18u
 #endif
@@ -9356,6 +9454,9 @@ typedef char msg_hash_eo_blob_check[
 #ifdef _3DS
        + 63u
 #endif
+#ifdef HAVE_NFSCLIENT
+       + 39u
+#endif
 #ifdef HAVE_GAME_AI
        + 31u
 #endif
@@ -9371,14 +9472,28 @@ typedef char msg_hash_eo_blob_check[
        + 51u
        + 41u
 #endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
        + 35u
        + 49u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 57u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 51u
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
        + 39u
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
        + 47u
        + 45u
+#endif
 #endif
 #ifdef HAVE_LAKKA
        + 42u
@@ -10264,6 +10379,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_B,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_C,
@@ -10553,7 +10669,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_EXTENSION_DISPLAY_NEVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_FILE_BROWSER_SETTINGS,
@@ -10614,7 +10729,6 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -11377,8 +11491,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SETTINGS_SHOW_USER,
@@ -11407,17 +11523,39 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SIDELOAD_CORE_SUCCESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SETTINGS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SHARE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_SMB_SHARE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_TIMEOUT,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_USERNAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_SMB_CLIENT_WORKGROUP,
 #endif
@@ -12248,7 +12386,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -12290,7 +12427,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
-   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
@@ -12384,7 +12520,6 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DISABLE_KIOSK_MODE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENABLE_KIOSK_MODE,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_ENUM_THROTTLE_FRAMERATE,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FILE_BROWSER_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_FRAMEBUFFER_OPACITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_HDR_BRIGHTNESS_NITS,
@@ -12434,7 +12569,6 @@ static const uint32_t msg_hash_eo_ids[] =
 #endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_FULL_PATHS,
-   (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_HELP,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT,
    (uint32_t)MENU_ENUM_SUBLABEL_MENU_SHOW_LOAD_CONTENT_ANIMATION,
@@ -12546,6 +12680,9 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
+#endif
+#ifdef HAVE_NFSCLIENT
+   (uint32_t)MENU_ENUM_SUBLABEL_NFS_CLIENT_SERVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG,
    (uint32_t)MENU_ENUM_SUBLABEL_NOTIFICATION_SHOW_AUTOCONFIG_FAILS,
@@ -12805,8 +12942,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_POWER_MANAGEMENT,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_RECORDING,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SAVING,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_SMB_CLIENT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_STEAM,
    (uint32_t)MENU_ENUM_SUBLABEL_SETTINGS_SHOW_USER,
@@ -12822,13 +12961,27 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_SHOW_WIMP,
    (uint32_t)MENU_ENUM_SUBLABEL_SIDELOAD_CORE_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_SLOWMOTION_RATIO,
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_AUTH_MODE,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_BROWSE,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_NUM_CONTEXTS,
+#endif
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SERVER,
+#endif
+#if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
+#ifdef HAVE_SMBCLIENT
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_SMB_CLIENT_TIMEOUT,
+#endif
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_BY_CONTENT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_SORT_SAVEFILES_ENABLE,

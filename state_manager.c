@@ -767,9 +767,11 @@ void state_manager_event_init(
    core_info_t *core_info = NULL;
    void *state            = NULL;
 
-   if (  !rewind_st
-       || (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
-       || rewind_st->state)
+   if (!rewind_st)
+      return;
+   rewind_st->flags &= ~STATE_MGR_REWIND_ST_FLAG_INIT_PENDING;
+   if (     (rewind_st->flags & STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED)
+         || rewind_st->state)
       return;
 
    rewind_st->size               = 0;
@@ -862,6 +864,7 @@ void state_manager_event_deinit(
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_CHECKED
                         | STATE_MGR_REWIND_ST_FLAG_HOTKEY_WAS_PRESSED
                         | STATE_MGR_REWIND_ST_FLAG_INIT_ATTEMPTED
+                        | STATE_MGR_REWIND_ST_FLAG_INIT_PENDING
                         );
 
    /* Restore regular (non-rewind) core audio
@@ -960,7 +963,7 @@ bool state_manager_check_rewind(
          content_deserialize_state(buf, rewind_st->size);
 
 #ifdef HAVE_BSV_MOVIE
-         bsv_movie_frame_rewind();
+         bsv_movie_frame_rewind(input_state_get_ptr());
 #endif
       }
       else
@@ -973,7 +976,7 @@ bool state_manager_check_rewind(
             retro_atomic_store_release_int(
                   &rewind_st->frame_reversed_atomic, 1);
             rewind_st->flags |= STATE_MGR_REWIND_ST_FLAG_FRAME_IS_REVERSED;
-            bsv_movie_frame_rewind();
+            bsv_movie_frame_rewind(input_state_get_ptr());
          }
          else
 #endif
