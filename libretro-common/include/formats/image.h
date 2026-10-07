@@ -163,6 +163,100 @@ struct texture_compressed
 
 enum image_type_enum image_texture_get_type(const char *path);
 
+/* ---- The still loader ----------------------------------------------
+ * One decoder for every still the frontend or a core takes from a
+ * file: the bytes are the caller's, read whole or still arriving, and
+ * the decode runs in steps that stop at a time budget, at an abort
+ * hook, or at the byte frontier. image_texture_load() is this loader
+ * run to completion in one call. */
+
+/* What the caller takes of a still, asked of it once by whoever knows
+ * (the video driver, a core's own renderer) and handed down. Zero is
+ * the ordinary 8-bit image, ARGB words. */
+typedef struct
+{
+   /* Memory-order R,G,B,A rather than ARGB words */
+   bool rgba;
+   /* XRGB2101010 where the file has more than 8 bits a channel */
+   bool want_10bit;
+   /* Linear scRGB half floats where the source is HDR (video stills) */
+   bool want_fp16;
+   /* A GPU-native compressed payload (BCn) as it lies in the file,
+    * rather than its CPU decode; the caller then samples it as such or
+    * decodes it later with image_texture_realize_rgba() */
+   bool want_compressed;
+} image_texture_request_t;
+
+typedef struct image_loader image_loader_t;
+
+enum image_loader_state
+{
+   IMAGE_LOADER_ERROR = -1,
+   IMAGE_LOADER_RUNNING,   /* more steps to take */
+   IMAGE_LOADER_WAIT,      /* needs bytes not yet available */
+   IMAGE_LOADER_DONE       /* image_loader_finish() has the image */
+};
+
+/* Whether a decode of @type may start on the first @avail bytes of
+ * a file still being read: the header is resident for the decoders
+ * that paint from a prefix (PNG, JPEG, TGA, BMP, the video stills),
+ * the still's chunk is whole for WEBP. False means wait for the whole
+ * file. */
+bool image_loader_ready(enum image_type_enum type,
+      const void *buf, size_t avail);
+
+/* A loader for a still of @type. @req may be NULL for the ordinary
+ * image. NULL when out of memory. */
+image_loader_t *image_loader_new(enum image_type_enum type,
+      const image_texture_request_t *req);
+
+/* The file's bytes: @buf of @len bytes once fully read, of which
+ * @avail are resident now (@len for a whole file). The buffer is the
+ * caller's and stays where it is until the loader is freed. False
+ * when the decoder refused the start. */
+bool image_loader_start(image_loader_t *l, const void *buf, size_t len,
+      size_t avail);
+
+/* More of the file has arrived: the first @avail bytes are resident
+ * ((size_t)-1: all of them). */
+void image_loader_set_avail(image_loader_t *l, size_t avail);
+
+/* Asked between steps of the decode: true abandons it, and the loader
+ * reports IMAGE_LOADER_ERROR. For decodes that must stop promptly at
+ * shutdown or once their result is no longer wanted. */
+void image_loader_set_abort(image_loader_t *l,
+      bool (*should_abort)(void *ud), void *ud);
+
+/* Decode until @now's clock reaches @deadline, at least one iteration
+ * and, between a transfer and its pixels, never both in one step;
+ * @now NULL runs until the decode is done, aborts, or wants bytes. */
+enum image_loader_state image_loader_step(image_loader_t *l,
+      int64_t (*now)(void), int64_t deadline);
+
+/* The decoded image, the loader's no more: @img's pixels or compressed
+ * payload are the caller's to free with image_texture_free(). Only
+ * after IMAGE_LOADER_DONE. */
+bool image_loader_finish(image_loader_t *l, struct texture_image *img);
+
+/* Whether the loader's PNG is animated: 1 yes, 0 a still, -1 unknown
+ * (not a PNG, or the file is not wholly resident). */
+int image_loader_png_probe(const image_loader_t *l);
+
+/* The animation stream a video still's decode opened, detached for
+ * the caller to play on; NULL when there is none. The stream borrows
+ * the loader's buffer, which the caller keeps alive for it. */
+void *image_loader_detach_anim_stream(image_loader_t *l);
+
+void image_loader_free(image_loader_t *l);
+
+/* Resample a decoded still in place: a whole-factor upscale when an
+ * edge is under @upscale_threshold, then a box reduction to keep the
+ * longer edge within @downscale_cap; 0 skips either. Half-float
+ * images are left as they are. In formats/image_texture_scale.c,
+ * which brings the scaler with it. */
+bool image_texture_scale(struct texture_image *img,
+      unsigned upscale_threshold, unsigned downscale_cap);
+
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 

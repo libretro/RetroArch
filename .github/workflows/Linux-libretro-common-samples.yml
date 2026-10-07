@@ -191,6 +191,7 @@ jobs:
             # already queued and counts them.
             task_queue_switch_test
             image_blit_bands_test
+            image_loader_test
             tpool_wait_test
             # Four CPU-burning jobs on a pool of four must overlap;
             # on a one-core runner it notes that and still passes.

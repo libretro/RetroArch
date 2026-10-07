@@ -28,6 +28,21 @@
 #include <boolean.h>
 #include <formats/image.h>
 #include <formats/data_transfer.h>
+#ifdef HAVE_RPNG
+#include <formats/rpng.h>
+#endif
+#ifdef HAVE_RJPEG
+#include <formats/rjpeg.h>
+#endif
+#ifdef HAVE_RTGA
+#include <formats/rtga.h>
+#endif
+#ifdef HAVE_RBMP
+#include <formats/rbmp.h>
+#endif
+#ifdef HAVE_RWEBP
+#include <formats/rwebp.h>
+#endif
 
 enum image_type_enum image_texture_get_type(const char *path)
 {
@@ -125,6 +140,306 @@ enum image_type_enum image_texture_get_type(const char *path)
    return IMAGE_TYPE_NONE;
 }
 
+struct image_loader
+{
+   void *xfer;
+   const uint8_t *buf;
+   uint32_t *pixels;
+   struct texture_compressed *compressed;
+   bool (*should_abort)(void *ud);
+   void *abort_ud;
+   size_t len;
+   size_t avail;
+   unsigned width;
+   unsigned height;
+   enum image_type_enum type;
+   enum image_loader_state state;
+   uint8_t phase;  /* 0: the transfer, 1: the pixels */
+   bool pix10;
+   bool fp16;
+   image_texture_request_t req;
+};
+
+bool image_loader_ready(enum image_type_enum type,
+      const void *buf, size_t avail)
+{
+   if (!buf || !avail)
+      return false;
+   switch (type)
+   {
+      /* The video stills decode against a growing buffer from the
+       * first byte; the picture decoders paint from a prefix once
+       * their header is resident. WEBP has no wall to stall at, so
+       * it starts only once the still's chunk is whole. */
+      case IMAGE_TYPE_WEBM:
+      case IMAGE_TYPE_MP4:
+         return true;
+#ifdef HAVE_RWEBP
+      case IMAGE_TYPE_WEBP:
+         return rwebp_still_ready(buf, avail);
+#endif
+#ifdef HAVE_RPNG
+      case IMAGE_TYPE_PNG:
+         return rpng_header_ready((const uint8_t*)buf, avail);
+#endif
+#ifdef HAVE_RJPEG
+      case IMAGE_TYPE_JPEG:
+         return rjpeg_header_ready((const uint8_t*)buf, avail);
+#endif
+#ifdef HAVE_RTGA
+      case IMAGE_TYPE_TGA:
+         return rtga_header_ready((const uint8_t*)buf, avail);
+#endif
+#ifdef HAVE_RBMP
+      case IMAGE_TYPE_BMP:
+         return rbmp_header_ready((const uint8_t*)buf, avail);
+#endif
+      default:
+         break;
+   }
+   return false;
+}
+
+image_loader_t *image_loader_new(enum image_type_enum type,
+      const image_texture_request_t *req)
+{
+   image_loader_t *l;
+   if (type == IMAGE_TYPE_NONE)
+      return NULL;
+   if (!(l = (image_loader_t*)calloc(1, sizeof(*l))))
+      return NULL;
+   l->type  = type;
+   l->state = IMAGE_LOADER_RUNNING;
+   if (req)
+      l->req = *req;
+   return l;
+}
+
+bool image_loader_start(image_loader_t *l, const void *buf, size_t len,
+      size_t avail)
+{
+   if (!l || l->xfer || !buf || !len)
+      return false;
+   if (!(l->xfer = image_transfer_new(l->type)))
+      return false;
+   l->buf   = (const uint8_t*)buf;
+   l->len   = len;
+   l->avail = avail < len ? avail : len;
+   /* WEBP has no avail wall: it sees the bytes read so far and no
+    * more, and its start gate above admits it only once the still's
+    * chunk lies within them. The others wall at the frontier. */
+   if (l->type == IMAGE_TYPE_WEBP)
+      image_transfer_set_buffer_ptr(l->xfer, l->type,
+            (uint8_t*)buf, l->avail);
+   else
+   {
+      image_transfer_set_buffer_ptr(l->xfer, l->type, (uint8_t*)buf, len);
+      if (l->avail < len)
+         image_transfer_set_avail(l->xfer, l->type, l->avail);
+   }
+   if (l->req.want_10bit)
+      image_transfer_set_want_10bit(l->xfer, l->type, 1);
+   if (l->req.want_fp16)
+      image_transfer_set_want_fp16(l->xfer, l->type, true);
+   /* The channel order now: the JPEG decoder emits final pixels
+    * during the transfer, before the process call could name it. */
+   image_transfer_set_rgba(l->xfer, l->type, l->req.rgba);
+   if (!image_transfer_start(l->xfer, l->type))
+   {
+      image_transfer_free(l->xfer, l->type);
+      l->xfer  = NULL;
+      l->state = IMAGE_LOADER_ERROR;
+      return false;
+   }
+   return true;
+}
+
+void image_loader_set_avail(image_loader_t *l, size_t avail)
+{
+   if (!l || !l->xfer)
+      return;
+   l->avail = avail < l->len ? avail : l->len;
+   image_transfer_set_avail(l->xfer, l->type, avail);
+}
+
+void image_loader_set_abort(image_loader_t *l,
+      bool (*should_abort)(void *ud), void *ud)
+{
+   if (!l)
+      return;
+   l->should_abort = should_abort;
+   l->abort_ud     = ud;
+}
+
+/* The transfer is through: valid, and either the compressed payload
+ * the caller asked for is copied out, or the pixels are next. */
+static enum image_loader_state image_loader_transferred(image_loader_t *l)
+{
+   struct image_gpu_layout lay;
+   if (!image_transfer_is_valid(l->xfer, l->type))
+      return IMAGE_LOADER_ERROR;
+   l->phase = 1;
+   if (     l->req.want_compressed
+         && image_transfer_get_gpu_layout(l->xfer, l->type, l->len, &lay))
+   {
+      /* The source copied, so the mip pointers outlive the caller's
+       * buffer; the CPU decode is deferred to image_texture_realize_rgba */
+      struct texture_compressed *tc = (struct texture_compressed*)
+         calloc(1, sizeof(*tc));
+      if (tc)
+      {
+         tc->mips    = (struct texture_mip*)
+            malloc((size_t)lay.num_mips * sizeof(*tc->mips));
+         tc->storage = malloc(l->len);
+         if (tc->mips && tc->storage)
+         {
+            unsigned i;
+            memcpy(tc->storage, l->buf, l->len);
+            tc->storage_len = l->len;
+            tc->num_mips    = lay.num_mips;
+            tc->format      = lay.format;
+            tc->type        = l->type;
+            for (i = 0; i < lay.num_mips; i++)
+            {
+               tc->mips[i].data   = (const unsigned char*)tc->storage
+                                  + lay.offset[i];
+               tc->mips[i].width  = lay.width[i];
+               tc->mips[i].height = lay.height[i];
+               tc->mips[i].size   = lay.size[i];
+            }
+            l->compressed = tc;
+            l->width      = lay.width[0];
+            l->height     = lay.height[0];
+            return IMAGE_LOADER_DONE;
+         }
+         free(tc->storage);
+         free(tc->mips);
+         free(tc);
+         /* Out of memory for the copy: the CPU decode below instead */
+      }
+   }
+   return IMAGE_LOADER_RUNNING;
+}
+
+enum image_loader_state image_loader_step(image_loader_t *l,
+      int64_t (*now)(void), int64_t deadline)
+{
+   if (!l || !l->xfer)
+      return IMAGE_LOADER_ERROR;
+   if (l->state == IMAGE_LOADER_DONE || l->state == IMAGE_LOADER_ERROR)
+      return l->state;
+   l->state = IMAGE_LOADER_RUNNING;
+
+   /* Each loop runs its first iteration whatever the budget, so a
+    * caller whose window is spent still progresses; a timed step ends
+    * at a phase change rather than beginning the next phase's first
+    * pass on top of the time it already took. */
+   if (l->phase == 0)
+   {
+      do
+      {
+         if (!image_transfer_iterate(l->xfer, l->type))
+         {
+            /* False both when the transfer is through and when a
+             * decoder painting from a prefix stalled at the byte
+             * frontier: the next step resumes once more has arrived. */
+            if (image_transfer_need_more(l->xfer, l->type))
+               return (l->state = IMAGE_LOADER_WAIT);
+            if ((l->state = image_loader_transferred(l)) != IMAGE_LOADER_RUNNING
+                  || now)
+               return l->state;
+            break;
+         }
+         if (l->should_abort && l->should_abort(l->abort_ud))
+            return (l->state = IMAGE_LOADER_ERROR);
+      } while (!now || now() < deadline);
+      if (l->phase == 0)
+         return IMAGE_LOADER_RUNNING;
+   }
+
+   do
+   {
+      int ret = image_transfer_process(l->xfer, l->type,
+            &l->pixels, l->len, &l->width, &l->height, l->req.rgba);
+      switch (ret)
+      {
+         case IMAGE_PROCESS_NEXT:
+            /* Pass by pass (inflate + unfilter), the abort hook between */
+            if (l->should_abort && l->should_abort(l->abort_ud))
+               return (l->state = IMAGE_LOADER_ERROR);
+            break;
+         case IMAGE_PROCESS_WAIT:
+            /* A video still at the frontier: nothing was consumed */
+            return (l->state = IMAGE_LOADER_WAIT);
+         case IMAGE_PROCESS_END:
+            l->pix10 = image_transfer_is_10bit(l->xfer, l->type);
+            l->fp16  = image_transfer_is_fp16(l->xfer, l->type);
+            return (l->state = IMAGE_LOADER_DONE);
+         default:
+            return (l->state = IMAGE_LOADER_ERROR);
+      }
+   } while (!now || now() < deadline);
+   return IMAGE_LOADER_RUNNING;
+}
+
+bool image_loader_finish(image_loader_t *l, struct texture_image *img)
+{
+   if (!l || !img || l->state != IMAGE_LOADER_DONE)
+      return false;
+   img->pixels        = l->pixels;
+   img->compressed    = l->compressed;
+   img->width         = l->width;
+   img->height        = l->height;
+   img->supports_rgba = l->req.rgba;
+   img->pix10         = l->pix10;
+   img->fp16          = l->fp16;
+   l->pixels          = NULL;
+   l->compressed      = NULL;
+   return true;
+}
+
+int image_loader_png_probe(const image_loader_t *l)
+{
+#ifdef HAVE_RPNG
+   int more = 0;
+   /* Only a complete read is a verdict: over a partial buffer the walk
+    * can only say "not yet", which would read as "still" */
+   if (!l || l->type != IMAGE_TYPE_PNG || !l->buf || l->avail < l->len)
+      return -1;
+   if (rpng_is_apng_ex(l->buf, l->len, &more))
+      return 1;
+   return 0;
+#else
+   (void)l;
+   return -1;
+#endif
+}
+
+void *image_loader_detach_anim_stream(image_loader_t *l)
+{
+   if (!l || !l->xfer)
+      return NULL;
+   return image_transfer_detach_anim_stream(l->xfer, l->type);
+}
+
+void image_loader_free(image_loader_t *l)
+{
+   if (!l)
+      return;
+   if (l->xfer)
+      image_transfer_free(l->xfer, l->type);
+   if (l->compressed)
+   {
+      free(l->compressed->storage);
+      free(l->compressed->mips);
+      free(l->compressed);
+   }
+   free(l->pixels);
+   free(l);
+}
+
+/* The loader run to completion over a whole buffer: the request from
+ * the caller's image, whose ->pix10 asks for 10-bit on the way in. */
 static bool image_texture_load_internal(
       enum image_type_enum type,
       void *ptr,
@@ -132,118 +447,31 @@ static bool image_texture_load_internal(
       struct texture_image *out_img,
       bool (*should_abort)(void *ud), void *abort_ud)
 {
-   int ret;
-   void *img;
+   image_texture_request_t req;
+   image_loader_t *l;
+   enum image_loader_state st;
 
+   req.rgba            = out_img->supports_rgba;
+   req.want_10bit      = out_img->pix10;
+   req.want_fp16       = false;
+   req.want_compressed = true;
    out_img->compressed = NULL;
-
-   img = image_transfer_new(type);
-   if (!img)
+   if (!(l = image_loader_new(type, &req)))
       return false;
-
-   image_transfer_set_buffer_ptr(img, type, (uint8_t*)ptr, len);
-
-   /* A caller that wants the extra precision says so through
-    * ->pix10; the decoders that have a 10-bit path (PNG 16-bit, and
-    * the video stills) then emit XRGB2101010 and report what they
-    * actually produced. A decoder or a file without one leaves the
-    * flag clear and the caller gets the ordinary 8-bit image. */
-   if (out_img->pix10)
-      image_transfer_set_want_10bit(img, type, 1);
-
-   if (!image_transfer_start(img, type))
+   image_loader_set_abort(l, should_abort, abort_ud);
+   if (!image_loader_start(l, ptr, len, len))
    {
-      image_transfer_free(img, type);
+      image_loader_free(l);
       return false;
    }
-
-   /* Chunk by chunk, with the abort hook between chunks. */
-   while (image_transfer_iterate(img, type))
-      if (should_abort && should_abort(abort_ud))
-      {
-         image_transfer_free(img, type);
-         return false;
-      }
-
-   if (!image_transfer_is_valid(img, type))
+   st = image_loader_step(l, NULL, 0);
+   if (st == IMAGE_LOADER_DONE && image_loader_finish(l, out_img))
    {
-      image_transfer_free(img, type);
-      return false;
+      image_loader_free(l);
+      return true;
    }
-
-   out_img->pix10 = image_transfer_is_10bit(img, type);
-   /* No decoder emits half floats: an answer, never an ask, and the
-    * caller's struct may hold anything there. */
-   out_img->fp16  = false;
-
-   /* GPU-native fast path: if the loader can hand back BCn blocks for
-    * direct upload, copy the source (so the mip pointers survive the
-    * caller freeing its buffer) and defer any RGBA8 decode. */
-   {
-      struct image_gpu_layout lay;
-      if (image_transfer_get_gpu_layout(img, type, len, &lay))
-      {
-         struct texture_compressed *tc = (struct texture_compressed*)
-            calloc(1, sizeof(*tc));
-         if (tc)
-         {
-            tc->mips    = (struct texture_mip*)
-               malloc((size_t)lay.num_mips * sizeof(*tc->mips));
-            tc->storage = malloc(len);
-            if (tc->mips && tc->storage)
-            {
-               unsigned i;
-               memcpy(tc->storage, ptr, len);
-               tc->storage_len = len;
-               tc->num_mips    = lay.num_mips;
-               tc->format      = lay.format;
-               tc->type        = type;
-               for (i = 0; i < lay.num_mips; i++)
-               {
-                  tc->mips[i].data   = (const unsigned char*)tc->storage
-                                     + lay.offset[i];
-                  tc->mips[i].width  = lay.width[i];
-                  tc->mips[i].height = lay.height[i];
-                  tc->mips[i].size   = lay.size[i];
-               }
-               out_img->compressed = tc;
-               out_img->pixels     = NULL;
-               out_img->width      = lay.width[0];
-               out_img->height     = lay.height[0];
-               image_transfer_free(img, type);
-               return true;
-            }
-            free(tc->storage);
-            free(tc->mips);
-            free(tc);
-         }
-         /* allocation failure: fall through to the CPU decode below */
-      }
-   }
-
-   do
-   {
-      ret = image_transfer_process(img, type,
-            (uint32_t**)&out_img->pixels, len, &out_img->width,
-            &out_img->height, out_img->supports_rgba);
-      /* Pass by pass (inflate + unfilter), the abort hook between. */
-      if (ret == IMAGE_PROCESS_NEXT && should_abort && should_abort(abort_ud))
-      {
-         free(out_img->pixels);
-         out_img->pixels = NULL;
-         image_transfer_free(img, type);
-         return false;
-      }
-   } while (ret == IMAGE_PROCESS_NEXT);
-
-   if (ret == IMAGE_PROCESS_ERROR || ret == IMAGE_PROCESS_ERROR_END)
-   {
-      image_transfer_free(img, type);
-      return false;
-   }
-
-   image_transfer_free(img, type);
-   return true;
+   image_loader_free(l);
+   return false;
 }
 
 bool image_texture_load(struct texture_image *out_img, const char *path)
