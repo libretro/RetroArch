@@ -365,6 +365,8 @@ static void gfx_surface_done(void *user, uintptr_t handle)
        * pixels and payload kept until it lands. */
       if (!s->num_slots && !s->dying)
       {
+         /* The wrapper let go of the descriptor when it ran the node */
+         s->node.img     = &s->img;
          s->node.dropped = 0;
          if (video_thread_async_post(&s->node))
          {
@@ -717,7 +719,7 @@ bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
 typedef struct
 {
    gfx_surface_t *s;
-   uint8_t gen;
+   uint32_t gen;
 } gfx_surface_decode_t;
 
 /* Main thread, the decode done */

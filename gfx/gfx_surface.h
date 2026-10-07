@@ -123,6 +123,9 @@ struct gfx_surface
    /* The one gfx_surface_pixfmt bit the slots hold; 0 for a static
     * surface, whose every submit names its own. */
    uint32_t pixfmt;
+   /* Which submit_path asked for the decode out now; an older one's
+    * answer lands nowhere. Wide enough never to come round on one. */
+   uint32_t decode_gen;
    enum texture_filter_type filter;
    uint8_t inflight;
    uint8_t dying;      /* freed while in flight; the completion frees */
@@ -130,7 +133,6 @@ struct gfx_surface
     * (gfx_surface_submit_path). Only the newest one lands, and a
     * surface freed with one out stays until it is answered. */
    uint8_t decoding;
-   uint8_t decode_gen;
    /* Format and channel order of the texture, one key: an in-place
     * update only ever writes the layout the texture was made with.
     * 0xff = none. */
