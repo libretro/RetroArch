@@ -240,16 +240,12 @@ void openxr_input_sync(XrSession session)
     bool menu_down = retro_atomic_load_relaxed_int(&openxr_buttons[XR_MENU]) != 0;
     uint64_t now = cpu_features_get_time_usec();
 
+    /* Held, as a state: set from a second into the press until the
+     * button comes up. The reader looks, and takes nothing away. */
     if (menu_down && !openxr_menu_was_down)
-    {
         openxr_menu_down_time = now;
-        retro_atomic_store_relaxed_int(&openxr_menu_long_press, 0);
-    }
-    else if (menu_down)
-    {
-        if (now - openxr_menu_down_time >= 1000000)
-          retro_atomic_store_relaxed_int(&openxr_menu_long_press, 1);
-    }
+    retro_atomic_store_relaxed_int(&openxr_menu_long_press,
+          (menu_down && now - openxr_menu_down_time >= 1000000) ? 1 : 0);
 
     openxr_menu_was_down = menu_down;
   }
@@ -308,8 +304,14 @@ int16_t openxr_input_axis(unsigned axis)
   return (int16_t)v;
 }
 
+/* The menu button has been held a second, and still is. The frontend
+ * reads it as a hotkey that is down, and its hotkeys act once a press:
+ * so this says "down" for as long as it is, on every read. It took the
+ * flag away as it read it before, and the next sync put it back - a
+ * frame read between two syncs saw the button let go and pressed
+ * again, and the menu toggled a second time. */
 bool openxr_input_menu_long_press(void)
 {
-  return retro_atomic_exchange_int(&openxr_menu_long_press, 0) != 0;
+  return retro_atomic_load_relaxed_int(&openxr_menu_long_press) != 0;
 }
 #endif

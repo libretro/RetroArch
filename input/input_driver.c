@@ -10748,7 +10748,9 @@ static void input_keys_pressed(
                      i);
 
 #if defined(HAVE_OPENXR) && defined(ANDROID)
-         if (i == RARCH_MENU_TOGGLE && port == 0)
+         /* the headset's menu button, held: on whichever port the
+          * hotkeys are read - this loop runs for that one alone */
+         if (i == RARCH_MENU_TOGGLE)
             bit_pressed = bit_pressed || openxr_input_menu_long_press();
 #endif
          if (     bit_pressed
