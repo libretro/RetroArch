@@ -31,6 +31,7 @@ on:
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/menu/setting_command/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -51,6 +52,7 @@ on:
       - 'intl/msg_hash_lbl.h'
       - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
+      - 'samples/menu/setting_command/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -304,6 +306,19 @@ jobs:
           samples/settings/packed_rows/build.sh
           ./samples/settings/packed_rows/packed_rows_test
           make -C samples/settings/packed_rows clean
+
+      - name: Build and run setting_command_test
+        shell: bash
+        run: |
+          set -eu
+          # A press on a settings row whose command reinitialises the
+          # video driver has to bring the driver up once, on the first
+          # press and on every later one, whether or not the row
+          # applies its command by itself. Shares the non-Qt build
+          # made above.
+          samples/menu/setting_command/build.sh
+          ./samples/menu/setting_command/setting_command_test
+          make -C samples/menu/setting_command clean
 
       - name: Hot function budget
         shell: bash
