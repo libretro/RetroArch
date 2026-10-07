@@ -277,6 +277,7 @@ typedef struct video_thread_handoff_stats
    unsigned lapsed;
    unsigned declined_ring;
    unsigned declined_size;
+   unsigned pushed;           /* pushes that took a free slot, since init */
 } video_thread_handoff_stats_t;
 
 /* Slots of the statistics snapshot thread_video_t::stats publishes.

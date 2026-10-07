@@ -4987,7 +4987,8 @@ bool video_thread_get_handoff_stats(video_thread_handoff_stats_t *out)
       return false;
    if (!(thr = (thread_video_t*)video_st->data))
       return false;
-   *out = thr->handoff.last;
+   *out        = thr->handoff.last;
+   out->pushed = thr->hit_count;
    return true;
 }
 

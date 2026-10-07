@@ -6680,6 +6680,10 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
    video_info->osd_stat_params.color_hp    = NULL;
 
    {
+#ifdef HAVE_THREADS
+      video_thread_handoff_stats_t ho;
+      bool have_ho = video_thread_get_handoff_stats(&ho);
+#endif
       size_t __len = video_driver_stat_appendf(video_st->stat_text, 0,
             "CORE AV_INFO\n"
             " Size:       %ux%u\n"
@@ -6696,9 +6700,6 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
             " Refresh:  %7.2f hz\n"
             " FrameRate:%7.2f fps\n"
             " FrameTime %s:%5.2f ms\n"
-            " -Deviation:%6.2f %%\n"
-            " Frames:  %8" PRIu64"\n"
-            " -Dropped:  %6u\n"
             ,
             VIDEO_SCALE_W(cache_dims),
             VIDEO_SCALE_H(cache_dims),
@@ -6725,32 +6726,44 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
             video_info->refresh_rate,
             (runloop_st->pace_period_usec) ? 1000000.0f / (double)runloop_st->pace_period_usec : 0,
             video_st->frame_time_from_display ? "D" : "L",
-            (runloop_st->pace_period_usec) ? runloop_st->pace_period_usec / 1000.0f : 0,
-            100.0f * stddev,
-            video_st->frame_count,
-            video_st->frame_drop_count);
+            (runloop_st->pace_period_usec) ? runloop_st->pace_period_usec / 1000.0f : 0);
+
+      /* Frame times are not sampled under threaded video, so there
+       * is no deviation to show. */
+      if (!VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st))
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
+               " -Deviation:%6.2f %%\n", 100.0f * stddev);
+
+      __len = video_driver_stat_appendf(video_st->stat_text, __len,
+            " Frames:  %8" PRIu64"\n", video_st->frame_count);
 
 #ifdef HAVE_THREADS
-      {
-         /* What handing the frame to the video thread costs the
-          * runloop, with the slot wait - pacing, not handoff -
-          * on its own line. */
-         video_thread_handoff_stats_t ho;
-         if (video_thread_get_handoff_stats(&ho))
-            __len = video_driver_stat_appendf(video_st->stat_text, __len,
-                  " Handoff:   %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                  " -Copy:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
-                  " -Wait:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
-                  " -Frames: %3u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
-                  " -Lend:   %3u asked, %u lent, %u lapsed, %u ring, %u size\n",
-                  ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
-                  ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
-                  ho.bytes_per_frame / 1024,
-                  ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
-                  ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
-                  ho.waits, ho.dropped, ho.drains, ho.asked, ho.lent, ho.lapsed,
-                  ho.declined_ring, ho.declined_size);
-      }
+      if (have_ho)
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
+               " -Pushed:   %6u\n", ho.pushed);
+#endif
+
+      __len = video_driver_stat_appendf(video_st->stat_text, __len,
+            " -Dropped:  %6u\n", video_st->frame_drop_count);
+
+#ifdef HAVE_THREADS
+      /* What handing the frame to the video thread costs the
+       * runloop, with the slot wait - pacing, not handoff -
+       * on its own line. */
+      if (have_ho)
+         __len = video_driver_stat_appendf(video_st->stat_text, __len,
+               " Handoff:   %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+               " -Copy:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ") %" PRIu64 " KB/frame\n"
+               " -Wait:     %3" PRIu64 ".%02" PRIu64 " us (worst %" PRIu64 ")\n"
+               " -Frames: %3u copied, %u zero-copy, %u hw, %u waited, %u dropped, %u drains\n"
+               " -Lend:   %3u asked, %u lent, %u lapsed, %u ring, %u size\n",
+               ho.handoff_avg_x100 / 100, ho.handoff_avg_x100 % 100, ho.handoff_worst,
+               ho.copy_avg_x100 / 100, ho.copy_avg_x100 % 100, ho.copy_worst,
+               ho.bytes_per_frame / 1024,
+               ho.wait_avg_x100 / 100, ho.wait_avg_x100 % 100, ho.wait_worst,
+               ho.frames_copied, ho.frames_zero_copy, ho.frames_hw,
+               ho.waits, ho.dropped, ho.drains, ho.asked, ho.lent, ho.lapsed,
+               ho.declined_ring, ho.declined_size);
 #endif
 
 #ifdef HAVE_MENU

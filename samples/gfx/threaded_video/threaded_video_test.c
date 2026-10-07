@@ -2524,6 +2524,13 @@ static void lane_pacing_queue_drain(void)
    CHECK(presents == hits,
          "pacing-drain lane: the vsync driver saw %u presents of %u frames "
          "the wrapper kept (%u replaced)", presents, hits, misses);
+   /* The statistics overlay's Pushed line reads the same count. */
+   {
+      video_thread_handoff_stats_t ho;
+      CHECK(video_thread_get_handoff_stats(&ho) && ho.pushed == thr->hit_count,
+            "pacing-drain lane: handoff stats report %u pushed, wrapper %u",
+            ho.pushed, thr->hit_count);
+   }
    CHECK(render < vslane_period / 2,
          "pacing-drain lane: render reserve grew to %.1f ms of a %.1f ms period",
          render / 1000.0, vslane_period / 1000.0);
