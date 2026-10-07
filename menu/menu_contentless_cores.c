@@ -32,8 +32,8 @@
 
 typedef struct
 {
-   uintptr_t **system;
-   uintptr_t fallback;
+   gfx_surface_t **system;
+   gfx_surface_t *fallback;
 } contentless_core_icons_t;
 
 typedef struct
@@ -245,26 +245,12 @@ static void contentless_cores_unload_icons(contentless_cores_state_t *state)
    if (!state || !state->icons)
       return;
 
-   /* Icons still uploading into them land nowhere */
-   gfx_display_texture_loads_cancel(&state->icons->fallback,
-         sizeof(state->icons->fallback));
-   if (state->icons->fallback)
-      video_driver_texture_unload(&state->icons->fallback);
+   gfx_surface_free(state->icons->fallback);
+   state->icons->fallback = NULL;
 
    for (i = 0, cap = RHMAP_CAP(state->icons->system); i != cap; i++)
-   {
       if (RHMAP_KEY(state->icons->system, i))
-      {
-         uintptr_t *icon = state->icons->system[i];
-
-         if (!icon)
-            continue;
-
-         gfx_display_texture_loads_cancel(icon, sizeof(*icon));
-         video_driver_texture_unload(icon);
-         free(icon);
-      }
-   }
+         gfx_surface_free(state->icons->system[i]);
 
    RHMAP_FREE(state->icons->system);
    free(state->icons);
@@ -305,8 +291,12 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          CONTENTLESS_CORE_ICON_DEFAULT, sizeof(icon_path));
 
    if (path_is_valid(icon_path))
-      gfx_display_load_icon(icon_path, rgba_supported,
-            &state->icons->fallback);
+   {
+      state->icons->fallback = gfx_surface_new_still(
+            gfx_display_texture_filter());
+      gfx_surface_submit_path(state->icons->fallback, icon_path,
+            rgba_supported);
+   }
 
    /* Get icons for all contentless cores */
    core_info_get_list(&core_info_list);
@@ -337,19 +327,15 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
          if (!path_is_valid(icon_path))
             continue;
 
-         /* Allocate the icon handle and insert into hash map now.
-          * The async callback fills in the texture handle when
-          * the decode completes. */
          {
-            uintptr_t *icon = (uintptr_t*)calloc(1, sizeof(*icon));
+            gfx_surface_t *icon = gfx_surface_new_still(
+                  gfx_display_texture_filter());
             if (!icon)
                continue;
 
             RHMAP_SET_STR(state->icons->system,
                   core_info->core_file_id.str, icon);
-
-            gfx_display_load_icon(icon_path, rgba_supported,
-                  icon);
+            gfx_surface_submit_path(icon, icon_path, rgba_supported);
          }
       }
    }
@@ -358,15 +344,15 @@ static void contentless_cores_load_icons(contentless_cores_state_t *state)
 uintptr_t menu_contentless_cores_get_entry_icon(const char *core_id)
 {
    contentless_cores_state_t *state = contentless_cores_state;
-   uintptr_t *icon                  = NULL;
+   gfx_surface_t *icon              = NULL;
    if (   !state
        || !state->icons_enabled
        || !state->icons
        || (!core_id || !*core_id))
       return 0;
    if ((icon = RHMAP_GET_STR(state->icons->system, core_id)))
-      return *icon;
-   return state->icons->fallback;
+      return GFX_SURFACE_HANDLE(icon);
+   return GFX_SURFACE_HANDLE(state->icons->fallback);
 }
 
 void menu_contentless_cores_context_init(void)

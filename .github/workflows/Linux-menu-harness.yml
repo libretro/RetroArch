@@ -234,12 +234,15 @@ jobs:
           # icon had not landed, and the context destroy then freed the
           # cursor twice - a heap-corruption crash at startup under
           # threaded video. MaterialUI's playlist icon array could be
-          # rebuilt under a decode still in flight. Shares the non-Qt
-          # build made above; one binary, one run per menu driver.
+          # rebuilt under a decode still in flight. The contentless
+          # cores list's icons, fallback and per core, go at deinit.
+          # Shares the non-Qt build made above; one binary, one run per
+          # lane.
           samples/menu/menu_icon_ownership/build.sh
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test ozone
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test xmb
           ./samples/menu/menu_icon_ownership/menu_icon_ownership_test materialui
+          ./samples/menu/menu_icon_ownership/menu_icon_ownership_test contentless
           make -C samples/menu/menu_icon_ownership clean
 
       - name: Build and run menu_mouse_click_test

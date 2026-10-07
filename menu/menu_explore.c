@@ -121,7 +121,7 @@ struct explore_state
    explore_string_t **by[EXPLORE_CAT_COUNT];
    explore_entry_t *entries;
    playlist_t **playlists;
-   uintptr_t *icons;
+   gfx_surface_t **icons;
    const char *label_explore_item_str;
 
    char title[1024];
@@ -419,16 +419,16 @@ static void explore_add_unique_string(
    }
 }
 
-/* Icons still uploading into the array land nowhere */
 static void explore_unload_icons(explore_state_t *state)
 {
    unsigned i;
    if (!state)
       return;
-   gfx_display_texture_loads_cancel(state->icons, RBUF_SIZEOF(state->icons));
    for (i = 0; i != RBUF_LEN(state->icons); i++)
-      if (state->icons[i])
-         video_driver_texture_unload(&state->icons[i]);
+   {
+      gfx_surface_free(state->icons[i]);
+      state->icons[i] = NULL;
+   }
 }
 
 static void explore_load_icons(explore_state_t *state)
@@ -467,8 +467,9 @@ static void explore_load_icons(explore_state_t *state)
       if (!path_is_valid(path))
          continue;
 
-      gfx_display_load_icon(path, supports_rgba,
-            &state->icons[i]);
+      if (!state->icons[i])
+         state->icons[i] = gfx_surface_new_still(gfx_display_texture_filter());
+      gfx_surface_submit_path(state->icons[i], path, supports_rgba);
    }
 }
 
@@ -2093,12 +2094,12 @@ uintptr_t menu_explore_get_entry_icon(unsigned type)
    {
       explore_entry_t* e = &explore_state->entries[i];
       if (e < RBUF_END(explore_state->entries))
-         return explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx];
+         return GFX_SURFACE_HANDLE(explore_state->icons[e->by[EXPLORE_BY_SYSTEM]->idx]);
    }
    else if (explore_state->show_icons == EXPLORE_ICONS_SYSTEM_CATEGORY)
    {
       if (i < RBUF_LEN(explore_state->icons))
-         return explore_state->icons[i];
+         return GFX_SURFACE_HANDLE(explore_state->icons[i]);
    }
    return 0;
 }

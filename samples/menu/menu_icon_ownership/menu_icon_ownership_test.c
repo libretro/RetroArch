@@ -24,7 +24,12 @@
  *               wrote through would store a handle in freed memory and
  *               leak it, which the live count at deinit catches.
  *
- * Usage: menu_icon_ownership_test ozone|xmb|materialui
+ *   contentless The contentless cores list, built from one core whose
+ *               info says it runs without content, decodes the
+ *               fallback icon and the core's own; both are freed at
+ *               deinit.
+ *
+ * Usage: menu_icon_ownership_test ozone|xmb|materialui|contentless
  *
  * Requires a completed non-Qt build, same as the other menu harnesses:
  *
@@ -49,6 +54,7 @@
 #include "../../../retroarch.h"
 #include "../../../retroarch_types.h"
 #include "../../../menu/menu_driver.h"
+#include "../../../menu/menu_displaylist.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../frontend/frontend_driver.h"
 
@@ -186,6 +192,8 @@ static char icons_dir[768];
 static char playlists_dir[640];
 static char playlist_path[768];
 static char cfg_path[640];
+static char cores_dir[640];
+static char info_dir[640];
 
 /* The icon directory every one of the three drivers reads its system
  * icons from on this build: <assets>/xmb/monochrome/png. */
@@ -194,6 +202,13 @@ static bool fixture_make(const char *menu_driver)
    char assets_dir[640];
    char path[768];
    const char *tmp = getenv("TMPDIR");
+   /* The configuration names MaterialUI by its driver ident; the
+    * contentless lane runs on ozone */
+   const char *ident = string_is_equal(menu_driver, "materialui") ? "glui"
+         : string_is_equal(menu_driver, "contentless") ? "ozone"
+         : "xmb";
+   if (string_is_equal(menu_driver, "ozone"))
+      ident = "ozone";
 
    snprintf(fixture_dir, sizeof(fixture_dir),
          "%s/menu_icon_ownership_%s_%u", tmp ? tmp : "/tmp", menu_driver,
@@ -250,6 +265,38 @@ static bool fixture_make(const char *menu_driver)
       }
    }
 
+   if (string_is_equal(menu_driver, "contentless"))
+   {
+      /* A core that runs without content, by its info alone: the
+       * library file is never opened. Its icon and the fallback. */
+      fill_pathname_join_special(cores_dir, fixture_dir, "cores",
+            sizeof(cores_dir));
+      fill_pathname_join_special(info_dir, fixture_dir, "info",
+            sizeof(info_dir));
+      if (!path_mkdir(cores_dir) || !path_mkdir(info_dir))
+         return false;
+      fill_pathname_join_special(path, cores_dir, "harness_libretro.so",
+            sizeof(path));
+      if (!write_text(path, ""))
+         return false;
+      fill_pathname_join_special(path, info_dir, "harness_libretro.info",
+            sizeof(path));
+      if (!write_text(path,
+               "display_name = \"Harness\"\n"
+               "corename = \"harness\"\n"
+               "supports_no_game = \"true\"\n"
+               "database = \"Harness System\"\n"))
+         return false;
+      fill_pathname_join_special(path, icons_dir, "default.png",
+            sizeof(path));
+      if (!write_file(path, png_1x1, sizeof(png_1x1)))
+         return false;
+      fill_pathname_join_special(path, icons_dir, "Harness System.png",
+            sizeof(path));
+      if (!write_file(path, png_1x1, sizeof(png_1x1)))
+         return false;
+   }
+
    fill_pathname_join_special(cfg_path, fixture_dir, "harness.cfg",
          sizeof(cfg_path));
    {
@@ -266,10 +313,12 @@ static bool fixture_make(const char *menu_driver)
             "content_show_playlists = \"true\"\n"
             "materialui_icons_enable = \"true\"\n"
             "materialui_playlist_icons_enable = \"true\"\n");
-      /* The configuration names MaterialUI by its driver ident */
       _len += snprintf(cfg + _len, sizeof(cfg) - _len,
-            "menu_driver = \"%s\"\n",
-            string_is_equal(menu_driver, "materialui") ? "glui" : menu_driver);
+            "menu_driver = \"%s\"\n", ident);
+      if (string_is_equal(menu_driver, "contentless"))
+         _len += snprintf(cfg + _len, sizeof(cfg) - _len,
+               "libretro_directory = \"%s\"\n"
+               "libretro_info_path = \"%s\"\n", cores_dir, info_dir);
       _len += snprintf(cfg + _len, sizeof(cfg) - _len,
             "assets_directory = \"%s\"\n", assets_dir);
       _len += snprintf(cfg + _len, sizeof(cfg) - _len,
@@ -317,9 +366,11 @@ int main(int argc, char *argv[])
 
    if (     !string_is_equal(menu_driver, "ozone")
          && !string_is_equal(menu_driver, "xmb")
-         && !string_is_equal(menu_driver, "materialui"))
+         && !string_is_equal(menu_driver, "materialui")
+         && !string_is_equal(menu_driver, "contentless"))
    {
-      fprintf(stderr, "usage: %s ozone|xmb|materialui\n", argv[0]);
+      fprintf(stderr, "usage: %s ozone|xmb|materialui|contentless\n",
+            argv[0]);
       return 2;
    }
 
@@ -354,13 +405,34 @@ int main(int argc, char *argv[])
    menu_st = menu_state_get_ptr();
    CHECK(   menu_st->driver_ctx && menu_st->driver_ctx->ident
          && string_is_equal(menu_st->driver_ctx->ident,
-            string_is_equal(menu_driver, "materialui")
-               ? "glui" : menu_driver),
+            string_is_equal(menu_driver, "materialui") ? "glui"
+            : string_is_equal(menu_driver, "contentless") ? "ozone"
+            : menu_driver),
          "fixture: menu driver is %s, want %s",
          (menu_st->driver_ctx && menu_st->driver_ctx->ident)
             ? menu_st->driver_ctx->ident : "(none)", menu_driver);
 
-   if (string_is_equal(menu_driver, "materialui"))
+   if (string_is_equal(menu_driver, "contentless"))
+   {
+      /* Building the list makes the icon state and queues its decodes */
+      file_list_t list;
+      unsigned count;
+      unsigned had = loads;
+      memset(&list, 0, sizeof(list));
+      count = menu_displaylist_contentless_cores(&list,
+            MENU_CONTENTLESS_CORES_DISPLAY_ALL);
+      CHECK(count == 1, "fixture: %u contentless core(s) listed, want 1",
+            count);
+      file_list_deinitialize(&list);
+      run_tasks();
+      CHECK(menu_contentless_cores_get_entry_icon("harness_libretro") != 0,
+            "the core's icon did not land");
+      CHECK(loads == had + 2,
+            "fixture: %u texture(s) loaded for the list, want the fallback and the core's",
+            loads - had);
+      one_frame();
+   }
+   else if (string_is_equal(menu_driver, "materialui"))
    {
       /* The icon's decode is queued and not yet run. The playlist
        * goes, and the icon array with it. */
