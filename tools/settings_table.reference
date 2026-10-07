@@ -70,6 +70,7 @@ bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
+bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
@@ -358,7 +359,6 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
-bool	video_scanline_sync	1	0
 bool	video_notch_write_over_enable	1	0
 bool	video_window_save_positions	1	0
 bool	menu_enable_widgets	1	1
@@ -752,6 +752,7 @@ bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
+bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
@@ -1039,7 +1040,6 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
-bool	video_scanline_sync	1	0
 bool	video_notch_write_over_enable	1	0
 bool	video_window_save_positions	1	0
 bool	menu_enable_widgets	1	1
@@ -1427,6 +1427,7 @@ bool	video_threaded_present_repeat	1	0
 bool	video_threaded_display_pacing	1	0
 bool	video_present_timing_from_display	1	1
 bool	video_hard_sync	1	0
+bool	video_scanline_sync	1	0
 bool	video_ctx_scaling	1	0
 bool	netplay_fade_chat	1	1
 bool	netplay_allow_pausing	1	0
@@ -1723,7 +1724,6 @@ bool	settings_show_network	1	1
 bool	settings_show_playlists	1	1
 bool	settings_show_user	1	1
 bool	settings_show_directory	1	1
-bool	video_scanline_sync	1	0
 bool	video_notch_write_over_enable	1	0
 bool	video_window_save_positions	1	0
 bool	menu_enable_widgets	1	1
