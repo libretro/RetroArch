@@ -744,35 +744,40 @@ static void input_snapshot_fetch_hat(const input_device_driver_t *real,
 
 /* The pad's copy for this frame, taken now if this is the first read
  * since the poll. */
-static input_pad_snapshot_t *input_snapshot_pad(unsigned b, unsigned pad)
+/* Takes the copy of a pad for this poll. */
+INPUT_NOINLINE static void input_snapshot_pad_take(unsigned b, unsigned pad)
 {
+   unsigned i;
    input_snapshot_bridge_t *bridge = &input_snapshot_bridge[b];
    input_pad_snapshot_t *snap      = &bridge->pads[pad];
-   uint16_t *valid                 = &input_driver_st.frame_valid.snapshot[b];
 
-   if (!(*valid & (1 << pad)))
-   {
-      unsigned i;
+   /* Copy what was read out of the last copy, and no more: a
+    * control that has stopped being read - the bind screen scans
+    * every axis, a remap drops a stick - leaves the copy a frame
+    * later, and one that is read again comes back the same way. */
+   snap->axes_known = snap->axes_used;
+   snap->hats_known = snap->hats_used;
+   snap->axes_used  = 0;
+   snap->hats_used  = 0;
 
-      /* Copy what was read out of the last copy, and no more: a
-       * control that has stopped being read - the bind screen scans
-       * every axis, a remap drops a stick - leaves the copy a frame
-       * later, and one that is read again comes back the same way. */
-      snap->axes_known = snap->axes_used;
-      snap->hats_known = snap->hats_used;
-      snap->axes_used  = 0;
-      snap->hats_used  = 0;
+   bridge->real->get_buttons(pad, &snap->buttons);
+   for (i = 0; i < INPUT_SNAPSHOT_AXES; i++)
+      if (snap->axes_known & (1 << i))
+         input_snapshot_fetch_axis(bridge->real, snap, pad, i);
+   for (i = 0; i < INPUT_SNAPSHOT_HATS; i++)
+      if (snap->hats_known & (1 << i))
+         input_snapshot_fetch_hat(bridge->real, snap, pad, i);
+   input_driver_st.frame_valid.snapshot[b] |= (1 << pad);
+}
 
-      bridge->real->get_buttons(pad, &snap->buttons);
-      for (i = 0; i < INPUT_SNAPSHOT_AXES; i++)
-         if (snap->axes_known & (1 << i))
-            input_snapshot_fetch_axis(bridge->real, snap, pad, i);
-      for (i = 0; i < INPUT_SNAPSHOT_HATS; i++)
-         if (snap->hats_known & (1 << i))
-            input_snapshot_fetch_hat(bridge->real, snap, pad, i);
-      *valid |= (1 << pad);
-   }
-   return snap;
+/* A pad's copy, taken if this is the poll's first look at it. Whether
+ * it is, is one test, here where it is asked - it is asked for every
+ * axis and hat read. */
+static INLINE input_pad_snapshot_t *input_snapshot_pad(unsigned b, unsigned pad)
+{
+   if (!(input_driver_st.frame_valid.snapshot[b] & (1 << pad)))
+      input_snapshot_pad_take(b, pad);
+   return &input_snapshot_bridge[b].pads[pad];
 }
 
 static int32_t input_snapshot_button(unsigned b, unsigned pad, uint16_t joykey)
