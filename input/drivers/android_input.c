@@ -3202,7 +3202,7 @@ static int16_t android_input_state(
             case RARCH_DEVICE_ID_POINTER_BACK:
             {
                const struct retro_keybind *keyptr =
-                  &input_autoconf_binds[0][RARCH_MENU_TOGGLE];
+                  input_autoconf_bind(0, RARCH_MENU_TOGGLE);
                if (keyptr->joykey == 0)
                   return ANDROID_KEYBOARD_INPUT_PRESSED(AKEYCODE_BACK);
             }

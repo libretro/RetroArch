@@ -185,25 +185,31 @@ def driver_calls(root):
     return found
 
 
-# The bind arrays are the input code's own. Everything else gets at a
-# bind through input_config_bind() and input_autoconf_bind(), and at a
-# whole set through input_config_binds_copy_out() and _copy_in(), so
-# how the binds are kept can change without the menu, the configuration
-# and the UI changing with it.
+# The bind arrays are the frontend input file's own: input_driver.c and
+# the header that declares them. Everything else - the input drivers
+# too - gets at a bind through input_config_bind() and
+# input_autoconf_bind(), and at a whole set through
+# input_config_binds_copy_out() and _copy_in(), so how the binds are
+# kept can change without a driver, the menu, the configuration or the
+# UI changing with it.
 BIND_ARRAY = re.compile(r'\binput_(?:config|autoconf)_binds\b(?!_)')
+BIND_OWNERS = ('input/input_driver.c', 'input/input_driver.h')
+BIND_NOT_CALLERS = tuple(d for d in NOT_CALLERS if d != 'input/')
 
 
 def bind_array_uses(root):
     found = {}
     for d, dirs, files in os.walk(root):
         rel_d = os.path.relpath(d, root).replace(os.sep, '/') + '/'
-        if rel_d.startswith(NOT_CALLERS):
+        if rel_d.startswith(BIND_NOT_CALLERS):
             dirs[:] = []
             continue
         for f in files:
             if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
                 continue
             path = os.path.join(d, f)
+            if os.path.relpath(path, root).replace(os.sep, '/') in BIND_OWNERS:
+                continue
             try:
                 text = open(path, encoding='utf-8', errors='replace').read()
             except OSError:
@@ -443,6 +449,15 @@ def selftest():
             print('selftest: a menu file going through the calls was taken for one naming the arrays')
             bad += 1
         os.remove(os.path.join(root, 'menu', 'b.c'))
+        # an input driver naming them is counted; the frontend's file is not
+        with open(os.path.join(root, 'input', 'drivers', 'bn.c'), 'w') as f:
+            f.write('x = input_autoconf_binds[0][1].joykey;\n')
+        with open(os.path.join(root, 'input', 'input_driver.c'), 'a') as f:
+            f.write('y = input_config_binds[0][1].joykey;\n')
+        if bind_array_uses(root) != {'input/drivers/bn.c': 1}:
+            print('selftest: an input driver naming the bind arrays was not the one file counted')
+            bad += 1
+        os.remove(os.path.join(root, 'input', 'drivers', 'bn.c'))
         # a driver working a stick out from its binds itself
         with open(os.path.join(root, 'input', 'drivers', 'an.c'), 'w') as f:
             f.write('input_conv_analog_id_to_bind_id(idx, id, id_minus, id_plus);\n')
