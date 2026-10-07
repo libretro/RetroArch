@@ -19,7 +19,12 @@
  *   missing   the energy preference, PCI Express and USB settings do
  *             not exist: the plan applies without them
  *   idlefail  holding idle states off is refused: nothing is left
- *             behind, and the plan without it still applies */
+ *             behind, and the plan without it still applies
+ *   clean     a start with the setting off and no run's copy left
+ *             behind loads powrprof not at all
+ *   marked    a run ended with the copy active and its mark set; the
+ *             next start, told by the mark, loads powrprof, restores
+ *             and clears it */
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -35,7 +40,9 @@ enum scenario
    SC_NONE,
    SC_IDLE,
    SC_MISSING,
-   SC_IDLEFAIL
+   SC_IDLEFAIL,
+   SC_CLEAN,
+   SC_MARKED
 };
 
 /* The four processor values the copy writes, by index */
@@ -231,12 +238,73 @@ static DWORD WINAPI fake_read_desc(HKEY root, const GUID *scheme,
    return ERROR_SUCCESS;
 }
 
+static int loads;
+
 HMODULE LoadLibraryA(const char *name)
 {
+   loads++;
    if (sc == SC_NONE || strcmp(name, "powrprof.dll"))
       return NULL;
    return &powrprof_token;
 }
+
+/* The registry: one value under the user's key, the mark */
+static int  reg_marked;
+static int  reg_token;
+
+LONG RegOpenKeyExA(HKEY root, const char *sub, DWORD opt, DWORD sam,
+      HKEY *out)
+{
+   (void)sub; (void)opt; (void)sam;
+   if (root != HKEY_CURRENT_USER)
+      return 2;
+   *out = &reg_token;
+   return ERROR_SUCCESS;
+}
+
+LONG RegCreateKeyExA(HKEY root, const char *sub, DWORD reserved,
+      char *cls, DWORD opt, DWORD sam, void *sa, HKEY *out, DWORD *disp)
+{
+   (void)reserved; (void)cls; (void)sa; (void)disp;
+   return RegOpenKeyExA(root, sub, opt, sam, out);
+}
+
+LONG RegQueryValueExA(HKEY key, const char *name, DWORD *reserved,
+      DWORD *type, LPBYTE data, DWORD *size)
+{
+   DWORD v = (DWORD)reg_marked;
+   (void)name; (void)reserved;
+   if (key != &reg_token || !reg_marked || *size < sizeof(v))
+      return 2;
+   if (type)
+      *type = REG_DWORD;
+   memcpy(data, &v, sizeof(v));
+   *size = sizeof(v);
+   return ERROR_SUCCESS;
+}
+
+LONG RegSetValueExA(HKEY key, const char *name, DWORD reserved,
+      DWORD type, const BYTE *data, DWORD size)
+{
+   DWORD v;
+   (void)name; (void)reserved;
+   if (key != &reg_token || type != REG_DWORD || size != sizeof(v))
+      return 87;
+   memcpy(&v, data, sizeof(v));
+   reg_marked = v != 0;
+   return ERROR_SUCCESS;
+}
+
+LONG RegDeleteValueA(HKEY key, const char *name)
+{
+   (void)name;
+   if (key != &reg_token)
+      return 2;
+   reg_marked = 0;
+   return ERROR_SUCCESS;
+}
+
+LONG RegCloseKey(HKEY key) { (void)key; return ERROR_SUCCESS; }
 
 FARPROC GetProcAddress(HMODULE module, const char *name)
 {
@@ -347,7 +415,7 @@ int main(int argc, char **argv)
 {
    static const char *names[] = {
       "capped", "recover", "switched", "refused", "none",
-      "idle", "missing", "idlefail" };
+      "idle", "missing", "idlefail", "clean", "marked" };
    plan_t *u;
    size_t i;
 
@@ -387,12 +455,42 @@ int main(int argc, char **argv)
          break;
       case SC_RECOVER:
          expect(frontend_win32_set_power_plan(true, false), "the plan is applied");
+         expect(reg_marked, "the copy is marked as active");
          /* The process ends here without restoring; the next one
           * starts with the setting off. */
          win32_power_plan_flags = WIN32_POWER_PLAN_LOADED;
          expect(frontend_win32_set_power_plan(false, false),
                "the next start turns it off");
          expect_restored(&g_user);
+         expect(!reg_marked, "the mark is cleared with the copy");
+         break;
+      case SC_CLEAN:
+         expect(frontend_win32_set_power_plan(false, false),
+               "a start with the setting off succeeds");
+         expect(loads == 0, "and loads powrprof not at all");
+         expect(is_active(&g_user) && plan_count() == 2,
+               "and touches no plan");
+         expect(frontend_win32_set_power_plan(false, false),
+               "turning it off again succeeds");
+         expect(loads == 0, "still without powrprof");
+         break;
+      case SC_MARKED:
+         /* A run that ended with the copy active, its mark set: the
+          * copy names the plan it came from, as apply writes it */
+         {
+            plan_t *c = add(&win32_power_plan_guid);
+            WCHAR desc[37];
+            win32_power_guid_to_wstr(&g_user, desc);
+            memcpy(c->desc, desc, sizeof(desc));
+            c->desc_size = sizeof(desc);
+            active       = win32_power_plan_guid;
+            reg_marked   = 1;
+         }
+         expect(frontend_win32_set_power_plan(false, false),
+               "the next start turns it off");
+         expect(loads == 1, "the mark has powrprof loaded");
+         expect(!find(&win32_power_plan_guid), "the copy is deleted");
+         expect(!reg_marked, "the mark is cleared");
          break;
       case SC_SWITCHED:
          expect(frontend_win32_set_power_plan(true, false), "the plan is applied");

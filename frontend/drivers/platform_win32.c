@@ -916,6 +916,51 @@ static win32_powrprof_t *win32_powrprof_get(void)
    return p;
 }
 
+/* Whether a run left the copy behind, kept in the registry: read
+ * before powrprof is loaded at all, so a start with the setting off
+ * and nothing to undo never loads it. */
+#define WIN32_POWER_PLAN_KEY   "Software\\libretro\\RetroArch"
+#define WIN32_POWER_PLAN_VALUE "LowLatencyPowerPlan"
+
+static bool win32_power_plan_marked(void)
+{
+   HKEY  key;
+   DWORD type = 0, data = 0, size = sizeof(data);
+   bool  marked = false;
+
+   if (RegOpenKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0, KEY_READ,
+            &key) != ERROR_SUCCESS)
+      return false;
+   if (     RegQueryValueExA(key, WIN32_POWER_PLAN_VALUE, NULL, &type,
+               (LPBYTE)&data, &size) == ERROR_SUCCESS
+         && type == REG_DWORD)
+      marked = data != 0;
+   RegCloseKey(key);
+   return marked;
+}
+
+static void win32_power_plan_mark(bool on)
+{
+   HKEY key;
+   if (on)
+   {
+      DWORD one = 1;
+      if (RegCreateKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0, NULL,
+               0, KEY_WRITE, NULL, &key, NULL) != ERROR_SUCCESS)
+         return;
+      RegSetValueExA(key, WIN32_POWER_PLAN_VALUE, 0, REG_DWORD,
+            (const BYTE*)&one, sizeof(one));
+   }
+   else
+   {
+      if (RegOpenKeyExA(HKEY_CURRENT_USER, WIN32_POWER_PLAN_KEY, 0,
+               KEY_WRITE, &key) != ERROR_SUCCESS)
+         return;
+      RegDeleteValueA(key, WIN32_POWER_PLAN_VALUE);
+   }
+   RegCloseKey(key);
+}
+
 /* Reactivates the plan RetroArch's copy was made from, if the copy
  * is still active, then deletes the copy. */
 static void win32_power_plan_restore(win32_powrprof_t *p)
@@ -948,6 +993,7 @@ static void win32_power_plan_restore(win32_powrprof_t *p)
    }
 
    p->remove(NULL, &win32_power_plan_guid);
+   win32_power_plan_mark(false);
 }
 
 /* Activates a copy of the current plan with processor performance
@@ -1031,9 +1077,17 @@ static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
             & WIN32_POWER_PLAN_IDLE_APPLIED))
       return true;
    if (     !on
-         && !(win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
-         &&  (win32_power_plan_flags & WIN32_POWER_PLAN_RECOVERED))
-      return true;
+         && !(win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED))
+   {
+      if (win32_power_plan_flags & WIN32_POWER_PLAN_RECOVERED)
+         return true;
+      /* Nothing a run left behind: nothing to load, either */
+      if (!win32_power_plan_marked())
+      {
+         win32_power_plan_flags |= WIN32_POWER_PLAN_RECOVERED;
+         return true;
+      }
+   }
    if (!(p = win32_powrprof_get()))
       return false;
 
@@ -1057,6 +1111,7 @@ static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
    win32_power_plan_flags |= WIN32_POWER_PLAN_APPLIED;
    if (idle_disable)
       win32_power_plan_flags |= WIN32_POWER_PLAN_IDLE_APPLIED;
+   win32_power_plan_mark(true);
 #ifdef HAVE_THREADS
    thread_elevation_note_power_plan(true, idle_disable);
 #endif
