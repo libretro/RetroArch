@@ -96,6 +96,11 @@ typedef struct gl3
 {
    const gfx_ctx_driver_t *ctx_driver;
    void *ctx_data;
+   /* The frame's swap: how long it took, and whether it was one that
+    * waits for the vertical blank (a swap interval set). For
+    * gl3_get_last_present_wait(). */
+   retro_time_t present_wait;
+   bool present_vsynced;
    gl3_filter_chain_t *filter_chain;
    gl3_filter_chain_t *filter_chain_default;
    GLuint *overlay_tex;
@@ -3521,6 +3526,7 @@ static void *gl3_init(const video_info_t *video)
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
+   gl->present_vsynced = (interval != 0);
 
    win_dims   = video->dims;
 
@@ -4020,6 +4026,7 @@ static void gl3_set_nonblock_state(void *data, bool state,
          interval = -1;
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
    }
+   gl->present_vsynced = (interval != 0);
 
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
          && !gl3_core_context_is_mains(gl))
@@ -5712,8 +5719,14 @@ static bool gl3_frame(void *data, const void *frame,
    }
 
    gl3_hw_ring_drawn(gl);
+   gl->present_wait = 0;
    if (gl->ctx_driver->swap_buffers)
+   {
+      /* timed: see gl3_get_last_present_wait() */
+      retro_time_t swap_at = cpu_features_get_time_usec();
       gl->ctx_driver->swap_buffers(gl->ctx_data);
+      gl->present_wait = cpu_features_get_time_usec() - swap_at;
+   }
 
  /* Emscripten has to do black frame insertion in its main loop */
 #ifndef __EMSCRIPTEN__
@@ -6515,6 +6528,19 @@ static retro_time_t gl3_get_last_present_time(void *data)
    return 0;
 }
 
+/* How long the frame's swap took. With a swap interval set the swap
+ * waits for the vertical blank and returns when the frame is out, so
+ * that time is waiting, not drawing, and the frame is shown. */
+static retro_time_t gl3_get_last_present_wait(void *data, bool *shown)
+{
+   gl3_t *gl = (gl3_t*)data;
+   *shown    = false;
+   if (!gl || !gl->present_vsynced)
+      return 0;
+   *shown    = true;
+   return gl->present_wait;
+}
+
 static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_flags,
    gl3_load_texture,
@@ -6556,7 +6582,11 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_hw_ring_context_new,
    gl3_hw_ring_context_free,
    gl3_hw_ring_framebuffer,
-   gl3_update_texture
+   gl3_update_texture,
+   NULL, /* get_swap_interval_cap */
+   NULL, /* texture_lend */
+   NULL, /* texture_lend_ready */
+   gl3_get_last_present_wait
 };
 
 static void gl3_get_poke_interface(void *data,

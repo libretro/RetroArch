@@ -2034,6 +2034,150 @@ static void lane_font_marshal(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a present that waits for the vertical blank                   */
+/*   An OpenGL swap with a swap interval set returns when the vblank   */
+/*   has passed and the frame is out. The presenter timed the whole    */
+/*   frame call as drawing and took the frame to go out on the vblank  */
+/*   after the call returned: so the hold started the core a wait      */
+/*   earlier every frame, and the latency read a period and more for   */
+/*   a frame that went out on time. A driver that says how long it     */
+/*   waited, and that the frame is out, is held to its drawing time    */
+/*   and measured to the vblank it met.                                */
+/* ------------------------------------------------------------------ */
+
+#define BLK_PERIOD 16667
+
+static video_driver_t blk_driver;
+static const video_driver_t *blk_inner;
+static video_poke_interface_t blk_poke;
+static const video_poke_interface_t *blk_inner_poke;
+static retro_time_t blk_origin;
+static retro_time_t blk_vblank;
+static retro_time_t blk_wait;
+static retro_time_t blk_wait_sum;
+static unsigned blk_frames;
+static bool blk_tells;
+
+static bool blk_frame(void *data, const void *frame, unsigned dims,
+      uint64_t frame_count, unsigned pitch, const char *msg,
+      video_frame_info_t *video_info)
+{
+   retro_time_t at, now, v;
+   bool ret = blk_inner->frame(data, frame, dims, frame_count, pitch,
+         msg, video_info);
+   /* the swap: to the next vblank of a 60 Hz display */
+   at  = cpu_features_get_time_usec();
+   v   = blk_origin + ((at - blk_origin) / BLK_PERIOD + 1) * BLK_PERIOD;
+   for (now = at; now < v; now = cpu_features_get_time_usec())
+      if (v - now > 2500)
+         retro_sleep(1);
+   blk_wait      = now - at;
+   blk_wait_sum += blk_wait;
+   blk_frames++;
+   blk_vblank    = v;
+   return ret;
+}
+
+static retro_time_t blk_present_time(void *data)
+{
+   (void)data;
+   return blk_vblank;
+}
+
+static retro_time_t blk_present_wait(void *data, bool *shown)
+{
+   (void)data;
+   *shown = blk_tells;
+   return blk_tells ? blk_wait : 0;
+}
+
+static void blk_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   blk_inner->poke_interface(data, &blk_inner_poke);
+   blk_poke = *blk_inner_poke;
+   blk_poke.get_last_present_time = blk_present_time;
+   blk_poke.get_last_present_wait = blk_present_wait;
+   *iface = &blk_poke;
+}
+
+static void lane_blocking_present(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   bool  saved_pacing = settings->bools.video_threaded_display_pacing;
+   float saved_hz     = settings->floats.video_refresh_rate;
+   bool  menu_was_up;
+   thread_video_t *thr;
+   retro_time_t lat_untold, lat_told, render_untold, render_told;
+
+   settings->bools.video_threaded_display_pacing = true;
+   settings->floats.video_refresh_rate           = 60.0f;
+   set_threaded_via_setting(true);
+   run_frames(10);
+   expect_wrapper(true, "blocking-present lane");
+   thr = (thread_video_t*)video_st->data;
+   menu_was_up = menu_is_up();
+   if (menu_was_up)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+   video_thread_wait_idle();
+
+   blk_origin = cpu_features_get_time_usec();
+   blk_vblank = blk_origin;
+   blk_inner  = thr->driver;
+   blk_driver = *thr->driver;
+   blk_driver.frame          = blk_frame;
+   blk_driver.poke_interface = blk_get_poke;
+   set_driver(thr, &blk_driver);
+   set_poke_from(thr, &blk_driver);
+
+   /* as a driver that says nothing of its wait */
+   blk_tells = false;
+   run_frames(120);
+   video_thread_wait_idle();
+   lat_untold    = thr->latency_avg;
+   render_untold = thr->render_time;
+
+   /* and one that does */
+   blk_tells    = true;
+   run_frames(60);
+   video_thread_wait_idle();
+   blk_wait_sum = 0;
+   blk_frames   = 0;
+   run_frames(120);
+   video_thread_wait_idle();
+   lat_told    = thr->latency_avg;
+   render_told = thr->render_time;
+   fprintf(stderr, "   blocking present, told: the swap waited %.2f ms on average over %u frames\n",
+         blk_frames ? blk_wait_sum / 1000.0 / blk_frames : 0.0, blk_frames);
+
+   CHECK(render_told < 4000,
+         "blocking present: the wait for the vblank is still counted as drawing"
+         " (render time %.2f ms)", render_told / 1000.0);
+   CHECK(lat_told < 9000,
+         "blocking present: a frame that went out on its vblank reads %.2f ms"
+         " to it", lat_told / 1000.0);
+   fprintf(stderr, "   blocking present at 60 Hz: untold, latency %.2f ms and"
+         " render %.2f ms; told, latency %.2f ms and render %.2f ms\n",
+         lat_untold / 1000.0, render_untold / 1000.0,
+         lat_told / 1000.0, render_told / 1000.0);
+
+   video_thread_wait_idle();
+   set_driver(thr, blk_inner);
+   set_poke(thr, blk_inner_poke);
+   if (menu_was_up && !menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(3);
+   settings->floats.video_refresh_rate           = saved_hz;
+   settings->bools.video_threaded_display_pacing = saved_pacing;
+   set_threaded_via_setting(false);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] blocking-present lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: display pacing holds the runloop to the display's cadence     */
 /*   With the null driver, core and render both take ~0, so the pacer  */
 /*   should release each frame just under a period after the last one  */
@@ -6586,6 +6730,7 @@ int main(int argc, char *argv[])
    if (!real_driver())
    {
       lane_display_pacing();
+      lane_blocking_present();
       lane_pacing_queue_drain();
       lane_pacing_fast_display();
       lane_pacing_after_stall();

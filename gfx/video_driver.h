@@ -1043,6 +1043,22 @@ typedef struct video_poke_interface
          size_t pitch);
    bool (*texture_lend_ready)(void *video_data, uintptr_t id,
          unsigned slot);
+
+   /* How long the most recent frame call spent in its present waiting
+    * for the display, in microseconds; 0 where it did not wait or the
+    * driver cannot say. @shown is set when the frame is on the display
+    * as the call returns - a swap that waits for the vertical blank
+    * and comes back when it has passed - and cleared when the frame is
+    * queued for a later one.
+    *
+    * For the threaded presenter. It times the frame call to know how
+    * long a frame takes to draw, and holds the core back by that much
+    * before each vblank; and it takes a frame to go out on the first
+    * vblank after the call returns. A present that waits for the
+    * vblank makes both wrong: the wait is counted as drawing, and the
+    * frame is counted to the vblank after the one it went out on.
+    * Placed last: a table that stops short of it leaves it NULL. */
+   retro_time_t (*get_last_present_wait)(void *video_data, bool *shown);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

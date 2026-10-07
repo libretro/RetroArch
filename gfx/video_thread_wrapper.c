@@ -1255,6 +1255,14 @@ static void video_thread_schedule_next(thread_video_t *thr)
     * does not block returns in well under a millisecond, and a number
     * measured to there says nothing about when the frame is seen. */
    thr->last_present_end = thr->present_period > 0 ? next : now;
+   /* ...unless the present waited for the vblank and came back with
+    * the frame out: then it went out now. Taken once: a repeat that
+    * follows has made no such wait. */
+   if (thr->present_shown)
+   {
+      thr->last_present_end = now;
+      thr->present_shown    = false;
+   }
 }
 
 /* Video thread: take the whole in list, upload each
@@ -2183,6 +2191,28 @@ static void video_thread_loop(void *data)
 
                ret_frame  = ret;
                render_took = cpu_features_get_time_usec() - render_start;
+               /* A present that waited for the display: the wait is
+                * not drawing, and is not held back for before the next
+                * vblank; and where the frame is out as the call
+                * returns, that is when it went out. A swap that waits
+                * for the vblank was counted whole as render time - so
+                * the hold started the core a wait earlier each frame,
+                * until it started a period early - and its frame was
+                * counted to the vblank after its own. */
+               thr->present_shown = false;
+               if (ret && thr->poke && thr->poke->get_last_present_wait)
+               {
+                  bool shown          = false;
+                  retro_time_t waited = thr->poke->get_last_present_wait(
+                        thr->driver_data, &shown);
+                  if (waited > render_took)
+                     waited = render_took;
+                  if (waited > 0)
+                  {
+                     render_took       -= waited;
+                     thr->present_shown = shown;
+                  }
+               }
                if (ret)
                {
                   /* The presenter's clock: this frame just went out,

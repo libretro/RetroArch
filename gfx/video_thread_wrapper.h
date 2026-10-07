@@ -404,6 +404,7 @@ typedef struct thread_video
     * grid or one estimated from the clock. Video thread only; the
     * overlay takes them from the stats snapshot. */
    retro_time_t last_present_end;
+   bool present_shown; /* the frame just presented is out as its call returned */
    retro_time_t latency_avg;
    retro_time_t latency_max;
    retro_time_t latency_max_at;
