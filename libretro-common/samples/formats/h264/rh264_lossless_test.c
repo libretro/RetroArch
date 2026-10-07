@@ -39,6 +39,7 @@
 
 #include <formats/rmp4.h>
 #include <formats/rh264.h>
+#include <retro_atomic.h>
 #ifdef HAVE_THREADS
 #include <rthreads/tpool.h>
 #endif
@@ -108,6 +109,9 @@ static int g_contexts = 1;
  * before it was final, or published before it was. */
 static int g_threads = 0;
 static void *g_pool = NULL;
+
+/* Pictures posted to a pool over the run */
+static long g_posted;
 
 static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       const uint8_t *ref_b, int split, int *frames_out)
@@ -258,6 +262,11 @@ static long compare(const char *mp4, const uint8_t *ref_a, size_t alen,
       bad = bad < 0 ? bad : bad + 1;   /* short: not every reference frame came out */
 done:
    *frames_out = frames;
+   {
+      int posted = 0;
+      rh264_video_stats(h, &posted, NULL, NULL, NULL, NULL, NULL);
+      g_posted += posted;
+   }
    rh264_video_close(h);
    rmp4_close(m);
    free(b);
@@ -735,6 +744,13 @@ int main(void)
          rh264_video_ref_wait_misses());
    check("row progress never short on one thread",
          rh264_video_ref_wait_misses() == 0);
+#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
+   /* Without pointer atomics the decoder takes no pool: the threaded
+    * cases above decoded on one thread, still byte-exact */
+   printf("pictures posted to a pool without pointer atomics: %ld\n",
+         g_posted);
+   check("no pool without pointer atomics", g_posted == 0);
+#endif
    printf("rh264_lossless_test: %s (%d failure%s)\n", fails ? "FAIL" : "PASS",
          fails, fails == 1 ? "" : "s");
    return fails ? 1 : 0;

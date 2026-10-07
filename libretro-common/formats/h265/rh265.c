@@ -130,9 +130,6 @@
 #ifdef HAVE_THREADS
 static retro_eventcount_t rh265_rows_ec;
 static int rh265_rows_ec_ok;
-#ifndef RETRO_ATOMIC_HAS_PTR
-static slock_t *rh265_pool_lock;
-#endif
 #endif
 
 
@@ -1454,8 +1451,9 @@ typedef struct
 #define RH265_NAL_POOL 32
 
 /* A pool slot holds a pointer or nothing, and changes hands in one
- * atomic swap: whoever swaps a pointer out owns it. Backends with no
- * pointer atomics keep the slots under a lock. */
+ * atomic swap: whoever swaps a pointer out owns it. Without pointer
+ * atomics a decoder runs on the one thread that calls it, so its
+ * slots are plain. */
 #ifdef RETRO_ATOMIC_HAS_PTR
 typedef retro_atomic_ptr_t rh265_slot_t;
 #define rh265_slot_peek(s)    retro_atomic_load_relaxed_ptr(s)
@@ -1467,34 +1465,17 @@ typedef void *rh265_slot_t;
 
 static void *rh265_slot_take(rh265_slot_t *s)
 {
-   void *p;
-#ifdef HAVE_THREADS
-   if (rh265_pool_lock)
-      slock_lock(rh265_pool_lock);
-#endif
-   p  = *s;
-   *s = NULL;
-#ifdef HAVE_THREADS
-   if (rh265_pool_lock)
-      slock_unlock(rh265_pool_lock);
-#endif
+   void *p = *s;
+   *s      = NULL;
    return p;
 }
 
 static int rh265_slot_fill(rh265_slot_t *s, void *p)
 {
-   int ok;
-#ifdef HAVE_THREADS
-   if (rh265_pool_lock)
-      slock_lock(rh265_pool_lock);
-#endif
-   if ((ok = !*s))
-      *s = p;
-#ifdef HAVE_THREADS
-   if (rh265_pool_lock)
-      slock_unlock(rh265_pool_lock);
-#endif
-   return ok;
+   if (*s)
+      return 0;
+   *s = p;
+   return 1;
 }
 #endif
 
@@ -4178,6 +4159,11 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
    }
    if (threads > RH265_MAX_CTX - 1)
       threads = RH265_MAX_CTX - 1;
+#ifndef RETRO_ATOMIC_HAS_PTR
+   /* Pictures in flight on the pool hand their buffers over through
+    * the slots: no pool without pointer atomics */
+   pool = NULL;
+#endif
    if (!pool || threads <= 1)
    {
       v->pool     = NULL;
@@ -4193,10 +4179,6 @@ void rh265_video_set_thread_pool(rh265_video *v, void *pool,
     * rows of the ones it predicts from instead. */
    if (!rh265_rows_ec_ok)
    {
-#ifndef RETRO_ATOMIC_HAS_PTR
-      if (!rh265_pool_lock && !(rh265_pool_lock = slock_new()))
-         return;
-#endif
       if (!retro_eventcount_init(&rh265_rows_ec))
       {
          retro_eventcount_free(&rh265_rows_ec);

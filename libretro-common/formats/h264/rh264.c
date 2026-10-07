@@ -5031,13 +5031,10 @@ typedef struct rh264_pic_ctx
 #define RH264_MAX_CTX 8
 #define RH264_RBSP_POOL 32   /* slice jobs kept between slices */
 
-#if defined(HAVE_THREADS) && !defined(RETRO_ATOMIC_HAS_PTR)
-static slock_t *rh264_slots_lock;
-#endif
-
 /* A pool slot holds a pointer or nothing, and changes hands in one
- * atomic swap: whoever swaps a pointer out owns it. Backends with no
- * pointer atomics keep the slots under a lock. */
+ * atomic swap: whoever swaps a pointer out owns it. Without pointer
+ * atomics a decoder runs on the one thread that calls it and keeps no
+ * pool shared between decoders, so its slots are plain. */
 #ifdef RETRO_ATOMIC_HAS_PTR
 typedef retro_atomic_ptr_t rh264_slot_t;
 #define rh264_slot_peek(s)    retro_atomic_load_relaxed_ptr(s)
@@ -5049,34 +5046,17 @@ typedef void *rh264_slot_t;
 
 static void *rh264_slot_take(rh264_slot_t *s)
 {
-   void *p;
-#ifdef HAVE_THREADS
-   if (rh264_slots_lock)
-      slock_lock(rh264_slots_lock);
-#endif
-   p  = *s;
-   *s = NULL;
-#ifdef HAVE_THREADS
-   if (rh264_slots_lock)
-      slock_unlock(rh264_slots_lock);
-#endif
+   void *p = *s;
+   *s      = NULL;
    return p;
 }
 
 static int rh264_slot_fill(rh264_slot_t *s, void *p)
 {
-   int ok;
-#ifdef HAVE_THREADS
-   if (rh264_slots_lock)
-      slock_lock(rh264_slots_lock);
-#endif
-   if ((ok = !*s))
-      *s = p;
-#ifdef HAVE_THREADS
-   if (rh264_slots_lock)
-      slock_unlock(rh264_slots_lock);
-#endif
-   return ok;
+   if (*s)
+      return 0;
+   *s = p;
+   return 1;
 }
 #endif
 
@@ -5274,24 +5254,38 @@ static void rh264_block_publish_rows(void *data, int rows)
 #endif
 }
 
+/* Planes released by any decoder wait here for the next of the same
+ * size. Shared between decoders on any threads, so only where the
+ * slots are atomic; elsewhere a block is simply freed. */
+#ifdef RETRO_ATOMIC_HAS_PTR
 #define RH264_FREE_BLOCKS 16
+#else
+#define RH264_FREE_BLOCKS 0
+#endif
 
+#if RH264_FREE_BLOCKS
 static rh264_slot_t rh264_free_blocks[RH264_FREE_BLOCKS];
+#endif
 
 static int rh264_block_park(rh264_block_hdr *b)
 {
+#if RH264_FREE_BLOCKS
    int i;
    for (i = 0; i < RH264_FREE_BLOCKS; i++)
       if (    !rh264_slot_peek(&rh264_free_blocks[i])
             && rh264_slot_fill(&rh264_free_blocks[i], b))
          return 1;
+#else
+   (void)b;
+#endif
    return 0;
 }
 
 static uint8_t *rh264_block_new(size_t len)
 {
-   int i;
    rh264_block_hdr *b;
+#if RH264_FREE_BLOCKS
+   int i;
    for (i = 0; i < RH264_FREE_BLOCKS; i++)
    {
       if (     !rh264_slot_peek(&rh264_free_blocks[i])
@@ -5308,6 +5302,7 @@ static uint8_t *rh264_block_new(size_t len)
             && !rh264_block_park(b))
          free(b);
    }
+#endif
    b = (rh264_block_hdr*)calloc(len + RH264_PLANES_HDR, 1);
    if (!b)
       return NULL;
@@ -10628,6 +10623,11 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
 #ifdef HAVE_THREADS
    if (!v)
       return;
+#ifndef RETRO_ATOMIC_HAS_PTR
+   /* Pictures in flight on the pool hand their buffers over through
+    * the slots: no pool without pointer atomics */
+   pool = NULL;
+#endif
    if (!pool || threads < 2)
    {
       v->pool     = NULL;
@@ -10636,10 +10636,6 @@ void rh264_video_set_thread_pool(rh264_video *v, void *pool, int threads)
    }
    if (!rh264_rows_ec_ok)
    {
-#ifndef RETRO_ATOMIC_HAS_PTR
-      if (!rh264_slots_lock && !(rh264_slots_lock = slock_new()))
-         return;
-#endif
       if (!retro_eventcount_init(&rh264_rows_ec))
       {
          retro_eventcount_free(&rh264_rows_ec);
