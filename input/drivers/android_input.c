@@ -1726,8 +1726,9 @@ static bool android_input_event_is_keyboard(const android_input_t *android,
  * the call that created it. */
 #define ANDROID_KCM_CACHE_SIZE 4
 
-static jclass    kcm_class                                   = NULL;
-static jmethodID kcm_load                                    = NULL;
+static rjni_ref  kcm_class_ref;
+static rjni_ref  kcm_load_ref;
+static rjni_ref  kcm_get_ref;
 static jmethodID kcm_get                                     = NULL;
 static jobject   kcm_obj[ANDROID_KCM_CACHE_SIZE];
 static int       kcm_obj_device[ANDROID_KCM_CACHE_SIZE];
@@ -1749,12 +1750,8 @@ static void android_keycode_map_free(JNIEnv *env)
       kcm_obj_device[i] = 0;
    }
 
-   if (kcm_class)
-      (*env)->DeleteGlobalRef(env, kcm_class);
-
-   kcm_class          = NULL;
-   kcm_load           = NULL;
-   kcm_get            = NULL;
+   /* The class global reference and the method IDs are process-lifetime
+    * rjni once-caches now, so a driver restart re-resolves nothing. */
    kcm_obj_next       = 0;
    kcm_resolve_failed = false;
 }
@@ -1768,41 +1765,30 @@ static void android_keycode_map_free(JNIEnv *env)
  * a reconnected device re-resolves. */
 static jobject android_keycode_map_get(JNIEnv *env, int device_id)
 {
-   int     i;
-   jobject local = NULL;
+   int       i;
+   jobject   local = NULL;
+   jclass    kcm_class;
+   jmethodID kcm_load;
 
    if (kcm_resolve_failed)
       return NULL;
 
+   /* rjni once-caches: after the first call these are three atomic
+    * loads, with no VM crossing even across driver restarts. */
+   kcm_class = rjni_class(&kcm_class_ref, env,
+         "android/view/KeyCharacterMap");
    if (!kcm_class)
    {
-      jclass found = NULL;
-
-      FIND_CLASS(env, found, "android/view/KeyCharacterMap");
-      if (!found)
-      {
-         kcm_resolve_failed = true;
-         return NULL;
-      }
-
-      kcm_class = (jclass)(*env)->NewGlobalRef(env, found);
-      (*env)->DeleteLocalRef(env, found);
-      if (!kcm_class)
-      {
-         kcm_resolve_failed = true;
-         return NULL;
-      }
-
-      GET_STATIC_METHOD_ID(env, kcm_load, kcm_class, "load",
-            "(I)Landroid/view/KeyCharacterMap;");
-      GET_METHOD_ID(env, kcm_get, kcm_class, "get", "(II)I");
-
-      if (!kcm_load || !kcm_get)
-      {
-         android_keycode_map_free(env);
-         kcm_resolve_failed = true;
-         return NULL;
-      }
+      kcm_resolve_failed = true;
+      return NULL;
+   }
+   kcm_load = rjni_method_static(&kcm_load_ref, env, kcm_class, "load",
+         "(I)Landroid/view/KeyCharacterMap;");
+   kcm_get  = rjni_method(&kcm_get_ref, env, kcm_class, "get", "(II)I");
+   if (!kcm_load || !kcm_get)
+   {
+      kcm_resolve_failed = true;
+      return NULL;
    }
 
    for (i = 0; i < ANDROID_KCM_CACHE_SIZE; i++)
