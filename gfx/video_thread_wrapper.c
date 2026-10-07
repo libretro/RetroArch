@@ -1103,6 +1103,7 @@ typedef struct
    retro_time_t input_age_max;
    retro_time_t core_time;
    retro_time_t render_time;
+   retro_time_t present_wait;
    retro_time_t present_period;
    retro_time_t next_present;
    int          flags;
@@ -1161,6 +1162,8 @@ static void video_thread_publish_stats(thread_video_t *thr)
          (uint64_t)(unsigned)retro_atomic_load_relaxed_int(&thr->core_time_us));
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_RENDER_LO,
          (uint64_t)thr->render_time);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_WAIT_LO,
+         (uint64_t)thr->present_wait);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_SWAPS_LO,
          thr->video_st->swap_count);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_PERIOD_LO,
@@ -1209,6 +1212,8 @@ static void video_thread_read_stats(thread_video_t *thr,
             VIDEO_THREAD_STAT_CORE_LO);
       out->render_time = (retro_time_t)video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_RENDER_LO);
+      out->present_wait = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_WAIT_LO);
       out->swaps       = video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_SWAPS_LO);
       out->present_period = (retro_time_t)video_thread_stat_get64(s,
@@ -2212,6 +2217,9 @@ static void video_thread_loop(void *data)
                      render_took       -= waited;
                      thr->present_shown = shown;
                   }
+                  /* for the statistics, averaged as the render time is */
+                  thr->present_wait = thr->present_wait
+                     ? (thr->present_wait * 7 + waited) / 8 : waited;
                }
                if (ret)
                {
@@ -4712,6 +4720,22 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
    *worst        = snap.latency_max;
    *from_display = (snap.flags & VIDEO_THREAD_STAT_F_LAT_DISPLAY) != 0;
    return *avg > 0;
+}
+
+bool video_thread_present_wait_stats(retro_time_t *wait)
+{
+   video_thread_stat_snap_t snap;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+   *wait = 0;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (     !(thr = (thread_video_t*)video_st->data) || !thr->thread
+         || !thr->poke || !thr->poke->get_last_present_wait)
+      return false;
+   video_thread_read_stats(thr, &snap);
+   *wait = snap.present_wait;
+   return true;
 }
 
 bool video_thread_pacing_stats(bool *display_pacing,

@@ -2177,6 +2177,11 @@ static void lane_blocking_present(void)
    CHECK(met >= 6,
          "blocking present: %u frames of 8 were counted to the vblank their"
          " swap came back on", met);
+   {
+      retro_time_t shown_wait = 0;
+      CHECK(video_thread_present_wait_stats(&shown_wait) && shown_wait > 0,
+            "blocking present: the wait is not in the statistics");
+   }
    CHECK(render_told < 4000,
          "blocking present: the wait for the vblank is still counted as drawing"
          " (render time %.2f ms)", render_told / 1000.0);

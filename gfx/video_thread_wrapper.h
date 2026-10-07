@@ -296,6 +296,10 @@ enum video_thread_stat_slot
    VIDEO_THREAD_STAT_INPUT_AVG_HI,
    VIDEO_THREAD_STAT_INPUT_MAX_LO,
    VIDEO_THREAD_STAT_INPUT_MAX_HI,
+   /* how long the driver's present waits for the display, where it
+    * says (get_last_present_wait) */
+   VIDEO_THREAD_STAT_WAIT_LO,
+   VIDEO_THREAD_STAT_WAIT_HI,
    VIDEO_THREAD_STAT_SLOTS
 };
 
@@ -421,6 +425,7 @@ typedef struct thread_video
     * handoff's arrival, and run_start is when the last handoff
     * returned. Both main-thread only. */
    retro_time_t render_time;
+   retro_time_t present_wait; /* the wait in the driver's present, averaged as render_time is */
    retro_time_t core_time;
    /* The last frame presented had queued behind another: the next
     * hold runs a period longer to drain it. Video thread only. */
@@ -975,6 +980,12 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase);
  * times it is reserving, in microseconds. From the published snapshot,
  * so the two the main thread feeds are a frame behind. Returns whether
  * the wrapper is up at all. */
+/* How long the driver's present waits for the display, a moving
+ * average in microseconds; false where the driver does not say or
+ * there is no wrapper. For the statistics: beside the render time,
+ * which no longer counts it. */
+bool video_thread_present_wait_stats(retro_time_t *wait);
+
 bool video_thread_pacing_stats(bool *display_pacing,
       retro_time_t *core_time, retro_time_t *render_time);
 

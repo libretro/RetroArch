@@ -6935,6 +6935,17 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   core_time / 1000.0f, render_time / 1000.0f);
       }
       {
+         /* How long the driver's present waits for the display, where
+          * the driver says: time the render figure does not count, and
+          * the place a frame's lateness shows - a wait of most of a
+          * period is a frame that missed its vblank, or a queue. */
+         retro_time_t wait;
+         if (video_thread_present_wait_stats(&wait) && wait > 0)
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
+                  " Swap Wait:  %5.2f ms for the display\n",
+                  wait / 1000.0f);
+      }
+      {
          retro_time_t lat_avg, lat_max;
          bool lat_display;
          if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))
