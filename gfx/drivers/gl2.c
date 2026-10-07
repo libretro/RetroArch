@@ -3530,8 +3530,9 @@ static bool gl2_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_us)
                ? GL_TIMEOUT_IGNORED : (GLuint64)timeout_us * 1000);
       if (r == GL_TIMEOUT_EXPIRED)
          return false;
-      glDeleteSync((GLsync)f->sync);
-      f->sync = NULL;
+      /* Not deleted here: the video thread made it and may still be
+       * in the swap that follows it. It goes when the cell is
+       * signalled again */
    }
 #else
    (void)timeout_us;

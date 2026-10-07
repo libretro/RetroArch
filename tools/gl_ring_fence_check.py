@@ -6,6 +6,10 @@ rendered core to the display's rate in fast-forward.
 
 Fails if a driver's frame function swaps before taking the fence, or if
 its hand-over (hw_ring_fence_signal) stops using the one taken.
+
+The thread that waits on the fence does not delete it either: the video
+thread made it and can still be in the swap that follows it, and a
+driver has aborted on the delete.  Fails if hw_ring_fence_wait deletes.
 """
 import re
 import sys
@@ -35,6 +39,9 @@ def check(src, prefix):
         errs.append("%s_frame: swaps before %s_hw_ring_drawn(gl)" % (prefix, prefix))
     if "hw_ring_done_sync" not in signal:
         errs.append("%s_hw_ring_fence_signal: does not hand over hw_ring_done_sync" % prefix)
+    wait = body(src, prefix + "_hw_ring_fence_wait")
+    if wait is not None and "glDeleteSync" in wait:
+        errs.append("%s_hw_ring_fence_wait: deletes the video thread's sync" % prefix)
     return errs
 
 
@@ -49,6 +56,9 @@ def selftest():
     assert check(good, "glx") == []
     assert len(check(late, "glx")) == 1
     assert len(check(unused, "glx")) == 1
+    deletes = good + ("static bool glx_hw_ring_fence_wait(void *d, void *f, unsigned t)\n{\n"
+                      "   glDeleteSync(f->sync);\n   return true;\n}\n")
+    assert len(check(deletes, "glx")) == 1
     print("gl_ring_fence_check: selftest ok")
 
 
