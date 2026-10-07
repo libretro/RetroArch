@@ -983,6 +983,142 @@ const struct rarch_key_map rarch_key_map_sdl3[] = {
 };
 #endif
 
+#ifdef HAVE_WIN32INPUT
+/* The keyboard's scancodes, the extended keys with 0x80 added: what
+ * the window procedure makes of a key message, and what DirectInput
+ * calls its DIK_ codes. The same keys as rarch_key_map_dinput below,
+ * in numbers, so that a build with no DirectX header has it. */
+const struct rarch_key_map rarch_key_map_win32[] = {
+   { 0xCB, RETROK_LEFT            }, /* LEFT */
+   { 0xCD, RETROK_RIGHT           }, /* RIGHT */
+   { 0xC8, RETROK_UP              }, /* UP */
+   { 0xD0, RETROK_DOWN            }, /* DOWN */
+   { 0x1C, RETROK_RETURN          }, /* RETURN */
+   { 0x0F, RETROK_TAB             }, /* TAB */
+   { 0xD2, RETROK_INSERT          }, /* INSERT */
+   { 0xD3, RETROK_DELETE          }, /* DELETE */
+   { 0x36, RETROK_RSHIFT          }, /* RSHIFT */
+   { 0x2A, RETROK_LSHIFT          }, /* LSHIFT */
+   { 0x9D, RETROK_RCTRL           }, /* RCONTROL */
+   { 0x1D, RETROK_LCTRL           }, /* LCONTROL */
+   { 0xB8, RETROK_RALT            }, /* RMENU */
+   { 0x38, RETROK_LALT            }, /* LALT */
+   { 0xDB, RETROK_LSUPER          }, /* LWIN */
+   { 0xDC, RETROK_RSUPER          }, /* RWIN */
+   { 0xDD, RETROK_MENU            }, /* APPS */
+   { 0xCF, RETROK_END             }, /* END */
+   { 0xC7, RETROK_HOME            }, /* HOME */
+   { 0xD1, RETROK_PAGEDOWN        }, /* NEXT */
+   { 0xC9, RETROK_PAGEUP          }, /* PRIOR */
+   { 0x39, RETROK_SPACE           }, /* SPACE */
+   { 0x01, RETROK_ESCAPE          }, /* ESCAPE */
+   { 0x0E, RETROK_BACKSPACE       }, /* BACKSPACE */
+   { 0x9C, RETROK_KP_ENTER        }, /* NUMPADENTER */
+   { 0x4E, RETROK_KP_PLUS         }, /* NUMPADPLUS */
+   { 0x4A, RETROK_KP_MINUS        }, /* NUMPADMINUS */
+   { 0x37, RETROK_KP_MULTIPLY     }, /* NUMPADSTAR */
+   { 0xB5, RETROK_KP_DIVIDE       }, /* DIVIDE */
+   { 0x29, RETROK_BACKQUOTE       }, /* GRAVE */
+   { 0xC5, RETROK_PAUSE           }, /* PAUSE */
+   { 0x52, RETROK_KP0             }, /* NUMPAD0 */
+   { 0x4F, RETROK_KP1             }, /* NUMPAD1 */
+   { 0x50, RETROK_KP2             }, /* NUMPAD2 */
+   { 0x51, RETROK_KP3             }, /* NUMPAD3 */
+   { 0x4B, RETROK_KP4             }, /* NUMPAD4 */
+   { 0x4C, RETROK_KP5             }, /* NUMPAD5 */
+   { 0x4D, RETROK_KP6             }, /* NUMPAD6 */
+   { 0x47, RETROK_KP7             }, /* NUMPAD7 */
+   { 0x48, RETROK_KP8             }, /* NUMPAD8 */
+   { 0x49, RETROK_KP9             }, /* NUMPAD9 */
+   { 0x0B, RETROK_0               }, /* 0 */
+   { 0x02, RETROK_1               }, /* 1 */
+   { 0x03, RETROK_2               }, /* 2 */
+   { 0x04, RETROK_3               }, /* 3 */
+   { 0x05, RETROK_4               }, /* 4 */
+   { 0x06, RETROK_5               }, /* 5 */
+   { 0x07, RETROK_6               }, /* 6 */
+   { 0x08, RETROK_7               }, /* 7 */
+   { 0x09, RETROK_8               }, /* 8 */
+   { 0x0A, RETROK_9               }, /* 9 */
+   { 0x3B, RETROK_F1              }, /* F1 */
+   { 0x3C, RETROK_F2              }, /* F2 */
+   { 0x3D, RETROK_F3              }, /* F3 */
+   { 0x3E, RETROK_F4              }, /* F4 */
+   { 0x3F, RETROK_F5              }, /* F5 */
+   { 0x40, RETROK_F6              }, /* F6 */
+   { 0x41, RETROK_F7              }, /* F7 */
+   { 0x42, RETROK_F8              }, /* F8 */
+   { 0x43, RETROK_F9              }, /* F9 */
+   { 0x44, RETROK_F10             }, /* F10 */
+   { 0x57, RETROK_F11             }, /* F11 */
+   { 0x58, RETROK_F12             }, /* F12 */
+   { 0x64, RETROK_F13             }, /* F13 */
+   { 0x65, RETROK_F14             }, /* F14 */
+   { 0x66, RETROK_F15             }, /* F15 */
+   { 0x1E, RETROK_a               }, /* A */
+   { 0x30, RETROK_b               }, /* B */
+   { 0x2E, RETROK_c               }, /* C */
+   { 0x20, RETROK_d               }, /* D */
+   { 0x12, RETROK_e               }, /* E */
+   { 0x21, RETROK_f               }, /* F */
+   { 0x22, RETROK_g               }, /* G */
+   { 0x23, RETROK_h               }, /* H */
+   { 0x17, RETROK_i               }, /* I */
+   { 0x24, RETROK_j               }, /* J */
+   { 0x25, RETROK_k               }, /* K */
+   { 0x26, RETROK_l               }, /* L */
+   { 0x32, RETROK_m               }, /* M */
+   { 0x31, RETROK_n               }, /* N */
+   { 0x18, RETROK_o               }, /* O */
+   { 0x19, RETROK_p               }, /* P */
+   { 0x10, RETROK_q               }, /* Q */
+   { 0x13, RETROK_r               }, /* R */
+   { 0x1F, RETROK_s               }, /* S */
+   { 0x14, RETROK_t               }, /* T */
+   { 0x16, RETROK_u               }, /* U */
+   { 0x2F, RETROK_v               }, /* V */
+   { 0x11, RETROK_w               }, /* W */
+   { 0x2D, RETROK_x               }, /* X */
+   { 0x15, RETROK_y               }, /* Y */
+   { 0x2C, RETROK_z               }, /* Z */
+   { 0x28, RETROK_QUOTE           }, /* APOSTROPHE */
+   { 0x33, RETROK_COMMA           }, /* COMMA */
+   { 0x0C, RETROK_MINUS           }, /* MINUS */
+   { 0x35, RETROK_SLASH           }, /* SLASH */
+   { 0x27, RETROK_SEMICOLON       }, /* SEMICOLON */
+   { 0x0D, RETROK_EQUALS          }, /* EQUALS */
+   { 0x1A, RETROK_LEFTBRACKET     }, /* LBRACKET */
+   { 0x2B, RETROK_BACKSLASH       }, /* BACKSLASH */
+   { 0x1B, RETROK_RIGHTBRACKET    }, /* RBRACKET */
+   { 0x53, RETROK_KP_PERIOD       }, /* DECIMAL */
+   { 0x34, RETROK_PERIOD          }, /* PERIOD */
+   { 0x46, RETROK_SCROLLOCK       }, /* SCROLL */
+   { 0x3A, RETROK_CAPSLOCK        }, /* CAPSLOCK */
+   { 0x45, RETROK_NUMLOCK         }, /* NUMLOCK */
+   { 0x56, RETROK_OEM_102         }, /* OEM_102 */
+   { 0x90, RETROK_MEDIA_PREV      }, /* CIRCUMFLEX */
+   { 0x99, RETROK_MEDIA_NEXT      }, /* NEXTTRACK */
+   { 0xA0, RETROK_VOLUME_MUTE     }, /* MUTE */
+   { 0xA1, RETROK_LAUNCH_APP2     }, /* CALCULATOR */
+   { 0xA2, RETROK_MEDIA_PLAY_PAUSE }, /* PLAYPAUSE */
+   { 0xA4, RETROK_MEDIA_STOP      }, /* MEDIASTOP */
+   { 0xAE, RETROK_VOLUME_DOWN     }, /* VOLUMEDOWN */
+   { 0xB0, RETROK_VOLUME_UP       }, /* VOLUMEUP */
+   { 0xB2, RETROK_BROWSER_HOME    }, /* WEBHOME */
+   { 0xE5, RETROK_BROWSER_SEARCH  }, /* WEBSEARCH */
+   { 0xE6, RETROK_BROWSER_FAVORITES }, /* WEBFAVORITES */
+   { 0xE7, RETROK_BROWSER_REFRESH }, /* WEBREFRESH */
+   { 0xE8, RETROK_BROWSER_STOP    }, /* WEBSTOP */
+   { 0xE9, RETROK_BROWSER_FORWARD }, /* WEBFORWARD */
+   { 0xEA, RETROK_BROWSER_BACK    }, /* WEBBACK */
+   { 0xEB, RETROK_LAUNCH_APP1     }, /* MYCOMPUTER */
+   { 0xEC, RETROK_LAUNCH_MAIL     }, /* MAIL */
+   { 0xED, RETROK_LAUNCH_MEDIA    }, /* MEDIASELECT */
+   { 0x90, RETROK_MEDIA_PREV      }, /* PREVTRACK */
+   { 0, RETROK_UNKNOWN },
+};
+#endif
+
 #ifdef HAVE_DINPUT
 const struct rarch_key_map rarch_key_map_dinput[] = {
    { DIK_LEFT, RETROK_LEFT },

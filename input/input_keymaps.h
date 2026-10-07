@@ -242,6 +242,7 @@ extern const struct rarch_key_map rarch_key_map_sdl[];
 extern const struct rarch_key_map rarch_key_map_sdl2[];
 extern const struct rarch_key_map rarch_key_map_sdl3[];
 extern const struct rarch_key_map rarch_key_map_dinput[];
+extern const struct rarch_key_map rarch_key_map_win32[];
 
  /* is generated at runtime so can't be const */
 extern struct rarch_key_map rarch_key_map_rwebinput[RARCH_KEY_MAP_RWEBINPUT_SIZE];

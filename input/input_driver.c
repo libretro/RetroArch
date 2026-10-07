@@ -500,6 +500,9 @@ input_driver_t *input_drivers[] = {
 #ifdef HAVE_DINPUT
    &input_dinput,
 #endif
+#ifdef HAVE_WIN32INPUT
+   &input_win32,
+#endif
 #if defined(HAVE_SDL2) && !defined(HAVE_COCOA)
    &input_sdl2,
 #elif defined(HAVE_SDL) && !defined(HAVE_COCOA)

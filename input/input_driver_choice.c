@@ -91,6 +91,22 @@ void input_driver_init_windows(const char *joypad_name,
    *input_data = input_driver_init_wrap(&input_dinput, joypad_name);
    *input      = *input_data ? &input_dinput : NULL;
 #endif
+#ifdef HAVE_WIN32INPUT
+   /* the window and the oldest of the Windows API: asked for by name
+    * ("win32"), or where nothing above is built or starts */
+   if (     !*input
+         || string_is_equal(config_get_ptr()->arrays.input_driver, "win32"))
+   {
+      void *w32 = input_driver_init_wrap(&input_win32, joypad_name);
+      if (w32)
+      {
+         if (*input && (*input)->free)
+            (*input)->free(*input_data);
+         *input_data = w32;
+         *input      = &input_win32;
+      }
+   }
+#endif
 #endif
    }
 }

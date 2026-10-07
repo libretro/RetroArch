@@ -2160,6 +2160,7 @@ extern input_driver_t input_sdl2;
 extern input_driver_t input_sdl3;
 extern input_driver_t input_sdl_dingux;
 extern input_driver_t input_dinput;
+extern input_driver_t input_win32;
 extern input_driver_t input_x;
 extern input_driver_t input_ps4;
 extern input_driver_t input_ps3;

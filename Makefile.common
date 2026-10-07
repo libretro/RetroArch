@@ -1288,6 +1288,14 @@ ifeq ($(HAVE_DINPUT), 1)
    OBJ += input/drivers_joypad/dinput_joypad.o
 endif
 
+# The keyboard and the mouse from the window and the oldest of the
+# Windows API: for a Windows with neither raw input nor DirectInput 8.
+# Not on by default anywhere but the Visual C++ 6 project.
+ifeq ($(HAVE_WIN32INPUT), 1)
+   DEFINES += -DHAVE_WIN32INPUT
+   OBJ += input/drivers/win32_input.o
+endif
+
 ifeq ($(HAVE_XINPUT), 1)
    DEFINES += -DHAVE_XINPUT
    HAVE_INPUT_OUTPUT_WRITER = 1

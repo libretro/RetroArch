@@ -245,6 +245,7 @@ enum input_driver_enum
    INPUT_RWEBINPUT,
    INPUT_DOS,
    INPUT_WINRAW,
+   INPUT_WIN32,
    INPUT_NULL
 };
 
@@ -684,6 +685,8 @@ static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_RWEBINPUT;
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_DINPUT;
 #elif defined(_WIN32) && !defined(HAVE_DINPUT) && _WIN32_WINNT >= 0x0501
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WINRAW;
+#elif defined(_WIN32) && defined(HAVE_WIN32INPUT)
+static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_WIN32;
 #elif defined(PS2)
 static const enum input_driver_enum INPUT_DEFAULT_DRIVER = INPUT_PS2;
 #elif defined(__PS3__)
@@ -1535,6 +1538,8 @@ const char *config_get_default_input(void)
          return "sdl_dingux";
       case INPUT_DINPUT:
          return "dinput";
+      case INPUT_WIN32:
+         return "win32";
       case INPUT_WINRAW:
          return "raw";
       case INPUT_X:

@@ -213,6 +213,11 @@ static bool        win32_wnd_taken;
 static HDEVNOTIFY win32_kept_notification;
 #endif
 
+#ifdef HAVE_WIN32INPUT
+/* input/drivers/win32_input.c */
+extern void win32_input_key_message(unsigned scancode, bool down);
+#endif
+
 #ifdef HAVE_DINPUT
 extern bool dinput_handle_message(void *dinput, UINT message,
       WPARAM wParam, LPARAM lParam);
@@ -1387,6 +1392,12 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
          /* extended keys will map to dinput if the high bit is set */
          if (extended)
             keysym |= 0x80;
+
+#ifdef HAVE_WIN32INPUT
+         /* the plain Win32 input driver has the keys that are down
+          * from here and nowhere else */
+         win32_input_key_message(keysym, keydown);
+#endif
 
          /* tell the driver about shift and alt key events */
          if (     (route & WIN32_ROUTE_KEY_MODS)
