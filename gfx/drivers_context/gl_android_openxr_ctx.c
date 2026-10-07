@@ -320,7 +320,11 @@ bool gl_android_openxr_begin_frame(void)
    xr->image_acquired = false;
 
    if (!xr->running)
+   {
+      /* no sync on this frame: what the last one read is not held */
+      openxr_input_idle();
       return false;
+   }
 
    result = xrWaitFrame(xr->session, &wait_info, &frame_state);
 

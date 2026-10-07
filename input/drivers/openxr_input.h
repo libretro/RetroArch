@@ -11,6 +11,7 @@
 bool openxr_input_init(XrInstance instance);
 bool openxr_input_attach(XrSession session);
 void openxr_input_sync(XrSession session);
+void openxr_input_idle(void);
 void openxr_input_deinit(void);
 /* True while actions are attached to a live session; readable from the
  * main thread while sync runs on the video thread. */

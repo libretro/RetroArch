@@ -153,6 +153,8 @@ bool android_vk_openxr_begin_frame(void)
    if (!xr->running)
    {
       RARCH_DBG("[XR] begin_frame: session is not running.\n");
+      /* no sync on this frame: what the last one read is not held */
+      openxr_input_idle();
       return false;
    }
 

@@ -1,0 +1,48 @@
+name: CI OpenXR input (stand-in runtime)
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  openxr-input:
+    name: OpenXR input against a stand-in for the runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run input/drivers/openxr_input.c against a stand-in runtime
+        working-directory: samples/input/openxr_input
+        shell: bash
+        run: |
+          set -eu
+          # The OpenXR input file is built for the Quest only, and a
+          # headset cannot be scripted. This builds it as it ships, with
+          # the host's compiler and the vendored OpenXR headers, against
+          # a runtime the test stands in for, and holds it to what it
+          # does when the runtime has nothing to give: a failed sync,
+          # the session out of focus or not running, a control whose
+          # state cannot be had, and deinit all leave nothing held.
+          make clean all
+          ./openxr_input_test | tee openxr_input.log
+          grep -q "PASS openxr_input_test" openxr_input.log
+          make clean
+          rm -f openxr_input.log

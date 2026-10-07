@@ -35,15 +35,71 @@ static XrActionSet openxr_action_set;
 static XrAction openxr_actions[XR_COUNT];
 /* Written by openxr_input_sync (the frame loop's thread, which is the
  * video thread under threaded video) and read by the input drivers on
- * the main thread, so these cross-thread values are atomics. */
-static retro_atomic_int_t openxr_buttons[XR_COUNT];
-static retro_atomic_int_t openxr_axes[6];
+ * the main thread, so these cross-thread values are atomics.
+ *
+ * Four words, each stored and loaded whole: the buttons as a set, a
+ * stick's x and y together, the two triggers together. They were a
+ * word a button and a word an axis, so a read could take a stick's x
+ * from one sync and its y from the next; a pair is one sync's now.
+ * (One word is still not the next word's sync: a button and a stick
+ * read in the same poll can be a sync apart.)
+ *
+ * What they hold while there is no fresh state to give - no session
+ * attached, the session not running, a sync that failed, the session
+ * without the focus - is "nothing held": see
+ * openxr_input_release_all(). */
+static retro_atomic_int_t openxr_buttons;      /* bit n: action n is down */
+static retro_atomic_int_t openxr_sticks[2];    /* left, right: XR_PAIR(x, y) */
+static retro_atomic_int_t openxr_triggers;     /* XR_PAIR(left, right) */
 static retro_atomic_int_t openxr_attached_flag;
 static retro_atomic_int_t openxr_menu_long_press;
+
+/* two axis values, each -32767 to 32767, in one word */
+#define XR_PAIR(lo, hi) ((int)(  (uint32_t)(uint16_t)(int16_t)(lo) \
+                               | ((uint32_t)(uint16_t)(int16_t)(hi) << 16)))
+#define XR_PAIR_LO(v)   ((int16_t)((uint32_t)(v) & 0xffff))
+#define XR_PAIR_HI(v)   ((int16_t)((uint32_t)(v) >> 16))
 
 /* long press menu button for F1; sync-thread only */
 static bool openxr_menu_was_down;
 static uint64_t openxr_menu_down_time;
+/* something other than "nothing held" may be published; sync-thread only */
+static bool openxr_state_live;
+
+/* An axis as the runtime gives it, -1 to 1, as a stick's value. */
+static int openxr_axis_value(float v)
+{
+  int out = (int)(v * 32767.0f);
+  if (out >  32767) out =  32767;
+  if (out < -32767) out = -32767;
+  return out;
+}
+
+/* Nothing held. What readers are given whenever this file has no fresh
+ * state for them: left as it was, a button that was down when the
+ * state stopped coming stayed down for the frontend for as long as it
+ * stopped - a sync that failed, the headset's own menu taking the
+ * focus, the session ended. On the sync's thread. */
+static void openxr_input_release_all(void)
+{
+  if (!openxr_state_live)
+    return;
+  retro_atomic_store_relaxed_int(&openxr_buttons, 0);
+  retro_atomic_store_relaxed_int(&openxr_sticks[0], 0);
+  retro_atomic_store_relaxed_int(&openxr_sticks[1], 0);
+  retro_atomic_store_relaxed_int(&openxr_triggers, 0);
+  retro_atomic_store_relaxed_int(&openxr_menu_long_press, 0);
+  openxr_menu_was_down = false;
+  openxr_state_live    = false;
+}
+
+/* The session is not running: there is no state to sync, and what was
+ * synced last is not what is held. For the context's frame loop, in
+ * place of the sync on a frame it does not begin. */
+void openxr_input_idle(void)
+{
+  openxr_input_release_all();
+}
 
 #define HEAD_RAD2DEG 57.29577951f
 
@@ -174,6 +230,9 @@ void openxr_input_sync(XrSession session)
   XrActiveActionSet active = {openxr_action_set, XR_NULL_PATH};
   XrActionsSyncInfo sync = {XR_TYPE_ACTIONS_SYNC_INFO};
   unsigned i;
+  unsigned buttons = 0;
+  int stick[2]     = {0, 0};
+  int trigger[2]   = {0, 0};
 
   if (!retro_atomic_load_relaxed_int(&openxr_attached_flag))
     return;
@@ -181,9 +240,17 @@ void openxr_input_sync(XrSession session)
   sync.countActiveActionSets = 1;
   sync.activeActionSets = &active;
 
+  /* Anything but success is no fresh state: an error, or the session
+   * without the focus (XR_SESSION_NOT_FOCUSED is not XR_SUCCESS), which
+   * is every frame the headset's own menu is up. */
   if (xrSyncActions(session, &sync) != XR_SUCCESS)
+  {
+    openxr_input_release_all();
     return;
+  }
 
+  /* A control whose state cannot be had, or that is not active, is not
+   * held. (A stick or a trigger kept its last value before.) */
   for (i = 0; i < XR_COUNT; i++)
   {
     XrActionStateGetInfo info = {XR_TYPE_ACTION_STATE_GET_INFO};
@@ -197,11 +264,9 @@ void openxr_input_sync(XrSession session)
 
     info.action = openxr_actions[i];
 
-    if (xrGetActionStateBoolean(session, &info, &state) == XR_SUCCESS)
-      retro_atomic_store_relaxed_int(&openxr_buttons[i],
-            (state.isActive && state.currentState) ? 1 : 0);
-    else
-      retro_atomic_store_relaxed_int(&openxr_buttons[i], 0);
+    if (     xrGetActionStateBoolean(session, &info, &state) == XR_SUCCESS
+          && state.isActive && state.currentState)
+      buttons |= (1u << i);
   }
 
   for (i = 0; i < 2; i++)
@@ -210,34 +275,30 @@ void openxr_input_sync(XrSession session)
     XrActionStateFloat state = {XR_TYPE_ACTION_STATE_FLOAT};
     info.action = openxr_actions[XR_LTRIGGER + i];
 
-    if (xrGetActionStateFloat(session, &info, &state) == XR_SUCCESS)
-      retro_atomic_store_relaxed_int(&openxr_axes[4 + i],
-            state.isActive ? (int)(state.currentState * 32767.0f) : 0);
+    if (     xrGetActionStateFloat(session, &info, &state) == XR_SUCCESS
+          && state.isActive)
+      trigger[i] = openxr_axis_value(state.currentState);
   }
   for (i = 0; i < 2; i++)
   {
     XrActionStateGetInfo info = {XR_TYPE_ACTION_STATE_GET_INFO};
     XrActionStateVector2f state = {XR_TYPE_ACTION_STATE_VECTOR2F};
     info.action = openxr_actions[XR_LSTICK + i];
-    if (xrGetActionStateVector2f(session, &info, &state) == XR_SUCCESS)
-    {
-      if (state.isActive)
-      {
-          retro_atomic_store_relaxed_int(&openxr_axes[i * 2],
-                (int)(state.currentState.x * 32767.0f));
-          retro_atomic_store_relaxed_int(&openxr_axes[i * 2 + 1],
-                (int)(state.currentState.y * 32767.0f));
-      }
-      else
-      {
-          retro_atomic_store_relaxed_int(&openxr_axes[i * 2], 0);
-          retro_atomic_store_relaxed_int(&openxr_axes[i * 2 + 1], 0);
-      }
-    }
+    if (     xrGetActionStateVector2f(session, &info, &state) == XR_SUCCESS
+          && state.isActive)
+      stick[i] = XR_PAIR(openxr_axis_value(state.currentState.x),
+                         openxr_axis_value(state.currentState.y));
   }
 
+  retro_atomic_store_relaxed_int(&openxr_buttons, (int)buttons);
+  retro_atomic_store_relaxed_int(&openxr_sticks[0], stick[0]);
+  retro_atomic_store_relaxed_int(&openxr_sticks[1], stick[1]);
+  retro_atomic_store_relaxed_int(&openxr_triggers,
+        XR_PAIR(trigger[0], trigger[1]));
+  openxr_state_live = true;
+
   {
-    bool menu_down = retro_atomic_load_relaxed_int(&openxr_buttons[XR_MENU]) != 0;
+    bool menu_down = (buttons >> XR_MENU) & 1;
     uint64_t now = cpu_features_get_time_usec();
 
     /* Held, as a state: set from a second into the press until the
@@ -258,8 +319,10 @@ void openxr_input_deinit(void)
 
   openxr_action_set = XR_NULL_HANDLE;
   retro_atomic_store_relaxed_int(&openxr_attached_flag, 0);
-  openxr_menu_was_down = false;
-  retro_atomic_store_relaxed_int(&openxr_menu_long_press, 0);
+  /* and nothing of the session that is gone is still held: its last
+   * buttons and axes stayed readable after this before */
+  openxr_state_live = true;
+  openxr_input_release_all();
   openxr_menu_down_time = 0;
 }
 
@@ -286,22 +349,21 @@ bool openxr_input_button(unsigned button)
     default:
       return false;
   }
-  return retro_atomic_load_relaxed_int(&openxr_buttons[idx]) != 0;
+  return ((unsigned)retro_atomic_load_relaxed_int(&openxr_buttons) >> idx) & 1;
 }
 
 int16_t openxr_input_axis(unsigned axis)
 {
-  int32_t v;
+  int v;
+  /* a stick's x then its y, the left stick then the right; the
+   * triggers after them, left then right */
   if (axis < 4)
-    v = retro_atomic_load_relaxed_int(&openxr_axes[axis]);
+    v = retro_atomic_load_relaxed_int(&openxr_sticks[axis >> 1]);
   else if (axis == 6 || axis == 7)
-    v = retro_atomic_load_relaxed_int(&openxr_axes[axis - 2]);
+    v = retro_atomic_load_relaxed_int(&openxr_triggers);
   else
     return 0;
-
-  if (v >  32767) v =  32767;
-  if (v < -32767) v = -32767;
-  return (int16_t)v;
+  return (axis & 1) ? XR_PAIR_HI(v) : XR_PAIR_LO(v);
 }
 
 /* The menu button has been held a second, and still is. The frontend
