@@ -114,6 +114,18 @@
 
 RETRO_BEGIN_DECLS
 
+/* Internal shape of a headset content request, fed by the view-map
+ * adapter; the recommended_* members are outputs. */
+typedef struct video_vr_content_info
+{
+   bool stereo_native;
+   bool request_flat;
+   float ipd_hint_m;
+   enum retro_vr_reference_space reference_space;
+   unsigned recommended_eye_width;
+   unsigned recommended_eye_height;
+} video_vr_content_info_t;
+
 enum video_driver_state_flags
 {
    VIDEO_FLAG_DEFERRED_VIDEO_CTX_DRIVER_SET_FLAGS = (1 << 0 ),
@@ -1217,7 +1229,9 @@ typedef struct video_driver
 
 #ifdef HAVE_OPENXR
    bool (*get_vr_frame_state)(void *data, struct retro_vr_frame_state *out);
-   bool (*set_vr_content_info)(void *data, const struct retro_vr_content_info *info);
+   bool (*set_vr_content_info)(void *data, const video_vr_content_info_t *info);
+   /* Optional: RETRO_VIDEO_VIEWS_STATUS_ flags for the live session. */
+   unsigned (*get_video_views_status)(void *data);
 #endif
 
 } video_driver_t;
@@ -1225,7 +1239,8 @@ typedef struct video_driver
 #ifdef HAVE_OPENXR
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);
-bool video_driver_set_vr_content_info(struct retro_vr_content_info *info);
+bool video_driver_set_video_views(struct retro_video_views *views);
+bool video_driver_get_video_views_status(unsigned *flags);
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out);
 #endif

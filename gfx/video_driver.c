@@ -382,7 +382,81 @@ enum {
 
 static uint32_t video_vr_frame_flags;
 static uint32_t vr_ctx_id;
-static struct retro_vr_content_info vr_saved_info;
+static video_vr_content_info_t vr_saved_info;
+static bool video_driver_set_vr_content_info(video_vr_content_info_t *info);
+
+/* The converged core-facing surface: a view map. Only the shape the
+ * headset path consumes today - two full-height eye views side by
+ * side on screen 0 - reaches the sink; anything else is refused
+ * honestly until a consumer lands. */
+static bool video_views_is_sbs(const struct retro_video_views *v)
+{
+   const struct retro_video_view *l;
+   const struct retro_video_view *r;
+   if (!v->views || v->num_views != 2)
+      return false;
+   l = &v->views[0];
+   r = &v->views[1];
+   if (l->eye == RETRO_VIDEO_VIEW_EYE_RIGHT)
+   {
+      const struct retro_video_view *t = l;
+      l = r;
+      r = t;
+   }
+   if (l->eye != RETRO_VIDEO_VIEW_EYE_LEFT)
+      return false;
+   if (r->eye != RETRO_VIDEO_VIEW_EYE_RIGHT)
+      return false;
+   if (l->screen || r->screen || l->x || l->y || r->y)
+      return false;
+   if (!l->width || l->width != r->width)
+      return false;
+   if (!l->height || l->height != r->height)
+      return false;
+   if (r->x != l->width)
+      return false;
+   return true;
+}
+
+bool video_driver_set_video_views(struct retro_video_views *views)
+{
+   video_vr_content_info_t info;
+
+   if (!views || !views->num_views)
+      return video_driver_set_vr_content_info(NULL);
+   if (!video_views_is_sbs(views))
+   {
+      RARCH_ERR("[XR] Unsupported view map (%u views).\n",
+            views->num_views);
+      return false;
+   }
+
+   memset(&info, 0, sizeof(info));
+   info.stereo_native   = true;
+   info.request_flat    =
+      (views->flags & RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT) != 0;
+   info.ipd_hint_m      = views->ipd_hint_m;
+   info.reference_space = views->reference_space;
+
+   if (!video_driver_set_vr_content_info(&info))
+      return false;
+
+   views->recommended_view_width  = info.recommended_eye_width;
+   views->recommended_view_height = info.recommended_eye_height;
+   return true;
+}
+
+bool video_driver_get_video_views_status(unsigned *flags)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+
+   *flags = 0;
+   if (     video_st->current_video
+         && video_st->current_video->get_video_views_status)
+      *flags = video_st->current_video->get_video_views_status(
+            video_st->data);
+   return true;
+}
 static bool vr_saved_valid;
 #endif
 
@@ -6144,7 +6218,7 @@ void video_driver_vr_driver_changed(void)
    vr_ctx_id = 0;                       /* drop cached GL/VK id */
    if (vr_saved_valid)
    {
-      struct retro_vr_content_info i = vr_saved_info;
+      video_vr_content_info_t i = vr_saved_info;
       video_driver_set_vr_content_info(&i);
    }
 }
@@ -8728,7 +8802,7 @@ bool video_driver_vr_sample_tracking(void)
    return ok;
 }
 
-bool video_driver_set_vr_content_info(struct retro_vr_content_info *info)
+static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned w = 0, h = 0;
@@ -8739,12 +8813,6 @@ bool video_driver_set_vr_content_info(struct retro_vr_content_info *info)
    if (!video_st->current_video || !video_st->current_video->set_vr_content_info)
    {
       RARCH_ERR("[XR] set_vr_content_info unavailable\n");
-      return false;
-   }
-
-   if (info && info->layout != RETRO_VR_LAYOUT_SIDE_BY_SIDE)
-   {
-      RARCH_ERR("[XR] Unsupported VR layout %d.\n", (int)info->layout);
       return false;
    }
 

@@ -4439,17 +4439,23 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          }
          break;
 #ifdef HAVE_OPENXR
-      case RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO:
+      case RETRO_ENVIRONMENT_SET_VIDEO_VIEWS:
          {
-            struct retro_vr_content_info *vr_info =
-               (struct retro_vr_content_info*)data;
-            bool session_active = video_driver_set_vr_content_info(vr_info);
+            struct retro_video_views *views =
+               (struct retro_video_views*)data;
+            bool session_active = video_driver_set_video_views(views);
 
-            runloop_st->core_vr_content = session_active && vr_info;
-            RARCH_LOG("[Environ] SET_VR_CONTENT_INFO: %s.\n",
-                  session_active ? "VR session active" : "unavailable");
+            runloop_st->core_vr_content = session_active
+                  && views && views->num_views;
+            RARCH_LOG("[Environ] SET_VIDEO_VIEWS: %s.\n",
+                  session_active ? "accepted" : "unavailable");
             return session_active;
          }
+
+      case RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS:
+         if (!data)
+            return false;
+         return video_driver_get_video_views_status((unsigned*)data);
 
       case RETRO_ENVIRONMENT_GET_VR_HEAD_POSE:
          if (!data || !runloop_st->core_vr_content)

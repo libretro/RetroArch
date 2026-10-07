@@ -2918,65 +2918,6 @@ enum retro_mod
  */
 #define RETRO_ENVIRONMENT_GET_AUDIO_SAMPLE_BATCH_MULTI (94 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
-/**
- * Notifies the frontend that this core can render stereoscopic VR content
- * and describes what it needs from the frontend to do so.
- *
- * Should be called from retro_load_game(), after RETRO_ENVIRONMENT_SET_HW_RENDER
- * if hardware rendering is used. VR content requires hardware rendering in
- * practice, since the frontend provides a hardware framebuffer containing
- * both eye images.
- *
- * A core that supports both a flat and a VR presentation of the same
- * content should call this unconditionally and let the frontend's return
- * value decide: returning false means no VR session is available (headset
- * build not active, or the platform does not support VR), in which case
- * the core continues exactly as if the call had never been made.
- *
- * When VR is requested successfully, the core must report its VR framebuffer
- * geometry through retro_get_system_av_info(): the base and maximum geometry
- * must both be 2W by H, where W and H are the dimensions of one eye.
- *
- * The frontend uses this geometry when allocating the hardware framebuffer;
- * recommended_eye_width and recommended_eye_height do not determine the
- * framebuffer allocation.
- *
- * If RETRO_VR_FRAME_TARGET_RESIZED is subsequently reported, the eye target
- * dimensions have changed. The core must call this environment command again
- * and update its system AV info so that the base and maximum geometry are
- * again 2W by H. Otherwise the new stereo framebuffer may exceed the
- * currently allocated maximum geometry.
- *
- * The frontend samples the eye poses and field of view once per frame and
- * passes that same sample to the core through
- * RETRO_ENVIRONMENT_GET_VR_FRAME_STATE. When submitting the compositor
- * layer for that frame, the frontend must use the same eye poses and FOV
- * that were supplied to the core. This keeps the compositor submission
- * synchronized with the sample used to render the eye images and avoids
- * reprojection errors caused by using a different pose sample.
- *
- * @param[in,out] data <tt>struct retro_vr_content_info *</tt>.
- * If non-NULL, requests VR presentation using the supplied content
- * information. If NULL, disables the current VR presentation.
- *
- * @returns true if the requested operation was accepted and successfully
- * applied, false if VR is unavailable or the request cannot be satisfied.
- *
- * @see retro_vr_content_info
- * @see RETRO_ENVIRONMENT_GET_VR_FRAME_STATE
- */
-#define RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
-
-enum retro_vr_layout {
-   /* Core renders both eyes into the frontend framebuffer (the one from
-    * retro_hw_render_callback::get_current_framebuffer), left eye in
-    * x=[0,W), right eye in x=[W,2W), and calls retro_video_refresh_t ONCE per
-    * retro_run() with RETRO_HW_FRAME_BUFFER_VALID, width=2W, height=H.
-    * Origin follows hw_render.bottom_left_origin. Alpha is ignored. */
-   RETRO_VR_LAYOUT_SIDE_BY_SIDE = 0,
-   RETRO_VR_LAYOUT_DUMMY = INT_MAX
-};
-
 enum retro_vr_reference_space {
    RETRO_VR_REFERENCE_SPACE_LOCAL = 0,  /* seated: origin = head at session start/recenter */
    RETRO_VR_REFERENCE_SPACE_STAGE = 1,  /* standing: origin = floor */
@@ -2984,54 +2925,151 @@ enum retro_vr_reference_space {
 };
 
 /**
- * Details a core provides when requesting a VR session via
- * RETRO_ENVIRONMENT_SET_VR_CONTENT_INFO.
+ * Describes how the frame the core passes to \c retro_video_refresh_t
+ * divides into views: the screens of a multi-screen system and the eyes
+ * of a stereo image.
+ *
+ * The core keeps drawing every view into its one frame, packed however it
+ * likes, and this call says where each view is. A frontend that presents
+ * views lays them out, shades and composes them itself. Any other frontend
+ * shows the packed frame as it is, so the core needs no second code path.
+ *
+ * Rules:
+ *  - Call from \c retro_load_game() or \c retro_run(). The map applies from
+ *    the next \c retro_video_refresh_t call and the frontend copies it.
+ *    Cores should send it every \c retro_run(): an unchanged map costs a
+ *    comparison, and resending covers state loads and run-ahead.
+ *  - Rectangles are pixels in the frame of each refresh call (for a
+ *    hardware frame, the \c width and \c height passed to the refresh
+ *    call), measured from the top-left of the image as displayed. A GL core
+ *    rendering bottom-up still measures \c y from the top. Width and height
+ *    are non-zero. Rectangles may overlap. A frame that some rectangle does
+ *    not fit inside is shown as the packed frame; the map applies again to
+ *    the next frame they all fit.
+ *  - \c num_views is 1 to \c RETRO_VIDEO_VIEWS_MAX, or 0 to clear the map,
+ *    in which case \c views may be NULL.
+ *    Screens number from 0 with no gaps; screen 0 is the primary. Each
+ *    screen has one \c RETRO_VIDEO_VIEW_EYE_NONE view, or one
+ *    \c RETRO_VIDEO_VIEW_EYE_LEFT and one \c RETRO_VIDEO_VIEW_EYE_RIGHT view
+ *    of equal width and height.
+ *  - \c aspect_ratio is the view's display aspect ratio. At or below zero
+ *    means \c width / \c height. Above zero it must be from 0.01 to 100,
+ *    or the map is invalid.
+ *  - \c retro_game_geometry keeps describing the whole packed frame.
+ *    \c RETRO_ENVIRONMENT_SET_ROTATION rotates each view on its own.
+ *  - Touch and light gun coordinates stay in packed-frame terms. A touch
+ *    on any copy of a screen is reported inside that screen's
+ *    \c RETRO_VIDEO_VIEW_EYE_NONE or \c RETRO_VIDEO_VIEW_EYE_LEFT view, at
+ *    the same fraction of its width and height as the touch is across the
+ *    screen as displayed. Rotation is not undone: x follows the display's
+ *    horizontal axis, as it does for a frame without views, so a core that
+ *    sets a rotation turns the point itself.
+ *  - The frontend clears the map when content unloads.
+ *
+ * @param[in] data <tt>const struct retro_video_views *</tt>.
+ * @return \c true if the map was accepted. \c false for an invalid map,
+ * which leaves the previous map in effect, or from a frontend that does
+ * not know this call. Either way the core keeps sending the packed frame.
+ * @see retro_video_views
+ * @see RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS
  */
-struct retro_vr_content_info
-{
-   /**
-    * true if the core renders both eyes natively into the VR
-    * framebuffer using the layout specified by layout
-    *
-    * false if the core renders mono content and the frontend
-    * derives the stereo presentation.
-    */
-   bool stereo_native;
+#define RETRO_ENVIRONMENT_SET_VIDEO_VIEWS (95 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
-   /**
-    * A core has requested a flat presentation of its content, even if it
-    * is capable of producing VR output.
-    */
-   bool request_flat;
+/**
+ * Asks whether the frontend presents views, and whether it shows both eyes.
+ *
+ * The answer can change at any time (the user's stereo mode, HDR output,
+ * the video driver), so a core asks every \c retro_run(), before it draws.
+ *  - With \c RETRO_VIDEO_VIEWS_STATUS_PRESENTS, the core may pack its frame
+ *    for views and send the map with \c RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ *    before the \c retro_video_refresh_t call of the frame it describes.
+ *  - Without it, a core with layouts of its own uses them, and clears any
+ *    map it sent by sending one with \c num_views 0.
+ *  - With \c RETRO_VIDEO_VIEWS_STATUS_STEREO, a core with stereo content
+ *    sends left/right pairs. A screen with no 3D content may still be one
+ *    \c RETRO_VIDEO_VIEW_EYE_NONE view, which appears the same in both eyes.
+ *  - Without it, the core sends one \c RETRO_VIDEO_VIEW_EYE_NONE view per
+ *    screen and can skip rendering the second eye. A left/right pair sent
+ *    anyway is shown as its left eye where views are presented, and within
+ *    the packed frame elsewhere.
+ *
+ * @param[out] data <tt>unsigned *</tt>. Set to a combination of the
+ * \c RETRO_VIDEO_VIEWS_STATUS_ flags.
+ * @return \c true if the call is recognised. A frontend that does not know
+ * it returns \c false, which means no flags.
+ * @see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ */
+#define RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS (96 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+
+/* Flags of RETRO_ENVIRONMENT_GET_VIDEO_VIEWS_STATUS. PRESENTS: the frontend
+ * would lay out a valid map sent now, whether or not one is set. STEREO:
+ * both eyes are shown; only set together with PRESENTS. */
+#define RETRO_VIDEO_VIEWS_STATUS_PRESENTS (1 << 0)
+#define RETRO_VIDEO_VIEWS_STATUS_STEREO   (1 << 1)
+/** An active headset session is presenting; eye-tagged views render on it. */
+#define RETRO_VIDEO_VIEWS_STATUS_HMD      (1 << 2)
+
+/* The eye a view shows; see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS. */
+#define RETRO_VIDEO_VIEW_EYE_NONE  0
+#define RETRO_VIDEO_VIEW_EYE_LEFT  1
+#define RETRO_VIDEO_VIEW_EYE_RIGHT 2
+
+/* The most views one map may hold. */
+#define RETRO_VIDEO_VIEWS_MAX      8
+/** The core asks for a flat presentation even on a headset. */
+#define RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT (1 << 0)
+
+/**
+ * One view of the frame.
+ * @see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS
+ */
+struct retro_video_view
+{
+   /** The view's rectangle in the frame, from the top-left as displayed. */
+   unsigned x;
+   unsigned y;
+   unsigned width;
+   unsigned height;
+   /** Screen number, from 0. */
+   unsigned screen;
+   /** One of the \c RETRO_VIDEO_VIEW_EYE_ values. */
+   unsigned eye;
+   /** Display aspect ratio; at or below zero means \c width / \c height. */
+   float aspect_ratio;
+};
+
+/**
+ * The argument of \c RETRO_ENVIRONMENT_SET_VIDEO_VIEWS.
+ */
+struct retro_video_views
+{
+   const struct retro_video_view *views;
+   unsigned num_views;
+
+   /** RETRO_VIDEO_VIEWS_FLAG_ values. */
+   unsigned flags;
+
+   /** Headset reference space for eye-tagged views. */
+   enum retro_vr_reference_space reference_space;
 
    /**
     * Requested interpupillary distance in meters, used only if the
     * frontend cannot obtain one from the runtime/HMD itself.
-    *
     * 0.0f means "use whatever the frontend/runtime already knows".
     */
    float ipd_hint_m;
 
-   enum retro_vr_layout layout;
-   enum retro_vr_reference_space reference_space;
-
    /**
-    * Output: recommended width of one eye's render target.
-    *
-    * The core must not use this value to determine its system AV geometry.
-    * The VR framebuffer geometry is reported separately through
-    * retro_get_system_av_info() as 2W x H.
+    * Output: recommended size of one eye-tagged view's render target.
+    * The core must not use these to determine its system AV geometry;
+    * the frame geometry stays retro_get_system_av_info()'s.
     */
-   unsigned recommended_eye_width;
-
-   /**
-    * Output: recommended height of one eye's render target.
-    */
-   unsigned recommended_eye_height;
+   unsigned recommended_view_width;
+   unsigned recommended_view_height;
 };
 
 #define RETRO_VR_FRAME_RECENTERED     (1u << 0)  /* user recentered: re-capture any reference */
-#define RETRO_VR_FRAME_TARGET_RESIZED (1u << 1)  /* eye size changed: call SET_VR_CONTENT_INFO again */
+#define RETRO_VR_FRAME_TARGET_RESIZED (1u << 1)  /* eye size changed: call SET_VIDEO_VIEWS again */
 
 /**
  * Retrieves the per-eye state plus per-frame event flags
@@ -3050,7 +3088,7 @@ struct retro_vr_content_info
  * @param[out] data <tt>struct retro_vr_frame_state *</tt>.
  * @return false if no VR session exists or no valid sample is available.
  */
-#define RETRO_ENVIRONMENT_GET_VR_FRAME_STATE (96 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_VR_FRAME_STATE (97 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 
 /**
@@ -3138,7 +3176,7 @@ struct retro_vr_frame_state {
  * retro_run(), and returns the same sample for the duration of that
  * retro_run() call.
  */
-#define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (97 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (98 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
 #define RETRO_VR_HEAD_POSE_POSITION_VALID    (1u << 0)
 #define RETRO_VR_HEAD_POSE_ORIENTATION_VALID (1u << 1)

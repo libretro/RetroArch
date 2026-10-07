@@ -10275,8 +10275,21 @@ static bool vulkan_frame(void *data, const void *frame,
 }
 
 #ifdef HAVE_OPENXR
+static unsigned vulkan_get_video_views_status(void *data)
+{
+   vk_t *vk = (vk_t*)data;
+
+   if (!vk || !vk->ctx_driver)
+      return 0;
+   if (!string_is_equal(vk->ctx_driver->ident, "android_vk_openxr"))
+      return 0;
+   if (!android_vk_openxr_is_session_ready())
+      return 0;
+   return RETRO_VIDEO_VIEWS_STATUS_HMD | RETRO_VIDEO_VIEWS_STATUS_STEREO;
+}
+
 static bool vulkan_set_vr_content_info(void *data,
-      const struct retro_vr_content_info *info)
+      const video_vr_content_info_t *info)
 {
    vk_t *vk = (vk_t*)data;
 
@@ -10304,7 +10317,7 @@ static bool vulkan_set_vr_content_info(void *data,
 
    if (!info->stereo_native)
    {
-      RARCH_WARN("[Vulkan] SET_VR_CONTENT_INFO: mono reprojection requested, "
+      RARCH_WARN("[Vulkan] SET_VIDEO_VIEWS: mono reprojection requested, "
             "not supported by android_vk_openxr.\n");
       return false;
    }
@@ -12541,6 +12554,7 @@ video_driver_t video_vulkan = {
 #ifdef HAVE_OPENXR
    vulkan_get_vr_frame_state,
    vulkan_set_vr_content_info,
+   vulkan_get_video_views_status,
 #endif
 };
 

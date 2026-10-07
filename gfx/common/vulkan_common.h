@@ -134,7 +134,7 @@ enum vk_flags
    VK_FLAG_TEXTURE_FOR_LEND     = (1 << 21),
    /* frontend uses openxr */
    VK_FLAG_OPEN_XR              = (1 << 22),
-   /* core opted into VR via SET_VR_CONTENT_INFO */
+   /* core opted into VR via SET_VIDEO_VIEWS */
    VK_FLAG_XR_STEREO            = (1 << 23)
 };
 
