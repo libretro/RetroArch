@@ -160,6 +160,9 @@ typedef struct gt_post_node
 } gt_post_node_t;
 static gt_post_node_t *gt_post_head, *gt_post_tail;
 
+/* The stub video thread lends nothing: no records to ask about */
+bool video_thread_lend_ready(int idx) { (void)idx; return true; }
+
 bool video_thread_async_post(void *node)
 {
    gt_post_node_t *n = (gt_post_node_t*)node;

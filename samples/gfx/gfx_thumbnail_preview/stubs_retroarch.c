@@ -222,6 +222,7 @@ void sthread_join(sthread_t *t) { (void)t; }
  * video thread, so the surface takes its direct path. */
 bool video_driver_thread_wrapper_active(void) { return false; }
 bool video_thread_async_post(void *n) { (void)n; return false; }
+bool video_thread_lend_ready(int idx) { (void)idx; return true; }
 #endif
 
 bool path_is_directory(const char *p)

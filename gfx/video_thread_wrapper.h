@@ -227,6 +227,13 @@ typedef struct video_thread_async_load
     * count on getting it back. Nodes the wrapper allocates itself
     * (video_thread_texture_load_async) have this clear. */
    uint8_t caller_owned;
+   /* UPDATE: driver slots of the texture's upload memory to lend once
+    * the update has gone, a bit each. What was lent comes back with the
+    * node: lent_mem the memory, lent_idx the wrapper's record of it for
+    * video_thread_lend_ready() (-1: not lent). */
+   uint8_t lend;
+   int8_t  lent_idx[2];
+   void   *lent_mem[2];
 } video_thread_async_load_t;
 
 /* Deep enough for the burst an overlay issues between two frames - one
@@ -237,6 +244,10 @@ typedef struct video_thread_async_load
  * lie, so none of it reaches a stack frame. A power of two: the index
  * wraps with a mask. */
 #define VIDEO_THREAD_DEFERRED_MAX 128
+
+/* Texture slots lent at once under the wrapper: two a streamed
+ * surface, for the previews and overlays on screen together. */
+#define VIDEO_THREAD_LEND_MAX 16
 
 /* The main thread's cost of handing a frame to the video thread,
  * counted in CPU cycles in video_thread_frame() while the statistics
@@ -376,6 +387,21 @@ typedef struct thread_video
       mpsc_stack_t in;                                 /* to upload */
       mpsc_stack_t out;                                /* to deliver */
    } async;
+   /* Upload memory the driver lent under the wrapper, one record per
+    * texture slot. The video thread owns every field but busy, which
+    * it sets when an update leaves the GPU reading the slot and clears
+    * once the driver says the read is done; the main thread reads busy
+    * alone, by the index the lend came back with. */
+   struct
+   {
+      void *mem;
+      uintptr_t id;
+      retro_atomic_int_t busy;
+      unsigned slot;
+      bool used;
+   } lend[VIDEO_THREAD_LEND_MAX];
+   unsigned lend_busy;      /* records busy, the video thread's count */
+   bool lend_used;          /* anything was ever lent: the video thread's */
    /* Presenter state, all owned by the video thread. present_period
     * is one display period in usec, taken from the refresh rate of the
     * last frame rendered; next_present is when a repeat of it falls
@@ -960,6 +986,11 @@ bool video_thread_texture_load_async(void *img,
  * video thread; the caller then runs the operation synchronously.
  * Main thread only. */
 bool video_thread_async_post(video_thread_async_load_t *n);
+
+/* Whether lent upload memory a node came back with (lent_idx) may be
+ * written: false while the GPU may still read the last update from
+ * it. Never waits. Main thread. */
+bool video_thread_lend_ready(int idx);
 
 /* Whether the wrapped driver updates textures in place; false while
  * no wrapper is up. video_driver_texture_can_update() asks this so a

@@ -83,6 +83,9 @@ bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
    return true;
 }
 
+/* Nothing is lent here: the wrapper's records never exist */
+bool video_thread_lend_ready(int idx) { (void)idx; return true; }
+
 bool video_thread_async_post(video_thread_async_load_t *n)
 {
    if (!st_async)

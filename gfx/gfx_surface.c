@@ -244,9 +244,22 @@ static void gfx_surface_unlend(gfx_surface_t *s)
       return;
    for (i = 0; i < s->num_slots; i++)
       s->slots[i] = s->own_slots[i];
-   s->lent_spare = NULL;
-   s->lent       = 0;
-   s->lent_cur   = 0;
+   s->lent_spare  = NULL;
+   s->lent        = 0;
+   s->lent_cur    = 0;
+   s->lend_rec[0] = 0;
+   s->lend_rec[1] = 0;
+}
+
+/* Whether lent driver slot @dslot may be written: the wrapper's record
+ * says under threaded video, the driver under direct */
+static bool gfx_surface_lend_ready(const gfx_surface_t *s, unsigned dslot)
+{
+#ifdef HAVE_THREADS
+   if (s->lend_rec[dslot])
+      return video_thread_lend_ready((int)s->lend_rec[dslot] - 1);
+#endif
+   return video_driver_texture_lend_ready(s->handle, dslot);
 }
 
 /* After a direct submit of @slot: the texture streams, so the next
@@ -332,6 +345,34 @@ static enum gfx_surface_submit_result gfx_surface_upload_sync(
 }
 
 #ifdef HAVE_THREADS
+/* Main thread: what the video thread lent after the update of @slot,
+ * taken as gfx_surface_lend takes a direct lend - the same-numbered
+ * driver slot for a surface of two, both for a surface of one */
+static void gfx_surface_lend_adopt(gfx_surface_t *s, unsigned slot)
+{
+   const video_thread_async_load_t *n = &s->node;
+   if (s->num_slots >= 2)
+   {
+      if (slot < 2 && n->lent_mem[slot] && n->lent_idx[slot] >= 0)
+      {
+         s->slots[slot]       = (uint32_t*)n->lent_mem[slot];
+         s->lent             |= (uint8_t)(1u << slot);
+         s->lend_rec[slot]    = (uint8_t)(n->lent_idx[slot] + 1);
+      }
+      return;
+   }
+   if (     n->lent_mem[0] && n->lent_mem[1]
+         && n->lent_idx[0] >= 0 && n->lent_idx[1] >= 0)
+   {
+      s->slots[0]    = (uint32_t*)n->lent_mem[0];
+      s->lent_spare  = (uint32_t*)n->lent_mem[1];
+      s->lent        = 3;
+      s->lent_cur    = 0;
+      s->lend_rec[0] = (uint8_t)(n->lent_idx[0] + 1);
+      s->lend_rec[1] = (uint8_t)(n->lent_idx[1] + 1);
+   }
+}
+
 /* Main thread, from video_thread_async_poll(): the video thread is
  * done with the slot. A load brought a texture (0: nothing, the
  * previous one stays and the format is forgotten so the next submit
@@ -351,6 +392,15 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    {
       if (handle)
       {
+         /* The new texture has read the frame, wherever it lay; the
+          * memory lent from the old one goes with it - once nothing
+          * writes it (see gfx_surface_upload_sync) */
+         if (s->lent && s->writing && s->handle)
+         {
+            s->retired_handle = s->handle;
+            s->handle         = 0;
+         }
+         gfx_surface_unlend(s);
          if (s->handle)
             video_driver_texture_unload(&s->handle);
          s->handle = handle;
@@ -360,6 +410,8 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    }
    else if (!handle)
       s->can_update = 0;
+   else if (s->node.lend && !s->node.dropped)
+      gfx_surface_lend_adopt(s, slot);
    else if (s->node.dropped)
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
@@ -423,8 +475,27 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
    {
       bool need_load = !s->handle || s->fmt != fmt || !s->can_update;
 
+      /* A second replacement while a producer still writes memory
+       * lent from the first replaced texture is refused, as it is
+       * under direct video */
+      if (need_load && s->lent && s->writing && s->retired_handle)
+         return GFX_SURFACE_SUBMIT_FAILED;
       s->node.kind    = need_load
             ? VIDEO_THREAD_ASYNC_LOAD : VIDEO_THREAD_ASYNC_UPDATE;
+      /* An update of a streaming texture asks for its upload memory:
+       * the same-numbered driver slot for a surface of two, both for a
+       * surface of one, until they are lent */
+      s->node.lend        = 0;
+      s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
+      s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
+      if (!need_load && s->num_slots)
+      {
+         if (s->num_slots >= 2)
+            s->node.lend = (slot < 2 && !(s->lent & (1u << slot)))
+               ? (uint8_t)(1u << slot) : 0;
+         else if (!s->lent)
+            s->node.lend = 3;
+      }
       s->node.img     = &s->img;
       s->node.handle  = s->handle;
       s->node.filter  = s->filter;
@@ -924,10 +995,10 @@ bool gfx_surface_slot_writable(gfx_surface_t *s, unsigned slot)
    if (!s || slot >= s->num_slots || !(s->lent & (1u << slot)))
       return true;
    if (s->num_slots >= 2)
-      return video_driver_texture_lend_ready(s->handle, slot);
-   if (video_driver_texture_lend_ready(s->handle, s->lent_cur))
+      return gfx_surface_lend_ready(s, slot);
+   if (gfx_surface_lend_ready(s, s->lent_cur))
       return true;
-   if (!video_driver_texture_lend_ready(s->handle, s->lent_cur ^ 1u))
+   if (!gfx_surface_lend_ready(s, s->lent_cur ^ 1u))
       return false;
    /* The other borrowed buffer is free: write that one next. */
    other         = s->lent_spare;

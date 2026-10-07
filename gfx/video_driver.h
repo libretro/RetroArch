@@ -1025,9 +1025,11 @@ typedef struct video_poke_interface
 
    /* Lending a streamed texture's upload memory, so a producer writes
     * a frame where update_texture copies it to the GPU from and the
-    * copy into it goes away. Direct video only: the thread wrapper
-    * leaves both NULL, since the lent memory's readiness is the
-    * video thread's to know.
+    * copy into it goes away. Called on the driver's own thread: under
+    * the thread wrapper the video thread lends after an update node
+    * that asks (video_thread_async_load_t.lend) and answers readiness
+    * itself (video_thread_lend_ready), so the wrapper's poke leaves
+    * both NULL.
     *
     * texture_lend hands out slot @slot of texture @id's upload memory,
     * mapped and writable, when its rows lie the @pitch bytes apart the
@@ -1957,8 +1959,8 @@ enum video_texture_update video_driver_texture_update(uintptr_t id,
 bool video_driver_texture_can_update(void);
 
 /* texture_lend / texture_lend_ready of the active driver; NULL and
- * true under the thread wrapper or with a driver that lends nothing,
- * where no slot is ever lent. Main thread. */
+ * true under the thread wrapper, whose lends come back with an update
+ * node, or with a driver that lends nothing. Main thread. */
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);

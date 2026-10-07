@@ -433,6 +433,7 @@ static bool video_thread_handle_packet(thread_video_t *thr,
 typedef struct video_thread_tex_retire video_thread_tex_retire_t;
 static void video_thread_tex_retire_run(thread_video_t *thr,
       video_thread_tex_retire_t *list);
+static void video_thread_lend_forget(thread_video_t *thr, uintptr_t id);
 
 /* Queues a command the caller wants nothing back from, for the video
  * thread to run on its next pass. False when it could not be queued -
@@ -759,6 +760,8 @@ static bool video_thread_handle_packet(
                n = next;
             }
          }
+         /* The lent memory goes with the driver */
+         video_thread_lend_forget(thr, 0);
          /* The hardware ring's fences belong to the device. */
          video_thread_hw_free(thr);
          if (thr->driver_data && thr->driver && thr->driver->free)
@@ -1354,6 +1357,105 @@ static void video_thread_schedule_next(thread_video_t *thr)
    }
 }
 
+/* Video thread: the record of slot @slot of texture @id lent, or -1 */
+static int video_thread_lend_find(const thread_video_t *thr, uintptr_t id,
+      const void *mem)
+{
+   int i;
+   for (i = 0; i < VIDEO_THREAD_LEND_MAX; i++)
+      if (     thr->lend[i].used && thr->lend[i].id == id
+            && thr->lend[i].mem == mem)
+         return i;
+   return -1;
+}
+
+/* Video thread: an update from lent memory has left the GPU reading it */
+static void video_thread_lend_mark(thread_video_t *thr, uintptr_t id,
+      const void *pixels)
+{
+   int i = video_thread_lend_find(thr, id, pixels);
+   if (i < 0 || retro_atomic_load_relaxed_int(&thr->lend[i].busy))
+      return;
+   retro_atomic_store_release_int(&thr->lend[i].busy, 1);
+   thr->lend_busy++;
+}
+
+/* Video thread: lend the slots an update asked for, now that the
+ * texture streams. The pitch is the image's rows, as the producer
+ * writes them. */
+static void video_thread_lend_slots(thread_video_t *thr,
+      video_thread_async_load_t *n, const struct texture_image *img)
+{
+   size_t pitch = (size_t)img->width * (img->fp16 ? 8 : 4);
+   unsigned slot;
+   for (slot = 0; slot < 2; slot++)
+   {
+      int i;
+      void *mem;
+      if (!(n->lend & (1u << slot)))
+         continue;
+      /* Asked again, as for a surface that took none of a partial
+       * lend: the record there is */
+      for (i = 0; i < VIDEO_THREAD_LEND_MAX; i++)
+         if (     thr->lend[i].used && thr->lend[i].id == n->handle
+               && thr->lend[i].slot == slot)
+            break;
+      if (i < VIDEO_THREAD_LEND_MAX)
+      {
+         n->lent_mem[slot] = thr->lend[i].mem;
+         n->lent_idx[slot] = (int8_t)i;
+         continue;
+      }
+      for (i = 0; i < VIDEO_THREAD_LEND_MAX && thr->lend[i].used; i++) ;
+      if (     i == VIDEO_THREAD_LEND_MAX
+            || !(mem = thr->poke->texture_lend(thr->driver_data,
+                  n->handle, slot, pitch)))
+         continue;
+      thr->lend[i].mem  = mem;
+      thr->lend[i].id   = n->handle;
+      thr->lend[i].slot = slot;
+      thr->lend[i].used = true;
+      retro_atomic_store_relaxed_int(&thr->lend[i].busy, 0);
+      n->lent_mem[slot] = mem;
+      n->lent_idx[slot] = (int8_t)i;
+   }
+}
+
+/* Video thread: lent slots whose last update the GPU has finished
+ * reading may be written again. Only while some are busy. */
+static void video_thread_lend_poll(thread_video_t *thr)
+{
+   int i;
+   for (i = 0; i < VIDEO_THREAD_LEND_MAX; i++)
+      if (     thr->lend[i].used
+            && retro_atomic_load_relaxed_int(&thr->lend[i].busy)
+            && (     !thr->poke || !thr->poke->texture_lend_ready
+                  || !thr->driver_data
+                  || thr->poke->texture_lend_ready(thr->driver_data,
+                     thr->lend[i].id, thr->lend[i].slot)))
+      {
+         retro_atomic_store_release_int(&thr->lend[i].busy, 0);
+         thr->lend_busy--;
+      }
+}
+
+/* Video thread: the texture @id is going, and its lent memory with it;
+ * 0 forgets every record (the driver is going) */
+static void video_thread_lend_forget(thread_video_t *thr, uintptr_t id)
+{
+   int i;
+   for (i = 0; i < VIDEO_THREAD_LEND_MAX; i++)
+      if (thr->lend[i].used && (!id || thr->lend[i].id == id))
+      {
+         if (retro_atomic_load_relaxed_int(&thr->lend[i].busy))
+            thr->lend_busy--;
+         retro_atomic_store_release_int(&thr->lend[i].busy, 0);
+         thr->lend[i].used = false;
+         thr->lend[i].mem  = NULL;
+         thr->lend[i].id   = 0;
+      }
+}
+
 /* Video thread: take the whole in list, upload each
  * node with the driver directly (this is the driver's thread), release
  * the image, and queue the handle for the main thread. */
@@ -1381,10 +1483,22 @@ static void video_thread_async_run(thread_video_t *thr)
           * result so done() sees the same value on success, 0 when
           * the driver refused to update it in place. */
          enum video_texture_update r = VIDEO_TEXTURE_UPDATE_REFUSED;
+         const struct texture_image *img =
+               (const struct texture_image*)n->img;
          if (driver_data && poke && poke->update_texture)
-            r = poke->update_texture(driver_data, n->handle,
-                  (const struct texture_image*)n->img, false);
+            r = poke->update_texture(driver_data, n->handle, img, false);
          n->dropped = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
+         if (r == VIDEO_TEXTURE_UPDATE_DONE)
+         {
+            /* An update from lent memory leaves the GPU reading it */
+            if (thr->lend_used)
+               video_thread_lend_mark(thr, n->handle, img->pixels);
+            if (n->lend && poke->texture_lend)
+            {
+               video_thread_lend_slots(thr, n, img);
+               thr->lend_used = true;
+            }
+         }
          if (r == VIDEO_TEXTURE_UPDATE_REFUSED)
          {
             GFX_INSTR_INC(GFX_INSTR_TEX_UPDATE_REFUSED);
@@ -1536,6 +1650,17 @@ bool video_thread_async_post(video_thread_async_load_t *n)
    video_thread_async_push(thr, &thr->async.in, n);
    retro_eventcount_notify(&thr->work);
    return true;
+}
+
+bool video_thread_lend_ready(int idx)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   if (     idx < 0 || idx >= VIDEO_THREAD_LEND_MAX
+         || !video_st->thread_wrapper_active
+         || !(thr = (thread_video_t*)video_st->data))
+      return true;
+   return !retro_atomic_load_acquire_int(&thr->lend[idx].busy);
 }
 
 bool video_thread_texture_can_update(void)
@@ -1934,6 +2059,8 @@ static void video_thread_tex_retire_run(thread_video_t *thr,
    {
       video_thread_tex_retire_t *next =
          (video_thread_tex_retire_t*)list->node.next;
+      if (thr->lend_used)
+         video_thread_lend_forget(thr, list->id);
       if (thr->poke && thr->poke->unload_texture && thr->driver_data)
          thr->poke->unload_texture(thr->driver_data, false, list->id);
       free(list);
@@ -2137,6 +2264,8 @@ static void video_thread_loop(void *data)
       }
 
       video_thread_async_run(thr);
+      if (thr->lend_busy)
+         video_thread_lend_poll(thr);
 
       if (claimed)
       {
@@ -4311,6 +4440,8 @@ static void thread_unload_texture(void *data,
                == sthread_get_current_thread_id()
             || !(node = (video_thread_tex_retire_t*)malloc(sizeof(*node))))
       {
+         if (thr->lend_used)
+            video_thread_lend_forget(thr, id);
          thr->poke->unload_texture(thr->driver_data, threaded, id);
          return;
       }

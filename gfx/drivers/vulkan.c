@@ -10992,8 +10992,8 @@ static uintptr_t vulkan_load_texture_compressed(void *video_data,
    return vulkan_load_texture_compressed_internal(vk, tc, filter_type);
 }
 
-/* Direct video only (see texture_lend in video_driver.h): the lent
- * slot's fence is read on the thread that submits its copies. */
+/* On the driver's own thread (see texture_lend in video_driver.h): the
+ * lent slot's fence is read on the thread that submits its copies. */
 static void *vulkan_texture_lend(void *data, uintptr_t id, unsigned slot,
       size_t pitch)
 {

@@ -104,7 +104,9 @@ struct gfx_surface
    uint32_t *slots[GFX_SURFACE_MAX_SLOTS];
    /* The surface's own slot memory. Under direct video a slot whose
     * texture the driver can stream may instead be lent upload memory
-    * (texture_lend): slots[i] then points there, and own_slots[i] is
+    * (texture_lend; under the thread wrapper the video thread lends it
+    * after an update and the node brings it back): slots[i] then
+    * points there, and own_slots[i] is
     * where it points again once the texture is replaced or freed. A
     * surface of one slot borrows two of the driver's, so it is double
     * buffered as the driver's own copy path is: slots[0] is the one to
@@ -139,6 +141,10 @@ struct gfx_surface
    uint8_t fmt;
    uint8_t lent;       /* driver slots borrowed, a bit each */
    uint8_t lent_cur;   /* one slot: the driver slot slots[0] is */
+   /* Under the thread wrapper, the wrapper's record of each driver
+    * slot lent, plus one (video_thread_lend_ready); 0 under direct
+    * video, where the driver answers itself. */
+   uint8_t lend_rec[2];
    /* Slots a producer is writing on another thread, a bit each
     * (gfx_surface_slot_begin / _end). A texture replaced while one is
     * may still own the memory that producer writes - lent upload

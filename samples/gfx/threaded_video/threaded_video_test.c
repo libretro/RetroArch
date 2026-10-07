@@ -4885,6 +4885,8 @@ static void lane_surface_lend(void)
    gfx_surface_t *s;
    unsigned pass, k, tries;
    bool lent_any = false, lent_single = false, flipped = false;
+   bool lent_threaded = false, lent_threaded_single = false;
+   bool flipped_threaded = false;
 
    if (!real_driver())
    {
@@ -4892,12 +4894,14 @@ static void lane_surface_lend(void)
       return;
    }
 
-   /* Passes: direct and threaded with two slots, then direct with one,
-    * which borrows both driver slots and alternates them itself. */
-   for (pass = 0; pass < 3; pass++)
+   /* Passes: direct and threaded with two slots, then direct and
+    * threaded with one, which borrows both driver slots and alternates
+    * them itself. Under threaded video the video thread lends after an
+    * update and says when the GPU is done reading a slot. */
+   for (pass = 0; pass < 4; pass++)
    {
-      bool threaded   = pass == 1;
-      unsigned nslots = pass == 2 ? 1 : 2;
+      bool threaded   = (pass & 1) != 0;
+      unsigned nslots = pass >= 2 ? 1 : 2;
       uintptr_t first = 0;
       uint32_t *seen  = NULL;
       set_threaded_via_setting(threaded);
@@ -4922,7 +4926,12 @@ static void lane_surface_lend(void)
          if (nslots == 1 && s->lent)
          {
             if (seen && s->slots[0] != seen)
-               flipped = true;
+            {
+               if (threaded)
+                  flipped_threaded = true;
+               else
+                  flipped = true;
+            }
             seen = s->slots[0];
          }
          for (i = 0; i < n; i++)
@@ -4948,11 +4957,12 @@ static void lane_surface_lend(void)
             CHECK(s->handle == first, "surface lend lane: frame %u "
                   "replaced the texture", k);
       }
-      if (threaded)
-         CHECK(s->lent == 0, "threaded video lent a slot");
-      else if (nslots == 1)
+      if (nslots == 1)
       {
-         lent_single = s->lent == 3;
+         if (threaded)
+            lent_threaded_single = s->lent == 3;
+         else
+            lent_single = s->lent == 3;
          if (s->lent)
             CHECK(     s->lent == 3 && s->lent_spare
                     && s->slots[0] != s->own_slots[0],
@@ -4961,8 +4971,11 @@ static void lane_surface_lend(void)
       }
       else
       {
-         lent_any = s->lent != 0;
-         if (lent_any)
+         if (threaded)
+            lent_threaded = s->lent == 3;
+         else
+            lent_any = s->lent != 0;
+         if (s->lent)
             CHECK(     s->slots[0] != s->own_slots[0]
                     && s->slots[1] != s->own_slots[1],
                   "surface lend lane: lent bits without lent slots");
@@ -4980,13 +4993,22 @@ static void lane_surface_lend(void)
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
          CHECK(lent_single, "surface lend lane: %s lent a one-slot "
                "surface nothing", drv);
+         CHECK(lent_threaded, "surface lend lane: %s lent nothing under "
+               "threaded video", drv);
+         CHECK(lent_threaded_single, "surface lend lane: %s lent a "
+               "one-slot surface nothing under threaded video", drv);
       }
    }
    if (failures == had)
-      fprintf(stderr, "[pass] surface lend lane (direct %s, one slot %s, "
-            "threaded none)\n", lent_any ? "lent both slots" : "lent nothing",
+      fprintf(stderr, "[pass] surface lend lane (direct %s, one slot %s; "
+            "threaded %s, one slot %s)\n",
+            lent_any ? "lent both slots" : "lent nothing",
             lent_single ? (flipped ? "double buffered" : "borrowed two")
-                        : "lent nothing");
+                        : "lent nothing",
+            lent_threaded ? "lent both slots" : "lent nothing",
+            lent_threaded_single
+               ? (flipped_threaded ? "double buffered" : "borrowed two")
+               : "lent nothing");
 }
 
 static void lane_surface_update(void)

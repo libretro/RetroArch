@@ -252,7 +252,7 @@ typedef struct
     * nothing was ever copied. An in-place update writes the buffer
     * only past that value. */
    UINT64                             upload_fence;
-   /* Lending (d3d12_texture_lend, direct video only): upload memory a
+   /* Lending (d3d12_texture_lend, on the driver's thread): upload memory a
     * producer writes itself. Slot 0 is upload_buffer, slot 1 a second
     * buffer of the same layout made on its first lend; once lent, each
     * stays mapped and is guarded by the fence of the frame that last
@@ -9607,8 +9607,8 @@ static void d3d12_set_video_mode(void *data, unsigned dims, bool fullscreen)
 }
 #endif
 
-/* Direct video only (see texture_lend in video_driver.h): the queue
- * fence and the draw-time copy are both the caller's thread's. */
+/* On the driver's own thread (see texture_lend in video_driver.h): the
+ * queue fence and the draw-time copy are both the caller's thread's. */
 static void *d3d12_texture_lend(void *data, uintptr_t id, unsigned slot,
       size_t pitch)
 {
