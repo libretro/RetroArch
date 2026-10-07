@@ -616,67 +616,71 @@ static void gl1_raster_font_free(void *data,
    free(font);
 }
 
-/* Convert the atlas rows [y0, y1) to LUMINANCE_ALPHA and upload them.
- * Full-width row bands are used (rather than an x/y sub-rectangle)
- * because GL_UNPACK_ROW_LENGTH is unavailable on some gl1 targets.
- * When 'respecify' is set the texture is (re)created at full size,
- * otherwise the band is updated in place with glTexSubImage2D. */
+/* Converts atlas texels to LUMINANCE_ALPHA, opaque white with the
+ * coverage as alpha inside the atlas and clear past it, and uploads
+ * them: the whole texture, its storage made anew, when @respecify is
+ * set, otherwise the atlas region @xy0..@xy1 in place. The region is
+ * widened to whole groups of four texels, so each row is a multiple of
+ * eight bytes and reads the same under any GL_UNPACK_ALIGNMENT, and is
+ * packed tightly, which OpenGL ES 2 needs for want of
+ * GL_UNPACK_ROW_LENGTH. */
 static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
-      unsigned y0, unsigned y1, bool respecify)
+      unsigned xy0, unsigned xy1, bool respecify)
 {
-   unsigned i, j;
-   unsigned tex_w              = VIDEO_SCALE_W(font->tex_dims);
-   unsigned tex_h              = VIDEO_SCALE_H(font->tex_dims);
+   unsigned x, y, x0, y0, x1, y1, xe;
+   unsigned tex_w     = VIDEO_SCALE_W(font->tex_dims);
+   unsigned tex_h     = VIDEO_SCALE_H(font->tex_dims);
+   unsigned aw        = font->atlas->width;
+   unsigned ah        = font->atlas->height;
    GLint  gl_internal = GL_LUMINANCE_ALPHA;
    GLenum gl_format   = GL_LUMINANCE_ALPHA;
-   size_t ncomponents = 2;
-   unsigned band      = respecify ? tex_h : (y1 - y0);
-   uint8_t *tmp;
-
-   if (!respecify && (y1 <= y0 || y1 > (unsigned)font->atlas->height))
-      return;
-
-   tmp = (uint8_t*)calloc(band, tex_w * ncomponents);
-   if (!tmp)
-      return;
+   uint8_t *tmp, *dst;
 
    if (respecify)
    {
+      x0 = 0;
       y0 = 0;
-      y1 = font->atlas->height;
+      x1 = tex_w;
+      y1 = tex_h;
    }
-
-   switch (ncomponents)
+   else
    {
-      case 1:
-         for (i = y0; i < y1; ++i)
-         {
-            const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[(i - y0) * tex_w * ncomponents];
-
-            memcpy(dst, src, font->atlas->width);
-         }
-         break;
-      case 2:
-         for (i = y0; i < y1; ++i)
-         {
-            const uint8_t *src = &font->atlas->buffer[i * font->atlas->width];
-            uint8_t       *dst = &tmp[(i - y0) * tex_w * ncomponents];
-
-            for (j = 0; j < font->atlas->width; ++j)
-            {
-               *dst++ = 0xff;
-               *dst++ = *src++;
-            }
-         }
-         break;
+      x0 = VIDEO_SCALE_W(xy0);
+      y0 = VIDEO_SCALE_H(xy0);
+      x1 = VIDEO_SCALE_W(xy1);
+      y1 = VIDEO_SCALE_H(xy1);
+      if (x1 <= x0 || y1 <= y0 || x1 > aw || y1 > ah)
+         return;
+      x0 &= ~3u;
+      x1  = (x1 + 3) & ~3u;
+      if (x1 > tex_w)
+         x1 = tex_w;
    }
 
-   /* The temp buffer is a tightly packed POT-sized GL_LUMINANCE_ALPHA
-    * image: each row is exactly tex_w * 2 bytes with no
-    * padding. Force the pixel-unpack state to match that before
-    * uploading. Without this, the upload inherits whatever state the
-    * GL context happens to be in at the time of the first font init.
+   if (!(tmp = (uint8_t*)malloc((size_t)(x1 - x0) * (y1 - y0) * 2)))
+      return;
+
+   dst = tmp;
+   for (y = y0; y < y1; y++)
+   {
+      xe = (y < ah) ? (x1 < aw ? x1 : aw) : x0;
+      if (xe > x0)
+      {
+         const uint8_t *src = font->atlas->buffer + (size_t)y * aw + x0;
+         for (x = x0; x < xe; x++)
+         {
+            *dst++ = 0xff;
+            *dst++ = *src++;
+         }
+      }
+      memset(dst, 0, (size_t)(x1 - xe) * 2);
+      dst += (size_t)(x1 - xe) * 2;
+   }
+
+   /* The temp buffer is a tightly packed GL_LUMINANCE_ALPHA image.
+    * Force the pixel-unpack state to match that before uploading.
+    * Without this, the upload inherits whatever state the GL context
+    * happens to be in at the time of the first font init.
     * In practice on Windows/NVIDIA, GL_UNPACK_ROW_LENGTH can come up
     * non-zero from the WGL/driver setup, which makes glTexImage2D
     * read source rows at the wrong stride. The texture ends up with
@@ -696,8 +700,8 @@ static void gl1_raster_font_upload_atlas(gl1_raster_t *font,
             tex_w, tex_h,
             0, gl_format, GL_UNSIGNED_BYTE, tmp);
    else
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, (GLint)y0,
-            tex_w, band,
+      glTexSubImage2D(GL_TEXTURE_2D, 0, (GLint)x0, (GLint)y0,
+            (GLsizei)(x1 - x0), (GLsizei)(y1 - y0),
             gl_format, GL_UNSIGNED_BYTE, tmp);
 
    free(tmp);
@@ -781,9 +785,8 @@ static void gl1_raster_font_draw_vertices(
    }
    else if (font->atlas->dirty)
    {
-      gl1_raster_font_upload_atlas(font,
-            VIDEO_SCALE_H(font->atlas->dirty_xy0),
-            VIDEO_SCALE_H(font->atlas->dirty_xy1), false);
+      gl1_raster_font_upload_atlas(font, font->atlas->dirty_xy0,
+            font->atlas->dirty_xy1, false);
       font->atlas->dirty   = false;
    }
 
