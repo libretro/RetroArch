@@ -438,26 +438,33 @@ void image_loader_free(image_loader_t *l)
    free(l);
 }
 
-/* The loader run to completion over a whole buffer: the request from
- * the caller's image, whose ->pix10 asks for 10-bit on the way in. */
-static bool image_texture_load_internal(
-      enum image_type_enum type,
-      void *ptr,
-      size_t len,
-      struct texture_image *out_img,
+static void image_texture_clear(struct texture_image *img)
+{
+   img->supports_rgba = false;
+   img->pixels        = NULL;
+   img->width         = 0;
+   img->height        = 0;
+   img->compressed    = NULL;
+   img->pix10         = false;
+   img->fp16          = false;
+}
+
+bool image_texture_load_buffer_request(struct texture_image *out_img,
+      enum image_type_enum type, const void *ptr, size_t len,
+      const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *abort_ud)
 {
-   image_texture_request_t req;
    image_loader_t *l;
    enum image_loader_state st;
 
-   req.rgba            = out_img->supports_rgba;
-   req.want_10bit      = out_img->pix10;
-   req.want_fp16       = false;
-   req.want_compressed = true;
-   out_img->compressed = NULL;
-   if (!(l = image_loader_new(type, &req)))
+   if (!out_img)
       return false;
+   out_img->compressed = NULL;
+   if (!ptr || !len || !(l = image_loader_new(type, req)))
+   {
+      image_texture_clear(out_img);
+      return false;
+   }
    image_loader_set_abort(l, should_abort, abort_ud);
    if (!image_loader_start(l, ptr, len, len))
    {
@@ -471,7 +478,57 @@ static bool image_texture_load_internal(
       return true;
    }
    image_loader_free(l);
+   image_texture_clear(out_img);
    return false;
+}
+
+bool image_texture_load_request(struct texture_image *out_img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud)
+{
+   enum image_type_enum type = image_texture_get_type(path);
+
+   if (type != IMAGE_TYPE_NONE)
+   {
+      /* The synchronous read rides the data_transfer prefix spine
+       * like every other loader: filestream/VFS routing (overlays
+       * and driver assets from archive members or content://
+       * documents), 64-bit lengths, the hardware guard behind the
+       * read, and honest short-read detection.  A zero budget fills
+       * to completion in one blocking call, which is this API's
+       * contract. */
+      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
+      if (dt)
+      {
+         size_t file_len    = 0;
+         const uint8_t *ptr = NULL;
+
+         data_transfer_iterate(dt, 0);
+         ptr = data_transfer_ptr(dt, &file_len);
+         if (data_transfer_complete(dt) && ptr && file_len
+               && image_texture_load_buffer_request(out_img, type,
+                     ptr, file_len, req, should_abort, ud))
+         {
+            data_transfer_free(dt);
+            return true;
+         }
+         data_transfer_free(dt);
+      }
+   }
+   if (out_img)
+      image_texture_clear(out_img);
+   return false;
+}
+
+/* The request the plain loads carry: the caller's image, whose
+ * ->pix10 asks for 10-bit on the way in */
+static void image_texture_request_of(const struct texture_image *img,
+      image_texture_request_t *req)
+{
+   req->rgba            = img->supports_rgba;
+   req->want_10bit      = img->pix10;
+   req->want_fp16       = false;
+   req->want_compressed = true;
 }
 
 bool image_texture_load(struct texture_image *out_img, const char *path)
@@ -648,63 +705,17 @@ bool image_texture_tile_gx(struct texture_image *img)
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {
-   if (type != IMAGE_TYPE_NONE)
-   {
-      if (image_texture_load_internal(
-         type, buffer, buffer_len, out_img, NULL, NULL))
-         return true;
-   }
-
-   out_img->supports_rgba = false;
-   out_img->pixels = NULL;
-   out_img->width = 0;
-   out_img->height = 0;
-   out_img->compressed = NULL;
-
-   return false;
+   image_texture_request_t req;
+   image_texture_request_of(out_img, &req);
+   return image_texture_load_buffer_request(out_img, type, buffer,
+         buffer_len, &req, NULL, NULL);
 }
 
 bool image_texture_load_ex(struct texture_image *out_img,
       const char *path, bool (*should_abort)(void *ud), void *ud)
 {
-   enum image_type_enum type  = image_texture_get_type(path);
-
-   if (type != IMAGE_TYPE_NONE)
-   {
-      /* The synchronous read rides the data_transfer prefix spine
-       * like every other loader: filestream/VFS routing (overlays
-       * and driver assets from archive members or content://
-       * documents), 64-bit lengths, the hardware guard behind the
-       * read, and honest short-read detection.  A zero budget fills
-       * to completion in one blocking call, which is this API's
-       * contract. */
-      struct data_transfer *dt = data_transfer_open_prefix(path, 0);
-      if (dt)
-      {
-         size_t file_len    = 0;
-         const uint8_t *ptr = NULL;
-
-         data_transfer_iterate(dt, 0);
-         ptr = data_transfer_ptr(dt, &file_len);
-         if (data_transfer_complete(dt) && ptr && file_len
-               && image_texture_load_internal(
-                     type,
-                     (void*)ptr, file_len, out_img, should_abort, ud))
-         {
-            data_transfer_free(dt);
-            return true;
-         }
-         data_transfer_free(dt);
-      }
-   }
-
-   out_img->supports_rgba = false;
-   out_img->pixels        = NULL;
-   out_img->width         = 0;
-   out_img->height        = 0;
-   out_img->compressed    = NULL;
-   out_img->pix10         = false;
-   out_img->fp16          = false;
-
-   return false;
+   image_texture_request_t req;
+   image_texture_request_of(out_img, &req);
+   return image_texture_load_request(out_img, path, &req,
+         should_abort, ud);
 }

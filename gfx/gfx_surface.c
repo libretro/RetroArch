@@ -17,13 +17,6 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
-#include <features/features_cpu.h>
-#include <retro_atomic.h>
-#ifdef HAVE_GCD
-#include <dispatch/dispatch.h>
-#elif defined(HAVE_THREADS)
-#include <rthreads/rthreads.h>
-#endif
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
@@ -689,17 +682,33 @@ gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
    return *slot;
 }
 
+/* What a still's decode is asked for: the order the caller named,
+ * 10-bit where the driver samples it, a compressed payload as it lies
+ * in the file */
+static void gfx_surface_request(image_texture_request_t *req,
+      bool supports_rgba)
+{
+   gfx_surface_requirements_t want;
+   req->rgba            = supports_rgba;
+   req->want_10bit      = gfx_surface_query_requirements(0, &want)
+      && (want.formats & GFX_SURFACE_PIXFMT_2101010);
+   req->want_fp16       = false;
+   req->want_compressed = true;
+}
+
 bool gfx_surface_submit_buffer(gfx_surface_t *s,
       enum image_type_enum type, const void *buf, size_t len,
       bool supports_rgba)
 {
+   image_texture_request_t req;
    struct texture_image *img;
    if (!s || !buf || !len)
       return false;
    if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
       return false;
-   img->supports_rgba = supports_rgba;
-   if (!image_texture_load_buffer(img, type, (void*)buf, len))
+   gfx_surface_request(&req, supports_rgba);
+   if (!image_texture_load_buffer_request(img, type, buf, len, &req,
+            NULL, NULL))
    {
       free(img);
       return false;
@@ -723,97 +732,19 @@ bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img)
 bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       bool supports_rgba)
 {
+   image_texture_request_t req;
    struct texture_image *img;
    if (!s || !path || !*path)
       return false;
    if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
       return false;
-   img->supports_rgba = supports_rgba;
-   if (!image_texture_load(img, path))
+   gfx_surface_request(&req, supports_rgba);
+   if (!image_texture_load_request(img, path, &req, NULL, NULL))
    {
       free(img);
       return false;
    }
    return gfx_surface_submit_image(s, img);
-}
-
-/* A set of files decoded together: the next index a worker takes,
- * and the images they come back as */
-typedef struct
-{
-   const char *const    *paths;
-   struct texture_image *imgs;
-   retro_atomic_int_t    next;
-   unsigned              n;
-   bool                  supports_rgba;
-} gfx_surface_decode_set_t;
-
-static void gfx_surface_decode_one(gfx_surface_decode_set_t *set,
-      unsigned i)
-{
-   struct texture_image *img = &set->imgs[i];
-   img->supports_rgba        = set->supports_rgba;
-   if (!set->paths[i] || !*set->paths[i]
-         || !image_texture_load(img, set->paths[i]))
-      img->pixels            = NULL;
-}
-
-#if !defined(HAVE_GCD) && defined(HAVE_THREADS)
-static void gfx_surface_decode_set_run(void *data)
-{
-   gfx_surface_decode_set_t *set = (gfx_surface_decode_set_t*)data;
-   for (;;)
-   {
-      unsigned i = (unsigned)retro_atomic_fetch_add_int(&set->next, 1);
-      if (i >= set->n)
-         return;
-      gfx_surface_decode_one(set, i);
-   }
-}
-#endif
-
-/* The set, decoded: on Apple over the dispatch pool the task queue's
- * decodes already run on, elsewhere on threads of its own, and on one
- * thread where there is only one */
-static void gfx_surface_decode_set(gfx_surface_decode_set_t *set)
-{
-#ifdef HAVE_GCD
-   if (set->n > 1)
-   {
-      gfx_surface_decode_set_t *at = set;
-      dispatch_apply(set->n,
-            dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0),
-            ^(size_t i) { gfx_surface_decode_one(at, (unsigned)i); });
-      return;
-   }
-#elif defined(HAVE_THREADS)
-   {
-      unsigned workers = cpu_features_get_core_amount();
-      if (workers > 8)
-         workers = 8;
-      if (workers > 1 && set->n > 1)
-      {
-         /* This thread decodes alongside the others; a worker that
-          * could not be made costs nothing but its share */
-         sthread_t *thread[8];
-         unsigned t, spawned = workers - 1;
-         if (spawned > set->n - 1)
-            spawned = set->n - 1;
-         for (t = 0; t < spawned; t++)
-            thread[t] = sthread_create(gfx_surface_decode_set_run, set);
-         gfx_surface_decode_set_run(set);
-         for (t = 0; t < spawned; t++)
-            if (thread[t])
-               sthread_join(thread[t]);
-         return;
-      }
-   }
-#endif
-   {
-      unsigned i;
-      for (i = 0; i < set->n; i++)
-         gfx_surface_decode_one(set, i);
-   }
 }
 
 /* At most this many decodes in hand before they go up, whatever
@@ -824,14 +755,13 @@ unsigned gfx_surface_submit_files(gfx_surface_t *const *slots,
       const char *const *paths, unsigned n, bool supports_rgba)
 {
    struct texture_image imgs[GFX_SURFACE_DECODE_BATCH];
-   gfx_surface_decode_set_t set;
+   image_texture_request_t req;
    unsigned done = 0, first;
 
    if (!slots || !paths)
       return 0;
 
-   set.imgs          = imgs;
-   set.supports_rgba = supports_rgba;
+   gfx_surface_request(&req, supports_rgba);
 
    for (first = 0; first < n; first += GFX_SURFACE_DECODE_BATCH)
    {
@@ -839,11 +769,7 @@ unsigned gfx_surface_submit_files(gfx_surface_t *const *slots,
       unsigned count = n - first;
       if (count > GFX_SURFACE_DECODE_BATCH)
          count = GFX_SURFACE_DECODE_BATCH;
-      memset(imgs, 0, count * sizeof(*imgs));
-      set.paths = paths + first;
-      set.n     = count;
-      retro_atomic_int_init(&set.next, 0);
-      gfx_surface_decode_set(&set);
+      image_texture_load_set(paths + first, imgs, count, &req);
 
       /* Up, in order, on this thread */
       for (i = 0; i < count; i++)

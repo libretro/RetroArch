@@ -451,6 +451,7 @@ VIDEO IMAGE
 
 #include "../libretro-common/formats/image_texture.c"
 #include "../libretro-common/formats/image_texture_scale.c"
+#include "../libretro-common/formats/image_texture_set.c"
 
 #ifdef HAVE_RTGA
 #include "../libretro-common/formats/tga/rtga.c"

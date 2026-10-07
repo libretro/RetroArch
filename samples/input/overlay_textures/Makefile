@@ -12,7 +12,8 @@ SOURCES := \
 	$(REPO_ROOT)/input/input_overlay_textures.c \
 	$(REPO_ROOT)/input/input_overlay_alpha.c \
 	$(REPO_ROOT)/gfx/gfx_surface.c \
-	$(LIBRETRO_COMM_DIR)/formats/image_texture.c
+	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c
 
 OBJS := $(SOURCES:.c=.o)
 

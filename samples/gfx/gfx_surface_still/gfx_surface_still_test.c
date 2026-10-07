@@ -131,9 +131,12 @@ static uintptr_t st_decode_thread[ST_DECODE_THREADS];
 static unsigned  st_decode_threads;
 static slock_t  *st_decode_lock;
 
-bool image_texture_load(struct texture_image *img, const char *path)
+bool image_texture_load_request(struct texture_image *img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud)
 {
    unsigned w = (unsigned)atoi(path);
+   (void)req; (void)should_abort; (void)ud;
    if (!w)
       return false;
    retro_sleep(2);
@@ -153,10 +156,13 @@ bool image_texture_load(struct texture_image *img, const char *path)
    return true;
 }
 
-bool image_texture_load_buffer(struct texture_image *img,
-      enum image_type_enum type, void *s, size_t len)
+bool image_texture_load_buffer_request(struct texture_image *img,
+      enum image_type_enum type, const void *s, size_t len,
+      const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud)
 {
-   (void)img; (void)type; (void)s; (void)len;
+   (void)img; (void)type; (void)s; (void)len; (void)req;
+   (void)should_abort; (void)ud;
    return false;
 }
 

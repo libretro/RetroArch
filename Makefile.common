@@ -516,7 +516,8 @@ ifneq ($(HAVE_STRL), 1)
 endif
 
 OBJ += $(LIBRETRO_COMM_DIR)/formats/image_texture.o \
-       $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.o
+       $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.o \
+       $(LIBRETRO_COMM_DIR)/formats/image_texture_set.o
 
 ifeq ($(HAVE_IMAGEVIEWER), 1)
    DEFINES += -DHAVE_IMAGEVIEWER

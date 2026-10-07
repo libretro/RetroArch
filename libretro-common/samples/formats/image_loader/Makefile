@@ -3,7 +3,8 @@ TARGET := image_loader_test
 # The still loader (formats/image_texture.c) and the scale unit
 # (formats/image_texture_scale.c), driven as a frontend task or a core
 # would: whole buffer, timed steps against a fake clock, a prefix that
-# grows, an abort, the APNG verdict, the request's answers.
+# grows, an abort, the APNG verdict, the request's answers, and the
+# set decode (formats/image_texture_set.c) across threads.
 LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := image_loader_test.c \
@@ -18,6 +19,7 @@ SOURCES := image_loader_test.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \
@@ -26,6 +28,7 @@ SOURCES := image_loader_test.c \
            $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_filter.c \
            $(LIBRETRO_COMM_DIR)/gfx/scaler/scaler_int.c \
            $(LIBRETRO_COMM_DIR)/memmap/memmap.c \
+           $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/streams/file_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/trans_stream.c \
            $(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
@@ -37,7 +40,7 @@ SOURCES := image_loader_test.c \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -DHAVE_RPNG \
+CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -DHAVE_RPNG -DHAVE_THREADS \
           -I$(LIBRETRO_COMM_DIR)/include
 
 ifneq ($(SANITIZER),)
@@ -51,7 +54,7 @@ all: $(TARGET)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS) -lm
+	$(CC) -o $@ $^ $(LDFLAGS) -lm -lpthread
 
 clean:
 	rm -f $(TARGET) $(TARGET).exe $(OBJS)

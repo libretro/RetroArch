@@ -260,6 +260,34 @@ bool image_texture_scale(struct texture_image *img,
 bool image_texture_load_buffer(struct texture_image *img,
    enum image_type_enum type, void *s, size_t len);
 
+/* The loader run to completion over a whole buffer or a file, with
+ * @req naming what the caller takes (NULL: the ordinary image). The
+ * abort hook is asked between steps; it may be NULL. False leaves
+ * @img empty. */
+bool image_texture_load_buffer_request(struct texture_image *img,
+      enum image_type_enum type, const void *buf, size_t len,
+      const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud);
+bool image_texture_load_request(struct texture_image *img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud);
+
+/* Run @fn for every index below @n, across the cores at once where
+ * there are threads: on Apple over the dispatch pool, elsewhere on
+ * threads of its own with the caller working alongside, and in order
+ * on one thread where there is only one. Returns once every call has.
+ * In formats/image_texture_set.c. */
+void image_texture_set_run(unsigned n,
+      void (*fn)(unsigned i, void *ud), void *ud);
+
+/* Decode the @n files @paths name into @imgs together, each as
+ * image_texture_load_request does with @req; a path that is NULL,
+ * empty or unreadable leaves its image empty. Returns how many
+ * decoded. In formats/image_texture_set.c. */
+unsigned image_texture_load_set(const char *const *paths,
+      struct texture_image *imgs, unsigned n,
+      const image_texture_request_t *req);
+
 /* ->pix10 is an ask on the way in and an answer on the way out: set
  * it before the call to have a decoder that can emit XRGB2101010 do
  * so, and read it after to find out whether it did. Clear on entry

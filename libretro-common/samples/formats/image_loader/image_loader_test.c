@@ -12,6 +12,8 @@
  *   6  the request's channel order is answered and honoured
  *   7  image_texture_scale: the cap, the whole-factor upscale, and
  *      a half-float image left alone
+ *   8  image_texture_load_set: a set of files decoded together, an
+ *      unreadable one left empty, every index run exactly once
  *
  * The PNG is built here - RGB, every row filter 0, the zlib stream
  * stored and split across many small IDATs so the transfer has many
@@ -187,6 +189,11 @@ static int64_t fake_now(void)
    return fake_now_v;
 }
 
+static void set_hit(unsigned i, void *ud)
+{
+   ((unsigned*)ud)[i]++;
+}
+
 static int aborts;
 static bool abort_now(void *ud)
 {
@@ -337,6 +344,52 @@ int main(void)
       s.fp16 = true;
       CHECK(!image_texture_scale(&s, 64, 4), "half floats are left at their size");
       free(s.pixels);
+   }
+
+   /* 8: a set */
+   {
+      static const char *names[5] = {
+         "image_loader_set_0.png", "image_loader_set_1.png",
+         "image_loader_none.png", "", "image_loader_set_2.png" };
+      const char *paths[6];
+      struct texture_image imgs[6];
+      unsigned i, ok = 1, got;
+      for (i = 0; i < 5; i++)
+      {
+         FILE *f;
+         paths[i] = names[i];
+         if (i == 2 || i == 3)
+            continue;
+         if ((f = fopen(names[i], "wb")))
+         {
+            fwrite(png, 1, len, f);
+            fclose(f);
+         }
+      }
+      paths[5] = NULL;
+      req.rgba = false;
+      got = image_texture_load_set(paths, imgs, 6, &req);
+      for (i = 0; i < 6; i++)
+      {
+         bool want = (i == 0 || i == 1 || i == 4);
+         if (want ? !pixels_match(&imgs[i], false) : (imgs[i].pixels != NULL))
+            ok = 0;
+         image_texture_free(&imgs[i]);
+      }
+      CHECK(got == 3 && ok, "a set decodes its files; missing, empty and NULL paths stay empty");
+      for (i = 0; i < 5; i++)
+         if (i != 2 && i != 3)
+            remove(names[i]);
+   }
+   {
+      static unsigned hits[64];
+      unsigned i, ok = 1;
+      memset(hits, 0, sizeof(hits));
+      image_texture_set_run(64, set_hit, hits);
+      for (i = 0; i < 64; i++)
+         if (hits[i] != 1)
+            ok = 0;
+      CHECK(ok, "image_texture_set_run calls every index exactly once");
    }
 
    image_texture_free(&ref);
