@@ -6876,11 +6876,16 @@ static uintptr_t d3d11_gfx_load_texture_internal(
    else
    {
       /* Another format than the image's: converted on the way through
-       * the staging twin */
+       * the staging twin, without which there is no texture to hand out */
       d3d11_init_staging(d3d11->device, texture);
-      if (texture->staging)
-         d3d11_update_texture(d3d11->context, image->width, image->height,
-               0, src_format, image->pixels, texture);
+      if (!texture->staging)
+      {
+         d3d11_release_texture(texture);
+         free(texture);
+         return 0;
+      }
+      d3d11_update_texture(d3d11->context, image->width, image->height,
+            0, src_format, image->pixels, texture);
    }
 
    return (uintptr_t)texture;
