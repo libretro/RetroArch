@@ -1937,7 +1937,7 @@ static bool input_gun_mouse_button_down(unsigned port, unsigned mbutton)
  * is the core's (@keyboard_mapping_blocked), but for the bind that
  * gives it back. */
 static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
-      const struct retro_keybind *binds, bool keyboard_mapping_blocked,
+      bool keyboard_mapping_blocked,
       unsigned port, unsigned id)
 {
    const input_port_keys_t *k = input_port_keys_get(input, data, port);
@@ -2173,8 +2173,8 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
             /* the keys and mouse buttons bound to them: the frontend's
              * own answer where the driver hands it the keys */
             if (input && input->keys_down)
-               cached |= input_joypad_from_keys(input, data, binds[_port],
-                     keyboard_mapping_blocked, _port,
+               cached |= input_joypad_from_keys(input, data,
+                  keyboard_mapping_blocked, _port,
                      RETRO_DEVICE_ID_JOYPAD_MASK);
             else if (input && input->input_state)
                cached |= input->input_state(
@@ -2264,8 +2264,8 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
          ret |= held;
       else if (  device == RETRO_DEVICE_JOYPAD && binds
               && input && input->keys_down && _port < MAX_USERS)
-         ret |= input_joypad_from_keys(input, data, binds[_port],
-               keyboard_mapping_blocked, _port, id);
+         ret |= input_joypad_from_keys(input, data,
+                  keyboard_mapping_blocked, _port, id);
       else if (  device == RETRO_DEVICE_ANALOG && binds
               && input && input->keys_down && _port < MAX_USERS)
          ret |= input_analog_from_keys(input, data, _port, idx, id);
@@ -2348,8 +2348,7 @@ static INLINE int32_t input_state_wrap(
                && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
             return 1;
          if (     (k->has_mbutton[id >> 5] & bit)
-               && input_bind_mouse_button_down(k, _port,
-                  RETRO_KEYBIND_MBUTTON(&binds[_port][id])))
+               && input_bind_mouse_button_down(k, _port, k->mbutton[id]))
             return 1;
          return 0;
       }
@@ -2370,7 +2369,7 @@ static INLINE int32_t input_state_wrap(
          input_driver_state_t *input_st = &input_driver_st;
          int32_t ret                    = keyboard_mapping_blocked ? 0 : k->pad_keys;
          if (k->pad_mbuttons)
-            ret |= input_joypad_from_keys(input, data, binds[_port],
+            ret |= input_joypad_from_keys(input, data,
                   keyboard_mapping_blocked, _port, RETRO_DEVICE_ID_JOYPAD_MASK);
          if (!(input_st->frame_valid.joypad_cache & (1 << _port)))
          {
@@ -11849,7 +11848,7 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
    if (     device == RETRO_DEVICE_JOYPAD && port < MAX_USERS
          && input_st->current_driver->keys_down)
       return input_joypad_from_keys(input_st->current_driver,
-            input_st->current_data, input_config_binds[port],
+            input_st->current_data,
             (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0, port, id);
    if (     device == RETRO_DEVICE_ANALOG && port < MAX_USERS
          && input_st->current_driver->keys_down)
