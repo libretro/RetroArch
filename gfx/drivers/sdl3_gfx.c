@@ -1268,14 +1268,14 @@ typedef struct
    void                          *font_data;
    struct font_atlas             *atlas;
    uint32_t                      *staging; /* A8 -> RGBA expansion buffer */
-   int                            tex_width;
-   int                            tex_height;
+   unsigned                       tex_dims;
 } sdl3_raster_t;
 
 static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
 {
    int i, total;
    const uint8_t *src;
+   int tex_w, tex_h;
 
    if (!font || !font->atlas)
       return;
@@ -1284,19 +1284,20 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
     * staging buffer are created once and the atlas is re-uploaded in
     * place whenever the glyph cache grows (atlas->dirty). */
    if (  !font->tex
-       || font->tex_width  != (int)font->atlas->width
-       || font->tex_height != (int)font->atlas->height)
+       || font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+          font->atlas->height))
    {
       if (font->tex)
          SDL_DestroyTexture(font->tex);
 
-      font->tex_width  = (int)font->atlas->width;
-      font->tex_height = (int)font->atlas->height;
+      font->tex_dims = VIDEO_SCALE_PACK(font->atlas->width,
+            font->atlas->height);
 
       font->tex = SDL_CreateTexture(font->vid->renderer,
             SDL_PIXELFORMAT_RGBA32,
             SDL_TEXTUREACCESS_STATIC,
-            font->tex_width, font->tex_height);
+            (int)VIDEO_SCALE_W(font->tex_dims),
+            (int)VIDEO_SCALE_H(font->tex_dims));
       if (!font->tex)
          return;
 
@@ -1304,7 +1305,7 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
 
       free(font->staging);
       font->staging = (uint32_t*)malloc(
-            font->tex_width * font->tex_height * sizeof(uint32_t));
+            VIDEO_SCALE_AREA(font->tex_dims) * sizeof(uint32_t));
       if (!font->staging)
       {
          SDL_DestroyTexture(font->tex);
@@ -1317,7 +1318,9 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
     * value so vertex color modulation produces correctly-tinted
     * glyphs. SDL_PIXELFORMAT_RGBA32 is the endian-neutral alias for
     * byte order R,G,B,A, so fill the staging buffer byte-wise. */
-   total = font->tex_width * font->tex_height;
+   tex_w = (int)VIDEO_SCALE_W(font->tex_dims);
+   tex_h = (int)VIDEO_SCALE_H(font->tex_dims);
+   total = tex_w * tex_h;
    src   = font->atlas->buffer;
    {
       uint8_t *dst = (uint8_t*)font->staging;
@@ -1331,7 +1334,7 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
    }
 
    SDL_UpdateTexture(font->tex, NULL, font->staging,
-         font->tex_width * sizeof(uint32_t));
+         tex_w * (int)sizeof(uint32_t));
 
    font->atlas->dirty = false;
 }
@@ -1375,10 +1378,8 @@ static void *sdl3_raster_font_init(void *data, const char *font_path,
             SDL_GetRendererProperties(font->vid->renderer),
             SDL_PROP_RENDERER_MAX_TEXTURE_SIZE_NUMBER, 0);
       if (max_tex > 0)
-      {
-         font->atlas->max_width  = (unsigned)max_tex;
-         font->atlas->max_height = (unsigned)max_tex;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               (unsigned)max_tex, (unsigned)max_tex);
    }
    sdl3_raster_font_upload_atlas(font);
 
@@ -1478,8 +1479,8 @@ static void sdl3_raster_font_render_message(
          x -= (int)((float)(line_width) * scale); \
       else if (align == TEXT_ALIGN_CENTER) \
          x -= (int)((float)(line_width) * scale) * 0.5f; \
-      inv_w = 1.0f / (float)font->tex_width; \
-      inv_h = 1.0f / (float)font->tex_height; \
+      inv_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+      inv_h = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
       n_glyphs = 0; \
    } while (0)
 #define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \

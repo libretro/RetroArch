@@ -723,8 +723,7 @@ static void* gx2_font_init(void* data, const char* font_path,
 
    font->atlas                       = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, kept modest for the 32 MB of MEM1 */
-   font->atlas->max_width            = 1024;
-   font->atlas->max_height           = 1024;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(1024, 1024);
    if (!gx2_font_make_texture(font))
    {
       font->font_driver->free(font->font_data);
@@ -851,8 +850,8 @@ static void gx2_font_render_message(
          /* Copy and invalidate only the dirty row band tracked by \
           * the font renderers instead of the whole atlas */ \
          unsigned j; \
-         unsigned y0 = font->atlas->dirty_y0; \
-         unsigned y1 = font->atlas->dirty_y1; \
+         unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0); \
+         unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1); \
          if (y1 > font->atlas->height) \
             y1 = font->atlas->height; \
          if (y1 > font->texture.surface.height) \

@@ -175,10 +175,12 @@ static unsigned font_rasterizer_ft_glyph_index(void *data, uint32_t code)
 }
 
 static bool font_rasterizer_ft_render_glyph(void *data, uint32_t code,
-      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
-      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_dims,
+      enum font_atlas_format fmt, struct font_glyph *glyph)
 {
    unsigned x, y, copy_w, copy_h;
+   unsigned cell_w = VIDEO_SCALE_W(cell_dims);
+   unsigned cell_h = VIDEO_SCALE_H(cell_dims);
    FT_GlyphSlot slot;
    const uint8_t *src;
    ft_face_t *self = (ft_face_t*)data;

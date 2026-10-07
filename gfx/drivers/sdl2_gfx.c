@@ -1647,10 +1647,9 @@ static void *sdl2_raster_font_init(void *data, const char *font_path,
       if (     SDL_GetRendererInfo(vid->renderer, &info) == 0
             && info.max_texture_width  > 0
             && info.max_texture_height > 0)
-      {
-         font->atlas->max_width  = (unsigned)info.max_texture_width;
-         font->atlas->max_height = (unsigned)info.max_texture_height;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               (unsigned)info.max_texture_width,
+               (unsigned)info.max_texture_height);
    }
    sdl2_raster_font_upload_atlas(font);
 

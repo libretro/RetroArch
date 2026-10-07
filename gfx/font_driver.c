@@ -590,7 +590,7 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
    {
       /* Room is made at the start of a later frame, when nothing drawn
        * from the atlas at its present size is still waiting */
-      if (c->atlas.max_width && c->growths < FONT_CACHE_GROWTHS)
+      if (c->atlas.max_dims && c->growths < FONT_CACHE_GROWTHS)
       {
          c->grow_wanted = true;
          c->grow_frame  = frame;
@@ -616,27 +616,22 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
    return victim;
 }
 
+/* @pos and @dims add packed: the atlas never outgrows
+ * VIDEO_SCALE_DIM_MAX, so nothing carries between halves */
 static void font_cache_dirty_cell(struct font_atlas *atlas,
-      unsigned x, unsigned y, unsigned w, unsigned h)
+      unsigned pos, unsigned dims)
 {
+   unsigned end = pos + dims;
    if (!atlas->dirty)
    {
-      atlas->dirty_x0 = x;
-      atlas->dirty_y0 = y;
-      atlas->dirty_x1 = x + w;
-      atlas->dirty_y1 = y + h;
-      atlas->dirty    = true;
+      atlas->dirty_xy0 = pos;
+      atlas->dirty_xy1 = end;
+      atlas->dirty     = true;
    }
    else
    {
-      if (x < atlas->dirty_x0)
-         atlas->dirty_x0 = x;
-      if (y < atlas->dirty_y0)
-         atlas->dirty_y0 = y;
-      if (x + w > atlas->dirty_x1)
-         atlas->dirty_x1 = x + w;
-      if (y + h > atlas->dirty_y1)
-         atlas->dirty_y1 = y + h;
+      atlas->dirty_xy0 = VIDEO_SCALE_MIN(atlas->dirty_xy0, pos);
+      atlas->dirty_xy1 = VIDEO_SCALE_MAX(atlas->dirty_xy1, end);
    }
 }
 
@@ -647,7 +642,6 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
    const font_rasterizer_t *rast = c->rast;
    void *face                    = c->face;
    font_cache_slot_t *slot;
-   unsigned cell_w, cell_h;
    size_t   esz;
    uint8_t *dst;
 
@@ -682,8 +676,6 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
     * one, and is drawn once a frame frees a cell */
    if (!(slot = font_cache_take_slot(c)))
       return NULL;
-   cell_w = VIDEO_SCALE_W(c->cell_dims);
-   cell_h = VIDEO_SCALE_H(c->cell_dims);
    esz    = (c->atlas.format == FONT_ATLAS_FORMAT_A16)
       ? sizeof(uint16_t) : sizeof(uint8_t);
    dst    = c->atlas.buffer
@@ -691,7 +683,7 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
       +  (size_t)slot->glyph.atlas_offset_y * c->atlas.width) * esz;
 
    if (!rast->render_glyph(face, code, gi, dst, c->atlas.width,
-            cell_w, cell_h, c->atlas.format, &slot->glyph))
+            c->cell_dims, c->atlas.format, &slot->glyph))
    {
       /* Nothing to draw: the cell goes back as the oldest there is */
       slot->last_used  = c->usage_counter - 0x80000000u;
@@ -703,8 +695,9 @@ static const struct font_glyph *font_cache_miss(font_cache_t *c,
    slot->next                   = c->map[FONT_CACHE_HASH(code)];
    c->map[FONT_CACHE_HASH(code)] = slot;
    slot->last_used              = c->usage_counter++;
-   font_cache_dirty_cell(&c->atlas, slot->glyph.atlas_offset_x,
-         slot->glyph.atlas_offset_y, cell_w, cell_h);
+   font_cache_dirty_cell(&c->atlas,
+         VIDEO_SCALE_PACK(slot->glyph.atlas_offset_x,
+            slot->glyph.atlas_offset_y), c->cell_dims);
    return &slot->glyph;
 }
 
@@ -751,8 +744,8 @@ static bool font_cache_grow(font_cache_t *c)
    font_cache_slot_t *blk;
 
    if (     c->growths >= FONT_CACHE_GROWTHS
-         || width  > c->atlas.max_width
-         || height > c->atlas.max_height)
+         || width  > VIDEO_SCALE_W(c->atlas.max_dims)
+         || height > VIDEO_SCALE_H(c->atlas.max_dims))
       return false;
    if (!(buffer = (uint8_t*)calloc(height, (size_t)width * esz)))
       return false;
@@ -792,10 +785,8 @@ static bool font_cache_grow(font_cache_t *c)
    c->rows                     = rows;
    /* All of it, for a consumer making its texture anew */
    c->atlas.dirty              = true;
-   c->atlas.dirty_x0           = 0;
-   c->atlas.dirty_y0           = 0;
-   c->atlas.dirty_x1           = width;
-   c->atlas.dirty_y1           = height;
+   c->atlas.dirty_xy0          = 0;
+   c->atlas.dirty_xy1          = VIDEO_SCALE_PACK(width, height);
    return true;
 }
 

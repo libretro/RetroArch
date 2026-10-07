@@ -1454,8 +1454,7 @@ typedef struct
 } d3d11_font_t;
 
 static void d3d11_font_update_atlas_region(
-      D3D11DeviceContext ctx, d3d11_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1);
+      D3D11DeviceContext ctx, d3d11_font_t *font, unsigned xy0, unsigned xy1);
 
 /* (Re)makes the font texture at the atlas's size and uploads all of
  * it: at init, and when the atlas has grown. The context keeps a
@@ -1476,8 +1475,8 @@ static void d3d11_font_make_texture(d3d11_video_t *d3d11,
          /* the generic path's conversion table does not cover R16;
           * stage the whole atlas through the element-size-aware
           * region helper instead */
-         d3d11_font_update_atlas_region(d3d11->context, font,
-               0, 0, font->atlas->width, font->atlas->height);
+         d3d11_font_update_atlas_region(d3d11->context, font, 0,
+               VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
       else
          d3d11_update_texture(
                d3d11->context, font->atlas->width, font->atlas->height, font->atlas->width,
@@ -1522,8 +1521,7 @@ static void * d3d11_font_init(void* data, const char* font_path,
          max_tex = 8192;
       else if (d3d11->supportedFeatureLevel >= D3D_FEATURE_LEVEL_9_3)
          max_tex = 4096;
-      font->atlas->max_width  = max_tex;
-      font->atlas->max_height = max_tex;
+      font->atlas->max_dims = VIDEO_SCALE_PACK(max_tex, max_tex);
    }
    d3d11_font_make_texture(d3d11, font);
 
@@ -1562,10 +1560,13 @@ static int d3d11_font_get_message_width(void *data, const char *msg,
  * rows, and issue a boxed CopySubresourceRegion for just that area.
  * The generic d3d11_update_texture() re-uploads the whole surface. */
 static void d3d11_font_update_atlas_region(
-      D3D11DeviceContext ctx, d3d11_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+      D3D11DeviceContext ctx, d3d11_font_t *font, unsigned xy0, unsigned xy1)
 {
    unsigned y;
+   unsigned x0 = VIDEO_SCALE_W(xy0);
+   unsigned y0 = VIDEO_SCALE_H(xy0);
+   unsigned x1 = VIDEO_SCALE_W(xy1);
+   unsigned y1 = VIDEO_SCALE_H(xy1);
    D3D11_MAPPED_SUBRESOURCE mapped;
    D3D11_BOX box;
 
@@ -1929,8 +1930,7 @@ static void d3d11_font_upload_atlas(d3d11_video_t *d3d11,
    {
       if (font->texture.staging)
          d3d11_font_update_atlas_region(d3d11->context, font,
-               font->atlas->dirty_x0, font->atlas->dirty_y0,
-               font->atlas->dirty_x1, font->atlas->dirty_y1);
+               font->atlas->dirty_xy0, font->atlas->dirty_xy1);
       font->atlas->dirty = false;
    }
 }

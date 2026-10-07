@@ -3681,10 +3681,9 @@ static void *vulkan_font_init(void *data,
    }
 
    /* The atlas may grow, up to the largest image the device makes */
-   font->atlas->max_width  =
-      font->vk->context->gpu_properties.limits.maxImageDimension2D;
-   font->atlas->max_height =
-      font->vk->context->gpu_properties.limits.maxImageDimension2D;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(
+         font->vk->context->gpu_properties.limits.maxImageDimension2D,
+         font->vk->context->gpu_properties.limits.maxImageDimension2D);
 
    /* Initial upload is full atlas. */
    font->dirty_x_min  = 0;

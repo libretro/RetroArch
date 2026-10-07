@@ -1693,8 +1693,7 @@ static void *gxm_font_init(void *data,
       goto error;
 
    /* The atlas may grow; the texture follows it */
-   atlas->max_width  = 2048;
-   atlas->max_height = 2048;
+   atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
 
    if (!(font->texture = gxm_font_make_texture(atlas)))
       goto error;
@@ -1784,10 +1783,10 @@ static void gxm_font_render_message(
          unsigned int pitch     = font->atlas->width; \
          /* Copy only the dirty rectangle tracked by the font \
           * renderers, one row at a time */ \
-         unsigned int x0        = font->atlas->dirty_x0; \
-         unsigned int y0        = font->atlas->dirty_y0; \
-         unsigned int x1        = font->atlas->dirty_x1; \
-         unsigned int y1        = font->atlas->dirty_y1; \
+         unsigned int x0        = VIDEO_SCALE_W(font->atlas->dirty_xy0); \
+         unsigned int y0        = VIDEO_SCALE_H(font->atlas->dirty_xy0); \
+         unsigned int x1        = VIDEO_SCALE_W(font->atlas->dirty_xy1); \
+         unsigned int y1        = VIDEO_SCALE_H(font->atlas->dirty_xy1); \
          if (x1 <= x0 || y1 <= y0 || x1 > pitch || y1 > font->atlas->height) \
          { \
             x0 = 0; \

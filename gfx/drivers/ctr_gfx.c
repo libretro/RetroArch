@@ -387,10 +387,13 @@ static void gfx_display_ctr_draw(gfx_display_ctx_draw_t *draw,
 /* Swizzles the atlas's rectangle into the font texture, in place in
  * the linear memory the GPU samples, and flushes it out of the cache */
 static void ctr_font_upload(ctr_font_t *font,
-      const struct font_atlas *atlas,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+      const struct font_atlas *atlas, unsigned xy0, unsigned xy1)
 {
    unsigned i, j;
+   unsigned x0        = VIDEO_SCALE_W(xy0);
+   unsigned y0        = VIDEO_SCALE_H(xy0);
+   unsigned x1        = VIDEO_SCALE_W(xy1);
+   unsigned y1        = VIDEO_SCALE_H(xy1);
    uint8_t       *tex = (uint8_t*)font->texture.data;
    const uint8_t *src = atlas->buffer;
 
@@ -426,7 +429,8 @@ static void *ctr_font_make_texture(ctr_font_t *font,
    font->texture.width  = width;
    font->texture.height = height;
    font->texture.data   = data;
-   ctr_font_upload(font, atlas, 0, 0, atlas->width, atlas->height);
+   ctr_font_upload(font, atlas, 0,
+         VIDEO_SCALE_PACK(atlas->width, atlas->height));
 
    CTR_SET_SCALE_VECTOR(
          &font->scale_vector_top,
@@ -462,8 +466,7 @@ static void* ctr_font_init(void* data, const char* font_path,
 
    atlas                = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, to the 3DS GPU's largest texture */
-   atlas->max_width     = 1024;
-   atlas->max_height    = 1024;
+   atlas->max_dims = VIDEO_SCALE_PACK(1024, 1024);
 
    if (!(font->texture.data = ctr_font_make_texture(font, atlas)))
    {
@@ -675,8 +678,7 @@ static void ctr_font_render_msg(
       }
       if (atlas->dirty)
       {
-         ctr_font_upload(font, atlas, atlas->dirty_x0, atlas->dirty_y0,
-               atlas->dirty_x1, atlas->dirty_y1);
+         ctr_font_upload(font, atlas, atlas->dirty_xy0, atlas->dirty_xy1);
          atlas->dirty = false;
       }
    }

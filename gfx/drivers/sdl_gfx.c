@@ -110,8 +110,7 @@ static void sdl_init_font(sdl_video_t *vid,
     * to make again */
    {
       struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
-      grow->max_width  = 2048;
-      grow->max_height = 2048;
+      grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
    }
 
    r = msg_color_r * 255;

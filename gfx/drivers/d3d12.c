@@ -719,10 +719,8 @@ typedef struct
    unsigned                      acc_cap;
    /* Pending atlas dirty rectangle, staged to the upload buffer on
     * the CPU and awaiting the boxed GPU copy at draw time */
-   unsigned                      region_x0;
-   unsigned                      region_y0;
-   unsigned                      region_x1;
-   unsigned                      region_y1;
+   unsigned                      region_xy0;
+   unsigned                      region_xy1;
    bool                          region_pending;
    /* Textures the atlas outgrew, and the queue fence value past which
     * no command list still names them; released then, not waited for */
@@ -2072,9 +2070,13 @@ static void gfx_display_d3d12_scissor_end(void *data, unsigned video_dims)
  * d3d12_font_upload_region(); the generic d3d12_update_texture() /
  * d3d12_upload_texture() pair re-transfers the whole surface. */
 static void d3d12_font_update_atlas_region(d3d12_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+      unsigned xy0, unsigned xy1)
 {
    unsigned y;
+   unsigned x0              = VIDEO_SCALE_W(xy0);
+   unsigned y0              = VIDEO_SCALE_H(xy0);
+   unsigned x1              = VIDEO_SCALE_W(xy1);
+   unsigned y1              = VIDEO_SCALE_H(xy1);
    uint8_t *dst;
    D3D12_RANGE read_range;
    ID3D12Resource *resource = (ID3D12Resource*)font->texture.upload_buffer;
@@ -2106,18 +2108,14 @@ static void d3d12_font_update_atlas_region(d3d12_font_t *font,
 
    if (!font->region_pending)
    {
-      font->region_x0      = x0;
-      font->region_y0      = y0;
-      font->region_x1      = x1;
-      font->region_y1      = y1;
+      font->region_xy0     = xy0;
+      font->region_xy1     = xy1;
       font->region_pending = true;
    }
    else
    {
-      if (x0 < font->region_x0) font->region_x0 = x0;
-      if (y0 < font->region_y0) font->region_y0 = y0;
-      if (x1 > font->region_x1) font->region_x1 = x1;
-      if (y1 > font->region_y1) font->region_y1 = y1;
+      font->region_xy0     = VIDEO_SCALE_MIN(font->region_xy0, xy0);
+      font->region_xy1     = VIDEO_SCALE_MAX(font->region_xy1, xy1);
    }
 }
 
@@ -2151,8 +2149,8 @@ static void d3d12_font_make_texture(d3d12_video_t *d3d12,
          /* stage the whole atlas; the boxed copy at first draw
           * transfers it (the generic path's conversion table does
           * not cover R16) */
-         d3d12_font_update_atlas_region(font,
-               0, 0, font->atlas->width, font->atlas->height);
+         d3d12_font_update_atlas_region(font, 0,
+               VIDEO_SCALE_PACK(font->atlas->width, font->atlas->height));
       else
          d3d12_update_texture(
                font->atlas->width, font->atlas->height,
@@ -2232,8 +2230,9 @@ static void * d3d12_font_init(void* data, const char* font_path,
    font->d3d12               = d3d12;
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, up to the largest 2D texture D3D12 has */
-   font->atlas->max_width    = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-   font->atlas->max_height   = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(
+         D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION,
+         D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION);
    d3d12_release_texture(&font->texture);
    d3d12_font_make_texture(d3d12, font);
 
@@ -2296,11 +2295,11 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
    dst.Type             = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
    dst.SubresourceIndex = 0;
 
-   box.left   = font->region_x0;
-   box.top    = font->region_y0;
+   box.left   = VIDEO_SCALE_W(font->region_xy0);
+   box.top    = VIDEO_SCALE_H(font->region_xy0);
    box.front  = 0;
-   box.right  = font->region_x1;
-   box.bottom = font->region_y1;
+   box.right  = VIDEO_SCALE_W(font->region_xy1);
+   box.bottom = VIDEO_SCALE_H(font->region_xy1);
    box.back   = 1;
 
    D3D12_RESOURCE_TRANSITION(
@@ -2310,7 +2309,7 @@ static void d3d12_font_upload_region(D3D12GraphicsCommandList cmd,
          D3D12_RESOURCE_STATE_COPY_DEST);
 
    cmd->lpVtbl->CopyTextureRegion(cmd, &dst,
-         font->region_x0, font->region_y0, 0, &src, &box);
+         box.left, box.top, 0, &src, &box);
 
    D3D12_RESOURCE_TRANSITION(
          cmd,
@@ -2426,8 +2425,7 @@ static void d3d12_font_render_msg(
    if (font->atlas->dirty)
    {
       d3d12_font_update_atlas_region(font,
-            font->atlas->dirty_x0, font->atlas->dirty_y0,
-            font->atlas->dirty_x1, font->atlas->dirty_y1);
+            font->atlas->dirty_xy0, font->atlas->dirty_xy1);
       font->atlas->dirty = false;
    }
 

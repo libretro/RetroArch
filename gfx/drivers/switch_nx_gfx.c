@@ -106,8 +106,7 @@ static void *switch_font_init(void *data, const char *font_path,
    font->atlas = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow; glyphs are blitted from it in memory, so
     * there is no texture to make again */
-   font->atlas->max_width  = 2048;
-   font->atlas->max_height = 2048;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
 
    return font;
 }

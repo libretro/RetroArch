@@ -269,8 +269,7 @@ typedef struct
    void *font_data;
    struct font_atlas *atlas;
    video_font_raster_block_t *block;
-   u32 tex_width;
-   u32 tex_height;
+   unsigned tex_dims;
    /* Texture memory the atlas outgrew: a frame in flight may still
     * draw from it, and freeing it means waiting for the RSX, so it goes
     * when the font does - the atlas grows at most twice */
@@ -555,8 +554,8 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
     * contiguous in both buffers and one memcpy of just that band
     * suffices; the initial upload (dirty rect covering everything
     * after the renderer pre-cache) still transfers the full atlas. */
-   unsigned y0                 = font->atlas->dirty_y0;
-   unsigned y1                 = font->atlas->dirty_y1;
+   unsigned y0                 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+   unsigned y1                 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
    if (y1 > font->atlas->height || y1 <= y0)
    {
       y0 = 0;
@@ -579,10 +578,10 @@ static bool rsx_font_upload_atlas(rsx_t *rsx, rsx_font_t *font)
          | (GCM_TEXTURE_REMAP_COLOR_B    << GCM_TEXTURE_REMAP_COLOR_G_SHIFT)
          | (GCM_TEXTURE_REMAP_COLOR_B    << GCM_TEXTURE_REMAP_COLOR_R_SHIFT)
          | (GCM_TEXTURE_REMAP_COLOR_B    << GCM_TEXTURE_REMAP_COLOR_A_SHIFT));
-   font->texture.tex.width     = font->tex_width;
-   font->texture.tex.height    = font->tex_height;
+   font->texture.tex.width     = VIDEO_SCALE_W(font->tex_dims);
+   font->texture.tex.height    = VIDEO_SCALE_H(font->tex_dims);
    font->texture.tex.depth     = 1;
-   font->texture.tex.pitch     = font->tex_width;
+   font->texture.tex.pitch     = VIDEO_SCALE_W(font->tex_dims);
    font->texture.tex.location  = GCM_LOCATION_RSX;
    font->texture.tex.offset    = font->texture.offset;
    font->texture.wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
@@ -649,11 +648,11 @@ static void *rsx_font_init(void *data,
    font->rsx->font_vert_idx = 0;
 
    /* The atlas may grow; the texture follows it */
-   font->atlas->max_width   = 2048;
-   font->atlas->max_height  = 2048;
-   font->tex_width          = font->atlas->width;
-   font->tex_height         = font->atlas->height;
-   font->texture.data       = (u32*)rsxMemalign(128, (font->tex_height * font->tex_width));
+   font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
+   font->tex_dims           = VIDEO_SCALE_PACK(font->atlas->width,
+         font->atlas->height);
+   font->texture.data       = (u32*)rsxMemalign(128,
+         VIDEO_SCALE_AREA(font->tex_dims));
    rsxAddressToOffset(font->texture.data, &font->texture.offset);
 
    if (!font->texture.data)
@@ -779,8 +778,8 @@ static void rsx_font_render_message(rsx_t *rsx,
    float *font_vertex                     = font->font_vertex;
    float *font_color                      = font->font_color;
    int pre_x                              = roundf(pos_x * VIDEO_SCALE_W(rsx->vp.dims));
-   float inv_tex_size_x                   = 1.0f / font->tex_width;
-   float inv_tex_size_y                   = 1.0f / font->tex_height;
+   float inv_tex_size_x                   = 1.0f / VIDEO_SCALE_W(font->tex_dims);
+   float inv_tex_size_y                   = 1.0f / VIDEO_SCALE_H(font->tex_dims);
    float inv_win_width                    = 1.0f / VIDEO_SCALE_W(rsx->vp.dims);
    float inv_win_height                   = 1.0f / VIDEO_SCALE_H(rsx->vp.dims);
    const struct font_glyph* (*get_glyph)(void*, uint32_t)
@@ -889,8 +888,8 @@ static void rsx_font_render_msg(
    {
       font->atlas = font->font_driver->get_atlas(font->font_data);
       if (     font->retired_count < 2
-            && (   font->tex_width  != font->atlas->width
-                || font->tex_height != font->atlas->height))
+            && font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height))
       {
          u32 *data = (u32*)rsxMemalign(128,
                font->atlas->width * font->atlas->height);
@@ -899,10 +898,10 @@ static void rsx_font_render_msg(
             font->retired[font->retired_count++] = font->texture.data;
             font->texture.data     = data;
             rsxAddressToOffset(font->texture.data, &font->texture.offset);
-            font->tex_width        = font->atlas->width;
-            font->tex_height       = font->atlas->height;
-            font->atlas->dirty_y0  = 0;
-            font->atlas->dirty_y1  = font->atlas->height;
+            font->tex_dims         = VIDEO_SCALE_PACK(font->atlas->width,
+                  font->atlas->height);
+            font->atlas->dirty_xy0 = 0;
+            font->atlas->dirty_xy1 = font->tex_dims;
             font->atlas->dirty     = true;
          }
       }

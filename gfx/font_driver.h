@@ -69,13 +69,14 @@ typedef struct font_rasterizer
    unsigned (*glyph_index)(void *face, uint32_t code);
 
    /* Draws glyph @gi (for codepoint @code; 0 asks for the face's
-    * missing-glyph mark) into the @cell_w x @cell_h cell at @dst,
-    * whose rows are @pitch samples apart, covering the whole cell, and
-    * fills width, height, draw_offset_x/y and advance_x/y of @glyph,
-    * leaving its atlas offsets alone. Returns false when nothing can
-    * be drawn for @gi; the cell is then left as it was. */
+    * missing-glyph mark) into the cell at @dst, @cell_dims in
+    * VIDEO_SCALE_PACK's layout, whose rows are @pitch samples apart,
+    * covering the whole cell, and fills width, height, draw_offset_x/y
+    * and advance_x/y of @glyph, leaving its atlas offsets alone.
+    * Returns false when nothing can be drawn for @gi; the cell is then
+    * left as it was. */
    bool (*render_glyph)(void *face, uint32_t code, unsigned gi,
-         uint8_t *dst, unsigned pitch, unsigned cell_w, unsigned cell_h,
+         uint8_t *dst, unsigned pitch, unsigned cell_dims,
          enum font_atlas_format fmt, struct font_glyph *glyph);
 
    /* The cell every glyph of this face is drawn into, packed with

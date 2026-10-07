@@ -1086,8 +1086,7 @@ static int exynos_init_font(struct exynos_video *vid)
        * to make again */
       {
          struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
-         grow->max_width  = 2048;
-         grow->max_height = 2048;
+         grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
       }
    }
    else

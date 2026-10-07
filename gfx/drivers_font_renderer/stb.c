@@ -1429,14 +1429,16 @@ static unsigned font_rasterizer_stb_glyph_index(void *data, uint32_t code)
 }
 
 static bool font_rasterizer_stb_render_builtin(stb_face_t *self,
-      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
-      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_dims,
+      enum font_atlas_format fmt, struct font_glyph *glyph)
 {
    unsigned x, y, xo, yo;
-   unsigned scale = self->builtin_scale;
+   unsigned scale  = self->builtin_scale;
+   unsigned cell_w = VIDEO_SCALE_W(cell_dims);
+   unsigned cell_h = VIDEO_SCALE_H(cell_dims);
    unsigned i;
-   bool     fmt16 = (fmt == FONT_ATLAS_FORMAT_A16);
-   size_t   esz   = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
+   bool     fmt16  = (fmt == FONT_ATLAS_FORMAT_A16);
+   size_t   esz    = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
 
    /* No glyph: the caller has nothing to draw, as before */
    if (!gi)
@@ -1482,9 +1484,10 @@ static bool font_rasterizer_stb_render_builtin(stb_face_t *self,
 }
 
 static bool font_rasterizer_stb_render_glyph(void *data, uint32_t code,
-      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
-      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_dims,
+      enum font_atlas_format fmt, struct font_glyph *glyph)
 {
+   unsigned cell_w, cell_h;
    int x0                    = 0;
    int y1                    = 0;
    int advance_width         = 0;
@@ -1497,7 +1500,10 @@ static bool font_rasterizer_stb_render_glyph(void *data, uint32_t code,
 
    if (self->builtin_scale)
       return font_rasterizer_stb_render_builtin(self, gi, dst, pitch,
-            cell_w, cell_h, fmt, glyph);
+            cell_dims, fmt, glyph);
+
+   cell_w = VIDEO_SCALE_W(cell_dims);
+   cell_h = VIDEO_SCALE_H(cell_dims);
 
    rtt_glyph_hmetrics(&self->info, (int)gi, &advance_width,
          &left_side_bearing);

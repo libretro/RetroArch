@@ -1689,10 +1689,10 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
     * freshly (re)created DIB has no previous contents and is
     * converted in full. */
    {
-      unsigned x0 = font->atlas->dirty_x0;
-      unsigned y0 = font->atlas->dirty_y0;
-      unsigned x1 = font->atlas->dirty_x1;
-      unsigned y1 = font->atlas->dirty_y1;
+      unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
+      unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+      unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
+      unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
 
       if (     recreated
             || x1 <= x0 || y1 <= y0
@@ -1806,8 +1806,7 @@ static void *gdi_font_init(void *data,
    font->atlas = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow; the DIB mirroring it is made again whenever
     * its size changes */
-   font->atlas->max_width  = 2048;
-   font->atlas->max_height = 2048;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
 
    /* The atlas DIB is created lazily on first render_msg, since
     * gdi->memDC may not exist yet at font init time (font_driver

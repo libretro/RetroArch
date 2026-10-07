@@ -1397,8 +1397,7 @@ typedef struct
    const font_renderer_driver_t *font_driver;
    void                         *font_data;
    struct font_atlas             *atlas;
-   unsigned                      tex_width;
-   unsigned                      tex_height;
+   unsigned                      tex_dims;
    /* Scratch buffer to avoid per-line malloc/free in font rendering */
    Vertex                       *scratch_verts;
    unsigned                      scratch_capacity; /* in Vertex count */
@@ -1431,20 +1430,18 @@ static void *d3d9_font_init(void *data,
       if (     SUCCEEDED(IDirect3DDevice9_GetDeviceCaps(d3d->dev, &caps))
             && caps.MaxTextureWidth  > 0
             && caps.MaxTextureHeight > 0)
-      {
-         font->atlas->max_width  = caps.MaxTextureWidth;
-         font->atlas->max_height = caps.MaxTextureHeight;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               caps.MaxTextureWidth, caps.MaxTextureHeight);
    }
-   font->tex_width  = font->atlas->width;
-   font->tex_height = font->atlas->height;
+   font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
+         font->atlas->height);
 
    /* Create an A8R8G8B8 texture from the A8 atlas buffer.
     * D3D9 doesn't universally support D3DFMT_A8
     * as a texture format, so we expand it. */
    font->texture    = NULL;
    IDirect3DDevice9_CreateTexture(d3d->dev,
-         font->tex_width, font->tex_height, 1,
+         VIDEO_SCALE_W(font->tex_dims), VIDEO_SCALE_H(font->tex_dims), 1,
          0, D3DFMT_A8R8G8B8,
          D3DPOOL_MANAGED,
          (struct IDirect3DTexture9**)&font->texture, NULL);
@@ -1681,18 +1678,18 @@ static void d3d9_font_render_msg(
        * will have wrong UVs or missing data. */
       bool respecified = false;
 
-      if (   font->atlas->width  != font->tex_width
-          || font->atlas->height != font->tex_height)
+      if (font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height))
       {
          respecified      = true;
          if (font->texture)
             IDirect3DTexture9_Release(font->texture);
 
-         font->tex_width  = font->atlas->width;
-         font->tex_height = font->atlas->height;
+         font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height);
          font->texture    = NULL;
          IDirect3DDevice9_CreateTexture(d3d->dev,
-               font->tex_width, font->tex_height, 1,
+               VIDEO_SCALE_W(font->tex_dims), VIDEO_SCALE_H(font->tex_dims), 1,
                0, D3DFMT_A8R8G8B8,
                D3DPOOL_MANAGED,
                (struct IDirect3DTexture9**)&font->texture, NULL);
@@ -1703,10 +1700,10 @@ static void d3d9_font_render_msg(
          unsigned i, j;
          D3DLOCKED_RECT lr;
          RECT rect;
-         unsigned x0 = font->atlas->dirty_x0;
-         unsigned y0 = font->atlas->dirty_y0;
-         unsigned x1 = font->atlas->dirty_x1;
-         unsigned y1 = font->atlas->dirty_y1;
+         unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
+         unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+         unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
+         unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
 
          /* A recreated texture has no previous contents, so the whole
           * atlas must be converted; otherwise only the dirty
@@ -1819,8 +1816,8 @@ static void d3d9_font_render_msg(
          verts_f   = verts_s + (bytes) * 6; \
          inv_vp_w  = 1.0f / (float)width; \
          inv_vp_h  = 1.0f / (float)height; \
-         inv_tex_w = 1.0f / (float)font->tex_width; \
-         inv_tex_h = 1.0f / (float)font->tex_height; \
+         inv_tex_w = 1.0f / (float)VIDEO_SCALE_W(font->tex_dims); \
+         inv_tex_h = 1.0f / (float)VIDEO_SCALE_H(font->tex_dims); \
          if (text_align == TEXT_ALIGN_RIGHT) \
             fx -= (float)((line_width) * scale) / (float)width; \
          else if (text_align == TEXT_ALIGN_CENTER) \

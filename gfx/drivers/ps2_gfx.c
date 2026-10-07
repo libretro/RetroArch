@@ -179,8 +179,7 @@ static void* ps2_font_init(void* data, const char* font_path,
    /* The atlas may grow, kept small for the GS's 4 MB: the EE copy is
     * made again at its size and the texture sent again, as the menu
     * texture is when its size changes */
-   atlas->max_width    = 512;
-   atlas->max_height   = 512;
+   atlas->max_dims = VIDEO_SCALE_PACK(512, 512);
 
    return font;
 }
@@ -363,10 +362,10 @@ static void ps2_font_render_msg(
       unsigned j;
       uint8_t *tex8              = (uint8_t*)font->texture->Mem;
       const struct font_atlas *a = font->atlas;
-      unsigned x0                = a->dirty_x0;
-      unsigned y0                = a->dirty_y0;
-      unsigned x1                = a->dirty_x1;
-      unsigned y1                = a->dirty_y1;
+      unsigned x0                = VIDEO_SCALE_W(a->dirty_xy0);
+      unsigned y0                = VIDEO_SCALE_H(a->dirty_xy0);
+      unsigned x1                = VIDEO_SCALE_W(a->dirty_xy1);
+      unsigned y1                = VIDEO_SCALE_H(a->dirty_xy1);
 
       if (x1 <= x0 || y1 <= y0 || x1 > a->width || y1 > a->height)
       {

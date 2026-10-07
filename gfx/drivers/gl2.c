@@ -1057,10 +1057,8 @@ static void *gl2_raster_font_init(void *data,
       GLint max_tex = 0;
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_tex);
       if (max_tex > 0)
-      {
-         font->atlas->max_width  = (unsigned)max_tex;
-         font->atlas->max_height = (unsigned)max_tex;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               (unsigned)max_tex, (unsigned)max_tex);
    }
 
    gl2_raster_font_upload_atlas(font, 0, 0, true);
@@ -1096,7 +1094,8 @@ static void gl2_raster_font_draw_vertices(gl2_t *gl,
    else if (font->atlas->dirty)
    {
       gl2_raster_font_upload_atlas(font,
-            font->atlas->dirty_y0, font->atlas->dirty_y1, false);
+            VIDEO_SCALE_H(font->atlas->dirty_xy0),
+            VIDEO_SCALE_H(font->atlas->dirty_xy1), false);
       font->atlas->dirty   = false;
    }
 

@@ -71,8 +71,7 @@ typedef struct
     * the glyphs are multiplied by */
    VGImage font_atlas;
    VGPaint font_paint;
-   unsigned font_atlas_w;
-   unsigned font_atlas_h;
+   unsigned font_atlas_dims;
    vg_glyph_image_t font_glyphs[VG_FONT_CHILDREN];
 
    unsigned mTextureWidth;
@@ -125,8 +124,9 @@ static bool vg_font_init(vg_t *vg, const char *path, float size)
       return false;
    if ((atlas = vg->font_driver->get_atlas(vg->font_data)))
    {
-      atlas->max_width  = (unsigned)vgGeti(VG_MAX_IMAGE_WIDTH);
-      atlas->max_height = (unsigned)vgGeti(VG_MAX_IMAGE_HEIGHT);
+      unsigned max_w  = (unsigned)vgGeti(VG_MAX_IMAGE_WIDTH);
+      unsigned max_h  = (unsigned)vgGeti(VG_MAX_IMAGE_HEIGHT);
+      atlas->max_dims = VIDEO_SCALE_PACK(max_w, max_h);
    }
    if ((vg->font_paint = vgCreatePaint()) == VG_INVALID_HANDLE)
    {
@@ -285,8 +285,7 @@ static void vg_font_release_images(vg_t *vg)
    if (vg->font_atlas != VG_INVALID_HANDLE)
       vgDestroyImage(vg->font_atlas);
    vg->font_atlas   = VG_INVALID_HANDLE;
-   vg->font_atlas_w = 0;
-   vg->font_atlas_h = 0;
+   vg->font_atlas_dims = 0;
 }
 
 /* Brings the atlas image up to the glyph cache: made again when the
@@ -295,8 +294,8 @@ static void vg_font_release_images(vg_t *vg)
 static bool vg_font_sync_atlas(vg_t *vg, struct font_atlas *atlas)
 {
    if (     vg->font_atlas == VG_INVALID_HANDLE
-         || atlas->width   != vg->font_atlas_w
-         || atlas->height  != vg->font_atlas_h)
+         || vg->font_atlas_dims != VIDEO_SCALE_PACK(atlas->width,
+            atlas->height))
    {
       vg_font_release_images(vg);
       if ((vg->font_atlas = vgCreateImage(VG_A_8,
@@ -305,19 +304,20 @@ static bool vg_font_sync_atlas(vg_t *vg, struct font_atlas *atlas)
                   | VG_IMAGE_QUALITY_FASTER
                   | VG_IMAGE_QUALITY_BETTER)) == VG_INVALID_HANDLE)
          return false;
-      vg->font_atlas_w = atlas->width;
-      vg->font_atlas_h = atlas->height;
+      vg->font_atlas_dims = VIDEO_SCALE_PACK(atlas->width, atlas->height);
       vgImageSubData(vg->font_atlas, atlas->buffer, (VGint)atlas->width,
             VG_A_8, 0, 0, (VGint)atlas->width, (VGint)atlas->height);
    }
    else if (atlas->dirty)
    {
-      unsigned x0 = atlas->dirty_x0;
-      unsigned y0 = atlas->dirty_y0;
-      unsigned x1 = (atlas->dirty_x1 < atlas->width)
-         ? atlas->dirty_x1 : atlas->width;
-      unsigned y1 = (atlas->dirty_y1 < atlas->height)
-         ? atlas->dirty_y1 : atlas->height;
+      unsigned x0 = VIDEO_SCALE_W(atlas->dirty_xy0);
+      unsigned y0 = VIDEO_SCALE_H(atlas->dirty_xy0);
+      unsigned x1 = VIDEO_SCALE_W(atlas->dirty_xy1);
+      unsigned y1 = VIDEO_SCALE_H(atlas->dirty_xy1);
+      if (x1 > atlas->width)
+         x1 = atlas->width;
+      if (y1 > atlas->height)
+         y1 = atlas->height;
       if (x1 > x0 && y1 > y0)
          vgImageSubData(vg->font_atlas,
                atlas->buffer + (size_t)y0 * atlas->width + x0,
@@ -438,8 +438,8 @@ static void vg_render_msg(vg_t *vg, const char *msg, size_t msg_len,
          line_x -= (float)(line_width) * scale / 2.0f; \
       line_y = y0 + off_y - (float)(line) * line_height * scale; \
       if (     atlas->dirty \
-            || atlas->width  != vg->font_atlas_w \
-            || atlas->height != vg->font_atlas_h) \
+            || vg->font_atlas_dims != VIDEO_SCALE_PACK(atlas->width, \
+               atlas->height)) \
          atlas_ok = vg_font_sync_atlas(vg, atlas);
 #define FONT_LAYOUT_GLYPH(glyph, pen_x, pen_y) \
       if (atlas_ok) \

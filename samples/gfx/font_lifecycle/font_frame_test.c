@@ -79,6 +79,31 @@ int main(void)
       CHECK(missing == 0, "a frame that fits draws every glyph");
    }
 
+   /* The dirty region is the bounding box of the cells drawn since the
+    * consumer last cleared it, each axis on its own */
+   {
+      struct font_atlas *atlas = drv->get_atlas(h);
+      const struct font_glyph *a, *b;
+      unsigned ax, ay, bx, by;
+      atlas->dirty = false;
+      font_driver_frame_begin();
+      a  = drv->get_glyph(h, 0x0391);
+      ax = a ? a->atlas_offset_x : 0;
+      ay = a ? a->atlas_offset_y : 0;
+      b  = drv->get_glyph(h, 0x03A9);
+      bx = b ? b->atlas_offset_x : 0;
+      by = b ? b->atlas_offset_y : 0;
+      CHECK(a && b && atlas->dirty, "dirty: two new glyphs mark the atlas");
+      CHECK(   VIDEO_SCALE_W(atlas->dirty_xy0) == (ax < bx ? ax : bx)
+            && VIDEO_SCALE_H(atlas->dirty_xy0) == (ay < by ? ay : by),
+            "dirty: top-left is the least of each axis");
+      CHECK(   VIDEO_SCALE_W(atlas->dirty_xy1) > (ax > bx ? ax : bx)
+            && VIDEO_SCALE_H(atlas->dirty_xy1) > (ay > by ? ay : by)
+            && VIDEO_SCALE_W(atlas->dirty_xy1) <= atlas->width
+            && VIDEO_SCALE_H(atlas->dirty_xy1) <= atlas->height,
+            "dirty: bottom-right past both cells, inside the atlas");
+   }
+
    drv->free(h);
 
    /* A consumer that can take a bigger texture: the frame after one
@@ -92,8 +117,7 @@ int main(void)
       unsigned w0 = atlas->width, h0 = atlas->height;
       const struct font_glyph *g;
       unsigned ax, ay;
-      atlas->max_width  = 4096;
-      atlas->max_height = 4096;
+      atlas->max_dims = VIDEO_SCALE_PACK(4096, 4096);
 
       font_driver_frame_begin();
       g  = drv->get_glyph(h, 'A');
@@ -108,8 +132,9 @@ int main(void)
       atlas = drv->get_atlas(h);
       CHECK(atlas->width == 2 * w0 && atlas->height == 2 * h0,
             "growing: twice as wide and high a frame later");
-      CHECK(atlas->dirty && atlas->dirty_x1 == atlas->width
-            && atlas->dirty_y1 == atlas->height,
+      CHECK(atlas->dirty && atlas->dirty_xy0 == 0
+            && atlas->dirty_xy1 == VIDEO_SCALE_PACK(atlas->width,
+               atlas->height),
             "growing: all of it marked for upload");
       g = drv->get_glyph(h, 'A');
       CHECK(g->atlas_offset_x == ax && g->atlas_offset_y == ay,

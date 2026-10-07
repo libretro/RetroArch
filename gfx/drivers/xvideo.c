@@ -203,8 +203,7 @@ static void xv_init_font(xv_t *xv, const char *font_path, unsigned font_size)
        * to make again */
       {
          struct font_atlas *grow = xv->font_driver->get_atlas(xv->font);
-         grow->max_width  = 2048;
-         grow->max_height = 2048;
+         grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
       }
    }
    else

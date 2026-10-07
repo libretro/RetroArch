@@ -1130,8 +1130,9 @@ static void *d3d10_font_init(void* data, const char* font_path,
 
    font->atlas               = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, up to the largest 2D texture D3D10 has */
-   font->atlas->max_width    = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
-   font->atlas->max_height   = D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   font->atlas->max_dims = VIDEO_SCALE_PACK(
+         D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION,
+         D3D10_REQ_TEXTURE2D_U_OR_V_DIMENSION);
    d3d10_font_make_texture(d3d10, font);
 
    return font;
@@ -1168,10 +1169,13 @@ static int d3d10_font_get_message_width(void *data, const char *msg,
  * rows, and issue a boxed CopySubresourceRegion for just that area.
  * The generic d3d10_update_texture() re-uploads the whole surface. */
 static void d3d10_font_update_atlas_region(
-      D3D10Device ctx, d3d10_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+      D3D10Device ctx, d3d10_font_t *font, unsigned xy0, unsigned xy1)
 {
    unsigned y;
+   unsigned x0 = VIDEO_SCALE_W(xy0);
+   unsigned y0 = VIDEO_SCALE_H(xy0);
+   unsigned x1 = VIDEO_SCALE_W(xy1);
+   unsigned y1 = VIDEO_SCALE_H(xy1);
    D3D10_MAPPED_TEXTURE2D mapped;
    D3D10_BOX box;
 
@@ -1414,8 +1418,7 @@ static void d3d10_font_render_msg(
    {
       if (font->texture.staging)
          d3d10_font_update_atlas_region(d3d10->device, font,
-               font->atlas->dirty_x0, font->atlas->dirty_y0,
-               font->atlas->dirty_x1, font->atlas->dirty_y1);
+               font->atlas->dirty_xy0, font->atlas->dirty_xy1);
       font->atlas->dirty = false;
    }
 

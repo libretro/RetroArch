@@ -4116,8 +4116,7 @@ static void gfx_display_metal_scissor_end(void *data, unsigned video_dims)
       _atlas  = _font_driver->get_atlas(_font_data);
       /* The atlas may grow, up to a texture every Metal GPU makes; the
        * buffer and texture follow it (_followAtlas) */
-      _atlas->max_width  = 8192;
-      _atlas->max_height = 8192;
+      _atlas->max_dims = VIDEO_SCALE_PACK(8192, 8192);
       [self _makeAtlasTexture];
 
       if (![self _initializeState])

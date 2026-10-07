@@ -1162,11 +1162,15 @@ typedef struct
  * it has no previous contents). Managed pool textures track locked
  * sub-rects natively, so only that region is transferred. */
 static void d3d8_font_upload_atlas(d3d8_font_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1, bool full)
+      unsigned xy0, unsigned xy1, bool full)
 {
    D3DLOCKED_RECT lr;
    RECT rect;
    unsigned i, j;
+   unsigned x0 = VIDEO_SCALE_W(xy0);
+   unsigned y0 = VIDEO_SCALE_H(xy0);
+   unsigned x1 = VIDEO_SCALE_W(xy1);
+   unsigned y1 = VIDEO_SCALE_H(xy1);
 
    if (!font->texture)
       return;
@@ -1228,10 +1232,8 @@ static void *d3d8_font_init(void *data,
       if (     SUCCEEDED(IDirect3DDevice8_GetDeviceCaps(d3d->dev, &caps))
             && caps.MaxTextureWidth  > 0
             && caps.MaxTextureHeight > 0)
-      {
-         font->atlas->max_width  = caps.MaxTextureWidth;
-         font->atlas->max_height = caps.MaxTextureHeight;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               caps.MaxTextureWidth, caps.MaxTextureHeight);
    }
    font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
@@ -1247,7 +1249,7 @@ static void *d3d8_font_init(void *data,
          D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
 
    if (font->texture)
-      d3d8_font_upload_atlas(font, 0, 0, 0, 0, true);
+      d3d8_font_upload_atlas(font, 0, 0, true);
 
    font->atlas->dirty = false;
    return font;
@@ -1511,8 +1513,7 @@ static void d3d8_font_render_msg(
       }
 
       d3d8_font_upload_atlas(font,
-            font->atlas->dirty_x0, font->atlas->dirty_y0,
-            font->atlas->dirty_x1, font->atlas->dirty_y1, respecified);
+            font->atlas->dirty_xy0, font->atlas->dirty_xy1, respecified);
       font->atlas->dirty = false;
    }
 

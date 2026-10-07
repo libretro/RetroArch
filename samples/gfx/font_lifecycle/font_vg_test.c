@@ -384,11 +384,13 @@ int main(void)
    p = plain(0.1f, 0.5f, TEXT_ALIGN_LEFT);
    vg_render_msg(&vg_st, "T", 1, &p, SURF_W, SURF_H);
    found = glyph_lands('T', 0.1f * SURF_W, 0.5f * SURF_H, &missing);
-   CHECK(     vg_st.font_atlas_w > first_w
-         || vg_st.font_atlas_h > first_h, "the atlas grew and its image with it");
+   CHECK(     VIDEO_SCALE_W(vg_st.font_atlas_dims) > first_w
+         || VIDEO_SCALE_H(vg_st.font_atlas_dims) > first_h,
+         "the atlas grew and its image with it");
    CHECK(found > 0 && missing == 0, "after the atlas grew, glyphs still land");
-   printf("  atlas image %ux%u (first %ux%u)\n", vg_st.font_atlas_w,
-         vg_st.font_atlas_h, first_w, first_h);
+   printf("  atlas image %ux%u (first %ux%u)\n",
+         VIDEO_SCALE_W(vg_st.font_atlas_dims),
+         VIDEO_SCALE_H(vg_st.font_atlas_dims), first_w, first_h);
 
    vg_font_release_images(&vg_st);
    CHECK(live_images == 0, "every image released");

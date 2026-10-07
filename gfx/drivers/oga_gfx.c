@@ -423,8 +423,7 @@ static void *oga_init(const video_info_t *video)
           * holds; the glyphs are blitted from it in memory, so there is
           * no texture to make again */
          struct font_atlas *grow = vid->font_driver->get_atlas(vid->font);
-         grow->max_width  = 2048;
-         grow->max_height = 2048;
+         grow->max_dims = VIDEO_SCALE_PACK(2048, 2048);
       }
    }
 

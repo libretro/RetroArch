@@ -1316,8 +1316,7 @@ typedef struct
    gl3_t *gl;
    GLuint tex;
    /* The atlas size the texture was made at; the atlas may grow */
-   unsigned tex_w;
-   unsigned tex_h;
+   unsigned tex_dims;
 
    const font_renderer_driver_t *font_driver;
    void *font_data;
@@ -1368,8 +1367,8 @@ static void gl3_raster_font_upload_atlas(gl3_raster_t *font)
    glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
    glTexStorage2D(GL_TEXTURE_2D, 1, GL_R8, font->atlas->width, font->atlas->height);
-   font->tex_w = font->atlas->width;
-   font->tex_h = font->atlas->height;
+   font->tex_dims = VIDEO_SCALE_PACK(font->atlas->width,
+         font->atlas->height);
    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                    font->atlas->width, font->atlas->height, GL_RED, GL_UNSIGNED_BYTE, font->atlas->buffer);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -1383,8 +1382,13 @@ static void gl3_raster_font_upload_atlas(gl3_raster_t *font)
  * guarantee GL_UNPACK_ROW_LENGTH, so the exact sub-rectangle can be
  * uploaded without staging or respecifying the (immutable) storage. */
 static void gl3_raster_font_update_atlas_region(gl3_raster_t *font,
-      unsigned x0, unsigned y0, unsigned x1, unsigned y1)
+      unsigned xy0, unsigned xy1)
 {
+   unsigned x0 = VIDEO_SCALE_W(xy0);
+   unsigned y0 = VIDEO_SCALE_H(xy0);
+   unsigned x1 = VIDEO_SCALE_W(xy1);
+   unsigned y1 = VIDEO_SCALE_H(xy1);
+
    if (     x1 <= x0 || y1 <= y0
          || x1 > (unsigned)font->atlas->width
          || y1 > (unsigned)font->atlas->height)
@@ -1434,10 +1438,8 @@ static void *gl3_raster_font_init(void *data,
       GLint max_tex = 0;
       glGetIntegerv(GL_MAX_TEXTURE_SIZE, &max_tex);
       if (max_tex > 0)
-      {
-         font->atlas->max_width  = (unsigned)max_tex;
-         font->atlas->max_height = (unsigned)max_tex;
-      }
+         font->atlas->max_dims = VIDEO_SCALE_PACK(
+               (unsigned)max_tex, (unsigned)max_tex);
    }
 
    gl3_raster_font_upload_atlas(font);
@@ -1465,11 +1467,10 @@ static void gl3_raster_font_draw_vertices(gl3_t *gl,
       /* Immutable storage: an atlas that grew needs a texture of its
        * own size */
       if (     font->tex
-            && font->tex_w == font->atlas->width
-            && font->tex_h == font->atlas->height)
+            && font->tex_dims == VIDEO_SCALE_PACK(font->atlas->width,
+               font->atlas->height))
          gl3_raster_font_update_atlas_region(font,
-               font->atlas->dirty_x0, font->atlas->dirty_y0,
-               font->atlas->dirty_x1, font->atlas->dirty_y1);
+               font->atlas->dirty_xy0, font->atlas->dirty_xy1);
       else
          gl3_raster_font_upload_atlas(font);
       font->atlas->dirty   = false;

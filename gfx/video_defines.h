@@ -219,6 +219,22 @@ enum text_alignment
  * without having to remember the cast. */
 #define VIDEO_SCALE_AREA(d) ((size_t)VIDEO_SCALE_W(d) * VIDEO_SCALE_H(d))
 
+/* Each axis of two pairs at its least or greatest, staying packed: a
+ * half compares with the other one masked off. */
+#define VIDEO_SCALE_HI_MASK (VIDEO_SCALE_DIM_MAX << 16)
+#define VIDEO_SCALE_HALF_MIN(a, b, m) \
+   (((unsigned)(a) & (m)) < ((unsigned)(b) & (m)) \
+    ? ((unsigned)(a) & (m)) : ((unsigned)(b) & (m)))
+#define VIDEO_SCALE_HALF_MAX(a, b, m) \
+   (((unsigned)(a) & (m)) > ((unsigned)(b) & (m)) \
+    ? ((unsigned)(a) & (m)) : ((unsigned)(b) & (m)))
+#define VIDEO_SCALE_MIN(a, b) \
+   (  VIDEO_SCALE_HALF_MIN(a, b, VIDEO_SCALE_HI_MASK) \
+    | VIDEO_SCALE_HALF_MIN(a, b, VIDEO_SCALE_DIM_MAX))
+#define VIDEO_SCALE_MAX(a, b) \
+   (  VIDEO_SCALE_HALF_MAX(a, b, VIDEO_SCALE_HI_MASK) \
+    | VIDEO_SCALE_HALF_MAX(a, b, VIDEO_SCALE_DIM_MAX))
+
 /* An alpha modulation as an 8-bit channel, saturated. An overlay's
  * alpha is its opacity times a per-desc alpha_mod, which packs set
  * above 1 to brighten a pressed button; packed straight into a byte
@@ -448,22 +464,21 @@ struct font_atlas
    unsigned width;
    unsigned height;
    /* Dirty region in pixels, covering every glyph cell updated since
-    * the consumer last cleared the dirty flag; x1/y1 are exclusive
-    * and the values are only meaningful while dirty is set.
-    * Consumers may upload just this region (or any superset of it,
-    * such as the full-width row band) instead of the whole atlas. */
-   unsigned dirty_x0;
-   unsigned dirty_y0;
-   unsigned dirty_x1;
-   unsigned dirty_y1;
-   /* Set by the consumer to the largest texture it can make. When a
-    * frame needs more glyphs than the atlas has cells for, the next
-    * get_atlas() call in a later frame grows the atlas - width and
-    * height, never past these - and the consumer remakes its texture at
-    * the new size. Zero, the default, keeps the atlas at its first
-    * size. Cells only ever get added: a glyph's offsets never change. */
-   unsigned max_width;
-   unsigned max_height;
+    * the consumer last cleared the dirty flag: its top-left corner and
+    * its exclusive bottom-right one, each x and y in VIDEO_SCALE_PACK's
+    * layout (read with VIDEO_SCALE_W/H), only meaningful while dirty is
+    * set. Consumers may upload just this region (or any superset of
+    * it, such as the full-width row band) instead of the whole atlas. */
+   unsigned dirty_xy0;
+   unsigned dirty_xy1;
+   /* Set by the consumer to the largest texture it can make, packed
+    * with VIDEO_SCALE_PACK. When a frame needs more glyphs than the
+    * atlas has cells for, the next get_atlas() call in a later frame
+    * grows the atlas - width and height, never past these - and the
+    * consumer remakes its texture at the new size. Zero, the default,
+    * keeps the atlas at its first size. Cells only ever get added: a
+    * glyph's offsets never change. */
+   unsigned max_dims;
    enum font_atlas_format format;
    bool dirty;
 };

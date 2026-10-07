@@ -94,12 +94,14 @@ static unsigned font_rasterizer_ct_glyph_index(void *data, uint32_t code)
 
 /* The missing-glyph mark: a rectangle inset into the cell */
 static void ct_render_missing(ct_face_t *self, uint8_t *dst,
-      unsigned pitch, unsigned cell_w, unsigned cell_h,
+      unsigned pitch, unsigned cell_dims,
       enum font_atlas_format fmt, struct font_glyph *glyph)
 {
    unsigned r, c;
-   bool fmt16 = (fmt == FONT_ATLAS_FORMAT_A16);
-   size_t esz = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
+   unsigned cell_w = VIDEO_SCALE_W(cell_dims);
+   unsigned cell_h = VIDEO_SCALE_H(cell_dims);
+   bool fmt16      = (fmt == FONT_ATLAS_FORMAT_A16);
+   size_t esz      = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
 
    for (r = 0; r < cell_h; r++)
       memset(dst + (size_t)r * pitch * esz, 0, (size_t)cell_w * esz);
@@ -147,8 +149,8 @@ static void ct_render_missing(ct_face_t *self, uint8_t *dst,
 }
 
 static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
-      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_w,
-      unsigned cell_h, enum font_atlas_format fmt, struct font_glyph *glyph)
+      unsigned gi, uint8_t *dst, unsigned pitch, unsigned cell_dims,
+      enum font_atlas_format fmt, struct font_glyph *glyph)
 {
    CGGlyph glyphs[1];
    CGRect bounds;
@@ -160,16 +162,18 @@ static bool font_rasterizer_ct_render_glyph(void *data, uint32_t code,
    CFStringRef glyph_cfstr;
    CFAttributedStringRef attr_string;
    CTLineRef line;
-   unsigned r;
+   unsigned r, cell_w, cell_h;
    ct_face_t *self = (ct_face_t*)data;
    bool fmt16      = (fmt == FONT_ATLAS_FORMAT_A16);
    size_t esz      = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
 
    if (!gi || !(utf16_len = ct_utf16(code, utf16)))
    {
-      ct_render_missing(self, dst, pitch, cell_w, cell_h, fmt, glyph);
+      ct_render_missing(self, dst, pitch, cell_dims, fmt, glyph);
       return true;
    }
+   cell_w    = VIDEO_SCALE_W(cell_dims);
+   cell_h    = VIDEO_SCALE_H(cell_dims);
    glyphs[0] = (CGGlyph)(gi - 1);
 
    /* kCTFontDefaultOrientation was renamed kCTFontOrientationDefault
