@@ -1,6 +1,7 @@
-/* image_texture_tile_gx() against the GX RGBA8 layout, which no other
- * test sees: the gx driver samples it straight from memory on
- * hardware, so a wrong tile is invisible anywhere else.
+/* image_texture_tile_gx() and image_texture_tile_gx_copy() against the
+ * GX RGBA8 layout, which no other test sees: the gx drivers sample it
+ * straight from memory on hardware, so a wrong tile is invisible
+ * anywhere else.
  *
  * Two oracles. The layout itself, from its definition: texel (x, y)
  * lands in tile (y/4)*(w/4) + x/4 at position k = (y%4)*4 + x%4, its
@@ -88,9 +89,59 @@ static unsigned check_layout(const uint32_t *lin, const uint32_t *tiled,
    return bad;
 }
 
+/* image_texture_tile_gx_copy() against the layout by value: AR of a
+ * texel at halfword k of its tile and GB at 16 + k, the tiles of a
+ * texture rounded up to multiples of 4, and every padding texel clear.
+ * The same texels as memory-order R,G,B,A must tile the same. */
+static unsigned check_copy(const uint32_t *lin, unsigned w, unsigned h)
+{
+   unsigned x, y, bad = 0;
+   unsigned tw    = (w + 3) & ~3u;
+   unsigned th    = (h + 3) & ~3u;
+   size_t   sz    = image_texture_tile_gx_size(w, h);
+   uint16_t *t    = (uint16_t*)malloc(sz);
+   uint16_t *t2   = (uint16_t*)malloc(sz);
+   uint8_t  *rgba = (uint8_t*)malloc((size_t)w * h * 4);
+   if (!t || !t2 || !rgba || sz != (size_t)tw * th * 4)
+   {
+      free(t);
+      free(t2);
+      free(rgba);
+      return 1;
+   }
+   for (y = 0; y < (unsigned)((size_t)w * h); y++)
+   {
+      uint32_t p      = lin[y];
+      rgba[y * 4 + 0] = (uint8_t)(p >> 16);
+      rgba[y * 4 + 1] = (uint8_t)(p >> 8);
+      rgba[y * 4 + 2] = (uint8_t)p;
+      rgba[y * 4 + 3] = (uint8_t)(p >> 24);
+   }
+   memset(t, 0xa5, sz);
+   memset(t2, 0x5a, sz);
+   image_texture_tile_gx_copy(t, lin, w, h, false);
+   image_texture_tile_gx_copy(t2, (const uint32_t*)rgba, w, h, true);
+   for (y = 0; y < th; y++)
+      for (x = 0; x < tw; x++)
+      {
+         size_t   tile = (size_t)(y / 4) * (tw / 4) + x / 4;
+         unsigned k    = (y % 4) * 4 + x % 4;
+         uint32_t p    = (x < w && y < h) ? lin[(size_t)y * w + x] : 0;
+         if (     t[tile * 32 + k]      != (uint16_t)(p >> 16)
+               || t[tile * 32 + 16 + k] != (uint16_t)p)
+            bad++;
+      }
+   if (memcmp(t, t2, sz))
+      bad++;
+   free(t);
+   free(t2);
+   free(rgba);
+   return bad;
+}
+
 int main(void)
 {
-   unsigned w, h, n = 0, bad_oracle = 0, bad_layout = 0;
+   unsigned w, h, n = 0, bad_oracle = 0, bad_layout = 0, bad_copy = 0;
    srand(1);
    for (w = 1; w <= 70; w++)
       for (h = 1; h <= 44; h++)
@@ -119,6 +170,7 @@ int main(void)
             bad_oracle++;
          bad_layout += check_layout(lin, b, w, h, img.width, img.height)
             ? 1 : 0;
+         bad_copy   += check_copy(lin, w, h) ? 1 : 0;
          n++;
          free(a);
          free(b);
@@ -131,8 +183,9 @@ int main(void)
          bad_layout++;
    }
    printf("%u sizes: %u differ from the band conversion, "
-         "%u break the GX RGBA8 layout\n", n, bad_oracle, bad_layout);
-   if (bad_oracle || bad_layout)
+         "%u break the GX RGBA8 layout, %u copies break it\n",
+         n, bad_oracle, bad_layout, bad_copy);
+   if (bad_oracle || bad_layout || bad_copy)
       return 1;
    printf("[pass] image_tile_gx_test\n");
    return 0;

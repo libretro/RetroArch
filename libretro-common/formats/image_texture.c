@@ -724,6 +724,51 @@ bool image_texture_tile_gx(struct texture_image *img)
    return true;
 }
 
+size_t image_texture_tile_gx_size(unsigned width, unsigned height)
+{
+   return (size_t)((width + 3) & ~3u) * ((height + 3) & ~3u)
+      * sizeof(uint32_t);
+}
+
+/* See image.h. A tile is 32 halfwords: AR of its sixteen texels row by
+ * row, then GB. Values, not memory order, so it is right on the GX's
+ * big-endian bus whatever host runs the tests. */
+void image_texture_tile_gx_copy(uint16_t *dst, const uint32_t *src,
+      unsigned width, unsigned height, bool rgba)
+{
+   unsigned tx, ty, r, c;
+   unsigned tw = (width + 3) & ~3u;
+   unsigned th = (height + 3) & ~3u;
+
+   for (ty = 0; ty < th; ty += 4)
+      for (tx = 0; tx < tw; tx += 4, dst += 32)
+         for (r = 0; r < 4; r++)
+            for (c = 0; c < 4; c++)
+            {
+               unsigned x = tx + c;
+               unsigned y = ty + r;
+               unsigned k = r * 4 + c;
+               if (x >= width || y >= height)
+               {
+                  dst[k]      = 0;
+                  dst[16 + k] = 0;
+               }
+               else if (rgba)
+               {
+                  const uint8_t *b = (const uint8_t*)(src
+                        + (size_t)y * width + x);
+                  dst[k]      = (uint16_t)((b[3] << 8) | b[0]);
+                  dst[16 + k] = (uint16_t)((b[1] << 8) | b[2]);
+               }
+               else
+               {
+                  uint32_t p  = src[(size_t)y * width + x];
+                  dst[k]      = (uint16_t)(p >> 16);
+                  dst[16 + k] = (uint16_t)p;
+               }
+            }
+}
+
 bool image_texture_load_buffer(struct texture_image *out_img,
    enum image_type_enum type, void *buffer, size_t buffer_len)
 {

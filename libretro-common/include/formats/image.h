@@ -343,6 +343,17 @@ void image_texture_narrow_10bit(struct texture_image *img);
  * scratch cannot be allocated. */
 bool image_texture_tile_gx(struct texture_image *img);
 
+/* Write @width x @height linear 32-bit texels, @src (ARGB8888 words,
+ * or memory-order R,G,B,A when @rgba), to @dst as GX RGBA8 tiles of a
+ * texture rounded up to multiples of 4 a side, the padding clear: the
+ * layout image_texture_tile_gx() makes, but in a buffer of its own and
+ * keeping every texel. @dst holds image_texture_tile_gx_size() bytes. */
+void image_texture_tile_gx_copy(uint16_t *dst, const uint32_t *src,
+      unsigned width, unsigned height, bool rgba);
+
+/* The bytes image_texture_tile_gx_copy() writes for @width x @height */
+size_t image_texture_tile_gx_size(unsigned width, unsigned height);
+
 /* Image transfer */
 
 void image_transfer_free(void *data, enum image_type_enum type);

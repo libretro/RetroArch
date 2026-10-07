@@ -32,6 +32,7 @@
 #include <libretro.h>
 #include <retro_miscellaneous.h>
 #include <encodings/utf.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -58,10 +59,25 @@
 struct gekko_overlay
 {
    gk_gx_tex_t tex;
+   /* The tiles tex samples when they are the overlay's own (load);
+    * NULL for a texture of the pack's (load_textures) */
+   uint16_t   *tiles;
    float       tex_coord[4];    /* x, y, w, h */
    float       vertex_coord[4]; /* x, y, w, h; 0..1, y down */
    float       alpha;
+   /* No image: nothing is drawn */
+   bool        empty;
 };
+
+/* A texture of load_texture: its texels as GX RGBA8 tiles, which the
+ * GPU samples where they lie */
+typedef struct gekko_texture
+{
+   gk_gx_tex_t tex;
+   uint16_t   *tiles;
+   size_t      size;
+   unsigned    dims;
+} gekko_texture_t;
 
 typedef struct gekko_video
 {
@@ -93,6 +109,8 @@ typedef struct gekko_video
 #ifdef HAVE_OVERLAY
    bool                  overlay_enable;
    bool                  overlay_full_screen;
+   /* The page's textures are the pack's (load_textures) */
+   bool                  overlay_borrowed;
 #endif
 } gekko_video_t;
 
@@ -428,6 +446,17 @@ static void draw_menu(gekko_video_t *gx)
 }
 
 #ifdef HAVE_OVERLAY
+static void free_overlays(gekko_video_t *gx)
+{
+   unsigned i;
+   if (!gx->overlay_borrowed)
+      for (i = 0; gx->overlay && i < gx->overlays; i++)
+         free(gx->overlay[i].tiles);
+   free(gx->overlay);
+   gx->overlay  = NULL;
+   gx->overlays = 0;
+}
+
 static void draw_overlays(gekko_video_t *gx)
 {
    unsigned i;
@@ -445,6 +474,8 @@ static void draw_overlays(gekko_video_t *gx)
       const struct gekko_overlay *o = &gx->overlay[i];
       float u[4], v[4];
       uint32_t a = (uint32_t)VIDEO_ALPHA_BYTE(o->alpha);
+      if (o->empty)
+         continue;
       u[0] = u[3] = o->tex_coord[0];
       u[1] = u[2] = o->tex_coord[0] + o->tex_coord[2];
       v[0] = v[1] = o->tex_coord[1];
@@ -680,7 +711,7 @@ static void gekko_free(void *data)
       return;
    gk_gx_draw_done();
 #ifdef HAVE_OVERLAY
-   free(gx->overlay);
+   free_overlays(gx);
 #endif
    /* The VI goes on showing a black XFB, so whatever comes next (a
     * crash screen, say) is not hidden behind a blanked display. */
@@ -745,10 +776,73 @@ static void gekko_set_video_mode_poke(void *data, unsigned dims,
    setup_gx(gx);
 }
 
+/* ---- textures ---- */
+
+/* The GPU is done drawing (gk_gx_draw_done) before a frame returns, so
+ * tiles written between frames are never being read */
+static void gekko_texture_fill(gekko_texture_t *t,
+      const struct texture_image *ti)
+{
+   image_texture_tile_gx_copy(t->tiles, ti->pixels, ti->width,
+         ti->height, ti->supports_rgba);
+   gk_dcache_flush(t->tiles, t->size);
+   gk_gx_invalidate_tex();
+}
+
+static uintptr_t gekko_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   enum gk_gx_filter filter;
+   gekko_texture_t *t;
+   const struct texture_image *ti = (const struct texture_image*)data;
+
+   if (     !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || !ti->width  || ti->width  > 1024
+         || !ti->height || ti->height > 1024
+         || !(t = (gekko_texture_t*)calloc(1, sizeof(*t))))
+      return 0;
+   t->size = image_texture_tile_gx_size(ti->width, ti->height);
+   if (!(t->tiles = (uint16_t*)memalign(32, t->size)))
+   {
+      free(t);
+      return 0;
+   }
+   t->dims = VIDEO_SCALE_PACK(ti->width, ti->height);
+   gekko_texture_fill(t, ti);
+   gk_gx_tex_init(&t->tex, t->tiles, ti->width, ti->height,
+         GK_GX_TF_RGBA8, GK_GX_CLAMP, GK_GX_CLAMP);
+   filter = (     filter_type == TEXTURE_FILTER_LINEAR
+               || filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      ? GK_GX_LINEAR : GK_GX_NEAR;
+   gk_gx_tex_filter(&t->tex, filter, filter);
+   return (uintptr_t)t;
+}
+
+static void gekko_unload_texture(void *data, bool threaded, uintptr_t id)
+{
+   gekko_texture_t *t = (gekko_texture_t*)id;
+   if (t)
+   {
+      free(t->tiles);
+      free(t);
+   }
+}
+
+static enum video_texture_update gekko_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   gekko_texture_t *t = (gekko_texture_t*)id;
+   if (     !t || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || t->dims != VIDEO_SCALE_PACK(ti->width, ti->height))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   gekko_texture_fill(t, ti);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static const video_poke_interface_t gekko_poke_interface = {
    gekko_get_flags,
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   gekko_load_texture,
+   gekko_unload_texture,
    gekko_set_video_mode_poke,
    NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
@@ -771,7 +865,22 @@ static const video_poke_interface_t gekko_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gekko_update_texture
 };
 
 static void gekko_get_poke_interface(void *data,
@@ -817,37 +926,85 @@ static void gekko_overlay_vertex_geom(void *data, unsigned image,
    }
 }
 
+/* Each image tiled into the overlay's own memory, page by page: the
+ * path for a pack not shown as textures */
 static bool gekko_overlay_load(void *data, const void *image_data,
       unsigned num_images)
 {
    unsigned i;
    gekko_video_t *gx = (gekko_video_t*)data;
-   /* The image loader has already tiled these as RGBA8. */
    const struct texture_image *images =
       (const struct texture_image*)image_data;
    if (!gx)
       return false;
 
-   free(gx->overlay);
-   gx->overlays = 0;
+   free_overlays(gx);
    if (!(gx->overlay = (struct gekko_overlay*)calloc(num_images,
                sizeof(*gx->overlay))))
       return false;
-   gx->overlays = num_images;
+   gx->overlays         = num_images;
+   gx->overlay_borrowed = false;
 
    for (i = 0; i < num_images; i++)
    {
       struct gekko_overlay *o = &gx->overlay[i];
-      gk_dcache_flush(images[i].pixels,
-            (size_t)images[i].width * images[i].height * 4);
-      gk_gx_tex_init(&o->tex, images[i].pixels, images[i].width,
-            images[i].height, GK_GX_TF_RGBA8, GK_GX_CLAMP, GK_GX_CLAMP);
-      gk_gx_tex_filter(&o->tex, GK_GX_LINEAR, GK_GX_LINEAR);
+      size_t sz = image_texture_tile_gx_size(images[i].width,
+            images[i].height);
+      if (!images[i].pixels || !images[i].width || !images[i].height)
+         o->empty = true;
+      else if (!(o->tiles = (uint16_t*)memalign(32, sz)))
+      {
+         free_overlays(gx);
+         return false;
+      }
+      else
+      {
+         image_texture_tile_gx_copy(o->tiles, images[i].pixels,
+               images[i].width, images[i].height,
+               images[i].supports_rgba);
+         gk_dcache_flush(o->tiles, sz);
+         gk_gx_tex_init(&o->tex, o->tiles, images[i].width,
+               images[i].height, GK_GX_TF_RGBA8, GK_GX_CLAMP, GK_GX_CLAMP);
+         gk_gx_tex_filter(&o->tex, GK_GX_LINEAR, GK_GX_LINEAR);
+      }
       gekko_overlay_tex_geom(gx, i, 0, 0, 1, 1);
       gekko_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
       o->alpha = 1.0f;
    }
    gk_gx_invalidate_tex();
+   return true;
+}
+
+/* A page of the pack's textures: gekko_load_texture's, whose tiles an
+ * update rewrites where they are, so a copy of the object stays good */
+static bool gekko_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   gekko_video_t *gx = (gekko_video_t*)data;
+   if (!gx)
+      return false;
+
+   free_overlays(gx);
+   if (!num_textures)
+      return true;
+   if (!(gx->overlay = (struct gekko_overlay*)calloc(num_textures,
+               sizeof(*gx->overlay))))
+      return false;
+   gx->overlays         = num_textures;
+   gx->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      const gekko_texture_t *t = (const gekko_texture_t*)textures[i];
+      if (t)
+         gx->overlay[i].tex   = t->tex;
+      else
+         gx->overlay[i].empty = true;
+      gekko_overlay_tex_geom(gx, i, 0, 0, 1, 1);
+      gekko_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
+      gx->overlay[i].alpha = 1.0f;
+   }
    return true;
 }
 
@@ -875,7 +1032,7 @@ static void gekko_overlay_set_alpha(void *data, unsigned image, float mod)
 static const video_overlay_interface_t gekko_overlay_interface = {
    gekko_overlay_enable,
    gekko_overlay_load,
-   NULL, /* load_textures */
+   gekko_overlay_load_textures,
    gekko_overlay_tex_geom,
    gekko_overlay_vertex_geom,
    gekko_overlay_full_screen,

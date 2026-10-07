@@ -538,13 +538,6 @@ static bool task_overlay_load_image_texture(
             return false;
       }
 
-      if (     (loader->flags & OVERLAY_LOADER_GX_TILE)
-            && !image_texture_tile_gx(image))
-      {
-         image_texture_free(image);
-         return false;
-      }
-
       attr.p = (void*)image;
       string_list_append(loader->image_list, rel_path, attr);
       if (pack_idx)
@@ -554,8 +547,7 @@ static bool task_overlay_load_image_texture(
       /* An animated PNG keeps its file bytes: the pack composes the
        * frames from them one at a time. The decode above said which
        * files those are and is the animation's first frame, so a
-       * still is read once and nothing decodes twice; a tiled pack has
-       * no animations. */
+       * still is read once and nothing decodes twice. */
       {
          union string_list_elem_attr aattr;
          overlay_anim_src_t *src = NULL;
@@ -564,7 +556,6 @@ static bool task_overlay_load_image_texture(
 
          aattr.i = 0;
          if (     png_probe == 1
-               && !(loader->flags & OVERLAY_LOADER_GX_TILE)
                && filestream_read_file(full_path, &buf, &len)
                && buf && len > 0
                && (src = (overlay_anim_src_t*)calloc(1, sizeof(*src))))
@@ -1835,8 +1826,6 @@ bool task_push_overlay_load_default(
             loader->flags  |= OVERLAY_LOADER_RGBA_SUPPORT;
          if (req.formats & GFX_SURFACE_PIXFMT_2101010)
             loader->flags  |= OVERLAY_LOADER_10BIT;
-         if (req.preferred == GFX_SURFACE_PIXFMT_GX_RGBA8)
-            loader->flags  |= OVERLAY_LOADER_GX_TILE;
       }
    }
 #endif

@@ -83,12 +83,6 @@ bool gfx_surface_query_requirements(unsigned width,
       return false;
    req->rgba       = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA)
          ? true : false;
-#ifdef GEKKO
-   /* The gx driver has no texture upload: an overlay's pixels are
-    * sampled where they lie, so they must already be GX tiles. */
-   req->formats    = GFX_SURFACE_PIXFMT_GX_RGBA8;
-   req->preferred  = GFX_SURFACE_PIXFMT_GX_RGBA8;
-#else
    /* 8888 is always sampled; the wider formats are what the driver
     * says its texture interface takes. The preference is the widest
     * of them, since a producer with a wider source loses nothing by
@@ -114,7 +108,6 @@ bool gfx_surface_query_requirements(unsigned width,
       req->preferred = GFX_SURFACE_PIXFMT_2101010;
    else
       req->preferred = GFX_SURFACE_PIXFMT_8888;
-#endif
    if ((size_t)width > ((size_t)-1) / GFX_SURFACE_PIXFMT_BPP(req->preferred))
       return false;
    req->can_update = video_driver_texture_can_update();

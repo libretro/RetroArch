@@ -192,9 +192,9 @@ enum gfx_surface_pixfmt
    GFX_SURFACE_PIXFMT_4444     = (1 << 5),
    /* GX RGBA8, the GameCube/Wii texture layout: 4x4 tiles of 64 bytes,
     * the AR halves of a tile's 16 texels then their GB halves, width
-    * and height multiples of 4 (image_texture_tile_gx). A layout as
-    * much as a format: the gx driver points the GPU at the pixels
-    * where they lie, so it samples nothing linear at all. */
+    * and height multiples of 4 (image_texture_tile_gx). No surface
+    * takes it: the gx drivers tile what they are given as they load
+    * or update a texture. */
    GFX_SURFACE_PIXFMT_GX_RGBA8 = (1 << 6)
 };
 
@@ -231,8 +231,7 @@ typedef struct
    bool rgba;
    /* Every format the driver samples without the frontend converting
     * first, as gfx_surface_pixfmt bits: GFX_SURFACE_PIXFMT_8888 and
-    * whatever the driver adds to it, except on the GameCube/Wii, where
-    * it is GFX_SURFACE_PIXFMT_GX_RGBA8 alone. A format is only listed
+    * whatever the driver adds to it. A format is only listed
     * when a submit of it reaches the GPU as that format - a scRGB
     * framebuffer is not by itself a reason to list FP16. */
    uint32_t formats;

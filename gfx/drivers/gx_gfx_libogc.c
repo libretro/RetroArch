@@ -24,6 +24,7 @@
 #include <libretro.h>
 #include <verbosity.h>
 #include <encodings/utf.h>
+#include <formats/image.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -81,10 +82,25 @@ void VIDEO_SetGamma(int gamma);
 struct gx_overlay_data
 {
    GXTexObj tex;
+   /* The tiles tex samples when they are the overlay's own (load);
+    * NULL for a texture of the pack's (load_textures) */
+   uint16_t *tiles;
    float tex_coord[8];
    float vertex_coord[8];
    float alpha_mod;
+   /* No image: nothing is drawn */
+   bool empty;
 };
+
+/* A texture of load_texture: its texels as GX RGBA8 tiles, which the
+ * GPU samples where they lie */
+typedef struct gx_texture
+{
+   GXTexObj obj;
+   uint16_t *tiles;
+   size_t    size;
+   unsigned  dims;
+} gx_texture_t;
 
 typedef struct gx_video
 {
@@ -122,6 +138,8 @@ typedef struct gx_video
    bool vsync;
 #ifdef HAVE_OVERLAY
    bool overlay_enable;
+   /* The page's textures are the pack's (load_textures) */
+   bool overlay_borrowed;
    bool overlay_full_screen;
 #endif
 } gx_video_t;
@@ -1085,10 +1103,70 @@ static uint32_t gx_get_flags(void *data)
    return flags;
 }
 
+/* The GPU is done drawing (GX_DrawDone) before a frame returns, so
+ * tiles written between frames are never being read */
+static void gx_texture_fill(gx_texture_t *t, const struct texture_image *ti)
+{
+   image_texture_tile_gx_copy(t->tiles, ti->pixels, ti->width,
+         ti->height, ti->supports_rgba);
+   DCFlushRange(t->tiles, t->size);
+   GX_InvalidateTexAll();
+}
+
+static uintptr_t gx_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   u8 filter;
+   gx_texture_t *t;
+   const struct texture_image *ti = (const struct texture_image*)data;
+
+   if (     !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || !ti->width  || ti->width  > 1024
+         || !ti->height || ti->height > 1024
+         || !(t = (gx_texture_t*)calloc(1, sizeof(*t))))
+      return 0;
+   t->size = image_texture_tile_gx_size(ti->width, ti->height);
+   if (!(t->tiles = (uint16_t*)memalign(32, t->size)))
+   {
+      free(t);
+      return 0;
+   }
+   t->dims = VIDEO_SCALE_PACK(ti->width, ti->height);
+   gx_texture_fill(t, ti);
+   GX_InitTexObj(&t->obj, t->tiles, ti->width, ti->height,
+         GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+   filter = (     filter_type == TEXTURE_FILTER_LINEAR
+               || filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      ? GX_LINEAR : GX_NEAR;
+   GX_InitTexObjFilterMode(&t->obj, filter, filter);
+   return (uintptr_t)t;
+}
+
+static void gx_unload_texture(void *data, bool threaded, uintptr_t id)
+{
+   gx_texture_t *t = (gx_texture_t*)id;
+   if (t)
+   {
+      free(t->tiles);
+      free(t);
+   }
+}
+
+static enum video_texture_update gx_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   gx_texture_t *t = (gx_texture_t*)id;
+   if (     !t || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || t->dims != VIDEO_SCALE_PACK(ti->width, ti->height))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   gx_texture_fill(t, ti);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static const video_poke_interface_t gx_poke_interface = {
    gx_get_flags,
-   NULL, /* load_texture */
-   NULL, /* unload_texture */
+   gx_load_texture,
+   gx_unload_texture,
    gx_set_video_mode,
    NULL, /* get_refresh_rate */
    NULL, /* set_filtering */
@@ -1111,7 +1189,22 @@ static const video_poke_interface_t gx_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gx_update_texture
 };
 
 static void gx_get_poke_interface(void *data,
@@ -1179,6 +1272,10 @@ static void gx_free_overlay(gx_video_t *gx)
 {
    if (gx)
    {
+      unsigned i;
+      if (!gx->overlay_borrowed)
+         for (i = 0; gx->overlay && i < gx->overlays; i++)
+            free(gx->overlay[i].tiles);
       free(gx->overlay);
       gx->overlay = NULL;
       gx->overlays = 0;
@@ -1191,27 +1288,42 @@ static bool gx_overlay_load(void *data,
 {
    unsigned i;
    gx_video_t *gx = (gx_video_t*)data;
+   const struct texture_image *images = (const struct texture_image*)image_data;
    if (!gx)
       return false;
-   const struct texture_image *images = (const struct texture_image*)image_data;
 
    gx_free_overlay(gx);
    gx->overlay = (struct gx_overlay_data*)calloc(num_images, sizeof(*gx->overlay));
    if (!gx->overlay)
       return false;
 
-   gx->overlays = num_images;
+   gx->overlays         = num_images;
+   gx->overlay_borrowed = false;
 
    for (i = 0; i < num_images; i++)
    {
       struct gx_overlay_data *o = (struct gx_overlay_data*)&gx->overlay[i];
+      size_t sz = image_texture_tile_gx_size(images[i].width,
+            images[i].height);
 
-      GX_InitTexObj(&o->tex, images[i].pixels, images[i].width,
-            images[i].height,
-            GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
-      GX_InitTexObjFilterMode(&g_tex.obj, GX_LINEAR, GX_LINEAR);
-      DCFlushRange(images[i].pixels, images[i].width *
-            images[i].height * sizeof(uint32_t));
+      if (!images[i].pixels || !images[i].width || !images[i].height)
+         o->empty = true;
+      else if (!(o->tiles = (uint16_t*)memalign(32, sz)))
+      {
+         gx_free_overlay(gx);
+         return false;
+      }
+      else
+      {
+         image_texture_tile_gx_copy(o->tiles, images[i].pixels,
+               images[i].width, images[i].height,
+               images[i].supports_rgba);
+         DCFlushRange(o->tiles, sz);
+         GX_InitTexObj(&o->tex, o->tiles, images[i].width,
+               images[i].height,
+               GX_TF_RGBA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+         GX_InitTexObjFilterMode(&o->tex, GX_LINEAR, GX_LINEAR);
+      }
 
       /* Default. Stretch to whole screen. */
       gx_overlay_tex_geom(gx, i, 0, 0, 1, 1);
@@ -1220,6 +1332,39 @@ static bool gx_overlay_load(void *data,
    }
 
    GX_InvalidateTexAll();
+   return true;
+}
+
+/* A page of the pack's textures: gx_load_texture's, whose tiles an
+ * update rewrites where they are, so a copy of the object stays good */
+static bool gx_overlay_load_textures(void *data,
+      const uintptr_t *textures, unsigned num_textures)
+{
+   unsigned i;
+   gx_video_t *gx = (gx_video_t*)data;
+   if (!gx)
+      return false;
+
+   gx_free_overlay(gx);
+   if (!num_textures)
+      return true;
+   if (!(gx->overlay = (struct gx_overlay_data*)calloc(num_textures,
+               sizeof(*gx->overlay))))
+      return false;
+   gx->overlays         = num_textures;
+   gx->overlay_borrowed = true;
+
+   for (i = 0; i < num_textures; i++)
+   {
+      const gx_texture_t *t = (const gx_texture_t*)textures[i];
+      if (t)
+         gx->overlay[i].tex   = t->obj;
+      else
+         gx->overlay[i].empty = true;
+      gx_overlay_tex_geom(gx, i, 0, 0, 1, 1);
+      gx_overlay_vertex_geom(gx, i, 0, 0, 1, 1);
+      gx->overlay[i].alpha_mod = 1.0f;
+   }
    return true;
 }
 
@@ -1264,6 +1409,8 @@ static void gx_render_overlay(void *data)
 
    for (i = 0; i < gx->overlays; i++)
    {
+      if (gx->overlay[i].empty)
+         continue;
       GX_LoadTexObj(&gx->overlay[i].tex, GX_TEXMAP0);
 
       GX_Begin(GX_TRIANGLESTRIP, GX_VTXFMT0, 4);
@@ -1301,7 +1448,7 @@ static void gx_render_overlay(void *data)
 static const video_overlay_interface_t gx_overlay_interface = {
    gx_overlay_enable,
    gx_overlay_load,
-   NULL, /* load_textures */
+   gx_overlay_load_textures,
    gx_overlay_tex_geom,
    gx_overlay_vertex_geom,
    gx_overlay_full_screen,

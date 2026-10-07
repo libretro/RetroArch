@@ -110,13 +110,9 @@ enum OVERLAY_LOADER_FLAGS
    OVERLAY_LOADER_10BIT        = (1 << 2),
    /* A desc of the pack names the LED its image shows (_led). */
    OVERLAY_LOADER_HAS_LEDS     = (1 << 3),
-   /* The driver samples the pack's pixels where they lie, as GX
-    * tiles: each image is tiled once it is decoded, and an APNG
-    * keeps no stream, since nothing could show its frames. */
-   OVERLAY_LOADER_GX_TILE      = (1 << 4),
    /* The pack's images were decoded together before the first
     * overlay was parsed (task_overlay_predecode) */
-   OVERLAY_LOADER_PREDECODED   = (1 << 5)
+   OVERLAY_LOADER_PREDECODED   = (1 << 4)
 };
 
 enum INPUT_OVERLAY_FLAGS

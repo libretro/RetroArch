@@ -282,6 +282,14 @@ platform_video "gx video" "-DGEKKO -DHW_RVL" "-I$STUBS/gx" \
 # Wii's configuration; nothing compiled that branch.
 platform_video "gx video (GameCube)" "-DGEKKO -DHW_DOL" "-I$STUBS/gx" \
    gfx/drivers/gx_gfx_libogc.c ""
+# Their overlays, and os/gekko's own driver against its headers: no
+# lane compiled either until the textures and overlay packs reached them.
+platform_video "gx video: overlay" "-DGEKKO -DHW_RVL -DHAVE_OVERLAY" \
+   "-I$STUBS/gx" gfx/drivers/gx_gfx_libogc.c ""
+platform_video "gekko video" "$HOSTOFF -DGEKKO -DHW_RVL -DHAVE_OVERLAY" \
+   "-Ios/gekko/include" gfx/drivers/gekko_gfx.c ""
+platform_video "gekko video (GameCube)" "$HOSTOFF -DGEKKO -DHW_DOL -DHAVE_OVERLAY" \
+   "-Ios/gekko/include" gfx/drivers/gekko_gfx.c ""
 platform_video "switch video" \
    "-DHAVE_LIBNX -DSWITCH -D__SWITCH__" "-I$STUBS/libnx" \
    gfx/drivers/switch_nx_gfx.c ""
