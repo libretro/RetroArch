@@ -1549,7 +1549,13 @@ void video_driver_force_fallback(const char *driver)
 
    command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
 
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+   /* Desktop Windows, which __WINRT__ not being defined says. This
+    * also asked that WINAPI_FAMILY not be defined, which <windows.h>
+    * defines in every build: so on the desktop there was no message,
+    * and a driver that fell back to another - OpenGL too old for the
+    * one chosen, Direct3D 11 not there - closed RetroArch without a
+    * word, to start with the other driver the next time. */
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    /* UI companion driver is not inited yet, just call into it directly */
    msg_window = &ui_msg_window_win32;
 #endif
