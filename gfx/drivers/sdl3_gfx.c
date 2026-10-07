@@ -923,6 +923,56 @@ static void sdl3_unload_texture(void *data, bool threaded, uintptr_t id)
    SDL_DestroyTexture(tex);
 }
 
+/* Same-size contents into a texture sdl3_load_texture made: the
+ * texture stays, SDL_UpdateTexture rewrites it. */
+static bool sdl3_update_texture_internal(SDL_Texture *tex,
+      const struct texture_image *ti)
+{
+   float w = 0.0f, h = 0.0f;
+   return     SDL_GetTextureSize(tex, &w, &h)
+           && (unsigned)w == ti->width && (unsigned)h == ti->height
+           && SDL_UpdateTexture(tex, NULL, ti->pixels,
+                 (int)(ti->width * sizeof(uint32_t)));
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   SDL_Texture *tex;
+   const struct texture_image *ti;
+} sdl3_update_cmd_t;
+
+static uintptr_t sdl3_update_texture_wrap(void *data)
+{
+   sdl3_update_cmd_t *cmd = (sdl3_update_cmd_t*)data;
+   return sdl3_update_texture_internal(cmd->tex, cmd->ti) ? 1 : 0;
+}
+#endif
+
+/* On the thread the loads run on, for the reason sdl3_load_texture
+ * gives */
+static enum video_texture_update sdl3_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   SDL_Texture *tex = (SDL_Texture*)id;
+   (void)video_data;
+   /* The textures hold 8 bits a channel and nothing wider */
+   if (!tex || !ti || !ti->pixels || ti->pix10 || ti->fp16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      sdl3_update_cmd_t cmd;
+      cmd.tex = tex;
+      cmd.ti  = ti;
+      return video_thread_texture_handle(&cmd, sdl3_update_texture_wrap)
+         ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+#endif
+   return sdl3_update_texture_internal(tex, ti)
+      ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
+}
+
 static void sdl3_poke_set_osd_msg(void *data, const char *msg, size_t msg_len,
       const struct font_params *params, void *font)
 {
@@ -1939,7 +1989,22 @@ static video_poke_interface_t sdl3_video_poke_interface = {
    NULL,                            /* set_hdr_paper_white_nits */
    NULL,                            /* set_hdr_expand_gamut */
    NULL,                            /* set_hdr_scanlines */
-   NULL                             /* set_hdr_subpixel_layout */
+   NULL,                            /* set_hdr_subpixel_layout */
+   NULL,                            /* supports_texture_format */
+   NULL,                            /* load_texture_compressed */
+   NULL,                            /* present_last */
+   NULL,                            /* get_last_present_time */
+   NULL,                            /* hw_ring_install */
+   NULL,                            /* hw_ring_fence_new */
+   NULL,                            /* hw_ring_fence_free */
+   NULL,                            /* hw_ring_fence_signal */
+   NULL,                            /* hw_ring_fence_wait */
+   NULL,                            /* hw_ring_capture */
+   NULL,                            /* hw_ring_present_slot */
+   NULL,                            /* hw_ring_context_new */
+   NULL,                            /* hw_ring_context_free */
+   NULL,                            /* hw_ring_framebuffer */
+   sdl3_update_texture
 };
 
 static void sdl3_gfx_poke_interface(void *data, const video_poke_interface_t **iface)

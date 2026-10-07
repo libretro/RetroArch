@@ -1058,6 +1058,26 @@ static void sdl2_unload_texture(void *data,
    if (tex)
       SDL_DestroyTexture(tex);
 }
+
+/* Same-size contents into a texture sdl2_load_texture made: the
+ * texture stays, SDL_UpdateTexture rewrites it. Called on the thread
+ * the loads run on, as the load is. */
+static enum video_texture_update sdl2_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   SDL_Texture *tex = (SDL_Texture*)id;
+   int w = 0, h = 0;
+   (void)video_data;
+   (void)threaded;
+   /* The textures hold 8 bits a channel and nothing wider */
+   if (     !tex || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || SDL_QueryTexture(tex, NULL, NULL, &w, &h) != 0
+         || (unsigned)w != ti->width || (unsigned)h != ti->height
+         || SDL_UpdateTexture(tex, NULL, ti->pixels,
+               (int)(ti->width * sizeof(uint32_t))) != 0)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
 #endif
 
 static video_poke_interface_t sdl2_video_poke_interface = {
@@ -1091,7 +1111,26 @@ static video_poke_interface_t sdl2_video_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+#if SDL_VERSION_ATLEAST(2, 0, 18)
+   sdl2_update_texture
+#else
+   NULL  /* update_texture */
+#endif
 };
 
 static void sdl2_gfx_poke_interface(void *data, const video_poke_interface_t **iface)

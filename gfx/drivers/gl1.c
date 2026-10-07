@@ -3122,6 +3122,72 @@ static uintptr_t gl1_load_texture(void *video_data, void *data,
    return id;
 }
 
+/* Same-size, same-order contents into a texture video_texture_load_gl1
+ * made: the storage stays, glTexSubImage2D rewrites it in the format
+ * the load chose from the driver's RGBA flag. */
+static void gl1_update_texture_internal(uintptr_t id,
+      const struct texture_image *ti)
+{
+   bool use_rgba = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)id);
+#ifndef VITA
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#endif
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
+         use_rgba ? GL_RGBA : RARCH_GL1_TEXTURE_TYPE32,
+#ifdef MSB_FIRST
+         GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+         RARCH_GL1_FORMAT32,
+#endif
+         ti->pixels);
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   gl1_t *gl;
+   const struct texture_image *ti;
+   uintptr_t id;
+} gl1_update_cmd_t;
+
+static uintptr_t video_texture_update_wrap_gl1(void *data)
+{
+   gl1_update_cmd_t *cmd = (gl1_update_cmd_t*)data;
+   gl1_t            *gl1 = cmd->gl;
+
+   if (gl1 && gl1->ctx_driver->make_current)
+      gl1->ctx_driver->make_current(false);
+
+   gl1_update_texture_internal(cmd->id, cmd->ti);
+   return 1;
+}
+#endif
+
+static enum video_texture_update gl1_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   /* The textures hold 8 bits a channel and nothing wider */
+   if (!id || !ti || !ti->pixels || ti->pix10 || ti->fp16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gl1_update_cmd_t cmd;
+      cmd.gl = (gl1_t*)video_data;
+      cmd.ti = ti;
+      cmd.id = id;
+      video_thread_texture_handle(&cmd, video_texture_update_wrap_gl1);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+#endif
+
+   gl1_update_texture_internal(id, ti);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static void gl1_set_aspect_ratio(void *data, unsigned aspect_ratio_idx)
 {
    gl1_t *gl1     = (gl1_t*)data;
@@ -3223,7 +3289,22 @@ static const video_poke_interface_t gl1_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gl1_update_texture
 };
 
 static void gl1_get_poke_interface(void *data,
