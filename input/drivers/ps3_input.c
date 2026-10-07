@@ -776,6 +776,27 @@ static int16_t ps3_lightgun_device_state(ps3_input_t *ps3,
 }
 #endif
 
+/* The keys the frontend asks about, for a port's binds: which are
+ * down. The driver evaluated the binds itself - and without the rule
+ * that keeps bound keys from the RetroPad while the keyboard is the
+ * core's (Game Focus), which every other driver applied; the frontend
+ * does the evaluating for every driver that hands it the keys, with
+ * the one set of rules. */
+static void ps3_input_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   ps3_input_t *ps3 = (ps3_input_t*)data;
+   (void)port;
+   (void)bind;
+   if (!ps3)
+      return;
+   for (i = 0; i < count; i++)
+      if (ps3_keyboard_port_input_pressed(ps3, keys[i]))
+         down[i >> 5] |= (1u << (i & 31));
+}
+
 static int16_t ps3_input_state(
       void *data,
       const input_device_driver_t *joypad,
@@ -794,32 +815,10 @@ static int16_t ps3_input_state(
    {
       switch (device)
       {
+         /* The RetroPad's buttons, where they are bound to keys, are
+          * the frontend's to answer: it asks ps3_input_keys_down() for
+          * the keys once a poll. */
          case RETRO_DEVICE_JOYPAD:
-            if (id == RETRO_DEVICE_ID_JOYPAD_MASK)
-            {
-               int i;
-               int16_t ret = 0;
-
-               for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
-               {
-                  if (RETRO_KEYBIND_VALID(&binds[port][i]))
-                  {
-                     if (ps3_keyboard_port_input_pressed(
-                              ps3, RETRO_KEYBIND_KEY(&binds[port][i])))
-                        ret |= (1 << i);
-                  }
-               }
-
-               return ret;
-            }
-
-            if (RETRO_KEYBIND_VALID(&binds[port][id]))
-            {
-               if (ps3_keyboard_port_input_pressed(
-                        ps3, RETRO_KEYBIND_KEY(&binds[port][id])))
-                  return 1;
-            }
-	    break;
          case RETRO_DEVICE_ANALOG:
             break;
          case RETRO_DEVICE_KEYBOARD:
@@ -980,5 +979,7 @@ input_driver_t input_ps3 = {
 
    NULL,                         /* grab_mouse */
    NULL,
-   NULL
+   NULL,
+   NULL,                         /* survives_video */
+   ps3_input_keys_down
 };
