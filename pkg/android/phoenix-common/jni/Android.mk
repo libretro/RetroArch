@@ -54,36 +54,6 @@ ifneq ($(GIT_VERSION),)
    DEFINES += -DHAVE_GIT_VERSION -DGIT_VERSION=$(GIT_VERSION)
 endif
 
-ifeq ($(HAVE_OPENXR),1)
-
-OPENXR_DIR := $(RA_ROOT)/deps/OpenXR-SDK
-OPENXR_BUILD_DIR := $(OPENXR_DIR)/build/android-arm64
-OPENXR_LOADER := $(OPENXR_BUILD_DIR)/src/loader/libopenxr_loader.so
-
-ifeq ($(wildcard $(OPENXR_LOADER)),)
-
-OPENXR_BUILD := $(shell \
-    cd "$(OPENXR_DIR)" && \
-    cmake -S . -B "$(OPENXR_BUILD_DIR)" \
-        -DCMAKE_TOOLCHAIN_FILE="$(ANDROID_SDK_ROOT)/ndk/29.0.14206865/build/cmake/android.toolchain.cmake" \
-        -DANDROID_ABI=arm64-v8a \
-        -DANDROID_PLATFORM=android-29 \
-        -DDYNAMIC_LOADER=ON \
-        -DCMAKE_BUILD_TYPE=Release && \
-    cmake --build "$(OPENXR_BUILD_DIR)" --target openxr_loader -j$$(nproc) \
-)
-
-endif
-
-include $(CLEAR_VARS)
-
-LOCAL_MODULE := openxr_loader
-LOCAL_SRC_FILES := $(OPENXR_LOADER)
-
-include $(PREBUILT_SHARED_LIBRARY)
-
-endif
-
 include $(CLEAR_VARS)
 ifeq ($(TARGET_ARCH),arm)
    DEFINES += -DANDROID_ARM -marm
@@ -258,7 +228,7 @@ ifeq ($(HAVE_RETRONFS),1)
 endif
 
 ifeq ($(HAVE_OPENXR),1)
-DEFINES += -DHAVE_OPENXR
+DEFINES += -DHAVE_OPENXR -DXR_OS_ANDROID -DXR_USE_PLATFORM_ANDROID
 endif
 
 LOCAL_CFLAGS   += -Wall -std=gnu99 -pthread -Wno-unused-function -fno-stack-protector -funroll-loops $(DEFINES)
@@ -279,7 +249,16 @@ INCLUDE_DIRS     := \
 
 ifeq ($(HAVE_OPENXR),1)
 OPENXR_DIR := $(RARCH_DIR)/deps/OpenXR-SDK
-LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include
+LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/common \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/loader \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/jsoncpp/include \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/jnipp \
+		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/external/android-jni-wrappers
+# The vendored OpenXR loader is C++17; later -std wins over the global
+# gnu++11 above, and the rest of the C++ in this build compiles as 17.
+LOCAL_CPPFLAGS += -std=gnu++17
 endif
 
 ifeq ($(HAVE_CHEEVOS),1)
@@ -310,10 +289,6 @@ LOCAL_SRC_FILES += $(RARCH_DIR)/griffin/griffin_glslang.cpp
 endif
 
 LOCAL_LDLIBS += -lOpenSLES
-
-ifeq ($(HAVE_OPENXR),1)
-LOCAL_SHARED_LIBRARIES += openxr_loader
-endif
 
 ifneq ($(SANITIZER),)
    LOCAL_CFLAGS   += -g -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
