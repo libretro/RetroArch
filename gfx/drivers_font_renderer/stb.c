@@ -471,6 +471,15 @@ typedef struct rtt__raster
    float  sx0, sy0; /* contour start */
 } rtt__raster_t;
 
+/* A face's rasterizer memory, kept from glyph to glyph */
+typedef struct rtt__scratch
+{
+   float   *mem;
+   size_t   size;
+   /* The cell the zeroed layout is for, packed; 0 for none */
+   unsigned dims;
+} rtt__scratch_t;
+
 static void rtt__acc_line(rtt__raster_t *r, float x0, float y0,
       float x1, float y1)
 {
@@ -1202,34 +1211,27 @@ simple_done:
    }
 }
 
-/* Render glyph 'gi' into dst (out_w x out_h, given stride), scaled by
- * sx/sy, positioned exactly like the code this replaces: the bitmap
- * origin is (floor(xmin*sx), floor(-ymax*sy)) of the glyph bbox. The
- * full out_w x out_h region is always written. */
+/* Render glyph 'gi', whose bbox has xmin bx0 and ymax by1, into dst
+ * (out_w x out_h, given stride), scaled by sx/sy: the bitmap origin is
+ * (floor(xmin*sx), floor(-ymax*sy)). The full out_w x out_h region is
+ * always written. */
 /* dst points at coverage elements of the atlas format: uint8_t rows
  * when fmt16 is 0, native-endian uint16_t rows when it is nonzero.
  * 'stride' is in elements either way. Quantization happens only in
  * the per-row resolve, so both formats share every other stage. */
-static void rtt_render_glyph(const rtt_font_t *f, void *dst,
-      int out_w, int out_h, int stride, float sx, float sy, int gi,
-      int fmt16)
+static void rtt_render_glyph(const rtt_font_t *f, rtt__scratch_t *sc,
+      void *dst, int out_w, int out_h, int stride, float sx, float sy,
+      int gi, int bx0, int by1, int fmt16)
 {
    size_t esz = fmt16 ? sizeof(uint16_t) : sizeof(uint8_t);
    rtt__raster_t r;
    rtt__xform_t  ident;
-   int bx0, by0, bx1, by1, y;
-   size_t cells, scratch_pts, o_flags, o_xs, o_ys;
+   int y;
+   size_t cells, scratch_pts, o_flags, o_xs, o_ys, need;
+   unsigned dims;
 
    if (!dst || out_w <= 0 || out_h <= 0)
       return;
-
-   if (!rtt_glyph_box(f, gi, &bx0, &by0, &bx1, &by1))
-   {
-      for (y = 0; y < out_h; y++)
-         memset((uint8_t*)dst + (size_t)y * (size_t)stride * esz, 0,
-               (size_t)out_w * esz);
-      return;
-   }
 
    r.w  = out_w;
    r.h  = out_h;
@@ -1241,23 +1243,38 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
    r.cy = r.sy0 = 0.0f;
 
    cells = (size_t)(out_w + 2) * (size_t)out_h;
-   /* one allocation: float cells, per-row dirty extents, then the
-    * outline scratch sized from maxp so no glyph allocates on its own */
+   /* float cells, per-row dirty extents, then the outline scratch
+    * sized from maxp so no glyph allocates on its own */
    scratch_pts = f->max_points > 0 ? (size_t)f->max_points : 0;
    o_flags     = (cells + (size_t)out_h) * sizeof(float);
    o_xs        = o_flags + ((scratch_pts + 63) & ~(size_t)63);
    o_ys        = o_xs + ((scratch_pts * sizeof(float) + 63) & ~(size_t)63);
-   r.acc = (float*)malloc(o_ys + scratch_pts * sizeof(float));
-   if (!r.acc)
+   need        = o_ys + scratch_pts * sizeof(float);
+   dims        = VIDEO_SCALE_PACK(out_w, out_h);
+
+   /* The cells and extents are left zeroed by every glyph for the
+    * next; a new layout, or memory just had, is cleared in full */
+   if (need > sc->size)
    {
-      for (y = 0; y < out_h; y++)
-         memset((uint8_t*)dst + (size_t)y * (size_t)stride * esz, 0,
-               (size_t)out_w * esz);
-      return;
+      float *grown = (float*)malloc(need);
+      if (!grown)
+      {
+         for (y = 0; y < out_h; y++)
+            memset((uint8_t*)dst + (size_t)y * (size_t)stride * esz, 0,
+                  (size_t)out_w * esz);
+         return;
+      }
+      free(sc->mem);
+      sc->mem  = grown;
+      sc->size = need;
+      sc->dims = 0;
    }
-   /* only the cells and extents start zeroed; the outline scratch is
-    * written before it is read */
-   memset(r.acc, 0, o_flags);
+   if (sc->dims != dims)
+   {
+      memset(sc->mem, 0, o_flags);
+      sc->dims = dims;
+   }
+   r.acc       = sc->mem;
    r.rowmax    = (int*)(r.acc + cells);
    r.pts_flags = (uint8_t*)r.acc + o_flags;
    r.pts_xs    = (float*)((uint8_t*)r.acc + o_xs);
@@ -1276,12 +1293,11 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
    for (y = 0; y < out_h; y++)
    {
       uint8_t *drow = (uint8_t*)dst + (size_t)y * (size_t)stride * esz;
-      int      dw   = r.rowmax[y];
-      if (dw > out_w)
-         dw = out_w;
+      float   *arow = r.acc + (size_t)y * (size_t)(out_w + 2);
+      int      span = r.rowmax[y];
+      int      dw   = span > out_w ? out_w : span;
       if (dw > 0)
       {
-         const float *arow = r.acc + (size_t)y * (size_t)(out_w + 2);
          if (fmt16)
             rtt__resolve_row_u16(arow, (uint16_t*)(void*)drow, dw);
          else
@@ -1291,9 +1307,13 @@ static void rtt_render_glyph(const rtt_font_t *f, void *dst,
        * zero, so the tail of the row is empty */
       if (dw < out_w)
          memset(drow + (size_t)dw * esz, 0, (size_t)(out_w - dw) * esz);
+      /* every cell an edge touched lies before the row's extent */
+      if (span > 0)
+      {
+         memset(arow, 0, (size_t)span * sizeof(float));
+         r.rowmax[y] = 0;
+      }
    }
-
-   free(r.acc);
 }
 
 /* ==================== end cleanroom TrueType ==================== */
@@ -1305,6 +1325,7 @@ typedef struct
 {
    uint8_t *font_data;
    size_t font_data_size;
+   rtt__scratch_t scratch;                /* ptr alignment */
    rtt_font_t info;                       /* ptr alignment */
    float scale_factor;
    struct font_line_metrics line_metrics; /* float alignment */
@@ -1316,9 +1337,13 @@ typedef struct
 
 static void font_rasterizer_stb_free(void *data)
 {
+   stb_face_t *self = (stb_face_t*)data;
+   if (!self)
+      return;
    /* The bytes are borrowed - from font_driver.c, or on WiiU from the
     * OS shared font - and never freed here. */
-   free(data);
+   free(self->scratch.mem);
+   free(self);
 }
 
 /* Built-in fallback: the 5x10 bitmap in bitmap.h, scaled to the
@@ -1509,8 +1534,8 @@ static bool font_rasterizer_stb_render_glyph(void *data, uint32_t code,
          &left_side_bearing);
 
    if (rtt_glyph_box(&self->info, (int)gi, &x0, NULL, NULL, &y1))
-      rtt_render_glyph(&self->info, dst, cell_w, cell_h, pitch,
-            self->scale_factor, self->scale_factor, (int)gi,
+      rtt_render_glyph(&self->info, &self->scratch, dst, cell_w, cell_h,
+            pitch, self->scale_factor, self->scale_factor, (int)gi, x0, y1,
             fmt == FONT_ATLAS_FORMAT_A16);
    else
    {
