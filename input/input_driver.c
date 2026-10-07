@@ -954,12 +954,17 @@ typedef struct
     * controller it goes by with the same pointer, so "is this read by
     * the port's own controller" is one compare */
    const struct retro_keybind *autob;
-   /* The RetroPad's sixteen, resolved: the button and the axis behind
-    * each - the port's own bind where it names one, the controller's
-    * profile's where it does not. That choice was made for every one
-    * of them at every read; it is made here, when a bind changes. */
-   uint32_t axis16[RARCH_FIRST_CUSTOM_BIND];
-   uint16_t key16[RARCH_FIRST_CUSTOM_BIND];
+   /* ... and of those, the ones that are usable: a hotkey, a turbo or
+    * a lightgun bind is read only where its bit is set here */
+   uint32_t pad_ok[(RARCH_BIND_LIST_END + 31) / 32];
+   /* Every bind, resolved: the button and the axis behind it - the
+    * port's own bind where it names one, the controller's profile's
+    * where it does not. That choice was made at every read, from the
+    * two tables; it is made here, when a bind changes, and a read
+    * looks at neither table. Written only where has_pad has the bit,
+    * and to be read only there. */
+   uint32_t axis[RARCH_BIND_LIST_END];
+   uint16_t key[RARCH_BIND_LIST_END];
 } input_port_pads_t;
 
 static input_port_pads_t input_port_pads[MAX_USERS];
@@ -981,18 +986,22 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
    autob = input_autoconf_binds[joy_idx];
 
    memset(pads->has_pad, 0, sizeof(pads->has_pad));
+   memset(pads->pad_ok,  0, sizeof(pads->pad_ok));
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
-      if (     binds[i].joykey  != NO_BTN
-            || binds[i].joyaxis != AXIS_NONE
-            || autob[i].joykey  != NO_BTN
-            || autob[i].joyaxis != AXIS_NONE)
-         pads->has_pad[i >> 5] |= (1u << (i & 31));
-   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
    {
-      pads->key16[i]  = (binds[i].joykey  != NO_BTN)
+      uint16_t key  = (binds[i].joykey  != NO_BTN)
          ? binds[i].joykey  : autob[i].joykey;
-      pads->axis16[i] = (binds[i].joyaxis != AXIS_NONE)
+      uint32_t axis = (binds[i].joyaxis != AXIS_NONE)
          ? binds[i].joyaxis : autob[i].joyaxis;
+      /* nothing behind it - most binds: its place is not written, and
+       * not read either, its bit being clear */
+      if (key == NO_BTN && axis == AXIS_NONE)
+         continue;
+      pads->key[i]  = key;
+      pads->axis[i] = axis;
+      pads->has_pad[i >> 5] |= (1u << (i & 31));
+      if (RETRO_KEYBIND_VALID(&binds[i]))
+         pads->pad_ok[i >> 5] |= (1u << (i & 31));
    }
    pads->autob = autob;
    pads->gen   = gen;
@@ -1139,8 +1148,8 @@ static int16_t input_snapshot_state(unsigned b,
 
       if (pads)
       {
-         joykey  = pads->key16[i];
-         joyaxis = pads->axis16[i];
+         joykey  = pads->key[i];
+         joyaxis = pads->axis[i];
       }
       else
       {
@@ -2189,19 +2198,44 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
          /* Extended bind IDs (turbo, hold, meta keys) are not
           * covered by joypad->state(), so use the original
           * per-button dispatch path. */
-         if (RETRO_KEYBIND_VALID(&binds[_port][id]))
+         /* What is behind the bind was chosen when the binds last
+          * changed - the port's own bind or its controller's profile's
+          * - and is read from there: neither table is looked at. Only
+          * a read by another controller than the port's own, which the
+          * choice was not made for, makes it here as it always was. */
+         const input_port_pads_t *pads =
+               (   id < RARCH_BIND_LIST_END && _port < MAX_USERS
+                && (const void*)binds == (const void*)input_config_binds)
+            ? input_port_pads_for(_port, joypad_info) : NULL;
+         uint32_t joykey               = NO_BTN;
+         uint32_t joyaxis              = AXIS_NONE;
+         bool usable                   = false;
+
+         if (pads)
          {
-            const uint64_t bind_joykey     = binds[_port][id].joykey;
-            const uint64_t bind_joyaxis    = binds[_port][id].joyaxis;
-            const uint64_t autobind_joykey = joypad_info->auto_binds[id].joykey;
-            const uint64_t autobind_joyaxis= joypad_info->auto_binds[id].joyaxis;
+            if (pads->pad_ok[id >> 5] & (1u << (id & 31)))
+            {
+               joykey  = pads->key[id];
+               joyaxis = pads->axis[id];
+               usable  = true;
+            }
+         }
+         else if (RETRO_KEYBIND_VALID(&binds[_port][id]))
+         {
+            joykey  = (binds[_port][id].joykey != NO_BTN)
+               ? binds[_port][id].joykey
+               : joypad_info->auto_binds[id].joykey;
+            joyaxis = (binds[_port][id].joyaxis != AXIS_NONE)
+               ? binds[_port][id].joyaxis
+               : joypad_info->auto_binds[id].joyaxis;
+            usable  = true;
+         }
+
+         if (usable)
+         {
             uint16_t port                  = joypad_info->joy_idx;
             float axis_threshold           = joypad_info->axis_threshold;
             float inv_0x8000               = INV_0x8000;
-            const uint64_t joykey          = (bind_joykey != NO_BTN)
-               ? bind_joykey  : autobind_joykey;
-            const uint64_t joyaxis         = (bind_joyaxis != AXIS_NONE)
-               ? bind_joyaxis : autobind_joyaxis;
 
             if (joypad)
             {
