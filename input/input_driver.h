@@ -750,6 +750,9 @@ typedef struct
     * here, which costs at most 4 bytes.)
     */
    rarch_timer_t combo_timers[INPUT_COMBO_LAST];
+   /* The hold combinations that have reported for the hold they are
+    * in, a bit each: see input_driver_button_combo_hold(). */
+   uint16_t combo_hold_reported;
 
    unsigned osk_last_codepoint;
    unsigned osk_last_codepoint_len;

@@ -3564,6 +3564,135 @@ static void lane_mapping_changes(void)
 #endif
 }
 
+/* A controller combination that quits, with "Confirm Quit" on: one
+ * press asks for a second, and is not itself the second.
+ *
+ * Two things made one press both. A combination of buttons is true on
+ * every frame it is held, where the quit key counts on the frame it
+ * goes down: the frame after "Press again to quit" was taken as the
+ * press asked for (#19642). And a combination that is a button held
+ * for two seconds started its two seconds again the frame after they
+ * ran out, so four seconds of holding were two presses. */
+static void lane_quit_combo(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st  = input_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   const input_device_driver_t *joypad_real;
+   struct retro_keybind saved_l2, saved_r2;
+   input_bits_t bits;
+   retro_time_t t;
+   unsigned had = failures;
+   unsigned saved_combo, i, reports, quits;
+   bool     saved_confirm;
+
+   /* --- the combination itself, with a clock of the lane's own */
+
+   /* buttons together: true for as long as they are held, which is
+    * why whoever asks counts the frame it starts */
+   BIT256_CLEAR_ALL(bits);
+   BIT256_SET(bits, RETRO_DEVICE_ID_JOYPAD_L2);
+   BIT256_SET(bits, RETRO_DEVICE_ID_JOYPAD_R2);
+   reports = 0;
+   for (i = 0, t = 1000000; i < 60; i++, t += 16667)
+      if (input_driver_button_combo(INPUT_COMBO_L2_R2, t, &bits))
+         reports++;
+   CHECK(reports == 60, "quit combo: L2+R2 held is not reported on every frame it is held");
+
+   /* a button held: once for the hold, however long it lasts */
+   BIT256_CLEAR_ALL(bits);
+   input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits); /* let go */
+   BIT256_SET(bits, RETRO_DEVICE_ID_JOYPAD_START);
+   reports = 0;
+   for (i = 0; i < 600; i++, t += 16667) /* ten seconds */
+      if (input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits))
+         reports++;
+   CHECK(reports == 1, "quit combo: Start held for ten seconds did not report once");
+   /* let go, and held again: once more */
+   BIT256_CLEAR_ALL(bits);
+   t += 16667;
+   CHECK(!input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits),
+         "quit combo: Start let go is reported");
+   BIT256_SET(bits, RETRO_DEVICE_ID_JOYPAD_START);
+   reports = 0;
+   for (i = 0; i < 180; i++, t += 16667) /* three seconds */
+      if (input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits))
+         reports++;
+   CHECK(reports == 1, "quit combo: Start held again after being let go did not report once");
+   /* short of the two seconds: not at all */
+   BIT256_CLEAR_ALL(bits);
+   t += 16667;
+   input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits);
+   BIT256_SET(bits, RETRO_DEVICE_ID_JOYPAD_START);
+   reports = 0;
+   for (i = 0; i < 60; i++, t += 16667) /* one second */
+      if (input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits))
+         reports++;
+   CHECK(reports == 0, "quit combo: Start held for one second is reported");
+   BIT256_CLEAR_ALL(bits);
+   t += 16667;
+   input_driver_button_combo(INPUT_COMBO_HOLD_START, t, &bits);
+
+   /* --- through the frontend: L2+R2 quits, Confirm Quit on, the two
+    * held for a second. Nothing may quit. */
+   if (!input_st->primary_joypad)
+   {
+      CHECK(false, "quit combo: no joypad driver");
+      return;
+   }
+   saved_combo   = settings->uints.input_quit_gamepad_combo;
+   saved_confirm = settings->bools.confirm_quit;
+   saved_l2      = input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2];
+   saved_r2      = input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_R2];
+
+   joypad_real              = input_st->primary_joypad;
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_L2)->joykey  = 12;
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_L2)->joyaxis = AXIS_NONE;
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_R2)->joykey  = 13;
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_R2)->joyaxis = AXIS_NONE;
+   settings->uints.input_quit_gamepad_combo = INPUT_COMBO_L2_R2;
+   settings->bools.confirm_quit             = true;
+   run_loop_frames(3);
+
+   syn_buttons = (1u << 12) | (1u << 13);
+   quits       = 0;
+   for (i = 0; i < 60; i++)
+   {
+      if (runloop_iterate() == -1)
+         quits++;
+      task_queue_check();
+   }
+   CHECK(quits == 0, "quit combo: with Confirm Quit on, one press of L2+R2 held for a second quit");
+   syn_buttons = 0;
+   run_loop_frames(5);
+
+   settings->uints.input_quit_gamepad_combo = saved_combo;
+   settings->bools.confirm_quit             = saved_confirm;
+   *input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_L2) = saved_l2;
+   *input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_R2) = saved_r2;
+   run_loop_frames(3);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad = joypad_real;
+   if (failures == had)
+      printf("[pass] quit combo: with Confirm Quit on, L2+R2 held for a second"
+            " does not quit; a button-held combination reports once for a"
+            " hold of ten seconds, once more when held again, and not at all"
+            " short of its two seconds\n");
+#else
+   printf("[skip] quit combo: no test drivers in this build\n");
+#endif
+}
+
 /* What a port's mapping is made from is counted each time it changes,
  * so that what is compiled from it can tell without looking at a bind.
  * Each way of changing it counts; frames in which nothing changes do
@@ -5058,6 +5187,7 @@ int main(int argc, char *argv[])
       lane_pointer_store();
       lane_binds_change_count();
       lane_mapping_changes();
+      lane_quit_combo();
       lane_sticks_read_once();
       lane_aim_stick();
       lane_core_view();

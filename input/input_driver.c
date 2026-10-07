@@ -1587,8 +1587,18 @@ static bool input_driver_button_combo_hold(
       timer->timer_begin = false;
       timer->timer_end   = true;
       timer->timeout_end = 0;
+      input_driver_st.combo_hold_reported &= ~(1 << mode);
       return false;
    }
+
+   /* One hold reports once. The timer started again the frame after
+    * it ran out, so a button kept down reported every two seconds:
+    * with "Confirm Quit" on, holding the quit combination for four
+    * seconds was its own second press and quit, and a held menu
+    * combination asked for the menu again. The button is let go
+    * before a hold counts again. */
+   if (input_driver_st.combo_hold_reported & (1 << mode))
+      return false;
 
    /* User started holding down the start button, start the timer */
    if (!timer->timer_begin)
@@ -1610,6 +1620,7 @@ static bool input_driver_button_combo_hold(
       timer->timer_begin = false;
       timer->timer_end   = true;
       timer->timeout_end = 0;
+      input_driver_st.combo_hold_reported |= (1 << mode);
       return true;
    }
 
