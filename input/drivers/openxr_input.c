@@ -8,6 +8,7 @@
 #include <retro_atomic.h>
 
 #include "../../tasks/tasks_internal.h"
+#include "../../verbosity.h"
 
 enum
 {
