@@ -22,7 +22,7 @@ S_BOOL(video_crop_overscan, VIDEO_CROP_OVERSCAN,
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_BOOL(video_filter_enable, VIDEO_FILTER_ENABLE,
       "filter_enable",
-      true, SD_FLAG_NONE, 0, CMD_EVENT_NONE,
+      true, SD_FLAG_NONE, 0, CMD_EVENT_REINIT,
       "Video Filter Enable",
       "Apply Video Filter. Is a hint that does not necessarily have to be honored by the video driver.")
 #endif
