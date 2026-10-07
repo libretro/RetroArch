@@ -571,7 +571,7 @@ typedef struct
 {
    char *playlist_file;
    char *image_file;
-   uintptr_t image;
+   gfx_surface_t *image;
 } materialui_playlist_icon_t;
 
 /* Contains icon data for all installed
@@ -655,8 +655,8 @@ typedef struct materialui_handle
    struct
    {
       materialui_playlist_icons_t playlist;  /* ptr alignment */
-      uintptr_t bg;
-      uintptr_t list[MUI_TEXTURE_LAST];
+      gfx_surface_t *bg;
+      gfx_surface_t *list[MUI_TEXTURE_LAST];
    } textures;
 
    menu_screensaver_t *screensaver;
@@ -2314,14 +2314,25 @@ static const char *materialui_texture_path(unsigned id)
  * Playlist icons START
  * ============================== */
 
-/* The icons out of the array, those still uploading into it included */
+/* The still in a slot, made on first use; the filter is the current
+ * setting's at every load */
+static gfx_surface_t *materialui_still(gfx_surface_t **slot)
+{
+   if (!*slot)
+      *slot = gfx_surface_new_still(gfx_display_texture_filter());
+   else
+      (*slot)->filter = gfx_display_texture_filter();
+   return *slot;
+}
+
 static void materialui_context_destroy_playlist_icons(materialui_handle_t *mui)
 {
    size_t i;
-   gfx_display_texture_loads_cancel(mui->textures.playlist.icons,
-         mui->textures.playlist.size * sizeof(*mui->textures.playlist.icons));
    for (i = 0; i < mui->textures.playlist.size; i++)
-      video_driver_texture_unload(&mui->textures.playlist.icons[i].image);
+   {
+      gfx_surface_free(mui->textures.playlist.icons[i].image);
+      mui->textures.playlist.icons[i].image = NULL;
+   }
 }
 
 static void materialui_context_reset_playlist_icons(
@@ -2344,8 +2355,9 @@ static void materialui_context_reset_playlist_icons(
       fill_pathname_join_special(texpath,
             mui->sysicons_path, image_file,
             sizeof(texpath));
-      gfx_display_load_icon(texpath, supports_rgba,
-            &mui->textures.playlist.icons[i].image);
+      gfx_surface_submit_path(
+            materialui_still(&mui->textures.playlist.icons[i].image),
+            texpath, supports_rgba);
    }
 }
 
@@ -2429,7 +2441,7 @@ static void materialui_refresh_playlist_icon_list(
        * correctly initialised */
       mui->textures.playlist.icons[i].playlist_file = NULL;
       mui->textures.playlist.icons[i].image_file    = NULL;
-      mui->textures.playlist.icons[i].image         = 0;
+      mui->textures.playlist.icons[i].image         = NULL;
 
       /* dir_list_new_special() is 'well behaved'.
        * - It will only return file paths, not
@@ -2497,10 +2509,11 @@ static uintptr_t materialui_get_playlist_icon(
    /* Always use MUI_TEXTURE_PLAYLIST as
     * a fallback */
    if (texture_index >= mui->textures.playlist.size)
-      return mui->textures.list[MUI_TEXTURE_PLAYLIST];
-   if ((playlist_icon = mui->textures.playlist.icons[texture_index].image))
+      return GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_PLAYLIST]);
+   if ((playlist_icon = GFX_SURFACE_HANDLE(
+               mui->textures.playlist.icons[texture_index].image)))
       return playlist_icon;
-   return mui->textures.list[MUI_TEXTURE_PLAYLIST];
+   return GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_PLAYLIST]);
 }
 
 /* ==============================
@@ -2638,6 +2651,7 @@ static void materialui_update_savestate_thumbnail_image(void *data)
 static void materialui_context_reset_textures(materialui_handle_t *mui)
 {
    int i;
+   bool supports_rgba = gfx_surface_wants_rgba();
 
    /* Loop through all textures */
    for (i = 0; i < MUI_TEXTURE_LAST; i++)
@@ -2646,8 +2660,8 @@ static void materialui_context_reset_textures(materialui_handle_t *mui)
       fill_pathname_join_special(texpath,
             mui->icons_path, materialui_texture_path(i),
             sizeof(texpath));
-      gfx_display_reset_icon_texture(texpath,
-         &mui->textures.list[i], gfx_display_texture_filter());
+      gfx_surface_submit_file(materialui_still(&mui->textures.list[i]),
+            texpath, supports_rgba);
    }
 }
 
@@ -2759,7 +2773,7 @@ static void materialui_draw_thumbnail(
                   userdata, p_disp,
                   video_dims,
                   (unsigned)icon_size,
-                  mui->textures.list[MUI_TEXTURE_IMAGE],
+                  GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_IMAGE]),
                   bg_x + (bg_width - icon_size) / 2.0f,
                   bg_y + (bg_height - icon_size) / 2.0f,
                   0.0f,
@@ -3121,7 +3135,7 @@ static void materialui_render_messagebox(
             userdata, p_disp,
             video_dims,
             (unsigned)icon_size,
-            mui->textures.list[MUI_TEXTURE_BACK],
+            GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_BACK]),
             icon_x,
             icon_y,
             0.0f,
@@ -3177,7 +3191,7 @@ static void materialui_render_messagebox(
             userdata, p_disp,
             video_dims,
             (unsigned)icon_size,
-            mui->textures.list[MUI_TEXTURE_CHECKMARK],
+            GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]),
             icon_x,
             icon_y,
             0.0f,
@@ -3376,7 +3390,7 @@ static void materialui_compute_entries_box_default(
       switch (node->icon_type)
       {
          case MUI_ICON_TYPE_INTERNAL:
-            has_icon = mui->textures.list[node->icon_texture_index] != 0;
+            has_icon = GFX_SURFACE_HANDLE(mui->textures.list[node->icon_texture_index]) != 0;
             break;
          case MUI_ICON_TYPE_MENU_EXPLORE:
          case MUI_ICON_TYPE_MENU_CONTENTLESS_CORE:
@@ -4754,7 +4768,7 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
          if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_DISABLED))
              || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF)))
          {
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_OFF])
+            if (GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_SWITCH_OFF]))
                value_type = MUI_ENTRY_VALUE_SWITCH_OFF;
             else
                value_type = MUI_ENTRY_VALUE_TEXT;
@@ -4763,7 +4777,7 @@ static enum materialui_entry_value_type materialui_get_entry_value_type(
          else if (   string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_ENABLED))
                   || string_is_equal(entry_value, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_ON)))
          {
-            if (mui->textures.list[MUI_TEXTURE_SWITCH_ON])
+            if (GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_SWITCH_ON]))
                value_type = MUI_ENTRY_VALUE_SWITCH_ON;
             else
                value_type = MUI_ENTRY_VALUE_TEXT;
@@ -4835,12 +4849,12 @@ static void materialui_render_switch_icon(
          (int)mui->margin - (int)mui->icon_size;
 
    /* Draw background */
-   if (mui->textures.list[MUI_TEXTURE_SWITCH_BG])
+   if (GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_SWITCH_BG]))
       materialui_draw_icon(
             userdata, p_disp,
             video_dims,
             mui->icon_size,
-            mui->textures.list[MUI_TEXTURE_SWITCH_BG],
+            GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_SWITCH_BG]),
             x,
             y,
             0,
@@ -4849,12 +4863,12 @@ static void materialui_render_switch_icon(
             mymat);
 
    /* Draw switch */
-   if (mui->textures.list[switch_texture_index])
+   if (GFX_SURFACE_HANDLE(mui->textures.list[switch_texture_index]))
       materialui_draw_icon(
             userdata, p_disp,
             video_dims,
             mui->icon_size,
-            mui->textures.list[switch_texture_index],
+            GFX_SURFACE_HANDLE(mui->textures.list[switch_texture_index]),
             x,
             y,
             0,
@@ -4945,7 +4959,7 @@ static void materialui_render_menu_entry_default(
       case MUI_ICON_TYPE_INTERNAL:
          /* Note: Checked entries never have icons */
          if (!(entry->flags & MENU_ENTRY_FLAG_CHECKED))
-            icon_texture = mui->textures.list[node->icon_texture_index];
+            icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[node->icon_texture_index]);
          break;
 #if defined(HAVE_LIBRETRODB)
       case MUI_ICON_TYPE_MENU_EXPLORE:
@@ -4988,12 +5002,12 @@ static void materialui_render_menu_entry_default(
             if (!rcheevos_menu_get_state(node->icon_texture_index, buffer, sizeof(buffer)))
             {
                /* no state means its a header - show the info icon */
-               icon_texture = mui->textures.list[MUI_TEXTURE_INFO];
+               icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_INFO]);
             }
             else
             {
                /* placeholder badge image was not found, show generic menu icon */
-               icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
+               icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_IMAGE]);
             }
          }
          break;
@@ -5034,10 +5048,10 @@ static void materialui_render_menu_entry_default(
                 * means it would otherwise get incorrectly identified as
                 * an archive file... */
                if (entry_type == FILE_TYPE_CARCHIVE)
-                  icon_texture = mui->textures.list[MUI_TEXTURE_ARCHIVE];
+                  icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_ARCHIVE]);
                break;
             case FILE_TYPE_IMAGE:
-               icon_texture = mui->textures.list[MUI_TEXTURE_IMAGE];
+               icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_IMAGE]);
                break;
             default:
                break;
@@ -5226,12 +5240,12 @@ static void materialui_render_menu_entry_default(
       case MUI_ENTRY_VALUE_CHECKMARK:
          {
             /* Draw checkmark */
-            if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
+            if (GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]))
                materialui_draw_icon(
                      userdata, p_disp,
                      video_dims,
                      mui->icon_size,
-                     mui->textures.list[MUI_TEXTURE_CHECKMARK],
+                     GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]),
                      entry_x + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin - (int)mui->icon_size,
                      value_icon_y,
                      0,
@@ -5895,7 +5909,7 @@ static void materialui_render_menu_entry_savestate_list(
    switch (node->icon_type)
    {
       case MUI_ICON_TYPE_INTERNAL:
-         icon_texture = mui->textures.list[node->icon_texture_index];
+         icon_texture = GFX_SURFACE_HANDLE(mui->textures.list[node->icon_texture_index]);
          break;
       default:
          break;
@@ -6039,12 +6053,12 @@ static void materialui_render_menu_entry_savestate_list(
       case MUI_ENTRY_VALUE_CHECKMARK:
          {
             /* Draw checkmark */
-            if (mui->textures.list[MUI_TEXTURE_CHECKMARK])
+            if (GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]))
                materialui_draw_icon(
                      userdata, p_disp,
                      video_dims,
                      mui->icon_size,
-                     mui->textures.list[MUI_TEXTURE_CHECKMARK],
+                     GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_CHECKMARK]),
                      entry_x + node->entry_width - (int)mui->margin - (int)mui->landscape_optimization.entry_margin - (int)mui->icon_size,
                      value_icon_y,
                      0,
@@ -7820,7 +7834,7 @@ MUI_NOINLINE static void materialui_draw_no_thumbnail_available(
                userdata, p_disp,
                video_dims,
                (unsigned)icon_size,
-               mui->textures.list[MUI_TEXTURE_IMAGE],
+               GFX_SURFACE_HANDLE(mui->textures.list[MUI_TEXTURE_IMAGE]),
                x_position + ((view_width - icon_size) / 2),
                video_height - y_position - icon_size - ((view_height - icon_size) / 2),
                0.0f,
@@ -8395,8 +8409,10 @@ static void materialui_frame(void *data, video_frame_info_t *video_info)
     * snapshots for rendering this frame. */
    {
       uintptr_t tex_list[MUI_TEXTURE_LAST];
-      uintptr_t tex_bg = mui->textures.bg;
-      memcpy(tex_list, mui->textures.list, sizeof(tex_list));
+      uintptr_t tex_bg = GFX_SURFACE_HANDLE(mui->textures.bg);
+      unsigned tex_i;
+      for (tex_i = 0; tex_i < MUI_TEXTURE_LAST; tex_i++)
+         tex_list[tex_i] = GFX_SURFACE_HANDLE(mui->textures.list[tex_i]);
 
    /* If menu screensaver is active, draw
     * screensaver and return */
@@ -9740,6 +9756,25 @@ error:
    return NULL;
 }
 
+static void materialui_context_bg_destroy(materialui_handle_t *mui)
+{
+   if (!mui)
+      return;
+
+   gfx_surface_free(mui->textures.bg);
+   mui->textures.bg = NULL;
+}
+
+static void materialui_free_textures(materialui_handle_t *mui)
+{
+   size_t i;
+   for (i = 0; i < MUI_TEXTURE_LAST; i++)
+   {
+      gfx_surface_free(mui->textures.list[i]);
+      mui->textures.list[i] = NULL;
+   }
+}
+
 static void materialui_free(void *data)
 {
    materialui_handle_t *mui    = (materialui_handle_t*)data;
@@ -9748,8 +9783,8 @@ static void materialui_free(void *data)
    if (!mui)
       return;
 
-   /* Theme textures still uploading land nowhere */
-   gfx_display_texture_loads_cancel(mui, sizeof(*mui));
+   materialui_free_textures(mui);
+   materialui_context_bg_destroy(mui);
 
    video_coord_array_free(&mui->font_data.title.raster_block.carr);
    video_coord_array_free(&mui->font_data.list.raster_block.carr);
@@ -9762,15 +9797,6 @@ static void materialui_free(void *data)
    menu_screensaver_free(mui->screensaver);
 }
 
-static void materialui_context_bg_destroy(materialui_handle_t *mui)
-{
-   if (!mui)
-      return;
-
-   gfx_display_texture_loads_cancel(&mui->textures.bg,
-         sizeof(mui->textures.bg));
-   video_driver_texture_unload(&mui->textures.bg);
-}
 
 static void materialui_reset_thumbnails(materialui_handle_t *mui)
 {
@@ -9800,13 +9826,9 @@ static void materialui_reset_thumbnails(materialui_handle_t *mui)
 static void materialui_context_destroy(void *data)
 {
    materialui_handle_t *mui = (materialui_handle_t*)data;
-   size_t i;
 
    if (!mui)
       return;
-
-   /* Theme textures still uploading land nowhere */
-   gfx_display_texture_loads_cancel(mui, sizeof(*mui));
 
    /* Signal the render path to stop using textures/fonts.
     * Under threaded video, materialui_frame() may be mid-render
@@ -9814,8 +9836,7 @@ static void materialui_context_destroy(void *data)
    mui->context_generation++;
 
    /* Free standard menu textures */
-   for (i = 0; i < MUI_TEXTURE_LAST; i++)
-      video_driver_texture_unload(&mui->textures.list[i]);
+   materialui_free_textures(mui);
 
    /* Free playlist icons */
    materialui_context_destroy_playlist_icons(mui);
@@ -9853,8 +9874,8 @@ static bool materialui_load_image(void *userdata,
 
    if (type == MENU_IMAGE_WALLPAPER)
       /* Replaces the one up, once it is loaded */
-      gfx_display_texture_load((struct texture_image*)data,
-            gfx_display_texture_filter(), &mui->textures.bg);
+      gfx_surface_take_image(materialui_still(&mui->textures.bg),
+            (struct texture_image*)data);
 
    return true;
 }
