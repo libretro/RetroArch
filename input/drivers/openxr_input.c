@@ -5,6 +5,7 @@
 #include <android/keycodes.h>
 #endif
 #include <compat/strl.h>
+#include <retro_atomic.h>
 
 #include "../../tasks/tasks_internal.h"
 
@@ -31,13 +32,16 @@ enum
 
 static XrActionSet openxr_action_set;
 static XrAction openxr_actions[XR_COUNT];
-static bool openxr_buttons[XR_COUNT];
-static int16_t openxr_axes[6];
-static bool openxr_attached;
+/* Written by openxr_input_sync (the frame loop's thread, which is the
+ * video thread under threaded video) and read by the input drivers on
+ * the main thread, so these cross-thread values are atomics. */
+static retro_atomic_int_t openxr_buttons[XR_COUNT];
+static retro_atomic_int_t openxr_axes[6];
+static retro_atomic_int_t openxr_attached_flag;
+static retro_atomic_int_t openxr_menu_long_press;
 
-/* long press menu button for F1 */
+/* long press menu button for F1; sync-thread only */
 static bool openxr_menu_was_down;
-static bool openxr_menu_long_press;
 static uint64_t openxr_menu_down_time;
 
 #define HEAD_RAD2DEG 57.29577951f
@@ -144,9 +148,10 @@ bool openxr_input_attach(XrSession session)
   XrSessionActionSetsAttachInfo info = {XR_TYPE_SESSION_ACTION_SETS_ATTACH_INFO};
   info.countActionSets = 1;
   info.actionSets = &openxr_action_set;
-  openxr_attached = xrAttachSessionActionSets(session, &info) == XR_SUCCESS;
+  bool attached = xrAttachSessionActionSets(session, &info) == XR_SUCCESS;
+  retro_atomic_store_relaxed_int(&openxr_attached_flag, attached ? 1 : 0);
 
-  if (openxr_attached)
+  if (attached)
   {
     input_autoconfigure_connect(
           "Meta Quest Touch Plus Controller",
@@ -160,7 +165,7 @@ bool openxr_input_attach(XrSession session)
     RARCH_LOG("[XR] Registered Meta Quest Touch Plus Controller on port 0\n");
   }
 
-  return openxr_attached;
+  return retro_atomic_load_relaxed_int(&openxr_attached_flag) != 0;
 }
 
 void openxr_input_sync(XrSession session)
@@ -169,7 +174,7 @@ void openxr_input_sync(XrSession session)
   XrActionsSyncInfo sync = {XR_TYPE_ACTIONS_SYNC_INFO};
   unsigned i;
 
-  if (!openxr_attached)
+  if (!retro_atomic_load_relaxed_int(&openxr_attached_flag))
     return;
 
   sync.countActiveActionSets = 1;
@@ -192,9 +197,10 @@ void openxr_input_sync(XrSession session)
     info.action = openxr_actions[i];
 
     if (xrGetActionStateBoolean(session, &info, &state) == XR_SUCCESS)
-      openxr_buttons[i] = state.isActive && state.currentState;
+      retro_atomic_store_relaxed_int(&openxr_buttons[i],
+            (state.isActive && state.currentState) ? 1 : 0);
     else
-      openxr_buttons[i] = false;
+      retro_atomic_store_relaxed_int(&openxr_buttons[i], 0);
   }
 
   for (i = 0; i < 2; i++)
@@ -204,7 +210,8 @@ void openxr_input_sync(XrSession session)
     info.action = openxr_actions[XR_LTRIGGER + i];
 
     if (xrGetActionStateFloat(session, &info, &state) == XR_SUCCESS)
-      openxr_axes[4 + i] = state.isActive ? (int16_t)(state.currentState * 32767.0f) : 0;
+      retro_atomic_store_relaxed_int(&openxr_axes[4 + i],
+            state.isActive ? (int)(state.currentState * 32767.0f) : 0);
   }
   for (i = 0; i < 2; i++)
   {
@@ -215,34 +222,32 @@ void openxr_input_sync(XrSession session)
     {
       if (state.isActive)
       {
-          openxr_axes[i * 2] =
-            (int16_t)(state.currentState.x * 32767.0f);
-          openxr_axes[i * 2 + 1] =
-            (int16_t)(state.currentState.y * 32767.0f);
+          retro_atomic_store_relaxed_int(&openxr_axes[i * 2],
+                (int)(state.currentState.x * 32767.0f));
+          retro_atomic_store_relaxed_int(&openxr_axes[i * 2 + 1],
+                (int)(state.currentState.y * 32767.0f));
       }
       else
       {
-          openxr_axes[i * 2] = 0;
-          openxr_axes[i * 2 + 1] = 0;
+          retro_atomic_store_relaxed_int(&openxr_axes[i * 2], 0);
+          retro_atomic_store_relaxed_int(&openxr_axes[i * 2 + 1], 0);
       }
     }
   }
 
   {
-    bool menu_down = openxr_buttons[XR_MENU];
+    bool menu_down = retro_atomic_load_relaxed_int(&openxr_buttons[XR_MENU]) != 0;
     uint64_t now = cpu_features_get_time_usec();
 
     if (menu_down && !openxr_menu_was_down)
     {
         openxr_menu_down_time = now;
-        openxr_menu_long_press = false;
+        retro_atomic_store_relaxed_int(&openxr_menu_long_press, 0);
     }
-    else if (menu_down && !openxr_menu_long_press)
+    else if (menu_down)
     {
         if (now - openxr_menu_down_time >= 1000000)
-        {
-          openxr_menu_long_press = true;
-        }
+          retro_atomic_store_relaxed_int(&openxr_menu_long_press, 1);
     }
 
     openxr_menu_was_down = menu_down;
@@ -255,47 +260,45 @@ void openxr_input_deinit(void)
     xrDestroyActionSet(openxr_action_set);
 
   openxr_action_set = XR_NULL_HANDLE;
-  openxr_attached = false;
+  retro_atomic_store_relaxed_int(&openxr_attached_flag, 0);
   openxr_menu_was_down = false;
-  openxr_menu_long_press = false;
+  retro_atomic_store_relaxed_int(&openxr_menu_long_press, 0);
   openxr_menu_down_time = 0;
 }
 
-#ifdef ANDROID
-bool android_vk_openxr_button(unsigned button)
+bool openxr_input_session_active(void)
 {
-  switch (button)
-  {
-    case AKEYCODE_BUTTON_X:
-      return openxr_buttons[XR_X];
-    case AKEYCODE_BUTTON_Y:
-      return openxr_buttons[XR_Y];
-    case AKEYCODE_BUTTON_A:
-      return openxr_buttons[XR_A];
-    case AKEYCODE_BUTTON_B:
-      return openxr_buttons[XR_B];
-    case AKEYCODE_BUTTON_L1:
-      return openxr_buttons[XR_LGRIP];
-    case AKEYCODE_BUTTON_R1:
-      return openxr_buttons[XR_RGRIP];
-    case AKEYCODE_BUTTON_THUMBL:
-      return openxr_buttons[XR_LCLICK];
-    case AKEYCODE_BUTTON_THUMBR:
-      return openxr_buttons[XR_RCLICK];
-    case AKEYCODE_BACK:
-      return openxr_buttons[XR_MENU];
-  }
-
-  return false;
+  return retro_atomic_load_relaxed_int(&openxr_attached_flag) != 0;
 }
 
-int16_t android_vk_openxr_axis(unsigned axis)
+#ifdef ANDROID
+bool openxr_input_button(unsigned button)
+{
+  int idx;
+  switch (button)
+  {
+    case AKEYCODE_BUTTON_X:      idx = XR_X;      break;
+    case AKEYCODE_BUTTON_Y:      idx = XR_Y;      break;
+    case AKEYCODE_BUTTON_A:      idx = XR_A;      break;
+    case AKEYCODE_BUTTON_B:      idx = XR_B;      break;
+    case AKEYCODE_BUTTON_L1:     idx = XR_LGRIP;  break;
+    case AKEYCODE_BUTTON_R1:     idx = XR_RGRIP;  break;
+    case AKEYCODE_BUTTON_THUMBL: idx = XR_LCLICK; break;
+    case AKEYCODE_BUTTON_THUMBR: idx = XR_RCLICK; break;
+    case AKEYCODE_BACK:          idx = XR_MENU;   break;
+    default:
+      return false;
+  }
+  return retro_atomic_load_relaxed_int(&openxr_buttons[idx]) != 0;
+}
+
+int16_t openxr_input_axis(unsigned axis)
 {
   int32_t v;
   if (axis < 4)
-    v = openxr_axes[axis];
+    v = retro_atomic_load_relaxed_int(&openxr_axes[axis]);
   else if (axis == 6 || axis == 7)
-    return openxr_axes[axis - 2];
+    v = retro_atomic_load_relaxed_int(&openxr_axes[axis - 2]);
   else
     return 0;
 
@@ -304,12 +307,8 @@ int16_t android_vk_openxr_axis(unsigned axis)
   return (int16_t)v;
 }
 
-bool android_vk_openxr_menu_long_press(void)
+bool openxr_input_menu_long_press(void)
 {
-  if (!openxr_menu_long_press)
-    return false;
-
-  openxr_menu_long_press = false;
-  return true;
+  return retro_atomic_exchange_int(&openxr_menu_long_press, 0) != 0;
 }
 #endif

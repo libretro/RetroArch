@@ -38,6 +38,9 @@
 #endif
 
 #include "input_driver.h"
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+#include "drivers/openxr_input.h"
+#endif
 #ifdef HAVE_THREADS
 #include "input_key_lane.h"
 #endif
@@ -10697,11 +10700,10 @@ static void input_keys_pressed(
                      port, RETRO_DEVICE_JOYPAD, 0,
                      i);
 
-#ifdef HAVE_OPENXR
-      if (i == RARCH_MENU_TOGGLE && port == 0)
-         bit_pressed = bit_pressed || android_vk_openxr_menu_long_press();
+#if defined(HAVE_OPENXR) && defined(ANDROID)
+         if (i == RARCH_MENU_TOGGLE && port == 0)
+            bit_pressed = bit_pressed || openxr_input_menu_long_press();
 #endif
-
          if (     bit_pressed
                || other_pressed
                || (i == RARCH_MENU_TOGGLE && input_st->platform_menu_button))

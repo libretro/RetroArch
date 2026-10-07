@@ -22,7 +22,7 @@
 #include "../drivers_keyboard/keyboard_event_android.h"
 
 #ifdef HAVE_OPENXR
-#include "../../gfx/drivers_context/android_vk_openxr.h"
+#include "../drivers/openxr_input.h"
 #endif
 
 static const char *android_joypad_name(unsigned pad)
@@ -73,7 +73,7 @@ static int32_t android_joypad_button(unsigned port, uint16_t joykey)
    if (port >= DEFAULT_MAX_PADS)
       return 0;
 #ifdef HAVE_OPENXR
-   if (port == 0 && android_vk_openxr_button(joykey))
+   if (port == 0 && openxr_input_button(joykey))
       return 1;
 #endif
    buf = android_keyboard_state_get(port);
@@ -113,8 +113,8 @@ static int16_t android_joypad_axis(unsigned port, uint32_t joyaxis)
       unsigned neg = AXIS_NEG_GET(joyaxis);
       unsigned pos = AXIS_POS_GET(joyaxis);
 
-      int16_t neg_val = android_vk_openxr_axis(neg);
-      int16_t pos_val = android_vk_openxr_axis(pos);
+      int16_t neg_val = openxr_input_axis(neg);
+      int16_t pos_val = openxr_input_axis(pos);
 
       if (neg_val < 0)
          return neg_val;
@@ -156,7 +156,7 @@ static int16_t android_joypad_state(
 
 #ifdef HAVE_OPENXR
       if ((uint16_t)joykey != NO_BTN && port_idx == 0
-            && android_vk_openxr_button((unsigned)joykey))
+            && openxr_input_button((unsigned)joykey))
          ret |= (1 << i);
       else
 #endif
@@ -168,7 +168,6 @@ static int16_t android_joypad_state(
          ret |= (1 << i);
       else if (joyaxis != AXIS_NONE
 #ifdef HAVE_OPENXR
-            && port_idx == 0
             && ((float)abs(android_joypad_axis(
                port_idx, joyaxis))
                / 0x8000) > joypad_info->axis_threshold

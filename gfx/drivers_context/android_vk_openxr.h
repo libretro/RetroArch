@@ -38,9 +38,6 @@ XrInstance android_vk_openxr_xr_instance(void);
 XrSystemId android_vk_openxr_xr_system_id(void);
 #endif
 
-bool android_vk_openxr_button(unsigned button);
-int16_t android_vk_openxr_axis(unsigned axis);
-
 bool android_vk_openxr_get_eye_state(struct retro_vr_eye_state out[2]);
 
 #endif

@@ -12,8 +12,11 @@ bool openxr_input_init(XrInstance instance);
 bool openxr_input_attach(XrSession session);
 void openxr_input_sync(XrSession session);
 void openxr_input_deinit(void);
-bool android_vk_openxr_button(unsigned button);
-int16_t android_vk_openxr_axis(unsigned axis);
-bool android_vk_openxr_menu_long_press(void);
+/* True while actions are attached to a live session; readable from the
+ * main thread while sync runs on the video thread. */
+bool openxr_input_session_active(void);
+bool openxr_input_button(unsigned button);
+int16_t openxr_input_axis(unsigned axis);
+bool openxr_input_menu_long_press(void);
 
 #endif
