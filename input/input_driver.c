@@ -1752,6 +1752,7 @@ typedef struct
    uint32_t has_pad[INPUT_BIND_WORDS];   /* by bind: some controller's pad may be behind it */
    uint16_t pad_any16;      /* ... the RetroPad's sixteen, valid or not */
    bool     any_key_down;   /* key_down may hold a bit: it wants clearing when the keys go */
+   uint8_t  stick_ok;       /* bit 0 the left stick, 1 the right: its four binds are usable */
    uint16_t key[RARCH_BIND_LIST_END];    /* the n-th bind that names a key */
    uint8_t  bind[RARCH_BIND_LIST_END];   /* ... and which bind that is */
    uint8_t  mbutton[RARCH_BIND_LIST_END]; /* by bind: its mouse button, where has_mbutton says it has one */
@@ -1811,6 +1812,15 @@ static void input_port_keys_refresh(input_port_keys_t *k,
          }
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
+      /* a stick is read only with all four of its binds usable */
+      k->stick_ok     = 0;
+      for (i = 0; i < 2; i++)
+      {
+         const struct retro_keybind *stick = &binds[RARCH_ANALOG_LEFT_X_PLUS + i * 4];
+         if (     RETRO_KEYBIND_VALID(&stick[0]) && RETRO_KEYBIND_VALID(&stick[1])
+               && RETRO_KEYBIND_VALID(&stick[2]) && RETRO_KEYBIND_VALID(&stick[3]))
+            k->stick_ok |= (uint8_t)(1u << i);
+      }
       k->any_mbutton  = false;
       for (i = 0; i < INPUT_BIND_WORDS; i++)
          if (k->has_mbutton[i])
@@ -2573,12 +2583,141 @@ static int16_t input_joypad_analog_button(
    return res;
 }
 
+/* What is behind a stick's four binds - x+, x-, y+, y- - as its two
+ * readers want it. They asked the binds' records each read: six times
+ * whether a bind is usable, each one's key and whether the keyboard
+ * has it down, and for each pad axis and button the choice between the
+ * port's own bind and its controller's profile's. It is all kept
+ * already: whether the stick is usable and which of its keys are down
+ * with the port's keys, what the pad has behind each bind with the
+ * port's resolved set. */
+typedef struct
+{
+   uint32_t axis[4];    /* the pad's axis behind each, or AXIS_NONE */
+   uint16_t button[4];  /* the pad's button behind each, or NO_BTN */
+   uint8_t  keys;       /* bit n: the n-th's key is down */
+} input_stick_src_t;
+
+/* ... for an input driver that does not say which of a list of keys
+ * are down (keys_down): nothing is kept of its keys, so the binds'
+ * records are read as they always were, and the keyboard asked a key
+ * at a time. Off the path of the drivers that do. */
+INPUT_NOINLINE static bool input_stick_src_from_binds(
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, unsigned id_stick,
+      input_stick_src_t *src)
+{
+   unsigned i;
+   input_driver_state_t *input_st    = &input_driver_st;
+   const struct retro_keybind *stick = &binds[id_stick];
+
+   if (     !RETRO_KEYBIND_VALID(&stick[0]) || !RETRO_KEYBIND_VALID(&stick[1])
+         || !RETRO_KEYBIND_VALID(&stick[2]) || !RETRO_KEYBIND_VALID(&stick[3]))
+      return false;
+
+   src->keys = 0;
+   for (i = 0; i < 4; i++)
+   {
+      unsigned key   = RETRO_KEYBIND_KEY(&stick[i]);
+      if (key && input_state_wrap(
+               input_st->current_driver,
+               input_st->current_data,
+               input_st->primary_joypad,
+               joypad_info,
+               (*input_st->libretro_input_binds),
+               !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
+               0, RETRO_DEVICE_KEYBOARD, 0, key))
+         src->keys  |= (uint8_t)(1u << i);
+      src->axis[i]   = (stick[i].joyaxis == AXIS_NONE)
+         ? joypad_info->auto_binds[id_stick + i].joyaxis
+         : stick[i].joyaxis;
+      src->button[i] = (stick[i].joykey == NO_BTN)
+         ? joypad_info->auto_binds[id_stick + i].joykey
+         : stick[i].joykey;
+   }
+   return true;
+}
+
+/* False if the stick is not to be read: one of its binds is not
+ * usable. */
+static INLINE bool input_stick_src(unsigned port, unsigned idx,
+      rarch_joypad_info_t *joypad_info,
+      const struct retro_keybind *binds, input_stick_src_t *src)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
+   unsigned id_stick              = INPUT_ANALOG_AXIS_BIND(idx,
+         RETRO_DEVICE_ID_ANALOG_X);
+   const input_port_keys_t *k;
+   const input_port_pads_t *pads;
+
+   /* between input drivers: nothing has been polled to read */
+   if (!input_st->current_driver)
+      return false;
+   if (!input_st->current_driver->keys_down)
+      return input_stick_src_from_binds(joypad_info, binds, id_stick, src);
+
+   k = input_port_keys_get(
+         input_st->current_driver, input_st->current_data, port);
+   if (!((k->stick_ok >> idx) & 1))
+      return false;
+
+   /* the keys: down or not as of this poll, whatever the keyboard is
+    * being kept for - a stick's keys were read past that before too */
+   src->keys = (uint8_t)((k->key_down[0] >> id_stick) & 0xf);
+
+   if (!((k->has_pad[0] >> id_stick) & 0xf))
+   {
+      /* no controller's pad could be behind any of the four - no
+       * controller at all, most of the time: nothing is made for the
+       * port to find that out */
+      for (i = 0; i < 4; i++)
+      {
+         src->axis[i]   = AXIS_NONE;
+         src->button[i] = NO_BTN;
+      }
+   }
+   else if ((pads = input_port_pads_for(port, joypad_info)))
+   {
+      for (i = 0; i < 4; i++)
+      {
+         if ((pads->has_pad[0] >> (id_stick + i)) & 1)
+         {
+            src->axis[i]   = pads->axis[id_stick + i];
+            src->button[i] = pads->key[id_stick + i];
+         }
+         else
+         {
+            src->axis[i]   = AXIS_NONE;
+            src->button[i] = NO_BTN;
+         }
+      }
+   }
+   else
+   {
+      /* read by another controller than the port's own: from the
+       * binds, and that controller's profile */
+      const struct retro_keybind *stick = &binds[id_stick];
+      for (i = 0; i < 4; i++)
+      {
+         src->axis[i]   = (stick[i].joyaxis == AXIS_NONE)
+            ? joypad_info->auto_binds[id_stick + i].joyaxis
+            : stick[i].joyaxis;
+         src->button[i] = (stick[i].joykey == NO_BTN)
+            ? joypad_info->auto_binds[id_stick + i].joykey
+            : stick[i].joykey;
+      }
+   }
+   return true;
+}
+
 static int16_t input_joypad_analog_axis(
       unsigned input_analog_dpad_mode,
       float input_analog_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
+      unsigned port,
       unsigned idx,
       unsigned ident,
       const struct retro_keybind *binds)
@@ -2586,10 +2725,8 @@ static int16_t input_joypad_analog_axis(
    int16_t res                              = 0;
    /* Analog sticks. Either RETRO_DEVICE_INDEX_ANALOG_LEFT
     * or RETRO_DEVICE_INDEX_ANALOG_RIGHT */
-   unsigned id_axis;                   /* the axis's + bind; its - is the next */
-   unsigned id_stick;                  /* the stick's four: x+, x-, y+, y- */
-   const struct retro_keybind *bind;   /* [0] the axis's +, [1] its - */
-   const struct retro_keybind *stick;  /* [0] x+, [1] x-, [2] y+, [3] y- */
+   unsigned a;                         /* the axis's + in the stick's four; its - is the next */
+   input_stick_src_t src;              /* [0] x+, [1] x-, [2] y+, [3] y- */
 
    /* See input_joypad_analog_button() - drv is NULL while the
     * joypad driver is being torn down and reinitialised. */
@@ -2605,54 +2742,22 @@ static int16_t input_joypad_analog_axis(
    if (!INPUT_ANALOG_AXIS_IS_STICK(idx, ident))
       return 0;
 
-   id_axis  = INPUT_ANALOG_AXIS_BIND(idx, ident);
-   id_stick = INPUT_ANALOG_AXIS_BIND(idx, RETRO_DEVICE_ID_ANALOG_X);
-   bind     = &binds[id_axis];
-   stick    = &binds[id_stick];
+   a = (ident == RETRO_DEVICE_ID_ANALOG_Y) ? 2 : 0;
 
-   if (     !RETRO_KEYBIND_VALID(&bind[0])  || !RETRO_KEYBIND_VALID(&bind[1])
-         || !RETRO_KEYBIND_VALID(&stick[0]) || !RETRO_KEYBIND_VALID(&stick[1])
-         || !RETRO_KEYBIND_VALID(&stick[2]) || !RETRO_KEYBIND_VALID(&stick[3]))
+   if (!input_stick_src(port, idx, joypad_info, binds, &src))
       return 0;
 
    /* Keyboard bind priority */
-   if (     RETRO_KEYBIND_KEY(&bind[0])  != RETROK_UNKNOWN
-         || RETRO_KEYBIND_KEY(&bind[1]) != RETROK_UNKNOWN)
-   {
-      input_driver_state_t *input_st = &input_driver_st;
-
-      if (RETRO_KEYBIND_KEY(&bind[0]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad,
-            joypad_info,
-            (*input_st->libretro_input_binds),
-            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&bind[0])))
-         res  = 0x7fff;
-      if (RETRO_KEYBIND_KEY(&bind[1]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad,
-            joypad_info,
-            (*input_st->libretro_input_binds),
-            !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&bind[1])))
-         res += -0x7fff;
-
-      if (res)
-         return res;
-   }
+   if (src.keys & (1u << a))
+      res  = 0x7fff;
+   if (src.keys & (2u << a))
+      res += -0x7fff;
+   if (res)
+      return res;
 
    {
-      uint32_t axis_minus         = (bind[1].joyaxis   == AXIS_NONE)
-         ? joypad_info->auto_binds[id_axis + 1].joyaxis
-         : bind[1].joyaxis;
-      uint32_t axis_plus          = (bind[0].joyaxis    == AXIS_NONE)
-         ? joypad_info->auto_binds[id_axis].joyaxis
-         : bind[0].joyaxis;
+      uint32_t axis_minus         = src.axis[a + 1];
+      uint32_t axis_plus          = src.axis[a];
       float normal_mag            = 0.0f;
 
       /* normalized magnitude of stick actuation, needed for scaled
@@ -2662,18 +2767,10 @@ static int16_t input_joypad_analog_axis(
          float x                  = 0.0f;
          float y                  = 0.0f;
          float mag_sq;
-         uint32_t x_axis_minus    = (stick[1].joyaxis == AXIS_NONE)
-            ? joypad_info->auto_binds[id_stick + 1].joyaxis
-            : stick[1].joyaxis;
-         uint32_t x_axis_plus     = (stick[0].joyaxis  == AXIS_NONE)
-            ? joypad_info->auto_binds[id_stick].joyaxis
-            : stick[0].joyaxis;
-         uint32_t y_axis_minus    = (stick[3].joyaxis == AXIS_NONE)
-            ? joypad_info->auto_binds[id_stick + 3].joyaxis
-            : stick[3].joyaxis;
-         uint32_t y_axis_plus     = (stick[2].joyaxis  == AXIS_NONE)
-            ? joypad_info->auto_binds[id_stick + 2].joyaxis
-            : stick[2].joyaxis;
+         uint32_t x_axis_minus    = src.axis[1];
+         uint32_t x_axis_plus     = src.axis[0];
+         uint32_t y_axis_minus    = src.axis[3];
+         uint32_t y_axis_plus     = src.axis[2];
          /* normalized magnitude for radial scaled analog deadzone */
          if (x_axis_plus != AXIS_NONE && drv->axis)
             x                     = drv->axis(
@@ -2721,12 +2818,8 @@ static int16_t input_joypad_analog_axis(
 
    if (res == 0)
    {
-      uint16_t key_minus    = (bind[1].joykey == NO_BTN)
-         ? joypad_info->auto_binds[id_axis + 1].joykey
-         : bind[1].joykey;
-      uint16_t key_plus     = (bind[0].joykey  == NO_BTN)
-         ? joypad_info->auto_binds[id_axis].joykey
-         : bind[0].joykey;
+      uint16_t key_minus    = src.button[a + 1];
+      uint16_t key_plus     = src.button[a];
       /* A stick at rest comes here every read, and with no button
        * bound to its directions - the usual case - the pad was asked
        * whether "no button" is down, each way, each axis. It is not a
@@ -2766,12 +2859,12 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
+      unsigned port,
       unsigned idx,
       const struct retro_keybind *binds,
       int16_t *out_x, int16_t *out_y)
 {
-   unsigned id_stick;                  /* the stick's four: x+, x-, y+, y- */
-   const struct retro_keybind *stick;  /* [0] x+, [1] x-, [2] y+, [3] y- */
+   input_stick_src_t src;              /* [0] x+, [1] x-, [2] y+, [3] y- */
    float normal_mag                = 0.0f;
 
    *out_x = 0;
@@ -2790,84 +2883,28 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
    if (idx > RETRO_DEVICE_INDEX_ANALOG_RIGHT)
       return false;
 
-   id_stick = INPUT_ANALOG_AXIS_BIND(idx, RETRO_DEVICE_ID_ANALOG_X);
-   stick    = &binds[id_stick];
-
-   if (   !RETRO_KEYBIND_VALID(&stick[0]) || !RETRO_KEYBIND_VALID(&stick[1])
-       || !RETRO_KEYBIND_VALID(&stick[2]) || !RETRO_KEYBIND_VALID(&stick[3]))
+   if (!input_stick_src(port, idx, joypad_info, binds, &src))
       return false;
 
-   /* Keyboard bind priority — check X */
-   if (     RETRO_KEYBIND_KEY(&stick[0])  != RETROK_UNKNOWN
-         || RETRO_KEYBIND_KEY(&stick[1]) != RETROK_UNKNOWN)
-   {
-      input_driver_state_t *input_st = &input_driver_st;
-      bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
-
-      if (RETRO_KEYBIND_KEY(&stick[0]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad, joypad_info,
-            (*input_st->libretro_input_binds),
-            kb_blocked,
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&stick[0])))
-         *out_x  = 0x7fff;
-      if (RETRO_KEYBIND_KEY(&stick[1]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad, joypad_info,
-            (*input_st->libretro_input_binds),
-            kb_blocked,
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&stick[1])))
-         *out_x += -0x7fff;
-   }
-
-   /* Keyboard bind priority — check Y */
-   if (     RETRO_KEYBIND_KEY(&stick[2])  != RETROK_UNKNOWN
-         || RETRO_KEYBIND_KEY(&stick[3]) != RETROK_UNKNOWN)
-   {
-      input_driver_state_t *input_st = &input_driver_st;
-      bool kb_blocked = !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED);
-
-      if (RETRO_KEYBIND_KEY(&stick[2]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad, joypad_info,
-            (*input_st->libretro_input_binds),
-            kb_blocked,
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&stick[2])))
-         *out_y  = 0x7fff;
-      if (RETRO_KEYBIND_KEY(&stick[3]) && input_state_wrap(
-            input_st->current_driver,
-            input_st->current_data,
-            input_st->primary_joypad, joypad_info,
-            (*input_st->libretro_input_binds),
-            kb_blocked,
-            0, RETRO_DEVICE_KEYBOARD, 0,
-            RETRO_KEYBIND_KEY(&stick[3])))
-         *out_y += -0x7fff;
-   }
+   /* Keyboard bind priority */
+   if (src.keys & 1)
+      *out_x  = 0x7fff;
+   if (src.keys & 2)
+      *out_x += -0x7fff;
+   if (src.keys & 4)
+      *out_y  = 0x7fff;
+   if (src.keys & 8)
+      *out_y += -0x7fff;
 
    /* If keyboard produced results for both axes, we're done */
    if (*out_x && *out_y)
       return true;
 
    {
-      uint32_t x_axis_minus = (stick[1].joyaxis == AXIS_NONE)
-         ? joypad_info->auto_binds[id_stick + 1].joyaxis
-         : stick[1].joyaxis;
-      uint32_t x_axis_plus  = (stick[0].joyaxis  == AXIS_NONE)
-         ? joypad_info->auto_binds[id_stick].joyaxis
-         : stick[0].joyaxis;
-      uint32_t y_axis_minus = (stick[3].joyaxis == AXIS_NONE)
-         ? joypad_info->auto_binds[id_stick + 3].joyaxis
-         : stick[3].joyaxis;
-      uint32_t y_axis_plus  = (stick[2].joyaxis  == AXIS_NONE)
-         ? joypad_info->auto_binds[id_stick + 2].joyaxis
-         : stick[2].joyaxis;
+      uint32_t x_axis_minus = src.axis[1];
+      uint32_t x_axis_plus  = src.axis[0];
+      uint32_t y_axis_minus = src.axis[3];
+      uint32_t y_axis_plus  = src.axis[2];
 
       /* The stick's four pad axes, each read once: for the magnitude
        * where there is a deadzone, and for the axis itself. An axis the
@@ -2916,12 +2953,8 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
 
          if (x_val == 0)
          {
-            uint16_t key_minus = (stick[1].joykey == NO_BTN)
-               ? joypad_info->auto_binds[id_stick + 1].joykey
-               : stick[1].joykey;
-            uint16_t key_plus  = (stick[0].joykey  == NO_BTN)
-               ? joypad_info->auto_binds[id_stick].joykey
-               : stick[0].joykey;
+            uint16_t key_minus = src.button[1];
+            uint16_t key_plus  = src.button[0];
             if (key_plus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_plus))
                x_val  = 0x7fff;
             if (key_minus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_minus))
@@ -2943,12 +2976,8 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
 
          if (y_val == 0)
          {
-            uint16_t key_minus = (stick[3].joykey == NO_BTN)
-               ? joypad_info->auto_binds[id_stick + 3].joykey
-               : stick[3].joykey;
-            uint16_t key_plus  = (stick[2].joykey  == NO_BTN)
-               ? joypad_info->auto_binds[id_stick + 2].joykey
-               : stick[2].joykey;
+            uint16_t key_minus = src.button[3];
+            uint16_t key_plus  = src.button[2];
             if (key_plus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_plus))
                y_val  = 0x7fff;
             if (key_minus != NO_BTN && drv->button && drv->button(joypad_info->joy_idx, key_minus))
@@ -2981,7 +3010,7 @@ static int16_t input_port_stick_axis(input_driver_state_t *input_st,
    if (port >= MAX_USERS || !INPUT_ANALOG_AXIS_IS_STICK(idx, ident))
       return input_joypad_analog_axis(input_analog_dpad_mode,
             input_analog_deadzone, input_analog_sensitivity,
-            drv, joypad_info, idx, ident, binds);
+            drv, joypad_info, port, idx, ident, binds);
 
    slot = idx;
    bit  = (uint16_t)(1u << port);
@@ -3001,7 +3030,7 @@ static int16_t input_port_stick_axis(input_driver_state_t *input_st,
       int16_t y = 0;
       input_joypad_analog_stick(input_analog_dpad_mode,
             input_analog_deadzone, input_analog_sensitivity,
-            drv, joypad_info, idx, binds, &x, &y);
+            drv, joypad_info, port, idx, binds, &x, &y);
       input_st->stick_cache[port][slot][0]  = x;
       input_st->stick_cache[port][slot][1]  = y;
       input_st->frame_valid.sticks[slot]   |= bit;
@@ -4091,7 +4120,7 @@ static int16_t input_state_internal(
             ret = 0;
             if (joypad && !ret)
                ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
-                     joypad, &joypad_info, stick, (unsigned)axis,
+                     joypad, &joypad_info, mapped_port, stick, (unsigned)axis,
                      (*input_st->libretro_input_binds[mapped_port]));
          }
       }
@@ -4202,6 +4231,7 @@ static int16_t input_state_internal(
                         settings->floats.input_analog_sensitivity,
                         joypad,
                         &joypad_info,
+                        mapped_port,
                         s,
                         a,
                         (*input_st->libretro_input_binds[mapped_port]));
@@ -11952,7 +11982,7 @@ uint32_t input_driver_user_controls_bound(unsigned user)
          input_joypad_analog_stick(ANALOG_DPAD_NONE,
                settings->floats.input_analog_deadzone,
                settings->floats.input_analog_sensitivity,
-               joypad, &joypad_info, idx,
+               joypad, &joypad_info, user, idx,
                (*input_st->libretro_input_binds[user]), &x, &y);
       if (!x)
          x = (int16_t)input_state_wrap(input_st->current_driver,
@@ -12476,7 +12506,7 @@ void input_driver_poll(void)
                               input_analog_deadzone,
                               input_analog_sensitivity,
                               joypad, &joypad_info[i],
-                              k, (*input_st->libretro_input_binds[i]),
+                              i, k, (*input_st->libretro_input_binds[i]),
                               &stick_x, &stick_y))
                      {
                         unsigned off_x = 0 + (k * 4);
@@ -13594,6 +13624,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                   settings->floats.input_analog_sensitivity,
                   joypad,
                   &joypad_info,
+                  port,
                   s,
                   (input_st->libretro_input_binds[port]
                      ? *input_st->libretro_input_binds[port] : NULL),

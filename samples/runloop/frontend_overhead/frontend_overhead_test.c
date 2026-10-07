@@ -4270,6 +4270,135 @@ static void lane_pointer_store(void)
 
 /* Aim From Analog Stick: a port's stick is where its lightgun or
  * pointer points. */
+/* Where a stick's values come from. Its readers took the binds'
+ * records for it each read; they take what is kept - whether the
+ * stick's four binds are usable, with the port's keys; the pad's axis
+ * and button behind each, with the port's resolved set. Held to what
+ * the records say: the controller's profile where the port has nothing
+ * of its own, the port's own bind over the profile, a pad's button
+ * where the axis is at rest, nothing at all from a stick one of whose
+ * binds is not usable - and each of those again as soon as a bind
+ * changes. */
+static void lane_stick_sources(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8];
+   struct retro_keybind saved_own[8];
+   float saved_deadzone = settings->floats.input_analog_deadzone;
+   unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
+   unsigned had         = failures;
+   unsigned i;
+#define SS_READ(stick, axis) (input_driver_poll(), \
+      input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, (stick), (axis)))
+#define SS_LX() SS_READ(RETRO_DEVICE_INDEX_ANALOG_LEFT,  RETRO_DEVICE_ID_ANALOG_X)
+#define SS_LY() SS_READ(RETRO_DEVICE_INDEX_ANALOG_LEFT,  RETRO_DEVICE_ID_ANALOG_Y)
+#define SS_RX() SS_READ(RETRO_DEVICE_INDEX_ANALOG_RIGHT, RETRO_DEVICE_ID_ANALOG_X)
+
+   if (!joypad_real)
+   {
+      CHECK(false, "stick sources: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], sizeof(saved_auto));
+   memcpy(saved_own,  &input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS],   sizeof(saved_own));
+   for (i = 0; i < 8; i++)
+   {
+      struct retro_keybind *own = &input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS + i];
+      own->joykey  = NO_BTN;
+      own->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(own, true);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + i].joykey = NO_BTN;
+   }
+   /* the profile: the sticks on the pad's axes 0 to 3 */
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   settings->floats.input_analog_deadzone    = 0.0f;
+   settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   /* the controller's profile */
+   syn_axes[0] = 20000;
+   syn_axes[1] = -12000;
+   CHECK(SS_LX() > 15000, "stick sources: the profile's axis, held right, reads wrong");
+   CHECK(SS_LY() < -8000, "stick sources: the profile's axis, held up, reads wrong");
+
+   /* the port's own bind, over the profile: x+ on the pad's axis 3 */
+   input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS].joyaxis = AXIS_POS(3);
+   binds_written_by_a_lane();
+   CHECK(SS_LX() == 0, "stick sources: with x+ bound to another axis, at rest,"
+         " the profile's axis still reads");
+   syn_axes[3] = 25000;
+   CHECK(SS_LX() > 20000, "stick sources: the port's own axis, held, reads wrong");
+   syn_axes[3] = 0;
+   input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS].joyaxis = AXIS_NONE;
+   binds_written_by_a_lane();
+   CHECK(SS_LX() > 15000, "stick sources: with the port's own bind taken away"
+         " the profile's axis does not read again");
+
+   /* a pad's button behind a direction, the axis at rest */
+   syn_axes[0] = 0;
+   input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_MINUS].joykey = 9;
+   binds_written_by_a_lane();
+   CHECK(SS_LX() == 0, "stick sources: a button bound to left, not held, reads wrong");
+   syn_buttons = 1u << 9;
+   CHECK(SS_LX() == -0x7fff, "stick sources: a button bound to left, held, reads wrong");
+   syn_buttons = 0;
+
+   /* one bind of the left stick not usable: the left stick reads
+    * nothing, the right one is not touched by it */
+   syn_axes[0] = 20000;
+   syn_axes[1] = -12000;
+   syn_axes[2] = 18000;
+   RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RARCH_ANALOG_LEFT_Y_MINUS], false);
+   binds_written_by_a_lane();
+   CHECK(SS_LX() == 0 && SS_LY() == 0, "stick sources: a stick with a bind that"
+         " is not usable reads something");
+   CHECK(SS_RX() > 12000, "stick sources: the other stick does not read beside it");
+   RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RARCH_ANALOG_LEFT_Y_MINUS], true);
+   binds_written_by_a_lane();
+   CHECK(SS_LX() > 15000 && SS_LY() < -8000, "stick sources: usable again, the"
+         " stick reads something");
+
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto, sizeof(saved_auto));
+   memcpy(&input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS],   saved_own,  sizeof(saved_own));
+   binds_written_by_a_lane();
+   settings->floats.input_analog_deadzone    = saved_deadzone;
+   settings->uints.input_analog_dpad_mode[0] = saved_mode;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   syn_buttons = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+#undef SS_READ
+#undef SS_LX
+#undef SS_LY
+#undef SS_RX
+
+   if (failures == had)
+      printf("[pass] stick sources: the profile, the port's own bind over it,"
+            " a button behind a direction, and nothing from a stick with a bind"
+            " that is not usable\n");
+#else
+   printf("[skip] stick sources: needs the test drivers\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -5595,6 +5724,7 @@ int main(int argc, char *argv[])
       lane_quit_combo();
       lane_restart_hold();
       lane_sticks_read_once();
+      lane_stick_sources();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
