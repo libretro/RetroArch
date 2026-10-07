@@ -394,11 +394,25 @@ uint64_t mem_stats_total(void)
    }
 #else /* the iOS family */
    {
+      uint64_t size = 0;
+      int    mib[2] = { CTL_HW, HW_MEMSIZE };
+      size_t len    = sizeof(size);
+#ifdef TASK_VM_INFO_REV4_COUNT
+      /* What this process may use: its footprint plus the headroom left
+       * before jetsam. limit_bytes_remaining is revision 4 of the
+       * structure (iOS 13): read where the SDK declares it and the
+       * running kernel filled it in, which the count it hands back
+       * says. */
       task_vm_info_data_t vm_info;
       mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-      if (task_info(mach_task_self(), TASK_VM_INFO,
-               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
+      if (     task_info(mach_task_self(), TASK_VM_INFO,
+                  (task_info_t)&vm_info, &count) == KERN_SUCCESS
+            && count >= TASK_VM_INFO_REV4_COUNT)
          return vm_info.phys_footprint + vm_info.limit_bytes_remaining;
+#endif
+      /* Before that, the device's memory */
+      if (sysctl(mib, 2, &size, &len, NULL, 0) >= 0)
+         return size;
       return 0;
    }
 #endif
@@ -551,7 +565,19 @@ uint64_t mem_stats_free(void)
       return cached;
    }
 #elif defined(MEM_STATS_APPLE)
-#if !TARGET_OS_IPHONE
+#if TARGET_OS_IPHONE && defined(TASK_VM_INFO_REV4_COUNT)
+   /* iOS 13 on: the headroom left before jetsam, revision 4 of the
+    * structure - read only when the running kernel filled it in. Older
+    * systems take the page count below, as macOS does. */
+   {
+      task_vm_info_data_t vm_info;
+      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+      if (     task_info(mach_task_self(), TASK_VM_INFO,
+                  (task_info_t)&vm_info, &count) == KERN_SUCCESS
+            && count >= TASK_VM_INFO_REV4_COUNT)
+         return vm_info.limit_bytes_remaining;
+   }
+#endif
    /* Free plus reclaimable (inactive) pages, through the 32-bit
     * host_statistics interface: it exists back to 10.0 and runs on 10.5
     * kernels, unlike host_statistics64 (10.6+) or a task_vm_info
@@ -574,16 +600,6 @@ uint64_t mem_stats_free(void)
       mach_port_deallocate(mach_task_self(), host);
       return avail;
    }
-#else /* the iOS family */
-   {
-      task_vm_info_data_t vm_info;
-      mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
-      if (task_info(mach_task_self(), TASK_VM_INFO,
-               (task_info_t)&vm_info, &count) == KERN_SUCCESS)
-         return vm_info.limit_bytes_remaining;
-      return 0;
-   }
-#endif
 #elif defined(MEM_STATS_PROC)
    {
       uint64_t avail = 0;

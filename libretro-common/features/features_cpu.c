@@ -929,7 +929,9 @@ static size_t cpu_features_processor_order_masked(
 
 size_t cpu_features_get_processor_order(unsigned *s, size_t len)
 {
+#if defined(__linux__) || (defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__))
    unsigned char allowed[CPU_CLASS_MAX_IDS];
+#endif
    const unsigned char *mask = NULL;
 #if defined(__linux__)
    {

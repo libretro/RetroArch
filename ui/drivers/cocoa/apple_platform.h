@@ -19,8 +19,12 @@ extern bool ios_running_on_ipad(void);
 #endif
 
 #if TARGET_OS_IPHONE
-/* iOS native keyboard support */
+/* iOS native keyboard support; the typedef is input_driver.h's, made
+ * once whichever header comes first */
+#ifndef INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
+#define INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
 typedef void (*input_keyboard_line_complete_t)(void *userdata, const char *line);
+#endif
 extern bool ios_keyboard_start(char **buffer_ptr, size_t *size_ptr, size_t *ptr_ptr,
                                 const char *label,
                                 input_keyboard_line_complete_t callback, void *userdata);

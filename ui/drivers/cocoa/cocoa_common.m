@@ -325,10 +325,7 @@ retro_time_t cocoa_last_vblank_time(void)
          if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
             hz = (float)apple_rt_get_long([UIScreen mainScreen],
                   sel_registerName("maximumFramesPerSecond"));
-         if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-            COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
-         else
-            view.displayLink.preferredFramesPerSecond = hz;
+         cocoa_display_link_set_rate(view.displayLink, hz);
       }
       [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
@@ -599,7 +596,9 @@ retro_time_t cocoa_last_vblank_time(void)
 
 #pragma mark UIDocumentPickerViewController
 
--(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url
+/* The document picker is iOS 8: UIKit calls these only there, and
+ * ios_show_file_sheet() checks the OS before it asks for one. */
+-(void)documentPicker:(UIDocumentPickerViewController *)controller didPickDocumentAtURL:(NSURL *)url API_AVAILABLE(ios(8.0))
 {
    NSFileManager *manager = [NSFileManager defaultManager];
    NSString     *filename = (NSString*)url.path.lastPathComponent;
@@ -611,7 +610,7 @@ retro_time_t cocoa_last_vblank_time(void)
    NSString *documentsDir = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
    /* Copy file to documents directory if it's not already
     * inside Documents directory */
-   if (![[url path] containsString:documentsDir])
+   if ([[url path] rangeOfString:documentsDir].location == NSNotFound)
       if (![manager fileExistsAtPath:destination])
          [manager copyItemAtPath:[url path] toPath:destination error:&error];
    if (filebrowser_get_type() == FILEBROWSER_SCAN_FILE)
@@ -622,11 +621,11 @@ retro_time_t cocoa_last_vblank_time(void)
    }
 }
 
--(void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller
+-(void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller API_AVAILABLE(ios(8.0))
 {
 }
 
--(void)showDocumentPicker
+-(void)showDocumentPicker API_AVAILABLE(ios(8.0))
 {
    /* -initWithDocumentTypes:inMode: and the kUTType names are
     * deprecated (iOS 14 / 15) and still what reaches back to iOS 8;
@@ -732,7 +731,8 @@ retro_time_t cocoa_last_vblank_time(void)
 }
 
 -(BOOL)prefersHomeIndicatorAutoHidden { return YES; }
--(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator
+/* UIKit calls this from iOS 8 on, so the call up to super is as old */
+-(void)viewWillTransitionToSize:(CGSize)size withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator API_AVAILABLE(ios(8.0))
 {
     [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
@@ -787,7 +787,10 @@ retro_time_t cocoa_last_vblank_time(void)
       if (!window)
          return;
 
-      UIEdgeInsets inset   = window.safeAreaInsets;
+      /* -[UIView safeAreaInsets] (iOS 11); the struct is returned in
+       * memory everywhere but arm64 */
+      UIEdgeInsets inset   = apple_rt_get_large_struct(UIEdgeInsets, window,
+            sel_registerName("safeAreaInsets"));
       /* UIWindowScene.effectiveGeometry is an iOS 16 API that older
        * SDKs do not declare, so it is resolved entirely at runtime via
        * objc_msgSend - same cost as a compiled property access.
@@ -961,7 +964,8 @@ retro_time_t cocoa_last_vblank_time(void)
 {
 #if TARGET_OS_IOS
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(11, 0, 0), 0))
-        [self setNeedsUpdateOfHomeIndicatorAutoHidden];
+        apple_rt_send_void(self,
+              sel_registerName("setNeedsUpdateOfHomeIndicatorAutoHidden"));
 #endif
 }
 
@@ -1045,7 +1049,8 @@ retro_time_t cocoa_last_vblank_time(void)
 #if TARGET_OS_IOS
 void ios_show_file_sheet(void)
 {
-   [[CocoaView get] showDocumentPicker];
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), 0))
+      apple_rt_send_void([CocoaView get], @selector(showDocumentPicker));
 }
 #endif
 
@@ -1406,6 +1411,40 @@ static float cocoa_display_mode_refresh_rate(CGDirectDisplayID id)
 }
 #endif
 
+#if TARGET_OS_IPHONE
+void cocoa_display_link_set_rate(id link, float hz)
+{
+   if (!link || hz <= 0.0f)
+      return;
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
+      COCOA_DISPLAY_LINK_SET_RATE(link, hz);
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), APPLE_RUNTIME_VER(10, 0, 0)))
+      apple_rt_send_long(link, sel_registerName("setPreferredFramesPerSecond:"),
+            (long)(hz + 0.5f));
+   else
+   {
+      /* Deprecated in iOS 10 and the only control before it */
+      long interval = (long)(60.0f / hz + 0.5f);
+      apple_rt_send_long(link, sel_registerName("setFrameInterval:"),
+            interval > 0 ? interval : 1);
+   }
+}
+
+float cocoa_display_link_get_rate(id link)
+{
+   long interval;
+   if (!link)
+      return 0.0f;
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
+      return COCOA_DISPLAY_LINK_PREFERRED_RATE(link);
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), APPLE_RUNTIME_VER(10, 0, 0)))
+      return (float)apple_rt_get_long(link,
+            sel_registerName("preferredFramesPerSecond"));
+   interval = apple_rt_get_long(link, sel_registerName("frameInterval"));
+   return 60.0f / (float)(interval > 0 ? interval : 1);
+}
+#endif
+
 float cocoa_get_refresh_rate(void)
 {
 #if TARGET_OS_OSX
@@ -1434,41 +1473,25 @@ float cocoa_get_refresh_rate(void)
     * below stays reachable and unchanged: 10.0 - 10.2 still gets
     * preferredFramesPerSecond, pre-10.0 still gets frameInterval,
     * and a 0 answer here still falls through to them. */
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
    {
-      NSInteger max_fps = [[UIScreen mainScreen] maximumFramesPerSecond];
+      long max_fps = apple_rt_get_long([UIScreen mainScreen],
+            sel_registerName("maximumFramesPerSecond"));
       if (max_fps > 0)
          return (float)max_fps;
    }
-#endif
    {
       CADisplayLink *dl = [CocoaView get].displayLink;
       if (dl)
       {
-         if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-            return COCOA_DISPLAY_LINK_PREFERRED_RATE(dl);
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100000 || __TV_OS_VERSION_MAX_ALLOWED >= 100000
-         if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), APPLE_RUNTIME_VER(10, 0, 0)))
-            return dl.preferredFramesPerSecond;
-#endif
-         /* iOS 6 - 9 / tvOS < 10: only frameInterval exists.  It is
-          * the number of screen refreshes between callbacks, so
-          * convert to Hz assuming a 60 Hz panel (accurate for every
-          * pre-iOS-10 device - ProMotion is iPad Pro 2017+). */
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-         {
-            NSInteger fi = dl.frameInterval;
-            return 60.0f / (float)(fi > 0 ? fi : 1);
-         }
-#pragma clang diagnostic pop
+         /* Before iOS 10 this is frameInterval on a 60 Hz panel, which
+          * is every pre-iOS-10 device - ProMotion is iPad Pro 2017+. */
+         return cocoa_display_link_get_rate(dl);
       }
    }
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
-      return [UIScreen mainScreen].maximumFramesPerSecond;
-#endif
+      return (float)apple_rt_get_long([UIScreen mainScreen],
+            sel_registerName("maximumFramesPerSecond"));
    return 60.0f;
 #endif
 }
@@ -1512,14 +1535,13 @@ float cocoa_get_window_refresh_rate(void)
 
    if (!screen)
       return 0.0f;
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 100300 || __TV_OS_VERSION_MAX_ALLOWED >= 100200
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), APPLE_RUNTIME_VER(10, 2, 0)))
    {
-      NSInteger max_fps = [screen maximumFramesPerSecond];
+      long max_fps = apple_rt_get_long(screen,
+            sel_registerName("maximumFramesPerSecond"));
       if (max_fps > 0)
          return (float)max_fps;
    }
-#endif
    return 0.0f;
 #endif
 }
@@ -1569,16 +1591,16 @@ void cocoa_get_video_output_size(unsigned *dims,
 {
 #if TARGET_OS_IPHONE
    UIScreen *screen = [UIScreen mainScreen];
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 80000 || __TV_OS_VERSION_MAX_ALLOWED >= 90000
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(8, 0, 0), APPLE_RUNTIME_VER(9, 0, 0)))
    {
-      /* nativeBounds is physical pixels, orientation-independent. */
-      CGRect b = screen.nativeBounds;
+      /* nativeBounds (iOS 8) is physical pixels, orientation-independent;
+       * a CGRect is returned in memory everywhere but arm64. */
+      CGRect b = apple_rt_get_large_struct(CGRect, screen,
+            sel_registerName("nativeBounds"));
       *dims    = VIDEO_SCALE_PACK((unsigned)b.size.width,
             (unsigned)b.size.height);
    }
    else
-#endif
    {
       /* iOS 6/7: no nativeBounds.  UIScreen.bounds is in points and
        * fixed to portrait orientation pre-iOS-8.  Every iOS 6/7-era

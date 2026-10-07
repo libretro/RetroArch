@@ -47,7 +47,11 @@ static CMMotionManager *motionManager;
 #ifdef HAVE_MFI
 #import <GameController/GameController.h>
 #endif
-#if TARGET_OS_IOS
+/* CoreHaptics needs an iOS 13 SDK. Built against an older one there is
+ * no RAKeypressHaptics class, its lookup answers nil, and keypresses
+ * take the feedback generator instead. */
+#if TARGET_OS_IOS && defined(__IPHONE_13_0) && (__IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_13_0)
+#define RARCH_SDK_COREHAPTICS 1
 #import <CoreHaptics/CoreHaptics.h>
 #endif
 
@@ -81,11 +85,14 @@ float cocoa_screen_get_backing_scale_factor(void);
 static bool small_keyboard_active = false;
 static icade_map_t icade_maps[MAX_ICADE_PROFILES][MAX_ICADE_KEYS];
 #if TARGET_OS_IOS
+/* Fallback for iOS 10-13: a UISelectionFeedbackGenerator (iOS 10),
+ * made by class name and driven by selector */
+static id feedbackGenerator;
+
+#ifdef RARCH_SDK_COREHAPTICS
 #define KEYPRESS_HAPTIC_AVAIL API_AVAILABLE(ios(14.0))
 static CHHapticEngine *keypressHapticEngine KEYPRESS_HAPTIC_AVAIL;
 static id<CHHapticPatternPlayer> keypressHapticPlayer KEYPRESS_HAPTIC_AVAIL;
-/* Fallback for iOS 10-13 */
-static UISelectionFeedbackGenerator *feedbackGenerator;
 
 /* The keypress haptics are iOS 14 CoreHaptics. They live in a class
  * carrying that availability, so its methods use the API directly, and
@@ -97,12 +104,18 @@ KEYPRESS_HAPTIC_AVAIL
 + (void)vibrate;
 + (void)stopEngine;
 @end
+#endif
 
+/* nil when this build has no CoreHaptics; looked up once either way */
 static id cocoa_keypress_haptics(void)
 {
-   static id cls;
-   if (!cls)
-      cls = apple_rt_class("RAKeypressHaptics");
+   static id  cls;
+   static int looked_up;
+   if (!looked_up)
+   {
+      cls       = apple_rt_class("RAKeypressHaptics");
+      looked_up = 1;
+   }
    return cls;
 }
 #endif
@@ -431,17 +444,14 @@ static void *cocoa_input_init(const char *joypad_driver)
 #endif
 
 #if TARGET_OS_IOS
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      apple_rt_send_void(cocoa_keypress_haptics(), @selector(startEngine));
-   else
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("startEngine"));
+   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
    {
-      /* Fallback for iOS 10-13 */
-      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
-      {
-         if (!feedbackGenerator)
-            feedbackGenerator = [[UISelectionFeedbackGenerator alloc] init];
-         [feedbackGenerator prepare];
-      }
+      if (!feedbackGenerator)
+         feedbackGenerator = [[apple_rt_class("UISelectionFeedbackGenerator") alloc] init];
+      apple_rt_send_void(feedbackGenerator, sel_registerName("prepare"));
    }
 #endif
 
@@ -735,10 +745,14 @@ static void cocoa_input_free(void *data)
       return;
 
 #if TARGET_OS_IOS
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      apple_rt_send_void(cocoa_keypress_haptics(), @selector(stopEngine));
-   else if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("stopEngine"));
+   else if (feedbackGenerator)
+   {
+      RARCH_RELEASE(feedbackGenerator);
       feedbackGenerator = nil;
+   }
 #endif
 
    memset(apple_key_state, 0, sizeof(apple_key_state));
@@ -969,6 +983,7 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 #if TARGET_OS_IOS
+#ifdef RARCH_SDK_COREHAPTICS
 @implementation RAKeypressHaptics
 
 + (void)startEngine
@@ -1080,22 +1095,17 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
 }
 
 @end
+#endif
 
 static void cocoa_input_keypress_vibrate(void)
 {
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
-      apple_rt_send_void(cocoa_keypress_haptics(), @selector(vibrate));
-   else
+   if (     apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0)
+         && cocoa_keypress_haptics())
+      apple_rt_send_void(cocoa_keypress_haptics(), sel_registerName("vibrate"));
+   else if (feedbackGenerator)
    {
-      /* Fallback for iOS 10-13 */
-      if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 0, 0), 0))
-      {
-         if (feedbackGenerator)
-         {
-            [feedbackGenerator selectionChanged];
-            [feedbackGenerator prepare];
-         }
-      }
+      apple_rt_send_void(feedbackGenerator, sel_registerName("selectionChanged"));
+      apple_rt_send_void(feedbackGenerator, sel_registerName("prepare"));
    }
 }
 #endif

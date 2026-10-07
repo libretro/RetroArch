@@ -107,6 +107,13 @@
 @end
 
 void get_ios_version(int *major, int *minor);
+
+/* A display link's refresh rate, set and read the way the running OS
+ * provides it: a frame-rate range from iOS/tvOS 15,
+ * preferredFramesPerSecond from 10, and before that frameInterval, the
+ * screen refreshes per callback on a 60 Hz panel. */
+void  cocoa_display_link_set_rate(id link, float hz);
+float cocoa_display_link_get_rate(id link);
 #else
 #define RAScreen NSScreen
 

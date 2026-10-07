@@ -289,8 +289,11 @@ typedef enum replay_checkpoint_behavior_ replay_checkpoint_behavior;
  * @param userdata User data which will be passed to subsequent callbacks.
  * @param line      the line of input, which can be NULL.
  **/
+#ifndef INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
+#define INPUT_KEYBOARD_LINE_COMPLETE_T_DEFINED
 typedef void (*input_keyboard_line_complete_t)(void *userdata,
       const char *line);
+#endif
 
 struct input_keyboard_line
 {

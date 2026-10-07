@@ -35,6 +35,35 @@
 #include <sys/sysctl.h>
 #endif
 
+/* API_AVAILABLE / API_UNAVAILABLE came with the iOS 11 / macOS 10.13
+ * SDKs. Against an older SDK, clang gets the same availability
+ * attribute they expand to - so code annotated as newer than the floor
+ * still compiles clean there - and other compilers get nothing. Up to
+ * four platforms per annotation, as the SDK's own macro takes. */
+#ifndef API_AVAILABLE
+#if defined(__clang__)
+#define APPLE_RT_AV_macos(v)       __attribute__((availability(macos,introduced=v)))
+#define APPLE_RT_AV_macosx(v)      __attribute__((availability(macos,introduced=v)))
+#define APPLE_RT_AV_ios(v)         __attribute__((availability(ios,introduced=v)))
+#define APPLE_RT_AV_tvos(v)        __attribute__((availability(tvos,introduced=v)))
+#define APPLE_RT_AV_watchos(v)     __attribute__((availability(watchos,introduced=v)))
+#define APPLE_RT_AV_macCatalyst(v) __attribute__((availability(macCatalyst,introduced=v)))
+#define APPLE_RT_AV1(a)            APPLE_RT_AV_##a
+#define APPLE_RT_AV2(a, b)         APPLE_RT_AV1(a) APPLE_RT_AV1(b)
+#define APPLE_RT_AV3(a, b, c)      APPLE_RT_AV1(a) APPLE_RT_AV2(b, c)
+#define APPLE_RT_AV4(a, b, c, d)   APPLE_RT_AV1(a) APPLE_RT_AV3(b, c, d)
+#define APPLE_RT_AV_PICK(_1, _2, _3, _4, name, ...) name
+#define API_AVAILABLE(...) \
+   APPLE_RT_AV_PICK(__VA_ARGS__, APPLE_RT_AV4, APPLE_RT_AV3, \
+         APPLE_RT_AV2, APPLE_RT_AV1, _unused)(__VA_ARGS__)
+#else
+#define API_AVAILABLE(...)
+#endif
+#endif
+#ifndef API_UNAVAILABLE
+#define API_UNAVAILABLE(...)
+#endif
+
 /* Encodes a version as major * 10000 + minor * 100 + patch */
 #define APPLE_RUNTIME_VER(maj, min, pat) ((maj) * 10000 + (min) * 100 + (pat))
 

@@ -318,10 +318,7 @@ static bool apple_display_server_set_resolution(void *data,
 
    /* iOS: Only refresh rate changes */
    RARCH_DBG("[Video] Setting refresh rate to %.3f Hz\n", hz);
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-      COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
-   else
-      view.displayLink.preferredFramesPerSecond = hz;
+   cocoa_display_link_set_rate(view.displayLink, hz);
     return true;
 }
 #endif
@@ -491,22 +488,17 @@ static void *apple_display_server_get_resolution_list(
    unsigned dims;
    NSMutableSet *rates = [NSMutableSet set];
 
-   /* Use nativeBounds to get physical screen resolution
-    * (works correctly in multitasking/Split View modes) */
-   UIScreen *mainScreen = [UIScreen mainScreen];
-   CGRect nativeBounds = mainScreen.nativeBounds;
-   dims = VIDEO_SCALE_PACK((unsigned)nativeBounds.size.width,
-         (unsigned)nativeBounds.size.height);
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-      currentRate = COCOA_DISPLAY_LINK_PREFERRED_RATE([CocoaView get].displayLink);
-   else
-      currentRate = [CocoaView get].displayLink.preferredFramesPerSecond;
+   /* Physical screen resolution (nativeBounds from iOS 8, which works
+    * in multitasking/Split View; bounds * scale before it) */
+   cocoa_get_video_output_size(&dims, NULL, 0);
+   currentRate = cocoa_display_link_get_rate([CocoaView get].displayLink);
 
    /* Detect ProMotion displays and available refresh rates */
 #if !TARGET_OS_TV
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(10, 3, 0), 0))
    {
-      NSInteger maxFPS = mainScreen.maximumFramesPerSecond;
+      long maxFPS = apple_rt_get_long([UIScreen mainScreen],
+            sel_registerName("maximumFramesPerSecond"));
 
       /* ProMotion displays (120Hz) */
       if (maxFPS >= 120)
@@ -642,10 +634,7 @@ static void *apple_display_server_init(void)
          if (view && view.displayLink)
          {
             RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
-            if (apple_runtime_available(0, APPLE_RUNTIME_VER(15, 0, 0), APPLE_RUNTIME_VER(15, 0, 0)))
-               COCOA_DISPLAY_LINK_SET_RATE(view.displayLink, hz);
-            else
-               view.displayLink.preferredFramesPerSecond = hz;
+            cocoa_display_link_set_rate(view.displayLink, hz);
          }
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
          float hz        = settings->floats.video_refresh_rate;

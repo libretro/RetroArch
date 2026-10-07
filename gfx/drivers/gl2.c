@@ -117,11 +117,21 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_NONE
 #endif
 
+/* Desktop OpenGL against a macOS SDK before 10.12, whose framebuffer
+ * names carry the EXT suffix. An iOS SDK defines the macOS version
+ * macro as well - below 10.12 up to the iOS 10 SDKs - so GLES builds
+ * are ruled out by name. */
+#if defined(__MACH__) && !defined(HAVE_OPENGLES) \
+   && defined(MAC_OS_X_VERSION_MAX_ALLOWED) \
+   && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200)
+#define GL2_MAC_EXT_FBO 1
+#endif
+
 #if defined(HAVE_PSGL)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_OES
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_OES
 #define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
-#elif (defined(__MACH__)  && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#elif defined(GL2_MAC_EXT_FBO)
 #define RARCH_GL_FRAMEBUFFER GL_FRAMEBUFFER_EXT
 #define RARCH_GL_FRAMEBUFFER_COMPLETE GL_FRAMEBUFFER_COMPLETE_EXT
 #define RARCH_GL_COLOR_ATTACHMENT0 GL_COLOR_ATTACHMENT0_EXT
@@ -140,7 +150,7 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #endif
 #define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT
 #define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
-#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#elif defined(GL2_MAC_EXT_FBO)
 #define RARCH_GL_RENDERBUFFER GL_RENDERBUFFER_EXT
 #define RARCH_GL_DEPTH24_STENCIL8 GL_DEPTH24_STENCIL8_EXT
 #define RARCH_GL_DEPTH_ATTACHMENT GL_DEPTH_ATTACHMENT_EXT
@@ -157,7 +167,7 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #define RARCH_GL_STENCIL_ATTACHMENT GL_STENCIL_ATTACHMENT
 #endif
 
-#if (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if defined(GL2_MAC_EXT_FBO)
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_EXT
 #elif defined(HAVE_PSGL)
 #define RARCH_GL_MAX_RENDERBUFFER_SIZE GL_MAX_RENDERBUFFER_SIZE_OES
@@ -293,7 +303,7 @@ static bool gl2_init_pbo_readback(gl2_t *gl);
 #define gl2_rb_storage       glRenderbufferStorageOES
 #define gl2_delete_rb        glDeleteRenderbuffersOES
 
-#elif (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#elif defined(GL2_MAC_EXT_FBO)
 #define gl2_fb_texture_2d(a, b, c, d, e) glFramebufferTexture2DEXT(a, b, c, d, e)
 #define gl2_check_fb_status(target) glCheckFramebufferStatusEXT(target)
 #define gl2_gen_fb(n, ids)   glGenFramebuffersEXT(n, ids)
@@ -2336,7 +2346,7 @@ static bool gl2_renderchain_init_hw_render(
 
          if (stencil)
          {
-#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || (defined(__MACH__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED < 101200))
+#if defined(HAVE_OPENGLES2) || defined(HAVE_OPENGLES1) || defined(GL2_MAC_EXT_FBO)
             /* GLES2 is a bit weird, as always.
              * There's no GL_DEPTH_STENCIL_ATTACHMENT like in desktop GL. */
             gl2_fb_rb(RARCH_GL_FRAMEBUFFER,
