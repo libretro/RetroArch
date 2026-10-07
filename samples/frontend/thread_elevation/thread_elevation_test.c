@@ -405,7 +405,7 @@ int main(void)
       thread_elevation_note_power_plan(false, false);
       line[0] = 'x';
       check("nothing raised or applied: no line",
-            thread_elevation_status(line, sizeof(line)) == 0 && line[0] == 'x');
+            thread_elevation_status(line, sizeof(line), NULL) == 0 && line[0] == 'x');
 
       thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN,
             THREAD_ELEVATION_REFUSED, NULL, true);
@@ -415,18 +415,22 @@ int main(void)
             THREAD_ELEVATION_PENDING, NULL, true);
       thread_elevation_note_power_plan(true, true);
       check("one line naming each thread and the plan",
-            thread_elevation_status(line, sizeof(line))
+            thread_elevation_status(line, sizeof(line), NULL)
                == strlen(" Priority:   main no, video high, audio ask, plan+idle\n")
             && !strcmp(line,
                " Priority:   main no, video high, audio ask, plan+idle\n"));
       printf("        (%.*s)\n", (int)strlen(line) - 1, line);
 
       thread_elevation_note_power_plan(true, false);
-      thread_elevation_status(line, sizeof(line));
+      thread_elevation_status(line, sizeof(line), NULL);
       check("the plan without idle disable",
             strstr(line, ", plan\n") != NULL);
+      thread_elevation_status(line, sizeof(line), "MMCSS");
+      check("a device thread is named before the plan",
+            !strcmp(line, " Priority:   main no, video high, audio ask, "
+               "device MMCSS, plan\n"));
       check("a short buffer is cut and terminated",
-            thread_elevation_status(small, sizeof(small)) == sizeof(small) - 1
+            thread_elevation_status(small, sizeof(small), NULL) == sizeof(small) - 1
             && small[sizeof(small) - 1] == '\0');
 
       thread_elevation_note(THREAD_ELEVATION_SLOT_MAIN,
@@ -436,8 +440,13 @@ int main(void)
       thread_elevation_note(THREAD_ELEVATION_SLOT_AUDIO,
             THREAD_ELEVATION_REFUSED, NULL, false);
       thread_elevation_note_power_plan(false, false);
+      check("an unraised device thread alone shows no line",
+            thread_elevation_status(line, sizeof(line), "-") == 0);
+      check("a raised device thread alone shows the line",
+            thread_elevation_status(line, sizeof(line), "high") != 0
+            && strstr(line, "device high") != NULL);
       check("everything back off: the line goes away",
-            thread_elevation_status(line, sizeof(line)) == 0);
+            thread_elevation_status(line, sizeof(line), NULL) == 0);
    }
 
    slock_free(calls_lock);

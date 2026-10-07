@@ -130,9 +130,11 @@ void thread_elevation_note_power_plan(bool active, bool idle_disable);
 /**
  * Writes one overlay line, newline included, naming what each thread
  * was granted and whether the low-latency power plan is active.
- * Writes nothing and returns 0 when nothing was raised or applied.
+ * 'device' names what the audio driver's own thread runs under, or is
+ * NULL where it has none. Writes nothing and returns 0 when nothing
+ * was raised or applied.
  */
-size_t thread_elevation_status(char *s, size_t len);
+size_t thread_elevation_status(char *s, size_t len, const char *device);
 
 /**
  * For a brokered backend refused after answering PENDING: tries the

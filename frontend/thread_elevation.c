@@ -18,6 +18,7 @@
 
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include <stdint.h>
 
 #include <boolean.h>
@@ -377,7 +378,7 @@ void thread_elevation_note_power_plan(bool active, bool idle_disable)
          active ? (idle_disable ? 2 : 1) : 0);
 }
 
-size_t thread_elevation_status(char *s, size_t len)
+size_t thread_elevation_status(char *s, size_t len, const char *device)
 {
    /* -: not asked, no: refused, ask: a broker is still on it */
    static const char *const names[] = { "-", "no", "ask", "high", "MMCSS" };
@@ -392,7 +393,7 @@ size_t thread_elevation_status(char *s, size_t len)
          &thread_elevation_states[THREAD_ELEVATION_SLOT_COUNT]);
    if (plan < 0 || plan > 2)
       plan = 0;
-   any  = plan != 0;
+   any  = plan != 0 || (device && strcmp(device, "-"));
    for (i = 0; i < THREAD_ELEVATION_SLOT_COUNT; i++)
    {
       st[i] = retro_atomic_load_acquire_int(&thread_elevation_states[i]);
@@ -403,10 +404,12 @@ size_t thread_elevation_status(char *s, size_t len)
    if (!any || !len)
       return 0;
 
-   ret = snprintf(s, len, " Priority:   main %s, video %s, audio %s%s\n",
+   ret = snprintf(s, len, " Priority:   main %s, video %s, audio %s%s%s%s\n",
          names[st[THREAD_ELEVATION_SLOT_MAIN]],
          names[st[THREAD_ELEVATION_SLOT_VIDEO]],
          names[st[THREAD_ELEVATION_SLOT_AUDIO]],
+         device ? ", device " : "",
+         device ? device : "",
          plans[plan]);
    if (ret < 0)
    {

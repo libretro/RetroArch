@@ -521,6 +521,14 @@ static size_t audio_thread_underruns(void *data)
    return thr->driver->underruns(thr->driver_data);
 }
 
+static enum audio_thread_grant audio_thread_thread_grant(void *data)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   if (!thr || !thr->driver->thread_grant || !thr->driver_data)
+      return AUDIO_THREAD_GRANT_NONE;
+   return thr->driver->thread_grant(thr->driver_data);
+}
+
 static size_t audio_thread_frames_consumed(void *data)
 {
    audio_thread_t *thr = (audio_thread_t*)data;
@@ -628,7 +636,8 @@ static const audio_driver_t audio_thread = {
    audio_thread_underruns,
    audio_thread_layout,
    audio_thread_frames_consumed_fallback,
-   audio_thread_device_clock_ppm
+   audio_thread_device_clock_ppm,
+   audio_thread_thread_grant
 };
 
 /**

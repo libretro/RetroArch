@@ -1698,6 +1698,7 @@ typedef struct
    retro_eventcount_t  rt_park;
    sthread_t          *rt_thread;
    retro_atomic_int_t  rt_run;
+   retro_atomic_int_t  rt_grant;   /* enum audio_thread_grant */
    /* How the thread woke, kept by it and read once it has joined: the
     * longest gap between two of its passes and how many gaps were a
     * loop or more, which is the count of laps the position could not
@@ -2784,14 +2785,23 @@ static void wdmks_rt_refill_thread(void *data)
     * twenties - and time-critical otherwise, or where the class is
     * refused. */
    w->rt_sched = "normal priority";
+   retro_atomic_store_release_int(&w->rt_grant, AUDIO_THREAD_GRANT_NORMAL);
    if (w->thread_priority)
    {
       HANDLE task = wdmks_mmcss_begin(&avrt, w->mmcss);
+      int grant   = AUDIO_THREAD_GRANT_REFUSED;
       if (task)
+      {
          w->rt_sched = "Pro Audio";
+         grant       = AUDIO_THREAD_GRANT_MMCSS;
+      }
       else if (SetThreadPriority(GetCurrentThread(),
                THREAD_PRIORITY_TIME_CRITICAL))
+      {
          w->rt_sched = "time-critical";
+         grant       = AUDIO_THREAD_GRANT_RAISED;
+      }
+      retro_atomic_store_release_int(&w->rt_grant, grant);
       mmtask = task;
    }
 
@@ -2847,6 +2857,7 @@ static void wdmks_rt_refill_thread(void *data)
       wdmks_rt_pump_once(w);
    }
    wdmks_mmcss_end(avrt, mmtask);
+   retro_atomic_store_release_int(&w->rt_grant, AUDIO_THREAD_GRANT_NONE);
 }
 
 /* Producer-side ring room, capped to the size that was asked for
@@ -3298,6 +3309,17 @@ static size_t wdmks_underruns(void *data)
    if (!w || !w->stream.looped)
       return 0;
    return retro_atomic_load_acquire_size(&w->rt_underruns);
+}
+
+static enum audio_thread_grant wdmks_thread_grant(void *data)
+{
+#ifdef HAVE_THREADS
+   wdmks_t *w = (wdmks_t*)data;
+   if (w)
+      return (enum audio_thread_grant)retro_atomic_load_acquire_int(
+            &w->rt_grant);
+#endif
+   return AUDIO_THREAD_GRANT_NONE;
 }
 
 static bool wdmks_device_clock_ppm(void *data, double *ppm)
@@ -4026,7 +4048,8 @@ audio_driver_t audio_wdmks = {
    wdmks_underruns,
    wdmks_layout,
    NULL, /* frames_consumed_fallback */
-   wdmks_device_clock_ppm
+   wdmks_device_clock_ppm,
+   wdmks_thread_grant
 };
 
 /* ---- capture ------------------------------------------------------ */

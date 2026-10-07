@@ -6952,8 +6952,12 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   in_max / 1000.0f);
       }
       {
-         char sched[96];
-         if (thread_elevation_status(sched, sizeof(sched)))
+         static const char *const grants[] = {
+            NULL, "-", "no", "high", "MMCSS" };
+         char sched[112];
+         unsigned g = (unsigned)audio_driver_get_thread_grant();
+         if (thread_elevation_status(sched, sizeof(sched),
+                  g < ARRAY_SIZE(grants) ? grants[g] : NULL))
             __len = video_driver_stat_appendf(video_st->stat_text, __len,
                   "%s", sched);
       }

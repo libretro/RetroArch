@@ -117,6 +117,7 @@ typedef struct
    retro_eventcount_t  park;
    bool                park_inited;
    retro_atomic_int_t  pump_run;
+   retro_atomic_int_t  pump_grant;     /* enum audio_thread_grant */
    /* Periods the pump filled with silence for want of audio: one
     * atomic add on that path, read by the frontend's overlay. */
    retro_atomic_size_t underruns;
@@ -2333,8 +2334,13 @@ static void wasapi_pump_thread(void *data)
     * thread has always run at - the two are not combined, since the
     * class carries its own priority. */
    w->mmcss = (mmtask != NULL);
-   if (!mmtask)
-      SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_TIME_CRITICAL);
+   if (mmtask)
+      retro_atomic_store_release_int(&w->pump_grant, AUDIO_THREAD_GRANT_MMCSS);
+   else
+      retro_atomic_store_release_int(&w->pump_grant,
+            SetThreadPriority(GetCurrentThread(),
+               THREAD_PRIORITY_TIME_CRITICAL)
+            ? AUDIO_THREAD_GRANT_RAISED : AUDIO_THREAD_GRANT_REFUSED);
    if (w->rate)
    {
       /* Shared mode names the engine's period outright; exclusive
@@ -2439,6 +2445,7 @@ static void wasapi_pump_thread(void *data)
     * init the session makes, which on a driver that reinitialises per
     * content load is every one of them. */
    wasapi_pump_mmcss_end(avrt, mmtask);
+   retro_atomic_store_release_int(&w->pump_grant, AUDIO_THREAD_GRANT_NONE);
 }
 
 static bool wasapi_pump_start(wasapi_t *w)
@@ -3046,6 +3053,15 @@ static void wasapi_clock_fit(wasapi_t *w, UINT64 frames, UINT64 qpc)
    }
 }
 
+static enum audio_thread_grant wasapi_thread_grant(void *wh)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   if (!w)
+      return AUDIO_THREAD_GRANT_NONE;
+   return (enum audio_thread_grant)retro_atomic_load_acquire_int(
+         &w->pump_grant);
+}
+
 /* The device clock, for the statistics overlay. */
 static bool wasapi_device_clock_ppm(void *wh, double *ppm)
 {
@@ -3126,5 +3142,6 @@ audio_driver_t audio_wasapi = {
    wasapi_underruns,
    wasapi_layout,
    wasapi_frames_consumed_fallback,
-   wasapi_device_clock_ppm
+   wasapi_device_clock_ppm,
+   wasapi_thread_grant
 };

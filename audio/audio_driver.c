@@ -625,6 +625,16 @@ size_t audio_driver_get_underruns(void)
    return 0;
 }
 
+enum audio_thread_grant audio_driver_get_thread_grant(void)
+{
+   audio_driver_state_t *audio_st = &audio_driver_st;
+   if (     audio_st->current_audio && audio_st->current_audio->thread_grant
+         && audio_st->context_audio_data)
+      return audio_st->current_audio->thread_grant(
+            audio_st->context_audio_data);
+   return AUDIO_THREAD_GRANT_NONE;
+}
+
 /* ---- the discrete extras ------------------------------------------ */
 
 static void audio_driver_extra_free(audio_driver_state_t *audio_st)

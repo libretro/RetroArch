@@ -118,6 +118,16 @@ typedef struct audio_mixer_stream_params
 } audio_mixer_stream_params_t;
 #endif
 
+/* What a driver's own device thread was scheduled under */
+enum audio_thread_grant
+{
+   AUDIO_THREAD_GRANT_NONE = 0, /* no such thread */
+   AUDIO_THREAD_GRANT_NORMAL,   /* not raised */
+   AUDIO_THREAD_GRANT_REFUSED,  /* asked, refused */
+   AUDIO_THREAD_GRANT_RAISED,   /* a higher priority */
+   AUDIO_THREAD_GRANT_MMCSS     /* the MMCSS Pro Audio class */
+};
+
 typedef struct audio_driver
 {
    /* Creates and initializes handle to audio driver.
@@ -409,6 +419,11 @@ typedef struct audio_driver
     * shifts every driver's initialiser by one and the compiler will
     * not always say so; that has broken the Android build before. */
    bool (*device_clock_ppm)(void *data, double *ppm);
+
+   /* What the driver's own device thread was scheduled under, for the
+    * statistics overlay; read from any thread. NULL where a driver
+    * runs no thread of its own. */
+   enum audio_thread_grant (*thread_grant)(void *data);
 } audio_driver_t;
 
 /* What a driver's device-clock word holds until it has an estimate.
@@ -1517,6 +1532,8 @@ void audio_driver_set_float_gate(audio_driver_float_gate_t gate);
 /* Periods the device played silence for want of audio since the driver
  * was initialised, where the driver counts them; 0 otherwise. */
 size_t audio_driver_get_underruns(void);
+
+enum audio_thread_grant audio_driver_get_thread_grant(void);
 
 /* Whether a driver has asked to be reinitialised since the last call;
  * clears the request. The runloop calls this once a frame, on the main
