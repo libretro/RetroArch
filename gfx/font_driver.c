@@ -683,17 +683,63 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 static void font_cache_dirty_cell(struct font_atlas *atlas,
       unsigned pos, unsigned dims)
 {
+   unsigned i;
    unsigned end = pos + dims;
+
    if (!atlas->dirty)
    {
-      atlas->dirty_xy0 = pos;
-      atlas->dirty_xy1 = end;
-      atlas->dirty     = true;
+      atlas->dirty_xy0        = pos;
+      atlas->dirty_xy1        = end;
+      atlas->dirty_rect[0][0] = pos;
+      atlas->dirty_rect[0][1] = end;
+      atlas->dirty_rects      = 1;
+      atlas->dirty            = true;
+      return;
    }
-   else
+   atlas->dirty_xy0 = VIDEO_SCALE_MIN(atlas->dirty_xy0, pos);
+   atlas->dirty_xy1 = VIDEO_SCALE_MAX(atlas->dirty_xy1, end);
+
+   /* Only the corners describe a region someone else made */
+   if (!atlas->dirty_rects)
+      return;
+   if (atlas->dirty_rects < FONT_ATLAS_DIRTY_MAX)
    {
-      atlas->dirty_xy0 = VIDEO_SCALE_MIN(atlas->dirty_xy0, pos);
-      atlas->dirty_xy1 = VIDEO_SCALE_MAX(atlas->dirty_xy1, end);
+      atlas->dirty_rect[atlas->dirty_rects][0]   = pos;
+      atlas->dirty_rect[atlas->dirty_rects++][1] = end;
+      return;
+   }
+
+   /* Full: of the rectangles and the cell, the two whose union adds
+    * least are joined */
+   {
+      unsigned j, bi = 0, bj = 1;
+      unsigned (*r)[2]  = atlas->dirty_rect;
+      unsigned  cand[FONT_ATLAS_DIRTY_MAX + 1][2];
+      size_t    best_add = (size_t)-1;
+      memcpy(cand, r, sizeof(atlas->dirty_rect));
+      cand[FONT_ATLAS_DIRTY_MAX][0] = pos;
+      cand[FONT_ATLAS_DIRTY_MAX][1] = end;
+      for (i = 0; i < FONT_ATLAS_DIRTY_MAX; i++)
+         for (j = i + 1; j <= FONT_ATLAS_DIRTY_MAX; j++)
+         {
+            size_t both = VIDEO_SCALE_AREA(
+                     VIDEO_SCALE_MAX(cand[i][1], cand[j][1])
+                   - VIDEO_SCALE_MIN(cand[i][0], cand[j][0]));
+            size_t each = VIDEO_SCALE_AREA(cand[i][1] - cand[i][0])
+                        + VIDEO_SCALE_AREA(cand[j][1] - cand[j][0]);
+            size_t add  = both > each ? both - each : 0;
+            if (add < best_add)
+            {
+               bi       = i;
+               bj       = j;
+               best_add = add;
+            }
+         }
+      cand[bi][0] = VIDEO_SCALE_MIN(cand[bi][0], cand[bj][0]);
+      cand[bi][1] = VIDEO_SCALE_MAX(cand[bi][1], cand[bj][1]);
+      cand[bj][0] = cand[FONT_ATLAS_DIRTY_MAX][0];
+      cand[bj][1] = cand[FONT_ATLAS_DIRTY_MAX][1];
+      memcpy(r, cand, sizeof(atlas->dirty_rect));
    }
 }
 
@@ -883,6 +929,7 @@ static bool font_cache_grow(font_cache_t *c)
    c->atlas.dirty              = true;
    c->atlas.dirty_xy0          = 0;
    c->atlas.dirty_xy1          = VIDEO_SCALE_PACK(width, height);
+   c->atlas.dirty_rects        = 0;
    return true;
 }
 

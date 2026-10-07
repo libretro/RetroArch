@@ -1633,46 +1633,54 @@ static void d3d9_cg_font_render_msg(
 
       if (font->texture)
       {
-         unsigned i, j;
-         D3DLOCKED_RECT lr;
-         RECT rect;
-         unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
-         unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
-         unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
-         unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
-
+         unsigned r;
          /* A recreated texture has no previous contents, so the whole
-          * atlas must be converted; otherwise only the dirty
-          * rectangle tracked by the font renderers needs it. Managed
-          * pool textures track locked sub-rects natively. */
-         if (     respecified
-               || x1 <= x0 || y1 <= y0
-               || x1 > (unsigned)font->atlas->width
-               || y1 > (unsigned)font->atlas->height)
+          * atlas is converted; otherwise each dirty rectangle the font
+          * renderers tracked. Managed pool textures track locked
+          * sub-rects natively. */
+         unsigned rects = respecified
+            ? 1 : font_atlas_dirty_rects(font->atlas);
+         for (r = 0; r < rects; r++)
          {
-            x0 = 0;
-            y0 = 0;
-            x1 = font->atlas->width;
-            y1 = font->atlas->height;
-         }
-         rect.left   = (LONG)x0;
-         rect.top    = (LONG)y0;
-         rect.right  = (LONG)x1;
-         rect.bottom = (LONG)y1;
+            unsigned i, j, xy0, xy1, x0, y0, x1, y1;
+            D3DLOCKED_RECT lr;
+            RECT rect;
+            font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
+            x0 = VIDEO_SCALE_W(xy0);
+            y0 = VIDEO_SCALE_H(xy0);
+            x1 = VIDEO_SCALE_W(xy1);
+            y1 = VIDEO_SCALE_H(xy1);
 
-         if (SUCCEEDED(IDirect3DTexture9_LockRect(
-                     font->texture, 0, &lr, &rect, 0)))
-         {
-            /* lr.pBits addresses the top-left of the locked rect */
-            for (j = 0; j < y1 - y0; j++)
+            if (     respecified
+                  || x1 <= x0 || y1 <= y0
+                  || x1 > (unsigned)font->atlas->width
+                  || y1 > (unsigned)font->atlas->height)
             {
-               uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits + j * lr.Pitch);
-               const uint8_t  *src = font->atlas->buffer
-                     + (size_t)(y0 + j) * font->atlas->width + x0;
-               for (i = 0; i < x1 - x0; i++)
-                  dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
+               x0 = 0;
+               y0 = 0;
+               x1 = font->atlas->width;
+               y1 = font->atlas->height;
             }
-            IDirect3DTexture9_UnlockRect(font->texture, 0);
+            rect.left   = (LONG)x0;
+            rect.top    = (LONG)y0;
+            rect.right  = (LONG)x1;
+            rect.bottom = (LONG)y1;
+
+            if (SUCCEEDED(IDirect3DTexture9_LockRect(
+                        font->texture, 0, &lr, &rect, 0)))
+            {
+               /* lr.pBits addresses the top-left of the locked rect */
+               for (j = 0; j < y1 - y0; j++)
+               {
+                  uint32_t       *dst = (uint32_t*)((uint8_t*)lr.pBits
+                        + j * lr.Pitch);
+                  const uint8_t  *src = font->atlas->buffer
+                        + (size_t)(y0 + j) * font->atlas->width + x0;
+                  for (i = 0; i < x1 - x0; i++)
+                     dst[i] = D3DCOLOR_ARGB(src[i], 0xFF, 0xFF, 0xFF);
+               }
+               IDirect3DTexture9_UnlockRect(font->texture, 0);
+            }
          }
       }
       font->atlas->dirty = false;

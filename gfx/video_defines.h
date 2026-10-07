@@ -456,6 +456,8 @@ enum font_atlas_format
    FONT_ATLAS_FORMAT_A16
 };
 
+#define FONT_ATLAS_DIRTY_MAX 16
+
 struct font_atlas
 {
    uint8_t *buffer; /* Coverage samples; layout per 'format'. */
@@ -469,6 +471,12 @@ struct font_atlas
     * it, such as the full-width row band) instead of the whole atlas. */
    unsigned dirty_xy0;
    unsigned dirty_xy1;
+   /* The same region as up to FONT_ATLAS_DIRTY_MAX rectangles, each its
+    * two corners as above, so cells far apart are not sent with all
+    * between them; read through font_atlas_dirty_rect(). 0 when only
+    * the corners above describe it. */
+   unsigned dirty_rect[FONT_ATLAS_DIRTY_MAX][2];
+   unsigned dirty_rects;
    /* Set by the consumer to the largest texture it can make, packed
     * with VIDEO_SCALE_PACK. When a frame needs more glyphs than the
     * atlas has cells for, the next get_atlas() call in a later frame

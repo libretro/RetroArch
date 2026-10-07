@@ -411,8 +411,6 @@ static void ctr_font_upload(ctr_font_t *font,
       for (i = x0; i < x1; i++)
          tex[ctrgu_swizzle_coords(i, j, font->texture.width)] =
             src[i + j * atlas->width];
-
-   GSPGPU_FlushDataCache(tex, font->texture.width * font->texture.height);
 }
 
 /* Texture memory holding all of @atlas, sized up to powers of two,
@@ -433,6 +431,8 @@ static void *ctr_font_make_texture(ctr_font_t *font,
    font->texture.data   = data;
    ctr_font_upload(font, atlas, 0,
          VIDEO_SCALE_PACK(atlas->width, atlas->height));
+   GSPGPU_FlushDataCache(font->texture.data,
+         font->texture.width * font->texture.height);
 
    CTR_SET_SCALE_VECTOR(
          &font->scale_vector_top,
@@ -680,7 +680,14 @@ static void ctr_font_render_msg(
       }
       if (atlas->dirty)
       {
-         ctr_font_upload(font, atlas, atlas->dirty_xy0, atlas->dirty_xy1);
+         unsigned r, xy0, xy1;
+         for (r = 0; r < font_atlas_dirty_rects(atlas); r++)
+         {
+            font_atlas_dirty_rect(atlas, r, &xy0, &xy1);
+            ctr_font_upload(font, atlas, xy0, xy1);
+         }
+         GSPGPU_FlushDataCache(font->texture.data,
+               font->texture.width * font->texture.height);
          atlas->dirty = false;
       }
    }

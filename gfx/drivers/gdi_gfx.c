@@ -1691,36 +1691,43 @@ static bool gdi_font_upload_atlas(gdi_raster_t *font)
    /* Expand A8 -> BGRA premultiplied: A=atlas[i], R=G=B=A.  This
     * gives us a "white glyph with embedded alpha" source that
     * AlphaBlend can composite directly with AC_SRC_ALPHA.  Only the
-    * dirty rectangle tracked by the font renderers is expanded; a
+    * dirty rectangles tracked by the font renderers are expanded; a
     * freshly (re)created DIB has no previous contents and is
     * converted in full. */
    {
-      unsigned x0 = VIDEO_SCALE_W(font->atlas->dirty_xy0);
-      unsigned y0 = VIDEO_SCALE_H(font->atlas->dirty_xy0);
-      unsigned x1 = VIDEO_SCALE_W(font->atlas->dirty_xy1);
-      unsigned y1 = VIDEO_SCALE_H(font->atlas->dirty_xy1);
-
-      if (     recreated
-            || x1 <= x0 || y1 <= y0
-            || x1 > (unsigned)font->atlas->width
-            || y1 > (unsigned)font->atlas->height)
+      unsigned r;
+      unsigned rects = recreated ? 1 : font_atlas_dirty_rects(font->atlas);
+      for (r = 0; r < rects; r++)
       {
-         x0 = 0;
-         y0 = 0;
-         x1 = font->atlas->width;
-         y1 = font->atlas->height;
-      }
+         unsigned xy0, xy1, x0, y0, x1, y1;
+         font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
+         x0 = VIDEO_SCALE_W(xy0);
+         y0 = VIDEO_SCALE_H(xy0);
+         x1 = VIDEO_SCALE_W(xy1);
+         y1 = VIDEO_SCALE_H(xy1);
 
-      for (j = y0; j < y1; j++)
-      {
-         uint32_t      *dst = font->atlas_pixels
-            + (size_t)j * VIDEO_SCALE_W(font->atlas_dims) + x0;
-         const uint8_t *src = font->atlas->buffer
-            + (size_t)j * font->atlas->width + x0;
-         for (i = 0; i < x1 - x0; i++)
+         if (     recreated
+               || x1 <= x0 || y1 <= y0
+               || x1 > (unsigned)font->atlas->width
+               || y1 > (unsigned)font->atlas->height)
          {
-            uint32_t a = src[i];
-            dst[i] = (a << 24) | (a << 16) | (a << 8) | a;
+            x0 = 0;
+            y0 = 0;
+            x1 = font->atlas->width;
+            y1 = font->atlas->height;
+         }
+
+         for (j = y0; j < y1; j++)
+         {
+            uint32_t      *dst = font->atlas_pixels
+               + (size_t)j * VIDEO_SCALE_W(font->atlas_dims) + x0;
+            const uint8_t *src = font->atlas->buffer
+               + (size_t)j * font->atlas->width + x0;
+            for (i = 0; i < x1 - x0; i++)
+            {
+               uint32_t a = src[i];
+               dst[i] = (a << 24) | (a << 16) | (a << 8) | a;
+            }
          }
       }
    }

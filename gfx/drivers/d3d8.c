@@ -1514,8 +1514,17 @@ static void d3d8_font_render_msg(
                D3DPOOL_MANAGED, 0, 0, 0, NULL, NULL, false);
       }
 
-      d3d8_font_upload_atlas(font,
-            font->atlas->dirty_xy0, font->atlas->dirty_xy1, respecified);
+      if (respecified)
+         d3d8_font_upload_atlas(font, 0, 0, true);
+      else
+      {
+         unsigned r, xy0, xy1;
+         for (r = 0; r < font_atlas_dirty_rects(font->atlas); r++)
+         {
+            font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
+            d3d8_font_upload_atlas(font, xy0, xy1, false);
+         }
+      }
       font->atlas->dirty = false;
    }
 

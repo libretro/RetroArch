@@ -904,6 +904,7 @@ static void rsx_font_render_msg(
                   font->atlas->height);
             font->atlas->dirty_xy0 = 0;
             font->atlas->dirty_xy1 = font->tex_dims;
+            font->atlas->dirty_rects = 0;
             font->atlas->dirty     = true;
          }
       }

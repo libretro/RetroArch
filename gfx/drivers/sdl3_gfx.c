@@ -1323,7 +1323,7 @@ typedef struct
 
 static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
 {
-   unsigned x, y, x0, y0, x1, y1, tex_w, tex_h;
+   unsigned x, y, x0, y0, x1, y1, tex_w, tex_h, r, rects, xy0, xy1;
    SDL_Rect rect;
    bool     whole = false;
 
@@ -1363,48 +1363,54 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
    }
 
    /* A texture just made takes all of the atlas; otherwise only the
-    * region drawn into since the last upload changes */
+    * rectangles drawn into since the last upload change */
    tex_w = VIDEO_SCALE_W(font->tex_dims);
    tex_h = VIDEO_SCALE_H(font->tex_dims);
-   x0    = VIDEO_SCALE_W(font->atlas->dirty_xy0);
-   y0    = VIDEO_SCALE_H(font->atlas->dirty_xy0);
-   x1    = VIDEO_SCALE_W(font->atlas->dirty_xy1);
-   y1    = VIDEO_SCALE_H(font->atlas->dirty_xy1);
-   if (     whole
-         || !font->atlas->dirty
-         || x1 <= x0 || y1 <= y0 || x1 > tex_w || y1 > tex_h)
+   rects = (whole || !font->atlas->dirty)
+      ? 1 : font_atlas_dirty_rects(font->atlas);
+   for (r = 0; r < rects; r++)
    {
-      x0 = 0;
-      y0 = 0;
-      x1 = tex_w;
-      y1 = tex_h;
-   }
-
-   /* Atlas buffer is 8-bit alpha. Expand to white-RGB plus the alpha
-    * value so vertex color modulation produces correctly-tinted
-    * glyphs. SDL_PIXELFORMAT_RGBA32 is the endian-neutral alias for
-    * byte order R,G,B,A, so fill the staging buffer byte-wise. */
-   for (y = y0; y < y1; y++)
-   {
-      const uint8_t *src = font->atlas->buffer + (size_t)y * tex_w + x0;
-      uint8_t       *dst = (uint8_t*)(font->staging
-            + (size_t)y * tex_w + x0);
-      for (x = x0; x < x1; x++)
+      font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
+      x0    = VIDEO_SCALE_W(xy0);
+      y0    = VIDEO_SCALE_H(xy0);
+      x1    = VIDEO_SCALE_W(xy1);
+      y1    = VIDEO_SCALE_H(xy1);
+      if (     whole
+            || !font->atlas->dirty
+            || x1 <= x0 || y1 <= y0 || x1 > tex_w || y1 > tex_h)
       {
-         *dst++ = 0xFF;
-         *dst++ = 0xFF;
-         *dst++ = 0xFF;
-         *dst++ = *src++;
+         x0 = 0;
+         y0 = 0;
+         x1 = tex_w;
+         y1 = tex_h;
       }
-   }
 
-   rect.x = (int)x0;
-   rect.y = (int)y0;
-   rect.w = (int)(x1 - x0);
-   rect.h = (int)(y1 - y0);
-   SDL_UpdateTexture(font->tex, &rect,
-         font->staging + (size_t)y0 * tex_w + x0,
-         (int)(tex_w * sizeof(uint32_t)));
+      /* Atlas buffer is 8-bit alpha. Expand to white-RGB plus the alpha
+       * value so vertex color modulation produces correctly-tinted
+       * glyphs. SDL_PIXELFORMAT_RGBA32 is the endian-neutral alias for
+       * byte order R,G,B,A, so fill the staging buffer byte-wise. */
+      for (y = y0; y < y1; y++)
+      {
+         const uint8_t *src = font->atlas->buffer + (size_t)y * tex_w + x0;
+         uint8_t       *dst = (uint8_t*)(font->staging
+               + (size_t)y * tex_w + x0);
+         for (x = x0; x < x1; x++)
+         {
+            *dst++ = 0xFF;
+            *dst++ = 0xFF;
+            *dst++ = 0xFF;
+            *dst++ = *src++;
+         }
+      }
+
+      rect.x = (int)x0;
+      rect.y = (int)y0;
+      rect.w = (int)(x1 - x0);
+      rect.h = (int)(y1 - y0);
+      SDL_UpdateTexture(font->tex, &rect,
+            font->staging + (size_t)y0 * tex_w + x0,
+            (int)(tex_w * sizeof(uint32_t)));
+   }
 
    font->atlas->dirty = false;
 }

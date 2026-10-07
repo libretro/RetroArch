@@ -787,8 +787,12 @@ static void gl1_raster_font_draw_vertices(
    }
    else if (font->atlas->dirty)
    {
-      gl1_raster_font_upload_atlas(font, font->atlas->dirty_xy0,
-            font->atlas->dirty_xy1, false);
+      unsigned r, xy0, xy1;
+      for (r = 0; r < font_atlas_dirty_rects(font->atlas); r++)
+      {
+         font_atlas_dirty_rect(font->atlas, r, &xy0, &xy1);
+         gl1_raster_font_upload_atlas(font, xy0, xy1, false);
+      }
       font->atlas->dirty   = false;
    }
 

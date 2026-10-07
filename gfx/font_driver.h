@@ -29,6 +29,29 @@
 
 RETRO_BEGIN_DECLS
 
+/* How many rectangles @a's dirty region is sent as */
+static INLINE unsigned font_atlas_dirty_rects(const struct font_atlas *a)
+{
+   return a->dirty_rects ? a->dirty_rects : 1;
+}
+
+/* Rectangle @i of @a's dirty region, its corners packed as dirty_xy0
+ * and dirty_xy1 are */
+static INLINE void font_atlas_dirty_rect(const struct font_atlas *a,
+      unsigned i, unsigned *xy0, unsigned *xy1)
+{
+   if (a->dirty_rects)
+   {
+      *xy0 = a->dirty_rect[i][0];
+      *xy1 = a->dirty_rect[i][1];
+   }
+   else
+   {
+      *xy0 = a->dirty_xy0;
+      *xy1 = a->dirty_xy1;
+   }
+}
+
 typedef struct font_renderer
 {
    void *(*init)(void *data, const char *font_path,

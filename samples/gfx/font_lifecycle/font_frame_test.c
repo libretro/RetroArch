@@ -179,6 +179,50 @@ int main(void)
    }
    drv->free(h);
 
+   /* The dirty region is sent as rectangles round the cells drawn
+    * into, not as the one rectangle round them all: a frame's new
+    * glyphs land wherever cells are free, far apart */
+   if (!font_renderer_create_default(&drv, &h, dejavu, 16,
+            FONT_ATLAS_FORMAT_A8))
+      return 1;
+   {
+      struct font_atlas *atlas;
+      unsigned i, r, n, covered = 0;
+      size_t   sum = 0;
+      const struct font_glyph *g[6];
+      font_driver_frame_begin();
+      for (i = 0; i < 256; i++)
+         drv->get_glyph(h, 0x0100 + i);
+      font_driver_frame_begin();
+      atlas = drv->get_atlas(h);
+      atlas->dirty = false;
+      /* Keep all but six cells, spread over the atlas, in use */
+      for (i = 0; i < 256; i++)
+         if (i % 50)
+            drv->get_glyph(h, 0x0100 + i);
+      for (i = 0; i < 6; i++)
+         g[i] = drv->get_glyph(h, 0x0400 + i);
+      n = font_atlas_dirty_rects(atlas);
+      for (r = 0; r < n; r++)
+      {
+         unsigned xy0, xy1;
+         font_atlas_dirty_rect(atlas, r, &xy0, &xy1);
+         sum += VIDEO_SCALE_AREA(xy1 - xy0);
+         for (i = 0; i < 6; i++)
+            if (     g[i]
+                  && VIDEO_SCALE_W(g[i]->atlas_pos) >= VIDEO_SCALE_W(xy0)
+                  && VIDEO_SCALE_H(g[i]->atlas_pos) >= VIDEO_SCALE_H(xy0)
+                  && VIDEO_SCALE_W(g[i]->atlas_pos) <  VIDEO_SCALE_W(xy1)
+                  && VIDEO_SCALE_H(g[i]->atlas_pos) <  VIDEO_SCALE_H(xy1))
+               covered |= 1u << i;
+      }
+      CHECK(atlas->dirty && covered == 0x3f,
+            "dirty rects: every new glyph's cell is in one");
+      CHECK(sum * 4 < VIDEO_SCALE_AREA(atlas->dirty_xy1 - atlas->dirty_xy0),
+            "dirty rects: far fewer pixels than the one rectangle round them");
+   }
+   drv->free(h);
+
    /* Misses take cells least recently used first, with hits between
     * them and across more of them than one search of the cells keeps
     * in hand: 256 glyphs fill the cells; a new glyph takes the oldest,
