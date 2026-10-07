@@ -635,8 +635,9 @@ static void font_cache_dirty_cell(struct font_atlas *atlas,
    }
 }
 
-static const struct font_glyph *font_cache_miss(font_cache_t *c,
-      uint32_t code)
+/* Out of line, so a hit needs none of the registers a miss saves */
+VIDEO_NOINLINE static const struct font_glyph *font_cache_miss(
+      font_cache_t *c, uint32_t code)
 {
    unsigned gi                   = c->rast->glyph_index(c->face, code);
    const font_rasterizer_t *rast = c->rast;
