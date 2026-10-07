@@ -26,6 +26,10 @@
  *                  progress, so the loader cannot stall.
  *   one read     - a still is read once, by its decode; only a file
  *                  the decode found animated is read for its bytes.
+ *   predecode    - with a threaded task queue a pack's distinct
+ *                  images are decoded together across the cores before
+ *                  the first overlay is parsed, each exactly once, and
+ *                  the load produces the same overlays and descriptors.
  *
  * Time is a virtual clock advancing a fixed step per observation, so
  * the assertions are exact rather than scheduler-dependent.  Image
@@ -43,6 +47,8 @@
 #include <string/stdstring.h>
 #include <lists/string_list.h>
 
+#include <retro_timers.h>
+#include <rthreads/rthreads.h>
 #include <streams/file_stream.h>
 #include <vfs/vfs_implementation.h>
 
@@ -76,6 +82,10 @@ retro_time_t cpu_features_get_time_usec(void)
 }
 
 uint64_t cpu_features_get(void) { return 0; }
+unsigned cpu_features_get_core_amount(void) { return 4; }
+
+/* The set's own threads let their read pools go; nothing pooled here */
+void data_transfer_pool_flush(void) { }
 
 /* NBIO_XFER_TICK_USEC is 4000; a third of it per observation
  * exhausts the window after a couple of budget checks. */
@@ -86,6 +96,11 @@ uint64_t cpu_features_get(void) { return 0; }
 /* ------------------------------------------------------------------ */
 
 static unsigned images_loaded;
+/* Threads the decodes ran on, for the predecode lane */
+#define MAX_DECODE_THREADS 8
+static uintptr_t decode_thread[MAX_DECODE_THREADS];
+static unsigned  decode_threads;
+static slock_t  *decode_lock;
 
 /* The loader deduplicates images by path and then COPIES the
  * texture_image into each consumer, so one allocation is reachable
@@ -107,7 +122,23 @@ bool image_texture_load_request_ex(struct texture_image *img,
    (void)req; (void)should_abort; (void)ud;
    if (png_probe)
       *png_probe = strstr(path, "anim") ? 1 : 0;
-   images_loaded++;
+   if (decode_lock)
+   {
+      uintptr_t id = sthread_get_current_thread_id();
+      unsigned i;
+      slock_lock(decode_lock);
+      for (i = 0; i < decode_threads; i++)
+         if (decode_thread[i] == id)
+            break;
+      if (i == decode_threads && i < MAX_DECODE_THREADS)
+         decode_thread[decode_threads++] = id;
+      images_loaded++;
+      slock_unlock(decode_lock);
+      /* long enough that the set's other threads get a share */
+      retro_sleep(2);
+   }
+   else
+      images_loaded++;
    if (img)
    {
       img->width  = 4;
@@ -115,10 +146,23 @@ bool image_texture_load_request_ex(struct texture_image *img,
       img->pixels = (uint32_t*)calloc(16, sizeof(uint32_t));
       if (!img->pixels)
          return false;
+      if (decode_lock)
+         slock_lock(decode_lock);
       if (tracked_count < MAX_TRACKED_IMAGES)
          tracked_pixels[tracked_count++] = img->pixels;
+      if (decode_lock)
+         slock_unlock(decode_lock);
    }
    return true;
+}
+
+/* image_texture_set.c's own file set, which the loader does not use */
+bool image_texture_load_request(struct texture_image *img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud)
+{
+   return image_texture_load_request_ex(img, path, req, should_abort,
+         ud, NULL);
 }
 
 /* Deliberately a no-op on pixels: see above. */
@@ -562,6 +606,88 @@ static void lane_exhausted_window_progresses(void)
             "[pass] exhausted-window lane (%u ticks)\n", ticks);
 }
 
+/* A pack of @distinct images over @overlays overlays: each overlay's
+ * base and its descs cycle through them, so every image is named more
+ * than once */
+static void lane_predecode(void)
+{
+   char cfg[512], path[512];
+   unsigned had = failures, ticks = 0, o, d, i;
+   unsigned distinct = 6, overlays = 2, descs = 8, unthreaded_loaded;
+   FILE *f;
+
+   for (i = 0; i < distinct; i++)
+   {
+      snprintf(path, sizeof(path), "%s/p%u.png", fixture_dir, i);
+      if ((f = fopen(path, "wb")))
+      {
+         fputc(0, f);
+         fclose(f);
+      }
+   }
+   snprintf(cfg, sizeof(cfg), "%s/pre.cfg", fixture_dir);
+   if (!(f = fopen(cfg, "wb")))
+   {
+      CHECK(false, "fixture write failed");
+      return;
+   }
+   fprintf(f, "overlays = %u\n", overlays);
+   for (o = 0; o < overlays; o++)
+   {
+      fprintf(f, "overlay%u_name = ol%u\n", o, o);
+      fprintf(f, "overlay%u_full_screen = true\n", o);
+      fprintf(f, "overlay%u_rect = \"0.0,0.0,1.0,1.0\"\n", o);
+      fprintf(f, "overlay%u_overlay = p%u.png\n", o, o % distinct);
+      fprintf(f, "overlay%u_descs = %u\n", o, descs);
+      for (d = 0; d < descs; d++)
+      {
+         fprintf(f, "overlay%u_desc%u = \"a,0.5,0.5,rect,0.1,0.1\"\n",
+               o, d);
+         fprintf(f, "overlay%u_desc%u_overlay = p%u.png\n", o, d,
+               (o + d) % distinct);
+      }
+   }
+   fclose(f);
+
+   for (i = 0; i < 2; i++)
+   {
+      bool threaded = i == 1;
+      loaded_overlays = loaded_descs = images_loaded = 0;
+      decode_threads  = 0;
+      ticks           = 0;
+      task_queue_init(threaded, NULL);
+      clock_now  = 0;
+      clock_step = 0;
+      if (task_push_overlay_load_default(overlay_cb, cfg, false, NULL))
+         while (queue_busy() && ticks < 1000000)
+         {
+            task_queue_check();
+            ticks++;
+         }
+      task_queue_deinit();
+      release_tracked_images();
+      CHECK(loaded_overlays == overlays && loaded_descs == overlays * descs,
+            "%s load produced %u overlays and %u descs",
+            threaded ? "a threaded" : "an unthreaded",
+            loaded_overlays, loaded_descs);
+      CHECK(images_loaded == distinct,
+            "%s load decoded %u images for %u distinct",
+            threaded ? "a threaded" : "an unthreaded",
+            images_loaded, distinct);
+      if (!threaded)
+         unthreaded_loaded = images_loaded;
+      else
+         CHECK(decode_threads > 1,
+               "a threaded load decoded its pack on %u thread(s)",
+               decode_threads);
+   }
+   (void)unthreaded_loaded;
+
+   if (failures == had)
+      fprintf(stderr, "[pass] predecode lane (%u threads)\n",
+            decode_threads);
+}
+
 int main(void)
 {
    char cmd[600];
@@ -585,6 +711,10 @@ int main(void)
    lane_work_per_tick_does_not_scale();
    lane_exhausted_window_progresses();
    lane_still_read_once();
+   decode_lock = slock_new();
+   lane_predecode();
+   slock_free(decode_lock);
+   decode_lock = NULL;
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

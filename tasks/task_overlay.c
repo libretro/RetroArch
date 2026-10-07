@@ -23,7 +23,10 @@
 #ifdef HAVE_COMPRESSION
 #include <file/archive_file.h>
 #endif
+#include <formats/data_transfer.h>
 #include <formats/image.h>
+#include <features/features_cpu.h>
+#include <queues/task_queue.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lrc_hash.h>
@@ -55,6 +58,9 @@ struct overlay_loader
    struct overlay *active;
    struct string_list *image_list;
    struct string_list *anim_list; /* APNG file bytes, parallel */
+   /* Images decoded ahead, by relative path: overlay_predecoded_t in
+    * attr.p, each taken by the item that names it first */
+   struct string_list *predecoded;
 
    size_t resolve_pos;
    unsigned size;
@@ -296,6 +302,164 @@ static bool task_overlay_within_budget(void *ud)
    return task_nbio_slice_within_budget(ud, 0, 0);
 }
 
+typedef struct
+{
+   struct texture_image img;
+   int png_probe;
+   bool ok;
+} overlay_predecoded_t;
+
+typedef struct
+{
+   overlay_predecoded_t **items;
+   char **paths;
+   image_texture_request_t req;
+} overlay_predecode_set_t;
+
+static void task_overlay_predecode_one(unsigned i, void *ud)
+{
+   overlay_predecode_set_t *set = (overlay_predecode_set_t*)ud;
+   overlay_predecoded_t *item   = set->items[i];
+   item->png_probe              = -1;
+   item->ok = image_texture_load_request_ex(&item->img, set->paths[i],
+         &set->req, NULL, NULL, &item->png_probe);
+}
+
+/* Every image file the pack names, decoded at once across the cores
+ * before the first overlay is parsed; each item then takes its image
+ * from here instead of decoding it. Only where the task queue has a
+ * thread of its own - without one the decodes are paced item by item
+ * on the main thread - and not for a pack in an archive, whose members
+ * come out of it one at a time. */
+static void task_overlay_predecode(overlay_loader_t *loader)
+{
+   overlay_predecode_set_t set;
+   struct string_list *rel;
+   char key[64];
+   char rel_path[PATH_MAX_LENGTH];
+   char full_path[PATH_MAX_LENGTH];
+   unsigned o, d, n, i;
+
+   loader->flags |= OVERLAY_LOADER_PREDECODED;
+   if (     !task_queue_is_threaded()
+         || cpu_features_get_core_amount() < 2
+#ifdef HAVE_COMPRESSION
+         || path_get_archive_delim(loader->overlay_path)
+#endif
+         || !(rel = string_list_new()))
+      return;
+
+   for (o = 0; o < loader->size; o++)
+   {
+      unsigned descs = 0;
+      union string_list_elem_attr attr;
+      attr.i = 0;
+      snprintf(key, sizeof(key), "overlay%u_overlay", o);
+      if (     config_get_path(loader->conf, key, rel_path, sizeof(rel_path))
+            && *rel_path && string_list_find_elem(rel, rel_path) == 0)
+         string_list_append(rel, rel_path, attr);
+      snprintf(key, sizeof(key), "overlay%u_descs", o);
+      if (!config_get_uint(loader->conf, key, &descs))
+         continue;
+      for (d = 0; d < descs; d++)
+      {
+         snprintf(key, sizeof(key), "overlay%u_desc%u_overlay", o, d);
+         if (     config_get_path(loader->conf, key, rel_path,
+                     sizeof(rel_path))
+               && *rel_path && string_list_find_elem(rel, rel_path) == 0)
+            string_list_append(rel, rel_path, attr);
+      }
+   }
+
+   set.items = NULL;
+   set.paths = NULL;
+   if (     (n = (unsigned)rel->size) < 2
+         || !(set.items = (overlay_predecoded_t**)calloc(n,
+               sizeof(*set.items)))
+         || !(set.paths = (char**)calloc(n, sizeof(*set.paths))))
+   {
+      free(set.items);
+      string_list_free(rel);
+      return;
+   }
+   for (i = 0; i < n; i++)
+   {
+      overlay_resolve_path(full_path, loader->overlay_path,
+            rel->elems[i].data, sizeof(full_path));
+      if (     !(set.items[i] = (overlay_predecoded_t*)calloc(1,
+                  sizeof(**set.items)))
+            || !(set.paths[i] = strdup(full_path)))
+         break;
+      rel->elems[i].attr.p = set.items[i];
+   }
+   set.req.rgba            = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT)
+      ? true : false;
+   set.req.want_10bit      = (loader->flags & OVERLAY_LOADER_10BIT)
+      ? true : false;
+   set.req.want_fp16       = false;
+   set.req.want_compressed = true;
+
+   /* Out of memory part way: no predecode, every item decodes its own */
+   if (i < n)
+   {
+      for (i = 0; i < n; i++)
+      {
+         free(set.items[i]);
+         free(set.paths[i]);
+      }
+      free(set.items);
+      free(set.paths);
+      string_list_free(rel);
+      return;
+   }
+
+   image_texture_set_run_ex(n, task_overlay_predecode_one, &set,
+         data_transfer_pool_flush);
+   for (i = 0; i < n; i++)
+      free(set.paths[i]);
+   free(set.items);
+   free(set.paths);
+   loader->predecoded = rel;
+}
+
+/* The image predecoded for @rel_path, taken: false when there is none,
+ * which leaves the item to decode it itself */
+static bool task_overlay_take_predecoded(overlay_loader_t *loader,
+      const char *rel_path, struct texture_image *image, int *png_probe)
+{
+   overlay_predecoded_t *item;
+   int idx;
+   if (     !loader->predecoded
+         || !(idx = string_list_find_elem(loader->predecoded, rel_path))
+         || !(item = (overlay_predecoded_t*)
+               loader->predecoded->elems[idx - 1].attr.p))
+      return false;
+   loader->predecoded->elems[idx - 1].attr.p = NULL;
+   if (item->ok)
+   {
+      *image     = item->img;
+      *png_probe = item->png_probe;
+   }
+   free(item);
+   return true;
+}
+
+static void task_overlay_predecoded_free(struct string_list *list)
+{
+   size_t i;
+   if (!list)
+      return;
+   for (i = 0; i < list->size; i++)
+   {
+      overlay_predecoded_t *item =
+            (overlay_predecoded_t*)list->elems[i].attr.p;
+      if (item)
+         image_texture_free(&item->img);
+      free(item);
+   }
+   string_list_free(list);
+}
+
 static void task_overlay_image_done(struct overlay *overlay)
 {
    overlay->pos           = 0;
@@ -361,7 +525,15 @@ static bool task_overlay_load_image_texture(
          req.want_10bit      = image->pix10;
          req.want_fp16       = false;
          req.want_compressed = true;
-         if (!image_texture_load_request_ex(image, full_path, &req,
+         /* A predecoded image that failed is as failed as a decode
+          * here: an empty image */
+         if (task_overlay_take_predecoded(loader, rel_path, image,
+                  &png_probe))
+         {
+            if (!image->pixels && !image->compressed)
+               return false;
+         }
+         else if (!image_texture_load_request_ex(image, full_path, &req,
                   NULL, NULL, &png_probe))
             return false;
       }
@@ -1045,6 +1217,9 @@ static void task_overlay_deferred_load(retro_task_t *task, void *budget)
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
    config_file_t       *conf = loader->conf;
 
+   if (!(loader->flags & OVERLAY_LOADER_PREDECODED))
+      task_overlay_predecode(loader);
+
    for (;; loader->pos++)
    {
       size_t _len;
@@ -1354,6 +1529,10 @@ static void task_overlay_free(retro_task_t *task)
 {
    unsigned i;
    overlay_loader_t *loader  = (overlay_loader_t*)task->state;
+
+   /* Images no item came to take: a load cut short */
+   task_overlay_predecoded_free(loader->predecoded);
+   loader->predecoded = NULL;
 
    /* Release what the loader still owns.
     *

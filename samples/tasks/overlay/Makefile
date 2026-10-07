@@ -19,6 +19,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 SOURCES := overlay_budget_test.c \
            $(REPO_ROOT)/tasks/task_overlay.c \
            $(REPO_ROOT)/tasks/task_nbio_slice.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/queues/task_queue.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
            $(LIBRETRO_COMM_DIR)/file/config_file.c \

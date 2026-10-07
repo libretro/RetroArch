@@ -113,7 +113,10 @@ enum OVERLAY_LOADER_FLAGS
    /* The driver samples the pack's pixels where they lie, as GX
     * tiles: each image is tiled once it is decoded, and an APNG
     * keeps no stream, since nothing could show its frames. */
-   OVERLAY_LOADER_GX_TILE      = (1 << 4)
+   OVERLAY_LOADER_GX_TILE      = (1 << 4),
+   /* The pack's images were decoded together before the first
+    * overlay was parsed (task_overlay_predecode) */
+   OVERLAY_LOADER_PREDECODED   = (1 << 5)
 };
 
 enum INPUT_OVERLAY_FLAGS
