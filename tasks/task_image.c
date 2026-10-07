@@ -406,6 +406,203 @@ int task_image_png_probe(retro_task_t *task)
    return image_loader_png_probe(image->loader);
 }
 
+/* ---- A set of stills ---------------------------------------------- */
+
+typedef struct
+{
+   char *path;
+   void *ud;
+   struct texture_image *img;
+   int png_probe;
+} task_image_set_item_t;
+
+typedef struct
+{
+   task_image_set_item_t *items;
+   retro_task_t *task;
+   task_image_set_cb_t cb;
+   uint64_t tag;
+   image_texture_request_t req;
+   unsigned n;
+   unsigned upscale_threshold;
+   unsigned downscale_cap;
+   uint8_t flags;
+} task_image_set_t;
+
+static bool task_image_set_cancelled(void *ud)
+{
+   return (task_get_flags((retro_task_t*)ud) & RETRO_TASK_FLG_CANCELLED)
+      ? true : false;
+}
+
+/* One file of the set, on whichever thread the set runs it: read
+ * whole, decoded to the set's request, resampled. The read and the
+ * decode both stop once the set is cancelled. */
+static void task_image_set_one(unsigned i, void *ud)
+{
+   task_image_set_t      *set  = (task_image_set_t*)ud;
+   task_image_set_item_t *item = &set->items[i];
+   enum image_type_enum type   = image_texture_get_type(item->path);
+   struct data_transfer *dt;
+   image_loader_t *l;
+   const uint8_t *ptr;
+   size_t len = 0;
+
+   item->png_probe = -1;
+   if (     type == IMAGE_TYPE_NONE
+         || task_image_set_cancelled(set->task)
+         || !(dt = data_transfer_open_prefix(item->path, 0)))
+      return;
+   data_transfer_iterate(dt, 0);
+   ptr = data_transfer_ptr(dt, &len);
+   if (     data_transfer_complete(dt) && ptr && len
+         && (l = image_loader_new(type, &set->req)))
+   {
+      image_loader_set_abort(l, task_image_set_cancelled, set->task);
+      if (     image_loader_start(l, ptr, len, len)
+            && image_loader_step(l, NULL, 0) == IMAGE_LOADER_DONE
+            && (item->img = (struct texture_image*)malloc(
+                  sizeof(*item->img))))
+      {
+         if (image_loader_finish(l, item->img))
+         {
+            item->png_probe = image_loader_png_probe(l);
+            image_texture_scale(item->img,
+                  set->upscale_threshold, set->downscale_cap);
+         }
+         else
+         {
+            free(item->img);
+            item->img = NULL;
+         }
+      }
+      image_loader_free(l);
+   }
+   data_transfer_free(dt);
+}
+
+/* The worker: the whole set at once, then done. Its decodes run
+ * alongside one another, not alongside the other tasks' slices; a set
+ * is a few images, the cores' worth. */
+static void task_image_set_handler(retro_task_t *task)
+{
+   task_image_set_t *set = (task_image_set_t*)task->state;
+   gfx_surface_requirements_t want;
+
+   /* Asked now rather than at the push: the driver's answers reset on
+    * a reinit, which may have happened since. */
+   gfx_surface_query_requirements(0, &want);
+   set->req.rgba            = want.rgba;
+   set->req.want_10bit      = (want.formats & GFX_SURFACE_PIXFMT_2101010)
+      ? true : false;
+   set->req.want_fp16       = (set->flags & IMAGE_FLAG_WANT_HDR)
+      && (want.formats & GFX_SURFACE_PIXFMT_FP16);
+   set->req.want_compressed = false;
+   set->task                = task;
+
+   image_texture_set_run_ex(set->n, task_image_set_one, set,
+         data_transfer_pool_flush);
+   task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
+}
+
+/* Main thread: every file to its caller, in order */
+static void task_image_set_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   task_image_set_t *set = (task_image_set_t*)task->state;
+   unsigned i;
+   (void)task_data;
+   (void)user_data;
+   (void)error;
+   if (!set)
+      return;
+   for (i = 0; i < set->n; i++)
+   {
+      struct texture_image *img = set->items[i].img;
+      set->items[i].img         = NULL;
+      set->cb(img, set->items[i].png_probe, set->items[i].ud);
+   }
+}
+
+static void task_image_set_free(task_image_set_t *set)
+{
+   unsigned i;
+   for (i = 0; i < set->n; i++)
+   {
+      if (set->items[i].img)
+      {
+         image_texture_free(set->items[i].img);
+         free(set->items[i].img);
+      }
+      free(set->items[i].path);
+   }
+   free(set->items);
+   free(set);
+}
+
+static void task_image_set_cleanup(retro_task_t *task)
+{
+   if (task && task->state)
+      task_image_set_free((task_image_set_t*)task->state);
+}
+
+bool task_push_image_load_set(const char *const *paths,
+      void *const *item_uds, unsigned n, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      task_image_set_cb_t cb, uint64_t tag)
+{
+   task_image_set_t *set;
+   retro_task_t *t;
+   unsigned i;
+
+   if (!paths || !n || !cb)
+      return false;
+   if (!(set = (task_image_set_t*)calloc(1, sizeof(*set))))
+      return false;
+   if (!(set->items = (task_image_set_item_t*)calloc(n,
+               sizeof(*set->items))))
+   {
+      free(set);
+      return false;
+   }
+   set->n = n;
+   for (i = 0; i < n; i++)
+   {
+      if (!(set->items[i].path = strdup(paths[i] ? paths[i] : "")))
+      {
+         task_image_set_free(set);
+         return false;
+      }
+      set->items[i].ud = item_uds ? item_uds[i] : NULL;
+   }
+   set->cb                = cb;
+   set->tag               = tag;
+   set->upscale_threshold = upscale_threshold;
+   set->downscale_cap     = downscale_cap;
+   set->flags             = (load_flags & TASK_IMAGE_LOAD_HDR)
+      ? IMAGE_FLAG_WANT_HDR : 0;
+   if (!(t = task_init()))
+   {
+      task_image_set_free(set);
+      return false;
+   }
+   t->state    = set;
+   t->handler  = task_image_set_handler;
+   t->cleanup  = task_image_set_cleanup;
+   t->callback = task_image_set_done;
+   task_queue_push(t);
+   return true;
+}
+
+bool task_image_set_tag(retro_task_t *task, uint64_t *tag)
+{
+   if (!task || task->handler != task_image_set_handler || !task->state)
+      return false;
+   if (tag)
+      *tag = ((task_image_set_t*)task->state)->tag;
+   return true;
+}
+
 bool task_push_image_load(const char *fullpath,
       bool supports_rgba, unsigned upscale_threshold,
       unsigned downscale_cap,

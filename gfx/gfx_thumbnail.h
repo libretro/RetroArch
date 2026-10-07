@@ -467,6 +467,12 @@ void gfx_thumbnail_request_file(
       const char *file_path, gfx_thumbnail_t *thumbnail,
       unsigned gfx_thumbnail_upscale_threshold);
 
+/* Sends the stills asked for since the last call to the task queue,
+ * in sets decoded across the cores at once. Called by a menu driver
+ * at the end of a frame that may have asked for thumbnails; nothing
+ * to send is a no-op. */
+void gfx_thumbnail_flush_requests(void);
+
 /* Resets (and free()s the current texture of) the
  * specified thumbnail */
 void gfx_thumbnail_reset(gfx_thumbnail_t *thumbnail);

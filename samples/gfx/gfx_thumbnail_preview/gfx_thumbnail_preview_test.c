@@ -286,6 +286,109 @@ static void env_set(const char *name, const char *value)
 #endif
 }
 
+/* Stills asked for during a frame go out at its end, in sets as wide
+ * as the cores, where the task queue is threaded; a cancel before then
+ * sends nothing; an unthreaded queue takes each at once. Every tag
+ * comes back through the thumbnail's landing, which ASan's leak check
+ * holds to. */
+#define SET_STILLS 5
+static void lane_still_sets(void)
+{
+   gfx_thumbnail_path_data_t *pd = gfx_thumbnail_path_init();
+   gfx_thumbnail_t th[SET_STILLS];
+   char names[SET_STILLS][32];
+   unsigned i, width = cpu_features_get_core_amount();
+   int ok;
+
+   if (width > 8)
+      width = 8;
+   printf("still sets (%u cores)\n", width);
+   for (i = 0; i < SET_STILLS; i++)
+   {
+      FILE *f;
+      char full[64];
+      snprintf(names[i], sizeof(names[i]), "gfx_thumb_set_%u.png", i);
+      snprintf(full, sizeof(full), "/tmp/%s", names[i]);
+      if ((f = fopen(full, "wb")))
+      {
+         fputs("png", f);
+         fclose(f);
+      }
+      gfx_thumbnail_init_blank(&th[i]);
+   }
+   hp.thumb_cfg      = 1;
+   hp.threaded_queue = 1;
+   hp.still_loads    = hp.still_sets = hp.set_items = hp.set_max = 0;
+
+   for (i = 0; i < SET_STILLS; i++)
+   {
+      gfx_thumbnail_set_content_image(pd, "/tmp", names[i]);
+      gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[i],
+            0, false);
+   }
+   ok = 1;
+   for (i = 0; i < SET_STILLS; i++)
+      if (th[i].status != GFX_THUMBNAIL_STATUS_PENDING)
+         ok = 0;
+   check("sets", "requests wait for the frame's end", ok
+         && hp.still_loads == 0 && hp.still_sets == 0);
+   gfx_thumbnail_flush_requests();
+   if (width > 1)
+      check("sets", "the frame's stills go out in sets of the cores",
+            hp.set_items + hp.still_loads == SET_STILLS
+            && hp.set_max == (int)(width < SET_STILLS ? width : SET_STILLS)
+            && hp.still_sets == (int)(SET_STILLS / width
+               + (SET_STILLS % width > 1))
+            && hp.still_loads == (int)(SET_STILLS % width == 1));
+   else
+      check("sets", "one core: each still alone",
+            hp.still_loads == SET_STILLS && hp.still_sets == 0);
+   /* The sets come first, in request order; a single's task here
+    * never answers */
+   ok = 1;
+   for (i = 0; i < (unsigned)hp.set_items; i++)
+      if (th[i].status == GFX_THUMBNAIL_STATUS_PENDING)
+         ok = 0;
+   check("sets", "a set's stills land", ok);
+   gfx_thumbnail_flush_requests();
+   check("sets", "a second flush sends nothing",
+         hp.set_items + hp.still_loads == SET_STILLS);
+
+   /* cancelled before the frame's end */
+   hp.still_loads = hp.still_sets = hp.set_items = 0;
+   for (i = 0; i < 2; i++)
+   {
+      gfx_thumbnail_set_content_image(pd, "/tmp", names[i]);
+      gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[i],
+            0, false);
+   }
+   gfx_thumbnail_cancel_pending_requests();
+   gfx_thumbnail_flush_requests();
+   check("sets", "a cancel before the frame's end sends nothing",
+         hp.still_loads == 0 && hp.still_sets == 0);
+   check("sets", "and leaves them orphaned for a re-request",
+         gfx_thumbnail_reset_if_orphaned(&th[0])
+         && gfx_thumbnail_reset_if_orphaned(&th[1]));
+
+   /* an unthreaded queue */
+   hp.threaded_queue = 0;
+   gfx_thumbnail_set_content_image(pd, "/tmp", names[0]);
+   gfx_thumbnail_request(pd, GFX_THUMBNAIL_RIGHT, NULL, 0, &th[0], 0, false);
+   check("sets", "an unthreaded queue takes each still at once",
+         hp.still_loads == 1 && hp.still_sets == 0);
+
+   for (i = 0; i < SET_STILLS; i++)
+   {
+      char full[64];
+      gfx_thumbnail_reset(&th[i]);
+      snprintf(full, sizeof(full), "/tmp/%s", names[i]);
+      remove(full);
+   }
+   free(pd);
+   hp.thumb_cfg      = 0;
+   hp.still_loads    = 0;
+}
+
 int main(int argc, char **argv)
 {
    int i;
@@ -294,6 +397,7 @@ int main(int argc, char **argv)
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
    }
+   lane_still_sets();
    for (i = 1; i < argc; i++)
       run(argv[i], argv[i], 1);
 

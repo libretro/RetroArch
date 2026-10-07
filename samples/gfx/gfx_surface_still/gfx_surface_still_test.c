@@ -156,6 +156,18 @@ bool image_texture_load_request(struct texture_image *img,
    return true;
 }
 
+/* The set's own threads hand back their read pools as they finish;
+ * the caller's thread keeps its own. Noted by thread. */
+static uintptr_t st_flush_thread[ST_DECODE_THREADS];
+static unsigned  st_flush_threads;
+void data_transfer_pool_flush(void)
+{
+   slock_lock(st_decode_lock);
+   if (st_flush_threads < ST_DECODE_THREADS)
+      st_flush_thread[st_flush_threads++] = sthread_get_current_thread_id();
+   slock_unlock(st_decode_lock);
+}
+
 bool image_texture_load_buffer_request(struct texture_image *img,
       enum image_type_enum type, const void *s, size_t len,
       const image_texture_request_t *req,
@@ -373,6 +385,7 @@ int main(void)
       memset(slots, 0, sizeof(slots));
       slots[5] = (gfx_surface_t*)NULL;
       st_decode_threads = 0;
+      st_flush_threads  = 0;
       up = gfx_surface_submit_named(slots, SET_N, TEXTURE_FILTER_NEAREST,
             st_set_path, NULL, true);
       CHECK(up == SET_N - 1, "%u of %u files went up, wanted all but the missing one",
@@ -395,6 +408,26 @@ int main(void)
          CHECK(st_decode_threads > 1,
                "the set was decoded on one thread with %u cores",
                cpu_features_get_core_amount());
+      /* every thread but this one that decoded let its pool go */
+      {
+         uintptr_t self = sthread_get_current_thread_id();
+         unsigned j, k, missing = 0, own = 0;
+         for (j = 0; j < st_decode_threads; j++)
+         {
+            bool found = false;
+            for (k = 0; k < st_flush_threads; k++)
+               if (st_flush_thread[k] == st_decode_thread[j])
+                  found = true;
+            if (st_decode_thread[j] != self && !found)
+               missing++;
+         }
+         for (k = 0; k < st_flush_threads; k++)
+            if (st_flush_thread[k] == self)
+               own++;
+         CHECK(!missing && !own,
+               "%u decode threads exited holding their read pools, "
+               "%u pool flushes on the caller's thread", missing, own);
+      }
       for (i = 0; i < SET_N; i++)
          gfx_surface_free(slots[i]);
       CHECK(st_live == 0, "%d live after the set went", st_live);

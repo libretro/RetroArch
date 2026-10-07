@@ -33,6 +33,7 @@ SOURCES := image_decode_slice_test.c \
            $(LIBRETRO_COMM_DIR)/formats/data_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_scale.c \
+           $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng.c \
            $(LIBRETRO_COMM_DIR)/formats/png/rpng_apng.c \

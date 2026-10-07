@@ -312,6 +312,28 @@ bool task_image_detach_video_stream(retro_task_t *task,
  * already answer. */
 int task_image_png_probe(retro_task_t *task);
 
+/* A set of stills decoded together, across the cores at once: @n
+ * whole files at @paths, decoded and resampled as
+ * task_push_image_load_ex does each. On the main thread @cb is then
+ * called once per file, in order, with the image (NULL when the file
+ * could not be decoded or the set was cancelled; the caller's to free
+ * otherwise), the PNG verdict task_image_png_probe would give, and
+ * that file's @item_uds entry. @tag is the caller's, for
+ * task_image_set_tag. Video files take task_push_image_load_ex: a set
+ * has no decoder stream to hand over. The set decodes in one go on the
+ * task worker, so it is for a threaded task queue only; without one it
+ * would hold the main thread for all of it. */
+typedef void (*task_image_set_cb_t)(struct texture_image *img,
+      int png_probe, void *item_ud);
+bool task_push_image_load_set(const char *const *paths,
+      void *const *item_uds, unsigned n, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      task_image_set_cb_t cb, uint64_t tag);
+
+/* The @tag an image set task was pushed with; false for any other
+ * task. Safe from a task_queue_find predicate. */
+bool task_image_set_tag(retro_task_t *task, uint64_t *tag);
+
 #ifdef HAVE_LIBRETRODB
 /* Scans @fullpath, a directory or a single file, against the content
  * databases; the database and playlist directories come from the

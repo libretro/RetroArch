@@ -24,6 +24,7 @@
 
 #include <boolean.h>
 #include <formats/image.h>
+#include <formats/data_transfer.h>
 #ifdef HAVE_GCD
 #include <dispatch/dispatch.h>
 #elif defined(HAVE_THREADS)
@@ -37,6 +38,7 @@
 typedef struct
 {
    void (*fn)(unsigned i, void *ud);
+   void (*thread_done)(void);
    void *ud;
    retro_atomic_int_t next;
    unsigned n;
@@ -53,12 +55,30 @@ static void image_texture_set_worker(void *data)
       set->fn(i, set->ud);
    }
 }
+
+static void image_texture_set_thread(void *data)
+{
+   image_texture_set_t *set = (image_texture_set_t*)data;
+   image_texture_set_worker(set);
+   if (set->thread_done)
+      set->thread_done();
+}
 #endif
 
 void image_texture_set_run(unsigned n,
       void (*fn)(unsigned i, void *ud), void *ud)
 {
+   image_texture_set_run_ex(n, fn, ud, NULL);
+}
+
+void image_texture_set_run_ex(unsigned n,
+      void (*fn)(unsigned i, void *ud), void *ud,
+      void (*thread_done)(void))
+{
    unsigned i;
+   /* A dispatch pool's threads live on, and their pools with them:
+    * bounded, as the task queue's own are */
+   (void)thread_done;
    if (!n || !fn)
       return;
 #ifdef HAVE_GCD
@@ -81,14 +101,15 @@ void image_texture_set_run(unsigned n,
          image_texture_set_t set;
          sthread_t *thread[8];
          unsigned t, spawned = workers - 1;
-         set.fn = fn;
-         set.ud = ud;
-         set.n  = n;
+         set.fn          = fn;
+         set.thread_done = thread_done;
+         set.ud          = ud;
+         set.n           = n;
          retro_atomic_int_init(&set.next, 0);
          if (spawned > n - 1)
             spawned = n - 1;
          for (t = 0; t < spawned; t++)
-            thread[t] = sthread_create(image_texture_set_worker, &set);
+            thread[t] = sthread_create(image_texture_set_thread, &set);
          image_texture_set_worker(&set);
          for (t = 0; t < spawned; t++)
             if (thread[t])
@@ -130,7 +151,8 @@ unsigned image_texture_load_set(const char *const *paths,
    set.paths = paths;
    set.imgs  = imgs;
    set.req   = req;
-   image_texture_set_run(n, image_texture_load_one, &set);
+   image_texture_set_run_ex(n, image_texture_load_one, &set,
+         data_transfer_pool_flush);
    for (i = 0; i < n; i++)
       if (imgs[i].pixels || imgs[i].compressed)
          done++;

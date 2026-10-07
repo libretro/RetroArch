@@ -11,6 +11,9 @@ typedef struct {
    size_t last_audio_bytes;
    int force_preview_audio;
    unsigned last_tex_w, last_tex_h;
+   /* Still sets: a threaded task queue to batch on, the thumbnail
+    * settings to request under, and what went to the queue */
+   int threaded_queue, thumb_cfg, still_sets, set_items, set_max;
 } harness_probe_t;
 extern harness_probe_t hp;
 #endif

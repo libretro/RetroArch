@@ -8585,6 +8585,9 @@ static void xmb_render(void *data,
       menu_st->entries.begin = 0;
 
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
+
+   /* The frame's thumbnail requests go out together */
+   gfx_thumbnail_flush_requests();
 }
 
 XMB_NOINLINE static void xmb_draw_bg(

@@ -4726,6 +4726,9 @@ static void materialui_render(void *data,
    }
 
    menu_st->entries.begin = mui->first_onscreen_entry;
+
+   /* The frame's thumbnail requests go out together */
+   gfx_thumbnail_flush_requests();
 }
 
 /* ==============================

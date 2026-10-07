@@ -121,6 +121,29 @@ bool task_image_detach_video_stream(void *t, void **s, int *ty, void **x,
  * exactly what sends the open down its historical file probe. */
 int task_image_png_probe(void *t) { (void)t; return -1; }
 
+/* A set is decoded and lands here and now, with nothing: the tags go
+ * back through the thumbnail's own landing, as the real callback
+ * would hand them */
+bool task_push_image_load_set(const char *const *paths,
+      void *const *item_uds, unsigned n, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      void (*cb)(void *img, int png_probe, void *ud), uint64_t tag)
+{
+   unsigned i;
+   (void)paths; (void)load_flags; (void)upscale_threshold;
+   (void)downscale_cap; (void)tag;
+   hp.still_sets++;
+   hp.set_items += (int)n;
+   if ((int)n > hp.set_max)
+      hp.set_max = (int)n;
+   for (i = 0; i < n; i++)
+      cb(NULL, -1, item_uds[i]);
+   return true;
+}
+bool task_image_set_tag(void *task, uint64_t *tag)
+{ (void)task; (void)tag; return false; }
+bool task_queue_is_threaded(void) { return hp.threaded_queue != 0; }
+
 void *task_queue_find(void *id) { (void)id; return NULL; }
 void task_set_flags(void *t, uint32_t f, bool s) { (void)t; (void)f; (void)s; }
 
@@ -133,11 +156,20 @@ void task_set_flags(void *t, uint32_t f, bool s) { (void)t; (void)f; (void)s; }
 extern const size_t settings_layout_sizeof;
 extern const size_t settings_layout_preview_audio_off;
 extern const size_t settings_layout_preview_threads_off;
+extern const size_t settings_layout_gfx_thumbnails_off;
+extern const size_t settings_layout_dir_thumbnails_off;
 static char g_settings[1 << 20];
 void *config_get_ptr(void)
 {
    if (settings_layout_sizeof > sizeof(g_settings))
       abort();
+   if (hp.thumb_cfg)
+   {
+      unsigned on = 1;
+      memcpy(g_settings + settings_layout_gfx_thumbnails_off, &on,
+            sizeof(on));
+      strcpy(g_settings + settings_layout_dir_thumbnails_off, "/tmp");
+   }
    g_settings[settings_layout_preview_audio_off] =
          hp.force_preview_audio ? 1 : 0;
    {
@@ -219,7 +251,7 @@ int path_is_media_type(const char *path)
    if (!strcasecmp(e, ".png") || !strcasecmp(e, ".jpg")
     || !strcasecmp(e, ".jpeg") || !strcasecmp(e, ".bmp")
     || !strcasecmp(e, ".tga") || !strcasecmp(e, ".webp"))
-      return 4 /* RARCH_CONTENT_IMAGE */;
+      return 3 /* RARCH_CONTENT_IMAGE */;
    return 0;
 }
 

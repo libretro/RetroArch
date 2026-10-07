@@ -369,6 +369,52 @@ static void image_loaded_cb(retro_task_t *task,
    cb_done++;
 }
 
+/* ---- a set of stills ---- */
+static int set_order[8];
+static int set_seen, set_good, set_null, set_probe_still;
+
+static void set_item_cb(struct texture_image *img, int png_probe,
+      void *item_ud)
+{
+   int idx = (int)(intptr_t)item_ud;
+   if (set_seen < 8)
+      set_order[set_seen] = idx;
+   set_seen++;
+   if (!img)
+      set_null++;
+   else
+   {
+      if (     img->width == FIX_W && img->height == FIX_H && img->pixels
+            && image_format_fields_clear(img)
+            && img->pixels[(size_t)100 * FIX_W] == 0xff646464u)
+         set_good++;
+      if (png_probe == 0)
+         set_probe_still++;
+      image_texture_free(img);
+      free(img);
+   }
+}
+
+static bool set_cancel_finder(retro_task_t *task, void *ud)
+{
+   uint64_t tag;
+   (void)ud;
+   if (task_image_set_tag(task, &tag) && tag == 77)
+      task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+   return false;
+}
+
+static void set_pump(void)
+{
+   int guard = 100000;
+   while (guard-- > 0)
+   {
+      task_queue_check();
+      if (set_seen >= 4)
+         break;
+   }
+}
+
 /* Pump the queue to completion, recording the most expensive gather
  * in fake microseconds.  'skip' gathers at the front are excluded
  * from the max (the first mixes file I/O with decode); the last
@@ -455,6 +501,37 @@ int main(void)
             "single task does not exceed its allowance");
       CHECK(cb_done == 1, "single load completed");
       CHECK(cb_bad_image == 0, "single load decoded correctly");
+   }
+
+   /* ---- a set: every file to its callback, in order ---- */
+   {
+      const char *paths[4] = { "slice_fixture.png", "slice_fixture.png",
+         "no_such_file.png", "slice_fixture.png" };
+      void *uds[4] = { (void*)0, (void*)1, (void*)2, (void*)3 };
+      uint64_t tag = 0;
+      task_finder_data_t find;
+      set_seen = set_good = set_null = set_probe_still = 0;
+      CHECK(task_push_image_load_set(paths, uds, 4, 0, 0, 0,
+            set_item_cb, 42), "image set queued");
+      set_pump();
+      CHECK(set_seen == 4 && set_order[0] == 0 && set_order[1] == 1
+            && set_order[2] == 2 && set_order[3] == 3,
+            "a set calls back once per file, in order");
+      CHECK(set_good == 3 && set_null == 1,
+            "a set's images decode, an unreadable file comes back empty");
+      CHECK(set_probe_still == 3, "a set gives the still PNG verdict");
+
+      /* cancelled before it runs: every file back, empty */
+      set_seen = set_good = set_null = 0;
+      CHECK(task_push_image_load_set(paths, uds, 4, 0, 0, 0,
+            set_item_cb, 77), "second image set queued");
+      find.func     = set_cancel_finder;
+      find.userdata = NULL;
+      task_queue_find(&find);
+      set_pump();
+      CHECK(set_seen == 4 && set_null == 4,
+            "a cancelled set calls back for every file, with nothing");
+      CHECK(!task_image_set_tag(NULL, &tag), "a set tag is only a set's");
    }
 
    task_queue_deinit();

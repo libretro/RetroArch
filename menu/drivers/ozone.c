@@ -11490,6 +11490,9 @@ static void ozone_render(void *data,
       menu_st->entries.begin = 0;
 
    GFX_ANIMATION_CLEAR_ACTIVE(p_anim);
+
+   /* The frame's thumbnail requests go out together */
+   gfx_thumbnail_flush_requests();
 }
 
 OZONE_NOINLINE static void ozone_draw_header(

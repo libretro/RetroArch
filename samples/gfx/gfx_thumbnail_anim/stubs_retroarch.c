@@ -274,6 +274,19 @@ int task_image_png_probe(void *t) { (void)t; return -1; }
 bool task_push_image_load(const char *a, bool b, unsigned c, unsigned d,
       void *e, void *f)
 { (void)a; (void)b; (void)c; (void)d; (void)e; (void)f; return false; }
+/* No sets here: the anim lanes ask for no playlist thumbnails */
+bool task_push_image_load_set(const char *const *paths,
+      void *const *item_uds, unsigned n, unsigned load_flags,
+      unsigned upscale_threshold, unsigned downscale_cap,
+      void *cb, uint64_t tag)
+{
+   (void)paths; (void)item_uds; (void)n; (void)load_flags;
+   (void)upscale_threshold; (void)downscale_cap; (void)cb; (void)tag;
+   return false;
+}
+bool task_image_set_tag(void *task, uint64_t *tag)
+{ (void)task; (void)tag; return false; }
+
 /* Lane 14 captures the still load's callback and user data, to run
  * the upload itself; without the capture there is no task queue. */
 void (*gt_still_cb)(void *task, void *data, void *user, const char *err);

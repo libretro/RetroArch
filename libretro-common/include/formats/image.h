@@ -280,6 +280,15 @@ bool image_texture_load_request(struct texture_image *img,
 void image_texture_set_run(unsigned n,
       void (*fn)(unsigned i, void *ud), void *ud);
 
+/* image_texture_set_run with @thread_done called on each thread of
+ * the set's own as it finishes, for state it kept per thread - the
+ * data_transfer pool above all, which a thread that exits with it
+ * full would leave resident for good. Not called on the caller's
+ * thread, nor on a dispatch pool's, which live on. May be NULL. */
+void image_texture_set_run_ex(unsigned n,
+      void (*fn)(unsigned i, void *ud), void *ud,
+      void (*thread_done)(void));
+
 /* Decode the @n files @paths name into @imgs together, each as
  * image_texture_load_request does with @req; a path that is NULL,
  * empty or unreadable leaves its image empty. Returns how many

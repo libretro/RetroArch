@@ -145,8 +145,19 @@ typedef struct
 {
    uint64_t list_id;
    gfx_thumbnail_t *thumbnail;
+   unsigned upscale_threshold;   /* while waiting for a set */
    char path[PATH_MAX_LENGTH];
 } gfx_thumbnail_tag_t;
+
+/* Stills asked for during a frame wait here for the frame's end, when
+ * they go to the task queue as sets of as many as there are cores to
+ * decode them at once (gfx_thumbnail_flush_requests) */
+#define GFX_THUMB_SET_MAX     8
+#define GFX_THUMB_PENDING_MAX 64
+static gfx_thumbnail_tag_t *gfx_thumb_pending[GFX_THUMB_PENDING_MAX];
+static unsigned             gfx_thumb_pending_n;
+
+static unsigned gfx_thumbnail_downscale_cap(void);
 
 static gfx_thumbnail_state_t gfx_thumb_st = {0}; /* uint64_t alignment */
 
@@ -1812,12 +1823,15 @@ void gfx_thumbnail_animate(gfx_thumbnail_t *thumbnail,
          cpu_features_get_time_usec() - decode_start;
 }
 
-static void gfx_thumbnail_handle_upload(
-      retro_task_t *task, void *task_data, void *user_data, const char *err)
+/* A still's decode has come back, the image (NULL: nothing) the
+ * thumbnail's to upload or free, the tag to free. @task is the image
+ * task it came from, NULL for a set's, which holds no stream to adopt;
+ * @png_probe is its verdict on an animated PNG (-1: unknown). */
+static void gfx_thumbnail_still_landed(retro_task_t *task,
+      struct texture_image *img, gfx_thumbnail_tag_t *thumbnail_tag,
+      int png_probe)
 {
    gfx_thumbnail_state_t *p_gfx_thumb = &gfx_thumb_st;
-   struct texture_image *img          = (struct texture_image*)task_data;
-   gfx_thumbnail_tag_t *thumbnail_tag = (gfx_thumbnail_tag_t*)user_data;
    bool fade_enabled                  = false;
 
    /* Sanity check */
@@ -1936,8 +1950,7 @@ open_anim:
           * transfer, decode path without the buffer) falls back to
           * the probe inside the open, exactly as before. */
          gfx_thumbnail_anim_open_probed(thumbnail_tag->thumbnail,
-               thumbnail_tag->path,
-               task_image_png_probe(task));
+               thumbnail_tag->path, png_probe);
    }
 
 end:
@@ -1959,6 +1972,108 @@ end:
    }
 }
 
+static void gfx_thumbnail_handle_upload(
+      retro_task_t *task, void *task_data, void *user_data, const char *err)
+{
+   (void)err;
+   gfx_thumbnail_still_landed(task, (struct texture_image*)task_data,
+         (gfx_thumbnail_tag_t*)user_data, task_image_png_probe(task));
+}
+
+static void gfx_thumbnail_set_landed(struct texture_image *img,
+      int png_probe, void *item_ud)
+{
+   gfx_thumbnail_still_landed(NULL, img,
+         (gfx_thumbnail_tag_t*)item_ud, png_probe);
+}
+
+/* How many stills a set takes: the cores the decode can use, where
+ * the task queue runs on a thread of its own. One is no set at all. */
+static unsigned gfx_thumbnail_set_width(void)
+{
+   static unsigned cores;
+   if (!task_queue_is_threaded())
+      return 1;
+   if (!cores)
+   {
+      cores = cpu_features_get_core_amount();
+      if (cores > GFX_THUMB_SET_MAX)
+         cores = GFX_THUMB_SET_MAX;
+      if (!cores)
+         cores = 1;
+   }
+   return cores;
+}
+
+/* The still at @tag's path, decoded on the task queue: held for the
+ * frame's set where one can be made, else a task of its own. A video
+ * always goes alone - only its task can hand the thumbnail the decoder
+ * stream the still came from. False when nothing was queued. */
+static bool gfx_thumbnail_push_still(gfx_thumbnail_tag_t *tag,
+      unsigned upscale_threshold)
+{
+   enum image_type_enum type = image_texture_get_type(tag->path);
+   if (     type != IMAGE_TYPE_WEBM && type != IMAGE_TYPE_MP4
+         && gfx_thumbnail_set_width() > 1)
+   {
+      if (gfx_thumb_pending_n == GFX_THUMB_PENDING_MAX)
+         gfx_thumbnail_flush_requests();
+      tag->upscale_threshold                      = upscale_threshold;
+      gfx_thumb_pending[gfx_thumb_pending_n++] = tag;
+      return true;
+   }
+   return task_push_image_load_ex(tag->path, GFX_THUMBNAIL_LOAD_FLAGS,
+         upscale_threshold, gfx_thumbnail_downscale_cap(),
+         gfx_thumbnail_handle_upload, tag);
+}
+
+void gfx_thumbnail_flush_requests(void)
+{
+   unsigned width, cap, i = 0, n = gfx_thumb_pending_n;
+   if (!n)
+      return;
+   gfx_thumb_pending_n = 0;
+   width               = gfx_thumbnail_set_width();
+   cap                 = gfx_thumbnail_downscale_cap();
+   while (i < n)
+   {
+      const char *paths[GFX_THUMB_SET_MAX];
+      void *uds[GFX_THUMB_SET_MAX];
+      gfx_thumbnail_tag_t *first = gfx_thumb_pending[i];
+      unsigned j, count          = n - i;
+      bool queued;
+      if (count > width)
+         count = width;
+      /* One threshold to a set */
+      for (j = 1; j < count; j++)
+         if (gfx_thumb_pending[i + j]->upscale_threshold
+               != first->upscale_threshold)
+            break;
+      count = j;
+      if (count == 1)
+         queued = task_push_image_load_ex(first->path,
+               GFX_THUMBNAIL_LOAD_FLAGS, first->upscale_threshold, cap,
+               gfx_thumbnail_handle_upload, first);
+      else
+      {
+         for (j = 0; j < count; j++)
+         {
+            paths[j] = gfx_thumb_pending[i + j]->path;
+            uds[j]   = gfx_thumb_pending[i + j];
+         }
+         queued = task_push_image_load_set(paths, uds, count,
+               GFX_THUMBNAIL_LOAD_FLAGS, first->upscale_threshold, cap,
+               gfx_thumbnail_set_landed, first->list_id);
+      }
+      /* Nothing will come back for these: they land empty now */
+      if (!queued)
+         for (j = 0; j < count; j++)
+            gfx_thumbnail_still_landed(NULL, NULL,
+                  gfx_thumb_pending[i + j], -1);
+      i += count;
+   }
+}
+
 /* Core interface */
 
 /* When called, prevents the handling of any pending
@@ -1977,6 +2092,15 @@ static bool gfx_thumbnail_cancel_finder(retro_task_t *task, void *userdata)
    uint64_t             *current_id = (uint64_t*)userdata;
    gfx_thumbnail_tag_t  *tag;
 
+   uint64_t              set_tag;
+
+   /* A set of thumbnails carries the generation it was asked under */
+   if (task_image_set_tag(task, &set_tag))
+   {
+      if (set_tag != *current_id)
+         task_set_flags(task, RETRO_TASK_FLG_CANCELLED, true);
+      return false;
+   }
    /* Thumbnail loads are the ones that come back through our own
     * upload handler; other image loads (menu icons, savestate shots
     * pushed elsewhere) are not ours to cancel. */
@@ -2000,6 +2124,12 @@ void gfx_thumbnail_cancel_pending_requests(void)
    task_finder_data_t     find_data;
 
    p_gfx_thumb->list_id++;
+
+   /* Stills not yet sent are simply not sent; their thumbnails are
+    * PENDING under the old generation, which is what
+    * gfx_thumbnail_reset_if_orphaned looks for. */
+   while (gfx_thumb_pending_n)
+      free(gfx_thumb_pending[--gfx_thumb_pending_n]);
 
    /* Bumping the generation only makes the *results* unwanted; the
     * decodes themselves kept running to completion and were then thrown
@@ -2178,11 +2308,8 @@ void gfx_thumbnail_request(
 
                /* Would like to cancel any existing image load tasks
                 * here, but can't see how to do it... */
-               if (task_push_image_load_ex(
-                        thumbnail_path, GFX_THUMBNAIL_LOAD_FLAGS,
-                        gfx_thumbnail_upscale_threshold,
-                        gfx_thumbnail_downscale_cap(),
-                        gfx_thumbnail_handle_upload, thumbnail_tag))
+               if (gfx_thumbnail_push_still(thumbnail_tag,
+                        gfx_thumbnail_upscale_threshold))
                {
                   /* Not thumbnail_tag->list_id: the tag belongs to the
                    * task from the push on, and its callback frees it
