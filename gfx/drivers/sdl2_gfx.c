@@ -1556,7 +1556,7 @@ typedef struct
 static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
 {
    uint32_t *rgba;
-   int       i, total;
+   size_t    i, total;
    const uint8_t *src;
 
    if (!font || !font->atlas)

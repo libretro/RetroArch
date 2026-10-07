@@ -932,9 +932,9 @@ static bool frontend_darwin_accessibility_speak(int speed,
 static void frontend_darwin_content_loaded(void)
 {
 #ifdef HAVE_SWIFT
-   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
-      [RetroArchAppShortcuts contentLoaded];
-   }
+   if (apple_runtime_available(APPLE_RUNTIME_VER(13, 0, 0), APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
+      apple_rt_send_void(apple_rt_class("RetroArchAppShortcuts"),
+            sel_registerName("contentLoaded"));
 #endif
 }
 

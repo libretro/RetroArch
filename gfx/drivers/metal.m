@@ -164,6 +164,45 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
 };
 
 /*! @brief Context contains the render state used by various components */
+/* HDR availability gate.
+ *
+ * Compile-time: the SDK must expose CAMetalLayer's
+ * wantsExtendedDynamicRangeContent property and the PQ colour space name.
+ * The PQ colour space name (kCGColorSpaceITUR_2100_PQ) is the binding
+ * constraint on macOS — introduced in 10.15.4 but gated to macOS 11.0 in
+ * the public headers.  On iOS the EDR surface area on CAMetalLayer was
+ * only exposed in the 16.x SDKs.  tvOS never got a public EDR path:
+ * wantsExtendedDynamicRangeContent / edrMetadata are not part of the
+ * public tvOS interface regardless of SDK version, so HDR is unsupported
+ * there and the driver stays in SDR.
+ *
+ * We key the compile gate off the Availability.h __MAC_... / __IPHONE_...
+ * version tokens rather than AvailabilityMacros.h MAC_OS_X_VERSION_*
+ * constants: the former are defined consistently across all recent SDKs,
+ * while the latter were phased out for newer point releases and checking
+ * them fails silently even when the APIs are in fact present.
+ *
+ * Runtime: the HDR paths are still guarded with cached runtime version
+ * checks (apple_runtime_available) because RetroArch's Apple deployment
+ * targets (macOS 10.13, iOS 11) are lower than the first HDR-capable OS
+ * release on each platform.  When the runtime gate is false the driver
+ * stays in SDR mode.
+ *
+ * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an
+ * HDR-specific API inside those blocks, an apple_runtime_available
+ * check guards runtime dispatch. */
+#include <Availability.h>
+#include <TargetConditionals.h>
+#if defined(TARGET_OS_TV) && TARGET_OS_TV
+#  define METAL_HDR_AVAILABLE 0
+#elif TARGET_OS_OSX && defined(__MAC_11_0)
+#  define METAL_HDR_AVAILABLE 1
+#elif defined(HAVE_COCOATOUCH) && defined(__IPHONE_16_0)
+#  define METAL_HDR_AVAILABLE 1
+#else
+#  define METAL_HDR_AVAILABLE 0
+#endif
+
 @interface Context : NSObject
 
 @property (nonatomic, readonly) id<MTLDevice> device;
@@ -260,9 +299,11 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * Viewport size is used to size the HDR offscreen + readback buffers. */
 @property (nonatomic, readonly) bool hdrEnabled;
 @property (nonatomic, readonly) unsigned hdrOutputMode;
+#if METAL_HDR_AVAILABLE
 - (void)setHDROutputMode:(unsigned)mode
              viewportWidth:(unsigned)w
             viewportHeight:(unsigned)h;
+#endif
 
 /* Composite the source texture into the current drawable via the HDR encode
  * pipeline (hdr_composite_fragment).  Must be called while a frame is in
@@ -279,9 +320,11 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * the current frame's mode / paper-white / expand-gamut state.  The
  * caller supplies the source explicitly: the shader-chain's last-pass RT
  * if a preset is active, or the raw frame texture for the no-shader path. */
+#if METAL_HDR_AVAILABLE
 - (void)hdrComposite:(const HDRUniforms *)uniforms
           fromSource:(id<MTLTexture>)source
             rotation:(unsigned)rotation;
+#endif
 
 /* HDR-specific setters exposed for the poke interface. */
 - (void)setHDRPaperWhiteNits:(float)nits;
@@ -294,7 +337,9 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * SDR UI overlay) to match a new drawable size.  Called from
  * setViewportDims: on window resize; cheap no-op when the
  * current allocations already match. */
+#if METAL_HDR_AVAILABLE
 - (void)resizeHDRResourcesForWidth:(NSUInteger)w height:(NSUInteger)h;
+#endif
 
 /* Shader-emitted HDR path: set by FrameView after parsing a shader preset,
  * tells the composite fragment to pass the final pass through without
@@ -308,10 +353,12 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
  * readViewport:.  Reports the measured peak / average light levels and
  * which encoding the swapchain used.  Returns NO when HDR is off or
  * capture is unavailable; the caller then falls back to the SDR path. */
+#if METAL_HDR_AVAILABLE
 - (bool)readViewportHDR:(uint16_t *)buffer
                  maxCLL:(float *)outMaxCLL
                 maxFALL:(float *)outMaxFALL
                 isSCRGB:(bool *)outIsSCRGB;
+#endif
 
 /* Current HDRUniforms for composite pass — updated as settings change. */
 - (const HDRUniforms *)currentHDRUniforms;
@@ -529,45 +576,6 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
  * RARCH_RETURN_INIT_FAILURE); see that header for the semantics of
  * each form and for why the file must compile under both modes. */
 
-/* HDR availability gate.
- *
- * Compile-time: the SDK must expose CAMetalLayer's
- * wantsExtendedDynamicRangeContent property and the PQ colour space name.
- * The PQ colour space name (kCGColorSpaceITUR_2100_PQ) is the binding
- * constraint on macOS — introduced in 10.15.4 but gated to macOS 11.0 in
- * the public headers.  On iOS the EDR surface area on CAMetalLayer was
- * only exposed in the 16.x SDKs.  tvOS never got a public EDR path:
- * wantsExtendedDynamicRangeContent / edrMetadata are not part of the
- * public tvOS interface regardless of SDK version, so HDR is unsupported
- * there and the driver stays in SDR.
- *
- * We key the compile gate off the Availability.h __MAC_... / __IPHONE_...
- * version tokens rather than AvailabilityMacros.h MAC_OS_X_VERSION_*
- * constants: the former are defined consistently across all recent SDKs,
- * while the latter were phased out for newer point releases and checking
- * them fails silently even when the APIs are in fact present.
- *
- * Runtime: the HDR paths are still guarded with cached runtime version
- * checks (apple_runtime_available) because RetroArch's Apple deployment
- * targets (macOS 10.13, iOS 11) are lower than the first HDR-capable OS
- * release on each platform.  When the runtime gate is false the driver
- * stays in SDR mode.
- *
- * METAL_HDR_AVAILABLE guards compile-time only. Whenever we touch an
- * HDR-specific API inside those blocks, an apple_runtime_available
- * check guards runtime dispatch. */
-#include <Availability.h>
-#include <TargetConditionals.h>
-#if defined(TARGET_OS_TV) && TARGET_OS_TV
-#  define METAL_HDR_AVAILABLE 0
-#elif TARGET_OS_OSX && defined(__MAC_11_0)
-#  define METAL_HDR_AVAILABLE 1
-#elif defined(HAVE_COCOATOUCH) && defined(__IPHONE_16_0)
-#  define METAL_HDR_AVAILABLE 1
-#else
-#  define METAL_HDR_AVAILABLE 0
-#endif
-
 /* video_hdr_mode values — must match the rest of RetroArch. */
 #define METAL_HDR_MODE_OFF    0u
 #define METAL_HDR_MODE_HDR10  1u
@@ -597,6 +605,32 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
  * and iOS 16, at or below this file's EDR floor, so the compile-time
  * gate covers it; a display that ignores the metadata behaves as
  * before. */
+/* The EDR calls on the layer, sent by selector: the deployment floor
+ * is below the OS that introduced them, and every caller sits behind
+ * the apple_runtime_available() check above. */
+static void metal_layer_set_wants_edr(CAMetalLayer *layer, BOOL v)
+{
+   apple_rt_send_bool(layer, sel_registerName(
+         "setWantsExtendedDynamicRangeContent:"), v);
+}
+
+static void metal_layer_set_edr_metadata(CAMetalLayer *layer, id metadata)
+{
+   apple_rt_send_id(layer, sel_registerName("setEDRMetadata:"), metadata);
+}
+
+/* +[CAEDRMetadata HDR10MetadataWithMinLuminance:maxLuminance:opticalOutputScale:] */
+static id metal_hdr10_metadata(float min_nits, float max_nits, float scale)
+{
+   id cls = apple_rt_class("CAEDRMetadata");
+   if (!cls)
+      return nil;
+   return ((id (*)(id, SEL, float, float, float))objc_msgSend)(cls,
+         sel_registerName(
+            "HDR10MetadataWithMinLuminance:maxLuminance:opticalOutputScale:"),
+         min_nits, max_nits, scale);
+}
+
 static void metal_apply_hdr_metadata(CAMetalLayer *layer, unsigned hdr_mode)
 {
    float peak;
@@ -609,11 +643,8 @@ static void metal_apply_hdr_metadata(CAMetalLayer *layer, unsigned hdr_mode)
    if ((peak = video_driver_get_hdr_max_nits()) <= 0.0f)
       return;
 
-   layer.EDRMetadata = [CAEDRMetadata
-      HDR10MetadataWithMinLuminance:0.005f
-                       maxLuminance:peak
-                 opticalOutputScale:(hdr_mode == METAL_HDR_MODE_SCRGB)
-                                    ? 80.0f : 10000.0f];
+   metal_layer_set_edr_metadata(layer, metal_hdr10_metadata(0.005f, peak,
+         (hdr_mode == METAL_HDR_MODE_SCRGB) ? 80.0f : 10000.0f));
 }
 
 static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
@@ -633,9 +664,9 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
             layer.colorspace = cs;
             CGColorSpaceRelease(cs);
          }
-         layer.wantsExtendedDynamicRangeContent = NO;
+         metal_layer_set_wants_edr(layer, NO);
          /* Claim no luminance range in SDR */
-         layer.EDRMetadata                      = nil;
+         metal_layer_set_edr_metadata(layer, nil);
       }
       return MTLPixelFormatBGRA8Unorm;
    }
@@ -656,7 +687,7 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
          layer.colorspace = cs;
          CGColorSpaceRelease(cs);
       }
-      layer.wantsExtendedDynamicRangeContent = YES;
+      metal_layer_set_wants_edr(layer, YES);
       metal_apply_hdr_metadata(layer, hdr_mode);
       return fmt;
    }
@@ -702,7 +733,8 @@ static bool metal_display_supports_edr(void)
    {
       UIScreen *screen = [UIScreen mainScreen];
       if (screen)
-         return screen.potentialEDRHeadroom > 1.0;
+         return apple_rt_get_double(screen,
+               sel_registerName("potentialEDRHeadroom")) > 1.0;
    }
 #endif
 #endif
@@ -1863,11 +1895,11 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    {
       if (newCS)
          _layer.colorspace = newCS;
-      _layer.wantsExtendedDynamicRangeContent = wantEDR;
+      metal_layer_set_wants_edr(_layer, wantEDR);
       if (wantEDR)
          metal_apply_hdr_metadata(_layer, mode);
       else
-         _layer.EDRMetadata = nil;
+         metal_layer_set_edr_metadata(_layer, nil);
    }
 #endif
    if (newCS)
@@ -5266,6 +5298,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
        * yet).  Composite touches the drawable unconditionally to avoid
        * presenting uninitialised swapchain memory — when src is nil, a
        * clear-only pass runs in place of the core encode. */
+#if METAL_HDR_AVAILABLE
       if (hdrOn)
       {
          const HDRUniforms *u  = _context.currentHDRUniforms;
@@ -5279,6 +5312,7 @@ static void metal_pull_cached_frame_cb(void *userdata,
             src = _frameView.frameTexture;
          [_context hdrComposite:u fromSource:src rotation:rot];
       }
+#endif
 
       [self _endFrame];
    }

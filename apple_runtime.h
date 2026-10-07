@@ -40,7 +40,8 @@
 
 /* Returns the running OS version, APPLE_RUNTIME_VER-encoded.
  * Resolved once; the benign race on the static is idempotent. */
-static inline int apple_runtime_os_version(void)
+/* unused: a unit may include this header for the macros alone. */
+static inline __attribute__((unused)) int apple_runtime_os_version(void)
 {
    static int ver = -1;
    if (ver == -1)
@@ -104,6 +105,64 @@ static inline int apple_runtime_os_version(void)
 #else
 #define apple_runtime_available(macos_v, ios_v, tvos_v) \
    (apple_runtime_os_version() >= (macos_v))
+#endif
+
+/* Message sends the compiler does not see.
+ *
+ * One binary runs from Mac OS X 10.4 / iOS 4.0 up to the current
+ * release, so an API newer than the deployment floor is called only
+ * behind an apple_runtime_available() check.  Written as a plain
+ * message expression that call still trips -Wunguarded-availability,
+ * and on an SDK too old to declare the method it does not compile at
+ * all.  These macros send the message through objc_msgSend with a
+ * selector looked up by name, which is the very call a message
+ * expression compiles to: nothing is checked, nothing is slower, and
+ * being macros there is no inlining for a compiler to decline.
+ *
+ * Cache the SEL in a static where a send sits on a hot path;
+ * sel_registerName is a table lookup, @selector() is free but needs
+ * the SDK to declare the method. */
+#include <dlfcn.h>
+#include <objc/runtime.h>
+#include <objc/message.h>
+
+#ifndef __has_feature
+#define __has_feature(x) 0
+#endif
+
+#define apple_rt_send_void(obj, sel) \
+   ((void (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+#define apple_rt_send_bool(obj, sel, v) \
+   ((void (*)(id, SEL, BOOL))objc_msgSend)((id)(obj), (sel), (BOOL)(v))
+#define apple_rt_send_id(obj, sel, v) \
+   ((void (*)(id, SEL, id))objc_msgSend)((id)(obj), (sel), (id)(v))
+#define apple_rt_get_id(obj, sel) \
+   ((id (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+#define apple_rt_get_long(obj, sel) \
+   ((long (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+
+/* i386 returns floating point on the x87 stack and needs the _fpret
+ * entry; every other ABI returns it in a register through objc_msgSend. */
+#if defined(__i386__)
+#define apple_rt_get_double(obj, sel) \
+   ((double (*)(id, SEL))objc_msgSend_fpret)((id)(obj), (sel))
+#else
+#define apple_rt_get_double(obj, sel) \
+   ((double (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+#endif
+
+/* A class by name, nil when this OS (or this binary) does not have it. */
+#define apple_rt_class(name) ((id)objc_getClass(name))
+
+/* The address of an exported object constant (an NSString * such as
+ * AVCaptureDeviceTypeExternal) by name, NULL when this OS does not
+ * export it; apple_rt_obj_at reads the object, which stays the
+ * framework's own. */
+#define apple_rt_constant_addr(name) ((void **)dlsym(RTLD_DEFAULT, (name)))
+#if __has_feature(objc_arc)
+#define apple_rt_obj_at(p) ((__bridge id)*(p))
+#else
+#define apple_rt_obj_at(p) ((id)*(p))
 #endif
 
 #endif /* __APPLE_RUNTIME_H */

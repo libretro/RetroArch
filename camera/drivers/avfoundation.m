@@ -447,13 +447,15 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
     NSMutableArray<AVCaptureDeviceType> *deviceTypes = [NSMutableArray array];
 
     // External cameras: iOS 17 / Mac Catalyst 17 only, unavailable on tvOS.
-    // The constant only exists in the iOS 17 SDK, so it must be guarded at
-    // compile time as well as at runtime. Listed first to prefer an attached
+    // The constant is looked up at runtime, so the same binary builds on
+    // any SDK and runs on any OS. Listed first to prefer an attached
     // external camera when one is present.
-#if __IPHONE_OS_VERSION_MAX_ALLOWED >= 170000
     if (apple_runtime_available(0, APPLE_RUNTIME_VER(17, 0, 0), 0))
-        [deviceTypes addObject:AVCaptureDeviceTypeExternal];
-#endif
+    {
+        void **external = apple_rt_constant_addr("AVCaptureDeviceTypeExternal");
+        if (external)
+            [deviceTypes addObject:apple_rt_obj_at(external)];
+    }
 
     // Built-in wide-angle and telephoto are the iOS 10 baseline.
     [deviceTypes addObject:AVCaptureDeviceTypeBuiltInWideAngleCamera];

@@ -823,11 +823,23 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
    float rawX = *x, rawY = *y;
    UIInterfaceOrientation orient;
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), 0)) {
+      /* -[UIWindowScene effectiveGeometry].interfaceOrientation, both
+       * iOS 16; the selectors are looked up once. */
+      static SEL sel_geometry;
+      static SEL sel_orientation;
+      id geometry;
       UIWindow *window = [[UIApplication sharedApplication] delegate].window;
       if (!window) {
          return;
       }
-      orient = window.windowScene.effectiveGeometry.interfaceOrientation;
+      if (!sel_geometry)
+      {
+         sel_geometry    = sel_registerName("effectiveGeometry");
+         sel_orientation = sel_registerName("interfaceOrientation");
+      }
+      geometry = apple_rt_get_id(window.windowScene, sel_geometry);
+      orient   = (UIInterfaceOrientation)apple_rt_get_long(geometry,
+            sel_orientation);
    } else {
       orient = [[UIApplication sharedApplication] statusBarOrientation];
    }

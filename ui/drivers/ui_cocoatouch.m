@@ -1153,9 +1153,9 @@ bool cocoa_audio_session_begin_record(unsigned preferred_rate,
 #endif
 
 #if HAVE_SWIFT
-   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0))) {
-      [RetroArchAppShortcuts updateAppShortcuts];
-   }
+   if (apple_runtime_available(0, APPLE_RUNTIME_VER(16, 0, 0), APPLE_RUNTIME_VER(16, 0, 0)))
+      apple_rt_send_void(apple_rt_class("RetroArchAppShortcuts"),
+            sel_registerName("updateAppShortcuts"));
 #endif
 
 #if TARGET_OS_IOS
