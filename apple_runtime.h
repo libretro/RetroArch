@@ -140,6 +140,31 @@ static inline __attribute__((unused)) int apple_runtime_os_version(void)
    ((id (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
 #define apple_rt_get_long(obj, sel) \
    ((long (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+#define apple_rt_send_long(obj, sel, v) \
+   ((void (*)(id, SEL, long))objc_msgSend)((id)(obj), (sel), (long)(v))
+/* BOOL is a char on most ABIs: read through a BOOL-returning cast, never
+ * a wider one, or the bits above it are whatever the register held. */
+#define apple_rt_get_bool(obj, sel) \
+   ((BOOL (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+/* An int-typed result (an NS_ENUM(int, ...) such as CLAuthorizationStatus):
+ * read as int, for the same reason. */
+#define apple_rt_get_int(obj, sel) \
+   ((int (*)(id, SEL))objc_msgSend)((id)(obj), (sel))
+#define apple_rt_get_id_arg(obj, sel, a) \
+   ((id (*)(id, SEL, id))objc_msgSend)((id)(obj), (sel), (id)(a))
+
+/* A struct the ABI returns in memory: every target but arm64 does that
+ * for anything over 16 bytes (armv7, i386 and PPC for far less), and
+ * goes through objc_msgSend_stret; arm64 has no _stret entry at all.
+ * Only for structs larger than 16 bytes - a smaller one comes back in
+ * registers on x86_64, where _stret would be wrong. */
+#if defined(__arm64__) || defined(__aarch64__)
+#define apple_rt_get_large_struct(T, obj, sel) \
+   (((T (*)(id, SEL))objc_msgSend)((id)(obj), (sel)))
+#else
+#define apple_rt_get_large_struct(T, obj, sel) \
+   (((T (*)(id, SEL))objc_msgSend_stret)((id)(obj), (sel)))
+#endif
 
 /* i386 returns floating point on the x87 stack and needs the _fpret
  * entry; every other ABI returns it in a register through objc_msgSend. */

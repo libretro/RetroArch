@@ -122,7 +122,37 @@ void get_ios_version(int *major, int *minor);
 #endif
 
 @end
+
+#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
+/* The display link above is macOS 14; the callers check the OS first
+ * and reach it by selector, the send the property syntax makes. */
+#define COCOA_VIEW_DISPLAY_LINK(view) \
+   apple_rt_get_id((view), @selector(displayLink))
+#define COCOA_VIEW_SET_DISPLAY_LINK(view, link) \
+   apple_rt_send_id((view), @selector(setDisplayLink:), (link))
 #endif
+#endif
+
+/* A display link's frame-rate range (macOS 14, iOS/tvOS 15), set by
+ * selector: callers check the OS first. The range is CAFrameRateRange
+ * (macOS 12, iOS 15) restated - three floats, so the same layout and
+ * the same argument passing - and the link travels as id, because
+ * naming either type at a lower floor warns as using it would. */
+typedef struct
+{
+   float minimum;
+   float maximum;
+   float preferred;
+} cocoa_frame_rate_range_t;
+
+#define COCOA_DISPLAY_LINK_SET_RATE(link, hz) do { \
+   cocoa_frame_rate_range_t cocoa_range_; \
+   cocoa_range_.minimum   = (float)((hz) * 0.9); \
+   cocoa_range_.maximum   = (float)((hz) * 1.2); \
+   cocoa_range_.preferred = (float)(hz); \
+   ((void (*)(id, SEL, cocoa_frame_rate_range_t))objc_msgSend)((id)(link), \
+      sel_registerName("setPreferredFrameRateRange:"), cocoa_range_); \
+} while (0)
 
 #define BOXSTRING(x) [NSString stringWithUTF8String:x]
 #define BOXINT(x)    [NSNumber numberWithInt:x]

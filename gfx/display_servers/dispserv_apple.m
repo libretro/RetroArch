@@ -199,7 +199,7 @@ static bool apple_display_server_set_resolution(void *data,
    CocoaView *view = [CocoaView get];
    if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
    {
-      if (!view || !view.displayLink)
+      if (!view || !COCOA_VIEW_DISPLAY_LINK(view))
       {
          RARCH_WARN("[Video] CocoaView not ready, skipping refresh rate change to %.3f Hz\n", hz);
          return false;
@@ -301,7 +301,7 @@ static bool apple_display_server_set_resolution(void *data,
 
    /* Set refresh rate for display link */
    if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
-      view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+      COCOA_DISPLAY_LINK_SET_RATE(COCOA_VIEW_DISPLAY_LINK(view), hz);
    return true;
 }
 #elif TARGET_OS_IPHONE
@@ -660,8 +660,7 @@ static void *apple_display_server_init(void)
             if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
             {
                RARCH_DBG("[Video] Setting initial refresh rate to %.3f Hz\n", hz);
-               view.displayLink.preferredFrameRateRange =
-                  CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
+               COCOA_DISPLAY_LINK_SET_RATE(COCOA_VIEW_DISPLAY_LINK(view), hz);
             }
          }
 #endif

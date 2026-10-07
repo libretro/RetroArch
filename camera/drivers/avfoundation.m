@@ -438,7 +438,9 @@ didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer
 #if TARGET_OS_OSX
     // On macOS, use default discovery method
     // Could probably due the same as iOS but need to test.
-    devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    // Deprecated in 10.15 and still present: sent by selector.
+    devices = apple_rt_get_id_arg([AVCaptureDevice class],
+          @selector(devicesWithMediaType:), AVMediaTypeVideo);
 #else
     // On iOS/tvOS use modern discovery session.
     // Build the type list at runtime: some constants are gated by both SDK

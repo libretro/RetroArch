@@ -40,6 +40,8 @@
 #include <compat/apple_compat.h>
 #include <string/stdstring.h>
 
+#include "../../apple_runtime.h"
+#include <defines/cocoa_defines.h>
 #include "../../ui/drivers/ui_cocoa.h"
 #include "../../ui/drivers/cocoa/cocoa_common.h"
 #include "../../ui/drivers/cocoa/apple_platform.h"
@@ -384,7 +386,7 @@ static void cocoa_gl_gfx_ctx_swap_interval(void *data, int i)
    unsigned interval             = (unsigned)i;
 #if TARGET_OS_OSX
    GLint value                   = interval ? 1 : 0;
-   [g_ctx setValues:&value forParameter:NSOpenGLCPSwapInterval];
+   [g_ctx setValues:&value forParameter:NSOpenGLContextParameterSwapInterval];
 #else
    cocoa_ctx_data_t *cocoa_ctx   = (cocoa_ctx_data_t*)data;
    /* < No way to disable Vsync on iOS? */
@@ -460,8 +462,11 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
    /* Render at the backing store's resolution rather than at point
     * size. 10.7, deprecated in 10.14 and still honoured; asked of the
     * view rather than of the build SDK. */
-   if ([g_view respondsToSelector:@selector(setWantsBestResolutionOpenGLSurface:)])
-      [g_view setWantsBestResolutionOpenGLSurface:YES];
+   {
+      SEL sel = sel_registerName("setWantsBestResolutionOpenGLSurface:");
+      if ([g_view respondsToSelector:sel])
+         apple_rt_send_bool(g_view, sel, YES);
+   }
 
    {
       NSOpenGLPixelFormat *fmt;
@@ -546,7 +551,9 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
       RELEASE(fmt);
    }
 
-   [g_ctx setView:g_view];
+   /* Deprecated with the rest of NSOpenGL and still how a context
+    * gets its drawable; sent by selector so it does not warn */
+   apple_rt_send_id(g_ctx, @selector(setView:), g_view);
    {
       /* -[NSWindow setColorSpace:] is NS_AVAILABLE_MAC(10_6).  On 10.5
        * Leopard the selector doesn't exist and the runtime throws

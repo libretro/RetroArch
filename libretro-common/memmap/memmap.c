@@ -639,20 +639,33 @@ void memshm_unmap(void *addr, size_t len) { (void)addr; (void)len; }
  * TARGET_OS_OSX is the test, not the architecture. */
 #if defined(__APPLE__) && defined(__aarch64__) && defined(TARGET_OS_OSX) && TARGET_OS_OSX
 #include <pthread.h>
+#include <dlfcn.h>
 /* pthread_jit_write_protect_np is per thread, and so is this depth:
  * one thread's nesting must not flip another's pages. */
 static __thread int memjit_depth;
 
+/* Every macOS that runs on arm64 has pthread_jit_write_protect_np, but
+ * the SDK declares it for macOS 11 against a lower deployment target,
+ * so it is resolved by name once, at load: the call through the
+ * pointer is the same indirect call the library stub makes. */
+static void (*memjit_protect)(int);
+
+static void __attribute__((constructor)) memjit_resolve(void)
+{
+   *(void **)(&memjit_protect) = dlsym(RTLD_DEFAULT,
+         "pthread_jit_write_protect_np");
+}
+
 void memjit_write_begin(void)
 {
-   if (memjit_depth++ == 0)
-      pthread_jit_write_protect_np(0);
+   if (memjit_depth++ == 0 && memjit_protect)
+      memjit_protect(0);
 }
 
 void memjit_write_end(void)
 {
-   if (--memjit_depth == 0)
-      pthread_jit_write_protect_np(1);
+   if (--memjit_depth == 0 && memjit_protect)
+      memjit_protect(1);
 }
 #else
 void memjit_write_begin(void) { }

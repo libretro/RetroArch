@@ -608,6 +608,21 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 /* The EDR calls on the layer, sent by selector: the deployment floor
  * is below the OS that introduced them, and every caller sits behind
  * the apple_runtime_available() check above. */
+/* kCGColorSpaceITUR_2100_PQ is in CoreGraphics from 10.15.4 but declared
+ * for macOS 11, so it is looked up by name. NULL where it is not
+ * exported: the callers then make no colour space, which they handle. */
+static CFStringRef metal_colorspace_name_pq(void)
+{
+   static CFStringRef name;
+   if (!name)
+   {
+      void **p = apple_rt_constant_addr("kCGColorSpaceITUR_2100_PQ");
+      if (p)
+         name = (CFStringRef)*p;
+   }
+   return name;
+}
+
 static void metal_layer_set_wants_edr(CAMetalLayer *layer, BOOL v)
 {
    apple_rt_send_bool(layer, sel_registerName(
@@ -678,10 +693,10 @@ static MTLPixelFormat metal_apply_hdr_layer_config(CAMetalLayer *layer,
          : MTLPixelFormatRGB10A2Unorm;
       CFStringRef csName = (hdr_mode == METAL_HDR_MODE_SCRGB)
          ? kCGColorSpaceExtendedLinearSRGB
-         : kCGColorSpaceITUR_2100_PQ;
+         : metal_colorspace_name_pq();
 
       layer.pixelFormat = fmt;
-      CGColorSpaceRef cs = CGColorSpaceCreateWithName(csName);
+      CGColorSpaceRef cs = csName ? CGColorSpaceCreateWithName(csName) : NULL;
       if (cs)
       {
          layer.colorspace = cs;
@@ -1848,8 +1863,9 @@ static void buffer_chain_discard(buffer_chain_t *chain);
       {
          if (mode == METAL_HDR_OUTPUT_HDR10)
          {
+            CFStringRef pq = metal_colorspace_name_pq();
             newFmt   = MTLPixelFormatRGB10A2Unorm;
-            newCS    = CGColorSpaceCreateWithName(kCGColorSpaceITUR_2100_PQ);
+            newCS    = pq ? CGColorSpaceCreateWithName(pq) : NULL;
             wantEDR  = YES;
          }
          else /* scRGB */
@@ -7820,7 +7836,8 @@ static bool metal_supports_texture_format(void *video_data,
    }
    dev = md.context.device;
    if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), 0, 0))
-      return dev.supportsBCTextureCompression ? true : false;
+      return apple_rt_get_bool(dev,
+            sel_registerName("supportsBCTextureCompression")) ? true : false;
    return true; /* BC always available on pre-11 (Intel) Macs */
 #else
    (void)video_data;

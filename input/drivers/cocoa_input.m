@@ -767,19 +767,23 @@ static bool cocoa_input_set_sensor_state(void *data, unsigned port,
             continue;
          if (!controller.motion)
             break;
-         if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE && !controller.motion.hasGravityAndUserAcceleration)
+         /* GCMotion's activation API is macOS 11 / iOS 14, sent by
+          * selector behind the check above */
+         if (action == RETRO_SENSOR_ACCELEROMETER_ENABLE
+               && !apple_rt_get_bool(controller.motion,
+                  sel_registerName("hasGravityAndUserAcceleration")))
             break;
          if (action == RETRO_SENSOR_GYROSCOPE_ENABLE && !controller.motion.hasAttitudeAndRotationRate)
             break;
-         if (controller.motion.sensorsRequireManualActivation)
+         if (apple_rt_get_bool(controller.motion,
+                  sel_registerName("sensorsRequireManualActivation")))
          {
             /* This is a bug, we assume if you turn on/off either
              * you want both on/off */
-            if (     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
-                  || (action == RETRO_SENSOR_GYROSCOPE_ENABLE))
-               controller.motion.sensorsActive = YES;
-            else
-               controller.motion.sensorsActive = NO;
+            apple_rt_send_bool(controller.motion,
+                  sel_registerName("setSensorsActive:"),
+                     (action == RETRO_SENSOR_ACCELEROMETER_ENABLE)
+                  || (action == RETRO_SENSOR_GYROSCOPE_ENABLE));
          }
          /* no such thing as update interval for GCController? */
          return true;
@@ -863,6 +867,24 @@ static void cocoa_sensor_rotate_xy(float *x, float *y)
 }
 #endif
 
+#ifdef HAVE_MFI
+/* -[GCMotion acceleration] (macOS 11 / iOS 14) returns a GCAcceleration,
+ * three doubles; the layout is restated here so the file does not need
+ * an SDK that declares the type. */
+typedef struct
+{
+   double x, y, z;
+} cocoa_input_accel_t;
+
+static cocoa_input_accel_t cocoa_input_motion_acceleration(id motion)
+{
+   static SEL sel;
+   if (!sel)
+      sel = sel_registerName("acceleration");
+   return apple_rt_get_large_struct(cocoa_input_accel_t, motion, sel);
+}
+#endif
+
 static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id)
 {
 #ifdef HAVE_MFI
@@ -877,11 +899,11 @@ static float cocoa_input_get_sensor_input(void *data, unsigned port, unsigned id
          switch (id)
          {
             case RETRO_SENSOR_ACCELEROMETER_X:
-               return controller.motion.acceleration.x;
+               return cocoa_input_motion_acceleration(controller.motion).x;
             case RETRO_SENSOR_ACCELEROMETER_Y:
-               return controller.motion.acceleration.y;
+               return cocoa_input_motion_acceleration(controller.motion).y;
             case RETRO_SENSOR_ACCELEROMETER_Z:
-               return controller.motion.acceleration.z;
+               return cocoa_input_motion_acceleration(controller.motion).z;
             case RETRO_SENSOR_GYROSCOPE_X:
                return controller.motion.rotationRate.x;
             case RETRO_SENSOR_GYROSCOPE_Y:

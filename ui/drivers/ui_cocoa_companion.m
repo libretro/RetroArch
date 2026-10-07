@@ -45,6 +45,48 @@
 #include <defines/cocoa_defines.h>
 #include "cocoa/cocoa_common.h"
 #include "cocoa/apple_platform.h"
+#ifndef GNUSTEP
+#include "../../apple_runtime.h"
+#endif
+
+/* Window base coordinates to screen coordinates and back: the offset is
+ * the window frame's origin, which is all -convertBaseToScreen: (10.0,
+ * deprecated in 10.7) and -convertPointToScreen: (10.12) compute, so
+ * the arithmetic serves every release. */
+static NSPoint companion_window_to_screen(NSWindow *w, NSPoint p)
+{
+   NSRect f = [w frame];
+   p.x     += f.origin.x;
+   p.y     += f.origin.y;
+   return p;
+}
+
+static NSPoint companion_screen_to_window(NSWindow *w, NSPoint p)
+{
+   NSRect f = [w frame];
+   p.x     -= f.origin.x;
+   p.y     -= f.origin.y;
+   return p;
+}
+
+/* The list-of-paths pasteboard type every drag source here writes and
+ * every drop handler reads. Its name is deprecated (10.14) for per-item
+ * file URLs but the type itself still serves, so it is looked up by
+ * name, once; the string is the fallback where the symbol is gone. */
+static NSString *companion_filenames_type(void)
+{
+#ifdef GNUSTEP
+   return NSFilenamesPboardType;
+#else
+   static NSString *type;
+   if (!type)
+   {
+      void **p = apple_rt_constant_addr("NSFilenamesPboardType");
+      type     = p ? apple_rt_obj_at(p) : @"NSFilenamesPboardType";
+   }
+   return type;
+#endif
+}
 
 #include "../../command.h"
 #include "../../configuration.h"
@@ -477,13 +519,13 @@ static const companion_callbacks_t cc_callbacks = {
 - (NSDragOperation)draggingEntered:(id)sender
 {
    NSPasteboard *pb = [sender draggingPasteboard];
-   if ([[pb types] containsObject:NSFilenamesPboardType])
+   if ([[pb types] containsObject:companion_filenames_type()])
       return NSDragOperationCopy;
    return NSDragOperationNone;
 }
 - (BOOL)performDragOperation:(id)sender
 {
-   NSArray *files = [[sender draggingPasteboard] propertyListForType:NSFilenamesPboardType];
+   NSArray *files = [[sender draggingPasteboard] propertyListForType:companion_filenames_type()];
    if (![files count] || !owner)
       return NO;
    return [owner installThumbnailFromPath:[[files objectAtIndex:0] UTF8String] pane:pane];
@@ -518,7 +560,7 @@ static const companion_callbacks_t cc_callbacks = {
    /* A press above the content area is on the title bar: a double-
     * click docks the pane back, a drag moves the window and docks it
     * where a strip drag would if it is let go over the companion. */
-   if ([e type] == NSLeftMouseDown && owner)
+   if ([e type] == NSEventTypeLeftMouseDown && owner)
    {
       NSPoint p = [e locationInWindow];
       if (p.y >= [[self contentView] frame].size.height)
@@ -1236,7 +1278,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 {
    NSButton *b = [[[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 60, CC_CTRL_H)] autorelease_compat];
    [b setTitle:BOXSTRING(title ? title : "")];
-   [b setBezelStyle:NSRoundedBezelStyle];
+   [b setBezelStyle:NSBezelStyleRounded];
    [b setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
    [b setTarget:self];
    [b setAction:sel];
@@ -1491,7 +1533,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
          RACompanionBoxart *bv = [[RACompanionBoxart alloc] initWithFrame:NSMakeRect(0, 0, CC_PANE_W, 300)];
          bv->owner = self;
          bv->pane  = t;
-         [bv registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+         [bv registerForDraggedTypes:[NSArray arrayWithObject:companion_filenames_type()]];
          [bv setImageScaling:NSImageScaleProportionallyUpOrDown];
          [bv setImageFrameStyle:NSImageFrameGrayBezel];
          [content addSubview:bv];
@@ -1593,7 +1635,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    item = [entriesMenu addItemWithTitle:@"Delete Entry" action:@selector(deleteEntry:) keyEquivalent:@""];
    [item setTarget:self];
    [entries setMenu:entriesMenu];
-   [entries registerForDraggedTypes:[NSArray arrayWithObject:NSFilenamesPboardType]];
+   [entries registerForDraggedTypes:[NSArray arrayWithObject:companion_filenames_type()]];
    item = [entriesMenu addItemWithTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_ADD_FILES))
       action:@selector(addFiles:) keyEquivalent:@""];
    [item setTarget:self];
@@ -1798,7 +1840,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       return floats[pane];
    fw = [[RACompanionFloatWindow alloc]
       initWithContentRect:NSMakeRect(100, 100, 300, 240)
-      styleMask:NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask
+      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
       backing:NSBackingStoreBuffered defer:NO];
    fw->owner = self;
    fw->pane  = pane;
@@ -1978,7 +2020,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    lastSide[pane] = side;
    p   = [dockView convertPoint:NSMakePoint(VIDEO_POS_X(geom.strip[pane].pos),
          VIDEO_POS_Y(geom.strip[pane].pos)) toView:nil];
-   p   = [window convertBaseToScreen:p];
+   p   = companion_window_to_screen(window, p);
    rw  = (int)VIDEO_SCALE_W(geom.strip[pane].dims);
    rh  = VIDEO_POS_Y(geom.pane[pane].pos) + (int)VIDEO_SCALE_H(geom.pane[pane].dims)
        + (int)VIDEO_SCALE_H(geom.tabbar[pane].dims) - VIDEO_POS_Y(geom.strip[pane].pos);
@@ -2005,7 +2047,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
  * where the pane would dock); nothing while it is off the docks. */
 - (void)floatDragUpdate:(int)pane screenPoint:(NSPoint)sp
 {
-   NSPoint p = [dockView convertPoint:[window convertScreenToBase:sp] fromView:nil];
+   NSPoint p = [dockView convertPoint:companion_screen_to_window(window, sp) fromView:nil];
    companion_rect_t client = [self dockClient];
    dragPane  = pane;
    dragMoved = YES;
@@ -2039,17 +2081,17 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    NSRect f0;
    if (!fw)
       return;
-   start = [fw convertBaseToScreen:[e locationInWindow]];
+   start = companion_window_to_screen(fw, [e locationInWindow]);
    f0    = [fw frame];
    for (;;)
    {
-      NSEvent *ev = [fw nextEventMatchingMask:NSLeftMouseDraggedMask | NSLeftMouseUpMask
+      NSEvent *ev = [fw nextEventMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp
          untilDate:[NSDate distantFuture] inMode:NSEventTrackingRunLoopMode dequeue:YES];
       NSPoint sp;
       if (!ev)
          break;
-      sp = [fw convertBaseToScreen:[ev locationInWindow]];
-      if ([ev type] == NSLeftMouseUp)
+      sp = companion_window_to_screen(fw, [ev locationInWindow]);
+      if ([ev type] == NSEventTypeLeftMouseUp)
          break;
       [fw setFrameOrigin:NSMakePoint(f0.origin.x + sp.x - start.x, f0.origin.y + sp.y - start.y)];
       [self floatDragUpdate:pane screenPoint:sp];
@@ -2163,7 +2205,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
          companion_rect_t r;
          enum companion_dock_area side;
          int idx, rw, rh;
-         NSPoint sp = [window convertBaseToScreen:[dockView convertPoint:pt toView:nil]];
+         NSPoint sp = companion_window_to_screen(window, [dockView convertPoint:pt toView:nil]);
          CGFloat sh = [[NSScreen mainScreen] frame].size.height;
          /* A float lands with its strip under the pointer, at its
           * docked size. */
@@ -2277,7 +2319,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
             VIDEO_SCALE_W(drop.indicator.dims),
             VIDEO_SCALE_H(drop.indicator.dims));
       [[[NSColor selectedControlColor] colorWithAlphaComponent:0.35] set];
-      NSRectFillUsingOperation(r, NSCompositeSourceOver);
+      NSRectFillUsingOperation(r, NSCompositingOperationSourceOver);
       [[NSColor selectedControlColor] set];
       NSFrameRectWithWidth(r, 3.0);
    }
@@ -3821,7 +3863,7 @@ static const char *cc_thumb_subdir(int t)
    (void)row; (void)op;
    if (tv != entries || browseMode)
       return NO;
-   files = [[info draggingPasteboard] propertyListForType:NSFilenamesPboardType];
+   files = [[info draggingPasteboard] propertyListForType:companion_filenames_type()];
    return [self addPaths:files] > 0;
 }
 
@@ -3835,7 +3877,7 @@ static const char *cc_thumb_subdir(int t)
 {
    NSRect fr = NSMakeRect(0, 0, 600, 420);
    NSWindow *win = [[NSWindow alloc] initWithContentRect:fr
-      styleMask:(NSTitledWindowMask | NSClosableWindowMask | NSResizableWindowMask)
+      styleMask:(NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable)
       backing:NSBackingStoreBuffered defer:NO];
    NSScrollView *sv = [[[NSScrollView alloc] initWithFrame:NSMakeRect(0, 40, 600, 380)] autorelease_compat];
    NSTableView *tv  = [[[NSTableView alloc] initWithFrame:[[sv contentView] bounds]] autorelease_compat];
@@ -4134,7 +4176,7 @@ static const char *cc_thumb_subdir(int t)
        * and a key-equivalent button need not be visible, only present. */
       load = [[[NSButton alloc] initWithFrame:NSMakeRect(8, 8, 150, 24)] autorelease_compat];
       [load setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE))];
-      [load setBezelStyle:NSRoundedBezelStyle];
+      [load setBezelStyle:NSBezelStyleRounded];
       [load setTarget:self];
       [load setAction:@selector(loadCustomCore:)];
       [load setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];

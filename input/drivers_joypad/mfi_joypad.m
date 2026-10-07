@@ -69,6 +69,86 @@ static MFIRumbleController *mfi_rumblers[MAX_MFI_CONTROLLERS];
 #define MFI_WEAK_RUMBLE 0.7f
 static bool mfi_inited;
 
+/* The physical input profile (macOS 11, iOS/tvOS 14) is reached by
+ * selector and its element names by symbol lookup, both resolved once
+ * in mfi_runtime_init(), so one binary builds against any SDK and runs
+ * on any OS; behind the apple_runtime_available() checks the sends are
+ * the same message sends the property syntax compiles to. */
+enum mfi_key_id
+{
+   MFI_KEY_DIRECTION_PAD = 0,
+   MFI_KEY_LEFT_THUMBSTICK,
+   MFI_KEY_RIGHT_THUMBSTICK,
+   MFI_KEY_BUTTON_A,
+   MFI_KEY_BUTTON_B,
+   MFI_KEY_BUTTON_X,
+   MFI_KEY_BUTTON_Y,
+   MFI_KEY_LEFT_SHOULDER,
+   MFI_KEY_RIGHT_SHOULDER,
+   MFI_KEY_LEFT_TRIGGER,
+   MFI_KEY_RIGHT_TRIGGER,
+   MFI_KEY_LEFT_STICK_BUTTON,
+   MFI_KEY_RIGHT_STICK_BUTTON,
+   MFI_KEY_BUTTON_OPTIONS,
+   MFI_KEY_BUTTON_MENU,
+   MFI_KEY_BUTTON_HOME,
+   MFI_KEY_COUNT
+};
+
+static const char *const mfi_key_symbol[MFI_KEY_COUNT] = {
+   "GCInputDirectionPad",
+   "GCInputLeftThumbstick",
+   "GCInputRightThumbstick",
+   "GCInputButtonA",
+   "GCInputButtonB",
+   "GCInputButtonX",
+   "GCInputButtonY",
+   "GCInputLeftShoulder",
+   "GCInputRightShoulder",
+   "GCInputLeftTrigger",
+   "GCInputRightTrigger",
+   "GCInputLeftThumbstickButton",
+   "GCInputRightThumbstickButton",
+   "GCInputButtonOptions",
+   "GCInputButtonMenu",
+   "GCInputButtonHome"
+};
+
+/* nil where this OS does not export the name; a nil key finds nothing,
+ * and a message to the nil element reads as released. */
+static NSString *mfi_key[MFI_KEY_COUNT];
+
+static struct
+{
+   SEL physical_input_profile;
+   SEL buttons;
+   SEL dpads;
+   SEL elements;
+   SEL button_home;
+   SEL set_gesture_state;
+   SEL localized_name;
+} mfi_sel;
+
+#define MFI_PROFILE_PRESSED(pb, k) \
+   [(GCControllerButtonInput *)[(pb) objectForKey:mfi_key[(k)]] isPressed]
+
+static void mfi_runtime_init(void)
+{
+   int i;
+   for (i = 0; i < MFI_KEY_COUNT; i++)
+   {
+      void **p  = apple_rt_constant_addr(mfi_key_symbol[i]);
+      mfi_key[i] = p ? apple_rt_obj_at(p) : nil;
+   }
+   mfi_sel.physical_input_profile = sel_registerName("physicalInputProfile");
+   mfi_sel.buttons                = sel_registerName("buttons");
+   mfi_sel.dpads                  = sel_registerName("dpads");
+   mfi_sel.elements               = sel_registerName("elements");
+   mfi_sel.button_home            = sel_registerName("buttonHome");
+   mfi_sel.set_gesture_state      = sel_registerName("setPreferredSystemGestureState:");
+   mfi_sel.localized_name         = sel_registerName("localizedName");
+}
+
 /* How long a haptic player is kept playing at zero intensity before
  * it is stopped. A core does not hold a rumble level; it sets one and
  * clears it, and some do both every frame - a Game Boy rumble
@@ -148,32 +228,39 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
 
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
     {
-        GCPhysicalInputProfile *profile = controller.physicalInputProfile;
+        id            profile = apple_rt_get_id(controller, mfi_sel.physical_input_profile);
+        NSDictionary *pb      = apple_rt_get_id(profile, mfi_sel.buttons);
+        NSDictionary *pd      = apple_rt_get_id(profile, mfi_sel.dpads);
+        GCControllerDirectionPad *dpad = [pd objectForKey:mfi_key[MFI_KEY_DIRECTION_PAD]];
+        GCControllerDirectionPad *ls   = [pd objectForKey:mfi_key[MFI_KEY_LEFT_THUMBSTICK]];
+        GCControllerDirectionPad *rs   = [pd objectForKey:mfi_key[MFI_KEY_RIGHT_THUMBSTICK]];
+        GCControllerButtonInput  *lt   = [pb objectForKey:mfi_key[MFI_KEY_LEFT_TRIGGER]];
+        GCControllerButtonInput  *rt   = [pb objectForKey:mfi_key[MFI_KEY_RIGHT_TRIGGER]];
 
-        *buttons |= [[profile.dpads[GCInputDirectionPad] up] isPressed]       ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)     : 0;
-        *buttons |= [[profile.dpads[GCInputDirectionPad] down] isPressed]     ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)   : 0;
-        *buttons |= [[profile.dpads[GCInputDirectionPad] left] isPressed]     ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)   : 0;
-        *buttons |= [[profile.dpads[GCInputDirectionPad] right] isPressed]    ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT)  : 0;
-        *buttons |= [profile.buttons[GCInputButtonA] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_B)      : 0;
-        *buttons |= [profile.buttons[GCInputButtonB] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_A)      : 0;
-        *buttons |= [profile.buttons[GCInputButtonX] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)      : 0;
-        *buttons |= [profile.buttons[GCInputButtonY] isPressed]               ? (1 << RETRO_DEVICE_ID_JOYPAD_X)      : 0;
-        *buttons |= [profile.buttons[GCInputLeftShoulder] isPressed]          ? (1 << RETRO_DEVICE_ID_JOYPAD_L)      : 0;
-        *buttons |= [profile.buttons[GCInputRightShoulder] isPressed]         ? (1 << RETRO_DEVICE_ID_JOYPAD_R)      : 0;
-        *buttons |= [profile.buttons[GCInputLeftTrigger] isPressed]           ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)     : 0;
-        *buttons |= [profile.buttons[GCInputRightTrigger] isPressed]          ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)     : 0;
-        *buttons |= [profile.buttons[GCInputLeftThumbstickButton] isPressed]  ? (1 << RETRO_DEVICE_ID_JOYPAD_L3)     : 0;
-        *buttons |= [profile.buttons[GCInputRightThumbstickButton] isPressed] ? (1 << RETRO_DEVICE_ID_JOYPAD_R3)     : 0;
-        *buttons |= [profile.buttons[GCInputButtonOptions] isPressed]         ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
-        *buttons |= [profile.buttons[GCInputButtonMenu] isPressed]            ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
-        *buttons |= [profile.buttons[GCInputButtonHome] isPressed]            ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
+        *buttons |= [[dpad up] isPressed]    ? (1 << RETRO_DEVICE_ID_JOYPAD_UP)    : 0;
+        *buttons |= [[dpad down] isPressed]  ? (1 << RETRO_DEVICE_ID_JOYPAD_DOWN)  : 0;
+        *buttons |= [[dpad left] isPressed]  ? (1 << RETRO_DEVICE_ID_JOYPAD_LEFT)  : 0;
+        *buttons |= [[dpad right] isPressed] ? (1 << RETRO_DEVICE_ID_JOYPAD_RIGHT) : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_A)       ? (1 << RETRO_DEVICE_ID_JOYPAD_B)      : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_B)       ? (1 << RETRO_DEVICE_ID_JOYPAD_A)      : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_X)       ? (1 << RETRO_DEVICE_ID_JOYPAD_Y)      : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_Y)       ? (1 << RETRO_DEVICE_ID_JOYPAD_X)      : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_LEFT_SHOULDER)  ? (1 << RETRO_DEVICE_ID_JOYPAD_L)      : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_RIGHT_SHOULDER) ? (1 << RETRO_DEVICE_ID_JOYPAD_R)      : 0;
+        *buttons |= [lt isPressed]                                  ? (1 << RETRO_DEVICE_ID_JOYPAD_L2)     : 0;
+        *buttons |= [rt isPressed]                                  ? (1 << RETRO_DEVICE_ID_JOYPAD_R2)     : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_LEFT_STICK_BUTTON)  ? (1 << RETRO_DEVICE_ID_JOYPAD_L3) : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_RIGHT_STICK_BUTTON) ? (1 << RETRO_DEVICE_ID_JOYPAD_R3) : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_OPTIONS) ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_MENU)    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
+        *buttons |= MFI_PROFILE_PRESSED(pb, MFI_KEY_BUTTON_HOME)    ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
 
-        mfi_axes[slot][0] = [[profile.dpads[GCInputLeftThumbstick] xAxis] value]  * 32767.0f;
-        mfi_axes[slot][1] = [[profile.dpads[GCInputLeftThumbstick] yAxis] value]  * 32767.0f;
-        mfi_axes[slot][2] = [[profile.dpads[GCInputRightThumbstick] xAxis] value] * 32767.0f;
-        mfi_axes[slot][3] = [[profile.dpads[GCInputRightThumbstick] yAxis] value] * 32767.0f;
-        mfi_axes[slot][4] = [profile.buttons[GCInputLeftTrigger] value]           * 32767.0f;
-        mfi_axes[slot][5] = [profile.buttons[GCInputRightTrigger] value]          * 32767.0f;
+        mfi_axes[slot][0] = [[ls xAxis] value] * 32767.0f;
+        mfi_axes[slot][1] = [[ls yAxis] value] * 32767.0f;
+        mfi_axes[slot][2] = [[rs xAxis] value] * 32767.0f;
+        mfi_axes[slot][3] = [[rs yAxis] value] * 32767.0f;
+        mfi_axes[slot][4] = [lt value]         * 32767.0f;
+        mfi_axes[slot][5] = [rt value]         * 32767.0f;
     }
     else if (controller.extendedGamepad)
     {
@@ -205,7 +292,8 @@ static void apple_gamecontroller_joypad_poll_internal(GCController *controller, 
             *buttons             |= gp.buttonOptions.pressed ? (1 << RETRO_DEVICE_ID_JOYPAD_SELECT) : 0;
             *buttons             |= gp.buttonMenu.pressed    ? (1 << RETRO_DEVICE_ID_JOYPAD_START)  : 0;
             if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
-                *buttons         |= gp.buttonHome.pressed    ? (1 << RARCH_FIRST_CUSTOM_BIND)       : 0;
+                *buttons         |= [(GCControllerButtonInput *)apple_rt_get_id(gp,
+                      mfi_sel.button_home) isPressed] ? (1 << RARCH_FIRST_CUSTOM_BIND) : 0;
             else
             {
                /* Support buttons that aren't supported by older mFi controller via "hotkey" combinations:
@@ -287,23 +375,19 @@ static void apple_gamecontroller_joypad_register(GCController *controller)
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
     {
         GCExtendedGamepad *gp = (GCExtendedGamepad *)controller.extendedGamepad;
-        gp.buttonOptions.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        gp.buttonMenu.preferredSystemGestureState    = GCSystemGestureStateDisabled;
-        gp.buttonHome.preferredSystemGestureState    = GCSystemGestureStateDisabled;
-
-        GCPhysicalInputProfile *profile = controller.physicalInputProfile;
-        GCControllerButtonInput *homeBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonHome];
-        if (homeBtn) {
-            homeBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        }
-        GCControllerButtonInput *menuBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonMenu];
-        if (menuBtn) {
-            menuBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        }
-        GCControllerButtonInput *optionsBtn = (GCControllerButtonInput *)profile.buttons[GCInputButtonOptions];
-        if (optionsBtn) {
-            optionsBtn.preferredSystemGestureState = GCSystemGestureStateDisabled;
-        }
+        id            profile = apple_rt_get_id(controller, mfi_sel.physical_input_profile);
+        NSDictionary *pb      = apple_rt_get_id(profile, mfi_sel.buttons);
+        apple_rt_send_long(gp.buttonOptions, mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long(gp.buttonMenu,    mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long(apple_rt_get_id(gp, mfi_sel.button_home),
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        /* A message to a missing (nil) element does nothing */
+        apple_rt_send_long([pb objectForKey:mfi_key[MFI_KEY_BUTTON_HOME]],
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long([pb objectForKey:mfi_key[MFI_KEY_BUTTON_MENU]],
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
+        apple_rt_send_long([pb objectForKey:mfi_key[MFI_KEY_BUTTON_OPTIONS]],
+              mfi_sel.set_gesture_state, GCSystemGestureStateDisabled);
     }
 #endif
 
@@ -521,10 +605,21 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
 @property (nonatomic, strong, readonly) id<CHHapticPatternPlayer> strongPlayer MFI_RUMBLE_AVAIL;
 @property (nonatomic, strong, readonly) id<CHHapticPatternPlayer> weakPlayer MFI_RUMBLE_AVAIL;
 @property (nonatomic, assign) CFAbsoluteTime hapticRetryTime;
+- (void)attachController:(GCController*)controller MFI_RUMBLE_AVAIL;
 - (bool)setStrength:(uint16_t)strength strong:(bool)strong MFI_RUMBLE_AVAIL;
 - (bool)stopQuietPlayers:(CFAbsoluteTime)now MFI_RUMBLE_AVAIL;
 - (void)forgetPlayback;
 @end
+
+/* The members above are macOS 11 / iOS 14 and are reached from outside
+ * the class only behind an apple_runtime_available() check, so those
+ * calls go by selector; the selectors are this file's own. */
+#define MFI_RUMBLER_SET_STRENGTH(r, level, is_strong) \
+   ((bool (*)(id, SEL, uint16_t, bool))objc_msgSend)((id)(r), \
+         @selector(setStrength:strong:), (level), (is_strong))
+#define MFI_RUMBLER_STOP_QUIET(r, t) \
+   ((bool (*)(id, SEL, CFAbsoluteTime))objc_msgSend)((id)(r), \
+         @selector(stopQuietPlayers:), (t))
 
 @implementation MFIRumbleController
 {
@@ -558,17 +653,13 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
     memset(&_weakState,   0, sizeof(_weakState));
 }
 
-- (instancetype)initWithController:(GCController*)controller MFI_RUMBLE_AVAIL
+- (void)attachController:(GCController*)controller MFI_RUMBLE_AVAIL
 {
-    if (self = [super init])
-    {
-        if (!controller.haptics)
-            return self;
+    if (!controller.haptics)
+        return;
 
-        _controller = controller;
-        _engines = [[NSMutableSet alloc] init];
-    }
-    return self;
+    _controller = controller;
+    _engines = [[NSMutableSet alloc] init];
 }
 
 - (id<CHHapticPatternPlayer>)createPlayerWithLocality:(GCHapticsLocality)locality andIntensity:(float)intensity MFI_RUMBLE_AVAIL
@@ -680,13 +771,14 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
         /* When controller disconnects, the haptic engine is already stopped
          * by the system, so don't bother trying to cancel players - just
          * clear the handlers and release everything. */
-        for (CHHapticEngine *eng in self.engines)
+        NSMutableSet *engines = apple_rt_get_id(self, @selector(engines));
+        for (CHHapticEngine *eng in engines)
         {
             eng.stoppedHandler = ^(CHHapticEngineStoppedReason reason) {};
             eng.resetHandler = ^{};
             [eng stopWithCompletionHandler:nil];
         }
-        [self.engines removeAllObjects];
+        [engines removeAllObjects];
 
         _weakPlayer = nil;
         _strongPlayer = nil;
@@ -699,7 +791,11 @@ static bool apple_gamecontroller_haptic_stop_if_quiet(
 static void apple_gamecontroller_joypad_setup_haptics(GCController *controller)
 {
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
-        mfi_rumblers[controller.playerIndex] = [[MFIRumbleController alloc] initWithController:controller];
+    {
+        MFIRumbleController *rumbler = [[MFIRumbleController alloc] init];
+        apple_rt_send_id(rumbler, @selector(attachController:), controller);
+        mfi_rumblers[controller.playerIndex] = rumbler;
+    }
 }
 
 static void apple_gamecontroller_joypad_connect(GCController *controller)
@@ -726,19 +822,23 @@ static void apple_gamecontroller_joypad_connect(GCController *controller)
         RARCH_DBG("[MFI] New controller connected:\n");
         RARCH_DBG("[MFI]    name: %s\n", [controller.vendorName UTF8String]);
         RARCH_DBG("[MFI]    category: %s\n", [controller.productCategory UTF8String]);
-        RARCH_DBG("[MFI]    has battery info: %s\n", controller.battery != nil ? "yes" : "no");
-        RARCH_DBG("[MFI]    has haptics: %s\n", controller.haptics != nil ? "yes" : "no");
-        RARCH_DBG("[MFI]    has light: %s\n", controller.light != nil ? "yes" : "no");
+        RARCH_DBG("[MFI]    has battery info: %s\n", apple_rt_get_id(controller, sel_registerName("battery")) != nil ? "yes" : "no");
+        RARCH_DBG("[MFI]    has haptics: %s\n", apple_rt_get_id(controller, sel_registerName("haptics")) != nil ? "yes" : "no");
+        RARCH_DBG("[MFI]    has light: %s\n", apple_rt_get_id(controller, sel_registerName("light")) != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    has motion: %s\n", controller.motion != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    has microGamepad: %s\n", controller.microGamepad != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    has extendedGamepad: %s\n", controller.extendedGamepad != nil ? "yes" : "no");
         RARCH_DBG("[MFI]    input profile:\n");
-        for (NSString *elem in controller.physicalInputProfile.elements.allKeys)
+        NSDictionary *elements = apple_rt_get_id(apple_rt_get_id(controller,
+                 mfi_sel.physical_input_profile), mfi_sel.elements);
+        for (NSString *elem in [elements allKeys])
         {
+            id element = [elements objectForKey:elem];
             RARCH_DBG("[MFI]       %s\n", [elem UTF8String]);
-            GCControllerElement *element = controller.physicalInputProfile.elements[elem];
-            RARCH_DBG("[MFI]          analog: %s\n", element.analog ? "yes" : "no");
-            RARCH_DBG("[MFI]          localizedName: %s\n", [element.localizedName UTF8String]);
+            RARCH_DBG("[MFI]          analog: %s\n",
+                  apple_rt_get_bool(element, sel_registerName("isAnalog")) ? "yes" : "no");
+            RARCH_DBG("[MFI]          localizedName: %s\n",
+                  [(NSString *)apple_rt_get_id(element, mfi_sel.localized_name) UTF8String]);
         }
     }
 
@@ -934,7 +1034,7 @@ static void apple_gamecontroller_haptics_idle(void)
 
         for (i = 0; i < MAX_MFI_CONTROLLERS; i++)
         {
-            if (mfi_rumblers[i] && [mfi_rumblers[i] stopQuietPlayers:now])
+            if (mfi_rumblers[i] && MFI_RUMBLER_STOP_QUIET(mfi_rumblers[i], now))
                 pending = true;
         }
     }
@@ -946,6 +1046,8 @@ void *apple_gamecontroller_joypad_init(void *data)
 {
    if (mfi_inited)
       return (void*)-1;
+
+   mfi_runtime_init();
 
 #if TARGET_OS_IOS
    if (apple_runtime_available(0, APPLE_RUNTIME_VER(14, 0, 0), 0))
@@ -1130,8 +1232,8 @@ static bool apple_gamecontroller_joypad_set_rumble(unsigned pad,
               * sequence. */
              @try
              {
-                return [rumble setStrength:strength
-                                    strong:(type == RETRO_RUMBLE_STRONG)];
+                return MFI_RUMBLER_SET_STRENGTH(rumble, strength,
+                      (type == RETRO_RUMBLE_STRONG));
              }
              @catch (NSException *exception)
              {

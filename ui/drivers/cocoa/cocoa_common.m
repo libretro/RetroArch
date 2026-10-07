@@ -284,15 +284,17 @@ void rarch_stop_draw_observer(void)
 #elif TARGET_OS_OSX && __MAC_OS_X_VERSION_MAX_ALLOWED >= 140000
       if (apple_runtime_available(APPLE_RUNTIME_VER(14, 0, 0), 0, 0))
       {
+         id link;
          CGDirectDisplayID did = CGMainDisplayID();
          CGDisplayModeRef mode = CGDisplayCopyDisplayMode(did);
          float hz = (float)CGDisplayModeGetRefreshRate(mode);
          CGDisplayModeRelease(mode);
          if (hz <= 0.0f)
             hz = 60.0f;
-         view.displayLink = [view displayLinkWithTarget:view selector:@selector(step:)];
-         view.displayLink.preferredFrameRateRange = CAFrameRateRangeMake(hz * 0.9, hz * 1.2, hz);
-         [view.displayLink addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+         link = [view displayLinkWithTarget:view selector:@selector(step:)];
+         COCOA_VIEW_SET_DISPLAY_LINK(view, link);
+         COCOA_DISPLAY_LINK_SET_RATE(link, hz);
+         [link addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
       }
 #endif
    }
@@ -1437,14 +1439,14 @@ float cocoa_get_window_refresh_rate(void)
    /* A built-in panel, whose mode carries no rate: the screen's own
     * figure, which is its current rate on a fixed panel and its top
     * rate on a ProMotion one */
-#if __MAC_OS_X_VERSION_MAX_ALLOWED >= 120000
    if (apple_runtime_available(APPLE_RUNTIME_VER(12, 0, 0), 0, 0))
    {
-      NSInteger max_fps = [screen maximumFramesPerSecond];
+      /* -[NSScreen maximumFramesPerSecond], macOS 12 */
+      long max_fps = apple_rt_get_long(screen,
+            sel_registerName("maximumFramesPerSecond"));
       if (max_fps > 0)
          return (float)max_fps;
    }
-#endif
    return 0.0f;
 #else /* iOS / tvOS */
    UIScreen *screen = (view && view.view.window) ? view.view.window.screen : nil;

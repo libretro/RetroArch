@@ -53,10 +53,15 @@
 
 - (void)requestAuthorization {
     CLAuthorizationStatus status;
+    /* The instance property is macOS 11 / iOS 14, the class method it
+     * replaces deprecated there: both are sent by selector, so neither
+     * warns whichever floor the build has. */
     if (apple_runtime_available(APPLE_RUNTIME_VER(11, 0, 0), APPLE_RUNTIME_VER(14, 0, 0), APPLE_RUNTIME_VER(14, 0, 0)))
-        status = [_locationManager authorizationStatus];
+        status = (CLAuthorizationStatus)apple_rt_get_int(_locationManager,
+              @selector(authorizationStatus));
     else
-        status = [CLLocationManager authorizationStatus];
+        status = (CLAuthorizationStatus)apple_rt_get_int([CLLocationManager class],
+              @selector(authorizationStatus));
 
     if (status == kCLAuthorizationStatusNotDetermined)
     {
