@@ -514,7 +514,7 @@ static bool render_msg(oga_video_t* vid, const char* msg)
 #define FONT_LAYOUT_GLYPH(g, pen_x, pen_y) \
       do \
       { \
-         int x, y; \
+         int x, y, drawn; \
          uint32_t* dest        = NULL; \
          const uint8_t *source = NULL; \
          (void)(pen_x); \
@@ -538,16 +538,19 @@ static bool render_msg(oga_video_t* vid, const char* msg)
          source = atlas->buffer + VIDEO_SCALE_H((g)->atlas_pos) * \
             atlas->width  + VIDEO_SCALE_W((g)->atlas_pos); \
          dest   = fb + dest_y * dest_stride + dest_x; \
+         /* The glyph's texels up to its advance, then clear ones */ \
+         drawn  = MIN((int)VIDEO_SCALE_W((g)->dims), (g)->advance_x); \
          for (y = 0; y < (int)VIDEO_SCALE_H((g)->dims); y++) \
          { \
-            for (x = 0; x < (int)(g)->advance_x; x++) \
+            for (x = 0; x < drawn; x++) \
             { \
-               uint32_t px = (x < (int)VIDEO_SCALE_W((g)->dims)) \
-                  ? *(source++) : 0x00; \
-               *(dest++)   = (0xCD << 24) | (px << 16) | (px << 8) | px; \
+               uint32_t px = source[x]; \
+               dest[x]     = (0xCDu << 24) | (px * 0x010101u); \
             } \
-            dest   += dest_stride - (g)->advance_x; \
-            source += atlas->width - VIDEO_SCALE_W((g)->dims); \
+            for (; x < (g)->advance_x; x++) \
+               dest[x]     = 0xCDu << 24; \
+            dest   += dest_stride; \
+            source += atlas->width; \
          } \
          dest_x += (g)->advance_x; \
          if (vid->msg_width < dest_x) \

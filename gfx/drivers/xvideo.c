@@ -343,12 +343,18 @@ static void render16_yuv12(xv_t *xv, const void *input_,
    }
 }
 
+/* Two glyph texels at a time, one chroma sample for the pair; a pair
+ * with no coverage changes nothing and is passed over. Past an odd
+ * width the second texel is clear. */
 static INLINE void render_glyph_yuv12(xv_t *xv, int base_x, int base_y,
-				      const uint8_t *glyph, int atlas_width,
-				      int glyph_width, int glyph_height)
+      const uint8_t *glyph, int atlas_width,
+      int glyph_width, int glyph_height)
 {
    uint8_t *out_luma, *out_u, *out_v;
-   int x, y, i;
+   int x, y;
+   unsigned font_y = xv->font_y;
+   unsigned font_u = xv->font_u;
+   unsigned font_v = xv->font_v;
 
    out_luma = (uint8_t*)xv->image->data + base_y * xv->width + (base_x);
    out_u = (uint8_t*)xv->image->data + xv->width * xv->height + (base_y / 2) * xv->width / 2 + (base_x / 2);
@@ -356,63 +362,51 @@ static INLINE void render_glyph_yuv12(xv_t *xv, int base_x, int base_y,
 
    for (y = 0; y < glyph_height; y++, glyph += atlas_width, out_luma += xv->width)
    {
-      /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
-
+      int chroma = y & 1;
       for (x = 0; x < glyph_width; x += 2)
       {
-	 unsigned alpha[2], alpha_sub, blended;
+         unsigned a0 = glyph[x];
+         unsigned a1 = (x + 1 < glyph_width) ? glyph[x + 1] : 0;
+         unsigned as;
 
-	 alpha[0] = glyph[x + 0];
-	 alpha[1] = 0;
+         if (!(a0 | a1))
+            continue;
 
-	 if (x + 1 < glyph_width)
-	    alpha[1] = glyph[x + 1];
+         out_luma[x] = (font_y * a0 + (256 - a0) * out_luma[x]) >> 8;
+         if (a1)
+            out_luma[x + 1] = (font_y * a1
+                  + (256 - a1) * out_luma[x + 1]) >> 8;
 
-	 /* Blended alpha for the sub-sampled U/V channels. */
-	 alpha_sub = (alpha[0] + alpha[1]) >> 1;
-
-	 for (i = 0; i < 2; i++)
-	 {
-	    unsigned blended = (xv->font_y * alpha[i]
-				+ ((256 - alpha[i]) * out_luma[x+i])) >> 8;
-	    out_luma[x+i] = blended;
-	 }
-
-	 /* Blend chroma channels */
-	 if (y & 1)
-	 {
-	    blended = (xv->font_u * alpha_sub
-		       + ((256 - alpha_sub) * out_u[x/2])) >> 8;
-	    out_u[x / 2] = blended;
-
-	    blended = (xv->font_v * alpha_sub
-		       + ((256 - alpha_sub) * out_v[x/2])) >> 8;
-	    out_v[x/2] = blended;
-	 }
+         if (chroma)
+         {
+            as         = (a0 + a1) >> 1;
+            out_u[x/2] = (font_u * as + (256 - as) * out_u[x/2]) >> 8;
+            out_v[x/2] = (font_v * as + (256 - as) * out_v[x/2]) >> 8;
+         }
       }
 
-      if (y & 1)
+      if (chroma)
       {
-	 out_u += xv->width / 2;
-	 out_v += xv->width / 2;
+         out_u += xv->width / 2;
+         out_v += xv->width / 2;
       }
    }
 }
 
 static INLINE void render_glyph_yuv_packed(xv_t *xv, int base_x, int base_y,
-					   const uint8_t *glyph, int atlas_width,
-					   int glyph_width, int glyph_height)
+      const uint8_t *glyph, int atlas_width,
+      int glyph_width, int glyph_height)
 {
-   uint8_t *out                   = NULL;
-   int x, y, i;
-   unsigned luma_index[2], pitch;
-   unsigned chroma_u_index, chroma_v_index;
-
-   luma_index[0]  = xv->luma_index[0];
-   luma_index[1]  = xv->luma_index[1];
-
-   chroma_u_index = xv->chroma_u_index;
-   chroma_v_index = xv->chroma_v_index;
+   uint8_t *out;
+   int x, y;
+   unsigned pitch;
+   unsigned luma0    = xv->luma_index[0];
+   unsigned luma1    = xv->luma_index[1];
+   unsigned chroma_u = xv->chroma_u_index;
+   unsigned chroma_v = xv->chroma_v_index;
+   unsigned font_y   = xv->font_y;
+   unsigned font_u   = xv->font_u;
+   unsigned font_v   = xv->font_v;
 
    pitch          = xv->width << 1; /* YUV formats used are 16 bpp. */
    out = (uint8_t*)xv->image->data + base_y * pitch + (base_x << 1);
@@ -420,36 +414,21 @@ static INLINE void render_glyph_yuv_packed(xv_t *xv, int base_x, int base_y,
    for (y = 0; y < glyph_height; y++, glyph += atlas_width, out += pitch)
    {
       /* 2 input pixels => 4 bytes (2Y, 1U, 1V). */
-
       for (x = 0; x < glyph_width; x += 2)
       {
-	 unsigned alpha[2], alpha_sub, blended;
-	 int out_x = x << 1;
+         uint8_t *o  = out + (x << 1);
+         unsigned a0 = glyph[x];
+         unsigned a1 = (x + 1 < glyph_width) ? glyph[x + 1] : 0;
+         unsigned as;
 
-	 alpha[0] = glyph[x + 0];
-	 alpha[1] = 0;
+         if (!(a0 | a1))
+            continue;
 
-	 if (x + 1 < glyph_width)
-	    alpha[1] = glyph[x + 1];
-
-	 /* Blended alpha for the sub-sampled U/V channels. */
-	 alpha_sub = (alpha[0] + alpha[1]) >> 1;
-
-	 for (i = 0; i < 2; i++)
-	 {
-	    unsigned blended = (xv->font_y * alpha[i]
-				+ ((256 - alpha[i]) * out[out_x + luma_index[i]])) >> 8;
-	    out[out_x + luma_index[i]] = blended;
-	 }
-
-	 /* Blend chroma channels */
-	 blended = (xv->font_u * alpha_sub
-		    + ((256 - alpha_sub) * out[out_x + chroma_u_index])) >> 8;
-	 out[out_x + chroma_u_index] = blended;
-
-	 blended = (xv->font_v * alpha_sub
-		    + ((256 - alpha_sub) * out[out_x + chroma_v_index])) >> 8;
-	 out[out_x + chroma_v_index] = blended;
+         as          = (a0 + a1) >> 1;
+         o[luma0]    = (font_y * a0 + (256 - a0) * o[luma0]) >> 8;
+         o[luma1]    = (font_y * a1 + (256 - a1) * o[luma1]) >> 8;
+         o[chroma_u] = (font_u * as + (256 - as) * o[chroma_u]) >> 8;
+         o[chroma_v] = (font_v * as + (256 - as) * o[chroma_v]) >> 8;
       }
    }
 }

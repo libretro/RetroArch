@@ -219,14 +219,17 @@ static void sdl_render_msg(
             for (x = 0; x < glyph_width; x++) \
             { \
                unsigned blend   = src[x]; \
-               unsigned out_pix = out[x]; \
-               unsigned       r = (out_pix >> rshift) & 0xff; \
-               unsigned       g = (out_pix >> gshift) & 0xff; \
-               unsigned       b = (out_pix >> bshift) & 0xff; \
-               unsigned   out_r = (r * (256 - blend) + vid->font_r * blend) >> 8; \
-               unsigned   out_g = (g * (256 - blend) + vid->font_g * blend) >> 8; \
-               unsigned   out_b = (b * (256 - blend) + vid->font_b * blend) >> 8; \
-               out[x]           = (out_r << rshift) | \
+               unsigned out_pix, r, g, b, out_r, out_g, out_b; \
+               if (!blend) \
+                  continue; \
+               out_pix = out[x]; \
+               r       = (out_pix >> rshift) & 0xff; \
+               g       = (out_pix >> gshift) & 0xff; \
+               b       = (out_pix >> bshift) & 0xff; \
+               out_r   = (r * (256 - blend) + vid->font_r * blend) >> 8; \
+               out_g   = (g * (256 - blend) + vid->font_g * blend) >> 8; \
+               out_b   = (b * (256 - blend) + vid->font_b * blend) >> 8; \
+               out[x]  = (out_r << rshift) | \
                                   (out_g << gshift) | \
                                   (out_b << bshift); \
             } \
