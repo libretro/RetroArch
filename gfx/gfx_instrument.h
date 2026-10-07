@@ -101,6 +101,10 @@ enum gfx_instrument_counter
    GFX_INSTR_HW_DROP,           /* frames taken back or replaced     */
    GFX_INSTR_HW_DROP_SUBMIT,    /* ..queue submissions they cost     */
 
+   /* Queue submissions a driver makes for the texture uploads
+    * recorded between two frames: one per batch (Vulkan) */
+   GFX_INSTR_UPLOAD_SUBMIT,
+
    GFX_INSTR_COUNT
 };
 

@@ -4080,6 +4080,67 @@ static void lane_async_texture_load(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: texture uploads batched                                      */
+/*   The static textures loaded between two frames go up on one       */
+/*   queue submission ahead of the frame, not one each. Without the   */
+/*   wrapper, on a real driver that counts its upload submissions     */
+/*   (Vulkan, instrumented).                                          */
+/* ------------------------------------------------------------------ */
+
+#define UPLOAD_BATCH_N 8
+
+static void lane_upload_batch(void)
+{
+#ifdef HAVE_GFX_INSTRUMENT
+   unsigned had = failures;
+   static struct texture_image imgs[UPLOAD_BATCH_N];
+   uintptr_t handles[UPLOAD_BATCH_N];
+   unsigned i;
+   int before, during, after;
+
+   set_threaded_via_setting(false);
+   run_frames(2);
+   expect_wrapper(false, "upload batch lane");
+
+   before = gfx_instrument_get(GFX_INSTR_UPLOAD_SUBMIT);
+   for (i = 0; i < UPLOAD_BATCH_N; i++)
+   {
+      imgs[i].width = imgs[i].height = 4;
+      imgs[i].pixels = (uint32_t*)&imgs[i];
+      handles[i]     = 0;
+      CHECK(video_driver_texture_load(&imgs[i], TEXTURE_FILTER_LINEAR,
+               &handles[i]) && handles[i],
+            "upload %u refused", i);
+   }
+   during = gfx_instrument_get(GFX_INSTR_UPLOAD_SUBMIT);
+   if (during == before)
+   {
+      run_frames(1);
+      after = gfx_instrument_get(GFX_INSTR_UPLOAD_SUBMIT);
+      CHECK(after - before == 1,
+            "%d submission(s) for %u uploads over one frame, wanted 1",
+            after - before, UPLOAD_BATCH_N);
+   }
+   else
+   {
+      /* A driver that submits as it loads: not batched */
+      CHECK(false, "%d submission(s) before any frame for %u uploads",
+            during - before, UPLOAD_BATCH_N);
+      run_frames(1);
+   }
+   for (i = 0; i < UPLOAD_BATCH_N; i++)
+      video_driver_texture_unload(&handles[i]);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] upload batch lane (%u uploads, one submission)\n",
+            UPLOAD_BATCH_N);
+#else
+   fprintf(stderr, "[skip] upload batch lane (not instrumented)\n");
+#endif
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: streaming surfaces through the real driver                    */
 /*   A gfx_surface submits frames to whatever driver is up: under the  */
 /*   wrapper a submit is QUEUED and the slot comes back through        */
@@ -6540,6 +6601,9 @@ int main(int argc, char *argv[])
    lane_surface_lend();
    if (real_driver())
       lane_surface_4k();
+   /* The one driver that batches and counts its upload submissions */
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+      lane_upload_batch();
    lane_overlay_textures();
    lane_driver_reloads();
    if (real_driver())

@@ -557,6 +557,8 @@ typedef struct vk
     * fence signals, plus the pool those fences return to. See
     * vulkan_deferred_cmds_tick(). */
    struct vk_deferred_cmd *deferred_cmds;
+   /* The batch open for recording, until the frame submits it */
+   struct vk_deferred_cmd *upload_batch;
    struct vk_deferred_fence *deferred_fences;
    /* The fence an upload is waited on when it has to be finished
     * before returning (no node or no fence of its own to defer it
@@ -1345,12 +1347,22 @@ static void vulkan_deferred_textures_flush(vk_t *vk)
  * list and the fence pool are owned by the frame-recording thread:
  * enqueue, tick and flush all run there, which is also what keeps
  * the externally synchronised staging pool on one thread. */
+struct vk_deferred_staging
+{
+   struct vk_texture tex;            /* uint64_t alignment; .memory
+                                        is VK_NULL_HANDLE when unused */
+   struct vk_deferred_staging *next;
+   VkBuffer buffer;                  /* VK_NULL_HANDLE when unused */
+   VkDeviceMemory memory;
+};
+
+/* The uploads and layout transitions recorded between two frames go
+ * on one command buffer (vulkan_upload_batch_cmd), submitted once
+ * ahead of the frame with one fence (vulkan_upload_batch_submit),
+ * rather than a command buffer, a submit and a fence each. */
 struct vk_deferred_cmd
 {
-   struct vk_texture staging_tex;    /* uint64_t alignment; .memory
-                                        is VK_NULL_HANDLE when unused */
-   VkBuffer staging_buffer;          /* VK_NULL_HANDLE when unused */
-   VkDeviceMemory staging_memory;
+   struct vk_deferred_staging *staging;
    VkFence fence;
    struct vk_deferred_cmd *next;
    VkCommandBuffer cmd;
@@ -1426,44 +1438,113 @@ static void vulkan_deferred_fence_recycle(vk_t *vk, VkFence fence)
 static void vulkan_deferred_cmd_release(vk_t *vk,
       struct vk_deferred_cmd *node)
 {
-   VkDevice device = vk->context->device;
+   VkDevice device                   = vk->context->device;
+   struct vk_deferred_staging *stage = node->staging;
    vkFreeCommandBuffers(device, vk->staging_pool, 1, &node->cmd);
-   if (node->staging_tex.memory != VK_NULL_HANDLE)
-      vulkan_destroy_texture(device, &node->staging_tex);
-   if (node->staging_buffer != VK_NULL_HANDLE)
-      vkDestroyBuffer(device, node->staging_buffer, NULL);
-   if (node->staging_memory != VK_NULL_HANDLE)
-      vkFreeMemory(device, node->staging_memory, NULL);
-   vulkan_deferred_fence_recycle(vk, node->fence);
+   while (stage)
+   {
+      struct vk_deferred_staging *next = stage->next;
+      if (stage->tex.memory != VK_NULL_HANDLE)
+         vulkan_destroy_texture(device, &stage->tex);
+      if (stage->buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(device, stage->buffer, NULL);
+      if (stage->memory != VK_NULL_HANDLE)
+         vkFreeMemory(device, stage->memory, NULL);
+      free(stage);
+      stage = next;
+   }
+   if (node->fence != VK_NULL_HANDLE)
+      vulkan_deferred_fence_recycle(vk, node->fence);
    free(node);
 }
 
-/* Submit a one-shot staging command buffer. Ownership of the command
- * buffer and of the optional staging texture / raw staging buffer
- * passes to the deferred list, which releases them once the upload's
- * fence has signalled. If a node or fence cannot be obtained the
- * upload is waited for here and everything is released before
- * returning - on the upload's own fence, with nothing held. That wait
- * used to be vkQueueWaitIdle under queue_lock: it drained whatever a
- * hardware core had on the queue as well, and kept the core out of
- * lock_queue for as long as that took. */
-static void vulkan_submit_deferred_cmd(vk_t *vk,
-      VkCommandBuffer cmd,
-      struct vk_texture *staging_tex,
-      VkBuffer staging_buffer, VkDeviceMemory staging_memory)
+/* The batch's command buffer, open for recording; a new one is begun
+ * when none is. VK_NULL_HANDLE when one could not be made. */
+static VkCommandBuffer vulkan_upload_batch_cmd(vk_t *vk)
+{
+   VkCommandBufferAllocateInfo cmd_info;
+   VkCommandBufferBeginInfo begin_info;
+   struct vk_deferred_cmd *node;
+
+   if (vk->upload_batch)
+      return vk->upload_batch->cmd;
+   if (vk->staging_pool == VK_NULL_HANDLE)
+      return VK_NULL_HANDLE;
+   if (!(node = (struct vk_deferred_cmd*)calloc(1, sizeof(*node))))
+      return VK_NULL_HANDLE;
+
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.pNext              = NULL;
+   cmd_info.commandPool        = vk->staging_pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = 1;
+   if (vkAllocateCommandBuffers(vk->context->device, &cmd_info,
+            &node->cmd) != VK_SUCCESS)
+   {
+      free(node);
+      return VK_NULL_HANDLE;
+   }
+
+   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext            = NULL;
+   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo = NULL;
+   vkBeginCommandBuffer(node->cmd, &begin_info);
+   vk->upload_batch            = node;
+   return node->cmd;
+}
+
+/* What the batch's commands read from, released with it once its
+ * fence has signalled. Without a batch open, or memory to remember
+ * it, the copy was never recorded or cannot be waited for: it goes
+ * now. */
+static void vulkan_upload_batch_keep(vk_t *vk,
+      const struct vk_texture *tex, VkBuffer buffer,
+      VkDeviceMemory memory)
+{
+   struct vk_deferred_staging *stage = vk->upload_batch
+      ? (struct vk_deferred_staging*)malloc(sizeof(*stage)) : NULL;
+   if (!stage)
+   {
+      VkDevice device = vk->context->device;
+      if (tex)
+         vulkan_destroy_texture(device, (struct vk_texture*)tex);
+      if (buffer != VK_NULL_HANDLE)
+         vkDestroyBuffer(device, buffer, NULL);
+      if (memory != VK_NULL_HANDLE)
+         vkFreeMemory(device, memory, NULL);
+      return;
+   }
+   if (tex)
+      stage->tex = *tex;
+   else
+      stage->tex.memory = VK_NULL_HANDLE;
+   stage->buffer           = buffer;
+   stage->memory           = memory;
+   stage->next             = vk->upload_batch->staging;
+   vk->upload_batch->staging = stage;
+}
+
+/* Submits the open batch ahead of whatever the caller submits next;
+ * it is released once its fence has signalled. With no fence to be
+ * had the upload is waited for here, on the driver's own fence, and
+ * released before returning. */
+static void vulkan_upload_batch_submit(vk_t *vk)
 {
    VkSubmitInfo submit_info;
-   VkFence fence               = VK_NULL_HANDLE;
-   struct vk_deferred_cmd *node =
-      (struct vk_deferred_cmd*)malloc(sizeof(*node));
+   struct vk_deferred_cmd *node = vk->upload_batch;
+   VkFence fence;
 
-   if (node)
+   if (!node)
+      return;
+   vk->upload_batch = NULL;
+   vkEndCommandBuffer(node->cmd);
+
+   fence = vulkan_deferred_fence_acquire(vk);
+   if (fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
    {
-      if ((fence = vulkan_deferred_fence_acquire(vk)) == VK_NULL_HANDLE)
-      {
-         free(node);
-         node = NULL;
-      }
+      fence = vk->sync_fence;
+      vkResetFences(vk->context->device, 1, &fence);
    }
 
    submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -1472,17 +1553,9 @@ static void vulkan_submit_deferred_cmd(vk_t *vk,
    submit_info.pWaitSemaphores      = NULL;
    submit_info.pWaitDstStageMask    = NULL;
    submit_info.commandBufferCount   = 1;
-   submit_info.pCommandBuffers      = &cmd;
+   submit_info.pCommandBuffers      = &node->cmd;
    submit_info.signalSemaphoreCount = 0;
    submit_info.pSignalSemaphores    = NULL;
-
-   /* Nothing to defer it with: the upload is waited on below, on the
-    * driver's fence. */
-   if (!node && fence == VK_NULL_HANDLE && vk->sync_fence != VK_NULL_HANDLE)
-   {
-      fence = vk->sync_fence;
-      vkResetFences(vk->context->device, 1, &fence);
-   }
 
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -1491,36 +1564,24 @@ static void vulkan_submit_deferred_cmd(vk_t *vk,
 #ifdef HAVE_THREADS
    slock_unlock(vk->context->queue_lock);
 #endif
+   GFX_INSTR_INC(GFX_INSTR_UPLOAD_SUBMIT);
 
-   if (!node)
+   if (fence == VK_NULL_HANDLE || fence == vk->sync_fence)
    {
-      VkDevice device = vk->context->device;
       /* Not even the driver's fence (it could not be created): there
        * is nothing to wait on, and freeing these under the GPU is
        * worse than leaving them to the device teardown. */
       if (fence == VK_NULL_HANDLE)
          return;
-      vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX);
-      vkFreeCommandBuffers(device, vk->staging_pool, 1, &cmd);
-      if (staging_tex)
-         vulkan_destroy_texture(device, staging_tex);
-      if (staging_buffer != VK_NULL_HANDLE)
-         vkDestroyBuffer(device, staging_buffer, NULL);
-      if (staging_memory != VK_NULL_HANDLE)
-         vkFreeMemory(device, staging_memory, NULL);
+      vkWaitForFences(vk->context->device, 1, &fence, VK_TRUE, UINT64_MAX);
+      node->fence = VK_NULL_HANDLE;
+      vulkan_deferred_cmd_release(vk, node);
       return;
    }
 
-   if (staging_tex)
-      node->staging_tex = *staging_tex;
-   else
-      node->staging_tex.memory = VK_NULL_HANDLE;
-   node->staging_buffer = staging_buffer;
-   node->staging_memory = staging_memory;
-   node->fence          = fence;
-   node->cmd            = cmd;
-   node->next           = vk->deferred_cmds;
-   vk->deferred_cmds    = node;
+   node->fence       = fence;
+   node->next        = vk->deferred_cmds;
+   vk->deferred_cmds = node;
 }
 
 /* Driver teardown, after the queue is idle: stream state of textures
@@ -1705,6 +1766,8 @@ static void vulkan_wait_own_submissions(vk_t *vk)
       vkWaitForFences(vk->context->device, count, fences, VK_TRUE,
             UINT64_MAX);
 
+   /* A batch still open goes now, so what it uploads is whole */
+   vulkan_upload_batch_submit(vk);
    for (node = vk->deferred_cmds; node; node = node->next)
       vkWaitForFences(vk->context->device, 1, &node->fence, VK_TRUE,
             UINT64_MAX);
@@ -2200,8 +2263,6 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
             {
                VkBufferImageCopy region;
                VkCommandBuffer staging;
-               VkCommandBufferBeginInfo begin_info;
-               VkCommandBufferAllocateInfo cmd_info;
                enum VkImageLayout layout_fmt =
                   (tex.flags & VK_TEX_FLAG_MIPMAP)
                   ? VK_IMAGE_LAYOUT_GENERAL
@@ -2209,21 +2270,11 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                struct vk_texture tmp                = vulkan_create_texture(vk, NULL,
                      width, height, format, initial, NULL, VULKAN_TEXTURE_STAGING);
 
-               cmd_info.sType                       = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-               cmd_info.pNext                       = NULL;
-               cmd_info.commandPool                 = vk->staging_pool;
-               cmd_info.level                       = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-               cmd_info.commandBufferCount          = 1;
-
-               vkAllocateCommandBuffers(vk->context->device,
-                     &cmd_info, &staging);
-
-               begin_info.sType                     = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-               begin_info.pNext                     = NULL;
-               begin_info.flags                     = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-               begin_info.pInheritanceInfo          = NULL;
-
-               vkBeginCommandBuffer(staging, &begin_info);
+               if ((staging = vulkan_upload_batch_cmd(vk)) == VK_NULL_HANDLE)
+               {
+                  vulkan_destroy_texture(vk->context->device, &tmp);
+                  break;
+               }
 
                /* If doing mipmapping on upload, keep in general
                 * so we can easily do transfers to
@@ -2309,14 +2360,10 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
                      VK_PIPELINE_STAGE_TRANSFER_BIT,
                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-               vkEndCommandBuffer(staging);
-
-               /* Queue order places the upload ahead of the frame
-                * that first samples the texture; the staging copy
-                * is released with the command buffer once that
-                * frame retires. */
-               vulkan_submit_deferred_cmd(vk, staging, &tmp,
-                     VK_NULL_HANDLE, VK_NULL_HANDLE);
+               /* The batch goes ahead of the frame that first samples
+                * the texture; the staging copy is released with it. */
+               vulkan_upload_batch_keep(vk, &tmp, VK_NULL_HANDLE,
+                     VK_NULL_HANDLE);
                tex.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             }
             break;
@@ -2341,30 +2388,14 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
          && tex.layout == VK_IMAGE_LAYOUT_PREINITIALIZED
          && vk->staging_pool != VK_NULL_HANDLE)
    {
-      VkCommandBuffer staging;
-      VkCommandBufferBeginInfo begin_info;
-      VkCommandBufferAllocateInfo cmd_info;
-
-      cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-      cmd_info.pNext              = NULL;
-      cmd_info.commandPool        = vk->staging_pool;
-      cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-      cmd_info.commandBufferCount = 1;
-      if (vkAllocateCommandBuffers(device, &cmd_info, &staging) == VK_SUCCESS)
+      VkCommandBuffer staging = vulkan_upload_batch_cmd(vk);
+      if (staging != VK_NULL_HANDLE)
       {
-         begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-         begin_info.pNext            = NULL;
-         begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-         begin_info.pInheritanceInfo = NULL;
-         vkBeginCommandBuffer(staging, &begin_info);
          VULKAN_IMAGE_LAYOUT_TRANSITION(staging, tex.image,
                VK_IMAGE_LAYOUT_PREINITIALIZED, VK_IMAGE_LAYOUT_GENERAL,
                VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
                VK_PIPELINE_STAGE_HOST_BIT,
                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-         vkEndCommandBuffer(staging);
-         vulkan_submit_deferred_cmd(vk, staging, NULL,
-               VK_NULL_HANDLE, VK_NULL_HANDLE);
          tex.layout = VK_IMAGE_LAYOUT_GENERAL;
       }
    }
@@ -3769,9 +3800,7 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
 
          if (dw > 0 && dh > 0)
          {
-            VkCommandBuffer staging_cmd;
-            VkCommandBufferAllocateInfo cmd_info;
-            VkCommandBufferBeginInfo begin_info;
+            VkCommandBuffer staging_cmd = vulkan_upload_batch_cmd(vk);
             VkBufferImageCopy region;
             /* UNDEFINED as oldLayout lets the implementation discard
              * the whole image. That is only sound when the copy
@@ -3786,19 +3815,8 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
                ? VK_IMAGE_LAYOUT_UNDEFINED
                : dynamic_tex->layout;
 
-            cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-            cmd_info.pNext              = NULL;
-            cmd_info.commandPool        = vk->staging_pool;
-            cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            cmd_info.commandBufferCount = 1;
-            vkAllocateCommandBuffers(vk->context->device,
-                  &cmd_info, &staging_cmd);
-
-            begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-            begin_info.pNext            = NULL;
-            begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-            begin_info.pInheritanceInfo = NULL;
-            vkBeginCommandBuffer(staging_cmd, &begin_info);
+            if (staging_cmd == VK_NULL_HANDLE)
+               return;
 
             /* Naming the real source scope also gives this barrier a
              * non-empty first synchronisation scope, which covers
@@ -3857,15 +3875,10 @@ static void vulkan_font_upload_atlas(vk_t *vk, vulkan_raster_t *font)
                   VK_PIPELINE_STAGE_TRANSFER_BIT,
                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-            vkEndCommandBuffer(staging_cmd);
-
-            /* The copy lands ahead of this frame's command buffer in
+            /* The batch lands ahead of this frame's command buffer in
              * queue submission order and the trailing barrier makes it
              * visible to the fragment stage, so the glyphs drawn below
              * sample the updated atlas without a CPU wait. */
-            vulkan_submit_deferred_cmd(vk, staging_cmd, NULL,
-                  VK_NULL_HANDLE, VK_NULL_HANDLE);
-
             dynamic_tex->layout =
                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
@@ -7998,6 +8011,7 @@ static bool vulkan_present_retained_once(vk_t *vk)
    submit_info.pWaitSemaphores    = wait_sems;
    submit_info.pWaitDstStageMask  = wait_stages;
 
+   vulkan_upload_batch_submit(vk);
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
@@ -8208,6 +8222,7 @@ static void vulkan_inject_black_frame(vk_t *vk, video_frame_info_t *video_info)
    submit_info.pWaitSemaphores    = wait_sems;
    submit_info.pWaitDstStageMask  = wait_stages;
 
+   vulkan_upload_batch_submit(vk);
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
@@ -9793,6 +9808,9 @@ static bool vulkan_frame(void *data, const void *frame,
    }
    submit_info.pSignalSemaphores = submit_info.signalSemaphoreCount ? signal_semaphores : NULL;
 
+   /* What this frame's textures were loaded with goes ahead of it */
+   vulkan_upload_batch_submit(vk);
+
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
 #endif
@@ -10534,6 +10552,8 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    submit_info.signalSemaphoreCount = 0;
    submit_info.pSignalSemaphores    = NULL;
 
+   /* The texture's own upload, if still batched, goes first */
+   vulkan_upload_batch_submit(vk);
    vkResetFences(device, 1, &st->fence[slot]);
 #ifdef HAVE_THREADS
    slock_lock(vk->context->queue_lock);
@@ -10684,8 +10704,6 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    VkMemoryRequirements    mem_reqs;
    VkMemoryAllocateInfo    alloc;
    VkBufferCreateInfo      buffer_info;
-   VkCommandBufferAllocateInfo cmd_info;
-   VkCommandBufferBeginInfo    begin_info;
    VkBufferImageCopy       regions[IMAGE_MAX_MIPS];
    VkBuffer                staging     = VK_NULL_HANDLE;
    VkDeviceMemory          staging_mem = VK_NULL_HANDLE;
@@ -10784,19 +10802,16 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
    }
    vkUnmapMemory(device, staging_mem);
 
-   /* One-shot copy: UNDEFINED -> TRANSFER_DST -> SHADER_READ_ONLY. */
-   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-   cmd_info.pNext              = NULL;
-   cmd_info.commandPool        = vk->staging_pool;
-   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-   cmd_info.commandBufferCount = 1;
-   vkAllocateCommandBuffers(device, &cmd_info, &cmd);
-
-   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-   begin_info.pNext            = NULL;
-   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-   begin_info.pInheritanceInfo = NULL;
-   vkBeginCommandBuffer(cmd, &begin_info);
+   /* The copy: UNDEFINED -> TRANSFER_DST -> SHADER_READ_ONLY. */
+   if ((cmd = vulkan_upload_batch_cmd(vk)) == VK_NULL_HANDLE)
+   {
+      vkDestroyBuffer(device, staging, NULL);
+      vkFreeMemory(device, staging_mem, NULL);
+      vkFreeMemory(device, texture->memory, NULL);
+      vkDestroyImage(device, texture->image, NULL);
+      free(texture);
+      return 0;
+   }
 
    VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -10812,9 +10827,7 @@ static uintptr_t vulkan_load_texture_compressed_internal(vk_t *vk,
          VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
-   vkEndCommandBuffer(cmd);
-
-   vulkan_submit_deferred_cmd(vk, cmd, NULL, staging, staging_mem);
+   vulkan_upload_batch_keep(vk, NULL, staging, staging_mem);
 
    memset(&view, 0, sizeof(view));
    view.sType                       = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
