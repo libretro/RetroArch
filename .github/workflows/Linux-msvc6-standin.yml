@@ -32,7 +32,8 @@ jobs:
           set -eu
           sudo apt-get update -qq
           sudo apt-get install -y -qq --no-install-recommends \
-            gcc-mingw-w64-i686 g++-mingw-w64-i686
+            gcc-mingw-w64-i686 g++-mingw-w64-i686 \
+            gcc-mingw-w64-x86-64 wine64 pulseaudio
 
       - name: Checkout
         uses: actions/checkout@v5
@@ -48,3 +49,26 @@ jobs:
           # links it. See the script for what that does and does not
           # catch.
           tools/msvc6_standin_check.sh
+
+      - name: Run the waveout audio driver on a wave output device (Wine)
+        working-directory: samples/audio/waveout
+        shell: bash
+        run: |
+          set -eu
+          # The audio driver the Visual C++ 6 project uses: the
+          # multimedia library's wave output, which is all a Windows
+          # with no DirectX has. Run for real against a device - a
+          # silent one, from a sound server started here - and held to
+          # what the audio interface says of a driver. With no device
+          # the test only skips, which checks nothing: that is a
+          # failure here.
+          trap 'wineserver -k >/dev/null 2>&1 || true; pulseaudio --kill >/dev/null 2>&1 || true' EXIT
+          pulseaudio --start --exit-idle-time=-1
+          pactl load-module module-null-sink sink_name=ci >/dev/null
+          pactl set-default-sink ci
+          WINE=$(command -v wine64 || command -v wine || echo /usr/lib/wine/wine64)
+          make clean all
+          WINEDEBUG=-all timeout 300 make check WINE="$WINE" | tee waveout.log
+          grep -q "PASS waveout_test" waveout.log
+          make clean
+          rm -f waveout.log
