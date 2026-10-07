@@ -1751,6 +1751,7 @@ typedef struct
    bool     any_key_down;   /* key_down may hold a bit: it wants clearing when the keys go */
    uint16_t key[RARCH_BIND_LIST_END];    /* the n-th bind that names a key */
    uint8_t  bind[RARCH_BIND_LIST_END];   /* ... and which bind that is */
+   uint8_t  mbutton[RARCH_BIND_LIST_END]; /* by bind: its mouse button, where has_mbutton says it has one */
    unsigned binds_gen;                   /* the change count + 1 it was made at */
    unsigned poll_gen;                    /* the poll key_down[] is from */
    uint16_t pad_keys;                    /* key_down for the RetroPad's sixteen */
@@ -1801,7 +1802,10 @@ static void input_port_keys_refresh(input_port_keys_t *k,
             k->bind[k->count++] = (uint8_t)i;
          }
          if (RETRO_KEYBIND_MBUTTON(&binds[i]) <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+         {
             k->has_mbutton[i >> 5] |= (1u << (i & 31));
+            k->mbutton[i]           = (uint8_t)RETRO_KEYBIND_MBUTTON(&binds[i]);
+         }
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
       k->any_mbutton  = false;
@@ -1934,7 +1938,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
       for (; mouse; mouse &= mouse - 1)
       {
          i = (unsigned)compat_ctz(mouse);
-         if (input_bind_mouse_button_down(k, port, RETRO_KEYBIND_MBUTTON(&binds[i])))
+         if (input_bind_mouse_button_down(k, port, k->mbutton[i]))
             ret |= (1u << i);
       }
       return (int16_t)ret;
@@ -1947,7 +1951,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
             && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
          return 1;
       if (     (k->has_mbutton[id >> 5] & bit)
-            && input_bind_mouse_button_down(k, port, RETRO_KEYBIND_MBUTTON(&binds[id])))
+            && input_bind_mouse_button_down(k, port, k->mbutton[id]))
          return 1;
    }
    return 0;
@@ -2039,15 +2043,43 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
    *held  = 0;
    new_id = input_driver_lightgun_id_convert(id);
 
-   if (new_id < RARCH_BIND_LIST_END && RETRO_KEYBIND_VALID(&binds[new_id]))
+   if (new_id < RARCH_BIND_LIST_END)
    {
-      const input_port_keys_t *k = input_port_keys_get(input, data, port);
-      uint16_t joykey  = (binds[new_id].joykey != NO_BTN)
-         ? binds[new_id].joykey
-         : input_autoconf_binds[port][new_id].joykey;
-      uint32_t joyaxis = (binds[new_id].joyaxis != AXIS_NONE)
-         ? binds[new_id].joyaxis
-         : input_autoconf_binds[port][new_id].joyaxis;
+      /* What is behind the button is kept, and read from there: the
+       * pad's button and axis with the RetroPad's (the port's own bind,
+       * or its controller's profile's), the key and the mouse button
+       * with the port's keys. A bind that is not usable is in none of
+       * them. Only a read by another controller than the port's own
+       * goes to the bind tables for the pad, as it always did. */
+      const input_port_keys_t *k    = input_port_keys_get(input, data, port);
+      const input_port_pads_t *pads = NULL;
+      uint32_t bit                  = (1u << (new_id & 31));
+      uint16_t joykey               = NO_BTN;
+      uint32_t joyaxis              = AXIS_NONE;
+
+      /* no controller's pad could be behind it - no controller at all,
+       * most of the time: nothing to choose, and nothing made for the
+       * port to choose from */
+      if (!(k->has_pad[new_id >> 5] & bit))
+         ;
+      else if ((pads = (port < MAX_USERS)
+               ? input_port_pads_for(port, joypad_info) : NULL))
+      {
+         if (pads->pad_ok[new_id >> 5] & bit)
+         {
+            joykey  = pads->key[new_id];
+            joyaxis = pads->axis[new_id];
+         }
+      }
+      else if (RETRO_KEYBIND_VALID(&binds[new_id]))
+      {
+         joykey  = (binds[new_id].joykey != NO_BTN)
+            ? binds[new_id].joykey
+            : input_autoconf_binds[port][new_id].joykey;
+         joyaxis = (binds[new_id].joyaxis != AXIS_NONE)
+            ? binds[new_id].joyaxis
+            : input_autoconf_binds[port][new_id].joyaxis;
+      }
 
       if (joypad && joykey != NO_BTN && joypad->button
             && joypad->button(joypad_info->joy_idx, joykey))
@@ -2057,13 +2089,12 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
                / 0x8000) > joypad_info->axis_threshold)
          *held = 1;
       else if (  !keyboard_mapping_blocked
-              && (k->key_down[new_id >> 5] & (1u << (new_id & 31))))
+              && (k->key_down[new_id >> 5] & bit))
          *held = 1;
-      else if (k->mouse_from_driver
-            ? input_bind_mouse_button_down(k, port,
-               RETRO_KEYBIND_MBUTTON(&binds[new_id]))
-            : input_gun_mouse_button_down(port,
-               RETRO_KEYBIND_MBUTTON(&binds[new_id])))
+      else if (     (k->has_mbutton[new_id >> 5] & bit)
+            && (k->mouse_from_driver
+               ? input_bind_mouse_button_down(k, port, k->mbutton[new_id])
+               : input_gun_mouse_button_down(port, k->mbutton[new_id])))
          *held = 1;
    }
    return true;
