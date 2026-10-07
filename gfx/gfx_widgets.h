@@ -263,9 +263,6 @@ typedef struct dispgfx_widget
 #ifdef HAVE_TRANSLATE
    gfx_surface_t *ai_service_overlay_texture;
 #endif
-   uintptr_t msg_queue_icon;
-   uintptr_t msg_queue_icon_outline;
-   uintptr_t msg_queue_icon_rect;
    gfx_surface_t *gfx_widgets_icons_textures[
    MENU_WIDGETS_ICON_LAST];
    uintptr_t gfx_widgets_generic_tag;
