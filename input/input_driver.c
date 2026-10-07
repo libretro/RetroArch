@@ -1830,6 +1830,11 @@ typedef struct
    uint8_t  count;
    bool     any_mbutton;                 /* some bind names a mouse button */
    bool     mouse_from_driver;           /* ... and the driver answers for it */
+   /* The RetroPad's sixteen: the bind is usable. Last, in what was
+    * padding: the structure is the size it was and nothing in it has
+    * moved - put among the other masks it cost every reader of the
+    * rest an instruction or two an access. */
+   uint16_t usable16;
 } input_port_keys_t;
 
 static input_port_keys_t input_port_keys[MAX_USERS];
@@ -1850,6 +1855,7 @@ static void input_port_keys_refresh(input_port_keys_t *k,
          input_autoconf_any_pad_refresh(gen);
       k->count     = 0;
       k->pad_any16 = 0;
+      k->usable16  = 0;
       memset(k->has_mbutton, 0, sizeof(k->has_mbutton));
       memset(k->has_pad, 0, sizeof(k->has_pad));
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
@@ -1863,6 +1869,8 @@ static void input_port_keys_refresh(input_port_keys_t *k,
             k->pad_any16 |= (uint16_t)(1u << i);
          if (!RETRO_KEYBIND_VALID(&binds[i]))
             continue;
+         if (i < RARCH_FIRST_CUSTOM_BIND)
+            k->usable16 |= (uint16_t)(1u << i);
          if (pad)
             k->has_pad[i >> 5] |= (1u << (i & 31));
          key = RETRO_KEYBIND_KEY(&binds[i]);
@@ -4013,12 +4021,11 @@ static bool input_state_device_mask_plain(
       int32_t ret, unsigned port, int16_t *out)
 {
    unsigned id;
-   unsigned pass  = 0;  /* buttons the pad's and the keys' state reaches the core for */
+   unsigned pass;       /* buttons the pad's and the keys' state reaches the core for */
+   unsigned usable;     /* buttons whose bind is usable */
    unsigned ident = 0;  /* buttons remapped to themselves */
    unsigned res;
    const unsigned *remap_ids             = settings->uints.input_remap_ids[port];
-   const struct retro_keybind *binds     = input_st->libretro_input_binds[port]
-      ? *input_st->libretro_input_binds[port] : NULL;
 
 #ifdef HAVE_NETWORKGAMEPAD
    /* the Remote RetroPad answers for a button in place of the binds */
@@ -4034,13 +4041,28 @@ static bool input_state_device_mask_plain(
       return false;
 
    for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
-   {
-      bool same = (remap_ids[id] == id);
-      if (same)
+      if (remap_ids[id] == id)
          ident |= (1u << id);
-      if (same || !binds || !RETRO_KEYBIND_VALID(&binds[id]))
-         pass  |= (1u << id);
+
+   /* Which of the sixteen have a usable bind: kept with the port's
+    * keys, which this read of the pad has just been through. Each
+    * bind's record was looked at for it, sixteen of them a port a
+    * frame. Where what is kept is not of the binds as they are - an
+    * input driver that gives no list of keys keeps none - the records
+    * are looked at as before. */
+   if (input_port_keys[port].binds_gen == input_config_binds_generation() + 1)
+      usable = input_port_keys[port].usable16;
+   else
+   {
+      const struct retro_keybind *binds = input_st->libretro_input_binds[port]
+         ? *input_st->libretro_input_binds[port] : NULL;
+      usable = 0;
+      for (id = 0; binds && id < RARCH_FIRST_CUSTOM_BIND; id++)
+         if (RETRO_KEYBIND_VALID(&binds[id]))
+            usable |= (1u << id);
    }
+   /* remapped to themselves, or with no usable bind */
+   pass = ident | (~usable & 0xffff);
 
    res = ((unsigned)ret & pass)
       | (handle->buttons[port].data[0] & 0xffff);

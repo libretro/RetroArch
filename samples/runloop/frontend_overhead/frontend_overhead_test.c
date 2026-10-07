@@ -4407,6 +4407,160 @@ static void lane_stick_sources(void)
 #endif
 }
 
+/* The RetroPad as a mask, and as sixteen buttons. A core that asks for
+ * the mask is answered in one go where the port has no hold or turbo
+ * going, from three masks; one of them is which of the sixteen have a
+ * usable bind, and that is kept with the port's keys rather than read
+ * off sixteen records. A core that asks a button at a time goes by
+ * each bind's record. The two must say the same: with every bind
+ * usable, with a button remapped to another, with that button's bind
+ * not usable as well - then the pad's own B reaches the core again,
+ * which is the kept bits' doing - and as soon as either changes.
+ *
+ * Twice: with the harness's own input driver, which gives no list of
+ * keys, so that nothing is kept and the records are read; and with one
+ * that does, so that the kept bits are what is read. */
+static void mb_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   /* a keyboard with nothing held */
+   (void)data; (void)port; (void)keys; (void)bind; (void)count; (void)down;
+}
+
+static void lane_mask_and_buttons(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[RARCH_FIRST_CUSTOM_BIND];
+   struct retro_keybind saved_own[RARCH_FIRST_CUSTOM_BIND];
+   unsigned saved_remap_b = settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B];
+   input_driver_t *saved_input = input_st->current_driver;
+   static input_driver_t mb_input;
+   unsigned had           = failures;
+   unsigned i, step, with_keys;
+   static const char *const what[] = {
+      "every bind usable", "B remapped to Y",
+      "B remapped to Y and its bind not usable",
+      "B's bind usable again, still remapped", "the remap undone" };
+
+   if (!joypad_real)
+   {
+      CHECK(false, "mask and buttons: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   memcpy(saved_auto, input_autoconf_binds[0], sizeof(saved_auto));
+   memcpy(saved_own,  input_config_binds[0],   sizeof(saved_own));
+   /* the profile: the RetroPad's n-th on the pad's n-th button */
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      input_config_binds[0][i].joykey    = NO_BTN;
+      input_config_binds[0][i].joyaxis   = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(&input_config_binds[0][i], true);
+      input_autoconf_binds[0][i].joykey  = (uint16_t)i;
+      input_autoconf_binds[0][i].joyaxis = AXIS_NONE;
+   }
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+   /* held: B, Y, Start and A */
+   syn_buttons = (1u << RETRO_DEVICE_ID_JOYPAD_B) | (1u << RETRO_DEVICE_ID_JOYPAD_Y)
+               | (1u << RETRO_DEVICE_ID_JOYPAD_START) | (1u << RETRO_DEVICE_ID_JOYPAD_A);
+
+   for (with_keys = 0; with_keys < 2; with_keys++)
+   {
+   if (with_keys && saved_input)
+   {
+      mb_input                 = *saved_input;
+      mb_input.keys_down       = mb_keys_down;
+      input_st->current_driver = &mb_input;
+      binds_written_by_a_lane();
+      run_loop_frames(2);
+   }
+   for (step = 0; step < 5; step++)
+   {
+      unsigned mask, buttons = 0;
+      switch (step)
+      {
+         case 1:
+            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_Y;
+            break;
+         case 2:
+            /* remapped and not usable: its own state passes again */
+            RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B], false);
+            break;
+         case 3:
+            RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B], true);
+            break;
+         case 4:
+            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = saved_remap_b;
+            break;
+         default:
+            break;
+      }
+      if (step)
+         binds_written_by_a_lane();
+      input_driver_poll();
+      mask = (unsigned)input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0,
+            RETRO_DEVICE_ID_JOYPAD_MASK) & 0xffff;
+      input_driver_poll();
+      for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+         if (input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, i))
+            buttons |= (1u << i);
+      if (mask != buttons)
+      {
+         fprintf(stderr, "FAIL: mask and buttons: with %s the mask is %04x and"
+               " the buttons, one at a time, are %04x (input driver %s a list"
+               " of keys)\n", what[step], mask, buttons,
+               with_keys ? "with" : "without");
+         failures++;
+      }
+      if (step == 0 && mask != syn_buttons)
+      {
+         fprintf(stderr, "FAIL: mask and buttons: four buttons held read %04x\n", mask);
+         failures++;
+      }
+      /* B is on Y while it is remapped and usable, and itself again
+       * when its bind is not */
+      if (     (step == 1 && (mask & (1u << RETRO_DEVICE_ID_JOYPAD_B)))
+            || (step == 2 && !(mask & (1u << RETRO_DEVICE_ID_JOYPAD_B))))
+      {
+         fprintf(stderr, "FAIL: mask and buttons: with %s the mask is %04x"
+               " (input driver %s a list of keys)\n", what[step], mask,
+               with_keys ? "with" : "without");
+         failures++;
+      }
+   }
+   }
+   input_st->current_driver = saved_input;
+
+   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = saved_remap_b;
+   memcpy(input_autoconf_binds[0], saved_auto, sizeof(saved_auto));
+   memcpy(input_config_binds[0],   saved_own,  sizeof(saved_own));
+   binds_written_by_a_lane();
+   syn_buttons = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] mask and buttons: the RetroPad read as a mask is the"
+            " sixteen read one at a time, with a bind not usable and a"
+            " button remapped, from the records and from what is kept\n");
+#else
+   printf("[skip] mask and buttons: needs the test drivers\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -5733,6 +5887,7 @@ int main(int argc, char *argv[])
       lane_restart_hold();
       lane_sticks_read_once();
       lane_stick_sources();
+      lane_mask_and_buttons();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
