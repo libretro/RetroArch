@@ -6502,6 +6502,18 @@ static uintptr_t gl3_load_texture_compressed(void *video_data,
    return gl3_upload_texture_compressed(tc, filter_type);
 }
 
+/* When the most recent swap reached the display, as the window
+ * system's context reports it: the gl driver passes this on to the
+ * threaded presenter, and this one gave it nothing, so with glcore the
+ * presenter laid its vblanks from its own clock on every platform. */
+static retro_time_t gl3_get_last_present_time(void *data)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (gl && gl->ctx_driver && gl->ctx_driver->last_present_time)
+      return gl->ctx_driver->last_present_time(gl->ctx_data);
+   return 0;
+}
+
 static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_flags,
    gl3_load_texture,
@@ -6532,7 +6544,7 @@ static const video_poke_interface_t gl3_poke_interface = {
    gl3_supports_texture_format,
    gl3_load_texture_compressed,
    NULL, /* present_last */
-   NULL, /* get_last_present_time */
+   gl3_get_last_present_time,
    NULL, /* hw_ring_install: Vulkan-shaped */
    gl3_hw_ring_fence_new,
    gl3_hw_ring_fence_free,
