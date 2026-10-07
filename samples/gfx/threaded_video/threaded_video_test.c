@@ -4756,6 +4756,9 @@ static void lane_surface_external(void)
       uint32_t *p8  = (uint32_t*)malloc(n * sizeof(uint32_t));
       uintptr_t first = 0;
       unsigned  k, tries;
+#ifdef HAVE_GFX_INSTRUMENT
+      gfx_instrument_reset();
+#endif
       s = gfx_surface_new_static(VIDEO_SCALE_PACK(64, 48),
             TEXTURE_FILTER_LINEAR);
       CHECK(s && ph && p8, "fp16 lane: allocation failed");
@@ -4841,6 +4844,14 @@ static void lane_surface_external(void)
          gfx_surface_free(s);
          run_frames(2);
       }
+#ifdef HAVE_GFX_INSTRUMENT
+      /* A refused update loads a replacement, and GL hands the deleted
+       * name straight back: the handle cannot tell, the count can. */
+      if (video_driver_texture_can_update())
+         CHECK(gfx_instrument_get(GFX_INSTR_TEX_UPDATE_REFUSED) == 0,
+               "fp16 lane: the driver refused %d half-float updates",
+               gfx_instrument_get(GFX_INSTR_TEX_UPDATE_REFUSED));
+#endif
       if (failures == had)
          fprintf(stderr, "[pass] fp16 surface lane (still load, update, "
                "reload as 8888; stream in place)\n");

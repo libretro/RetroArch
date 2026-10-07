@@ -187,6 +187,8 @@ struct gl2
 
    char device_str[128];
    bool pbo_readback_valid[4];
+   /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */
+   bool fp16_textures;
    /* scRGB (FP16) default framebuffer support (Windows/WGL HDR):
     * everything renders into this SDR offscreen and one GLSL 1.20
     * pass encodes it into the FP16 backbuffer at end of frame.
@@ -209,7 +211,19 @@ struct gl2
       GLint    loc_mode;
       GLint    loc_ui_nits;
       GLint    loc_out_pq;
+      /* Draws a half-float texture, linear scRGB, into the SDR layer
+       * as the encode's inverse (gl2_linear_program) */
+      GLuint   lin_program;
+      GLint    lin_loc_mvp;
+      GLint    lin_loc_tex;
+      GLint    lin_loc_params;
+      bool     lin_tried;
       bool   active;
+      /* At init: the SDR layer can be RGBA16F, so a linear texture
+       * keeps what is above menu white (TEXTURE_GPU_FORMAT_SCRGB) */
+      bool     fp16_ok;
+      /* The SDR layer is RGBA16F */
+      bool     tex_fp16;
       /* The backbuffer is 10-bit Rec.2020 PQ, not FP16 scRGB */
       bool   pq_out;
       /* The HDR settings this frame carried (video_frame_info_t), so the

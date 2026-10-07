@@ -106,6 +106,70 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #ifndef GL_UNSIGNED_INT_2_10_10_10_REV
 #define GL_UNSIGNED_INT_2_10_10_10_REV    0x8368
 #endif
+#ifndef GL_RGBA16F
+#define GL_RGBA16F                        0x881A
+#endif
+#ifndef GL_HALF_FLOAT
+#define GL_HALF_FLOAT                     0x140B
+#endif
+
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+/* The names of the RGBA16F textures gl2_load_texture made: those are
+ * linear scRGB and drawn through gl2_linear_program. Loads, unloads and
+ * draws all run on the thread that owns the context. */
+static GLuint  *gl2_fp16_tex;
+static unsigned gl2_fp16_count;
+static unsigned gl2_fp16_cap;
+/* One was loaded since init: the SDR layer turns RGBA16F for good, so
+ * a session with no linear texture keeps the 8-bit layer */
+static bool     gl2_fp16_loaded;
+
+static void gl2_fp16_remember(GLuint id)
+{
+   if (gl2_fp16_count == gl2_fp16_cap)
+   {
+      unsigned cap  = gl2_fp16_cap ? gl2_fp16_cap * 2 : 32;
+      GLuint *grown = (GLuint*)realloc(gl2_fp16_tex, cap * sizeof(*grown));
+      if (!grown)
+         return;
+      gl2_fp16_tex = grown;
+      gl2_fp16_cap = cap;
+   }
+   gl2_fp16_tex[gl2_fp16_count++] = id;
+   gl2_fp16_loaded                = true;
+}
+
+static void gl2_fp16_forget(GLuint id)
+{
+   unsigned i;
+   for (i = 0; i < gl2_fp16_count; i++)
+      if (gl2_fp16_tex[i] == id)
+      {
+         gl2_fp16_tex[i] = gl2_fp16_tex[--gl2_fp16_count];
+         return;
+      }
+}
+
+static void gl2_fp16_forget_all(void)
+{
+   free(gl2_fp16_tex);
+   gl2_fp16_tex    = NULL;
+   gl2_fp16_count  = 0;
+   gl2_fp16_cap    = 0;
+   gl2_fp16_loaded = false;
+}
+
+static bool gl2_fp16_is(GLuint id)
+{
+   unsigned i;
+   for (i = 0; i < gl2_fp16_count; i++)
+      if (gl2_fp16_tex[i] == id)
+         return true;
+   return false;
+}
+
+static GLuint gl2_linear_program(gl2_t *gl);
+#endif
 
 #if defined(HAVE_OPENGLES2)
 #define GL2_DEFAULT_SHADER_TYPE RARCH_SHADER_GLSL
@@ -687,6 +751,50 @@ static void gfx_display_gl2_draw(gfx_display_ctx_draw_t *draw,
          VIDEO_SCALE_W(draw->dims), VIDEO_SCALE_H(draw->dims));
    glBindTexture(GL_TEXTURE_2D, draw->texture
          ? (GLuint)draw->texture : gl->white_texture);
+
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* A half-float texture is linear scRGB: into an RGBA16F layer,
+    * through the program that inverts its encode */
+   if (     gl->scrgb.tex_fp16
+         && gl2_fp16_count
+         && draw->texture
+         && gl2_fp16_is((GLuint)draw->texture))
+   {
+      GLuint prog = gl2_linear_program(gl);
+      if (prog)
+      {
+         const math_matrix_4x4 *mat = draw->matrix_data
+            ? (const math_matrix_4x4*)draw->matrix_data
+            : (const math_matrix_4x4*)&gl->mvp_no_rot;
+         glUseProgram(prog);
+         glUniformMatrix4fv(gl->scrgb.lin_loc_mvp, 1, GL_FALSE, mat->data);
+         glUniform1i(gl->scrgb.lin_loc_tex, 0);
+         glUniform2f(gl->scrgb.lin_loc_params, gl->scrgb.menu_nits,
+               (float)gl->scrgb.expand_gamut);
+         glBindBuffer(GL_ARRAY_BUFFER, 0);
+         glEnableVertexAttribArray(0);
+         glEnableVertexAttribArray(1);
+         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, coords.vertex);
+         glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, coords.tex_coord);
+         if (coords.color)
+         {
+            glEnableVertexAttribArray(2);
+            glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 0, coords.color);
+         }
+         else
+            glVertexAttrib4f(2, 1.0f, 1.0f, 1.0f, 1.0f);
+         glDrawArrays(GL_TRIANGLE_STRIP, 0, coords.vertices);
+         glDisableVertexAttribArray(0);
+         glDisableVertexAttribArray(1);
+         glDisableVertexAttribArray(2);
+         glUseProgram(0);
+         gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND,
+               true);
+         gl->coords.color = gl->white_color_ptr;
+         return;
+      }
+   }
+#endif
 
    gl->shader->set_coords(gl->shader_data, &coords);
    gl->shader->set_mvp(gl->shader_data,
@@ -4118,6 +4226,133 @@ static bool gl2_scrgb_init_program(gl2_t *gl)
    return true;
 }
 
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+/* An RGBA16F texture is linear scRGB: 1.0 is 80 nits, the 709
+ * primaries. Drawn into the SDR layer, which the encode (sdrToScrgb
+ * above) shows as k2020to709 * M * v^2.4 at the menu nits, M the
+ * expand-gamut matrix. This writes the exact inverse, so the encode
+ * shows the texture at the luminance it was graded at; above menu
+ * white v is above 1.0, which the RGBA16F layer keeps. The inverses
+ * are of the encode's own matrices, column-major likewise. */
+static const char *gl2_linear_vert_src[] = {
+   "attribute vec2 Pos;\n"
+   "attribute vec2 Tex;\n"
+   "attribute vec4 Col;\n"
+   "uniform mat4 uMVP;\n"
+   "varying vec2 vTex;\n"
+   "varying vec4 vCol;\n"
+   "void main()\n"
+   "{\n"
+   "   gl_Position = uMVP * vec4(Pos, 0.0, 1.0);\n"
+   "   vTex = Tex;\n"
+   "   vCol = Col;\n"
+   "}\n"
+};
+
+static const char *gl2_linear_frag_src[] = {
+   "uniform sampler2D uTex;\n"
+   /* x: menu nits, y: the encode's uExpand */
+   "uniform vec2 uParams;\n"
+   "varying vec2 vTex;\n"
+   "varying vec4 vCol;\n"
+   "const mat3 k709to2020 = mat3(\n"
+   "   0.6274040, 0.0690970, 0.0163916,\n"
+   "   0.3292820, 0.9195400, 0.0880132,\n"
+   "   0.0433136, 0.0113612, 0.8955950);\n"
+   "const mat3 kInvExpanded709to2020 = mat3(\n"
+   "    1.6353460, -0.0794803,  0.0034352,\n"
+   "   -0.5705700,  1.0898049, -0.0202070,\n"
+   "   -0.0647755, -0.0103244,  1.0167713);\n",
+   "const mat3 kInvP3to2020 = mat3(\n"
+   "    1.3435784, -0.0652977,  0.0028213,\n"
+   "   -0.2821792,  1.0757882, -0.0195987,\n"
+   "   -0.0613991, -0.0104905,  1.0167763);\n"
+   "void main()\n"
+   "{\n"
+   "   vec4 s = texture2D(uTex, vTex);\n"
+   "   vec3 t = vCol.rgb * s.rgb * (80.0 / max(uParams.x, 1.0));\n"
+   "   vec3 x;\n"
+   "   if (uParams.y < 0.5)\n"
+   "      x = t;\n"
+   "   else if (uParams.y < 1.5)\n"
+   "      x = kInvExpanded709to2020 * (k709to2020 * t);\n"
+   "   else if (uParams.y < 2.5)\n"
+   "      x = kInvP3to2020 * (k709to2020 * t);\n"
+   "   else\n"
+   "      x = k709to2020 * t;\n"
+   "   gl_FragColor = vec4(pow(max(x, vec3(0.0)), vec3(1.0 / 2.4)),\n"
+   "         vCol.a * s.a);\n"
+   "}\n"
+};
+
+/* Made the first time a half-float texture is drawn; 0 where it
+ * cannot be, and the texture is drawn as any other */
+static GLuint gl2_linear_program(gl2_t *gl)
+{
+   GLint status = 0;
+   GLuint vs, fs, prog;
+
+   if (gl->scrgb.lin_program || gl->scrgb.lin_tried)
+      return gl->scrgb.lin_program;
+   gl->scrgb.lin_tried = true;
+
+   if (!(vs = gl2_scrgb_compile_stage(GL_VERTEX_SHADER,
+               gl2_linear_vert_src,
+               (GLsizei)ARRAY_SIZE(gl2_linear_vert_src))))
+      return 0;
+   if (!(fs = gl2_scrgb_compile_stage(GL_FRAGMENT_SHADER,
+               gl2_linear_frag_src,
+               (GLsizei)ARRAY_SIZE(gl2_linear_frag_src))))
+   {
+      glDeleteShader(vs);
+      return 0;
+   }
+   prog = glCreateProgram();
+   glAttachShader(prog, vs);
+   glAttachShader(prog, fs);
+   glBindAttribLocation(prog, 0, "Pos");
+   glBindAttribLocation(prog, 1, "Tex");
+   glBindAttribLocation(prog, 2, "Col");
+   glLinkProgram(prog);
+   glDeleteShader(vs);
+   glDeleteShader(fs);
+   glGetProgramiv(prog, GL_LINK_STATUS, &status);
+   if (!status)
+   {
+      glDeleteProgram(prog);
+      return 0;
+   }
+   gl->scrgb.lin_program    = prog;
+   gl->scrgb.lin_loc_mvp    = glGetUniformLocation(prog, "uMVP");
+   gl->scrgb.lin_loc_tex    = glGetUniformLocation(prog, "uTex");
+   gl->scrgb.lin_loc_params = glGetUniformLocation(prog, "uParams");
+   return prog;
+}
+
+/* Whether an RGBA16F texture can be the SDR layer's target, tried once
+ * at init on the context that will draw it */
+static bool gl2_fp16_target_ok(void)
+{
+   GLuint tex = 0, fbo = 0;
+   bool   ok  = false;
+   glGenTextures(1, &tex);
+   glBindTexture(GL_TEXTURE_2D, tex);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, 4, 4, 0,
+         GL_RGBA, GL_HALF_FLOAT, NULL);
+   gl2_gen_fb(1, &fbo);
+   gl2_bind_fb(fbo);
+   gl2_fb_texture_2d(RARCH_GL_FRAMEBUFFER, RARCH_GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, tex, 0);
+   ok = gl2_check_fb_status(RARCH_GL_FRAMEBUFFER)
+      == RARCH_GL_FRAMEBUFFER_COMPLETE;
+   gl2_bind_fb(0);
+   gl2_delete_fb(1, &fbo);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   glDeleteTextures(1, &tex);
+   return ok;
+}
+#endif
+
 /* True when the frame must route through the offscreen + encode even
  * with no scRGB backbuffer: the core supplied PQ, which cannot go to an
  * SDR presentation path as-is. The frontend accepts HDR10 by configured
@@ -4132,11 +4367,24 @@ static bool gl2_needs_pq_downconvert(gl2_t *gl)
  * should bind: the offscreen under scRGB or PQ content, 0 otherwise. */
 static GLuint gl2_frame_target_fbo(gl2_t *gl)
 {
+   /* RGBA16F once a linear texture has been loaded, so it keeps what is
+    * above menu white - but not while recording reads the layer back
+    * each frame, which RGBA8 hands over without converting */
+   bool want_fp16 = false;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   want_fp16      =    gl->scrgb.fp16_ok
+                    && gl->scrgb.active
+                    && !gl->video_info.source_hdr10
+                    && gl2_fp16_loaded
+                    && !(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE);
+#endif
+
    if (!gl->scrgb.active && !gl2_needs_pq_downconvert(gl))
       return 0;
 
    if (     !gl->scrgb.fbo
-         || gl->scrgb.dims != gl->video_dims)
+         || gl->scrgb.dims != gl->video_dims
+         || gl->scrgb.tex_fp16 != want_fp16)
    {
       if (gl->scrgb.fbo)
          gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -4147,11 +4395,16 @@ static GLuint gl2_frame_target_fbo(gl2_t *gl)
       /* PQ content needs 10 bits here for the same reason the source
        * textures do: this holds the frame between the chain's final
        * pass and the encode, and 8-bit PQ bands in the darks. */
+      gl->scrgb.tex_fp16 = false;
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
       if (gl->video_info.source_hdr10)
          glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB10_A2,
                VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
                GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, NULL);
+      else if ((gl->scrgb.tex_fp16 = want_fp16))
+         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F,
+               VIDEO_SCALE_W(gl->video_dims), VIDEO_SCALE_H(gl->video_dims), 0,
+               GL_RGBA, GL_HALF_FLOAT, NULL);
       else
 #endif
          glTexImage2D(GL_TEXTURE_2D, 0, RARCH_GL_INTERNAL_FORMAT32,
@@ -5030,6 +5283,13 @@ static void gl2_scrgb_deinit(gl2_t *gl)
       glDeleteProgram(gl->scrgb.program);
       gl->scrgb.program = 0;
    }
+   if (gl->scrgb.lin_program)
+   {
+      glDeleteProgram(gl->scrgb.lin_program);
+      gl->scrgb.lin_program = 0;
+   }
+   gl->scrgb.lin_tried = false;
+   gl->scrgb.tex_fp16  = false;
    if (gl->scrgb.fbo)
    {
       gl2_delete_fb(1, &gl->scrgb.fbo);
@@ -5081,6 +5341,9 @@ static void gl2_free(void *data)
    gl->shader->deinit(gl->shader_data);
 
    gl2_scrgb_deinit(gl);
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   gl2_fp16_forget_all();
+#endif
 
    glDeleteTextures(gl->textures, gl->texture);
 
@@ -5798,6 +6061,21 @@ static void *gl2_init(const video_info_t *video)
    if (!gl2_resolve_extensions(gl, ctx_driver->ident, video))
       goto error;
 
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* Half-float textures are core in GL 3.0, extensions before it */
+   gl->fp16_textures =
+            (version && version[0] >= '3' && version[0] <= '9'
+             && version[1] == '.')
+         || gl_query_core_context_in_use()
+         || (     gl_query_extension("ARB_texture_float")
+               && gl_query_extension("ARB_half_float_pixel"));
+   gl->scrgb.fp16_ok = gl->fp16_textures
+         && (gl->flags & GL2_FLAG_HAVE_FBO)
+         && gl->scrgb.active
+         && !video->source_hdr10
+         && gl2_fp16_target_ok();
+#endif
+
 #ifdef GL_DEBUG
    gl2_begin_debug(gl);
 #endif
@@ -6512,6 +6790,23 @@ static void gl2_apply_state_changes(void *data)
       gl->flags        |= GL2_FLAG_SHOULD_RESIZE;
 }
 
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+/* Half floats, R,G,B,A as sampled: RGBA16F with no swizzle and no
+ * mipmaps, which half-float storage need not generate */
+static void gl2_load_texture_fp16(GLuint id,
+      enum texture_filter_type filter_type, const struct texture_image *ti)
+{
+   GLint filter = (   filter_type == TEXTURE_FILTER_NEAREST
+                   || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST)
+      ? GL_NEAREST : GL_LINEAR;
+   GL2_BIND_TEXTURE(id, GL_CLAMP_TO_EDGE, filter, filter);
+   glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, ti->width, ti->height, 0,
+         GL_RGBA, GL_HALF_FLOAT, ti->pixels);
+   gl2_fp16_remember(id);
+}
+#endif
+
 static void video_texture_load_gl2(
       struct texture_image *ti,
       enum texture_filter_type filter_type,
@@ -6524,6 +6819,14 @@ static void video_texture_load_gl2(
    /* Generate the OpenGL texture object */
    glGenTextures(1, &id);
    *idptr             = id;
+
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   if (ti && ti->fp16)
+   {
+      gl2_load_texture_fp16(id, filter_type, ti);
+      return;
+   }
+#endif
 
    if (ti)
    {
@@ -6591,6 +6894,9 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
       gl->ctx_driver->make_current(false);
 
    glid = (GLuint)id;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   gl2_fp16_forget(glid);
+#endif
    glDeleteTextures(1, &glid);
    return 0;
 }
@@ -6649,6 +6955,9 @@ static void gl2_unload_texture(void *data,
 #endif
 
    glid = (GLuint)id;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   gl2_fp16_forget(glid);
+#endif
    glDeleteTextures(1, &glid);
 }
 
@@ -6663,7 +6972,10 @@ static void gl2_update_texture_internal(uintptr_t id,
    glBindTexture(GL_TEXTURE_2D, (GLuint)id);
    glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
-   if (ti->pix10)
+   if (ti->fp16)
+      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
+            GL_RGBA, GL_HALF_FLOAT, ti->pixels);
+   else if (ti->pix10)
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, ti->width, ti->height,
             GL_BGRA, GL_UNSIGNED_INT_2_10_10_10_REV, ti->pixels);
    else
@@ -6693,6 +7005,17 @@ static enum video_texture_update gl2_update_texture(void *video_data,
 {
    if (!id || !ti || !ti->pixels)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   /* Half floats only into half-float storage, and only there: the
+    * set is the video thread's, so the threaded check is the format */
+   if (ti->fp16 && !((gl2_t*)video_data)->fp16_textures)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!threaded && ti->fp16 != gl2_fp16_is((GLuint)id))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#else
+   if (ti->fp16)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
 
 #ifdef HAVE_THREADS
    if (threaded)
@@ -6765,9 +7088,17 @@ static GLenum gl2_gpu_format(enum texture_gpu_format fmt)
 static bool gl2_supports_texture_format(void *data,
       enum texture_gpu_format fmt)
 {
-   (void)data;
+   const gl2_t *gl = (const gl2_t*)data;
    switch (fmt)
    {
+      /* Both answers are fixed at init */
+      case TEXTURE_GPU_FORMAT_RGBA16F:
+         return gl && gl->fp16_textures;
+      /* The linear program shows such a texture as linear scRGB while
+       * the backbuffer is HDR, into an RGBA16F layer that keeps its
+       * highlights; in SDR there is no linear light. */
+      case TEXTURE_GPU_FORMAT_SCRGB:
+         return gl && gl->scrgb.fp16_ok;
       /* Desktop GL takes RGB10_A2 from BGRA 2_10_10_10_REV words in
        * gl_load_texture_data and gl2_update_texture_internal; GLES2
        * has neither, and gets the image narrowed. */
