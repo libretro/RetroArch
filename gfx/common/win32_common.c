@@ -1416,18 +1416,36 @@ static LRESULT win32_wnd_proc_route(HWND hwnd,
          return 0;
    }
 
+   /* The focus lost by a window that is no longer the main window.
+    *
+    * The input driver keeps one focus for the process, and the mouse
+    * is clipped for the process: both go by the main window. A window
+    * that has been replaced still loses the focus, and can lose it
+    * after its replacement has gained it - the loss would then clear
+    * the driver's focus and the keyboard would be dead until the next
+    * Alt-Tab. Two ways that happens:
+    *
+    * - A window left up for a driver that did not take it loses the
+    *   focus as it is destroyed (win32_retiring_hwnd).
+    * - Threaded video turned on or off moves the window to another
+    *   thread: the new window is another thread's, and the old one is
+    *   told it lost the focus through its own thread's queue, which
+    *   that thread gets to after the new window is up.
+    *
+    * Neither is the process losing the focus, and neither is passed
+    * on. If the focus does leave, the main window is told so itself. */
+   if (     message == WM_KILLFOCUS
+         && (   hwnd == win32_retiring_hwnd
+             || (main_window.hwnd && hwnd != main_window.hwnd)))
+      route &= ~(WIN32_ROUTE_INPUT | WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF);
+
 #ifdef HAVE_CLIP_WINDOW
    if (     (route & (WIN32_ROUTE_CLIP_ON | WIN32_ROUTE_CLIP_OFF))
          && (input_driver_get_flags() & INP_FLAG_GRAB_MOUSE_STATE))
       win32_clip_window((route & WIN32_ROUTE_CLIP_ON) != 0);
 #endif
 
-   /* A window left up for a driver that did not take it loses the
-    * focus as it goes down, after the window that replaced it has
-    * taken the focus; the input driver keeps one focus for the
-    * process, and that late loss would clear it until the next
-    * Alt-Tab. Nothing from a window on its way out reaches the
-    * input driver. */
+   /* Nothing from a window on its way out reaches the input driver. */
    if (     (route & WIN32_ROUTE_INPUT)
          && hwnd != win32_retiring_hwnd
          && win32_wnd_input_message(message, wparam, lparam))

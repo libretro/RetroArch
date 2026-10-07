@@ -504,6 +504,70 @@ int main(int argc, char **argv)
       trace(" focus messages from the window going down reached the input driver: %s\n",
             during ? "yes" : "no");
    }
+
+   /* A window that has been replaced loses the focus before it is
+    * taken down. Turning threaded video on or off moves the window to
+    * another thread: the new window is another thread's, and the old
+    * one is told it lost the focus through its own thread's queue,
+    * which that thread gets to after the new window is up and has the
+    * focus. The loss then cleared the input driver's focus, and the
+    * keyboard was dead until the next Alt-Tab. A loss from a window
+    * that is not the main window is not the process losing the focus;
+    * the main window's own loss still is.
+    *
+    * The replaced window here is a second window given the same
+    * procedure: on one thread a kept window does not outlive the
+    * making of the next. */
+   {
+      WNDCLASSEX wndclass;
+      HWND main_hwnd = NULL, replaced = NULL;
+      unsigned late = 0, own = 0, before;
+
+      strlcpy(settings->arrays.input_driver, "raw",
+            sizeof(settings->arrays.input_driver));
+      settings->bools.video_fullscreen = false;
+      trace_on = false;
+
+      win32_window_reset();
+      win32_monitor_init();
+      memset(&wndclass, 0, sizeof(wndclass));
+      wndclass.lpfnWndProc = proc_for(FAM_D3D, IN_WINRAW);
+      if (     win32_window_init(&wndclass, true, NULL)
+            && win32_set_video_mode(NULL, VIDEO_SCALE_PACK(640, 480), false))
+      {
+         main_hwnd = win32_get_window();
+         pump();
+
+         replaced  = CreateWindowExA(0, "STATIC", "replaced",
+               WS_OVERLAPPEDWINDOW, 0, 0, 320, 240, NULL, NULL,
+               GetModuleHandle(NULL), NULL);
+         if (replaced)
+         {
+            WNDPROC plain = (WNDPROC)SetWindowLongPtr(replaced, GWLP_WNDPROC,
+                  (LONG_PTR)proc_for(FAM_D3D, IN_WINRAW));
+            /* the old window's loss, arriving now */
+            before = stub_input_focus_msgs;
+            SendMessage(replaced, WM_KILLFOCUS, 0, 0);
+            late   = stub_input_focus_msgs - before;
+            SetWindowLongPtr(replaced, GWLP_WNDPROC, (LONG_PTR)plain);
+            DestroyWindow(replaced);
+         }
+         /* and the main window's own */
+         before = stub_input_focus_msgs;
+         SendMessage(main_hwnd, WM_KILLFOCUS, 0, 0);
+         own    = stub_input_focus_msgs - before;
+
+         win32_monitor_from_window();
+         win32_destroy_window();
+         pump();
+      }
+
+      trace_on = true;
+      trace("== a replaced window loses the focus late\n");
+      trace(" second window made %s\n", replaced ? "yes" : "no");
+      trace(" its loss reached the input driver: %s\n", late ? "yes" : "no");
+      trace(" the main window's own loss reached it: %s\n", own ? "yes" : "no");
+   }
 #endif
 
    out = fopen(argc > 1 ? argv[1] : "trace.txt", "wb");
