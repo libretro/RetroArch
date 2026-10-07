@@ -1540,6 +1540,8 @@ typedef struct
    const font_renderer_driver_t  *font_driver;
    void                          *font_data;
    struct font_atlas             *atlas;
+   /* The atlas expanded to RGBA, the texture's source */
+   uint32_t                      *staging;
    /* The atlas texture's pixel size, packed. */
    unsigned                       tex_dims;
    bool                           atlas_dirty;
@@ -1555,55 +1557,87 @@ typedef struct
 
 static void sdl2_raster_font_upload_atlas(sdl2_raster_t *font)
 {
-   uint32_t *rgba;
-   size_t    i, total;
-   const uint8_t *src;
+   unsigned x, y, x0, y0, x1, y1, tex_w, tex_h;
+   SDL_Rect rect;
+   bool     whole = false;
 
    if (!font || !font->atlas)
       return;
 
-   if (font->tex)
+   if (  !font->tex
+       || font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
+          font->atlas->height))
    {
-      SDL_DestroyTexture(font->tex);
-      font->tex = NULL;
+      if (font->tex)
+      {
+         SDL_DestroyTexture(font->tex);
+         font->tex = NULL;
+      }
+
+      font->tex_dims = VIDEO_SCALE_PACK(font->atlas->width,
+            font->atlas->height);
+
+      font->tex = SDL_CreateTexture(font->vid->renderer,
+            SDL_PIXELFORMAT_ABGR8888,
+            SDL_TEXTUREACCESS_STATIC,
+            VIDEO_SCALE_W(font->tex_dims),
+            VIDEO_SCALE_H(font->tex_dims));
+      if (!font->tex)
+         return;
+
+      SDL_SetTextureBlendMode(font->tex, SDL_BLENDMODE_BLEND);
+
+      free(font->staging);
+      font->staging = (uint32_t*)malloc(
+            VIDEO_SCALE_AREA(font->tex_dims) * sizeof(uint32_t));
+      if (!font->staging)
+      {
+         SDL_DestroyTexture(font->tex);
+         font->tex = NULL;
+         return;
+      }
+      whole = true;
    }
 
-   font->tex_dims   = VIDEO_SCALE_PACK(font->atlas->width,
-         font->atlas->height);
-
-   font->tex = SDL_CreateTexture(font->vid->renderer,
-         SDL_PIXELFORMAT_ABGR8888,
-         SDL_TEXTUREACCESS_STATIC,
-         VIDEO_SCALE_W(font->tex_dims),
-         VIDEO_SCALE_H(font->tex_dims));
-   if (!font->tex)
-      return;
-
-   total = VIDEO_SCALE_AREA(font->tex_dims);
-   rgba  = (uint32_t*)malloc(total * sizeof(uint32_t));
-   if (!rgba)
+   /* A texture just made takes all of the atlas; otherwise only the
+    * region drawn into since the last upload changes */
+   tex_w = VIDEO_SCALE_W(font->tex_dims);
+   tex_h = VIDEO_SCALE_H(font->tex_dims);
+   x0    = VIDEO_SCALE_W(font->atlas->dirty_xy0);
+   y0    = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+   x1    = VIDEO_SCALE_W(font->atlas->dirty_xy1);
+   y1    = VIDEO_SCALE_H(font->atlas->dirty_xy1);
+   if (     whole
+         || font->atlas_dirty
+         || !font->atlas->dirty
+         || x1 <= x0 || y1 <= y0 || x1 > tex_w || y1 > tex_h)
    {
-      SDL_DestroyTexture(font->tex);
-      font->tex = NULL;
-      return;
+      x0 = 0;
+      y0 = 0;
+      x1 = tex_w;
+      y1 = tex_h;
    }
 
    /* Atlas buffer is 8-bit alpha. Expand to white-RGB plus the alpha
     * value so vertex color modulation produces correctly-tinted
     * glyphs. SDL_PIXELFORMAT_ABGR8888 is byte order R,G,B,A on
     * little-endian, packed as 0xAABBGGRR in a uint32_t. */
-   src = font->atlas->buffer;
-   for (i = 0; i < total; i++)
+   for (y = y0; y < y1; y++)
    {
-      uint32_t a = src[i];
-      rgba[i] = (a << 24) | 0x00FFFFFFu;
+      const uint8_t *src = font->atlas->buffer + (size_t)y * tex_w + x0;
+      uint32_t      *dst = font->staging + (size_t)y * tex_w + x0;
+      for (x = x0; x < x1; x++)
+         *dst++ = ((uint32_t)*src++ << 24) | 0x00FFFFFFu;
    }
 
-   SDL_UpdateTexture(font->tex, NULL, rgba,
-         VIDEO_SCALE_W(font->tex_dims) * sizeof(uint32_t));
-   SDL_SetTextureBlendMode(font->tex, SDL_BLENDMODE_BLEND);
+   rect.x = (int)x0;
+   rect.y = (int)y0;
+   rect.w = (int)(x1 - x0);
+   rect.h = (int)(y1 - y0);
+   SDL_UpdateTexture(font->tex, &rect,
+         font->staging + (size_t)y0 * tex_w + x0,
+         (int)(tex_w * sizeof(uint32_t)));
 
-   free(rgba);
    font->atlas->dirty = false;
    font->atlas_dirty  = false;
 }
@@ -1641,7 +1675,7 @@ static void *sdl2_raster_font_init(void *data, const char *font_path,
 
    font->atlas = font->font_driver->get_atlas(font->font_data);
    /* The atlas may grow, up to the largest texture the renderer takes;
-    * the texture is remade at the atlas's size on every upload */
+    * the upload remakes the texture when the atlas's size changes */
    {
       SDL_RendererInfo info;
       if (     SDL_GetRendererInfo(vid->renderer, &info) == 0
@@ -1674,6 +1708,7 @@ static void sdl2_raster_font_free(void *data, bool is_threaded)
       SDL_DestroyTexture(font->tex);
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
+   free(font->staging);
    free(font);
 }
 

@@ -1273,16 +1273,13 @@ typedef struct
 
 static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
 {
-   int i, total;
-   const uint8_t *src;
-   int tex_w, tex_h;
+   unsigned x, y, x0, y0, x1, y1, tex_w, tex_h;
+   SDL_Rect rect;
+   bool     whole = false;
 
    if (!font || !font->atlas)
       return;
 
-   /* The atlas dimensions are fixed after init, so the texture and
-    * staging buffer are created once and the atlas is re-uploaded in
-    * place whenever the glyph cache grows (atlas->dirty). */
    if (  !font->tex
        || font->tex_dims != VIDEO_SCALE_PACK(font->atlas->width,
           font->atlas->height))
@@ -1312,29 +1309,52 @@ static void sdl3_raster_font_upload_atlas(sdl3_raster_t *font)
          font->tex = NULL;
          return;
       }
+      whole = true;
+   }
+
+   /* A texture just made takes all of the atlas; otherwise only the
+    * region drawn into since the last upload changes */
+   tex_w = VIDEO_SCALE_W(font->tex_dims);
+   tex_h = VIDEO_SCALE_H(font->tex_dims);
+   x0    = VIDEO_SCALE_W(font->atlas->dirty_xy0);
+   y0    = VIDEO_SCALE_H(font->atlas->dirty_xy0);
+   x1    = VIDEO_SCALE_W(font->atlas->dirty_xy1);
+   y1    = VIDEO_SCALE_H(font->atlas->dirty_xy1);
+   if (     whole
+         || !font->atlas->dirty
+         || x1 <= x0 || y1 <= y0 || x1 > tex_w || y1 > tex_h)
+   {
+      x0 = 0;
+      y0 = 0;
+      x1 = tex_w;
+      y1 = tex_h;
    }
 
    /* Atlas buffer is 8-bit alpha. Expand to white-RGB plus the alpha
     * value so vertex color modulation produces correctly-tinted
     * glyphs. SDL_PIXELFORMAT_RGBA32 is the endian-neutral alias for
     * byte order R,G,B,A, so fill the staging buffer byte-wise. */
-   tex_w = (int)VIDEO_SCALE_W(font->tex_dims);
-   tex_h = (int)VIDEO_SCALE_H(font->tex_dims);
-   total = tex_w * tex_h;
-   src   = font->atlas->buffer;
+   for (y = y0; y < y1; y++)
    {
-      uint8_t *dst = (uint8_t*)font->staging;
-      for (i = 0; i < total; i++)
+      const uint8_t *src = font->atlas->buffer + (size_t)y * tex_w + x0;
+      uint8_t       *dst = (uint8_t*)(font->staging
+            + (size_t)y * tex_w + x0);
+      for (x = x0; x < x1; x++)
       {
          *dst++ = 0xFF;
          *dst++ = 0xFF;
          *dst++ = 0xFF;
-         *dst++ = src[i];
+         *dst++ = *src++;
       }
    }
 
-   SDL_UpdateTexture(font->tex, NULL, font->staging,
-         tex_w * (int)sizeof(uint32_t));
+   rect.x = (int)x0;
+   rect.y = (int)y0;
+   rect.w = (int)(x1 - x0);
+   rect.h = (int)(y1 - y0);
+   SDL_UpdateTexture(font->tex, &rect,
+         font->staging + (size_t)y0 * tex_w + x0,
+         (int)(tex_w * sizeof(uint32_t)));
 
    font->atlas->dirty = false;
 }
