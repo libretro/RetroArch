@@ -759,7 +759,22 @@ d3d11_get_closest_match(D3D11Device device, DXGI_FORMAT desired_format, UINT des
    return *format;
 }
 
-static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
+/* The CPU-written twin the texture's updates copy from */
+static void d3d11_init_staging(D3D11Device device, d3d11_texture_t* texture)
+{
+   D3D11_TEXTURE2D_DESC desc = texture->desc;
+   desc.MipLevels            = 1;
+   desc.BindFlags            = 0;
+   desc.MiscFlags            = 0;
+   desc.Usage                = D3D11_USAGE_STAGING;
+   desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
+   device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
+}
+
+/* @staging: whether a sampled texture gets its CPU-written twin now;
+ * one that may never be updated in place takes it on first use */
+static bool d3d11_init_texture_ex(D3D11Device device,
+      d3d11_texture_t* texture, bool staging)
 {
    bool is_render_target            = texture->desc.BindFlags & D3D11_BIND_RENDER_TARGET;
    UINT format_support              = D3D11_FORMAT_SUPPORT_TEXTURE2D | D3D11_FORMAT_SUPPORT_SHADER_SAMPLE;
@@ -816,22 +831,19 @@ static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
    if (is_render_target)
       device->lpVtbl->CreateRenderTargetView(device,
             (D3D11Resource)texture->handle, NULL, &texture->rt_view);
-   else
-   {
-      D3D11_TEXTURE2D_DESC desc = texture->desc;
-      desc.MipLevels            = 1;
-      desc.BindFlags            = 0;
-      desc.MiscFlags            = 0;
-      desc.Usage                = D3D11_USAGE_STAGING;
-      desc.CPUAccessFlags       = D3D11_CPU_ACCESS_WRITE;
-      device->lpVtbl->CreateTexture2D(device, &desc, NULL, &texture->staging);
-   }
+   else if (staging)
+      d3d11_init_staging(device, texture);
 
    texture->size_data.x = texture->desc.Width;
    texture->size_data.y = texture->desc.Height;
    texture->size_data.z = 1.0f / texture->desc.Width;
    texture->size_data.w = 1.0f / texture->desc.Height;
    return true;
+}
+
+static bool d3d11_init_texture(D3D11Device device, d3d11_texture_t* texture)
+{
+   return d3d11_init_texture_ex(device, texture, true);
 }
 
 static void d3d11_update_texture(
@@ -6806,6 +6818,11 @@ static uintptr_t d3d11_gfx_load_texture_internal(
       enum texture_filter_type filter_type)
 {
    d3d11_texture_t* texture = NULL;
+   DXGI_FORMAT   src_format = image->fp16
+         ? DXGI_FORMAT_R16G16B16A16_FLOAT
+         : image->pix10
+         ? DXGI_FORMAT_R10G10B10A2_UNORM
+         : DXGI_FORMAT_B8G8R8A8_UNORM;
 
    if (!d3d11)
       return 0;
@@ -6837,23 +6854,34 @@ static uintptr_t d3d11_gfx_load_texture_internal(
 
    texture->desc.Width  = image->width;
    texture->desc.Height = image->height;
-   texture->desc.Format = image->fp16
-         ? DXGI_FORMAT_R16G16B16A16_FLOAT
-         : image->pix10
-         ? DXGI_FORMAT_R10G10B10A2_UNORM
-         : DXGI_FORMAT_B8G8R8A8_UNORM;
+   texture->desc.Format = src_format;
 
+   /* A loaded texture has no staging twin until an in-place update
+    * needs one: the image goes straight in */
    d3d11_release_texture(texture);
-   d3d11_init_texture(d3d11->device, texture);
+   if (!d3d11_init_texture_ex(d3d11->device, texture, false))
+   {
+      free(texture);
+      return 0;
+   }
 
-   if (texture->staging)
-      d3d11_update_texture(
-            d3d11->context, image->width, image->height, 0,
-            image->fp16  ? DXGI_FORMAT_R16G16B16A16_FLOAT
-          : image->pix10 ? DXGI_FORMAT_R10G10B10A2_UNORM
-                         : DXGI_FORMAT_B8G8R8A8_UNORM,
-            image->pixels,
-            texture);
+   if (texture->desc.Format == src_format)
+   {
+      d3d11->context->lpVtbl->UpdateSubresource(d3d11->context,
+            (D3D11Resource)texture->handle, 0, NULL, image->pixels,
+            image->width * (image->fp16 ? 8 : 4), 0);
+      if (texture->desc.MiscFlags & D3D11_RESOURCE_MISC_GENERATE_MIPS)
+         d3d11->context->lpVtbl->GenerateMips(d3d11->context, texture->view);
+   }
+   else
+   {
+      /* Another format than the image's: converted on the way through
+       * the staging twin */
+      d3d11_init_staging(d3d11->device, texture);
+      if (texture->staging)
+         d3d11_update_texture(d3d11->context, image->width, image->height,
+               0, src_format, image->pixels, texture);
+   }
 
    return (uintptr_t)texture;
 }
@@ -6938,9 +6966,13 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    d3d11_texture_t *texture = (d3d11_texture_t*)handle;
    HRESULT hr;
 
-   if (     !d3d11 || !texture || !texture->staging
+   if (     !d3d11 || !texture
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (!texture->staging)
+      d3d11_init_staging(d3d11->device, texture);
+   if (!texture->staging)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
    /* The staging texture the last update copied from may still be
