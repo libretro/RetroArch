@@ -42,7 +42,7 @@ SOURCES := overlay_budget_test.c \
 
 OBJS := $(SOURCES:.c=.o)
 
-CFLAGS  += -Wall -std=gnu99 -g -DHAVE_THREADS -DHAVE_OVERLAY \
+CFLAGS  += -Wall -std=gnu99 -g -DHAVE_THREADS -DHAVE_OVERLAY -DHAVE_RPNG \
            -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)
 LDFLAGS += -lpthread -lm
 

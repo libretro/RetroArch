@@ -272,6 +272,14 @@ bool image_texture_load_request(struct texture_image *img,
       const char *path, const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *ud);
 
+/* image_texture_load_request answering, from the bytes it read, whether
+ * the file is an animated PNG: 1 yes, 0 a still, -1 not a PNG or no
+ * decode. Spares a caller that keeps an animation's bytes a second
+ * read of every still to ask. @png_probe may be NULL. */
+bool image_texture_load_request_ex(struct texture_image *img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud, int *png_probe);
+
 /* Run @fn for every index below @n, across the cores at once where
  * there are threads: on Apple over the dispatch pool, elsewhere on
  * threads of its own with the caller working alongside, and in order

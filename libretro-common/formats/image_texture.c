@@ -449,10 +449,10 @@ static void image_texture_clear(struct texture_image *img)
    img->fp16          = false;
 }
 
-bool image_texture_load_buffer_request(struct texture_image *out_img,
+static bool image_texture_load_buffer_probe(struct texture_image *out_img,
       enum image_type_enum type, const void *ptr, size_t len,
       const image_texture_request_t *req,
-      bool (*should_abort)(void *ud), void *abort_ud)
+      bool (*should_abort)(void *ud), void *abort_ud, int *png_probe)
 {
    image_loader_t *l;
    enum image_loader_state st;
@@ -474,6 +474,8 @@ bool image_texture_load_buffer_request(struct texture_image *out_img,
    st = image_loader_step(l, NULL, 0);
    if (st == IMAGE_LOADER_DONE && image_loader_finish(l, out_img))
    {
+      if (png_probe)
+         *png_probe = image_loader_png_probe(l);
       image_loader_free(l);
       return true;
    }
@@ -482,11 +484,31 @@ bool image_texture_load_buffer_request(struct texture_image *out_img,
    return false;
 }
 
+bool image_texture_load_buffer_request(struct texture_image *out_img,
+      enum image_type_enum type, const void *ptr, size_t len,
+      const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *abort_ud)
+{
+   return image_texture_load_buffer_probe(out_img, type, ptr, len, req,
+         should_abort, abort_ud, NULL);
+}
+
 bool image_texture_load_request(struct texture_image *out_img,
       const char *path, const image_texture_request_t *req,
       bool (*should_abort)(void *ud), void *ud)
 {
+   return image_texture_load_request_ex(out_img, path, req,
+         should_abort, ud, NULL);
+}
+
+bool image_texture_load_request_ex(struct texture_image *out_img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud, int *png_probe)
+{
    enum image_type_enum type = image_texture_get_type(path);
+
+   if (png_probe)
+      *png_probe = -1;
 
    if (type != IMAGE_TYPE_NONE)
    {
@@ -506,8 +528,8 @@ bool image_texture_load_request(struct texture_image *out_img,
          data_transfer_iterate(dt, 0);
          ptr = data_transfer_ptr(dt, &file_len);
          if (data_transfer_complete(dt) && ptr && file_len
-               && image_texture_load_buffer_request(out_img, type,
-                     ptr, file_len, req, should_abort, ud))
+               && image_texture_load_buffer_probe(out_img, type,
+                     ptr, file_len, req, should_abort, ud, png_probe))
          {
             data_transfer_free(dt);
             return true;

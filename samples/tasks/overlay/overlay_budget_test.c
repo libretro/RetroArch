@@ -24,6 +24,8 @@
  *                  count must not double what one invocation does.
  *   one-item     - a window that is already exhausted still makes
  *                  progress, so the loader cannot stall.
+ *   one read     - a still is read once, by its decode; only a file
+ *                  the decode found animated is read for its bytes.
  *
  * Time is a virtual clock advancing a fixed step per observation, so
  * the assertions are exact rather than scheduler-dependent.  Image
@@ -40,6 +42,9 @@
 #include <queues/task_queue.h>
 #include <string/stdstring.h>
 #include <lists/string_list.h>
+
+#include <streams/file_stream.h>
+#include <vfs/vfs_implementation.h>
 
 #include "../../../input/input_overlay.h"
 #include "../../../tasks/tasks_internal.h"
@@ -93,8 +98,15 @@ static unsigned images_loaded;
 static uint32_t *tracked_pixels[MAX_TRACKED_IMAGES];
 static unsigned  tracked_count;
 
-bool image_texture_load(struct texture_image *img, const char *path)
+/* The decode, which also says whether the file is an animated PNG:
+ * here, any file named for one */
+bool image_texture_load_request_ex(struct texture_image *img,
+      const char *path, const image_texture_request_t *req,
+      bool (*should_abort)(void *ud), void *ud, int *png_probe)
 {
+   (void)req; (void)should_abort; (void)ud;
+   if (png_probe)
+      *png_probe = strstr(path, "anim") ? 1 : 0;
    images_loaded++;
    if (img)
    {
@@ -340,9 +352,113 @@ static unsigned run_load(unsigned overlays, unsigned descs,
    return ticks;
 }
 
+/* Opens of the pack's image files, counted through the VFS: the decode
+ * is faked, so any open of one is a read beyond it */
+static unsigned still_opens, anim_opens;
+static struct retro_vfs_file_handle *counting_open(const char *path,
+      unsigned mode, unsigned hints)
+{
+   if (strstr(path, "still.png"))
+      still_opens++;
+   if (strstr(path, "anim.png"))
+      anim_opens++;
+   return (struct retro_vfs_file_handle*)
+      retro_vfs_file_open_impl(path, mode, hints);
+}
+
+static unsigned anim_kept, anim_null;
+static void anim_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   overlay_task_data_t *data = (overlay_task_data_t*)task_data;
+   unsigned i;
+   if (data && data->anim_list && data->image_list)
+      for (i = 0; i < data->anim_list->size; i++)
+      {
+         overlay_anim_src_t *src =
+            (overlay_anim_src_t*)data->anim_list->elems[i].attr.p;
+         bool anim = strstr(data->image_list->elems[i].data, "anim") != NULL;
+         if (anim && src && src->len == 4)
+            anim_kept++;
+         if (!anim && !src)
+            anim_null++;
+      }
+   overlay_cb(task, task_data, user_data, err);
+}
+
 /* ------------------------------------------------------------------ */
 /* Lanes                                                               */
 /* ------------------------------------------------------------------ */
+
+static void lane_still_read_once(void)
+{
+   static struct retro_vfs_interface iface;
+   struct retro_vfs_interface_info info;
+   char cfg[512], path[512];
+   unsigned had = failures, ticks = 0;
+   FILE *f;
+   const char *names[2] = { "still.png", "anim.png" };
+   unsigned i;
+
+   for (i = 0; i < 2; i++)
+   {
+      snprintf(path, sizeof(path), "%s/%s", fixture_dir, names[i]);
+      if ((f = fopen(path, "wb")))
+      {
+         fwrite("\x89PNG", 1, 4, f);
+         fclose(f);
+      }
+   }
+   snprintf(cfg, sizeof(cfg), "%s/anim.cfg", fixture_dir);
+   if (!(f = fopen(cfg, "wb")))
+   {
+      CHECK(false, "fixture write failed");
+      return;
+   }
+   fprintf(f, "overlays = 1\n");
+   fprintf(f, "overlay0_name = ol0\n");
+   fprintf(f, "overlay0_full_screen = true\n");
+   fprintf(f, "overlay0_rect = \"0.0,0.0,1.0,1.0\"\n");
+   fprintf(f, "overlay0_overlay = still.png\n");
+   fprintf(f, "overlay0_descs = 2\n");
+   fprintf(f, "overlay0_desc0 = \"a,0.5,0.5,rect,0.1,0.1\"\n");
+   fprintf(f, "overlay0_desc0_overlay = anim.png\n");
+   fprintf(f, "overlay0_desc1 = \"b,0.2,0.2,rect,0.1,0.1\"\n");
+   fprintf(f, "overlay0_desc1_overlay = still.png\n");
+   fclose(f);
+
+   memset(&iface, 0, sizeof(iface));
+   iface.open                       = counting_open;
+   info.required_interface_version  = FILESTREAM_REQUIRED_VFS_VERSION;
+   info.iface                       = &iface;
+   filestream_vfs_init(&info);
+   still_opens = anim_opens = anim_kept = anim_null = 0;
+
+   task_queue_init(false, NULL);
+   clock_now  = 0;
+   clock_step = 0;
+   if (task_push_overlay_load_default(anim_cb, cfg, false, NULL))
+      while (queue_busy() && ticks < 100000)
+      {
+         task_queue_check();
+         ticks++;
+      }
+   task_queue_deinit();
+   release_tracked_images();
+   info.iface = NULL;
+   filestream_vfs_init(&info);
+
+   CHECK(still_opens == 0, "a still was read %u times beyond its decode",
+         still_opens);
+   CHECK(anim_opens == 1, "an animated file was read %u times for its "
+         "bytes, wanted 1", anim_opens);
+   CHECK(anim_kept == 1 && anim_null == 1,
+         "the pack kept %u animations and %u stills as stills, wanted 1 "
+         "and 1", anim_kept, anim_null);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] one-read lane\n");
+}
 
 static void lane_completeness(void)
 {
@@ -468,6 +584,7 @@ int main(void)
    lane_paced_matches_unpaced();
    lane_work_per_tick_does_not_scale();
    lane_exhausted_window_progresses();
+   lane_still_read_once();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

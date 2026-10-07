@@ -24,9 +24,6 @@
 #include <file/archive_file.h>
 #endif
 #include <formats/image.h>
-#ifdef HAVE_RPNG
-#include <formats/rpng.h>
-#endif
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <lrc_hash.h>
@@ -318,6 +315,7 @@ static bool task_overlay_load_image_texture(
    if (img_idx == -1)
    {
       union string_list_elem_attr attr;
+      int png_probe = -1;
 
       image->supports_rgba =
             (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
@@ -357,8 +355,16 @@ static bool task_overlay_load_image_texture(
       }
       else
 #endif
-      if (!image_texture_load(image, full_path))
-         return false;
+      {
+         image_texture_request_t req;
+         req.rgba            = image->supports_rgba;
+         req.want_10bit      = image->pix10;
+         req.want_fp16       = false;
+         req.want_compressed = true;
+         if (!image_texture_load_request_ex(image, full_path, &req,
+                  NULL, NULL, &png_probe))
+            return false;
+      }
 
       if (     (loader->flags & OVERLAY_LOADER_GX_TILE)
             && !image_texture_tile_gx(image))
@@ -374,9 +380,10 @@ static bool task_overlay_load_image_texture(
 
 #ifdef HAVE_RPNG
       /* An animated PNG keeps its file bytes: the pack composes the
-       * frames from them one at a time, where a still is done with
-       * the file the moment it is decoded. The decoded image above is
-       * the animation's first frame, so nothing decodes twice. */
+       * frames from them one at a time. The decode above said which
+       * files those are and is the animation's first frame, so a
+       * still is read once and nothing decodes twice; a tiled pack has
+       * no animations. */
       {
          union string_list_elem_attr aattr;
          overlay_anim_src_t *src = NULL;
@@ -384,11 +391,10 @@ static bool task_overlay_load_image_texture(
          void *buf               = NULL;
 
          aattr.i = 0;
-         if (     !(loader->flags & OVERLAY_LOADER_GX_TILE)
-               && !path_get_archive_delim(full_path)
+         if (     png_probe == 1
+               && !(loader->flags & OVERLAY_LOADER_GX_TILE)
                && filestream_read_file(full_path, &buf, &len)
                && buf && len > 0
-               && rpng_is_apng((const uint8_t*)buf, (size_t)len)
                && (src = (overlay_anim_src_t*)calloc(1, sizeof(*src))))
          {
             src->data = buf;
@@ -399,6 +405,8 @@ static bool task_overlay_load_image_texture(
          aattr.p = (void*)src;
          string_list_append(loader->anim_list, rel_path, aattr);
       }
+#else
+      (void)png_probe;
 #endif
    }
    else

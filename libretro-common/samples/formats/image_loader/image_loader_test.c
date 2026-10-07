@@ -346,6 +346,36 @@ int main(void)
       free(s.pixels);
    }
 
+   /* 5b: a file load answers the APNG question from its own read */
+   {
+      static const char *still_name = "image_loader_probe_still.png";
+      static const char *anim_name  = "image_loader_probe_anim.png";
+      FILE *f;
+      int probe_still = -2, probe_anim = -2;
+      if ((f = fopen(still_name, "wb")))
+      {
+         fwrite(png, 1, len, f);
+         fclose(f);
+      }
+      if ((f = fopen(anim_name, "wb")))
+      {
+         fwrite(apng, 1, apng_len, f);
+         fclose(f);
+      }
+      memset(&img, 0, sizeof(img));
+      CHECK(image_texture_load_request_ex(&img, still_name, &req, NULL,
+               NULL, &probe_still) && pixels_match(&img, false)
+            && probe_still == 0, "a still file decodes and says so");
+      image_texture_free(&img);
+      memset(&img, 0, sizeof(img));
+      CHECK(image_texture_load_request_ex(&img, anim_name, &req, NULL,
+               NULL, &probe_anim) && probe_anim == 1,
+            "an APNG file decodes its first frame and says it is animated");
+      image_texture_free(&img);
+      remove(still_name);
+      remove(anim_name);
+   }
+
    /* 8: a set */
    {
       static const char *names[5] = {
