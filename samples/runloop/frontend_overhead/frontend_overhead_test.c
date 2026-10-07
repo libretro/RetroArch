@@ -2772,6 +2772,161 @@ static bool pm_menu_settled(void)
    return false;
 }
 
+/* --- What the hotkey pass keeps of a port's binds ---
+ *
+ * Whether a port has a "Hotkey Enable", on a pad or a key, whether it
+ * blocks, which hotkeys are usable: the pass asked the bind tables
+ * every frame, and now keeps the answers by port, worked out again
+ * when a bind changes or the port is read with another controller's
+ * profile (input_port_hotkeys_t). Kept answers are right only while
+ * what they were worked out from is as it was. So: each way that
+ * changes, and what a hotkey does on the very next press.
+ *
+ * The pause hotkey on a pad's button, and whether the core runs. */
+static bool hf_paused(void)
+{
+   long r0 = pm_runs();
+   run_loop_frames(5);
+   return pm_runs() == r0;
+}
+
+/* @first held for two frames, then @then with it for two, then nothing */
+static void hf_press(uint32_t first, uint32_t then)
+{
+   if (first)
+   {
+      syn_buttons = first;
+      run_loop_frames(2);
+   }
+   syn_buttons = first | then;
+   run_loop_frames(2);
+   syn_buttons = 0;
+   run_loop_frames(3);
+}
+
+static void lane_hotkey_facts(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   input_driver_state_t *input_st = input_state_get_ptr();
+   settings_t *settings           = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_pause  = input_config_binds[0][RARCH_PAUSE_TOGGLE];
+   struct retro_keybind saved_en     = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_auto0  = input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_auto1  = input_autoconf_binds[1][RARCH_ENABLE_HOTKEY];
+   unsigned saved_index              = settings->uints.input_joypad_index[0];
+   unsigned saved_pad                = syn_pad_index;
+   const uint32_t pause_bit = 1u << 20, en_bit = 1u << 23;
+   unsigned had = failures;
+   void *core;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(pm_runs = (long (*)(void))dlsym(core, "harness_core_runs"))
+       || !joypad_real)
+   {
+      CHECK(false, "hotkey facts: the harness core's entry point or the joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat                  = 0;
+   syn_buttons              = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+
+   /* pause on a button of its own; no enabler anywhere */
+   {
+      struct retro_keybind *en = &input_config_binds[0][RARCH_ENABLE_HOTKEY];
+      input_config_binds[0][RARCH_PAUSE_TOGGLE].joykey = 20;
+      en->joykey  = NO_BTN;
+      en->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_KEY(en, RETROK_UNKNOWN);
+      RETRO_KEYBIND_SET_MBUTTON(en, NO_BTN);
+      input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joykey  = NO_BTN;
+      input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joyaxis = AXIS_NONE;
+      input_autoconf_binds[1][RARCH_ENABLE_HOTKEY].joykey  = NO_BTN;
+      input_autoconf_binds[1][RARCH_ENABLE_HOTKEY].joyaxis = AXIS_NONE;
+   }
+   binds_written_by_a_lane();
+   run_loop_frames(3);
+   CHECK(!hf_paused(), "hotkey facts: the core is not running to begin with");
+
+   /* no enabler: the hotkey acts alone */
+   hf_press(0, pause_bit);
+   CHECK(hf_paused(), "hotkey facts: with no enabler, the pause hotkey did not pause");
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: with no enabler, the pause hotkey did not unpause");
+
+   /* the port's own bind gets an enabler: blocked alone, acts with it */
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey = 23;
+   binds_written_by_a_lane();
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: an enabler was bound, and the pause hotkey"
+         " still paused without it");
+   hf_press(en_bit, pause_bit);
+   CHECK(hf_paused(), "hotkey facts: with the new enabler held, the pause hotkey did not pause");
+   hf_press(en_bit, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: with the new enabler held, the pause hotkey did not unpause");
+
+   /* ... and loses it */
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey = NO_BTN;
+   binds_written_by_a_lane();
+   hf_press(0, pause_bit);
+   CHECK(hf_paused(), "hotkey facts: the enabler was unbound, and the pause hotkey"
+         " alone did not pause");
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: the enabler was unbound, and the pause hotkey"
+         " alone did not unpause");
+
+   /* the hotkey made unusable, and usable again */
+   RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RARCH_PAUSE_TOGGLE], false);
+   binds_written_by_a_lane();
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: the pause hotkey was made unusable, and paused");
+   RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RARCH_PAUSE_TOGGLE], true);
+   binds_written_by_a_lane();
+   hf_press(0, pause_bit);
+   CHECK(hf_paused(), "hotkey facts: the pause hotkey was made usable again, and did not pause");
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: the pause hotkey, usable again, did not unpause");
+
+   /* the controller's profile has an enabler: blocked alone */
+   input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joykey = 23;
+   binds_written_by_a_lane();
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: the controller's profile got an enabler, and"
+         " the pause hotkey still paused without it");
+   /* ... and the port is given another controller, whose profile has
+    * none - a setting, which no bind change announces */
+   settings->uints.input_joypad_index[0] = 1;
+   syn_pad_index                         = 1;
+   hf_press(0, pause_bit);
+   CHECK(hf_paused(), "hotkey facts: the port was given a controller whose profile"
+         " has no enabler, and the pause hotkey alone did not pause");
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: ... and did not unpause");
+   settings->uints.input_joypad_index[0] = saved_index;
+   syn_pad_index                         = saved_pad;
+   hf_press(0, pause_bit);
+   CHECK(!hf_paused(), "hotkey facts: the port was given its first controller back,"
+         " and the pause hotkey paused without that profile's enabler");
+
+   input_config_binds[0][RARCH_PAUSE_TOGGLE]     = saved_pause;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY]    = saved_en;
+   input_autoconf_binds[0][RARCH_ENABLE_HOTKEY]  = saved_auto0;
+   input_autoconf_binds[1][RARCH_ENABLE_HOTKEY]  = saved_auto1;
+   binds_written_by_a_lane();
+   syn_buttons              = 0;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+   if (failures == had)
+      fprintf(stderr, "[pass] hotkey-facts lane (kept by port, made again at each change)\n");
+#endif
+}
+
 /* --- The lightgun's bound buttons, for a driver that keeps its mice ---
  *
  * A lightgun's buttons are what they are bound to: a pad's button, a
@@ -5398,6 +5553,7 @@ int main(int argc, char *argv[])
       lane_menu_combo_gate();
       lane_menu_pause();
       lane_gun_buttons_kept_mice();
+      lane_hotkey_facts();
       lane_ai_presses();
       lane_menu_repeat_rates();
       lane_pointer_store();
