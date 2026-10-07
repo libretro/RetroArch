@@ -33763,6 +33763,10 @@ MSG_HASH(
    "Failed to activate the low-latency power plan"
    )
 MSG_HASH(
+   MSG_FAILED_TO_DISABLE_IDLE_STATES,
+   "Failed to disable processor idle states"
+   )
+MSG_HASH(
    MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    "Failed to enter GameMode - ensure GameMode daemon is installed/running"
    )

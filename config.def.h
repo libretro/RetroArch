@@ -2052,6 +2052,7 @@
 
 /* Windows: activate the low-latency copy of the power plan */
 #define DEFAULT_WIN32_POWER_PLAN false
+#define DEFAULT_WIN32_POWER_PLAN_IDLE_DISABLE false
 
 #if defined(ANDROID) || TARGET_OS_IPHONE
 #define DEFAULT_VIBRATE_ON_KEYPRESS true

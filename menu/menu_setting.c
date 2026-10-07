@@ -10210,14 +10210,29 @@ static void general_write_handler(rarch_setting_t *setting)
 #endif
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
       case MENU_ENUM_LABEL_WIN32_POWER_PLAN:
-         if (     !frontend_driver_set_power_plan(settings->bools.win32_power_plan)
-               && settings->bools.win32_power_plan)
+      case MENU_ENUM_LABEL_WIN32_POWER_PLAN_IDLE_DISABLE:
          {
-            const char *_msg = msg_hash_to_str(MSG_FAILED_TO_APPLY_POWER_PLAN);
+            bool plan = settings->bools.win32_power_plan;
+            bool idle = settings->bools.win32_power_plan_idle_disable;
+            const char *_msg;
+
+            if (frontend_driver_set_power_plan(plan, idle) || !plan)
+               break;
+            /* Without idle states held off, the plan may still apply */
+            if (idle && frontend_driver_set_power_plan(plan, false))
+            {
+               _msg = msg_hash_to_str(MSG_FAILED_TO_DISABLE_IDLE_STATES);
+               configuration_set_bool(settings,
+                     settings->bools.win32_power_plan_idle_disable, false);
+            }
+            else
+            {
+               _msg = msg_hash_to_str(MSG_FAILED_TO_APPLY_POWER_PLAN);
+               configuration_set_bool(settings,
+                     settings->bools.win32_power_plan, false);
+            }
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            configuration_set_bool(settings,
-                  settings->bools.win32_power_plan, false);
          }
          break;
 #endif

@@ -7617,7 +7617,10 @@ static bool config_load_file(const char *path, settings_t *settings)
    frontend_driver_set_sustained_performance_mode(settings->bools.sustained_performance_mode);
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
    /* Also undoes a plan left active by a run that did not exit cleanly. */
-   frontend_driver_set_power_plan(settings->bools.win32_power_plan);
+   if (     !frontend_driver_set_power_plan(settings->bools.win32_power_plan,
+               settings->bools.win32_power_plan_idle_disable)
+         && settings->bools.win32_power_plan_idle_disable)
+      frontend_driver_set_power_plan(settings->bools.win32_power_plan, false);
 #endif
 #ifdef HAVE_COMPRESSION
    rzipstream_set_write_codec(settings->uints.save_compression_codec == 1

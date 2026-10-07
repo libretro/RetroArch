@@ -593,11 +593,11 @@ bool frontend_driver_set_gamemode(bool on)
    return false;
 }
 
-bool frontend_driver_set_power_plan(bool on)
+bool frontend_driver_set_power_plan(bool on, bool idle_disable)
 {
    frontend_state_t *frontend_st   = &frontend_driver_st;
    frontend_ctx_driver_t *frontend = frontend_st->current_frontend_ctx;
    if (frontend && frontend->set_power_plan)
-      return frontend->set_power_plan(on);
+      return frontend->set_power_plan(on, idle_disable);
    return false;
 }

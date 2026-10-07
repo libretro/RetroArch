@@ -23,7 +23,7 @@ all: $(TARGET)
 $(GEN): $(PLATFORM_SRC)
 	awk '/^typedef DWORD \(WINAPI \*PowerGetActiveScheme_t\)/ { on = 1 } \
 	     on { print } \
-	     on && /^static bool frontend_win32_set_power_plan\(bool on\)$$/ { last = 1 } \
+	     on && /^static bool frontend_win32_set_power_plan\(/ { last = 1 } \
 	     last && /^}$$/ { exit }' $< > $@
 	grep -q 'win32_power_plan_apply' $@
 	grep -q 'frontend_win32_set_power_plan' $@
@@ -39,6 +39,9 @@ check: all
 	./$(TARGET) switched
 	./$(TARGET) refused
 	./$(TARGET) none
+	./$(TARGET) idle
+	./$(TARGET) missing
+	./$(TARGET) idlefail
 
 clean:
 	rm -f $(OBJS) $(TARGET) $(GEN)

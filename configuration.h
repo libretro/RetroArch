@@ -1170,6 +1170,7 @@ typedef struct settings
 
       bool gamemode_enable;
       bool win32_power_plan;
+      bool win32_power_plan_idle_disable;
 #ifdef HAVE_BSV_MOVIE
       bool replay_checkpoint_deserialize;
 #endif

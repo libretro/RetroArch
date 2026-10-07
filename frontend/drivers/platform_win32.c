@@ -751,9 +751,11 @@ typedef struct
 
 enum win32_power_plan_flags
 {
-   WIN32_POWER_PLAN_LOADED    = (1 << 0),
-   WIN32_POWER_PLAN_APPLIED   = (1 << 1),
-   WIN32_POWER_PLAN_RECOVERED = (1 << 2)
+   WIN32_POWER_PLAN_LOADED       = (1 << 0),
+   WIN32_POWER_PLAN_APPLIED      = (1 << 1),
+   WIN32_POWER_PLAN_RECOVERED    = (1 << 2),
+   /* The applied copy keeps the processor out of its idle states */
+   WIN32_POWER_PLAN_IDLE_APPLIED = (1 << 3)
 };
 
 static win32_powrprof_t win32_powrprof;
@@ -783,6 +785,24 @@ static const GUID win32_power_throttle_max =
 static const GUID win32_power_parking_min_cores =
    { 0x0cc5b647, 0xc1df, 0x4637,
       { 0x89, 0x1a, 0xde, 0xc3, 0x5c, 0x31, 0x85, 0x83 } };
+static const GUID win32_power_perf_epp =
+   { 0x36687f9e, 0xe3a5, 0x4dbf,
+      { 0xb1, 0xdc, 0x15, 0xeb, 0x38, 0x1c, 0x68, 0x63 } };
+static const GUID win32_power_idle_disable =
+   { 0x5d76a2ca, 0xe8c0, 0x402f,
+      { 0xa1, 0x33, 0x21, 0x58, 0x49, 0x2d, 0x58, 0xad } };
+static const GUID win32_power_sub_pciexpress =
+   { 0x501a4d13, 0x42af, 0x4429,
+      { 0x9f, 0xd1, 0xa8, 0x21, 0x8c, 0x26, 0x8e, 0x20 } };
+static const GUID win32_power_aspm =
+   { 0xee12f906, 0xd277, 0x404b,
+      { 0xb6, 0xda, 0xe5, 0xfa, 0x1a, 0x57, 0x6d, 0xf5 } };
+static const GUID win32_power_sub_usb =
+   { 0x2a737441, 0x1930, 0x4402,
+      { 0x8d, 0x77, 0xb2, 0xbe, 0xbb, 0xa3, 0x08, 0xa3 } };
+static const GUID win32_power_usb_suspend =
+   { 0x48e6b7a6, 0x50f5, 0x4782,
+      { 0xa5, 0xd4, 0x53, 0xbb, 0x8f, 0x07, 0xe2, 0x26 } };
 
 /* Writes the 36 hex-and-dash characters of a GUID, no braces. */
 static void win32_power_guid_to_wstr(const GUID *g, WCHAR *s)
@@ -931,9 +951,12 @@ static void win32_power_plan_restore(win32_powrprof_t *p)
  * re-evaluation at its longest interval.  Minimum and maximum processor
  * state and unparked cores are pinned at 100% - the original may cap
  * the maximum - so there is nothing left for that check to decide.
- * Only AC values change; on battery the copy behaves like the
- * original. */
-static bool win32_power_plan_apply(win32_powrprof_t *p)
+ * The energy preference favours performance, and PCI Express links and
+ * USB ports are kept out of low-power states they take time to wake
+ * from; a system without one of those settings goes without it.  With
+ * idle_disable the processor also never enters an idle state.  Only AC
+ * values change; on battery the copy behaves like the original. */
+static bool win32_power_plan_apply(win32_powrprof_t *p, bool idle_disable)
 {
    static const WCHAR name[] = L"RetroArch Low Latency";
    WCHAR desc[37];
@@ -971,8 +994,21 @@ static bool win32_power_plan_apply(win32_powrprof_t *p)
             && p->write_ac(NULL, &copy, &win32_power_sub_processor,
                      &win32_power_throttle_max, 100) == ERROR_SUCCESS
             && p->write_ac(NULL, &copy, &win32_power_sub_processor,
-                     &win32_power_parking_min_cores, 100) == ERROR_SUCCESS
-            && p->set_active(NULL, &copy) == ERROR_SUCCESS;
+                     &win32_power_parking_min_cores, 100) == ERROR_SUCCESS;
+
+      if (ok)
+      {
+         p->write_ac(NULL, &copy, &win32_power_sub_processor,
+               &win32_power_perf_epp, 0);
+         p->write_ac(NULL, &copy, &win32_power_sub_pciexpress,
+               &win32_power_aspm, 0);
+         p->write_ac(NULL, &copy, &win32_power_sub_usb,
+               &win32_power_usb_suspend, 0);
+         if (idle_disable)
+            ok = p->write_ac(NULL, &copy, &win32_power_sub_processor,
+                     &win32_power_idle_disable, 1) == ERROR_SUCCESS;
+      }
+      ok = ok && p->set_active(NULL, &copy) == ERROR_SUCCESS;
 
       if (!ok)
          p->remove(NULL, &copy);
@@ -982,11 +1018,14 @@ static bool win32_power_plan_apply(win32_powrprof_t *p)
    return ok;
 }
 
-static bool frontend_win32_set_power_plan(bool on)
+static bool frontend_win32_set_power_plan(bool on, bool idle_disable)
 {
    win32_powrprof_t *p;
 
-   if (on && (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED))
+   if (     on
+         && (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
+         && idle_disable == !!(win32_power_plan_flags
+            & WIN32_POWER_PLAN_IDLE_APPLIED))
       return true;
    if (     !on
          && !(win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
@@ -996,26 +1035,29 @@ static bool frontend_win32_set_power_plan(bool on)
       return false;
 
    win32_power_plan_flags |= WIN32_POWER_PLAN_RECOVERED;
-   win32_power_plan_flags &= ~WIN32_POWER_PLAN_APPLIED;
+   win32_power_plan_flags &= ~(WIN32_POWER_PLAN_APPLIED
+         | WIN32_POWER_PLAN_IDLE_APPLIED);
 
    if (!on)
    {
       win32_power_plan_restore(p);
       return true;
    }
-   if (!win32_power_plan_apply(p))
+   if (!win32_power_plan_apply(p, idle_disable))
    {
       RARCH_WARN("[Power] Could not activate the low-latency power plan.\n");
       return false;
    }
    win32_power_plan_flags |= WIN32_POWER_PLAN_APPLIED;
+   if (idle_disable)
+      win32_power_plan_flags |= WIN32_POWER_PLAN_IDLE_APPLIED;
    return true;
 }
 
 static void frontend_win32_deinit(void *data)
 {
    if (win32_power_plan_flags & WIN32_POWER_PLAN_APPLIED)
-      frontend_win32_set_power_plan(false);
+      frontend_win32_set_power_plan(false, false);
 }
 #endif
 

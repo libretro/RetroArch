@@ -13349,6 +13349,7 @@ unsigned menu_displaylist_build_list(
 #endif /*HAVE_LAKKA*/
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
                {MENU_ENUM_LABEL_WIN32_POWER_PLAN,           PARSE_ONLY_BOOL},
+               {MENU_ENUM_LABEL_WIN32_POWER_PLAN_IDLE_DISABLE, PARSE_ONLY_BOOL},
 #endif
             };
 
