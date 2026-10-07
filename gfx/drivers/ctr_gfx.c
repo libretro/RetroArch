@@ -2705,6 +2705,43 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
+/* Swizzled on the CPU straight into the texture: no staging copy,
+ * and nothing for the transfer engine to finish. */
+static enum video_texture_update ctr_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   unsigned int i, j;
+   const uint32_t *src;
+   uint32_t       *dst;
+   ctr_video_t     *ctr     = (ctr_video_t*)video_data;
+   ctr_texture_t   *texture = (ctr_texture_t*)id;
+
+   if (     !ctr || !texture || !texture->data
+         || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || texture->active_width  != ti->width
+         || texture->active_height != ti->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   /* A load's transfer may still be writing it; the frame retires it */
+   if (ctr->ppf_event_pending)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+
+   src = ti->pixels;
+   dst = (uint32_t*)texture->data;
+   for (j = 0; j < ti->height; j++)
+      for (i = 0; i < ti->width; i++)
+      {
+         dst[ctrgu_swizzle_coords(i, j, texture->width)] =
+                 ((*src << 8)  & 0xFFFFFF00)
+               | ((*src >> 24) & 0x000000FF);
+         src++;
+      }
+   GSPGPU_FlushDataCache(texture->data, texture->width
+         * texture->height * sizeof(uint32_t));
+
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static void ctr_unload_texture(void *data, bool threaded,
       uintptr_t handle)
 {
@@ -2972,7 +3009,22 @@ static const video_poke_interface_t ctr_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   ctr_update_texture
 };
 
 static void ctr_get_poke_interface(void* data,

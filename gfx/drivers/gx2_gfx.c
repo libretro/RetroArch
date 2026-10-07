@@ -2377,6 +2377,33 @@ static uintptr_t gx2_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
+/* Written in place like the menu texture: the menu's frames end on
+ * GX2DrawDone, so no draw still reads it. */
+static enum video_texture_update gx2_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   uint32_t i;
+   GX2Texture *texture = (GX2Texture*)id;
+
+   if (     !texture || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || texture->surface.format != GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8
+         || texture->surface.width  != ti->width
+         || texture->surface.height != ti->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   for (i = 0; i < ti->height; i++)
+      memcpy((uint32_t *)texture->surface.image
+            + (i * texture->surface.pitch),
+            ti->pixels + (i * ti->width),
+            ti->width * sizeof(uint32_t));
+
+   GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE,
+         texture->surface.image,
+         texture->surface.imageSize);
+
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static void gx2_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
@@ -2608,7 +2635,20 @@ static const video_poke_interface_t gx2_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    gx2_supports_texture_format,
-   gx2_load_texture_compressed
+   gx2_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gx2_update_texture
 };
 
 static void gx2_get_poke_interface(void *data,

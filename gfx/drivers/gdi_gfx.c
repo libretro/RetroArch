@@ -51,6 +51,10 @@
 #include "../common/win32_common.h"
 #endif
 
+#ifdef HAVE_THREADS
+#include "../video_thread_wrapper.h"
+#endif
+
 /* AlphaBlend / GradientFill / TransparentBlt are msimg32 imports
  * that became available with Windows 98 / 2000.  Most of the menu
  * draw path requires real per-pixel alpha (Ozone shadows, XMB
@@ -92,6 +96,7 @@ typedef struct gdi_texture
    HBITMAP bmp;
    HBITMAP bmp_old;
    void *data;            /* Owned BGRA premultiplied pixel buffer. */
+   void *bits;            /* bmp's pixels, once realized. */
 
    unsigned dims;         /* Pixel size of `data`, packed. */
 
@@ -999,7 +1004,8 @@ static bool gdi_texture_realize(gdi_t *gdi, gdi_texture_t *texture)
    memcpy(pixels, texture->data,
          VIDEO_SCALE_AREA(texture->dims) * sizeof(uint32_t));
 
-   texture->bmp = bmp;
+   texture->bmp  = bmp;
+   texture->bits = pixels;
    return true;
 }
 
@@ -3215,43 +3221,17 @@ static void gdi_set_video_mode(void *data, unsigned dims,
    gfx_ctx_gdi_set_video_mode(dims, fullscreen);
 }
 
-static uintptr_t gdi_load_texture(void *video_data, void *data,
-      bool threaded, enum texture_filter_type filter_type)
+/* Source pixels arrive in BGRA byte order (PNG -> ARGB32 little-
+ * endian when supports_rgba is false, which is the GDI default).
+ * AlphaBlend with AC_SRC_ALPHA needs *premultiplied* alpha source
+ * pixels: do that conversion once here so the per-frame draw path
+ * is a straight blit.  Also detect "no transparency anywhere" so
+ * the draw path can use a faster opaque blit when appropriate. */
+static bool gdi_texture_premultiply(uint32_t *dst, const uint32_t *src,
+      size_t total)
 {
-   gdi_texture_t *texture      = NULL;
-   struct texture_image *image = (struct texture_image*)data;
-   const uint32_t *src;
-   uint32_t       *dst;
-   size_t          i, total;
-   bool            has_alpha   = false;
-
-   if (!image || image->width > 2048 || image->height > 2048)
-      return 0;
-
-   texture                     = (gdi_texture_t*)calloc(1, sizeof(*texture));
-
-   if (!texture)
-      return 0;
-
-   texture->dims               = VIDEO_SCALE_PACK(image->width, image->height);
-   texture->type               = filter_type;
-   total                       = VIDEO_SCALE_AREA(texture->dims);
-   texture->data               = calloc(1, total * sizeof(uint32_t));
-
-   if (!texture->data)
-   {
-      free(texture);
-      return 0;
-   }
-
-   /* Source pixels arrive in BGRA byte order (PNG -> ARGB32 little-
-    * endian when supports_rgba is false, which is the GDI default).
-    * AlphaBlend with AC_SRC_ALPHA needs *premultiplied* alpha source
-    * pixels: do that conversion once here so the per-frame draw path
-    * is a straight blit.  Also detect "no transparency anywhere" so
-    * the draw path can use a faster opaque blit when appropriate. */
-   src   = (const uint32_t*)image->pixels;
-   dst   = (uint32_t*)texture->data;
+   size_t i;
+   bool has_alpha = false;
 
    for (i = 0; i < total; i++)
    {
@@ -3285,10 +3265,94 @@ static uintptr_t gdi_load_texture(void *video_data, void *data,
              |  (uint32_t)pb;
    }
 
-   texture->has_alpha     = has_alpha;
+   return has_alpha;
+}
+
+static uintptr_t gdi_load_texture(void *video_data, void *data,
+      bool threaded, enum texture_filter_type filter_type)
+{
+   gdi_texture_t *texture      = NULL;
+   struct texture_image *image = (struct texture_image*)data;
+   size_t          total;
+
+   if (!image || image->width > 2048 || image->height > 2048)
+      return 0;
+
+   texture                     = (gdi_texture_t*)calloc(1, sizeof(*texture));
+
+   if (!texture)
+      return 0;
+
+   texture->dims               = VIDEO_SCALE_PACK(image->width, image->height);
+   texture->type               = filter_type;
+   total                       = VIDEO_SCALE_AREA(texture->dims);
+   texture->data               = calloc(1, total * sizeof(uint32_t));
+
+   if (!texture->data)
+   {
+      free(texture);
+      return 0;
+   }
+
+   texture->has_alpha     = gdi_texture_premultiply(
+         (uint32_t*)texture->data, (const uint32_t*)image->pixels, total);
    texture->premultiplied = true;
 
    return (uintptr_t)texture;
+}
+
+/* Runs where the draws run, so the DIB is never read while written;
+ * GdiFlush retires any batched blit still sourcing it. */
+static void gdi_update_texture_internal(gdi_texture_t *texture,
+      const struct texture_image *ti)
+{
+   size_t total       = VIDEO_SCALE_AREA(texture->dims);
+   texture->has_alpha = gdi_texture_premultiply(
+         (uint32_t*)texture->data, (const uint32_t*)ti->pixels, total);
+   if (texture->bits)
+   {
+      GdiFlush();
+      memcpy(texture->bits, texture->data, total * sizeof(uint32_t));
+   }
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   gdi_texture_t *texture;
+   const struct texture_image *ti;
+} gdi_update_cmd_t;
+
+static uintptr_t gdi_update_texture_wrap(void *data)
+{
+   gdi_update_cmd_t *cmd = (gdi_update_cmd_t*)data;
+   gdi_update_texture_internal(cmd->texture, cmd->ti);
+   return 1;
+}
+#endif
+
+static enum video_texture_update gdi_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   gdi_texture_t *texture = (gdi_texture_t*)id;
+
+   if (     !texture || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || texture->dims != VIDEO_SCALE_PACK(ti->width, ti->height))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      gdi_update_cmd_t cmd;
+      cmd.texture = texture;
+      cmd.ti      = ti;
+      video_thread_texture_handle(&cmd, gdi_update_texture_wrap);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+#endif
+
+   gdi_update_texture_internal(texture, ti);
+   return VIDEO_TEXTURE_UPDATE_DONE;
 }
 
 static void gdi_unload_texture(void *data,
@@ -3366,7 +3430,22 @@ static const video_poke_interface_t gdi_poke_interface = {
    NULL, /* set_hdr_paper_white_nits */
    NULL, /* set_hdr_expand_gamut */
    NULL, /* set_hdr_scanlines */
-   NULL  /* set_hdr_subpixel_layout */
+   NULL, /* set_hdr_subpixel_layout */
+   NULL, /* supports_texture_format */
+   NULL, /* load_texture_compressed */
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gdi_update_texture
 };
 
 static void gdi_get_poke_interface(void *data,

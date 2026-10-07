@@ -1643,6 +1643,57 @@ static uintptr_t rsx_texture_unload_wrap(void *data)
 }
 #endif
 
+/* Written in place like the menu texture */
+static void rsx_update_texture_internal(rsx_texture_t *texture,
+      const struct texture_image *ti)
+{
+   memcpy(texture->data, ti->pixels, ti->height * ti->width * 4);
+}
+
+#ifdef HAVE_THREADS
+typedef struct
+{
+   rsx_texture_t *texture;
+   const struct texture_image *ti;
+} rsx_update_cmd_t;
+
+static uintptr_t rsx_texture_update_wrap(void *data)
+{
+   rsx_update_cmd_t *cmd = (rsx_update_cmd_t*)data;
+   rsx_update_texture_internal(cmd->texture, cmd->ti);
+   return 1;
+}
+#endif
+
+static enum video_texture_update rsx_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   rsx_texture_t *texture = (rsx_texture_t*)id;
+
+   if (     !texture || !texture->data
+         || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || texture->tex.format
+            != (GCM_TEXTURE_FORMAT_A8R8G8B8 | GCM_TEXTURE_FORMAT_LIN)
+         || texture->tex.width  != ti->width
+         || texture->tex.height != ti->height
+         || texture->tex.pitch  != ti->width * 4)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+#ifdef HAVE_THREADS
+   if (threaded)
+   {
+      rsx_update_cmd_t cmd;
+      cmd.texture = texture;
+      cmd.ti      = ti;
+      video_thread_texture_handle(&cmd, rsx_texture_update_wrap);
+      return VIDEO_TEXTURE_UPDATE_DONE;
+   }
+#endif
+
+   rsx_update_texture_internal(texture, ti);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static uintptr_t rsx_load_texture(void *video_data, void *data,
       bool threaded, enum texture_filter_type filter_type)
 {
@@ -2628,7 +2679,20 @@ static const video_poke_interface_t rsx_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    rsx_supports_texture_format,
-   rsx_load_texture_compressed
+   rsx_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   rsx_update_texture
 };
 
 static void rsx_get_poke_interface(void* data,

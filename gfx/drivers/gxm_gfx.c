@@ -2582,6 +2582,31 @@ static uintptr_t gxm_load_texture(void *video_data, void *data,
    return (uintptr_t)texture;
 }
 
+/* Written in place like the menu texture: no replacement to load,
+ * and no sceGxmFinish to unload the old one */
+static enum video_texture_update gxm_update_texture(void *video_data,
+      uintptr_t id, const struct texture_image *ti, bool threaded)
+{
+   unsigned int stride, j;
+   uint32_t       *tex32;
+   gxm_texture_t *texture = (gxm_texture_t*)id;
+
+   if (     !texture || !ti || !ti->pixels || ti->pix10 || ti->fp16
+         || sceGxmTextureGetFormat(&texture->gxm_tex)
+            != SCE_GXM_TEXTURE_FORMAT_U8U8U8U8_ARGB
+         || sceGxmTextureGetWidth(&texture->gxm_tex)  != ti->width
+         || sceGxmTextureGetHeight(&texture->gxm_tex) != ti->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   stride = gxm_texture_get_stride(texture) / 4;
+   tex32  = sceGxmTextureGetData(&texture->gxm_tex);
+   for (j = 0; j < ti->height; j++)
+      memcpy_neon(&tex32[j * stride], &ti->pixels[j * ti->width],
+            ti->width * sizeof(uint32_t));
+
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static void gxm_unload_texture(void *data,
       bool threaded, uintptr_t handle)
 {
@@ -2792,7 +2817,20 @@ static const video_poke_interface_t vita_poke_interface = {
    NULL, /* set_hdr_scanlines */
    NULL, /* set_hdr_subpixel_layout */
    gxm_supports_texture_format,
-   gxm_load_texture_compressed
+   gxm_load_texture_compressed,
+   NULL, /* present_last */
+   NULL, /* get_last_present_time */
+   NULL, /* hw_ring_install */
+   NULL, /* hw_ring_fence_new */
+   NULL, /* hw_ring_fence_free */
+   NULL, /* hw_ring_fence_signal */
+   NULL, /* hw_ring_fence_wait */
+   NULL, /* hw_ring_capture */
+   NULL, /* hw_ring_present_slot */
+   NULL, /* hw_ring_context_new */
+   NULL, /* hw_ring_context_free */
+   NULL, /* hw_ring_framebuffer */
+   gxm_update_texture
 };
 
 static void gxm_get_poke_interface(void *data,
