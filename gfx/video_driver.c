@@ -172,8 +172,16 @@ void gfx_ctx_wl_release_kept(void);
 #endif
 
 /* A window the last driver left up for this one
- * (gfx/common/win32_common.c): it goes if this one did not take it. */
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+ * (gfx/common/win32_common.c): it goes if this one did not take it.
+ *
+ * For desktop Windows, which is what __WINRT__ not being defined says
+ * (retro_environment.h defines it for a UWP build). This also asked
+ * that WINAPI_FAMILY not be defined - and <windows.h> defines that in
+ * every build, to the desktop family where nothing else was asked for,
+ * so on the desktop this was compiled to nothing: a window nobody took
+ * was never taken down, and stayed behind the new one. */
+#include <retro_environment.h>
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() win32_window_release_kept()
 #else
 #define VIDEO_WIN32_RELEASE_KEPT_WINDOW() ((void)0)

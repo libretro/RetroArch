@@ -78,7 +78,12 @@
 /* gfx/common/wayland_common.c */
 void gfx_ctx_wl_release_kept(void);
 #endif
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+/* Desktop Windows: __WINRT__ is what says a build is not
+ * (retro_environment.h). WINAPI_FAMILY says nothing - <windows.h>
+ * defines it in every build - and asking that it not be defined
+ * compiled this out on the desktop too. */
+#include <retro_environment.h>
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
 /* gfx/common/win32_common.c */
 void win32_window_release_kept(void);
 #endif
@@ -2373,7 +2378,7 @@ static void content_load_step(struct content_load_job *job,
              * dashboard rather than a window nothing draws into. */
             gfx_ctx_wl_release_kept();
 #endif
-#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && !defined(WINAPI_FAMILY)
+#if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
             /* nor for a Windows one */
             win32_window_release_kept();
 #endif
