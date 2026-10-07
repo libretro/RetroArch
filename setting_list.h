@@ -199,7 +199,7 @@ struct rarch_setting
    union
    {
       const char                 *string;
-      const struct retro_keybind *keybind;
+      const struct retro_keybind_def *keybind;
       size_t                     sizet;
       int                        integer;
       unsigned int               unsigned_integer;

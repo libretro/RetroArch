@@ -545,11 +545,11 @@ int main(void)
       rarch_keysym_lut[RETROK_f] = SC_KEY_F;
       for (p = 0; p < 3; p++)
          input_config_binds[p][RETRO_DEVICE_ID_JOYPAD_B].attr =
-            RETRO_KEYBIND_PACK(0, RETROK_a, 1);
+            RETRO_KEYBIND_ATTR(RETROK_a, NO_BTN, 1);
       input_config_binds[0][RARCH_FAST_FORWARD_KEY].attr =
-         RETRO_KEYBIND_PACK(0, RETROK_f, 1);
+         RETRO_KEYBIND_ATTR(RETROK_f, NO_BTN, 1);
       input_config_binds[1][RARCH_FAST_FORWARD_KEY].attr =
-         RETRO_KEYBIND_PACK(0, RETROK_f, 1);
+         RETRO_KEYBIND_ATTR(RETROK_f, NO_BTN, 1);
    }
    stub_settings.uints.input_keyboard_index[0] = 1; /* K(1) */
    stub_settings.uints.input_keyboard_index[1] = 2; /* K(5) */

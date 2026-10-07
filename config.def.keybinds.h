@@ -21,7 +21,7 @@
 #ifndef IS_SALAMANDER
 
 /* User 1 */
-static const struct retro_keybind retro_keybinds_1[] = {
+static const struct retro_keybind_def retro_keybinds_1[] = {
 #ifdef __QNX__
    { 
       AXIS_NONE, AXIS_NONE,
@@ -1480,7 +1480,7 @@ static const struct retro_keybind retro_keybinds_1[] = {
 };
 
 /* Users 2 to MAX_USERS */
-static const struct retro_keybind retro_keybinds_rest[] = {
+static const struct retro_keybind_def retro_keybinds_rest[] = {
    {
       AXIS_NONE, AXIS_NONE,
       RETRO_KEYBIND_PACK(MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_B, RETROK_UNKNOWN, true),

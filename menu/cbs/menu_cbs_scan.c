@@ -222,7 +222,7 @@ static int action_scan_input_desc(const char *path,
       RETRO_KEYBIND_SET_KEY(target, RETROK_UNKNOWN);
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
-      target->mbutton = NO_BTN;
+      RETRO_KEYBIND_SET_MBUTTON(target, NO_BTN);
    }
 
    return 0;

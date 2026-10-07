@@ -1196,11 +1196,11 @@ static void lane_core_view(void)
          case 3:
             settings->bools.input_turbo_enable = true;
             input_config_binds[0][RARCH_TURBO_ENABLE].joykey = 16;
-            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_ATTR_VALID_BIT;
             break;
          case 4:
             input_config_binds[0][RARCH_HOLD_ENABLE].joykey = 17;
-            input_config_binds[0][RARCH_HOLD_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            input_config_binds[0][RARCH_HOLD_ENABLE].attr  |= RETRO_KEYBIND_ATTR_VALID_BIT;
             break;
          case 5:
          case 6:
@@ -1211,7 +1211,7 @@ static void lane_core_view(void)
                : (sc == 6) ? INPUT_TURBO_MODE_SINGLEBUTTON
                :             INPUT_TURBO_MODE_SINGLEBUTTON_HOLD;
             input_config_binds[0][RARCH_TURBO_ENABLE].joykey = 16;
-            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_VALID_BIT;
+            input_config_binds[0][RARCH_TURBO_ENABLE].attr  |= RETRO_KEYBIND_ATTR_VALID_BIT;
             break;
          case 9:
             input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_UP].joykey    = HAT_MAP(0, HAT_UP_MASK);

@@ -4113,7 +4113,7 @@ static int16_t udev_input_state(
                            && udev_port_key_pressed(udev, own, RETRO_KEYBIND_KEY(&binds[port][new_id]))
                         )
                         return 1;
-                     else if (udev_mouse_button_pressed(udev, port, binds[port][new_id].mbutton))
+                     else if (udev_mouse_button_pressed(udev, port, RETRO_KEYBIND_MBUTTON(&binds[port][new_id])))
                         return 1;
                   }
                }

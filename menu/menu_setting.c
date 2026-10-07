@@ -64,7 +64,6 @@
 #endif
 
 #include "../config.def.h"
-#include "../config.def.keybinds.h"
 
 #if !defined(__PSL1GHT__) && defined(__PS3__)
 #include <sysutil/sysutil_bgmplayback.h>
@@ -846,8 +845,8 @@ static int setting_int_action_right_default(
 static int setting_bind_action_start(rarch_setting_t *setting)
 {
    unsigned bind_type;
-   struct retro_keybind *keybind   = NULL;
-   struct retro_keybind *def_binds = (struct retro_keybind *)retro_keybinds_1;
+   struct retro_keybind *keybind         = NULL;
+   const struct retro_keybind_def *def   = NULL;
 
    if (!setting)
       return -1;
@@ -861,14 +860,12 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    /* Clear old mapping bit */
    input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
 
-   if (setting->index_offset)
-      def_binds     = (struct retro_keybind*)retro_keybinds_rest;
-
    bind_type        = setting->bind_type;
+   def              = input_config_bind_def(setting->index_offset,
+         bind_type - MENU_SETTINGS_BIND_BEGIN);
 
-   RETRO_KEYBIND_SET_KEY(keybind,
-         RETRO_KEYBIND_KEY(&def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN]));
-   keybind->mbutton = def_binds[bind_type - MENU_SETTINGS_BIND_BEGIN].mbutton;
+   RETRO_KEYBIND_SET_KEY(keybind, RETRO_KEYBIND_DEF_KEY(def));
+   RETRO_KEYBIND_SET_MBUTTON(keybind, def->mbutton);
 
    /* Store new mapping bit */
    input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(keybind));
@@ -1305,7 +1302,8 @@ static void setting_reset_setting(rarch_setting_t* setting)
          *setting->value.target.fraction         = setting->default_value.fraction;
          break;
       case ST_BIND:
-         *setting->value.target.keybind          = *setting->default_value.keybind;
+         input_config_bind_from_def(setting->value.target.keybind,
+               setting->default_value.keybind);
          break;
       case ST_STRING:
       case ST_STRING_OPTIONS:
@@ -1431,13 +1429,10 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    index_offset = setting->index_offset;
    keybind      = (const struct retro_keybind*)setting->value.target.keybind;
    auto_bind    = (const struct retro_keybind*)
-      input_config_get_bind_auto(index_offset, keybind->id);
-   if (keybind->id >= RARCH_BIND_LIST_END)
-      return input_config_get_bind_string(settings, s, keybind, auto_bind,
-            NULL, NULL, len);
+      input_config_get_bind_auto(index_offset, input_config_bind_id(keybind));
    return input_config_get_bind_string(settings, s, keybind, auto_bind,
-         &input_config_bind_labels[index_offset][keybind->id],
-         &input_autoconf_bind_labels[index_offset][keybind->id], len);
+         &input_config_bind_labels[index_offset][input_config_bind_id(keybind)],
+         &input_autoconf_bind_labels[index_offset][input_config_bind_id(keybind)], len);
 }
 
 static int setting_action_action_ok(
@@ -1821,7 +1816,7 @@ static rarch_setting_t setting_size_setting(const char* name,
 static rarch_setting_t setting_bind_setting(const char* name,
       const char* short_description, struct retro_keybind* target,
       uint32_t idx, uint32_t idx_offset,
-      const struct retro_keybind* default_value,
+      const struct retro_keybind_def* default_value,
       const char *group, const char *subgroup,
       const char *parent_group,
       bool dont_use_enum_idx)
@@ -2648,7 +2643,7 @@ static void config_bind_alt(
       struct retro_keybind *s,
       uint32_t player, uint32_t player_offset,
       const char *name, const char *SHORT,
-      const struct retro_keybind *default_value,
+      const struct retro_keybind_def *default_value,
       rarch_setting_group_info_t *group_info,
       rarch_setting_group_info_t *subgroup_info,
       const char *parent_group)
@@ -2838,26 +2833,23 @@ static int setting_action_ok_bind_defaults(
    struct menu_state    *menu_st         = menu_state_get_ptr();
    struct menu_bind_state *binds         = &menu_st->input_binds;
    struct retro_keybind *target          = NULL;
-   const struct retro_keybind *def_binds = NULL;
 
    if (!setting)
       return -1;
 
    target             =  input_config_bind_edit(setting->index_offset, 0);
-   def_binds          =  (setting->index_offset)
-                        ? retro_keybinds_rest
-                        : retro_keybinds_1;
    binds->begin       = MENU_SETTINGS_BIND_BEGIN;
    binds->last        = MENU_SETTINGS_BIND_LAST;
 
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
          i <= MENU_SETTINGS_BIND_LAST; i++, target++)
    {
-      RETRO_KEYBIND_SET_KEY(target,
-            RETRO_KEYBIND_KEY(&def_binds[i - MENU_SETTINGS_BIND_BEGIN]));
+      RETRO_KEYBIND_SET_KEY(target, RETRO_KEYBIND_DEF_KEY(
+               input_config_bind_def(setting->index_offset,
+                  i - MENU_SETTINGS_BIND_BEGIN)));
       target->joykey  = NO_BTN;
       target->joyaxis = AXIS_NONE;
-      target->mbutton = NO_BTN;
+      RETRO_KEYBIND_SET_MBUTTON(target, NO_BTN);
    }
 
    return 0;
@@ -7777,10 +7769,7 @@ static size_t setting_get_string_representation_retropad_bind(
          return strlcpy(s, RARCH_NO_BIND, len);
       else
       {
-         const struct retro_keybind *keyptr =
-               input_config_bind(0, retro_id);
-
-         return strlcpy(s, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), len);
+         return strlcpy(s, msg_hash_to_str(input_config_bind_label(retro_id)), len);
       }
    }
    return 0;
@@ -11539,8 +11528,6 @@ static bool setting_append_list_input_player_options(
    rarch_setting_group_info_t subgroup_info;
    settings_t *settings                       = config_get_ptr();
    rarch_system_info_t *sys_info              = &runloop_state_get_ptr()->system;
-   const struct retro_keybind* const defaults = (user == 0)
-         ? retro_keybinds_1 : retro_keybinds_rest;
    const char *binds_group_label              = msg_hash_to_str
          ((enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_USER_1_BINDS + user));
 
@@ -11898,7 +11885,7 @@ static bool setting_append_list_input_player_options(
                user,
                name,
                label,
-               &defaults[i],
+               input_config_bind_def(user, i),
                &group_info,
                &subgroup_info,
                parent_group);
@@ -16093,7 +16080,7 @@ static void settings_build_input_hotkey(
                   0, 0,
                   input_config_bind_map_get_base(i),
                   input_config_bind_map_get_desc(i),
-                  &retro_keybinds_1[i],
+                  input_config_bind_def(0, i),
                   &group_info, &subgroup_info, parent_group);
             (*list)[list_info->index - 1].ui_type        = ST_UI_TYPE_BIND_BUTTON;
             (*list)[list_info->index - 1].bind_type      = i + MENU_SETTINGS_BIND_BEGIN;

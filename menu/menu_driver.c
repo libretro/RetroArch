@@ -1765,7 +1765,7 @@ static bool menu_input_key_bind_poll_find_hold_pad(
          case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
          case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-            output->mbutton = b;
+            RETRO_KEYBIND_SET_MBUTTON(output, b);
             return true;
       }
    }
@@ -1895,7 +1895,7 @@ static bool menu_input_key_bind_poll_find_trigger_pad(
          case RETRO_DEVICE_ID_MOUSE_WHEELDOWN:
          case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP:
          case RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN:
-            output->mbutton = b;
+            RETRO_KEYBIND_SET_MBUTTON(output, b);
             return true;
       }
    }

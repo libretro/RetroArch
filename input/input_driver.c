@@ -190,7 +190,7 @@ struct input_remote
 #define CHECK_INPUT_DRIVER_BLOCK_HOTKEY(normal_bind, autoconf_bind) \
 ( \
          (((RETRO_KEYBIND_KEY(normal_bind))      != RETROK_UNKNOWN) \
-      || ((normal_bind)->mbutton   != NO_BTN) \
+      || RETRO_KEYBIND_HAS_MBUTTON(normal_bind) \
       || ((normal_bind)->joykey    != NO_BTN) \
       || ((normal_bind)->joyaxis   != AXIS_NONE) \
       || ((RETRO_KEYBIND_KEY(autoconf_bind))     != RETROK_UNKNOWN) \
@@ -1828,7 +1828,7 @@ static void input_port_keys_refresh(input_port_keys_t *k,
             k->key[k->count]    = (uint16_t)key;
             k->bind[k->count++] = (uint8_t)i;
          }
-         if (binds[i].mbutton <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+         if (RETRO_KEYBIND_MBUTTON(&binds[i]) <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
             k->has_mbutton[i >> 5] |= (1u << (i & 31));
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
@@ -1962,7 +1962,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
       for (; mouse; mouse &= mouse - 1)
       {
          i = (unsigned)compat_ctz(mouse);
-         if (input_bind_mouse_button_down(k, port, binds[i].mbutton))
+         if (input_bind_mouse_button_down(k, port, RETRO_KEYBIND_MBUTTON(&binds[i])))
             ret |= (1u << i);
       }
       return (int16_t)ret;
@@ -1975,7 +1975,7 @@ static int16_t input_joypad_from_keys(input_driver_t *input, void *data,
             && (id == RARCH_GAME_FOCUS_TOGGLE || !keyboard_mapping_blocked))
          return 1;
       if (     (k->has_mbutton[id >> 5] & bit)
-            && input_bind_mouse_button_down(k, port, binds[id].mbutton))
+            && input_bind_mouse_button_down(k, port, RETRO_KEYBIND_MBUTTON(&binds[id])))
          return 1;
    }
    return 0;
@@ -2082,7 +2082,7 @@ static bool input_gun_button_from_binds(input_driver_t *input, void *data,
       else if (  !keyboard_mapping_blocked
               && (k->key_down[new_id >> 5] & (1u << (new_id & 31))))
          *held = 1;
-      else if (input_gun_mouse_button_down(port, binds[new_id].mbutton))
+      else if (input_gun_mouse_button_down(port, RETRO_KEYBIND_MBUTTON(&binds[new_id])))
          *held = 1;
    }
    return true;
@@ -2316,7 +2316,7 @@ static INLINE int32_t input_state_wrap(
             return 1;
          if (     (k->has_mbutton[id >> 5] & bit)
                && input_bind_mouse_button_down(k, _port,
-                  binds[_port][id].mbutton))
+                  RETRO_KEYBIND_MBUTTON(&binds[_port][id])))
             return 1;
          return 0;
       }
@@ -6528,10 +6528,10 @@ size_t input_config_get_bind_string(
    }
 #endif
 
-   if (bind->mbutton != NO_BTN)
+   if (RETRO_KEYBIND_HAS_MBUTTON(bind))
    {
       int tag = 0;
-      switch (bind->mbutton)
+      switch (RETRO_KEYBIND_MBUTTON(bind))
       {
          case RETRO_DEVICE_ID_MOUSE_LEFT:
             tag = MENU_ENUM_LABEL_VALUE_INPUT_MOUSE_LEFT;
@@ -8594,17 +8594,74 @@ bool input_driver_ungrab_mouse(void)
    return true;
 }
 
+/* The default tables (config.def.keybinds.h): what each bind starts
+ * as, what it is called and its number. The first user's has every
+ * bind at its own place. The other users' is shorter - it leaves three
+ * hotkeys out - so from there on an entry is not at its number's
+ * place: it is looked for by its number, and a bind the table does not
+ * have starts as nothing. Copied in by place, as it was, those users
+ * had each later hotkey three places early and the last three places
+ * holding zeroes, which read as button 0 and axis 0. */
+const struct retro_keybind_def *input_config_bind_def(
+      unsigned user, unsigned id)
+{
+   static const struct retro_keybind_def nothing = {
+      AXIS_NONE, AXIS_NONE,
+      RETRO_KEYBIND_PACK(MSG_UNKNOWN, RETROK_UNKNOWN, true),
+      0, NO_BTN, NO_BTN, 0
+   };
+   if (user == 0)
+   {
+      if (id < ARRAY_SIZE(retro_keybinds_1))
+         return &retro_keybinds_1[id];
+   }
+   else
+   {
+      /* an entry is at its number's place or before it */
+      unsigned i = id < ARRAY_SIZE(retro_keybinds_rest)
+         ? id : (unsigned)ARRAY_SIZE(retro_keybinds_rest) - 1;
+      for (;;)
+      {
+         if (retro_keybinds_rest[i].id == id)
+            return &retro_keybinds_rest[i];
+         if (retro_keybinds_rest[i].id < id || i == 0)
+            break;
+         i--;
+      }
+   }
+   return &nothing;
+}
+
+/* What a bind is called. Its place's, the same for every user. */
+enum msg_hash_enums input_config_bind_label(unsigned id)
+{
+   if (id < ARRAY_SIZE(retro_keybinds_1))
+      return RETRO_KEYBIND_DEF_ENUM_IDX(&retro_keybinds_1[id]);
+   return MSG_UNKNOWN;
+}
+
+void input_config_bind_from_def(struct retro_keybind *bind,
+      const struct retro_keybind_def *def)
+{
+   bind->joyaxis = def->joyaxis;
+   bind->joykey  = def->joykey;
+   bind->attr    = RETRO_KEYBIND_ATTR(RETRO_KEYBIND_DEF_KEY(def),
+         def->mbutton, RETRO_KEYBIND_DEF_VALID(def));
+}
+
 void input_config_reset(void)
 {
    unsigned i;
    input_driver_state_t *input_st = &input_driver_st;
 
    input_config_binds_changed();
-   memcpy(input_config_binds[0], retro_keybinds_1, sizeof(retro_keybinds_1));
-
-   for (i = 1; i < MAX_USERS; i++)
-      memcpy(input_config_binds[i], retro_keybinds_rest,
-            sizeof(retro_keybinds_rest));
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      unsigned j;
+      for (j = 0; j < RARCH_BIND_LIST_END; j++)
+         input_config_bind_from_def(&input_config_binds[i][j],
+               input_config_bind_def(i, j));
+   }
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -13399,7 +13456,7 @@ void input_remapping_set_defaults(bool clear_cache)
 
          configuration_set_uint(settings,
                settings->uints.input_remap_ids[i][j],
-                     keybind ? keybind->id : RARCH_UNMAPPED);
+                     keybind ? j : RARCH_UNMAPPED);
 
          configuration_set_uint(settings,
                settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);

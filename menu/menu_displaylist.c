@@ -6914,11 +6914,9 @@ static int menu_displaylist_parse_input_retropad_bind_list(
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END; i++)
    {
       int retro_id = input_config_bind_order[i];
-      const struct retro_keybind *keyptr =
-            input_config_bind(0, retro_id);
 
       snprintf(id, sizeof(id), "%d", retro_id);
-      strlcpy(name, msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)), sizeof(name));
+      strlcpy(name, msg_hash_to_str(input_config_bind_label(retro_id)), sizeof(name));
 
       if (!turbo_bind && i >= RARCH_FIRST_CUSTOM_BIND)
          continue;
@@ -14683,10 +14681,8 @@ static bool menu_displaylist_ctl_internal(
                         if (!strstr(descriptor, "Auto"))
                         {
                            char desc_lbl[400];
-                           const struct retro_keybind *keyptr =
-                                 input_config_bind(port, retro_id);
                            _len         = strlcpy(desc_lbl,
-                                 msg_hash_to_str(RETRO_KEYBIND_ENUM_IDX(keyptr)),
+                                 msg_hash_to_str(input_config_bind_label(retro_id)),
                                  sizeof(desc_lbl));
                            _len        += strlcpy_lit(desc_lbl + _len, ", ", sizeof(desc_lbl) - _len);
                            strlcpy(desc_lbl + _len, descriptor, sizeof(desc_lbl) - _len);

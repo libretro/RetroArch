@@ -723,7 +723,7 @@ static int16_t cocoa_input_state(
                      {
                         if (input_config_get_mouse_index(port) == 0)
                         {
-                           if (cocoa_mouse_button_pressed(apple, port, binds[port][new_id].mbutton))
+                           if (cocoa_mouse_button_pressed(apple, port, RETRO_KEYBIND_MBUTTON(&binds[port][new_id])))
                               return 1;
                         }
                      }

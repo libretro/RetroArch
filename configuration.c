@@ -8375,7 +8375,7 @@ static void save_keybind_mbutton(config_file_t *conf,
       base, '_', sizeof(key));
    strlcpy_lit(key + _len, "_mbtn", sizeof(key) - _len);
 
-   switch (bind->mbutton)
+   switch (RETRO_KEYBIND_MBUTTON(bind))
    {
       case RETRO_DEVICE_ID_MOUSE_LEFT:
          config_set_uint64(conf, key, 1);
@@ -8510,7 +8510,7 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
          save_keybind_joykey (conf, prefix, base, override_bind, true);
       if (bind->joyaxis != override_bind->joyaxis)
          save_keybind_axis   (conf, prefix, base, override_bind, true);
-      if (bind->mbutton != override_bind->mbutton)
+      if (RETRO_KEYBIND_MBUTTON(bind) != RETRO_KEYBIND_MBUTTON(override_bind))
          save_keybind_mbutton(conf, prefix, base, override_bind, true);
 
       RARCH_DBG("[Override] %s = \"%s\"\n", key, btn);
@@ -8556,7 +8556,7 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
       differs_from_default = (RETRO_KEYBIND_KEY(bind)     != RETRO_KEYBIND_KEY(def_bind))
                           || (bind->joykey  != def_bind->joykey)
                           || (bind->joyaxis != def_bind->joyaxis)
-                          || (bind->mbutton != def_bind->mbutton);
+                          || (RETRO_KEYBIND_MBUTTON(bind) != RETRO_KEYBIND_MBUTTON(def_bind));
 
       fill_pathname_join_delim(key, prefix, base, '_', sizeof(key));
 
@@ -10180,7 +10180,7 @@ int8_t config_save_overrides(enum override_type type,
             if (     config_bind->joyaxis != override_bind->joyaxis
                   || config_bind->joykey  != override_bind->joykey
                   || RETRO_KEYBIND_KEY(config_bind)     != RETRO_KEYBIND_KEY(override_bind)
-                  || config_bind->mbutton != override_bind->mbutton
+                  || RETRO_KEYBIND_MBUTTON(config_bind) != RETRO_KEYBIND_MBUTTON(override_bind)
                )
                input_config_save_keybinds_user_override(conf, i, j, override_bind);
          }
@@ -10979,26 +10979,26 @@ void input_config_parse_mouse_button(char *s,
 
    if (config_get_array(conf, key, tmp, sizeof(tmp)))
    {
-      bind->mbutton = NO_BTN;
+      RETRO_KEYBIND_SET_MBUTTON(bind, NO_BTN);
 
       if (tmp[0]=='w')
       {
          switch (tmp[1])
          {
             case 'u':
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELUP;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_WHEELUP);
                break;
             case 'd':
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_WHEELDOWN;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_WHEELDOWN);
                break;
             case 'h':
                switch (tmp[2])
                {
                   case 'u':
-                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP;
+                     RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELUP);
                      break;
                   case 'd':
-                     bind->mbutton = RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN;
+                     RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_HORIZ_WHEELDOWN);
                      break;
                }
                break;
@@ -11010,19 +11010,19 @@ void input_config_parse_mouse_button(char *s,
          switch (val)
          {
             case 1:
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_LEFT;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_LEFT);
                break;
             case 2:
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_RIGHT;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_RIGHT);
                break;
             case 3:
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_MIDDLE;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_MIDDLE);
                break;
             case 4:
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_4;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_BUTTON_4);
                break;
             case 5:
-               bind->mbutton = RETRO_DEVICE_ID_MOUSE_BUTTON_5;
+               RETRO_KEYBIND_SET_MBUTTON(bind, RETRO_DEVICE_ID_MOUSE_BUTTON_5);
                break;
          }
       }

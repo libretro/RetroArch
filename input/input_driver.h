@@ -2267,6 +2267,21 @@ static INLINE const struct retro_keybind *input_autoconf_bind(
    return &input_autoconf_binds[pad][id];
 }
 
+/* A configured bind's number: its place in its user's set. For a
+ * pointer into the configured binds, as a bind setting's is. */
+static INLINE unsigned input_config_bind_id(const struct retro_keybind *bind)
+{
+   return (unsigned)((bind - &input_config_binds[0][0]) % RARCH_BIND_LIST_END);
+}
+
+/* What a user's bind starts as (never NULL), what a bind is called,
+ * and a bind set to a default. See input_config_bind_def(). */
+const struct retro_keybind_def *input_config_bind_def(
+      unsigned user, unsigned id);
+enum msg_hash_enums input_config_bind_label(unsigned id);
+void input_config_bind_from_def(struct retro_keybind *bind,
+      const struct retro_keybind_def *def);
+
 /* A bind to be written, now. A pointer kept and written later is not
  * counted here: the menu's are covered by its being open. */
 static INLINE struct retro_keybind *input_config_bind_edit(
