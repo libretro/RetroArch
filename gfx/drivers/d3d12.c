@@ -266,6 +266,15 @@ typedef struct
    uint8_t                            lent;
 } d3d12_texture_t;
 
+/* A texture is released and freed; anything else is a COM object
+ * released once */
+struct d3d12_retired
+{
+   d3d12_texture_t *texture;
+   IUnknown        *object;
+   UINT64           fence;
+};
+
 typedef struct ALIGN(16)
 {
    math_matrix_4x4 mvp;
@@ -632,6 +641,12 @@ typedef struct
       UINT64        fence;
    } meshes_retired[4];
    unsigned                        meshes_retired_count;
+   /* What was let go while a frame that may still read it is on the
+    * GPU: released once the fence has passed the value each was
+    * retired behind (d3d12_retire). */
+   struct d3d12_retired           *retired;
+   unsigned                        retired_count;
+   unsigned                        retired_cap;
    uint64_t                        mesh_draws;
 
 #if defined(DEBUG) && !defined(__MINGW32__) && !defined(__MINGW64__)
@@ -957,6 +972,80 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
    texture->lend_mapped[1] = NULL;
    texture->lent           = 0;
    texture->pending        = 0;
+}
+
+static void d3d12_retired_release(struct d3d12_retired *r)
+{
+   if (r->texture)
+   {
+      d3d12_release_texture(r->texture);
+      free(r->texture);
+   }
+   if (r->object)
+      r->object->lpVtbl->Release(r->object);
+}
+
+/* Releases what the fence has passed */
+static void d3d12_retired_tick(d3d12_video_t *d3d12)
+{
+   unsigned i, kept;
+   UINT64 done;
+
+   if (!d3d12->retired_count)
+      return;
+   done = d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence);
+   for (i = 0, kept = 0; i < d3d12->retired_count; i++)
+   {
+      if (done >= d3d12->retired[i].fence)
+         d3d12_retired_release(&d3d12->retired[i]);
+      else
+         d3d12->retired[kept++] = d3d12->retired[i];
+   }
+   d3d12->retired_count = kept;
+}
+
+/* After a queue drain: everything retired is past */
+static void d3d12_retired_flush(d3d12_video_t *d3d12)
+{
+   unsigned i;
+   for (i = 0; i < d3d12->retired_count; i++)
+      d3d12_retired_release(&d3d12->retired[i]);
+   d3d12->retired_count = 0;
+}
+
+/* Lets @texture or @object go behind the fence value @fence; without
+ * a queue to wait on, or room to remember it, the queue is drained
+ * and it goes now. */
+static void d3d12_retire(d3d12_video_t *d3d12,
+      d3d12_texture_t *texture, IUnknown *object, UINT64 fence)
+{
+   struct d3d12_retired r;
+   r.texture = texture;
+   r.object  = object;
+   r.fence   = fence;
+
+   if (d3d12->queue.handle && d3d12->queue.fence)
+   {
+      d3d12_retired_tick(d3d12);
+      if (d3d12->retired_count == d3d12->retired_cap)
+      {
+         unsigned cap = d3d12->retired_cap ? d3d12->retired_cap * 2 : 16;
+         struct d3d12_retired *grown = (struct d3d12_retired*)realloc(
+               d3d12->retired, cap * sizeof(*grown));
+         if (grown)
+         {
+            d3d12->retired     = grown;
+            d3d12->retired_cap = cap;
+         }
+      }
+      if (d3d12->retired_count < d3d12->retired_cap)
+      {
+         d3d12->retired[d3d12->retired_count++] = r;
+         return;
+      }
+      d3d12_queue_drain(d3d12);
+   }
+   d3d12_retired_release(&r);
 }
 
 static DXGI_FORMAT d3d12_get_closest_match(D3D12Device device, D3D12_FEATURE_DATA_FORMAT_SUPPORT* desired)
@@ -4489,9 +4578,11 @@ static void d3d12_gfx_free(void* data)
    if (!d3d12)
       return;
 
-   {
-      d3d12_queue_drain(d3d12);
-   }
+   d3d12_queue_drain(d3d12);
+   d3d12_retired_flush(d3d12);
+   free(d3d12->retired);
+   d3d12->retired     = NULL;
+   d3d12->retired_cap = 0;
 
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       CloseHandle(d3d12->chain.frameLatencyWaitableObject);
@@ -6497,9 +6588,8 @@ static bool d3d12_gfx_frame(
             1000,
             true);
 
-   {
-      d3d12_queue_drain(d3d12);
-   }
+   d3d12_queue_drain(d3d12);
+   d3d12_retired_tick(d3d12);
 
 #ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
@@ -8527,9 +8617,9 @@ static uintptr_t d3d12_gfx_load_texture_internal(
    return (uintptr_t)texture;
 }
 
-/* Inner unload function -- performs the fence wait and
- * resource release.  Must run on the same thread that owns
- * the D3D12 command queue. */
+/* The texture goes once the frame that may still name it is done:
+ * the next signal after this. Must run on the thread that owns the
+ * command queue. */
 static void d3d12_gfx_unload_texture_internal(
       d3d12_video_t* d3d12, uintptr_t handle)
 {
@@ -8537,14 +8627,13 @@ static void d3d12_gfx_unload_texture_internal(
 
    if (!texture)
       return;
-
-   if (d3d12)
+   if (!d3d12)
    {
-      d3d12_queue_drain(d3d12);
+      d3d12_release_texture(texture);
+      free(texture);
+      return;
    }
-
-   d3d12_release_texture(texture);
-   free(texture);
+   d3d12_retire(d3d12, texture, NULL, d3d12->queue.fenceValue + 1);
 }
 
 #ifdef HAVE_THREADS
@@ -9399,7 +9488,8 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
    texture->upload_buffer->lpVtbl->Unmap(texture->upload_buffer, 0, NULL);
 
    /* One-shot copy on a temporary DIRECT command list, executed on the
-    * driver's queue and fence-waited (mirrors the unload synchronisation). */
+    * driver's queue ahead of the frame that first samples the texture;
+    * the list and its upload go once the signal behind it has passed. */
    device->lpVtbl->CreateCommandAllocator(device,
          D3D12_COMMAND_LIST_TYPE_DIRECT, uuidof(ID3D12CommandAllocator),
          (void**)&alloc);
@@ -9425,11 +9515,15 @@ static uintptr_t d3d12_gfx_load_texture_compressed_internal(
       D3D12CommandList lists[1];
       lists[0] = (D3D12CommandList)cmd;
       d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1, lists);
-      d3d12_queue_drain(d3d12);
    }
-   Release(cmd);
-   Release(alloc);
-   Release(texture->upload_buffer);
+   {
+      UINT64 fence = ++d3d12->queue.fenceValue;
+      d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+            d3d12->queue.fence, fence);
+      d3d12_retire(d3d12, NULL, (IUnknown*)cmd, fence);
+      d3d12_retire(d3d12, NULL, (IUnknown*)alloc, fence);
+      d3d12_retire(d3d12, NULL, (IUnknown*)texture->upload_buffer, fence);
+   }
    texture->upload_buffer = NULL;
 
    {
