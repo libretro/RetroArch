@@ -934,6 +934,7 @@ static void lane_context_api_behind_wrapper(void)
    thread_video_t *thr;
    struct string_list *names;
    union string_list_elem_attr attr;
+   enum gfx_ctx_api api;
 
    set_threaded_via_setting(true);
    run_frames(4);
@@ -942,26 +943,33 @@ static void lane_context_api_behind_wrapper(void)
       return;
 
    video_thread_wait_idle();
-   apilane_inner       = thr->driver;
-   apilane_driver      = *thr->driver;
-   apilane_driver.ident = "d3d11";
-   set_driver(thr, &apilane_driver);
+   apilane_inner = thr->driver;
+   api           = video_context_driver_get_api();
+   /* A driver with a context driver of its own is known by that;
+    * one without, by its ident */
+   if (api == GFX_CTX_NONE)
+   {
+      apilane_driver       = *thr->driver;
+      apilane_driver.ident = "d3d11";
+      set_driver(thr, &apilane_driver);
 
-   CHECK(!strcmp(video_driver_get_ident(), "d3d11"),
-         "ident behind the wrapper: %s", video_driver_get_ident());
-   CHECK(video_context_driver_get_api() == GFX_CTX_DIRECT3D11_API,
-         "context api behind the wrapper: %d, wanted %d",
-         (int)video_context_driver_get_api(), (int)GFX_CTX_DIRECT3D11_API);
+      CHECK(!strcmp(video_driver_get_ident(), "d3d11"),
+            "ident behind the wrapper: %s", video_driver_get_ident());
+      api = video_context_driver_get_api();
+      CHECK(api == GFX_CTX_DIRECT3D11_API,
+            "context api behind the wrapper: %d, wanted %d",
+            (int)api, (int)GFX_CTX_DIRECT3D11_API);
 
-   /* and the GPU names the driver published are found by it */
-   attr.i = 0;
-   names  = string_list_new();
-   string_list_append(names, "harness adapter", attr);
-   video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, names);
-   CHECK(video_driver_get_gpu_api_devices(video_context_driver_get_api()) == names,
-         "the GPU names are not found by the api the wrapper reports");
-   video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, NULL);
-   string_list_free(names);
+      /* and the GPU names the driver published are found by it */
+      attr.i = 0;
+      names  = string_list_new();
+      string_list_append(names, "harness adapter", attr);
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, names);
+      CHECK(video_driver_get_gpu_api_devices(video_context_driver_get_api()) == names,
+            "the GPU names are not found by the api the wrapper reports");
+      video_driver_set_gpu_api_devices(GFX_CTX_DIRECT3D11_API, NULL);
+      string_list_free(names);
+   }
 
    video_thread_wait_idle();
    set_driver(thr, apilane_inner);
@@ -970,7 +978,8 @@ static void lane_context_api_behind_wrapper(void)
    run_frames(2);
 
    if (failures == had)
-      fprintf(stderr, "[pass] context api behind the wrapper lane\n");
+      fprintf(stderr, "[pass] context api behind the wrapper lane (api %d)\n",
+            (int)api);
 }
 
 /* ------------------------------------------------------------------ */
