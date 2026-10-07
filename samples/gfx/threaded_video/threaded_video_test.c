@@ -5200,7 +5200,8 @@ static void lane_surface_lend(void)
        * or ARB_buffer_storage), which llvmpipe has. */
       const char *drv = getenv("HARNESS_VIDEO_DRIVER");
       if (drv && (     !strcmp(drv, "vulkan") || !strcmp(drv, "d3d12")
-                    || !strcmp(drv, "gl")     || !strcmp(drv, "glcore")))
+                    || !strcmp(drv, "gl")     || !strcmp(drv, "glcore")
+                    || !strcmp(drv, "metal")))
       {
          CHECK(lent_any, "surface lend lane: %s lent no slot", drv);
          CHECK(lent_single, "surface lend lane: %s lent a one-slot "

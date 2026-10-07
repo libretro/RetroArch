@@ -913,6 +913,10 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * thread Metal finishes on. */
    int      _stagingBusy[METAL_STAGING_SLOTS];
    unsigned _stagingNext;
+   /* Slots lent to a producer (metal_texture_lend), which writes them
+    * itself: an update from other memory never uses them. Touched
+    * only on the thread that updates. */
+   unsigned _stagingLent;
 }
 @property (nonatomic, readwrite, strong) id<MTLTexture> texture;
 @property (nonatomic, readwrite, strong) id<MTLSamplerState> sampler;
@@ -7497,6 +7501,24 @@ static void metal_unload_texture(void *data,
  * Must run on the thread that owns Context.blitCommandBuffer (see
  * metal_load_texture_internal): metal_update_texture routes it to
  * the video thread when threaded video is up. */
+/* The texture's staging buffer, METAL_STAGING_SLOTS slots of @len
+ * bytes, made on first use and kept: a texture streams at one size,
+ * and lent slots point into it. */
+static bool metal_texture_staging(Texture *t, NSUInteger len)
+{
+   id<MTLBuffer> buf;
+   if (t.staging.length >= len * METAL_STAGING_SLOTS)
+      return true;
+   /* Grown under a lent slot would leave the producer the old one */
+   if (t->_stagingLent)
+      return false;
+   if (!(buf = [t.texture.device newBufferWithLength:len * METAL_STAGING_SLOTS
+               options:PLATFORM_METAL_RESOURCE_STORAGE_MODE]))
+      return false;
+   t.staging = RARCH_AUTORELEASE_R(buf);
+   return true;
+}
+
 static enum video_texture_update metal_update_texture_internal(
       void *video_data, uintptr_t handle, const struct texture_image *ti)
 {
@@ -7518,29 +7540,51 @@ static enum video_texture_update metal_update_texture_internal(
          NSUInteger bpp = (tex.pixelFormat == MTLPixelFormatRGBA16Float)
             ? 8 : 4;
          NSUInteger len = (NSUInteger)ti->width * ti->height * bpp;
-         unsigned slot  = t->_stagingNext;
-         NSUInteger off = (NSUInteger)slot * len;
+         unsigned slot  = METAL_STAGING_SLOTS;
+         unsigned k;
+         NSUInteger off;
          id<MTLCommandBuffer> cb;
          id<MTLBlitCommandEncoder> bce;
 
-         /* The copy out of this slot from METAL_STAGING_SLOTS frames
-          * ago has not finished: the frame is dropped rather than
-          * written over the GPU's shoulder, which is the policy the
-          * other backends keep. */
-         if (__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
-            return VIDEO_TEXTURE_UPDATE_DROPPED;
-         if (t.staging.length < len * METAL_STAGING_SLOTS)
+         if (!metal_texture_staging(t, len))
+            return VIDEO_TEXTURE_UPDATE_REFUSED;
+         /* A lent slot holding the frame: the producer wrote it where
+          * the blit reads from, once the slot's last blit had run */
+         for (k = 0; k < METAL_STAGING_SLOTS; k++)
+            if (     (t->_stagingLent & (1u << k))
+                  && ti->pixels == (const void*)
+                     ((uint8_t *)t.staging.contents + (NSUInteger)k * len))
+               slot = k;
+         if (slot < METAL_STAGING_SLOTS)
          {
-            id<MTLBuffer> buf = [tex.device
-                  newBufferWithLength:len * METAL_STAGING_SLOTS
-                  options:PLATFORM_METAL_RESOURCE_STORAGE_MODE];
-            if (!buf)
-               return VIDEO_TEXTURE_UPDATE_REFUSED;
-            t.staging = RARCH_AUTORELEASE_R(buf);
+            if (__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
+               /* written early: keep the last frame */
+               return VIDEO_TEXTURE_UPDATE_DROPPED;
          }
+         else
+         {
+            /* Otherwise the next slot nobody writes but this path */
+            for (k = 0; k < METAL_STAGING_SLOTS; k++)
+            {
+               slot = (t->_stagingNext + k) % METAL_STAGING_SLOTS;
+               if (!(t->_stagingLent & (1u << slot)))
+                  break;
+            }
+            if (k == METAL_STAGING_SLOTS)
+               return VIDEO_TEXTURE_UPDATE_DROPPED;
+            /* The copy out of this slot from METAL_STAGING_SLOTS
+             * frames ago has not finished: the frame is dropped rather
+             * than written over the GPU's shoulder, which is the
+             * policy the other backends keep. */
+            if (__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
+               return VIDEO_TEXTURE_UPDATE_DROPPED;
+            t->_stagingNext = (slot + 1) % METAL_STAGING_SLOTS;
+         }
+         off = (NSUInteger)slot * len;
          if (!(cb = md.context.blitCommandBuffer))
             return VIDEO_TEXTURE_UPDATE_REFUSED;
-         memcpy((uint8_t *)t.staging.contents + off, ti->pixels, len);
+         if (!(t->_stagingLent & (1u << slot)))
+            memcpy((uint8_t *)t.staging.contents + off, ti->pixels, len);
 #if TARGET_OS_OSX
          if (t.staging.storageMode == MTLStorageModeManaged)
             [t.staging didModifyRange:NSMakeRange(off, len)];
@@ -7557,7 +7601,6 @@ static enum video_texture_update metal_update_texture_internal(
            destinationOrigin:MTLOriginMake(0, 0, 0)];
          [bce endEncoding];
          __atomic_store_n(&t->_stagingBusy[slot], 1, __ATOMIC_RELEASE);
-         t->_stagingNext = (slot + 1) % METAL_STAGING_SLOTS;
          {
             /* The slot is free again when this command buffer is done
              * with it. The handler holds the Texture so the flag it
@@ -7609,6 +7652,44 @@ static enum video_texture_update metal_update_texture(void *video_data,
 #endif
 
    return metal_update_texture_internal(video_data, handle, ti);
+}
+
+/* On the driver's own thread (see texture_lend in video_driver.h):
+ * the slot's staging memory, where the update's blit reads from */
+static void *metal_texture_lend(void *video_data, uintptr_t handle,
+      unsigned slot, size_t pitch)
+{
+   void *mem = NULL;
+   if (!video_data || !handle || slot >= 2)
+      return NULL;
+   @autoreleasepool
+   {
+      Texture *t         = (__bridge Texture *)(void *)handle;
+      id<MTLTexture> tex = t.texture;
+      NSUInteger bpp, len;
+      if (!tex || tex.mipmapLevelCount > 1)
+         return NULL;
+      bpp = (tex.pixelFormat == MTLPixelFormatRGBA16Float) ? 8 : 4;
+      len = (NSUInteger)tex.width * tex.height * bpp;
+      if (     (NSUInteger)pitch != (NSUInteger)tex.width * bpp
+            || !metal_texture_staging(t, len))
+         return NULL;
+      t->_stagingLent |= 1u << slot;
+      mem = (uint8_t *)t.staging.contents + (NSUInteger)slot * len;
+   }
+   return mem;
+}
+
+static bool metal_texture_lend_ready(void *video_data, uintptr_t handle,
+      unsigned slot)
+{
+   Texture *t;
+   if (!video_data || !handle || slot >= METAL_STAGING_SLOTS)
+      return true;
+   t = (__bridge Texture *)(void *)handle;
+   if (!(t->_stagingLent & (1u << slot)))
+      return true;
+   return !__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE);
 }
 
 typedef struct
@@ -7926,7 +8007,10 @@ static const video_poke_interface_t metal_poke_interface = {
    NULL, /* hw_ring_context_new */
    NULL, /* hw_ring_context_free */
    NULL, /* hw_ring_framebuffer */
-   metal_update_texture
+   metal_update_texture,
+   NULL, /* get_swap_interval_cap */
+   metal_texture_lend,
+   metal_texture_lend_ready
 };
 
 static void metal_get_poke_interface(void *data,
