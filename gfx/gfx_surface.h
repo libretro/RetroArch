@@ -294,6 +294,11 @@ gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter);
  * thread. */
 bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img);
 
+/* gfx_surface_submit_image for an image the caller keeps: the pixels
+ * move to the surface and @img is left without them, for the caller
+ * to free as before. Main thread. */
+bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img);
+
 /* Decode the image file at @path here and now and upload it as
  * gfx_surface_submit_image does. False when it could not be read.
  * Main thread. */

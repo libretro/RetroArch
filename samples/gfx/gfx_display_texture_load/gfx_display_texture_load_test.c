@@ -296,6 +296,15 @@ int main(void)
       CHECK(gfx_surface_submit_image(s, st_image(8)) && s->handle != a
             && st_last_unloaded == a && st_live == 1,
             "direct replacement left %d live", st_live);
+      /* an image the caller keeps: its pixels move to the still */
+      {
+         struct texture_image *img = st_image(16);
+         CHECK(gfx_surface_take_image(s, img) && !img->pixels
+               && VIDEO_SCALE_W(s->dims) == 16 && st_live == 1,
+               "a taken image did not go up");
+         image_texture_free(img);
+         free(img);
+      }
       gfx_surface_free(s);
       CHECK(st_live == 0, "%d textures live at the end", st_live);
    }

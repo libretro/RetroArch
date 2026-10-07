@@ -654,6 +654,19 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
    return true;
 }
 
+bool gfx_surface_take_image(gfx_surface_t *s, struct texture_image *img)
+{
+   struct texture_image *own;
+   if (!s || !img)
+      return false;
+   if (!(own = (struct texture_image*)malloc(sizeof(*own))))
+      return false;
+   *own            = *img;
+   img->pixels     = NULL;
+   img->compressed = NULL;
+   return gfx_surface_submit_image(s, own);
+}
+
 bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       bool supports_rgba)
 {
