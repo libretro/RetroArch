@@ -3851,6 +3851,10 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
    }
    if (!enable)
       return;
+#ifdef ANDROID
+   /* The headset is the projection context's. */
+   return;
+#endif
    vk->context.xr = vulkan_openxr_new(enable1, api_version);
    if (     vk->context.xr && enable1
          && !vulkan_context_openxr_instance_exts_ok(vk->context.xr))
