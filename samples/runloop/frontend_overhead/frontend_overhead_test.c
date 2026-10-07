@@ -3648,8 +3648,7 @@ static void lane_sticks_read_once(void)
    unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
    unsigned had         = failures;
    int16_t  v[2][4];
-   unsigned i, pass;
-   int      slot        = -1;
+   unsigned i, pass, s;
 
    if (!joypad_real)
    {
@@ -3685,8 +3684,9 @@ static void lane_sticks_read_once(void)
 
    run_loop_frames(2);
    input_driver_poll();
-   CHECK(!(  (input_st->frame_valid.sticks[0] | input_st->frame_valid.sticks[1]
-            | input_st->frame_valid.sticks[2] | input_st->frame_valid.sticks[3]) & 1),
+   /* a stick has a slot of its own for its read: the left one's is
+    * the first, the right one's the second, and there are the two */
+   CHECK(!((input_st->frame_valid.sticks[0] | input_st->frame_valid.sticks[1]) & 1),
          "sticks read once: a stick's read was kept across the poll");
 
    /* what a core does: x and y of each stick, and all of it once more,
@@ -3701,26 +3701,36 @@ static void lane_sticks_read_once(void)
    CHECK(!memcmp(v[0], v[1], sizeof(v[0])),
          "sticks read once: a second read in the frame gave another value");
 
-   /* the left stick's read is kept, x and y both, from the one read */
-   for (i = 0; i < 4; i += 2)
-      if (input_st->frame_valid.sticks[i] & 1)
-         slot = (int)i;
-   CHECK(slot >= 0 && input_st->stick_cache[0][slot][0] == v[0][0]
-                   && input_st->stick_cache[0][slot][1] == v[0][1],
-         "sticks read once: the left stick's two axes were not kept from one read");
-   if (slot >= 0)
+   /* each stick's read is kept, x and y both, from the one read ... */
+   for (s = 0; s < 2; s++)
    {
-      /* ... and is what the next read of it in the frame is given */
-      input_st->stick_cache[0][slot][1] = 1234;
-      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
-               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) == 1234,
+      CHECK(input_st->frame_valid.sticks[s] & 1,
+            s ? "sticks read once: the right stick's read was not kept"
+              : "sticks read once: the left stick's read was not kept");
+      CHECK(   input_st->stick_cache[0][s][0] == v[0][s * 2]
+            && input_st->stick_cache[0][s][1] == v[0][s * 2 + 1],
+            s ? "sticks read once: the right stick's two axes were not kept from one read"
+              : "sticks read once: the left stick's two axes were not kept from one read");
+      /* ... and is what the next read of it in the frame is given,
+       * either axis */
+      input_st->stick_cache[0][s][0] = (int16_t)(4321 + s);
+      input_st->stick_cache[0][s][1] = (int16_t)(1234 + s);
+      CHECK(   input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, s,
+                  RETRO_DEVICE_ID_ANALOG_X) == (int16_t)(4321 + s)
+            && input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, s,
+                  RETRO_DEVICE_ID_ANALOG_Y) == (int16_t)(1234 + s),
             "sticks read once: a read later in the frame went to the pad again");
-      /* until the next poll */
-      input_driver_poll();
-      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
-               RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y) == v[0][1],
-            "sticks read once: the read was kept past the next poll");
    }
+   /* until the next poll: it drops both, and a read goes to the pad */
+   input_driver_poll();
+   CHECK(!((input_st->frame_valid.sticks[0] | input_st->frame_valid.sticks[1]) & 1),
+         "sticks read once: the poll did not drop the reads it found kept");
+   for (s = 0; s < 2; s++)
+      CHECK(   input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, s,
+                  RETRO_DEVICE_ID_ANALOG_X) == v[0][s * 2]
+            && input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, s,
+                  RETRO_DEVICE_ID_ANALOG_Y) == v[0][s * 2 + 1],
+            "sticks read once: a read was kept past the next poll");
 
    memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
          sizeof(saved_auto));
