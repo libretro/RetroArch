@@ -181,12 +181,12 @@ static bool apple_display_server_set_window_decorations(void *data, bool on)
     * than sent. The constant needs no such care: cocoa_defines.h maps
     * NSWindowStyleMaskTitled to NSTitledWindowMask, its name before
     * 10.12, and that one is 10.0. */
-   if (![window respondsToSelector:@selector(setStyleMask:)])
+   if (![window respondsToSelector:sel_registerName("setStyleMask:")])
       return false;
-   if (on)
-      [window setStyleMask:([window styleMask] | NSWindowStyleMaskTitled)];
-   else
-      [window setStyleMask:([window styleMask] & ~NSWindowStyleMaskTitled)];
+   /* -setStyleMask: is 10.6; sent by selector for the older SDKs */
+   apple_rt_send_long(window, sel_registerName("setStyleMask:"), on
+         ? ([window styleMask] |  NSWindowStyleMaskTitled)
+         : ([window styleMask] & ~NSWindowStyleMaskTitled));
    return true;
 }
 #endif
@@ -329,7 +329,9 @@ static bool apple_display_server_set_resolution(void *data,
 static void *apple_display_server_get_resolution_list(
       void *data, unsigned *len)
 {
+#if !TARGET_OS_OSX || defined(RARCH_HAS_CGDISPLAYMODE_API)
    unsigned j                        = 0;
+#endif
    struct video_display_config *conf = NULL;
    double currentRate;
 

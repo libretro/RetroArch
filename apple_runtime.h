@@ -123,8 +123,11 @@ static inline __attribute__((unused)) int apple_runtime_os_version(void)
  * sel_registerName is a table lookup, @selector() is free but needs
  * the SDK to declare the method. */
 #include <dlfcn.h>
-#include <objc/runtime.h>
-#include <objc/message.h>
+/* #import: the 10.5 and older SDKs' objc/message.h has no include guard
+ * and is written to be imported, as every file here that also pulls it
+ * in does. */
+#import <objc/runtime.h>
+#import <objc/message.h>
 
 #ifndef __has_feature
 #define __has_feature(x) 0

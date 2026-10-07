@@ -14,7 +14,7 @@
  * If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <objc/objc-runtime.h>
+#import <objc/objc-runtime.h>
 #include "../../apple_runtime.h"
 #include <stdint.h>
 #include <stddef.h>
@@ -1612,8 +1612,9 @@ static NSMenu *cocoa_create_help_menu(void)
     * help menu still appears in the menu bar via setMainMenu; this
     * call is only about telling AppKit which one to route Spotlight-
     * for-Help into. */
-   if ([NSApp respondsToSelector:@selector(setHelpMenu:)])
-      [NSApp setHelpMenu:menu];
+   if ([NSApp respondsToSelector:sel_registerName("setHelpMenu:")])
+      ((void (*)(id, SEL, id))objc_msgSend)(NSApp,
+            sel_registerName("setHelpMenu:"), menu);
    RARCH_AUTORELEASE(menu);
    return menu;
 }

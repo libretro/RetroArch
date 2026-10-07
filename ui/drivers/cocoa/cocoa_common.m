@@ -16,7 +16,7 @@
 
 #import <AvailabilityMacros.h>
 #include "../../../apple_runtime.h"
-#include <objc/message.h>
+#import <objc/message.h>
 #include <sys/stat.h>
 #ifdef HAVE_COCOATOUCH
 /* Grand Central Dispatch is used by the iOS/tvOS code only; the macOS

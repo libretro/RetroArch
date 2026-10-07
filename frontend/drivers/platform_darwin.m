@@ -39,7 +39,7 @@
 
 #ifdef __OBJC__
 #include <Foundation/NSPathUtilities.h>
-#include <objc/message.h>
+#import <objc/message.h>
 #endif
 
 #if TARGET_OS_OSX
@@ -461,11 +461,15 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
     * exist and the runtime throws "unrecognized selector".  Guard
     * with respondsToSelector: and fall through to the existing
     * fill_pathname_join fallback on older systems, which simply
-    * won't do bundle-shipped filter auto-discovery. */
+    * won't do bundle-shipped filter auto-discovery. The send goes by
+    * selector, since a 10.5 SDK does not declare the method. */
+#define PLATFORM_DARWIN_BUNDLE_URL(sel, ext, subdir) \
+   ((NSURL *)((id (*)(id, SEL, id, id, id))objc_msgSend)( \
+      [NSBundle mainBundle], (sel), nil, (ext), (subdir)))
    NSURL *url = nil;
-   SEL url_for_resource_sel = @selector(URLForResource:withExtension:subdirectory:);
+   SEL url_for_resource_sel = sel_registerName("URLForResource:withExtension:subdirectory:");
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
-      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"dsp" subdirectory:@"filters/audio"];
+      url = PLATFORM_DARWIN_BUNDLE_URL(url_for_resource_sel, @"dsp", @"filters/audio");
    if (url)
        /* URLForResource: with a nil name returns a URL pointing at
         * the first matching .dsp file.  What we want is the directory
@@ -483,7 +487,7 @@ static void frontend_darwin_get_env(int *argc, char *argv[],
        fill_pathname_join(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER], application_data, "filters/audio", sizeof(g_defaults.dirs[DEFAULT_DIR_AUDIO_FILTER]));
    url = nil;
    if ([[NSBundle mainBundle] respondsToSelector:url_for_resource_sel])
-      url = [[NSBundle mainBundle] URLForResource:nil withExtension:@"filt" subdirectory:@"filters/video"];
+      url = PLATFORM_DARWIN_BUNDLE_URL(url_for_resource_sel, @"filt", @"filters/video");
    if (url)
        strlcpy(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER], [[[url path] stringByDeletingLastPathComponent] UTF8String], sizeof(g_defaults.dirs[DEFAULT_DIR_VIDEO_FILTER]));
    else

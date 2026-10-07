@@ -562,8 +562,9 @@ static void cocoa_gl_gfx_ctx_set_video_mode_mainthread(void *userdata)
        * anyway), so skip it on systems that lack the method.
        * +[NSColorSpace sRGBColorSpace] itself is 10.5+ and is safe. */
       NSWindow *win = [g_view window];
-      if ([win respondsToSelector:@selector(setColorSpace:)])
-         [win setColorSpace:[NSColorSpace sRGBColorSpace]];
+      SEL set_cs    = sel_registerName("setColorSpace:");
+      if ([win respondsToSelector:set_cs])
+         apple_rt_send_id(win, set_cs, [NSColorSpace sRGBColorSpace]);
    }
 
    /* Window and full-screen surgery lives with the application

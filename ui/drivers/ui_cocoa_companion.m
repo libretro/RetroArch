@@ -25,7 +25,7 @@
  * every object stored past the current autorelease pool is created with
  * alloc/init and released with RELEASE(). */
 
-#include <objc/objc-runtime.h>
+#import <objc/objc-runtime.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -49,10 +49,32 @@
 #include "../../apple_runtime.h"
 #endif
 
+/* AppKit names this file uses that GNUstep's AppKit has only under
+ * their older spelling; on Apple, cocoa_defines.h maps the current
+ * spelling back for SDKs that predate it. */
+#ifdef GNUSTEP
+#define COMPANION_EVT_LEFT_DOWN     NSLeftMouseDown
+#define COMPANION_EVT_LEFT_UP       NSLeftMouseUp
+#define COMPANION_MASK_LEFT_DRAGGED NSLeftMouseDraggedMask
+#define COMPANION_MASK_LEFT_UP      NSLeftMouseUpMask
+#define COMPANION_BEZEL_ROUNDED     NSRoundedBezelStyle
+#else
+#define COMPANION_EVT_LEFT_DOWN     NSEventTypeLeftMouseDown
+#define COMPANION_EVT_LEFT_UP       NSEventTypeLeftMouseUp
+#define COMPANION_MASK_LEFT_DRAGGED NSEventMaskLeftMouseDragged
+#define COMPANION_MASK_LEFT_UP      NSEventMaskLeftMouseUp
+#define COMPANION_BEZEL_ROUNDED     NSBezelStyleRounded
+#endif
+
 /* Window base coordinates to screen coordinates and back: the offset is
  * the window frame's origin, which is all -convertBaseToScreen: (10.0,
  * deprecated in 10.7) and -convertPointToScreen: (10.12) compute, so
  * the arithmetic serves every release. */
+/* +[NSSortDescriptor sortDescriptorWithKey:ascending:] is 10.6; the
+ * initialiser it wraps is 10.3, autoreleased the same way. */
+#define COMPANION_SORT(key, asc) \
+   [[[NSSortDescriptor alloc] initWithKey:(key) ascending:(asc)] autorelease_compat]
+
 static NSPoint companion_window_to_screen(NSWindow *w, NSPoint p)
 {
    NSRect f = [w frame];
@@ -560,7 +582,7 @@ static const companion_callbacks_t cc_callbacks = {
    /* A press above the content area is on the title bar: a double-
     * click docks the pane back, a drag moves the window and docks it
     * where a strip drag would if it is let go over the companion. */
-   if ([e type] == NSEventTypeLeftMouseDown && owner)
+   if ([e type] == COMPANION_EVT_LEFT_DOWN && owner)
    {
       NSPoint p = [e locationInWindow];
       if (p.y >= [[self contentView] frame].size.height)
@@ -1278,7 +1300,7 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
 {
    NSButton *b = [[[NSButton alloc] initWithFrame:NSMakeRect(0, 0, 60, CC_CTRL_H)] autorelease_compat];
    [b setTitle:BOXSTRING(title ? title : "")];
-   [b setBezelStyle:NSBezelStyleRounded];
+   [b setBezelStyle:COMPANION_BEZEL_ROUNDED];
    [b setFont:[NSFont systemFontOfSize:[NSFont smallSystemFontSize]]];
    [b setTarget:self];
    [b setAction:sel];
@@ -1478,11 +1500,11 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       [sz setHidden:YES];
       [dt setHidden:YES];
       [[[entries tableColumns] objectAtIndex:0] setSortDescriptorPrototype:
-         [NSSortDescriptor sortDescriptorWithKey:@"name" ascending:YES]];
+         COMPANION_SORT(@"name", YES)];
       [[[entries tableColumns] objectAtIndex:1] setSortDescriptorPrototype:
-         [NSSortDescriptor sortDescriptorWithKey:@"type" ascending:YES]];
-      [sz setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"size" ascending:YES]];
-      [dt setSortDescriptorPrototype:[NSSortDescriptor sortDescriptorWithKey:@"date" ascending:YES]];
+         COMPANION_SORT(@"type", YES)];
+      [sz setSortDescriptorPrototype:COMPANION_SORT(@"size", YES)];
+      [dt setSortDescriptorPrototype:COMPANION_SORT(@"date", YES)];
    }
    entriesScroll = RETAIN_COMPAT(sr);
    [content addSubview:sr];
@@ -2085,13 +2107,13 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
    f0    = [fw frame];
    for (;;)
    {
-      NSEvent *ev = [fw nextEventMatchingMask:NSEventMaskLeftMouseDragged | NSEventMaskLeftMouseUp
+      NSEvent *ev = [fw nextEventMatchingMask:COMPANION_MASK_LEFT_DRAGGED | COMPANION_MASK_LEFT_UP
          untilDate:[NSDate distantFuture] inMode:NSEventTrackingRunLoopMode dequeue:YES];
       NSPoint sp;
       if (!ev)
          break;
       sp = companion_window_to_screen(fw, [ev locationInWindow]);
-      if ([ev type] == NSEventTypeLeftMouseUp)
+      if ([ev type] == COMPANION_EVT_LEFT_UP)
          break;
       [fw setFrameOrigin:NSMakePoint(f0.origin.x + sp.x - start.x, f0.origin.y + sp.y - start.y)];
       [self floatDragUpdate:pane screenPoint:sp];
@@ -3032,8 +3054,8 @@ static void cc_thumb_done(void *ud, const char *path, unsigned dims,
       case COMPANION_BROWSE_SORT_DATE: key = @"date"; break;
       default:                         key = @"name"; break;
    }
-   d = [NSSortDescriptor sortDescriptorWithKey:key
-         ascending:companion_core_browse_sort_ascending(wimp->core) ? YES : NO];
+   d = COMPANION_SORT(key,
+         companion_core_browse_sort_ascending(wimp->core) ? YES : NO);
    syncingSort = YES;
    [entries setSortDescriptors:[NSArray arrayWithObject:d]];
    syncingSort = NO;
@@ -4176,7 +4198,7 @@ static const char *cc_thumb_subdir(int t)
        * and a key-equivalent button need not be visible, only present. */
       load = [[[NSButton alloc] initWithFrame:NSMakeRect(8, 8, 150, 24)] autorelease_compat];
       [load setTitle:BOXSTRING(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_QT_LOAD_CUSTOM_CORE))];
-      [load setBezelStyle:NSBezelStyleRounded];
+      [load setBezelStyle:COMPANION_BEZEL_ROUNDED];
       [load setTarget:self];
       [load setAction:@selector(loadCustomCore:)];
       [load setAutoresizingMask:NSViewMaxXMargin | NSViewMaxYMargin];
