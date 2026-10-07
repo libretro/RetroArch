@@ -281,7 +281,10 @@ static void font_file_ref_release(font_file_ref_t *entry)
  * glyph into the next */
 #define FONT_CACHE_PADDING   1
 #define FONT_CACHE_HASH_SIZE 0x100
-#define FONT_CACHE_HASH(c)   (((c) ^ ((c) >> 8)) & (FONT_CACHE_HASH_SIZE - 1))
+/* A bucket of @c's map: as many buckets as cells, so a chain is a cell
+ * long on average however far the cache has grown */
+#define FONT_CACHE_HASH(c, code) \
+   ((c)->map[((code) ^ ((code) >> 8)) & (c)->map_mask])
 /* No codepoint: an evicted cell whose redraw failed */
 #define FONT_CACHE_NO_CODE   0xFFFFFFFFu
 
@@ -345,7 +348,11 @@ typedef struct font_cache_slot
 
 typedef struct font_cache
 {
-   font_cache_slot_t *map[FONT_CACHE_HASH_SIZE];
+   /* The hash of the cells in use: map_small until a growth makes a
+    * larger one */
+   font_cache_slot_t **map;
+   unsigned map_mask;
+   font_cache_slot_t *map_small[FONT_CACHE_HASH_SIZE];
    font_cache_slot_t slots[FONT_CACHE_SLOTS];
    /* The cells each growth added, so no cell ever moves */
    font_cache_slot_t *grown[FONT_CACHE_GROWTHS];
@@ -655,7 +662,7 @@ static font_cache_slot_t *font_cache_take_slot(font_cache_t *c)
 
    if (victim->charcode != FONT_CACHE_NO_CODE)
    {
-      for (link = &c->map[FONT_CACHE_HASH(victim->charcode)];
+      for (link = &FONT_CACHE_HASH(c, victim->charcode);
             *link; link = &(*link)->next)
       {
          if (*link == victim)
@@ -750,8 +757,8 @@ VIDEO_NOINLINE static const struct font_glyph *font_cache_miss(
    }
 
    slot->charcode               = code;
-   slot->next                   = c->map[FONT_CACHE_HASH(code)];
-   c->map[FONT_CACHE_HASH(code)] = slot;
+   slot->next                   = FONT_CACHE_HASH(c, code);
+   FONT_CACHE_HASH(c, code)     = slot;
    slot->last_used              = c->usage_counter++;
    font_cache_dirty_cell(&c->atlas, slot->glyph.atlas_pos, c->cell_dims);
    return &slot->glyph;
@@ -766,7 +773,7 @@ static const struct font_glyph *font_cache_get_glyph(void *data,
    if (!c)
       return NULL;
 
-   for (slot = c->map[FONT_CACHE_HASH(code)]; slot; slot = slot->next)
+   for (slot = FONT_CACHE_HASH(c, code); slot; slot = slot->next)
    {
       if (slot->charcode == code)
       {
@@ -778,6 +785,36 @@ static const struct font_glyph *font_cache_get_glyph(void *data,
    }
 
    return font_cache_miss(c, code);
+}
+
+/* Makes the map as many buckets as there are cells and puts every cell
+ * in use in it; without the memory, the map stays as it was */
+static void font_cache_rehash(font_cache_t *c)
+{
+   unsigned b, i;
+   unsigned cells          = c->cols * c->rows;
+   font_cache_slot_t **map = (font_cache_slot_t**)calloc(cells,
+         sizeof(*map));
+
+   if (!map)
+      return;
+   if (c->map != c->map_small)
+      free(c->map);
+   c->map      = map;
+   c->map_mask = cells - 1;
+
+   for (b = 0; b <= c->growths; b++)
+   {
+      font_cache_slot_t *blk = b ? c->grown[b - 1] : c->slots;
+      unsigned           len = b ? c->grown_len[b - 1] : FONT_CACHE_SLOTS;
+      for (i = 0; i < len; i++)
+      {
+         if (blk[i].charcode == FONT_CACHE_NO_CODE)
+            continue;
+         blk[i].next = FONT_CACHE_HASH(c, blk[i].charcode);
+         FONT_CACHE_HASH(c, blk[i].charcode) = &blk[i];
+      }
+   }
 }
 
 /* Doubles the columns and the rows, leaving every cell where it was so
@@ -841,6 +878,7 @@ static bool font_cache_grow(font_cache_t *c)
    c->cols                     = cols;
    c->rows                     = rows;
    c->cand_count               = 0;
+   font_cache_rehash(c);
    /* All of it, for a consumer making its texture anew */
    c->atlas.dirty              = true;
    c->atlas.dirty_xy0          = 0;
@@ -895,6 +933,8 @@ static void font_cache_free(void *data)
    }
    for (i = 0; i < c->growths; i++)
       free(c->grown[i]);
+   if (c->map != c->map_small)
+      free(c->map);
    free(c->atlas.buffer);
    free(c);
 }
@@ -924,6 +964,8 @@ static font_cache_t *font_cache_new(const font_rasterizer_t *rast,
       goto error;
 
    c->rast      = rast;
+   c->map       = c->map_small;
+   c->map_mask  = FONT_CACHE_HASH_SIZE - 1;
    c->face      = face;
    c->ref       = ref;
    c->font_size = font_size;
