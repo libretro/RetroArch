@@ -10327,6 +10327,7 @@ static void input_keys_pressed(
       unsigned port,
       unsigned hotkey_port,
       bool is_menu,
+      unsigned libretro_device,
       unsigned input_hotkey_block_delay,
       input_bits_t *p_new_state,
       const retro_keybind_set *binds,
@@ -10407,9 +10408,11 @@ static void input_keys_pressed(
 #endif
 
    /* Check libretro input if emulated device type is active,
-    * except device type must be always active in menu. */
+    * except device type must be always active in menu. The port's
+    * device is the caller's to give: it has the settings in hand, and
+    * asking for them again here was a call a port, every frame. */
    if (     !(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT)
-         && !(!is_menu && !input_config_get_device(port)))
+         && !(!is_menu && !libretro_device))
       ret = input_state_wrap(
             input_st->current_driver,
             input_st->current_data,
@@ -13603,6 +13606,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
 #else
             false,
 #endif
+            settings->uints.input_libretro_device[port],
             block_delay,
             current_bits,
             (const retro_keybind_set *)input_config_binds,
