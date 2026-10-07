@@ -991,6 +991,9 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
    }
    pads->autob = autob;
    pads->gen   = gen;
+   /* the masks worked out from what it held before */
+   input_driver_st.frame_valid.pad_state[0] &= ~(1 << port);
+   input_driver_st.frame_valid.pad_state[1] &= ~(1 << port);
 }
 
 static INLINE const input_port_pads_t *input_port_pads_get(unsigned port)
@@ -1103,6 +1106,22 @@ static int16_t input_snapshot_state(unsigned b,
       return 0;
    full_range = config_get_ptr()->bools.input_trigger_full_range;
 
+   /* Worked out already this poll, with the same threshold and the
+    * same say on full-range triggers: the copy of the pad it is worked
+    * out from is the same until the next poll, so it comes out the
+    * same. (Where a trigger's rest is learned, it is learned before
+    * the first working-out uses it.) */
+   if (pads)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      unsigned port                  = (unsigned)(pads - input_port_pads);
+      if (     (input_st->frame_valid.pad_state[b] & (1 << port))
+            && (((input_st->frame_valid.pad_state_full[b] >> port) & 1)
+               == (full_range ? 1 : 0))
+            && input_st->pad_state_thr[b][port] == joypad_info->axis_threshold)
+         return input_st->pad_state_cache[b][port];
+   }
+
    for (; bound; bound &= bound - 1)
    {
       unsigned i = (unsigned)compat_ctz(bound);
@@ -1145,6 +1164,19 @@ static int16_t input_snapshot_state(unsigned b,
          if (((float)value / 0x8000) > joypad_info->axis_threshold)
             ret |= (1 << i);
       }
+   }
+
+   if (pads)
+   {
+      input_driver_state_t *input_st = &input_driver_st;
+      unsigned port                  = (unsigned)(pads - input_port_pads);
+      input_st->pad_state_cache[b][port]   = ret;
+      input_st->pad_state_thr[b][port]     = joypad_info->axis_threshold;
+      input_st->frame_valid.pad_state[b]  |= (1 << port);
+      if (full_range)
+         input_st->frame_valid.pad_state_full[b] |=  (1 << port);
+      else
+         input_st->frame_valid.pad_state_full[b] &= ~(1 << port);
    }
    return ret;
 }
@@ -1205,7 +1237,8 @@ static const input_device_driver_t *input_snapshot_for(
    if (bridge->real != drv)
    {
       memset(bridge->pads, 0, sizeof(bridge->pads));
-      st->frame_valid.snapshot[b] = 0;
+      st->frame_valid.snapshot[b]  = 0;
+      st->frame_valid.pad_state[b] = 0;
       bridge->real                = drv;
       bridge->adapter             = *drv;
       bridge->adapter.init        = NULL;
@@ -1240,6 +1273,8 @@ static void input_snapshot_forget_pad(unsigned slot)
       memset(&input_snapshot_bridge[b].pads[slot], 0,
             sizeof(input_snapshot_bridge[b].pads[slot]));
       input_driver_st.frame_valid.snapshot[b] &= ~(1 << slot);
+      /* and any port's mask worked out from it */
+      input_driver_st.frame_valid.pad_state[b] = 0;
    }
 }
 

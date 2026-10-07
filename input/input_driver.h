@@ -843,7 +843,19 @@ typedef struct
       uint16_t asked;
       uint16_t snapshot[2]; /* pads snapshotted: primary, secondary driver */
       uint16_t sticks[4];
+      uint16_t pad_state[2]; /* pad_state_cache[n][port] holds this poll's mask */
+      uint16_t pad_state_full[2]; /* ... worked out with full-range triggers on */
    } frame_valid;
+
+   /* A port's RetroPad mask as its controller holds it, worked out
+    * from the frontend's per-poll copy of the pad: once a poll. It was
+    * worked out again for every reader of the port's mask - the
+    * hotkeys, the frame's view for the core, the poll's own - three or
+    * four times a frame from a copy that does not change between
+    * them. By pad driver (primary, secondary) and port; the threshold
+    * is the one it was worked out with. */
+   int16_t pad_state_cache[2][MAX_USERS];
+   float   pad_state_thr[2][MAX_USERS];
 
    /* A port's sticks as the core is given them, each read whole once a
     * frame: x and y, for each pad driver and stick as in
