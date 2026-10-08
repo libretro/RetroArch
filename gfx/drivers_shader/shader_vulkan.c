@@ -1085,9 +1085,9 @@ static void slang_chain_flush(struct vulkan_filter_chain *chain);
 static bool slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
       unsigned passes);
 static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain);
-static void slang_chain_set_num_sync_indices(
+static bool slang_chain_set_num_sync_indices(
       struct vulkan_filter_chain *chain, unsigned num_indices);
-static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
+static bool slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
       const vulkan_filter_chain_swapchain_info info);
 static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain);
 static bool slang_chain_init_history(struct vulkan_filter_chain *chain);
@@ -1534,8 +1534,8 @@ static struct vulkan_filter_chain *slang_chain_new(
          info->memory_properties);
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
-   slang_chain_set_swapchain_info(chain, info->swapchain);
-   if (!slang_chain_set_num_passes(chain, info->num_passes))
+   if (     !slang_chain_set_swapchain_info(chain, info->swapchain)
+         || !slang_chain_set_num_passes(chain, info->num_passes))
    {
       slang_chain_free(chain);
       return NULL;
@@ -1565,15 +1565,17 @@ static void slang_chain_free(struct vulkan_filter_chain *chain)
    free(chain);
 }
 
-static void slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
+static bool slang_chain_set_swapchain_info(struct vulkan_filter_chain *chain,
       
       const vulkan_filter_chain_swapchain_info info)
 {
    chain->swapchain_info = info;
-   slang_chain_set_num_sync_indices(chain, info.num_indices);
+   return slang_chain_set_num_sync_indices(chain, info.num_indices);
 }
 
-static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
+/* A frame disposes into the queue of its sync index, so a chain without
+ * one for every index is not drawn with */
+static bool slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
       unsigned num_indices)
 {
    unsigned i;
@@ -1595,7 +1597,7 @@ static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
          /* Growth failed: keep the old, still-valid block and count.
           * (The vector this replaces terminated the process here.) */
          RARCH_ERR("[Vulkan] Failed to size deferred-disposal queues.\n");
-         return;
+         return false;
       }
       for (i = chain->num_deferred; i < num_indices; i++)
       {
@@ -1606,6 +1608,7 @@ static void slang_chain_set_num_sync_indices(struct vulkan_filter_chain *chain,
       chain->deferred_calls = new_calls;
    }
    chain->num_deferred = num_indices;
+   return true;
 }
 
 static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
@@ -1675,7 +1678,8 @@ static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
    }
 
    slang_chain_flush(chain);
-   slang_chain_set_swapchain_info(chain, info);
+   if (!slang_chain_set_swapchain_info(chain, info))
+      return false;
    return slang_chain_init(chain);
 }
 

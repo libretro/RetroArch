@@ -333,6 +333,22 @@ jobs:
           timeout 60 ./vulkan_swapchain_clamp_test
           echo "[pass] vulkan_swapchain_clamp_test"
 
+      - name: Build and run vulkan_chain_alloc_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/vulkan_chain_alloc
+        run: |
+          set -eu
+          # gfx/drivers_shader/shader_vulkan.c's filter chain creation,
+          # Vulkan through the symbol wrapper pointed at mocks, with
+          # each allocation it makes failed in turn: a chain comes back
+          # with every pass and every deferred-disposal queue, or not
+          # at all, and nothing is left behind.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./vulkan_chain_alloc_test
+          make clean
+          echo "[pass] vulkan_chain_alloc_test"
+
       - name: Build and run vulkan_texture_size_test (ASan)
         shell: bash
         working-directory: samples/gfx/vulkan_texture_size
