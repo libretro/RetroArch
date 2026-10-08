@@ -337,7 +337,10 @@ static void gfx_widgets_task_cmds_discard(dispgfx_widget_t *p_dispwidget)
    }
 }
 
-/* Task widgets not yet on screen were never animated or counted. */
+/* Task widgets not yet on screen were never animated or counted: an
+ * update to one that is still waiting changes its text and starts
+ * nothing (gfx_widgets_task_cmd_apply()), so there is no animation
+ * left pointing into what is freed here. */
 static void gfx_widgets_task_pending_discard(dispgfx_widget_t *p_dispwidget)
 {
    unsigned i;
@@ -500,16 +503,19 @@ void gfx_widgets_task_transfer(retro_task_t *from, retro_task_t *to)
    gfx_widgets_task_cmd_push(p_dispwidget, cmd);
 }
 
+/* The task's widget, and whether it is still waiting to go on screen */
 static disp_widget_msg_t *gfx_widgets_task_widget_find(
-      dispgfx_widget_t *p_dispwidget, uintptr_t key)
+      dispgfx_widget_t *p_dispwidget, uintptr_t key, bool *waiting)
 {
    size_t i;
+   *waiting = false;
    for (i = 0; i < p_dispwidget->current_msgs_size; i++)
    {
       disp_widget_msg_t *msg_widget = p_dispwidget->current_msgs[i];
       if (msg_widget && msg_widget->task_key == key)
          return msg_widget;
    }
+   *waiting = true;
    for (i = 0; i < p_dispwidget->task_pending_size; i++)
       if (p_dispwidget->task_pending[i]->task_key == key)
          return p_dispwidget->task_pending[i];
@@ -521,8 +527,9 @@ static disp_widget_msg_t *gfx_widgets_task_widget_find(
 static void gfx_widgets_task_cmd_apply(dispgfx_widget_t *p_dispwidget,
       gfx_widgets_task_cmd_t *cmd)
 {
+   bool waiting                  = false;
    disp_widget_msg_t *msg_widget =
-      gfx_widgets_task_widget_find(p_dispwidget, cmd->key);
+      gfx_widgets_task_widget_find(p_dispwidget, cmd->key, &waiting);
 
    if (msg_widget)
       gfx_widgets_task_rebind(msg_widget, cmd->ident);
@@ -636,7 +643,12 @@ static void gfx_widgets_task_cmd_apply(dispgfx_widget_t *p_dispwidget,
       msg_widget->msg_len                    = _len;
       msg_widget->msg_transition_animation   = 0;
 
-      if (!msg_widget->alternative_look)
+      /* The old title slides out and the new one in - for a widget
+       * that is on screen. One still waiting is not drawn: it takes
+       * the new title as it is. An animation started for it would
+       * also outlive it when the waiting widgets are discarded (a
+       * video driver restart), and write to it once freed. */
+      if (!msg_widget->alternative_look && !waiting)
       {
          gfx_animation_ctx_entry_t entry;
 
