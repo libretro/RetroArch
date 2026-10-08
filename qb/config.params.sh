@@ -145,6 +145,7 @@ HAVE_CHD=yes               # Compile in chd support
 HAVE_RCHD=yes              # Read CHD images with the built-in reader instead of libchdr
 CXX_CHD=no
 HAVE_7ZIP=yes              # Compile in 7z support
+HAVE_RRAR=yes              # Compile in RAR support
 HAVE_RZSTD=yes             # The built-in Zstandard codec
 HAVE_FLAC=no               # Link against libFLAC (unused by default; FLAC decode is provided by rflac)
 HAVE_RMP3=yes            # Compile in Dr. MP3 support

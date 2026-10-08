@@ -152,6 +152,9 @@ typedef struct
   Byte NS2Indx[256], NS2BSIndx[256], HB2Flag[256];
   CPpmd_See DummySee, See[25][16];
   UInt16 BinSumm[128][64];
+  /* The escape path's candidate states, here rather than on the
+   * decoder's stack: 2 KiB of pointers on a 64-bit target. */
+  CPpmd_State *EscStates[256];
 } CPpmd7;
 
 /* ---------- Decode ---------- */

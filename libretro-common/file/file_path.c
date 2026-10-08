@@ -201,6 +201,9 @@ const char *path_get_archive_delim(const char *path)
                /* Check ".apk" */
                else if (c3 == 'a' && c2 == 'p' && c1 == 'k')
                   return delim;
+               /* Check ".rar" */
+               else if (c3 == 'r' && c2 == 'a' && c1 == 'r')
+                  return delim;
             }
          }
       }
@@ -296,6 +299,10 @@ bool path_is_compressed_file(const char *path)
       case 'a':
          return tolower((unsigned char)ext[1]) == 'p'
              && tolower((unsigned char)ext[2]) == 'k'
+             && ext[3] == '\0';
+      case 'r':
+         return tolower((unsigned char)ext[1]) == 'a'
+             && tolower((unsigned char)ext[2]) == 'r'
              && ext[3] == '\0';
       case 'z':
          switch (tolower((unsigned char)ext[1]))

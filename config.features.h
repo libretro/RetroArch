@@ -290,6 +290,12 @@
 #define SUPPORTS_7ZIP false
 #endif
 
+#ifdef HAVE_RRAR
+#define SUPPORTS_RAR true
+#else
+#define SUPPORTS_RAR false
+#endif
+
 #ifdef HAVE_RZSTD
 #define SUPPORTS_ZSTD true
 #else

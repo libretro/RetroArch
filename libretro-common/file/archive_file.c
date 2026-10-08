@@ -883,9 +883,18 @@ const struct file_archive_file_backend *file_archive_get_zstd_file_backend(void)
 #endif
 }
 
+const struct file_archive_file_backend *file_archive_get_rar_file_backend(void)
+{
+#ifdef HAVE_RRAR
+   return &rar_backend;
+#else
+   return NULL;
+#endif
+}
+
 const struct file_archive_file_backend* file_archive_get_file_backend(const char *path)
 {
-#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_RZSTD) || defined(HAVE_COMPRESSION)
+#if defined(HAVE_7ZIP) || defined(HAVE_ZLIB) || defined(HAVE_RZSTD) || defined(HAVE_RRAR) || defined(HAVE_COMPRESSION)
    char newpath[PATH_MAX_LENGTH];
    const char *file_ext          = NULL;
    char *last                    = NULL;
@@ -914,6 +923,11 @@ const struct file_archive_file_backend* file_archive_get_file_backend(const char
 #ifdef HAVE_RZSTD
    if (string_is_equal_noncase(file_ext, "zst"))
       return &zstd_backend;
+#endif
+
+#ifdef HAVE_RRAR
+   if (string_is_equal_noncase(file_ext, "rar"))
+      return &rar_backend;
 #endif
 #endif
 

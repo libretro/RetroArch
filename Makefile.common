@@ -2096,6 +2096,15 @@ ifeq ($(HAVE_7ZIP),1)
            $(7ZOBJ)
 endif
 
+# The built-in RAR reader: no dependency, on unless configured off.
+HAVE_RRAR ?= 1
+ifeq ($(HAVE_RRAR),1)
+   DEFINES += -DHAVE_RRAR
+   OBJ += $(LIBRETRO_COMM_DIR)/file/archive_file_rar.o \
+          $(LIBRETRO_COMM_DIR)/formats/rar/rrar_archive.o \
+          $(LIBRETRO_COMM_DIR)/formats/rar/rrar_ppmd7.o
+endif
+
 # The built-in Zstandard codec: one C file, no dependency.
 ifeq ($(HAVE_RZSTD),1)
    DEFINES += -DHAVE_RZSTD

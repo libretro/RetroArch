@@ -140,6 +140,7 @@ jobs:
             emscripten_mmap_test
             archive_zip_test
             archive_zstd_test
+            archive_rar_test
             config_file_test
             path_resolve_realpath_test
             fill_pathname_test

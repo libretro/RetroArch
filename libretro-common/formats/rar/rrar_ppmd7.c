@@ -892,7 +892,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
   }
   for (;;)
   {
-    CPpmd_State *ps[256], *s;
+    CPpmd_State **ps = p->EscStates, *s;
     UInt32 freqSum, count, hiCnt;
     CPpmd_See *see;
     unsigned i, num, numMasked = p->MinContext->NumStats;

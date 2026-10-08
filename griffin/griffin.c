@@ -41,6 +41,12 @@
  * always available regardless of whether zlib or 7zip is compiled in. */
 #define HAVE_COMPRESSION 1
 
+/* The RAR reader has no dependency either, so it is built wherever the
+ * archive layer is. */
+#ifndef HAVE_RRAR
+#define HAVE_RRAR 1
+#endif
+
 #if defined(HAVE_OPENGL) && defined(HAVE_ANGLE)
 #ifndef HAVE_OPENGLES
 #define HAVE_OPENGLES  1
@@ -131,6 +137,12 @@ ARCHIVE FILE
 
 #ifdef HAVE_RZSTD
 #include "../libretro-common/file/archive_file_zstd.c"
+#endif
+
+#ifdef HAVE_RRAR
+#include "../libretro-common/file/archive_file_rar.c"
+#include "../libretro-common/formats/rar/rrar_archive.c"
+#include "../libretro-common/formats/rar/rrar_ppmd7.c"
 #endif
 
 /*============================================================

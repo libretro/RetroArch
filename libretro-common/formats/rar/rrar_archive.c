@@ -239,7 +239,7 @@ static INLINE void wr32(uint8_t *p, uint32_t v)
 
 /* ------------------------------------------------------------------ bits */
 
-static INLINE void br_fill(rrar_bits_t *br)
+static INLINE void rrar_br_fill(rrar_bits_t *br)
 {
    if (br->bits > 32)
       return;
@@ -266,39 +266,39 @@ static INLINE void br_fill(rrar_bits_t *br)
 }
 
 /* The next @n bits, 1 to 32, without taking them. */
-static INLINE uint32_t br_peek(rrar_bits_t *br, int n)
+static INLINE uint32_t rrar_br_peek(rrar_bits_t *br, int n)
 {
-   br_fill(br);
+   rrar_br_fill(br);
    return (uint32_t)(br->buf >> (64 - n));
 }
 
-static INLINE void br_skip(rrar_bits_t *br, int n)
+static INLINE void rrar_br_skip(rrar_bits_t *br, int n)
 {
    br->buf  <<= n;
    br->bits  -= n;
 }
 
-static INLINE uint32_t br_get(rrar_bits_t *br, int n)
+static INLINE uint32_t rrar_br_get(rrar_bits_t *br, int n)
 {
-   uint32_t v = br_peek(br, n);
-   br_skip(br, n);
+   uint32_t v = rrar_br_peek(br, n);
+   rrar_br_skip(br, n);
    return v;
 }
 
-static uint32_t br_get32(rrar_bits_t *br)
+static uint32_t rrar_br_get32(rrar_bits_t *br)
 {
-   return br_get(br, 32);
+   return rrar_br_get(br, 32);
 }
 
 /* To the start of the next byte. */
-static void br_align(rrar_bits_t *br)
+static void rrar_br_align(rrar_bits_t *br)
 {
-   br_skip(br, br->bits & 7);
+   rrar_br_skip(br, br->bits & 7);
 }
 
 /* More was read than the data had: up to 8 bytes are looked at ahead of
  * where the reading is, so that many past the end mean nothing yet. */
-static INLINE int br_overrun(const rrar_bits_t *br)
+static INLINE int rrar_br_overrun(const rrar_bits_t *br)
 {
    return br->past > 8;
 }
@@ -358,13 +358,13 @@ static int huff_build(rrar_huff_t *h, const uint8_t *lengths, unsigned n)
 /* The next symbol, or -1 if the bits are no code of this table. */
 static INLINE int huff_decode(rrar_bits_t *br, const rrar_huff_t *h)
 {
-   uint32_t v = br_peek(br, 16);
+   uint32_t v = rrar_br_peek(br, 16);
    uint32_t e = h->quick[v >> (16 - QUICK_BITS)];
    unsigned len;
 
    if (e)
    {
-      br_skip(br, (int)(e >> 12));
+      rrar_br_skip(br, (int)(e >> 12));
       return (int)(e & 0xfff);
    }
    for (len = QUICK_BITS + 1; len <= MAX_CODE_LENGTH; len++)
@@ -372,7 +372,7 @@ static INLINE int huff_decode(rrar_bits_t *br, const rrar_huff_t *h)
       if (v < h->limit[len])
       {
          unsigned i = h->index[len] + ((v >> (16 - len)) - h->first[len]);
-         br_skip(br, (int)len);
+         rrar_br_skip(br, (int)len);
          return h->symbol[i];
       }
    }
@@ -383,7 +383,7 @@ static INLINE int huff_decode(rrar_bits_t *br, const rrar_huff_t *h)
 
 static Byte ppmd_read(void *ud)
 {
-   return (Byte)br_get((rrar_bits_t *)ud, 8);
+   return (Byte)rrar_br_get((rrar_bits_t *)ud, 8);
 }
 
 /* A byte of what the member says besides its data - a filter - by
@@ -392,7 +392,7 @@ static int unpack_byte(rrar_unpack_t *u)
 {
    if (u->is_ppmd)
       return rrar_ppmd7_decode_symbol(&u->ppmd, &u->range);
-   return (int)br_get(&u->br, 8);
+   return (int)rrar_br_get(&u->br, 8);
 }
 
 /* ---------------------------------------------------------- block header */
@@ -406,19 +406,19 @@ static int unpack_tables(rrar_unpack_t *u)
    rrar_huff_t *pre;
    int          i, r = RRAR_ERROR_DATA;
 
-   br_align(br);
+   rrar_br_align(br);
 
-   u->is_ppmd = (int)br_get(br, 1);
+   u->is_ppmd = (int)rrar_br_get(br, 1);
    if (u->is_ppmd)
    {
-      unsigned flags  = br_get(br, 7);
+      unsigned flags  = rrar_br_get(br, 7);
       unsigned mem_mb = 0;
 
       /* a new model: how much memory it has */
       if (flags & 0x20)
-         mem_mb = br_get(br, 8) + 1;
+         mem_mb = rrar_br_get(br, 8) + 1;
       if (flags & 0x40)
-         u->ppmd_escape = (int)br_get(br, 8);
+         u->ppmd_escape = (int)rrar_br_get(br, 8);
 
       u->byte_in.ud   = br;
       u->byte_in.Read = ppmd_read;
@@ -444,7 +444,7 @@ static int unpack_tables(rrar_unpack_t *u)
          if (!rrar_ppmd7_range_init(&u->range, &u->byte_in))
             return RRAR_ERROR_DATA;
       }
-      return br_overrun(br) ? RRAR_ERROR_DATA : RRAR_OK;
+      return rrar_br_overrun(br) ? RRAR_ERROR_DATA : RRAR_OK;
    }
 
    /* (what the low distance bits repeat belongs to the tables) */
@@ -452,16 +452,16 @@ static int unpack_tables(rrar_unpack_t *u)
    u->low_offset_repeats = 0;
 
    /* the lengths are differences from the last tables', unless told not */
-   if (!br_get(br, 1))
+   if (!rrar_br_get(br, 1))
       memset(u->lengths, 0, sizeof(u->lengths));
 
    memset(pre_lengths, 0, sizeof(pre_lengths));
    for (i = 0; i < PRECODE_SIZE;)
    {
-      pre_lengths[i++] = (uint8_t)br_get(br, 4);
+      pre_lengths[i++] = (uint8_t)rrar_br_get(br, 4);
       if (pre_lengths[i - 1] == 0xf)
       {
-         unsigned zeros = br_get(br, 4);
+         unsigned zeros = rrar_br_get(br, 4);
          if (zeros)
          {
             unsigned j;
@@ -482,7 +482,7 @@ static int unpack_tables(rrar_unpack_t *u)
       int val = huff_decode(br, pre);
       int n, j;
 
-      if (val < 0 || br_overrun(br))
+      if (val < 0 || rrar_br_overrun(br))
          goto done;
       if (val < 16)
       {
@@ -494,14 +494,14 @@ static int unpack_tables(rrar_unpack_t *u)
          /* the last length again, a few or many times */
          if (i == 0)
             goto done;
-         n = val == 16 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         n = val == 16 ? (int)rrar_br_get(br, 3) + 3 : (int)rrar_br_get(br, 7) + 11;
          for (j = 0; j < n && i < HUFFMAN_TABLE_SIZE; j++, i++)
             u->lengths[i] = u->lengths[i - 1];
       }
       else
       {
          /* zeros */
-         n = val == 18 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         n = val == 18 ? (int)rrar_br_get(br, 3) + 3 : (int)rrar_br_get(br, 7) + 11;
          for (j = 0; j < n && i < HUFFMAN_TABLE_SIZE; j++)
             u->lengths[i++] = 0;
       }
@@ -528,19 +528,19 @@ static uint32_t vm_number(rrar_bits_t *br)
 {
    uint32_t val;
 
-   switch (br_get(br, 2))
+   switch (rrar_br_get(br, 2))
    {
       case 0:
-         return br_get(br, 4);
+         return rrar_br_get(br, 4);
       case 1:
-         val = br_get(br, 8);
+         val = rrar_br_get(br, 8);
          if (val >= 16)
             return val;
-         return 0xffffff00u | (val << 4) | br_get(br, 4);
+         return 0xffffff00u | (val << 4) | rrar_br_get(br, 4);
       case 2:
-         return br_get(br, 16);
+         return rrar_br_get(br, 16);
    }
-   return br_get32(br);
+   return rrar_br_get32(br);
 }
 
 /* Which of the standard filters a program is: they are told by their
@@ -609,7 +609,7 @@ static int filter_parse(rrar_unpack_t *u, const uint8_t *bytes, uint32_t length,
    regs[4] = block_length;
    if (flags & 0x10)
    {
-      unsigned mask = br_get(&br, 7);
+      unsigned mask = rrar_br_get(&br, 7);
       for (i = 0; i < 7; i++)
          if (mask & (1u << i))
             regs[i] = vm_number(&br);
@@ -622,18 +622,18 @@ static int filter_parse(rrar_unpack_t *u, const uint8_t *bytes, uint32_t length,
       uint8_t        x = 0;
       uint32_t       kind;
 
-      if (len == 0 || len > 0x10000 || br_overrun(&br))
+      if (len == 0 || len > 0x10000 || rrar_br_overrun(&br))
          return RRAR_ERROR_DATA;
       if (!(code = (uint8_t *)malloc(len)))
          return RRAR_ERROR_MEM;
       for (i = 0; i < len; i++)
-         code[i] = (uint8_t)br_get(&br, 8);
+         code[i] = (uint8_t)rrar_br_get(&br, 8);
       for (i = 1; i < len; i++)
          x ^= code[i];
-      kind = (x == code[0] && !br_overrun(&br)) ? filter_kind(code, len) : 0;
+      kind = (x == code[0] && !rrar_br_overrun(&br)) ? filter_kind(code, len) : 0;
       i    = x == code[0];
       free(code);
-      if (!i || br_overrun(&br))
+      if (!i || rrar_br_overrun(&br))
          return RRAR_ERROR_DATA;
       if (!kind)
          return RRAR_ERROR_UNSUPPORTED;   /* a program of the archive's own */
@@ -660,9 +660,9 @@ static int filter_parse(rrar_unpack_t *u, const uint8_t *bytes, uint32_t length,
       if (len > FILTER_GLOBAL_MAX)
          return RRAR_ERROR_DATA;
       for (i = 0; i < len; i++)
-         br_get(&br, 8);
+         rrar_br_get(&br, 8);
    }
-   if (br_overrun(&br))
+   if (rrar_br_overrun(&br))
       return RRAR_ERROR_DATA;
 
    if (     block_length > VM_MEMORY_SIZE
@@ -719,7 +719,7 @@ static int filter_read(rrar_unpack_t *u)
       return RRAR_ERROR_MEM;
    for (i = 0; i < length; i++)
    {
-      if ((v = unpack_byte(u)) < 0 || br_overrun(&u->br))
+      if ((v = unpack_byte(u)) < 0 || rrar_br_overrun(&u->br))
       {
          free(code);
          return RRAR_ERROR_DATA;
@@ -1156,7 +1156,7 @@ static int unpack_lz(rrar_unpack_t *u)
       }
       /* (bytes are made up past the end of the data: an archive that is
        * cut short is seen here, or by the caller) */
-      if (br_overrun(&br))
+      if (rrar_br_overrun(&br))
       {
          r = RRAR_ERROR_DATA;
          break;
@@ -1164,7 +1164,7 @@ static int unpack_lz(rrar_unpack_t *u)
       if (symbol == 256)
       {
          /* the end of the block: of the file too, or new tables */
-         r = br_get(&br, 1) ? LZ_NEW_TABLE : LZ_END_OF_FILE;
+         r = rrar_br_get(&br, 1) ? LZ_NEW_TABLE : LZ_END_OF_FILE;
          break;
       }
       if (symbol == 257)
@@ -1200,7 +1200,7 @@ static int unpack_lz(rrar_unpack_t *u)
          }
          len = length_bases[len_symbol] + 2;
          if (length_bits[len_symbol])
-            len += br_get(&br, length_bits[len_symbol]);
+            len += rrar_br_get(&br, length_bits[len_symbol]);
          for (i = idx; i > 0; i--)
             u->old_offset[i] = u->old_offset[i - 1];
          u->old_offset[0] = offs;
@@ -1210,7 +1210,7 @@ static int unpack_lz(rrar_unpack_t *u)
          /* two bytes from close by */
          offs = short_bases[symbol - 263] + 1;
          if (short_bits[symbol - 263])
-            offs += br_get(&br, short_bits[symbol - 263]);
+            offs += rrar_br_get(&br, short_bits[symbol - 263]);
          len = 2;
          for (i = 3; i > 0; i--)
             u->old_offset[i] = u->old_offset[i - 1];
@@ -1227,7 +1227,7 @@ static int unpack_lz(rrar_unpack_t *u)
          }
          len = length_bases[symbol - 271] + 3;
          if (length_bits[symbol - 271])
-            len += br_get(&br, length_bits[symbol - 271]);
+            len += rrar_br_get(&br, length_bits[symbol - 271]);
 
          if ((offs_symbol = huff_decode(&br, &u->offset_code)) < 0
                || offs_symbol >= (int)(sizeof(offset_bases) / sizeof(offset_bases[0])))
@@ -1242,7 +1242,7 @@ static int unpack_lz(rrar_unpack_t *u)
             {
                /* the low four bits have a code of their own, and repeat */
                if (offset_bits[offs_symbol] > 4)
-                  offs += br_get(&br, offset_bits[offs_symbol] - 4) << 4;
+                  offs += rrar_br_get(&br, offset_bits[offs_symbol] - 4) << 4;
                if (u->low_offset_repeats)
                {
                   u->low_offset_repeats--;
@@ -1269,7 +1269,7 @@ static int unpack_lz(rrar_unpack_t *u)
                }
             }
             else
-               offs += br_get(&br, offset_bits[offs_symbol]);
+               offs += rrar_br_get(&br, offset_bits[offs_symbol]);
          }
          if (offs >= 0x40000)
             len++;
@@ -1286,7 +1286,7 @@ static int unpack_lz(rrar_unpack_t *u)
 
    u->br  = br;
    u->pos = pos;
-   if (r == RRAR_OK && br_overrun(&br))
+   if (r == RRAR_OK && rrar_br_overrun(&br))
       r = RRAR_ERROR_DATA;
    return r;
 }
@@ -1303,7 +1303,7 @@ static int unpack29(rrar_unpack_t *u)
       int      symbol, code, i;
       uint32_t offs;
 
-      if (br_overrun(&u->br))
+      if (rrar_br_overrun(&u->br))
          return RRAR_ERROR_DATA;
       if (new_table)
       {
@@ -1385,7 +1385,7 @@ static INLINE uint32_t length5(rrar_bits_t *br, unsigned slot)
       length += (uint32_t)(4 | (slot & 3)) << bits;
    }
    if (bits)
-      length += br_get(br, (int)bits);
+      length += rrar_br_get(br, (int)bits);
    return length;
 }
 
@@ -1393,12 +1393,12 @@ static INLINE uint32_t length5(rrar_bits_t *br, unsigned slot)
  * first. */
 static uint32_t filter5_number(rrar_bits_t *br)
 {
-   unsigned bytes = br_get(br, 2) + 1;
+   unsigned bytes = rrar_br_get(br, 2) + 1;
    uint32_t v = 0;
    unsigned i;
 
    for (i = 0; i < bytes; i++)
-      v += br_get(br, 8) << (i * 8);
+      v += rrar_br_get(br, 8) << (i * 8);
    return v;
 }
 
@@ -1413,10 +1413,10 @@ static int unpack5_tables(rrar_unpack_t *u, rrar_bits_t *br)
 
    for (i = 0; i < PRECODE_SIZE;)
    {
-      unsigned v = br_get(br, 4);
+      unsigned v = rrar_br_get(br, 4);
       if (v == 15)
       {
-         unsigned zeros = br_get(br, 4);
+         unsigned zeros = rrar_br_get(br, 4);
          if (!zeros)
             pre_lengths[i++] = 15;
          else
@@ -1440,7 +1440,7 @@ static int unpack5_tables(rrar_unpack_t *u, rrar_bits_t *br)
       int val = huff_decode(br, pre);
       int n, j;
 
-      if (val < 0 || br_overrun(br))
+      if (val < 0 || rrar_br_overrun(br))
          goto done;
       if (val < 16)
          u->lengths[i++] = (uint8_t)val;
@@ -1448,13 +1448,13 @@ static int unpack5_tables(rrar_unpack_t *u, rrar_bits_t *br)
       {
          if (i == 0)
             goto done;
-         n = val == 16 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         n = val == 16 ? (int)rrar_br_get(br, 3) + 3 : (int)rrar_br_get(br, 7) + 11;
          for (j = 0; j < n && i < HUFFMAN_TABLE5_SIZE; j++, i++)
             u->lengths[i] = u->lengths[i - 1];
       }
       else
       {
-         n = val == 18 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         n = val == 18 ? (int)rrar_br_get(br, 3) + 3 : (int)rrar_br_get(br, 7) + 11;
          for (j = 0; j < n && i < HUFFMAN_TABLE5_SIZE; j++)
             u->lengths[i++] = 0;
       }
@@ -1480,12 +1480,12 @@ static int unpack5_filter(rrar_unpack_t *u, rrar_bits_t *br, size_t pos)
 {
    uint32_t       start  = filter5_number(br);
    uint32_t       length = filter5_number(br);
-   unsigned       type   = br_get(br, 3);
-   uint32_t       channels = type == 0 ? br_get(br, 5) + 1 : 0;
+   unsigned       type   = rrar_br_get(br, 3);
+   uint32_t       channels = type == 0 ? rrar_br_get(br, 5) + 1 : 0;
    uint64_t       block  = (uint64_t)pos + start;
    rrar_filter_t *f;
 
-   if (br_overrun(br) || length < 4 || length > FILTER5_BLOCK_MAX)
+   if (rrar_br_overrun(br) || length < 4 || length > FILTER5_BLOCK_MAX)
       return RRAR_ERROR_DATA;
    if (type > 3)
       return RRAR_ERROR_UNSUPPORTED;
@@ -1624,13 +1624,13 @@ static int unpack50(rrar_unpack_t *u)
                   int low;
                   /* the low four bits have a code of their own */
                   if (bits > 4)
-                     dist += (uint64_t)br_get(&br, (int)bits - 4) << 4;
+                     dist += (uint64_t)rrar_br_get(&br, (int)bits - 4) << 4;
                   if ((low = huff_decode(&br, &u->low_offset_code)) < 0)
                      return RRAR_ERROR_DATA;
                   dist += (unsigned)low;
                }
                else
-                  dist += br_get(&br, (int)bits);
+                  dist += rrar_br_get(&br, (int)bits);
             }
             if (dist > 0x100)
             {
@@ -1680,12 +1680,12 @@ static int unpack50(rrar_unpack_t *u)
             len = length5(&br, (unsigned)slot);
             u->last_length = len;
          }
-         if (br_overrun(&br))
+         if (rrar_br_overrun(&br))
             return RRAR_ERROR_DATA;
          pos = copy_match(out, pos, size, (uint32_t)dist, len);
       }
 
-      if (br_overrun(&br))
+      if (rrar_br_overrun(&br))
          return RRAR_ERROR_DATA;
       if (!block_done)
          break;                     /* the member is full */

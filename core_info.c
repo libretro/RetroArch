@@ -2043,6 +2043,11 @@ static size_t core_info_list_resolve_all_extensions(
          scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
          total_chars, _HASH_MASK);
 #endif
+#ifdef HAVE_RRAR
+   CORE_INFO_EXT_INSERT("rar", STRLEN_CONST("rar"), scr->slots,
+         scr->token_buf, token_pos, _TOKEN_BUF, unique_count,
+         total_chars, _HASH_MASK);
+#endif
 #ifdef HAVE_COMPRESSION
    CORE_INFO_EXT_INSERT("zip", STRLEN_CONST("zip"), scr->slots,
          scr->token_buf, token_pos, _TOKEN_BUF, unique_count,

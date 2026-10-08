@@ -3591,6 +3591,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #ifdef HAVE_RZSTD
          {SUPPORTS_ZSTD, "Zstandard"},
 #endif
+#ifdef HAVE_RRAR
+         {SUPPORTS_RAR, "RAR"},
+#endif
 #ifdef HAVE_FFMPEG
          {SUPPORTS_FFMPEG, "FFmpeg"},
 #endif

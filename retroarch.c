@@ -7376,6 +7376,9 @@ static void retroarch_print_features(void)
 #ifdef HAVE_RZSTD
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_ZSTD,            "zstd",            "Zstandard support");
 #endif
+#ifdef HAVE_RRAR
+   _len += _PSUPP_BUF(buf, _len, SUPPORTS_RAR,             "rar",             "RAR support");
+#endif
 #ifdef HAVE_FFMPEG
    _len += _PSUPP_BUF(buf, _len, SUPPORTS_FFMPEG,          "FFmpeg",          "On-the-fly recording of gameplay with libavcodec");
 #endif
