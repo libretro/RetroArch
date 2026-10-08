@@ -14,3 +14,13 @@ S_BOOL(video_gpu_record, VIDEO_GPU_RECORD,
       DEFAULT_GPU_RECORD, SD_FLAG_NONE, 0, 0,
       "Use GPU Recording",
       "Record output of GPU shaded material if available.")
+S_BOOL(video_record_allow_frame_drop, VIDEO_RECORD_ALLOW_FRAME_DROP,
+      "video_record_allow_frame_drop",
+      DEFAULT_VIDEO_RECORD_ALLOW_FRAME_DROP, SD_FLAG_NONE, 0, 0,
+      "Drop Frames When Encoder Falls Behind",
+      "When the recording encoder can't keep up, skip frames in the recording instead of slowing down the game. Disable to keep every frame at the cost of stutter.")
+S_UINT(video_record_fifo_frames, VIDEO_RECORD_FIFO_FRAMES,
+      "video_record_fifo_frames",
+      DEFAULT_VIDEO_RECORD_FIFO_FRAMES, SD_FLAG_LAKKA_ADVANCED, SDESC_RANGE_MINMAX, 0, MIN_VIDEO_RECORD_FIFO_FRAMES, MAX_VIDEO_RECORD_FIFO_FRAMES, 4, MIN_VIDEO_RECORD_FIFO_FRAMES, setting_action_ok_uint, NULL,
+      "Recording Video Buffer (Frames)",
+      "Frames queued between the game and the encoder. Larger values absorb encoder hiccups but use more memory. Applies to the next recording.")

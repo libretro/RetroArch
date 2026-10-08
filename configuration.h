@@ -426,6 +426,7 @@ typedef struct settings
       unsigned window_auto_dims_max;
 
       unsigned video_record_threads;
+      unsigned video_record_fifo_frames;
 
       unsigned libnx_overclock;
       unsigned ai_service_mode;
@@ -669,6 +670,7 @@ typedef struct settings
       bool video_disable_composition;
       bool video_post_filter_record;
       bool video_gpu_record;
+      bool video_record_allow_frame_drop;
       bool video_gpu_screenshot;
       bool video_allow_rotate;
       bool video_shared_context;

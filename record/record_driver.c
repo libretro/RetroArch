@@ -300,6 +300,8 @@ bool recording_init(void)
    params.video_stream_scale_factor = settings->uints.video_stream_scale_factor;
    params.video_record_threads      = settings->uints.video_record_threads;
    params.streaming_mode            = settings->uints.streaming_mode;
+   params.allow_frame_drop          = settings->bools.video_record_allow_frame_drop;
+   params.video_fifo_frames         = settings->uints.video_record_fifo_frames;
 
    params.out_dims                  = VIDEO_SCALE_PACK(
          av_info->geometry.base_width, av_info->geometry.base_height);

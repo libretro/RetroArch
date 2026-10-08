@@ -1196,6 +1196,15 @@
 /* Record post-shaded GPU output instead of raw game footage if available. */
 #define DEFAULT_GPU_RECORD false
 
+/* Drop recorded video frames when the encoder queue is full, instead
+ * of stalling the frontend until it drains. */
+#define DEFAULT_VIDEO_RECORD_ALLOW_FRAME_DROP true
+
+/* Depth of the recording video queue, in frames. */
+#define DEFAULT_VIDEO_RECORD_FIFO_FRAMES 32
+#define MIN_VIDEO_RECORD_FIFO_FRAMES 8
+#define MAX_VIDEO_RECORD_FIFO_FRAMES 128
+
 /* Watch shader files for changes and auto-apply as necessary. */
 #define DEFAULT_VIDEO_SHADER_WATCH_FILES false
 

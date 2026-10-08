@@ -70,6 +70,8 @@ struct record_params
    unsigned video_stream_scale_factor;
    unsigned video_record_threads;
    unsigned streaming_mode;
+   /* Video queue depth in frames (driver clamps/defaults out-of-range). */
+   unsigned video_fifo_frames;
 
    /* Aspect ratio of input video. Parameters are passed to the muxer,
     * the video itself is not scaled.
@@ -82,6 +84,8 @@ struct record_params
    enum ffemu_pix_format pix_fmt;
 
    bool video_gpu_record;
+   /* Drop frames when the encoder queue is full instead of blocking. */
+   bool allow_frame_drop;
 };
 
 struct record_video_data
