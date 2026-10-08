@@ -231,12 +231,13 @@ private_lane :ra_upload_to_testflight do |options|
 
     make_public = options[:public].nil? || options[:public]
     if make_public && ra_prior_build_in_review
-      UI.important("A prior build is currently in TestFlight review; uploading without external distribution")
+      UI.important("A prior build is currently in TestFlight review; uploading without sending this nightly to the testers")
       make_public = false
     end
 
-    # The groups are left out, not emptied, for an internal upload:
-    # pilot submits for beta review whenever groups are given at all.
+    # A nightly held back from the testers is uploaded with no groups,
+    # not an empty list: pilot submits for beta review whenever groups
+    # are given at all. The next nightly after the review goes out.
     # The review check above runs before the build's processing wait,
     # so a build that went into review meanwhile still refuses the
     # submission; the upload itself has landed by then.
@@ -249,7 +250,7 @@ private_lane :ra_upload_to_testflight do |options|
       )
     rescue Spaceship::UnexpectedResponse => ex
       raise unless ex.message.include?("Another build is in review")
-      UI.important("Uploaded; not submitted for external review, another build is in review")
+      UI.important("Uploaded; held back from the testers, another build is in review")
     end
   end
 end
