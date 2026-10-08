@@ -1578,6 +1578,59 @@ static void lane_push_runtime_survives_failed_copy(void)
       fprintf(stderr, "  [pass] a push that cannot copy its strings leaves the list alone\n");
 }
 
+/* A pushed entry starts with no thumbnail-name flags.  The push
+ * shifts the list down one and builds the new entry in slot 0 with
+ * read-modify-write setters, so the flag bits it never cleared came
+ * from the entry that had been on top. */
+static void lane_push_starts_without_thumbnail_flags(void)
+{
+   unsigned had = failures;
+   playlist_config_t cfg;
+   playlist_t *pl;
+   struct playlist_entry push;
+   char path[512];
+
+   memset(&cfg, 0, sizeof(cfg));
+   snprintf(path, sizeof(path), "%s/thumb_flags.lpl", fixture_dir);
+   strlcpy(cfg.path, path, sizeof(cfg.path));
+   cfg.capacity = 16;
+
+   if (!(pl = playlist_init(&cfg)))
+   {
+      CHECK(false, "playlist_init failed");
+      return;
+   }
+
+   memset(&push, 0, sizeof(push));
+   push.path      = (char*)"/games/first.bin";
+   push.core_path = (char*)"/cores/core.so";
+   push.core_name = (char*)"Core";
+   playlist_push(pl, &push);
+   playlist_update_thumbnail_name_flag(pl, 0,
+         (enum playlist_thumbnail_name_flags)(PLAYLIST_THUMBNAIL_FLAG_FULL_NAME
+         | PLAYLIST_THUMBNAIL_FLAG_STD_NAME
+         | PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME
+         | PLAYLIST_THUMBNAIL_FLAG_NONE));
+
+   push.path = (char*)"/games/second.bin";
+   playlist_push(pl, &push);
+   CHECK(playlist_size(pl) == 2, "the second entry was not pushed");
+   CHECK(playlist_get_curr_thumbnail_name_flag(pl, 0)
+            == PLAYLIST_THUMBNAIL_FLAG_INVALID,
+         "a new entry inherited thumbnail flags 0x%x from the old top entry",
+         (unsigned)playlist_get_curr_thumbnail_name_flag(pl, 0));
+   CHECK(playlist_get_curr_thumbnail_name_flag(pl, 1)
+            == (PLAYLIST_THUMBNAIL_FLAG_FULL_NAME
+              | PLAYLIST_THUMBNAIL_FLAG_STD_NAME
+              | PLAYLIST_THUMBNAIL_FLAG_SHORT_NAME
+              | PLAYLIST_THUMBNAIL_FLAG_NONE),
+         "the old top entry lost its thumbnail flags when it moved down");
+
+   playlist_free(pl);
+   if (failures == had)
+      fprintf(stderr, "  [pass] a pushed entry starts without thumbnail flags\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[600];
@@ -1614,6 +1667,7 @@ int main(int argc, char *argv[])
    lane_rebuild_reuses_deferred_install();
    lane_update_survives_failed_copy();
    lane_push_runtime_survives_failed_copy();
+   lane_push_starts_without_thumbnail_flags();
 
    snprintf(cmd, sizeof(cmd), "rm -rf %s", fixture_dir);
    if (system(cmd) != 0) { }

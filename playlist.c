@@ -1770,6 +1770,10 @@ static bool playlist_push_new_entry(playlist_t *playlist,
       playlist->entries[0].last_played_str    = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].path_id            = NULL;
+      /* The setters below keep the bits they do not own, and slot 0
+       * still holds the entry that was on top (or fresh heap on the
+       * first push), so clear the thumbnail-name flags with them. */
+      playlist->entries[0].attr               = 0;
       PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
             PLAYLIST_RUNTIME_UNKNOWN);
       PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], 0);
