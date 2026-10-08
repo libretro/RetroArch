@@ -1931,7 +1931,11 @@ static bool gl3_init_pbo_readback(gl3_t *gl)
    scaler->out_height        = VIDEO_SCALE_H(gl->vp.dims);
    scaler->in_stride         = VIDEO_SCALE_W(gl->vp.dims) * sizeof(uint32_t);
    scaler->out_stride        = VIDEO_SCALE_W(gl->vp.dims) * 3;
-   scaler->in_fmt            = SCALER_FMT_ABGR8888;
+#ifdef HAVE_OPENGLES
+   scaler->in_fmt            = SCALER_FMT_ABGR8888; /* RGBA readback */
+#else
+   scaler->in_fmt            = SCALER_FMT_ARGB8888; /* BGRA readback */
+#endif
    scaler->out_fmt           = SCALER_FMT_BGR24;
    scaler->scaler_type       = SCALER_TYPE_POINT;
 
@@ -1975,9 +1979,17 @@ static void gl3_pbo_async_readback(gl3_t *gl)
       gl->pbo_readback_index = 0;
    gl->pbo_readback_valid[gl->pbo_readback_index] = true;
 
+   /* Desktop GL reads BGRA, which both the recording's BGRX path and
+    * the BGR24 scaler want; GLES only guarantees RGBA. Keep in sync
+    * with the scaler in gl3_init_pbo_readback(). */
    glReadPixels(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos),
                 VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims),
-                GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+#ifdef HAVE_OPENGLES
+                GL_RGBA, GL_UNSIGNED_BYTE,
+#else
+                GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV,
+#endif
+                NULL);
    if (gl->scrgb.active && gl->scrgb.fbo)
       glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
@@ -4589,13 +4601,12 @@ static bool gl3_read_viewport_hdr(void *data, uint16_t *buffer,
    return true;
 }
 
-static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* bgrx: write bottom-up 32-bit BGRX (read_viewport_bgrx) instead of
+ * bottom-up BGR24. */
+static bool gl3_read_viewport_internal(gl3_t *gl, uint8_t *buffer,
+      bool is_idle, bool bgrx)
 {
-   gl3_t *gl = (gl3_t*)data;
    size_t num_pixels   = 0;
-
-   if (!gl)
-      return false;
 
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
@@ -4633,7 +4644,19 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       glBindBuffer(GL_PIXEL_PACK_BUFFER, gl->pbo_readback[gl->pbo_readback_index]);
 
       ptr = glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0, num_pixels * sizeof(uint32_t), GL_MAP_READ_BIT);
-      scaler_ctx_scale_direct(ctx, buffer, ptr);
+      if (ptr && bgrx)
+         video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
+               VIDEO_SCALE_H(gl->vp.dims),
+               (const uint8_t*)ptr, VIDEO_SCALE_W(gl->vp.dims) * 4,
+               VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims),
+#ifdef HAVE_OPENGLES
+               true
+#else
+               false
+#endif
+               );
+      else if (ptr)
+         scaler_ctx_scale_direct(ctx, buffer, ptr);
       glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
       glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
    }
@@ -4665,13 +4688,19 @@ static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                VIDEO_SCALE_W(gl->video_dims));
          unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
                VIDEO_SCALE_H(gl->video_dims));
-         video_frame_convert_rgba_to_bgr(
-               (const void*)gl->readback_buffer_screenshot,
-               buffer,
-               rb_w * sizeof(uint32_t),
-               rb_w * 3,
-               rb_w,
-               rb_h);
+         if (bgrx)
+            video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
+                  VIDEO_SCALE_H(gl->vp.dims),
+                  (const uint8_t*)gl->readback_buffer_screenshot,
+                  rb_w * 4, rb_w, rb_h, true);
+         else
+            video_frame_convert_rgba_to_bgr(
+                  (const void*)gl->readback_buffer_screenshot,
+                  buffer,
+                  rb_w * sizeof(uint32_t),
+                  rb_w * 3,
+                  rb_w,
+                  rb_h);
       }
 
       free(gl->readback_buffer_screenshot);
@@ -4691,6 +4720,25 @@ error:
          && !gl3_core_context_is_mains(gl))
       gl->ctx_driver->bind_hw_render(gl->ctx_data, true);
    return false;
+}
+
+static bool gl3_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return false;
+   return gl3_read_viewport_internal(gl, buffer, is_idle, false);
+}
+
+static bool gl3_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl)
+      return false;
+   /* glReadPixels returns the bottom row first. */
+   *bottom_up = true;
+   return gl3_read_viewport_internal(gl, buffer, is_idle, true);
 }
 
 static void gl3_update_cpu_texture(gl3_t *gl,
@@ -7552,7 +7600,13 @@ video_driver_t video_gl3 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    gl3_read_viewport_hdr,
-   &gl3_raster_font
+   &gl3_raster_font,
+#ifdef HAVE_OPENXR
+   NULL, /* get_vr_frame_state */
+   NULL, /* set_vr_content_info */
+   NULL, /* get_video_views_status */
+#endif
+   gl3_read_viewport_bgrx
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl3 = {

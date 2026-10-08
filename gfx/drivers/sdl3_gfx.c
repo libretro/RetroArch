@@ -361,11 +361,17 @@ static void sdl3_blit_frame(sdl3_video_t *vid)
  * flipped because read_viewport callers expect bottom-up data.
  * Must run before SDL_RenderPresent - afterwards the backbuffer
  * contents are undefined on several backends. */
-static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
+/* bgrx: write 32-bit B,G,R,X top row first (read_viewport_bgrx);
+ * otherwise BGR24 bottom row first, as read_viewport() callers expect. */
+static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer,
+      bool bgrx)
 {
    SDL_Surface *surf;
    int w, h, y;
    bool ok = true;
+   size_t bpp           = bgrx ? 4 : 3;
+   SDL_PixelFormat fmt  = bgrx ? SDL_PIXELFORMAT_BGRA32
+                               : SDL_PIXELFORMAT_BGR24;
 
    /* NULL rect = the current render viewport, which is the
     * aspect-corrected game viewport at this point in the frame. */
@@ -382,18 +388,19 @@ static bool sdl3_capture_viewport(sdl3_video_t *vid, uint8_t *buffer)
    h = (surf->h < (int)VIDEO_SCALE_H(vid->vp.dims)) ? surf->h : (int)VIDEO_SCALE_H(vid->vp.dims);
 
    if (w < (int)VIDEO_SCALE_W(vid->vp.dims) || h < (int)VIDEO_SCALE_H(vid->vp.dims))
-      memset(buffer, 0, VIDEO_SCALE_AREA(vid->vp.dims) * 3);
+      memset(buffer, 0, VIDEO_SCALE_AREA(vid->vp.dims) * bpp);
 
    for (y = 0; y < h; y++)
    {
+      int dst_row = bgrx ? y : (h - 1 - y);
       if (!SDL_ConvertPixels(w, 1, surf->format,
             (const uint8_t*)surf->pixels + (size_t)y * surf->pitch,
             surf->pitch,
-            SDL_PIXELFORMAT_BGR24,
-            buffer + (size_t)(h - 1 - y) * VIDEO_SCALE_W(vid->vp.dims) * 3,
-            (int)VIDEO_SCALE_W(vid->vp.dims) * 3))
+            fmt,
+            buffer + (size_t)dst_row * VIDEO_SCALE_W(vid->vp.dims) * bpp,
+            (int)(VIDEO_SCALE_W(vid->vp.dims) * bpp)))
       {
-         RARCH_WARN("[SDL3] Failed to convert viewport data to BGR24: %s.\n",
+         RARCH_WARN("[SDL3] Failed to convert viewport data: %s.\n",
                SDL_GetError());
          ok = false;
          break;
@@ -624,7 +631,20 @@ static bool sdl3_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    SDL_RenderClear(vid->renderer);
    sdl3_blit_frame(vid);
 
-   return sdl3_capture_viewport(vid, buffer);
+   return sdl3_capture_viewport(vid, buffer, false);
+}
+
+static bool sdl3_gfx_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   sdl3_video_t *vid = (sdl3_video_t*)data;
+
+   /* Same redraw-and-capture as sdl3_gfx_read_viewport(). */
+   SDL_RenderClear(vid->renderer);
+   sdl3_blit_frame(vid);
+
+   *bottom_up = false;
+   return sdl3_capture_viewport(vid, buffer, true);
 }
 
 /* Applies a new window size / fullscreen in place, without tearing
@@ -2045,7 +2065,13 @@ video_driver_t video_sdl3 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
-   &sdl3_raster_font
+   &sdl3_raster_font,
+#ifdef HAVE_OPENXR
+   NULL, /* get_vr_frame_state */
+   NULL, /* set_vr_content_info */
+   NULL, /* get_video_views_status */
+#endif
+   sdl3_gfx_read_viewport_bgrx
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_sdl3 = {

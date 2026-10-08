@@ -587,26 +587,12 @@ static void check_window(sdl2_video_t *vid)
    }
 }
 
-static bool sdl2_gfx_frame(void *data, const void *frame,
-      unsigned dims, uint64_t frame_count,
-      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+/* Draw the current core frame into the game viewport, honouring
+ * rotation. Also used by the viewport readback, which redraws rather
+ * than read the presented backbuffer (undefined after
+ * SDL_RenderPresent on several backends). */
+static void sdl2_blit_frame(sdl2_video_t *vid)
 {
-   char title[128];
-   sdl2_video_t *vid  = (sdl2_video_t*)data;
-#ifdef HAVE_MENU
-   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
-#endif
-
-   if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
-      sdl_refresh_viewport(vid);
-
-   if (frame)
-   {
-      SDL_RenderClear(vid->renderer);
-      sdl_refresh_input_size(vid, false, vid->video.rgb32, dims, pitch);
-      SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
-   }
-
    {
       /* For 90/270 degree rotation the frame must not be clipped by the
        * aspect-corrected game viewport.  SDL_RenderCopyEx() scales the
@@ -644,6 +630,29 @@ static bool sdl2_gfx_frame(void *data, const void *frame,
          SDL_RenderCopyEx(vid->renderer, vid->frame.tex, NULL, NULL,
                vid->rotation, NULL, SDL_FLIP_NONE);
    }
+}
+
+static bool sdl2_gfx_frame(void *data, const void *frame,
+      unsigned dims, uint64_t frame_count,
+      unsigned pitch, const char *msg, video_frame_info_t *video_info)
+{
+   char title[128];
+   sdl2_video_t *vid  = (sdl2_video_t*)data;
+#ifdef HAVE_MENU
+   bool menu_is_alive = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
+
+   if (vid->flags & SDL2_FLAG_SHOULD_RESIZE)
+      sdl_refresh_viewport(vid);
+
+   if (frame)
+   {
+      SDL_RenderClear(vid->renderer);
+      sdl_refresh_input_size(vid, false, vid->video.rgb32, dims, pitch);
+      SDL_UpdateTexture(vid->frame.tex, NULL, frame, pitch);
+   }
+
+   sdl2_blit_frame(vid);
 
 #ifdef HAVE_MENU
    {
@@ -892,26 +901,77 @@ static void sdl2_gfx_viewport_info(void *data, struct video_viewport *vp)
    *vp = vid->vp;
 }
 
-static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* Redraw the last core frame into the game viewport and read it back.
+ * bgrx: 32-bit B,G,R,X, top row first; otherwise BGR24 bottom row
+ * first, as read_viewport() callers expect. Menu, widget and OSD
+ * passes are not replayed. Nothing is presented; the next frame
+ * redraws. */
+static bool sdl2_capture_viewport(sdl2_video_t *vid, uint8_t *buffer,
+      bool bgrx)
 {
-   SDL_Surface *surf = NULL, *bgr24 = NULL;
-   sdl2_video_t *vid = (sdl2_video_t*)data;
+   SDL_Rect saved_vp, game_vp;
+   int pitch;
+   bool ok;
+#if SDL_VERSION_ATLEAST(2, 0, 5)
+   Uint32 fmt = bgrx ? SDL_PIXELFORMAT_BGRA32 : SDL_PIXELFORMAT_BGR24;
+#else
+   Uint32 fmt = bgrx ? SDL_PIXELFORMAT_ARGB8888 : SDL_PIXELFORMAT_BGR24;
+#endif
 
-   if (!is_idle)
-      video_driver_cached_frame();
+   if (!vid || !vid->renderer || !vid->frame.tex
+         || !VIDEO_SCALE_W(vid->vp.dims) || !VIDEO_SCALE_H(vid->vp.dims))
+      return false;
 
-   surf  = SDL_GetWindowSurface(vid->window);
-   bgr24 = SDL_ConvertSurfaceFormat(surf, SDL_PIXELFORMAT_BGR24, 0);
+   pitch     = (int)VIDEO_SCALE_W(vid->vp.dims) * (bgrx ? 4 : 3);
+   game_vp.x = VIDEO_POS_X(vid->vp.pos);
+   game_vp.y = VIDEO_POS_Y(vid->vp.pos);
+   game_vp.w = (int)VIDEO_SCALE_W(vid->vp.dims);
+   game_vp.h = (int)VIDEO_SCALE_H(vid->vp.dims);
 
-   if (!bgr24)
+   SDL_RenderGetViewport(vid->renderer, &saved_vp);
+   SDL_RenderSetViewport(vid->renderer, &game_vp);
+   SDL_RenderClear(vid->renderer);
+   sdl2_blit_frame(vid);
+   /* NULL rect: the current viewport, the size of the caller's buffer. */
+   ok = SDL_RenderReadPixels(vid->renderer, NULL, fmt, buffer, pitch) == 0;
+   SDL_RenderSetViewport(vid->renderer, &saved_vp);
+
+   if (!ok)
    {
-      RARCH_WARN("[SDL2] Failed to convert viewport data to BGR24: %s.", SDL_GetError());
+      RARCH_WARN("[SDL2] Failed to read viewport: %s.\n", SDL_GetError());
       return false;
    }
 
-   memcpy(buffer, bgr24->pixels, bgr24->h * bgr24->pitch);
+   if (!bgrx)
+   {
+      unsigned y, h = VIDEO_SCALE_H(vid->vp.dims);
+      uint8_t *tmp  = (uint8_t*)malloc((size_t)pitch);
+      if (!tmp)
+         return false;
+      for (y = 0; y < h / 2; y++)
+      {
+         uint8_t *a = buffer + (size_t)y * pitch;
+         uint8_t *b = buffer + (size_t)(h - 1 - y) * pitch;
+         memcpy(tmp, a, pitch);
+         memcpy(a, b, pitch);
+         memcpy(b, tmp, pitch);
+      }
+      free(tmp);
+   }
 
    return true;
+}
+
+static bool sdl2_gfx_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   return sdl2_capture_viewport((sdl2_video_t*)data, buffer, false);
+}
+
+static bool sdl2_gfx_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   *bottom_up = false;
+   return sdl2_capture_viewport((sdl2_video_t*)data, buffer, true);
 }
 
 static void sdl2_poke_set_filtering(void *data, unsigned index, bool smooth, bool ctx_scaling)
@@ -2395,10 +2455,16 @@ video_driver_t video_sdl2 = {
    NULL, /* invalidate_hw_render_cache */
    NULL, /* read_viewport_hdr */
 #if SDL_VERSION_ATLEAST(2, 0, 18)
-   &sdl2_raster_font
+   &sdl2_raster_font,
 #else
-   NULL  /* sdl2_raster_font needs SDL_RenderGeometry */
+   NULL, /* sdl2_raster_font needs SDL_RenderGeometry */
 #endif
+#ifdef HAVE_OPENXR
+   NULL, /* get_vr_frame_state */
+   NULL, /* set_vr_content_info */
+   NULL, /* get_video_views_status */
+#endif
+   sdl2_gfx_read_viewport_bgrx
 };
 
 #if SDL_VERSION_ATLEAST(2, 0, 18)
