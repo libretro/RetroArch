@@ -186,6 +186,13 @@ int rzip_seek_state(const rzip_seek_t *s);
  * RZIP_ERROR_ when they cannot be decoded. */
 int rzip_seek_read(rzip_seek_t *s, uint64_t offset, uint8_t *dst, size_t len);
 
+/* @len bytes at @offset where they lie decoded, for a reader that would
+ * only copy them on: *@data points at them until the next call on @s, or
+ * is NULL when they straddle two spans and have to be read instead.
+ * Returns as rzip_seek_read() does. The reader's thread. */
+int rzip_seek_view(rzip_seek_t *s, uint64_t offset, size_t len,
+      const uint8_t **data);
+
 RETRO_END_DECLS
 
 #endif

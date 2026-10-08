@@ -187,9 +187,39 @@ static void check_member(rzip_archive_t *a, uint32_t idx, uint32_t span,
       CHECK(rzip_seek_read(s, off, got, len) == RZIP_OK, how);
       CHECK(!memcmp(got, want + off, len), how);
    }
+   /* in place: the same bytes when it gives them, and it gives them
+    * unless they lie across two spans */
+   {
+      unsigned given = 0, asked = 0;
+
+      for (i = 0; i < 400 && want_len > 2352; i++)
+      {
+         const uint8_t *view = (const uint8_t*)got;
+         uint64_t       off  = rng() % (want_len - 2352);
+
+         CHECK(rzip_seek_view(s, off, 2352, &view) == RZIP_OK, how);
+         asked++;
+         if (view)
+         {
+            given++;
+            CHECK(!memcmp(view, want + off, 2352), how);
+         }
+         else
+         {
+            CHECK(rzip_seek_read(s, off, got, 2352) == RZIP_OK, how);
+            CHECK(!memcmp(got, want + off, 2352), how);
+         }
+      }
+      if (asked && want_len > 8u * span)
+         CHECK(given * 2 > asked, how);
+   }
    /* the ends */
    CHECK(rzip_seek_read(s, want_len, got, 0) == RZIP_OK, how);
    CHECK(rzip_seek_read(s, want_len, got, 1) == RZIP_ERROR_PARAM, how);
+   {
+      const uint8_t *view = (const uint8_t*)got;
+      CHECK(rzip_seek_view(s, want_len, 1, &view) == RZIP_ERROR_PARAM && !view, how);
+   }
    if (want_len)
    {
       CHECK(rzip_seek_read(s, want_len - 1, got, 1) == RZIP_OK, how);
@@ -291,6 +321,32 @@ int main(int argc, char **argv)
       }
       t1 = now();
       printf("sectors in order: %.1f MB/s\n", 20000 * 2352 / 1048576.0 / (t1 - t0));
+      /* the spans are decoded by now: what a sector costs to hand over */
+      {
+         unsigned pass, sum = 0;
+         t0 = now();
+         for (pass = 0; pass < 50; pass++)
+            for (i = 0; i < 3000; i++)
+            {
+               if (rzip_seek_read(s, (uint64_t)i * 2352, buf, 2352) != RZIP_OK)
+                  return 1;
+               sum += buf[100];
+            }
+         t1 = now();
+         printf("a decoded sector, copied out: %.0f ns", (t1 - t0) * 1e9 / 150000);
+         t0 = now();
+         for (pass = 0; pass < 50; pass++)
+            for (i = 0; i < 3000; i++)
+            {
+               const uint8_t *view = NULL;
+               if (rzip_seek_view(s, (uint64_t)i * 2352, 2352, &view) != RZIP_OK)
+                  return 1;
+               if (view)
+                  sum += view[100];
+            }
+         t1 = now();
+         printf("; in place: %.0f ns (%u)\n", (t1 - t0) * 1e9 / 150000, sum & 1);
+      }
       rzip_seek_free(s);
       return 0;
    }

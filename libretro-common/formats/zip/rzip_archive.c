@@ -855,53 +855,82 @@ static int rzip_seek_span(rzip_seek_t *s, uint32_t p, uint64_t end,
    return RZIP_OK;
 }
 
-int rzip_seek_read(rzip_seek_t *s, uint64_t offset, uint8_t *dst, size_t len)
+/* The span that holds @offset, decoded: its bytes, where it starts and
+ * where it ends. RZIP_ERROR_PARAM when the index has not got that far. */
+static int rzip_seek_span_at(rzip_seek_t *s, uint64_t offset,
+      const uint8_t **span, uint64_t *start, uint64_t *end)
 {
-   int n;
-   int complete;
+   uint32_t lo = 0;
+   uint32_t hi;
+   int      n;
+   int      complete;
 
-   if (!s || (!dst && len))
-      return RZIP_ERROR_PARAM;
    /* the count, then whether it is the last: see rzip_seek_covered() */
    n        = retro_atomic_load_acquire_int(&s->num_points);
    complete = retro_atomic_load_acquire_int(&s->state) == 1;
    if (complete)
       n     = retro_atomic_load_acquire_int(&s->num_points);
+   hi       = (uint32_t)n;
+
+   /* the last point at or before the offset */
+   while (hi - lo > 1)
+   {
+      uint32_t mid = lo + (hi - lo) / 2;
+      if (s->points[mid].out_off <= offset)
+         lo = mid;
+      else
+         hi = mid;
+   }
+   if (lo + 1 < (uint32_t)n)
+      *end = s->points[lo + 1].out_off;
+   else if (complete)
+      *end = s->e->size;
+   else
+      return RZIP_ERROR_PARAM;
+   *start = s->points[lo].out_off;
+   return rzip_seek_span(s, lo, *end, span);
+}
+
+int rzip_seek_read(rzip_seek_t *s, uint64_t offset, uint8_t *dst, size_t len)
+{
+   if (!s || (!dst && len))
+      return RZIP_ERROR_PARAM;
    if (offset > s->e->size || len > s->e->size - offset)
       return RZIP_ERROR_PARAM;
 
    while (len)
    {
       const uint8_t *span;
-      uint64_t       end;
+      uint64_t       start, end;
       size_t         take;
       int            res;
-      uint32_t       lo = 0;
-      uint32_t       hi = (uint32_t)n;
 
-      /* the last point at or before the offset */
-      while (hi - lo > 1)
-      {
-         uint32_t mid = lo + (hi - lo) / 2;
-         if (s->points[mid].out_off <= offset)
-            lo = mid;
-         else
-            hi = mid;
-      }
-      if (lo + 1 < (uint32_t)n)
-         end = s->points[lo + 1].out_off;
-      else if (complete)
-         end = s->e->size;
-      else
-         return RZIP_ERROR_PARAM;   /* not indexed this far yet */
-
-      if ((res = rzip_seek_span(s, lo, end, &span)) != RZIP_OK)
+      if ((res = rzip_seek_span_at(s, offset, &span, &start, &end)) != RZIP_OK)
          return res;
       take = (size_t)(end - offset) < len ? (size_t)(end - offset) : len;
-      memcpy(dst, span + (size_t)(offset - s->points[lo].out_off), take);
+      memcpy(dst, span + (size_t)(offset - start), take);
       dst    += take;
       offset += take;
       len    -= take;
    }
+   return RZIP_OK;
+}
+
+int rzip_seek_view(rzip_seek_t *s, uint64_t offset, size_t len,
+      const uint8_t **data)
+{
+   const uint8_t *span;
+   uint64_t       start, end;
+   int            res;
+
+   if (!s || !data)
+      return RZIP_ERROR_PARAM;
+   *data = NULL;
+   if (!len || offset >= s->e->size || len > s->e->size - offset)
+      return RZIP_ERROR_PARAM;
+   if ((res = rzip_seek_span_at(s, offset, &span, &start, &end)) != RZIP_OK)
+      return res;
+   if (len <= end - offset)
+      *data = span + (size_t)(offset - start);
    return RZIP_OK;
 }
