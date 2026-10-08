@@ -980,9 +980,12 @@ static int32_t syn_button(unsigned pad, uint16_t joykey)
    return (syn_buttons >> joykey) & 1;
 }
 
+static unsigned syn_axis_reads;   /* the stand-in pad's axes asked for */
+
 static int16_t syn_axis(unsigned pad, uint32_t joyaxis)
 {
    syn_calls_other++;
+   syn_axis_reads++;
    if (pad != syn_pad_index)
       return 0;
    if (AXIS_NEG_GET(joyaxis) < 4)
@@ -3659,6 +3662,106 @@ static void lane_menu_repeat_rates(void)
  * rest of the frame's reads of it are given what was read. (The pad is
  * the frontend's own copy of it by then, so this cannot be counted at
  * the driver: the lane looks at the frame's cache instead.) */
+/* A stick driving the D-pad, read by a core a button at a time. Held
+ * to: the buttons the stick presses read as the pad holds them, from
+ * one read of the stick the frame - sixteen button reads ask the pad
+ * for the stick's axes once, not for each button - and the same again
+ * for a second pass in the frame; the mask has them too; and the next
+ * poll reads the stick afresh. */
+static void lane_dpad_sticks_once(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8];
+   float saved_deadzone = settings->floats.input_analog_deadzone;
+   unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
+   unsigned had         = failures;
+   unsigned i, pass, reads[2];
+   uint16_t got[2];
+   int16_t mask;
+
+   if (!joypad_real)
+   {
+      CHECK(false, "dpad sticks: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone    = 0.2f;
+   /* forced: an earlier lane read the sticks as sticks, so the core has
+    * asked for analog input, which a plain mode gives way to */
+   settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_LSTICK_FORCED;
+   /* the left stick to the left and up */
+   syn_axes[0] = -30000;
+   syn_axes[1] = -30000;
+   syn_axes[2] = 0;
+   syn_axes[3] = 0;
+   run_loop_frames(2);
+   input_driver_poll();
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      unsigned before = syn_axis_reads;
+      got[pass] = 0;
+      for (i = 0; i < 16; i++)
+         if (input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, i))
+            got[pass] |= (uint16_t)(1u << i);
+      reads[pass] = syn_axis_reads - before;
+   }
+   CHECK(got[0] == ((1u << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1u << RETRO_DEVICE_ID_JOYPAD_UP)),
+         "dpad sticks: the stick to the left and up does not press left and up");
+   CHECK(got[1] == got[0], "dpad sticks: a second pass in the frame read otherwise");
+   {
+      char why[160];
+      snprintf(why, sizeof(why), "dpad sticks: sixteen button reads asked for the stick's axes"
+            " %u times, then %u more", reads[0], reads[1]);
+      CHECK(reads[0] <= 4 && reads[1] == 0, why);
+   }
+   mask = input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_MASK);
+   CHECK((mask & ((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_UP)))
+         == ((1 << RETRO_DEVICE_ID_JOYPAD_LEFT) | (1 << RETRO_DEVICE_ID_JOYPAD_UP)),
+         "dpad sticks: the mask does not have what the stick presses");
+
+   /* the next poll: the stick to the right, read afresh */
+   syn_axes[0] = 30000;
+   syn_axes[1] = 0;
+   input_driver_poll();
+   CHECK(   input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+         && !input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT),
+         "dpad sticks: after a poll the stick's buttons are not read afresh");
+
+   memset(syn_axes, 0, sizeof(syn_axes));
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
+         sizeof(saved_auto));
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone    = saved_deadzone;
+   settings->uints.input_analog_dpad_mode[0] = saved_mode;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] dpad sticks: a stick's buttons read as it holds them, from"
+            " one read of it a frame - sixteen button reads, %u reads of its"
+            " axes; a second pass none - and afresh after a poll\n", reads[0]);
+#endif
+}
+
 static void lane_sticks_read_once(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -8234,6 +8337,7 @@ int main(int argc, char *argv[])
       lane_quit_combo();
       lane_restart_hold();
       lane_sticks_read_once();
+      lane_dpad_sticks_once();
       lane_stick_sources();
       lane_mask_and_buttons();
       lane_keys_current();

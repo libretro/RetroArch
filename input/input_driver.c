@@ -3580,6 +3580,93 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
    return true;
 }
 
+/* The RetroPad buttons a port's sticks press in a stick-drives-the-
+ * D-pad mode, worked out once a frame and kept for the frame: a core
+ * that reads its pad a button at a time read every stick's every axis
+ * again for each button - with a deadzone, six reads of the pad an
+ * axis. The mode is kept with it: a read under another is made again. */
+static uint16_t input_port_dpad_bits(input_driver_state_t *input_st,
+      unsigned input_analog_dpad_mode,
+      float deadzone, float sensitivity,
+      const input_device_driver_t *joypad,
+      rarch_joypad_info_t *joypad_info,
+      unsigned port,
+      const struct retro_keybind *binds)
+{
+   uint16_t bits      = 0;
+   uint16_t mine      = (uint16_t)(1u << port);
+   int16_t ret_axis;
+   uint8_t s;
+   uint8_t a;
+   float axis_thr     = joypad_info->axis_threshold;
+   float inv_0x7fff   = INV_0x7fff;
+
+   if (     (input_st->frame_valid.dpad & mine)
+         && input_st->dpad_cache_mode[port] == input_analog_dpad_mode)
+      return input_st->dpad_cache[port];
+
+   for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
+   {
+      int16_t xy[2];
+      if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
+            || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode == ANALOG_DPAD_LSTICK))
+         continue;
+
+      /* the stick read whole: both axes from one read of the pad, as
+       * input_joypad_analog_axis() reads them axis for axis */
+      input_joypad_analog_stick(ANALOG_DPAD_NONE, deadzone, sensitivity,
+            joypad, joypad_info, port, s, binds, &xy[0], &xy[1]);
+      for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
+      {
+         ret_axis = xy[a];
+
+         if (ret_axis)
+         {
+            float norm  = (float)ret_axis * inv_0x7fff;
+            int bit     = -1;
+
+            if (a == RETRO_DEVICE_ID_ANALOG_Y && norm < -axis_thr)
+            {
+               if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  bit = RETRO_DEVICE_ID_JOYPAD_X;
+               else
+                  bit = RETRO_DEVICE_ID_JOYPAD_UP;
+            }
+            else if (a == RETRO_DEVICE_ID_ANALOG_Y && norm > axis_thr)
+            {
+               if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  bit = RETRO_DEVICE_ID_JOYPAD_B;
+               else
+                  bit = RETRO_DEVICE_ID_JOYPAD_DOWN;
+            }
+
+            if (a == RETRO_DEVICE_ID_ANALOG_X && norm < -axis_thr)
+            {
+               if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  bit = RETRO_DEVICE_ID_JOYPAD_Y;
+               else
+                  bit = RETRO_DEVICE_ID_JOYPAD_LEFT;
+            }
+            else if (a == RETRO_DEVICE_ID_ANALOG_X && norm > axis_thr)
+            {
+               if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
+                  bit = RETRO_DEVICE_ID_JOYPAD_A;
+               else
+                  bit = RETRO_DEVICE_ID_JOYPAD_RIGHT;
+            }
+
+            if (bit > -1)
+               bits |= (uint16_t)(1u << bit);
+         }
+      }
+   }
+
+   input_st->dpad_cache[port]       = bits;
+   input_st->dpad_cache_mode[port]  = (uint8_t)input_analog_dpad_mode;
+   input_st->frame_valid.dpad      |= mine;
+   return bits;
+}
+
 /* A stick's axis for a port's core, out of one read of the whole stick
  * a frame.
  * What is read is what input_joypad_analog_axis() reads, axis for axis;
@@ -5058,88 +5145,29 @@ static int16_t input_state_internal(
                   input_analog_dpad_mode, ret, mapped_port,
                   device, idx, id, false);
 
-         /* Handle Analog to Digital */
+         /* Handle Analog to Digital: what the sticks press, worked
+          * out once a frame */
          if (     (device == RETRO_DEVICE_JOYPAD)
                && (input_analog_dpad_mode != ANALOG_DPAD_NONE)
                && joypad
             )
          {
-            int16_t ret_axis;
-            uint8_t s;
-            uint8_t a;
-            float axis_thr     = joypad_info.axis_threshold;
-            float inv_0x7fff   = INV_0x7fff;
-
-            for (s = RETRO_DEVICE_INDEX_ANALOG_LEFT; s <= RETRO_DEVICE_INDEX_ANALOG_RIGHT; s++)
+            uint16_t dpad_bits = (mapped_port < MAX_USERS)
+               ? input_port_dpad_bits(input_st, input_analog_dpad_mode,
+                     settings->floats.input_analog_deadzone,
+                     settings->floats.input_analog_sensitivity,
+                     joypad, &joypad_info, mapped_port,
+                     input_config_binds[mapped_port])
+               : 0;
+            if (bitmask_enabled)
+               port_result |= dpad_bits;
+            else if (id < 16 && (dpad_bits & (1u << id)))
             {
-               if (     (s == RETRO_DEVICE_INDEX_ANALOG_LEFT  && input_analog_dpad_mode == ANALOG_DPAD_RSTICK)
-                     || (s == RETRO_DEVICE_INDEX_ANALOG_RIGHT && input_analog_dpad_mode == ANALOG_DPAD_LSTICK))
-                  continue;
-
-               for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
-               {
-                  ret_axis = input_joypad_analog_axis(
-                        ANALOG_DPAD_NONE,
-                        settings->floats.input_analog_deadzone,
-                        settings->floats.input_analog_sensitivity,
-                        joypad,
-                        &joypad_info,
-                        mapped_port,
-                        s,
-                        a,
-                        input_config_binds[mapped_port]);
-
-                  if (ret_axis)
-                  {
-                     float norm  = (float)ret_axis * inv_0x7fff;
-                     int bit     = -1;
-
-                     if (a == RETRO_DEVICE_ID_ANALOG_Y && norm < -axis_thr)
-                     {
-                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                           bit = RETRO_DEVICE_ID_JOYPAD_X;
-                        else
-                           bit = RETRO_DEVICE_ID_JOYPAD_UP;
-                     }
-                     else if (a == RETRO_DEVICE_ID_ANALOG_Y && norm > axis_thr)
-                     {
-                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                           bit = RETRO_DEVICE_ID_JOYPAD_B;
-                        else
-                           bit = RETRO_DEVICE_ID_JOYPAD_DOWN;
-                     }
-
-                     if (a == RETRO_DEVICE_ID_ANALOG_X && norm < -axis_thr)
-                     {
-                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                           bit = RETRO_DEVICE_ID_JOYPAD_Y;
-                        else
-                           bit = RETRO_DEVICE_ID_JOYPAD_LEFT;
-                     }
-                     else if (a == RETRO_DEVICE_ID_ANALOG_X && norm > axis_thr)
-                     {
-                        if (input_analog_dpad_mode == ANALOG_DPAD_TWINSTICK && s == RETRO_DEVICE_INDEX_ANALOG_RIGHT)
-                           bit = RETRO_DEVICE_ID_JOYPAD_A;
-                        else
-                           bit = RETRO_DEVICE_ID_JOYPAD_RIGHT;
-                     }
-
-                     if (bit > -1)
-                     {
-                        if (bitmask_enabled)
-                           port_result |= (1 << bit);
-                        else if (id == (unsigned)bit)
-                        {
-                           /* Digital results are OR'd together by the
-                            * caller, so this must be a plain 1 - not
-                            * the bind index, which would leave stray
-                            * high bits in the returned value */
-                           port_result = 1;
-                           result      = 1;
-                        }
-                     }
-                  }
-               }
+               /* Digital results are OR'd together by the caller, so
+                * this must be a plain 1 - not the bind index, which
+                * would leave stray high bits in the returned value */
+               port_result = 1;
+               result      = 1;
             }
          }
       }

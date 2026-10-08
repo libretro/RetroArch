@@ -862,6 +862,7 @@ typedef struct
       uint16_t sticks[2];
       uint16_t pad_state;   /* pad_state_cache[port] holds this poll's mask */
       uint16_t pad_state_full; /* ... worked out with full-range triggers on */
+      uint16_t dpad;        /* dpad_cache[port] holds this frame's buttons from its sticks */
    } frame_valid;
 
    /* A port's RetroPad mask as its controller holds it, worked out
@@ -881,6 +882,12 @@ typedef struct
     * made under: a read under another is made again. */
    int16_t stick_cache[MAX_USERS][2][2];
    uint8_t stick_cache_mode[MAX_USERS];
+
+   /* The RetroPad buttons a port's sticks press in a stick-drives-the-
+    * D-pad mode, worked out once a frame (frame_valid.dpad), and the
+    * mode they were worked out under. */
+   uint16_t dpad_cache[MAX_USERS];
+   uint8_t  dpad_cache_mode[MAX_USERS];
 
    retro_bits_512_t keyboard_mapping_bits;    /* bool alignment */
    input_game_focus_state_t game_focus_state; /* bool alignment */
