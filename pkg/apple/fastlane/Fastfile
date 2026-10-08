@@ -235,11 +235,22 @@ private_lane :ra_upload_to_testflight do |options|
       make_public = false
     end
 
-    upload_to_testflight(
-      distribute_external: make_public,
-      groups: make_public ? ['Invaders', 'Patreons'] : [],
-      changelog: "Rebuild frontend for commit #{short_hash}"
-    )
+    # The groups are left out, not emptied, for an internal upload:
+    # pilot submits for beta review whenever groups are given at all.
+    # The review check above runs before the build's processing wait,
+    # so a build that went into review meanwhile still refuses the
+    # submission; the upload itself has landed by then.
+    begin
+      upload_to_testflight(
+        distribute_external: make_public,
+        submit_beta_review: make_public,
+        groups: make_public ? ['Invaders', 'Patreons'] : nil,
+        changelog: "Rebuild frontend for commit #{short_hash}"
+      )
+    rescue Spaceship::UnexpectedResponse => ex
+      raise unless ex.message.include?("Another build is in review")
+      UI.important("Uploaded; not submitted for external review, another build is in review")
+    end
   end
 end
 
