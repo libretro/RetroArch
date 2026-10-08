@@ -6499,9 +6499,9 @@ static void lane_entry_capture(void)
    syn_buttons = 0;
    run_loop_frames(5);
 
-   /* --- a row with nothing in it starts nothing --- */
-   empty->actions->right(empty, 0, false);
-   CHECK(!input_entry_capture_running(), "entry capture: a row with no entry started it");
+   /* (a row with nothing in it: the lane after this, on picking what
+    * a combination does) */
+   (void)empty;
 
    /* --- Right, held as it starts; then L3, then R3 with it; let go --- */
    syn_buttons = 1u << 24;
@@ -6599,6 +6599,209 @@ static void lane_entry_capture(void)
             " together is the combination, its key and target kept; the menu does"
             " not move under it; five seconds of nothing changes nothing; an empty"
             " row or an entry taken out ends it\n");
+#endif
+}
+
+/* What a combination does, picked from a list: on an empty row, Right,
+ * the buttons held and let go, then the list; on a row with an entry,
+ * Left and the list. Picked with the menu's own OK, from the list the
+ * menu itself opened. Held to: the list holds every target there is,
+ * in order, by its menu name; picking one makes the entry of the
+ * buttons held, or changes what the entry does and keeps its buttons;
+ * the list goes when one is picked; and leaving it with Back makes
+ * nothing. */
+static int tp_index(const char *target)
+{
+   char all[4096];
+   const char *p = all;
+   int i = 0;
+   size_t n = strlen(target);
+   input_entry_targets(all, sizeof(all));
+   while (*p)
+   {
+      if (!strncmp(p, target, n) && (p[n] == '|' || !p[n]))
+         return i;
+      p = strchr(p, '|');
+      if (!p)
+         break;
+      p++;
+      i++;
+   }
+   return -1;
+}
+
+static void tp_press(uint32_t button)
+{
+   syn_buttons = button;
+   run_loop_frames(3);
+   syn_buttons = 0;
+   run_loop_frames(4);
+}
+
+static void lane_entry_target_pick(void)
+{
+#ifdef HAVE_MENU
+   enum { L3 = RETRO_DEVICE_ID_JOYPAD_L3, R3 = RETRO_DEVICE_ID_JOYPAD_R3,
+          A = RETRO_DEVICE_ID_JOYPAD_A, B = RETRO_DEVICE_ID_JOYPAD_B };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved[4];
+   rarch_setting_t *row5 = menu_setting_find("input_combo_5");
+   unsigned had = failures;
+   file_list_t *stack;
+   size_t depth;
+   int idx;
+   char spec[256];
+   char all[4096];
+   /* the menu's OK and Back, as this configuration has them */
+   bool     swap   = config_get_ptr()->bools.input_menu_swap_ok_cancel_buttons;
+   uint32_t ok_b   = swap ? (1u << 27) : (1u << 26);
+   uint32_t back_b = swap ? (1u << 26) : (1u << 27);
+
+   if (!row5 || !joypad_real || !row5->actions || !row5->actions->right || !row5->actions->left)
+   {
+      CHECK(false, "target pick: no row to start it from, or no joypad driver");
+      return;
+   }
+   saved[0] = *input_autoconf_bind(0, L3);
+   saved[1] = *input_autoconf_bind(0, R3);
+   saved[2] = *input_autoconf_bind(0, A);
+   saved[3] = *input_autoconf_bind(0, B);
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   input_autoconf_bind_edit(0, L3)->joykey = 22;
+   input_autoconf_bind_edit(0, R3)->joykey = 23;
+   input_autoconf_bind_edit(0, A)->joykey  = 26;
+   input_autoconf_bind_edit(0, B)->joykey  = 27;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, L3), true);
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, R3), true);
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, A), true);
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, B), true);
+
+   input_entries_clear();
+   input_macros_clear();
+   input_macro_set(2, "a 1");
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   syn_buttons = 0;
+   run_loop_frames(5);
+   stack = MENU_LIST_GET(menu_state_get_ptr()->entries.list, 0);
+   depth = stack ? stack->size : 0;
+
+   /* the targets: the hotkeys but the enabler, the commands, the macros */
+   input_entry_targets(all, sizeof(all));
+   CHECK(   tp_index("menu_toggle") >= 0 && tp_index("pause_toggle") >= 0
+         && tp_index("undo_load_state") >= 0 && tp_index("macro_2") >= 0
+         && tp_index("enable_hotkey") < 0,
+         "target pick: the targets are not every hotkey but the enabler, the commands and the macros");
+
+   /* --- an empty row: Right, L3 and R3 held and let go, the list --- */
+   row5->actions->right(row5, 0, false);
+   CHECK(input_entry_capture_running(), "target pick: Right on an empty row did not start it");
+   run_loop_frames(3);
+   syn_buttons = (1u << 22) | (1u << 23);
+   run_loop_frames(4);
+   syn_buttons = 0;
+   run_loop_frames(4);
+   {
+      file_list_t *sel = MENU_LIST_GET_SELECTION(menu_state_get_ptr()->entries.list, 0);
+      char why[200];
+      snprintf(why, sizeof(why), "target pick: after the buttons the list is not up"
+            " (stack %u, was %u)", stack ? (unsigned)stack->size : 0, (unsigned)depth);
+      CHECK(stack && stack->size == depth + 1 && stack->list[depth].label
+            && !strcmp(stack->list[depth].label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)), why);
+      CHECK(!input_entry_spec(5, spec, sizeof(spec)), "target pick: the entry was made before a target was picked");
+      /* its items: as many as there are targets, by their menu names */
+      {
+         unsigned n = 1;
+         const char *q = all;
+         while ((q = strchr(q, '|')))
+         {
+            n++;
+            q++;
+         }
+         snprintf(why, sizeof(why), "target pick: the list has %u items for %u targets",
+               sel ? (unsigned)sel->size : 0, n);
+         CHECK(sel && sel->size == n, why);
+      }
+      idx = tp_index("menu_toggle");
+      if (sel && idx >= 0 && (size_t)idx < sel->size)
+      {
+         char desc[128];
+         input_entry_target_desc("menu_toggle", desc, sizeof(desc));
+         CHECK(sel->list[idx].path && !strcmp(sel->list[idx].path, desc),
+               "target pick: an item is not shown by its menu name");
+         /* picked with the menu's own OK */
+         menu_state_get_ptr()->selection_ptr = (size_t)idx;
+         tp_press(ok_b);
+      }
+   }
+   spec[0] = '\0';
+   input_entry_spec(5, spec, sizeof(spec));
+   {
+      char why[200];
+      snprintf(why, sizeof(why), "target pick: picking Menu Toggle made \"%s\", not \"l3+r3 : menu_toggle\"", spec);
+      CHECK(!strcmp(spec, "l3+r3 : menu_toggle"), why);
+   }
+   CHECK(stack && stack->size == depth, "target pick: the list did not go when a target was picked");
+
+   /* --- a row with an entry: Left and the list; its buttons kept --- */
+   row5->actions->left(row5, 0, false);
+   run_loop_frames(3);
+   CHECK(stack && stack->size == depth + 1, "target pick: Left on a row with an entry did not open the list");
+   idx = tp_index("macro_2");
+   if (idx >= 0)
+   {
+      menu_state_get_ptr()->selection_ptr = (size_t)idx;
+      tp_press(ok_b);
+   }
+   spec[0] = '\0';
+   input_entry_spec(5, spec, sizeof(spec));
+   CHECK(!strcmp(spec, "l3+r3 : macro_2"),
+         "target pick: picking a macro for an entry did not keep its buttons and change what it does");
+
+   /* --- Back out of the list makes nothing --- */
+   {
+      rarch_setting_t *row6 = menu_setting_find("input_combo_6");
+      if (row6)
+      {
+         row6->actions->right(row6, 0, false);
+         run_loop_frames(3);
+         syn_buttons = 1u << 22;
+         run_loop_frames(4);
+         syn_buttons = 0;
+         run_loop_frames(4);
+         CHECK(stack && stack->size == depth + 1, "target pick: the list is not up for the second row");
+         tp_press(back_b);
+         CHECK(stack && stack->size == depth && !input_entry_spec(6, spec, sizeof(spec)),
+               "target pick: leaving the list with Back made an entry, or did not leave it");
+      }
+   }
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   syn_buttons = 0;
+   run_loop_frames(3);
+   input_entries_clear();
+   input_macros_clear();
+   *input_autoconf_bind_edit(0, L3) = saved[0];
+   *input_autoconf_bind_edit(0, R3) = saved[1];
+   *input_autoconf_bind_edit(0, A)  = saved[2];
+   *input_autoconf_bind_edit(0, B)  = saved[3];
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+
+   if (failures == had)
+      printf("[pass] target pick: the list holds every target by its menu name;"
+            " picked with the menu's OK after buttons held on an empty row it"
+            " makes the entry; from Left it changes what an entry does and keeps"
+            " its buttons; Back makes nothing\n");
 #endif
 }
 
@@ -7941,6 +8144,7 @@ int main(int argc, char *argv[])
       lane_entries_kept();
       lane_menu_entry_rows();
       lane_entry_capture();
+      lane_entry_target_pick();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();

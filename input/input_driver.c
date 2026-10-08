@@ -11524,6 +11524,7 @@ static struct
    uint16_t commands[INPUT_ENTRIES_MAX]; /* given this frame, to be carried out after it */
    retro_time_t since[INPUT_ENTRIES_MAX]; /* when entry n's sources went down, for one that is timed; 0 while up */
    uint16_t on;                          /* bit n: entry n's sources were all down when last looked at */
+   uint8_t  work;                        /* bit 0: there are entries; bit 1: a capture runs - one load a frame */
    uint8_t  count;
    uint8_t  key_count;
    uint8_t  command_count;
@@ -11560,13 +11561,25 @@ static struct
 {
    retro_time_t deadline;
    uint16_t     seen;
-   uint8_t      number;   /* 0 while none runs */
+   uint16_t     fresh_pad;  /* the buttons held for a number with no entry */
+   uint8_t      number;     /* 0 while none runs */
+   uint8_t      fresh_done; /* the number they were held for; 0 for none */
    bool         released;
+   bool         fresh;      /* the number has no entry yet */
 } input_entry_capture;
+
+/* What the frame has to do for entries, made again when it changes:
+ * the frame looks at this one byte and at nothing else of them. */
+static void input_entries_work_update(void)
+{
+   input_entries.work = (uint8_t)((input_entries.count ? 1 : 0)
+                      | (input_entry_capture.number ? 2 : 0));
+}
 
 void input_entries_clear(void)
 {
    input_entry_capture.number  = 0;
+   input_entries.work          = 0;
    input_entries.count         = 0;
    input_entries.key_count     = 0;
    input_entries.command_count = 0;
@@ -11781,6 +11794,7 @@ static void input_entries_changed(void)
    }
    input_entries.on = 0;
    memset(input_entries.since, 0, sizeof(input_entries.since));
+   input_entries_work_update();
 }
 
 /* Entry @number is what @spec says: the one of that number if there is
@@ -11812,20 +11826,31 @@ bool input_entry_add(unsigned number, const char *spec)
 static void input_entry_capture_end(const char *msg)
 {
    input_entry_capture.number = 0;
+   input_entries_work_update();
    if (msg)
       runloop_msg_queue_push(msg, strlen(msg), 1, 120, true, NULL,
             MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
 }
 
+/* For an entry there is, its buttons are set when they are let go.
+ * For a number with no entry - an empty row - they are kept, to be
+ * taken with input_entry_capture_take_fresh() and made an entry with
+ * what it is to be (input_entry_set_from_pad()). */
 bool input_entry_capture_start(unsigned number)
 {
    unsigned i;
+   if (!number || number > INPUT_ENTRIES_MAX)
+      return false;
    for (i = 0; i < input_entries.count; i++)
       if (input_entries.entry[i].number == number)
          break;
-   if (i == input_entries.count)
+   /* a new one only while there is room for it */
+   if (i == input_entries.count && input_entries.count >= INPUT_ENTRIES_MAX)
       return false;
+   input_entry_capture.fresh      = (i == input_entries.count);
+   input_entry_capture.fresh_done = 0;
    input_entry_capture.number   = (uint8_t)number;
+   input_entries_work_update();
    input_entry_capture.seen     = 0;
    input_entry_capture.released = false;
    input_entry_capture.deadline = cpu_features_get_time_usec()
@@ -11836,6 +11861,18 @@ bool input_entry_capture_start(unsigned number)
 bool input_entry_capture_running(void)
 {
    return input_entry_capture.number != 0;
+}
+
+/* The buttons held on an empty row, once let go: true once, with the
+ * row's number and them. */
+bool input_entry_capture_take_fresh(unsigned *number, unsigned *pad)
+{
+   if (!input_entry_capture.fresh_done)
+      return false;
+   *number = input_entry_capture.fresh_done;
+   *pad    = input_entry_capture.fresh_pad;
+   input_entry_capture.fresh_done = 0;
+   return true;
 }
 
 /* Whole seconds left before it gives up, rounded up: while nothing has
@@ -11880,7 +11917,14 @@ INPUT_NOINLINE static void input_entry_capture_frame(input_bits_t *bits)
          input_entry_capture_end("Nothing was pressed: the combination is as it was.");
       return;
    }
-   /* all let go: these are its buttons */
+   /* all let go: these are its buttons - kept, for an empty row */
+   if (input_entry_capture.fresh)
+   {
+      input_entry_capture.fresh_pad  = input_entry_capture.seen;
+      input_entry_capture.fresh_done = input_entry_capture.number;
+      input_entry_capture_end(NULL);
+      return;
+   }
    for (i = 0; i < input_entries.count; i++)
       if (input_entries.entry[i].number == input_entry_capture.number)
       {
@@ -11931,6 +11975,97 @@ static size_t input_entry_pad_names(unsigned pad, char *s, size_t len)
             at ? "+" : "", base);
    }
    return at;
+}
+
+/* What an entry can be, as the configuration names them, with | between
+ * them: the hotkeys but the enabler, the commands, and the macros
+ * there are. Its length. */
+size_t input_entry_targets(char *s, size_t len)
+{
+   unsigned i;
+   size_t at = 0;
+   if (!len)
+      return 0;
+   s[0] = '\0';
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      const char *base = input_config_bind_map_get_base(i);
+      if (i == RARCH_ENABLE_HOTKEY || !base || !*base)
+         continue;
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, "%s%s",
+            at ? "|" : "", base);
+   }
+   for (i = 0; i < ARRAY_SIZE(input_entry_commands); i++)
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, "%s%s",
+            at ? "|" : "", input_entry_commands[i].name);
+   for (i = 0; i < input_macros.count; i++)
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, "%smacro_%u",
+            at ? "|" : "", (unsigned)input_macros.macro[i].number);
+   return at < len ? at : len - 1;
+}
+
+/* What a target is called in the menu: a hotkey by its name there, a
+ * command or a macro by its own. */
+size_t input_entry_target_desc(const char *target, char *s, size_t len)
+{
+   unsigned i;
+   static const char *command_desc[] = {
+      "Pause", "Unpause", "Undo Load State", "Undo Save State",
+      "Save Current Configuration" };
+   if (!len)
+      return 0;
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      const char *base = input_config_bind_map_get_base(i);
+      if (base && !strcmp(base, target))
+         return strlcpy(s, input_config_bind_map_get_desc(i), len);
+   }
+   for (i = 0; i < ARRAY_SIZE(input_entry_commands); i++)
+      if (!strcmp(input_entry_commands[i].name, target))
+         return strlcpy(s, command_desc[i], len);
+   if (!strncmp(target, "macro_", 6))
+      return (size_t)snprintf(s, len, "Macro %s", target + 6);
+   return strlcpy(s, target, len);
+}
+
+/* Entry @number made of the RetroPad's buttons in @pad and @target,
+ * replacing the one of that number if there is one. */
+bool input_entry_set_from_pad(unsigned number, unsigned pad,
+      const char *target)
+{
+   char spec[256];
+   size_t at;
+   if (!pad || !target || !*target)
+      return false;
+   at = input_entry_pad_names(pad, spec, sizeof(spec));
+   snprintf(spec + at, sizeof(spec) - at, " : %s", target);
+   return input_entry_add(number, spec);
+}
+
+/* What entry @number is, changed to @target, its sources and time
+ * held kept. */
+bool input_entry_set_target(unsigned number, const char *target)
+{
+   char spec[256];
+   char *colon;
+   if (!target || !*target || !input_entry_spec(number, spec, sizeof(spec)))
+      return false;
+   if (!(colon = strstr(spec, " : ")))
+      return false;
+   snprintf(colon, sizeof(spec) - (size_t)(colon - spec), " : %s", target);
+   return input_entry_add(number, spec);
+}
+
+/* What entry @number is, as the configuration names it, in @s; its
+ * length, 0 for none. */
+size_t input_entry_target(unsigned number, char *s, size_t len)
+{
+   char spec[256];
+   const char *colon;
+   if (!len || !input_entry_spec(number, spec, sizeof(spec))
+         || !(colon = strstr(spec, " : ")))
+      return 0;
+   return strlcpy(s, colon + 3, len);
 }
 
 /* Entry @number as the configuration writes it, in @s; its length, 0
@@ -15543,6 +15678,29 @@ typedef char input_menu_dpad_ids_in_a_row[(
       && RETRO_DEVICE_ID_JOYPAD_RIGHT == RETRO_DEVICE_ID_JOYPAD_LEFT + 1) ? 1 : -1];
 #endif
 
+/* What there is to do for entries on a frame that has any: a capture's
+ * frame, the entries, and the commands they gave - carried out last,
+ * since one may start the drivers again. Out of line, so that the
+ * frame's input pass holds one call for all of it. */
+INPUT_NOINLINE static void input_entries_work_frame(
+      input_driver_state_t *input_st,
+      const input_device_driver_t *joypad,
+      unsigned hotkey_port, bool device_merge,
+      input_bits_t *current_bits)
+{
+   /* (one being assigned by pressing takes the pad's buttons first:
+    * on an empty row there can be one with no entries yet) */
+   if (input_entries.work & 2)
+      input_entry_capture_frame(current_bits);
+   if (input_entries.work & 1)
+   {
+      input_entries_frame(input_st, joypad, hotkey_port,
+            device_merge, current_bits);
+      if (input_entries.command_count)
+         input_entries_commands();
+   }
+}
+
 void input_driver_collect_system_input(input_driver_state_t *input_st,
       settings_t *settings, input_bits_t *current_bits)
 {
@@ -15896,17 +16054,9 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
     * - with the ports gone through; and the commands carried out, last
     * of all, since one may start the drivers again. One test a frame
     * when there are none. */
-   if (input_entries.count)
-   {
-      /* (one being assigned by pressing takes the pad's buttons first:
-       * there is one to assign only when there are entries) */
-      if (input_entry_capture.number)
-         input_entry_capture_frame(current_bits);
-      input_entries_frame(input_st, joypad, hotkey_port,
+   if (input_entries.work)
+      input_entries_work_frame(input_st, joypad, hotkey_port,
             settings->bools.input_hotkey_device_merge, current_bits);
-      if (input_entries.command_count)
-         input_entries_commands();
-   }
 }
 
 #if defined(HAVE_MENU) && defined(HAVE_ACCESSIBILITY)

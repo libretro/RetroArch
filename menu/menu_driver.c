@@ -8073,6 +8073,18 @@ static int generic_menu_iterate(
 
    menu->menu_state_msg[0]         = '\0';
 
+   /* buttons held on an empty combination row: what it is to do is
+    * picked next, from a list opened over this one */
+   {
+      unsigned number, pad;
+      if (input_entry_capture_take_fresh(&number, &pad))
+      {
+         menu_setting_entry_target_pick(number, pad);
+         if (list && list->size)
+            label                  = list->list[list->size - 1].label;
+      }
+   }
+
    iterate_type                    = action_iterate_type(label, menu_st);
    menu_st->flags                 &= ~MENU_ST_FLAG_IS_BINDING;
 

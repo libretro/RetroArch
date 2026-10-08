@@ -822,16 +822,86 @@ static int setting_entry_text_start(rarch_setting_t *setting)
    return 0;
 }
 
-/* Right, on a combination row with an entry: its buttons set by
- * holding them. (OK types the whole line; Start takes it out.) */
+/* What a combination is to do, picked from a list: one setting, never
+ * shown as a row, whose drop-down is opened for a combination - after
+ * its buttons were held on an empty row, or by Left on a row with an
+ * entry. Its values are every target there is (input_entry_targets()),
+ * made again each time it is opened; each is shown by its name in the
+ * menu. */
+static char     menu_target_text[64];
+static char     menu_target_values[4096];
+static unsigned menu_target_number;
+static unsigned menu_target_pad;   /* the buttons held, for a new one; 0 keeps them */
+
+static void setting_entry_target_change(rarch_setting_t *setting)
+{
+   const char *target = setting->value.target.string;
+   if (!menu_target_number || !*target)
+      return;
+   if (menu_target_pad)
+      input_entry_set_from_pad(menu_target_number, menu_target_pad, target);
+   else
+      input_entry_set_target(menu_target_number, target);
+   menu_target_number = 0;
+   menu_target_pad    = 0;
+   setting_entry_rows_repopulate();
+}
+
+static size_t setting_entry_target_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   return input_entry_target_desc(setting->value.target.string, s, len);
+}
+
+/* The list opened, for combination @number: with @pad the buttons held
+ * on its empty row, or 0 to change what an entry there is does. */
+void menu_setting_entry_target_pick(unsigned number, unsigned pad)
+{
+   char enum_idx[16];
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (!input_entry_targets(menu_target_values, sizeof(menu_target_values)))
+      return;
+   menu_target_number = number;
+   menu_target_pad    = pad;
+   /* checked in the list: what it does now, or the first there is */
+   if (!input_entry_target(number, menu_target_text, sizeof(menu_target_text)))
+   {
+      const char *bar = strchr(menu_target_values, '|');
+      size_t      n   = bar ? (size_t)(bar - menu_target_values)
+                            : strlen(menu_target_values);
+      if (n >= sizeof(menu_target_text))
+         n = sizeof(menu_target_text) - 1;
+      memcpy(menu_target_text, menu_target_values, n);
+      menu_target_text[n] = '\0';
+   }
+   snprintf(enum_idx, sizeof(enum_idx), "%d", MENU_ENUM_LABEL_INPUT_COMBO_TARGET);
+   generic_action_ok_displaylist_push(enum_idx, NULL, NULL, 0,
+         menu_st->selection_ptr, 0, ACTION_OK_DL_DROPDOWN_BOX_LIST);
+}
+
+/* Right, on a combination row: its buttons set by holding them. On an
+ * empty row, what it is to do is picked after. (OK types the whole
+ * line; Left picks what it does; Start takes it out.) */
 static int setting_entry_text_right(rarch_setting_t *setting, size_t idx,
       bool wraparound)
 {
    (void)idx;
    (void)wraparound;
-   if (!setting || !menu_input_entry_capture_begin(setting->index_offset))
-      RARCH_WARN("[Input] Combination %u has nothing to set the buttons of:"
-            " type it first.\n", setting ? setting->index_offset : 0);
+   if (setting)
+      menu_input_entry_capture_begin(setting->index_offset);
+   return 0;
+}
+
+/* Left, on a combination row with an entry: what it does, picked. */
+static int setting_entry_text_left(rarch_setting_t *setting, size_t idx,
+      bool wraparound)
+{
+   char text[64];
+   (void)idx;
+   (void)wraparound;
+   if (setting && input_entry_target(setting->index_offset, text, sizeof(text)))
+      menu_setting_entry_target_pick(setting->index_offset, 0);
    return 0;
 }
 
@@ -16399,9 +16469,29 @@ static void settings_build_input_hotkey(
                SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1],
                      k ? setting_macro_text_repr : setting_entry_text_repr)
                if (!k)
+               {
                   SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_entry_text_right)
+                  SETTINGS_ACTION_SET(left,  &(*list)[list_info->index - 1], setting_entry_text_left)
+               }
             }
          }
+
+         /* what a combination does, picked from a list: not a row */
+         input_entry_targets(menu_target_values, sizeof(menu_target_values));
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               menu_target_text, sizeof(menu_target_text),
+               MENU_ENUM_LABEL_INPUT_COMBO_TARGET,
+               MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
+               "", menu_target_values,
+               &group_info, &subgroup_info, parent_group,
+               setting_entry_target_change, NULL);
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+               MENU_ENUM_LABEL_INPUT_COMBO_TARGET);
+         SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_entry_target_repr)
+         /* its values are this file's own buffer, made again each time
+          * the list is opened: not to be freed with the settings */
+         (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
 
          GROUP_END();
 

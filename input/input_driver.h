@@ -2289,6 +2289,16 @@ bool input_entry_remove(unsigned number);
 bool input_entry_capture_start(unsigned number);
 bool input_entry_capture_running(void);
 unsigned input_entry_capture_seconds_left(void);
+/* The buttons held on a row with no entry, once let go: true once. */
+bool input_entry_capture_take_fresh(unsigned *number, unsigned *pad);
+/* What an entry can be, | between them; what one is called in the
+ * menu; an entry made of buttons and a target; an entry's target
+ * changed; and what an entry's target is. */
+size_t input_entry_targets(char *s, size_t len);
+size_t input_entry_target_desc(const char *target, char *s, size_t len);
+bool input_entry_set_from_pad(unsigned number, unsigned pad, const char *target);
+bool input_entry_set_target(unsigned number, const char *target);
+size_t input_entry_target(unsigned number, char *s, size_t len);
 size_t input_entry_spec(unsigned number, char *s, size_t len);
 /* The entries and macros written into a configuration to be saved. */
 void input_entries_write(void *conf);

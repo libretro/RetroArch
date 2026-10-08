@@ -24931,6 +24931,14 @@ MSG_HASH(
    "Find a Button by Pressing It"
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
+   "What the Combination Does"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
+   "The hotkey, command or macro the buttons just held will set off."
+   )
+MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    "Press a button or push a stick on this port's controller, or a key bound to one, and the list below jumps to it."
    )

@@ -84,6 +84,11 @@ rarch_setting_t *menu_setting_find(const char *label);
  * there is now (see menu_setting.c). */
 void menu_setting_entries_refresh(void);
 
+/* The list of what a combination can do, opened for combination
+ * @number: @pad the buttons held on its empty row, or 0 to change what
+ * an entry there is does. */
+void menu_setting_entry_target_pick(unsigned number, unsigned pad);
+
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 
 int menu_action_handle_setting(rarch_setting_t *setting,
