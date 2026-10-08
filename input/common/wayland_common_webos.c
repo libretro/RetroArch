@@ -899,7 +899,7 @@ void wl_keyboard_handle_key_webos(void *data,
 
    /* OSK: D-pad / Enter navigate and confirm the grid; do not inject
     * text-cursor moves or '\n' line submission from those keys. */
-   if (input_driver_keyboard_mapping_blocked())
+   if (input_driver_text_entry_active())
    {
       switch (keysym)
       {

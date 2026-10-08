@@ -246,7 +246,7 @@ static bool sdl3_key_pressed(sdl3_input_t *sdl, int key)
       if (sdl_webos_sticky_pressed(slot))
          return true;
 
-      if (input_driver_keyboard_mapping_blocked())
+      if (input_driver_text_entry_active())
          return false;
    }
    if (key == RETROK_F1 && sdl->kb_state[SDL_SCANCODE_WEBOS_EXIT])
@@ -907,7 +907,7 @@ static void sdl3_input_poll(void *data)
          uint32_t character  = 0;
 
 #ifdef WEBOS
-         bool osk_active = input_driver_keyboard_mapping_blocked();
+         bool osk_active = input_driver_text_entry_active();
 
          if (!osk_active)
             sdl_webos_phys_kbd_typing = false;
