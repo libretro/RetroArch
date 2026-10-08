@@ -473,6 +473,21 @@ jobs:
           make clean
           echo "[pass] key_lane_test"
 
+      - name: Build and run keymaps_lut_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/input/keymaps_lut
+        run: |
+          set -eu
+          # The keysym reverse table input/input_keymaps.c builds, with
+          # memory and with its allocation failed: every mapped code
+          # translates the same either way, through the forward table
+          # when there is no reverse one.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./keymaps_lut_test
+          make clean
+          echo "[pass] keymaps_lut_test"
+
       - name: Build and run pointer_frame_test (plain, ASan, UBSan)
         shell: bash
         working-directory: samples/input/pointer_frame
