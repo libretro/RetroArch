@@ -108,6 +108,11 @@ void input_remapping_deinit(bool save_remap);
  */
 void input_remapping_set_defaults(bool clear_cache);
 
+/* The same defaults written into @settings, which need not be the
+ * settings in use, and nothing else done: see the definition. */
+struct settings;
+void input_remapping_defaults_into(struct settings *settings);
+
 /**
  * Checks `input_config_bind_map` for the requested `input_bind_map`, and if
  * the bind has been registered, returns its base.

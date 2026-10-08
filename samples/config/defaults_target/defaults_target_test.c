@@ -47,6 +47,7 @@ void input_config_reset(void) { }
 void input_config_set_device(unsigned port, unsigned id) { (void)port; (void)id; }
 void input_remapping_deinit(bool save) { (void)save; }
 void input_remapping_set_defaults(bool clear) { (void)clear; }
+void input_remapping_defaults_into(struct settings *settings) { (void)settings; }
 bool path_is_directory(const char *path) { (void)path; return false; }
 bool path_mkdir(const char *dir) { (void)dir; return true; }
 recording_state_t *recording_state_get_ptr(void)

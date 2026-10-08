@@ -13925,25 +13925,24 @@ void input_remapping_deinit(bool save_remap)
                                |    RUNLOOP_FLAG_REMAPS_GAME_ACTIVE);
 }
 
-void input_remapping_set_defaults(bool clear_cache)
+/* The defaults of what a remap changes, written into @settings and
+ * nowhere else: every button and axis as itself, no key mapped, every
+ * port its own (or none yet, under first-press assignment). @settings
+ * may be the settings in use, or a copy being filled with the defaults
+ * only to be compared against - the configuration does that to save
+ * what differs - and filling a copy must not reset what is in use. */
+void input_remapping_defaults_into(settings_t *settings)
 {
    unsigned i, j;
-   settings_t *settings           = config_get_ptr();
-   input_driver_state_t *input_st = &input_driver_st;
-   bool first_press               = input_first_press_enabled();
-
-   input_config_binds_changed();
+   bool first_press = input_first_press_enabled();
 
    for (i = 0; i < MAX_USERS; i++)
    {
       /* Button/keyboard remaps */
       for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
       {
-         const struct retro_keybind *keybind = &input_config_binds[i][j];
-
          configuration_set_uint(settings,
-               settings->uints.input_remap_ids[i][j],
-                     keybind ? j : RARCH_UNMAPPED);
+               settings->uints.input_remap_ids[i][j], j);
 
          configuration_set_uint(settings,
                settings->uints.input_keymapper_ids[i][j], RETROK_UNKNOWN);
@@ -13959,6 +13958,17 @@ void input_remapping_set_defaults(bool clear_cache)
             settings->uints.input_remap_ports[i],
             first_press ? MAX_USERS : i);
    }
+}
+
+void input_remapping_set_defaults(bool clear_cache)
+{
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = &input_driver_st;
+   bool first_press               = input_first_press_enabled();
+
+   input_config_binds_changed();
+
+   input_remapping_defaults_into(settings);
 
    /* first-press assignment starts over; the setting is looked at
     * here, so changing it applies from the next content start */

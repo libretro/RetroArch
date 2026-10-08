@@ -6025,9 +6025,23 @@ void config_set_defaults(settings_t *target)
    *settings->arrays.cheevos_token                    = '\0';
 #endif
 
-   input_config_reset();
-   input_remapping_deinit(false);
-   input_remapping_set_defaults(false);
+   /* The input's own state - the binds, the active remap, what a
+    * controller's profile gave - is reset with the settings in use,
+    * and only with them. Filling a copy with the defaults, which the
+    * save does to write only what differs, reset all of it for a user
+    * in the middle of a game: the remap gone, each port's kind of
+    * device and analog-to-digital setting put back, and every bind and
+    * profile copied aside and copied back to survive it. A copy gets
+    * its remap defaults written into it, and nothing in use is
+    * touched. */
+   if (settings == config_st)
+   {
+      input_config_reset();
+      input_remapping_deinit(false);
+      input_remapping_set_defaults(false);
+   }
+   else
+      input_remapping_defaults_into(settings);
 
    configuration_set_string(settings,
          settings->paths.network_buildbot_url, DEFAULT_BUILDBOT_SERVER_URL);
@@ -6041,7 +6055,10 @@ void config_set_defaults(settings_t *target)
    {
       settings->uints.input_joypad_index[i] = (unsigned)i;
       settings->uints.input_analog_dpad_mode[i] = ANALOG_DPAD_LSTICK;
-      input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
+      if (settings == config_st)
+         input_config_set_device((unsigned)i, RETRO_DEVICE_JOYPAD);
+      else
+         settings->uints.input_libretro_device[i] = RETRO_DEVICE_JOYPAD;
       settings->uints.input_mouse_index[i] = (unsigned)i;
       settings->uints.input_keyboard_index[i] = 0;
       settings->uints.input_aim_stick[i]      = INPUT_AIM_STICK_NONE;
@@ -8548,13 +8565,13 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
  * input_config_save_keybinds_user_minimal:
  * @conf               : pointer to config file object
  * @user               : user number
- * @defaults           : a copy of the binds taken with the defaults loaded
+ *
  *
  * Save the current keybinds of a user (@user) to the config file (@conf),
  * but only save binds that differ from defaults. Remove binds that match defaults.
  */
 static void input_config_save_keybinds_user_minimal(config_file_t *conf,
-      unsigned user, const input_config_binds_copy_t *defaults)
+      unsigned user)
 {
    unsigned i;
    for (i = 0; input_config_bind_map_get_valid(i); i++)
@@ -8566,8 +8583,10 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
       const struct retro_keybind *bind     = input_config_bind(user, i);
-      const struct retro_keybind *def_bind =
-         input_config_binds_copy_bind(defaults, user, i);
+      /* the bind's default, made from its definition as a reset makes
+       * it: no copy of every user's binds with the defaults loaded */
+      struct retro_keybind def_bind_made;
+      const struct retro_keybind *def_bind = &def_bind_made;
       const char                 *base     = NULL;
       bool differs_from_default            = false;
 
@@ -8576,6 +8595,9 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
 
       if (!*prefix || !RETRO_KEYBIND_VALID(bind) || !keybind)
          continue;
+
+      input_config_bind_from_def(&def_bind_made,
+            input_config_bind_def(user, i));
 
       base                                 = keybind->base;
       btn[0]                               = '\0';
@@ -9110,7 +9132,6 @@ bool config_save_file(const char *path)
    bool minimal                                      = false;
    bool credentials_saved                            = false;
    settings_t                     *defaults          = NULL;
-   input_config_binds_copy_t      *defaults_binds    = NULL;
    struct config_bool_setting     *bool_settings     = NULL;
    struct config_bool_setting     *bool_defaults     = NULL;
    struct config_int_setting     *int_settings       = NULL;
@@ -9171,69 +9192,23 @@ bool config_save_file(const char *path)
       }
       else
       {
-         /* Allocate space for default keybinds */
-         defaults_binds = input_config_binds_copy_new();
-         if (!defaults_binds)
          {
-            /* Failed to allocate, fall back to non-minimal mode */
-            free(defaults);
-            defaults = NULL;
-            minimal = false;
-         }
-         else
-         {
-            input_autoconf_backup_t autoconf_bkp;
-            bool have_autoconf_bkp;
-            input_bind_label_set *saved_config_labels;
-            /* A copy of the binds is on the heap: too large for the
-             * stack on small-stack platforms. As defaults_binds above. */
-            input_config_binds_copy_t *saved_binds;
 #ifdef HAVE_LANGEXTRA
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
-            /* Save the current binds */
-            saved_binds = input_config_binds_copy_new();
-
-            /* Config-bind labels are saved and restored by value, exactly as
-             * they were when they lived inside the bind struct. */
-            saved_config_labels = (input_bind_label_set*)calloc(MAX_USERS,
-                  sizeof(input_bind_label_set));
-            if (saved_config_labels)
-               memcpy(saved_config_labels, input_config_bind_labels,
-                     MAX_USERS * sizeof(input_bind_label_set));
-
-            have_autoconf_bkp = input_autoconf_state_save(&autoconf_bkp);
-
             /* Populate the local defaults struct directly: config_st
-             * stays what every other thread's config_get_ptr() returns.
-             * input_config_reset() inside sets the default keybinds. */
+             * stays what every other thread's config_get_ptr() returns,
+             * and the input's own state is not reset for it (see
+             * config_set_defaults()). Nothing of the binds, their labels
+             * or the controllers' profiles is copied aside and put back:
+             * a bind's default is asked for where it is compared. */
             config_set_defaults(defaults);
-
-            /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
-            input_config_binds_copy_take(defaults_binds);
-
-            /* Restore the binds */
-            if (saved_binds)
-            {
-               input_config_binds_copy_restore(saved_binds);
-               input_config_binds_copy_free(saved_binds);
-            }
-
-            if (saved_config_labels)
-            {
-               memcpy(input_config_bind_labels, saved_config_labels,
-                     MAX_USERS * sizeof(input_bind_label_set));
-               free(saved_config_labels);
-            }
 
 #ifdef HAVE_LANGEXTRA
             /* Restore user_language global, clobbered by config_set_defaults. */
             msg_hash_set_uint(MSG_HASH_USER_LANGUAGE, saved_user_language);
 #endif
-
-            if (have_autoconf_bkp)
-               input_autoconf_state_restore(&autoconf_bkp);
          }
 
          /* Populate default setting arrays */
@@ -9744,8 +9719,8 @@ bool config_save_file(const char *path)
 
    for (i = 0; i < MAX_USERS; i++)
    {
-      if (minimal && defaults_binds)
-         input_config_save_keybinds_user_minimal(conf, i, defaults_binds);
+      if (minimal)
+         input_config_save_keybinds_user_minimal(conf, i);
       else
          input_config_save_keybinds_user(conf, i);
    }
@@ -9794,9 +9769,6 @@ bool config_save_file(const char *path)
          free(path_defaults);
       free(defaults);
    }
-
-   if (defaults_binds)
-      input_config_binds_copy_free(defaults_binds);
 
    if (bool_settings)
       free(bool_settings);

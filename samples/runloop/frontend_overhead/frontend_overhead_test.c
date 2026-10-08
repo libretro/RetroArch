@@ -4798,12 +4798,14 @@ static void lane_hotkeys_one_set(void)
 }
 
 /* Saving the configuration with "only what differs from the defaults".
- * To know the defaults it takes a copy of the binds, loads the defaults
- * over them, takes a copy of those, and puts the binds back; then it
- * writes each bind that is not what the second copy has. Held to all
- * of it through a bind the test changes: that one is written, one it
- * did not change is not, and afterwards the binds are what they were
- * - the changed one still changed. */
+ * To know the defaults it fills a copy of the settings with them, and
+ * asks for each bind's default as it compares. It used to load the
+ * defaults over everything in use and put back what it had thought to
+ * copy aside - the binds and the profiles - which left the rest reset:
+ * the active remap, each port's kind of device, its analog-to-digital
+ * setting. Held to it through things the test changes: the changed
+ * bind is written and a default one is not, and after the save all of
+ * it is what it was, with no bind counted as changed. */
 static void lane_save_minimal_binds(void)
 {
    settings_t *settings      = config_get_ptr();
@@ -4813,18 +4815,33 @@ static void lane_save_minimal_binds(void)
    struct retro_keybind before_y = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_Y];
    struct retro_keybind before_p2 = input_config_binds[1][RETRO_DEVICE_ID_JOYPAD_START];
    bool saved_minimal        = settings->bools.config_save_minimal;
+   unsigned saved_device     = settings->uints.input_libretro_device[1];
+   unsigned saved_remap      = settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A];
+   unsigned saved_analog     = settings->uints.input_analog_dpad_mode[0];
    unsigned had              = failures;
+   unsigned changes;
    char *text                = NULL;
    long  len                 = 0;
    FILE *f;
 
    RETRO_KEYBIND_SET_KEY(b, RETROK_F11);
    RETRO_KEYBIND_SET_VALID(b, true);
+   /* and what else of the input a user has set that is not a bind: a
+    * port's kind of device, a remapped button, a stick as the d-pad */
+   input_config_set_device(1, RETRO_DEVICE_ANALOG);
+   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_X;
+   settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
    binds_written_by_a_lane();
    settings->bools.config_save_minimal = true;
    remove(path);
 
+   changes = input_config_binds_generation();
    CHECK(config_save_file(path), "save minimal: the configuration was not saved");
+   /* saving reads the binds; it copied every one aside, loaded the
+    * defaults over them and copied them back, which is a change to
+    * every one and made everything kept from them be made again */
+   CHECK(input_config_binds_generation() == changes,
+         "save minimal: saving counted as a change to the binds");
 
    if ((f = fopen(path, "rb")))
    {
@@ -4855,16 +4872,27 @@ static void lane_save_minimal_binds(void)
          "save minimal: the first user's Y is not what it was after the save");
    CHECK(!memcmp(&before_p2, &input_config_binds[1][RETRO_DEVICE_ID_JOYPAD_START], sizeof(before_p2)),
          "save minimal: the second user's Start is not what it was after the save");
+   /* ... and so is the rest of what was set: saving is not resetting */
+   CHECK(settings->uints.input_libretro_device[1] == RETRO_DEVICE_ANALOG,
+         "save minimal: the second port's kind of device was reset by the save");
+   CHECK(settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] == RETRO_DEVICE_ID_JOYPAD_X,
+         "save minimal: a remapped button was reset by the save");
+   CHECK(settings->uints.input_analog_dpad_mode[0] == ANALOG_DPAD_NONE,
+         "save minimal: the first port's analog-to-digital setting was reset by the save");
 
    remove(path);
    settings->bools.config_save_minimal = saved_minimal;
+   input_config_set_device(1, saved_device);
+   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = saved_remap;
+   settings->uints.input_analog_dpad_mode[0] = saved_analog;
    *b = saved_b;
    binds_written_by_a_lane();
    run_loop_frames(2);
 
    if (failures == had)
       printf("[pass] save minimal: a changed bind is written, a default one is"
-            " not, and the binds are put back as they were\n");
+            " not, and the binds, a port's device, a remap and a stick"
+            " setting are what they were\n");
 }
 
 static void lane_aim_stick(void)
