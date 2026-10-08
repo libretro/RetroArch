@@ -6341,8 +6341,14 @@ static void lane_menu_entry_rows(void)
          "menu rows: a row does not show its entry as it is written");
    CHECK(!m2->value.target.string[0], "menu rows: a row with nothing there shows something");
 
-   /* typed and entered */
+   /* typed and entered: and the list is to be made again, so that the
+    * empty row moves on */
+   menu_state_get_ptr()->flags &= ~MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_state_get_ptr()->flags |=  MENU_ST_FLAG_PREVENT_POPULATE;
    mr_text(c3, "l3+r3:menu_toggle");
+   CHECK(   (menu_state_get_ptr()->flags & MENU_ST_FLAG_ENTRIES_NEED_REFRESH)
+         && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_PREVENT_POPULATE),
+         "menu rows: a row entered does not have the list made again");
    CHECK(   input_entry_spec(3, spec, sizeof(spec))
          && !strcmp(spec, "l3+r3 : menu_toggle")
          && !strcmp(c3->value.target.string, "l3+r3 : menu_toggle"),
@@ -6393,6 +6399,11 @@ static void lane_menu_entry_rows(void)
          const char *label = list.list[i].label;
          if (!label)
             continue;
+         if (!strncmp(label, "input_combo_", 12) || !strncmp(label, "input_macro_", 12))
+            /* drawn as the text setting it is, with its value: an
+             * action's type draws a row with no value at all */
+            CHECK(list.list[i].type != MENU_SETTING_ACTION,
+                  "menu rows: a row is listed as an action, which shows nothing of what it holds");
          if (!strncmp(label, "input_combo_", 12))
          {
             combos++;

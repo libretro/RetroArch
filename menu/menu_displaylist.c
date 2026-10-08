@@ -9214,7 +9214,9 @@ unsigned menu_displaylist_build_list(
             }
 
             /* Combinations and macros: each there is, and one empty
-             * row to add the next with */
+             * row to add the next with. Listed as the text settings they
+             * are (no entry type given): as an action a row was drawn
+             * with no value, and showed nothing of what it held. */
             menu_setting_entries_refresh();
             {
                unsigned k;
@@ -9235,7 +9237,7 @@ unsigned menu_displaylist_build_list(
                      }
                      snprintf(key, sizeof(key), k ? "input_macro_%u" : "input_combo_%u", i);
                      if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
-                              key, PARSE_ONLY_STRING, false, MENU_SETTING_ACTION) == 0)
+                              key, PARSE_ONLY_STRING, false, 0) == 0)
                         count++;
                   }
                }

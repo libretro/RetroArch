@@ -771,6 +771,16 @@ static int setting_string_action_start_generic(rarch_setting_t *setting)
 static char menu_entry_text[MENU_ENTRY_ROWS][256];
 static char menu_macro_text[MENU_ENTRY_ROWS][512];
 
+/* After a row's number is set or taken out the list is made again,
+ * not only drawn again: which rows it has follows what there is - the
+ * empty row to add the next with moves on, or back. */
+static void setting_entry_rows_repopulate(void)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->flags            &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+   menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
 static void setting_entry_text_change(rarch_setting_t *setting)
 {
    unsigned n = setting->index_offset;
@@ -783,6 +793,7 @@ static void setting_entry_text_change(rarch_setting_t *setting)
             " command\".\n", s);
    if (!input_entry_spec(n, s, setting->size))
       s[0] = '\0';
+   setting_entry_rows_repopulate();
 }
 
 static void setting_macro_text_change(rarch_setting_t *setting)
@@ -797,6 +808,7 @@ static void setting_macro_text_change(rarch_setting_t *setting)
             " or -, and a number of frames\".\n", s);
    if (!input_macro_spec(n, s, setting->size))
       s[0] = '\0';
+   setting_entry_rows_repopulate();
 }
 
 /* (Start, on a row: the number is taken out.) */
