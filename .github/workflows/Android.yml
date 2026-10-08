@@ -31,11 +31,27 @@ jobs:
       with:
         java-version: '25'
         distribution: 'temurin'
+        cache: 'gradle'
 
     - name: Compile RA
       run: |
         cd pkg/android/phoenix
-        ./gradlew assembleDebug
+        # A repository that answers with a server error is retried with
+        # a backoff (2 s doubling, six tries) before Gradle gives up on
+        # it for the rest of the build. A build that still fails to fetch
+        # a dependency is run again, keeping what it already fetched and
+        # built; any other failure fails the step at once.
+        set -o pipefail
+        for i in 1 2 3; do
+          ./gradlew assembleDebug \
+            -Dorg.gradle.internal.repository.max.tentatives=6 \
+            -Dorg.gradle.internal.repository.initial.backoff=2000 \
+            2>&1 | tee gradle.log && break
+          grep -qE 'Could not (resolve|GET|HEAD|download)' gradle.log \
+            && [ $i != 3 ] || exit 1
+          echo "dependency fetch failed (attempt $i); retrying in 30s"
+          sleep 30
+        done
         find . -iname "*.apk" -exec ls -l "{}" \;
 
     - name: Get short SHA
