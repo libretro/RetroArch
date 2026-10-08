@@ -87,10 +87,6 @@ extern "C" {
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 #endif
 
-#ifndef FFMPEG8
-#define FFMPEG8 (LIBAVCODEC_VERSION_MAJOR >= 62)
-#endif
-
 /* avcodec_get_supported_config() was added in lavc 61.13.100 (FFmpeg 7.1)
  * and the AVCodec.sample_fmts / AVCodec.supported_samplerates arrays it
  * replaces were deprecated at the same time, then removed entirely in
@@ -1516,28 +1512,12 @@ static void ffmpeg_free(void *data)
    av_free(handle->video_rot_buf);
    handle->video_rot_buf = NULL;
 
-   if (handle->audio.codec)
-   {
-#if FFMPEG8
-      avcodec_free_context(&handle->audio.codec);
-#else
-      avcodec_close(handle->audio.codec);
-#endif
-      av_free(handle->audio.codec);
-   }
+   avcodec_free_context(&handle->audio.codec);
 
    av_free(handle->audio.buffer);
    av_frame_free(&handle->audio.frame);
 
-   if (handle->video.codec)
-   {
-#if FFMPEG8
-      avcodec_free_context(&handle->video.codec);
-#else
-      avcodec_close(handle->video.codec);
-#endif
-      av_free(handle->video.codec);
-   }
+   avcodec_free_context(&handle->video.codec);
 
    av_frame_free(&handle->video.conv_frame);
    av_free(handle->video.conv_frame_buf);
