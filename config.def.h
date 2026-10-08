@@ -1200,6 +1200,14 @@
  * of stalling the frontend until it drains. */
 #define DEFAULT_VIDEO_RECORD_ALLOW_FRAME_DROP true
 
+/* Use a hardware H.264 encoder for recording/streaming when the FFmpeg
+ * build has one that works, falling back to libx264. */
+#ifdef HAVE_LAKKA_SWITCH
+#define DEFAULT_VIDEO_RECORD_HW_ENCODER true
+#else
+#define DEFAULT_VIDEO_RECORD_HW_ENCODER false
+#endif
+
 /* Depth of the recording video queue, in frames. */
 #define DEFAULT_VIDEO_RECORD_FIFO_FRAMES 32
 #define MIN_VIDEO_RECORD_FIFO_FRAMES 8

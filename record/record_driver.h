@@ -86,6 +86,8 @@ struct record_params
    bool video_gpu_record;
    /* Drop frames when the encoder queue is full instead of blocking. */
    bool allow_frame_drop;
+   /* Prefer a hardware H.264 encoder for the built-in presets. */
+   bool hw_encoder;
 };
 
 struct record_video_data

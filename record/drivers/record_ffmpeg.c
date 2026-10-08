@@ -211,6 +211,9 @@ struct ff_config_param
    int video_buf_size;
    float video_gop_seconds;
    int video_max_b_frames;
+   /* Bits per pixel per frame used to derive a bitrate for hardware
+    * encoders when the preset is CRF-based (hardware has no CRF). */
+   float video_hw_bpp;
 
    AVDictionary *video_opts;
    AVDictionary *audio_opts;
@@ -550,6 +553,185 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    return true;
 }
 
+/* Returns the encoder's supported pixel formats, terminated by
+ * AV_PIX_FMT_NONE, or NULL if unrestricted / unknown. */
+static const enum AVPixelFormat *ffmpeg_codec_pix_fmts(const AVCodec *codec)
+{
+#if HAVE_AVCODEC_GET_SUPPORTED_CONFIG
+   const void *fmts = NULL;
+   if (avcodec_get_supported_config(NULL, codec,
+         AV_CODEC_CONFIG_PIX_FORMAT, 0, &fmts, NULL) < 0)
+      return NULL;
+   return (const enum AVPixelFormat*)fmts;
+#else
+   return codec->pix_fmts;
+#endif
+}
+
+/* H.264 encoders that take frames from system memory, tried in order.
+ * VAAPI is left out: it needs a hw_frames_ctx upload path. */
+static const char *const ffmpeg_hw_h264_encoders[] = {
+   "h264_nvv4l2",       /* Tegra (L4T FFmpeg) */
+   "h264_nvmpi",        /* Tegra/Jetson (jetson-ffmpeg) */
+   "h264_v4l2m2m",      /* V4L2 mem2mem: RPi, Exynos, ... */
+   "h264_rkmpp",        /* Rockchip */
+   "h264_nvenc",        /* NVIDIA desktop */
+   "h264_amf",          /* AMD */
+   "h264_qsv",          /* Intel */
+   "h264_videotoolbox", /* Apple */
+   "h264_mediacodec",   /* Android */
+   NULL
+};
+
+/* Pick YUV420P, else NV12, from what the encoder accepts. */
+static enum AVPixelFormat ffmpeg_hw_pick_pix_fmt(const AVCodec *codec)
+{
+   unsigned i;
+   bool has_nv12                    = false;
+   const enum AVPixelFormat *fmts   = ffmpeg_codec_pix_fmts(codec);
+
+   if (!fmts)
+      return AV_PIX_FMT_YUV420P;
+
+   for (i = 0; fmts[i] != AV_PIX_FMT_NONE; i++)
+   {
+      if (fmts[i] == AV_PIX_FMT_YUV420P)
+         return AV_PIX_FMT_YUV420P;
+      if (fmts[i] == AV_PIX_FMT_NV12)
+         has_nv12 = true;
+   }
+   return has_nv12 ? AV_PIX_FMT_NV12 : AV_PIX_FMT_NONE;
+}
+
+/* Allocates and opens handle->video.codec; frees it on failure. */
+static bool ffmpeg_open_video_codec(ffmpeg_t *handle,
+      const AVCodec *codec, enum AVPixelFormat pix_fmt,
+      unsigned out_w, unsigned out_h, bool hw, AVDictionary **opts)
+{
+   struct ff_config_param *params  = &handle->config;
+   struct ff_video_info *video     = &handle->video;
+   struct record_params *param     = &handle->params;
+   AVCodecContext *c;
+
+   /* Ensure even dimensions for chroma-subsampled pixel formats.
+    * Odd dimensions cause encoder init failure with e.g. libx264.
+    * Round up (pad) rather than down so no source pixels are lost. */
+   if (     pix_fmt == AV_PIX_FMT_YUV420P
+         || pix_fmt == AV_PIX_FMT_YUV422P
+         || pix_fmt == AV_PIX_FMT_NV12)
+   {
+      out_w = (out_w + 1) & ~1;
+      out_h = (out_h + 1) & ~1;
+   }
+
+   if (!(c = avcodec_alloc_context3(codec)))
+      return false;
+
+   c->codec_type          = AVMEDIA_TYPE_VIDEO;
+   c->width               = out_w;
+   c->height              = out_h;
+   c->time_base           = av_d2q((double)
+         params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
+   c->framerate           = av_inv_q(c->time_base);
+   c->sample_aspect_ratio = av_d2q(
+         param->aspect_ratio * out_h / out_w, 255);
+   c->pix_fmt             = pix_fmt;
+   c->thread_count        = params->threads;
+
+   if (params->video_qscale)
+   {
+      c->flags          |= AV_CODEC_FLAG_QSCALE;
+      c->global_quality  = params->video_global_quality;
+   }
+   else if (params->video_bit_rate)
+      c->bit_rate = params->video_bit_rate;
+   else if (hw)
+   {
+      /* No CRF in hardware; derive a bitrate from the preset. */
+      float bpp   = params->video_hw_bpp > 0.0f
+         ? params->video_hw_bpp : 0.1f;
+      double rate = (double)bpp * out_w * out_h
+         * param->fps / params->frame_drop_ratio;
+      if (rate < 500000.0)
+         rate = 500000.0;
+      c->bit_rate = (int64_t)rate;
+   }
+
+   if (params->video_max_rate)
+      c->rc_max_rate    = params->video_max_rate;
+   if (params->video_buf_size)
+      c->rc_buffer_size = params->video_buf_size;
+   if (params->video_max_b_frames >= 0)
+      c->max_b_frames   = params->video_max_b_frames;
+   if (params->video_gop_seconds > 0.0f)
+   {
+      int gop = (int)(params->video_gop_seconds * param->fps
+            / params->frame_drop_ratio + 0.5f);
+      if (gop < 1)
+         gop = 1;
+      c->gop_size = gop;
+   }
+
+   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
+      c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+   if (avcodec_open2(c, codec, opts) != 0)
+   {
+      avcodec_free_context(&c);
+      return false;
+   }
+
+   video->codec    = c;
+   video->encoder  = codec;
+   param->out_dims = VIDEO_SCALE_PACK(out_w, out_h);
+   return true;
+}
+
+/* Try the hardware H.264 encoders this FFmpeg build has, in order. */
+static bool ffmpeg_open_hw_h264(ffmpeg_t *handle,
+      unsigned out_w, unsigned out_h, enum AVPixelFormat *out_fmt)
+{
+   unsigned i;
+   struct ff_config_param *params = &handle->config;
+
+   for (i = 0; ffmpeg_hw_h264_encoders[i]; i++)
+   {
+      AVDictionary *opts   = NULL;
+      enum AVPixelFormat fmt;
+      const AVCodec *codec = avcodec_find_encoder_by_name(
+            ffmpeg_hw_h264_encoders[i]);
+
+      if (!codec)
+         continue;
+      if ((fmt = ffmpeg_hw_pick_pix_fmt(codec)) == AV_PIX_FMT_NONE)
+      {
+         RARCH_LOG("[FFmpeg] %s: no YUV420P/NV12 input, skipping.\n",
+               codec->name);
+         continue;
+      }
+
+      /* x264's private options mean nothing to these. Ask for CBR where
+       * there's an "rc" knob; an encoder that rejects it fails to open
+       * and the next one is tried. */
+      if (params->video_max_rate)
+         av_dict_set(&opts, "rc", "cbr", 0);
+
+      if (ffmpeg_open_video_codec(handle, codec, fmt, out_w, out_h,
+               true, &opts))
+      {
+         av_dict_free(&opts);
+         *out_fmt = fmt;
+         RARCH_LOG("[FFmpeg] Using hardware encoder %s (%s).\n",
+               codec->name, av_get_pix_fmt_name(fmt));
+         return true;
+      }
+      av_dict_free(&opts);
+      RARCH_WARN("[FFmpeg] Hardware encoder %s failed to open.\n",
+            codec->name);
+   }
+   return false;
+}
+
 static bool ffmpeg_init_video(ffmpeg_t *handle)
 {
    size_t size;
@@ -558,58 +740,9 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    struct ff_video_info *video     = &handle->video;
    struct record_params *param     = &handle->params;
    const AVCodec *codec            = NULL;
+   enum AVPixelFormat pix_fmt      = AV_PIX_FMT_BGR24;
+   bool opened                     = false;
    unsigned out_w, out_h;
-
-   if (*params->vcodec)
-      codec = avcodec_find_encoder_by_name(params->vcodec);
-   else
-   {
-      /* By default, lossless video. */
-      av_dict_set(&params->video_opts, "qp", "0", 0);
-      codec = avcodec_find_encoder_by_name("libx264rgb");
-   }
-
-   if (!codec)
-   {
-      RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
-            *params->vcodec ? params->vcodec : "libx264rgb");
-      return false;
-   }
-
-   video->encoder = codec;
-
-   /* Don't use swscaler unless format is not something "in-house" scaler
-    * supports.
-    *
-    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first),
-    * and it's non-trivial to fix upstream as it's heavily geared towards YUV.
-    * If we're dealing with strange formats or YUV, just use libswscale.
-    */
-   if (params->out_pix_fmt != AV_PIX_FMT_NONE)
-   {
-      video->pix_fmt = params->out_pix_fmt;
-      if (video->pix_fmt != AV_PIX_FMT_BGR24 && video->pix_fmt != AV_PIX_FMT_RGB32)
-         video->use_sws = true;
-
-      switch (video->pix_fmt)
-      {
-         case AV_PIX_FMT_BGR24:
-            video->scaler.out_fmt = SCALER_FMT_BGR24;
-            break;
-
-         case AV_PIX_FMT_RGB32:
-            video->scaler.out_fmt = SCALER_FMT_ARGB8888;
-            break;
-
-         default:
-            break;
-      }
-   }
-   else /* Use BGR24 as default out format. */
-   {
-      video->pix_fmt        = AV_PIX_FMT_BGR24;
-      video->scaler.out_fmt = SCALER_FMT_BGR24;
-   }
 
    switch (param->pix_fmt)
    {
@@ -635,65 +768,73 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
          return false;
    }
 
-   video->codec = avcodec_alloc_context3(codec);
-
    /* Useful to set scale_factor to 2 for chroma subsampled formats to
     * maintain full chroma resolution. (Or just use 4:4:4 or RGB ...)
     */
    out_w = (float)VIDEO_SCALE_W(param->out_dims) * params->scale_factor;
    out_h = (float)VIDEO_SCALE_H(param->out_dims) * params->scale_factor;
 
-   /* Ensure even dimensions for chroma-subsampled pixel formats.
-    * Odd dimensions cause encoder init failure with e.g. libx264.
-    * Round up (pad) rather than down so no source pixels are lost. */
-   if (     video->pix_fmt == AV_PIX_FMT_YUV420P
-         || video->pix_fmt == AV_PIX_FMT_YUV422P)
+   /* Hardware H.264 replaces libx264 for the built-in presets only;
+    * an explicit vcodec in a custom config is left alone. */
+   if (     param->hw_encoder
+         && !params->conf
+         && string_is_equal(params->vcodec, "libx264"))
    {
-      out_w = (out_w + 1) & ~1;
-      out_h = (out_h + 1) & ~1;
-   }
-   param->out_dims = VIDEO_SCALE_PACK(out_w, out_h);
-
-   video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
-   video->codec->width               = out_w;
-   video->codec->height              = out_h;
-   video->codec->time_base           = av_d2q((double)
-         params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
-   video->codec->sample_aspect_ratio = av_d2q(
-         param->aspect_ratio * out_h / out_w, 255);
-   video->codec->pix_fmt             = video->pix_fmt;
-
-   video->codec->thread_count = params->threads;
-
-   if (params->video_qscale)
-   {
-      video->codec->flags |= AV_CODEC_FLAG_QSCALE;
-      video->codec->global_quality = params->video_global_quality;
-   }
-   else if (params->video_bit_rate)
-      video->codec->bit_rate = params->video_bit_rate;
-
-   if (params->video_max_rate)
-      video->codec->rc_max_rate    = params->video_max_rate;
-   if (params->video_buf_size)
-      video->codec->rc_buffer_size = params->video_buf_size;
-   if (params->video_max_b_frames >= 0)
-      video->codec->max_b_frames   = params->video_max_b_frames;
-   if (params->video_gop_seconds > 0.0f)
-   {
-      int gop = (int)(params->video_gop_seconds * param->fps
-            / params->frame_drop_ratio + 0.5f);
-      if (gop < 1)
-         gop = 1;
-      video->codec->gop_size = gop;
+      opened = ffmpeg_open_hw_h264(handle, out_w, out_h, &pix_fmt);
+      if (!opened)
+         RARCH_WARN("[FFmpeg] No usable hardware H.264 encoder,"
+               " falling back to libx264.\n");
    }
 
-   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      video->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+   if (!opened)
+   {
+      if (*params->vcodec)
+         codec = avcodec_find_encoder_by_name(params->vcodec);
+      else
+      {
+         /* By default, lossless video. */
+         av_dict_set(&params->video_opts, "qp", "0", 0);
+         codec = avcodec_find_encoder_by_name("libx264rgb");
+      }
 
-   if (avcodec_open2(video->codec, codec, params->video_opts ?
-            &params->video_opts : NULL) != 0)
-      return false;
+      if (!codec)
+      {
+         RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
+               *params->vcodec ? params->vcodec : "libx264rgb");
+         return false;
+      }
+
+      if (params->out_pix_fmt != AV_PIX_FMT_NONE)
+         pix_fmt = params->out_pix_fmt;
+
+      if (!ffmpeg_open_video_codec(handle, codec, pix_fmt, out_w, out_h,
+               false, params->video_opts ? &params->video_opts : NULL))
+         return false;
+   }
+
+   out_w = VIDEO_SCALE_W(param->out_dims);
+   out_h = VIDEO_SCALE_H(param->out_dims);
+
+   /* Don't use swscaler unless format is not something "in-house" scaler
+    * supports.
+    *
+    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first),
+    * and it's non-trivial to fix upstream as it's heavily geared towards YUV.
+    * If we're dealing with strange formats or YUV, just use libswscale.
+    */
+   video->pix_fmt = pix_fmt;
+   switch (pix_fmt)
+   {
+      case AV_PIX_FMT_BGR24:
+         video->scaler.out_fmt = SCALER_FMT_BGR24;
+         break;
+      case AV_PIX_FMT_RGB32:
+         video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+         break;
+      default:
+         video->use_sws = true;
+         break;
+   }
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
@@ -786,6 +927,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.05f;
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "35", 0);
@@ -802,6 +944,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.1f;
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "25", 0);
@@ -818,6 +961,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.2f;
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "15", 0);

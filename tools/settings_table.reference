@@ -310,6 +310,7 @@ bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
 bool	video_record_allow_frame_drop	1	1
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1
@@ -1002,6 +1003,7 @@ bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
 bool	video_record_allow_frame_drop	1	1
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1
@@ -1697,6 +1699,7 @@ bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
 bool	video_record_allow_frame_drop	1	1
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1

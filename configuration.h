@@ -671,6 +671,7 @@ typedef struct settings
       bool video_post_filter_record;
       bool video_gpu_record;
       bool video_record_allow_frame_drop;
+      bool video_record_hw_encoder;
       bool video_gpu_screenshot;
       bool video_allow_rotate;
       bool video_shared_context;
