@@ -5886,6 +5886,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    video_info->gpu_recording               = recording_state_get_ptr()->enable;
+   video_info->record_game_only            = video_info->gpu_recording
+      && settings->bools.video_record_game_only;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    video_info->menu_content_rate           = false;
 #ifdef HAVE_MENU

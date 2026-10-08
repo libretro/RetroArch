@@ -699,6 +699,9 @@ typedef struct video_frame_info
     * draws them: it travels with the frame, so the thread that draws
     * never reads the recording state the main thread writes. */
    bool gpu_recording;
+   /* Record Game Only: the driver reads the recording's frame back
+    * before drawing any UI over it. */
+   bool record_game_only;
    bool threaded_present_repeat;
    /* The threaded presenter is holding each push to the display's
     * vblank: the setting is on and the wrapper is running. */

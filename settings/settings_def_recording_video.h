@@ -19,6 +19,11 @@ S_BOOL(video_record_allow_frame_drop, VIDEO_RECORD_ALLOW_FRAME_DROP,
       DEFAULT_VIDEO_RECORD_ALLOW_FRAME_DROP, SD_FLAG_NONE, 0, 0,
       "Drop Frames When Encoder Falls Behind",
       "When the recording or streaming encoder can't keep up, skip video frames and fill audio gaps with silence instead of slowing down the game. Disable to keep every frame at the cost of stutter.")
+S_BOOL(video_record_game_only, VIDEO_RECORD_GAME_ONLY,
+      "video_record_game_only",
+      DEFAULT_VIDEO_RECORD_GAME_ONLY, SD_FLAG_NONE, 0, 0,
+      "Record Game Only",
+      "Leave the menu, notifications, on-screen messages and overlays out of GPU recordings, and leave out the time spent in the menu. When off, recordings capture exactly what is on screen.")
 S_BOOL(video_record_hw_encoder, VIDEO_RECORD_HW_ENCODER,
       "video_record_hw_encoder",
       DEFAULT_VIDEO_RECORD_HW_ENCODER, SD_FLAG_NONE, 0, 0,

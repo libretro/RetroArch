@@ -1200,6 +1200,10 @@
  * of stalling the frontend until it drains. */
 #define DEFAULT_VIDEO_RECORD_ALLOW_FRAME_DROP true
 
+/* Record only the game: GPU recordings leave out the menu, OSD,
+ * widgets and overlays, and menu time is left out of recordings. */
+#define DEFAULT_VIDEO_RECORD_GAME_ONLY false
+
 /* Use a hardware H.264 encoder for recording/streaming when the FFmpeg
  * build has one that works, falling back to libx264. */
 #ifdef HAVE_LAKKA_SWITCH

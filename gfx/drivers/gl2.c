@@ -4039,6 +4039,30 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
 }
 #endif
 
+static void gl2_pbo_async_readback(gl2_t *gl);
+
+/* The recording's per-frame async readback, or its teardown once
+ * recording has stopped. skip_in_menu: don't read back while the menu
+ * is drawn. */
+static void gl2_record_readback(gl2_t *gl, bool skip_in_menu)
+{
+   if (!(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE))
+      return;
+
+   if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
+   {
+      glDeleteBuffers(4, gl->pbo_readback);
+      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+   }
+#ifdef HAVE_MENU
+   else if (skip_in_menu && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
+      ;
+#endif
+   else
+      gl2_pbo_async_readback(gl);
+}
+
 static void gl2_pbo_async_readback(gl2_t *gl)
 {
 #ifdef HAVE_OPENGLES
@@ -5045,8 +5069,15 @@ static bool gl2_frame(void *data, const void *frame,
     * displayable image. Same choke-point pattern as glcore. */
    if (gl->scrgb.active)
       gl2_bind_fb(gl2_ui_target_fbo(gl));
-   else if (gl2_needs_pq_downconvert(gl))
-      gl2_encode_pq_to_sdr(gl);
+   else
+   {
+      if (gl2_needs_pq_downconvert(gl))
+         gl2_encode_pq_to_sdr(gl);
+      /* Record Game Only: read back before any UI is drawn. Under
+       * scRGB the image only lands at the final composite. */
+      if (video_info->record_game_only)
+         gl2_record_readback(gl, false);
+   }
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -5203,24 +5234,8 @@ static bool gl2_frame(void *data, const void *frame,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
 
-   else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
-   {
-      /* If recording has stopped, tear down PBO readback */
-      if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
-      {
-         glDeleteBuffers(4, gl->pbo_readback);
-         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
-         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
-      }
-      else
-      {
-#ifdef HAVE_MENU
-         /* Don't readback if we're in menu mode. */
-         if (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
-#endif
-            gl2_pbo_async_readback(gl);
-      }
-   }
+   else if (!video_info->record_game_only || gl->scrgb.active)
+      gl2_record_readback(gl, !video_info->record_game_only);
 
    /* The backbuffer is what it is until the swap, so the copy is
     * taken now. Not from the BFI light dupes, which recurse in here

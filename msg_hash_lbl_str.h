@@ -1721,6 +1721,7 @@
 #define MENU_ENUM_LABEL_VIDEO_PRESENT_TIMING_FROM_DISPLAY_STR "video_present_timing_from_display"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_ALLOW_FRAME_DROP_STR "video_record_allow_frame_drop"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_FIFO_FRAMES_STR "video_record_fifo_frames"
+#define MENU_ENUM_LABEL_VIDEO_RECORD_GAME_ONLY_STR "video_record_game_only"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_HW_ENCODER_STR "video_record_hw_encoder"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_QUALITY_STR "video_record_quality"
 #define MENU_ENUM_LABEL_VIDEO_RECORD_THREADS_STR "video_record_threads"

@@ -1961,6 +1961,29 @@ static void gl3_deinit_pbo_readback(gl3_t *gl)
    scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
 }
 
+static void gl3_pbo_async_readback(gl3_t *gl);
+
+/* The recording's per-frame async readback, or its teardown once
+ * recording has stopped. skip_in_menu: don't read back while the menu
+ * is drawn. */
+static void gl3_record_readback(gl3_t *gl, bool skip_in_menu)
+{
+   if (!(gl->flags & GL3_FLAG_PBO_READBACK_ENABLE))
+      return;
+
+   if (!(gl->flags & GL3_FLAG_GPU_RECORDING))
+   {
+      gl3_deinit_pbo_readback(gl);
+      gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
+   }
+#ifdef HAVE_MENU
+   else if (skip_in_menu && (gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
+      ;
+#endif
+   else
+      gl3_pbo_async_readback(gl);
+}
+
 static void gl3_pbo_async_readback(gl3_t *gl)
 {
    glBindBuffer(GL_PIXEL_PACK_BUFFER,
@@ -6303,13 +6326,18 @@ static bool gl3_frame(void *data, const void *frame,
    if (gl->scrgb.active)
       glBindFramebuffer(GL_FRAMEBUFFER,
             gl3_ui_target_fbo(gl, video_info->dims));
-   else if (gl3_needs_pq_downconvert(gl))
+   else
    {
       /* Convert the PQ frame to SDR now, straight into the backbuffer,
        * so the UI below draws over a displayable image in its own
        * space - no UI layer, no linear composite, nothing else about
        * the SDR path changes. */
-      gl3_encode_pq_to_sdr(gl, width, height);
+      if (gl3_needs_pq_downconvert(gl))
+         gl3_encode_pq_to_sdr(gl, width, height);
+      /* Record Game Only: read back before any UI is drawn. Under
+       * scRGB the image only lands at the final composite. */
+      if (video_info->record_game_only)
+         gl3_record_readback(gl, false);
    }
 
 #ifdef HAVE_SLANG
@@ -6539,23 +6567,8 @@ static bool gl3_frame(void *data, const void *frame,
             && !gl->video_info.source_hdr10)
          glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
    }
-   else if (gl->flags & GL3_FLAG_PBO_READBACK_ENABLE)
-   {
-      /* If recording has stopped, tear down PBO readback */
-      if (!(gl->flags & GL3_FLAG_GPU_RECORDING))
-      {
-         gl3_deinit_pbo_readback(gl);
-         gl->flags &= ~GL3_FLAG_PBO_READBACK_ENABLE;
-      }
-      else
-      {
-#ifdef HAVE_MENU
-         /* Don't readback if we're in menu mode. */
-         if (!(gl->flags & GL3_FLAG_MENU_TEXTURE_ENABLE))
-#endif
-            gl3_pbo_async_readback(gl);
-      }
-   }
+   else if (!video_info->record_game_only || gl->scrgb.active)
+      gl3_record_readback(gl, !video_info->record_game_only);
 
    gl3_hw_ring_drawn(gl);
    gl->present_wait = 0;

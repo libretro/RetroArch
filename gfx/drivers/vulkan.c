@@ -10473,6 +10473,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool use_offscreen_buffer                     = false;
 #endif
+   /* Recording's readback was already taken this frame, before the UI. */
+   bool record_readback_done                     = false;
 
 #ifdef HAVE_OPENXR
    bool xr_stereo        = (vk->flags & VK_FLAG_OPEN_XR) != 0;
@@ -11341,6 +11343,50 @@ static bool vulkan_frame(void *data, const void *frame,
                (vulkan_filter_chain_t*)filter_chain, vk->cmd,
                &vk->video_vp, vk->mvp.data);
 
+      /* Record Game Only: copy the game image out before the UI is
+       * drawn, then resume the pass with LOAD. HDR output keeps the
+       * end-of-frame readback, which needs its tonemap pass. */
+      if (     video_info->record_game_only
+            && (vk->flags & VK_FLAG_READBACK_STREAMED)
+            && (vk->flags & VK_FLAG_GPU_RECORDING)
+#ifdef VULKAN_HDR_SWAPCHAIN
+            && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+#endif
+            && (backbuffer->image != VK_NULL_HANDLE)
+            && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      {
+         vkCmdEndRenderPass(vk->cmd);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+         vulkan_readback(vk, backbuffer);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+               | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+         /* Same framebuffer, LOAD instead of CLEAR. */
+         rp_info.renderPass = vk->keep_render_pass;
+         vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+
+         record_readback_done = true;
+      }
+
 #ifdef VULKAN_HDR_SWAPCHAIN
       end_pass      = true;
       end_main_pass = true;
@@ -11626,7 +11672,8 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       if (     (vk->flags & VK_FLAG_READBACK_PENDING)
-             || (vk->flags & VK_FLAG_READBACK_STREAMED))
+             || (   (vk->flags & VK_FLAG_READBACK_STREAMED)
+                 && !record_readback_done))
       {
          VkImageLayout backbuffer_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 #ifdef VULKAN_HDR_SWAPCHAIN
