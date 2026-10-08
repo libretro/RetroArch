@@ -9281,6 +9281,23 @@ int runloop_iterate(void)
 
    runloop_msg_queue_drain_deferred();
 
+   /* A quit waiting for its state to be written: the core is not run
+    * and nothing is read but the input the window needs drained; the
+    * last frame and the "Saving state" notice are presented, paced as
+    * any frame is, until the quit is finished and the loop ends. */
+   if (runloop_st->quit_pending)
+   {
+      if (retroarch_main_quit_poll())
+      {
+         runloop_st->frame_limit_anchor_ns = 0;
+         runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
+         return -1;
+      }
+      input_driver_poll_between_frames(input_driver_poll);
+      video_driver_cached_frame();
+      return 1;
+   }
+
    /* A video driver that lost its GPU device - a TDR on Windows, a GPU
     * reset elsewhere - sets this from whichever thread saw it, and
     * nothing it does on that device works from then on: every frame
@@ -9427,6 +9444,10 @@ int runloop_iterate(void)
          runloop_st->frame_limit_anchor_ns = 0;
          runloop_st->flags                &= ~RUNLOOP_FLAG_CORE_RUNNING;
          command_event(CMD_EVENT_QUIT, NULL);
+         /* Waiting for a state to be written: the frames go on until
+          * it is, at the top of this function. */
+         if (runloop_st->quit_pending)
+            return 1;
          return -1;
       case RUNLOOP_STATE_POLLED_AND_CONTINUE:
          runloop_st->pace = RUNLOOP_PACE_NONE;

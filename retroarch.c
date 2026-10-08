@@ -4414,7 +4414,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
          break;
       case CMD_EVENT_QUIT:
-         if (!retroarch_main_quit())
+         if (!retroarch_main_quit_staged())
             return false;
          break;
       case CMD_EVENT_CHEEVOS_HARDCORE_MODE_TOGGLE:
@@ -10039,16 +10039,25 @@ bool should_quit_on_close(void)
    return false;
 }
 
-/*
- * Also saves configuration files to disk,
- * and (optionally) autosave state.
- */
-bool retroarch_main_quit(void)
+/* Quitting, in two halves around the wait for the auto save-state the
+ * first half pushes: the state file is only whole once its task is
+ * through, and the runtime log, remaps and config written by the second
+ * half are the quit's last word.  retroarch_main_quit() waits between
+ * the halves in one go; a quit from inside the frame loop
+ * (retroarch_main_quit_staged()) returns to the loop between them, which
+ * presents the last frame and the "Saving state" notice while the state
+ * is written and finishes the quit once it is.
+ *
+ * Returns whether this is the quit's first pass, the one that saves
+ * what a quit saves; false once shutdown has already begun. */
+static bool retroarch_main_quit_begin(void)
 {
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
    video_driver_state_t*video_st = video_state_get_ptr();
    settings_t *settings          = config_get_ptr();
+#if !defined(HAVE_DYNAMIC)
    bool config_save_on_exit      = settings->bools.config_save_on_exit;
+#endif
 
    /* Let the desktop companion snapshot its window/dock layout into
     * settings_t before the config is written below; its own
@@ -10098,17 +10107,26 @@ bool retroarch_main_quit(void)
    }
 #endif
 
-   if (!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED))
+   if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+      return false;
+   if (   settings->bools.savestate_auto_save
+       && runloop_st->current_core_type != CORE_TYPE_DUMMY)
+      command_event_save_auto_state();
+   return true;
+}
+
+/* The second half, once no state task is writing; first as
+ * retroarch_main_quit_begin() returned it. */
+static void retroarch_main_quit_finish(bool first)
+{
+   runloop_state_t *runloop_st   = runloop_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
+#if defined(HAVE_DYNAMIC)
+   bool config_save_on_exit      = settings->bools.config_save_on_exit;
+#endif
+
+   if (first)
    {
-      if (   settings->bools.savestate_auto_save
-          && runloop_st->current_core_type != CORE_TYPE_DUMMY)
-         command_event_save_auto_state();
-
-      /* If any save states are in progress, wait
-       * until all tasks are complete (otherwise
-       * save state file may be truncated) */
-      content_wait_for_save_state_task();
-
       runloop_runtime_log_deinit(runloop_st,
             settings->bools.content_runtime_log,
             settings->bools.content_runtime_log_aggregate,
@@ -10180,7 +10198,98 @@ bool retroarch_main_quit(void)
 #ifdef HAVE_NFSCLIENT
    nfs_shutdown();
 #endif
+}
 
+/* A state task the quit has to see through: a save still writing, or
+ * the load a save over an existing file makes first, into the undo
+ * buffer - its callback pushes the save itself, so the save is not
+ * pending until that load is through.  The callback clears the one and
+ * sets the other in one go on this thread, so between the two flags
+ * there is no moment with neither. */
+static bool retroarch_quit_state_task_pending(void *data)
+{
+   (void)data;
+   return content_save_state_in_progress(NULL)
+       || content_load_state_in_progress(NULL);
+}
+
+/* Also saves configuration files to disk, and (optionally) the auto
+ * save-state, waiting for it to be written. */
+bool retroarch_main_quit(void)
+{
+   bool first = retroarch_main_quit_begin();
+   /* A state task still writing - the auto-save just pushed, or one
+    * the user started - would leave a truncated file behind the exit. */
+   if (first)
+      task_queue_wait(retroarch_quit_state_task_pending, NULL);
+   retroarch_main_quit_finish(first);
+   return true;
+}
+
+/* CMD_EVENT_QUIT: a quit asked for from inside the frame loop - the
+ * menu, the quit hotkey, the window's close button, a platform's
+ * request handled there.  While a state is still being written the
+ * loop keeps presenting until it is (runloop_iterate() asks
+ * retroarch_main_quit_poll() each frame) instead of freezing on it.
+ *
+ * Blocks as retroarch_main_quit() does where the loop cannot carry
+ * the wait: with no window to present into, and on the consoles whose
+ * frame pumps the system's own messages (the applet and APT loops in
+ * runloop_check_state(), which a waiting frame does not reach).  A
+ * quit the operating system forces calls retroarch_main_quit()
+ * directly and blocks too: the process may end the moment it returns. */
+bool retroarch_main_quit_staged(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+#if !defined(HAVE_LIBNX) && !defined(_3DS)
+   video_driver_state_t *video_st = video_state_get_ptr();
+   bool first;
+#endif
+
+   if (runloop_st->quit_pending)
+      return true;
+#if defined(HAVE_LIBNX) || defined(_3DS)
+   return retroarch_main_quit();
+#else
+   if (     !video_st->current_video
+         || !video_st->data
+         || !video_st->current_video->alive
+         || !video_st->current_video->alive(video_st->data))
+      return retroarch_main_quit();
+
+   first = retroarch_main_quit_begin();
+   if (!first || !retroarch_quit_state_task_pending(NULL))
+   {
+      retroarch_main_quit_finish(first);
+      return true;
+   }
+
+   /* The core is not run again (core_run's guard): the state task may
+    * be serializing it, and the session ends with this quit. */
+   runloop_st->quit_pending    = true;
+   runloop_st->content_closing = true;
+   {
+      const char *_msg = msg_hash_to_str(MSG_SAVING_STATE);
+      runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true,
+            NULL, MESSAGE_QUEUE_ICON_DEFAULT,
+            MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+   return true;
+#endif
+}
+
+/* Asked once a frame while a staged quit waits: true once the state is
+ * written and the quit finished, when the loop is to end. */
+bool retroarch_main_quit_poll(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+
+   if (!runloop_st->quit_pending)
+      return false;
+   if (retroarch_quit_state_task_pending(NULL))
+      return false;
+   runloop_st->quit_pending = false;
+   retroarch_main_quit_finish(true);
    return true;
 }
 

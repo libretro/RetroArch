@@ -23,7 +23,11 @@
  *  - fallback: a core that cannot be loaded ends on the dummy core
  *    with the drivers rebuilt and the menu up;
  *  - not a core: a library that opens but lacks retro_init does the
- *    same, and the failure is said.
+ *    same, and the failure is said;
+ *  - quit waits for a save: a quit from the frame loop while a state
+ *    is being written returns to the loop at once, which presents
+ *    frames - the core not run - until the state is written, and only
+ *    then finishes the quit and ends.  Runs last: the session ends.
  *
  * Requires a completed non-Qt build:
  *
@@ -979,6 +983,91 @@ static void lane_close_waits_for_save(void)
 
    if (failures == had)
       fprintf(stderr, "[pass] close-waits-for-save lane (%u frames waited, "
+            "%u presented)\n", waited, presented_waiting);
+}
+
+/* ------------------------------------------------------------------ */
+/* Lane: a quit waits for a save in flight, presenting                */
+/* ------------------------------------------------------------------ */
+
+/* A quit while a save state is being written: the state file must be
+ * whole before the exit, and the wait is spent in the frame loop -
+ * frames presented, retro_run never entered - rather than inside the
+ * quit.  CMD_EVENT_QUIT returns with the quit pending; runloop_iterate()
+ * goes on returning 1 until the save is through, then finishes the
+ * quit (shutdown begins only then) and returns -1.  The session ends
+ * here, so this lane runs last. */
+static bool state_task_in_flight(void)
+{
+   return content_save_state_in_progress(NULL)
+       || content_load_state_in_progress(NULL);
+}
+
+static void lane_quit_waits_for_save(void)
+{
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   settings_t *settings        = config_get_ptr();
+   unsigned had = failures;
+   unsigned i, runs_at_quit, presented_waiting = 0, waited = 0;
+   bool shutdown_early = false;
+   int ret = 1;
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   pump(2);
+   CHECK(core_is_up() && !menu_is_up(), "not running the core");
+
+   /* The contentless core saves into a folder of its own, which the
+    * lanes before have not made. */
+   {
+      char state_dir[PATH_MAX_LENGTH];
+      fill_pathname_basedir(state_dir, runloop_st->name.savestate,
+            sizeof(state_dir));
+      path_mkdir(state_dir);
+   }
+   /* The slot's file exists from the lanes before, so the save first
+    * loads it into the undo buffer and is only pushed once that load
+    * is through: the quit has to wait for the pair. */
+   configuration_set_int(settings, settings->ints.state_slot, 0);
+   CHECK(command_event(CMD_EVENT_SAVE_STATE, NULL), "save state not started");
+   CHECK(state_task_in_flight(), "no state task in flight");
+
+   hook_install();
+   runs_at_quit = core_export("harness_core_runs");
+   command_event(CMD_EVENT_QUIT, NULL);
+   CHECK(state_task_in_flight(),
+         "the quit returned with the save already written: it waited "
+         "inside the command");
+   CHECK(!(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED),
+         "shutdown began before the save was written");
+
+   /* As the main loop drives it, the queue checked after each frame;
+    * the bound only stops a quit that never ends. */
+   for (i = 0; i < 20000; i++)
+   {
+      unsigned before = presented;
+      ret = runloop_iterate();
+      task_queue_check();
+      if (ret == -1)
+         break;
+      waited++;
+      presented_waiting += presented - before;
+      if (runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED)
+         shutdown_early = true;
+   }
+   CHECK(ret == -1, "the loop did not end after the save (%u frames)", waited);
+   CHECK(waited >= 1, "the quit never waited for the save (%u frames)", waited);
+   CHECK(presented_waiting >= 1,
+         "no frame presented while the quit waited (%u frames)", waited);
+   CHECK(!shutdown_early, "shutdown began while the save was still writing");
+   CHECK(!state_task_in_flight(), "the save did not finish");
+   CHECK(core_export("harness_core_runs") == runs_at_quit,
+         "retro_run entered while the quit waited");
+   CHECK(runloop_st->flags & RUNLOOP_FLAG_SHUTDOWN_INITIATED,
+         "the quit did not finish");
+
+   if (failures == had)
+      fprintf(stderr, "[pass] quit-waits-for-save lane (%u frames waited, "
             "%u presented)\n", waited, presented_waiting);
 }
 
@@ -2536,6 +2625,8 @@ int main(int argc, char *argv[])
    lane_prefetch_follows_new_core();
    lane_contentless_names();
 #endif
+   /* Last of all: the session ends with it. */
+   lane_quit_waits_for_save();
 
    main_exit(NULL);
 

@@ -188,6 +188,12 @@ bool retroarch_main_init_drivers(bool staged,
 
 bool retroarch_main_quit(void);
 
+/* A quit from inside the frame loop: returns to the loop while an auto
+ * save-state is still being written, and runloop_iterate() finishes it
+ * through retroarch_main_quit_poll(), which is true once it has. */
+bool retroarch_main_quit_staged(void);
+bool retroarch_main_quit_poll(void);
+
 content_state_t *content_state_get_ptr(void);
 
 unsigned content_get_subsystem_rom_id(void);

@@ -388,6 +388,11 @@ struct runloop
     * cross-thread race.  Both are main-thread only. */
    bool content_closing;
    bool content_switching;
+   /* quit_pending: a quit from the frame loop is waiting for a state
+    * task to finish writing (retroarch_main_quit_staged()).  The loop
+    * presents the last frame and runs nothing else until it is through.
+    * Main-thread only. */
+   bool quit_pending;
    /* The core running behind the menu was not due a frame this
     * iteration (see menu_core_due_ns), so nothing that counts the
     * core's frames - achievements - steps either. Main thread only. */
