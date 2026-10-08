@@ -11543,8 +11543,30 @@ static const struct
    { "save_config",     CMD_EVENT_MENU_SAVE_CURRENT_CONFIG }
 };
 
+/* Assigning by pressing: an entry's buttons are the RetroPad's buttons
+ * held together, set by holding them.
+ *
+ * Started for an entry there is. First what is held when it starts -
+ * the press that asked for it - is let go of; then what is pressed is
+ * gathered for as long as anything is held, and when all of it is let
+ * go the entry's buttons are those, its key and what it is staying as
+ * they were. Five seconds with nothing pressed gives up and changes
+ * nothing. While it runs the RetroPad's buttons it reads are taken
+ * out of the frame's input, so the menu does not move under it and
+ * nothing else is pressed by them. */
+#define INPUT_ENTRY_CAPTURE_USEC 5000000
+
+static struct
+{
+   retro_time_t deadline;
+   uint16_t     seen;
+   uint8_t      number;   /* 0 while none runs */
+   bool         released;
+} input_entry_capture;
+
 void input_entries_clear(void)
 {
+   input_entry_capture.number  = 0;
    input_entries.count         = 0;
    input_entries.key_count     = 0;
    input_entries.command_count = 0;
@@ -11787,6 +11809,83 @@ bool input_entry_add(unsigned number, const char *spec)
    return true;
 }
 
+static void input_entry_capture_end(const char *msg)
+{
+   input_entry_capture.number = 0;
+   if (msg)
+      runloop_msg_queue_push(msg, strlen(msg), 1, 120, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+}
+
+bool input_entry_capture_start(unsigned number)
+{
+   unsigned i;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         break;
+   if (i == input_entries.count)
+      return false;
+   input_entry_capture.number   = (uint8_t)number;
+   input_entry_capture.seen     = 0;
+   input_entry_capture.released = false;
+   input_entry_capture.deadline = cpu_features_get_time_usec()
+      + INPUT_ENTRY_CAPTURE_USEC;
+   {
+      const char *msg = "Hold the buttons for the combination, then let go.";
+      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   }
+   return true;
+}
+
+bool input_entry_capture_running(void)
+{
+   return input_entry_capture.number != 0;
+}
+
+/* A frame of it, with the RetroPad's buttons the frame's input holds. */
+INPUT_NOINLINE static void input_entry_capture_frame(input_bits_t *bits)
+{
+   unsigned held = bits->data[0] & 0xffff;
+   unsigned i;
+
+   /* none of them reaches anything else while this runs */
+   bits->data[0] &= ~(uint32_t)0xffff;
+
+   if (!input_entry_capture.released)
+   {
+      if (!held)
+      {
+         input_entry_capture.released = true;
+         input_entry_capture.deadline = cpu_features_get_time_usec()
+            + INPUT_ENTRY_CAPTURE_USEC;
+      }
+      return;
+   }
+   if (held)
+   {
+      input_entry_capture.seen |= (uint16_t)held;
+      return;
+   }
+   if (!input_entry_capture.seen)
+   {
+      if (cpu_features_get_time_usec() >= input_entry_capture.deadline)
+         input_entry_capture_end("Nothing was pressed: the combination is as it was.");
+      return;
+   }
+   /* all let go: these are its buttons */
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == input_entry_capture.number)
+      {
+         input_entries.entry[i].pad = input_entry_capture.seen;
+         input_entries_changed();
+         if (input_entry_capture.number < 32)
+            input_entries_unread &= ~((uint32_t)1 << input_entry_capture.number);
+         break;
+      }
+   input_entry_capture_end(NULL);
+}
+
 /* Entry @number goes, and a line of that number that did not read
  * with it. False if there was neither. */
 bool input_entry_remove(unsigned number)
@@ -11801,6 +11900,8 @@ bool input_entry_remove(unsigned number)
          break;
    if (i == input_entries.count)
       return unread;
+   if (input_entry_capture.number == number)
+      input_entry_capture_end(NULL);
    for (; i + 1 < input_entries.count; i++)
       input_entries.entry[i] = input_entries.entry[i + 1];
    input_entries.count--;
@@ -15790,6 +15891,10 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
     * when there are none. */
    if (input_entries.count)
    {
+      /* (one being assigned by pressing takes the pad's buttons first:
+       * there is one to assign only when there are entries) */
+      if (input_entry_capture.number)
+         input_entry_capture_frame(current_bits);
       input_entries_frame(input_st, joypad, hotkey_port,
             settings->bools.input_hotkey_device_merge, current_bits);
       if (input_entries.command_count)

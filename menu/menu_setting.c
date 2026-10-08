@@ -810,6 +810,39 @@ static int setting_entry_text_start(rarch_setting_t *setting)
    return 0;
 }
 
+/* Right, on a combination row with an entry: its buttons set by
+ * holding them. (OK types the whole line; Start takes it out.) */
+static int setting_entry_text_right(rarch_setting_t *setting, size_t idx,
+      bool wraparound)
+{
+   (void)idx;
+   (void)wraparound;
+   if (!setting || !input_entry_capture_start(setting->index_offset))
+      RARCH_WARN("[Input] Combination %u has nothing to set the buttons of:"
+            " type it first.\n", setting ? setting->index_offset : 0);
+   return 0;
+}
+
+/* What a row shows: what that number is now, as the configuration
+ * writes it - kept by the input, and changed by more than this row */
+static size_t setting_entry_text_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   size_t n = input_entry_spec(setting->index_offset, s, len);
+   if (!n && len)
+      s[0] = '\0';
+   return n;
+}
+
+static size_t setting_macro_text_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   size_t n = input_macro_spec(setting->index_offset, s, len);
+   if (!n && len)
+      s[0] = '\0';
+   return n;
+}
+
 void menu_setting_entries_refresh(void)
 {
    unsigned i;
@@ -16351,6 +16384,10 @@ static void settings_build_input_hotkey(
                (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_LINE_EDIT;
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
                SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_entry_text_start)
+               SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1],
+                     k ? setting_macro_text_repr : setting_entry_text_repr)
+               if (!k)
+                  SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], setting_entry_text_right)
             }
          }
 

@@ -6429,6 +6429,139 @@ static void lane_menu_entry_rows(void)
 #endif
 }
 
+/* Assigning a combination's buttons by pressing them, from its row in
+ * the menu (Right). Held to: the press that asks for it is not taken
+ * as part of it; what is held together, pressed one after another, is
+ * the combination, set when all of it is let go, its key and what it
+ * is kept; nothing it reads moves the menu or reaches anything else
+ * meanwhile; five seconds of nothing changes nothing; and a row with
+ * no entry starts nothing. */
+static void lane_entry_capture(void)
+{
+#ifdef HAVE_MENU
+   enum { L3 = RETRO_DEVICE_ID_JOYPAD_L3, R3 = RETRO_DEVICE_ID_JOYPAD_R3,
+          RIGHT = RETRO_DEVICE_ID_JOYPAD_RIGHT, DOWN = RETRO_DEVICE_ID_JOYPAD_DOWN };
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved[4];
+   rarch_setting_t *row = menu_setting_find("input_combo_2");
+   rarch_setting_t *empty = menu_setting_find("input_combo_5");
+   unsigned had = failures;
+   unsigned i;
+   char spec[256];
+
+   if (!row || !empty || !joypad_real || !row->actions || !row->actions->right)
+   {
+      CHECK(false, "entry capture: no row to start it from, or no joypad driver");
+      return;
+   }
+   saved[0] = *input_autoconf_bind(0, L3);
+   saved[1] = *input_autoconf_bind(0, R3);
+   saved[2] = *input_autoconf_bind(0, RIGHT);
+   saved[3] = *input_autoconf_bind(0, DOWN);
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   input_autoconf_bind_edit(0, L3)->joykey    = 22;
+   input_autoconf_bind_edit(0, R3)->joykey    = 23;
+   input_autoconf_bind_edit(0, RIGHT)->joykey = 24;
+   input_autoconf_bind_edit(0, DOWN)->joykey  = 25;
+   for (i = 0; i < 4; i++)
+      RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, i == 0 ? L3 : i == 1 ? R3 : i == 2 ? RIGHT : DOWN), true);
+
+   input_entries_clear();
+   input_entry_add(2, "start+key_g held 1s : pause");
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   syn_buttons = 0;
+   run_loop_frames(5);
+
+   /* --- a row with nothing in it starts nothing --- */
+   empty->actions->right(empty, 0, false);
+   CHECK(!input_entry_capture_running(), "entry capture: a row with no entry started it");
+
+   /* --- Right, held as it starts; then L3, then R3 with it; let go --- */
+   syn_buttons = 1u << 24;
+   run_loop_frames(2);
+   row->actions->right(row, 0, false);
+   CHECK(input_entry_capture_running(), "entry capture: Right on a row with an entry did not start it");
+   run_loop_frames(4);
+   syn_buttons = 0;
+   run_loop_frames(3);
+   {
+      size_t sel = menu_state_get_ptr()->selection_ptr;
+      syn_buttons = 1u << 22;
+      run_loop_frames(4);
+      syn_buttons = (1u << 22) | (1u << 23);
+      run_loop_frames(4);
+      syn_buttons = 1u << 23;
+      run_loop_frames(3);
+      CHECK(input_entry_capture_running(), "entry capture: it ended with something still held");
+      /* a direction among them: gathered, and the menu not moved by it */
+      syn_buttons = (1u << 23) | (1u << 25);
+      run_loop_frames(4);
+      CHECK(menu_state_get_ptr()->selection_ptr == sel,
+            "entry capture: a button pressed for it moved the menu");
+      syn_buttons = 0;
+      run_loop_frames(4);
+   }
+   CHECK(!input_entry_capture_running(), "entry capture: all let go, it did not end");
+   spec[0] = '\0';
+   input_entry_spec(2, spec, sizeof(spec));
+   {
+      char why[300];
+      snprintf(why, sizeof(why), "entry capture: L3, L3 and R3, R3, R3 and Down held made"
+            " \"%s\", not \"down+l3+r3+key_g held 1s : pause\"", spec);
+      CHECK(!strcmp(spec, "down+l3+r3+key_g held 1s : pause"), why);
+   }
+
+   /* --- five seconds of nothing changes nothing --- */
+   row->actions->right(row, 0, false);
+   run_loop_frames(3);
+   {
+      retro_time_t until = cpu_features_get_time_usec() + 5300000;
+      while (cpu_features_get_time_usec() < until && input_entry_capture_running())
+      {
+         run_loop_frames(1);
+         retro_sleep(20);
+      }
+   }
+   CHECK(!input_entry_capture_running(), "entry capture: five seconds of nothing did not give it up");
+   spec[0] = '\0';
+   input_entry_spec(2, spec, sizeof(spec));
+   CHECK(!strcmp(spec, "down+l3+r3+key_g held 1s : pause"),
+         "entry capture: given up, it changed the combination");
+
+   /* --- the entry taken out while it runs: it ends --- */
+   row->actions->right(row, 0, false);
+   input_entry_remove(2);
+   CHECK(!input_entry_capture_running(), "entry capture: its entry taken out, it went on");
+
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   syn_buttons = 0;
+   run_loop_frames(3);
+   input_entries_clear();
+   *input_autoconf_bind_edit(0, L3)    = saved[0];
+   *input_autoconf_bind_edit(0, R3)    = saved[1];
+   *input_autoconf_bind_edit(0, RIGHT) = saved[2];
+   *input_autoconf_bind_edit(0, DOWN)  = saved[3];
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+
+   if (failures == had)
+      printf("[pass] entry capture: the press that asks is not taken; what is held"
+            " together is the combination, its key and target kept; the menu does"
+            " not move under it; five seconds of nothing changes nothing; an empty"
+            " row or an entry taken out ends it\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -7767,6 +7900,7 @@ int main(int argc, char *argv[])
       lane_macro_modes();
       lane_entries_kept();
       lane_menu_entry_rows();
+      lane_entry_capture();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();
