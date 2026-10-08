@@ -136,6 +136,56 @@ int rzip_archive_extract(rzip_archive_t *a, uint32_t index,
 int rzip_archive_extract_into(rzip_archive_t *a, uint32_t index,
       uint8_t *dst, size_t dst_size, size_t *out_len);
 
+/* ---- a deflated member read at any offset, without decoding it whole ----
+ *
+ * A deflate stream can only be decoded from its start, so reading the
+ * end of a large member means decoding all of it - and keeping all of
+ * it, if the middle is wanted next. The index remembers restart points
+ * along the stream instead: at a block boundary, the position in the
+ * compressed bytes and the 32 KiB of output before it are all it takes
+ * to decode from there. With a point about every @span bytes, any byte
+ * of the member is within one span's decoding of a point, and nothing
+ * but the points (32 KiB each) and a few decoded spans is kept.
+ *
+ * The points are found by decoding the member through once: that is
+ * rzip_seek_build(), which may be called a piece at a time, and on a
+ * thread of its own while another thread reads what is already covered.
+ * One thread builds and one thread reads; the two share only the points
+ * already published. (An archive opened with a read callback has both
+ * calling it, so there the two must be the same thread unless the
+ * callback takes that.)
+ */
+typedef struct rzip_seek rzip_seek_t;
+
+#define RZIP_SEEK_SPAN_DEFAULT (1024 * 1024)
+
+/* Member @index of @a, which must outlive the index. NULL unless it is a
+ * deflated file. @span: bytes between restart points, 0 for the default. */
+rzip_seek_t *rzip_seek_new(rzip_archive_t *a, uint32_t index, uint32_t span);
+void rzip_seek_free(rzip_seek_t *s);
+
+/* The member's decoded length. */
+uint64_t rzip_seek_size(const rzip_seek_t *s);
+
+/* Decode on from where the index ends until it covers @upto bytes of the
+ * member, or all of it. Returns 1 when the whole member is indexed (and
+ * its checksum was right), 0 when there is more to do, and a negative
+ * RZIP_ERROR_ when the stream is bad - nothing more is covered then. */
+int rzip_seek_build(rzip_seek_t *s, uint64_t upto);
+
+/* How much of the member, from its start, can be read now. Any thread. */
+uint64_t rzip_seek_covered(const rzip_seek_t *s);
+
+/* Where the index stands: 0 while there is more to index, 1 when the
+ * whole member is, a negative RZIP_ERROR_ once the stream has turned out
+ * bad. Any thread. */
+int rzip_seek_state(const rzip_seek_t *s);
+
+/* @len bytes at @offset to @dst. Returns RZIP_OK; RZIP_ERROR_PARAM when
+ * the index does not cover them yet (or they are past the end); another
+ * RZIP_ERROR_ when they cannot be decoded. */
+int rzip_seek_read(rzip_seek_t *s, uint64_t offset, uint8_t *dst, size_t len);
+
 RETRO_END_DECLS
 
 #endif

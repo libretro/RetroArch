@@ -1,9 +1,10 @@
 TARGET := rzip_archive_test
+# a deflated member read at any offset through an index (rzip_seek)
+SEEK   := rzip_seek_test
 
 LIBRETRO_COMM_DIR := ../../..
 
 SOURCES := \
-	rzip_archive_test.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_crc32.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c \
@@ -19,18 +20,22 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-all: $(TARGET)
+all: $(TARGET) $(SEEK)
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-$(TARGET): $(OBJS)
-	$(CC) $(OBJS) $(LDFLAGS) -o $@ -lm
+$(TARGET): rzip_archive_test.o $(OBJS)
+	$(CC) rzip_archive_test.o $(OBJS) $(LDFLAGS) -o $@ -lm
 
-check: $(TARGET)
+$(SEEK): rzip_seek_test.o $(OBJS)
+	$(CC) rzip_seek_test.o $(OBJS) $(LDFLAGS) -o $@ -lm
+
+check: $(TARGET) $(SEEK)
 	./$(TARGET)
+	./$(SEEK)
 
 clean:
-	rm -f $(TARGET) $(OBJS)
+	rm -f $(TARGET) $(SEEK) rzip_archive_test.o rzip_seek_test.o $(OBJS)
 
 .PHONY: all check clean
