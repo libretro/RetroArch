@@ -983,6 +983,197 @@ static void lane_context_api_behind_wrapper(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: headset calls behind the wrapper                             */
+/*   The headset's rates, its status, a stereo request and the eye    */
+/*   poses go to the wrapped driver, and its answers come back. The   */
+/*   request and the poses are run on the video thread, whose frame   */
+/*   reads what they change. Without the forwards the menu offered    */
+/*   the fallback rates, the runloop never learned the headset's      */
+/*   rate, and a VR core saw no headset at all. A rate that fits      */
+/*   still leaves threaded video on the window's pacing.              */
+/* ------------------------------------------------------------------ */
+
+static video_driver_t                hslane_driver;
+static const video_driver_t         *hslane_inner;
+static video_poke_interface_t        hslane_poke;
+static const video_poke_interface_t *hslane_inner_poke;
+#ifdef HAVE_OPENXR
+static unsigned                      hslane_info_calls;
+static uintptr_t                     hslane_info_thread;
+static bool                          hslane_info_stereo;
+static unsigned                      hslane_pose_calls;
+static uintptr_t                     hslane_pose_thread;
+#endif
+
+/* Out of order, and fewer than any fallback list. Twice the harness
+ * core's 60 fps, so the headset would pace it. */
+static float hslane_refresh(void *data, float *rates, unsigned cap,
+      unsigned *count)
+{
+   (void)data;
+   *count = 0;
+   if (cap >= 2)
+   {
+      rates[0] = 120.0f;
+      rates[1] = 80.0f;
+      *count   = 2;
+   }
+   return 120.0f;
+}
+
+static void hslane_get_poke(void *data, const video_poke_interface_t **iface)
+{
+   hslane_inner->poke_interface(data, &hslane_inner_poke);
+   hslane_poke                     = *hslane_inner_poke;
+   hslane_poke.get_headset_refresh = hslane_refresh;
+   *iface                          = &hslane_poke;
+}
+
+#ifdef HAVE_OPENXR
+static unsigned hslane_status(void *data)
+{
+   (void)data;
+   return RETRO_VIDEO_VIEWS_STATUS_HMD;
+}
+
+static bool hslane_set_info(void *data, const video_vr_content_info_t *info)
+{
+   (void)data;
+   hslane_info_calls++;
+   hslane_info_thread = sthread_get_current_thread_id();
+   hslane_info_stereo = info && info->stereo_native;
+   return true;
+}
+
+static bool hslane_frame_state(void *data, struct retro_vr_frame_state *out)
+{
+   (void)data;
+   hslane_pose_calls++;
+   hslane_pose_thread = sthread_get_current_thread_id();
+   memset(out->eyes, 0, sizeof(out->eyes));
+   out->eyes[0].position[0] = -0.032f;
+   out->eyes[1].position[0] =  0.032f;
+   return true;
+}
+#endif
+
+static void lane_headset_calls(void)
+{
+   unsigned had = failures;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t *thr;
+   unsigned values[8];
+   float rates[4];
+   unsigned n;
+   unsigned count = 0;
+   float hz       = 0.0f;
+
+   set_threaded_via_setting(true);
+   run_frames(4);
+   expect_wrapper(true, "headset lane");
+   if (!(thr = (thread_video_t*)video_st->data))
+      return;
+
+   video_thread_wait_idle();
+   hslane_inner                         = thr->driver;
+   hslane_driver                        = *thr->driver;
+   hslane_driver.poke_interface         = hslane_get_poke;
+#ifdef HAVE_OPENXR
+   hslane_driver.get_video_views_status = hslane_status;
+   hslane_driver.set_vr_content_info    = hslane_set_info;
+   hslane_driver.get_vr_frame_state     = hslane_frame_state;
+#endif
+   set_driver(thr, &hslane_driver);
+   set_poke_from(thr, &hslane_driver);
+
+   /* The menu's list: the two fixed choices, then the driver's rates
+    * in order, not the list offered while no headset answers. */
+   n = video_driver_headset_rate_choices(values, 8);
+   CHECK(n == 4 && values[2] == 80 && values[3] == 120,
+         "headset lane: %u rate choices (%u, %u, ...), wanted the "
+         "driver's 80 and 120", n, n > 2 ? values[2] : 0,
+         n > 3 ? values[3] : 0);
+   if (video_st->poke && video_st->poke->get_headset_refresh)
+      hz = video_st->poke->get_headset_refresh(video_st->data, rates, 4,
+            &count);
+   CHECK(hz == 120.0f && count == 2,
+         "headset lane: the wrapper's poke answered %.1f Hz with %u rates",
+         (double)hz, count);
+
+#ifdef HAVE_OPENXR
+   /* The runloop's poll, every iteration */
+   run_frames(2);
+   CHECK(video_st->headset_hz == 120.0f,
+         "headset lane: the runloop took the headset's rate as %.1f Hz",
+         (double)video_st->headset_hz);
+
+   /* The rate fits, and vsync is what lets a headset pace, but threaded
+    * video stays on the window's pacing. */
+   {
+      settings_t *settings = config_get_ptr();
+      settings->bools.video_vsync = true;
+      run_frames(2);
+      CHECK(video_st->headset_interval == 0,
+            "headset lane: the headset paced threaded video (interval %u)",
+            video_st->headset_interval);
+      settings->bools.video_vsync = false;
+      run_frames(2);
+   }
+
+   CHECK(video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD,
+         "headset lane: the views status did not carry the driver's HMD");
+
+   {
+      video_vr_content_info_t info;
+      bool ok = false;
+      memset(&info, 0, sizeof(info));
+      info.stereo_native = true;
+      hslane_info_calls  = 0;
+      if (video_st->current_video->set_vr_content_info)
+         ok = video_st->current_video->set_vr_content_info(video_st->data,
+               &info);
+      CHECK(ok && hslane_info_calls == 1 && hslane_info_stereo,
+            "headset lane: a stereo request reached the driver %u times "
+            "(answer %d)", hslane_info_calls, ok);
+      CHECK(!hslane_info_calls
+            || hslane_info_thread == sthread_get_thread_id(thr->thread),
+            "headset lane: the stereo request ran off the video thread");
+   }
+
+   {
+      struct retro_vr_frame_state fs;
+      bool ok;
+      memset(&fs, 0, sizeof(fs));
+      hslane_pose_calls = 0;
+      ok = video_driver_get_vr_frame_state(&fs);
+      CHECK(ok && hslane_pose_calls == 1 && fs.eyes[1].position[0] == 0.032f,
+            "headset lane: the eye poses reached the driver %u times "
+            "(answer %d)", hslane_pose_calls, ok);
+      CHECK(!hslane_pose_calls
+            || hslane_pose_thread == sthread_get_thread_id(thr->thread),
+            "headset lane: the eye poses were read off the video thread");
+   }
+#endif
+
+   video_thread_wait_idle();
+   set_driver(thr, hslane_inner);
+   set_poke(thr, hslane_inner_poke);
+#ifdef HAVE_OPENXR
+   /* No headset again: the poll puts the configured rate back. */
+   run_frames(2);
+   CHECK(video_st->headset_hz == 0.0f,
+         "headset lane: the headset's rate stayed at %.1f Hz",
+         (double)video_st->headset_hz);
+#endif
+   run_frames(2);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] headset calls lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: presenter repeats                                            */
 /*   With video_threaded_present_repeat on and a driver that can      */
 /*   present its last frame again (the null driver can), a stalled    */
@@ -7192,6 +7383,7 @@ int main(int argc, char *argv[])
    lane_stat_text_bounds();
    lane_viewport_publish();
    lane_context_api_behind_wrapper();
+   lane_headset_calls();
    lane_async_texture_load();
    if (!real_driver())
       lane_present_repeat();

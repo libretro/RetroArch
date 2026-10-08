@@ -9127,11 +9127,64 @@ static int video_driver_vr_ctx(void)
    return vr_ctx_id;
 }
 
+/* The headset context's state belongs to the thread drawing its frames:
+ * under the threaded wrapper the video thread, so it runs there, after
+ * the frames already handed over. Those keep the poses, space and
+ * stereo state they were made with, and a sample predicts from the
+ * last one's display time. */
+static uintptr_t video_driver_vr_ctx_run(uintptr_t (*func)(void*),
+      void *data)
+{
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+   {
+      video_thread_wait_idle();
+      return video_thread_run_blocking(func, data);
+   }
+#endif
+   return func(data);
+}
+
+#if defined(ANDROID)
+static uintptr_t video_driver_vr_content_clear_cb(void *data)
+{
+   (void)data;
+   gl_android_openxr_set_stereo(false);
+   return 0;
+}
+#endif
+
 void video_driver_vr_content_clear(void)
 {
 #if defined(ANDROID)
-   gl_android_openxr_set_stereo(false);
+   video_driver_vr_ctx_run(video_driver_vr_content_clear_cb, NULL);
 #endif
+}
+
+static uintptr_t video_driver_vr_sample(void *data)
+{
+   uint32_t *flags = (uint32_t*)data;
+   bool ok         = false;
+
+   switch (video_driver_vr_ctx())
+   {
+#if defined(ANDROID) && defined(HAVE_VULKAN)
+      case VR_CTX_VK:
+         ok = android_vk_openxr_sample_tracking();
+         *flags = android_vk_openxr_take_frame_flags();
+         break;
+#endif
+#if defined(ANDROID)
+      case VR_CTX_GL:
+         ok = gl_android_openxr_sample_tracking();
+         *flags = gl_android_openxr_take_frame_flags();
+         break;
+#endif
+      default:
+         break;
+   }
+
+   return ok;
 }
 
 /* Called by the runloop once per iteration, BEFORE retro_run(), so the
@@ -9141,31 +9194,17 @@ bool video_driver_vr_sample_tracking(void)
    bool ok        = false;
    uint32_t flags = 0;
 
-   switch (video_driver_vr_ctx())
-   {
-#if defined(ANDROID) && defined(HAVE_VULKAN)
-      case VR_CTX_VK:
-         ok = android_vk_openxr_sample_tracking();
-         flags = android_vk_openxr_take_frame_flags();
-         break;
-#endif
-#if defined(ANDROID)
-      case VR_CTX_GL:
-         ok = gl_android_openxr_sample_tracking();
-         flags = gl_android_openxr_take_frame_flags();
-         break;
-#endif
-      default:
-         break;
-   }
+   if (video_driver_vr_ctx() != VR_CTX_NONE)
+      ok = video_driver_vr_ctx_run(video_driver_vr_sample, &flags) != 0;
 
    video_vr_frame_flags = flags;
 
    return ok;
 }
 
-static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
+static uintptr_t video_driver_vr_content_info_apply(void *data)
 {
+   video_vr_content_info_t *info  = (video_vr_content_info_t*)data;
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned w = 0, h = 0;
 
@@ -9231,6 +9270,12 @@ static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
    vr_saved_valid = true;
 
    return true;
+}
+
+static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
+{
+   return video_driver_vr_ctx_run(video_driver_vr_content_info_apply,
+         info) != 0;
 }
 
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out)
