@@ -205,6 +205,12 @@ struct ff_config_param
    bool video_qscale;
    int video_global_quality;
    int video_bit_rate;
+   /* Rate control / GOP for bitrate-constrained outputs (RTMP).
+    * 0 (or <0 for max_b_frames) leaves the encoder default. */
+   int video_max_rate;
+   int video_buf_size;
+   float video_gop_seconds;
+   int video_max_b_frames;
 
    AVDictionary *video_opts;
    AVDictionary *audio_opts;
@@ -264,6 +270,10 @@ typedef struct ffmpeg
     * silence, so the sample-count timeline never loses time. */
    size_t   audio_silence_pending;
    uint64_t audio_bytes_dropped;
+
+   /* Encoder thread: pts of the last keyframe forced for
+    * video_gop_seconds. */
+   int64_t  video_last_key_pts;
 } ffmpeg_t;
 
 /* attr_fifo record: the frame plus the drops right before it. */
@@ -663,6 +673,21 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    else if (params->video_bit_rate)
       video->codec->bit_rate = params->video_bit_rate;
 
+   if (params->video_max_rate)
+      video->codec->rc_max_rate    = params->video_max_rate;
+   if (params->video_buf_size)
+      video->codec->rc_buffer_size = params->video_buf_size;
+   if (params->video_max_b_frames >= 0)
+      video->codec->max_b_frames   = params->video_max_b_frames;
+   if (params->video_gop_seconds > 0.0f)
+   {
+      int gop = (int)(params->video_gop_seconds * param->fps
+            / params->frame_drop_ratio + 0.5f);
+      if (gop < 1)
+         gop = 1;
+      video->codec->gop_size = gop;
+   }
+
    if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
       video->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
@@ -696,6 +721,48 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    return true;
 }
 
+/* RTMP ingest (Twitch, YouTube, Facebook, Kick) wants H.264 + AAC-LC in
+ * FLV, CBR video, a fixed 2 s keyframe interval and 44.1/48 kHz audio.
+ * Twitch caps non-partner video at 6000 kbps and audio at 160 kbps. */
+static void ffmpeg_config_rtmp(struct ff_config_param *params,
+      unsigned preset)
+{
+   int kbps;
+
+   switch (preset)
+   {
+      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+         kbps = 2500;
+         break;
+      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+         kbps = 4500;
+         break;
+      default:
+         kbps = 6000;
+         break;
+   }
+
+   params->video_qscale       = false;
+   params->video_bit_rate     = kbps * 1000;
+   params->video_max_rate     = kbps * 1000;
+   params->video_buf_size     = kbps * 1000;
+   params->video_gop_seconds  = 2.0f;
+   params->video_max_b_frames = 0;
+
+   /* CBR instead of CRF. nal-hrd=cbr makes x264 pad to a true CBR
+    * stream, which is what the ingest servers expect. */
+   av_dict_set(&params->video_opts, "crf", NULL, 0);
+   av_dict_set(&params->video_opts, "nal-hrd", "cbr", 0);
+   /* No extra keyframes on scene cuts: ingest wants a fixed cadence.
+    * (keyint_min can't do this; x264 clamps it to keyint/2+1.) */
+   av_dict_set(&params->video_opts, "x264-params", "scenecut=0", 0);
+
+   params->audio_qscale       = false;
+   params->audio_bit_rate     = 160000;
+   params->sample_rate        = 48000;
+   av_dict_set(&params->audio_opts, "audio_global_quality", NULL, 0);
+}
+
 static bool ffmpeg_init_config_common(struct ff_config_param *params,
       unsigned preset,
       bool video_gpu_record,
@@ -704,6 +771,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
       unsigned streaming_mode,
       unsigned video_record_threads)
 {
+   params->video_max_b_frames = -1;
+
    switch (preset)
    {
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
@@ -896,7 +965,10 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             || streaming_mode == STREAMING_MODE_TWITCH
             || streaming_mode == STREAMING_MODE_FACEBOOK
             || streaming_mode == STREAMING_MODE_KICK)
+      {
          strlcpy_lit(params->format, "flv", sizeof(params->format));
+         ffmpeg_config_rtmp(params, preset);
+      }
       else
          strlcpy_lit(params->format, "mpegts", sizeof(params->format));
    }
@@ -920,6 +992,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    params->threads          = 1;
    params->frame_drop_ratio = 1;
    params->audio_enable     = true;
+   params->video_max_b_frames = -1;
 
    if (!config)
       return true;
@@ -1621,6 +1694,22 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
    handle->video.frame_cnt      += pts_skip;
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
+
+   /* gop_size counts frames, so pts gaps (drops, cores presenting
+    * every other tick) stretch it in time; force keyframes on time. */
+   handle->video.conv_frame->pict_type = AV_PICTURE_TYPE_NONE;
+   if (handle->config.video_gop_seconds > 0.0f)
+   {
+      int64_t ticks = (int64_t)(handle->config.video_gop_seconds
+            * handle->params.fps / handle->video.frame_drop_ratio + 0.5);
+      if (ticks < 1)
+         ticks = 1;
+      if (handle->video.frame_cnt - handle->video_last_key_pts >= ticks)
+      {
+         handle->video.conv_frame->pict_type = AV_PICTURE_TYPE_I;
+         handle->video_last_key_pts          = handle->video.frame_cnt;
+      }
+   }
 
    if (!encode_video(handle, handle->video.conv_frame))
       return false;
