@@ -1736,8 +1736,26 @@ void drivers_init(
       if (video_driver_thread_wrapper_active())
          video_thread_hw_bind_core_context(video_state_get_ptr()->data);
 #endif
-      if (   !video_driver_cache_context_ack_test()
-            && hwr->context_reset)
+      if (video_driver_cache_context_ack_test())
+      {
+         /* The core asked for its context to be kept, it was, and the
+          * core is not told of the restart. The hardware render
+          * interface it holds has to be the one in front now, though:
+          * it is, brought up to date, unless the driver in front hands
+          * out another one altogether - and then the core cannot go on
+          * with what it has, and is reset after all, its objects
+          * destroyed first on the device that was kept. */
+         if (!video_driver_hw_render_interface_kept())
+         {
+            video_driver_invalidate_hw_render_cache();
+            if (hwr->context_destroy)
+               hwr->context_destroy();
+            video_driver_hw_render_interface_note(NULL);
+            if (hwr->context_reset)
+               hwr->context_reset();
+         }
+      }
+      else if (hwr->context_reset)
          hwr->context_reset();
       video_driver_cache_context_ack_clear();
       runloop_st->frame_time_last = 0;

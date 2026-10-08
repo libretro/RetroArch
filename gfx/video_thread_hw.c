@@ -160,6 +160,23 @@ typedef struct
 #endif
 } hw_ring_t;
 
+#ifdef HAVE_VULKAN
+/* The Vulkan interface a core is handed under the wrapper. It is kept
+ * here, not in the ring it describes, for the reason the driver keeps
+ * its own in static storage (vulkan_hw_iface in drivers/vulkan.c): a
+ * core that asked the frontend to keep its context (cache_context) is
+ * not told when the video is restarted, and goes on with the pointer it
+ * was given. The ring is freed with the wrapper; this is not.
+ *
+ * The handle is the wrapper. video_thread_hw_free() clears it, so that
+ * a call landing between one wrapper and the next finds no ring and
+ * does nothing, and video_thread_get_hw_render_interface() fills the
+ * whole of it in again for the next wrapper - which the frontend asks
+ * for after a restart that did not reset the core
+ * (video_driver_hw_render_interface_kept()). */
+static struct retro_hw_render_interface_vulkan hw_vk_core_iface;
+#endif
+
 static hw_ring_t *hw_ring_of(void *handle)
 {
    thread_video_t *thr = (thread_video_t*)handle;
@@ -697,7 +714,9 @@ bool video_thread_get_hw_render_interface(void *data,
             ring->queue_submit = (PFN_vkQueueSubmit)
                ring->iface.vk.get_device_proc_addr(ring->iface.vk.device,
                      "vkQueueSubmit");
-         *iface = (const struct retro_hw_render_interface*)&ring->iface.vk;
+         /* What the core holds: see hw_vk_core_iface. */
+         hw_vk_core_iface = ring->iface.vk;
+         *iface = (const struct retro_hw_render_interface*)&hw_vk_core_iface;
          return true;
 #endif
 #ifdef HAVE_D3D12
@@ -1212,6 +1231,12 @@ void video_thread_hw_free(thread_video_t *thr)
 {
    hw_ring_t *ring = (hw_ring_t*)thr->frame.hw_ring;
    unsigned i;
+#ifdef HAVE_VULKAN
+   /* A core that is not told of this goes on calling: into nothing,
+    * until the next wrapper takes the interface over. */
+   if (hw_vk_core_iface.handle == thr)
+      hw_vk_core_iface.handle = NULL;
+#endif
    if (!ring)
       return;
    for (i = 0; i < VIDEO_THREAD_HW_RING; i++)

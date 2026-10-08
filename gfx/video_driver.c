@@ -2674,6 +2674,10 @@ void video_driver_init_filter(enum retro_pixel_format colfmt_int,
 }
 #endif
 
+/* The hardware render interface the core was last handed, while it can
+ * still be holding it: see video_driver_hw_render_interface_kept(). */
+static const struct retro_hw_render_interface *video_hw_render_iface_held;
+
 void video_driver_free_hw_context(void)
 {
    video_driver_state_t *video_st       = &video_driver_st;
@@ -2701,6 +2705,8 @@ void video_driver_free_hw_context(void)
    if (video_st->hw_render.context_destroy)
       video_st->hw_render.context_destroy();
    video_driver_invalidate_hw_render_cache();
+   /* the core holds no interface of ours any more */
+   video_hw_render_iface_held = NULL;
 
    memset(&video_st->hw_render, 0, sizeof(video_st->hw_render));
    /* After the memset: an acquire reader that sees NONE is
@@ -3535,6 +3541,25 @@ void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits)
 
 static retro_atomic_int_t video_cache_context_ack
    = RETRO_ATOMIC_INT_INITIALIZER(0);
+
+void video_driver_hw_render_interface_note(const struct retro_hw_render_interface *iface)
+{
+   video_hw_render_iface_held = iface;
+}
+
+bool video_driver_hw_render_interface_kept(void)
+{
+   video_driver_state_t *video_st                 = &video_driver_st;
+   const struct retro_hw_render_interface *iface  = NULL;
+
+   if (!video_hw_render_iface_held)
+      return true;
+   if (     !video_st->poke
+         || !video_st->poke->get_hw_render_interface
+         || !video_st->poke->get_hw_render_interface(video_st->data, &iface))
+      return false;
+   return iface == video_hw_render_iface_held;
+}
 
 void video_driver_cache_context_ack_set(void)
 {

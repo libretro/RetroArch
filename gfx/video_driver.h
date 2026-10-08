@@ -2166,6 +2166,20 @@ void video_driver_build_info(video_frame_info_t *video_info);
 void video_driver_modify_disp_flags(uint32_t set_bits, uint32_t clear_bits);
 
 void video_driver_cache_context_ack_set(void);
+/* The hardware render interface a core holds, from when it is handed
+ * one until its context is destroyed.
+ *
+ * _note(): the core was handed @iface.
+ * _kept(): after a video restart that did not reset the core (it asked
+ * for its context to be kept, and it was), whether the interface it
+ * holds is the one in front now. Asking the driver for it again is also
+ * what brings it up to date: under the threaded wrapper the hand-over is
+ * made anew with each wrapper. False when the driver in front hands out
+ * another interface altogether - threaded video was switched across the
+ * restart - and the core has to be reset after all. True for a core
+ * that holds none. */
+void video_driver_hw_render_interface_note(const struct retro_hw_render_interface *iface);
+bool video_driver_hw_render_interface_kept(void);
 bool video_driver_cache_context_ack_test(void);
 void video_driver_cache_context_ack_clear(void);
 

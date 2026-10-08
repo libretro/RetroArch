@@ -3536,7 +3536,11 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                && video_st->poke->get_hw_render_interface
                && video_st->poke->get_hw_render_interface(
                   video_st->data, iface))
+         {
+            /* what the core holds from here on */
+            video_driver_hw_render_interface_note(*iface);
             return true;
+         }
 
          return false;
       }
