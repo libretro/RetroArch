@@ -2280,6 +2280,13 @@ void input_entries_clear(void);
 unsigned input_entries_count(void);
 bool input_entry_add(unsigned number, const char *spec);
 void input_entries_read(void *conf);
+/* An entry by its number: taken out; and as the configuration writes
+ * it (its length, 0 for none). input_entry_add() with a number there
+ * is an entry of replaces that entry. */
+bool input_entry_remove(unsigned number);
+size_t input_entry_spec(unsigned number, char *s, size_t len);
+/* The entries and macros written into a configuration to be saved. */
+void input_entries_write(void *conf);
 
 /* Macros: buttons of the RetroPad pressed for a user a step at a time,
  * a step lasting a number of the core's frames; read from the
@@ -2289,6 +2296,11 @@ void input_entries_read(void *conf);
 void input_macros_clear(void);
 unsigned input_macros_count(void);
 bool input_macro_add(unsigned number, const char *spec);
+/* A macro by its number: set, whether or not there was one; taken
+ * out; and as the configuration writes it (its length, 0 for none). */
+bool input_macro_set(unsigned number, const char *spec);
+bool input_macro_remove(unsigned number);
+size_t input_macro_spec(unsigned number, char *s, size_t len);
 bool input_macro_start(unsigned number, unsigned user);
 bool input_macro_playing(unsigned user);
 

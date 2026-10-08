@@ -9650,6 +9650,9 @@ bool config_save_file(const char *path)
          input_config_save_keybinds_user(conf, i);
    }
 
+   /* the entries and macros, as they are now */
+   input_entries_write(conf);
+
    /* Remove unused "quit_press_twice" after migrating to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";

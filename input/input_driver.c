@@ -11575,9 +11575,10 @@ static bool input_entry_word(const char *s, const char *end,
    return true;
 }
 
-/* An entry, as the configuration writes it: "sources : target". False,
- * and nothing added, if it does not read as one or there is no room. */
-bool input_entry_add(unsigned number, const char *spec)
+/* An entry read from how the configuration writes it, "sources :
+ * target", into @out. False if it does not read as one. */
+static bool input_entry_parse(unsigned number, const char *spec,
+      input_entry_t *out)
 {
    char word[64];
    unsigned i;
@@ -11587,7 +11588,7 @@ bool input_entry_add(unsigned number, const char *spec)
    const char *colon_src = colon;
    const char *s     = spec;
 
-   if (!colon || input_entries.count >= INPUT_ENTRIES_MAX)
+   if (!colon)
       return false;
 
    e.pad    = 0;
@@ -11729,13 +11730,153 @@ bool input_entry_add(unsigned number, const char *spec)
    if (!e.kind)
       return false;
 
-   if (e.key != RETROK_UNKNOWN)
+   *out = e;
+   return true;
+}
+
+/* The lines of the configuration that did not read as an entry or as
+ * a macro, by number (bit N for input_combo_N, input_macro_N). A save
+ * writes the ones there are and takes out the line of one there is
+ * not; a line somebody wrote with a slip in it is neither, and is left
+ * in the file as they wrote it, to be put right. It is theirs until
+ * that number is set or taken out here. */
+static uint32_t input_entries_unread;
+static uint32_t input_macros_unread;
+
+/* The keys the entries name, for the driver, made again from the
+ * entries; and every entry counted as up, so that one whose sources
+ * are down when the entries change is given when they next go down. */
+static void input_entries_changed(void)
+{
+   unsigned i;
+   input_entries.key_count = 0;
+   for (i = 0; i < input_entries.count; i++)
    {
-      input_entries.keys[input_entries.key_count]       = e.key;
+      if (input_entries.entry[i].key == RETROK_UNKNOWN)
+         continue;
+      input_entries.keys[input_entries.key_count]       = input_entries.entry[i].key;
       input_entries.key_bind[input_entries.key_count++] = RARCH_FIRST_META_KEY;
    }
-   input_entries.entry[input_entries.count++] = e;
+   input_entries.on = 0;
+   memset(input_entries.since, 0, sizeof(input_entries.since));
+}
+
+/* Entry @number is what @spec says: the one of that number if there is
+ * one, a new one if there is room. False, and nothing changed, if
+ * @spec does not read as an entry or there is no room. */
+bool input_entry_add(unsigned number, const char *spec)
+{
+   unsigned i;
+   input_entry_t e;
+
+   if (!number || number > 255 || !input_entry_parse(number, spec, &e))
+      return false;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         break;
+   if (i == input_entries.count)
+   {
+      if (input_entries.count >= INPUT_ENTRIES_MAX)
+         return false;
+      input_entries.count++;
+   }
+   input_entries.entry[i] = e;
+   if (number < 32)
+      input_entries_unread &= ~((uint32_t)1 << number);
+   input_entries_changed();
    return true;
+}
+
+/* Entry @number goes, and a line of that number that did not read
+ * with it. False if there was neither. */
+bool input_entry_remove(unsigned number)
+{
+   unsigned i;
+   bool unread = number < 32
+      && (input_entries_unread & ((uint32_t)1 << number)) != 0;
+   if (number < 32)
+      input_entries_unread &= ~((uint32_t)1 << number);
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         break;
+   if (i == input_entries.count)
+      return unread;
+   for (; i + 1 < input_entries.count; i++)
+      input_entries.entry[i] = input_entries.entry[i + 1];
+   input_entries.count--;
+   input_entries_changed();
+   return true;
+}
+
+/* The RetroPad's buttons in @pad by the names their binds have, with
+ * + between them, written at @s; how much was written. */
+static size_t input_entry_pad_names(unsigned pad, char *s, size_t len)
+{
+   unsigned i;
+   size_t at = 0;
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      const char *base;
+      if (!(pad & (1u << i)) || !(base = input_config_bind_map_get_base(i)))
+         continue;
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, "%s%s",
+            at ? "+" : "", base);
+   }
+   return at;
+}
+
+/* Entry @number as the configuration writes it, in @s; its length, 0
+ * if there is no such entry. What input_entry_add() reads back as the
+ * same entry. */
+size_t input_entry_spec(unsigned number, char *s, size_t len)
+{
+   unsigned i;
+   size_t at = 0;
+   const input_entry_t *e = NULL;
+
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         e = &input_entries.entry[i];
+   if (!e || !len)
+      return 0;
+   s[0] = '\0';
+
+   at = input_entry_pad_names(e->pad, s, len);
+   if (e->key != RETROK_UNKNOWN)
+   {
+      char key[64];
+      key[0] = '\0';
+      input_keymaps_translate_rk_to_str((enum retro_key)e->key, key, sizeof(key));
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, "%skey_%s",
+            at ? "+" : "", key);
+   }
+   if (e->hold)
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0,
+            (e->hold % 10) ? " held %u.%us" : " held %us",
+            (unsigned)(e->hold / 10), (unsigned)(e->hold % 10));
+
+   if (e->kind == INPUT_ENTRY_HOTKEY)
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, " : %s",
+            input_config_bind_map_get_base(e->target));
+   else if (e->kind == INPUT_ENTRY_MACRO)
+   {
+      if (e->target >> 8)
+         at += (size_t)snprintf(s + at, at < len ? len - at : 0,
+               " : macro_%u@%u", (unsigned)(e->target & 0xff),
+               (unsigned)(e->target >> 8) + 1);
+      else
+         at += (size_t)snprintf(s + at, at < len ? len - at : 0,
+               " : macro_%u", (unsigned)(e->target & 0xff));
+   }
+   else
+   {
+      const char *name = "";
+      for (i = 0; i < ARRAY_SIZE(input_entry_commands); i++)
+         if (input_entry_commands[i].cmd == e->target)
+            name = input_entry_commands[i].name;
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, " : %s", name);
+   }
+   return at < len ? at : len - 1;
 }
 
 void input_macros_clear(void)
@@ -11758,21 +11899,17 @@ unsigned input_macros_count(void)
  * none, and the frames it lasts: "down 2, down+right 2, - 1, a 4".
  * False, and nothing added, if it does not read as one, is longer than
  * a macro may be, or there is no room left for its steps. */
-bool input_macro_add(unsigned number, const char *spec)
+static bool input_macro_parse(const char *spec,
+      input_macro_step_t *step, unsigned *count)
 {
    char word[64];
    unsigned i;
    unsigned steps      = 0;
    const char *s       = spec;
    const char *end_all = spec ? spec + strlen(spec) : NULL;
-   input_macro_step_t step[INPUT_MACRO_STEPS_MAX];
 
-   if (     !spec || !number || number > 255
-         || input_macros.count >= INPUT_MACROS_MAX)
+   if (!spec)
       return false;
-   for (i = 0; i < input_macros.count; i++)
-      if (input_macros.macro[i].number == number)
-         return false;
 
    while (s < end_all)
    {
@@ -11830,9 +11967,51 @@ bool input_macro_add(unsigned number, const char *spec)
          return false;
       s = comma ? comma + 1 : end_all;
    }
-   if (!steps || input_macros.pool_used + steps > INPUT_MACRO_POOL)
+   if (!steps)
       return false;
+   *count = steps;
+   return true;
+}
 
+/* Macro @number goes, and its steps' room with it. Whatever is playing
+ * stops: the macros after it move up. False if there was none. */
+bool input_macro_remove(unsigned number)
+{
+   unsigned m, i, user;
+   unsigned first, count;
+   bool unread = number < 32
+      && (input_macros_unread & ((uint32_t)1 << number)) != 0;
+
+   if (number < 32)
+      input_macros_unread &= ~((uint32_t)1 << number);
+   for (m = 0; m < input_macros.count; m++)
+      if (input_macros.macro[m].number == number)
+         break;
+   if (m == input_macros.count)
+      return unread;
+   for (user = 0; user < MAX_USERS; user++)
+      if (input_macros.users & (1u << user))
+         input_macro_stop(user);
+   first = input_macros.macro[m].first;
+   count = input_macros.macro[m].count;
+   memmove(&input_macros.pool[first], &input_macros.pool[first + count],
+         (input_macros.pool_used - first - count) * sizeof(input_macros.pool[0]));
+   input_macros.pool_used = (uint16_t)(input_macros.pool_used - count);
+   for (i = m; i + 1 < input_macros.count; i++)
+   {
+      input_macros.macro[i]       = input_macros.macro[i + 1];
+      input_macros.macro[i].first = (uint16_t)(input_macros.macro[i].first - count);
+   }
+   input_macros.count--;
+   return true;
+}
+
+static bool input_macro_keep(unsigned number,
+      const input_macro_step_t *step, unsigned steps)
+{
+   if (     input_macros.count >= INPUT_MACROS_MAX
+         || input_macros.pool_used + steps > INPUT_MACRO_POOL)
+      return false;
    memcpy(&input_macros.pool[input_macros.pool_used], step,
          steps * sizeof(step[0]));
    input_macros.macro[input_macros.count].first  = input_macros.pool_used;
@@ -11840,7 +12019,107 @@ bool input_macro_add(unsigned number, const char *spec)
    input_macros.macro[input_macros.count].number = (uint8_t)number;
    input_macros.pool_used                        = (uint16_t)(input_macros.pool_used + steps);
    input_macros.count++;
+   if (number < 32)
+      input_macros_unread &= ~((uint32_t)1 << number);
    return true;
+}
+
+/* A new macro, @number: false if there is one of that number already,
+ * @spec does not read as a macro, or there is no room. */
+bool input_macro_add(unsigned number, const char *spec)
+{
+   unsigned i, steps;
+   input_macro_step_t step[INPUT_MACRO_STEPS_MAX];
+
+   if (!number || number > 255)
+      return false;
+   for (i = 0; i < input_macros.count; i++)
+      if (input_macros.macro[i].number == number)
+         return false;
+   return input_macro_parse(spec, step, &steps)
+       && input_macro_keep(number, step, steps);
+}
+
+/* Macro @number is what @spec says, whether or not there was one of
+ * that number. False, and nothing changed, if @spec does not read as a
+ * macro or there is no room for it even with the old one gone. */
+bool input_macro_set(unsigned number, const char *spec)
+{
+   unsigned i, steps;
+   unsigned old_steps = 0;
+   input_macro_step_t step[INPUT_MACRO_STEPS_MAX];
+
+   if (!number || number > 255 || !input_macro_parse(spec, step, &steps))
+      return false;
+   for (i = 0; i < input_macros.count; i++)
+      if (input_macros.macro[i].number == number)
+         old_steps = input_macros.macro[i].count;
+   if (     input_macros.pool_used - old_steps + steps > INPUT_MACRO_POOL
+         || (!old_steps && input_macros.count >= INPUT_MACROS_MAX))
+      return false;
+   if (old_steps)
+      input_macro_remove(number);
+   return input_macro_keep(number, step, steps);
+}
+
+/* Macro @number as the configuration writes it, in @s; its length, 0
+ * if there is no such macro. What input_macro_add() reads back as the
+ * same macro. */
+size_t input_macro_spec(unsigned number, char *s, size_t len)
+{
+   unsigned m, i;
+   size_t at = 0;
+
+   for (m = 0; m < input_macros.count; m++)
+      if (input_macros.macro[m].number == number)
+         break;
+   if (m == input_macros.count || !len)
+      return 0;
+   s[0] = '\0';
+   for (i = 0; i < input_macros.macro[m].count; i++)
+   {
+      const input_macro_step_t *st =
+         &input_macros.pool[input_macros.macro[m].first + i];
+      if (i)
+         at += (size_t)snprintf(s + at, at < len ? len - at : 0, ", ");
+      if (st->buttons)
+         at += input_entry_pad_names(st->buttons, s + at, at < len ? len - at : 0);
+      else
+         at += (size_t)snprintf(s + at, at < len ? len - at : 0, "-");
+      at += (size_t)snprintf(s + at, at < len ? len - at : 0, " %u",
+            (unsigned)st->frames);
+   }
+   return at < len ? at : len - 1;
+}
+
+/* The entries and macros there are, written into the configuration as
+ * it reads them back; and the line of any that there is not, taken
+ * out, so that one removed stays removed. */
+void input_entries_write(void *data)
+{
+   unsigned i;
+   char key[32];
+   char spec[512];
+   config_file_t *conf = (config_file_t*)data;
+
+   if (!conf)
+      return;
+   for (i = 1; i <= INPUT_ENTRIES_MAX; i++)
+   {
+      snprintf(key, sizeof(key), "input_combo_%u", i);
+      if (input_entry_spec(i, spec, sizeof(spec)))
+         config_set_string(conf, key, spec);
+      else if (!(input_entries_unread & ((uint32_t)1 << i)))
+         config_unset(conf, key);
+   }
+   for (i = 1; i <= INPUT_MACROS_MAX; i++)
+   {
+      snprintf(key, sizeof(key), "input_macro_%u", i);
+      if (input_macro_spec(i, spec, sizeof(spec)))
+         config_set_string(conf, key, spec);
+      else if (!(input_macros_unread & ((uint32_t)1 << i)))
+         config_unset(conf, key);
+   }
 }
 
 /* The configuration's entries and macros, in place of the ones there
@@ -11853,6 +12132,8 @@ void input_entries_read(void *data)
 
    input_entries_clear();
    input_macros_clear();
+   input_entries_unread = 0;
+   input_macros_unread  = 0;
    if (!conf)
       return;
    for (i = 1; i <= INPUT_MACROS_MAX; i++)
@@ -11864,6 +12145,8 @@ void input_entries_read(void *data)
       if (!entry || !entry->value || !*entry->value)
          continue;
       if (!input_macro_add(i, entry->value))
+         input_macros_unread |= (uint32_t)1 << i;
+      if (input_macros_unread & ((uint32_t)1 << i))
          RARCH_WARN("[Input] %s = \"%s\" is not read: it wants steps"
                " with commas between, each \"buttons with + between"
                " them, or -, and a number of frames\".\n",
@@ -11878,6 +12161,8 @@ void input_entries_read(void *data)
       if (!entry || !entry->value || !*entry->value)
          continue;
       if (!input_entry_add(i, entry->value))
+         input_entries_unread |= (uint32_t)1 << i;
+      if (input_entries_unread & ((uint32_t)1 << i))
          RARCH_WARN("[Input] %s = \"%s\" is not read: it wants"
                " \"buttons and a key with + between them : a hotkey"
                " or a command\".\n", key, entry->value);

@@ -6058,6 +6058,251 @@ static void lane_macro_modes(void)
 #endif
 }
 
+/* Entries and macros changed while the program runs, as a menu will
+ * change them, and saved. Held to: one is written out as it reads back
+ * - the same entry, the same macro; setting a number there is one of
+ * replaces that one, and its room is handed back; one taken out leaves
+ * the others as they were; and a save writes the ones there are, and
+ * takes out the line of one there is no longer, so that a load of what
+ * was saved gives back what there was. */
+static bool ek_is(unsigned number, const char *want)
+{
+   char got[512];
+   got[0] = '\0';
+   input_entry_spec(number, got, sizeof(got));
+   if (strcmp(got, want))
+      fprintf(stderr, "       entry %u is \"%s\", not \"%s\"\n", number, got, want);
+   return !strcmp(got, want);
+}
+
+static bool mk_is(unsigned number, const char *want)
+{
+   char got[512];
+   got[0] = '\0';
+   input_macro_spec(number, got, sizeof(got));
+   if (strcmp(got, want))
+      fprintf(stderr, "       macro %u is \"%s\", not \"%s\"\n", number, got, want);
+   return !strcmp(got, want);
+}
+
+static void lane_entries_kept(void)
+{
+   static const char path[] = "/tmp/frontend_overhead_entries.cfg";
+   settings_t *settings     = config_get_ptr();
+   bool saved_minimal       = settings->bools.config_save_minimal;
+   unsigned had             = failures;
+   unsigned i;
+   char spec[512];
+   char *text               = NULL;
+   long  len                = 0;
+   FILE *f;
+   config_file_t *conf;
+
+   input_entries_clear();
+   input_macros_clear();
+
+   /* --- written out as it reads back --- */
+   CHECK(   input_entry_add(2, "  r3 + l3:menu_toggle ")
+         && input_entry_add(7, "key_f9 : undo_load_state")
+         && input_entry_add(3, "select+start+key_g held 2s : exit_emulator")
+         && input_entry_add(9, "a held 0.5s : macro_4@2")
+         && input_entry_add(1, "r : macro_1"),
+         "entries kept: five entries are not read");
+   CHECK(   ek_is(2, "l3+r3 : menu_toggle")
+         && ek_is(7, "key_f9 : undo_load_state")
+         && ek_is(3, "select+start+key_g held 2s : exit_emulator")
+         && ek_is(9, "a held 0.5s : macro_4@2")
+         && ek_is(1, "r : macro_1")
+         && !input_entry_spec(4, spec, sizeof(spec)),
+         "entries kept: an entry is not written out as what it is");
+   CHECK(   input_macro_set(1, " down 2 ,down+right 2, - 1,a 4")
+         && input_macro_set(4, "b 30")
+         && input_macro_set(6, "l+r 1, - 1, l+r 1"),
+         "entries kept: three macros are not read");
+   CHECK(   mk_is(1, "down 2, down+right 2, - 1, a 4")
+         && mk_is(4, "b 30")
+         && mk_is(6, "l+r 1, - 1, l+r 1")
+         && !input_macro_spec(2, spec, sizeof(spec)),
+         "entries kept: a macro is not written out as what it is");
+   /* each read back from what it was written as is the same again */
+   for (i = 1; i <= 9; i++)
+   {
+      char again[512];
+      if (!input_entry_spec(i, spec, sizeof(spec)))
+         continue;
+      CHECK(input_entry_add(i, spec) && input_entry_spec(i, again, sizeof(again))
+            && !strcmp(spec, again),
+            "entries kept: an entry read back from how it was written is not the same");
+   }
+
+   /* --- a number there is one of: that one, replaced --- */
+   CHECK(input_entry_add(7, "x : pause") && ek_is(7, "x : pause")
+         && input_entries_count() == 5,
+         "entries kept: setting a number there is an entry of did not replace it");
+   CHECK(!input_entry_add(7, "nothing that reads") && ek_is(7, "x : pause"),
+         "entries kept: an entry that does not read replaced one that did");
+   CHECK(input_macro_set(4, "b 1, a 1") && mk_is(4, "b 1, a 1")
+         && mk_is(1, "down 2, down+right 2, - 1, a 4")
+         && mk_is(6, "l+r 1, - 1, l+r 1")
+         && input_macros_count() == 3,
+         "entries kept: a macro set again was not replaced, or disturbed another");
+   CHECK(!input_macro_set(4, "not a macro") && mk_is(4, "b 1, a 1"),
+         "entries kept: a macro that does not read replaced one that did");
+
+   /* --- one taken out leaves the others --- */
+   CHECK(   input_entry_remove(3) && !input_entry_remove(3)
+         && input_entries_count() == 4
+         && ek_is(2, "l3+r3 : menu_toggle") && ek_is(9, "a held 0.5s : macro_4@2")
+         && ek_is(1, "r : macro_1") && ek_is(7, "x : pause"),
+         "entries kept: taking an entry out disturbed another, or did not take it");
+   CHECK(   input_macro_remove(1) && !input_macro_remove(1)
+         && input_macros_count() == 2
+         && mk_is(4, "b 1, a 1") && mk_is(6, "l+r 1, - 1, l+r 1"),
+         "entries kept: taking a macro out disturbed another, or did not take it");
+   /* the room a macro had is room again: the pool filled to the brim */
+   {
+      unsigned n = 0;
+      spec[0] = '\0';
+      for (i = 0; i < 32; i++)
+         strlcat(spec, i ? ", a 1" : "a 1", sizeof(spec));
+      for (i = 10; i < 18; i++)
+         if (input_macro_set(i, spec))
+            n++;
+      /* 256 steps, 5 used: seven of thirty-two fit, an eighth does not */
+      CHECK(n == 7, "entries kept: the steps of a macro taken out were not room again");
+      for (i = 10; i < 18; i++)
+         input_macro_remove(i);
+      CHECK(input_macros_count() == 2 && mk_is(4, "b 1, a 1") && mk_is(6, "l+r 1, - 1, l+r 1"),
+            "entries kept: filling and emptying the pool disturbed the macros that stayed");
+   }
+
+   /* --- saved: what there is, and not the line of what there is not --- */
+   if ((f = fopen(path, "wb")))
+   {
+      fputs("input_combo_5 = \"start : pause\"\n"
+            "input_macro_9 = \"a 1\"\n", f);
+      fclose(f);
+   }
+   settings->bools.config_save_minimal = true;
+   CHECK(config_save_file(path), "entries kept: the configuration was not saved");
+   if ((f = fopen(path, "rb")))
+   {
+      fseek(f, 0, SEEK_END);
+      len = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      if (len > 0 && (text = (char*)malloc((size_t)len + 1)))
+      {
+         if (fread(text, 1, (size_t)len, f) != (size_t)len)
+            len = 0;
+         text[len] = '\0';
+      }
+      fclose(f);
+   }
+   CHECK(text != NULL, "entries kept: nothing was saved");
+   if (text)
+   {
+      CHECK(   strstr(text, "input_combo_2 = \"l3+r3 : menu_toggle\"")
+            && strstr(text, "input_combo_7 = \"x : pause\"")
+            && strstr(text, "input_combo_9 = \"a held 0.5s : macro_4@2\"")
+            && strstr(text, "input_macro_4 = \"b 1, a 1\"")
+            && strstr(text, "input_macro_6 = \"l+r 1, - 1, l+r 1\""),
+            "entries kept: an entry or a macro there is was not saved");
+      CHECK(   !strstr(text, "input_combo_5") && !strstr(text, "input_combo_3")
+            && !strstr(text, "input_macro_9") && !strstr(text, "input_macro_1 "),
+            "entries kept: the line of one there is not was left in what was saved");
+      free(text);
+   }
+
+   /* --- and what was saved, loaded, is what there was --- */
+   input_entries_clear();
+   input_macros_clear();
+   if ((conf = config_file_new(path)))
+   {
+      input_entries_read(conf);
+      config_file_free(conf);
+   }
+   CHECK(conf != NULL, "entries kept: what was saved cannot be read");
+   CHECK(   input_entries_count() == 4 && input_macros_count() == 2
+         && ek_is(2, "l3+r3 : menu_toggle") && ek_is(7, "x : pause")
+         && ek_is(9, "a held 0.5s : macro_4@2") && ek_is(1, "r : macro_1")
+         && mk_is(4, "b 1, a 1") && mk_is(6, "l+r 1, - 1, l+r 1"),
+         "entries kept: what was saved, loaded, is not what there was");
+
+   /* --- a line with a slip in it is left as it was written, until
+    * that number is set or taken out --- */
+   if ((f = fopen(path, "wb")))
+   {
+      fputs("input_combo_8 = \"start : puase\"\n"
+            "input_combo_2 = \"l3+r3 : menu_toggle\"\n"
+            "input_macro_3 = \"a two\"\n", f);
+      fclose(f);
+   }
+   if ((conf = config_file_new(path)))
+   {
+      input_entries_read(conf);
+      config_file_free(conf);
+   }
+   CHECK(input_entries_count() == 1 && input_macros_count() == 0,
+         "entries kept: a line with a slip in it was read");
+   CHECK(config_save_file(path), "entries kept: the configuration was not saved a second time");
+   text = NULL;
+   if ((f = fopen(path, "rb")))
+   {
+      fseek(f, 0, SEEK_END);
+      len = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      if (len > 0 && (text = (char*)malloc((size_t)len + 1)))
+      {
+         if (fread(text, 1, (size_t)len, f) != (size_t)len)
+            len = 0;
+         text[len] = '\0';
+      }
+      fclose(f);
+   }
+   if (text)
+   {
+      CHECK(   strstr(text, "input_combo_8 = \"start : puase\"")
+            && strstr(text, "input_macro_3 = \"a two\"")
+            && strstr(text, "input_combo_2 = \"l3+r3 : menu_toggle\""),
+            "entries kept: a save took out a line that did not read, with its slip");
+      free(text);
+   }
+   CHECK(input_entry_remove(8) && input_macro_remove(3)
+         && config_save_file(path),
+         "entries kept: a line that did not read cannot be taken out");
+   text = NULL;
+   if ((f = fopen(path, "rb")))
+   {
+      fseek(f, 0, SEEK_END);
+      len = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      if (len > 0 && (text = (char*)malloc((size_t)len + 1)))
+      {
+         if (fread(text, 1, (size_t)len, f) != (size_t)len)
+            len = 0;
+         text[len] = '\0';
+      }
+      fclose(f);
+   }
+   if (text)
+   {
+      CHECK(!strstr(text, "input_combo_8") && !strstr(text, "input_macro_3"),
+            "entries kept: a line that did not read, taken out, is still saved");
+      free(text);
+   }
+
+   remove(path);
+   settings->bools.config_save_minimal = saved_minimal;
+   input_entries_clear();
+   input_macros_clear();
+
+   if (failures == had)
+      printf("[pass] entries kept: one is written out as it reads back; a number"
+            " set again is replaced; one taken out leaves the rest and its room;"
+            " a save writes what there is and takes out what there is not, and"
+            " loads back the same\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -7394,6 +7639,7 @@ int main(int argc, char *argv[])
       lane_entries();
       lane_macros();
       lane_macro_modes();
+      lane_entries_kept();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();
