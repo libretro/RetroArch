@@ -6455,6 +6455,7 @@ static void lane_entry_capture(void)
    input_driver_state_t *input_st = input_state_get_ptr();
    const input_device_driver_t *joypad_real = input_st->primary_joypad;
    struct retro_keybind saved[4];
+   struct retro_keybind saved_ab[2];
    rarch_setting_t *row = menu_setting_find("input_combo_2");
    rarch_setting_t *empty = menu_setting_find("input_combo_5");
    unsigned had = failures;
@@ -6482,6 +6483,12 @@ static void lane_entry_capture(void)
    input_autoconf_bind_edit(0, R3)->joykey    = 23;
    input_autoconf_bind_edit(0, RIGHT)->joykey = 24;
    input_autoconf_bind_edit(0, DOWN)->joykey  = 25;
+   saved_ab[0] = *input_autoconf_bind(0, RETRO_DEVICE_ID_JOYPAD_A);
+   saved_ab[1] = *input_autoconf_bind(0, RETRO_DEVICE_ID_JOYPAD_B);
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_A)->joykey = 26;
+   input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_B)->joykey = 27;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_A), true);
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_B), true);
    for (i = 0; i < 4; i++)
       RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, i == 0 ? L3 : i == 1 ? R3 : i == 2 ? RIGHT : DOWN), true);
 
@@ -6506,6 +6513,12 @@ static void lane_entry_capture(void)
    run_loop_frames(3);
    {
       size_t sel = menu_state_get_ptr()->selection_ptr;
+      file_list_t *stack = MENU_LIST_GET(menu_state_get_ptr()->entries.list, 0);
+      size_t depth = stack ? stack->size : 0;
+      /* its own screen is up: one more on the menu's stack */
+      CHECK(depth > 0 && stack->list[depth - 1].label
+            && !strcmp(stack->list[depth - 1].label, "input_entry_capture_listen"),
+            "entry capture: it has no screen of its own over the list");
       syn_buttons = 1u << 22;
       run_loop_frames(4);
       syn_buttons = (1u << 22) | (1u << 23);
@@ -6513,22 +6526,32 @@ static void lane_entry_capture(void)
       syn_buttons = 1u << 23;
       run_loop_frames(3);
       CHECK(input_entry_capture_running(), "entry capture: it ended with something still held");
-      /* a direction among them: gathered, and the menu not moved by it */
+      /* a direction among them, and OK and Back: gathered, and the
+       * menu neither moved nor left by them */
+      syn_buttons = (1u << 23) | (1u << 25);
+      run_loop_frames(4);
+      syn_buttons = (1u << 23) | (1u << 25) | (1u << 26) | (1u << 27);
+      run_loop_frames(4);
       syn_buttons = (1u << 23) | (1u << 25);
       run_loop_frames(4);
       CHECK(menu_state_get_ptr()->selection_ptr == sel,
             "entry capture: a button pressed for it moved the menu");
+      CHECK(stack && stack->size == depth && input_entry_capture_running(),
+            "entry capture: OK or Back pressed for it acted on the menu");
       syn_buttons = 0;
       run_loop_frames(4);
+      /* over: its screen is gone, and the list is where it was */
+      CHECK(stack && stack->size == depth - 1,
+            "entry capture: its screen is still up after it ended");
    }
    CHECK(!input_entry_capture_running(), "entry capture: all let go, it did not end");
    spec[0] = '\0';
    input_entry_spec(2, spec, sizeof(spec));
    {
       char why[300];
-      snprintf(why, sizeof(why), "entry capture: L3, L3 and R3, R3, R3 and Down held made"
-            " \"%s\", not \"down+l3+r3+key_g held 1s : pause\"", spec);
-      CHECK(!strcmp(spec, "down+l3+r3+key_g held 1s : pause"), why);
+      snprintf(why, sizeof(why), "entry capture: L3, L3 and R3, R3, R3 and Down, with A and B, held made"
+            " \"%s\", not \"b+down+a+l3+r3+key_g held 1s : pause\"", spec);
+      CHECK(!strcmp(spec, "b+down+a+l3+r3+key_g held 1s : pause"), why);
    }
 
    /* --- five seconds of nothing changes nothing --- */
@@ -6545,7 +6568,7 @@ static void lane_entry_capture(void)
    CHECK(!input_entry_capture_running(), "entry capture: five seconds of nothing did not give it up");
    spec[0] = '\0';
    input_entry_spec(2, spec, sizeof(spec));
-   CHECK(!strcmp(spec, "down+l3+r3+key_g held 1s : pause"),
+   CHECK(!strcmp(spec, "b+down+a+l3+r3+key_g held 1s : pause"),
          "entry capture: given up, it changed the combination");
 
    /* --- the entry taken out while it runs: it ends --- */
@@ -6562,6 +6585,8 @@ static void lane_entry_capture(void)
    *input_autoconf_bind_edit(0, R3)    = saved[1];
    *input_autoconf_bind_edit(0, RIGHT) = saved[2];
    *input_autoconf_bind_edit(0, DOWN)  = saved[3];
+   *input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_A) = saved_ab[0];
+   *input_autoconf_bind_edit(0, RETRO_DEVICE_ID_JOYPAD_B) = saved_ab[1];
    input_st->primary_joypad = joypad_real;
    run_loop_frames(3);
 

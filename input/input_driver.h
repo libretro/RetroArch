@@ -2288,6 +2288,7 @@ bool input_entry_remove(unsigned number);
  * False if there is no such entry. */
 bool input_entry_capture_start(unsigned number);
 bool input_entry_capture_running(void);
+unsigned input_entry_capture_seconds_left(void);
 size_t input_entry_spec(unsigned number, char *s, size_t len);
 /* The entries and macros written into a configuration to be saved. */
 void input_entries_write(void *conf);

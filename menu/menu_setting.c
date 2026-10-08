@@ -829,7 +829,7 @@ static int setting_entry_text_right(rarch_setting_t *setting, size_t idx,
 {
    (void)idx;
    (void)wraparound;
-   if (!setting || !input_entry_capture_start(setting->index_offset))
+   if (!setting || !menu_input_entry_capture_begin(setting->index_offset))
       RARCH_WARN("[Input] Combination %u has nothing to set the buttons of:"
             " type it first.\n", setting ? setting->index_offset : 0);
    return 0;

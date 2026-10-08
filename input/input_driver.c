@@ -11830,17 +11830,24 @@ bool input_entry_capture_start(unsigned number)
    input_entry_capture.released = false;
    input_entry_capture.deadline = cpu_features_get_time_usec()
       + INPUT_ENTRY_CAPTURE_USEC;
-   {
-      const char *msg = "Hold the buttons for the combination, then let go.";
-      runloop_msg_queue_push(msg, strlen(msg), 1, 180, true, NULL,
-            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-   }
    return true;
 }
 
 bool input_entry_capture_running(void)
 {
    return input_entry_capture.number != 0;
+}
+
+/* Whole seconds left before it gives up, rounded up: while nothing has
+ * been pressed. 0 once something has, or when none runs. */
+unsigned input_entry_capture_seconds_left(void)
+{
+   retro_time_t now = cpu_features_get_time_usec();
+   if (     !input_entry_capture.number
+         || input_entry_capture.seen
+         || now >= input_entry_capture.deadline)
+      return 0;
+   return (unsigned)((input_entry_capture.deadline - now) / 1000000) + 1;
 }
 
 /* A frame of it, with the RetroPad's buttons the frame's input holds. */

@@ -3643,6 +3643,53 @@ void menu_input_remap_find_begin(unsigned port)
    menu_displaylist_info_free(&info);
 }
 
+/* A combination's buttons set by holding them (input_entry_capture_start())
+ * on a screen of its own, as "find a button by pressing it" has: the
+ * list is faded behind a message, and the menu takes no input until it
+ * is over - OK and Back are pressed for the combination like any other
+ * button, not for the menu. */
+#define MENU_ENTRY_CAPTURE_SCREEN    "input_entry_capture_listen"
+static unsigned menu_entry_capture_number;
+
+bool menu_input_entry_capture_begin(unsigned number)
+{
+   menu_displaylist_info_t info;
+   struct menu_state *menu_st = &menu_driver_state;
+   menu_list_t *menu_list     = menu_st->entries.list;
+   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
+
+   if (!menu_stack || !input_entry_capture_start(number))
+      return false;
+   menu_entry_capture_number  = number;
+
+   menu_displaylist_info_init(&info);
+   info.list                  = menu_stack;
+   info.type                  = MENU_SETTING_ACTION;
+   info.directory_ptr         = menu_st->selection_ptr;
+   info.enum_idx              = MENU_ENUM_LABEL_INPUT_REMAP_FIND;
+   info.label                 = strdup(MENU_ENTRY_CAPTURE_SCREEN);
+   if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, config_get_ptr()))
+      menu_displaylist_process(&info);
+   menu_displaylist_info_free(&info);
+   return true;
+}
+
+/* One pass while it is up; true when it is over. */
+static bool menu_input_entry_capture_iterate(char *s, size_t len)
+{
+   unsigned left;
+   if (!input_entry_capture_running())
+      return true;
+   left = input_entry_capture_seconds_left();
+   if (left)
+      snprintf(s, len, "Combination %u: hold its buttons together, then"
+            " let go. (%u)", menu_entry_capture_number, left);
+   else
+      snprintf(s, len, "Combination %u: let go of all of them to set"
+            " it.", menu_entry_capture_number);
+   return false;
+}
+
 /* One pass while the screen is up. Returns true when it is over: a
  * button was pressed and let go again, or the time ran out. The first
  * press counts only once everything has been seen released - the
@@ -3700,6 +3747,8 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
          return ITERATE_TYPE_BIND;
    if (!strcmp(label, MENU_REMAP_FIND_SCREEN))
       return ITERATE_TYPE_REMAP_FIND;
+   if (!strcmp(label, MENU_ENTRY_CAPTURE_SCREEN))
+      return ITERATE_TYPE_ENTRY_CAPTURE;
    return ITERATE_TYPE_DEFAULT;
 }
 
@@ -8125,6 +8174,21 @@ static int generic_menu_iterate(
             else
                BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          }
+         break;
+      case ITERATE_TYPE_ENTRY_CAPTURE:
+         /* the menu takes none of what is pressed meanwhile: the
+          * capture has had it (it runs in the input pass, ahead of
+          * this) */
+         menu_st->flags |= MENU_ST_FLAG_IS_BINDING;
+         if (menu_input_entry_capture_iterate(menu->menu_state_msg,
+                  sizeof(menu->menu_state_msg)))
+         {
+            size_t selection = menu_st->selection_ptr;
+            menu_entries_pop_stack(&selection, 0, 0);
+            menu_st->selection_ptr = selection;
+         }
+         else
+            BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_REMAP_FIND:
          /* the menu's own controls are left alone meanwhile */

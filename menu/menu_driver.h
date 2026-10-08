@@ -830,6 +830,10 @@ bool menu_is_running_quick_menu(void);
 /* "Find a Button by Pressing It": waits for a button of @port's
  * controller and puts the selection on its entry. */
 void menu_input_remap_find_begin(unsigned port);
+/* A combination's buttons set by holding them, on a screen of its own
+ * that takes the menu's input meanwhile. False if there is no such
+ * combination. */
+bool menu_input_entry_capture_begin(unsigned number);
 
 bool menu_input_key_bind_set_mode(
       enum menu_input_binds_ctl_state state, void *data);
