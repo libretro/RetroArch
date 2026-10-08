@@ -9971,6 +9971,9 @@ void config_read_keybinds_conf(void *data)
    }
    /* binds read from a file are binds changed */
    input_config_binds_changed();
+
+   /* and the entries, input_combo_1 and up */
+   input_entries_read(conf);
 }
 
 #ifdef HAVE_COMMAND
@@ -11285,6 +11288,330 @@ INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
    }
    set->port_plus1                    = port + 1;
    input_port_hotkeys[port].flags    |= INPUT_HK_HAS_SET;
+}
+
+/* Entries: a hotkey or a command reached by something other than a
+ * bind of its own.
+ *
+ * A hotkey has one bind: a key, and a button or an axis of the
+ * controller. An entry says "these, held together, are that": some of
+ * the RetroPad's buttons, a key, or both, and what they are - one of
+ * the hotkeys, by its name, or a command that has no hotkey. It is
+ * written in the configuration as
+ *
+ *    input_combo_1 = "l3+r3 : menu_toggle"
+ *    input_combo_2 = "key_f9 : undo_load_state"
+ *
+ * with the RetroPad's buttons by the names their binds have (b, y,
+ * select, start, up, down, left, right, a, x, l, r, l2, r2, l3, r3), a
+ * key as key_ and the name it has in a bind, a hotkey by the name its
+ * bind has, and a command by a name in input_entry_commands[] below.
+ *
+ * The entries are read on the port the hotkeys are read on, after the
+ * hotkeys, and are held back by what holds a hotkey back: "Hotkey
+ * Enable" not being held, for the kind of source - controller or
+ * keyboard - that has an enabler; the keyboard being held by Game
+ * Focus or a line of text; input waiting to be let go. A hotkey an
+ * entry reaches is down while the entry's sources are; a command is
+ * given once, when they go down, after the frame's input has been
+ * gone through. With no entry there is one test a frame. */
+#define INPUT_ENTRIES_MAX 16
+
+enum
+{
+   INPUT_ENTRY_HOTKEY = 1,
+   INPUT_ENTRY_COMMAND
+};
+
+typedef struct
+{
+   uint16_t pad;      /* the RetroPad's buttons that must all be held; 0 for none */
+   uint16_t key;      /* a key that must be down; RETROK_UNKNOWN for none */
+   uint16_t target;   /* a hotkey's bind number, or a command */
+   uint8_t  kind;
+   uint8_t  number;   /* the N of its input_combo_N */
+} input_entry_t;
+
+static struct
+{
+   input_entry_t entry[INPUT_ENTRIES_MAX];
+   uint16_t keys[INPUT_ENTRIES_MAX];     /* the keys the entries name, for the driver */
+   uint8_t  key_bind[INPUT_ENTRIES_MAX]; /* ... which are hotkeys' keys to it */
+   uint16_t commands[INPUT_ENTRIES_MAX]; /* given this frame, to be carried out after it */
+   uint16_t on;                          /* bit n: entry n's sources were all down when last looked at */
+   uint8_t  count;
+   uint8_t  key_count;
+   uint8_t  command_count;
+} input_entries;
+
+/* The commands an entry can reach: ones that have no hotkey and need
+ * nothing told them. */
+static const struct
+{
+   const char *name;
+   uint16_t    cmd;
+} input_entry_commands[] = {
+   { "pause",           CMD_EVENT_PAUSE },
+   { "unpause",         CMD_EVENT_UNPAUSE },
+   { "undo_load_state", CMD_EVENT_UNDO_LOAD_STATE },
+   { "undo_save_state", CMD_EVENT_UNDO_SAVE_STATE },
+   { "save_config",     CMD_EVENT_MENU_SAVE_CURRENT_CONFIG }
+};
+
+void input_entries_clear(void)
+{
+   input_entries.count         = 0;
+   input_entries.key_count     = 0;
+   input_entries.command_count = 0;
+   input_entries.on            = 0;
+}
+
+unsigned input_entries_count(void)
+{
+   return input_entries.count;
+}
+
+/* One word of an entry, between @s and @end with the spaces at its
+ * ends left off, copied into @out. */
+static bool input_entry_word(const char *s, const char *end,
+      char *out, size_t len)
+{
+   size_t n;
+   while (s < end && (*s == ' ' || *s == '\t'))
+      s++;
+   while (end > s && (end[-1] == ' ' || end[-1] == '\t'))
+      end--;
+   n = (size_t)(end - s);
+   if (!n || n >= len)
+      return false;
+   memcpy(out, s, n);
+   out[n] = '\0';
+   return true;
+}
+
+/* An entry, as the configuration writes it: "sources : target". False,
+ * and nothing added, if it does not read as one or there is no room. */
+bool input_entry_add(unsigned number, const char *spec)
+{
+   char word[64];
+   unsigned i;
+   input_entry_t e;
+   const char *colon = spec ? strchr(spec, ':') : NULL;
+   const char *s     = spec;
+
+   if (!colon || input_entries.count >= INPUT_ENTRIES_MAX)
+      return false;
+
+   e.pad    = 0;
+   e.key    = RETROK_UNKNOWN;
+   e.target = 0;
+   e.kind   = 0;
+   e.number = (uint8_t)number;
+
+   /* what is held: words with + between them */
+   while (s < colon)
+   {
+      const char *plus = (const char*)memchr(s, '+', (size_t)(colon - s));
+      const char *end  = plus ? plus : colon;
+
+      if (!input_entry_word(s, end, word, sizeof(word)))
+         return false;
+      if (!strncmp(word, "key_", 4))
+      {
+         enum retro_key key = input_config_translate_str_to_rk(
+               word + 4, strlen(word + 4));
+         /* one key to an entry, and one there is */
+         if (key == RETROK_UNKNOWN || key >= RETROK_LAST
+               || e.key != RETROK_UNKNOWN)
+            return false;
+         e.key = (uint16_t)key;
+      }
+      else
+      {
+         for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+         {
+            const char *base = input_config_bind_map_get_base(i);
+            if (base && !strcmp(base, word))
+               break;
+         }
+         if (i == RARCH_FIRST_CUSTOM_BIND)
+            return false;
+         e.pad |= (uint16_t)(1u << i);
+      }
+      s = end + 1;
+   }
+   if (!e.pad && e.key == RETROK_UNKNOWN)
+      return false;
+
+   /* what it is: a hotkey by its bind's name, or a command */
+   if (!input_entry_word(colon + 1, colon + 1 + strlen(colon + 1),
+            word, sizeof(word)))
+      return false;
+   for (i = RARCH_FIRST_META_KEY; i < RARCH_BIND_LIST_END; i++)
+   {
+      const char *base = input_config_bind_map_get_base(i);
+      if (base && !strcmp(base, word))
+      {
+         e.kind   = INPUT_ENTRY_HOTKEY;
+         e.target = (uint16_t)i;
+         break;
+      }
+   }
+   /* the enabler is held to reach the others: it is not reached */
+   if (e.kind == INPUT_ENTRY_HOTKEY && e.target == RARCH_ENABLE_HOTKEY)
+      return false;
+   if (!e.kind)
+   {
+      for (i = 0; i < ARRAY_SIZE(input_entry_commands); i++)
+      {
+         if (strcmp(input_entry_commands[i].name, word))
+            continue;
+         e.kind   = INPUT_ENTRY_COMMAND;
+         e.target = input_entry_commands[i].cmd;
+         break;
+      }
+   }
+   if (!e.kind)
+      return false;
+
+   if (e.key != RETROK_UNKNOWN)
+   {
+      input_entries.keys[input_entries.key_count]       = e.key;
+      input_entries.key_bind[input_entries.key_count++] = RARCH_FIRST_META_KEY;
+   }
+   input_entries.entry[input_entries.count++] = e;
+   return true;
+}
+
+/* The configuration's entries, in place of the ones there are:
+ * input_combo_1 and up, as many as there is room for. */
+void input_entries_read(void *data)
+{
+   unsigned i;
+   config_file_t *conf = (config_file_t*)data;
+
+   input_entries_clear();
+   if (!conf)
+      return;
+   for (i = 1; i <= INPUT_ENTRIES_MAX; i++)
+   {
+      char key[32];
+      struct config_entry_list *entry;
+      snprintf(key, sizeof(key), "input_combo_%u", i);
+      entry = config_get_entry(conf, key);
+      if (!entry || !entry->value || !*entry->value)
+         continue;
+      if (!input_entry_add(i, entry->value))
+         RARCH_WARN("[Input] %s = \"%s\" is not read: it wants"
+               " \"buttons and a key with + between them : a hotkey"
+               " or a command\".\n", key, entry->value);
+   }
+}
+
+/* The entries gone through, once a frame, after the ports have been:
+ * with what is held of the RetroPad as the hotkeys' combinations have
+ * always had it - the buttons delivered this frame - and the keys of
+ * the port the hotkeys are read on. */
+INPUT_NOINLINE static void input_entries_frame(
+      input_driver_state_t *input_st,
+      const input_device_driver_t *joypad,
+      unsigned port, bool device_merge,
+      input_bits_t *p_new_state)
+{
+   unsigned i;
+   unsigned n               = 0;
+   uint32_t down            = 0;
+   uint16_t on              = 0;
+   unsigned held16          = p_new_state->data[0] & 0xffff;
+   input_driver_t *input    = input_st->current_driver;
+   bool kb_blocked          = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
+   bool wait                = (input_st->flags & INP_FLAG_WAIT_INPUT_RELEASE) != 0;
+   bool no_enabler          = (input_st->flags & INP_FLAG_BLOCK_HOTKEY) != 0;
+   const input_port_hotkeys_t *hk;
+   bool pad_enabler, key_enabler;
+   rarch_joypad_info_t joypad_info;
+   settings_t *settings     = config_get_ptr();
+
+   if (port >= MAX_USERS)
+      port = 0;
+   joypad_info.axis_threshold = settings->floats.input_axis_threshold;
+   joypad_info.joy_idx        = settings->uints.input_joypad_index[port];
+   if (joypad_info.joy_idx >= MAX_USERS)
+      joypad_info.joy_idx     = 0;
+   joypad_info.auto_binds     = input_autoconf_binds[joypad_info.joy_idx];
+
+   /* which kind of source has an enabler, as the hotkey pass has it */
+   hk          = input_port_hotkeys_get(port, joypad_info.auto_binds);
+   pad_enabler = (hk->flags & INPUT_HK_PAD_ENABLER) != 0;
+   key_enabler = (hk->flags & INPUT_HK_KEY_ENABLER) != 0;
+   if (device_merge && (pad_enabler || key_enabler))
+      pad_enabler = key_enabler = true;
+
+   if (input_entries.key_count && !kb_blocked && input)
+   {
+      if (input->keys_down)
+         input->keys_down(input_st->current_data, port,
+               input_entries.keys, input_entries.key_bind,
+               input_entries.key_count, &down);
+      else
+         for (i = 0; i < input_entries.key_count; i++)
+            if (input_state_wrap(input, input_st->current_data,
+                     joypad, &joypad_info,
+                     (const retro_keybind_set *)input_config_binds,
+                     kb_blocked,
+                     port, RETRO_DEVICE_KEYBOARD, 0,
+                     input_entries.keys[i]))
+               down |= (1u << i);
+   }
+
+   for (i = 0; i < input_entries.count; i++)
+   {
+      const input_entry_t *e = &input_entries.entry[i];
+      bool all               = true;
+
+      if (e->pad && (held16 & e->pad) != e->pad)
+         all = false;
+      if (e->key != RETROK_UNKNOWN)
+      {
+         if (!((down >> n) & 1))
+            all = false;
+         n++;
+      }
+      if (!all)
+         continue;
+      /* held back with the hotkeys: by the enabler of its kind of
+       * source not being held ... */
+      if (     no_enabler
+            && (   (e->pad && pad_enabler)
+                || (e->key != RETROK_UNKNOWN && key_enabler)))
+         continue;
+      on |= (uint16_t)(1u << i);
+      /* ... and while input waits to be let go, when it counts as
+       * down already and is given again only after it has been up */
+      if (wait)
+         continue;
+      if (e->kind == INPUT_ENTRY_HOTKEY)
+         BIT256_SET_PTR(p_new_state, e->target);
+      else if (   !(input_entries.on & (1u << i))
+               && input_entries.command_count < INPUT_ENTRIES_MAX)
+         input_entries.commands[input_entries.command_count++] = e->target;
+   }
+   input_entries.on = on;
+}
+
+/* The commands the entries gave this frame, carried out: after the
+ * frame's input has been gone through, since a command may start the
+ * drivers again. */
+INPUT_NOINLINE static void input_entries_commands(void)
+{
+   unsigned i;
+   unsigned count = input_entries.command_count;
+   uint16_t commands[INPUT_ENTRIES_MAX];
+
+   memcpy(commands, input_entries.commands, sizeof(commands));
+   input_entries.command_count = 0;
+   for (i = 0; i < count; i++)
+      command_event((enum event_command)commands[i], NULL);
 }
 
 static void input_keys_pressed(
@@ -14464,16 +14791,22 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
     * core port 0) is mapped from. Worked out here once; it was worked
     * out again at each port. A move is a change to what a hotkey's
     * bind is for two ports, and is counted as a change to the binds. */
-   if (settings->bools.input_hotkey_follows_player1)
+   /* (With the setting off and the hotkeys on the first port, as they
+    * were last frame, there is nothing to work out or to compare: one
+    * test, where there were two.) */
+   if (settings->bools.input_hotkey_follows_player1 | input_hotkey_port_seen)
    {
-      hotkey_port = settings->uints.input_remap_port_map[0][0];
-      if (hotkey_port >= MAX_USERS)
-         hotkey_port = 0;
-   }
-   if (hotkey_port != input_hotkey_port_seen)
-   {
-      input_hotkey_port_seen = hotkey_port;
-      input_config_binds_changed();
+      if (settings->bools.input_hotkey_follows_player1)
+      {
+         hotkey_port = settings->uints.input_remap_port_map[0][0];
+         if (hotkey_port >= MAX_USERS)
+            hotkey_port = 0;
+      }
+      if (hotkey_port != input_hotkey_port_seen)
+      {
+         input_hotkey_port_seen = hotkey_port;
+         input_config_binds_changed();
+      }
    }
 
    for (port = 0; port < (int)max_users; port++)
@@ -14727,6 +15060,18 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             retro_atomic_exchange_int(&input_st->ai_press_pending, 0);
       }
 #endif /* defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE) */
+   }
+
+   /* What the entries add - hotkeys reached another way, and commands
+    * - with the ports gone through; and the commands carried out, last
+    * of all, since one may start the drivers again. One test a frame
+    * when there are none. */
+   if (input_entries.count)
+   {
+      input_entries_frame(input_st, joypad, hotkey_port,
+            settings->bools.input_hotkey_device_merge, current_bits);
+      if (input_entries.command_count)
+         input_entries_commands();
    }
 }
 

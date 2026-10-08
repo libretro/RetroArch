@@ -5343,6 +5343,174 @@ static void lane_binds_shared_rows(void)
             " and no one else's changes; an own row is kept\n");
 }
 
+/* Entries: a hotkey or a command reached by buttons of the RetroPad
+ * and a key held together (input_combo_N in the configuration). Held
+ * to what they say: only what reads as an entry is taken, and no more
+ * than there is room for; a command is given once when all of an
+ * entry's sources are down and not again while they stay down; a
+ * hotkey an entry reaches does what its own bind would; and what holds
+ * a hotkey back holds an entry back - the enabler of its kind of
+ * source, and the keyboard being held. */
+static void en_hold(uint32_t buttons, unsigned frames)
+{
+   syn_buttons = buttons;
+   run_loop_frames(frames);
+}
+
+static void lane_entries(void)
+{
+   enum { START = RETRO_DEVICE_ID_JOYPAD_START, SELECT = RETRO_DEVICE_ID_JOYPAD_SELECT,
+          L3 = RETRO_DEVICE_ID_JOYPAD_L3 };
+   const uint32_t b_start = 1u << 20, b_select = 1u << 21, b_l3 = 1u << 22,
+                  b_enable = 1u << 23;
+   input_driver_state_t *input_st           = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_driver_t *saved_input              = input_st->current_driver;
+   static input_driver_t en_input;
+   struct retro_keybind saved[4];
+   struct retro_keybind saved_cfg_en;
+   unsigned had = failures;
+   unsigned i;
+   char spec[64];
+
+   if (!joypad_real || !saved_input)
+   {
+      CHECK(false, "entries: no joypad or input driver");
+      return;
+   }
+   saved[0]     = *input_autoconf_bind(0, START);
+   saved[1]     = *input_autoconf_bind(0, SELECT);
+   saved[2]     = *input_autoconf_bind(0, L3);
+   saved[3]     = *input_autoconf_bind(0, RARCH_ENABLE_HOTKEY);
+   saved_cfg_en = *input_config_bind(0, RARCH_ENABLE_HOTKEY);
+
+   /* --- what reads as an entry --- */
+   input_entries_clear();
+   CHECK(input_entry_add(1, "start+select : pause"), "entries: two buttons and a command is not read");
+   CHECK(input_entry_add(2, "key_g:unpause"),         "entries: a key and a command is not read");
+   CHECK(input_entry_add(3, " l3 :  pause_toggle "),  "entries: a button and a hotkey, with spaces, is not read");
+   CHECK(input_entries_count() == 3, "entries: three read are not three kept");
+   CHECK(   !input_entry_add(4, "l3+r3")
+         && !input_entry_add(4, "l9 : pause")
+         && !input_entry_add(4, "key_nosuchkey : pause")
+         && !input_entry_add(4, "key_f1+key_f2 : pause")
+         && !input_entry_add(4, " : pause")
+         && !input_entry_add(4, "start : no_such_thing")
+         && !input_entry_add(4, "start : enable_hotkey")
+         && !input_entry_add(4, "start+ : pause")
+         && !input_entry_add(4, NULL),
+         "entries: something that is not an entry was taken as one");
+   CHECK(input_entries_count() == 3, "entries: a refused entry was kept");
+
+   /* the controller: start, select and L3 on its buttons 20 to 22 */
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   en_input                 = *saved_input;
+   en_input.keys_down       = os_keys_down;
+   input_st->current_driver = &en_input;
+   input_autoconf_bind_edit(0, START)->joykey  = 20;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, START), true);
+   input_autoconf_bind_edit(0, SELECT)->joykey = 21;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, SELECT), true);
+   input_autoconf_bind_edit(0, L3)->joykey     = 22;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, L3), true);
+   input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY)->joykey  = NO_BTN;
+   input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY)->joyaxis = AXIS_NONE;
+   input_config_bind_edit(0, RARCH_ENABLE_HOTKEY)->joykey    = NO_BTN;
+   input_config_bind_edit(0, RARCH_ENABLE_HOTKEY)->joyaxis   = AXIS_NONE;
+   RETRO_KEYBIND_SET_KEY(input_config_bind_edit(0, RARCH_ENABLE_HOTKEY), RETROK_UNKNOWN);
+   os_g_down = false;
+   en_hold(0, 4);
+   CHECK(!hf_paused(), "entries: paused to begin with");
+
+   /* --- a command, once, when all of its sources are down --- */
+   en_hold(b_start, 4);
+   CHECK(!hf_paused(), "entries: one button of two gave the command");
+   en_hold(b_start | b_select, 4);
+   CHECK(hf_paused(), "entries: both buttons held did not give the command");
+   en_hold(0, 3);
+   os_tap();
+   CHECK(!hf_paused(), "entries: the key did not give its command");
+
+   /* --- a hotkey an entry reaches: once for a press, however long --- */
+   en_hold(b_l3, 12);
+   en_hold(0, 3);
+   CHECK(hf_paused(), "entries: a button held for a hotkey did not press it, or pressed it twice");
+   en_hold(b_l3, 3);
+   en_hold(0, 3);
+   CHECK(!hf_paused(), "entries: the hotkey's second press did not undo its first");
+
+   /* --- held back by the enabler of its kind of source --- */
+   input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY)->joykey = 23;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY), true);
+   en_hold(0, 3);
+   en_hold(b_start | b_select, 4);
+   CHECK(!hf_paused(), "entries: buttons gave their command with the controller's enabler not held");
+   en_hold(0, 3);
+   en_hold(b_enable, 2);
+   en_hold(b_enable | b_start | b_select, 4);
+   CHECK(hf_paused(), "entries: buttons with the enabler held did not give their command");
+   en_hold(0, 3);
+   /* the keyboard has no enabler: its entry is not held back */
+   os_tap();
+   CHECK(!hf_paused(), "entries: a key's entry was held back by the controller's enabler");
+   input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY)->joykey = NO_BTN;
+   en_hold(0, 3);
+
+   /* --- held back while the keyboard is held --- */
+   en_hold(b_start | b_select, 4);
+   en_hold(0, 3);
+   CHECK(hf_paused(), "entries: not paused for the keyboard check");
+   input_keyboard_capture_hold(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   os_tap();
+   CHECK(hf_paused(), "entries: a key's entry was read while the keyboard was held");
+   input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
+   os_tap();
+   CHECK(!hf_paused(), "entries: a key's entry was not read once the keyboard was let go");
+
+   /* --- no more than there is room for --- */
+   input_entries_clear();
+   for (i = 1; i <= 16; i++)
+   {
+      snprintf(spec, sizeof(spec), "start+l3 : pause");
+      if (!input_entry_add(i, spec))
+         break;
+   }
+   CHECK(i == 17 && input_entries_count() == 16, "entries: sixteen were not all taken");
+   CHECK(!input_entry_add(17, "start : pause") && input_entries_count() == 16,
+         "entries: a seventeenth was taken");
+
+   /* --- none: nothing is given --- */
+   input_entries_clear();
+   en_hold(b_start | b_select, 4);
+   en_hold(0, 3);
+   CHECK(!hf_paused(), "entries: with none there, buttons still gave a command");
+
+   if (hf_paused())
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+   syn_buttons = 0;
+   *input_autoconf_bind_edit(0, START)               = saved[0];
+   *input_autoconf_bind_edit(0, SELECT)              = saved[1];
+   *input_autoconf_bind_edit(0, L3)                  = saved[2];
+   *input_autoconf_bind_edit(0, RARCH_ENABLE_HOTKEY) = saved[3];
+   *input_config_bind_edit(0, RARCH_ENABLE_HOTKEY)   = saved_cfg_en;
+   input_st->current_driver = saved_input;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+
+   if (failures == had)
+      printf("[pass] entries: only what reads as one is taken, and sixteen at most;"
+            " a command is given once when its sources are all down; a hotkey"
+            " reached is pressed once; the enabler and a held keyboard hold"
+            " them back\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -6676,6 +6844,7 @@ int main(int argc, char *argv[])
       lane_save_minimal_binds();
       lane_bind_names();
       lane_binds_shared_rows();
+      lane_entries();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();

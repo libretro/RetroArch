@@ -2273,6 +2273,14 @@ extern struct retro_keybind *input_autoconf_binds[MAX_USERS];
 extern retro_atomic_int_t input_binds_generation;
 void input_binds_kept_invalidate(void);
 
+/* Entries: a hotkey or a command reached by buttons of the RetroPad
+ * and a key held together, read from the configuration's input_combo_N
+ * (see input_driver.c). Up to sixteen. */
+void input_entries_clear(void);
+unsigned input_entries_count(void);
+bool input_entry_add(unsigned number, const char *spec);
+void input_entries_read(void *conf);
+
 /* One of a user's controls is remapped to @remap. A remap is set
  * through here and not written into the settings directly: it is
  * counted as a change, which is what has the frontend look at the
