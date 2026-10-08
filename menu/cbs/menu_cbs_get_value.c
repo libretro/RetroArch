@@ -50,6 +50,9 @@
 #ifdef HAVE_LAKKA
 #include "../../lakka.h"
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+#include "../../misc/reboot2payload/reboot2payload.h"
+#endif
 #include "../../audio/audio_driver.h"
 
 #ifdef HAVE_NETWORKING
@@ -697,7 +700,9 @@ static size_t menu_action_cpu_governor_label(
 
 /* Value column of the main menu "Reboot" entry: shows
  * "Install Update" while an update image is staged, so the user
- * knows the next reboot will install it. Empty otherwise. */
+ * knows the next reboot will install it. On Switch with pmc_r2p it
+ * otherwise shows the selected reboot payload (and an update only
+ * wins when reboot_force_self_on_update is set). Empty otherwise. */
 static size_t menu_action_setting_disp_reboot(
       file_list_t* list,
       unsigned *w, unsigned type, unsigned i,
@@ -710,9 +715,35 @@ static size_t menu_action_setting_disp_reboot(
    *w = 19;
    if (path)
       strlcpy(s2, path, len2);
+#ifdef HAVE_LAKKA_SWITCH
+   if (r2p_is_supported())
+   {
+      settings_t *settings = config_get_ptr();
+      if (     settings->bools.reboot_force_self_on_update
+            && lakka_update_pending())
+         return strlcpy(s, msg_hash_to_str(MSG_VALUE_INSTALL_UPDATE), len);
+      return strlcpy(s, r2p_get_destination_name(), len);
+   }
+#endif
    if (lakka_update_pending())
       return strlcpy(s, msg_hash_to_str(MSG_VALUE_INSTALL_UPDATE), len);
    return 0;
+}
+#endif
+
+#ifdef HAVE_LAKKA_SWITCH
+static size_t menu_action_setting_disp_reboot_payload(
+      file_list_t* list,
+      unsigned *w, unsigned type, unsigned i,
+      const char *label,
+      char *s, size_t len,
+      const char *path,
+      char *s2, size_t len2)
+{
+   *w = 19;
+   if (path)
+      strlcpy(s2, path, len2);
+   return strlcpy(s, r2p_get_destination_name(), len);
 }
 #endif
 
@@ -2229,6 +2260,12 @@ static int menu_cbs_init_bind_get_string_representation_compare_label(
             BIND_ACTION_GET_VALUE(cbs,
                   menu_action_setting_disp_cpu_gov_mode);
             break;
+#ifdef HAVE_LAKKA_SWITCH
+         case MENU_ENUM_LABEL_REBOOT_PAYLOAD:
+            BIND_ACTION_GET_VALUE(cbs,
+                  menu_action_setting_disp_reboot_payload);
+            break;
+#endif
          case MENU_ENUM_LABEL_CPU_POLICY_CORE_GOVERNOR:
          case MENU_ENUM_LABEL_CPU_POLICY_MENU_GOVERNOR:
             BIND_ACTION_GET_VALUE(cbs,

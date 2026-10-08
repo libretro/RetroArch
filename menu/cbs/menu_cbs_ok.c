@@ -7087,6 +7087,13 @@ STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_menu_bottom_list, ACTION_OK_DL_MENU_BOTT
 #endif
 #ifdef HAVE_LAKKA_SWITCH
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_lakka_switch_options, ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST)
+
+/* Left/Right cycles the payload selection; OK does nothing. */
+static int action_ok_reboot_payload(const char *path, const char *label,
+      unsigned type, size_t idx, size_t entry_idx)
+{
+   return 0;
+}
 #endif
 STATIC_DEFAULT_ACTION_OK_FUNC(action_ok_rdb_entry, ACTION_OK_DL_RDB_ENTRY)
 #ifdef HAVE_AUDIOMIXER
@@ -9929,6 +9936,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
+         {MENU_ENUM_LABEL_REBOOT_PAYLOAD,                      action_ok_reboot_payload},
 #endif
          {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},

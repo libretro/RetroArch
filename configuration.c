@@ -2054,6 +2054,9 @@ static struct config_array_setting *populate_settings_array(
    SETTING_ARRAY("cpu_main_gov",                 settings->arrays.cpu_main_gov, false, NULL, true);
    SETTING_ARRAY("cpu_menu_gov",                 settings->arrays.cpu_menu_gov, false, NULL, true);
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+   SETTING_ARRAY("reboot_payload_name",          settings->arrays.reboot_payload_name, false, NULL, true);
+#endif
 
    *size = count;
 
@@ -2258,6 +2261,7 @@ static struct config_bool_setting *populate_settings_bool(
    SETTING_BOOL("switch_oc",                     &settings->bools.switch_oc, true, DEFAULT_SWITCH_OC, false);
    SETTING_BOOL("switch_cec",                    &settings->bools.switch_cec, true, DEFAULT_SWITCH_CEC, false);
    SETTING_BOOL("bluetooth_ertm_disable",        &settings->bools.bluetooth_ertm_disable, true, DEFAULT_BLUETOOTH_ERTM, false);
+   SETTING_BOOL("reboot_force_self_on_update",   &settings->bools.reboot_force_self_on_update, true, DEFAULT_REBOOT_FORCE_SELF_ON_UPDATE, false);
 #endif
    SETTING_BOOL("audio_rate_control",            &settings->bools.audio_rate_control, true, DEFAULT_RATE_CONTROL, false);
    SETTING_BOOL("audio_enable_menu_ok",          &settings->bools.audio_enable_menu_ok, true, DEFAULT_AUDIO_ENABLE_MENU_OK, false);
@@ -4397,6 +4401,9 @@ static struct config_uint_setting *populate_settings_uint(
    SETTING_UINT("cpu_scaling_mode",              &settings->uints.cpu_scaling_mode,    true,   0, false);
    SETTING_UINT("cpu_min_freq",                  &settings->uints.cpu_min_freq,        true,   1, false);
    SETTING_UINT("cpu_max_freq",                  &settings->uints.cpu_max_freq,        true, ~0U, false);
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+   SETTING_UINT("reboot_payload_kind",           &settings->uints.reboot_payload_kind, true,   0, false);
 #endif
 
 

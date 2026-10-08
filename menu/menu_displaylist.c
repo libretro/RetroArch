@@ -145,6 +145,9 @@
 #include "../manual_content_scan.h"
 #include "../core_backup.h"
 #include "../misc/cpufreq/cpufreq.h"
+#ifdef HAVE_LAKKA_SWITCH
+#include "../misc/reboot2payload/reboot2payload.h"
+#endif
 #include "../input/input_remapping.h"
 
 #ifdef HAVE_MICROPHONE
@@ -12420,21 +12423,37 @@ unsigned menu_displaylist_build_list(
 #endif
 #ifdef HAVE_LAKKA_SWITCH
       case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
-         {
-            static const menu_displaylist_build_info_t build_list[] = {
-               {MENU_ENUM_LABEL_SWITCH_OC_ENABLE,                                            PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,                                           PARSE_ONLY_BOOL},
-               {MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,                                      PARSE_ONLY_BOOL},
-            };
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_SWITCH_OC_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
 
-            for (i = 0; i < ARRAY_SIZE(build_list); i++)
-            {
-               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
-                        build_list[i].enum_idx,  build_list[i].parse_type,
-                        false) == 0)
-                  count++;
-            }
+         /* Reboot-to-payload needs the pmc_r2p kernel driver. The
+          * payload selector has no backing rarch_setting_t; its
+          * Left/Right/OK/value callbacks live in menu/cbs. */
+         if (r2p_is_supported())
+         {
+            if (menu_entries_append(list,
+                     msg_hash_to_str(MENU_ENUM_LABEL_VALUE_REBOOT_PAYLOAD),
+                     msg_hash_to_str(MENU_ENUM_LABEL_REBOOT_PAYLOAD),
+                     MENU_ENUM_LABEL_REBOOT_PAYLOAD,
+                     MENU_SETTING_ACTION, 0, 0, NULL))
+               count++;
+
+            if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                     MENU_ENUM_LABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+                     PARSE_ONLY_BOOL, false) == 0)
+               count++;
          }
+
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_SWITCH_CEC_ENABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                  MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE,
+                  PARSE_ONLY_BOOL, false) == 0)
+            count++;
          break;
 #endif
       case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:

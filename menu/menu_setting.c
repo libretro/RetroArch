@@ -18182,6 +18182,21 @@ static void settings_build_lakka_switch_options(
                general_read_handler,
                SD_FLAG_NONE);
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], bluetooth_ertm_disable_toggle_change_handler)
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.reboot_force_self_on_update,
+               MENU_ENUM_LABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+               MENU_ENUM_LABEL_VALUE_REBOOT_FORCE_SELF_ON_UPDATE,
+               DEFAULT_REBOOT_FORCE_SELF_ON_UPDATE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
          GROUP_END();
 
    }

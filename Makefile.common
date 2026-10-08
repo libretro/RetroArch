@@ -1039,6 +1039,7 @@ endif
 
 ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
+   OBJ += misc/reboot2payload/reboot2payload.o
 endif
 
 ifeq ($(HAVE_MENU_COMMON), 1)

@@ -214,6 +214,7 @@
 #define DEFAULT_SWITCH_OC false
 #define DEFAULT_SWITCH_CEC true
 #define DEFAULT_BLUETOOTH_ERTM false
+#define DEFAULT_REBOOT_FORCE_SELF_ON_UPDATE true
 #endif
 
 #if (defined(_WIN32) && !defined(_XBOX)) || (defined(__linux) && !defined(ANDROID) && !defined(HAVE_LAKKA)) || (defined(__MACH__) && !TARGET_OS_IPHONE) || defined(__EMSCRIPTEN__)

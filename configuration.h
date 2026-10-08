@@ -449,6 +449,10 @@ typedef struct settings
       unsigned cpu_min_freq;
       unsigned cpu_max_freq;
 #endif
+#ifdef HAVE_LAKKA_SWITCH
+      /* enum r2p_payload_kind; paired with reboot_payload_name */
+      unsigned reboot_payload_kind;
+#endif
 
 #ifdef HAVE_MIST
       unsigned steam_rich_presence_format;
@@ -1128,6 +1132,10 @@ typedef struct settings
       bool switch_oc;
       bool switch_cec;
       bool bluetooth_ertm_disable;
+      /* When an update is staged, reboot back into the running
+       * Lakka entry instead of the selected payload so the
+       * initramfs installs it. */
+      bool reboot_force_self_on_update;
 #endif
 #ifdef HAVE_LAKKA
       bool ssh_enable;
@@ -1246,6 +1254,9 @@ typedef struct settings
 #ifdef HAVE_LAKKA
       char cpu_main_gov[32];
       char cpu_menu_gov[32];
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+      char reboot_payload_name[64]; /* R2P_NAME_MAXLEN */
 #endif
 #ifdef HAVE_MICROPHONE
       char microphone_driver[32];

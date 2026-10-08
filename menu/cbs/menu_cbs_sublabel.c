@@ -287,6 +287,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_options,                MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_oc_enable,              MENU_ENUM_SUBLABEL_SWITCH_OC_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_switch_cec_enable,             MENU_ENUM_SUBLABEL_SWITCH_CEC_ENABLE)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_ertm_disable,        MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reboot_payload,                MENU_ENUM_SUBLABEL_REBOOT_PAYLOAD)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_reboot_force_self_on_update,   MENU_ENUM_SUBLABEL_REBOOT_FORCE_SELF_ON_UPDATE)
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_remap_settings,           MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS)
 
@@ -3773,6 +3775,12 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_BLUETOOTH_ERTM_DISABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_bluetooth_ertm_disable);
+            break;
+         case MENU_ENUM_LABEL_REBOOT_PAYLOAD:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reboot_payload);
+            break;
+         case MENU_ENUM_LABEL_REBOOT_FORCE_SELF_ON_UPDATE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_reboot_force_self_on_update);
             break;
 #endif
 #ifdef HAVE_VIDEO_FILTER
