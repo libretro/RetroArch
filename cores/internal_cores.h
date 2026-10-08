@@ -91,6 +91,10 @@ unsigned libretro_ffmpeg_retro_api_version(void);
 
 void libretro_ffmpeg_retro_get_system_info(struct retro_system_info *info);
 
+/* True if this build's FFmpeg can open files with this (lowercase)
+ * extension; extensions the core always claimed are always true. */
+bool libretro_ffmpeg_ffmpeg_core_supports_extension(const char *ext);
+
 void libretro_ffmpeg_retro_get_system_av_info(struct retro_system_av_info *info);
 
 void libretro_ffmpeg_retro_set_environment(retro_environment_t cb);

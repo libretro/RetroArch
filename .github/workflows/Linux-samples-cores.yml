@@ -165,15 +165,16 @@ jobs:
           # empty or absent, then teardown while the decode thread is
           # still working.
           #
-          # Leak detection off: libavutil's HW-device probing keeps a
-          # few objects, as the audio-pipe lane already has it. The
-          # libav* TSan suppressions are the same ones and for the
-          # same reason.
+          # With leak detection: every load and unload in it, the
+          # decoder probing included, must give back its codec
+          # contexts and hardware devices. The libav* TSan
+          # suppressions are the audio-pipe lane's, for the same
+          # reason.
           make clean all
           ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test"
           make clean all SANITIZER=address,undefined
-          ASAN_OPTIONS=detect_leaks=0:detect_stack_use_after_return=1 \
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
              UBSAN_OPTIONS=print_stacktrace=1 timeout 900 ./ffmpeg_sweep_test
           echo "[pass] ffmpeg_sweep_test (ASan)"
           make clean all SANITIZER=thread

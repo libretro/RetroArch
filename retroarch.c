@@ -237,6 +237,9 @@
 #include "version_git.h"
 
 #include "retroarch.h"
+#ifdef HAVE_FFMPEG
+#include "cores/internal_cores.h"
+#endif
 
 #include "accessibility.h"
 
@@ -3121,6 +3124,15 @@ enum rarch_content_type path_is_media_type(const char *path)
       case FILE_TYPE_TS:
       case FILE_TYPE_MXF:
          return RARCH_CONTENT_MOVIE;
+      case FILE_TYPE_MOVIE_OTHER:
+      case FILE_TYPE_MUSIC_OTHER:
+#ifdef HAVE_FFMPEG
+         /* Only if this build's FFmpeg can open it. */
+         if (!libretro_ffmpeg_ffmpeg_core_supports_extension(ext_lower))
+            return RARCH_CONTENT_NONE;
+#endif
+         return (msg_hash_to_file_type(ext_lower) == FILE_TYPE_MOVIE_OTHER)
+            ? RARCH_CONTENT_MOVIE : RARCH_CONTENT_MUSIC;
       case FILE_TYPE_WMA:
       case FILE_TYPE_M4A:
 #endif
