@@ -346,10 +346,10 @@ static bool kms_display_server_modeline_set(void *data,
    p_switch->hsync       = mode->hsync;
    p_switch->vsync       = mode->vsync;
 
-   return video_driver_set_video_mode(mode->dims, true);
-#else
-   return false;
+   if (video_driver_set_video_mode(mode->dims, true))
+      return true;
 #endif
+   return false;
 }
 
 static bool kms_display_server_modeline_flush(void *data)
@@ -440,19 +440,21 @@ static bool kms_display_server_line0_ns(int fd, uint32_t crtc_id,
 {
 #ifdef DRM_IOCTL_CRTC_GET_SEQUENCE
    struct drm_crtc_get_sequence get_seq;
-
-   memset(&get_seq, 0, sizeof(get_seq));
-   get_seq.crtc_id = crtc_id;
-   if (drmIoctl(fd, DRM_IOCTL_CRTC_GET_SEQUENCE, &get_seq) != 0)
-      return false;
-   /* The kernel reports 0 as "no valid timestamp" */
-   if (get_seq.sequence_ns <= 0)
-      return false;
-   *line0_ns = (uint64_t)get_seq.sequence_ns;
-   return true;
-#else
-   return false;
+   get_seq.crtc_id     = crtc_id;
+   get_seq.active      = 0;
+   get_seq.sequence    = 0;
+   get_seq.sequence_ns = 0;
+   if (drmIoctl(fd, DRM_IOCTL_CRTC_GET_SEQUENCE, &get_seq) == 0)
+   {
+      /* The kernel reports 0 as "no valid timestamp" */
+      if (get_seq.sequence_ns > 0)
+      {
+         *line0_ns = (uint64_t)get_seq.sequence_ns;
+         return true;
+      }
+   }
 #endif
+   return false;
 }
 
 /* A compositor can leave VRR on, and blanking then outlasts the mode */
