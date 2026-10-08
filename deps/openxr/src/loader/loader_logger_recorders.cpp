@@ -9,7 +9,6 @@
 
 #include "loader_logger_recorders.hpp"
 
-#include "hex_and_handles.h"
 #include "loader_logger.hpp"
 
 #include <openxr/openxr.h>
@@ -146,7 +145,7 @@ DebugUtilsLogRecorder::DebugUtilsLogRecorder(const XrDebugUtilsMessengerCreateIn
                         DebugUtilsMessageTypesToLoaderLogMessageTypes(create_info->messageTypes)),
       _user_callback(create_info->userCallback) {
     // Use the debug messenger value to uniquely identify this logger with that messenger
-    _unique_id = MakeHandleGeneric(debug_messenger);
+    _unique_id = XR_HANDLE_TO_U64(debug_messenger);
     Start();
 }
 

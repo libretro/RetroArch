@@ -95,6 +95,7 @@ typedef int ssize_t;
 #ifndef PRId64
 #define PRId64 "I64d"
 #define PRIu64 "I64u"
+#define PRIx64 "I64x"
 #define PRIuPTR "Iu"
 #endif
 #endif

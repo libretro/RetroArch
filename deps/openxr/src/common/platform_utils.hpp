@@ -28,15 +28,6 @@
 #define OPENXR_RUNTIME_JSON_ENV_VAR "XR_RUNTIME_JSON"
 #define OPENXR_API_LAYER_PATH_ENV_VAR "XR_API_LAYER_PATH"
 
-// This is a CMake generated file with #defines for any functions/includes
-// that it found present and build-time configuration.
-// If you don't have this file, on non-Windows you'll need to define
-// one of HAVE_SECURE_GETENV or HAVE___SECURE_GETENV depending on which
-// of secure_getenv or __secure_getenv are present
-#ifdef OPENXR_HAVE_COMMON_CONFIG
-#include "common_config.h"
-#endif  // OPENXR_HAVE_COMMON_CONFIG
-
 #if defined(__x86_64__) && defined(__ILP32__)
 #define XR_ARCH_ABI "x32"
 #elif defined(_M_X64) || defined(__x86_64__)

@@ -47,6 +47,31 @@ jobs:
           make clean
           rm -f openxr_input.log
 
+  openxr-loader-threads:
+    name: OpenXR loader under concurrent use (TSan, ASan+UBSan)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Run deps/openxr's loader from several threads
+        working-directory: samples/openxr/loader_threads
+        shell: bash
+        run: |
+          set -eu
+          # The loader shares its runtime, active instance, recorder and
+          # messenger tables and property set between threads with no
+          # lock. Threads enumerate, create, reinitialize and log against
+          # a stand-in runtime while the main thread cycles instances and
+          # messengers; a race or a use-after-free in any of it fails.
+          make clean
+          make SANITIZER=thread check
+          make clean
+          make SANITIZER=address,undefined check
+          make clean
+
   openxr-desktop:
     name: Desktop headset output with the in-tree loader
     runs-on: ubuntu-latest

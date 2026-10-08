@@ -13,8 +13,12 @@
 
 #include "loader_instance.hpp"
 
+#include <retro_common_api.h>
+#include <stdio.h>
+
+#include "loader_lockfree.h"
+
 #include "api_layer_interface.hpp"
-#include "hex_and_handles.h"
 #include "loader_logger.hpp"
 #include "runtime_interface.hpp"
 #include "xr_generated_dispatch_table_core.h"
@@ -30,26 +34,28 @@
 #include <utility>
 #include <vector>
 
-namespace {
-std::unique_ptr<LoaderInstance>& GetSetCurrentLoaderInstance() {
-    static std::unique_ptr<LoaderInstance> current_loader_instance;
-    return current_loader_instance;
-}
-}  // namespace
+/* The active LoaderInstance, published whole: set and removed only by
+ * the holder of the instance claim, read by any call. */
+static retro_atomic_ptr_t loader_active_instance;
+static retro_atomic_int_t loader_instance_claim;
 
 namespace ActiveLoaderInstance {
+bool Claim() { return retro_atomic_cas_int(&loader_instance_claim, 0, 1) != 0; }
+
+void Release() { retro_atomic_store_release_int(&loader_instance_claim, 0); }
+
 XrResult Set(std::unique_ptr<LoaderInstance> loader_instance, const char* log_function_name) {
-    if (GetSetCurrentLoaderInstance() != nullptr) {
+    if (!retro_atomic_cas_ptr(&loader_active_instance, NULL, loader_instance.get())) {
         LoaderLogger::LogErrorMessage(log_function_name, "Active XrInstance handle already exists");
         return XR_ERROR_LIMIT_REACHED;
     }
 
-    GetSetCurrentLoaderInstance() = std::move(loader_instance);
+    loader_instance.release();
     return XR_SUCCESS;
 }
 
 XrResult Get(LoaderInstance** loader_instance, const char* log_function_name) {
-    *loader_instance = GetSetCurrentLoaderInstance().get();
+    *loader_instance = (LoaderInstance*)retro_atomic_load_acquire_ptr(&loader_active_instance);
     if (*loader_instance == nullptr) {
         LoaderLogger::LogErrorMessage(log_function_name, "No active XrInstance handle.");
         return XR_ERROR_HANDLE_INVALID;
@@ -58,9 +64,9 @@ XrResult Get(LoaderInstance** loader_instance, const char* log_function_name) {
     return XR_SUCCESS;
 }
 
-bool IsAvailable() { return GetSetCurrentLoaderInstance() != nullptr; }
+bool IsAvailable() { return retro_atomic_load_acquire_ptr(&loader_active_instance) != NULL; }
 
-void Remove() { GetSetCurrentLoaderInstance().reset(nullptr); }
+void Remove() { delete (LoaderInstance*)retro_atomic_exchange_ptr(&loader_active_instance, NULL); }
 }  // namespace ActiveLoaderInstance
 
 // Extensions that are supported by the loader, but may not be supported
@@ -262,7 +268,11 @@ XrResult LoaderInstance::CreateInstance(PFN_xrGetInstanceProcAddr get_instance_p
         oss << "LoaderInstance::CreateInstance succeeded with ";
         oss << (*loader_instance)->LayerInterfaces().size();
         oss << " layers enabled and runtime interface - created instance = ";
-        oss << HandleToHexString((*loader_instance)->GetInstanceHandle());
+        {
+            char hex[19];
+            snprintf(hex, sizeof(hex), "0x%016" PRIx64, XR_HANDLE_TO_U64((*loader_instance)->GetInstanceHandle()));
+            oss << hex;
+        }
         LoaderLogger::LogInfoMessage("xrCreateInstance", oss.str());
     }
 
@@ -289,7 +299,11 @@ LoaderInstance::LoaderInstance(XrInstance instance, const XrInstanceCreateInfo* 
 LoaderInstance::~LoaderInstance() {
     std::ostringstream oss;
     oss << "Destroying LoaderInstance = ";
-    oss << PointerToHexString(this);
+    {
+        char hex[19];
+        snprintf(hex, sizeof(hex), "0x%0*" PRIx64, (int)(sizeof(void*) * 2), (uint64_t)(uintptr_t)this);
+        oss << hex;
+    }
     LoaderLogger::LogInfoMessage("xrDestroyInstance", oss.str());
 }
 

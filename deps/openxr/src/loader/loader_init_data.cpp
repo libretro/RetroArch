@@ -54,9 +54,8 @@ XrResult LoaderInitData::initializeProperties(const XrLoaderInitInfoBaseHeaderKH
             }
 
             // Inject provided properties into the loader property store.
-            LoaderProperty::ClearOverrides();
-            for (uint32_t i = 0; i < propertyInfo->propertyValueCount; i++) {
-                LoaderProperty::SetOverride(propertyInfo->propertyValues[i].name, propertyInfo->propertyValues[i].value);
+            if (!LoaderProperty::SetOverrides(propertyInfo->propertyValues, propertyInfo->propertyValueCount)) {
+                return XR_ERROR_OUT_OF_MEMORY;
             }
             // Take only the first such struct.
             return XR_SUCCESS;
@@ -148,16 +147,18 @@ XrResult LoaderInitData::initializePlatform(const XrLoaderInitInfoBaseHeaderKHR*
 #endif  // defined(XR_USE_PLATFORM_ANDROID) && defined(XR_HAS_REQUIRED_PLATFORM_LOADER_INIT_STRUCT)
 
 XrResult InitializeLoaderInitData(const XrLoaderInitInfoBaseHeaderKHR* loaderInitInfo) {
-    if (!ActiveLoaderInstance::IsAvailable()) {
-        LoaderLogger::LogVerboseMessage("InitializeLoaderInitData", "Unloading any previously loaded runtime");
-        // This will not shutdown the runtime, only unload the library.
-        RuntimeInterface::UnloadRuntime("InitializeLoaderInitData");
-    } else {
+    XrResult result;
+    if (!ActiveLoaderInstance::Claim()) {
         LoaderLogger::LogErrorMessage("InitializeLoaderInitData",
                                       "An active instance currently exists while trying to reinitialize the loader");
         return XR_ERROR_INITIALIZATION_FAILED;
     }
-    return LoaderInitData::instance().initialize(loaderInitInfo);
+    LoaderLogger::LogVerboseMessage("InitializeLoaderInitData", "Unloading any previously loaded runtime");
+    // This will not shutdown the runtime, only unload the library.
+    RuntimeInterface::UnloadRuntime("InitializeLoaderInitData");
+    result = LoaderInitData::instance().initialize(loaderInitInfo);
+    ActiveLoaderInstance::Release();
+    return result;
 }
 
 #if defined(XR_USE_PLATFORM_ANDROID) && defined(XR_HAS_REQUIRED_PLATFORM_LOADER_INIT_STRUCT)

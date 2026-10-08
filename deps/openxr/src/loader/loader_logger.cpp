@@ -10,7 +10,6 @@
 #include "loader_logger.hpp"
 
 #include "extra_algorithms.h"
-#include "hex_and_handles.h"
 #include "loader_logger_recorders.hpp"
 #include "loader_properties.hpp"
 #include "platform_utils.hpp"
@@ -101,9 +100,35 @@ XrDebugUtilsMessageTypeFlagsEXT LoaderLogMessageTypesToDebugUtilsMessageTypes(Xr
     return utils_types;
 }
 
+/* One recorder table entry: the recorder, and the instance it was made
+ * for (XR_NULL_HANDLE for the loader's own). */
+typedef struct loader_log_entry {
+    LoaderLogRecorder* recorder;
+    XrInstance instance;
+} loader_log_entry_t;
+
+/* A removed recorder, kept alive until the logger goes. */
+typedef struct loader_log_retired {
+    mpsc_stack_node_t node;
+    LoaderLogRecorder* recorder;
+} loader_log_retired_t;
+
+enum { LOADER_LOG_DROP_NONE = 0, LOADER_LOG_DROP_ID, LOADER_LOG_DROP_INSTANCE };
+
+static bool loader_log_drops(const loader_log_entry_t* entry, int drop, uint64_t drop_id, XrInstance drop_instance) {
+    if (drop == LOADER_LOG_DROP_ID) {
+        return entry->recorder->UniqueId() == drop_id;
+    }
+    if (drop == LOADER_LOG_DROP_INSTANCE) {
+        return entry->instance != XR_NULL_HANDLE && entry->instance == drop_instance;
+    }
+    return false;
+}
+
 LoaderLogger::LoaderLogger() {
     retro_atomic_ptr_init(&_snapshot, NULL);
-    _write_lock = slock_new();
+    mpsc_stack_init(&_retired_snapshots);
+    mpsc_stack_init(&_retired_recorders);
 
     std::string debug_string = LoaderProperty::Get("XR_LOADER_DEBUG");
 
@@ -143,79 +168,101 @@ LoaderLogger::LoaderLogger() {
 }
 
 LoaderLogger::~LoaderLogger() {
-    RecorderSnapshot* current = static_cast<RecorderSnapshot*>(retro_atomic_exchange_ptr(&_snapshot, NULL));
+    size_t i;
+    mpsc_stack_node_t* node;
+    loader_snapshot_t* current = (loader_snapshot_t*)retro_atomic_exchange_ptr(&_snapshot, NULL);
     if (current) {
-        delete[] current->items;
-        delete current;
+        loader_log_entry_t* entries = LOADER_SNAPSHOT_ITEMS(current, loader_log_entry_t);
+        for (i = 0; i < current->count; i++) {
+            delete entries[i].recorder;
+        }
+        free(current);
     }
-    for (RecorderSnapshot* retired : _retired_snapshots) {
-        delete[] retired->items;
-        delete retired;
+    loader_snapshot_free_retired(&_retired_snapshots);
+    node = mpsc_stack_drain(&_retired_recorders);
+    while (node) {
+        loader_log_retired_t* retired = (loader_log_retired_t*)node;
+        node = node->next;
+        delete retired->recorder;
+        free(retired);
     }
-    slock_free(_write_lock);
 }
 
-// Rebuild the published snapshot from _recorders.  Caller holds _write_lock.
-void LoaderLogger::PublishRecordersLocked() {
-    RecorderSnapshot* snapshot = new RecorderSnapshot();
-    snapshot->count = _recorders.size();
-    snapshot->items = (snapshot->count != 0) ? new LoaderLogRecorder*[snapshot->count] : nullptr;
-    for (size_t i = 0; i < snapshot->count; ++i) {
-        snapshot->items[i] = _recorders[i].get();
-    }
-    RecorderSnapshot* previous = static_cast<RecorderSnapshot*>(retro_atomic_exchange_ptr(&_snapshot, snapshot));
-    if (previous) {
-        _retired_snapshots.push_back(previous);
+// The current table less the entries drop selects, plus add when given,
+// published in one compare-exchange.
+void LoaderLogger::Publish(LoaderLogRecorder* add, XrInstance add_instance, int drop, uint64_t drop_id,
+                           XrInstance drop_instance) {
+    for (;;) {
+        size_t i;
+        size_t dropped = 0;
+        size_t count = 0;
+        const loader_log_entry_t* entries = NULL;
+        loader_log_entry_t* next_entries;
+        loader_snapshot_t* next;
+        loader_snapshot_t* current = (loader_snapshot_t*)retro_atomic_load_acquire_ptr(&_snapshot);
+
+        if (current) {
+            count = current->count;
+            entries = LOADER_SNAPSHOT_ITEMS(current, const loader_log_entry_t);
+        }
+        for (i = 0; i < count; i++) {
+            if (loader_log_drops(&entries[i], drop, drop_id, drop_instance)) {
+                dropped++;
+            }
+        }
+        if (!add && !dropped) {
+            return;
+        }
+        if (!(next = loader_snapshot_new(count - dropped + (add ? 1 : 0), sizeof(loader_log_entry_t), 0))) {
+            delete add;
+            return;
+        }
+        next_entries = LOADER_SNAPSHOT_ITEMS(next, loader_log_entry_t);
+        for (i = 0; i < count; i++) {
+            if (!loader_log_drops(&entries[i], drop, drop_id, drop_instance)) {
+                *next_entries++ = entries[i];
+            }
+        }
+        if (add) {
+            next_entries->recorder = add;
+            next_entries->instance = add_instance;
+        }
+
+        if (retro_atomic_cas_ptr(&_snapshot, current, next)) {
+            if (current) {
+                for (i = 0; i < count; i++) {
+                    loader_log_retired_t* retired;
+                    if (!loader_log_drops(&entries[i], drop, drop_id, drop_instance)) {
+                        continue;
+                    }
+                    /* Out of memory, the recorder is leaked rather than freed under a reader. */
+                    if ((retired = (loader_log_retired_t*)malloc(sizeof(*retired)))) {
+                        retired->recorder = entries[i].recorder;
+                        mpsc_stack_push(&_retired_recorders, &retired->node);
+                    }
+                }
+                mpsc_stack_push(&_retired_snapshots, &current->retire.node);
+            }
+            return;
+        }
+        free(next);
     }
 }
 
 void LoaderLogger::AddLogRecorder(std::unique_ptr<LoaderLogRecorder>&& recorder) {
-    LoaderScopedSlock lock(_write_lock);
-    _recorders.push_back(std::move(recorder));
-    PublishRecordersLocked();
+    Publish(recorder.release(), XR_NULL_HANDLE, LOADER_LOG_DROP_NONE, 0, XR_NULL_HANDLE);
 }
 
 void LoaderLogger::AddLogRecorderForXrInstance(XrInstance instance, std::unique_ptr<LoaderLogRecorder>&& recorder) {
-    LoaderScopedSlock lock(_write_lock);
-    _recordersByInstance[instance].insert(recorder->UniqueId());
-    _recorders.emplace_back(std::move(recorder));
-    PublishRecordersLocked();
+    Publish(recorder.release(), instance, LOADER_LOG_DROP_NONE, 0, XR_NULL_HANDLE);
 }
 
 void LoaderLogger::RemoveLogRecorder(uint64_t unique_id) {
-    LoaderScopedSlock lock(_write_lock);
-    for (size_t i = 0; i < _recorders.size(); ++i) {
-        if (_recorders[i]->UniqueId() == unique_id) {
-            // Retired, not destroyed: an in-flight reader may still be
-            // walking a snapshot that names it.  Freed in the destructor.
-            _retired_recorders.push_back(std::move(_recorders[i]));
-            _recorders.erase(_recorders.begin() + static_cast<ptrdiff_t>(i));
-            break;
-        }
-    }
-    for (auto& recorders : _recordersByInstance) {
-        auto& messengersForInstance = recorders.second;
-        if (messengersForInstance.count(unique_id) > 0) {
-            messengersForInstance.erase(unique_id);
-        }
-    }
-    PublishRecordersLocked();
+    Publish(NULL, XR_NULL_HANDLE, LOADER_LOG_DROP_ID, unique_id, XR_NULL_HANDLE);
 }
 
 void LoaderLogger::RemoveLogRecordersForXrInstance(XrInstance instance) {
-    LoaderScopedSlock lock(_write_lock);
-    auto by_instance = _recordersByInstance.find(instance);
-    if (by_instance != _recordersByInstance.end()) {
-        const std::unordered_set<uint64_t> ids = by_instance->second;
-        for (size_t i = _recorders.size(); i-- > 0;) {
-            if (ids.find(_recorders[i]->UniqueId()) != ids.end()) {
-                _retired_recorders.push_back(std::move(_recorders[i]));
-                _recorders.erase(_recorders.begin() + static_cast<ptrdiff_t>(i));
-            }
-        }
-        _recordersByInstance.erase(by_instance);
-        PublishRecordersLocked();
-    }
+    Publish(NULL, XR_NULL_HANDLE, LOADER_LOG_DROP_INSTANCE, 0, instance);
 }
 
 bool LoaderLogger::LogMessage(XrLoaderLogMessageSeverityFlagBits message_severity, XrLoaderLogMessageTypeFlags message_type,
@@ -234,10 +281,11 @@ bool LoaderLogger::LogMessage(XrLoaderLogMessageSeverityFlagBits message_severit
     callback_data.session_labels_count = static_cast<uint8_t>(names_and_labels.labels.size());
 
     bool exit_app = false;
-    const RecorderSnapshot* snapshot = CurrentSnapshot();
-    size_t snapshot_count = (snapshot != nullptr) ? snapshot->count : 0;
+    const loader_snapshot_t* snapshot = (const loader_snapshot_t*)retro_atomic_load_acquire_ptr(&_snapshot);
+    size_t snapshot_count = snapshot ? snapshot->count : 0;
+    const loader_log_entry_t* entries = snapshot ? LOADER_SNAPSHOT_ITEMS(snapshot, const loader_log_entry_t) : NULL;
     for (size_t i = 0; i < snapshot_count; ++i) {
-        LoaderLogRecorder* recorder = snapshot->items[i];
+        LoaderLogRecorder* recorder = entries[i].recorder;
         if ((recorder->MessageSeverities() & message_severity) == message_severity &&
             (recorder->MessageTypes() & message_type) == message_type) {
             exit_app |= recorder->LogMessage(message_severity, message_type, &callback_data);
@@ -258,10 +306,11 @@ bool LoaderLogger::LogDebugUtilsMessage(XrDebugUtilsMessageSeverityFlagsEXT mess
     data_.WrapCallbackData(&augmented_data, callback_data);
 
     // Loop through the recorders
-    const RecorderSnapshot* snapshot = CurrentSnapshot();
-    size_t snapshot_count = (snapshot != nullptr) ? snapshot->count : 0;
+    const loader_snapshot_t* snapshot = (const loader_snapshot_t*)retro_atomic_load_acquire_ptr(&_snapshot);
+    size_t snapshot_count = snapshot ? snapshot->count : 0;
+    const loader_log_entry_t* entries = snapshot ? LOADER_SNAPSHOT_ITEMS(snapshot, const loader_log_entry_t) : NULL;
     for (size_t i = 0; i < snapshot_count; ++i) {
-        LoaderLogRecorder* recorder = snapshot->items[i];
+        LoaderLogRecorder* recorder = entries[i].recorder;
         // Only send the message if it's a debug utils recorder and of the type the recorder cares about.
         if (recorder->Type() != XR_LOADER_LOG_DEBUG_UTILS ||
             (recorder->MessageSeverities() & log_message_severity) != log_message_severity ||

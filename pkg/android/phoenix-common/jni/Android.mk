@@ -248,7 +248,7 @@ INCLUDE_DIRS     := \
 		    -I$(LOCAL_PATH)/$(DEPS_DIR)/7zip/
 
 ifeq ($(HAVE_OPENXR),1)
-OPENXR_DIR := $(RARCH_DIR)/deps/OpenXR-SDK
+OPENXR_DIR := $(RARCH_DIR)/deps/openxr
 LOCAL_C_INCLUDES += $(LOCAL_PATH)/$(OPENXR_DIR)/include \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src \
 		    $(LOCAL_PATH)/$(OPENXR_DIR)/src/common \

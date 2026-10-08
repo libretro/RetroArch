@@ -30,7 +30,6 @@
 #include "xr_generated_loader.hpp"
 
 #include "api_layer_interface.hpp"
-#include "hex_and_handles.h"
 #include "loader_instance.hpp"
 #include "loader_logger.hpp"
 #include "loader_platform.hpp"

@@ -128,20 +128,20 @@ VIDEO DRIVER
 #ifdef HAVE_OPENXR
 /* Vendored OpenXR loader, built into this TU instead of as a separate
  * CMake artifact.  C++17. */
-#include "../deps/OpenXR-SDK/src/common/object_info.cpp"
-#include "../deps/OpenXR-SDK/src/common/filesystem_utils.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_json.cpp"
+#include "../deps/openxr/src/common/object_info.cpp"
+#include "../deps/openxr/src/common/filesystem_utils.cpp"
+#include "../deps/openxr/src/loader/loader_json.cpp"
 #if defined(ANDROID)
-#include "../deps/OpenXR-SDK/src/loader/android_utilities.cpp"
+#include "../deps/openxr/src/loader/android_utilities.cpp"
 #endif
-#include "../deps/OpenXR-SDK/src/loader/api_layer_interface.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_core.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_init_data.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_instance.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_logger.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_logger_recorders.cpp"
-#include "../deps/OpenXR-SDK/src/loader/loader_properties.cpp"
-#include "../deps/OpenXR-SDK/src/loader/manifest_file.cpp"
-#include "../deps/OpenXR-SDK/src/loader/runtime_interface.cpp"
-#include "../deps/OpenXR-SDK/src/loader/xr_generated_loader.cpp"
+#include "../deps/openxr/src/loader/api_layer_interface.cpp"
+#include "../deps/openxr/src/loader/loader_core.cpp"
+#include "../deps/openxr/src/loader/loader_init_data.cpp"
+#include "../deps/openxr/src/loader/loader_instance.cpp"
+#include "../deps/openxr/src/loader/loader_logger.cpp"
+#include "../deps/openxr/src/loader/loader_logger_recorders.cpp"
+#include "../deps/openxr/src/loader/loader_properties.cpp"
+#include "../deps/openxr/src/loader/manifest_file.cpp"
+#include "../deps/openxr/src/loader/runtime_interface.cpp"
+#include "../deps/openxr/src/loader/xr_generated_loader.cpp"
 #endif

@@ -53,28 +53,20 @@
 #endif  // XR_USE_PLATFORM_XCB
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL_ES) || defined(XR_USE_PLATFORM_EGL)
-#ifdef XRDEPENDENCIES_USE_GLAD
-#include <glad/egl.h>
-#else
 #include <EGL/egl.h>
-#endif
 #endif  // XR_USE_GRAPHICS_API_OPENGL_ES || XR_USE_PLATFORM_EGL
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL) && (defined(XR_USE_PLATFORM_XLIB) || defined(XR_USE_PLATFORM_XCB))
-#ifdef XRDEPENDENCIES_USE_GLAD
-#include <glad/glx.h>
-#else
 #include <GL/glx.h>
-#endif
 #endif  // XR_USE_GRAPHICS_API_OPENGL && XR_USE_PLATFORM_XLIB || XR_USE_PLATFORM_XCB
 
 #if defined(XR_USE_GRAPHICS_API_OPENGL) && defined(XR_USE_PLATFORM_XCB)
 #include <xcb/glx.h>
 #endif  // XR_USE_GRAPHICS_API_OPENGL && XR_USE_PLATFORM_XCB
 
-#if defined(XR_USE_GRAPHICS_API_OPENGL) && defined(XR_USE_PLATFORM_MACOS) && !defined(XRDEPENDENCIES_USE_GLAD)
+#if defined(XR_USE_GRAPHICS_API_OPENGL) && defined(XR_USE_PLATFORM_MACOS)
 #include <OpenCL/cl_gl_ext.h>
-#endif  // XR_USE_GRAPHICS_API_OPENGL && XR_USE_PLATFORM_MACOS && !XRDEPENDENCIES_USE_GLAD
+#endif  // XR_USE_GRAPHICS_API_OPENGL && XR_USE_PLATFORM_MACOS
 
 #ifdef XR_USE_GRAPHICS_API_VULKAN
 #include <vulkan/vulkan.h>

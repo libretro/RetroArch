@@ -27,6 +27,13 @@ class LoaderInstance;
 
 // Manage the single loader instance that is available.
 namespace ActiveLoaderInstance {
+// Claim the loader's one instance: held by xrCreateInstance until xrDestroyInstance (or a failed create)
+// has unloaded the runtime, and by loader reinitialization while it unloads. Creating, destroying,
+// reinitializing and unloading the runtime run one at a time under it; a caller that cannot take it is
+// refused, never made to wait.
+bool Claim();
+void Release();
+
 // Set the active loader instance. This will fail if there is already an active loader instance.
 XrResult Set(std::unique_ptr<LoaderInstance> loader_instance, const char* log_function_name);
 

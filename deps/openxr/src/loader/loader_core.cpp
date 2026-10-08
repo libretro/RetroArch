@@ -12,7 +12,6 @@
 #endif  // defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 
 #include "api_layer_interface.hpp"
-#include "hex_and_handles.h"
 #include "loader_init_data.hpp"
 #include "loader_instance.hpp"
 #include "loader_logger_recorders.hpp"
@@ -31,15 +30,6 @@
 #include <utility>
 #include <vector>
 
-#include "loader_locking.hpp"
-
-// Global loader lock to:
-//   1. Ensure ActiveLoaderInstance get and set operations are done atomically.
-//   2. Ensure RuntimeInterface isn't used to unload the runtime while the runtime is in use.
-static slock_t *GetGlobalLoaderMutex() {
-    static LoaderLazySlock loader_mutex;
-    return loader_mutex.Get();
-}
 
 // Prototypes for the debug utils calls used internally.
 static XRAPI_ATTR XrResult XRAPI_CALL LoaderTrampolineCreateDebugUtilsMessengerEXT(
@@ -88,9 +78,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrEnumerateApiLayerProperties(uint32
                                                                           XrApiLayerProperties *properties) {
     LoaderLogger::LogVerboseMessage("xrEnumerateApiLayerProperties", "Entering loader trampoline");
 
-    // Make sure only one thread is attempting to read the JSON files at a time.
-    LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
-
     XrResult result = ApiLayerInterface::GetApiLayerProperties("xrEnumerateApiLayerProperties", propertyCapacityInput,
                                                                propertyCountOutput, properties);
     if (XR_FAILED(result)) {
@@ -121,21 +108,23 @@ LoaderXrEnumerateInstanceExtensionProperties(const char *layerName, uint32_t pro
     XrResult result;
 
     {
-        // Make sure the runtime isn't unloaded while this call is in progress.
-        LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
+        RuntimeInterface *runtime = nullptr;
 
         // Get the layer extension properties
         result = ApiLayerInterface::GetInstanceExtensionProperties("xrEnumerateInstanceExtensionProperties", layerName,
                                                                    extension_properties);
         if (XR_SUCCEEDED(result) && !just_layer_properties) {
-            // If not specific to a layer, get the runtime extension properties
-            result = RuntimeInterface::LoadRuntime("xrEnumerateInstanceExtensionProperties");
+            // If not specific to a layer, get the runtime extension properties. The use is counted, so a
+            // runtime unloaded meanwhile stays alive until this call is done with it.
+            RuntimeInterface::BeginUse();
+            result = RuntimeInterface::LoadRuntime("xrEnumerateInstanceExtensionProperties", &runtime);
             if (XR_SUCCEEDED(result)) {
-                RuntimeInterface::GetRuntime().GetInstanceExtensionProperties(extension_properties);
+                runtime->GetInstanceExtensionProperties(extension_properties);
             } else {
                 LoaderLogger::LogErrorMessage("xrEnumerateInstanceExtensionProperties",
                                               "Failed to find default runtime with RuntimeInterface::LoadRuntime()");
             }
+            RuntimeInterface::EndUse();
         }
     }
 
@@ -230,15 +219,12 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCre
         return XR_ERROR_VALIDATION_FAILURE;
     }
 
-    // Make sure the ActiveLoaderInstance::IsAvailable check is done atomically with RuntimeInterface::LoadRuntime.
-    LoaderScopedSlock instance_lock(GetGlobalLoaderMutex());
-
-    // Check if there is already an XrInstance that is alive. If so, another instance cannot be created.
-    // The loader does not support multiple simultaneous instances because the loader is intended to be
-    // usable by apps using future OpenXR APIs (through xrGetInstanceProcAddr). Because the loader would
-    // not be aware of new handle types, it would not be able to look up the appropriate dispatch table
-    // in some cases.
-    if (ActiveLoaderInstance::IsAvailable()) {  // If there is an XrInstance already alive.
+    // Claim the loader's one instance. If an XrInstance is alive, or another create is under way,
+    // another instance cannot be created. The loader does not support multiple simultaneous instances
+    // because the loader is intended to be usable by apps using future OpenXR APIs (through
+    // xrGetInstanceProcAddr). Because the loader would not be aware of new handle types, it would not be
+    // able to look up the appropriate dispatch table in some cases.
+    if (!ActiveLoaderInstance::Claim()) {
         LoaderLogger::LogErrorMessage("xrCreateInstance", "Loader does not support simultaneous XrInstances");
         return XR_ERROR_LIMIT_REACHED;
     }
@@ -246,7 +232,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCre
     std::vector<std::unique_ptr<ApiLayerInterface>> api_layer_interfaces;
     XrResult result;
 
-    // Make sure only one thread is attempting to read the JSON files and use the instance.
     {
         // Load the available runtime
         result = RuntimeInterface::LoadRuntime("xrCreateInstance");
@@ -300,6 +285,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrCreateInstance(const XrInstanceCre
         // Ensure the global loader instance and runtime are destroyed if something went wrong.
         ActiveLoaderInstance::Remove();
         RuntimeInterface::UnloadRuntime("xrCreateInstance");
+        ActiveLoaderInstance::Release();
         LoaderLogger::LogErrorMessage("xrCreateInstance", "xrCreateInstance failed");
     } else {
         *instance = loader_instance->GetInstanceHandle();
@@ -316,9 +302,6 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instanc
         LoaderLogger::LogErrorMessage("xrDestroyInstance", "Instance handle is XR_NULL_HANDLE.");
         return XR_ERROR_HANDLE_INVALID;
     }
-
-    // Make sure the runtime isn't unloaded while it is being used by xrEnumerateInstanceExtensionProperties.
-    LoaderScopedSlock loader_lock(GetGlobalLoaderMutex());
 
     LoaderInstance *loader_instance;
     XrResult result = ActiveLoaderInstance::Get(&loader_instance, "xrDestroyInstance");
@@ -344,8 +327,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL LoaderXrDestroyInstance(XrInstance instanc
 
     LoaderLogger::LogVerboseMessage("xrDestroyInstance", "Completed loader trampoline");
 
-    // Finally, unload the runtime if necessary
+    // Finally, unload the runtime if necessary, and give the instance claim back
     RuntimeInterface::UnloadRuntime("xrDestroyInstance");
+    ActiveLoaderInstance::Release();
 
     return XR_SUCCESS;
 }
@@ -645,14 +629,14 @@ XRAPI_ATTR XrResult XRAPI_CALL LoaderXrTermDestroyDebugUtilsMessengerEXT(XrDebug
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Entering loader terminator");
     const XrGeneratedDispatchTableCore *dispatch_table = RuntimeInterface::GetDebugUtilsMessengerDispatchTable(messenger);
     XrResult result = XR_SUCCESS;
-    LoaderLogger::GetInstance().RemoveLogRecorder(MakeHandleGeneric(messenger));
+    LoaderLogger::GetInstance().RemoveLogRecorder(XR_HANDLE_TO_U64(messenger));
     RuntimeInterface::GetRuntime().ForgetDebugMessenger(messenger);
     // This extension is supported entirely by the loader which means the runtime may or may not support it.
     if (nullptr != dispatch_table->DestroyDebugUtilsMessengerEXT) {
         result = dispatch_table->DestroyDebugUtilsMessengerEXT(messenger);
     } else {
         // Delete the character we would've created
-        delete (reinterpret_cast<char *>(MakeHandleGeneric(messenger)));
+        delete (reinterpret_cast<char *>(XR_HANDLE_TO_U64(messenger)));
     }
     LoaderLogger::LogVerboseMessage("xrDestroyDebugUtilsMessengerEXT", "Completed loader terminator");
     return result;

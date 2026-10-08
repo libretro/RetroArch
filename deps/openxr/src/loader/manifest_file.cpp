@@ -13,10 +13,6 @@
 
 #include "manifest_file.hpp"
 
-#ifdef OPENXR_HAVE_COMMON_CONFIG
-#include "common_config.h"
-#endif  // OPENXR_HAVE_COMMON_CONFIG
-
 #include "filesystem_utils.hpp"
 #include "loader_init_data.hpp"
 #include "loader_platform.hpp"

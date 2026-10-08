@@ -18,7 +18,7 @@
 #include <unordered_map>
 #include <memory>
 
-#include "loader_locking.hpp"
+#include "loader_lockfree.h"
 
 namespace Json {
 class Value;
@@ -31,10 +31,18 @@ class RuntimeInterface {
    public:
     virtual ~RuntimeInterface();
 
-    // Helper functions for loading and unloading the runtime (but only when necessary)
+    // Helper functions for loading and unloading the runtime (but only when necessary).
+    // The runtime is published whole once built.  Only the holder of the
+    // instance claim (ActiveLoaderInstance::Claim) unloads it;
+    // a call that uses the runtime without that claim brackets the use with
+    // BeginUse/EndUse and takes the runtime LoadRuntime hands back, which an
+    // unload then retires rather than frees until no such call is running.
     static XrResult LoadRuntime(const std::string& openxr_command);
+    static XrResult LoadRuntime(const std::string& openxr_command, RuntimeInterface** runtime);
     static void UnloadRuntime(const std::string& openxr_command);
-    static RuntimeInterface& GetRuntime() { return *(GetInstance().get()); }
+    static RuntimeInterface& GetRuntime();
+    static void BeginUse();
+    static void EndUse();
     static XrResult GetInstanceProcAddr(XrInstance instance, const char* name, PFN_xrVoidFunction* function);
 
     // Get the direct dispatch table to this runtime, without API layers or loader terminators.
@@ -58,22 +66,21 @@ class RuntimeInterface {
    private:
     RuntimeInterface(LoaderPlatformLibraryHandle runtime_library, PFN_xrGetInstanceProcAddr get_instance_proc_addr);
     void SetSupportedExtensions(std::vector<std::string>& supported_extensions);
-    static XrResult TryLoadingSingleRuntime(const std::string& openxr_command, std::unique_ptr<RuntimeManifestFile>& manifest_file);
-
-    static std::unique_ptr<RuntimeInterface>& GetInstance() {
-        static std::unique_ptr<RuntimeInterface> instance;
-        return instance;
-    }
+    static XrResult TryLoadingSingleRuntime(const std::string& openxr_command, std::unique_ptr<RuntimeManifestFile>& manifest_file,
+                                           RuntimeInterface** runtime);
+    void PublishMessenger(XrDebugUtilsMessengerEXT messenger, XrInstance instance, bool track);
 
     LoaderPlatformLibraryHandle _runtime_library;
     PFN_xrGetInstanceProcAddr _get_instance_proc_addr;
     // The loader supports exactly one live runtime XrInstance, so the
-    // dispatch table lives in a single lock-free slot (a heap
-    // RuntimeDispatchSlot, defined in runtime_interface.cpp): CreateInstance
-    // publishes it with a release-store and GetDispatchTable acquire-loads
-    // it, replacing the mutex-guarded one-entry map this used to be.
+    // dispatch table lives in a single slot (a heap RuntimeDispatchSlot,
+    // defined in runtime_interface.cpp): CreateInstance publishes it with a
+    // release-store and GetDispatchTable acquire-loads it.
     retro_atomic_ptr_t _dispatch_slot;
-    std::unordered_map<XrDebugUtilsMessengerEXT, XrInstance> _messenger_to_instance_map;
-    slock_t* _messenger_lock;
+    // Messenger to instance, a published table: lookups walk it with no
+    // lock, tracking replaces it by compare-exchange, and a replaced table
+    // waits on the retire stack until the runtime goes.
+    retro_atomic_ptr_t _messengers;
+    mpsc_stack_t _retired_messengers;
     std::vector<std::string> _supported_extensions;
 };

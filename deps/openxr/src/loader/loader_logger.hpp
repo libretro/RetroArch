@@ -17,11 +17,10 @@
 #include <set>
 #include <map>
 
-#include "loader_locking.hpp"
+#include "loader_lockfree.h"
 
 #include <openxr/openxr.h>
 
-#include "hex_and_handles.h"
 #include "object_info.h"
 
 // Use internal versions of flags similar to XR_EXT_debug_utils so that
@@ -174,36 +173,19 @@ class LoaderLogger {
     LoaderLogger();
     ~LoaderLogger();
 
-    // The LogMessage paths are wait-free readers: they acquire-load the
-    // immutable snapshot below and walk it, with no lock and no atomic RMW.
-    // Writers serialize on _write_lock, rebuild the recorder array, publish
-    // it with a release-store and retire the superseded snapshot / removed
-    // recorders onto the lists below, which the destructor frees, so a
-    // reader that loaded an old snapshot never touches freed memory.  One
-    // behavioural delta from the shared_timed_mutex this replaces: a
-    // removal no longer waits for in-flight readers, so a log call racing
-    // the removal can reach the removed recorder once more before it drops
-    // out of view (the recorder object itself stays alive).
-    struct RecorderSnapshot {
-        size_t count;
-        LoaderLogRecorder** items;
-    };
-
-    const RecorderSnapshot* CurrentSnapshot() {
-        return static_cast<const RecorderSnapshot*>(retro_atomic_load_acquire_ptr(&_snapshot));
-    }
-    void PublishRecordersLocked();
+    // The log paths are wait-free readers: they acquire-load the
+    // published recorder table and walk it, with no lock and no atomic
+    // read-modify-write.  Writers build the next table from the current
+    // one and publish it with a compare-exchange, retrying when another
+    // writer moved it first.  A replaced table and a removed recorder go
+    // onto the retire stacks below, freed with the logger, so a reader
+    // still walking an older table never touches freed memory; a log call
+    // racing a removal can reach the removed recorder once more.
+    void Publish(LoaderLogRecorder* add, XrInstance add_instance, int drop, uint64_t drop_id, XrInstance drop_instance);
 
     retro_atomic_ptr_t _snapshot;
-    slock_t* _write_lock;
-
-    // List of *all* available recorder objects (including created specifically for an Instance)
-    std::vector<std::unique_ptr<LoaderLogRecorder>> _recorders;
-    std::vector<std::unique_ptr<LoaderLogRecorder>> _retired_recorders;
-    std::vector<RecorderSnapshot*> _retired_snapshots;
-
-    // List of recorder objects only created specifically for an XrInstance
-    std::unordered_map<XrInstance, std::unordered_set<uint64_t>> _recordersByInstance;
+    mpsc_stack_t _retired_snapshots;
+    mpsc_stack_t _retired_recorders;
 
     DebugUtilsData data_;
 };

@@ -15,14 +15,24 @@
 
 #pragma once
 
-#include "hex_and_handles.h"
-
 #include <openxr/openxr.h>
+
+#include <stdint.h>
 
 #include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+/* An OpenXR handle is a pointer where XR_PTR_SIZE is 8 and a uint64_t
+ * otherwise; these carry one to and from the type-erased uint64_t. */
+#if XR_PTR_SIZE == 8
+#define XR_HANDLE_TO_U64(h) ((uint64_t)(uintptr_t)(h))
+#define XR_U64_TO_HANDLE(type, u) ((type)(uintptr_t)(u))
+#else
+#define XR_HANDLE_TO_U64(h) ((uint64_t)(h))
+#define XR_U64_TO_HANDLE(type, u) ((type)(u))
+#endif
 
 struct XrSdkGenericObject {
     //! Type-erased handle value
@@ -34,19 +44,13 @@ struct XrSdkGenericObject {
     ///
     /// Note: Does not check the type before doing it!
     template <typename HandleType>
-    HandleType& GetTypedHandle() {
-        return TreatIntegerAsHandle<HandleType&>(handle);
-    }
-
-    //! @overload
-    template <typename HandleType>
-    HandleType const& GetTypedHandle() const {
-        return TreatIntegerAsHandle<HandleType&>(handle);
+    HandleType GetTypedHandle() const {
+        return XR_U64_TO_HANDLE(HandleType, handle);
     }
 
     //! Create from a typed handle and object type
     template <typename T>
-    XrSdkGenericObject(T h, XrObjectType t) : handle(MakeHandleGeneric(h)), type(t) {}
+    XrSdkGenericObject(T h, XrObjectType t) : handle(XR_HANDLE_TO_U64(h)), type(t) {}
 
     //! Create from an untyped handle value (integer) and object type
     XrSdkGenericObject(uint64_t h, XrObjectType t) : handle(h), type(t) {}
@@ -66,21 +70,15 @@ struct XrSdkLogObjectInfo {
     ///
     /// Note: Does not check the type before doing it!
     template <typename HandleType>
-    HandleType& GetTypedHandle() {
-        return TreatIntegerAsHandle<HandleType&>(handle);
-    }
-
-    //! @overload
-    template <typename HandleType>
-    HandleType const& GetTypedHandle() const {
-        return TreatIntegerAsHandle<HandleType&>(handle);
+    HandleType GetTypedHandle() const {
+        return XR_U64_TO_HANDLE(HandleType, handle);
     }
 
     XrSdkLogObjectInfo() = default;
 
     //! Create from a typed handle and object type
     template <typename T>
-    XrSdkLogObjectInfo(T h, XrObjectType t) : handle(MakeHandleGeneric(h)), type(t) {}
+    XrSdkLogObjectInfo(T h, XrObjectType t) : handle(XR_HANDLE_TO_U64(h)), type(t) {}
 
     //! Create from an untyped handle value (integer) and object type
     XrSdkLogObjectInfo(uint64_t h, XrObjectType t) : handle(h), type(t) {}

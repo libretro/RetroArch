@@ -12,8 +12,10 @@
 
 #include "object_info.h"
 
+#include <retro_common_api.h>
+#include <stdio.h>
+
 #include "extra_algorithms.h"
-#include "hex_and_handles.h"
 
 #include <openxr/openxr.h>
 
@@ -28,7 +30,9 @@
 
 std::string XrSdkLogObjectInfo::ToString() const {
     std::ostringstream oss;
-    oss << Uint64ToHexString(handle);
+    char hex[19];
+    snprintf(hex, sizeof(hex), "0x%016" PRIx64, handle);
+    oss << hex;
     if (!name.empty()) {
         oss << " (" << name << ")";
     }
@@ -209,7 +213,7 @@ void DebugUtilsData::DeleteObject(uint64_t object_handle, XrObjectType object_ty
     object_info_.RemoveObject(object_handle, object_type);
 
     if (object_type == XR_OBJECT_TYPE_SESSION) {
-        auto session = TreatIntegerAsHandle<XrSession>(object_handle);
+        XrSession session = XR_U64_TO_HANDLE(XrSession, object_handle);
         XrSdkSessionLabelList* vec_ptr = GetSessionLabelList(session);
         if (vec_ptr != nullptr) {
             session_labels_.erase(session);
@@ -250,7 +254,7 @@ void DebugUtilsData::WrapCallbackData(AugmentedCallbackData* aug_data,
 
         // If this is a session, record any labels associated with it
         if (XR_OBJECT_TYPE_SESSION == current_obj.objectType) {
-            XrSession session = TreatIntegerAsHandle<XrSession>(current_obj.objectHandle);
+            XrSession session = XR_U64_TO_HANDLE(XrSession, current_obj.objectHandle);
             LookUpSessionLabels(session, aug_data->labels);
         }
     }
