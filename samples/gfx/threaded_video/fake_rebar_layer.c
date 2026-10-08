@@ -38,6 +38,11 @@
  * that every type-2 allocation refused falls back and the run still
  * passes.
  *
+ * With FAKE_REBAR_FAIL_MAP_SIZE=n, the first vkMapMemory of n bytes on
+ * each device fails, as a map can on a real driver out of address
+ * space: check-vulkan-mapfail runs the lanes so, and the driver is to
+ * get past the buffer it could not map.
+ *
  * One instance and one device at a time, which is how the harness runs
  * the driver; the next layer's entry points are kept in globals. */
 
@@ -67,6 +72,7 @@ static unsigned long             s_allocs[FR_TYPES];
 static unsigned long             s_refused;
 static unsigned long             s_images_bar;
 static VkDeviceMemory            s_live_bar[FR_LIVE];
+static unsigned long             s_map_refused;
 
 static PFN_vkVoidFunction fr_next_instance(const char *name)
 {
@@ -78,6 +84,13 @@ static int fr_refuse(void)
 {
    const char *v = getenv("FAKE_REBAR_REFUSE");
    return v && *v && strcmp(v, "0");
+}
+
+/* FAKE_REBAR_FAIL_MAP_SIZE, or 0 */
+static VkDeviceSize fr_fail_map_size(void)
+{
+   const char *v = getenv("FAKE_REBAR_FAIL_MAP_SIZE");
+   return v ? (VkDeviceSize)strtoul(v, NULL, 10) : 0;
 }
 
 static void fr_fill(VkPhysicalDeviceMemoryProperties *p)
@@ -203,6 +216,22 @@ static VKAPI_ATTR void VKAPI_CALL fr_FreeMemory(VkDevice device,
    next(device, memory, cb);
 }
 
+static VKAPI_ATTR VkResult VKAPI_CALL fr_MapMemory(VkDevice device,
+      VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size,
+      VkMemoryMapFlags flags, void **data)
+{
+   PFN_vkMapMemory next = (PFN_vkMapMemory)
+      s_next_gdpa(device, "vkMapMemory");
+   VkDeviceSize fail    = fr_fail_map_size();
+   if (fail && size == fail && !s_map_refused)
+   {
+      s_map_refused++;
+      *data = NULL;
+      return VK_ERROR_MEMORY_MAP_FAILED;
+   }
+   return next(device, memory, offset, size, flags, data);
+}
+
 static void fr_count_image(VkDeviceMemory memory)
 {
    unsigned i;
@@ -241,7 +270,10 @@ static VKAPI_ATTR void VKAPI_CALL fr_DestroyDevice(VkDevice device,
       s_next_gdpa(device, "vkDestroyDevice");
    printf("[info] fake-rebar: allocations in type 0 %lu, type 1 %lu, type 2 %lu; type 2 refused %lu; images in type 2 %lu\n",
          s_allocs[0], s_allocs[1], s_allocs[2], s_refused, s_images_bar);
+   if (fr_fail_map_size())
+      printf("[info] fake-rebar-map: maps refused %lu\n", s_map_refused);
    fflush(stdout);
+   s_map_refused = 0;
    next(device, cb);
 }
 
@@ -299,6 +331,7 @@ static PFN_vkVoidFunction fr_device_hook(const char *name)
    FR_HOOK(GetBufferMemoryRequirements2);
    FR_HOOK(GetImageMemoryRequirements2);
    FR_HOOK(AllocateMemory);
+   FR_HOOK(MapMemory);
    FR_HOOK(FreeMemory);
    FR_HOOK(BindImageMemory);
    FR_HOOK(BindImageMemory2);

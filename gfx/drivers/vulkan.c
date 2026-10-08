@@ -9211,11 +9211,16 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    {
       VkWriteDescriptorSet write;
       VkDescriptorImageInfo image_info;
-      VkDescriptorSet set = vulkan_descriptor_manager_alloc(
+      VkDescriptorSet set;
+      /* NULL when the uniform buffer could not be mapped at init */
+      vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
+
+      if (!mapped_ubo)
+         return;
+
+      set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
-
-      vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
 
       if (set == VK_NULL_HANDLE)
          return;

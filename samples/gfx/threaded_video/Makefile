@@ -118,6 +118,22 @@ check-vulkan-rebar: all $(FR_LIB) fake_rebar_layer.json
 	    fi; \
 	 done; echo "check-vulkan-rebar: passed"
 
+# check-vulkan through the same layer with the first map of a 64 KiB
+# buffer on each device refused (FAKE_REBAR_FAIL_MAP_SIZE): the size of
+# a buffer-chain block, so a chain is handed a buffer it cannot write.
+# Every lane must still pass, and at least one map must have been
+# refused.
+check-vulkan-mapfail: all $(FR_LIB) fake_rebar_layer.json
+	@VK_ADD_LAYER_PATH=. VK_INSTANCE_LAYERS=VK_LAYER_RA_fake_rebar \
+	 FAKE_REBAR_FAIL_MAP_SIZE=65536 \
+	 $(MAKE) -s --no-print-directory check-vulkan > mapfail.log 2>&1; rc=$$?; \
+	 grep -E 'all lanes|FAIL|Validation|check-vulkan|fake-rebar-map' mapfail.log; \
+	 if [ $$rc -ne 0 ]; then cat mapfail.log; rm -f mapfail.log; exit $$rc; fi; \
+	 refused=$$(awk '/fake-rebar-map:/ { n += $$NF } END { print n + 0 }' mapfail.log); \
+	 rm -f mapfail.log; \
+	 if [ "$$refused" = 0 ]; then echo "check-vulkan-mapfail: no map was refused"; exit 1; fi; \
+	 echo "check-vulkan-mapfail: $$refused buffer maps refused, every lane passed"
+
 # The same lanes on any real driver named in DRIVER (gl, glcore, ...),
 # through whatever context the display offers - in CI, llvmpipe under
 # Xvfb with LIBGL_ALWAYS_SOFTWARE=1. No validation layer here: a
@@ -150,6 +166,6 @@ check-driver: all
 clean:
 	rm -f $(TARGET) check.log harness_core.so retroarch_nomain.o retroarch_nomain.d \
 	      harness_main.o harness_main.d harness_cocoa.o harness_cocoa.d default.metallib \
-	      rebar.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
+	      rebar.log mapfail.log libfake_rebar_layer.so fake_rebar_layer.dll fake_rebar_layer.json
 
-.PHONY: all check check-vulkan check-vulkan-rebar check-driver clean
+.PHONY: all check check-vulkan check-vulkan-rebar check-vulkan-mapfail check-driver clean
