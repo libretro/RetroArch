@@ -6067,6 +6067,39 @@ static bool runloop_event_load_core(runloop_state_t *runloop_st,
    return true;
 }
 
+#ifdef HAVE_COMPRESSION
+/* The content is a file inside an archive ("game.zip#track03.bin", which
+ * is how a scanned playlist lists it) and the core takes archives
+ * itself: the name everything is filed under is the archive's, not the
+ * member's. See runloop_event_init_core(). */
+static void runloop_path_set_basename_to_archive(runloop_state_t *runloop_st)
+{
+   const char *content = path_get(RARCH_PATH_CONTENT);
+   const char *delim   = (content && *content) ? path_get_archive_delim(content) : NULL;
+   size_t _len;
+   char *dot;
+
+   if (!delim)
+      return;
+   _len = (size_t)(delim - content);
+   if (_len == 0 || _len >= sizeof(runloop_st->runtime_content_path_basename))
+      return;
+   memcpy(runloop_st->runtime_content_path_basename, content, _len);
+   runloop_st->runtime_content_path_basename[_len] = '\0';
+   /* (without the archive's extension, as runloop_path_set_basename()
+    * leaves a path) */
+   if (     (dot = strrchr(runloop_st->runtime_content_path_basename, '.'))
+         && (dot - runloop_st->runtime_content_path_basename > 0)
+         && !strchr(dot, '/')
+#ifdef _WIN32
+         && !strchr(dot, '\\')
+#endif
+      )
+      *dot = '\0';
+   runloop_path_set_names();
+}
+#endif
+
 bool runloop_event_init_core(
       settings_t *settings,
       void *input_data,
@@ -6165,6 +6198,21 @@ bool runloop_event_init_core(
    if (!sys_info->info.valid_extensions)
    strlcpy(sys_info->valid_extensions, DEFAULT_EXT,
          sizeof(sys_info->valid_extensions));
+
+#ifdef HAVE_COMPRESSION
+   /* A core that takes archives itself (block_extract) is handed the
+    * archive and decides for itself what in it is the content: the
+    * content is the archive. A path into the archive named everything
+    * after the member instead - states, saves, cheats, and the
+    * overrides and remaps loaded next - and for a disc image packed in
+    * an archive that is "track03" for every game there is. Now that
+    * the core has said which kind it is, they are named after the
+    * archive, as they are when it is loaded by its own path. (The save
+    * directories are set from the name further down, as always.) */
+   if (     sys_info->info.block_extract
+         && path_is_empty(RARCH_PATH_SUBSYSTEM))
+      runloop_path_set_basename_to_archive(runloop_st);
+#endif
 
 #ifdef HAVE_CONFIGFILE
    if (auto_overrides_enable)
