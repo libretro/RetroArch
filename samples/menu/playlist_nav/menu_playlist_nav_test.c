@@ -794,6 +794,61 @@ static void lane_saved_view_opens_explore(void)
 
 /* ------------------------------------------------------------------ */
 
+/* Content information for a playlist entry that has no path - a
+ * playlist line written without one, for a core that needs content:
+ * the Path row says Not Available. It used to read the first byte of
+ * the NULL path. */
+static void lane_info_entry_without_path(void)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *buf;
+   playlist_config_t cfg;
+   char lpl[700];
+   char want[256];
+   size_t i, rows;
+   bool found                 = false;
+   FILE *f;
+
+   snprintf(lpl, sizeof(lpl), "%s/nopath.lpl", fixture_dir);
+   if ((f = fopen(lpl, "wb")))
+   {
+      fprintf(f, "{\n  \"version\": \"1.5\",\n  \"items\": [\n"
+                 "    { \"label\": \"No Path\","
+                 " \"core_path\": \"/cores/none_libretro.so\","
+                 " \"core_name\": \"None\","
+                 " \"crc32\": \"00000000|crc\", \"db_name\": \"t.lpl\" }\n"
+                 "  ]\n}\n");
+      fclose(f);
+   }
+
+   memset(&cfg, 0, sizeof(cfg));
+   cfg.capacity = 16;
+   playlist_config_set_path(&cfg, lpl);
+   CHECK(playlist_init_cached(&cfg), "the path-less playlist did not load");
+   CHECK(menu_st->driver_data != NULL, "no menu handle");
+   if (failures != had)
+      return;
+   menu_st->driver_data->rpl_entry_selection_ptr = 0;
+
+   rows = open_screen(DISPLAYLIST_INFORMATION,
+         msg_hash_to_str(MENU_ENUM_LABEL_INFORMATION),
+         MENU_ENUM_LABEL_INFORMATION, "No Path");
+   buf  = selection_buf();
+   snprintf(want, sizeof(want), "%s: %s",
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
+         msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE));
+   for (i = 0; buf && i < buf->size; i++)
+      if (buf->list[i].path && string_is_equal(buf->list[i].path, want))
+         found = true;
+   CHECK(found, "no '%s' row among the %u rows of the entry's information",
+         want, (unsigned)rows);
+
+   playlist_free_cached();
+   if (failures == had)
+      fprintf(stderr, "[pass] info-entry-without-path lane\n");
+}
+
 int main(int argc, char *argv[])
 {
    char cmd[700];
@@ -888,6 +943,7 @@ int main(int argc, char *argv[])
    lane_many_playlists_keep_history();
    lane_restored_selection_clamped();
    lane_restored_selection_kept_through_load();
+   lane_info_entry_without_path();
 
    CHECK(saf_read_calls > 0,
          "the short-read VFS was never used - this run did not "
