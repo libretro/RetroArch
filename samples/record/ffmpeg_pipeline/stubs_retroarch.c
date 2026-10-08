@@ -6,12 +6,16 @@
 #include <queues/message_queue.h>
 #include "../../../runloop.h"
 
+/* The last line logged, for checks on what the driver chose */
+char stub_last_log[512];
+
 void RARCH_LOG(const char *fmt, ...)
 {
    va_list ap;
    va_start(ap, fmt);
-   vfprintf(stderr, fmt, ap);
+   vsnprintf(stub_last_log, sizeof(stub_last_log), fmt, ap);
    va_end(ap);
+   fputs(stub_last_log, stderr);
 }
 
 void RARCH_ERR(const char *fmt, ...)
@@ -48,14 +52,18 @@ void RARCH_DBG(const char *fmt, ...)
 {
 }
 
+/* The frontend's logging, as a test sets it */
+bool     stub_verbose   = false;
+unsigned stub_log_level = 1;
+
 bool verbosity_is_enabled(void)
 {
-   return false;
+   return stub_verbose;
 }
 
 unsigned verbosity_get_log_level(void)
 {
-   return 1;
+   return stub_log_level;
 }
 
 static runloop_state_t stub_runloop_state;

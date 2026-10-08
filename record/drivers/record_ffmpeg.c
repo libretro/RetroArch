@@ -1309,6 +1309,13 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
 #define DEFAULT_VIDEO_FIFO_FRAMES 32
 #define MIN_VIDEO_FIFO_FRAMES      8
 #define MAX_VIDEO_FIFO_FRAMES    128
+/* The video ring's ceiling in bytes, a power of two so the ring, which
+ * rounds up to one, stays within it: 32 1080p 32-bit frames where the
+ * address space is 32-bit, 128 elsewhere. Deeper queues are shortened
+ * to fit, and a ring that still cannot be had is halved down to
+ * MIN_VIDEO_FIFO_FRAMES. */
+#define VIDEO_FIFO_BYTES_MAX \
+   ((size_t)(sizeof(void*) > 4 ? 1024 : 256) * 1024 * 1024)
 
 /* Reported at exit with perfcnt_enable, and readable live from the
  * menu, which reads and resets them on the frontend's thread: so only
@@ -1373,9 +1380,17 @@ static bool init_thread(ffmpeg_t *handle)
    double rate = handle->params.samplerate > 0.0
          ? handle->params.samplerate : 48000.0;
 
+   uint64_t frame_bytes = (uint64_t)VIDEO_SCALE_AREA(handle->params.fb_dims)
+         * handle->video.pix_size;
+
    if (vf < MIN_VIDEO_FIFO_FRAMES || vf > MAX_VIDEO_FIFO_FRAMES)
       vf = DEFAULT_VIDEO_FIFO_FRAMES;
-   handle->video_fifo_frames = vf;
+   if (frame_bytes && (uint64_t)vf * frame_bytes > VIDEO_FIFO_BYTES_MAX)
+   {
+      vf = (unsigned)(VIDEO_FIFO_BYTES_MAX / frame_bytes);
+      if (vf < MIN_VIDEO_FIFO_FRAMES)
+         vf = MIN_VIDEO_FIFO_FRAMES;
+   }
 
    handle->data_init  = retro_eventcount_init(&handle->data);
    handle->space_init = retro_eventcount_init(&handle->space);
@@ -1396,11 +1411,26 @@ static bool init_thread(ffmpeg_t *handle)
     * room for.) */
    handle->fifos_init =
          retro_spsc_init(&handle->audio_fifo, (size_t)(rate * AUDIO_FIFO_SECONDS)
-               * handle->params.channels * sizeof(int16_t))
-      && retro_spsc_init(&handle->attr_fifo, sizeof(struct ff_video_attr) * vf)
-      && retro_spsc_init(&handle->video_fifo,
-               (size_t)VIDEO_SCALE_AREA(handle->params.fb_dims) *
-               handle->video.pix_size * vf);
+               * handle->params.channels * sizeof(int16_t));
+   if (handle->fifos_init)
+   {
+      /* A frame larger than the address space can hold a ring of
+       * fails here rather than wrapping the size */
+      bool fits = frame_bytes * MIN_VIDEO_FIFO_FRAMES <= (uint64_t)(SIZE_MAX / 2);
+      handle->fifos_init = false;
+      for (; fits && vf >= MIN_VIDEO_FIFO_FRAMES; vf /= 2)
+      {
+         if (retro_spsc_init(&handle->video_fifo, (size_t)(frame_bytes * vf)))
+         {
+            handle->fifos_init = retro_spsc_init(&handle->attr_fifo,
+                  sizeof(struct ff_video_attr) * vf);
+            if (!handle->fifos_init)
+               retro_spsc_free(&handle->video_fifo);
+            break;
+         }
+      }
+   }
+   handle->video_fifo_frames = vf;
    if (!handle->fifos_init)
    {
       RARCH_ERR("[FFmpeg] Failed to allocate recording queues"
@@ -1427,8 +1457,7 @@ static bool init_thread(ffmpeg_t *handle)
    }
 
    RARCH_LOG("[FFmpeg] Video queue: %u frames (%.1f MiB), drop-on-full: %s.\n",
-         vf, ((double)VIDEO_SCALE_AREA(handle->params.fb_dims)
-            * handle->video.pix_size * vf) / (1024.0 * 1024.0),
+         vf, (double)handle->video_fifo.capacity / (1024.0 * 1024.0),
          handle->allow_frame_drop ? "yes" : "no");
 
    return true;
@@ -1569,8 +1598,9 @@ static void ffmpeg_free(void *data)
 
 /* Route libav* logging into RetroArch's log, which is flushed per line
  * and so survives a crash. FFmpeg's level follows the frontend log
- * level: Debug gets AV_LOG_DEBUG (codec internals, e.g. the nvv4l2
- * encoder's steps), Info gets AV_LOG_INFO, and so on. */
+ * level: Debug gets AV_LOG_VERBOSE (codec set-up in detail), Info gets
+ * AV_LOG_INFO, and so on. Never AV_LOG_DEBUG: encoders log every frame
+ * there (libx264's frame= ... QP= lines), from the encoder threads. */
 /* FFmpeg often builds one line out of several av_log() calls, so
  * pieces are collected until a newline. Calls come from any thread. */
 static slock_t *ffmpeg_av_log_lock;
@@ -1652,7 +1682,7 @@ static void ffmpeg_av_log_init(void)
    {
       switch (verbosity_get_log_level())
       {
-         case 0:  av_level = AV_LOG_DEBUG;   break;
+         case 0:  av_level = AV_LOG_VERBOSE; break;
          case 1:  av_level = AV_LOG_INFO;    break;
          case 2:  av_level = AV_LOG_WARNING; break;
          default: av_level = AV_LOG_ERROR;   break;

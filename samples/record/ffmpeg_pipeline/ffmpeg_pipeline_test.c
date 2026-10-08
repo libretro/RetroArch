@@ -22,7 +22,12 @@
  * lower priority than the thread that opened the recording.
  *
  * A geometry lane checks the output size and display aspect of a raw
- * recording of a frame the display turns a quarter. */
+ * recording of a frame the display turns a quarter.
+ *
+ * An open-only lane checks two choices made at init: a video queue
+ * deeper than the ring's byte ceiling is shortened to fit under it,
+ * and the frontend's Debug log level asks libav* for no more than
+ * AV_LOG_VERBOSE, below which encoders log every frame. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,6 +51,11 @@
 
 extern unsigned stub_warn_calls;
 extern unsigned stub_msg_calls;
+extern char     stub_last_log[512];
+extern bool     stub_verbose;
+extern unsigned stub_log_level;
+
+#include <libavutil/log.h>
 
 #define W        160
 #define H        120
@@ -375,9 +385,68 @@ static int geometry(void)
    return 0;
 }
 
+/* Opens and frees the driver: the choices made at init */
+static int open_only(void)
+{
+   struct record_params params;
+   void    *rec;
+   unsigned frames = 0;
+   double   mib    = 0.0;
+   /* 16 MiB frames: 128 of them is twice the ceiling */
+   const unsigned fw = 2048, fh = 2048;
+
+   memset(&params, 0, sizeof(params));
+   params.fps                        = FPS;
+   params.samplerate                 = RATE;
+   params.filename                   = OUT;
+   params.audio_resampler            = "sinc";
+   params.out_dims                   = VIDEO_SCALE_PACK(W, H);
+   params.fb_dims                    = VIDEO_SCALE_PACK(fw, fh);
+   params.channels                   = 2;
+   params.video_record_scale_factor  = 1;
+   params.video_stream_scale_factor  = 1;
+   params.video_record_threads       = 1;
+   params.aspect_ratio               = (float)W / H;
+   params.preset                     = RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY;
+   params.pix_fmt                    = FFEMU_PIX_ARGB8888;
+   params.allow_frame_drop           = true;
+   params.video_fifo_frames          = 128;
+
+   stub_verbose   = true;
+   stub_log_level = 0;
+   remove(OUT);
+   if (!(rec = record_ffmpeg.init(&params)))
+   {
+      fprintf(stderr, "open-only: init failed\n");
+      return 1;
+   }
+   if (av_log_get_level() > AV_LOG_VERBOSE)
+   {
+      fprintf(stderr, "open-only: Debug logging asks libav* for level %d,"
+            " past AV_LOG_VERBOSE\n", av_log_get_level());
+      return 1;
+   }
+   if (     sscanf(stub_last_log, "[FFmpeg] Video queue: %u frames (%lf MiB)",
+               &frames, &mib) != 2
+         || mib > (sizeof(void*) > 4 ? 1024.0 : 256.0))
+   {
+      fprintf(stderr, "open-only: video queue %u frames, %.1f MiB, over"
+            " the ceiling (%s)\n", frames, mib, stub_last_log);
+      return 1;
+   }
+   record_ffmpeg.free(rec);
+   stub_verbose   = false;
+   stub_log_level = 1;
+   remove(OUT);
+   printf("[pass] open-only: a 128-frame queue of 16 MiB frames is %u"
+         " frames (%.0f MiB); Debug logging stops at AV_LOG_VERBOSE\n",
+         frames, mib);
+   return 0;
+}
+
 int main(void)
 {
-   if (geometry() || run(false) || run(true))
+   if (geometry() || open_only() || run(false) || run(true))
       return 1;
    printf("ALL OK\n");
    return 0;
