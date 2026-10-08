@@ -6515,10 +6515,12 @@ static void lane_entry_capture(void)
       size_t sel = menu_state_get_ptr()->selection_ptr;
       file_list_t *stack = MENU_LIST_GET(menu_state_get_ptr()->entries.list, 0);
       size_t depth = stack ? stack->size : 0;
-      /* its own screen is up: one more on the menu's stack */
-      CHECK(depth > 0 && stack->list[depth - 1].label
-            && !strcmp(stack->list[depth - 1].label, "input_entry_capture_listen"),
-            "entry capture: it has no screen of its own over the list");
+      /* nothing pushed onto the menu's stack: the list stays, faded
+       * behind the message, and the menu is in its binding state */
+      run_loop_frames(1);
+      CHECK(stack && stack->size == depth
+            && (menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING),
+            "entry capture: a list was pushed for it, or the menu is not held off");
       syn_buttons = 1u << 22;
       run_loop_frames(4);
       syn_buttons = (1u << 22) | (1u << 23);
@@ -6540,9 +6542,11 @@ static void lane_entry_capture(void)
             "entry capture: OK or Back pressed for it acted on the menu");
       syn_buttons = 0;
       run_loop_frames(4);
-      /* over: its screen is gone, and the list is where it was */
-      CHECK(stack && stack->size == depth - 1,
-            "entry capture: its screen is still up after it ended");
+      /* over: the list is where it was, and the menu takes input again */
+      run_loop_frames(1);
+      CHECK(stack && stack->size == depth
+            && !(menu_state_get_ptr()->flags & MENU_ST_FLAG_IS_BINDING),
+            "entry capture: after it ended the list moved, or the menu is still held off");
    }
    CHECK(!input_entry_capture_running(), "entry capture: all let go, it did not end");
    spec[0] = '\0';

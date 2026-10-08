@@ -3643,34 +3643,20 @@ void menu_input_remap_find_begin(unsigned port)
    menu_displaylist_info_free(&info);
 }
 
-/* A combination's buttons set by holding them (input_entry_capture_start())
- * on a screen of its own, as "find a button by pressing it" has: the
- * list is faded behind a message, and the menu takes no input until it
- * is over - OK and Back are pressed for the combination like any other
- * button, not for the menu. */
-#define MENU_ENTRY_CAPTURE_SCREEN    "input_entry_capture_listen"
+/* A combination's buttons set by holding them (input_entry_capture_start()).
+ * While it runs the menu is in the state "find a button by pressing it"
+ * puts it in - the list faded behind a message, and no input taken by
+ * the menu, OK and Back being pressed for the combination like any
+ * other button - for as long as it runs, whatever list is up. Nothing
+ * is pushed onto the menu's stack for it: a list pushed from inside a
+ * row's action came up as a file browser, and stayed. */
 static unsigned menu_entry_capture_number;
 
 bool menu_input_entry_capture_begin(unsigned number)
 {
-   menu_displaylist_info_t info;
-   struct menu_state *menu_st = &menu_driver_state;
-   menu_list_t *menu_list     = menu_st->entries.list;
-   file_list_t *menu_stack    = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
-
-   if (!menu_stack || !input_entry_capture_start(number))
+   if (!input_entry_capture_start(number))
       return false;
-   menu_entry_capture_number  = number;
-
-   menu_displaylist_info_init(&info);
-   info.list                  = menu_stack;
-   info.type                  = MENU_SETTING_ACTION;
-   info.directory_ptr         = menu_st->selection_ptr;
-   info.enum_idx              = MENU_ENUM_LABEL_INPUT_REMAP_FIND;
-   info.label                 = strdup(MENU_ENTRY_CAPTURE_SCREEN);
-   if (menu_displaylist_ctl(DISPLAYLIST_INFO, &info, config_get_ptr()))
-      menu_displaylist_process(&info);
-   menu_displaylist_info_free(&info);
+   menu_entry_capture_number = number;
    return true;
 }
 
@@ -3731,6 +3717,9 @@ static bool menu_input_remap_find_iterate(char *s, size_t len,
 
 static enum action_iterate_type action_iterate_type(const char *label, struct menu_state *menu_st)
 {
+   /* a combination being set by holding its buttons: over any list */
+   if (input_entry_capture_running())
+      return ITERATE_TYPE_ENTRY_CAPTURE;
    if (menu_st->dialog_st.confirm_msg && menu_st->dialog_st.confirm_cmd)
       return ITERATE_TYPE_CONFIRM;
    if (!strcmp(label, "info_screen"))
@@ -3747,8 +3736,6 @@ static enum action_iterate_type action_iterate_type(const char *label, struct me
          return ITERATE_TYPE_BIND;
    if (!strcmp(label, MENU_REMAP_FIND_SCREEN))
       return ITERATE_TYPE_REMAP_FIND;
-   if (!strcmp(label, MENU_ENTRY_CAPTURE_SCREEN))
-      return ITERATE_TYPE_ENTRY_CAPTURE;
    return ITERATE_TYPE_DEFAULT;
 }
 
@@ -8180,14 +8167,8 @@ static int generic_menu_iterate(
           * capture has had it (it runs in the input pass, ahead of
           * this) */
          menu_st->flags |= MENU_ST_FLAG_IS_BINDING;
-         if (menu_input_entry_capture_iterate(menu->menu_state_msg,
+         if (!menu_input_entry_capture_iterate(menu->menu_state_msg,
                   sizeof(menu->menu_state_msg)))
-         {
-            size_t selection = menu_st->selection_ptr;
-            menu_entries_pop_stack(&selection, 0, 0);
-            menu_st->selection_ptr = selection;
-         }
-         else
             BIT64_SET(menu->state, MENU_STATE_RENDER_MESSAGEBOX);
          break;
       case ITERATE_TYPE_REMAP_FIND:
