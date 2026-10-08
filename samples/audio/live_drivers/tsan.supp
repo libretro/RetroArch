@@ -1,0 +1,7 @@
+# libpulse is uninstrumented: TSan does not see what orders the mutexes
+# its mainloop thread allocates before another thread locks them, and
+# reports pa_mutex_lock itself from the connect wait in init on. Only
+# reports through that function are suppressed - a suppression on the
+# library as a whole would also hide the driver's callbacks, which run
+# under libpulse's frames.
+race:pa_mutex_lock

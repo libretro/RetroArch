@@ -39,6 +39,12 @@ retro_task_threaded_gather       6
 tpool_worker                     0
 tpool_help                       0
 tpool_wait                       0
+# PulseAudio's writer fills a ring the server's thread drains into the
+# stream under the mainloop lock it already holds; the frontend's side
+# parks on an eventcount. Counted as pa_threaded_mainloop_lock calls.
+pulse_write                      0
+pulse_write_avail                0
+pulse_wait_writable              0
 # The recorder's pushes and its encoder hand frames over through
 # retro_spsc rings and sleep on eventcounts; nothing here.
 ffmpeg_push_video                0

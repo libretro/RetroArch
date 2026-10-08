@@ -587,7 +587,8 @@ jobs:
           # A server with a null sink, and an ALSA config naming a null
           # PCM: the real drivers against the real libraries, no
           # hardware. Pulse's telemetry is cached from the server
-          # thread's callbacks; ALSA is run once as the device reports
+          # thread's callbacks and its writer takes no mainloop lock;
+          # ALSA is run once as the device reports
           # itself and once told it cannot pause, the fallback from
           # snd_pcm_pause to snd_pcm_drop.
           export XDG_RUNTIME_DIR=/tmp/xdg
@@ -605,6 +606,11 @@ jobs:
           make clean && make -j$(nproc) all SANITIZER=address,undefined
           ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./live_drivers_test
           echo "[pass] live_drivers_test (ASan)"
+          # Pulse's writer hands audio to the server's thread through a
+          # ring and an eventcount, which is what TSan is for.
+          make clean && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1:suppressions=$PWD/tsan.supp ./live_drivers_test
+          echo "[pass] live_drivers_test (TSan)"
           kill $PA_PID || true
 
       - name: Build and run binaural_test (plain, ASan + UBSan)

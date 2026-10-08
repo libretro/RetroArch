@@ -3,7 +3,11 @@
  *
  * Pulse on a null sink: the cached telemetry - write_avail served
  * from what the server's thread last said - advances with the
- * server's requests, a blocking write ends at its bound when the
+ * server's requests, the writer takes the mainloop lock on none of
+ * its writes, write_avail and wait_writable calls (it hands audio to
+ * the server's thread through a ring; the driver's calls to the lock
+ * are counted at the link boundary), a blocking write ends at its
+ * bound when the
  * server raises none (the null sink's first request comes two
  * seconds after the prebuf fills, which a real sink does not do; a
  * short write there is the bound doing its job, and is reported, not
@@ -28,6 +32,20 @@
 #include "../../../audio/audio_driver.h"
 
 extern audio_driver_t audio_pulse;
+
+/* The driver's calls to the mainloop lock, counted while the writer
+ * runs. libpulse's own thread locks its mutex directly, not through
+ * this symbol, so only the driver's calls reach it. */
+typedef struct pa_threaded_mainloop pa_threaded_mainloop;
+void __real_pa_threaded_mainloop_lock(pa_threaded_mainloop *m);
+static volatile int counting_locks = 0;
+static unsigned writer_locks       = 0;
+void __wrap_pa_threaded_mainloop_lock(pa_threaded_mainloop *m)
+{
+   if (counting_locks)
+      writer_locks++;
+   __real_pa_threaded_mainloop_lock(m);
+}
 #include "../../../audio/drivers/alsa.c"
 static bool alsa_no_pause = false;
 
@@ -62,6 +80,8 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
       buf[i] = buf[i + 1] = (int16_t)(8000.0 * sin(t)); t += 2 * M_PI * 440 / rate;
    }
    /* two seconds of blocking writes, sampling the telemetry */
+   counting_locks = (drv == &audio_pulse);
+   writer_locks   = 0;
    for (i = 0; i < 200; i++)
    {
       size_t avail = drv->write_avail(h);
@@ -81,6 +101,17 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
       else
          CHECK(w == (ssize_t)sizeof(buf), "%s: write %u returned %ld", name, (unsigned)i, (long)w);
       writes++;
+      if (drv->wait_writable && (i % 20) == 0)
+         drv->wait_writable(h, 480 * 2 * sizeof(int16_t));
+   }
+   counting_locks = 0;
+   if (drv == &audio_pulse)
+   {
+      printf("      mainloop lock taken %u times by 200 writes\n",
+            writer_locks);
+      CHECK(writer_locks == 0,
+            "%s: the writer took the mainloop lock %u times", name,
+            writer_locks);
    }
    printf("      %u writes; write_avail min %u max %u, zero %u times\n",
          (unsigned)writes, (unsigned)min_avail, (unsigned)max_avail, (unsigned)zero_avail);

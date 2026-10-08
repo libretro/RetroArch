@@ -425,6 +425,9 @@ check_pkgconf RSOUND rsound 1.1
 check_pkgconf ROAR libroar 1.0.12
 check_val '' JACK -ljack '' jack 0.120.1 '' false
 check_val '' PULSE -lpulse '' libpulse '' '' false
+# The driver's writer hands audio to the server's thread through a
+# lock-free ring and parks on an eventcount, both threads-only.
+check_enabled THREADS PULSE PulseAudio 'Threads are' false
 check_val '' PIPEWIRE -lpipewire-0.3 'pipewire-0.3 spa-0.2' libpipewire-0.3 '' '' false
 # PIPEWIRE_STABLE only qualifies PIPEWIRE (it gates the camera driver), so
 # it must not be probed when PipeWire itself is off: with --disable-pipewire

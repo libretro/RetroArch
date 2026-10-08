@@ -13,10 +13,13 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
-	$(LIBRETRO_COMM_DIR)/lists/string_list.c
+	$(LIBRETRO_COMM_DIR)/lists/string_list.c \
+	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
 CFLAGS  += -std=gnu99 -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_ALSA -DHAVE_PULSE -DHAVE_CONFIGFILE -DHAVE_MENU -D_GNU_SOURCE
-LDFLAGS += -lpulse -lasound -lpthread -lm
+LDFLAGS += -Wl,--wrap=pa_threaded_mainloop_lock -lpulse -lasound -lpthread -lm
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer -g $(CFLAGS)

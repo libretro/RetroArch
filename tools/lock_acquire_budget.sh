@@ -59,6 +59,7 @@ count_in() {
       in_fn && /^$/                          { exit }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_lock-/     { c++ }
       in_fn && /R_X86_64_[A-Z0-9]*[ \t]+slock_try_lock-/ { c++ }
+      in_fn && /R_X86_64_[A-Z0-9]*[ \t]+pa_threaded_mainloop_lock-/ { c++ }
       END { print c + 0 }'
 }
 
@@ -113,6 +114,12 @@ measure libretro-common/queues/task_queue.o  retro_task_threaded_gather
 measure libretro-common/rthreads/tpool.o  tpool_worker
 measure libretro-common/rthreads/tpool.o  tpool_help
 measure libretro-common/rthreads/tpool.o  tpool_wait
+
+# PulseAudio's writer: the frontend fills a ring the server's thread
+# drains, so none of these takes the mainloop lock.
+measure audio/drivers/pulse.o  pulse_write
+measure audio/drivers/pulse.o  pulse_write_avail
+measure audio/drivers/pulse.o  pulse_wait_writable
 
 measure record/drivers/record_ffmpeg.o  ffmpeg_push_video
 measure record/drivers/record_ffmpeg.o  ffmpeg_push_audio

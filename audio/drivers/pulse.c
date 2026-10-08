@@ -16,6 +16,9 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <lists/string_list.h>
 
@@ -25,6 +28,8 @@
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
 #include <retro_endianness.h>
+#include <retro_spsc.h>
+#include <rthreads/retro_eventcount.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -35,32 +40,33 @@ typedef struct
    pa_context *context;
    uint32_t layout;   /* the frontend's mask the stream carries */
    pa_stream *stream;
-   size_t buffer_size;
-   /* The server's request granularity; wait_writable() only needs
-    * this much room to make progress, since the write itself fills in
-    * the rest as it frees. */
-   size_t minreq;
+   /* The server's buffer and its request granularity; wait_writable()
+    * only needs minreq of room to make progress, since the write
+    * itself fills in the rest as it frees. Set from the server's
+    * thread when it changes them, read by the frontend's. */
+   retro_atomic_size_t buffer_size;
+   retro_atomic_size_t minreq;
    struct string_list *devicelist;
    bool nonblock;
    bool success;
    bool is_paused;
-   bool is_ready;
+   /* Cleared from the server's thread when the stream or the context
+    * ends; read by the writer without the mainloop lock. */
+   retro_atomic_int_t ready;
    /* Set by the timeout event pulse_wait_ms() arms. */
    bool timed_out;
    /* Frames handed to the server since the stream opened, for the sink
     * rate estimate; the device's own count is this less whatever is
-    * still queued. Written and read on the frontend's thread, under
-    * the mainloop lock where the writes happen. */
+    * still queued. Written by the drain on the server's thread and
+    * read by frames_consumed(), both under the mainloop lock. */
    uint64_t frames_written;
    unsigned rate;
    /* What the server last said, from its own thread, for the reads the
-    * frontend makes every frame: the writable size, from the write
-    * callback's argument and after each write; the sink's own latency
-    * behind the stream, in frames, from the latency update. Read
-    * without the mainloop lock. Stale by at most one server period -
-    * the write callback fires at each - and stale on the full side,
-    * since only a callback raises the writable size and every write
-    * lowers it at once. */
+    * frontend makes every frame: the writable size, after each drain;
+    * the sink's own latency behind the stream, in frames, from the
+    * latency update. Read without the mainloop lock. Lowered before a
+    * drain takes from the ring, so the room the writer works out from
+    * it and the ring's fill errs short, never long. */
    retro_atomic_size_t writable_cached;
    retro_atomic_size_t sink_frames_cached;
    /* Times the server ran out of audio for this stream, from its own
@@ -81,17 +87,37 @@ typedef struct
    int      clk_have_anchor;
    double   clk_sx, clk_sy, clk_sxx, clk_sxy, clk_n;
    retro_atomic_int_t clk_ppm; /* AUDIO_CLOCK_PPM_NONE until known */
+   /* Audio on its way to the server. write() fills it on the
+    * frontend's thread with no lock; the server's thread moves it into
+    * the stream, under the mainloop lock it already holds, from the
+    * write callback and from the kick below. */
+   retro_spsc_t ring;
+   /* A blocking write parks here until a drain makes room or the
+    * stream ends. */
+   retro_eventcount_t room;
+   /* 1 when a drain left the ring empty with the server still wanting
+    * more. No write callback comes until the server consumes, so the
+    * write that next fills the ring has to wake the server's thread
+    * itself. Exchanged on both sides: a write landing as the drain
+    * finishes either sees the flag or is seen by the drain's look
+    * after it. */
+   retro_atomic_int_t starved;
+   /* That wake: a pipe the mainloop watches. A byte written to it is a
+    * syscall, not a lock. */
+   int kick_fd[2];
+   pa_io_event *kick_ev;
+   bool ring_ok;
+   bool room_ok;
 } pa_t;
 
-/* A note for the eventcount census: this driver stays off it, on
- * purpose. Every wait and signal here is pa_threaded_mainloop's own
- * rendezvous, which is not machinery this file chose but the
- * library's contract - every pa_* call below must hold the mainloop
- * lock, callbacks are dispatched under it, and
- * pa_threaded_mainloop_signal is only meaningful from inside it.
- * Parking on anything of ours would step outside that contract, and
- * there is nothing else here to park on: no fifo of ours sits in
- * front of pa_stream_write. Same column as ALSA's device waits. */
+/* The writer takes no lock. Every pa_* call must hold the mainloop
+ * lock, so the frontend's thread makes none on the write path: it
+ * fills the ring, and the server's thread - which holds that lock for
+ * every callback anyway - moves the ring into the stream. A blocking
+ * write parks on the eventcount every drain notifies. The mainloop's
+ * own wait is kept for what is rare and has to call into the library
+ * from the frontend's thread: connecting, cork and uncork, and the
+ * latency query behind frames_consumed(). */
 
 /* Bounds on the waits below. A server that is answering signals in
  * milliseconds; these are for one that is not - stopped consuming, or
@@ -128,6 +154,16 @@ static bool pulse_wait_ms(pa_t *pa, unsigned ms)
    return !pa->timed_out;
 }
 
+#define PULSE_READY(pa) (retro_atomic_load_acquire_int(&(pa)->ready) != 0)
+
+/* Ends the stream for the writer: a parked write wakes and sees it. */
+static void pulse_set_unready(pa_t *pa)
+{
+   retro_atomic_store_release_int(&pa->ready, 0);
+   if (pa->room_ok)
+      retro_eventcount_notify(&pa->room);
+}
+
 static void pulse_free(void *data)
 {
    pa_t *pa = (pa_t*)data;
@@ -137,6 +173,14 @@ static void pulse_free(void *data)
 
    if (pa->mainloop)
       pa_threaded_mainloop_stop(pa->mainloop);
+
+   /* The mainloop's thread is gone: nothing drains or kicks now. */
+   if (pa->kick_ev)
+      pa_threaded_mainloop_get_api(pa->mainloop)->io_free(pa->kick_ev);
+   if (pa->kick_fd[0] >= 0)
+      close(pa->kick_fd[0]);
+   if (pa->kick_fd[1] >= 0)
+      close(pa->kick_fd[1]);
 
    if (pa->stream)
    {
@@ -155,6 +199,11 @@ static void pulse_free(void *data)
 
    if (pa->devicelist)
       string_list_free(pa->devicelist);
+
+   if (pa->ring_ok)
+      retro_spsc_free(&pa->ring);
+   if (pa->room_ok)
+      retro_eventcount_free(&pa->room);
 
    free(pa);
 }
@@ -178,11 +227,11 @@ static void pulse_context_state_cb(pa_context *c, void *data)
          break;
       case PA_CONTEXT_FAILED:
          RARCH_ERR("[PulseAudio] Connection failed.\n");
-         pa->is_ready = false;
+         pulse_set_unready(pa);
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       case PA_CONTEXT_TERMINATED:
-         pa->is_ready = false;
+         pulse_set_unready(pa);
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       default:
@@ -215,13 +264,13 @@ static void pulse_stream_state_cb(pa_stream *s, void *data)
    switch (pa_stream_get_state(s))
    {
       case PA_STREAM_READY:
-         pa->is_ready = true;
+         retro_atomic_store_release_int(&pa->ready, 1);
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       case PA_STREAM_UNCONNECTED:
       case PA_STREAM_FAILED:
       case PA_STREAM_TERMINATED:
-         pa->is_ready = false;
+         pulse_set_unready(pa);
          pa_threaded_mainloop_signal(pa->mainloop, 0);
          break;
       default:
@@ -229,11 +278,83 @@ static void pulse_stream_state_cb(pa_stream *s, void *data)
    }
 }
 
+/* On the server's thread, the mainloop lock held: moves whole frames
+ * from the ring into the stream while both have them, then publishes
+ * what the stream can still take and wakes a parked writer. */
+static void pulse_drain(pa_t *pa)
+{
+   size_t fb = pa->frame_bytes;
+
+   if (!pa->stream || !pa->ring_ok || !fb)
+      return;
+
+   for (;;)
+   {
+      size_t writable = pa_stream_writable_size(pa->stream);
+      size_t queued   = retro_spsc_read_avail(&pa->ring);
+      size_t want     = MIN(writable, queued);
+      size_t n;
+      void  *dst      = NULL;
+
+      want -= want % fb;
+      n     = want;
+      if (n)
+      {
+         /* The server's buffer may come back smaller than asked. */
+         if (pa_stream_begin_write(pa->stream, &dst, &n) < 0 || !dst)
+            break;
+         if (n > want)
+            n = want;
+         n -= n % fb;
+         if (!n)
+         {
+            pa_stream_cancel_write(pa->stream);
+            break;
+         }
+         /* Room the writer sees is the writable size less the ring's
+          * fill: lowering the first before the second keeps it short. */
+         retro_atomic_store_release_size(&pa->writable_cached,
+               writable - n);
+         retro_spsc_read(&pa->ring, dst, n);
+         if (pa_stream_write(pa->stream, dst, n, NULL, 0,
+                  PA_SEEK_RELATIVE) < 0)
+            break;
+         pa->frames_written += n / fb;
+         continue;
+      }
+
+      retro_atomic_store_release_size(&pa->writable_cached, writable);
+      if (!writable || queued >= fb)
+         break;
+      /* Dry, with room the server wants filled. Flag it, then look
+       * once more: a write that landed before the flag is seen here,
+       * one that lands after it sees the flag and kicks. */
+      retro_atomic_exchange_int(&pa->starved, 1);
+      if (retro_spsc_read_avail(&pa->ring) < fb)
+         break;
+      retro_atomic_exchange_int(&pa->starved, 0);
+   }
+
+   if (pa->room_ok)
+      retro_eventcount_notify(&pa->room);
+}
+
 static void pulse_stream_request_cb(pa_stream *s, size_t len, void *data)
 {
    pa_t *pa = (pa_t*)data;
-   retro_atomic_store_release_size(&pa->writable_cached, len);
-   pa_threaded_mainloop_signal(pa->mainloop, 0);
+   (void)s;
+   (void)len;
+   pulse_drain(pa);
+}
+
+/* The writer's wake, on the server's thread with the lock held. */
+static void pulse_kick_cb(pa_mainloop_api *a, pa_io_event *e, int fd,
+      pa_io_event_flags_t events, void *data)
+{
+   char sink[64];
+   (void)a; (void)e; (void)events;
+   while (read(fd, sink, sizeof(sink)) > 0) { }
+   pulse_drain((pa_t*)data);
 }
 
 /* One (position, time) pair from the server's timing info into the
@@ -329,13 +450,9 @@ static void pulse_buffer_attr_cb(pa_stream *s, void *data)
    const pa_buffer_attr *server_attr = pa_stream_get_buffer_attr(s);
    if (server_attr)
    {
-      pa->buffer_size = server_attr->tlength;
-      pa->minreq      = server_attr->minreq;
+      retro_atomic_store_release_size(&pa->buffer_size, server_attr->tlength);
+      retro_atomic_store_release_size(&pa->minreq, server_attr->minreq);
    }
-
-#if 0
-   RARCH_LOG("[PulseAudio] Got new buffer size %u.\n", (unsigned)pa->buffer_size);
-#endif
 }
 
 /* A channel map of the layout's positions in the mask's ascending-bit
@@ -376,6 +493,11 @@ static void *pulse_init(const char *device, unsigned rate,
 
    if (!pa)
       return NULL;
+   pa->kick_fd[0] = pa->kick_fd[1] = -1;
+   retro_atomic_int_init(&pa->ready, 0);
+   retro_atomic_int_init(&pa->starved, 0);
+   retro_atomic_size_init(&pa->buffer_size, 0);
+   retro_atomic_size_init(&pa->minreq, 0);
    retro_atomic_size_init(&pa->writable_cached, 0);
    retro_atomic_size_init(&pa->sink_frames_cached, 0);
    retro_atomic_size_init(&pa->underruns, 0);
@@ -452,9 +574,31 @@ static void *pulse_init(const char *device, unsigned rate,
    buffer_attr.minreq    = -1;
    buffer_attr.fragsize  = -1;
 
+   /* The ring is in place before the stream can ask for audio. It only
+    * ever holds what the stream has room for, so twice the requested
+    * buffer covers a server that grants more than was asked. */
+   if (!(pa->ring_ok = retro_spsc_init(&pa->ring,
+               (size_t)buffer_attr.tlength * 2)))
+      goto unlock_error;
+   if (!(pa->room_ok = retro_eventcount_init(&pa->room)))
+      goto unlock_error;
+   if (pipe(pa->kick_fd) < 0)
+   {
+      pa->kick_fd[0] = pa->kick_fd[1] = -1;
+      goto unlock_error;
+   }
+   fcntl(pa->kick_fd[0], F_SETFL, fcntl(pa->kick_fd[0], F_GETFL) | O_NONBLOCK);
+   fcntl(pa->kick_fd[1], F_SETFL, fcntl(pa->kick_fd[1], F_GETFL) | O_NONBLOCK);
+   fcntl(pa->kick_fd[0], F_SETFD, FD_CLOEXEC);
+   fcntl(pa->kick_fd[1], F_SETFD, FD_CLOEXEC);
+   if (!(pa->kick_ev = pa_threaded_mainloop_get_api(pa->mainloop)->io_new(
+               pa_threaded_mainloop_get_api(pa->mainloop), pa->kick_fd[0],
+               PA_IO_EVENT_INPUT, pulse_kick_cb, pa)))
+      goto unlock_error;
+
    if (pa_stream_connect_playback(pa->stream, NULL,
             &buffer_attr, PA_STREAM_ADJUST_LATENCY, NULL, NULL) < 0)
-      goto error;
+      goto unlock_error;
 
    while (pa_stream_get_state(pa->stream) != PA_STREAM_READY)
    {
@@ -472,24 +616,24 @@ static void *pulse_init(const char *device, unsigned rate,
    server_attr = pa_stream_get_buffer_attr(pa->stream);
    if (server_attr)
    {
-      pa->buffer_size = server_attr->tlength;
-      pa->minreq      = server_attr->minreq;
+      retro_atomic_store_release_size(&pa->buffer_size, server_attr->tlength);
+      retro_atomic_store_release_size(&pa->minreq, server_attr->minreq);
       RARCH_LOG("[PulseAudio] Requested %u bytes buffer, got %u.\n",
             (unsigned)buffer_attr.tlength,
-            (unsigned)pa->buffer_size);
+            (unsigned)server_attr->tlength);
    }
    else
    {
-      pa->buffer_size = buffer_attr.tlength;
-      pa->minreq      = buffer_attr.tlength / 4;
+      retro_atomic_store_release_size(&pa->buffer_size, buffer_attr.tlength);
+      retro_atomic_store_release_size(&pa->minreq, buffer_attr.tlength / 4);
    }
 
-   /* Seeded here, under the lock; the write callback keeps it. */
+   /* Seeded here, under the lock; every drain keeps it. */
    retro_atomic_store_release_size(&pa->writable_cached,
          pa_stream_writable_size(pa->stream));
    retro_atomic_store_release_size(&pa->sink_frames_cached, 0);
+   retro_atomic_store_release_int(&pa->ready, 1);
    pa_threaded_mainloop_unlock(pa->mainloop);
-   pa->is_ready = true;
 
    return pa;
 
@@ -506,7 +650,7 @@ static bool pulse_start(void *data, bool is_shutdown)
    pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
-   if (!pa->is_ready)
+   if (!PULSE_READY(pa))
       return false;
    if (!pa->is_paused)
       return true;
@@ -534,6 +678,50 @@ static bool pulse_start(void *data, bool is_shutdown)
    return ret;
 }
 
+/* What the writer may add: what the stream can take less what the
+ * ring already holds for it, in whole frames, and never more than the
+ * ring has free. The frontend sees the server's buffer as before; the
+ * ring only carries it across. */
+static size_t pulse_room(pa_t *pa)
+{
+   size_t fb       = pa->frame_bytes;
+   size_t free_now = retro_spsc_write_avail(&pa->ring);
+   size_t used     = pa->ring.capacity - free_now;
+   size_t writable = retro_atomic_load_acquire_size(&pa->writable_cached);
+   size_t room     = writable > used ? writable - used : 0;
+
+   if (room > free_now)
+      room = free_now;
+   return room - room % fb;
+}
+
+/* Parks until the room reaches want or the stream ends, bounded: a
+ * server that has stopped consuming drains nothing, and the bound
+ * hands the call back rather than holding the thread on it. */
+static bool pulse_park(pa_t *pa, size_t want, unsigned ms)
+{
+   int key = retro_eventcount_prepare_wait(&pa->room);
+   if (pulse_room(pa) >= want || !PULSE_READY(pa))
+   {
+      retro_eventcount_cancel_wait(&pa->room);
+      return true;
+   }
+   return retro_eventcount_commit_wait_timeout(&pa->room, key,
+         (int64_t)ms * 1000);
+}
+
+static void pulse_push(pa_t *pa, const void *s, size_t len)
+{
+   retro_spsc_write(&pa->ring, s, len);
+   /* The server's thread drained the ring dry and is waiting on no
+    * callback: wake it. A full pipe means a wake is already pending. */
+   if (retro_atomic_exchange_int(&pa->starved, 0))
+   {
+      char c = 0;
+      while (write(pa->kick_fd[1], &c, 1) < 0 && errno == EINTR) { }
+   }
+}
+
 static ssize_t pulse_write(void *data, const void *s, size_t len)
 {
    size_t _len = 0;
@@ -545,38 +733,25 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
    if (pa->is_paused && !pulse_start(pa, false))
       return -1;
 
-   if (!pa->is_ready)
-      return 0;
-
-   pa_threaded_mainloop_lock(pa->mainloop);
-   while (len)
+   len -= len % pa->frame_bytes;
+   while (len && PULSE_READY(pa))
    {
-      size_t writable = MIN(len, pa_stream_writable_size(pa->stream));
+      /* Once: MIN() would evaluate it twice, and the room can grow
+       * between the two. */
+      size_t room = pulse_room(pa);
+      size_t n    = MIN(len, room);
 
-      if (writable)
+      if (n)
       {
-         pa_stream_write(pa->stream, buf, writable, NULL, 0, PA_SEEK_RELATIVE);
-         buf     += writable;
-         len     -= writable;
-         _len    += writable;
-         /* Float32 at the layout's channels, fixed at stream setup. */
-         pa->frames_written += writable / (audio_layout_channels(pa->layout) * sizeof(float));
-         retro_atomic_store_release_size(&pa->writable_cached,
-               pa_stream_writable_size(pa->stream));
+         pulse_push(pa, buf, n);
+         buf  += n;
+         len  -= n;
+         _len += n;
       }
-      else if (!pa->nonblock)
-      {
-         /* Wakes on the next write callback. A server that has
-          * stopped consuming raises none; the bound ends the write
-          * with what went, rather than holding the thread on it. */
-         if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS) || !pa->is_ready)
-            break;
-      }
-      else
+      else if (pa->nonblock || !pulse_park(pa, pa->frame_bytes,
+               PULSE_WRITE_WAIT_MS))
          break;
    }
-
-   pa_threaded_mainloop_unlock(pa->mainloop);
 
    return _len;
 }
@@ -587,7 +762,7 @@ static bool pulse_stop(void *data)
    pa_operation *op;
    pa_t *pa = (pa_t*)data;
 
-   if (!pa->is_ready)
+   if (!PULSE_READY(pa))
       return false;
    if (pa->is_paused)
       return true;
@@ -617,7 +792,7 @@ static bool pulse_alive(void *data)
 {
    pa_t *pa = (pa_t*)data;
 
-   if (!pa || !pa->is_ready)
+   if (!pa || !PULSE_READY(pa))
       return false;
    return !pa->is_paused;
 }
@@ -644,20 +819,22 @@ static size_t pulse_write_avail(void *data)
    pa_t *pa = (pa_t*)data;
    size_t sink;
 
-   if (!pa->is_ready)
+   if (!PULSE_READY(pa))
       return 0;
 
-   audio_driver_set_buffer_size(pa->buffer_size); /* Can change spuriously. */
+   /* Can change spuriously. */
+   audio_driver_set_buffer_size(
+         retro_atomic_load_acquire_size(&pa->buffer_size));
    sink = retro_atomic_load_acquire_size(&pa->sink_frames_cached);
    if (sink)
       audio_driver_set_device_latency(sink);
-   return retro_atomic_load_acquire_size(&pa->writable_cached);
+   return pulse_room(pa);
 }
 
 static size_t pulse_buffer_size(void *data)
 {
    pa_t *pa = (pa_t*)data;
-   return pa->buffer_size;
+   return retro_atomic_load_acquire_size(&pa->buffer_size);
 }
 
 /* Frames the device has taken since the stream opened.
@@ -680,7 +857,7 @@ static size_t pulse_frames_consumed(void *data)
    int       negative = 0;
    uint64_t  queued;
 
-   if (!pa || !pa->is_ready || !pa->rate)
+   if (!pa || !PULSE_READY(pa) || !pa->rate)
       return 0;
 
    pa_threaded_mainloop_lock(pa->mainloop);
@@ -700,43 +877,45 @@ static size_t pulse_frames_consumed(void *data)
    }
 }
 
-/* Sleep on the mainloop until at least len bytes are writable. The
- * stream's write callback signals the mainloop as the server drains,
- * so this wakes when room exists and never on a timer. */
+/* Park until at least len bytes may be written. Every drain notifies,
+ * and the server drains as it consumes, so this wakes when room exists
+ * and never on a timer; the bound is a watchdog for a server that has
+ * stopped. */
 static size_t pulse_wait_writable(void *data, size_t len)
 {
-   size_t _len = 0;
-   pa_t *pa    = (pa_t*)data;
+   size_t _len   = 0;
+   pa_t *pa      = (pa_t*)data;
+   size_t minreq = retro_atomic_load_acquire_size(&pa->minreq);
 
-   if (!pa->is_ready)
+   if (!PULSE_READY(pa))
       return 0;
 
    /* Enough for the server's next request is enough: the write loops
     * on writable space as the server frees it, and before the stream
     * has started playing (prebuf) that partial write is the only way
     * to get it full. */
-   if (pa->minreq && len > pa->minreq)
-      len = pa->minreq;
+   if (minreq && len > minreq)
+      len = minreq;
+   if (len < pa->frame_bytes)
+      len = pa->frame_bytes;
 
-   pa_threaded_mainloop_lock(pa->mainloop);
-   while (pa->is_ready)
+   while (PULSE_READY(pa))
    {
-      _len = pa_stream_writable_size(pa->stream);
+      _len = pulse_room(pa);
       if (_len >= len)
          break;
-      /* Wakes on the next write callback, i.e. when the server has
-       * consumed enough for more room to exist - or on the bound, which
-       * hands the pass back as no space coming from this call. */
-      if (!pulse_wait_ms(pa, PULSE_WRITE_WAIT_MS))
+      /* The bound hands the pass back as no space coming from this
+       * call. */
+      if (!pulse_park(pa, len, PULSE_WRITE_WAIT_MS))
       {
          _len = 0;
          break;
       }
    }
-   if (!pa->is_ready)
+   if (!PULSE_READY(pa))
       _len = 0;
-   audio_driver_set_buffer_size(pa->buffer_size);
-   pa_threaded_mainloop_unlock(pa->mainloop);
+   audio_driver_set_buffer_size(
+         retro_atomic_load_acquire_size(&pa->buffer_size));
    return _len;
 }
 
