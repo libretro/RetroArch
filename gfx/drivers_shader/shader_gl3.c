@@ -428,11 +428,14 @@ GLuint gl3_cross_compile_program(
             glGetProgramInfoLog(program, length, &length, info_log);
             RARCH_ERR("[GLCore] Failed to link program: %s\n", info_log);
             free(info_log);
-            glDeleteProgram(program);
-            program = 0;
-            goto error;
          }
       }
+      else
+         RARCH_ERR("[GLCore] Failed to link program.\n");
+      /* A failed link fails whether or not the driver wrote a log */
+      glDeleteProgram(program);
+      program = 0;
+      goto error;
    }
 
    glUseProgram(program);
