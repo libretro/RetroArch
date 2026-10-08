@@ -77,6 +77,15 @@ const char *config_get_default_ai_service_backend(void)
  * Abstraction layer for translation backends (HTTP, local, etc.)
  */
 
+/* A little-endian 32-bit field of an image header. */
+#define TRANSLATION_LE32(p) \
+   (  (uint32_t)(p)[0]        | ((uint32_t)(p)[1] << 8) \
+   | ((uint32_t)(p)[2] << 16) | ((uint32_t)(p)[3] << 24))
+
+/* The largest side a server's image may have: past it the decode is
+ * refused rather than sized from untrusted fields. */
+#define TRANSLATION_IMAGE_DIM_MAX 16384
+
 typedef struct translation_response
 {
    /* Decoded image data (BMP/PNG file bytes, NOT base64) */
@@ -342,11 +351,19 @@ static void handle_translation_response(
    }
 
    /* Handle image overlay */
-   if (response->image_data && response->image_size > 0)
+   /* Shorter than a PNG signature is no image at all, and both paths
+    * below read the first bytes to tell the format. */
+   if (     response->image_data
+         && response->image_size >= 8
+         && response->image_size <= 0x7fffffff)
    {
       char *raw_image_file_data = (char*)response->image_data;
       int new_image_size        = (int)response->image_size;
       unsigned image_width, image_height;
+      /* Bytes from one row of raw_image_data to the next, and whether
+       * the first row in memory is the top of the image. */
+      size_t   image_row        = 0;
+      bool     image_top_down   = false;
       /* Get the video frame dimensions reference */
       unsigned dims   = 0;
       bool     is_hw_fb;
@@ -404,31 +421,49 @@ static void handle_translation_response(
          size_t pitch;
          /* Write to video buffer directly (software cores only) */
 
-         /* This is a BMP file coming back. */
-         if (     raw_image_file_data[0] == 'B'
+         /* This is a BMP file coming back: a 54-byte header and 24-bit
+          * rows padded to four bytes, bottom-up unless the height is
+          * negative. Every field comes from the server's reply, so the
+          * pixels it describes must be in that reply. */
+         if (     new_image_size >= 54
+               && raw_image_file_data[0] == 'B'
                && raw_image_file_data[1] == 'M')
          {
-            /* Get image data (24 bit), and convert to the emulated pixel format */
-            image_width    =
-                 ((uint32_t) ((uint8_t)raw_image_file_data[21]) << 24)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[20]) << 16)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[19]) << 8)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[18]) << 0);
+            const uint8_t *hdr = (const uint8_t*)raw_image_file_data;
+            uint32_t offset    = TRANSLATION_LE32(hdr + 10);
+            int32_t  width     = (int32_t)TRANSLATION_LE32(hdr + 18);
+            int32_t  height    = (int32_t)TRANSLATION_LE32(hdr + 22);
+            unsigned bpp       = hdr[28] | ((unsigned)hdr[29] << 8);
 
-            image_height   =
-                 ((uint32_t) ((uint8_t)raw_image_file_data[25]) << 24)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8)
-               + ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-            raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
-            if (raw_image_data)
-               memcpy(raw_image_data,
-                     raw_image_file_data + 54       * sizeof(uint8_t),
-                     image_width * image_height * 3 * sizeof(uint8_t));
+            image_top_down     = height < 0;
+            image_width        = width  > 0 ? (unsigned)width : 0;
+            image_height       = height < 0 ? (unsigned)-(int64_t)height
+                                            : (unsigned)height;
+            image_row          = ((size_t)image_width * 3 + 3) & ~(size_t)3;
+
+            if (     bpp != 24
+                  || !image_width
+                  || !image_height
+                  || image_width  > TRANSLATION_IMAGE_DIM_MAX
+                  || image_height > TRANSLATION_IMAGE_DIM_MAX
+                  || offset < 54
+                  || offset > (uint32_t)new_image_size
+                  || (uint64_t)image_row * image_height
+                     > (uint64_t)new_image_size - offset)
+            {
+               RARCH_LOG("[Translation] BMP size does not match its data.\n");
+               goto finish;
+            }
+
+            if (!(raw_image_data = malloc(image_row * image_height)))
+               goto finish;
+            memcpy(raw_image_data, raw_image_file_data + offset,
+                  image_row * image_height);
          }
-         else if (raw_image_file_data[1] == 'P'
-               && raw_image_file_data[2] == 'N'
-               && raw_image_file_data[3] == 'G')
+         else if (   new_image_size >= 24
+                  && raw_image_file_data[1] == 'P'
+                  && raw_image_file_data[2] == 'N'
+                  && raw_image_file_data[3] == 'G')
          {
             /* PNG file */
 #ifdef HAVE_RPNG
@@ -458,6 +493,21 @@ static void handle_translation_response(
                      (size_t)new_image_size, &image_width, &image_height,
                      false);
             } while (retval == IMAGE_PROCESS_NEXT);
+
+            if (     retval == IMAGE_PROCESS_ERROR
+                  || retval == IMAGE_PROCESS_ERROR_END
+                  || !raw_image_data_alpha
+                  || !image_width
+                  || !image_height
+                  || image_width  > TRANSLATION_IMAGE_DIM_MAX
+                  || image_height > TRANSLATION_IMAGE_DIM_MAX)
+            {
+               RARCH_LOG("[Translation] PNG reply did not decode.\n");
+               rpng_free(rpng);
+               goto finish;
+            }
+            /* Written below as tight rows, bottom-up. */
+            image_row = (size_t)image_width * 3;
 
             /* Returned output from the png processor is an upside down RGBA
              * image, so we have to change that to RGB first.  This should
@@ -503,7 +553,9 @@ static void handle_translation_response(
             goto finish;
          }
 
-         if (!(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
+         if (    !VIDEO_SCALE_W(dims)
+              || !VIDEO_SCALE_H(dims)
+              || !(scaler = (struct scaler_ctx*)calloc(1, sizeof(struct scaler_ctx))))
             goto finish;
 
          if (is_hw_fb)
@@ -535,7 +587,7 @@ static void handle_translation_response(
             raw_output_data    = (uint8_t*)malloc(VIDEO_SCALE_AREA(dims) * 2 * sizeof(uint8_t));
             scaler->out_fmt    = SCALER_FMT_RGB565;
             pitch              = VIDEO_SCALE_W(dims) * 2;
-            scaler->out_stride = VIDEO_SCALE_W(dims);
+            scaler->out_stride = (int)pitch;
          }
 
          if (!raw_output_data)
@@ -547,12 +599,27 @@ static void handle_translation_response(
          scaler->out_width     = VIDEO_SCALE_W(dims);
          scaler->out_height    = VIDEO_SCALE_H(dims);
          scaler->scaler_type   = SCALER_TYPE_POINT;
-         scaler_ctx_gen_filter(scaler);
-         scaler->in_stride     = -1 * VIDEO_SCALE_W(dims) * 3;
+         if (!scaler_ctx_gen_filter(scaler))
+            goto finish;
 
-         scaler_ctx_scale_direct(scaler, raw_output_data,
-               (uint8_t*)raw_image_data + (image_height - 1) * VIDEO_SCALE_W(dims) * 3);
-         video_driver_frame(raw_output_data, image_width, image_height, pitch);
+         /* The server's image need not match the frame: the input
+          * steps by its own rows, top row first, and the output is the
+          * frame's size. */
+         if (image_top_down)
+         {
+            scaler->in_stride  = (int)image_row;
+            scaler_ctx_scale_direct(scaler, raw_output_data,
+                  raw_image_data);
+         }
+         else
+         {
+            scaler->in_stride  = -(int)image_row;
+            scaler_ctx_scale_direct(scaler, raw_output_data,
+                  (uint8_t*)raw_image_data
+                  + (image_height - 1) * image_row);
+         }
+         video_driver_frame(raw_output_data,
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
       }
    }
 
@@ -689,7 +756,10 @@ finish:
    if (raw_image_data)
       free(raw_image_data);
    if (scaler)
+   {
+      scaler_ctx_gen_reset(scaler);
       free(scaler);
+   }
    if (raw_output_data)
       free(raw_output_data);
 
