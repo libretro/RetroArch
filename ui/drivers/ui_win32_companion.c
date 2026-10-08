@@ -3177,9 +3177,11 @@ static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
       char *full = (char*)malloc(PATH_MAX_LENGTH);
       if (!*p)
       {
-         paths = (const char**)malloc(sizeof(char*));
-         paths[0] = buf;
-         n = 1;
+         if ((paths = (const char**)malloc(sizeof(char*))))
+         {
+            paths[0] = buf;
+            n = 1;
+         }
       }
       else if (full)
       {
@@ -3190,8 +3192,16 @@ static void cw_add_files_dialog(ui_companion_win32_wimp_t *w)
             fp = strldup(full, strlen(full) + 1);
             if (n == cap)
             {
-               cap = cap ? cap * 2 : 8;
-               paths = (const char**)realloc((void*)paths, cap * sizeof(char*));
+               /* Keep the old array on failure: add what was gathered. */
+               const char **tmp = (const char**)realloc((void*)paths,
+                     (cap ? cap * 2 : 8) * sizeof(char*));
+               if (!tmp)
+               {
+                  free(fp);
+                  break;
+               }
+               paths = tmp;
+               cap   = cap ? cap * 2 : 8;
             }
             paths[n++] = fp;
             p += strlen(p) + 1;
