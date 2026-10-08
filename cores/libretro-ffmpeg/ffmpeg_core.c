@@ -1983,13 +1983,112 @@ void CORE_PREFIX(retro_set_controller_port_device)(unsigned port, unsigned devic
    (void)device;
 }
 
+/* Formats this core has always claimed. */
+#define FFMPEG_CORE_BASE_EXTENSIONS \
+   "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mp3|flac|ogg|m4a|webm|3g2|mov|wmv|mpg|mpeg|vob|asf|divx|m2p|m2ts|ps|ts|mxf|wma|wav"
+
+/* Further formats, claimed only when this FFmpeg build can open them:
+ * RetroArch runs on platforms whose FFmpeg builds differ widely, so
+ * each needs its demuxer and, where the format implies one, its
+ * decoder. Keep in sync with the media types in msg_hash.c. */
+static const struct
+{
+   const char *ext;
+   const char *demuxer;
+   enum AVCodecID codec; /* AV_CODEC_ID_NONE: container only */
+} ffmpeg_core_extra_formats[] = {
+   { "ogv",  "ogg",       AV_CODEC_ID_THEORA   },
+   { "oga",  "ogg",       AV_CODEC_ID_VORBIS   },
+   { "opus", "ogg",       AV_CODEC_ID_OPUS     },
+   { "spx",  "ogg",       AV_CODEC_ID_SPEEX    },
+   { "mka",  "matroska",  AV_CODEC_ID_NONE     },
+   { "mk3d", "matroska",  AV_CODEC_ID_NONE     },
+   { "weba", "matroska",  AV_CODEC_ID_NONE     },
+   { "m4v",  "mov",       AV_CODEC_ID_NONE     },
+   { "m4b",  "mov",       AV_CODEC_ID_AAC      },
+   { "aac",  "aac",       AV_CODEC_ID_AAC      },
+   { "ac3",  "ac3",       AV_CODEC_ID_AC3      },
+   { "eac3", "eac3",      AV_CODEC_ID_EAC3     },
+   { "dts",  "dts",       AV_CODEC_ID_DTS      },
+   { "mts",  "mpegts",    AV_CODEC_ID_NONE     },
+   { "m2t",  "mpegts",    AV_CODEC_ID_NONE     },
+   { "m2v",  "mpegvideo", AV_CODEC_ID_MPEG2VIDEO },
+   { "mp2",  "mp3",       AV_CODEC_ID_MP2      },
+   { "aif",  "aiff",      AV_CODEC_ID_NONE     },
+   { "aiff", "aiff",      AV_CODEC_ID_NONE     },
+   { "wv",   "wv",        AV_CODEC_ID_WAVPACK  },
+   { "ape",  "ape",       AV_CODEC_ID_APE      },
+   { "tta",  "tta",       AV_CODEC_ID_TTA      },
+   { "mpc",  "mpc",       AV_CODEC_ID_MUSEPACK7 },
+   { "amr",  "amr",       AV_CODEC_ID_AMR_NB   },
+   { "au",   "au",        AV_CODEC_ID_NONE     },
+   { "caf",  "caf",       AV_CODEC_ID_NONE     },
+   { "rm",   "rm",        AV_CODEC_ID_NONE     },
+   { "rmvb", "rm",        AV_CODEC_ID_NONE     },
+   { "nut",  "nut",       AV_CODEC_ID_NONE     },
+   { "dv",   "dv",        AV_CODEC_ID_DVVIDEO  },
+   { "ivf",  "ivf",       AV_CODEC_ID_NONE     },
+};
+
+static bool ffmpeg_core_extra_format_ok(unsigned i)
+{
+   if (!av_find_input_format(ffmpeg_core_extra_formats[i].demuxer))
+      return false;
+   if (     ffmpeg_core_extra_formats[i].codec != AV_CODEC_ID_NONE
+         && !avcodec_find_decoder(ffmpeg_core_extra_formats[i].codec))
+      return false;
+   return true;
+}
+
+/* Exported for the frontend's media type detection (msg_hash.c lists
+ * these extensions as movie/music): true if this build can open ext.
+ * Base formats are always claimed. */
+/* Appends s to the extension list in buf, if it fits. */
+static size_t ffmpeg_core_append(char *buf, size_t len, size_t size,
+      const char *s)
+{
+   size_t n = strlen(s);
+   if (len + n + 1 > size)
+      return len;
+   memcpy(buf + len, s, n + 1);
+   return len + n;
+}
+
+bool CORE_PREFIX(ffmpeg_core_supports_extension)(const char *ext)
+{
+   unsigned i;
+   for (i = 0; i < sizeof(ffmpeg_core_extra_formats)
+         / sizeof(ffmpeg_core_extra_formats[0]); i++)
+      if (!strcmp(ext, ffmpeg_core_extra_formats[i].ext))
+         return ffmpeg_core_extra_format_ok(i);
+   return true;
+}
+
 void CORE_PREFIX(retro_get_system_info)(struct retro_system_info *info)
 {
+   static char extensions[512];
+
+   if (!*extensions)
+   {
+      unsigned i;
+      size_t _len = ffmpeg_core_append(extensions, 0, sizeof(extensions),
+            FFMPEG_CORE_BASE_EXTENSIONS);
+      for (i = 0; i < sizeof(ffmpeg_core_extra_formats)
+            / sizeof(ffmpeg_core_extra_formats[0]); i++)
+      {
+         if (!ffmpeg_core_extra_format_ok(i))
+            continue;
+         _len = ffmpeg_core_append(extensions, _len, sizeof(extensions), "|");
+         _len = ffmpeg_core_append(extensions, _len, sizeof(extensions),
+               ffmpeg_core_extra_formats[i].ext);
+      }
+   }
+
    memset(info, 0, sizeof(*info));
    info->library_name     = "FFmpeg";
    info->library_version  = "v1";
    info->need_fullpath    = true;
-   info->valid_extensions = "mkv|avi|f4v|f4f|3gp|ogm|flv|mp4|mp3|flac|ogg|m4a|webm|3g2|mov|wmv|mpg|mpeg|vob|asf|divx|m2p|m2ts|ps|ts|mxf|wma|wav";
+   info->valid_extensions = extensions;
 }
 
 void CORE_PREFIX(retro_get_system_av_info)(struct retro_system_av_info *info)

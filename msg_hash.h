@@ -218,6 +218,10 @@ enum msg_file_type
    FILE_TYPE_PS,
    FILE_TYPE_TS,
    FILE_TYPE_MXF,
+   /* Further formats the built-in media player claims when its build
+    * can open them (see ffmpeg_core_supports_extension()). */
+   FILE_TYPE_MOVIE_OTHER,
+   FILE_TYPE_MUSIC_OTHER,
 
    FILE_TYPE_JPEG,
    FILE_TYPE_PNG,
