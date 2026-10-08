@@ -430,9 +430,10 @@ static INLINE bool realloc_checked(void **ptr, size_t len)
       nptr = realloc(*ptr, len);
    else
       nptr = malloc(len);
-   if (nptr)
-      *ptr = nptr;
-   return *ptr == nptr;
+   if (!nptr)
+      return false;
+   *ptr = nptr;
+   return true;
 }
 
 /* Grow one stream, or bring it into existence if this is the first
