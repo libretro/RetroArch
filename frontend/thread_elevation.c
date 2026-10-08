@@ -404,11 +404,14 @@ size_t thread_elevation_status(char *s, size_t len, const char *device)
    if (!any || !len)
       return 0;
 
-   ret = snprintf(s, len, " Priority:   main %s, video %s, audio %s%s%s%s\n",
-         names[st[THREAD_ELEVATION_SLOT_MAIN]],
-         names[st[THREAD_ELEVATION_SLOT_VIDEO]],
-         names[st[THREAD_ELEVATION_SLOT_AUDIO]],
-         device ? ", device " : "",
+   ret = snprintf(s, len, " Priority:%s%s%s%s%s%s%s%s%s\n",
+         st[THREAD_ELEVATION_SLOT_MAIN]  ? " Main=" : "",
+         st[THREAD_ELEVATION_SLOT_MAIN]  ? names[st[THREAD_ELEVATION_SLOT_MAIN]] : "",
+         st[THREAD_ELEVATION_SLOT_VIDEO] ? " Video=" : "",
+         st[THREAD_ELEVATION_SLOT_VIDEO] ? names[st[THREAD_ELEVATION_SLOT_VIDEO]] : "",
+         st[THREAD_ELEVATION_SLOT_AUDIO] ? " Audio=" : "",
+         st[THREAD_ELEVATION_SLOT_AUDIO] ? names[st[THREAD_ELEVATION_SLOT_AUDIO]] : "",
+         device ? " Device=" : "",
          device ? device : "",
          plans[plan]);
    if (ret < 0)

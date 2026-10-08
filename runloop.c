@@ -5836,8 +5836,13 @@ size_t runloop_pace_string(char *s, size_t len)
       _len += strlcpy(s + _len, "VSync", len - _len);
    if (pace & RUNLOOP_PACE_AUDIO)
       _len += strlcpy(s + _len, _len ? "+Audio" : "Audio", len - _len);
-   if (pace & RUNLOOP_PACE_SCANLINE)
+#ifdef HAVE_MENU
+   if (pace & RUNLOOP_PACE_SCANLINE && menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE)
       _len += strlcpy(s + _len, _len ? "+Scanline" : "Scanline", len - _len);
+   else
+#endif
+   if (pace & RUNLOOP_PACE_SCANLINE)
+      _len += strlcpy(s + _len, _len ? "+SL" : "SL", len - _len);
    if (pace & RUNLOOP_PACE_DISPLAY)
       _len += strlcpy(s + _len, _len ? "+Display" : "Display", len - _len);
    if (pace & RUNLOOP_PACE_TIMER)
