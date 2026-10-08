@@ -14775,8 +14775,8 @@ static bool menu_displaylist_ctl_internal(
                         size_t desc_len = input_config_get_bind_string(
                               settings, descriptor,
                               keybind, auto_bind,
-                              &input_config_bind_labels[port][retro_id],
-                              &input_autoconf_bind_labels[port][retro_id],
+                              input_config_bind_names(port, retro_id),
+                              input_autoconf_bind_names(port, retro_id),
                               sizeof(descriptor));
 
                         if (!strstr(descriptor, "Auto"))

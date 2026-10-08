@@ -185,7 +185,6 @@ struct retro_keybind
                     : ((b)->attr & ~RETRO_KEYBIND_ATTR_VALID_BIT)))
 
 typedef struct retro_keybind retro_keybind_set[RARCH_BIND_LIST_END];
-typedef struct input_bind_label input_bind_label_set[RARCH_BIND_LIST_END];
 
 typedef struct
 {

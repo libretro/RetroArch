@@ -302,8 +302,192 @@ retro_atomic_int_t input_binds_generation;
 /* The ports whose keys the last poll made current: see
  * input_port_keys_get(). Taken back to none by a change to a bind. */
 static unsigned input_keys_ports_at_poll;
-input_bind_label_set input_config_bind_labels[MAX_USERS];
-input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
+
+/* What a bind's button and its axis are called, for the binds that are
+ * called anything: a controller's profile names some of its buttons
+ * and axes, and a user's bind takes the name over when the menu fills
+ * it in from the profile. The rest have no name.
+ *
+ * They were two tables with room for two names for every bind of
+ * every user - 50,176 bytes of pointers, nearly all null. Each user
+ * has a list of the binds that have a name, which is as long as there
+ * are such binds: none for a keyboard, a couple of dozen for a
+ * controller whose profile names everything. */
+struct input_bind_label_entry
+{
+   struct input_bind_label label;
+   uint8_t id;
+};
+
+typedef struct
+{
+   struct input_bind_label_entry *list;
+   uint8_t count;
+   uint8_t room;
+} input_bind_label_list_t;
+
+static input_bind_label_list_t input_config_label_lists[MAX_USERS];
+static input_bind_label_list_t input_autoconf_label_lists[MAX_USERS];
+
+/* a bind with no name: both null, as an empty place in the tables was */
+static const struct input_bind_label input_bind_label_none = { NULL, NULL };
+
+static const struct input_bind_label *input_bind_label_find(
+      const input_bind_label_list_t *l, unsigned id)
+{
+   unsigned i;
+   for (i = 0; i < l->count; i++)
+      if (l->list[i].id == id)
+         return &l->list[i].label;
+   return &input_bind_label_none;
+}
+
+/* Each name @got has replaces the bind's, and is the list's from here;
+ * a name it has not leaves the bind's as it was. @got is left empty. */
+static void input_bind_label_take(input_bind_label_list_t *l,
+      unsigned id, struct input_bind_label *got)
+{
+   unsigned i;
+   struct input_bind_label *label = NULL;
+
+   if (!got->joykey && !got->joyaxis)
+      return;
+
+   for (i = 0; i < l->count; i++)
+      if (l->list[i].id == id)
+      {
+         label = &l->list[i].label;
+         break;
+      }
+
+   if (!label)
+   {
+      if (l->count == l->room)
+      {
+         unsigned room = l->room ? (unsigned)l->room * 2 : 8;
+         struct input_bind_label_entry *list;
+         if (room > RARCH_BIND_LIST_END)
+            room = RARCH_BIND_LIST_END;
+         list = (room > l->room)
+            ? (struct input_bind_label_entry*)realloc(l->list,
+                  room * sizeof(*list))
+            : NULL;
+         if (!list)
+         {
+            /* no room: the names are not kept, and not leaked */
+            free(got->joykey);
+            free(got->joyaxis);
+            got->joykey  = NULL;
+            got->joyaxis = NULL;
+            return;
+         }
+         l->list = list;
+         l->room = (uint8_t)room;
+      }
+      l->list[l->count].id            = (uint8_t)id;
+      l->list[l->count].label.joykey  = NULL;
+      l->list[l->count].label.joyaxis = NULL;
+      label = &l->list[l->count++].label;
+   }
+
+   if (got->joykey)
+   {
+      free(label->joykey);
+      label->joykey = got->joykey;
+   }
+   if (got->joyaxis)
+   {
+      free(label->joyaxis);
+      label->joyaxis = got->joyaxis;
+   }
+   got->joykey  = NULL;
+   got->joyaxis = NULL;
+}
+
+/* One bind's names forgotten: its place in the list goes to the last. */
+static void input_bind_label_drop(input_bind_label_list_t *l, unsigned id)
+{
+   unsigned i;
+   for (i = 0; i < l->count; i++)
+   {
+      if (l->list[i].id != id)
+         continue;
+      free(l->list[i].label.joykey);
+      free(l->list[i].label.joyaxis);
+      l->list[i] = l->list[--l->count];
+      return;
+   }
+}
+
+static void input_bind_label_list_free(input_bind_label_list_t *l)
+{
+   unsigned i;
+   for (i = 0; i < l->count; i++)
+   {
+      free(l->list[i].label.joykey);
+      free(l->list[i].label.joyaxis);
+   }
+   free(l->list);
+   l->list  = NULL;
+   l->count = 0;
+   l->room  = 0;
+}
+
+const struct input_bind_label *input_config_bind_names(
+      unsigned user, unsigned id)
+{
+   if (user >= MAX_USERS)
+      return &input_bind_label_none;
+   return input_bind_label_find(&input_config_label_lists[user], id);
+}
+
+const struct input_bind_label *input_autoconf_bind_names(
+      unsigned port, unsigned id)
+{
+   if (port >= MAX_USERS)
+      return &input_bind_label_none;
+   return input_bind_label_find(&input_autoconf_label_lists[port], id);
+}
+
+void input_config_bind_names_take(unsigned user, unsigned id,
+      struct input_bind_label *got)
+{
+   if (user < MAX_USERS && id < RARCH_BIND_LIST_END)
+      input_bind_label_take(&input_config_label_lists[user], id, got);
+   else
+   {
+      free(got->joykey);
+      free(got->joyaxis);
+      got->joykey  = NULL;
+      got->joyaxis = NULL;
+   }
+}
+
+void input_autoconf_bind_names_take(unsigned port, unsigned id,
+      struct input_bind_label *got)
+{
+   if (port < MAX_USERS && id < RARCH_BIND_LIST_END)
+      input_bind_label_take(&input_autoconf_label_lists[port], id, got);
+   else
+   {
+      free(got->joykey);
+      free(got->joyaxis);
+      got->joykey  = NULL;
+      got->joyaxis = NULL;
+   }
+}
+
+void input_config_bind_names_drop(unsigned user, unsigned id)
+{
+   if (user < MAX_USERS)
+      input_bind_label_drop(&input_config_label_lists[user], id);
+}
+
+void input_autoconf_bind_names_free(unsigned port)
+{
+   if (port < MAX_USERS)
+      input_bind_label_list_free(&input_autoconf_label_lists[port]);
+}
 
 static void *input_null_init(const char *joypad_driver) { return (void*)-1; }
 static void input_null_poll(void *data) { }
@@ -9619,10 +9803,15 @@ void config_read_keybinds_conf(void *data)
          input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(bind));
          key_store[RETRO_KEYBIND_KEY(bind)]       = true;
 
-         input_config_parse_joy_button  (str, conf, prefix, btn, bind,
-               &input_config_bind_labels[i][j]);
-         input_config_parse_joy_axis    (str, conf, prefix, btn, bind,
-               &input_config_bind_labels[i][j]);
+         {
+            /* the names the file gives it, if it gives any */
+            struct input_bind_label got = { NULL, NULL };
+            input_config_parse_joy_button  (str, conf, prefix, btn, bind,
+                  &got);
+            input_config_parse_joy_axis    (str, conf, prefix, btn, bind,
+                  &got);
+            input_config_bind_names_take(i, j, &got);
+         }
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
       }
    }

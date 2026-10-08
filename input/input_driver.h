@@ -2359,8 +2359,26 @@ const struct retro_keybind *input_config_binds_copy_bind(
 /* The binds are made what the copy has: a change to every one. */
 void input_config_binds_copy_restore(const input_config_binds_copy_t *copy);
 void input_config_binds_copy_free(input_config_binds_copy_t *copy);
-extern input_bind_label_set input_config_bind_labels[MAX_USERS];
-extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
+/* What a bind's button and its axis are called: a user's own bind,
+ * and what the profile of the controller on a port calls it. Never
+ * NULL; both names are NULL for a bind that is called nothing, which
+ * is most. Good until the same user's or port's names are next
+ * changed. */
+const struct input_bind_label *input_config_bind_names(
+      unsigned user, unsigned id);
+const struct input_bind_label *input_autoconf_bind_names(
+      unsigned port, unsigned id);
+/* A bind is given names. Each name @got has - a string from malloc() -
+ * replaces the bind's and belongs to the input from here; a name it
+ * has not leaves the bind's as it was. @got is left empty. */
+void input_config_bind_names_take(unsigned user, unsigned id,
+      struct input_bind_label *got);
+void input_autoconf_bind_names_take(unsigned port, unsigned id,
+      struct input_bind_label *got);
+/* One of a user's binds is called nothing again. */
+void input_config_bind_names_drop(unsigned user, unsigned id);
+/* Nothing of what the controller on @port has is called anything. */
+void input_autoconf_bind_names_free(unsigned port);
 
 RETRO_END_DECLS
 

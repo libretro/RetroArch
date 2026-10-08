@@ -4895,6 +4895,204 @@ static void lane_save_minimal_binds(void)
             " setting are what they were\n");
 }
 
+/* What a bind's button and axis are called is kept as a list of the
+ * binds that are called anything, for each user and each port's
+ * controller; it was a place for two names for every bind there is.
+ * Held to what the tables did: a bind with no name reads as two nulls
+ * and never as nothing to look at; a name given replaces the one
+ * before and leaves the other alone; every bind of a port can have
+ * both; one bind's names can go, and a port's can all go. */
+static char *bn_dup(const char *s)
+{
+   size_t n = strlen(s) + 1;
+   char *d  = (char*)malloc(n);
+   if (d)
+      memcpy(d, s, n);
+   return d;
+}
+
+static void lane_bind_names(void)
+{
+   unsigned i;
+   unsigned had = failures;
+   const unsigned user = 3, port = 5;
+   struct input_bind_label got;
+   const struct input_bind_label *l;
+   char name[32];
+   bool all = true;
+
+   /* (starts clean: nothing the harness runs names a bind for these two) */
+   input_autoconf_bind_names_free(port);
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      input_config_bind_names_drop(user, i);
+
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(l && !l->joykey && !l->joyaxis,
+         "bind names: a bind called nothing does not read as two nulls");
+   l = input_config_bind_names(MAX_USERS + 3, RARCH_BIND_LIST_END + 3);
+   CHECK(l && !l->joykey && !l->joyaxis,
+         "bind names: a user and a bind there are not do not read as two nulls");
+
+   got.joykey  = bn_dup("Cross");
+   got.joyaxis = NULL;
+   input_config_bind_names_take(user, RETRO_DEVICE_ID_JOYPAD_B, &got);
+   CHECK(!got.joykey && !got.joyaxis, "bind names: what was handed over was not taken");
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(l->joykey && !strcmp(l->joykey, "Cross") && !l->joyaxis,
+         "bind names: a button's name given is not the name read");
+
+   got.joykey  = NULL;
+   got.joyaxis = bn_dup("Left X");
+   input_config_bind_names_take(user, RETRO_DEVICE_ID_JOYPAD_B, &got);
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(   l->joykey  && !strcmp(l->joykey,  "Cross")
+         && l->joyaxis && !strcmp(l->joyaxis, "Left X"),
+         "bind names: an axis's name given took the button's away, or did not arrive");
+
+   got.joykey  = bn_dup("Circle");
+   got.joyaxis = NULL;
+   input_config_bind_names_take(user, RETRO_DEVICE_ID_JOYPAD_B, &got);
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(   l->joykey  && !strcmp(l->joykey,  "Circle")
+         && l->joyaxis && !strcmp(l->joyaxis, "Left X"),
+         "bind names: a second name for the button did not replace the first");
+
+   /* nothing handed over changes nothing, and makes no place */
+   got.joykey = got.joyaxis = NULL;
+   input_config_bind_names_take(user, RETRO_DEVICE_ID_JOYPAD_Y, &got);
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_Y);
+   CHECK(!l->joykey && !l->joyaxis, "bind names: no names handed over made some");
+   /* another user's, and the port's controller's, are their own */
+   l = input_config_bind_names(user + 1, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(!l->joykey && !l->joyaxis, "bind names: one user's name is another's");
+   l = input_autoconf_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(!l->joykey && !l->joyaxis, "bind names: a user's name is the controller's");
+
+   input_config_bind_names_drop(user, RETRO_DEVICE_ID_JOYPAD_B);
+   l = input_config_bind_names(user, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(!l->joykey && !l->joyaxis, "bind names: a bind's names dropped are still read");
+
+   /* every bind of a port's controller, both names, in an order that
+    * is not theirs; then each is what it was given */
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      unsigned id = (i * 37) % RARCH_BIND_LIST_END;
+      snprintf(name, sizeof(name), "btn %u", id);
+      got.joykey  = bn_dup(name);
+      snprintf(name, sizeof(name), "axis %u", id);
+      got.joyaxis = bn_dup(name);
+      input_autoconf_bind_names_take(port, id, &got);
+   }
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      char want_b[32], want_a[32];
+      snprintf(want_b, sizeof(want_b), "btn %u", i);
+      snprintf(want_a, sizeof(want_a), "axis %u", i);
+      l = input_autoconf_bind_names(port, i);
+      if (   !l->joykey  || strcmp(l->joykey,  want_b)
+          || !l->joyaxis || strcmp(l->joyaxis, want_a))
+         all = false;
+   }
+   CHECK(all, "bind names: with every bind of a controller named, one does not read as it was given");
+   /* one dropped from the middle leaves the rest */
+   got.joykey  = bn_dup("x");
+   got.joyaxis = NULL;
+   input_config_bind_names_take(user, 7, &got);
+   got.joykey  = bn_dup("y");
+   input_config_bind_names_take(user, 9, &got);
+   got.joykey  = bn_dup("z");
+   input_config_bind_names_take(user, 11, &got);
+   input_config_bind_names_drop(user, 7);
+   CHECK(   !input_config_bind_names(user, 7)->joykey
+         && input_config_bind_names(user, 9)->joykey
+         && !strcmp(input_config_bind_names(user, 9)->joykey, "y")
+         && input_config_bind_names(user, 11)->joykey
+         && !strcmp(input_config_bind_names(user, 11)->joykey, "z"),
+         "bind names: dropping one bind's names disturbed another's");
+   input_config_bind_names_drop(user, 9);
+   input_config_bind_names_drop(user, 11);
+
+   input_autoconf_bind_names_free(port);
+   all = true;
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      l = input_autoconf_bind_names(port, i);
+      if (l->joykey || l->joyaxis)
+         all = false;
+   }
+   CHECK(all, "bind names: a controller's names freed are still read");
+
+   /* And through the two places names come from: a controller's
+    * profile, read for a port, and the configuration's binds. */
+   {
+      static const char profile[] =
+         "input_b_btn = \"3\"\n"
+         "input_b_btn_label = \"Cross\"\n"
+         "input_l_x_plus_axis = \"+0\"\n"
+         "input_l_x_plus_axis_label = \"Left stick right\"\n"
+         "input_a_btn = \"4\"\n";
+      static const char binds[] =
+         "input_player4_y_btn = \"6\"\n"
+         "input_player4_y_btn_label = \"Square\"\n";
+      struct retro_keybind saved_b = input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_B];
+      struct retro_keybind saved_a = input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_A];
+      struct retro_keybind saved_x = input_autoconf_binds[port][RARCH_ANALOG_LEFT_X_PLUS];
+      struct retro_keybind saved_y = input_config_binds[3][RETRO_DEVICE_ID_JOYPAD_Y];
+      char *text           = bn_dup(profile);
+      config_file_t *conf  = text ? config_file_new_from_string(text, NULL) : NULL;
+
+      CHECK(conf != NULL, "bind names: no profile to read");
+      if (conf)
+      {
+         input_config_set_autoconfig_binds(port, conf);
+         config_file_free(conf);
+         l = input_autoconf_bind_names(port, RETRO_DEVICE_ID_JOYPAD_B);
+         CHECK(   l->joykey && !strcmp(l->joykey, "Cross")
+               && input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_B].joykey == 3,
+               "bind names: a profile's name for a button is not read after the profile is");
+         l = input_autoconf_bind_names(port, RARCH_ANALOG_LEFT_X_PLUS);
+         CHECK(l->joyaxis && !strcmp(l->joyaxis, "Left stick right"),
+               "bind names: a profile's name for an axis is not read after the profile is");
+         l = input_autoconf_bind_names(port, RETRO_DEVICE_ID_JOYPAD_A);
+         CHECK(   !l->joykey && !l->joyaxis
+               && input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_A].joykey == 4,
+               "bind names: a button the profile does not name has a name");
+         input_config_reset_autoconfig_binds(port);
+         l = input_autoconf_bind_names(port, RETRO_DEVICE_ID_JOYPAD_B);
+         CHECK(!l->joykey && !l->joyaxis,
+               "bind names: a controller's names outlive its profile");
+      }
+      free(text);
+
+      text = bn_dup(binds);
+      conf = text ? config_file_new_from_string(text, NULL) : NULL;
+      CHECK(conf != NULL, "bind names: no binds to read");
+      if (conf)
+      {
+         config_read_keybinds_conf(conf);
+         config_file_free(conf);
+         l = input_config_bind_names(3, RETRO_DEVICE_ID_JOYPAD_Y);
+         CHECK(   l->joykey && !strcmp(l->joykey, "Square")
+               && input_config_binds[3][RETRO_DEVICE_ID_JOYPAD_Y].joykey == 6,
+               "bind names: the configuration's name for a user's button is not read");
+         input_config_bind_names_drop(3, RETRO_DEVICE_ID_JOYPAD_Y);
+      }
+      free(text);
+
+      input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_B]  = saved_b;
+      input_autoconf_binds[port][RETRO_DEVICE_ID_JOYPAD_A]  = saved_a;
+      input_autoconf_binds[port][RARCH_ANALOG_LEFT_X_PLUS]  = saved_x;
+      input_config_binds[3][RETRO_DEVICE_ID_JOYPAD_Y]       = saved_y;
+      binds_written_by_a_lane();
+   }
+
+   if (failures == had)
+      printf("[pass] bind names: none reads as two nulls; a name given is the name"
+            " read and replaces the one before; every bind of a controller can"
+            " have both; one bind's go, and a controller's all go; a profile's"
+            " and the configuration's names are read\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -6226,6 +6424,7 @@ int main(int argc, char *argv[])
       lane_keyboard_holders();
       lane_hotkeys_one_set();
       lane_save_minimal_binds();
+      lane_bind_names();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

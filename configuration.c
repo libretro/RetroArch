@@ -8674,22 +8674,26 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    {
       struct retro_keybind *bind            = input_config_bind_edit(user, i);
       const struct retro_keybind *auto_bind = input_autoconf_bind(dev, i);
-      struct input_bind_label *lbl    = &input_config_bind_labels[user][i];
-      struct input_bind_label *albl   = &input_autoconf_bind_labels[dev][i];
+      const struct input_bind_label *albl =
+         input_autoconf_bind_names(dev, i);
+      /* the names the bind takes over from the profile, with what it
+       * takes over */
+      struct input_bind_label got     = { NULL, NULL };
 
       if (bind->joykey == NO_BTN && auto_bind->joykey != NO_BTN)
       {
          bind->joykey = auto_bind->joykey;
          if (albl->joykey && *albl->joykey)
-            lbl->joykey = strdup(albl->joykey);
+            got.joykey = strdup(albl->joykey);
       }
 
       if (bind->joyaxis == AXIS_NONE && auto_bind->joyaxis != AXIS_NONE)
       {
          bind->joyaxis = auto_bind->joyaxis;
          if (albl->joyaxis && *albl->joyaxis)
-            lbl->joyaxis = strdup(albl->joyaxis);
+            got.joyaxis = strdup(albl->joyaxis);
       }
+      input_config_bind_names_take(user, i, &got);
    }
 
    /* Require at least directions (D-Pad or Left Analog) and South button,
@@ -8755,23 +8759,18 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    {
       unsigned id                      = input_config_bind_order[i];
       const struct retro_keybind *bind = input_config_bind(user, id);
-      struct input_bind_label *lbl     = &input_config_bind_labels[user][id];
+      const struct input_bind_label *lbl = input_config_bind_names(user, id);
 
       if (RETRO_KEYBIND_VALID(bind))
       {
          if (lbl->joykey && *lbl->joykey)
-         {
             save_keybind_joykey_label(conf, "input", input_config_bind_map_get_base(id), lbl);
-            free(lbl->joykey);
-            lbl->joykey = NULL;
-         }
 
          if (lbl->joyaxis && *lbl->joyaxis)
-         {
             save_keybind_axis_label(conf, "input", input_config_bind_map_get_base(id), lbl);
-            free(lbl->joyaxis);
-            lbl->joyaxis = NULL;
-         }
+         /* written out: the bind is called nothing from here, as each
+          * name was freed once it was saved */
+         input_config_bind_names_drop(user, id);
       }
    }
 
@@ -10799,19 +10798,8 @@ void input_config_reset_autoconfig_binds(unsigned port)
       bind->joykey  = NO_BTN;
       bind->joyaxis = AXIS_NONE;
       RETRO_KEYBIND_SET_VALID(bind, false);
-
-      if (input_autoconf_bind_labels[port][i].joykey)
-      {
-         free(input_autoconf_bind_labels[port][i].joykey);
-         input_autoconf_bind_labels[port][i].joykey = NULL;
-      }
-
-      if (input_autoconf_bind_labels[port][i].joyaxis)
-      {
-         free(input_autoconf_bind_labels[port][i].joyaxis);
-         input_autoconf_bind_labels[port][i].joyaxis = NULL;
-      }
    }
+   input_autoconf_bind_names_free(port);
 
    /* Reset sensor axis map to default identity mapping */
    for (i = 0; i < 6; i++)
@@ -10834,7 +10822,6 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
    size_t i;
    config_file_t *config       = (config_file_t*)data;
    struct retro_keybind *binds     = NULL;
-   struct input_bind_label *labels = NULL;
    const input_sensor_map_t *current;
    input_sensor_map_t map;
 
@@ -10842,7 +10829,6 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
       return;
 
    binds  = input_autoconf_bind_edit(port, 0);
-   labels = input_autoconf_bind_labels[port];
 
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
@@ -10852,12 +10838,16 @@ void input_config_set_autoconfig_binds(unsigned port, void *data)
       {
          char str[256];
          const char *base = keybind->base;
+         /* the names the profile gives it, if it gives any */
+         struct input_bind_label got = { NULL, NULL };
+
          fill_pathname_join_delim(str, "input", base,  '_', sizeof(str));
 
          input_config_parse_joy_button(str, config, "input", base, &binds[i],
-               &labels[i]);
+               &got);
          input_config_parse_joy_axis  (str, config, "input", base, &binds[i],
-               &labels[i]);
+               &got);
+         input_autoconf_bind_names_take(port, (unsigned)i, &got);
       }
    }
 
