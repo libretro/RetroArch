@@ -7889,6 +7889,21 @@ bool input_osk_native_available(void)
 #endif
 }
 
+#ifdef HAVE_LANGEXTRA
+/* The Chinese keyboard's first page for each pinyin initial, indexed by
+ * the initial. i, u and v have no page, and no game title starts with
+ * one. */
+static const enum osk_type osk_chinese_first_page[] = {
+   OSK_CHINESE_A_1,       OSK_CHINESE_B_1,       OSK_CHINESE_C_1,       OSK_CHINESE_D_1,    
+   OSK_CHINESE_E_1,       OSK_CHINESE_F_1,       OSK_CHINESE_G_1,       OSK_CHINESE_H_1,    
+   OSK_TYPE_UNKNOWN,      OSK_CHINESE_J_1,       OSK_CHINESE_K_1,       OSK_CHINESE_L_1,    
+   OSK_CHINESE_M_1,       OSK_CHINESE_N_1,       OSK_CHINESE_O_1,       OSK_CHINESE_P_1,    
+   OSK_CHINESE_Q_1,       OSK_CHINESE_R_1,       OSK_CHINESE_S_1,       OSK_CHINESE_T_1,    
+   OSK_TYPE_UNKNOWN,      OSK_TYPE_UNKNOWN,      OSK_CHINESE_W_1,       OSK_CHINESE_X_1,    
+   OSK_CHINESE_Y_1,       OSK_CHINESE_Z_1,    
+};
+#endif
+
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
@@ -7904,6 +7919,16 @@ void input_event_osk_append(
       input_keyboard_event(true, '\x7f', '\x7f', 0, RETRO_DEVICE_KEYBOARD);
    else if (memcmp(word, "\xe2\x8f\x8e", 4) == 0) /* return character */
       input_keyboard_event(true, '\n', '\n', 0, RETRO_DEVICE_KEYBOARD);
+   else if (   *osk_idx >= OSK_CHINESE_INDEX
+            && (   memcmp(word, "\xe2\x87\xa7", 4) == 0 /* up arrow */
+                || memcmp(word, "\xe2\x8c\x82", 4) == 0)) /* house */
+   {
+      /* Chinese pages come last in the enum, so this covers all of
+       * them. On a page it is "back to the initial index"; the index
+       * itself is its own parent, so there it leaves the keyboard. */
+      *osk_idx = (*osk_idx == OSK_CHINESE_INDEX)
+            ? OSK_LOWERCASE_LATIN : OSK_CHINESE_INDEX;
+   }
    else if (memcmp(word, "\xe2\x87\xa7", 4) == 0) /* up arrow */
       *osk_idx = OSK_UPPERCASE_LATIN;
    else if (memcmp(word, "\xe2\x87\xa9", 4) == 0) /* down arrow */
@@ -7930,6 +7955,14 @@ void input_event_osk_append(
    {
       unsigned character = *((unsigned*)word) | 0x01000000;
       input_keyboard_line_event(&input_driver_st, keyboard_line, character);
+   }
+   else if (   *osk_idx == OSK_CHINESE_INDEX
+            && len == 1 && word[0] >= 'a' && word[0] <= 'z')
+   {
+      /* an initial on the index page: its first page */
+      enum osk_type first = osk_chinese_first_page[word[0] - 'a'];
+      if (first != OSK_TYPE_UNKNOWN)
+         *osk_idx = first;
    }
 #else
    if (memcmp(word, "Bksp", 5) == 0)
