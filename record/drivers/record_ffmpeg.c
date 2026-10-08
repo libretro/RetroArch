@@ -276,6 +276,13 @@ typedef struct ffmpeg
    /* Frames dropped since the last queued one; rides along with the
     * next frame so the encoder leaves a pts gap for them. */
    unsigned video_pts_pending;
+   /* With audio, video is placed on the audio clock: every audio frame
+    * the core produced is its real elapsed time, and video_next_pts is
+    * the pts the encoder gives the next queued frame. Cores that don't
+    * present every tick (30 fps games on a 60 Hz core, frame skip,
+    * run-ahead) then still get the right spacing. Producer only. */
+   uint64_t audio_frames_in;
+   int64_t  video_next_pts;
    unsigned video_fifo_frames;
    bool     allow_frame_drop;
 
@@ -1873,6 +1880,20 @@ static bool ffmpeg_push_video_impl(void *data,
    }
 
    attr.pts_skip             = handle->video_pts_pending;
+   if (     handle->config.audio_enable
+         && handle->audio_frames_in
+         && handle->params.samplerate > 0.0)
+   {
+      /* This frame's place on the audio timeline, in codec time base
+       * units; never behind the previous frame. */
+      double  secs   = (double)handle->audio_frames_in
+         / handle->params.samplerate;
+      int64_t target = (int64_t)(secs * handle->params.fps
+            / handle->video.frame_drop_ratio + 0.5);
+      attr.pts_skip  = (target > handle->video_next_pts)
+         ? (unsigned)(target - handle->video_next_pts) : 0;
+   }
+   handle->video_next_pts   += (int64_t)attr.pts_skip + 1;
    handle->video_pts_pending = 0;
 
    /* Frame first, attr last: the encoder takes the attr as the
@@ -1921,6 +1942,7 @@ static bool ffmpeg_push_audio_impl(void *data,
       return true;
 
    need = audio_data->frames * handle->params.channels * sizeof(int16_t);
+   handle->audio_frames_in += audio_data->frames;
 
    if (handle->allow_frame_drop)
    {
