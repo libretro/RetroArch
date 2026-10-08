@@ -6491,7 +6491,7 @@ static unsigned menu_displaylist_parse_content_information(
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_CONTENT_INFO_PATH),
             sizeof(tmp));
       _len       += strlcpy_lit(tmp + _len, ": ", sizeof(tmp) - _len);
-      strlcpy(tmp + _len, *content_path
+      strlcpy(tmp + _len, (content_path && *content_path)
                   ? content_path
                   : msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NOT_AVAILABLE),
                   sizeof(tmp) - _len);
