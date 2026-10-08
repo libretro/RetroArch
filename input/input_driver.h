@@ -2281,6 +2281,17 @@ unsigned input_entries_count(void);
 bool input_entry_add(unsigned number, const char *spec);
 void input_entries_read(void *conf);
 
+/* Macros: buttons of the RetroPad pressed for a user a step at a time,
+ * a step lasting a number of the core's frames; read from the
+ * configuration's input_macro_N and started by an entry, "macro_N" or
+ * "macro_N@user" (see input_driver.c). Up to sixteen, of thirty-two
+ * steps at most. */
+void input_macros_clear(void);
+unsigned input_macros_count(void);
+bool input_macro_add(unsigned number, const char *spec);
+bool input_macro_start(unsigned number, unsigned user);
+bool input_macro_playing(unsigned user);
+
 /* One of a user's controls is remapped to @remap. A remap is set
  * through here and not written into the settings directly: it is
  * counted as a change, which is what has the frontend look at the

@@ -4541,6 +4541,59 @@ static int16_t input_state_device(
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT) \
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
 
+/* Macros: buttons of the RetroPad pressed for a user, a step at a time.
+ *
+ * A macro is steps, and a step is some of the RetroPad's buttons held
+ * for a number of the core's frames - not of the screen's, and not a
+ * time: the core reads the pad once for each frame it runs, so a macro
+ * is the same presses to the game at any speed, on any screen, paused
+ * and stepped, and in a replay. It is written in the configuration as
+ *
+ *    input_macro_1 = "down 2, down+right 2, right 2, a 4"
+ *
+ * and an entry starts it: input_combo_4 = "r3 : macro_1", for the
+ * first user, or "macro_1@2" for the second.
+ *
+ * It plays into what the user's controller is mapped to, through the
+ * same place a remapped button goes (the mapper), so the core is given
+ * it as it is given any press - and so with "Remap Controls" off a
+ * macro is not started. While one plays for a user that user
+ * has remap work at the poll, which is where a step is taken; with
+ * none playing there is nothing here on a frame at all.
+ *
+ * The steps of every macro are in one pool, so room is by what is
+ * written and not by what could be: sixteen macros, thirty-two steps
+ * to one, 256 steps in all. */
+#define INPUT_MACROS_MAX       16
+#define INPUT_MACRO_STEPS_MAX  32
+#define INPUT_MACRO_POOL       256
+
+typedef struct
+{
+   uint16_t buttons;   /* the RetroPad's, held for the step */
+   uint16_t frames;    /* of the core's */
+} input_macro_step_t;
+
+static struct
+{
+   input_macro_step_t pool[INPUT_MACRO_POOL];
+   struct
+   {
+      uint16_t first;  /* in the pool */
+      uint8_t  count;
+      uint8_t  number; /* the N of its input_macro_N */
+   } macro[INPUT_MACROS_MAX];
+   struct
+   {
+      uint16_t done;   /* frames of the step given */
+      uint8_t  macro;  /* which is playing */
+      uint8_t  step;
+   } run[MAX_USERS];
+   uint16_t users;     /* bit u: one is playing for user u */
+   uint16_t pool_used;
+   uint8_t  count;
+} input_macros;
+
 /* What is kept of the users' remaps of the pad.
  *
  * Two things were worked out from the remap table every frame: whether
@@ -4555,6 +4608,7 @@ static struct
 {
    bool     valid;
    uint16_t rows_differ;           /* bit u: user u has a button or an axis mapped away from itself */
+   uint16_t work;                  /* ... or a macro playing: the poll has remap work for user u */
    uint16_t ident16[MAX_USERS];    /* bit n: the RetroPad's n-th is mapped to itself */
 } input_remap_kept;
 
@@ -4581,9 +4635,79 @@ INPUT_NOINLINE static void input_remap_kept_make(void)
       input_remap_kept.ident16[user] = ident;
    }
    input_remap_kept.rows_differ = differ;
+   input_remap_kept.work        = differ | input_macros.users;
    /* a change made while this was done, from another thread: asked
     * again at the next reading */
    input_remap_kept.valid       = (input_config_binds_generation() == gen);
+}
+
+/* A macro stops for a user: nothing more is pressed for them. */
+static void input_macro_stop(unsigned user)
+{
+   input_macros.users     &= (uint16_t)~(1u << user);
+   input_remap_kept.work   = input_remap_kept.rows_differ | input_macros.users;
+}
+
+/* Macro @number starts for @user, from its first step; one already
+ * playing for them is left for it. False if there is no such macro. */
+bool input_macro_start(unsigned number, unsigned user)
+{
+   unsigned m;
+   if (user >= MAX_USERS)
+      return false;
+   /* It is played where a remapped button goes, and with "Remap
+    * Controls" off nothing goes there: it would be started and never
+    * played. Not started. */
+   if (!config_get_ptr()->bools.input_remap_binds_enable)
+      return false;
+   for (m = 0; m < input_macros.count; m++)
+      if (input_macros.macro[m].number == number)
+         break;
+   if (m == input_macros.count || !input_macros.macro[m].count)
+      return false;
+   input_macros.run[user].macro = (uint8_t)m;
+   input_macros.run[user].step  = 0;
+   input_macros.run[user].done  = 0;
+   input_macros.users          |= (uint16_t)(1u << user);
+   if (!input_remap_kept.valid)
+      input_remap_kept_make();
+   input_remap_kept.work        = input_remap_kept.rows_differ | input_macros.users;
+   return true;
+}
+
+bool input_macro_playing(unsigned user)
+{
+   return user < MAX_USERS && ((input_macros.users >> user) & 1);
+}
+
+/* The buttons the macro playing for @user presses at this poll, and
+ * the macro moved on by a frame. */
+INPUT_NOINLINE static unsigned input_macro_frame(unsigned user)
+{
+   unsigned m     = input_macros.run[user].macro;
+   unsigned step  = input_macros.run[user].step;
+   const input_macro_step_t *st;
+
+   if (     m >= input_macros.count
+         || step >= input_macros.macro[m].count)
+   {
+      input_macro_stop(user);
+      return 0;
+   }
+   st = &input_macros.pool[input_macros.macro[m].first + step];
+   /* Input is polled with the core paused or idle, too, for the
+    * hotkeys: the core runs no frame then, and the macro stands where
+    * it is. (A frame stepped while paused is run with the pause taken
+    * off for it, and counts.) */
+   if (runloop_get_flags() & (RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE))
+      return st->buttons;
+   if (++input_macros.run[user].done >= st->frames)
+   {
+      input_macros.run[user].done = 0;
+      if (++input_macros.run[user].step >= input_macros.macro[m].count)
+         input_macro_stop(user);
+   }
+   return st->buttons;
 }
 
 /* One of a user's controls is remapped: written here so that it is
@@ -11354,7 +11478,8 @@ INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
 enum
 {
    INPUT_ENTRY_HOTKEY = 1,
-   INPUT_ENTRY_COMMAND
+   INPUT_ENTRY_COMMAND,
+   INPUT_ENTRY_MACRO      /* its number, and above that the user it plays for */
 };
 
 typedef struct
@@ -11541,6 +11666,31 @@ bool input_entry_add(unsigned number, const char *spec)
    /* the enabler is held to reach the others: it is not reached */
    if (e.kind == INPUT_ENTRY_HOTKEY && e.target == RARCH_ENABLE_HOTKEY)
       return false;
+   if (!e.kind && !strncmp(word, "macro_", 6))
+   {
+      /* a macro by its number, for the first user or the one after @ */
+      unsigned number = 0, user = 1;
+      const char *d   = word + 6;
+      if (*d < '0' || *d > '9')
+         return false;
+      for (; *d >= '0' && *d <= '9'; d++)
+         if ((number = number * 10 + (unsigned)(*d - '0')) > 255)
+            return false;
+      if (*d == '@')
+      {
+         user = 0;
+         d++;
+         if (*d < '0' || *d > '9')
+            return false;
+         for (; *d >= '0' && *d <= '9'; d++)
+            if ((user = user * 10 + (unsigned)(*d - '0')) > MAX_USERS)
+               return false;
+      }
+      if (*d || !number || !user)
+         return false;
+      e.kind   = INPUT_ENTRY_MACRO;
+      e.target = (uint16_t)(number | ((user - 1) << 8));
+   }
    if (!e.kind)
    {
       for (i = 0; i < ARRAY_SIZE(input_entry_commands); i++)
@@ -11564,16 +11714,137 @@ bool input_entry_add(unsigned number, const char *spec)
    return true;
 }
 
-/* The configuration's entries, in place of the ones there are:
- * input_combo_1 and up, as many as there is room for. */
+void input_macros_clear(void)
+{
+   unsigned user;
+   for (user = 0; user < MAX_USERS; user++)
+      if (input_macros.users & (1u << user))
+         input_macro_stop(user);
+   input_macros.count     = 0;
+   input_macros.pool_used = 0;
+}
+
+unsigned input_macros_count(void)
+{
+   return input_macros.count;
+}
+
+/* A macro, as the configuration writes it: steps with commas between,
+ * each some buttons of the RetroPad with + between them, or - for
+ * none, and the frames it lasts: "down 2, down+right 2, - 1, a 4".
+ * False, and nothing added, if it does not read as one, is longer than
+ * a macro may be, or there is no room left for its steps. */
+bool input_macro_add(unsigned number, const char *spec)
+{
+   char word[64];
+   unsigned i;
+   unsigned steps      = 0;
+   const char *s       = spec;
+   const char *end_all = spec ? spec + strlen(spec) : NULL;
+   input_macro_step_t step[INPUT_MACRO_STEPS_MAX];
+
+   if (     !spec || !number || number > 255
+         || input_macros.count >= INPUT_MACROS_MAX)
+      return false;
+   for (i = 0; i < input_macros.count; i++)
+      if (input_macros.macro[i].number == number)
+         return false;
+
+   while (s < end_all)
+   {
+      const char *comma = (const char*)memchr(s, ',', (size_t)(end_all - s));
+      const char *end   = comma ? comma : end_all;
+      const char *sp;
+      const char *b;
+      unsigned frames   = 0;
+      unsigned buttons  = 0;
+
+      if (steps == INPUT_MACRO_STEPS_MAX)
+         return false;
+      /* the frames: the last word of the step */
+      while (end > s && (end[-1] == ' ' || end[-1] == '\t'))
+         end--;
+      sp = end;
+      while (sp > s && sp[-1] >= '0' && sp[-1] <= '9')
+         sp--;
+      if (sp == end || sp == s || (sp[-1] != ' ' && sp[-1] != '\t'))
+         return false;
+      for (b = sp; b < end; b++)
+         if ((frames = frames * 10 + (unsigned)(*b - '0')) > 0xffff)
+            return false;
+      if (!frames)
+         return false;
+      /* the buttons before them */
+      b = s;
+      while (b < sp)
+      {
+         const char *plus = (const char*)memchr(b, '+', (size_t)(sp - b));
+         const char *bend = plus ? plus : sp;
+         if (!input_entry_word(b, bend, word, sizeof(word)))
+            return false;
+         if (strcmp(word, "-"))
+         {
+            for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+            {
+               const char *base = input_config_bind_map_get_base(i);
+               if (base && !strcmp(base, word))
+                  break;
+            }
+            if (i == RARCH_FIRST_CUSTOM_BIND)
+               return false;
+            buttons |= (1u << i);
+         }
+         else if (plus || b != s)
+            return false;   /* "-" is a step's only word */
+         b = bend + 1;
+      }
+      step[steps].buttons = (uint16_t)buttons;
+      step[steps].frames  = (uint16_t)frames;
+      steps++;
+      /* a comma is between two steps: not after the last */
+      if (comma && comma + 1 == end_all)
+         return false;
+      s = comma ? comma + 1 : end_all;
+   }
+   if (!steps || input_macros.pool_used + steps > INPUT_MACRO_POOL)
+      return false;
+
+   memcpy(&input_macros.pool[input_macros.pool_used], step,
+         steps * sizeof(step[0]));
+   input_macros.macro[input_macros.count].first  = input_macros.pool_used;
+   input_macros.macro[input_macros.count].count  = (uint8_t)steps;
+   input_macros.macro[input_macros.count].number = (uint8_t)number;
+   input_macros.pool_used                        = (uint16_t)(input_macros.pool_used + steps);
+   input_macros.count++;
+   return true;
+}
+
+/* The configuration's entries and macros, in place of the ones there
+ * are: input_combo_1 and input_macro_1 and up, as many as there is
+ * room for. */
 void input_entries_read(void *data)
 {
    unsigned i;
    config_file_t *conf = (config_file_t*)data;
 
    input_entries_clear();
+   input_macros_clear();
    if (!conf)
       return;
+   for (i = 1; i <= INPUT_MACROS_MAX; i++)
+   {
+      char key[32];
+      struct config_entry_list *entry;
+      snprintf(key, sizeof(key), "input_macro_%u", i);
+      entry = config_get_entry(conf, key);
+      if (!entry || !entry->value || !*entry->value)
+         continue;
+      if (!input_macro_add(i, entry->value))
+         RARCH_WARN("[Input] %s = \"%s\" is not read: it wants steps"
+               " with commas between, each \"buttons with + between"
+               " them, or -, and a number of frames\".\n",
+               key, entry->value);
+   }
    for (i = 1; i <= INPUT_ENTRIES_MAX; i++)
    {
       char key[32];
@@ -11688,8 +11959,11 @@ INPUT_NOINLINE static void input_entries_frame(
          continue;
       if (e->kind == INPUT_ENTRY_HOTKEY)
          BIT256_SET_PTR(p_new_state, e->target);
-      else if (   !(input_entries.on & (1u << i))
-               && input_entries.command_count < INPUT_ENTRIES_MAX)
+      else if (input_entries.on & (1u << i))
+         continue;   /* given when it went down: not again while it stays */
+      else if (e->kind == INPUT_ENTRY_MACRO)
+         input_macro_start(e->target & 0xff, e->target >> 8);
+      else if (input_entries.command_count < INPUT_ENTRIES_MAX)
          input_entries.commands[input_entries.command_count++] = e->target;
    }
    /* a timed one whose sources are up, or held back, starts over */
@@ -13308,7 +13582,8 @@ static bool input_remap_user_has_work(const settings_t *settings,
           * the user's row with the row that maps nothing, every poll */
          if (!input_remap_kept.valid)
             input_remap_kept_make();
-         return (input_remap_kept.rows_differ >> user) & 1;
+         /* (a macro playing for the user is work too: the same bit) */
+         return (input_remap_kept.work >> user) & 1;
       case RETRO_DEVICE_KEYBOARD:
          {
             const unsigned *keys = settings->uints.input_keymapper_ids[user];
@@ -13888,6 +14163,11 @@ void input_driver_poll(void)
 
                for (j = 0; j < 8; j++)
                   handle->analog_value[i][j] = 0;
+
+               /* a macro playing for this user: its step's buttons,
+                * pressed as a remapped button is */
+               if (input_macros.users & (1u << i))
+                  handle->buttons[i].data[0] |= input_macro_frame((unsigned)i);
 
                for (j = 0; j < RARCH_FIRST_CUSTOM_BIND; j++)
                {

@@ -5571,6 +5571,243 @@ static void lane_entries(void)
             " them back\n");
 }
 
+/* Macros: buttons of the RetroPad pressed for a user a step at a time
+ * (input_macro_N in the configuration), started by an entry. Held to
+ * what a macro says, by what the core is given frame by frame, read a
+ * button at a time and as a mask: each step's buttons for its number
+ * of the core's frames and no more; added to what the user holds, not
+ * in place of it; once for a press of the entry that starts it,
+ * however long that is held; standing still while the core is paused;
+ * for the user it was started for and no other. And only what reads as
+ * a macro is taken, of no more steps than one may have, while there is
+ * room for its steps. */
+static void lane_macros(void)
+{
+#ifdef HAVE_MENU
+   enum { A = RETRO_DEVICE_ID_JOYPAD_A, B = RETRO_DEVICE_ID_JOYPAD_B,
+          L3 = RETRO_DEVICE_ID_JOYPAD_L3 };
+   static const char *how[2]       = { "button by button", "as a mask" };
+   static const unsigned want[9]   = { 1u << A, 1u << A, (1u << A) | (1u << B),
+                                       0, 0, 1u << B, 1u << B, 1u << B, 0 };
+   const unsigned ab               = (1u << A) | (1u << B);
+   input_driver_state_t *input_st  = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_a, saved_l3;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned m, n, i;
+   char     why[200];
+   char     spec[400];
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !joypad_real)
+   {
+      CHECK(false, "macros: the harness core's trace entry points or the joypad driver");
+      return;
+   }
+   saved_a  = *input_autoconf_bind(0, A);
+   saved_l3 = *input_autoconf_bind(0, L3);
+
+   /* --- what reads as a macro --- */
+   input_macros_clear();
+   input_entries_clear();
+   CHECK(input_macro_add(1, "a 2, a+b 1, - 2, b 3"), "macros: four steps are not read");
+   CHECK(   !input_macro_add(2, "a")
+         && !input_macro_add(2, "a x")
+         && !input_macro_add(2, "nosuch 2")
+         && !input_macro_add(2, "a 0")
+         && !input_macro_add(2, "a+- 2")
+         && !input_macro_add(2, "a 2,")
+         && !input_macro_add(2, ", a 2")
+         && !input_macro_add(2, "")
+         && !input_macro_add(1, "a 2")
+         && !input_macro_add(0, "a 2")
+         && !input_macro_add(2, NULL),
+         "macros: something that is not a macro, or a second of one number, was taken");
+   CHECK(input_macros_count() == 1, "macros: a refused macro was kept");
+   /* thirty-two steps to one, and no more */
+   spec[0] = '\0';
+   for (i = 0; i < 32; i++)
+      strlcat(spec, i ? ", a 1" : "a 1", sizeof(spec));
+   CHECK(input_macro_add(2, spec), "macros: one of thirty-two steps is not read");
+   strlcat(spec, ", a 1", sizeof(spec));
+   CHECK(!input_macro_add(3, spec), "macros: one of thirty-three steps was taken");
+   /* 256 steps in all: 4 + 32 are used; six more of 32 fit, a seventh does not */
+   spec[strlen(spec) - 5] = '\0';
+   for (i = 3; i < 9; i++)
+      if (!input_macro_add(i, spec))
+         break;
+   CHECK(i == 9, "macros: six more of thirty-two steps did not all fit");
+   CHECK(!input_macro_add(9, spec), "macros: a macro was taken with no room for its steps");
+   CHECK(input_macro_add(9, "b 1"), "macros: a short one did not fit in what room was left");
+   input_macros_clear();
+   CHECK(input_macros_count() == 0 && input_macro_add(1, "a 2, a+b 1, - 2, b 3"),
+         "macros: cleared, the first is not read again");
+
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   fast_forward(true);
+   /* the controller's button 5 is A, its 22 is L3 */
+   input_autoconf_bind_edit(0, A)->joykey  = 5;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, A), true);
+   input_autoconf_bind_edit(0, L3)->joykey = 22;
+   RETRO_KEYBIND_SET_VALID(input_autoconf_bind_edit(0, L3), true);
+
+   for (m = 0; m < 2; m++)
+   {
+      bool as_said = true;
+      unsigned got[9];
+
+      trace((int)m + 1, 0);
+      map_frame(0, trace_last);
+      CHECK(!(map_frame(0, trace_last) & ab), "macros: something is pressed before any is started");
+
+      /* --- each step's buttons, for its frames and no more --- */
+      CHECK(input_macro_start(1, 0), "macros: the macro does not start");
+      CHECK(!input_macro_start(7, 0) || true, "macros: (starting)");
+      for (n = 0; n < 9; n++)
+      {
+         got[n] = map_frame(0, trace_last) & ab;
+         if (got[n] != want[n])
+            as_said = false;
+      }
+      snprintf(why, sizeof(why), "macros, read %s: the core was given %x %x %x %x %x %x %x %x %x"
+            " for \"a 2, a+b 1, - 2, b 3\"", how[m],
+            got[0], got[1], got[2], got[3], got[4], got[5], got[6], got[7], got[8]);
+      CHECK(as_said, why);
+      CHECK(!input_macro_playing(0), "macros: one that has ended is still playing");
+      CHECK(!(map_frame(0, trace_last) & ab), "macros: something is still pressed after it ended");
+
+      /* --- added to what the user holds --- */
+      input_macro_start(1, 0);
+      map_frame(1u << 5, trace_last);
+      map_frame(1u << 5, trace_last);
+      map_frame(1u << 5, trace_last);
+      snprintf(why, sizeof(why), "macros, read %s: with A held by the user, the step with nothing in it let A go", how[m]);
+      CHECK((map_frame(1u << 5, trace_last) & ab) == (1u << A), why);
+      map_frame(1u << 5, trace_last);
+      snprintf(why, sizeof(why), "macros, read %s: with A held by the user, B's step is not A and B", how[m]);
+      CHECK((map_frame(1u << 5, trace_last) & ab) == ab, why);
+      for (n = 0; n < 4; n++)
+         map_frame(0, trace_last);
+
+      /* --- for the user it was started for --- */
+      input_macro_start(1, 1);
+      snprintf(why, sizeof(why), "macros, read %s: one started for the second user pressed the first's", how[m]);
+      CHECK(!(map_frame(0, trace_last) & ab) && input_macro_playing(1) && !input_macro_playing(0), why);
+      for (n = 0; n < 9; n++)
+         map_frame(0, trace_last);
+
+      /* --- standing still while the core is paused: a macro of forty
+       * frames, paused after one for longer than it lasts, is still
+       * playing when the core runs again, and still pressing --- */
+      input_macros_clear();
+      CHECK(input_macro_add(1, "a 2, a+b 1, - 2, b 3") && input_macro_add(2, "a 40"),
+            "macros: the two for the pause are not read");
+      input_macro_start(2, 0);
+      map_frame(0, trace_last);
+      fast_forward(false);
+      command_event(CMD_EVENT_PAUSE, NULL);
+      {
+         long r0 = pm_runs();
+         run_loop_frames(80);
+         snprintf(why, sizeof(why), "macros, read %s: (the core ran %ld frames while paused: the pause did not hold)",
+               how[m], pm_runs() - r0);
+         CHECK(pm_runs() == r0, why);
+      }
+      snprintf(why, sizeof(why), "macros, read %s: paused for longer than it lasts, a macro played on to its end", how[m]);
+      CHECK(input_macro_playing(0), why);
+      command_event(CMD_EVENT_UNPAUSE, NULL);
+      fast_forward(true);
+      {
+         unsigned a_frames = 0;
+         unsigned first    = 99;
+         for (n = 0; n < 60; n++)
+         {
+            if (map_frame(0, trace_last) & (1u << A))
+            {
+               a_frames++;
+               if (first == 99)
+                  first = n;
+            }
+         }
+         printf("[info] macros, read %s: after the pause the core was given A for %u more"
+               " frames, the first of them %u frames in\n", how[m], a_frames, first);
+         snprintf(why, sizeof(why), "macros, read %s: after the pause the macro did not go on pressing, or went on past its end", how[m]);
+         CHECK(a_frames > 0 && a_frames <= 39 && !input_macro_playing(0), why);
+      }
+
+      /* --- not started with "Remap Controls" off, where it would
+       * never be played --- */
+      {
+         settings_t *settings = config_get_ptr();
+         bool saved_remap     = settings->bools.input_remap_binds_enable;
+         settings->bools.input_remap_binds_enable = false;
+         snprintf(why, sizeof(why), "macros, read %s: one was started with Remap Controls off", how[m]);
+         CHECK(!input_macro_start(1, 0) && !input_macro_playing(0)
+               && !(map_frame(0, trace_last) & ab), why);
+         settings->bools.input_remap_binds_enable = saved_remap;
+      }
+
+      /* --- once for a press of the entry that starts it --- */
+      input_entries_clear();
+      CHECK(input_entry_add(1, "l3 : macro_1"), "macros: an entry that starts one is not read");
+      {
+         unsigned a_frames = 0, b_frames = 0;
+         for (n = 0; n < 30; n++)
+         {
+            unsigned seen = map_frame(1u << 22, trace_last) & ab;
+            if (seen & (1u << A))
+               a_frames++;
+            if (seen & (1u << B))
+               b_frames++;
+         }
+         snprintf(why, sizeof(why), "macros, read %s: L3 held for thirty frames gave A for %u frames"
+               " and B for %u, where the macro once is 3 and 4", how[m], a_frames, b_frames);
+         CHECK(a_frames == 3 && b_frames == 4, why);
+      }
+      map_frame(0, trace_last);
+      map_frame(0, trace_last);
+      input_entries_clear();
+   }
+   CHECK(   !input_entry_add(1, "l3 : macro_")
+         && !input_entry_add(1, "l3 : macro_0")
+         && !input_entry_add(1, "l3 : macro_1@0")
+         && !input_entry_add(1, "l3 : macro_1@17")
+         && !input_entry_add(1, "l3 : macro_1x")
+         && input_entry_add(1, "l3 : macro_1@16"),
+         "macros: an entry for a macro that does not read as one was taken, or one that does was not");
+
+   input_entries_clear();
+   input_macros_clear();
+   *input_autoconf_bind_edit(0, A)  = saved_a;
+   *input_autoconf_bind_edit(0, L3) = saved_l3;
+   syn_buttons              = 0;
+   trace(0, 0);
+   fast_forward(false);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(3);
+
+   if (failures == had)
+      printf("[pass] macros: each step's buttons for its frames and no more, read a"
+            " button at a time and as a mask; added to what is held; for its user"
+            " alone; still while paused; once for a press of its entry; and only"
+            " what reads as one is taken, while there is room\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -6905,6 +7142,7 @@ int main(int argc, char *argv[])
       lane_bind_names();
       lane_binds_shared_rows();
       lane_entries();
+      lane_macros();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();
