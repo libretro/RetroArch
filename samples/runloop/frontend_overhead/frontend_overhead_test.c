@@ -4700,6 +4700,105 @@ static void lane_keyboard_holders(void)
             " for a key each hold the keyboard and let go of their own hold\n");
 }
 
+/* There is one set of hotkeys: the first user's, whichever port the
+ * hotkeys are read on. The configuration loads and saves only that
+ * set and the menu shows only that one; but the hotkey pass read the
+ * row of the port it was on, so with "Hotkeys Follow Player 1" and
+ * that player on another port it read a row nothing fills, and a
+ * hotkey on a key of the keyboard did nothing. Held to it with a
+ * keyboard that has the pause hotkey's key down: it pauses with the
+ * hotkeys on the first port, and with them on the second. */
+static bool os_g_down;
+static void os_keys_down(void *data, unsigned port,
+      const uint16_t *keys, const uint8_t *bind, unsigned count,
+      uint32_t *down)
+{
+   unsigned i;
+   /* one keyboard, whichever port asks */
+   (void)data; (void)port; (void)bind;
+   for (i = 0; i < count; i++)
+      if (os_g_down && keys[i] == RETROK_g)
+         down[i >> 5] |= (1u << (i & 31));
+}
+
+static void os_tap(void)
+{
+   os_g_down = true;
+   run_loop_frames(3);
+   os_g_down = false;
+   run_loop_frames(3);
+}
+
+static void lane_hotkeys_one_set(void)
+{
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   input_driver_t *saved_input    = input_st->current_driver;
+   static input_driver_t os_input;
+   struct retro_keybind saved_pause = input_config_binds[0][RARCH_PAUSE_TOGGLE];
+   struct retro_keybind saved_en    = input_config_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_auto0 = input_autoconf_binds[0][RARCH_ENABLE_HOTKEY];
+   struct retro_keybind saved_auto1 = input_autoconf_binds[1][RARCH_ENABLE_HOTKEY];
+   bool saved_follow                = settings->bools.input_hotkey_follows_player1;
+   unsigned saved_map               = settings->uints.input_remap_port_map[0][0];
+   unsigned had                     = failures;
+
+   if (!saved_input)
+   {
+      CHECK(false, "one hotkey set: no input driver");
+      return;
+   }
+   os_input                 = *saved_input;
+   os_input.keys_down       = os_keys_down;
+   input_st->current_driver = &os_input;
+
+   /* pause on a key, and no enabler anywhere */
+   RETRO_KEYBIND_SET_KEY(&input_config_binds[0][RARCH_PAUSE_TOGGLE], RETROK_g);
+   RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RARCH_PAUSE_TOGGLE], true);
+   RETRO_KEYBIND_SET_KEY(&input_config_binds[0][RARCH_ENABLE_HOTKEY], RETROK_UNKNOWN);
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey    = NO_BTN;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY].joyaxis   = AXIS_NONE;
+   input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joykey  = NO_BTN;
+   input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joyaxis = AXIS_NONE;
+   input_autoconf_binds[1][RARCH_ENABLE_HOTKEY].joykey  = NO_BTN;
+   input_autoconf_binds[1][RARCH_ENABLE_HOTKEY].joyaxis = AXIS_NONE;
+   binds_written_by_a_lane();
+   run_loop_frames(3);
+   CHECK(!hf_paused(), "one hotkey set: paused to begin with");
+
+   /* the hotkeys on the first port */
+   os_tap();
+   CHECK(hf_paused(), "one hotkey set: the pause key did not pause with the hotkeys on the first port");
+   os_tap();
+   CHECK(!hf_paused(), "one hotkey set: ... and did not unpause");
+
+   /* the hotkeys on the second: the same set, the same key */
+   settings->bools.input_hotkey_follows_player1 = true;
+   settings->uints.input_remap_port_map[0][0]   = 1;
+   run_loop_frames(2);
+   os_tap();
+   CHECK(hf_paused(), "one hotkey set: the pause key did not pause with the hotkeys"
+         " on the second port");
+   os_tap();
+   CHECK(!hf_paused(), "one hotkey set: ... and did not unpause there");
+   if (hf_paused())
+      os_tap();
+
+   settings->bools.input_hotkey_follows_player1 = saved_follow;
+   settings->uints.input_remap_port_map[0][0]   = saved_map;
+   input_config_binds[0][RARCH_PAUSE_TOGGLE]    = saved_pause;
+   input_config_binds[0][RARCH_ENABLE_HOTKEY]   = saved_en;
+   input_autoconf_binds[0][RARCH_ENABLE_HOTKEY] = saved_auto0;
+   input_autoconf_binds[1][RARCH_ENABLE_HOTKEY] = saved_auto1;
+   input_st->current_driver = saved_input;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] one hotkey set: the first user's hotkeys are the hotkeys,"
+            " on whichever port they are read\n");
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -6029,6 +6128,7 @@ int main(int argc, char *argv[])
       lane_mask_and_buttons();
       lane_keys_current();
       lane_keyboard_holders();
+      lane_hotkeys_one_set();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

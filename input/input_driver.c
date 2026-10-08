@@ -236,6 +236,29 @@ const unsigned input_config_bind_order[24] = {
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
+
+/* A port's bind as configured. The RetroPad's, the sticks', the
+ * lightgun's and the rest that are a port's are the port's own.
+ *
+ * A hotkey's is another matter: there is one set of hotkeys, the first
+ * user's. The configuration has only ever loaded and saved that set,
+ * the menu only ever shown it, and the keyboard's events and the
+ * menu's keys have gone by it all along. So on the port the hotkeys
+ * are read on - whichever that is - a hotkey's bind is the first
+ * user's; what read that port's own row instead, when the hotkeys
+ * follow player 1 to another port, found a row nothing fills. On any
+ * other port a hotkey has no bind of the port's - which is what those
+ * rows held - and only its controller's profile can be behind one. */
+static unsigned input_hotkey_port_seen;
+
+static const struct retro_keybind input_hotkey_bind_none = {
+   AXIS_NONE, NO_BTN,
+   RETRO_KEYBIND_ATTR(RETROK_UNKNOWN, NO_BTN, true) };
+
+#define INPUT_CONFIG_BIND(port, i) \
+   (  ((i) < RARCH_FIRST_META_KEY)           ? &input_config_binds[(port)][(i)] \
+    : ((port) == input_hotkey_port_seen)     ? &input_config_binds[0][(i)] \
+    :                                          &input_hotkey_bind_none)
 retro_keybind_set input_autoconf_binds[MAX_USERS];
 retro_atomic_int_t input_binds_generation;
 /* The ports whose keys the last poll made current: see
@@ -1022,7 +1045,6 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
 {
    unsigned i;
    input_port_pads_t *pads           = &input_port_pads[port];
-   const struct retro_keybind *binds = input_config_binds[port];
    const struct retro_keybind *autob;
    unsigned joy_idx = config_get_ptr()->uints.input_joypad_index[port];
 
@@ -1034,10 +1056,10 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
    memset(pads->pad_ok,  0, sizeof(pads->pad_ok));
    for (i = 0; i < RARCH_BIND_LIST_END; i++)
    {
-      uint16_t key  = (binds[i].joykey  != NO_BTN)
-         ? binds[i].joykey  : autob[i].joykey;
-      uint32_t axis = (binds[i].joyaxis != AXIS_NONE)
-         ? binds[i].joyaxis : autob[i].joyaxis;
+      uint16_t key  = (INPUT_CONFIG_BIND(port, i)->joykey  != NO_BTN)
+         ? INPUT_CONFIG_BIND(port, i)->joykey  : autob[i].joykey;
+      uint32_t axis = (INPUT_CONFIG_BIND(port, i)->joyaxis != AXIS_NONE)
+         ? INPUT_CONFIG_BIND(port, i)->joyaxis : autob[i].joyaxis;
       /* nothing behind it - most binds: its place is not written, and
        * not read either, its bit being clear. The RetroPad's sixteen
        * are written whatever is behind them: they are handed to the
@@ -1049,7 +1071,7 @@ INPUT_NOINLINE static void input_port_pads_make(unsigned port, unsigned gen)
       if (key == NO_BTN && axis == AXIS_NONE)
          continue;
       pads->has_pad[i >> 5] |= (1u << (i & 31));
-      if (RETRO_KEYBIND_VALID(&binds[i]))
+      if (RETRO_KEYBIND_VALID(INPUT_CONFIG_BIND(port, i)))
          pads->pad_ok[i >> 5] |= (1u << (i & 31));
    }
    pads->autob = autob;
@@ -1884,7 +1906,6 @@ static void input_port_keys_refresh(input_port_keys_t *k,
 
    if (k->binds_gen != gen)
    {
-      const struct retro_keybind *binds = input_config_binds[port];
       if (input_autoconf_any_pad_gen != gen)
          input_autoconf_any_pad_refresh(gen);
       k->count     = 0;
@@ -1896,27 +1917,27 @@ static void input_port_keys_refresh(input_port_keys_t *k,
       {
          unsigned key;
          /* its own pad button or axis, or one some profile gives it */
-         bool pad =    binds[i].joykey  != NO_BTN
-                    || binds[i].joyaxis != AXIS_NONE
+         bool pad =    INPUT_CONFIG_BIND(port, i)->joykey  != NO_BTN
+                    || INPUT_CONFIG_BIND(port, i)->joyaxis != AXIS_NONE
                     || (input_autoconf_any_pad[i >> 5] & (1u << (i & 31)));
          if (pad && i < RARCH_FIRST_CUSTOM_BIND)
             k->pad_any16 |= (uint16_t)(1u << i);
-         if (!RETRO_KEYBIND_VALID(&binds[i]))
+         if (!RETRO_KEYBIND_VALID(INPUT_CONFIG_BIND(port, i)))
             continue;
          if (i < RARCH_FIRST_CUSTOM_BIND)
             k->usable16 |= (uint16_t)(1u << i);
          if (pad)
             k->has_pad[i >> 5] |= (1u << (i & 31));
-         key = RETRO_KEYBIND_KEY(&binds[i]);
+         key = RETRO_KEYBIND_KEY(INPUT_CONFIG_BIND(port, i));
          if (key && key < RETROK_LAST)
          {
             k->key[k->count]    = (uint16_t)key;
             k->bind[k->count++] = (uint8_t)i;
          }
-         if (RETRO_KEYBIND_MBUTTON(&binds[i]) <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
+         if (RETRO_KEYBIND_MBUTTON(INPUT_CONFIG_BIND(port, i)) <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
          {
             k->has_mbutton[i >> 5] |= (1u << (i & 31));
-            k->mbutton[i]           = (uint8_t)RETRO_KEYBIND_MBUTTON(&binds[i]);
+            k->mbutton[i]           = (uint8_t)RETRO_KEYBIND_MBUTTON(INPUT_CONFIG_BIND(port, i));
          }
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
@@ -1924,7 +1945,8 @@ static void input_port_keys_refresh(input_port_keys_t *k,
       k->stick_ok     = 0;
       for (i = 0; i < 2; i++)
       {
-         const struct retro_keybind *stick = &binds[RARCH_ANALOG_LEFT_X_PLUS + i * 4];
+         const struct retro_keybind *stick =
+            &input_config_binds[port][RARCH_ANALOG_LEFT_X_PLUS + i * 4];
          if (     RETRO_KEYBIND_VALID(&stick[0]) && RETRO_KEYBIND_VALID(&stick[1])
                && RETRO_KEYBIND_VALID(&stick[2]) && RETRO_KEYBIND_VALID(&stick[3]))
             k->stick_ok |= (uint8_t)(1u << i);
@@ -2361,13 +2383,13 @@ INPUT_NOINLINE static int32_t input_state_wrap_slow(
                usable  = true;
             }
          }
-         else if (RETRO_KEYBIND_VALID(&binds[_port][id]))
+         else if (RETRO_KEYBIND_VALID(INPUT_CONFIG_BIND(_port, id)))
          {
-            joykey  = (binds[_port][id].joykey != NO_BTN)
-               ? binds[_port][id].joykey
+            joykey  = (INPUT_CONFIG_BIND(_port, id)->joykey != NO_BTN)
+               ? INPUT_CONFIG_BIND(_port, id)->joykey
                : joypad_info->auto_binds[id].joykey;
-            joyaxis = (binds[_port][id].joyaxis != AXIS_NONE)
-               ? binds[_port][id].joyaxis
+            joyaxis = (INPUT_CONFIG_BIND(_port, id)->joyaxis != AXIS_NONE)
+               ? INPUT_CONFIG_BIND(_port, id)->joyaxis
                : joypad_info->auto_binds[id].joyaxis;
             usable  = true;
          }
@@ -10719,9 +10741,10 @@ INPUT_NOINLINE static void input_port_hotkeys_make(unsigned port,
       unsigned gen, const struct retro_keybind *autob)
 {
    input_port_hotkeys_t *hot          = &input_port_hotkeys[port];
-   const struct retro_keybind *binds  = input_config_binds[port];
-   const struct retro_keybind *en     = &binds[RARCH_ENABLE_HOTKEY];
-   const struct retro_keybind *menu   = &binds[RARCH_MENU_TOGGLE];
+   /* the enabler and the menu toggle are hotkeys: the one set's, with
+    * this port's controller's profile behind them */
+   const struct retro_keybind *en     = INPUT_CONFIG_BIND(port, RARCH_ENABLE_HOTKEY);
+   const struct retro_keybind *menu   = INPUT_CONFIG_BIND(port, RARCH_MENU_TOGGLE);
    /* a read with no profile: nothing there, as no button and no axis */
    static const struct retro_keybind none = {
       AXIS_NONE, NO_BTN,
@@ -10799,7 +10822,8 @@ INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
 {
    unsigned i;
    input_hotkey_set_t *set           = &input_hotkey_set;
-   const struct retro_keybind *binds = input_config_binds[port];
+   /* the one set of hotkeys: the same binds for any port */
+   const struct retro_keybind *binds = input_config_binds[0];
 
    if (set->port_plus1)
       input_port_hotkeys[set->port_plus1 - 1].flags &= ~INPUT_HK_HAS_SET;
@@ -13976,6 +14000,23 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
    joypad_info.axis_threshold          = settings->floats.input_axis_threshold;
 
    /* Gather input from each (enabled) joypad */
+   /* The port the hotkeys are read on: the first, or with "Hotkeys
+    * Follow Player 1" the one that player (the first user mapped to
+    * core port 0) is mapped from. Worked out here once; it was worked
+    * out again at each port. A move is a change to what a hotkey's
+    * bind is for two ports, and is counted as a change to the binds. */
+   if (settings->bools.input_hotkey_follows_player1)
+   {
+      hotkey_port = settings->uints.input_remap_port_map[0][0];
+      if (hotkey_port >= MAX_USERS)
+         hotkey_port = 0;
+   }
+   if (hotkey_port != input_hotkey_port_seen)
+   {
+      input_hotkey_port_seen = hotkey_port;
+      input_config_binds_changed();
+   }
+
    for (port = 0; port < (int)max_users; port++)
    {
       joypad_info.joy_idx                    = settings->uints.input_joypad_index[port];
@@ -14071,16 +14112,6 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
          }
       }
 #endif /* HAVE_MENU */
-
-      if (settings->bools.input_hotkey_follows_player1)
-      {
-         /* Hotkeys are bound to player 1 (the first user mapped to core port 0),
-          * even if player 1 is remapped to a different user. */
-         hotkey_port = settings->uints.input_remap_port_map[0][0];
-
-         if (hotkey_port >= MAX_USERS)
-            hotkey_port = 0;
-      }
 
       input_keys_pressed(
             port,
