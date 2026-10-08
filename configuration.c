@@ -7757,6 +7757,8 @@ static bool config_load_file(const char *path, settings_t *settings)
    if (size_settings)
       free(size_settings);
    first_load = false;
+   /* each port's deadzones, from the settings now loaded */
+   input_driver_deadzones_refresh();
    return true;
 }
 
@@ -7950,6 +7952,8 @@ bool config_load_override(void *data)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+   /* each port's deadzones, from the override's settings */
+   input_driver_deadzones_refresh();
    return true;
 }
 
@@ -7993,6 +7997,8 @@ bool config_load_override_file(const char *config_path)
    else
       runloop_state_get_ptr()->flags &= ~RUNLOOP_FLAG_OVERRIDES_ACTIVE;
 
+   /* each port's deadzones, from the override's settings */
+   input_driver_deadzones_refresh();
    return true;
 }
 
@@ -8054,6 +8060,8 @@ bool config_unload_override(void)
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_STATE_PATH, NULL);
    retroarch_override_setting_set(RARCH_OVERRIDE_SETTING_SAVE_PATH, NULL);
 
+   /* each port's deadzones, from the settings put back */
+   input_driver_deadzones_refresh();
    return true;
 }
 
@@ -8741,6 +8749,15 @@ bool config_save_autoconf_profile(const char *device_name, unsigned user)
    {
       config_set_int(conf, "input_vendor_id", vid_user);
       config_set_int(conf, "input_product_id", pid_user);
+   }
+
+   /* the controller's own deadzones, where it has them */
+   {
+      float v;
+      if ((v = input_config_get_device_deadzone(dev, 0)) >= 0.0f)
+         config_set_float(conf, "input_analog_deadzone", v);
+      if ((v = input_config_get_device_deadzone(dev, 1)) >= 0.0f)
+         config_set_float(conf, "input_analog_trigger_deadzone", v);
    }
 
    for (i = 0; i < RARCH_ANALOG_BIND_LIST_END && valid; i++)

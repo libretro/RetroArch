@@ -328,6 +328,11 @@ typedef struct
    char display_name[128];
    char phys[NAME_MAX_LENGTH];
    char config_name[NAME_MAX_LENGTH]; /* Base name of the RetroArch config file */
+   /* The controller's own deadzones, from its profile, in hundredths
+    * plus one: 0 is none of its own - the global setting goes - so
+    * that a cleared entry has none. [0] the sticks', [1] the analog
+    * buttons'. */
+   uint8_t deadzone[2];
    bool autoconfigured;
 } input_device_info_t;
 
@@ -737,6 +742,14 @@ typedef struct
    input_mapper_t mapper;          /* uint32_t alignment */
    input_remap_cache_t remapping_cache;
    input_device_info_t input_device_info[MAX_INPUT_DEVICES]; /* unsigned alignment */
+   /* Each controller's own deadzones, as input_device_info_t.deadzone
+    * has them, kept two bytes apiece where a stick read looks them up:
+    * the device info's stride is hundreds of bytes. */
+   uint8_t device_deadzone[MAX_INPUT_DEVICES][2];
+   /* Each user port's deadzones as its reads take them - [0] the
+    * sticks', [1] the analog buttons' - worked out by
+    * input_driver_deadzones_refresh() when what they come from changes. */
+   float port_deadzone[MAX_USERS][2];
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
    /* the listed keyboards' identities, and what each port reads */
@@ -1658,6 +1671,14 @@ void input_config_set_device_name(unsigned port, const char *name);
  * The port of the device to be assigned to
  */
 void input_config_set_device_display_name(unsigned port, const char *name);
+/* A controller's own stick and trigger deadzones, from its profile
+ * (each 0 to 0.95, or below 0 for none of its own), and what they are:
+ * below 0 for none. */
+void input_config_set_device_deadzones(unsigned port, float stick, float trigger);
+float input_config_get_device_deadzone(unsigned port, unsigned which);
+/* Each user port's deadzones worked out again from its controller's
+ * own and the settings: called when any of those changes. */
+void input_driver_deadzones_refresh(void);
 void input_config_set_mouse_display_name(unsigned port, const char *name);
 
 /* The mice, for the menu (Information > Input Information). A mouse is

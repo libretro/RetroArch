@@ -9200,6 +9200,7 @@ static int setting_action_start_input_device_index(rarch_setting_t *setting)
    configuration_set_uint(settings,
          settings->uints.input_joypad_index[setting->index_offset],
          setting->index_offset);
+   input_driver_deadzones_refresh();
    return 0;
 }
 
@@ -9939,6 +9940,11 @@ static void general_write_handler(rarch_setting_t *setting)
       return;
 
    rarch_cmd                    = write_handler_get_cmd(setting);
+
+   /* each port's deadzones worked out again: a deadzone setting, or a
+    * port's controller, may be what was written (sixteen ports, and
+    * only on a write) */
+   input_driver_deadzones_refresh();
 
    /* a mouse picked for a port from the list of them: the port is
     * pinned to that mouse */

@@ -3519,6 +3519,7 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
        * keys have answered is not read unless the magnitude wants it. */
       bool    need_x = input_analog_deadzone || !*out_x;
       bool    need_y = input_analog_deadzone || !*out_y;
+
       int16_t raw_x_plus  = (need_x && x_axis_plus  != AXIS_NONE && drv->axis)
          ? drv->axis(joypad_info->joy_idx, x_axis_plus)  : 0;
       int16_t raw_x_minus = (need_x && x_axis_minus != AXIS_NONE && drv->axis)
@@ -4975,7 +4976,6 @@ static int16_t input_state_internal(
       unsigned idx, unsigned id)
 {
    rarch_joypad_info_t joypad_info;
-   float input_analog_deadzone             = settings->floats.input_analog_deadzone;
    float input_analog_sensitivity          = settings->floats.input_analog_sensitivity;
    unsigned *input_remap_port_map          = settings->uints.input_remap_port_map[port];
    /* Clamped: the arrays walked below are [MAX_USERS] and the setting
@@ -5107,7 +5107,7 @@ static int16_t input_state_internal(
 
                      if (joypad && (ret == 0))
                         ret = input_joypad_analog_button(
-                              settings->floats.input_analog_trigger_deadzone,
+                              input_st->port_deadzone[mapped_port][1],
                               input_analog_sensitivity,
                               joypad, &joypad_info,
                               id,
@@ -5125,7 +5125,7 @@ static int16_t input_state_internal(
                if (joypad && (ret == 0))
                   ret = input_port_stick_axis(input_st,
                         input_analog_dpad_mode,
-                        input_analog_deadzone,
+                        input_st->port_deadzone[mapped_port][0],
                         input_analog_sensitivity,
                         joypad,
                         &joypad_info,
@@ -5172,7 +5172,7 @@ static int16_t input_state_internal(
          {
             uint16_t dpad_bits = (mapped_port < MAX_USERS)
                ? input_port_dpad_bits(input_st, input_analog_dpad_mode,
-                     settings->floats.input_analog_deadzone,
+                     input_st->port_deadzone[mapped_port][0],
                      settings->floats.input_analog_sensitivity,
                      joypad, &joypad_info, mapped_port,
                      input_config_binds[mapped_port])
@@ -9984,6 +9984,66 @@ void input_config_set_device_name(unsigned port, const char *name)
    input_config_reindex_device_names(input_st);
 }
 
+static uint8_t input_device_deadzone_code(float v)
+{
+   if (!(v >= 0.0f))
+      return 0;
+   if (v > 0.95f)
+      v = 0.95f;
+   return (uint8_t)(v * 100.0f + 0.5f) + 1;
+}
+
+void input_config_set_device_deadzones(unsigned port, float stick, float trigger)
+{
+   input_driver_state_t *input_st = &input_driver_st;
+   if (port >= MAX_INPUT_DEVICES)
+      return;
+   input_st->input_device_info[port].deadzone[0] = input_device_deadzone_code(stick);
+   input_st->input_device_info[port].deadzone[1] = input_device_deadzone_code(trigger);
+   /* and where the reads look: two bytes a controller, side by side */
+   input_st->device_deadzone[port][0] = input_st->input_device_info[port].deadzone[0];
+   input_st->device_deadzone[port][1] = input_st->input_device_info[port].deadzone[1];
+   input_driver_deadzones_refresh();
+}
+
+/* Each user port's deadzones as its reads take them: its controller's
+ * own, from that controller's profile, or else the settings'. Worked
+ * out here, when one of those changes - a controller connected or
+ * gone, a port given another controller, a deadzone setting changed, a
+ * configuration or an override loaded - so that a read takes one
+ * value, as it took the setting, and tests nothing. */
+void input_driver_deadzones_refresh(void)
+{
+   unsigned p;
+   input_driver_state_t *input_st = &input_driver_st;
+   settings_t *settings           = config_get_ptr();
+   float global[2];
+
+   if (!settings)
+      return;
+   global[0] = settings->floats.input_analog_deadzone;
+   global[1] = settings->floats.input_analog_trigger_deadzone;
+   for (p = 0; p < MAX_USERS; p++)
+   {
+      unsigned dev = settings->uints.input_joypad_index[p];
+      unsigned k;
+      for (k = 0; k < 2; k++)
+      {
+         uint8_t code = (dev < MAX_INPUT_DEVICES) ? input_st->device_deadzone[dev][k] : 0;
+         input_st->port_deadzone[p][k] = code ? (float)(code - 1) * 0.01f : global[k];
+      }
+   }
+}
+
+float input_config_get_device_deadzone(unsigned port, unsigned which)
+{
+   uint8_t code;
+   if (port >= MAX_INPUT_DEVICES || which > 1)
+      return -1.0f;
+   code = input_driver_st.input_device_info[port].deadzone[which];
+   return code ? (float)(code - 1) * 0.01f : -1.0f;
+}
+
 void input_config_set_device_display_name(unsigned port, const char *name)
 {
    input_driver_state_t *input_st = &input_driver_st;
@@ -14253,7 +14313,7 @@ uint32_t input_driver_user_controls_bound(unsigned user)
 
       if (joypad)
          input_joypad_analog_stick(ANALOG_DPAD_NONE,
-               settings->floats.input_analog_deadzone,
+               input_st->port_deadzone[user < MAX_USERS ? user : 0][0],
                settings->floats.input_analog_sensitivity,
                joypad, &joypad_info, user, idx,
                input_config_binds[user], &x, &y);
@@ -14574,7 +14634,6 @@ void input_driver_poll(void)
             (overlay_pointer->flags & INPUT_OVERLAY_ALIVE));
 #endif
       input_mapper_t *handle         = &input_st->mapper;
-      float input_analog_deadzone    = settings->floats.input_analog_deadzone;
       float input_analog_sensitivity = settings->floats.input_analog_sensitivity;
 
       if (settings->ints.input_turbo_bind != -1)
@@ -14777,7 +14836,7 @@ void input_driver_poll(void)
                         {
                            int16_t   val =
                               input_joypad_analog_button(
-                                    settings->floats.input_analog_trigger_deadzone,
+                                    input_st->port_deadzone[i][1],
                                     input_analog_sensitivity,
                                     joypad,
                                     &joypad_info[i],
@@ -14801,7 +14860,7 @@ void input_driver_poll(void)
                      int16_t stick_y = 0;
                      if (input_joypad_analog_stick(
                               input_analog_dpad_mode,
-                              input_analog_deadzone,
+                              input_st->port_deadzone[i][0],
                               input_analog_sensitivity,
                               joypad, &joypad_info[i],
                               i, k, input_config_binds[i],
@@ -15987,7 +16046,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             stick_xy[1] = 0;
             input_joypad_analog_stick(
                   ANALOG_DPAD_NONE,
-                  settings->floats.input_analog_deadzone,
+                  input_st->port_deadzone[port < MAX_USERS ? port : 0][0],
                   settings->floats.input_analog_sensitivity,
                   joypad,
                   &joypad_info,

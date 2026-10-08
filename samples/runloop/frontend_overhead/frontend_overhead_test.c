@@ -599,7 +599,9 @@ static void lane_device_registry(void)
 
       /* once the user changes the mapping, what they see is what is saved */
       settings->uints.input_joypad_index[6] = 7;
+      input_driver_deadzones_refresh();
       settings->uints.input_joypad_index[7] = 6;
+      input_driver_deadzones_refresh();
       CHECK(   input_config_get_saved_joypad_index(0) == 1
             && input_config_get_saved_joypad_index(6) == 7,
             "registry: a mapping the user changed is not what would be saved");
@@ -607,6 +609,7 @@ static void lane_device_registry(void)
       /* back to the pads and the mapping the other lanes expect */
       for (i = 0; i < MAX_USERS; i++)
          settings->uints.input_joypad_index[i] = i;
+         input_driver_deadzones_refresh();
       input_driver_registry_restart();
       for (i = 0; i < 8; i++)
          input_autoconfigure_connect("Harness pad", NULL, NULL,
@@ -2927,6 +2930,7 @@ static void lane_hotkey_facts(void)
    /* ... and the port is given another controller, whose profile has
     * none - a setting, which no bind change announces */
    settings->uints.input_joypad_index[0] = 1;
+   input_driver_deadzones_refresh();
    syn_pad_index                         = 1;
    hf_press(0, pause_bit);
    CHECK(hf_paused(), "hotkey facts: the port was given a controller whose profile"
@@ -2934,6 +2938,7 @@ static void lane_hotkey_facts(void)
    hf_press(0, pause_bit);
    CHECK(!hf_paused(), "hotkey facts: ... and did not unpause");
    settings->uints.input_joypad_index[0] = saved_index;
+   input_driver_deadzones_refresh();
    syn_pad_index                         = saved_pad;
    hf_press(0, pause_bit);
    CHECK(!hf_paused(), "hotkey facts: the port was given its first controller back,"
@@ -3705,6 +3710,7 @@ static void lane_dpad_sticks_once(void)
    }
    input_config_binds_changed();
    settings->floats.input_analog_deadzone    = 0.2f;
+   input_driver_deadzones_refresh();
    /* forced: an earlier lane read the sticks as sticks, so the core has
     * asked for analog input, which a plain mode gives way to */
    settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_LSTICK_FORCED;
@@ -3752,6 +3758,7 @@ static void lane_dpad_sticks_once(void)
          sizeof(saved_auto));
    input_config_binds_changed();
    settings->floats.input_analog_deadzone    = saved_deadzone;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = saved_mode;
    input_st->primary_joypad = joypad_real;
    run_loop_frames(2);
@@ -3820,6 +3827,7 @@ static void lane_deadzone_numbers(void)
    }
    input_config_binds_changed();
    settings->floats.input_analog_deadzone    = 0.2f;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
 
    for (c = 0; c < ARRAY_SIZE(cases); c++)
@@ -3845,6 +3853,7 @@ static void lane_deadzone_numbers(void)
    input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2].joyaxis = AXIS_POS(3);
    input_config_binds_changed();
    settings->floats.input_analog_trigger_deadzone = 0.0f;
+   input_driver_deadzones_refresh();
    memset(syn_axes, 0, sizeof(syn_axes));
    syn_axes[3] = (int16_t)(0.6 * 32767.0);
    input_driver_poll();
@@ -3856,6 +3865,7 @@ static void lane_deadzone_numbers(void)
    }
    /* and the trigger's own, 0.2, on its own travel */
    settings->floats.input_analog_trigger_deadzone = 0.2f;
+   input_driver_deadzones_refresh();
    for (c = 0; c < 3; c++)
    {
       static const double pull[3] = { 0.6, 0.1, 1.0 };
@@ -3871,12 +3881,48 @@ static void lane_deadzone_numbers(void)
       CHECK(abs(v - ev) <= 3, why);
    }
 
+   /* the controller's own deadzones, from its profile, over the
+    * global ones (both 0.2 here): its stick's 0, its triggers' 0.5 -
+    * and with them cleared, the global ones again */
+   input_config_set_device_deadzones(syn_pad_index, 0.0f, 0.5f);
+   CHECK(   fabs(input_state_get_ptr()->port_deadzone[0][0] - 0.0f) < 0.001f
+         && fabs(input_state_get_ptr()->port_deadzone[0][1] - 0.5f) < 0.001f,
+         "deadzone numbers: port 1's deadzones are not its controller's own");
+   CHECK(   fabs(input_config_get_device_deadzone(syn_pad_index, 0) - 0.0f) < 0.001f
+         && fabs(input_config_get_device_deadzone(syn_pad_index, 1) - 0.5f) < 0.001f,
+         "deadzone numbers: a controller's own deadzones do not read back as set");
+   {
+      int16_t x, t;
+      char why[200];
+      memset(syn_axes, 0, sizeof(syn_axes));
+      syn_axes[0] = (int16_t)(0.5 * 32767.0);
+      syn_axes[3] = (int16_t)(0.6 * 32767.0);
+      input_driver_poll();
+      x = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+      t = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_L2);
+      snprintf(why, sizeof(why), "deadzone numbers: with the controller's own deadzones the stick at 0.5"
+            " read %d (it is %d) and the trigger at 0.6 %d (it is %d)",
+            x, (int)(0.5 * 32767.0), t, dz_expect(0.6, 0.0, 0.5));
+      CHECK(abs(x - (int)(0.5 * 32767.0)) <= 3 && abs(t - dz_expect(0.6, 0.0, 0.5)) <= 3, why);
+      input_config_set_device_deadzones(syn_pad_index, -1.0f, -1.0f);
+      CHECK(   input_config_get_device_deadzone(syn_pad_index, 0) < 0.0f
+            && input_config_get_device_deadzone(syn_pad_index, 1) < 0.0f,
+            "deadzone numbers: a controller's deadzones cleared still read as set");
+      input_driver_poll();
+      x = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+      t = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_L2);
+      CHECK(abs(x - dz_expect(0.5, 0.0, 0.2)) <= 3 && abs(t - dz_expect(0.6, 0.0, 0.2)) <= 3,
+            "deadzone numbers: with the controller's own deadzones cleared the global ones do not apply again");
+   }
+
    memset(syn_axes, 0, sizeof(syn_axes));
    memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto, sizeof(saved_auto));
    input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2] = saved_l2;
    input_config_binds_changed();
    settings->floats.input_analog_deadzone    = saved_deadzone;
+   input_driver_deadzones_refresh();
    settings->floats.input_analog_trigger_deadzone = saved_trigger;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = saved_mode;
    input_st->primary_joypad = joypad_real;
    run_loop_frames(2);
@@ -3885,7 +3931,8 @@ static void lane_deadzone_numbers(void)
       printf("[pass] deadzone numbers: past the deadzone a stick's tilt is rescaled"
             " in a straight line, its direction kept - half a tilt is 0.375 with"
             " 0.2 - nothing inside it, full at full; a trigger by its own"
-            " deadzone, not the stick's, the same way on its own travel\n");
+            " deadzone, not the stick's, the same way on its own travel; a"
+            " controller's own deadzones over the global ones\n");
 #endif
 }
 
@@ -3926,6 +3973,7 @@ static void lane_sticks_read_once(void)
    }
    input_config_binds_changed();
    settings->floats.input_analog_deadzone = 0.2f;
+   input_driver_deadzones_refresh();
    /* the sticks as sticks: a mode that gives one to the D-pad would
     * have the first read of all come back empty */
    settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
@@ -3988,6 +4036,7 @@ static void lane_sticks_read_once(void)
          sizeof(saved_auto));
    input_config_binds_changed();
    settings->floats.input_analog_deadzone = saved_deadzone;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = saved_mode;
    memset(syn_axes, 0, sizeof(syn_axes));
    input_st->primary_joypad = joypad_real;
@@ -4118,10 +4167,12 @@ static void lane_mapping_changes(void)
       input_autoconf_bind_edit(1, A)->joyaxis = AXIS_NONE;
       run_loop_frames(1);
       settings->uints.input_joypad_index[0] = 1;
+      input_driver_deadzones_refresh();
       syn_pad_index                         = 1;
       MAP_SEES(1u << 5, 0,       "another controller chosen, the first one's profile still presses A");
       MAP_SEES(1u << 6, 1u << A, "another controller chosen, its profile's button does not press A");
       settings->uints.input_joypad_index[0] = 0;
+      input_driver_deadzones_refresh();
       syn_pad_index                         = 0;
       MAP_SEES(1u << 6, 0,       "the first controller chosen again, the other's profile still presses A");
       MAP_SEES(1u << 5, 1u << A, "the first controller chosen again, its button does not press A");
@@ -4166,6 +4217,7 @@ static void lane_mapping_changes(void)
 #undef MAP_SEES
 
    settings->uints.input_joypad_index[0]    = saved_index;
+   input_driver_deadzones_refresh();
    input_config_set_remap_id(0, A, saved_remap_a);
    syn_pad_index                            = 0;
    syn_buttons                              = 0;
@@ -4605,6 +4657,7 @@ static void lane_stick_sources(void)
       input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
    }
    settings->floats.input_analog_deadzone    = 0.0f;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
    binds_written_by_a_lane();
    run_loop_frames(2);
@@ -4656,6 +4709,7 @@ static void lane_stick_sources(void)
    memcpy(&input_config_binds[0][RARCH_ANALOG_LEFT_X_PLUS],   saved_own,  sizeof(saved_own));
    binds_written_by_a_lane();
    settings->floats.input_analog_deadzone    = saved_deadzone;
+   input_driver_deadzones_refresh();
    settings->uints.input_analog_dpad_mode[0] = saved_mode;
    memset(syn_axes, 0, sizeof(syn_axes));
    syn_buttons = 0;
