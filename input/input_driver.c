@@ -3105,8 +3105,12 @@ uint16_t input_driver_analog_dpad_buttons(unsigned mode,
  *
  * Returns: analog value on success, otherwise 0.
  **/
+/* An analog button - a trigger, a pressure-sensitive face button - as
+ * the core is given it: through the trigger deadzone, on its own
+ * travel, and the sensitivity. A trigger learned to rest at the far
+ * end goes from there. */
 static int16_t input_joypad_analog_button(
-      float input_analog_deadzone,
+      float trigger_deadzone,
       float input_analog_sensitivity,
       const input_device_driver_t *drv,
       rarch_joypad_info_t *joypad_info,
@@ -3146,27 +3150,34 @@ static int16_t input_joypad_analog_button(
       return 0;
    }
 
-   /* a trigger learned to rest at the far end: its pull, from there */
-   if (     (ident == RETRO_DEVICE_ID_JOYPAD_L2 || ident == RETRO_DEVICE_ID_JOYPAD_R2)
-         && input_trigger_rests_far(joy_idx, axis)
-         && config_get_ptr()->bools.input_trigger_full_range)
-      return input_trigger_pull(drv, joy_idx, axis);
-
-   /* Analog button - call drv->axis at most once */
-   if (input_analog_deadzone)
+   /* One read of the axis: its pull - from the far end for a trigger
+    * learned to rest there - as a magnitude, through the deadzone on
+    * its own travel. (With a deadzone the axis was read twice, once
+    * for the magnitude; and a trigger at rest at the far end skipped
+    * the deadzone and the sensitivity.) */
    {
-      int16_t mult = drv->axis(joy_idx, axis);
-      if (mult != 0)
+      int pull;
+      if (     (ident == RETRO_DEVICE_ID_JOYPAD_L2 || ident == RETRO_DEVICE_ID_JOYPAD_R2)
+            && input_trigger_rests_far(joy_idx, axis)
+            && config_get_ptr()->bools.input_trigger_full_range)
+         pull = input_trigger_pull(drv, joy_idx, axis);
+      else
       {
+         int16_t raw = drv->axis ? drv->axis(joy_idx, axis) : 0;
          /* Manual abs avoids fabs() float-to-int rounding ambiguity */
-         normal_mag = (float)(mult < 0 ? -mult : mult) * INV_0x7fff;
+         pull        = (raw < 0) ? -raw : raw;
       }
+      if (pull > 0x7fff)
+         pull = 0x7fff;
+      normal_mag = (float)pull * INV_0x7fff;
+      res        = input_joypad_axis_scaled(trigger_deadzone,
+            input_analog_sensitivity, (int16_t)pull, normal_mag);
+      if (res < 0)
+         res = -res;
    }
 
    /* If the result is zero, it's got a digital button attached to it instead */
-   if ((res = abs(input_joypad_axis(input_analog_deadzone,
-            input_analog_sensitivity, drv,
-            joy_idx, axis, normal_mag))) == 0)
+   if (res == 0)
    {
       uint16_t key = (bind->joykey == NO_BTN)
          ? joypad_info->auto_binds[ident].joykey
@@ -5096,7 +5107,7 @@ static int16_t input_state_internal(
 
                      if (joypad && (ret == 0))
                         ret = input_joypad_analog_button(
-                              input_analog_deadzone,
+                              settings->floats.input_analog_trigger_deadzone,
                               input_analog_sensitivity,
                               joypad, &joypad_info,
                               id,
@@ -14766,7 +14777,7 @@ void input_driver_poll(void)
                         {
                            int16_t   val =
                               input_joypad_analog_button(
-                                    input_analog_deadzone,
+                                    settings->floats.input_analog_trigger_deadzone,
                                     input_analog_sensitivity,
                                     joypad,
                                     &joypad_info[i],

@@ -10044,6 +10044,7 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_BUTTON_AXIS_THRESHOLD,           PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_TRIGGER_FULL_RANGE,              PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_DEADZONE,                 PARSE_ONLY_FLOAT, true},
+               {MENU_ENUM_LABEL_INPUT_ANALOG_TRIGGER_DEADZONE,         PARSE_ONLY_FLOAT, true},
                {MENU_ENUM_LABEL_INPUT_ANALOG_SENSITIVITY,              PARSE_ONLY_FLOAT, true},
 #if defined(GEKKO)
                {MENU_ENUM_LABEL_INPUT_MOUSE_SCALE,                     PARSE_ONLY_UINT,  true},

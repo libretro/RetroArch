@@ -1860,6 +1860,9 @@
  * How far an axis must be tilted to result in a button press. */
 #define DEFAULT_AXIS_THRESHOLD 0.5f
 #define DEFAULT_ANALOG_DEADZONE 0.0f
+/* An analog trigger's or pressure-sensitive button's own deadzone, on
+ * its own travel. */
+#define DEFAULT_ANALOG_TRIGGER_DEADZONE 0.0f
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY 1.0f

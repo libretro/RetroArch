@@ -3790,6 +3790,7 @@ static void lane_deadzone_numbers(void)
    const input_device_driver_t *joypad_real = input_st->primary_joypad;
    struct retro_keybind saved_auto[8], saved_l2;
    float saved_deadzone = settings->floats.input_analog_deadzone;
+   float saved_trigger  = settings->floats.input_analog_trigger_deadzone;
    unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
    unsigned had         = failures;
    unsigned i, c;
@@ -3838,9 +3839,23 @@ static void lane_deadzone_numbers(void)
       CHECK(abs(x - ex) <= 3 && abs(y - ey) <= 3, why);
    }
 
-   /* a trigger on an axis of its own: the right stick's y here */
+   /* a trigger on an axis of its own: the right stick's y here. The
+    * stick's deadzone is not the trigger's: with only the stick's set,
+    * a trigger at 0.6 reads 0.6 */
    input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2].joyaxis = AXIS_POS(3);
    input_config_binds_changed();
+   settings->floats.input_analog_trigger_deadzone = 0.0f;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   syn_axes[3] = (int16_t)(0.6 * 32767.0);
+   input_driver_poll();
+   {
+      int16_t v = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
+            RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_L2);
+      CHECK(abs(v - (int)(0.6 * 32767.0)) <= 3,
+            "deadzone numbers: the stick's deadzone was applied to a trigger");
+   }
+   /* and the trigger's own, 0.2, on its own travel */
+   settings->floats.input_analog_trigger_deadzone = 0.2f;
    for (c = 0; c < 3; c++)
    {
       static const double pull[3] = { 0.6, 0.1, 1.0 };
@@ -3861,6 +3876,7 @@ static void lane_deadzone_numbers(void)
    input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2] = saved_l2;
    input_config_binds_changed();
    settings->floats.input_analog_deadzone    = saved_deadzone;
+   settings->floats.input_analog_trigger_deadzone = saved_trigger;
    settings->uints.input_analog_dpad_mode[0] = saved_mode;
    input_st->primary_joypad = joypad_real;
    run_loop_frames(2);
@@ -3868,8 +3884,8 @@ static void lane_deadzone_numbers(void)
    if (failures == had)
       printf("[pass] deadzone numbers: past the deadzone a stick's tilt is rescaled"
             " in a straight line, its direction kept - half a tilt is 0.375 with"
-            " 0.2 - nothing inside it, full at full; a trigger the same on its"
-            " own travel\n");
+            " 0.2 - nothing inside it, full at full; a trigger by its own"
+            " deadzone, not the stick's, the same way on its own travel\n");
 #endif
 }
 
