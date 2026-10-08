@@ -80,13 +80,34 @@ jobs:
               $pkgs && break
             [ $i = 3 ] && exit 1
             echo "package download failed or stalled (attempt $i); retrying from archive.ubuntu.com"
+            if [ ! -d /etc/apt/ra-orig ]; then
+              sudo mkdir /etc/apt/ra-orig
+              sudo cp -a /etc/apt/sources.list.d /etc/apt/ra-orig/
+              [ ! -f /etc/apt/sources.list ] || sudo cp -a /etc/apt/sources.list /etc/apt/ra-orig/
+            fi
             for f in /etc/apt/sources.list /etc/apt/sources.list.d/*; do
               [ -f "$f" ] || continue
               sudo sed -i -e 's#mirror+file:/etc/apt/apt-mirrors.txt#http://archive.ubuntu.com/ubuntu/#g' \
                 -e 's#http://azure\.archive\.ubuntu\.com/ubuntu#http://archive.ubuntu.com/ubuntu#g' "$f"
             done
-            sudo timeout 90 apt-get update -y \
-              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 || true
+            # A refresh cut short or refused leaves apt no package lists: it
+            # is retried, without translations or command-not-found data, and
+            # the mirror is put back when the archive will not answer either.
+            upd="-o Acquire::Retries=3 -o Acquire::http::Timeout=30
+              -o Acquire::Languages=none
+              -o Acquire::IndexTargets::deb::CNF::DefaultEnabled=false
+              -o APT::Update::Error-Mode=any"
+            ok=0
+            for j in 1 2; do
+              sudo timeout 120 apt-get update -y $upd && { ok=1; break; }
+            done
+            if [ $ok = 0 ]; then
+              sudo rm -rf /etc/apt/sources.list.d
+              sudo cp -a /etc/apt/ra-orig/sources.list.d /etc/apt/
+              [ ! -f /etc/apt/ra-orig/sources.list ] || sudo cp -a /etc/apt/ra-orig/sources.list /etc/apt/
+              sudo rm -rf /etc/apt/ra-orig
+              sudo timeout 120 apt-get update -y $upd || true
+            fi
           done
           sudo apt-get install -y \
             -o Acquire::Retries=3 -o Acquire::http::Timeout=30 \
