@@ -24944,7 +24944,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
-   "Instant acts the moment all of the buttons are down. Hold waits until they have been held together for the time chosen, so that pressing them briefly - in the middle of a game, say - does nothing."
+   "Instant acts the moment all of the buttons are down. Hold For waits until they have been held together for a time you choose next, so that pressing them briefly - in the middle of a game, say - does nothing."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
+   "Hold For"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
+   "How long all of the combination's buttons must be held down together before it acts."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
@@ -32878,7 +32886,11 @@ MSG_HASH(
    )
 MSG_HASH(
    MSG_INPUT_COMBO_HOLD_SECONDS,
-   "Hold for %s Seconds"
+   "%s Seconds"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_HOLD_FOR,
+   "Hold For"
    )
 MSG_HASH(
    MSG_INPUT_COMBO_ROW_SUBLABEL,
