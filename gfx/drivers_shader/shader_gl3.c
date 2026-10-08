@@ -103,7 +103,6 @@ RETRO_BEGIN_DECLS
          GLuint image,
          float rx, float ry);
 
-   GLuint gl3_compile_shader(GLenum stage, const char *source);
    uint32_t gl3_get_cross_compiler_target_version(void);
 
    static GLenum address_to_gl(glslang_filter_chain_address type)
@@ -187,6 +186,41 @@ static void gl3_spvc_rename_by_location(spvc_compiler compiler,
       spvc_compiler_unset_decoration(compiler, list[i].id,
             SpvDecorationLocation);
    }
+}
+
+/* A failed compile fails whether or not the driver wrote a log. */
+static GLuint gl3_compile_shader(GLenum stage, const char *source)
+{
+   GLint status    = 0;
+   GLint length    = 0;
+   GLuint shader   = glCreateShader(stage);
+   const char *ptr = source;
+
+   if (!shader)
+      return 0;
+
+   glShaderSource(shader, 1, &ptr, NULL);
+   glCompileShader(shader);
+
+   glGetShaderiv(shader, GL_COMPILE_STATUS, &status);
+   if (status)
+      return shader;
+
+   glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &length);
+   if (length > 1)
+   {
+      char *info_log = (char*)malloc(length);
+      if (info_log)
+      {
+         glGetShaderInfoLog(shader, length, &length, info_log);
+         RARCH_ERR("[GLCore] Failed to compile shader: %s\n", info_log);
+         free(info_log);
+      }
+   }
+   else
+      RARCH_ERR("[GLCore] Failed to compile shader.\n");
+   glDeleteShader(shader);
+   return 0;
 }
 
 GLuint gl3_cross_compile_program(
