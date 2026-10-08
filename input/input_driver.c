@@ -3654,7 +3654,6 @@ INPUT_NOINLINE static bool input_joypad_analog_stick(
  * axis. The mode is kept with it: a read under another is made again. */
 static uint16_t input_port_dpad_bits(input_driver_state_t *input_st,
       unsigned input_analog_dpad_mode,
-      float deadzone, float sensitivity,
       const input_device_driver_t *joypad,
       rarch_joypad_info_t *joypad_info,
       unsigned port,
@@ -3680,8 +3679,14 @@ static uint16_t input_port_dpad_bits(input_driver_state_t *input_st,
          continue;
 
       /* the stick read whole: both axes from one read of the pad, as
-       * input_joypad_analog_axis() reads them axis for axis */
-      input_joypad_analog_stick(ANALOG_DPAD_NONE, deadzone, sensitivity,
+       * input_joypad_analog_axis() reads them axis for axis - and as it
+       * is tilted, not as it is shaped for the core: the threshold is
+       * how far the stick is tilted, as it is for an axis bound to a
+       * button and for the OpenXR controllers' D-pad. (Through the
+       * deadzone, a deadzone of 0.3 put a threshold of 0.5 at a tilt of
+       * 0.65, and an anti-deadzone pressed the D-pad at the deadzone's
+       * edge.) */
+      input_joypad_analog_stick(ANALOG_DPAD_NONE, 0.0f, 1.0f,
             joypad, joypad_info, port, s, binds, &xy[0], &xy[1]);
       for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
       {
@@ -5220,8 +5225,6 @@ static int16_t input_state_internal(
          {
             uint16_t dpad_bits = (mapped_port < MAX_USERS)
                ? input_port_dpad_bits(input_st, input_analog_dpad_mode,
-                     input_st->port_deadzone[mapped_port][0],
-                     settings->floats.input_analog_sensitivity,
                      joypad, &joypad_info, mapped_port,
                      input_config_binds[mapped_port])
                : 0;

@@ -3753,6 +3753,34 @@ static void lane_dpad_sticks_once(void)
          && !input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_LEFT),
          "dpad sticks: after a poll the stick's buttons are not read afresh");
 
+   /* the threshold is how far the stick is tilted, not what the
+    * deadzone and the anti-deadzone make of it: threshold 0.5 and
+    * deadzone 0.3 - a tilt of 0.55 presses right (through the deadzone
+    * it was 0.36, and did not); with an anti-deadzone of 0.6 too, a
+    * tilt of 0.35 does not (through it, 0.63 did) */
+   {
+      float saved_thr  = settings->floats.input_axis_threshold;
+      float saved_anti = settings->floats.input_analog_anti_deadzone;
+      settings->floats.input_axis_threshold     = 0.5f;
+      settings->floats.input_analog_deadzone    = 0.3f;
+      input_driver_deadzones_refresh();
+      memset(syn_axes, 0, sizeof(syn_axes));
+      syn_axes[0] = (int16_t)(0.55 * 32767.0);
+      input_driver_poll();
+      CHECK(input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT),
+            "dpad sticks: a tilt of 0.55 past a threshold of 0.5 did not press right with a deadzone of 0.3");
+      settings->floats.input_analog_anti_deadzone = 0.6f;
+      input_driver_deadzones_refresh();
+      syn_axes[0] = (int16_t)(0.35 * 32767.0);
+      input_driver_poll();
+      CHECK(!input_driver_state_wrapper(0, RETRO_DEVICE_JOYPAD, 0, RETRO_DEVICE_ID_JOYPAD_RIGHT),
+            "dpad sticks: a tilt of 0.35 pressed right past a threshold of 0.5, by the anti-deadzone");
+      settings->floats.input_axis_threshold       = saved_thr;
+      settings->floats.input_analog_anti_deadzone = saved_anti;
+      settings->floats.input_analog_deadzone      = 0.2f;
+      input_driver_deadzones_refresh();
+   }
+
    memset(syn_axes, 0, sizeof(syn_axes));
    memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto,
          sizeof(saved_auto));
@@ -3766,7 +3794,8 @@ static void lane_dpad_sticks_once(void)
    if (failures == had)
       printf("[pass] dpad sticks: a stick's buttons read as it holds them, from"
             " one read of it a frame - sixteen button reads, %u reads of its"
-            " axes; a second pass none - and afresh after a poll\n", reads[0]);
+            " axes; a second pass none - afresh after a poll, and by how far the"
+            " stick is tilted, past the deadzone's shaping\n", reads[0]);
 #endif
 }
 
