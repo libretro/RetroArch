@@ -207,8 +207,12 @@ typedef struct rrar_unpack
 
 struct rrar_archive
 {
-   const uint8_t *data;
+   const uint8_t *data;       /* the whole archive, or NULL when it is read */
    size_t         len;
+   rrar_read_t    read_cb;    /* positioned reads of it, when data is NULL */
+   void          *read_ud;
+   uint8_t       *head;       /* the header being parsed, when it was read in */
+   size_t         head_cap;
    rrar_entry_t  *entries;
    char          *names;
    uint32_t       num_entries;
@@ -1928,9 +1932,45 @@ static int add_name(rrar_archive_t *a, const uint8_t *name, size_t name_len,
    return RRAR_OK;
 }
 
+/* @n of the archive's bytes at @off, copied to @dst: from memory, or read
+ * in through the callback. The range is the caller's to have checked. */
+static int rrar_fetch(const rrar_archive_t *a, uint64_t off, uint8_t *dst,
+      size_t n)
+{
+   if (a->data)
+      memcpy(dst, a->data + (size_t)off, n);
+   else if (n && (!a->read_cb
+            || a->read_cb(a->read_ud, off, dst, n) != (int64_t)n))
+      return RRAR_ERROR_DATA;
+   return RRAR_OK;
+}
+
+/* The @n bytes of a header at @pos, to look at: where they lie when the
+ * archive is in memory, read into a buffer of the archive's when it is
+ * not. Good until the next call. */
+static int rrar_head(rrar_archive_t *a, size_t pos, size_t n,
+      const uint8_t **h)
+{
+   if (a->data)
+   {
+      *h = a->data + pos;
+      return RRAR_OK;
+   }
+   if (n > a->head_cap)
+   {
+      size_t   cap = n < 4096 ? 4096 : n;
+      uint8_t *p   = (uint8_t *)realloc(a->head, cap);
+      if (!p)
+         return RRAR_ERROR_MEM;
+      a->head     = p;
+      a->head_cap = cap;
+   }
+   *h = a->head;
+   return rrar_fetch(a, pos, a->head, n);
+}
+
 static int parse_headers(rrar_archive_t *a)
 {
-   const uint8_t *d   = a->data;
    size_t         len = a->len;
    size_t         pos = RRAR_SIGNATURE_SIZE;
    size_t        *name_at = NULL;
@@ -1940,11 +1980,20 @@ static int parse_headers(rrar_archive_t *a)
 
    while (pos + 7 <= len)
    {
-      uint32_t crc   = rd16(d + pos);
-      unsigned type  = d[pos + 2];
-      unsigned flags = rd16(d + pos + 3);
-      size_t   size  = rd16(d + pos + 5);
-      uint64_t add   = 0;
+      /* The header at pos: its first seven bytes say how long it is,
+       * and then all of it is looked at. */
+      const uint8_t *h;
+      uint32_t       crc;
+      unsigned       type, flags;
+      size_t         size;
+      uint64_t       add = 0;
+
+      if ((r = rrar_head(a, pos, 7, &h)) != RRAR_OK)
+         break;
+      crc   = rd16(h);
+      type  = h[2];
+      flags = rd16(h + 3);
+      size  = rd16(h + 5);
 
       if (size < 7 || size > len - pos)
       {
@@ -1956,11 +2005,13 @@ static int parse_headers(rrar_archive_t *a)
        * checked whole) */
       if (type == RAR_HEAD_END)
          break;
+      if ((r = rrar_head(a, pos, size, &h)) != RRAR_OK)
+         break;
 
       if (type == RAR_HEAD_MAIN)
       {
          if (size < 13
-               || (encoding_crc32(0, d + pos + 2, 11) & 0xffff) != crc)
+               || (encoding_crc32(0, h + 2, 11) & 0xffff) != crc)
          {
             r = RRAR_ERROR_DATA;
             break;
@@ -1981,14 +2032,14 @@ static int parse_headers(rrar_archive_t *a)
          int           is_dir;
 
          if (size < fixed
-               || (encoding_crc32(0, d + pos + 2, size - 2) & 0xffff) != crc)
+               || (encoding_crc32(0, h + 2, size - 2) & 0xffff) != crc)
          {
             r = RRAR_ERROR_DATA;
             break;
          }
-         packed   = rd32(d + pos + 7);
-         unpacked = rd32(d + pos + 11);
-         name_len = rd16(d + pos + 26);
+         packed   = rd32(h + 7);
+         unpacked = rd32(h + 11);
+         name_len = rd16(h + 26);
          if (flags & RAR_FILE_LARGE)
          {
             if (size < fixed + 8)
@@ -1996,8 +2047,8 @@ static int parse_headers(rrar_archive_t *a)
                r = RRAR_ERROR_DATA;
                break;
             }
-            packed   |= (uint64_t)rd32(d + pos + 32) << 32;
-            unpacked |= (uint64_t)rd32(d + pos + 36) << 32;
+            packed   |= (uint64_t)rd32(h + 32) << 32;
+            unpacked |= (uint64_t)rd32(h + 36) << 32;
             fixed    += 8;
          }
          if (name_len > size - fixed || packed > len - pos - size)
@@ -2023,7 +2074,7 @@ static int parse_headers(rrar_archive_t *a)
             }
             a->cap_entries = cap;
          }
-         if ((r = add_name(a, d + pos + fixed, name_len,
+         if ((r = add_name(a, h + fixed, name_len,
                      (flags & RAR_FILE_UNICODE) != 0, &name_at[a->num_entries])) != RRAR_OK)
             break;
 
@@ -2033,10 +2084,10 @@ static int parse_headers(rrar_archive_t *a)
          e->size        = unpacked;
          e->packed_size = packed;
          e->data_offset = pos + size;
-         e->crc         = rd32(d + pos + 16);
+         e->crc         = rd32(h + 16);
          e->has_crc     = 1;
-         e->version     = d[pos + 24];
-         e->method      = d[pos + 25];
+         e->version     = h[24];
+         e->method      = h[25];
          e->is_dir      = (uint8_t)is_dir;
          e->supported   = !is_dir
             && !(flags & (RAR_FILE_SPLIT_BEFORE | RAR_FILE_SPLIT_AFTER | RAR_FILE_PASSWORD))
@@ -2055,7 +2106,7 @@ static int parse_headers(rrar_archive_t *a)
             r = RRAR_ERROR_DATA;
             break;
          }
-         add = rd32(d + pos + 7);
+         add = rd32(h + 7);
          if (add > len - pos - size)
          {
             r = RRAR_ERROR_DATA;
@@ -2075,7 +2126,10 @@ static int parse_headers(rrar_archive_t *a)
 
 /* A number as RAR 5's headers write them: seven bits to a byte, the low
  * ones first, the top bit saying there is more. */
-static int rd_vint(const uint8_t *d, size_t end, size_t *pos, uint64_t *v)
+/* (@d holds the bytes from @base on; @pos and @end count from the start of
+ * the archive) */
+static int rd_vint(const uint8_t *d, size_t base, size_t end, size_t *pos,
+      uint64_t *v)
 {
    uint64_t r = 0;
    unsigned shift;
@@ -2085,7 +2139,8 @@ static int rd_vint(const uint8_t *d, size_t end, size_t *pos, uint64_t *v)
       uint8_t b;
       if (*pos >= end)
          return 0;
-      b  = d[(*pos)++];
+      b  = d[*pos - base];
+      (*pos)++;
       if (shift < 64)
          r |= (uint64_t)(b & 0x7f) << shift;
       if (!(b & 0x80))
@@ -2101,7 +2156,6 @@ static int rd_vint(const uint8_t *d, size_t end, size_t *pos, uint64_t *v)
  * flags, and what the kind has; a file's data after its header. */
 static int parse_headers5(rrar_archive_t *a)
 {
-   const uint8_t *d   = a->data;
    size_t         len = a->len;
    size_t         pos = 8;
    size_t        *name_at = NULL;
@@ -2111,24 +2165,34 @@ static int parse_headers5(rrar_archive_t *a)
 
    while (!ended && pos + 4 < len)
    {
+      /* The header at pos: its start says how long it is (the size is
+       * within ten bytes of the checksum), and then all of it is looked
+       * at. h holds it from pos on. */
+      const uint8_t *h;
       size_t   q = pos + 4, head_end;
+      size_t   pre = len - pos < 16 ? len - pos : 16;
       uint64_t hsize, type, flags, extra = 0, data_size = 0;
 
-      if (!rd_vint(d, len, &q, &hsize) || hsize > 0x200000 || hsize > len - q)
+      if ((r = rrar_head(a, pos, pre, &h)) != RRAR_OK)
+         break;
+      if (     !rd_vint(h, pos, pos + pre, &q, &hsize)
+            || hsize > 0x200000 || hsize > len - q)
       {
          r = RRAR_ERROR_DATA;
          break;
       }
       head_end = q + (size_t)hsize;
-      if (encoding_crc32(0, d + pos + 4, head_end - (pos + 4)) != rd32(d + pos))
+      if ((r = rrar_head(a, pos, head_end - pos, &h)) != RRAR_OK)
+         break;
+      if (encoding_crc32(0, h + 4, head_end - (pos + 4)) != rd32(h))
       {
          r = RRAR_ERROR_DATA;
          break;
       }
-      if (     !rd_vint(d, head_end, &q, &type)
-            || !rd_vint(d, head_end, &q, &flags)
-            || ((flags & 1) && !rd_vint(d, head_end, &q, &extra))
-            || ((flags & 2) && !rd_vint(d, head_end, &q, &data_size))
+      if (     !rd_vint(h, pos, head_end, &q, &type)
+            || !rd_vint(h, pos, head_end, &q, &flags)
+            || ((flags & 1) && !rd_vint(h, pos, head_end, &q, &extra))
+            || ((flags & 2) && !rd_vint(h, pos, head_end, &q, &data_size))
             || extra > head_end - q
             || data_size > len - head_end)
       {
@@ -2141,7 +2205,7 @@ static int parse_headers5(rrar_archive_t *a)
          case 1:     /* the archive */
          {
             uint64_t aflags;
-            if (!rd_vint(d, head_end, &q, &aflags))
+            if (!rd_vint(h, pos, head_end, &q, &aflags))
                r = RRAR_ERROR_DATA;
             else if (aflags & 1)
                r = RRAR_ERROR_UNSUPPORTED;      /* a volume */
@@ -2164,9 +2228,9 @@ static int parse_headers5(rrar_archive_t *a)
             unsigned      method, version;
             int           encrypted = 0, is_dir;
 
-            if (     !rd_vint(d, extra_at, &q, &fflags)
-                  || !rd_vint(d, extra_at, &q, &unpacked)
-                  || !rd_vint(d, extra_at, &q, &attr))
+            if (     !rd_vint(h, pos, extra_at, &q, &fflags)
+                  || !rd_vint(h, pos, extra_at, &q, &unpacked)
+                  || !rd_vint(h, pos, extra_at, &q, &attr))
             {
                r = RRAR_ERROR_DATA;
                break;
@@ -2187,12 +2251,12 @@ static int parse_headers5(rrar_archive_t *a)
                   r = RRAR_ERROR_DATA;
                   break;
                }
-               crc = rd32(d + q);
+               crc = rd32(h + (q - pos));
                q  += 4;
             }
-            if (     !rd_vint(d, extra_at, &q, &info)
-                  || !rd_vint(d, extra_at, &q, &host)
-                  || !rd_vint(d, extra_at, &q, &name_len)
+            if (     !rd_vint(h, pos, extra_at, &q, &info)
+                  || !rd_vint(h, pos, extra_at, &q, &host)
+                  || !rd_vint(h, pos, extra_at, &q, &name_len)
                   || name_len > extra_at - q)
             {
                r = RRAR_ERROR_DATA;
@@ -2205,10 +2269,10 @@ static int parse_headers5(rrar_archive_t *a)
             {
                uint64_t rsize, rtype;
                size_t   y;
-               if (!rd_vint(d, head_end, &x, &rsize) || rsize > head_end - x)
+               if (!rd_vint(h, pos, head_end, &x, &rsize) || rsize > head_end - x)
                   break;
                y = x;
-               if (rd_vint(d, x + (size_t)rsize, &y, &rtype) && rtype == 1)
+               if (rd_vint(h, pos, x + (size_t)rsize, &y, &rtype) && rtype == 1)
                   encrypted = 1;
                x += (size_t)rsize;
             }
@@ -2230,7 +2294,7 @@ static int parse_headers5(rrar_archive_t *a)
                a->cap_entries = cap;
             }
             /* (the name is UTF-8 as it is) */
-            if ((r = add_name(a, d + q, (size_t)name_len, 0, &name_at[a->num_entries])) != RRAR_OK)
+            if ((r = add_name(a, h + (q - pos), (size_t)name_len, 0, &name_at[a->num_entries])) != RRAR_OK)
                break;
 
             version = (unsigned)(info & 0x3f);
@@ -2276,27 +2340,42 @@ static int parse_headers5(rrar_archive_t *a)
 
 /* ------------------------------------------------------------------ API */
 
-int rrar_archive_open(rrar_archive_t **out, const uint8_t *data, size_t len)
+/* The archive in memory (@data), or read through @read_cb. */
+static int rrar_open(rrar_archive_t **out, const uint8_t *data, size_t len,
+      rrar_read_t read_cb, void *ud)
 {
    rrar_archive_t *a;
+   uint8_t         sig[8];
    int             r;
 
    if (!out)
       return RRAR_ERROR_PARAM;
    *out = NULL;
-   if (!data || len < RRAR_SIGNATURE_SIZE)
+   if ((!data && !read_cb) || len < RRAR_SIGNATURE_SIZE)
       return RRAR_ERROR_PARAM;
-   if (memcmp(data, "Rar!\x1a\x07", 6))
+   memset(sig, 0, sizeof(sig));
+   if (data)
+      memcpy(sig, data, len < 8 ? len : 8);
+   else if (read_cb(ud, 0, sig, len < 8 ? len : 8) != (int64_t)(len < 8 ? len : 8))
+      return RRAR_ERROR_DATA;
+   if (memcmp(sig, "Rar!\x1a\x07", 6))
       return RRAR_ERROR_DATA;
    /* the seventh byte tells the two containers apart */
-   if (data[6] > 1 || (data[6] == 1 && (len < 8 || data[7] != 0)))
+   if (sig[6] > 1 || (sig[6] == 1 && (len < 8 || sig[7] != 0)))
       return RRAR_ERROR_UNSUPPORTED;
 
    if (!(a = (rrar_archive_t *)calloc(1, sizeof(*a))))
       return RRAR_ERROR_MEM;
-   a->data = data;
-   a->len  = len;
-   if ((r = data[6] ? parse_headers5(a) : parse_headers(a)) != RRAR_OK)
+   a->data    = data;
+   a->len     = len;
+   a->read_cb = read_cb;
+   a->read_ud = ud;
+   r          = sig[6] ? parse_headers5(a) : parse_headers(a);
+   /* (the buffer the headers were read into has done its work) */
+   free(a->head);
+   a->head     = NULL;
+   a->head_cap = 0;
+   if (r != RRAR_OK)
    {
       rrar_archive_close(a);
       return r;
@@ -2305,12 +2384,32 @@ int rrar_archive_open(rrar_archive_t **out, const uint8_t *data, size_t len)
    return RRAR_OK;
 }
 
+int rrar_archive_open(rrar_archive_t **out, const uint8_t *data, size_t len)
+{
+   if (out)
+      *out = NULL;
+   if (!data)
+      return RRAR_ERROR_PARAM;
+   return rrar_open(out, data, len, NULL, NULL);
+}
+
+int rrar_archive_open_read(rrar_archive_t **out, uint64_t len,
+      rrar_read_t read_cb, void *ud)
+{
+   if (out)
+      *out = NULL;
+   if (!read_cb || len > (uint64_t)((size_t)-1))
+      return RRAR_ERROR_PARAM;
+   return rrar_open(out, NULL, (size_t)len, read_cb, ud);
+}
+
 void rrar_archive_close(rrar_archive_t *a)
 {
    if (!a)
       return;
    free(a->entries);
    free(a->names);
+   free(a->head);
    free(a);
 }
 
@@ -2344,14 +2443,29 @@ int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
       return RRAR_ERROR_UNSUPPORTED;
 
    size   = (size_t)e->size;
-   packed = a->data + (size_t)e->data_offset;
    if (!(buf = (uint8_t *)malloc(size ? size : 1)))
       return RRAR_ERROR_MEM;
 
    if (e->method == RAR_METHOD_STORED)
-      memcpy(buf, packed, size);
-   else if (size)
+      /* (straight to where it goes, from memory or from the file) */
+      r = rrar_fetch(a, e->data_offset, buf, size);
+   else if (size && a->data)
+   {
+      packed = a->data + (size_t)e->data_offset;
       r = unpack_member(packed, (size_t)e->packed_size, buf, size, e->version == 50);
+   }
+   else if (size)
+   {
+      /* An archive that is read: the member's packed bytes are read in
+       * for as long as it takes to decode them. */
+      uint8_t *in = (uint8_t *)malloc((size_t)e->packed_size ? (size_t)e->packed_size : 1);
+
+      if (!in)
+         r = RRAR_ERROR_MEM;
+      else if ((r = rrar_fetch(a, e->data_offset, in, (size_t)e->packed_size)) == RRAR_OK)
+         r = unpack_member(in, (size_t)e->packed_size, buf, size, e->version == 50);
+      free(in);
+   }
 
    if (r == RRAR_OK && e->has_crc && encoding_crc32(0, buf, size) != e->crc)
       r = RRAR_ERROR_CRC;

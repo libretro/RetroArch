@@ -62,19 +62,44 @@ struct expect
 
 /* Opens the archive, unpacks everything in it that can be, and finds
  * each of @want in it. */
-static void check(const char *dir, const char *file,
-      const struct expect *want, unsigned num_want)
+/* The archive as a file that is read, not one that is in memory. */
+typedef struct
+{
+   const uint8_t *data;
+   size_t         len;
+} file_t;
+
+static int64_t read_cb(void *ud, uint64_t off, void *dst, size_t len)
+{
+   const file_t *f = (const file_t*)ud;
+
+   if (off > f->len)
+      return -1;
+   if (len > f->len - (size_t)off)
+      len = f->len - (size_t)off;
+   memcpy(dst, f->data + (size_t)off, len);
+   return (int64_t)len;
+}
+
+static void check_mode(const char *dir, const char *file,
+      const struct expect *want, unsigned num_want, int through_reads)
 {
    size_t          len = 0;
    uint8_t        *data = read_file(dir, file, &len);
    rrar_archive_t *a = NULL;
+   file_t          f;
    uint32_t        i;
    unsigned        w;
 
    CHECK(data != NULL, file);
    if (!data)
       return;
-   CHECK(rrar_archive_open(&a, data, len) == RRAR_OK, file);
+   f.data = data;
+   f.len  = len;
+   if (through_reads)
+      CHECK(rrar_archive_open_read(&a, len, read_cb, &f) == RRAR_OK, file);
+   else
+      CHECK(rrar_archive_open(&a, data, len) == RRAR_OK, file);
    if (a)
    {
       for (i = 0; i < rrar_archive_num_entries(a); i++)
@@ -138,6 +163,14 @@ static void check(const char *dir, const char *file,
    free(data);
 }
 
+/* In memory, and read through the callback. */
+static void check(const char *dir, const char *file,
+      const struct expect *want, unsigned num_want)
+{
+   check_mode(dir, file, want, num_want, 0);
+   check_mode(dir, file, want, num_want, 1);
+}
+
 /* The archive cut short and with bytes changed. */
 static void mangle(const char *dir, const char *file)
 {
@@ -171,8 +204,52 @@ static void mangle(const char *dir, const char *file)
             copy[(seed >> 8) % len] ^= (uint8_t)(1u << (seed & 7));
          }
       }
-      if (rrar_archive_open(&a, copy, use) != RRAR_OK)
-         continue;
+      {
+         /* Whatever it is taken for in memory, it is taken for the same
+          * when it is read: the same verdict, the same members, the same
+          * bytes or the same refusal for each. */
+         rrar_archive_t *b = NULL;
+         file_t          f;
+         int             res_a, res_b;
+
+         f.data = copy;
+         f.len  = use;
+         res_a  = rrar_archive_open(&a, copy, use);
+         res_b  = rrar_archive_open_read(&b, use, read_cb, &f);
+         CHECK(res_a == res_b, file);
+         CHECK((a != NULL) == (b != NULL), file);
+         if (a && b)
+         {
+            CHECK(rrar_archive_num_entries(a) == rrar_archive_num_entries(b), file);
+            for (i = 0; i < rrar_archive_num_entries(a)
+                  && i < rrar_archive_num_entries(b); i++)
+            {
+               const rrar_entry_t *ea = rrar_archive_entry(a, i);
+               const rrar_entry_t *eb = rrar_archive_entry(b, i);
+               uint8_t *oa = NULL, *ob = NULL;
+               size_t   la = 0, lb = 0;
+               int      xa, xb;
+
+               CHECK(!strcmp(ea->name, eb->name) && ea->size == eb->size
+                     && ea->supported == eb->supported && ea->is_dir == eb->is_dir, file);
+               if (ea->is_dir || ea->size > 64u * 1024 * 1024)
+                  continue;
+               xa = rrar_archive_extract(a, i, &oa, &la);
+               xb = rrar_archive_extract(b, i, &ob, &lb);
+               CHECK(xa == xb && la == lb, file);
+               if (oa && ob && la == lb)
+                  CHECK(!memcmp(oa, ob, la), file);
+               free(oa);
+               free(ob);
+            }
+         }
+         rrar_archive_close(b);
+         if (res_a != RRAR_OK)
+         {
+            rrar_archive_close(a);
+            continue;
+         }
+      }
       for (i = 0; i < rrar_archive_num_entries(a); i++)
       {
          const rrar_entry_t *e = rrar_archive_entry(a, i);

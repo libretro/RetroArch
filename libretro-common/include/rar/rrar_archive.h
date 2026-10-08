@@ -129,6 +129,28 @@ typedef struct rrar_archive rrar_archive_t;
 int rrar_archive_open(rrar_archive_t **out,
       const uint8_t *data, size_t len);
 
+/* Positioned read of @len bytes at @off into @dst; returns the bytes
+ * read, 0 at the end, negative on error. */
+typedef int64_t (*rrar_read_t)(void *ud, uint64_t off, void *dst,
+      size_t len);
+
+/**
+ * rrar_archive_open_read:
+ * @out        : receives the opened archive
+ * @len        : length of the archive file
+ * @read_cb    : positioned reads of it
+ * @ud         : handed to @read_cb
+ *
+ * The same, for an archive that is not in memory and is not to be put
+ * there whole: its headers are read one at a time at open, a stored
+ * member is read straight into the buffer it is extracted to, and a
+ * compressed one has its packed bytes read in while it is decoded.
+ *
+ * Returns: RRAR_OK, or a negative RRAR_ERROR_* code.
+ */
+int rrar_archive_open_read(rrar_archive_t **out, uint64_t len,
+      rrar_read_t read_cb, void *ud);
+
 /**
  * rrar_archive_close:
  * @a          : archive, may be NULL
