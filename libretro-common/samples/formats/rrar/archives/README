@@ -1,4 +1,4 @@
-RAR archives for tools/archive/rar_test.c.
+RAR archives for ../rrar_archive_test.c.
 
 They are test data of libarchive (libarchive/test/test_read_format_rar*.rar.uu,
 2-clause BSD), decoded and otherwise as they come:

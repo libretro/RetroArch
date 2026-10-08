@@ -128,7 +128,7 @@ typedef struct rrar_bits
 {
    const uint8_t *p;
    const uint8_t *end;
-   uint32_t       buf;     /* the bits to come, from the top */
+   uint64_t       buf;     /* the bits to come, from the top */
    int            bits;    /* how many of them */
    uint32_t       past;    /* bytes made up after the end */
 } rrar_bits_t;
@@ -218,23 +218,35 @@ static INLINE void wr32(uint8_t *p, uint32_t v)
 
 static INLINE void br_fill(rrar_bits_t *br)
 {
-   while (br->bits <= 24)
+   if (br->bits > 32)
+      return;
+   if (br->end - br->p >= 4)
    {
-      uint32_t byte = 0;
+      /* four bytes in one go, anywhere but at the very end */
+      uint32_t w = ((uint32_t)br->p[0] << 24) | ((uint32_t)br->p[1] << 16)
+                 | ((uint32_t)br->p[2] << 8)  |  (uint32_t)br->p[3];
+      br->buf  |= (uint64_t)w << (32 - br->bits);
+      br->p    += 4;
+      br->bits += 32;
+      return;
+   }
+   while (br->bits <= 56)
+   {
+      uint64_t byte = 0;
       if (br->p < br->end)
          byte = *br->p++;
       else
          br->past++;
-      br->buf  |= byte << (24 - br->bits);
+      br->buf  |= byte << (56 - br->bits);
       br->bits += 8;
    }
 }
 
-/* The next @n bits, 1 to 16, without taking them. */
+/* The next @n bits, 1 to 32, without taking them. */
 static INLINE uint32_t br_peek(rrar_bits_t *br, int n)
 {
    br_fill(br);
-   return br->buf >> (32 - n);
+   return (uint32_t)(br->buf >> (64 - n));
 }
 
 static INLINE void br_skip(rrar_bits_t *br, int n)
@@ -252,8 +264,7 @@ static INLINE uint32_t br_get(rrar_bits_t *br, int n)
 
 static uint32_t br_get32(rrar_bits_t *br)
 {
-   uint32_t hi = br_get(br, 16);
-   return (hi << 16) | br_get(br, 16);
+   return br_get(br, 32);
 }
 
 /* To the start of the next byte. */
@@ -262,11 +273,11 @@ static void br_align(rrar_bits_t *br)
    br_skip(br, br->bits & 7);
 }
 
-/* More was read than the data had: 4 bytes are looked at ahead of where
- * the reading is, so that many past the end mean nothing yet. */
+/* More was read than the data had: up to 8 bytes are looked at ahead of
+ * where the reading is, so that many past the end mean nothing yet. */
 static INLINE int br_overrun(const rrar_bits_t *br)
 {
-   return br->past > 4;
+   return br->past > 8;
 }
 
 /* --------------------------------------------------------------- Huffman */
@@ -928,39 +939,81 @@ static INLINE void emit_literal(rrar_unpack_t *u, uint8_t byte)
    u->out[(size_t)u->pos++] = byte;
 }
 
-/* @length bytes from @offset back. From before the member's start they
- * are zeros; past its end they are not written. */
-static void emit_match(rrar_unpack_t *u, uint32_t offset, uint32_t length)
+/* A match that reaches back before the member's start, or to no
+ * distance at all: what is not there is zeros. */
+static size_t copy_match_edge(uint8_t *out, size_t pos, uint32_t offset, uint32_t length)
 {
-   uint8_t *dst = u->out + (size_t)u->pos;
+   uint8_t *dst = out + pos;
 
-   if (length > u->size - u->pos)
-      length = (uint32_t)(u->size - u->pos);
-   u->pos += length;
-
-   if (offset == 0 || offset > (uint64_t)(dst - u->out))
-   {
-      uint64_t before = offset ? offset - (uint64_t)(dst - u->out) : length;
-      uint32_t zeros  = before < length ? (uint32_t)before : length;
-      memset(dst, 0, zeros);
-      dst    += zeros;
-      length -= zeros;
-      if (!offset)
-         return;
-   }
-   if (offset >= length)
-      memcpy(dst, dst - offset, length);
+   if (offset == 0)
+      memset(dst, 0, length);
    else
    {
-      const uint8_t *src = dst - offset;
-      while (length--)
-         *dst++ = *src++;
+      size_t   before = offset - pos;
+      uint32_t zeros  = before < length ? (uint32_t)before : length;
+      uint32_t i;
+
+      memset(dst, 0, zeros);
+      /* (pos + i is at least offset from here on) */
+      for (i = zeros; i < length; i++)
+         dst[i] = out[pos + i - offset];
    }
+   return pos + length;
 }
 
-/* RAR 2.9: blocks of LZ symbols and blocks of PPMd, with filters among
- * them, to the member's size or the end of its data. */
-static int unpack29(rrar_unpack_t *u)
+/* @length bytes from @offset back, to @out at @pos. Past the member's end
+ * they are not written. The position after them. */
+static INLINE size_t copy_match(uint8_t *out, size_t pos, size_t size,
+      uint32_t offset, uint32_t length)
+{
+   uint8_t       *dst;
+   const uint8_t *src;
+   size_t         next;
+
+   if (length > size - pos)
+      length = (uint32_t)(size - pos);
+   if (offset == 0 || offset > pos)
+      return copy_match_edge(out, pos, offset, length);
+   next = pos + length;
+
+   dst = out + pos;
+   src = dst - offset;
+   if (offset >= 8 && size - pos >= (size_t)length + 8)
+   {
+      /* eight bytes at a time; the few too many are written over by
+       * what comes next */
+      uint8_t *end = dst + length;
+      do
+      {
+         memcpy(dst, src, 8);
+         dst += 8;
+         src += 8;
+      } while (dst < end);
+   }
+   else if (offset >= length)
+      memcpy(dst, src, length);
+   else
+      while (length--)
+         *dst++ = *src++;
+   return next;
+}
+
+static void emit_match(rrar_unpack_t *u, uint32_t offset, uint32_t length)
+{
+   u->pos = copy_match(u->out, (size_t)u->pos, (size_t)u->size, offset, length);
+}
+
+/* What an LZ block's symbols stand for. */
+#define LZ_END_OF_FILE  1
+#define LZ_NEW_TABLE    2
+
+/* The symbols of an LZ block, until it is over - new tables, or the end
+ * of the file - or the member is full. The reading and the writing are
+ * kept in local variables: a store of a byte through the state's
+ * pointer would have the compiler read every field of the state again
+ * after it. Returns LZ_END_OF_FILE, LZ_NEW_TABLE, RRAR_OK (the member is
+ * full) or an error. */
+static int unpack_lz(rrar_unpack_t *u)
 {
    static const uint8_t length_bases[] =
       {   0,   1,   2,   3,   4,   5,   6,
@@ -991,93 +1044,49 @@ static int unpack29(rrar_unpack_t *u)
         18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18, 18 };
    static const uint8_t short_bases[] = { 0, 4, 8, 16, 32, 64, 128, 192 };
    static const uint8_t short_bits[]  = { 2, 2, 3, 4, 5, 6, 6, 6 };
-   rrar_bits_t *br = &u->br;
-   int new_table = 1;
-   int r;
+   rrar_bits_t br   = u->br;
+   uint8_t    *out  = u->out;
+   size_t      pos  = (size_t)u->pos;
+   size_t      size = (size_t)u->size;
+   int         r    = RRAR_OK;
 
-   while (u->pos < u->size)
+   while (pos < size)
    {
-      int      symbol;
+      int      symbol = huff_decode(&br, &u->main_code);
       uint32_t offs, len;
       int      i;
 
-      if (br_overrun(br))
-         return RRAR_ERROR_DATA;
-      if (new_table)
-      {
-         if ((r = unpack_tables(u)) != RRAR_OK)
-            return r;
-         new_table = 0;
-      }
-
-      if (u->is_ppmd)
-      {
-         int code;
-
-         if ((symbol = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
-            return RRAR_ERROR_DATA;
-         if (symbol != u->ppmd_escape)
-         {
-            emit_literal(u, (uint8_t)symbol);
-            continue;
-         }
-         /* the escape byte: what comes after says what is meant */
-         if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
-            return RRAR_ERROR_DATA;
-         switch (code)
-         {
-            case 0:     /* a new block */
-               new_table = 1;
-               break;
-            case 2:     /* the end of the data */
-               return RRAR_OK;
-            case 3:
-               if ((r = filter_read(u)) != RRAR_OK)
-                  return r;
-               break;
-            case 4:     /* a match: three bytes of distance, one of length */
-               offs = 0;
-               for (i = 2; i >= 0; i--)
-               {
-                  if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
-                     return RRAR_ERROR_DATA;
-                  offs |= (uint32_t)code << (i * 8);
-               }
-               if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
-                  return RRAR_ERROR_DATA;
-               emit_match(u, offs + 2, (uint32_t)code + 32);
-               break;
-            case 5:     /* the last byte again */
-               if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
-                  return RRAR_ERROR_DATA;
-               emit_match(u, 1, (uint32_t)code + 4);
-               break;
-            default:    /* the escape byte itself */
-               emit_literal(u, (uint8_t)symbol);
-               break;
-         }
-         continue;
-      }
-
-      if ((symbol = huff_decode(br, &u->main_code)) < 0)
-         return RRAR_ERROR_DATA;
       if (symbol < 256)
       {
-         emit_literal(u, (uint8_t)symbol);
+         if (symbol < 0)
+         {
+            r = RRAR_ERROR_DATA;
+            break;
+         }
+         out[pos++] = (uint8_t)symbol;
          continue;
+      }
+      /* (bytes are made up past the end of the data: an archive that is
+       * cut short is seen here, or by the caller) */
+      if (br_overrun(&br))
+      {
+         r = RRAR_ERROR_DATA;
+         break;
       }
       if (symbol == 256)
       {
          /* the end of the block: of the file too, or new tables */
-         if (!br_get(br, 1))
-            return RRAR_OK;
-         new_table = 1;
-         continue;
+         r = br_get(&br, 1) ? LZ_NEW_TABLE : LZ_END_OF_FILE;
+         break;
       }
       if (symbol == 257)
       {
-         if ((r = filter_read(u)) != RRAR_OK)
-            return r;
+         u->br  = br;
+         u->pos = pos;
+         r      = filter_read(u);
+         br     = u->br;
+         if (r != RRAR_OK)
+            break;
          continue;
       }
       if (symbol == 258)
@@ -1095,12 +1104,15 @@ static int unpack29(rrar_unpack_t *u)
          int len_symbol;
 
          offs = u->old_offset[idx];
-         if ((len_symbol = huff_decode(br, &u->length_code)) < 0
+         if ((len_symbol = huff_decode(&br, &u->length_code)) < 0
                || len_symbol >= (int)sizeof(length_bases))
-            return RRAR_ERROR_DATA;
+         {
+            r = RRAR_ERROR_DATA;
+            break;
+         }
          len = length_bases[len_symbol] + 2;
          if (length_bits[len_symbol])
-            len += br_get(br, length_bits[len_symbol]);
+            len += br_get(&br, length_bits[len_symbol]);
          for (i = idx; i > 0; i--)
             u->old_offset[i] = u->old_offset[i - 1];
          u->old_offset[0] = offs;
@@ -1110,7 +1122,7 @@ static int unpack29(rrar_unpack_t *u)
          /* two bytes from close by */
          offs = short_bases[symbol - 263] + 1;
          if (short_bits[symbol - 263])
-            offs += br_get(br, short_bits[symbol - 263]);
+            offs += br_get(&br, short_bits[symbol - 263]);
          len = 2;
          for (i = 3; i > 0; i--)
             u->old_offset[i] = u->old_offset[i - 1];
@@ -1121,14 +1133,20 @@ static int unpack29(rrar_unpack_t *u)
          int offs_symbol;
 
          if (symbol - 271 >= (int)sizeof(length_bases))
-            return RRAR_ERROR_DATA;
+         {
+            r = RRAR_ERROR_DATA;
+            break;
+         }
          len = length_bases[symbol - 271] + 3;
          if (length_bits[symbol - 271])
-            len += br_get(br, length_bits[symbol - 271]);
+            len += br_get(&br, length_bits[symbol - 271]);
 
-         if ((offs_symbol = huff_decode(br, &u->offset_code)) < 0
+         if ((offs_symbol = huff_decode(&br, &u->offset_code)) < 0
                || offs_symbol >= (int)(sizeof(offset_bases) / sizeof(offset_bases[0])))
-            return RRAR_ERROR_DATA;
+         {
+            r = RRAR_ERROR_DATA;
+            break;
+         }
          offs = offset_bases[offs_symbol] + 1;
          if (offset_bits[offs_symbol])
          {
@@ -1136,7 +1154,7 @@ static int unpack29(rrar_unpack_t *u)
             {
                /* the low four bits have a code of their own, and repeat */
                if (offset_bits[offs_symbol] > 4)
-                  offs += br_get(br, offset_bits[offs_symbol] - 4) << 4;
+                  offs += br_get(&br, offset_bits[offs_symbol] - 4) << 4;
                if (u->low_offset_repeats)
                {
                   u->low_offset_repeats--;
@@ -1144,9 +1162,12 @@ static int unpack29(rrar_unpack_t *u)
                }
                else
                {
-                  int low = huff_decode(br, &u->low_offset_code);
+                  int low = huff_decode(&br, &u->low_offset_code);
                   if (low < 0)
-                     return RRAR_ERROR_DATA;
+                  {
+                     r = RRAR_ERROR_DATA;
+                     break;
+                  }
                   if (low == 16)
                   {
                      u->low_offset_repeats = 15;
@@ -1160,7 +1181,7 @@ static int unpack29(rrar_unpack_t *u)
                }
             }
             else
-               offs += br_get(br, offset_bits[offs_symbol]);
+               offs += br_get(&br, offset_bits[offs_symbol]);
          }
          if (offs >= 0x40000)
             len++;
@@ -1172,7 +1193,89 @@ static int unpack29(rrar_unpack_t *u)
       }
       u->last_offset = offs;
       u->last_length = len;
-      emit_match(u, offs, len);
+      pos = copy_match(out, pos, size, offs, len);
+   }
+
+   u->br  = br;
+   u->pos = pos;
+   if (r == RRAR_OK && br_overrun(&br))
+      r = RRAR_ERROR_DATA;
+   return r;
+}
+
+/* RAR 2.9: blocks of LZ symbols and blocks of PPMd, with filters among
+ * them, to the member's size or the end of its data. */
+static int unpack29(rrar_unpack_t *u)
+{
+   int new_table = 1;
+   int r;
+
+   while (u->pos < u->size)
+   {
+      int      symbol, code, i;
+      uint32_t offs;
+
+      if (br_overrun(&u->br))
+         return RRAR_ERROR_DATA;
+      if (new_table)
+      {
+         if ((r = unpack_tables(u)) != RRAR_OK)
+            return r;
+         new_table = 0;
+      }
+
+      if (!u->is_ppmd)
+      {
+         r = unpack_lz(u);
+         if (r == LZ_NEW_TABLE)
+            new_table = 1;
+         else
+            return r == LZ_END_OF_FILE ? RRAR_OK : r;
+         continue;
+      }
+
+      if ((symbol = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
+         return RRAR_ERROR_DATA;
+      if (symbol != u->ppmd_escape)
+      {
+         emit_literal(u, (uint8_t)symbol);
+         continue;
+      }
+      /* the escape byte: what comes after says what is meant */
+      if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
+         return RRAR_ERROR_DATA;
+      switch (code)
+      {
+         case 0:     /* a new block */
+            new_table = 1;
+            break;
+         case 2:     /* the end of the data */
+            return RRAR_OK;
+         case 3:
+            if ((r = filter_read(u)) != RRAR_OK)
+               return r;
+            break;
+         case 4:     /* a match: three bytes of distance, one of length */
+            offs = 0;
+            for (i = 2; i >= 0; i--)
+            {
+               if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
+                  return RRAR_ERROR_DATA;
+               offs |= (uint32_t)code << (i * 8);
+            }
+            if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
+               return RRAR_ERROR_DATA;
+            emit_match(u, offs + 2, (uint32_t)code + 32);
+            break;
+         case 5:     /* the last byte again */
+            if ((code = rrar_ppmd7_decode_symbol(&u->ppmd, &u->range)) < 0)
+               return RRAR_ERROR_DATA;
+            emit_match(u, 1, (uint32_t)code + 4);
+            break;
+         default:    /* the escape byte itself */
+            emit_literal(u, (uint8_t)symbol);
+            break;
+      }
    }
    return RRAR_OK;
 }

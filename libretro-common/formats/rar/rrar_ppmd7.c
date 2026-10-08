@@ -4,7 +4,9 @@
  * domain), itself based on Dmitry Shkarin's PPMd var.H (2001, public
  * domain), as libarchive carries it - the model, and of the two range
  * decoders only RAR's. The encoder is left out. It is kept in the SDK's
- * own style so that it can be compared with its source line by line.
+ * own style so that it can be compared with its source line by line; the
+ * one change is that the model calls RAR's range decoder by name, where
+ * the SDK goes through a table of functions to have a choice of two.
  */
 
 #include <stdlib.h>
@@ -186,7 +188,7 @@ static void GlueFreeBlocks(CPpmd7 *p)
   #else
   CPpmd7_Node_Ref head = p->AlignOffset + p->Size;
   #endif
-  
+
   CPpmd7_Node_Ref n = head;
   unsigned i;
 
@@ -213,7 +215,7 @@ static void GlueFreeBlocks(CPpmd7 *p)
   NODE(n)->Prev = head;
   if (p->LoUnit != p->HiUnit)
     ((CPpmd7_Node *)p->LoUnit)->Stamp = 1;
-  
+
   /* Glue free blocks */
   while (n != head)
   {
@@ -231,7 +233,7 @@ static void GlueFreeBlocks(CPpmd7 *p)
     }
     n = node->Next;
   }
-  
+
   /* Fill lists of free blocks */
   for (n = NODE(head)->Next; n != head;)
   {
@@ -362,7 +364,7 @@ static void RestartModel(CPpmd7 *p)
       for (m = 0; m < 64; m += 8)
         dest[m] = val;
     }
-  
+
   for (i = 0; i < 25; i++)
     for (k = 0; k < 16; k++)
     {
@@ -388,10 +390,10 @@ static CTX_PTR CreateSuccessors(CPpmd7 *p, Bool skip)
   CPpmd_Byte_Ref upBranch = (CPpmd_Byte_Ref)SUCCESSOR(p->FoundState);
   CPpmd_State *ps[PPMD7_MAX_ORDER];
   unsigned numPs = 0;
-  
+
   if (!skip)
     ps[numPs++] = p->FoundState;
-  
+
   while (c->Suffix)
   {
     CPpmd_Void_Ref successor;
@@ -413,10 +415,10 @@ static CTX_PTR CreateSuccessors(CPpmd7 *p, Bool skip)
     }
     ps[numPs++] = s;
   }
-  
+
   upState.Symbol = *(const Byte *)Ppmd7_GetPtr(p, upBranch);
   SetSuccessor(&upState, upBranch + 1);
-  
+
   if (c->NumStats == 1)
     upState.Freq = ONE_STATE(c)->Freq;
   else
@@ -449,7 +451,7 @@ static CTX_PTR CreateSuccessors(CPpmd7 *p, Bool skip)
     SetSuccessor(ps[--numPs], REF(c1));
     c = c1;
   }
-  
+
   return c;
 }
 
@@ -465,11 +467,11 @@ static void UpdateModel(CPpmd7 *p)
   CPpmd_Void_Ref successor, fSuccessor = SUCCESSOR(p->FoundState);
   CTX_PTR c;
   unsigned s0, ns;
-  
+
   if (p->FoundState->Freq < MAX_FREQ / 4 && p->MinContext->Suffix != 0)
   {
     c = SUFFIX(p->MinContext);
-    
+
     if (c->NumStats == 1)
     {
       CPpmd_State *s = ONE_STATE(c);
@@ -507,7 +509,7 @@ static void UpdateModel(CPpmd7 *p)
     SetSuccessor(p->FoundState, REF(p->MinContext));
     return;
   }
-  
+
   *p->Text++ = p->FoundState->Symbol;
   successor = REF(p->Text);
   if (p->Text >= p->UnitsStart)
@@ -515,7 +517,7 @@ static void UpdateModel(CPpmd7 *p)
     RestartModel(p);
     return;
   }
-  
+
   if (fSuccessor)
   {
     if (fSuccessor <= successor)
@@ -539,9 +541,9 @@ static void UpdateModel(CPpmd7 *p)
     SetSuccessor(p->FoundState, successor);
     fSuccessor = REF(p->MinContext);
   }
-  
+
   s0 = p->MinContext->SummFreq - (ns = p->MinContext->NumStats) - (p->FoundState->Freq - 1);
-  
+
   for (c = p->MaxContext; c != p->MinContext; c = SUFFIX(c))
   {
     unsigned ns1;
@@ -608,7 +610,7 @@ static void UpdateModel(CPpmd7 *p)
   }
   p->MaxContext = p->MinContext = CTX(fSuccessor);
 }
-  
+
 static void Rescale(CPpmd7 *p)
 {
   unsigned i, adder, sumFreq, escFreq;
@@ -625,7 +627,7 @@ static void Rescale(CPpmd7 *p)
   adder = (p->OrderFall != 0);
   s->Freq = (Byte)((s->Freq + adder) >> 1);
   sumFreq = s->Freq;
-  
+
   i = p->MinContext->NumStats - 1;
   do
   {
@@ -643,7 +645,7 @@ static void Rescale(CPpmd7 *p)
     }
   }
   while (--i);
-  
+
   if (s->Freq == 0)
   {
     unsigned numStats = p->MinContext->NumStats;
@@ -806,16 +808,16 @@ static void Range_Decode_RAR(void *pp, UInt32 start, UInt32 size)
 static UInt32 Range_DecodeBit_RAR(void *pp, UInt32 size0)
 {
   CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  UInt32 bit, value = p->p.GetThreshold(p, PPMD_BIN_SCALE);
+  UInt32 bit, value = Range_GetThreshold(p, PPMD_BIN_SCALE);
   if(value < size0)
   {
     bit = 0;
-    p->p.Decode(p, 0, size0);
+    Range_Decode_RAR(p, 0, size0);
   }
   else
   {
     bit = 1;
-    p->p.Decode(p, size0, PPMD_BIN_SCALE - size0);
+    Range_Decode_RAR(p, size0, PPMD_BIN_SCALE - size0);
   }
   return bit;
 }
@@ -838,10 +840,10 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     CPpmd_State *s = Ppmd7_GetStats(p, p->MinContext);
     unsigned i;
     UInt32 count, hiCnt;
-    if ((count = rc->GetThreshold(rc, p->MinContext->SummFreq)) < (hiCnt = s->Freq))
+    if ((count = Range_GetThreshold(rc, p->MinContext->SummFreq)) < (hiCnt = s->Freq))
     {
       Byte symbol;
-      rc->Decode(rc, 0, s->Freq);
+      Range_Decode_RAR(rc, 0, s->Freq);
       p->FoundState = s;
       symbol = s->Symbol;
       Ppmd7_Update1_0(p);
@@ -854,7 +856,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
       if ((hiCnt += (++s)->Freq) > count)
       {
         Byte symbol;
-        rc->Decode(rc, hiCnt - s->Freq, s->Freq);
+        Range_Decode_RAR(rc, hiCnt - s->Freq, s->Freq);
         p->FoundState = s;
         symbol = s->Symbol;
         Ppmd7_Update1(p);
@@ -865,7 +867,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     if (count >= p->MinContext->SummFreq)
       return -2;
     p->HiBitsFlag = p->HB2Flag[p->FoundState->Symbol];
-    rc->Decode(rc, hiCnt, p->MinContext->SummFreq - hiCnt);
+    Range_Decode_RAR(rc, hiCnt, p->MinContext->SummFreq - hiCnt);
     PPMD_SetAllBitsIn256Bytes(charMask);
     MASK(s->Symbol) = 0;
     i = p->MinContext->NumStats - 1;
@@ -874,7 +876,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
   else
   {
     UInt16 *prob = Ppmd7_GetBinSumm(p);
-    if (rc->DecodeBit(rc, *prob) == 0)
+    if (Range_DecodeBit_RAR(rc, *prob) == 0)
     {
       Byte symbol;
       *prob = (UInt16)PPMD_UPDATE_PROB_0(*prob);
@@ -917,7 +919,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
 
     see = Ppmd7_MakeEscFreq(p, numMasked, &freqSum);
     freqSum += hiCnt;
-    count = rc->GetThreshold(rc, freqSum);
+    count = Range_GetThreshold(rc, freqSum);
 
     if (count < hiCnt)
     {
@@ -925,7 +927,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
       CPpmd_State **pps = ps;
       for (hiCnt = 0; (hiCnt += (*pps)->Freq) <= count; pps++);
       s = *pps;
-      rc->Decode(rc, hiCnt - s->Freq, s->Freq);
+      Range_Decode_RAR(rc, hiCnt - s->Freq, s->Freq);
       Ppmd_See_Update(see);
       p->FoundState = s;
       symbol = s->Symbol;
@@ -934,7 +936,7 @@ static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
     }
     if (count >= freqSum)
       return -2;
-    rc->Decode(rc, hiCnt, freqSum - hiCnt);
+    Range_Decode_RAR(rc, hiCnt, freqSum - hiCnt);
     see->Summ = (UInt16)(see->Summ + freqSum);
     do { MASK(ps[--i]->Symbol) = 0; } while (i != 0);
   }

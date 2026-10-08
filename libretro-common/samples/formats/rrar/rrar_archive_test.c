@@ -1,6 +1,10 @@
-/* libretro-common's RAR reader on real archives.
+/* libretro-common's RAR reader (formats/rar/rrar_archive.c) on real
+ * archives.
  *
- *   rar_test <dir with the archives of tools/archive/rar>
+ *   rrar_archive_test [dir with the archives]
+ *
+ * Without an argument the archives are looked for in "archives", next to
+ * this file, which is where they are when the test is run from here.
  *
  * Every member that the reader says it can unpack has to come out, which
  * means with the CRC-32 the archive gives for it: the reader checks that
@@ -199,12 +203,12 @@ int main(int argc, char **argv)
    };
    const char *dir;
 
-   if (argc != 2)
+   if (argc > 2)
    {
-      fprintf(stderr, "usage: rar_test <dir>\n");
+      fprintf(stderr, "usage: rrar_archive_test [dir]\n");
       return 2;
    }
-   dir = argv[1];
+   dir = argc == 2 ? argv[1] : "archives";
 
    check(dir, "lowdist_reset.rar", lowdist, sizeof(lowdist) / sizeof(lowdist[0]));
    check(dir, "compress_best.rar", best, sizeof(best) / sizeof(best[0]));
@@ -230,6 +234,6 @@ int main(int argc, char **argv)
       printf("%d checks failed\n", failures);
       return 1;
    }
-   printf("rar_test: PASS\n");
+   printf("rrar_archive_test: PASS\n");
    return 0;
 }
