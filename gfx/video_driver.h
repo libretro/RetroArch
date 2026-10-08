@@ -699,6 +699,9 @@ typedef struct video_frame_info
     * draws them: it travels with the frame, so the thread that draws
     * never reads the recording state the main thread writes. */
    bool gpu_recording;
+   /* Record Game Only: the driver reads the recording's frame back
+    * before drawing any UI over it. */
+   bool record_game_only;
    bool threaded_present_repeat;
    /* The threaded presenter is holding each push to the display's
     * vblank: the setting is on and the wrapper is running. */
@@ -1284,6 +1287,11 @@ typedef struct video_driver
    unsigned (*get_video_views_status)(void *data);
 #endif
 
+   /* Optional: read_viewport as 32-bit B,G,R,X, viewport width * 4
+    * per row, with *bottom_up set to the row order written. Lets GPU
+    * recording skip the BGR24 conversion. */
+   bool (*read_viewport_bgrx)(void *data, uint8_t *buffer, bool is_idle,
+         bool *bottom_up);
 } video_driver_t;
 
 #ifdef HAVE_OPENXR

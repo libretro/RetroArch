@@ -10,18 +10,42 @@
  * (frames are pushed as fast as they are taken), the blocking wait
  * when the queues are full, and the drain after the encoder thread
  * is joined.  A frame out of order, torn, or from the wrong slot
- * fails the pixel check. */
+ * fails the pixel check.
+ *
+ * A second pass runs in drop mode (allow_frame_drop, the smallest
+ * video queue): frames the encoder can't take in time are dropped,
+ * so it checks the survivors come out in order, pixel-exact, at the
+ * timestamp of the frame they were pushed as, that frames were in
+ * fact dropped, and that the frontend was told nothing while it
+ * recorded: no log line and no on-screen message from the pushes.
+ * On Linux, drop mode also has the encoder's own threads run at a
+ * lower priority than the thread that opened the recording.
+ *
+ * A geometry lane checks the output size and display aspect of a raw
+ * recording of a frame the display turns a quarter. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <boolean.h>
 
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_ffmpeg.h"
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
+
+#if defined(__linux__)
+#include <dirent.h>
+#include <errno.h>
+#include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#endif
+
+extern unsigned stub_warn_calls;
+extern unsigned stub_msg_calls;
 
 #define W        160
 #define H        120
@@ -83,7 +107,53 @@ static int check_frame(const AVFrame *f, unsigned n)
    return 1;
 }
 
-int main(void)
+/* Which frame this is, from its top-left pixel. */
+static int frame_number(const AVFrame *f)
+{
+   unsigned n;
+   for (n = 0; n < FRAMES; n++)
+   {
+      uint32_t want = ((n * 37u) & 0xffu) << 16
+                    | ((n * 91u) & 0xffu) << 8 | ((n * 13u) & 0xffu);
+      uint32_t px;
+      if (f->format == AV_PIX_FMT_GBRP)
+         px = (f->data[2][0] << 16) | (f->data[0][0] << 8) | f->data[1][0];
+      else
+         px = (f->data[0][2] << 16) | (f->data[0][1] << 8) | f->data[0][0];
+      if (px == want)
+         return (int)n;
+   }
+   return -1;
+}
+
+#if defined(__linux__)
+/* Threads of this process running at a higher nice value than the
+ * calling thread. */
+static unsigned threads_lowered(void)
+{
+   struct dirent *ent;
+   unsigned n = 0;
+   int me     = getpriority(PRIO_PROCESS, (id_t)syscall(SYS_gettid));
+   DIR *dir   = opendir("/proc/self/task");
+   if (!dir)
+      return 0;
+   while ((ent = readdir(dir)))
+   {
+      long tid = strtol(ent->d_name, NULL, 10);
+      int  nice;
+      if (tid <= 0)
+         continue;
+      errno = 0;
+      nice  = getpriority(PRIO_PROCESS, (id_t)tid);
+      if (!errno && nice > me)
+         n++;
+   }
+   closedir(dir);
+   return n;
+}
+#endif
+
+static int run(bool drop)
 {
    struct record_params params;
    struct record_video_data vid;
@@ -103,10 +173,13 @@ int main(void)
    params.channels                   = 2;
    params.video_record_scale_factor  = 1;
    params.video_stream_scale_factor  = 1;
-   params.video_record_threads       = 1;
+   /* Drop mode with encoder threads of its own, to see them lowered */
+   params.video_record_threads       = drop ? 2 : 1;
    params.aspect_ratio               = (float)W / H;
    params.preset                     = RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY;
    params.pix_fmt                    = FFEMU_PIX_ARGB8888;
+   params.allow_frame_drop           = drop;
+   params.video_fifo_frames          = drop ? 8 : 32;
 
    remove(OUT);
    rec = record_ffmpeg.init(&params);
@@ -116,6 +189,16 @@ int main(void)
       return 1;
    }
 
+#if defined(__linux__)
+   if (drop && !threads_lowered())
+   {
+      fprintf(stderr, "drop mode: no encoder thread runs lowered\n");
+      return 1;
+   }
+#endif
+
+   stub_warn_calls = 0;
+   stub_msg_calls  = 0;
    memset(pcm, 0, sizeof(pcm));
    for (n = 0; n < FRAMES; n++)
    {
@@ -137,6 +220,12 @@ int main(void)
          return 1;
       }
    }
+   if (drop && (stub_warn_calls || stub_msg_calls))
+   {
+      fprintf(stderr, "drop mode: %u warnings and %u on-screen messages"
+            " while recording\n", stub_warn_calls, stub_msg_calls);
+      return 1;
+   }
    record_ffmpeg.finalize(rec);
    record_ffmpeg.free(rec);
    free(fb);
@@ -149,6 +238,7 @@ int main(void)
       AVPacket        *pkt = av_packet_alloc();
       AVFrame         *frm = av_frame_alloc();
       int vstream = -1, i;
+      int last = -1;
       unsigned got = 0;
 
       if (avformat_open_input(&fmt, OUT, NULL, NULL) < 0
@@ -188,7 +278,26 @@ int main(void)
          }
          while (avcodec_receive_frame(dec, frm) == 0)
          {
-            if (!check_frame(frm, got))
+            int n = drop ? frame_number(frm) : (int)got;
+            if (drop)
+            {
+               /* In order, and at the pushed frame's own time. */
+               double t = frm->best_effort_timestamp
+                  * av_q2d(fmt->streams[vstream]->time_base);
+               if (n <= last)
+               {
+                  fprintf(stderr, "frame %d after %d\n", n, last);
+                  return 1;
+               }
+               if (t < n / FPS - 0.002 || t > n / FPS + 0.002)
+               {
+                  fprintf(stderr, "frame %d at %.4f s, want %.4f s\n",
+                        n, t, n / FPS);
+                  return 1;
+               }
+               last = n;
+            }
+            if (n < 0 || !check_frame(frm, (unsigned)n))
                return 1;
             got++;
             av_frame_unref(frm);
@@ -196,7 +305,7 @@ int main(void)
          if (flushing)
             break;
       }
-      if (got != FRAMES)
+      if (drop ? (got == 0 || got >= FRAMES) : got != FRAMES)
       {
          fprintf(stderr, "decoded %u frames, pushed %u\n", got, FRAMES);
          return 1;
@@ -205,9 +314,71 @@ int main(void)
       avformat_close_input(&fmt);
       av_packet_free(&pkt);
       av_frame_free(&frm);
+      if (drop)
+         printf("[pass] drop mode: %u of %u frames kept, in order, "
+               "pixel-exact, on time\n", got, FRAMES);
+      else
+         printf("[pass] %u frames through record_ffmpeg, all in order "
+               "and pixel-exact\n", FRAMES);
    }
    remove(OUT);
-   printf("[pass] %u frames through record_ffmpeg, all in order and pixel-exact\n", FRAMES);
+   return 0;
+}
+
+/* A raw recording of frames the display turns a quarter: the output
+ * is turned, and its aspect is the display's, which is already the
+ * turned picture's - not that inverted again. */
+static int geometry(void)
+{
+   unsigned dims;
+   float aspect;
+
+   /* 320x240 core frame, shown turned on a 3:4 display */
+   dims = VIDEO_SCALE_PACK(320, 240);
+   record_raw_geometry(&dims, &aspect, 1, 0.75f, false);
+   if (dims != VIDEO_SCALE_PACK(240, 320) || aspect != 0.75f)
+   {
+      fprintf(stderr, "geometry: turned frame recorded %ux%u at %.3f,"
+            " want 240x320 at 0.750\n", VIDEO_SCALE_W(dims),
+            VIDEO_SCALE_H(dims), aspect);
+      return 1;
+   }
+   /* No display aspect: the turned size decides */
+   dims = VIDEO_SCALE_PACK(320, 240);
+   record_raw_geometry(&dims, &aspect, 3, 0.0f, false);
+   if (dims != VIDEO_SCALE_PACK(240, 320) || aspect != 0.75f)
+   {
+      fprintf(stderr, "geometry: turned size gives %ux%u at %.3f\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), aspect);
+      return 1;
+   }
+   /* --size is kept as given, and its own shape is its aspect */
+   dims = VIDEO_SCALE_PACK(640, 480);
+   record_raw_geometry(&dims, &aspect, 1, 0.0f, true);
+   if (dims != VIDEO_SCALE_PACK(640, 480) || aspect < 1.333f
+         || aspect > 1.334f)
+   {
+      fprintf(stderr, "geometry: --size became %ux%u at %.3f\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), aspect);
+      return 1;
+   }
+   /* Unturned: as it was */
+   dims = VIDEO_SCALE_PACK(320, 240);
+   record_raw_geometry(&dims, &aspect, 2, 1.25f, false);
+   if (dims != VIDEO_SCALE_PACK(320, 240) || aspect != 1.25f)
+   {
+      fprintf(stderr, "geometry: half turn gives %ux%u at %.3f\n",
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), aspect);
+      return 1;
+   }
+   printf("[pass] raw recording geometry under rotation\n");
+   return 0;
+}
+
+int main(void)
+{
+   if (geometry() || run(false) || run(true))
+      return 1;
    printf("ALL OK\n");
    return 0;
 }

@@ -2554,7 +2554,8 @@ static void gl2_renderchain_bind_prev_texture(
 }
 
 #ifdef HAVE_GL_ASYNC_READBACK
-static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
+/* bgrx: write 32-bit BGRX (read_viewport_bgrx) instead of BGR24. */
+static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer, bool bgrx)
 {
    const uint8_t *ptr = NULL;
 #ifdef HAVE_OPENGLES3
@@ -2583,17 +2584,31 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
             VIDEO_SCALE_W(gl->video_dims));
       unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
             VIDEO_SCALE_H(gl->video_dims));
-      video_frame_convert_rgba_to_bgr(
-            (const void*)ptr,
-            buffer,
-            rb_w * sizeof(uint32_t),
-            rb_w * 3,
-            rb_w,
-            rb_h);
+      if (bgrx)
+         video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
+               VIDEO_SCALE_H(gl->vp.dims), ptr, rb_w * 4, rb_w, rb_h, true);
+      else
+         video_frame_convert_rgba_to_bgr(
+               (const void*)ptr,
+               buffer,
+               rb_w * sizeof(uint32_t),
+               rb_w * 3,
+               rb_w,
+               rb_h);
    }
 #else
    ptr = (const uint8_t*)glMapBuffer(GL_PIXEL_PACK_BUFFER, GL_READ_ONLY);
-   if (ptr)
+   if (ptr && bgrx)
+   {
+      /* Already BGRA (GL_BGRA readback): rows are copied as-is. */
+      unsigned rb_w = MIN(VIDEO_SCALE_W(gl->vp.dims),
+            VIDEO_SCALE_W(gl->video_dims));
+      unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
+            VIDEO_SCALE_H(gl->video_dims));
+      video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
+            VIDEO_SCALE_H(gl->vp.dims), ptr, rb_w * 4, rb_w, rb_h, false);
+   }
+   else if (ptr)
    {
       struct scaler_ctx *ctx = &gl->pbo_readback_scaler;
       scaler_ctx_scale_direct(ctx, buffer, ptr);
@@ -2619,7 +2634,7 @@ static bool gl2_read_pbo(gl2_t *gl, uint8_t *buffer)
 
 static bool gl2_renderchain_read_viewport(
       gl2_t *gl,
-      uint8_t *buffer, bool is_idle)
+      uint8_t *buffer, bool is_idle, bool bgrx)
 {
    size_t num_pixels      = 0;
 
@@ -2653,7 +2668,7 @@ static bool gl2_renderchain_read_viewport(
 #ifdef HAVE_GL_ASYNC_READBACK
    if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
    {
-      if (!gl2_read_pbo(gl, buffer))
+      if (!gl2_read_pbo(gl, buffer, bgrx))
          goto error;
    }
    else
@@ -2686,13 +2701,19 @@ static bool gl2_renderchain_read_viewport(
                VIDEO_SCALE_W(gl->video_dims));
          unsigned rb_h = MIN(VIDEO_SCALE_H(gl->vp.dims),
                VIDEO_SCALE_H(gl->video_dims));
-         video_frame_convert_rgba_to_bgr(
-               (const void*)gl->readback_buffer_screenshot,
-               buffer,
-               rb_w * sizeof(uint32_t),
-               rb_w * 3,
-               rb_w,
-               rb_h);
+         if (bgrx)
+            video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl->vp.dims),
+                  VIDEO_SCALE_H(gl->vp.dims),
+                  (const uint8_t*)gl->readback_buffer_screenshot,
+                  rb_w * 4, rb_w, rb_h, true);
+         else
+            video_frame_convert_rgba_to_bgr(
+                  (const void*)gl->readback_buffer_screenshot,
+                  buffer,
+                  rb_w * sizeof(uint32_t),
+                  rb_w * 3,
+                  rb_w,
+                  rb_h);
       }
 
       free(gl->readback_buffer_screenshot);
@@ -4018,6 +4039,30 @@ static INLINE void gl2_draw_texture(gl2_t *gl)
 }
 #endif
 
+static void gl2_pbo_async_readback(gl2_t *gl);
+
+/* The recording's per-frame async readback, or its teardown once
+ * recording has stopped. skip_in_menu: don't read back while the menu
+ * is drawn. */
+static void gl2_record_readback(gl2_t *gl, bool skip_in_menu)
+{
+   if (!(gl->flags & GL2_FLAG_PBO_READBACK_ENABLE))
+      return;
+
+   if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
+   {
+      glDeleteBuffers(4, gl->pbo_readback);
+      scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
+      gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
+   }
+#ifdef HAVE_MENU
+   else if (skip_in_menu && (gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
+      ;
+#endif
+   else
+      gl2_pbo_async_readback(gl);
+}
+
 static void gl2_pbo_async_readback(gl2_t *gl)
 {
 #ifdef HAVE_OPENGLES
@@ -5024,8 +5069,15 @@ static bool gl2_frame(void *data, const void *frame,
     * displayable image. Same choke-point pattern as glcore. */
    if (gl->scrgb.active)
       gl2_bind_fb(gl2_ui_target_fbo(gl));
-   else if (gl2_needs_pq_downconvert(gl))
-      gl2_encode_pq_to_sdr(gl);
+   else
+   {
+      if (gl2_needs_pq_downconvert(gl))
+         gl2_encode_pq_to_sdr(gl);
+      /* Record Game Only: read back before any UI is drawn. Under
+       * scRGB the image only lands at the final composite. */
+      if (video_info->record_game_only)
+         gl2_record_readback(gl, false);
+   }
 
 #ifdef HAVE_OVERLAY
    if ((gl->flags & GL2_FLAG_OVERLAY_ENABLE) && overlay_behind_menu)
@@ -5182,24 +5234,8 @@ static bool gl2_frame(void *data, const void *frame,
             4, GL_RGBA, GL_UNSIGNED_BYTE,
             gl->readback_buffer_screenshot);
 
-   else if (gl->flags & GL2_FLAG_PBO_READBACK_ENABLE)
-   {
-      /* If recording has stopped, tear down PBO readback */
-      if (!(gl->flags & GL2_FLAG_GPU_RECORDING))
-      {
-         glDeleteBuffers(4, gl->pbo_readback);
-         scaler_ctx_gen_reset(&gl->pbo_readback_scaler);
-         gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
-      }
-      else
-      {
-#ifdef HAVE_MENU
-         /* Don't readback if we're in menu mode. */
-         if (!(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
-#endif
-            gl2_pbo_async_readback(gl);
-      }
-   }
+   else if (!video_info->record_game_only || gl->scrgb.active)
+      gl2_record_readback(gl, !video_info->record_game_only);
 
    /* The backbuffer is what it is until the swap, so the copy is
     * taken now. Not from the BFI light dupes, which recurse in here
@@ -6616,7 +6652,20 @@ static bool gl2_read_viewport(void *data, uint8_t *buffer, bool is_idle)
    if (!gl)
       return false;
 
-   return gl2_renderchain_read_viewport(gl, buffer, is_idle);
+   return gl2_renderchain_read_viewport(gl, buffer, is_idle, false);
+}
+
+static bool gl2_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   gl2_t *gl = (gl2_t*)data;
+
+   if (!gl)
+      return false;
+
+   /* glReadPixels returns the bottom row first. */
+   *bottom_up = true;
+   return gl2_renderchain_read_viewport(gl, buffer, is_idle, true);
 }
 
 #if defined(HAVE_GL_ASYNC_READBACK) && !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
@@ -6639,7 +6688,7 @@ static bool gl2_record_read(void *data, uint8_t *buffer)
          gl->flags &= ~GL2_FLAG_PBO_READBACK_ENABLE;
       return false;
    }
-   return gl2_read_pbo(gl, buffer);
+   return gl2_read_pbo(gl, buffer, false);
 }
 #endif
 
@@ -7575,8 +7624,9 @@ video_driver_t video_gl2 = {
 #ifdef HAVE_OPENXR
    gl2_get_vr_frame_state,
    gl2_set_vr_content_info,
-   gl2_get_video_views_status
+   gl2_get_video_views_status,
 #endif
+   gl2_read_viewport_bgrx
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl = {

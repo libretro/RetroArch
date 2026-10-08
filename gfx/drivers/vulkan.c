@@ -10488,6 +10488,8 @@ static bool vulkan_frame(void *data, const void *frame,
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool use_offscreen_buffer                     = false;
 #endif
+   /* Recording's readback was already taken this frame, before the UI. */
+   bool record_readback_done                     = false;
 
 #ifdef HAVE_OPENXR
    bool xr_stereo        = (vk->flags & VK_FLAG_OPEN_XR) != 0;
@@ -11356,6 +11358,50 @@ static bool vulkan_frame(void *data, const void *frame,
                (vulkan_filter_chain_t*)filter_chain, vk->cmd,
                &vk->video_vp, vk->mvp.data);
 
+      /* Record Game Only: copy the game image out before the UI is
+       * drawn, then resume the pass with LOAD. HDR output keeps the
+       * end-of-frame readback, which needs its tonemap pass. */
+      if (     video_info->record_game_only
+            && (vk->flags & VK_FLAG_READBACK_STREAMED)
+            && (vk->flags & VK_FLAG_GPU_RECORDING)
+#ifdef VULKAN_HDR_SWAPCHAIN
+            && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
+#endif
+            && (backbuffer->image != VK_NULL_HANDLE)
+            && (vk->context->flags & VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN))
+      {
+         vkCmdEndRenderPass(vk->cmd);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT);
+
+         vulkan_readback(vk, backbuffer);
+
+         VULKAN_IMAGE_LAYOUT_TRANSITION(
+               vk->cmd,
+               backbuffer->image,
+               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+               VK_ACCESS_TRANSFER_READ_BIT,
+               VK_ACCESS_COLOR_ATTACHMENT_READ_BIT
+               | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+               VK_PIPELINE_STAGE_TRANSFER_BIT,
+               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+         /* Same framebuffer, LOAD instead of CLEAR. */
+         rp_info.renderPass = vk->keep_render_pass;
+         vkCmdBeginRenderPass(vk->cmd, &rp_info, VK_SUBPASS_CONTENTS_INLINE);
+
+         record_readback_done = true;
+      }
+
 #ifdef VULKAN_HDR_SWAPCHAIN
       end_pass      = true;
       end_main_pass = true;
@@ -11641,7 +11687,8 @@ static bool vulkan_frame(void *data, const void *frame,
       }
 
       if (     (vk->flags & VK_FLAG_READBACK_PENDING)
-             || (vk->flags & VK_FLAG_READBACK_STREAMED))
+             || (   (vk->flags & VK_FLAG_READBACK_STREAMED)
+                 && !record_readback_done))
       {
          VkImageLayout backbuffer_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -13437,11 +13484,13 @@ video_record_read_t vulkan_get_record_read(void)
    return vulkan_record_read;
 }
 
-static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* bgrx: write top-down 32-bit BGRX (read_viewport_bgrx) instead of
+ * bottom-up BGR24. */
+static bool vulkan_read_viewport_internal(vk_t *vk, uint8_t *buffer,
+      bool is_idle, bool bgrx)
 {
    VkFormat format;
    struct vk_texture *staging       = NULL;
-   vk_t *vk                         = (vk_t*)data;
 
    if (!vk)
       return false;
@@ -13493,7 +13542,8 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
          if (staging->memory == VK_NULL_HANDLE)
             return false;
 
-         buffer += 3 * (VIDEO_SCALE_H(vk->vp.dims) - 1) * VIDEO_SCALE_W(vk->vp.dims);
+         if (!bgrx)
+            buffer += 3 * (VIDEO_SCALE_H(vk->vp.dims) - 1) * VIDEO_SCALE_W(vk->vp.dims);
          vkMapMemory(vk->context->device, staging->memory,
                staging->offset, staging->size, 0, (void**)&src);
 
@@ -13509,9 +13559,27 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             vkInvalidateMappedMemoryRanges(vk->context->device, 1, &range);
          }
 
-         ctx->in_stride  =  (int)staging->stride;
-         ctx->out_stride = -(int)VIDEO_SCALE_W(vk->vp.dims) * 3;
-         scaler_ctx_scale_direct(ctx, buffer, src);
+         if (bgrx)
+         {
+            /* Only the region vulkan_readback() copied is valid. */
+            unsigned vp_w = VIDEO_SCALE_W(vk->vp.dims);
+            unsigned vp_h = VIDEO_SCALE_H(vk->vp.dims);
+            unsigned cp_w = VIDEO_SCALE_W(vk->readback.copied_dims);
+            unsigned cp_h = VIDEO_SCALE_H(vk->readback.copied_dims);
+            if (!cp_w || cp_w > vp_w)
+               cp_w = vp_w;
+            if (!cp_h || cp_h > vp_h)
+               cp_h = vp_h;
+            video_frame_copy_to_bgrx(buffer, vp_w, vp_h,
+                  src, staging->stride, cp_w, cp_h,
+                  format != VK_FORMAT_B8G8R8A8_UNORM);
+         }
+         else
+         {
+            ctx->in_stride  =  (int)staging->stride;
+            ctx->out_stride = -(int)VIDEO_SCALE_W(vk->vp.dims) * 3;
+            scaler_ctx_scale_direct(ctx, buffer, src);
+         }
 
          vkUnmapMemory(vk->context->device, staging->memory);
       }
@@ -13594,10 +13662,24 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             cp_width         = vp_width;
          if (cp_height == 0 || cp_height > vp_height)
             cp_height        = vp_height;
-         if (cp_width < vp_width || cp_height < vp_height)
-            memset(buffer, 0, (size_t)vp_width * vp_height * 3);
 
-         buffer            += 3 * (vp_height - 1) * vp_width;
+         if (bgrx)
+         {
+            /* vp_width here is clamped to video_width; keep the
+             * recording's vp.width row pitch. */
+            video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(vk->vp.dims),
+                  VIDEO_SCALE_H(vk->vp.dims),
+                  src, staging->stride, cp_width, cp_height,
+                  format != VK_FORMAT_B8G8R8A8_UNORM);
+            format = VK_FORMAT_UNDEFINED; /* skip the BGR24 conversion */
+         }
+         else
+         {
+            if (cp_width < vp_width || cp_height < vp_height)
+               memset(buffer, 0, (size_t)vp_width * vp_height * 3);
+
+            buffer         += 3 * (vp_height - 1) * vp_width;
+         }
 
          switch (format)
          {
@@ -13630,6 +13712,9 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
                }
                break;
 
+            case VK_FORMAT_UNDEFINED:
+               break;
+
             default:
                RARCH_ERR("[Vulkan] Unexpected swapchain format.\n");
                break;
@@ -13639,6 +13724,25 @@ static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
             vk->context->device, staging);
    }
    return true;
+}
+
+static bool vulkan_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk)
+      return false;
+   return vulkan_read_viewport_internal(vk, buffer, is_idle, false);
+}
+
+static bool vulkan_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk)
+      return false;
+   /* The staging copy is top row first. */
+   *bottom_up = false;
+   return vulkan_read_viewport_internal(vk, buffer, is_idle, true);
 }
 
 #ifdef VULKAN_HDR_SWAPCHAIN
@@ -14426,6 +14530,7 @@ video_driver_t video_vulkan = {
    vulkan_set_vr_content_info,
    vulkan_get_video_views_status,
 #endif
+   vulkan_read_viewport_bgrx
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_vulkan = {

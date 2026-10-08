@@ -309,6 +309,9 @@ bool	menu_show_reboot	1	1
 bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
+bool	video_record_allow_frame_drop	1	1
+bool	video_record_game_only	1	0
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1
@@ -601,6 +604,7 @@ uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
+uint	video_record_fifo_frames	1	32
 uint	video_scale	1	3
 uint	video_window_opacity	1	100
 uint	video_stream_port	1	56400
@@ -999,6 +1003,9 @@ bool	menu_show_reboot	1	1
 bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
+bool	video_record_allow_frame_drop	1	1
+bool	video_record_game_only	1	0
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1
@@ -1285,6 +1292,7 @@ uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
+uint	video_record_fifo_frames	1	32
 uint	video_scale	1	3
 uint	video_window_opacity	1	100
 uint	video_stream_port	1	56400
@@ -1692,6 +1700,9 @@ bool	menu_show_reboot	1	1
 bool	menu_show_shutdown	1	1
 bool	video_post_filter_record	1	0
 bool	video_gpu_record	1	0
+bool	video_record_allow_frame_drop	1	1
+bool	video_record_game_only	1	0
+bool	video_record_hw_encoder	1	0
 bool	menu_rgui_full_width_layout	1	1
 bool	video_shader_enable	1	1
 bool	quick_menu_show_save_core_overrides	1	1
@@ -1994,6 +2005,7 @@ uint	audio_output_layout	1	0
 uint	microphone_block_frames	1	0
 uint	menu_thumbnail_preview_threads	1	1
 uint	menu_file_browser_extension_display	1	MENU_FILE_BROWSER_EXTENSION_DISPLAY_ALWAYS
+uint	video_record_fifo_frames	1	32
 uint	video_scale	1	3
 uint	video_window_opacity	1	100
 uint	video_stream_port	1	56400

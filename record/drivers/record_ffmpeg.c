@@ -44,6 +44,14 @@
 #include <time.h>
 #endif
 
+#if defined(__linux__)
+#include <errno.h>
+#include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#define FFMPEG_HAVE_THREAD_NICE 1
+#endif
+
 #include "record_ffmpeg.h"
 
 #ifdef __cplusplus
@@ -70,6 +78,8 @@ extern "C" {
 #endif
 
 #include "../../retroarch.h"
+#include "../../runloop.h"
+#include "../../performance_counters.h"
 #include "../../verbosity.h"
 
 #ifndef FFMPEG3
@@ -204,6 +214,15 @@ struct ff_config_param
    bool video_qscale;
    int video_global_quality;
    int video_bit_rate;
+   /* Rate control / GOP for bitrate-constrained outputs (RTMP).
+    * 0 (or <0 for max_b_frames) leaves the encoder default. */
+   int video_max_rate;
+   int video_buf_size;
+   float video_gop_seconds;
+   int video_max_b_frames;
+   /* Bits per pixel per frame used to derive a bitrate for hardware
+    * encoders when the preset is CRF-based (hardware has no CRF). */
+   float video_hw_bpp;
 
    AVDictionary *video_opts;
    AVDictionary *audio_opts;
@@ -247,14 +266,52 @@ typedef struct ffmpeg
    retro_eventcount_t space;
    bool data_init;
    bool space_init;
+
+   /* Drop-on-full accounting. Written by the producer only; the
+    * totals are read after the encoder thread has been joined. */
+   uint64_t video_frames_in;
+   uint64_t video_frames_dropped;
+   /* Frames dropped since the last queued one; rides along with the
+    * next frame so the encoder leaves a pts gap for them. */
+   unsigned video_pts_pending;
+   /* With audio, video is placed on the audio clock: every audio frame
+    * the core produced is its real elapsed time, and video_next_pts is
+    * the pts the encoder gives the next queued frame. Cores that don't
+    * present every tick (30 fps games on a 60 Hz core, frame skip,
+    * run-ahead) then still get the right spacing. Producer only. */
+   uint64_t audio_frames_in;
+   int64_t  video_next_pts;
+   /* For cores that stop producing audio: ffmpeg_fill_audio_gap(). */
+   uint64_t audio_frames_at_last_video;
+   unsigned video_frames_without_audio;
+   double   silence_frac;
+   /* Encoder thread: scratch for params.rotation, fb_dims pixels,
+    * allocated on first use. */
+   uint8_t *video_rot_buf;
+   unsigned video_fifo_frames;
+   bool     allow_frame_drop;
+
+   /* Audio bytes dropped on a full queue and still owed to it as
+    * silence, so the sample-count timeline never loses time. */
+   size_t   audio_silence_pending;
+   uint64_t audio_bytes_dropped;
+
+   /* Encoder thread: pts of the last keyframe forced for
+    * video_gop_seconds. */
+   int64_t  video_last_key_pts;
 } ffmpeg_t;
+
+/* attr_fifo record: the frame plus the drops right before it. */
+struct ff_video_attr
+{
+   struct record_video_data vid;
+   unsigned pts_skip;
+};
 
 /* How long a push waits for room before looking at alive again. The
  * encoder notifies space on every read and deinit_thread() on the way
  * out, so this only bounds a wake that never comes. */
 #define FFMPEG_PUSH_WAIT_US 100000
-
-AVFormatContext *ctx;
 
 /* Returns the encoder's list of supported sample formats, terminated by
  * AV_SAMPLE_FMT_NONE, or NULL if the encoder does not restrict sample
@@ -516,6 +573,189 @@ static bool ffmpeg_init_audio(ffmpeg_t *handle, const char *audio_resampler)
    return true;
 }
 
+/* Returns the encoder's supported pixel formats, terminated by
+ * AV_PIX_FMT_NONE, or NULL if unrestricted / unknown. */
+static const enum AVPixelFormat *ffmpeg_codec_pix_fmts(const AVCodec *codec)
+{
+#if HAVE_AVCODEC_GET_SUPPORTED_CONFIG
+   const void *fmts = NULL;
+   if (avcodec_get_supported_config(NULL, codec,
+         AV_CODEC_CONFIG_PIX_FORMAT, 0, &fmts, NULL) < 0)
+      return NULL;
+   return (const enum AVPixelFormat*)fmts;
+#else
+   return codec->pix_fmts;
+#endif
+}
+
+/* H.264 encoders that take frames from system memory, tried in order.
+ * VAAPI is left out: it needs a hw_frames_ctx upload path. */
+static const char *const ffmpeg_hw_h264_encoders[] = {
+   "h264_nvv4l2",       /* Tegra (L4T FFmpeg) */
+   "h264_nvmpi",        /* Tegra/Jetson (jetson-ffmpeg) */
+   "h264_v4l2m2m",      /* V4L2 mem2mem: RPi, Exynos, ... */
+   "h264_rkmpp",        /* Rockchip */
+   "h264_nvenc",        /* NVIDIA desktop */
+   "h264_amf",          /* AMD */
+   "h264_qsv",          /* Intel */
+   "h264_videotoolbox", /* Apple */
+   "h264_mediacodec",   /* Android */
+   NULL
+};
+
+/* Pick YUV420P, else NV12, from what the encoder accepts. */
+static enum AVPixelFormat ffmpeg_hw_pick_pix_fmt(const AVCodec *codec)
+{
+   unsigned i;
+   bool has_nv12                    = false;
+   const enum AVPixelFormat *fmts   = ffmpeg_codec_pix_fmts(codec);
+
+   if (!fmts)
+      return AV_PIX_FMT_YUV420P;
+
+   for (i = 0; fmts[i] != AV_PIX_FMT_NONE; i++)
+   {
+      if (fmts[i] == AV_PIX_FMT_YUV420P)
+         return AV_PIX_FMT_YUV420P;
+      if (fmts[i] == AV_PIX_FMT_NV12)
+         has_nv12 = true;
+   }
+   return has_nv12 ? AV_PIX_FMT_NV12 : AV_PIX_FMT_NONE;
+}
+
+/* Allocates and opens handle->video.codec; frees it on failure. */
+static bool ffmpeg_open_video_codec(ffmpeg_t *handle,
+      const AVCodec *codec, enum AVPixelFormat pix_fmt,
+      unsigned out_w, unsigned out_h, bool hw, AVDictionary **opts)
+{
+   struct ff_config_param *params  = &handle->config;
+   struct ff_video_info *video     = &handle->video;
+   struct record_params *param     = &handle->params;
+   AVCodecContext *c;
+
+   /* Ensure even dimensions for chroma-subsampled pixel formats.
+    * Odd dimensions cause encoder init failure with e.g. libx264.
+    * Round up (pad) rather than down so no source pixels are lost. */
+   if (     pix_fmt == AV_PIX_FMT_YUV420P
+         || pix_fmt == AV_PIX_FMT_YUV422P
+         || pix_fmt == AV_PIX_FMT_NV12)
+   {
+      out_w = (out_w + 1) & ~1;
+      out_h = (out_h + 1) & ~1;
+   }
+
+   if (!(c = avcodec_alloc_context3(codec)))
+      return false;
+
+   c->codec_type          = AVMEDIA_TYPE_VIDEO;
+   c->width               = out_w;
+   c->height              = out_h;
+   c->time_base           = av_d2q((double)
+         params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
+   c->framerate           = av_inv_q(c->time_base);
+   c->sample_aspect_ratio = av_d2q(
+         param->aspect_ratio * out_h / out_w, 255);
+   c->pix_fmt             = pix_fmt;
+   c->thread_count        = params->threads;
+
+   if (params->video_qscale)
+   {
+      c->flags          |= AV_CODEC_FLAG_QSCALE;
+      c->global_quality  = params->video_global_quality;
+   }
+   else if (params->video_bit_rate)
+      c->bit_rate = params->video_bit_rate;
+   else if (hw)
+   {
+      /* No CRF in hardware; derive a bitrate from the preset. */
+      float bpp   = params->video_hw_bpp > 0.0f
+         ? params->video_hw_bpp : 0.1f;
+      double rate = (double)bpp * out_w * out_h
+         * param->fps / params->frame_drop_ratio;
+      if (rate < 500000.0)
+         rate = 500000.0;
+      c->bit_rate = (int64_t)rate;
+   }
+
+   if (params->video_max_rate)
+      c->rc_max_rate    = params->video_max_rate;
+   if (params->video_buf_size)
+      c->rc_buffer_size = params->video_buf_size;
+   if (params->video_max_b_frames >= 0)
+      c->max_b_frames   = params->video_max_b_frames;
+   if (params->video_gop_seconds > 0.0f)
+   {
+      int gop = (int)(params->video_gop_seconds * param->fps
+            / params->frame_drop_ratio + 0.5f);
+      if (gop < 1)
+         gop = 1;
+      c->gop_size = gop;
+   }
+
+   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
+      c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
+   if (avcodec_open2(c, codec, opts) != 0)
+   {
+      avcodec_free_context(&c);
+      return false;
+   }
+
+   video->codec    = c;
+   video->encoder  = codec;
+   param->out_dims = VIDEO_SCALE_PACK(out_w, out_h);
+   return true;
+}
+
+/* Try the hardware H.264 encoders this FFmpeg build has, in order. */
+static bool ffmpeg_open_hw_h264(ffmpeg_t *handle,
+      unsigned out_w, unsigned out_h, enum AVPixelFormat *out_fmt)
+{
+   unsigned i;
+   struct ff_config_param *params = &handle->config;
+
+   for (i = 0; ffmpeg_hw_h264_encoders[i]; i++)
+   {
+      AVDictionary *opts   = NULL;
+      enum AVPixelFormat fmt;
+      const AVCodec *codec = avcodec_find_encoder_by_name(
+            ffmpeg_hw_h264_encoders[i]);
+
+      if (!codec)
+         continue;
+      if ((fmt = ffmpeg_hw_pick_pix_fmt(codec)) == AV_PIX_FMT_NONE)
+      {
+         RARCH_LOG("[FFmpeg] %s: no YUV420P/NV12 input, skipping.\n",
+               codec->name);
+         continue;
+      }
+
+      /* x264's private options mean nothing to these. Ask for CBR where
+       * there's an "rc" knob; an encoder without one leaves the option
+       * unused, and the stream is then held only by the generic rate
+       * limits. */
+      if (params->video_max_rate)
+         av_dict_set(&opts, "rc", "cbr", 0);
+
+      if (ffmpeg_open_video_codec(handle, codec, fmt, out_w, out_h,
+               true, &opts))
+      {
+         if (av_dict_get(opts, "rc", NULL, 0))
+            RARCH_WARN("[FFmpeg] %s has no rate control option: not CBR.\n",
+                  codec->name);
+         av_dict_free(&opts);
+         *out_fmt = fmt;
+         RARCH_LOG("[FFmpeg] Using hardware encoder %s (%s).\n",
+               codec->name, av_get_pix_fmt_name(fmt));
+         return true;
+      }
+      av_dict_free(&opts);
+      RARCH_WARN("[FFmpeg] Hardware encoder %s failed to open.\n",
+            codec->name);
+   }
+   return false;
+}
+
 static bool ffmpeg_init_video(ffmpeg_t *handle)
 {
    size_t size;
@@ -524,58 +764,9 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    struct ff_video_info *video     = &handle->video;
    struct record_params *param     = &handle->params;
    const AVCodec *codec            = NULL;
+   enum AVPixelFormat pix_fmt      = AV_PIX_FMT_BGR24;
+   bool opened                     = false;
    unsigned out_w, out_h;
-
-   if (*params->vcodec)
-      codec = avcodec_find_encoder_by_name(params->vcodec);
-   else
-   {
-      /* By default, lossless video. */
-      av_dict_set(&params->video_opts, "qp", "0", 0);
-      codec = avcodec_find_encoder_by_name("libx264rgb");
-   }
-
-   if (!codec)
-   {
-      RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
-            *params->vcodec ? params->vcodec : "libx264rgb");
-      return false;
-   }
-
-   video->encoder = codec;
-
-   /* Don't use swscaler unless format is not something "in-house" scaler
-    * supports.
-    *
-    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first),
-    * and it's non-trivial to fix upstream as it's heavily geared towards YUV.
-    * If we're dealing with strange formats or YUV, just use libswscale.
-    */
-   if (params->out_pix_fmt != AV_PIX_FMT_NONE)
-   {
-      video->pix_fmt = params->out_pix_fmt;
-      if (video->pix_fmt != AV_PIX_FMT_BGR24 && video->pix_fmt != AV_PIX_FMT_RGB32)
-         video->use_sws = true;
-
-      switch (video->pix_fmt)
-      {
-         case AV_PIX_FMT_BGR24:
-            video->scaler.out_fmt = SCALER_FMT_BGR24;
-            break;
-
-         case AV_PIX_FMT_RGB32:
-            video->scaler.out_fmt = SCALER_FMT_ARGB8888;
-            break;
-
-         default:
-            break;
-      }
-   }
-   else /* Use BGR24 as default out format. */
-   {
-      video->pix_fmt        = AV_PIX_FMT_BGR24;
-      video->scaler.out_fmt = SCALER_FMT_BGR24;
-   }
 
    switch (param->pix_fmt)
    {
@@ -601,50 +792,73 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
          return false;
    }
 
-   video->codec = avcodec_alloc_context3(codec);
-
    /* Useful to set scale_factor to 2 for chroma subsampled formats to
     * maintain full chroma resolution. (Or just use 4:4:4 or RGB ...)
     */
    out_w = (float)VIDEO_SCALE_W(param->out_dims) * params->scale_factor;
    out_h = (float)VIDEO_SCALE_H(param->out_dims) * params->scale_factor;
 
-   /* Ensure even dimensions for chroma-subsampled pixel formats.
-    * Odd dimensions cause encoder init failure with e.g. libx264.
-    * Round up (pad) rather than down so no source pixels are lost. */
-   if (     video->pix_fmt == AV_PIX_FMT_YUV420P
-         || video->pix_fmt == AV_PIX_FMT_YUV422P)
+   /* Hardware H.264 replaces libx264 for the built-in presets only;
+    * an explicit vcodec in a custom config is left alone. */
+   if (     param->hw_encoder
+         && !params->conf
+         && string_is_equal(params->vcodec, "libx264"))
    {
-      out_w = (out_w + 1) & ~1;
-      out_h = (out_h + 1) & ~1;
+      opened = ffmpeg_open_hw_h264(handle, out_w, out_h, &pix_fmt);
+      if (!opened)
+         RARCH_WARN("[FFmpeg] No usable hardware H.264 encoder,"
+               " falling back to libx264.\n");
    }
-   param->out_dims = VIDEO_SCALE_PACK(out_w, out_h);
 
-   video->codec->codec_type          = AVMEDIA_TYPE_VIDEO;
-   video->codec->width               = out_w;
-   video->codec->height              = out_h;
-   video->codec->time_base           = av_d2q((double)
-         params->frame_drop_ratio /param->fps, 1000000); /* Arbitrary big number. */
-   video->codec->sample_aspect_ratio = av_d2q(
-         param->aspect_ratio * out_h / out_w, 255);
-   video->codec->pix_fmt             = video->pix_fmt;
-
-   video->codec->thread_count = params->threads;
-
-   if (params->video_qscale)
+   if (!opened)
    {
-      video->codec->flags |= AV_CODEC_FLAG_QSCALE;
-      video->codec->global_quality = params->video_global_quality;
+      if (*params->vcodec)
+         codec = avcodec_find_encoder_by_name(params->vcodec);
+      else
+      {
+         /* By default, lossless video. */
+         av_dict_set(&params->video_opts, "qp", "0", 0);
+         codec = avcodec_find_encoder_by_name("libx264rgb");
+      }
+
+      if (!codec)
+      {
+         RARCH_ERR("[FFmpeg] Cannot find vcodec %s.\n",
+               *params->vcodec ? params->vcodec : "libx264rgb");
+         return false;
+      }
+
+      if (params->out_pix_fmt != AV_PIX_FMT_NONE)
+         pix_fmt = params->out_pix_fmt;
+
+      if (!ffmpeg_open_video_codec(handle, codec, pix_fmt, out_w, out_h,
+               false, params->video_opts ? &params->video_opts : NULL))
+         return false;
    }
-   else if (params->video_bit_rate)
-      video->codec->bit_rate = params->video_bit_rate;
 
-   if (handle->muxer.ctx->oformat->flags & AVFMT_GLOBALHEADER)
-      video->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+   out_w = VIDEO_SCALE_W(param->out_dims);
+   out_h = VIDEO_SCALE_H(param->out_dims);
 
-   if (avcodec_open2(video->codec, codec, params->video_opts ?
-            &params->video_opts : NULL) != 0)
-      return false;
+   /* Don't use swscaler unless format is not something "in-house" scaler
+    * supports.
+    *
+    * libswscale doesn't scale RGB -> RGB correctly (goes via YUV first),
+    * and it's non-trivial to fix upstream as it's heavily geared towards YUV.
+    * If we're dealing with strange formats or YUV, just use libswscale.
+    */
+   video->pix_fmt = pix_fmt;
+   switch (pix_fmt)
+   {
+      case AV_PIX_FMT_BGR24:
+         video->scaler.out_fmt = SCALER_FMT_BGR24;
+         break;
+      case AV_PIX_FMT_RGB32:
+         video->scaler.out_fmt = SCALER_FMT_ARGB8888;
+         break;
+      default:
+         video->use_sws = true;
+         break;
+   }
 
    video->frame_drop_ratio = params->frame_drop_ratio;
 
@@ -672,6 +886,48 @@ static bool ffmpeg_init_video(ffmpeg_t *handle)
    return true;
 }
 
+/* RTMP ingest (Twitch, YouTube, Facebook, Kick) wants H.264 + AAC-LC in
+ * FLV, CBR video, a fixed 2 s keyframe interval and 44.1/48 kHz audio.
+ * Twitch caps non-partner video at 6000 kbps and audio at 160 kbps. */
+static void ffmpeg_config_rtmp(struct ff_config_param *params,
+      unsigned preset)
+{
+   int kbps;
+
+   switch (preset)
+   {
+      case RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY:
+         kbps = 2500;
+         break;
+      case RECORD_CONFIG_TYPE_STREAMING_MED_QUALITY:
+         kbps = 4500;
+         break;
+      default:
+         kbps = 6000;
+         break;
+   }
+
+   params->video_qscale       = false;
+   params->video_bit_rate     = kbps * 1000;
+   params->video_max_rate     = kbps * 1000;
+   params->video_buf_size     = kbps * 1000;
+   params->video_gop_seconds  = 2.0f;
+   params->video_max_b_frames = 0;
+
+   /* CBR instead of CRF. nal-hrd=cbr makes x264 pad to a true CBR
+    * stream, which is what the ingest servers expect. */
+   av_dict_set(&params->video_opts, "crf", NULL, 0);
+   av_dict_set(&params->video_opts, "nal-hrd", "cbr", 0);
+   /* No extra keyframes on scene cuts: ingest wants a fixed cadence.
+    * (keyint_min can't do this; x264 clamps it to keyint/2+1.) */
+   av_dict_set(&params->video_opts, "x264-params", "scenecut=0", 0);
+
+   params->audio_qscale       = false;
+   params->audio_bit_rate     = 160000;
+   params->sample_rate        = 48000;
+   av_dict_set(&params->audio_opts, "audio_global_quality", NULL, 0);
+}
+
 static bool ffmpeg_init_config_common(struct ff_config_param *params,
       unsigned preset,
       bool video_gpu_record,
@@ -680,6 +936,8 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
       unsigned streaming_mode,
       unsigned video_record_threads)
 {
+   params->video_max_b_frames = -1;
+
    switch (preset)
    {
       case RECORD_CONFIG_TYPE_RECORDING_LOW_QUALITY:
@@ -693,6 +951,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.05f;
          av_dict_set(&params->video_opts, "preset", "ultrafast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "35", 0);
@@ -709,6 +968,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.1f;
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "25", 0);
@@ -725,6 +985,7 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
          strlcpy_lit(params->vcodec, "libx264", sizeof(params->vcodec));
          strlcpy_lit(params->acodec, "aac", sizeof(params->acodec));
 
+         params->video_hw_bpp         = 0.2f;
          av_dict_set(&params->video_opts, "preset", "superfast", 0);
          av_dict_set(&params->video_opts, "tune", "film", 0);
          av_dict_set(&params->video_opts, "crf", "15", 0);
@@ -872,7 +1133,10 @@ static bool ffmpeg_init_config_common(struct ff_config_param *params,
             || streaming_mode == STREAMING_MODE_TWITCH
             || streaming_mode == STREAMING_MODE_FACEBOOK
             || streaming_mode == STREAMING_MODE_KICK)
+      {
          strlcpy_lit(params->format, "flv", sizeof(params->format));
+         ffmpeg_config_rtmp(params, preset);
+      }
       else
          strlcpy_lit(params->format, "mpegts", sizeof(params->format));
    }
@@ -896,6 +1160,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
    params->threads          = 1;
    params->frame_drop_ratio = 1;
    params->audio_enable     = true;
+   params->video_max_b_frames = -1;
 
    if (!config)
       return true;
@@ -966,6 +1231,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
+   AVFormatContext *ctx;
 #if !FFMPEG3
    size_t _len;
 #endif
@@ -1037,12 +1303,80 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
 
-#define MAX_FRAMES 32
+/* Audio queue depth in seconds of input audio. */
+#define AUDIO_FIFO_SECONDS         2
+/* Video queue depth, from video_record_fifo_frames. */
+#define DEFAULT_VIDEO_FIFO_FRAMES 32
+#define MIN_VIDEO_FIFO_FRAMES      8
+#define MAX_VIDEO_FIFO_FRAMES    128
+
+/* Reported at exit with perfcnt_enable, and readable live from the
+ * menu, which reads and resets them on the frontend's thread: so only
+ * the push_* side, which runs there. */
+static struct retro_perf_counter ffmpeg_perf_push_video   = {0};
+static struct retro_perf_counter ffmpeg_perf_push_audio   = {0};
+
+static bool ffmpeg_perf_enabled(void)
+{
+   return runloop_state_get_ptr()->perfcnt_enable;
+}
+
+static void ffmpeg_perf_init(void)
+{
+   performance_counter_init(ffmpeg_perf_push_video,   "record_push_video");
+   performance_counter_init(ffmpeg_perf_push_audio,   "record_push_audio");
+}
 
 static void ffmpeg_thread(void *data);
 
+/* Encoder threads run this much nicer than the core, in drop mode
+ * only: with blocking on, a starved encoder just stalls the game. */
+#define ENCODER_NICE_DELTA 10
+
+#ifdef FFMPEG_HAVE_THREAD_NICE
+/* Linux nice is per thread and a new thread takes its creator's, so a
+ * thread that lowers itself before it opens the encoders has every
+ * thread they spawn run lowered too, and nothing else. */
+static void ffmpeg_lower_this_thread(void)
+{
+   int cur;
+   id_t tid = (id_t)syscall(SYS_gettid);
+
+   errno = 0;
+   cur   = getpriority(PRIO_PROCESS, tid);
+   if (cur == -1 && errno)
+      return;
+   /* Raising nice never needs privileges. */
+   setpriority(PRIO_PROCESS, tid, cur + ENCODER_NICE_DELTA);
+}
+
+typedef struct
+{
+   ffmpeg_t *handle;
+   const char *audio_resampler;
+   bool ok;
+} ffmpeg_open_job_t;
+
+static void ffmpeg_open_codecs_lowered(void *data)
+{
+   ffmpeg_open_job_t *job = (ffmpeg_open_job_t*)data;
+   ffmpeg_lower_this_thread();
+   job->ok = ffmpeg_init_video(job->handle)
+      && (  !job->handle->config.audio_enable
+          || ffmpeg_init_audio(job->handle, job->audio_resampler));
+}
+#endif
+
 static bool init_thread(ffmpeg_t *handle)
 {
+   unsigned vf = handle->video_fifo_frames;
+   double rate = handle->params.samplerate > 0.0
+         ? handle->params.samplerate : 48000.0;
+
+   if (vf < MIN_VIDEO_FIFO_FRAMES || vf > MAX_VIDEO_FIFO_FRAMES)
+      vf = DEFAULT_VIDEO_FIFO_FRAMES;
+   handle->video_fifo_frames = vf;
+
    handle->data_init  = retro_eventcount_init(&handle->data);
    handle->space_init = retro_eventcount_init(&handle->space);
    if (!handle->data_init || !handle->space_init)
@@ -1061,14 +1395,16 @@ static bool init_thread(ffmpeg_t *handle)
     * larger attr ring cannot admit a frame the video ring lacks
     * room for.) */
    handle->fifos_init =
-         retro_spsc_init(&handle->audio_fifo, 32000 * sizeof(int16_t) *
-               handle->params.channels * MAX_FRAMES / 60) /* Some arbitrary max size. */
-      && retro_spsc_init(&handle->attr_fifo, sizeof(struct record_video_data) * MAX_FRAMES)
+         retro_spsc_init(&handle->audio_fifo, (size_t)(rate * AUDIO_FIFO_SECONDS)
+               * handle->params.channels * sizeof(int16_t))
+      && retro_spsc_init(&handle->attr_fifo, sizeof(struct ff_video_attr) * vf)
       && retro_spsc_init(&handle->video_fifo,
-               VIDEO_SCALE_AREA(handle->params.fb_dims) *
-               handle->video.pix_size * MAX_FRAMES);
+               (size_t)VIDEO_SCALE_AREA(handle->params.fb_dims) *
+               handle->video.pix_size * vf);
    if (!handle->fifos_init)
    {
+      RARCH_ERR("[FFmpeg] Failed to allocate recording queues"
+            " (%u video frames).\n", vf);
       retro_spsc_free(&handle->audio_fifo);
       retro_spsc_free(&handle->attr_fifo);
       retro_spsc_free(&handle->video_fifo);
@@ -1080,6 +1416,20 @@ static bool init_thread(ffmpeg_t *handle)
 
    retro_atomic_store_release_int(&handle->alive, 1);
    handle->thread    = sthread_create(ffmpeg_thread, handle);
+   if (!handle->thread)
+   {
+      RARCH_ERR("[FFmpeg] Failed to create encoder thread.\n");
+      retro_atomic_store_release_int(&handle->alive, 0);
+      retro_eventcount_free(&handle->data);
+      retro_eventcount_free(&handle->space);
+      handle->data_init = handle->space_init = false;
+      return false;
+   }
+
+   RARCH_LOG("[FFmpeg] Video queue: %u frames (%.1f MiB), drop-on-full: %s.\n",
+         vf, ((double)VIDEO_SCALE_AREA(handle->params.fb_dims)
+            * handle->video.pix_size * vf) / (1024.0 * 1024.0),
+         handle->allow_frame_drop ? "yes" : "no");
 
    return true;
 }
@@ -1119,6 +1469,23 @@ static void ffmpeg_free(void *data)
 
    deinit_thread(handle);
    deinit_thread_buf(handle);
+
+   if (handle->video_frames_in > 0)
+      RARCH_LOG("[FFmpeg] Recording ended: %llu video frames in,"
+            " %llu dropped (%.2f%%).\n",
+            (unsigned long long)handle->video_frames_in,
+            (unsigned long long)handle->video_frames_dropped,
+            100.0 * (double)handle->video_frames_dropped
+                  / (double)handle->video_frames_in);
+   if (handle->audio_bytes_dropped && handle->params.samplerate > 0.0)
+      RARCH_LOG("[FFmpeg] Recording ended: %.2f s of audio replaced"
+            " with silence.\n",
+            (double)handle->audio_bytes_dropped
+            / (handle->params.samplerate
+               * handle->params.channels * sizeof(int16_t)));
+
+   av_free(handle->video_rot_buf);
+   handle->video_rot_buf = NULL;
 
    if (handle->audio.codec)
    {
@@ -1185,14 +1552,120 @@ static void ffmpeg_free(void *data)
    /* The muxer context owns its streams, their codec parameters, its
     * metadata and its url; releasing just the struct left the rest
     * behind on every session. */
+   /* Failed before finalize: the open ffmpeg_init_muxer_pre made */
+   if (handle->muxer.ctx && handle->muxer.ctx->pb)
+      avio_closep(&handle->muxer.ctx->pb);
    avformat_free_context(handle->muxer.ctx);
    av_packet_free(&handle->pkt);
 
    free(handle);
 
+   av_log_set_callback(av_log_default_callback);
+
 #if FFMPEG3
    avformat_network_deinit();
 #endif
+}
+
+/* Route libav* logging into RetroArch's log, which is flushed per line
+ * and so survives a crash. FFmpeg's level follows the frontend log
+ * level: Debug gets AV_LOG_DEBUG (codec internals, e.g. the nvv4l2
+ * encoder's steps), Info gets AV_LOG_INFO, and so on. */
+/* FFmpeg often builds one line out of several av_log() calls, so
+ * pieces are collected until a newline. Calls come from any thread. */
+static slock_t *ffmpeg_av_log_lock;
+static char     ffmpeg_av_log_line[1024];
+static size_t   ffmpeg_av_log_len;
+static int      ffmpeg_av_log_level;
+static int      ffmpeg_av_log_prefix = 1;
+static void    *ffmpeg_av_log_ctx;
+
+static void ffmpeg_av_log_emit(int level, const char *line)
+{
+   if (level <= AV_LOG_ERROR)
+      RARCH_ERR("[FFmpeg/lav] %s\n", line);
+   else if (level <= AV_LOG_WARNING)
+      RARCH_WARN("[FFmpeg/lav] %s\n", line);
+   else if (level <= AV_LOG_INFO)
+      RARCH_LOG("[FFmpeg/lav] %s\n", line);
+   else
+      RARCH_DBG("[FFmpeg/lav] %s\n", line);
+}
+
+static void ffmpeg_av_log_cb(void *avcl, int level, const char *fmt,
+      va_list vl)
+{
+   char piece[1024];
+   size_t _len;
+
+   if (level > av_log_get_level())
+      return;
+
+   if (ffmpeg_av_log_lock)
+      slock_lock(ffmpeg_av_log_lock);
+
+   /* A partial line from another context (another thread or codec)
+    * is finished on its own rather than spliced with this one. */
+   if (ffmpeg_av_log_len && avcl != ffmpeg_av_log_ctx)
+   {
+      ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
+      ffmpeg_av_log_len     = 0;
+      ffmpeg_av_log_line[0] = '\0';
+      ffmpeg_av_log_prefix  = 1;
+   }
+   ffmpeg_av_log_ctx = avcl;
+
+   av_log_format_line2(avcl, level, fmt, vl, piece, sizeof(piece),
+         &ffmpeg_av_log_prefix);
+
+   if (!ffmpeg_av_log_len || level < ffmpeg_av_log_level)
+      ffmpeg_av_log_level = level;
+   ffmpeg_av_log_len += strlcpy(ffmpeg_av_log_line + ffmpeg_av_log_len,
+         piece, sizeof(ffmpeg_av_log_line) - ffmpeg_av_log_len);
+   if (ffmpeg_av_log_len >= sizeof(ffmpeg_av_log_line))
+      ffmpeg_av_log_len = sizeof(ffmpeg_av_log_line) - 1;
+
+   _len = ffmpeg_av_log_len;
+   if (     (_len && ffmpeg_av_log_line[_len - 1] == '\n')
+         || _len == sizeof(ffmpeg_av_log_line) - 1)
+   {
+      while (_len && (ffmpeg_av_log_line[_len - 1] == '\n'
+               || ffmpeg_av_log_line[_len - 1] == '\r'))
+         ffmpeg_av_log_line[--_len] = '\0';
+      if (_len)
+         ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
+      ffmpeg_av_log_len     = 0;
+      ffmpeg_av_log_line[0] = '\0';
+   }
+
+   if (ffmpeg_av_log_lock)
+      slock_unlock(ffmpeg_av_log_lock);
+}
+
+static void ffmpeg_av_log_init(void)
+{
+   int av_level;
+
+   if (!verbosity_is_enabled())
+      av_level = AV_LOG_ERROR;
+   else
+   {
+      switch (verbosity_get_log_level())
+      {
+         case 0:  av_level = AV_LOG_DEBUG;   break;
+         case 1:  av_level = AV_LOG_INFO;    break;
+         case 2:  av_level = AV_LOG_WARNING; break;
+         default: av_level = AV_LOG_ERROR;   break;
+      }
+   }
+
+   /* Created once and kept: the callback may still be in use by
+    * another libav* user when a recording ends. */
+   if (!ffmpeg_av_log_lock)
+      ffmpeg_av_log_lock = slock_new();
+
+   av_log_set_level(av_level);
+   av_log_set_callback(ffmpeg_av_log_cb);
 }
 
 static void *ffmpeg_new(const struct record_params *params)
@@ -1206,8 +1679,14 @@ static void *ffmpeg_new(const struct record_params *params)
    avformat_network_init();
 #endif
 
-   handle->params       = *params;
-   handle->pkt          = av_packet_alloc();
+   ffmpeg_av_log_init();
+
+   ffmpeg_perf_init();
+
+   handle->params            = *params;
+   handle->pkt               = av_packet_alloc();
+   handle->allow_frame_drop  = params->allow_frame_drop;
+   handle->video_fifo_frames = params->video_fifo_frames;
 
    switch (params->preset)
    {
@@ -1234,13 +1713,34 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;
 
-   if (!ffmpeg_init_video(handle))
-      goto error;
-
-   if (  handle->config.audio_enable
-         && !ffmpeg_init_audio(handle,
-            params->audio_resampler))
-      goto error;
+   {
+      bool ok;
+      bool opened = false;
+#ifdef FFMPEG_HAVE_THREAD_NICE
+      /* In drop mode the encoders are opened on a thread that has
+       * lowered itself, so the threads they start run lowered. */
+      if (handle->allow_frame_drop)
+      {
+         ffmpeg_open_job_t job;
+         sthread_t *opener;
+         job.handle          = handle;
+         job.audio_resampler = params->audio_resampler;
+         job.ok              = false;
+         if ((opener = sthread_create(ffmpeg_open_codecs_lowered, &job)))
+         {
+            sthread_join(opener);
+            ok     = job.ok;
+            opened = true;
+         }
+      }
+#endif
+      if (!opened)
+         ok = ffmpeg_init_video(handle)
+            && (  !handle->config.audio_enable
+                || ffmpeg_init_audio(handle, params->audio_resampler));
+      if (!ok)
+         goto error;
+   }
 
    if (!ffmpeg_init_muxer_post(handle))
       goto error;
@@ -1255,18 +1755,79 @@ error:
    return NULL;
 }
 
-static bool ffmpeg_push_video(void *data,
+static bool ffmpeg_video_fifo_has_room(ffmpeg_t *handle, size_t video_bytes)
+{
+   return retro_spsc_write_avail(&handle->attr_fifo)
+            >= sizeof(struct ff_video_attr)
+       && retro_spsc_write_avail(&handle->video_fifo) >= video_bytes;
+}
+
+static void ffmpeg_audio_write_silence(ffmpeg_t *handle);
+
+/* Video frames in a row without audio before the core is taken to have
+ * gone silent: short enough to be imperceptible, long enough that cores
+ * delivering audio in bursts aren't affected. */
+#define SILENT_VIDEO_FRAMES 4
+
+/* A core that produces no audio for a while (rather than silence) left
+ * that time out of the audio track, desyncing everything after it, and
+ * with video on the audio clock it would stall video too. After
+ * SILENT_VIDEO_FRAMES frames without audio, owe one frame period of
+ * silence per video frame, backfilling the ones already seen. */
+static void ffmpeg_fill_audio_gap(ffmpeg_t *handle)
+{
+   unsigned frames_to_fill;
+   double samples;
+   uint64_t whole;
+
+   if (     !handle->config.audio_enable
+         || handle->params.samplerate <= 0.0
+         || handle->params.fps <= 0.0)
+      return;
+
+   if (handle->audio_frames_in != handle->audio_frames_at_last_video)
+   {
+      handle->audio_frames_at_last_video = handle->audio_frames_in;
+      handle->video_frames_without_audio = 0;
+      return;
+   }
+
+   if (++handle->video_frames_without_audio < SILENT_VIDEO_FRAMES)
+      return;
+
+   frames_to_fill = (handle->video_frames_without_audio == SILENT_VIDEO_FRAMES)
+      ? SILENT_VIDEO_FRAMES : 1;
+   samples        = frames_to_fill * handle->params.samplerate
+      / handle->params.fps + handle->silence_frac;
+   whole          = (uint64_t)samples;
+   handle->silence_frac = samples - (double)whole;
+
+   handle->audio_frames_in            += whole;
+   handle->audio_silence_pending      += (size_t)whole
+      * handle->params.channels * sizeof(int16_t);
+   handle->audio_frames_at_last_video  = handle->audio_frames_in;
+   ffmpeg_audio_write_silence(handle);
+   retro_eventcount_notify(&handle->data);
+}
+
+static bool ffmpeg_push_video_impl(void *data,
       const struct record_video_data *vid)
 {
    unsigned y;
    unsigned rows;
-   struct record_video_data attr_data;
+   size_t video_bytes;
+   struct ff_video_attr attr;
    bool drop_frame  = false;
    ffmpeg_t *handle = (ffmpeg_t*)data;
    int       offset = 0;
 
    if (!handle || !vid)
       return false;
+
+   /* Every frame the core presents is a frame period of its time,
+    * whether or not frame_drop_ratio keeps it. */
+   if (retro_atomic_load_acquire_int(&handle->alive))
+      ffmpeg_fill_audio_gap(handle);
 
    drop_frame       = handle->video.frame_drop_count++ %
       handle->video.frame_drop_ratio;
@@ -1276,62 +1837,108 @@ static bool ffmpeg_push_video(void *data,
    if (drop_frame)
       return true;
 
+   if (!retro_atomic_load_acquire_int(&handle->alive))
+      return false;
+
    /* Tightly pack our frame to conserve memory.
     * libretro tends to use a very large pitch.
     */
-   attr_data = *vid;
+   attr.vid      = *vid;
+   attr.pts_skip = 0;
 
-   if (attr_data.is_dupe)
+   if (attr.vid.is_dupe)
    {
-      attr_data.dims  = 0;
-      attr_data.pitch = 0;
+      attr.vid.dims  = 0;
+      attr.vid.pitch = 0;
    }
    else
-      attr_data.pitch = (int)(VIDEO_SCALE_W(attr_data.dims)
+      attr.vid.pitch = (int)(VIDEO_SCALE_W(attr.vid.dims)
             * handle->video.pix_size);
 
-   rows = VIDEO_SCALE_H(attr_data.dims);
+   rows        = VIDEO_SCALE_H(attr.vid.dims);
+   video_bytes = (size_t)rows * attr.vid.pitch;
+
+   handle->video_frames_in++;
+
+   /* Drop mode: a full queue costs this frame, never the frontend. */
+   if (     handle->allow_frame_drop
+         && !ffmpeg_video_fifo_has_room(handle, video_bytes))
+   {
+      /* Counted, and said once when the recording ends */
+      handle->video_frames_dropped++;
+      handle->video_pts_pending++;
+      return true;
+   }
 
    for (;;)
    {
-      /* Room for the attr and for the frame's bytes: the old check
-       * only asked the attr fifo, relying on the two being sized in
-       * step; the rings are sized independently now (power-of-two
-       * rounding), so ask both. */
       int key;
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (     retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
-            && retro_spsc_write_avail(&handle->video_fifo)
-                  >= (size_t)rows * attr_data.pitch)
+      if (ffmpeg_video_fifo_has_room(handle, video_bytes))
          break;
 
       key = retro_eventcount_prepare_wait(&handle->space);
       if (     !retro_atomic_load_acquire_int(&handle->alive)
-            || (  retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
-               && retro_spsc_write_avail(&handle->video_fifo)
-                     >= (size_t)rows * attr_data.pitch))
+            || ffmpeg_video_fifo_has_room(handle, video_bytes))
          retro_eventcount_cancel_wait(&handle->space);
       else
          retro_eventcount_commit_wait_timeout(&handle->space, key,
                FFMPEG_PUSH_WAIT_US);
    }
 
+   attr.pts_skip             = handle->video_pts_pending;
+   if (     handle->config.audio_enable
+         && handle->audio_frames_in
+         && handle->params.samplerate > 0.0)
+   {
+      /* This frame's place on the audio timeline, in codec time base
+       * units; never behind the previous frame. */
+      double  secs   = (double)handle->audio_frames_in
+         / handle->params.samplerate;
+      int64_t target = (int64_t)(secs * handle->params.fps
+            / handle->video.frame_drop_ratio + 0.5);
+      attr.pts_skip  = (target > handle->video_next_pts)
+         ? (unsigned)(target - handle->video_next_pts) : 0;
+   }
+   handle->video_next_pts   += (int64_t)attr.pts_skip + 1;
+   handle->video_pts_pending = 0;
+
    /* Frame first, attr last: the encoder takes the attr as the
     * signal that a whole frame is behind it, and the ring's
     * release/acquire on each write orders the rows before it. */
    for (y = 0; y < rows; y++, offset += vid->pitch)
       retro_spsc_write(&handle->video_fifo,
-            (const uint8_t*)vid->data + offset, attr_data.pitch);
+            (const uint8_t*)vid->data + offset, attr.vid.pitch);
 
-   retro_spsc_write(&handle->attr_fifo, &attr_data, sizeof(attr_data));
+   retro_spsc_write(&handle->attr_fifo, &attr, sizeof(attr));
    retro_eventcount_notify(&handle->data);
 
    return true;
 }
 
-static bool ffmpeg_push_audio(void *data,
+/* Writes as much owed silence as fits, in whole frames. */
+static void ffmpeg_audio_write_silence(ffmpeg_t *handle)
+{
+   static const int16_t zeros[1024] = {0};
+   size_t avail = retro_spsc_write_avail(&handle->audio_fifo);
+   size_t todo  = handle->audio_silence_pending;
+   size_t frame = handle->params.channels * sizeof(int16_t);
+
+   if (todo > avail)
+      todo = avail - (avail % frame);
+
+   handle->audio_silence_pending -= todo;
+   while (todo)
+   {
+      size_t chunk = todo < sizeof(zeros) ? todo : sizeof(zeros);
+      retro_spsc_write(&handle->audio_fifo, zeros, chunk);
+      todo -= chunk;
+   }
+}
+
+static bool ffmpeg_push_audio_impl(void *data,
       const struct record_audio_data *audio_data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
@@ -1344,6 +1951,26 @@ static bool ffmpeg_push_audio(void *data,
       return true;
 
    need = audio_data->frames * handle->params.channels * sizeof(int16_t);
+   handle->audio_frames_in += audio_data->frames;
+
+   if (handle->allow_frame_drop)
+   {
+      if (!retro_atomic_load_acquire_int(&handle->alive))
+         return false;
+      /* A chunk that doesn't fit is owed as silence, not waited for. */
+      if (handle->audio_silence_pending)
+         ffmpeg_audio_write_silence(handle);
+      if (     !handle->audio_silence_pending
+            && retro_spsc_write_avail(&handle->audio_fifo) >= need)
+         retro_spsc_write(&handle->audio_fifo, audio_data->data, need);
+      else
+      {
+         handle->audio_silence_pending += need;
+         handle->audio_bytes_dropped   += need;
+      }
+      retro_eventcount_notify(&handle->data);
+      return true;
+   }
 
    for (;;)
    {
@@ -1351,12 +1978,20 @@ static bool ffmpeg_push_audio(void *data,
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (retro_spsc_write_avail(&handle->audio_fifo) >= need)
+      /* Silence owed from a gap goes in first, in order. */
+      if (handle->audio_silence_pending)
+      {
+         ffmpeg_audio_write_silence(handle);
+         retro_eventcount_notify(&handle->data);
+      }
+      if (     !handle->audio_silence_pending
+            && retro_spsc_write_avail(&handle->audio_fifo) >= need)
          break;
 
       key = retro_eventcount_prepare_wait(&handle->space);
       if (     !retro_atomic_load_acquire_int(&handle->alive)
-            || retro_spsc_write_avail(&handle->audio_fifo) >= need)
+            || (  !handle->audio_silence_pending
+               && retro_spsc_write_avail(&handle->audio_fifo) >= need))
          retro_eventcount_cancel_wait(&handle->space);
       else
          retro_eventcount_commit_wait_timeout(&handle->space, key,
@@ -1367,6 +2002,28 @@ static bool ffmpeg_push_audio(void *data,
    retro_eventcount_notify(&handle->data);
 
    return true;
+}
+
+static bool ffmpeg_push_video(void *data,
+      const struct record_video_data *vid)
+{
+   bool ret;
+   bool perf = ffmpeg_perf_enabled();
+   performance_counter_start_plus(perf, ffmpeg_perf_push_video);
+   ret = ffmpeg_push_video_impl(data, vid);
+   performance_counter_stop_plus(perf, ffmpeg_perf_push_video);
+   return ret;
+}
+
+static bool ffmpeg_push_audio(void *data,
+      const struct record_audio_data *audio_data)
+{
+   bool ret;
+   bool perf = ffmpeg_perf_enabled();
+   performance_counter_start_plus(perf, ffmpeg_perf_push_audio);
+   ret = ffmpeg_push_audio_impl(data, audio_data);
+   performance_counter_stop_plus(perf, ffmpeg_perf_push_audio);
+   return ret;
 }
 
 static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
@@ -1427,12 +2084,12 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 {
    unsigned src_w = VIDEO_SCALE_W(vid->dims);
    unsigned src_h = VIDEO_SCALE_H(vid->dims);
-   /* When output was padded to even dimensions, clamp the scaling
-    * destination to the source size. */
+   /* Scale every frame to the output size, except one exactly a pixel
+    * short of it (the padding to even dimensions), which is copied 1:1. */
    unsigned out_w = VIDEO_SCALE_W(handle->params.out_dims);
    unsigned out_h = VIDEO_SCALE_H(handle->params.out_dims);
-   unsigned dst_w = (src_w < out_w) ? src_w : out_w;
-   unsigned dst_h = (src_h < out_h) ? src_h : out_h;
+   unsigned dst_w = (src_w + 1 == out_w) ? src_w : out_w;
+   unsigned dst_h = (src_h + 1 == out_h) ? src_h : out_h;
 
    /* Attempt to preserve more information if we scale down. */
    bool shrunk = dst_w < src_w || dst_h < src_h;
@@ -1465,15 +2122,89 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
             shrunk);
 }
 
-static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
-      const struct record_video_data *vid)
+/* Rotate a packed frame by rot quarter turns counter-clockwise
+ * (libretro convention) from src (w x h, src_pitch bytes per row) into
+ * dst, tightly packed at the rotated width. */
+static void ffmpeg_rotate_frame(uint8_t *dst, const uint8_t *src,
+      unsigned w, unsigned h, int src_pitch, unsigned bpp, unsigned rot)
 {
+   unsigned x, y;
+   unsigned dw = (rot & 1) ? h : w;
+
+   for (y = 0; y < h; y++)
+   {
+      const uint8_t *row = src + (ptrdiff_t)y * src_pitch;
+      for (x = 0; x < w; x++)
+      {
+         unsigned dx, dy;
+         switch (rot)
+         {
+            case 1:  dx = y;         dy = w - 1 - x; break; /*  90 CCW */
+            case 2:  dx = w - 1 - x; dy = h - 1 - y; break; /* 180     */
+            default: dx = h - 1 - y; dy = x;         break; /* 270 CCW */
+         }
+         memcpy(dst + ((size_t)dy * dw + dx) * bpp, row + (size_t)x * bpp,
+               bpp);
+      }
+   }
+}
+
+static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
+      const struct record_video_data *vid, unsigned pts_skip)
+{
+   struct record_video_data rotated;
+   bool ok;
+
+   if (handle->params.rotation && !vid->is_dupe && vid->data)
+   {
+      unsigned bpp = (unsigned)handle->video.pix_size;
+      unsigned w   = VIDEO_SCALE_W(vid->dims);
+      unsigned h   = VIDEO_SCALE_H(vid->dims);
+      if (!handle->video_rot_buf)
+         handle->video_rot_buf = (uint8_t*)av_malloc(
+               VIDEO_SCALE_AREA(handle->params.fb_dims) * bpp);
+      if (     handle->video_rot_buf
+            && (size_t)w * h <= VIDEO_SCALE_AREA(handle->params.fb_dims))
+      {
+         unsigned rot = handle->params.rotation & 3;
+         ffmpeg_rotate_frame(handle->video_rot_buf,
+               (const uint8_t*)vid->data, w, h, vid->pitch, bpp, rot);
+         rotated        = *vid;
+         rotated.data   = handle->video_rot_buf;
+         rotated.dims   = (rot & 1) ? VIDEO_SCALE_PACK(h, w) : vid->dims;
+         rotated.pitch  = (int)(VIDEO_SCALE_W(rotated.dims) * bpp);
+         vid            = &rotated;
+      }
+   }
+
    if (!vid->is_dupe)
+   {
       ffmpeg_scale_input(handle, vid);
+   }
+
+   /* Leave a gap for dropped frames so A/V stays aligned. */
+   handle->video.frame_cnt      += pts_skip;
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
-   if (!encode_video(handle, handle->video.conv_frame))
+   /* gop_size counts frames, so pts gaps (drops, cores presenting
+    * every other tick) stretch it in time; force keyframes on time. */
+   handle->video.conv_frame->pict_type = AV_PICTURE_TYPE_NONE;
+   if (handle->config.video_gop_seconds > 0.0f)
+   {
+      int64_t ticks = (int64_t)(handle->config.video_gop_seconds
+            * handle->params.fps / handle->video.frame_drop_ratio + 0.5);
+      if (ticks < 1)
+         ticks = 1;
+      if (handle->video.frame_cnt - handle->video_last_key_pts >= ticks)
+      {
+         handle->video.conv_frame->pict_type = AV_PICTURE_TYPE_I;
+         handle->video_last_key_pts          = handle->video.frame_cnt;
+      }
+   }
+
+   ok = encode_video(handle, handle->video.conv_frame);
+   if (!ok)
       return false;
 
    handle->video.frame_cnt++;
@@ -1838,21 +2569,13 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
    return true;
 }
 
-static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
-      size_t audio_buf_size)
+static void ffmpeg_flush_audio(ffmpeg_t *handle)
 {
-   size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
-
-   if (avail)
+   if (     handle->audio.frames_in_buffer
+         && encode_audio(handle, false))
    {
-      struct record_audio_data aud = {0};
-
-      retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
-
-      aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
-      aud.data = audio_buf;
-
-      ffmpeg_push_audio_thread(handle, &aud, false);
+      handle->audio.frame_cnt       += handle->audio.frames_in_buffer;
+      handle->audio.frames_in_buffer = 0;
    }
 
    encode_audio(handle, true);
@@ -1875,7 +2598,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    do
    {
-      struct record_video_data attr_buf;
+      struct ff_video_attr attr_buf;
 
       did_work = false;
 
@@ -1906,19 +2629,48 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       {
          retro_spsc_read(&handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          retro_spsc_read(&handle->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.dims) * attr_buf.pitch);
-         attr_buf.data = video_buf;
-         ffmpeg_push_video_thread(handle, &attr_buf);
+               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
+         attr_buf.vid.data = video_buf;
+         ffmpeg_push_video_thread(handle, &attr_buf.vid, attr_buf.pts_skip);
 
          did_work = true;
       }
    }while (did_work);
 
-   /* Flush out last audio.  Skip on OOM - audio_buf is the
-    * destination for ffmpeg_flush_audio's internal fifo_read
-    * (via ffmpeg_push_audio_thread) and NULL would NULL-deref. */
+   /* The real audio left in the queue was queued ahead of any silence
+    * still owed: it goes first, held in the encoder's frame until the
+    * silence completes it. */
    if (handle->config.audio_enable && audio_buf)
-      ffmpeg_flush_audio(handle, audio_buf, audio_buf_size);
+   {
+      size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
+      if (avail)
+      {
+         struct record_audio_data aud = {0};
+         retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
+         aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
+         aud.data   = audio_buf;
+         ffmpeg_push_audio_thread(handle, &aud, true);
+      }
+   }
+
+   /* Pay back silence still owed, so audio runs as long as video. */
+   if (handle->config.audio_enable && audio_buf)
+   {
+      memset(audio_buf, 0, audio_buf_size);
+      while (handle->audio_silence_pending >= audio_buf_size)
+      {
+         struct record_audio_data aud = {0};
+         aud.frames = handle->audio.codec->frame_size;
+         aud.data   = audio_buf;
+         ffmpeg_push_audio_thread(handle, &aud, true);
+         handle->audio_silence_pending -= audio_buf_size;
+      }
+      handle->audio_silence_pending = 0;
+   }
+
+   /* Flush out last audio: a short final frame, then the encoder. */
+   if (handle->config.audio_enable && audio_buf)
+      ffmpeg_flush_audio(handle);
 
    /* Flush out last video. */
    encode_video(handle, NULL);
@@ -1943,7 +2695,7 @@ static bool ffmpeg_finalize(void *data)
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
 
-   avio_close(ctx->pb);
+   avio_closep(&handle->muxer.ctx->pb);
 
    return true;
 }
@@ -1959,9 +2711,15 @@ static void ffmpeg_thread(void *data)
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
 
+#ifdef FFMPEG_HAVE_THREAD_NICE
+   /* Also covers threads an encoder spawns lazily from here. */
+   if (ff->allow_frame_drop)
+      ffmpeg_lower_this_thread();
+#endif
+
    while (retro_atomic_load_acquire_int(&ff->alive))
    {
-      struct record_video_data attr_buf;
+      struct ff_video_attr attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
@@ -1990,11 +2748,11 @@ static void ffmpeg_thread(void *data)
       {
          retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
          retro_spsc_read(&ff->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.dims) * attr_buf.pitch);
+               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
          retro_eventcount_notify(&ff->space);
 
-         attr_buf.data = video_buf;
-         ffmpeg_push_video_thread(ff, &attr_buf);
+         attr_buf.vid.data = video_buf;
+         ffmpeg_push_video_thread(ff, &attr_buf.vid, attr_buf.pts_skip);
       }
 
       if (avail_audio && audio_buf)

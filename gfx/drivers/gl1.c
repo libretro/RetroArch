@@ -2867,13 +2867,12 @@ static void gl1_viewport_info(void *data, struct video_viewport *vp)
    VIDEO_POS_PUT_Y(vp->pos, top_dist);
 }
 
-static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+/* bgrx: write bottom-up 32-bit BGRX (read_viewport_bgrx) instead of
+ * bottom-up BGR24. */
+static bool gl1_read_viewport_internal(gl1_t *gl1, uint8_t *buffer,
+      bool is_idle, bool bgrx)
 {
    unsigned num_pixels = 0;
-   gl1_t *gl1          = (gl1_t*)data;
-
-   if (!gl1)
-      return false;
 
    num_pixels                      = VIDEO_SCALE_AREA(gl1->vp.dims);
    gl1->readback_buffer_screenshot = malloc(num_pixels * sizeof(uint32_t));
@@ -2895,19 +2894,44 @@ static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
       unsigned vd_h = VIDEO_SCALE_H(gl1->vp.full_dims);
       unsigned rb_w = (VIDEO_SCALE_W(gl1->vp.dims)  > vd_w) ? vd_w : VIDEO_SCALE_W(gl1->vp.dims);
       unsigned rb_h = (VIDEO_SCALE_H(gl1->vp.dims) > vd_h) ? vd_h : VIDEO_SCALE_H(gl1->vp.dims);
-      video_frame_convert_rgba_to_bgr(
-            (const void*)gl1->readback_buffer_screenshot,
-            buffer,
-            rb_w * sizeof(uint32_t),
-            rb_w * 3,
-            rb_w,
-            rb_h);
+      if (bgrx)
+         video_frame_copy_to_bgrx(buffer, VIDEO_SCALE_W(gl1->vp.dims),
+               VIDEO_SCALE_H(gl1->vp.dims),
+               (const uint8_t*)gl1->readback_buffer_screenshot,
+               rb_w * 4, rb_w, rb_h, true);
+      else
+         video_frame_convert_rgba_to_bgr(
+               (const void*)gl1->readback_buffer_screenshot,
+               buffer,
+               rb_w * sizeof(uint32_t),
+               rb_w * 3,
+               rb_w,
+               rb_h);
    }
 
    free(gl1->readback_buffer_screenshot);
    gl1->readback_buffer_screenshot = NULL;
 
    return true;
+}
+
+static bool gl1_read_viewport(void *data, uint8_t *buffer, bool is_idle)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+   if (!gl1)
+      return false;
+   return gl1_read_viewport_internal(gl1, buffer, is_idle, false);
+}
+
+static bool gl1_read_viewport_bgrx(void *data, uint8_t *buffer,
+      bool is_idle, bool *bottom_up)
+{
+   gl1_t *gl1 = (gl1_t*)data;
+   if (!gl1)
+      return false;
+   /* glReadPixels returns the bottom row first. */
+   *bottom_up = true;
+   return gl1_read_viewport_internal(gl1, buffer, is_idle, true);
 }
 
 static void gl1_set_texture_frame(void *data,
@@ -3664,7 +3688,13 @@ video_driver_t video_gl1 = {
 #endif
    NULL, /* invalidate_hw_render_cache */
    gl1_read_viewport_hdr,
-   &gl1_raster_font
+   &gl1_raster_font,
+#ifdef HAVE_OPENXR
+   NULL, /* get_vr_frame_state */
+   NULL, /* set_vr_content_info */
+   NULL, /* get_video_views_status */
+#endif
+   gl1_read_viewport_bgrx
 };
 
 gfx_display_ctx_driver_t gfx_display_ctx_gl1 = {

@@ -9092,9 +9092,15 @@ void audio_driver_menu_sample(bool by_clock)
    if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED))
       check_flush                         = false;
 
+   /* Record Game Only: the menu's filler silence (and so the time spent
+    * in the menu) stays out of the recording, like its frames do. */
+   if (settings->bools.video_record_game_only)
+      recording_st                        = NULL;
+
    while (sample_count > 1024)
    {
-      if (  recording_st->data   &&
+      if (  recording_st         &&
+            recording_st->data   &&
             recording_st->driver &&
             recording_st->driver->push_audio)
       {
@@ -9117,7 +9123,8 @@ void audio_driver_menu_sample(bool by_clock)
       sample_count -= 1024;
    }
 
-   if (     recording_st->data
+   if (     recording_st
+         && recording_st->data
          && recording_st->driver
          && recording_st->driver->push_audio)
    {

@@ -164,6 +164,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "../driver.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
+#include "../performance_counters.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../command.h"
@@ -1835,6 +1836,27 @@ void video_driver_gpu_record_deinit(void)
    video_st->record_gpu_buffer = NULL;
 }
 
+/* Main thread GPU readback while recording, for perfcnt_enable. */
+static struct retro_perf_counter record_perf_readback = {0};
+
+/* BGR24 pixels to B,G,R,X. @dst may be @src: walked from the end, each
+ * pixel is read before anything is written over it. */
+VIDEO_NOINLINE static void recording_bgr24_to_bgrx(uint8_t *dst,
+      const uint8_t *src, size_t area)
+{
+   size_t i = area;
+   while (i--)
+   {
+      uint8_t b      = src[3 * i + 0];
+      uint8_t g      = src[3 * i + 1];
+      uint8_t r      = src[3 * i + 2];
+      dst[4 * i + 0] = b;
+      dst[4 * i + 1] = g;
+      dst[4 * i + 2] = r;
+      dst[4 * i + 3] = 0xff;
+   }
+}
+
 static void recording_dump_frame(
       const void *data, unsigned dims, size_t pitch, bool is_idle)
 {
@@ -1851,6 +1873,7 @@ static void recording_dump_frame(
    if (video_st->record_gpu_buffer)
    {
       const uint8_t *gpu_frame = video_st->record_gpu_buffer;
+      bool bottom_up           = true;
 #ifdef HAVE_THREADS
       int taken = -2;
       if (video_st->thread_wrapper_active)
@@ -1864,10 +1887,21 @@ static void recording_dump_frame(
          record_st->driver->push_video(record_st->data, &ffemu_data);
          return;
       }
+      /* The wrapper reads back BGR24 on its own thread; a recording
+       * opened for 32-bit frames (threaded video switched on since)
+       * has it widened into the buffer sized for those. */
+      if (taken == 1 && record_st->gpu_bgrx)
+      {
+         recording_bgr24_to_bgrx(video_st->record_gpu_buffer, gpu_frame,
+               VIDEO_SCALE_AREA(record_st->gpu_dims));
+         gpu_frame = video_st->record_gpu_buffer;
+      }
       if (taken == -2)
 #endif
       {
          struct video_viewport vp;
+         bool ok;
+         bool perf                   = runloop_state_get_ptr()->perfcnt_enable;
 
          vp.pos                      = VIDEO_POS_PACK(0, 0);
          vp.dims                     = 0;
@@ -1901,19 +1935,39 @@ static void recording_dump_frame(
          /* Big bottleneck.
           * Since we might need to do read-backs asynchronously,
           * it might take 3-4 times before this returns true. */
-         if (!(      vid->read_viewport
-                  && vid->read_viewport(
-                     video_st->data, video_st->record_gpu_buffer, is_idle)))
+         performance_counter_init(record_perf_readback, "record_readback");
+         performance_counter_start_plus(perf, record_perf_readback);
+         if (record_st->gpu_bgrx && vid->read_viewport_bgrx)
+            ok = vid->read_viewport_bgrx(video_st->data,
+                  video_st->record_gpu_buffer, is_idle, &bottom_up);
+         else
+         {
+            /* BGR24, as the driver now up reads it back: widened when
+             * the recording was opened for 32-bit frames. */
+            ok = vid->read_viewport
+               && vid->read_viewport(
+                     video_st->data, video_st->record_gpu_buffer, is_idle);
+            if (ok && record_st->gpu_bgrx)
+               recording_bgr24_to_bgrx(video_st->record_gpu_buffer,
+                     video_st->record_gpu_buffer,
+                     VIDEO_SCALE_AREA(record_st->gpu_dims));
+         }
+         performance_counter_stop_plus(perf, record_perf_readback);
+         if (!ok)
             return;
 
       }
 
       ffemu_data.dims   = record_st->gpu_dims;
-      ffemu_data.pitch  = (int)(VIDEO_SCALE_W(ffemu_data.dims) * 3);
-      ffemu_data.data   = gpu_frame
-         + (VIDEO_SCALE_H(ffemu_data.dims) - 1) * ffemu_data.pitch;
-
-      ffemu_data.pitch  = -ffemu_data.pitch;
+      ffemu_data.pitch  = (int)(VIDEO_SCALE_W(ffemu_data.dims)
+            * (record_st->gpu_bgrx ? 4 : 3));
+      ffemu_data.data   = gpu_frame;
+      if (bottom_up)
+      {
+         ffemu_data.data  = gpu_frame
+            + (VIDEO_SCALE_H(ffemu_data.dims) - 1) * ffemu_data.pitch;
+         ffemu_data.pitch = -ffemu_data.pitch;
+      }
    }
    else
       ffemu_data.is_dupe = !data;
@@ -5871,6 +5925,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
    video_info->msg_queue_delay             = runloop_st->msg_queue_delay;
    video_info->runloop_is_paused           = (runloop_st->flags & RUNLOOP_FLAG_PAUSED) ? true : false;
    video_info->gpu_recording               = recording_state_get_ptr()->enable;
+   video_info->record_game_only            = video_info->gpu_recording
+      && settings->bools.video_record_game_only;
    video_info->core_running                = !(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    video_info->menu_content_rate           = false;
 #ifdef HAVE_MENU
