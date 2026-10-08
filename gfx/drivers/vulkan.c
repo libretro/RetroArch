@@ -11695,7 +11695,21 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_readback(vk, readback_source);
 
 #ifdef HAVE_OPENXR
-         if (!(vk->flags & VK_FLAG_OPEN_XR))
+         if (vk->flags & VK_FLAG_OPEN_XR)
+         {
+            /* The runtime takes its swapchain images back in
+             * COLOR_ATTACHMENT_OPTIMAL. */
+            VULKAN_IMAGE_LAYOUT_TRANSITION(
+                  vk->cmd,
+                  backbuffer->image,
+                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                  0,
+                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                  VK_PIPELINE_STAGE_TRANSFER_BIT,
+                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+         }
+         else
 #endif
          {
             /* Prepare for presentation after transfers are complete. */

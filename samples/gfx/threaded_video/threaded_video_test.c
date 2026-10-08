@@ -6506,6 +6506,63 @@ static void lane_x11_wsi_connection(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: a frame that was read back goes to present once              */
+/*   A synchronous read_viewport (a GPU screenshot) renders the       */
+/*   cached frame with a readback pending: the backbuffer goes to     */
+/*   TRANSFER_SRC for the copy and from there to PRESENT_SRC. That    */
+/*   frame takes no other transition - one more from                  */
+/*   COLOR_ATTACHMENT starts from a layout the image no longer has,   */
+/*   which the validation layer reports. Run on a tree configured     */
+/*   with OpenXR too, where the headset checks sit in the same chain. */
+/*   Unthreaded, and under the wrapper through CMD_READ_VIEWPORT.     */
+/* ------------------------------------------------------------------ */
+
+static void readback_once(bool threaded)
+{
+   struct video_viewport vp;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   const char *mode               = threaded ? "threaded" : "unthreaded";
+   uint8_t *buf                   = NULL;
+   size_t len;
+   bool ok;
+
+   set_threaded_via_setting(threaded);
+   run_frames(4);
+   expect_wrapper(threaded, "readback lane");
+   if (threaded)
+      video_thread_wait_idle();
+
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   len = (size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3;
+   CHECK(len > 0, "readback lane (%s): no viewport to read", mode);
+   if (!len || !video_st->current_video->read_viewport)
+      return;
+   if (!(buf = (uint8_t*)malloc(len)))
+      return;
+
+   ok = video_st->current_video->read_viewport(video_st->data, buf, false);
+   CHECK(ok, "readback lane (%s): read_viewport failed", mode);
+   free(buf);
+
+   /* The read-back image is acquired and presented again after it. */
+   run_frames(4);
+}
+
+static void lane_gpu_readback(void)
+{
+   unsigned had = failures;
+
+   readback_once(false);
+   readback_once(true);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] gpu readback lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: a hardware core's image is not drawn from after it is gone   */
 /*   A Vulkan hardware core hands the frontend an image of its own    */
 /*   and destroys it in context_destroy. A staged content close keeps */
@@ -7182,6 +7239,8 @@ int main(int argc, char *argv[])
       lane_x11_event_pump();
    if (real_driver())
       lane_x11_wsi_connection();
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+      lane_gpu_readback();
    if (real_driver())
       lane_x11_grabbed_mouse();
    if (     real_driver()
