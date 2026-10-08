@@ -539,7 +539,9 @@ unlock_error:
    pw_thread_loop_unlock(mic->pw->thread_loop);
 error:
    RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
-   pwire_microphone_close_mic(mic->pw, mic);
+   /* mic is NULL when there was no driver context or the calloc failed */
+   if (mic)
+      pwire_microphone_close_mic(mic->pw, mic);
    return NULL;
 }
 
