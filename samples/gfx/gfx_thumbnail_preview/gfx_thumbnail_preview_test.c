@@ -291,6 +291,37 @@ static void env_set(const char *name, const char *value)
  * sends nothing; an unthreaded queue takes each at once. Every tag
  * comes back through the thumbnail's landing, which ASan's leak check
  * holds to. */
+/* The savestate thumbnail path for a playlist entry, with no core
+ * running: built from the entry's name in the savestate folder, over
+ * and over as the menu redraws it. Every call is to leave nothing
+ * behind, which ASan's leak check holds to. */
+extern int stub_playlist_entry_set(const char *savestate_dir,
+      const char *entry_path);
+static void lane_savestate_thumbnail_path(void)
+{
+   int  i;
+   int  wrong = 0;
+   char path[512];
+   int  ok    = stub_playlist_entry_set("/states", "/roms/Some Game.zip");
+
+   check("savestate path", "the playlist entry is laid out", ok);
+   for (i = 0; ok && i < 64; i++)
+   {
+      gfx_savestate_thumbnail_get_path(path, sizeof(path),
+            "ignored", (i & 1) ? 3 : 0);
+      if (strcmp(path, (i & 1)
+               ? "/states/Some Game.state3.png"
+               : "/states/Some Game.state.png"))
+      {
+         if (!wrong++)
+            printf("      savestate thumbnail path: %s\n", path);
+      }
+   }
+   check("savestate path", "built from the entry in the state folder",
+         ok && !wrong);
+   stub_playlist_entry_set(NULL, NULL);
+}
+
 #define SET_STILLS 5
 static void lane_still_sets(void)
 {
@@ -397,6 +428,7 @@ int main(int argc, char **argv)
       printf("usage: %s <video> [more...]\n", argv[0]);
       return 2;
    }
+   lane_savestate_thumbnail_path();
    lane_still_sets();
    for (i = 1; i < argc; i++)
       run(argv[i], argv[i], 1);
