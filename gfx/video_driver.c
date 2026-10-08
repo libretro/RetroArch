@@ -5463,6 +5463,71 @@ void video_driver_update_title(void *data)
 #endif
 }
 
+/* The frame period the fast-forward frameskip paces presents to */
+static uint16_t video_driver_frame_time_target(settings_t *settings,
+      bool fullscreen)
+{
+   float target = 1000000.0f / settings->floats.video_refresh_rate;
+#if defined(_WIN32) && defined(HAVE_VULKAN)
+   /* Vulkan in Windows does mailbox emulation
+    * in fullscreen with vsync, effectively
+    * already discarding frames, therefore compensate
+    * frameskip target to make it smoother and faster. */
+   if (     fullscreen
+         && settings->bools.video_vsync
+         && (memcmp(video_driver_get_ident(), "vulkan", 6) == 0))
+      target /= 2.0f;
+#endif
+   return (uint16_t)target;
+}
+
+void video_driver_ff_frameskip_decide(retro_time_t now)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   settings_t *settings           = config_get_ptr();
+   bool menu_is_alive             = false;
+#ifdef HAVE_MENU
+   menu_is_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
+#endif
+
+   video_st->main_flags &= ~VIDEO_FLAG_FF_SKIP_FRAME;
+   video_st->main_flags |=  VIDEO_FLAG_FF_DECIDED;
+
+   /* If fast forward is active and fast forward
+    * frame skipping is enabled, drop any frames
+    * that occur at a rate higher than the core-set
+    * refresh rate. However: We must always render
+    * the current frame when:
+    * - The menu is open
+    * - The last frame was NULL and the
+    *   current frame is not (i.e. if core was
+    *   previously sending duped frames, ensure
+    *   that the next frame update is captured) -
+    *   video_driver_frame() applies that one, as
+    *   only it sees the frame. */
+   if (     (input_driver_get_flags() & INP_FLAG_NONBLOCKING)
+         && settings->bools.fastforward_frameskip
+         && !menu_is_alive)
+   {
+      if (!runloop_ff_frameskip_step(&video_st->ff_accumulator,
+               &video_st->ff_nonblock_active,
+               (uint16_t)(now - video_st->ff_last_time),
+               video_driver_frame_time_target(settings,
+                  settings->bools.video_fullscreen
+                  || ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+                     & VIDEO_FLAG_FORCE_FULLSCREEN))))
+         video_st->main_flags |= VIDEO_FLAG_FF_SKIP_FRAME;
+   }
+   else
+   {
+      video_st->ff_nonblock_active = 0;
+      video_st->ff_accumulator     = 0;
+      video_st->main_flags        &= ~VIDEO_FLAG_FF_FRAME_OWED;
+   }
+
+   video_st->ff_last_time = now;
+}
+
 void video_driver_build_info(video_frame_info_t *video_info)
 {
    video_viewport_settings_t *custom_vp             = NULL;
@@ -5790,20 +5855,8 @@ void video_driver_build_info(video_frame_info_t *video_info)
 #endif
    video_info->runloop_is_slowmotion       = (runloop_st->flags & RUNLOOP_FLAG_SLOWMOTION) ? true : false;
    video_info->fastforward_frameskip       = settings->bools.fastforward_frameskip;
-   video_info->frame_time_target           = 1000000.0f / video_info->refresh_rate;
-
-#ifdef _WIN32
-#ifdef HAVE_VULKAN
-   /* Vulkan in Windows does mailbox emulation
-    * in fullscreen with vsync, effectively
-    * already discarding frames, therefore compensate
-    * frameskip target to make it smoother and faster. */
-   if (     video_info->fullscreen
-         && settings->bools.video_vsync
-         && (memcmp(video_driver_get_ident(), "vulkan", 6) == 0))
-      video_info->frame_time_target       /= 2.0f;
-#endif
-#endif
+   video_info->frame_time_target           = video_driver_frame_time_target(
+         settings, video_info->fullscreen);
 
    video_info->input_driver_nonblock_state   = (input_flags & INP_FLAG_NONBLOCKING)      ? true : false;
    video_info->input_driver_grab_mouse_state = (input_flags & INP_FLAG_GRAB_MOUSE_STATE) ? true : false;
@@ -7494,15 +7547,10 @@ void video_driver_frame(const void *data, unsigned width,
    unsigned dims        = VIDEO_SCALE_PACK(width, height);
    settings_t *settings = config_get_ptr();
    static char video_driver_msg[256];
-   static retro_time_t last_time;
    static retro_time_t last_render_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static float last_fps, frame_time;
-   static int32_t frame_time_accumulator;
-   /* Mark the start of nonblock state for
-    * ignoring initial previous frame time */
-   static int8_t nonblock_active;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
    static bool last_frame_duped   = true;
@@ -7627,74 +7675,36 @@ void video_driver_frame(const void *data, unsigned width,
    if (!last_fps)
       last_fps = video_info.refresh_rate;
 
-   /* If fast forward is active and fast forward
-    * frame skipping is enabled, drop any frames
-    * that occur at a rate higher than the core-set
-    * refresh rate. However: We must always render
-    * the current frame when:
+   /* The fast-forward frameskip's decision, made before the core ran
+    * (video_driver_ff_frameskip_decide), or here for a frame no
+    * decision waits for. Always rendered regardless:
     * - The menu is open
     * - The last frame was NULL and the
     *   current frame is not (i.e. if core was
     *   previously sending duped frames, ensure
     *   that the next frame update is captured) */
+   if (!(video_st->main_flags & VIDEO_FLAG_FF_DECIDED))
+      video_driver_ff_frameskip_decide(new_time);
+   video_st->main_flags &= ~VIDEO_FLAG_FF_DECIDED;
    if (     video_info.input_driver_nonblock_state
          && video_info.fastforward_frameskip
          && !( menu_is_alive
             || (last_frame_duped && !!data))
       )
    {
-      int32_t frame_time_accumulator_prev  = frame_time_accumulator;
-      uint16_t frame_time_delta            = new_time - last_time;
-      uint16_t frame_time_target           = video_info.frame_time_target;
-
-      /* Ignore initial previous frame time
-       * to prevent rubber band startup */
-      if (!nonblock_active)
-         nonblock_active = -1;
-      else if (nonblock_active < 0)
-         nonblock_active = 1;
-
-      /* Accumulate the elapsed time since the last frame */
-      if (nonblock_active > 0)
-         frame_time_accumulator += frame_time_delta;
-
-      /* Render frame if the accumulated time is
-       * greater than or equal to the expected
-       * core frame time */
-      render_frame = frame_time_accumulator >= frame_time_target;
-
-      /* If frame is to be rendered, subtract
-       * expected frame time from accumulator */
-      if (render_frame)
-      {
-         frame_time_accumulator -= frame_time_target;
-
-         /* Prevent external frame limiters from
-          * pushing fast forward ratio down to 1x */
-         if (frame_time_accumulator_prev - frame_time_accumulator >= frame_time_delta)
-            frame_time_accumulator -= frame_time_delta;
-
-         if (frame_time_accumulator < 0)
-            frame_time_accumulator = 0;
-
-         /* If fast forward is working correctly,
-          * the actual frame time will always be
-          * less than the expected frame time.
-          * But if the host cannot run the core
-          * fast enough to achieve at least 1x
-          * speed then the frame time accumulator
-          * will never empty and may potentially
-          * overflow. If a 'runaway' accumulator
-          * is detected, we simply reset it */
-         if (frame_time_accumulator > frame_time_target)
-            frame_time_accumulator = 0;
-      }
+      render_frame = !(video_st->main_flags & VIDEO_FLAG_FF_SKIP_FRAME);
+      /* A turn spent on a dupe leaves the next real frame to the rule
+       * above, so a core that skips rendering on the hint must render it */
+      if (render_frame && !data)
+         video_st->main_flags |=  VIDEO_FLAG_FF_FRAME_OWED;
    }
    else
    {
-      nonblock_active        = 0;
-      frame_time_accumulator = 0;
+      video_st->ff_nonblock_active = 0;
+      video_st->ff_accumulator     = 0;
    }
+   if (data)
+      video_st->main_flags &= ~VIDEO_FLAG_FF_FRAME_OWED;
 
    /* What the shader chains read as FrameTimeDelta, from the reading
     * taken at the top of this function. Measured between the frames
@@ -7708,7 +7718,6 @@ void video_driver_frame(const void *data, unsigned width,
       last_render_time              = new_time;
    }
 
-   last_time        = new_time;
    last_frame_duped = !data;
 
    /* Get the amount of frames per seconds. */

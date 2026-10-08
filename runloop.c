@@ -3674,7 +3674,12 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                && (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_ACTIVE))
             result |= RETRO_AV_ENABLE_AUDIO;
 
+         /* A frame the fast-forward frameskip drops is not worth
+          * rendering (video_driver_ff_frameskip_decide) */
          if (      (video_st->main_flags & VIDEO_FLAG_ACTIVE)
+               && !runloop_ff_skips_render(
+                  (video_st->main_flags & VIDEO_FLAG_FF_SKIP_FRAME) != 0,
+                  (video_st->main_flags & VIDEO_FLAG_FF_FRAME_OWED) != 0)
                && !(video_st->current_video->frame == video_null.frame))
             result |= RETRO_AV_ENABLE_VIDEO;
 
@@ -7092,6 +7097,7 @@ static bool display_menu_libretro(
       if (!(input_st->flags & INP_FLAG_BLOCK_LIBRETRO_INPUT))
          input_st->flags |= INP_FLAG_BLOCK_LIBRETRO_INPUT;
 
+      video_driver_ff_frameskip_decide(current_time);
       core_run();
       runloop_st->core_runtime_usec       +=
          runloop_core_runtime_tick(runloop_st, slowmotion_ratio, current_time);
@@ -9593,6 +9599,10 @@ int runloop_iterate(void)
 
    /* Measure the time between core_run() and video_driver_frame() */
    runloop_st->core_run_time = cpu_features_get_time_usec();
+   /* Whether this frame is presented, before the core makes it: a core
+    * that asks (GET_AUDIO_VIDEO_ENABLE) need not render a frame that
+    * fast-forward drops */
+   video_driver_ff_frameskip_decide(runloop_st->core_run_time);
 
    {
 #ifdef HAVE_RUNAHEAD

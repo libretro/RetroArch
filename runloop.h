@@ -474,6 +474,41 @@ static INLINE bool runloop_vsync_blocks(bool vsync, bool scanline_sync,
    return vsync && !scanline_sync && !force_nonblock && !nonblocking;
 }
 
+/* One step of fast-forward's frameskip: whether the frame begun
+ * delta_us after the last one is presented, against a target period of
+ * presents. The first frame of a fast-forward only starts the clock, and
+ * a host that cannot keep up resets the backlog rather than carry it. */
+static INLINE bool runloop_ff_frameskip_step(int32_t *accumulator,
+      int8_t *active, uint16_t delta_us, uint16_t target_us)
+{
+   int32_t prev = *accumulator;
+   if (!*active)
+      *active = -1;
+   else if (*active < 0)
+      *active = 1;
+   if (*active > 0)
+      *accumulator += delta_us;
+   if (*accumulator < target_us)
+      return false;
+   *accumulator -= target_us;
+   /* Prevent external frame limiters from
+    * pushing fast forward ratio down to 1x */
+   if (prev - *accumulator >= delta_us)
+      *accumulator -= delta_us;
+   if (*accumulator < 0)
+      *accumulator = 0;
+   if (*accumulator > target_us)
+      *accumulator = 0;
+   return true;
+}
+
+/* Whether the core is asked not to render the frame: fast-forward drops
+ * it, and no real frame is owed from a turn that went to a dupe. */
+static INLINE bool runloop_ff_skips_render(bool skip, bool owed)
+{
+   return skip && !owed;
+}
+
 /* Whether the frame limiter should hold the loop to the display rate
  * because nothing else is: an empty pace record means no vsync, no
  * audio, no scanline lock, and no fast-forward limit to fall back on.

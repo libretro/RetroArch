@@ -161,6 +161,9 @@ enum video_driver_state_flags
     * Bit left reserved rather than reused. */
    VIDEO_FLAG_ACTIVE                              = (1 << 11),
    VIDEO_FLAG_STATE_OUT_RGB32                     = (1 << 12),
+   /* main_flags: the fast-forward frameskip drops this iteration's
+    * frame (video_driver_ff_frameskip_decide) */
+   VIDEO_FLAG_FF_SKIP_FRAME                       = (1 << 13),
    VIDEO_FLAG_FORCE_FULLSCREEN                    = (1 << 14),
    VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE           = (1 << 15),
    VIDEO_FLAG_SHADER_PRESETS_NEED_RELOAD          = (1 << 16),
@@ -179,7 +182,12 @@ enum video_driver_state_flags
    VIDEO_FLAG_THREAD_WRAPPER_ACTIVE_UNUSED        = (1 << 22),
    /* A driver that failed to finish something it built its device for
     * asks the main thread to rebuild video. */
-   VIDEO_FLAG_DRIVER_REINIT                       = (1 << 23)
+   VIDEO_FLAG_DRIVER_REINIT                       = (1 << 23),
+   /* main_flags: a frameskip turn went to a dupe, so the core is asked
+    * for video until a real frame comes */
+   VIDEO_FLAG_FF_FRAME_OWED                       = (1 << 24),
+   /* main_flags: a frameskip decision waits for its frame */
+   VIDEO_FLAG_FF_DECIDED                          = (1 << 25)
 };
 
 enum video_driver_scanline
@@ -1399,6 +1407,11 @@ typedef struct
     * frame's snapshot (video_frame_info_t::video_st_flags) carries
     * both words. */
    uint32_t main_flags;
+   /* The fast-forward frameskip's clock: main thread, see
+    * video_driver_ff_frameskip_decide() */
+   retro_time_t ff_last_time;
+   int32_t      ff_accumulator;
+   int8_t       ff_nonblock_active;
 
    /* Whether CRT switching is on. Not a bit of main_flags: the video
     * thread reads it, through the refresh rate its driver answers
@@ -2421,6 +2434,17 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
  **/
 void video_driver_frame(const void *data, unsigned width,
       unsigned height, size_t pitch);
+
+/**
+ * video_driver_ff_frameskip_decide:
+ * @now                  : the clock read before the core runs.
+ *
+ * Decides, before the core runs the frame, whether the fast-forward
+ * frameskip drops it (VIDEO_FLAG_FF_SKIP_FRAME in main_flags), so the
+ * core can be told through GET_AUDIO_VIDEO_ENABLE and skip rendering
+ * it. video_driver_frame() consumes the decision.
+ **/
+void video_driver_ff_frameskip_decide(retro_time_t now);
 
 void video_driver_update_title(void *data);
 

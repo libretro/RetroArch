@@ -396,6 +396,46 @@ static void test_fastforward_ratios(void)
           "0.25-2 ms timer\n");
 }
 
+/* Fast-forward's frameskip, decided before the core runs so a core
+ * that asks need not render a dropped frame. */
+static void test_ff_frameskip(void)
+{
+   int32_t acc   = 0;
+   int8_t active = 0;
+   unsigned i, renders = 0;
+   bool ok       = true;
+
+   /* The first frame of a fast-forward only starts the clock */
+   check(!runloop_ff_frameskip_step(&acc, &active, 60000, 8333) && acc == 0,
+         "first fast-forward frame starts the clock, presents nothing");
+
+   /* 1500 frames a second against a 120 Hz display: every 13th frame,
+    * the first whole number of frames to span the period */
+   for (i = 0; i < 1500; i++)
+      if (runloop_ff_frameskip_step(&acc, &active, 667, 8333))
+         renders++;
+   check(renders >= 1500 / 13 - 1 && renders <= 1500 / 13 + 1,
+         "1500 fps fast-forward presents every 13th frame at 120 Hz");
+
+   /* A host short of the target presents every frame, no backlog */
+   for (i = 0; i < 100; i++)
+   {
+      if (!runloop_ff_frameskip_step(&acc, &active, 12000, 8333))
+         ok = false;
+      if (acc > 8333)
+         ok = false;
+   }
+   check(ok, "a host below 1x presents every frame and carries no backlog");
+
+   check(   runloop_ff_skips_render(true, false)
+         && !runloop_ff_skips_render(true, true)
+         && !runloop_ff_skips_render(false, false)
+         && !runloop_ff_skips_render(false, true),
+         "the core is asked to skip only a dropped frame nothing is owed");
+   printf("   fast-forward frameskip: presents at the target, a frame "
+          "owed after a dupe is rendered\n");
+}
+
 /* The video driver's blocking state, as every caller hands it over:
  * vsync blocks only alone - never with Scanline Sync, a content rate
  * vsync cannot hold, or fast-forward. */
@@ -747,6 +787,7 @@ int main(void)
    test_schedule();
    test_margin();
    test_fastforward_ratios();
+   test_ff_frameskip();
    test_vsync_blocks();
    test_swap_interval();
    test_sync_plan();
@@ -763,7 +804,8 @@ int main(void)
           "stall never moves the measured rate, an overshooting sleep "
           "never slows the loop, the margin follows the overshoot, and "
           "the swap interval is the multiple the display actually is of "
-          "the content, within what the driver can present, and VRR drops "
-          "vsync only for a content rate past the skew tolerance\n");
+          "the content, within what the driver can present, VRR drops "
+          "vsync only for a content rate past the skew tolerance, and "
+          "fast-forward's frameskip presents at the display's rate\n");
    return 0;
 }
