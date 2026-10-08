@@ -184,14 +184,37 @@ void *config_get_ptr(void)
 }
 
 /* ---- menu / runloop / playlist ---- */
-void *menu_state_get_ptr(void) { static char b[65536]; return b; }
-void *runloop_state_get_ptr(void) { static char b[1 << 18]; return b; }
+static char g_menu_blob[65536];
+static char g_runloop_blob[1 << 18];
+void *menu_state_get_ptr(void) { return g_menu_blob; }
+void *runloop_state_get_ptr(void) { return g_runloop_blob; }
+
+/* A one-entry playlist, cached while a test holds it: the entry is laid
+ * out by settings_layout_uut.c, which sees the UUT's struct layouts. */
+extern const void *layout_savestate_entry_setup(void *menu_blob,
+      size_t menu_size, void *runloop_blob, size_t runloop_size,
+      const char *savestate_dir, const char *entry_path);
+static const void *g_playlist_entry;
+int stub_playlist_entry_set(const char *savestate_dir, const char *entry_path)
+{
+   if (!entry_path)
+   {
+      g_playlist_entry = NULL;
+      return 1;
+   }
+   g_playlist_entry = layout_savestate_entry_setup(
+         g_menu_blob, sizeof(g_menu_blob),
+         g_runloop_blob, sizeof(g_runloop_blob),
+         savestate_dir, entry_path);
+   return g_playlist_entry != NULL;
+}
 void runloop_path_set_redirect(void *a, char *b, char *c)
 { (void)a; (void)b; (void)c; }
 void dir_set(unsigned t, const char *p) { (void)t; (void)p; }
-void *playlist_get_cached(void) { return NULL; }
+void *playlist_get_cached(void)
+{ return g_playlist_entry ? (void*)&g_playlist_entry : NULL; }
 void playlist_get_index(void *p, size_t i, const void **e)
-{ (void)p; (void)i; if (e) *e = NULL; }
+{ (void)i; if (e) *e = p ? g_playlist_entry : NULL; }
 size_t playlist_get_size(void *p) { (void)p; return 0; }
 char *playlist_get_conf_path(void *p) { (void)p; return NULL; }
 void playlist_get_db_name(void *p, size_t i, const char **n)
