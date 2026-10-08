@@ -727,12 +727,14 @@ check_lib '' DRMINGW -lexchndl
 check_enabled THREADS FFMPEG FFmpeg 'Threads are' false
 
 if [ "$HAVE_FFMPEG" != 'no' ]; then
-   check_val '' AVCODEC -lavcodec '' libavcodec 57 '' false
-   check_val '' AVFORMAT -lavformat '' libavformat 57 '' false
-   check_val '' AVDEVICE -lavdevice '' libavdevice 57 '' false
-   check_val '' SWRESAMPLE -lswresample '' libswresample 2 '' false
-   check_val '' AVUTIL -lavutil '' libavutil 55 '' false
-   check_val '' SWSCALE -lswscale '' libswscale 4 '' false
+   # FFmpeg 3.1's libraries: the recorder and the media player use the
+   # send/receive codec API (avcodec_send_frame, libavcodec 57.37).
+   check_val '' AVCODEC -lavcodec '' libavcodec 57.48.101 '' false
+   check_val '' AVFORMAT -lavformat '' libavformat 57.41.100 '' false
+   check_val '' AVDEVICE -lavdevice '' libavdevice 57.0.101 '' false
+   check_val '' SWRESAMPLE -lswresample '' libswresample 2.1.100 '' false
+   check_val '' AVUTIL -lavutil '' libavutil 55.28.100 '' false
+   check_val '' SWSCALE -lswscale '' libswscale 4.1.100 '' false
 
    check_header '' AV_CHANNEL_LAYOUT libavutil/channel_layout.h
 
