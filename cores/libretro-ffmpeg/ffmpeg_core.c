@@ -421,6 +421,42 @@ static bool video_buffer_wait_for_finished_slot(video_buffer_t *video_buffer,
    return VB_STATUS(video_buffer, VB_TAIL(video_buffer)) == KB_FINISHED;
 }
 
+/* Audio decoded ahead of playback this deep means the next video frame
+ * lies across a gap in the video track (frames dropped while
+ * recording, variable frame rate). The audio queue is 2 s. */
+#define VIDEO_GAP_AUDIO_BACKLOG 1.0
+
+static double audio_backlog_seconds(void);
+
+/* Main thread: waits for slot @index to be finished, like the wait
+ * above, but gives up across a gap in the video track. The decode
+ * thread only decodes a video packet once audio has caught up to it,
+ * so with this thread waiting and not taking audio it fills the audio
+ * queue and blocks too. The caller holds the frame on screen instead
+ * and keeps playing audio until the decoder reaches the next one. */
+static bool video_buffer_wait_for_frame(video_buffer_t *video_buffer,
+      unsigned index, retro_atomic_int_t *thread_dead)
+{
+   for (;;)
+   {
+      int key;
+      if (VB_STATUS(video_buffer, index) == KB_FINISHED)
+         return true;
+      if (     retro_atomic_load_acquire_int(thread_dead)
+            || audio_backlog_seconds() >= VIDEO_GAP_AUDIO_BACKLOG)
+         return false;
+      key = retro_eventcount_prepare_wait(&video_buffer->ec);
+      if (     VB_STATUS(video_buffer, index) == KB_FINISHED
+            || retro_atomic_load_acquire_int(thread_dead))
+      {
+         retro_eventcount_cancel_wait(&video_buffer->ec);
+         continue;
+      }
+      /* Bounded: the audio backlog grows without a notify. */
+      retro_eventcount_commit_wait_timeout(&video_buffer->ec, key, 10000);
+   }
+}
+
 /* Wakes every wait on the buffer to re-test: the decode thread is
  * gone, or a waiter has something else to look at. */
 static void video_buffer_wake(video_buffer_t *video_buffer)
@@ -2423,6 +2459,16 @@ static int seek_adjust(int target)
    return 0;
 }
 
+static double audio_backlog_seconds(void)
+{
+   if (     AUDIO_STREAMS_NUM_STR <= 0
+         || !g_ctx.audio_decode_fifo_init
+         || MEDIA_STR.sample_rate <= 0)
+      return 0.0;
+   return (double)retro_spsc_read_avail(&AUDIO_DECODE_FIFO_STR)
+      / (MEDIA_STR.sample_rate * sizeof(int16_t) * 2);
+}
+
 void CORE_PREFIX(retro_run)(void)
 {
    double min_pts;
@@ -2662,9 +2708,11 @@ void CORE_PREFIX(retro_run)(void)
             if (!VIDEO_BUFFER_STR)
                break;
 
-            if (!DECODE_THREAD_DEAD_STR)
-               video_buffer_wait_for_finished_slot(VIDEO_BUFFER_STR,
-                     &g_ctx.decode_thread_dead);
+            /* Gap in the video track: hold the current frame. */
+            if (     !DECODE_THREAD_DEAD_STR
+                  && !video_buffer_wait_for_frame(VIDEO_BUFFER_STR,
+                     VB_TAIL(VIDEO_BUFFER_STR), &g_ctx.decode_thread_dead))
+               break;
 
             if (!DECODE_THREAD_DEAD_STR)
             {
@@ -2732,6 +2780,11 @@ void CORE_PREFIX(retro_run)(void)
          }
 
          mix_factor = (min_pts - FRAMES_STR[0].pts) / (FRAMES_STR[1].pts - FRAMES_STR[0].pts);
+         /* A frame held across a gap leaves min_pts past both. */
+         if (!(mix_factor >= 0.0f))
+            mix_factor = 0.0f;
+         else if (mix_factor > 1.0f)
+            mix_factor = 1.0f;
 
          if (!TEMPORAL_INTERPOLATION_STR)
             mix_factor = 1.0f;
@@ -2784,6 +2837,16 @@ void CORE_PREFIX(retro_run)(void)
              * No buffer is no frame ready, which is what the dupe
              * below is for. */
             if (!VIDEO_BUFFER_STR)
+               break;
+
+            /* Gap in the video track: keep holding the frame on screen.
+             * The next one is in the slot after the held one. */
+            if (     !DECODE_THREAD_DEAD_STR
+                  && !video_buffer_wait_for_frame(VIDEO_BUFFER_STR,
+                     g_ctx.held_slot
+                     ? (g_ctx.held_slot->index + 1) % VIDEO_BUFFER_STR->capacity
+                     : (unsigned)VB_TAIL(VIDEO_BUFFER_STR),
+                     &g_ctx.decode_thread_dead))
                break;
 
             /* The frame on screen is about to be replaced (or, when

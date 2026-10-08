@@ -32,7 +32,7 @@ static const char *current = "";
 
 /* ---- the host ----------------------------------------------------- */
 
-static unsigned  frames_seen, batches_seen;
+static unsigned  frames_seen, batches_seen, fresh_frames;
 static uint64_t  audio_frames;
 static bool      quiet_log = true;
 
@@ -86,8 +86,10 @@ static bool env_cb(unsigned cmd, void *data)
 
 static void video_cb(const void *d, unsigned w, unsigned h, size_t p)
 {
-   (void)d; (void)w; (void)h; (void)p;
+   (void)w; (void)h; (void)p;
    frames_seen++;
+   if (d)
+      fresh_frames++;
 }
 
 static size_t audio_batch_cb(const int16_t *data, size_t frames)
@@ -213,6 +215,58 @@ static void clip_case(const char *name, const char *path, const char *args,
    clips_run++;
 }
 
+/* A video track with a hole in it, as a recording that dropped frames
+ * leaves: the core has to play across it, not wait for a frame that
+ * is seconds away while the audio queue fills behind it. */
+static void gap_case(const char *path)
+{
+   struct retro_game_info info;
+   struct retro_system_av_info av;
+   unsigned frames, fresh;
+   double fps;
+
+   current = "video gap";
+   if (!make_clip(path,
+         "-f lavfi -i testsrc=size=160x120:rate=30:duration=8 "
+         "-f lavfi -i sine=f=440:r=48000:duration=8 "
+         "-vf \"select='not(between(t,2,6))'\" -fps_mode passthrough "
+         "-c:v mpeg4 -c:a pcm_s16le"))
+   {
+      printf("      (ffmpeg would not make the gap clip; skipped)\n");
+      return;
+   }
+
+   memset(&info, 0, sizeof(info));
+   info.path    = path;
+   audio_frames = 0;
+
+   retro_init();
+   if (!retro_load_game(&info))
+   {
+      CHECK(false, "the core refused the gap clip");
+      retro_deinit();
+      return;
+   }
+   memset(&av, 0, sizeof(av));
+   retro_get_system_av_info(&av);
+   /* Through the gap (2 s to 6 s) and out the other side. */
+   fps    = av.timing.fps > 0.0 ? av.timing.fps : 30.0;
+   frames = (unsigned)(6.5 * fps);
+   alarm(60);
+   run_frames(frames);
+   fresh  = fresh_frames;
+   run_frames((unsigned)fps);
+   alarm(600);
+   printf("      %-22s %.2f s of audio, %u new frames after the gap\n",
+         "video gap", (double)audio_frames / 48000.0, fresh_frames - fresh);
+   CHECK(audio_frames >= 7 * 48000,
+         "audio stopped at %.2f s, in the gap",
+         (double)audio_frames / 48000.0);
+   CHECK(fresh_frames > fresh, "no video after the gap");
+   retro_unload_game();
+   retro_deinit();
+}
+
 /* A file that is not what it says, or is cut short. The core has to
  * refuse it without reading past the end of it. */
 static void reject_case(const char *name, const char *path)
@@ -306,6 +360,8 @@ int main(void)
          "-f lavfi -i testsrc=size=161x121:rate=30:duration=2 "
          "-f lavfi -i sine=f=440:r=48000:duration=2 -c:v mpeg4 -c:a pcm_s16le",
          true, true);
+
+   gap_case("/tmp/sw_gap.mkv");
 
    printf("   files that are not what they claim\n");
    /* A media file cut in half: the header parses, the stream does
