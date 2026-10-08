@@ -80,6 +80,7 @@ extern "C" {
 
 #include "../../retroarch.h"
 #include "../../runloop.h"
+#include "../../performance_counters.h"
 #include "../../verbosity.h"
 
 #ifndef FFMPEG3
@@ -1296,6 +1297,28 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
 /* One warning per this many newly dropped frames. */
 #define DROP_LOG_INTERVAL         64
 
+/* Reported at exit with perfcnt_enable. push_* run on the frontend's
+ * thread, the rest on the encoder thread; one writer each. */
+static struct retro_perf_counter ffmpeg_perf_push_video   = {0};
+static struct retro_perf_counter ffmpeg_perf_push_audio   = {0};
+static struct retro_perf_counter ffmpeg_perf_scale        = {0};
+static struct retro_perf_counter ffmpeg_perf_encode_video = {0};
+static struct retro_perf_counter ffmpeg_perf_encode_audio = {0};
+
+static bool ffmpeg_perf_enabled(void)
+{
+   return runloop_state_get_ptr()->perfcnt_enable;
+}
+
+static void ffmpeg_perf_init(void)
+{
+   performance_counter_init(ffmpeg_perf_push_video,   "record_push_video");
+   performance_counter_init(ffmpeg_perf_push_audio,   "record_push_audio");
+   performance_counter_init(ffmpeg_perf_scale,        "record_scale");
+   performance_counter_init(ffmpeg_perf_encode_video, "record_encode_video");
+   performance_counter_init(ffmpeg_perf_encode_audio, "record_encode_audio");
+}
+
 static void ffmpeg_thread(void *data);
 
 /* Encoder threads run this much nicer than the core, in drop mode
@@ -1680,6 +1703,8 @@ static void *ffmpeg_new(const struct record_params *params)
 
    ffmpeg_av_log_init();
 
+   ffmpeg_perf_init();
+
    handle->params            = *params;
    handle->pkt               = av_packet_alloc();
    handle->allow_frame_drop  = params->allow_frame_drop;
@@ -1769,7 +1794,7 @@ static void ffmpeg_report_drops(uint64_t dropped)
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 
-static bool ffmpeg_push_video(void *data,
+static bool ffmpeg_push_video_impl(void *data,
       const struct record_video_data *vid)
 {
    unsigned y;
@@ -1883,7 +1908,7 @@ static void ffmpeg_audio_write_silence(ffmpeg_t *handle)
    }
 }
 
-static bool ffmpeg_push_audio(void *data,
+static bool ffmpeg_push_audio_impl(void *data,
       const struct record_audio_data *audio_data)
 {
    ffmpeg_t *handle = (ffmpeg_t*)data;
@@ -1938,6 +1963,28 @@ static bool ffmpeg_push_audio(void *data,
    retro_eventcount_notify(&handle->data);
 
    return true;
+}
+
+static bool ffmpeg_push_video(void *data,
+      const struct record_video_data *vid)
+{
+   bool ret;
+   bool perf = ffmpeg_perf_enabled();
+   performance_counter_start_plus(perf, ffmpeg_perf_push_video);
+   ret = ffmpeg_push_video_impl(data, vid);
+   performance_counter_stop_plus(perf, ffmpeg_perf_push_video);
+   return ret;
+}
+
+static bool ffmpeg_push_audio(void *data,
+      const struct record_audio_data *audio_data)
+{
+   bool ret;
+   bool perf = ffmpeg_perf_enabled();
+   performance_counter_start_plus(perf, ffmpeg_perf_push_audio);
+   ret = ffmpeg_push_audio_impl(data, audio_data);
+   performance_counter_stop_plus(perf, ffmpeg_perf_push_audio);
+   return ret;
 }
 
 static bool encode_video(ffmpeg_t *handle, AVFrame *frame)
@@ -2039,8 +2086,15 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       const struct record_video_data *vid, unsigned pts_skip)
 {
+   bool ok;
+   bool perf = ffmpeg_perf_enabled();
+
    if (!vid->is_dupe)
+   {
+      performance_counter_start_plus(perf, ffmpeg_perf_scale);
       ffmpeg_scale_input(handle, vid);
+      performance_counter_stop_plus(perf, ffmpeg_perf_scale);
+   }
 
    /* Leave a gap for dropped frames so A/V stays aligned. */
    handle->video.frame_cnt      += pts_skip;
@@ -2063,7 +2117,10 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       }
    }
 
-   if (!encode_video(handle, handle->video.conv_frame))
+   performance_counter_start_plus(perf, ffmpeg_perf_encode_video);
+   ok = encode_video(handle, handle->video.conv_frame);
+   performance_counter_stop_plus(perf, ffmpeg_perf_encode_video);
+   if (!ok)
       return false;
 
    handle->video.frame_cnt++;
@@ -2563,6 +2620,7 @@ static void ffmpeg_thread(void *data)
    size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
+   bool perf             = ffmpeg_perf_enabled();
 
 #ifdef FFMPEG_HAVE_THREAD_NICE
    /* Also covers threads an encoder spawns lazily from here. */
@@ -2618,7 +2676,9 @@ static void ffmpeg_thread(void *data)
          aud.frames = ff->audio.codec->frame_size;
          aud.data   = audio_buf;
 
+         performance_counter_start_plus(perf, ffmpeg_perf_encode_audio);
          ffmpeg_push_audio_thread(ff, &aud, true);
+         performance_counter_stop_plus(perf, ffmpeg_perf_encode_audio);
       }
    }
 

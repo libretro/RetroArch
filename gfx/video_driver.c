@@ -164,6 +164,7 @@ static void video_driver_read_vp_params(struct video_vp_param_snap *ps);
 #include "../driver.h"
 #include "../file_path_special.h"
 #include "../list_special.h"
+#include "../performance_counters.h"
 #include "../retroarch.h"
 #include "../verbosity.h"
 #include "../command.h"
@@ -1835,6 +1836,9 @@ void video_driver_gpu_record_deinit(void)
    video_st->record_gpu_buffer = NULL;
 }
 
+/* Main thread GPU readback while recording, for perfcnt_enable. */
+static struct retro_perf_counter record_perf_readback = {0};
+
 static void recording_dump_frame(
       const void *data, unsigned dims, size_t pitch, bool is_idle)
 {
@@ -1869,6 +1873,8 @@ static void recording_dump_frame(
 #endif
       {
          struct video_viewport vp;
+         bool ok;
+         bool perf                   = runloop_state_get_ptr()->perfcnt_enable;
 
          vp.pos                      = VIDEO_POS_PACK(0, 0);
          vp.dims                     = 0;
@@ -1902,16 +1908,18 @@ static void recording_dump_frame(
          /* Big bottleneck.
           * Since we might need to do read-backs asynchronously,
           * it might take 3-4 times before this returns true. */
+         performance_counter_init(record_perf_readback, "record_readback");
+         performance_counter_start_plus(perf, record_perf_readback);
          if (record_st->gpu_bgrx)
-         {
-            if (!(      vid->read_viewport_bgrx
-                     && vid->read_viewport_bgrx(video_st->data,
-                        video_st->record_gpu_buffer, is_idle, &bottom_up)))
-               return;
-         }
-         else if (!(      vid->read_viewport
-                  && vid->read_viewport(
-                     video_st->data, video_st->record_gpu_buffer, is_idle)))
+            ok = vid->read_viewport_bgrx
+               && vid->read_viewport_bgrx(video_st->data,
+                     video_st->record_gpu_buffer, is_idle, &bottom_up);
+         else
+            ok = vid->read_viewport
+               && vid->read_viewport(
+                     video_st->data, video_st->record_gpu_buffer, is_idle);
+         performance_counter_stop_plus(perf, record_perf_readback);
+         if (!ok)
             return;
 
       }

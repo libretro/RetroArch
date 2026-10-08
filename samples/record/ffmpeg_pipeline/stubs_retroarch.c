@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <boolean.h>
 #include <queues/message_queue.h>
+#include "../../../runloop.h"
 
 void RARCH_LOG(const char *fmt, ...)
 {
@@ -48,4 +49,16 @@ bool verbosity_is_enabled(void)
 unsigned verbosity_get_log_level(void)
 {
    return 1;
+}
+
+static runloop_state_t stub_runloop_state;
+
+runloop_state_t *runloop_state_get_ptr(void)
+{
+   return &stub_runloop_state;
+}
+
+void rarch_perf_register(struct retro_perf_counter *perf)
+{
+   perf->registered = true;
 }
