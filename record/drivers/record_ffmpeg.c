@@ -283,6 +283,10 @@ typedef struct ffmpeg
     * run-ahead) then still get the right spacing. Producer only. */
    uint64_t audio_frames_in;
    int64_t  video_next_pts;
+   /* For cores that stop producing audio: ffmpeg_fill_audio_gap(). */
+   uint64_t audio_frames_at_last_video;
+   unsigned video_frames_without_audio;
+   double   silence_frac;
    /* Encoder thread: scratch for params.rotation, fb_dims pixels,
     * allocated on first use. */
    uint8_t *video_rot_buf;
@@ -1807,6 +1811,54 @@ static void ffmpeg_report_drops(uint64_t dropped)
          MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 
+static void ffmpeg_audio_write_silence(ffmpeg_t *handle);
+
+/* Video frames in a row without audio before the core is taken to have
+ * gone silent: short enough to be imperceptible, long enough that cores
+ * delivering audio in bursts aren't affected. */
+#define SILENT_VIDEO_FRAMES 4
+
+/* A core that produces no audio for a while (rather than silence) left
+ * that time out of the audio track, desyncing everything after it, and
+ * with video on the audio clock it would stall video too. After
+ * SILENT_VIDEO_FRAMES frames without audio, owe one frame period of
+ * silence per video frame, backfilling the ones already seen. */
+static void ffmpeg_fill_audio_gap(ffmpeg_t *handle)
+{
+   unsigned frames_to_fill;
+   double samples;
+   uint64_t whole;
+
+   if (     !handle->config.audio_enable
+         || handle->params.samplerate <= 0.0
+         || handle->params.fps <= 0.0)
+      return;
+
+   if (handle->audio_frames_in != handle->audio_frames_at_last_video)
+   {
+      handle->audio_frames_at_last_video = handle->audio_frames_in;
+      handle->video_frames_without_audio = 0;
+      return;
+   }
+
+   if (++handle->video_frames_without_audio < SILENT_VIDEO_FRAMES)
+      return;
+
+   frames_to_fill = (handle->video_frames_without_audio == SILENT_VIDEO_FRAMES)
+      ? SILENT_VIDEO_FRAMES : 1;
+   samples        = frames_to_fill * handle->params.samplerate
+      / handle->params.fps + handle->silence_frac;
+   whole          = (uint64_t)samples;
+   handle->silence_frac = samples - (double)whole;
+
+   handle->audio_frames_in            += whole;
+   handle->audio_silence_pending      += (size_t)whole
+      * handle->params.channels * sizeof(int16_t);
+   handle->audio_frames_at_last_video  = handle->audio_frames_in;
+   ffmpeg_audio_write_silence(handle);
+   retro_eventcount_notify(&handle->data);
+}
+
 static bool ffmpeg_push_video_impl(void *data,
       const struct record_video_data *vid)
 {
@@ -1850,6 +1902,7 @@ static bool ffmpeg_push_video_impl(void *data,
    rows        = VIDEO_SCALE_H(attr.vid.dims);
    video_bytes = (size_t)rows * attr.vid.pitch;
 
+   ffmpeg_fill_audio_gap(handle);
    handle->video_frames_in++;
 
    /* Drop mode: a full queue costs this frame, never the frontend. */
@@ -1975,12 +2028,20 @@ static bool ffmpeg_push_audio_impl(void *data,
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (retro_spsc_write_avail(&handle->audio_fifo) >= need)
+      /* Silence owed from a gap goes in first, in order. */
+      if (handle->audio_silence_pending)
+      {
+         ffmpeg_audio_write_silence(handle);
+         retro_eventcount_notify(&handle->data);
+      }
+      if (     !handle->audio_silence_pending
+            && retro_spsc_write_avail(&handle->audio_fifo) >= need)
          break;
 
       key = retro_eventcount_prepare_wait(&handle->space);
       if (     !retro_atomic_load_acquire_int(&handle->alive)
-            || retro_spsc_write_avail(&handle->audio_fifo) >= need)
+            || (  !handle->audio_silence_pending
+               && retro_spsc_write_avail(&handle->audio_fifo) >= need))
          retro_eventcount_cancel_wait(&handle->space);
       else
          retro_eventcount_commit_wait_timeout(&handle->space, key,
