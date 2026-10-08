@@ -409,7 +409,11 @@ enum display_flags
     * which shows both eyes whatever the stereo mode. */
    GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET,
    /* Set while that headset's session has the runtime's focus. */
-   GFX_CTX_FLAGS_HEADSET_FOCUSED
+   GFX_CTX_FLAGS_HEADSET_FOCUSED,
+   /* Set by a video driver whose GPU recording reads the core's image
+    * before the menu, overlays and messages are drawn over it, when
+    * Record Game Only is on - in its present output mode. */
+   GFX_CTX_FLAGS_RECORD_GAME_ONLY
 };
 
 enum shader_uniform_type

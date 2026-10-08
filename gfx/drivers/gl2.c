@@ -7198,6 +7198,14 @@ static uint32_t gl2_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_SCREENSHOTS_SUPPORTED);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+   /* The PBO readback, issued before the UI; under scRGB the image
+    * only lands at the final composite */
+#ifdef HAVE_GL_ASYNC_READBACK
+#if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
+   if (gl && !gl->scrgb.active)
+#endif
+      BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+#endif
 
    return flags;
 }

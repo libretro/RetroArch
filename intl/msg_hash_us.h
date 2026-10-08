@@ -32841,6 +32841,10 @@ MSG_HASH(
    "Recording terminated due to resize."
    )
 MSG_HASH(
+   MSG_RECORDING_GAME_ONLY_UNSUPPORTED,
+   "This video driver can't Record Game Only: the menu and messages are recorded."
+   )
+MSG_HASH(
    MSG_RECORDING_TO,
    "Recording to"
    )

@@ -823,6 +823,9 @@ static uint32_t sdl3_get_flags(void *data)
     * sdl3_gfx_set_nonblock_state. */
    if (vid && (vid->flags & SDL3_FLAG_ADAPTIVE_VSYNC))
       BIT32_SET(flags, GFX_CTX_FLAGS_ADAPTIVE_VSYNC);
+   /* The viewport readback redraws the core's frame alone, so a GPU
+    * recording never holds the menu or messages. */
+   BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
 
    return flags;
 }

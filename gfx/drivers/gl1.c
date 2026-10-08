@@ -329,6 +329,8 @@ typedef struct gl1
     * thread_update_driver_state(), and reading the setting there races
     * the menu writing it. */
    bool frame_menu_linear_filter;
+   /* The pending readback is a GPU recording's (read_viewport_bgrx) */
+   bool readback_record;
 } gl1_t;
 
 #ifdef VITA
@@ -1930,6 +1932,22 @@ static void gl1_readback(gl1_t *gl1,
 #endif
 }
 
+/* The pending screenshot or recording readback, as RGBA */
+static void gl1_screenshot_readback(gl1_t *gl1,
+      unsigned video_width, unsigned video_height)
+{
+   gl1_readback(gl1,
+         4,
+         GL_RGBA,
+#ifdef MSB_FIRST
+         GL_UNSIGNED_INT_8_8_8_8_REV,
+#else
+         GL_UNSIGNED_BYTE,
+#endif
+         video_width, video_height,
+         gl1->readback_buffer_screenshot);
+}
+
 #ifndef VITA
 /* Same GLSL 1.20 encode as the gl driver, but using the built-in
  * compatibility attributes (gl_Vertex / gl_MultiTexCoord0) so the
@@ -2217,6 +2235,7 @@ static bool gl1_frame(void *data, const void *frame,
    unsigned height                  = VIDEO_SCALE_H(video_info->dims);
    bool draw                        = true;
    bool do_swap                     = false;
+   bool read_early                  = false;
    gl1_t *gl1                       = (gl1_t*)data;
    unsigned bits                    = gl1->frame_bits;
    unsigned pot_width               = 0;
@@ -2382,6 +2401,21 @@ static bool gl1_frame(void *data, const void *frame,
       if (frame_to_copy)
          gl1_draw_tex(gl1, pot_width, pot_height,
                width, height, gl1->tex, frame_to_copy, src_row, src_fmt);
+   }
+
+   /* Record Game Only: a recording's readback takes the core's image
+    * before anything is drawn over it. Under scRGB the image only
+    * lands at the final composite. */
+   if (     gl1->readback_buffer_screenshot
+         && gl1->readback_record
+         && video_info->record_game_only
+#ifndef VITA
+         && !gl1->scrgb.active
+#endif
+      )
+   {
+      gl1_screenshot_readback(gl1, video_width, video_height);
+      read_early = true;
    }
 
 #ifndef VITA
@@ -2615,17 +2649,8 @@ static bool gl1_frame(void *data, const void *frame,
    }
 #endif
 
-   if (gl1->readback_buffer_screenshot)
-      gl1_readback(gl1,
-            4,
-            GL_RGBA,
-#ifdef MSB_FIRST
-            GL_UNSIGNED_INT_8_8_8_8_REV,
-#else
-            GL_UNSIGNED_BYTE,
-#endif
-            video_width, video_height,
-            gl1->readback_buffer_screenshot);
+   if (gl1->readback_buffer_screenshot && !read_early)
+      gl1_screenshot_readback(gl1, video_width, video_height);
 
 
    if (do_swap && gl1->ctx_driver->swap_buffers)
@@ -2880,8 +2905,10 @@ static bool gl1_read_viewport_internal(gl1_t *gl1, uint8_t *buffer,
    if (!gl1->readback_buffer_screenshot)
       return false;
 
+   gl1->readback_record = bgrx;
    if (!is_idle)
       video_driver_cached_frame();
+   gl1->readback_record = false;
 
    {
       /* Clamp to the region glReadPixels actually wrote.
@@ -3291,6 +3318,13 @@ static uint32_t gl1_get_flags(void *data)
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
    BIT32_SET(flags, GFX_CTX_FLAGS_MENU_FRAME_FILTERING);
    BIT32_SET(flags, GFX_CTX_FLAGS_OVERLAY_BEHIND_MENU_SUPPORTED);
+#ifdef VITA
+   BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+#else
+   /* Under scRGB the image only lands at the final composite */
+   if (gl1 && !gl1->scrgb.active)
+      BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+#endif
 
    return flags;
 }

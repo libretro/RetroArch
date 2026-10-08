@@ -400,6 +400,18 @@ bool recording_init(void)
 #endif
       params.pix_fmt                      = recording_st->gpu_bgrx
          ? FFEMU_PIX_ARGB8888 : FFEMU_PIX_BGR24;
+
+      /* Said once, as the recording starts: this driver reads back the
+       * screen as shown, with the menu and messages in it. */
+      if (     settings->bools.video_record_game_only
+            && !video_driver_test_all_flags(GFX_CTX_FLAGS_RECORD_GAME_ONLY))
+      {
+         const char *_msg = msg_hash_to_str(
+               MSG_RECORDING_GAME_ONLY_UNSUPPORTED);
+         RARCH_WARN("[Recording] %s\n", _msg);
+         runloop_msg_queue_push(_msg, strlen(_msg), 1, 240, false, NULL,
+               MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+      }
       recording_st->gpu_dims              = vp.dims;
 
       RARCH_LOG("[Recording] %s %ux%u (%s readback).\n",

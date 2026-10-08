@@ -6869,6 +6869,90 @@ static void lane_record_format(void)
       fprintf(stderr, "[pass] gpu record format lane\n");
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: Record Game Only keeps the on-screen messages out            */
+/*   A GPU recording's read (read_viewport_bgrx) with Record Game     */
+/*   Only on takes the core's image before anything is drawn over it. */
+/*   With the content paused, so the image holds still, a message is  */
+/*   put on screen: an ordinary read must change with it - else there */
+/*   is nothing for the lane to keep out - and a game-only read must  */
+/*   not. The SDL drivers read back the core's frame alone whatever   */
+/*   the setting, so there only the game-only read is held to it.     */
+/* ------------------------------------------------------------------ */
+
+static bool game_only_read(uint8_t *buf, bool game_only)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   bool bottom_up                 = true;
+   config_get_ptr()->bools.video_record_game_only = game_only;
+   return video_st->current_video->read_viewport_bgrx(video_st->data, buf,
+         false, &bottom_up);
+}
+
+static void lane_record_game_only(bool full_read_has_ui)
+{
+   struct video_viewport vp;
+   unsigned had                   = failures;
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t *rec_st      = recording_state_get_ptr();
+   bool saved_game_only           = settings->bools.video_record_game_only;
+   bool saved_enable              = rec_st->enable;
+   static const char msg[]        = "RECORD GAME ONLY LANE MESSAGE";
+   uint8_t *buf                   = NULL;
+   size_t len;
+   bool ok;
+
+   set_threaded_via_setting(false);
+   run_frames(4);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "game-only lane: menu still up");
+   if (!video_st->current_video->read_viewport_bgrx)
+   {
+      fprintf(stderr, "[skip] game-only lane (no 32-bit readback)\n");
+      return;
+   }
+   run_frames(2);
+   command_event(CMD_EVENT_PAUSE, NULL);
+   run_frames(2);
+
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   len = VIDEO_SCALE_AREA(vp.dims) * 4;
+   CHECK(len > 0, "game-only lane: no viewport");
+   if (len && (buf = (uint8_t*)malloc(len * 4)))
+   {
+      uint8_t *g0 = buf, *n0 = buf + len, *g1 = buf + 2 * len,
+              *n1 = buf + 3 * len;
+      rec_st->enable = true;
+      ok             = game_only_read(g0, true) && game_only_read(n0, false);
+      runloop_msg_queue_push(msg, sizeof(msg) - 1, 1, 600, true, NULL,
+            MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+      run_frames(30);
+      ok             = ok && game_only_read(g1, true) && game_only_read(n1, false);
+      rec_st->enable = saved_enable;
+      settings->bools.video_record_game_only = saved_game_only;
+
+      CHECK(ok, "game-only lane: a read failed");
+      if (ok)
+      {
+         if (full_read_has_ui)
+            CHECK(memcmp(n0, n1, len) != 0,
+                  "game-only lane: the message never reached an ordinary read,"
+                  " so there is nothing to keep out");
+         CHECK(memcmp(g0, g1, len) == 0,
+               "game-only lane: a game-only read holds the message");
+      }
+      free(buf);
+   }
+
+   command_event(CMD_EVENT_UNPAUSE, NULL);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] record game only lane\n");
+}
+
 static void lane_gpu_readback(void)
 {
    unsigned had = failures;
@@ -7564,6 +7648,12 @@ int main(int argc, char *argv[])
       lane_gpu_readback();
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
       lane_record_format();
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl1"))
+      lane_record_game_only(true);
+   if (     real_driver()
+         && (   !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "sdl2")
+             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "sdl3")))
+      lane_record_game_only(false);
    if (real_driver())
       lane_x11_grabbed_mouse();
    if (     real_driver()

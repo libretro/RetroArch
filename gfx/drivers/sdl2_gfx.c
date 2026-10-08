@@ -1072,7 +1072,14 @@ static void sdl2_grab_mouse_toggle(void *data)
    sdl2_video_t *vid = (sdl2_video_t*)data;
    SDL_SetWindowGrab(vid->window, SDL_GetWindowGrab(vid->window));
 }
-static uint32_t sdl2_get_flags(void *data) { return 0; }
+/* The viewport readback redraws the core's frame alone, so a GPU
+ * recording never holds the menu or messages. */
+static uint32_t sdl2_get_flags(void *data)
+{
+   uint32_t flags = 0;
+   BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
+   return flags;
+}
 
 #if SDL_VERSION_ATLEAST(2, 0, 18)
 /* Texture upload hook for menu icons and any other gfx_display-driven

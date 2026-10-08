@@ -674,7 +674,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        driver: [gl, glcore]
+        driver: [gl, glcore, gl1]
         san: [none, address, thread]
 
     steps:

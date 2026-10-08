@@ -12918,6 +12918,11 @@ static uint32_t vulkan_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
    if (vk && retro_atomic_load_acquire_int(&vk->views.fallback))
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   /* HDR output keeps the end-of-frame readback, for its tonemap */
+#ifdef VULKAN_HDR_SWAPCHAIN
+   if (vk && vk->context && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
+#endif
+      BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
 #ifdef HAVE_OPENXR
    if (     vk && vk->context && vk->context->xr
          && vulkan_openxr_alive(vk->context->xr))
