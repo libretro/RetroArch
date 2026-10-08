@@ -24,6 +24,8 @@
 #include <switch.h>
 
 #include <retro_inline.h>
+#include <retro_atomic.h>
+#include <rthreads/rthreads.h>
 
 #include "../audio_driver.h"
 #include "../../verbosity.h"
@@ -72,11 +74,17 @@ typedef struct
    size_t current_size;
    size_t buffer_size;
    size_t samples;
-   /* Held for every call into the renderer and for the wave buffer
-    * states and the buffer being filled: write_avail() reads them on
-    * the frontend's thread while the writer, on the audio thread, adds
-    * and starts. */
-   Mutex update_lock;
+   /* The renderer and the wave buffer states belong to the thread that
+    * writes: write, wait_writable, start and stop all run there, under
+    * the audio thread wrapper or on the frontend's own thread without
+    * it. write_avail() is the one call the frontend also makes from
+    * another thread - rate control's fill, every frame - so the writer
+    * publishes the room after every change, and a caller that is not
+    * the writer reads that instead of calling into the renderer. */
+   retro_atomic_size_t room_cached;
+   /* sthread id of the thread that last wrote, started or stopped; 0
+    * before any. */
+   retro_atomic_size_t writer;
    /* The renderer's own config, kept here rather than taken from the
     * file-scope one: num_mix_buffers follows the channel count, and
     * audrenInitialize() and audrvCreate() have to be handed the same
@@ -202,7 +210,9 @@ static void *libnx_audren_audio_init(
       }
    }
 
-   mutexInit(&aud->update_lock);
+   /* Every wave buffer is free before the first write. */
+   retro_atomic_size_init(&aud->room_cached, aud->buffer_size * BUFFER_COUNT);
+   retro_atomic_size_init(&aud->writer, 0);
    *new_rate = sample_rate;
 
    return aud;
@@ -223,17 +233,14 @@ fail:
 }
 
 /* Free wave buffers, in bytes, plus what is left of the one being
- * filled: the room the driver has across all its stages. States are
- * brought up to date first, as the renderer only reports a finished
- * buffer on an update. */
-static size_t libnx_audren_audio_room(libnx_audren_t *aud)
+ * filled: the room the driver has across all its stages, as the last
+ * update left the states. Published for write_avail() callers on
+ * other threads. Writer's thread only. */
+static size_t libnx_audren_audio_publish_room(libnx_audren_t *aud)
 {
    size_t   free_bufs = 0;
    size_t   room;
    unsigned i;
-
-   mutexLock(&aud->update_lock);
-   audrvUpdate(&aud->drv);
 
    for (i = 0; i < BUFFER_COUNT; i++)
       if (     aud->wavebufs[i].state == AudioDriverWaveBufState_Free
@@ -251,8 +258,24 @@ static size_t libnx_audren_audio_room(libnx_audren_t *aud)
    }
    else
       room = free_bufs * aud->buffer_size;
-   mutexUnlock(&aud->update_lock);
+   retro_atomic_store_release_size(&aud->room_cached, room);
    return room;
+}
+
+/* The same, with the states brought up to date first, as the renderer
+ * only reports a finished buffer on an update. Writer's thread only. */
+static size_t libnx_audren_audio_room(libnx_audren_t *aud)
+{
+   audrvUpdate(&aud->drv);
+   return libnx_audren_audio_publish_room(aud);
+}
+
+/* Taken by every call that touches the renderer, so write_avail() can
+ * tell whether its caller is the one thread allowed to. */
+static void libnx_audren_audio_claim(libnx_audren_t *aud)
+{
+   retro_atomic_store_release_size(&aud->writer,
+         (size_t)sthread_get_current_thread_id());
 }
 
 static size_t libnx_audren_audio_buffer_size(void *data)
@@ -288,15 +311,11 @@ static size_t libnx_audren_audio_append(
    void *dstbuf     = NULL;
    ssize_t free_idx = -1;
 
-   mutexLock(&aud->update_lock);
    if (!aud->current_wavebuf)
    {
       free_idx = libnx_audren_audio_get_free_wavebuf_idx(aud);
       if (free_idx == -1)
-      {
-         mutexUnlock(&aud->update_lock);
          return 0;
-      }
 
       aud->current_wavebuf = &aud->wavebufs[free_idx];
       aud->current_pool_ptr = aud->mempool + (free_idx * aud->buffer_size);
@@ -320,7 +339,7 @@ static size_t libnx_audren_audio_append(
          audrvVoiceStart(&aud->drv, 0);
       aud->current_wavebuf = NULL;
    }
-   mutexUnlock(&aud->update_lock);
+   libnx_audren_audio_publish_room(aud);
 
    return len;
 }
@@ -334,14 +353,24 @@ static ssize_t libnx_audren_audio_write(void *data,
    if (!aud)
       return -1;
 
+   libnx_audren_audio_claim(aud);
    if (aud->nonblock)
    {
+      /* No buffer free as the last update saw it: one more update, as
+       * write_avail() used to make before every write, then whatever
+       * that frees. */
+      bool updated = false;
       while (_len < len)
       {
-         _len += libnx_audren_audio_append(
+         size_t n = libnx_audren_audio_append(
                aud, s + _len, len - _len);
-         if (_len != len)
+         _len += n;
+         if (n)
+            continue;
+         if (updated)
             break;
+         libnx_audren_audio_room(aud);
+         updated = true;
       }
    }
    else
@@ -353,9 +382,7 @@ static ssize_t libnx_audren_audio_write(void *data,
                aud, s + _len, len - _len);
          if (_len != len)
          {
-            mutexLock(&aud->update_lock);
-            audrvUpdate(&aud->drv);
-            mutexUnlock(&aud->update_lock);
+            libnx_audren_audio_room(aud);
             if (--laps < 0)
                break;   /* Report what was taken */
             if (libnx_audren_wait_frame_timeout())
@@ -374,24 +401,23 @@ static bool libnx_audren_audio_stop(void *data)
    if (!aud)
       return false;
 
-   mutexLock(&aud->update_lock);
+   libnx_audren_audio_claim(aud);
    audrvVoiceStop(&aud->drv, 0);
-   mutexUnlock(&aud->update_lock);
 
    return true;
 }
 
 static bool libnx_audren_audio_start(void *data, bool is_shutdown)
 {
-   (void)is_shutdown;
    libnx_audren_t *aud = (libnx_audren_t*)data;
+
+   (void)is_shutdown;
 
    if (!aud)
       return false;
 
-   mutexLock(&aud->update_lock);
+   libnx_audren_audio_claim(aud);
    audrvVoiceStart(&aud->drv, 0);
-   mutexUnlock(&aud->update_lock);
 
    return true;
 }
@@ -446,6 +472,7 @@ static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
 
    if (!aud)
       return 0;
+   libnx_audren_audio_claim(aud);
    /* Capped at half the buffers, so the wait always has an end within
     * a playing renderer's reach. */
    if (len > aud->buffer_size * BUFFER_COUNT / 2)
@@ -464,6 +491,11 @@ static size_t libnx_audren_audio_wait_writable(void *data, size_t len)
    return 0;
 }
 
+/* On the writer's thread - no wrapper, the frontend writing itself -
+ * the renderer is brought up to date as before. From any other, the
+ * room the writer last published: stale by at most one renderer frame
+ * while the writer runs, since its waits update every frame, and never
+ * long, since the update that frees a buffer publishes it. */
 static size_t libnx_audren_audio_write_avail(void *data)
 {
    libnx_audren_t *aud = (libnx_audren_t*)data;
@@ -471,7 +503,10 @@ static size_t libnx_audren_audio_write_avail(void *data)
    if (!aud)
       return 0;
 
-   return libnx_audren_audio_room(aud);
+   if (     retro_atomic_load_acquire_size(&aud->writer)
+         == (size_t)sthread_get_current_thread_id())
+      return libnx_audren_audio_room(aud);
+   return retro_atomic_load_acquire_size(&aud->room_cached);
 }
 
 static void libnx_audren_audio_set_nonblock_state(void *data, bool state)

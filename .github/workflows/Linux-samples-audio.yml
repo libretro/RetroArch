@@ -482,6 +482,30 @@ jobs:
           ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./switch_audio_test
           echo "[pass] switch_audio_test (ASan)"
 
+      - name: Build and run switch_audren_test (the Switch audren driver's renderer ownership, ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/audio/switch_audren
+        run: |
+          set -eu
+          # audio/drivers/switch_libnx_audren_audio.c's libnx build
+          # against a stand-in <switch.h> whose renderer thread plays a
+          # wave buffer a frame. libnx's audrv is not thread-safe and
+          # the driver takes no lock: every renderer call must come from
+          # the writer's thread while another reads write_avail(), a
+          # write_avail() on the writer's own thread must see what the
+          # renderer played, non-blocking writes must keep taking audio,
+          # and stop and start must pause and resume the voice. TSan
+          # reports two threads in the renderer as a race on the
+          # stand-in's wave buffer list.
+          make clean && make -j$(nproc) all
+          ./switch_audren_test
+          make clean && make -j$(nproc) all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 ./switch_audren_test
+          echo "[pass] switch_audren_test (ASan)"
+          make clean && make -j$(nproc) all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./switch_audren_test
+          echo "[pass] switch_audren_test (TSan)"
+
       - name: Build and run wiiu_ax_test (the Wii U AX driver's callback against its writer)
         shell: bash
         working-directory: samples/audio/wiiu_ax
