@@ -306,7 +306,7 @@ static INLINE int rrar_br_overrun(const rrar_bits_t *br)
 /* --------------------------------------------------------------- Huffman */
 
 /* The code RAR means by a list of lengths: codes of a length in the
- * order of their symbols, shorter lengths first. False if the lengths
+ * order of their symbols, shorter lengths first. false if the lengths
  * are of no prefix code. */
 static int huff_build(rrar_huff_t *h, const uint8_t *lengths, unsigned n)
 {
@@ -381,9 +381,9 @@ static INLINE int huff_decode(rrar_bits_t *br, const rrar_huff_t *h)
 
 /* ------------------------------------------------------------------ PPMd */
 
-static Byte ppmd_read(void *ud)
+static uint8_t ppmd_read(void *ud)
 {
-   return (Byte)rrar_br_get((rrar_bits_t *)ud, 8);
+   return (uint8_t)rrar_br_get((rrar_bits_t *)ud, 8);
 }
 
 /* A byte of what the member says besides its data - a filter - by

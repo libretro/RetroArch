@@ -13,23 +13,17 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <boolean.h>
+
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
-
-typedef unsigned char Byte;
-typedef uint16_t UInt16;
-typedef int32_t Int32;
-typedef uint32_t UInt32;
-typedef int Bool;
-#define True 1
-#define False 0
 
 /* Where the range decoder gets its bytes. */
 typedef struct
 {
   void *ud;
-  Byte (*Read)(void *ud); /* reads one byte, returns 0 in case of EOF or error */
+  uint8_t (*Read)(void *ud); /* reads one byte, returns 0 in case of EOF or error */
 } IByteIn;
 
 /* References into the model's memory are pointers where a pointer is 32
@@ -56,31 +50,31 @@ typedef struct
 /* SEE-contexts for PPM-contexts with masked symbols */
 typedef struct
 {
-  UInt16 Summ; /* Freq */
-  Byte Shift;  /* Speed of Freq change; low Shift is for fast change */
-  Byte Count;  /* Count to next change of Shift */
+  uint16_t Summ; /* Freq */
+  uint8_t Shift;  /* Speed of Freq change; low Shift is for fast change */
+  uint8_t Count;  /* Count to next change of Shift */
 } CPpmd_See;
 
 #define Ppmd_See_Update(p) do {                  \
    if ((p)->Shift < PPMD_PERIOD_BITS && --(p)->Count == 0) {   \
       (p)->Summ <<= 1;               \
-      (p)->Count = (Byte)(3 << (p)->Shift++);         \
+      (p)->Count = (uint8_t)(3 << (p)->Shift++);         \
        }                        \
 } while (0)
 
 typedef struct
 {
-  Byte Symbol;
-  Byte Freq;
-  UInt16 SuccessorLow;
-  UInt16 SuccessorHigh;
+  uint8_t Symbol;
+  uint8_t Freq;
+  uint16_t SuccessorLow;
+  uint16_t SuccessorHigh;
 } CPpmd_State;
 
 typedef
   #ifdef PPMD_32BIT
     CPpmd_State *
   #else
-    UInt32
+    uint32_t
   #endif
   CPpmd_State_Ref;
 
@@ -88,15 +82,15 @@ typedef
   #ifdef PPMD_32BIT
     void *
   #else
-    UInt32
+    uint32_t
   #endif
   CPpmd_Void_Ref;
 
 typedef
   #ifdef PPMD_32BIT
-    Byte *
+    uint8_t *
   #else
-    UInt32
+    uint32_t
   #endif
   CPpmd_Byte_Ref;
 
@@ -120,14 +114,14 @@ typedef
   #ifdef PPMD_32BIT
     struct CPpmd7_Context_ *
   #else
-    UInt32
+    uint32_t
   #endif
   CPpmd7_Context_Ref;
 
 typedef struct CPpmd7_Context_
 {
-  UInt16 NumStats;
-  UInt16 SummFreq;
+  uint16_t NumStats;
+  uint16_t SummFreq;
   CPpmd_State_Ref Stats;
   CPpmd7_Context_Ref Suffix;
 } CPpmd7_Context;
@@ -139,19 +133,19 @@ typedef struct
   CPpmd7_Context *MinContext, *MaxContext;
   CPpmd_State *FoundState;
   unsigned OrderFall, InitEsc, PrevSuccess, MaxOrder, HiBitsFlag;
-  Int32 RunLength, InitRL; /* must be 32-bit at least */
+  int32_t RunLength, InitRL; /* must be 32-bit at least */
 
-  UInt32 Size;
-  UInt32 GlueCount;
-  Byte *Base, *LoUnit, *HiUnit, *Text, *UnitsStart;
-  UInt32 AlignOffset;
+  uint32_t Size;
+  uint32_t GlueCount;
+  uint8_t *Base, *LoUnit, *HiUnit, *Text, *UnitsStart;
+  uint32_t AlignOffset;
 
-  Byte Indx2Units[PPMD_NUM_INDEXES];
-  Byte Units2Indx[128];
+  uint8_t Indx2Units[PPMD_NUM_INDEXES];
+  uint8_t Units2Indx[128];
   CPpmd_Void_Ref FreeList[PPMD_NUM_INDEXES];
-  Byte NS2Indx[256], NS2BSIndx[256], HB2Flag[256];
+  uint8_t NS2Indx[256], NS2BSIndx[256], HB2Flag[256];
   CPpmd_See DummySee, See[25][16];
-  UInt16 BinSumm[128][64];
+  uint16_t BinSumm[128][64];
   /* The escape path's candidate states, here rather than on the
    * decoder's stack: 2 KiB of pointers on a 64-bit target. */
   CPpmd_State *EscStates[256];
@@ -161,27 +155,27 @@ typedef struct
 
 typedef struct
 {
-  UInt32 (*GetThreshold)(void *p, UInt32 total);
-  void (*Decode)(void *p, UInt32 start, UInt32 size);
-  UInt32 (*DecodeBit)(void *p, UInt32 size0);
+  uint32_t (*GetThreshold)(void *p, uint32_t total);
+  void (*Decode)(void *p, uint32_t start, uint32_t size);
+  uint32_t (*DecodeBit)(void *p, uint32_t size0);
 } IPpmd7_RangeDec;
 
 typedef struct
 {
   IPpmd7_RangeDec p;
-  UInt32 Range;
-  UInt32 Code;
-  UInt32 Low;
-  UInt32 Bottom;
+  uint32_t Range;
+  uint32_t Code;
+  uint32_t Low;
+  uint32_t Bottom;
   IByteIn *Stream;
 } CPpmd7z_RangeDec;
 
 void rrar_ppmd7_construct(CPpmd7 *p);
-Bool rrar_ppmd7_alloc(CPpmd7 *p, UInt32 size);
+bool rrar_ppmd7_alloc(CPpmd7 *p, uint32_t size);
 void rrar_ppmd7_free(CPpmd7 *p);
 void rrar_ppmd7_init(CPpmd7 *p, unsigned max_order);
-/* The four bytes a block's data starts with. False if they cannot be. */
-Bool rrar_ppmd7_range_init(CPpmd7z_RangeDec *rc, IByteIn *stream);
+/* The four bytes a block's data starts with. false if they cannot be. */
+bool rrar_ppmd7_range_init(CPpmd7z_RangeDec *rc, IByteIn *stream);
 /* The next byte, or a negative number if the data is not PPMd's. */
 int rrar_ppmd7_decode_symbol(CPpmd7 *p, CPpmd7z_RangeDec *rc);
 
