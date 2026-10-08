@@ -45,7 +45,6 @@
 #endif
 
 #if defined(__linux__)
-#include <dirent.h>
 #include <errno.h>
 #include <sys/resource.h>
 #include <sys/syscall.h>
@@ -272,7 +271,6 @@ typedef struct ffmpeg
     * totals are read after the encoder thread has been joined. */
    uint64_t video_frames_in;
    uint64_t video_frames_dropped;
-   uint64_t video_frames_logged;
    /* Frames dropped since the last queued one; rides along with the
     * next frame so the encoder leaves a pts gap for them. */
    unsigned video_pts_pending;
@@ -733,14 +731,18 @@ static bool ffmpeg_open_hw_h264(ffmpeg_t *handle,
       }
 
       /* x264's private options mean nothing to these. Ask for CBR where
-       * there's an "rc" knob; an encoder that rejects it fails to open
-       * and the next one is tried. */
+       * there's an "rc" knob; an encoder without one leaves the option
+       * unused, and the stream is then held only by the generic rate
+       * limits. */
       if (params->video_max_rate)
          av_dict_set(&opts, "rc", "cbr", 0);
 
       if (ffmpeg_open_video_codec(handle, codec, fmt, out_w, out_h,
                true, &opts))
       {
+         if (av_dict_get(opts, "rc", NULL, 0))
+            RARCH_WARN("[FFmpeg] %s has no rate control option: not CBR.\n",
+                  codec->name);
          av_dict_free(&opts);
          *out_fmt = fmt;
          RARCH_LOG("[FFmpeg] Using hardware encoder %s (%s).\n",
@@ -1307,16 +1309,12 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
 #define DEFAULT_VIDEO_FIFO_FRAMES 32
 #define MIN_VIDEO_FIFO_FRAMES      8
 #define MAX_VIDEO_FIFO_FRAMES    128
-/* One warning per this many newly dropped frames. */
-#define DROP_LOG_INTERVAL         64
 
-/* Reported at exit with perfcnt_enable. push_* run on the frontend's
- * thread, the rest on the encoder thread; one writer each. */
+/* Reported at exit with perfcnt_enable, and readable live from the
+ * menu, which reads and resets them on the frontend's thread: so only
+ * the push_* side, which runs there. */
 static struct retro_perf_counter ffmpeg_perf_push_video   = {0};
 static struct retro_perf_counter ffmpeg_perf_push_audio   = {0};
-static struct retro_perf_counter ffmpeg_perf_scale        = {0};
-static struct retro_perf_counter ffmpeg_perf_encode_video = {0};
-static struct retro_perf_counter ffmpeg_perf_encode_audio = {0};
 
 static bool ffmpeg_perf_enabled(void)
 {
@@ -1327,9 +1325,6 @@ static void ffmpeg_perf_init(void)
 {
    performance_counter_init(ffmpeg_perf_push_video,   "record_push_video");
    performance_counter_init(ffmpeg_perf_push_audio,   "record_push_audio");
-   performance_counter_init(ffmpeg_perf_scale,        "record_scale");
-   performance_counter_init(ffmpeg_perf_encode_video, "record_encode_video");
-   performance_counter_init(ffmpeg_perf_encode_audio, "record_encode_audio");
 }
 
 static void ffmpeg_thread(void *data);
@@ -1337,74 +1332,38 @@ static void ffmpeg_thread(void *data);
 /* Encoder threads run this much nicer than the core, in drop mode
  * only: with blocking on, a starved encoder just stalls the game. */
 #define ENCODER_NICE_DELTA 10
-#define MAX_TRACKED_TIDS   512
 
 #ifdef FFMPEG_HAVE_THREAD_NICE
-struct ff_tid_set
-{
-   pid_t tids[MAX_TRACKED_TIDS];
-   unsigned count;
-};
-
-static void ffmpeg_tids_snapshot(struct ff_tid_set *set)
-{
-   struct dirent *ent;
-   DIR *dir   = opendir("/proc/self/task");
-
-   set->count = 0;
-   if (!dir)
-      return;
-   while ((ent = readdir(dir)) && set->count < MAX_TRACKED_TIDS)
-   {
-      long tid = strtol(ent->d_name, NULL, 10);
-      if (tid > 0)
-         set->tids[set->count++] = (pid_t)tid;
-   }
-   closedir(dir);
-}
-
-static void ffmpeg_renice_tid(pid_t tid, int delta)
+/* Linux nice is per thread and a new thread takes its creator's, so a
+ * thread that lowers itself before it opens the encoders has every
+ * thread they spawn run lowered too, and nothing else. */
+static void ffmpeg_lower_this_thread(void)
 {
    int cur;
+   id_t tid = (id_t)syscall(SYS_gettid);
 
    errno = 0;
-   cur   = getpriority(PRIO_PROCESS, (id_t)tid);
+   cur   = getpriority(PRIO_PROCESS, tid);
    if (cur == -1 && errno)
       return;
    /* Raising nice never needs privileges. */
-   setpriority(PRIO_PROCESS, (id_t)tid, cur + delta);
+   setpriority(PRIO_PROCESS, tid, cur + ENCODER_NICE_DELTA);
 }
 
-/* Renice threads an encoder spawned during avcodec_open2(). They
- * inherit the main thread's priority, and lowering that around the
- * open can't be undone without CAP_SYS_NICE. */
-static unsigned ffmpeg_renice_new_threads(const struct ff_tid_set *before)
+typedef struct
 {
-   unsigned i, j, n = 0;
-   struct ff_tid_set *after = (struct ff_tid_set*)malloc(sizeof(*after));
+   ffmpeg_t *handle;
+   const char *audio_resampler;
+   bool ok;
+} ffmpeg_open_job_t;
 
-   if (!after)
-      return 0;
-   ffmpeg_tids_snapshot(after);
-   for (i = 0; i < after->count; i++)
-   {
-      bool seen = false;
-      for (j = 0; j < before->count; j++)
-      {
-         if (after->tids[i] == before->tids[j])
-         {
-            seen = true;
-            break;
-         }
-      }
-      if (!seen)
-      {
-         ffmpeg_renice_tid(after->tids[i], ENCODER_NICE_DELTA);
-         n++;
-      }
-   }
-   free(after);
-   return n;
+static void ffmpeg_open_codecs_lowered(void *data)
+{
+   ffmpeg_open_job_t *job = (ffmpeg_open_job_t*)data;
+   ffmpeg_lower_this_thread();
+   job->ok = ffmpeg_init_video(job->handle)
+      && (  !job->handle->config.audio_enable
+          || ffmpeg_init_audio(job->handle, job->audio_resampler));
 }
 #endif
 
@@ -1593,11 +1552,9 @@ static void ffmpeg_free(void *data)
    /* The muxer context owns its streams, their codec parameters, its
     * metadata and its url; releasing just the struct left the rest
     * behind on every session. */
-   if (     handle->muxer.ctx
-         && handle->muxer.ctx->pb
-         && !(handle->muxer.ctx->oformat
-            && (handle->muxer.ctx->oformat->flags & AVFMT_NOFILE)))
-      avio_closep(&handle->muxer.ctx->pb); /* failed before finalize */
+   /* Failed before finalize: the open ffmpeg_init_muxer_pre made */
+   if (handle->muxer.ctx && handle->muxer.ctx->pb)
+      avio_closep(&handle->muxer.ctx->pb);
    avformat_free_context(handle->muxer.ctx);
    av_packet_free(&handle->pkt);
 
@@ -1758,28 +1715,29 @@ static void *ffmpeg_new(const struct record_params *params)
 
    {
       bool ok;
+      bool opened = false;
 #ifdef FFMPEG_HAVE_THREAD_NICE
-      struct ff_tid_set *before = NULL;
-      if (handle->allow_frame_drop
-            && (before = (struct ff_tid_set*)malloc(sizeof(*before))))
-         ffmpeg_tids_snapshot(before);
-#endif
-      ok = ffmpeg_init_video(handle)
-         && (  !handle->config.audio_enable
-             || ffmpeg_init_audio(handle, params->audio_resampler));
-#ifdef FFMPEG_HAVE_THREAD_NICE
-      if (before)
+      /* In drop mode the encoders are opened on a thread that has
+       * lowered itself, so the threads they start run lowered. */
+      if (handle->allow_frame_drop)
       {
-         if (ok)
+         ffmpeg_open_job_t job;
+         sthread_t *opener;
+         job.handle          = handle;
+         job.audio_resampler = params->audio_resampler;
+         job.ok              = false;
+         if ((opener = sthread_create(ffmpeg_open_codecs_lowered, &job)))
          {
-            unsigned n = ffmpeg_renice_new_threads(before);
-            if (n)
-               RARCH_LOG("[FFmpeg] Lowered priority of %u encoder"
-                     " thread(s).\n", n);
+            sthread_join(opener);
+            ok     = job.ok;
+            opened = true;
          }
-         free(before);
       }
 #endif
+      if (!opened)
+         ok = ffmpeg_init_video(handle)
+            && (  !handle->config.audio_enable
+                || ffmpeg_init_audio(handle, params->audio_resampler));
       if (!ok)
          goto error;
    }
@@ -1802,17 +1760,6 @@ static bool ffmpeg_video_fifo_has_room(ffmpeg_t *handle, size_t video_bytes)
    return retro_spsc_write_avail(&handle->attr_fifo)
             >= sizeof(struct ff_video_attr)
        && retro_spsc_write_avail(&handle->video_fifo) >= video_bytes;
-}
-
-static void ffmpeg_report_drops(uint64_t dropped)
-{
-   char msg[128];
-   size_t _len = snprintf(msg, sizeof(msg),
-         "Recording: %llu frames dropped (encoder too slow)",
-         (unsigned long long)dropped);
-   RARCH_WARN("[FFmpeg] %s.\n", msg);
-   runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
 }
 
 static void ffmpeg_audio_write_silence(ffmpeg_t *handle);
@@ -1877,6 +1824,11 @@ static bool ffmpeg_push_video_impl(void *data,
    if (!handle || !vid)
       return false;
 
+   /* Every frame the core presents is a frame period of its time,
+    * whether or not frame_drop_ratio keeps it. */
+   if (retro_atomic_load_acquire_int(&handle->alive))
+      ffmpeg_fill_audio_gap(handle);
+
    drop_frame       = handle->video.frame_drop_count++ %
       handle->video.frame_drop_ratio;
 
@@ -1906,21 +1858,15 @@ static bool ffmpeg_push_video_impl(void *data,
    rows        = VIDEO_SCALE_H(attr.vid.dims);
    video_bytes = (size_t)rows * attr.vid.pitch;
 
-   ffmpeg_fill_audio_gap(handle);
    handle->video_frames_in++;
 
    /* Drop mode: a full queue costs this frame, never the frontend. */
    if (     handle->allow_frame_drop
          && !ffmpeg_video_fifo_has_room(handle, video_bytes))
    {
+      /* Counted, and said once when the recording ends */
       handle->video_frames_dropped++;
       handle->video_pts_pending++;
-      if (handle->video_frames_dropped - handle->video_frames_logged
-            >= DROP_LOG_INTERVAL)
-      {
-         handle->video_frames_logged = handle->video_frames_dropped;
-         ffmpeg_report_drops(handle->video_frames_dropped);
-      }
       return true;
    }
 
@@ -2208,7 +2154,6 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
 {
    struct record_video_data rotated;
    bool ok;
-   bool perf = ffmpeg_perf_enabled();
 
    if (handle->params.rotation && !vid->is_dupe && vid->data)
    {
@@ -2234,9 +2179,7 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
 
    if (!vid->is_dupe)
    {
-      performance_counter_start_plus(perf, ffmpeg_perf_scale);
       ffmpeg_scale_input(handle, vid);
-      performance_counter_stop_plus(perf, ffmpeg_perf_scale);
    }
 
    /* Leave a gap for dropped frames so A/V stays aligned. */
@@ -2260,9 +2203,7 @@ static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       }
    }
 
-   performance_counter_start_plus(perf, ffmpeg_perf_encode_video);
    ok = encode_video(handle, handle->video.conv_frame);
-   performance_counter_stop_plus(perf, ffmpeg_perf_encode_video);
    if (!ok)
       return false;
 
@@ -2628,21 +2569,13 @@ static bool ffmpeg_push_audio_thread(ffmpeg_t *handle,
    return true;
 }
 
-static void ffmpeg_flush_audio(ffmpeg_t *handle, void *audio_buf,
-      size_t audio_buf_size)
+static void ffmpeg_flush_audio(ffmpeg_t *handle)
 {
-   size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
-
-   if (avail)
+   if (     handle->audio.frames_in_buffer
+         && encode_audio(handle, false))
    {
-      struct record_audio_data aud = {0};
-
-      retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
-
-      aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
-      aud.data = audio_buf;
-
-      ffmpeg_push_audio_thread(handle, &aud, false);
+      handle->audio.frame_cnt       += handle->audio.frames_in_buffer;
+      handle->audio.frames_in_buffer = 0;
    }
 
    encode_audio(handle, true);
@@ -2704,6 +2637,22 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       }
    }while (did_work);
 
+   /* The real audio left in the queue was queued ahead of any silence
+    * still owed: it goes first, held in the encoder's frame until the
+    * silence completes it. */
+   if (handle->config.audio_enable && audio_buf)
+   {
+      size_t avail = retro_spsc_read_avail(&handle->audio_fifo);
+      if (avail)
+      {
+         struct record_audio_data aud = {0};
+         retro_spsc_read(&handle->audio_fifo, audio_buf, avail);
+         aud.frames = avail / (sizeof(int16_t) * handle->params.channels);
+         aud.data   = audio_buf;
+         ffmpeg_push_audio_thread(handle, &aud, true);
+      }
+   }
+
    /* Pay back silence still owed, so audio runs as long as video. */
    if (handle->config.audio_enable && audio_buf)
    {
@@ -2719,11 +2668,9 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       handle->audio_silence_pending = 0;
    }
 
-   /* Flush out last audio.  Skip on OOM - audio_buf is the
-    * destination for ffmpeg_flush_audio's internal fifo_read
-    * (via ffmpeg_push_audio_thread) and NULL would NULL-deref. */
+   /* Flush out last audio: a short final frame, then the encoder. */
    if (handle->config.audio_enable && audio_buf)
-      ffmpeg_flush_audio(handle, audio_buf, audio_buf_size);
+      ffmpeg_flush_audio(handle);
 
    /* Flush out last video. */
    encode_video(handle, NULL);
@@ -2763,12 +2710,11 @@ static void ffmpeg_thread(void *data)
    size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
-   bool perf             = ffmpeg_perf_enabled();
 
 #ifdef FFMPEG_HAVE_THREAD_NICE
    /* Also covers threads an encoder spawns lazily from here. */
    if (ff->allow_frame_drop)
-      ffmpeg_renice_tid((pid_t)syscall(SYS_gettid), ENCODER_NICE_DELTA);
+      ffmpeg_lower_this_thread();
 #endif
 
    while (retro_atomic_load_acquire_int(&ff->alive))
@@ -2819,9 +2765,7 @@ static void ffmpeg_thread(void *data)
          aud.frames = ff->audio.codec->frame_size;
          aud.data   = audio_buf;
 
-         performance_counter_start_plus(perf, ffmpeg_perf_encode_audio);
          ffmpeg_push_audio_thread(ff, &aud, true);
-         performance_counter_stop_plus(perf, ffmpeg_perf_encode_audio);
       }
    }
 

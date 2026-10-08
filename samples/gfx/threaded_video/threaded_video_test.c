@@ -41,6 +41,7 @@
 #include "../../../gfx/video_driver.h"
 #include "../../../gfx/gfx_instrument.h"
 #include "../../../gfx/video_thread_wrapper.h"
+#include "../../../record/record_driver.h"
 #include "../../../gfx/font_driver.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_setting.h"
@@ -6549,6 +6550,134 @@ static void readback_once(bool threaded)
    run_frames(4);
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: a GPU recording's frames keep the format it was opened for   */
+/*   A GPU recording opened unthreaded on a driver with the 32-bit    */
+/*   readback takes B,G,R,X frames. Threaded Video switched on during */
+/*   it puts the wrapper's readback in charge, which hands over BGR24 */
+/*   from a buffer of its own: those frames were pushed as 32-bit,    */
+/*   reading a third more than the wrapper's buffer holds and showing */
+/*   garbage. The recorder must get 32-bit rows of its own buffer     */
+/*   either way, every row of them readable.                          */
+/* ------------------------------------------------------------------ */
+
+static unsigned       reclane_pushes;
+static int            reclane_pitch;
+static const uint8_t *reclane_data;
+static unsigned       reclane_rows;
+static unsigned       reclane_sum;
+
+static bool reclane_push_video(void *data,
+      const struct record_video_data *v)
+{
+   unsigned y;
+   size_t   row;
+   (void)data;
+   if (v->is_dupe || !v->data)
+      return true;
+   reclane_pushes++;
+   reclane_pitch = v->pitch;
+   reclane_data  = (const uint8_t*)v->data;
+   /* Each row's last byte, as the encoder's copy reads every row */
+   row           = (size_t)(v->pitch < 0 ? -v->pitch : v->pitch);
+   for (y = 0; y < reclane_rows; y++)
+      reclane_sum += ((const uint8_t*)v->data)[(ptrdiff_t)y * v->pitch
+            + (ptrdiff_t)row - 1];
+   return true;
+}
+
+static bool reclane_push_audio(void *data,
+      const struct record_audio_data *a)
+{
+   (void)data;
+   (void)a;
+   return true;
+}
+
+static const record_driver_t reclane_driver = {
+   NULL, NULL, reclane_push_video, reclane_push_audio, NULL, "reclane"
+};
+
+static void record_format_once(bool threaded)
+{
+   struct video_viewport vp;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t    *rec_st   = recording_state_get_ptr();
+   const char *mode               = threaded ? "threaded" : "unthreaded";
+   recording_state_t saved;
+   uint8_t *saved_buf;
+   uint8_t *buf;
+   size_t   area;
+   unsigned i;
+
+   set_threaded_via_setting(threaded);
+   run_frames(4);
+   expect_wrapper(threaded, "record format lane");
+   /* Frames the core makes are recorded; the menu's dupes are not */
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   CHECK(!menu_is_up(), "record format lane (%s): menu still up", mode);
+   run_frames(2);
+   if (threaded)
+      video_thread_wait_idle();
+
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   area = VIDEO_SCALE_AREA(vp.dims);
+   CHECK(area > 0, "record format lane (%s): no viewport", mode);
+   if (!area || !(buf = (uint8_t*)malloc(area * 4)))
+      return;
+
+   /* A recording opened for 32-bit frames, as on this driver unthreaded */
+   saved                     = *rec_st;
+   saved_buf                 = video_st->record_gpu_buffer;
+   reclane_pushes            = 0;
+   reclane_rows              = VIDEO_SCALE_H(vp.dims);
+   rec_st->driver            = &reclane_driver;
+   rec_st->gpu_dims          = vp.dims;
+   rec_st->gpu_bgrx          = true;
+   rec_st->enable            = true;
+   video_st->record_gpu_buffer = buf;
+   rec_st->data              = (void*)&reclane_driver;
+
+   /* The wrapper's readback starts a few frames behind */
+   for (i = 0; i < 32 && !reclane_pushes; i++)
+      run_frames(1);
+
+   rec_st->data              = NULL;
+   if (threaded)
+      video_thread_wait_idle();
+   *rec_st                   = saved;
+   video_st->record_gpu_buffer = saved_buf;
+
+   CHECK(reclane_pushes > 0, "record format lane (%s): no frame recorded",
+         mode);
+   if (reclane_pushes)
+   {
+      CHECK(reclane_pitch == (int)VIDEO_SCALE_W(vp.dims) * 4
+            || reclane_pitch == -(int)VIDEO_SCALE_W(vp.dims) * 4,
+            "record format lane (%s): rows of %d bytes for a %u wide "
+            "32-bit recording", mode, reclane_pitch, VIDEO_SCALE_W(vp.dims));
+      CHECK(reclane_data >= buf && reclane_data < buf + area * 4,
+            "record format lane (%s): the frame is not in the recording's "
+            "own buffer", mode);
+   }
+   free(buf);
+}
+
+static void lane_record_format(void)
+{
+   unsigned had = failures;
+
+   record_format_once(false);
+   record_format_once(true);
+   set_threaded_via_setting(false);
+   run_frames(2);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] gpu record format lane\n");
+}
+
 static void lane_gpu_readback(void)
 {
    unsigned had = failures;
@@ -7241,6 +7370,8 @@ int main(int argc, char *argv[])
       lane_x11_wsi_connection();
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
       lane_gpu_readback();
+   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+      lane_record_format();
    if (real_driver())
       lane_x11_grabbed_mouse();
    if (     real_driver()

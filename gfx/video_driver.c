@@ -1839,6 +1839,24 @@ void video_driver_gpu_record_deinit(void)
 /* Main thread GPU readback while recording, for perfcnt_enable. */
 static struct retro_perf_counter record_perf_readback = {0};
 
+/* BGR24 pixels to B,G,R,X. @dst may be @src: walked from the end, each
+ * pixel is read before anything is written over it. */
+VIDEO_NOINLINE static void recording_bgr24_to_bgrx(uint8_t *dst,
+      const uint8_t *src, size_t area)
+{
+   size_t i = area;
+   while (i--)
+   {
+      uint8_t b      = src[3 * i + 0];
+      uint8_t g      = src[3 * i + 1];
+      uint8_t r      = src[3 * i + 2];
+      dst[4 * i + 0] = b;
+      dst[4 * i + 1] = g;
+      dst[4 * i + 2] = r;
+      dst[4 * i + 3] = 0xff;
+   }
+}
+
 static void recording_dump_frame(
       const void *data, unsigned dims, size_t pitch, bool is_idle)
 {
@@ -1868,6 +1886,15 @@ static void recording_dump_frame(
          ffemu_data.is_dupe = true;
          record_st->driver->push_video(record_st->data, &ffemu_data);
          return;
+      }
+      /* The wrapper reads back BGR24 on its own thread; a recording
+       * opened for 32-bit frames (threaded video switched on since)
+       * has it widened into the buffer sized for those. */
+      if (taken == 1 && record_st->gpu_bgrx)
+      {
+         recording_bgr24_to_bgrx(video_st->record_gpu_buffer, gpu_frame,
+               VIDEO_SCALE_AREA(record_st->gpu_dims));
+         gpu_frame = video_st->record_gpu_buffer;
       }
       if (taken == -2)
 #endif
@@ -1910,14 +1937,21 @@ static void recording_dump_frame(
           * it might take 3-4 times before this returns true. */
          performance_counter_init(record_perf_readback, "record_readback");
          performance_counter_start_plus(perf, record_perf_readback);
-         if (record_st->gpu_bgrx)
-            ok = vid->read_viewport_bgrx
-               && vid->read_viewport_bgrx(video_st->data,
-                     video_st->record_gpu_buffer, is_idle, &bottom_up);
+         if (record_st->gpu_bgrx && vid->read_viewport_bgrx)
+            ok = vid->read_viewport_bgrx(video_st->data,
+                  video_st->record_gpu_buffer, is_idle, &bottom_up);
          else
+         {
+            /* BGR24, as the driver now up reads it back: widened when
+             * the recording was opened for 32-bit frames. */
             ok = vid->read_viewport
                && vid->read_viewport(
                      video_st->data, video_st->record_gpu_buffer, is_idle);
+            if (ok && record_st->gpu_bgrx)
+               recording_bgr24_to_bgrx(video_st->record_gpu_buffer,
+                     video_st->record_gpu_buffer,
+                     VIDEO_SCALE_AREA(record_st->gpu_dims));
+         }
          performance_counter_stop_plus(perf, record_perf_readback);
          if (!ok)
             return;

@@ -22,9 +22,15 @@ void RARCH_ERR(const char *fmt, ...)
    va_end(ap);
 }
 
+/* What the frontend was told, counted: drop mode must say nothing
+ * while it records. */
+unsigned stub_warn_calls = 0;
+unsigned stub_msg_calls  = 0;
+
 void RARCH_WARN(const char *fmt, ...)
 {
    va_list ap;
+   stub_warn_calls++;
    va_start(ap, fmt);
    vfprintf(stderr, fmt, ap);
    va_end(ap);
@@ -35,6 +41,7 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       char *title, enum message_queue_icon icon,
       enum message_queue_category category)
 {
+   stub_msg_calls++;
 }
 
 void RARCH_DBG(const char *fmt, ...)

@@ -4,6 +4,8 @@
 #include <boolean.h>
 #include <retro_miscellaneous.h>
 
+#include <retro_inline.h>
+
 #include "../gfx/video_defines.h"   /* VIDEO_SCALE_PACK */
 
 enum ffemu_pix_format
@@ -72,6 +74,10 @@ struct record_params
    unsigned streaming_mode;
    /* Video queue depth in frames (driver clamps/defaults out-of-range). */
    unsigned video_fifo_frames;
+   /* Quarter turns counter-clockwise to rotate incoming frames by.
+    * out_dims and aspect_ratio describe the rotated output, fb_dims
+    * the incoming frames. */
+   unsigned rotation;
 
    /* Aspect ratio of input video. Parameters are passed to the muxer,
     * the video itself is not scaled.
@@ -88,10 +94,6 @@ struct record_params
    bool allow_frame_drop;
    /* Prefer a hardware H.264 encoder for the built-in presets. */
    bool hw_encoder;
-   /* Quarter turns counter-clockwise to rotate incoming frames by.
-    * out_dims and aspect_ratio describe the rotated output, fb_dims
-    * the incoming frames. */
-   unsigned rotation;
 };
 
 struct record_video_data
@@ -121,6 +123,23 @@ typedef struct record_driver
    const char *ident;
 } record_driver_t;
 
+
+/* A raw recording's output size and display aspect when the display
+ * shows the core's frames turned @rotation quarter turns. @out_dims
+ * holds the core's size, turned here, unless it is --size's
+ * (@user_dims), which is kept as given. @display_aspect is the
+ * viewport's, which is already the turned picture's; 0 lets the
+ * output size decide. */
+static INLINE void record_raw_geometry(unsigned *out_dims, float *aspect,
+      unsigned rotation, float display_aspect, bool user_dims)
+{
+   if ((rotation & 1) && !user_dims)
+      *out_dims = VIDEO_SCALE_PACK(VIDEO_SCALE_H(*out_dims),
+            VIDEO_SCALE_W(*out_dims));
+   *aspect      = (display_aspect > 0.0f)
+      ? display_aspect
+      : (float)VIDEO_SCALE_W(*out_dims) / VIDEO_SCALE_H(*out_dims);
+}
 
 struct recording
 {
