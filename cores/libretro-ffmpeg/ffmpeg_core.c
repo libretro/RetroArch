@@ -625,9 +625,6 @@ static retro_input_state_t CORE_PREFIX(input_state_cb);
 #define FFMPEG3 ((LIBAVUTIL_VERSION_INT < AV_VERSION_INT(56, 6, 100)) || \
       (LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)))
 #endif
-#ifndef FFMPEG8
-#define FFMPEG8 (LIBAVCODEC_VERSION_MAJOR >= 62)
-#endif
 
 #define MAX_STREAMS 8
 /* Sentinel return value indicating no frame available (EAGAIN/EOF) */
@@ -3156,7 +3153,7 @@ exit:
          decoder_pix_fmt = AV_PIX_FMT_NONE;
       }
       else
-         ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+         ctx->hw_device_ctx = hw_device_ctx; /* the context owns it */
    }
 
    return decoder_pix_fmt;
@@ -4532,32 +4529,18 @@ void CORE_PREFIX(retro_unload_game)(void)
    g_ctx.decoded_frame_cnt = 0;
    AUDIO_FRAMES_STR = 0;
 
+   /* Freed, not only closed: avcodec_close() leaves the context
+    * allocated. */
    for (i = 0; i < MAX_STREAMS; i++)
    {
-#if FFMPEG8
       if (SCTX_STR[i])
          avcodec_free_context(&SCTX_STR[i]);
       if (ACTX_STR[i])
          avcodec_free_context(&ACTX_STR[i]);
-#else
-      if (SCTX_STR[i])
-         avcodec_close(SCTX_STR[i]);
-      if (ACTX_STR[i])
-         avcodec_close(ACTX_STR[i]);
-#endif
-      SCTX_STR[i] = NULL;
-      ACTX_STR[i] = NULL;
    }
 
    if (VCTX_STR)
-   {
-#if FFMPEG8
       avcodec_free_context(&VCTX_STR);
-#else
-      avcodec_close(VCTX_STR);
-#endif
-      VCTX_STR = NULL;
-   }
 
    if (FCTX_STR)
    {
