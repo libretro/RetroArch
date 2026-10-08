@@ -90,6 +90,10 @@ typedef struct gfx_ctx_drm_data
    bool waiting_for_flip;
    bool leased;
    bool lease_lost;
+   bool async_flip;
+   bool async_flip_refused;
+   /* The vsync setting, latched where the main thread waits */
+   bool video_vsync;
    /* The GPUs the GL GPU index chooses from, as published to the menu */
    struct string_list *gl_gpu_list;
    /* HDR10: what the sink takes, and the connector properties changed
@@ -559,6 +563,7 @@ static void gfx_ctx_drm_swap_interval(void *data, int interval)
 {
    gfx_ctx_drm_data_t *drm = (gfx_ctx_drm_data_t*)data;
    drm->interval           = interval;
+   drm->video_vsync        = config_get_ptr()->bools.video_vsync;
 
    if (interval > 1)
       RARCH_WARN("[KMS] Swap intervals > 1 currently not supported. Will use swap interval of 1.\n");
@@ -669,6 +674,26 @@ static bool gfx_ctx_drm_queue_flip(gfx_ctx_drm_data_t *drm)
          return false;
       }
       switch_mode = false;
+   }
+
+   /* Vsync off tears, while fast-forward with vsync on drops frames
+    * as Vulkan's MAILBOX does; a refused async flip (a format or
+    * layout change, as around a mode switch) waits for vblank this
+    * once */
+   if (     drm->interval == 0
+         && drm->async_flip
+         && !drm->video_vsync)
+   {
+      if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
+            DRM_MODE_PAGE_FLIP_EVENT | DRM_MODE_PAGE_FLIP_ASYNC,
+            &drm->waiting_for_flip) == 0)
+         return true;
+
+      if (!drm->async_flip_refused)
+      {
+         drm->async_flip_refused = true;
+         RARCH_WARN("[KMS] Async page flip refused: %s.\n", strerror(errno));
+      }
    }
 
    if (drmModePageFlip(g_drm_fd, g_crtc_id, fb->fb_id,
@@ -1147,6 +1172,12 @@ have_device:
    g_drm_evctx.page_flip_handler  = drm_flip_handler;
 
    g_drm_fd                       = fd;
+
+   {
+      uint64_t cap                = 0;
+      drm->async_flip             = drmGetCap(fd,
+            DRM_CAP_ASYNC_PAGE_FLIP, &cap) == 0 && cap;
+   }
 
    video_driver_display_type_set(RARCH_DISPLAY_KMS);
 

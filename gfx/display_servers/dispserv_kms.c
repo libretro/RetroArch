@@ -17,6 +17,7 @@
 
 #include <math.h>
 #include <string.h>
+#include <time.h>
 
 #include <compat/strl.h>
 
@@ -422,6 +423,106 @@ static void kms_display_server_get_video_output_size(void *data,
       *dims = VIDEO_SCALE_PACK(g_drm_mode->hdisplay, g_drm_mode->vdisplay);
 }
 
+/* A mode the beam can be worked out for: progressive, with timings */
+static bool kms_display_server_mode_timed(void)
+{
+   return g_drm_mode
+         && g_drm_mode->clock
+         && g_drm_mode->htotal
+         && g_drm_mode->vtotal
+         && !(g_drm_mode->flags
+            & (DRM_MODE_FLAG_INTERLACE | DRM_MODE_FLAG_DBLSCAN));
+}
+
+/* The ioctl behind drmCrtcGetSequence(), which needs libdrm 2.4.89 */
+static bool kms_display_server_line0_ns(int fd, uint32_t crtc_id,
+      uint64_t *line0_ns)
+{
+#ifdef DRM_IOCTL_CRTC_GET_SEQUENCE
+   struct drm_crtc_get_sequence get_seq;
+
+   memset(&get_seq, 0, sizeof(get_seq));
+   get_seq.crtc_id = crtc_id;
+   if (drmIoctl(fd, DRM_IOCTL_CRTC_GET_SEQUENCE, &get_seq) != 0)
+      return false;
+   /* The kernel reports 0 as "no valid timestamp" */
+   if (get_seq.sequence_ns <= 0)
+      return false;
+   *line0_ns = (uint64_t)get_seq.sequence_ns;
+   return true;
+#else
+   return false;
+#endif
+}
+
+/* A compositor can leave VRR on, and blanking then outlasts the mode */
+static bool kms_vrr;
+
+static bool kms_display_server_crtc_vrr(int fd, uint32_t crtc_id)
+{
+   uint32_t i;
+   bool vrr                       = false;
+   drmModeObjectProperties *props = drmModeObjectGetProperties(fd,
+         crtc_id, DRM_MODE_OBJECT_CRTC);
+
+   if (!props)
+      return false;
+   for (i = 0; i < props->count_props && !vrr; i++)
+   {
+      drmModePropertyRes *prop = drmModeGetProperty(fd, props->props[i]);
+      if (!prop)
+         continue;
+      if (!strcmp(prop->name, "VRR_ENABLED"))
+         vrr = props->prop_values[i] != 0;
+      drmModeFreeProperty(prop);
+   }
+   drmModeFreeObjectProperties(props);
+   return vrr;
+}
+
+static bool kms_display_server_get_metrics(void *data,
+      enum display_metric_types type, float *value)
+{
+   bool vrr;
+
+   if (     type != DISPLAY_METRIC_TOTAL_LINES
+         || !kms_display_server_mode_timed())
+      return false;
+   /* Read with the line count, outside Scanline Sync's wait */
+   vrr = g_crtc_id && kms_display_server_crtc_vrr(g_drm_fd, g_crtc_id);
+   if (vrr && !kms_vrr)
+      RARCH_LOG("[KMS] Variable refresh is on for CRTC %u, so Scanline Sync stays off.\n",
+            g_crtc_id);
+   kms_vrr = vrr;
+   *value  = (float)g_drm_mode->vtotal;
+   return true;
+}
+
+/* DRM stamps a vblank with the time line 0 of the next frame starts,
+ * so during blanking the stamp is still ahead of the clock. Drivers
+ * without high-precision timestamps stamp at the interrupt instead,
+ * and every line then reads about a blanking interval ahead. */
+static int kms_display_server_get_scanline(void *data)
+{
+   struct timespec now;
+   uint64_t line0_ns;
+   uint64_t now_ns;
+   uint64_t frame_ns;
+
+   if (!g_crtc_id || !kms_display_server_mode_timed() || kms_vrr)
+      return -1;
+   if (!kms_display_server_line0_ns(g_drm_fd, g_crtc_id, &line0_ns))
+      return -1;
+   if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+      return -1;
+
+   now_ns   = (uint64_t)now.tv_sec * 1000000000 + (uint64_t)now.tv_nsec;
+   frame_ns = (uint64_t)g_drm_mode->htotal * g_drm_mode->vtotal
+         * 1000000 / g_drm_mode->clock;
+   return video_display_server_scanline_from_time(
+         (int64_t)(now_ns - line0_ns), frame_ns, g_drm_mode->vtotal);
+}
+
 const video_display_server_t dispserv_kms = {
    kms_display_server_init,
    kms_display_server_destroy,
@@ -437,9 +538,9 @@ const video_display_server_t dispserv_kms = {
    kms_display_server_get_video_output_size,
    NULL, /* get_video_output_prev */
    NULL, /* get_video_output_next */
-   NULL, /* get_metrics */
+   kms_display_server_get_metrics,
    kms_display_server_get_flags,
-   NULL, /* get_scanline */
+   kms_display_server_get_scanline,
    NULL, /* wait_vblank */
    kms_display_server_modeline_list_outputs,
    kms_display_server_modeline_open,
