@@ -11713,7 +11713,7 @@ static bool vulkan_frame(void *data, const void *frame,
          vk->flags &= ~VK_FLAG_READBACK_PENDING;
       }
 #ifdef HAVE_OPENXR
-      if (vk->flags & VK_FLAG_OPEN_XR)
+      else if (vk->flags & VK_FLAG_OPEN_XR)
       {
          /* OpenXR owns presentation of its swapchain images.
           * Do not transition them to PRESENT_SRC_KHR. */
