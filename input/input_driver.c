@@ -4641,6 +4641,19 @@ INPUT_NOINLINE static void input_remap_kept_make(void)
    input_remap_kept.valid       = (input_config_binds_generation() == gen);
 }
 
+/* A poll made with no frame of the core to follow it. The devices are
+ * read as at any poll; what goes by the core's frames - a macro - is
+ * told, and stands still. Whoever polls when the core is not about to
+ * run calls this with the poll to make. */
+static bool input_poll_no_frame;
+
+void input_driver_poll_between_frames(void (*poll)(void))
+{
+   input_poll_no_frame = true;
+   poll();
+   input_poll_no_frame = false;
+}
+
 /* A macro stops for a user: nothing more is pressed for them. */
 static void input_macro_stop(unsigned user)
 {
@@ -4660,6 +4673,15 @@ bool input_macro_start(unsigned number, unsigned user)
     * played. Not started. */
    if (!config_get_ptr()->bools.input_remap_binds_enable)
       return false;
+#ifdef HAVE_NETWORKING
+   /* Nor with netplay on. Hosting with nobody connected, a macro
+    * started was never given to the core: netplay takes the player's
+    * input for itself, and not at the poll a step is taken at. Until
+    * it is known what a macro should be in a netplay game, it is not
+    * one. */
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+      return false;
+#endif
    for (m = 0; m < input_macros.count; m++)
       if (input_macros.macro[m].number == number)
          break;
@@ -4695,11 +4717,13 @@ INPUT_NOINLINE static unsigned input_macro_frame(unsigned user)
       return 0;
    }
    st = &input_macros.pool[input_macros.macro[m].first + step];
-   /* Input is polled with the core paused or idle, too, for the
-    * hotkeys: the core runs no frame then, and the macro stands where
-    * it is. (A frame stepped while paused is run with the pause taken
-    * off for it, and counts.) */
-   if (runloop_get_flags() & (RUNLOOP_FLAG_PAUSED | RUNLOOP_FLAG_IDLE))
+   /* Input is polled with no frame of the core to follow, too - the
+    * core paused or idle, a load or a netplay stall - for the hotkeys:
+    * the macro stands where it is (input_driver_poll_between_frames()).
+    * A frame stepped while paused is a frame, and counts; so does each
+    * frame shown under run-ahead, once, however many the core runs
+    * behind it, since those are run without a poll. */
+   if (input_poll_no_frame)
       return st->buttons;
    if (++input_macros.run[user].done >= st->frames)
    {

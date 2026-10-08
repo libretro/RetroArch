@@ -5808,6 +5808,256 @@ static void lane_macros(void)
 #endif
 }
 
+/* A macro under what changes how frames and input go: a frame stepped
+ * while paused, run-ahead, a replay recorded and played back, and
+ * netplay. In each the core must be given the macro as it is written -
+ * the same presses for the same numbers of its frames, in order -
+ * whenever it starts. What the core is given is taken frame by frame
+ * and put as runs: "A3 AB2 -2 B4" for "a 3, a+b 2, - 2, b 4". */
+#define MM_SAID "A3 AB2 -2 B4"
+
+static void mm_runs(const unsigned *seen, unsigned n, char *out, size_t len)
+{
+   enum { A = RETRO_DEVICE_ID_JOYPAD_A, B = RETRO_DEVICE_ID_JOYPAD_B };
+   unsigned first = 0, last = n, i, run = 0;
+   size_t   at    = 0;
+   out[0] = '\0';
+   while (first < n && !(seen[first] & ((1u << A) | (1u << B))))
+      first++;
+   while (last > first && !(seen[last - 1] & ((1u << A) | (1u << B))))
+      last--;
+   for (i = first; i < last; i++)
+   {
+      unsigned v = seen[i] & ((1u << A) | (1u << B));
+      run++;
+      if (i + 1 == last || (seen[i + 1] & ((1u << A) | (1u << B))) != v)
+      {
+         at += (size_t)snprintf(out + at, at < len ? len - at : 0, "%s%s%u",
+               at ? " " : "",
+               v == ((1u << A) | (1u << B)) ? "AB" : v == (1u << A) ? "A" : v ? "B" : "-",
+               run);
+         run = 0;
+      }
+   }
+}
+
+static void lane_macro_modes(void)
+{
+#ifdef HAVE_MENU
+   enum { FRAMES = 40 };
+   input_driver_state_t *input_st  = input_state_get_ptr();
+   settings_t *settings            = config_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   input_driver_t *saved_input     = input_st->current_driver;
+   static input_driver_t mm_input;
+   void (*trace)(int, int);
+   void (*trace_last)(unsigned*, int*);
+   void    *core;
+   unsigned had = failures;
+   unsigned seen[FRAMES + 40];
+   unsigned f;
+   int      axes[4];
+   char     got[160], why[320];
+   /* which of its parts are run: all of them, unless MM_PARTS says
+    * (1 stepped frames, 2 run-ahead, 4 the replay, 8 netplay) - for
+    * finding which one a later lane's failure follows */
+   unsigned mm_parts = getenv("MM_PARTS") ? (unsigned)atoi(getenv("MM_PARTS")) : 15;
+
+   if (   !(core = dlopen(core_path_g, RTLD_NOW))
+       || !(trace = (void (*)(int, int))dlsym(core, "harness_core_trace"))
+       || !(trace_last = (void (*)(unsigned*, int*))dlsym(core, "harness_core_trace_last"))
+       || !joypad_real || !saved_input)
+   {
+      CHECK(false, "macro modes: the harness core's trace entry points or the drivers");
+      return;
+   }
+   input_macros_clear();
+   input_entries_clear();
+   CHECK(input_macro_add(1, "a 3, a+b 2, - 2, b 4"), "macro modes: the macro is not read");
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   input_driver_set_snapshot_bridge(true);
+   syn_hat = 0;
+   syn_buttons = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   trace(1, 0);
+   run_loop_frames(5);
+
+#define MM_PLAY(n) do { \
+      for (f = 0; f < (n); f++) \
+      { \
+         runloop_iterate(); \
+         task_queue_check(); \
+         trace_last(&seen[f], axes); \
+      } \
+   } while (0)
+
+   /* --- as it is, to begin with --- */
+   input_macro_start(1, 0);
+   MM_PLAY(FRAMES);
+   mm_runs(seen, FRAMES, got, sizeof(got));
+   snprintf(why, sizeof(why), "macro modes: with nothing else going on the core was given \"%s\", not \"" MM_SAID "\"", got);
+   CHECK(!strcmp(got, MM_SAID), why);
+
+   /* --- a frame stepped while paused is a frame --- */
+   if (mm_parts & 1)
+   {
+      unsigned n = 0;
+      unsigned tries = 0;
+      long     r0;
+      mm_input                 = *saved_input;
+      mm_input.keys_down       = os_keys_down;
+      input_st->current_driver = &mm_input;
+      CHECK(input_entry_add(1, "key_g : frame_advance"), "macro modes: an entry for frame advance is not read");
+      os_g_down = false;
+      input_macro_start(1, 0);
+      MM_PLAY(1);
+      n = 1;
+      command_event(CMD_EVENT_PAUSE, NULL);
+      run_loop_frames(20);
+      r0 = pm_runs();
+      /* eleven frames are left of it: stepped one at a time, and then some */
+      while (n < 20 && pm_runs() - r0 < 16 && tries++ < 60)
+      {
+         long before = pm_runs();
+         os_g_down = true;
+         runloop_iterate();
+         task_queue_check();
+         os_g_down = false;
+         run_loop_frames(3);
+         if (pm_runs() != before)
+            trace_last(&seen[n++], axes);
+      }
+      mm_runs(seen, n, got, sizeof(got));
+      snprintf(why, sizeof(why), "macro modes: stepped a frame at a time while paused (%ld frames), the core was given \"%s\", not \"" MM_SAID "\"",
+            pm_runs() - r0, got);
+      CHECK(!strcmp(got, MM_SAID), why);
+      CHECK(!input_macro_playing(0), "macro modes: stepped to its end, a macro is still playing");
+      /* Out of the pause by the pause hotkey, as someone stepping
+       * frames gets out of it: frame advance puts the run loop in a
+       * pause of its own kind that only that hotkey ends, and left in
+       * it the lanes after this one are not given their key events. */
+      input_entries_clear();
+      CHECK(input_entry_add(1, "key_g : pause_toggle"), "macro modes: an entry for the pause hotkey is not read");
+      os_g_down = true;
+      run_loop_frames(2);
+      os_g_down = false;
+      run_loop_frames(4);
+      if (runloop_get_flags() & RUNLOOP_FLAG_PAUSED)
+      {
+         CHECK(false, "macro modes: the pause hotkey did not end the pause after stepping");
+         command_event(CMD_EVENT_UNPAUSE, NULL);
+      }
+      input_entries_clear();
+      input_st->current_driver = saved_input;
+      run_loop_frames(5);
+   }
+
+   /* --- run-ahead: a frame shown is a frame, however many are run behind it --- */
+   if (mm_parts & 2)
+   {
+      bool     saved_on     = settings->bools.run_ahead_enabled;
+      bool     saved_second = settings->bools.run_ahead_secondary_instance;
+      bool     saved_hide   = settings->bools.run_ahead_hide_warnings;
+      unsigned saved_frames = settings->uints.run_ahead_frames;
+      long     r0, ran;
+      runahead_clear_variables(runloop_state_get_ptr());
+      settings->bools.run_ahead_enabled            = true;
+      settings->bools.run_ahead_secondary_instance = false;
+      settings->bools.run_ahead_hide_warnings      = true;
+      settings->uints.run_ahead_frames             = 2;
+      run_loop_frames(10);
+      r0 = pm_runs();
+      input_macro_start(1, 0);
+      MM_PLAY(FRAMES);
+      ran = pm_runs() - r0;
+      mm_runs(seen, FRAMES, got, sizeof(got));
+      snprintf(why, sizeof(why), "macro modes: under run-ahead of two frames (the core ran %ld times for %d shown) the core was given \"%s\", not \"" MM_SAID "\"",
+            ran, (int)FRAMES, got);
+      CHECK(!strcmp(got, MM_SAID), why);
+      printf("[info] macro modes, run-ahead: the core ran %ld times for %d frames shown\n", ran, (int)FRAMES);
+      CHECK(ran > FRAMES, "macro modes: run-ahead was not running the core more than once a frame");
+      settings->bools.run_ahead_enabled            = saved_on;
+      settings->bools.run_ahead_secondary_instance = saved_second;
+      settings->bools.run_ahead_hide_warnings      = saved_hide;
+      settings->uints.run_ahead_frames             = saved_frames;
+      run_loop_frames(10);
+   }
+
+#ifdef HAVE_BSV_MOVIE
+   /* --- a replay: recorded with the macro playing, played back with
+    * nothing started, the core is given the macro again --- */
+   if (mm_parts & 4)
+   {
+      char path[512];
+      snprintf(path, sizeof(path), "%s/macro_modes.replay", harness_dir_g);
+      CHECK(movie_start_record(input_st, path), "macro modes: recording did not start");
+      run_loop_frames(10);
+      CHECK(BSV_MOVIE_IS_RECORDING(), "macro modes: not recording");
+      input_macro_start(1, 0);
+      MM_PLAY(FRAMES);
+      mm_runs(seen, FRAMES, got, sizeof(got));
+      snprintf(why, sizeof(why), "macro modes: while a replay was recorded the core was given \"%s\", not \"" MM_SAID "\"", got);
+      CHECK(!strcmp(got, MM_SAID), why);
+      run_loop_frames(5);
+      movie_stop(input_st);
+      run_loop_frames(10);
+
+      /* played for fewer frames than were recorded (ten, the forty and
+       * five): a replay that runs out ends itself, and leaves the core
+       * as this lane must not leave it for the next */
+      CHECK(movie_start_playback(input_st, path), "macro modes: playback did not start");
+      MM_PLAY(FRAMES + 8);
+      movie_stop(input_st);
+      run_loop_frames(10);
+      mm_runs(seen, FRAMES + 8, got, sizeof(got));
+      snprintf(why, sizeof(why), "macro modes: the replay played back gave the core \"%s\", not \"" MM_SAID "\"", got);
+      CHECK(!strcmp(got, MM_SAID), why);
+      CHECK(!input_macro_playing(0), "macro modes: playing a replay back started a macro");
+   }
+#endif
+
+#ifdef HAVE_NETWORKING
+   /* --- netplay: a macro is not started. (Hosting with nobody
+    * connected, one that was started was never given to the core.) --- */
+   if (mm_parts & 8)
+   {
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_ENABLE_SERVER, NULL);
+   if (netplay_driver_ctl(RARCH_NETPLAY_CTL_IS_ENABLED, NULL))
+   {
+      CHECK(!input_macro_start(1, 0) && !input_macro_playing(0),
+            "macro modes: a macro was started with netplay on");
+   }
+   else
+      printf("[skip] macro modes, netplay: could not be turned on here\n");
+   netplay_driver_ctl(RARCH_NETPLAY_CTL_DISABLE, NULL);
+   CHECK(input_macro_start(1, 0), "macro modes: with netplay off again a macro does not start");
+   MM_PLAY(FRAMES);
+   }
+#endif
+#undef MM_PLAY
+
+   input_entries_clear();
+   input_macros_clear();
+   syn_buttons              = 0;
+   trace(0, 0);
+   input_driver_set_snapshot_bridge(false);
+   input_st->primary_joypad = joypad_real;
+   input_st->current_driver = saved_input;
+   run_loop_frames(5);
+
+   if (failures == had)
+      printf("[pass] macro modes: the core is given a macro as it is written when"
+            " frames are stepped while paused, under run-ahead, while a replay is"
+            " recorded and when it is played back; with netplay on one is not"
+            " started\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -7143,6 +7393,7 @@ int main(int argc, char *argv[])
       lane_binds_shared_rows();
       lane_entries();
       lane_macros();
+      lane_macro_modes();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();

@@ -2292,6 +2292,10 @@ bool input_macro_add(unsigned number, const char *spec);
 bool input_macro_start(unsigned number, unsigned user);
 bool input_macro_playing(unsigned user);
 
+/* A poll made with no frame of the core to follow it: @poll is called,
+ * and what goes by the core's frames stands still for it. */
+void input_driver_poll_between_frames(void (*poll)(void));
+
 /* One of a user's controls is remapped to @remap. A remap is set
  * through here and not written into the settings directly: it is
  * counted as a change, which is what has the frontend look at the

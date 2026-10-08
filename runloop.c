@@ -7885,7 +7885,7 @@ static enum runloop_state_enum runloop_check_state(
       menu_st->input_time_us        = input_poll_time_us;
       input_poll_time_us            = current_time;
 
-      cbs->poll_cb();
+      input_driver_poll_between_frames(cbs->poll_cb);
 
       bits_clear_bits(trigger_input.data, old_input.data,
             ARRAY_SIZE(trigger_input.data));
@@ -8336,7 +8336,7 @@ static enum runloop_state_enum runloop_check_state(
    {
       if (runloop_st->flags & RUNLOOP_FLAG_IDLE)
       {
-         cbs->poll_cb();
+         input_driver_poll_between_frames(cbs->poll_cb);
          return RUNLOOP_STATE_POLLED_AND_SLEEP;
       }
    }
@@ -8446,7 +8446,7 @@ static enum runloop_state_enum runloop_check_state(
                && old_rewind_pressed
                && !runloop_st->run_frames_and_pause)
          {
-            cbs->poll_cb();
+            input_driver_poll_between_frames(cbs->poll_cb);
             return RUNLOOP_STATE_PAUSE;
          }
 
@@ -8499,7 +8499,7 @@ static enum runloop_state_enum runloop_check_state(
 #endif
             )
          {
-            cbs->poll_cb();
+            input_driver_poll_between_frames(cbs->poll_cb);
             /* Run a few frames on first press after pausing to
              * prevent going forwards for the first frame */
             if (runloop_st->run_frames_and_pause == -1)
@@ -8668,7 +8668,7 @@ static enum runloop_state_enum runloop_check_state(
 
    if (!focused && !runloop_paused)
    {
-      cbs->poll_cb();
+      input_driver_poll_between_frames(cbs->poll_cb);
       return RUNLOOP_STATE_POLLED_AND_SLEEP;
    }
 
@@ -9150,7 +9150,7 @@ static enum runloop_state_enum runloop_check_state(
 
    if (runloop_paused)
    {
-      cbs->poll_cb();
+      input_driver_poll_between_frames(cbs->poll_cb);
       return RUNLOOP_STATE_PAUSE;
    }
 #if HAVE_MENU
@@ -9565,7 +9565,7 @@ int runloop_iterate(void)
           * paused frame does. */
          if (runloop_st->content_switching)
          {
-            input_driver_poll();
+            input_driver_poll_between_frames(input_driver_poll);
             video_driver_cached_frame();
             goto end;
          }
@@ -10497,7 +10497,7 @@ void core_run(void)
     * reads as a hang. */
    if (runloop_st->content_closing || runloop_st->content_switching)
    {
-      input_driver_poll();
+      input_driver_poll_between_frames(input_driver_poll);
       video_driver_cached_frame();
       return;
    }
@@ -10510,7 +10510,7 @@ void core_run(void)
    {
       /* Paused due to netplay. We must poll and display something so that a
        * netplay peer pausing doesn't just hang. */
-      input_driver_poll();
+      input_driver_poll_between_frames(input_driver_poll);
       video_driver_cached_frame();
       return;
    }
