@@ -315,8 +315,6 @@ struct ff_video_attr
  * out, so this only bounds a wake that never comes. */
 #define FFMPEG_PUSH_WAIT_US 100000
 
-AVFormatContext *ctx;
-
 /* Returns the encoder's list of supported sample formats, terminated by
  * AV_SAMPLE_FMT_NONE, or NULL if the encoder does not restrict sample
  * formats (or the list could not be queried). */
@@ -1231,6 +1229,7 @@ static bool ffmpeg_init_config(struct ff_config_param *params,
 
 static bool ffmpeg_init_muxer_pre(ffmpeg_t *handle)
 {
+   AVFormatContext *ctx;
 #if !FFMPEG3
    size_t _len;
 #endif
@@ -1594,6 +1593,11 @@ static void ffmpeg_free(void *data)
    /* The muxer context owns its streams, their codec parameters, its
     * metadata and its url; releasing just the struct left the rest
     * behind on every session. */
+   if (     handle->muxer.ctx
+         && handle->muxer.ctx->pb
+         && !(handle->muxer.ctx->oformat
+            && (handle->muxer.ctx->oformat->flags & AVFMT_NOFILE)))
+      avio_closep(&handle->muxer.ctx->pb); /* failed before finalize */
    avformat_free_context(handle->muxer.ctx);
    av_packet_free(&handle->pkt);
 
@@ -2744,7 +2748,7 @@ static bool ffmpeg_finalize(void *data)
    /* Write final data. */
    av_write_trailer(handle->muxer.ctx);
 
-   avio_close(ctx->pb);
+   avio_closep(&handle->muxer.ctx->pb);
 
    return true;
 }
