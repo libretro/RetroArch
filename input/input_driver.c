@@ -9019,10 +9019,10 @@ void input_config_bind_from_def(struct retro_keybind *bind,
          def->mbutton, RETRO_KEYBIND_DEF_VALID(def));
 }
 
-void input_config_reset(void)
+/* The configured binds, every user's, as their defaults. */
+void input_config_reset_binds(void)
 {
    unsigned i;
-   input_driver_state_t *input_st = &input_driver_st;
 
    input_config_binds_changed();
    for (i = 0; i < MAX_USERS; i++)
@@ -9032,6 +9032,17 @@ void input_config_reset(void)
          input_config_bind_from_def(&input_config_binds[i][j],
                input_config_bind_def(i, j));
    }
+}
+
+/* Every connected controller is forgotten: its names and numbers, and
+ * what its profile gave. They come back when the joypad driver next
+ * starts and finds them again - so this is for a start, or for a reset
+ * that is followed by one, and not for putting the settings back to
+ * their defaults under a running driver. */
+void input_config_forget_controllers(void)
+{
+   unsigned i;
+   input_driver_state_t *input_st = &input_driver_st;
 
    for (i = 0; i < MAX_USERS; i++)
    {
@@ -12068,19 +12079,6 @@ void input_driver_set_remapping_cache_active(void)
    input_driver_st.flags |= INP_FLAG_REMAPPING_CACHE_ACTIVE;
 }
 
-/* Every device's name and identity, copied out and back: for a
- * configuration being swapped and restored around a core. */
-void input_driver_device_info_save(input_device_info_t *dst)
-{
-   memcpy(dst, input_driver_st.input_device_info,
-         sizeof(input_driver_st.input_device_info));
-}
-
-void input_driver_device_info_restore(const input_device_info_t *src)
-{
-   memcpy(input_driver_st.input_device_info, src,
-         sizeof(input_driver_st.input_device_info));
-}
 
 /* A port's sensor axis map, as read and as set. */
 const input_sensor_map_t *input_config_get_sensor_map(unsigned port)

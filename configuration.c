@@ -6036,7 +6036,11 @@ void config_set_defaults(settings_t *target)
     * touched. */
    if (settings == config_st)
    {
-      input_config_reset();
+      /* The binds; not the controllers that are connected, which are
+       * no setting - forgetting them as well is for whoever is about
+       * to start the joypad driver again (config_load(), and the
+       * menu's reset to defaults). */
+      input_config_reset_binds();
       input_remapping_deinit(false);
       input_remapping_set_defaults(false);
    }
@@ -6436,6 +6440,10 @@ void config_set_defaults(settings_t *target)
 void config_load(void)
 {
    config_set_defaults(config_st);
+   /* a load is followed by the drivers starting: the controllers are
+    * found again then, and start from nothing here, as they did when
+    * the defaults forgot them */
+   input_config_forget_controllers();
 #ifdef HAVE_CONFIGFILE
    config_parse_file();
 #endif
@@ -7988,85 +7996,6 @@ bool config_load_override_file(const char *config_path)
    return true;
 }
 
-typedef struct
-{
-   retro_keybind_set *autoconf_binds;    /* heap: too large for stack */
-   input_bind_label_set *autoconf_labels;
-   input_device_info_t device_info[MAX_INPUT_DEVICES];
-} input_autoconf_backup_t;
-
-/* Autoconf binds and device info come from controller hotplug events;
- * no config file can restore them after input_config_reset(). */
-static bool input_autoconf_state_save(input_autoconf_backup_t *bkp)
-{
-   unsigned i, j;
-
-   bkp->autoconf_binds  = (retro_keybind_set*)calloc(MAX_USERS,
-         sizeof(retro_keybind_set));
-   bkp->autoconf_labels = (input_bind_label_set*)calloc(MAX_USERS,
-         sizeof(input_bind_label_set));
-
-   if (!bkp->autoconf_binds || !bkp->autoconf_labels)
-   {
-      free(bkp->autoconf_binds);
-      free(bkp->autoconf_labels);
-      bkp->autoconf_binds  = NULL;
-      bkp->autoconf_labels = NULL;
-      return false;
-   }
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         memcpy(&bkp->autoconf_binds[i][j], input_autoconf_bind(i, j),
-               sizeof(struct retro_keybind));
-         /* Duplicate allocated strings (don't share pointers!) */
-         if (input_autoconf_bind_labels[i][j].joykey)
-            bkp->autoconf_labels[i][j].joykey =
-               strdup(input_autoconf_bind_labels[i][j].joykey);
-         if (input_autoconf_bind_labels[i][j].joyaxis)
-            bkp->autoconf_labels[i][j].joyaxis =
-               strdup(input_autoconf_bind_labels[i][j].joyaxis);
-      }
-   }
-
-   input_driver_device_info_save(bkp->device_info);
-   return true;
-}
-
-static void input_autoconf_state_restore(input_autoconf_backup_t *bkp)
-{
-   unsigned i, j;
-
-   if (!bkp->autoconf_binds || !bkp->autoconf_labels)
-      return;
-
-   for (i = 0; i < MAX_USERS; i++)
-   {
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-      {
-         /* Free strings allocated by input_config_reset() */
-         if (input_autoconf_bind_labels[i][j].joykey)
-            free(input_autoconf_bind_labels[i][j].joykey);
-         if (input_autoconf_bind_labels[i][j].joyaxis)
-            free(input_autoconf_bind_labels[i][j].joyaxis);
-
-         memcpy(input_autoconf_bind_edit(i, j), &bkp->autoconf_binds[i][j],
-               sizeof(struct retro_keybind));
-         /* String ownership moves back to input_autoconf_bind_labels */
-         input_autoconf_bind_labels[i][j] = bkp->autoconf_labels[i][j];
-      }
-   }
-
-   input_driver_device_info_restore(bkp->device_info);
-
-   free(bkp->autoconf_binds);
-   free(bkp->autoconf_labels);
-   bkp->autoconf_binds  = NULL;
-   bkp->autoconf_labels = NULL;
-}
-
 /**
  * config_unload_override:
  *
@@ -8091,14 +8020,11 @@ bool config_unload_override(void)
    /* When using minimal config, reset to defaults first.
     * This ensures settings not present in the config file
     * get their default values restored after override unload. */
+   /* The connected controllers stay as they are: putting the settings
+    * back to their defaults does not forget them, so there is nothing
+    * of theirs to copy aside and put back around it. */
    if (settings->bools.config_save_minimal)
-   {
-      input_autoconf_backup_t bkp;
-      bool have_bkp = input_autoconf_state_save(&bkp);
       config_set_defaults(config_st);
-      if (have_bkp)
-         input_autoconf_state_restore(&bkp);
-   }
 
    if (!config_load_file(
             path_get(RARCH_PATH_CONFIG), config_st))

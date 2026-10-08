@@ -1232,8 +1232,6 @@ enum input_platform_request
 };
 void input_driver_platform_request(enum input_platform_request req);
 void input_driver_set_remapping_cache_active(void);
-void input_driver_device_info_save(input_device_info_t *dst);
-void input_driver_device_info_restore(const input_device_info_t *src);
 void input_driver_set_sensor_map(unsigned port, const input_sensor_map_t *map);
 #ifdef HAVE_OVERLAY
 float *input_driver_overlay_eightway_slopes(bool abxy);
@@ -2061,7 +2059,11 @@ void input_config_reset_autoconfig_binds(unsigned port);
 
 const input_sensor_map_t *input_config_get_sensor_map(unsigned port);
 
-void input_config_reset(void);
+/* The configured binds, every user's, as their defaults. */
+void input_config_reset_binds(void);
+/* Every connected controller is forgotten, until the joypad driver
+ * next starts and finds it again. */
+void input_config_forget_controllers(void);
 
 const char *joypad_driver_name(unsigned i);
 

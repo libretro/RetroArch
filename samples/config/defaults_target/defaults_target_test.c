@@ -43,7 +43,8 @@ size_t fill_pathname_join(char *out, const char *dir, const char *path, size_t s
       n = 0;
    return n + strlcpy(out + n, path, size ? size - n : 0);
 }
-void input_config_reset(void) { }
+void input_config_reset_binds(void) { }
+void input_config_forget_controllers(void) { }
 void input_config_set_device(unsigned port, unsigned id) { (void)port; (void)id; }
 void input_remapping_deinit(bool save) { (void)save; }
 void input_remapping_set_defaults(bool clear) { (void)clear; }

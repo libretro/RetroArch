@@ -5328,8 +5328,9 @@ bool command_event(enum event_command cmd, void *data)
 #endif
       case CMD_EVENT_MENU_RESET_TO_DEFAULT_CONFIG:
          config_set_defaults(config_get_ptr());
-         /* that reset the controllers' configuration, which they get
-          * back when the joypad driver next starts */
+         /* a reset forgets the controllers too, which they get back
+          * when the joypad driver next starts */
+         input_config_forget_controllers();
          input_driver_restart_with_next_video_restart();
          break;
       case CMD_EVENT_MENU_SAVE_CURRENT_CONFIG:
