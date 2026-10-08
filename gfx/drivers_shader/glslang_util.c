@@ -675,11 +675,19 @@ static bool glslang_read_shader_file_internal(const char *path,
       if (hit)
       {
          if (pragmas_only && hit->prg_data)
-            return shader_line_buf_append_block(output, hit->prg_data,
+         {
+            ret = shader_line_buf_append_block(output, hit->prg_data,
                   hit->prg_len, hit->prg_offsets, hit->prg_lines);
+            free(scratch);
+            return ret;
+         }
          if (!pragmas_only && hit->exp_data)
-            return shader_line_buf_append_block(output, hit->exp_data,
+         {
+            ret = shader_line_buf_append_block(output, hit->exp_data,
                   hit->exp_len, hit->exp_offsets, hit->exp_lines);
+            free(scratch);
+            return ret;
+         }
       }
       capture   = true;
       cap_len   = output->len;
