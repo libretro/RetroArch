@@ -81,6 +81,74 @@ static int64_t read_cb(void *ud, uint64_t off, void *dst, size_t len)
    return (int64_t)len;
 }
 
+/* A watcher of a member being decoded: what it is told is final has to
+ * be the member's bytes then and there, and only ever more of them. */
+typedef struct
+{
+   const uint8_t *want;      /* the member, extracted the plain way */
+   const uint8_t *dst;       /* where it is being decoded to */
+   size_t         size;
+   size_t         done;
+   unsigned       calls;
+   unsigned       stop_after;   /* 0: never */
+   int            bad;
+} watched_t;
+
+static int watch_cb(void *ud, size_t done)
+{
+   watched_t *w = (watched_t*)ud;
+
+   w->calls++;
+   if (done < w->done || done > w->size)
+      w->bad = 1;
+   else if (memcmp(w->dst + w->done, w->want + w->done, done - w->done))
+      w->bad = 1;
+   else
+      w->done = done;
+   return w->stop_after && w->calls >= w->stop_after;
+}
+
+static void check_watched(rrar_archive_t *a, uint32_t i, const uint8_t *want,
+      size_t size, const char *name)
+{
+   uint8_t     *dst = (uint8_t *)malloc(size ? size : 1);
+   watched_t    w;
+   rrar_watch_t watch;
+
+   if (!dst)
+      return;
+   memset(&w, 0, sizeof(w));
+   memset(dst, 0xA5, size);
+   w.want         = want;
+   w.dst          = dst;
+   w.size         = size;
+   watch.progress = watch_cb;
+   watch.ud       = &w;
+   CHECK(rrar_archive_extract_to(a, i, dst, size, &watch) == RRAR_OK, name);
+   CHECK(!w.bad, name);
+   CHECK(w.done == size && w.calls > 0, name);
+   CHECK(!memcmp(dst, want, size), name);
+   /* too little room is refused, and without a watcher it is the same */
+   if (size)
+      CHECK(rrar_archive_extract_to(a, i, dst, size - 1, NULL) == RRAR_ERROR_PARAM, name);
+   memset(dst, 0xA5, size);
+   CHECK(rrar_archive_extract_to(a, i, dst, size, NULL) == RRAR_OK
+         && !memcmp(dst, want, size), name);
+   /* stopped by the watcher at its first call: a member long enough to
+    * have more than one says so */
+   if (w.calls > 1)
+   {
+      memset(&w, 0, sizeof(w));
+      w.want       = want;
+      w.dst        = dst;
+      w.size       = size;
+      w.stop_after = 1;
+      CHECK(rrar_archive_extract_to(a, i, dst, size, &watch) == RRAR_ERROR_CANCELLED, name);
+      CHECK(!w.bad && w.calls == 1, name);
+   }
+   free(dst);
+}
+
 static void check_mode(const char *dir, const char *file,
       const struct expect *want, unsigned num_want, int through_reads)
 {
@@ -121,6 +189,8 @@ static void check_mode(const char *dir, const char *file,
          CHECK(out != NULL && out_len == e->size, e->name);
          if (out && e->has_crc)
             CHECK(encoding_crc32(0, out, out_len) == e->crc, e->name);
+         if (out)
+            check_watched(a, i, out, out_len, e->name);
          free(out);
       }
       for (w = 0; w < num_want; w++)

@@ -203,6 +203,18 @@ typedef struct rrar_unpack
    rrar_filter_t  *filters;
    uint32_t        num_filters;
    uint32_t        cap_filters;
+
+   /* For a caller that reads the member while it is being decoded
+    * (rrar_archive_extract_to()): who is told how far it has got, the
+    * position at which it is next told, how far back the packed data
+    * can refer, and the first filter not yet run. Without a watcher the
+    * position is the member's size, which is never reached before the
+    * end, and every filter is run then. */
+   const rrar_watch_t *watch;
+   uint64_t            watch_at;
+   uint64_t            window;
+   uint32_t            next_filter;
+   uint8_t            *work;      /* the filters' second copy */
 } rrar_unpack_t;
 
 struct rrar_archive
@@ -957,102 +969,127 @@ static void filter5_arm(uint8_t *mem, uint32_t length, uint64_t start)
 
 /* The member is all unpacked: its filters, in the order they came. Two
  * for the same block are one after the other on it. */
+/* One filter over its block, which is all there. */
+static int filter_apply(rrar_unpack_t *u, const rrar_filter_t *f)
+{
+   uint8_t  *block  = u->out + (size_t)f->start;
+   uint32_t  length = f->length;
+
+   if (f->kind >= FILTER5_DELTA)
+   {
+      /* RAR 5's: their blocks are up to 4 MB, and nothing but the
+       * delta filter needs a second copy */
+      if (f->kind == FILTER5_E8 || f->kind == FILTER5_E8E9)
+         filter5_e8(block, length, f->start, f->kind == FILTER5_E8E9);
+      else if (f->kind == FILTER5_ARM)
+         filter5_arm(block, length, f->start);
+      else
+      {
+         uint8_t *copy = (uint8_t *)malloc(length ? length : 1);
+         if (!copy)
+            return RRAR_ERROR_MEM;
+         filter_delta(block, copy, length, f->r0);
+         memcpy(block, copy, length);
+         free(copy);
+      }
+      return RRAR_OK;
+   }
+
+   /* (checked when it was read against the member's size; a filter
+    * whose result is not its block's length would move everything
+    * after it) */
+   if (f->r4 != length)
+      return RRAR_ERROR_DATA;
+   if (f->kind == FILTER_E8 || f->kind == FILTER_E8E9)
+   {
+      if (length > FILTER_WORK_SIZE)
+         return RRAR_ERROR_DATA;
+      filter_e8(block, length, (uint32_t)f->start, f->kind == FILTER_E8E9);
+      return RRAR_OK;
+   }
+
+   if (length > FILTER_WORK_SIZE / 2)
+      return RRAR_ERROR_DATA;
+   if (!u->work && !(u->work = (uint8_t *)malloc(FILTER_WORK_SIZE / 2)))
+      return RRAR_ERROR_MEM;
+   switch (f->kind)
+   {
+      case FILTER_DELTA:
+         if (f->r0 == 0 || f->r0 > 128)
+            return RRAR_ERROR_DATA;
+         filter_delta(block, u->work, length, f->r0);
+         break;
+      case FILTER_RGB:
+         if (f->r0 > length || length < 3 || f->r1 > 2)
+            return RRAR_ERROR_DATA;
+         /* (a row no wider than a pixel is predicted from bytes
+          * not written yet: let them be something) */
+         memset(u->work, 0, length);
+         filter_rgb(block, u->work, length, f->r0, f->r1);
+         break;
+      case FILTER_AUDIO:
+         if (f->r0 == 0 || f->r0 > 128)
+            return RRAR_ERROR_DATA;
+         filter_audio(block, u->work, length, f->r0);
+         break;
+      default:
+         return RRAR_ERROR_UNSUPPORTED;
+   }
+   memcpy(block, u->work, length);
+   return RRAR_OK;
+}
+
+/* The filters not run yet, in the order they were read. */
 static int filters_run(rrar_unpack_t *u)
 {
-   uint8_t *work = NULL;
-   uint32_t n;
-   int      r = RRAR_OK;
+   int r = RRAR_OK;
 
-   for (n = 0; n < u->num_filters && r == RRAR_OK; n++)
-   {
-      const rrar_filter_t *f = &u->filters[n];
-      uint8_t  *block  = u->out + (size_t)f->start;
-      uint32_t  length = f->length;
-
-      if (f->kind >= FILTER5_DELTA)
-      {
-         /* RAR 5's: their blocks are up to 4 MB, and nothing but the
-          * delta filter needs a second copy */
-         if (f->kind == FILTER5_E8 || f->kind == FILTER5_E8E9)
-            filter5_e8(block, length, f->start, f->kind == FILTER5_E8E9);
-         else if (f->kind == FILTER5_ARM)
-            filter5_arm(block, length, f->start);
-         else
-         {
-            uint8_t *copy = (uint8_t *)malloc(length ? length : 1);
-            if (!copy)
-            {
-               r = RRAR_ERROR_MEM;
-               break;
-            }
-            filter_delta(block, copy, length, f->r0);
-            memcpy(block, copy, length);
-            free(copy);
-         }
-         continue;
-      }
-
-      /* (checked when it was read against the member's size; a filter
-       * whose result is not its block's length would move everything
-       * after it) */
-      if (f->r4 != length)
-      {
-         r = RRAR_ERROR_DATA;
-         break;
-      }
-      if (f->kind == FILTER_E8 || f->kind == FILTER_E8E9)
-      {
-         if (length > FILTER_WORK_SIZE)
-            r = RRAR_ERROR_DATA;
-         else
-            filter_e8(block, length, (uint32_t)f->start, f->kind == FILTER_E8E9);
-         continue;
-      }
-
-      if (length > FILTER_WORK_SIZE / 2)
-      {
-         r = RRAR_ERROR_DATA;
-         break;
-      }
-      if (!work && !(work = (uint8_t *)malloc(FILTER_WORK_SIZE / 2)))
-      {
-         r = RRAR_ERROR_MEM;
-         break;
-      }
-      switch (f->kind)
-      {
-         case FILTER_DELTA:
-            if (f->r0 == 0 || f->r0 > 128)
-               r = RRAR_ERROR_DATA;
-            else
-               filter_delta(block, work, length, f->r0);
-            break;
-         case FILTER_RGB:
-            if (f->r0 > length || length < 3 || f->r1 > 2)
-               r = RRAR_ERROR_DATA;
-            else
-            {
-               /* (a row no wider than a pixel is predicted from bytes
-                * not written yet: let them be something) */
-               memset(work, 0, length);
-               filter_rgb(block, work, length, f->r0, f->r1);
-            }
-            break;
-         case FILTER_AUDIO:
-            if (f->r0 == 0 || f->r0 > 128)
-               r = RRAR_ERROR_DATA;
-            else
-               filter_audio(block, work, length, f->r0);
-            break;
-         default:
-            r = RRAR_ERROR_UNSUPPORTED;
-            break;
-      }
-      if (r == RRAR_OK)
-         memcpy(block, work, length);
-   }
-   free(work);
+   for (; u->next_filter < u->num_filters && r == RRAR_OK; u->next_filter++)
+      r = filter_apply(u, &u->filters[u->next_filter]);
    return r;
+}
+
+/* The decoder has got to watch_at: the watcher is told how much of the
+ * member is final.
+ *
+ * What has been decoded is final unless a filter is still to be run
+ * over it. A filter is read before the bytes it is for, so the bytes
+ * before the first filter not yet run are final; and a filter can be
+ * run, in place, once the decoder is so far past its block that nothing
+ * still to be decoded can refer back into it - the packed data refers to
+ * the bytes as they were before any filter. In the order they were read,
+ * as at the end. */
+#define RRAR_WATCH_STEP 0x10000
+static int unpack_watch(rrar_unpack_t *u)
+{
+   uint64_t done = u->pos;
+   uint32_t n;
+   int      r;
+
+   if (!u->watch)
+   {
+      u->watch_at = u->size;
+      return RRAR_OK;
+   }
+   while (u->next_filter < u->num_filters)
+   {
+      const rrar_filter_t *f = &u->filters[u->next_filter];
+
+      if (u->pos < f->start + f->length + u->window)
+         break;
+      if ((r = filter_apply(u, f)) != RRAR_OK)
+         return r;
+      u->next_filter++;
+   }
+   for (n = u->next_filter; n < u->num_filters; n++)
+   {
+      if (u->filters[n].start < done)
+         done = u->filters[n].start;
+   }
+   u->watch_at = u->pos + RRAR_WATCH_STEP;
+   if (u->watch->progress(u->watch->ud, (size_t)done))
+      return RRAR_ERROR_CANCELLED;
+   return RRAR_OK;
 }
 
 /* ------------------------------------------------------------ the member */
@@ -1129,6 +1166,7 @@ static void emit_match(rrar_unpack_t *u, uint32_t offset, uint32_t length)
 /* What an LZ block's symbols stand for. */
 #define LZ_END_OF_FILE  1
 #define LZ_NEW_TABLE    2
+#define LZ_PAUSE        3
 
 /* The symbols of an LZ block, until it is over - new tables, or the end
  * of the file - or the member is full. The reading and the writing are
@@ -1171,9 +1209,11 @@ static int unpack_lz(rrar_unpack_t *u)
    uint8_t    *out  = u->out;
    size_t      pos  = (size_t)u->pos;
    size_t      size = (size_t)u->size;
+   /* (to the member's end, or to where the watcher is next told) */
+   size_t      stop = u->watch_at < u->size ? (size_t)u->watch_at : size;
    int         r    = RRAR_OK;
 
-   while (pos < size)
+   while (pos < stop)
    {
       int      symbol = huff_decode(&br, &u->main_code);
       uint32_t offs, len;
@@ -1323,6 +1363,9 @@ static int unpack_lz(rrar_unpack_t *u)
    u->pos = pos;
    if (r == RRAR_OK && rrar_br_overrun(&br))
       r = RRAR_ERROR_DATA;
+   /* not the member's end: the caller has the watcher told, and comes back */
+   if (r == RRAR_OK && pos < size)
+      r = LZ_PAUSE;
    return r;
 }
 
@@ -1340,6 +1383,8 @@ static int unpack29(rrar_unpack_t *u)
 
       if (unpack_overrun(u))
          return RRAR_ERROR_DATA;
+      if (u->pos >= u->watch_at && (r = unpack_watch(u)) != RRAR_OK)
+         return r;
       if (new_table)
       {
          if ((r = unpack_tables(u)) != RRAR_OK)
@@ -1352,7 +1397,7 @@ static int unpack29(rrar_unpack_t *u)
          r = unpack_lz(u);
          if (r == LZ_NEW_TABLE)
             new_table = 1;
-         else
+         else if (r != LZ_PAUSE)
             return r == LZ_END_OF_FILE ? RRAR_OK : r;
          continue;
       }
@@ -1576,6 +1621,12 @@ static int unpack50(rrar_unpack_t *u)
       uint8_t        sum;
       int            block_done = 0;
 
+      if (pos >= u->watch_at)
+      {
+         u->pos = pos;
+         if ((r = unpack_watch(u)) != RRAR_OK)
+            return r;
+      }
       /* the block's header: flags, a checksum, and its size */
       if (end - p < 3)
          return RRAR_ERROR_DATA;
@@ -1733,7 +1784,8 @@ static int unpack50(rrar_unpack_t *u)
 }
 
 static int unpack_member(const uint8_t *packed, size_t packed_len,
-      uint8_t *out, size_t out_len, int rar5)
+      uint8_t *out, size_t out_len, int rar5, uint64_t window,
+      const rrar_watch_t *watch)
 {
    rrar_unpack_t *u = (rrar_unpack_t *)calloc(1, sizeof(*u));
    int r;
@@ -1745,6 +1797,9 @@ static int unpack_member(const uint8_t *packed, size_t packed_len,
    u->out         = out;
    u->size        = out_len;
    u->ppmd_escape = 2;
+   u->watch       = watch;
+   u->watch_at    = watch ? RRAR_WATCH_STEP : out_len;
+   u->window      = window;
    rrar_ppmd7_construct(&u->ppmd);
 
    r = rar5 ? unpack50(u) : unpack29(u);
@@ -1756,6 +1811,7 @@ static int unpack_member(const uint8_t *packed, size_t packed_len,
    rrar_ppmd7_free(&u->ppmd);
    free(u->programs);
    free(u->filters);
+   free(u->work);
    free(u);
    return r;
 }
@@ -2089,6 +2145,7 @@ static int parse_headers(rrar_archive_t *a)
          e->version     = h[24];
          e->method      = h[25];
          e->is_dir      = (uint8_t)is_dir;
+         e->window      = 0x400000;       /* RAR 4's largest dictionary */
          e->supported   = !is_dir
             && !(flags & (RAR_FILE_SPLIT_BEFORE | RAR_FILE_SPLIT_AFTER | RAR_FILE_PASSWORD))
             && unpacked <= (uint64_t)((size_t)-1) / 2
@@ -2310,6 +2367,8 @@ static int parse_headers5(rrar_archive_t *a)
             e->version     = 50;
             e->method      = (uint8_t)(RAR_METHOD_STORED + method);
             e->is_dir      = (uint8_t)is_dir;
+            /* the dictionary: 128 KiB, doubled as many times as it says */
+            e->window      = (uint64_t)0x20000 << ((info >> 10) & 0xf);
             e->supported   = !is_dir
                && !encrypted
                && !(flags & (0x08 | 0x10))            /* split between volumes */
@@ -2425,35 +2484,20 @@ const rrar_entry_t *rrar_archive_entry(const rrar_archive_t *a, uint32_t index)
    return &a->entries[index];
 }
 
-int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
-      uint8_t **out, size_t *out_len)
+/* Member @e decoded to @buf, which has room for it. */
+static int rrar_extract_into(rrar_archive_t *a, const rrar_entry_t *e,
+      uint8_t *buf, const rrar_watch_t *watch)
 {
-   const rrar_entry_t *e;
-   const uint8_t      *packed;
-   uint8_t            *buf;
-   size_t              size;
-   int                 r = RRAR_OK;
-
-   if (out)
-      *out = NULL;
-   if (!a || !out || !out_len || index >= a->num_entries)
-      return RRAR_ERROR_PARAM;
-   e = &a->entries[index];
-   if (!e->supported)
-      return RRAR_ERROR_UNSUPPORTED;
-
-   size   = (size_t)e->size;
-   if (!(buf = (uint8_t *)malloc(size ? size : 1)))
-      return RRAR_ERROR_MEM;
+   size_t size = (size_t)e->size;
+   int    r    = RRAR_OK;
 
    if (e->method == RAR_METHOD_STORED)
       /* (straight to where it goes, from memory or from the file) */
       r = rrar_fetch(a, e->data_offset, buf, size);
    else if (size && a->data)
-   {
-      packed = a->data + (size_t)e->data_offset;
-      r = unpack_member(packed, (size_t)e->packed_size, buf, size, e->version == 50);
-   }
+      r = unpack_member(a->data + (size_t)e->data_offset,
+            (size_t)e->packed_size, buf, size, e->version == 50,
+            e->window, watch);
    else if (size)
    {
       /* An archive that is read: the member's packed bytes are read in
@@ -2463,13 +2507,39 @@ int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
       if (!in)
          r = RRAR_ERROR_MEM;
       else if ((r = rrar_fetch(a, e->data_offset, in, (size_t)e->packed_size)) == RRAR_OK)
-         r = unpack_member(in, (size_t)e->packed_size, buf, size, e->version == 50);
+         r = unpack_member(in, (size_t)e->packed_size, buf, size,
+               e->version == 50, e->window, watch);
       free(in);
    }
 
    if (r == RRAR_OK && e->has_crc && encoding_crc32(0, buf, size) != e->crc)
       r = RRAR_ERROR_CRC;
-   if (r != RRAR_OK)
+   /* all of it, now that it is known to be right */
+   if (r == RRAR_OK && watch)
+      watch->progress(watch->ud, size);
+   return r;
+}
+
+int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *out_len)
+{
+   const rrar_entry_t *e;
+   uint8_t            *buf;
+   size_t              size;
+   int                 r;
+
+   if (out)
+      *out = NULL;
+   if (!a || !out || !out_len || index >= a->num_entries)
+      return RRAR_ERROR_PARAM;
+   e = &a->entries[index];
+   if (!e->supported)
+      return RRAR_ERROR_UNSUPPORTED;
+
+   size = (size_t)e->size;
+   if (!(buf = (uint8_t *)malloc(size ? size : 1)))
+      return RRAR_ERROR_MEM;
+   if ((r = rrar_extract_into(a, e, buf, NULL)) != RRAR_OK)
    {
       free(buf);
       return r;
@@ -2477,4 +2547,19 @@ int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
    *out     = buf;
    *out_len = size;
    return RRAR_OK;
+}
+
+int rrar_archive_extract_to(rrar_archive_t *a, uint32_t index,
+      uint8_t *dst, size_t dst_size, const rrar_watch_t *watch)
+{
+   const rrar_entry_t *e;
+
+   if (!a || !dst || index >= a->num_entries || (watch && !watch->progress))
+      return RRAR_ERROR_PARAM;
+   e = &a->entries[index];
+   if (!e->supported)
+      return RRAR_ERROR_UNSUPPORTED;
+   if (e->size > (uint64_t)dst_size)
+      return RRAR_ERROR_PARAM;
+   return rrar_extract_into(a, e, dst, watch);
 }

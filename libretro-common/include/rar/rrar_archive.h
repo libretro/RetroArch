@@ -84,6 +84,8 @@ RETRO_BEGIN_DECLS
 #define RRAR_ERROR_MEM         (-3)
 #define RRAR_ERROR_UNSUPPORTED (-4)
 #define RRAR_ERROR_CRC         (-5)
+/* A watcher asked for the decode to stop: rrar_archive_extract_to(). */
+#define RRAR_ERROR_CANCELLED   (-6)
 
 /* Signature length at the head of every archive (a RAR 5 one has an
  * eighth byte, zero). */
@@ -107,6 +109,8 @@ typedef struct rrar_entry
    /* 0: the archive has no CRC-32 for the entry (a RAR 5 archive made to
     * carry BLAKE2 hashes only), and extraction checks nothing */
    uint8_t     has_crc;
+   /* How far back the packed data can refer: its dictionary size. */
+   uint64_t    window;
 } rrar_entry_t;
 
 typedef struct rrar_archive rrar_archive_t;
@@ -194,6 +198,40 @@ const rrar_entry_t *rrar_archive_entry(const rrar_archive_t *a,
  */
 int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
       uint8_t **out, size_t *out_len);
+
+/* Told, on the thread that decodes, how much of a member is final:
+ * @done bytes from its start, which no later call takes back. Returns
+ * nonzero to have the decode stop. See rrar_archive_extract_to(). */
+typedef struct rrar_watch
+{
+   int  (*progress)(void *ud, size_t done);
+   void  *ud;
+} rrar_watch_t;
+
+/**
+ * rrar_archive_extract_to:
+ * @a          : opened archive
+ * @index      : entry index
+ * @dst        : where the entry's data goes
+ * @dst_size   : how much room there is at @dst
+ * @watch      : who is told how far the decode has got, or NULL
+ *
+ * The same as rrar_archive_extract(), into memory the caller has, and
+ * with a watcher: for a member that takes long to decode, which another
+ * thread can read from @dst as it is decoded. The watcher is called
+ * about every 64 KiB with the count of bytes that are final - behind
+ * the decoder by a filter's block and the dictionary where the member
+ * has filters, since a filter is run over its block only once nothing
+ * can refer back into it - and with the whole size once the CRC has
+ * been checked. A member is decoded in the calling thread from start to
+ * end; an archive may have several decoded at once, each on a thread.
+ *
+ * Returns: RRAR_OK, RRAR_ERROR_CANCELLED if the watcher stopped it, or
+ * another negative RRAR_ERROR_* code. On an error what the watcher was
+ * told is final was never checked.
+ */
+int rrar_archive_extract_to(rrar_archive_t *a, uint32_t index,
+      uint8_t *dst, size_t dst_size, const rrar_watch_t *watch);
 
 RETRO_END_DECLS
 
