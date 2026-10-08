@@ -2579,7 +2579,7 @@ static bool gl3_chain_init_history(struct gl3_filter_chain *chain);
 static bool gl3_chain_init_feedback(struct gl3_filter_chain *chain);
 static bool gl3_chain_init_alias(struct gl3_filter_chain *chain);
 static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pass, const gl3_filter_chain_pass_info info);
-static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_);
+static bool gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_);
 static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words);
 static void gl3_chain_add_parameter(struct gl3_filter_chain *chain, unsigned pass,
       unsigned index, const char *id);
@@ -2621,7 +2621,11 @@ static struct gl3_filter_chain *gl3_chain_new(unsigned num_passes)
    /* ran as the member constructor until gl3_common_resources flattened */
    gl3_common_resources_init(&chain->common);
 
-   gl3_chain_set_num_passes(chain, num_passes);
+   if (!gl3_chain_set_num_passes(chain, num_passes))
+   {
+      gl3_chain_free(chain);
+      return NULL;
+   }
    return chain;
 }
 
@@ -3021,7 +3025,7 @@ static void gl3_chain_set_pass_info(struct gl3_filter_chain *chain, unsigned pas
    chain->pass_info[pass] = info;
 }
 
-static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_)
+static bool gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned num_passes_)
 {
    unsigned i;
 
@@ -3037,25 +3041,26 @@ static void gl3_chain_set_num_passes(struct gl3_filter_chain *chain, unsigned nu
    chain->num_pass_info  = 0;
 
    if (!num_passes_)
-      return;
+      return true;
 
    if (!(chain->pass_info = (gl3_filter_chain_pass_info*)
             calloc(num_passes_, sizeof(*chain->pass_info))))
-      return;
+      return false;
    chain->num_pass_info  = num_passes_;
 
    if (!(chain->passes = (struct gl3_pass**)
             calloc(num_passes_, sizeof(*chain->passes))))
-      return;
+      return false;
 
    for (i = 0; i < num_passes_; i++)
    {
       if (!(chain->passes[i] = gl3_pass_new(i + 1 == num_passes_)))
-         return;
+         return false;
       gl3_pass_set_common_resources(chain->passes[i], &chain->common);
       gl3_pass_set_pass_number(chain->passes[i], i);
       chain->num_passes++;
    }
+   return true;
 }
 
 static void gl3_chain_set_shader(struct gl3_filter_chain *chain, unsigned pass, GLenum stage, const uint32_t *spirv, size_t spirv_words)
