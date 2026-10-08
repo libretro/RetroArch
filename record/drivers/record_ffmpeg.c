@@ -70,6 +70,7 @@ extern "C" {
 #endif
 
 #include "../../retroarch.h"
+#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #ifndef FFMPEG3
@@ -247,7 +248,30 @@ typedef struct ffmpeg
    retro_eventcount_t space;
    bool data_init;
    bool space_init;
+
+   /* Drop-on-full accounting. Written by the producer only; the
+    * totals are read after the encoder thread has been joined. */
+   uint64_t video_frames_in;
+   uint64_t video_frames_dropped;
+   uint64_t video_frames_logged;
+   /* Frames dropped since the last queued one; rides along with the
+    * next frame so the encoder leaves a pts gap for them. */
+   unsigned video_pts_pending;
+   unsigned video_fifo_frames;
+   bool     allow_frame_drop;
+
+   /* Audio bytes dropped on a full queue and still owed to it as
+    * silence, so the sample-count timeline never loses time. */
+   size_t   audio_silence_pending;
+   uint64_t audio_bytes_dropped;
 } ffmpeg_t;
+
+/* attr_fifo record: the frame plus the drops right before it. */
+struct ff_video_attr
+{
+   struct record_video_data vid;
+   unsigned pts_skip;
+};
 
 /* How long a push waits for room before looking at alive again. The
  * encoder notifies space on every read and deinit_thread() on the way
@@ -1037,12 +1061,27 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
    return avformat_write_header(handle->muxer.ctx, NULL) >= 0;
 }
 
-#define MAX_FRAMES 32
+/* Audio queue depth in seconds of input audio. */
+#define AUDIO_FIFO_SECONDS         2
+/* Video queue depth, from video_record_fifo_frames. */
+#define DEFAULT_VIDEO_FIFO_FRAMES 32
+#define MIN_VIDEO_FIFO_FRAMES      8
+#define MAX_VIDEO_FIFO_FRAMES    128
+/* One warning per this many newly dropped frames. */
+#define DROP_LOG_INTERVAL         64
 
 static void ffmpeg_thread(void *data);
 
 static bool init_thread(ffmpeg_t *handle)
 {
+   unsigned vf = handle->video_fifo_frames;
+   double rate = handle->params.samplerate > 0.0
+         ? handle->params.samplerate : 48000.0;
+
+   if (vf < MIN_VIDEO_FIFO_FRAMES || vf > MAX_VIDEO_FIFO_FRAMES)
+      vf = DEFAULT_VIDEO_FIFO_FRAMES;
+   handle->video_fifo_frames = vf;
+
    handle->data_init  = retro_eventcount_init(&handle->data);
    handle->space_init = retro_eventcount_init(&handle->space);
    if (!handle->data_init || !handle->space_init)
@@ -1061,14 +1100,16 @@ static bool init_thread(ffmpeg_t *handle)
     * larger attr ring cannot admit a frame the video ring lacks
     * room for.) */
    handle->fifos_init =
-         retro_spsc_init(&handle->audio_fifo, 32000 * sizeof(int16_t) *
-               handle->params.channels * MAX_FRAMES / 60) /* Some arbitrary max size. */
-      && retro_spsc_init(&handle->attr_fifo, sizeof(struct record_video_data) * MAX_FRAMES)
+         retro_spsc_init(&handle->audio_fifo, (size_t)(rate * AUDIO_FIFO_SECONDS)
+               * handle->params.channels * sizeof(int16_t))
+      && retro_spsc_init(&handle->attr_fifo, sizeof(struct ff_video_attr) * vf)
       && retro_spsc_init(&handle->video_fifo,
-               VIDEO_SCALE_AREA(handle->params.fb_dims) *
-               handle->video.pix_size * MAX_FRAMES);
+               (size_t)VIDEO_SCALE_AREA(handle->params.fb_dims) *
+               handle->video.pix_size * vf);
    if (!handle->fifos_init)
    {
+      RARCH_ERR("[FFmpeg] Failed to allocate recording queues"
+            " (%u video frames).\n", vf);
       retro_spsc_free(&handle->audio_fifo);
       retro_spsc_free(&handle->attr_fifo);
       retro_spsc_free(&handle->video_fifo);
@@ -1080,6 +1121,20 @@ static bool init_thread(ffmpeg_t *handle)
 
    retro_atomic_store_release_int(&handle->alive, 1);
    handle->thread    = sthread_create(ffmpeg_thread, handle);
+   if (!handle->thread)
+   {
+      RARCH_ERR("[FFmpeg] Failed to create encoder thread.\n");
+      retro_atomic_store_release_int(&handle->alive, 0);
+      retro_eventcount_free(&handle->data);
+      retro_eventcount_free(&handle->space);
+      handle->data_init = handle->space_init = false;
+      return false;
+   }
+
+   RARCH_LOG("[FFmpeg] Video queue: %u frames (%.1f MiB), drop-on-full: %s.\n",
+         vf, ((double)VIDEO_SCALE_AREA(handle->params.fb_dims)
+            * handle->video.pix_size * vf) / (1024.0 * 1024.0),
+         handle->allow_frame_drop ? "yes" : "no");
 
    return true;
 }
@@ -1119,6 +1174,20 @@ static void ffmpeg_free(void *data)
 
    deinit_thread(handle);
    deinit_thread_buf(handle);
+
+   if (handle->video_frames_in > 0)
+      RARCH_LOG("[FFmpeg] Recording ended: %llu video frames in,"
+            " %llu dropped (%.2f%%).\n",
+            (unsigned long long)handle->video_frames_in,
+            (unsigned long long)handle->video_frames_dropped,
+            100.0 * (double)handle->video_frames_dropped
+                  / (double)handle->video_frames_in);
+   if (handle->audio_bytes_dropped && handle->params.samplerate > 0.0)
+      RARCH_LOG("[FFmpeg] Recording ended: %.2f s of audio replaced"
+            " with silence.\n",
+            (double)handle->audio_bytes_dropped
+            / (handle->params.samplerate
+               * handle->params.channels * sizeof(int16_t)));
 
    if (handle->audio.codec)
    {
@@ -1206,8 +1275,10 @@ static void *ffmpeg_new(const struct record_params *params)
    avformat_network_init();
 #endif
 
-   handle->params       = *params;
-   handle->pkt          = av_packet_alloc();
+   handle->params            = *params;
+   handle->pkt               = av_packet_alloc();
+   handle->allow_frame_drop  = params->allow_frame_drop;
+   handle->video_fifo_frames = params->video_fifo_frames;
 
    switch (params->preset)
    {
@@ -1255,12 +1326,31 @@ error:
    return NULL;
 }
 
+static bool ffmpeg_video_fifo_has_room(ffmpeg_t *handle, size_t video_bytes)
+{
+   return retro_spsc_write_avail(&handle->attr_fifo)
+            >= sizeof(struct ff_video_attr)
+       && retro_spsc_write_avail(&handle->video_fifo) >= video_bytes;
+}
+
+static void ffmpeg_report_drops(uint64_t dropped)
+{
+   char msg[128];
+   size_t _len = snprintf(msg, sizeof(msg),
+         "Recording: %llu frames dropped (encoder too slow)",
+         (unsigned long long)dropped);
+   RARCH_WARN("[FFmpeg] %s.\n", msg);
+   runloop_msg_queue_push(msg, _len, 1, 180, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+}
+
 static bool ffmpeg_push_video(void *data,
       const struct record_video_data *vid)
 {
    unsigned y;
    unsigned rows;
-   struct record_video_data attr_data;
+   size_t video_bytes;
+   struct ff_video_attr attr;
    bool drop_frame  = false;
    ffmpeg_t *handle = (ffmpeg_t*)data;
    int       offset = 0;
@@ -1276,59 +1366,96 @@ static bool ffmpeg_push_video(void *data,
    if (drop_frame)
       return true;
 
+   if (!retro_atomic_load_acquire_int(&handle->alive))
+      return false;
+
    /* Tightly pack our frame to conserve memory.
     * libretro tends to use a very large pitch.
     */
-   attr_data = *vid;
+   attr.vid      = *vid;
+   attr.pts_skip = 0;
 
-   if (attr_data.is_dupe)
+   if (attr.vid.is_dupe)
    {
-      attr_data.dims  = 0;
-      attr_data.pitch = 0;
+      attr.vid.dims  = 0;
+      attr.vid.pitch = 0;
    }
    else
-      attr_data.pitch = (int)(VIDEO_SCALE_W(attr_data.dims)
+      attr.vid.pitch = (int)(VIDEO_SCALE_W(attr.vid.dims)
             * handle->video.pix_size);
 
-   rows = VIDEO_SCALE_H(attr_data.dims);
+   rows        = VIDEO_SCALE_H(attr.vid.dims);
+   video_bytes = (size_t)rows * attr.vid.pitch;
+
+   handle->video_frames_in++;
+
+   /* Drop mode: a full queue costs this frame, never the frontend. */
+   if (     handle->allow_frame_drop
+         && !ffmpeg_video_fifo_has_room(handle, video_bytes))
+   {
+      handle->video_frames_dropped++;
+      handle->video_pts_pending++;
+      if (handle->video_frames_dropped - handle->video_frames_logged
+            >= DROP_LOG_INTERVAL)
+      {
+         handle->video_frames_logged = handle->video_frames_dropped;
+         ffmpeg_report_drops(handle->video_frames_dropped);
+      }
+      return true;
+   }
 
    for (;;)
    {
-      /* Room for the attr and for the frame's bytes: the old check
-       * only asked the attr fifo, relying on the two being sized in
-       * step; the rings are sized independently now (power-of-two
-       * rounding), so ask both. */
       int key;
       if (!retro_atomic_load_acquire_int(&handle->alive))
          return false;
 
-      if (     retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
-            && retro_spsc_write_avail(&handle->video_fifo)
-                  >= (size_t)rows * attr_data.pitch)
+      if (ffmpeg_video_fifo_has_room(handle, video_bytes))
          break;
 
       key = retro_eventcount_prepare_wait(&handle->space);
       if (     !retro_atomic_load_acquire_int(&handle->alive)
-            || (  retro_spsc_write_avail(&handle->attr_fifo) >= sizeof(attr_data)
-               && retro_spsc_write_avail(&handle->video_fifo)
-                     >= (size_t)rows * attr_data.pitch))
+            || ffmpeg_video_fifo_has_room(handle, video_bytes))
          retro_eventcount_cancel_wait(&handle->space);
       else
          retro_eventcount_commit_wait_timeout(&handle->space, key,
                FFMPEG_PUSH_WAIT_US);
    }
 
+   attr.pts_skip             = handle->video_pts_pending;
+   handle->video_pts_pending = 0;
+
    /* Frame first, attr last: the encoder takes the attr as the
     * signal that a whole frame is behind it, and the ring's
     * release/acquire on each write orders the rows before it. */
    for (y = 0; y < rows; y++, offset += vid->pitch)
       retro_spsc_write(&handle->video_fifo,
-            (const uint8_t*)vid->data + offset, attr_data.pitch);
+            (const uint8_t*)vid->data + offset, attr.vid.pitch);
 
-   retro_spsc_write(&handle->attr_fifo, &attr_data, sizeof(attr_data));
+   retro_spsc_write(&handle->attr_fifo, &attr, sizeof(attr));
    retro_eventcount_notify(&handle->data);
 
    return true;
+}
+
+/* Writes as much owed silence as fits, in whole frames. */
+static void ffmpeg_audio_write_silence(ffmpeg_t *handle)
+{
+   static const int16_t zeros[1024] = {0};
+   size_t avail = retro_spsc_write_avail(&handle->audio_fifo);
+   size_t todo  = handle->audio_silence_pending;
+   size_t frame = handle->params.channels * sizeof(int16_t);
+
+   if (todo > avail)
+      todo = avail - (avail % frame);
+
+   handle->audio_silence_pending -= todo;
+   while (todo)
+   {
+      size_t chunk = todo < sizeof(zeros) ? todo : sizeof(zeros);
+      retro_spsc_write(&handle->audio_fifo, zeros, chunk);
+      todo -= chunk;
+   }
 }
 
 static bool ffmpeg_push_audio(void *data,
@@ -1344,6 +1471,25 @@ static bool ffmpeg_push_audio(void *data,
       return true;
 
    need = audio_data->frames * handle->params.channels * sizeof(int16_t);
+
+   if (handle->allow_frame_drop)
+   {
+      if (!retro_atomic_load_acquire_int(&handle->alive))
+         return false;
+      /* A chunk that doesn't fit is owed as silence, not waited for. */
+      if (handle->audio_silence_pending)
+         ffmpeg_audio_write_silence(handle);
+      if (     !handle->audio_silence_pending
+            && retro_spsc_write_avail(&handle->audio_fifo) >= need)
+         retro_spsc_write(&handle->audio_fifo, audio_data->data, need);
+      else
+      {
+         handle->audio_silence_pending += need;
+         handle->audio_bytes_dropped   += need;
+      }
+      retro_eventcount_notify(&handle->data);
+      return true;
+   }
 
    for (;;)
    {
@@ -1466,10 +1612,13 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 }
 
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
-      const struct record_video_data *vid)
+      const struct record_video_data *vid, unsigned pts_skip)
 {
    if (!vid->is_dupe)
       ffmpeg_scale_input(handle, vid);
+
+   /* Leave a gap for dropped frames so A/V stays aligned. */
+   handle->video.frame_cnt      += pts_skip;
 
    handle->video.conv_frame->pts = handle->video.frame_cnt;
 
@@ -1875,7 +2024,7 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
 
    do
    {
-      struct record_video_data attr_buf;
+      struct ff_video_attr attr_buf;
 
       did_work = false;
 
@@ -1906,13 +2055,28 @@ static void ffmpeg_flush_buffers(ffmpeg_t *handle)
       {
          retro_spsc_read(&handle->attr_fifo, &attr_buf, sizeof(attr_buf));
          retro_spsc_read(&handle->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.dims) * attr_buf.pitch);
-         attr_buf.data = video_buf;
-         ffmpeg_push_video_thread(handle, &attr_buf);
+               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
+         attr_buf.vid.data = video_buf;
+         ffmpeg_push_video_thread(handle, &attr_buf.vid, attr_buf.pts_skip);
 
          did_work = true;
       }
    }while (did_work);
+
+   /* Pay back silence still owed, so audio runs as long as video. */
+   if (handle->config.audio_enable && audio_buf)
+   {
+      memset(audio_buf, 0, audio_buf_size);
+      while (handle->audio_silence_pending >= audio_buf_size)
+      {
+         struct record_audio_data aud = {0};
+         aud.frames = handle->audio.codec->frame_size;
+         aud.data   = audio_buf;
+         ffmpeg_push_audio_thread(handle, &aud, true);
+         handle->audio_silence_pending -= audio_buf_size;
+      }
+      handle->audio_silence_pending = 0;
+   }
 
    /* Flush out last audio.  Skip on OOM - audio_buf is the
     * destination for ffmpeg_flush_audio's internal fifo_read
@@ -1961,7 +2125,7 @@ static void ffmpeg_thread(void *data)
 
    while (retro_atomic_load_acquire_int(&ff->alive))
    {
-      struct record_video_data attr_buf;
+      struct ff_video_attr attr_buf;
 
       bool avail_video = false;
       bool avail_audio = false;
@@ -1990,11 +2154,11 @@ static void ffmpeg_thread(void *data)
       {
          retro_spsc_read(&ff->attr_fifo, &attr_buf, sizeof(attr_buf));
          retro_spsc_read(&ff->video_fifo, video_buf,
-               VIDEO_SCALE_H(attr_buf.dims) * attr_buf.pitch);
+               VIDEO_SCALE_H(attr_buf.vid.dims) * attr_buf.vid.pitch);
          retro_eventcount_notify(&ff->space);
 
-         attr_buf.data = video_buf;
-         ffmpeg_push_video_thread(ff, &attr_buf);
+         attr_buf.vid.data = video_buf;
+         ffmpeg_push_video_thread(ff, &attr_buf.vid, attr_buf.pts_skip);
       }
 
       if (avail_audio && audio_buf)

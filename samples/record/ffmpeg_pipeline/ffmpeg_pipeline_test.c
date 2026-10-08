@@ -10,12 +10,18 @@
  * (frames are pushed as fast as they are taken), the blocking wait
  * when the queues are full, and the drain after the encoder thread
  * is joined.  A frame out of order, torn, or from the wrong slot
- * fails the pixel check. */
+ * fails the pixel check.
+ *
+ * A second pass runs in drop mode (allow_frame_drop, the smallest
+ * video queue): frames the encoder can't take in time are dropped,
+ * so it checks the survivors come out in order, pixel-exact, at the
+ * timestamp of the frame they were pushed as. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <boolean.h>
 
 #include "../../../record/record_driver.h"
 #include "../../../record/drivers/record_ffmpeg.h"
@@ -83,7 +89,26 @@ static int check_frame(const AVFrame *f, unsigned n)
    return 1;
 }
 
-int main(void)
+/* Which frame this is, from its top-left pixel. */
+static int frame_number(const AVFrame *f)
+{
+   unsigned n;
+   for (n = 0; n < FRAMES; n++)
+   {
+      uint32_t want = ((n * 37u) & 0xffu) << 16
+                    | ((n * 91u) & 0xffu) << 8 | ((n * 13u) & 0xffu);
+      uint32_t px;
+      if (f->format == AV_PIX_FMT_GBRP)
+         px = (f->data[2][0] << 16) | (f->data[0][0] << 8) | f->data[1][0];
+      else
+         px = (f->data[0][2] << 16) | (f->data[0][1] << 8) | f->data[0][0];
+      if (px == want)
+         return (int)n;
+   }
+   return -1;
+}
+
+static int run(bool drop)
 {
    struct record_params params;
    struct record_video_data vid;
@@ -107,6 +132,8 @@ int main(void)
    params.aspect_ratio               = (float)W / H;
    params.preset                     = RECORD_CONFIG_TYPE_RECORDING_LOSSLESS_QUALITY;
    params.pix_fmt                    = FFEMU_PIX_ARGB8888;
+   params.allow_frame_drop           = drop;
+   params.video_fifo_frames          = drop ? 8 : 32;
 
    remove(OUT);
    rec = record_ffmpeg.init(&params);
@@ -149,6 +176,7 @@ int main(void)
       AVPacket        *pkt = av_packet_alloc();
       AVFrame         *frm = av_frame_alloc();
       int vstream = -1, i;
+      int last = -1;
       unsigned got = 0;
 
       if (avformat_open_input(&fmt, OUT, NULL, NULL) < 0
@@ -188,7 +216,26 @@ int main(void)
          }
          while (avcodec_receive_frame(dec, frm) == 0)
          {
-            if (!check_frame(frm, got))
+            int n = drop ? frame_number(frm) : (int)got;
+            if (drop)
+            {
+               /* In order, and at the pushed frame's own time. */
+               double t = frm->best_effort_timestamp
+                  * av_q2d(fmt->streams[vstream]->time_base);
+               if (n <= last)
+               {
+                  fprintf(stderr, "frame %d after %d\n", n, last);
+                  return 1;
+               }
+               if (t < n / FPS - 0.002 || t > n / FPS + 0.002)
+               {
+                  fprintf(stderr, "frame %d at %.4f s, want %.4f s\n",
+                        n, t, n / FPS);
+                  return 1;
+               }
+               last = n;
+            }
+            if (n < 0 || !check_frame(frm, (unsigned)n))
                return 1;
             got++;
             av_frame_unref(frm);
@@ -196,7 +243,7 @@ int main(void)
          if (flushing)
             break;
       }
-      if (got != FRAMES)
+      if (drop ? got == 0 : got != FRAMES)
       {
          fprintf(stderr, "decoded %u frames, pushed %u\n", got, FRAMES);
          return 1;
@@ -205,9 +252,21 @@ int main(void)
       avformat_close_input(&fmt);
       av_packet_free(&pkt);
       av_frame_free(&frm);
+      if (drop)
+         printf("[pass] drop mode: %u of %u frames kept, in order, "
+               "pixel-exact, on time\n", got, FRAMES);
+      else
+         printf("[pass] %u frames through record_ffmpeg, all in order "
+               "and pixel-exact\n", FRAMES);
    }
    remove(OUT);
-   printf("[pass] %u frames through record_ffmpeg, all in order and pixel-exact\n", FRAMES);
+   return 0;
+}
+
+int main(void)
+{
+   if (run(false) || run(true))
+      return 1;
    printf("ALL OK\n");
    return 0;
 }
