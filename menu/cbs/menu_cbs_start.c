@@ -239,10 +239,10 @@ static int action_start_input_desc(
       /* Check whether core has defined this input */
       if (sys_info->input_desc_btn[mapped_port][btn_idx] && *sys_info->input_desc_btn[mapped_port][btn_idx])
       {
-         settings->uints.input_remap_ids[user_idx][btn_idx] = btn_idx;
+         input_config_set_remap_id(user_idx, btn_idx, btn_idx);
       }
       else
-         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+         input_config_set_remap_id(user_idx, btn_idx, RARCH_UNMAPPED);
    }
 
    return 0;

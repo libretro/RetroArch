@@ -2271,6 +2271,12 @@ extern retro_keybind_set input_autoconf_binds[MAX_USERS];
 extern retro_atomic_int_t input_binds_generation;
 void input_binds_kept_invalidate(void);
 
+/* One of a user's controls is remapped to @remap. A remap is set
+ * through here and not written into the settings directly: it is
+ * counted as a change, which is what has the frontend look at the
+ * remaps again. */
+void input_config_set_remap_id(unsigned user, unsigned id, unsigned remap);
+
 static INLINE void input_config_binds_changed(void)
 {
    retro_atomic_fetch_add_int(&input_binds_generation, 1);

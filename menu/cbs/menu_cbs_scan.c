@@ -167,7 +167,7 @@ static int action_scan_input_desc(const char *path,
 
       if (     type >= MENU_SETTINGS_INPUT_DESC_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_END)
-         settings->uints.input_remap_ids[user_idx][key] = RARCH_UNMAPPED;
+         input_config_set_remap_id(user_idx, key, RARCH_UNMAPPED);
       else if (type >= MENU_SETTINGS_INPUT_DESC_KBD_BEGIN
             && type <= MENU_SETTINGS_INPUT_DESC_KBD_END)
          settings->uints.input_keymapper_ids[user_idx][key] = RETROK_UNKNOWN;

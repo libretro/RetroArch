@@ -4218,6 +4218,64 @@ static int16_t input_state_device(
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_DPAD_RIGHT) \
                             | (1u << RETRO_DEVICE_ID_LIGHTGUN_RELOAD))
 
+/* What is kept of the users' remaps of the pad.
+ *
+ * Two things were worked out from the remap table every frame: whether
+ * a user has anything remapped at all (a compare of the user's row
+ * with the row that maps nothing, for each user at each poll), and
+ * which of the RetroPad's sixteen a user has left as themselves (a
+ * walk of sixteen, at each read of the pad as a mask). The table
+ * changes when someone remaps a control, loads a remap file or sets
+ * the defaults; all three are counted as changes, and what is kept
+ * here is made again at the first asking after one. */
+static struct
+{
+   bool     valid;
+   uint16_t rows_differ;           /* bit u: user u has a button or an axis mapped away from itself */
+   uint16_t ident16[MAX_USERS];    /* bit n: the RetroPad's n-th is mapped to itself */
+} input_remap_kept;
+
+INPUT_NOINLINE static void input_remap_kept_make(void)
+{
+   /* every button and axis mapped to itself */
+   static const unsigned unmapped_row[RARCH_FIRST_CUSTOM_BIND + 8] = {
+       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11,
+      12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
+   unsigned user, id;
+   const settings_t *settings = config_get_ptr();
+   unsigned gen               = input_config_binds_generation();
+   uint16_t differ            = 0;
+
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      const unsigned *row = settings->uints.input_remap_ids[user];
+      uint16_t ident      = 0;
+      if (memcmp(row, unmapped_row, sizeof(unmapped_row)))
+         differ |= (uint16_t)(1u << user);
+      for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+         if (row[id] == id)
+            ident |= (uint16_t)(1u << id);
+      input_remap_kept.ident16[user] = ident;
+   }
+   input_remap_kept.rows_differ = differ;
+   /* a change made while this was done, from another thread: asked
+    * again at the next reading */
+   input_remap_kept.valid       = (input_config_binds_generation() == gen);
+}
+
+/* One of a user's controls is remapped: written here so that it is
+ * counted, and what is kept of the remaps is made again. */
+void input_config_set_remap_id(unsigned user, unsigned id, unsigned remap)
+{
+   settings_t *settings = config_get_ptr();
+   if (     !settings
+         || user >= MAX_USERS
+         || id >= RARCH_CUSTOM_BIND_LIST_END)
+      return;
+   settings->uints.input_remap_ids[user][id] = remap;
+   input_config_binds_changed();
+}
+
 /* A port's sixteen RetroPad buttons for the core, in one go.
  *
  * input_state_device() is the rules a button goes through on its way
@@ -4242,7 +4300,6 @@ static bool input_state_device_mask_plain(
    unsigned usable;     /* buttons whose bind is usable */
    unsigned ident = 0;  /* buttons remapped to themselves */
    unsigned res;
-   const unsigned *remap_ids             = settings->uints.input_remap_ids[port];
 
 #ifdef HAVE_NETWORKGAMEPAD
    /* the Remote RetroPad answers for a button in place of the binds */
@@ -4257,9 +4314,11 @@ static bool input_state_device_mask_plain(
          || input_st->turbo_btns.turbo_pressed[port])
       return false;
 
-   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
-      if (remap_ids[id] == id)
-         ident |= (1u << id);
+   /* which of the sixteen the user has left as themselves: kept since
+    * the remaps last changed */
+   if (!input_remap_kept.valid)
+      input_remap_kept_make();
+   ident = input_remap_kept.ident16[port];
 
    /* Which of the sixteen have a usable bind: kept with the port's
     * keys, which this read of the pad has just been through. Each
@@ -10837,6 +10896,7 @@ void input_binds_kept_invalidate(void)
 {
    unsigned port;
    input_keys_ports_at_poll = 0;
+   input_remap_kept.valid   = false;
    for (port = 0; port < MAX_USERS; port++)
    {
       input_port_pads[port].gen     = 0;
@@ -12463,12 +12523,6 @@ uint32_t input_driver_user_controls_bound(unsigned user)
 static bool input_remap_user_has_work(const settings_t *settings,
       const input_driver_state_t *input_st, unsigned user, unsigned device)
 {
-   /* every button and axis mapped to itself; one compare of the row
-    * against this is cheaper than a walk that stops at the first
-    * difference, since on most polls there is none to stop at */
-   static const unsigned unmapped_row[RARCH_FIRST_CUSTOM_BIND + 8] = {
-       0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11,
-      12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23 };
    unsigned j;
 
    switch (device)
@@ -12481,8 +12535,11 @@ static bool input_remap_user_has_work(const settings_t *settings,
          if (user == 0 && input_st->gamepad_input_override)
             return true;
 #endif
-         return memcmp(settings->uints.input_remap_ids[user],
-               unmapped_row, sizeof(unmapped_row)) != 0;
+         /* kept since the remaps last changed: it was a compare of
+          * the user's row with the row that maps nothing, every poll */
+         if (!input_remap_kept.valid)
+            input_remap_kept_make();
+         return (input_remap_kept.rows_differ >> user) & 1;
       case RETRO_DEVICE_KEYBOARD:
          {
             const unsigned *keys = settings->uints.input_keymapper_ids[user];

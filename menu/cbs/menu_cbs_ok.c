@@ -8399,7 +8399,7 @@ static int action_ok_push_dropdown_item_input_description(const char *path,
       return -1;
 
    /* Assign new mapping */
-   settings->uints.input_remap_ids[user_idx][btn_idx] = remap_idx;
+   input_config_set_remap_id(user_idx, btn_idx, remap_idx);
 
    return action_cancel_pop_default(NULL, NULL, 0, 0);
 }

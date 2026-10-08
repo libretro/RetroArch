@@ -1185,8 +1185,8 @@ static void lane_core_view(void)
       switch (sc)
       {
          case 1:
-            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_B;
-            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+            input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B);
+            input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A);
             break;
          case 2:
             settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_LSTICK_FORCED;
@@ -1292,8 +1292,8 @@ static void lane_core_view(void)
          CHECK(digest != digest_default, "core view: a scenario changed nothing");
 
       /* back to the default mapping */
-      settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_A;
-      settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+      input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_A);
+      input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_B);
       settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
       settings->bools.input_turbo_enable        = false;
       settings->uints.input_turbo_mode          = INPUT_TURBO_MODE_CLASSIC;
@@ -1793,7 +1793,7 @@ static void lane_remap_idle(void)
       trace((int)reading, 0);
 
       /* nothing mapped: B is B, and the poll did no remap work */
-      settings->uints.input_remap_ids[0][B] = B;
+      input_config_set_remap_id(0, B, B);
       run_loop_frames(2);
       CHECK(remap_frame(B, trace_last) == (1u << B),
             "remap idle: with nothing mapped, B does not reach the core as B");
@@ -1801,29 +1801,29 @@ static void lane_remap_idle(void)
             "remap idle: with nothing mapped the poll still did the first user's remap work");
 
       /* B given to A */
-      settings->uints.input_remap_ids[0][B] = A;
+      input_config_set_remap_id(0, B, A);
       CHECK(remap_frame(B, trace_last) == (1u << A),
             "remap idle: B mapped to A does not reach the core as A alone");
       CHECK(input_st->remap_worked & 1u,
             "remap idle: with B mapped to A the poll did no remap work");
 
       /* B switched off */
-      settings->uints.input_remap_ids[0][B] = RARCH_UNMAPPED;
+      input_config_set_remap_id(0, B, RARCH_UNMAPPED);
       CHECK(remap_frame(B, trace_last) == 0,
             "remap idle: B switched off still reaches the core");
 
       /* and back: nothing of the mapping is left */
-      settings->uints.input_remap_ids[0][B] = A;
+      input_config_set_remap_id(0, B, A);
       syn_buttons = 1u << (input_autoconf_binds[0][B].joykey & 31);
       run_loop_frames(1);
-      settings->uints.input_remap_ids[0][B] = B;
+      input_config_set_remap_id(0, B, B);
       CHECK(remap_frame(B, trace_last) == (1u << B),
             "remap idle: after the mapping was taken away, B is not B again, or A is still held");
       CHECK(!(input_st->remap_worked & 1u),
             "remap idle: after the mapping was taken away the poll kept doing remap work");
    }
 
-   settings->uints.input_remap_ids[0][B] = was;
+   input_config_set_remap_id(0, B, was);
    syn_buttons = 0;
    trace(0, 0);
    fast_forward(false);
@@ -2200,7 +2200,7 @@ static void lane_remap_pressure(void)
          "remapped pressure: not remapped, a press without pressure is not a full press");
 
    /* A onto B */
-   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_B;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B);
    pressure_frame(0, 0, 0, trace_last, &a, &b);
    seen = pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
    CHECK(seen == B && b == 20000 && !a,
@@ -2218,7 +2218,7 @@ static void lane_remap_pressure(void)
          "remapped pressure: A and B onto B, B pressed harder, B is not B's");
 
    /* swapped */
-   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A);
    seen = pressure_frame(a_btn | b_btn, 20000, 10000, trace_last, &a, &b);
    CHECK(seen == (A | B) && b == 20000 && a == 10000,
          "remapped pressure: A and B swapped, the pressures are not swapped");
@@ -2231,8 +2231,8 @@ static void lane_remap_pressure(void)
    a_bind->joyaxis = AXIS_POS(2);
 
    /* A and B both onto X: the harder press */
-   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_X;
-   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_X;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X);
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_X);
    seen = pressure_frame(a_btn | b_btn, 20000, 10000, trace_last, &a, &b);
    x    = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
          RETRO_DEVICE_INDEX_ANALOG_BUTTON, RETRO_DEVICE_ID_JOYPAD_X);
@@ -2245,22 +2245,22 @@ static void lane_remap_pressure(void)
          "remapped pressure: A and B onto X, B pressed harder, X is not B's");
 
    /* unmapped: nothing */
-   remap[RETRO_DEVICE_ID_JOYPAD_A] = RARCH_UNMAPPED;
-   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RARCH_UNMAPPED);
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_B);
    seen = pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
    CHECK(!seen && !a && !b,
          "remapped pressure: A unmapped, it still reaches the core");
 
    /* onto a stick, as before */
-   remap[RETRO_DEVICE_ID_JOYPAD_A] = RARCH_ANALOG_LEFT_X_PLUS;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RARCH_ANALOG_LEFT_X_PLUS);
    pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
    stick = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG,
          RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
    CHECK(stick == 20000 && !a,
          "remapped pressure: A onto the left stick, the stick is not A's pressure");
 
-   remap[RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_A;
-   remap[RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_B;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_A);
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_B);
    *a_bind = saved_a;
    *b_bind = saved_b;
    syn_buttons = 0;
@@ -3866,9 +3866,9 @@ static void lane_mapping_changes(void)
       MAP_SEES(1u << 5, 1u << A, "the first controller chosen again, its button does not press A");
 
       /* the button is remapped: what the pad's A is to the core */
-      settings->uints.input_remap_ids[0][A] = B;
+      input_config_set_remap_id(0, A, B);
       MAP_SEES(1u << 5, 1u << B, "remapped to B, the button does not press B alone");
-      settings->uints.input_remap_ids[0][A] = A;
+      input_config_set_remap_id(0, A, A);
       MAP_SEES(1u << 5, 1u << A, "the remap undone, the button does not press A");
 
       /* the controller is unplugged: its profile goes */
@@ -3893,7 +3893,7 @@ static void lane_mapping_changes(void)
 #undef MAP_SEES
 
    settings->uints.input_joypad_index[0]    = saved_index;
-   settings->uints.input_remap_ids[0][A]    = saved_remap_a;
+   input_config_set_remap_id(0, A, saved_remap_a);
    syn_pad_index                            = 0;
    syn_buttons                              = 0;
    trace(0, 0);
@@ -4488,7 +4488,7 @@ static void lane_mask_and_buttons(void)
       switch (step)
       {
          case 1:
-            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_Y;
+            input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_Y);
             break;
          case 2:
             /* remapped and not usable: its own state passes again */
@@ -4498,7 +4498,7 @@ static void lane_mask_and_buttons(void)
             RETRO_KEYBIND_SET_VALID(&input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B], true);
             break;
          case 4:
-            settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = saved_remap_b;
+            input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, saved_remap_b);
             break;
          default:
             break;
@@ -4539,7 +4539,7 @@ static void lane_mask_and_buttons(void)
    }
    input_st->current_driver = saved_input;
 
-   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = saved_remap_b;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, saved_remap_b);
    memcpy(input_autoconf_binds[0], saved_auto, sizeof(saved_auto));
    memcpy(input_config_binds[0],   saved_own,  sizeof(saved_own));
    binds_written_by_a_lane();
@@ -4829,7 +4829,7 @@ static void lane_save_minimal_binds(void)
    /* and what else of the input a user has set that is not a bind: a
     * port's kind of device, a remapped button, a stick as the d-pad */
    input_config_set_device(1, RETRO_DEVICE_ANALOG);
-   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = RETRO_DEVICE_ID_JOYPAD_X;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_X);
    settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
    binds_written_by_a_lane();
    settings->bools.config_save_minimal = true;
@@ -4883,7 +4883,7 @@ static void lane_save_minimal_binds(void)
    remove(path);
    settings->bools.config_save_minimal = saved_minimal;
    input_config_set_device(1, saved_device);
-   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_A] = saved_remap;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, saved_remap);
    settings->uints.input_analog_dpad_mode[0] = saved_analog;
    *b = saved_b;
    binds_written_by_a_lane();
@@ -5129,8 +5129,8 @@ static void lane_remap_close(void)
 
    /* L is disabled and B is given to A, and the remap is saved as a
     * core remap, as the menu saves it */
-   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_L] = RARCH_UNMAPPED;
-   settings->uints.input_remap_ids[0][RETRO_DEVICE_ID_JOYPAD_B] = RETRO_DEVICE_ID_JOYPAD_A;
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_L, RARCH_UNMAPPED);
+   input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_B, RETRO_DEVICE_ID_JOYPAD_A);
    CHECK(input_remapping_save_file(path), "remap close: the remap file was not saved");
    if (runloop_st->name.remapfile)
       free(runloop_st->name.remapfile);

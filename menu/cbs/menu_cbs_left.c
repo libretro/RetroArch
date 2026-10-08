@@ -182,14 +182,14 @@ static int action_left_input_desc(unsigned type, const char *label,
       {
          bind_idx--;
          bind_idx = input_config_bind_order[bind_idx];
-         settings->uints.input_remap_ids[user_idx][btn_idx] = bind_idx;
+         input_config_set_remap_id(user_idx, btn_idx, bind_idx);
 
          /* Skip empty descs */
          if ((!sys_info->input_desc_btn[mapped_port][bind_idx] || !*sys_info->input_desc_btn[mapped_port][bind_idx]))
             return action_left_input_desc(type, NULL, wraparound);
       }
       else
-         settings->uints.input_remap_ids[user_idx][btn_idx] = RARCH_UNMAPPED;
+         input_config_set_remap_id(user_idx, btn_idx, RARCH_UNMAPPED);
    }
 
    return 0;

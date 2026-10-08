@@ -286,6 +286,42 @@ def joypad_bind_names(root):
     return found
 
 
+# A user's remap of a control is set through
+# input_config_set_remap_id(), which counts it as a change: what the
+# frontend keeps of the remaps - who has anything remapped, which
+# buttons are left as themselves - is made again after a counted change
+# and not otherwise. A remap written into the settings directly would
+# take effect whenever something else happened to be counted. The
+# input's own files and the configuration's loader, which end with a
+# counted call, are where the table is written.
+REMAP_DIRECT_WRITE = re.compile(
+    r'\binput_remap_ids\s*\[[^\]]*\]\s*\[[^\]]*\]\s*(?:[-+|&]?=)(?!=)')
+REMAP_WRITERS = ('input/', 'configuration.c')
+
+
+def remap_direct_writes(root):
+    found = {}
+    for d, dirs, files in os.walk(root):
+        rel_d = os.path.relpath(d, root).replace(os.sep, '/')
+        if rel_d == '.':
+            dirs[:] = [x for x in dirs if x not in ('deps', 'samples', '.git')]
+            rel_d = ''
+        for f in sorted(files):
+            if not f.endswith(('.c', '.h', '.m', '.mm', '.cpp')):
+                continue
+            rel = (rel_d + '/' + f) if rel_d else f
+            if rel.startswith(REMAP_WRITERS[0]) or rel == REMAP_WRITERS[1]:
+                continue
+            try:
+                text = open(os.path.join(d, f), encoding='utf-8', errors='replace').read()
+            except OSError:
+                continue
+            n = len(REMAP_DIRECT_WRITE.findall(strip_comments(text)))
+            if n:
+                found[rel] = n
+    return found
+
+
 def analog_bind_macro_uses(root):
     found = {}
     for d, dirs, files in os.walk(root):
@@ -398,6 +434,12 @@ def run(root, allowed, outside_allowed=None):
         print('%s: maps a stick\'s axis to its binds itself, %d time(s).\n'
               '  The frontend answers a stick from the keys bound to it: give it\n'
               '  the keys (keys_down in the driver table).' % (rel, n))
+        bad += 1
+    for rel, n in sorted(remap_direct_writes(root).items()):
+        print('%s: writes a remap into the settings directly, %d time(s).\n'
+              '  Set it with input_config_set_remap_id(user, id, remap), which\n'
+              '  counts the change; what the frontend keeps of the remaps is made\n'
+              '  again only after a counted change.' % (rel, n))
         bad += 1
     for rel, n in sorted(joypad_bind_names(root).items()):
         print('%s: names binds, %d time(s).\n'
@@ -554,6 +596,18 @@ def selftest():
                                        'input/drivers_hid/hb.c': 1}:
             print('selftest: joypad and HID files naming binds were not the two counted')
             bad += 1
+        # a remap written straight into the settings by the menu; the same
+        # write in the input's own file, a read and a comparison are not it
+        os.makedirs(os.path.join(root, 'menu', 'cbs'))
+        with open(os.path.join(root, 'menu', 'cbs', 'rw.c'), 'w') as f:
+            f.write('settings->uints.input_remap_ids[u][b] = idx;\n'
+                    'if (settings->uints.input_remap_ids[u][b] == idx) x = 1;\n'
+                    'y = settings->uints.input_remap_ids[u][b];\n')
+        with open(os.path.join(root, 'input', 'ours.c'), 'w') as f:
+            f.write('settings->uints.input_remap_ids[u][b] = idx;\n')
+        if remap_direct_writes(root) != {'menu/cbs/rw.c': 1}:
+            print('selftest: a remap written directly was not the one counted')
+            bad += 1
         if analog_bind_macro_uses(root) != {'input/drivers/an.c': 1}:
             print('selftest: a driver mapping a stick to its binds was not found, '
                   'or the frontend was taken for one')
@@ -562,7 +616,7 @@ def selftest():
     if bad:
         print('FAIL input_state_grab_check --selftest')
         return 1
-    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 12))
+    print('PASS input_state_grab_check --selftest (%d cases)' % (len(cases) + 13))
     return 0
 
 
