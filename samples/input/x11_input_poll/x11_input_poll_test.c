@@ -51,8 +51,8 @@
 static int stub_signal_state;
 const struct rarch_key_map rarch_key_map_x11[] = { { 0, RETROK_UNKNOWN } };
 enum retro_key rarch_keysym_lut[RETROK_LAST];
-retro_keybind_set input_config_binds[MAX_USERS];
-retro_keybind_set input_autoconf_binds[MAX_USERS];
+struct retro_keybind *input_config_binds[MAX_USERS];
+struct retro_keybind *input_autoconf_binds[MAX_USERS];
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_DBG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }

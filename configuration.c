@@ -10792,13 +10792,7 @@ void input_config_reset_autoconfig_binds(unsigned port)
    if (port >= MAX_USERS)
       return;
 
-   for (i = 0; i < RARCH_BIND_LIST_END; i++)
-   {
-      struct retro_keybind *bind = input_autoconf_bind_edit(port, i);
-      bind->joykey  = NO_BTN;
-      bind->joyaxis = AXIS_NONE;
-      RETRO_KEYBIND_SET_VALID(bind, false);
-   }
+   input_autoconf_binds_none(port);
    input_autoconf_bind_names_free(port);
 
    /* Reset sensor axis map to default identity mapping */

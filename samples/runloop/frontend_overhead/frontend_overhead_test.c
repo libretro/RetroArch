@@ -241,17 +241,42 @@ static void (*core_input_edges)(long*, long*);
  * (input_config_binds_changed()), and what is compiled from the binds
  * goes by the count. So that a lane's write is seen, the arrays are
  * looked at here and a change in them is counted on the lane's behalf. */
+#define LANE_SHARED_A 12
+#define LANE_SHARED_B 13
 static void binds_written_by_a_lane(void)
 {
    static uint32_t last;
+   static bool own;
    uint32_t h             = 2166136261u;
-   const unsigned char *p = (const unsigned char*)input_config_binds;
+   const unsigned char *p;
    size_t i;
-   for (i = 0; i < sizeof(input_config_binds); i++)
-      h = (h ^ p[i]) * 16777619u;
-   p = (const unsigned char*)input_autoconf_binds;
-   for (i = 0; i < sizeof(input_autoconf_binds); i++)
-      h = (h ^ p[i]) * 16777619u;
+   unsigned user;
+   /* The lanes write binds where they are kept, as nothing in the
+    * program may: a row is shared until input_config_bind_edit() or
+    * input_autoconf_bind_edit() gives its user their own. So every
+    * user and port gets a row of their own here, once - but for two,
+    * LANE_SHARED_A and LANE_SHARED_B, which no lane writes directly
+    * and the lane on sharing keeps as it finds them. */
+   if (!own)
+   {
+      own = true;
+      for (user = 0; user < MAX_USERS; user++)
+      {
+         if (user == LANE_SHARED_A || user == LANE_SHARED_B)
+            continue;
+         (void)input_config_bind_edit(user, 0);
+         (void)input_autoconf_bind_edit(user, 0);
+      }
+   }
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      p = (const unsigned char*)input_config_binds[user];
+      for (i = 0; i < sizeof(retro_keybind_set); i++)
+         h = (h ^ p[i]) * 16777619u;
+      p = (const unsigned char*)input_autoconf_binds[user];
+      for (i = 0; i < sizeof(retro_keybind_set); i++)
+         h = (h ^ p[i]) * 16777619u;
+   }
    if (h != last)
    {
       last = h;
@@ -3797,8 +3822,14 @@ static void lane_mapping_changes(void)
       free(saved_auto);
       return;
    }
-   memcpy(saved_user, input_config_binds,   MAX_USERS * sizeof(*saved_user));
-   memcpy(saved_auto, input_autoconf_binds, MAX_USERS * sizeof(*saved_auto));
+   {
+      unsigned u;
+      for (u = 0; u < MAX_USERS; u++)
+      {
+         memcpy(saved_user[u], input_config_binds[u],   sizeof(*saved_user));
+         memcpy(saved_auto[u], input_autoconf_binds[u], sizeof(*saved_auto));
+      }
+   }
    saved_index   = settings->uints.input_joypad_index[0];
    saved_remap_a = settings->uints.input_remap_ids[0][A];
 
@@ -3884,8 +3915,20 @@ static void lane_mapping_changes(void)
        * It is not done here: it also forgets which controllers are
        * connected, which the lanes after this one need.) */
 
-      memcpy(input_config_binds,   saved_user, MAX_USERS * sizeof(*saved_user));
-      memcpy(input_autoconf_binds, saved_auto, MAX_USERS * sizeof(*saved_auto));
+      {
+         /* a row is written back only if it was changed, and through
+          * the call that makes it its user's own if it is not yet */
+         unsigned u;
+         for (u = 0; u < MAX_USERS; u++)
+         {
+            if (memcmp(input_config_binds[u], saved_user[u], sizeof(*saved_user)))
+               memcpy(input_config_bind_edit(u, 0), saved_user[u],
+                     sizeof(*saved_user));
+            if (memcmp(input_autoconf_binds[u], saved_auto[u], sizeof(*saved_auto)))
+               memcpy(input_autoconf_bind_edit(u, 0), saved_auto[u],
+                     sizeof(*saved_auto));
+         }
+      }
       input_config_binds_changed();
       syn_buttons = 0;
       run_loop_frames(2);
@@ -5206,6 +5249,98 @@ static void lane_bind_settings(void)
             " clears that bind and no other user's, and a captured button"
             " lands in it\n");
 #endif
+}
+
+/* A user's binds are a row that is shared until it is written: every
+ * user who has configured nothing reads the same row of defaults, and
+ * every port with no profile the same row of nothing. Held to it with
+ * the two users and ports the harness leaves as they start: they share
+ * a row; reading does not part them; a write through the call gives
+ * the one written a row of their own that says what the shared one
+ * did but for the write, and leaves the other reading what they read;
+ * putting the binds back to their defaults, and forgetting a
+ * controller, write the defaults and the nothing into the own row
+ * and do not hand it back - an address taken of it stays good. */
+static void lane_binds_shared_rows(void)
+{
+   unsigned i;
+   unsigned had   = failures;
+   const unsigned a = LANE_SHARED_A, b = LANE_SHARED_B;
+   const struct retro_keybind *row_a, *row_b, *own;
+   struct retro_keybind was;
+   bool same = true;
+   unsigned changes;
+
+   row_a = input_config_binds[a];
+   row_b = input_config_binds[b];
+   CHECK(row_a && row_a == row_b,
+         "shared rows: two users who have configured nothing do not share a row");
+   CHECK(input_autoconf_binds[a] && input_autoconf_binds[a] == input_autoconf_binds[b],
+         "shared rows: two ports with no profile do not share a row");
+   CHECK(input_config_binds[0] != row_a,
+         "shared rows: the first user's row is the others'");
+
+   /* reading parts nobody, and is not a change */
+   changes = input_config_binds_generation();
+   (void)input_config_bind(a, RETRO_DEVICE_ID_JOYPAD_B);
+   (void)input_autoconf_bind(a, RETRO_DEVICE_ID_JOYPAD_B);
+   CHECK(   input_config_binds[a] == row_a
+         && input_config_binds_generation() == changes,
+         "shared rows: reading a bind gave the user a row, or counted as a change");
+
+   /* a write gives the user their own, which says what the shared one
+    * did but for the write */
+   was = row_a[RETRO_DEVICE_ID_JOYPAD_B];
+   input_config_bind_edit(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey = 11;
+   own = input_config_binds[a];
+   CHECK(own != row_a, "shared rows: a write did not give the user a row of their own");
+   CHECK(input_config_binds_generation() != changes,
+         "shared rows: a write was not counted as a change");
+   CHECK(input_config_binds[b] == row_b,
+         "shared rows: a write to one user's bind parted another from the shared row");
+   CHECK(   input_config_bind(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey == 11
+         && input_config_bind(b, RETRO_DEVICE_ID_JOYPAD_B)->joykey == was.joykey
+         && row_a[RETRO_DEVICE_ID_JOYPAD_B].joykey == was.joykey,
+         "shared rows: a write to one user's bind is read by another, or was lost");
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+      if (   i != RETRO_DEVICE_ID_JOYPAD_B
+          && memcmp(&own[i], &row_a[i], sizeof(own[i])))
+         same = false;
+   CHECK(same, "shared rows: the user's own row does not start as the shared one said");
+   /* a second write is to the same row */
+   input_config_bind_edit(a, RETRO_DEVICE_ID_JOYPAD_A)->joykey = 12;
+   CHECK(input_config_binds[a] == own,
+         "shared rows: a second write gave the user another row");
+
+   /* the same for what a controller's profile gives */
+   input_autoconf_bind_edit(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey = 3;
+   CHECK(   input_autoconf_binds[a] != input_autoconf_binds[b]
+         && input_autoconf_bind(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey == 3
+         && input_autoconf_bind(b, RETRO_DEVICE_ID_JOYPAD_B)->joykey != 3,
+         "shared rows: a profile's bind for one port is read on another, or was lost");
+   own = input_autoconf_binds[a];
+   input_config_reset_autoconfig_binds(a);
+   CHECK(   input_autoconf_binds[a] == own
+         && input_autoconf_bind(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey == NO_BTN
+         && !RETRO_KEYBIND_VALID(input_autoconf_bind(a, RETRO_DEVICE_ID_JOYPAD_B)),
+         "shared rows: a forgotten controller's row was handed back, or still has its bind");
+
+   /* a user's own row put back to what the shared one says */
+   {
+      struct retro_keybind *row = input_config_bind_edit(a, 0);
+      own = input_config_binds[a];
+      memcpy(row, row_a, sizeof(retro_keybind_set));
+      CHECK(   input_config_binds[a] == own
+            && input_config_bind(a, RETRO_DEVICE_ID_JOYPAD_B)->joykey == was.joykey,
+            "shared rows: an own row written back to the defaults is not read as them");
+   }
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] shared rows: users with nothing configured share a row,"
+            " and ports with no profile; a write gives its user their own"
+            " and no one else's changes; an own row is kept\n");
 }
 
 static void lane_aim_stick(void)
@@ -6540,6 +6675,7 @@ int main(int argc, char *argv[])
       lane_hotkeys_one_set();
       lane_save_minimal_binds();
       lane_bind_names();
+      lane_binds_shared_rows();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();

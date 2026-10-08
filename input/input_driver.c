@@ -235,7 +235,68 @@ const unsigned input_config_bind_order[24] = {
 
 /**************************************/
 /* TODO/FIXME - turn these into static global variable */
-retro_keybind_set input_config_binds[MAX_USERS];
+/* The binds: what each user has configured, and what the profile of
+ * the controller on each port gives.
+ *
+ * A user's binds are a row, one place for every bind there is, and so
+ * are a controller's. They were two tables of sixteen rows each, 25,088
+ * bytes, though most rows hold nothing of their own: a user who has
+ * configured nothing has the defaults, the same ones as the next such
+ * user, and a port with no controller, or one with no profile, has
+ * nothing behind any bind.
+ *
+ * So a row is shared until it is written. The tables are sixteen
+ * pointers each; they start at the three rows below - the first user's
+ * defaults, every other user's, and a controller's nothing - and a row
+ * becomes its user's or its port's own, a copy, at the first write to
+ * it (the _edit calls). Readers index the tables as they did. A row
+ * that has become someone's own stays so and is never freed: putting
+ * the binds back to their defaults, or forgetting a controller, writes
+ * into it. So an address a reader took is good for as long as it was
+ * before, and the only change it can meet is the one from a shared
+ * row to an own one that says the same. */
+#define INPUT_BINDS_ROW_BYTES \
+   (RARCH_BIND_LIST_END * sizeof(struct retro_keybind))
+
+static struct retro_keybind input_binds_first_user[RARCH_BIND_LIST_END];
+static struct retro_keybind input_binds_other_users[RARCH_BIND_LIST_END];
+static struct retro_keybind input_binds_no_profile[RARCH_BIND_LIST_END];
+
+struct retro_keybind *input_config_binds[MAX_USERS] = {
+   input_binds_first_user,
+   input_binds_other_users, input_binds_other_users, input_binds_other_users,
+   input_binds_other_users, input_binds_other_users, input_binds_other_users,
+   input_binds_other_users, input_binds_other_users, input_binds_other_users,
+   input_binds_other_users, input_binds_other_users, input_binds_other_users,
+   input_binds_other_users, input_binds_other_users, input_binds_other_users
+};
+typedef char input_binds_rows_for_sixteen[(MAX_USERS == 16) ? 1 : -1];
+
+/* A row that is its user's own, to be written: the one it has, or a
+ * copy of the shared one it had. NULL if there is no memory for one. */
+static struct retro_keybind *input_binds_row_own(
+      struct retro_keybind **rows, unsigned who)
+{
+   struct retro_keybind *row = rows[who];
+   if (     row == input_binds_first_user
+         || row == input_binds_other_users
+         || row == input_binds_no_profile)
+   {
+      struct retro_keybind *own =
+         (struct retro_keybind*)malloc(INPUT_BINDS_ROW_BYTES);
+      if (!own)
+         return NULL;
+      memcpy(own, row, INPUT_BINDS_ROW_BYTES);
+      rows[who] = own;
+      row       = own;
+   }
+   return row;
+}
+
+/* Where a write that cannot be kept goes: there was no memory for the
+ * row, or the user or the bind asked for is not one there is. A whole
+ * row, since a caller may ask for a row's first bind and step from it. */
+static struct retro_keybind input_binds_write_lost[RARCH_BIND_LIST_END];
 
 /* A copy of the configured binds: see input_driver.h. It is the table
  * over again, for now. */
@@ -243,6 +304,26 @@ struct input_config_binds_copy
 {
    retro_keybind_set binds[MAX_USERS];
 };
+
+struct retro_keybind *input_config_bind_edit(unsigned user, unsigned id)
+{
+   struct retro_keybind *row;
+   input_config_binds_changed();
+   if (     user < MAX_USERS && id < RARCH_BIND_LIST_END
+         && (row = input_binds_row_own(input_config_binds, user)))
+      return &row[id];
+   return &input_binds_write_lost[id < RARCH_BIND_LIST_END ? id : 0];
+}
+
+struct retro_keybind *input_autoconf_bind_edit(unsigned pad, unsigned id)
+{
+   struct retro_keybind *row;
+   input_config_binds_changed();
+   if (     pad < MAX_USERS && id < RARCH_BIND_LIST_END
+         && (row = input_binds_row_own(input_autoconf_binds, pad)))
+      return &row[id];
+   return &input_binds_write_lost[id < RARCH_BIND_LIST_END ? id : 0];
+}
 
 input_config_binds_copy_t *input_config_binds_copy_new(void)
 {
@@ -255,7 +336,10 @@ input_config_binds_copy_t *input_config_binds_copy_new(void)
 
 void input_config_binds_copy_take(input_config_binds_copy_t *copy)
 {
-   memcpy(copy->binds, input_config_binds, sizeof(input_config_binds));
+   unsigned user;
+   for (user = 0; user < MAX_USERS; user++)
+      memcpy(copy->binds[user], input_config_binds[user],
+            INPUT_BINDS_ROW_BYTES);
 }
 
 const struct retro_keybind *input_config_binds_copy_bind(
@@ -266,7 +350,18 @@ const struct retro_keybind *input_config_binds_copy_bind(
 
 void input_config_binds_copy_restore(const input_config_binds_copy_t *copy)
 {
-   memcpy(input_config_binds, copy->binds, sizeof(input_config_binds));
+   unsigned user;
+   for (user = 0; user < MAX_USERS; user++)
+   {
+      struct retro_keybind *row;
+      /* a user whose binds are what the copy has keeps the row they
+       * have, shared or not */
+      if (!memcmp(copy->binds[user], input_config_binds[user],
+               INPUT_BINDS_ROW_BYTES))
+         continue;
+      if ((row = input_binds_row_own(input_config_binds, user)))
+         memcpy(row, copy->binds[user], INPUT_BINDS_ROW_BYTES);
+   }
    input_config_binds_changed();
 }
 
@@ -297,7 +392,14 @@ static const struct retro_keybind input_hotkey_bind_none = {
    (  ((i) < RARCH_FIRST_META_KEY)           ? &input_config_binds[(port)][(i)] \
     : ((port) == input_hotkey_port_seen)     ? &input_config_binds[0][(i)] \
     :                                          &input_hotkey_bind_none)
-retro_keybind_set input_autoconf_binds[MAX_USERS];
+struct retro_keybind *input_autoconf_binds[MAX_USERS] = {
+   input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
+   input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
+   input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
+   input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
+   input_binds_no_profile, input_binds_no_profile, input_binds_no_profile,
+   input_binds_no_profile
+};
 retro_atomic_int_t input_binds_generation;
 /* The ports whose keys the last poll made current: see
  * input_port_keys_get(). Taken back to none by a change to a bind. */
@@ -9203,18 +9305,57 @@ void input_config_bind_from_def(struct retro_keybind *bind,
          def->mbutton, RETRO_KEYBIND_DEF_VALID(def));
 }
 
-/* The configured binds, every user's, as their defaults. */
+/* The configured binds, every user's, as their defaults: the two
+ * shared rows are made, and a user who has a row of their own has the
+ * defaults written into it. */
 void input_config_reset_binds(void)
 {
    unsigned i;
 
    input_config_binds_changed();
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_config_bind_from_def(&input_binds_first_user[i],
+            input_config_bind_def(0, i));
+      input_config_bind_from_def(&input_binds_other_users[i],
+            input_config_bind_def(1, i));
+   }
    for (i = 0; i < MAX_USERS; i++)
    {
-      unsigned j;
-      for (j = 0; j < RARCH_BIND_LIST_END; j++)
-         input_config_bind_from_def(&input_config_binds[i][j],
-               input_config_bind_def(i, j));
+      struct retro_keybind *row      = input_config_binds[i];
+      const struct retro_keybind *as = i
+         ? input_binds_other_users : input_binds_first_user;
+      if (row != as)
+         memcpy(row, as, INPUT_BINDS_ROW_BYTES);
+   }
+}
+
+/* Nothing is behind any bind of the controller on @port: what a port
+ * has before a profile is read for it, and after its controller goes.
+ * Each bind loses its button and its axis and is not usable; the rest
+ * of it is left, as it always was. */
+void input_autoconf_binds_none(unsigned port)
+{
+   unsigned i;
+   struct retro_keybind *row;
+
+   if (port >= MAX_USERS)
+      return;
+   input_config_binds_changed();
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      input_binds_no_profile[i].joykey  = NO_BTN;
+      input_binds_no_profile[i].joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(&input_binds_no_profile[i], false);
+   }
+   row = input_autoconf_binds[port];
+   if (row == input_binds_no_profile)
+      return;
+   for (i = 0; i < RARCH_BIND_LIST_END; i++)
+   {
+      row[i].joykey  = NO_BTN;
+      row[i].joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_VALID(&row[i], false);
    }
 }
 
@@ -9769,7 +9910,10 @@ void config_read_keybinds_conf(void *data)
          char prefix[16];
          const struct input_bind_map *keybind =
             (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(j);
-         struct retro_keybind *bind      = &input_config_binds[i][j];
+         /* worked on aside, and written if the file changes it: a
+          * user the file says nothing about keeps the shared row */
+         struct retro_keybind now        = input_config_binds[i][j];
+         struct retro_keybind *bind      = &now;
          bool meta                       = false;
          const char *btn                 = NULL;
          struct config_entry_list *entry = NULL;
@@ -9813,6 +9957,9 @@ void config_read_keybinds_conf(void *data)
             input_config_bind_names_take(i, j, &got);
          }
          input_config_parse_mouse_button(str, conf, prefix, btn, bind);
+
+         if (memcmp(&now, &input_config_binds[i][j], sizeof(now)))
+            *input_config_bind_edit(i, j) = now;
       }
    }
    /* binds read from a file are binds changed */

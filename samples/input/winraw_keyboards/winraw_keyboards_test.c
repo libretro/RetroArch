@@ -132,8 +132,12 @@ static void fake_device_strings(HANDLE hnd, char *path,
 /* The frontend, as far as the driver links against it. */
 uint8_t g_win32_flags;
 ui_window_win32_t main_window;
-retro_keybind_set input_config_binds[MAX_USERS];
-retro_keybind_set input_autoconf_binds[MAX_USERS];
+/* The frontend keeps a pointer to each user's row of binds; here every
+ * user has a row of this test's. */
+static retro_keybind_set kb_rows[MAX_USERS];
+static retro_keybind_set kb_auto_rows[MAX_USERS];
+struct retro_keybind *input_config_binds[MAX_USERS];
+struct retro_keybind *input_autoconf_binds[MAX_USERS];
 enum retro_key rarch_keysym_lut[RETROK_LAST];
 const struct rarch_key_map rarch_key_map_winraw[] = { { 0, RETROK_UNKNOWN } };
 static settings_t stub_settings;
@@ -402,7 +406,7 @@ static int pad_mask_b(unsigned port)
 
 static int port_key(unsigned port, unsigned rk)
 {
-   return winraw_input_state(wr, NULL, &joy_info, input_config_binds,
+   return winraw_input_state(wr, NULL, &joy_info, kb_rows,
          port, RETRO_DEVICE_KEYBOARD, 0, rk);
 }
 
@@ -543,6 +547,11 @@ int main(void)
       unsigned p;
       rarch_keysym_lut[RETROK_a] = SC_KEY_A;
       rarch_keysym_lut[RETROK_f] = SC_KEY_F;
+      for (p = 0; p < MAX_USERS; p++)
+      {
+         input_config_binds[p]   = kb_rows[p];
+         input_autoconf_binds[p] = kb_auto_rows[p];
+      }
       for (p = 0; p < 3; p++)
          input_config_binds[p][RETRO_DEVICE_ID_JOYPAD_B].attr =
             RETRO_KEYBIND_ATTR(RETROK_a, NO_BTN, 1);

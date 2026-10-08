@@ -55,8 +55,8 @@ settings_t *config_get_ptr(void) { return &stub_settings; }
 /* the settings a driver asks for by name, read from the ones above */
 #include "../input_config_stubs.h"
 
-struct retro_keybind input_config_binds[MAX_USERS][RARCH_BIND_LIST_END];
-struct retro_keybind input_autoconf_binds[MAX_USERS][RARCH_BIND_LIST_END];
+struct retro_keybind *input_config_binds[MAX_USERS];
+struct retro_keybind *input_autoconf_binds[MAX_USERS];
 enum retro_key rarch_keysym_lut[RETROK_LAST];
 const struct rarch_key_map rarch_key_map_linux[] = { { 0, RETROK_UNKNOWN } };
 void input_keymaps_init_keyboard_lut(const struct rarch_key_map *map) { (void)map; }

@@ -38,8 +38,8 @@ static int hooked_load_acquire_int(retro_atomic_int_t *p)
 /* The frontend, as far as the driver links against it. */
 uint8_t g_win32_flags;
 ui_window_win32_t main_window;
-retro_keybind_set input_config_binds[MAX_USERS];
-retro_keybind_set input_autoconf_binds[MAX_USERS];
+struct retro_keybind *input_config_binds[MAX_USERS];
+struct retro_keybind *input_autoconf_binds[MAX_USERS];
 enum retro_key rarch_keysym_lut[RETROK_LAST];
 const struct rarch_key_map rarch_key_map_winraw[] = { { 0, RETROK_UNKNOWN } };
 static settings_t stub_settings;

@@ -2255,8 +2255,8 @@ extern hid_driver_t gekko_hid;
 extern hid_driver_t wiiu_hid;
 #endif /* HAVE_HID */
 
-extern retro_keybind_set input_config_binds[MAX_USERS];
-extern retro_keybind_set input_autoconf_binds[MAX_USERS];
+extern struct retro_keybind *input_config_binds[MAX_USERS];
+extern struct retro_keybind *input_autoconf_binds[MAX_USERS];
 
 /* What a port's mapping is made from - the users' binds, the binds a
  * pad's autoconfig profile gave it, which pad, mouse and kind of device
@@ -2317,21 +2317,15 @@ enum msg_hash_enums input_config_bind_label(unsigned id);
 void input_config_bind_from_def(struct retro_keybind *bind,
       const struct retro_keybind_def *def);
 
-/* A bind to be written, now. A pointer kept and written later is not
- * counted here: the menu's are covered by its being open. */
-static INLINE struct retro_keybind *input_config_bind_edit(
-      unsigned user, unsigned id)
-{
-   input_config_binds_changed();
-   return &input_config_binds[user][id];
-}
-
-static INLINE struct retro_keybind *input_autoconf_bind_edit(
-      unsigned pad, unsigned id)
-{
-   input_config_binds_changed();
-   return &input_autoconf_binds[pad][id];
-}
+/* A bind to be written, now: counted as a change, and the row it is
+ * in becomes the user's or the port's own if it was a shared one (see
+ * input_config_binds in input_driver.c). Never NULL. Write through
+ * these and not through the arrays, which may be pointing at a row
+ * that is shared. */
+struct retro_keybind *input_config_bind_edit(unsigned user, unsigned id);
+struct retro_keybind *input_autoconf_bind_edit(unsigned pad, unsigned id);
+/* Nothing is behind any bind of the controller on @port. */
+void input_autoconf_binds_none(unsigned port);
 
 /* Every user's binds, copied out to and back from @sets[MAX_USERS]. */
 /* A copy of the configured binds: to compare the binds with, or to
