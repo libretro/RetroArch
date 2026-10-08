@@ -854,6 +854,8 @@ static struct vk_buffer vulkan_create_buffer(
    return buffer;
 }
 
+static void vulkan_destroy_buffer(VkDevice device, struct vk_buffer *buffer);
+
 static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       const struct vulkan_context *context,
       size_t len, VkBufferUsageFlags usage)
@@ -864,6 +866,14 @@ static struct vk_buffer_node *vulkan_buffer_chain_alloc_node(
       return NULL;
    node->buffer = vulkan_create_buffer(
          context, len, usage);
+   /* A buffer that could not be created or mapped has nothing to
+    * suballocate from, so do not hand it to the chain. */
+   if (!node->buffer.mapped)
+   {
+      vulkan_destroy_buffer(context->device, &node->buffer);
+      free(node);
+      return NULL;
+   }
    node->next   = NULL;
    return node;
 }
@@ -9201,11 +9211,16 @@ static void vulkan_run_hdr_pipeline(VkPipeline pipeline, VkRenderPass render_pas
    {
       VkWriteDescriptorSet write;
       VkDescriptorImageInfo image_info;
-      VkDescriptorSet set = vulkan_descriptor_manager_alloc(
+      VkDescriptorSet set;
+      /* NULL when the uniform buffer could not be mapped at init */
+      vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
+
+      if (!mapped_ubo)
+         return;
+
+      set = vulkan_descriptor_manager_alloc(
             vk->context->device,
             &vk->chain->descriptor_manager);
-
-      vulkan_hdr_uniform_t* mapped_ubo = (vulkan_hdr_uniform_t*)ubo->mapped;
 
       if (set == VK_NULL_HANDLE)
          return;
