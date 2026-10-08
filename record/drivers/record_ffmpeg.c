@@ -1559,9 +1559,112 @@ static void ffmpeg_free(void *data)
 
    free(handle);
 
+   av_log_set_callback(av_log_default_callback);
+
 #if FFMPEG3
    avformat_network_deinit();
 #endif
+}
+
+/* Route libav* logging into RetroArch's log, which is flushed per line
+ * and so survives a crash. FFmpeg's level follows the frontend log
+ * level: Debug gets AV_LOG_DEBUG (codec internals, e.g. the nvv4l2
+ * encoder's steps), Info gets AV_LOG_INFO, and so on. */
+/* FFmpeg often builds one line out of several av_log() calls, so
+ * pieces are collected until a newline. Calls come from any thread. */
+static slock_t *ffmpeg_av_log_lock;
+static char     ffmpeg_av_log_line[1024];
+static size_t   ffmpeg_av_log_len;
+static int      ffmpeg_av_log_level;
+static int      ffmpeg_av_log_prefix = 1;
+static void    *ffmpeg_av_log_ctx;
+
+static void ffmpeg_av_log_emit(int level, const char *line)
+{
+   if (level <= AV_LOG_ERROR)
+      RARCH_ERR("[FFmpeg/lav] %s\n", line);
+   else if (level <= AV_LOG_WARNING)
+      RARCH_WARN("[FFmpeg/lav] %s\n", line);
+   else if (level <= AV_LOG_INFO)
+      RARCH_LOG("[FFmpeg/lav] %s\n", line);
+   else
+      RARCH_DBG("[FFmpeg/lav] %s\n", line);
+}
+
+static void ffmpeg_av_log_cb(void *avcl, int level, const char *fmt,
+      va_list vl)
+{
+   char piece[1024];
+   size_t _len;
+
+   if (level > av_log_get_level())
+      return;
+
+   if (ffmpeg_av_log_lock)
+      slock_lock(ffmpeg_av_log_lock);
+
+   /* A partial line from another context (another thread or codec)
+    * is finished on its own rather than spliced with this one. */
+   if (ffmpeg_av_log_len && avcl != ffmpeg_av_log_ctx)
+   {
+      ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
+      ffmpeg_av_log_len     = 0;
+      ffmpeg_av_log_line[0] = '\0';
+      ffmpeg_av_log_prefix  = 1;
+   }
+   ffmpeg_av_log_ctx = avcl;
+
+   av_log_format_line2(avcl, level, fmt, vl, piece, sizeof(piece),
+         &ffmpeg_av_log_prefix);
+
+   if (!ffmpeg_av_log_len || level < ffmpeg_av_log_level)
+      ffmpeg_av_log_level = level;
+   ffmpeg_av_log_len += strlcpy(ffmpeg_av_log_line + ffmpeg_av_log_len,
+         piece, sizeof(ffmpeg_av_log_line) - ffmpeg_av_log_len);
+   if (ffmpeg_av_log_len >= sizeof(ffmpeg_av_log_line))
+      ffmpeg_av_log_len = sizeof(ffmpeg_av_log_line) - 1;
+
+   _len = ffmpeg_av_log_len;
+   if (     (_len && ffmpeg_av_log_line[_len - 1] == '\n')
+         || _len == sizeof(ffmpeg_av_log_line) - 1)
+   {
+      while (_len && (ffmpeg_av_log_line[_len - 1] == '\n'
+               || ffmpeg_av_log_line[_len - 1] == '\r'))
+         ffmpeg_av_log_line[--_len] = '\0';
+      if (_len)
+         ffmpeg_av_log_emit(ffmpeg_av_log_level, ffmpeg_av_log_line);
+      ffmpeg_av_log_len     = 0;
+      ffmpeg_av_log_line[0] = '\0';
+   }
+
+   if (ffmpeg_av_log_lock)
+      slock_unlock(ffmpeg_av_log_lock);
+}
+
+static void ffmpeg_av_log_init(void)
+{
+   int av_level;
+
+   if (!verbosity_is_enabled())
+      av_level = AV_LOG_ERROR;
+   else
+   {
+      switch (verbosity_get_log_level())
+      {
+         case 0:  av_level = AV_LOG_DEBUG;   break;
+         case 1:  av_level = AV_LOG_INFO;    break;
+         case 2:  av_level = AV_LOG_WARNING; break;
+         default: av_level = AV_LOG_ERROR;   break;
+      }
+   }
+
+   /* Created once and kept: the callback may still be in use by
+    * another libav* user when a recording ends. */
+   if (!ffmpeg_av_log_lock)
+      ffmpeg_av_log_lock = slock_new();
+
+   av_log_set_level(av_level);
+   av_log_set_callback(ffmpeg_av_log_cb);
 }
 
 static void *ffmpeg_new(const struct record_params *params)
@@ -1574,6 +1677,8 @@ static void *ffmpeg_new(const struct record_params *params)
    av_register_all();
    avformat_network_init();
 #endif
+
+   ffmpeg_av_log_init();
 
    handle->params            = *params;
    handle->pkt               = av_packet_alloc();

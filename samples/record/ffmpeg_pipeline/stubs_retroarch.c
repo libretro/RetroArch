@@ -35,3 +35,17 @@ void runloop_msg_queue_push(const char *msg, size_t len,
       enum message_queue_category category)
 {
 }
+
+void RARCH_DBG(const char *fmt, ...)
+{
+}
+
+bool verbosity_is_enabled(void)
+{
+   return false;
+}
+
+unsigned verbosity_get_log_level(void)
+{
+   return 1;
+}

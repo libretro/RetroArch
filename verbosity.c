@@ -149,6 +149,11 @@ void verbosity_set_log_level(unsigned level)
    verbosity_log_level = level;
 }
 
+unsigned verbosity_get_log_level(void)
+{
+   return verbosity_log_level;
+}
+
 void verbosity_enable(void)
 {
    main_verbosity_st.verbosity = true;
