@@ -2282,14 +2282,17 @@ static INLINE bool audio_driver_ff_follows(const audio_driver_state_t *audio_st,
 #ifdef HAVE_THREADS
 /* Whether a fast-forward producer waits on a full ring rather than
  * dropping: when the consumer pulls at the core's speed and a limiter
- * bounds that speed. Unlimited, waiting would hold the core to the
- * fastest tempo the audio can play. */
+ * bounds that speed. Unlimited, or limited past the fastest tempo the
+ * audio can play (AUDIO_MIN_RATIO), waiting would hold the core to that
+ * tempo instead of the limit. */
 static bool audio_driver_pipe_ff_waits(audio_driver_state_t *audio_st)
 {
-   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   int snap     = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   double ratio = audio_driver_snapshot_ffratio(audio_st);
    return (snap & AUDIO_SNAP_SYNC)
       && audio_driver_ff_follows(audio_st, (snap & AUDIO_SNAP_FF_SPEEDUP) != 0)
-      && audio_driver_snapshot_ffratio(audio_st) > 1.0;
+      && ratio > 1.0
+      && ratio * AUDIO_MIN_RATIO <= 1.0;
 }
 #endif
 

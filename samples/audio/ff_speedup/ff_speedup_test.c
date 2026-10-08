@@ -614,6 +614,12 @@ static void test_producer_holds_at_a_full_ring(void)
    settings->floats.fastforward_ratio = 0.0f;
    audio_driver_publish_runloop();
    CHECK(!audio_driver_pipe_ff_waits(st), "an unlimited hold drops instead");
+   settings->floats.fastforward_ratio = 16.0f;
+   audio_driver_publish_runloop();
+   CHECK(audio_driver_pipe_ff_waits(st), "a limit the audio can play at waits");
+   settings->floats.fastforward_ratio = 50.0f;
+   audio_driver_publish_runloop();
+   CHECK(!audio_driver_pipe_ff_waits(st), "a limit past the audio's fastest tempo drops instead");
    settings->floats.fastforward_ratio = 3.0f;
    settings->bools.audio_sync         = false;
    audio_driver_publish_runloop();
@@ -750,6 +756,95 @@ static void test_full_ring_follows_the_core(void)
       retro_spsc_free(&st->pipe_ring);
       retro_eventcount_free(&st->pipe_space);
       retro_eventcount_free(&st->pipe_data);
+   }
+}
+
+/* The whole loop: the runloop's limiter, the producer's wait for room,
+ * and a device draining the ring at the published multiplier. With
+ * Speedup the core reaches its limit, up to the audio's fastest tempo
+ * and past it: a limit past it is not held to it. */
+static double closed_loop_speed(float ratio)
+{
+   static int16_t block[FRAMES * 2];
+   audio_driver_state_t *st = &audio_driver_st;
+   settings_t *settings     = config_get_ptr();
+   const size_t fb          = 2 * sizeof(int16_t);
+   double drained = 0.0, t_last, t_drain, t_warm = 0.0;
+   int i;
+
+   fresh();
+   settings->bools.audio_fastforward_speedup = true;
+   settings->bools.audio_sync                = true;
+   settings->floats.fastforward_ratio        = ratio;
+   runloop_state_get_ptr()->flags           |= RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   st->pipe_threaded    = true;
+   st->pipe_channels    = 2;
+   st->pipe_frame_bytes = fb;
+   st->pipe_pass_frames = FRAMES;
+   AUDIO_FLAGS_SET(st, AUDIO_FLAG_PIPELINE_THREADED | AUDIO_FLAG_STARTED);
+   /* the ring the pipeline makes with audio sync: three core frames */
+   if (!retro_spsc_init(&st->pipe_ring, FRAMES * 3 * fb)) abort();
+   if (!retro_eventcount_init(&st->pipe_space)
+         || !retro_eventcount_init(&st->pipe_data)) abort();
+   audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
+   retro_atomic_store_release_int(&st->pipe_ff_mult_q16, 65536);
+   /* the wait for room is the loop's; submit itself never parks */
+   retro_atomic_store_release_int(&st->pipe_stalled, 1);
+   t_last  = (double)fake_now;
+   t_drain = t_last;
+
+   for (i = 0; i < 2000; i++)
+   {
+      double m, rate_in, frames, need;
+      double deadline = t_last + ONE_X / ratio;
+      if ((double)fake_now < deadline)
+         fake_now = (retro_time_t)deadline;
+      t_last    = (double)fake_now;
+      fake_now += 50;
+      m        = retro_atomic_load_acquire_int(&st->pipe_ff_mult_q16) / 65536.0;
+      rate_in  = RATE / m;
+      frames   = ((double)fake_now - t_drain) * rate_in / 1000000.0 + drained;
+      if (frames > (double)(retro_spsc_read_avail(&st->pipe_ring) / fb))
+         frames = (double)(retro_spsc_read_avail(&st->pipe_ring) / fb);
+      retro_spsc_skip(&st->pipe_ring, (size_t)frames * fb);
+      drained  = frames - (double)(size_t)frames;
+      t_drain  = (double)fake_now;
+      need     = (double)FRAMES
+         - (double)(retro_spsc_write_avail(&st->pipe_ring) / fb);
+      if (need > 0.0 && audio_driver_pipe_ff_waits(st))
+      {
+         double wait = need * 1000000.0 / rate_in;
+         fake_now   += (retro_time_t)wait;
+         retro_spsc_skip(&st->pipe_ring, (size_t)need * fb);
+         t_drain     = (double)fake_now;
+      }
+      audio_driver_submit(st, 1.0f, block, FRAMES * 2, false, false, true, true);
+      audio_driver_frame_end();
+      if (i == 500)
+         t_warm = (double)fake_now;
+   }
+
+   settings->floats.fastforward_ratio = 0.0f;
+   runloop_state_get_ptr()->flags    &= ~RUNLOOP_FLAG_FASTMOTION;
+   audio_driver_publish_runloop();
+   retro_spsc_free(&st->pipe_ring);
+   retro_eventcount_free(&st->pipe_space);
+   retro_eventcount_free(&st->pipe_data);
+   return 1500.0 * ONE_X / ((double)fake_now - t_warm);
+}
+
+static void test_limit_reached_past_the_audio_tempo(void)
+{
+   static const float ratios[] = { 4.0f, 16.0f, 20.0f, 50.0f };
+   unsigned r;
+   for (r = 0; r < sizeof(ratios) / sizeof(ratios[0]); r++)
+   {
+      char what[96];
+      double x = closed_loop_speed(ratios[r]);
+      snprintf(what, sizeof(what),
+            "a %.0fx limit with Speedup runs at %.2fx", ratios[r], x);
+      CHECK(near(x, ratios[r]), what);
    }
 }
 
@@ -937,6 +1032,7 @@ int main(void)
    test_fragmented_frame_cadence();
    test_producer_holds_at_a_full_ring();
    test_full_ring_follows_the_core();
+   test_limit_reached_past_the_audio_tempo();
    test_stop_excludes_idle_gap();
    test_inline_silent_boundaries();
    test_callback_optin();
