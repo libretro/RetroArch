@@ -80,6 +80,48 @@ static unsigned failures = 0;
 
 /* ------------------------------------------------------------------ */
 
+/* calloc() through the link's --wrap (build.sh, everywhere but Apple's
+ * linker, which has no --wrap): armed, the next call fails. Only the
+ * main thread arms it, before the frontend starts. */
+#if !defined(__APPLE__)
+#define HARNESS_WRAP_CALLOC 1
+void *__real_calloc(size_t nmemb, size_t size);
+static bool harness_calloc_fail_next;
+void *__wrap_calloc(size_t nmemb, size_t size)
+{
+   if (harness_calloc_fail_next)
+   {
+      harness_calloc_fail_next = false;
+      return NULL;
+   }
+   return __real_calloc(nmemb, size);
+}
+
+/* A GL driver whose own struct cannot be allocated returns no driver,
+ * touching nothing (its init allocates that struct first). Run before
+ * the frontend is up: the init's error path frees the current context
+ * driver, and there is none yet. */
+static void lane_driver_struct_alloc(void)
+{
+   video_info_t video;
+   memset(&video, 0, sizeof(video));
+#ifdef HAVE_OPENGL
+   harness_calloc_fail_next = true;
+   CHECK(!video_gl2.init(&video), "gl: init with no memory for its "
+         "struct gave a driver");
+   CHECK(!harness_calloc_fail_next, "gl: init did not allocate");
+#endif
+#ifdef HAVE_OPENGL_CORE
+   harness_calloc_fail_next = true;
+   CHECK(!video_gl3.init(&video), "glcore: init with no memory for its "
+         "struct gave a driver");
+   CHECK(!harness_calloc_fail_next, "glcore: init did not allocate");
+#endif
+   harness_calloc_fail_next = false;
+   printf("[pass] driver struct allocation lane\n");
+}
+#endif
+
 /* True when HARNESS_VIDEO_DRIVER names a real driver. The lanes that
  * instrument the null driver - fake present reports, fake sizes, fake
  * frame() hooks, heap counting through the null frame path - are
@@ -7528,6 +7570,10 @@ int main(int argc, char *argv[])
    retroarch_config_init();
    retroarch_ctl(RARCH_CTL_STATE_FREE, NULL);
    frontend_driver_init_first(NULL);
+
+#ifdef HARNESS_WRAP_CALLOC
+   lane_driver_struct_alloc();
+#endif
 
    rarch_argv[rarch_argc++] = (char*)"retroarch";
    rarch_argv[rarch_argc++] = (char*)"--config";

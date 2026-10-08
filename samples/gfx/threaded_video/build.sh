@@ -101,9 +101,14 @@ if [ ! -s "$ld_line" ]; then
    exit 1
 fi
 
+# calloc() through the harness (its __wrap_calloc), for the lanes that
+# fail an allocation; Apple's linker has no --wrap, and the harness
+# leaves those lanes out there.
+wrap="-Wl,--wrap=calloc"
+[ "$(uname -s)" = Darwin ] && wrap=""
 sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o $cocoa_objs#" \
-    -e "s#-o retroarch #-o $out/threaded_video_test #" \
-    -e "s#-o retroarch_debug #-o $out/threaded_video_test #" \
+    -e "s#-o retroarch #$wrap -o $out/threaded_video_test #" \
+    -e "s#-o retroarch_debug #$wrap -o $out/threaded_video_test #" \
    "$ld_line" | sh
 
 # Every substitution above is checked by its result. The link line
