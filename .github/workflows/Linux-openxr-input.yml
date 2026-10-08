@@ -73,11 +73,11 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # OpenXR is auto on Linux with Vulkan and threads: the vendored
-          # Khronos loader is built into the tree, so nothing has to be
-          # installed. Qt has to go: the menu harness below replaces
-          # main(), which lives in ui_qt.o with Qt enabled.
-          ./configure --disable-qt
+          # OpenXR is opt-in; the vendored Khronos loader is built into
+          # the tree, so nothing has to be installed. Qt has to go: the
+          # menu harness below replaces main(), which lives in ui_qt.o
+          # with Qt enabled.
+          ./configure --disable-qt --enable-openxr
           grep -q '^HAVE_OPENXR = 1' config.mk
           make -j$(nproc)
 
