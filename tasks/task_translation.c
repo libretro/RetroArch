@@ -405,7 +405,8 @@ static void handle_translation_response(
          /* Write to video buffer directly (software cores only) */
 
          /* This is a BMP file coming back. */
-         if (     raw_image_file_data[0] == 'B'
+         if (     new_image_size >= 54
+               && raw_image_file_data[0] == 'B'
                && raw_image_file_data[1] == 'M')
          {
             /* Get image data (24 bit), and convert to the emulated pixel format */
@@ -420,11 +421,23 @@ static void handle_translation_response(
                + ((uint32_t) ((uint8_t)raw_image_file_data[24]) << 16)
                + ((uint32_t) ((uint8_t)raw_image_file_data[23]) << 8)
                + ((uint32_t) ((uint8_t)raw_image_file_data[22]) << 0);
-            raw_image_data = (void*)malloc(image_width * image_height * 3 * sizeof(uint8_t));
-            if (raw_image_data)
-               memcpy(raw_image_data,
-                     raw_image_file_data + 54       * sizeof(uint8_t),
-                     image_width * image_height * 3 * sizeof(uint8_t));
+
+            /* The dimensions come from the server's reply: the pixels
+             * they describe must be in that reply. */
+            if (     !image_width
+                  || !image_height
+                  || (uint64_t)image_width * image_height
+                     > (uint64_t)(new_image_size - 54) / 3)
+            {
+               RARCH_LOG("[Translation] BMP size does not match its data.\n");
+               goto finish;
+            }
+
+            if (!(raw_image_data = malloc((size_t)image_width * image_height * 3)))
+               goto finish;
+            memcpy(raw_image_data,
+                  raw_image_file_data + 54,
+                  (size_t)image_width * image_height * 3);
          }
          else if (raw_image_file_data[1] == 'P'
                && raw_image_file_data[2] == 'N'
@@ -548,11 +561,14 @@ static void handle_translation_response(
          scaler->out_height    = VIDEO_SCALE_H(dims);
          scaler->scaler_type   = SCALER_TYPE_POINT;
          scaler_ctx_gen_filter(scaler);
-         scaler->in_stride     = -1 * VIDEO_SCALE_W(dims) * 3;
+         /* Rows are image_width wide: the server's image need not match
+          * the frame, and the scaler output is the frame's size. */
+         scaler->in_stride     = -1 * (int)image_width * 3;
 
          scaler_ctx_scale_direct(scaler, raw_output_data,
-               (uint8_t*)raw_image_data + (image_height - 1) * VIDEO_SCALE_W(dims) * 3);
-         video_driver_frame(raw_output_data, image_width, image_height, pitch);
+               (uint8_t*)raw_image_data + (size_t)(image_height - 1) * image_width * 3);
+         video_driver_frame(raw_output_data,
+               VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), pitch);
       }
    }
 
