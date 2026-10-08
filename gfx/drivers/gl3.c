@@ -3631,10 +3631,11 @@ static void *gl3_init(const video_info_t *video)
    const char *version                  = NULL;
    char *err_string                     = NULL;
    gl3_t *gl                            = (gl3_t*)calloc(1, sizeof(gl3_t));
-   const gfx_ctx_driver_t *ctx_driver   = gl3_get_context(gl);
+   const gfx_ctx_driver_t *ctx_driver   = NULL;
    struct retro_hw_render_callback *hwr = video_driver_get_hw_context();
 
-   if (!gl || !ctx_driver)
+   /* gl must exist before the context lookup writes its flags. */
+   if (!gl || !(ctx_driver = gl3_get_context(gl)))
       goto error;
 
    /* Latched here, inside the wrapper's blocking CMD_INIT (the main
