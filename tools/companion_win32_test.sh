@@ -55,7 +55,9 @@ for f in $CSRCS ui/drivers/ui_win32_companion.c ui/companion/test/companion_win3
    $CC -std=gnu99 -O1 -g -w $INC $DEFS -c "$f" -o "$o"
    OBJS="$OBJS $o"
 done
-$CC -o "$OUT/companion_win32_test.exe" $OBJS -lcomctl32 -lcomdlg32 -lshell32 -lole32 -lgdi32 -luser32 -lws2_32 -lpthread
+# realloc and calloc are wrapped so the test can fail one (see the
+# test's __wrap_ functions).
+$CC -o "$OUT/companion_win32_test.exe" $OBJS -Wl,--wrap=realloc,--wrap=calloc -lcomctl32 -lcomdlg32 -lshell32 -lole32 -lgdi32 -luser32 -lws2_32 -lpthread
 
 # Headless: Wine needs a display; Xvfb provides one. Wine's own noise
 # on stderr is dropped; the harness prints to stdout.

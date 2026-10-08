@@ -39,6 +39,8 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <encodings/utf.h>
+#include <formats/rpng.h>
+#include <file/file_path.h>
 #include <retro_miscellaneous.h>
 
 #include "../../../configuration.h"
@@ -67,6 +69,99 @@ extern size_t stub_core_count;
 extern ui_companion_driver_t ui_companion_wimp_win32;
 extern void companion_test_setup_fixtures(char *root, size_t len);
 extern void companion_test_teardown_fixtures(const char *root);
+
+/* Allocation failures, armed by the test: tools/companion_win32_test.sh
+ * links with --wrap for these, so the driver's (and the core's) calls
+ * come here. Each fails the first call matching once armed, then
+ * disarms. */
+void *__real_realloc(void *ptr, size_t size);
+void *__real_calloc(size_t nmemb, size_t size);
+static size_t fail_realloc_size; /* a growth to this many bytes */
+static size_t fail_calloc_nmemb, fail_calloc_size;
+static int    failed_allocs;
+
+void *__wrap_realloc(void *ptr, size_t size)
+{
+   if (fail_realloc_size && ptr && size == fail_realloc_size)
+   {
+      fail_realloc_size = 0;
+      failed_allocs++;
+      return NULL;
+   }
+   return __real_realloc(ptr, size);
+}
+
+void *__wrap_calloc(size_t nmemb, size_t size)
+{
+   if (fail_calloc_nmemb && nmemb == fail_calloc_nmemb
+         && size == fail_calloc_size)
+   {
+      fail_calloc_nmemb = 0;
+      failed_allocs++;
+      return NULL;
+   }
+   return __real_calloc(nmemb, size);
+}
+
+/* Add Files: the modal file dialog, answered from a thread timer (the
+ * dialog's own loop dispatches it) with the names in add_files_names,
+ * picked in the current directory. */
+static const char *add_files_names;
+static HWND        add_files_owner;
+
+static BOOL CALLBACK add_files_find(HWND h, LPARAM lp)
+{
+   char cls[16];
+   if (     GetClassNameA(h, cls, sizeof(cls))
+         && !strcmp(cls, "#32770")
+         && GetWindow(h, GW_OWNER) == add_files_owner
+         && IsWindowVisible(h))
+   {
+      *(HWND*)lp = h;
+      return FALSE;
+   }
+   return TRUE;
+}
+
+static void CALLBACK add_files_answer(HWND h, UINT msg, UINT_PTR id, DWORD t)
+{
+   HWND dlg = NULL;
+   EnumWindows(add_files_find, (LPARAM)&dlg);
+   if (!dlg)
+      return;
+   KillTimer(NULL, id);
+   /* cmb13, the file name box of the Explorer-style dialog */
+   SetDlgItemTextA(dlg, 0x47c, add_files_names);
+   PostMessageA(dlg, WM_COMMAND, MAKEWPARAM(IDOK, BN_CLICKED),
+         (LPARAM)GetDlgItem(dlg, IDOK));
+}
+
+/* Makes @count empty files @prefix00.nes.. in @dir, their quoted names
+ * in @names */
+static void add_files_make(const char *dir, const char *prefix,
+      int count, char *names, size_t len)
+{
+   int i;
+   CreateDirectoryA(dir, NULL);
+   names[0] = '\0';
+   for (i = 0; i < count; i++)
+   {
+      char name[64], path[PATH_MAX_LENGTH];
+      HANDLE f;
+      snprintf(name, sizeof(name), "%s%02d.nes", prefix, i);
+      snprintf(path, sizeof(path), "%s\\%s", dir, name);
+      if ((f = CreateFileA(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS,
+               FILE_ATTRIBUTE_NORMAL, NULL)) != INVALID_HANDLE_VALUE)
+      {
+         DWORD wr;
+         WriteFile(f, "NES\x1a", 4, &wr, NULL);
+         CloseHandle(f);
+      }
+      strlcat(names, "\"", len);
+      strlcat(names, name, len);
+      strlcat(names, "\" ", len);
+   }
+}
 
 /* The driver's private struct: its first two fields are stable. */
 struct wimp_peek { companion_core_t *core; HWND hwnd; };
@@ -696,6 +791,97 @@ int main(void)
                   "Closed Docks shows it again (%s)", test_settings.arrays.desktop_menu_dock_title);
          }
          ui_companion_wimp_win32.deinit(d2);
+      }
+   }
+
+   /* Out of memory: the thumbnail slot table, then Add Files' path
+    * list (a fresh window, so the lanes above keep theirs) */
+   {
+      void *d3;
+      /* A boxart that decodes, where the grid looks for Metroid's, so
+       * icon view installs it in a slot */
+      {
+         static uint32_t px[8 * 8];
+         char png[PATH_MAX_LENGTH], dir[PATH_MAX_LENGTH];
+         int k;
+         for (k = 0; k < 8 * 8; k++)
+            px[k] = 0xff3060a0u;
+         snprintf(dir, sizeof(dir), "%s/thumbnails/playlists/Nintendo - "
+               "Nintendo Entertainment System/Named_Boxarts", root);
+         path_mkdir(dir);
+         snprintf(png, sizeof(png), "%s/Metroid (USA).png", dir);
+         CHECK(rpng_save_image_argb(png, px, 8, 8, 8 * sizeof(uint32_t)),
+               "a boxart for Metroid");
+      }
+      d3                = ui_companion_wimp_win32.init();
+      CHECK(d3 != NULL, "a second window");
+      if (d3)
+      {
+         struct wimp_peek *p3 = (struct wimp_peek*)d3;
+         HWND h3   = p3->hwnd;
+         HWND pl3  = GetDlgItem(h3, IDC_CW_PLAYLISTS);
+         HWND en3  = GetDlgItem(h3, IDC_CW_ENTRIES);
+         HWND vw3  = GetDlgItem(h3, IDC_CW_VIEW_COMBO);
+         char dir[PATH_MAX_LENGTH], names[1024], cwd[PATH_MAX_LENGTH];
+         size_t before;
+
+         /* The first playlist to land sizes the slot table (the
+          * engine's rings, the same size, came with init): it fails */
+         failed_allocs     = 0;
+         fail_calloc_nmemb = 1024;
+         fail_calloc_size  = sizeof(size_t);
+         ui_companion_wimp_win32.toggle(d3, true);
+         pump(d3, 300);
+         ListView_SetItemState(pl3, 2, LVIS_SELECTED | LVIS_FOCUSED,
+               LVIS_SELECTED | LVIS_FOCUSED);
+         pump(d3, 600);
+         CHECK(failed_allocs == 1, "the thumbnail slot table's calloc failed");
+         fail_calloc_nmemb = 0;
+         /* Icons view with no slot table: the rows show, without
+          * thumbnails, though Metroid's would decode */
+         SendMessageA(vw3, CB_SETCURSEL, 1, 0);
+         SendMessageA(h3, WM_COMMAND,
+               MAKEWPARAM(IDC_CW_VIEW_COMBO, CBN_SELCHANGE), (LPARAM)vw3);
+         pump(d3, 800);
+         CHECK(SendMessageA(en3, LVM_GETITEMCOUNT, 0, 0) == 3,
+               "icon view without a slot table shows the 3 entries");
+         send_command(h3, IDM_CW_VIEW_LIST);
+         pump(d3, 200);
+
+         /* Add Files, nine files: the path list grows from 8 to 16,
+          * and that growth fails. The eight gathered are added. */
+         GetCurrentDirectoryA(sizeof(cwd), cwd);
+         snprintf(dir, sizeof(dir), "%s\\add_a", root);
+         add_files_make(dir, "add_a", 9, names, sizeof(names));
+         SetCurrentDirectoryA(dir);
+         before            = companion_core_entry_count(p3->core);
+         add_files_names   = names;
+         add_files_owner   = h3;
+         failed_allocs     = 0;
+         fail_realloc_size = 16 * sizeof(char*);
+         SetTimer(NULL, 0, 50, add_files_answer);
+         send_command(h3, IDM_CW_ADD_FILES);
+         fail_realloc_size = 0;
+         pump(d3, 600);
+         CHECK(failed_allocs == 1
+               && companion_core_entry_count(p3->core) == before + 8,
+               "Add Files of 9 with the list's growth failing adds 8 "
+               "(%d failed, %u entries, was %u)", failed_allocs,
+               (unsigned)companion_core_entry_count(p3->core), (unsigned)before);
+
+         /* And with memory, all nine */
+         snprintf(dir, sizeof(dir), "%s\\add_b", root);
+         add_files_make(dir, "add_b", 9, names, sizeof(names));
+         SetCurrentDirectoryA(dir);
+         before = companion_core_entry_count(p3->core);
+         SetTimer(NULL, 0, 50, add_files_answer);
+         send_command(h3, IDM_CW_ADD_FILES);
+         pump(d3, 600);
+         CHECK(companion_core_entry_count(p3->core) == before + 9,
+               "Add Files of 9 adds 9 (%u entries, was %u)",
+               (unsigned)companion_core_entry_count(p3->core), (unsigned)before);
+         SetCurrentDirectoryA(cwd);
+         ui_companion_wimp_win32.deinit(d3);
       }
    }
 

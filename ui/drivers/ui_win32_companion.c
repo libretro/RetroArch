@@ -1031,10 +1031,13 @@ static void cw_thumbs_reset(ui_companion_win32_wimp_t *w, size_t count)
       w->thumbs = NULL;
    }
    w->slot_used = w->slot_next = 0;
-   if (!w->slot_cap)
+   /* No table, no grid: the rows show without thumbnails, and the next
+    * reset tries again */
+   if (!w->slot_row)
    {
+      if (!(w->slot_row = (size_t*)calloc(1024, sizeof(*w->slot_row))))
+         return;
       w->slot_cap = 1024;
-      w->slot_row = (size_t*)calloc(w->slot_cap, sizeof(*w->slot_row));
    }
    w->slots_edge   = T;
    w->slots_subdir = w->thumb_subdir;
