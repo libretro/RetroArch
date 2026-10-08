@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #ifdef RARCH_INTERNAL
 #ifdef HAVE_CONFIG_H
@@ -23,6 +24,7 @@ extern "C" {
 #include <libavutil/imgutils.h>
 #include <libavutil/time.h>
 #include <libavutil/opt.h>
+#include <libavutil/pixdesc.h>
 #ifdef HAVE_SWRESAMPLE
 #include <libswresample/swresample.h>
 #endif
@@ -780,6 +782,9 @@ typedef struct ffmpeg_core_ctx
    enum AVPixelFormat hw_pix_fmt;
    bool force_sw_decoder;
 #endif
+   /* Try platform hardware decoders (h264_nvv4l2, h264_v4l2m2m,
+    * h264_mediacodec, ...) in decoder detection: ffmpeg_hw_wrappers. */
+   bool use_hw_wrappers;
 
    /* Stream bookkeeping */
    AVCodecContext *actx[MAX_STREAMS];
@@ -916,6 +921,7 @@ static ffmpeg_core_ctx_t g_ctx;
 #define HW_DECODER_STR             (g_ctx.hw_decoder)
 #define HW_DECODING_ENABLED_STR    (g_ctx.hw_decoding_enabled)
 #define FORCE_SW_DECODER_STR       (g_ctx.force_sw_decoder)
+#define USE_HW_WRAPPERS_STR        (g_ctx.use_hw_wrappers)
 #endif
 #define ACTX_STR                   (g_ctx.actx)
 #define SCTX_STR                   (g_ctx.sctx)
@@ -2018,6 +2024,9 @@ void CORE_PREFIX(retro_set_environment)(retro_environment_t cb)
       { "ffmpeg_hw_decoder", "Use Hardware decoder (restart); off|auto|"
          "cuda|d3d11va|drm|dxva2|mediacodec|opencl|qsv|vaapi|vdpau|videotoolbox" },
 #endif
+#if !FFMPEG3
+      { "ffmpeg_hw_wrappers", "Use platform hardware decoders (restart); enabled|disabled" },
+#endif
       { "ffmpeg_sw_decoder_threads", "Software decoder thread count (restart); auto|1|2|4|6|8|10|12|14|16" },
 #if defined(HAVE_OPENGL) || defined(HAVE_OPENGLES)
       { "ffmpeg_temporal_interp", "Temporal Interpolation; disabled|enabled" },
@@ -2143,6 +2152,17 @@ static void check_variables(bool firststart)
       else if (memcmp(color_var.value, "SMPTE240M", 9) == 0)
          space = AVCOL_SPC_SMPTE240M;
       retro_atomic_store_release_int(&g_ctx.color_space, space);
+   }
+
+   if (firststart)
+   {
+      struct retro_variable wrap_var = {0};
+      wrap_var.key        = "ffmpeg_hw_wrappers";
+      USE_HW_WRAPPERS_STR = true;
+      if (     CORE_PREFIX(environ_cb)(RETRO_ENVIRONMENT_GET_VARIABLE, &wrap_var)
+            && wrap_var.value
+            && !strcmp(wrap_var.value, "disabled"))
+         USE_HW_WRAPPERS_STR = false;
    }
 
 #if ENABLE_HW_ACCEL
@@ -2974,7 +2994,7 @@ static enum AVPixelFormat init_hw_decoder(struct AVCodecContext *ctx,
 #endif
    int ret = 0;
    enum AVPixelFormat decoder_pix_fmt = AV_PIX_FMT_NONE;
-   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[VIDEO_STREAM_INDEX_STR]->codecpar->codec_id);
+   const AVCodec *codec = ctx->codec;
 
 #if !FFMPEG3
    for (i = 0;; i++)
@@ -3128,17 +3148,169 @@ static enum AVPixelFormat get_format(AVCodecContext *ctx,
 }
 #endif
 
-static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
+/* Decoder detection: try every decoder for a stream's codec - for
+ * video, platform hardware decoders first (ffmpeg_hw_wrappers), then
+ * the default one (with the hwaccel path), then other software ones -
+ * and keep the first that opens and, for audio and video, decodes a
+ * frame this core can use. avcodec_find_decoder() alone gives whichever
+ * the build registered first, which need not work here. */
+#define MAX_DECODER_CANDIDATES 16
+#define DECODER_PROBE_PACKETS  64
+
+/* Can this core use the decoded frame? Video: a software format
+ * swscale accepts, or the hwaccel format select_decoder() set up.
+ * Audio: any packed or planar sample format swresample converts. */
+static bool frame_usable(const AVFrame *frame, enum AVMediaType type)
 {
-   int ret              = 0;
-   const AVCodec *codec = retro_find_decoder(FCTX_STR->streams[index]->codecpar->codec_id);
-   if (!codec)
+   if (type == AVMEDIA_TYPE_AUDIO)
+      return frame->nb_samples > 0
+         && av_get_bytes_per_sample((enum AVSampleFormat)frame->format) > 0;
+
    {
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Couldn't find suitable decoder\n");
+      const AVPixFmtDescriptor *desc =
+         av_pix_fmt_desc_get((enum AVPixelFormat)frame->format);
+
+      if (!desc)
+         return false;
+      if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
+      {
+#if ENABLE_HW_ACCEL
+         return HW_DECODING_ENABLED_STR && frame->format == g_ctx.hw_pix_fmt;
+#else
+         return false;
+#endif
+      }
+      return sws_isSupportedInput((enum AVPixelFormat)frame->format) > 0;
+   }
+}
+
+static bool input_is_seekable(void)
+{
+   return FCTX_STR->pb
+      && (FCTX_STR->pb->seekable & AVIO_SEEKABLE_NORMAL)
+      && !(FCTX_STR->iformat->flags & AVFMT_NOFILE);
+}
+
+/* Rewind the demuxer to the start after a probe. */
+static bool rewind_input(unsigned index)
+{
+   int64_t start = FCTX_STR->streams[index]->start_time;
+   if (start == AV_NOPTS_VALUE)
+      start = 0;
+   if (av_seek_frame(FCTX_STR, (int)index, start, AVSEEK_FLAG_BACKWARD) < 0)
       return false;
+   avformat_flush(FCTX_STR);
+   return true;
+}
+
+/* Decode from the start of the stream until one frame comes out. True
+ * if that frame is usable. The caller rewinds. */
+static bool probe_decoder(AVCodecContext *ctx, enum AVMediaType type,
+      unsigned index)
+{
+   int packets      = 0;
+   bool decoded     = false;
+   bool usable      = false;
+   AVPacket *pkt    = av_packet_alloc();
+   AVFrame  *frame  = av_frame_alloc();
+
+   if (!pkt || !frame)
+      goto end;
+
+   while (!decoded && packets < DECODER_PROBE_PACKETS
+         && av_read_frame(FCTX_STR, pkt) >= 0)
+   {
+      if (pkt->stream_index == (int)index)
+      {
+         int ret = avcodec_send_packet(ctx, pkt);
+         packets++;
+         if (ret < 0 && ret != AVERROR(EAGAIN))
+         {
+            av_packet_unref(pkt);
+            break;
+         }
+         if (avcodec_receive_frame(ctx, frame) == 0)
+            decoded = true;
+      }
+      av_packet_unref(pkt);
    }
 
+   /* Decoders with delay may hold the first frame until drained. */
+   if (!decoded && packets)
+   {
+      avcodec_send_packet(ctx, NULL);
+      if (avcodec_receive_frame(ctx, frame) == 0)
+         decoded = true;
+   }
+
+   usable = decoded && frame_usable(frame, type);
+   if (decoded && !usable)
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] %s decodes to %s, which this core can't use.\n",
+            ctx->codec->name, type == AVMEDIA_TYPE_AUDIO
+            ? av_get_sample_fmt_name((enum AVSampleFormat)frame->format)
+            : av_get_pix_fmt_name((enum AVPixelFormat)frame->format));
+
+end:
+   av_frame_free(&frame);
+   av_packet_free(&pkt);
+   avcodec_flush_buffers(ctx);
+   return usable;
+}
+
+static int decoder_candidates(enum AVCodecID id, enum AVMediaType type,
+      const AVCodec **list, int max)
+{
+   int n                = 0;
+   const AVCodec *def   = retro_find_decoder(id);
+#if !FFMPEG3
+   int pass;
+   bool allow_hw        = (type == AVMEDIA_TYPE_VIDEO) && USE_HW_WRAPPERS_STR;
+#endif
+
+#if FFMPEG3
+   if (def)
+      list[n++] = def;
+#else
+   /* 0: platform hardware decoders (video only),
+    * 1: the default decoder, 2: any other software decoder. */
+   for (pass = 0; pass < 3 && n < max; pass++)
+   {
+      void *it          = NULL;
+      const AVCodec *c  = NULL;
+
+      if (pass == 1)
+      {
+         if (def && !(def->capabilities & AV_CODEC_CAP_HARDWARE))
+            list[n++] = def;
+         continue;
+      }
+
+      while ((c = av_codec_iterate(&it)) && n < max)
+      {
+         bool hw = (c->capabilities & AV_CODEC_CAP_HARDWARE) != 0;
+         if (c->id != id || !av_codec_is_decoder(c))
+            continue;
+         if (c->capabilities & AV_CODEC_CAP_EXPERIMENTAL)
+            continue;
+         if (pass == 0 ? !(hw && allow_hw) : (hw || c == def))
+            continue;
+         list[n++] = c;
+      }
+   }
+#endif
+   return n;
+}
+
+/* Allocate and open ctx for codec. Video gets the hwaccel set-up for
+ * non-wrapper decoders, exactly as before. */
+static bool open_codec_with(AVCodecContext **ctx, const AVCodec *codec,
+      enum AVMediaType type, unsigned index)
+{
+   int ret = 0;
+
    *ctx = avcodec_alloc_context3(codec);
+   if (!*ctx)
+      return false;
    avcodec_parameters_to_context((*ctx), FCTX_STR->streams[index]->codecpar);
 
    if (type == AVMEDIA_TYPE_VIDEO)
@@ -3146,8 +3318,20 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
       VIDEO_STREAM_INDEX_STR = index;
 
 #if ENABLE_HW_ACCEL
-      VCTX_STR->get_format  = get_format;
-      g_ctx.hw_pix_fmt = select_decoder((*ctx), NULL);
+      g_ctx.hw_pix_fmt        = AV_PIX_FMT_NONE;
+      HW_DECODING_ENABLED_STR = false;
+      if (codec->capabilities & AV_CODEC_CAP_HARDWARE)
+      {
+         /* A hardware wrapper decodes by itself into frames it hands
+          * back; no hwaccel device or get_format() hook. */
+         log_cb(RETRO_LOG_INFO, "[FFMPEG] Trying hardware decoder %s.\n",
+               codec->name);
+      }
+      else
+      {
+         (*ctx)->get_format = get_format;
+         g_ctx.hw_pix_fmt   = select_decoder((*ctx), NULL);
+      }
 #else
       select_decoder((*ctx), NULL);
 #endif
@@ -3156,13 +3340,76 @@ static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned ind
    if ((ret = avcodec_open2(*ctx, codec, NULL)) < 0)
    {
 #ifdef __cplusplus
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec: %d\n", ret);
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec %s: %d\n",
+            codec->name, ret);
 #else
-      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec: %s\n", av_err2str(ret));
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not open codec %s: %s\n",
+            codec->name, av_err2str(ret));
 #endif
+      avcodec_free_context(ctx);
       return false;
    }
 
+   return true;
+}
+
+static bool open_codec(AVCodecContext **ctx, enum AVMediaType type, unsigned index)
+{
+   const AVCodec *list[MAX_DECODER_CANDIDATES];
+   enum AVCodecID id = FCTX_STR->streams[index]->codecpar->codec_id;
+   int i, n;
+   bool probe;
+
+   *ctx = NULL;
+   n    = decoder_candidates(id, type, list, MAX_DECODER_CANDIDATES);
+   if (!n)
+   {
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] This FFmpeg build has no decoder for %s (%s).\n",
+            avcodec_get_name(id), av_get_media_type_string(type));
+      return false;
+   }
+
+   /* Probing reads packets, so the input must be rewindable; otherwise
+    * take the first decoder that opens, as before. With one candidate,
+    * or for subtitles, there is nothing worth probing. */
+   probe = n > 1
+      && (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)
+      && input_is_seekable();
+
+   for (i = 0; i < n; i++)
+   {
+      if (!open_codec_with(ctx, list[i], type, index))
+         continue;
+
+      if (!probe)
+         break;
+
+      if (probe_decoder(*ctx, type, index))
+      {
+         if (!rewind_input(index))
+            log_cb(RETRO_LOG_WARN, "[FFMPEG] Could not rewind after probing the decoder.\n");
+         break;
+      }
+
+      log_cb(RETRO_LOG_INFO, "[FFMPEG] Decoder %s failed its probe, trying the next.\n",
+            list[i]->name);
+      avcodec_free_context(ctx);
+      if (!rewind_input(index))
+      {
+         log_cb(RETRO_LOG_ERROR, "[FFMPEG] Could not rewind after probing the decoder.\n");
+         return false;
+      }
+   }
+
+   if (!*ctx)
+   {
+      log_cb(RETRO_LOG_ERROR, "[FFMPEG] No working decoder for %s (%s).\n",
+            avcodec_get_name(id), av_get_media_type_string(type));
+      return false;
+   }
+
+   log_cb(RETRO_LOG_INFO, "[FFMPEG] Using %s decoder %s.\n",
+         av_get_media_type_string(type), (*ctx)->codec->name);
    return true;
 }
 
