@@ -7346,7 +7346,6 @@ static enum runloop_state_enum runloop_check_state(
 {
    input_bits_t current_bits;
 #ifdef HAVE_MENU
-   static input_bits_t last_input      = {{0}};
 #endif
    gfx_display_t            *p_disp    = disp_get_ptr();
    runloop_state_t *runloop_st         = &runloop_state;
@@ -7363,12 +7362,10 @@ static enum runloop_state_enum runloop_check_state(
    bool rarch_is_initialized           = !!runloop_is_inited();
    bool runloop_paused                 = !!(runloop_st->flags & RUNLOOP_FLAG_PAUSED);
    bool pause_nonactive                = settings->bools.pause_nonactive;
-   unsigned quit_gamepad_combo         = settings->uints.input_quit_gamepad_combo;
    bool menu_pause_libretro            = settings->bools.menu_pause_libretro;
 #ifdef HAVE_MENU
    struct menu_state *menu_st          = menu_state_get_ptr();
    menu_handle_t *menu                 = menu_st->driver_data;
-   unsigned menu_toggle_gamepad_combo  = settings->uints.input_menu_toggle_gamepad_combo;
    bool menu_driver_binding_state      = !!(menu_st->flags & MENU_ST_FLAG_IS_BINDING);
    bool menu_was_alive                 = !!(menu_st->flags & MENU_ST_FLAG_ALIVE);
    bool display_kb                     = menu_input_dialog_get_display_kb();
@@ -7412,19 +7409,8 @@ static enum runloop_state_enum runloop_check_state(
    input_driver_collect_system_input(input_st, settings, &current_bits);
 
 #ifdef HAVE_MENU
-   last_input                       = current_bits;
-#ifdef HAVE_OVERLAY
-   /* buttons held on an overlay that has its own menu button do not
-    * add up to the combination */
-   if (menu_toggle_gamepad_combo != INPUT_COMBO_NONE)
-      input_driver_menu_combo_source_gate(&last_input);
-#endif
-   if (     menu_toggle_gamepad_combo != INPUT_COMBO_NONE
-         && input_driver_button_combo(
-               menu_toggle_gamepad_combo,
-               current_time,
-               &last_input))
-      BIT256_SET(current_bits, RARCH_MENU_TOGGLE);
+   /* (The menu's controller combination has pressed the menu toggle by
+    * now, if it is set and held: input_combos_frame().) */
 
    /* What was down when the menu opened or closed, a bind or a text
     * entry ended or the mouse clicked is held back, each control until
@@ -7688,29 +7674,17 @@ static enum runloop_state_enum runloop_check_state(
    {
       static bool quit_key       = false;
       static bool old_quit_key   = false;
-      static bool old_quit_combo = false;
       static bool runloop_exec   = false;
-      bool quit_combo;
       bool trig_quit_key;
 
       quit_key                 = BIT256_GET(current_bits, RARCH_QUIT_KEY);
       trig_quit_key            = quit_key && !old_quit_key;
 
-      /* Check for quit gamepad combo.  It reports true on every frame
-       * it is held, so like the key it counts only on the frame it is
-       * first held: otherwise one press is also the second press that
-       * 'confirm_quit' asks for. */
-      quit_combo               =
-               quit_gamepad_combo != INPUT_COMBO_NONE
-            && input_driver_button_combo(
-                  quit_gamepad_combo,
-                  current_time,
-                  &current_bits);
-      if (quit_combo && !old_quit_combo)
-         trig_quit_key = true;
-
+      /* The quit controller combination presses the quit hotkey, when
+       * it is set and held (input_combos_frame()): like the key, it
+       * counts on the frame it is first down, or one press would also
+       * be the second press that 'confirm_quit' asks for. */
       old_quit_key             = quit_key;
-      old_quit_combo           = quit_combo;
 
       /* Check double press if enabled */
       if (     trig_quit_key

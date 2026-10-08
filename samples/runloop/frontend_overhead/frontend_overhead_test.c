@@ -5351,6 +5351,15 @@ static void lane_binds_shared_rows(void)
  * hotkey an entry reaches does what its own bind would; and what holds
  * a hotkey back holds an entry back - the enabler of its kind of
  * source, and the keyboard being held. */
+/* paused now: whether the core runs over the next few frames, with
+ * whatever is held kept held */
+static bool hf_paused_now(void)
+{
+   long r0 = pm_runs();
+   run_loop_frames(4);
+   return pm_runs() == r0;
+}
+
 static void en_hold(uint32_t buttons, unsigned frames)
 {
    syn_buttons = buttons;
@@ -5401,6 +5410,16 @@ static void lane_entries(void)
          && !input_entry_add(4, NULL),
          "entries: something that is not an entry was taken as one");
    CHECK(input_entries_count() == 3, "entries: a refused entry was kept");
+   /* ... and a time to be held, which is seconds to a tenth */
+   CHECK(   !input_entry_add(4, "start held : pause")
+         && !input_entry_add(4, "start held 2 : pause")
+         && !input_entry_add(4, "start held 0s : pause")
+         && !input_entry_add(4, "start held 26s : pause")
+         && !input_entry_add(4, "start held 1.s : pause")
+         && !input_entry_add(4, "start held 2s x : pause")
+         && !input_entry_add(4, " held 2s : pause"),
+         "entries: a time to be held that is not one was taken");
+   CHECK(input_entries_count() == 3, "entries: a refused timed entry was kept");
 
    /* the controller: start, select and L3 on its buttons 20 to 22 */
    syn_joypad               = *joypad_real;
@@ -5473,6 +5492,47 @@ static void lane_entries(void)
    input_keyboard_capture_release(INPUT_KEYBOARD_CAPTURE_GAME_FOCUS);
    os_tap();
    CHECK(!hf_paused(), "entries: a key's entry was not read once the keyboard was let go");
+
+   /* --- a time the sources must be held: by the clock --- */
+   input_entries_clear();
+   CHECK(input_entry_add(1, "start held 0.3s : pause"), "entries: a timed entry is not read");
+   CHECK(input_entry_add(2, "key_g : unpause"),         "entries: the key's entry is not read again");
+   en_hold(0, 3);
+   {
+      unsigned n;
+      /* held for a tenth of a second, over many frames: not yet */
+      for (n = 0; n < 5; n++)
+      {
+         en_hold(b_start, 2);
+         retro_sleep(20);
+      }
+      CHECK(!hf_paused_now(), "entries: a timed entry was given before its time, however many frames");
+      /* ... and on to past its time */
+      for (n = 0; n < 15; n++)
+      {
+         en_hold(b_start, 2);
+         retro_sleep(20);
+      }
+      en_hold(b_start, 2);
+      CHECK(hf_paused_now(), "entries: a timed entry was not given when its time was up");
+      /* still held: not given again */
+      os_tap();
+      for (n = 0; n < 5; n++)
+      {
+         en_hold(b_start, 2);
+         retro_sleep(20);
+      }
+      CHECK(!hf_paused_now(), "entries: a timed entry kept down was given a second time");
+      /* let go, and held again for less than its time: nothing */
+      en_hold(0, 3);
+      for (n = 0; n < 5; n++)
+      {
+         en_hold(b_start, 2);
+         retro_sleep(20);
+      }
+      en_hold(0, 3);
+      CHECK(!hf_paused_now(), "entries: a timed entry let go early was given");
+   }
 
    /* --- no more than there is room for --- */
    input_entries_clear();

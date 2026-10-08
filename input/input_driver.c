@@ -2091,69 +2091,99 @@ unsigned input_driver_lightgun_id_convert(unsigned id)
    return 0;
 }
 
+/* The ten fixed combinations the "Menu Toggle" and "Quit" controller
+ * combination settings choose from: for each, the RetroPad's buttons
+ * that are held. Two of them are one button held for two seconds, and
+ * are timed (input_driver_button_combo_hold()); the rest are their
+ * buttons all down. They were a branch each, a test a button. */
+static const uint16_t input_combo_pad[INPUT_COMBO_LAST] = {
+   /* INPUT_COMBO_NONE */               0,
+   /* INPUT_COMBO_DOWN_Y_L_R */         (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1 << RETRO_DEVICE_ID_JOYPAD_Y)
+                                      | (1 << RETRO_DEVICE_ID_JOYPAD_L)    | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L3_R3 */              (1 << RETRO_DEVICE_ID_JOYPAD_L3)   | (1 << RETRO_DEVICE_ID_JOYPAD_R3),
+   /* INPUT_COMBO_L1_R1_START_SELECT */ (1 << RETRO_DEVICE_ID_JOYPAD_L)    | (1 << RETRO_DEVICE_ID_JOYPAD_R)
+                                      | (1 << RETRO_DEVICE_ID_JOYPAD_START)| (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_START_SELECT */       (1 << RETRO_DEVICE_ID_JOYPAD_START)| (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L3_R */               (1 << RETRO_DEVICE_ID_JOYPAD_L3)   | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_L_R */                (1 << RETRO_DEVICE_ID_JOYPAD_L)    | (1 << RETRO_DEVICE_ID_JOYPAD_R),
+   /* INPUT_COMBO_HOLD_START */         (1 << RETRO_DEVICE_ID_JOYPAD_START),
+   /* INPUT_COMBO_HOLD_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_DOWN_SELECT */        (1 << RETRO_DEVICE_ID_JOYPAD_DOWN) | (1 << RETRO_DEVICE_ID_JOYPAD_SELECT),
+   /* INPUT_COMBO_L2_R2 */              (1 << RETRO_DEVICE_ID_JOYPAD_L2)   | (1 << RETRO_DEVICE_ID_JOYPAD_R2)
+};
+
 bool input_driver_button_combo(
       unsigned mode,
       retro_time_t current_time,
       input_bits_t *p_input)
 {
-   switch (mode)
-   {
-      case INPUT_COMBO_DOWN_Y_L_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_Y)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_L3_R3:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R3))
-            return true;
-         break;
-      case INPUT_COMBO_L1_R1_START_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_START_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_START)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_L3_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L3)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_L_R:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R))
-            return true;
-         break;
-      case INPUT_COMBO_DOWN_SELECT:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_DOWN)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_SELECT))
-            return true;
-         break;
-      case INPUT_COMBO_L2_R2:
-         if (   BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_L2)
-             && BIT256_GET_PTR(p_input, RETRO_DEVICE_ID_JOYPAD_R2))
-            return true;
-         break;
-      case INPUT_COMBO_HOLD_START:
-         return input_driver_button_combo_hold(
-               INPUT_COMBO_HOLD_START, RETRO_DEVICE_ID_JOYPAD_START, current_time, p_input);
-      case INPUT_COMBO_HOLD_SELECT:
-         return input_driver_button_combo_hold(
-               INPUT_COMBO_HOLD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT, current_time, p_input);
-      default:
-      case INPUT_COMBO_NONE:
-         break;
-   }
+   uint16_t pad;
 
-   return false;
+   if (mode >= INPUT_COMBO_LAST)
+      return false;
+   if (mode == INPUT_COMBO_HOLD_START)
+      return input_driver_button_combo_hold(
+            INPUT_COMBO_HOLD_START, RETRO_DEVICE_ID_JOYPAD_START, current_time, p_input);
+   if (mode == INPUT_COMBO_HOLD_SELECT)
+      return input_driver_button_combo_hold(
+            INPUT_COMBO_HOLD_SELECT, RETRO_DEVICE_ID_JOYPAD_SELECT, current_time, p_input);
+   pad = input_combo_pad[mode];
+   return pad && (p_input->data[0] & pad) == pad;
+}
+
+/* The two settings, looked at once a frame with the ports gone
+ * through: the menu's combination presses the menu toggle, the quit
+ * combination the quit hotkey. The run loop did both itself, the first
+ * on a copy of the frame's bits it made every frame whether or not a
+ * combination was set.
+ *
+ * As they were to the letter. The menu's does not count buttons an
+ * overlay alone holds when that overlay has a menu button of its own.
+ * The quit one was looked at after what is held back had been taken
+ * out of the frame's bits (input_driver_hold_bits()), so a button held
+ * back does not count towards it. And one that is a button held for a
+ * time is told every frame, down or not, since it is what stops its
+ * clock. */
+INPUT_NOINLINE static void input_combos_frame(
+      input_driver_state_t *input_st,
+      unsigned menu_combo, unsigned quit_combo,
+      input_bits_t *bits)
+{
+   if (menu_combo != INPUT_COMBO_NONE && menu_combo < INPUT_COMBO_LAST)
+   {
+      uint16_t pad = input_combo_pad[menu_combo];
+      bool timed   =    menu_combo == INPUT_COMBO_HOLD_START
+                     || menu_combo == INPUT_COMBO_HOLD_SELECT;
+      if (timed || (bits->data[0] & pad) == pad)
+      {
+         input_bits_t in = *bits;
+#ifdef HAVE_OVERLAY
+         input_driver_menu_combo_source_gate(&in);
+#endif
+         if (input_driver_button_combo(menu_combo,
+                  timed ? cpu_features_get_time_usec() : 0, &in))
+            BIT256_SET_PTR(bits, RARCH_MENU_TOGGLE);
+      }
+   }
+   if (quit_combo != INPUT_COMBO_NONE && quit_combo < INPUT_COMBO_LAST)
+   {
+      uint16_t pad = input_combo_pad[quit_combo];
+      bool timed   =    quit_combo == INPUT_COMBO_HOLD_START
+                     || quit_combo == INPUT_COMBO_HOLD_SELECT;
+      if (timed || (bits->data[0] & pad) == pad)
+      {
+         input_bits_t in = *bits;
+         if (input_st->held_bits_phase & INPUT_HELD_PHASE)
+         {
+            unsigned w;
+            for (w = 0; w < ARRAY_SIZE(in.data); w++)
+               in.data[w] &= ~input_st->held_bits.data[w];
+         }
+         if (input_driver_button_combo(quit_combo,
+                  timed ? cpu_features_get_time_usec() : 0, &in))
+            BIT256_SET_PTR(bits, RARCH_QUIT_KEY);
+      }
+   }
 }
 
 #include "input_pointer_frame.h"
@@ -11302,10 +11332,14 @@ INPUT_NOINLINE static void input_hotkey_set_make(unsigned port)
  *    input_combo_1 = "l3+r3 : menu_toggle"
  *    input_combo_2 = "key_f9 : undo_load_state"
  *
+ *    input_combo_3 = "start held 2s : exit_emulator"
+ *
  * with the RetroPad's buttons by the names their binds have (b, y,
  * select, start, up, down, left, right, a, x, l, r, l2, r2, l3, r3), a
  * key as key_ and the name it has in a bind, a hotkey by the name its
  * bind has, and a command by a name in input_entry_commands[] below.
+ * "held" and a time in seconds, to a tenth and up to 25, says the
+ * sources must stay down that long first: by the clock, not by frames.
  *
  * The entries are read on the port the hotkeys are read on, after the
  * hotkeys, and are held back by what holds a hotkey back: "Hotkey
@@ -11330,6 +11364,7 @@ typedef struct
    uint16_t target;   /* a hotkey's bind number, or a command */
    uint8_t  kind;
    uint8_t  number;   /* the N of its input_combo_N */
+   uint8_t  hold;     /* tenths of a second its sources must stay down first; 0 for none */
 } input_entry_t;
 
 static struct
@@ -11338,6 +11373,7 @@ static struct
    uint16_t keys[INPUT_ENTRIES_MAX];     /* the keys the entries name, for the driver */
    uint8_t  key_bind[INPUT_ENTRIES_MAX]; /* ... which are hotkeys' keys to it */
    uint16_t commands[INPUT_ENTRIES_MAX]; /* given this frame, to be carried out after it */
+   retro_time_t since[INPUT_ENTRIES_MAX]; /* when entry n's sources went down, for one that is timed; 0 while up */
    uint16_t on;                          /* bit n: entry n's sources were all down when last looked at */
    uint8_t  count;
    uint8_t  key_count;
@@ -11364,6 +11400,7 @@ void input_entries_clear(void)
    input_entries.key_count     = 0;
    input_entries.command_count = 0;
    input_entries.on            = 0;
+   memset(input_entries.since, 0, sizeof(input_entries.since));
 }
 
 unsigned input_entries_count(void)
@@ -11397,6 +11434,8 @@ bool input_entry_add(unsigned number, const char *spec)
    unsigned i;
    input_entry_t e;
    const char *colon = spec ? strchr(spec, ':') : NULL;
+   /* where the sources end: at the colon, or at "held" before it */
+   const char *colon_src = colon;
    const char *s     = spec;
 
    if (!colon || input_entries.count >= INPUT_ENTRIES_MAX)
@@ -11407,12 +11446,54 @@ bool input_entry_add(unsigned number, const char *spec)
    e.target = 0;
    e.kind   = 0;
    e.number = (uint8_t)number;
+   e.hold   = 0;
+
+   /* "held 2s" or "held 0.5s", after what is held: a time in tenths */
+   {
+      const char *h = spec;
+      const char *held = NULL;
+      for (; h + 6 <= colon; h++)
+         if (!strncmp(h, " held ", 6))
+            held = h;
+      if (held)
+      {
+         unsigned tenths = 0;
+         const char *d   = held + 6;
+         bool digits     = false;
+         while (d < colon && *d == ' ')
+            d++;
+         for (; d < colon && *d >= '0' && *d <= '9'; d++)
+         {
+            tenths = tenths * 10 + (unsigned)(*d - '0') * 10;
+            digits = true;
+            if (tenths > 250)
+               return false;
+         }
+         if (d < colon && *d == '.')
+         {
+            d++;
+            if (d >= colon || *d < '0' || *d > '9')
+               return false;
+            tenths += (unsigned)(*d - '0');
+            d++;
+         }
+         if (!digits || d >= colon || *d != 's')
+            return false;
+         for (d++; d < colon; d++)
+            if (*d != ' ' && *d != '\t')
+               return false;
+         if (!tenths || tenths > 250)
+            return false;
+         e.hold = (uint8_t)tenths;
+         colon_src = held;
+      }
+   }
 
    /* what is held: words with + between them */
-   while (s < colon)
+   while (s < colon_src)
    {
-      const char *plus = (const char*)memchr(s, '+', (size_t)(colon - s));
-      const char *end  = plus ? plus : colon;
+      const char *plus = (const char*)memchr(s, '+', (size_t)(colon_src - s));
+      const char *end  = plus ? plus : colon_src;
 
       if (!input_entry_word(s, end, word, sizeof(word)))
          return false;
@@ -11522,6 +11603,7 @@ INPUT_NOINLINE static void input_entries_frame(
    unsigned n               = 0;
    uint32_t down            = 0;
    uint16_t on              = 0;
+   uint16_t timed           = 0;   /* sources down, its time not yet up */
    unsigned held16          = p_new_state->data[0] & 0xffff;
    input_driver_t *input    = input_st->current_driver;
    bool kb_blocked          = (input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED) != 0;
@@ -11585,6 +11667,20 @@ INPUT_NOINLINE static void input_entries_frame(
             && (   (e->pad && pad_enabler)
                 || (e->key != RETROK_UNKNOWN && key_enabler)))
          continue;
+      /* one that is timed counts from when its sources went down, and
+       * is not down until they have been for its time */
+      if (e->hold)
+      {
+         retro_time_t now = cpu_features_get_time_usec();
+         if (!input_entries.since[i])
+            input_entries.since[i] = now ? now : 1;
+         if (now - input_entries.since[i]
+               < (retro_time_t)e->hold * 100000)
+         {
+            timed |= (uint16_t)(1u << i);
+            continue;
+         }
+      }
       on |= (uint16_t)(1u << i);
       /* ... and while input waits to be let go, when it counts as
        * down already and is given again only after it has been up */
@@ -11596,6 +11692,11 @@ INPUT_NOINLINE static void input_entries_frame(
                && input_entries.command_count < INPUT_ENTRIES_MAX)
          input_entries.commands[input_entries.command_count++] = e->target;
    }
+   /* a timed one whose sources are up, or held back, starts over */
+   for (i = 0; i < input_entries.count; i++)
+      if (     input_entries.since[i]
+            && !((on | timed) & (1u << i)))
+         input_entries.since[i] = 0;
    input_entries.on = on;
 }
 
@@ -15060,6 +15161,38 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
             retro_atomic_exchange_int(&input_st->ai_press_pending, 0);
       }
 #endif /* defined(HAVE_ACCESSIBILITY) && defined(HAVE_TRANSLATE) */
+   }
+
+   /* The menu's and the quit controller combinations, if either is
+    * set: one test a frame when neither is. */
+   {
+      unsigned quit_combo = settings->uints.input_quit_gamepad_combo;
+#ifdef HAVE_MENU
+      unsigned menu_combo = settings->uints.input_menu_toggle_gamepad_combo;
+#else
+      unsigned menu_combo = INPUT_COMBO_NONE;
+#endif
+      if (menu_combo | quit_combo)
+      {
+         /* Looked at closer only when one's buttons are all down, or
+          * it is one of the two that are a button held for a time:
+          * with a combination set and nothing of it held, which is
+          * nearly every frame, this is all there is. */
+         unsigned held  = current_bits->data[0];
+         unsigned mp    = (menu_combo < INPUT_COMBO_LAST)
+            ? input_combo_pad[menu_combo] : 0;
+         unsigned qp    = (quit_combo < INPUT_COMBO_LAST)
+            ? input_combo_pad[quit_combo] : 0;
+         bool timed     =    menu_combo == INPUT_COMBO_HOLD_START
+                          || menu_combo == INPUT_COMBO_HOLD_SELECT
+                          || quit_combo == INPUT_COMBO_HOLD_START
+                          || quit_combo == INPUT_COMBO_HOLD_SELECT;
+         if (     timed
+               || (mp && (held & mp) == mp)
+               || (qp && (held & qp) == qp))
+            input_combos_frame(input_st, menu_combo, quit_combo,
+                  current_bits);
+      }
    }
 
    /* What the entries add - hotkeys reached another way, and commands
