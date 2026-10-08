@@ -33161,6 +33161,10 @@ MSG_HASH(
    "Rebooting..."
    )
 MSG_HASH(
+   MSG_VALUE_INSTALL_UPDATE,
+   "Install Update"
+   )
+MSG_HASH(
    MSG_VALUE_SHUTTING_DOWN,
    "Shutting down..."
    )

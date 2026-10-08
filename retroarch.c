@@ -269,11 +269,38 @@
 #endif
 
 #ifdef HAVE_LAKKA
+#include <retro_dirent.h>
 #include "lakka.h"
 #include <systemd/sd-daemon.h>
 #endif
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
+
+#ifdef HAVE_LAKKA
+bool lakka_update_pending(void)
+{
+   bool         found = false;
+   struct RDIR *dir   = retro_opendir(LAKKA_UPDATE_DIR);
+
+   if (!dir)
+      return false;
+
+   while (!found && retro_readdir(dir))
+   {
+      const char *name = retro_dirent_get_name(dir);
+
+      if (retro_dirent_is_dir(dir, NULL))
+         continue;
+
+      found =    string_ends_with(name, ".tar")
+              || string_ends_with(name, ".img.gz")
+              || string_ends_with(name, ".img");
+   }
+
+   retro_closedir(dir);
+   return found;
+}
+#endif
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
