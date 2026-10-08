@@ -24,7 +24,8 @@
  * The container and the decoder follow libarchive's RAR reader
  * (archive_read_support_format_rar.c, Tim Kientzle and Andres Mejia,
  * 2-clause BSD - see rrar_archive.c for its notice); the PPMd model next
- * to it is Igor Pavlov's public-domain Ppmd7.
+ * to it (rrar_ppmd7.c) is an implementation of Dmitry Shkarin's
+ * public-domain PPMd var.H.
  *
  * Deliberately not a general RAR implementation. libretro-common opens
  * archives of ROMs, so this covers what those are packed as and rejects

@@ -224,6 +224,10 @@ int main(int argc, char **argv)
       { "abcdefghijklmnopqrs\xe3\x83\x86\xe3\x82\xb9\xe3\x83\x88.txt", 16, 0x15b6d005u, 0 },
       { "\xe8\xa1\xa8\xe3\x81\xa0\xe3\x82\x88", 0, 0, 1 },
    };
+   static const struct expect conversion[] = {
+      /* PPMd blocks between LZ blocks, the reading handed over each way */
+      { "ppmd_lzss_conversion_test.txt", 241647978, 0xf72b4477u, 0 },
+   };
    /* RAR 5 */
    static const struct expect five_stored[] = {
       { "helloworld.txt", 29, 0x95a043b4u, 0, 0 },
@@ -256,6 +260,7 @@ int main(int argc, char **argv)
    check(dir, "compress_best.rar", best, sizeof(best) / sizeof(best[0]));
    check(dir, "filter.rar", filter, sizeof(filter) / sizeof(filter[0]));
    check(dir, "unicode.rar", unicode, sizeof(unicode) / sizeof(unicode[0]));
+   check(dir, "ppmd_lzss_conversion.rar", conversion, sizeof(conversion) / sizeof(conversion[0]));
 
    check(dir, "rar5_stored.rar", five_stored, sizeof(five_stored) / sizeof(five_stored[0]));
    check(dir, "rar5_compressed.rar", five_compressed, sizeof(five_compressed) / sizeof(five_compressed[0]));

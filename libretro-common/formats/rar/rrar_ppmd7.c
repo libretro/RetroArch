@@ -1,976 +1,1043 @@
-/* PPMd var.H model and the range decoder RAR pairs it with.
+/* Copyright  (C) 2010-2026 The RetroArch team
  *
- * This is Igor Pavlov's Ppmd7 from the LZMA SDK (2010-03-12, public
- * domain), itself based on Dmitry Shkarin's PPMd var.H (2001, public
- * domain), as libarchive carries it - the model, and of the two range
- * decoders only RAR's. The encoder is left out. It is kept in the SDK's
- * own style so that it can be compared with its source line by line; the
- * one change is that the model calls RAR's range decoder by name, where
- * the SDK goes through a table of functions to have a choice of two.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rrar_ppmd7.c).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
+
+/* PPMd var.H decoding for RAR 2.9; see rrar_ppmd7.h. */
 
 #include <stdlib.h>
 #include <string.h>
 
+#include <retro_inline.h>
+
 #include "rrar_ppmd7.h"
 
-#ifdef PPMD_32BIT
-  #define Ppmd7_GetPtr(p, ptr) (ptr)
-  #define Ppmd7_GetContext(p, ptr) (ptr)
-  #define Ppmd7_GetStats(p, ctx) ((ctx)->Stats)
+#define PPMD_UNIT_SIZE      12
+#define PPMD_MAX_FREQ       124
+#define PPMD_MAX_ORDER      64
+#define PPMD_INT_BITS       7
+#define PPMD_PERIOD_BITS    7
+#define PPMD_BIN_SCALE      (1u << (PPMD_INT_BITS + PPMD_PERIOD_BITS))
+#define PPMD_NUM_INDEXES    RRAR_PPMD7_NUM_INDEXES
+
+#if defined(__GNUC__)
+#define PPMD_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER) && _MSC_VER >= 1300
+#define PPMD_NOINLINE __declspec(noinline)
 #else
-  #define Ppmd7_GetPtr(p, offs) ((void *)((p)->Base + (offs)))
-  #define Ppmd7_GetContext(p, offs) ((CPpmd7_Context *)Ppmd7_GetPtr((p), (offs)))
-  #define Ppmd7_GetStats(p, ctx) ((CPpmd_State *)Ppmd7_GetPtr((p), ((ctx)->Stats)))
+#define PPMD_NOINLINE
 #endif
 
-#define Ppmd7_GetBinSumm(p) \
-    &p->BinSumm[Ppmd7Context_OneState(p->MinContext)->Freq - 1][p->PrevSuccess + \
-    p->NS2BSIndx[Ppmd7_GetContext(p, p->MinContext->Suffix)->NumStats - 1] + \
-    (p->HiBitsFlag = p->HB2Flag[p->FoundState->Symbol]) + \
-    2 * p->HB2Flag[Ppmd7Context_OneState(p->MinContext)->Symbol] + \
-    ((p->RunLength >> 26) & 0x20)]
+/* RAR's range coder: renormalise while the top byte is settled, or while
+ * the range has fallen under the bottom, in which case it is cut to what
+ * is left before the next multiple of it. */
+#define PPMD_RC_TOP         (1u << 24)
+#define PPMD_RC_BOTTOM      (1u << 15)
 
-#define kTopValue (1 << 24)
-#define MAX_FREQ 124
-#define UNIT_SIZE 12
-
-#define U2B(nu) ((uint32_t)(nu) * UNIT_SIZE)
-#define U2I(nu) (p->Units2Indx[(nu) - 1])
-#define I2U(indx) (p->Indx2Units[indx])
-
-#ifdef PPMD_32BIT
-  #define REF(ptr) (ptr)
-#else
-  #define REF(ptr) ((uint32_t)((uint8_t *)(ptr) - (p)->Base))
-#endif
-
-#define STATS_REF(ptr) ((CPpmd_State_Ref)REF(ptr))
-
-#define CTX(ref) ((CPpmd7_Context *)Ppmd7_GetContext(p, ref))
-#define STATS(ctx) Ppmd7_GetStats(p, ctx)
-#define ONE_STATE(ctx) Ppmd7Context_OneState(ctx)
-#define SUFFIX(ctx) CTX((ctx)->Suffix)
-
-static const uint16_t kInitBinEsc[] = { 0x3CDD, 0x1F3F, 0x59BF, 0x48F3, 0x64A1, 0x5ABC, 0x6632, 0x6051};
-static const uint8_t PPMD7_kExpEscape[16] = { 25, 14, 9, 7, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2 };
-
-typedef CPpmd7_Context * CTX_PTR;
-
-struct CPpmd7_Node_;
-
-typedef
-  #ifdef PPMD_32BIT
-    struct CPpmd7_Node_ *
-  #else
-    uint32_t
-  #endif
-  CPpmd7_Node_Ref;
-
-typedef struct CPpmd7_Node_
+/* A symbol and how often it was seen in a context; the context it leads
+ * to, or the text after it, split in two halves to keep the state at six
+ * bytes on a two-byte boundary. */
+typedef struct rrar_ppmd7_state
 {
-  uint16_t Stamp; /* must be at offset 0 as CPpmd7_Context::NumStats. Stamp=0 means free */
-  uint16_t NU;
-  CPpmd7_Node_Ref Next; /* must be at offset >= 4 */
-  CPpmd7_Node_Ref Prev;
-} CPpmd7_Node;
+   uint8_t  symbol;
+   uint8_t  freq;
+   uint16_t successor_lo;
+   uint16_t successor_hi;
+} ppmd_state_t;
 
-#ifdef PPMD_32BIT
-  #define NODE(ptr) (ptr)
-#else
-  #define NODE(offs) ((CPpmd7_Node *)(p->Base + (offs)))
-#endif
-
-static void Ppmd7_Update1(CPpmd7 *p);
-static void Ppmd7_Update1_0(CPpmd7 *p);
-static void Ppmd7_Update2(CPpmd7 *p);
-static void Ppmd7_UpdateBin(CPpmd7 *p);
-static CPpmd_See *Ppmd7_MakeEscFreq(CPpmd7 *p, unsigned numMasked,
-                                    uint32_t *scale);
-
-/* ----------- Base ----------- */
-
-static void Ppmd7_Construct(CPpmd7 *p)
+/* A context of one unit: with more than one symbol, the sum of their
+ * counts and its block of states; with one, that state in their place.
+ * The halves of the link keep the union on a two-byte boundary, where
+ * the one state's fields fall. */
+typedef struct rrar_ppmd7_context
 {
-  unsigned i, k, m;
-
-  p->Base = 0;
-
-  for (i = 0, k = 0; i < PPMD_NUM_INDEXES; i++)
-  {
-    unsigned step = (i >= 12 ? 4 : (i >> 2) + 1);
-    do { p->Units2Indx[k++] = (uint8_t)i; } while(--step);
-    p->Indx2Units[i] = (uint8_t)k;
-  }
-
-  p->NS2BSIndx[0] = (0 << 1);
-  p->NS2BSIndx[1] = (1 << 1);
-  memset(p->NS2BSIndx + 2, (2 << 1), 9);
-  memset(p->NS2BSIndx + 11, (3 << 1), 256 - 11);
-
-  for (i = 0; i < 3; i++)
-    p->NS2Indx[i] = (uint8_t)i;
-  for (m = i, k = 1; i < 256; i++)
-  {
-    p->NS2Indx[i] = (uint8_t)m;
-    if (--k == 0)
-      k = (++m) - 2;
-  }
-
-  memset(p->HB2Flag, 0, 0x40);
-  memset(p->HB2Flag + 0x40, 8, 0x100 - 0x40);
-}
-
-static void Ppmd7_Free(CPpmd7 *p)
-{
-  free(p->Base);
-  p->Size = 0;
-  p->Base = 0;
-}
-
-static bool Ppmd7_Alloc(CPpmd7 *p, uint32_t size)
-{
-  if (p->Base == 0 || p->Size != size)
-  {
-    /* RestartModel() below assumes that p->Size >= UNIT_SIZE
-       (see the calculation of m->MinContext). */
-    if (size < UNIT_SIZE) {
-      return false;
-    }
-    Ppmd7_Free(p);
-    p->AlignOffset =
-      #ifdef PPMD_32BIT
-        (4 - size) & 3;
-      #else
-        4 - (size & 3);
-      #endif
-    if ((p->Base = malloc(p->AlignOffset + size
-        #ifndef PPMD_32BIT
-        + UNIT_SIZE
-        #endif
-        )) == 0)
-      return false;
-    p->Size = size;
-  }
-  return true;
-}
-
-static void InsertNode(CPpmd7 *p, void *node, unsigned indx)
-{
-  *((CPpmd_Void_Ref *)node) = p->FreeList[indx];
-  p->FreeList[indx] = REF(node);
-}
-
-static void *RemoveNode(CPpmd7 *p, unsigned indx)
-{
-  CPpmd_Void_Ref *node = (CPpmd_Void_Ref *)Ppmd7_GetPtr(p, p->FreeList[indx]);
-  p->FreeList[indx] = *node;
-  return node;
-}
-
-static void SplitBlock(CPpmd7 *p, void *ptr, unsigned oldIndx, unsigned newIndx)
-{
-  unsigned i, nu = I2U(oldIndx) - I2U(newIndx);
-  ptr = (uint8_t *)ptr + U2B(I2U(newIndx));
-  if (I2U(i = U2I(nu)) != nu)
-  {
-    unsigned k = I2U(--i);
-    InsertNode(p, ((uint8_t *)ptr) + U2B(k), nu - k - 1);
-  }
-  InsertNode(p, ptr, i);
-}
-
-static void GlueFreeBlocks(CPpmd7 *p)
-{
-  #ifdef PPMD_32BIT
-  CPpmd7_Node headItem;
-  CPpmd7_Node_Ref head = &headItem;
-  #else
-  CPpmd7_Node_Ref head = p->AlignOffset + p->Size;
-  #endif
-
-  CPpmd7_Node_Ref n = head;
-  unsigned i;
-
-  p->GlueCount = 255;
-
-  /* create doubly-linked list of free blocks */
-  for (i = 0; i < PPMD_NUM_INDEXES; i++)
-  {
-    uint16_t nu = I2U(i);
-    CPpmd7_Node_Ref next = (CPpmd7_Node_Ref)p->FreeList[i];
-    p->FreeList[i] = 0;
-    while (next != 0)
-    {
-      CPpmd7_Node *node = NODE(next);
-      node->Next = n;
-      n = NODE(n)->Prev = next;
-      next = *(const CPpmd7_Node_Ref *)node;
-      node->Stamp = 0;
-      node->NU = (uint16_t)nu;
-    }
-  }
-  NODE(head)->Stamp = 1;
-  NODE(head)->Next = n;
-  NODE(n)->Prev = head;
-  if (p->LoUnit != p->HiUnit)
-    ((CPpmd7_Node *)p->LoUnit)->Stamp = 1;
-
-  /* Glue free blocks */
-  while (n != head)
-  {
-    CPpmd7_Node *node = NODE(n);
-    uint32_t nu = (uint32_t)node->NU;
-    for (;;)
-    {
-      CPpmd7_Node *node2 = NODE(n) + nu;
-      nu += node2->NU;
-      if (node2->Stamp != 0 || nu >= 0x10000)
-        break;
-      NODE(node2->Prev)->Next = node2->Next;
-      NODE(node2->Next)->Prev = node2->Prev;
-      node->NU = (uint16_t)nu;
-    }
-    n = node->Next;
-  }
-
-  /* Fill lists of free blocks */
-  for (n = NODE(head)->Next; n != head;)
-  {
-    CPpmd7_Node *node = NODE(n);
-    unsigned nu;
-    CPpmd7_Node_Ref next = node->Next;
-    for (nu = node->NU; nu > 128; nu -= 128, node += 128)
-      InsertNode(p, node, PPMD_NUM_INDEXES - 1);
-    if (I2U(i = U2I(nu)) != nu)
-    {
-      unsigned k = I2U(--i);
-      InsertNode(p, node + k, nu - k - 1);
-    }
-    InsertNode(p, node, i);
-    n = next;
-  }
-}
-
-static void *AllocUnitsRare(CPpmd7 *p, unsigned indx)
-{
-  unsigned i;
-  void *retVal;
-  if (p->GlueCount == 0)
-  {
-    GlueFreeBlocks(p);
-    if (p->FreeList[indx] != 0)
-      return RemoveNode(p, indx);
-  }
-  i = indx;
-  do
-  {
-    if (++i == PPMD_NUM_INDEXES)
-    {
-      uint32_t numBytes = U2B(I2U(indx));
-      p->GlueCount--;
-      return ((uint32_t)(p->UnitsStart - p->Text) > numBytes) ? (p->UnitsStart -= numBytes) : (NULL);
-    }
-  }
-  while (p->FreeList[i] == 0);
-  retVal = RemoveNode(p, i);
-  SplitBlock(p, retVal, i, indx);
-  return retVal;
-}
-
-static void *AllocUnits(CPpmd7 *p, unsigned indx)
-{
-  uint32_t numBytes;
-  if (p->FreeList[indx] != 0)
-    return RemoveNode(p, indx);
-  numBytes = U2B(I2U(indx));
-  if (numBytes <= (uint32_t)(p->HiUnit - p->LoUnit))
-  {
-    void *retVal = p->LoUnit;
-    p->LoUnit += numBytes;
-    return retVal;
-  }
-  return AllocUnitsRare(p, indx);
-}
-
-#define MyMem12Cpy(dest, src, num) do {               \
-   uint32_t *d = (uint32_t *)dest;               \
-   const uint32_t *s = (const uint32_t *)src;            \
-   uint32_t n = num;                     \
-   do {                        \
-      d[0] = s[0]; d[1] = s[1]; d[2] = s[2]; s += 3; d += 3;   \
-   } while(--n);                     \
-} while (0)
-
-static void *ShrinkUnits(CPpmd7 *p, void *oldPtr, unsigned oldNU, unsigned newNU)
-{
-  unsigned i0 = U2I(oldNU);
-  unsigned i1 = U2I(newNU);
-  if (i0 == i1)
-    return oldPtr;
-  if (p->FreeList[i1] != 0)
-  {
-    void *ptr = RemoveNode(p, i1);
-    MyMem12Cpy(ptr, oldPtr, newNU);
-    InsertNode(p, oldPtr, i0);
-    return ptr;
-  }
-  SplitBlock(p, oldPtr, i0, i1);
-  return oldPtr;
-}
-
-#define SUCCESSOR(p) ((CPpmd_Void_Ref)((p)->SuccessorLow | ((uint32_t)(p)->SuccessorHigh << 16)))
-
-static void SetSuccessor(CPpmd_State *p, CPpmd_Void_Ref v)
-{
-  (p)->SuccessorLow = (uint16_t)((uint32_t)(v) & 0xFFFF);
-  (p)->SuccessorHigh = (uint16_t)(((uint32_t)(v) >> 16) & 0xFFFF);
-}
-
-static void RestartModel(CPpmd7 *p)
-{
-  unsigned i, k, m;
-
-  memset(p->FreeList, 0, sizeof(p->FreeList));
-  p->Text = p->Base + p->AlignOffset;
-  p->HiUnit = p->Text + p->Size;
-  p->LoUnit = p->UnitsStart = p->HiUnit - p->Size / 8 / UNIT_SIZE * 7 * UNIT_SIZE;
-  p->GlueCount = 0;
-
-  p->OrderFall = p->MaxOrder;
-  p->RunLength = p->InitRL = -(int32_t)((p->MaxOrder < 12) ? p->MaxOrder : 12) - 1;
-  p->PrevSuccess = 0;
-
-  p->MinContext = p->MaxContext = (CTX_PTR)(p->HiUnit -= UNIT_SIZE); /* AllocContext(p); */
-  p->MinContext->Suffix = 0;
-  p->MinContext->NumStats = 256;
-  p->MinContext->SummFreq = 256 + 1;
-  p->FoundState = (CPpmd_State *)p->LoUnit; /* AllocUnits(p, PPMD_NUM_INDEXES - 1); */
-  p->LoUnit += U2B(256 / 2);
-  p->MinContext->Stats = REF(p->FoundState);
-  for (i = 0; i < 256; i++)
-  {
-    CPpmd_State *s = &p->FoundState[i];
-    s->Symbol = (uint8_t)i;
-    s->Freq = 1;
-    SetSuccessor(s, 0);
-  }
-
-  for (i = 0; i < 128; i++)
-    for (k = 0; k < 8; k++)
-    {
-      uint16_t *dest = p->BinSumm[i] + k;
-      uint16_t val = (uint16_t)(PPMD_BIN_SCALE - kInitBinEsc[k] / (i + 2));
-      for (m = 0; m < 64; m += 8)
-        dest[m] = val;
-    }
-
-  for (i = 0; i < 25; i++)
-    for (k = 0; k < 16; k++)
-    {
-      CPpmd_See *s = &p->See[i][k];
-      s->Summ = (uint16_t)((5 * i + 10) << (s->Shift = PPMD_PERIOD_BITS - 4));
-      s->Count = 4;
-    }
-}
-
-static void Ppmd7_Init(CPpmd7 *p, unsigned maxOrder)
-{
-  p->MaxOrder = maxOrder;
-  RestartModel(p);
-  p->DummySee.Shift = PPMD_PERIOD_BITS;
-  p->DummySee.Summ = 0; /* unused */
-  p->DummySee.Count = 64; /* unused */
-}
-
-static CTX_PTR CreateSuccessors(CPpmd7 *p, bool skip)
-{
-  CPpmd_State upState;
-  CTX_PTR c = p->MinContext;
-  CPpmd_Byte_Ref upBranch = (CPpmd_Byte_Ref)SUCCESSOR(p->FoundState);
-  CPpmd_State *ps[PPMD7_MAX_ORDER];
-  unsigned numPs = 0;
-
-  if (!skip)
-    ps[numPs++] = p->FoundState;
-
-  while (c->Suffix)
-  {
-    CPpmd_Void_Ref successor;
-    CPpmd_State *s;
-    c = SUFFIX(c);
-    if (c->NumStats != 1)
-    {
-      for (s = STATS(c); s->Symbol != p->FoundState->Symbol; s++);
-    }
-    else
-      s = ONE_STATE(c);
-    successor = SUCCESSOR(s);
-    if (successor != upBranch)
-    {
-      c = CTX(successor);
-      if (numPs == 0)
-        return c;
-      break;
-    }
-    ps[numPs++] = s;
-  }
-
-  upState.Symbol = *(const uint8_t *)Ppmd7_GetPtr(p, upBranch);
-  SetSuccessor(&upState, upBranch + 1);
-
-  if (c->NumStats == 1)
-    upState.Freq = ONE_STATE(c)->Freq;
-  else
-  {
-    uint32_t cf, s0;
-    CPpmd_State *s;
-    for (s = STATS(c); s->Symbol != upState.Symbol; s++);
-    cf = s->Freq - 1;
-    s0 = c->SummFreq - c->NumStats - cf;
-    upState.Freq = (uint8_t)(1 + ((2 * cf <= s0) ? (5 * cf > s0) : ((2 * cf + 3 * s0 - 1) / (2 * s0))));
-  }
-
-  while (numPs != 0)
-  {
-    /* Create Child */
-    CTX_PTR c1; /* = AllocContext(p); */
-    if (p->HiUnit != p->LoUnit)
-      c1 = (CTX_PTR)(p->HiUnit -= UNIT_SIZE);
-    else if (p->FreeList[0] != 0)
-      c1 = (CTX_PTR)RemoveNode(p, 0);
-    else
-    {
-      c1 = (CTX_PTR)AllocUnitsRare(p, 0);
-      if (!c1)
-        return NULL;
-    }
-    c1->NumStats = 1;
-    *ONE_STATE(c1) = upState;
-    c1->Suffix = REF(c);
-    SetSuccessor(ps[--numPs], REF(c1));
-    c = c1;
-  }
-
-  return c;
-}
-
-static void SwapStates(CPpmd_State *t1, CPpmd_State *t2)
-{
-  CPpmd_State tmp = *t1;
-  *t1 = *t2;
-  *t2 = tmp;
-}
-
-static void UpdateModel(CPpmd7 *p)
-{
-  CPpmd_Void_Ref successor, fSuccessor = SUCCESSOR(p->FoundState);
-  CTX_PTR c;
-  unsigned s0, ns;
-
-  if (p->FoundState->Freq < MAX_FREQ / 4 && p->MinContext->Suffix != 0)
-  {
-    c = SUFFIX(p->MinContext);
-
-    if (c->NumStats == 1)
-    {
-      CPpmd_State *s = ONE_STATE(c);
-      if (s->Freq < 32)
-        s->Freq++;
-    }
-    else
-    {
-      CPpmd_State *s = STATS(c);
-      if (s->Symbol != p->FoundState->Symbol)
+   uint16_t num_stats;
+   union
+   {
+      struct
       {
-        do { s++; } while (s->Symbol != p->FoundState->Symbol);
-        if (s[0].Freq >= s[-1].Freq)
-        {
-          SwapStates(&s[0], &s[-1]);
-          s--;
-        }
-      }
-      if (s->Freq < MAX_FREQ - 9)
-      {
-        s->Freq += 2;
-        c->SummFreq += 2;
-      }
-    }
-  }
+         uint16_t summ_freq;
+         uint16_t stats_lo;
+         uint16_t stats_hi;
+      } m;
+      ppmd_state_t one;
+   } u;
+   uint32_t suffix;
+} ppmd_context_t;
 
-  if (p->OrderFall == 0)
-  {
-    p->MinContext = p->MaxContext = CreateSuccessors(p, true);
-    if (p->MinContext == 0)
-    {
-      RestartModel(p);
+/* A free block while blocks are glued: stamp sits where a context keeps
+ * num_stats and a state its symbol and freq, so a block in use never
+ * reads as free (0). */
+typedef struct ppmd_node
+{
+   uint16_t stamp;
+   uint16_t nu;
+   uint32_t next;
+   uint32_t prev;
+} ppmd_node_t;
+
+#define PPMD_PTR(p, ref)          ((void *)((p)->base + (ref)))
+#define PPMD_CTX(p, ref)          ((ppmd_context_t *)((p)->base + (ref)))
+#define PPMD_NODE(p, ref)         ((ppmd_node_t *)((p)->base + (ref)))
+#define PPMD_STATS_REF(ctx)       ((uint32_t)(ctx)->u.m.stats_lo | ((uint32_t)(ctx)->u.m.stats_hi << 16))
+#define PPMD_STATS(p, ctx)        ((ppmd_state_t *)((p)->base + PPMD_STATS_REF(ctx)))
+#define PPMD_SUFFIX(p, ctx)       PPMD_CTX(p, (ctx)->suffix)
+#define PPMD_REF(p, ptr)          ((uint32_t)((uint8_t *)(ptr) - (p)->base))
+#define PPMD_ONE_STATE(ctx)       (&(ctx)->u.one)
+#define PPMD_SUCCESSOR(s)         ((uint32_t)(s)->successor_lo | ((uint32_t)(s)->successor_hi << 16))
+#define PPMD_U2B(nu)              ((uint32_t)(nu) * PPMD_UNIT_SIZE)
+#define PPMD_U2I(p, nu)           ((p)->units2indx[(nu) - 1])
+#define PPMD_I2U(p, indx)         ((p)->indx2units[indx])
+
+#define PPMD_SET_SUCCESSOR(s, v) \
+   do \
+   { \
+      ppmd_state_t *st_  = (s); \
+      uint32_t succ_     = (v); \
+      st_->successor_lo  = (uint16_t)succ_; \
+      st_->successor_hi  = (uint16_t)(succ_ >> 16); \
+   } while (0)
+
+#define PPMD_SET_STATS(ctx, v) \
+   do \
+   { \
+      ppmd_context_t *ctx_ = (ctx); \
+      uint32_t ref_        = (v); \
+      ctx_->u.m.stats_lo   = (uint16_t)ref_; \
+      ctx_->u.m.stats_hi   = (uint16_t)(ref_ >> 16); \
+   } while (0)
+
+/* The mean a binary context's probability moves by. */
+#define PPMD_GET_MEAN(prob)       (((prob) + (1 << (PPMD_PERIOD_BITS - 2))) >> PPMD_PERIOD_BITS)
+
+static const uint16_t ppmd_init_bin_esc[8] = {
+   0x3CDD, 0x1F3F, 0x59BF, 0x48F3, 0x64A1, 0x5ABC, 0x6632, 0x6051
+};
+static const uint8_t ppmd_exp_escape[16] = {
+   25, 14, 9, 7, 5, 5, 4, 4, 4, 3, 3, 3, 2, 2, 2, 2
+};
+
+/* ----------------------------------------------------------- range coder */
+
+static INLINE uint32_t ppmd_rc_byte(rrar_ppmd7_range_t *rc)
+{
+   if (rc->p < rc->end)
+      return *rc->p++;
+   rc->past++;
+   return 0;
+}
+
+static INLINE void ppmd_rc_normalize(rrar_ppmd7_range_t *rc)
+{
+   for (;;)
+   {
+      if ((rc->low ^ (rc->low + rc->range)) >= PPMD_RC_TOP)
+      {
+         if (rc->range >= PPMD_RC_BOTTOM)
+            break;
+         rc->range = (0u - rc->low) & (PPMD_RC_BOTTOM - 1);
+      }
+      rc->code    = (rc->code << 8) | ppmd_rc_byte(rc);
+      rc->range <<= 8;
+      rc->low   <<= 8;
+   }
+}
+
+/* Where the code falls among @total. */
+static INLINE uint32_t ppmd_rc_threshold(rrar_ppmd7_range_t *rc,
+      uint32_t total)
+{
+   return (rc->code - rc->low) / (rc->range /= total);
+}
+
+static INLINE void ppmd_rc_decode(rrar_ppmd7_range_t *rc,
+      uint32_t start, uint32_t size)
+{
+   rc->low   += start * rc->range;
+   rc->range *= size;
+   ppmd_rc_normalize(rc);
+}
+
+/* A binary decision with @size0 of PPMD_BIN_SCALE for 0. The scale is a
+ * power of two, so the threshold needs no division: the code is under
+ * size0 * range exactly when the quotient is under size0. */
+static INLINE unsigned ppmd_rc_bit(rrar_ppmd7_range_t *rc, uint32_t size0)
+{
+   rc->range >>= PPMD_INT_BITS + PPMD_PERIOD_BITS;
+   if (rc->code - rc->low < size0 * rc->range)
+   {
+      rc->range *= size0;
+      ppmd_rc_normalize(rc);
+      return 0;
+   }
+   rc->low   += size0 * rc->range;
+   rc->range *= PPMD_BIN_SCALE - size0;
+   ppmd_rc_normalize(rc);
+   return 1;
+}
+
+/* ------------------------------------------------------------- allocator */
+
+/* A free block's link to the next of its size sits in its first four
+ * bytes, where the block's own fields are when in use. */
+static INLINE void ppmd_insert_node(rrar_ppmd7_t *p, void *node,
+      unsigned indx)
+{
+   memcpy(node, &p->free_list[indx], sizeof(uint32_t));
+   p->free_list[indx] = PPMD_REF(p, node);
+}
+
+static INLINE void *ppmd_remove_node(rrar_ppmd7_t *p, unsigned indx)
+{
+   void *node = PPMD_PTR(p, p->free_list[indx]);
+   memcpy(&p->free_list[indx], node, sizeof(uint32_t));
+   return node;
+}
+
+/* The units of a block of size @old_indx past the first @new_indx's
+ * worth go back on the free lists. */
+static void ppmd_split_block(rrar_ppmd7_t *p, void *ptr,
+      unsigned old_indx, unsigned new_indx)
+{
+   unsigned i;
+   unsigned nu = PPMD_I2U(p, old_indx) - PPMD_I2U(p, new_indx);
+   ptr         = (uint8_t *)ptr + PPMD_U2B(PPMD_I2U(p, new_indx));
+   if (PPMD_I2U(p, i = PPMD_U2I(p, nu)) != nu)
+   {
+      unsigned k = PPMD_I2U(p, --i);
+      ppmd_insert_node(p, (uint8_t *)ptr + PPMD_U2B(k), nu - k - 1);
+   }
+   ppmd_insert_node(p, ptr, i);
+}
+
+/* Every free block into one list, neighbours merged, and back onto the
+ * free lists by size. The list's head is the spare unit past the end of
+ * the model's memory. */
+static void ppmd_glue_free_blocks(rrar_ppmd7_t *p)
+{
+   unsigned i;
+   uint32_t head = p->align_offset + p->size;
+   uint32_t n    = head;
+
+   p->glue_count = 255;
+
+   for (i = 0; i < PPMD_NUM_INDEXES; i++)
+   {
+      uint16_t nu   = PPMD_I2U(p, i);
+      uint32_t next = p->free_list[i];
+      p->free_list[i] = 0;
+      while (next != 0)
+      {
+         ppmd_node_t *node    = PPMD_NODE(p, next);
+         node->next           = n;
+         PPMD_NODE(p, n)->prev = next;
+         n                    = next;
+         memcpy(&next, node, sizeof(uint32_t));
+         node->stamp          = 0;
+         node->nu             = nu;
+      }
+   }
+   PPMD_NODE(p, head)->stamp = 1;
+   PPMD_NODE(p, head)->next  = n;
+   PPMD_NODE(p, n)->prev     = head;
+   if (p->lo_unit != p->hi_unit)
+      ((ppmd_node_t *)p->lo_unit)->stamp = 1;
+
+   /* each block takes in the free blocks that follow it */
+   while (n != head)
+   {
+      ppmd_node_t *node = PPMD_NODE(p, n);
+      uint32_t nu       = node->nu;
+      for (;;)
+      {
+         ppmd_node_t *node2 = node + nu;
+         uint16_t head2[2];
+         /* the block may be in use: its first four bytes as they are */
+         memcpy(head2, node2, sizeof(head2));
+         nu += head2[1];
+         if (head2[0] != 0 || nu >= 0x10000)
+            break;
+         PPMD_NODE(p, node2->prev)->next = node2->next;
+         PPMD_NODE(p, node2->next)->prev = node2->prev;
+         node->nu                        = (uint16_t)nu;
+      }
+      n = node->next;
+   }
+
+   for (n = PPMD_NODE(p, head)->next; n != head; )
+   {
+      ppmd_node_t *node = PPMD_NODE(p, n);
+      uint32_t next     = node->next;
+      unsigned nu;
+      for (nu = node->nu; nu > 128; nu -= 128, node += 128)
+         ppmd_insert_node(p, node, PPMD_NUM_INDEXES - 1);
+      if (PPMD_I2U(p, i = PPMD_U2I(p, nu)) != nu)
+      {
+         unsigned k = PPMD_I2U(p, --i);
+         ppmd_insert_node(p, node + k, nu - k - 1);
+      }
+      ppmd_insert_node(p, node, i);
+      n = next;
+   }
+}
+
+/* A block when its own list and the gap between the unit areas are
+ * empty: glued lists, a larger block split, or the top of the text area.
+ * NULL when there is none. */
+static void *ppmd_alloc_units_rare(rrar_ppmd7_t *p, unsigned indx)
+{
+   unsigned i;
+   void *block;
+
+   if (p->glue_count == 0)
+   {
+      ppmd_glue_free_blocks(p);
+      if (p->free_list[indx] != 0)
+         return ppmd_remove_node(p, indx);
+   }
+
+   i = indx;
+   do
+   {
+      if (++i == PPMD_NUM_INDEXES)
+      {
+         uint32_t num_bytes = PPMD_U2B(PPMD_I2U(p, indx));
+         p->glue_count--;
+         if ((uint32_t)(p->units_start - p->text) > num_bytes)
+            return p->units_start -= num_bytes;
+         return NULL;
+      }
+   } while (p->free_list[i] == 0);
+
+   block = ppmd_remove_node(p, i);
+   ppmd_split_block(p, block, i, indx);
+   return block;
+}
+
+static INLINE void *ppmd_alloc_units(rrar_ppmd7_t *p, unsigned indx)
+{
+   uint32_t num_bytes;
+   if (p->free_list[indx] != 0)
+      return ppmd_remove_node(p, indx);
+   num_bytes = PPMD_U2B(PPMD_I2U(p, indx));
+   if (num_bytes <= (uint32_t)(p->hi_unit - p->lo_unit))
+   {
+      void *block  = p->lo_unit;
+      p->lo_unit  += num_bytes;
+      return block;
+   }
+   return ppmd_alloc_units_rare(p, indx);
+}
+
+/* A block of states down from @old_nu units to @new_nu: moved when a
+ * block of the smaller size is free, else split in place. */
+static void *ppmd_shrink_units(rrar_ppmd7_t *p, void *old_ptr,
+      unsigned old_nu, unsigned new_nu)
+{
+   unsigned i0 = PPMD_U2I(p, old_nu);
+   unsigned i1 = PPMD_U2I(p, new_nu);
+   if (i0 == i1)
+      return old_ptr;
+   if (p->free_list[i1] != 0)
+   {
+      void *ptr = ppmd_remove_node(p, i1);
+      memcpy(ptr, old_ptr, PPMD_U2B(new_nu));
+      ppmd_insert_node(p, old_ptr, i0);
+      return ptr;
+   }
+   ppmd_split_block(p, old_ptr, i0, i1);
+   return old_ptr;
+}
+
+/* ----------------------------------------------------------------- model */
+
+static void ppmd_restart_model(rrar_ppmd7_t *p)
+{
+   unsigned i, k, m;
+   ppmd_state_t *s;
+
+   memset(p->free_list, 0, sizeof(p->free_list));
+   p->text         = p->base + p->align_offset;
+   p->hi_unit      = p->text + p->size;
+   p->lo_unit      = p->hi_unit - p->size / 8 / PPMD_UNIT_SIZE * 7 * PPMD_UNIT_SIZE;
+   p->units_start  = p->lo_unit;
+   p->glue_count   = 0;
+
+   p->order_fall   = p->max_order;
+   p->init_rl      = -(int32_t)((p->max_order < 12) ? p->max_order : 12) - 1;
+   p->run_length   = p->init_rl;
+   p->prev_success = 0;
+
+   p->hi_unit     -= PPMD_UNIT_SIZE;
+   p->min_ctx      = (ppmd_context_t *)p->hi_unit;
+   p->max_ctx      = p->min_ctx;
+   p->min_ctx->suffix    = 0;
+   p->min_ctx->num_stats = 256;
+   p->min_ctx->u.m.summ_freq = 256 + 1;
+
+   s               = (ppmd_state_t *)p->lo_unit;
+   p->found        = s;
+   p->lo_unit     += PPMD_U2B(256 / 2);
+   PPMD_SET_STATS(p->min_ctx, PPMD_REF(p, s));
+   for (i = 0; i < 256; i++, s++)
+   {
+      s->symbol       = (uint8_t)i;
+      s->freq         = 1;
+      s->successor_lo = 0;
+      s->successor_hi = 0;
+   }
+
+   for (i = 0; i < 128; i++)
+      for (k = 0; k < 8; k++)
+      {
+         uint16_t val = (uint16_t)(PPMD_BIN_SCALE - ppmd_init_bin_esc[k] / (i + 2));
+         for (m = 0; m < 64; m += 8)
+            p->bin_summ[i][k + m] = val;
+      }
+
+   for (i = 0; i < 25; i++)
+      for (k = 0; k < 16; k++)
+      {
+         rrar_ppmd7_see_t *see = &p->see[i][k];
+         see->shift = PPMD_PERIOD_BITS - 4;
+         see->summ  = (uint16_t)((5 * i + 10) << see->shift);
+         see->count = 4;
+      }
+}
+
+/* The contexts the symbol just found leads to, from the longest one that
+ * already has it down to min_ctx. NULL when memory runs out. */
+static ppmd_context_t *ppmd_create_successors(rrar_ppmd7_t *p, bool skip)
+{
+   ppmd_state_t   *ps[PPMD_MAX_ORDER];
+   ppmd_state_t    up_state;
+   ppmd_state_t   *s;
+   ppmd_context_t *c         = p->min_ctx;
+   uint32_t        up_branch = PPMD_SUCCESSOR(p->found);
+   uint8_t         symbol    = p->found->symbol;
+   unsigned        num_ps    = 0;
+
+   if (!skip)
+      ps[num_ps++] = p->found;
+
+   while (c->suffix)
+   {
+      uint32_t successor;
+      c = PPMD_SUFFIX(p, c);
+      if (c->num_stats != 1)
+         for (s = PPMD_STATS(p, c); s->symbol != symbol; s++);
+      else
+         s = PPMD_ONE_STATE(c);
+      successor = PPMD_SUCCESSOR(s);
+      if (successor != up_branch)
+      {
+         c = PPMD_CTX(p, successor);
+         if (num_ps == 0)
+            return c;
+         break;
+      }
+      ps[num_ps++] = s;
+   }
+
+   up_state.symbol = *(const uint8_t *)PPMD_PTR(p, up_branch);
+   PPMD_SET_SUCCESSOR(&up_state, up_branch + 1);
+
+   if (c->num_stats == 1)
+      up_state.freq = PPMD_ONE_STATE(c)->freq;
+   else
+   {
+      uint32_t cf, s0;
+      for (s = PPMD_STATS(p, c); s->symbol != up_state.symbol; s++);
+      cf            = (uint32_t)s->freq - 1;
+      s0            = (uint32_t)c->u.m.summ_freq - c->num_stats - cf;
+      up_state.freq = (uint8_t)(1 + ((2 * cf <= s0)
+            ? (5 * cf > s0)
+            : ((2 * cf + 3 * s0 - 1) / (2 * s0))));
+   }
+
+   while (num_ps != 0)
+   {
+      ppmd_context_t *c1;
+      if (p->hi_unit != p->lo_unit)
+         c1 = (ppmd_context_t *)(p->hi_unit -= PPMD_UNIT_SIZE);
+      else if (p->free_list[0] != 0)
+         c1 = (ppmd_context_t *)ppmd_remove_node(p, 0);
+      else if (!(c1 = (ppmd_context_t *)ppmd_alloc_units_rare(p, 0)))
+         return NULL;
+      c1->num_stats = 1;
+      memcpy(PPMD_ONE_STATE(c1), &up_state, sizeof(up_state));
+      c1->suffix    = PPMD_REF(p, c);
+      PPMD_SET_SUCCESSOR(ps[--num_ps], PPMD_REF(p, c1));
+      c             = c1;
+   }
+
+   return c;
+}
+
+static INLINE void ppmd_swap_states(ppmd_state_t *a, ppmd_state_t *b)
+{
+   ppmd_state_t t = *a;
+   *a             = *b;
+   *b             = t;
+}
+
+/* After a symbol: its count in the next shorter context, the contexts it
+ * leads to, and it added to every context from max_ctx down to the one
+ * it was found in. */
+static void ppmd_update_model(rrar_ppmd7_t *p)
+{
+   ppmd_context_t *c;
+   uint32_t successor;
+   unsigned s0, ns;
+   uint8_t  symbol      = p->found->symbol;
+   uint8_t  found_freq  = p->found->freq;
+   uint32_t f_successor = PPMD_SUCCESSOR(p->found);
+
+   if (found_freq < PPMD_MAX_FREQ / 4 && p->min_ctx->suffix != 0)
+   {
+      c = PPMD_SUFFIX(p, p->min_ctx);
+      if (c->num_stats == 1)
+      {
+         ppmd_state_t *s = PPMD_ONE_STATE(c);
+         if (s->freq < 32)
+            s->freq++;
+      }
+      else
+      {
+         ppmd_state_t *s = PPMD_STATS(p, c);
+         if (s->symbol != symbol)
+         {
+            do
+            {
+               s++;
+            } while (s->symbol != symbol);
+            if (s[0].freq >= s[-1].freq)
+            {
+               ppmd_swap_states(&s[0], &s[-1]);
+               s--;
+            }
+         }
+         if (s->freq < PPMD_MAX_FREQ - 9)
+         {
+            s->freq     += 2;
+            c->u.m.summ_freq += 2;
+         }
+      }
+   }
+
+   if (p->order_fall == 0)
+   {
+      p->min_ctx = p->max_ctx = ppmd_create_successors(p, true);
+      if (!p->min_ctx)
+      {
+         ppmd_restart_model(p);
+         return;
+      }
+      PPMD_SET_SUCCESSOR(p->found, PPMD_REF(p, p->min_ctx));
       return;
-    }
-    SetSuccessor(p->FoundState, REF(p->MinContext));
-    return;
-  }
+   }
 
-  *p->Text++ = p->FoundState->Symbol;
-  successor = REF(p->Text);
-  if (p->Text >= p->UnitsStart)
-  {
-    RestartModel(p);
-    return;
-  }
+   *p->text++ = symbol;
+   successor  = PPMD_REF(p, p->text);
+   if (p->text >= p->units_start)
+   {
+      ppmd_restart_model(p);
+      return;
+   }
 
-  if (fSuccessor)
-  {
-    if (fSuccessor <= successor)
-    {
-      CTX_PTR cs = CreateSuccessors(p, false);
-      if (cs == NULL)
+   if (f_successor)
+   {
+      if (f_successor <= successor)
       {
-        RestartModel(p);
-        return;
-      }
-      fSuccessor = REF(cs);
-    }
-    if (--p->OrderFall == 0)
-    {
-      successor = fSuccessor;
-      p->Text -= (p->MaxContext != p->MinContext);
-    }
-  }
-  else
-  {
-    SetSuccessor(p->FoundState, successor);
-    fSuccessor = REF(p->MinContext);
-  }
-
-  s0 = p->MinContext->SummFreq - (ns = p->MinContext->NumStats) - (p->FoundState->Freq - 1);
-
-  for (c = p->MaxContext; c != p->MinContext; c = SUFFIX(c))
-  {
-    unsigned ns1;
-    uint32_t cf, sf;
-    if ((ns1 = c->NumStats) != 1)
-    {
-      if ((ns1 & 1) == 0)
-      {
-        /* Expand for one UNIT */
-        unsigned oldNU = ns1 >> 1;
-        unsigned i = U2I(oldNU);
-        if (i != U2I(oldNU + 1))
-        {
-          void *ptr = AllocUnits(p, i + 1);
-          void *oldPtr;
-          if (!ptr)
-          {
-            RestartModel(p);
+         /* it leads into the text: make the contexts it means */
+         ppmd_context_t *cs = ppmd_create_successors(p, false);
+         if (!cs)
+         {
+            ppmd_restart_model(p);
             return;
-          }
-          oldPtr = STATS(c);
-          MyMem12Cpy(ptr, oldPtr, oldNU);
-          InsertNode(p, oldPtr, i);
-          c->Stats = STATS_REF(ptr);
-        }
+         }
+         f_successor = PPMD_REF(p, cs);
       }
-      c->SummFreq = (uint16_t)(c->SummFreq + (2 * ns1 < ns) + 2 * ((4 * ns1 <= ns) & (c->SummFreq <= 8 * ns1)));
-    }
-    else
-    {
-      CPpmd_State *s = (CPpmd_State*)AllocUnits(p, 0);
-      if (!s)
+      if (--p->order_fall == 0)
       {
-        RestartModel(p);
-        return;
+         successor  = f_successor;
+         p->text   -= (p->max_ctx != p->min_ctx);
       }
-      *s = *ONE_STATE(c);
-      c->Stats = REF(s);
-      if (s->Freq < MAX_FREQ / 4 - 1)
-        s->Freq <<= 1;
+   }
+   else
+   {
+      PPMD_SET_SUCCESSOR(p->found, successor);
+      f_successor = PPMD_REF(p, p->min_ctx);
+   }
+
+   ns         = p->min_ctx->num_stats;
+   s0         = p->min_ctx->u.m.summ_freq - ns - (found_freq - 1);
+
+   for (c = p->max_ctx; c != p->min_ctx; c = PPMD_SUFFIX(p, c))
+   {
+      ppmd_state_t *s;
+      uint32_t cf, sf;
+      unsigned ns1 = c->num_stats;
+
+      if (ns1 != 1)
+      {
+         if ((ns1 & 1) == 0)
+         {
+            /* the states fill their block: one unit more */
+            unsigned old_nu = ns1 >> 1;
+            unsigned i      = PPMD_U2I(p, old_nu);
+            if (i != PPMD_U2I(p, old_nu + 1))
+            {
+               void *ptr = ppmd_alloc_units(p, i + 1);
+               void *old_ptr;
+               if (!ptr)
+               {
+                  ppmd_restart_model(p);
+                  return;
+               }
+               old_ptr  = PPMD_STATS(p, c);
+               memcpy(ptr, old_ptr, PPMD_U2B(old_nu));
+               ppmd_insert_node(p, old_ptr, i);
+               PPMD_SET_STATS(c, PPMD_REF(p, ptr));
+            }
+         }
+         c->u.m.summ_freq = (uint16_t)(c->u.m.summ_freq + (2 * ns1 < ns)
+               + 2 * ((4 * ns1 <= ns) & (c->u.m.summ_freq <= 8 * ns1)));
+      }
       else
-        s->Freq = MAX_FREQ - 4;
-      c->SummFreq = (uint16_t)(s->Freq + p->InitEsc + (ns > 3));
-    }
-    cf = 2 * (uint32_t)p->FoundState->Freq * (c->SummFreq + 6);
-    sf = (uint32_t)s0 + c->SummFreq;
-    if (cf < 6 * sf)
-    {
-      cf = 1 + (cf > sf) + (cf >= 4 * sf);
-      c->SummFreq += 3;
-    }
-    else
-    {
-      cf = 4 + (cf >= 9 * sf) + (cf >= 12 * sf) + (cf >= 15 * sf);
-      c->SummFreq = (uint16_t)(c->SummFreq + cf);
-    }
-    {
-      CPpmd_State *s = STATS(c) + ns1;
-      SetSuccessor(s, successor);
-      s->Symbol = p->FoundState->Symbol;
-      s->Freq = (uint8_t)cf;
-      c->NumStats = (uint16_t)(ns1 + 1);
-    }
-  }
-  p->MaxContext = p->MinContext = CTX(fSuccessor);
-}
-
-static void Rescale(CPpmd7 *p)
-{
-  unsigned i, adder, sumFreq, escFreq;
-  CPpmd_State *stats = STATS(p->MinContext);
-  CPpmd_State *s = p->FoundState;
-  {
-    CPpmd_State tmp = *s;
-    for (; s != stats; s--)
-      s[0] = s[-1];
-    *s = tmp;
-  }
-  escFreq = p->MinContext->SummFreq - s->Freq;
-  s->Freq += 4;
-  adder = (p->OrderFall != 0);
-  s->Freq = (uint8_t)((s->Freq + adder) >> 1);
-  sumFreq = s->Freq;
-
-  i = p->MinContext->NumStats - 1;
-  do
-  {
-    escFreq -= (++s)->Freq;
-    s->Freq = (uint8_t)((s->Freq + adder) >> 1);
-    sumFreq += s->Freq;
-    if (s[0].Freq > s[-1].Freq)
-    {
-      CPpmd_State *s1 = s;
-      CPpmd_State tmp = *s1;
-      do
-        s1[0] = s1[-1];
-      while (--s1 != stats && tmp.Freq > s1[-1].Freq);
-      *s1 = tmp;
-    }
-  }
-  while (--i);
-
-  if (s->Freq == 0)
-  {
-    unsigned numStats = p->MinContext->NumStats;
-    unsigned n0, n1;
-    do { i++; } while ((--s)->Freq == 0);
-    escFreq += i;
-    p->MinContext->NumStats = (uint16_t)(p->MinContext->NumStats - i);
-    if (p->MinContext->NumStats == 1)
-    {
-      CPpmd_State tmp = *stats;
-      do
       {
-        tmp.Freq = (uint8_t)(tmp.Freq - (tmp.Freq >> 1));
-        escFreq >>= 1;
+         /* one state becomes a block of states */
+         ppmd_state_t one;
+         if (!(s = (ppmd_state_t *)ppmd_alloc_units(p, 0)))
+         {
+            ppmd_restart_model(p);
+            return;
+         }
+         memcpy(&one, PPMD_ONE_STATE(c), sizeof(one));
+         *s       = one;
+         PPMD_SET_STATS(c, PPMD_REF(p, s));
+         if (s->freq < PPMD_MAX_FREQ / 4 - 1)
+            s->freq <<= 1;
+         else
+            s->freq   = PPMD_MAX_FREQ - 4;
+         c->u.m.summ_freq = (uint16_t)(s->freq + p->init_esc + (ns > 3));
       }
-      while (escFreq > 1);
-      InsertNode(p, stats, U2I(((numStats + 1) >> 1)));
-      *(p->FoundState = ONE_STATE(p->MinContext)) = tmp;
-      return;
-    }
-    n0 = (numStats + 1) >> 1;
-    n1 = (p->MinContext->NumStats + 1) >> 1;
-    if (n0 != n1)
-      p->MinContext->Stats = STATS_REF(ShrinkUnits(p, stats, n0, n1));
-  }
-  p->MinContext->SummFreq = (uint16_t)(sumFreq + escFreq - (escFreq >> 1));
-  p->FoundState = STATS(p->MinContext);
-}
 
-static CPpmd_See *Ppmd7_MakeEscFreq(CPpmd7 *p, unsigned numMasked, uint32_t *escFreq)
-{
-  CPpmd_See *see;
-  unsigned nonMasked = p->MinContext->NumStats - numMasked;
-  if (p->MinContext->NumStats != 256)
-  {
-    see = p->See[p->NS2Indx[nonMasked - 1]] +
-        (nonMasked < (unsigned)SUFFIX(p->MinContext)->NumStats - p->MinContext->NumStats) +
-        2 * (p->MinContext->SummFreq < 11 * p->MinContext->NumStats) +
-        4 * (numMasked > nonMasked) +
-        p->HiBitsFlag;
-    {
-      unsigned r = (see->Summ >> see->Shift);
-      see->Summ = (uint16_t)(see->Summ - r);
-      *escFreq = r + (r == 0);
-    }
-  }
-  else
-  {
-    see = &p->DummySee;
-    *escFreq = 1;
-  }
-  return see;
-}
-
-static void NextContext(CPpmd7 *p)
-{
-  CTX_PTR c = CTX(SUCCESSOR(p->FoundState));
-  if (p->OrderFall == 0 && (uint8_t *)c > p->Text)
-    p->MinContext = p->MaxContext = c;
-  else
-    UpdateModel(p);
-}
-
-static void Ppmd7_Update1(CPpmd7 *p)
-{
-  CPpmd_State *s = p->FoundState;
-  s->Freq += 4;
-  p->MinContext->SummFreq += 4;
-  if (s[0].Freq > s[-1].Freq)
-  {
-    SwapStates(&s[0], &s[-1]);
-    p->FoundState = --s;
-    if (s->Freq > MAX_FREQ)
-      Rescale(p);
-  }
-  NextContext(p);
-}
-
-static void Ppmd7_Update1_0(CPpmd7 *p)
-{
-  p->PrevSuccess = (2 * p->FoundState->Freq > p->MinContext->SummFreq);
-  p->RunLength += p->PrevSuccess;
-  p->MinContext->SummFreq += 4;
-  if ((p->FoundState->Freq += 4) > MAX_FREQ)
-    Rescale(p);
-  NextContext(p);
-}
-
-static void Ppmd7_UpdateBin(CPpmd7 *p)
-{
-  p->FoundState->Freq = (uint8_t)(p->FoundState->Freq + (p->FoundState->Freq < 128 ? 1: 0));
-  p->PrevSuccess = 1;
-  p->RunLength++;
-  NextContext(p);
-}
-
-static void Ppmd7_Update2(CPpmd7 *p)
-{
-  p->MinContext->SummFreq += 4;
-  if ((p->FoundState->Freq += 4) > MAX_FREQ)
-    Rescale(p);
-  p->RunLength = p->InitRL;
-  UpdateModel(p);
-}
-
-/* ---------- Decode ---------- */
-
-static bool Ppmd_RangeDec_Init(CPpmd7z_RangeDec *p)
-{
-  unsigned i;
-  p->Low = p->Bottom = 0;
-  p->Range = 0xFFFFFFFF;
-  for (i = 0; i < 4; i++)
-    p->Code = (p->Code << 8) | p->Stream->Read(p->Stream->ud);
-  return (p->Code < 0xFFFFFFFF);
-}
-
-
-static bool PpmdRAR_RangeDec_Init(CPpmd7z_RangeDec *p)
-{
-  if (!Ppmd_RangeDec_Init(p))
-    return false;
-  p->Bottom = 0x8000;
-  return true;
-}
-
-static uint32_t Range_GetThreshold(void *pp, uint32_t total)
-{
-  CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  return (p->Code - p->Low) / (p->Range /= total);
-}
-
-static void Range_Normalize(CPpmd7z_RangeDec *p)
-{
-  while (1)
-  {
-    if((p->Low ^ (p->Low + p->Range)) >= kTopValue)
-    {
-      if(p->Range >= p->Bottom)
-        break;
+      cf = 2 * (uint32_t)found_freq * (c->u.m.summ_freq + 6);
+      sf = (uint32_t)s0 + c->u.m.summ_freq;
+      if (cf < 6 * sf)
+      {
+         cf            = 1 + (cf > sf) + (cf >= 4 * sf);
+         c->u.m.summ_freq += 3;
+      }
       else
-        p->Range = ((uint32_t)(0 - p->Low)) & (p->Bottom - 1);
-    }
-    p->Code = (p->Code << 8) | p->Stream->Read(p->Stream->ud);
-    p->Range <<= 8;
-    p->Low <<= 8;
-  }
-}
-
-
-static void Range_Decode_RAR(void *pp, uint32_t start, uint32_t size)
-{
-  CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  p->Low += start * p->Range;
-  p->Range *= size;
-  Range_Normalize(p);
-}
-
-
-static uint32_t Range_DecodeBit_RAR(void *pp, uint32_t size0)
-{
-  CPpmd7z_RangeDec *p = (CPpmd7z_RangeDec *)pp;
-  uint32_t bit, value = Range_GetThreshold(p, PPMD_BIN_SCALE);
-  if(value < size0)
-  {
-    bit = 0;
-    Range_Decode_RAR(p, 0, size0);
-  }
-  else
-  {
-    bit = 1;
-    Range_Decode_RAR(p, size0, PPMD_BIN_SCALE - size0);
-  }
-  return bit;
-}
-
-
-static void PpmdRAR_RangeDec_CreateVTable(CPpmd7z_RangeDec *p)
-{
-  p->p.GetThreshold = Range_GetThreshold;
-  p->p.Decode = Range_Decode_RAR;
-  p->p.DecodeBit = Range_DecodeBit_RAR;
-}
-
-#define MASK(sym) ((signed char *)charMask)[sym]
-
-static int Ppmd7_DecodeSymbol(CPpmd7 *p, IPpmd7_RangeDec *rc)
-{
-  size_t charMask[256 / sizeof(size_t)];
-  if (p->MinContext->NumStats != 1)
-  {
-    CPpmd_State *s = Ppmd7_GetStats(p, p->MinContext);
-    unsigned i;
-    uint32_t count, hiCnt;
-    if ((count = Range_GetThreshold(rc, p->MinContext->SummFreq)) < (hiCnt = s->Freq))
-    {
-      uint8_t symbol;
-      Range_Decode_RAR(rc, 0, s->Freq);
-      p->FoundState = s;
-      symbol = s->Symbol;
-      Ppmd7_Update1_0(p);
-      return symbol;
-    }
-    p->PrevSuccess = 0;
-    i = p->MinContext->NumStats - 1;
-    do
-    {
-      if ((hiCnt += (++s)->Freq) > count)
       {
-        uint8_t symbol;
-        Range_Decode_RAR(rc, hiCnt - s->Freq, s->Freq);
-        p->FoundState = s;
-        symbol = s->Symbol;
-        Ppmd7_Update1(p);
-        return symbol;
+         cf           = 4 + (cf >= 9 * sf) + (cf >= 12 * sf) + (cf >= 15 * sf);
+         c->u.m.summ_freq = (uint16_t)(c->u.m.summ_freq + cf);
       }
-    }
-    while (--i);
-    if (count >= p->MinContext->SummFreq)
-      return -2;
-    p->HiBitsFlag = p->HB2Flag[p->FoundState->Symbol];
-    Range_Decode_RAR(rc, hiCnt, p->MinContext->SummFreq - hiCnt);
-    PPMD_SetAllBitsIn256Bytes(charMask);
-    MASK(s->Symbol) = 0;
-    i = p->MinContext->NumStats - 1;
-    do { MASK((--s)->Symbol) = 0; } while (--i);
-  }
-  else
-  {
-    uint16_t *prob = Ppmd7_GetBinSumm(p);
-    if (Range_DecodeBit_RAR(rc, *prob) == 0)
-    {
-      uint8_t symbol;
-      *prob = (uint16_t)PPMD_UPDATE_PROB_0(*prob);
-      symbol = (p->FoundState = Ppmd7Context_OneState(p->MinContext))->Symbol;
-      Ppmd7_UpdateBin(p);
-      return symbol;
-    }
-    *prob = (uint16_t)PPMD_UPDATE_PROB_1(*prob);
-    p->InitEsc = PPMD7_kExpEscape[*prob >> 10];
-    PPMD_SetAllBitsIn256Bytes(charMask);
-    MASK(Ppmd7Context_OneState(p->MinContext)->Symbol) = 0;
-    p->PrevSuccess = 0;
-  }
-  for (;;)
-  {
-    CPpmd_State **ps = p->EscStates, *s;
-    uint32_t freqSum, count, hiCnt;
-    CPpmd_See *see;
-    unsigned i, num, numMasked = p->MinContext->NumStats;
-    do
-    {
-      p->OrderFall++;
-      if (!p->MinContext->Suffix)
-        return -1;
-      p->MinContext = Ppmd7_GetContext(p, p->MinContext->Suffix);
-    }
-    while (p->MinContext->NumStats == numMasked);
-    hiCnt = 0;
-    s = Ppmd7_GetStats(p, p->MinContext);
-    i = 0;
-    num = p->MinContext->NumStats - numMasked;
-    do
-    {
-      int k = (int)(MASK(s->Symbol));
-      hiCnt += (s->Freq & k);
-      ps[i] = s++;
-      i -= k;
-    }
-    while (i != num);
 
-    see = Ppmd7_MakeEscFreq(p, numMasked, &freqSum);
-    freqSum += hiCnt;
-    count = Range_GetThreshold(rc, freqSum);
+      s            = PPMD_STATS(p, c) + ns1;
+      PPMD_SET_SUCCESSOR(s, successor);
+      s->symbol    = symbol;
+      s->freq      = (uint8_t)cf;
+      c->num_stats = (uint16_t)(ns1 + 1);
+   }
 
-    if (count < hiCnt)
-    {
-      uint8_t symbol;
-      CPpmd_State **pps = ps;
-      for (hiCnt = 0; (hiCnt += (*pps)->Freq) <= count; pps++);
-      s = *pps;
-      Range_Decode_RAR(rc, hiCnt - s->Freq, s->Freq);
-      Ppmd_See_Update(see);
-      p->FoundState = s;
-      symbol = s->Symbol;
-      Ppmd7_Update2(p);
-      return symbol;
-    }
-    if (count >= freqSum)
-      return -2;
-    Range_Decode_RAR(rc, hiCnt, freqSum - hiCnt);
-    see->Summ = (uint16_t)(see->Summ + freqSum);
-    do { MASK(ps[--i]->Symbol) = 0; } while (i != 0);
-  }
+   p->min_ctx = p->max_ctx = PPMD_CTX(p, f_successor);
 }
 
-void rrar_ppmd7_construct(CPpmd7 *p)
+/* Halve min_ctx's counts, the found state first, and drop the states
+ * that reach zero. */
+static void ppmd_rescale(rrar_ppmd7_t *p)
 {
-  Ppmd7_Construct(p);
+   unsigned i, adder, sum_freq, esc_freq;
+   ppmd_context_t *mc  = p->min_ctx;
+   ppmd_state_t *stats = PPMD_STATS(p, mc);
+   ppmd_state_t *s     = p->found;
+
+   {
+      ppmd_state_t t = *s;
+      for (; s != stats; s--)
+         s[0] = s[-1];
+      *s = t;
+   }
+
+   esc_freq  = mc->u.m.summ_freq - s->freq;
+   s->freq  += 4;
+   adder     = (p->order_fall != 0);
+   s->freq   = (uint8_t)((s->freq + adder) >> 1);
+   sum_freq  = s->freq;
+
+   i = mc->num_stats - 1;
+   do
+   {
+      esc_freq -= (++s)->freq;
+      s->freq   = (uint8_t)((s->freq + adder) >> 1);
+      sum_freq += s->freq;
+      if (s[0].freq > s[-1].freq)
+      {
+         /* keep the states in order of their counts */
+         ppmd_state_t *s1 = s;
+         ppmd_state_t  t  = *s1;
+         do
+         {
+            s1[0] = s1[-1];
+         } while (--s1 != stats && t.freq > s1[-1].freq);
+         *s1 = t;
+      }
+   } while (--i);
+
+   if (s->freq == 0)
+   {
+      unsigned num_stats = mc->num_stats;
+      unsigned n0, n1;
+      do
+      {
+         i++;
+      } while ((--s)->freq == 0);
+      esc_freq     += i;
+      mc->num_stats = (uint16_t)(mc->num_stats - i);
+      if (mc->num_stats == 1)
+      {
+         ppmd_state_t t = *stats;
+         do
+         {
+            t.freq     = (uint8_t)(t.freq - (t.freq >> 1));
+            esc_freq >>= 1;
+         } while (esc_freq > 1);
+         ppmd_insert_node(p, stats, PPMD_U2I(p, (num_stats + 1) >> 1));
+         p->found = PPMD_ONE_STATE(mc);
+         memcpy(p->found, &t, sizeof(t));
+         return;
+      }
+      n0 = (num_stats + 1) >> 1;
+      n1 = (mc->num_stats + 1) >> 1;
+      if (n0 != n1)
+         PPMD_SET_STATS(mc, PPMD_REF(p, ppmd_shrink_units(p, stats, n0, n1)));
+   }
+   mc->u.m.summ_freq = (uint16_t)(sum_freq + esc_freq - (esc_freq >> 1));
+   p->found      = PPMD_STATS(p, mc);
 }
 
-bool rrar_ppmd7_alloc(CPpmd7 *p, uint32_t size)
+/* The escape estimate for min_ctx with @num_masked of its symbols
+ * already ruled out, and the SEE context it came from. */
+static rrar_ppmd7_see_t *ppmd_make_esc_freq(rrar_ppmd7_t *p,
+      unsigned num_masked, uint32_t *esc_freq)
 {
-  return Ppmd7_Alloc(p, size);
+   rrar_ppmd7_see_t *see;
+   ppmd_context_t *mc  = p->min_ctx;
+   unsigned non_masked = mc->num_stats - num_masked;
+   unsigned r;
+
+   if (mc->num_stats == 256)
+   {
+      *esc_freq = 1;
+      return &p->dummy_see;
+   }
+
+   see = p->see[p->ns2indx[non_masked - 1]]
+       + (non_masked < (unsigned)PPMD_SUFFIX(p, mc)->num_stats - mc->num_stats)
+       + 2 * (mc->u.m.summ_freq < 11 * mc->num_stats)
+       + 4 * (num_masked > non_masked)
+       + p->hi_bits_flag;
+   r          = see->summ >> see->shift;
+   see->summ  = (uint16_t)(see->summ - r);
+   *esc_freq  = r + (r == 0);
+   return see;
 }
 
-void rrar_ppmd7_free(CPpmd7 *p)
+static INLINE void ppmd_see_update(rrar_ppmd7_see_t *see)
 {
-  Ppmd7_Free(p);
+   if (see->shift < PPMD_PERIOD_BITS && --see->count == 0)
+   {
+      see->summ <<= 1;
+      see->count  = (uint8_t)(3 << see->shift++);
+   }
 }
 
-void rrar_ppmd7_init(CPpmd7 *p, unsigned max_order)
+/* Where the model goes after a symbol: straight to the context the found
+ * state leads to when nothing has to be learnt. */
+static INLINE void ppmd_next_context(rrar_ppmd7_t *p)
 {
-  Ppmd7_Init(p, max_order);
+   ppmd_context_t *c = PPMD_CTX(p, PPMD_SUCCESSOR(p->found));
+   if (p->order_fall == 0 && (uint8_t *)c > p->text)
+      p->min_ctx = p->max_ctx = c;
+   else
+      ppmd_update_model(p);
 }
 
-bool rrar_ppmd7_range_init(CPpmd7z_RangeDec *rc, IByteIn *stream)
+/* -------------------------------------------------------------- decoding */
+
+/* After an escape from min_ctx: down the suffixes, leaving out the
+ * symbols already ruled out, until one of the rest is the symbol. Out of
+ * line, so that the common paths in rrar_ppmd7_decode_symbol carry
+ * neither the mask nor the registers this needs. A ruled-out symbol's
+ * mask is 0 and the rest are all ones, so a count is taken or left out
+ * without a branch. */
+static PPMD_NOINLINE int ppmd_decode_escape(rrar_ppmd7_t *p,
+      rrar_ppmd7_range_t *rc)
 {
-  PpmdRAR_RangeDec_CreateVTable(rc);
-  rc->Stream = stream;
-  rc->Code = 0;
-  return PpmdRAR_RangeDec_Init(rc);
+   int8_t mask[256];
+   ppmd_context_t *mc = p->min_ctx;
+   ppmd_state_t *s;
+   unsigned n;
+
+   memset(mask, -1, sizeof(mask));
+   if (mc->num_stats == 1)
+      mask[PPMD_ONE_STATE(mc)->symbol] = 0;
+   else
+      for (s = PPMD_STATS(p, mc), n = mc->num_stats; n != 0; n--, s++)
+         mask[s->symbol] = 0;
+
+   for (;;)
+   {
+      rrar_ppmd7_see_t *see;
+      uint32_t freq_sum, count, hi_cnt;
+      unsigned num_masked = mc->num_stats;
+
+      do
+      {
+         p->order_fall++;
+         if (!mc->suffix)
+            return -1;
+         mc = PPMD_SUFFIX(p, mc);
+      } while (mc->num_stats == num_masked);
+      p->min_ctx = mc;
+
+      hi_cnt = 0;
+      s      = PPMD_STATS(p, mc);
+      n      = mc->num_stats;
+      if (n & 1)
+      {
+         hi_cnt = s->freq & (uint32_t)(int32_t)mask[s->symbol];
+         s++;
+      }
+      for (n >>= 1; n != 0; n--, s += 2)
+      {
+         hi_cnt += s[0].freq & (uint32_t)(int32_t)mask[s[0].symbol];
+         hi_cnt += s[1].freq & (uint32_t)(int32_t)mask[s[1].symbol];
+      }
+
+      see       = ppmd_make_esc_freq(p, num_masked, &freq_sum);
+      freq_sum += hi_cnt;
+      count     = ppmd_rc_threshold(rc, freq_sum);
+
+      if (count < hi_cnt)
+      {
+         /* the first state whose running count passes the code */
+         uint8_t symbol;
+         int32_t left = (int32_t)count;
+         s = PPMD_STATS(p, mc);
+         for (;;)
+         {
+            left -= s->freq & (uint32_t)(int32_t)mask[s->symbol];
+            if (left < 0)
+               break;
+            s++;
+         }
+         ppmd_rc_decode(rc, count - (uint32_t)left - s->freq, s->freq);
+         ppmd_see_update(see);
+         p->found       = s;
+         symbol         = s->symbol;
+         mc->u.m.summ_freq += 4;
+         if ((s->freq += 4) > PPMD_MAX_FREQ)
+            ppmd_rescale(p);
+         p->run_length  = p->init_rl;
+         ppmd_update_model(p);
+         return symbol;
+      }
+      if (count >= freq_sum)
+         return -2;
+      ppmd_rc_decode(rc, hi_cnt, freq_sum - hi_cnt);
+      see->summ = (uint16_t)(see->summ + freq_sum);
+
+      for (s = PPMD_STATS(p, mc), n = mc->num_stats; n != 0; n--, s++)
+         mask[s->symbol] = 0;
+   }
 }
 
-int rrar_ppmd7_decode_symbol(CPpmd7 *p, CPpmd7z_RangeDec *rc)
+int rrar_ppmd7_decode_symbol(rrar_ppmd7_t *p, rrar_ppmd7_range_t *rc)
 {
-  return Ppmd7_DecodeSymbol(p, &rc->p);
+   ppmd_context_t *mc = p->min_ctx;
+
+   if (mc->num_stats != 1)
+   {
+      uint32_t count, hi_cnt;
+      unsigned i;
+      ppmd_state_t *s = PPMD_STATS(p, mc);
+      count           = ppmd_rc_threshold(rc, mc->u.m.summ_freq);
+      if (count < (hi_cnt = s->freq))
+      {
+         /* the most probable symbol */
+         uint8_t symbol;
+         ppmd_rc_decode(rc, 0, s->freq);
+         p->found         = s;
+         symbol           = s->symbol;
+         p->prev_success  = (2 * (unsigned)s->freq > mc->u.m.summ_freq);
+         p->run_length   += p->prev_success;
+         mc->u.m.summ_freq   += 4;
+         if ((s->freq += 4) > PPMD_MAX_FREQ)
+            ppmd_rescale(p);
+         ppmd_next_context(p);
+         return symbol;
+      }
+      p->prev_success = 0;
+      i = mc->num_stats - 1;
+      do
+      {
+         if ((hi_cnt += (++s)->freq) > count)
+         {
+            uint8_t symbol;
+            ppmd_rc_decode(rc, hi_cnt - s->freq, s->freq);
+            p->found       = s;
+            symbol         = s->symbol;
+            s->freq       += 4;
+            mc->u.m.summ_freq += 4;
+            if (s[0].freq > s[-1].freq)
+            {
+               ppmd_swap_states(&s[0], &s[-1]);
+               p->found = --s;
+               if (s->freq > PPMD_MAX_FREQ)
+                  ppmd_rescale(p);
+            }
+            ppmd_next_context(p);
+            return symbol;
+         }
+      } while (--i);
+      if (count >= mc->u.m.summ_freq)
+         return -2;
+      p->hi_bits_flag = p->hb2flag[p->found->symbol];
+      ppmd_rc_decode(rc, hi_cnt, mc->u.m.summ_freq - hi_cnt);
+   }
+   else
+   {
+      ppmd_state_t *one = PPMD_ONE_STATE(mc);
+      uint16_t *prob    = &p->bin_summ[one->freq - 1][
+              p->prev_success
+            + p->ns2bsindx[PPMD_SUFFIX(p, mc)->num_stats - 1]
+            + (p->hi_bits_flag = p->hb2flag[p->found->symbol])
+            + 2 * p->hb2flag[one->symbol]
+            + ((p->run_length >> 26) & 0x20)];
+      if (ppmd_rc_bit(rc, *prob) == 0)
+      {
+         uint8_t symbol;
+         *prob           = (uint16_t)(*prob + (1 << PPMD_INT_BITS) - PPMD_GET_MEAN(*prob));
+         p->found        = one;
+         symbol          = one->symbol;
+         one->freq       = (uint8_t)(one->freq + (one->freq < 128));
+         p->prev_success = 1;
+         p->run_length++;
+         ppmd_next_context(p);
+         return symbol;
+      }
+      *prob           = (uint16_t)(*prob - PPMD_GET_MEAN(*prob));
+      p->init_esc     = ppmd_exp_escape[*prob >> 10];
+      p->prev_success = 0;
+   }
+
+   return ppmd_decode_escape(p, rc);
+}
+
+/* ------------------------------------------------------------------- API */
+
+void rrar_ppmd7_construct(rrar_ppmd7_t *p)
+{
+   unsigned i, k, m;
+
+   p->base = NULL;
+   p->size = 0;
+
+   /* block sizes in units: 1 to 4 one apart, then two, three and four */
+   for (i = 0, k = 0; i < PPMD_NUM_INDEXES; i++)
+   {
+      unsigned step = (i >= 12) ? 4 : (i >> 2) + 1;
+      do
+      {
+         p->units2indx[k++] = (uint8_t)i;
+      } while (--step);
+      p->indx2units[i] = (uint8_t)k;
+   }
+
+   p->ns2bsindx[0] = 0 << 1;
+   p->ns2bsindx[1] = 1 << 1;
+   memset(p->ns2bsindx + 2,  2 << 1, 9);
+   memset(p->ns2bsindx + 11, 3 << 1, 256 - 11);
+
+   for (i = 0; i < 3; i++)
+      p->ns2indx[i] = (uint8_t)i;
+   for (m = i, k = 1; i < 256; i++)
+   {
+      p->ns2indx[i] = (uint8_t)m;
+      if (--k == 0)
+         k = ++m - 2;
+   }
+
+   memset(p->hb2flag, 0, 0x40);
+   memset(p->hb2flag + 0x40, 8, 0x100 - 0x40);
+}
+
+void rrar_ppmd7_free(rrar_ppmd7_t *p)
+{
+   free(p->base);
+   p->base = NULL;
+   p->size = 0;
+}
+
+bool rrar_ppmd7_alloc(rrar_ppmd7_t *p, uint32_t size)
+{
+   if (p->base && p->size == size)
+      return true;
+   /* the root context takes a unit of its own */
+   if (size < PPMD_UNIT_SIZE)
+      return false;
+   rrar_ppmd7_free(p);
+   /* never 0, so no link into the model is 0; a spare unit past the end
+    * heads the list of free blocks when they are glued */
+   p->align_offset = 4 - (size & 3);
+   if (!(p->base = (uint8_t *)malloc((size_t)p->align_offset + size
+               + PPMD_UNIT_SIZE)))
+      return false;
+   p->size = size;
+   return true;
+}
+
+void rrar_ppmd7_init(rrar_ppmd7_t *p, unsigned max_order)
+{
+   p->max_order       = max_order;
+   ppmd_restart_model(p);
+   p->dummy_see.shift = PPMD_PERIOD_BITS;
+   p->dummy_see.summ  = 0;
+   p->dummy_see.count = 64;
+}
+
+bool rrar_ppmd7_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
+      const uint8_t *end, uint32_t past)
+{
+   unsigned i;
+   rc->p     = data;
+   rc->end   = end;
+   rc->past  = past;
+   rc->low   = 0;
+   rc->range = 0xFFFFFFFFu;
+   rc->code  = 0;
+   for (i = 0; i < 4; i++)
+      rc->code = (rc->code << 8) | ppmd_rc_byte(rc);
+   return rc->code < 0xFFFFFFFFu;
 }

@@ -193,9 +193,8 @@ typedef struct rrar_unpack
    int         is_ppmd;
    int         ppmd_valid;
    int         ppmd_escape;
-   CPpmd7           ppmd;
-   CPpmd7z_RangeDec range;
-   IByteIn          byte_in;
+   rrar_ppmd7_t       ppmd;
+   rrar_ppmd7_range_t range;
 
    rrar_program_t *programs;
    uint32_t        num_programs;
@@ -381,9 +380,41 @@ static INLINE int huff_decode(rrar_bits_t *br, const rrar_huff_t *h)
 
 /* ------------------------------------------------------------------ PPMd */
 
-static uint8_t ppmd_read(void *ud)
+/* A PPMd block reads its bytes straight from the data. At its start the
+ * bit reader is on a byte boundary: the bytes it holds and has not given
+ * out go back, made-up ones past the end staying counted. */
+static int ppmd_range_start(rrar_unpack_t *u)
 {
-   return (uint8_t)rrar_br_get((rrar_bits_t *)ud, 8);
+   rrar_bits_t   *br       = &u->br;
+   const uint8_t *p        = br->p;
+   uint32_t       past     = br->past;
+   uint32_t       buffered = (uint32_t)(br->bits >> 3);
+
+   if (buffered <= past)
+      past -= buffered;
+   else
+   {
+      p    -= buffered - past;
+      past  = 0;
+   }
+   return rrar_ppmd7_range_init(&u->range, p, br->end, past);
+}
+
+/* And when the block is over, the bit reader goes on from there. */
+static void ppmd_range_end(rrar_unpack_t *u)
+{
+   u->br.p    = u->range.p;
+   u->br.past = u->range.past;
+   u->br.buf  = 0;
+   u->br.bits = 0;
+}
+
+/* More was read than the data had, by whichever coder is reading. */
+static int unpack_overrun(const rrar_unpack_t *u)
+{
+   if (u->is_ppmd)
+      return u->range.past > 8;
+   return rrar_br_overrun(&u->br);
 }
 
 /* A byte of what the member says besides its data - a filter - by
@@ -406,6 +437,8 @@ static int unpack_tables(rrar_unpack_t *u)
    rrar_huff_t *pre;
    int          i, r = RRAR_ERROR_DATA;
 
+   if (u->is_ppmd)
+      ppmd_range_end(u);
    rrar_br_align(br);
 
    u->is_ppmd = (int)rrar_br_get(br, 1);
@@ -420,8 +453,6 @@ static int unpack_tables(rrar_unpack_t *u)
       if (flags & 0x40)
          u->ppmd_escape = (int)rrar_br_get(br, 8);
 
-      u->byte_in.ud   = br;
-      u->byte_in.Read = ppmd_read;
       if (flags & 0x20)
       {
          unsigned order = (flags & 0x1f) + 1;
@@ -431,7 +462,7 @@ static int unpack_tables(rrar_unpack_t *u)
             return RRAR_ERROR_DATA;
          if (!rrar_ppmd7_alloc(&u->ppmd, mem_mb << 20))
             return RRAR_ERROR_MEM;
-         if (!rrar_ppmd7_range_init(&u->range, &u->byte_in))
+         if (!ppmd_range_start(u))
             return RRAR_ERROR_DATA;
          rrar_ppmd7_init(&u->ppmd, order);
          u->ppmd_valid = 1;
@@ -441,10 +472,10 @@ static int unpack_tables(rrar_unpack_t *u)
          /* the model goes on from where the last PPMd block left it */
          if (!u->ppmd_valid)
             return RRAR_ERROR_DATA;
-         if (!rrar_ppmd7_range_init(&u->range, &u->byte_in))
+         if (!ppmd_range_start(u))
             return RRAR_ERROR_DATA;
       }
-      return rrar_br_overrun(br) ? RRAR_ERROR_DATA : RRAR_OK;
+      return unpack_overrun(u) ? RRAR_ERROR_DATA : RRAR_OK;
    }
 
    /* (what the low distance bits repeat belongs to the tables) */
@@ -719,7 +750,7 @@ static int filter_read(rrar_unpack_t *u)
       return RRAR_ERROR_MEM;
    for (i = 0; i < length; i++)
    {
-      if ((v = unpack_byte(u)) < 0 || rrar_br_overrun(&u->br))
+      if ((v = unpack_byte(u)) < 0 || unpack_overrun(u))
       {
          free(code);
          return RRAR_ERROR_DATA;
@@ -1303,7 +1334,7 @@ static int unpack29(rrar_unpack_t *u)
       int      symbol, code, i;
       uint32_t offs;
 
-      if (rrar_br_overrun(&u->br))
+      if (unpack_overrun(u))
          return RRAR_ERROR_DATA;
       if (new_table)
       {

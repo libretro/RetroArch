@@ -7,6 +7,7 @@ They are test data of libarchive (libarchive/test/test_read_format_rar*.rar.uu a
   compress_best.rar  RAR 2.9 "best": PPMd blocks; a stored member; directories
   filter.rar         RAR 2.9: a Windows program, with delta and x86 (E8/E9) filters
   unicode.rar        names in the packed UTF-16 form, Japanese
+  ppmd_lzss_conversion.rar  RAR 2.9: PPMd blocks and LZ blocks after one another
   rar5_stored.rar                 RAR 5, a stored member
   rar5_compressed.rar             RAR 5, one packed member
   rar5_arm.rar                    RAR 5: an ARM program, with delta and ARM filters

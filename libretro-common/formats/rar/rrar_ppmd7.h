@@ -1,10 +1,37 @@
-/* PPMd var.H model and the range decoder RAR pairs it with.
+/* Copyright  (C) 2010-2026 The RetroArch team
  *
- * This is Igor Pavlov's Ppmd7 from the LZMA SDK (2010-03-12, public
- * domain), itself based on Dmitry Shkarin's PPMd var.H (2001, public
- * domain), as libarchive carries it - the model, and of the two range
- * decoders only RAR's. The encoder is left out. It is kept in the SDK's
- * own style so that it can be compared with its source line by line.
+ * ---------------------------------------------------------------------------------------
+ * The following license statement only applies to this file (rrar_ppmd7.h).
+ * ---------------------------------------------------------------------------------------
+ *
+ * Permission is hereby granted, free of charge,
+ * to any person obtaining a copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation the rights to
+ * use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/* The PPMd variant H model RAR 2.9 packs with, and RAR's range decoder.
+ *
+ * PPMd var.H is Dmitry Shkarin's prediction by partial matching (public
+ * domain, 2001); RAR pairs it with a carry-less range coder of its own.
+ * Decoding only. What comes out has to be what RAR put in, so the model
+ * makes every decision theirs does: the 12-byte units, the free lists
+ * and when blocks are glued, when the model restarts for want of
+ * memory, and the arithmetic of every frequency.
+ *
+ * Nothing here trusts the data: the model only ever grows from the
+ * symbols it decodes, and the range decoder reads its input from a span
+ * with made-up zeros past the end, which it counts.
  */
 
 #ifndef __LIBRETRO_SDK_RRAR_PPMD7_H
@@ -14,170 +41,87 @@
 #include <stdint.h>
 
 #include <boolean.h>
-
 #include <retro_common_api.h>
 
 RETRO_BEGIN_DECLS
 
-/* Where the range decoder gets its bytes. */
-typedef struct
+#define RRAR_PPMD7_NUM_INDEXES 38
+
+struct rrar_ppmd7_state;
+struct rrar_ppmd7_context;
+
+/* Secondary escape estimation: one of the 25x16 adaptive escape counts. */
+typedef struct rrar_ppmd7_see
 {
-  void *ud;
-  uint8_t (*Read)(void *ud); /* reads one byte, returns 0 in case of EOF or error */
-} IByteIn;
+   uint16_t summ;
+   uint8_t  shift;   /* how fast summ moves; low is fast */
+   uint8_t  count;   /* until shift next changes */
+} rrar_ppmd7_see_t;
 
-/* References into the model's memory are pointers where a pointer is 32
- * bits, and offsets from its base elsewhere. */
-#if (defined(_M_IX86) || defined(__i386__) || defined(_M_ARM) || defined(__arm__)) && !defined(__aarch64__)
-#define PPMD_32BIT
-#endif
-
-#define PPMD_INT_BITS 7
-#define PPMD_PERIOD_BITS 7
-#define PPMD_BIN_SCALE (1 << (PPMD_INT_BITS + PPMD_PERIOD_BITS))
-
-#define PPMD_GET_MEAN_SPEC(summ, shift, round) (((summ) + (1 << ((shift) - (round)))) >> (shift))
-#define PPMD_GET_MEAN(summ) PPMD_GET_MEAN_SPEC((summ), PPMD_PERIOD_BITS, 2)
-#define PPMD_UPDATE_PROB_0(prob) ((prob) + (1 << PPMD_INT_BITS) - PPMD_GET_MEAN(prob))
-#define PPMD_UPDATE_PROB_1(prob) ((prob) - PPMD_GET_MEAN(prob))
-
-#define PPMD_N1 4
-#define PPMD_N2 4
-#define PPMD_N3 4
-#define PPMD_N4 ((128 + 3 - 1 * PPMD_N1 - 2 * PPMD_N2 - 3 * PPMD_N3) / 4)
-#define PPMD_NUM_INDEXES (PPMD_N1 + PPMD_N2 + PPMD_N3 + PPMD_N4)
-
-/* SEE-contexts for PPM-contexts with masked symbols */
-typedef struct
+typedef struct rrar_ppmd7
 {
-  uint16_t Summ; /* Freq */
-  uint8_t Shift;  /* Speed of Freq change; low Shift is for fast change */
-  uint8_t Count;  /* Count to next change of Shift */
-} CPpmd_See;
+   struct rrar_ppmd7_context *min_ctx;
+   struct rrar_ppmd7_context *max_ctx;
+   struct rrar_ppmd7_state   *found;
+   /* The model's memory: text grows up from the bottom, units are
+    * carved from lo_unit up and hi_unit down. Links inside it are 32-bit
+    * offsets from base; 0 is none. */
+   uint8_t  *base;
+   uint8_t  *lo_unit;
+   uint8_t  *hi_unit;
+   uint8_t  *text;
+   uint8_t  *units_start;
+   int32_t   run_length;
+   int32_t   init_rl;
+   uint32_t  size;
+   uint32_t  align_offset;
+   uint32_t  glue_count;
+   uint32_t  free_list[RRAR_PPMD7_NUM_INDEXES];
+   unsigned  order_fall;
+   unsigned  init_esc;
+   unsigned  prev_success;
+   unsigned  max_order;
+   unsigned  hi_bits_flag;
+   uint16_t  bin_summ[128][64];
+   rrar_ppmd7_see_t see[25][16];
+   rrar_ppmd7_see_t dummy_see;
+   uint8_t   indx2units[RRAR_PPMD7_NUM_INDEXES];
+   uint8_t   units2indx[128];
+   uint8_t   ns2indx[256];
+   uint8_t   ns2bsindx[256];
+   uint8_t   hb2flag[256];
+} rrar_ppmd7_t;
 
-#define Ppmd_See_Update(p) do {                  \
-   if ((p)->Shift < PPMD_PERIOD_BITS && --(p)->Count == 0) {   \
-      (p)->Summ <<= 1;               \
-      (p)->Count = (uint8_t)(3 << (p)->Shift++);         \
-       }                        \
-} while (0)
-
-typedef struct
+/* RAR's range decoder, over a span of the packed data. */
+typedef struct rrar_ppmd7_range
 {
-  uint8_t Symbol;
-  uint8_t Freq;
-  uint16_t SuccessorLow;
-  uint16_t SuccessorHigh;
-} CPpmd_State;
+   const uint8_t *p;
+   const uint8_t *end;
+   uint32_t       range;
+   uint32_t       code;
+   uint32_t       low;
+   uint32_t       past;    /* bytes read past the end, as zeros */
+} rrar_ppmd7_range_t;
 
-typedef
-  #ifdef PPMD_32BIT
-    CPpmd_State *
-  #else
-    uint32_t
-  #endif
-  CPpmd_State_Ref;
+/* Once, before anything else. */
+void rrar_ppmd7_construct(rrar_ppmd7_t *p);
 
-typedef
-  #ifdef PPMD_32BIT
-    void *
-  #else
-    uint32_t
-  #endif
-  CPpmd_Void_Ref;
+/* The model's memory, @size bytes; kept when the size is the same. */
+bool rrar_ppmd7_alloc(rrar_ppmd7_t *p, uint32_t size);
 
-typedef
-  #ifdef PPMD_32BIT
-    uint8_t *
-  #else
-    uint32_t
-  #endif
-  CPpmd_Byte_Ref;
+void rrar_ppmd7_free(rrar_ppmd7_t *p);
 
-#define PPMD_SetAllBitsIn256Bytes(p) do {            \
-   unsigned j;                     \
-   for (j = 0; j < 256 / sizeof(p[0]); j += 8) {         \
-      p[j+7] = p[j+6] = p[j+5] = p[j+4] =         \
-          p[j+3] = p[j+2] = p[j+1] = p[j+0] = ~(size_t)0;   \
-   }                        \
-} while (0)
+/* A new model of order @max_order. */
+void rrar_ppmd7_init(rrar_ppmd7_t *p, unsigned max_order);
 
-#define PPMD7_MIN_ORDER 2
-#define PPMD7_MAX_ORDER 64
+/* The decoder at @data, its first four bytes read; @past bytes are
+ * already counted as read past @end. false if the bytes cannot start a
+ * block. */
+bool rrar_ppmd7_range_init(rrar_ppmd7_range_t *rc, const uint8_t *data,
+      const uint8_t *end, uint32_t past);
 
-#define PPMD7_MIN_MEM_SIZE (1 << 11)
-#define PPMD7_MAX_MEM_SIZE (0xFFFFFFFFu - 12 * 3)
-
-struct CPpmd7_Context_;
-
-typedef
-  #ifdef PPMD_32BIT
-    struct CPpmd7_Context_ *
-  #else
-    uint32_t
-  #endif
-  CPpmd7_Context_Ref;
-
-typedef struct CPpmd7_Context_
-{
-  uint16_t NumStats;
-  uint16_t SummFreq;
-  CPpmd_State_Ref Stats;
-  CPpmd7_Context_Ref Suffix;
-} CPpmd7_Context;
-
-#define Ppmd7Context_OneState(p) ((CPpmd_State *)&(p)->SummFreq)
-
-typedef struct
-{
-  CPpmd7_Context *MinContext, *MaxContext;
-  CPpmd_State *FoundState;
-  unsigned OrderFall, InitEsc, PrevSuccess, MaxOrder, HiBitsFlag;
-  int32_t RunLength, InitRL; /* must be 32-bit at least */
-
-  uint32_t Size;
-  uint32_t GlueCount;
-  uint8_t *Base, *LoUnit, *HiUnit, *Text, *UnitsStart;
-  uint32_t AlignOffset;
-
-  uint8_t Indx2Units[PPMD_NUM_INDEXES];
-  uint8_t Units2Indx[128];
-  CPpmd_Void_Ref FreeList[PPMD_NUM_INDEXES];
-  uint8_t NS2Indx[256], NS2BSIndx[256], HB2Flag[256];
-  CPpmd_See DummySee, See[25][16];
-  uint16_t BinSumm[128][64];
-  /* The escape path's candidate states, here rather than on the
-   * decoder's stack: 2 KiB of pointers on a 64-bit target. */
-  CPpmd_State *EscStates[256];
-} CPpmd7;
-
-/* ---------- Decode ---------- */
-
-typedef struct
-{
-  uint32_t (*GetThreshold)(void *p, uint32_t total);
-  void (*Decode)(void *p, uint32_t start, uint32_t size);
-  uint32_t (*DecodeBit)(void *p, uint32_t size0);
-} IPpmd7_RangeDec;
-
-typedef struct
-{
-  IPpmd7_RangeDec p;
-  uint32_t Range;
-  uint32_t Code;
-  uint32_t Low;
-  uint32_t Bottom;
-  IByteIn *Stream;
-} CPpmd7z_RangeDec;
-
-void rrar_ppmd7_construct(CPpmd7 *p);
-bool rrar_ppmd7_alloc(CPpmd7 *p, uint32_t size);
-void rrar_ppmd7_free(CPpmd7 *p);
-void rrar_ppmd7_init(CPpmd7 *p, unsigned max_order);
-/* The four bytes a block's data starts with. false if they cannot be. */
-bool rrar_ppmd7_range_init(CPpmd7z_RangeDec *rc, IByteIn *stream);
 /* The next byte, or a negative number if the data is not PPMd's. */
-int rrar_ppmd7_decode_symbol(CPpmd7 *p, CPpmd7z_RangeDec *rc);
+int rrar_ppmd7_decode_symbol(rrar_ppmd7_t *p, rrar_ppmd7_range_t *rc);
 
 RETRO_END_DECLS
 
