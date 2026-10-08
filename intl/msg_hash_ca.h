@@ -1140,6 +1140,7 @@ static const struct
    char s_dc362405[10];
    char s_e2f51ded[10];
    char s_d9685b01[16];
+   char s_88d4b1c5[40];
    char s_74b6dd31[12];
    char s_3e39918c[18];
    char s_96380b84[17];
@@ -2424,6 +2425,10 @@ static const struct
    char s_4b582a0c[41];
    char s_61213f1d[18];
    char s_95e4b29f[71];
+   char s_60258de0[7];
+   char s_caf61308[11];
+   char s_34b2592a[7];
+   char s_c7a27b20[11];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_1f66aac3[5];
@@ -2464,7 +2469,9 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[17];
    char s_a40653a7[25];
+   char s_e67b672d[63];
    char s_52e3d6ea[47];
+   char s_2c868ae4[12];
    char s_c992346c[30];
    char s_580e244f[7];
    char s_a9c8430e[18];
@@ -2505,6 +2512,7 @@ static const struct
    char s_258060bf[16];
    char s_3bbc8b05[47];
    char s_e595f6df[47];
+   char s_2a5f7cd7[40];
    char s_f90edcc2[75];
    char s_ad14307a[18];
 #if defined(RARCH_MOBILE)
@@ -2545,6 +2553,8 @@ static const struct
    char s_e0609921[17];
    char s_b3c7fa93[21];
    char s_f6a0db44[21];
+   char s_a9af29b1[29];
+   char s_2cdaeb21[48];
    char s_4eecff92[36];
    char s_0ca1128d[22];
    char s_65e6ea7c[4];
@@ -4184,12 +4194,14 @@ static const struct
    char s_b0e4eb88[34];
    char s_9589cc66[61];
    char s_a0cd3533[24];
+   char s_29ffdb0d[49];
    char s_135957cd[35];
    char s_96b546df[56];
    char s_731e9836[36];
    char s_ffb4111b[34];
    char s_a363d07a[32];
    char s_9e5bd759[36];
+   char s_b880bab5[58];
    char s_8d7296ed[28];
    char s_21580d7c[100];
    char s_fc5e1d2c[59];
@@ -5925,6 +5937,7 @@ static const struct
    "2 (Av\303\255s)",
    "Principal",
    "Men\303\272 principal",
+   "Augmenta la prioritat del fil principal",
    "Administrar",
    "Nucli per defecte",
    "<No especificat>",
@@ -7223,6 +7236,10 @@ static const struct
    "Posici\303\263 de les notificacions (vertical)",
    "\303\215ndex de monitor",
    "Activa la pantalla completa sobre l'osca als dispositius Android i iOS",
+   "Sempre",
+   "Autom\303\240tic",
+   "Apagat",
+   "Autom\303\240tic",
    "180\302\272",
    "270\302\272",
    "90\302\272",
@@ -7263,7 +7280,9 @@ static const struct
    "Redu\303\257r escala",
    "Escalat d'imatge",
    "Sincronitzaci\303\263 Scanline",
+   "Despla\303\247ament de la sincronitzaci\303\263 de les l\303\255nies d'escombrat",
    "Simulaci\303\263 de la l\303\255nia d'escaneig en moviment",
+   "Horitzontal",
    "Mostra el mode d'alternar SDL",
    "V\303\255deo",
    "Shaders de V\303\255deo",
@@ -7304,6 +7323,7 @@ static const struct
    "V\303\255deo multifil",
    "Ritme de visualitzaci\303\263 amb el v\303\255deo multifil",
    "Repetici\303\263 de fotogrames en el v\303\255deo multifil",
+   "Augmenta la prioritat del fil de v\303\255deo",
    "Fes servir la mem\303\262ria interm\303\250dia pels arguments de Metal (Cal reiniciar)",
    "Antipampallugueig",
 #if defined(RARCH_MOBILE)
@@ -7346,6 +7366,8 @@ static const struct
    "Activant la WIFI",
    "Connecta a una xarxa",
    "Connecta a una xarxa",
+   "Pla d'energia de baix consum",
+   "Desactiva l'estat d'inactivitat del processador",
    "Factor d'opacitat del tema de color",
    "Icona de men\303\272 actual",
    "Cap",
@@ -9965,12 +9987,14 @@ static const struct
    "Error en acceptar a l'espectador.",
    "No s\342\200\231ha pogut assignar mem\303\262ria pel contingut apeda\303\247at...",
    "Error en afegir el disc",
+   "Error en activar el pla d'energia de baix consum",
    "No s\342\200\231ha pogut aplicar el shader.",
    "No s\342\200\231ha pogut aplicar el valor predefinit del shader:",
    "No s\342\200\231ha pogut vincular el s\303\262col.",
    "Error en connectar amb el client.",
    "Error en connectar al servidor.",
    "No s\342\200\231ha pogut crear el directori.",
+   "Error en desactivar l'estat d'inactivitat del processador",
    "Error en entrar al GameMode",
    "Error en entrar a GameMode - comprova que el servei de GameMode est\303\240 instal\302\267lat i "
    "en funcionament",
@@ -10377,7 +10401,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (229158u
+      (sizeof(msg_hash_ca_blob) == (229533u
 #ifdef ANDROID
        + 281u
 #endif
@@ -12054,6 +12078,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
@@ -13337,6 +13362,10 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
@@ -13377,7 +13406,9 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13418,6 +13449,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -13458,6 +13490,8 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -15088,12 +15122,14 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   (uint32_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,

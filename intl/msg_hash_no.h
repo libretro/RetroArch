@@ -845,6 +845,7 @@ static const struct
    char s_71747541[11];
    char s_ff960910[18];
    char s_61213f1d[13];
+   char s_60258de0[7];
    char s_317b17ed[11];
    char s_94c8d15f[11];
    char s_1f66aac3[10];
@@ -2123,6 +2124,7 @@ static const struct
    "GPU indeks",
    "Varslingsbakgrunn",
    "Skjermindeks",
+   "Alltid",
    "180 grader",
    "270 grader",
    "90 grader",
@@ -2623,7 +2625,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29315u
+      (sizeof(msg_hash_no_blob) == (29322u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3598,6 +3600,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_BGCOLOR_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,

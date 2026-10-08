@@ -716,6 +716,7 @@ static const struct
    char s_146c6f57[6];
    char s_7ec63ffc[38];
    char s_7f004a36[142];
+   char s_fcd0c0d6[208];
    char s_a3825f18[17];
    char s_ef2d0a03[21];
    char s_ad17a194[13];
@@ -1040,6 +1041,7 @@ static const struct
    char s_88226df7[30];
    char s_4c92f60e[26];
    char s_9c702ee1[38];
+   char s_b8abf5ac[32];
    char s_b8b18b90[16];
    char s_efa8d516[33];
    char s_d7c1d887[25];
@@ -1096,6 +1098,7 @@ static const struct
    char s_ff1b8ce5[25];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[27];
    char s_19f5e3bc[60];
 #endif
 #endif
@@ -1151,6 +1154,7 @@ static const struct
    char s_dc362405[17];
    char s_e2f51ded[10];
    char s_d9685b01[16];
+   char s_88d4b1c5[38];
    char s_74b6dd31[12];
    char s_3e39918c[23];
    char s_96380b84[18];
@@ -2460,6 +2464,10 @@ static const struct
    char s_4b582a0c[39];
    char s_61213f1d[20];
    char s_95e4b29f[100];
+   char s_60258de0[8];
+   char s_caf61308[12];
+   char s_34b2592a[11];
+   char s_c7a27b20[12];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_1f66aac3[5];
@@ -2500,6 +2508,7 @@ static const struct
    char s_f57f6158[15];
    char s_69b801ef[9];
    char s_a40653a7[35];
+   char s_e67b672d[63];
    char s_52e3d6ea[52];
    char s_c992346c[32];
    char s_580e244f[7];
@@ -2542,6 +2551,7 @@ static const struct
    char s_258060bf[17];
    char s_3bbc8b05[48];
    char s_e595f6df[50];
+   char s_2a5f7cd7[38];
    char s_f90edcc2[66];
    char s_ad14307a[20];
 #if defined(RARCH_MOBILE)
@@ -2584,6 +2594,7 @@ static const struct
    char s_b3c7fa93[21];
    char s_f6a0db44[21];
    char s_50d77da7[5];
+   char s_a9af29b1[34];
    char s_4eecff92[29];
    char s_0ca1128d[22];
    char s_65e6ea7c[13];
@@ -3126,6 +3137,7 @@ static const struct
    char s_47df0525[70];
    char s_03e272fc[64];
    char s_5c2cc60f[95];
+   char s_d6d33eda[140];
    char s_d6d8d4be[187];
    char s_e86d2704[96];
    char s_dda608b5[316];
@@ -3174,7 +3186,8 @@ static const struct
    char s_eaa7274b[65];
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
-   char s_bb34fe6a[247];
+   char s_2172fd53[315];
+   char s_bb34fe6a[223];
 #endif
 #endif
    char s_10994fc9[109];
@@ -3205,6 +3218,7 @@ static const struct
    char s_e29f9539[120];
    char s_824e2e0c[225];
    char s_c5a7263e[47];
+   char s_8eb8e1f3[416];
    char s_d9b9d57a[93];
    char s_858f09e9[150];
    char s_608f698e[147];
@@ -3944,6 +3958,7 @@ static const struct
    char s_f4e4e921[243];
    char s_7968f59d[43];
    char s_8cee3615[327];
+   char s_87ba81db[230];
    char s_58c80718[411];
    char s_894ecb9a[425];
    char s_67d549fd[40];
@@ -3982,6 +3997,7 @@ static const struct
    char s_d73ccef3_1[19];
    char s_81163acd_0[500];
    char s_81163acd_1[12];
+   char s_ecc9b2c5[390];
    char s_c2314d30[253];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[214];
@@ -4222,6 +4238,7 @@ static const struct
    char s_b0e4eb88[32];
    char s_9589cc66[57];
    char s_a0cd3533[26];
+   char s_29ffdb0d[54];
    char s_135957cd[28];
    char s_96b546df[42];
    char s_731e9836[28];
@@ -4308,6 +4325,7 @@ static const struct
    char s_51df877a[52];
    char s_136098cd[45];
    char s_f482576f[49];
+   char s_d2b9475b[89];
    char s_0408afc3[18];
    char s_654f5308[21];
    char s_c4a8e97c[9];
@@ -5548,6 +5566,9 @@ static const struct
    "Solo se ha podido leer parte del EDID",
    "Un PC port\303\241til o un panel integrado todo en uno no transmite datos EDID, pero una pantall"
    "a externa conectada mediante DDC s\303\255 los transmite.",
+   "Android no permite que las aplicaciones puedan leer el EDID de la pantalla integrada de un smart"
+   "phone o tablet. Un TV Box que transmita su imagen por HDMI s\303\255 expondr\303\241 el EDID, si"
+   " lo permite el dispositivo.",
    "Versi\303\263n de EDID",
    "Mostrar informaci\303\263n",
    "Orientaci\303\263n",
@@ -5872,6 +5893,7 @@ static const struct
    "Salir (combinaci\303\263n de mando)",
    "Reasignaciones de entrada",
    "Reasignar controles para este n\303\272cleo",
+   "Localizar un bot\303\263n puls\303\241ndolo",
    "Puerto asignado",
    "Ordenar reasignaciones por mando",
    "Asignaciones de RetroPad",
@@ -5929,6 +5951,7 @@ static const struct
    "Controles del puerto %u ",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Luces de jugador del mando",
    "Utilizar XInput con mandos de Xbox (es necesario reiniciar)",
 #endif
 #endif
@@ -5984,6 +6007,7 @@ static const struct
    "2 (advertencias)",
    "Principal",
    "Men\303\272 principal",
+   "Aumentar prioridad del hilo principal",
    "Administrar",
    "N\303\272cleo predeterminado",
    "<Sin especificar>",
@@ -7303,6 +7327,10 @@ static const struct
    "\303\215ndice del monitor",
    "Permitir que la pantalla completa sobrepase la muesca (\302\253notch\302\273) de los dispositivo"
    "s Android e iOS",
+   "Siempre",
+   "Autom\303\241tico",
+   "Desactivar",
+   "Autom\303\241tico",
    "180\302\260",
    "270\302\260",
    "90\302\260",
@@ -7343,6 +7371,7 @@ static const struct
    "Reducir escala",
    "Escalado",
    "Sincronizar con l\303\255neas de barrido",
+   "Desplazamiento de la sincronizaci\303\263n de las l\303\255neas de barrido",
    "Simulaci\303\263n de escalonamiento de l\303\255neas de barrido",
    "Cambio de modo de v\303\255deo de SDL",
    "V\303\255deo",
@@ -7385,6 +7414,7 @@ static const struct
    "V\303\255deo multihilo",
    "Ritmo de visualizaci\303\263n con el v\303\255deo multihilo",
    "Repetici\303\263n de fotogramas con el v\303\255deo multihilo",
+   "Aumentar prioridad del hilo de v\303\255deo",
    "Utilizar b\303\272feres de argumentos de Metal (es necesario reiniciar)",
    "Filtro antiparpadeo",
 #if defined(RARCH_MOBILE)
@@ -7429,6 +7459,7 @@ static const struct
    "Conectarse a una red",
    "Conectarse a una red",
    "Wifi",
+   "Plan de energ\303\255a de baja latencia",
    "Opacidad del tema de colores",
    "Icono de men\303\272 actual",
    "No compartir",
@@ -8315,6 +8346,8 @@ static const struct
    "En este directorio se guardar\303\241n las reasignaciones de entrada.",
    "Ignora la reasignaci\303\263n de entrada general y utiliza una personalizada para el n\303\272cl"
    "eo actual.",
+   "Pulsa un bot\303\263n o mueve un stick del mando de este puerto, o una tecla asignada a un mando"
+   ", para que la lista salte a dicho bot\303\263n o stick.",
    "Especifica el puerto del n\303\272cleo que recibir\303\241 las pulsaciones del puerto de mando %"
    "u del front-end. Selecciona No para que no mande sus pulsaciones a ninguno de los puertos del n"
    "\303\272cleo.",
@@ -8414,9 +8447,13 @@ static const struct
    "Cambia las asignaciones de entrada espec\303\255ficas para el n\303\272cleo.",
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
-   "Al utilizar el controlador de mandos de datos en bruto, leer los mandos compatibles con Xbox uti"
-   "lizando XInput: con gatillos independientes y la disposici\303\263n de botones de XInput. El con"
-   "trolador de datos en bruto seguir\303\241 detectando otros mandos.",
+   "Al utilizar el controlador de mandos \"raw\", mostrar el puerto de cada mando con sus luces prop"
+   "ias: los indicadores de jugador de un DualSense, el color de la barra de luz de un DualShock 4 ("
+   "azul, rojo, verde, rosa). Las luces seguir\303\241n al mando cuando cambie su puerto y se apagar"
+   "\303\241n cuando se desconecte el mando.",
+   "Al utilizar el controlador de mandos \"raw\", leer los mandos compatibles con Xbox utilizando XI"
+   "nput: con gatillos independientes y la disposici\303\263n de botones de XInput. El controlador "
+   "\"raw\" seguir\303\241 detectando otros mandos.",
 #endif
 #endif
    "En este directorio se guardar\303\241n los perfiles de mandos que se utilizan para configurarlos"
@@ -8460,6 +8497,11 @@ static const struct
    "a un archivo nuevo, marcando su fecha. Si se desactiva esta opci\303\263n, se sobrescribir\303"
    "\241 el registro cada vez que se reinicie RetroArch.",
    "Registra los eventos a una terminal o archivo.",
+   "Solicita al sistema operativo que programe el hilo principal, responsable de ejecutar el n\303"
+   "\272cleo y el men\303\272, con m\303\241s prioridad que el resto de hilos normales sin programar"
+   "los en tiempo real. Los contenidos se ejecutar\303\241n sin limitaciones, como har\303\255an al "
+   "activar el avance r\303\241pido, y luego ocupar\303\255a la CPU con otros programas. Si un siste"
+   "ma rechaza el cambio, se mantendr\303\241 el orden de prioridades predeterminado.",
    "Selecciona el n\303\272cleo asignado de forma predeterminada para iniciar los contenidos buscado"
    "s.",
    "Selecciona un archivo XML DAT de Logiqx o MAME para nombrar autom\303\241ticamente los contenido"
@@ -9733,6 +9775,9 @@ static const struct
    "r la sincron\303\255a vertical y el retraso de fotogramas, as\303\255 como tener una frecuencia "
    "de imagen cercana al 100\302\240% de los FPS del n\303\272cleo y de la GPU a su velocidad m\303"
    "\241xima.",
+   "Ajusta de forma manual el desplazamiento de la sincronizaci\303\263n de las l\303\255neas de bar"
+   "rido. Si no se usa esta opci\303\263n, se calcular\303\241 el desplazamiento en funci\303\263n d"
+   "e los barridos verticales y del tama\303\261o de la cach\303\251 de fotogramas.",
    "ADVERTENCIA: los parpadeos r\303\241pidos pueden provocar persistencia de la imagen (\302\253im"
    "\303\241genes fantasma\302\273) en algunas pantallas. Utiliza esta opci\303\263n bajo tu propia "
    "responsabilidad. // Simula de forma b\303\241sica el escalonamiento de las l\303\255neas de barr"
@@ -9825,6 +9870,11 @@ static const struct
    "ngan estables cuando el n\303\272cleo d\303\251 tirones. Esta opci\303\263n se aplicar\303\241 c"
    "uando el controlador de v\303\255deo pueda repetir fotogramas, no se aplica a subfotogramas ",
    "de shaders.",
+   "Solicita al sistema operativo que programe el hilo del v\303\255deo multihilo con m\303\241s pri"
+   "oridad que el resto de hilos normales sin programarlos en tiempo real: la clase Juegos en Window"
+   "s, la calidad de servicio interactiva por el usuario en sistemas de Apple y un valor mejor y m"
+   "\303\241s bajo en Linux y Android. Si un sistema rechaza el cambio, se mantendr\303\241 el orden"
+   " de prioridades predeterminado.",
    "Intenta mejorar el rendimiento mediante el uso de los b\303\272feres de argumentos de Metal. Es "
    "posible que algunos n\303\272cleos los necesiten. Podr\303\255a dar problemas con algunos shader"
    "s, sobre todo en hardware obsoleto o versiones antiguas del sistema operativo.",
@@ -10114,6 +10164,7 @@ static const struct
    "Error al aceptar al espectador.",
    "Error al reservar memoria para el contenido parcheado...",
    "Error al a\303\261adir el disco",
+   "Error al activar el plan de energ\303\255a de baja latencia",
    "Error al aplicar el shader.",
    "Error al aplicar el preajuste de shaders:",
    "Error al asignar el socket.",
@@ -10202,6 +10253,7 @@ static const struct
    "Introduce el nombre del archivo de personalizaci\303\263n",
    "Introduce el nombre de archivo del preajuste",
    "Introduce el nombre del archivo de reasignaci\303\263n",
+   "Pulsa un bot\303\263n o mueve un stick del mando del puerto %u\n(Tiempo de espera: %u segundos)",
    "Renombrar t\303\255tulo",
    "Instalando n\303\272cleo: ",
    "Interfaz",
@@ -10519,7 +10571,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_es_blob_check[
-      (sizeof(msg_hash_es_blob) == (239245u
+      (sizeof(msg_hash_es_blob) == (241020u
 #ifdef ANDROID
        + 329u
 #endif
@@ -10603,6 +10655,7 @@ typedef char msg_hash_es_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 27u
        + 60u
 #endif
 #endif
@@ -10868,7 +10921,8 @@ typedef char msg_hash_es_blob_check[
 #endif
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
-       + 247u
+       + 315u
+       + 223u
 #endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
@@ -11778,6 +11832,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -12102,6 +12157,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
@@ -12158,6 +12214,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -12213,6 +12270,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
@@ -13521,6 +13579,10 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
@@ -13561,6 +13623,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
@@ -13603,6 +13666,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -13645,6 +13709,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -14180,6 +14245,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
@@ -14228,6 +14294,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
 #if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
 #if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
 #endif
 #endif
@@ -14259,6 +14326,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -14996,6 +15064,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
@@ -15031,6 +15100,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -15271,6 +15341,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
@@ -15357,6 +15428,7 @@ static const uint32_t msg_hash_es_ids[] =
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERFACE,

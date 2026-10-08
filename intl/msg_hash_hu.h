@@ -2194,6 +2194,10 @@ static const struct
    char s_4b582a0c[55];
    char s_61213f1d[18];
    char s_95e4b29f[79];
+   char s_60258de0[7];
+   char s_caf61308[12];
+   char s_34b2592a[3];
+   char s_c7a27b20[12];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_de16b5d2[8];
@@ -2236,6 +2240,8 @@ static const struct
    char s_69b801ef[12];
    char s_a40653a7[26];
    char s_52e3d6ea[40];
+   char s_2c868ae4[12];
+   char s_9c535394[13];
    char s_580e244f[5];
    char s_a9c8430e[14];
    char s_f5911f43[33];
@@ -6665,6 +6671,10 @@ static const struct
    "Monitor sorsz\303\241ma",
    "A teljes k\303\251perny\305\221 kiterjeszt\303\251se a bev\303\241g\303\241sra Android \303\251s"
    " iOS eszk\303\266z\303\266k\303\266n",
+   "Mindig",
+   "Automatikus",
+   "Ki",
+   "Automatikus",
    "180 fok",
    "270 fok",
    "Norm\303\241l",
@@ -6708,6 +6718,8 @@ static const struct
    "M\303\251retez\303\251s",
    "Scanline szinkroniz\303\241l\303\241s",
    "G\303\266rd\303\274l\305\221 elektronsug\303\241r szimul\303\241l\303\241sa",
+   "V\303\255zszintes",
+   "F\303\274gg\305\221leges",
    "K\303\251p",
    "Videoshaderek",
    "Automatikus shader k\303\251sleltet\303\251s",
@@ -9785,7 +9797,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (187961u
+      (sizeof(msg_hash_hu_blob) == (188020u
 #ifdef ANDROID
        + 316u
 #endif
@@ -12407,6 +12419,10 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -12449,6 +12465,8 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,

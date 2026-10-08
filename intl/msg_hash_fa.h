@@ -570,6 +570,8 @@ static const struct
    char s_59f183c9[33];
    char s_b45e4c28[36];
    char s_61213f1d[26];
+   char s_caf61308[13];
+   char s_c7a27b20[13];
    char s_57665cff[11];
    char s_b3d1e989[13];
    char s_50eb4c56[9];
@@ -1657,6 +1659,8 @@ static const struct
    "\267 \330\250\330\247 GPU",
    "\330\247\331\206\330\257\333\214\330\263 \331\206\331\205\330\247\333\214\330\264\332\257\330"
    "\261",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
+   "\330\256\331\210\330\257\332\251\330\247\330\261",
    "\330\256\330\261\331\210\330\254\333\214",
    "\330\263\331\201\330\247\330\261\330\264\333\214",
    "\330\250\330\247\331\204\330\247",
@@ -2355,7 +2359,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fa_blob_check[
-      (sizeof(msg_hash_fa_blob) == (27926u
+      (sizeof(msg_hash_fa_blob) == (27952u
 #ifdef HAVE_LAKKA
        + 13u
 #endif
@@ -3002,6 +3006,8 @@ static const uint32_t msg_hash_fa_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_GPU_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_HIGH_QUALITY,

@@ -2136,6 +2136,10 @@ static const struct
    char s_4b582a0b[27];
    char s_4b582a0c[27];
    char s_95e4b29f[71];
+   char s_60258de0[7];
+   char s_caf61308[12];
+   char s_34b2592a[4];
+   char s_c7a27b20[12];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_de16b5d2[8];
@@ -6309,6 +6313,10 @@ static const struct
    "OSD Berichten X-as positie",
    "OSD Berichten Y-as positie",
    "Volledig scherm inschakelen over de notch op Android- en iOS-apparaten",
+   "Altijd",
+   "Automatisch",
+   "UIT",
+   "Automatisch",
    "180\302\272",
    "270\302\272",
    "Normaal",
@@ -8642,7 +8650,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_nl_blob_check[
-      (sizeof(msg_hash_nl_blob) == (173425u
+      (sizeof(msg_hash_nl_blob) == (173460u
 #ifdef ANDROID
        + 375u
 #endif
@@ -11209,6 +11217,10 @@ static const uint32_t msg_hash_nl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,

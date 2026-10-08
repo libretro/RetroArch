@@ -249,6 +249,8 @@ static const struct
    char s_eb4eab83[7];
    char s_c6d5bcb5[6];
    char s_78585119[8];
+   char s_2c868ae4[13];
+   char s_9c535394[11];
    char s_c017f975[11];
    char s_730df420[15];
    char s_bcddf275[12];
@@ -531,6 +533,8 @@ static const struct
    "Visoka",
    "Niska",
    "Pametno",
+   "Horizontalno",
+   "Vertikalno",
    "Automatski",
    "Sinkronizacija",
    "Videozapisi",
@@ -585,7 +589,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hr_blob_check[
-      (sizeof(msg_hash_hr_blob) == (4195u
+      (sizeof(msg_hash_hr_blob) == (4219u
 #ifdef HAVE_CDROM
 #ifdef HAVE_LAKKA
        + 12u
@@ -864,6 +868,8 @@ static const uint32_t msg_hash_hr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_HIGH_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_STREAMING_LOW_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAP_INTERVAL_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_TAB,

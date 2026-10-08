@@ -139,6 +139,7 @@ static const struct
    char s_ad7c73f6[16];
    char s_30acd6fb[16];
    char s_04b30c51[29];
+   char s_24976a5b[34];
    char s_e2eedfe1[12];
    char s_e66b1cb9[53];
    char s_1bf49fce[52];
@@ -439,13 +440,20 @@ static const struct
    char s_ca9a92ae[33];
    char s_d04ab10c[10];
 #endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   char s_5a6c78fd[34];
+#endif
+#endif
    char s_8be7813a[8];
    char s_1757647b[7];
    char s_e1a8f707[20];
    char s_51844cc2[21];
    char s_df610c7f[6];
    char s_3acb0241[25];
+   char s_bacce639[24];
    char s_40084357[8];
+   char s_df62d56f[6];
    char s_9f2cc577[16];
    char s_026e5a83[12];
    char s_42b8ffbf[8];
@@ -558,8 +566,9 @@ static const struct
    char s_0e57428f[18];
 #ifdef HAVE_QT
    char s_974d8c3a_0[500];
-   char s_974d8c3a_1[237];
+   char s_974d8c3a_1[294];
 #endif
+   char s_6d0b3292[6];
    char s_08785e85[24];
    char s_b71e6907[37];
    char s_4707850d[17];
@@ -803,6 +812,8 @@ static const struct
    char s_4b582a0b[38];
    char s_4b582a0c[38];
    char s_61213f1d[19];
+   char s_caf61308[12];
+   char s_c7a27b20[12];
    char s_57665cff[7];
    char s_6cdf4f07[32];
    char s_b3d1e989[13];
@@ -888,6 +899,7 @@ static const struct
    char s_5977d6d8[44];
    char s_cb67f2a4[32];
    char s_4b78ee7f[82];
+   char s_dbe6e749[113];
    char s_a8d552a7[62];
    char s_6112ec7c[55];
    char s_9b87fbf9[126];
@@ -995,8 +1007,12 @@ static const struct
    char s_fe54bf7f[53];
 #endif
    char s_a9d2ffe8[46];
+   char s_f2b2b8e9[35];
    char s_0295f370[24];
    char s_c2717b6d[134];
+   char s_fa87996f[135];
+   char s_a83d6467[228];
+   char s_28f025c5[76];
    char s_aa93eec8[101];
    char s_198c91d3[43];
    char s_8fd135b7[37];
@@ -1574,6 +1590,7 @@ static const struct
    "Sincronizar som",
    "Sincronizar som",
    "N\303\255vel de volume de som (dB)",
+   "Formato WASAPI de ponto flutuante",
    "Autom\303\241tico",
    "Carregar ficheiros de substitui\303\247\303\243o automaticamente",
    "Carregar os ficheiros de mapeamento automaticamente",
@@ -1875,13 +1892,20 @@ static const struct
    "Qualidade de reamostragem de som",
    "Microfone",
 #endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   "Formato WASAPI de ponto flutuante",
+#endif
+#endif
    "Entrada",
    "Sa\303\255da",
    "Em falta, Opcional:",
    "Em falta, Requerido:",
    "Jogar",
    "Reproduzir (Repeti\303\247\303\243o)",
+   "Reproduzir (sequencial)",
    "Remover",
+   "Parar",
    "Suporte de rato",
    "Multim\303\251dia",
    "M\303\272sica",
@@ -1995,16 +2019,18 @@ static const struct
    "Reiniciar (reset)",
 #ifdef HAVE_QT
    "Verifica\303\247\303\243o conclu\303\255da.<br><br>\nPara que o conte\303\272do seja corretament"
-   "e verificado, \303\251 necess\303\241rio:\n<ul><li>ter um n\303\272cleo compat\303\255vel j\303"
-   "\241 transferido</li>\n<li>ter os \"Ficheiros de Informa\303\247\303\243o de N\303\272cleos\" at"
-   "ualizados atrav\303\251s da Atualiza\303\247\303\243o Online</li>\n<li>ter \"Bases de dados\" at"
-   "ualizadas atrav\303\251s do Atualizador Online</li>\n<li>reiniciar o RetroArch se alguma das a"
-   "\303\247\303\265es acima tiver sido realizada</li></ul>\nPor \303\272ltimo, o conte\303\272do de"
-   "ve corresponder \303\240s bases de dados existentes de <a href=",
-   "\"https://docs.libretro.com/guides/roms-playlists-thumbnails/#sources\">here</a>. Se ainda n\303"
-   "\243o estiver a funcionar, considere a possibilidade de <a href=\"https://www.github.com/libretr"
-   "o/RetroArch/issues\">enviar um relat\303\263rio de erro</a>.",
+   "e verificado, voc\303\252 deve:\n<ul><li>j\303\241 ter descarregado um n\303\272cleo Libretro co"
+   "mpat\303\255vel</li>\n<li>ter atualizado os \302\253Ficheiros de Informa\303\247\303\243o de N"
+   "\303\272cleos\302\273 atrav\303\251s da Instalador dos N\303\272cleos</li>\n<li>ter atualizado a"
+   "s \302\253Bases de Dados do RetroArch\302\273 atrav\303\251s da Instalador dos N\303\272cleos</l"
+   "i>\n<li>reiniciar o RetroArch ap\303\263s fazer qualquer das tarefas acima</li></ul>\nAl\303\251"
+   "m disso, o conte\303\272do deve corresponder \303\240s bases de dados ",
+   "existentes das fontes listadas <a href=\"https://docs.libretro.com/guides/roms-playlists-thumbna"
+   "ils/#sources\">aqui</a>. Se, ap\303\263s seguir estes passos o seu conte\303\272do n\303\243o es"
+   "tiver a funcionar, considere <a href=\"https://www.github.com/libretro/RetroArch/issues\">enviar"
+   " um relat\303\263rio de erro</a>.",
 #endif
+   "Parar",
    "Explorador de ficheiros",
    "Selecionar de Listas de Reprodu\303\247\303\243o",
    "Captura de ecr\303\243",
@@ -2248,6 +2274,8 @@ static const struct
    "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o X",
    "Notifica\303\247\303\243o no ecr\303\243 da posi\303\247\303\243o Y",
    "\303\215ndice do monitor",
+   "Autom\303\241tico",
+   "Autom\303\241tico",
    "Sa\303\255da",
    "Utilizar grava\303\247\303\243o p\303\263s-filtro",
    "Personalizar",
@@ -2337,6 +2365,8 @@ static const struct
    "Modificar as defini\303\247\303\265es de sa\303\255da de som.",
    "Sincronizar o som. Recomendado.",
    "Volume de som (em dB). 0 dB representa o volume normal, sem aplica\303\247\303\243o de ganho.",
+   "Utilize o formato de ponto flutuante para o controlador WASAPI, se for suportado pelo seu dispos"
+   "itivo de \303\241udio.",
    "Ativar configura\303\247\303\243o personalizada no arranque, por defeito.",
    "Ativar teclas personalizadas no arranque, por defeito.",
    "Impedir a sobreposi\303\247\303\243o da Save RAM durante o carregamento de estados de grava\303"
@@ -2498,9 +2528,18 @@ static const struct
    "Controlador de reamostrador do microfone a utilizar.",
 #endif
    "Selecione o dispositivo de entrada de \303\241udio.",
+   "Selecione o dispositivo de sa\303\255da.",
    "Define a (%) de volume.",
    "Vai iniciar a reprodu\303\247\303\243o da transmiss\303\243o de \303\241udio. Uma vez terminado,"
    " ele ir\303\241 remover a transmiss\303\243o de \303\241udio atual da mem\303\263ria.",
+   "Inicia a reprodu\303\247\303\243o do fluxo de \303\241udio em modo de repeti\303\247\303\243o; q"
+   "uando terminar, a faixa ser\303\241 reproduzida novamente desde o in\303\255cio.",
+   "Inicia a reprodu\303\247\303\243o sequencial dos fluxos de \303\241udio. Quando terminar, ter"
+   "\303\241 in\303\255cio a reprodu\303\247\303\243o do pr\303\263ximo fluxo de \303\241udio na lis"
+   "ta, at\303\251 que todos os fluxos tenham sido reproduzidos; \303\272til para a reprodu\303\247"
+   "\303\243o de \303\241lbuns.",
+   "Pare a reprodu\303\247\303\243o do fluxo de \303\241udio e remov\303\252-lo totalmente da mem"
+   "\303\263ria.",
    "Envolver o in\303\255cio e/ou o final, caso o limite da lista seja alcan\303\247ado horizontal o"
    "u verticalmente.",
    "Juntar ou hospedar uma sess\303\243o de netplay.",
@@ -2979,7 +3018,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pt_pt_blob_check[
-      (sizeof(msg_hash_pt_pt_blob) == (54534u
+      (sizeof(msg_hash_pt_pt_blob) == (55215u
 #ifdef HAVE_LAKKA
        + 17u
 #endif
@@ -3003,8 +3042,13 @@ typedef char msg_hash_pt_pt_blob_check[
        + 33u
        + 10u
 #endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+       + 34u
+#endif
+#endif
 #ifdef HAVE_QT
-       + 737u
+       + 794u
 #endif
 #ifdef HAVE_LAKKA
 #ifdef HAVE_RETROFLAG
@@ -3203,6 +3247,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_AUTO_REMAPS_ENABLE,
@@ -3503,13 +3548,20 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_RESAMPLER_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_SETTINGS,
 #endif
+#ifdef HAVE_MICROPHONE
+#ifdef HAVE_WASAPI
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MICROPHONE_WASAPI_FLOAT_FORMAT,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_INPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_OPTIONAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MISSING_REQUIRED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_PLAY_SEQUENTIAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
@@ -3623,6 +3675,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
 #ifdef HAVE_QT
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_SCAN_FINISHED,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_QT_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_FILE_BROWSER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_TAB_PLAYLISTS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_QT_THUMBNAIL_SCREENSHOT,
@@ -3866,6 +3919,8 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_POST_FILTER_RECORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_RECORD_CONFIG_TYPE_RECORDING_CUSTOM,
@@ -3951,6 +4006,7 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_SYNC,
    (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_VOLUME,
+   (uint32_t)MENU_ENUM_SUBLABEL_AUDIO_WASAPI_FLOAT_FORMAT,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_OVERRIDES_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_AUTO_REMAPS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_BLOCK_SRAM_OVERWRITE,
@@ -4058,8 +4114,12 @@ static const uint32_t msg_hash_pt_pt_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_MICROPHONE_RESAMPLER_DRIVER,
 #endif
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_INPUT,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIDI_OUTPUT,
    (uint32_t)MENU_ENUM_SUBLABEL_MIDI_VOLUME,
    (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_LOOPED,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_PLAY_SEQUENTIAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_SUBLABEL_NAVIGATION_WRAPAROUND,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_ENABLE_CLIENT,

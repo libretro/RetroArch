@@ -2262,6 +2262,10 @@ static const struct
    char s_4b582a0c[31];
    char s_61213f1d[15];
    char s_95e4b29f[70];
+   char s_60258de0[6];
+   char s_caf61308[10];
+   char s_34b2592a[12];
+   char s_c7a27b20[10];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_de16b5d2[1];
@@ -2304,6 +2308,8 @@ static const struct
    char s_69b801ef[8];
    char s_a40653a7[21];
    char s_52e3d6ea[27];
+   char s_2c868ae4[12];
+   char s_9c535394[10];
    char s_a9c8430e[18];
    char s_f5911f43[32];
    char s_9017e0d3[18];
@@ -2330,6 +2336,7 @@ static const struct
    char s_552163d9[32];
    char s_ef3d53d8[19];
    char s_6dcc2f9f[17];
+   char s_d3c5c0e9[11];
    char s_48431da6[7];
    char s_21d7a1f6[5];
    char s_d2fe3ed2[16];
@@ -6657,6 +6664,10 @@ static const struct
    "Pozicio de sciigoj (vertikala)",
    "Ekrana indekso",
    "Ebligi plenekranan re\304\235imon super \"no\304\211o\" en aparatoj Android kaj iOS",
+   "\304\210iam",
+   "A\305\255tomata",
+   "Malebligita",
+   "A\305\255tomata",
    "180\302\260",
    "270\302\260",
    "",
@@ -6699,6 +6710,8 @@ static const struct
    "Skalado",
    "Skanlinia sinkronigo",
    "Imito de rulanta skanlinio",
+   "Horizontala",
+   "Vertikala",
    "Videaj ombrigiloj",
    "Prokrasti a\305\255tomatan ombrigilon",
    "Videaj ombrigiloj",
@@ -6725,6 +6738,7 @@ static const struct
    "Aparatara kunhavigata kunteksto",
    "Dulineara filtrado",
    "Malmola filtrilo",
+   "2-dimensia",
    "Propra",
    "Loka",
    "Elsenda kvalito",
@@ -9132,7 +9146,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171576u
+      (sizeof(msg_hash_eo_blob) == (171647u
 #ifdef ANDROID
        + 312u
 #endif
@@ -11822,6 +11836,10 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -11864,6 +11882,8 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,
@@ -11890,6 +11910,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_2D,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,

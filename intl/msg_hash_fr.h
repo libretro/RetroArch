@@ -901,7 +901,7 @@ static const struct
    char s_392e7967[35];
 #endif
    char s_e9f0dd82[32];
-   char s_b58b86df[17];
+   char s_b58b86df[19];
    char s_1b46171b[19];
    char s_0bd714f7[5];
    char s_0bebb490[11];
@@ -936,6 +936,8 @@ static const struct
    char s_b3a9ff57[37];
    char s_f4eaed02[43];
    char s_a9f5617a[37];
+   char s_7b2598f2[32];
+   char s_182194b5[37];
    char s_50e34bc5[36];
    char s_00ea00d3[24];
    char s_b43e2e98[11];
@@ -1078,7 +1080,7 @@ static const struct
    char s_9c91e6ef[44];
    char s_f03621e7[45];
 #endif
-   char s_9d47ac69[43];
+   char s_9d47ac69[41];
    char s_75851363[10];
    char s_a60a77f9[57];
    char s_f07432ff[18];
@@ -1147,6 +1149,7 @@ static const struct
    char s_dc362405[18];
    char s_e2f51ded[10];
    char s_d9685b01[15];
+   char s_88d4b1c5[53];
    char s_74b6dd31[7];
    char s_3e39918c[18];
    char s_96380b84[17];
@@ -2446,6 +2449,17 @@ static const struct
    char s_4b582a0c[38];
    char s_61213f1d[21];
    char s_95e4b29f[94];
+   char s_1ee69db0[19];
+   char s_0cfd4fd0[9];
+   char s_d64659c4[9];
+   char s_0861dea4[21];
+   char s_d7deafe0[26];
+   char s_83217fd0[15];
+   char s_60258de0[9];
+   char s_34b2592a[12];
+   char s_740ed6e5[16];
+   char s_c7ab7873[42];
+   char s_83ecb279[20];
    char s_de16b5d2[8];
    char s_57665cff[14];
    char s_0e2c0fca[32];
@@ -2482,7 +2496,11 @@ static const struct
    char s_f57f6158[18];
    char s_69b801ef[19];
    char s_a40653a7[40];
+   char s_e67b672d[53];
    char s_52e3d6ea[41];
+   char s_f387bafb[21];
+   char s_2c868ae4[12];
+   char s_9c535394[10];
    char s_c992346c[35];
    char s_580e244f[7];
    char s_a9c8430e[15];
@@ -2511,6 +2529,14 @@ static const struct
    char s_552163d9[28];
    char s_ef3d53d8[19];
    char s_6dcc2f9f[16];
+   char s_7a23be94[14];
+   char s_07483307[23];
+   char s_166f5c6e[11];
+   char s_33da1d6d[27];
+   char s_33dae115[25];
+   char s_b2b1563a[9];
+   char s_fa98dce0[23];
+   char s_2bf7c29f[19];
    char s_48431da6[14];
    char s_d2fe3ed2[26];
    char s_1edf58ee[32];
@@ -2522,6 +2548,7 @@ static const struct
    char s_258060bf[39];
    char s_3bbc8b05[82];
    char s_e595f6df[66];
+   char s_2a5f7cd7[50];
    char s_f90edcc2[73];
    char s_ad14307a[32];
 #if defined(RARCH_MOBILE)
@@ -2564,6 +2591,7 @@ static const struct
    char s_b3c7fa93[24];
    char s_f6a0db44[24];
    char s_a9af29b1[52];
+   char s_2cdaeb21[51];
    char s_4eecff92[40];
    char s_0ca1128d[22];
    char s_65e6ea7c[7];
@@ -2978,7 +3006,7 @@ static const struct
    char s_50f43cfa[246];
 #endif
    char s_b65270d1[389];
-   char s_27fda584[249];
+   char s_27fda584[252];
    char s_e85b309d[71];
    char s_cd94bb16[228];
    char s_a17a67e1[74];
@@ -3028,6 +3056,8 @@ static const struct
    char s_a11a7d85[212];
    char s_e25b6b30[190];
    char s_4b347c28[56];
+   char s_44480960[77];
+   char s_94c28c23[88];
    char s_0832c8b3[84];
    char s_109af481[56];
    char s_bcea0a06[35];
@@ -3136,7 +3166,7 @@ static const struct
    char s_493a2167[397];
 #ifdef ANDROID
    char s_354b4abf[158];
-   char s_21594ec5[253];
+   char s_21594ec5[245];
    char s_d1b3c47b[237];
    char s_27919f0b[224];
 #endif
@@ -3148,7 +3178,7 @@ static const struct
    char s_65b4575d[100];
    char s_dda6a015[131];
 #endif
-   char s_5d044397[411];
+   char s_5d044397[408];
    char s_b5bb6ba7[143];
    char s_0e9b7c2d[100];
    char s_2447fa4c[44];
@@ -3194,6 +3224,7 @@ static const struct
    char s_e29f9539[159];
    char s_824e2e0c[209];
    char s_c5a7263e[65];
+   char s_8eb8e1f3[474];
    char s_d9b9d57a[80];
    char s_858f09e9[146];
    char s_608f698e[171];
@@ -3234,7 +3265,7 @@ static const struct
    char s_ff7d19fe[239];
    char s_db495a9d[50];
    char s_ddc672a7[59];
-   char s_6fe18880[331];
+   char s_6fe18880[335];
    char s_ccea261d[152];
    char s_f754a0d3[87];
    char s_4fe7b3d2[158];
@@ -3921,6 +3952,12 @@ static const struct
    char s_34400c79[98];
    char s_34400c7a[102];
    char s_4a09218b[36];
+   char s_dea334de[211];
+   char s_cacc1492[67];
+   char s_c0c6924e[260];
+   char s_c83fcc7e[255];
+   char s_7efaf561[275];
+   char s_c90aff27[113];
    char s_19d092ed[41];
    char s_1eebf4f8[197];
    char s_2f2ca2b6[198];
@@ -3938,7 +3975,9 @@ static const struct
    char s_f4e4e921[212];
    char s_7968f59d[53];
    char s_8cee3615[310];
+   char s_87ba81db[187];
    char s_58c80718[347];
+   char s_dc6f9d69[58];
    char s_894ecb9a[400];
    char s_67d549fd[41];
    char s_afac733c[38];
@@ -3967,6 +4006,9 @@ static const struct
    char s_3c679f0a[347];
    char s_5b059407[170];
    char s_36033606[190];
+   char s_5d342d82[287];
+   char s_bd0312ce[111];
+   char s_3ba8b64d[187];
    char s_d62ed5dc[451];
    char s_2e69508b[436];
    char s_7e96b5ce[50];
@@ -3976,6 +4018,7 @@ static const struct
    char s_d73ccef3_1[77];
    char s_81163acd_0[500];
    char s_81163acd_1[64];
+   char s_ecc9b2c5[418];
    char s_c2314d30[294];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[208];
@@ -4010,7 +4053,9 @@ static const struct
    char s_6ac06624[185];
    char s_f765b650[48];
    char s_7059a595[57];
-   char s_c7d672df[407];
+   char s_c7d672df_0[500];
+   char s_c7d672df_1[93];
+   char s_c85b2f0f[351];
    char s_6d1448c0[57];
    char s_cf0b487b[101];
    char s_840f4569[48];
@@ -4227,6 +4272,7 @@ static const struct
    char s_ffb4111b[34];
    char s_a363d07a[35];
    char s_9e5bd759[35];
+   char s_b880bab5[67];
    char s_8d7296ed[44];
    char s_21580d7c[118];
    char s_fc5e1d2c[64];
@@ -4422,6 +4468,12 @@ static const struct
    char s_8ab54d62[117];
    char s_aa554847[19];
    char s_ac2c797c[22];
+   char s_c5fee1cb[73];
+   char s_272dccbd[20];
+   char s_7da2720b[60];
+   char s_9e9f8d9d[277];
+   char s_fdc097e9[98];
+   char s_5fe664ca[102];
    char s_80528b14[38];
    char s_eae21890[57];
    char s_1451fe0d[67];
@@ -5761,7 +5813,7 @@ static const struct
    "Saisie au clavier en arri\303\250re-plan",
 #endif
    "Type de mappage clavier manette",
-   "Index du clavier",
+   "Num\303\251ro du clavier",
    "%s (non connect\303\251)",
    "Tous",
    "Clavier %s",
@@ -5796,6 +5848,8 @@ static const struct
    "Jeu au premier plan/en arri\303\250re-plan",
    "Capture de la souris (activer/d\303\251sactiver)",
    "Suspendre l'enregistrement/le replay",
+   "Recentrer les \303\251crans du casque",
+   "Pointeur laser (activer/d\303\251sactiver)",
    "Charger une sauvegarde instantan\303\251e",
    "Menu (afficher/masquer)",
    "Son coup\303\251",
@@ -5942,7 +5996,7 @@ static const struct
    "Utiliser la VMouse tactile en mode trackpad",
    "Utiliser la VMouse tactile en mode trackball",
 #endif
-   "G\303\242chettes analogiques \303\240 pleine amplitude",
+   "G\303\242chettes analogiques \303\240 pleine port\303\251e",
    "Tir turbo",
    "Turbo autorise les directions de la croix directionnelle",
    "Affectation turbo",
@@ -6011,6 +6065,7 @@ static const struct
    "2 (avertissement)",
    "Principal",
    "Menu principal",
+   "Augmenter la priorit\303\251 du fil d'ex\303\251cution principal",
    "G\303\251rer",
    "C\305\223ur par d\303\251faut",
    "<Non sp\303\251cifi\303\251>",
@@ -7326,6 +7381,17 @@ static const struct
    "Num\303\251ro du moniteur ",
    "Activer le d\303\251passement de l'encoche (notch) en plein \303\251cran sur les appareils Andro"
    "id et iOS",
+   "Manettes de casque",
+   "Combin\303\251",
+   "S\303\251par\303\251",
+   "Distance de l'\303\251cran",
+   "Sortie du casque (OpenXR)",
+   "Pointeur laser",
+   "Toujours",
+   "D\303\251sactiv\303\251",
+   "Choix du casque",
+   "Fr\303\251quence de rafra\303\256chissement du casque",
+   "Largeur de l'\303\251cran",
    "Normale",
    "Sortie vid\303\251o",
    "Correction du surbalayage (Bas)",
@@ -7362,7 +7428,11 @@ static const struct
    "Sous-dimensionner",
    "Mise \303\240 l'\303\251chelle",
    "Synchronisation \303\240 la ligne de balayage",
+   "D\303\251calage de synchronisation de la ligne de balayage",
    "Simulation de ligne de balayage roulante",
+   "Disposition d'\303\251cran",
+   "Horizontale",
+   "Verticale",
    "Changement de mode d'affichage SDL",
    "Vid\303\251o",
    "Shaders vid\303\251o",
@@ -7391,6 +7461,14 @@ static const struct
    "Contexte mat\303\251riel partag\303\251",
    "Filtre bilin\303\251aire",
    "Filtre logiciel",
+   "Mode st\303\251r\303\251o",
+   "Anaglyphe (rouge/cyan)",
+   "Entrelac\303\251",
+   "C\303\264te \303\240 c\303\264te (int\303\251gral)",
+   "C\303\264te \303\240 c\303\264te (moiti\303\251)",
+   "Haut-Bas",
+   "St\303\251r\303\251o 3D et \303\251crans",
+   "\303\211changer les yeux",
    "Personnalis\303\251",
    "Qualit\303\251 de la diffusion ",
    "Profondeur de bits de la sortie",
@@ -7403,6 +7481,7 @@ static const struct
    "R\303\251gulation de la cadence d'affichage avec vid\303\251o sur plusieurs fils d'ex\303\251cut"
    "ion",
    "R\303\251p\303\251tition d'images avec vid\303\251o sur plusieurs fils d'ex\303\251cution",
+   "Augmenter la priorit\303\251 du fil d'ex\303\251cution vid\303\251o",
    "Utiliser les m\303\251moires tampon d'arguments de Metal (Red\303\251marrage requis)",
    "\303\211limination des scintillements",
 #if defined(RARCH_MOBILE)
@@ -7445,6 +7524,7 @@ static const struct
    "Se connecter au r\303\251seau",
    "Se connecter au r\303\251seau",
    "Mode de gestion de l'alimentation \303\240 faible latence",
+   "D\303\251sactiver les \303\251tats d'inactivit\303\251 du processeur",
    "Facteur d'opacit\303\251 du th\303\250me de couleur",
    "Ic\303\264ne du menu actuel",
    "Aucune",
@@ -8139,8 +8219,8 @@ static const struct
    "st connect\303\251e au port.",
    "Au lancement de contenu, aucune manette n'est associ\303\251e \303\240 un port du c\305\223ur ; "
    "chaque manette se voit attribuer le prochain port du c\305\223ur disponible d\303\250s qu'une to"
-   "uche est press\303\251e sur celui-ci. S'applique \303\240 partir du prochain lancement de conten"
-   "u.",
+   "uche est press\303\251e dans ce contenu. S'applique \303\240 partir du prochain lancement de con"
+   "tenu.",
    "Tente de configurer automatiquement les manettes, style Plug-and-Play.",
    "Toujours activer le mode 'Jeu au premier plan' lors du lancement et de la reprise du contenu. Lo"
    "rsque r\303\251gl\303\251 sur 'D\303\251tecter', l'option sera activ\303\251e si le c\305\223ur "
@@ -8237,6 +8317,9 @@ static const struct
    "est masqu\303\251 et confin\303\251 \303\240 la fen\303\252tre d'affichage de RetroArch, am\303"
    "\251liorant le mouvement relatif de la souris.",
    "Arr\303\252te l'enregistrement/la lecture du replay en cours.",
+   "Place les \303\251crans du casque devant l'endroit o\303\271 vous regardez actuellement.",
+   "Bascule le pointeur laser du casque entre l'\303\251tat \303\251teint et son dernier mode utilis"
+   "\303\251.",
    "Charge une sauvegarde instantan\303\251e depuis l'emplacement actuellement s\303\251lectionn\303"
    "\251.",
    "Bascule l'affichage actuel entre le menu et le contenu.",
@@ -8440,8 +8523,8 @@ static const struct
    "Activer les appareils \303\240 stylet. Fournit une saisie pr\303\251cise pour les jeux de dessin"
    " et de pointage. D\303\251sactivez cette option en cas de conflits d\342\200\231entr\303\251e.",
    "Autoriser le d\303\251placement du curseur par survol du stylet (sans toucher l'\303\251cran). I"
-   "ndispensable pour les jeux de dessin et de peinture ou les jeux de tir au pistolet optique. D"
-   "\303\251sactivez cette fonction si le curseur se d\303\251place de mani\303\250re inattendue.",
+   "ndispensable pour les jeux de dessin et de peinture ou les jeux de tir au pistolet. D\303\251sac"
+   "tivez cette fonction si le curseur se d\303\251place de mani\303\250re inattendue.",
    "Sensibilit\303\251 tactile du stylet. Valeurs plus \303\251lev\303\251es = plus grande sensibili"
    "t\303\251 (pression plus l\303\251g\303\250re). La valeur par d\303\251faut de 70 convient \303"
    "\240 la plupart des appareils. R\303\251duisez-la si vous utilisez une protection d'\303\251cran"
@@ -8466,10 +8549,10 @@ static const struct
    "ball, ajoutant de l'inertie au pointeur.",
 #endif
    "Pour les g\303\242chettes L2 et R2 fonctionnant sur un axe dont la position de repos se situe "
-   "\303\240 une extr\303\251mit\303\251 de son amplitude : mesurer la pression \303\240 partir de c"
-   "ette position de repos. Une pression compl\303\250te couvre alors toute la plage analogique, tan"
-   "dis qu'une demi-pression active la touche. Lorsque cette option est d\303\251sactiv\303\251e, se"
-   "ule la seconde moiti\303\251 de la pression est prise en compte, comme auparavant.",
+   "\303\240 une extr\303\251mit\303\251 de sa port\303\251e : mesurer la pression \303\240 partir d"
+   "e cette position de repos. Une pression compl\303\250te couvre alors toute la plage analogique, "
+   "tandis qu'une demi-pression active la touche. Lorsque cette option est d\303\251sactiv\303\251e,"
+   " seule la seconde moiti\303\251 de la pression est prise en compte, comme auparavant.",
    "Si activ\303\251, les entr\303\251es num\303\251riques directionnelles (aussi connues sous le no"
    "m de croix ou 'pav\303\251 directionnel') peuvent \303\252tre en mode turbo.",
    "Affectation RetroManette activant le Turbo. Laisser vide utilise l'affectation sp\303\251cifique"
@@ -8542,6 +8625,12 @@ static const struct
    "un nouveau fichier horodat\303\251. Si d\303\251sactiv\303\251, le journal est \303\251cras\303"
    "\251 chaque fois que RetroArch est red\303\251marr\303\251.",
    "Journaliser les \303\251v\303\251nements sur un terminal ou dans un fichier.",
+   "Demander au syst\303\250me d'exploitation de planifier le fil d'ex\303\251cution principal, qui "
+   "ex\303\251cute le c\305\223ur et le menu, en priorit\303\251 par rapport aux fils d'ex\303\251cu"
+   "tion ordinaires, sans recourir \303\240 la planification en temps r\303\251el. Ainsi, le contenu"
+   " s'ex\303\251cutant sans limitation de vitesse, comme en mode avance rapide, accapare en priorit"
+   "\303\251 les ressources processeur au d\303\251triment des autres programmes. Si le syst\303\250"
+   "me refuse cette demande, la priorit\303\251 par d\303\251faut est conserv\303\251e.",
    "S\303\251lectionne le c\305\223ur \303\240 utiliser par d\303\251faut au lancement du contenu an"
    "alys\303\251.",
    "S\303\251lectionne un fichier Logiqx ou MAME List XML DAT pour activer le renommage automatique "
@@ -8621,11 +8710,11 @@ static const struct
    "res fichiers de r\303\251glages les affichent syst\303\251matiquement.",
    "Modifier les r\303\251glages du navigateur de fichiers.",
    "Modifie l'opacit\303\251 de l'arri\303\250re-plan du menu par d\303\251faut.",
-   "La cadence \303\240 laquelle le menu s'ex\303\251cute pendant le chargement du contenu. 'Fr\303"
-   "\251quence d'affichage' fait fonctionner le menu \303\240 la fr\303\251quence de rafra\303\256ch"
-   "issement de l'\303\251cran ; le contenu s'ex\303\251cutant en arri\303\250re-plan conserve sa pr"
-   "opre cadence. 'Fr\303\251quence du contenu' fait fonctionner le menu \303\240 la cadence d'image"
-   "s du contenu.",
+   "La fr\303\251quence \303\240 laquelle le menu s'ex\303\251cute lorsque du contenu est charg\303"
+   "\251. 'Fr\303\251quence d'affichage' fait fonctionner le menu \303\240 la fr\303\251quence de ra"
+   "fra\303\256chissement de l'\303\251cran ; le contenu s'ex\303\251cutant en arri\303\250re-plan c"
+   "onserve sa propre fr\303\251quence. 'Fr\303\251quence du contenu' fait fonctionner le menu \303"
+   "\240 la cadence d'images du contenu.",
    "Luminosit\303\251 du menu en cd/m2 (nits) lors de l'utilisation d'un affichage HDR. Uniquement v"
    "isible lorsque HDR est activ\303\251 dans R\303\251glages > Vid\303\251o > HDR.",
    "Active l'animation horizontale pour le menu. Cela aura un impact sur les performances.",
@@ -8910,9 +8999,9 @@ static const struct
    "Pour un emplacement de joueur partag\303\251 avec d'autres clients de jeu en r\303\251seau : com"
    "ment leurs touches se combinent. 'Partager' : activ\303\251es si l'un des joueurs appuie dessus."
    " 'Saisir' : activ\303\251es si un nombre impair de joueurs appuie dessus. 'Voter' : activ\303"
-   "\251es si la majorit\303\251 des joueurs appuie dessus. Si ce param\303\250tre est utilis\303"
-   "\251 alors que le partage des entr\303\251es analogiques est r\303\251gl\303\251 sur 'Ne pas par"
-   "tager', un emplacement d\303\251di\303\251 vous sera demand\303\251.",
+   "\251es si la majorit\303\251 des joueurs appuie dessus. Si cette option est utilis\303\251e alor"
+   "s que le partage des entr\303\251es analogiques est r\303\251gl\303\251 sur 'Ne pas partager', u"
+   "n emplacement d\303\251di\303\251 vous sera demand\303\251.",
    "Mot de passe utilis\303\251 par les clients pour se connecter \303\240 l'h\303\264te en tant que"
    " spectateur.",
    "D\303\251marre le jeu en r\303\251seau en mode spectateur.",
@@ -9842,6 +9931,23 @@ static const struct
    "Sp\303\251cifier la position personalis\303\251e sur l'axe Y pour le texte \303\240 l'\303\251cr"
    "an. 0 est le bord inf\303\251rieur.",
    "S\303\251lectionner l'\303\251cran \303\240 utiliser.",
+   "Comment fonctionnent les manettes du casque. En mode combin\303\251, elles forment une seule man"
+   "ette pour le joueur 1. En mode s\303\251par\303\251, la manette de gauche est attribu\303\251e a"
+   "u joueur 1 et celle de droite au joueur 2.",
+   "La distance \303\240 laquelle le casque affiche les \303\251crans devant vous.",
+   "Afficher \303\251galement le contenu dans un casque OpenXR : chaque \303\251cran appara\303\256t"
+   " comme un \303\251cran flottant distinct, en 3D st\303\251r\303\251oscopique (pour les deux yeux"
+   "), avec le menu positionn\303\251 devant eux. Vulkan uniquement. La fen\303\252tre conserve son "
+   "affichage habituel.",
+   "Utilise les zones tactiles de la manette au lieu d'appuyer sur L2 ou R2. Auto : dans le menu lor"
+   "squ'il est ouvert, ainsi que les \303\251crans secondaires comme un \303\251cran tactile. Toujou"
+   "rs : dans tous les \303\251crans (pour les pistolets). D\303\251sactiv\303\251 : nulle part.",
+   "La fr\303\251quence de rafra\303\256chissement \303\240 demander au casque. Auto s\303\251lectio"
+   "nne celle qui convient le mieux au contenu, tandis que le mode Choix du casque ne formule aucune"
+   " demande sp\303\251cifique. Le contenu se synchronise avec le casque d\303\250s lors que sa fr"
+   "\303\251quence est compatible.",
+   "La largeur de l'\303\251cran principal du casque. Les autres \303\251crans sont dimensionn\303"
+   "\251s pour correspondre \303\240 celui-ci.",
    "Modifier les r\303\251glages de sortie vid\303\251o.",
    "Ajuste le surbalayage \303\240 l'\303\251cran en r\303\251duisant la taille de l'image par un no"
    "mbre sp\303\251cifique de lignes de balayage (enlev\303\251es du bas de l'\303\251cran). Peut in"
@@ -9882,10 +9988,14 @@ static const struct
    "layage bas\303\251e sur le temps du c\305\223ur. Pr\303\251requis : V-Sync d\303\251sactiv\303"
    "\251, Retard d'images d\303\251sactiv\303\251, fr\303\251quence d'affichage proche de 1x le nomb"
    "re d'images par seconde du c\305\223ur et processeur graphique aux fr\303\251quences maximales.",
+   "Ajuster manuellement le d\303\251calage de synchronisation des lignes de balayage. Sinon, le d"
+   "\303\251calage est calcul\303\251 en fonction du rafra\303\256chissement vertical et de la taill"
+   "e du cache d'images.",
    "AVERTISSEMENT : Un scintillement rapide peut causer une persistance de l'image sur certains \303"
    "\251crans. \303\200 utiliser \303\240 vos risques et p\303\251rils // Simule une ligne de balaya"
    "ge roulante basique au cours de plusieurs sous-images en divisant l'\303\251cran verticalement e"
    "t en rendant chaque partie de l'\303\251cran en fonction du nombre de sous-images disponibles.",
+   "Comment disposer les \303\251crans des syst\303\250mes multi-\303\251crans.",
    "Permet \303\240 la fen\303\252tre SDL de basculer entre les modes d'affichage qu'elle r\303\251p"
    "ertorie. 'Auto' n'utilise cette fonction que lorsque le serveur d'affichage natif ne peut pas ch"
    "anger de mode. 'Toujours' supplante le serveur natif : CRT SwitchRes s\303\251lectionne alors un"
@@ -9946,6 +10056,15 @@ static const struct
    "Ajouter un l\303\251ger flou \303\240 l'image pour att\303\251nuer le contour des pixels bruts. "
    "Cette option a tr\303\250s peu d'impact sur les performances. Devrait \303\252tre d\303\251sacti"
    "v\303\251 si vous utilisez des shaders.",
+   "Comment afficher les deux yeux du contenu 3D st\303\251r\303\251o. 2D montre uniquement l'\305"
+   "\223il gauche. C\303\264te \303\240 c\303\264te (int\303\251gral) convient aux applications de v"
+   "isionneuse de casque et \303\240 la visualisation avec les yeux crois\303\251s; C\303\264te \303"
+   "\240 c\303\264te (moiti\303\251) et Haut-Bas conviennent aux t\303\251l\303\251viseurs 3D.",
+   "Changer la fa\303\247on dont les \303\251crans 3D st\303\251r\303\251o et plusieurs \303\251cran"
+   "s qui les prennent en charge sont affich\303\251s.",
+   "Inverser les images des yeux gauche et droit. Utilisez cette option pour la visualisation en lou"
+   "chant (vision crois\303\251e) ou lorsque l'affichage pr\303\251sente les yeux ou les lignes inve"
+   "rs\303\251s.",
    "Profondeur de bits de l'image finale lorsque le HDR est d\303\251sactiv\303\251. Le 10 bits \303"
    "\251limine les effets de bandes introduits par les shaders qui assombrissent fortement l'image, "
    "comme les profils de faisceau des \303\251crans cathodiques et les masques de grille d'ouverture"
@@ -9985,6 +10104,12 @@ static const struct
    "la fr\303\251quence de rafra\303\256chissement, malgr\303\251 les saccades du c\305\223ur. Cette"
    " option s'applique lorsque le pilote vid\303\251o est capable de r\303\251p\303\251ter",
    " une image ; elle ne s'applique pas aux sous-images de shaders.",
+   "Demander au syst\303\250me d'exploitation de planifier le fils d'ex\303\251cution de 'Vid\303"
+   "\251o sur plusieurs fils d'ex\303\251cution' avant les fils d'ex\303\251cution ordinaires, sans "
+   "recourir \303\240 la planification en temps r\303\251el : la classe Games sous Windows, la quali"
+   "t\303\251 de service user-interactive sur les syst\303\250mes Apple, ou une valeur nice plus fai"
+   "ble sous Linux et Android. Si le syst\303\250me refuse, la priorit\303\251 par d\303\251faut est"
+   " conserv\303\251e.",
    "Essaye d'am\303\251liorer les performances en utilisant les m\303\251moires tampon pour les argu"
    "ments de Metal. Certains c\305\223urs peuvent n\303\251cessiter cette option. Cela peut emp\303"
    "\252cher certains shaders de fonctionner, en particulier sur du mat\303\251riel ancien ou d'anci"
@@ -10051,11 +10176,20 @@ static const struct
    " (G-Sync, FreeSync, HDMI 2.1 VRR).",
    "Pilote Wi-Fi \303\240 utiliser. (Red\303\251marrage requis)",
    "Analyser les r\303\251seaux sans fil et \303\251tablir la connexion.",
-   "Passe \303\240 une copie du mode de gestion de l'alimentation Windows actif qui maintient le pro"
-   "cesseur \303\240 pleine vitesse, sans mise en veille de c\305\223urs, et r\303\251\303\251value "
-   "les \303\251tats de performance toutes les 5 secondes au lieu de toutes les 15 ms, r\303\251duis"
-   "ant ainsi l'activit\303\251 des interruptions du noyau. Ne s'applique que lorsque l'appareil est"
-   " branch\303\251 sur secteur. Le mode d'origine est r\303\251tabli \303\240 la fermeture.",
+   "Bascule vers une copie du plan d'alimentation actif de Windows qui maintient le processeur \303"
+   "\240 pleine vitesse - \303\251tat minimal et maximum du processeur \303\240 100\302\240%, pr\303"
+   "\251f\303\251rence \303\251nerg\303\251tique sur les performances - sans c\305\223urs stationn"
+   "\303\251s, r\303\251\303\251value les \303\251tats de performances toutes les 5\302\240secondes "
+   "au lieu de 15\302\240ms, et conserve les liens PCI\302\240Express et les ports USB hors des mode"
+   "s d'\303\251conomie d'\303\251nergie, de la r\303\251duction de l'activit\303\251 d'interruption"
+   " du noyau et des d\303\251lais de r\303\251veil. S'applique",
+   " uniquement lorsque l'ordinateur est branch\303\251. Le plan d'origine est restaur\303\251 \303"
+   "\240 la sortie.",
+   "Lorsque le mode de gestion de l'alimentation \303\240 faible latence est activ\303\251, tous les"
+   " c\305\223urs du processeur restent actifs, \303\251vitant ainsi qu'ils n'aient \303\240 se r"
+   "\303\251veiller avant de fonctionner. Le processeur consomme alors toute sa puissance et chauffe"
+   " beaucoup, m\303\252me sans aucune activit\303\251. Ceci s'applique uniquement lorsque l'ordinat"
+   "eur est branch\303\251.",
    "Modifier le pourcentage d'opacit\303\251 du th\303\250me de couleur.",
    "L'ic\303\264ne du menu actuel peut \303\252tre masqu\303\251e, sous le menu horizontal ou dans l"
    "e titre de l'en-t\303\252te.",
@@ -10249,8 +10383,8 @@ static const struct
    "D\303\251compression d\303\251j\303\240 en cours.",
    "\303\211chec \303\240 la d\303\251compression.",
    "Taille de la fen\303\252tre d'affichage d\303\251tect\303\251e de",
-   "%s et clavier affect\303\251s au port du c\305\223ur %u",
-   "%s affect\303\251 au port du c\305\223ur %u",
+   "%s et clavier affect\303\251s au port %u du c\305\223ur",
+   "%s affect\303\251 au port %u du c\305\223ur",
    "%s configur\303\251 dans le port %u",
    "%s d\303\251connect\303\251 du port %u",
    "%s (%u/%u) non configur\303\251, utilisation du recours par d\303\251faut",
@@ -10299,6 +10433,7 @@ static const struct
    "\303\211chec de la connexion au client.",
    "\303\211chec de la connexion \303\240 l'h\303\264te.",
    "\303\211chec \303\240 la cr\303\251ation du dossier.",
+   "\303\211chec de la d\303\251sactivation des \303\251tats d'inactivit\303\251 du processeur",
    "Impossible de passer en mode jeu (GameMode)",
    "Impossible de passer en mode jeu (GameMode) - assurez-vous que le daemon GameMode est install"
    "\303\251/en cours d'ex\303\251cution",
@@ -10394,7 +10529,7 @@ static const struct
    "en m\303\251gaoctets ",
    "La souris tactile est d\303\251sactiv\303\251e",
    "La souris tactile est activ\303\251e",
-   "Clavier affect\303\251 au port du c\305\223ur %u",
+   "Clavier affect\303\251 au port %u du c\305\223ur",
    "Phrase secr\303\250te du trousseau supprim\303\251e.",
    "Phrase secr\303\250te du trousseau d\303\251finie.",
    "Phrase secr\303\250te du trousseau incorrecte.",
@@ -10506,6 +10641,17 @@ static const struct
    "\303\251 essay\303\251s pour cette entr\303\251e de liste de lecture.",
    "C\305\223urs ignor\303\251s : ",
    "C\305\223urs mis \303\240 jour : ",
+   "La sortie du casque n'a pas pu d\303\251marrer. La fen\303\252tre affiche la sortie.",
+   "Pointeur laser : %s",
+   "La sortie casque d\303\251marre lorsque le contenu est recharg\303\251.",
+   "Le casque fonctionne \303\240 %u Hz, ce qui ne correspond pas au taux de %.2f images/s de ce jeu"
+   " ; le mouvement pr\303\251sentera des saccades. R\303\251glez la fr\303\251quence de rafra\303"
+   "\256chissement du casque pour RetroArch sur un multiple de la cadence du jeu (dans SteamVR : Par"
+   "am\303\250tres vid\303\251o VR).",
+   "La session du casque a pris fin. D\303\251sactivez puis r\303\251activez la sortie du casque pou"
+   "r r\303\251essayer.",
+   "La sortie vers le casque est d\303\251sactiv\303\251e : aucun runtime OpenXR ni aucun casque n'a"
+   " \303\251t\303\251 d\303\251tect\303\251.",
    "Clavier en surimpression non d\303\251fini.",
    "Ne sauvegarde pas. Configuration de substitution active.",
    "Erreur lors de la suppression de la configuration de substitution.",
@@ -10703,7 +10849,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (248903u
+      (sizeof(msg_hash_fr_blob) == (253877u
 #ifdef ANDROID
        + 373u
 #endif
@@ -11034,7 +11180,7 @@ typedef char msg_hash_fr_blob_check[
 #ifdef ANDROID
        + 74u
        + 158u
-       + 253u
+       + 245u
        + 237u
        + 224u
 #endif
@@ -12177,6 +12323,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -12388,6 +12536,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME_DETECT,
@@ -13686,6 +13835,17 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
@@ -13722,7 +13882,11 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_UNDERSCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -13751,6 +13915,14 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SWAPCHAIN_BIT_DEPTH,
@@ -13762,6 +13934,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VFILTER,
 #if defined(RARCH_MOBILE)
@@ -13804,6 +13977,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -14256,6 +14430,8 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -14422,6 +14598,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -15142,6 +15319,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -15159,7 +15342,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -15188,12 +15373,16 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -15229,6 +15418,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
@@ -15445,6 +15635,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   (uint32_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -15640,6 +15831,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_FAILED,
+   (uint32_t)MSG_OPENXR_LASER_POINTER,
+   (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
+   (uint32_t)MSG_OPENXR_RATE_MISFIT,
+   (uint32_t)MSG_OPENXR_SESSION_ENDED,
+   (uint32_t)MSG_OPENXR_UNAVAILABLE,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

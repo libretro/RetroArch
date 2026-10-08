@@ -1986,6 +1986,10 @@ static const struct
    char s_4b582a0b[29];
    char s_4b582a0c[29];
    char s_61213f1d[18];
+   char s_60258de0[5];
+   char s_caf61308[14];
+   char s_34b2592a[15];
+   char s_c7a27b20[14];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_de16b5d2[9];
@@ -5525,6 +5529,10 @@ static const struct
    "Ilmoituksen sijainti (vaaka)",
    "Ilmoituksen sijainti (pysty)",
    "Monitorin indeksi",
+   "Aina",
+   "Automaattinen",
+   "Ei k\303\244yt\303\266ss\303\244",
+   "Automaattinen",
    "180 as.",
    "270 as.",
    "Normaali",
@@ -7541,7 +7549,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123751u
+      (sizeof(msg_hash_fi_blob) == (123799u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -9850,6 +9858,10 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,

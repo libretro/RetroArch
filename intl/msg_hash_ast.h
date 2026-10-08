@@ -734,6 +734,7 @@ static const struct
    char s_0571321b[31];
    char s_4b582a0b[37];
    char s_4b582a0c[35];
+   char s_60258de0[8];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_1f66aac3[5];
@@ -1743,6 +1744,7 @@ static const struct
    "Color de los avisos (color\303\241u)",
    "Posici\303\263n de los avisos (horizontal)",
    "Posici\303\263n de los avisos (vertical)",
+   "Siempre",
    "180\302\272",
    "270\302\272",
    "90\302\272",
@@ -2072,7 +2074,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24525u
+      (sizeof(msg_hash_ast_blob) == (24533u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2880,6 +2882,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_COLOR_RED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,

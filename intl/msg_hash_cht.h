@@ -2058,6 +2058,9 @@ static const struct
    char s_4b582a0c[22];
    char s_61213f1d[16];
    char s_95e4b29f[54];
+   char s_60258de0[13];
+   char s_caf61308[7];
+   char s_c7a27b20[7];
    char s_317b17ed[7];
    char s_94c8d15f[7];
    char s_de16b5d2[7];
@@ -2123,6 +2126,7 @@ static const struct
    char s_552163d9[19];
    char s_ef3d53d8[16];
    char s_6dcc2f9f[16];
+   char s_d3c5c0e9[7];
    char s_48431da6[7];
    char s_0050d725[23];
    char s_21d7a1f6[7];
@@ -6578,6 +6582,9 @@ static const struct
    "\351\241\257\347\244\272\345\231\250\351\205\215\347\275\256",
    "\347\200\217\346\265\267\350\236\242\345\271\225\351\226\213\345\225\237\345\205\250\350\236\242"
    "\345\271\225 (Android \350\210\207 iOS \350\243\235\347\275\256 )",
+   "\345\205\250\351\203\250\345\210\227\350\241\250",
+   "\350\207\252\345\213\225",
+   "\350\207\252\345\213\225",
    "180\345\272\246",
    "270\345\272\246",
    "\346\255\243\345\270\270",
@@ -6654,6 +6661,7 @@ static const struct
    "\347\241\254\351\253\224\345\205\261\347\224\250\347\222\260\345\242\203",
    "\351\233\231\347\267\232\346\200\247\351\201\216\346\277\276",
    "\350\273\237\351\253\224\351\201\216\346\277\276\345\231\250",
+   "\344\272\214\347\266\255",
    "\350\207\252\350\250\202",
    "Facebook Gaming \347\233\264\346\222\255",
    "\346\234\254\345\234\260",
@@ -10463,7 +10471,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cht_blob_check[
-      (sizeof(msg_hash_cht_blob) == (120890u
+      (sizeof(msg_hash_cht_blob) == (120924u
 #ifdef ANDROID
        + 157u
 #endif
@@ -12824,6 +12832,9 @@ static const uint32_t msg_hash_cht_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -12889,6 +12900,7 @@ static const uint32_t msg_hash_cht_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_2D,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,

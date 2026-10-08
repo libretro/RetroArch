@@ -2325,6 +2325,8 @@ static const struct
    char s_4b582a0c[38];
    char s_61213f1d[21];
    char s_95e4b29f[71];
+   char s_60258de0[7];
+   char s_34b2592a[12];
    char s_57665cff[7];
    char s_0e2c0fca[44];
    char s_93ac5ec8[42];
@@ -6916,6 +6918,8 @@ static const struct
    "Posici\303\263n de notificaci\303\263n (vertical)",
    "\303\215ndice de monitores",
    "Activa a pantalla completa sobre o notch en dispositivos Android e iOS",
+   "Sempre",
+   "Desactivado",
    "Sa\303\255da",
    "Correcci\303\263n de sobreexploraci\303\263n (inferior)",
    "Correcci\303\263n de sobreexploraci\303\263n (arriba)",
@@ -9780,7 +9784,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (212715u
+      (sizeof(msg_hash_gl_blob) == (212734u
 #ifdef ANDROID
        + 365u
 #endif
@@ -12549,6 +12553,8 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,

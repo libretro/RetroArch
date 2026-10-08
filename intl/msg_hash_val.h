@@ -441,6 +441,8 @@ static const struct
    char s_e9bca139[35];
    char s_59dc5d76[62];
    char s_61213f1d[19];
+   char s_caf61308[22];
+   char s_c7a27b20[22];
    char s_57665cff[7];
    char s_0e2c0fca[38];
    char s_93ac5ec8[38];
@@ -1143,6 +1145,8 @@ static const struct
    "Sincronitzaci\303\263 rigorosa de la GPU",
    "Nombre de fotogrames per a sincronitzaci\303\263 rigorosa de la GPU",
    "\303\215ndex del monitor",
+   "Selecci\303\263 autom\303\240tica",
+   "Selecci\303\263 autom\303\240tica",
    "Eixida",
    "Correcci\303\263 de sobreescalat (inferior)",
    "Correcci\303\263 de sobreescalat (superior)",
@@ -1514,7 +1518,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_val_blob_check[
-      (sizeof(msg_hash_val_blob) == (25364u
+      (sizeof(msg_hash_val_blob) == (25408u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -2038,6 +2042,8 @@ static const uint32_t msg_hash_val_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,

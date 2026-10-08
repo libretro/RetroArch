@@ -2404,6 +2404,10 @@ static const struct
    char s_4b582a0c[24];
    char s_61213f1d[16];
    char s_95e4b29f[71];
+   char s_60258de0[7];
+   char s_caf61308[13];
+   char s_34b2592a[12];
+   char s_c7a27b20[13];
    char s_317b17ed[11];
    char s_94c8d15f[11];
    char s_de16b5d2[9];
@@ -2446,6 +2450,8 @@ static const struct
    char s_69b801ef[11];
    char s_a40653a7[32];
    char s_52e3d6ea[26];
+   char s_2c868ae4[8];
+   char s_9c535394[8];
    char s_c992346c[39];
    char s_580e244f[6];
    char s_a9c8430e[14];
@@ -3891,7 +3897,6 @@ static const struct
    char s_6ac06624[154];
    char s_f765b650[47];
    char s_7059a595[76];
-   char s_c7d672df[363];
    char s_6d1448c0[60];
    char s_cf0b487b[81];
    char s_840f4569[32];
@@ -7138,6 +7143,10 @@ static const struct
    "Indeks monitora",
    "W\305\202\304\205cz pe\305\202ny ekran nad wyci\304\231ciem na urz\304\205dzeniach z Androidem i"
    " iOS",
+   "Zawsze",
+   "Automatyczny",
+   "Wy\305\202\304\205czony",
+   "Automatyczny",
    "180 stopni",
    "270 stopni",
    "Normalna",
@@ -7181,6 +7190,8 @@ static const struct
    "Skalowanie",
    "Synchronizacja linii skanowania",
    "Symulacja prze\305\233wietlania",
+   "Poziomo",
+   "Pionowo",
    "Prze\305\202\304\205czanie trybu wy\305\233wietlania SDL",
    "Wideo",
    "Shadery Video",
@@ -9556,12 +9567,6 @@ static const struct
    "Sterownik Wi-Fi do u\305\274ycia. (Wymagany restart)",
    "Skanuj w poszukiwaniu sieci bezprzewodowych i nawi\304\205\305\274 z nimi po\305\202\304\205czen"
    "ie.",
-   "Prze\305\202\304\205cza si\304\231 na kopi\304\231 aktywnego planu zasilania systemu Windows, kt"
-   "\303\263ry utrzymuje procesor z pe\305\202n\304\205 pr\304\231dko\305\233ci\304\205 bez zaparkow"
-   "anych rdzeni i ponownie ocenia stany wydajno\305\233ci co 5 sekund zamiast co 15 ms, wycinaj\304"
-   "\205c ilo\305\233\304\207 aktywno\305\233ci przerywa\305\204 j\304\205dra. Ma zastosowanie tylko"
-   " przy pod\305\202\304\205czeniu do zasilania. Oryginalny plan jest przywr\303\263cony po wyj\305"
-   "\233ciu.",
    "Modyfikuj procent przezroczysto\305\233ci motywu kolorystycznego.",
    "Bie\305\274\304\205ca ikona menu mo\305\274e by\304\207 ukryta, w menu poziomym lub w tytule nag"
    "\305\202\303\263wka.",
@@ -10207,7 +10212,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200916u
+      (sizeof(msg_hash_pl_blob) == (200614u
 #ifdef ANDROID
        + 385u
 #endif
@@ -13112,6 +13117,10 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -13154,6 +13163,8 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
@@ -14596,7 +14607,6 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
-   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,

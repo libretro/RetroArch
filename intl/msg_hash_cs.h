@@ -2031,6 +2031,7 @@ static const struct
    char s_4b582a0c[28];
    char s_61213f1d[15];
    char s_95e4b29f[100];
+   char s_60258de0[6];
    char s_317b17ed[6];
    char s_94c8d15f[6];
    char s_de16b5d2[11];
@@ -2067,6 +2068,8 @@ static const struct
    char s_78585119[8];
    char s_69b801ef[14];
    char s_52e3d6ea[34];
+   char s_2c868ae4[15];
+   char s_9c535394[13];
    char s_a9c8430e[14];
    char s_f5911f43[22];
    char s_9017e0d3[14];
@@ -6103,6 +6106,7 @@ static const struct
    "Index monitoru",
    "Povolen\303\255 zobrazen\303\255 na celou obrazovku p\305\231es notifikaci v za\305\231\303\255z"
    "en\303\255ch se syst\303\251mem Android a iOS",
+   "V\305\276dy",
    "180\302\272",
    "270\302\272",
    "Norm\303\241ln\303\255",
@@ -6139,6 +6143,8 @@ static const struct
    "Chytr\303\241",
    "\305\240k\303\241lov\303\241n\303\255",
    "Simulace valiv\303\251 skenovac\303\255 linie",
+   "Horizont\303\241ln\303\255",
+   "Vertik\303\241ln\303\255",
    "Shadery videa",
    "Prodleva auto-shaderu",
    "Shadery videa",
@@ -8789,7 +8795,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162279u
+      (sizeof(msg_hash_cs_blob) == (162313u
 #ifdef ANDROID
        + 390u
 #endif
@@ -11169,6 +11175,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -11205,6 +11212,8 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADERS_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DIR,

@@ -630,6 +630,8 @@ static const struct
    char s_59f183c9[19];
    char s_59dc5d76[26];
    char s_61213f1d[15];
+   char s_caf61308[9];
+   char s_c7a27b20[9];
    char s_57665cff[9];
    char s_0e2c0fca[33];
    char s_93ac5ec8[31];
@@ -640,6 +642,7 @@ static const struct
    char s_6c1369c6[17];
    char s_4d7e9b13[21];
    char s_69b801ef[11];
+   char s_9c535394[9];
    char s_f5911f43[24];
    char s_552163d9[32];
    char s_ef3d53d8[21];
@@ -1607,6 +1610,8 @@ static const struct
    "Tinggi Layar Penuh",
    "Bingkai Sinkron GPU Keras",
    "Indeks Monitor",
+   "Otomatis",
+   "Otomatis",
    "Keluaran",
    "Perbaikan Lebihan Pindai (Bawah)",
    "Betulkan Lebihan Pindai (Atas)",
@@ -1617,6 +1622,7 @@ static const struct
    "Skala Berjendela",
    "Skala Bilangan Bulat",
    "Penskalaan",
+   "Vertikal",
    "Tundaan Shader Otomatis",
    "Konteks Bagi-Bagi Peranti Keras",
    "Penyaringan Bilinear",
@@ -2010,7 +2016,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_id_blob_check[
-      (sizeof(msg_hash_id_blob) == (26736u
+      (sizeof(msg_hash_id_blob) == (26763u
 #ifdef HAVE_MIST
        + 10u
 #endif
@@ -2737,6 +2743,8 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_FULLSCREEN_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_HARD_SYNC_FRAMES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_AUTO,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -2747,6 +2755,7 @@ static const uint32_t msg_hash_id_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,

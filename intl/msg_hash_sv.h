@@ -2345,6 +2345,8 @@ static const struct
    char s_4b582a0c[31];
    char s_61213f1d[12];
    char s_95e4b29f[71];
+   char s_60258de0[7];
+   char s_34b2592a[3];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_1f66aac3[7];
@@ -2383,6 +2385,8 @@ static const struct
    char s_69b801ef[9];
    char s_a40653a7[25];
    char s_52e3d6ea[34];
+   char s_2c868ae4[12];
+   char s_9c535394[9];
    char s_c992346c[33];
    char s_f5911f43[25];
    char s_55f488d2[11];
@@ -7042,6 +7046,8 @@ static const struct
    "Meddelandeposition (vertikalt)",
    "Sk\303\244rmindex",
    "Aktivera helsk\303\244rm utan h\303\244nsyn till notch p\303\245 Android och iOS-enheter",
+   "Alltid",
+   "Av",
    "180 gr.",
    "270 gr.",
    "90 gr.",
@@ -7080,6 +7086,8 @@ static const struct
    "Skalning",
    "Skannlinjesynkronisering",
    "Rullande skanningslinjesimulering",
+   "Horisontell",
+   "Vertikal",
    "Byte av bildsk\303\244rmsl\303\244ge med SDL",
    "Autoshader-f\303\266rdr\303\266jning",
    "Shaderpass",
@@ -10204,7 +10212,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (202696u
+      (sizeof(msg_hash_sv_blob) == (202727u
 #ifdef ANDROID
        + 361u
 #endif
@@ -13090,6 +13098,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
@@ -13128,6 +13138,8 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_DELAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHADER_NUM_PASSES,
