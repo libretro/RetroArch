@@ -2919,10 +2919,17 @@ static int16_t input_joypad_axis_scaled(
       if (normal_mag <= input_analog_deadzone)
          return 0;
 
-      /* Radial/linear scaled deadzone rescale.
-       * Precompute 1/normal_mag once; clamp implicitly via MIN/MAX. */
+      /* Radial scaled deadzone: the axis as a share of the stick's
+       * whole tilt (val / normal_mag), times how far past the deadzone
+       * that tilt is, rescaled to the rest of the way - so that the
+       * stick's tilt past the deadzone goes from nothing to full in a
+       * straight line, its direction kept. A magnitude over 1 - a
+       * square gate's corner - is not divided by: the axis is full
+       * already. (Taken as 1 under 1 and 1 / normal_mag over it, the
+       * other way round, this gave tilt times the rescaled tilt: half
+       * a tilt with a deadzone of 0.2 came to 0.19, not 0.375.) */
       {
-         float inv_mag   = (normal_mag > 1.0f) ? (1.0f / normal_mag) : 1.0f;
+         float inv_mag   = (normal_mag > 1.0f) ? 1.0f : (1.0f / normal_mag);
          float dz_scale  = (normal_mag - input_analog_deadzone)
                          / (1.0f - input_analog_deadzone);
          if (dz_scale > 1.0f) dz_scale = 1.0f;

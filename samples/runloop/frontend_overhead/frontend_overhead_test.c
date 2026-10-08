@@ -79,6 +79,7 @@
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <unistd.h>
 #ifndef _WIN32
 #include <dlfcn.h>
@@ -3759,6 +3760,116 @@ static void lane_dpad_sticks_once(void)
       printf("[pass] dpad sticks: a stick's buttons read as it holds them, from"
             " one read of it a frame - sixteen button reads, %u reads of its"
             " axes; a second pass none - and afresh after a poll\n", reads[0]);
+#endif
+}
+
+/* The deadzone, by the numbers. Held to: a stick's tilt past the
+ * deadzone is rescaled to the rest of the way in a straight line, its
+ * direction kept - half a tilt with a deadzone of 0.2 is 0.375 of
+ * full, on one axis or on the diagonal - inside the deadzone it is
+ * nothing, and full tilt is full; an analog button (a trigger) past
+ * the deadzone is rescaled the same way on its own travel - 0.6 of
+ * its pull is half. */
+static int dz_expect(double ax, double other, double dz)
+{
+   double mag = sqrt(ax * ax + other * other);
+   double k;
+   if (mag <= dz)
+      return 0;
+   k = (mag - dz) / (1.0 - dz);
+   if (k > 1.0)
+      k = 1.0;
+   return (int)(ax * 32767.0 / (mag > 1.0 ? 1.0 : mag) * k);
+}
+
+static void lane_deadzone_numbers(void)
+{
+#if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
+   settings_t *settings           = config_get_ptr();
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = input_st->primary_joypad;
+   struct retro_keybind saved_auto[8], saved_l2;
+   float saved_deadzone = settings->floats.input_analog_deadzone;
+   unsigned saved_mode  = settings->uints.input_analog_dpad_mode[0];
+   unsigned had         = failures;
+   unsigned i, c;
+   static const double cases[][2] = {
+      { 0.5, 0.0 }, { 0.4, 0.4 }, { 0.15, 0.0 }, { 1.0, 0.0 }, { -0.7, 0.3 } };
+
+   if (!joypad_real)
+   {
+      CHECK(false, "deadzone numbers: no joypad driver");
+      return;
+   }
+   syn_joypad               = *joypad_real;
+   syn_joypad.button        = syn_button;
+   syn_joypad.axis          = syn_axis;
+   syn_joypad.state         = syn_state;
+   syn_joypad.get_buttons   = syn_get_buttons;
+   input_st->primary_joypad = &syn_joypad;
+   syn_hat     = 0;
+   syn_buttons = 0;
+   memcpy(saved_auto, &input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS],
+         sizeof(saved_auto));
+   saved_l2 = input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2];
+   for (i = 0; i < 4; i++)
+   {
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i].joyaxis     = AXIS_POS(i);
+      input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS + 2 * i + 1].joyaxis = AXIS_NEG(i);
+   }
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone    = 0.2f;
+   settings->uints.input_analog_dpad_mode[0] = ANALOG_DPAD_NONE;
+
+   for (c = 0; c < ARRAY_SIZE(cases); c++)
+   {
+      int16_t x, y;
+      int ex = dz_expect(cases[c][0], cases[c][1], 0.2);
+      int ey = dz_expect(cases[c][1], cases[c][0], 0.2);
+      char why[200];
+      syn_axes[0] = (int16_t)(cases[c][0] * 32767.0);
+      syn_axes[1] = (int16_t)(cases[c][1] * 32767.0);
+      syn_axes[2] = syn_axes[3] = 0;
+      input_driver_poll();
+      x = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+      y = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_Y);
+      snprintf(why, sizeof(why), "deadzone numbers: the stick at %.2f, %.2f read %d, %d; it is %d, %d",
+            cases[c][0], cases[c][1], x, y, ex, ey);
+      CHECK(abs(x - ex) <= 3 && abs(y - ey) <= 3, why);
+   }
+
+   /* a trigger on an axis of its own: the right stick's y here */
+   input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2].joyaxis = AXIS_POS(3);
+   input_config_binds_changed();
+   for (c = 0; c < 3; c++)
+   {
+      static const double pull[3] = { 0.6, 0.1, 1.0 };
+      int16_t v;
+      int ev = dz_expect(pull[c], 0.0, 0.2);
+      char why[160];
+      memset(syn_axes, 0, sizeof(syn_axes));
+      syn_axes[3] = (int16_t)(pull[c] * 32767.0);
+      input_driver_poll();
+      v = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_BUTTON,
+            RETRO_DEVICE_ID_JOYPAD_L2);
+      snprintf(why, sizeof(why), "deadzone numbers: the trigger at %.2f read %d; it is %d", pull[c], v, ev);
+      CHECK(abs(v - ev) <= 3, why);
+   }
+
+   memset(syn_axes, 0, sizeof(syn_axes));
+   memcpy(&input_autoconf_binds[0][RARCH_ANALOG_LEFT_X_PLUS], saved_auto, sizeof(saved_auto));
+   input_autoconf_binds[0][RETRO_DEVICE_ID_JOYPAD_L2] = saved_l2;
+   input_config_binds_changed();
+   settings->floats.input_analog_deadzone    = saved_deadzone;
+   settings->uints.input_analog_dpad_mode[0] = saved_mode;
+   input_st->primary_joypad = joypad_real;
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] deadzone numbers: past the deadzone a stick's tilt is rescaled"
+            " in a straight line, its direction kept - half a tilt is 0.375 with"
+            " 0.2 - nothing inside it, full at full; a trigger the same on its"
+            " own travel\n");
 #endif
 }
 
@@ -8337,6 +8448,7 @@ int main(int argc, char *argv[])
       lane_quit_combo();
       lane_restart_hold();
       lane_sticks_read_once();
+      lane_deadzone_numbers();
       lane_dpad_sticks_once();
       lane_stick_sources();
       lane_mask_and_buttons();
