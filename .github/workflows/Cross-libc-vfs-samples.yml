@@ -145,10 +145,20 @@ jobs:
         with:
           msystem: ${{ matrix.sys }}
           update: true
-          install: >-
-            base-devel
-          pacboy: >-
-            toolchain:p
+
+      - name: Install packages
+        shell: msys2 {0}
+        run: |
+          # A mirror that stalls fails pacman's whole transaction; what it
+          # fetched stays in the cache, so a retry fetches only the rest.
+          p=$MINGW_PACKAGE_PREFIX
+          pkgs="base-devel $p-toolchain"
+          for i in 1 2 3; do
+            pacman -S --noconfirm --needed $pkgs && exit 0
+            echo "package install failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          exit 1
 
       - name: Build and run
         working-directory: libretro-common/samples/file/vfs

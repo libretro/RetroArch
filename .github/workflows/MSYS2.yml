@@ -43,36 +43,27 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: ${{ matrix.sys }}
-          install: >-
-            base-devel
-            git
-          pacboy: >-
-            gettext:p
-            gobject-introspection:p
-            graphite2:p
-            p11-kit:p
-            qt6:p
-            qt6-3d:p
-            qt6-charts:p
-            qt6-datavis3d:p
-            qt6-imageformats:p
-            qt6-location:p
-            qt6-lottie:p
-            qt6-networkauth:p
-            qt6-quick3dphysics:p
-            qt6-quicktimeline:p
-            qt6-remoteobjects:p
-            qt6-scxml:p
-            qt6-sensors:p
-            qt6-serialbus:p
-            qt6-speech:p
-            qt6-tools:p
-            qt6-translations:p
-            qt6-virtualkeyboard:p
-            qt6-webchannel:p
-            qt6-websockets:p
-            x264:p
-            cc:p
+
+      - name: Install packages
+        shell: msys2 {0}
+        run: |
+          # A mirror that stalls fails pacman's whole transaction; what it
+          # fetched stays in the cache, so a retry fetches only the rest.
+          p=$MINGW_PACKAGE_PREFIX
+          pkgs="base-devel git $p-gettext $p-gobject-introspection
+            $p-graphite2 $p-p11-kit $p-qt6 $p-qt6-3d $p-qt6-charts
+            $p-qt6-datavis3d $p-qt6-imageformats $p-qt6-location
+            $p-qt6-lottie $p-qt6-networkauth $p-qt6-quick3dphysics
+            $p-qt6-quicktimeline $p-qt6-remoteobjects $p-qt6-scxml
+            $p-qt6-sensors $p-qt6-serialbus $p-qt6-speech $p-qt6-tools
+            $p-qt6-translations $p-qt6-virtualkeyboard $p-qt6-webchannel
+            $p-qt6-websockets $p-x264 $p-cc"
+          for i in 1 2 3; do
+            pacman -S --noconfirm --needed $pkgs && exit 0
+            echo "package install failed (attempt $i); retrying in 10s"
+            sleep 10
+          done
+          exit 1
 
       - name: Configure and build RetroArch
         shell: msys2 {0}
