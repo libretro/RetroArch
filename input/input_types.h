@@ -124,8 +124,9 @@ struct retro_keybind_def
 
 /* A bind as it is used: what was chosen for it, and nothing else.
  * Eight bytes. Its label and its number are its place's, the same for
- * every user, and are asked of the place (input_config_bind_label(),
- * input_config_bind_id()); two tables hold a set for each of sixteen
+ * every user, and are asked of the place (input_config_bind_label());
+ * whoever has a bind knows whose it is and which. Two tables hold a
+ * set for each of sixteen
  * users, and whole sets are copied on every remap and autoconfig
  * apply, so what a record does not carry is carried by none of 3,072.
  *

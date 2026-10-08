@@ -178,7 +178,11 @@ struct menu_bind_state
    rarch_timer_t timer_timeout;
    rarch_timer_t timer_hold;
 
-   struct retro_keybind *output;
+   /* The bind being captured: whose, and which. Where it is stored is
+    * asked for when it is read or written, and is not held here from
+    * one frame to the next. */
+   unsigned out_user;
+   unsigned out_id;
    struct retro_keybind buffer;
 
    struct menu_bind_state_port state[MAX_USERS];

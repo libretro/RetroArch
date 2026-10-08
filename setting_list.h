@@ -190,7 +190,6 @@ struct rarch_setting
          int                  *integer;
          unsigned int         *unsigned_integer;
          float                *fraction;
-         struct retro_keybind *keybind;
          size_t               *sizet;
       } target;
    } value;

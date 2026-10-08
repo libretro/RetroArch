@@ -5093,6 +5093,121 @@ static void lane_bind_names(void)
             " and the configuration's names are read\n");
 }
 
+/* A bind's setting in the menu says whose bind it is and which; it
+ * used to hold the address the bind was stored at, taken when the
+ * menu's settings were made, and so did a capture, from the frame it
+ * began to the frame the button came. Held to "the setting is the
+ * bind": what it shows is the bind as it is now, clearing it clears
+ * that bind and no other user's, and a button captured for it lands
+ * in it. */
+static void lane_bind_settings(void)
+{
+#ifdef HAVE_MENU
+   char shown[256];
+   unsigned had                 = failures;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   const input_device_driver_t *joypad_real = NULL;
+   rarch_setting_t *b1          = menu_setting_find("p1_b");
+   rarch_setting_t *b2          = menu_setting_find("p2_b");
+   struct retro_keybind *bind1  = &input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind *bind2  = &input_config_binds[1][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind saved1  = *bind1;
+   struct retro_keybind saved2  = *bind2;
+   const struct retro_keybind_def *def =
+      input_config_bind_def(0, RETRO_DEVICE_ID_JOYPAD_B);
+
+   CHECK(b1 && b2 && b1->type == ST_BIND && b2->type == ST_BIND,
+         "bind settings: the first two users' B settings are not found");
+   if (!b1 || !b2)
+      return;
+   CHECK(   b1->index_offset == 0 && b2->index_offset == 1
+         && b1->bind_type - MENU_SETTINGS_BIND_BEGIN == RETRO_DEVICE_ID_JOYPAD_B
+         && b2->bind_type - MENU_SETTINGS_BIND_BEGIN == RETRO_DEVICE_ID_JOYPAD_B,
+         "bind settings: a setting does not say whose bind it is and which");
+
+   /* what it shows is the bind as it is now */
+   RETRO_KEYBIND_SET_KEY(bind1, RETROK_F11);
+   RETRO_KEYBIND_SET_KEY(bind2, RETROK_F12);
+   bind1->joykey = 5;
+   bind2->joykey = 6;
+   binds_written_by_a_lane();
+   shown[0] = '\0';
+   if (b1->actions && b1->actions->repr)
+      b1->actions->repr(b1, shown, sizeof(shown));
+   CHECK(strstr(shown, "f11") && !strstr(shown, "f12"),
+         "bind settings: the first user's setting does not show the first user's bind");
+   shown[0] = '\0';
+   if (b2->actions && b2->actions->repr)
+      b2->actions->repr(b2, shown, sizeof(shown));
+   CHECK(strstr(shown, "f12") && !strstr(shown, "f11"),
+         "bind settings: the second user's setting does not show the second user's bind");
+
+   /* clearing it clears that bind, and no other user's */
+   CHECK(b1->actions && b1->actions->start,
+         "bind settings: a bind's setting cannot be cleared");
+   if (b1->actions && b1->actions->start)
+      b1->actions->start(b1);
+   CHECK(   bind1->joykey == NO_BTN
+         && RETRO_KEYBIND_KEY(bind1) == RETRO_KEYBIND_DEF_KEY(def),
+         "bind settings: clearing the first user's B did not clear that bind");
+   CHECK(bind2->joykey == 6 && RETRO_KEYBIND_KEY(bind2) == RETROK_F12,
+         "bind settings: clearing the first user's B changed the second user's");
+
+   /* a button captured for it lands in it: with the stand-in
+    * controller as the first pad, as the lanes that press buttons have */
+   joypad_real = input_st->primary_joypad;
+   if (joypad_real)
+   {
+      syn_joypad               = *joypad_real;
+      syn_joypad.button        = syn_button;
+      syn_joypad.axis          = syn_axis;
+      syn_joypad.state         = syn_state;
+      syn_joypad.get_buttons   = syn_get_buttons;
+      input_st->primary_joypad = &syn_joypad;
+   }
+   syn_hat = 0;
+   memset(syn_axes, 0, sizeof(syn_axes));
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+   syn_buttons = 0;
+   if (!joypad_real)
+      CHECK(false, "bind settings: no joypad driver to capture from");
+   else if (menu_input_key_bind_set_mode(MENU_INPUT_BINDS_CTL_BIND_SINGLE, b1))
+   {
+      unsigned i;
+      run_loop_frames(8);
+      syn_buttons = (1u << 9);
+      for (i = 0; i < 30 && bind1->joykey != 9; i++)
+         run_loop_frames(1);
+      syn_buttons = 0;
+      run_loop_frames(8);
+      CHECK(bind1->joykey == 9,
+            "bind settings: a button captured for the first user's B did not land in that bind");
+      CHECK(bind2->joykey == 6,
+            "bind settings: a capture for the first user's B changed the second user's");
+   }
+   else
+      CHECK(false, "bind settings: a capture could not be started");
+   run_loop_frames(5);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_loop_frames(3);
+   if (joypad_real)
+      input_st->primary_joypad = joypad_real;
+
+   *bind1 = saved1;
+   *bind2 = saved2;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] bind settings: a bind's setting shows the bind as it is,"
+            " clears that bind and no other user's, and a captured button"
+            " lands in it\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -6425,6 +6540,7 @@ int main(int argc, char *argv[])
       lane_hotkeys_one_set();
       lane_save_minimal_binds();
       lane_bind_names();
+      lane_bind_settings();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

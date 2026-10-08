@@ -1658,13 +1658,9 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
          {
             unsigned bind_type;
             menu_displaylist_info_t info;
-            struct retro_keybind *keybind = (struct retro_keybind*)setting->value.target.keybind;
             menu_list_t *menu_list   = menu_st->entries.list;
             file_list_t *menu_stack  = menu_list ? MENU_LIST_GET(menu_list, (unsigned)0) : NULL;
             size_t selection         = menu_st->selection_ptr;
-
-            if (!keybind)
-               return -1;
 
             menu_displaylist_info_init(&info);
 
@@ -1673,8 +1669,10 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
             binds->order             = 0;
             binds->begin             = bind_type;
             binds->last              = bind_type;
-            binds->output            = keybind;
-            binds->buffer            = *(binds->output);
+            binds->out_user          = setting->index_offset;
+            binds->out_id            = bind_type - MENU_SETTINGS_BIND_BEGIN;
+            binds->buffer            = *input_config_bind(
+                  binds->out_user, binds->out_id);
             binds->user              = setting->index_offset;
 
             info.list                = menu_stack;
@@ -1700,9 +1698,10 @@ static int menu_input_key_bind_set_mode_common(struct menu_state *menu_st,
             binds->begin             = MENU_SETTINGS_BIND_BEGIN
                   + input_config_bind_order[0];
             binds->last              = MENU_SETTINGS_BIND_LAST;
-            binds->output            = input_config_bind_edit(
-                  setting->index_offset, input_config_bind_order[0]);
-            binds->buffer            = *(binds->output);
+            binds->out_user          = setting->index_offset;
+            binds->out_id            = input_config_bind_order[0];
+            binds->buffer            = *input_config_bind(
+                  binds->out_user, binds->out_id);
             /* whose binds these are: the keyboard's capture asks for
              * the next one by user and number */
             binds->user              = setting->index_offset;
@@ -5198,14 +5197,15 @@ static bool menu_input_key_bind_custom_bind_keyboard_cb(
    input_keyboard_mapping_bits(1, RETRO_KEYBIND_KEY(&binds->buffer));
 
    /* Write out the bind */
-   *(binds->output)                 = binds->buffer;
+   *input_config_bind_edit(binds->out_user, binds->out_id) = binds->buffer;
 
    /* Next bind: asked for by its number, not found by stepping along
     * the user's row. */
    binds->begin++;
-   binds->output                    = input_config_bind_edit(binds->user,
-         binds->begin - MENU_SETTINGS_BIND_BEGIN);
-   binds->buffer                    =* (binds->output);
+   binds->out_user                  = binds->user;
+   binds->out_id                    = binds->begin - MENU_SETTINGS_BIND_BEGIN;
+   binds->buffer                    = *input_config_bind(
+         binds->out_user, binds->out_id);
 
    binds->timer_hold.timeout_us     = input_bind_hold_us;
    binds->timer_hold.current        = current_usec;
@@ -5384,7 +5384,8 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
       {
          /* Keep resetting bind during the hold period,
           * or we'll potentially bind joystick and mouse, etc. */
-         new_binds.buffer                       = *(new_binds.output);
+         new_binds.buffer                       = *input_config_bind(
+               new_binds.out_user, new_binds.out_id);
 
          if (menu_input_key_bind_poll_find_hold(
                settings->uints.input_max_users,
@@ -5441,7 +5442,12 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          bool stop_binding                   = new_binds.order == 0 && new_binds.begin == new_binds.last;
 
          /* Update bind */
-         *(new_binds.output)                 = new_binds.buffer;
+         /* written where the bind is kept now, which is asked for
+          * here: the write is counted as a change when it is made,
+          * and no address is carried from the frame the capture
+          * began in */
+         *input_config_bind_edit(new_binds.out_user, new_binds.out_id)
+                                             = new_binds.buffer;
 
          /* Update keyboard mapping bits */
          if (RETRO_KEYBIND_KEY(&new_binds.buffer))
@@ -5470,10 +5476,11 @@ MENU_NOINLINE static bool menu_input_key_bind_iterate(
          input_driver_set_wait_input_release(true);
 
          /* Next bind */
-         new_binds.output                    =
-                 input_config_bind_edit(new_binds.port,
-                       input_config_bind_order[new_binds.order]);
-         new_binds.buffer = *(new_binds.output);
+         new_binds.out_user                  = new_binds.port;
+         new_binds.out_id                    =
+            input_config_bind_order[new_binds.order];
+         new_binds.buffer = *input_config_bind(
+               new_binds.out_user, new_binds.out_id);
          new_binds.timer_hold   .timeout_us  = input_bind_hold_us;
          new_binds.timer_hold   .current     = current_time;
          new_binds.timer_hold   .timeout_end = current_time + input_bind_hold_us;

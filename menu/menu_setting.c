@@ -272,8 +272,8 @@ void win32_menubar_rebuild(void);
    if (SETTINGS_LIST_APPEND(a, b)) \
       config_hex(a, b, c, d, e, f, g, h, i, j, k, l)
 
-#define CONFIG_BIND_ALT(a, b, c, d, e, f, g, h, i, j, k) \
-   config_bind_alt(a, b, c, d, e, f, g, h, i, j, k)
+#define CONFIG_BIND_ALT(a, b, d, e, f, g, h, i, j, k) \
+   config_bind_alt(a, b, d, e, f, g, h, i, j, k)
 
 #define CONFIG_BIND(a, b, c, d, e, f, g, h, i, j, k, l) \
    if (SETTINGS_LIST_APPEND(a, b)) \
@@ -852,7 +852,10 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    if (!setting)
       return -1;
 
-   if (!(keybind = (struct retro_keybind*)setting->value.target.keybind))
+   /* the setting says whose bind and which; where it is kept is asked */
+   bind_type        = setting->bind_type;
+   if (!(keybind = input_config_bind_edit(setting->index_offset,
+               bind_type - MENU_SETTINGS_BIND_BEGIN)))
       return -1;
 
    keybind->joykey  = NO_BTN;
@@ -861,7 +864,6 @@ static int setting_bind_action_start(rarch_setting_t *setting)
    /* Clear old mapping bit */
    input_keyboard_mapping_bits(0, RETRO_KEYBIND_KEY(keybind));
 
-   bind_type        = setting->bind_type;
    def              = input_config_bind_def(setting->index_offset,
          bind_type - MENU_SETTINGS_BIND_BEGIN);
 
@@ -1303,7 +1305,9 @@ static void setting_reset_setting(rarch_setting_t* setting)
          *setting->value.target.fraction         = setting->default_value.fraction;
          break;
       case ST_BIND:
-         input_config_bind_from_def(setting->value.target.keybind,
+         input_config_bind_from_def(
+               input_config_bind_edit(setting->index_offset,
+                  setting->bind_type - MENU_SETTINGS_BIND_BEGIN),
                setting->default_value.keybind);
          break;
       case ST_STRING:
@@ -1421,6 +1425,7 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
       char *s, size_t len)
 {
    unsigned index_offset                 = 0;
+   unsigned id                           = 0;
    const struct retro_keybind* keybind   = NULL;
    const struct retro_keybind* auto_bind = NULL;
    settings_t *settings                  = config_get_ptr();
@@ -1428,12 +1433,13 @@ static size_t setting_get_string_representation_st_bind(rarch_setting_t *setting
    if (!setting)
       return 0;
    index_offset = setting->index_offset;
-   keybind      = (const struct retro_keybind*)setting->value.target.keybind;
+   id           = setting->bind_type - MENU_SETTINGS_BIND_BEGIN;
+   keybind      = input_config_bind(index_offset, id);
    auto_bind    = (const struct retro_keybind*)
-      input_config_get_bind_auto(index_offset, input_config_bind_id(keybind));
+      input_config_get_bind_auto(index_offset, id);
    return input_config_get_bind_string(settings, s, keybind, auto_bind,
-         input_config_bind_names(index_offset, input_config_bind_id(keybind)),
-         input_autoconf_bind_names(index_offset, input_config_bind_id(keybind)), len);
+         input_config_bind_names(index_offset, id),
+         input_autoconf_bind_names(index_offset, id), len);
 }
 
 static int setting_action_action_ok(
@@ -1814,8 +1820,11 @@ static rarch_setting_t setting_size_setting(const char* name,
  *
  * Returns: setting of type ST_BIND.
  **/
+/* A bind's setting says whose bind it is (its index_offset) and which
+ * (its bind_type, set by whoever makes it); it does not hold where the
+ * bind is stored. */
 static rarch_setting_t setting_bind_setting(const char* name,
-      const char* short_description, struct retro_keybind* target,
+      const char* short_description,
       uint32_t idx, uint32_t idx_offset,
       const struct retro_keybind_def* default_value,
       const char *group, const char *subgroup,
@@ -1849,7 +1858,6 @@ static rarch_setting_t setting_bind_setting(const char* name,
    result.step                      = 0.0f;
    result.aux.rounding_fraction         = NULL;
 
-   result.value.target.keybind      = target;
    result.default_value.keybind     = default_value;
 
    result.cmd_trigger_idx           = CMD_EVENT_NONE;
@@ -2641,7 +2649,6 @@ static void config_string_options(
 static void config_bind_alt(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
-      struct retro_keybind *s,
       uint32_t player, uint32_t player_offset,
       const char *name, const char *SHORT,
       const struct retro_keybind_def *default_value,
@@ -2656,7 +2663,7 @@ static void config_bind_alt(
 
    (*list)[list_info->index++] = setting_bind_setting(
          strdup(name), strdup(SHORT),
-         s, player, player_offset,
+         player, player_offset,
          default_value,
          group_info->name, subgroup_info->name, parent_group,
          true);
@@ -12033,7 +12040,6 @@ static bool setting_append_list_input_player_options(
 
          CONFIG_BIND_ALT(
                list, list_info,
-               input_config_bind_edit(user, i),
                user + 1,
                user,
                name,
@@ -16251,7 +16257,6 @@ static void settings_build_input_hotkey(
 #endif
             CONFIG_BIND_ALT(
                   list, list_info,
-                  input_config_bind_edit(0, i),
                   0, 0,
                   input_config_bind_map_get_base(i),
                   input_config_bind_map_get_desc(i),
