@@ -127,6 +127,8 @@ struct recording
     * word - VIDEO_SCALE_PACK's layout, so a resize is one comparison
     * against a freshly packed viewport rather than two. */
    unsigned gpu_dims;
+   /* GPU recording reads through read_viewport_bgrx. */
+   bool gpu_bgrx;
 
    /* --size's override of the recording's output size, same layout;
     * zero when it was not given, which is one test instead of two. */

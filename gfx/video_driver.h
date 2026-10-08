@@ -1284,6 +1284,11 @@ typedef struct video_driver
    unsigned (*get_video_views_status)(void *data);
 #endif
 
+   /* Optional: read_viewport as 32-bit B,G,R,X, viewport width * 4
+    * per row, with *bottom_up set to the row order written. Lets GPU
+    * recording skip the BGR24 conversion. */
+   bool (*read_viewport_bgrx)(void *data, uint8_t *buffer, bool is_idle,
+         bool *bottom_up);
 } video_driver_t;
 
 #ifdef HAVE_OPENXR

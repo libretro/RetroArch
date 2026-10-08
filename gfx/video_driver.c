@@ -1851,6 +1851,7 @@ static void recording_dump_frame(
    if (video_st->record_gpu_buffer)
    {
       const uint8_t *gpu_frame = video_st->record_gpu_buffer;
+      bool bottom_up           = true;
 #ifdef HAVE_THREADS
       int taken = -2;
       if (video_st->thread_wrapper_active)
@@ -1901,7 +1902,14 @@ static void recording_dump_frame(
          /* Big bottleneck.
           * Since we might need to do read-backs asynchronously,
           * it might take 3-4 times before this returns true. */
-         if (!(      vid->read_viewport
+         if (record_st->gpu_bgrx)
+         {
+            if (!(      vid->read_viewport_bgrx
+                     && vid->read_viewport_bgrx(video_st->data,
+                        video_st->record_gpu_buffer, is_idle, &bottom_up)))
+               return;
+         }
+         else if (!(      vid->read_viewport
                   && vid->read_viewport(
                      video_st->data, video_st->record_gpu_buffer, is_idle)))
             return;
@@ -1909,11 +1917,15 @@ static void recording_dump_frame(
       }
 
       ffemu_data.dims   = record_st->gpu_dims;
-      ffemu_data.pitch  = (int)(VIDEO_SCALE_W(ffemu_data.dims) * 3);
-      ffemu_data.data   = gpu_frame
-         + (VIDEO_SCALE_H(ffemu_data.dims) - 1) * ffemu_data.pitch;
-
-      ffemu_data.pitch  = -ffemu_data.pitch;
+      ffemu_data.pitch  = (int)(VIDEO_SCALE_W(ffemu_data.dims)
+            * (record_st->gpu_bgrx ? 4 : 3));
+      ffemu_data.data   = gpu_frame;
+      if (bottom_up)
+      {
+         ffemu_data.data  = gpu_frame
+            + (VIDEO_SCALE_H(ffemu_data.dims) - 1) * ffemu_data.pitch;
+         ffemu_data.pitch = -ffemu_data.pitch;
+      }
    }
    else
       ffemu_data.is_dupe = !data;
