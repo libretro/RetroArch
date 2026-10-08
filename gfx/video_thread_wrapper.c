@@ -4294,6 +4294,21 @@ static void thread_hw_context_destroying(void *data)
    }
 }
 
+/* Direct, as the runloop asks every iteration: the driver answers from
+ * what its headset thread publishes and from what only init and free
+ * change, which this thread waits out. */
+static float thread_get_headset_refresh(void *data, float *rates,
+      unsigned cap, unsigned *count)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (     thr && thr->driver_data
+         && thr->poke && thr->poke->get_headset_refresh)
+      return thr->poke->get_headset_refresh(thr->driver_data, rates, cap,
+            count);
+   return 0.0f;
+}
+
 static void thread_set_texture_frame(void *data, const void *frame,
       bool rgb32, unsigned dims, float alpha)
 {
@@ -4664,7 +4679,8 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* texture_lend_ready */
    NULL, /* get_last_present_wait: read on the video thread */
    thread_set_view_count,
-   thread_hw_context_destroying
+   thread_hw_context_destroying,
+   thread_get_headset_refresh
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the
@@ -4719,6 +4735,76 @@ static bool video_thread_wrapper_gfx_widgets_enabled(void *data)
 }
 #endif
 
+#ifdef HAVE_OPENXR
+typedef struct
+{
+   thread_video_t *thr;
+   const video_vr_content_info_t *info;
+   struct retro_vr_frame_state *frame;
+} video_thread_vr_call_t;
+
+static uintptr_t video_thread_set_vr_content_info_cb(void *data)
+{
+   video_thread_vr_call_t *call = (video_thread_vr_call_t*)data;
+   return call->thr->driver->set_vr_content_info(call->thr->driver_data,
+         call->info);
+}
+
+/* On the video thread: the stereo state it sets is the frame's. */
+static bool video_thread_set_vr_content_info(void *data,
+      const video_vr_content_info_t *info)
+{
+   video_thread_vr_call_t call;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (     !thr || !thr->driver_data || !thr->driver
+         || !thr->driver->set_vr_content_info)
+      return false;
+   call.thr   = thr;
+   call.info  = info;
+   call.frame = NULL;
+   return video_thread_run_blocking(video_thread_set_vr_content_info_cb,
+         &call) != 0;
+}
+
+static uintptr_t video_thread_get_vr_frame_state_cb(void *data)
+{
+   video_thread_vr_call_t *call = (video_thread_vr_call_t*)data;
+   return call->thr->driver->get_vr_frame_state(call->thr->driver_data,
+         call->frame);
+}
+
+/* On the video thread: taking the poses marks them for the frame that
+ * submits them. */
+static bool video_thread_get_vr_frame_state(void *data,
+      struct retro_vr_frame_state *out)
+{
+   video_thread_vr_call_t call;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (     !thr || !thr->driver_data || !thr->driver
+         || !thr->driver->get_vr_frame_state)
+      return false;
+   call.thr   = thr;
+   call.info  = NULL;
+   call.frame = out;
+   return video_thread_run_blocking(video_thread_get_vr_frame_state_cb,
+         &call) != 0;
+}
+
+/* Direct, as cores ask every frame: the drivers answer from the session
+ * init made, which only free takes down. */
+static unsigned video_thread_get_video_views_status(void *data)
+{
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (     thr && thr->driver_data && thr->driver
+         && thr->driver->get_video_views_status)
+      return thr->driver->get_video_views_status(thr->driver_data);
+   return 0;
+}
+#endif
+
 static const video_driver_t video_thread = {
    video_thread_init_never_call, /* Should never be called directly. */
    video_thread_frame,
@@ -4755,7 +4841,14 @@ static const video_driver_t video_thread = {
    /* Without this the runloop's invalidate stopped at the wrapper: the
     * driver kept the core's image across a reset, and the ring kept
     * handing it back across a close. */
-   video_thread_invalidate_hw_render_cache
+   video_thread_invalidate_hw_render_cache,
+   NULL, /* read_viewport_hdr */
+   NULL, /* font_backend: CMD_INIT/CMD_FREE read the driver's */
+#ifdef HAVE_OPENXR
+   video_thread_get_vr_frame_state,
+   video_thread_set_vr_content_info,
+   video_thread_get_video_views_status,
+#endif
 };
 
 static void video_thread_set_callbacks(thread_video_t *thr,
