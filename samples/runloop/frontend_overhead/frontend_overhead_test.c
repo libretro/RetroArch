@@ -6303,6 +6303,132 @@ static void lane_entries_kept(void)
             " loads back the same\n");
 }
 
+/* The menu's rows for entries and macros: a text setting a number,
+ * at the end of the hotkeys. Held to: a row shows what that number is,
+ * as it is written; text typed into it and entered is read as an entry
+ * or a macro, and the row then shows it as kept; text that does not
+ * read changes nothing, and the row shows what was there; an empty
+ * line, or Start on the row, takes the number out. */
+static bool mr_text(rarch_setting_t *row, const char *typed)
+{
+   strlcpy(row->value.target.string, typed, row->size);
+   if (row->actions && row->actions->change)
+      row->actions->change(row);
+   return true;
+}
+
+static void lane_menu_entry_rows(void)
+{
+#ifdef HAVE_MENU
+   unsigned had            = failures;
+   rarch_setting_t *c3     = menu_setting_find("input_combo_3");
+   rarch_setting_t *m2     = menu_setting_find("input_macro_2");
+   rarch_setting_t *c16    = menu_setting_find("input_combo_16");
+   rarch_setting_t *m16    = menu_setting_find("input_macro_16");
+   char spec[512];
+
+   CHECK(c3 && m2 && c16 && m16 && c3->type == ST_STRING && m2->type == ST_STRING,
+         "menu rows: the rows for entries and macros are not there");
+   if (!c3 || !m2)
+      return;
+   input_entries_clear();
+   input_macros_clear();
+
+   /* a row shows what there is */
+   input_entry_add(3, "start + select : pause");
+   menu_setting_entries_refresh();
+   CHECK(!strcmp(c3->value.target.string, "select+start : pause"),
+         "menu rows: a row does not show its entry as it is written");
+   CHECK(!m2->value.target.string[0], "menu rows: a row with nothing there shows something");
+
+   /* typed and entered */
+   mr_text(c3, "l3+r3:menu_toggle");
+   CHECK(   input_entry_spec(3, spec, sizeof(spec))
+         && !strcmp(spec, "l3+r3 : menu_toggle")
+         && !strcmp(c3->value.target.string, "l3+r3 : menu_toggle"),
+         "menu rows: an entry typed into a row was not taken, or the row does not show it");
+   mr_text(m2, "a 2,b 3");
+   CHECK(   input_macro_spec(2, spec, sizeof(spec)) && !strcmp(spec, "a 2, b 3")
+         && !strcmp(m2->value.target.string, "a 2, b 3"),
+         "menu rows: a macro typed into a row was not taken, or the row does not show it");
+
+   /* what does not read changes nothing */
+   mr_text(c3, "l3+r3 : menu_togle");
+   CHECK(   input_entry_spec(3, spec, sizeof(spec)) && !strcmp(spec, "l3+r3 : menu_toggle")
+         && !strcmp(c3->value.target.string, "l3+r3 : menu_toggle"),
+         "menu rows: text that is not an entry changed the entry, or the row");
+   mr_text(m2, "a two");
+   CHECK(   input_macro_spec(2, spec, sizeof(spec)) && !strcmp(spec, "a 2, b 3")
+         && !strcmp(m2->value.target.string, "a 2, b 3"),
+         "menu rows: text that is not a macro changed the macro, or the row");
+   mr_text(c16, "nothing that reads");
+   CHECK(!input_entry_spec(16, spec, sizeof(spec)) && !c16->value.target.string[0],
+         "menu rows: text that does not read made an entry, or stayed in an empty row");
+
+   /* an empty line, and Start, take it out */
+   mr_text(m2, "");
+   CHECK(!input_macro_spec(2, spec, sizeof(spec)) && input_macros_count() == 0,
+         "menu rows: an empty line did not take the macro out");
+   CHECK(c3->actions && c3->actions->start, "menu rows: Start does nothing on a row");
+   if (c3->actions && c3->actions->start)
+      c3->actions->start(c3);
+   CHECK(!input_entry_spec(3, spec, sizeof(spec)) && input_entries_count() == 0
+         && !c3->value.target.string[0],
+         "menu rows: Start on a row did not take the entry out");
+
+   /* the hotkey list: each there is, and one empty row for the next */
+   {
+      file_list_t list = {0};
+      unsigned i, combos = 0, macros = 0;
+      bool has_c3 = false, has_c4 = false, has_c5 = false, has_m1 = false, has_m2 = false;
+      input_entries_clear();
+      input_macros_clear();
+      input_entry_add(3, "start : pause");
+      input_entry_add(9, "select : pause");
+      input_macro_set(1, "a 1");
+      menu_displaylist_build_list(&list, config_get_ptr(),
+            DISPLAYLIST_INPUT_HOTKEY_BINDS_LIST, true);
+      for (i = 0; i < list.size; i++)
+      {
+         const char *label = list.list[i].label;
+         if (!label)
+            continue;
+         if (!strncmp(label, "input_combo_", 12))
+         {
+            combos++;
+            has_c3 |= !strcmp(label, "input_combo_3");
+            has_c4 |= !strcmp(label, "input_combo_1");
+            has_c5 |= !strcmp(label, "input_combo_9");
+         }
+         if (!strncmp(label, "input_macro_", 12))
+         {
+            macros++;
+            has_m1 |= !strcmp(label, "input_macro_1");
+            has_m2 |= !strcmp(label, "input_macro_2");
+         }
+      }
+      {
+         char why[200];
+         snprintf(why, sizeof(why), "menu rows: the hotkey list has %u combination rows and %u macro"
+               " rows, not the two there are and one empty, and the one there is and one empty",
+               combos, macros);
+         CHECK(combos == 3 && macros == 2 && has_c3 && has_c4 && has_c5 && has_m1 && has_m2, why);
+      }
+      file_list_clear(&list);
+   }
+
+   input_entries_clear();
+   input_macros_clear();
+   menu_setting_entries_refresh();
+
+   if (failures == had)
+      printf("[pass] menu rows: a row shows its entry or macro as written; what is"
+            " typed is taken and shown as kept; what does not read changes"
+            " nothing; an empty line and Start take it out; the hotkey list shows"
+            " each there is and one empty row\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -7640,6 +7766,7 @@ int main(int argc, char *argv[])
       lane_macros();
       lane_macro_modes();
       lane_entries_kept();
+      lane_menu_entry_rows();
       lane_bind_settings();
       lane_aim_stick();
       lane_core_view();

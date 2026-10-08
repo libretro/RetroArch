@@ -761,6 +761,67 @@ static int setting_string_action_start_generic(rarch_setting_t *setting)
    return 0;
 }
 
+/* The rows for entries and macros in the hotkeys list: one a number,
+ * each the text of what that number is, as the configuration writes it
+ * (input_combo_N, input_macro_N). Edited as a line of text; what is
+ * typed is read as an entry or a macro, and the row then shows it as
+ * it is kept - or what it was, if what was typed did not read. An
+ * empty line takes that number out. */
+#define MENU_ENTRY_ROWS 16
+static char menu_entry_text[MENU_ENTRY_ROWS][256];
+static char menu_macro_text[MENU_ENTRY_ROWS][512];
+
+static void setting_entry_text_change(rarch_setting_t *setting)
+{
+   unsigned n = setting->index_offset;
+   char    *s = setting->value.target.string;
+   if (!*s)
+      input_entry_remove(n);
+   else if (!input_entry_add(n, s))
+      RARCH_WARN("[Input] \"%s\" is not read as an entry: it wants"
+            " \"buttons and a key with + between them : a hotkey or a"
+            " command\".\n", s);
+   if (!input_entry_spec(n, s, setting->size))
+      s[0] = '\0';
+}
+
+static void setting_macro_text_change(rarch_setting_t *setting)
+{
+   unsigned n = setting->index_offset;
+   char    *s = setting->value.target.string;
+   if (!*s)
+      input_macro_remove(n);
+   else if (!input_macro_set(n, s))
+      RARCH_WARN("[Input] \"%s\" is not read as a macro: it wants steps"
+            " with commas between, each \"buttons with + between them,"
+            " or -, and a number of frames\".\n", s);
+   if (!input_macro_spec(n, s, setting->size))
+      s[0] = '\0';
+}
+
+/* (Start, on a row: the number is taken out.) */
+static int setting_entry_text_start(rarch_setting_t *setting)
+{
+   if (!setting)
+      return -1;
+   setting->value.target.string[0] = '\0';
+   if ((setting->actions && setting->actions->change))
+      setting->actions->change(setting);
+   return 0;
+}
+
+void menu_setting_entries_refresh(void)
+{
+   unsigned i;
+   for (i = 0; i < MENU_ENTRY_ROWS; i++)
+   {
+      if (!input_entry_spec(i + 1, menu_entry_text[i], sizeof(menu_entry_text[i])))
+         menu_entry_text[i][0] = '\0';
+      if (!input_macro_spec(i + 1, menu_macro_text[i], sizeof(menu_macro_text[i])))
+         menu_macro_text[i][0] = '\0';
+   }
+}
+
 static void setting_add_special_callbacks(
       rarch_setting_t **list,
       rarch_setting_info_t *list_info,
@@ -16266,6 +16327,31 @@ static void settings_build_input_hotkey(
             (*list)[list_info->index - 1].bind_type      = i + MENU_SETTINGS_BIND_BEGIN;
             MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
                   (enum msg_hash_enums)(MENU_ENUM_LABEL_INPUT_HOTKEY_BIND_BEGIN + i));
+         }
+
+         /* entries and macros, a row a number: see menu_entry_text */
+         for (i = 0; i < MENU_ENTRY_ROWS; i++)
+         {
+            char name[32];
+            char shortname[48];
+            unsigned k;
+            for (k = 0; k < 2; k++)
+            {
+               snprintf(name, sizeof(name), k ? "input_macro_%u" : "input_combo_%u", i + 1);
+               snprintf(shortname, sizeof(shortname), k ? "Macro %u" : "Combination %u", i + 1);
+               CONFIG_STRING_ALT(
+                     list, list_info,
+                     k ? menu_macro_text[i] : menu_entry_text[i],
+                     k ? sizeof(menu_macro_text[i]) : sizeof(menu_entry_text[i]),
+                     name, shortname, "",
+                     &group_info, &subgroup_info, parent_group,
+                     k ? setting_macro_text_change : setting_entry_text_change,
+                     NULL);
+               (*list)[list_info->index - 1].index_offset = i + 1;
+               (*list)[list_info->index - 1].ui_type      = ST_UI_TYPE_STRING_LINE_EDIT;
+               SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, SD_FLAG_ALLOW_INPUT);
+               SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_entry_text_start)
+            }
          }
 
          GROUP_END();

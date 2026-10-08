@@ -80,6 +80,10 @@ int menu_setting_set(unsigned type, unsigned action, bool wraparound);
  **/
 rarch_setting_t *menu_setting_find(const char *label);
 
+/* The hotkey list's rows for entries and macros, made to show what
+ * there is now (see menu_setting.c). */
+void menu_setting_entries_refresh(void);
+
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 
 int menu_action_handle_setting(rarch_setting_t *setting,

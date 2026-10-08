@@ -9212,6 +9212,34 @@ unsigned menu_displaylist_build_list(
                         PARSE_ONLY_BIND, false) == 0)
                   count++;
             }
+
+            /* Combinations and macros: each there is, and one empty
+             * row to add the next with */
+            menu_setting_entries_refresh();
+            {
+               unsigned k;
+               for (k = 0; k < 2; k++)
+               {
+                  bool blank = false;
+                  for (i = 1; i <= 16; i++)
+                  {
+                     char key[32];
+                     char text[16];
+                     size_t has = k ? input_macro_spec(i, text, sizeof(text))
+                                    : input_entry_spec(i, text, sizeof(text));
+                     if (!has)
+                     {
+                        if (blank)
+                           continue;
+                        blank = true;
+                     }
+                     snprintf(key, sizeof(key), k ? "input_macro_%u" : "input_combo_%u", i);
+                     if (MENU_DISPLAYLIST_PARSE_SETTINGS(list,
+                              key, PARSE_ONLY_STRING, false, MENU_SETTING_ACTION) == 0)
+                        count++;
+                  }
+               }
+            }
          }
          break;
       case DISPLAYLIST_SHADER_PRESET_MANAGER:
