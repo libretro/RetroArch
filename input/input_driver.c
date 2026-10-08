@@ -2196,6 +2196,7 @@ typedef struct
    uint32_t key_down[INPUT_BIND_WORDS];  /* by bind: its key is down, this poll */
    uint32_t has_mbutton[INPUT_BIND_WORDS]; /* by bind: it names a mouse button */
    uint32_t has_pad[INPUT_BIND_WORDS];   /* by bind: some controller's pad may be behind it */
+   uint32_t live[INPUT_BIND_WORDS];      /* by bind: usable, and a key, a mouse button or a pad may press it */
    uint16_t pad_any16;      /* ... the RetroPad's sixteen, valid or not */
    bool     any_key_down;   /* key_down may hold a bit: it wants clearing when the keys go */
    uint8_t  stick_ok;       /* bit 0 the left stick, 1 the right: its four binds are usable */
@@ -2237,6 +2238,7 @@ static void input_port_keys_refresh(input_port_keys_t *k,
       k->usable16  = 0;
       memset(k->has_mbutton, 0, sizeof(k->has_mbutton));
       memset(k->has_pad, 0, sizeof(k->has_pad));
+      memset(k->live, 0, sizeof(k->live));
       for (i = 0; i < RARCH_BIND_LIST_END; i++)
       {
          unsigned key;
@@ -2251,17 +2253,22 @@ static void input_port_keys_refresh(input_port_keys_t *k,
          if (i < RARCH_FIRST_CUSTOM_BIND)
             k->usable16 |= (uint16_t)(1u << i);
          if (pad)
+         {
             k->has_pad[i >> 5] |= (1u << (i & 31));
+            k->live[i >> 5]    |= (1u << (i & 31));
+         }
          key = RETRO_KEYBIND_KEY(INPUT_CONFIG_BIND(port, i));
          if (key && key < RETROK_LAST)
          {
             k->key[k->count]    = (uint16_t)key;
             k->bind[k->count++] = (uint8_t)i;
+            k->live[i >> 5]    |= (1u << (i & 31));
          }
          if (RETRO_KEYBIND_MBUTTON(INPUT_CONFIG_BIND(port, i)) <= RETRO_DEVICE_ID_MOUSE_BUTTON_5)
          {
             k->has_mbutton[i >> 5] |= (1u << (i & 31));
             k->mbutton[i]           = (uint8_t)RETRO_KEYBIND_MBUTTON(INPUT_CONFIG_BIND(port, i));
+            k->live[i >> 5]        |= (1u << (i & 31));
          }
       }
       k->pad_mbuttons = (uint16_t)k->has_mbutton[0];
@@ -13135,6 +13142,10 @@ void input_driver_poll(void)
 
       for (i = 0; i < max_users; i++)
       {
+         const input_port_keys_t *pk;
+         bool turbo_live;
+         bool hold_live;
+
          /* --- joypad_info init (shared by turbo/hold and remap) --- */
          joypad_info[i].axis_threshold        = input_axis_threshold;
          joypad_info[i].joy_idx               = settings->uints.input_joypad_index[i];
@@ -13142,9 +13153,26 @@ void input_driver_poll(void)
             joypad_info[i].joy_idx            = 0;
          joypad_info[i].auto_binds            = input_autoconf_binds[joypad_info[i].joy_idx];
 
+         /* Whether the turbo and the hold binds are read at all. They
+          * were, for every port at every poll, if the bind was usable -
+          * and it is usable, and has nothing behind it, for nearly
+          * everyone. What is kept with a port's keys says whether a
+          * key, a mouse button or a pad can press a bind; when the
+          * poll made that current for this port, a bind of the kind
+          * that only those can press (not one of the RetroPad's
+          * sixteen, which a remote pad can) is not read if none can. */
+         pk         = (i < input_keys_ports_at_poll)
+            ? &input_port_keys[i] : NULL;
+         turbo_live = (pk && turbo_btn_id >= RARCH_FIRST_CUSTOM_BIND)
+            ? ((pk->live[turbo_btn_id >> 5] >> (turbo_btn_id & 31)) & 1)
+            : RETRO_KEYBIND_VALID(&input_config_binds[i][turbo_btn_id]);
+         hold_live  = pk
+            ? ((pk->live[RARCH_HOLD_ENABLE >> 5] >> (RARCH_HOLD_ENABLE & 31)) & 1)
+            : RETRO_KEYBIND_VALID(&input_config_binds[i][RARCH_HOLD_ENABLE]);
+
          /* --- Turbo button state --- */
          input_st->turbo_btns.frame_enable[i] =
-                  RETRO_KEYBIND_VALID(&input_config_binds[i][turbo_btn_id])
+                  turbo_live
                && turbo_enable ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
@@ -13165,7 +13193,7 @@ void input_driver_poll(void)
 
          /* --- Hold button modifier state --- */
          input_st->hold_btns.frame_enable[i] =
-                  RETRO_KEYBIND_VALID(&input_config_binds[i][RARCH_HOLD_ENABLE]) ?
+                  hold_live ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
                   joypad, &joypad_info[i],
