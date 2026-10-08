@@ -1,4 +1,5 @@
-TARGET := gl3_shader_status_test
+TARGET       := gl3_shader_status_test
+CHAIN_TARGET := gl3_chain_alloc_test
 
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
@@ -6,13 +7,18 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # The real gfx/drivers_shader/shader_gl3.c, with GL entry points through
 # the real glsym table the test points at its own mocks, and SPIRV-Cross
 # and the rest of the frontend stubbed in stubs.c.
-SOURCES := gl3_shader_status_test.c \
-           stubs.c \
-           $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c \
+COMMON  := stubs.c \
+           spvc_stubs.c \
            $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
            $(LIBRETRO_COMM_DIR)/string/stdstring.c \
            $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
+SOURCES := gl3_shader_status_test.c \
+           $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c \
+           $(COMMON)
+# The chain allocations: shader_gl3.c compiled into the test itself,
+# with calloc() routed through it.
+CHAIN_SOURCES := gl3_chain_alloc_test.c $(COMMON)
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 -DRARCH_INTERNAL \
            -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_GLSLANG \
@@ -32,20 +38,28 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES:.c=.o)
+OBJS       := $(SOURCES:.c=.o)
+CHAIN_OBJS := $(CHAIN_SOURCES:.c=.o)
 
-all: $(TARGET)
+all: $(TARGET) $(CHAIN_TARGET)
 
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
+$(CHAIN_TARGET): $(CHAIN_OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+gl3_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c
+
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-check: $(TARGET)
+check: $(TARGET) $(CHAIN_TARGET)
 	./$(TARGET)
+	./$(CHAIN_TARGET)
 
 clean:
-	rm -f $(OBJS) $(TARGET) $(TARGET).exe
+	rm -f $(OBJS) $(CHAIN_OBJS) $(TARGET) $(TARGET).exe \
+	      $(CHAIN_TARGET) $(CHAIN_TARGET).exe
 
 .PHONY: all check clean
