@@ -2797,7 +2797,6 @@ static int setting_action_ok_bind_all_save_autoconfig(
       size_t _len;
       char buf[128];
       char msg[NAME_MAX_LENGTH];
-      struct retro_keybind *target = input_config_bind_edit(index_offset, 0);
 
       config_get_autoconf_profile_filename(name, map, buf, sizeof(buf));
       _len = snprintf(msg, sizeof(msg),
@@ -2807,8 +2806,11 @@ static int setting_action_ok_bind_all_save_autoconfig(
 
       /* Clear manual controller binds */
       for ( i  = MENU_SETTINGS_BIND_BEGIN;
-            i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+            i <= MENU_SETTINGS_BIND_LAST; i++)
       {
+         /* each bind by its number, not by stepping along the row */
+         struct retro_keybind *target = input_config_bind_edit(
+               index_offset, i - MENU_SETTINGS_BIND_BEGIN);
          target->joykey  = NO_BTN;
          target->joyaxis = AXIS_NONE;
       }
@@ -2838,13 +2840,14 @@ static int setting_action_ok_bind_defaults(
    if (!setting)
       return -1;
 
-   target             =  input_config_bind_edit(setting->index_offset, 0);
    binds->begin       = MENU_SETTINGS_BIND_BEGIN;
    binds->last        = MENU_SETTINGS_BIND_LAST;
 
    for ( i  = MENU_SETTINGS_BIND_BEGIN;
-         i <= MENU_SETTINGS_BIND_LAST; i++, target++)
+         i <= MENU_SETTINGS_BIND_LAST; i++)
    {
+      target = input_config_bind_edit(setting->index_offset,
+            i - MENU_SETTINGS_BIND_BEGIN);
       RETRO_KEYBIND_SET_KEY(target, RETRO_KEYBIND_DEF_KEY(
                input_config_bind_def(setting->index_offset,
                   i - MENU_SETTINGS_BIND_BEGIN)));
