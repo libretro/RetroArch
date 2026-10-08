@@ -117,6 +117,28 @@ typedef struct r7z_archive r7z_archive_t;
 int r7z_archive_open(r7z_archive_t **out,
       const uint8_t *data, size_t len);
 
+/* Positioned read of @len bytes at @off into @dst; returns the bytes
+ * read, 0 at the end, negative on error. */
+typedef int64_t (*r7z_read_t)(void *ud, uint64_t off, void *dst,
+      size_t len);
+
+/**
+ * r7z_archive_open_read:
+ * @out        : receives the opened archive
+ * @len        : length of the archive file
+ * @read_cb    : positioned reads of it
+ * @ud         : handed to @read_cb
+ *
+ * The same, for an archive that is not in memory and is not to be put
+ * there whole: the header is read at open, and a folder's packed bytes
+ * are read in when it is decoded and let go of when it has been. A
+ * member is extracted as it is from an archive in memory.
+ *
+ * Returns: R7Z_OK, or a negative R7Z_ERROR_* code.
+ */
+int r7z_archive_open_read(r7z_archive_t **out, uint64_t len,
+      r7z_read_t read_cb, void *ud);
+
 /**
  * r7z_archive_close:
  * @a          : archive, may be NULL

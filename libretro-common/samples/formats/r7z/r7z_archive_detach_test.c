@@ -289,13 +289,44 @@ static void check_borrow(r7z_archive_t *a, int solid,
    }
 }
 
+/* The archive as a file that is read, not one that is in memory. */
+typedef struct
+{
+   const uint8_t *data;
+   size_t         len;
+   unsigned       reads;
+} file_t;
+
+static int64_t read_cb(void *ud, uint64_t off, void *dst, size_t len)
+{
+   file_t *f = (file_t*)ud;
+
+   f->reads++;
+   if (off > f->len)
+      return -1;
+   if (len > f->len - (size_t)off)
+      len = f->len - (size_t)off;
+   memcpy(dst, f->data + (size_t)off, len);
+   return (int64_t)len;
+}
+
 static void check_archive(const uint8_t *data, size_t len, const char *what,
-      int solid, const uint8_t *a_want, const uint8_t *b_want)
+      int solid, int through_reads, const uint8_t *a_want, const uint8_t *b_want)
 {
    r7z_archive_t *a = NULL;
-   int            res = r7z_archive_open(&a, data, len);
+   file_t         file;
+   int            res;
 
-   printf("%s\n", what);
+   file.data  = data;
+   file.len   = len;
+   file.reads = 0;
+   res = through_reads
+      ? r7z_archive_open_read(&a, len, read_cb, &file)
+      : r7z_archive_open(&a, data, len);
+
+   printf("%s%s\n", what, through_reads ? ", read through a callback" : "");
+   if (through_reads)
+      check(file.reads > 0, "it was read");
    check(res == R7Z_OK && a && r7z_archive_num_entries(a) == 2, "open");
    if (res != R7Z_OK || !a)
       return;
@@ -324,9 +355,26 @@ int main(void)
    fill_b(b_want);
 
    check_archive(nonsolid_7z, sizeof(nonsolid_7z),
-         "non-solid: each member is its own folder", 0, a_want, b_want);
+         "non-solid: each member is its own folder", 0, 0, a_want, b_want);
    check_archive(solid_7z, sizeof(solid_7z),
-         "solid: both members in one folder", 1, a_want, b_want);
+         "solid: both members in one folder", 1, 0, a_want, b_want);
+   check_archive(nonsolid_7z, sizeof(nonsolid_7z),
+         "non-solid: each member is its own folder", 0, 1, a_want, b_want);
+   check_archive(solid_7z, sizeof(solid_7z),
+         "solid: both members in one folder", 1, 1, a_want, b_want);
+   {
+      /* nothing to read from, and a file cut short of its header */
+      r7z_archive_t *a = NULL;
+      file_t         file;
+
+      file.data  = solid_7z;
+      file.len   = sizeof(solid_7z) - 40;
+      file.reads = 0;
+      check(r7z_archive_open_read(&a, sizeof(solid_7z), NULL, NULL) != R7Z_OK && !a,
+            "no callback is refused");
+      check(r7z_archive_open_read(&a, sizeof(solid_7z), read_cb, &file) != R7Z_OK && !a,
+            "a file shorter than it says is refused");
+   }
 
    printf("%d checks, %d failures\n", checks, failures);
    return failures ? 1 : 0;
