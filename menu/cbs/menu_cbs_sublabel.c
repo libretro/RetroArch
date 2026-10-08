@@ -290,6 +290,8 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_ertm_disable,        MENU_
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_user_remap_settings,           MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS)
 
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_combo_row,                 MSG_INPUT_COMBO_ROW_SUBLABEL)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_macro_row,                 MSG_INPUT_MACRO_ROW_SUBLABEL)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_enable_hotkey,         MENU_ENUM_SUBLABEL_INPUT_META_ENABLE_HOTKEY)
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_input_meta_menu_toggle,           MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE)
 #ifdef HAVE_LAKKA
@@ -1614,6 +1616,19 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       }
    }
 
+   /* the rows for combinations and macros, a row a number: by name,
+    * having no label of their own */
+   if (     label
+         && (   string_starts_with_size(label, "input_combo_", STRLEN_CONST("input_combo_"))
+             || string_starts_with_size(label, "input_macro_", STRLEN_CONST("input_macro_")))
+         && label[12] >= '1' && label[12] <= '9')
+   {
+      BIND_ACTION_SUBLABEL(cbs, label[6] == 'c'
+            ? action_bind_sublabel_input_combo_row
+            : action_bind_sublabel_input_macro_row);
+      return 0;
+   }
+
    if (type == MENU_SETTINGS_INPUT_LIBRETRO_DEVICE)
    {
       BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_input_device_type);
@@ -2117,6 +2132,8 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
       { MENU_ENUM_LABEL_REMAP_FILE_REMOVE_CORE, MENU_ENUM_SUBLABEL_REMAP_FILE_REMOVE_CORE },
       { MENU_ENUM_LABEL_REMAP_FILE_RESET, MENU_ENUM_SUBLABEL_REMAP_FILE_RESET },
       { MENU_ENUM_LABEL_INPUT_REMAP_FIND, MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND },
+      { MENU_ENUM_LABEL_INPUT_COMBO_TARGET, MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET },
+      { MENU_ENUM_LABEL_INPUT_COMBO_HOLD, MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD },
       { MENU_ENUM_LABEL_REMAP_FILE_FLUSH, MENU_ENUM_SUBLABEL_REMAP_FILE_FLUSH },
       { MENU_ENUM_LABEL_OVERRIDE_FILE_INFO, MENU_ENUM_SUBLABEL_OVERRIDE_FILE_INFO },
       { MENU_ENUM_LABEL_OVERRIDE_FILE_LOAD, MENU_ENUM_SUBLABEL_OVERRIDE_FILE_LOAD },

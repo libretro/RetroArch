@@ -8078,11 +8078,11 @@ static int generic_menu_iterate(
    {
       unsigned number, pad;
       if (input_entry_capture_take_fresh(&number, &pad))
-      {
          menu_setting_entry_target_pick(number, pad);
-         if (list && list->size)
-            label                  = list->list[list->size - 1].label;
-      }
+      /* the response time's list, after what it does was picked */
+      menu_setting_entry_pending();
+      if (list && list->size)
+         label                     = list->list[list->size - 1].label;
    }
 
    iterate_type                    = action_iterate_type(label, menu_st);

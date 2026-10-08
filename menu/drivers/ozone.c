@@ -578,6 +578,8 @@ struct ozone_handle
       ozone_footer_label_t cycle_thumbnails;
       ozone_footer_label_t fullscreen_thumbnails;
       ozone_footer_label_t reset_to_default;
+      ozone_footer_label_t combo_left;   /* a combination row: Left chooses what it does */
+      ozone_footer_label_t combo_right;  /* ... Right sets its buttons */
       ozone_footer_label_t manage;
       ozone_footer_label_t metadata_override;
       ozone_footer_label_t help;
@@ -8866,6 +8868,20 @@ static bool ozone_manage_available(ozone_handle_t *ozone,
    return false;
 }
 
+/* A combination's row is selected (input_combo_1 and up): Left and
+ * Right do something on it, and the footer says what. */
+static bool ozone_combo_row_selected(size_t selection)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *list          = menu_st->entries.list
+      ? MENU_LIST_GET_SELECTION(menu_st->entries.list, 0) : NULL;
+   const char *label;
+   if (!list || selection >= list->size || !(label = list->list[selection].label))
+      return false;
+   return    !strncmp(label, "input_combo_", 12)
+          && label[12] >= '1' && label[12] <= '9';
+}
+
 static bool ozone_is_current_entry_settings(size_t current_selection)
 {
    menu_entry_t last_entry;
@@ -10358,6 +10374,14 @@ static void ozone_cache_footer_labels(ozone_handle_t *ozone)
          &ozone->footer_labels.manage,
          MENU_ENUM_LABEL_VALUE_MANAGE);
 
+   ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.combo_left,
+         MSG_INPUT_COMBO_CHOOSE_ACTION);
+
+   ozone_cache_footer_label(ozone,
+         &ozone->footer_labels.combo_right,
+         MSG_INPUT_COMBO_SET_BUTTONS);
+
    /* Record current language setting */
    ozone->footer_labels_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 }
@@ -11833,6 +11857,12 @@ static void ozone_draw_footer(
             !ozone->footer_labels.fullscreen_thumbnails.show
          && ozone_is_current_entry_settings(selection);
 
+   ozone->footer_labels.combo_right.show           =
+            !ozone->footer_labels.fullscreen_thumbnails.show
+         && ozone_combo_row_selected(selection);
+   ozone->footer_labels.combo_left.show            =
+         ozone->footer_labels.combo_right.show;
+
    ozone->footer_labels.help.show                  =
             !ozone->footer_labels.metadata_override.show
          && ozone_help_available(ozone, selection, ((video_info->menu.flags & VIDEO_MENU_FLAG_SHOW_SUBLABELS) ? true : false));
@@ -11916,9 +11946,17 @@ static void ozone_draw_footer(
          ? ozone->footer_labels.clear_setting.x - ozone->footer_labels.scan.width - icon_spacer
          : ozone->footer_labels.clear_setting.x;
 
-   ozone->footer_labels.reset_to_default.x      = (ozone->footer_labels.reset_to_default.show)
-         ? ozone->footer_labels.scan.x - ozone->footer_labels.reset_to_default.width - icon_spacer
+   ozone->footer_labels.combo_right.x           = (ozone->footer_labels.combo_right.show)
+         ? ozone->footer_labels.scan.x - ozone->footer_labels.combo_right.width - icon_spacer
          : ozone->footer_labels.scan.x;
+
+   ozone->footer_labels.combo_left.x            = (ozone->footer_labels.combo_left.show)
+         ? ozone->footer_labels.combo_right.x - ozone->footer_labels.combo_left.width - icon_spacer
+         : ozone->footer_labels.combo_right.x;
+
+   ozone->footer_labels.reset_to_default.x      = (ozone->footer_labels.reset_to_default.show)
+         ? ozone->footer_labels.combo_left.x - ozone->footer_labels.reset_to_default.width - icon_spacer
+         : ozone->footer_labels.combo_left.x;
 
    ozone->footer_labels.help.x                  = (ozone->footer_labels.help.show)
          ? ozone->footer_labels.reset_to_default.x - ozone->footer_labels.help.width - icon_spacer
@@ -12093,6 +12131,37 @@ static void ozone_draw_footer(
                   1.0f,
                   col,
                   mymat);
+
+         /* > A combination's row: Right and Left */
+         if (ozone->footer_labels.combo_right.show)
+         {
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_dims,
+                  icon_size,
+                  icon_size,
+                  icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_R],
+                  ozone->footer_labels.combo_right.x,
+                  icon_y,
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
+            ozone_draw_icon(
+                  p_disp,
+                  userdata,
+                  video_dims,
+                  icon_size,
+                  icon_size,
+                  icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_INPUT_DPAD_L],
+                  ozone->footer_labels.combo_left.x,
+                  icon_y,
+                  0.0f,
+                  1.0f,
+                  col,
+                  mymat);
+         }
 
          /* > Reset to default */
          if (ozone->footer_labels.reset_to_default.show)
@@ -12297,6 +12366,35 @@ static void ozone_draw_footer(
             false,
             1.0f,
             false);
+
+   /* > A combination's row: Right and Left */
+   if (ozone->footer_labels.combo_right.show)
+   {
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            ozone->footer_labels.combo_right.str,
+            ozone->footer_labels.combo_right.x + icon_size + icon_padding_small,
+            footer_text_y,
+            video_dims,
+            ozone->theme->text_rgba,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+      gfx_display_draw_text(
+            ozone->fonts.footer.font,
+            ozone->footer_labels.combo_left.str,
+            ozone->footer_labels.combo_left.x + icon_size + icon_padding_small,
+            footer_text_y,
+            video_dims,
+            ozone->theme->text_rgba,
+            TEXT_ALIGN_LEFT,
+            1.0f,
+            false,
+            1.0f,
+            false);
+   }
 
    /* > Reset to default */
    if (ozone->footer_labels.reset_to_default.show)
@@ -13986,6 +14084,10 @@ static int ozone_tap_footer(
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_SCAN);
    else if (ozone->footer_labels.scan.show && x > ozone->footer_labels.scan.x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_SCAN);
+   else if (ozone->footer_labels.combo_right.show && x > ozone->footer_labels.combo_right.x)
+      return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_RIGHT);
+   else if (ozone->footer_labels.combo_left.show && x > ozone->footer_labels.combo_left.x)
+      return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_LEFT);
    else if (ozone->footer_labels.reset_to_default.show && x > ozone->footer_labels.reset_to_default.x)
       return ozone_menu_entry_action(ozone, entry, selection, MENU_ACTION_START);
    else if (ozone->footer_labels.help.show && x > ozone->footer_labels.help.x)

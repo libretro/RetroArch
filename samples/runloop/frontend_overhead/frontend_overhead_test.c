@@ -6749,7 +6749,28 @@ static void lane_entry_target_pick(void)
       snprintf(why, sizeof(why), "target pick: picking Menu Toggle made \"%s\", not \"l3+r3 : menu_toggle\"", spec);
       CHECK(!strcmp(spec, "l3+r3 : menu_toggle"), why);
    }
-   CHECK(stack && stack->size == depth, "target pick: the list did not go when a target was picked");
+   /* then the response time's list: Instant, or held for a time */
+   run_loop_frames(2);
+   CHECK(stack && stack->size == depth + 1 && stack->list[depth].label
+         && !strcmp(stack->list[depth].label, msg_hash_to_str(MENU_ENUM_LABEL_DEFERRED_DROPDOWN_BOX_LIST)),
+         "target pick: after the target the response time's list is not up");
+   {
+      file_list_t *sel = MENU_LIST_GET_SELECTION(menu_state_get_ptr()->entries.list, 0);
+      CHECK(   sel && sel->size == 6 && sel->list[0].path && sel->list[3].path
+            && !strcmp(sel->list[0].path, msg_hash_to_str(MSG_INPUT_COMBO_INSTANT))
+            && strstr(sel->list[3].path, "2"),
+            "target pick: the response time's list is not Instant and five times to hold for");
+      menu_state_get_ptr()->selection_ptr = 3;   /* two seconds */
+      tp_press(ok_b);
+   }
+   spec[0] = '\0';
+   input_entry_spec(5, spec, sizeof(spec));
+   {
+      char why[200];
+      snprintf(why, sizeof(why), "target pick: holding for two seconds picked made \"%s\"", spec);
+      CHECK(!strcmp(spec, "l3+r3 held 2s : menu_toggle"), why);
+   }
+   CHECK(stack && stack->size == depth, "target pick: the lists did not go when both were picked");
 
    /* --- a row with an entry: Left and the list; its buttons kept --- */
    row5->actions->left(row5, 0, false);
@@ -6761,10 +6782,14 @@ static void lane_entry_target_pick(void)
       menu_state_get_ptr()->selection_ptr = (size_t)idx;
       tp_press(ok_b);
    }
+   /* the response time's list again: left with Back, the time stays */
+   run_loop_frames(2);
+   CHECK(stack && stack->size == depth + 1, "target pick: after Left and a target the response time's list is not up");
+   tp_press(back_b);
    spec[0] = '\0';
    input_entry_spec(5, spec, sizeof(spec));
-   CHECK(!strcmp(spec, "l3+r3 : macro_2"),
-         "target pick: picking a macro for an entry did not keep its buttons and change what it does");
+   CHECK(!strcmp(spec, "l3+r3 held 2s : macro_2") && stack && stack->size == depth,
+         "target pick: picking a macro for an entry did not keep its buttons and time and change what it does");
 
    /* --- Back out of the list makes nothing --- */
    {
@@ -6800,8 +6825,9 @@ static void lane_entry_target_pick(void)
    if (failures == had)
       printf("[pass] target pick: the list holds every target by its menu name;"
             " picked with the menu's OK after buttons held on an empty row it"
-            " makes the entry; from Left it changes what an entry does and keeps"
-            " its buttons; Back makes nothing\n");
+            " makes the entry, and the response time's list sets how long they are"
+            " held; from Left it changes what an entry does and keeps its buttons;"
+            " Back makes nothing\n");
 #endif
 }
 

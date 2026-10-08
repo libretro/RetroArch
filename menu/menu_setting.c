@@ -833,15 +833,71 @@ static char     menu_target_values[4096];
 static unsigned menu_target_number;
 static unsigned menu_target_pad;   /* the buttons held, for a new one; 0 keeps them */
 
+/* After what it does is picked, how quickly it does it: a second list,
+ * "Response Time" - at once, or held for a time. Opened at the next
+ * pass of the menu (menu_setting_entry_pending()), the list that was
+ * picked from being taken down after its change handler returns. */
+static char     menu_hold_text[8];
+static unsigned menu_hold_number;
+static unsigned menu_hold_pending;
+static const char menu_hold_values[] = "0|5|10|20|30|50";
+
+static void setting_entry_hold_change(rarch_setting_t *setting)
+{
+   if (!menu_hold_number)
+      return;
+   input_entry_set_hold(menu_hold_number,
+         (unsigned)strtoul(setting->value.target.string, NULL, 10));
+   menu_hold_number = 0;
+   setting_entry_rows_repopulate();
+}
+
+static size_t setting_entry_hold_repr(rarch_setting_t *setting,
+      char *s, size_t len)
+{
+   char secs[16];
+   unsigned tenths = (unsigned)strtoul(setting->value.target.string, NULL, 10);
+   if (!tenths)
+      return strlcpy(s, msg_hash_to_str(MSG_INPUT_COMBO_INSTANT), len);
+   if (tenths % 10)
+      snprintf(secs, sizeof(secs), "%u.%u", tenths / 10, tenths % 10);
+   else
+      snprintf(secs, sizeof(secs), "%u", tenths / 10);
+   return (size_t)snprintf(s, len, msg_hash_to_str(MSG_INPUT_COMBO_HOLD_SECONDS), secs);
+}
+
+/* The response time's list, if one is waiting to be opened. */
+void menu_setting_entry_pending(void)
+{
+   char enum_idx[16];
+   unsigned number = menu_hold_pending;
+   struct menu_state *menu_st = menu_state_get_ptr();
+
+   if (!number)
+      return;
+   menu_hold_pending = 0;
+   if (!input_entry_target(number, enum_idx, sizeof(enum_idx)))
+      return;   /* (not made after all) */
+   menu_hold_number = number;
+   snprintf(menu_hold_text, sizeof(menu_hold_text), "%u", input_entry_hold(number));
+   snprintf(enum_idx, sizeof(enum_idx), "%d", MENU_ENUM_LABEL_INPUT_COMBO_HOLD);
+   generic_action_ok_displaylist_push(enum_idx, NULL, NULL, 0,
+         menu_st->selection_ptr, 0, ACTION_OK_DL_DROPDOWN_BOX_LIST);
+}
+
 static void setting_entry_target_change(rarch_setting_t *setting)
 {
    const char *target = setting->value.target.string;
+   bool made;
    if (!menu_target_number || !*target)
       return;
    if (menu_target_pad)
-      input_entry_set_from_pad(menu_target_number, menu_target_pad, target);
+      made = input_entry_set_from_pad(menu_target_number, menu_target_pad, target);
    else
-      input_entry_set_target(menu_target_number, target);
+      made = input_entry_set_target(menu_target_number, target);
+   /* and then how quickly */
+   if (made)
+      menu_hold_pending = menu_target_number;
    menu_target_number = 0;
    menu_target_pad    = 0;
    setting_entry_rows_repopulate();
@@ -16491,6 +16547,20 @@ static void settings_build_input_hotkey(
          SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_entry_target_repr)
          /* its values are this file's own buffer, made again each time
           * the list is opened: not to be freed with the settings */
+         (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
+
+         /* how quickly it does it, picked from a list: not a row */
+         CONFIG_STRING_OPTIONS(
+               list, list_info,
+               menu_hold_text, sizeof(menu_hold_text),
+               MENU_ENUM_LABEL_INPUT_COMBO_HOLD,
+               MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
+               "0", menu_hold_values,
+               &group_info, &subgroup_info, parent_group,
+               setting_entry_hold_change, NULL);
+         MENU_SETTINGS_LIST_CURRENT_ADD_ENUM_IDX_PTR(list, list_info,
+               MENU_ENUM_LABEL_INPUT_COMBO_HOLD);
+         SETTINGS_ACTION_SET(repr, &(*list)[list_info->index - 1], setting_entry_hold_repr)
          (*list)[list_info->index - 1].free_flags &= ~SD_FREE_FLAG_VALUES;
 
          GROUP_END();

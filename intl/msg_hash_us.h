@@ -24936,7 +24936,15 @@ MSG_HASH(
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
-   "The hotkey, command or macro the buttons just held will set off."
+   "What happens when all of the combination's buttons are held down together: any hotkey, a command that has no hotkey, or one of your macros. The buttons still reach the game as well."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
+   "Response Time"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
+   "Instant acts the moment all of the buttons are down. Hold waits until they have been held together for the time chosen, so that pressing them briefly - in the middle of a game, say - does nothing."
    )
 MSG_HASH(
    MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
@@ -32855,6 +32863,30 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_REMAP_FIND_PRESS,
    "Press a button or push a stick on the controller of Port %u\n(Timeout %u seconds)"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_SET_BUTTONS,
+   "Set Buttons"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_CHOOSE_ACTION,
+   "Choose Action"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_INSTANT,
+   "Instant"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_HOLD_SECONDS,
+   "Hold for %s Seconds"
+   )
+MSG_HASH(
+   MSG_INPUT_COMBO_ROW_SUBLABEL,
+   "Buttons held together that set off a hotkey, a command or a macro. Right: hold the buttons to use, then choose what they do. Left: choose what they do. OK: type it. Start: remove it."
+   )
+MSG_HASH(
+   MSG_INPUT_MACRO_ROW_SUBLABEL,
+   "Buttons pressed for you a step at a time, each held for a number of the game's frames, written as \"down 2, down+right 2, a 4\". A combination sets it off. Start: remove it."
    )
 MSG_HASH(
    MSG_REMOVING_TEMPORARY_CONTENT_FILE,

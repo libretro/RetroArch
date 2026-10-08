@@ -88,6 +88,9 @@ void menu_setting_entries_refresh(void);
  * @number: @pad the buttons held on its empty row, or 0 to change what
  * an entry there is does. */
 void menu_setting_entry_target_pick(unsigned number, unsigned pad);
+/* A list of the combination rows' waiting to be opened, opened: called
+ * each pass of the menu. */
+void menu_setting_entry_pending(void);
 
 rarch_setting_t *menu_setting_find_enum(enum msg_hash_enums enum_idx);
 

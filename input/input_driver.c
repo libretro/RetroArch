@@ -12056,6 +12056,35 @@ bool input_entry_set_target(unsigned number, const char *target)
    return input_entry_add(number, spec);
 }
 
+/* How long entry @number's sources must be held first, in tenths of a
+ * second: 0 for at once. */
+unsigned input_entry_hold(unsigned number)
+{
+   unsigned i;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+         return input_entries.entry[i].hold;
+   return 0;
+}
+
+/* ... and set: up to 25 seconds. False if there is no such entry. */
+bool input_entry_set_hold(unsigned number, unsigned tenths)
+{
+   unsigned i;
+   if (tenths > 250)
+      return false;
+   for (i = 0; i < input_entries.count; i++)
+      if (input_entries.entry[i].number == number)
+      {
+         input_entries.entry[i].hold = (uint8_t)tenths;
+         if (number < 32)
+            input_entries_unread &= ~((uint32_t)1 << number);
+         input_entries_changed();
+         return true;
+      }
+   return false;
+}
+
 /* What entry @number is, as the configuration names it, in @s; its
  * length, 0 for none. */
 size_t input_entry_target(unsigned number, char *s, size_t len)
