@@ -1863,6 +1863,10 @@
 /* An analog trigger's or pressure-sensitive button's own deadzone, on
  * its own travel. */
 #define DEFAULT_ANALOG_TRIGGER_DEADZONE 0.0f
+/* The sticks' outer deadzone (a tilt this close to the edge is full)
+ * and anti-deadzone (movement starts at this share of full). */
+#define DEFAULT_ANALOG_OUTER_DEADZONE 0.0f
+#define DEFAULT_ANALOG_ANTI_DEADZONE 0.0f
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY 1.0f

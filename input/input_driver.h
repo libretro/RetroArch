@@ -750,6 +750,9 @@ typedef struct
     * sticks', [1] the analog buttons' - worked out by
     * input_driver_deadzones_refresh() when what they come from changes. */
    float port_deadzone[MAX_USERS][2];
+   /* the sticks' outer deadzone and anti-deadzone, from the settings */
+   float stick_outer;
+   float stick_anti;
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
    /* the listed keyboards' identities, and what each port reads */

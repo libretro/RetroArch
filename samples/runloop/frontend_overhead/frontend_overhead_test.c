@@ -3881,6 +3881,42 @@ static void lane_deadzone_numbers(void)
       CHECK(abs(v - ev) <= 3, why);
    }
 
+   /* the outer deadzone and the anti-deadzone: with the deadzone at
+    * 0.2 and the outer at 0.1, a stick at 0.85 is (0.85 - 0.2) / 0.7
+    * of full and at 0.95 full; with an anti-deadzone of 0.3 too, a
+    * stick at 0.5 is 0.3 + 0.375 * 0.7; and with the deadzone at 0 and
+    * only the anti-deadzone, a stick just off centre starts at 0.3 and
+    * one at rest is nothing */
+   {
+      static const struct { float dz, outer, anti, at, want; } shape[] = {
+         { 0.2f, 0.1f, 0.0f, 0.85f, 0.65f / 0.7f },
+         { 0.2f, 0.1f, 0.0f, 0.95f, 1.0f },
+         { 0.2f, 0.1f, 0.3f, 0.5f,  0.3f + (0.3f / 0.7f) * 0.7f },
+         { 0.0f, 0.0f, 0.3f, 0.02f, 0.3f + 0.02f * 0.7f },
+         { 0.0f, 0.0f, 0.3f, 0.0f,  0.0f } };
+      for (c = 0; c < ARRAY_SIZE(shape); c++)
+      {
+         int16_t x;
+         int want = (int)(shape[c].want * 32767.0f);
+         char why[200];
+         settings->floats.input_analog_deadzone       = shape[c].dz;
+         settings->floats.input_analog_outer_deadzone = shape[c].outer;
+         settings->floats.input_analog_anti_deadzone  = shape[c].anti;
+         input_driver_deadzones_refresh();
+         memset(syn_axes, 0, sizeof(syn_axes));
+         syn_axes[0] = (int16_t)(shape[c].at * 32767.0f);
+         input_driver_poll();
+         x = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+         snprintf(why, sizeof(why), "deadzone numbers: deadzone %.2f, outer %.2f, anti %.2f, stick at %.2f"
+               " read %d; it is %d", shape[c].dz, shape[c].outer, shape[c].anti, shape[c].at, x, want);
+         CHECK(abs(x - want) <= 40, why);
+      }
+      settings->floats.input_analog_outer_deadzone = 0.0f;
+      settings->floats.input_analog_anti_deadzone  = 0.0f;
+      settings->floats.input_analog_deadzone       = 0.2f;
+      input_driver_deadzones_refresh();
+   }
+
    /* the controller's own deadzones, from its profile, over the
     * global ones (both 0.2 here): its stick's 0, its triggers' 0.5 -
     * and with them cleared, the global ones again */
@@ -3932,7 +3968,8 @@ static void lane_deadzone_numbers(void)
             " in a straight line, its direction kept - half a tilt is 0.375 with"
             " 0.2 - nothing inside it, full at full; a trigger by its own"
             " deadzone, not the stick's, the same way on its own travel; a"
-            " controller's own deadzones over the global ones\n");
+            " controller's own deadzones over the global ones; the outer"
+            " deadzone and the anti-deadzone by the numbers\n");
 #endif
 }
 

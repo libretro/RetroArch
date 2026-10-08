@@ -19,6 +19,16 @@ S_FLOAT_EX(input_analog_trigger_deadzone, INPUT_ANALOG_TRIGGER_DEADZONE,
       DEFAULT_ANALOG_TRIGGER_DEADZONE, "%.2f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 0.95, 0.05, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
       "Analog Trigger Deadzone",
       "Ignore the first part of an analog trigger's pull, or of a pressure-sensitive button's press; the rest of the way is rescaled to the whole range. Apart from the stick deadzone, which applies to the sticks only.")
+S_FLOAT_EX(input_analog_outer_deadzone, INPUT_ANALOG_OUTER_DEADZONE,
+      "input_analog_outer_deadzone",
+      DEFAULT_ANALOG_OUTER_DEADZONE, "%.2f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 0.5, 0.05, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      "Analog Outer Deadzone",
+      "Treat a stick tilted this close to its edge as tilted all the way, for sticks that wear and stop short of full. The movement between the deadzone and this edge is spread over the whole range.")
+S_FLOAT_EX(input_analog_anti_deadzone, INPUT_ANALOG_ANTI_DEADZONE,
+      "input_analog_anti_deadzone",
+      DEFAULT_ANALOG_ANTI_DEADZONE, "%.2f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 0.9, 0.05, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
+      "Analog Anti-Deadzone",
+      "Start a stick's movement at this share of full as soon as it leaves the deadzone. For cores that have a deadzone of their own, which would otherwise come on top of this one: set it to the core's deadzone.")
 S_FLOAT_EX(input_analog_sensitivity, INPUT_ANALOG_SENSITIVITY,
       "input_analog_sensitivity",
       DEFAULT_ANALOG_SENSITIVITY, "%.1f", SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, -5.0, 5.0, 0.1, setting_action_ok_uint, NULL, NULL, NULL, NULL, NULL, 0,
