@@ -424,6 +424,19 @@ bool recording_init(void)
          params.aspect_ratio = (float)VIDEO_SCALE_W(params.out_dims)
                / VIDEO_SCALE_H(params.out_dims);
 
+      /* Raw core frames are unrotated; the GPU path reads back the
+       * already-rotated screen. Rotate them like the display does. */
+      params.rotation = retroarch_get_rotation() % 4;
+      if (params.rotation & 1)
+      {
+         if (!recording_state.out_dims)
+            params.out_dims = VIDEO_SCALE_PACK(
+                  VIDEO_SCALE_H(params.out_dims),
+                  VIDEO_SCALE_W(params.out_dims));
+         if (params.aspect_ratio > 0.0f)
+            params.aspect_ratio = 1.0f / params.aspect_ratio;
+      }
+
 #ifdef HAVE_VIDEO_FILTER
       if (settings->bools.video_post_filter_record
             && !!video_st->state_filter)

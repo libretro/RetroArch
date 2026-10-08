@@ -88,6 +88,10 @@ struct record_params
    bool allow_frame_drop;
    /* Prefer a hardware H.264 encoder for the built-in presets. */
    bool hw_encoder;
+   /* Quarter turns counter-clockwise to rotate incoming frames by.
+    * out_dims and aspect_ratio describe the rotated output, fb_dims
+    * the incoming frames. */
+   unsigned rotation;
 };
 
 struct record_video_data

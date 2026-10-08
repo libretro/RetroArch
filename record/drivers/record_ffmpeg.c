@@ -283,6 +283,9 @@ typedef struct ffmpeg
     * run-ahead) then still get the right spacing. Producer only. */
    uint64_t audio_frames_in;
    int64_t  video_next_pts;
+   /* Encoder thread: scratch for params.rotation, fb_dims pixels,
+    * allocated on first use. */
+   uint8_t *video_rot_buf;
    unsigned video_fifo_frames;
    bool     allow_frame_drop;
 
@@ -1519,6 +1522,9 @@ static void ffmpeg_free(void *data)
             / (handle->params.samplerate
                * handle->params.channels * sizeof(int16_t)));
 
+   av_free(handle->video_rot_buf);
+   handle->video_rot_buf = NULL;
+
    if (handle->audio.codec)
    {
 #if FFMPEG8
@@ -2105,11 +2111,61 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
             shrunk);
 }
 
+/* Rotate a packed frame by rot quarter turns counter-clockwise
+ * (libretro convention) from src (w x h, src_pitch bytes per row) into
+ * dst, tightly packed at the rotated width. */
+static void ffmpeg_rotate_frame(uint8_t *dst, const uint8_t *src,
+      unsigned w, unsigned h, int src_pitch, unsigned bpp, unsigned rot)
+{
+   unsigned x, y;
+   unsigned dw = (rot & 1) ? h : w;
+
+   for (y = 0; y < h; y++)
+   {
+      const uint8_t *row = src + (ptrdiff_t)y * src_pitch;
+      for (x = 0; x < w; x++)
+      {
+         unsigned dx, dy;
+         switch (rot)
+         {
+            case 1:  dx = y;         dy = w - 1 - x; break; /*  90 CCW */
+            case 2:  dx = w - 1 - x; dy = h - 1 - y; break; /* 180     */
+            default: dx = h - 1 - y; dy = x;         break; /* 270 CCW */
+         }
+         memcpy(dst + ((size_t)dy * dw + dx) * bpp, row + (size_t)x * bpp,
+               bpp);
+      }
+   }
+}
+
 static bool ffmpeg_push_video_thread(ffmpeg_t *handle,
       const struct record_video_data *vid, unsigned pts_skip)
 {
+   struct record_video_data rotated;
    bool ok;
    bool perf = ffmpeg_perf_enabled();
+
+   if (handle->params.rotation && !vid->is_dupe && vid->data)
+   {
+      unsigned bpp = (unsigned)handle->video.pix_size;
+      unsigned w   = VIDEO_SCALE_W(vid->dims);
+      unsigned h   = VIDEO_SCALE_H(vid->dims);
+      if (!handle->video_rot_buf)
+         handle->video_rot_buf = (uint8_t*)av_malloc(
+               VIDEO_SCALE_AREA(handle->params.fb_dims) * bpp);
+      if (     handle->video_rot_buf
+            && (size_t)w * h <= VIDEO_SCALE_AREA(handle->params.fb_dims))
+      {
+         unsigned rot = handle->params.rotation & 3;
+         ffmpeg_rotate_frame(handle->video_rot_buf,
+               (const uint8_t*)vid->data, w, h, vid->pitch, bpp, rot);
+         rotated        = *vid;
+         rotated.data   = handle->video_rot_buf;
+         rotated.dims   = (rot & 1) ? VIDEO_SCALE_PACK(h, w) : vid->dims;
+         rotated.pitch  = (int)(VIDEO_SCALE_W(rotated.dims) * bpp);
+         vid            = &rotated;
+      }
+   }
 
    if (!vid->is_dupe)
    {
