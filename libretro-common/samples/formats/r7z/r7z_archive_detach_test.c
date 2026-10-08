@@ -346,6 +346,65 @@ static void check_archive(const uint8_t *data, size_t len, const char *what,
    r7z_archive_close(a);
 }
 
+/* A folder decoded a slice at a time, and looked at between slices as a
+ * reader on another thread would: what is there is the member's bytes,
+ * in the place it stays in, and it only grows. */
+static void check_step(const uint8_t *data, size_t len, const char *what,
+      const uint8_t *a_want, const uint8_t *b_want)
+{
+   r7z_archive_t *a = NULL;
+   uint32_t       m;
+
+   printf("%s, a slice at a time\n", what);
+   check(r7z_archive_open(&a, data, len) == R7Z_OK && a, "open");
+   if (!a)
+      return;
+   for (m = 0; m < 2; m++)
+   {
+      const uint8_t *want     = m ? b_want : a_want;
+      size_t         want_len = m ? B_LEN : A_LEN;
+      const uint8_t *first    = NULL;
+      const uint8_t *view     = NULL;
+      size_t         avail    = 0, before = 0;
+      unsigned       steps    = 0;
+      int            res      = R7Z_PENDING;
+      int            ok       = 1;
+
+      check(r7z_archive_folder_size(a, r7z_archive_entry(a, m)->folder) >= want_len,
+            "the folder is at least the member");
+      while (res == R7Z_PENDING && steps < 100000)
+      {
+         res = r7z_archive_decode_step(a, m);
+         steps++;
+         if (r7z_archive_decode_peek(a, m, &view, &avail) != R7Z_OK)
+            ok = 0;
+         if (view)
+         {
+            if (!first)
+               first = view;
+            if (view != first || avail < before || avail > want_len
+                  || memcmp(view, want, avail))
+               ok = 0;
+            before = avail;
+         }
+      }
+      check(res == R7Z_OK, "decoded");
+      check(ok, "what was there between slices was the member's, in one place");
+      check(r7z_archive_decode_peek(a, m, &view, &avail) == R7Z_OK
+            && view && avail == want_len && !memcmp(view, want, want_len),
+            "all of it at the end");
+      {
+         const uint8_t *held = NULL;
+         size_t         held_len = 0;
+         check(r7z_archive_entry_borrow(a, m, &held, &held_len) == R7Z_OK
+               && held == view && held_len == want_len,
+               "and it is the folder that is held");
+      }
+      check(r7z_archive_decode_step(a, m) == R7Z_OK, "a step more changes nothing");
+   }
+   r7z_archive_close(a);
+}
+
 int main(void)
 {
    static uint8_t a_want[A_LEN];
@@ -362,6 +421,10 @@ int main(void)
          "non-solid: each member is its own folder", 0, 1, a_want, b_want);
    check_archive(solid_7z, sizeof(solid_7z),
          "solid: both members in one folder", 1, 1, a_want, b_want);
+   check_step(nonsolid_7z, sizeof(nonsolid_7z),
+         "non-solid: each member is its own folder", a_want, b_want);
+   check_step(solid_7z, sizeof(solid_7z),
+         "solid: both members in one folder", a_want, b_want);
    {
       /* nothing to read from, and a file cut short of its header */
       r7z_archive_t *a = NULL;
