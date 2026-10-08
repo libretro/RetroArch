@@ -6848,6 +6848,67 @@ static void lane_entry_target_pick(void)
 #endif
 }
 
+/* The Chinese pages of the on-screen keyboard. Held to: the page
+ * triggers and the next-page key step through the Latin, symbol and
+ * other languages' pages and the Chinese index, and not through the
+ * pages of characters; those step among themselves, the index before
+ * the first and after the last; a page of characters is laid out as
+ * the 4x11 grid from its string, blank past its last character; and
+ * the index, laid out after a page, leaves nothing of that page in the
+ * grid. */
+static void lane_osk_chinese(void)
+{
+#ifdef HAVE_LANGEXTRA
+   unsigned had = failures;
+   unsigned i, steps = 0;
+   enum osk_type at = OSK_LOWERCASE_LATIN;
+   char *grid[45];
+
+   do
+   {
+      at = input_osk_step(at, 1, true);
+      CHECK(at <= OSK_CHINESE_INDEX, "osk chinese: stepping on reached a page of characters");
+      steps++;
+   } while (at != OSK_LOWERCASE_LATIN && steps < 200);
+   CHECK(steps == (unsigned)OSK_CHINESE_INDEX, "osk chinese: stepping on did not go round every page once");
+   CHECK(input_osk_step(OSK_LOWERCASE_LATIN, -1, true) == OSK_CHINESE_INDEX,
+         "osk chinese: stepping back from the first page is not the index");
+   CHECK(input_osk_step(OSK_SYMBOLS_PAGE1, 1, false) == OSK_LOWERCASE_LATIN,
+         "osk chinese: with the symbols hidden it went past them");
+   CHECK(   input_osk_step(OSK_CHINESE_B_1, 1, true) == OSK_CHINESE_B_2
+         && input_osk_step(OSK_CHINESE_B_2, -1, true) == OSK_CHINESE_B_1
+         && input_osk_step(OSK_CHINESE_A_1, -1, true) == OSK_CHINESE_INDEX
+         && input_osk_step(OSK_CHINESE_Z_5, 1, true) == OSK_CHINESE_INDEX,
+         "osk chinese: the pages of characters do not step among themselves, the index at the ends");
+
+   memset(grid, 0, sizeof(grid));
+   input_osk_chinese_grid(grid, OSK_CHINESE_B_1);
+   for (i = 0; i < 44; i++)
+      if (!grid[i])
+         break;
+   CHECK(i == 44, "osk chinese: a page left a key of the grid unset");
+   CHECK(   grid[0] && !strcmp(grid[0], "1") && !strcmp(grid[10], "\xe2\x87\xa6")
+         && !strcmp(grid[11], "\xe7\x89\x88")
+         && !strcmp(grid[21], "\xe2\x8f\x8e") && !strcmp(grid[32], "\xe2\x87\xa9")
+         && !strcmp(grid[43], "\xe2\x8c\x82") && strlen(grid[42]) == 3,
+         "osk chinese: page b 1 is not laid out as the grid");
+   input_osk_chinese_grid(grid, OSK_CHINESE_A_1);
+   CHECK(strlen(grid[19]) == 3 && !grid[20][0] && !grid[22][0] && !grid[42][0],
+         "osk chinese: past the last character of a page the keys are not blank");
+   input_osk_chinese_grid(grid, OSK_CHINESE_B_1);
+   input_osk_chinese_grid(grid, OSK_CHINESE_INDEX);
+   CHECK(   !strcmp(grid[11], "a") && !grid[19][0] && !grid[33][0] && !grid[34][0]
+         && !grid[42][0] && !strcmp(grid[43], "\xe2\x8c\x82"),
+         "osk chinese: the index is not its 44 keys, i u v blank, or keeps a key of the page before");
+
+   if (failures == had)
+      printf("[pass] osk chinese: the triggers step to the index and not through"
+            " the pages of characters, which step among themselves; a page is"
+            " laid out from its string, blank past its end; the index keeps"
+            " nothing of the page before\n");
+#endif
+}
+
 static void lane_aim_stick(void)
 {
 #if defined(HAVE_TEST_DRIVERS) && !defined(_WIN32)
@@ -8192,6 +8253,7 @@ int main(int argc, char *argv[])
       lane_aim_stick();
       lane_core_view();
       lane_key_events();
+      lane_osk_chinese();
       /* last: these restart the drivers */
       lane_input_kept();
       lane_joypad_reinit();

@@ -7890,19 +7890,103 @@ bool input_osk_native_available(void)
 }
 
 #ifdef HAVE_LANGEXTRA
+#include "chinese_osk_pages.h"
+
 /* The Chinese keyboard's first page for each pinyin initial, indexed by
- * the initial. i, u and v have no page, and no game title starts with
- * one. */
+ * the initial. i, u and v have no page: they begin no syllable. */
 static const enum osk_type osk_chinese_first_page[] = {
-   OSK_CHINESE_A_1,       OSK_CHINESE_B_1,       OSK_CHINESE_C_1,       OSK_CHINESE_D_1,    
-   OSK_CHINESE_E_1,       OSK_CHINESE_F_1,       OSK_CHINESE_G_1,       OSK_CHINESE_H_1,    
-   OSK_TYPE_UNKNOWN,      OSK_CHINESE_J_1,       OSK_CHINESE_K_1,       OSK_CHINESE_L_1,    
-   OSK_CHINESE_M_1,       OSK_CHINESE_N_1,       OSK_CHINESE_O_1,       OSK_CHINESE_P_1,    
-   OSK_CHINESE_Q_1,       OSK_CHINESE_R_1,       OSK_CHINESE_S_1,       OSK_CHINESE_T_1,    
-   OSK_TYPE_UNKNOWN,      OSK_TYPE_UNKNOWN,      OSK_CHINESE_W_1,       OSK_CHINESE_X_1,    
-   OSK_CHINESE_Y_1,       OSK_CHINESE_Z_1,    
+   OSK_CHINESE_A_1,  OSK_CHINESE_B_1,  OSK_CHINESE_C_1,  OSK_CHINESE_D_1,
+   OSK_CHINESE_E_1,  OSK_CHINESE_F_1,  OSK_CHINESE_G_1,  OSK_CHINESE_H_1,
+   OSK_TYPE_UNKNOWN, OSK_CHINESE_J_1,  OSK_CHINESE_K_1,  OSK_CHINESE_L_1,
+   OSK_CHINESE_M_1,  OSK_CHINESE_N_1,  OSK_CHINESE_O_1,  OSK_CHINESE_P_1,
+   OSK_CHINESE_Q_1,  OSK_CHINESE_R_1,  OSK_CHINESE_S_1,  OSK_CHINESE_T_1,
+   OSK_TYPE_UNKNOWN, OSK_TYPE_UNKNOWN, OSK_CHINESE_W_1,  OSK_CHINESE_X_1,
+   OSK_CHINESE_Y_1,  OSK_CHINESE_Z_1
 };
+
+/* A page of the table for every character page, and none over. */
+typedef char chinese_osk_pages_match_enum[
+      (ARRAY_SIZE(chinese_osk_pages) == OSK_TYPE_LAST - OSK_CHINESE_A_1) ? 1 : -1];
+
+/* The keys of the character page shown, each a character and its end:
+ * what the grid's keys point at. One keyboard is shown at a time. */
+static char osk_chinese_keys[CHINESE_OSK_PAGE_CHARS][4];
+
+/* A Chinese page laid out in @grid (44 keys): the index as it is, or a
+ * page of characters as the 4x11 grid. */
+void input_osk_chinese_grid(char **grid, enum osk_type osk_idx)
+{
+   static const char *top[11] = {
+      "1","2","3","4","5","6","7","8","9","0","\xe2\x87\xa6" /* ⇦ */ };
+   static const char *row_end[3] = {
+      "\xe2\x8f\x8e" /* ⏎ */, "\xe2\x87\xa9" /* ⇩ */, "\xe2\x8c\x82" /* ⌂ */ };
+   const char *page;
+   unsigned i;
+
+   if (osk_idx == OSK_CHINESE_INDEX)
+   {
+      for (i = 0; i < 44; i++)
+         grid[i] = (char*)chinese_index_grid[i];
+      return;
+   }
+   if (osk_idx < OSK_CHINESE_A_1 || osk_idx >= OSK_TYPE_LAST)
+      return;
+   page = chinese_osk_pages[osk_idx - OSK_CHINESE_A_1];
+   for (i = 0; i < 11; i++)
+      grid[i] = (char*)top[i];
+   for (i = 0; i < CHINESE_OSK_PAGE_CHARS; i++)
+   {
+      char *key = osk_chinese_keys[i];
+      if (page[0])
+      {
+         key[0] = page[0];
+         key[1] = page[1];
+         key[2] = page[2];
+         page  += 3;
+      }
+      else
+         key[0] = '\0';
+      key[3] = '\0';
+      if (!key[0])
+         key[1] = key[2] = '\0';
+      grid[11 + (i / 10) * 11 + (i % 10)] = key;
+   }
+   for (i = 0; i < 3; i++)
+      grid[21 + i * 11] = (char*)row_end[i];
+}
 #endif
+
+/* The page after (@dir > 0) or before (< 0) @osk_idx, as the next-page
+ * key and the menu's page triggers step: through the Latin pages, the
+ * symbols if they are shown, and the other languages' pages, the
+ * Chinese ones by their index alone - its pages of characters are
+ * stepped through among themselves, the index before the first and
+ * after the last. */
+enum osk_type input_osk_step(enum osk_type osk_idx, int dir,
+      bool show_symbol_pages)
+{
+   enum osk_type last = show_symbol_pages
+#ifdef HAVE_LANGEXTRA
+      ? OSK_CHINESE_INDEX
+#else
+      ? (enum osk_type)(OSK_TYPE_LAST - 1)
+#endif
+      : OSK_SYMBOLS_PAGE1;
+#ifdef HAVE_LANGEXTRA
+   if (osk_idx > OSK_CHINESE_INDEX)
+   {
+      if (dir < 0)
+         return (enum osk_type)(osk_idx - 1);  /* the first: the index */
+      return (osk_idx < OSK_TYPE_LAST - 1)
+         ? (enum osk_type)(osk_idx + 1) : OSK_CHINESE_INDEX;
+   }
+#endif
+   if (dir < 0)
+      return (osk_idx > OSK_TYPE_UNKNOWN + 1)
+         ? (enum osk_type)(osk_idx - 1) : last;
+   return (osk_idx < last)
+      ? (enum osk_type)(osk_idx + 1) : (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+}
 
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
@@ -7946,10 +8030,8 @@ void input_event_osk_append(
          else
             *osk_idx = (enum osk_type)prv_osk;
       }
-      else if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
       else
-         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
+         *osk_idx = input_osk_step(*osk_idx, 1, show_symbol_pages);
    }
    else if (*osk_idx == OSK_KOREAN_PAGE1 && word && len == 3)
    {
@@ -7974,12 +8056,7 @@ void input_event_osk_append(
    else if (memcmp(word, "Lower", 6) == 0)
       *osk_idx = OSK_LOWERCASE_LATIN;
    else if (memcmp(word, "Next", 5) == 0)
-   {
-      if (*osk_idx < (show_symbol_pages ? OSK_TYPE_LAST - 1 : OSK_SYMBOLS_PAGE1))
-         *osk_idx = (enum osk_type)(*osk_idx + 1);
-      else
-         *osk_idx = (enum osk_type)(OSK_TYPE_UNKNOWN + 1);
-   }
+      *osk_idx = input_osk_step(*osk_idx, 1, show_symbol_pages);
 #endif
    else
    {

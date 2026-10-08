@@ -118,6 +118,16 @@ enum osk_type
    OSK_TYPE_LAST
 };
 
+/* The page after (@dir > 0) or before (@dir < 0) a page of the
+ * keyboard, as its next-page key and the menu's page triggers step. */
+enum osk_type input_osk_step(enum osk_type osk_idx, int dir,
+      bool show_symbol_pages);
+
+#ifdef HAVE_LANGEXTRA
+/* A Chinese page laid out in @grid, 44 keys. */
+void input_osk_chinese_grid(char **grid, enum osk_type osk_idx);
+#endif
+
 void input_event_osk_append(
       input_keyboard_line_t *keyboard_line,
       enum osk_type *osk_idx,
