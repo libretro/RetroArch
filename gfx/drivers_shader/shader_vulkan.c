@@ -1082,7 +1082,7 @@ static bool slang_chain_emits_hdr16(const struct vulkan_filter_chain *chain);
 static void slang_chain_set_emits_hdr16(struct vulkan_filter_chain *chain);
 
 static void slang_chain_flush(struct vulkan_filter_chain *chain);
-static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
+static bool slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
       unsigned passes);
 static void slang_chain_execute_deferred(struct vulkan_filter_chain *chain);
 static void slang_chain_set_num_sync_indices(
@@ -1535,7 +1535,11 @@ static struct vulkan_filter_chain *slang_chain_new(
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
    slang_chain_set_swapchain_info(chain, info->swapchain);
-   slang_chain_set_num_passes(chain, info->num_passes);
+   if (!slang_chain_set_num_passes(chain, info->num_passes))
+   {
+      slang_chain_free(chain);
+      return NULL;
+   }
    return chain;
 }
 
@@ -2163,7 +2167,7 @@ static void slang_chain_set_emits_hdr16(struct vulkan_filter_chain *chain)
    chain->emits_hdr16_output = true;
 }
 
-static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
+static bool slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
       unsigned num_passes)
 {
    unsigned i;
@@ -2173,7 +2177,7 @@ static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
          (vulkan_filter_chain_pass_info*)realloc(chain->pass_info,
                num_passes * sizeof(*chain->pass_info));
       if (!new_info && num_passes)
-         return;
+         return false;
       chain->pass_info = new_info;
       if (num_passes > chain->pass_info_count)
          memset(&chain->pass_info[chain->pass_info_count], 0,
@@ -2183,19 +2187,23 @@ static void slang_chain_set_num_passes(struct vulkan_filter_chain *chain,
    for (i = 0; i < chain->pass_count; i++)
       slang_pass_free(chain->passes[i]);
    free(chain->passes);
+   chain->passes     = NULL;
    chain->pass_count = 0;
+   if (!num_passes)
+      return true;
    if (!(chain->passes = (struct slang_pass**)
             calloc(num_passes, sizeof(*chain->passes))))
-      return;
+      return false;
    for (i = 0; i < num_passes; i++)
    {
       if (!(chain->passes[i] = slang_pass_new(chain->device, &chain->memory_properties,
                chain->cache, chain->num_deferred, i + 1 == num_passes)))
-         return;
+         return false;
       chain->passes[i]->common      = &chain->common;
       chain->passes[i]->pass_number = i;
       chain->pass_count++;
    }
+   return true;
 }
 
 static void slang_chain_set_shader(struct vulkan_filter_chain *chain,
