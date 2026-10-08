@@ -1770,24 +1770,20 @@ static bool playlist_push_new_entry(playlist_t *playlist,
       playlist->entries[0].last_played_str    = NULL;
       playlist->entries[0].subsystem_roms     = NULL;
       playlist->entries[0].path_id            = NULL;
+      /* Slot 0 still holds the entry that was on top, or fresh heap
+       * on the first push: each packed word is written whole, so no
+       * bit of it - a thumbnail-name flag above all - carries over.
+       * The new entry has the caller's slot and nothing else. */
+      playlist->entries[0].runtime            = 0;
+      playlist->entries[0].last_played_ymd    = 0;
+      playlist->entries[0].last_played_hms    = 0;
+      playlist->entries[0].attr               = PLAYLIST_ENTRY_SLOT(entry);
       PLAYLIST_SET_RUNTIME_STATUS(&playlist->entries[0],
             PLAYLIST_RUNTIME_UNKNOWN);
-      PLAYLIST_SET_RUNTIME_HOURS(&playlist->entries[0], 0);
-      PLAYLIST_SET_RUNTIME_MINUTES(&playlist->entries[0], 0);
-      PLAYLIST_SET_RUNTIME_SECONDS(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_YEAR(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_MONTH(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_DAY(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_HOUR(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_MINUTE(&playlist->entries[0], 0);
-      PLAYLIST_SET_LAST_PLAYED_SECOND(&playlist->entries[0], 0);
 
       if (path_id->real_path && *path_id->real_path)
          playlist->entries[0].path            = strdup(path_id->real_path);
       playlist->entries[0].path_id            = path_id;
-
-      PLAYLIST_SET_ENTRY_SLOT(&playlist->entries[0],
-            PLAYLIST_ENTRY_SLOT(entry));
 
       if (entry->label && *entry->label)
          playlist->entries[0].label           = strdup(entry->label);
