@@ -103,6 +103,7 @@ typedef struct
 {
    gcmTexture tex;
    u32 *data;
+   u32 size;   /* bytes data holds */
    u32 offset;
    u32 wrap_s;
    u32 wrap_t;
@@ -645,20 +646,19 @@ static void *rsx_font_init(void *data,
    font->col_index          = font->rsx->col_index[RSX_SHADER_STOCK_BLEND];
    font->tex_unit           = font->rsx->tex_unit[RSX_SHADER_STOCK_BLEND];
 
-   font->vertices           = (rsx_vertex_t *)rsxMemalign(128,
-         sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES);
+   if (!(font->vertices     = (rsx_vertex_t *)rsxMemalign(128,
+         sizeof(rsx_vertex_t) * RSX_MAX_FONT_VERTICES)))
+      goto error;
    font->rsx->font_vert_idx = 0;
 
    /* The atlas may grow; the texture follows it */
    font->atlas->max_dims = VIDEO_SCALE_PACK(2048, 2048);
    font->tex_dims           = VIDEO_SCALE_PACK(font->atlas->width,
          font->atlas->height);
-   font->texture.data       = (u32*)rsxMemalign(128,
-         VIDEO_SCALE_AREA(font->tex_dims));
-   rsxAddressToOffset(font->texture.data, &font->texture.offset);
-
-   if (!font->texture.data)
+   if (!(font->texture.data = (u32*)rsxMemalign(128,
+         VIDEO_SCALE_AREA(font->tex_dims))))
       goto error;
+   rsxAddressToOffset(font->texture.data, &font->texture.offset);
 
    if (!rsx_font_upload_atlas(font->rsx, font))
       goto error;
@@ -1023,18 +1023,36 @@ static bool rsx_font_get_line_metrics(void* data, struct font_line_metrics **met
  * VIDEO DRIVER
  */
 
-static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
+static bool rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
       const void *frame, unsigned width, unsigned height, unsigned pitch,
       bool rgb32, bool menu, enum texture_filter_type filter_type)
 {
    u8 *texbuffer;
    u32 mag_filter, min_filter;
    const u8 *data         = (u8*)frame;
+   u32 bytes              = height * pitch;
+
+   /* The buffer is kept from load to load; a frame bigger than it
+    * (a taller frame, a wider pitch, 16 to 32 bits) gets a new one */
+   if (texture->data && bytes > texture->size)
+   {
+      /* The RSX may still be reading it, as in
+       * rsx_unload_texture_internal */
+      if (rsx && rsx->context)
+         rsxFinish(rsx->context, 0);
+      rsxFree(texture->data);
+      texture->data = NULL;
+      texture->size = 0;
+   }
 
    if (!texture->data)
    {
-      if (!(texture->data = (u32*)rsxMemalign(128, texture->height * pitch)))
-         return;
+      u32 size = texture->height * pitch;
+      if (size < bytes)
+         size = bytes;
+      if (!(texture->data = (u32*)rsxMemalign(128, size)))
+         return false;
+      texture->size = size;
       rsxAddressToOffset(texture->data, &texture->offset);
    }
 
@@ -1083,6 +1101,7 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
    texture->mag_filter    = mag_filter;
    texture->wrap_s        = GCM_TEXTURE_CLAMP_TO_EDGE;
    texture->wrap_t        = GCM_TEXTURE_CLAMP_TO_EDGE;
+   return true;
 }
 
 static void rsx_set_projection(rsx_t *rsx,
@@ -1211,6 +1230,7 @@ static int rsx_make_buffer(rsx_buffer *buffer, u16 width, u16 height, int id)
 error:
    if (buffer->ptr)
       rsxFree (buffer->ptr);
+   buffer->ptr = NULL;
    return 0;
 }
 
@@ -1330,7 +1350,8 @@ static gcmContextData *rsx_init_screen(rsx_t* gcm)
    gcmSetFlipMode(GCM_FLIP_VSYNC); /* Wait for VSYNC to flip */
 
    gcm->depth_pitch  = res.width * sizeof(u32);
-   gcm->depth_buffer = (u32 *)rsxMemalign(64, (res.height * gcm->depth_pitch));  /* Beware, if was (res.height * gcm->depth_pitch) * 2 */
+   if (!(gcm->depth_buffer = (u32 *)rsxMemalign(64, (res.height * gcm->depth_pitch))))  /* Beware, if was (res.height * gcm->depth_pitch) * 2 */
+      goto error;
 
    rsxAddressToOffset(gcm->depth_buffer, &gcm->depth_offset);
 
@@ -1377,9 +1398,12 @@ static void rsx_init_render_target(rsx_t *rsx, rsx_buffer *buffer, int id)
    rsx->surface[id].y				         = 0;
 }
 
-static void rsx_init_vertices(rsx_t *rsx)
+static bool rsx_init_vertices(rsx_t *rsx)
 {
-   rsx->vertices         = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES); /* vertices for menu and core */
+   /* vertices for menu and core */
+   if (!(rsx->vertices   = (rsx_vertex_t *)rsxMemalign(128,
+         sizeof(rsx_vertex_t) * RSX_MAX_VERTICES)))
+      return false;
    rsx->vert_idx         = 0;
 
    rsx->vertices[0].x    = 0.0f;
@@ -1420,12 +1444,15 @@ static void rsx_init_vertices(rsx_t *rsx)
 
 #if RSX_MAX_TEXTURE_VERTICES > 0
    /* Using preallocated texture vertices */
-   rsx->texture_vertices = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_TEXTURE_VERTICES);
+   if (!(rsx->texture_vertices = (rsx_vertex_t *)rsxMemalign(128,
+         sizeof(rsx_vertex_t) * RSX_MAX_TEXTURE_VERTICES)))
+      return false;
    rsx->texture_vert_idx = 0;
 #endif
+   return true;
 }
 
-static void rsx_init_shader(rsx_t *rsx)
+static bool rsx_init_shader(rsx_t *rsx)
 {
    u32 fpsize                               = 0;
    u32 vpsize                               = 0;
@@ -1439,7 +1466,7 @@ static void rsx_init_shader(rsx_t *rsx)
    if (!rsx->fp_buffer[RSX_SHADER_MENU])
    {
       RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
-      return;
+      return false;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_MENU], rsx->fp_ucode[RSX_SHADER_MENU], fpsize);
    rsxAddressToOffset(rsx->fp_buffer[RSX_SHADER_MENU], &rsx->fp_offset[RSX_SHADER_MENU]);
@@ -1459,7 +1486,7 @@ static void rsx_init_shader(rsx_t *rsx)
    if (!rsx->fp_buffer[RSX_SHADER_STOCK_BLEND])
    {
       RARCH_ERR("[RSX] Failed to allocate fp_buffer.\n");
-      return;
+      return false;
    }
    memcpy(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], rsx->fp_ucode[RSX_SHADER_STOCK_BLEND], fpsize);
    rsxAddressToOffset(rsx->fp_buffer[RSX_SHADER_STOCK_BLEND], &rsx->fp_offset[RSX_SHADER_STOCK_BLEND]);
@@ -1469,6 +1496,7 @@ static void rsx_init_shader(rsx_t *rsx)
    rsx->uv_index[RSX_SHADER_STOCK_BLEND]    = rsxVertexProgramGetAttrib(rsx->vpo[RSX_SHADER_STOCK_BLEND], "texcoord");
    rsx->tex_unit[RSX_SHADER_STOCK_BLEND]    = rsxFragmentProgramGetAttrib(rsx->fpo[RSX_SHADER_STOCK_BLEND], "texture");
    rsx->bgcolor[RSX_SHADER_STOCK_BLEND]     = rsxFragmentProgramGetConst(rsx->fpo[RSX_SHADER_STOCK_BLEND], "bgcolor");
+   return true;
 }
 
 static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
@@ -1485,13 +1513,11 @@ static void* rsx_init(const video_info_t* video)
 
    memset(rsx, 0, sizeof(rsx_t));
 
-   rsx->context = rsx_init_screen(rsx);
+   if (!(rsx->context = rsx_init_screen(rsx)))
+      goto error;
 
    if (!(ctx_driver = rsx_get_context(rsx)))
-   {
-      free(rsx);
-      return NULL;
-   }
+      goto error;
 
    video_context_driver_set((const gfx_ctx_driver_t*)ctx_driver);
    rsx->ctx_driver = ctx_driver;
@@ -1499,14 +1525,16 @@ static void* rsx_init(const video_info_t* video)
 
    for (i = 0; i < RSX_MAX_BUFFERS; i++)
    {
-      rsx_make_buffer(&rsx->buffers[i], rsx->width, rsx->height, i);
+      if (!rsx_make_buffer(&rsx->buffers[i], rsx->width, rsx->height, i))
+         goto error;
       rsx_init_render_target(rsx, &rsx->buffers[i], i);
    }
 
 #if defined(HAVE_MENU_BUFFER)
    for (i = 0; i < RSX_MAX_MENU_BUFFERS; i++)
    {
-      rsx_make_buffer(&rsx->menuBuffers[i], rsx->width, rsx->height, i+RSX_MAX_BUFFERS);
+      if (!rsx_make_buffer(&rsx->menuBuffers[i], rsx->width, rsx->height, i+RSX_MAX_BUFFERS))
+         goto error;
       rsx_init_render_target(rsx, &rsx->menuBuffers[i], i+RSX_MAX_BUFFERS);
    }
 #endif
@@ -1521,8 +1549,8 @@ static void* rsx_init(const video_info_t* video)
    rsx->menu_texture.height  = rsx->height;
    rsx->menu_texture.width   = rsx->width;
 
-   rsx_init_shader(rsx);
-   rsx_init_vertices(rsx);
+   if (!rsx_init_shader(rsx) || !rsx_init_vertices(rsx))
+      goto error;
 
    {
       static const uint32_t white = 0xffffffffu;
@@ -1531,8 +1559,9 @@ static void* rsx_init(const video_info_t* video)
       image.pixels       = (uint32_t*)&white;
       image.width        = 1;
       image.height       = 1;
-      rsx->white_texture = (rsx_texture_t*)rsx_load_texture_internal(rsx,
-            &image, TEXTURE_FILTER_NEAREST);
+      if (!(rsx->white_texture = (rsx_texture_t*)rsx_load_texture_internal(
+            rsx, &image, TEXTURE_FILTER_NEAREST)))
+         goto error;
    }
 
    rsx_flip(rsx->context, RSX_MAX_BUFFERS - 1);
@@ -1554,6 +1583,19 @@ static void* rsx_init(const video_info_t* video)
       rsx->msg_rendering_enabled = true;
 
    return rsx;
+
+error:
+   /* What the RSX has not drawn from goes. The display and depth
+    * buffers handed to it stay, as rsx_free leaves them. */
+   for (i = 0; i < RSX_MAX_SHADERS; i++)
+      if (rsx->fp_buffer[i])
+         rsxFree(rsx->fp_buffer[i]);
+   if (rsx->vertices)
+      rsxFree(rsx->vertices);
+   if (rsx->texture_vertices)
+      rsxFree(rsx->texture_vertices);
+   free(rsx);
+   return NULL;
 }
 
 static void rsx_update_viewport(rsx_t* rsx)
@@ -1587,12 +1629,17 @@ static uintptr_t rsx_load_texture_internal(void *video_data, void *data,
 {
    rsx_t *rsx                     = (rsx_t *)video_data;
    struct texture_image *image    = (struct texture_image*)data;
-   rsx_texture_t *texture         = (rsx_texture_t *)malloc(sizeof(rsx_texture_t));
+   rsx_texture_t *texture         = (rsx_texture_t *)calloc(1, sizeof(rsx_texture_t));
+   if (!texture)
+      return 0;
    texture->width                 = image->width;
    texture->height                = image->height;
-   texture->data                  = (u32*)rsxMemalign(128, (image->height * image->width*4));
-   rsxAddressToOffset(texture->data, &texture->offset);
-   rsx_load_texture_data(rsx, texture, image->pixels, image->width, image->height, image->width*4, true, false, filter_type);
+   if (!rsx_load_texture_data(rsx, texture, image->pixels, image->width,
+            image->height, image->width*4, true, false, filter_type))
+   {
+      free(texture);
+      return 0;
+   }
 
    return (uintptr_t)texture;
 }
@@ -2183,7 +2230,12 @@ static bool rsx_overlay_load(void *data,
    for (i = 0; i < num_images; i++)
    {
       rsx_overlay_t *o = (rsx_overlay_t *)&rsx->overlay[i];
-      o->vertices = (rsx_vertex_t *)rsxMemalign(128, sizeof(rsx_vertex_t) * RSX_MAX_VERTICES);
+      if (!(o->vertices = (rsx_vertex_t *)rsxMemalign(128,
+            sizeof(rsx_vertex_t) * RSX_MAX_VERTICES)))
+      {
+         rsx_free_overlay(rsx);
+         return false;
+      }
 
       /* Default. Stretch to whole screen. */
       rsx_overlay_tex_geom(rsx, i, 0, 0, 1, 1);
@@ -2198,8 +2250,13 @@ static bool rsx_overlay_load(void *data,
       o->texture.data = NULL;
       o->texture.height = images[i].height;
       o->texture.width = images[i].width;
-      rsx_load_texture_data(rsx, &o->texture, images[i].pixels, images[i].width, images[i].height, images[i].width*4,
-                            true, false, TEXTURE_FILTER_LINEAR);
+      if (!rsx_load_texture_data(rsx, &o->texture, images[i].pixels,
+               images[i].width, images[i].height, images[i].width*4,
+               true, false, TEXTURE_FILTER_LINEAR))
+      {
+         rsx_free_overlay(rsx);
+         return false;
+      }
    }
 
    return true;
@@ -2387,17 +2444,19 @@ static bool rsx_frame(void* data, const void* frame,
    if (frame && width && height)
    {
       gcm->tex_index  = ((gcm->tex_index + 1) % RSX_MAX_TEXTURES);
-      rsx_load_texture_data(gcm,
+      if (rsx_load_texture_data(gcm,
             &gcm->texture[gcm->tex_index],
             frame, width, height, pitch, gcm->rgb32, false,
             gcm->smooth
             ? TEXTURE_FILTER_LINEAR
-            : TEXTURE_FILTER_NEAREST);
-      /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU,
-       * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
-      rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
-      rsx_draw_vertices(gcm);
-      draw = true;
+            : TEXTURE_FILTER_NEAREST))
+      {
+         /* TODO/FIXME - pipeline ID being used here is RSX_SHADER_MENU,
+          * shouldn't this be RSX_SHADER_STOCK_BLEND instead? */
+         rsx_set_texture(gcm, &gcm->texture[gcm->tex_index]);
+         rsx_draw_vertices(gcm);
+         draw = true;
+      }
    }
 
 #ifdef HAVE_MENU
@@ -2650,6 +2709,7 @@ static uintptr_t rsx_load_texture_compressed(void *video_data,
       free(texture);
       return 0;
    }
+   texture->size   = total;
    rsxAddressToOffset(texture->data, &texture->offset);
 
    /* Mip chain is stored contiguously; the RSX derives per-level

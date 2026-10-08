@@ -19,6 +19,7 @@
 #define VIDEO_RESOLUTION_1440x1080 11
 #define VIDEO_RESOLUTION_1280x1080 12
 #define VIDEO_RESOLUTION_960x1080  13
+#define VIDEO_BUFFER_FORMAT_XRGB   0
 
 typedef struct _videodisplaymode
 {
@@ -38,9 +39,28 @@ typedef struct _videostate
    videoDisplayMode displayMode;
 } videoState;
 
+typedef struct _videoresolution
+{
+   uint16_t width;
+   uint16_t height;
+} videoResolution;
+
+typedef struct _videoconfig
+{
+   uint8_t  resolution;
+   uint8_t  format;
+   uint8_t  aspect;
+   uint8_t  padding[9];
+   uint32_t pitch;
+} videoConfiguration;
+
 int32_t videoGetState(int32_t videoOut, int32_t deviceIndex,
       videoState *state);
 int32_t videoGetResolutionAvailability(uint32_t videoOut,
       uint32_t resolutionId, uint32_t aspect, uint32_t option);
 
+int32_t videoGetResolution(int32_t resolutionId,
+      videoResolution *resolution);
+int32_t videoConfigure(int32_t videoOut, videoConfiguration *config,
+      void *option, int32_t blocking);
 #endif
