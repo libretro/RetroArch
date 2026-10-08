@@ -44,6 +44,15 @@
 #include <time.h>
 #endif
 
+#if defined(__linux__)
+#include <dirent.h>
+#include <errno.h>
+#include <sys/resource.h>
+#include <sys/syscall.h>
+#include <unistd.h>
+#define FFMPEG_HAVE_THREAD_NICE 1
+#endif
+
 #include "record_ffmpeg.h"
 
 #ifdef __cplusplus
@@ -1289,6 +1298,80 @@ static bool ffmpeg_init_muxer_post(ffmpeg_t *handle)
 
 static void ffmpeg_thread(void *data);
 
+/* Encoder threads run this much nicer than the core, in drop mode
+ * only: with blocking on, a starved encoder just stalls the game. */
+#define ENCODER_NICE_DELTA 10
+#define MAX_TRACKED_TIDS   512
+
+#ifdef FFMPEG_HAVE_THREAD_NICE
+struct ff_tid_set
+{
+   pid_t tids[MAX_TRACKED_TIDS];
+   unsigned count;
+};
+
+static void ffmpeg_tids_snapshot(struct ff_tid_set *set)
+{
+   struct dirent *ent;
+   DIR *dir   = opendir("/proc/self/task");
+
+   set->count = 0;
+   if (!dir)
+      return;
+   while ((ent = readdir(dir)) && set->count < MAX_TRACKED_TIDS)
+   {
+      long tid = strtol(ent->d_name, NULL, 10);
+      if (tid > 0)
+         set->tids[set->count++] = (pid_t)tid;
+   }
+   closedir(dir);
+}
+
+static void ffmpeg_renice_tid(pid_t tid, int delta)
+{
+   int cur;
+
+   errno = 0;
+   cur   = getpriority(PRIO_PROCESS, (id_t)tid);
+   if (cur == -1 && errno)
+      return;
+   /* Raising nice never needs privileges. */
+   setpriority(PRIO_PROCESS, (id_t)tid, cur + delta);
+}
+
+/* Renice threads an encoder spawned during avcodec_open2(). They
+ * inherit the main thread's priority, and lowering that around the
+ * open can't be undone without CAP_SYS_NICE. */
+static unsigned ffmpeg_renice_new_threads(const struct ff_tid_set *before)
+{
+   unsigned i, j, n = 0;
+   struct ff_tid_set *after = (struct ff_tid_set*)malloc(sizeof(*after));
+
+   if (!after)
+      return 0;
+   ffmpeg_tids_snapshot(after);
+   for (i = 0; i < after->count; i++)
+   {
+      bool seen = false;
+      for (j = 0; j < before->count; j++)
+      {
+         if (after->tids[i] == before->tids[j])
+         {
+            seen = true;
+            break;
+         }
+      }
+      if (!seen)
+      {
+         ffmpeg_renice_tid(after->tids[i], ENCODER_NICE_DELTA);
+         n++;
+      }
+   }
+   free(after);
+   return n;
+}
+#endif
+
 static bool init_thread(ffmpeg_t *handle)
 {
    unsigned vf = handle->video_fifo_frames;
@@ -1522,13 +1605,33 @@ static void *ffmpeg_new(const struct record_params *params)
    if (!ffmpeg_init_muxer_pre(handle))
       goto error;
 
-   if (!ffmpeg_init_video(handle))
-      goto error;
-
-   if (  handle->config.audio_enable
-         && !ffmpeg_init_audio(handle,
-            params->audio_resampler))
-      goto error;
+   {
+      bool ok;
+#ifdef FFMPEG_HAVE_THREAD_NICE
+      struct ff_tid_set *before = NULL;
+      if (handle->allow_frame_drop
+            && (before = (struct ff_tid_set*)malloc(sizeof(*before))))
+         ffmpeg_tids_snapshot(before);
+#endif
+      ok = ffmpeg_init_video(handle)
+         && (  !handle->config.audio_enable
+             || ffmpeg_init_audio(handle, params->audio_resampler));
+#ifdef FFMPEG_HAVE_THREAD_NICE
+      if (before)
+      {
+         if (ok)
+         {
+            unsigned n = ffmpeg_renice_new_threads(before);
+            if (n)
+               RARCH_LOG("[FFmpeg] Lowered priority of %u encoder"
+                     " thread(s).\n", n);
+         }
+         free(before);
+      }
+#endif
+      if (!ok)
+         goto error;
+   }
 
    if (!ffmpeg_init_muxer_post(handle))
       goto error;
@@ -2355,6 +2458,12 @@ static void ffmpeg_thread(void *data)
    size_t audio_buf_size = ff->config.audio_enable ?
       (ff->audio.codec->frame_size * ff->params.channels * sizeof(int16_t)) : 0;
    void *audio_buf       = audio_buf_size ? av_malloc(audio_buf_size) : NULL;
+
+#ifdef FFMPEG_HAVE_THREAD_NICE
+   /* Also covers threads an encoder spawns lazily from here. */
+   if (ff->allow_frame_drop)
+      ffmpeg_renice_tid((pid_t)syscall(SYS_gettid), ENCODER_NICE_DELTA);
+#endif
 
    while (retro_atomic_load_acquire_int(&ff->alive))
    {
