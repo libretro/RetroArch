@@ -121,6 +121,21 @@ const uint8_t *rzip_archive_entry_view(const rzip_archive_t *a,
 int rzip_archive_extract(rzip_archive_t *a, uint32_t index,
       uint8_t **out, size_t *out_len);
 
+/**
+ * rzip_archive_extract_into:
+ * @dst        : where the member goes
+ * @dst_size   : how much room there is at @dst
+ * @out_len    : receives the member's length
+ *
+ * The same as rzip_archive_extract(), into memory the caller has: for a
+ * member whose bytes have a place of their own to go to, which would
+ * otherwise be decoded into a buffer and copied from it. A member
+ * longer than @dst_size is refused with RZIP_ERROR_PARAM and nothing is
+ * written; on any other error @dst may hold part of the member.
+ */
+int rzip_archive_extract_into(rzip_archive_t *a, uint32_t index,
+      uint8_t *dst, size_t dst_size, size_t *out_len);
+
 RETRO_END_DECLS
 
 #endif

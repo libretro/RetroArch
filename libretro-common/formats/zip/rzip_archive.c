@@ -424,17 +424,15 @@ static int rzip_inflate(rzip_archive_t *a, const rzip_entry_t *e,
    return res;
 }
 
-int rzip_archive_extract(rzip_archive_t *a, uint32_t index,
-      uint8_t **out, size_t *out_len)
+int rzip_archive_extract_into(rzip_archive_t *a, uint32_t index,
+      uint8_t *dst, size_t dst_size, size_t *out_len)
 {
    const rzip_entry_t *e;
-   uint8_t            *buf;
    int                 res;
 
-   if (!a || !out || !out_len || index >= a->num_entries)
+   if (!a || !dst || !out_len || index >= a->num_entries)
       return RZIP_ERROR_PARAM;
    e        = &a->entries[index];
-   *out     = NULL;
    *out_len = 0;
 
    if (e->is_dir)
@@ -445,35 +443,56 @@ int rzip_archive_extract(rzip_archive_t *a, uint32_t index,
       return RZIP_ERROR_DATA;
    if (e->method == RZIP_METHOD_STORED && e->csize != e->size)
       return RZIP_ERROR_DATA;
-
-   if (!(buf = (uint8_t*)malloc(e->size ? (size_t)e->size : 1)))
-      return RZIP_ERROR_MEM;
+   if (e->size > (uint64_t)dst_size)
+      return RZIP_ERROR_PARAM;
 
    if (e->method == RZIP_METHOD_STORED)
    {
       if (a->data)
-         memcpy(buf, a->data + (size_t)e->data_off, (size_t)e->size);
-      else if (e->size && a->read_cb(a->ud, e->data_off, buf,
+         memcpy(dst, a->data + (size_t)e->data_off, (size_t)e->size);
+      else if (e->size && a->read_cb(a->ud, e->data_off, dst,
                (size_t)e->size) != (int64_t)e->size)
-      {
-         free(buf);
          return RZIP_ERROR_IO;
-      }
       res = RZIP_OK;
    }
    else
-      res = rzip_inflate(a, e, buf);
+      res = rzip_inflate(a, e, dst);
 
    if (res == RZIP_OK
-         && encoding_crc32(0, buf, (size_t)e->size) != e->crc)
+         && encoding_crc32(0, dst, (size_t)e->size) != e->crc)
       res = RZIP_ERROR_CRC;
-
    if (res != RZIP_OK)
+      return res;
+   *out_len = (size_t)e->size;
+   return RZIP_OK;
+}
+
+int rzip_archive_extract(rzip_archive_t *a, uint32_t index,
+      uint8_t **out, size_t *out_len)
+{
+   const rzip_entry_t *e;
+   uint8_t            *buf;
+   size_t              size;
+   int                 res;
+
+   if (!a || !out || !out_len || index >= a->num_entries)
+      return RZIP_ERROR_PARAM;
+   e        = &a->entries[index];
+   *out     = NULL;
+   *out_len = 0;
+
+   if (e->is_dir)
+      return RZIP_ERROR_PARAM;
+   if (e->size > (uint64_t)((size_t)-1))
+      return RZIP_ERROR_DATA;
+   size = e->size ? (size_t)e->size : 1;
+   if (!(buf = (uint8_t*)malloc(size)))
+      return RZIP_ERROR_MEM;
+   if ((res = rzip_archive_extract_into(a, index, buf, size, out_len)) != RZIP_OK)
    {
       free(buf);
       return res;
    }
-   *out     = buf;
-   *out_len = (size_t)e->size;
+   *out = buf;
    return RZIP_OK;
 }
