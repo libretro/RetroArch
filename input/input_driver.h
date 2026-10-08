@@ -753,6 +753,7 @@ typedef struct
    /* the sticks' outer deadzone and anti-deadzone, from the settings */
    float stick_outer;
    float stick_anti;
+   float stick_curve;   /* the response curve's power: 1 a straight line */
    input_mouse_info_t input_mouse_info[MAX_INPUT_DEVICES];
    input_keyboard_info_t input_keyboard_info[MAX_INPUT_DEVICES];
    /* the listed keyboards' identities, and what each port reads */

@@ -1888,6 +1888,8 @@
  * and anti-deadzone (movement starts at this share of full). */
 #define DEFAULT_ANALOG_OUTER_DEADZONE 0.0f
 #define DEFAULT_ANALOG_ANTI_DEADZONE 0.0f
+/* The sticks' response curve: the tilt to this power (1 a straight line). */
+#define DEFAULT_ANALOG_RESPONSE_CURVE 1.0f
 #define DEFAULT_ANALOG_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_ACCELEROMETER_SENSITIVITY 1.0f
 #define DEFAULT_SENSOR_GYROSCOPE_SENSITIVITY 1.0f

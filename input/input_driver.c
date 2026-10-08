@@ -2961,31 +2961,56 @@ static int16_t input_joypad_axis_scaled(
  * port's deadzone is 0 (input_driver_deadzones_refresh()) and none of
  * this is reached; with only the outer or the anti one set it is a
  * deadzone of a millionth, to reach it. */
-static int16_t input_stick_axis_scaled(
+/* (the shaped half, out of line: reached only with a deadzone or the
+ * shaping the port's deadzone stands in for) */
+INPUT_NOINLINE static int16_t input_stick_axis_shaped(
+      float input_analog_deadzone,
+      float input_analog_sensitivity,
+      int16_t val, float normal_mag)
+{
+   float outer, anti, k, inv_mag;
+   if (normal_mag <= input_analog_deadzone)
+      return 0;
+   outer   = input_driver_st.stick_outer;
+   anti    = input_driver_st.stick_anti;
+   inv_mag = (normal_mag > 1.0f) ? 1.0f : (1.0f / normal_mag);
+   /* (a deadzone reaching the outer one's edge leaves no way between
+    * them: past it is full) */
+   k       = ((1.0f - outer) - input_analog_deadzone > 0.001f)
+           ? (normal_mag - input_analog_deadzone)
+             / ((1.0f - outer) - input_analog_deadzone)
+           : 1.0f;
+   if (k > 1.0f)
+      k = 1.0f;
+   /* the response curve: the tilt to a power - over 1 finer near the
+    * centre, under 1 quicker off it - before the anti-deadzone lifts
+    * where it starts */
+   if (input_driver_st.stick_curve != 1.0f)
+      k = powf(k, input_driver_st.stick_curve);
+   if (anti)
+      k = anti + k * (1.0f - anti);
+   val = (int16_t)((float)val * inv_mag * k);
+
+   if (input_analog_sensitivity != 1.0f)
+   {
+      int new_val = (int)((float)val * input_analog_sensitivity);
+      if (new_val > 0x7fff)
+         return 0x7fff;
+      if (new_val < -0x7fff)
+         return -0x7fff;
+      return (int16_t)new_val;
+   }
+   return val;
+}
+
+static INLINE int16_t input_stick_axis_scaled(
       float input_analog_deadzone,
       float input_analog_sensitivity,
       int16_t val, float normal_mag)
 {
    if (input_analog_deadzone)
-   {
-      float outer, anti, k, inv_mag;
-      if (normal_mag <= input_analog_deadzone)
-         return 0;
-      outer   = input_driver_st.stick_outer;
-      anti    = input_driver_st.stick_anti;
-      inv_mag = (normal_mag > 1.0f) ? 1.0f : (1.0f / normal_mag);
-      /* (a deadzone reaching the outer one's edge leaves no way between
-       * them: past it is full) */
-      k       = ((1.0f - outer) - input_analog_deadzone > 0.001f)
-              ? (normal_mag - input_analog_deadzone)
-                / ((1.0f - outer) - input_analog_deadzone)
-              : 1.0f;
-      if (k > 1.0f)
-         k = 1.0f;
-      if (anti)
-         k = anti + k * (1.0f - anti);
-      val = (int16_t)((float)val * inv_mag * k);
-   }
+      return input_stick_axis_shaped(input_analog_deadzone,
+            input_analog_sensitivity, val, normal_mag);
 
    if (input_analog_sensitivity != 1.0f)
    {
@@ -10082,6 +10107,9 @@ void input_driver_deadzones_refresh(void)
       input_st->stick_outer = 0.0f;
    if (!(input_st->stick_anti >= 0.0f && input_st->stick_anti <= 0.9f))
       input_st->stick_anti = 0.0f;
+   input_st->stick_curve = settings->floats.input_analog_response_curve;
+   if (!(input_st->stick_curve >= 0.5f && input_st->stick_curve <= 3.0f))
+      input_st->stick_curve = 1.0f;
    for (p = 0; p < MAX_USERS; p++)
    {
       unsigned dev = settings->uints.input_joypad_index[p];
@@ -10093,7 +10121,8 @@ void input_driver_deadzones_refresh(void)
          /* a stick shaped only by the outer or the anti deadzone: a
           * deadzone of a millionth, to take it through the shaping */
          if (     k == 0 && !input_st->port_deadzone[p][0]
-               && (input_st->stick_outer || input_st->stick_anti))
+               && (     input_st->stick_outer || input_st->stick_anti
+                     || input_st->stick_curve != 1.0f))
             input_st->port_deadzone[p][0] = 0.000001f;
       }
    }

@@ -3923,6 +3923,14 @@ static void lane_deadzone_numbers(void)
          { 0.2f, 0.1f, 0.3f, 0.5f,  0.3f + (0.3f / 0.7f) * 0.7f },
          { 0.0f, 0.0f, 0.3f, 0.02f, 0.3f + 0.02f * 0.7f },
          { 0.0f, 0.0f, 0.3f, 0.0f,  0.0f } };
+      /* and the response curve: a power of 2 takes a tilt of 0.5 to
+       * 0.25; of 0.5, a tilt of 0.25 to 0.5; past a deadzone of 0.2, a
+       * power of 2 takes 0.6 - halfway - to a quarter */
+      static const struct { float dz, curve, at, want; } curve[] = {
+         { 0.0f, 2.0f, 0.5f,  0.25f },
+         { 0.0f, 0.5f, 0.25f, 0.5f  },
+         { 0.2f, 2.0f, 0.6f,  0.25f },
+         { 0.0f, 2.0f, 1.0f,  1.0f  } };
       for (c = 0; c < ARRAY_SIZE(shape); c++)
       {
          int16_t x;
@@ -3942,6 +3950,23 @@ static void lane_deadzone_numbers(void)
       }
       settings->floats.input_analog_outer_deadzone = 0.0f;
       settings->floats.input_analog_anti_deadzone  = 0.0f;
+      for (c = 0; c < ARRAY_SIZE(curve); c++)
+      {
+         int16_t x;
+         int want = (int)(curve[c].want * 32767.0f);
+         char why[200];
+         settings->floats.input_analog_deadzone       = curve[c].dz;
+         settings->floats.input_analog_response_curve = curve[c].curve;
+         input_driver_deadzones_refresh();
+         memset(syn_axes, 0, sizeof(syn_axes));
+         syn_axes[0] = (int16_t)(curve[c].at * 32767.0f);
+         input_driver_poll();
+         x = input_driver_state_wrapper(0, RETRO_DEVICE_ANALOG, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X);
+         snprintf(why, sizeof(why), "deadzone numbers: deadzone %.2f, curve %.1f, stick at %.2f read %d; it is %d",
+               curve[c].dz, curve[c].curve, curve[c].at, x, want);
+         CHECK(abs(x - want) <= 40, why);
+      }
+      settings->floats.input_analog_response_curve = 1.0f;
       settings->floats.input_analog_deadzone       = 0.2f;
       input_driver_deadzones_refresh();
    }
@@ -3998,7 +4023,7 @@ static void lane_deadzone_numbers(void)
             " 0.2 - nothing inside it, full at full; a trigger by its own"
             " deadzone, not the stick's, the same way on its own travel; a"
             " controller's own deadzones over the global ones; the outer"
-            " deadzone and the anti-deadzone by the numbers\n");
+            " deadzone, the anti-deadzone and the response curve by the numbers\n");
 #endif
 }
 
