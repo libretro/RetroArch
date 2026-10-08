@@ -2073,12 +2073,12 @@ static void ffmpeg_scale_input(ffmpeg_t *handle,
 {
    unsigned src_w = VIDEO_SCALE_W(vid->dims);
    unsigned src_h = VIDEO_SCALE_H(vid->dims);
-   /* When output was padded to even dimensions, clamp the scaling
-    * destination to the source size. */
+   /* Scale every frame to the output size, except one exactly a pixel
+    * short of it (the padding to even dimensions), which is copied 1:1. */
    unsigned out_w = VIDEO_SCALE_W(handle->params.out_dims);
    unsigned out_h = VIDEO_SCALE_H(handle->params.out_dims);
-   unsigned dst_w = (src_w < out_w) ? src_w : out_w;
-   unsigned dst_h = (src_h < out_h) ? src_h : out_h;
+   unsigned dst_w = (src_w + 1 == out_w) ? src_w : out_w;
+   unsigned dst_h = (src_h + 1 == out_h) ? src_h : out_h;
 
    /* Attempt to preserve more information if we scale down. */
    bool shrunk = dst_w < src_w || dst_h < src_h;
