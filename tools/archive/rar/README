@@ -1,0 +1,9 @@
+RAR archives for tools/archive/rar_test.c.
+
+They are test data of libarchive (libarchive/test/test_read_format_rar*.rar.uu,
+2-clause BSD), decoded and otherwise as they come:
+
+  lowdist_reset.rar  RAR 2.9, one LZ block whose low distance bits repeat
+  compress_best.rar  RAR 2.9 "best": PPMd blocks; a stored member; directories
+  filter.rar         RAR 2.9: a Windows program, with delta and x86 (E8/E9) filters
+  unicode.rar        names in the packed UTF-16 form, Japanese
