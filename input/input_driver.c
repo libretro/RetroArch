@@ -2853,7 +2853,7 @@ INPUT_NOINLINE static bool input_stick_src_from_binds(
                input_st->current_data,
                input_st->primary_joypad,
                joypad_info,
-               (*input_st->libretro_input_binds),
+               (const retro_keybind_set *)input_config_binds,
                !!(input_st->flags & INP_FLAG_KB_MAPPING_BLOCKED),
                0, RETRO_DEVICE_KEYBOARD, 0, key))
          src->keys  |= (uint8_t)(1u << i);
@@ -3725,8 +3725,7 @@ static int16_t input_state_device(
             else
 #endif
             {
-               bool bind_valid       = input_st->libretro_input_binds[port]
-                  && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
+               bool bind_valid       = RETRO_KEYBIND_VALID(&input_config_binds[port][id]);
                unsigned remap_button = settings->uints.input_remap_ids[port][id];
 
                /* TODO/FIXME: What on earth is this code doing...? */
@@ -4007,8 +4006,7 @@ static int16_t input_state_device(
             {
                if (id < RARCH_FIRST_META_KEY)
                {
-                  bool bind_valid         = input_st->libretro_input_binds[port]
-                     && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
+                  bool bind_valid         = RETRO_KEYBIND_VALID(&input_config_binds[port][id]);
 
                   if (bind_valid)
                   {
@@ -4141,8 +4139,7 @@ static int16_t input_state_device(
 
          if (id < RARCH_FIRST_META_KEY)
          {
-            bool bind_valid = input_st->libretro_input_binds[port]
-               && RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[port])[id]);
+            bool bind_valid = RETRO_KEYBIND_VALID(&input_config_binds[port][id]);
 
             if (bind_valid)
             {
@@ -4236,8 +4233,7 @@ static bool input_state_device_mask_plain(
       usable = input_port_keys[port].usable16;
    else
    {
-      const struct retro_keybind *binds = input_st->libretro_input_binds[port]
-         ? *input_st->libretro_input_binds[port] : NULL;
+      const struct retro_keybind *binds = input_config_binds[port];
       usable = 0;
       for (id = 0; binds && id < RARCH_FIRST_CUSTOM_BIND; id++)
          if (RETRO_KEYBIND_VALID(&binds[id]))
@@ -4364,7 +4360,7 @@ static int16_t input_state_internal(
             input_st->current_data,
             joypad,
             &joypad_info,
-            (*input_st->libretro_input_binds),
+            (const retro_keybind_set *)input_config_binds,
             kb_mapping_blocked,
             mapped_port, device, idx, id);
 
@@ -4374,8 +4370,7 @@ static int16_t input_state_internal(
        * would make the centre of the screen a place it snaps to. */
       if (     settings->uints.input_aim_stick[mapped_port]
             && (   device == RETRO_DEVICE_LIGHTGUN
-                || (device == RETRO_DEVICE_POINTER && idx == 0))
-            && input_st->libretro_input_binds[mapped_port])
+                || (device == RETRO_DEVICE_POINTER && idx == 0)))
       {
          int axis = -1;
          if (device == RETRO_DEVICE_LIGHTGUN)
@@ -4398,7 +4393,7 @@ static int16_t input_state_internal(
                   input_st->current_data,
                   joypad,
                   &joypad_info,
-                  (*input_st->libretro_input_binds),
+                  (const retro_keybind_set *)input_config_binds,
                   kb_mapping_blocked,
                   mapped_port, RETRO_DEVICE_LIGHTGUN, 0,
                   RETRO_DEVICE_ID_LIGHTGUN_TRIGGER);
@@ -4412,7 +4407,7 @@ static int16_t input_state_internal(
             if (joypad && !ret)
                ret = input_joypad_analog_axis(ANALOG_DPAD_NONE, 0.0f, 1.0f,
                      joypad, &joypad_info, mapped_port, stick, (unsigned)axis,
-                     (*input_st->libretro_input_binds[mapped_port]));
+                     input_config_binds[mapped_port]);
          }
       }
 
@@ -4424,13 +4419,12 @@ static int16_t input_state_internal(
       if (     (device == RETRO_DEVICE_ANALOG)
             && (ret == 0))
       {
-         if (input_st->libretro_input_binds[mapped_port])
          {
             if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
             {
                if (id < RARCH_FIRST_CUSTOM_BIND)
                {
-                  bool valid_bind = RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[mapped_port])[id]) &&
+                  bool valid_bind = RETRO_KEYBIND_VALID(&input_config_binds[mapped_port][id]) &&
                         (id == settings->uints.input_remap_ids[mapped_port][id]);
                   /* Hardest pressure from buttons remapped onto this one. */
                   int16_t remapped = (int16_t)input_st->mapper.buttons[mapped_port].analog_buttons[id];
@@ -4444,7 +4438,7 @@ static int16_t input_state_internal(
                               input_analog_sensitivity,
                               joypad, &joypad_info,
                               id,
-                              &(*input_st->libretro_input_binds[mapped_port])[id]);
+                              &input_config_binds[mapped_port][id]);
                   }
 
                   if (remapped > ret)
@@ -4465,7 +4459,7 @@ static int16_t input_state_internal(
                         mapped_port,
                         idx,
                         id,
-                        (*input_st->libretro_input_binds[mapped_port]));
+                        input_config_binds[mapped_port]);
             }
          }
       }
@@ -4525,7 +4519,7 @@ static int16_t input_state_internal(
                         mapped_port,
                         s,
                         a,
-                        (*input_st->libretro_input_binds[mapped_port]));
+                        input_config_binds[mapped_port]);
 
                   if (ret_axis)
                   {
@@ -8958,8 +8952,6 @@ void input_config_reset(void)
       input_st->input_device_info[i].name_index       = 0;
 
       input_config_reset_autoconfig_binds(i);
-
-      input_st->libretro_input_binds[i] = (const retro_keybind_set *)&input_config_binds[i];
    }
 }
 
@@ -12259,7 +12251,7 @@ int16_t input_driver_bind_capture_state(unsigned joy_idx, unsigned port,
    return input_st->current_driver->input_state(
          input_st->current_data,
          joypad, &joypad_info,
-         (*input_st->libretro_input_binds),
+         (const retro_keybind_set *)input_config_binds,
          port, device, idx, id);
 }
 
@@ -12370,7 +12362,7 @@ uint32_t input_driver_user_controls_bound(unsigned user)
    held = (uint32_t)input_state_wrap(input_st->current_driver,
          input_st->current_data,
          joypad, &joypad_info,
-         (*input_st->libretro_input_binds),
+         (const retro_keybind_set *)input_config_binds,
          false, user, RETRO_DEVICE_JOYPAD, 0,
          RETRO_DEVICE_ID_JOYPAD_MASK) & 0xFFFF;
 
@@ -12386,19 +12378,19 @@ uint32_t input_driver_user_controls_bound(unsigned user)
                settings->floats.input_analog_deadzone,
                settings->floats.input_analog_sensitivity,
                joypad, &joypad_info, user, idx,
-               (*input_st->libretro_input_binds[user]), &x, &y);
+               input_config_binds[user], &x, &y);
       if (!x)
          x = (int16_t)input_state_wrap(input_st->current_driver,
                input_st->current_data,
                joypad, &joypad_info,
-               (*input_st->libretro_input_binds),
+               (const retro_keybind_set *)input_config_binds,
                false, user, RETRO_DEVICE_ANALOG, idx,
                RETRO_DEVICE_ID_ANALOG_X);
       if (!y)
          y = (int16_t)input_state_wrap(input_st->current_driver,
                input_st->current_data,
                joypad, &joypad_info,
-               (*input_st->libretro_input_binds),
+               (const retro_keybind_set *)input_config_binds,
                false, user, RETRO_DEVICE_ANALOG, idx,
                RETRO_DEVICE_ID_ANALOG_Y);
 
@@ -12723,12 +12715,12 @@ void input_driver_poll(void)
 
          /* --- Turbo button state --- */
          input_st->turbo_btns.frame_enable[i] =
-                  RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[turbo_btn_id])
+                  RETRO_KEYBIND_VALID(&input_config_binds[i][turbo_btn_id])
                && turbo_enable ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
                   joypad, &joypad_info[i],
-                  (*input_st->libretro_input_binds),
+                  (const retro_keybind_set *)input_config_binds,
                   kb_blocked,
                   (unsigned)i,
                   RETRO_DEVICE_JOYPAD, 0, turbo_btn_id) : 0;
@@ -12744,11 +12736,11 @@ void input_driver_poll(void)
 
          /* --- Hold button modifier state --- */
          input_st->hold_btns.frame_enable[i] =
-                  RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[RARCH_HOLD_ENABLE]) ?
+                  RETRO_KEYBIND_VALID(&input_config_binds[i][RARCH_HOLD_ENABLE]) ?
             input_state_wrap(input_st->current_driver,
                   input_st->current_data,
                   joypad, &joypad_info[i],
-                  (*input_st->libretro_input_binds),
+                  (const retro_keybind_set *)input_config_binds,
                   kb_blocked,
                   (unsigned)i,
                   RETRO_DEVICE_JOYPAD, 0, RARCH_HOLD_ENABLE) : 0;
@@ -12776,7 +12768,7 @@ void input_driver_poll(void)
                   input_st->current_driver,
                   input_st->current_data,
                   joypad, &joypad_info[i],
-                  (*input_st->libretro_input_binds),
+                  (const retro_keybind_set *)input_config_binds,
                   kb_blocked,
                   (unsigned)i, RETRO_DEVICE_JOYPAD,
                   0, RETRO_DEVICE_ID_JOYPAD_MASK)
@@ -12872,7 +12864,7 @@ void input_driver_poll(void)
                         input_st->current_data,
                         joypad,
                         &joypad_info[i],
-                        (*input_st->libretro_input_binds),
+                        (const retro_keybind_set *)input_config_binds,
                         kb_blocked,
                         (unsigned)i, RETRO_DEVICE_JOYPAD,
                         0, RETRO_DEVICE_ID_JOYPAD_MASK);
@@ -12882,7 +12874,7 @@ void input_driver_poll(void)
                      if (ret & (1 << k))
                      {
                         bool valid_bind  =
-                           RETRO_KEYBIND_VALID(&(*input_st->libretro_input_binds[i])[k]);
+                           RETRO_KEYBIND_VALID(&input_config_binds[i][k]);
 
                         if (valid_bind)
                         {
@@ -12893,7 +12885,7 @@ void input_driver_poll(void)
                                     joypad,
                                     &joypad_info[i],
                                     k,
-                                    &(*input_st->libretro_input_binds[i])[k]
+                                    &input_config_binds[i][k]
                                     );
                            if (val)
                               p_new_state->analog_buttons[k] = val;
@@ -12915,7 +12907,7 @@ void input_driver_poll(void)
                               input_analog_deadzone,
                               input_analog_sensitivity,
                               joypad, &joypad_info[i],
-                              i, k, (*input_st->libretro_input_binds[i]),
+                              i, k, input_config_binds[i],
                               &stick_x, &stick_y))
                      {
                         unsigned off_x = 0 + (k * 4);
@@ -14060,8 +14052,7 @@ void input_driver_collect_system_input(input_driver_state_t *input_st,
                   &joypad_info,
                   port,
                   s,
-                  (input_st->libretro_input_binds[port]
-                     ? *input_st->libretro_input_binds[port] : NULL),
+                  input_config_binds[port],
                   &stick_xy[0], &stick_xy[1]);
 
             for (a = RETRO_DEVICE_ID_ANALOG_X; a <= RETRO_DEVICE_ID_ANALOG_Y; a++)
