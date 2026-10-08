@@ -8548,13 +8548,13 @@ static void input_config_save_keybinds_user_override(config_file_t *conf,
  * input_config_save_keybinds_user_minimal:
  * @conf               : pointer to config file object
  * @user               : user number
- * @default_binds      : default retro_keybind_set for comparison
+ * @defaults           : a copy of the binds taken with the defaults loaded
  *
  * Save the current keybinds of a user (@user) to the config file (@conf),
  * but only save binds that differ from defaults. Remove binds that match defaults.
  */
 static void input_config_save_keybinds_user_minimal(config_file_t *conf,
-      unsigned user, const retro_keybind_set default_binds)
+      unsigned user, const input_config_binds_copy_t *defaults)
 {
    unsigned i;
    for (i = 0; input_config_bind_map_get_valid(i); i++)
@@ -8566,7 +8566,8 @@ static void input_config_save_keybinds_user_minimal(config_file_t *conf,
          (const struct input_bind_map*)INPUT_CONFIG_BIND_MAP_GET(i);
       bool meta                            = keybind ? keybind->meta : false;
       const struct retro_keybind *bind     = input_config_bind(user, i);
-      const struct retro_keybind *def_bind = &default_binds[i];
+      const struct retro_keybind *def_bind =
+         input_config_binds_copy_bind(defaults, user, i);
       const char                 *base     = NULL;
       bool differs_from_default            = false;
 
@@ -9109,7 +9110,7 @@ bool config_save_file(const char *path)
    bool minimal                                      = false;
    bool credentials_saved                            = false;
    settings_t                     *defaults          = NULL;
-   retro_keybind_set              *defaults_binds    = NULL;
+   input_config_binds_copy_t      *defaults_binds    = NULL;
    struct config_bool_setting     *bool_settings     = NULL;
    struct config_bool_setting     *bool_defaults     = NULL;
    struct config_int_setting     *int_settings       = NULL;
@@ -9171,7 +9172,7 @@ bool config_save_file(const char *path)
       else
       {
          /* Allocate space for default keybinds */
-         defaults_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
+         defaults_binds = input_config_binds_copy_new();
          if (!defaults_binds)
          {
             /* Failed to allocate, fall back to non-minimal mode */
@@ -9184,18 +9185,15 @@ bool config_save_file(const char *path)
             input_autoconf_backup_t autoconf_bkp;
             bool have_autoconf_bkp;
             input_bind_label_set *saved_config_labels;
-            /* Heap-allocated: MAX_USERS * sizeof(retro_keybind_set) is
-             * ~51KB, too large for the stack on small-stack platforms.
-             * Matches defaults_binds above. */
-            retro_keybind_set *saved_binds;
+            /* A copy of the binds is on the heap: too large for the
+             * stack on small-stack platforms. As defaults_binds above. */
+            input_config_binds_copy_t *saved_binds;
 #ifdef HAVE_LANGEXTRA
             unsigned saved_user_language = *msg_hash_get_uint(MSG_HASH_USER_LANGUAGE);
 #endif
 
             /* Save the current binds */
-            saved_binds = (retro_keybind_set*)calloc(MAX_USERS, sizeof(retro_keybind_set));
-            if (saved_binds)
-               input_config_binds_copy_out(saved_binds);
+            saved_binds = input_config_binds_copy_new();
 
             /* Config-bind labels are saved and restored by value, exactly as
              * they were when they lived inside the bind struct. */
@@ -9213,13 +9211,13 @@ bool config_save_file(const char *path)
             config_set_defaults(defaults);
 
             /* Capture default keybinds (set by input_config_reset() in config_set_defaults) */
-            input_config_binds_copy_out(defaults_binds);
+            input_config_binds_copy_take(defaults_binds);
 
             /* Restore the binds */
             if (saved_binds)
             {
-               input_config_binds_copy_in(saved_binds);
-               free(saved_binds);
+               input_config_binds_copy_restore(saved_binds);
+               input_config_binds_copy_free(saved_binds);
             }
 
             if (saved_config_labels)
@@ -9747,7 +9745,7 @@ bool config_save_file(const char *path)
    for (i = 0; i < MAX_USERS; i++)
    {
       if (minimal && defaults_binds)
-         input_config_save_keybinds_user_minimal(conf, i, defaults_binds[i]);
+         input_config_save_keybinds_user_minimal(conf, i, defaults_binds);
       else
          input_config_save_keybinds_user(conf, i);
    }
@@ -9798,7 +9796,7 @@ bool config_save_file(const char *path)
    }
 
    if (defaults_binds)
-      free(defaults_binds);
+      input_config_binds_copy_free(defaults_binds);
 
    if (bool_settings)
       free(bool_settings);
@@ -9832,7 +9830,7 @@ int8_t config_save_overrides(enum override_type type,
    int tmp_i                                   = 0;
    unsigned i                                  = 0;
    int8_t ret                                  = 0;
-   retro_keybind_set *input_override_binds     = NULL;
+   input_config_binds_copy_t *input_override_binds = NULL;
    config_file_t *conf                         = NULL;
    settings_t *settings                        = NULL;
    struct config_bool_setting *bool_settings   = NULL;
@@ -9881,12 +9879,11 @@ int8_t config_save_overrides(enum override_type type,
 
    settings = (settings_t*)calloc(1, sizeof(settings_t));
    conf     = config_file_new_alloc();
-   /* MAX_USERS * sizeof(retro_keybind_set) is ~51KB; keep it off the
-    * stack (this function is reachable on small-stack platforms such
-    * as the 3DS). Allocated here so it shares the OOM bail below and
-    * is freed at the function-end cleanup. */
-   input_override_binds = (retro_keybind_set*)calloc(
-         MAX_USERS, sizeof(retro_keybind_set));
+   /* A copy of the binds is kept off the stack (this function is
+    * reachable on small-stack platforms such as the 3DS). Made here so
+    * it shares the OOM bail below and is freed at the function-end
+    * cleanup. */
+   input_override_binds = input_config_binds_copy_new();
 
    /* NULL-check: both calloc and config_file_new_alloc can
     * return NULL on OOM.  config_load_file at line ~6552
@@ -9905,7 +9902,8 @@ int8_t config_save_overrides(enum override_type type,
       if (conf)
          config_file_free(conf);
       free(settings);
-      free(input_override_binds);
+      if (input_override_binds)
+         input_config_binds_copy_free(input_override_binds);
       return -1;
    }
 
@@ -9923,7 +9921,7 @@ int8_t config_save_overrides(enum override_type type,
       path_mkdir(override_directory);
 
    /* Store current binds as override binds */
-   input_config_binds_copy_out(input_override_binds);
+   input_config_binds_copy_take(input_override_binds);
 
    /* Load the original config file in memory */
    config_load_file(
@@ -10201,7 +10199,8 @@ int8_t config_save_overrides(enum override_type type,
 
          for (j = 0; j < RARCH_BIND_LIST_END; j++)
          {
-            const struct retro_keybind *override_bind = &input_override_binds[i][j];
+            const struct retro_keybind *override_bind =
+               input_config_binds_copy_bind(input_override_binds, i, j);
             const struct retro_keybind *config_bind   = input_config_bind(i, j);
 
             if (     config_bind->joyaxis != override_bind->joyaxis
@@ -10298,7 +10297,7 @@ int8_t config_save_overrides(enum override_type type,
    }
 
    /* Since config_load_file resets binds, restore overrides back to current binds */
-   input_config_binds_copy_in(input_override_binds);
+   input_config_binds_copy_restore(input_override_binds);
 
    if (bool_settings)
       free(bool_settings);
@@ -10329,7 +10328,7 @@ int8_t config_save_overrides(enum override_type type,
    if (size_overrides)
       free(size_overrides);
    free(settings);
-   free(input_override_binds);
+   input_config_binds_copy_free(input_override_binds);
 
    return ret;
 }

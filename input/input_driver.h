@@ -2333,16 +2333,24 @@ static INLINE struct retro_keybind *input_autoconf_bind_edit(
 }
 
 /* Every user's binds, copied out to and back from @sets[MAX_USERS]. */
-static INLINE void input_config_binds_copy_out(retro_keybind_set *sets)
-{
-   memcpy(sets, input_config_binds, sizeof(input_config_binds));
-}
+/* A copy of the configured binds: to compare the binds with, or to
+ * put back. The configuration takes one before it loads the defaults
+ * or an override over the binds, asks it for a user's bind, and has it
+ * put back. What a copy is made of is the input file's business; it
+ * was a table the size and shape of the binds', which the callers
+ * allocated and indexed for themselves. */
+typedef struct input_config_binds_copy input_config_binds_copy_t;
 
-static INLINE void input_config_binds_copy_in(retro_keybind_set *sets)
-{
-   memcpy(input_config_binds, sets, sizeof(input_config_binds));
-   input_config_binds_changed();
-}
+/* A copy of the binds as they are. NULL if there is no memory for it. */
+input_config_binds_copy_t *input_config_binds_copy_new(void);
+/* The copy is made again, of the binds as they are now. */
+void input_config_binds_copy_take(input_config_binds_copy_t *copy);
+/* @user's bind @id as the copy has it. */
+const struct retro_keybind *input_config_binds_copy_bind(
+      const input_config_binds_copy_t *copy, unsigned user, unsigned id);
+/* The binds are made what the copy has: a change to every one. */
+void input_config_binds_copy_restore(const input_config_binds_copy_t *copy);
+void input_config_binds_copy_free(input_config_binds_copy_t *copy);
 extern input_bind_label_set input_config_bind_labels[MAX_USERS];
 extern input_bind_label_set input_autoconf_bind_labels[MAX_USERS];
 

@@ -4108,7 +4108,7 @@ static void lane_restart_hold(void)
  * menu is open does, which is what covers the menu's own writes. */
 static void lane_binds_change_count(void)
 {
-   retro_keybind_set *sets = (retro_keybind_set*)calloc(MAX_USERS, sizeof(*sets));
+   input_config_binds_copy_t *sets = input_config_binds_copy_new();
    settings_t *settings    = config_get_ptr();
    unsigned had            = failures;
    unsigned g;
@@ -4131,10 +4131,8 @@ static void lane_binds_change_count(void)
    COUNTS("a pad's autoconfig bind handed out to be written",
          (void)input_autoconf_bind_edit(15, RETRO_DEVICE_ID_JOYPAD_B));
    if (sets)
-   {
-      input_config_binds_copy_out(sets);
-      COUNTS("every user's binds copied in", input_config_binds_copy_in(sets));
-   }
+      COUNTS("every user's binds put back from a copy",
+            input_config_binds_copy_restore(sets));
    COUNTS("the pad a port has",
          input_config_set_joypad_index(15, settings->uints.input_joypad_index[15]));
    COUNTS("the kind of device a port has",
@@ -4149,7 +4147,7 @@ static void lane_binds_change_count(void)
    (void)input_config_bind(0, RETRO_DEVICE_ID_JOYPAD_B);
    (void)input_autoconf_bind(0, RETRO_DEVICE_ID_JOYPAD_B);
    if (sets)
-      input_config_binds_copy_out(sets);
+      input_config_binds_copy_take(sets);
    CHECK(input_config_binds_generation() == g,
          "binds change count: reading a bind counted as a change");
 
@@ -4172,7 +4170,7 @@ static void lane_binds_change_count(void)
             "binds change count: it kept moving after the menu closed");
    }
 #endif
-   free(sets);
+   input_config_binds_copy_free(sets);
 
    if (failures == had)
       printf("[pass] binds change count: each way of changing a port's"
@@ -4797,6 +4795,76 @@ static void lane_hotkeys_one_set(void)
    if (failures == had)
       printf("[pass] one hotkey set: the first user's hotkeys are the hotkeys,"
             " on whichever port they are read\n");
+}
+
+/* Saving the configuration with "only what differs from the defaults".
+ * To know the defaults it takes a copy of the binds, loads the defaults
+ * over them, takes a copy of those, and puts the binds back; then it
+ * writes each bind that is not what the second copy has. Held to all
+ * of it through a bind the test changes: that one is written, one it
+ * did not change is not, and afterwards the binds are what they were
+ * - the changed one still changed. */
+static void lane_save_minimal_binds(void)
+{
+   settings_t *settings      = config_get_ptr();
+   static const char path[]  = "/tmp/frontend_overhead_binds.cfg";
+   struct retro_keybind *b   = &input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_B];
+   struct retro_keybind saved_b = *b;
+   struct retro_keybind before_y = input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_Y];
+   struct retro_keybind before_p2 = input_config_binds[1][RETRO_DEVICE_ID_JOYPAD_START];
+   bool saved_minimal        = settings->bools.config_save_minimal;
+   unsigned had              = failures;
+   char *text                = NULL;
+   long  len                 = 0;
+   FILE *f;
+
+   RETRO_KEYBIND_SET_KEY(b, RETROK_F11);
+   RETRO_KEYBIND_SET_VALID(b, true);
+   binds_written_by_a_lane();
+   settings->bools.config_save_minimal = true;
+   remove(path);
+
+   CHECK(config_save_file(path), "save minimal: the configuration was not saved");
+
+   if ((f = fopen(path, "rb")))
+   {
+      fseek(f, 0, SEEK_END);
+      len = ftell(f);
+      fseek(f, 0, SEEK_SET);
+      if (len > 0 && (text = (char*)malloc((size_t)len + 1)))
+      {
+         if (fread(text, 1, (size_t)len, f) != (size_t)len)
+            len = 0;
+         text[len] = '\0';
+      }
+      fclose(f);
+   }
+   CHECK(text != NULL, "save minimal: nothing was written");
+   if (text)
+   {
+      CHECK(strstr(text, "input_player1_b = \"f11\"") != NULL,
+            "save minimal: the bind that was changed is not in what was written");
+      CHECK(strstr(text, "input_player1_y = ") == NULL,
+            "save minimal: a bind that is the default was written");
+      free(text);
+   }
+   /* the binds were put back as they were */
+   CHECK(RETRO_KEYBIND_KEY(b) == RETROK_F11,
+         "save minimal: the changed bind is not what it was after the save");
+   CHECK(!memcmp(&before_y, &input_config_binds[0][RETRO_DEVICE_ID_JOYPAD_Y], sizeof(before_y)),
+         "save minimal: the first user's Y is not what it was after the save");
+   CHECK(!memcmp(&before_p2, &input_config_binds[1][RETRO_DEVICE_ID_JOYPAD_START], sizeof(before_p2)),
+         "save minimal: the second user's Start is not what it was after the save");
+
+   remove(path);
+   settings->bools.config_save_minimal = saved_minimal;
+   *b = saved_b;
+   binds_written_by_a_lane();
+   run_loop_frames(2);
+
+   if (failures == had)
+      printf("[pass] save minimal: a changed bind is written, a default one is"
+            " not, and the binds are put back as they were\n");
 }
 
 static void lane_aim_stick(void)
@@ -6129,6 +6197,7 @@ int main(int argc, char *argv[])
       lane_keys_current();
       lane_keyboard_holders();
       lane_hotkeys_one_set();
+      lane_save_minimal_binds();
       lane_aim_stick();
       lane_core_view();
       lane_key_events();

@@ -237,6 +237,44 @@ const unsigned input_config_bind_order[24] = {
 /* TODO/FIXME - turn these into static global variable */
 retro_keybind_set input_config_binds[MAX_USERS];
 
+/* A copy of the configured binds: see input_driver.h. It is the table
+ * over again, for now. */
+struct input_config_binds_copy
+{
+   retro_keybind_set binds[MAX_USERS];
+};
+
+input_config_binds_copy_t *input_config_binds_copy_new(void)
+{
+   input_config_binds_copy_t *copy =
+      (input_config_binds_copy_t*)malloc(sizeof(*copy));
+   if (copy)
+      input_config_binds_copy_take(copy);
+   return copy;
+}
+
+void input_config_binds_copy_take(input_config_binds_copy_t *copy)
+{
+   memcpy(copy->binds, input_config_binds, sizeof(input_config_binds));
+}
+
+const struct retro_keybind *input_config_binds_copy_bind(
+      const input_config_binds_copy_t *copy, unsigned user, unsigned id)
+{
+   return &copy->binds[user][id];
+}
+
+void input_config_binds_copy_restore(const input_config_binds_copy_t *copy)
+{
+   memcpy(input_config_binds, copy->binds, sizeof(input_config_binds));
+   input_config_binds_changed();
+}
+
+void input_config_binds_copy_free(input_config_binds_copy_t *copy)
+{
+   free(copy);
+}
+
 /* A port's bind as configured. The RetroPad's, the sticks', the
  * lightgun's and the rest that are a port's are the port's own.
  *
