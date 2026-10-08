@@ -87,7 +87,10 @@ int pw_properties_setf(struct pw_properties *p, const char *k, const char *f, ..
 void pw_stream_add_listener(struct pw_stream *s, struct spa_hook *l, const struct pw_stream_events *e, void *d) { (void)s; (void)l; (void)e; (void)d; }
 int pw_stream_connect(struct pw_stream *s, enum spa_direction d, uint32_t t, enum pw_stream_flags f, const struct spa_pod **p, uint32_t n) { (void)s; (void)d; (void)t; (void)f; (void)p; (void)n; return -1; }
 struct pw_buffer *pw_stream_dequeue_buffer(struct pw_stream *s) { (void)s; return NULL; }
-void pw_stream_destroy(struct pw_stream *s) { (void)s; }
+/* libpipewire's own destroy dereferences the stream: a NULL here is a
+ * crash on a real system, so it is counted as one. */
+static unsigned null_destroys = 0;
+void pw_stream_destroy(struct pw_stream *s) { if (!s) null_destroys++; }
 int pw_stream_get_time_n(struct pw_stream *s, struct pw_time *t, size_t z) { (void)s; (void)t; (void)z; return -1; }
 struct pw_stream *pw_stream_new(struct pw_core *c, const char *n, struct pw_properties *p) { (void)c; (void)n; (void)p; return NULL; }
 int pw_stream_queue_buffer(struct pw_stream *s, struct pw_buffer *b) { (void)s; (void)b; return 0; }
@@ -158,6 +161,20 @@ int main(void)
          CHECK(log_lines == 0, "the capture callback logs nothing", log_lines, 0);
          free(mic);
       }
+   }
+
+   /* A mic open that fails cleans up after itself: with no driver
+    * context there is no mic to close, and with one the open fails
+    * before a stream exists (pw_properties_new is NULL here), so the
+    * close has no stream to destroy. */
+   {
+      unsigned new_rate = 0;
+      CHECK(pwire_microphone_open_mic(NULL, NULL, 48000, 64, &new_rate) == NULL,
+            "a mic open without a driver context fails", 0, 0);
+      CHECK(pwire_microphone_open_mic(&core, NULL, 48000, 64, &new_rate) == NULL,
+            "a mic open that cannot make its stream fails", 0, 0);
+      CHECK(null_destroys == 0, "a failed mic open destroys no NULL stream",
+            null_destroys, 0);
    }
 
    /* The playback callback with no buffer to take: counted too. */

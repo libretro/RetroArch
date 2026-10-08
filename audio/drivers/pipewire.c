@@ -297,10 +297,15 @@ static void pwire_microphone_close_mic(void *driver_context, void *mic_context)
    if (pw && mic)
    {
       size_t xruns;
-      pw_thread_loop_lock(pw->thread_loop);
-      pw_stream_destroy(mic->stream);
-      mic->stream = NULL;
-      pw_thread_loop_unlock(pw->thread_loop);
+      /* A failed open closes before the stream exists, and
+       * pw_stream_destroy() does not take NULL. */
+      if (mic->stream)
+      {
+         pw_thread_loop_lock(pw->thread_loop);
+         pw_stream_destroy(mic->stream);
+         mic->stream = NULL;
+         pw_thread_loop_unlock(pw->thread_loop);
+      }
       xruns = retro_atomic_load_acquire_size(&mic->xruns);
       if (xruns)
          RARCH_WARN("[Microphone] [PipeWire] %lu capture cycles overran, underran or found no buffer.\n",
@@ -539,7 +544,9 @@ unlock_error:
    pw_thread_loop_unlock(mic->pw->thread_loop);
 error:
    RARCH_ERR("[Microphone] [PipeWire] Failed to initialize microphone.\n");
-   pwire_microphone_close_mic(mic->pw, mic);
+   /* mic is NULL when there was no driver context or the calloc failed */
+   if (mic)
+      pwire_microphone_close_mic(mic->pw, mic);
    return NULL;
 }
 
