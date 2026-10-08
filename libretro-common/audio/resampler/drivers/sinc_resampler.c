@@ -128,11 +128,11 @@ typedef struct rarch_sinc_resampler
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
-#else
+#endif
 #include <arm_neon.h>
 
 /* Assumes that taps >= 8, and that taps is a multiple of 8.
- * Not bothering to reimplement this one for the external .S
+ * The external .S covers the Lanczos layout only.
  */
 static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data *data)
 {
@@ -193,7 +193,6 @@ static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data 
 
    data->output_frames = out_frames;
 }
-#endif
 
 /* Assumes that taps >= 8, and that taps is a multiple of 8. */
 static void resampler_sinc_process_neon(void *re_, struct resampler_data *data)
@@ -959,35 +958,33 @@ void *sinc_resampler_init_hq(double bandwidth_mod,
    if (window_type == SINC_WINDOW_KAISER)
       re->process    = resampler_sinc_process_c_kaiser;
 
-   if (mask & RESAMPLER_SIMD_AVX && enable_avx)
+   /* Widest kernel both compiled in and allowed by the mask. */
+#if defined(__SSE__)
+   if (mask & RESAMPLER_SIMD_SSE)
    {
+      re->process    = resampler_sinc_process_sse;
+      if (window_type == SINC_WINDOW_KAISER)
+         re->process = resampler_sinc_process_sse_kaiser;
+   }
+#endif
 #if defined(__AVX__)
+   if ((mask & RESAMPLER_SIMD_AVX) && enable_avx)
+   {
       re->process    = resampler_sinc_process_avx;
       if (window_type == SINC_WINDOW_KAISER)
          re->process = resampler_sinc_process_avx_kaiser;
-#endif
    }
-   else if (mask & RESAMPLER_SIMD_SSE)
-   {
-#if defined(__SSE__)
-      re->process = resampler_sinc_process_sse;
-      if (window_type == SINC_WINDOW_KAISER)
-         re->process = resampler_sinc_process_sse_kaiser;
-#endif
-   }
-   else if (mask & RESAMPLER_SIMD_NEON)
-   {
-#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
-#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
-      if (window_type != SINC_WINDOW_KAISER)
-         re->process = resampler_sinc_process_neon;
 #else
-      re->process = resampler_sinc_process_neon;
+   (void)enable_avx;
+#endif
+#if (defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(HAVE_NEON))
+   if (mask & RESAMPLER_SIMD_NEON)
+   {
+      re->process    = resampler_sinc_process_neon;
       if (window_type == SINC_WINDOW_KAISER)
          re->process = resampler_sinc_process_neon_kaiser;
-#endif
-#endif
    }
+#endif
 
    return re;
 

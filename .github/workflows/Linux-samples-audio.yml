@@ -1127,6 +1127,16 @@ jobs:
             echo "AVX unavailable on this runner; scalar/SSE tests ran above."
           fi
 
+      - name: Build and run sinc kernel dispatch test (C89, ASan + UBSan)
+        working-directory: samples/audio/sinc_dispatch
+        run: |
+          # The SSE-only build must still pick SSE when AVX is requested.
+          make -j$(nproc) check SANITIZER=address,undefined
+          if grep -qw avx /proc/cpuinfo; then
+            make clean
+            make -j$(nproc) check CC="gcc -mavx" SANITIZER=address,undefined
+          fi
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |
