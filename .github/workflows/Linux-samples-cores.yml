@@ -43,7 +43,7 @@ jobs:
       - name: Install dependencies
         timeout-minutes: 20
         run: |
-          pkgs="build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev"
+          pkgs="build-essential pkg-config ffmpeg libavcodec-dev libavformat-dev libavutil-dev libswscale-dev libswresample-dev libv4l-dev libasound2-dev"
           if dpkg -s $pkgs >/dev/null 2>&1; then
             echo "All packages already present on runner image; skipping apt."
             exit 0
@@ -235,3 +235,25 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1:suppressions=tsan.supp \
              timeout 300 ./ffmpeg_audio_pipe_test
           echo "[pass] ffmpeg_audio_pipe_test (TSan)"
+
+      - name: Build and run videoproc_audio_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/cores/videoproc_audio
+        run: |
+          set -eu
+          # cores/libretro-video-processor's ALSA capture handle between
+          # the frontend's audio thread, which keeps calling the core's
+          # audio callback, and the main thread opening and closing the
+          # device under it: no read on a closed handle - a close that
+          # lands mid-read included - and no lock taken by the callback.
+          # The device is ALSA's null PCM; the capture read is a
+          # stand-in.
+          make clean all
+          timeout 120 ./videoproc_audio_test
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=0 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 120 ./videoproc_audio_test
+          echo "[pass] videoproc_audio_test (ASan)"
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 120 ./videoproc_audio_test
+          echo "[pass] videoproc_audio_test (TSan)"

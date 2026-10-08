@@ -59,7 +59,7 @@
 
 #ifdef HAVE_ALSA
 #include <alsa/asoundlib.h>
-#include <pthread.h>
+#include <retro_atomic.h>
 #endif
 
 #ifdef HAVE_UDEV
@@ -160,11 +160,19 @@ int ft_fcount;
  * Audio capture state
  */
 #ifdef HAVE_ALSA
+/* Written only by the main thread's (re)configuration paths. The
+ * frontend's audio thread reads it from audio_callback() while it holds
+ * a reader's share of audio_use, never otherwise. */
 static snd_pcm_t *audio_handle;
-/* Serializes audio_handle access between the frontend's async audio
- * callback (which runs on the frontend's audio thread) and the main-thread
- * (re)configuration paths; see close_audio_device(). */
-static pthread_mutex_t audio_lock = PTHREAD_MUTEX_INITIALIZER;
+/* The handle's use, in one word so one read-modify-write orders the
+ * two: bit 0 is set while audio_handle may be read, the rest counts the
+ * callbacks reading it, in twos. A callback joins only while bit 0 is
+ * set; closing clears it and waits for the count to drain, so the
+ * handle is never closed under a reader and no lock is taken on the
+ * audio thread. */
+static retro_atomic_int_t audio_use = RETRO_ATOMIC_INT_INITIALIZER(0);
+#define AUDIO_USE_OPEN   1
+#define AUDIO_USE_READER 2
 #endif
 
 /*
@@ -178,14 +186,26 @@ static retro_input_poll_t VIDEOPROC_CORE_PREFIX(input_poll_cb);
 static retro_input_state_t VIDEOPROC_CORE_PREFIX(input_state_cb);
 
 #ifdef HAVE_ALSA
+/* A reader's share of audio_handle, taken only while it is open. */
+static bool audio_use_enter(void)
+{
+   int cur = retro_atomic_load_acquire_int(&audio_use);
+   while (cur & AUDIO_USE_OPEN)
+   {
+      if (retro_atomic_cas_int(&audio_use, cur, cur + AUDIO_USE_READER))
+         return true;
+      cur = retro_atomic_load_acquire_int(&audio_use);
+   }
+   return false;
+}
+
 static void audio_callback(void)
 {
    int16_t audio_data[128];
    int frames  = -1;
    bool opened = false;
 
-   pthread_mutex_lock(&audio_lock);
-   if (audio_handle)
+   if (audio_use_enter())
    {
       opened = true;
       frames = snd_pcm_readi(audio_handle,
@@ -193,8 +213,8 @@ static void audio_callback(void)
 
       if (frames < 0)
          snd_pcm_recover(audio_handle, frames, true);
+      retro_atomic_fetch_add_int(&audio_use, -AUDIO_USE_READER);
    }
-   pthread_mutex_unlock(&audio_lock);
 
    if (frames >= 0)
       VIDEOPROC_CORE_PREFIX(audio_sample_batch_cb)(audio_data, frames);
@@ -849,9 +869,10 @@ static int open_audio_device(const char *device)
       return error;
    }
 
-   pthread_mutex_lock(&audio_lock);
+   /* The handle before the bit: a callback that sees it open reads the
+    * handle through that read-modify-write. */
    audio_handle = handle;
-   pthread_mutex_unlock(&audio_lock);
+   retro_atomic_fetch_or_int(&audio_use, AUDIO_USE_OPEN);
    printf("Using ALSA device %s for audio input\n", device);
    return 0;
 
@@ -971,18 +992,20 @@ static void unregister_audio_callback(void)
 static void close_audio_device(void)
 {
 #ifdef HAVE_ALSA
-   snd_pcm_t *handle;
-   /* Unpublish the handle under the lock: RetroArch ignores
-    * SET_AUDIO_CALLBACK(NULL), so the async audio callback may still be
-    * registered. Taking the lock waits for an in-flight snd_pcm_readi() to
-    * drain, and later invocations see NULL — the handle is never closed
-    * underneath a reader. */
-   pthread_mutex_lock(&audio_lock);
-   handle       = audio_handle;
+   snd_pcm_t *handle = audio_handle;
+   /* RetroArch ignores SET_AUDIO_CALLBACK(NULL), so the async audio
+    * callback may still be registered. Closing the use word turns away
+    * every callback from here on; the one in snd_pcm_readi() now, if
+    * any, is waited out - a period of capture at most - so the handle
+    * is never closed underneath a reader. This is the main thread, off
+    * the audio path. */
+   if (!handle)
+      return;
+   retro_atomic_fetch_and_int(&audio_use, ~AUDIO_USE_OPEN);
+   while (retro_atomic_load_acquire_int(&audio_use) != 0)
+      usleep(1000);
    audio_handle = NULL;
-   pthread_mutex_unlock(&audio_lock);
-   if (handle)
-      snd_pcm_close(handle);
+   snd_pcm_close(handle);
 #endif
 }
 
