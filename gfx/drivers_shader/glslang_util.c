@@ -652,13 +652,6 @@ static bool glslang_read_shader_file_internal(const char *path,
    if (!basename || basename[0] == '\0')
       return false;
 
-   if (!(scratch = (void*)malloc(sizeof(*scratch))))
-      return false;
-
-   tmp         = scratch->tmp;
-   line_suffix = scratch->line_suffix;
-   tmp[0]      = '\0';
-
    /* An include expands to the same lines wherever it appears: the
     * '#line' directive that returns to the parent's position is
     * written by the parent after the call below, and nothing else
@@ -667,7 +660,8 @@ static bool glslang_read_shader_file_internal(const char *path,
     * copy of it.  A file that does include is left out: its run is
     * mostly the runs of the leaves below it, which are captured on
     * their own, and holding a second copy of them costs far more
-    * memory than the scan it would save. */
+    * memory than the scan it would save.  A copy needs none of the
+    * scratch below, so the cache is asked before it is allocated. */
    if (!root_file && cache)
    {
       struct slang_include_cache_entry *hit =
@@ -685,6 +679,13 @@ static bool glslang_read_shader_file_internal(const char *path,
       cap_len   = output->len;
       cap_lines = output->num_lines;
    }
+
+   if (!(scratch = (void*)malloc(sizeof(*scratch))))
+      return false;
+
+   tmp         = scratch->tmp;
+   line_suffix = scratch->line_suffix;
+   tmp[0]      = '\0';
 
    /* Precompute the #line directive suffix: ' "basename"'
     * so the inner loop only needs to write the line number. */
