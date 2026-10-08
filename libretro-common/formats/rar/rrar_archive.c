@@ -48,6 +48,15 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ * The unpacking of RAR 5 data - the block header, the code tables, the
+ * symbols and how lengths and distances are made up from them, and the
+ * four filters - follows libarchive's archive_read_support_format_rar5.c:
+ *
+ * Copyright (c) 2018 Grzegorz Antoniak (http://antoniak.org)
+ * All rights reserved.
+ *
+ * (under the same two-clause licence as above)
+ *
  * How it is put together is this file's own. libarchive unpacks through
  * a sliding window, a block at a time, and runs each filter when its
  * block has gone by. Here a member is unpacked whole into the buffer the
@@ -91,6 +100,15 @@
 /* ------------------------------------------------------------- unpacking */
 
 #define MAINCODE_SIZE       299
+/* RAR 5's four codes, and the largest any code here has */
+#define MAINCODE5_SIZE      306
+#define OFFSETCODE5_SIZE    64
+#define LOWOFFSETCODE5_SIZE 16
+#define LENGTHCODE5_SIZE    44
+#define HUFFMAN_TABLE5_SIZE (MAINCODE5_SIZE + OFFSETCODE5_SIZE + LOWOFFSETCODE5_SIZE + LENGTHCODE5_SIZE)
+#define MAX_CODE_SIZE       MAINCODE5_SIZE
+/* a RAR 5 filter's block may be this long */
+#define FILTER5_BLOCK_MAX   0x400000
 #define OFFSETCODE_SIZE     60
 #define LOWOFFSETCODE_SIZE  17
 #define LENGTHCODE_SIZE     28
@@ -110,7 +128,12 @@ enum
    FILTER_E8,
    FILTER_E8E9,
    FILTER_RGB,
-   FILTER_AUDIO
+   FILTER_AUDIO,
+   /* RAR 5's: told by a number in the data, not by a program */
+   FILTER5_DELTA,
+   FILTER5_E8,
+   FILTER5_E8E9,
+   FILTER5_ARM
 };
 
 typedef struct rrar_huff
@@ -119,7 +142,7 @@ typedef struct rrar_huff
    uint16_t first[MAX_CODE_LENGTH + 1];   /* first code of each length */
    uint16_t index[MAX_CODE_LENGTH + 1];   /* and where its symbols start */
    uint32_t limit[MAX_CODE_LENGTH + 1];   /* one past the last, as 16 bits from the top */
-   uint16_t symbol[MAINCODE_SIZE];
+   uint16_t symbol[MAX_CODE_SIZE];
    uint16_t quick[1 << QUICK_BITS];       /* length << 12 | symbol, 0: longer */
 } rrar_huff_t;
 
@@ -159,7 +182,7 @@ typedef struct rrar_unpack
    rrar_huff_t offset_code;
    rrar_huff_t low_offset_code;
    rrar_huff_t length_code;
-   uint8_t     lengths[HUFFMAN_TABLE_SIZE];
+   uint8_t     lengths[HUFFMAN_TABLE5_SIZE];
 
    uint32_t    old_offset[4];
    uint32_t    last_offset;
@@ -855,6 +878,48 @@ static void filter_audio(const uint8_t *src, uint8_t *dst, uint32_t length, uint
    }
 }
 
+/* RAR 5's x86 filter: as RAR 2.9's, with the position taken within 16 MB. */
+static void filter5_e8(uint8_t *mem, uint32_t length, uint64_t start, int e9_also)
+{
+   const uint32_t file_size = 0x1000000;
+   uint32_t i;
+
+   for (i = 0; i + 4 < length;)
+   {
+      uint8_t b = mem[i++];
+      if (b == 0xe8 || (e9_also && b == 0xe9))
+      {
+         uint32_t offset  = (uint32_t)((start + i) % file_size);
+         uint32_t address = rd32(mem + i);
+
+         if (address & 0x80000000u)
+         {
+            if (!((address + offset) & 0x80000000u))
+               wr32(mem + i, address + file_size);
+         }
+         else if ((address - file_size) & 0x80000000u)
+            wr32(mem + i, address - offset);
+         i += 4;
+      }
+   }
+}
+
+/* ARM: the 24-bit word addresses after BL are relative again. */
+static void filter5_arm(uint8_t *mem, uint32_t length, uint64_t start)
+{
+   uint32_t i;
+
+   for (i = 0; i + 3 < length; i += 4)
+   {
+      if (mem[i + 3] == 0xeb)
+      {
+         uint32_t offset = rd32(mem + i) & 0x00ffffffu;
+         offset -= (uint32_t)((start + i) / 4);
+         wr32(mem + i, (offset & 0x00ffffffu) | 0xeb000000u);
+      }
+   }
+}
+
 /* The member is all unpacked: its filters, in the order they came. Two
  * for the same block are one after the other on it. */
 static int filters_run(rrar_unpack_t *u)
@@ -868,6 +933,29 @@ static int filters_run(rrar_unpack_t *u)
       const rrar_filter_t *f = &u->filters[n];
       uint8_t  *block  = u->out + (size_t)f->start;
       uint32_t  length = f->length;
+
+      if (f->kind >= FILTER5_DELTA)
+      {
+         /* RAR 5's: their blocks are up to 4 MB, and nothing but the
+          * delta filter needs a second copy */
+         if (f->kind == FILTER5_E8 || f->kind == FILTER5_E8E9)
+            filter5_e8(block, length, f->start, f->kind == FILTER5_E8E9);
+         else if (f->kind == FILTER5_ARM)
+            filter5_arm(block, length, f->start);
+         else
+         {
+            uint8_t *copy = (uint8_t *)malloc(length ? length : 1);
+            if (!copy)
+            {
+               r = RRAR_ERROR_MEM;
+               break;
+            }
+            filter_delta(block, copy, length, f->r0);
+            memcpy(block, copy, length);
+            free(copy);
+         }
+         continue;
+      }
 
       /* (checked when it was read against the member's size; a filter
        * whose result is not its block's length would move everything
@@ -1280,8 +1368,337 @@ static int unpack29(rrar_unpack_t *u)
    return RRAR_OK;
 }
 
+/* ----------------------------------------------------------------- RAR 5 */
+
+/* A length, from its code: the first eight are themselves, the rest a
+ * few bits more each. */
+static INLINE uint32_t length5(rrar_bits_t *br, unsigned slot)
+{
+   uint32_t length = 2;
+   unsigned bits   = 0;
+
+   if (slot < 8)
+      length += slot;
+   else
+   {
+      bits    = slot / 4 - 1;
+      length += (uint32_t)(4 | (slot & 3)) << bits;
+   }
+   if (bits)
+      length += br_get(br, (int)bits);
+   return length;
+}
+
+/* A number in a filter's description: one to four bytes, the low one
+ * first. */
+static uint32_t filter5_number(rrar_bits_t *br)
+{
+   unsigned bytes = br_get(br, 2) + 1;
+   uint32_t v = 0;
+   unsigned i;
+
+   for (i = 0; i < bytes; i++)
+      v += br_get(br, 8) << (i * 8);
+   return v;
+}
+
+/* The code tables a block starts with: the lengths of a code of 20,
+ * which the lengths of the four others are written in. Unlike RAR
+ * 2.9's they are whole lengths, not differences from the last. */
+static int unpack5_tables(rrar_unpack_t *u, rrar_bits_t *br)
+{
+   uint8_t      pre_lengths[PRECODE_SIZE];
+   rrar_huff_t *pre;
+   int          i, r = RRAR_ERROR_DATA;
+
+   for (i = 0; i < PRECODE_SIZE;)
+   {
+      unsigned v = br_get(br, 4);
+      if (v == 15)
+      {
+         unsigned zeros = br_get(br, 4);
+         if (!zeros)
+            pre_lengths[i++] = 15;
+         else
+         {
+            unsigned j;
+            for (j = 0; j < zeros + 2 && i < PRECODE_SIZE; j++)
+               pre_lengths[i++] = 0;
+         }
+      }
+      else
+         pre_lengths[i++] = (uint8_t)v;
+   }
+
+   if (!(pre = (rrar_huff_t *)malloc(sizeof(*pre))))
+      return RRAR_ERROR_MEM;
+   if (!huff_build(pre, pre_lengths, PRECODE_SIZE))
+      goto done;
+
+   for (i = 0; i < HUFFMAN_TABLE5_SIZE;)
+   {
+      int val = huff_decode(br, pre);
+      int n, j;
+
+      if (val < 0 || br_overrun(br))
+         goto done;
+      if (val < 16)
+         u->lengths[i++] = (uint8_t)val;
+      else if (val < 18)
+      {
+         if (i == 0)
+            goto done;
+         n = val == 16 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         for (j = 0; j < n && i < HUFFMAN_TABLE5_SIZE; j++, i++)
+            u->lengths[i] = u->lengths[i - 1];
+      }
+      else
+      {
+         n = val == 18 ? (int)br_get(br, 3) + 3 : (int)br_get(br, 7) + 11;
+         for (j = 0; j < n && i < HUFFMAN_TABLE5_SIZE; j++)
+            u->lengths[i++] = 0;
+      }
+   }
+
+   if (     huff_build(&u->main_code, u->lengths, MAINCODE5_SIZE)
+         && huff_build(&u->offset_code, u->lengths + MAINCODE5_SIZE, OFFSETCODE5_SIZE)
+         && huff_build(&u->low_offset_code,
+               u->lengths + MAINCODE5_SIZE + OFFSETCODE5_SIZE, LOWOFFSETCODE5_SIZE)
+         && huff_build(&u->length_code,
+               u->lengths + MAINCODE5_SIZE + OFFSETCODE5_SIZE + LOWOFFSETCODE5_SIZE,
+               LENGTHCODE5_SIZE))
+      r = RRAR_OK;
+
+done:
+   free(pre);
+   return r;
+}
+
+/* A filter in the data: where its block starts from here, how long it
+ * is, and which of four it is. */
+static int unpack5_filter(rrar_unpack_t *u, rrar_bits_t *br, size_t pos)
+{
+   uint32_t       start  = filter5_number(br);
+   uint32_t       length = filter5_number(br);
+   unsigned       type   = br_get(br, 3);
+   uint32_t       channels = type == 0 ? br_get(br, 5) + 1 : 0;
+   uint64_t       block  = (uint64_t)pos + start;
+   rrar_filter_t *f;
+
+   if (br_overrun(br) || length < 4 || length > FILTER5_BLOCK_MAX)
+      return RRAR_ERROR_DATA;
+   if (type > 3)
+      return RRAR_ERROR_UNSUPPORTED;
+   /* within the member, and after the last filter's block */
+   if (block > u->size || length > u->size - block)
+      return RRAR_ERROR_DATA;
+   if (u->num_filters)
+   {
+      const rrar_filter_t *last = &u->filters[u->num_filters - 1];
+      if (block < last->start + last->length)
+         return RRAR_ERROR_DATA;
+   }
+
+   if (u->num_filters == u->cap_filters)
+   {
+      uint32_t cap = u->cap_filters ? u->cap_filters * 2 : 64;
+      rrar_filter_t *p = (rrar_filter_t *)realloc(u->filters, cap * sizeof(*p));
+      if (!p)
+         return RRAR_ERROR_MEM;
+      u->filters     = p;
+      u->cap_filters = cap;
+   }
+   f         = &u->filters[u->num_filters++];
+   f->start  = block;
+   f->length = length;
+   f->kind   = FILTER5_DELTA + type;
+   f->r0     = channels;
+   f->r1     = 0;
+   f->r4     = length;
+   return RRAR_OK;
+}
+
+/* RAR 5: blocks, each with a header of its own length in bytes and bits,
+ * of the symbols of one LZ coder - there is no PPMd, and the filters are
+ * four fixed ones. */
+static int unpack50(rrar_unpack_t *u)
+{
+   const uint8_t *p   = u->br.p;
+   const uint8_t *end = u->br.end;
+   uint8_t       *out  = u->out;
+   size_t         pos  = 0;
+   size_t         size = (size_t)u->size;
+   int            have_tables = 0;
+   int            r;
+
+   while (pos < size)
+   {
+      rrar_bits_t    br;
+      const uint8_t *data;
+      unsigned       flags, count, i;
+      uint32_t       block_size = 0;
+      uint64_t       end_bits;
+      uint8_t        sum;
+      int            block_done = 0;
+
+      /* the block's header: flags, a checksum, and its size */
+      if (end - p < 3)
+         return RRAR_ERROR_DATA;
+      flags = p[0];
+      count = ((flags >> 3) & 7) + 1;
+      if (count > 3 || (size_t)(end - p) < 2 + count)
+         return RRAR_ERROR_DATA;
+      sum = (uint8_t)(0x5a ^ flags);
+      for (i = 0; i < count; i++)
+      {
+         block_size |= (uint32_t)p[2 + i] << (i * 8);
+         sum        ^= p[2 + i];
+      }
+      if (sum != p[1])
+         return RRAR_ERROR_DATA;
+      data = p + 2 + count;
+      if (block_size > (size_t)(end - data))
+         return RRAR_ERROR_DATA;
+      /* the last byte's bits are not all the block's */
+      end_bits = block_size ? (uint64_t)(block_size - 1) * 8 + (flags & 7) + 1 : 0;
+
+      memset(&br, 0, sizeof(br));
+      br.p   = data;
+      br.end = data + block_size;
+
+      if (flags & 0x80)
+      {
+         if ((r = unpack5_tables(u, &br)) != RRAR_OK)
+            return r;
+         have_tables = 1;
+      }
+      else if (!have_tables)
+         return RRAR_ERROR_DATA;
+
+      while (pos < size)
+      {
+         int      symbol;
+         uint32_t len;
+         uint64_t dist;
+
+         /* (the bits read ahead are at most 8 bytes: further than that
+          * from the block's end, it has not been reached) */
+         if (br.end - br.p <= 8
+               && (uint64_t)(br.p - data) * 8 + (uint64_t)br.past * 8 - (uint64_t)br.bits >= end_bits)
+         {
+            block_done = 1;
+            break;
+         }
+
+         symbol = huff_decode(&br, &u->main_code);
+         if (symbol < 256)
+         {
+            if (symbol < 0)
+               return RRAR_ERROR_DATA;
+            out[pos++] = (uint8_t)symbol;
+            continue;
+         }
+         if (symbol >= 262)
+         {
+            int      slot;
+            unsigned bits;
+
+            len = length5(&br, (unsigned)symbol - 262);
+            if ((slot = huff_decode(&br, &u->offset_code)) < 0)
+               return RRAR_ERROR_DATA;
+            dist = 1;
+            if (slot < 4)
+            {
+               bits  = 0;
+               dist += (unsigned)slot;
+            }
+            else
+            {
+               bits  = (unsigned)slot / 2 - 1;
+               dist += (uint64_t)(2 | (slot & 1)) << bits;
+            }
+            if (bits)
+            {
+               if (bits >= 4)
+               {
+                  int low;
+                  /* the low four bits have a code of their own */
+                  if (bits > 4)
+                     dist += (uint64_t)br_get(&br, (int)bits - 4) << 4;
+                  if ((low = huff_decode(&br, &u->low_offset_code)) < 0)
+                     return RRAR_ERROR_DATA;
+                  dist += (unsigned)low;
+               }
+               else
+                  dist += br_get(&br, (int)bits);
+            }
+            if (dist > 0x100)
+            {
+               len++;
+               if (dist > 0x2000)
+               {
+                  len++;
+                  if (dist > 0x40000)
+                     len++;
+               }
+            }
+            /* (a distance of 4 GB or more is from before the member) */
+            if (dist > 0xffffffffu)
+               dist = 0xffffffffu;
+            u->old_offset[3] = u->old_offset[2];
+            u->old_offset[2] = u->old_offset[1];
+            u->old_offset[1] = u->old_offset[0];
+            u->old_offset[0] = (uint32_t)dist;
+            u->last_length   = len;
+         }
+         else if (symbol == 256)
+         {
+            if ((r = unpack5_filter(u, &br, pos)) != RRAR_OK)
+               return r;
+            continue;
+         }
+         else if (symbol == 257)
+         {
+            /* the last match again */
+            if (!u->last_length)
+               continue;
+            len  = u->last_length;
+            dist = u->old_offset[0];
+         }
+         else
+         {
+            /* one of the last four distances, which becomes the first */
+            int idx = symbol - 258;
+            int slot, i2;
+
+            dist = u->old_offset[idx];
+            for (i2 = idx; i2 > 0; i2--)
+               u->old_offset[i2] = u->old_offset[i2 - 1];
+            u->old_offset[0] = (uint32_t)dist;
+            if ((slot = huff_decode(&br, &u->length_code)) < 0)
+               return RRAR_ERROR_DATA;
+            len = length5(&br, (unsigned)slot);
+            u->last_length = len;
+         }
+         if (br_overrun(&br))
+            return RRAR_ERROR_DATA;
+         pos = copy_match(out, pos, size, (uint32_t)dist, len);
+      }
+
+      if (br_overrun(&br))
+         return RRAR_ERROR_DATA;
+      if (!block_done)
+         break;                     /* the member is full */
+      if (flags & 0x40)
+         break;                     /* the last block */
+      p = data + block_size;
+   }
+   u->pos = pos;
+   return RRAR_OK;
+}
+
 static int unpack_member(const uint8_t *packed, size_t packed_len,
-      uint8_t *out, size_t out_len)
+      uint8_t *out, size_t out_len, int rar5)
 {
    rrar_unpack_t *u = (rrar_unpack_t *)calloc(1, sizeof(*u));
    int r;
@@ -1295,7 +1712,7 @@ static int unpack_member(const uint8_t *packed, size_t packed_len,
    u->ppmd_escape = 2;
    rrar_ppmd7_construct(&u->ppmd);
 
-   r = unpack29(u);
+   r = rar5 ? unpack50(u) : unpack29(u);
    if (r == RRAR_OK && u->pos != u->size)
       r = RRAR_ERROR_DATA;
    if (r == RRAR_OK)
@@ -1586,6 +2003,7 @@ static int parse_headers(rrar_archive_t *a)
          e->packed_size = packed;
          e->data_offset = pos + size;
          e->crc         = rd32(d + pos + 16);
+         e->has_crc     = 1;
          e->version     = d[pos + 24];
          e->method      = d[pos + 25];
          e->is_dir      = (uint8_t)is_dir;
@@ -1624,6 +2042,207 @@ static int parse_headers(rrar_archive_t *a)
    return r;
 }
 
+/* A number as RAR 5's headers write them: seven bits to a byte, the low
+ * ones first, the top bit saying there is more. */
+static int rd_vint(const uint8_t *d, size_t end, size_t *pos, uint64_t *v)
+{
+   uint64_t r = 0;
+   unsigned shift;
+
+   for (shift = 0; shift < 70; shift += 7)
+   {
+      uint8_t b;
+      if (*pos >= end)
+         return 0;
+      b  = d[(*pos)++];
+      if (shift < 64)
+         r |= (uint64_t)(b & 0x7f) << shift;
+      if (!(b & 0x80))
+      {
+         *v = r;
+         return 1;
+      }
+   }
+   return 0;
+}
+
+/* The RAR 5 container: every header a CRC-32, its size, its kind and
+ * flags, and what the kind has; a file's data after its header. */
+static int parse_headers5(rrar_archive_t *a)
+{
+   const uint8_t *d   = a->data;
+   size_t         len = a->len;
+   size_t         pos = 8;
+   size_t        *name_at = NULL;
+   int            seen_main = 0, ended = 0;
+   int            r = RRAR_OK;
+   uint32_t       i;
+
+   while (!ended && pos + 4 < len)
+   {
+      size_t   q = pos + 4, head_end;
+      uint64_t hsize, type, flags, extra = 0, data_size = 0;
+
+      if (!rd_vint(d, len, &q, &hsize) || hsize > 0x200000 || hsize > len - q)
+      {
+         r = RRAR_ERROR_DATA;
+         break;
+      }
+      head_end = q + (size_t)hsize;
+      if (encoding_crc32(0, d + pos + 4, head_end - (pos + 4)) != rd32(d + pos))
+      {
+         r = RRAR_ERROR_DATA;
+         break;
+      }
+      if (     !rd_vint(d, head_end, &q, &type)
+            || !rd_vint(d, head_end, &q, &flags)
+            || ((flags & 1) && !rd_vint(d, head_end, &q, &extra))
+            || ((flags & 2) && !rd_vint(d, head_end, &q, &data_size))
+            || extra > head_end - q
+            || data_size > len - head_end)
+      {
+         r = RRAR_ERROR_DATA;
+         break;
+      }
+
+      switch (type)
+      {
+         case 1:     /* the archive */
+         {
+            uint64_t aflags;
+            if (!rd_vint(d, head_end, &q, &aflags))
+               r = RRAR_ERROR_DATA;
+            else if (aflags & 1)
+               r = RRAR_ERROR_UNSUPPORTED;      /* a volume */
+            seen_main = 1;
+            break;
+         }
+         case 4:     /* the headers after this are encrypted */
+            r = RRAR_ERROR_UNSUPPORTED;
+            break;
+         case 5:
+            ended = 1;
+            break;
+         case 2:     /* a file */
+         {
+            rrar_entry_t *e;
+            uint64_t      fflags, unpacked, attr, info, host, name_len;
+            uint32_t      crc = 0;
+            size_t        extra_at = head_end - (size_t)extra;
+            size_t        x;
+            unsigned      method, version;
+            int           encrypted = 0, is_dir;
+
+            if (     !rd_vint(d, extra_at, &q, &fflags)
+                  || !rd_vint(d, extra_at, &q, &unpacked)
+                  || !rd_vint(d, extra_at, &q, &attr))
+            {
+               r = RRAR_ERROR_DATA;
+               break;
+            }
+            if (fflags & 2)
+            {
+               if (extra_at - q < 4)
+               {
+                  r = RRAR_ERROR_DATA;
+                  break;
+               }
+               q += 4;        /* modification time */
+            }
+            if (fflags & 4)
+            {
+               if (extra_at - q < 4)
+               {
+                  r = RRAR_ERROR_DATA;
+                  break;
+               }
+               crc = rd32(d + q);
+               q  += 4;
+            }
+            if (     !rd_vint(d, extra_at, &q, &info)
+                  || !rd_vint(d, extra_at, &q, &host)
+                  || !rd_vint(d, extra_at, &q, &name_len)
+                  || name_len > extra_at - q)
+            {
+               r = RRAR_ERROR_DATA;
+               break;
+            }
+
+            /* the records after the name: one of them says the data is
+             * encrypted */
+            for (x = extra_at; x < head_end;)
+            {
+               uint64_t rsize, rtype;
+               size_t   y;
+               if (!rd_vint(d, head_end, &x, &rsize) || rsize > head_end - x)
+                  break;
+               y = x;
+               if (rd_vint(d, x + (size_t)rsize, &y, &rtype) && rtype == 1)
+                  encrypted = 1;
+               x += (size_t)rsize;
+            }
+
+            if (a->num_entries == a->cap_entries)
+            {
+               uint32_t      cap = a->cap_entries ? a->cap_entries * 2 : 16;
+               rrar_entry_t *p   = (rrar_entry_t *)realloc(a->entries, cap * sizeof(*p));
+               size_t       *n   = p ? (size_t *)realloc(name_at, cap * sizeof(*n)) : NULL;
+               if (p)
+                  a->entries = p;
+               if (n)
+                  name_at = n;
+               if (!p || !n)
+               {
+                  r = RRAR_ERROR_MEM;
+                  break;
+               }
+               a->cap_entries = cap;
+            }
+            /* (the name is UTF-8 as it is) */
+            if ((r = add_name(a, d + q, (size_t)name_len, 0, &name_at[a->num_entries])) != RRAR_OK)
+               break;
+
+            version = (unsigned)(info & 0x3f);
+            method  = (unsigned)((info >> 7) & 7);
+            is_dir  = (fflags & 1) != 0;
+            e       = &a->entries[a->num_entries++];
+            memset(e, 0, sizeof(*e));
+            e->size        = unpacked;
+            e->packed_size = data_size;
+            e->data_offset = head_end;
+            e->crc         = crc;
+            e->has_crc     = (fflags & 4) != 0;
+            e->version     = 50;
+            e->method      = (uint8_t)(RAR_METHOD_STORED + method);
+            e->is_dir      = (uint8_t)is_dir;
+            e->supported   = !is_dir
+               && !encrypted
+               && !(flags & (0x08 | 0x10))            /* split between volumes */
+               && !(fflags & 8)                       /* of a size not known */
+               && unpacked <= (uint64_t)((size_t)-1) / 2
+               && (method == 0
+                     ? data_size == unpacked
+                     : (version == 0 && !(info & 0x40) && method <= 5));
+            (void)attr;
+            (void)host;
+            break;
+         }
+         default:    /* a service header, or a kind from later: with its data, skipped */
+            break;
+      }
+      if (r != RRAR_OK)
+         break;
+      pos = head_end + (size_t)data_size;
+   }
+
+   if (r == RRAR_OK && !seen_main)
+      r = RRAR_ERROR_DATA;
+   for (i = 0; r == RRAR_OK && i < a->num_entries; i++)
+      a->entries[i].name = a->names + name_at[i];
+   free(name_at);
+   return r;
+}
+
 /* ------------------------------------------------------------------ API */
 
 int rrar_archive_open(rrar_archive_t **out, const uint8_t *data, size_t len)
@@ -1638,14 +2257,15 @@ int rrar_archive_open(rrar_archive_t **out, const uint8_t *data, size_t len)
       return RRAR_ERROR_PARAM;
    if (memcmp(data, "Rar!\x1a\x07", 6))
       return RRAR_ERROR_DATA;
-   if (data[6] != 0)
-      return RRAR_ERROR_UNSUPPORTED;      /* 1: the RAR 5 container */
+   /* the seventh byte tells the two containers apart */
+   if (data[6] > 1 || (data[6] == 1 && (len < 8 || data[7] != 0)))
+      return RRAR_ERROR_UNSUPPORTED;
 
    if (!(a = (rrar_archive_t *)calloc(1, sizeof(*a))))
       return RRAR_ERROR_MEM;
    a->data = data;
    a->len  = len;
-   if ((r = parse_headers(a)) != RRAR_OK)
+   if ((r = data[6] ? parse_headers5(a) : parse_headers(a)) != RRAR_OK)
    {
       rrar_archive_close(a);
       return r;
@@ -1700,9 +2320,9 @@ int rrar_archive_extract(rrar_archive_t *a, uint32_t index,
    if (e->method == RAR_METHOD_STORED)
       memcpy(buf, packed, size);
    else if (size)
-      r = unpack_member(packed, (size_t)e->packed_size, buf, size);
+      r = unpack_member(packed, (size_t)e->packed_size, buf, size, e->version == 50);
 
-   if (r == RRAR_OK && encoding_crc32(0, buf, size) != e->crc)
+   if (r == RRAR_OK && e->has_crc && encoding_crc32(0, buf, size) != e->crc)
       r = RRAR_ERROR_CRC;
    if (r != RRAR_OK)
    {

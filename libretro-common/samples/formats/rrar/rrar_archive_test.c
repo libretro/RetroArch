@@ -9,7 +9,8 @@
  * Every member that the reader says it can unpack has to come out, which
  * means with the CRC-32 the archive gives for it: the reader checks that
  * itself. Sizes, checksums and names are checked here against what they
- * are known to be. Then each archive is cut short and has bytes changed,
+ * are known to be - for RAR 2.9 archives and for RAR 5 ones. Then each
+ * archive is cut short and has bytes changed,
  * a few hundred times over: whatever the reader makes of that, it must
  * not read or write where it should not (the test is built with ASan and
  * UBSan), and what it does hand out still has the archive's CRC-32.
@@ -56,6 +57,7 @@ struct expect
    uint64_t    size;
    uint32_t    crc;
    int         is_dir;
+   int         unsupported;   /* the reader is to say it cannot unpack it */
 };
 
 /* Opens the archive, unpacks everything in it that can be, and finds
@@ -83,10 +85,16 @@ static void check(const char *dir, const char *file,
 
          if (e->is_dir)
             continue;
-         CHECK(e->supported, e->name);
+         if (!e->supported)
+         {
+            /* said not to be, and refused as that */
+            CHECK(rrar_archive_extract(a, i, &out, &out_len) == RRAR_ERROR_UNSUPPORTED
+                  && out == NULL, e->name);
+            continue;
+         }
          CHECK(rrar_archive_extract(a, i, &out, &out_len) == RRAR_OK, e->name);
          CHECK(out != NULL && out_len == e->size, e->name);
-         if (out)
+         if (out && e->has_crc)
             CHECK(encoding_crc32(0, out, out_len) == e->crc, e->name);
          free(out);
       }
@@ -107,7 +115,20 @@ static void check(const char *dir, const char *file,
             if (!e->is_dir)
             {
                CHECK(e->size == want[w].size, want[w].name);
-               CHECK(e->crc == want[w].crc, want[w].name);
+               if (e->has_crc)
+                  CHECK(e->crc == want[w].crc, want[w].name);
+               else if (e->supported)
+               {
+                  /* no CRC-32 in the archive: the known one, of what
+                   * comes out */
+                  uint8_t *out = NULL;
+                  size_t   out_len = 0;
+                  CHECK(rrar_archive_extract(a, i, &out, &out_len) == RRAR_OK, want[w].name);
+                  if (out)
+                     CHECK(encoding_crc32(0, out, out_len) == want[w].crc, want[w].name);
+                  free(out);
+               }
+               CHECK((e->supported != 0) == (want[w].unsupported == 0), want[w].name);
             }
          }
       }
@@ -165,7 +186,9 @@ static void mangle(const char *dir, const char *file)
          if (rrar_archive_extract(a, i, &out, &out_len) == RRAR_OK)
          {
             CHECK(out_len == e->size, file);
-            CHECK(encoding_crc32(0, out, out_len) == e->crc, file);
+            /* (an archive with no CRC-32s has nothing to hold it to) */
+            if (e->has_crc)
+               CHECK(encoding_crc32(0, out, out_len) == e->crc, file);
          }
          else
             CHECK(out == NULL, file);
@@ -201,6 +224,25 @@ int main(int argc, char **argv)
       { "abcdefghijklmnopqrs\xe3\x83\x86\xe3\x82\xb9\xe3\x83\x88.txt", 16, 0x15b6d005u, 0 },
       { "\xe8\xa1\xa8\xe3\x81\xa0\xe3\x82\x88", 0, 0, 1 },
    };
+   /* RAR 5 */
+   static const struct expect five_stored[] = {
+      { "helloworld.txt", 29, 0x95a043b4u, 0, 0 },
+   };
+   static const struct expect five_compressed[] = {
+      { "test.bin", 1200, 0x7cca70cdu, 0, 0 },
+   };
+   static const struct expect five_arm[] = {
+      { "elf-Linux-ARMv7-ls", 90808, 0x886f91ebu, 0, 0 },
+   };
+   static const struct expect five_solid[] = {
+      /* the first member of a solid archive stands by itself */
+      { "test1.bin", 4096, 0x7e13b2c6u, 0, 0 },
+      { "test2.bin", 4096, 0xf166afcbu, 0, 1 },
+      { "test4.bin", 4096, 0x10c43ed4u, 0, 1 },
+   };
+   static const struct expect five_blake2[] = {
+      { "cebula.txt", 814, 0x7e5ec49eu, 0, 0 },
+   };
    const char *dir;
 
    if (argc > 2)
@@ -215,6 +257,17 @@ int main(int argc, char **argv)
    check(dir, "filter.rar", filter, sizeof(filter) / sizeof(filter[0]));
    check(dir, "unicode.rar", unicode, sizeof(unicode) / sizeof(unicode[0]));
 
+   check(dir, "rar5_stored.rar", five_stored, sizeof(five_stored) / sizeof(five_stored[0]));
+   check(dir, "rar5_compressed.rar", five_compressed, sizeof(five_compressed) / sizeof(five_compressed[0]));
+   check(dir, "rar5_arm.rar", five_arm, sizeof(five_arm) / sizeof(five_arm[0]));
+   check(dir, "rar5_multiple_files_solid.rar", five_solid, sizeof(five_solid) / sizeof(five_solid[0]));
+   check(dir, "rar5_blake2.rar", five_blake2, sizeof(five_blake2) / sizeof(five_blake2[0]));
+
+   mangle(dir, "rar5_stored.rar");
+   mangle(dir, "rar5_compressed.rar");
+   mangle(dir, "rar5_arm.rar");
+   mangle(dir, "rar5_multiple_files_solid.rar");
+   mangle(dir, "rar5_blake2.rar");
    mangle(dir, "lowdist_reset.rar");
    mangle(dir, "compress_best.rar");
    mangle(dir, "filter.rar");
@@ -223,9 +276,11 @@ int main(int argc, char **argv)
    {
       /* what is no RAR, and what is one of a kind not read */
       rrar_archive_t *a = (rrar_archive_t *)1;
+      static const uint8_t rar6[] = { 'R', 'a', 'r', '!', 0x1a, 0x07, 0x02, 0x00, 0, 0, 0, 0 };
       static const uint8_t rar5[] = { 'R', 'a', 'r', '!', 0x1a, 0x07, 0x01, 0x00, 0, 0, 0, 0 };
       CHECK(rrar_archive_open(&a, (const uint8_t *)"PK\3\4....", 8) == RRAR_ERROR_DATA && !a, "zip");
-      CHECK(rrar_archive_open(&a, rar5, sizeof(rar5)) == RRAR_ERROR_UNSUPPORTED && !a, "rar5");
+      CHECK(rrar_archive_open(&a, rar6, sizeof(rar6)) == RRAR_ERROR_UNSUPPORTED && !a, "a later container");
+      CHECK(rrar_archive_open(&a, rar5, sizeof(rar5)) == RRAR_ERROR_DATA && !a, "rar5 with no headers");
       CHECK(rrar_archive_open(&a, rar5, 3) == RRAR_ERROR_PARAM && !a, "short");
    }
 

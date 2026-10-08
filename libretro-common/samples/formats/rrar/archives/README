@@ -1,9 +1,14 @@
 RAR archives for ../rrar_archive_test.c.
 
-They are test data of libarchive (libarchive/test/test_read_format_rar*.rar.uu,
+They are test data of libarchive (libarchive/test/test_read_format_rar*.rar.uu and test_read_format_rar5*.rar.uu,
 2-clause BSD), decoded and otherwise as they come:
 
   lowdist_reset.rar  RAR 2.9, one LZ block whose low distance bits repeat
   compress_best.rar  RAR 2.9 "best": PPMd blocks; a stored member; directories
   filter.rar         RAR 2.9: a Windows program, with delta and x86 (E8/E9) filters
   unicode.rar        names in the packed UTF-16 form, Japanese
+  rar5_stored.rar                 RAR 5, a stored member
+  rar5_compressed.rar             RAR 5, one packed member
+  rar5_arm.rar                    RAR 5: an ARM program, with delta and ARM filters
+  rar5_multiple_files_solid.rar   RAR 5, solid: only its first member stands alone
+  rar5_blake2.rar                 RAR 5 with BLAKE2 hashes and no CRC-32

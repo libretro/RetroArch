@@ -30,16 +30,24 @@
  * archives of ROMs, so this covers what those are packed as and rejects
  * everything else rather than half-supporting it:
  *
- *   - the RAR 1.5 to 4.x container ("Rar!\x1a\x07\x00")
+ *   - the RAR 1.5 to 4.x container ("Rar!\x1a\x07\x00") and the RAR 5
+ *     one ("Rar!\x1a\x07\x01\x00")
  *   - stored members of any version
  *   - members packed by RAR 2.9 to 4.x (unpack version 29 and 36), all
  *     five methods: the LZ coder with its Huffman tables, PPMd blocks,
  *     and the standard filters (delta, x86 E8 and E8/E9, RGB, audio)
+ *   - members packed by RAR 5 and later in the RAR 5 format, all five
+ *     methods, with its filters (delta, x86 E8 and E8/E9, ARM)
  *
- * Not supported, and said so per entry or at open: the RAR 5 container,
- * members packed by RAR 1.5 or 2.x, solid archives, encryption,
- * multi-volume archives, self-extracting archives, and filter programs
- * other than the standard ones (there is no RAR virtual machine here).
+ * Not supported, and said so per entry or at open: members packed by
+ * RAR 1.5 or 2.x, the RAR 7 format for dictionaries over 4 GB, solid
+ * archives (but for their first member), encryption, multi-volume and
+ * self-extracting archives, and for RAR 2.9 filter programs other than
+ * the standard ones (there is no RAR virtual machine here).
+ *
+ * A RAR 5 archive can be made with BLAKE2 hashes in place of CRC-32s.
+ * Its members are unpacked and not checked (has_crc is 0): there is no
+ * BLAKE2 here.
  *
  * ------------------------------------------------------------------
  * On untrusted input
@@ -76,7 +84,8 @@ RETRO_BEGIN_DECLS
 #define RRAR_ERROR_UNSUPPORTED (-4)
 #define RRAR_ERROR_CRC         (-5)
 
-/* Signature length at the head of every archive. */
+/* Signature length at the head of every archive (a RAR 5 one has an
+ * eighth byte, zero). */
 #define RRAR_SIGNATURE_SIZE 7
 
 /* One entry in the archive. */
@@ -90,10 +99,13 @@ typedef struct rrar_entry
    uint64_t    data_offset;  /* of the packed bytes in the archive */
    uint32_t    crc;
    uint8_t     method;       /* 0x30 stored, 0x31 to 0x35 packed */
-   uint8_t     version;      /* of RAR needed to unpack: 29 is 2.9 */
+   uint8_t     version;      /* of RAR needed to unpack: 29 is 2.9, 50 is 5.0 */
    uint8_t     is_dir;
    /* 0: this reader cannot extract the entry (see the list above) */
    uint8_t     supported;
+   /* 0: the archive has no CRC-32 for the entry (a RAR 5 archive made to
+    * carry BLAKE2 hashes only), and extraction checks nothing */
+   uint8_t     has_crc;
 } rrar_entry_t;
 
 typedef struct rrar_archive rrar_archive_t;
@@ -110,7 +122,7 @@ typedef struct rrar_archive rrar_archive_t;
  *
  * Returns: RRAR_OK, or a negative RRAR_ERROR_* code. A malformed archive
  * is an error, never a partial success; an archive of a kind this reader
- * does not read (RAR 5, multi-volume, encrypted headers) is
+ * does not read (multi-volume, encrypted headers) is
  * RRAR_ERROR_UNSUPPORTED.
  */
 int rrar_archive_open(rrar_archive_t **out,
@@ -149,7 +161,8 @@ const rrar_entry_t *rrar_archive_entry(const rrar_archive_t *a,
  * @out        : receives a malloc'd buffer holding the entry's data
  * @out_len    : receives the entry's size
  *
- * Unpacks one entry and checks it against the archive's CRC-32. The
+ * Unpacks one entry and checks it against the archive's CRC-32, if the
+ * archive has one for it. The
  * caller frees *@out. An empty entry yields a valid one-byte buffer and
  * a length of zero.
  *
