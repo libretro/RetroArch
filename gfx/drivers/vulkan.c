@@ -15,6 +15,7 @@
  */
 
 #include "../video_record.h"
+#include <stddef.h>
 #include <stdint.h>
 #include <math.h>
 #include <string.h>
@@ -27,6 +28,7 @@
 #include <formats/image.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
+#include <queues/mpsc_stack.h>
 #include <retro_math.h>
 #include <string/stdstring.h>
 #include <libretro.h>
@@ -210,7 +212,7 @@ struct vk_texture
    /* The link and countdown for a texture parked for destruction
     * (vulkan_deferred_textures_push). In the texture itself so that
     * parking one allocates nothing and cannot fail. */
-   struct vk_texture *park_next;
+   mpsc_stack_node_t park;
    unsigned park_frames;
 
    VkImageLayout layout;         /* enum alignment */
@@ -653,8 +655,8 @@ typedef struct vk
     * touch them. See vulkan_deferred_textures_tick(). Any thread
     * parks one by pushing it on deferred_textures_in; the list proper
     * belongs to the thread that records frames. */
-   retro_atomic_ptr_t deferred_textures_in;
-   struct vk_texture *deferred_textures;
+   mpsc_stack_t deferred_textures_in;
+   mpsc_stack_node_t *deferred_textures;
 
    /* One-shot staging command buffers submitted without a CPU wait
     * (texture and glyph atlas uploads), each released once its own
@@ -999,6 +1001,7 @@ static void vulkan_write_quad_descriptors(
  * driver overhead when issuing many draws with different descriptors
  * (e.g. overlay rendering, menu display draws). */
 
+#ifdef HAVE_OVERLAY
 static INLINE void vulkan_descriptor_batch_init(
       struct vk_descriptor_batch *batch)
 {
@@ -1086,6 +1089,7 @@ static INLINE void vulkan_descriptor_batch_flush(
       batch->image_count  = 0;
    }
 }
+#endif
 
 
 static void vulkan_transition_texture(vk_t *vk, VkCommandBuffer cmd, struct vk_texture *texture)
@@ -1362,48 +1366,36 @@ static void vulkan_destroy_texture(
  * that records frames (the threaded wrapper marshals unloads there),
  * but driver-reinit fallbacks can enqueue from the main thread while a
  * frame ticks the list. So parking a texture is a push onto
- * deferred_textures_in, one atomic pointer, and the list the frames
- * count down is private to the thread that records them: each tick
- * takes everything pushed since the last with an exchange and then
- * walks a list nobody else can reach. Nothing pops a single node off
- * the shared pointer, so the push needs no more than a compare-and-swap
- * loop. This used to borrow queue_lock, which made every parked
- * texture wait behind whatever held the queue - a present, or a
- * hardware core's submit.
+ * deferred_textures_in, an mpsc_stack, and the list the frames count
+ * down is private to the thread that records them: each tick drains
+ * everything pushed since the last and then walks a list nobody else
+ * can reach.
  *
- * The link is in the texture (park_next, park_frames). It used to be
- * a node allocated per unload, and when that allocation failed the
- * texture was destroyed on the spot after waiting for the frames
- * already submitted - which does nothing for a frame handed over but
- * not yet recorded, or for the menu code still looking at the handle.
- * Parking cannot fail now, so there is no such path. */
+ * The link is in the texture (park, park_frames), so parking a texture
+ * allocates nothing and cannot fail. */
+#define VK_PARKED_TEXTURE(node) ((struct vk_texture*)((char*)(node) \
+      - offsetof(struct vk_texture, park)))
 static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture);
 
 /* Any thread. The list owns the texture from here. */
 static void vulkan_deferred_textures_push(vk_t *vk,
       struct vk_texture *texture)
 {
-   void *head;
    texture->park_frames = vk->context->num_swapchain_images + 1;
-   do
-   {
-      head               = retro_atomic_load_acquire_ptr(&vk->deferred_textures_in);
-      texture->park_next = (struct vk_texture*)head;
-   } while (!retro_atomic_cas_ptr(&vk->deferred_textures_in, head, texture));
+   mpsc_stack_push(&vk->deferred_textures_in, &texture->park);
 }
 
 /* The thread that records frames. Moves what was pushed since the
  * last call onto the private list. */
 static void vulkan_deferred_textures_collect(vk_t *vk)
 {
-   struct vk_texture *texture = (struct vk_texture*)
-      retro_atomic_exchange_ptr(&vk->deferred_textures_in, NULL);
-   while (texture)
+   mpsc_stack_node_t *node = mpsc_stack_drain(&vk->deferred_textures_in);
+   while (node)
    {
-      struct vk_texture *next = texture->park_next;
-      texture->park_next      = vk->deferred_textures;
-      vk->deferred_textures   = texture;
-      texture                 = next;
+      mpsc_stack_node_t *next = node->next;
+      node->next              = vk->deferred_textures;
+      vk->deferred_textures   = node;
+      node                    = next;
    }
 }
 
@@ -1411,31 +1403,32 @@ static void vulkan_deferred_textures_collect(vk_t *vk)
  * submitted frame. */
 static void vulkan_deferred_textures_tick(vk_t *vk)
 {
-   struct vk_texture **cur;
-   struct vk_texture *expired = NULL;
+   mpsc_stack_node_t **cur;
+   mpsc_stack_node_t *expired = NULL;
 
    vulkan_deferred_textures_collect(vk);
    cur = &vk->deferred_textures;
    while (*cur)
    {
-      struct vk_texture *texture = *cur;
+      mpsc_stack_node_t *node    = *cur;
+      struct vk_texture *texture = VK_PARKED_TEXTURE(node);
       if (texture->park_frames > 1)
       {
          texture->park_frames--;
-         cur                = &texture->park_next;
+         cur        = &node->next;
       }
       else
       {
-         *cur               = texture->park_next;
-         texture->park_next = expired;
-         expired            = texture;
+         *cur       = node->next;
+         node->next = expired;
+         expired    = node;
       }
    }
 
    while (expired)
    {
-      struct vk_texture *next = expired->park_next;
-      vulkan_texture_retire(vk, expired);
+      mpsc_stack_node_t *next = expired->next;
+      vulkan_texture_retire(vk, VK_PARKED_TEXTURE(expired));
       expired = next;
    }
 }
@@ -1444,17 +1437,17 @@ static void vulkan_deferred_textures_tick(vk_t *vk)
  * the graphics queue is idle and no other thread is recording. */
 static void vulkan_deferred_textures_flush(vk_t *vk)
 {
-   struct vk_texture *texture;
+   mpsc_stack_node_t *node;
 
    vulkan_deferred_textures_collect(vk);
-   texture               = vk->deferred_textures;
+   node                  = vk->deferred_textures;
    vk->deferred_textures = NULL;
 
-   while (texture)
+   while (node)
    {
-      struct vk_texture *next = texture->park_next;
-      vulkan_texture_retire(vk, texture);
-      texture = next;
+      mpsc_stack_node_t *next = node->next;
+      vulkan_texture_retire(vk, VK_PARKED_TEXTURE(node));
+      node = next;
    }
 }
 
@@ -4929,12 +4922,13 @@ static void vulkan_init_pipeline_layout(
          &layout_info, NULL, &vk->pipelines.layout);
 }
 
-/* The SPIR-V the menu effects are made from, which they are made from
- * when first drawn rather than at start */
 static const uint32_t vk_alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
    ;
 
+#ifdef HAVE_SHADERPIPELINE
+/* The SPIR-V the menu effects are made from, which they are made from
+ * when first drawn rather than at start */
 static const uint32_t vk_pipeline_ribbon_vert[] =
 #include "vulkan_shaders/pipeline_ribbon.vert.inc"
    ;
@@ -4966,6 +4960,7 @@ static const uint32_t vk_pipeline_bokeh_frag[] =
 static const uint32_t vk_pipeline_snowflake_frag[] =
 #include "vulkan_shaders/pipeline_snowflake.frag.inc"
    ;
+#endif
 
 /* Copies the pipeline state the menu effects are made with as it stands
  * here, so each can be made the first time it is drawn */
@@ -4998,6 +4993,7 @@ static void vulkan_effect_capture(struct vk_effect_template *t,
    t->valid            = true;
 }
 
+#ifdef HAVE_SHADERPIPELINE
 /* Menu effect @i (0..5: ribbon, simple ribbon, simple snow, snow,
  * bokeh, snowflake), made from the captured state the first time it is
  * asked for; VK_NULL_HANDLE when it cannot be had, and is not tried
@@ -5118,6 +5114,7 @@ static VkPipeline vulkan_effect_pipeline(vk_t *vk, unsigned i, bool sdr)
    vkDestroyShaderModule(vk->context->device, stages[1].module, NULL);
    return *slot;
 }
+#endif
 
 /* The alpha blend of a pipeline for sdr_render_pass. With HDR off only
  * the views' UI layer draws there, over transparent black: its alpha
@@ -10450,7 +10447,9 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    unsigned frame_index;
    unsigned swapchain_index;
+#ifdef HAVE_OVERLAY
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
+#endif
    bool message_visible;
 #ifdef HAVE_GFX_WIDGETS
    bool widgets_visible;

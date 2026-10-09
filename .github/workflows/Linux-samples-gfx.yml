@@ -252,6 +252,10 @@ jobs:
                 gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
                    "-DRETRO_ATOMIC_FORCE_$backend" -c "$f" -o /dev/null
              done
+             # The Vulkan driver, from the Khronos headers the tree carries
+             gcc -std=gnu99 -O2 -Wall -Werror $INC -Igfx/include $EXTRA $DEF \
+                -DHAVE_VULKAN "-DRETRO_ATOMIC_FORCE_$backend" \
+                -c gfx/drivers/vulkan.c -o /dev/null
              echo "[pass] RETRO_ATOMIC_FORCE_$backend"
           done
           echo "[pass] atomic backend portability"
