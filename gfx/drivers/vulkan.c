@@ -431,7 +431,7 @@ typedef struct vk
    uint32_t built_hdr_flags;
    /* built_hdr_flags' HDR output, for get_flags() on the main thread
     * (atomic: the video thread rebuilds) */
-   int      built_hdr_output;
+   retro_atomic_int_t built_hdr_output;
    bool     built;
 
    video_info_t video;
