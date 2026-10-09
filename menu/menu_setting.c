@@ -13018,6 +13018,11 @@ static const setting_desc_t video_filter_desc[] = {
 #include "../settings/settings_def_video_filter_path.h"
 };
 
+static const setting_desc_t amiibo_file_desc[] = {
+/* GENERATED: rows come from settings_def_amiibo_file_path.h in order. */
+#include "../settings/settings_def_amiibo_file_path.h"
+};
+
 static const setting_desc_t crt_switchres_desc_0[] = {
 /* GENERATED: rows come from settings_def_crt_switchres.h in order. */
 #include "../settings/settings_def_crt_switchres.h"
@@ -18474,6 +18479,7 @@ static void settings_build_directory(
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
                      ADD_DESC(dir_desc_0);
+                     ADD_DESC(amiibo_file_desc);
       if (string_is_not_equal(settings->arrays.record_driver, "null"))
       {
          /* Descriptor holdout: value target outside settings_t. */
@@ -19778,6 +19784,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
 #endif
 #endif
    { dir_desc_0, (uint16_t)ARRAY_SIZE(dir_desc_0) },
+   { amiibo_file_desc, (uint16_t)ARRAY_SIZE(amiibo_file_desc) },
    { dir_desc_1, (uint16_t)ARRAY_SIZE(dir_desc_1) },
    { dir_desc_2, (uint16_t)ARRAY_SIZE(dir_desc_2) },
    { privacy_desc_0, (uint16_t)ARRAY_SIZE(privacy_desc_0) },

@@ -133,6 +133,9 @@
 #include "location_driver.h"
 
 #include "runloop.h"
+#ifdef HAVE_NFC
+#include "nfc/nfc_frontend.h"
+#endif
 #include "camera/camera_driver.h"
 #include "location_driver.h"
 #include "record/record_driver.h"
@@ -3660,6 +3663,15 @@ bool command_event(enum event_command cmd, void *data)
          settings_t  *settings      = config_get_ptr();
          video_driver_init_filter(video_driver_pix_fmt, settings);
          video_driver_filter_apply();
+#endif
+         break;
+      }
+      case CMD_EVENT_NFC_LOAD_AMIIBO:
+      {
+#ifdef HAVE_NFC
+         settings_t *settings = config_get_ptr();
+         if (settings && settings->paths.path_amiibo[0])
+            nfc_frontend_select_amiibo_path(settings->paths.path_amiibo);
 #endif
          break;
       }

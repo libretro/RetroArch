@@ -1643,6 +1643,8 @@
 #define MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE_STR "suspend_screensaver_enable"
 #define MENU_ENUM_LABEL_SUSTAINED_PERFORMANCE_MODE_STR "sustained_performance_mode"
 #define MENU_ENUM_LABEL_SWITCH_CPU_PROFILE_STR "switch_cpu_profile"
+#define MENU_ENUM_LABEL_AMIIBO_DIRECTORY_STR "amiibo_directory"
+#define MENU_ENUM_LABEL_NFC_LOAD_AMIIBO_STR "amiibo_file"
 #define MENU_ENUM_LABEL_SYSTEM_DIRECTORY_STR "system_directory"
 #define MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE_STR "threaded_data_runloop_enable"
 #define MENU_ENUM_LABEL_THREAD_PREFER_FAST_CORES_STR "thread_prefer_fast_cores"

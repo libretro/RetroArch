@@ -25,6 +25,10 @@
 #include "nfc_frontend.h"
 #include "../verbosity.h"
 
+#ifdef HAVE_MENU
+#include "../menu/menu_driver.h"
+#endif
+
 #ifdef NFC_HAVE_AFNFC
 /* Real kernel NFC backend (nfc/nfc_afnfc.c), built with HAVE_NFC_AFNFC. */
 extern const nfc_backend_t nfc_backend_afnfc;
@@ -300,6 +304,19 @@ int RETRO_CALLCONV nfc_frontend_write(unsigned offset,
    return nfc_cur->write ? nfc_cur->write(offset, buf, len) : -1;
 }
 
+/* The Quick Menu shows "Load Amiibo" only while a software source is
+ * active. A core may switch source while the menu is open (e.g. from its
+ * core-options update_display callback), so ask the menu to rebuild the
+ * current list whenever the software/hardware kind changes. */
+static void nfc_notify_source_changed(void)
+{
+#ifdef HAVE_MENU
+   struct menu_state *menu_st = menu_state_get_ptr();
+   menu_st->flags            |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags            &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+#endif
+}
+
 /* --- interface version 5 --- */
 
 int RETRO_CALLCONV nfc_frontend_mifare_read_block(unsigned sector, unsigned block,
@@ -336,10 +353,12 @@ int RETRO_CALLCONV nfc_frontend_transceive(const uint8_t *tx, unsigned tx_len,
 /* Switch the active backend at runtime (interface v2 set_source). */
 static bool nfc_switch_backend(const nfc_backend_t *b)
 {
+   bool was_software;
    if (!b)
       return false;
    if (nfc_cur == b)
       return true;
+   was_software = nfc_frontend_active_is_software();
    if (nfc_cur && nfc_cur->deinit)
       nfc_cur->deinit();
    nfc_cur       = b;
@@ -351,6 +370,9 @@ static bool nfc_switch_backend(const nfc_backend_t *b)
       return false;
    }
    RARCH_LOG("[NFC] active backend: %s.\n", nfc_cur->ident);
+
+   if (was_software != nfc_frontend_active_is_software())
+      nfc_notify_source_changed();
 
    /* If a scan was in progress, resume it on the new backend so the selected
     * reader/tag becomes available without waiting for the next start_scan. */

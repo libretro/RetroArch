@@ -122,6 +122,7 @@ enum event_command
    CMD_EVENT_STATISTICS_TOGGLE,
    /* Initializes video filter. */
    CMD_EVENT_VIDEO_FILTER_INIT,
+   CMD_EVENT_NFC_LOAD_AMIIBO,
    /* Initializes overlay. */
    CMD_EVENT_OVERLAY_INIT,
    /* Frees or caches overlay. */

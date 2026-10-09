@@ -3674,16 +3674,24 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          RARCH_LOG("[Environ]: GET_NFC_INTERFACE.\n");
          runloop_nfc_supported = true;
 
-         /* Point the software amiibo backend at <system>/amiibo; the
-          * RETRO_NFC_AMIIBO_DIR env override applies when unset. */
-         if (nfc_settings
-               && !string_is_empty(nfc_settings->paths.directory_system))
+         /* Point the software amiibo backend at the configured directory
+          * (Settings -> Directory -> Amiibo); empty falls back to the
+          * RETRO_NFC_AMIIBO_DIR env override, then a default. */
+         if (nfc_settings)
          {
-            char amiibo_dir[DIR_MAX_LENGTH];
-            fill_pathname_join_special(amiibo_dir,
-                  nfc_settings->paths.directory_system, "amiibo",
-                  sizeof(amiibo_dir));
-            nfc_frontend_set_amiibo_dir(amiibo_dir);
+            if (!string_is_empty(nfc_settings->paths.directory_amiibo))
+               nfc_frontend_set_amiibo_dir(
+                     nfc_settings->paths.directory_amiibo);
+            else if (!string_is_empty(nfc_settings->paths.directory_system))
+            {
+               /* No Amiibo directory configured: default to
+                * <system>/amiibo rather than the working directory. */
+               char amiibo_dir[DIR_MAX_LENGTH];
+               fill_pathname_join_special(amiibo_dir,
+                     nfc_settings->paths.directory_system, "amiibo",
+                     sizeof(amiibo_dir));
+               nfc_frontend_set_amiibo_dir(amiibo_dir);
+            }
          }
 
          if (iface)
