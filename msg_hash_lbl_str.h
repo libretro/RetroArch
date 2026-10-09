@@ -1059,6 +1059,7 @@
 #define MENU_ENUM_LABEL_CLOUD_SYNC_ACCESS_KEY_ID_STR "cloud_sync_access_key_id"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_DESTRUCTIVE_STR "cloud_sync_destructive"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_ENABLE_STR "cloud_sync_enable"
+#define MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR_STR "cloud_sync_nfs_subdir"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_PASSWORD_STR "cloud_sync_password"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL_STR "cloud_sync_resolve_keep_local"
 #define MENU_ENUM_LABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER_STR "cloud_sync_resolve_keep_server"

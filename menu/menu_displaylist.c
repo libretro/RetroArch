@@ -13316,6 +13316,7 @@ unsigned menu_displaylist_build_list(
 #endif
 #ifdef HAVE_NFSCLIENT
                {MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS,           PARSE_ACTION,              false},
+               {MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR,          PARSE_ONLY_STRING,         false},
 #endif
             };
 
@@ -13342,6 +13343,7 @@ unsigned menu_displaylist_build_list(
 #endif
 #ifdef HAVE_NFSCLIENT
                   case MENU_ENUM_LABEL_NFS_CLIENT_SETTINGS:
+                  case MENU_ENUM_LABEL_CLOUD_SYNC_NFS_SUBDIR:
                      build_list[i].checked =
                            string_is_equal(settings->arrays.cloud_sync_driver, "nfs");
                      break;

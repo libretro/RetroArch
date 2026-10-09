@@ -28,10 +28,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
 
 #include <boolean.h>
 #include <streams/file_stream.h>
+#include <file/file_path.h>
+#include <vfs/vfs_implementation.h>
 
 #include "../../../network/cloud_sync/nfs.c"
 
@@ -132,7 +133,7 @@ static bool remote_is(const char *path, const char *text)
       && (!n->size || !memcmp(n->data, text, n->size));
 }
 
-static void begin(const char *subdir)
+static void begin_subdirs(const char *subdir, const char *sync_subdir)
 {
    settings_t *settings = config_get_ptr();
    done_t      d;
@@ -141,10 +142,17 @@ static void begin(const char *subdir)
    strlcpy(settings->arrays.nfs_server, "server", sizeof(settings->arrays.nfs_server));
    strlcpy(settings->arrays.nfs_export, "/export", sizeof(settings->arrays.nfs_export));
    strlcpy(settings->arrays.nfs_subdir, subdir, sizeof(settings->arrays.nfs_subdir));
+   strlcpy(settings->arrays.cloud_sync_nfs_subdir, sync_subdir,
+         sizeof(settings->arrays.cloud_sync_nfs_subdir));
    nfs_sync_capture();
    memset(&d, 0, sizeof(d));
    nfs_sync_begin(on_done, &d);
    CHECK(d.calls == 1 && d.success, "begin");
+}
+
+static void begin(const char *subdir)
+{
+   begin_subdirs(subdir, "");
 }
 
 static void end(void)
@@ -225,7 +233,7 @@ static bool no_temp_files(void)
       if (fake_nfs.nodes[i].used && l >= 12 && !strcmp(p + l - 12, ".rauploading"))
          return false;
    }
-   return access(local_tmp, F_OK) != 0;
+   return !path_is_valid(local_tmp);
 }
 
 static void test_download(void)
@@ -434,6 +442,32 @@ static void test_paths(void)
    CHECK(d.success && remote_is("games/retro/cloud_sync/saves/x.srm", "x"), "upload under the subdirectory");
    end();
 
+   begin_subdirs("roms", "/retroarch//sync/");
+   CHECK(fake_nfs_find("retroarch/sync/cloud_sync")
+         && !fake_nfs_find("roms"), "sync subdirectory overrides content subdirectory");
+   upload("states/x.state", "state", false, &d);
+   CHECK(d.success && remote_is("retroarch/sync/cloud_sync/states/x.state", "state"),
+         "state upload uses sync subdirectory");
+   upload("saves/x.srm", "save", false, &d);
+   CHECK(d.success && remote_is("retroarch/sync/cloud_sync/saves/x.srm", "save"),
+         "save upload uses sync subdirectory");
+   download("states/x.state", &d);
+   CHECK(d.success && local_is(local_save, "state"), "download uses sync subdirectory");
+   if (d.file)
+      filestream_close(d.file);
+   delete_remote("states/x.state", true, &d);
+   CHECK(d.success && !fake_nfs_find("retroarch/sync/cloud_sync/states/x.state"),
+         "delete uses sync subdirectory");
+   CHECK(string_is_equal(config_get_ptr()->arrays.nfs_subdir, "roms"),
+         "content subdirectory is unchanged");
+   end();
+
+   begin_subdirs("roms", "/");
+   upload("states/x.state", "root", false, &d);
+   CHECK(d.success && remote_is("cloud_sync/states/x.state", "root")
+         && !fake_nfs_find("roms"), "slash overrides content subdirectory with export root");
+   end();
+
    /* a directory another client makes between the lookup and MKDIR */
    begin("");
    fake_nfs.mkdir_race = 1;
@@ -466,9 +500,16 @@ static void test_paths(void)
 
 int main(void)
 {
+#ifdef _WIN32
+   snprintf(dir, sizeof(dir), "nfs_backup_%lu_%lu",
+         (unsigned long)time(NULL), (unsigned long)clock());
+   if (path_is_valid(dir) || !path_mkdir(dir))
+      return 2;
+#else
    strcpy(dir, "/tmp/nfs_backup_XXXXXX");
    if (!mkdtemp(dir))
       return 2;
+#endif
    snprintf(upload_src, sizeof(upload_src), "%s/upload", dir);
    snprintf(local_save, sizeof(local_save), "%s/save.srm", dir);
    snprintf(local_tmp, sizeof(local_tmp), "%s" NFS_LOCAL_TMP_SUFFIX, local_save);
@@ -478,10 +519,10 @@ int main(void)
    test_delete();
    test_paths();
 
-   unlink(upload_src);
-   unlink(local_save);
-   unlink(local_tmp);
-   rmdir(dir);
+   remove(upload_src);
+   remove(local_save);
+   remove(local_tmp);
+   retro_vfs_rmdir_impl(dir);
    if (failures)
    {
       printf("[FAIL] nfs_backup_test: %u failure(s)\n", failures);
