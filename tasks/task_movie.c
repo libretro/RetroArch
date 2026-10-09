@@ -178,9 +178,10 @@ static bool bsv_movie_init_record(
 #ifdef HAVE_STATESTREAM
    header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = swap_if_big32(block_size);
    header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = swap_if_big32(superblock_size);
-   header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = (((uint32_t)handle->commit_interval) << 24) |
-      ((uint32_t)handle->commit_threshold << 16) |
-      (((uint32_t)handle->checkpoint_compression) << 8);
+   header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = swap_if_big32(
+        (((uint32_t)handle->commit_interval) << 24)
+      | ((uint32_t)handle->commit_threshold << 16)
+      | (((uint32_t)handle->checkpoint_compression) << 8));
 #else
    header[REPLAY_HEADER_BLOCK_SIZE_INDEX]      = 0;
    header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX] = 0;

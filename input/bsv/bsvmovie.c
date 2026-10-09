@@ -327,7 +327,7 @@ bool bsv_movie_reset_playback(bsv_movie_t *handle)
    {
       uint8_t compression, encoding;
 #ifdef HAVE_STATESTREAM
-      uint32_t commit_settings = header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX];
+      uint32_t commit_settings = swap_if_big32(header[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX]);
       uint32_t superblock_size = swap_if_big32(header[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]);
       uint32_t block_size      = swap_if_big32(header[REPLAY_HEADER_BLOCK_SIZE_INDEX]);
       handle->commit_interval  = commit_settings >> 24;
@@ -1319,8 +1319,11 @@ bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer)
       /* Bounds checked above, this cast is safe */
       ((uint32_t *)buffer)[1+REPLAY_HEADER_FRAME_COUNT_INDEX] = swap_if_big32((uint32_t)(handle->frame_counter));
       if (read_amt != file_end)
+      {
          RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d.\n",
-               read_amt, file_end);
+               (int)read_amt, (int)file_end);
+         return false;
+      }
    }
    return true;
 }

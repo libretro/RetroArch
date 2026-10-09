@@ -813,7 +813,7 @@ static void lane_header_sizes(void)
    memset(words, 0, sizeof(words));
    words[REPLAY_HEADER_BLOCK_SIZE_INDEX]        = swap_if_big32(2);
    words[REPLAY_HEADER_SUPERBLOCK_SIZE_INDEX]   = swap_if_big32(0);
-   words[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = (4u << 24) | (2u << 16);
+   words[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX] = swap_if_big32((4u << 24) | (2u << 16));
    memcpy(buf, words, sizeof(words));
    h->version = 2;
    h->file    = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
@@ -968,6 +968,62 @@ static void lane_index_hash_missing(void)
    uint32s_index_free(idx);
    lane_done("index_hash_missing", NULL);
 }
+
+/* The checkpoint-config word is stored little-endian, like every other
+ * header field: byte 3 the commit interval, byte 2 the threshold.  A
+ * little-endian machine passes these two lanes with or without the
+ * swap; they guard big-endian builds, which would otherwise write and
+ * read the word in the other order. */
+static void lane_config_read_order(void)
+{
+   static uint8_t buf[REPLAY_HEADER_LEN_BYTES + 2 + 12 + STATE_SIZE];
+   uint32_t sizes[3];
+   uint8_t *p = buf + REPLAY_HEADER_LEN_BYTES;
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   memset(buf, 0, sizeof(buf));
+   buf[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX * 4 + 2] = 5;
+   buf[REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX * 4 + 3] = 7;
+   *p++     = REPLAY_CHECKPOINT2_COMPRESSION_NONE;
+   *p++     = REPLAY_CHECKPOINT2_ENCODING_RAW;
+   sizes[0] = swap_if_big32(STATE_SIZE);
+   sizes[1] = sizes[0];
+   sizes[2] = sizes[0];
+   memcpy(p, sizes, sizeof(sizes));
+   h->version = 2;
+   h->file    = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(buf));
+   CHECK(bsv_movie_reset_playback(h), "replay with a commit config refused");
+   CHECK(h->commit_interval == 7 && h->commit_threshold == 5,
+         "commit config read as interval %u threshold %u, not 7 and 5",
+         (unsigned)h->commit_interval, (unsigned)h->commit_threshold);
+   bsv_movie_free(h);
+   lane_done("config_read_order", NULL);
+}
+
+static void lane_config_write_order(const char *path)
+{
+   uint8_t start[STATE_SIZE];
+   void *data  = NULL;
+   int64_t len = 0;
+   uint8_t *cfg;
+
+   reset_counters();
+   record(path, 2, false, start);
+   CHECK(filestream_read_file(path, &data, &len)
+         && len >= REPLAY_HEADER_LEN_BYTES, "read recorded replay");
+   if (data && len >= REPLAY_HEADER_LEN_BYTES)
+   {
+      cfg = (uint8_t*)data + REPLAY_HEADER_CHECKPOINT_CONFIG_INDEX * 4;
+      /* byte 0 is unused and byte 3 holds the (non-zero) interval */
+      CHECK(cfg[0] == 0 && cfg[3] != 0,
+            "commit config written as bytes %u %u %u %u",
+            cfg[0], cfg[1], cfg[2], cfg[3]);
+   }
+   free(data);
+   lane_done("config_write_order", NULL);
+}
 #endif
 
 /* A version-1 replay whose initial state is cut short is refused, and
@@ -1052,6 +1108,47 @@ static void lane_state_replay_len(void)
    bsv_movie_free(h);
    free(block);
    lane_done("state_replay_len", NULL);
+}
+
+/* A savestate copies the replay into its replay block.  A copy cut
+ * short is refused, so the savestate is saved without a replay block
+ * rather than with a damaged one.  The handle is placed past the end
+ * of a file shorter than its position, the state a failed read
+ * leaves. */
+static bool serialize_from(const char *path, int64_t pos)
+{
+   static uint8_t block[4 + 256];
+   bool ret        = true;
+   bsv_movie_t *h  = (bsv_movie_t*)calloc(1, sizeof(*h));
+   h->file = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE);
+   CHECK(h->file != NULL, "open replay file");
+   if (h->file)
+   {
+      intfstream_seek(h->file, pos, SEEK_SET);
+      CHECK(intfstream_tell(h->file) == pos, "handle not placed at %d",
+            (int)pos);
+      input_st.bsv_movie_state_handle = h;
+      input_st.bsv_movie_state.flags  = BSV_FLAG_MOVIE_RECORDING;
+      ret = replay_get_serialized_data(&input_st, block);
+      input_st.bsv_movie_state_handle = NULL;
+      input_st.bsv_movie_state.flags  = 0;
+   }
+   bsv_movie_free(h);
+   return ret;
+}
+
+static void lane_serialize_short(const char *path)
+{
+   static uint8_t data[256];
+
+   reset_counters();
+   CHECK(filestream_write_file(path, data, sizeof(data)), "write replay file");
+   CHECK(serialize_from(path, sizeof(data)), "whole replay copy refused");
+   truncate_file(path, sizeof(data) / 2);
+   CHECK(!serialize_from(path, sizeof(data)),
+         "replay copy cut short accepted");
+   lane_done("serialize_short", NULL);
 }
 
 /* Recording stages events in fixed arrays; a core that polls more
@@ -1259,9 +1356,12 @@ int main(int argc, char **argv)
    lane_decode_fail_ends();
    lane_decode_fail_invalid();
    lane_index_hash_missing();
+   lane_config_read_order();
+   lane_config_write_order(path);
 #endif
    lane_timeline_inputs();
    lane_state_replay_len();
+   lane_serialize_short(path);
    lane_event_capacity();
    lane_seek_no_checkpoint();
    lane_checkpoint_seek();
