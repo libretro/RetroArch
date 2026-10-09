@@ -44,7 +44,7 @@ endif
 
 OBJS := $(SOURCES_C:.c=.o)
 
-all: $(TARGET)
+all: $(TARGET) runahead_tmpdir_test
 
 runahead_copy_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead core-copy fragment =====/,/===== END runahead core-copy fragment =====/p' $< > $@
@@ -54,6 +54,12 @@ preempt_mask_fragment.c: $(CORE_DIR)/runahead.c
 
 dense_cache_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN runahead dense input cache =====/,/===== END runahead dense input cache =====/p' $< > $@
+
+# runahead_tmp_dir_private(), against real directories
+runahead_tmpdir_fragment.c: $(CORE_DIR)/runahead.c
+	sed -n '/===== BEGIN runahead tmp dir check =====/,/===== END runahead tmp dir check =====/p' $< > $@
+runahead_tmpdir_test: runahead_tmpdir_test.c runahead_tmpdir_fragment.c
+	$(CC) $(CFLAGS) $(flags) -o $@ runahead_tmpdir_test.c $(LDFLAGS)
 
 preempt_slab_fragment.c: $(CORE_DIR)/runahead.c
 	sed -n '/===== BEGIN preempt slab =====/,/===== END preempt slab =====/p' $< > $@
@@ -66,11 +72,12 @@ runahead_copy_test.o: runahead_copy_fragment.c preempt_mask_fragment.c dense_cac
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
-check: $(TARGET)
+check: $(TARGET) runahead_tmpdir_test
 	./$(TARGET)
+	./runahead_tmpdir_test
 
 clean:
-	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c
-	rm -f $(TARGET)
+	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c runahead_tmpdir_fragment.c
+	rm -f $(TARGET) runahead_tmpdir_test
 
 .PHONY: clean all check
