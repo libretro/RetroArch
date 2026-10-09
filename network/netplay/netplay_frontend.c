@@ -8085,7 +8085,12 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
 #ifdef HAVE_CHEEVOS
       else if (memcmp(marker, NETPLAYSTATE_CHEEVOS_BLOCK, 4) == 0 && settings->bools.cheevos_enable)
       {
-         const bool hardcore_state = (input[0] != 0);
+         bool hardcore_state;
+
+         if (block_size < 8)
+            return false;
+
+         hardcore_state = (input[0] != 0);
          if (hardcore_state != rcheevos_hardcore_active() && !netplay_is_spectating())
          {
             const char *msg = msg_hash_to_str(MSG_CHEEVOS_HARDCORE_MODE_CHANGED_BY_HOST);
@@ -8111,7 +8116,7 @@ static bool netplay_process_savestate1(retro_ctx_serialize_info_t* serial_info)
           * block, and stepping 'input' here as well used to land the
           * walk 8 bytes past the next header. */
          if (block_size > 8)
-            rcheevos_set_serialized_data((void*)(input + 8));
+            rcheevos_set_serialized_data(input + 8, block_size - 8);
       }
 #endif
 
