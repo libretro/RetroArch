@@ -3159,6 +3159,19 @@ uint16_t input_driver_analog_dpad_buttons(unsigned mode,
 }
 #endif
 
+/* A pad button for an analog button's read: a bit of the frame's copy
+ * where the read goes through it, without the call. */
+static INLINE bool input_analog_button_key(
+      const input_device_driver_t *drv, uint16_t pad, uint16_t key)
+{
+   if (key == NO_BTN)
+      return false;
+   if (     drv == &input_snapshot_bridge.adapter
+         && pad < MAX_USERS && key < 256 && !GET_HAT_DIR(key))
+      return BIT256_GET(input_snapshot_pad(pad)->buttons, key) != 0;
+   return drv->button(pad, key) != 0;
+}
+
 /**
  * input_joypad_analog_button:
  * @drv                     : Input device driver handle.
@@ -3218,7 +3231,7 @@ static int16_t input_joypad_analog_button(
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (key != NO_BTN && drv->button(joy_idx, key))
+      if (input_analog_button_key(drv, joy_idx, key))
          return 0x7fff;
       return 0;
    }
@@ -3256,7 +3269,7 @@ static int16_t input_joypad_analog_button(
          ? joypad_info->auto_binds[ident].joykey
          : bind->joykey;
 
-      if (key != NO_BTN && drv->button(joy_idx, key))
+      if (input_analog_button_key(drv, joy_idx, key))
          return 0x7fff;
       return 0;
    }
