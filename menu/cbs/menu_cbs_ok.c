@@ -8300,7 +8300,7 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
         return -1;
 
     reserved_device_name = path;
-    no_device = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    no_device = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
 
     if (string_is_equal(reserved_device_name, no_device))
        settings->arrays.input_reserved_devices[user][0] = '\0';

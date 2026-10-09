@@ -7972,7 +7972,7 @@ static size_t setting_get_string_representation_uint_analog_dpad_mode(
    {
       default:
       case ANALOG_DPAD_NONE:
-         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+         name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
          break;
       case ANALOG_DPAD_LSTICK:
          name = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_LEFT_ANALOG);
@@ -9741,7 +9741,7 @@ static size_t get_string_representation_input_device_reservation_type(
       return 0;
    map = settings->uints.input_device_reservation_type[setting->index_offset];
    if (map == INPUT_DEVICE_RESERVATION_NONE)
-      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_NONE), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    else if (map == INPUT_DEVICE_RESERVATION_PREFERRED)
       return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_DEVICE_RESERVATION_PREFERRED), len);
    else if (map == INPUT_DEVICE_RESERVATION_RESERVED)
@@ -9755,7 +9755,7 @@ static size_t setting_get_string_representation_input_device_reserved_device_nam
    if (!setting)
       return 0;
    if (!setting->value.target.string || !*setting->value.target.string)
-      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE), len);
+      return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), len);
    str = setting->value.target.string;
    if (   ((str[0] >= '0' && str[0] <= '9') || (str[0] >= 'a' && str[0] <= 'f') || (str[0] >= 'A' && str[0] <= 'F'))
        && ((str[1] >= '0' && str[1] <= '9') || (str[1] >= 'a' && str[1] <= 'f') || (str[1] >= 'A' && str[1] <= 'F'))
@@ -12210,7 +12210,7 @@ static bool setting_append_list_input_player_options(
             sizeof(settings->arrays.input_reserved_devices[user]),
             device_reserved_device,
             msg_hash_to_str(MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_RESERVED_DEVICE_NAME),
-            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF),
             &group_info,
             &subgroup_info,
             parent_group,

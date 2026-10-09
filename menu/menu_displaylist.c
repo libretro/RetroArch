@@ -7123,7 +7123,7 @@ static int menu_displaylist_parse_input_select_reserved_device_list(
     if (!settings || !setting)
        return 0;
 
-    val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_NONE);
+    val_disabled = msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF);
     if (!*settings->arrays.input_reserved_devices[enum_idx - MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME])
         strlcpy(reserved_device_name, val_disabled, sizeof(reserved_device_name));
     else
