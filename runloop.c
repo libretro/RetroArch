@@ -7331,11 +7331,13 @@ bool runloop_is_inited(void)
  * rather than the schedule; where it offers none the bound is the
  * sleep it always was. Readiness only - nothing is dispatched here,
  * the next input poll consumes as before. */
+#if !(defined(__EMSCRIPTEN__) && !defined(EMSCRIPTEN_ASYNCIFY) && !defined(PROXY_TO_PTHREAD))
 static void runloop_idle_wait(void)
 {
    if (!video_display_server_idle_wait(10))
       retro_sleep(10);
 }
+#endif
 
 #ifdef HAVE_REWIND
 /* The rewind buffer a load asked for: one full serialize of the core,

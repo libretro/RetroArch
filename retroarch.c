@@ -8902,8 +8902,6 @@ bool retroarch_main_init_core(int argc, char *argv[],
    bool           init_failed    = false;
    struct rarch_state *p_rarch   = &rarch_st;
    runloop_state_t *runloop_st   = runloop_state_get_ptr();
-   input_driver_state_t
-      *input_st                  = input_state_get_ptr();
    settings_t *settings          = config_get_ptr();
 #ifdef HAVE_ACCESSIBILITY
    access_state_t *access_st     = access_state_get_ptr();
@@ -9255,7 +9253,7 @@ bool retroarch_main_init_core(int argc, char *argv[],
          settings->bools.apply_cheats_after_load,
          settings->paths.path_cheat_database,
 #ifdef HAVE_BSV_MOVIE
-         input_st->bsv_movie_state_handle
+         input_state_get_ptr()->bsv_movie_state_handle
 #else
          NULL
 #endif
@@ -9474,8 +9472,6 @@ void retroarch_task_queue_configure(void)
    if (settings->bools.thread_prefer_fast_cores)
       sthread_prefer_fast_cores();
    retroarch_main_thread_priority(settings->bools.main_thread_priority);
-#else
-   bool threaded_enable        = false;
 #endif
 
 #ifdef DEBUG
@@ -9495,7 +9491,6 @@ void retroarch_task_queue_configure(void)
     * unsliced work or a slice that has stopped honouring its
     * budget. */
    task_queue_set_slow_handler_cb(runloop_task_slow_handler, 16000);
-   (void)threaded_enable;
 #endif
 
    /* What one task_queue_check() may spend of the frame it runs in.
