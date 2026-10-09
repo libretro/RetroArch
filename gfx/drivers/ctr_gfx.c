@@ -452,7 +452,6 @@ static void* ctr_font_init(void* data, const char* font_path,
 {
    struct font_atlas* atlas       = NULL;
    ctr_font_t* font               = (ctr_font_t*)calloc(1, sizeof(*font));
-   ctr_video_t* ctr               = (ctr_video_t*)data;
 
    if (!font)
       return NULL;
@@ -973,7 +972,6 @@ error:
 static void ctr_state_thumbnail_geom(void *data)
 {
    float scale;
-   unsigned width, height;
    int x_offset, y_offset;
    ctr_scale_vector_t *vec           = NULL;
    ctr_texture_t *texture            = NULL;
@@ -1079,7 +1077,6 @@ static bool ctr_load_bottom_texture(void *data)
 static void save_state_to_file(void *data)
 {
    char state_path[PATH_MAX_LENGTH];
-   ctr_video_t *ctr = (ctr_video_t*)data;
    runloop_get_current_savestate_path(state_path, sizeof(state_path));
 
    command_event(CMD_EVENT_RAM_STATE_TO_FILE, state_path);
@@ -1219,7 +1216,6 @@ static void ctr_bottom_menu_control(void* data,
                if (settings->bools.savestate_thumbnail_enable)
                {
                   char screenshot_full_path[PATH_MAX_LENGTH];
-                  video_driver_state_t *video_st = video_state_get_ptr();
                   fill_pathname_join_special(screenshot_full_path,
                      dir_get_ptr(RARCH_DIR_SAVESTATE),
                      ctr_texture_path(CTR_TEXTURE_STATE_THUMBNAIL),
@@ -1664,7 +1660,6 @@ task_finder_data_t ctr_tasks_finder_data = {ctr_tasks_finder, NULL};
 
 static void* ctr_init(const video_info_t* video)
 {
-   size_t i;
    float refresh_rate;
    ctr_scale_vector_t *vec         = NULL;
    ctr_scale_vector_t *menu_vec    = NULL;
@@ -1883,15 +1878,19 @@ static bool ctr_frame(void* data, const void* frame,
 {
    unsigned width = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
+#ifdef CONSOLE_LOG
    static uint64_t current_tick, last_tick;
-   extern GSPGPU_FramebufferInfo topFramebufferInfo, bottomFramebufferInfo;
-   extern u8* gfxSharedMemory;
-   extern u8 gfxThreadID;
    uint32_t diff;
-   ctr_video_t       *ctr         = (ctr_video_t*)data;
    static float        fps        = 0.0;
    static int total_frames        = 0;
    static int       frames        = 0;
+#endif
+#ifndef USE_CTRULIB_2
+   extern GSPGPU_FramebufferInfo topFramebufferInfo, bottomFramebufferInfo;
+   extern u8* gfxSharedMemory;
+   extern u8 gfxThreadID;
+#endif
+   ctr_video_t       *ctr         = (ctr_video_t*)data;
    settings_t    *settings        = config_get_ptr();
    unsigned disp_mode             = settings->uints.video_3ds_display_mode;
    bool statistics_show           = video_info->statistics_show;
@@ -1899,10 +1898,6 @@ static bool ctr_frame(void* data, const void* frame,
    float video_refresh_rate       = video_info->refresh_rate;
    struct font_params *osd_params = (struct font_params*)
       &video_info->osd_stat_params;
-   int custom_vp_x                = video_info->custom_vp_x;
-   int custom_vp_y                = video_info->custom_vp_y;
-   unsigned custom_vp_width       = VIDEO_SCALE_W(video_info->custom_vp_dims);
-   unsigned custom_vp_height      = VIDEO_SCALE_H(video_info->custom_vp_dims);
 #ifdef HAVE_MENU
    bool menu_is_alive             = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
 #endif
@@ -2821,7 +2816,6 @@ static bool ctr_overlay_load(void *data,
 {
    unsigned int i, j;
    void *tmpdata;
-   ctr_texture_t       *texture = NULL;
    ctr_video_t             *ctr = (ctr_video_t *)data;
    struct texture_image *images = (struct texture_image *)image_data;
 

@@ -182,25 +182,48 @@ static void deinit_drm(void)
 #endif
 }
 
+/* Takes down what modeset_create_dumbfb() made: the mapping, the
+ * framebuffer and the dumb buffer. A page never made has none. */
+static void modeset_destroy_dumbfb(struct modeset_buf *buf)
+{
+   if (buf->map)
+   {
+      munmap(buf->map, buf->size);
+      buf->map = NULL;
+   }
+   if (buf->fb_id)
+   {
+      drmModeRmFB(drm.fd, buf->fb_id);
+      buf->fb_id = 0;
+   }
+   if (buf->handle)
+   {
+      struct drm_mode_destroy_dumb destroy_dumb = {0};
+      destroy_dumb.handle = buf->handle;
+      drmIoctl(drm.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+      buf->handle = 0;
+   }
+}
+
+/* The plane must not be reading from the surface: the kernel switches
+ * a plane off when the framebuffer it scans out is removed. */
 static void drm_surface_free(void *data, struct drm_surface **sp)
 {
    int i;
-   struct drm_video *_drmvars = data;
    struct drm_surface *surface;
 
-   if (sp)
-      surface = *sp;
-   else
+   if (!sp || !(surface = *sp))
       return;
 
-   if (surface)
+   for (i = 0; i < surface->numpages; i++)
    {
-      for (i = 0; surface && (i < surface->numpages); i++)
-         surface->pages[i].used = false;
-
-      free(surface->pages);
-      free(surface);
+      modeset_destroy_dumbfb(&surface->pages[i].buf);
+      if (surface->pages[i].page_used_mutex)
+         slock_free(surface->pages[i].page_used_mutex);
    }
+
+   free(surface->pages);
+   free(surface);
    *sp = NULL;
 }
 
@@ -328,8 +351,6 @@ static void drm_page_flip(struct drm_surface *surface)
 static void drm_surface_update(void *data, const void *frame,
       struct drm_surface *surface)
 {
-   struct drm_video *_drmvars  = data;
-   struct drm_page       *page = NULL;
    /* Frame blitting */
    int line                    = 0;
    int src_offset              = 0;
@@ -349,60 +370,32 @@ static void drm_surface_update(void *data, const void *frame,
    drm_page_flip(surface);
 }
 
-static uint32_t get_plane_prop_id(uint32_t obj_id, const char *name)
+/* The ID of the plane's property called @name, 0 if it has none. */
+static uint32_t get_plane_prop_id(uint32_t plane_id, const char *name)
 {
-   int i,j;
-   drmModePlaneRes *plane_resources;
-   drmModePlane *plane;
-   drmModeObjectProperties *props;
-   drmModePropertyRes **props_info;
+   int j;
+   uint32_t prop_id               = 0;
+   drmModeObjectProperties *props = drmModeObjectGetProperties(drm.fd,
+         plane_id, DRM_MODE_OBJECT_PLANE);
 
-   char format_str[5];
+   if (!props)
+      return 0;
 
-   plane_resources = drmModeGetPlaneResources(drm.fd);
-   for (i = 0; i < plane_resources->count_planes; i++)
+   for (j = 0; j < (int)props->count_props && !prop_id; j++)
    {
-      plane = drmModeGetPlane(drm.fd, plane_resources->planes[i]);
-      if (plane->plane_id != obj_id)
+      drmModePropertyRes *prop = drmModeGetProperty(drm.fd, props->props[j]);
+      if (!prop)
          continue;
-
-      /* TODO: Improvement. We get all the properties of the
-       * plane and info about the properties.
-       * We should have done this already...
-       * This implementation must be improved. */
-      props      = drmModeObjectGetProperties(drm.fd,
-            plane->plane_id, DRM_MODE_OBJECT_PLANE);
-      /* drmModeObjectGetProperties returns NULL on kernel/driver
-       * error or if the plane has no properties; previously
-       * 'props->count_props' NULL-deref'd in that case.  Also
-       * malloc on the next line was unchecked and props_info[j]
-       * below would NULL-deref on OOM.  On either failure skip
-       * this plane and continue; the caller falls through to
-       * 'return 0' (not-found) if no plane yields the prop.
-       *
-       * NOTE: pre-existing leaks in this function (plane_resources,
-       * plane, props, props_info are all libdrm-allocated and
-       * never freed even on the success path that 'return's from
-       * inside the loop) are out of scope for this fix. */
-      if (!props)
-         continue;
-      props_info = malloc(props->count_props * sizeof *props_info);
-      if (!props_info)
-         continue;
-
-      for (j = 0; j < props->count_props; ++j)
-         props_info[j] =	drmModeGetProperty(drm.fd, props->props[j]);
-
-      /* We look for the prop_id we need */
-      for (j = 0; j < props->count_props; j++)
-      {
-         if (string_is_equal(props_info[j]->name, name))
-            return props_info[j]->prop_id;
-      }
-      RARCH_ERR("[DRM] Plane %d fb property ID with name %s not found.\n",
-            plane->plane_id, name);
+      if (string_is_equal(prop->name, name))
+         prop_id = prop->prop_id;
+      drmModeFreeProperty(prop);
    }
-   return (0);
+   drmModeFreeObjectProperties(props);
+
+   if (!prop_id)
+      RARCH_ERR("[DRM] Plane %d fb property ID with name %s not found.\n",
+            plane_id, name);
+   return prop_id;
 }
 
 /* gets fourcc, returns name string. */
@@ -432,7 +425,9 @@ static bool format_support(const drmModePlanePtr ovr, uint32_t fmt)
 
 static uint64_t drm_plane_type(drmModePlane *plane)
 {
-   int i,j;
+   int j;
+   /* Not found reads as a primary plane, never as an overlay (0) */
+   uint64_t type = DRM_PLANE_TYPE_PRIMARY;
 
    /* The property values and their names are stored in different arrays,
     * so we access them simultaneously here.
@@ -443,21 +438,29 @@ static uint64_t drm_plane_type(drmModePlane *plane)
       drmModeObjectGetProperties(drm.fd, plane->plane_id,
             DRM_MODE_OBJECT_PLANE);
 
-   for (j = 0; j < props->count_props; j++)
-   {
-      /* found the type property */
-      if (string_is_equal(
-               drmModeGetProperty(drm.fd, props->props[j])->name, "type"))
-         return (props->prop_values[j]);
-   }
+   if (!props)
+      return type;
 
-   return (0);
+   for (j = 0; j < (int)props->count_props; j++)
+   {
+      drmModePropertyRes *prop = drmModeGetProperty(drm.fd, props->props[j]);
+      bool found               = prop && string_is_equal(prop->name, "type");
+      if (found)
+         type = props->prop_values[j];
+      if (prop)
+         drmModeFreeProperty(prop);
+      if (found)
+         break;
+   }
+   drmModeFreeObjectProperties(props);
+
+   return type;
 }
 
 /* This configures our only overlay plane to render the given surface. */
 static void drm_plane_setup(struct drm_surface *surface)
 {
-   int i,j;
+   int i;
    char fmt_name[5];
    unsigned int crtc_index = 0;
    uint32_t plane_flags = 0;
@@ -508,33 +511,25 @@ static void drm_plane_setup(struct drm_surface *surface)
     * Also, primary planes can't be scaled: we need overlays for that. */
    for (i = 0; i < plane_resources->count_planes; i++)
    {
-      plane = drmModeGetPlane(drm.fd, plane_resources->planes[i]);
+      if (!(plane = drmModeGetPlane(drm.fd, plane_resources->planes[i])))
+         continue;
 
       if (!(plane->possible_crtcs & (1 << crtc_index)))
-      {
          RARCH_LOG("[DRM] Plane with ID %d can't be used with current CRTC.\n",
                plane->plane_id);
-         continue;
-      }
-
       /* We are only interested in overlay planes. No overlay, no fun.
        * (no scaling, must cover crtc..etc) so we skip primary planes */
-      if (drm_plane_type(plane) != DRM_PLANE_TYPE_OVERLAY)
-      {
+      else if (drm_plane_type(plane) != DRM_PLANE_TYPE_OVERLAY)
          RARCH_LOG("[DRM] Plane with ID %d is not an overlay. May be primary or cursor. Not usable.\n",
                plane->plane_id);
-         continue;
-      }
-
-      if (!format_support(plane, surface->pixformat))
-      {
+      else if (!format_support(plane, surface->pixformat))
          RARCH_LOG("[DRM] Plane with ID %d does not support framebuffer format.\n", plane->plane_id);
-         continue;
-      }
+      else
+         drm.plane_id = plane->plane_id;
 
-      drm.plane_id = plane->plane_id;
       drmModeFreePlane(plane);
    }
+   drmModeFreePlaneResources(plane_resources);
 
    if (!drm.plane_id)
    {
@@ -657,7 +652,8 @@ error_rmfb:
 error_destroy:
    destroy_dumb.handle = create_dumb.handle;
    drmIoctl(drm.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
-   buf->fb_id = 0;
+   buf->fb_id  = 0;
+   buf->handle = 0;
    return -1;
 }
 
@@ -816,6 +812,10 @@ static bool drm_frame(void *data, const void *frame,
 
    if (_drmvars->core_dims != dims)
    {
+      /* The plane reads from the old surface until it is moved to the
+       * new one, so the old one goes only after that. */
+      struct drm_surface *old_surface = NULL;
+
       /* Sanity check. */
       if (width == 0 || height == 0)
          return true;
@@ -823,8 +823,8 @@ static bool drm_frame(void *data, const void *frame,
       _drmvars->core_dims   = dims;
       _drmvars->core_pitch  = pitch;
 
-      if (_drmvars->main_surface)
-         drm_surface_free(_drmvars, &_drmvars->main_surface);
+      old_surface            = _drmvars->main_surface;
+      _drmvars->main_surface = NULL;
 
       /* We need to recreate the main surface and it's pages (buffers). */
       if (!drm_surface_setup(_drmvars,
@@ -838,12 +838,14 @@ static bool drm_frame(void *data, const void *frame,
             0,
             &_drmvars->main_surface))
       {
+         drm_surface_free(_drmvars, &old_surface);
          _drmvars->core_dims = 0;
          return false;
       }
 
       /* We need to change the plane to read from the main surface */
       drm_plane_setup(_drmvars->main_surface);
+      drm_surface_free(_drmvars, &old_surface);
    }
 
 #ifdef HAVE_MENU

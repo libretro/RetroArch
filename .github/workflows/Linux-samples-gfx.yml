@@ -1184,6 +1184,23 @@ jobs:
              timeout 60 ./drm_hdr_test
           echo "[pass] drm_hdr_test"
 
+      - name: Build and run drm_surface_lifetime_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/gfx/drm_surface_lifetime
+        run: |
+          set -eu
+          # gfx/drivers/drm_gfx.c's surfaces against a fake kernel: a
+          # core's resolution changes and the menu's sessions leave only
+          # the live surface's dumb buffers, framebuffers and mappings,
+          # the framebuffer the plane scans out is never removed from
+          # under it, and the driver's free leaves nothing - LeakSanitizer
+          # holds the plane queries' libdrm objects to the same.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+             timeout 60 ./drm_surface_lifetime_test
+          make clean
+          echo "[pass] drm_surface_lifetime_test"
+
       - name: Build and run wayland_wlr_output_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/wayland_wlr_output
