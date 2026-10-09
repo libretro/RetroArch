@@ -503,7 +503,7 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
        return true;
 
    /* a download still being written, or left by one that never
-    * finished (network/cloud_sync/nfs.c) */
+    * finished (CS_FETCHING_SUFFIX) */
    if (string_ends_with(filename, ".rafetching"))
        return true;
 
@@ -1229,7 +1229,66 @@ typedef struct
 {
    task_cloud_sync_state_t *sync_state;
    struct item_file        *server_file;
+   /* Where the download goes once it is complete; the driver writes it
+    * beside that, under CS_FETCHING_SUFFIX. */
+   char                     local[PATH_MAX_LENGTH];
 } task_cloud_sync_fetch_state_t;
+
+/* A download is written here first and moved into place only once it
+ * is whole, so a transfer that fails part-way leaves the local file as
+ * it was, and a file a core took meanwhile is never replaced. The walk
+ * skips names ending in it. */
+#define CS_FETCHING_SUFFIX ".rafetching"
+
+/* @local's download, under CS_FETCHING_SUFFIX, into @s. False when the
+ * name does not fit. */
+static bool task_cloud_sync_fetching_path(char *s, size_t len,
+      const char *local)
+{
+   size_t _len = strlcpy(s, local, len);
+   return    _len < len
+          && strlcpy(s + _len, CS_FETCHING_SUFFIX, len - _len)
+               < len - _len;
+}
+
+/* Moves a whole download into place. A core that has taken the file
+ * since the fetch began keeps it, and the download goes, as at the
+ * start of the fetch. False when the download did not land. */
+static bool task_cloud_sync_fetch_commit(
+      task_cloud_sync_fetch_state_t *fetch_state, const char *key)
+{
+   char tmp[PATH_MAX_LENGTH];
+   task_cloud_sync_state_t *sync_state = fetch_state->sync_state;
+   const char *server_hash = CS_FILE_HASH(fetch_state->server_file);
+
+   if (!task_cloud_sync_fetching_path(tmp, sizeof(tmp), fetch_state->local))
+      return false;
+   if (content_savefile_is_live(fetch_state->local))
+   {
+      RARCH_LOG(CSPFX "Deferring \"%s\", the running core took it during the fetch.\n", key);
+      filestream_delete(tmp);
+      task_cloud_sync_carry_manifests_forward(sync_state, key, server_hash);
+      return false;
+   }
+   if (filestream_rename(tmp, fetch_state->local) != 0)
+   {
+      RARCH_WARN(CSPFX "Could not move the download of \"%s\" into place.\n", key);
+      filestream_delete(tmp);
+      task_cloud_sync_add_to_updated_manifest(sync_state, key, server_hash, true);
+      sync_state->failures = true;
+      return false;
+   }
+   return true;
+}
+
+/* What a fetch that never completed left beside its file. */
+static void task_cloud_sync_fetch_discard(
+      task_cloud_sync_fetch_state_t *fetch_state)
+{
+   char tmp[PATH_MAX_LENGTH];
+   if (task_cloud_sync_fetching_path(tmp, sizeof(tmp), fetch_state->local))
+      filestream_delete(tmp);
+}
 
 /* A download waiting to be hashed by the task thread. */
 typedef struct tcs_fetched
@@ -1353,8 +1412,9 @@ static void task_cloud_sync_fetched_run(task_cloud_sync_state_t *sync_state,
          free(h);
       }
       filestream_close(rec->file);
-      task_cloud_sync_fetched(sync_state, rec->fetch_state->server_file,
-            rec->path, hash);
+      if (task_cloud_sync_fetch_commit(rec->fetch_state, rec->path))
+         task_cloud_sync_fetched(sync_state, rec->fetch_state->server_file,
+               rec->path, hash);
       sync_state->fetched = rec->next;
       free(rec->fetch_state);
       free(rec);
@@ -1383,7 +1443,8 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
          return;
       hash = task_cloud_sync_md5_rfile(file);
       filestream_close(file);
-      task_cloud_sync_fetched(sync_state, server_file, path, hash);
+      if (task_cloud_sync_fetch_commit(fetch_state, path))
+         task_cloud_sync_fetched(sync_state, server_file, path, hash);
       free(hash);
    }
    else if (success)
@@ -1401,6 +1462,9 @@ static void task_cloud_sync_fetch_cb(void *user_data, const char *path, bool suc
    {
       /* on failure, don't add it to local manifest, that will cause a fetch again next time */
       RARCH_WARN(CSPFX "Failed to fetch \"%s\".\n", path);
+      if (file)
+         filestream_close(file);
+      task_cloud_sync_fetch_discard(fetch_state);
       task_cloud_sync_add_to_updated_manifest(sync_state, path, CS_FILE_HASH(server_file), true);
       sync_state->failures = true;
    }
@@ -1414,6 +1478,7 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
 {
    size_t                         i;
    char                           filename[PATH_MAX_LENGTH];
+   char                           fetching[PATH_MAX_LENGTH];
    char                           directory[DIR_MAX_LENGTH];
    struct string_list            *dirlist     = sync_state->dirlist;
    struct item_file              *server_file = &sync_state->server_manifest->list[sync_state->server_idx];
@@ -1504,7 +1569,9 @@ static void task_cloud_sync_fetch_server_file(task_cloud_sync_state_t *sync_stat
    }
    fetch_state->sync_state  = sync_state;
    fetch_state->server_file = server_file;
-   if (cloud_sync_read(key, filename, task_cloud_sync_fetch_cb, fetch_state))
+   strlcpy(fetch_state->local, filename, sizeof(fetch_state->local));
+   if (     task_cloud_sync_fetching_path(fetching, sizeof(fetching), filename)
+         && cloud_sync_read(key, fetching, task_cloud_sync_fetch_cb, fetch_state))
       task_cloud_sync_waiting_inc(sync_state);
    else
    {
@@ -2369,6 +2436,7 @@ static void task_cloud_sync_cleanup(retro_task_t *task)
       tcs_fetched_t *rec  = sync_state->fetched;
       sync_state->fetched = rec->next;
       filestream_close(rec->file);
+      task_cloud_sync_fetch_discard(rec->fetch_state);
       free(rec->fetch_state);
       free(rec);
    }

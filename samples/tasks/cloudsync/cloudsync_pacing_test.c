@@ -68,7 +68,12 @@ void RARCH_ERR(const char *fmt, ...)  { (void)fmt; }
 bool verbosity_is_enabled(void)       { return false; }
 settings_t *config_get_ptr(void)      { return NULL; }
 char *dir_get_ptr(enum rarch_dir_type type) { (void)type; return NULL; }
-bool content_savefile_is_live(const char *path) { (void)path; return false; }
+/* The file a running core owns, if any. */
+static char live_path[256];
+bool content_savefile_is_live(const char *path)
+{
+   return *live_path && path && !strcmp(path, live_path);
+}
 void task_window_progress_cb(retro_task_t *task) { (void)task; }
 size_t fill_pathname_application_special(char *s, size_t len,
       enum application_special_type type)
@@ -105,11 +110,22 @@ typedef struct
 
 static void write_file(const char *path, size_t size, unsigned seed);
 
+/* Nonzero: a fetch writes half its bytes and then reports failure, as
+ * a transfer cut off part-way. */
+static int fetch_fail;
+
 static void fetch_thread(void *data)
 {
    fetch_job_t job = *(fetch_job_t*)data;
    RFILE      *f;
    free(data);
+   if (fetch_fail)
+   {
+      write_file(job.file, fetch_size / 2, 9);
+      job.cb(job.ud, job.key, false, NULL);
+      retro_atomic_inc_int(&fetches_reported);
+      return;
+   }
    write_file(job.file, fetch_size, 9);
    f = filestream_open(job.file, RETRO_VFS_FILE_ACCESS_READ,
          RETRO_VFS_FILE_ACCESS_HINT_NONE);
@@ -362,10 +378,94 @@ static void fetch_lane(void)
    check("download: its hash in both updated manifests", ok_server && ok_local);
    check("download: matches the server, no manifest upload needed",
          !st->need_manifest_uploaded);
+   {
+      char  tmp[160];
+      char *got = hash_of(path);
+      snprintf(tmp, sizeof(tmp), "%s.rafetching", path);
+      check("download: lands under its own name, nothing left beside it",
+            got && !strcmp(got, want) && access(tmp, F_OK) != 0);
+      free(got);
+   }
 
    fetch_size = 0;
    free(want);
    unlink(path);
+   task_cloud_sync_cleanup(task);
+   free(task->title);
+   free(task);
+}
+
+/* A local save the server has a newer copy of; the fetch is under way
+ * when @what happens. The local file must come through as it was. */
+static void fetch_keep_lane(int live, const char *what_keep, const char *what_rest)
+{
+   task_cloud_sync_state_t *st   = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
+   retro_task_t            *task = task_init();
+   struct string_list      *dl   = string_list_new();
+   union string_list_elem_attr attr;
+   char     path[128], tmp[160];
+   char    *old, *srv, *got;
+   unsigned i;
+   int      carried = 0;
+
+   attr.i = 0;
+   string_list_append(dl, "saves", attr);
+   dl->elems[0].userdata = strdup(dir);
+   st->dirlist                 = dl;
+   st->server_manifest         = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->local_manifest          = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->current_manifest        = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->updated_server_manifest = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->updated_local_manifest  = (file_list_t*)calloc(1, sizeof(file_list_t));
+   st->destructive             = true;
+   strlcpy(st->dir_core_assets, dir, sizeof(st->dir_core_assets));
+   retro_atomic_int_init(&st->waiting, 0);
+   retro_atomic_int_init(&st->phase, (int)CLOUD_SYNC_PHASE_DIFF);
+   retro_atomic_int_init(&fetches_reported, 0);
+
+   /* the server's copy, hashed, then the local one in its place */
+   snprintf(path, sizeof(path), "%s/keep.srm", dir);
+   snprintf(tmp,  sizeof(tmp),  "%s.rafetching", path);
+   fetch_size = 64 * 1024;
+   write_file(path, fetch_size, 9);
+   srv = hash_of(path);
+   write_file(path, 4096, 4);
+   old = hash_of(path);
+   list_add(st->server_manifest, "saves/keep.srm", NULL, strdup(srv));
+   fetch_fail = !live;
+
+   task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
+   grant = 100;
+   for (i = 0; i < 5000 && !retro_atomic_load_acquire_int(&fetches_reported); i++)
+   {
+      task_cloud_sync_task_handler(task);
+      retro_sleep(1);
+   }
+   /* the download is in, not yet in place: a core takes the file now */
+   if (live)
+      strlcpy(live_path, path, sizeof(live_path));
+   for (i = 0; i < 200000 && (task_cloud_sync_phase_get(st) == CLOUD_SYNC_PHASE_DIFF
+            || task_cloud_sync_waiting_get(st) > 0); i++)
+      task_cloud_sync_task_handler(task);
+
+   got = hash_of(path);
+   check(what_keep, got && !strcmp(got, old) && access(tmp, F_OK) != 0);
+   task_cloud_sync_fold_manifest_adds(st);
+   for (i = 0; i < st->updated_server_manifest->size; i++)
+      if (!strcmp(st->updated_server_manifest->list[i].alt, "saves/keep.srm"))
+         carried = st->updated_server_manifest->list[i].userdata
+            && !strcmp((const char*)st->updated_server_manifest->list[i].userdata, srv);
+   check(what_rest, st->downloads == 0 && carried
+         && (live ? !st->failures : st->failures));
+
+   *live_path = '\0';
+   fetch_fail = 0;
+   fetch_size = 0;
+   free(got);
+   free(old);
+   free(srv);
+   unlink(path);
+   unlink(tmp);
    task_cloud_sync_cleanup(task);
    free(task->title);
    free(task);
@@ -654,6 +754,12 @@ int main(void)
    check("spent window: one unit per run", max_granted == 1);
 
    fetch_lane();
+   fetch_keep_lane(1,
+         "fetch: a save a core took during the download is left as it was",
+         "fetch: ... and the server's copy waits for the next sync");
+   fetch_keep_lane(0,
+         "fetch: a download cut off part-way leaves the save as it was",
+         "fetch: ... and is fetched again next sync");
    walk_lane();
    queue_lane();
    begin_lane();
