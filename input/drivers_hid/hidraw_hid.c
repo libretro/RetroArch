@@ -381,14 +381,16 @@ static int16_t hidraw_hid_joypad_axis(void *data,
 
    if (!hid || port >= MAX_USERS)
       return 0;
-   if (AXIS_NEG_GET(joyaxis) < 4)
+   /* the sticks, then what a handler has past them: a DualShock 3's
+    * pressures */
+   if (AXIS_NEG_GET(joyaxis) < 16)
    {
       int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_NEG_GET(joyaxis));
       if (val < 0)
          return val;
    }
-   else if (AXIS_POS_GET(joyaxis) < 4)
+   else if (AXIS_POS_GET(joyaxis) < 16)
    {
       int16_t val = pad_connection_get_axis(&hid->slots[port],
             port, AXIS_POS_GET(joyaxis));

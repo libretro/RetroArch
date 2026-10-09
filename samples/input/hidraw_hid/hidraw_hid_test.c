@@ -8,6 +8,8 @@
  *                  report written, 0xF4 set, 0xF2 and 0xF5 read
  *   poll        -> the newest of the reports waiting is the pad's state;
  *                  with none waiting, one read and the state stays
+ *   pressures   -> L2, R2 and the face, shoulder and D-pad buttons'
+ *                  pressures are axes 4 to 15
  *   gone        -> a read failing with ENODEV disconnects the pad, frees
  *                  its port and closes the node
  *   free        -> every node closed */
@@ -258,6 +260,10 @@ static void ds3_report(uint8_t *r, uint32_t buttons, uint8_t lx)
    r[3] = (uint8_t)(buttons >> 8);
    r[6] = lx;
    r[7] = r[8] = r[9] = 128;
+   /* circle's pressure, and R2's */
+   if (buttons & (1u << 13))
+      r[23] = 200;
+   r[19] = 255;
 }
 
 static void queue_report(fake_node_t *nd, uint32_t buttons, uint8_t lx)
@@ -320,6 +326,13 @@ int main(void)
          "the buttons are not the newest report's");
    x = hidraw_hid.axis(hid, 0, AXIS_POS(0));
    CHECK(x > 30000, "the stick is not the newest report's");
+   /* pressures: axes 4 to 15, circle the eighth */
+   CHECK(hidraw_hid.axis(hid, 0, AXIS_POS(7)) == ((200 << 7) | (200 >> 1)),
+         "circle's pressure is not axis 7");
+   CHECK(hidraw_hid.axis(hid, 0, AXIS_POS(5)) == 0x7fff,
+         "R2's pressure is not axis 5");
+   CHECK(!hidraw_hid.axis(hid, 0, AXIS_POS(6)),
+         "cross has pressure without being pressed");
 
    /* nothing waiting */
    ds3->reads = 0;

@@ -340,6 +340,13 @@ static void ds3_get_buttons(void *device_data, input_bits_t *state)
       BIT256_CLEAR_ALL_PTR(state);
 }
 
+/* The input report's bytes with the pressure of L2 and R2, then
+ * cross, circle, square, triangle, L1, R1, up, down, left and right:
+ * axes 4 to 15, as SDL gives them. */
+static const uint8_t ds3_pressure_byte[12] = {
+   18, 19, 24, 23, 25, 22, 20, 21, 14, 16, 17, 15
+};
+
 static int16_t ds3_get_axis(void *device_data, unsigned axis)
 {
    union joyaxis
@@ -351,6 +358,11 @@ static int16_t ds3_get_axis(void *device_data, unsigned axis)
    ds3_instance_t *device = (ds3_instance_t *)device_data;
 
    joyaxis.encoded        = axis;
+   if (device && axis >= 4 && axis < 16)
+   {
+      unsigned b = device->data[ds3_pressure_byte[axis - 4]];
+      return (int16_t)((b << 7) | (b >> 1));
+   }
    gamepad_read_axis_data(axis, &axis_data);
 
    if (!device || axis_data.axis >= 4)
