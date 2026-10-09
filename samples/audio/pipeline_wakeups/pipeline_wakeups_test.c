@@ -153,6 +153,9 @@ static retro_atomic_int_t  dev_running   = RETRO_ATOMIC_INT_INITIALIZER(1);
 
 static retro_atomic_size_t cnt_wakes;      /* returns from consume()      */
 static retro_atomic_size_t cnt_writes;     /* calls that reached write()  */
+/* Notified by every device write and pull: the waits below wake on the
+ * pipeline's own activity rather than on a timer. */
+static retro_eventcount_t  progress_ev;
 
 /* Frame-end signal, published by the main thread for the consumer's
  * first write to time itself against. One writer and one reader, so the
@@ -258,6 +261,7 @@ static void dev_render(void)
    }
    retro_atomic_fetch_add_size(&dev_pulls, 1);
    dev_signal();
+   retro_eventcount_notify(&progress_ev);
 }
 
 static void *dev_thread(void *arg)
@@ -299,6 +303,7 @@ static void note_write(void)
 {
    size_t seq = retro_atomic_load_acquire_size(&sig_seq);
    retro_atomic_fetch_add_size(&cnt_writes, 1);
+   retro_eventcount_notify(&progress_ev);
    if (seq != sig_seen)
    {
       retro_time_t at = (retro_time_t)retro_atomic_load_relaxed_size(&sig_us);
@@ -711,11 +716,99 @@ static void check_live_control(void *userdata)
    }
 }
 
+/* Until done(arg). A loaded runner slows the consumer down without
+ * stopping it, so the bound is on a stall - this long with no device
+ * write and the ring not draining, the two things every wait here is
+ * for - not on how long the wait takes; WAIT_CAP_US backs it. Device
+ * pulls wake the check but are not progress: the device runs on
+ * whether or not the consumer does. */
+#define PROGRESS_STALL_US 3000000
+#define WAIT_CAP_US       60000000
+static size_t progress_mark(void)
+{
+   return retro_atomic_load_acquire_size(&cnt_writes)
+      - retro_spsc_read_avail(&audio_driver_st.pipe_ring);
+}
+
+static bool wait_progress(bool (*done)(void *), void *arg)
+{
+   size_t mark        = progress_mark();
+   retro_time_t start = cpu_features_get_time_usec();
+   retro_time_t since = start;
+   for (;;)
+   {
+      retro_time_t now;
+      int key = retro_eventcount_prepare_wait(&progress_ev);
+      if (done(arg))
+      {
+         retro_eventcount_cancel_wait(&progress_ev);
+         return true;
+      }
+      retro_eventcount_commit_wait_timeout(&progress_ev, key, 100000);
+      now = cpu_features_get_time_usec();
+      if (progress_mark() != mark)
+      {
+         mark  = progress_mark();
+         since = now;
+      }
+      else if (now - since > PROGRESS_STALL_US)
+         return done(arg);
+      if (now - start > WAIT_CAP_US)
+         return done(arg);
+   }
+}
+
+struct drain_state
+{
+   audio_driver_state_t *st;
+   size_t boundary;
+   size_t before;
+};
+
+static bool control_drained(void *arg)
+{
+   struct drain_state *d = (struct drain_state*)arg;
+   return retro_spsc_read_avail(&d->st->pipe_ring) == 0
+      && retro_atomic_load_acquire_size(&d->st->pipe_layouts.tail) == d->boundary
+      && retro_atomic_load_acquire_size(&cnt_writes) != d->before;
+}
+
+static bool ring_emptied(void *arg)
+{
+   (void)arg;
+   if (!retro_spsc_read_avail(&audio_driver_st.pipe_ring))
+      return true;
+   audio_driver_pipeline_wake();
+   return false;
+}
+
+static bool tap_head_full(void *arg)
+{
+   (void)arg;
+   return retro_atomic_load_relaxed_size(&tap_head_n) >= TAP_HEAD_MAX;
+}
+
+static bool wrote_since(void *arg)
+{
+   return retro_atomic_load_acquire_size(&cnt_writes) != *(size_t*)arg;
+}
+
 static void check_fallback_drained(void *userdata)
 {
    audio_driver_state_t *st = &audio_driver_st;
    if (retro_atomic_load_acquire_int(&in_callback)) fixture_failures++;
    *(bool*)userdata = !retro_spsc_read_avail(&st->pipe_ring) && !st->pipe_pending_bytes;
+}
+
+static bool fallback_drained(void *arg)
+{
+   audio_driver_state_t *st = &audio_driver_st;
+   bool drained             = false;
+   (void)arg;
+   if (!retro_spsc_read_avail(&st->pipe_ring))
+      audio_thread_apply_control(st->context_audio_data,
+            check_fallback_drained, &drained);
+   return drained;
 }
 
 static void wrapper_live_controls(unsigned publishes)
@@ -775,15 +868,14 @@ static void wrapper_live_controls(unsigned publishes)
                   (tempos[step] < 1 ? 1 : tempos[step])), publishes);
       }
       boundary = retro_atomic_load_relaxed_size(&st->pipe_layouts.head);
-      for (retry = 0; retry < 2000; retry++)
       {
-         if (retro_spsc_read_avail(&st->pipe_ring) == 0
-               && retro_atomic_load_acquire_size(&st->pipe_layouts.tail) == boundary
-               && retro_atomic_load_acquire_size(&cnt_writes) != before) break;
-         usleep(1000);
+         struct drain_state d;
+         d.st       = st;
+         d.boundary = boundary;
+         d.before   = before;
+         if (!wait_progress(control_drained, &d))
+         { fprintf(stderr, "control drain stalled at step %u\n", step); fixture_failures++; }
       }
-      if (retry == 2000)
-      { fprintf(stderr, "control drain timed out at step %u\n", step); fixture_failures++; }
       /* Observe consumer-owned metadata only while the real worker is parked. */
       audio_thread_apply_control(st->context_audio_data, check_live_control, &check);
    }
@@ -804,16 +896,8 @@ static void wrapper_live_controls(unsigned publishes)
       audio_driver_publish_runloop();
       if (auto_runloop)
       {
-         bool drained = false;
          audio_driver_frame_end();
-         for (step = 0; step < 2000; step++)
-         {
-            if (!retro_spsc_read_avail(&st->pipe_ring))
-               audio_thread_apply_control(st->context_audio_data, check_fallback_drained, &drained);
-            if (drained) break;
-            usleep(1000);
-         }
-         if (!drained)
+         if (!wait_progress(fallback_drained, NULL))
          { fprintf(stderr, "legacy fallback did not drain source/device output\n"); fixture_failures++; }
          audio_driver_frame_end();
          submit_frame((size_t)(CORE_RATE / FPS), publishes);
@@ -861,9 +945,7 @@ static void wrapper_restart(void)
          /* Prime the fixed-size source ring even below nominal tempo. */
          submit_frame((size_t)(CORE_RATE / FPS *
                   (source_tempo < 1.0 ? 1.0 : source_tempo)), 1);
-      for (retry = 0; retry < 1000 && before ==
-            retro_atomic_load_acquire_size(&cnt_writes); retry++) usleep(1000);
-      if (before == retro_atomic_load_acquire_size(&cnt_writes)) fixture_failures++;
+      if (!wait_progress(wrote_since, &before)) fixture_failures++;
    }
 }
 
@@ -1149,7 +1231,7 @@ static void pause_boundary_case(void)
 {
    audio_driver_state_t *st = &audio_driver_st;
    size_t per_frame = (size_t)(CORE_RATE / FPS);
-   unsigned frame, waited;
+   unsigned frame;
    double head_mean = 0.0, tail_mean = 0.0;
    size_t n, i;
 
@@ -1163,14 +1245,7 @@ static void pause_boundary_case(void)
          pause_boundary_pause_parked, NULL);
 
    /* The consumer takes the stale frames out unplayed. */
-   for (waited = 0; waited < 2000; waited++)
-   {
-      if (!retro_spsc_read_avail(&st->pipe_ring))
-         break;
-      audio_driver_pipeline_wake();
-      usleep(1000);
-   }
-   if (retro_spsc_read_avail(&st->pipe_ring))
+   if (!wait_progress(ring_emptied, NULL))
       fixture_failures++;
    if (retro_atomic_load_acquire_int(&tap_stale))
       fixture_failures++;
@@ -1182,10 +1257,7 @@ static void pause_boundary_case(void)
    for (frame = 0; frame < 8 && retro_atomic_load_relaxed_size(&tap_head_n)
          < TAP_HEAD_MAX; frame++)
       submit_frame(per_frame, 1);
-   for (waited = 0; waited < 2000
-         && retro_atomic_load_relaxed_size(&tap_head_n) < TAP_HEAD_MAX;
-         waited++)
-      usleep(1000);
+   wait_progress(tap_head_full, NULL);
    retro_atomic_store_release_int(&tap_record, 0);
 
    /* Acquire pairs with the release that published each element. */
@@ -1281,6 +1353,8 @@ int main(int argc, char **argv)
    const char *tempo = getenv("TEMPO");
    const char *layout = getenv("LAYOUT");
    size_t i;
+   if (!retro_eventcount_init(&progress_ev))
+      return 2;
    use_wrapper = getenv("WRAPPER") != NULL;
    source_float = getenv("SOURCE_FLOAT") != NULL;
    device_int16 = getenv("DEVICE_INT16") != NULL;
@@ -1421,5 +1495,6 @@ report:
    if (runloop_policy) printf("runloop policy: 128 speed-state requests, %u failures\n", fixture_failures);
    if (auto_runloop) printf("automatic transport: 128 producer updates, 16 fallbacks/recoveries, %u failures\n", fixture_failures);
    printf("pipeline wakeups: %u fixture failures\n", fixture_failures);
+   retro_eventcount_free(&progress_ev);
    return fixture_failures ? 1 : 0;
 }
