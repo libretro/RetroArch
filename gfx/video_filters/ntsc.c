@@ -110,8 +110,12 @@ static void ntsc_process_line(const struct filter_data *filt,
       int taps = (filt->atari_mode) ? 8 : (filt->c64_mode ? 4 : 6); 
       
       for (int t = -taps; t < taps; t++) {
-         int idx = (x + t < 0) ? 0 : (x + t >= (int)ow ? (int)ow - 1 : x + t);
-         int ph = (line_phase + (x * phase_step) + (t * phase_step)) % phases;
+         /* Signed: x is unsigned, and x + t is negative at the left edge */
+         int pos = (int)x + t;
+         int idx = (pos < 0) ? 0 : (pos >= (int)ow ? (int)ow - 1 : pos);
+         int ph = (line_phase + pos * phase_step) % phases;
+         if (ph < 0)
+            ph += phases;
          accI += cbuf[idx] * filt->lut_cos[ph];
          accQ += cbuf[idx] * filt->lut_sin[ph];
       }
