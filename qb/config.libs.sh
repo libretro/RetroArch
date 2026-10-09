@@ -193,6 +193,9 @@ fi
 
 check_platform 'Linux Win32' CDROM 'CD-ROM is' user
 
+check_enabled NFC NFC_AFNFC 'the AF_NFC reader backend' 'NFC is' false
+check_platform Linux NFC_AFNFC 'The AF_NFC reader backend is' true
+
 if [ "$OS" = 'Win32' ]; then
    add_opt DYLIB yes
 else

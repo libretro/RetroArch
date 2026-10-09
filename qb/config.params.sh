@@ -216,6 +216,8 @@ C89_LIBUSB=no
 HAVE_BLISSBOX=auto         # Blissbox support
 HAVE_LIBSHAKE=no           # libShake haptic feedback support
 HAVE_RPILED=auto           # RPI led support
+HAVE_NFC=no                # NFC reader interface (GET_NFC_INTERFACE) support
+HAVE_NFC_AFNFC=no          # Linux kernel NFC (AF_NFC) hardware reader backend, needs NFC
 HAVE_TEST_DRIVERS=yes      # Test input driver
 
 # SDL (video, audio and input)
