@@ -28,6 +28,12 @@
 #endif
 #endif
 
+#if defined(HAVE_DYNAMIC) && !defined(_WIN32) && !defined(ANDROID)
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#endif
+
 #include <encodings/utf.h>
 #include <string/stdstring.h>
 #include <streams/file_stream.h>
@@ -340,6 +346,38 @@ static char *get_tmpdir_alloc(const char *override_dir)
    return path;
 }
 
+/* ===== BEGIN runahead tmp dir check =====
+ * Whether the copy may go into @dir. On Windows and Android the temp
+ * dir is the user's own. Elsewhere it is a shared one like /tmp, where
+ * another user could have made @dir first, then planted a link to be
+ * overwritten or swapped the copied core before it is loaded. So @dir
+ * must be a real directory we own that no one else could have written
+ * to: a link left in it from then would be followed by the copy, which
+ * no change of mode now would undo. Group-writable is ours alone when
+ * the group is our own, as a user private group is. Readable by others
+ * is closed off. */
+static bool runahead_tmp_dir_private(const char *dir)
+{
+#if !defined(_WIN32) && !defined(ANDROID)
+   struct stat st;
+   if (     lstat(dir, &st) != 0
+         || !S_ISDIR(st.st_mode)
+         || st.st_uid != geteuid()
+         || (st.st_mode & S_IWOTH)
+         || ((st.st_mode & S_IWGRP) && st.st_gid != getegid())
+         || ((st.st_mode & 077) && chmod(dir, 0700) != 0))
+   {
+      RARCH_WARN("[Run-Ahead] \"%s\" is not private to this user; "
+            "not copying the core there.\n", dir);
+      return false;
+   }
+#else
+   (void)dir;
+#endif
+   return true;
+}
+/* ===== END runahead tmp dir check ===== */
+
 /* ===== BEGIN runahead core-copy fragment =====
  * Everything between the BEGIN/END markers depends only on
  * libretro-common (filestream, task_queue, path) plus libc and the
@@ -540,7 +578,7 @@ static void runahead_copy_task_begin(runahead_copy_handle_t *h)
    fill_pathname_join_special(tmp_path, tmpdir, "retroarch_temp",
          sizeof(tmp_path));
 
-   if (path_mkdir(tmp_path))
+   if (path_mkdir(tmp_path) && runahead_tmp_dir_private(tmp_path))
    {
       strcat_alloc(&dst, tmp_path);
       strcat_alloc(&dst, PATH_DEFAULT_SLASH());
