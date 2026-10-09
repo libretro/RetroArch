@@ -96,7 +96,7 @@ void led_driver_set_led(int led, int value)
    if (led < 0 || led >= MAX_LEDS)
       return;
 
-   output_store_post(&led_store, (unsigned)led, value);
+   output_store_post(&led_store, (unsigned)led, value != 0);
 }
 
 static void led_driver_write(unsigned led, int value, void *userdata)

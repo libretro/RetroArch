@@ -47,7 +47,20 @@ static void sleep_us(unsigned us) { Sleep(us / 1000u + 1u); }
 static void sleep_us(unsigned us) { usleep(us); }
 #endif
 
+static void after_take(void *store, unsigned slot);
+#define OUTPUT_STORE_AFTER_TAKE(st, slot) after_take(st, slot)
 #include "input_output_store.h"
+
+static bool post_during_take;
+
+static void after_take(void *store, unsigned slot)
+{
+   if (post_during_take && slot == 0)
+   {
+      post_during_take = false;
+      output_store_post((output_store_t*)store, slot, 200);
+   }
+}
 
 static unsigned failures = 0;
 static bool     quiet    = false;
@@ -152,6 +165,35 @@ static void lane_semantics(void)
       fprintf(stderr, "[pass] posts are stored, takes write once with the last value\n");
 }
 
+static void lane_publication(void)
+{
+   static output_store_t st;
+   struct device d;
+   unsigned had = failures;
+
+   memset(&st, 0, sizeof(st));
+   memset(&d, 0, sizeof(d));
+   output_store_post(&st, 0, 100);
+   post_during_take = true;
+   output_store_take(&st, device_write, &d);
+   CHECK(d.value[0] == 100 && d.writes[0] == 1,
+         "a post after the take replaced the value already taken");
+   output_store_take(&st, device_write, &d);
+   CHECK(d.value[0] == 200 && d.writes[0] == 2,
+         "the racing post was not written on the next take");
+   CHECK(output_store_take(&st, device_write, &d) == 0,
+         "the racing post was written twice");
+   output_store_post(&st, 0, 65535);
+   output_store_take(&st, device_write, &d);
+   CHECK(d.value[0] == 65535, "maximum rumble strength changed");
+   output_store_post(&st, 0, 0);
+   output_store_take(&st, device_write, &d);
+   CHECK(d.value[0] == 0, "zero strength was mistaken for an empty slot");
+
+   if (failures == had && !quiet)
+      fprintf(stderr, "[pass] a racing post keeps its own value and publication\n");
+}
+
 /* 8 */
 #define N_POSTERS 3
 #define N_POSTS   20000
@@ -174,9 +216,9 @@ static void poster_thread(void *arg)
    for (i = 1; i <= N_POSTS; i++)
    {
       /* a core's frame: both motors, the second set twice */
-      int v = (int)(p->slot_base * 100000 + i);
+      int v = (int)(p->slot_base * 10000 + i);
       output_store_post(&g_st, p->slot_base, v);
-      output_store_post(&g_st, p->slot_base + 1, -v);
+      output_store_post(&g_st, p->slot_base + 1, 0);
       output_store_post(&g_st, p->slot_base + 1, v);
       p->last[0] = v;
       p->last[1] = v;
@@ -250,10 +292,63 @@ static void lane_threads(void)
             (unsigned)N_POSTERS, (unsigned)N_POSTS, d.total);
 }
 
+static bool shared_seen[65536];
+static unsigned shared_duplicates;
+
+static void shared_write(unsigned slot, int value, void *userdata)
+{
+   if (shared_seen[value])
+      shared_duplicates++;
+   shared_seen[value] = true;
+   device_write(slot, value, userdata);
+}
+
+static void shared_poster(void *arg)
+{
+   struct poster *p = (struct poster*)arg;
+   unsigned i;
+   for (i = 1; i <= N_POSTS; i++)
+      output_store_post(&g_st, 0, (uint16_t)(p->slot_base * N_POSTS + i));
+   retro_atomic_fetch_add_int(&g_done, 1);
+}
+
+static void lane_shared_slot(void)
+{
+   struct device d;
+   struct poster post[N_POSTERS];
+   sthread_t *threads[N_POSTERS];
+   unsigned i, had = failures;
+
+   memset(&g_st, 0, sizeof(g_st));
+   memset(&d, 0, sizeof(d));
+   memset(shared_seen, 0, sizeof(shared_seen));
+   shared_duplicates = 0;
+   retro_atomic_store_release_int(&g_done, 0);
+   for (i = 0; i < N_POSTERS; i++)
+   {
+      post[i].slot_base = i;
+      threads[i] = sthread_create(shared_poster, &post[i]);
+   }
+   while (retro_atomic_load_acquire_int(&g_done) != N_POSTERS)
+      output_store_take(&g_st, shared_write, &d);
+   for (i = 0; i < N_POSTERS; i++)
+      sthread_join(threads[i]);
+   output_store_take(&g_st, shared_write, &d);
+   CHECK(!shared_duplicates, "a unique post to a shared slot was written twice");
+   output_store_post(&g_st, 0, 65535);
+   output_store_take(&g_st, shared_write, &d);
+   CHECK(d.value[0] == 65535 && !output_store_pending(&g_st),
+         "the last post to a shared slot was lost");
+   if (failures == had && !quiet)
+      fprintf(stderr, "[pass] three producers share one slot without duplicate delivery\n");
+}
+
 int main(void)
 {
    lane_semantics();
+   lane_publication();
    lane_threads();
+   lane_shared_slot();
 
    if (failures)
    {
