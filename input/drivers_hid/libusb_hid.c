@@ -96,6 +96,8 @@ typedef struct libusb_command
 
 /* Bytes of commands an adapter holds before it drops new ones. */
 #define LIBUSB_SEND_QUEUE_MAX 4096
+#define LIBUSB_REMOVING 1
+#define LIBUSB_SENDER   2
 
 struct libusb_adapter
 {
@@ -127,11 +129,8 @@ struct libusb_adapter
    libusb_command_t *queue;
    retro_atomic_int_t out_busy;
    retro_atomic_int_t queued_bytes;
-   /* send_control() calls inside the adapter; it is not freed under
-    * one. */
-   retro_atomic_int_t senders;
-   /* Set on the event-handling thread when the pad goes. */
-   retro_atomic_int_t removing;
+   /* Removal (bit 0) and send_control() calls (increments of 2). */
+   retro_atomic_int_t sender_gate;
    /* The event-handling thread's alone. */
    bool in_busy;
 
@@ -197,7 +196,7 @@ static void libusb_adapter_send_next(struct libusb_adapter *adapter)
       {
          size_t _len = cmd->len;
          retro_atomic_fetch_sub_int(&adapter->queued_bytes, (int)_len);
-         if (retro_atomic_load_seq_cst_int(&adapter->removing))
+         if (retro_atomic_load_seq_cst_int(&adapter->sender_gate) & LIBUSB_REMOVING)
          {
             free(cmd);
             continue;
@@ -238,7 +237,7 @@ static void LIBUSB_CALL libusb_adapter_in_cb(struct libusb_transfer *transfer)
    /* in_busy and removal are the event-handling thread's, as this
     * callback is. */
    adapter->in_busy = false;
-   if (!retro_atomic_load_acquire_int(&adapter->removing))
+   if (!(retro_atomic_load_acquire_int(&adapter->sender_gate) & LIBUSB_REMOVING))
       resubmit = (   transfer->status == LIBUSB_TRANSFER_COMPLETED
                   || transfer->status == LIBUSB_TRANSFER_TIMED_OUT);
 
@@ -275,8 +274,8 @@ static void libusb_hid_device_send_control(void *data,
    if (!adapter || !adapter->endpoint_out)
       return;
 
-   retro_atomic_fetch_add_seq_cst_int(&adapter->senders, 1);
-   if (retro_atomic_load_seq_cst_int(&adapter->removing))
+   if (retro_atomic_fetch_add_int(&adapter->sender_gate, LIBUSB_SENDER)
+         & LIBUSB_REMOVING)
       goto done;
 
    if (     len > sizeof(adapter->send_buf)
@@ -309,9 +308,9 @@ done:
        * free it: no transfer of its own is left to wake that. Taken
        * before letting go, after which the adapter may be gone. */
       libusb_hid_t *hid = adapter->hid;
-      bool removed      = retro_atomic_load_seq_cst_int(&adapter->removing) != 0;
-      if (     retro_atomic_fetch_sub_int(&adapter->senders, 1) == 1
-            && removed && hid)
+      int state = retro_atomic_fetch_sub_int(
+            &adapter->sender_gate, LIBUSB_SENDER);
+      if (state == (LIBUSB_REMOVING | LIBUSB_SENDER) && hid)
          libusb_hid_wake(hid);
    }
 }
@@ -353,7 +352,8 @@ static bool libusb_hid_reap(void)
 
       idle =   !adapter->in_busy
             && !retro_atomic_load_seq_cst_int(&adapter->out_busy)
-            && !retro_atomic_load_seq_cst_int(&adapter->senders);
+            && !(retro_atomic_load_seq_cst_int(&adapter->sender_gate)
+                  & ~LIBUSB_REMOVING);
 
       if (!idle)
       {
@@ -468,8 +468,7 @@ static int add_adapter(void *data, struct libusb_device *dev)
    mpsc_stack_init(&adapter->pending);
    retro_atomic_int_init(&adapter->out_busy, 0);
    retro_atomic_int_init(&adapter->queued_bytes, 0);
-   retro_atomic_int_init(&adapter->senders, 0);
-   retro_atomic_int_init(&adapter->removing, 0);
+   retro_atomic_int_init(&adapter->sender_gate, 0);
 
    rc = libusb_get_device_descriptor(dev, &desc);
 
@@ -629,7 +628,7 @@ static int remove_adapter(void *data, struct libusb_device *dev)
        * and the adapter is freed by libusb_hid_reap() once both have.
        * Nothing here waits for them - this can be running inside the
        * hotplug callback, on the very thread that delivers them. */
-      retro_atomic_exchange_int(&adapter->removing, 1);
+      retro_atomic_fetch_or_int(&adapter->sender_gate, LIBUSB_REMOVING);
       /* A sender that claims the OUT transfer after this sees the
        * flag and sends nothing; one that claimed it before may still
        * submit after the cancel, and is reaped when that completes,
