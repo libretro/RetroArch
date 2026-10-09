@@ -29,6 +29,15 @@
  * has claimed its slot, until told to go on */
 static retro_atomic_int_t stopped, go_on;
 static __thread int stop_me;
+static __thread int stop_release;
+static retro_atomic_int_t release_stopped, release_go;
+#define INPUT_KEY_LANE_BEFORE_RELEASE(lane, code, pos) do { \
+   if (stop_release) \
+   { \
+      retro_atomic_store_release_int(&release_stopped, 1); \
+      while (!retro_atomic_load_acquire_int(&release_go)) \
+         sched_yield(); \
+   } } while (0)
 #define INPUT_KEY_LANE_AFTER_CLAIM(lane, pos) do { \
    if (stop_me) \
    { \
@@ -50,6 +59,7 @@ static input_key_lane_t lane;
  * whether it is held at the end; and per writer, the order */
 static unsigned downs[RETROK_LAST], ups[RETROK_LAST];
 static unsigned got[4], bad[4];
+static bool newer_f1_on_delivery;
 static void deliver(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device)
 {
@@ -61,6 +71,11 @@ static void deliver(bool down, unsigned code, uint32_t character,
          downs[code]++;
       else
          ups[code]++;
+   }
+   if (down && code == RETROK_F1 && newer_f1_on_delivery)
+   {
+      newer_f1_on_delivery = false;
+      input_key_lane_push(&lane, true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
    }
    /* the stress writers send keys 10..13, presses only, numbered */
    if (down && code >= 10 && code < 14)
@@ -195,6 +210,7 @@ static void lane_wrap(void)
     * the position it will next take */
    reset();
    lane.head = start;
+   lane.position = start;
    retro_atomic_store_release_int(&lane.tail, (int)start);
    for (i = 0; i < INPUT_KEY_LANE_SIZE; i++)
    {
@@ -268,12 +284,140 @@ static void lane_stress(void)
             " each writer's in order\n");
 }
 
+static void lane_stopped_key_release(void)
+{
+   unsigned had = failures, i;
+   pthread_t writer;
+
+   reset();
+   retro_atomic_store_release_int(&stopped, 0);
+   retro_atomic_store_release_int(&go_on, 0);
+   pthread_create(&writer, NULL, stopped_writer, NULL);
+   while (!retro_atomic_load_acquire_int(&stopped))
+      sched_yield();
+   for (i = 1; i < INPUT_KEY_LANE_SIZE; i++)
+      input_key_lane_push(&lane, true, RETROK_F2, 0, 0, RETRO_DEVICE_KEYBOARD);
+   CHECK(!input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD),
+         "paused key release: the queue was not full");
+   input_key_lane_take(&lane, deliver);
+   CHECK(!downs[RETROK_F1] && !ups[RETROK_F1],
+         "paused key release: recovery overtook an unpublished press");
+   retro_atomic_store_release_int(&go_on, 1);
+   pthread_join(writer, NULL);
+   input_key_lane_take(&lane, deliver);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F1] == 1 && ups[RETROK_F1] == 1 && !held(RETROK_F1),
+         "an older paused press erased a newer retained release");
+   if (failures == had)
+      fprintf(stderr, "[pass] a paused press cannot erase its newer overflow release\n");
+}
+
+static void empty_at(unsigned start)
+{
+   unsigned i;
+   lane.head = start;
+   lane.position = start;
+   retro_atomic_store_release_int(&lane.tail, (int)start);
+   for (i = 0; i < INPUT_KEY_LANE_SIZE; i++)
+   {
+      unsigned p = start + ((i - start) & (INPUT_KEY_LANE_SIZE - 1));
+      retro_atomic_store_release_int(&lane.slot[i].seq, (int)(p - i));
+   }
+}
+
+static void lane_recovery_positions(void)
+{
+   unsigned had = failures, test, i;
+   static const unsigned starts[] = {0x7ffffffdu, UINT_MAX - 2u};
+
+   for (test = 0; test < 2; test++)
+   {
+      reset();
+      empty_at(starts[test]);
+      input_key_lane_push(&lane, true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+      for (i = 1; i < INPUT_KEY_LANE_SIZE; i++)
+         input_key_lane_push(&lane, true, RETROK_F2, 0, 0, RETRO_DEVICE_KEYBOARD);
+      input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+      input_key_lane_take(&lane, deliver);
+      CHECK(downs[RETROK_F1] == 1 && ups[RETROK_F1] == 1 && !held(RETROK_F1),
+            "overflow release changed across a position wrap");
+   }
+
+   reset();
+   input_key_lane_take_back_release(&lane, RETROK_F1);
+   deliver(true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   empty_at(0x80000400u);
+   fill_full();
+   input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_take(&lane, deliver);
+   CHECK(ups[RETROK_F1] == 1 && !held(RETROK_F1),
+         "a long-held key was mistaken for a newer press after a stamp lap");
+
+   reset();
+   input_key_lane_push(&lane, true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   for (i = 1; i < INPUT_KEY_LANE_SIZE; i++)
+      input_key_lane_push(&lane, true, RETROK_F2, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   newer_f1_on_delivery = true;
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F1] == 2 && ups[RETROK_F1] == 0 && held(RETROK_F1),
+         "recovery undid a queued press claimed after its cutoff");
+   if (failures == had)
+      fprintf(stderr, "[pass] recovery positions wrap and do not undo a newer press\n");
+}
+
+static void *delayed_release(void *data)
+{
+   (void)data;
+   stop_release = 1;
+   input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   return NULL;
+}
+
+static void lane_delayed_release(void)
+{
+   unsigned had = failures, test;
+   pthread_t writer;
+
+   for (test = 0; test < 2; test++)
+   {
+      reset();
+      deliver(true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+      fill_full();
+      retro_atomic_store_release_int(&release_stopped, 0);
+      retro_atomic_store_release_int(&release_go, 0);
+      pthread_create(&writer, NULL, delayed_release, NULL);
+      while (!retro_atomic_load_acquire_int(&release_stopped))
+         sched_yield();
+      input_key_lane_take(&lane, deliver);
+      input_key_lane_push(&lane, true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+      input_key_lane_take(&lane, deliver);
+      if (test)
+      {
+         fill_full();
+         input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+      }
+      retro_atomic_store_release_int(&release_go, 1);
+      pthread_join(writer, NULL);
+      input_key_lane_take(&lane, deliver);
+      input_key_lane_take(&lane, deliver);
+      CHECK(test ? (ups[RETROK_F1] == 1 && !held(RETROK_F1))
+                 : (ups[RETROK_F1] == 0 && held(RETROK_F1)),
+            "a delayed older overflow release changed newer key state");
+   }
+   if (failures == had)
+      fprintf(stderr, "[pass] delayed release publication cannot supersede newer state\n");
+}
+
 int main(void)
 {
    lane_stopped_writer();
    lane_newer_press();
    lane_wrap();
    lane_stress();
+   lane_stopped_key_release();
+   lane_recovery_positions();
+   lane_delayed_release();
    if (failures)
    {
       fprintf(stderr, "FAIL key_lane_test: %u failure(s)\n", failures);
