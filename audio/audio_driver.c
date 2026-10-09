@@ -9582,40 +9582,47 @@ static bool mic_driver_open_mic_internal(retro_microphone_t* microphone)
 
    microphone->orig_ratio = (double)microphone->effective_params.rate / microphone->actual_params.rate;
 
-   if (!retro_resampler_realloc(
-         &microphone->resampler_data,
-         &microphone->resampler,
-         mic_st->resampler_ident,
-         mic_st->resampler_quality,
-         microphone->orig_ratio))
-   {
-      RARCH_ERR("[Microphone] Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
-      goto error;
-   }
-
-   /* The libretro microphone interface hands the core int16 unconditionally,
-    * so when the device also delivers int16 there is no reason for the flush
-    * to detour through float: build the deterministic integer counterpart of
-    * the resampler just chosen and let microphone_driver_flush() use it.
-    * Float devices, and resamplers with no integer implementation, leave
-    * these NULL and keep the float path. */
+   /* The flush passes samples straight through when the rates match (by
+    * the same test it applies), and runs the deterministic integer path
+    * when the device also delivers int16, which the libretro microphone
+    * interface hands the core unconditionally: no s16->float->s16
+    * round-trip. The format and both rates are fixed at open, so only the
+    * resampler the flush will use is built - the float one for float
+    * devices and for backends with no integer implementation. */
    microphone->resampler_data_int16    = NULL;
    microphone->resampler_int16_process = NULL;
    microphone->resampler_int16_free    = NULL;
-   if (     !(microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
-         &&   microphone->resampler
-         &&   microphone->resampler->short_ident)
+   if (fabs(microphone->orig_ratio - 1.0f) < 1e-8)
+      RARCH_LOG("[Microphone] Resample path: none (rates match)\n");
+   else
    {
-      retro_resampler_int16_t rs;
-      retro_resampler_int16_new(&rs, microphone->resampler->short_ident,
-            mic_st->resampler_quality, microphone->orig_ratio, false);
-      microphone->resampler_data_int16    = rs.data;
-      microphone->resampler_int16_process = rs.process;
-      microphone->resampler_int16_free    = rs.free;
-      if (!microphone->resampler_data_int16)
+      const retro_resampler_t *backend =
+            audio_resampler_driver_find(mic_st->resampler_ident);
+      if (     !(microphone->flags & MICROPHONE_FLAG_USE_FLOAT)
+            &&   backend && backend->short_ident)
       {
-         microphone->resampler_int16_process = NULL;
-         microphone->resampler_int16_free    = NULL;
+         retro_resampler_int16_t rs;
+         retro_resampler_int16_new(&rs, backend->short_ident,
+               mic_st->resampler_quality, microphone->orig_ratio, false);
+         microphone->resampler_data_int16    = rs.data;
+         microphone->resampler_int16_process = rs.process;
+         microphone->resampler_int16_free    = rs.free;
+         if (!microphone->resampler_data_int16)
+         {
+            microphone->resampler_int16_process = NULL;
+            microphone->resampler_int16_free    = NULL;
+         }
+      }
+      if (     !microphone->resampler_data_int16
+            && !retro_resampler_realloc(
+               &microphone->resampler_data,
+               &microphone->resampler,
+               mic_st->resampler_ident,
+               mic_st->resampler_quality,
+               microphone->orig_ratio))
+      {
+         RARCH_ERR("[Microphone] Failed to initialize resampler \"%s\".\n", mic_st->resampler_ident);
+         goto error;
       }
       RARCH_LOG("[Microphone] Resample path: %s\n",
             microphone->resampler_data_int16
@@ -9924,7 +9931,10 @@ static size_t microphone_driver_flush(
                  mic_st->resampled_mono_frames_length / sizeof(float)),
              mic_st->final_frames_length / sizeof(int16_t)));
 
-   microphone->resampler->process(microphone->resampler_data, &resampler_data);
+   if (microphone->resampler_data)
+      microphone->resampler->process(microphone->resampler_data, &resampler_data);
+   else
+      resampler_data.output_frames = 0;
 
    /* Next, we convert the resampled data back to mono... */
    convert_to_mono_float_left(mic_st->resampled_mono_frames, mic_st->resampled_frames, resampler_data.output_frames);

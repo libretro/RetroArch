@@ -169,8 +169,12 @@ static bool  mdev_alive(const void *d, const void *m) { (void)d; (void)m; return
 static unsigned n_mdev_start;
 static bool  mdev_start(void *d, void *m)    { (void)d; (void)m; n_mdev_start++; return true; }
 static bool  mdev_stop(void *d, void *m)     { (void)d; (void)m; return true; }
+/* What open reports - zero for the rate asked - and the device format;
+ * the resampler choice case is the only one to change them. */
+static unsigned mdev_rate;
+static bool     mdev_float;
 static bool  mdev_use_float(const void *d, const void *m)
-{ (void)d; (void)m; return false; }
+{ (void)d; (void)m; return mdev_float; }
 static void  mdev_close(void *d, void *m)    { (void)d; (void)m; }
 
 static void *mdev_open(void *d, const char *dev, unsigned rate,
@@ -178,7 +182,7 @@ static void *mdev_open(void *d, const char *dev, unsigned rate,
 {
    static int h = 2;
    (void)d; (void)dev; (void)latency;
-   if (new_rate) *new_rate = rate;
+   if (new_rate) *new_rate = mdev_rate ? mdev_rate : rate;
    return &h;
 }
 
@@ -542,6 +546,78 @@ static void resume_case(void)
       printf("mic resume: the menu leaves the microphone as the core set it\n");
 }
 
+/* Only the resampler the flush will use is built: none when the device
+ * runs at the core's rate, the integer one for an int16 device at
+ * another, the float one for a float device. The int16 one still
+ * delivers. */
+static void resampler_choice_case(void)
+{
+   static const struct { unsigned rate; bool fl; bool i16; bool f32; } cases[] = {
+      { 0,     false, false, false },
+      { 44100, false, true,  false },
+      { 44100, true,  false, true  }
+   };
+   unsigned failed = failures;
+   size_t c;
+   for (c = 0; c < sizeof(cases) / sizeof(cases[0]); c++)
+   {
+      mdev_rate  = cases[c].rate;
+      mdev_float = cases[c].fl;
+      if (!mic_up(32))
+      {
+         printf("FAIL mic resampler: could not bring the microphone up\n");
+         failures++;
+         continue;
+      }
+      if (     (the_mic->resampler_data_int16 != NULL) != cases[c].i16
+            || (the_mic->resampler_data       != NULL) != cases[c].f32)
+      {
+         printf("FAIL mic resampler: %u Hz %s device built%s%s\n",
+               cases[c].rate ? cases[c].rate : CORE_RATE,
+               cases[c].fl ? "float" : "int16",
+               the_mic->resampler_data_int16 ? " integer" : "",
+               the_mic->resampler_data ? " float" : "");
+         failures++;
+      }
+      if (cases[c].i16)
+      {
+         pthread_t dev;
+         size_t    per_frame = (size_t)(CORE_RATE / FPS), heard = 0, i, j;
+         int16_t   buf[CORE_RATE / 30];
+         struct timespec next;
+         long      step_ns = (long)(1e9 / FPS);
+         core_want_bytes = per_frame * sizeof(int16_t);
+         retro_atomic_store_release_int(&dev_running, 1);
+         pthread_create(&dev, NULL, dev_thread, NULL);
+         clock_gettime(CLOCK_MONOTONIC, &next);
+         for (i = 0; i < 30; i++)
+         {
+            next.tv_nsec += step_ns;
+            next.tv_sec  += next.tv_nsec / 1000000000L;
+            next.tv_nsec %= 1000000000L;
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next, NULL);
+            memset(buf, 0, per_frame * sizeof(int16_t));
+            microphone_driver_read(the_mic, buf, per_frame);
+            for (j = 0; i >= 10 && j < per_frame; j++)
+               if (buf[j])
+                  heard++;
+         }
+         retro_atomic_store_release_int(&dev_running, 0);
+         pthread_join(dev, NULL);
+         if (!heard)
+         {
+            printf("FAIL mic resampler: the integer path delivered nothing\n");
+            failures++;
+         }
+      }
+      mic_down();
+   }
+   mdev_rate  = 0;
+   mdev_float = false;
+   if (failures == failed)
+      printf("mic resampler: only the one the flush uses is built\n");
+}
+
 int main(int argc, char **argv)
 {
    static const unsigned sweep[] = { 8, 16, 32, 64 };
@@ -563,6 +639,7 @@ int main(int argc, char **argv)
    free(lat_us);
    teardown_case();
    resume_case();
+   resampler_choice_case();
    printf("mic handshake: baseline taken\n");
    return failures ? 1 : 0;
 }

@@ -1162,6 +1162,16 @@ jobs:
           WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
             RUN="wine ./sinc_sibling_test.exe"
 
+      - name: Build and run mic_handshake_test (ASan + UBSan)
+        working-directory: samples/audio/mic_handshake
+        run: |
+          # The shipping capture worker against a clocked fake device, and
+          # only the resampler the microphone flush uses being built.
+          make clean
+          make -j$(nproc) SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            timeout 300 ./mic_handshake_test 1
+
       - name: Build and run pipeline_format_test (ASan + UBSan)
         working-directory: samples/audio/pipeline_format
         run: |
