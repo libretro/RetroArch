@@ -6999,7 +6999,9 @@ int rarch_main(int argc, char *argv[], void *data)
          settings->bools.ui_companion_start_on_boot
          );
 #ifdef HAVE_CLOUDSYNC
-   if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
+   if (rarch_st.flags & RARCH_FLAGS_CLOUD_SYNC_AT_INIT)
+      rarch_st.flags &= ~RARCH_FLAGS_CLOUD_SYNC_AT_INIT;
+   else if (settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
       task_push_cloud_sync(NULL, NULL);
 #endif
 #ifdef HAVE_LAKKA
@@ -7919,11 +7921,27 @@ void handle_dbscan_finished(retro_task_t *task,
 #endif
 
 #ifdef HAVE_CLOUDSYNC
-/* --cloudsync: the sync's verdict, where the waiting caller reads it. */
-static void handle_cloud_sync_cli_finished(retro_task_t *task,
+/* The sync's verdict, where the waiting caller reads it. */
+static void retroarch_cloud_sync_finished(retro_task_t *task,
       void *task_data, void *user_data, const char *err)
 {
    *(int*)user_data = err ? EXIT_FAILURE : EXIT_SUCCESS;
+}
+
+/* Runs a cloud sync to its end on this thread. Returns EXIT_SUCCESS or
+ * EXIT_FAILURE, or -1 when no sync was queued. */
+static int retroarch_cloud_sync_run(void)
+{
+   int result = -1;
+
+   if (!task_push_cloud_sync(retroarch_cloud_sync_finished, &result))
+      return -1;
+   while (result < 0)
+   {
+      task_queue_check();
+      retro_sleep(10);
+   }
+   return result;
 }
 #endif
 
@@ -8703,15 +8721,7 @@ static bool retroarch_parse_input_and_config(
                   cloud_sync_find_driver(settings->arrays.cloud_sync_driver,
                         "cloud sync driver", verbosity_is_enabled());
 
-                  if (task_push_cloud_sync(handle_cloud_sync_cli_finished, &result))
-                  {
-                     while (result < 0)
-                     {
-                        task_queue_check();
-                        retro_sleep(10);
-                     }
-                  }
-                  else
+                  if ((result = retroarch_cloud_sync_run()) < 0)
                      result = EXIT_FAILURE;
 
                   /* A blocking driver's worker, before what it calls
@@ -9246,6 +9256,21 @@ bool retroarch_main_init_core(int argc, char *argv[],
     * and finds after freeing them, in retroarch_main_init_drivers(). */
    if (find_drivers)
       retroarch_find_drivers(settings, verbosity_enabled);
+
+#ifdef HAVE_CLOUDSYNC
+   /* Content from the command line loads its save RAM below, before
+    * rarch_main() would push the startup sync. The sync runs first, so
+    * the core reads the save the server has. */
+   if (      find_drivers
+         && (rarch_st.flags & RARCH_FLAGS_LAUNCHED_FROM_CLI)
+         && !string_is_empty(p_rarch->path_content)
+         && settings->bools.cloud_sync_enable
+         && settings->uints.cloud_sync_sync_mode == CLOUD_SYNC_MODE_AUTOMATIC)
+   {
+      retroarch_cloud_sync_run();
+      rarch_st.flags |= RARCH_FLAGS_CLOUD_SYNC_AT_INIT;
+   }
+#endif
 
    /* Enforce stored brightness if needed */
    if (frontend_driver_can_set_screen_brightness())

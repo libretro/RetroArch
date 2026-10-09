@@ -127,7 +127,10 @@ enum rarch_state_flags
     * retroarch_fail from any other context (e.g. a reinit-time
     * drivers_init invoked via command_event_reinit) with the flag
     * clear means the longjmp would land in stale stack memory. */
-   RARCH_FLAGS_INIT_IN_PROGRESS             = (1 << 22)
+   RARCH_FLAGS_INIT_IN_PROGRESS             = (1 << 22),
+   /* Content from the command line waited for the startup cloud sync
+    * before loading; rarch_main() does not push another. */
+   RARCH_FLAGS_CLOUD_SYNC_AT_INIT           = (1 << 23)
 };
 
 bool retroarch_ctl(enum rarch_ctl_state state, void *data);
