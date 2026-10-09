@@ -108,6 +108,7 @@ typedef struct winusb_device
    HANDLE file;
    void *usb;
    HANDLE ctrl_event;
+   HANDLE quit_event;
    sthread_t *reader;
    int32_t slot;
    uint16_t vid;
@@ -212,6 +213,7 @@ static int32_t winusb_hid_control(winusb_device_t *dev, UCHAR type,
 static void winusb_hid_reader(void *data)
 {
    OVERLAPPED ov;
+   HANDLE events[2];
    winusb_device_t *dev = (winusb_device_t*)data;
 
    memset(&ov, 0, sizeof(ov));
@@ -220,17 +222,29 @@ static void winusb_hid_reader(void *data)
       retro_atomic_store_release_int(&dev->gone, 1);
       return;
    }
+   events[0] = dev->quit_event;
+   events[1] = ov.hEvent;
 
    while (!retro_atomic_load_acquire_int(&dev->quit))
    {
       ULONG got = 0;
       int w     = dev->write_idx;
+      BOOL ok;
 
       ResetEvent(ov.hEvent);
-      if (     (   !winusb_api.ReadPipe(dev->usb, WINUSB_EP_IN, dev->buf[w],
-                     WINUSB_REPORT_MAX, NULL, &ov)
-                && GetLastError() != ERROR_IO_PENDING)
-            || !winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE))
+      ok = winusb_api.ReadPipe(dev->usb, WINUSB_EP_IN, dev->buf[w],
+            WINUSB_REPORT_MAX, NULL, &ov);
+      if (!ok && GetLastError() == ERROR_IO_PENDING)
+      {
+         /* Abort only after the reader has submitted its operation. */
+         if (WaitForMultipleObjects(2, events, FALSE, INFINITE)
+               != WAIT_OBJECT_0 + 1)
+            winusb_api.AbortPipe(dev->usb, WINUSB_EP_IN);
+         ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+      }
+      else if (ok)
+         ok = winusb_api.GetOverlappedResult(dev->usb, &ov, &got, TRUE);
+      if (!ok)
       {
          /* stopped by the frontend, or the pad is gone */
          if (!retro_atomic_load_acquire_int(&dev->quit))
@@ -252,7 +266,7 @@ static void winusb_hid_close(winusb_device_t *dev)
    if (dev->reader)
    {
       retro_atomic_store_release_int(&dev->quit, 1);
-      winusb_api.AbortPipe(dev->usb, WINUSB_EP_IN);
+      SetEvent(dev->quit_event);
       sthread_join(dev->reader);
    }
    if (dev->usb)
@@ -261,6 +275,8 @@ static void winusb_hid_close(winusb_device_t *dev)
       CloseHandle(dev->file);
    if (dev->ctrl_event)
       CloseHandle(dev->ctrl_event);
+   if (dev->quit_event)
+      CloseHandle(dev->quit_event);
    free(dev);
 }
 
@@ -308,6 +324,7 @@ static void winusb_hid_open(winusb_hid_t *hid, const char *path,
       return;
    }
    if (     !(dev->ctrl_event = CreateEventA(NULL, TRUE, FALSE, NULL))
+         || !(dev->quit_event = CreateEventA(NULL, TRUE, FALSE, NULL))
          || !winusb_api.Initialize(dev->file, &dev->usb))
    {
       RARCH_WARN("[WinUSB] %s cannot be used (error %lu).\n",

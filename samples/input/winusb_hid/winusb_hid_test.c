@@ -54,11 +54,13 @@ static uint8_t bt_host[6];
 
 /* reports waiting for the reader, and whether it waits for more */
 static CRITICAL_SECTION q_lock; /* the stand-in's own, not the driver's */
-static HANDLE q_sem;
+static HANDLE submit_entered, allow_submit, close_done, abort_seen;
 static uint8_t q[16][49];
 static int q_head, q_tail;
 static volatile LONG reader_waiting;
-static volatile LONG unplugged, aborted;
+static volatile LONG unplugged, pause_submit;
+static bool read_pending, read_ok;
+static UCHAR *read_buffer;
 static ULONG read_len;
 static OVERLAPPED *read_ov;
 
@@ -89,47 +91,88 @@ static BOOL WINAPI f_control(void *usb, winusb_setup_packet_t s,
    return TRUE;
 }
 
+static void complete_read(void)
+{
+   if (!read_pending || (!unplugged && q_head == q_tail))
+      return;
+   read_ok = !unplugged;
+   if (read_ok)
+   {
+      memcpy(read_buffer, q[q_head++ & 15], 49);
+      read_len = 49;
+   }
+   read_pending = false;
+   InterlockedExchange(&reader_waiting, 0);
+   SetEvent(read_ov->hEvent);
+}
+
 static BOOL WINAPI f_read(void *usb, UCHAR pipe, UCHAR *buf, ULONG len,
       ULONG *got, OVERLAPPED *ov)
 {
-   read_ov = ov;
-   for (;;)
+   if (InterlockedExchange(&pause_submit, 0))
    {
-      EnterCriticalSection(&q_lock);
-      if (aborted || unplugged)
-      {
-         LeaveCriticalSection(&q_lock);
-         SetLastError(aborted ? ERROR_OPERATION_ABORTED
-               : ERROR_DEVICE_NOT_CONNECTED);
-         return FALSE;
-      }
-      if (q_head != q_tail)
-      {
-         memcpy(buf, q[q_head++ & 15], 49);
-         read_len = 49;
-         LeaveCriticalSection(&q_lock);
-         return TRUE;
-      }
-      InterlockedExchange(&reader_waiting, 1);
-      LeaveCriticalSection(&q_lock);
-      WaitForSingleObject(q_sem, INFINITE);
+      SetEvent(submit_entered);
+      WaitForSingleObject(allow_submit, INFINITE);
    }
+   EnterCriticalSection(&q_lock);
+   read_ov      = ov;
+   read_buffer  = buf;
+   read_pending = true;
+   read_ok      = false;
+   complete_read();
+   if (!read_pending)
+   {
+      BOOL ok = read_ok;
+      LeaveCriticalSection(&q_lock);
+      if (!ok)
+         SetLastError(ERROR_DEVICE_NOT_CONNECTED);
+      return ok;
+   }
+   InterlockedExchange(&reader_waiting, 1);
+   LeaveCriticalSection(&q_lock);
+   SetLastError(ERROR_IO_PENDING);
+   return FALSE;
 }
 
 static BOOL WINAPI f_abort(void *usb, UCHAR pipe)
 {
    aborts++;
    EnterCriticalSection(&q_lock);
-   aborted = 1;
+   if (read_pending)
+   {
+      read_pending = false;
+      read_ok      = false;
+      InterlockedExchange(&reader_waiting, 0);
+      SetEvent(read_ov->hEvent);
+   }
    LeaveCriticalSection(&q_lock);
-   ReleaseSemaphore(q_sem, 1, NULL);
+   SetEvent(abort_seen);
    return TRUE;
 }
 
 static BOOL WINAPI f_result(void *usb, OVERLAPPED *ov, ULONG *got, BOOL wait)
 {
-   *got = (ov == read_ov) ? read_len : ctrl_len;
-   return TRUE;
+   BOOL ok = TRUE;
+   if (ov == read_ov)
+   {
+      if (wait)
+         WaitForSingleObject(ov->hEvent, INFINITE);
+      EnterCriticalSection(&q_lock);
+      *got = read_len;
+      ok   = read_ok;
+      LeaveCriticalSection(&q_lock);
+      if (!ok)
+         SetLastError(ERROR_OPERATION_ABORTED);
+   }
+   else
+      *got = ctrl_len;
+   return ok;
+}
+
+static void close_driver(void *data)
+{
+   winusb_hid.free(data);
+   SetEvent(close_done);
 }
 
 /* a report queued, and returned once the reader has taken everything
@@ -146,8 +189,8 @@ static void push_report(uint32_t buttons, uint8_t circle)
    r[6]  = r[7] = r[8] = r[9] = 128;
    r[23] = circle;
    InterlockedExchange(&reader_waiting, 0);
+   complete_read();
    LeaveCriticalSection(&q_lock);
-   ReleaseSemaphore(q_sem, 1, NULL);
 }
 
 static void wait_reader(void)
@@ -176,9 +219,15 @@ int main(void)
    const uint32_t cross  = 1u << 14;
    const uint32_t circle = 1u << 13;
    int i, f4 = 0, f2 = 0, f5 = 0, led = 0;
+   sthread_t *closer;
+   HANDLE stop_events[2];
+   bool stopped;
 
    InitializeCriticalSection(&q_lock);
-   q_sem = CreateSemaphoreA(NULL, 0, 1000, NULL);
+   submit_entered = CreateEventA(NULL, TRUE, FALSE, NULL);
+   allow_submit   = CreateEventA(NULL, TRUE, FALSE, NULL);
+   close_done     = CreateEventA(NULL, TRUE, FALSE, NULL);
+   abort_seen     = CreateEventA(NULL, TRUE, FALSE, NULL);
 
    winusb_api.Initialize          = f_initialize;
    winusb_api.Free                = f_free;
@@ -255,8 +304,8 @@ int main(void)
    /* gone */
    EnterCriticalSection(&q_lock);
    unplugged = 1;
+   complete_read();
    LeaveCriticalSection(&q_lock);
-   ReleaseSemaphore(q_sem, 1, NULL);
    for (i = 0; i < 2000 && !retro_atomic_load_acquire_int(&dev->gone); i++)
       Sleep(1);
    winusb_hid.poll(hid);
@@ -267,14 +316,33 @@ int main(void)
 
    /* back, then the driver freed with it: the reader is aborted */
    unplugged = 0;
-   aborted   = 0;
+   InterlockedExchange(&pause_submit, 1);
    winusb_hid_open(hid, path, "USB\\VID_054C&PID_0268\\1", 0x054c, 0x0268);
    CHECK(hid->devices != NULL, "the pad did not come back");
-   wait_reader();
-   winusb_hid.free(hid);
-   CHECK(aborts >= 2 && frees == 2 && disconnects == 2,
+   CHECK(WaitForSingleObject(submit_entered, 2000) == WAIT_OBJECT_0,
+         "the reader did not reach the submission gate");
+   dev = hid->devices;
+   closer = sthread_create(close_driver, hid);
+   stop_events[0] = dev->quit_event;
+   stop_events[1] = abort_seen;
+   CHECK(WaitForMultipleObjects(2, stop_events, FALSE, 2000) != WAIT_TIMEOUT,
+         "close did not signal the reader to stop");
+   CHECK(retro_atomic_load_acquire_int(&dev->quit),
+         "close did not request the reader to stop");
+   SetEvent(allow_submit);
+   stopped = WaitForSingleObject(close_done, 2000) == WAIT_OBJECT_0;
+   CHECK(stopped, "a read submitted after shutdown left close waiting");
+   if (!stopped)
+      f_abort((void*)0x1234, WINUSB_EP_IN);
+   sthread_join(closer);
+   CHECK(aborts >= 1 && frees == 2 && disconnects == 2,
          "free did not stop the reader and let the pad go");
 
+   CloseHandle(submit_entered);
+   CloseHandle(allow_submit);
+   CloseHandle(close_done);
+   CloseHandle(abort_seen);
+   DeleteCriticalSection(&q_lock);
    DeleteFileA(path);
    if (failures)
    {

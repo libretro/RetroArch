@@ -259,6 +259,16 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 60 ./libusb_hid_test
           echo "[pass] libusb_hid_test (TSan)"
 
+      - name: Build and run winusb_hid_test (mingw + Wine)
+        shell: bash
+        working-directory: samples/input/winusb_hid
+        run: |
+          set -eu
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make clean all
+          WINEDEBUG=-all timeout 300 make check
+          make clean
+
       - name: Build and run hidraw_hid_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/hidraw_hid
