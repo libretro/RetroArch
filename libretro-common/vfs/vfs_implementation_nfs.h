@@ -32,8 +32,7 @@ RETRO_BEGIN_DECLS
 
 /* nfs:// backend over the built-in NFSv3 client (net/net_nfs3.c).
  * URL shape: nfs://server/export/path, or nfs://server/path with the
- * export from the settings; the subdir, when set, sits between the
- * export and the path. */
+ * export from the settings, the path relative to it. */
 
 #define RETRO_NFS_DEFAULT_TIMEOUT      5
 #define RETRO_NFS_DEFAULT_NUM_CONTEXTS 4
@@ -45,7 +44,6 @@ struct nfs_settings
 {
    const char *server_address;
    const char *export_path;
-   const char *subdir;
    unsigned    timeout;         /* seconds */
    unsigned    num_contexts;    /* connection pool size */
    unsigned    nfs_port;        /* 0: ask the portmapper */
