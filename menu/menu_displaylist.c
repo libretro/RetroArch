@@ -2884,17 +2884,34 @@ static unsigned menu_displaylist_parse_display_edid(file_list_t *list)
 }
 #endif
 
+static void menu_displaylist_bt_addr(char *s, size_t len,
+      const uint8_t *addr)
+{
+   snprintf(s, len, "%02X:%02X:%02X:%02X:%02X:%02X",
+         addr[0], addr[1], addr[2], addr[3], addr[4], addr[5]);
+}
+
 /* Each port with a device in it: its name, marked when no autoconfig
  * profile matched it, and on RGUI the display and configuration names
- * and VID/PID.  Every row carries its port in entry_idx. */
+ * and VID/PID; for a controller that connects over Bluetooth to an
+ * address it keeps, that address, and a row to pair it with this
+ * computer.  Every row carries its port in entry_idx. */
 static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
+   char host_str[18];
+   char host_name[16];
+   uint8_t host[6];
    unsigned port;
    unsigned count          = 0;
    unsigned keyboards      = 0;
    unsigned mice           = 0;
    const char *menu_driver = menu_driver_ident();
+   bool host_known         = input_bluetooth_host_address(host,
+         host_name, sizeof(host_name));
+
+   if (host_known)
+      menu_displaylist_bt_addr(host_str, sizeof(host_str), host);
 
    for (port = 0; port < MAX_USERS; port++)
    {
@@ -2951,6 +2968,41 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
             count++;
       }
 #endif
+
+      /* The Bluetooth address it connects to */
+      {
+         uint8_t pad_host[6];
+         if (input_driver_get_bt_host(port, pad_host))
+         {
+            char addr[18];
+            bool this_host = host_known && !memcmp(pad_host, host, 6);
+            menu_displaylist_bt_addr(addr, sizeof(addr), pad_host);
+            snprintf(entry, sizeof(entry), msg_hash_to_str(this_host
+                     ? MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS
+                     : MENU_ENUM_LABEL_VALUE_PORT_BT_HOST), addr);
+            if (menu_entries_append(list, entry, "",
+                  MENU_ENUM_LABEL_SYSTEM_INFO_CONTROLLER_ENTRY,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+               count++;
+            if (host_known && !this_host && menu_entries_append(list,
+                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR), "",
+                  MENU_ENUM_LABEL_INPUT_BT_PAIR,
+                  MENU_SETTINGS_CORE_INFO_NONE, 0, port, NULL))
+               count++;
+         }
+      }
+   }
+
+   /* This computer's Bluetooth */
+   if (host_known)
+   {
+      snprintf(entry, sizeof(entry),
+            msg_hash_to_str(MENU_ENUM_LABEL_VALUE_BLUETOOTH_HOST_INFO),
+            host_name, host_str);
+      if (menu_entries_append(list, entry, "",
+            MENU_ENUM_LABEL_SYSTEM_INFO_ENTRY,
+            MENU_SETTINGS_CORE_INFO_NONE, 0, 0, NULL))
+         count++;
    }
 
    /* The keyboards, where the input driver can tell them apart */

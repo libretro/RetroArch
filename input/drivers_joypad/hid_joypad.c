@@ -118,6 +118,18 @@ static const char *hid_joypad_name(unsigned pad)
    return NULL;
 }
 
+static bool hid_joypad_get_bt_host(unsigned pad, uint8_t *addr)
+{
+   return generic_hid && generic_hid->get_bt_host
+      && generic_hid->get_bt_host((void*)hid_driver_get_data(), pad, addr);
+}
+
+static bool hid_joypad_set_bt_host(unsigned pad, const uint8_t *addr)
+{
+   return generic_hid && generic_hid->set_bt_host
+      && generic_hid->set_bt_host((void*)hid_driver_get_data(), pad, addr);
+}
+
 input_device_driver_t hid_joypad = {
    hid_joypad_init,
    hid_joypad_query_pad,
@@ -132,5 +144,7 @@ input_device_driver_t hid_joypad = {
    NULL, /* set_sensor_state */
    NULL, /* get_sensor_input */
    hid_joypad_name,
-   "hid"
+   "hid",
+   hid_joypad_get_bt_host,
+   hid_joypad_set_bt_host
 };

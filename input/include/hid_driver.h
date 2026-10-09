@@ -55,6 +55,9 @@ struct hid_driver
    int32_t (*set_idle)(void *handle, uint8_t amount);
    int32_t (*set_protocol)(void *handle, uint8_t protocol);
    int32_t (*read)(void *handle, void *s, size_t len);
+   /* as input_device_driver_t's */
+   bool (*get_bt_host)(void *handle, unsigned pad, uint8_t *addr);
+   bool (*set_bt_host)(void *handle, unsigned pad, const uint8_t *addr);
 };
 
 #endif /* HID_DRIVER_H__ */

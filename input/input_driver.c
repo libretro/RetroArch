@@ -25,6 +25,12 @@
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <stddef.h>
+
+#if defined(__linux__) && !defined(ANDROID)
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#endif
 #include <string/stdstring.h>
 #include <encodings/utf.h>
 #include <clamping.h>
@@ -13388,6 +13394,76 @@ bool input_config_get_device_vibration(void)
 {
    settings_t *settings = config_get_ptr();
    return settings && settings->bools.enable_device_vibration;
+}
+
+#if defined(__linux__) && !defined(ANDROID)
+/* From the kernel's Bluetooth sockets, whose headers come with BlueZ's
+ * library and are not needed for this: an HCI socket and the adapter
+ * information it answers, struct hci_dev_info, whose first bytes are
+ * the adapter's number, its name and its address (least significant
+ * byte first), with its flags (bit 0: up) after. */
+#define INPUT_AF_BLUETOOTH  31
+#define INPUT_BTPROTO_HCI   1
+#define INPUT_HCIGETDEVINFO _IOR('H', 211, int)
+#define INPUT_HCI_MAX_DEVS  16
+#endif
+
+bool input_bluetooth_host_address(uint8_t *addr, char *name, size_t len)
+{
+#if defined(__linux__) && !defined(ANDROID)
+   uint8_t info[128];
+   unsigned dev;
+   bool found = false;
+   int fd     = socket(INPUT_AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC,
+         INPUT_BTPROTO_HCI);
+
+   if (fd < 0)
+      return false;
+   /* the first adapter that is up, or else the first there is */
+   for (dev = 0; dev < INPUT_HCI_MAX_DEVS; dev++)
+   {
+      unsigned i;
+      uint32_t flags;
+      bool up;
+      uint16_t id = (uint16_t)dev;
+      memset(info, 0, sizeof(info));
+      memcpy(info, &id, sizeof(id));
+      if (ioctl(fd, INPUT_HCIGETDEVINFO, info) < 0)
+         continue;
+      memcpy(&flags, info + 16, sizeof(flags));
+      up = (flags & 1) != 0;
+      if (found && !up)
+         continue;
+      for (i = 0; i < 6; i++)
+         addr[i] = info[15 - i];
+      if (name && len)
+      {
+         char n[9];
+         memcpy(n, info + 2, 8);
+         n[8] = '\0';
+         strlcpy(name, n, len);
+      }
+      found = true;
+      if (up)
+         break;
+   }
+   close(fd);
+   return found;
+#else
+   return false;
+#endif
+}
+
+bool input_driver_get_bt_host(unsigned pad, uint8_t *addr)
+{
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
+   return joypad && joypad->get_bt_host && joypad->get_bt_host(pad, addr);
+}
+
+bool input_driver_set_bt_host(unsigned pad, const uint8_t *addr)
+{
+   const input_device_driver_t *joypad = input_driver_st.primary_joypad;
+   return joypad && joypad->set_bt_host && joypad->set_bt_host(pad, addr);
 }
 
 #ifdef ANDROID

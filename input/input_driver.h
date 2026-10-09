@@ -625,6 +625,12 @@ struct rarch_joypad_driver
    const char *(*name)(unsigned);
 
    const char *ident;
+
+   /* The Bluetooth address a pad that keeps one connects to - a
+    * DualShock 3, on USB - read and written as shown, most significant
+    * byte first. NULL, or false, where the pad has none. */
+   bool (*get_bt_host)(unsigned pad, uint8_t *addr);
+   bool (*set_bt_host)(unsigned pad, const uint8_t *addr);
 };
 
 /**
@@ -1150,6 +1156,15 @@ bool input_config_get_stylus_enable(void);
 bool input_config_get_stylus_require_contact_for_click(void);
 bool input_config_get_stylus_hover_moves_pointer(void);
 unsigned input_config_get_stylus_pressure_sensitivity(void);
+
+/* This computer's Bluetooth address, most significant byte first, and
+ * its adapter's name; false where there is none or it cannot be read. */
+bool input_bluetooth_host_address(uint8_t *addr, char *name, size_t len);
+
+/* The Bluetooth address a controller connects to, read and set where
+ * its driver can (see input_device_driver_t's get_bt_host). */
+bool input_driver_get_bt_host(unsigned pad, uint8_t *addr);
+bool input_driver_set_bt_host(unsigned pad, const uint8_t *addr);
 bool input_config_get_android_disconnect_workaround(void);
 const char *input_config_get_android_physical_keyboard(void);
 const char *input_config_get_joypad_driver(void);

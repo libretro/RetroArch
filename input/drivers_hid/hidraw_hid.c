@@ -59,6 +59,7 @@ typedef struct hidraw_device
    int32_t slot;
    uint16_t vid;
    uint16_t pid;
+   bool usb;
    char devnode[64];
    char name[NAME_MAX_LENGTH];
    uint8_t data[2][HIDRAW_REPORT_MAX];
@@ -86,7 +87,7 @@ static bool hidraw_hid_handled(uint16_t vid, uint16_t pid, const char *name)
 
 /* The ids and name the node's HID device reports through sysfs, read
  * before the node is opened. */
-static bool hidraw_hid_uevent(const char *node,
+static bool hidraw_hid_uevent(const char *node, bool *usb,
       uint16_t *vid, uint16_t *pid, char *name, size_t name_len)
 {
    char path[384];
@@ -114,6 +115,7 @@ static bool hidraw_hid_uevent(const char *node,
             && sscanf(line + STRLEN_CONST("HID_ID="), "%x:%x:%x",
                &bus, &v, &p) == 3)
       {
+         *usb  = (bus == 0x03); /* BUS_USB */
          *vid  = (uint16_t)v;
          *pid  = (uint16_t)p;
          found = true;
@@ -137,6 +139,7 @@ static hidraw_device_t *hidraw_hid_find(hidraw_hid_t *hid,
 static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
 {
    uint16_t vid, pid;
+   bool usb;
    char name[NAME_MAX_LENGTH];
    const char *node = strrchr(devnode, '/');
    hidraw_device_t *dev;
@@ -144,7 +147,7 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    node = node ? node + 1 : devnode;
    if (     strncmp(node, "hidraw", STRLEN_CONST("hidraw"))
          || hidraw_hid_find(hid, devnode)
-         || !hidraw_hid_uevent(node, &vid, &pid, name, sizeof(name))
+         || !hidraw_hid_uevent(node, &usb, &vid, &pid, name, sizeof(name))
          || !hidraw_hid_handled(vid, pid, name))
       return;
 
@@ -153,6 +156,7 @@ static void hidraw_hid_add(hidraw_hid_t *hid, const char *devnode)
    dev->slot = -1;
    dev->vid  = vid;
    dev->pid  = pid;
+   dev->usb  = usb;
    strlcpy(dev->devnode, devnode, sizeof(dev->devnode));
    strlcpy(dev->name, name, sizeof(dev->name));
 
@@ -472,6 +476,49 @@ static int32_t hidraw_hid_get_report(void *handle, uint8_t report_type,
    return ioctl(dev->fd, HIDIOCGFEATURE(len), s);
 }
 
+/* A DualShock 3 on USB keeps the address it connects to over
+ * Bluetooth in feature report 0xF5, from its third byte. */
+static hidraw_device_t *hidraw_hid_usb_pad(void *data, unsigned pad)
+{
+   hidraw_hid_t *hid = (hidraw_hid_t*)data;
+   hidraw_device_t *dev;
+   if (!hid)
+      return NULL;
+   for (dev = hid->devices; dev; dev = dev->next)
+      if (dev->slot == (int32_t)pad)
+         return dev->usb ? dev : NULL;
+   return NULL;
+}
+
+static bool hidraw_hid_get_bt_host(void *data, unsigned pad, uint8_t *addr)
+{
+   uint8_t buf[8];
+   hidraw_device_t *dev = hidraw_hid_usb_pad(data, pad);
+
+   if (!dev)
+      return false;
+   memset(buf, 0, sizeof(buf));
+   buf[0] = 0xf5;
+   if (ioctl(dev->fd, HIDIOCGFEATURE(sizeof(buf)), buf) < (int)sizeof(buf))
+      return false;
+   memcpy(addr, buf + 2, 6);
+   return true;
+}
+
+static bool hidraw_hid_set_bt_host(void *data, unsigned pad,
+      const uint8_t *addr)
+{
+   uint8_t buf[8];
+   hidraw_device_t *dev = hidraw_hid_usb_pad(data, pad);
+
+   if (!dev)
+      return false;
+   buf[0] = 0xf5;
+   buf[1] = 0x00;
+   memcpy(buf + 2, addr, 6);
+   return ioctl(dev->fd, HIDIOCSFEATURE(sizeof(buf)), buf) >= 0;
+}
+
 hid_driver_t hidraw_hid = {
    hidraw_hid_init,
    hidraw_hid_joypad_query,
@@ -489,5 +536,7 @@ hid_driver_t hidraw_hid = {
    hidraw_hid_get_report,
    NULL, /* set_idle */
    NULL, /* set_protocol */
-   NULL  /* read */
+   NULL, /* read */
+   hidraw_hid_get_bt_host,
+   hidraw_hid_set_bt_host
 };

@@ -4849,6 +4849,28 @@ static int action_ok_cheat_reload_cheats(const char *path,
 }
 #endif
 
+/* Information > Input Information: the controller on the entry's port
+ * made to connect to this computer over Bluetooth. */
+static int action_ok_input_bt_pair(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   char msg[128];
+   uint8_t host[6];
+   size_t _len;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   bool paired                = input_bluetooth_host_address(host, NULL, 0)
+      && input_driver_set_bt_host((unsigned)entry_idx, host);
+
+   _len = snprintf(msg, sizeof(msg), msg_hash_to_str(paired
+            ? MSG_INPUT_BT_PAIRED : MSG_INPUT_BT_PAIR_FAILED),
+         (unsigned)entry_idx + 1);
+   runloop_msg_queue_push(msg, _len, 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
+   menu_st->flags |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   menu_st->flags &= ~MENU_ST_FLAG_PREVENT_POPULATE;
+   return 0;
+}
+
 static int action_ok_start_recording(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -9684,6 +9706,7 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
          {MENU_ENUM_LABEL_CHEAT_DELETE,                        action_ok_cheat_delete},
 #endif
          {MENU_ENUM_LABEL_RUN_MUSIC,                           action_ok_audio_run},
+         {MENU_ENUM_LABEL_INPUT_BT_PAIR,                       action_ok_input_bt_pair},
 #ifdef HAVE_AUDIOMIXER
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION,         action_ok_audio_add_to_mixer_and_collection},
          {MENU_ENUM_LABEL_ADD_TO_MIXER_AND_COLLECTION_AND_PLAY,action_ok_audio_add_to_mixer_and_collection_and_play},

@@ -31645,6 +31645,22 @@ MSG_HASH( /* Under either of those two entries. %s is the input driver's name */
    MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
    "The \"%s\" input driver reads these as one device and cannot tell them apart."
    )
+MSG_HASH( /* An entry of Information > Input Information: this computer's Bluetooth adapter. The first %s is its name, such as "hci0"; the second its address */
+   MENU_ENUM_LABEL_VALUE_BLUETOOTH_HOST_INFO,
+   "Bluetooth: %s (%s)"
+   )
+MSG_HASH( /* Under a controller's entry in Information > Input Information: the Bluetooth address the controller connects to when unplugged, such as a DualShock 3's */
+   MENU_ENUM_LABEL_VALUE_PORT_BT_HOST,
+   "- Connects over Bluetooth to: %s"
+   )
+MSG_HASH( /* The same, when that address is this computer's */
+   MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
+   "- Connects over Bluetooth to: This Computer (%s)"
+   )
+MSG_HASH( /* Under the same entry: selecting it makes the controller connect to this computer over Bluetooth when it is unplugged */
+   MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
+   "- Pair with This Computer"
+   )
 MSG_HASH(
    MENU_ENUM_LABEL_VALUE_CHEAT_SETTINGS,
    "Cheat Settings"
@@ -32875,6 +32891,14 @@ MSG_HASH(
 MSG_HASH(
    MSG_INPUT_REMAP_FIND_PRESS,
    "Press a button or push a stick on the controller of Port %u\n(Timeout %u seconds)"
+   )
+MSG_HASH( /* %u is the controller's port */
+   MSG_INPUT_BT_PAIRED,
+   "Port %u's controller will connect to this computer over Bluetooth when unplugged."
+   )
+MSG_HASH(
+   MSG_INPUT_BT_PAIR_FAILED,
+   "Port %u's controller could not be paired with this computer."
    )
 MSG_HASH(
    MSG_INPUT_COMBO_SET_BUTTONS,

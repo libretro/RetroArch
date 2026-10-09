@@ -28,6 +28,7 @@
 #if defined(__linux__)
 #include <linux/types.h>
 #include <linux/input.h>
+#include <linux/hidraw.h>
 #elif defined(__FreeBSD__)
 #include <dev/evdev/input.h>
 #else
@@ -130,6 +131,7 @@ struct udev_joypad
     * have: read from the pad's hidraw node into the axes from
     * pressure_axis on. */
    bool pressure;
+   bool usb;
    uint8_t pressure_axis;
    int pressure_fd;
 };
@@ -850,6 +852,7 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
    {
       pad->vid = inputid.vendor;
       pad->pid = inputid.product;
+      pad->usb = (inputid.bustype == BUS_USB);
    }
 
    /* Not a controller, whatever udev says: leave the slot free. */
@@ -1627,6 +1630,46 @@ static bool udev_get_sensor_input(unsigned port,
    return true;
 }
 
+#if defined(__linux__)
+/* A DualShock 3 on USB keeps the address it connects to over
+ * Bluetooth in feature report 0xF5, from its third byte; it is reached
+ * through the hidraw node its pressures come from. */
+static bool udev_joypad_get_bt_host(unsigned port, uint8_t *addr)
+{
+   uint8_t buf[8];
+   const struct udev_joypad *pad;
+
+   if (port >= MAX_USERS)
+      return false;
+   pad = &udev_pads[port];
+   if (!pad->pressure || !pad->usb)
+      return false;
+   memset(buf, 0, sizeof(buf));
+   buf[0] = 0xf5;
+   if (ioctl(pad->pressure_fd, HIDIOCGFEATURE(sizeof(buf)), buf)
+         < (int)sizeof(buf))
+      return false;
+   memcpy(addr, buf + 2, 6);
+   return true;
+}
+
+static bool udev_joypad_set_bt_host(unsigned port, const uint8_t *addr)
+{
+   uint8_t buf[8];
+   const struct udev_joypad *pad;
+
+   if (port >= MAX_USERS)
+      return false;
+   pad = &udev_pads[port];
+   if (!pad->pressure || !pad->usb)
+      return false;
+   buf[0] = 0xf5;
+   buf[1] = 0x00;
+   memcpy(buf + 2, addr, 6);
+   return ioctl(pad->pressure_fd, HIDIOCSFEATURE(sizeof(buf)), buf) >= 0;
+}
+#endif
+
 input_device_driver_t udev_joypad = {
    udev_joypad_init,
    udev_joypad_query_pad,
@@ -1646,4 +1689,8 @@ input_device_driver_t udev_joypad = {
    udev_get_sensor_input,
    udev_joypad_name,
    "udev",
+#if defined(__linux__)
+   udev_joypad_get_bt_host,
+   udev_joypad_set_bt_host
+#endif
 };

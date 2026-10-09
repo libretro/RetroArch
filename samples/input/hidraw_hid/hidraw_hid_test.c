@@ -10,6 +10,8 @@
  *                  with none waiting, one read and the state stays
  *   pressures   -> L2, R2 and the face, shoulder and D-pad buttons'
  *                  pressures are axes 4 to 15
+ *   bluetooth   -> the address the pad connects to is feature 0xF5,
+ *                  read and set most significant byte first
  *   gone        -> a read failing with ENODEV disconnects the pad, frees
  *                  its port and closes the node
  *   free        -> every node closed */
@@ -205,6 +207,9 @@ int __wrap_ioctl(int fd, unsigned long req, ...)
    {
       nd->features_got[buf[0]]++;
       memset(buf + 1, 0, size - 1);
+      /* the address the pad connects to, as last set */
+      if (buf[0] == 0xf5 && size >= 8)
+         memcpy(buf + 2, nd->feature_set + 2, 6);
       return (int)size;
    }
    errno = EINVAL;
@@ -347,6 +352,22 @@ int main(void)
       hid_driver_t *drv = &hidraw_hid;
       CHECK(drv->set_report(NULL, HID_REPORT_FEATURE, 0xf4, r, 5) < 0,
             "a report with no device was sent");
+   }
+
+   /* the Bluetooth address it connects to: read, and set */
+   {
+      static const uint8_t host[6] = { 0x00, 0x1a, 0x7d, 0xda, 0x71, 0x13 };
+      uint8_t addr[6];
+      hid_driver_t *drv = &hidraw_hid;
+      CHECK(drv->set_bt_host(hid, 0, host),
+            "the address could not be set");
+      CHECK(   ds3->feature_set[0] == 0xf5 && ds3->feature_set[1] == 0x00
+            && !memcmp(ds3->feature_set + 2, host, 6),
+            "0xF5 was not set to the address, most significant byte first");
+      CHECK(drv->get_bt_host(hid, 0, addr) && !memcmp(addr, host, 6),
+            "the address set is not the one read");
+      CHECK(!drv->get_bt_host(hid, 1, addr),
+            "a port with no pad has an address");
    }
 
    /* gone */
