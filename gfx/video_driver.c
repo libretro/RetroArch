@@ -431,9 +431,10 @@ static INLINE bool realloc_checked(void **ptr, size_t len)
       nptr = realloc(*ptr, len);
    else
       nptr = malloc(len);
-   if (nptr)
-      *ptr = nptr;
-   return *ptr == nptr;
+   if (!nptr)
+      return false;
+   *ptr = nptr;
+   return true;
 }
 
 /* Grow one stream, or bring it into existence if this is the first
@@ -537,9 +538,8 @@ bool video_coord_array_append(video_coord_array_t *ca,
 
 void video_coord_array_free(video_coord_array_t *ca)
 {
-   if (!ca->allocated)
-      return;
-
+   /* Streams can be held with nothing counted as allocated: an append
+    * whose resize failed after growing some of them */
    if (ca->coords.vertex)
       free(ca->coords.vertex);
    ca->coords.vertex        = NULL;
