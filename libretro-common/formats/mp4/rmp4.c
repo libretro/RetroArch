@@ -956,6 +956,14 @@ static void rmp4_parse_traf(rmp4_t *m, const uint8_t *body, uint64_t size,
             first_flags = rmp4_be32(b.body + off); off += 4;
             have_first  = 1;
          }
+         /* No per-sample fields: n samples of the default size. Of
+          * no size, there is nothing to append, only their time to
+          * pass - and n is the file's to choose, up to 2^32-1. */
+         if (!(f & 0x000F00) && !dflt_size)
+         {
+            t->frag_dts += (uint64_t)n * dflt_dur;
+            n            = 0;
+         }
          for (i = 0; i < n; i++)
          {
             uint32_t dur = dflt_dur, sz = dflt_size, fl = dflt_flags;
