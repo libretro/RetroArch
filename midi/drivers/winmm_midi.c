@@ -287,7 +287,7 @@ static bool winmm_midi_init_output_buffers(HMIDISTRM dev,
       {
          RARCH_ERR("[MIDI] midiOutPrepareHeader failed with error %d.\n", mmr);
 
-         while (--i <= 0)
+         while (i-- > 0)
             midiOutUnprepareHeader((HMIDIOUT)dev, &bufs[i].header, sizeof(MIDIHDR));
 
          return false;
