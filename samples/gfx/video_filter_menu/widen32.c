@@ -4,7 +4,6 @@
  * through it can be compared across a driver set up again. */
 #include "softfilter.h"
 #include <stdlib.h>
-#include <string.h>
 
 struct widen32_work
 {
@@ -63,7 +62,8 @@ static void widen32_work_cb(void *data, void *thread_data)
 
    for (y = 0; y < w->height; y++)
    {
-      uint32_t *row = out + (size_t)(y << 1) * out_stride;
+      uint32_t *row  = out + (size_t)(y << 1) * out_stride;
+      uint32_t *next = row + out_stride;
       for (x = 0; x < w->width; x++)
       {
          uint16_t c = in[(size_t)y * in_stride + x];
@@ -73,10 +73,11 @@ static void widen32_work_cb(void *data, void *thread_data)
          uint32_t p = ((r << 3 | r >> 2) << 16)
                     | ((g << 2 | g >> 4) <<  8)
                     |  (b << 3 | b >> 2);
-         row[2 * x]     = p;
-         row[2 * x + 1] = p;
+         row[2 * x]      = p;
+         row[2 * x + 1]  = p;
+         next[2 * x]     = p;
+         next[2 * x + 1] = p;
       }
-      memcpy(row + out_stride, row, (size_t)(w->width << 1) * sizeof(uint32_t));
    }
 }
 
