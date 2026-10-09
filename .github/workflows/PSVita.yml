@@ -23,6 +23,9 @@ jobs:
     timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-build-vita:latest-20260905
+      credentials:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
       options: --user root
 
     steps:

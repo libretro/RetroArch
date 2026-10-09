@@ -30,6 +30,17 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
+    # Authenticated pulls avoid the shared per-IP anonymous rate limit;
+    # without the secrets (fork pull requests) the pull stays anonymous
+    - name: Log in to Docker Hub
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+      run: |
+        if [ -n "$DOCKERHUB_USERNAME" ] && [ -n "$DOCKERHUB_TOKEN" ]; then
+          echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+        fi
+
     - name: Compile RA
       run: |
         docker run --rm --user root -v "$PWD":/src -w /src "$ORBIS_IMAGE" bash -c '
