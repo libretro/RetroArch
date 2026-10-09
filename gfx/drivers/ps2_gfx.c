@@ -70,6 +70,8 @@ struct rm_mode
 typedef struct
 {
    GSTEXTURE *texture;
+   /* The texture manager the texture was bound in */
+   GSGLOBAL *gsGlobal;
    const font_renderer_driver_t* font_driver;
    void* font_data;
    struct font_atlas* atlas;
@@ -132,6 +134,8 @@ static int vsync_sema_id;
 /*
  * FONT DRIVER
  */
+static void ps2_font_free(void* data, bool is_threaded);
+
 static void* ps2_font_init(void* data, const char* font_path,
       float font_size, bool is_threaded)
 {
@@ -144,6 +148,7 @@ static void* ps2_font_init(void* data, const char* font_path,
 
    if (!font)
       return NULL;
+   font->gsGlobal = data ? ((ps2_video_t*)data)->gsGlobal : NULL;
 
    if (!font_renderer_create_default(
             &font->font_driver,
@@ -156,6 +161,8 @@ static void* ps2_font_init(void* data, const char* font_path,
    atlas                  = font->font_driver->get_atlas(font->font_data);
    font->atlas            = atlas;
    font->texture          = (GSTEXTURE*)calloc(1, sizeof(GSTEXTURE));
+   if (!font->texture)
+      goto error;
    font->texture->Width   = atlas->width;
    font->texture->Height  = atlas->height;
    font->texture->PSM     = GS_PSM_T8;
@@ -165,6 +172,8 @@ static void* ps2_font_init(void* data, const char* font_path,
    /* Convert to 8bit texture */
    text_size           = gsKit_texture_size_ee(atlas->width, atlas->height, GS_PSM_T8);
    tex8                = (uint8_t*)malloc(text_size);
+   if (!tex8)
+      goto error;
    for (j = 0; j <  atlas->width * atlas->height; j++ )
       tex8[j]          = atlas->buffer[j] & 0x000000FF;
    font->texture->Mem  = (u32 *)tex8;
@@ -172,6 +181,8 @@ static void* ps2_font_init(void* data, const char* font_path,
    /* Create 8bit CLUT */
    clut_size           = gsKit_texture_size_ee(16, 16, GS_PSM_CT32);
    clut32              = (uint32_t*)malloc(clut_size);
+   if (!clut32)
+      goto error;
    for (j = 0; j < 256; j++)
       clut32[j]        = 0x01010101 * j;
    font->texture->Clut = (u32 *)clut32;
@@ -182,6 +193,10 @@ static void* ps2_font_init(void* data, const char* font_path,
    atlas->max_dims = VIDEO_SCALE_PACK(512, 512);
 
    return font;
+
+error:
+   ps2_font_free(font, is_threaded);
+   return NULL;
 }
 
 static void ps2_font_free(void* data, bool is_threaded)
@@ -194,14 +209,16 @@ static void ps2_font_free(void* data, bool is_threaded)
    if (font->font_driver && font->font_data)
       font->font_driver->free(font->font_data);
 
-   if (font->texture->Clut)
-      free(font->texture->Clut);
-
-   if (font->texture->Mem)
-      free(font->texture->Mem);
-
    if (font->texture)
+   {
+      /* Out of the texture manager first: it finds a resident texture
+       * by its address, which the next texture allocated may reuse */
+      gsKit_TexManager_free(font->gsGlobal, font->texture);
+      free(font->texture->Clut);
+      free(font->texture->Mem);
       free(font->texture);
+   }
+   free(font);
 }
 
 static int ps2_font_get_message_width(void *data, const char *msg,
