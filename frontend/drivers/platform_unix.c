@@ -1685,9 +1685,11 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
       }
       else if (string_is_equal(key, "remaining capacity"))
       {
+         /* "<number> mAh": parse, then check what follows */
          char *endptr = NULL;
-         if (endptr && *endptr == ' ')
-            remaining = (int)strtol(val, &endptr, 10);
+         long  _val   = strtol(val, &endptr, 10);
+         if (endptr != val && *endptr == ' ')
+            remaining = (int)_val;
       }
    }
 
@@ -1695,14 +1697,17 @@ static void check_proc_acpi_battery(const char * node, bool * have_battery,
 
    while (make_proc_acpi_key_val(&ptr, &key, &val))
    {
-      char      *endptr = NULL;
-
       if (string_is_equal(key, "design capacity"))
-         if (endptr && *endptr == ' ')
-            maximum = (int)strtol(val, &endptr, 10);
+      {
+         char *endptr = NULL;
+         long  _val   = strtol(val, &endptr, 10);
+         if (endptr != val && *endptr == ' ')
+            maximum = (int)_val;
+      }
    }
 
-   if ((maximum >= 0) && (remaining >= 0))
+   /* maximum is the divisor */
+   if ((maximum > 0) && (remaining >= 0))
    {
       pct = (int) ((((float) remaining) / ((float) maximum)) * 100.0f);
       if (pct < 0)
