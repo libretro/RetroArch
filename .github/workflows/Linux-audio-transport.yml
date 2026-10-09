@@ -69,3 +69,20 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: make check-pause SANITIZER='${{ matrix.sanitizer }}'
+      - name: Consumer leaving under a parked producer
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-consumer-exit SANITIZER='${{ matrix.sanitizer }}'
+      - name: Consumer leaving under a parked producer (ThreadSanitizer)
+        if: matrix.sanitizer == ''
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          TSAN_OPTIONS: halt_on_error=1 second_deadlock_stack=1
+        run: |
+          # Last: it rebuilds the fixture instrumented. The lane is the
+          # pipe_consumer_gone handshake, which only the race detector
+          # can judge.
+          make clean
+          make check-consumer-exit SANITIZER=thread

@@ -685,6 +685,9 @@ static void pause_boundary_run(void);
 static bool pause_boundary_mode;
 static void consumer_exit_run(void);
 static bool consumer_exit_mode;
+/* The pause boundary and consumer exit lanes run their one scenario in
+ * place of the load sweep's phases. */
+static bool single_lane;
 
 struct live_control_check
 {
@@ -1113,8 +1116,9 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    if (use_wrapper)
    {
       audio_driver_state_t *st = &audio_driver_st;
-      if (live_controls && !pause_boundary_mode) wrapper_live_controls(publishes);
-      if (!pause_boundary_mode) wrapper_restart();
+      /* Both lanes leave the consumer parked or gone; neither restarts. */
+      if (live_controls && !single_lane) wrapper_live_controls(publishes);
+      if (!single_lane) wrapper_restart();
       if (!st->current_audio->stop(st->context_audio_data)) fixture_failures++;
       if (channels > 2 && (st->extra.channels != channels - 2
                || st->extra.positions != (source_layout & ~AUDIO_LAYOUT_STEREO)
@@ -1140,7 +1144,7 @@ static void run_one(unsigned publishes, double seconds, bool backpressure)
    under  = retro_atomic_load_acquire_size(&dev_underruns) - warm_under;
    pulls  = retro_atomic_load_acquire_size(&dev_pulls) - warm_pulls;
    if (use_wrapper && (!writes || !wakes)) fixture_failures++;
-   if (use_wrapper && !pause_boundary_mode)
+   if (use_wrapper && !single_lane)
    {
       size_t f = retro_atomic_load_acquire_size(&to_float);
       size_t n = retro_atomic_load_acquire_size(&to_int16);
@@ -1294,13 +1298,23 @@ static void pause_boundary_case(void)
 static void consumer_exit_case(void)
 {
    size_t   per_frame = (size_t)(CORE_RATE / FPS);
+   size_t   blocked   = prod_blocked_frames;
    unsigned frame;
    int64_t  began, spent;
+
+   /* The device takes writes again, as each run's starts out doing. */
+   retro_atomic_store_release_int(&dev_fail_now, 0);
 
    /* Enough in flight that the producer has to wait on the consumer
     * rather than sail through. */
    for (frame = 0; frame < 16; frame++)
       submit_frame(per_frame, 1);
+   /* A producer that never parked leaves nothing for the exit to race. */
+   if (prod_blocked_frames == blocked)
+   {
+      fprintf(stderr, "the producer never waited on the consumer\n");
+      fixture_failures++;
+   }
 
    /* From here the device refuses, so the wrapper clears alive and
     * leaves its loop under its own steam. */
@@ -1367,9 +1381,15 @@ int main(int argc, char **argv)
    auto_runloop = getenv("AUTO_RUNLOOP") != NULL;
    pause_boundary_mode = getenv("PAUSE_BOUNDARY") != NULL;
    consumer_exit_mode  = getenv("CONSUMER_EXIT") != NULL;
+   single_lane         = pause_boundary_mode || consumer_exit_mode;
    if (pause_boundary_mode && (!use_wrapper || !transport))
    {
       fprintf(stderr, "PAUSE_BOUNDARY requires WRAPPER and a TRANSPORT\n");
+      return 1;
+   }
+   if (consumer_exit_mode && !use_wrapper)
+   {
+      fprintf(stderr, "CONSUMER_EXIT requires WRAPPER\n");
       return 1;
    }
    if (layout)
@@ -1466,7 +1486,9 @@ int main(int argc, char **argv)
    for (i = 0; i < (pause_boundary_mode
             ? 1 : sizeof(sweep) / sizeof(sweep[0])); i++)
       run_one(sweep[i], seconds, true);
-   if (pause_boundary_mode)
+   /* Both single lanes need a device that pushes back: without it the
+    * producer never parks, which is all either scenario is about. */
+   if (single_lane)
       goto report;
 
    printf("\n-- device applies none; the data handshake is the only pacer --\n");
