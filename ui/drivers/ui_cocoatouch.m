@@ -644,6 +644,12 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
    app.window = [[UIWindow alloc] initWithWindowScene:(UIWindowScene *)scene];
 
    [app.window makeKeyAndVisible];
+
+   /* A URL that launched the app comes here, not to
+    * scene:openURLContexts:; RetroArch is up by now
+    * (applicationDidFinishLaunching ran rarch_main) */
+   for (UIOpenURLContext *urlContext in connectionOptions.URLContexts)
+      [app application:[UIApplication sharedApplication] openURL:urlContext.URL options:@{}];
 }
 
 - (void)sceneDidBecomeActive:(UIScene *)scene {
@@ -663,9 +669,8 @@ API_AVAILABLE(ios(13.0), tvos(13.0))
 
 - (void)scene:(UIScene *)scene openURLContexts:(NSSet<UIOpenURLContext *> *)URLContexts {
    RetroArch_iOS *app = [RetroArch_iOS get];
-   for (UIOpenURLContext *urlContext in URLContexts) {
-      [app application:(UIApplication *)app openURL:urlContext.URL options:@{}];
-   }
+   for (UIOpenURLContext *urlContext in URLContexts)
+      [app application:[UIApplication sharedApplication] openURL:urlContext.URL options:@{}];
 }
 
 @end
