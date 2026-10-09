@@ -558,6 +558,7 @@ struct cb_observation
    int   data_present;
    int   body_present;
    int   status;
+   char  err[128];
 };
 
 static struct cb_observation g_obs;
@@ -575,6 +576,8 @@ static void failure_cb(retro_task_t *task, void *task_data,
    g_obs.data_present = data != NULL;
    g_obs.body_present = (data && data->data);
    g_obs.status       = data ? data->status : 0;
+   if (err)
+      snprintf(g_obs.err, sizeof(g_obs.err), "%s", err);
    pthread_mutex_unlock(&g_cb_lock);
 }
 
@@ -650,6 +653,25 @@ static void test_task_unmuted(void)
    run_task_lane("unmuted", false);
 }
 
+static void test_task_http_status(void)
+{
+   char url[128];
+
+   printf("  task layer, 404\n");
+   if (!server_start(SRV_NOT_FOUND))
+   {
+      printf("    SKIP: could not start loopback server\n");
+      return;
+   }
+   snprintf(url, sizeof(url), "http://127.0.0.1:%d/x", g_port);
+   memset(&g_obs, 0, sizeof(g_obs));
+   task_push_http_transfer(url, true, NULL, failure_cb, NULL);
+   task_queue_wait(NULL, NULL);
+   CHECK(!strcmp(g_obs.err, "Download failed: HTTP 404."),
+         "404: callback error \"%s\"", g_obs.err);
+   server_stop();
+}
+
 /* ================================================================= */
 
 int main(void)
@@ -673,6 +695,7 @@ int main(void)
    task_queue_init(true, NULL);
    test_task_muted();
    test_task_unmuted();
+   test_task_http_status();
    task_queue_deinit();
 
    net_http_deinit();

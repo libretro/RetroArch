@@ -27,6 +27,7 @@ SOURCES := http_emscripten_headers_test.c \
 	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_base64.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
 OBJS    := $(SOURCES:.c=.o)
 

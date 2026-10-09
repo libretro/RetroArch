@@ -35,6 +35,7 @@
 #include <net/net_socket_ssl.h>
 #endif
 #include <compat/strl.h>
+#include <encodings/base64.h>
 #include <features/features_cpu.h>
 #include <lists/string_list.h>
 #include <retro_common_api.h>
@@ -244,6 +245,7 @@ typedef struct request
    void *postdata;
    char *useragent;
    char *headers;
+   char *auth;
    size_t contentlength;
    /* Streamed body: pulled from source in runs as the socket takes
     * them, instead of being held whole in postdata. */
@@ -317,6 +319,7 @@ struct http_connection_t
    void *postdata;
    char *useragent;
    char *headers;
+   char *auth;
    size_t contentlength; /* ptr alignment */
    net_http_sink_t sink;
    void *sink_data;
@@ -734,6 +737,22 @@ int net_http_urldecode_inplace(char *s)
    return string_percent_decode(s, (size_t)-1, s);
 }
 
+/* Base64 "user:pass" for Basic auth, from a URL's userinfo. */
+static char *net_http_basic_auth(const char *userinfo, size_t len)
+{
+   int   flen;
+   char *out;
+   char *raw = (char*)malloc(len + 1);
+
+   if (!raw)
+      return NULL;
+   memcpy(raw, userinfo, len);
+   raw[len] = '\0';
+   out = base64(raw, net_http_urldecode_inplace(raw), &flen);
+   free(raw);
+   return out;
+}
+
 struct http_connection_t *net_http_connection_new(const char *url,
       const char *method, const char *data)
 {
@@ -769,11 +788,31 @@ struct http_connection_t *net_http_connection_new(const char *url,
    }
    else
       goto error;
+   {
+      /* RFC 3986 3.2.1 userinfo, sent as Basic credentials */
+      char *end = conn->scan + strcspn(conn->scan, "/?#");
+      char *at = NULL;
+      char *p;
+      for (p = conn->scan; p < end; p++)
+         if (*p == '@')
+            at = p;
+      if (at)
+      {
+         if (at + 1 == end || at[1] == ':')
+            goto error;
+         /* An empty userinfo names no one: nothing is sent. */
+         if (     at != conn->scan
+               && !(conn->auth = net_http_basic_auth(conn->scan, (size_t)(at - conn->scan))))
+            goto error;
+         conn->scan = at + 1;
+      }
+   }
    if (*conn->scan == '\0')
       goto error;
    conn->domain = conn->scan;
    return conn;
 error:
+   free(conn->auth);
    free(conn->url);
    free(conn->method);
    free(conn->postdata);
@@ -909,6 +948,9 @@ void net_http_connection_free(struct http_connection_t *conn)
 
    if (conn->headers)
       free(conn->headers);
+
+   if (conn->auth)
+      free(conn->auth);
 
    free(conn);
 }
@@ -1412,6 +1454,7 @@ struct http_t *net_http_new(struct http_connection_t *conn)
    state->request.source_data   = conn->source_data;
    state->request.useragent= conn->useragent ? strdup(conn->useragent) : NULL;
    state->request.headers  = conn->headers ? strdup(conn->headers) : NULL;
+   state->request.auth     = conn->auth    ? strdup(conn->auth)    : NULL;
    state->request.port     = conn->port;
 
    state->response.status  = -1;
@@ -1440,7 +1483,8 @@ struct http_t *net_http_new(struct http_connection_t *conn)
        || !state->request.method
        || (conn->contenttype && !state->request.contenttype)
        || (conn->useragent && !state->request.useragent)
-       || (conn->headers   && !state->request.headers))
+       || (conn->headers   && !state->request.headers)
+       || (conn->auth      && !state->request.auth))
    {
       /* Note: no postdata OOM check here.  Ownership of postdata is
        * moved from conn (above), not copied, so the transfer cannot
@@ -1851,6 +1895,8 @@ static bool net_http_build_head(struct http_t *state)
    size_t cap              = 192
       + strlen(method) + strlen(request->path) + strlen(request->domain)
       + (request->headers     ? strlen(request->headers)     : 0)
+      + (request->auth        ? strlen(request->auth)
+            + STRLEN_CONST("Authorization: Basic \r\n")    : 0)
       + (request->contenttype ? strlen(request->contenttype) : 0)
       + (request->useragent   ? strlen(request->useragent)   : 0);
    char  *h;
@@ -1866,6 +1912,12 @@ static bool net_http_build_head(struct http_t *state)
    if (request->port && request->port != 80 && request->port != 443)
       n += (size_t)snprintf(h + n, cap - n, ":%i", request->port);
    n = net_http_put(h, n, "\r\n");
+   if (request->auth)
+   {
+      n = net_http_put(h, n, "Authorization: Basic ");
+      n = net_http_put(h, n, request->auth);
+      n = net_http_put(h, n, "\r\n");
+   }
    /* Pre-formatted headers */
    if (request->headers)
       n = net_http_put(h, n, request->headers);
@@ -2960,7 +3012,7 @@ static bool net_http_redirect(struct http_t *state, const char *location)
    /* Credentials go only where the caller sent them: another host or
     * port gets the request without Authorization or Cookie.  Moving
     * the same host from http onto https keeps them. */
-   if (state->request.headers)
+   if (state->request.headers || state->request.auth)
    {
       bool same_host = strlen(state->request.domain) == host_len
             && !strncasecmp(new_domain, state->request.domain, host_len);
@@ -2968,7 +3020,12 @@ static bool net_http_redirect(struct http_t *state, const char *location)
             || (!state->ssl && ssl
                   && state->request.port == 80 && port == 443);
       if (!same_host || !same_port)
-         net_http_headers_drop_credentials(state->request.headers);
+      {
+         if (state->request.headers)
+            net_http_headers_drop_credentials(state->request.headers);
+         free(state->request.auth);
+         state->request.auth = NULL;
+      }
    }
 
    free(state->request.domain);
@@ -3797,6 +3854,8 @@ void net_http_delete(struct http_t *state)
       free(state->request.useragent);
    if (state->request.headers)
       free(state->request.headers);
+   if (state->request.auth)
+      free(state->request.auth);
    free(state);
 }
 

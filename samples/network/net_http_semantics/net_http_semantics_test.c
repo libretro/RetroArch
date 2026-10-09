@@ -113,6 +113,7 @@ struct reqlog
    int conn_id;
    char line[256];
    char host[128];
+   char auth[128];
    size_t body_len;
    int body_ok;
 };
@@ -269,6 +270,13 @@ static int srv_handle(struct srv_conn *c)
             if (hl >= sizeof(r->host))
                hl = sizeof(r->host) - 1;
             memcpy(r->host, p + 6, hl);
+         }
+         else if (!strncasecmp(p, "Authorization: ", 15))
+         {
+            size_t al = (size_t)(e - p - 15);
+            if (al >= sizeof(r->auth))
+               al = sizeof(r->auth) - 1;
+            memcpy(r->auth, p + 15, al);
          }
          p = e + 2;
       }
@@ -463,6 +471,7 @@ static struct reqlog log_get(int i)
 struct xfer
 {
    const char *method;
+   const char *req_headers;
    /* streamed request body */
    size_t source_len;
    int use_source;
@@ -543,6 +552,8 @@ static void xfer_run_url(struct xfer *x, const char *url)
       net_http_connection_free(conn);
       return;
    }
+   if (x->req_headers)
+      net_http_connection_set_headers(conn, x->req_headers);
    if (x->use_source)
    {
       source_pos     = 0;
@@ -1425,6 +1436,101 @@ static void run_section_stall(void)
    }
 }
 
+/* ---- URL userinfo sent as Basic credentials ---- */
+
+static void run_section_userinfo(void)
+{
+   char url[256];
+   char head[256];
+   char want_host[64];
+   struct step st[2];
+   struct xfer a;
+   struct reqlog r;
+   struct http_connection_t *conn;
+   static const struct step s_ok[] = {
+      { OK_2, 0, B_NONE, 0 },
+   };
+
+   memset(&a, 0, sizeof(a));
+   snprintf(want_host, sizeof(want_host), "127.0.0.1:%d", srv_port);
+
+   case_begin(s_ok, 1, 0);
+   snprintf(url, sizeof(url), "http://user:pa%%40ss@127.0.0.1:%d/x", srv_port);
+   xfer_run_url(&a, url);
+   r = log_get(0);
+   check(a.done && body_is(&a, "ok")
+         && !strcmp(r.line, "GET /x HTTP/1.1")
+         && !strcmp(r.host, want_host)
+         && !strcmp(r.auth, "Basic dXNlcjpwYUBzcw=="),
+         "userinfo: decoded, sent as Basic, kept out of Host and path");
+   xfer_free(&a);
+
+   case_begin(s_ok, 1, 0);
+   snprintf(url, sizeof(url), "http://u@127.0.0.1:%d?q=1", srv_port);
+   xfer_run_url(&a, url);
+   r = log_get(0);
+   check(a.done && !strcmp(r.line, "GET /?q=1 HTTP/1.1")
+         && !strcmp(r.host, want_host) && !strcmp(r.auth, "Basic dQ=="),
+         "userinfo with no path, only a query: user alone is sent");
+   xfer_free(&a);
+
+   case_begin(s_ok, 1, 0);
+   a.req_headers = "X-Extra: 1\r\n";
+   snprintf(url, sizeof(url), "http://ab:c@127.0.0.1:%d/h", srv_port);
+   xfer_run_url(&a, url);
+   r = log_get(0);
+   check(a.done && !strcmp(r.auth, "Basic YWI6Yw=="),
+         "userinfo: survives net_http_connection_set_headers()");
+   a.req_headers = NULL;
+   xfer_free(&a);
+
+   case_begin(s_ok, 1, 0);
+   xfer_run(&a, "/plain");
+   r = log_get(0);
+   check(a.done && !*r.auth, "no userinfo: no Authorization sent");
+   xfer_free(&a);
+
+   case_begin(s_ok, 1, 0);
+   snprintf(url, sizeof(url), "http://@127.0.0.1:%d/e", srv_port);
+   xfer_run_url(&a, url);
+   r = log_get(0);
+   check(a.done && !strcmp(r.host, want_host) && !*r.auth,
+         "empty userinfo: no Authorization sent");
+   xfer_free(&a);
+
+   snprintf(head, sizeof(head),
+         "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n"
+         "Location: /same\r\n\r\n");
+   memset(st, 0, sizeof(st));
+   st[0].head = head;
+   st[1].head = OK_2;
+   case_begin(st, 2, 0);
+   snprintf(url, sizeof(url), "http://u:p@127.0.0.1:%d/a", srv_port);
+   xfer_run_url(&a, url);
+   r = log_get(1);
+   check(a.done && !strcmp(r.line, "GET /same HTTP/1.1")
+         && !strcmp(r.auth, "Basic dTpw"),
+         "userinfo: kept across a same-origin redirect");
+   xfer_free(&a);
+
+   snprintf(head, sizeof(head),
+         "HTTP/1.1 302 Found\r\nContent-Length: 0\r\n"
+         "Location: http://localhost:%d/other\r\n\r\n", srv_port);
+   case_begin(st, 2, 0);
+   xfer_run_url(&a, url);
+   r = log_get(1);
+   check(a.done && !strcmp(r.line, "GET /other HTTP/1.1") && !*r.auth,
+         "userinfo: dropped on a redirect to another host");
+   xfer_free(&a);
+
+   conn = net_http_connection_new("http://user@/x", "GET", NULL);
+   check(!conn, "userinfo with an empty host: rejected");
+   net_http_connection_free(conn);
+   conn = net_http_connection_new("http://user@:80/x", "GET", NULL);
+   check(!conn, "userinfo with only a port: rejected");
+   net_http_connection_free(conn);
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1446,6 +1552,7 @@ int main(void)
    run_section_interim_framing();
    run_section_body_edges();
    run_section_stall();
+   run_section_userinfo();
 
    srv_shutdown();
    net_http_deinit();
