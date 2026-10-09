@@ -17,6 +17,11 @@ endif
 TARGET = sinc_hq_test
 SOURCES = sinc_hq_test.c $(COMMON)/audio/resampler/drivers/sinc_resampler.c \
  $(COMMON)/audio/resampler/drivers/sinc_resampler_int16.c $(COMMON)/memmap/memalign.c
+# The armeabi assembly kernels in place of the NEON intrinsics.
+ifeq ($(NEON_ASM),1)
+CPPFLAGS += -DHAVE_ARM_NEON_ASM_OPTIMIZATIONS
+SOURCES += $(COMMON)/audio/resampler/drivers/sinc_resampler_neon.S
+endif
 all: $(TARGET)
 $(TARGET): $(SOURCES) $(COMMON)/include/audio/sinc_resampler.h \
  $(COMMON)/include/audio/sinc_resampler_int16.h \

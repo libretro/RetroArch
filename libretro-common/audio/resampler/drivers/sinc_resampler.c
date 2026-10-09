@@ -128,12 +128,13 @@ typedef struct rarch_sinc_resampler
 #ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
 void process_sinc_neon_asm(float *out, const float *left,
       const float *right, const float *coeff, unsigned taps);
+void process_sinc_neon_kaiser_asm(float *out, const float *left,
+      const float *right, const float *coeff, unsigned taps,
+      const float *frac);
 #endif
 #include <arm_neon.h>
 
-/* Assumes that taps >= 8, and that taps is a multiple of 8.
- * The external .S covers the Lanczos layout only.
- */
+/* Assumes that taps >= 8, and that taps is a multiple of 8. */
 static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data *data)
 {
    rarch_sinc_resampler_t *resamp = (rarch_sinc_resampler_t*)re_;
@@ -155,11 +156,17 @@ static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data 
          const float *buffer_r    = resamp->buffer_r + resamp->ptr;
          while (resamp->time < phases)
          {
+            unsigned phase           = resamp->time >> resamp->subphase_bits;
+            const float *phase_table = resamp->phase_table + phase * taps2;
+#ifdef HAVE_ARM_NEON_ASM_OPTIMIZATIONS
+            float frac               = (resamp->time & resamp->subphase_mask)
+               * resamp->subphase_mod;
+            process_sinc_neon_kaiser_asm(output, buffer_l, buffer_r,
+                  phase_table, taps, &frac);
+#else
             /* C89: all declarations at top of block */
             int i;
             float32x2_t p3, p4;
-            unsigned phase           = resamp->time >> resamp->subphase_bits;
-            const float *phase_table = resamp->phase_table + phase * taps2;
             const float *delta_table = phase_table + taps;
             float32x4_t delta        = vdupq_n_f32((resamp->time & resamp->subphase_mask) * resamp->subphase_mod);
             float32x4_t p1           = vdupq_n_f32(0.0f);
@@ -184,6 +191,7 @@ static void resampler_sinc_process_neon_kaiser(void *re_, struct resampler_data 
             p3 = vadd_f32(vget_low_f32(p1), vget_high_f32(p1));
             p4 = vadd_f32(vget_low_f32(p2), vget_high_f32(p2));
             vst1_f32(output, vpadd_f32(p3, p4));
+#endif
             output                 += 2;
             out_frames++;
             resamp->time           += ratio;

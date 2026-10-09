@@ -71,6 +71,61 @@ _process_sinc_neon_asm:
 
    pop {r4, pc}
 
+.align 4
+.globl process_sinc_neon_kaiser_asm
+#ifndef __MACH__
+.type process_sinc_neon_kaiser_asm, %function
+#endif
+.globl _process_sinc_neon_kaiser_asm
+#ifndef __MACH__
+.type _process_sinc_neon_kaiser_asm, %function
+#endif
+# void process_sinc_neon_kaiser(float *out, const float *left, const float *right, const float *coeff, unsigned taps, const float *frac)
+# The delta row follows the taps coefficients; each tap is coeff + delta * frac.
+# The fraction comes by pointer so hard- and soft-float ABIs agree.
+# Assumes taps is >= 8, and a multiple of 8.
+process_sinc_neon_kaiser_asm:
+_process_sinc_neon_kaiser_asm:
+
+   push {r4, r5, r6, lr}
+   vmov.f32 q0, #0.0
+   vmov.f32 q8, #0.0
+
+   # Taps and the fraction pointer go on stack in armeabi.
+   ldr r4, [sp, #16]
+   ldr r5, [sp, #20]
+   vld1.32 {d2[], d3[]}, [r5]
+   add r5, r3, r4, lsl #2
+
+1:
+   # Left
+   vld1.f32 {q2-q3}, [r1]!
+   # Right
+   vld1.f32 {q10-q11}, [r2]!
+   # Coeff, delta
+   vld1.f32 {q12-q13}, [r3, :128]!
+   vld1.f32 {q14-q15}, [r5, :128]!
+
+   vmla.f32 q12, q14, q1
+   vmla.f32 q13, q15, q1
+
+   # Left / Right
+   vmla.f32 q0, q2, q12
+   vmla.f32 q8, q10, q12
+   vmla.f32 q0, q3, q13
+   vmla.f32 q8, q11, q13
+
+   subs r4, r4, #8
+   bne 1b
+
+   # Add everything together
+   vadd.f32 d0, d0, d1
+   vadd.f32 d16, d16, d17
+   vpadd.f32 d0, d0, d16
+   vst1.f32 d0, [r0]
+
+   pop {r4, r5, r6, pc}
+
 #endif
 
 /* Prevent the stack from becoming executable for no reason...

@@ -8,6 +8,8 @@
 
 #if defined(__AVX__)
 #define TEST_SIMD RESAMPLER_SIMD_AVX
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__)
+#define TEST_SIMD RESAMPLER_SIMD_NEON
 #else
 #define TEST_SIMD RESAMPLER_SIMD_SSE
 #endif

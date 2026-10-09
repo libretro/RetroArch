@@ -1225,7 +1225,7 @@ jobs:
   crc32-cross:
     name: Cross-arch crc32_test (${{ matrix.name }})
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
@@ -1367,6 +1367,28 @@ jobs:
              ${{ matrix.qemu }} -L ${{ matrix.sysroot }} ./pixconv_test
           fi
           make clean
+
+      - name: Build and run the sinc kernels under qemu-user
+        if: startsWith(matrix.name, 'aarch64') || matrix.name == 'armv7'
+        shell: bash
+        working-directory: samples/audio
+        run: |
+          set -euo pipefail
+          # The only place the NEON sinc kernels run: aarch64 the
+          # intrinsics, armv7 the armeabi assembly for both table
+          # layouts, against the scalar kernels and through dispatch.
+          flags="${{ matrix.cflags }}"
+          asm=0
+          if [ "${{ matrix.name }}" = armv7 ]; then
+             flags="-mfpu=neon"
+             asm=1
+          fi
+          for d in sinc_dispatch sinc_hq; do
+             make -C $d clean
+             CFLAGS="$flags" make -C $d CC="${{ matrix.cc }}" NEON_ASM=$asm
+             ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test
+             make -C $d clean
+          done
 
       - name: Run vfs_mapped_ptr_test without mappings (MMAP=0)
         shell: bash
