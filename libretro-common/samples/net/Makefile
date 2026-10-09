@@ -34,6 +34,7 @@ HTTP_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+				  $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.c \
 				  $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 				  $(LIBRETRO_COMM_DIR)/file/file_path.c \
 				  $(LIBRETRO_COMM_DIR)/file/file_path_io.c \
@@ -57,6 +58,7 @@ HTTP_PARSE_TEST_C = \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c \
 				  $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 				  $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+				  $(LIBRETRO_COMM_DIR)/encodings/encoding_base64.c \
 				  $(LIBRETRO_COMM_DIR)/features/features_cpu.c \
 				  $(LIBRETRO_COMM_DIR)/file/file_path.c \
 				  $(LIBRETRO_COMM_DIR)/file/file_path_io.c \

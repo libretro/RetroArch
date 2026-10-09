@@ -111,6 +111,9 @@ static char *task_http_failure_string(struct http_t *handle)
       else if (code > 0)
          _len += snprintf(buf + _len, sizeof(buf) - _len, " (%d)", code);
    }
+   else if (handle && net_http_status(handle) >= 300)
+      _len += snprintf(buf + _len, sizeof(buf) - _len, ": HTTP %d",
+            net_http_status(handle));
    strlcpy_lit(buf + _len, ".", sizeof(buf) - _len);
    return strdup(buf);
 }

@@ -33,6 +33,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
+	$(LIBRETRO_COMM_DIR)/encodings/encoding_base64.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
 CFLAGS  += -Wall -std=gnu99 -O1 -g $(INCDIRS)
