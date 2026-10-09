@@ -8,8 +8,9 @@ and checks the views status the core logged. One case also bounds the
 GPU memory RetroArch holds, and the pointer cases move the pointer of
 gamescope's own X server and look for the menu's cursor under it. The
 gl driver doesn't present views, so it runs one case that expects the
-packed frame and no PRESENTS. Not run in CI: it needs a GPU, gamescope
-and a RetroArch build.
+packed frame and no PRESENTS. The exact cases check every pixel of
+views filled with noise, on glcore once for each way it copies them.
+Not run in CI: it needs a GPU, gamescope and a RetroArch build.
 
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
 """
@@ -207,6 +208,37 @@ MEMORY_CASES = [
      3072),
 ]
 MEMORY_HW = {'glcore': 'gl', 'vulkan': 'vulkan'}
+
+# Views arrive pixel for pixel: the core fills each view with noise,
+# drawn unfiltered at an integer scale, and every pixel of each view on
+# screen must be its source pixel. glcore runs each case again with
+# Mesa hiding glCopyImageSubData, so the views are blitted instead, and
+# the two screenshots must match.
+# [(name, map option, core options, hw)]
+EXACT_SETTINGS = {'video_stereo_mode': '0', 'video_scale_integer': 'true',
+                  'video_smooth': 'false'}
+NOISE = {'video_views_test_pattern': 'noise'}
+NOISE_565 = dict(NOISE, video_views_test_format='rgb565')
+EXACT_CASES = [
+    ('exact-ds', 'ds', NOISE, 'off'),
+    ('exact-ds-rgb565', 'ds', NOISE_565, 'off'),
+    # The second screen starts 240 columns in.
+    ('exact-3ds-rgb565', '3ds', NOISE_565, 'off'),
+    # Rows counted from the frame's bottom, and from its top.
+    ('exact-3ds', '3ds', NOISE, 'gl'),
+    ('exact-3ds', '3ds', NOISE, 'gl_topleft'),
+    ('exact-3ds', '3ds', NOISE, 'vulkan'),
+]
+EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan')}
+# The core's 2D maps, as (x, y, width, height) in the packed frame.
+EXACT_VIEWS = {'ds': [(0, 0, 256, 192), (0, 192, 256, 192)],
+               '3ds': [(0, 0, 400, 240), (240, 240, 320, 240)]}
+NOISE_COLOURS = [BLACK, RED, GREEN, BLUE, (0, 255, 255), (255, 0, 255),
+                 YELLOW]
+# Mesa without GL 4.3 and ARB_copy_image: glcore must blit.
+NO_COPY_IMAGE = {'MESA_GL_VERSION_OVERRIDE': '4.2',
+                 'MESA_EXTENSION_OVERRIDE': '-GL_ARB_copy_image'}
+COPY_RE = re.compile(r'\[GLCore\] Views copied by ([\w ]+)\.')
 
 STATUS_RE = re.compile(
     r'\[video_views\] presents=(\d) stereo=(\d) accepted=(\d)')
@@ -492,15 +524,21 @@ def gpu_mib(pid):
     return kib / 1024.0 if seen else None
 
 
-def run_case(retroarch, root, driver, case, hw='off', menu=False,
-             opts=None, args=(), gpu=None, pointer=()):
-    """gpu, a list, gets RetroArch's GPU memory in MiB sampled while it
-    settles. pointer, window points, has the menu open with the pointer
-    at each in turn, in d/pointer-N.png."""
-    name, mapopt, settings, points = case
+def case_dir(root, driver, name, hw='off'):
+    """The directory a case runs in."""
     if hw != 'off':
         name += '-hw-' + hw
-    d = os.path.realpath(os.path.join(root, driver + '-' + name))
+    return os.path.realpath(os.path.join(root, driver + '-' + name))
+
+
+def run_case(retroarch, root, driver, case, hw='off', menu=False,
+             opts=None, args=(), gpu=None, pointer=(), env_extra=None):
+    """gpu, a list, gets RetroArch's GPU memory in MiB sampled while it
+    settles. pointer, window points, has the menu open with the pointer
+    at each in turn, in d/pointer-N.png. env_extra is added to
+    RetroArch's environment."""
+    name, mapopt, settings, points = case
+    d = case_dir(root, driver, name, hw)
     if os.path.commonpath([root, d]) != root or d == root:
         raise RuntimeError('refusing to touch ' + d)
     shutil.rmtree(d, ignore_errors=True)
@@ -535,6 +573,7 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
            'sh', '-c', guard,
            retroarch, '--config', cfg, '-L', CORE, '--verbose'] + list(args)
     env = isolated_env()
+    env.update(env_extra or {})
     log = open(os.path.join(d, 'run.log'), 'w')
     p = subprocess.Popen(cmd, stdout=log, stderr=subprocess.STDOUT,
                          env=env, start_new_session=True)
@@ -603,6 +642,128 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
         if any(abs(g - e) > TOLERANCE for g, e in zip(got, want)):
             errors.append('(%d,%d) got %s want %s' % (x, y, got, want))
     return errors
+
+
+def noise(x, y):
+    """The core's noise_colour()."""
+    h = (x * 0x9E3779B1 + y * 0x85EBCA77) & 0xffffffff
+    h ^= h >> 15
+    h = (h * 0x2C1B3C6D) & 0xffffffff
+    h ^= h >> 12
+    return NOISE_COLOURS[h % 7]
+
+
+def rgb_row(rows, bpp, y, x, w):
+    """w pixels of row y from column x, as RGB bytes."""
+    seg = bytearray(rows[y][x * bpp:(x + w) * bpp])
+    if bpp == 4:
+        del seg[3::4]
+    return seg
+
+
+def white_boxes(rows, bpp):
+    """(x, y, width, height) of each white rectangle, from its top-left
+    pixel: the views' markers, which no noise colour matches."""
+    white = bytes(WHITE)
+
+    def is_white(x, y):
+        return x >= 0 and y >= 0 and rows[y][x * bpp:x * bpp + 3] == white
+
+    boxes = []
+    for y, row in enumerate(rows):
+        i = row.find(white)
+        while i >= 0:
+            x = i // bpp
+            if (i % bpp == 0 and not is_white(x - 1, y)
+                    and not is_white(x, y - 1)):
+                w = h = 1
+                while x + w < W and is_white(x + w, y):
+                    w += 1
+                while y + h < H and is_white(x, y + h):
+                    h += 1
+                boxes.append((x, y, w, h))
+            i = row.find(white, i + 1)
+    return boxes
+
+
+def view_mismatches(rows, bpp, box, view):
+    """Pixels of view, at the scale of the marker box from its corner,
+    that are not their source pixel; None when box can't be its
+    marker."""
+    bx, by, bw, bh = box
+    vx, vy, vw, vh = view
+    if bw != bh or bw % 8:
+        return None
+    k = bw // 8
+    if bx + vw * k > W or by + vh * k > H:
+        return None
+    bad = 0
+    for sy in range(vh):
+        want = b''.join(
+            bytes(WHITE if sx < 8 and sy < 8 else noise(vx + sx, vy + sy)) * k
+            for sx in range(vw))
+        for r in range(k):
+            got = rgb_row(rows, bpp, by + sy * k + r, bx, vw * k)
+            if got != want:
+                bad += sum(got[i:i + 3] != want[i:i + 3]
+                           for i in range(0, len(want), 3))
+    return bad
+
+
+def exact_errors(rows, bpp, views):
+    """Each view must show every one of its pixels at some integer scale,
+    found by its marker, and the screens, one view each, stack in order
+    from the top."""
+    boxes = white_boxes(rows, bpp)
+    errors = []
+    tops = []
+    for view in views:
+        found = [(view_mismatches(rows, bpp, b, view), b) for b in boxes]
+        found = [(m, b) for m, b in found if m is not None]
+        exact = [b for m, b in found if m == 0]
+        if exact:
+            tops.append(exact[0][1])
+        else:
+            errors.append('view %s: %s' % (
+                view, 'no marker found' if not found else
+                'best match has %d wrong pixels' % min(found)[0]))
+    if not errors and tops != sorted(tops):
+        errors.append('screens out of order: tops at %s' % tops)
+    return errors
+
+
+def copy_path(d):
+    """How glcore's log says it copies views out of the frame."""
+    found = None
+    for name in ('run.log', 'retroarch.log'):
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            with open(path, errors='replace') as f:
+                for m in COPY_RE.finditer(f.read()):
+                    found = m.group(1)
+    return found
+
+
+def run_exact_case(retroarch, root, driver, case, suffix='',
+                   env_extra=None, path=None):
+    """The errors, and the screenshot's rows for comparing runs. path is
+    how glcore must say it copies views."""
+    name, mapopt, opts, hw = case
+    name += suffix
+    errors = run_case(retroarch, root, driver,
+                      (name, mapopt, EXACT_SETTINGS, []), hw, opts=opts,
+                      env_extra=env_extra)
+    d = case_dir(root, driver, name, hw)
+    if path and copy_path(d) != path:
+        errors.append('views copied by %s, want %s' % (copy_path(d), path))
+    shots = sorted(x for x in os.listdir(os.path.join(d, 'shots'))
+                   if x.endswith('.png'))
+    if not shots:
+        return errors, None
+    w, h, bpp, rows = read_png(os.path.join(d, 'shots', shots[0]))
+    if (w, h) != (W, H):
+        return errors, None
+    return errors + exact_errors(rows, bpp, EXACT_VIEWS[mapopt]), rows
 
 
 def run_menu_case(retroarch, root, driver, case):
@@ -836,6 +997,29 @@ def main():
             errors = run_case(retroarch, root, driver, case, hw)
             print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
                                   case[0], '' if hw == 'off' else ' (hw ' + hw + ')'))
+            for e in errors:
+                print('    ' + e)
+            failed += bool(errors)
+        for case in [c for c in EXACT_CASES
+                     if c[3] in EXACT_HW.get(driver, ())]:
+            hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
+            errors, rows = run_exact_case(
+                retroarch, root, driver, case,
+                path='glCopyImageSubData' if driver == 'glcore' else None)
+            print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
+                                  case[0], hw))
+            for e in errors:
+                print('    ' + e)
+            failed += bool(errors)
+            if driver != 'glcore':
+                continue
+            errors, blit_rows = run_exact_case(
+                retroarch, root, driver, case, '-blit', NO_COPY_IMAGE,
+                'framebuffer blits')
+            if rows and blit_rows and rows != blit_rows:
+                errors.append('screenshot differs from glCopyImageSubData\'s')
+            print('%s %s/%s-blit%s' % ('FAIL' if errors else 'pass', driver,
+                                       case[0], hw))
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)

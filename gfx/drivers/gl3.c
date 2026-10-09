@@ -109,7 +109,8 @@ typedef struct gl3
     * shader, the preset they came from, and each view's copy of its
     * rectangle of the frame. count is what set_view_count last asked
     * for; copied has a bit per view whose texture holds a copy;
-    * copy_failed is the frame format a copy failed for, or 0. The
+    * copy_failed is the frame format a blit failed for, or 0;
+    * copy_image is whether glCopyImageSubData copies instead. The
     * canvas holds both eyes for anaglyph and interlaced, the UI layer
     * the UI drawn once for both eyes. */
    struct
@@ -146,6 +147,7 @@ typedef struct gl3
       bool active;
       /* Drawing into the UI layer. */
       bool ui_pass;
+      bool copy_image;
    } views;
    GLuint *overlay_tex;
    float *overlay_vertex_coord;
@@ -3807,6 +3809,15 @@ static void *gl3_init(const video_info_t *video)
    if (version && *version)
       gl3_parse_version(version, &gl->version_major, &gl->version_minor);
 
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+   gl->views.copy_image = glCopyImageSubData
+      && (gl->version_major > 4
+         || (gl->version_major == 4 && gl->version_minor >= 3)
+         || gl_query_extension("ARB_copy_image"));
+#endif
+   RARCH_LOG("[GLCore] Views copied by %s.\n", gl->views.copy_image
+         ? "glCopyImageSubData" : "framebuffer blits");
+
    video_driver_set_gpu_api_version_string(version);
 
 #ifdef _WIN32
@@ -5391,12 +5402,46 @@ static bool gl3_views_prepare(gl3_t *gl,
    return true;
 }
 
-/* Blits each drawn view's rectangle out of the frame's texture into its
- * own. A blit copies raw texels: a view keeps the frame's orientation,
- * and a view of a red/blue-swapped upload samples with the same
- * swizzle. False when a view can't be copied, as RGB565 can't where it
- * isn't renderable. */
-static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
+/* Gives view i a texture of its rectangle's size in format. */
+static void gl3_views_tex(gl3_t *gl, unsigned i,
+      const struct retro_video_view *v, GLenum format, bool swizzle)
+{
+   unsigned dims = VIDEO_SCALE_PACK(v->width, v->height);
+   if (     gl->views.tex[i]
+         && gl->views.tex_dims[i]    == dims
+         && gl->views.tex_format[i]  == format
+         && gl->views.tex_swizzle[i] == swizzle)
+      return;
+   if (gl->views.tex[i])
+      glDeleteTextures(1, &gl->views.tex[i]);
+   glGenTextures(1, &gl->views.tex[i]);
+   glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
+   glTexStorage2D(GL_TEXTURE_2D, 1, format, v->width, v->height);
+   if (swizzle)
+   {
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
+   }
+   glBindTexture(GL_TEXTURE_2D, 0);
+   gl->views.tex_dims[i]    = dims;
+   gl->views.tex_format[i]  = format;
+   gl->views.tex_swizzle[i] = swizzle;
+}
+
+/* The texture row of a view's first row: the frame's rows count from
+ * its top, or for a bottom-up hardware frame from its bottom. */
+static GLint gl3_views_src_y(const struct gl3_filter_chain_texture *src,
+      const struct retro_video_view *v, bool bottom_up)
+{
+   return bottom_up
+      ? (GLint)(VIDEO_SCALE_H(src->dims) - (v->y + v->height))
+      : (GLint)v->y;
+}
+
+/* gl3_views_copy() by framebuffer blits, which need both textures
+ * renderable: false when a view can't be copied, as RGB565 can't where
+ * it isn't renderable. */
+static bool gl3_views_blit(gl3_t *gl, const video_frame_info_t *video_info,
       gl3_filter_chain_t **chains,
       const struct gl3_filter_chain_texture *src,
       bool bottom_up, bool swizzle)
@@ -5425,30 +5470,10 @@ static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
    {
       GLint sy;
       const struct retro_video_view *v = &video_info->views.views[i];
-      unsigned dims                    = VIDEO_SCALE_PACK(v->width, v->height);
 
       if (!chains[i])
          continue;
-      if (     !gl->views.tex[i]
-            || gl->views.tex_dims[i]    != dims
-            || gl->views.tex_format[i]  != src->format
-            || gl->views.tex_swizzle[i] != swizzle)
-      {
-         if (gl->views.tex[i])
-            glDeleteTextures(1, &gl->views.tex[i]);
-         glGenTextures(1, &gl->views.tex[i]);
-         glBindTexture(GL_TEXTURE_2D, gl->views.tex[i]);
-         glTexStorage2D(GL_TEXTURE_2D, 1, src->format, v->width, v->height);
-         if (swizzle)
-         {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_R, GL_BLUE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_SWIZZLE_B, GL_RED);
-         }
-         glBindTexture(GL_TEXTURE_2D, 0);
-         gl->views.tex_dims[i]    = dims;
-         gl->views.tex_format[i]  = src->format;
-         gl->views.tex_swizzle[i] = swizzle;
-      }
+      gl3_views_tex(gl, i, v, src->format, swizzle);
 
       glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
             GL_TEXTURE_2D, gl->views.tex[i], 0);
@@ -5458,11 +5483,7 @@ static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
          ok = false;
          break;
       }
-      /* The frame's rows count from its top, or for a bottom-up
-       * hardware frame from its bottom. */
-      sy = bottom_up
-         ? (GLint)(VIDEO_SCALE_H(src->dims) - (v->y + v->height))
-         : (GLint)v->y;
+      sy = gl3_views_src_y(src, v, bottom_up);
       glBlitFramebuffer((GLint)v->x, sy,
             (GLint)(v->x + v->width), sy + (GLint)v->height,
             0, 0, (GLint)v->width, (GLint)v->height,
@@ -5485,6 +5506,40 @@ static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
    }
    gl->views.copied = ok ? copied : 0;
    return ok;
+}
+
+/* Copies each drawn view's rectangle out of the frame's texture into its
+ * own. Either way raw texels are copied: a view keeps the frame's
+ * orientation, and a view of a red/blue-swapped upload samples with the
+ * same swizzle. glCopyImageSubData needs neither texture renderable;
+ * without it views are blitted. False when a view can't be copied. */
+static bool gl3_views_copy(gl3_t *gl, const video_frame_info_t *video_info,
+      gl3_filter_chain_t **chains,
+      const struct gl3_filter_chain_texture *src,
+      bool bottom_up, bool swizzle)
+{
+#if !defined(HAVE_OPENGLES3) && !defined(HAVE_OPENGLES)
+   if (gl->views.copy_image)
+   {
+      unsigned i;
+      unsigned copied = 0;
+      for (i = 0; i < video_info->views.num_views; i++)
+      {
+         const struct retro_video_view *v = &video_info->views.views[i];
+         if (!chains[i])
+            continue;
+         gl3_views_tex(gl, i, v, src->format, swizzle);
+         glCopyImageSubData(src->image, GL_TEXTURE_2D, 0,
+               (GLint)v->x, gl3_views_src_y(src, v, bottom_up), 0,
+               gl->views.tex[i], GL_TEXTURE_2D, 0, 0, 0, 0,
+               (GLsizei)v->width, (GLsizei)v->height, 1);
+         copied |= 1u << i;
+      }
+      gl->views.copied = copied;
+      return true;
+   }
+#endif
+   return gl3_views_blit(gl, video_info, chains, src, bottom_up, swizzle);
 }
 
 static void gl3_views_free_target(GLuint *fbo, GLuint *tex, unsigned *dims)
