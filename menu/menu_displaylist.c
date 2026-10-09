@@ -9876,18 +9876,18 @@ unsigned menu_displaylist_build_list(
             {
                static const menu_displaylist_settings_row_t dl_rows_7[] = {
                   { MENU_ENUM_LABEL_SUSPEND_SCREENSAVER_ENABLE, PARSE_ONLY_BOOL, false },
+                  { MENU_ENUM_LABEL_VIDEO_SHADER_DELAY, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_BRIGHTNESS_CONTROL, PARSE_ONLY_UINT, false },
+                  { MENU_ENUM_LABEL_VIDEO_CTX_SCALING, PARSE_ONLY_BOOL, false },
 #ifdef HAVE_VIDEO_FILTER
                   { MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE, PARSE_ONLY_BOOL, false },
 #endif
-                  { MENU_ENUM_LABEL_BRIGHTNESS_CONTROL, PARSE_ONLY_UINT, false },
-                  { MENU_ENUM_LABEL_VIDEO_CTX_SCALING, PARSE_ONLY_BOOL, false },
 #if defined(DINGUX)
                   { MENU_ENUM_LABEL_VIDEO_DINGUX_IPU_FILTER_TYPE, PARSE_ONLY_UINT, false },
 #if defined(RS90) || defined(MIYOO)
                   { MENU_ENUM_LABEL_VIDEO_DINGUX_RS90_SOFTFILTER_TYPE, PARSE_ONLY_UINT, false },
 #endif
 #endif
-                  { MENU_ENUM_LABEL_VIDEO_SHADER_DELAY, PARSE_ONLY_UINT, false },
                };
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_7, (unsigned)ARRAY_SIZE(dl_rows_7));
@@ -10077,15 +10077,15 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_INPUT_SENSOR_SETTINGS,                 PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_HAPTIC_FEEDBACK_SETTINGS,        PARSE_ACTION,     true},
                {MENU_ENUM_LABEL_INPUT_MAX_USERS,                       PARSE_ONLY_UINT,  true},
-               {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                 PARSE_ONLY_BOOL,  true},
-               {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                 PARSE_ONLY_UINT,  true},
-               {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                   PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_QUIT,                          PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_CLOSE,                         PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_CONFIRM_RESET,                         PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_AUTO_MOUSE_GRAB,                 PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_INPUT_AUTO_GAME_FOCUS,                 PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_AUTODETECT_ENABLE,               PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_REMAP_BINDS_ENABLE,              PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE, PARSE_ONLY_BOOL,  true},
+               {MENU_ENUM_LABEL_PAUSE_ON_DISCONNECT,                   PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,    PARSE_ONLY_BOOL,  true},
                {MENU_ENUM_LABEL_INPUT_ASSIGN_PORTS_KEYBOARD,           PARSE_ONLY_UINT,  true},
                {MENU_ENUM_LABEL_INPUT_ROTATION,                        PARSE_ONLY_UINT,  true},
