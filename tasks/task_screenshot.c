@@ -506,6 +506,12 @@ static void screenshot_rotate(
    int target_width    = source_width;
    int target_height   = source_height;
    size_t target_pitch = source_pitch;
+   /* Copy by byte: a pixel is bpp bytes, which is 2 for RGB565 */
+   uint8_t *target_px  = (uint8_t*)target;
+   const uint8_t *source_px = (const uint8_t*)source;
+
+   if (!bpp)
+      return;
 
    /* 90 deg dimension flip */
    if (     rotate_type == VIDEO_ROTATION_90_DEG
@@ -518,7 +524,7 @@ static void screenshot_rotate(
 
    for (y = 0; y < target_height; y++)
    {
-      for (x = 0; x < target_pitch; x++)
+      for (x = 0; x < (size_t)target_width; x++)
       {
          size_t pixel_source = (y * source_width) + x;
          size_t pixel_target = (y * target_width) + x;
@@ -539,13 +545,12 @@ static void screenshot_rotate(
                break;
          }
 
-         if (     pixel_source < 0
-               || pixel_target < 0
-               || pixel_source > size / bpp
-               || pixel_target > size / bpp)
+         if (     pixel_source >= size / bpp
+               || pixel_target >= size / bpp)
             continue;
 
-         *(target + pixel_target) = *(source + pixel_source);
+         memcpy(target_px + pixel_target * bpp,
+               source_px + pixel_source * bpp, bpp);
       }
    }
 
