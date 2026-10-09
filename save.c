@@ -480,6 +480,8 @@ static bool dump_to_file_desperate(const void *data,
       time_t time_;
       struct tm tm_;
 
+      /* rtime_localtime leaves tm_ unwritten when localtime() fails */
+      memset(&tm_, 0, sizeof(tm_));
       time(&time_);
       rtime_localtime(&time_, &tm_);
       _len += strlcpy_lit(path  + _len, "/RetroArch-recovery-", sizeof(path) - _len);
