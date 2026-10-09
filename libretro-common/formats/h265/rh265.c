@@ -159,10 +159,11 @@ typedef struct
    const uint8_t *buf;
    size_t size;
    size_t bitpos;
+   int malformed;
 } rh265_bits;
 
 static void rh265_bits_init(rh265_bits *b, const uint8_t *buf, size_t size)
-{ b->buf = buf; b->size = size; b->bitpos = 0; }
+{ b->buf = buf; b->size = size; b->bitpos = 0; b->malformed = 0; }
 
 static uint32_t rh265_u1(rh265_bits *b)
 {
@@ -180,13 +181,36 @@ static uint32_t rh265_un(rh265_bits *b, int n)
    return v;
 }
 
+/* No ue(v) field this decoder reads goes past 2^25 - 2 - the largest
+ * are picture sizes and cropping, which stop at 16888 - so a longer
+ * code marks the unit malformed (and reads as 0). That keeps every
+ * value well inside int, and the sums the parsers make of them from
+ * overflowing. A field the spec lets run to 2^32 - 2 that nothing
+ * reads is skipped with rh265_ue_skip(). */
+#define RH265_UE_MAX_LZ 24
+
 static uint32_t rh265_ue(rh265_bits *b)
 {
    int lz = 0;
-   while (lz < 32 && !rh265_u1(b)) lz++;
-   if (lz >= 32) return 0xffffffffu;
+   while (lz <= RH265_UE_MAX_LZ && !rh265_u1(b)) lz++;
+   if (lz > RH265_UE_MAX_LZ)
+   {
+      b->malformed = 1;
+      return 0;
+   }
    if (!lz) return 0;
    return (uint32_t)((1u << lz) - 1u + rh265_un(b, lz));
+}
+
+/* A ue(v) of any length the spec allows, skipped */
+static void rh265_ue_skip(rh265_bits *b)
+{
+   int lz = 0;
+   while (lz < 32 && !rh265_u1(b)) lz++;
+   if (lz >= 32)
+      b->malformed = 1;
+   else if (lz)
+      rh265_un(b, lz);
 }
 
 static int32_t rh265_se(rh265_bits *b)
@@ -197,7 +221,7 @@ static int32_t rh265_se(rh265_bits *b)
 }
 
 static int rh265_bits_overrun(const rh265_bits *b)
-{ return b->bitpos > b->size * 8; }
+{ return b->malformed || b->bitpos > b->size * 8; }
 
 
 
@@ -667,7 +691,7 @@ static int rh265_parse_sps(const uint8_t *rbsp, size_t size, rh265_sps *s,
       {
          s->max_dec_pic_buffering = (int)rh265_ue(&b) + 1;
          s->max_num_reorder_pics  = (int)rh265_ue(&b);
-         rh265_ue(&b);                   /* sps_max_latency_increase_plus1 */
+         rh265_ue_skip(&b);              /* sps_max_latency_increase_plus1 */
       }
    }
    s->log2_min_cb = (int)rh265_ue(&b) + 3;
