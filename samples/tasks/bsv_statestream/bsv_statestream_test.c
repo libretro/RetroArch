@@ -39,6 +39,8 @@
  *  record after  recording a checkpoint on a handle whose superblock
  *                list a short sequence sized does not write past it.
  *  no layout     a replay whose header gives no block size is refused.
+ *  wrong type    a string where any token, index, superblock or
+ *                sequence belongs is refused, and freed.
  *  oom           recording a checkpoint with the Nth allocation failing,
  *                for every N until one gets through, fails the
  *                checkpoint cleanly or writes one that decodes.
@@ -362,6 +364,58 @@ static void lane_no_layout(void)
    puts("[ok] no layout");
 }
 
+/* A payload with a string at token position 'pos' and valid tokens
+ * before it: 0 start token, 1 frame counter, 2 chunk token, 3 new
+ * block index, 4 new superblock index, 5 superblock contents, 6
+ * superblock sequence. */
+static size_t make_wrong_type(uint8_t *buf, unsigned pos)
+{
+   int64_t len;
+   intfstream_t *s = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ_WRITE,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, STREAM_CAP);
+#define TOKEN(p, v) do { if (pos == (p)) goto wrong; rmsgpack_write_int(s, (v)); } while (0)
+   TOKEN(0, BSV_IFRAME_START_TOKEN);
+   TOKEN(1, 1);
+   if (pos == 2)
+      goto wrong;
+   if (pos == 3)
+   {
+      rmsgpack_write_int(s, BSV_IFRAME_NEW_BLOCK_TOKEN);
+      goto wrong;
+   }
+   if (pos == 4 || pos == 5)
+   {
+      rmsgpack_write_int(s, BSV_IFRAME_NEW_SUPERBLOCK_TOKEN);
+      TOKEN(4, 1);
+      goto wrong;
+   }
+   rmsgpack_write_int(s, BSV_IFRAME_SUPERBLOCK_SEQ_TOKEN);
+#undef TOKEN
+wrong:
+   rmsgpack_write_string(s, "not a number", 12);
+   len = intfstream_tell(s);
+   intfstream_close(s);
+   free(s);
+   return (size_t)len;
+}
+
+static void lane_wrong_type(void)
+{
+   unsigned pos;
+   for (pos = 0; pos <= 6; pos++)
+   {
+      bsv_movie_t *r = movie_new(BLOCK_BYTES, SUPERBLOCK_LEN);
+      size_t n = make_wrong_type(payload, pos);
+      fill_state(1);
+      r->cur_save      = (uint8_t*)calloc(1, STATE_SIZE);
+      r->cur_save_size = STATE_SIZE;
+      n = wrap_checkpoint(ckpt, payload, (uint32_t)n);
+      CHECK(!load(r, ckpt, n), "wrong type at position %u is refused", pos);
+      movie_free(r);
+   }
+   puts("[ok] wrong type");
+}
+
 static void lane_oom(void)
 {
    long nth;
@@ -454,6 +508,8 @@ int main(int argc, char **argv)
       lane_record_after();
    if (!only || !strcmp(only, "layout"))
       lane_no_layout();
+   if (!only || !strcmp(only, "wrongtype"))
+      lane_wrong_type();
    if (!only || !strcmp(only, "oom"))
       lane_oom();
    if (!only || !strcmp(only, "oomload"))

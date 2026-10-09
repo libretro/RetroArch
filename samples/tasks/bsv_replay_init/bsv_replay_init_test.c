@@ -970,6 +970,26 @@ static void lane_index_hash_missing(void)
 }
 #endif
 
+/* A version-1 replay whose initial state is cut short is refused, and
+ * the buffer the state was read into is freed (ASan reports a leak). */
+static void lane_v1_short_state(void)
+{
+   static uint8_t buf[REPLAY_HEADER_LEN_BYTES + 16];
+   uint32_t words[REPLAY_HEADER_LEN];
+   bsv_movie_t *h = (bsv_movie_t*)calloc(1, sizeof(*h));
+
+   reset_counters();
+   memset(words, 0, sizeof(words));
+   words[REPLAY_HEADER_STATE_SIZE_INDEX] = swap_if_big32(64);
+   memcpy(buf, words, sizeof(words));
+   h->version = 1;
+   h->file    = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+         RETRO_VFS_FILE_ACCESS_HINT_NONE, sizeof(buf));
+   CHECK(!bsv_movie_reset_playback(h), "short version-1 state loaded");
+   bsv_movie_free(h);
+   lane_done("v1_short_state", NULL);
+}
+
 /* Defined in bsvmovie.c; no header declares it. */
 bool replay_check_same_timeline(bsv_movie_t *movie,
       uint8_t *other_movie, int64_t other_len);
@@ -1247,6 +1267,7 @@ int main(int argc, char **argv)
    lane_checkpoint_seek();
    lane_skips();
    lane_legacy_short();
+   lane_v1_short_state();
    lane_short_block();
    lane_write_oom();
 
