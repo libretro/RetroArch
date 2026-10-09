@@ -211,7 +211,7 @@ static void drm_surface_set_aspect(struct drm_surface *surface, float aspect)
       surface->aspect = aspect;
 }
 
-static void drm_surface_setup(void *data, unsigned src_dims,
+static bool drm_surface_setup(void *data, unsigned src_dims,
       int pitch, int bpp, uint32_t pixformat,
       int alpha, float aspect, int numpages, int layer,
       struct drm_surface **sp)
@@ -229,11 +229,9 @@ static void drm_surface_setup(void *data, unsigned src_dims,
     * below would NULL-deref on OOM.  Sibling bug to the one in
     * dispmanx_surface_setup - the two routines share this
     * structure (output-pointer + void return) and both had the
-    * same missing checks.  void-returning so callers can't see
-    * an error code; letting the function no-op on OOM beats a
-    * segfault. */
+    * same missing checks. */
    if (!surface)
-      return;
+      return false;
 
    /* Setup surface parameters */
    surface->numpages = numpages;
@@ -261,7 +259,7 @@ static void drm_surface_setup(void *data, unsigned src_dims,
    {
       free(surface);
       *sp = NULL;
-      return;
+      return false;
    }
 
    for (i = 0; i < surface->numpages; i++)
@@ -282,10 +280,13 @@ static void drm_surface_setup(void *data, unsigned src_dims,
       if (ret)
       {
          RARCH_ERR("[DRM] Can't create fb.\n");
+         drm_surface_free(_drmvars, sp);
+         return false;
       }
    }
 
    surface->flip_page = 0;
+   return true;
 }
 
 static void drm_page_flip(struct drm_surface *surface)
@@ -596,6 +597,7 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
    struct drm_mode_create_dumb create_dumb = {0};
    struct drm_mode_map_dumb map_dumb       = {0};
    struct drm_mode_fb_cmd cmd_dumb         = {0};
+   struct drm_mode_destroy_dumb destroy_dumb = {0};
 
    create_dumb.width  = VIDEO_SCALE_W(buf->dims);
    create_dumb.height = VIDEO_SCALE_H(buf->dims);
@@ -604,7 +606,11 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
    create_dumb.pitch  = 0;
    create_dumb.size   = 0;
    create_dumb.handle = 0;
-   drmIoctl(drm.fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb);
+   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_CREATE_DUMB, &create_dumb))
+   {
+      RARCH_ERR("[DRM] Cannot create dumb buffer.\n");
+      return -1;
+   }
 
    /* Create the buffer. We just copy values here... */
    cmd_dumb.width        = create_dumb.width;
@@ -614,10 +620,19 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
    cmd_dumb.handle       = create_dumb.handle;
    cmd_dumb.depth        = 24;
 
+   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_ADDFB, &cmd_dumb))
+   {
+      RARCH_ERR("[DRM] Cannot add framebuffer.\n");
+      goto error_destroy;
+   }
+
    /* Map the buffer */
-   drmIoctl(drm.fd,DRM_IOCTL_MODE_ADDFB,&cmd_dumb);
-   map_dumb.handle=create_dumb.handle;
-   drmIoctl(drm.fd,DRM_IOCTL_MODE_MAP_DUMB,&map_dumb);
+   map_dumb.handle = create_dumb.handle;
+   if (drmIoctl(drm.fd, DRM_IOCTL_MODE_MAP_DUMB, &map_dumb))
+   {
+      RARCH_ERR("[DRM] Cannot map dumb buffer.\n");
+      goto error_rmfb;
+   }
 
    buf->pixel_format = pixformat;
    buf->fb_id = cmd_dumb.fb_id;
@@ -631,10 +646,19 @@ static int modeset_create_dumbfb(int fd, struct modeset_buf *buf,
    if (buf->map == MAP_FAILED)
    {
       RARCH_ERR("[DRM] Cannot mmap dumb buffer.\n");
-      return 0;
+      buf->map = NULL;
+      goto error_rmfb;
    }
 
    return 0;
+
+error_rmfb:
+   drmModeRmFB(drm.fd, cmd_dumb.fb_id);
+error_destroy:
+   destroy_dumb.handle = create_dumb.handle;
+   drmIoctl(drm.fd, DRM_IOCTL_MODE_DESTROY_DUMB, &destroy_dumb);
+   buf->fb_id = 0;
+   return -1;
 }
 
 static bool init_drm(void)
@@ -723,6 +747,7 @@ static bool init_drm(void)
    if (modeset_create_dumbfb(drm.fd, &buf, 4, DRM_FORMAT_XRGB8888))
    {
       RARCH_ERR("[DRM] Can't create dumb fb.\n");
+      return false;
    }
 
    if (drmModeSetCrtc(drm.fd, drm.crtc_id, buf.fb_id, 0, 0,
@@ -802,7 +827,7 @@ static bool drm_frame(void *data, const void *frame,
          drm_surface_free(_drmvars, &_drmvars->main_surface);
 
       /* We need to recreate the main surface and it's pages (buffers). */
-      drm_surface_setup(_drmvars,
+      if (!drm_surface_setup(_drmvars,
             dims,
             pitch,
             _drmvars->rgb32 ? 4 : 2,
@@ -811,7 +836,11 @@ static bool drm_frame(void *data, const void *frame,
             _drmvars->current_aspect,
             3,
             0,
-            &_drmvars->main_surface);
+            &_drmvars->main_surface))
+      {
+         _drmvars->core_dims = 0;
+         return false;
+      }
 
       /* We need to change the plane to read from the main surface */
       drm_plane_setup(_drmvars->main_surface);
@@ -860,7 +889,7 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
     * menu surface is NULL, we allocate a new one.*/
    if (!_drmvars->menu_surface)
    {
-      drm_surface_setup(_drmvars,
+      if (!drm_surface_setup(_drmvars,
             dims,
             width * 4,
             4,
@@ -869,7 +898,8 @@ static void drm_set_texture_frame(void *data, const void *frame, bool rgb32,
             _drmvars->current_aspect,
             2,
             0,
-            &_drmvars->menu_surface);
+            &_drmvars->menu_surface))
+         return;
 
       /* We need to re-setup the ONLY plane as the setup
        * depends on input buffers dimensions. */
