@@ -1,0 +1,7 @@
+shaders = 2
+shader0 = pass.glsl
+filter_linear0 = false
+scale_type0 = source
+scale0 = 2.0
+shader1 = pass.glsl
+filter_linear1 = false

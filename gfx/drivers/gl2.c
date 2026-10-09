@@ -7364,6 +7364,62 @@ static uintptr_t gl2_load_texture_compressed(void *video_data,
    return gl2_upload_texture_compressed(tc, filter_type);
 }
 
+/* The frame textures are made again in the new format, and at the
+ * new size when it is larger than theirs, with the render chain's
+ * passes around them; the frames' own size follows per frame. */
+static bool gl2_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+#if defined(HAVE_PSGL)
+   (void)data; (void)rgb32; (void)input_scale;
+   return false;
+#else
+   unsigned side;
+   gl2_t *gl = (gl2_t*)data;
+
+   if (     !gl
+         || (gl->flags & (GL2_FLAG_HW_RENDER_USE | GL2_FLAG_SHARED_CONTEXT_USE))
+         || gl->video_info.source_10bit)
+      return false;
+
+   side = RARCH_SCALE_BASE * input_scale;
+   if (side > VIDEO_SCALE_W(gl->tex_dims))
+   {
+      /* As init sizes them: an extra row on the clear's source */
+      void *empty_buf = calloc((size_t)side * (side + 1), sizeof(uint32_t));
+      void *conv_buf  = calloc((size_t)side * side, sizeof(uint32_t));
+      if (!empty_buf || !conv_buf)
+      {
+         free(empty_buf);
+         free(conv_buf);
+         return false;
+      }
+      free(gl->empty_buf);
+      free(gl->conv_buffer);
+      gl->empty_buf               = empty_buf;
+      gl->conv_buffer             = conv_buf;
+      gl->tex_dims                = VIDEO_SCALE_PACK(side, side);
+      gl->video_info.input_scale  = input_scale;
+   }
+   else if (rgb32 == gl->video_info.rgb32)
+      return true;
+
+   gl->video_info.rgb32 = rgb32;
+   gl2_set_texture_fmts(gl, rgb32);
+
+   if (gl->flags & GL2_FLAG_FBO_INITED)
+      gl2_renderchain_deinit_fbo(gl,
+            (gl2_renderchain_data_t*)gl->renderchain_data);
+   glDeleteTextures(gl->textures, gl->texture);
+   gl->tex_index = 0;
+   gl2_init_textures(gl);
+   gl2_init_textures_data(gl);
+   gl2_renderchain_init(gl,
+         (gl2_renderchain_data_t*)gl->renderchain_data);
+   return true;
+#endif
+}
+
 static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_flags,
    gl2_load_texture,
@@ -7414,7 +7470,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* texture_lend */
    NULL, /* texture_lend_ready */
 #endif
-   gl2_get_last_present_wait
+   gl2_get_last_present_wait,
+   NULL, /* set_view_count */
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   gl2_set_frame_format
 };
 
 static void gl2_get_poke_interface(void *data,

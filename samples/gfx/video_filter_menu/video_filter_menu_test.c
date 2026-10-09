@@ -24,11 +24,12 @@
  *    with the format and scale the frames now have, nothing is set up
  *    again, and a change the frames do not make tells it nothing.
  *
- * HARNESS_VIDEO_DRIVER=glcore or vulkan, under a display (Xvfb), runs
+ * HARNESS_VIDEO_DRIVER=gl, glcore or vulkan, under a display (Xvfb), runs
  * the same steps on that driver, which takes them in place: nothing is
  * set up again, and after each step the picture read back from the
  * screen is the one the driver draws once set up again for it.
- * HARNESS_THREADED=1 runs it under the threaded video wrapper.
+ * HARNESS_THREADED=1 runs it under the threaded video wrapper, and
+ * HARNESS_SHADER=1 with a two-pass GLSL preset on gl (twopass.glslp).
  *
  * Requires a completed non-Qt build:
  *
@@ -61,6 +62,7 @@
 #include "../../../frontend/frontend.h"
 #include "../../../verbosity.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../gfx/video_shader_parse.h"
 #ifdef HAVE_THREADS
 #include "../../../gfx/video_thread_wrapper.h"
 #endif
@@ -453,7 +455,8 @@ int main(int argc, char *argv[])
    fprintf(cfg, "video_vsync = \"false\"\n");
    fprintf(cfg, "video_fullscreen = \"false\"\n");
    fprintf(cfg, "video_smooth = \"false\"\n");
-   fprintf(cfg, "video_shader_enable = \"false\"\n");
+   fprintf(cfg, "video_shader_enable = \"%s\"\n",
+         string_is_equal(getenv("HARNESS_SHADER"), "1") ? "true" : "false");
    fprintf(cfg, "video_font_enable = \"false\"\n");
    fprintf(cfg, "video_filter_enable = \"true\"\n");
    fprintf(cfg, "video_filter_dir = \"%s\"\n", filter_dir);
@@ -499,6 +502,20 @@ int main(int argc, char *argv[])
       fprintf(stderr, "FAIL: video driver %s did not come up (%s)\n",
             drv, config_get_ptr()->arrays.video_driver);
       return 1;
+   }
+   /* gl: the steps with a two-pass preset, the render chain's passes
+    * made again around the frame textures */
+   if (string_is_equal(getenv("HARNESS_SHADER"), "1"))
+   {
+      char preset[600];
+      snprintf(preset, sizeof(preset), "%.*s/twopass.glslp", dirlen, base);
+      if (!video_shader_apply_shader(config_get_ptr(),
+               RARCH_SHADER_GLSL, preset, false))
+      {
+         fprintf(stderr, "FAIL: the preset %s did not load\n", preset);
+         return 1;
+      }
+      pump(2);
    }
    menu_open(true);
    if (!menu_is_up())
