@@ -44,6 +44,7 @@ typedef char slang_spvid_word_size_check[
 
 #include "slang_process.h"
 
+#include "../../configuration.h"
 #include "../../verbosity.h"
 
 static const char *texture_semantic_names[] = {
@@ -723,8 +724,26 @@ static bool slang_process_reflection(
                "OriginalSize", "SourceSize", "OriginalHistorySize", "PassOutputSize", "PassFeedbackSize",
             };
 
-            uniform.data = (void*)((uintptr_t)map->textures[semantic].size
-                  + index * map->textures[semantic].size_stride);
+            if (semantic == (int)SLANG_TEXTURE_SEMANTIC_SOURCE)
+            {
+               settings_t *settings = config_get_ptr();
+               if (settings->bools.video_shader_simulated_input_resolution)
+               {
+                  float x = (float)settings->uints.video_shader_simulated_input_resolution_width;
+                  float y = (float)settings->uints.video_shader_simulated_input_resolution_height;
+                  out->source_size[0] = x;
+                  out->source_size[1] = y;
+                  out->source_size[2] = 1.0f / x;
+                  out->source_size[3] = 1.0f / y;
+                  uniform.data        = out->source_size;
+               }
+               else
+                  uniform.data = (void*)((uintptr_t)map->textures[semantic].size
+                        + index * map->textures[semantic].size_stride);
+            }
+            else
+               uniform.data = (void*)((uintptr_t)map->textures[semantic].size
+                     + index * map->textures[semantic].size_stride);
             uniform.size = 4 * sizeof(float);
             if (semantic < (int)SLANG_TEXTURE_SEMANTIC_ORIGINAL_HISTORY)
                strlcpy(uniform.id, names[_semantic], sizeof(uniform.id));

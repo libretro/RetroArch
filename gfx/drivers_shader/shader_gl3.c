@@ -2003,8 +2003,20 @@ static void gl3_pass_build_semantic_vec3(struct gl3_pass *pass, uint8_t *data, e
 static void gl3_pass_build_semantic_texture(struct gl3_pass *pass, uint8_t *buffer,
       enum slang_texture_semantic semantic, const gl3_texture_t *texture)
 {
-   gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic,
-         texture->texture.dims);
+   unsigned dims = texture->texture.dims;
+
+   if (semantic == SLANG_TEXTURE_SEMANTIC_SOURCE)
+   {
+      settings_t *settings = config_get_ptr();
+      if (settings->bools.video_shader_simulated_input_resolution)
+      {
+         unsigned width  = settings->uints.video_shader_simulated_input_resolution_width;
+         unsigned height = settings->uints.video_shader_simulated_input_resolution_height;
+         dims            = VIDEO_SCALE_PACK(width, height);
+      }
+   }
+
+   gl3_pass_build_semantic_texture_vec4(pass, buffer, semantic, dims);
    gl3_pass_set_semantic_texture(pass, semantic, texture);
 }
 

@@ -12996,6 +12996,11 @@ static const setting_desc_t sdelay_desc[] = {
 /* GENERATED: rows come from settings_def_shader_delay.h in order. */
 #include "../settings/settings_def_shader_delay.h"
 };
+
+static const setting_desc_t simulated_resolution_desc[] = {
+/* GENERATED: rows come from settings_def_shader_simulated_resolution.h in order. */
+#include "../settings/settings_def_shader_simulated_resolution.h"
+};
 #endif
 
 static const setting_desc_t shader_desc[] = {
@@ -15963,6 +15968,21 @@ static void settings_build_video(
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
                   || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
                         ADD_DESC(sdelay_desc);
+         }
+#endif
+
+#if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
+         {
+            gfx_ctx_flags_t flags;
+            flags.flags     = 0;
+            video_context_driver_get_flags(&flags);
+
+            if (
+                     BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_SLANG)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_GLSL)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_CG)
+                  || BIT32_GET(flags.flags, GFX_CTX_FLAGS_SHADERS_HLSL))
+                        ADD_DESC(simulated_resolution_desc);
          }
 #endif
 
@@ -19418,6 +19438,7 @@ static const settings_desc_table_t settings_desc_registry[] = {
    { fdelay_desc, (uint16_t)ARRAY_SIZE(fdelay_desc) },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { sdelay_desc, (uint16_t)ARRAY_SIZE(sdelay_desc) },
+   { simulated_resolution_desc, (uint16_t)ARRAY_SIZE(simulated_resolution_desc) },
 #endif
    { shader_desc, (uint16_t)ARRAY_SIZE(shader_desc) },
    { vid_desc_21, (uint16_t)ARRAY_SIZE(vid_desc_21) },
