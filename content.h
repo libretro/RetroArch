@@ -46,6 +46,11 @@ bool content_load_state_from_ram(void);
 /* Save a state to memory. */
 bool content_save_state_to_ram(void);
 
+/* Finishes a save written to filestream_atomic_temp_name(@path): moved
+ * over @path if @ok, deleted otherwise. A temporary file that could not
+ * be moved is kept only when it holds the one complete copy left. */
+bool content_finish_tmp(const char *path, bool ok);
+
 /* Save a ram state from memory to disk. */
 bool content_ram_state_to_file(const char *path);
 

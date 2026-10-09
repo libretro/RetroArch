@@ -533,6 +533,75 @@ static void test_serialize_failure(void)
 }
 
 /* -----------------------------------------------------------------
+ * A save is written beside its slot and moved in only once whole: a
+ * save that fails over an existing state leaves that state as it was,
+ * and none leaves its temporary file behind.
+ * ----------------------------------------------------------------- */
+static bool tmp_exists(const char *path)
+{
+   char tmp[256];
+   snprintf(tmp, sizeof(tmp), "%s.tmp", path);
+   return file_size(tmp) >= 0;
+}
+
+/* The slot no longer holds @old: a write into it has begun. */
+static bool written_into(const char *path, const void *old, int64_t n_old)
+{
+   void   *now = NULL;
+   int64_t n   = 0;
+   bool    changed;
+   if (!filestream_read_file(path, &now, &n))
+      return true;
+   changed = n != n_old || memcmp(now, old, (size_t)n_old);
+   free(now);
+   return changed;
+}
+
+static void test_failed_save_keeps_old(void)
+{
+   const char *path = "sst_keep.state";
+   size_t   sz      = 12 * TEST_SAVE_STATE_CHUNK;
+   void    *before  = NULL, *after = NULL;
+   int64_t  n_before = 0, n_after = 0;
+
+   frontend_reset();
+   core_fill(sz);
+   filestream_delete(path);
+   content_save_state(path, true);
+   pump(1000);
+   okf(!tmp_exists(path), "a save leaves nothing beside its slot");
+   if (!filestream_read_file(path, &before, &n_before))
+      n_before = -1;
+
+   /* A quantum a tick, cancelled two ticks into the write: whatever
+    * the save does first (keeping the old state for undo), the write
+    * has begun once the slot is open, beside it or in it. */
+   memset(core_mem, 0x5A, sz);
+   clock_step = TEST_TICK_BUDGET_US;
+   content_save_state(path, true);
+   {
+      int i;
+      for (i = 0; i < 1000 && !tmp_exists(path) && !written_into(path, before, n_before); i++)
+         task_queue_check();
+   }
+   task_queue_check();
+   task_queue_check();
+   task_queue_reset();
+   pump(1000);
+   clock_step = 0;
+
+   if (!filestream_read_file(path, &after, &n_after))
+      n_after = -2;
+   okf(n_before > 0 && n_after == n_before && !memcmp(before, after, (size_t)n_before),
+       "a save cancelled part-way over a state leaves that state as it was");
+   okf(!tmp_exists(path), "a cancelled save leaves nothing beside its slot");
+
+   free(before);
+   free(after);
+   filestream_delete(path);
+}
+
+/* -----------------------------------------------------------------
  * A background save defers only the core's serialize to the handler
  * - that deferral is the whole point of the core's
  * SET_SAVE_STATE_IN_BACKGROUND request - and a foreground save pays
@@ -1181,6 +1250,7 @@ static int run_default_lane(void)
          "round-trip is byte-exact at one quantum per tick");
    test_close_waits_for_save();
    test_serialize_failure();
+   test_failed_save_keeps_old();
    test_background_serialize_timing();
    test_open_failure();
    test_truncated_state();

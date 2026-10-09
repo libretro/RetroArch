@@ -338,6 +338,28 @@ RFILE *filestream_open_atomic(const char *path);
 int filestream_commit_atomic(RFILE *file, const char *path, bool ok);
 
 /**
+ * The name of the sibling temporary file an atomic write of \c path
+ * goes through, for a writer that opens files by name.
+ *
+ * @param s Where the name is written.
+ * @param len The size of \c s.
+ * @param path Path of the file that will be replaced.
+ * @return \c false if the name does not fit in \c s.
+ */
+bool filestream_atomic_temp_name(char *s, size_t len, const char *path);
+
+/**
+ * Finishes an atomic write of \c path whose temporary file, named by
+ * filestream_atomic_temp_name(), was written and closed by other means:
+ * as filestream_commit_atomic() does after its close.
+ *
+ * @param path Path of the file that will be replaced.
+ * @param ok Whether the temporary file holds everything it should.
+ * @return As filestream_commit_atomic().
+ */
+int filestream_finish_atomic(const char *path, bool ok);
+
+/**
  * Writes a single character to the given file.
  *
  * @param stream The file to write to.

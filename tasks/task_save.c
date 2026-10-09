@@ -412,6 +412,18 @@ static void undo_save_state_cb(retro_task_t *task,
    free(state);
 }
 
+bool content_finish_tmp(const char *path, bool ok)
+{
+   int ret = filestream_finish_atomic(path, ok);
+   if (ret == 1 && path_is_valid(path))
+   {
+      char tmp_path[PATH_MAX_LENGTH];
+      if (filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), path))
+         filestream_delete(tmp_path);
+   }
+   return ret == 0;
+}
+
 /**
  * task_save_handler_finished:
  * @task : the task to finish
@@ -430,7 +442,13 @@ static void task_save_handler_finished(retro_task_t *task,
     * (serialize failure, or the open itself). */
    if (state->file)
    {
-      intfstream_close(state->file);
+      /* rzip writes its last chunk at close, and a buffered write
+       * reports a full disk there, so a failed close is a failed save
+       * and the temporary file must not replace the old state. */
+      if (     intfstream_close(state->file) != 0
+            && !task_get_error(task))
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
       free(state->file);
       state->file = NULL;
    }
@@ -439,6 +457,25 @@ static void task_save_handler_finished(retro_task_t *task,
 
    if (!task_get_error(task) && ((flg & RETRO_TASK_FLG_CANCELLED) > 0))
       task_set_error(task, strdup("Task canceled"));
+
+   /* The state was written to "<path>.tmp", so a crash, cancel or
+    * short write leaves the existing file intact. Move it into place
+    * on success, discard it otherwise. */
+   {
+      char tmp_path[PATH_MAX_LENGTH];
+
+      if (!filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), state->path))
+      {
+         /* Nothing was written: the open refused the same path. */
+         if (!task_get_error(task))
+            task_set_error(task, strdup(
+                  msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+      }
+      else if (!content_finish_tmp(state->path, !task_get_error(task))
+            && !task_get_error(task))
+         task_set_error(task, strdup(
+               msg_hash_to_str(MSG_FAILED_TO_SAVE_STATE_TO)));
+   }
 
    if (state->data)
    {
@@ -838,12 +875,20 @@ static void task_save_handler(retro_task_t *task)
 
    if (!state->file)
    {
-      if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
+      char tmp_path[PATH_MAX_LENGTH];
+
+      /* Write to "<path>.tmp"; task_save_handler_finished moves it
+       * into place on success or deletes it on failure or cancel.
+       * A path too long to take the suffix is refused rather than
+       * written in place. */
+      if (!filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), state->path))
+         state->file   = NULL;
+      else if (state->flags & SAVE_TASK_FLAG_COMPRESS_FILES)
          state->file   = intfstream_open_rzip_file(
-               state->path, RETRO_VFS_FILE_ACCESS_WRITE);
+               tmp_path, RETRO_VFS_FILE_ACCESS_WRITE);
       else
          state->file   = intfstream_open_file(
-               state->path, RETRO_VFS_FILE_ACCESS_WRITE,
+               tmp_path, RETRO_VFS_FILE_ACCESS_WRITE,
                RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
       if (!state->file)
@@ -1899,9 +1944,11 @@ static bool task_push_load_and_save_state(const char *path, void *data,
 bool content_auto_save_state(const char *path)
 {
    size_t _len;
+   int _close_ret;
    settings_t *settings = config_get_ptr();
    void *serial_data    = NULL;
    intfstream_t *file   = NULL;
+   char tmp_path[PATH_MAX_LENGTH];
 
    if (!core_info_current_supports_savestate())
    {
@@ -1918,12 +1965,20 @@ bool content_auto_save_state(const char *path)
    if (!serial_data)
       return false;
 
+   /* Write to "<path>.tmp" and move it into place, so a crash or power
+    * loss mid-save leaves the previous state intact. */
+   if (!filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), path))
+   {
+      free(serial_data);
+      return false;
+   }
+
 #if defined(HAVE_COMPRESSION)
    if (settings->bools.savestate_file_compression)
-      file = intfstream_open_rzip_file(path, RETRO_VFS_FILE_ACCESS_WRITE);
+      file = intfstream_open_rzip_file(tmp_path, RETRO_VFS_FILE_ACCESS_WRITE);
    else
 #endif
-      file = intfstream_open_file(path, RETRO_VFS_FILE_ACCESS_WRITE,
+      file = intfstream_open_file(tmp_path, RETRO_VFS_FILE_ACCESS_WRITE,
                                   RETRO_VFS_FILE_ACCESS_HINT_NONE);
 
    if (!file)
@@ -1937,12 +1992,17 @@ bool content_auto_save_state(const char *path)
       intfstream_close(file);
       free(serial_data);
       free(file);
+      filestream_delete(tmp_path);
       return false;
    }
 
-   intfstream_close(file);
+   /* A failed close (rzip's last chunk, a full disk) is a failed save. */
+   _close_ret = intfstream_close(file);
    free(serial_data);
    free(file);
+
+   if (!content_finish_tmp(path, _close_ret == 0))
+      return false;
 
 #ifdef HAVE_SCREENSHOTS
    if (settings->bools.savestate_thumbnail_enable)
@@ -2424,21 +2484,25 @@ bool content_ram_state_to_file(const char *path)
          && ram_buf.state_buf.data
          && ram_buf.to_write_file)
    {
+      /* Write via a temporary file, so a crash or power loss mid-save
+       * leaves the previous file intact instead of a truncated one. */
+      bool written = false;
 #if defined(HAVE_COMPRESSION)
       settings_t *settings = config_get_ptr();
       if (settings->bools.save_file_compression)
       {
-         if (rzipstream_write_file(
-               path, ram_buf.state_buf.data, ram_buf.state_buf.size))
-            goto success;
+         char tmp_path[PATH_MAX_LENGTH];
+         if (filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), path))
+            written = content_finish_tmp(path, rzipstream_write_file(tmp_path,
+                  ram_buf.state_buf.data, ram_buf.state_buf.size));
       }
       else
 #endif
-      {
-         if (filestream_write_file(
-               path, ram_buf.state_buf.data, ram_buf.state_buf.size))
-            goto success;
-      }
+         written = filestream_write_file_atomic(path,
+               ram_buf.state_buf.data, ram_buf.state_buf.size);
+
+      if (written)
+         goto success;
    }
 
    return false;
