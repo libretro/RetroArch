@@ -830,6 +830,20 @@ jobs:
           make clean
           echo "[pass] net_retropad_repeat_test (ASan, and mingw-w64 under Wine)"
 
+      - name: Build and run output_writer_test (host sanitizers and mingw + Wine)
+        shell: bash
+        working-directory: samples/input/output_writer
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          timeout 30 make check
+          make clean all SANITIZER=thread
+          timeout 30 ./output_writer_test
+          make clean all CC=x86_64-w64-mingw32-gcc
+          WINE="$(command -v wine || command -v wine64 || echo /usr/lib/wine/wine64)"
+          WINEDEBUG=-all timeout 60 "$WINE" ./output_writer_test.exe
+          WINEDEBUG=-all timeout 60 "$WINE" ./output_writer_test_nothreads.exe
+          make clean
       - name: Build and run udev_rumble_test (ASan + UBSan, then TSan)
         shell: bash
         working-directory: samples/input/udev_rumble

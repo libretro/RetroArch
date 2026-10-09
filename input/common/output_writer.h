@@ -44,10 +44,20 @@ typedef struct input_output_writer input_output_writer_t;
  * driver to let go of what that thread holds. */
 typedef void (*input_output_writer_cb)(void *userdata, bool last);
 
+/* Called on the writer thread before each wait. Return milliseconds
+ * until the next service, or -1 to wait only for a wake. Deadlines and
+ * their state belong to the writer thread. Compute the remaining time
+ * from an absolute deadline so unrelated wakes do not postpone it. */
+typedef int (*input_output_writer_timeout_cb)(void *userdata);
+
 /* NULL where there are no threads, or if the thread cannot be
  * started: the driver then makes its writes itself, as it used to. */
 input_output_writer_t *input_output_writer_new(
       input_output_writer_cb cb, void *userdata);
+
+input_output_writer_t *input_output_writer_new_timed(
+      input_output_writer_cb cb, input_output_writer_timeout_cb timeout_cb,
+      void *userdata);
 
 /* From any thread; returns at once. */
 void input_output_writer_wake(input_output_writer_t *writer);
