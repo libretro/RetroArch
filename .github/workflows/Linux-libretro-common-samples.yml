@@ -137,6 +137,7 @@ jobs:
             unbase64_test
             crc32_test
             rinflate_window_test
+            rdeflate_hash_test
             emscripten_mmap_test
             archive_zip_test
             archive_zstd_test
