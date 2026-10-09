@@ -168,6 +168,20 @@ jobs:
           make -C samples/input/win32_ime check
           make -C samples/input/win32_ime clean
 
+      - name: Build and run winusb_hid_test under Wine
+        shell: bash
+        run: |
+          set -eu
+          # The WinUSB HID driver with the real pad handlers and a
+          # stand-in for winusb.dll: a DualShock 3 started by HID class
+          # requests on the control pipe, the newest report its reader
+          # has had taken at the poll, its Bluetooth address read and
+          # set, and a pad that goes or a driver that stops letting the
+          # reader go.
+          trap 'wineserver -k >/dev/null 2>&1 || true' EXIT
+          make -C samples/input/winusb_hid check
+          make -C samples/input/winusb_hid clean
+
       - name: Build retroarch.exe with mingw-w64 (GDI and raw input, the rest off)
         shell: bash
         run: |

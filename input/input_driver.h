@@ -2298,6 +2298,7 @@ extern hid_driver_t iohidmanager_hid;
 extern hid_driver_t btstack_hid;
 extern hid_driver_t libusb_hid;
 extern hid_driver_t hidraw_hid;
+extern hid_driver_t winusb_hid;
 extern hid_driver_t wiiusb_hid;
 extern hid_driver_t gekko_hid;
 extern hid_driver_t wiiu_hid;

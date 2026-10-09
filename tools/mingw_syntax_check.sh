@@ -32,7 +32,8 @@ FLAGS="-fsyntax-only -std=gnu99 -I. -Ilibretro-common/include -Ideps \
  -DHAVE_OVERLAY -DHAVE_RGUI -DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI \
  -DHAVE_GFX_WIDGETS -DHAVE_SHADERPIPELINE -DHAVE_CG -DHAVE_GLSL \
  -DHAVE_OPENGL -DHAVE_OPENGL_CORE -DHAVE_DSOUND -DHAVE_AUDIOMIXER \
- -DHAVE_TRANSLATE -DHAVE_SCREENSHOTS -DHAVE_PATCH -DHAVE_BSV_MOVIE"
+ -DHAVE_TRANSLATE -DHAVE_SCREENSHOTS -DHAVE_PATCH -DHAVE_BSV_MOVIE \
+ -DHAVE_HID -DHAVE_WINUSB"
 
 if [ "$1" = "--consumers-of" ]; then
    shift
@@ -173,6 +174,10 @@ for f in $FILES; do
    case "$f" in
       *gl3.c|*shader_gl3.c|*slang_process.c|*glslang_util.c)
          c89defs="-DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_OPENGL_CORE"
+         ;;
+      # built only with the HID joypad driver, which defines it
+      */connect/*|*_hid.c|*hid_joypad.c|*input_hid_common.c)
+         c89defs="-DHAVE_HID -DHAVE_THREADS"
          ;;
    esac
    case "$f" in

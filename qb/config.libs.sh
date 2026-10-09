@@ -641,6 +641,14 @@ if [ "$HAVE_HIDRAW" = 'yes' ]; then
    add_opt HID yes
 fi
 
+# WinUSB, loaded when used, brings the HID joypad driver on Windows
+# for pads bound to it; libusb stays as --enable-hid leaves it.
+check_enabled THREADS WINUSB WinUSB 'Threads are' false
+check_platform Win32 WINUSB 'WinUSB is' true
+if [ "$HAVE_WINUSB" = 'yes' ]; then
+   add_opt HID yes
+fi
+
 check_lib '' DINPUT -ldinput8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound

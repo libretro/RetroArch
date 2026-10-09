@@ -925,6 +925,9 @@ hid_driver_t *hid_drivers[] = {
 #ifdef HAVE_HIDRAW
    &hidraw_hid,
 #endif
+#if defined(HAVE_WINUSB) && defined(HAVE_THREADS)
+   &winusb_hid,
+#endif
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
    &libusb_hid,
 #endif
