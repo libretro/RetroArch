@@ -12,6 +12,11 @@ ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
    LDFLAGS += -fsanitize=$(SANITIZER)
 endif
+# undefined behaviour fails the run rather than being reported past
+ifneq ($(findstring undefined,$(SANITIZER)),)
+   CFLAGS  += -fno-sanitize-recover=undefined
+   LDFLAGS += -fno-sanitize-recover=undefined
+endif
 
 SOURCES := net_retropad_repeat_test.c \
    $(REPO_ROOT)/cores/libretro-net-retropad/net_retropad_core.c \
