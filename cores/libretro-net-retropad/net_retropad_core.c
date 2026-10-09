@@ -1042,7 +1042,7 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
    {
       int offset = DESC_OFFSET(&joypad, 0, 0, i);
       if (joypad.value[offset])
-         input_state |= 1 << i;
+         input_state |= 1U << i;
 
       /* Construct a red gradient representation for analog buttons */
       offset = DESC_OFFSET(&analog_button, 0, RETRO_DEVICE_INDEX_ANALOG_BUTTON, i);
@@ -1057,44 +1057,44 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
       int offset = DESC_OFFSET(&analog, 0, RETRO_DEVICE_INDEX_ANALOG_LEFT, i);
       if (     (int16_t)analog.value[offset] < -32768/2)
       {
-         input_state |= 1 << (16 + i*8 + 0);
+         input_state |= 1U << (16 + i*8 + 0);
          analog_item_colors[  16 + i*8 + 0] = (uint16_t)((-1*((int16_t)analog.value[offset])-32768/2) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] < -3276)
       {
-         input_state |= 1 << (16 + i*8 + 1);
+         input_state |= 1U << (16 + i*8 + 1);
          analog_item_colors[  16 + i*8 + 1] = (uint16_t)((-1*((int16_t)analog.value[offset])        ) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] > 32768/2)
       {
-         input_state |= 1 << (16 + i*8 + 3);
+         input_state |= 1U << (16 + i*8 + 3);
          analog_item_colors[  16 + i*8 + 3] = (uint16_t)((   ((int16_t)analog.value[offset])-32768/2) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] > 3276)
       {
-         input_state |= 1 << (16 + i*8 + 2);
+         input_state |= 1U << (16 + i*8 + 2);
          analog_item_colors[  16 + i*8 + 2] = (uint16_t)((   ((int16_t)analog.value[offset])        ) /528) << 11;
       }
 
       offset = DESC_OFFSET(&analog, 0, RETRO_DEVICE_INDEX_ANALOG_RIGHT, i);
       if (     (int16_t)analog.value[offset] < -32768/2)
       {
-         input_state |= 1 << (16 + i*8 + 4);
+         input_state |= 1U << (16 + i*8 + 4);
          analog_item_colors[  16 + i*8 + 4] = (uint16_t)((-1*((int16_t)analog.value[offset])-32768/2) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] < -3276)
       {
-         input_state |= 1 << (16 + i*8 + 5);
+         input_state |= 1U << (16 + i*8 + 5);
          analog_item_colors[  16 + i*8 + 5] = (uint16_t)((-1*((int16_t)analog.value[offset])        ) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] > 32768/2)
       {
-         input_state |= 1 << (16 + i*8 + 7);
+         input_state |= 1U << (16 + i*8 + 7);
          analog_item_colors[  16 + i*8 + 7] = (uint16_t)((   ((int16_t)analog.value[offset])-32768/2) /528) << 11;
       }
       else if ((int16_t)analog.value[offset] > 3276)
       {
-         input_state |= 1 << (16 + i*8 + 6);
+         input_state |= 1U << (16 + i*8 + 6);
          analog_item_colors[  16 + i*8 + 6] = (uint16_t)((   ((int16_t)analog.value[offset])        ) /528) << 11;
       }
    }
@@ -1413,9 +1413,9 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
                /* 0  - 15: buttons, 16 - 31: analog x/y */
                /* 32 - 47: analog input for same buttons */
                if (retropad_buttons[rle] < 32)
-                  button        = 1 <<  retropad_buttons[rle];
+                  button        = 1U <<  retropad_buttons[rle];
                else
-                  button_analog = 1 << (retropad_buttons[rle] - 32);
+                  button_analog = 1U << (retropad_buttons[rle] - 32);
 
                /* Red for active inputs */
                if (input_state & button)

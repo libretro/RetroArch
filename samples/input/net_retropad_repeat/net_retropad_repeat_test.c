@@ -47,6 +47,7 @@ static unsigned failures;
 static char port_text[16];
 static int  pad_a;      /* RetroPad A, held or not */
 static int  stick_x;    /* left stick X */
+static int  stick_ry;   /* right stick Y */
 
 static void RETRO_CALLCONV log_none(enum retro_log_level level, const char *fmt, ...)
 { (void)level; (void)fmt; }
@@ -102,6 +103,10 @@ static int16_t RETRO_CALLCONV input_state(unsigned port, unsigned device,
          && index  == RETRO_DEVICE_INDEX_ANALOG_LEFT
          && id     == RETRO_DEVICE_ID_ANALOG_X)
       return (int16_t)stick_x;
+   if (     device == RETRO_DEVICE_ANALOG
+         && index  == RETRO_DEVICE_INDEX_ANALOG_RIGHT
+         && id     == RETRO_DEVICE_ID_ANALOG_Y)
+      return (int16_t)stick_ry;
    return 0;
 }
 
@@ -234,7 +239,40 @@ int main(void)
          "a stick's move arrived %u time(s), want 4, the last 30 frames on", n);
    printf("   ok   a stick's move is sent again the same way\n");
 
+   /* the right stick fully down is the top bit of the core's input
+    * state: built under UBSan, a shift into the sign bit stops here */
+   f0       = frame;
+   stick_ry = 32767;
+   run(10);
+   n = frames_of(RETRO_DEVICE_ANALOG, RETRO_DEVICE_ID_ANALOG_Y, 32767, f0, at, 16);
+   CHECK(n >= 1, "the right stick's move arrived %u time(s)", n);
+   stick_ry = 0;
+   run(40);
+   printf("   ok   the right stick fully down is the input state's top bit\n");
+
    retro_deinit();
+
+   /* a test file may name a button past the input state's 32 bits:
+    * it matches nothing, and the step is judged without a wider shift */
+   {
+      char ratst[64];
+      struct retro_game_info info;
+      FILE *tf;
+      snprintf(ratst, sizeof(ratst), "/tmp/net_retropad_%u.ratst", port);
+      if ((tf = fopen(ratst, "wb")))
+      {
+         fputs("[{\"expected_button\": 40, \"message\": \"past bit 31\"}]", tf);
+         fclose(tf);
+      }
+      memset(&info, 0, sizeof(info));
+      info.path = ratst;
+      retro_init();
+      CHECK(retro_load_game(&info), "the test file did not load");
+      run(330);
+      retro_deinit();
+      remove(ratst);
+      printf("   ok   a test file naming a button past bit 31 runs its step\n");
+   }
    socket_close(fd);
    if (failures)
    {
