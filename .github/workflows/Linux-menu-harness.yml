@@ -32,6 +32,7 @@ on:
       - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
       - 'samples/menu/setting_command/**'
+      - 'samples/menu/core_info_page/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -53,6 +54,7 @@ on:
       - 'msg_hash_lbl_str.h'
       - 'samples/menu/resolution_reset/**'
       - 'samples/menu/setting_command/**'
+      - 'samples/menu/core_info_page/**'
       - 'samples/settings/packed_rows/**'
       - 'setting_list.h'
       - 'gfx/video_defines.h'
@@ -409,6 +411,18 @@ jobs:
           samples/gfx/video_filter_menu/build.sh
           ./samples/gfx/video_filter_menu/video_filter_menu_test
           make -C samples/gfx/video_filter_menu clean
+
+      - name: Build and run core_info_page_test
+        shell: bash
+        run: |
+          set -eu
+          # The running core's information - its current-core entry,
+          # Core Information in the Information menu and the page
+          # itself - comes from its info file, once it is up and again
+          # after the drivers are set up again under it.
+          samples/menu/core_info_page/build.sh
+          ./samples/menu/core_info_page/core_info_page_test
+          make -C samples/menu/core_info_page clean
 
       - name: Build and run explore_build_test
         shell: bash

@@ -1886,7 +1886,16 @@ void drivers_init(
       menu_st->input_pointer_hw_state.flags |= MENU_INP_PTR_FLG_RESET;
 #endif
 
-   core_info_init_current_core();
+   /* The running core's entry stays: its system info came from its
+    * own open, and nothing here reads the core again. One freed with
+    * the drivers is made anew, and CMD_EVENT_CORE_INFO_INIT below
+    * fills it in once it has rebuilt the list. */
+   {
+      core_info_t *current = NULL;
+      core_info_get_current_core(&current);
+      if (!current)
+         core_info_init_current_core();
+   }
 
 #if defined(HAVE_GFX_WIDGETS)
    /* Note that we only enable widgets if 'video_font_enable'

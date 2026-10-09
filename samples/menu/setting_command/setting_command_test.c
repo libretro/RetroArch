@@ -134,6 +134,16 @@ static void lane_start_picks(enum msg_hash_enums idx, const char *name)
 }
 
 #ifdef HAVE_OVERLAY
+/* The bundled presets a mobile build resets to; file_path_special.h
+ * names them on mobile only */
+#ifdef RARCH_MOBILE
+#define OVERLAY_DEFAULT     FILE_PATH_DEFAULT_OVERLAY
+#define OSK_OVERLAY_DEFAULT FILE_PATH_DEFAULT_OSK_OVERLAY
+#else
+#define OVERLAY_DEFAULT     NULL
+#define OSK_OVERLAY_DEFAULT NULL
+#endif
+
 /* Start on an overlay preset row restores what a fresh configuration
  * has: on mobile, where touch devices have no other controls, the
  * bundled preset under the overlay directory; elsewhere none. The
@@ -276,9 +286,9 @@ int main(int argc, char *argv[])
 #endif
 #ifdef HAVE_OVERLAY
    lane_overlay_preset_start(MENU_ENUM_LABEL_OVERLAY_PRESET,
-         "input_overlay", FILE_PATH_DEFAULT_OVERLAY);
+         "input_overlay", OVERLAY_DEFAULT);
    lane_overlay_preset_start(MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
-         "input_osk_overlay", FILE_PATH_DEFAULT_OSK_OVERLAY);
+         "input_osk_overlay", OSK_OVERLAY_DEFAULT);
    lane_overlay_opacity_start();
 #endif
 

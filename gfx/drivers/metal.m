@@ -5796,7 +5796,7 @@ typedef struct MTLALIGN(16)
    RARCH_RELEASE_NIL(_src);
    /* setSize: makes the staging texture a 16-bit format needs; a
     * view that has had no frame yet gets it with its first */
-   _size     = CGSizeZero;
+   _size     = CGSizeMake(0, 0);
    [self setSize:size];
 }
 
