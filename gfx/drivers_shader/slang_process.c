@@ -1440,6 +1440,7 @@ bool slang_process(
    spvc_compiler_options   vs_options  = NULL;
    spvc_compiler_options   ps_options  = NULL;
    spvc_backend            backend     = SPVC_BACKEND_GLSL;
+   const char             *backend_name = "GLSL";
    const char             *vs_code     = NULL;
    const char             *ps_code     = NULL;
    const spvc_reflected_resource *list = NULL;
@@ -1481,15 +1482,12 @@ bool slang_process(
    {
       case RARCH_SHADER_HLSL:
       case RARCH_SHADER_CG:
-#ifdef HAVE_HLSL
-         backend = SPVC_BACKEND_HLSL;
+         backend      = SPVC_BACKEND_HLSL;
+         backend_name = "HLSL";
          break;
-#else
-         RARCH_ERR("[Slang] HLSL backend not compiled in.\n");
-         goto error;
-#endif
       case RARCH_SHADER_METAL:
-         backend = SPVC_BACKEND_MSL;
+         backend      = SPVC_BACKEND_MSL;
+         backend_name = "MSL";
          break;
       default:
          backend = SPVC_BACKEND_GLSL;
@@ -1654,7 +1652,7 @@ bool slang_process(
    return true;
 
 spvc_error:
-   RARCH_ERR("[Slang] SPIRV-Cross: %s.\n",
+   RARCH_ERR("[Slang] SPIRV-Cross, %s: %s\n", backend_name,
          spvc_context_get_last_error_string(ctx));
 
 error:

@@ -77,7 +77,13 @@ VIDEO DRIVER
 #endif
 
 #if defined(HAVE_SPIRV_CROSS)
-#if defined(HAVE_HLSL)
+/* The HLSL emitter is what slang shaders reach the Direct3D 10/11/12
+ * drivers through, and what the D3D9 HLSL driver builds on */
+#if defined(HAVE_HLSL) || defined(HAVE_D3D10) || defined(HAVE_D3D11) \
+ || defined(HAVE_D3D12)
+#define RARCH_SPIRV_CROSS_HLSL
+#endif
+#if defined(RARCH_SPIRV_CROSS_HLSL)
 #include "../deps/SPIRV-Cross/spirv_hlsl.cpp"
 #endif
 #include "../deps/SPIRV-Cross/spirv_cross.cpp"
@@ -90,13 +96,13 @@ VIDEO DRIVER
  * be truthy exactly when the matching backend source is amalgamated
  * above - a wrapper section compiled against an absent backend is an
  * undefined-symbol link failure on every lane lacking that backend's
- * feature flag (spirv_hlsl.cpp is HAVE_HLSL-gated; glsl and msl are
- * unconditional here). */
+ * feature flag (spirv_hlsl.cpp is RARCH_SPIRV_CROSS_HLSL-gated; glsl
+ * and msl are unconditional here). */
 #ifndef SPIRV_CROSS_C_API_GLSL
 #define SPIRV_CROSS_C_API_GLSL 1
 #endif
 #ifndef SPIRV_CROSS_C_API_HLSL
-#if defined(HAVE_HLSL)
+#if defined(RARCH_SPIRV_CROSS_HLSL)
 #define SPIRV_CROSS_C_API_HLSL 1
 #else
 #define SPIRV_CROSS_C_API_HLSL 0
