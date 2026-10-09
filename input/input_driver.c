@@ -14805,13 +14805,14 @@ void input_driver_poll(void)
           * carried no happens-before at all). Same seq discipline as the
           * video viewport snapshots. */
          {
-            int seq = retro_atomic_load_relaxed_int(&input_st->sensor_snap_seq);
+            unsigned seq = (unsigned)retro_atomic_load_relaxed_int(
+                  &input_st->sensor_snap_seq);
             float *src[3];
             int i, j;
             src[0] = input_st->sensor_gyroscope_cache;
             src[1] = input_st->sensor_accelerometer_cache;
             src[2] = input_st->sensor_accelerometer_rest;
-            retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq, seq + 1);
+            retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq, (int)(seq + 1u));
             retro_atomic_thread_fence_release();
             for (i = 0; i < 3; i++)
                for (j = 0; j < 3; j++)
@@ -14822,7 +14823,7 @@ void input_driver_poll(void)
                         &input_st->sensor_snap_bits[i * 3 + j], b);
                }
             retro_atomic_thread_fence_release();
-            retro_atomic_store_release_int(&input_st->sensor_snap_seq, seq + 2);
+            retro_atomic_store_release_int(&input_st->sensor_snap_seq, (int)(seq + 2u));
          }
       }
    }

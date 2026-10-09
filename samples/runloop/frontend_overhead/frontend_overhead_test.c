@@ -7434,6 +7434,29 @@ static void lane_sensor_snapshot_idle(void)
          && accel[0] == 0.0f && accel[1] == 0.0f && accel[2] == 0.0f,
          "sensor snapshot: what is left published is not noughts");
 
+   /* Exercise the signed boundary and the full unsigned lap without
+    * waiting for months of sensor polls. */
+   {
+      unsigned edge;
+      for (edge = 0; edge < 2; edge++)
+      {
+         unsigned before = edge ? ~0u - 1u : (~0u >> 1) - 1u;
+         retro_atomic_store_relaxed_int(&input_st->sensor_snap_seq,
+               (int)before);
+         input_driver_set_shader_uses_sensors(true);
+         input_driver_poll();
+         CHECK((unsigned)retro_atomic_load_acquire_int(
+                  &input_st->sensor_snap_seq) == before + 2u,
+               "sensor snapshot: sequence did not wrap after one publication");
+         input_driver_set_shader_uses_sensors(false);
+         input_driver_poll();
+         input_driver_read_sensor_snapshot(gyro, accel, rest);
+         CHECK(   gyro[0] == 0.0f && gyro[1] == 0.0f && gyro[2] == 0.0f
+               && accel[0] == 0.0f && accel[1] == 0.0f && accel[2] == 0.0f,
+               "sensor snapshot: wrapped publication is not readable");
+      }
+   }
+
    if (failures == had)
       printf("[pass] sensor snapshot: published every poll while a shader"
             " reads sensors, once with noughts when it stops, and not at"
