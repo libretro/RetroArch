@@ -7081,8 +7081,8 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
 {
    bool use_rgba      = (video_driver_get_disp_flags() & VIDEO_FLAG_USE_RGBA);
    const void *pixels = ti->pixels;
-   int lent           = -1;
 #ifdef HAVE_GL_TEXTURE_LEND
+   int lent           = -1;
    /* A lent slot holding the frame: uploaded from its buffer */
    if (gl && gl->lend
          && (lent = gl_texture_lend_bind(gl->lend, (unsigned)id, pixels)) != -1)

@@ -76,6 +76,7 @@ static void *tracked_realloc(void *ptr, size_t bytes)
 }
 #define realloc tracked_realloc
 #define malloc tracked_malloc
+#define AUDIO_DRIVER_PIPE_TEST 1
 #include "../../../audio/audio_driver.c"
 #undef malloc
 #undef realloc

@@ -218,9 +218,8 @@ unsigned rarch_softfilter_auto_budget(unsigned cores, unsigned reserved,
 unsigned rarch_softfilter_auto_threads(const char *short_ident)
 {
    unsigned cores = 0;
-   unsigned fast  = 0, slow = 0;
-
 #ifdef HAVE_THREADS
+   unsigned fast  = 0, slow = 0;
    if (sthread_get_core_topology(&fast, &slow))
       cores = fast + slow;
 #endif

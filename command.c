@@ -991,6 +991,7 @@ static bool command_reply_push(command_t *cmd, struct command_reply *r)
    return true;
 }
 
+#ifdef HAVE_BSV_MOVIE
 /* Pushes @event as the work of command @name. */
 static bool command_reply_event(command_t *cmd, enum event_command event,
       const char *name)
@@ -1000,6 +1001,7 @@ static bool command_reply_event(command_t *cmd, enum event_command event,
       r->event = event;
    return command_reply_push(cmd, r);
 }
+#endif
 
 #ifdef HAVE_TRANSLATE
 /* AI_SERVICE run by command_run(): one translation of the screen,

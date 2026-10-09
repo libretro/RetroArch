@@ -1121,7 +1121,9 @@ nextgpu:
 
    drm_setup(fd);
 
+#ifdef HAVE_WAYLAND
 have_device:
+#endif
    /* Choose the optimal video mode for get_video_size():
      - video mode issued by switchres through the CRT module
      - custom timings from configuration

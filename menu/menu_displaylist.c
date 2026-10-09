@@ -17270,8 +17270,6 @@ static bool menu_displaylist_ctl_internal(
                const char *menu_ident        = menu_driver_ident();
                uint32_t flags                = runloop_get_flags();
                bool show_playlists           = settings->bools.menu_content_show_playlists;
-               bool show_netplay             = (settings->uints.menu_content_show_netplay ==
-                     MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB);
                bool show_add_content         = (settings->uints.menu_content_show_add_entry ==
                      MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
                   && !settings->bools.kiosk_mode_enable;
@@ -17438,7 +17436,8 @@ static bool menu_displaylist_ctl_internal(
                      count++;
 
 #ifdef HAVE_NETWORKING
-               if (show_netplay)
+               if (settings->uints.menu_content_show_netplay
+                     == MENU_ADD_CONTENT_ENTRY_DISPLAY_MAIN_TAB)
                   if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(info->list,
                            MENU_ENUM_LABEL_NETPLAY,
                            PARSE_ACTION, false) == 0)

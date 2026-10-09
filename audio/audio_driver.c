@@ -2067,6 +2067,8 @@ static INLINE double audio_driver_effective_ratio(
    return ratio * ff_mult;
 }
 
+/* Used by the threaded pipe, and by a harness's AUDIO_OUTPUT_BOUND_CHECK */
+#if defined(HAVE_THREADS) || defined(AUDIO_OUTPUT_BOUND_CHECK)
 static INLINE size_t audio_driver_output_bound(double ratio, size_t input_frames)
 {
    return (size_t)((double)(input_frames + 16) * ratio) + 1;
@@ -2094,6 +2096,7 @@ static INLINE size_t audio_driver_input_bound(double ratio, size_t output_frames
       input_frames--;
    return input_frames;
 }
+#endif
 
 /* A harness may define this to count a flush that produced more than
  * its bound; the shipping build has no check on the audio thread. */
@@ -5363,6 +5366,9 @@ static size_t audio_driver_pipe_prime_frames(audio_driver_state_t *audio_st)
 }
 #endif
 
+/* The threaded pipe's; samples/audio/extra_capacity drives it on its
+ * own, without threads, through AUDIO_DRIVER_PIPE_TEST */
+#if defined(HAVE_THREADS) || defined(AUDIO_DRIVER_PIPE_TEST)
 /* Input and output do not overlap. Convert only the two populated slots. */
 static INLINE void audio_driver_pipe_widen_stereo(void *output, const void *input,
       size_t frames, unsigned channels, bool input_float, bool output_float)
@@ -5397,6 +5403,7 @@ static INLINE void audio_driver_pipe_widen_stereo(void *output, const void *inpu
       }
    }
 }
+#endif
 
 /**
  * audio_driver_submit:

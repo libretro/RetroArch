@@ -523,6 +523,9 @@ typedef struct
 #  endif
 #elif defined(PS2)
 #  define PRI_SIZET "u"
+#elif defined(DJGPP)
+/* DJGPP's size_t is unsigned long, 32 bits as it is */
+#  define PRI_SIZET "lu"
 #elif defined(__EMSCRIPTEN__)
 #  define PRI_SIZET "zu"
 #elif defined(__APPLE__)

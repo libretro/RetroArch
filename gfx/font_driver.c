@@ -331,8 +331,8 @@ static char font_fallback_pkg_dir[PATH_MAX_LENGTH];
 /* One read per fallback file per process. The bytes are published
  * before the state flips to READY, and are kept for the life of the
  * process once read. */
-static retro_atomic_int_t font_fallback_state[FONT_FALLBACK_COUNT];
 #ifdef FONT_FALLBACK_LOADS
+static retro_atomic_int_t font_fallback_state[FONT_FALLBACK_COUNT];
 static font_file_ref_t   *font_fallback_ref[FONT_FALLBACK_COUNT];
 #endif
 

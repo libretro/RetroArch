@@ -933,10 +933,10 @@ int sha1_calculate(const char *path, char *result)
       goto error;
 
    sprintf(result, "%08X%08X%08X%08X%08X",
-         sha.digest[0],
-         sha.digest[1],
-         sha.digest[2],
-         sha.digest[3], sha.digest[4]);
+         (unsigned)sha.digest[0],
+         (unsigned)sha.digest[1],
+         (unsigned)sha.digest[2],
+         (unsigned)sha.digest[3], (unsigned)sha.digest[4]);
 
    filestream_close(fd);
    return 0;

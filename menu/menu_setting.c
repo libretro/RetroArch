@@ -8547,6 +8547,8 @@ static size_t setting_get_string_representation_uint_video_scale_integer_scaling
    return 0;
 }
 
+/* The History settings (pl_desc_2) are built where they are shown */
+#if defined(HAVE_OZONE) || defined(HAVE_XMB) || defined(RETROARCH_VALIDATION_DUMPS)
 static size_t setting_get_string_representation_uint_playlist_show_history_icons(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -8564,6 +8566,7 @@ static size_t setting_get_string_representation_uint_playlist_show_history_icons
    }
    return 0;
 }
+#endif
 
 static size_t setting_get_string_representation_uint_menu_screensaver_timeout(
       rarch_setting_t *setting, char *s, size_t len)
@@ -13853,10 +13856,12 @@ static const setting_desc_t pl_desc_1[] = {
 #include "../settings/settings_def_playlist_management.h"
 };
 
+#if defined(HAVE_OZONE) || defined(HAVE_XMB) || defined(RETROARCH_VALIDATION_DUMPS)
 static const setting_desc_t pl_desc_2[] = {
 /* GENERATED: rows come from settings_def_playlist_history.h in order. */
 #include "../settings/settings_def_playlist_history.h"
 };
+#endif
 
 static const setting_desc_t pl_desc_3[] = {
 /* GENERATED: rows come from settings_def_playlist_display.h in order. */
