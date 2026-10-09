@@ -1857,8 +1857,10 @@ VIDEO_NOINLINE static void recording_bgr24_to_bgrx(uint8_t *dst,
    }
 }
 
+/* @perf: the main thread's perfcnt_enable, read by the caller */
 static void recording_dump_frame(
-      const void *data, unsigned dims, size_t pitch, bool is_idle)
+      const void *data, unsigned dims, size_t pitch, bool is_idle,
+      bool perf)
 {
    struct record_video_data ffemu_data;
    video_driver_state_t *video_st   = &video_driver_st;
@@ -1901,7 +1903,6 @@ static void recording_dump_frame(
       {
          struct video_viewport vp;
          bool ok;
-         bool perf                   = runloop_state_get_ptr()->perfcnt_enable;
 
          vp.pos                      = VIDEO_POS_PACK(0, 0);
          vp.dims                     = 0;
@@ -1915,7 +1916,7 @@ static void recording_dump_frame(
             RARCH_WARN("[Recording] %s\n",
                   msg_hash_to_str(MSG_VIEWPORT_SIZE_CALCULATION_FAILED));
             video_driver_gpu_record_deinit();
-            recording_dump_frame(data, dims, pitch, is_idle);
+            recording_dump_frame(data, dims, pitch, is_idle, perf);
             return;
          }
 
@@ -8182,7 +8183,7 @@ void video_driver_frame(const void *data, unsigned width,
            && recording_st->driver
            && recording_st->driver->push_video)
       recording_dump_frame(
-            data, dims, pitch, runloop_idle);
+            data, dims, pitch, runloop_idle, runloop_st->perfcnt_enable);
 
 #ifdef HAVE_VIDEO_FILTER
    if (     settings->bools.video_filter_enable
@@ -8213,7 +8214,7 @@ void video_driver_frame(const void *data, unsigned width,
             && recording_st->driver->push_video)
          recording_dump_frame(
                video_st->state_buffer, output_dims, output_pitch,
-               runloop_idle);
+               runloop_idle, runloop_st->perfcnt_enable);
 
       data   = video_st->state_buffer;
       dims   = output_dims;
