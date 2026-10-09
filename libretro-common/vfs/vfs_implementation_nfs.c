@@ -98,10 +98,8 @@ static bool nfs_url_split(const char *url, char *server, size_t server_len,
    return true;
 }
 
-/* Resolves a URL to the export to mount and the path within it. With
- * an export in the settings, the URL path is relative to it (under the
- * subdir, when set); otherwise the URL's first component is the export
- * itself, as nfs://server/export/... */
+/* With a configured export, the URL path is relative to it.
+ * Otherwise mount prefixes of nfs://server/export/path. */
 static bool nfs_resolve(const char *url, char *server, size_t server_len,
       char *export_path, size_t export_len, char *path, size_t path_len)
 {
@@ -112,13 +110,7 @@ static bool nfs_resolve(const char *url, char *server, size_t server_len,
    if (cfg && cfg->export_path && *cfg->export_path)
    {
       strlcpy(export_path, cfg->export_path, export_len);
-      path[0] = '\0';
-      if (cfg->subdir && *cfg->subdir)
-      {
-         strlcpy(path, cfg->subdir, path_len);
-         strlcat(path, "/", path_len);
-      }
-      strlcat(path, rest, path_len);
+      strlcpy(path, rest, path_len);
    }
    else
    {

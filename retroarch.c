@@ -438,7 +438,6 @@ void retroarch_nfs_init(void)
 
    nfs_global_cfg.server_address = settings->arrays.nfs_server;
    nfs_global_cfg.export_path    = settings->arrays.nfs_export;
-   nfs_global_cfg.subdir         = settings->arrays.nfs_subdir;
    nfs_global_cfg.timeout        = settings->uints.nfs_timeout;
    nfs_global_cfg.num_contexts   = settings->uints.nfs_num_contexts;
    nfs_global_cfg.nfs_port       = settings->uints.nfs_port;
