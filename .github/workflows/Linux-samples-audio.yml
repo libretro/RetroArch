@@ -1162,6 +1162,13 @@ jobs:
           WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
             RUN="wine ./sinc_sibling_test.exe"
 
+      - name: Build and run pipeline_format_test (ASan + UBSan)
+        working-directory: samples/audio/pipeline_format
+        run: |
+          # Real init and one batch through each format and transport;
+          # the integer front pair exists only behind its hint.
+          make -j$(nproc) check SANITIZER=address,undefined
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |

@@ -4547,11 +4547,14 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.resampler_bypassed = false;
 
    /* Deterministic integer (s16) path: allocate an int16 resampler
-    * mirroring the float one when the selected backend has an int16
-    * implementation.  It is used by audio_driver_flush() for int16 cores
-    * unless a MIDI synth is sounding or a float-only DSP filter is loaded;
-    * DSP (int16-capable), the mixer, non-unity gain and fast-forward speedup
-    * are all handled in the integer domain.  Otherwise the float path runs. */
+    * mirroring the float one when the 'Resample to Fixed Integer' hint is
+    * on and the selected backend has an int16 implementation.  Nothing
+    * else reads it, and the hint reinits audio, so with the hint off no
+    * integer tables are built.  It is used by audio_driver_flush() for
+    * int16 cores unless a MIDI synth is sounding or a float-only DSP
+    * filter is loaded; DSP (int16-capable), the mixer, non-unity gain and
+    * fast-forward speedup are all handled in the integer domain.
+    * Otherwise the float path runs. */
    if (audio_driver_st.resampler_data_int16 && audio_driver_st.resampler_int16_free)
    {
       audio_driver_st.resampler_int16_free(audio_driver_st.resampler_data_int16);
@@ -4562,7 +4565,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.resampler_int16_free    = NULL;
    audio_driver_st.resampler_int16_reset   = NULL;
    audio_driver_st.resampler_int16_sibling = NULL;
-   if (     audio_driver_st.resampler
+   if (     settings->bools.audio_fastpath_s16
+         && audio_driver_st.resampler
          && audio_driver_st.resampler->short_ident)
    {
       const char *rs_ident = audio_driver_st.resampler->short_ident;
@@ -4590,9 +4594,8 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
     * The gate is deliberately the resampler and nothing else.  The scratch
     * is only *touched* when a synth is sounding or a DSP filter is loaded,
     * but both of those are runtime state that can change without an audio
-    * reinit - and audio_fastpath_s16 is CMD_EVENT_NONE, so toggling the
-    * hint does not reinit either.  Narrowing the gate to any of them would
-    * leave the s16 path live against a NULL scratch. */
+    * reinit.  Narrowing the gate to either would leave the s16 path live
+    * against a NULL scratch. */
    if (audio_driver_st.resampler_data_int16)
       audio_driver_st.input_data_int16 = arena_int16 + i16_in_scratch;
 

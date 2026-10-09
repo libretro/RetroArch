@@ -11,7 +11,7 @@ S_UINT_EX(audio_resampler_quality, AUDIO_RESAMPLER_QUALITY,
       "Lower this value to favor performance/lower latency over audio quality, increase for better audio quality at the expense of performance/lower latency.")
 S_BOOL(audio_fastpath_s16, AUDIO_FASTPATH_S16,
       "audio_fastpath_s16",
-      DEFAULT_AUDIO_FASTPATH_S16, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
+      DEFAULT_AUDIO_FASTPATH_S16, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,
       "Resample to Fixed Integer (Hint)",
       "Use the fixed-point (integer) resampler instead of the floating-point one when a core outputs 16-bit audio. Produces bit-identical output on every platform, making audio reproducible across runs and systems. This is for reproducibility, not speed: where the CPU has a vector FPU the integer resampler is slower, as only the floating-point one is vectorized. No effect on cores that output floating-point audio; falls back to floating-point while an incompatible DSP filter is active.")
 
