@@ -13,6 +13,10 @@
  * change handler; when each of them fires the command, the driver
  * comes up twice for one press.
  *
+ * And Start on the overlay preset rows restores what a fresh
+ * configuration has - the bundled preset on mobile, none elsewhere -
+ * not the directory their file browser opens in.
+ *
  * Requires a completed non-Qt build:
  *
  *   ./configure --disable-qt && make
@@ -30,9 +34,12 @@
 #include <lists/dir_list.h>
 #include <lists/string_list.h>
 #include <streams/file_stream.h>
+#include <compat/strl.h>
+#include <string/stdstring.h>
 
 #include "../../../command.h"
 #include "../../../configuration.h"
+#include "../../../file_path_special.h"
 #include "../../../retroarch.h"
 #include "../../../setting_list.h"
 #include "../../../menu/menu_defines.h"
@@ -126,6 +133,62 @@ static void lane_start_picks(enum msg_hash_enums idx, const char *name)
          name, inits - before);
 }
 
+#ifdef HAVE_OVERLAY
+/* Start on an overlay preset row restores what a fresh configuration
+ * has: on mobile, where touch devices have no other controls, the
+ * bundled preset under the overlay directory; elsewhere none. The
+ * row's default string is the directory its file browser opens in,
+ * which is no preset. A tree built with CFLAGS=-DRARCH_MOBILE runs
+ * the mobile half. */
+static void lane_overlay_preset_start(enum msg_hash_enums idx,
+      const char *name, const char *mobile_default)
+{
+   char want[PATH_MAX_LENGTH];
+   rarch_setting_t *s = menu_setting_find_enum(idx);
+
+   want[0] = '\0';
+#ifdef RARCH_MOBILE
+   fill_pathname_join_special(want,
+         config_get_ptr()->paths.directory_overlay, mobile_default,
+         sizeof(want));
+#else
+   (void)mobile_default;
+#endif
+
+   CHECK(s != NULL, "fixture: %s is not a setting", name);
+   if (!s)
+      return;
+   CHECK(s->default_value.string && *s->default_value.string,
+         "fixture: %s has no browser directory", name);
+   strlcpy(s->value.target.string, "/nowhere/preset.cfg", s->size);
+
+   menu_action_handle_setting(s, 0, MENU_ACTION_START, false);
+
+   CHECK(string_is_equal(s->value.target.string, want),
+         "%s, Start: the preset is \"%s\", want \"%s\"", name,
+         s->value.target.string, want);
+}
+
+/* The rows beside a preset keep their own reset */
+static void lane_overlay_opacity_start(void)
+{
+   rarch_setting_t *s = menu_setting_find_enum(
+         MENU_ENUM_LABEL_OSK_OVERLAY_OPACITY);
+
+   CHECK(s != NULL && s->type == ST_FLOAT,
+         "fixture: osk_overlay_opacity is not a float setting");
+   if (!s || s->type != ST_FLOAT)
+      return;
+   *s->value.target.fraction = s->default_value.fraction / 2.0f;
+
+   menu_action_handle_setting(s, 0, MENU_ACTION_START, false);
+
+   CHECK(*s->value.target.fraction == s->default_value.fraction,
+         "input_osk_overlay_opacity, Start: %f, want the default %f",
+         *s->value.target.fraction, s->default_value.fraction);
+}
+#endif
+
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
 {
@@ -189,6 +252,9 @@ int main(int argc, char *argv[])
       fprintf(cfg, "menu_driver = \"rgui\"\n");
       fprintf(cfg, "video_threaded = \"false\"\n");
       fprintf(cfg, "video_fullscreen = \"false\"\n");
+      fprintf(cfg, "input_overlay_enable = \"false\"\n");
+      fprintf(cfg, "overlay_directory = \"%s\"\n", dir);
+      fprintf(cfg, "osk_overlay_directory = \"%s\"\n", dir);
       fclose(cfg);
    }
 
@@ -204,7 +270,17 @@ int main(int argc, char *argv[])
    lane(MENU_ENUM_LABEL_VIDEO_SMOOTH, "video_smooth", false);
    lane(MENU_ENUM_LABEL_MENU_TEXTURE_MIPMAPPING,
          "menu_texture_mipmapping", true);
+#ifndef RARCH_MOBILE
+   /* Mobile has no window scale row */
    lane_start_picks(MENU_ENUM_LABEL_VIDEO_SCALE, "video_scale");
+#endif
+#ifdef HAVE_OVERLAY
+   lane_overlay_preset_start(MENU_ENUM_LABEL_OVERLAY_PRESET,
+         "input_overlay", FILE_PATH_DEFAULT_OVERLAY);
+   lane_overlay_preset_start(MENU_ENUM_LABEL_OSK_OVERLAY_PRESET,
+         "input_osk_overlay", FILE_PATH_DEFAULT_OSK_OVERLAY);
+   lane_overlay_opacity_start();
+#endif
 
    scratch_remove(dir);
 
