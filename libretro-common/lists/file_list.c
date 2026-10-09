@@ -320,12 +320,14 @@ static int file_list_type_cmp(const void *a_, const void *b_)
 
 void file_list_sort_on_alt(file_list_t *list)
 {
-   qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
+   if (list && list->size > 1)
+      qsort(list->list, list->size, sizeof(list->list[0]), file_list_alt_cmp);
 }
 
 void file_list_sort_on_type(file_list_t *list)
 {
-   qsort(list->list, list->size, sizeof(list->list[0]), file_list_type_cmp);
+   if (list && list->size > 1)
+      qsort(list->list, list->size, sizeof(list->list[0]), file_list_type_cmp);
 }
 
 void *file_list_get_userdata_at_offset(const file_list_t *list, size_t idx)
