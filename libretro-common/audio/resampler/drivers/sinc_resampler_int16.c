@@ -90,6 +90,21 @@
 #define SINC_I16_PREFETCH(addr) ((void)0)
 #endif
 
+/* Decimation by two ahead of the kernel when fast-forward takes the live
+ * ratio below what the table rejects images for, as in the float driver:
+ * each stage is the preset's table for a ratio of SINC_I16_DEC_ENGAGE / 2
+ * at its single phase, with the same thresholds and crossfade. Decisions
+ * run only when the ratio's bit pattern changes, so a stable ratio stays
+ * integer-only. */
+#define SINC_I16_DEC_STAGES       4
+#define SINC_I16_DEC_BLOCK        256
+#define SINC_I16_DEC_HALF         (2 * (SINC_I16_DEC_BLOCK / 2 + 1))
+#define SINC_I16_DEC_ENGAGE_FIRST 0.97
+#define SINC_I16_DEC_ENGAGE       0.9
+#define SINC_I16_DEC_RELEASE_LAST 0.975
+#define SINC_I16_DEC_RELEASE      1.25
+#define SINC_I16_FADE_FRAMES      256
+
 enum sinc_i16_window
 {
    SINC_I16_WINDOW_LANCZOS = 0,
@@ -116,7 +131,17 @@ typedef struct rarch_sinc_resampler_int16
    uint32_t  time;
    uint32_t  ratio_fixed; /* cached (uint32)(phases / ratio); recomputed only  */
    uint64_t  ratio_bits;  /* when the double ratio's bit pattern changes        */
+   uint64_t  dec_bits;    /* ratio the stage decision was last taken for        */
    double    kaiser_beta;
+   double    design_ratio;
+   /* SINC_I16_DEC_STAGES one-phase stages, then the kernel's shadow. */
+   struct rarch_sinc_resampler_int16 *dec;
+   int16_t  *dec_block;
+   int16_t  *fade_block;
+   unsigned  dec_stages;
+   unsigned  fade_stages;
+   unsigned  fade_left;
+   unsigned  fade_len;
 } rarch_sinc_resampler_int16_t;
 
 /* ------------------------------------------------------------------------- */
@@ -450,8 +475,167 @@ static void sinc_i16_process_lanczos(rarch_sinc_resampler_int16_t *re,
    data->output_frames = out_frames;
 }
 
+static void sinc_i16_kernel(rarch_sinc_resampler_int16_t *re,
+      struct resampler_data_int16 *data)
+{
+   if (re->window == SINC_I16_WINDOW_KAISER)
+      sinc_i16_process_kaiser(re, data);
+   else
+      sinc_i16_process_lanczos(re, data);
+}
+
+static size_t sinc_i16_dec_run(rarch_sinc_resampler_int16_t *kernel,
+      const int16_t *in, size_t frames, int16_t *out, double ratio)
+{
+   struct resampler_data_int16 chunk;
+   chunk.data_in       = in;
+   chunk.input_frames  = frames;
+   chunk.data_out      = out;
+   chunk.output_frames = 0;
+   chunk.ratio         = ratio;
+   sinc_i16_kernel(kernel, &chunk);
+   return chunk.output_frames;
+}
+
+/* Runs stages [first, last) from in; returns where the output is. */
+static const int16_t *sinc_i16_dec_chain(rarch_sinc_resampler_int16_t *re,
+      unsigned first, unsigned last, const int16_t *in, size_t *frames)
+{
+   int16_t *out = (in == re->dec_block) ? re->dec_block + SINC_I16_DEC_HALF
+                                        : re->dec_block;
+   for (; first < last; first++)
+   {
+      *frames = sinc_i16_dec_run(&re->dec[first], in, *frames, out, 0.5);
+      in      = out;
+      out     = (out == re->dec_block)
+         ? re->dec_block + SINC_I16_DEC_HALF : re->dec_block;
+   }
+   return in;
+}
+
+/* Clean rings, and a clock that takes input before it emits: a joining
+ * path then produces no output ahead of the frames it was given. */
+static void sinc_i16_dec_restart(rarch_sinc_resampler_int16_t *stage)
+{
+   memset(stage->buffer_l, 0, 4 * stage->taps * sizeof(*stage->buffer_l));
+   stage->ptr  = 0;
+   stage->time = 1u << (stage->phase_bits + stage->subphase_bits);
+}
+
+/* The kernel's rings move to the shadow, which carries on with the old
+ * stages; the kernel and any stage joining start clean. */
+static void sinc_i16_dec_switch(rarch_sinc_resampler_int16_t *re,
+      unsigned stages, double ratio)
+{
+   unsigned s;
+   double warm = re->taps * ratio * (double)(1u << stages);
+   rarch_sinc_resampler_int16_t *shadow = &re->dec[SINC_I16_DEC_STAGES];
+   memcpy(shadow->buffer_l, re->buffer_l,
+         4 * re->taps * sizeof(*re->buffer_l));
+   shadow->ptr  = re->ptr;
+   shadow->time = re->time;
+   sinc_i16_dec_restart(re);
+   for (s = re->dec_stages; s < stages; s++)
+   {
+      sinc_i16_dec_restart(&re->dec[s]);
+      warm += re->dec[s].taps * ratio * (double)(1u << s);
+   }
+   if (warm > 8192.0)
+      warm = 8192.0;
+   re->fade_len    = (warm < 256.0) ? 256 : (unsigned)warm + 1;
+   re->fade_left   = (unsigned)warm + 1 + re->fade_len;
+   re->fade_stages = re->dec_stages;
+   re->dec_stages  = stages;
+}
+
+static int16_t sinc_i16_mix(int16_t old, int16_t now, int32_t w)
+{
+   int32_t prod = ((int32_t)now - old) * w;
+   if (prod >= 0)
+      return (int16_t)(old + ((prod + 16384) >> 15));
+   return (int16_t)(old - (((-prod) + 16384) >> 15));
+}
+
+static void sinc_i16_dec_blend(rarch_sinc_resampler_int16_t *re,
+      int16_t *out, size_t frames, const int16_t *old, size_t old_frames)
+{
+   size_t i;
+   if (!old_frames)
+      return;
+   for (i = 0; i < frames && re->fade_left; i++, re->fade_left--)
+   {
+      size_t o  = (i < old_frames) ? i : old_frames - 1;
+      int32_t w = (re->fade_left > re->fade_len) ? 0
+         : (int32_t)(((uint32_t)(re->fade_len - re->fade_left) << 15)
+               / re->fade_len);
+      out[2 * i]     = sinc_i16_mix(old[2 * o],     out[2 * i],     w);
+      out[2 * i + 1] = sinc_i16_mix(old[2 * o + 1], out[2 * i + 1], w);
+   }
+}
+
+static void sinc_i16_process_decimated(rarch_sinc_resampler_int16_t *re,
+      struct resampler_data_int16 *data)
+{
+   const int16_t *input = data->data_in;
+   int16_t *output      = data->data_out;
+   size_t frames        = data->input_frames;
+   size_t produced      = 0;
+   size_t step          = SINC_I16_DEC_BLOCK;
+   double ratio         = data->ratio;
+
+   if (re->fade_left)
+      while (step > 1 && step * ratio + 4.0 > SINC_I16_FADE_FRAMES)
+         step >>= 1;
+
+   while (frames)
+   {
+      size_t n         = (frames < step) ? frames : step;
+      size_t got;
+      unsigned now_k   = re->dec_stages;
+      int16_t *out     = output + 2 * produced;
+      const int16_t *p = input;
+      input           += 2 * n;
+      frames          -= n;
+      if (!re->fade_left)
+      {
+         p   = sinc_i16_dec_chain(re, 0, now_k, p, &n);
+         got = sinc_i16_dec_run(re, p, n, out, ratio * (double)(1u << now_k));
+      }
+      else
+      {
+         rarch_sinc_resampler_int16_t *shadow = &re->dec[SINC_I16_DEC_STAGES];
+         unsigned old_k  = re->fade_stages;
+         unsigned common = (now_k < old_k) ? now_k : old_k;
+         size_t old;
+         p = sinc_i16_dec_chain(re, 0, common, p, &n);
+         /* The path without stages of its own reads p before the other
+          * path's stages reuse its block. */
+         if (now_k == common)
+         {
+            got = sinc_i16_dec_run(re, p, n, out,
+                  ratio * (double)(1u << now_k));
+            p   = sinc_i16_dec_chain(re, common, old_k, p, &n);
+            old = sinc_i16_dec_run(shadow, p, n, re->fade_block,
+                  ratio * (double)(1u << old_k));
+         }
+         else
+         {
+            old = sinc_i16_dec_run(shadow, p, n, re->fade_block,
+                  ratio * (double)(1u << old_k));
+            p   = sinc_i16_dec_chain(re, common, now_k, p, &n);
+            got = sinc_i16_dec_run(re, p, n, out,
+                  ratio * (double)(1u << now_k));
+         }
+         sinc_i16_dec_blend(re, out, got, re->fade_block, old);
+      }
+      produced += got;
+   }
+   data->output_frames = produced;
+}
+
 void sinc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
 {
+   uint64_t bits;
    rarch_sinc_resampler_int16_t *re = (rarch_sinc_resampler_int16_t*)re_;
    if (!sinc_resampler_ratio_valid(data->ratio,
             re->phase_bits, re->subphase_bits))
@@ -459,10 +643,28 @@ void sinc_resampler_int16_process(void *re_, struct resampler_data_int16 *data)
       data->output_frames = 0;
       return;
    }
-   if (re->window == SINC_I16_WINDOW_KAISER)
-      sinc_i16_process_kaiser(re, data);
+   memcpy(&bits, &data->ratio, sizeof(bits));
+   if (bits != re->dec_bits && !re->fade_left)
+   {
+      unsigned stages = re->dec_stages;
+      double ratio    = data->ratio;
+      while (     stages < SINC_I16_DEC_STAGES
+            && ratio * (double)(1u << stages)
+               < re->design_ratio
+               * (stages ? SINC_I16_DEC_ENGAGE : SINC_I16_DEC_ENGAGE_FIRST))
+         stages++;
+      while (stages && ratio * (double)(1u << (stages - 1))
+            >= re->design_ratio * ((stages == 1)
+               ? SINC_I16_DEC_RELEASE_LAST : SINC_I16_DEC_RELEASE))
+         stages--;
+      if (stages != re->dec_stages)
+         sinc_i16_dec_switch(re, stages, ratio);
+      re->dec_bits = bits;
+   }
+   if (!re->dec_stages && !re->fade_left)
+      sinc_i16_kernel(re, data);
    else
-      sinc_i16_process_lanczos(re, data);
+      sinc_i16_process_decimated(re, data);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -479,6 +681,9 @@ void sinc_resampler_int16_reset(void *re_)
    re->time        = 0;
    re->ratio_fixed = 0;
    re->ratio_bits  = 0;
+   re->dec_bits    = 0;
+   re->dec_stages  = 0;
+   re->fade_left   = 0;
 }
 
 void sinc_resampler_int16_free(void *re_)
@@ -487,6 +692,7 @@ void sinc_resampler_int16_free(void *re_)
    if (re)
    {
       memalign_free(re->buffer_l);
+      free(re->dec);
    }
    free(re);
 }
@@ -498,8 +704,11 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    unsigned sidelobes = 0;
    int      window  = SINC_I16_WINDOW_LANCZOS;
    int      stride;
-   size_t   phase_elems, o_table, o_coef, len;
+   size_t   phase_elems, o_table, o_coef, o_dec, o_dec_table, o_shadow,
+            o_fade, len;
    int      phases;
+   unsigned s, dec_taps;
+   double   dec_cutoff, dec_beta;
    rarch_sinc_resampler_int16_t *re =
       (rarch_sinc_resampler_int16_t*)calloc(1, sizeof(*re));
 
@@ -566,6 +775,21 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    re->window        = (unsigned)window;
    re->subphase_mask = (1u << re->subphase_bits) - 1u;
    re->taps          = sidelobes * 2;
+   re->design_ratio  = (bandwidth_mod < 1.0) ? bandwidth_mod : 1.0;
+   /* The Lanczos presets decimate through Normal's filter. */
+   if (window == SINC_I16_WINDOW_KAISER)
+   {
+      dec_cutoff = cutoff;
+      dec_beta   = re->kaiser_beta;
+      dec_taps   = 4 * sidelobes;
+   }
+   else
+   {
+      dec_cutoff = 0.825;
+      dec_beta   = 5.5;
+      dec_taps   = 32;
+   }
+   dec_taps = ((unsigned)ceil(dec_taps / SINC_I16_DEC_ENGAGE) + 7u) & ~7u;
 
    /* Downsampling: lower cutoff and extend taps to hold stopband. */
    if (bandwidth_mod < 1.0)
@@ -590,10 +814,23 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    o_coef   = o_table + ((sizeof(int32_t) * phase_elems + 63) & ~(size_t)63);
    len      = o_coef;
 #ifdef SINC_I16_KAISER_FISSION
-   len     += sizeof(int32_t) * (re->taps + 4u);
+   len     += (sizeof(int32_t) * (re->taps + 4u) + 63) & ~(size_t)63;
 #endif
+   /* Then the stage rings, their table, the shadow's rings and the
+    * blocks the paths hand through. */
+   o_dec       = len;
+   o_dec_table = o_dec + ((sizeof(int16_t) * 4 * dec_taps
+         * SINC_I16_DEC_STAGES + 63) & ~(size_t)63);
+   o_shadow    = o_dec_table + ((sizeof(int32_t) * 2 * dec_taps + 63)
+         & ~(size_t)63);
+   o_fade      = o_shadow + ((sizeof(int16_t) * 4 * re->taps + 63)
+         & ~(size_t)63);
+   len         = o_fade + sizeof(int16_t)
+      * (2 * SINC_I16_FADE_FRAMES + 2 * SINC_I16_DEC_HALF);
    re->buffer_l    = (int16_t*)memalign_alloc(128, len);
-   if (!re->buffer_l)
+   re->dec         = (rarch_sinc_resampler_int16_t*)
+      calloc(SINC_I16_DEC_STAGES + 1, sizeof(*re->dec));
+   if (!re->buffer_l || !re->dec)
       goto error;
    memset(re->buffer_l, 0, sizeof(int16_t) * 4 * re->taps);
    re->buffer_r    = re->buffer_l + 2 * re->taps;
@@ -608,6 +845,33 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    else
       sinc_i16_init_table_lanczos(re, cutoff, re->phase_table,
             phases, (int)re->taps);
+
+   re->fade_block = (int16_t*)((uint8_t*)re->buffer_l + o_fade);
+   re->dec_block  = re->fade_block + 2 * SINC_I16_FADE_FRAMES;
+   /* The Kaiser builder's delta row follows the one the stages read. */
+   for (s = 0; s < SINC_I16_DEC_STAGES; s++)
+   {
+      rarch_sinc_resampler_int16_t *stage = &re->dec[s];
+      stage->phase_table   = (int32_t*)((uint8_t*)re->buffer_l + o_dec_table);
+      stage->buffer_l      = (int16_t*)((uint8_t*)re->buffer_l + o_dec)
+         + 4 * dec_taps * s;
+      stage->buffer_r      = stage->buffer_l + 2 * dec_taps;
+      stage->taps          = dec_taps;
+      stage->subphase_bits = 1;
+      stage->subphase_mask = 1;
+      stage->window        = SINC_I16_WINDOW_LANCZOS;
+      stage->kaiser_beta   = dec_beta;
+   }
+   sinc_i16_init_table_kaiser(&re->dec[0],
+         0.5 * SINC_I16_DEC_ENGAGE * dec_cutoff,
+         re->dec[0].phase_table, 1, (int)dec_taps);
+
+   re->dec[SINC_I16_DEC_STAGES]          = *re;
+   re->dec[SINC_I16_DEC_STAGES].dec      = NULL;
+   re->dec[SINC_I16_DEC_STAGES].buffer_l = (int16_t*)
+      ((uint8_t*)re->buffer_l + o_shadow);
+   re->dec[SINC_I16_DEC_STAGES].buffer_r =
+      re->dec[SINC_I16_DEC_STAGES].buffer_l + 2 * re->taps;
 
    return re;
 

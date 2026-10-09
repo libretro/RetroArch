@@ -1376,14 +1376,15 @@ jobs:
           set -euo pipefail
           # The only place the NEON sinc kernels run: aarch64 the
           # intrinsics, armv7 the armeabi assembly for both table
-          # layouts, against the scalar kernels and through dispatch.
+          # layouts, against the scalar kernels and through dispatch
+          # and the fast-forward stages.
           flags="${{ matrix.cflags }}"
           asm=0
           if [ "${{ matrix.name }}" = armv7 ]; then
              flags="-mfpu=neon"
              asm=1
           fi
-          for d in sinc_dispatch sinc_hq; do
+          for d in sinc_dispatch sinc_hq sinc_fastforward; do
              make -C $d clean
              CFLAGS="$flags" make -C $d CC="${{ matrix.cc }}" NEON_ASM=$asm
              ${{ matrix.qemu }} -L ${{ matrix.sysroot }} $d/${d}_test

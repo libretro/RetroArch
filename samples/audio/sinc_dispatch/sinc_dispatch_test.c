@@ -101,6 +101,17 @@ int main(void)
             failures++;
             continue;
          }
+         /* Stages run the one-phase layout through the same choice;
+          * the shadow is the kernel's twin. */
+         if (     re->dec[0].process
+               != expected(masks[m].mask, 0, shapes[s].avx_tier)
+               || re->dec[SINC_DEC_STAGES].process != re->process)
+         {
+            printf("FAIL %s/%s: stage %s, shadow %s\n", shapes[s].name,
+                  masks[m].name, kernel_name(re->dec[0].process),
+                  kernel_name(re->dec[SINC_DEC_STAGES].process));
+            failures++;
+         }
          if (re->process != want)
          {
             printf("FAIL %s/%s: %s, expected %s\n", shapes[s].name,

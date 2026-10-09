@@ -1137,6 +1137,21 @@ jobs:
             make -j$(nproc) check CC="gcc -mavx" SANITIZER=address,undefined
           fi
 
+      - name: Build and run sinc fast-forward test (C89, ASan + UBSan, MinGW)
+        working-directory: samples/audio/sinc_fastforward
+        run: |
+          # Live ratios under the table's design are decimated first:
+          # rejection as a table built for that ratio, the nominal path
+          # untouched, the output bound, crossfaded stage changes.
+          make -j$(nproc) check SANITIZER=address,undefined
+          if grep -qw avx /proc/cpuinfo; then
+            make clean
+            make -j$(nproc) check CC="gcc -mavx" SANITIZER=address,undefined
+          fi
+          make clean
+          WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
+            RUN="wine ./sinc_fastforward_test.exe"
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |
