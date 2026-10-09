@@ -204,8 +204,6 @@ static retro_atomic_int_t udev_rumble_slot[MAX_USERS];
 static retro_atomic_int_t udev_rumble_gen[MAX_USERS];
 static input_output_writer_t *udev_rumble_writer = NULL;
 static int64_t udev_rumble_next; /* writer-owned, or frontend fallback */
-/* how many effect uploads and plays the writer has made: for the test */
-static retro_atomic_int_t udev_rumble_writes;
 
 /* Linux documents FF durations above 0x7fff ms as unspecified. */
 #define UDEV_RUMBLE_DURATION_MS 0x7fff
@@ -295,7 +293,6 @@ static void udev_rumble_write(unsigned p)
          else
             e.u.rumble.weak_magnitude   = strength;
 
-         retro_atomic_inc_int(&udev_rumble_writes);
          if (ioctl(o->fd, EVIOCSFF, &e) < 0)
          {
             RARCH_ERR("[udev] Failed to set rumble effect on pad #%u.\n", p);
@@ -318,7 +315,6 @@ static void udev_rumble_write(unsigned p)
          play.code  = o->effects[effect];
          play.value = !!strength;
 
-         retro_atomic_inc_int(&udev_rumble_writes);
          if (write(o->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
          {
             o->retry[effect] = true;
