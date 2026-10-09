@@ -416,9 +416,9 @@ int main(void)
       thread_elevation_note_power_plan(true, true);
       check("one line naming each thread and the plan",
             thread_elevation_status(line, sizeof(line), NULL)
-               == strlen(" Priority:   main no, video high, audio ask, plan+idle\n")
+               == strlen(" Priority: Main=no Video=high Audio=ask, plan+idle\n")
             && !strcmp(line,
-               " Priority:   main no, video high, audio ask, plan+idle\n"));
+               " Priority: Main=no Video=high Audio=ask, plan+idle\n"));
       printf("        (%.*s)\n", (int)strlen(line) - 1, line);
 
       thread_elevation_note_power_plan(true, false);
@@ -427,8 +427,8 @@ int main(void)
             strstr(line, ", plan\n") != NULL);
       thread_elevation_status(line, sizeof(line), "MMCSS");
       check("a device thread is named before the plan",
-            !strcmp(line, " Priority:   main no, video high, audio ask, "
-               "device MMCSS, plan\n"));
+            !strcmp(line, " Priority: Main=no Video=high Audio=ask "
+               "Device=MMCSS, plan\n"));
       check("a short buffer is cut and terminated",
             thread_elevation_status(small, sizeof(small), NULL) == sizeof(small) - 1
             && small[sizeof(small) - 1] == '\0');
@@ -444,7 +444,7 @@ int main(void)
             thread_elevation_status(line, sizeof(line), "-") == 0);
       check("a raised device thread alone shows the line",
             thread_elevation_status(line, sizeof(line), "high") != 0
-            && strstr(line, "device high") != NULL);
+            && strstr(line, "Device=high") != NULL);
       check("everything back off: the line goes away",
             thread_elevation_status(line, sizeof(line), NULL) == 0);
    }
