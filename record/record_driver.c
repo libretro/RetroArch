@@ -395,7 +395,7 @@ bool recording_init(void)
       recording_st->gpu_bgrx              = false;
 #else
       recording_st->gpu_bgrx              =
-            !video_st->thread_wrapper_active
+            !video_driver_thread_wrapper_active()
          && video_st->current_video->read_viewport_bgrx;
 #endif
       params.pix_fmt                      = recording_st->gpu_bgrx
