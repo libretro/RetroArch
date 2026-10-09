@@ -429,6 +429,9 @@ typedef struct vk
     * from; see vulkan_check_swapchain(). */
    VkFormat built_format;
    uint32_t built_hdr_flags;
+   /* built_hdr_flags' HDR output, for get_flags() on the main thread
+    * (atomic: the video thread rebuilds) */
+   int      built_hdr_output;
    bool     built;
 
    video_info_t video;
@@ -7187,6 +7190,8 @@ static void vulkan_note_built(vk_t *vk)
    vk->built_format    = vk->context->swapchain_format;
    vk->built_hdr_flags = vk->context->flags & VULKAN_BUILT_HDR_FLAGS;
    vk->built           = true;
+   retro_atomic_store_release_int(&vk->built_hdr_output,
+         (vk->built_hdr_flags & VK_CTX_FLAG_HDR_ENABLE) ? 1 : 0);
 }
 
 static void *vulkan_init(const video_info_t *video)
@@ -12920,7 +12925,7 @@ static uint32_t vulkan_get_flags(void *data)
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
    /* HDR output keeps the end-of-frame readback, for its tonemap */
 #ifdef VULKAN_HDR_SWAPCHAIN
-   if (vk && vk->context && !(vk->context->flags & VK_CTX_FLAG_HDR_ENABLE))
+   if (vk && !retro_atomic_load_acquire_int(&vk->built_hdr_output))
 #endif
       BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
 #ifdef HAVE_OPENXR
