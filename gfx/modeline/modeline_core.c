@@ -603,6 +603,15 @@ int modeline_parse(const char *user_modeline, video_modeline_t *mode)
       return 0;
    }
 
+   /* Both totals are divisors below */
+   if (mode->htotal <= 0 || mode->vtotal <= 0)
+   {
+      RARCH_ERR("[Modeline] Zero total in user modeline: %s\n",
+            user_modeline);
+      memset(mode, 0, sizeof(*mode));
+      return 0;
+   }
+
    mode->pclock  = (uint64_t)(pclock * 1000000.0);
    /* Whole hertz: the line rate label is an integer division */
    mode->hfreq   = (double)(mode->pclock / (uint64_t)mode->htotal);
