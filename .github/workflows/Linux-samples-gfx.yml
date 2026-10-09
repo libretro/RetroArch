@@ -1559,6 +1559,26 @@ jobs:
           echo "[pass] badge_cache_test (ASan)"
           make clean
 
+      - name: Build and run progress_bounds_test (ASan + UBSan)
+        shell: bash
+        working-directory: samples/cheevos/progress_bounds
+        run: |
+          set -eu
+          # Achievement progress comes back from a save state or a
+          # netplay host, so its bytes are not the runtime's own. The
+          # bundled rcheevos reader gets blobs in heap buffers of
+          # exactly their size: every truncation of a real one, a chunk
+          # length that wraps the offset back before itself, and a
+          # digest cut short. A read past a blob fails under ASan; the
+          # wrap would loop forever, which the timeout ends.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 timeout 60 ./progress_bounds_test
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=progress_bounds_test.exe
+          test -f progress_bounds_test.exe
+          make clean TARGET=progress_bounds_test.exe
+          echo "[pass] progress_bounds_test (ASan + UBSan, and a mingw-w64 build)"
+
       - name: Build and run psp1_gfx_contracts_test (ASan + UBSan)
         shell: bash
         working-directory: samples/gfx/psp1_gfx_contracts

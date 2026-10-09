@@ -1226,12 +1226,12 @@ bool rcheevos_get_serialized_data(void* buffer)
    return (rc_client_serialize_progress(rcheevos_locals.client, (uint8_t*)buffer) == RC_OK);
 }
 
-bool rcheevos_set_serialized_data(void* buffer)
+bool rcheevos_set_serialized_data(const void* buffer, size_t size)
 {
    if (rcheevos_is_game_loaded() && buffer)
    {
-      const int result = rc_client_deserialize_progress(
-         rcheevos_locals.client, (const uint8_t*)buffer);
+      const int result = rc_client_deserialize_progress_sized(
+         rcheevos_locals.client, (const uint8_t*)buffer, size);
 
       return (result == RC_OK);
    }
