@@ -48,10 +48,23 @@ static void sleep_us(unsigned us) { usleep(us); }
 #endif
 
 static void after_take(void *store, unsigned slot);
+static void after_claim(void *store);
+#define OUTPUT_STORE_AFTER_CLAIM(st) after_claim(st)
 #define OUTPUT_STORE_AFTER_TAKE(st, slot) after_take(st, slot)
 #include "input_output_store.h"
 
 static bool post_during_take;
+static unsigned post_after_claim;
+
+static void after_claim(void *store)
+{
+   if (post_after_claim)
+   {
+      unsigned slot = post_after_claim - 1;
+      post_after_claim = 0;
+      output_store_post((output_store_t*)store, slot, 200);
+   }
+}
 
 static void after_take(void *store, unsigned slot)
 {
@@ -256,8 +269,8 @@ static void lane_threads(void)
 
       if (sabotage_miss_wakeup && output_store_pending(&g_st))
       {
-         /* the taker notes the posts as seen, then looks at nothing */
-         g_st.seen = retro_atomic_load_acquire_int(&g_st.posts);
+         /* Consume the notification without delivering the values. */
+         retro_atomic_exchange_int(&g_st.posted, 0);
       }
       else
          output_store_take(&g_st, device_write, &d);
@@ -343,10 +356,53 @@ static void lane_shared_slot(void)
       fprintf(stderr, "[pass] three producers share one slot without duplicate delivery\n");
 }
 
+static void lane_sparse_slots(void)
+{
+   output_store_t st;
+   struct device d;
+   unsigned had = failures;
+
+   memset(&st, 0, sizeof(st));
+   memset(&d, 0, sizeof(d));
+   output_store_post(&st, 31, 65535);
+   output_store_post(&st, 0, 0);
+   CHECK(output_store_take(&st, device_write, &d) == 2,
+         "sparse take missed the first or last slot");
+   CHECK(d.order[0] == 0 && d.order[1] == 31
+         && d.value[31] == 65535 && d.writes[0] == 1,
+         "sparse take changed ordering, zero or maximum value");
+   CHECK(!output_store_pending(&st), "sparse take left a notification");
+   output_store_post(&st, 0, 42);
+   CHECK(output_store_take(&st, device_write, &d) == 1
+         && d.writes[31] == 1 && d.value[0] == 42,
+         "a previously used high slot was delivered again");
+   output_store_post(&st, 0, 100);
+   post_after_claim = 1;
+   CHECK(output_store_take(&st, device_write, &d) == 1 && d.value[0] == 200,
+         "a post between notification and value capture was lost");
+   CHECK(output_store_take(&st, device_write, &d) == 0
+         && !output_store_pending(&st),
+         "an already consumed racing value was delivered twice");
+   output_store_post(&st, 0, 100);
+   post_after_claim = 32;
+   CHECK(output_store_take(&st, device_write, &d) == 1 && d.value[0] == 100,
+         "a racing post to another slot changed the captured notification");
+   CHECK(output_store_take(&st, device_write, &d) == 1 && d.value[31] == 200,
+         "a racing post to another slot was not delivered next");
+   output_store_post(&st, 31, 0);
+   output_store_drop(&st);
+   CHECK(!output_store_pending(&st)
+         && output_store_take(&st, device_write, &d) == 0,
+         "drop retained a high-slot notification");
+   if (failures == had && !quiet)
+      fprintf(stderr, "[pass] sparse first/last slots retain values, order and drop semantics\n");
+}
+
 int main(void)
 {
    lane_semantics();
    lane_publication();
+   lane_sparse_slots();
    lane_threads();
    lane_shared_slot();
 
