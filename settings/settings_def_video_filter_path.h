@@ -16,7 +16,7 @@
 #ifndef SETTINGS_DEF_CONFIG_PASS
 S_PATH_DS_H(path_softfilter_plugin, VIDEO_FILTER,
       "video_filter",
-      directory_video_filter, SD_FLAG_LAKKA_ADVANCED, CMD_EVENT_VIDEO_FILTER_INIT, "filt", setting_get_string_representation_video_filter, 0,
+      directory_video_filter, SD_FLAG_LAKKA_ADVANCED, CMD_EVENT_REINIT, "filt", setting_get_string_representation_video_filter, 0,
       "Video Filter",
       "Apply a CPU-powered video filter. Might come at a high performance cost. Some video filters might only work for cores that use 32-bit or 16-bit color.")
 #endif
