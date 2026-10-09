@@ -59,6 +59,9 @@ typedef struct alsa_microphone_handle
 {
    snd_pcm_t *pcm;
    alsa_stream_info_t stream_info;
+   /* Nonzero while the frontend has the microphone on. Set on the
+    * main thread, read by the capture worker. */
+   retro_atomic_int_t on;
 } alsa_microphone_handle_t;
 
 /* The microphone driver context carries nothing of its own: what
@@ -88,16 +91,23 @@ static bool alsa_microphone_start_mic(void *driver_context, void *mic_context);
  * capture must cost a dropped slice rather than a parked worker. */
 #define ALSA_WAIT_READABLE_LAPS 8
 
-/* snd_pcm_recover() leaves an overrun stream prepared, not running.
- * Only a running stream overruns, so restart it here. Nowhere else:
- * any other prepared stream is one the core has off. */
-static int alsa_microphone_recover(snd_pcm_t *pcm, int err)
+/* snd_pcm_recover() leaves an overrun or suspended stream prepared,
+ * not running, and a signal leaves a stream as it was - which can be
+ * prepared and never started. Only a microphone the frontend has on is
+ * restarted. Should the frontend turn it off meanwhile, it is paused
+ * again here, as stop_mic() finds it prepared and does nothing. */
+static int alsa_microphone_recover(alsa_microphone_handle_t *mic, int err)
 {
-   int rc = snd_pcm_recover(pcm, err, 1);
+   int rc = snd_pcm_recover(mic->pcm, err, 1);
    if (rc < 0)
       return rc;
-   if (snd_pcm_state(pcm) == SND_PCM_STATE_PREPARED)
-      return snd_pcm_start(pcm);
+   if (     !retro_atomic_load_acquire_int(&mic->on)
+         || snd_pcm_state(mic->pcm) != SND_PCM_STATE_PREPARED)
+      return 0;
+   if ((rc = snd_pcm_start(mic->pcm)) < 0)
+      return rc;
+   if (!retro_atomic_load_acquire_int(&mic->on))
+      snd_pcm_pause(mic->pcm, 1);
    return 0;
 }
 
@@ -175,7 +185,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
-         if (alsa_microphone_recover(mic->pcm, rc) < 0)
+         if (alsa_microphone_recover(mic, rc) < 0)
             return -1;
          continue;
       }
@@ -184,7 +194,7 @@ static int alsa_microphone_read(void *driver_context, void *mic_context, void *s
 
       if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
       {
-         if (alsa_microphone_recover(mic->pcm, (int)frames) < 0)
+         if (alsa_microphone_recover(mic, (int)frames) < 0)
             return -1;
 
          break;
@@ -246,6 +256,7 @@ static void *alsa_microphone_open_mic(void *driver_context,
    /* If the microphone context couldn't be allocated... */
    if (!(mic = calloc(1, sizeof(alsa_microphone_handle_t))))
       return NULL;
+   retro_atomic_int_init(&mic->on, 0);
 
    /* channels hardcoded to 1, because we only support mono mic input */
    if (alsa_init_pcm(&mic->pcm, device, SND_PCM_STREAM_CAPTURE, rate, latency, 1,
@@ -279,6 +290,7 @@ static bool alsa_microphone_start_mic(void *driver_context, void *mic_context)
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
    if (!mic)
       return false;
+   retro_atomic_store_release_int(&mic->on, 1);
    return alsa_start_pcm(mic->pcm);
 }
 
@@ -287,6 +299,7 @@ static bool alsa_microphone_stop_mic(void *driver_context, void *mic_context)
    alsa_microphone_handle_t *mic = (alsa_microphone_handle_t*)mic_context;
    if (!mic)
       return false;
+   retro_atomic_store_release_int(&mic->on, 0);
    return alsa_stop_pcm(mic->pcm);
 }
 
@@ -323,7 +336,7 @@ static size_t alsa_microphone_wait_readable(void *driver_context,
 
       if (avail == -EPIPE || avail == -ESTRPIPE || avail == -EINTR)
       {
-         if (alsa_microphone_recover(mic->pcm, (int)avail) < 0)
+         if (alsa_microphone_recover(mic, (int)avail) < 0)
             return 0;
          if (--laps < 0)
             return 0;
@@ -339,7 +352,7 @@ static size_t alsa_microphone_wait_readable(void *driver_context,
          return 0;
       if (rc == -EPIPE || rc == -ESTRPIPE || rc == -EINTR)
       {
-         if (alsa_microphone_recover(mic->pcm, rc) < 0)
+         if (alsa_microphone_recover(mic, rc) < 0)
             return 0;
       }
       else if (rc < 0)

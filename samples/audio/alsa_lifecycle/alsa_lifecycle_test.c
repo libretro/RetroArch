@@ -501,6 +501,35 @@ static void s_capture_start(void)
          "an overrun in the read: %u recover(s), %u start(s)", n_recover, n_start);
    CHECK(microphone_alsa.mic_alive(drv, mic), "a microphone that overran in the read is not running");
 
+   /* Off again: a signal or a suspend in the wait leaves it off. */
+   microphone_alsa.stop_mic(drv, mic);
+   reset_counts();
+   scr_state    = SND_PCM_STATE_PREPARED;
+   scr_avail_rc = -EINTR;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_start == 0, "a signal in the wait started a microphone the core has off (%u start(s))", n_start);
+
+   reset_counts();
+   scr_state    = SND_PCM_STATE_SUSPENDED;
+   scr_avail_rc = -ESTRPIPE;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 0,
+         "a suspend in the wait of a microphone the core has off: %u recover(s), %u start(s)",
+         n_recover, n_start);
+
+   /* On, suspended, and the device cannot resume: restarted. */
+   microphone_alsa.start_mic(drv, mic);
+   reset_counts();
+   scr_state    = SND_PCM_STATE_SUSPENDED;
+   scr_avail_rc = -ESTRPIPE;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 1,
+         "a suspend in the wait of a microphone the core has on: %u recover(s), %u start(s)",
+         n_recover, n_start);
+
    reset_counts();
    microphone_alsa.close_mic(drv, mic);
    microphone_alsa.free(drv);
