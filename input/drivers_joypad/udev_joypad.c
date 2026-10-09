@@ -74,6 +74,8 @@
 #define INPUT_PROP_ACCELEROMETER 0x06
 #endif
 
+#define UDEV_DS3_PRESSURES 10
+
 #define SENSOR_AXES 6 /* ABS_X..ABS_RZ on sensor node, maps 1:1 to RETRO_SENSOR_* 0-5 */
 #define DEG_TO_RAD_F 0.017453293f
 
@@ -123,6 +125,13 @@ struct udev_joypad
    bool sensor_has_accel; /* sensor node has ABS_X/Y/Z or ABS_RX/RY/RZ */
    bool sensor_has_gyro;  /* sensor node has ABS_RX/RY/RZ */
    bool sensor_accel_on_rxyz_codes; /* wiimote: accel is reported on ABS_RX/RY/RZ instead of ABS_X/Y/Z. */
+
+   /* A DualShock 3's button pressures, which its evdev node does not
+    * have: read from the pad's hidraw node into the axes from
+    * pressure_axis on. */
+   bool pressure;
+   uint8_t pressure_axis;
+   int pressure_fd;
 };
 
 struct joypad_udev_entry
@@ -702,6 +711,113 @@ static void udev_find_sensor_sibling(struct udev_device *gamepad_dev,
    udev_enumerate_unref(enumerate);
 }
 
+/* The DualShock 3's input report bytes with the pressure of cross,
+ * circle, square, triangle, L1, R1, up, down, left and right: the
+ * order SDL gives them in, as axes after the pad's own. */
+static const uint8_t udev_ds3_pressure_byte[UDEV_DS3_PRESSURES] = {
+   24, 23, 25, 22, 20, 21, 14, 16, 17, 15
+};
+
+static void udev_pressure_attach(struct udev_joypad *pad, int fd,
+      unsigned *axes)
+{
+   pad->pressure      = true;
+   pad->pressure_fd   = fd;
+   pad->pressure_axis = (uint8_t)*axes;
+   *axes             += UDEV_DS3_PRESSURES;
+}
+
+/* The newest report waiting is the pad's state. */
+static void udev_pressure_read(struct udev_joypad *pad)
+{
+   uint8_t report[2][64];
+   ssize_t len;
+   int n;
+   int cur    = 0;
+   int newest = -1;
+
+   /* an input report is kept, anything else read over */
+   while ((len = read(pad->pressure_fd, report[cur],
+               sizeof(report[0]))) > 0)
+   {
+      if (len > 25 && report[cur][0] == 0x01)
+      {
+         newest = cur;
+         cur   ^= 1;
+      }
+   }
+   if (newest >= 0)
+   {
+      for (n = 0; n < UDEV_DS3_PRESSURES; n++)
+      {
+         unsigned b = report[newest][udev_ds3_pressure_byte[n]];
+         pad->axes[pad->pressure_axis + n] = (int16_t)((b << 7) | (b >> 1));
+      }
+   }
+   /* gone, or no longer ours: the buttons go on without */
+   if (len == 0 || (len < 0 && errno != EAGAIN && errno != EINTR))
+   {
+      close(pad->pressure_fd);
+      pad->pressure = false;
+      for (n = 0; n < UDEV_DS3_PRESSURES; n++)
+         pad->axes[pad->pressure_axis + n] = 0;
+   }
+}
+
+/* The hidraw node of the pad's HID device, for a DualShock 3. */
+static void udev_find_pressure_sibling(struct udev_device *gamepad_dev,
+      unsigned p, unsigned *axes)
+{
+   struct udev_enumerate *enumerate = NULL;
+   struct udev_list_entry *item     = NULL;
+   struct udev_device *hid_parent;
+   const char *parent_syspath;
+   struct udev_joypad *pad          = &udev_pads[p];
+
+   if (     pad->vid != 0x054c || pad->pid != 0x0268
+         || *axes + UDEV_DS3_PRESSURES > NUM_AXES
+         || !(hid_parent = udev_device_get_parent_with_subsystem_devtype(
+               gamepad_dev, "hid", NULL))
+         || !(parent_syspath = udev_device_get_syspath(hid_parent))
+         || !(enumerate = udev_enumerate_new(udev_joypad_fd)))
+      return;
+
+   udev_enumerate_add_match_subsystem(enumerate, "hidraw");
+   udev_enumerate_scan_devices(enumerate);
+   udev_list_entry_foreach(item, udev_enumerate_get_list_entry(enumerate))
+   {
+      struct udev_device *dev = udev_device_new_from_syspath(
+            udev_joypad_fd, udev_list_entry_get_name(item));
+      struct udev_device *parent;
+      const char *devnode;
+
+      if (!dev)
+         continue;
+      parent  = udev_device_get_parent_with_subsystem_devtype(
+            dev, "hid", NULL);
+      devnode = udev_device_get_devnode(dev);
+      if (     devnode && parent
+            && string_is_equal(udev_device_get_syspath(parent),
+               parent_syspath))
+      {
+         int fd = open(devnode, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+         if (fd >= 0)
+         {
+            udev_pressure_attach(pad, fd, axes);
+            RARCH_LOG("[udev] Pad #%u: button pressures from %s.\n",
+                  p, devnode);
+         }
+         else
+            RARCH_LOG("[udev] Pad #%u: no button pressures, %s cannot be"
+                  " read (%s).\n", p, devnode, strerror(errno));
+         udev_device_unref(dev);
+         break;
+      }
+      udev_device_unref(dev);
+   }
+   udev_enumerate_unref(enumerate);
+}
+
 static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char *path)
 {
    int i;
@@ -811,6 +927,8 @@ static int udev_add_pad(struct udev_device *dev, unsigned p, int fd, const char 
       }
    }
 
+   udev_find_pressure_sibling(dev, p, &axes);
+
    pad->device = st.st_rdev;
    udev_pad_set_fd(p, fd);
    pad->path   = strdup(path);
@@ -905,6 +1023,8 @@ static void udev_free_pad(unsigned pad)
       close(udev_pads[pad].fd);
    if (udev_pads[pad].sensor_fd >= 0)
       close(udev_pads[pad].sensor_fd);
+   if (udev_pads[pad].pressure)
+      close(udev_pads[pad].pressure_fd);
 
    if (udev_pads[pad].path)
       free(udev_pads[pad].path);
@@ -1179,6 +1299,9 @@ static void udev_joypad_poll(void)
             }
          }
       }
+
+      if (pad->pressure)
+         udev_pressure_read(pad);
 
       /* Read sensor events from sibling IMU node */
       if (  pad->sensor_fd >= 0
