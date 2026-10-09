@@ -1368,7 +1368,10 @@ void NETRETROPAD_CORE_PREFIX(retro_run)(void)
 
          if (input_test_steps[current_test_step].expected_button < KEYBOARD_OFFSET)
          {
-            expected_input = 1 << input_test_steps[current_test_step].expected_button;
+            /* The test file may name a button past input_state's 32 bits */
+            expected_input = (input_test_steps[current_test_step].expected_button < 32)
+               ? 1U << input_test_steps[current_test_step].expected_button
+               : 0;
             if (input_state & expected_input)
                test_success = true;
          }
