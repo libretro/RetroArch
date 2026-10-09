@@ -2625,13 +2625,13 @@ static uintptr_t ctr_load_texture(void *video_data, void *data,
    ctr_texture_t *texture      = NULL;
    ctr_video_t            *ctr = (ctr_video_t*)video_data;
    struct texture_image *image = (struct texture_image*)data;
-   u32 size                    = image->width
-      * image->height * sizeof(uint32_t);
-
-   if ((u64)size * 3 > linearSpaceFree())
-      return 0;
+   u32 size;
 
    if (!ctr || !image || image->width > 2048 || image->height > 2048)
+      return 0;
+
+   size = image->width * image->height * sizeof(uint32_t);
+   if ((u64)size * 3 > linearSpaceFree())
       return 0;
 
    texture                     = (ctr_texture_t*)
