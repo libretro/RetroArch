@@ -457,6 +457,85 @@ static const struct config_entry_list **config_file_sort_entries(
  *   has no programmatic value. In this case, the comment
  *   is removed from the end of 'str' and NULL is returned
  **/
+/* The closing quote of a string literal whose text starts at @s. A
+ * quote after an odd run of backslashes is escaped (see
+ * config_file_dump_value). A line with every quote escaped was written
+ * before values were escaped - a directory ending in a backslash - and
+ * its first quote closes it, the backslashes kept as they are. NULL
+ * when there is no quote. *escaped is set when the text up to the
+ * returned quote has escaping to undo: an escaped quote, or backslashes
+ * before the closing one. Nearly every value has neither, and costs the
+ * one strchr and a look at the byte before. */
+static char *config_file_literal_end(char *s, bool *escaped)
+{
+   char *first = NULL;
+   char *q     = s;
+
+   *escaped    = false;
+   while ((q = strchr(q, '\"')))
+   {
+      size_t n = 0;
+      while (q - n > s && *(q - n - 1) == '\\')
+         n++;
+      if (!(n & 1))
+      {
+         *escaped = (first != NULL) || n;
+         return q;
+      }
+      if (!first)
+         first = q;
+      q++;
+   }
+   return first;
+}
+
+#if defined(__GNUC__) || defined(__clang__)
+#define CONFIG_FILE_NOINLINE __attribute__((noinline))
+#elif defined(_MSC_VER)
+#define CONFIG_FILE_NOINLINE __declspec(noinline)
+#else
+#define CONFIG_FILE_NOINLINE
+#endif
+
+/* Undoes config_file_dump_value()'s escaping in place over the first
+ * @len bytes of @s: a run of backslashes before a quote, or at the end,
+ * is halved, and the quote kept. Returns the new length. */
+static size_t config_file_unescape(char *s, size_t len)
+{
+   size_t r = 0;
+   size_t w = 0;
+
+   while (r < len)
+   {
+      size_t n = 0;
+      size_t keep;
+      while (r + n < len && s[r + n] == '\\')
+         n++;
+      if (!n)
+      {
+         s[w++] = s[r++];
+         continue;
+      }
+      keep = (r + n == len || s[r + n] == '\"') ? n / 2 : n;
+      r   += n;
+      while (keep--)
+         s[w++] = '\\';
+   }
+   return w;
+}
+
+/* The value of a string literal at @line whose first quote has a
+ * backslash before it, unescaped in place; its length. Kept out of
+ * config_file_extract_value(), which nearly every value leaves through
+ * the one strchr. */
+static CONFIG_FILE_NOINLINE size_t config_file_literal_escaped(char *line)
+{
+   bool escaped;
+   char *end  = config_file_literal_end(line, &escaped);
+   size_t idx = end ? (size_t)(end - line) : strlen(line);
+   return escaped ? config_file_unescape(line, idx) : idx;
+}
+
 static char *config_file_strip_comment(char *str)
 {
    /* Search for a comment (#) character */
@@ -486,7 +565,9 @@ static char *config_file_strip_comment(char *str)
       {
          /* Search for the end of the string literal
           * value */
-         char *literal_end = strchr(literal_start + 1, '\"');
+         bool escaped;
+         char *literal_end = config_file_literal_end(literal_start + 1,
+               &escaped);
 
          /* Check whether string literal end occurs
           * *after* the comment character
@@ -536,7 +617,12 @@ static char *config_file_extract_value(char *line, unsigned p_opts,
           * the value. */
          size_t idx;
          char *end = strchr(line, '\"');
-         idx       = end ? (size_t)(end - line) : strlen(line);
+         /* A backslash before it: escaping to undo, or an older
+          * file's directory (config_file_literal_end) */
+         if (end && end[-1] == '\\')
+            idx    = config_file_literal_escaped(line);
+         else
+            idx    = end ? (size_t)(end - line) : strlen(line);
 
          line[idx] = '\0';
          if (idx)
@@ -2277,6 +2363,35 @@ static void config_file_dump_put(struct config_file_dump_buf *b,
 #define CONFIG_FILE_ENTRY_SERIALISABLE(e) \
    (!(e)->readonly && (e)->key && (e)->value)
 
+/* A value goes out as it is, but for its quotes: each is escaped with a
+ * backslash, and a run of backslashes before one, or at the end of the
+ * value, is doubled, so the run cannot be read as escaping the quote
+ * after it (config_file_unescape). Other backslashes - a Windows path -
+ * stay single. A value without either costs one memchr. */
+static void config_file_dump_value(struct config_file_dump_buf *b,
+      const char *v, size_t len)
+{
+   const char *end = v + len;
+   const char *q;
+   size_t tail     = 0;
+
+   while (tail < len && v[len - 1 - tail] == '\\')
+      tail++;
+   while ((q = (const char*)memchr(v, '\"', (size_t)(end - tail - v))))
+   {
+      size_t n = 0;
+      while (q - n > v && *(q - n - 1) == '\\')
+         n++;
+      config_file_dump_put(b, v, (size_t)(q - v));
+      config_file_dump_put(b, q - n, n);
+      config_file_dump_put(b, "\\\"", STRLEN_CONST("\\\""));
+      v = q + 1;
+   }
+   config_file_dump_put(b, v, (size_t)(end - v));
+   if (tail)
+      config_file_dump_put(b, end - tail, tail);
+}
+
 static void config_file_dump_entry(struct config_file_dump_buf *b,
       const struct config_entry_list *e)
 {
@@ -2285,7 +2400,7 @@ static void config_file_dump_entry(struct config_file_dump_buf *b,
    config_file_dump_put(b, e->key,
          e->key_len   ? e->key_len   : strlen(e->key));
    config_file_dump_put(b, " = \"", STRLEN_CONST(" = \""));
-   config_file_dump_put(b, e->value,
+   config_file_dump_value(b, e->value,
          e->value_len ? e->value_len : strlen(e->value));
    config_file_dump_put(b, "\"\n", STRLEN_CONST("\"\n"));
 }
