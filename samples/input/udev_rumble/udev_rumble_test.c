@@ -393,6 +393,47 @@ int main(void)
 
    printf("   ok   valid replay duration, unchanged refresh, bounded upload retry and failed-stop recovery\n");
 
+#ifndef HAVE_LAKKA_SWITCH
+   /* A rejected gain must not be remembered as applied. */
+   __atomic_store_n(&fail_play, 1, __ATOMIC_SEQ_CST);
+   udev_set_rumble_gain(0, 100);
+   CHECK(!pad_event(&ev, 50), "injected gain failure did not occur");
+   udev_rumble_wake(0);
+   CHECK(!pad_event(&ev, 50), "failed gain retried before its deadline");
+   __atomic_fetch_add(&clock_offset, UDEV_RUMBLE_RETRY_MS - 100, __ATOMIC_SEQ_CST);
+#ifdef HAVE_THREADS
+   input_output_writer_wake(udev_rumble_writer);
+#else
+   usleep(120000);
+   udev_rumble_poll();
+#endif
+   CHECK(pad_event(&ev, 500) && ev.code == FF_GAIN && ev.value == 0xffff,
+         "failed gain did not recover without a new request");
+
+   __atomic_store_n(&fail_play, 1, __ATOMIC_SEQ_CST);
+   udev_set_rumble_gain(0, 25);
+   CHECK(!pad_event(&ev, 50), "second injected gain failure did not occur");
+   udev_set_rumble_gain(0, 75);
+   CHECK(pad_event(&ev, 500) && ev.code == FF_GAIN
+         && ev.value >= 0xbfff && ev.value <= 0xc000,
+         "new gain did not replace the failed request immediately");
+#ifndef HAVE_THREADS
+   CHECK(udev_rumble_timeout(NULL) == -1, "successful gain retained a deadline");
+#endif
+   __atomic_store_n(&fail_play, 1, __ATOMIC_SEQ_CST);
+   udev_set_rumble_gain(0, 25);
+   CHECK(!pad_event(&ev, 50), "cancelled gain failure did not occur");
+   udev_set_rumble_gain(0, 75);
+   CHECK(!pad_event(&ev, 50), "returning to applied gain wrote an event");
+   __atomic_fetch_add(&clock_offset, UDEV_RUMBLE_RETRY_MS, __ATOMIC_SEQ_CST);
+   udev_rumble_wake(0);
+   CHECK(!pad_event(&ev, 50), "cancelled gain retained its retry");
+#ifndef HAVE_THREADS
+   CHECK(udev_rumble_timeout(NULL) == -1, "cancelled gain retained a deadline");
+#endif
+   printf("   ok   gain failures retry with backoff and newer gains replace them\n");
+#endif
+
    /* stopped: the writer ends and lets go of what it held */
    {
       int old_fd = udev_pads[0].fd;

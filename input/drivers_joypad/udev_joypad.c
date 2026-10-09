@@ -188,6 +188,8 @@ struct udev_rumble_out
    int      fd;            /* the writer's own descriptor, or -1 */
    int      gen;           /* the pad generation it is for */
    int      gain;          /* the gain written, or -1 */
+   int      attempted_gain;
+   int64_t  gain_due;
    int      effects[2];    /* [0] - strong, [1] - weak */
    bool     has_set_ff[2];
    uint16_t configured[2];
@@ -247,17 +249,28 @@ static void udev_rumble_write(unsigned p)
 
 #ifndef HAVE_LAKKA_SWITCH
    gain = retro_atomic_load_acquire_int(&udev_rumble_want_gain[p]);
-   if (gain >= 0 && gain != o->gain)
+   if (gain < 0 || gain == o->gain)
+      o->gain_due = 0;
+   if (gain >= 0 && gain != o->gain
+         && (gain != o->attempted_gain || !o->gain_due
+            || udev_rumble_now() >= o->gain_due))
    {
       struct input_event ie;
       memset(&ie, 0, sizeof(ie));
       ie.type  = EV_FF;
       ie.code  = FF_GAIN;
       ie.value = 0xFFFF * (gain / 100.0);
+      o->attempted_gain = gain;
       if (write(o->fd, &ie, sizeof(ie)) < (ssize_t)sizeof(ie))
+      {
          RARCH_ERR("[udev] Failed to set rumble gain on pad #%u.\n", p);
-      /* noted either way: a pad that refuses is not asked each time */
-      o->gain = gain;
+         o->gain_due = udev_rumble_now() + UDEV_RUMBLE_RETRY_MS;
+      }
+      else
+      {
+         o->gain     = gain;
+         o->gain_due = 0;
+      }
    }
 #else
    (void)gain;
@@ -360,12 +373,17 @@ static int udev_rumble_timeout(void *userdata)
    (void)userdata;
    for (p = 0; p < MAX_USERS; p++)
       if (udev_rumble_out[p].fd >= 0)
+      {
+         int64_t gain_due = udev_rumble_out[p].gain_due;
+         if (gain_due && (!next || gain_due < next))
+            next = gain_due;
          for (effect = 0; effect < 2; effect++)
          {
             int64_t due = udev_rumble_out[p].due[effect];
             if (due && (!next || due < next))
                next = due;
          }
+      }
    udev_rumble_next = next;
    if (!next)
       return -1;
