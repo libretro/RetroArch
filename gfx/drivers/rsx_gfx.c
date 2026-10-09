@@ -1033,7 +1033,8 @@ static void rsx_load_texture_data(rsx_t* rsx, rsx_texture_t *texture,
 
    if (!texture->data)
    {
-      texture->data       = (u32*)rsxMemalign(128, texture->height * pitch);
+      if (!(texture->data = (u32*)rsxMemalign(128, texture->height * pitch)))
+         return;
       rsxAddressToOffset(texture->data, &texture->offset);
    }
 
