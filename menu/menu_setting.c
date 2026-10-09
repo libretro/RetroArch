@@ -10443,11 +10443,9 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
 #ifdef HAVE_VIDEO_FILTER
       case MENU_ENUM_LABEL_VIDEO_FILTER_ENABLE:
-         /* As the toggle hotkey: instant while the filter keeps the
-          * core's pixel format, the driver set up again for one that
-          * changes it (ntsc_crt) */
-         if (video_driver_filter_changes_format())
-            rarch_cmd = CMD_EVENT_REINIT;
+         /* As the toggle hotkey. A second run of this handler for the
+          * same press finds the driver told already. */
+         video_driver_filter_apply();
          break;
       case MENU_ENUM_LABEL_VIDEO_FILTER_THREADS:
          /* Rebuild a running filter on the new worker count; with no

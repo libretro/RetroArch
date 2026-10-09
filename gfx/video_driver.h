@@ -1126,6 +1126,16 @@ typedef struct video_poke_interface
     * asked for into rates, *count of them. */
    float (*get_headset_refresh)(void *data, float *rates, unsigned cap,
          unsigned *count);
+
+   /* The frames the driver gets from now on are @rgb32 (XRGB8888, else
+    * RGB565) and up to RARCH_SCALE_BASE * @input_scale on a side: a
+    * software filter was chosen, removed, or turned on or off. True
+    * when the driver takes them as it is set up now, adapting in place;
+    * false, and the frontend sets the driver up again. Called from the
+    * main thread with no frame in flight, or under the threaded video
+    * wrapper from the video thread while the main thread waits.
+    * Optional. */
+   bool (*set_frame_format)(void *data, bool rgb32, unsigned input_scale);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -1430,6 +1440,10 @@ typedef struct
 #ifdef HAVE_VIDEO_FILTER
    unsigned state_scale;
    unsigned state_out_bpp;
+   /* What the driver was last set up or told the frames are: 32-bit
+    * or not, and the input scale (see set_frame_format) */
+   unsigned frame_scale;
+   bool     frame_rgb32;
 #endif
    /* The output size: width in the high 16 bits, height in the low
     * 16, one value so a reader gets a matching pair without a lock.
@@ -2429,10 +2443,10 @@ void video_driver_hw_request_restore(const struct video_hw_request *req);
 #ifdef HAVE_VIDEO_FILTER
 void video_driver_filter_free(void);
 
-/* The loaded software filter outputs another pixel format than the
- * core's, so the driver has to be set up again when it starts or stops
- * receiving the filtered frames. */
-bool video_driver_filter_changes_format(void);
+/* After a software filter was loaded, freed, or turned on or off: the
+ * driver is told what its frames are now, in place where it can take
+ * them, and set up again where it cannot. */
+void video_driver_filter_apply(void);
 #endif
 
 void video_driver_lock_new(void);

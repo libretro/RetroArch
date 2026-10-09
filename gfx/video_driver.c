@@ -2617,15 +2617,60 @@ void video_driver_filter_free(void)
    video_driver_modify_disp_flags(0, VIDEO_FLAG_STATE_OUT_RGB32);
 }
 
-bool video_driver_filter_changes_format(void)
+/* The frames the driver gets: the loaded filter's output while it
+ * filters, else the core's own; and their largest side, as the input
+ * scale (the filter's while one is loaded, filtering or not, so the
+ * toggle keeps the size). Both 32-bit core formats are 32-bit to the
+ * driver. */
+static void video_driver_frame_format(video_driver_state_t *video_st,
+      settings_t *settings, bool *rgb32, unsigned *scale)
 {
-   video_driver_state_t *video_st = &video_driver_st;
-   bool core_rgb32                = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
-         || video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
-         || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010;
-   bool filter_rgb32              = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
-         ? true : false;
-   return video_st->state_filter && filter_rgb32 != core_rgb32;
+   struct retro_game_geometry *geom = &video_st->av_info.geometry;
+   unsigned max_dim                 = MAX(geom->max_width, geom->max_height);
+   unsigned s                       = next_pow2(max_dim) / RARCH_SCALE_BASE;
+
+   if (video_st->state_filter && settings->bools.video_filter_enable)
+      *rgb32 = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags)
+            & VIDEO_FLAG_STATE_OUT_RGB32) ? true : false;
+   else
+      *rgb32 = video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
+            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
+            || video_st->pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010;
+   if (video_st->state_filter)
+      s = video_st->state_scale;
+   *scale = MAX(s, 1);
+}
+
+void video_driver_filter_apply(void)
+{
+   bool rgb32;
+   unsigned scale;
+   video_driver_state_t *video_st     = &video_driver_st;
+   settings_t *settings               = config_get_ptr();
+   const video_poke_interface_t *poke = video_st->poke;
+
+   if (!video_st->data || !video_st->current_video)
+      return;
+
+   video_driver_frame_format(video_st, settings, &rgb32, &scale);
+   /* A smaller frame fits what the driver holds */
+   if (rgb32 == video_st->frame_rgb32 && scale <= video_st->frame_scale)
+      return;
+   scale = MAX(scale, video_st->frame_scale);
+
+   /* A 10-bit source is set up with the driver's own say in it */
+   if (     video_st->pix_fmt != RETRO_PIXEL_FORMAT_XRGB2101010
+         && video_st->pix_fmt != RETRO_PIXEL_FORMAT_HDR10_2101010
+         && poke && poke->set_frame_format
+         && poke->set_frame_format(video_st->data, rgb32, scale))
+   {
+      RARCH_LOG("[Video] Frames now %s, scale %u, without setting the "
+            "driver up again.\n", rgb32 ? "32-bit" : "16-bit", scale);
+      video_st->frame_rgb32 = rgb32;
+      video_st->frame_scale = scale;
+      return;
+   }
+   command_event(CMD_EVENT_REINIT, NULL);
 }
 
 void video_driver_init_filter(enum retro_pixel_format colfmt_int,
@@ -6710,7 +6755,12 @@ void video_driver_vr_driver_changed(void)
 bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 {
    video_info_t video;
-   unsigned max_dim, scale, width, height;
+   unsigned scale, width, height;
+#ifdef HAVE_VIDEO_FILTER
+   bool frame_rgb32;
+#else
+   unsigned max_dim;
+#endif
    video_viewport_settings_t *custom_vp            = NULL;
    input_driver_t *tmp                    = NULL;
    static uint16_t dummy_pixels[32]       = {0};
@@ -6749,13 +6799,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       cached_frame_lock = slock_new();
 #endif
 
+#ifdef HAVE_VIDEO_FILTER
+   video_driver_frame_format(video_st, settings, &frame_rgb32, &scale);
+#else
    max_dim   = MAX(geom->max_width, geom->max_height);
    scale     = next_pow2(max_dim) / RARCH_SCALE_BASE;
    scale     = MAX(scale, 1);
-
-#ifdef HAVE_VIDEO_FILTER
-   if (video_st->state_filter)
-      scale  = video_st->state_scale;
 #endif
 
    strlcpy(aspectratio_lut[ASPECT_RATIO_CONFIG].name,
@@ -6877,12 +6926,7 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
 #ifdef HAVE_VIDEO_FILTER
    /* A disabled filter stays loaded for the toggle, but the driver then
     * gets the core's frames as they are, in the core's format */
-   video.rgb32                       =
-            (video_st->state_filter && settings->bools.video_filter_enable)
-         ? ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) & VIDEO_FLAG_STATE_OUT_RGB32)
-         : (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
-         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB2101010
-         || video_driver_pix_fmt == RETRO_PIXEL_FORMAT_HDR10_2101010);
+   video.rgb32                       = frame_rgb32;
 #else
    video.rgb32                       =
          (video_driver_pix_fmt == RETRO_PIXEL_FORMAT_XRGB8888
@@ -6995,6 +7039,10 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
       font_driver_init_osd(video_st->data, &video,
             video.is_threaded, video_st->current_video->font_backend);
 
+#ifdef HAVE_VIDEO_FILTER
+   video_st->frame_rgb32        = frame_rgb32;
+   video_st->frame_scale        = scale;
+#endif
    video_st->poke               = NULL;
    video_st->views_driver_count = 0;
    if (video_st->current_video->poke_interface)

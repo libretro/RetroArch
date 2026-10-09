@@ -10715,7 +10715,8 @@ static bool vulkan_frame(void *data, const void *frame,
       bool window           = vulkan_frame_window(&chain->texture,
             frame, dims, pitch, &win_x, &win_y);
 
-      if (!window && chain->texture.dims != dims)
+      if (!window && (     chain->texture.dims   != dims
+                        || chain->texture.format != vk->tex_fmt))
       {
          /* A frame inside this texture's mapping that is not a window
           * into it (another pitch, or it would not fit) is copied out
@@ -10731,7 +10732,7 @@ static bool vulkan_frame(void *data, const void *frame,
          }
          GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
          chain->texture = vulkan_create_texture(vk, &chain->texture,
-               frame_width, frame_height, chain->texture.format, NULL, NULL,
+               frame_width, frame_height, vk->tex_fmt, NULL, NULL,
                chain->texture_optimal.memory
                ? VULKAN_TEXTURE_STAGING : VULKAN_TEXTURE_STREAMED);
 
@@ -12266,6 +12267,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
     * write-combined video memory crawl. */
    if (     VIDEO_SCALE_W(chain->texture.dims) != framebuffer->width
          || VIDEO_SCALE_H(chain->texture.dims) != framebuffer->height
+         || chain->texture.format != vk->tex_fmt
          || (chain->texture.flags & VK_TEX_FLAG_BAR_MAPPED))
    {
       /* vulkan_create_texture() parks the old texture and its mapping
@@ -12276,7 +12278,7 @@ static bool vulkan_get_current_sw_framebuffer(void *data,
       video_driver_cached_frame_retire();
       vk->flags       |=  VK_FLAG_TEXTURE_FOR_LEND;
       chain->texture   = vulkan_create_texture(vk, &chain->texture,
-            framebuffer->width, framebuffer->height, chain->texture.format,
+            framebuffer->width, framebuffer->height, vk->tex_fmt,
             NULL, NULL, VULKAN_TEXTURE_STREAMED);
       vk->flags       &= ~VK_FLAG_TEXTURE_FOR_LEND;
       {
@@ -13300,6 +13302,24 @@ static void vulkan_hw_context_destroying(void *data)
 }
 #endif
 
+/* Each swapchain image's streamed texture is made at the frame's size
+ * already, and is made again in the new format at its next frame. */
+static bool vulkan_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+   vk_t *vk = (vk_t*)data;
+
+   (void)input_scale;
+   if (     !vk
+         || (vk->flags & VK_FLAG_HW_ENABLE)
+         || vk->video.source_10bit)
+      return false;
+   vk->video.rgb32 = rgb32;
+   vk->tex_fmt     = rgb32
+      ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R5G6B5_UNORM_PACK16;
+   return true;
+}
+
 static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_get_flags,
    vulkan_load_texture,
@@ -13357,11 +13377,12 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_set_view_count,
 #ifdef HAVE_OPENXR
    vulkan_hw_context_destroying,
-   vulkan_get_headset_refresh
+   vulkan_get_headset_refresh,
 #else
    NULL, /* hw_context_destroying */
-   NULL  /* get_headset_refresh */
+   NULL, /* get_headset_refresh */
 #endif
+   vulkan_set_frame_format
 };
 
 static void vulkan_get_poke_interface(void *data,

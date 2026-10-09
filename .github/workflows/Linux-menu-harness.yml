@@ -400,10 +400,12 @@ jobs:
         shell: bash
         run: |
           set -eu
-          # The menu's Video Filter and Video Filter Enable rows set the
-          # driver up for what it is then given: a chosen filter's scale
-          # and format, and the core's or the filter's format as
-          # Enable turns it off and on (instant when they are the same).
+          # The menu's Video Filter and Video Filter Enable rows get the
+          # driver the frames they make - a chosen filter's scale and
+          # format, the core's or the filter's format as Enable turns it
+          # off and on: told in place to a driver that takes it
+          # (set_frame_format), set up again otherwise, and nothing at
+          # all when the frames do not change.
           samples/gfx/video_filter_menu/build.sh
           ./samples/gfx/video_filter_menu/video_filter_menu_test
           make -C samples/gfx/video_filter_menu clean

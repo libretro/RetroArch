@@ -7432,6 +7432,28 @@ static void gl3_set_view_count(void *data, unsigned count)
 }
 #endif
 
+/* The streamed textures are made at each frame's size already; a new
+ * format makes them again at the next frame. */
+static bool gl3_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+   unsigned i;
+   gl3_t *gl = (gl3_t*)data;
+
+   (void)input_scale;
+   if (     !gl
+         || (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
+         || gl->video_info.source_10bit)
+      return false;
+   if (gl->video_info.rgb32 != rgb32)
+   {
+      gl->video_info.rgb32 = rgb32;
+      for (i = 0; i < GL_CORE_NUM_TEXTURES; i++)
+         gl->textures[i].dims = 0;
+   }
+   return true;
+}
+
 static const video_poke_interface_t gl3_poke_interface = {
    gl3_get_flags,
    gl3_load_texture,
@@ -7484,10 +7506,13 @@ static const video_poke_interface_t gl3_poke_interface = {
 #endif
    gl3_get_last_present_wait,
 #ifdef HAVE_SLANG
-   gl3_set_view_count
+   gl3_set_view_count,
 #else
-   NULL  /* set_view_count */
+   NULL, /* set_view_count */
 #endif
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   gl3_set_frame_format
 };
 
 static void gl3_get_poke_interface(void *data,

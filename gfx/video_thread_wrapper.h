@@ -87,6 +87,7 @@ enum thread_cmd
    CMD_SUPPRESS_SCREENSAVER,
    CMD_POKE_SET_VIEW_COUNT,
    CMD_POKE_HW_CONTEXT_DESTROYING,
+   CMD_POKE_SET_FRAME_FORMAT,
 
    CMD_DUMMY = INT_MAX
 };
@@ -188,6 +189,13 @@ typedef struct thread_packet
          bool scanlines;
          unsigned subpixel_layout;
       } hdr;
+
+      struct
+      {
+         unsigned input_scale;
+         bool rgb32;
+         bool ret;
+      } frame_format;
    } data;
    enum thread_cmd type;
 } thread_packet_t;

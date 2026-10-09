@@ -1,6 +1,7 @@
 /* Minimal libretro core for the video filter menu harness: runs
  * without content and pushes a 240x160 RGB565 frame per retro_run, the
- * shape of a handheld core a filter is put on. */
+ * shape of a handheld core a filter is put on. The picture is the
+ * same every frame. */
 #include <string.h>
 #include <stdint.h>
 #include <libretro.h>
@@ -56,11 +57,12 @@ RETRO_API void retro_reset(void) { }
 
 RETRO_API void retro_run(void)
 {
-   unsigned i;
-   static uint16_t c;
-   c++;
-   for (i = 0; i < W * H; i++)
-      frame[i] = (uint16_t)(i + c);
+   /* The same picture every frame, so frames can be compared */
+   unsigned x, y;
+   for (y = 0; y < H; y++)
+      for (x = 0; x < W; x++)
+         frame[y * W + x] = (uint16_t)(((x * 31 / W) << 11)
+               | ((y * 63 / H) << 5) | ((x + y) & 31));
    video_cb(frame, W, H, W * sizeof(uint16_t));
 }
 

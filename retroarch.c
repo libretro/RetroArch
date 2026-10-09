@@ -3659,6 +3659,7 @@ bool command_event(enum event_command cmd, void *data)
             video_driver_pix_fmt       = video_st->pix_fmt;
          settings_t  *settings      = config_get_ptr();
          video_driver_init_filter(video_driver_pix_fmt, settings);
+         video_driver_filter_apply();
 #endif
          break;
       }
@@ -4054,11 +4055,7 @@ bool command_event(enum event_command cmd, void *data)
 
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 60, true, NULL,
                   MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-            /* The toggle is instant while the filter keeps the core's
-             * pixel format; one that changes it (ntsc_crt) needs the
-             * driver set up again for the frames it now receives */
-            if (video_driver_filter_changes_format())
-               command_event(CMD_EVENT_REINIT, NULL);
+            video_driver_filter_apply();
 #endif
          }
          break;

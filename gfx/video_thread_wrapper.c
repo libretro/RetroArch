@@ -989,6 +989,15 @@ static bool video_thread_handle_packet(
          video_thread_reply(thr, &pkt);
          break;
 
+      case CMD_POKE_SET_FRAME_FORMAT:
+         pkt.data.frame_format.ret =
+               thr->driver_data && thr->poke && thr->poke->set_frame_format
+            && thr->poke->set_frame_format(thr->driver_data,
+                  pkt.data.frame_format.rgb32,
+                  pkt.data.frame_format.input_scale);
+         video_thread_reply(thr, &pkt);
+         break;
+
       case CMD_POKE_SET_VIEW_COUNT:
          if (thr->driver_data && thr->poke && thr->poke->set_view_count)
             thr->poke->set_view_count(thr->driver_data,
@@ -4280,6 +4289,79 @@ static void thread_set_view_count(void *data, unsigned count)
    }
 }
 
+/* The ring slots hold a frame of the new format and scale, grown here
+ * on the main thread with the worker idle and no slot lent; the spare
+ * is made again at the new size the next time a loan needs it. */
+static bool video_thread_frame_slots_fit(thread_video_t *thr,
+      bool rgb32, unsigned input_scale)
+{
+   unsigned i;
+   size_t size = (size_t)input_scale * RARCH_SCALE_BASE;
+   size       *= size;
+   size       *= rgb32 ? sizeof(uint32_t) : sizeof(uint16_t);
+
+   if (size <= thr->frame.buffer_size)
+      return true;
+   if (thr->frame.lent >= 0)
+      return false;
+
+   for (i = 0; i < 2; i++)
+   {
+#ifdef _3DS
+      uint8_t *buf = (uint8_t*)linearMemAlign(size, 0x80);
+#else
+      uint8_t *buf = (uint8_t*)memalign_alloc(64, size);
+#endif
+      if (!buf)
+         return false;
+      memset(buf, 0x80, size);
+#ifdef _3DS
+      linearFree(thr->frame.slot[i].buffer);
+#else
+      memalign_free(thr->frame.slot[i].buffer);
+#endif
+      thr->frame.slot[i].buffer = buf;
+   }
+   if (thr->frame.spare)
+   {
+#ifdef _3DS
+      linearFree(thr->frame.spare);
+#else
+      memalign_free(thr->frame.spare);
+#endif
+      thr->frame.spare = NULL;
+   }
+   thr->frame.buffer_size = size;
+   return true;
+}
+
+static bool thread_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+   thread_packet_t pkt;
+   thread_video_t *thr = (thread_video_t*)data;
+
+   if (!thr || !thr->poke || !thr->poke->set_frame_format)
+      return false;
+
+   /* No frame in flight reads a slot or the driver's textures */
+   video_thread_ring_drain(thr);
+   if (!video_thread_frame_slots_fit(thr, rgb32, input_scale))
+      return false;
+
+   pkt.type                          = CMD_POKE_SET_FRAME_FORMAT;
+   pkt.data.frame_format.rgb32       = rgb32;
+   pkt.data.frame_format.input_scale = input_scale;
+   pkt.data.frame_format.ret         = false;
+   video_thread_send_and_wait_user_to_thread(thr, &pkt);
+   if (!pkt.data.frame_format.ret)
+      return false;
+
+   thr->info.rgb32       = rgb32;
+   thr->info.input_scale = input_scale;
+   return true;
+}
+
 static void thread_hw_context_destroying(void *data)
 {
    thread_video_t *thr = (thread_video_t*)data;
@@ -4680,7 +4762,8 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* get_last_present_wait: read on the video thread */
    thread_set_view_count,
    thread_hw_context_destroying,
-   thread_get_headset_refresh
+   thread_get_headset_refresh,
+   thread_set_frame_format
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the

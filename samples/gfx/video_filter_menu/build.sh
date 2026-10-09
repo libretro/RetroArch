@@ -59,10 +59,10 @@ sed -e "s#$objdir/retroarch\.o#$out/retroarch_nomain.o $out/harness_main.o#" \
     -e "s#-o retroarch_debug #-o $out/video_filter_menu_test #" \
    "$ld_line" | sh
 
-# The core and the two filter plugins: plain shared libraries, no
-# sanitizer, built with the compiler the tree's compile line names.
-# Plugins are found next to the .filt, under the frontend's library
-# extension.
+# The core and the filter plugins (Normal2x, Normal4x, and widen32, the test
+# filter giving XRGB8888): plain shared libraries, no sanitizer, built
+# with the compiler the tree's compile line names. Plugins are found
+# next to the .filt, under the frontend's library extension.
 core_cc=$(awk '{print $1}' "$cc_line")
 case "$($core_cc -dumpmachine)" in
    *mingw*|*cygwin*|*windows*) ext=dll ;;
@@ -71,14 +71,17 @@ case "$($core_cc -dumpmachine)" in
 esac
 $core_cc -O1 -g -shared -fPIC -Ilibretro-common/include -o $out/filter_core.so $out/filter_core.c
 mkdir -p $out/filters
-for f in normal4x ntsc_crt; do
-   $core_cc -O2 -std=c99 -shared -fPIC -Ilibretro-common/include \
+for f in normal2x normal4x; do
+   $core_cc -O2 -shared -fPIC -Ilibretro-common/include \
       -o $out/filters/$f.$ext gfx/video_filters/$f.c
 done
-cp gfx/video_filters/Normal4x.filt gfx/video_filters/ntsc_crt.filt $out/filters/
+$core_cc -O2 -shared -fPIC -Ilibretro-common/include -Igfx/video_filters \
+   -o $out/filters/widen32.$ext $out/widen32.c
+cp gfx/video_filters/Normal2x.filt gfx/video_filters/Normal4x.filt $out/widen32.filt $out/filters/
 
 for f in $out/retroarch_nomain.o $out/harness_main.o $out/video_filter_menu_test \
-         $out/filter_core.so $out/filters/normal4x.$ext $out/filters/ntsc_crt.$ext; do
+         $out/filter_core.so $out/filters/normal2x.$ext $out/filters/normal4x.$ext \
+         $out/filters/widen32.$ext; do
    if [ ! -f "$f" ]; then
       echo "build.sh: $f was not produced" >&2
       exit 1

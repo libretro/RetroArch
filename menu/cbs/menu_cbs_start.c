@@ -151,9 +151,12 @@ static int action_start_video_filter_file_load(
    if (*settings->paths.path_softfilter_plugin)
    {
       struct menu_state *menu_st      = menu_state_get_ptr();
-      /* Unload video filter */
+      /* Unload video filter; the driver gets the core's frames */
       settings->paths.path_softfilter_plugin[0] = '\0';
-      command_event(CMD_EVENT_REINIT, NULL);
+#ifdef HAVE_VIDEO_FILTER
+      video_driver_filter_free();
+      video_driver_filter_apply();
+#endif
 
       /* Refresh menu */
       menu_st->flags                 |=  MENU_ST_FLAG_ENTRIES_NEED_REFRESH
