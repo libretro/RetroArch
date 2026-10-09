@@ -6597,8 +6597,10 @@ static bool gl2_set_shader(void *data,
 
       glDeleteTextures(gl->textures, gl->texture);
 #if defined(HAVE_PSGL)
+      /* gl2_init_textures generates the buffer again */
       glBindBuffer(GL_TEXTURE_REFERENCE_BUFFER_SCE, 0);
       glDeleteBuffers(1, &gl->pbo);
+      gl->pbo       = 0;
 #endif
       gl->textures  = textures;
       gl->tex_index = 0;
