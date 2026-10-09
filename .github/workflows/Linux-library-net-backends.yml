@@ -127,6 +127,9 @@ jobs:
           # A server that goes silent mid-handshake: the read bound ends it.
           make -C ../tls_retro clean tls_stall SSL_BACKEND=$be
           ../tls_retro/tls_stall
+          # A refused certificate reaches the verify hook.
+          make -C ../tls_retro clean
+          SSL_BACKEND=$be ../tls_retro/verify_hook_test.sh
           make -C ../tls_retro clean
 
       - name: Operate the libsmb2 backend (SMB VFS against a local smbd)

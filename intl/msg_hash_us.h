@@ -32797,6 +32797,14 @@ MSG_HASH(
    "Failed to initialize netplay."
    )
 MSG_HASH(
+   MSG_TLS_VERIFY_FAILED,
+   "Secure connection refused: the server's certificate could not be verified. See the log, or the 'TLS Certificate Verification' setting."
+   )
+MSG_HASH(
+   MSG_TLS_VERIFY_DISABLED,
+   "TLS certificate verification is disabled. Secure connections are not checked and can be intercepted."
+   )
+MSG_HASH(
    MSG_NETPLAY_UNSUPPORTED,
    "Core does not support netplay."
    )

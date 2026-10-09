@@ -20,17 +20,21 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stdio.h>
+
 #include <net/net_socket_ssl.h>
 #include <net/net_socket.h>
 #include <encodings/base64.h>
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
+#include <compat/strl.h>
 
 #include <bearssl.h>
 
 struct ssl_state
 {
    int fd;
+   char domain[256];
    br_ssl_client_context sc;
    br_x509_minimal_context xc;
    uint8_t iobuf[BR_SSL_BUFSIZE_BIDI];
@@ -269,6 +273,8 @@ void* ssl_socket_init(int fd, const char *domain)
    br_ssl_client_reset(&state->sc, domain, false);
 
    state->fd = fd;
+   if (domain)
+      strlcpy(state->domain, domain, sizeof(state->domain));
    return state;
 }
 
@@ -330,6 +336,51 @@ int ssl_socket_last_error(void *state_data)
    return br_ssl_engine_last_error(&state->sc.eng);
 }
 
+/* Weak no-op logging hooks; RetroArch overrides these in network/tls_log.c.
+ * See net_socket_ssl_mbed.c for why they are weak and not in griffin. */
+#if (defined(__GNUC__) || defined(__clang__)) && !defined(HAVE_GRIFFIN)
+__attribute__((weak))
+void ssl_socket_log_verify_fail(int mode_required, const char *domain,
+      const char *verify_info)
+{
+   (void)mode_required; (void)domain; (void)verify_info;
+}
+
+__attribute__((weak))
+void ssl_socket_log_verify_disabled(const char *domain)
+{
+   (void)domain;
+}
+#endif
+
+/* A handshake that ended on the certificate goes to the verify hook,
+ * as the other backends' refusals do. BearSSL always verifies, so every
+ * such failure is a required one. */
+static void ssl_bear_report_verify(struct ssl_state *state)
+{
+   char info[64];
+   int err = br_ssl_engine_last_error(&state->sc.eng);
+
+   if (err <= BR_ERR_X509_OK || err >= BR_ERR_X509_OK + 32)
+      return;
+   switch (err)
+   {
+      case BR_ERR_X509_EXPIRED:
+         strlcpy(info, "certificate expired or not yet valid", sizeof(info));
+         break;
+      case BR_ERR_X509_BAD_SERVER_NAME:
+         strlcpy(info, "certificate does not match the host", sizeof(info));
+         break;
+      case BR_ERR_X509_NOT_TRUSTED:
+         strlcpy(info, "certificate is not trusted", sizeof(info));
+         break;
+      default:
+         sprintf(info, "BearSSL X.509 error %d", err);
+         break;
+   }
+   ssl_socket_log_verify_fail(1, state->domain, info);
+}
+
 int ssl_socket_connect(void *state_data,
       void *data, bool timeout_enable, bool nonblock)
 {
@@ -353,13 +404,19 @@ int ssl_socket_connect(void *state_data,
    for (;;)
    {
       if (!process_inner(state, true))
+      {
+         ssl_bear_report_verify(state);
          return -1;
+      }
 
       bearstate = br_ssl_engine_current_state(&state->sc.eng);
       if (bearstate & BR_SSL_SENDAPP)
          break; /* handshake done */
       if (bearstate & BR_SSL_CLOSED)
+      {
+         ssl_bear_report_verify(state);
          return -1; /* failed */
+      }
    }
 
    return 1;
