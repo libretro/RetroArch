@@ -2183,6 +2183,8 @@ static void lane_remap_pressure(void)
    struct retro_keybind saved_a   = *a_bind;
    struct retro_keybind saved_b   = *b_bind;
    bool analog_requested          = input_st->analog_requested[0];
+   float saved_trigger_deadzone   = settings->floats.input_analog_trigger_deadzone;
+   float saved_sensitivity        = settings->floats.input_analog_sensitivity;
    const input_device_driver_t *joypad_real;
    void (*trace)(int, int);
    void (*trace_last)(unsigned*, int*);
@@ -2230,6 +2232,22 @@ static void lane_remap_pressure(void)
    seen = pressure_frame(a_btn, 0, 0, trace_last, &a, &b);
    CHECK(seen == A && a == 0x7fff,
          "remapped pressure: not remapped, a press without pressure is not a full press");
+
+   settings->floats.input_analog_trigger_deadzone = 0.1f;
+   input_driver_deadzones_refresh();
+   pressure_frame(a_btn, 1000, 0, trace_last, &a, &b);
+   CHECK(!a, "remapped pressure: a light press inside the deadzone became full pressure");
+   pressure_frame(a_btn, 3000, 0, trace_last, &a, &b);
+   CHECK(!a, "remapped pressure: pressure below the deadzone was not zero");
+   pressure_frame(a_btn, 4000, 0, trace_last, &a, &b);
+   CHECK(a > 0 && a < 1000,
+         "remapped pressure: pressure above the deadzone was not rescaled");
+   settings->floats.input_analog_sensitivity = 0.0f;
+   pressure_frame(a_btn, 20000, 0, trace_last, &a, &b);
+   CHECK(!a, "remapped pressure: zero sensitivity became full pressure");
+   settings->floats.input_analog_sensitivity = saved_sensitivity;
+   settings->floats.input_analog_trigger_deadzone = saved_trigger_deadzone;
+   input_driver_deadzones_refresh();
 
    /* A onto B */
    input_config_set_remap_id(0, RETRO_DEVICE_ID_JOYPAD_A, RETRO_DEVICE_ID_JOYPAD_B);

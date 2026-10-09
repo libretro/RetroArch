@@ -3274,8 +3274,8 @@ static int16_t input_joypad_analog_button(
          res = -res;
    }
 
-   /* If the result is zero, it's got a digital button attached to it instead */
-   if (res == 0)
+   /* Only a zero raw pull may use the digital fallback. */
+   if (normal_mag == 0.0f)
    {
       uint16_t key = (bind->joykey == NO_BTN)
          ? joypad_info->auto_binds[ident].joykey
