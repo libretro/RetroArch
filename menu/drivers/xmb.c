@@ -3311,6 +3311,7 @@ static void xmb_list_switch_horizontal_list(xmb_handle_t *xmb,
 
       switch (animation_horizontal_highlight)
       {
+         default: /* a value out of range in the config file */
          case 0:
             entry.duration     = XMB_DELAY;
             entry.easing_enum  = EASING_OUT_QUAD;
@@ -3919,6 +3920,7 @@ static void xmb_list_open(xmb_handle_t *xmb,
 
    switch (animation_opening_main_menu)
    {
+      default: /* a value out of range in the config file */
       case 0:
          entry.easing_enum  = EASING_OUT_QUAD;
          entry.duration     = XMB_DELAY;
