@@ -13,7 +13,7 @@ check: all
 
 clean:
 	rm -rf $(TARGET) filter_core.so filters \
-	      retroarch_nomain.o harness_main.o \
+	      retroarch_nomain.o harness_main.o harness_cocoa.o default.metallib \
 	      retroarch_nomain.d harness_main.d
 
 .PHONY: all check clean

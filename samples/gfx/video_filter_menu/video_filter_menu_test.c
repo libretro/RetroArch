@@ -24,10 +24,11 @@
  *    with the format and scale the frames now have, nothing is set up
  *    again, and a change the frames do not make tells it nothing.
  *
- * HARNESS_VIDEO_DRIVER=gl, glcore or vulkan, under a display (Xvfb), runs
- * the same steps on that driver, which takes them in place: nothing is
- * set up again, and after each step the picture read back from the
- * screen is the one the driver draws once set up again for it.
+ * HARNESS_VIDEO_DRIVER=gl, glcore, vulkan or (on macOS) metal, under a
+ * display (Xvfb on Linux), runs the same steps on that driver, which
+ * takes them in place: nothing is set up again, and after each step
+ * the picture read back from the screen is the one the driver draws
+ * once set up again for it.
  * HARNESS_THREADED=1 runs it under the threaded video wrapper, and
  * HARNESS_SHADER=1 with a two-pass GLSL preset on gl (twopass.glslp).
  *
@@ -107,6 +108,13 @@ static bool menu_is_up(void)
    return (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 }
 
+#ifdef __APPLE__
+/* threaded_video's harness_cocoa.m: the harness runs inside Cocoa's
+ * application, which needs its run loop turned each frame */
+void harness_cocoa_pump(void);
+void harness_cocoa_exit_status(int status);
+#endif
+
 static void pump(unsigned n)
 {
    unsigned i;
@@ -114,6 +122,9 @@ static void pump(unsigned n)
    {
       runloop_iterate();
       task_queue_check();
+#ifdef __APPLE__
+      harness_cocoa_pump();
+#endif
    }
 }
 
@@ -528,6 +539,11 @@ int main(int argc, char *argv[])
    if (!real_driver)
       lane_told_in_place();
 
+#ifdef __APPLE__
+   /* main_exit() terminates the Cocoa application; the status goes
+    * with it */
+   harness_cocoa_exit_status(failures ? 1 : 0);
+#endif
    main_exit(NULL);
 
    remove(cfg_path);

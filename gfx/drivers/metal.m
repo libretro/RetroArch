@@ -478,6 +478,9 @@ typedef NS_ENUM(NSInteger, ViewDrawState)
 - (BOOL)setShaderFromPath:(NSString *)path;
 - (void)clearShader;
 - (void)updateFrame:(void const *)src pitch:(NSUInteger)pitch;
+/* The frames from now on are in @format (a software filter changed
+ * it): the 16-bit staging texture is made again or dropped */
+- (void)setSourceFormat:(RPixelFormat)format;
 /* GET_CURRENT_SOFTWARE_FRAMEBUFFER: lend the core a buffer the GPU
  * reads directly. See lendFramebuffer: in the implementation. */
 - (bool)lendFramebuffer:(struct retro_framebuffer *)fb;
@@ -5782,6 +5785,21 @@ typedef struct MTLALIGN(16)
 
 - (CGSize)size { return _size; }
 
+- (void)setSourceFormat:(RPixelFormat)format
+{
+   CGSize size = _size;
+   if (format == _format)
+      return;
+   _format   = format;
+   _bpp      = RPixelFormatToBPP(_format);
+   _srcDirty = NO;
+   RARCH_RELEASE_NIL(_src);
+   /* setSize: makes the staging texture a 16-bit format needs; a
+    * view that has had no frame yet gets it with its first */
+   _size     = CGSizeZero;
+   [self setSize:size];
+}
+
 - (void)setFrame:(CGRect)frame
 {
    if (CGRectEqualToRect(_frame, frame))
@@ -7966,6 +7984,24 @@ static uintptr_t metal_load_texture_compressed(void *video_data,
 #endif
 }
 
+/* The frame texture is 32-bit whatever the source; a 16-bit source is
+ * converted into it from a staging texture. A new format changes only
+ * that, and the frames' size is taken per frame already. */
+static bool metal_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+   @autoreleasepool
+   {
+      MetalDriver *md = (__bridge MetalDriver *)data;
+      (void)input_scale;
+      if (!md || md.frameView.format == RPixelFormatBGR10A2Unorm)
+         return false;
+      [md.frameView setSourceFormat:rgb32
+            ? RPixelFormatBGRX8Unorm : RPixelFormatB5G6R5Unorm];
+      return true;
+   }
+}
+
 static const video_poke_interface_t metal_poke_interface = {
    metal_get_flags,
    metal_load_texture,
@@ -8010,7 +8046,12 @@ static const video_poke_interface_t metal_poke_interface = {
    metal_update_texture,
    NULL, /* get_swap_interval_cap */
    metal_texture_lend,
-   metal_texture_lend_ready
+   metal_texture_lend_ready,
+   NULL, /* get_last_present_wait */
+   NULL, /* set_view_count */
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   metal_set_frame_format
 };
 
 static void metal_get_poke_interface(void *data,
