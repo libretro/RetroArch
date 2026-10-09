@@ -75,6 +75,7 @@ bool retro_resampler_int16_new(retro_resampler_int16_t *out,
       out->process = sinc_resampler_int16_process;
       out->reset   = sinc_resampler_int16_reset;
       out->free    = sinc_resampler_int16_free;
+      out->sibling = sinc_resampler_int16_sibling;
    }
 #ifdef HAVE_NEAREST_RESAMPLER
    else if (string_is_equal(short_ident, "nearest"))

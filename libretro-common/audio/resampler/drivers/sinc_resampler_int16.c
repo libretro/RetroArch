@@ -51,6 +51,7 @@
 #include <string.h>
 #include <memalign.h>
 #include <math.h>
+#include <retro_atomic.h>
 
 #include "sinc_resampler_internal.h"
 
@@ -111,11 +112,22 @@ enum sinc_i16_window
    SINC_I16_WINDOW_KAISER
 };
 
+/* Leads the block that holds the immutable tables, which every sibling
+ * of an instance reads; the last one out frees it. */
+typedef struct sinc_i16_tables
+{
+   retro_atomic_int_t refs;
+} sinc_i16_tables_t;
+
+#define SINC_I16_TABLES_OFFSET 128
+#define SINC_I16_ALIGN64(n) (((n) + 63) & ~(size_t)63)
+
 typedef struct rarch_sinc_resampler_int16
 {
-   /* buffer_l owns one block that also holds the table and, on NEON,
-    * the coefficient scratch; each region starts on a 64-byte boundary
-    * from the rings' start and the others are views. */
+   /* buffer_l owns the stream state - the rings, on NEON the coefficient
+    * scratch, the stages' rings, the shadow's and the blocks - each on a
+    * 64-byte boundary; tables owns the shared coefficients. */
+   sinc_i16_tables_t *tables;
    int32_t  *phase_table; /* Q1.30 coefficients (+ interleaved deltas for Kaiser) */
    int16_t  *buffer_l;    /* 2 * taps int16 ring (doubled to stay contiguous)     */
    int16_t  *buffer_r;
@@ -693,8 +705,91 @@ void sinc_resampler_int16_free(void *re_)
    {
       memalign_free(re->buffer_l);
       free(re->dec);
+      if (     re->tables
+            && retro_atomic_fetch_sub_int(&re->tables->refs, 1) == 1)
+         memalign_free(re->tables);
    }
    free(re);
+}
+
+/* The state block's size; with bind, lays this instance's views over
+ * buffer_l. */
+static size_t sinc_i16_state(rarch_sinc_resampler_int16_t *re,
+      unsigned dec_taps, int bind)
+{
+   unsigned s;
+   size_t o_dec, o_shadow, o_fade;
+   size_t o_coef = SINC_I16_ALIGN64(sizeof(int16_t) * 4 * re->taps);
+   o_dec         = o_coef;
+#ifdef SINC_I16_KAISER_FISSION
+   o_dec        += SINC_I16_ALIGN64(sizeof(int32_t) * (re->taps + 4u));
+#endif
+   o_shadow      = o_dec + SINC_I16_ALIGN64(sizeof(int16_t) * 4 * dec_taps
+         * SINC_I16_DEC_STAGES);
+   o_fade        = o_shadow + SINC_I16_ALIGN64(sizeof(int16_t) * 4 * re->taps);
+   if (bind)
+   {
+      uint8_t *base = (uint8_t*)re->buffer_l;
+      re->buffer_r  = re->buffer_l + 2 * re->taps;
+#ifdef SINC_I16_KAISER_FISSION
+      re->coef_scratch = (int32_t*)(base + o_coef);
+#endif
+      for (s = 0; s < SINC_I16_DEC_STAGES; s++)
+      {
+         re->dec[s].buffer_l = (int16_t*)(base + o_dec) + 4 * dec_taps * s;
+         re->dec[s].buffer_r = re->dec[s].buffer_l + 2 * dec_taps;
+      }
+      re->fade_block = (int16_t*)(base + o_fade);
+      re->dec_block  = re->fade_block + 2 * SINC_I16_FADE_FRAMES;
+      re->dec[SINC_I16_DEC_STAGES]          = *re;
+      re->dec[SINC_I16_DEC_STAGES].dec      = NULL;
+      re->dec[SINC_I16_DEC_STAGES].buffer_l = (int16_t*)(base + o_shadow);
+      re->dec[SINC_I16_DEC_STAGES].buffer_r =
+         re->dec[SINC_I16_DEC_STAGES].buffer_l + 2 * re->taps;
+   }
+   return o_fade + sizeof(int16_t)
+      * (2 * SINC_I16_FADE_FRAMES + 2 * SINC_I16_DEC_HALF);
+}
+
+void *sinc_resampler_int16_sibling(void *re_)
+{
+   unsigned s;
+   size_t len;
+   rarch_sinc_resampler_int16_t *src = (rarch_sinc_resampler_int16_t*)re_;
+   rarch_sinc_resampler_int16_t *re;
+   if (!src || !(re = (rarch_sinc_resampler_int16_t*)calloc(1, sizeof(*re))))
+      return NULL;
+   *re          = *src;
+   len          = sinc_i16_state(src, src->dec[0].taps, 0);
+   re->buffer_l = (int16_t*)memalign_alloc(128, len);
+   re->dec      = (rarch_sinc_resampler_int16_t*)
+      calloc(SINC_I16_DEC_STAGES + 1, sizeof(*re->dec));
+   if (!re->buffer_l || !re->dec)
+   {
+      memalign_free(re->buffer_l);
+      free(re->dec);
+      free(re);
+      return NULL;
+   }
+   memset(re->buffer_l, 0, sizeof(int16_t) * 4 * re->taps);
+   for (s = 0; s < SINC_I16_DEC_STAGES; s++)
+   {
+      re->dec[s]             = src->dec[s];
+      re->dec[s].ptr         = 0;
+      re->dec[s].time        = 0;
+      re->dec[s].ratio_fixed = 0;
+      re->dec[s].ratio_bits  = 0;
+   }
+   re->ptr         = 0;
+   re->time        = 0;
+   re->ratio_fixed = 0;
+   re->ratio_bits  = 0;
+   re->dec_bits    = 0;
+   re->dec_stages  = 0;
+   re->fade_left   = 0;
+   sinc_i16_state(re, re->dec[0].taps, 1);
+   retro_atomic_inc_int(&re->tables->refs);
+   return re;
 }
 
 void *sinc_resampler_int16_init_hq(double bandwidth_mod,
@@ -704,8 +799,7 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    unsigned sidelobes = 0;
    int      window  = SINC_I16_WINDOW_LANCZOS;
    int      stride;
-   size_t   phase_elems, o_table, o_coef, o_dec, o_dec_table, o_shadow,
-            o_fade, len;
+   size_t   phase_elems, o_dec_table;
    int      phases;
    unsigned s, dec_taps;
    double   dec_cutoff, dec_beta;
@@ -807,37 +901,23 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    phases      = 1 << re->phase_bits;
    phase_elems = (size_t)phases * re->taps * stride;
 
-   /* The two rings first, then the table, then (NEON) the coefficient
-    * scratch, out of one block; the rings start zeroed as before. The
-    * block is owned through buffer_l. */
-   o_table  = (sizeof(int16_t) * 4 * re->taps + 63) & ~(size_t)63;
-   o_coef   = o_table + ((sizeof(int32_t) * phase_elems + 63) & ~(size_t)63);
-   len      = o_coef;
-#ifdef SINC_I16_KAISER_FISSION
-   len     += (sizeof(int32_t) * (re->taps + 4u) + 63) & ~(size_t)63;
-#endif
-   /* Then the stage rings, their table, the shadow's rings and the
-    * blocks the paths hand through. */
-   o_dec       = len;
-   o_dec_table = o_dec + ((sizeof(int16_t) * 4 * dec_taps
-         * SINC_I16_DEC_STAGES + 63) & ~(size_t)63);
-   o_shadow    = o_dec_table + ((sizeof(int32_t) * 2 * dec_taps + 63)
-         & ~(size_t)63);
-   o_fade      = o_shadow + ((sizeof(int16_t) * 4 * re->taps + 63)
-         & ~(size_t)63);
-   len         = o_fade + sizeof(int16_t)
-      * (2 * SINC_I16_FADE_FRAMES + 2 * SINC_I16_DEC_HALF);
-   re->buffer_l    = (int16_t*)memalign_alloc(128, len);
-   re->dec         = (rarch_sinc_resampler_int16_t*)
+   re->dec = (rarch_sinc_resampler_int16_t*)
       calloc(SINC_I16_DEC_STAGES + 1, sizeof(*re->dec));
-   if (!re->buffer_l || !re->dec)
+   if (!re->dec)
+      goto error;
+   re->dec[0].taps = dec_taps;
+   o_dec_table     = SINC_I16_TABLES_OFFSET
+      + SINC_I16_ALIGN64(sizeof(int32_t) * phase_elems);
+   re->buffer_l    = (int16_t*)memalign_alloc(128,
+         sinc_i16_state(re, dec_taps, 0));
+   re->tables      = (sinc_i16_tables_t*)memalign_alloc(128,
+         o_dec_table + sizeof(int32_t) * 2 * dec_taps);
+   if (!re->buffer_l || !re->tables)
       goto error;
    memset(re->buffer_l, 0, sizeof(int16_t) * 4 * re->taps);
-   re->buffer_r    = re->buffer_l + 2 * re->taps;
-   re->phase_table = (int32_t*)((uint8_t*)re->buffer_l + o_table);
-#ifdef SINC_I16_KAISER_FISSION
-   re->coef_scratch = (int32_t*)((uint8_t*)re->buffer_l + o_coef);
-#endif
+   retro_atomic_int_init(&re->tables->refs, 1);
+   re->phase_table = (int32_t*)((uint8_t*)re->tables
+         + SINC_I16_TABLES_OFFSET);
 
    if (window == SINC_I16_WINDOW_KAISER)
       sinc_i16_init_table_kaiser(re, cutoff, re->phase_table,
@@ -846,16 +926,11 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
       sinc_i16_init_table_lanczos(re, cutoff, re->phase_table,
             phases, (int)re->taps);
 
-   re->fade_block = (int16_t*)((uint8_t*)re->buffer_l + o_fade);
-   re->dec_block  = re->fade_block + 2 * SINC_I16_FADE_FRAMES;
    /* The Kaiser builder's delta row follows the one the stages read. */
    for (s = 0; s < SINC_I16_DEC_STAGES; s++)
    {
       rarch_sinc_resampler_int16_t *stage = &re->dec[s];
-      stage->phase_table   = (int32_t*)((uint8_t*)re->buffer_l + o_dec_table);
-      stage->buffer_l      = (int16_t*)((uint8_t*)re->buffer_l + o_dec)
-         + 4 * dec_taps * s;
-      stage->buffer_r      = stage->buffer_l + 2 * dec_taps;
+      stage->phase_table   = (int32_t*)((uint8_t*)re->tables + o_dec_table);
       stage->taps          = dec_taps;
       stage->subphase_bits = 1;
       stage->subphase_mask = 1;
@@ -865,18 +940,15 @@ void *sinc_resampler_int16_init_hq(double bandwidth_mod,
    sinc_i16_init_table_kaiser(&re->dec[0],
          0.5 * SINC_I16_DEC_ENGAGE * dec_cutoff,
          re->dec[0].phase_table, 1, (int)dec_taps);
-
-   re->dec[SINC_I16_DEC_STAGES]          = *re;
-   re->dec[SINC_I16_DEC_STAGES].dec      = NULL;
-   re->dec[SINC_I16_DEC_STAGES].buffer_l = (int16_t*)
-      ((uint8_t*)re->buffer_l + o_shadow);
-   re->dec[SINC_I16_DEC_STAGES].buffer_r =
-      re->dec[SINC_I16_DEC_STAGES].buffer_l + 2 * re->taps;
+   sinc_i16_state(re, dec_taps, 1);
 
    return re;
 
 error:
-   sinc_resampler_int16_free(re);
+   memalign_free(re->buffer_l);
+   memalign_free(re->tables);
+   free(re->dec);
+   free(re);
    return NULL;
 }
 

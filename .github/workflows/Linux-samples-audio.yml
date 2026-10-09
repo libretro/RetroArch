@@ -1152,6 +1152,16 @@ jobs:
           WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
             RUN="wine ./sinc_fastforward_test.exe"
 
+      - name: Build and run sinc sibling test (C89, ASan + UBSan, MinGW)
+        working-directory: samples/audio/sinc_sibling
+        run: |
+          # Siblings share their parent's tables: a fresh stream either
+          # way, own state only, either free order.
+          make -j$(nproc) check SANITIZER=address,undefined
+          make clean
+          WINEDEBUG=-all timeout 300 make check CC=x86_64-w64-mingw32-gcc \
+            RUN="wine ./sinc_sibling_test.exe"
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |

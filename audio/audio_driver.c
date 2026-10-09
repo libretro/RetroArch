@@ -601,6 +601,7 @@ static void audio_driver_deinit_resampler(void)
    audio_st->resampler_int16_process = NULL;
    audio_st->resampler_int16_free    = NULL;
    audio_st->resampler_int16_reset   = NULL;
+   audio_st->resampler_int16_sibling = NULL;
    audio_st->resampler_ident[0] = '\0';
    audio_st->resampler_quality  = RESAMPLER_QUALITY_DONTCARE;
    audio_st->resampler_hq       = false;
@@ -667,10 +668,13 @@ static void audio_driver_extra_free(audio_driver_state_t *audio_st)
    memset(&audio_st->extra, 0, sizeof(audio_st->extra));
 }
 
-/* An int16 resampler instance of the kind the front pair uses. */
+/* An int16 resampler instance of the kind the front pair uses, over the
+ * front pair's tables where the backend shares them. */
 static void *audio_driver_int16_resampler_new(audio_driver_state_t *audio_st)
 {
    retro_resampler_int16_t rs;
+   if (audio_st->resampler_int16_sibling && audio_st->resampler_data_int16)
+      return audio_st->resampler_int16_sibling(audio_st->resampler_data_int16);
    retro_resampler_int16_new(&rs,
          (audio_st->resampler && audio_st->resampler->short_ident)
                ? audio_st->resampler->short_ident : NULL,
@@ -707,6 +711,13 @@ static bool audio_driver_extra_prepare(audio_driver_state_t *audio_st,
       {
          if (int16_path)
             audio_st->extra.res[i] = audio_driver_int16_resampler_new(audio_st);
+         else if (audio_st->resampler && audio_st->resampler->sibling
+               && audio_st->resampler_data)
+         {
+            audio_st->extra.res[i]  = audio_st->resampler->sibling(
+                  audio_st->resampler_data);
+            audio_st->extra.res_drv = audio_st->resampler;
+         }
          else
          {
             const retro_resampler_t *drv = NULL;
@@ -4550,6 +4561,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
    audio_driver_st.resampler_int16_process = NULL;
    audio_driver_st.resampler_int16_free    = NULL;
    audio_driver_st.resampler_int16_reset   = NULL;
+   audio_driver_st.resampler_int16_sibling = NULL;
    if (     audio_driver_st.resampler
          && audio_driver_st.resampler->short_ident)
    {
@@ -4562,6 +4574,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       audio_driver_st.resampler_int16_process = rs.process;
       audio_driver_st.resampler_int16_free    = rs.free;
       audio_driver_st.resampler_int16_reset   = rs.reset;
+      audio_driver_st.resampler_int16_sibling = rs.sibling;
       if (audio_driver_st.resampler_int16_process)
          RARCH_LOG("[Audio] %s resampler: integer s16 path %s.\n",
                rs_ident,

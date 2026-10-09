@@ -34,6 +34,7 @@
 
 #include <retro_environment.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
 #include <filters.h>
 #include <memalign.h>
 
@@ -93,13 +94,23 @@ enum sinc_window
  * of sinc taps, the AVX code is clearly faster than SSE1.
  */
 
+/* Leads the block that holds the immutable tables, which every sibling
+ * of an instance reads; the last one out frees it. */
+typedef struct sinc_tables
+{
+   retro_atomic_int_t refs;
+} sinc_tables_t;
+
+/* In floats: keeps the tables on the block's 128-byte alignment. */
+#define SINC_TABLES_OFFSET 32
+
 typedef struct rarch_sinc_resampler
 {
    double design_ratio;
-   /* A buffer for phase_table, buffer_l, buffer_r and the decimator
-    * are created in a single calloc().
-    * Ensure that we get as good cache locality as we can hope for. */
+   /* The stream state - rings, the stages' rings, the shadow and the
+    * blocks - in one block, and the shared tables in another. */
    float *main_buffer;
+   sinc_tables_t *tables;
    float *phase_table;
    float *buffer_l;
    float *buffer_r;
@@ -715,8 +726,78 @@ static void resampler_sinc_free(void *data)
    {
       memalign_free(resamp->main_buffer);
       free(resamp->dec);
+      if (     resamp->tables
+            && retro_atomic_fetch_sub_int(&resamp->tables->refs, 1) == 1)
+         memalign_free(resamp->tables);
    }
    free(resamp);
+}
+
+static size_t sinc_state_elems(unsigned taps, unsigned dec_taps)
+{
+   return 8 * taps + 4 * dec_taps * SINC_DEC_STAGES
+      + 2 * SINC_DEC_FADE_FRAMES + 2 * SINC_DEC_HALF;
+}
+
+/* Lays this instance's state out over main_buffer: the kernel's rings,
+ * each stage's, the shadow's, then the blocks. */
+static void sinc_bind_state(rarch_sinc_resampler_t *re)
+{
+   unsigned s;
+   unsigned dec_taps = re->dec[0].taps;
+   float *at         = re->main_buffer + 4 * re->taps;
+   re->buffer_l      = re->main_buffer;
+   re->buffer_r      = re->buffer_l + 2 * re->taps;
+   for (s = 0; s < SINC_DEC_STAGES; s++)
+   {
+      re->dec[s].buffer_l = at;
+      re->dec[s].buffer_r = at + 2 * dec_taps;
+      at                 += 4 * dec_taps;
+   }
+   re->dec[SINC_DEC_STAGES]          = *re;
+   re->dec[SINC_DEC_STAGES].dec      = NULL;
+   re->dec[SINC_DEC_STAGES].buffer_l = at;
+   re->dec[SINC_DEC_STAGES].buffer_r = at + 2 * re->taps;
+   re->fade_block                    = at + 4 * re->taps;
+   re->dec_block                     = re->fade_block
+      + 2 * SINC_DEC_FADE_FRAMES;
+}
+
+/* A fresh stream over another instance's tables. */
+static void *resampler_sinc_sibling(void *data)
+{
+   unsigned s;
+   rarch_sinc_resampler_t *src = (rarch_sinc_resampler_t*)data;
+   rarch_sinc_resampler_t *re;
+   size_t elems;
+   if (!src || !(re = (rarch_sinc_resampler_t*)calloc(1, sizeof(*re))))
+      return NULL;
+   *re             = *src;
+   elems           = sinc_state_elems(src->taps, src->dec[0].taps);
+   re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
+   re->dec         = (rarch_sinc_resampler_t*)
+      calloc(SINC_DEC_STAGES + 1, sizeof(*re->dec));
+   if (!re->main_buffer || !re->dec)
+   {
+      memalign_free(re->main_buffer);
+      free(re->dec);
+      free(re);
+      return NULL;
+   }
+   memset(re->main_buffer, 0, sizeof(float) * elems);
+   for (s = 0; s < SINC_DEC_STAGES; s++)
+   {
+      re->dec[s]      = src->dec[s];
+      re->dec[s].ptr  = 0;
+      re->dec[s].time = 0;
+   }
+   re->ptr        = 0;
+   re->time       = 0;
+   re->dec_stages = 0;
+   re->fade_left  = 0;
+   sinc_bind_state(re);
+   retro_atomic_inc_int(&re->tables->refs);
+   return re;
 }
 
 /* The rings, the ring pointer and the phase; the table stands. */
@@ -1181,34 +1262,26 @@ void *sinc_resampler_init_hq(double bandwidth_mod,
    phase_elems = ((1 << re->phase_bits) * re->taps);
    if (window_type == SINC_WINDOW_KAISER)
       phase_elems  = phase_elems * 2;
-   elems       = phase_elems + 8 * re->taps + dec_taps
-      + 4 * dec_taps * SINC_DEC_STAGES + 2 * SINC_DEC_FADE_FRAMES
-      + 2 * SINC_DEC_HALF;
+   elems       = sinc_state_elems(re->taps, dec_taps);
 
    re->main_buffer = (float*)memalign_alloc(128, sizeof(float) * elems);
+   re->tables      = (sinc_tables_t*)memalign_alloc(128, sizeof(float)
+         * (SINC_TABLES_OFFSET + phase_elems + dec_taps));
    re->dec         = (rarch_sinc_resampler_t*)
       calloc(SINC_DEC_STAGES + 1, sizeof(*re->dec));
-   if (!re->main_buffer || !re->dec)
+   if (!re->main_buffer || !re->tables || !re->dec)
       goto error;
 
    memset(re->main_buffer, 0, sizeof(float) * elems);
-
-   re->phase_table = re->main_buffer;
-   re->buffer_l    = re->main_buffer + phase_elems;
-   re->buffer_r    = re->buffer_l + 2 * re->taps;
-   re->fade_block  = re->buffer_r + 2 * re->taps + dec_taps
-      + 4 * dec_taps * SINC_DEC_STAGES + 4 * re->taps;
-   re->dec_block   = re->fade_block + 2 * SINC_DEC_FADE_FRAMES;
+   retro_atomic_int_init(&re->tables->refs, 1);
+   re->phase_table = (float*)re->tables + SINC_TABLES_OFFSET;
 
    /* Each stage is the preset's table for a ratio of SINC_DEC_ENGAGE / 2,
     * at the single phase an exact halving visits. */
    for (s = 0; s < SINC_DEC_STAGES; s++)
    {
       rarch_sinc_resampler_t *stage = &re->dec[s];
-      stage->phase_table   = re->buffer_r + 2 * re->taps;
-      stage->buffer_l      = stage->phase_table + dec_taps
-         + 4 * dec_taps * s;
-      stage->buffer_r      = stage->buffer_l + 2 * dec_taps;
+      stage->phase_table   = re->phase_table + phase_elems;
       stage->taps          = dec_taps;
       stage->subphase_bits = 1;
       stage->subphase_mask = 1;
@@ -1235,16 +1308,15 @@ void *sinc_resampler_init_hq(double bandwidth_mod,
 
    re->process = sinc_select_process(window_type == SINC_WINDOW_KAISER,
          mask, enable_avx);
-
-   re->dec[SINC_DEC_STAGES]          = *re;
-   re->dec[SINC_DEC_STAGES].dec      = NULL;
-   re->dec[SINC_DEC_STAGES].buffer_l = re->fade_block - 4 * re->taps;
-   re->dec[SINC_DEC_STAGES].buffer_r = re->fade_block - 2 * re->taps;
+   sinc_bind_state(re);
 
    return re;
 
 error:
-   resampler_sinc_free(re);
+   memalign_free(re->main_buffer);
+   memalign_free(re->tables);
+   free(re->dec);
+   free(re);
    return NULL;
 }
 
@@ -1288,7 +1360,8 @@ retro_resampler_t sinc_resampler = {
    "sinc",
    "sinc",
    resampler_sinc_reset,
-   RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE
+   RESAMPLER_CAP_QUALITY | RESAMPLER_CAP_HQ_OVERSAMPLE,
+   resampler_sinc_sibling
 };
 
 #if defined(__GNUC__) && defined(__OPTIMIZE__) && !defined(__clang__)

@@ -78,6 +78,10 @@ void  sinc_resampler_int16_reset(void *re);
 
 void  sinc_resampler_int16_free(void *re);
 
+/* A fresh stream over re's tables, freed like any instance; the tables
+ * go with the last one. */
+void *sinc_resampler_int16_sibling(void *re);
+
 #ifdef __cplusplus
 }
 #endif

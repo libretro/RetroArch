@@ -1002,6 +1002,7 @@ typedef struct
    const uint8_t *pipe_pending;
    size_t pipe_pending_bytes;
    void (*resampler_int16_reset)(void *);
+   void *(*resampler_int16_sibling)(void *);
 #ifdef HAVE_THREADS
    struct audio_pipeline_stretch *pipe_transport;
    void *pipe_transport_output;
