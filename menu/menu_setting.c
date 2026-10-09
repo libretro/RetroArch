@@ -95,6 +95,7 @@
 #endif
 #include "../driver.h"
 #include "../paths.h"
+#include "../file_path_special.h"
 #include "../dynamic.h"
 #include "../list_special.h"
 #include "../msg_hash_lbl_str.h"
@@ -16769,6 +16770,35 @@ static void settings_build_onscreen_notifications(
    }
 }
 
+#ifdef HAVE_OVERLAY
+/* Start on an overlay preset row: back to what a fresh configuration
+ * has, which on mobile is the bundled gamepad (or keyboard), as touch
+ * devices have no other controls, and elsewhere no overlay. The row's
+ * default string is where its file browser opens, not a preset. */
+static int setting_overlay_preset_action_start(rarch_setting_t *setting)
+{
+   struct menu_state *menu_st = menu_state_get_ptr();
+#ifdef RARCH_MOBILE
+   settings_t *settings       = config_get_ptr();
+#endif
+
+   if (!setting || !setting->value.target.string)
+      return -1;
+   setting->value.target.string[0] = '\0';
+#ifdef RARCH_MOBILE
+   if (*settings->paths.directory_overlay)
+      fill_pathname_join_special(setting->value.target.string,
+            settings->paths.directory_overlay,
+            (setting->enum_idx == MENU_ENUM_LABEL_OSK_OVERLAY_PRESET)
+            ? FILE_PATH_DEFAULT_OSK_OVERLAY : FILE_PATH_DEFAULT_OVERLAY,
+            setting->size);
+#endif
+   menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                  |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+#endif
+
 static void settings_build_overlay(
       settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
@@ -16821,6 +16851,7 @@ static void settings_build_overlay(
             ADD_DESC(ovl_desc_1);
 
             ADD_DESC(overlay2_desc_0);
+            SETTINGS_ACTION_SET(start, &(*list)[list_info->index - 1], setting_overlay_preset_action_start)
 
             ADD_DESC(ovl_desc_2);
 
@@ -16853,7 +16884,12 @@ static void settings_build_osk_overlay(
 
       START_SUB_GROUP(list, list_info, "State", &group_info, &subgroup_info, parent_group);
 
-            ADD_DESC(osk_overlay_desc_0);
+            {
+               /* The preset is the first of the rows */
+               unsigned preset = list_info->index;
+               ADD_DESC(osk_overlay_desc_0);
+               SETTINGS_ACTION_SET(start, &(*list)[preset], setting_overlay_preset_action_start)
+            }
 
       GROUP_END();
 #endif
