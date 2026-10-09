@@ -87,6 +87,7 @@
  *             bsv_movie_load_checkpoint(), whose read lands in
  *             cur_save itself: one cut short, one whose stored length
  *             exceeds its state size, one whose zstd-decoded length does,
+ *             one whose zstd-decoded length falls short of it,
  *             one skipped with a larger declared size.  Each must fail or skip without freeing,
  *             overrunning or over-reporting cur_save; run under the
  *             sweep's ASan build to catch the memory errors.  Also: a
@@ -563,6 +564,31 @@ static void lane_checkpoint(void)
       CHECK(!ret, "checkpoint decoding past its state loaded");
       CHECK(h->cur_save_size <= 16, "cur_save_size %u for a 16-byte buffer",
             (unsigned)h->cur_save_size);
+      bsv_movie_free(h);
+   }
+
+   /* A 4096-byte state whose stored data decodes to 64: the rest
+    * would be restored as whatever the decode buffer held. */
+   {
+      static const uint8_t zeros[64];
+      size_t packed = 0;
+      size_t bound  = rzstd_compress_bound(sizeof(zeros));
+      uint8_t *pack = (uint8_t*)malloc(bound);
+      CHECK(pack && rzstd_encode(pack, bound, zeros, sizeof(zeros),
+               3, &packed) == RZSTD_PROCESS_END && packed <= sizeof(buf) - 12,
+            "short zstd fixture");
+      memcpy(buf + 12, pack, packed);
+      free(pack);
+      input_st.bsv_movie_state.flags = 0;
+      h   = checkpoint_handle(buf, 4096, 4096, (uint32_t)packed, 0);
+      intfstream_close(h->file);
+      free(h->file);
+      h->file = intfstream_open_memory(buf, RETRO_VFS_FILE_ACCESS_READ,
+            RETRO_VFS_FILE_ACCESS_HINT_NONE, 12 + packed);
+      ret = bsv_movie_load_checkpoint(h, REPLAY_CHECKPOINT2_COMPRESSION_ZSTD,
+            REPLAY_CHECKPOINT2_ENCODING_RAW, REPLAY_CPBEHAVIOR_DESERIALIZE);
+      CHECK(!ret, "checkpoint decoding short of its state loaded");
+      CHECK(!h->checkpoint_ready, "short-decoding checkpoint marked ready");
       bsv_movie_free(h);
    }
 
