@@ -30,10 +30,12 @@
 static SceShaccCgSourceFile source;
 static const SceShaccCgCompileOutput *output = NULL;
 
-static size_t logShaccCg(const SceShaccCgCompileOutput *output, char *shaderLog)
+// Each diagnostic is appended, cut short where shaderLog's size ends
+static size_t logShaccCg(const SceShaccCgCompileOutput *output, char *shaderLog, size_t size)
 {
+    size_t len = 0;
     shaderLog[0] = '\0';  // No diagnostics: an empty log, not the caller's stack bytes
-    for (int i = 0; i < output->diagnosticCount; ++i) {
+    for (int i = 0; i < output->diagnosticCount && len + 1 < size; ++i) {
 		const SceShaccCgDiagnosticMessage *log = &output->diagnostics[i];
         char diagnosticLevel[8];
         switch (log->level)
@@ -49,11 +51,12 @@ static size_t logShaccCg(const SceShaccCgCompileOutput *output, char *shaderLog)
                 break;
         }
         if (log->location)
-            sprintf(shaderLog, "[%s] Line %d: %s\n", diagnosticLevel, log->location->lineNumber, log->message);
+            snprintf(shaderLog + len, size - len, "[%s] Line %d: %s\n", diagnosticLevel, log->location->lineNumber, log->message);
 		else
-            sprintf(shaderLog, "[%s] %s\n", diagnosticLevel, log->message); // Haven't ran into a case where this happens. May need confirmation.
+            snprintf(shaderLog + len, size - len, "[%s] %s\n", diagnosticLevel, log->message); // Haven't ran into a case where this happens. May need confirmation.
+        len += strlen(shaderLog + len);
 	}
-    return strlen(shaderLog);
+    return len;
 }
 
 static SceShaccCgSourceFile *openFile_callback(const char *filename, const SceShaccCgSourceLocation *includedFrom,
@@ -117,7 +120,7 @@ int pglPlatformShaderCompiler_CustomPatch(int a1, void *shader)
     }
 
     char log[0x1024];
-    size_t logLength = logShaccCg(output, log); // Prepare the Shader Log
+    size_t logLength = logShaccCg(output, log, sizeof(log)); // Prepare the Shader Log
     SceUInt8 *shaderLogData = malloc(logLength + 1);
     memcpy(shaderLogData, log, logLength + 1);
     *(SceInt32*)(shader + 0x2c) = logLength + 1; // Shader Log Length
