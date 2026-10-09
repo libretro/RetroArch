@@ -2900,7 +2900,7 @@ static unsigned menu_displaylist_parse_input_info(file_list_t *list)
 {
    char entry[NAME_MAX_LENGTH];
    char host_str[18];
-   char host_name[16];
+   char host_name[64];
    uint8_t host[6];
    unsigned port;
    unsigned count          = 0;

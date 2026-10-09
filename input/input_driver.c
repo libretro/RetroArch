@@ -13406,6 +13406,38 @@ bool input_config_get_device_vibration(void)
 #define INPUT_BTPROTO_HCI   1
 #define INPUT_HCIGETDEVINFO _IOR('H', 211, int)
 #define INPUT_HCI_MAX_DEVS  16
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+/* The Bluetooth API's, loaded when asked for: it is in bthprops.cpl from
+ * XP SP2 on (and BluetoothApis.dll from 8 on), and where it is not, there
+ * is no address to give. Declared here, not from bluetoothapis.h, which
+ * older SDKs do not have. */
+typedef struct
+{
+   DWORD dwSize;
+} input_bt_find_radio_params_t;
+
+typedef struct
+{
+   DWORD dwSize;
+   union
+   {
+      ULONGLONG ullLong;
+      BYTE rgBytes[6];
+   } address;
+   WCHAR szName[248];
+   ULONG ulClassofDevice;
+   USHORT lmpSubversion;
+   USHORT manufacturer;
+} input_bt_radio_info_t;
+
+typedef char input_bt_radio_info_size[
+   (sizeof(input_bt_radio_info_t) == 520) ? 1 : -1];
+
+typedef HANDLE (WINAPI *input_bt_find_first_radio_t)(
+      const input_bt_find_radio_params_t*, HANDLE*);
+typedef DWORD  (WINAPI *input_bt_get_radio_info_t)(
+      HANDLE, input_bt_radio_info_t*);
+typedef BOOL   (WINAPI *input_bt_find_radio_close_t)(HANDLE);
 #endif
 
 bool input_bluetooth_host_address(uint8_t *addr, char *name, size_t len)
@@ -13448,6 +13480,53 @@ bool input_bluetooth_host_address(uint8_t *addr, char *name, size_t len)
          break;
    }
    close(fd);
+   return found;
+#elif defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__)
+   input_bt_find_first_radio_t find_first;
+   input_bt_get_radio_info_t   get_info;
+   input_bt_find_radio_close_t find_close;
+   input_bt_find_radio_params_t params;
+   input_bt_radio_info_t info;
+   HANDLE radio = NULL;
+   HANDLE find;
+   bool found   = false;
+   HMODULE lib  = LoadLibraryA("bthprops.cpl");
+
+   if (!lib && !(lib = LoadLibraryA("BluetoothApis.dll")))
+      return false;
+   find_first = (input_bt_find_first_radio_t)GetProcAddress(lib,
+         "BluetoothFindFirstRadio");
+   get_info   = (input_bt_get_radio_info_t)GetProcAddress(lib,
+         "BluetoothGetRadioInfo");
+   find_close = (input_bt_find_radio_close_t)GetProcAddress(lib,
+         "BluetoothFindRadioClose");
+
+   if (find_first && get_info && find_close)
+   {
+      params.dwSize = sizeof(params);
+      if ((find = find_first(&params, &radio)))
+      {
+         memset(&info, 0, sizeof(info));
+         info.dwSize = sizeof(info);
+         if (get_info(radio, &info) == ERROR_SUCCESS)
+         {
+            unsigned i;
+            for (i = 0; i < 6; i++)
+               addr[i] = info.address.rgBytes[5 - i];
+            if (name && len)
+            {
+               *name = '\0';
+               WideCharToMultiByte(CP_UTF8, 0, info.szName, -1,
+                     name, (int)len, NULL, NULL);
+               name[len - 1] = '\0';
+            }
+            found = true;
+         }
+         CloseHandle(radio);
+         find_close(find);
+      }
+   }
+   FreeLibrary(lib);
    return found;
 #else
    return false;
