@@ -20,6 +20,7 @@
 #include <limits.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <time.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -191,6 +192,9 @@ struct udev_rumble_out
    bool     has_set_ff[2];
    uint16_t configured[2];
    uint16_t playing[2];
+   uint16_t attempted[2];
+   bool     retry[2];
+   int64_t  due[2];
 };
 
 static struct udev_rumble_out udev_rumble_out[MAX_USERS];
@@ -199,8 +203,21 @@ static retro_atomic_int_t udev_rumble_want_gain[MAX_USERS];
 static retro_atomic_int_t udev_rumble_slot[MAX_USERS];
 static retro_atomic_int_t udev_rumble_gen[MAX_USERS];
 static input_output_writer_t *udev_rumble_writer = NULL;
+static int64_t udev_rumble_next; /* writer-owned, or frontend fallback */
 /* how many effect uploads and plays the writer has made: for the test */
 static retro_atomic_int_t udev_rumble_writes;
+
+/* Linux documents FF durations above 0x7fff ms as unspecified. */
+#define UDEV_RUMBLE_DURATION_MS 0x7fff
+#define UDEV_RUMBLE_REFRESH_MS  30000
+#define UDEV_RUMBLE_RETRY_MS    1000
+
+static int64_t udev_rumble_now(void)
+{
+   struct timespec ts;
+   clock_gettime(CLOCK_MONOTONIC, &ts);
+   return (int64_t)ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
+}
 
 /* One pad: its descriptor taken or let go if the pad changed, then
  * what is wanted of it written if it differs from what was. On the
@@ -212,6 +229,7 @@ static void udev_rumble_write(unsigned p)
    int gen                   = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
    int gain;
    uint32_t want;
+   int64_t now;
 
    if (gen != o->gen)
    {
@@ -247,25 +265,27 @@ static void udev_rumble_write(unsigned p)
    (void)gain;
 #endif
 
+   now  = udev_rumble_now();
    want = (uint32_t)retro_atomic_load_acquire_int(&udev_rumble_want[p]);
    for (effect = 0; effect < 2; effect++)
    {
       uint16_t strength = (uint16_t)(want >> (effect * 16));
       uint16_t old      = o->playing[effect];
 
-      if (strength == old)
+      if (o->retry[effect] && strength == o->attempted[effect]
+            && now < o->due[effect])
          continue;
+      if (!o->retry[effect] && strength == old
+            && (!strength || now < o->due[effect]))
+         continue;
+      o->retry[effect]     = false;
+      o->attempted[effect] = strength;
 
       if (strength && strength != o->configured[effect])
       {
          /* Create new or update old playing state. */
          struct ff_effect e      = {0};
-         /* This defines the length of the effect and
-            the delay before playing it. This means there
-            is a limit on the maximum vibration time, but
-            it's hopefully sufficient for most cases. Maybe
-            there's a better way? */
-         struct ff_replay replay = {0xffff, 0};
+         struct ff_replay replay = {UDEV_RUMBLE_DURATION_MS, 0};
 
          e.type   = FF_RUMBLE;
          e.id     = o->has_set_ff[effect] ? o->effects[effect] : -1;
@@ -279,8 +299,8 @@ static void udev_rumble_write(unsigned p)
          if (ioctl(o->fd, EVIOCSFF, &e) < 0)
          {
             RARCH_ERR("[udev] Failed to set rumble effect on pad #%u.\n", p);
-            /* not asked again until another strength is wanted */
-            o->playing[effect] = strength;
+            o->retry[effect] = true;
+            o->due[effect]   = udev_rumble_now() + UDEV_RUMBLE_RETRY_MS;
             continue;
          }
 
@@ -288,10 +308,8 @@ static void udev_rumble_write(unsigned p)
          o->has_set_ff[effect] = true;
          o->configured[effect] = strength;
       }
-      o->playing[effect] = strength;
-
       /* It seems that we can update strength with EVIOCSFF atomically. */
-      if ((!!strength) != (!!old))
+      if ((!!strength) != (!!old) || (strength && now >= o->due[effect]))
       {
          struct input_event play;
 
@@ -302,9 +320,19 @@ static void udev_rumble_write(unsigned p)
 
          retro_atomic_inc_int(&udev_rumble_writes);
          if (write(o->fd, &play, sizeof(play)) < (ssize_t)sizeof(play))
+         {
+            o->retry[effect] = true;
+            o->due[effect] = udev_rumble_now() + UDEV_RUMBLE_RETRY_MS;
             RARCH_ERR("[udev] Failed to play rumble effect #%u on pad #%u.\n",
                   effect, p);
+            continue;
+         }
+         o->due[effect] = strength
+            ? udev_rumble_now() + UDEV_RUMBLE_REFRESH_MS : 0;
       }
+      o->playing[effect] = strength;
+      if (!strength)
+         o->due[effect] = 0;
    }
 }
 
@@ -328,6 +356,40 @@ static void udev_rumble_writer_cb(void *userdata, bool last)
    }
 }
 
+static int udev_rumble_timeout(void *userdata)
+{
+   unsigned p, effect;
+   int64_t next = 0;
+   int64_t now;
+   (void)userdata;
+   for (p = 0; p < MAX_USERS; p++)
+      if (udev_rumble_out[p].fd >= 0)
+         for (effect = 0; effect < 2; effect++)
+         {
+            int64_t due = udev_rumble_out[p].due[effect];
+            if (due && (!next || due < next))
+               next = due;
+         }
+   udev_rumble_next = next;
+   if (!next)
+      return -1;
+   now = udev_rumble_now();
+   if (next <= now)
+      return 0;
+   return next - now > INT_MAX ? INT_MAX : (int)(next - now);
+}
+
+/* Without a writer, service only when a deadline has elapsed. */
+static void udev_rumble_poll(void)
+{
+   if (!udev_rumble_writer && udev_rumble_next
+         && udev_rumble_now() >= udev_rumble_next)
+   {
+      udev_rumble_writer_cb(NULL, false);
+      udev_rumble_timeout(NULL);
+   }
+}
+
 /* There is something for the writer to look at. Where there is no
  * writer it is looked at here. */
 static void udev_rumble_wake(unsigned p)
@@ -335,7 +397,10 @@ static void udev_rumble_wake(unsigned p)
    if (udev_rumble_writer)
       input_output_writer_wake(udev_rumble_writer);
    else
+   {
       udev_rumble_write(p);
+      udev_rumble_timeout(NULL);
+   }
 }
 
 /* A pad that can rumble has arrived in slot @p: a descriptor of its
@@ -367,6 +432,7 @@ static void udev_rumble_detach(unsigned p)
 static void udev_rumble_start(void)
 {
    unsigned p;
+   udev_rumble_next = 0;
    for (p = 0; p < MAX_USERS; p++)
    {
       memset(&udev_rumble_out[p], 0, sizeof(udev_rumble_out[p]));
@@ -377,7 +443,8 @@ static void udev_rumble_start(void)
       retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
       retro_atomic_store_release_int(&udev_rumble_want[p], 0);
    }
-   udev_rumble_writer = input_output_writer_new(udev_rumble_writer_cb, NULL);
+   udev_rumble_writer = input_output_writer_new_timed(udev_rumble_writer_cb,
+         udev_rumble_timeout, NULL);
 }
 
 static void udev_rumble_stop(void)
@@ -385,6 +452,7 @@ static void udev_rumble_stop(void)
    unsigned p;
    input_output_writer_free(udev_rumble_writer);
    udev_rumble_writer = NULL;
+   udev_rumble_next   = 0;
    for (p = 0; p < MAX_USERS; p++)
    {
       int old = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);
@@ -1187,6 +1255,8 @@ static bool udev_joypad_poll_hotplug_available(struct udev_monitor *dev)
 static void udev_joypad_poll(void)
 {
    unsigned p;
+
+   udev_rumble_poll();
 
    while (udev_joypad_mon && udev_joypad_poll_hotplug_available(udev_joypad_mon))
    {
