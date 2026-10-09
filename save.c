@@ -566,17 +566,21 @@ static bool content_save_ram_file(unsigned slot, bool compress)
          msg_hash_to_str(MSG_TO),
          ram.path);
 
+   /* Write via a temporary file, so a crash or power loss mid-save
+    * leaves the previous save intact instead of a truncated one. */
 #if defined(HAVE_COMPRESSION)
    if (compress)
    {
-      if (!rzipstream_write_file(
-            ram.path, mem_info.data, mem_info.size))
+      char tmp_path[PATH_MAX_LENGTH];
+      if (     !filestream_atomic_temp_name(tmp_path, sizeof(tmp_path), ram.path)
+            || !content_finish_tmp(ram.path, rzipstream_write_file(
+                  tmp_path, mem_info.data, mem_info.size)))
          goto fail;
    }
    else
 #endif
    {
-      if (!filestream_write_file(
+      if (!filestream_write_file_atomic(
             ram.path, mem_info.data, mem_info.size))
          goto fail;
    }

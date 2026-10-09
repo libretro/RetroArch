@@ -507,6 +507,11 @@ static bool task_cloud_sync_should_ignore_file(const char *filename)
    if (string_ends_with(filename, ".rafetching"))
        return true;
 
+   /* a save, state or disk index still being written, or left by one
+    * that never finished (filestream_atomic_temp_name) */
+   if (string_ends_with(filename, ".tmp"))
+       return true;
+
    return false;
 }
 
