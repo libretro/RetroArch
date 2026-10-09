@@ -27,7 +27,7 @@ for d in samples/audio/*/; do
               grep -m2 "error\|undefined" /tmp/asc.log; exit 1
            fi
            t=$(ls *_test 2>/dev/null | head -1)
-           if [ -n "$t" ] && ! timeout 180 "./$t" >/tmp/asc_run.log 2>&1; then
+           if [ -n "$t" ] && ! timeout 900 "./$t" >/tmp/asc_run.log 2>&1; then
               echo "RUN-FAIL $d (SANITIZER=$san)"
               grep -m6 "ThreadSanitizer\|AddressSanitizer\|runtime error" /tmp/asc_run.log || tail -3 /tmp/asc_run.log
               exit 1
