@@ -3167,6 +3167,20 @@ bool rpng_iterate_image(rpng_t *rpng)
          if (!rpng_process_ihdr(&rpng->ihdr))
             return false;
 
+         /* PNG only defines compression and filter method 0, and
+          * interlace methods 0 (none) and 1 (Adam7).  In particular,
+          * the decode path treats every non-zero interlace value as
+          * Adam7 while the buffer setup only treats 1 as Adam7. */
+         if (   rpng->ihdr.compression != 0
+             || rpng->ihdr.filter      != 0
+             || rpng->ihdr.interlace    > 1)
+         {
+#if defined(DEBUG) || defined(RPNG_TEST)
+            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
+#endif
+            return false;
+         }
+
          if (rpng->ihdr.width == 0 || rpng->ihdr.height == 0)
             return false;
 
@@ -3210,14 +3224,6 @@ bool rpng_iterate_image(rpng_t *rpng)
 #endif
                )
                return false;
-         }
-
-         if (rpng->ihdr.compression != 0)
-         {
-#if defined(DEBUG) || defined(RPNG_TEST)
-            fprintf(stderr, "[RPNG] Error in line %d.\n", __LINE__);
-#endif
-            return false;
          }
 
          rpng->flags   |= RPNG_FLAG_HAS_IHDR;
