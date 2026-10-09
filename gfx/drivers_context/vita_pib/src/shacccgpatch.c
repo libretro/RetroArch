@@ -32,6 +32,7 @@ static const SceShaccCgCompileOutput *output = NULL;
 
 static size_t logShaccCg(const SceShaccCgCompileOutput *output, char *shaderLog)
 {
+    shaderLog[0] = '\0';  // No diagnostics: an empty log, not the caller's stack bytes
     for (int i = 0; i < output->diagnosticCount; ++i) {
 		const SceShaccCgDiagnosticMessage *log = &output->diagnostics[i];
         char diagnosticLevel[8];
