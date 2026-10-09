@@ -5925,9 +5925,10 @@ static void *gl2_init(const video_info_t *video)
    char *error_string                   = NULL;
    recording_state_t *recording_st      = recording_state_get_ptr();
    gl2_t *gl                            = (gl2_t*)calloc(1, sizeof(gl2_t));
-   const gfx_ctx_driver_t *ctx_driver   = gl2_get_context(gl);
+   const gfx_ctx_driver_t *ctx_driver   = NULL;
 
-   if (!gl || !ctx_driver)
+   /* gl must exist before the context lookup writes its flags. */
+   if (!gl || !(ctx_driver = gl2_get_context(gl)))
       goto error;
 
    /* Latched here, inside the wrapper's blocking CMD_INIT (the main
