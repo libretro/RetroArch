@@ -79,8 +79,15 @@ void cloud_sync_find_driver(const char *drv, const char *prefix,
 void cloud_sync_capture(void) { }
 bool cloud_sync_begin(cloud_sync_complete_handler_t cb, void *user_data)
 { (void)cb; (void)user_data; return false; }
+/* Nonzero: the driver ends the sync, and reports it at once. */
+static int end_ok;
 bool cloud_sync_end(cloud_sync_complete_handler_t cb, void *user_data)
-{ (void)cb; (void)user_data; return false; }
+{
+   if (!end_ok)
+      return false;
+   cb(user_data, NULL, true, NULL);
+   return true;
+}
 /* A fetch writes @fetch_size bytes to the local file and reports it from
  * another thread, as a WebDAV or S3 transfer reports from the main
  * thread while the task runs on the queue's worker. Unset, a fetch is
@@ -515,9 +522,24 @@ static void walk_lane(void)
    if (system(cmd) != 0) { }
 }
 
+/* What a sync's pusher is told when it is done. */
+static unsigned done_calls;
+static int      done_failed;
+static int      done_had_state;
+
+static void on_sync_done(retro_task_t *task, void *task_data,
+      void *user_data, const char *err)
+{
+   (void)task_data;
+   done_calls++;
+   done_failed    = err != NULL;
+   done_had_state = task->state != NULL && user_data == (void*)&done_calls;
+}
+
 /* A whole sync's tail through the real task queue: the diff, the local
- * manifest and the end, then retirement. Run under LeakSanitizer in CI. */
-static void queue_lane(void)
+ * manifest and the end, then retirement. Run under LeakSanitizer in CI.
+ * @ends: whether the driver ends the sync. */
+static void queue_run(int ends)
 {
    task_cloud_sync_state_t *st   = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
    retro_task_t            *task = task_init();
@@ -538,6 +560,8 @@ static void queue_lane(void)
    strlcpy(st->dir_core_assets, dir, sizeof(st->dir_core_assets));
    retro_atomic_int_init(&st->waiting, 0);
    retro_atomic_int_init(&st->phase, (int)CLOUD_SYNC_PHASE_DIFF);
+   st->cb      = on_sync_done;
+   st->cb_data = &done_calls;
    snprintf(path, sizeof(path), "%s/q.srm", dir);
    write_file(path, 300 * 1024, 3);
    list_add(st->server_manifest,  "saves/q.srm", NULL, hash_of(path));
@@ -546,20 +570,57 @@ static void queue_lane(void)
 
    /* set up as task_push_cloud_sync() sets up every sync */
    task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
-   grant = 2;
+   grant      = 2;
+   end_ok     = ends;
+   done_calls = 0;
 
    task_queue_init(false, NULL);
    task_queue_push(task);
    for (i = 0; i < 10000; i++)
       task_queue_check();
    task_queue_deinit();
-   check("queue: the sync ran to its end and retired", 1);
+   end_ok = 0;
 
    unlink(path);
    snprintf(path, sizeof(path), "%s/manifest.local", dir);
    unlink(path);
    snprintf(path, sizeof(path), "%s/manifest.local.tmp", dir);
    unlink(path);
+}
+
+static void queue_lane(void)
+{
+   queue_run(1);
+   check("queue: the sync ran to its end and retired", 1);
+   check("queue: a clean sync tells its pusher once, with no error, before its state goes",
+         done_calls == 1 && !done_failed && done_had_state);
+
+   queue_run(0);
+   check("queue: a sync the driver could not end tells its pusher it failed",
+         done_calls == 1 && done_failed);
+}
+
+/* A sync whose driver cannot begin: its pusher hears it failed. */
+static void begin_lane(void)
+{
+   task_cloud_sync_state_t *st   = (task_cloud_sync_state_t*)calloc(1, sizeof(*st));
+   retro_task_t            *task = task_init();
+   unsigned i;
+
+   retro_atomic_int_init(&st->waiting, 0);
+   retro_atomic_int_init(&st->phase, (int)CLOUD_SYNC_PHASE_BEGIN);
+   st->cb      = on_sync_done;
+   st->cb_data = &done_calls;
+   task_cloud_sync_task_setup(task, st, "Cloud Sync in progress");
+   done_calls = 0;
+
+   task_queue_init(false, NULL);
+   task_queue_push(task);
+   for (i = 0; i < 100; i++)
+      task_queue_check();
+   task_queue_deinit();
+   check("begin: a sync that could not begin tells its pusher it failed",
+         done_calls == 1 && done_failed);
 }
 
 int main(void)
@@ -595,6 +656,7 @@ int main(void)
    fetch_lane();
    walk_lane();
    queue_lane();
+   begin_lane();
 
    rmdir(dir);
    printf("cloudsync_pacing_test: %s\n", fails ? "FAIL" : "PASS");

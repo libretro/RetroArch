@@ -77,11 +77,13 @@ static bool file_holds_pattern(void)
    return n == pattern_size && !memcmp(buf, pattern, pattern_size);
 }
 
-void __wrap_task_push_cloud_sync(void)
+bool __wrap_task_push_cloud_sync(retro_task_callback_t cb, void *cb_data)
 {
+   (void)cb; (void)cb_data;
    n_syncs++;
    last_on_disk = file_holds_pattern();
    last_live    = content_savefile_is_live(srm_path);
+   return true;
 }
 
 /* ---- helpers ------------------------------------------------------- */

@@ -162,6 +162,9 @@ typedef struct
     * than a process-wide cache: a fresh list per sync is a handful of
     * strdups, and it cannot go stale against the sync toggles. */
    struct string_list *dirlist;
+   /* Whoever pushed the sync, told when it is done. */
+   retro_task_callback_t cb;
+   void *cb_data;
 } task_cloud_sync_state_t;
 
 /* An entry for updated_server_manifest or updated_local_manifest, on
@@ -260,6 +263,7 @@ static void task_cloud_sync_begin_handler(void *user_data, const char *path, boo
    else
    {
       RARCH_WARN(CSPFX "Begin failed.\n");
+      sync_state->failures = true;
       task_free_title(task);
       task_set_title(task, strdup("Cloud Sync failed"));
       task_set_flags(task, RETRO_TASK_FLG_FINISHED, true);
@@ -2235,6 +2239,7 @@ static void task_cloud_sync_task_step(retro_task_t *task,
          if (!cloud_sync_begin(task_cloud_sync_begin_handler, task))
          {
             RARCH_WARN(CSPFX "Could not begin.\n");
+            sync_state->failures = true;
             task_free_title(task);
             task_set_title(task, strdup("Cloud Sync failed"));
             goto task_finished;
@@ -2274,6 +2279,7 @@ static void task_cloud_sync_task_step(retro_task_t *task,
          if (!cloud_sync_end(task_cloud_sync_end_handler, task))
          {
             RARCH_WARN(CSPFX "Could not end?!\n");
+            sync_state->failures = true;
             goto task_finished;
          }
          break;
@@ -2308,6 +2314,21 @@ static void task_cloud_sync_task_handler(retro_task_t *task)
    task_cloud_sync_fetched_run(sync_state, &b);
    task_cloud_sync_task_step(task, sync_state, &b);
    task_nbio_slice_close(&b);
+}
+
+/* Runs on the main thread before the state is released. A sync that
+ * failed, or finished with failures or conflicts, reports its title -
+ * the sync's own summary - as the error. */
+static void task_cloud_sync_cb(retro_task_t *task, void *task_data,
+      void *user_data, const char *error)
+{
+   task_cloud_sync_state_t *sync_state = (task_cloud_sync_state_t *)task->state;
+
+   if (!sync_state || !sync_state->cb)
+      return;
+   if (!error && (sync_state->failures || sync_state->conflicts))
+      error = task->title ? task->title : "Cloud Sync failed";
+   sync_state->cb(task, NULL, sync_state->cb_data, error);
 }
 
 /* Releases the sync's state when the task retires. Every manifest owns
@@ -2363,6 +2384,7 @@ static void task_cloud_sync_task_setup(retro_task_t *task,
    task->state       = sync_state;
    task->title       = strdup(title);
    task->handler     = task_cloud_sync_task_handler;
+   task->callback    = task_cloud_sync_cb;
    task->cleanup     = task_cloud_sync_cleanup;
    task->progress_cb = task_window_progress_cb;
 }
@@ -2376,7 +2398,8 @@ static bool task_cloud_sync_task_finder(retro_task_t *task, void *user_data)
    return task->handler == task_cloud_sync_task_handler;
 }
 
-static void task_push_cloud_sync_with_mode(int conflict_resolution)
+static bool task_push_cloud_sync_with_mode(int conflict_resolution,
+      retro_task_callback_t cb, void *cb_data)
 {
    char task_title[128];
    task_finder_data_t       find_data;
@@ -2385,7 +2408,7 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    bool cloud_sync_enable              = config_get_ptr()->bools.cloud_sync_enable;
 
    if (!cloud_sync_enable)
-      return;
+      return false;
 
 #if defined(HAVE_THREADS) && !defined(TCS_LOCK_FREE)
    if (!tcs_manifest_lock)
@@ -2396,12 +2419,12 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    if (task_queue_find(&find_data))
    {
       RARCH_LOG(CSPFX "Already in progress.\n");
-      return;
+      return false;
    }
 
    sync_state = (task_cloud_sync_state_t *)calloc(1, sizeof(task_cloud_sync_state_t));
    if (!sync_state)
-      return;
+      return false;
 
    /* Captured here, on the main thread, for the worker the threaded
     * task queue runs the handler on. */
@@ -2417,14 +2440,14 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    if (!sync_state->dirlist)
    {
       free(sync_state);
-      return;
+      return false;
    }
 
    if (!(task = task_init()))
    {
       string_list_free(sync_state->dirlist);
       free(sync_state);
-      return;
+      return false;
    }
 
    /* calloc zero-fill is not a portable initializer for an atomic
@@ -2436,17 +2459,20 @@ static void task_push_cloud_sync_with_mode(int conflict_resolution)
    task_cloud_sync_phase_set(sync_state, CLOUD_SYNC_PHASE_BEGIN);
    sync_state->start_time          = cpu_features_get_time_usec();
    sync_state->conflict_resolution = conflict_resolution;
+   sync_state->cb                  = cb;
+   sync_state->cb_data             = cb_data;
 
    strlcpy_lit(task_title, "Cloud Sync in progress", sizeof(task_title));
 
    task_cloud_sync_task_setup(task, sync_state, task_title);
 
    task_queue_push(task);
+   return true;
 }
 
-void task_push_cloud_sync(void)
+bool task_push_cloud_sync(retro_task_callback_t cb, void *cb_data)
 {
-   task_push_cloud_sync_with_mode(0);
+   return task_push_cloud_sync_with_mode(0, cb, cb_data);
 }
 
 void task_push_cloud_sync_update_driver(void)
@@ -2469,11 +2495,11 @@ void task_push_cloud_sync_update_driver(void)
 void task_push_cloud_sync_resolve_keep_local(void)
 {
    RARCH_LOG(CSPFX "Starting sync with conflict resolution: keep local.\n");
-   task_push_cloud_sync_with_mode(1);
+   task_push_cloud_sync_with_mode(1, NULL, NULL);
 }
 
 void task_push_cloud_sync_resolve_keep_server(void)
 {
    RARCH_LOG(CSPFX "Starting sync with conflict resolution: keep server.\n");
-   task_push_cloud_sync_with_mode(2);
+   task_push_cloud_sync_with_mode(2, NULL, NULL);
 }
