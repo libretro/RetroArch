@@ -12,3 +12,9 @@ race:libgallium
 race:libLLVM
 deadlock:libVkLayer_khronos_validation.so
 deadlock:libvulkan.so
+# libdbus, for the screensaver worker (gfx/common/dbus_common.c): it
+# closes its private connection while holding the connection lock and
+# takes its I/O-path lock the other way round inside a blocking call,
+# both on the worker. That connection is the worker's alone, so the
+# order cannot meet itself on another thread.
+deadlock:libdbus-1.so
