@@ -29,34 +29,34 @@
 #include <rthreads/rthreads.h>
 #endif
 
+#define CONNECTION_LIVE 1
+#define CONNECTION_USER 2
+
 bool pad_connection_acquire(joypad_connection_t *joyconn)
 {
-   (void)retro_atomic_fetch_add_seq_cst_int(&joyconn->users, 1);
-   retro_atomic_thread_fence_seq_cst();
-   if (retro_atomic_load_seq_cst_int(&joyconn->live))
+   int state = retro_atomic_fetch_add_int(&joyconn->gate, CONNECTION_USER);
+   if (state & CONNECTION_LIVE)
       return true;
-   (void)retro_atomic_fetch_sub_int(&joyconn->users, 1);
+   (void)retro_atomic_fetch_sub_int(&joyconn->gate, CONNECTION_USER);
    return false;
 }
 
 void pad_connection_release(joypad_connection_t *joyconn)
 {
-   (void)retro_atomic_fetch_sub_int(&joyconn->users, 1);
+   (void)retro_atomic_fetch_sub_int(&joyconn->gate, CONNECTION_USER);
 }
 
-/* The slot's fields are set: readers may go in. */
+/* Preserve rejected readers still leaving a closed slot. */
 static void slot_publish(joypad_connection_t *joyconn)
 {
-   retro_atomic_store_release_int(&joyconn->live, 1);
+   (void)retro_atomic_fetch_or_int(&joyconn->gate, CONNECTION_LIVE);
 }
 
-/* No new reader goes in; returns once none is inside. A reader is in
- * for one call into the pad, so the wait is that long. */
+/* No new reader goes in; returns once none is inside. */
 static void slot_retire(joypad_connection_t *joyconn)
 {
-   (void)retro_atomic_exchange_int(&joyconn->live, 0);
-   retro_atomic_thread_fence_seq_cst();
-   while (retro_atomic_load_seq_cst_int(&joyconn->users))
+   (void)retro_atomic_fetch_and_int(&joyconn->gate, ~CONNECTION_LIVE);
+   while (retro_atomic_load_acquire_int(&joyconn->gate))
    {
 #ifdef HAVE_THREADS
       sthread_yield();
@@ -189,8 +189,7 @@ void pad_connection_mark_end(joypad_connection_t *joyconn)
    joyconn->connected = false;
    joyconn->iface     = NULL;
    joyconn->data      = (void *)0xdeadbeef;
-   retro_atomic_int_init(&joyconn->live, 0);
-   retro_atomic_int_init(&joyconn->users, 0);
+   retro_atomic_int_init(&joyconn->gate, 0);
    retro_atomic_int_init(&joyconn->claimed, SLOT_END);
 }
 
@@ -242,8 +241,7 @@ joypad_connection_t *pad_connection_init(unsigned pads)
    for (i = 0; i < (int)pads; i++)
    {
       joypad_connection_t *conn  = (joypad_connection_t*)&joyconn[i];
-      retro_atomic_int_init(&conn->live, 0);
-      retro_atomic_int_init(&conn->users, 0);
+      retro_atomic_int_init(&conn->gate, 0);
       retro_atomic_int_init(&conn->claimed, 0);
 
       conn->connected            = false;

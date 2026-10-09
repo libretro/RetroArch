@@ -269,6 +269,18 @@ jobs:
           WINEDEBUG=-all timeout 300 make check
           make clean
 
+      - name: Build and run connection_gate_test (ASan + UBSan, TSan)
+        shell: bash
+        working-directory: samples/input/connection_gate
+        run: |
+          set -eu
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1:detect_stack_use_after_return=1 \
+             UBSAN_OPTIONS=print_stacktrace=1 timeout 60 ./connection_gate_test
+          make clean all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 timeout 60 ./connection_gate_test
+          make clean
+
       - name: Build and run hidraw_hid_test (ASan + UBSan)
         shell: bash
         working-directory: samples/input/hidraw_hid

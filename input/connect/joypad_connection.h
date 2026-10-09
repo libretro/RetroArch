@@ -61,20 +61,17 @@
 #define PID_KADE          SWAP_IF_BIG(0x82c0)
 #define PID_DRAGONRISE    SWAP_IF_BIG(0x0006)
 
-/* A slot is set up and torn down on the HID driver's own thread - its
- * event or hotplug thread - and read on the frontend's every frame.
- * The pad_connection_* calls that reach into the pad do so only while
- * the slot is 'live', counted in 'users'; pad_connection_pad_deinit()
- * takes 'live' away and waits for 'users' to drain before the pad's
- * deinit frees what they would read. */
+/* The HID owner publishes a slot and retires it before freeing the
+ * pad. One word holds admission (bit 0) and readers (increments of 2)
+ * so a reader's claim and the owner's close have one atomic order.
+ * The slot storage must outlive all attempts to acquire it. */
 struct joypad_connection
 {
     struct pad_connection_interface *iface;
     input_device_driver_t *input_driver;
     void* data;
     void* connection;
-    retro_atomic_int_t live;
-    retro_atomic_int_t users;
+    retro_atomic_int_t gate;
     /* Taken by pad_connection_find_vacant_pad() for whoever found the
      * slot, so two threads connecting pads at once - a HID driver's
      * and the input poll - never get the same one; given back by
