@@ -2090,6 +2090,8 @@ static struct config_path_setting *populate_settings_path(
    SETTING_PATH("playlist_directory",            settings->paths.directory_playlist, true, NULL, true);
    SETTING_PATH("cheat_database_path",           settings->paths.path_cheat_database, false, NULL, true);
    SETTING_PATH("system_directory",              settings->paths.directory_system, true, NULL, true);
+   SETTING_PATH("amiibo_directory",              settings->paths.directory_amiibo, true, NULL, true);
+   SETTING_PATH("amiibo_file",                   settings->paths.path_amiibo, false, NULL, true);
    SETTING_PATH("cache_directory",               settings->paths.directory_cache, false, NULL, true);
    SETTING_PATH("audio_dsp_plugin",              settings->paths.path_audio_dsp_plugin, false, NULL, true);
    SETTING_PATH("audio_filter_dir",              settings->paths.directory_audio_filter, true, NULL, true);
@@ -2663,6 +2665,7 @@ static struct config_bool_setting *populate_settings_bool(
 #include "settings/settings_def_menu_wallpaper_path.h"
 #include "settings/settings_def_audio_dsp_path.h"
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
@@ -3387,6 +3390,7 @@ static struct config_float_setting *populate_settings_float(
 #include "settings/settings_def_menu_wallpaper_path.h"
 #include "settings/settings_def_audio_dsp_path.h"
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
@@ -4088,6 +4092,7 @@ static struct config_uint_setting *populate_settings_uint(
 #include "settings/settings_def_menu_wallpaper_path.h"
 #include "settings/settings_def_audio_dsp_path.h"
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
@@ -4824,6 +4829,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_menu_wallpaper_path.h"
 #include "settings/settings_def_audio_dsp_path.h"
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"
@@ -5422,6 +5428,7 @@ static struct config_int_setting *populate_settings_int(
 #include "settings/settings_def_menu_wallpaper_path.h"
 #include "settings/settings_def_audio_dsp_path.h"
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #include "settings/settings_def_dir_user.h"
 #include "settings/settings_def_dir_core.h"
 #include "settings/settings_def_dir_cache_log.h"

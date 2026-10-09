@@ -4637,6 +4637,7 @@ MSG_HASH(MENU_ENUM_SUBLABEL_##T, sub)
 #define S_PATH_DS_NS(f, T, n, df2, sd, c, vals, rp, ui, us) \
 MSG_HASH(MENU_ENUM_LABEL_VALUE_##T, us)
 #include "../settings/settings_def_video_filter_path.h"
+#include "../settings/settings_def_amiibo_file_path.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT

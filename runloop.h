@@ -1069,6 +1069,9 @@ runloop_state_t *runloop_state_get_ptr(void);
  */
 bool runloop_is_content_closing(void);
 
+/* True if the loaded core requested the NFC reader interface. */
+bool runloop_core_supports_nfc(void);
+
 /**
  * runloop_is_content_switching:
  *

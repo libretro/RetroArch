@@ -118,6 +118,9 @@
 #include "../paths.h"
 #include "../retroarch.h"
 #include "../runloop.h"
+#ifdef HAVE_NFC
+#include "../nfc/nfc_frontend.h"
+#endif
 #include "../core.h"
 #include "../frontend/frontend_driver.h"
 #include <file/file_watch.h>
@@ -4804,6 +4807,17 @@ static int menu_displaylist_parse_load_content_settings(
                MENU_ENUM_LABEL_DISK_OPTIONS,
                MENU_SETTING_ACTION_CORE_DISK_OPTIONS, 0, 0, NULL))
             count++;
+
+#ifdef HAVE_NFC
+      /* Load Amiibo: a .bin file browser, shown only when the core uses NFC
+       * and the active source is software. Uses the settings file browser. */
+      if ((!retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+            && runloop_core_supports_nfc()
+            && nfc_frontend_active_is_software())
+         if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+               MENU_ENUM_LABEL_NFC_LOAD_AMIIBO, PARSE_ONLY_PATH, false) == 0)
+            count++;
+#endif
 
 #ifdef HAVE_SCREENSHOTS
       if (settings->bools.quick_menu_show_take_screenshot)
@@ -13858,6 +13872,9 @@ unsigned menu_displaylist_build_list(
             static const menu_displaylist_build_info_t build_list[] = {
                {MENU_ENUM_LABEL_RGUI_BROWSER_DIRECTORY,          PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_CACHE_DIRECTORY,                 PARSE_ONLY_DIR},
+#ifdef HAVE_NFC
+               {MENU_ENUM_LABEL_AMIIBO_DIRECTORY,                PARSE_ONLY_DIR},
+#endif
                {MENU_ENUM_LABEL_SYSTEM_DIRECTORY,                PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SAVEFILE_DIRECTORY,              PARSE_ONLY_DIR},
                {MENU_ENUM_LABEL_SAVESTATE_DIRECTORY,             PARSE_ONLY_DIR},

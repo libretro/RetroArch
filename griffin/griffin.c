@@ -1055,6 +1055,17 @@ LEDS
 #endif
 
 /*============================================================
+NFC
+============================================================ */
+#ifdef HAVE_NFC
+#include "../nfc/nfc_frontend.c"
+#include "../nfc/nfc_backend_amiibo.c"
+#ifdef NFC_HAVE_AFNFC
+#include "../nfc/nfc_afnfc.c"
+#endif
+#endif
+
+/*============================================================
 LOCATION
 ============================================================ */
 #if defined(ANDROID)

@@ -27861,6 +27861,7 @@ enum msg_hash_enums
 #define S_ACTION_EX_H(T, n, sd, ok, rp, c, us, sub) MENU_LBL_H(T),
 #define S_ACTION_EX_NS_H(T, n, sd, ok, rp, c, us) MENU_LBL_H(T),
 #include "settings/settings_def_video_filter_path.h"
+#include "settings/settings_def_amiibo_file_path.h"
 #undef S_BOOL
 #undef S_BOOL_NS
 #undef S_UINT

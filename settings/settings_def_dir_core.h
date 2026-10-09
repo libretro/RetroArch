@@ -13,6 +13,14 @@ S_DIR(directory_system, SYSTEM_DIRECTORY,
       "System/BIOS",
       "BIOSes, boot ROMs, and other system specific files are stored in this directory.")
 #endif
+/* config key "amiibo_directory" matches the label string. */
+#ifndef SETTINGS_DEF_CONFIG_PASS
+S_DIR(directory_amiibo, AMIIBO_DIRECTORY,
+      "amiibo_directory",
+      g_defaults.dirs[DEFAULT_DIR_AMIIBO], DIRECTORY_DEFAULT, SD_FLAG_NONE, 0, directory_action_start_generic,
+      "Amiibo",
+      "Amiibo/NTAG dumps (.bin) and the amiibo.json database are read from this directory.")
+#endif
 /* config key "core_assets_directory" differs from the label string; the
  * configuration.c row stays literal for this setting. */
 #ifndef SETTINGS_DEF_CONFIG_PASS

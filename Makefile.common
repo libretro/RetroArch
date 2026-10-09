@@ -1041,6 +1041,18 @@ ifeq ($(HAVE_LAKKA_SWITCH), 1)
    DEFINES += -DHAVE_LAKKA_SWITCH
 endif
 
+ifeq ($(HAVE_NFC), 1)
+   DEFINES += -DHAVE_NFC
+   OBJ     += nfc/nfc_frontend.o
+   OBJ     += nfc/nfc_backend_amiibo.o
+   # Enable the Linux AF_NFC hardware backend with:
+   #   HAVE_NFC_AFNFC=1  ->  -DNFC_HAVE_AFNFC + nfc/nfc_afnfc.o
+   ifeq ($(HAVE_NFC_AFNFC), 1)
+      DEFINES += -DNFC_HAVE_AFNFC
+      OBJ     += nfc/nfc_afnfc.o
+   endif
+endif
+
 ifeq ($(HAVE_MENU_COMMON), 1)
    OBJ += menu/menu_setting.o \
           menu/menu_driver.o \

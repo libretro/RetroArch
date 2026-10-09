@@ -142,6 +142,9 @@ enum
    ACTION_OK_SET_PATH_OVERLAY,
    ACTION_OK_SET_PATH_OSK_OVERLAY,
    ACTION_OK_SET_PATH_VIDEO_FONT,
+#ifdef HAVE_NFC
+   ACTION_OK_SET_PATH_AMIIBO,
+#endif
    ACTION_OK_SET_DIRECTORY,
    ACTION_OK_SHOW_WIMP,
    ACTION_OK_LOAD_CHEAT_FILE_APPEND,
@@ -2710,6 +2713,14 @@ static int generic_action_ok(const char *path,
          flush_char = MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST_STR;
          ret        = set_path_generic(menu_label, action_path);
          break;
+#ifdef HAVE_NFC
+      case ACTION_OK_SET_PATH_AMIIBO:
+         /* Return to the Quick Menu the picker was opened from; the
+          * caller then resumes content. */
+         flush_char = MENU_ENUM_LABEL_CONTENT_SETTINGS_STR;
+         ret        = set_path_generic(menu_label, action_path);
+         break;
+#endif
       case ACTION_OK_SET_PATH:
          flush_type = MENU_SETTINGS;
          ret        = set_path_generic(menu_label, action_path);
@@ -2871,6 +2882,23 @@ DEFAULT_ACTION_OK_SET(action_ok_shader_pass_load,     ACTION_OK_LOAD_SHADER_PASS
 DEFAULT_ACTION_OK_SET(action_ok_rgui_menu_theme_preset_load,  ACTION_OK_LOAD_RGUI_MENU_THEME_PRESET,  MENU_ENUM_LABEL_MENU_SETTINGS)
 DEFAULT_ACTION_OK_SET(action_ok_set_manual_content_scan_dat_file, ACTION_OK_SET_MANUAL_CONTENT_SCAN_DAT_FILE, MENU_ENUM_LABEL_DEFERRED_MANUAL_CONTENT_SCAN_LIST)
 
+#ifdef HAVE_NFC
+/* Load Amiibo: placing a tag is an in-game action, so after the dump is
+ * served (CMD_EVENT_NFC_LOAD_AMIIBO via the setting's change handler)
+ * drop back into the running content rather than leaving the menu open.
+ * The menu stack is flushed to the Quick Menu first so reopening the
+ * menu lands there instead of in the file browser. */
+static int action_ok_set_path_amiibo(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   int ret = generic_action_ok(path, label, type, idx, entry_idx,
+         ACTION_OK_SET_PATH_AMIIBO, MSG_UNKNOWN);
+   if (ret == 0 && !retroarch_ctl(RARCH_CTL_IS_DUMMY_CORE, NULL))
+      return generic_action_ok_command(CMD_EVENT_RESUME);
+   return ret;
+}
+#endif
+
 static int action_ok_file_load(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
@@ -2920,6 +2948,13 @@ static int action_ok_file_load(const char *path,
 
    if (menu_label && *menu_label)
       setting = menu_setting_find(menu_label);
+
+#ifdef HAVE_NFC
+   if (     setting
+         && setting->type == ST_PATH
+         && string_is_equal(menu_label, MENU_ENUM_LABEL_NFC_LOAD_AMIIBO_STR))
+      return action_ok_set_path_amiibo(path, label, type, idx, entry_idx);
+#endif
 
    if (setting && setting->type == ST_PATH)
       return action_ok_set_path(path, label, type, idx, entry_idx);

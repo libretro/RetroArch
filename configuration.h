@@ -1386,6 +1386,8 @@ typedef struct settings
       char directory_osk_overlay[DIR_MAX_LENGTH];
       char directory_screenshot[DIR_MAX_LENGTH];
       char directory_system[DIR_MAX_LENGTH];
+      char directory_amiibo[DIR_MAX_LENGTH];
+      char path_amiibo[PATH_MAX_LENGTH];
       char directory_cache[DIR_MAX_LENGTH];
       char directory_playlist[DIR_MAX_LENGTH];
       char directory_content_favorites[DIR_MAX_LENGTH];
