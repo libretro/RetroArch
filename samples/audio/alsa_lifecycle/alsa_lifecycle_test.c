@@ -106,20 +106,6 @@ int __wrap_snd_pcm_wait(snd_pcm_t *pcm, int timeout)
    return scr_wait_rc;
 }
 
-/* The capture read: what readi returns, and how often it was called. */
-static int      scr_readi_rc = -EAGAIN;
-static unsigned n_readi;
-
-snd_pcm_sframes_t __real_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size);
-snd_pcm_sframes_t __wrap_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size)
-{
-   (void)pcm; (void)buffer;
-   n_readi++;
-   if (scr_readi_rc == 0)
-      return (snd_pcm_sframes_t)size;
-   return scr_readi_rc;
-}
-
 /* The stream state, scripted: -1 is the real one. snd_pcm_recover()
  * prepares an overrun or suspended stream - or, when a resume is
  * scripted, takes a suspended one straight back to running - and
@@ -146,6 +132,41 @@ int __wrap_snd_pcm_start(snd_pcm_t *pcm)
       return -EBADFD;
    scr_state = SND_PCM_STATE_RUNNING;
    return 0;
+}
+
+/* The capture read: what readi returns, and how often it was called. */
+static int      scr_readi_rc = -EAGAIN;
+static unsigned n_readi;
+
+snd_pcm_sframes_t __real_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size);
+snd_pcm_sframes_t __wrap_snd_pcm_readi(snd_pcm_t *pcm, void *buffer, snd_pcm_uframes_t size)
+{
+   (void)pcm; (void)buffer;
+   n_readi++;
+   if (scr_readi_rc == 0)
+      return (snd_pcm_sframes_t)size;
+   /* An overrun stops the stream, as the device does. */
+   if (scr_readi_rc == -EPIPE && scr_state >= 0)
+      scr_state = SND_PCM_STATE_XRUN;
+   return scr_readi_rc;
+}
+
+/* Nonzero: the next avail returns it once, and an overrun stops the
+ * stream the way the device does. */
+static int scr_avail_rc;
+
+snd_pcm_sframes_t __real_snd_pcm_avail(snd_pcm_t *pcm);
+snd_pcm_sframes_t __wrap_snd_pcm_avail(snd_pcm_t *pcm)
+{
+   if (scr_avail_rc)
+   {
+      int rc       = scr_avail_rc;
+      scr_avail_rc = 0;
+      if (rc == -EPIPE && scr_state >= 0)
+         scr_state = SND_PCM_STATE_XRUN;
+      return rc;
+   }
+   return __real_snd_pcm_avail(pcm);
 }
 
 int __real_snd_pcm_recover(snd_pcm_t *pcm, int err, int silent);
@@ -182,6 +203,7 @@ static void reset_counts(void)
    scr_state = -1;
    scr_resume_running = 0;
    scr_readi_rc = -EAGAIN;
+   scr_avail_rc = 0;
    scr_writei_i = scr_writei_n = 0;
    scr_wait_rc = 1;
 }
@@ -423,6 +445,96 @@ static void s_stopped_capture(void)
    microphone_alsa.free(drv);
 }
 
+/* The capture worker waits on the microphone whether or not the core
+ * has it on. A wait must not start a stream the core has off, or the
+ * host microphone records anyway (melonds-ds#252). A stream that
+ * overran must still restart, or capture stops for good. */
+static void s_capture_start(void)
+{
+   void *drv, *mic;
+   uint8_t buf[2048];
+   unsigned new_rate = 0;
+   size_t   ready;
+   int      got;
+
+   printf("   a capture wait starts only a stream that overran\n");
+   reset_counts();
+   if (!(drv = microphone_alsa.init()))
+   {
+      CHECK(false, "the microphone driver did not initialize");
+      return;
+   }
+   if (!(mic = microphone_alsa.open_mic(drv, "null", 48000, 64, &new_rate)))
+   {
+      printf("      no capture device; skipped\n");
+      microphone_alsa.free(drv);
+      return;
+   }
+
+   /* Opened and never started: the core has it off. */
+   reset_counts();
+   scr_wait_rc = 0;
+   ready = microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(ready == 0, "a microphone the core has off had %zu bytes ready", ready);
+   CHECK(n_start == 0, "a wait started a microphone the core has off (%u start(s))", n_start);
+   CHECK(!microphone_alsa.mic_alive(drv, mic), "a wait left a microphone the core has off running");
+
+   /* On, and the wait finds an overrun: recovered and restarted. */
+   microphone_alsa.start_mic(drv, mic);
+   reset_counts();
+   scr_state    = SND_PCM_STATE_RUNNING;
+   scr_avail_rc = -EPIPE;
+   scr_wait_rc  = 0;
+   ready = microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 1,
+         "an overrun in the wait: %u recover(s), %u start(s)", n_recover, n_start);
+   CHECK(microphone_alsa.mic_alive(drv, mic), "a microphone that overran in the wait is not running");
+
+   /* On, and the read finds an overrun: the same. */
+   reset_counts();
+   scr_state    = SND_PCM_STATE_RUNNING;
+   scr_wait_rc  = 1;
+   scr_readi_rc = -EPIPE;
+   got = microphone_alsa.read(drv, mic, buf, sizeof(buf));
+   CHECK(got >= 0, "an overrun in the read returned %d", got);
+   CHECK(n_recover == 1 && n_start == 1,
+         "an overrun in the read: %u recover(s), %u start(s)", n_recover, n_start);
+   CHECK(microphone_alsa.mic_alive(drv, mic), "a microphone that overran in the read is not running");
+
+   /* Off again: a signal or a suspend in the wait leaves it off. */
+   microphone_alsa.stop_mic(drv, mic);
+   reset_counts();
+   scr_state    = SND_PCM_STATE_PREPARED;
+   scr_avail_rc = -EINTR;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_start == 0, "a signal in the wait started a microphone the core has off (%u start(s))", n_start);
+
+   reset_counts();
+   scr_state    = SND_PCM_STATE_SUSPENDED;
+   scr_avail_rc = -ESTRPIPE;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 0,
+         "a suspend in the wait of a microphone the core has off: %u recover(s), %u start(s)",
+         n_recover, n_start);
+
+   /* On, suspended, and the device cannot resume: restarted. */
+   microphone_alsa.start_mic(drv, mic);
+   reset_counts();
+   scr_state    = SND_PCM_STATE_SUSPENDED;
+   scr_avail_rc = -ESTRPIPE;
+   scr_wait_rc  = 0;
+   microphone_alsa.wait_readable(drv, mic, sizeof(buf));
+   CHECK(n_recover == 1 && n_start == 1,
+         "a suspend in the wait of a microphone the core has on: %u recover(s), %u start(s)",
+         n_recover, n_start);
+
+   reset_counts();
+   microphone_alsa.close_mic(drv, mic);
+   microphone_alsa.free(drv);
+}
+
 int main(void)
 {
    pthread_t wd;
@@ -437,6 +549,7 @@ int main(void)
    s_blocking_write();
    s_blocking_read();
    s_stopped_capture();
+   s_capture_start();
 
    if (failures)
    {
