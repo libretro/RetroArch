@@ -3768,9 +3768,8 @@ static bool d3d11_init_swapchain(d3d11_video_t* d3d11,
       dxgiFactory5->lpVtbl->Release(dxgiFactory5);
    }
 
-   if (FAILED(dxgiFactory->lpVtbl->CreateSwapChain(
-               dxgiFactory, (IUnknown*)d3d11->device,
-               &desc, (IDXGISwapChain**)&d3d11->swapChain)))
+   if (FAILED(DXGICreateSwapChain((DXGIFactory1)dxgiFactory,
+               d3d11->device, &desc, &d3d11->swapChain)))
    {
 #if defined(HAVE_WINDOW) && defined(HAVE_MONITOR)
       /* On a window taken from the last driver the likelier reason is
