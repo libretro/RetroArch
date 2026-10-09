@@ -172,8 +172,8 @@ static void udev_pad_set_fd(unsigned p, int fd)
  * reads the strength wanted when it gets to it, so a pad that is slow
  * to answer is given the latest and not each one in turn.
  *
- * There is no lock. What is wanted is an atomic a motor. A pad's
- * descriptor reaches the writer as a dup of it left in a slot: either
+ * There is no lock. Both wanted strengths share one atomic word. A
+ * pad's descriptor reaches the writer as a dup of it left in a slot: either
  * thread takes it out with an exchange, and whoever takes it out is
  * the one to close it. A pad that goes has its slot emptied and then
  * its generation raised; the writer, seeing the generation change,
@@ -194,7 +194,7 @@ struct udev_rumble_out
 };
 
 static struct udev_rumble_out udev_rumble_out[MAX_USERS];
-static retro_atomic_int_t udev_rumble_want[MAX_USERS][2];
+static retro_atomic_int_t udev_rumble_want[MAX_USERS];
 static retro_atomic_int_t udev_rumble_want_gain[MAX_USERS];
 static retro_atomic_int_t udev_rumble_slot[MAX_USERS];
 static retro_atomic_int_t udev_rumble_gen[MAX_USERS];
@@ -211,6 +211,7 @@ static void udev_rumble_write(unsigned p)
    struct udev_rumble_out *o = &udev_rumble_out[p];
    int gen                   = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
    int gain;
+   uint32_t want;
 
    if (gen != o->gen)
    {
@@ -246,10 +247,10 @@ static void udev_rumble_write(unsigned p)
    (void)gain;
 #endif
 
+   want = (uint32_t)retro_atomic_load_acquire_int(&udev_rumble_want[p]);
    for (effect = 0; effect < 2; effect++)
    {
-      uint16_t strength = (uint16_t)retro_atomic_load_acquire_int(
-            &udev_rumble_want[p][effect]);
+      uint16_t strength = (uint16_t)(want >> (effect * 16));
       uint16_t old      = o->playing[effect];
 
       if (strength == old)
@@ -344,8 +345,7 @@ static void udev_rumble_attach(unsigned p, int fd)
    int old;
    int own = dup(fd);
 
-   retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
-   retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+   retro_atomic_store_release_int(&udev_rumble_want[p], 0);
    old = retro_atomic_exchange_int(&udev_rumble_slot[p], own);
    if (old >= 0)
       close(old);
@@ -358,8 +358,7 @@ static void udev_rumble_detach(unsigned p)
    int old = retro_atomic_exchange_int(&udev_rumble_slot[p], -1);
    if (old >= 0)
       close(old);
-   retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
-   retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+   retro_atomic_store_release_int(&udev_rumble_want[p], 0);
    retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
    retro_atomic_inc_int(&udev_rumble_gen[p]);
    udev_rumble_wake(p);
@@ -376,8 +375,7 @@ static void udev_rumble_start(void)
       udev_rumble_out[p].gen  = retro_atomic_load_acquire_int(&udev_rumble_gen[p]);
       retro_atomic_store_release_int(&udev_rumble_slot[p], -1);
       retro_atomic_store_release_int(&udev_rumble_want_gain[p], -1);
-      retro_atomic_store_release_int(&udev_rumble_want[p][0], 0);
-      retro_atomic_store_release_int(&udev_rumble_want[p][1], 0);
+      retro_atomic_store_release_int(&udev_rumble_want[p], 0);
    }
    udev_rumble_writer = input_output_writer_new(udev_rumble_writer_cb, NULL);
 }
@@ -1166,7 +1164,9 @@ static bool udev_set_rumble(unsigned i,
    if (pad->strength[effect] != strength)
    {
       pad->strength[effect] = strength;
-      retro_atomic_store_release_int(&udev_rumble_want[i][effect], strength);
+      retro_atomic_store_release_int(&udev_rumble_want[i],
+            (int)((uint32_t)pad->strength[RETRO_RUMBLE_STRONG]
+               | ((uint32_t)pad->strength[RETRO_RUMBLE_WEAK] << 16)));
       udev_rumble_wake(i);
    }
 

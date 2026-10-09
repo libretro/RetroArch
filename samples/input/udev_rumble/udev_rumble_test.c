@@ -30,6 +30,7 @@ static int      slow_ms;
  * atomic stores and N() below */
 static int      uploads;
 static int      upload_strong, upload_weak, upload_id_in;
+static int      last_strong, last_weak;
 static int      next_id = 1;        /* the writer's thread's alone */
 
 static int test_ioctl(int fd, unsigned long req, void *arg)
@@ -49,6 +50,10 @@ static int test_ioctl(int fd, unsigned long req, void *arg)
          e->id = (short)next_id++;
       __atomic_store_n(&upload_strong, e->u.rumble.strong_magnitude, __ATOMIC_SEQ_CST);
       __atomic_store_n(&upload_weak, e->u.rumble.weak_magnitude, __ATOMIC_SEQ_CST);
+      if (e->u.rumble.strong_magnitude)
+         __atomic_store_n(&last_strong, e->u.rumble.strong_magnitude, __ATOMIC_SEQ_CST);
+      if (e->u.rumble.weak_magnitude)
+         __atomic_store_n(&last_weak, e->u.rumble.weak_magnitude, __ATOMIC_SEQ_CST);
       __sync_fetch_and_add(&uploads, 1);
       return 0;
    }
@@ -199,6 +204,34 @@ int main(void)
    udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0);
    CHECK(pad_event(&ev, 500) && ev.value == 0, "the weak motor was not stopped");
    printf("   ok   the weak motor is an effect of its own\n");
+
+   before = N(uploads);
+   udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0xffff);
+   udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0xffff);
+   settle(before + 2);
+   CHECK(N(last_strong) == 0xffff && N(last_weak) == 0xffff,
+         "full-strength pair lost a motor or precision");
+   CHECK(pad_event(&ev, 500) && ev.value == 1,
+         "first full-strength motor was not started");
+   CHECK(pad_event(&ev, 500) && ev.value == 1,
+         "second full-strength motor was not started");
+   before = N(uploads);
+   udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0x1234);
+   settle(before + 1);
+   CHECK(N(last_strong) == 0x1234 && N(last_weak) == 0xffff,
+         "changing strong corrupted weak");
+   CHECK(!pad_event(&ev, 50), "changing strong stopped or replayed weak");
+   before = N(uploads);
+   udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0x5678);
+   settle(before + 1);
+   CHECK(N(last_strong) == 0x1234 && N(last_weak) == 0x5678,
+         "changing weak corrupted strong");
+   CHECK(!pad_event(&ev, 50), "changing weak stopped or replayed strong");
+   udev_set_rumble(0, RETRO_RUMBLE_STRONG, 0);
+   udev_set_rumble(0, RETRO_RUMBLE_WEAK, 0);
+   CHECK(pad_event(&ev, 500) && ev.value == 0, "first motor did not stop");
+   CHECK(pad_event(&ev, 500) && ev.value == 0, "second motor did not stop");
+   printf("   ok   full-strength pairs preserve independent motor changes\n");
 
 #ifndef HAVE_LAKKA_SWITCH
    /* the gain is written by the writer too */
