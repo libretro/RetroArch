@@ -246,6 +246,7 @@ int DH;
 typedef struct gsGlobal GSGLOBAL;
 unsigned int gsKit_TexManager_bind(GSGLOBAL * gsGlobal, GSTEXTURE * tex);
 void gsKit_TexManager_invalidate(GSGLOBAL * gsGlobal, GSTEXTURE * tex);
+void gsKit_TexManager_free(GSGLOBAL * gsGlobal, GSTEXTURE * tex);
 void gsKit_TexManager_nextFrame(GSGLOBAL * gsGlobal);
 void gsKit_TexManager_setmode(GSGLOBAL * gsGlobal, enum ETransferMode mode);
 void gsKit_clear(GSGLOBAL *gsGlobal, u64 Color);
