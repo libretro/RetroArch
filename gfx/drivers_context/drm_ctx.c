@@ -149,6 +149,7 @@ static unsigned drm_fb_depth               = 24;
 static drmModeModeInfo gfx_ctx_crt_switch_mode;
 static bool switch_mode                   = false;
 
+#ifdef HAVE_MODELINE
 static float mode_vrefresh(drmModeModeInfo *mode)
 {
    return  mode->clock * 1000.00f / (mode->htotal * mode->vtotal);
@@ -170,6 +171,7 @@ static void dump_mode(drmModeModeInfo *mode, int index)
       mode->vtotal,
       mode->clock);
 }
+#endif
 
 static EGLint *gfx_ctx_drm_egl_fill_attribs(
       gfx_ctx_drm_data_t *drm, EGLint *attr)
