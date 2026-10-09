@@ -188,6 +188,7 @@ jobs:
             http_parse_test
             rjson_test
             rm3u_test
+            rmp4_fragment_test
             rtga_test
             rbmp_test
             rbmp_encode_test
