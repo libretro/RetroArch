@@ -31,6 +31,13 @@
 
 RETRO_BEGIN_DECLS
 
+/* How long a TLS read, in the handshake or in a record, waits for the
+ * server's next bytes before it fails: a server that goes silent must
+ * not hold the caller's thread for good. */
+#ifndef SSL_SOCKET_IO_TIMEOUT_MS
+#define SSL_SOCKET_IO_TIMEOUT_MS 30000
+#endif
+
 void* ssl_socket_init(int fd, const char *domain);
 
 int ssl_socket_connect(void *state_data, void *data, bool timeout_enable, bool nonblock);

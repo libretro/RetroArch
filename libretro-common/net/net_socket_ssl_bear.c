@@ -300,6 +300,16 @@ static bool process_inner(struct ssl_state *state, bool blocking)
    buf = br_ssl_engine_recvrec_buf(&state->sc.eng, &buflen);
    if (buflen)
    {
+      /* A blocking read waits for the server's next bytes, but no
+       * longer than SSL_SOCKET_IO_TIMEOUT_MS: a server that goes silent
+       * would otherwise hold recv() for good. */
+      if (blocking)
+      {
+         bool rd = true;
+         if (     !socket_wait(state->fd, &rd, NULL, SSL_SOCKET_IO_TIMEOUT_MS)
+               || !rd)
+            return false;
+      }
       /* if the socket is blocking, socket_receive_all_nonblocking blocks,
        * but only to read at least 1 byte which is exactly what we want */
       bytes = socket_receive_all_nonblocking(state->fd, &dummy, buf, buflen);

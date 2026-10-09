@@ -365,9 +365,25 @@ int ssl_socket_connect(void *state_data,
 
    mbedtls_ssl_set_bio(&state->ctx, &state->net_ctx, mbedtls_net_send, mbedtls_net_recv, NULL);
 
+   /* The handshake runs on a non-blocking socket, each wait for the
+    * server bounded: on a blocking one, a server that goes silent holds
+    * recv() for good. */
+   if (!socket_set_block(state->net_ctx.fd, false))
+      return -1;
    while ((ret = mbedtls_ssl_handshake(&state->ctx)) != 0)
    {
-      if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE)
+      if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+      {
+         bool rd = (ret == MBEDTLS_ERR_SSL_WANT_READ);
+         bool wr = !rd;
+         if (     !socket_wait(state->net_ctx.fd, &rd, &wr, SSL_SOCKET_IO_TIMEOUT_MS)
+               || !(rd || wr))
+         {
+            state->last_err = MBEDTLS_ERR_SSL_TIMEOUT;
+            return -1;
+         }
+      }
+      else
       {
          state->last_err = ret;
          /* Fail-closed: under REQUIRED a bad certificate makes the
@@ -384,6 +400,8 @@ int ssl_socket_connect(void *state_data,
          return -1;
       }
    }
+   if (!socket_set_block(state->net_ctx.fd, true))
+      return -1;
 
    if ((flags = mbedtls_ssl_get_verify_result(&state->ctx)) != 0)
    {

@@ -124,6 +124,10 @@ jobs:
              UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 timeout 120 \
              make check SSL_BACKEND=$be
           echo "[pass] ${{ matrix.lane }}: cheevos login transport over a local HTTPS server"
+          # A server that goes silent mid-handshake: the read bound ends it.
+          make -C ../tls_retro clean tls_stall SSL_BACKEND=$be
+          ../tls_retro/tls_stall
+          make -C ../tls_retro clean
 
       - name: Operate the libsmb2 backend (SMB VFS against a local smbd)
         if: matrix.lane == 'libsmb2'

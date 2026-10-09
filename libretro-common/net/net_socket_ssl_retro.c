@@ -623,6 +623,27 @@ static int tls_send_record(struct ssl_state *s, uint8_t type,
    return 0;
 }
 
+/* The socket is in blocking mode, so recv() itself would wait for good
+ * on a server that stops mid-handshake or mid-record; each recv() here
+ * waits for the socket to be readable first, for at most
+ * SSL_SOCKET_IO_TIMEOUT_MS, and a wait that runs out fails the read. */
+static bool tls_recv_exact(struct ssl_state *s, uint8_t *buf, size_t len)
+{
+   while (len)
+   {
+      bool    rd  = true;
+      bool    err = false;
+      ssize_t n;
+      if (!socket_wait(s->fd, &rd, NULL, SSL_SOCKET_IO_TIMEOUT_MS) || !rd)
+         return false;
+      if ((n = socket_receive_all_nonblocking(s->fd, &err, buf, len)) < 0)
+         return false;
+      buf += n;
+      len -= (size_t)n;
+   }
+   return true;
+}
+
 /* Reads one record into s->rx, decrypting in place once the server
  * write keys are in force. On return *type is the content type, and
  * *body / *len the plaintext. */
@@ -635,7 +656,7 @@ static int tls_read_record_to(struct ssl_state *s, uint8_t *type,
 {
    size_t rlen;
 
-   if (socket_receive_all_blocking(s->fd, s->rx, 5) <= 0)
+   if (!tls_recv_exact(s, s->rx, 5))
    {
       s->last_err = TLS_ERR_SOCKET;
       return -1;
@@ -646,7 +667,7 @@ static int tls_read_record_to(struct ssl_state *s, uint8_t *type,
       s->last_err = TLS_ERR_RECORD;
       return -1;
    }
-   if (socket_receive_all_blocking(s->fd, s->rx + 5, rlen) <= 0)
+   if (!tls_recv_exact(s, s->rx + 5, rlen))
    {
       s->last_err = TLS_ERR_SOCKET;
       return -1;

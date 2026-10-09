@@ -113,6 +113,19 @@
  * URLs used to be followed forever. */
 #define NET_HTTP_MAX_REDIRECTS      8
 
+/* A transfer that moves nothing - no DNS answer, no byte sent or
+ * received - for this long fails.  A peer that goes silent mid-request
+ * reports no error of its own, so this is the only end such a transfer
+ * has.  Only time the caller spends driving the transfer counts: a gap
+ * of NET_HTTP_STALL_POLL_GAP between two calls is a caller that was not
+ * driving it (a suspended app, a paused queue), not a silent peer. */
+#ifndef NET_HTTP_STALL_TIMEOUT
+#define NET_HTTP_STALL_TIMEOUT      ((retro_time_t)60 * 1000000)
+#endif
+#ifndef NET_HTTP_STALL_POLL_GAP
+#define NET_HTTP_STALL_POLL_GAP     ((retro_time_t)1000000)
+#endif
+
 enum response_part
 {
    P_HEADER_TOP = 0,
@@ -280,6 +293,14 @@ struct http_t
     * connection; it will not be replayed again. */
    bool retried;
    unsigned redirects;
+
+   /* For the stall bound: when the transfer last moved and how far it
+    * had got, and when it was last driven. */
+   retro_time_t moved_at;
+   retro_time_t polled_at;
+   size_t       moved_rx;
+   size_t       moved_tx;
+   unsigned     moved_stage;
 
    request_t request;
    response_t response;
@@ -1433,6 +1454,9 @@ struct http_t *net_http_new(struct http_connection_t *conn)
       net_http_delete(state);
       return NULL;
    }
+
+   state->moved_at  = cpu_features_get_time_usec();
+   state->polled_at = state->moved_at;
 
    return state;
 }
@@ -3173,6 +3197,39 @@ bool net_http_wait(struct http_t *state, int timeout_ms)
    return rd || wr;
 }
 
+/* True when the transfer has moved nothing for NET_HTTP_STALL_TIMEOUT
+ * of the time it was driven.  Moving is any change in how far it got:
+ * a connection, a byte sent, a byte received, a stage passed. */
+static bool net_http_stalled(struct http_t *state)
+{
+   retro_time_t now   = cpu_features_get_time_usec();
+   size_t       rx    = state->response.flushed + state->response.pos;
+   size_t       tx    = state->body_queued + state->out_off;
+   unsigned     stage = (state->conn ? 1u : 0u)
+      | ((state->conn && state->conn->connected) ? 2u : 0u)
+      | (state->request_sent ? 4u : 0u)
+      | (state->retried      ? 8u : 0u)
+      | ((unsigned)state->send_phase    << 4)
+      | ((unsigned)state->response.part << 8)
+      | (state->redirects               << 12);
+
+   if (now - state->polled_at > NET_HTTP_STALL_POLL_GAP)
+      state->moved_at += now - state->polled_at;
+   state->polled_at = now;
+
+   if (     rx    != state->moved_rx
+         || tx    != state->moved_tx
+         || stage != state->moved_stage)
+   {
+      state->moved_rx    = rx;
+      state->moved_tx    = tx;
+      state->moved_stage = stage;
+      state->moved_at    = now;
+      return false;
+   }
+   return now - state->moved_at > NET_HTTP_STALL_TIMEOUT;
+}
+
 bool net_http_update(struct http_t *state, size_t* progress, size_t* total)
 {
    return net_http_update_budget(state, progress, total, NULL, NULL);
@@ -3188,6 +3245,18 @@ bool net_http_update_budget(struct http_t *state,
 
    if (!state || state->err)
       return true;
+
+   if (net_http_stalled(state))
+   {
+      net_http_log_transport_state(state, "stalled", -1);
+      if (state->conn)
+         net_http_conn_pool_remove(state->conn);
+      state->conn             = NULL;
+      state->err              = true;
+      state->response.part    = P_DONE;
+      state->response.status  = -1;
+      return true;
+   }
 
    /* Re-established below wherever the pass ends without progress. */
    state->blocked = false;

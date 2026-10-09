@@ -36,6 +36,9 @@
 #define CONN_BUF    (256 * 1024)
 #define MAX_LOG     64
 #define CASE_MS     3000
+/* The build's NET_HTTP_STALL_TIMEOUT, see the Makefile. */
+#define STALL_MS    600
+#define DRIP_GAP_MS 150
 
 static int failures = 0;
 
@@ -95,7 +98,7 @@ char *__wrap_strdup(const char *p)
 
 /* ---- scripted server ---- */
 
-enum body_kind { B_NONE = 0, B_RAW, B_CHUNKED };
+enum body_kind { B_NONE = 0, B_RAW, B_CHUNKED, B_DRIP };
 
 struct step
 {
@@ -178,6 +181,18 @@ static void send_body(int fd, const struct step *st)
          if (send_all(fd, blk, n))
             return;
          off += n;
+      }
+   }
+   else if (st->body == B_DRIP)
+   {
+      /* A byte at a time, each well inside the stall bound, the whole
+       * well past it. */
+      for (; off < st->body_len; off++)
+      {
+         unsigned char b = pat(off);
+         usleep(DRIP_GAP_MS * 1000);
+         if (send_all(fd, &b, 1))
+            return;
       }
    }
    else if (st->body == B_CHUNKED)
@@ -1325,6 +1340,91 @@ static void run_section_body_edges(void)
    xfer_free(&a);
 }
 
+/* ---- a peer that goes silent ---- */
+
+/* Runs @x against @path and says how long it took. */
+static int64_t xfer_timed(struct xfer *x, const char *path)
+{
+   int64_t t0 = now_ms();
+   xfer_run(x, path);
+   return now_ms() - t0;
+}
+
+static int stalled_in_time(const struct xfer *x, int64_t ms)
+{
+   return x->done && x->err && ms >= STALL_MS && ms < CASE_MS;
+}
+
+static void run_section_stall(void)
+{
+   struct xfer a;
+   int64_t ms;
+   /* the request is read, then nothing */
+   static const struct step s_silent[] = { { NULL, 0, B_NONE, 0 } };
+   static const struct step s_head[]   = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 64\r\n\r\n", 0, B_NONE, 0 } };
+   static const struct step s_body[]   = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 64\r\n\r\npartial", 0, B_NONE, 0 } };
+   static const struct step s_drip[]   = {
+      { "HTTP/1.1 200 OK\r\nContent-Length: 8\r\n\r\n", 8, B_DRIP, 0 } };
+   static const struct step s_ok[]     = { { OK_2, 0, B_NONE, 0 } };
+
+   memset(&a, 0, sizeof(a));
+
+   case_begin(s_silent, 1, 0);
+   ms = xfer_timed(&a, "/silent");
+   check(stalled_in_time(&a, ms), "no response after the request: fails once stalled");
+   xfer_free(&a);
+
+   case_begin(s_head, 1, 0);
+   ms = xfer_timed(&a, "/head");
+   check(stalled_in_time(&a, ms), "headers, then silence: fails once stalled");
+   xfer_free(&a);
+
+   case_begin(s_body, 1, 0);
+   ms = xfer_timed(&a, "/body");
+   check(stalled_in_time(&a, ms), "part of the body, then silence: fails once stalled");
+   xfer_free(&a);
+
+   case_begin(s_drip, 1, 0);
+   ms = xfer_timed(&a, "/drip");
+   check(a.done && !a.err && body_is_pattern(&a, 8) && ms > STALL_MS,
+         "a body slower than the stall bound but never silent that long: succeeds");
+   xfer_free(&a);
+
+   /* The caller stops driving the transfer for longer than the bound;
+    * the reply is waiting when it comes back. */
+   case_begin(s_ok, 1, 0);
+   {
+      char url[128];
+      struct http_connection_t *conn;
+      struct http_t *h = NULL;
+      int64_t deadline;
+      int done = 0;
+      snprintf(url, sizeof(url), "http://127.0.0.1:%d/idle", srv_port);
+      if ((conn = net_http_connection_new(url, "GET", NULL)))
+      {
+         while (!net_http_connection_iterate(conn)) { }
+         if (net_http_connection_done(conn))
+            h = net_http_new(conn);
+         net_http_connection_free(conn);
+      }
+      if (h)
+      {
+         net_http_update(h, NULL, NULL);
+         usleep((STALL_MS * 5 / 2) * 1000);
+         deadline = now_ms() + CASE_MS;
+         while (!(done = net_http_update(h, NULL, NULL)) && now_ms() < deadline)
+            net_http_wait(h, 20);
+         check(done && !net_http_error(h),
+               "a caller that stopped driving the transfer: its time away is not a stall");
+         net_http_delete(h);
+      }
+      else
+         check(0, "a caller that stopped driving the transfer: transfer created");
+   }
+}
+
 int main(void)
 {
    if (!network_init() || srv_start())
@@ -1345,6 +1445,7 @@ int main(void)
    run_section_headers();
    run_section_interim_framing();
    run_section_body_edges();
+   run_section_stall();
 
    srv_shutdown();
    net_http_deinit();

@@ -37,6 +37,8 @@ SOURCES_C := \
 
 CFLAGS  += -Wall -std=gnu99 -O1 -g $(INCDIRS)
 CFLAGS  += -DHAVE_NETWORKING -DHAVE_THREADS -D_GNU_SOURCE
+# A stall bound short enough to test: STALL_MS in the test.
+CFLAGS  += "-DNET_HTTP_STALL_TIMEOUT=((retro_time_t)600 * 1000)"
 # The buffer-growth cases read the largest realloc() net_http asks for,
 # the header cases count allocations.
 LDFLAGS += -Wl,--wrap=realloc,--wrap=malloc,--wrap=calloc,--wrap=strdup -lpthread -lm
