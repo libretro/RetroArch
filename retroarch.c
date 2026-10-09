@@ -9068,6 +9068,16 @@ bool retroarch_main_init_core(int argc, char *argv[],
          }
       }
 #endif
+#ifdef HAVE_OPENXR
+      {
+         char str_output[128];
+
+         snprintf(str_output, sizeof(str_output),
+            "OpenXR support: enabled\n");
+
+         RARCH_LOG_OUTPUT("%s", str_output);
+      }
+#endif
       {
          char str_output[64];
          snprintf(str_output, sizeof(str_output),

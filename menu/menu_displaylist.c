@@ -3531,6 +3531,9 @@ static unsigned menu_displaylist_parse_system_info(file_list_t *list)
 #endif
          {SUPPORTS_OPENGL, "OpenGL"},
          {SUPPORTS_OPENGLES, "OpenGL ES"},
+#ifdef HAVE_OPENXR
+         {SUPPORTS_OPENXR, "OpenXR"},
+#endif
 #ifdef HAVE_XVIDEO
          {SUPPORTS_XVIDEO, "XVideo"},
 #endif

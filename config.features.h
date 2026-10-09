@@ -448,6 +448,12 @@
 #define SUPPORTS_CHECK false
 #endif
 
+#ifdef HAVE_OPENXR
+#define SUPPORTS_OPENXR true
+#else
+#define SUPPORTS_OPENXR false
+#endif
+
 #if !defined(_WIN32) && !defined(GLOBAL_CONFIG_DIR)
 #if defined(__HAIKU__)
 #define GLOBAL_CONFIG_DIR "/system/settings"
