@@ -127,6 +127,10 @@ bool android_get_vfs_authorized_locations(
 #include "record/record_driver.h"
 #include "msg_hash_lbl_str.h"
 
+#ifdef HAVE_NFC
+#include "nfc/nfc_frontend.h"
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -413,6 +417,9 @@ static void runloop_game_ai_think_cb(void *userdata,
 #endif
 
 static runloop_state_t runloop_state;
+/* Set when the loaded core requests the NFC reader interface; drives menu
+ * visibility of amiibo entries. Cleared on core deinit. */
+static bool runloop_nfc_supported         = false;
 
 /* Defined here, before its first user: the SET_MESSAGE_EXT STATUS
  * path in the environment callback defers through this machinery,
@@ -3657,6 +3664,75 @@ bool runloop_environment_cb(unsigned cmd, void *data)
 #endif
       }
 
+      case RETRO_ENVIRONMENT_GET_NFC_INTERFACE:
+      {
+#ifdef HAVE_NFC
+         struct retro_nfc_interface *iface =
+            (struct retro_nfc_interface*)data;
+         settings_t *nfc_settings = config_get_ptr();
+
+         RARCH_LOG("[Environ]: GET_NFC_INTERFACE.\n");
+         runloop_nfc_supported = true;
+
+         /* Point the software amiibo backend at <system>/amiibo; the
+          * RETRO_NFC_AMIIBO_DIR env override applies when unset. */
+         if (nfc_settings
+               && !string_is_empty(nfc_settings->paths.directory_system))
+         {
+            char amiibo_dir[DIR_MAX_LENGTH];
+            fill_pathname_join_special(amiibo_dir,
+                  nfc_settings->paths.directory_system, "amiibo",
+                  sizeof(amiibo_dir));
+            nfc_frontend_set_amiibo_dir(amiibo_dir);
+         }
+
+         if (iface)
+         {
+            /* Version negotiation: the core sets iface->version to the
+             * version it built against before the call. Provide at most
+             * that, and only populate pointers the core's struct can hold,
+             * so a newer frontend never writes past an older core's iface. */
+            unsigned core_ver = iface->version;
+            unsigned use      = core_ver ? core_ver : 1;
+            if (use > RETRO_NFC_INTERFACE_VERSION)
+               use = RETRO_NFC_INTERFACE_VERSION;
+
+            iface->version      = use;
+            iface->start_scan   = nfc_frontend_start_scan;
+            iface->stop_scan    = nfc_frontend_stop_scan;
+            iface->get_status   = nfc_frontend_get_status;
+            iface->get_tag_info = nfc_frontend_get_tag_info;
+            iface->read         = nfc_frontend_read;
+            iface->write        = nfc_frontend_write;
+
+            if (use >= 2)
+               iface->set_source = nfc_frontend_set_source;
+
+            if (use >= 3)
+            {
+               iface->get_source_count = nfc_frontend_get_source_count;
+               iface->get_source_info  = nfc_frontend_get_source_info;
+               iface->select_source    = nfc_frontend_select_source;
+            }
+
+            if (use >= 4)
+               iface->has_hardware     = nfc_frontend_has_hardware;
+
+            if (use >= 5)
+            {
+               iface->mifare_read_block  = nfc_frontend_mifare_read_block;
+               iface->mifare_write_block = nfc_frontend_mifare_write_block;
+               iface->transceive         = nfc_frontend_transceive;
+            }
+
+            nfc_frontend_set_interface_version(use);
+         }
+         break;
+#else
+         return false;
+#endif
+      }
+
       case RETRO_ENVIRONMENT_GET_LED_INTERFACE:
       {
          struct retro_led_interface *ledintf = (struct retro_led_interface *)data;
@@ -5333,12 +5409,24 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
             fastforward_ratio_current);
 }
 
+bool runloop_core_supports_nfc(void)
+{
+   return runloop_nfc_supported;
+}
+
 void runloop_event_deinit_core(void)
 {
    video_driver_state_t
       *video_st                = video_state_get_ptr();
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
+
+#ifdef HAVE_NFC
+   /* Release the reader (closes the AF_NFC socket / powers the adapter
+    * down) and forget that this core uses NFC. */
+   nfc_frontend_free();
+#endif
+   runloop_nfc_supported       = false;
 
    audio_driver_set_core_float(false);
    audio_driver_set_core_multi(false);
