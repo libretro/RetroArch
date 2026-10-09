@@ -1320,7 +1320,7 @@ bool replay_get_serialized_data(input_driver_state_t *input_st, void* buffer)
       if (read_amt != file_end)
       {
          RARCH_ERR("[Replay] Failed to write correct number of replay bytes into state file: %d / %d.\n",
-               read_amt, file_end);
+               (int)read_amt, (int)file_end);
          return false;
       }
    }
