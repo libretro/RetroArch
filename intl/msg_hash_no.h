@@ -1238,6 +1238,7 @@ static const struct
    char s_ed159cd6[16];
    char s_a56efbe2[7];
    char s_543fcabd[12];
+   char s_a63c824a[14];
    char s_a9f3b2c3[18];
    char s_0e7aca8a[17];
    char s_ab1afe7c[16];
@@ -2571,6 +2572,7 @@ static const struct
    "Fil ikke funnet",
    "indeks",
    "Tidsavbrudd",
+   "\303\230yeblikkelig",
    "Skriv inn passord",
    "Ugyldig passord.",
    "Passord riktig.",
@@ -2625,7 +2627,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_no_blob_check[
-      (sizeof(msg_hash_no_blob) == (29322u
+      (sizeof(msg_hash_no_blob) == (29336u
 #ifdef HAVE_LAKKA
        + 178u
 #endif
@@ -3993,6 +3995,7 @@ static const uint32_t msg_hash_no_ids[] =
    (uint32_t)MSG_FILE_NOT_FOUND,
    (uint32_t)MSG_INDEX_FILE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

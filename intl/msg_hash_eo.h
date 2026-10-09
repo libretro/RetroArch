@@ -3925,6 +3925,7 @@ static const struct
    char s_543fcabd[12];
    char s_59212b5f[7];
    char s_f26b6cff[26];
+   char s_a63c824a[5];
    char s_a9f3b2c3[16];
    char s_0e7aca8a[20];
    char s_ab1afe7c[17];
@@ -8847,6 +8848,7 @@ static const struct
    "Atendotempo",
    "Enigi ",
    "Enigi trompan dosiernomon",
+   "Tuja",
    "Enigi pasvorton",
    "Mal\304\235usta pasvorto.",
    "\304\234usta pasvorto.",
@@ -9146,7 +9148,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_eo_blob_check[
-      (sizeof(msg_hash_eo_blob) == (171647u
+      (sizeof(msg_hash_eo_blob) == (171652u
 #ifdef ANDROID
        + 312u
 #endif
@@ -13499,6 +13501,7 @@ static const uint32_t msg_hash_eo_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

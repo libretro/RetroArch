@@ -3466,6 +3466,7 @@ static const struct
    char s_543fcabd[15];
    char s_59212b5f[15];
    char s_f26b6cff[25];
+   char s_a63c824a[11];
    char s_a9f3b2c3[14];
    char s_0e7aca8a[19];
    char s_ab1afe7c[20];
@@ -8486,6 +8487,7 @@ static const struct
    "\304\214asov\303\275 limit",
    "Vstupn\303\255 cheat",
    "N\303\241zev vstupn\303\255ho cheatu",
+   "Okam\305\276it\303\251",
    "Zadejte heslo",
    "Nespr\303\241vn\303\251 heslo.",
    "Heslo je spr\303\241vn\303\251.",
@@ -8795,7 +8797,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_cs_blob_check[
-      (sizeof(msg_hash_cs_blob) == (162313u
+      (sizeof(msg_hash_cs_blob) == (162324u
 #ifdef ANDROID
        + 390u
 #endif
@@ -12610,6 +12612,7 @@ static const uint32_t msg_hash_cs_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

@@ -3766,6 +3766,7 @@ static const struct
    char s_b0e45a57[27];
    char s_59212b5f[13];
    char s_f26b6cff[33];
+   char s_a63c824a[11];
    char s_a9f3b2c3[19];
    char s_0e7aca8a[17];
    char s_ab1afe7c[19];
@@ -8517,6 +8518,7 @@ static const struct
    "Rilascia tasti e pulsanti!",
    "Input Trucco",
    "Immettere il nome del file cheat",
+   "Istantaneo",
    "Inserisci Password",
    "Password errata.",
    "Password corretta.",
@@ -8817,7 +8819,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_it_blob_check[
-      (sizeof(msg_hash_it_blob) == (183091u
+      (sizeof(msg_hash_it_blob) == (183102u
 #ifdef ANDROID
        + 376u
 #endif
@@ -13012,6 +13014,7 @@ static const uint32_t msg_hash_it_ids[] =
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

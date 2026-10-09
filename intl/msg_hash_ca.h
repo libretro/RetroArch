@@ -4271,6 +4271,7 @@ static const struct
    char s_543fcabd[23];
    char s_59212b5f[15];
    char s_f26b6cff[38];
+   char s_a63c824a[13];
    char s_a9f3b2c3[26];
    char s_0e7aca8a[24];
    char s_ab1afe7c[22];
@@ -10066,6 +10067,7 @@ static const struct
    "Temps d'espera superat",
    "Introduir truc",
    "Introdueix el nom del fitxer de trucs",
+   "Instant\303\240nia",
    "Introdu\303\257u la contrasenya",
    "Contrasenya incorrecta.",
    "Contrasenya correcta.",
@@ -10401,7 +10403,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ca_blob_check[
-      (sizeof(msg_hash_ca_blob) == (229533u
+      (sizeof(msg_hash_ca_blob) == (229546u
 #ifdef ANDROID
        + 281u
 #endif
@@ -15199,6 +15201,7 @@ static const uint32_t msg_hash_ca_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

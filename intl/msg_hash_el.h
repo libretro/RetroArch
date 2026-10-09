@@ -1297,6 +1297,7 @@ static const struct
    char s_856bdef7[48];
    char s_a56efbe2[21];
    char s_59212b5f[30];
+   char s_a63c824a[17];
    char s_a9f3b2c3[32];
    char s_0e7aca8a[39];
    char s_ab1afe7c[29];
@@ -4542,6 +4543,7 @@ static const struct
    "\316\265\317\205\317\201\316\265\317\204\316\267\317\201\316\257\316\277\317\205",
    "\316\225\316\271\317\203\316\261\316\263\317\211\316\263\316\256 \316\221\317\200\316\254\317"
    "\204\316\267\317\202",
+   "\316\221\316\272\316\261\317\201\316\271\316\261\316\257\316\261",
    "\316\225\316\271\317\203\316\261\316\263\317\211\316\263\316\256 \316\232\317\211\316\264\316"
    "\271\316\272\316\277\317\215",
    "\316\233\316\261\316\275\316\270\316\261\317\203\316\274\316\255\316\275\316\277\317\202 \316"
@@ -4740,7 +4742,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_el_blob_check[
-      (sizeof(msg_hash_el_blob) == (68367u
+      (sizeof(msg_hash_el_blob) == (68384u
 #ifdef HAVE_LAKKA
        + 35u
 #endif
@@ -6124,6 +6126,7 @@ static const uint32_t msg_hash_el_ids[] =
    (uint32_t)MSG_GOT_CONNECTION_FROM_NAME,
    (uint32_t)MSG_INDEX_FILE,
    (uint32_t)MSG_INPUT_CHEAT,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

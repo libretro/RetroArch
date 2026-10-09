@@ -914,6 +914,7 @@ static const struct
    char s_b3a9ff57[19];
    char s_f4eaed02[27];
    char s_a9f5617a[25];
+   char s_182194b5[21];
    char s_50e34bc5[19];
    char s_00ea00d3[16];
    char s_b43e2e98[8];
@@ -2345,8 +2346,11 @@ static const struct
    char s_4b582a0c[31];
    char s_61213f1d[12];
    char s_95e4b29f[71];
+   char s_0861dea4[15];
+   char s_83217fd0[12];
    char s_60258de0[7];
    char s_34b2592a[3];
+   char s_83ecb279[12];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_1f66aac3[7];
@@ -2385,6 +2389,7 @@ static const struct
    char s_69b801ef[9];
    char s_a40653a7[25];
    char s_52e3d6ea[34];
+   char s_f387bafb[13];
    char s_2c868ae4[12];
    char s_9c535394[9];
    char s_c992346c[33];
@@ -2412,6 +2417,7 @@ static const struct
    char s_552163d9[29];
    char s_ef3d53d8[21];
    char s_6dcc2f9f[13];
+   char s_7a23be94[12];
    char s_48431da6[8];
    char s_21d7a1f6[6];
    char s_d2fe3ed2[18];
@@ -4168,6 +4174,7 @@ static const struct
    char s_543fcabd[11];
    char s_59212b5f[13];
    char s_f26b6cff[28];
+   char s_a63c824a[10];
    char s_a9f3b2c3[15];
    char s_0e7aca8a[21];
    char s_ab1afe7c[19];
@@ -4295,6 +4302,7 @@ static const struct
    char s_8ab54d62[93];
    char s_aa554847[23];
    char s_ac2c797c[22];
+   char s_272dccbd[16];
    char s_80528b14[43];
    char s_eae21890[39];
    char s_1451fe0d[42];
@@ -5603,6 +5611,7 @@ static const struct
    "Spelfokus (v\303\244xla)",
    "F\303\245nga muspekaren (v\303\244xla)",
    "Stoppa Inspelning/Repris",
+   "Laserpekare (v\303\244xla)",
    "L\303\244s in tillst\303\245nd",
    "Visa/d\303\266lj meny",
    "Ljud av",
@@ -7046,8 +7055,11 @@ static const struct
    "Meddelandeposition (vertikalt)",
    "Sk\303\244rmindex",
    "Aktivera helsk\303\244rm utan h\303\244nsyn till notch p\303\245 Android och iOS-enheter",
+   "Sk\303\244rmavst\303\245nd",
+   "Laserpekare",
    "Alltid",
    "Av",
+   "Sk\303\244rmbredd",
    "180 gr.",
    "270 gr.",
    "90 gr.",
@@ -7086,6 +7098,7 @@ static const struct
    "Skalning",
    "Skannlinjesynkronisering",
    "Rullande skanningslinjesimulering",
+   "Sk\303\244rmlayout",
    "Horisontell",
    "Vertikal",
    "Byte av bildsk\303\244rmsl\303\244ge med SDL",
@@ -7113,6 +7126,7 @@ static const struct
    "Delad kontext f\303\266r h\303\245rdvara",
    "Bilinj\303\244r-filtrering",
    "Mjukt filter",
+   "Stereol\303\244ge",
    "Anpassa",
    "Lokal",
    "Streamingkvalitet",
@@ -9895,6 +9909,7 @@ static const struct
    "Tidsgr\303\244ns",
    "Mata in fusk",
    "Filnamn f\303\266r inmatningsfusk",
+   "Omedelbar",
    "Ange l\303\266senord",
    "L\303\266senord felaktigt.",
    "L\303\266senord korrekt.",
@@ -10027,6 +10042,7 @@ static const struct
    "\244r spellisteposten.",
    "K\303\244rnor \303\266verhoppade: ",
    "K\303\244rnor uppdaterade: ",
+   "Laserpekare: %s",
    "Tangentbords\303\266verl\303\244gg \303\244r inte inst\303\244llt.",
    "Sparar inte. \303\205sidos\303\244ttningar aktiva.",
    "Fel vid borttagning av \303\245sidos\303\244ttningar.",
@@ -10212,7 +10228,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sv_blob_check[
-      (sizeof(msg_hash_sv_blob) == (202727u
+      (sizeof(msg_hash_sv_blob) == (202838u
 #ifdef ANDROID
        + 361u
 #endif
@@ -11668,6 +11684,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -13098,8 +13115,11 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_VERTICAL,
@@ -13138,6 +13158,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
@@ -13165,6 +13186,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAM_QUALITY,
@@ -14914,6 +14936,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15041,6 +15064,7 @@ static const uint32_t msg_hash_sv_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_LASER_POINTER,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

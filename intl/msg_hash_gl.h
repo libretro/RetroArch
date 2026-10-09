@@ -4069,6 +4069,7 @@ static const struct
    char s_543fcabd[16];
    char s_59212b5f[14];
    char s_f26b6cff[39];
+   char s_a63c824a[13];
    char s_a9f3b2c3[23];
    char s_0e7aca8a[24];
    char s_ab1afe7c[22];
@@ -9475,6 +9476,7 @@ static const struct
    "Tempo de espera",
    "Truco entrada",
    "Introduza o nome do ficheiro de trucos",
+   "Instant\303\241neo",
    "Introducir contrasinal",
    "Contrasinal incorrecto.",
    "Contrasinal correcto.",
@@ -9784,7 +9786,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_gl_blob_check[
-      (sizeof(msg_hash_gl_blob) == (212734u
+      (sizeof(msg_hash_gl_blob) == (212747u
 #ifdef ANDROID
        + 365u
 #endif
@@ -14290,6 +14292,7 @@ static const uint32_t msg_hash_gl_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

@@ -978,6 +978,7 @@ static const struct
    char s_27bf01b6[42];
    char s_ed159cd6[23];
    char s_a56efbe2[7];
+   char s_a63c824a[10];
    char s_0e7aca8a[30];
    char s_3b7c0dd8[30];
    char s_c4a8e97c[9];
@@ -2029,6 +2030,7 @@ static const struct
    "Diendo en cata de la llista de nucleos\342\200\246",
    "Nun s'atop\303\263'l ficheru",
    "\303\215ndiz",
+   "Nel intre",
    "La contrase\303\261a ye incorreuta.",
    "La contrase\303\261a ye incorreuta.",
    "Interfaz",
@@ -2074,7 +2076,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ast_blob_check[
-      (sizeof(msg_hash_ast_blob) == (24533u
+      (sizeof(msg_hash_ast_blob) == (24543u
 #ifdef HAVE_MIST
        + 20u
 #endif
@@ -3126,6 +3128,7 @@ static const uint32_t msg_hash_ast_ids[] =
    (uint32_t)MSG_FETCHING_CORE_LIST,
    (uint32_t)MSG_FILE_NOT_FOUND,
    (uint32_t)MSG_INDEX_FILE,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INTERFACE,

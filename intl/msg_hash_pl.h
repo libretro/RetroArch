@@ -4182,6 +4182,7 @@ static const struct
    char s_543fcabd[12];
    char s_59212b5f[13];
    char s_f26b6cff[28];
+   char s_a63c824a[15];
    char s_a9f3b2c3[17];
    char s_0e7aca8a[20];
    char s_ab1afe7c[17];
@@ -9886,6 +9887,7 @@ static const struct
    "Limit czasu",
    "Wejd\305\272 w kod",
    "Wprowad\305\272 nazw\304\231 pliku kodu",
+   "Natychmiastowy",
    "Wprowad\305\272 has\305\202o",
    "Has\305\202o niepoprawne.",
    "Has\305\202o poprawne.",
@@ -10212,7 +10214,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_pl_blob_check[
-      (sizeof(msg_hash_pl_blob) == (200614u
+      (sizeof(msg_hash_pl_blob) == (200629u
 #ifdef ANDROID
        + 385u
 #endif
@@ -14892,6 +14894,7 @@ static const uint32_t msg_hash_pl_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

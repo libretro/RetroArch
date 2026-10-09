@@ -860,6 +860,9 @@ static const struct
    char s_8b9af73a[27];
    char s_66389548[34];
    char s_926f9e93[28];
+   char s_539024ed[18];
+   char s_3703a97b[18];
+   char s_933104ed[27];
    char s_c6b760c9[87];
    char s_1d5a27f5[38];
    char s_18029d7e[26];
@@ -3016,6 +3019,9 @@ static const struct
    char s_d0b943e8[84];
    char s_4f2077b6[207];
    char s_5b920f01[133];
+   char s_71b76e1b[277];
+   char s_f96ddf69[148];
+   char s_d84f519b[245];
    char s_5d20ea2c[54];
    char s_b339b327[153];
    char s_a9e0aaa3[76];
@@ -4342,6 +4348,12 @@ static const struct
    char s_543fcabd[17];
    char s_59212b5f[16];
    char s_f26b6cff[35];
+   char s_58909bc7[19];
+   char s_bd1fdff6[18];
+   char s_d9d9a1be[12];
+   char s_a63c824a[13];
+   char s_b969706a[245];
+   char s_a3f6ebc3[23];
    char s_a9f3b2c3[23];
    char s_0e7aca8a[24];
    char s_ab1afe7c[22];
@@ -4350,6 +4362,7 @@ static const struct
    char s_026b7f11[23];
    char s_3b7c0dd8[24];
    char s_b43a100a[22];
+   char s_b8bfcaec[246];
    char s_51df877a[58];
    char s_136098cd[42];
    char s_f482576f[50];
@@ -5771,6 +5784,9 @@ static const struct
    "D\303\251lai pour l'assignation ",
    "D\303\251lai pour bloquer l'assignation",
    "Seuil de l'axe des touches ",
+   "Temps de r\303\251ponse",
+   "Maintenir pendant",
+   "Ce que fait la combinaison",
    "Masquer les descripteurs d'appellation des touches sp\303\251cifiques au c\305\223ur non assign"
    "\303\251s",
    "Afficher les descriptions des touches",
@@ -8237,6 +8253,15 @@ static const struct
    "\251es simultan\303\251ment (Android uniquement).",
    "Jusqu'o\303\271 un axe doit \303\252tre inclin\303\251 pour r\303\251sulter en un appui sur la t"
    "ouche lors de l'utilisation de 'Analogique vers num\303\251rique'.",
+   "L'action est imm\303\251diate d\303\250s que tous les boutons sont enfonc\303\251s. 'Maintenir p"
+   "endant' attend qu'ils soient maintenus enfonc\303\251s simultan\303\251ment pendant une dur\303"
+   "\251e que vous d\303\251finissez, ainsi, une pression br\303\250ve \342\200\224 en pleine partie"
+   ", par exemple \342\200\224 ne d\303\251clenche aucune action.",
+   "La dur\303\251e pendant laquelle tous les boutons de la combinaison doivent \303\252tre maintenu"
+   "s enfonc\303\251s simultan\303\251ment avant que l'action ne se d\303\251clenche.",
+   "Ce qu'il se passe lorsque toutes les touches de la combinaison sont maintenues enfonc\303\251es "
+   "simultan\303\251ment : une touche de raccourci, une commande sans raccourci ou l'une de vos macr"
+   "os. Les touches continuent \303\251galement d'\303\252tre transmises au jeu.",
    "La manette physique telle que reconnue par RetroArch.",
    "Pr\303\251f\303\251r\303\251 : si le p\303\251riph\303\251rique sp\303\251cifi\303\251 est pr"
    "\303\251sent, il sera allou\303\251 \303\240 ce joueur. R\303\251serv\303\251 : aucune autre man"
@@ -10505,6 +10530,14 @@ static const struct
    "D\303\251lai d\303\251pass\303\251",
    "Saisir le cheat",
    "Saisir le nom du fichier de cheats",
+   "Choisir une action",
+   "Maintenir pendant",
+   "%s secondes",
+   "Instantan\303\251e",
+   "Combinaison de touches d\303\251clenchant un raccourci, une commande ou une macro. Droite : main"
+   "tenez les touches enfonc\303\251es pour les utiliser, puis choisissez leur fonction. Gauche : ch"
+   "oisissez leur fonction. OK : saisissez-la. Start : supprimez-la.",
+   "Configurer les touches",
    "Entrer le mot de passe",
    "Mot de passe incorrect.",
    "Mot de passe correct.",
@@ -10513,6 +10546,9 @@ static const struct
    "Entrer le mot de passe",
    "Mot de passe incorrect.",
    "Mot de passe correct.",
+   "Les touches sont press\303\251es successivement, chacune \303\251tant maintenue enfonc\303\251e "
+   "pendant un certain nombre d'images du jeu, la notation utilis\303\251e est par exemple \"bas 2, "
+   "bas+droite 2, A 4\". Une combinaison d\303\251clenche l'action. Start : la supprimer.",
    "Saisir le nom du fichier de remplacement de configuration",
    "Saisir le nom du fichier de pr\303\251r\303\251glages",
    "Saisir le nom du fichier de remappage des touches",
@@ -10849,7 +10885,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fr_blob_check[
-      (sizeof(msg_hash_fr_blob) == (253877u
+      (sizeof(msg_hash_fr_blob) == (255186u
 #ifdef ANDROID
        + 373u
 #endif
@@ -12247,6 +12283,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_HIDE_UNBOUND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DESCRIPTOR_LABEL_SHOW,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_DEVICE_INDEX,
@@ -14390,6 +14429,9 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BIND_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BLOCK_TIMEOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_BUTTON_AXIS_THRESHOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_HOLD_TIME,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_COMBO_TARGET,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVATION_TYPE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME,
@@ -15705,6 +15747,12 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_FOR,
+   (uint32_t)MSG_INPUT_COMBO_HOLD_SECONDS,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
+   (uint32_t)MSG_INPUT_COMBO_ROW_SUBLABEL,
+   (uint32_t)MSG_INPUT_COMBO_SET_BUTTONS,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15713,6 +15761,7 @@ static const uint32_t msg_hash_fr_ids[] =
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_KIOSK_MODE_PASSWORD_OK,
+   (uint32_t)MSG_INPUT_MACRO_ROW_SUBLABEL,
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,

@@ -2207,6 +2207,7 @@ static const struct
    char s_543fcabd[13];
    char s_59212b5f[20];
    char s_f26b6cff[34];
+   char s_a63c824a[9];
    char s_a9f3b2c3[31];
    char s_0e7aca8a[41];
    char s_ab1afe7c[34];
@@ -7546,6 +7547,7 @@ static const struct
    "\330\272\330\264 \330\247\331\204\330\245\330\257\330\256\330\247\331\204",
    "\330\247\330\257\330\256\330\247\331\204 \330\247\330\263\331\205 \331\205\331\204\331\201 \330"
    "\247\331\204\330\272\330\264",
+   "\331\201\331\210\330\261\331\212",
    "\330\243\330\257\330\256\331\204 \331\203\331\204\331\205\330\251 \330\247\331\204\331\205\330"
    "\261\331\210\330\261",
    "\331\203\331\204\331\205\330\251 \330\247\331\204\331\205\330\261\331\210\330\261 \330\272\331"
@@ -7918,7 +7920,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ar_blob_check[
-      (sizeof(msg_hash_ar_blob) == (107099u
+      (sizeof(msg_hash_ar_blob) == (107108u
 #ifdef HAVE_LAKKA
        + 287u
 #endif
@@ -10321,6 +10323,7 @@ static const uint32_t msg_hash_ar_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

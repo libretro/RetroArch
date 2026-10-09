@@ -3839,6 +3839,7 @@ static const struct
    char s_543fcabd[12];
    char s_59212b5f[17];
    char s_f26b6cff[27];
+   char s_a63c824a[9];
    char s_a9f3b2c3[20];
    char s_0e7aca8a[16];
    char s_ab1afe7c[16];
@@ -9455,6 +9456,7 @@ static const struct
    "Id\305\221korl\303\241t",
    "Bemeneti csal\303\241s",
    "Bemeneti csal\303\241sf\303\241jl neve",
+   "Azonnali",
    "\303\215rja be a jelsz\303\263t",
    "Hib\303\241s jelsz\303\263.",
    "Hib\303\241s jelsz\303\263.",
@@ -9797,7 +9799,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_hu_blob_check[
-      (sizeof(msg_hash_hu_blob) == (188020u
+      (sizeof(msg_hash_hu_blob) == (188029u
 #ifdef ANDROID
        + 316u
 #endif
@@ -14062,6 +14064,7 @@ static const uint32_t msg_hash_hu_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

@@ -3403,6 +3403,7 @@ static const struct
    char s_543fcabd[19];
    char s_59212b5f[19];
    char s_f26b6cff[34];
+   char s_a63c824a[7];
    char s_a9f3b2c3[43];
    char s_0e7aca8a[34];
    char s_ab1afe7c[40];
@@ -13258,6 +13259,7 @@ static const struct
    "\343\203\201\343\203\274\343\203\210\343\202\222\345\205\245\345\212\233",
    "\343\203\201\343\203\274\343\203\210\343\203\225\343\202\241\343\202\244\343\203\253\345\220\215"
    "\343\202\222\345\205\245\345\212\233",
+   "\345\215\263\346\231\202",
    "\343\203\221\343\202\271\343\203\257\343\203\274\343\203\211\343\202\222\345\205\245\345\212\233"
    "\343\201\227\343\201\246\343\201\217\343\201\240\343\201\225\343\201\204",
    "\343\203\221\343\202\271\343\203\257\343\203\274\343\203\211\343\201\214\351\201\225\343\201\204"
@@ -13944,7 +13946,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_ja_blob_check[
-      (sizeof(msg_hash_ja_blob) == (200253u
+      (sizeof(msg_hash_ja_blob) == (200260u
 #ifdef ANDROID
        + 484u
 #endif
@@ -17670,6 +17672,7 @@ static const uint32_t msg_hash_ja_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,

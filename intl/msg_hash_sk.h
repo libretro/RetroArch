@@ -703,6 +703,7 @@ static const struct
    char s_52dea05d[24];
    char s_7ec63ffc[40];
    char s_7f004a36[122];
+   char s_fcd0c0d6[183];
    char s_a3825f18[12];
    char s_ef2d0a03[22];
    char s_ad17a194[12];
@@ -822,6 +823,7 @@ static const struct
    char s_d81bf7a9[12];
    char s_af315ae7[51];
    char s_87994f40[32];
+   char s_19bdcb0b[30];
    char s_6f199f35[41];
    char s_b1e1d992[25];
    char s_798643f5[27];
@@ -836,6 +838,10 @@ static const struct
 #ifdef ANDROID
    char s_b573f90c[33];
 #endif
+   char s_ed300063[43];
+   char s_28ea7dfa[19];
+   char s_b9dacc8a[25];
+   char s_e7afbcd6[47];
    char s_e28bc72f[27];
    char s_0b2a8528[47];
    char s_ea5757a0[8];
@@ -885,8 +891,12 @@ static const struct
    char s_56e1b335[19];
    char s_56e1b336[21];
    char s_313d15c0[11];
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_392e7967[29];
+#endif
    char s_e9f0dd82[37];
    char s_b58b86df[18];
+   char s_1b46171b[18];
    char s_0bd714f7[8];
    char s_0bebb490[15];
    char s_72765a06[18];
@@ -920,6 +930,8 @@ static const struct
    char s_b3a9ff57[28];
    char s_f4eaed02[31];
    char s_a9f5617a[35];
+   char s_7b2598f2[32];
+   char s_182194b5[35];
    char s_50e34bc5[16];
    char s_00ea00d3[17];
    char s_b43e2e98[13];
@@ -1018,9 +1030,12 @@ static const struct
    char s_88226df7[36];
    char s_4c92f60e[20];
    char s_9c702ee1[34];
+   char s_b8abf5ac[35];
    char s_b8b18b90[15];
    char s_efa8d516[32];
    char s_d7c1d887[20];
+   char s_ac419de7[16];
+   char s_d87f977f[29];
    char s_8c49943c[21];
    char s_d2c6b214[27];
 #ifdef HAVE_SDL3
@@ -1036,6 +1051,12 @@ static const struct
    char s_a7da7dc1[22];
    char s_980ef0e8[6];
    char s_fcf05466[18];
+   char s_172a1f47[24];
+   char s_ebede389[33];
+   char s_941bb4f3[28];
+   char s_e8e3269a[11];
+   char s_8f104024[14];
+   char s_60523ef9[29];
    char s_da16c634[18];
 #ifdef ANDROID
    char s_4c636851[16];
@@ -1043,6 +1064,7 @@ static const struct
    char s_a8f7398d[27];
    char s_16430f5d[33];
 #endif
+   char s_a310fe56[85];
    char s_d042d680[6];
    char s_16cacb01[16];
 #ifdef UDEV_TOUCH_SUPPORT
@@ -1052,6 +1074,7 @@ static const struct
    char s_9c91e6ef[31];
    char s_f03621e7[32];
 #endif
+   char s_9d47ac69[37];
    char s_75851363[17];
    char s_a60a77f9[27];
    char s_f07432ff[17];
@@ -1063,11 +1086,18 @@ static const struct
    char s_feaf16c5[13];
    char s_dedb2642[30];
    char s_ff1b8ce5[20];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_8033e2a5[29];
+   char s_19f5e3bc[48];
+#endif
+#endif
    char s_bd07998f[14];
    char s_4e2f19db[28];
    char s_9e66791a[10];
    char s_3e958bb3[26];
    char s_3e981328[19];
+   char s_d5d699bd[38];
    char s_591b268d[18];
    char s_168d155d[21];
    char s_c64d260f[8];
@@ -1108,6 +1138,7 @@ static const struct
    char s_dc362405[16];
    char s_e2f51ded[8];
    char s_d9685b01[13];
+   char s_88d4b1c5[37];
    char s_74b6dd31[11];
    char s_3e39918c[18];
    char s_981e8bbb[18];
@@ -1323,7 +1354,9 @@ static const struct
    char s_40084357[12];
    char s_df62d56f[10];
    char s_4a1166e1[11];
+   char s_44e2e900[12];
    char s_9f2cc577[14];
+   char s_dc216f95[25];
    char s_026e5a83[13];
    char s_42b8ffbf[6];
    char s_64702d9a[29];
@@ -1368,6 +1401,7 @@ static const struct
    char s_d48223f9[27];
    char s_28adc26d[28];
    char s_0b9c6082[36];
+   char s_8974ac0f[24];
    char s_b80a2fc4[25];
    char s_02b33f2e[38];
    char s_d3b03946[14];
@@ -1395,7 +1429,11 @@ static const struct
    char s_89920317[22];
    char s_9e49780c[38];
    char s_5703c323[19];
+   char s_00fcd264[43];
+   char s_ae7e624b[46];
+   char s_c1870a3a[59];
    char s_ce445b41[37];
+   char s_972c382e[37];
    char s_87d88aa2[6];
    char s_aadf6541[37];
 #ifdef _3DS
@@ -2344,8 +2382,17 @@ static const struct
    char s_4b582a0c[34];
    char s_61213f1d[15];
    char s_95e4b29f[66];
+   char s_1ee69db0[20];
+   char s_0cfd4fd0[9];
+   char s_d64659c4[10];
+   char s_0861dea4[24];
+   char s_d7deafe0[29];
+   char s_83217fd0[21];
    char s_60258de0[6];
    char s_34b2592a[9];
+   char s_740ed6e5[16];
+   char s_c7ab7873[32];
+   char s_83ecb279[18];
    char s_317b17ed[8];
    char s_94c8d15f[8];
    char s_de16b5d2[10];
@@ -2386,7 +2433,9 @@ static const struct
    char s_78585119[14];
    char s_69b801ef[13];
    char s_a40653a7[25];
+   char s_e67b672d[30];
    char s_52e3d6ea[43];
+   char s_f387bafb[23];
    char s_2c868ae4[10];
    char s_9c535394[7];
    char s_c992346c[36];
@@ -2416,6 +2465,14 @@ static const struct
    char s_552163d9[32];
    char s_ef3d53d8[24];
    char s_6dcc2f9f[15];
+   char s_7a23be94[14];
+   char s_07483307[30];
+   char s_166f5c6e[12];
+   char s_33da1d6d[20];
+   char s_33dae115[26];
+   char s_b2b1563a[10];
+   char s_fa98dce0[22];
+   char s_2bf7c29f[14];
    char s_48431da6[9];
    char s_0050d725[20];
    char s_21d7a1f6[8];
@@ -2428,6 +2485,7 @@ static const struct
    char s_258060bf[17];
    char s_3bbc8b05[42];
    char s_e595f6df[39];
+   char s_2a5f7cd7[33];
    char s_f90edcc2[53];
 #if defined(RARCH_MOBILE)
    char s_774121c7[49];
@@ -2467,6 +2525,8 @@ static const struct
    char s_e0609921[15];
    char s_b3c7fa93[18];
    char s_f6a0db44[18];
+   char s_a9af29b1[37];
+   char s_2cdaeb21[37];
    char s_4eecff92[39];
    char s_0ca1128d[23];
    char s_65e6ea7c[8];
@@ -2864,12 +2924,15 @@ static const struct
    char s_9eb26572[34];
    char s_50707595[81];
    char s_976074ee[120];
+   char s_2269a679[288];
    char s_5c8a1d63[115];
    char s_744c0f80[66];
    char s_2aa39081[42];
 #ifdef ANDROID
    char s_50f43cfa[268];
 #endif
+   char s_b65270d1[309];
+   char s_27fda584[206];
    char s_e85b309d[95];
    char s_cd94bb16[209];
    char s_a17a67e1[61];
@@ -2895,6 +2958,10 @@ static const struct
    char s_09f2837b[276];
    char s_512d7a8b[71];
    char s_2c4c27eb[190];
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_f07df655[257];
+#endif
+   char s_bb6fb70d[380];
    char s_85147d5c[83];
    char s_0b56ad4c[53];
    char s_c312b1ca[35];
@@ -2915,6 +2982,8 @@ static const struct
    char s_a11a7d85[176];
    char s_e25b6b30[143];
    char s_4b347c28[54];
+   char s_44480960[66];
+   char s_94c28c23[82];
    char s_0832c8b3[54];
    char s_109af481[52];
    char s_bcea0a06[27];
@@ -2958,6 +3027,7 @@ static const struct
    char s_74d87c7a[44];
    char s_12adb1e7[44];
    char s_070529d4[58];
+   char s_30d1fc05[209];
 #ifdef GEKKO
    char s_3180dcf5[61];
 #endif
@@ -2999,8 +3069,11 @@ static const struct
    char s_47df0525[60];
    char s_03e272fc[49];
    char s_5c2cc60f[64];
+   char s_d6d33eda[149];
+   char s_d6d8d4be[139];
    char s_e86d2704[70];
    char s_dda608b5[302];
+   char s_bc08c395[247];
    char s_6f5a032a[48];
    char s_9530e802[115];
 #ifdef HAVE_SDL3
@@ -3015,6 +3088,8 @@ static const struct
    char s_aaa55caa[83];
    char s_6a44b3af[57];
    char s_a7d61696[52];
+   char s_ae581977[211];
+   char s_493a2167[235];
 #ifdef ANDROID
    char s_354b4abf[136];
    char s_21594ec5[192];
@@ -3029,6 +3104,7 @@ static const struct
    char s_65b4575d[73];
    char s_dda6a015[111];
 #endif
+   char s_5d044397[284];
    char s_b5bb6ba7[103];
    char s_0e9b7c2d[94];
    char s_2447fa4c[55];
@@ -3040,6 +3116,12 @@ static const struct
    char s_a7fd96b0[68];
    char s_1d42d613[110];
    char s_eaa7274b[47];
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   char s_2172fd53[280];
+   char s_bb34fe6a[196];
+#endif
+#endif
    char s_10994fc9[108];
    char s_bde8a108[61];
    char s_420308fb[235];
@@ -3068,6 +3150,7 @@ static const struct
    char s_e29f9539[98];
    char s_824e2e0c[186];
    char s_c5a7263e[53];
+   char s_8eb8e1f3[333];
    char s_d9b9d57a[80];
    char s_858f09e9[146];
    char s_608f698e[117];
@@ -3259,14 +3342,21 @@ static const struct
    char s_da518d67[132];
    char s_1195a4db[38];
    char s_ce069670[32];
+   char s_8f44157d[147];
    char s_77c6c6f2[49];
    char s_126432dc[137];
+   char s_7b4c2ad6[262];
+   char s_c0817362[354];
    char s_bc33055d[72];
    char s_be8c2b47[36];
    char s_02526a85[62];
    char s_8b64010b[137];
+   char s_09c9a0f9[273];
    char s_7279e585[55];
    char s_8bb9f63a[109];
+   char s_196df911[348];
+   char s_ca1f42d2[254];
+   char s_9d10685c[148];
    char s_a5ffd3d0[36];
 #ifdef _3DS
    char s_0d834bc5[71];
@@ -3781,6 +3871,12 @@ static const struct
    char s_34400c79[75];
    char s_34400c7a[76];
    char s_4a09218b[39];
+   char s_dea334de[162];
+   char s_cacc1492[51];
+   char s_c0c6924e[191];
+   char s_c83fcc7e[235];
+   char s_7efaf561[213];
+   char s_c90aff27[90];
    char s_19d092ed[33];
    char s_1eebf4f8[179];
    char s_2f2ca2b6[177];
@@ -3798,7 +3894,9 @@ static const struct
    char s_f4e4e921[242];
    char s_7968f59d[31];
    char s_8cee3615[222];
+   char s_87ba81db[144];
    char s_58c80718[304];
+   char s_dc6f9d69[62];
    char s_894ecb9a[336];
    char s_67d549fd[33];
    char s_afac733c[34];
@@ -3827,6 +3925,9 @@ static const struct
    char s_3c679f0a[304];
    char s_5b059407[144];
    char s_36033606[169];
+   char s_5d342d82[229];
+   char s_bd0312ce[87];
+   char s_3ba8b64d[127];
    char s_d62ed5dc[347];
    char s_2e69508b[316];
    char s_7e96b5ce[40];
@@ -3834,6 +3935,7 @@ static const struct
    char s_3547866d_1[35];
    char s_d73ccef3[388];
    char s_81163acd[400];
+   char s_ecc9b2c5[311];
    char s_c2314d30[190];
 #if defined(RARCH_MOBILE)
    char s_82c9e375[162];
@@ -3868,6 +3970,9 @@ static const struct
    char s_6ac06624[148];
    char s_f765b650[52];
    char s_7059a595[55];
+   char s_c7d672df_0[500];
+   char s_c7d672df_1[5];
+   char s_c85b2f0f[286];
    char s_6d1448c0[51];
    char s_cf0b487b[98];
    char s_840f4569[36];
@@ -4035,6 +4140,8 @@ static const struct
    char s_d50c6bf1[26];
    char s_64a038aa[21];
    char s_697f59c0[20];
+   char s_10e46c37[45];
+   char s_2a722735[31];
    char s_05437279[31];
    char s_c0cae103[24];
    char s_71d52dde[52];
@@ -4074,12 +4181,14 @@ static const struct
    char s_b0e4eb88[49];
    char s_9589cc66[56];
    char s_a0cd3533[25];
+   char s_29ffdb0d[62];
    char s_135957cd[33];
    char s_96b546df[45];
    char s_731e9836[31];
    char s_ffb4111b[33];
    char s_a363d07a[35];
    char s_9e5bd759[34];
+   char s_b880bab5[51];
    char s_8d7296ed[36];
    char s_21580d7c[99];
    char s_fc5e1d2c[56];
@@ -4148,6 +4257,7 @@ static const struct
    char s_543fcabd[15];
    char s_59212b5f[15];
    char s_f26b6cff[33];
+   char s_a63c824a[10];
    char s_a9f3b2c3[14];
    char s_0e7aca8a[18];
    char s_ab1afe7c[19];
@@ -4159,6 +4269,7 @@ static const struct
    char s_51df877a[34];
    char s_136098cd[35];
    char s_f482576f[33];
+   char s_d2b9475b[94];
    char s_0408afc3[19];
    char s_654f5308[20];
    char s_c4a8e97c[10];
@@ -4170,6 +4281,7 @@ static const struct
    char s_01a4c762[14];
    char s_ba4d8b17[29];
    char s_ffed014a[28];
+   char s_cc3fcff6[40];
    char s_68bd6ae1[32];
    char s_599fa4bb[30];
    char s_406b377c[30];
@@ -4274,6 +4386,12 @@ static const struct
    char s_8ab54d62[88];
    char s_aa554847[22];
    char s_ac2c797c[24];
+   char s_c5fee1cb[66];
+   char s_272dccbd[25];
+   char s_7da2720b[64];
+   char s_9e9f8d9d[193];
+   char s_fdc097e9[83];
+   char s_5fe664ca[82];
    char s_80528b14[44];
    char s_eae21890[36];
    char s_1451fe0d[35];
@@ -5418,6 +5536,9 @@ static const struct
    "Podarilo sa pre\304\215\303\255ta\305\245 len \304\215as\305\245 EDID",
    "Vstavan\303\275 panel notebooku alebo po\304\215\303\255ta\304\215a typu v\305\241etko v jednom "
    "nenesie EDID. Extern\303\275 displej pripojen\303\275 cez DDC \303\241no.",
+   "Android nedovo\304\276uje aplik\303\241ci\303\241m \304\215\303\255ta\305\245 EDID zabudovanej o"
+   "brazovky telef\303\263nu alebo tabletu. TV box, ktor\303\275 ovl\303\241da displej cez HDMI, ho "
+   "spr\303\255stupn\303\255 tam, kde to zariadenie dovol\303\255.",
    "Verzia EDID",
    "Zobrazi\305\245 inform\303\241cie",
    "Orient\303\241cia",
@@ -5537,6 +5658,7 @@ static const struct
    "Inform\303\241cie",
    "Automaticky na\304\215\303\255ta\305\245 po\304\215iato\304\215n\303\251 indexy diskov",
    "Typ anal\303\263gov\303\251ho na digit\303\241lne",
+   "Mierenie anal\303\263govou p\303\241\304\215kou",
    "V\305\241etci pou\305\276\303\255vatelia ovl\303\241daj\303\272 ponuku",
    "Anal\303\263gov\303\241 m\305\225tva z\303\263na",
    "\304\275av\303\275 anal\303\263g X- (v\304\276avo)",
@@ -5551,6 +5673,10 @@ static const struct
 #ifdef ANDROID
    "Pou\305\276i\305\245 syst\303\251mov\303\272 kl\303\241vesnicu",
 #endif
+   "Kl\303\241vesnica pri prvom stla\304\215en\303\255 tla\304\215idla",
+   "Prirad\303\255 svoj port",
+   "\304\214ak\303\241 na svoj kontroler",
+   "Priradi\305\245 porty pri prvom stla\304\215en\303\255 tla\304\215idla",
    "Automatick\303\241 konfigur\303\241cia",
    "Automaticky povoli\305\245 re\305\276im 'Zameranie na hru'",
    "Zisti\305\245",
@@ -5600,8 +5726,12 @@ static const struct
    "Tla\304\215idlo X (hore)",
    "Tla\304\215idlo Y (v\304\276avo)",
    "Kl\303\241ves %s",
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Vstup kl\303\241vesnice na pozad\303\255",
+#endif
    "Typ mapovania ovl\303\241da\304\215a kl\303\241vesnice",
    "Index kl\303\241vesnice",
+   "%s (nepripojen\303\241)",
    "V\305\241etko",
    "Kl\303\241vesnica %s",
    "Pomocn\303\241 zbra\305\210 A",
@@ -5635,6 +5765,8 @@ static const struct
    "Zameranie hry (prep\303\255nanie)",
    "Zachytenie my\305\241i (prep\303\255nanie)",
    "Zastavi\305\245 nahr\303\241vanie/prehr\303\241vanie",
+   "Vycentrova\305\245 obrazovky headsetu",
+   "Laserov\303\251 ukazovadlo (prep\303\255nanie)",
    "Na\304\215\303\255ta\305\245 stav",
    "Prepnutie ponuky",
    "Stlmi\305\245 zvuk",
@@ -5733,9 +5865,12 @@ static const struct
    "Ukon\304\215enie (kombin\303\241cia kontroleru)",
    "Premapovania vstupu",
    "Zmeni\305\245 ovl\303\241danie pre toto jadro",
+   "N\303\241js\305\245 tla\304\215idlo jeho stla\304\215en\303\255m",
    "Mapovan\303\275 port",
    "Triedi\305\245 remapy pod\304\276a gamepadu",
    "Priradenia RetroPad",
+   "Rot\303\241cia vstupu",
+   "Automaticky (rot\303\241cia videa)",
    "Intenzita vibr\303\241ci\303\255",
    "Ulo\305\276i\305\245 profil kontroleru",
 #ifdef HAVE_SDL3
@@ -5751,6 +5886,12 @@ static const struct
    "Senzory pohybu/svetla",
    "Vstup",
    "Mal\303\241 kl\303\241vesnica",
+   "Priorita prv\303\251ho vstupu",
+   "SOCD \304\215istenie (v\304\276avo + vpravo)",
+   "Priorita posledn\303\251ho vstupu",
+   "Neutr\303\241lne",
+   "Priorita hore",
+   "SOCD \304\215istenie (hore + dole)",
    "Rozdeli\305\245 Joy-Con",
 #ifdef ANDROID
    "Podpora stylusu",
@@ -5758,6 +5899,8 @@ static const struct
    "Citlivos\305\245 stylusu na tlak",
    "Stylus vy\305\276aduje dotyk obrazovky",
 #endif
+   "Vstupn\303\275 ovl\303\241da\304\215 \342\200\236%s\342\200\234 ich \304\215\303\255ta ako jedno"
+   " zariadenie a nevie ich rozl\303\255\305\241i\305\245.",
    "Dotyk",
    "Stupnica dotyku",
 #ifdef UDEV_TOUCH_SUPPORT
@@ -5767,6 +5910,7 @@ static const struct
    "Re\305\276im touchpadu VMouse dotyku",
    "Re\305\276im trackballu VMouse dotyku",
 #endif
+   "Anal\303\263gov\303\251 sp\303\272\305\241te v plnom rozsahu",
    "R\303\275chlo stre\304\276ba",
    "Turbo povol\303\255 smery D-Padu",
    "Priradenie turbo",
@@ -5778,11 +5922,18 @@ static const struct
    "Turbo re\305\276im",
    "Zjednoten\303\251 ovl\303\241danie ponuky",
    "Ovl\303\241da\304\215e portu %u",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "Hr\303\241\304\215ske svetl\303\241 kontrolera",
+   "XInput pre kontrolery Xbox (vy\305\276aduje re\305\241tart)",
+#endif
+#endif
    "JIT dostupn\303\251",
    "Profily hern\303\251ho ovl\303\241da\304\215a",
    "Ovl\303\241da\304\215",
    "VID/PID zariadenia: %d/%d",
    "Kl\303\241vesnica %d: %s",
+   "Kl\303\241vesnica: v\305\241etky kl\303\241vesnice (%s)",
    "Heslo k\304\276\303\272\304\215enky",
    "K\304\276\303\272\304\215 streamu Kick",
    "Slu\305\276by",
@@ -5823,6 +5974,7 @@ static const struct
    "2 (upozornenie)",
    "Hlavn\303\251",
    "Hlavn\303\251 menu",
+   "Zv\303\275\305\241i\305\245 prioritu hlavn\303\251ho vl\303\241kna",
    "Spravova\305\245",
    "Predvolen\303\251 jadro",
    "Arcade DAT s\303\272bor",
@@ -6038,7 +6190,9 @@ static const struct
    "Odstr\303\241ni\305\245",
    "Zastavi\305\245",
    "Hlasitos\305\245",
+   "My\305\241 %s: %s",
    "Podpora my\305\241i",
+   "My\305\241: v\305\241etky my\305\241i (%s)",
    "Multim\303\251di\303\241",
    "Hudba",
    "Filtrova\305\245 nezn\303\241me pr\303\255pony",
@@ -6085,6 +6239,7 @@ static const struct
    "Verejne oznamova\305\245 netplay",
    "Obnovi\305\245 zoznam netplay LAN",
    "Obnovi\305\245 zoznam netplay hostite\304\276ov",
+   "Po\305\276adovan\303\251 zariadenia",
    "Po\305\276iada\305\245 zariadenie %u",
    "Zak\303\241za\305\245 klientov mimo slave re\305\276imu",
    "Prez\303\275vka: %s",
@@ -6112,7 +6267,11 @@ static const struct
    "Sie\305\245ov\303\251 inform\303\241cie",
    "S\305\245ahovanie n\303\241h\304\276adov na po\305\276iadanie",
    "Sie\305\245ov\303\275 RetroPad",
+   "Sie\305\245ov\303\275 RetroPad: len prv\303\275 odosielate\304\276",
+   "Sie\305\245ov\303\275 RetroPad %u: port %u, z %u.%u.%u.%u",
+   "Sie\305\245ov\303\275 RetroPad %u: port %u, zatia\304\276 \305\276iadne zariadenie",
    "Z\303\241kladn\303\275 port sie\305\245ov\303\251ho RetroPad",
+   "Pou\305\276\303\255vatelia sie\305\245ov\303\251ho RetroPadu",
    "Sie\305\245",
    "Sie\305\245ov\303\275 RetroPad pou\305\276\303\255vate\304\276a %d",
 #ifdef _3DS
@@ -7077,8 +7236,17 @@ static const struct
    "Poz\303\255cia ozn\303\241menia (vertik\303\241lna)",
    "Index monitora",
    "Povoli\305\245 cel\303\272 obrazovku cez v\303\275rez na zariadeniach Android a iOS",
+   "Ovl\303\241da\304\215e headsetu",
+   "Spojen\303\251",
+   "Oddelen\303\251",
+   "Vzdialenos\305\245 obrazoviek",
+   "V\303\275stup do headsetu (OpenXR)",
+   "Laserov\303\251 ukazovadlo",
    "V\305\276dy",
    "Vypn\303\272\305\245",
+   "Pod\304\276a headsetu",
+   "Obnovovacia frekvencia headsetu",
+   "\305\240\303\255rka obrazovky",
    "180 st.",
    "270 st.",
    "Norm\303\241lne",
@@ -7119,7 +7287,9 @@ static const struct
    "Inteligentn\303\251",
    "\305\240k\303\241lovanie",
    "Synchroniz\303\241cia scanline",
+   "Posun synchroniz\303\241cie riadkov",
    "Simul\303\241cia roluj\303\272ceho skenovacieho riadku",
+   "Rozlo\305\276enie obrazoviek",
    "Vodorovne",
    "Zvislo",
    "Prep\303\255nanie re\305\276imov zobrazenia SDL",
@@ -7149,6 +7319,14 @@ static const struct
    "Hardv\303\251rov\303\275 zdie\304\276an\303\275 kontext",
    "Biline\303\241rne filtrovanie",
    "M\303\244kk\303\275 filter",
+   "Stereo re\305\276im",
+   "Anaglyf (\304\215erven\303\241/az\303\272rov\303\241)",
+   "Prekladan\303\251",
+   "Ved\304\276a seba (pln\303\251)",
+   "Ved\304\276a seba (polovi\304\215n\303\251)",
+   "Nad sebou",
+   "Stereo 3D a obrazovky",
+   "Vymeni\305\245 o\304\215i",
    "Vlastn\303\251",
    "Hranie na Facebooku",
    "Miestne",
@@ -7161,6 +7339,7 @@ static const struct
    "Vl\303\241knov\303\251 video",
    "\304\214asovanie zobrazenia vo Vl\303\241knovom videu",
    "Opakovanie sn\303\255mok vo Vl\303\241knovom videu",
+   "Zv\303\275\305\241i\305\245 prioritu vl\303\241kna videa",
    "Pou\305\276i\305\245 Metal Argument Buffers (vy\305\276aduje re\305\241tart)",
 #if defined(RARCH_MOBILE)
    "Sklon kotvy viewportu X (orient\303\241cia na v\303\275\305\241ku)",
@@ -7200,6 +7379,8 @@ static const struct
    "Povoli\305\245 Wi-Fi",
    "Pripoji\305\245 k sieti",
    "Pripoji\305\245 k sieti",
+   "Pl\303\241n nap\303\241jania s n\303\255zkou latenciou",
+   "Vypn\303\272\305\245 stavy ne\304\215innosti procesora",
    "Faktor neprieh\304\276adnosti farebnej t\303\251my",
    "Aktu\303\241lna ikona ponuky",
    "\305\275iadne",
@@ -7906,6 +8087,11 @@ static const struct
    "Pou\305\276ije zadan\303\272 anal\303\263gov\303\272 p\303\241\304\215ku pre vstup D-Padu. Re"
    "\305\276imy 'Vyn\303\272ten\303\251' prep\303\255\305\241u nat\303\255vny anal\303\263gov\303"
    "\275 vstup jadra.",
+   "Umo\305\276n\303\255 anal\303\263govej p\303\241\304\215ke mieri\305\245 svetelnou zbra\305\210o"
+   "u alebo ukazovate\304\276om tohto portu: kam je p\303\241\304\215ka vych\303\275len\303\241, tam"
+   " mieri na obrazovke, stred p\303\241\304\215ky je stred obrazovky. Viacer\303\255 hr\303\241\304"
+   "\215i tak m\303\264\305\276u mieri\305\245 bez vlastnej my\305\241i. Tla\304\215idl\303\241 zbra"
+   "ne sa prira\304\217uj\303\272 ni\305\276\305\241ie ako zvy\304\215ajne.",
    "Umo\305\276ni\305\245 ktor\303\251muko\304\276vek pou\305\276\303\255vate\304\276ovi ovl\303\241"
    "da\305\245 menu. Pri vypnut\303\255 m\303\264\305\276e menu ovl\303\241da\305\245 iba Pou\305"
    "\276\303\255vate\304\276 1.",
@@ -7919,6 +8105,15 @@ static const struct
    "\272 obrazovku alebo met\303\263du vstupu, ktor\303\272 mo\305\276no ovl\303\241da\305\245 gamep"
    "adom.",
 #endif
+   "Pri 'Priradi\305\245 porty pri prvom stla\304\215en\303\255 tla\304\215idla': \304\215o urob\303"
+   "\255 kl\303\241ves priraden\303\275 k ovl\303\241daniu portu. 'Prirad\303\255 svoj port' d\303"
+   "\241 portu jeho port jadra, ako by to urobilo tla\304\215idlo jeho kontrolera. '\304\214ak\303"
+   "\241 na svoj kontroler' to nech\303\241 na tla\304\215idl\303\241 kontrolera, pokia\304\276 port"
+   " nem\303\241 pripojen\303\275 \305\276iadny kontroler.",
+   "Po spusten\303\255 obsahu nie je \305\276iadny kontroler priraden\303\275 k portu jadra; ka\305"
+   "\276d\303\275 dostane \304\217al\305\241\303\255 vo\304\276n\303\275 port jadra, ke\304\217 sa n"
+   "a \305\210om prv\303\275kr\303\241t stla\304\215\303\255 tla\304\215idlo. Plat\303\255 od nasled"
+   "uj\303\272ceho spustenia obsahu.",
    "Automaticky konfigurova\305\245 hern\303\251 ovl\303\241da\304\215e, pre ktor\303\251 existuje p"
    "rofil, \305\241t\303\275l Plug-and-Play.",
    "Povol\303\255 re\305\276im \"Priorita hry\" pri automatickom spusten\303\255 a obnoven\303\255 o"
@@ -7973,6 +8168,20 @@ static const struct
    "Prij\303\255ma vstup z ovl\303\241da\304\215a, aj ke\304\217 RetroArch nie je akt\303\255vne okn"
    "o. Ke\304\217 je vypnut\303\251, ovl\303\241da\304\215e sa bez zamerania ignoruj\303\272: menu, "
    "kl\303\241vesov\303\251 skratky ani spusten\303\275 obsah na ne nereaguj\303\272.",
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "So vstupn\303\275m ovl\303\241da\304\215om 'raw' necha\305\245 be\305\276iaci obsah \304\215\303"
+   "\255ta\305\245 kl\303\241vesnicu, aj ke\304\217 RetroArch nie je akt\303\255vne okno. Kl\303\241"
+   "vesov\303\251 skratky a menu na\304\217alej potrebuj\303\272 akt\303\255vne okno. Obsah mus\303"
+   "\255 be\305\276a\305\245 \304\217alej: 'Pozastavi\305\245 obsah ke\304\217 nie je akt\303\255vne"
+   "' vypnut\303\251.",
+#endif
+   "Kl\303\241vesnica, z ktorej sa \304\215\303\255taj\303\272 priradenia kl\303\241vesov tohto port"
+   "u. 'V\305\241etky' \304\215\303\255ta v\305\241etky kl\303\241vesnice ako jednu. Jednu kl\303"
+   "\241vesnicu mo\305\276no vybra\305\245 tam, kde vstupn\303\275 ovl\303\241da\304\215 vie kl\303"
+   "\241vesnice rozl\303\255\305\241i\305\245; zapam\303\244t\303\241 sa pod\304\276a toho, \304\215"
+   "o je za\304\215, a ostane tomuto portu aj pri prip\303\241jan\303\255 a odp\303\241jan\303\255 k"
+   "l\303\241vesn\303\255c. Kl\303\241vesov\303\251 skratky a menu reaguj\303\272 v\305\276dy na v"
+   "\305\241etky kl\303\241vesnice.",
    "Maxim\303\241lny po\304\215et pou\305\276\303\255vate\304\276ov podporovan\303\275ch RetroArchom"
    ". (Vy\305\276aduje re\305\241tart)",
    "Kombin\303\241cia tla\304\215idiel kontroleru na prepnutie menu.",
@@ -8011,6 +8220,9 @@ static const struct
    "\303\275 kurzor skryje a obmedz\303\255 na okno RetroArchu, \304\215o zlep\305\241uje relat\303"
    "\255vny vstup my\305\241i.",
    "Zastav\303\255 nahr\303\241vanie/prehr\303\241vanie aktu\303\241lneho replay.",
+   "Umiestni obrazovky headsetu pred miesto, kam sa pr\303\241ve pozer\303\241te.",
+   "Prep\303\255na laserov\303\251 ukazovadlo headsetu medzi Vypnut\303\251 a jeho posledn\303\275m "
+   "re\305\276imom.",
    "Na\304\215\303\255ta ulo\305\276en\303\275 stav z aktu\303\241lne vybran\303\251ho slotu.",
    "Prep\303\255na aktu\303\241lne zobrazenie medzi menu a obsahom.",
    "Zapne/vypne v\303\275stup zvuku.",
@@ -8076,6 +8288,10 @@ static const struct
    "Zn\303\255\305\276i \303\272rove\305\210 hlasitosti v\303\275stupu zvuku.",
    "Zv\303\275\305\241i \303\272rove\305\210 hlasitosti v\303\275stupu zvuku.",
    "Zapne/vypne synchroniz\303\241ciu s presnou frekvenciou obsahu.",
+   "Fyzick\303\241 my\305\241 rozpoznan\303\241 RetroArchom. Tam, kde vstupn\303\275 ovl\303\241da"
+   "\304\215 vie my\305\241i rozl\303\255\305\241i\305\245, sa tu vybran\303\241 my\305\241 zapam"
+   "\303\244t\303\241 pod\304\276a toho, \304\215o je za\304\215, a ostane tomuto portu aj pri prip"
+   "\303\241jan\303\255 a odp\303\241jan\303\255 my\305\241\303\255.",
 #ifdef GEKKO
    "Upravi\305\245 mierku x/y pre r\303\275chlos\305\245 svetelnej zbrane Wiimote.",
 #endif
@@ -8149,6 +8365,11 @@ static const struct
    "Kombin\303\241cia tla\304\215idiel kontroleru na ukon\304\215enie RetroArchu.",
    "Vstupn\303\251 remapy s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Prep\303\255\305\241e zmeny pomocou upraven\303\275ch volieb pre aktu\303\241lne jadro.",
+   "Stla\304\215te tla\304\215idlo alebo vych\303\275\304\276te p\303\241\304\215ku na kontroleri to"
+   "hto portu, alebo kl\303\241ves, ktor\303\275 je k nim priraden\303\275, a zoznam ni\305\276\305"
+   "\241ie na\305\210 presko\304\215\303\255.",
+   "Ur\304\215uje, ktor\303\275 port jadra bude prij\303\255ma\305\245 vstup z portu kontrolera %u f"
+   "rontendu. '\305\275iadny' neposiela jeho vstup do \305\276iadneho portu jadra.",
    "Remapy sa pou\305\276ij\303\272 iba na akt\303\255vny gamepad, v ktorom boli ulo\305\276en\303"
    "\251.",
    "Zmen\303\255, ako je virtu\303\241lny RetroPad mapovan\303\275 na fyzick\303\251 vstupn\303\251 "
@@ -8156,6 +8377,10 @@ static const struct
    "\303\251, pou\305\276\303\255vatelia toto menu pravdepodobne nepotrebuj\303\272.\nPozn\303\241mk"
    "a: pre zmeny vstupu \305\241pecifick\303\251 pre core pou\305\276ite rad\305\241ej podmenu 'Ovl"
    "\303\241da\304\215e' v Quick Menu.",
+   "Oto\304\215\303\255 D-Pad a anal\303\263gov\303\251 p\303\241\304\215ky, ktor\303\251 jadro vid"
+   "\303\255, pre obsah zobrazen\303\275 oto\304\215ene. Uhol je ten, na ktor\303\275 by sa nastavil"
+   "a Rot\303\241cia videa: pri 90 stup\305\210och je v\304\276avo na kontroleri v hre hore. 'Automa"
+   "ticky' sa riadi nastaven\303\255m Rot\303\241cia videa.",
    "Ur\304\215uje silu efektov haptickej sp\303\244tnej v\303\244zby.",
    "Ulo\305\276\303\255 s\303\272bor autokonfigur\303\241cie, ktor\303\275 sa automaticky aplikuje v"
    "\305\276dy, ke\304\217 je tento kontroler znova rozpoznan\303\275.",
@@ -8177,6 +8402,14 @@ static const struct
    "nia.",
    "Zmen\303\255 nastavenia akcelerometra, gyroskopu a osvetlenia.",
    "Zmeni\305\245 nastavenia ovl\303\241da\304\215a, kl\303\241vesnice a my\305\241i.",
+   "\304\214o jadro vid\303\255 z D-Padu, ke\304\217 s\303\272 v\304\276avo a vpravo dr\305\276an"
+   "\303\251 naraz. 'VYP' odovzd\303\241 oba. 'Neutr\303\241lne' \305\276iadny, 'Priorita posledn"
+   "\303\251ho vstupu' ten stla\304\215en\303\275 nesk\303\264r, 'Priorita prv\303\251ho vstupu' ten"
+   " stla\304\215en\303\275 sk\303\264r.",
+   "\304\214o jadro vid\303\255 z D-Padu, ke\304\217 s\303\272 hore a dole dr\305\276an\303\251 nara"
+   "z. 'VYP' odovzd\303\241 oba. 'Neutr\303\241lne' \305\276iadny, 'Priorita posledn\303\251ho vstup"
+   "u' ten stla\304\215en\303\275 nesk\303\264r, 'Priorita prv\303\251ho vstupu' ten stla\304\215en"
+   "\303\275 sk\303\264r, 'Priorita hore' v\305\276dy hore.",
 #ifdef ANDROID
    "Povoli\305\245 zariadenia so stylusom. Poskytuje presn\303\275 vstup pre kreslenie a hry s ukazo"
    "van\303\255m. Vypnite, ak doch\303\241dza ku konfliktom vstupu.",
@@ -8203,6 +8436,11 @@ static const struct
    "Povo\304\276te spolu s my\305\241ou pre vyu\305\276itie dotykovej obrazovky ako trackballu, prid"
    "\303\241va zotrva\304\215nos\305\245 ukazovate\304\276u.",
 #endif
+   "Pre L2 a R2 na osi, ktor\303\241 je v pokoji na jednom konci rozsahu: po\304\215\303\255ta\305"
+   "\245 stla\304\215enie od miesta, kde sp\303\272\305\241\305\245 spo\304\215\303\255va. \303\232p"
+   "ln\303\251 stla\304\215enie potom d\303\241 cel\303\275 anal\303\263gov\303\275 rozsah a polovi"
+   "\304\215n\303\251 stla\304\215\303\255 tla\304\215idlo. Ke\304\217 je vypnut\303\251, po\304\215"
+   "\303\255ta sa len druh\303\241 polovica stla\304\215enia, ako doteraz.",
    "Ak je povolen\303\251, digit\303\241lne smerov\303\251 vstupy (zn\303\241me aj ako d-pad alebo '"
    "hatswitch') m\303\264\305\276u ma\305\245 turbo.",
    "Priradenie RetroPad pre aktiv\303\241ciu turbo. Pr\303\241zdne pou\305\276ije priradenie \305"
@@ -8221,6 +8459,19 @@ static const struct
    "Zmen\303\255, ako je virtu\303\241lny RetroPad mapovan\303\275 na va\305\241e fyzick\303\251 vst"
    "upn\303\251 zariadenie pre tento virtu\303\241lny port.",
    "Zmen\303\255 mapovanie vstupu \305\241pecifick\303\251 pre core.",
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   "S ovl\303\241da\304\215om kontrolerov 'raw' uk\303\241za\305\245 port ka\305\276d\303\251ho kont"
+   "rolera na jeho vlastn\303\275ch svetl\303\241ch: hr\303\241\304\215ske svetl\303\241 DualSense, "
+   "farba svetelnej li\305\241ty DualShock 4 (modr\303\241, \304\215erven\303\241, zelen\303\241, ru"
+   "\305\276ov\303\241). Pri zmene portu kontrolera sa prisp\303\264sobia a po vypnut\303\255 tejto "
+   "vo\304\276by zhasn\303\272.",
+   "S ovl\303\241da\304\215om kontrolerov 'raw' \304\215\303\255ta\305\245 kontrolery kompatibiln"
+   "\303\251 s Xboxom cez XInput: oddelen\303\251 sp\303\272\305\241te a rozlo\305\276enie tla\304"
+   "\215idiel XInput. Ostatn\303\251 kontrolery sa na\304\217alej \304\215\303\255taj\303\272 cez ra"
+   "w input.",
+#endif
+#endif
    "Profily kontrolerov pou\305\276\303\255van\303\251 na automatick\303\272 konfigur\303\241ciu kon"
    "trolerov s\303\272 ulo\305\276en\303\251 v tomto adres\303\241ri.",
    "Ak\303\275 ovl\303\241da\304\215 pre kontrolery pou\305\276i\305\245. (Vy\305\276aduje re\305"
@@ -8265,6 +8516,12 @@ static const struct
    "roArchu do nov\303\251ho \304\215asovo-pe\304\215iatkovan\303\251ho s\303\272boru. Ak je vypnut"
    "\303\251, log sa prep\303\255\305\241e pri ka\305\276dom re\305\241tarte RetroArchu.",
    "Zaznamen\303\241va\305\245 udalosti do termin\303\241lu alebo s\303\272boru.",
+   "Po\305\276iada\305\245 opera\304\215n\303\275 syst\303\251m, aby pl\303\241noval hlavn\303\251 v"
+   "l\303\241kno, ktor\303\251 be\305\276\303\255 jadro a menu, pred be\305\276n\303\275mi vl\303"
+   "\241knami, bez pl\303\241novania v re\303\241lnom \304\215ase. Obsah be\305\276iaci bez obmedzen"
+   "ia r\303\275chlosti, napr\303\255klad pri r\303\275chlom posune vpred, potom berie \304\215as CP"
+   "U najprv in\303\275m programom. Ak to syst\303\251m odmietne, ponech\303\241 sa predvolen\303"
+   "\241 priorita.",
    "Vyberte predvolen\303\275 core, ktor\303\275 sa pou\305\276ije pri spusten\303\255 skenovan\303"
    "\251ho obsahu.",
    "Vyberte Logiqx alebo MAME List XML DAT s\303\272bor na povolenie automatick\303\251ho pomenov"
@@ -8629,19 +8886,52 @@ static const struct
    "ia prip\303\241ja\305\245 manu\303\241lne, namiesto pou\305\276itia verejnej lobby.",
    "Vyh\304\276ada\305\245 netplay hostite\304\276ov v LAN.",
    "Vyh\304\276ada\305\245 netplay hostite\304\276ov.",
+   "Hr\303\241\304\215ske sloty, o ktor\303\251 sa po\305\276iada hostite\304\276a pri prip\303\241j"
+   "an\303\255 k netplay rel\303\241cii. Ak nie je vybran\303\275 \305\276iadny, hostite\304\276 pri"
+   "del\303\255 prv\303\275 vo\304\276n\303\275.",
    "Po\305\276iada\305\245 o hru s dan\303\275m vstupn\303\275m zariaden\303\255m.",
    "Zak\303\241za\305\245 pripojenia, ktor\303\251 nie s\303\272 v slave re\305\276ime. Neodpor\303"
    "\272\304\215a sa okrem pr\303\255padov ve\304\276mi r\303\275chlych siet\303\255 s ve\304\276mi "
    "slab\303\275mi strojmi.",
+   "Pre hr\303\241\304\215sky slot zdie\304\276an\303\275 s in\303\275mi netplay klientmi: ako sa ko"
+   "mbinuj\303\272 ich anal\303\263gov\303\251 p\303\241\304\215ky. 'Max': vyhr\303\241va najsilnej"
+   "\305\241ie vych\303\275lenie. 'Priemer': priemer v\305\241etk\303\275ch. Ak je toto aj Zdie\304"
+   "\276anie digit\303\241lneho vstupu na '\305\275iadne', po\305\276iada sa o vlastn\303\275 slot.",
+   "Pre hr\303\241\304\215sky slot zdie\304\276an\303\275 s in\303\275mi netplay klientmi: ako sa ko"
+   "mbinuj\303\272 ich tla\304\215idl\303\241. 'Zdie\304\276a\305\245': stla\304\215en\303\251, ke"
+   "\304\217 ho stla\304\215\303\255 ktoko\304\276vek. 'Z\303\241pasy': stla\304\215en\303\251, ke"
+   "\304\217 ho stla\304\215\303\255 nep\303\241rny po\304\215et hr\303\241\304\215ov. 'Hlasova\305"
+   "\245': stla\304\215en\303\251, ke\304\217 ho stla\304\215\303\255 v\303\244\304\215\305\241ina. "
+   "Ak je toto aj Zdie\304\276anie anal\303\263gov\303\251ho vstupu na '\305\275iadne', po\305\276ia"
+   "da sa o vlastn\303\275 slot.",
    "Heslo pou\305\276\303\255van\303\251 klientami pri prip\303\241jan\303\255 k hostite\304\276ovi "
    "ako div\303\241k.",
    "Spusti\305\245 netplay v re\305\276ime div\303\241ka.",
    "Port hostite\304\276skej IP adresy. M\303\264\305\276e by\305\245 TCP alebo UDP port.",
    "Presmerova\305\245 netplay pripojenia cez man-in-the-middle server. U\305\276ito\304\215n\303"
    "\251, ak je hostite\304\276 za firewallom alebo m\303\241 probl\303\251my s NAT/UPnP.",
+   "Prij\303\255ma\305\245 pr\303\255kazy od in\303\275ch programov cez UDP na sie\305\245ovom comma"
+   "nd porte: to, \304\215o robia kl\303\241vesov\303\251 skratky, a \304\217al\305\241ie, napr\303"
+   "\255klad na\304\215\303\255tanie obsahu alebo \304\215\303\255tanie pam\303\244te jadra. Od odos"
+   "ielate\304\276a sa ni\304\215 nevy\305\276aduje, preto to pou\305\276\303\255vajte v sieti, ktor"
+   "ej d\303\264verujete.",
    "Zobrazi\305\245 sie\305\245ov\303\251 zariadenia a s\303\272visiace IP adresy.",
    "Automaticky stiahnu\305\245 ch\303\275baj\303\272ce n\303\241h\304\276ady pri prehliadan\303\255"
    " zoznamov skladieb. M\303\241 v\303\241\305\276ny vplyv na v\303\275kon.",
+   "Necha\305\245 in\303\251 zariadenie by\305\245 kontrolerom cez sie\305\245: RetroArch so spusten"
+   "\303\275m 'Spusti\305\245 vzdialen\303\275 RetroPad' sem posiela svoje tla\304\215idl\303\241 a "
+   "p\303\241\304\215ky cez UDP. Ka\305\276d\303\275 ni\305\276\305\241ie povolen\303\275 pou\305"
+   "\276\303\255vate\304\276 po\304\215\303\272va na vlastnom porte, po\304\215\303\255tanom od z"
+   "\303\241kladn\303\251ho portu. Od odosielate\304\276a sa ni\304\215 nevy\305\276aduje, preto to "
+   "pou\305\276\303\255vajte v sieti, ktorej d\303\264verujete.",
+   "Sie\305\245ov\303\275 RetroPad ka\305\276d\303\251ho pou\305\276\303\255vate\304\276a po\304\215"
+   "\303\272va prv\303\251 zariadenie, ktor\303\251 mu po\305\241le \303\272daje, a v\305\241etky os"
+   "tatn\303\251 ignoruje a\305\276 do re\305\241tartu RetroArchu. Druh\303\251 zariadenie nem\303"
+   "\264\305\276e kontroler prevzia\305\245. Nezastav\303\255 zariadenie, ktor\303\251 podvrhne svoj"
+   "u adresu.",
+   "Pou\305\276\303\255vatelia, za ktor\303\275ch m\303\264\305\276e hra\305\245 in\303\251 zariaden"
+   "ie cez sie\305\245. Ka\305\276d\303\275 vybran\303\275 po\304\215\303\272va na vlastnom porte, p"
+   "o\304\215\303\255tanom od z\303\241kladn\303\251ho portu.",
    "Zmeni\305\245 nastavenia servera a siete.",
 #ifdef _3DS
    "Povoli\305\245 r\303\275chlos\305\245 hod\303\255n New3DS (804MHz) a L2 vyrovn\303\241vaciu pam"
@@ -9574,6 +9864,23 @@ static const struct
    "Ur\304\215i\305\245 vlastn\303\272 polohu na osi Y pre text na obrazovke. 0 je spodn\303\275 okr"
    "aj.",
    "Vybra\305\245 obrazovku, ktor\303\241 sa pou\305\276ije.",
+   "Ako sa hr\303\241 s ovl\303\241da\304\215mi headsetu. Spojen\303\251 z oboch urob\303\255 jeden "
+   "gamepad pre hr\303\241\304\215a 1. Oddelen\303\251 urob\303\255 z \304\276av\303\251ho ovl\303"
+   "\241da\304\215a hr\303\241\304\215a 1 a z prav\303\251ho hr\303\241\304\215a 2.",
+   "Ako \304\217aleko pred vami headset zobrazuje obrazovky.",
+   "Zobrazi\305\245 obsah aj v headsete OpenXR: ka\305\276d\303\272 obrazovku ako samostatn\303\272 "
+   "pl\303\241vaj\303\272cu obrazovku, s oboma o\304\215ami stereo 3D a s menu pred nimi. Len Vulkan"
+   ". Okno si ponech\303\241 svoj be\305\276n\303\275 v\303\275stup.",
+   "Kam sp\303\272\305\241\305\245 ovl\303\241da\304\215a ukazuje a dot\303\275ka sa, namiesto stl"
+   "\303\241\304\215ania L2 alebo R2. Automaticky: menu, k\303\275m je otvoren\303\251, a druh\303"
+   "\251 obrazovky, napr\303\255klad dotykov\303\241 obrazovka. V\305\276dy: ka\305\276d\303\241 obr"
+   "azovka, pre sveteln\303\251 zbrane. Vypnut\303\251: nikde.",
+   "Obnovovacia frekvencia, o ktor\303\272 sa po\305\276iada headset. Automaticky vyberie t\303\272,"
+   " ktor\303\241 najlep\305\241ie sed\303\255 k obsahu; Pod\304\276a headsetu ne\305\276iada nikdy."
+   " Obsah be\305\276\303\255 v kroku s headsetom v\305\276dy, ke\304\217 jeho frekvencia sed\303"
+   "\255.",
+   "\305\240\303\255rka hlavnej obrazovky v headsete. Ostatn\303\251 obrazovky sa jej ve\304\276kos"
+   "\305\245ou prisp\303\264sobia.",
    "Zmena nastaven\303\255 video v\303\275stupu.",
    "Uprav\303\255 orezanie overscanu zobrazenia zn\303\255\305\276en\303\255m ve\304\276kosti obrazu"
    " o ur\304\215en\303\275 po\304\215et skenovac\303\255ch riadkov (zo spodnej \304\215asti obrazov"
@@ -9615,11 +9922,15 @@ static const struct
    "Synchronizuje zobrazenie videa s predpove\304\217ou polohy riadku (scanline) pod\304\276a \304"
    "\215asu jadra. Po\305\276iadavky: VSync vypnut\303\275, Oneskorenie sn\303\255mky vypnut\303\251"
    ", frekvencia displeja bl\303\255zka 1x FPS jadra a GPU na maxim\303\241lnych taktoch.",
+   "Ru\304\215ne nastavi\305\245 posun synchroniz\303\241cie riadkov. Inak sa posun vypo\304\215\303"
+   "\255ta z vertik\303\241lneho zatemnenia a ve\304\276kost\303\255 vyrovn\303\241vacej pam\303\244"
+   "te sn\303\255mok.",
    "VAROVANIE: R\303\275chle blikanie m\303\264\305\276e na niektor\303\275ch displejoch sp\303\264s"
    "obi\305\245 pretrv\303\241vanie obrazu. Pou\305\276\303\255vate na vlastn\303\251 riziko // Simu"
    "luje z\303\241kladn\303\275 roluj\303\272ci skenovac\303\255 riadok cez viacero pod-sn\303\255mo"
    "k rozdelen\303\255m obrazovky vertik\303\241lne a vykres\304\276ovan\303\255m ka\305\276dej \304"
    "\215asti obrazovky pod\304\276a po\304\215tu pod-sn\303\255mok.",
+   "Ako usporiada\305\245 obrazovky syst\303\251mov s viacer\303\275mi obrazovkami.",
    "Umo\305\276n\303\255 oknu SDL prep\303\255na\305\245 medzi re\305\276imami zobrazenia, ktor\303"
    "\251 uv\303\241dza. 'Auto' ho pou\305\276ije len vtedy, ke\304\217 nat\303\255vny zobrazovac\303"
    "\255 server nevie prep\303\255na\305\245 re\305\276imy. 'V\305\276dy' prep\303\255\305\241e nat"
@@ -9685,6 +9996,14 @@ static const struct
    "Prid\303\241 \304\276ahk\303\251 rozmazanie obrazu pre zjemnenie tvrd\303\275ch okrajov pixelov."
    " T\303\241to mo\305\276nos\305\245 m\303\241 ve\304\276mi mal\303\275 vplyv na v\303\275kon. Pri"
    " pou\305\276it\303\255 shaderov by mala by\305\245 vypnut\303\241.",
+   "Ako zobrazi\305\245 obe o\304\215i stereo 3D obsahu. 2D zobraz\303\255 len \304\276av\303\251 ok"
+   "o. Ved\304\276a seba (pln\303\251) sa hod\303\255 pre aplik\303\241cie na prehliadanie v headset"
+   "e a pozeranie kr\303\255\305\276om; Ved\304\276a seba (polovi\304\215n\303\251) a Nad sebou sa h"
+   "odia pre 3D telev\303\255zory.",
+   "Zmeni\305\245, ako sa zobrazuje stereo 3D a viac obrazoviek z jadier, ktor\303\251 ich podporuj"
+   "\303\272.",
+   "Vymeni\305\245 obraz \304\276av\303\251ho a prav\303\251ho oka. Pou\305\276ite pri pozeran\303"
+   "\255 kr\303\255\305\276om alebo ke\304\217 displej zobrazuje o\304\215i alebo riadky naopak.",
    "Bitov\303\241 h\304\272bka kone\304\215n\303\251ho v\303\275stupn\303\251ho povrchu, ke\304\217 "
    "je HDR vypnut\303\251. 10-bitov\303\241 odstra\305\210uje farebn\303\251 p\303\241sy, ktor\303"
    "\251 vn\303\241\305\241aj\303\272 shadery v\303\275razne stmavuj\303\272ce obraz, ako s\303\272 "
@@ -9718,6 +10037,11 @@ static const struct
    "efekty shaderov viazan\303\251 na obnovovaciu frekvenciu stabiln\303\251 aj pri zasek\303\241van"
    "\303\255 jadra. Plat\303\255 tam, kde video ovl\303\241da\304\215 vie zopakova\305\245 sn\303"
    "\255mku; nepou\305\276ije sa pri podsn\303\255mkach shaderov.",
+   "Po\305\276iada\305\245 opera\304\215n\303\275 syst\303\251m, aby pl\303\241noval vl\303\241kno V"
+   "l\303\241knov\303\251ho videa pred be\305\276n\303\275mi vl\303\241knami, bez pl\303\241novania "
+   "v re\303\241lnom \304\215ase: trieda Games vo Windows, kvalita slu\305\276by user-interactive v "
+   "syst\303\251moch Apple, ni\305\276\305\241ia hodnota nice v Linuxe a Androide. Ak to syst\303"
+   "\251m odmietne, ponech\303\241 sa predvolen\303\241 priorita.",
    "Pok\303\272si sa zlep\305\241i\305\245 v\303\275kon pou\305\276it\303\255m Metal argument buffer"
    "ov. Niektor\303\251 cores to m\303\264\305\276u vy\305\276adova\305\245. Toto m\303\264\305\276e"
    " pokazi\305\245 niektor\303\251 shadery, hlavne na starom hardv\303\251ri alebo OS verzi\303\241"
@@ -9781,6 +10105,20 @@ static const struct
    "e pre obrazovky s premenlivou obnovovacou frekvenciou (G-Sync, FreeSync, HDMI 2,1 VRR).",
    "Ak\303\275 ovl\303\241da\304\215 Wi-Fi pou\305\276i\305\245. (Vy\305\276aduje re\305\241tart)",
    "Vyh\304\276ada\305\245 bezdr\303\264tov\303\251 siete a nadviaza\305\245 pripojenie.",
+   "Prepne na k\303\263piu akt\303\255vneho pl\303\241nu nap\303\241jania Windows, ktor\303\241 dr"
+   "\305\276\303\255 procesor na plnej r\303\275chlosti - minim\303\241lny aj maxim\303\241lny stav "
+   "procesora na 100 %, energetick\303\241 preferencia na v\303\275kon - bez zaparkovan\303\275ch ja"
+   "dier, prehodnocuje v\303\275konov\303\251 stavy ka\305\276d\303\275ch 5 sek\303\272nd namiesto k"
+   "a\305\276d\303\275ch 15 ms a dr\305\276\303\255 linky PCI Express a porty USB mimo \303\272spory"
+   " energie, \304\215\303\255m obmedz\303\255 preru\305\241enia v jadre syst\303\251mu a oneskoreni"
+   "a pri preb\303\272dzan\303\255. Plat\303\255 len pri nap\303\241jan\303\255 zo siete. P\303\264v"
+   "odn\303\275 pl\303\241n sa obnov\303\255 pri ukon\304\215e",
+   "n\303\255.",
+   "Pri zapnutom pl\303\241ne nap\303\241jania s n\303\255zkou latenciou udr\305\276iava\305\245 aj "
+   "v\305\241etky jadr\303\241 procesora mimo stavov ne\304\215innosti, aby sa \305\276iadne nemusel"
+   "o pred spusten\303\255m preb\303\272dza\305\245. Procesor potom odober\303\241 pln\303\275 v\303"
+   "\275kon a hreje sa aj vtedy, ke\304\217 nem\303\241 \304\215o robi\305\245. Plat\303\255 len pri"
+   " nap\303\241jan\303\255 zo siete.",
    "Upravi\305\245 percento neprieh\304\276adnosti farebnej t\303\251my.",
    "Aktu\303\241lna ikona ponuky m\303\264\305\276e by\305\245 skryt\303\241, pod horizont\303\241ln"
    "ou ponukou alebo v nadpise hlavi\304\215ky.",
@@ -9977,6 +10315,8 @@ static const struct
    "Dekompresia u\305\276 prebieha.",
    "Dekompresia zlyhala.",
    "Zisten\303\251 zobrazenie",
+   "%s a kl\303\241vesnica priraden\303\251 k portu jadra %u",
+   "%s priraden\303\275 k portu jadra %u",
    "%s nakonfigurovan\303\251 v porte %u",
    "%s odpojen\303\251 z portu %u",
    "%s (%u/%u) nenakonfigurovan\303\251, pou\305\276\303\255va sa z\303\241loha",
@@ -10017,12 +10357,14 @@ static const struct
    "Nepodarilo sa prija\305\245 prich\303\241dzaj\303\272ceho div\303\241ka.",
    "Nepodarilo sa alokova\305\245 pam\303\244\305\245 pre patchnut\303\275 obsah...",
    "Pripojenie disku zlyhalo",
+   "Nepodarilo sa aktivova\305\245 pl\303\241n nap\303\241jania s n\303\255zkou latenciou",
    "Nepodarilo sa aplikova\305\245 shader.",
    "Nepodarilo sa aplikova\305\245 predvo\304\276bu shaderu:",
    "Nepodarilo sa naviaza\305\245 soket.",
    "Pripojenie ku klientovi zlyhalo.",
    "Pripojenie k hostite\304\276ovi zlyhalo.",
    "Nepodarilo sa vytvori\305\245 adres\303\241r.",
+   "Nepodarilo sa vypn\303\272\305\245 stavy ne\304\215innosti procesora",
    "Nepodarilo sa vst\303\272pi\305\245 do GameMode",
    "Nepodarilo sa vst\303\272pi\305\245 do GameMode - uistite sa, \305\276e je GameMode d\303\251mon"
    " nain\305\241talovan\303\275/spusten\303\275",
@@ -10094,6 +10436,7 @@ static const struct
    "\304\214asov\303\275 limit",
    "Vstupn\303\275 cheat",
    "N\303\241zov s\303\272boru vstupn\303\251ho cheatu",
+   "Okam\305\276ite",
    "Zadajte heslo",
    "Nespr\303\241vne heslo.",
    "Heslo je spr\303\241vne.",
@@ -10105,6 +10448,8 @@ static const struct
    "N\303\241zov s\303\272boru vstupn\303\251ho prepisu",
    "N\303\241zov s\303\272boru vstupnej predvo\304\276by",
    "N\303\241zov s\303\272boru vstupn\303\251ho remapu",
+   "Stla\304\215te tla\304\215idlo alebo vych\303\275\304\276te p\303\241\304\215ku na kontroleri po"
+   "rtu %u(\304\215asov\303\275 limit %u sek\303\272nd)",
    "Premenova\305\245 n\303\241zov",
    "In\305\241talujem jadro: ",
    "Rozhranie",
@@ -10116,6 +10461,7 @@ static const struct
    "v megabajtoch",
    "Dotykov\303\241 my\305\241 je zak\303\241zan\303\241",
    "Dotykov\303\241 my\305\241 je povolen\303\241",
+   "Kl\303\241vesnica priraden\303\241 k portu jadra %u",
    "Heslo k\304\276\303\272\304\215enky odstr\303\241nen\303\251.",
    "Heslo k\304\276\303\272\304\215enky nastaven\303\251.",
    "Nespr\303\241vne heslo k\304\276\303\272\304\215enky.",
@@ -10234,6 +10580,17 @@ static const struct
    "\305\241an\303\251 pre t\303\272to polo\305\276ku zoznamu.",
    "Presko\304\215en\303\251 jadr\303\241: ",
    "Aktualizovan\303\251 jadr\303\241: ",
+   "V\303\275stup do headsetu sa nepodarilo spusti\305\245. V\303\275stup ukazuje okno.",
+   "Laserov\303\251 ukazovadlo: %s",
+   "V\303\275stup do headsetu sa spust\303\255 pri \304\217al\305\241om na\304\215\303\255tan\303"
+   "\255 obsahu.",
+   "Headset be\305\276\303\255 na %u Hz, \304\215o nesed\303\255 k %.2f fps tejto hry; pohyb bude tr"
+   "han\303\275. Nastavte obnovovaciu frekvenciu headsetu pre RetroArch na n\303\241sobok frekvencie"
+   " hry (v SteamVR: VR Video Settings).",
+   "Rel\303\241cia headsetu skon\304\215ila. Na nov\303\275 pokus vypnite a zapnite V\303\275stup do"
+   " headsetu.",
+   "V\303\275stup do headsetu je vypnut\303\275: nena\305\241iel sa \305\276iadny runtime OpenXR ani"
+   " headset.",
    "Kl\303\241vesnicov\303\251 prekrytie nie je nastaven\303\251.",
    "Neuklad\303\241 sa. Prepisy s\303\272 akt\303\255vne.",
    "Chyba pri odstra\305\210ovan\303\255 prepisov.",
@@ -10424,7 +10781,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_sk_blob_check[
-      (sizeof(msg_hash_sk_blob) == (199897u
+      (sizeof(msg_hash_sk_blob) == (209941u
 #ifdef ANDROID
        + 389u
 #endif
@@ -10477,6 +10834,9 @@ typedef char msg_hash_sk_blob_check[
 #ifdef ANDROID
        + 33u
 #endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 29u
+#endif
 #ifdef GEKKO
        + 13u
 #endif
@@ -10499,6 +10859,12 @@ typedef char msg_hash_sk_blob_check[
        + 29u
        + 31u
        + 32u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 29u
+       + 48u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 27u
@@ -10731,6 +11097,9 @@ typedef char msg_hash_sk_blob_check[
 #ifdef ANDROID
        + 268u
 #endif
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 257u
+#endif
 #ifdef GEKKO
        + 61u
 #endif
@@ -10756,6 +11125,12 @@ typedef char msg_hash_sk_blob_check[
        + 73u
        + 73u
        + 111u
+#endif
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+       + 280u
+       + 196u
+#endif
 #endif
 #ifdef HAVE_LAKKA_SWITCH
        + 55u
@@ -11654,6 +12029,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_STANDARD_TIMINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_TRUNCATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_UNAVAILABLE_ANDROID,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_EDID_VERSION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_DISPLAY_INFO_ORIENTATION,
@@ -11773,6 +12149,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INFORMATION_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANALOG_LEFT_X_MINUS,
@@ -11787,6 +12164,10 @@ static const uint32_t msg_hash_sk_ids[] =
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_ASSIGNS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_KEYBOARD_WAITS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_AUTO_GAME_FOCUS_DETECT,
@@ -11836,8 +12217,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_X,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_JOYPAD_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEY,
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_BACKGROUND,
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_GAMEPAD_MAPPING_TYPE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ABSENT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_INDEX_ALL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_KEYBOARD_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_LIGHTGUN_AUX_A,
@@ -11871,6 +12256,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_META_MUTE,
@@ -11969,9 +12356,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_FIND,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_ROTATION_AUTO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -11987,6 +12377,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SMALL_KEYBOARD_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_FIRST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_LAST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_NEUTRAL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_UP,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SOCD_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SPLIT_JOYCON,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_ENABLE,
@@ -11994,6 +12390,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_PRESSURE_SENSITIVITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_STYLUS_REQUIRE_CONTACT_FOR_CLICK,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_SYSTEM_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_SCALE,
 #ifdef UDEV_TOUCH_SUPPORT
@@ -12003,6 +12400,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TOUCHPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TOUCH_VMOUSE_TRACKBALL,
 #endif
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TRIGGER_FULL_RANGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_BIND,
@@ -12014,11 +12412,18 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_TURBO_PERIOD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_USER_BINDS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_PLAYER_LIGHTS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_LABEL_VALUE_JIT_AVAILABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_DEVICE_NAME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_KEYBOARD_SYSTEM_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KEYCHAIN_PASSPHRASE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_KICK_STREAM_KEY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_LAKKA_SERVICES,
@@ -12059,6 +12464,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_LOG_VERBOSITY_WARNING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_MENU,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANAGE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MANUAL_CONTENT_SCAN_DAT_FILE,
@@ -12274,7 +12680,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_REMOVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_STOP,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MIXER_ACTION_VOLUME,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_MOUSE_SYSTEM_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MULTIMEDIA_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_MUSIC_TAB,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NAVIGATION_BROWSER_FILTER_SUPPORTED_EXTENSIONS_ENABLE,
@@ -12319,6 +12727,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_REQUIRE_SLAVES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETPLAY_ROOM_NICKNAME,
@@ -12346,7 +12755,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_ON_DEMAND_THUMBNAILS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_FIRST_SENDER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_HEARD,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_INFO_WAITING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_REMOTE_USERS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_NETWORK_USER_REMOTE_ENABLE,
 #ifdef _3DS
@@ -13294,8 +13707,17 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_MONITOR_INDEX,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_NOTCH_WRITE_OVER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_CONTROLLERS_SEPARATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_ALWAYS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_LASER_OFF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_HEADSET,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_FLIPPED_ROTATED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_ORIENTATION_NORMAL,
@@ -13336,7 +13758,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALE_INTEGER_SCALING_SMART,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_HORIZONTAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SCREEN_LAYOUT_VERTICAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SDL_DISPLAY_SERVER,
@@ -13366,6 +13790,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SMOOTH,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_SOFT_FILTER,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_ANAGLYPH,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_INTERLACED,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_FULL,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_SBS_HALF,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_MODE_TOP_BOTTOM,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_CUSTOM,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_FACEBOOK,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_STREAMING_MODE_LOCAL,
@@ -13378,6 +13810,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_LABEL_VALUE_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -13417,6 +13850,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_ENABLED,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORKS,
    (uint32_t)MENU_ENUM_LABEL_VALUE_WIFI_NETWORK_SCAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_LABEL_VALUE_XMB_CURRENT_MENU_ICON_NONE,
@@ -13808,12 +14243,15 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INFORMATION_LIST_LIST,
    (uint32_t)MENU_ENUM_SUBLABEL_INITIAL_DISK_CHANGE_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ADC_TYPE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AIM_STICK,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ALL_USERS_CONTROL_MENU,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_DEADZONE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANALOG_SENSITIVITY,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ANDROID_SYSTEM_KEYBOARD,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_KEYBOARD,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ASSIGN_PORTS_ON_BUTTON_PRESS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTODETECT_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_GAME_FOCUS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_AUTO_MOUSE_GRAB,
@@ -13839,6 +14277,10 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_HOTKEY_FOLLOWS_PLAYER1,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_JOYPAD_BACKGROUND,
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_BACKGROUND,
+#endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_KEYBOARD_INDEX,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MAX_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_ENUM_TOGGLE_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MENU_SETTINGS,
@@ -13859,6 +14301,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GAME_FOCUS_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_GRAB_MOUSE_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HALT_REPLAY_KEY,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_HEADSET_RECENTER,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LASER_POINTER_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_LOAD_STATE_KEY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MENU_TOGGLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_MUTE,
@@ -13902,6 +14346,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_DOWN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VOLUME_UP,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_META_VRR_RUNLOOP_TOGGLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_INDEX,
 #ifdef GEKKO
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_MOUSE_SCALE,
 #endif
@@ -13943,8 +14388,11 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_QUIT_GAMEPAD_COMBO,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAPPING_DIRECTORY,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_BINDS_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_FIND,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_REMAP_SORT_BY_CONTROLLER_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RETROPAD_BINDS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_ROTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_RUMBLE_GAIN,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SAVE_AUTOCONFIG,
 #ifdef HAVE_SDL3
@@ -13959,6 +14407,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_ORIENTATION,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SENSOR_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_HORIZONTAL,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_SOCD_VERTICAL,
 #ifdef ANDROID
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_STYLUS_HOVER_MOVES_POINTER,
@@ -13973,6 +14423,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TOUCHPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TOUCH_VMOUSE_TRACKBALL,
 #endif
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TRIGGER_FULL_RANGE,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_ALLOW_DPAD,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BIND,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_TURBO_BUTTON,
@@ -13984,6 +14435,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_UNIFIED_MENU_CONTROLS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_BINDS,
    (uint32_t)MENU_ENUM_SUBLABEL_INPUT_USER_REMAPS,
+#if defined(HAVE_DINPUT) || defined(HAVE_WINRAWINPUT)
+#if defined(_WIN32) && defined(HAVE_WINRAWINPUT)
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_PLAYER_LIGHTS,
+   (uint32_t)MENU_ENUM_SUBLABEL_INPUT_WINRAW_XINPUT_ENABLE,
+#endif
+#endif
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_AUTOCONFIG_DIR,
    (uint32_t)MENU_ENUM_SUBLABEL_JOYPAD_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_KEYCHAIN_PASSPHRASE,
@@ -14012,6 +14469,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_TO_FILE_TIMESTAMP,
    (uint32_t)MENU_ENUM_SUBLABEL_LOG_VERBOSITY,
+   (uint32_t)MENU_ENUM_SUBLABEL_MAIN_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_CORE_NAME,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE,
    (uint32_t)MENU_ENUM_SUBLABEL_MANUAL_CONTENT_SCAN_DAT_FILE_FILTER,
@@ -14203,14 +14661,21 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_PUBLIC_ANNOUNCE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_LAN,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REFRESH_ROOMS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICES,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUEST_DEVICE_I,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_REQUIRE_SLAVES,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SHARE_ANALOG,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SHARE_DIGITAL,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_SPECTATE_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_START_AS_SPECTATOR,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_TCP_UDP_PORT,
    (uint32_t)MENU_ENUM_SUBLABEL_NETPLAY_USE_MITM_SERVER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_CMD_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_INFORMATION,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_ON_DEMAND_THUMBNAILS,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_FIRST_SENDER,
+   (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_REMOTE_USERS,
    (uint32_t)MENU_ENUM_SUBLABEL_NETWORK_SETTINGS,
 #ifdef _3DS
    (uint32_t)MENU_ENUM_SUBLABEL_NEW3DS_SPEEDUP_ENABLE,
@@ -14725,6 +15190,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_X,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MESSAGE_POS_Y,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_MONITOR_INDEX,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_CONTROLLERS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_DISTANCE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_LASER,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_REFRESH_RATE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OPENXR_WIDTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OUTPUT_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_BOTTOM,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_OVERSCAN_CORRECTION_TOP,
@@ -14742,7 +15213,9 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALE_INTEGER_SCALING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCALING_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCANLINE_SYNC_OFFSET,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCAN_SUBFRAMES,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SCREEN_LAYOUT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SDL_DISPLAY_SERVER,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADERS_ENABLE,
@@ -14771,12 +15244,16 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHADER_SUBFRAMES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SHARED_CONTEXT,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SMOOTH,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_MODE,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_STEREO_SWAP_EYES,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAPCHAIN_BIT_DEPTH,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SWAP_INTERVAL,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_SYNCHRONIZATION_SETTINGS,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_DISPLAY_PACING,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREADED_PRESENT_REPEAT,
+   (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_THREAD_PRIORITY,
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_USE_METAL_ARG_BUFFERS,
 #if defined(RARCH_MOBILE)
    (uint32_t)MENU_ENUM_SUBLABEL_VIDEO_VIEWPORT_BIAS_PORTRAIT_X,
@@ -14811,6 +15288,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_VRR_RUNLOOP_ENABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_WIFI_SETTINGS,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN,
+   (uint32_t)MENU_ENUM_SUBLABEL_WIN32_POWER_PLAN_IDLE_DISABLE,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ALPHA_FACTOR,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_CURRENT_MENU_ICON,
    (uint32_t)MENU_ENUM_SUBLABEL_XMB_ENTRY_ICONS,
@@ -14978,6 +15457,8 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_DECOMPRESSION_ALREADY_IN_PROGRESS,
    (uint32_t)MSG_DECOMPRESSION_FAILED,
    (uint32_t)MSG_DETECTED_VIEWPORT_OF,
+   (uint32_t)MSG_DEVICE_AND_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
+   (uint32_t)MSG_DEVICE_ASSIGNED_TO_CORE_PORT_NR,
    (uint32_t)MSG_DEVICE_CONFIGURED_IN_PORT_NR,
    (uint32_t)MSG_DEVICE_DISCONNECTED_FROM_PORT_NR,
    (uint32_t)MSG_DEVICE_NOT_CONFIGURED_FALLBACK_NR,
@@ -15017,12 +15498,14 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_FAILED_TO_ACCEPT_INCOMING_SPECTATOR,
    (uint32_t)MSG_FAILED_TO_ALLOCATE_MEMORY_FOR_PATCHED_CONTENT,
    (uint32_t)MSG_FAILED_TO_APPEND_DISK,
+   (uint32_t)MSG_FAILED_TO_APPLY_POWER_PLAN,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER,
    (uint32_t)MSG_FAILED_TO_APPLY_SHADER_PRESET,
    (uint32_t)MSG_FAILED_TO_BIND_SOCKET,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_CLIENT,
    (uint32_t)MSG_FAILED_TO_CONNECT_TO_HOST,
    (uint32_t)MSG_FAILED_TO_CREATE_THE_DIRECTORY,
+   (uint32_t)MSG_FAILED_TO_DISABLE_IDLE_STATES,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE,
    (uint32_t)MSG_FAILED_TO_ENTER_GAMEMODE_LINUX,
    (uint32_t)MSG_FAILED_TO_EXTRACT_CONTENT_FROM_COMPRESSED_FILE,
@@ -15091,6 +15574,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
@@ -15102,6 +15586,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_INPUT_OVERRIDE_FILENAME,
    (uint32_t)MSG_INPUT_PRESET_FILENAME,
    (uint32_t)MSG_INPUT_REMAP_FILENAME,
+   (uint32_t)MSG_INPUT_REMAP_FIND_PRESS,
    (uint32_t)MSG_INPUT_RENAME_ENTRY,
    (uint32_t)MSG_INSTALLING_CORE,
    (uint32_t)MSG_INTERFACE,
@@ -15113,6 +15598,7 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_IN_MEGABYTES,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_DISABLED,
    (uint32_t)MSG_IOS_TOUCH_MOUSE_ENABLED,
+   (uint32_t)MSG_KEYBOARD_ASSIGNED_TO_CORE_PORT_NR,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_REMOVED,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_SET,
    (uint32_t)MSG_KEYCHAIN_PASSPHRASE_WRONG,
@@ -15217,6 +15703,12 @@ static const uint32_t msg_hash_sk_ids[] =
    (uint32_t)MSG_NO_THUMBNAIL_DOWNLOAD_POSSIBLE,
    (uint32_t)MSG_NUM_CORES_LOCKED,
    (uint32_t)MSG_NUM_CORES_UPDATED,
+   (uint32_t)MSG_OPENXR_FAILED,
+   (uint32_t)MSG_OPENXR_LASER_POINTER,
+   (uint32_t)MSG_OPENXR_NEEDS_RELOAD,
+   (uint32_t)MSG_OPENXR_RATE_MISFIT,
+   (uint32_t)MSG_OPENXR_SESSION_ENDED,
+   (uint32_t)MSG_OPENXR_UNAVAILABLE,
    (uint32_t)MSG_OSK_OVERLAY_NOT_SET,
    (uint32_t)MSG_OVERRIDES_ACTIVE_NOT_SAVING,
    (uint32_t)MSG_OVERRIDES_ERROR_REMOVING,

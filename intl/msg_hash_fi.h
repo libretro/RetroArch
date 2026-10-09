@@ -3246,6 +3246,7 @@ static const struct
    char s_543fcabd[13];
    char s_59212b5f[22];
    char s_f26b6cff[38];
+   char s_a63c824a[10];
    char s_a9f3b2c3[14];
    char s_0e7aca8a[19];
    char s_ab1afe7c[17];
@@ -7282,6 +7283,7 @@ static const struct
    "Aikakatkaisu",
    "Sis\303\244\303\244ntulon huijaus",
    "Sis\303\244\303\244ntulon huijauksen tiedostonimi",
+   "V\303\244lit\303\266n",
    "Anna salasana",
    "Salasana v\303\244\303\244rin.",
    "Salasana oikein.",
@@ -7549,7 +7551,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_fi_blob_check[
-      (sizeof(msg_hash_fi_blob) == (123799u
+      (sizeof(msg_hash_fi_blob) == (123809u
 #ifdef HAVE_LAKKA
        + 257u
 #endif
@@ -11118,6 +11120,7 @@ static const uint32_t msg_hash_fi_ids[] =
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
+   (uint32_t)MSG_INPUT_COMBO_INSTANT,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_NOK,
    (uint32_t)MSG_INPUT_ENABLE_SETTINGS_PASSWORD_OK,
