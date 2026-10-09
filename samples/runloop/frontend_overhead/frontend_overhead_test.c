@@ -5061,6 +5061,17 @@ static void lane_keys_current(void)
    input_driver_poll();
    CHECK(!KC_B(), "keys current: the key let go still reads after a poll");
 
+   input_driver_poll();
+   CHECK(!KC_B(), "keys current: an idle poll restored a released key");
+   kc_g_down = true;
+   input_driver_poll();
+   CHECK(KC_B(), "keys current: a press after idle polls does not read");
+   RETRO_KEYBIND_SET_KEY(b, RETROK_UNKNOWN);
+   binds_written_by_a_lane();
+   input_driver_poll();
+   CHECK(!KC_B(), "keys current: removing a held key bind left B down");
+   kc_g_down = false;
+
    *b = saved_b;
    input_st->current_driver = saved_input;
    binds_written_by_a_lane();

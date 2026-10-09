@@ -2354,7 +2354,9 @@ static void input_port_keys_refresh(input_port_keys_t *k,
 
    memset(down, 0, sizeof(down));
    input->keys_down(data, port, k->key, k->bind, k->count, down);
-   memset(k->key_down, 0, sizeof(k->key_down));
+   if (k->any_key_down)
+      memset(k->key_down, 0, sizeof(k->key_down));
+   k->any_key_down = false;
    /* the keys that are down, a set bit at a time: few are, of the
     * sixty-odd a port's binds name, and each was looked at */
    for (i = 0; i < (k->count + 31u) / 32; i++)
@@ -2364,12 +2366,13 @@ static void input_port_keys_refresh(input_port_keys_t *k,
       {
          unsigned n = (i << 5) + (unsigned)compat_ctz(held);
          if (n < k->count)
+         {
             k->key_down[k->bind[n] >> 5] |= (1u << (k->bind[n] & 31));
+            k->any_key_down = true;
+         }
       }
    }
    k->pad_keys     = (uint16_t)k->key_down[0];
-   /* not "is any down" but "may the bits be other than clear" */
-   k->any_key_down = true;
    k->poll_gen     = input_poll_generation;
 }
 
