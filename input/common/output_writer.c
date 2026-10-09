@@ -145,7 +145,11 @@ void input_output_writer_wake(input_output_writer_t *writer)
 #else
    {
       char c = 1;
-      if (write(writer->wake[1], &c, 1) < 0) { }
+      ssize_t written;
+      do
+      {
+         written = write(writer->wake[1], &c, 1);
+      } while (written < 0 && errno == EINTR);
    }
 #endif
 }

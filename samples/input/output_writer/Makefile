@@ -6,14 +6,13 @@ ifneq ($(SANITIZER),)
 CFLAGS += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
 LDFLAGS += -fsanitize=$(SANITIZER)
 endif
-COMMON := $(REPO_ROOT)/input/common/output_writer.c \
-          $(LRC)/rthreads/rthreads.c $(LRC)/time/rtime.c
+COMMON := $(LRC)/rthreads/rthreads.c $(LRC)/time/rtime.c
 LDLIBS += -lpthread
 all: output_writer_test output_writer_test_nothreads
-output_writer_test: output_writer_test.c $(COMMON)
-	$(CC) $(CFLAGS) -DHAVE_THREADS $(LDFLAGS) -o $@ $^ $(LDLIBS)
-output_writer_test_nothreads: output_writer_test.c $(COMMON)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+output_writer_test: output_writer_test.c $(REPO_ROOT)/input/common/output_writer.c $(COMMON)
+	$(CC) $(CFLAGS) -DHAVE_THREADS $(LDFLAGS) -o $@ output_writer_test.c $(COMMON) $(LDLIBS)
+output_writer_test_nothreads: output_writer_test.c $(REPO_ROOT)/input/common/output_writer.c $(COMMON)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ output_writer_test.c $(COMMON) $(LDLIBS)
 check: all
 	./output_writer_test
 	./output_writer_test_nothreads

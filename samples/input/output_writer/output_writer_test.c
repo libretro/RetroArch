@@ -4,6 +4,27 @@
 #include <rthreads/rthreads.h>
 #include "input/common/output_writer.h"
 
+#if !defined(_WIN32) && defined(HAVE_THREADS)
+#include <errno.h>
+#include <unistd.h>
+#include <retro_atomic.h>
+static retro_atomic_int_t inject_eintr;
+static ssize_t test_writer_write(int fd, const void *buf, size_t size)
+{
+   if (retro_atomic_exchange_int(&inject_eintr, 0))
+   {
+      errno = EINTR;
+      return -1;
+   }
+   return write(fd, buf, size);
+}
+#define write(fd, buf, size) test_writer_write((fd), (buf), (size))
+#endif
+#include "input/common/output_writer.c"
+#if !defined(_WIN32) && defined(HAVE_THREADS)
+#undef write
+#endif
+
 struct test_state
 {
    slock_t *lock;
@@ -74,6 +95,9 @@ int main(void)
    if (!writer)
       return 2;
    ok = remains_idle(&state, 0);
+#if !defined(_WIN32)
+   retro_atomic_store_release_int(&inject_eintr, 1);
+#endif
    input_output_writer_wake(writer);
    ok = await_calls(&state, 2) && ok; /* one wake, one timeout */
    ok = remains_idle(&state, 2) && ok;
