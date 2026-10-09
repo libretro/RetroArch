@@ -162,6 +162,7 @@ jobs:
             rh265_lossless_test
             rh265_lossless_test_nothreads
             rh265_lossless_test_volatile
+            rh265_malformed_test
             r7z_lzma_props_test
             r7z_archive_detach_test
             rzip_archive_test
