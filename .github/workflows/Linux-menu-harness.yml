@@ -396,6 +396,18 @@ jobs:
           ./samples/tasks/content_load/content_load_test
           make -C samples/tasks/content_load clean
 
+      - name: Build and run video_filter_menu_test
+        shell: bash
+        run: |
+          set -eu
+          # The menu's Video Filter and Video Filter Enable rows set the
+          # driver up for what it is then given: a chosen filter's scale
+          # and format, and the core's or the filter's format as
+          # Enable turns it off and on (instant when they are the same).
+          samples/gfx/video_filter_menu/build.sh
+          ./samples/gfx/video_filter_menu/video_filter_menu_test
+          make -C samples/gfx/video_filter_menu clean
+
       - name: Build and run explore_build_test
         shell: bash
         run: |
