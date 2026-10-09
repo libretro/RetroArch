@@ -1632,6 +1632,78 @@ static void test_config_setter_entries_are_pooled(void)
          "survive replace, unset and append\n");
 }
 
+/* A value with double quotes, backslashes and '#' in it is written so
+ * that reading the file back gives the same value: every string over a
+ * small alphabet up to five characters, written by config_file_dump
+ * and read back by the parser (with a comment after the value too). */
+static void test_config_quoted_values_round_trip(void)
+{
+   static const char alphabet[] = { 'a', '"', '\\', '#', ' ', '/' };
+   enum { K = sizeof(alphabet), MAXLEN = 5 };
+   char val[MAXLEN + 1];
+   unsigned digits[MAXLEN];
+   unsigned len, i, checked = 0;
+
+   for (len = 0; len <= MAXLEN; len++)
+   {
+      memset(digits, 0, sizeof(digits));
+      for (;;)
+      {
+         int pass;
+         for (i = 0; i < len; i++)
+            val[i] = alphabet[digits[i]];
+         val[len] = '\0';
+
+         for (pass = 0; pass < 2; pass++)
+         {
+            config_file_t *out = config_file_new_alloc();
+            config_file_t *in;
+            char *text, *line, *got = NULL;
+
+            config_set_string(out, "k", val);
+            text = cfg_dump_to_string(out, false);
+            config_file_free(out);
+            if (pass)
+            {
+               /* the same line with a comment after it */
+               size_t n = strlen(text);
+               char *t  = (char*)malloc(n + 32);
+               memcpy(t, text, n);
+               while (n && (t[n - 1] == '\n' || t[n - 1] == '\r'))
+                  n--;
+               strcpy(t + n, "  # \"note\" #\n");
+               free(text);
+               text = t;
+            }
+            line = strdup(text);
+            in   = config_file_new_from_string(line, NULL);
+            free(line);
+            if (!in || !config_get_string(in, "k", &got)
+                  || strcmp(got ? got : "", val))
+            {
+               printf("[FAILED] value [%s] written as [%s] read back as [%s]\n",
+                     val, text, got ? got : "(none)");
+               abort();
+            }
+            free(got);
+            free(text);
+            config_file_free(in);
+            checked++;
+         }
+
+         for (i = 0; i < len; i++)
+         {
+            if (++digits[i] < K)
+               break;
+            digits[i] = 0;
+         }
+         if (i == len)
+            break;
+      }
+   }
+   printf("[SUCCESS] %u quoted values round-trip\n", checked);
+}
+
 int main(void)
 {
    test_config_file_parse_contains("foo = \"bar\"\n",   "foo", "bar");
@@ -1697,4 +1769,23 @@ int main(void)
    test_config_set_over_parsed_keys_round_trips();
    test_config_set_insert_is_not_quadratic();
    test_config_setter_entries_are_pooled();
+
+   /* Escaped quotes inside a value; other backslashes are kept */
+   test_config_file_parse_contains(
+         "k = \"it's a \\\"secret\\\".\"\n", "k", "it's a \"secret\".");
+   test_config_file_parse_contains(
+         "k = \"C:\\Games\\ROMs\"\n", "k", "C:\\Games\\ROMs");
+   test_config_file_parse_contains(
+         "k = \"C:\\Games\\\\\"\n", "k", "C:\\Games\\");
+   test_config_file_parse_contains(
+         "k = \"a \\\"#b\\\"\" # c\n", "k", "a \"#b\"");
+   /* Written before values were escaped: a directory ending in a
+    * backslash keeps it, with a comment after it or not */
+   test_config_file_parse_contains(
+         "k = \"C:\\Games\\\"\n", "k", "C:\\Games\\");
+   test_config_file_parse_contains(
+         "k = \"C:\\Games\\\" # c\n", "k", "C:\\Games\\");
+   test_config_file_parse_contains(
+         "k = \"\\\\server\\share\"\n", "k", "\\\\server\\share");
+   test_config_quoted_values_round_trip();
 }
