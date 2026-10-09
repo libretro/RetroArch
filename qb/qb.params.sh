@@ -54,8 +54,10 @@ EOF
 	print_help_option 'Both options are shown:'  'Default is auto (included if the necessary library is present)'
 	printf %s\\n '' 'Custom options:'
 
-	while read -r VAR _ COMMENT; do
+	while read -r VAR SEP COMMENT; do
 		case "$VAR" in
+			'') continue;;
+			'#') printf '\n %s:\n' "$SEP${COMMENT:+ $COMMENT}"; continue;;
 			'C89_'*|'CXX_'*) continue;;
 			*)
 			TMPVAR="${VAR%=*}"
