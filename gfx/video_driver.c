@@ -6726,12 +6726,12 @@ bool video_driver_init_internal(bool *video_is_threaded, bool verbosity_enabled)
    const char *path_softfilter_plugin     = settings->paths.path_softfilter_plugin;
 #endif
 
-#ifdef HAVE_VIDEO_FILTER
    /* Bound before any driver or wrapper exists: under threaded video
     * the OSD fonts live on the video thread, and the font driver
     * reaches ra-video state through this capture, not the getter. */
    font_driver_bind_video_state(video_state_get_ptr());
 
+#ifdef HAVE_VIDEO_FILTER
    /* Init video filter only when game is running */
    if ((     runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED)
          && (path_softfilter_plugin && *path_softfilter_plugin))

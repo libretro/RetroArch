@@ -187,6 +187,16 @@ jobs:
           # modes.
           timeout 180 python3 samples/input/overlay_on_screen/overlay_on_screen_test.py ./retroarch
 
+      - name: Run statistics_on_screen_test (threaded video off, then on)
+        shell: bash
+        run: |
+          set -eu
+          # This build has no video filters, and the statistics have
+          # to show all the same: they are drawn with the OSD font,
+          # which reaches the video state through a binding video init
+          # makes whatever the build leaves out.
+          timeout 180 python3 samples/gfx/statistics_on_screen/statistics_on_screen_test.py ./retroarch
+
       - name: Run overlay_menu_mouse_test (display and input packs, threaded off and on)
         shell: bash
         run: |
