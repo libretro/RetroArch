@@ -195,4 +195,6 @@ http "net_http over TLS 1.3, ChaCha20-Poly1305"  -tls1_3 -ciphersuites TLS_CHACH
 # A server that goes silent mid-handshake: the read bound ends it.
 make -s tls_stall
 $RUN ./tls_stall$EXE
+# A refused certificate reaches the verify hook.
+./verify_hook_test.sh
 echo "[pass] tls_retro local server matrix"

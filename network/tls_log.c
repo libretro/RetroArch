@@ -17,8 +17,27 @@
 #include <string.h>
 
 #include <net/net_socket_ssl.h>
+#include <retro_atomic.h>
 
+#include "../msg_hash.h"
+#include "../runloop.h"
 #include "../verbosity.h"
+
+/* The log line comes on every connection; the on-screen notice once a
+ * session, since a background task can connect many times a minute.
+ * The hooks run on connection threads, so the once is an atomic. */
+static retro_atomic_int_t tls_notice_fail_shown;
+static retro_atomic_int_t tls_notice_disabled_shown;
+
+static void tls_notice_once(retro_atomic_int_t *shown, enum msg_hash_enums msg)
+{
+   const char *str;
+   if (!retro_atomic_cas_int(shown, 0, 1))
+      return;
+   str = msg_hash_to_str(msg);
+   runloop_msg_queue_push(str, strlen(str), 1, 300, false, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
+}
 
 /* Strong overrides of the weak logging hooks declared in net_socket_ssl.h.
  * Routing TLS verification outcomes into the RetroArch log lives here, on the
@@ -46,6 +65,7 @@ void ssl_socket_log_verify_fail(int mode_required, const char *domain,
                "Setting 'TLS Certificate Verification' to 'Optional' "
                "restores connectivity without a fix, at the cost of "
                "certificate checking.\n");
+      tls_notice_once(&tls_notice_fail_shown, MSG_TLS_VERIFY_FAILED);
    }
    else
       RARCH_WARN("[TLS] Cert verification soft-failed for %s: %s\n",
@@ -57,4 +77,5 @@ void ssl_socket_log_verify_disabled(const char *domain)
 {
    (void)domain;
    RARCH_WARN("[TLS] Certificate verification disabled - connections vulnerable to MITM.\n");
+   tls_notice_once(&tls_notice_disabled_shown, MSG_TLS_VERIFY_DISABLED);
 }

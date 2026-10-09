@@ -56,9 +56,13 @@ else
 endif
 tls_stall: $(STALL_SRC)
 	$(CC) $(STALL_FLAGS) -DHAVE_THREADS -DSSL_SOCKET_IO_TIMEOUT_MS=500 $(CFLAGS) $(STALL_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
+# a refused certificate reaches the verify hook, on the same backends
+HOOK_SRC = $(patsubst tls_stall.c,tls_verify_hook.c,$(STALL_SRC))
+tls_verify_hook: $(HOOK_SRC)
+	$(CC) $(STALL_FLAGS) -DHAVE_THREADS $(CFLAGS) $(HOOK_SRC) $(STALL_LIBS) $(LDLIBS) -lpthread -o $@
 THR_SRC = tls_threads.c $(filter-out tls_fetch.c,$(SRC)) $(COMMON)/rthreads/rthreads.c
 tls_threads: $(THR_SRC)
 	$(CC) $(CPPFLAGS) -DHAVE_THREADS $(CFLAGS) $(THR_SRC) $(LDLIBS) -lpthread -o $@
 clean:
-	rm -f tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
+	rm -f tls_verify_hook tls_verify_hook.exe tls_stall tls_stall.exe tls_fetch_noaes tls_fetch_noaes.exe tls_http tls_http.exe tls_fetch tls_fetch.exe tls_bench tls_bench.exe tls_keyupdate tls_keyupdate.exe tls_threads tls_threads.exe
 .PHONY: all clean
