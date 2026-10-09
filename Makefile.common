@@ -1386,6 +1386,12 @@ ifeq ($(HAVE_LIBUSB), 1)
    LIBS += $(LIBUSB_LIBS)
 endif
 
+ifeq ($(HAVE_HIDRAW), 1)
+   HAVE_HID=1
+   DEFINES += -DHAVE_HIDRAW
+   OBJ += input/drivers_hid/hidraw_hid.o
+endif
+
 ifeq ($(HAVE_IOHIDMANAGER), 1)
    HAVE_HID=1
    DEFINES += -DHAVE_IOHIDMANAGER

@@ -916,6 +916,9 @@ hid_driver_t *hid_drivers[] = {
 #if defined(__APPLE__) && defined(HAVE_IOHIDMANAGER)
    &iohidmanager_hid,
 #endif
+#ifdef HAVE_HIDRAW
+   &hidraw_hid,
+#endif
 #if defined(HAVE_LIBUSB) && defined(HAVE_THREADS)
    &libusb_hid,
 #endif

@@ -633,6 +633,14 @@ check_enabled THREADS LIBUSB libusb 'Threads are' false
 check_enabled HID LIBUSB libusb 'HID is' false
 check_val '' LIBUSB -lusb-1.0 libusb-1.0 libusb-1.0 1.0.13 '' false
 
+# hidraw brings the HID joypad driver on Linux without libusb, which
+# stays as --enable-hid leaves it.
+check_platform Linux HIDRAW 'hidraw is' true
+check_header '' HIDRAW linux/hidraw.h
+if [ "$HAVE_HIDRAW" = 'yes' ]; then
+   add_opt HID yes
+fi
+
 check_lib '' DINPUT -ldinput8
 check_lib '' D3D9 -ld3d9
 check_lib '' DSOUND -ldsound

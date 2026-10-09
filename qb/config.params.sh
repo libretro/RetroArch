@@ -191,6 +191,7 @@ HAVE_RMPEG1=yes            # RMPEG1 (MPEG-1 program stream / video) support
 HAVE_WEBMPLAYER=no         # Built-in WebM/MP4 movie player
 HAVE_RWAV=yes              # WAV support
 HAVE_HID=no                # Low-level HID (Human Interface Device) support
+HAVE_HIDRAW=auto           # Linux hidraw HID support
 HAVE_AUDIOMIXER=yes        # Audio Mixer
 HAVE_LANGEXTRA=yes         # Multi-language support
 HAVE_SCREENSHOTS=yes       # Screenshot support
