@@ -186,15 +186,17 @@ static INLINE void input_key_lane_note(input_key_lane_t *lane, bool down,
       lane->keys_down[code >> 5] &= ~(1u << (code & 31));
 }
 
-/* The reader's: every event filled in order since the last time, then
+/* The reader's: ready events among the claims present at entry, then
  * eligible kept releases not superseded by a newer press. @deliver is expected to call
  * input_key_lane_note() for what it is given. */
 static INLINE void input_key_lane_take(input_key_lane_t *lane,
       input_key_lane_deliver_t deliver)
 {
    unsigned w;
+   unsigned start = lane->head;
+   unsigned count = input_key_lane_load(&lane->tail) - start;
 
-   for (;;)
+   while ((unsigned)(lane->head - start) < count)
    {
       unsigned pos = lane->head;
       unsigned i   = pos & (INPUT_KEY_LANE_SIZE - 1);
@@ -258,6 +260,25 @@ static INLINE void input_key_lane_take(input_key_lane_t *lane,
       if (retry)
          retro_atomic_fetch_or_int(&lane->released[w], (int)retry);
    }
+}
+
+/* The reader's event cannot overtake a claimed but unpublished slot. */
+static INLINE void input_key_lane_dispatch(input_key_lane_t *lane, bool down,
+      unsigned code, uint32_t character, uint16_t mod, unsigned device,
+      input_key_lane_deliver_t deliver)
+{
+   if (lane->head != input_key_lane_load(&lane->tail))
+   {
+      input_key_lane_take(lane, deliver);
+      if (lane->head != input_key_lane_load(&lane->tail))
+      {
+         input_key_lane_push(lane, down, code, character, mod, device);
+         return;
+      }
+   }
+   if (down && code < RETROK_LAST)
+      lane->last_down[code] = lane->position;
+   deliver(down, code, character, mod, device);
 }
 
 #endif

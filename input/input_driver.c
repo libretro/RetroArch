@@ -16707,11 +16707,11 @@ void input_keyboard_event(bool down, unsigned code,
             device);
       return;
    }
-   /* a press here is newer than a release the lane kept for its key */
-   if (down)
-      input_key_lane_take_back_release(&input_key_lane, code);
-#endif
+   input_key_lane_dispatch(&input_key_lane, down, code, character, mod,
+         device, input_keyboard_event_now);
+#else
    input_keyboard_event_now(down, code, character, mod, device);
+#endif
 }
 
 static void input_keyboard_event_now_act(bool down, unsigned code,

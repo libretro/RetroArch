@@ -60,6 +60,7 @@ static input_key_lane_t lane;
 static unsigned downs[RETROK_LAST], ups[RETROK_LAST];
 static unsigned got[4], bad[4];
 static bool newer_f1_on_delivery;
+static unsigned reposts_left;
 static void deliver(bool down, unsigned code, uint32_t character,
       uint16_t mod, unsigned device)
 {
@@ -76,6 +77,11 @@ static void deliver(bool down, unsigned code, uint32_t character,
    {
       newer_f1_on_delivery = false;
       input_key_lane_push(&lane, true, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
+   }
+   if (down && code == RETROK_F6 && reposts_left)
+   {
+      reposts_left--;
+      input_key_lane_push(&lane, true, RETROK_F6, 0, 0, RETRO_DEVICE_KEYBOARD);
    }
    /* the stress writers send keys 10..13, presses only, numbered */
    if (down && code >= 10 && code < 14)
@@ -360,7 +366,8 @@ static void lane_recovery_positions(void)
    input_key_lane_push(&lane, false, RETROK_F1, 0, 0, RETRO_DEVICE_KEYBOARD);
    newer_f1_on_delivery = true;
    input_key_lane_take(&lane, deliver);
-   CHECK(downs[RETROK_F1] == 2 && ups[RETROK_F1] == 0 && held(RETROK_F1),
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F1] == 2 && ups[RETROK_F1] == 1 && held(RETROK_F1),
          "recovery undid a queued press claimed after its cutoff");
    if (failures == had)
       fprintf(stderr, "[pass] recovery positions wrap and do not undo a newer press\n");
@@ -409,6 +416,135 @@ static void lane_delayed_release(void)
       fprintf(stderr, "[pass] delayed release publication cannot supersede newer state\n");
 }
 
+static void lane_direct_order(void)
+{
+   unsigned had = failures;
+   unsigned i;
+   pthread_t writer;
+
+   reset();
+   input_key_lane_push(&lane, true, RETROK_a, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_dispatch(&lane, false, RETROK_a, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_a] == 1 && ups[RETROK_a] == 1 && !held(RETROK_a),
+         "direct release overtook an older queued press");
+
+   reset();
+   deliver(true, RETROK_b, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_push(&lane, false, RETROK_b, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_dispatch(&lane, true, RETROK_b, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_b] == 2 && ups[RETROK_b] == 1 && held(RETROK_b),
+         "direct press overtook an older queued release");
+
+   reset();
+   retro_atomic_store_release_int(&stopped, 0);
+   retro_atomic_store_release_int(&go_on, 0);
+   pthread_create(&writer, NULL, stopped_writer, NULL);
+   while (!retro_atomic_load_acquire_int(&stopped))
+      sched_yield();
+   input_key_lane_dispatch(&lane, false, RETROK_F1, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   CHECK(ups[RETROK_F1] == 0,
+         "direct release overtook a claimed but unpublished press");
+   retro_atomic_store_release_int(&go_on, 1);
+   pthread_join(writer, NULL);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F1] == 1 && ups[RETROK_F1] == 1 && !held(RETROK_F1),
+         "direct release left a key held after the writer resumed");
+
+   reset();
+   retro_atomic_store_release_int(&stopped, 0);
+   retro_atomic_store_release_int(&go_on, 0);
+   pthread_create(&writer, NULL, stopped_writer, NULL);
+   while (!retro_atomic_load_acquire_int(&stopped))
+      sched_yield();
+   for (i = 1; i < INPUT_KEY_LANE_SIZE; i++)
+      input_key_lane_push(&lane, true, RETROK_F2, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_dispatch(&lane, false, RETROK_F1, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   CHECK(ups[RETROK_F1] == 0 && input_key_lane_load(&lane.dropped) == 1,
+         "full blocked lane did not retain the direct release");
+   retro_atomic_store_release_int(&go_on, 1);
+   pthread_join(writer, NULL);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F1] == 1 && ups[RETROK_F1] == 1 && !held(RETROK_F1),
+         "full blocked lane left a key held");
+
+   reset();
+   input_key_lane_dispatch(&lane, true, RETROK_a, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   CHECK(downs[RETROK_a] == 1 && held(RETROK_a)
+         && lane.head == 0 && input_key_lane_load(&lane.tail) == 0,
+         "empty lane did not deliver immediately without queueing");
+   if (failures == had)
+      fprintf(stderr, "[pass] reader events preserve queued order and the empty-lane fast path\n");
+}
+
+static retro_atomic_int_t mixed_done;
+static void *mixed_writer(void *data)
+{
+   unsigned code = RETROK_F1 + (unsigned)(uintptr_t)data, i;
+   for (i = 0; i < 5000; i++)
+   {
+      while (!input_key_lane_push(&lane, true, code, 0, 0, RETRO_DEVICE_KEYBOARD))
+         sched_yield();
+      input_key_lane_push(&lane, false, code, 0, 0, RETRO_DEVICE_KEYBOARD);
+   }
+   retro_atomic_fetch_add_int(&mixed_done, 1);
+   return NULL;
+}
+
+static void lane_mixed_stress(void)
+{
+   unsigned had = failures, i;
+   pthread_t writers[4];
+   reset();
+   retro_atomic_store_release_int(&mixed_done, 0);
+   for (i = 0; i < 4; i++)
+      pthread_create(&writers[i], NULL, mixed_writer, (void*)(uintptr_t)i);
+   while (input_key_lane_load(&mixed_done) != 4)
+   {
+      input_key_lane_dispatch(&lane, true, RETROK_F5, 0, 0,
+            RETRO_DEVICE_KEYBOARD, deliver);
+      input_key_lane_dispatch(&lane, false, RETROK_F5, 0, 0,
+            RETRO_DEVICE_KEYBOARD, deliver);
+      input_key_lane_take(&lane, deliver);
+   }
+   for (i = 0; i < 4; i++)
+      pthread_join(writers[i], NULL);
+   input_key_lane_take(&lane, deliver);
+   input_key_lane_dispatch(&lane, false, RETROK_F5, 0, 0,
+         RETRO_DEVICE_KEYBOARD, deliver);
+   input_key_lane_take(&lane, deliver);
+   for (i = 0; i < 5; i++)
+      CHECK(!held(RETROK_F1 + i), "mixed queue/direct stress left a key held");
+   CHECK(lane.head == input_key_lane_load(&lane.tail),
+         "mixed stress left a claimed event undelivered");
+   if (failures == had)
+      fprintf(stderr, "[pass] four press/release writers and direct reader events leave no keys held\n");
+}
+
+static void lane_drain_budget(void)
+{
+   unsigned had = failures;
+   reset();
+   reposts_left = INPUT_KEY_LANE_SIZE * 2;
+   input_key_lane_push(&lane, true, RETROK_F6, 0, 0, RETRO_DEVICE_KEYBOARD);
+   input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F6] == 1 && lane.head == 1
+         && input_key_lane_load(&lane.tail) == 2,
+         "the drain consumed events posted after its entry watermark");
+   while (lane.head != input_key_lane_load(&lane.tail))
+      input_key_lane_take(&lane, deliver);
+   CHECK(downs[RETROK_F6] == INPUT_KEY_LANE_SIZE * 2 + 1,
+         "bounded drains lost events posted during delivery");
+   if (failures == had)
+      fprintf(stderr, "[pass] a drain stops at its entry watermark without losing later posts\n");
+}
+
 int main(void)
 {
    lane_stopped_writer();
@@ -418,6 +554,9 @@ int main(void)
    lane_stopped_key_release();
    lane_recovery_positions();
    lane_delayed_release();
+   lane_direct_order();
+   lane_mixed_stress();
+   lane_drain_budget();
    if (failures)
    {
       fprintf(stderr, "FAIL key_lane_test: %u failure(s)\n", failures);
