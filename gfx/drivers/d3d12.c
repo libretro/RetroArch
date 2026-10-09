@@ -9652,6 +9652,30 @@ static bool d3d12_texture_lend_ready(void *data, uintptr_t id,
       >= texture->lend_fence[slot];
 }
 
+/* The frame texture follows each frame's size already; the new format
+ * goes into its description and the next frame makes it again, as a
+ * new size would, with the history textures after it. */
+static bool d3d12_set_frame_format(void *data, bool rgb32,
+      unsigned input_scale)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+
+   (void)input_scale;
+   if (     !d3d12
+         || (d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE)
+         || d3d12->format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      return false;
+   d3d12->format = rgb32
+      ? DXGI_FORMAT_B8G8R8X8_UNORM : DXGI_FORMAT_B5G6R5_UNORM;
+   if (d3d12->frame.texture[0].desc.Format != d3d12->format)
+   {
+      d3d12->frame.texture[0].desc.Format = d3d12->format;
+      d3d12->frame.texture[0].desc.Width  = 0;
+      d3d12->flags                       |= D3D12_ST_FLAG_INIT_HISTORY;
+   }
+   return true;
+}
+
 static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_get_flags,
    d3d12_gfx_load_texture,
@@ -9719,7 +9743,12 @@ static const video_poke_interface_t d3d12_poke_interface = {
    d3d12_gfx_update_texture,
    d3d12_get_swap_interval_cap,
    d3d12_texture_lend,
-   d3d12_texture_lend_ready
+   d3d12_texture_lend_ready,
+   NULL, /* get_last_present_wait */
+   NULL, /* set_view_count */
+   NULL, /* hw_context_destroying */
+   NULL, /* get_headset_refresh */
+   d3d12_set_frame_format
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

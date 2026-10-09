@@ -7366,14 +7366,11 @@ static uintptr_t gl2_load_texture_compressed(void *video_data,
 
 /* The frame textures are made again in the new format, and at the
  * new size when it is larger than theirs, with the render chain's
- * passes around them; the frames' own size follows per frame. */
+ * passes around them; the frames' own size follows per frame. On PSGL
+ * gl2_init_textures sizes the texture reference buffer again. */
 static bool gl2_set_frame_format(void *data, bool rgb32,
       unsigned input_scale)
 {
-#if defined(HAVE_PSGL)
-   (void)data; (void)rgb32; (void)input_scale;
-   return false;
-#else
    unsigned side;
    gl2_t *gl = (gl2_t*)data;
 
@@ -7417,7 +7414,6 @@ static bool gl2_set_frame_format(void *data, bool rgb32,
    gl2_renderchain_init(gl,
          (gl2_renderchain_data_t*)gl->renderchain_data);
    return true;
-#endif
 }
 
 static const video_poke_interface_t gl2_poke_interface = {

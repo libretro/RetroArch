@@ -79,7 +79,10 @@ $core_cc -O2 -shared -fPIC -Ilibretro-common/include -Igfx/video_filters \
    -o $out/filters/widen32.$ext $out/widen32.c
 cp gfx/video_filters/Normal2x.filt gfx/video_filters/Normal4x.filt $out/widen32.filt $out/filters/
 
-for f in $out/retroarch_nomain.o $out/harness_main.o $out/video_filter_menu_test \
+# a Windows link names the binary .exe
+exe=$out/video_filter_menu_test
+[ -f $exe ] || exe=$exe.exe
+for f in $out/retroarch_nomain.o $out/harness_main.o $exe \
          $out/filter_core.so $out/filters/normal2x.$ext $out/filters/normal4x.$ext \
          $out/filters/widen32.$ext; do
    if [ ! -f "$f" ]; then
