@@ -23,8 +23,11 @@ CHAIN_SOURCES := gl3_chain_alloc_test.c $(COMMON)
 CFLAGS  += -Wall -std=gnu99 -g -O1 -DRARCH_INTERNAL \
            -DHAVE_OPENGL_CORE -DHAVE_SLANG -DHAVE_SPIRV_CROSS -DHAVE_GLSLANG \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include -I$(REPO_ROOT)/deps \
-           -I$(REPO_ROOT)/deps/SPIRV-Cross -I$(REPO_ROOT)/gfx/include
+           -I$(REPO_ROOT)/deps/SPIRV-Cross -I$(REPO_ROOT)/gfx/include \
+           -I$(REPO_ROOT)/gfx/include/MESA
 
+# <GL/gl.h> is the tree's own copy under gfx/include/MESA, so the test
+# builds with no GL development package installed.
 # The GL 1.1 entry points glsym does not carry: Windows has them from
 # opengl32, elsewhere stubs.c defines them.
 ifeq ($(OS),Windows_NT)
