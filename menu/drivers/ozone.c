@@ -199,7 +199,9 @@ enum OZONE_TEXTURE
 
 enum OZONE_THEME_TEXTURES
 {
-   OZONE_THEME_TEXTURE_SWITCH = 0,
+#ifdef HAVE_LIBNX
+   OZONE_THEME_TEXTURE_SWITCH,
+#endif
    OZONE_THEME_TEXTURE_CHECK,
 
    OZONE_THEME_TEXTURE_CURSOR_NO_BORDER,
@@ -3078,7 +3080,9 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
 }
 
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
+#ifdef HAVE_LIBNX
    "switch.png",
+#endif
    "check.png",
 
    "cursor_noborder.png",
