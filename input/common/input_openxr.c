@@ -399,8 +399,9 @@ typedef struct input_openxr
 static input_openxr_t input_openxr_st;
 
 /* The main thread's laser mode and menu, for the XR thread's dots. */
-static retro_atomic_int_t input_openxr_laser;
-static retro_atomic_int_t input_openxr_menu_open;
+#define INPUT_OPENXR_LASER_MASK 3
+#define INPUT_OPENXR_MENU_OPEN  4
+static retro_atomic_int_t input_openxr_pointer_config;
 
 /* A core's rumble per player, strong then weak, and whether a session's
  * controllers exist: cores set rumble from any thread. */
@@ -1050,9 +1051,10 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    video_xr_quad_set_t set;
    unsigned n         = 0;
    input_openxr_t *st = &input_openxr_st;
-   int laser          = retro_atomic_load_acquire_int(&input_openxr_laser);
-   bool menu_open     = retro_atomic_load_acquire_int(
-         &input_openxr_menu_open) != 0;
+   int config         = retro_atomic_load_acquire_int(
+         &input_openxr_pointer_config);
+   int laser          = config & INPUT_OPENXR_LASER_MASK;
+   bool menu_open     = (config & INPUT_OPENXR_MENU_OPEN) != 0;
    (void)user;
 
    if (     !st->xr || laser == VIDEO_OPENXR_LASER_OFF
@@ -1181,10 +1183,9 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
     * yields, which a closed menu or the laser Off ends. */
    if (!menu_open || laser == VIDEO_OPENXR_LASER_OFF)
       st->yield = false;
-   retro_atomic_store_release_int(&input_openxr_laser,
-         st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser);
-   retro_atomic_store_release_int(&input_openxr_menu_open,
-         menu_open ? 1 : 0);
+   retro_atomic_store_release_int(&input_openxr_pointer_config,
+         (st->yield ? VIDEO_OPENXR_LASER_OFF : (int)laser)
+         | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
 
    /* Nothing stops the last rumble of a core closed behind a menu that
     * ran it; no later content may inherit it. */
@@ -1259,7 +1260,8 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
    input_openxr_yield(st, laser, menu_open, threshold);
    if (st->yield)
       laser = VIDEO_OPENXR_LASER_OFF;
-   retro_atomic_store_release_int(&input_openxr_laser, (int)laser);
+   retro_atomic_store_release_int(&input_openxr_pointer_config,
+         (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
    input_openxr_laser_poll(st, laser, menu_open, threshold, was_pressed);
    input_openxr_triggers(st, threshold);
    input_openxr_dpad(st, threshold);
