@@ -2354,7 +2354,13 @@ void retro_vfs_file_prefetch_impl(
       lo = (size_t)offset & ~(page - 1);
       hi = (size_t)(offset + len);
 #if defined(HAVE_MMAP)
+      /* Older libc feature profiles may expose only the POSIX advice API.
+       * Prefetch is advisory: leave it a no-op if neither API is exposed. */
+#if defined(MADV_WILLNEED)
       madvise(stream->mapped + lo, hi - lo, MADV_WILLNEED);
+#elif defined(POSIX_MADV_WILLNEED)
+      posix_madvise(stream->mapped + lo, hi - lo, POSIX_MADV_WILLNEED);
+#endif
 #else
       {
          vfs_prefetch_t            prefetch = vfs_win32_prefetch();
