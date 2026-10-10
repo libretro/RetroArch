@@ -72,9 +72,8 @@ struct linux_illuminance_sensor
    /* Poll rate in Hz (i.e. in queries per second) */
    retro_atomic_int_t poll_rate;
 
-   /* The lux reading in millilux, so it can be published atomically
-    * to the input driver without a lock. A little precision is lost,
-    * not enough to matter. */
+   /* The millilux value publishes no other state, so relaxed access
+    * suffices. A little precision is lost, not enough to matter. */
    retro_atomic_int_t millilux;
 
    char path[PATH_MAX_LENGTH];
@@ -202,7 +201,7 @@ static void linux_poll_illuminance_sensor(void *data)
          / retro_atomic_load_acquire_int(&sensor->poll_rate);
 
       lux = linux_read_illuminance_sensor(sensor);
-      retro_atomic_store_release_int(&sensor->millilux,
+      retro_atomic_store_relaxed_int(&sensor->millilux,
             (int)(lux * 1000.0));
 
       now   = cpu_features_get_time_usec();
@@ -246,7 +245,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       rate           = MAX_POLL_RATE;
    retro_atomic_int_init(&sensor->poll_rate, (int)rate);
    sensor->path[0]   = '\0';
-   retro_atomic_store_release_int(&sensor->millilux, 0);
+   retro_atomic_store_relaxed_int(&sensor->millilux, 0);
 #ifdef HAVE_THREADS
    sensor->thread       = NULL; /* spawned once a sensor is found */
    retro_atomic_int_init(&sensor->rate_gen, 0);
@@ -281,7 +280,7 @@ linux_illuminance_sensor_t *linux_open_illuminance_sensor(unsigned rate)
       if (lux >= 0)
       { /* If we found an illuminance sensor that works... */
          /* Set the first reading */
-         retro_atomic_store_release_int(&sensor->millilux,
+         retro_atomic_store_relaxed_int(&sensor->millilux,
                (int)(lux * 1000.0));
 #ifdef HAVE_THREADS
          if (!(sensor->thread = sthread_create(
@@ -341,7 +340,7 @@ float linux_get_illuminance_reading(const linux_illuminance_sensor_t *sensor)
    if (!sensor)
       return -1.0f;
 
-   millilux = retro_atomic_load_acquire_int(&sensor->millilux);
+   millilux = retro_atomic_load_relaxed_int(&sensor->millilux);
 
    return (float)millilux / 1000.0f;
 }
