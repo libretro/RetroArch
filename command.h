@@ -485,8 +485,45 @@ void command_event_init_cheats(
 #endif
 
 #if defined(HAVE_COMMAND)
+enum cmd_param_type
+{
+   /* text, as the command takes it */
+   CMD_PARAM_STRING = 0,
+   /* a whole number; a structured client sends a JSON number */
+   CMD_PARAM_INT
+};
+
+/* One of a command's parameters, for interfaces that take a request
+ * apart rather than a line: a tool schema is generated from these, and
+ * what a client sends by name is put back together into the line the
+ * handlers read.
+ *
+ * @lead is what precedes the parameter in that line - NULL on the
+ * first, a space on most, "|" where the command's own form uses one -
+ * so a command's grammar is described here instead of being parsed by
+ * hand at both ends. @values, where set, is the "|"-separated set the
+ * parameter accepts, which the schema offers as an enum.
+ *
+ * @def stands in for an optional parameter the client left out, so the
+ * line form says it rather than leaving the handler to guess: what
+ * GET_PLAYLIST reads as a trailing entry number cannot be told from a
+ * playlist whose name ends in one, and a default settles it.
+ *
+ * An array of these ends with a row whose @name is NULL. */
+struct cmd_param
+{
+   const char *name;
+   const char *desc;
+   enum cmd_param_type type;
+   bool        required;
+   const char *lead;
+   const char *values;
+   const char *def;
+};
+
 /* A command with its own handler; @arg_desc names the argument, or
- * "No argument". */
+ * "No argument", and @params describes it for a structured client, or
+ * is NULL on one that takes none. */
 struct cmd_action_map
 {
    const char *str;
@@ -494,6 +531,7 @@ struct cmd_action_map
    const char *arg_desc;
    const char *desc;
    unsigned flags;       /* enum cmd_info_flags */
+   const struct cmd_param *params;
 };
 
 /* GET_OPTION [option] / SET_OPTION <option> on|off */
@@ -549,49 +587,127 @@ bool command_video_reinit(command_t *cmd, const char* arg);
 bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
+/* The parameters of the commands that take any. Several commands take
+ * the same ones; what tells READ_CORE_RAM from READ_CORE_MEMORY is the
+ * command's own description, not its parameters'. */
+static const struct cmd_param cmd_params_help[] = {
+   { "command", "A command name. Left out, every command.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_preset[] = {
+   { "preset", "Path to a shader preset, absolute or under the shader "
+      "directory. Empty turns the shader off.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_option[] = {
+   { "option", "An option name, as GET_OPTION with no argument lists.",
+      CMD_PARAM_STRING, false, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_option_set[] = {
+   { "option", "An option name, as GET_OPTION with no argument lists.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "state", "The state to put it in.",
+      CMD_PARAM_STRING, true, " ", "on|off", NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_config[] = {
+   { "parameter", "A configuration setting's name.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_playlist[] = {
+   { "playlist", "A playlist name as LIST_PLAYLISTS gives it, \".lpl\" "
+      "and all.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "first", "The entry to start at; the first when left out.",
+      CMD_PARAM_INT, false, " ", NULL, "0" },
+   { NULL }
+};
+static const struct cmd_param cmd_params_message[] = {
+   { "message", "The text to show on screen.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_read[] = {
+   { "address", "The address to read from, in hexadecimal.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "bytes", "How many bytes to read.",
+      CMD_PARAM_INT, true, " ", NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_write[] = {
+   { "address", "The address to write to, in hexadecimal.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "bytes", "The bytes to write, in hexadecimal, separated by spaces.",
+      CMD_PARAM_STRING, true, " ", NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_slot[] = {
+   { "slot", "The slot number.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_frame[] = {
+   { "frame", "The frame to seek to.", CMD_PARAM_INT, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_core[] = {
+   { "core", "Path to a core library, as LIST_CORES gives it.",
+      CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param cmd_params_content[] = {
+   { "core", "Path to the core to load it with, as LIST_CORES and "
+      "GET_PLAYLIST give it.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "content", "Path to the content, as GET_PLAYLIST gives it.",
+      CMD_PARAM_STRING, true, "|", NULL, NULL },
+   { NULL }
+};
+
 static const struct cmd_action_map action_map[] = {
    /* HELP and VERSION are not tools: a structured interface lists the
     * commands itself and names its version in every answer. */
-   { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
+   { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_help },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
-   { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0 },
+   { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0, cmd_params_preset },
 #endif
-   { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
-   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY },
-   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY },
-   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0 },
+   { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, NULL },
+   { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY, cmd_params_option },
+   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0, cmd_params_option_set },
    /* GET_OPTION reports these and more; this stays for the clients that
     * have always asked it. */
-   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
-   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY },
-   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY },
-   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY },
-   { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0 },
+   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL, cmd_params_config },
+   { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY, NULL },
+   { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY, NULL },
+   { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY, cmd_params_playlist },
+   { "SHOW_MSG",         command_show_osd_msg,     "<message>", "Show a message on screen.", 0, cmd_params_message },
 #if defined(HAVE_CHEEVOS)
    /* These functions use achievement addresses and only work if a game with achievements is
     * loaded. READ_CORE_MEMORY and WRITE_CORE_MEMORY are preferred and use system addresses. */
-   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY },
-   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE },
+   { "READ_CORE_RAM",    command_read_ram,         "<address> <number of bytes>", "Read bytes from core memory at an achievement address (needs a game with achievements).", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "WRITE_CORE_RAM",   command_write_ram,        "<address> <byte1> <byte2> ...", "Write bytes to core memory at an achievement address (needs a game with achievements).", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 #endif
-   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY },
-   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE },
+   { "READ_CORE_MEMORY", command_read_memory,      "<address> <number of bytes>", "Read bytes from core memory at a system address.", CMD_INFO_READ_ONLY, cmd_params_read },
+   { "WRITE_CORE_MEMORY",command_write_memory,     "<address> <byte1> <byte2> ...", "Write bytes to core memory at a system address.", CMD_INFO_DESTRUCTIVE, cmd_params_write },
 
-   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE },
-   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE },
-   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE },
-   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE },
+   { "LOAD_STATE_SLOT",command_load_state_slot, "<slot number>", "Load the save state in the given slot, replacing the current game state.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
+   { "SAVE_STATE_SLOT",command_save_state_slot, "<slot number>", "Save a state to the given slot, overwriting what it held.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
+   { "PLAY_REPLAY_SLOT",command_play_replay_slot, "<slot number>", "Play back the replay in the given slot.", CMD_INFO_DESTRUCTIVE, cmd_params_slot },
+   { "SEEK_REPLAY",command_seek_replay, "<frame number>", "Seek the playing replay to the given frame.", CMD_INFO_DESTRUCTIVE, cmd_params_frame },
 
-   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE },
-   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE },
+   { "SAVE_FILES", command_save_savefiles, "No argument", "Write the core's save files (SRAM) to disk.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "LOAD_FILES", command_load_savefiles, "No argument", "Reload the core's save files (SRAM) from disk.", CMD_INFO_DESTRUCTIVE, NULL },
 
-   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE },
-   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE },
-   { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE },
-   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE },
-   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0 },
-   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", 0 },
-   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", 0 },
+   { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
+   { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
+   { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0, NULL },
+   { "AUDIO_REINIT", command_audio_reinit, "No argument", "Restart the audio driver.", 0, NULL },
+   { "DRIVERS_REINIT", command_drivers_reinit, "No argument", "Restart all drivers.", 0, NULL },
 };
 
 static const struct cmd_map map[] = {

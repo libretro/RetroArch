@@ -6,7 +6,8 @@
  * thread: each request is sent, then the server polled until it has
  * answered and closed.  Covered: the protocol handshake, the tool list
  * and its hints, tool calls answered at once and later, the JSON-RPC
- * errors, a later answer carrying an image (SCREENSHOT's), the flag
+ * errors, the parameters a tool declares and the line they are put
+ * back into, a later answer carrying an image (SCREENSHOT's), the flag
  * that leaves a command out of the tool list, the HTTP gate (method,
  * path, Origin, the bearer token the server will not start without), a
  * body larger than the server takes, a request arriving in pieces, and
@@ -75,13 +76,40 @@ static bool act_later(command_t *cmd, const char *arg)
    return later_dest != NULL;
 }
 
+/* "WIPE <what>", and "JOIN <a>|<b> [n]" for the separators and the
+ * types: a lead of its own, an optional parameter, an integer, and a
+ * set the schema offers as an enum. */
+static const struct cmd_param test_params_wipe[] = {
+   { "what", "What to wipe.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { NULL }
+};
+static const struct cmd_param test_params_join[] = {
+   { "a", "The first.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+   { "b", "The second.", CMD_PARAM_STRING, true, "|", NULL, NULL },
+   { "n", "How many.", CMD_PARAM_INT, false, " ", NULL, "0" },
+   { "mode", "Which way.", CMD_PARAM_STRING, false, " ", "fast|slow", NULL },
+   { NULL }
+};
+
+/* answers with the line it was given, so the test can see how the
+ * named arguments were put back together */
+static bool act_join(command_t *cmd, const char *arg)
+{
+   char reply[256];
+   size_t len = (size_t)snprintf(reply, sizeof(reply), "JOIN[%s]\n",
+         arg ? arg : "");
+   cmd->replier(cmd, reply, len);
+   return true;
+}
+
 static struct cmd_action_map test_actions[] = {
-   { "PING",  act_ping,  "No argument", "Answer PONG.",       CMD_INFO_READ_ONLY },
-   { "WIPE",  act_wipe,  "<what>",      "Wipe something.",    CMD_INFO_DESTRUCTIVE },
-   { "FAIL",  act_fail,  "No argument", "Fail.",              0 },
-   { "BAD",   act_bad,   "No argument", "Reply an error.",    0 },
-   { "LATER", act_later, "No argument", "Answer on a later frame.", 0 },
-   { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0 },
+   { "PING",  act_ping,  "No argument", "Answer PONG.",       CMD_INFO_READ_ONLY, NULL },
+   { "WIPE",  act_wipe,  "<what>",      "Wipe something.",    CMD_INFO_DESTRUCTIVE, test_params_wipe },
+   { "FAIL",  act_fail,  "No argument", "Fail.",              0, NULL },
+   { "BAD",   act_bad,   "No argument", "Reply an error.",    0, NULL },
+   { "LATER", act_later, "No argument", "Answer on a later frame.", 0, NULL },
+   { "QUIET", act_quiet_fail, "No argument", "Fail without saying ERROR.", 0, NULL },
+   { "JOIN",  act_join,  "<a>|<b> [n]", "Echo the line it was given.", 0, test_params_join },
 };
 static struct cmd_map test_hotkeys[] = {
    { "PAUSE_TOGGLE", 1, "Pause or resume.", 0 },
@@ -302,8 +330,23 @@ int main(void)
             && strstr(p, "\"readOnlyHint\":true") < w);
       check("a destructive command is hinted destructive",
             w && strstr(w, "\"destructiveHint\":true"));
-      check("a command taking an argument requires it",
-            w && strstr(w, "\"required\":[\"argument\"]"));
+      check("a command taking an argument requires it by name",
+            w && strstr(w, "\"required\":[\"what\"]"));
+   }
+   {
+      const char *j = strstr(out, "\"name\":\"JOIN\"");
+      check("every parameter is a property of its own",
+            j && strstr(j, "\"a\":{\"type\":\"string\"")
+            && strstr(j, "\"b\":{\"type\":\"string\"")
+            && strstr(j, "\"n\":{\"type\":\"integer\""));
+      check("only the needed ones are required",
+            j && strstr(j, "\"required\":[\"a\",\"b\"]"));
+      check("a parameter with a set of values offers them as an enum",
+            j && strstr(j, "\"enum\":[\"fast\",\"slow\"]"));
+      check("a command taking nothing has no properties",
+            strstr(out, "\"name\":\"PING\"")
+            && strstr(strstr(out, "\"name\":\"PING\""),
+                  "\"properties\":{}"));
    }
 
    printf("tools/call\n");
@@ -343,6 +386,36 @@ int main(void)
          && strstr(out, "\"mimeType\":\"image/png\"")
          && strstr(out, "Game-251004.png")
          && strstr(out, "\"isError\":false"));
+
+   printf("parameters\n");
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\"}"),
+         out, sizeof(out), NULL);
+   check("named arguments are joined as the table says",
+         st == 200 && strstr(out, "JOIN[one|two 0]"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"n\":7}"),
+         out, sizeof(out), NULL);
+   check("an integer arrives as its digits",
+         st == 200 && strstr(out, "JOIN[one|two 7]"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"b\":\"two\",\"a\":\"one\",\"n\":7}"),
+         out, sizeof(out), NULL);
+   check("the table's order is used, not the client's",
+         st == 200 && strstr(out, "JOIN[one|two 7]"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"two\",\"mode\":\"fast\"}"),
+         out, sizeof(out), NULL);
+   check("one left out stands in with its default, if it has one",
+         st == 200 && strstr(out, "JOIN[one|two 0 fast]"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\"}"), out, sizeof(out), NULL);
+   check("a required one left out is invalid params (-32602)",
+         strstr(out, "-32602") && strstr(out, "\\\"b\\\""));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"argument\":\"one|two 7\"}"), out, sizeof(out), NULL);
+   check("the single argument older clients send still works",
+         st == 200 && strstr(out, "JOIN[one|two 7]"));
 
    printf("commands that are not tools\n");
    /* The flag is what leaves a command out, so the same two the list
