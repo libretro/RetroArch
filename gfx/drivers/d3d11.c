@@ -5148,6 +5148,24 @@ static bool d3d11_sw_direct_upload(d3d11_video_t *d3d11,
    return true;
 }
 
+/* Whether a preset's passes may read the frame where it is, through
+ * hw_direct.view, as Original and as the first pass's Source: when it
+ * keeps no history, which is copied out of frame.texture[0], and the
+ * frame is the whole of a texture of one level, @texture's, or with
+ * NULL sw_direct's. */
+static bool d3d11_preset_reads_in_place(d3d11_video_t *d3d11,
+      D3D11Texture2D texture, unsigned width, unsigned height)
+{
+   D3D11_TEXTURE2D_DESC desc;
+   if (d3d11->shader_preset->history_size)
+      return false;
+   if (!texture)
+      return true;
+   texture->lpVtbl->GetDesc(texture, &desc);
+   return desc.Width == width && desc.Height == height
+      && desc.MipLevels == 1 && desc.ArraySize == 1;
+}
+
 static D3D11ShaderResourceView d3d11_hw_direct_view(d3d11_video_t *d3d11,
       D3D11Texture2D texture)
 {
@@ -5542,7 +5560,9 @@ static bool d3d11_gfx_frame_body(
       /* A frame that arrives any other way is drawn from
        * frame.texture[0] as always. */
       if (!hw_texture || !d3d11->hw_direct.eligible
-            || (d3d11->shader_preset && video_info->shader_active))
+            || (     d3d11->shader_preset && video_info->shader_active
+                 && !d3d11_preset_reads_in_place(d3d11, hw_texture,
+                    width, height)))
          d3d11->hw_direct.view = NULL;
       else
          d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
@@ -5575,9 +5595,11 @@ static bool d3d11_gfx_frame_body(
       else if (d3d11->frame.texture[0].staging
             && frame != RETRO_HW_FRAME_BUFFER_VALID)
       {
-         /* The stock chain draws a software frame from where it was
-          * written; a preset's passes read frame.texture[0]. */
-         if (     !(d3d11->shader_preset && video_info->shader_active)
+         /* A software frame is drawn from where it was written, by
+          * the stock chain or a preset that reads it in place. */
+         if (     (   !(d3d11->shader_preset && video_info->shader_active)
+                   || d3d11_preset_reads_in_place(d3d11, NULL,
+                      width, height))
                && d3d11_sw_direct_upload(d3d11, context,
                   width, height, pitch, frame))
             d3d11->hw_direct.view = d3d11->sw_direct.texture.view;
@@ -5762,6 +5784,12 @@ static bool d3d11_gfx_frame_body(
             {
                int binding       = texture_sem->binding;
                textures[binding] = *(D3D11ShaderResourceView*)texture_sem->texture_data;
+               /* The frame where it is, not copied into
+                * frame.texture[0] (d3d11_preset_reads_in_place). */
+               if (     d3d11->hw_direct.view
+                     && texture_sem->texture_data
+                        == (void*)&d3d11->frame.texture[0].view)
+                  textures[binding] = d3d11->hw_direct.view;
                samplers[binding] = d3d11->samplers[texture_sem->filter][texture_sem->wrap];
                texture_sem++;
             }

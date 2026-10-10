@@ -20,10 +20,13 @@
  * in the packed frame. It sends its map even without
  * RETRO_VIDEO_VIEWS_STATUS_PRESENTS, so the frontend's answer there is
  * logged too. It draws in software, or with the video_views_test_hw
- * option through a GL core context, with either origin, or into
- * Vulkan images of its own handed over with set_image. With
+ * option through a GL core context, with either origin, into Vulkan
+ * images of its own handed over with set_image, or on Windows into
+ * D3D11 textures of its own, one per sync index, handed over with
+ * set_texture (libretro_d3d11.h version 2). With
  * video_views_test_max it declares a far larger maximum than it draws.
- * e2e/run.py checks the colours on screen and the status in the log.
+ * e2e/run.py checks the colours on screen and the status in the log;
+ * e2e/wine.sh checks the d3d11 driver's frames under Wine.
  *
  * In the Vulkan modes context_destroy first waits on the device without
  * the queue lock, as a core draining its work may, and logs when:
@@ -51,6 +54,9 @@
 
 #include <libretro.h>
 #include <libretro_vulkan.h>
+#ifdef _WIN32
+#include <libretro_d3d11.h>
+#endif
 
 #define MAX_W 800
 #define MAX_H 480
@@ -87,8 +93,12 @@ enum hw_kind
    HW_GL,         /* bottom-left origin */
    HW_GL_TOPLEFT,
    HW_VULKAN,
-   HW_VULKAN_KEEP
+   HW_VULKAN_KEEP,
+   HW_D3D11
 };
+
+/* The Vulkan modes, by the order above. */
+#define HW_IS_VULKAN(k) ((k) == HW_VULKAN || (k) == HW_VULKAN_KEEP)
 
 enum pattern_kind
 {
@@ -820,6 +830,10 @@ static void read_options(void)
          hw_kind = HW_VULKAN;
       else if (!strcmp(var.value, "vulkan_keep"))
          hw_kind = HW_VULKAN_KEEP;
+#ifdef _WIN32
+      else if (!strcmp(var.value, "d3d11"))
+         hw_kind = HW_D3D11;
+#endif
    }
 
    var.key   = "video_views_test_max";
@@ -888,7 +902,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep" },
+        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep|d3d11" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -1034,6 +1048,91 @@ static void update_rumble(void)
    }
 }
 
+#ifdef _WIN32
+/* The D3D11 mode: frame_buf uploaded into a texture per sync index,
+ * exactly the frame's size, and handed over with set_texture. */
+#define D3D_TEXTURES 8
+static const struct retro_hw_render_interface_d3d11 *d3d;
+static ID3D11Texture2D *d3d_tex[D3D_TEXTURES];
+static unsigned d3d_dims[D3D_TEXTURES];
+static struct retro_hw_render_context_negotiation_interface_d3d11 d3d_nego;
+
+static void d3d_context_reset(void)
+{
+   d3d = NULL;
+   if (     !environ_cb(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE,
+               (void*)&d3d)
+         || !d3d
+         || d3d->interface_type    != RETRO_HW_RENDER_INTERFACE_D3D11
+         || d3d->interface_version <  RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2)
+   {
+      log_cb(RETRO_LOG_ERROR, "[video_views] no D3D11 interface version 2\n");
+      d3d = NULL;
+   }
+}
+
+static void d3d_context_destroy(void)
+{
+   unsigned i;
+   for (i = 0; i < D3D_TEXTURES; i++)
+   {
+      if (d3d_tex[i])
+         d3d_tex[i]->lpVtbl->Release(d3d_tex[i]);
+      d3d_tex[i]  = NULL;
+      d3d_dims[i] = 0;
+   }
+   d3d = NULL;
+}
+
+static bool d3d_send(unsigned fw, unsigned fh)
+{
+   unsigned i, k;
+   ID3D11DeviceContext *ctx;
+   if (!d3d)
+      return false;
+   i = d3d->get_sync_index(d3d->handle);
+   if (i >= D3D_TEXTURES)
+      return false;
+   d3d->wait_sync_index(d3d->handle);
+   /* Always taken; true only says the frontend has used the context,
+    * and an upload binds nothing. */
+   d3d->lock_context(d3d->handle);
+   if (!d3d_tex[i] || d3d_dims[i] != (fw << 16 | fh))
+   {
+      D3D11_TEXTURE2D_DESC desc;
+      if (d3d_tex[i])
+         d3d_tex[i]->lpVtbl->Release(d3d_tex[i]);
+      d3d_tex[i]              = NULL;
+      memset(&desc, 0, sizeof(desc));
+      desc.Width              = fw;
+      desc.Height             = fh;
+      desc.MipLevels          = 1;
+      desc.ArraySize          = 1;
+      desc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
+      desc.SampleDesc.Count   = 1;
+      desc.Usage              = D3D11_USAGE_DEFAULT;
+      desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE;
+      if (FAILED(d3d->device->lpVtbl->CreateTexture2D(d3d->device, &desc,
+                  NULL, &d3d_tex[i])))
+      {
+         d3d_tex[i] = NULL;
+         d3d->unlock_context(d3d->handle);
+         return false;
+      }
+      d3d_dims[i] = fw << 16 | fh;
+   }
+   /* XRGB: the X byte is the texture's alpha. */
+   for (k = 0; k < fw * fh; k++)
+      frame_buf[k] |= 0xFF000000u;
+   ctx = d3d->context;
+   ctx->lpVtbl->UpdateSubresource(ctx, (ID3D11Resource*)d3d_tex[i], 0,
+         NULL, frame_buf, fw * sizeof(uint32_t), 0);
+   d3d->set_texture(d3d->handle, d3d_tex[i]);
+   d3d->unlock_context(d3d->handle);
+   return true;
+}
+#endif
+
 void retro_run(void)
 {
    struct retro_video_view v[RETRO_VIDEO_VIEWS_MAX];
@@ -1063,7 +1162,7 @@ void retro_run(void)
 
    frame_size(&fw, &fh);
    n = build_map(v, c, stereo);
-   if (hw_kind >= HW_VULKAN)
+   if (HW_IS_VULKAN(hw_kind))
    {
       if (!vk_ready)
       {
@@ -1071,6 +1170,16 @@ void retro_run(void)
          return;
       }
    }
+#ifdef _WIN32
+   else if (hw_kind == HW_D3D11)
+   {
+      if (!d3d)
+      {
+         video_cb(NULL, fw, fh, 0);
+         return;
+      }
+   }
+#endif
    else if (hw_kind != HW_OFF)
    {
       if (!gl_ready)
@@ -1132,13 +1241,18 @@ void retro_run(void)
    log_lightgun(fw, fh);
    update_rumble();
 
-   if (hw_kind >= HW_VULKAN)
+   if (HW_IS_VULKAN(hw_kind))
    {
       if (vk_send(fw, fh))
          video_cb(RETRO_HW_FRAME_BUFFER_VALID, fw, fh, 0);
       else
          video_cb(NULL, fw, fh, 0);
    }
+#ifdef _WIN32
+   else if (hw_kind == HW_D3D11)
+      video_cb(d3d_send(fw, fh) ? RETRO_HW_FRAME_BUFFER_VALID : NULL,
+            fw, fh, 0);
+#endif
    else if (hw_kind != HW_OFF)
    {
       p_glDisable(GL_SCISSOR_TEST);
@@ -1176,7 +1290,7 @@ bool retro_load_game(const struct retro_game_info *game)
       return false;
    if (!environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble))
       memset(&rumble, 0, sizeof(rumble));
-   if (hw_kind >= HW_VULKAN)
+   if (HW_IS_VULKAN(hw_kind))
    {
       memset(&hw_render, 0, sizeof(hw_render));
       hw_render.context_type    = RETRO_HW_CONTEXT_VULKAN;
@@ -1187,6 +1301,34 @@ bool retro_load_game(const struct retro_game_info *game)
       if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
          return false;
    }
+#ifdef _WIN32
+   else if (hw_kind == HW_D3D11)
+   {
+      struct retro_hw_render_context_negotiation_interface probe;
+      memset(&hw_render, 0, sizeof(hw_render));
+      hw_render.context_type    = RETRO_HW_CONTEXT_D3D11;
+      hw_render.version_major   = 11;
+      hw_render.context_reset   = d3d_context_reset;
+      hw_render.context_destroy = d3d_context_destroy;
+      if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+         return false;
+      probe.interface_type    =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11;
+      probe.interface_version = 0;
+      d3d_nego.interface_type =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11;
+      d3d_nego.interface_version =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D11_VERSION;
+      d3d_nego.max_render_interface_version =
+         RETRO_HW_RENDER_INTERFACE_D3D11_VERSION_2;
+      if (     environ_cb(
+                  RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT,
+                  &probe)
+            && probe.interface_version >= 1)
+         environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
+               &d3d_nego);
+   }
+#endif
    else if (hw_kind != HW_OFF)
    {
       memset(&hw_render, 0, sizeof(hw_render));
