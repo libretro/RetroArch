@@ -719,6 +719,9 @@ struct ozone_handle
    uint32_t cursor_pos_old;   /* VIDEO_POS_PACK */
 
    uint16_t flags2;
+   /* The frame path switched ozone->theme; its icon set is loaded on
+    * the main thread (ozone_render), which owns texture submits. */
+   bool theme_textures_pending;
 
    uint8_t selection_lastplayed_lines;
    uint8_t system_tab_end;
@@ -3154,8 +3157,21 @@ static void ozone_reset_theme_textures(ozone_handle_t *ozone)
    {
       ozone_theme_t *theme = ozone_themes[j];
 
-      if (!theme->name || theme != ozone->theme)
+      if (!theme->name)
          continue;
+
+      /* Only the current theme keeps an icon set: one left over from
+       * a theme switched away from is not drawn again */
+      if (theme != ozone->theme)
+      {
+         unsigned i;
+         for (i = 0; i < OZONE_THEME_TEXTURE_LAST; i++)
+         {
+            gfx_surface_free(theme->textures[i]);
+            theme->textures[i] = NULL;
+         }
+         continue;
+      }
 
       fill_pathname_join_special(
             theme_path,
@@ -3486,7 +3502,10 @@ static void ozone_draw_cursor(
       ozone_apply_cursor_wiggle_offset(ozone, &new_x, &new_y);
 
    /* Draw the cursor */
+   /* The slice needs the theme's cursor texture: until it is up (a
+    * theme just switched to, a decode in flight) draw the quads */
    if (     (ozone->theme->name)
+         && GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
          && ((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) || (ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)))
       ozone_draw_cursor_slice(ozone,
             p_disp,
@@ -10887,6 +10906,16 @@ static void ozone_render(void *data,
       ozone->flags2 &= ~OZONE_FLAG2_COLOR_THEME_WRITE_PENDING;
    }
 
+   /* A theme switched on the fly has no icon set yet: only the theme
+    * current at the last context reset was loaded, and until this
+    * load its cursor, check and switch draw from texture 0, which
+    * the drivers fill with a blank white texture. */
+   if (ozone->theme_textures_pending)
+   {
+      ozone->theme_textures_pending = false;
+      ozone_reset_theme_textures(ozone);
+   }
+
    /* Advance animated thumbnails (animated WebP) once per frame on the
     * main thread. No-op for still images. */
    gfx_thumbnail_animate(&ozone->thumbnails.right,
@@ -12856,6 +12885,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
 
       ozone_set_color_theme(ozone, color_theme);
+      ozone->theme_textures_pending = true;
       if (ozone->theme->background_libretro_running)
          ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 
