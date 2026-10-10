@@ -1435,6 +1435,8 @@ static void runahead_core_run_use_last_input(runloop_state_t *runloop_st)
    runloop_st->current_core.retro_set_input_state(cbs->state_cb);
 
    runloop_st->current_core.retro_run();
+   if (runloop_st->auto_state_load_pending)
+      runloop_st->auto_state_load_core_ran = true;
    audio_driver_frame_end();
 
    cbs->poll_cb                           = old_poll_function;
@@ -1800,6 +1802,8 @@ bool preempt_init(void *data)
    if (video_state_get_ptr()->frame_count == 0)
    {
       runloop_st->current_core.retro_run();
+      if (runloop_st->auto_state_load_pending)
+         runloop_st->auto_state_load_core_ran = true;
       audio_driver_frame_end();
    }
 
@@ -1983,6 +1987,8 @@ void preempt_run(preempt_t *preempt, void *data)
       }
 
       current_core->retro_run();
+      if (runloop_st->auto_state_load_pending)
+         runloop_st->auto_state_load_core_ran = true;
       preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->start_ptr);
 
       while (preempt->replay_ptr != preempt->start_ptr)
@@ -1995,6 +2001,8 @@ void preempt_run(preempt_t *preempt, void *data)
          }
 
          current_core->retro_run();
+         if (runloop_st->auto_state_load_pending)
+            runloop_st->auto_state_load_core_ran = true;
          preempt->replay_ptr = PREEMPT_NEXT_PTR(preempt->replay_ptr);
       }
 
@@ -2016,6 +2024,8 @@ void preempt_run(preempt_t *preempt, void *data)
 
    /* Run normal frame */
    current_core->retro_run();
+   if (runloop_st->auto_state_load_pending)
+      runloop_st->auto_state_load_core_ran = true;
    audio_driver_frame_end();
    preempt->frame_count++;
    return;

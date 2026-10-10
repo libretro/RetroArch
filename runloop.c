@@ -4405,6 +4405,7 @@ static void runloop_reset_auto_state_load(runloop_state_t *runloop_st)
    runloop_st->auto_state_load_pending   = false;
    runloop_st->auto_state_load_attempted = false;
    runloop_st->auto_state_load_ready     = false;
+   runloop_st->auto_state_load_core_ran  = false;
 }
 
 static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
@@ -8970,15 +8971,18 @@ void core_reset(void)
 static void runloop_load_deferred_auto_state(void)
 {
    runloop_state_t *runloop_st = &runloop_state;
-   settings_t *settings        = config_get_ptr();
+   settings_t *settings;
 
    if (!runloop_st->auto_state_load_pending)
       return;
 
-   runloop_st->auto_state_load_pending = false;
+   settings = config_get_ptr();
 
    if (!settings->bools.savestate_auto_load)
    {
+      runloop_st->auto_state_load_pending   = false;
+      runloop_st->auto_state_load_ready     = false;
+      runloop_st->auto_state_load_core_ran  = false;
       runloop_st->auto_state_load_attempted = true;
       RARCH_LOG("[State] Deferred auto-load canceled because Auto Load State is disabled.\n");
       return;
@@ -8987,17 +8991,23 @@ static void runloop_load_deferred_auto_state(void)
    if (     runloop_st->content_closing
          || !(runloop_st->current_core.flags & RETRO_CORE_FLAG_GAME_LOADED))
    {
+      runloop_st->auto_state_load_pending   = false;
+      runloop_st->auto_state_load_ready     = false;
+      runloop_st->auto_state_load_core_ran  = false;
       runloop_st->auto_state_load_attempted = true;
       return;
    }
 
-   /* The command handler defers this core's initial auto-load. Mark this
-    * dispatch as ready so the call below uses the existing state task path
-    * exactly once. */
+   /* A core may need several frames before serialization is available. */
+   if (!runloop_st->auto_state_load_core_ran || !core_serialize_size())
+      return;
+
+   runloop_st->auto_state_load_pending   = false;
    runloop_st->auto_state_load_attempted = true;
    runloop_st->auto_state_load_ready     = true;
    command_event_load_auto_state();
    runloop_st->auto_state_load_ready     = false;
+   runloop_st->auto_state_load_core_ran  = false;
 }
 
 void core_run(void)
@@ -9067,6 +9077,8 @@ void core_run(void)
    if (current_core->retro_run)
    {
       current_core->retro_run();
+      if (runloop_st->auto_state_load_pending)
+         runloop_st->auto_state_load_core_ran = true;
       audio_driver_frame_end();
    }
 

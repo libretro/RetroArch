@@ -1833,6 +1833,11 @@ bool command_event_load_auto_state(void)
       return false;
 #endif
 
+   if (must_initialize
+         && runloop_st->auto_state_load_attempted
+         && !runloop_st->auto_state_load_ready)
+      return false;
+
    _len = strlcpy(savestate_name_auto, name_savestate,
          sizeof(savestate_name_auto));
    strlcpy_lit(savestate_name_auto + _len, ".auto",
@@ -1841,17 +1846,12 @@ bool command_event_load_auto_state(void)
    if (!path_is_valid(savestate_name_auto))
       return false;
 
-   if (must_initialize
-         && runloop_st->auto_state_load_attempted
-         && !runloop_st->auto_state_load_ready)
-      return false;
-
    if (must_initialize && !runloop_st->auto_state_load_ready)
    {
       if (!runloop_st->auto_state_load_pending)
       {
          runloop_st->auto_state_load_pending = true;
-         RARCH_LOG("[State] Auto-loading savestate \"%s\" deferred until after the first core run.\n",
+         RARCH_LOG("[State] Auto-loading savestate \"%s\" deferred until core initialization completes.\n",
                savestate_name_auto);
       }
       return true;

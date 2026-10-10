@@ -352,6 +352,7 @@ struct runloop
    bool auto_state_load_pending;
    bool auto_state_load_attempted;
    bool auto_state_load_ready;
+   bool auto_state_load_core_ran;
 };
 
 /* Frame pacing sources.
