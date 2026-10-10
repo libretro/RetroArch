@@ -449,6 +449,46 @@ static size_t cdev_frames_consumed(void *d)
    return retro_atomic_load_acquire_size(&dev_pulls) * dev_period;
 }
 
+/* LEND=1: the device lends its ring as a driver with a lendable front
+ * does. Through the real wrapper the pipeline must reach it. */
+static retro_atomic_size_t cnt_lends;
+static uint8_t            *lend_region;
+static size_t cdev_write_begin(void *d, size_t len, void **region)
+{
+   size_t span = dev_capacity - dev_write_ptr;
+   size_t room = dev_rb_write_avail();
+   (void)d;
+   *region = NULL;
+   if (retro_atomic_load_acquire_int(&dev_fail_now))
+      return 0;
+   if (span > room)
+      span = room;
+   if (span > len / device_sample_bytes)
+      span = len / device_sample_bytes;
+   span -= span % channels;
+   if (!span)
+      return 0;
+   lend_region = (uint8_t*)dev_ring + dev_write_ptr * device_sample_bytes;
+   *region     = lend_region;
+   return span * device_sample_bytes;
+}
+
+static ssize_t cdev_write_end(void *d, size_t len)
+{
+   size_t samples = len / device_sample_bytes;
+   (void)d;
+   samples -= samples % channels;
+   if (samples)
+   {
+      note_write();
+      tap_samples(lend_region, samples);
+      dev_write_ptr = (dev_write_ptr + samples) & (dev_capacity - 1);
+      retro_atomic_fetch_add_size(&dev_filled, samples);
+      retro_atomic_fetch_add_size(&cnt_lends, 1);
+   }
+   return (ssize_t)(samples * device_sample_bytes);
+}
+
 static audio_driver_t clocked_driver = {
    cdev_init, cdev_write, cdev_stop, cdev_start, cdev_alive,
    cdev_set_nonblock, cdev_free, cdev_use_float, "clocked", NULL, NULL,
@@ -1367,6 +1407,11 @@ int main(int argc, char **argv)
    if (!retro_eventcount_init(&progress_ev))
       return 2;
    use_wrapper = getenv("WRAPPER") != NULL;
+   if (getenv("LEND"))
+   {
+      clocked_driver.write_begin = cdev_write_begin;
+      clocked_driver.write_end   = cdev_write_end;
+   }
    source_float = getenv("SOURCE_FLOAT") != NULL;
    device_int16 = getenv("DEVICE_INT16") != NULL;
    device_sample_bytes = device_int16 ? sizeof(int16_t) : sizeof(float);
@@ -1504,6 +1549,16 @@ report:
       if (reads)
       {
          fprintf(stderr, "consumer read settings %u times\n", (unsigned)reads);
+         fixture_failures++;
+      }
+   }
+   if (clocked_driver.write_begin)
+   {
+      size_t lends = retro_atomic_load_acquire_size(&cnt_lends);
+      printf("lend: %u spans produced in the device's ring\n", (unsigned)lends);
+      if (!lends)
+      {
+         fprintf(stderr, "the pipeline never reached the device's lend\n");
          fixture_failures++;
       }
    }

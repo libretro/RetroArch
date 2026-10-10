@@ -63,6 +63,12 @@ jobs:
           ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
         run: make check-auto SANITIZER='${{ matrix.sanitizer }}'
+      - name: A device's lend reached through the real wrapper
+        working-directory: samples/audio/pipeline_wakeups
+        env:
+          ASAN_OPTIONS: detect_leaks=1:detect_stack_use_after_return=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=1
+        run: make check-lend SANITIZER='${{ matrix.sanitizer }}'
       - name: Pause boundary on the real wrapper
         working-directory: samples/audio/pipeline_wakeups
         env:

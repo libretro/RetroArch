@@ -557,6 +557,24 @@ static size_t audio_thread_frames_consumed_fallback(void *data)
    return thr->driver->frames_consumed_fallback(thr->driver_data);
 }
 
+/* The lend pair, which the threaded pipeline takes from the wrapper:
+ * a driver that lends is reached only through these. */
+static size_t audio_thread_write_begin(void *data, size_t len, void **region)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   *region             = NULL;
+   if (     !thr || !thr->driver_data
+         || !thr->driver->write_begin || !thr->driver->write_end)
+      return 0;
+   return thr->driver->write_begin(thr->driver_data, len, region);
+}
+
+static ssize_t audio_thread_write_end(void *data, size_t len)
+{
+   audio_thread_t *thr = (audio_thread_t*)data;
+   return thr->driver->write_end(thr->driver_data, len);
+}
+
 static ssize_t audio_thread_write(void *data, const void *s, size_t len)
 {
    ssize_t _len;
@@ -637,7 +655,9 @@ static const audio_driver_t audio_thread = {
    audio_thread_layout,
    audio_thread_frames_consumed_fallback,
    audio_thread_device_clock_ppm,
-   audio_thread_thread_grant
+   audio_thread_thread_grant,
+   audio_thread_write_begin,
+   audio_thread_write_end
 };
 
 /**
