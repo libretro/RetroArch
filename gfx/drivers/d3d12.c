@@ -665,9 +665,9 @@ typedef struct
     * command list copies the back buffer into the next readback buffer
     * of this ring, a fence value is signalled behind the list, and
     * read_viewport maps the buffer copied D3D12_RECORD_RING frames ago
-    * once its fence has passed - never waiting on the GPU. Before this
-    * the recorder re-rendered the frame, drained the queue, created a
-    * fresh readback buffer and copied into it, every frame. */
+    * once its fence has passed - never waiting on the GPU. A GPU
+    * screenshot copies one frame into it with a list of its own and
+    * waits for that; the next frame not recorded frees the ring. */
 #define D3D12_RECORD_RING 3
    struct
    {
@@ -8314,18 +8314,36 @@ static bool d3d12_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    bool            ret = true;
    const D3D12_PLACED_SUBRESOURCE_FOOTPRINT *footprint;
 
-   (void)is_idle;
-
    if (!d3d12)
       return false;
 
-   /* Nothing captured yet: the frame after recording starts records
-    * the first copy, and the ring fills over the next few frames. The
-    * recorder treats false as "not this frame" and tries again. */
-   if (!d3d12->record.enable)
-      return false;
-
-   slot     = d3d12->record.index; /* the oldest: copied RING frames ago */
+   if (d3d12->record.enable)
+      /* Recording: the oldest copy, made RING frames ago. The recorder
+       * treats false as "not this frame" and tries again. */
+      slot = d3d12->record.index;
+   else
+   {
+      /* A screenshot: the frame drawn again (idle, as it stands), then
+       * the buffer it was presented from copied with a list of its
+       * own, and that copy waited for. */
+      D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
+      if (!is_idle)
+         video_driver_cached_frame();
+      d3d12_queue_drain(d3d12);
+      d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+      cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
+            d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+      d3d12_record_capture(d3d12, cmd);
+      cmd->lpVtbl->Close(cmd);
+      d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle,
+            1, (ID3D12CommandList* const*)&d3d12->queue.cmd);
+      d3d12_record_signal(d3d12);
+      d3d12_queue_drain(d3d12);
+      if (!d3d12->record.enable)
+         return false;
+      slot = (d3d12->record.index + D3D12_RECORD_RING - 1)
+         % D3D12_RECORD_RING;
+   }
    readback = d3d12->record.readback[slot];
    if (!d3d12->record.valid[slot] || !readback)
       return false;

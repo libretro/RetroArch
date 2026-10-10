@@ -6749,6 +6749,8 @@ static void lane_x11_wsi_connection(void)
 /*   which the validation layer reports. Run on a tree configured     */
 /*   with OpenXR too, where the headset checks sit in the same chain. */
 /*   Unthreaded, and under the wrapper through CMD_READ_VIEWPORT.     */
+/*   On d3d11 and d3d12 the read must not need a recording running:   */
+/*   their streamed recording ring is also what a screenshot reads.   */
 /* ------------------------------------------------------------------ */
 
 static void readback_once(bool threaded)
@@ -7690,7 +7692,10 @@ int main(int argc, char *argv[])
       lane_x11_event_pump();
    if (real_driver())
       lane_x11_wsi_connection();
-   if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+   if (     real_driver()
+         && (  !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d11")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d12")))
       lane_gpu_readback();
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
       lane_record_format();

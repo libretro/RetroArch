@@ -117,7 +117,10 @@ enum d3d11_state_flags
    /* The menu has drawn a texture wider than eight bits under HDR: the
     * back buffer the UI is drawn into is R16G16B16A16_FLOAT from then
     * on (d3d11_back_buffer_format), so the composite gets it as drawn. */
-   D3D11_ST_FLAG_UI_WIDE             = (1 << 19)
+   D3D11_ST_FLAG_UI_WIDE             = (1 << 19),
+   /* A GPU screenshot waits for this frame's back buffer: the frame
+    * copies it into the recording ring before Present. */
+   D3D11_ST_FLAG_READBACK_PENDING    = (1 << 20)
 };
 
 enum d3d11_feature_level_hint
@@ -572,8 +575,8 @@ typedef struct
     * frame is copied from the back buffer into the next staging
     * texture of this ring before Present; read_viewport maps the one
     * copied D3D11_RECORD_RING frames ago without waiting on the GPU.
-    * Before this the recorder re-rendered the frame, created a fresh
-    * staging texture and mapped it with a blocking read, every frame. */
+    * A GPU screenshot has one frame copied into it and waits for that
+    * copy; the next frame not recorded frees the ring. */
 #define D3D11_RECORD_RING 3
    struct
    {
@@ -4714,8 +4717,6 @@ static INLINE void d3d11_wait_for_vblank(d3d11_video_t* d3d11)
    Release(pOutput);
 }
 
-/* Copies the current backbuffer into the retained texture, creating or
- * resizing that texture to match the swapchain when it does not. */
 static void d3d11_record_free(d3d11_video_t *d3d11)
 {
    unsigned i;
@@ -4780,6 +4781,8 @@ static void d3d11_record_capture(d3d11_video_t *d3d11)
    Release(back_buffer);
 }
 
+/* Copies the current backbuffer into the retained texture, creating or
+ * resizing that texture to match the swapchain when it does not. */
 static void d3d11_retain_backbuffer(d3d11_video_t *d3d11)
 {
    D3D11Texture2D back_buffer = NULL;
@@ -6292,8 +6295,12 @@ static bool d3d11_gfx_frame_body(
    /* The recorder's copy of this frame, queued behind the render so
     * the GPU does it in its own time; read_viewport picks it up frames
     * later. Torn down when recording stops. */
-   if (video_info->gpu_recording)
+   if (     video_info->gpu_recording
+         || (d3d11->flags & D3D11_ST_FLAG_READBACK_PENDING))
+   {
+      d3d11->flags &= ~D3D11_ST_FLAG_READBACK_PENDING;
       d3d11_record_capture(d3d11);
+   }
    else if (d3d11->record.enable)
       d3d11_record_free(d3d11);
 
@@ -6605,29 +6612,48 @@ static bool d3d11_gfx_read_viewport(void* data, uint8_t* buffer, bool is_idle)
    unsigned slot;
    uint32_t y;
    uint32_t x;
+   bool wait;
    bool ret = true;
    HRESULT hr;
-
-   (void)is_idle;
 
    if (!d3d11)
       return false;
 
-   /* Nothing captured yet: the frame after recording starts queues
-    * the first copy, and the ring fills over the next few frames. The
-    * recorder treats false as "not this frame" and tries again. */
-   if (!d3d11->record.enable)
-      return false;
+   if (d3d11->record.enable)
+   {
+      /* Recording: the oldest copy, made RING frames ago. The recorder
+       * treats false as "not this frame" and tries again. */
+      slot = d3d11->record.index;
+      wait = false;
+   }
+   else
+   {
+      /* A screenshot: the frame drawn again, its back buffer copied
+       * before Present; idle, the back buffer as it stands. That copy
+       * is waited for. */
+      d3d11->flags |= D3D11_ST_FLAG_READBACK_PENDING;
+      if (!is_idle)
+         video_driver_cached_frame();
+      if (d3d11->flags & D3D11_ST_FLAG_READBACK_PENDING)
+      {
+         d3d11->flags &= ~D3D11_ST_FLAG_READBACK_PENDING;
+         d3d11_record_capture(d3d11);
+      }
+      if (!d3d11->record.enable)
+         return false;
+      slot = (d3d11->record.index + D3D11_RECORD_RING - 1)
+         % D3D11_RECORD_RING;
+      wait = true;
+   }
 
-   slot    = d3d11->record.index; /* the oldest: copied RING frames ago */
    staging = d3d11->record.staging[slot];
    if (!d3d11->record.valid[slot] || !staging)
       return false;
 
-   /* A map that would wait for the GPU is declined instead; the copy
-    * is read on a later frame, never waited for. */
+   /* Recording never waits for the GPU: a copy still being made is
+    * read on a later frame. */
    hr = d3d11->context->lpVtbl->Map(d3d11->context, (D3D11Resource)staging,
-         0, D3D11_MAP_READ, D3D11_MAP_FLAG_DO_NOT_WAIT, &Map);
+         0, D3D11_MAP_READ, wait ? 0 : D3D11_MAP_FLAG_DO_NOT_WAIT, &Map);
    if (hr == DXGI_ERROR_WAS_STILL_DRAWING)
       return false;
    if (FAILED(hr))
