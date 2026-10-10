@@ -8,6 +8,7 @@ LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 # the real glsym table the test points at its own mocks, and SPIRV-Cross
 # and the rest of the frontend stubbed in stubs.c.
 COMMON  := stubs.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
            spvc_stubs.c \
            $(LIBRETRO_COMM_DIR)/glsym/glsym_gl.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
