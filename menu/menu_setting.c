@@ -127,6 +127,9 @@ void android_app_set_window_settings(bool notch_write_over,
 #include "../performance_counters.h"
 #include "../setting_list.h"
 #include "../lakka.h"
+#ifdef HAVE_LAKKA
+#include "../misc/timedate/timedate.h"
+#endif
 #ifdef HAVE_LAKKA_SWITCH
 #include "../lakka-switch.h"
 #endif
@@ -18033,6 +18036,156 @@ static void settings_build_netplay(
    }
 }
 
+#ifdef HAVE_LAKKA
+/* Date and Time submenu (Services). The rows edit this staged copy;
+ * nothing touches the clock until Apply. It is loaded from the
+ * current local time each time the submenu is entered. */
+static struct timedate_fields lakka_datetime_pending;
+/* The AM/PM row edits the hour; it needs a target of its own. */
+static unsigned lakka_datetime_ampm_target;
+
+void menu_lakka_datetime_load_now(void)
+{
+   timedate_get_local(&lakka_datetime_pending);
+}
+
+const struct timedate_fields *menu_lakka_datetime_get(void)
+{
+   return &lakka_datetime_pending;
+}
+
+static unsigned lakka_datetime_wrap(unsigned v, int dir,
+      unsigned min, unsigned max)
+{
+   if (dir < 0)
+      return (v <= min) ? max : v - 1;
+   return (v >= max) ? min : v + 1;
+}
+
+static void lakka_datetime_step(rarch_setting_t *setting, int dir)
+{
+   struct menu_state      *menu_st = menu_state_get_ptr();
+   struct timedate_fields *f       = &lakka_datetime_pending;
+
+   switch (setting->enum_idx)
+   {
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR:
+         f->year   = lakka_datetime_wrap(f->year, dir,
+               TIMEDATE_YEAR_MIN, timedate_year_max());
+         break;
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH:
+         f->month  = lakka_datetime_wrap(f->month, dir, 1, 12);
+         break;
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_DAY:
+         f->day    = lakka_datetime_wrap(f->day, dir, 1,
+               timedate_days_in_month(f->year, f->month));
+         break;
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_HOUR:
+         if (menu_timedate_12hour_enabled())
+         {
+            /* Cycle 12, 1 .. 11 within the current half of the day */
+            unsigned pm = (f->hour >= 12) ? 12 : 0;
+            f->hour     = lakka_datetime_wrap(f->hour % 12, dir, 0, 11) + pm;
+         }
+         else
+            f->hour = lakka_datetime_wrap(f->hour, dir, 0, 23);
+         break;
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_MINUTE:
+         f->minute = lakka_datetime_wrap(f->minute, dir, 0, 59);
+         break;
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_AMPM:
+         f->hour   = (f->hour + 12) % 24;
+         break;
+      default:
+         return;
+   }
+
+   /* A shorter month, or leaving a leap year, pulls the day in
+    * (31 March -> February gives 28 or 29). */
+   timedate_normalize(f);
+
+   /* Day and the Apply preview show values from other rows */
+   menu_st->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                  |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+}
+
+static int lakka_datetime_action_left(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   lakka_datetime_step(setting, -1);
+   return 0;
+}
+
+static int lakka_datetime_action_right(rarch_setting_t *setting,
+      size_t idx, bool wraparound)
+{
+   lakka_datetime_step(setting, 1);
+   return 0;
+}
+
+static size_t lakka_datetime_get_string_representation(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   const struct timedate_fields *f = &lakka_datetime_pending;
+
+   if (!setting)
+      return 0;
+
+   switch (setting->enum_idx)
+   {
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR:
+         return snprintf(s, len, "%u", f->year);
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH:
+         return snprintf(s, len, "%s (%u)",
+               msg_hash_to_str((enum msg_hash_enums)(
+                  MENU_ENUM_LABEL_VALUE_RDB_ENTRY_RELEASE_MONTH_JANUARY
+                  + f->month - 1)),
+               f->month);
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_DAY:
+         return snprintf(s, len, "%u", f->day);
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_HOUR:
+         if (menu_timedate_12hour_enabled())
+            return snprintf(s, len, "%u",
+                  (f->hour % 12) ? (f->hour % 12) : 12);
+         return snprintf(s, len, "%02u", f->hour);
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_MINUTE:
+         return snprintf(s, len, "%02u", f->minute);
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_AMPM:
+         return strlcpy(s, (f->hour >= 12) ? "PM" : "AM", len);
+      default:
+         break;
+   }
+   return 0;
+}
+
+static void lakka_datetime_add_row(
+      rarch_setting_t **list, rarch_setting_info_t *list_info,
+      unsigned *target, enum msg_hash_enums label,
+      enum msg_hash_enums label_value,
+      rarch_setting_group_info_t *group_info,
+      rarch_setting_group_info_t *subgroup_info,
+      const char *parent_group)
+{
+   CONFIG_UINT(
+         list, list_info,
+         target,
+         label,
+         label_value,
+         *target,
+         group_info,
+         subgroup_info,
+         parent_group,
+         NULL,
+         NULL);
+   (*list)[list_info->index - 1].ui_type = ST_UI_TYPE_NONE;
+   /* OK steps forward like Right: a picker, not a free list */
+   SETTINGS_ACTION_SET(ok,    &(*list)[list_info->index - 1], lakka_datetime_action_right)
+   SETTINGS_ACTION_SET(left,  &(*list)[list_info->index - 1], lakka_datetime_action_left)
+   SETTINGS_ACTION_SET(right, &(*list)[list_info->index - 1], lakka_datetime_action_right)
+   SETTINGS_ACTION_SET(repr,  &(*list)[list_info->index - 1], lakka_datetime_get_string_representation)
+}
+#endif
+
 static void settings_build_lakka_services(
       settings_t *settings,
       rarch_setting_t **list, rarch_setting_info_t *list_info,
@@ -18122,6 +18275,68 @@ static void settings_build_lakka_services(
                SD_FLAG_NONE);
          SETTINGS_ACTION_SET(change, &(*list)[list_info->index - 1], localap_enable_toggle_change_handler)
 #endif
+
+         CONFIG_BOOL(
+               list, list_info,
+               &settings->bools.rtc_update_enable,
+               MENU_ENUM_LABEL_RTC_UPDATE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_RTC_UPDATE_ENABLE,
+               DEFAULT_RTC_UPDATE_ENABLE,
+               MENU_ENUM_LABEL_VALUE_OFF,
+               MENU_ENUM_LABEL_VALUE_ON,
+               &group_info,
+               &subgroup_info,
+               parent_group,
+               general_write_handler,
+               general_read_handler,
+               SD_FLAG_NONE);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_SETTINGS,
+               &group_info,
+               &subgroup_info,
+               parent_group);
+
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_pending.year,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_YEAR,
+               &group_info, &subgroup_info, parent_group);
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_pending.month,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_MONTH,
+               &group_info, &subgroup_info, parent_group);
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_pending.day,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_DAY,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_DAY,
+               &group_info, &subgroup_info, parent_group);
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_pending.hour,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_HOUR,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_HOUR,
+               &group_info, &subgroup_info, parent_group);
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_pending.minute,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_MINUTE,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_MINUTE,
+               &group_info, &subgroup_info, parent_group);
+         lakka_datetime_add_row(list, list_info,
+               &lakka_datetime_ampm_target,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_AMPM,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_AMPM,
+               &group_info, &subgroup_info, parent_group);
+
+         CONFIG_ACTION(
+               list, list_info,
+               MENU_ENUM_LABEL_LAKKA_DATETIME_APPLY,
+               MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_APPLY,
+               &group_info,
+               &subgroup_info,
+               parent_group);
 
 #ifdef HAVE_RETROFLAG
          CONFIG_BOOL(

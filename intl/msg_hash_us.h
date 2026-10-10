@@ -35556,6 +35556,78 @@ MSG_HASH(
    "Enable or disable Wi-Fi Access Point."
    )
 MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_RTC_UPDATE_ENABLE,
+   "Update Hardware Clock"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_RTC_UPDATE_ENABLE,
+   "Also store the new date and time in the hardware real-time clock (RTC), so it survives a power-off."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_SETTINGS,
+   "Date and Time"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_SETTINGS,
+   "Set the system date and time."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_YEAR,
+   "Year"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_YEAR,
+   "Year to set."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_MONTH,
+   "Month"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_MONTH,
+   "Month to set."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_DAY,
+   "Day"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_DAY,
+   "Day of the month to set. Follows the length of the selected month, including 29 February in leap years."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_HOUR,
+   "Hour"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_HOUR,
+   "Hour to set."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_MINUTE,
+   "Minute"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_MINUTE,
+   "Minute to set."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_AMPM,
+   "AM/PM"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_AMPM,
+   "Morning (AM) or afternoon and evening (PM)."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_LAKKA_DATETIME_APPLY,
+   "Apply"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_LAKKA_DATETIME_APPLY,
+   "Set the clock to the date and time above."
+   )
+MSG_HASH(
    MENU_ENUM_LABEL_VALUE_TIMEZONE,
    "Time zone"
    )
@@ -35646,6 +35718,26 @@ MSG_HASH(
 MSG_HASH(
    MSG_LOCALAP_ERROR_CONFIG_PARSE,
    "Wrong configuration file - could not find APNAME or PASSWORD in %s"
+   )
+MSG_HASH(
+   MSG_LAKKA_DATETIME_SET,
+   "Date and time set."
+   )
+MSG_HASH(
+   MSG_LAKKA_DATETIME_SET_RTC_FAILED,
+   "Date and time set, but the hardware clock could not be updated."
+   )
+MSG_HASH(
+   MSG_LAKKA_DATETIME_SET_FAILED,
+   "Could not set the date and time."
+   )
+MSG_HASH(
+   MSG_LAKKA_DATETIME_SET_NO_PERMISSION,
+   "Could not set the date and time: RetroArch lacks the CAP_SYS_TIME capability."
+   )
+MSG_HASH(
+   MSG_LAKKA_DATETIME_APPLY_PREVIEW,
+   "Set the clock to %s."
    )
 #endif
 #ifdef GEKKO

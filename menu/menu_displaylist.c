@@ -58,6 +58,7 @@
 
 #ifdef HAVE_LAKKA
 #include "../../lakka.h"
+#include "../misc/timedate/timedate.h"
 #endif
 
 #ifdef HAVE_LIBNX
@@ -12473,12 +12474,73 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE,                                   PARSE_ONLY_BOOL},
 #endif
                {MENU_ENUM_LABEL_TIMEZONE,                                              PARSE_ONLY_STRING_OPTIONS},
+               {MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS,                               PARSE_ACTION},
             };
 
             for (i = 0; i < ARRAY_SIZE(build_list); i++)
             {
                if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
                         build_list[i].enum_idx,  build_list[i].parse_type,
+                        false) == 0)
+                  count++;
+            }
+         }
+         break;
+      case DISPLAYLIST_LAKKA_DATETIME_SETTINGS_LIST:
+         {
+            menu_displaylist_build_info_t build_list[8];
+            unsigned n = 0;
+
+            unsigned order = MENU_TIMEDATE_DATE_ORDER_YMD;
+
+            /* Date fields in the order the menu writes dates in (ISO
+             * order when it cannot tell) */
+            menu_timedate_date_order(&order);
+            switch (order)
+            {
+               case MENU_TIMEDATE_DATE_ORDER_MDY:
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH;  n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_DAY;    n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR;   n++;
+                  break;
+               case MENU_TIMEDATE_DATE_ORDER_DMY:
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_DAY;    n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH;  n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR;   n++;
+                  break;
+               case MENU_TIMEDATE_DATE_ORDER_YMD:
+               default:
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR;   n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH;  n++;
+                  build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_DAY;    n++;
+                  break;
+            }
+
+            build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_HOUR;         n++;
+            build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_MINUTE;       n++;
+            if (menu_timedate_12hour_enabled())
+            {
+               build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_AMPM;      n++;
+            }
+            /* Only offer the RTC toggle when there is an RTC that
+             * can actually be written. */
+            if (timedate_rtc_can_write())
+            {
+               build_list[n].enum_idx = MENU_ENUM_LABEL_RTC_UPDATE_ENABLE;        n++;
+            }
+            build_list[n].enum_idx = MENU_ENUM_LABEL_LAKKA_DATETIME_APPLY;        n++;
+
+            for (i = 0; i < n; i++)
+            {
+               enum msg_hash_enums e = build_list[i].enum_idx;
+               build_list[i].parse_type =
+                       (e == MENU_ENUM_LABEL_LAKKA_DATETIME_APPLY)
+                     ? PARSE_ACTION
+                     : (e == MENU_ENUM_LABEL_RTC_UPDATE_ENABLE)
+                     ? PARSE_ONLY_BOOL
+                     : PARSE_ONLY_UINT;
+               if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                        build_list[i].enum_idx, build_list[i].parse_type,
                         false) == 0)
                   count++;
             }
@@ -16853,6 +16915,7 @@ static bool menu_displaylist_ctl_internal(
          case DISPLAYLIST_MENU_FILE_BROWSER_SETTINGS_LIST:
          case DISPLAYLIST_MENU_VIEWS_SETTINGS_LIST:
          case DISPLAYLIST_LAKKA_SERVICES_LIST:
+         case DISPLAYLIST_LAKKA_DATETIME_SETTINGS_LIST:
 #ifdef HAVE_LAKKA_SWITCH
          case DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST:
 #endif

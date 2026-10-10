@@ -87,6 +87,9 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 #include "../../lakka.h"
+#ifdef HAVE_LAKKA
+#include "../../misc/timedate/timedate.h"
+#endif
 #ifdef HAVE_BLUETOOTH
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
@@ -492,6 +495,8 @@ static enum msg_hash_enums action_ok_dl_to_enum(unsigned lbl)
          return MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST;
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST;
+      case ACTION_OK_DL_LAKKA_DATETIME_SETTINGS_LIST:
+         return MENU_ENUM_LABEL_DEFERRED_LAKKA_DATETIME_SETTINGS_LIST;
 #ifdef HAVE_LAKKA_SWITCH
       case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
          return MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST;
@@ -1868,6 +1873,7 @@ int generic_action_ok_displaylist_push(
       case ACTION_OK_DL_WIFI_SETTINGS_LIST:
       case ACTION_OK_DL_WIFI_NETWORKS_LIST:
       case ACTION_OK_DL_LAKKA_SERVICES_LIST:
+      case ACTION_OK_DL_LAKKA_DATETIME_SETTINGS_LIST:
 #ifdef HAVE_LAKKA_SWITCH
       case ACTION_OK_DL_LAKKA_SWITCH_OPTIONS_LIST:
 #endif
@@ -9644,6 +9650,59 @@ static int action_ok_smb_browse(const char *path,
 }
 #endif
 
+#ifdef HAVE_LAKKA
+static int action_ok_lakka_datetime_settings(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   /* Every visit starts from what the system clock says now */
+   menu_lakka_datetime_load_now();
+   return generic_action_ok_displaylist_push(path, NULL, label, type,
+         idx, entry_idx, ACTION_OK_DL_LAKKA_DATETIME_SETTINGS_LIST);
+}
+
+static int action_ok_lakka_datetime_apply(const char *path,
+      const char *label, unsigned type, size_t idx, size_t entry_idx)
+{
+   settings_t        *settings = config_get_ptr();
+   struct menu_state *menu_st  = menu_state_get_ptr();
+   enum msg_hash_enums msg     = MSG_LAKKA_DATETIME_SET;
+   enum message_queue_category category = MESSAGE_QUEUE_CATEGORY_SUCCESS;
+   size_t             selection;
+   const char        *_msg;
+
+   switch (timedate_set_local(menu_lakka_datetime_get(),
+            settings->bools.rtc_update_enable))
+   {
+      case TIMEDATE_SET_OK:
+         break;
+      case TIMEDATE_SET_OK_RTC_FAILED:
+         msg      = MSG_LAKKA_DATETIME_SET_RTC_FAILED;
+         category = MESSAGE_QUEUE_CATEGORY_WARNING;
+         break;
+      case TIMEDATE_SET_NO_PERMISSION:
+         msg      = MSG_LAKKA_DATETIME_SET_NO_PERMISSION;
+         category = MESSAGE_QUEUE_CATEGORY_ERROR;
+         break;
+      case TIMEDATE_SET_INVALID:
+      case TIMEDATE_SET_FAILED:
+      default:
+         msg      = MSG_LAKKA_DATETIME_SET_FAILED;
+         category = MESSAGE_QUEUE_CATEGORY_ERROR;
+         break;
+   }
+
+   _msg = msg_hash_to_str(msg);
+   runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,
+         MESSAGE_QUEUE_ICON_DEFAULT, category);
+
+   /* Back to Services either way; the notification says how it went */
+   selection              = menu_st->selection_ptr;
+   menu_entries_pop_stack(&selection, 0, 1);
+   menu_st->selection_ptr = selection;
+   return 0;
+}
+#endif
+
 static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
       const char *label)
 {
@@ -9951,6 +10010,10 @@ static int menu_cbs_init_bind_ok_compare_label(menu_file_list_cbs_t *cbs,
 #endif
 #ifdef HAVE_LAKKA_SWITCH
          {MENU_ENUM_LABEL_LAKKA_SWITCH_OPTIONS,                action_ok_lakka_switch_options},
+#endif
+#ifdef HAVE_LAKKA
+         {MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS,             action_ok_lakka_datetime_settings},
+         {MENU_ENUM_LABEL_LAKKA_DATETIME_APPLY,                action_ok_lakka_datetime_apply},
 #endif
          {MENU_ENUM_LABEL_SCREEN_RESOLUTION,                   action_ok_video_resolution},
          {MENU_ENUM_LABEL_PLAYLIST_MANAGER_DEFAULT_CORE,       action_ok_playlist_default_core},

@@ -119,6 +119,15 @@ void menu_setting_free(rarch_setting_t *setting);
  * name of the keyboard listed there. */
 size_t menu_setting_keyboard_index_name(unsigned idx, char *s, size_t len);
 
+#ifdef HAVE_LAKKA
+struct timedate_fields;
+
+/* Services > Date and Time: reload the staged date and time from
+ * the clock (on entering the submenu), and read it (for Apply). */
+void menu_lakka_datetime_load_now(void);
+const struct timedate_fields *menu_lakka_datetime_get(void);
+#endif
+
 RETRO_END_DECLS
 
 #endif

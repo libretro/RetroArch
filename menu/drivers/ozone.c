@@ -2019,6 +2019,10 @@ static uintptr_t ozone_entries_icon_get_texture(
 #endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_DISC];
+#ifdef HAVE_LAKKA
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS:
+         return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CLOCK];
+#endif
       case MENU_ENUM_LABEL_QUICK_MENU_SHOW_OPTIONS:
          return icons_tex[OZONE_ENTRIES_ICONS_TEXTURE_CORE_OPTIONS];
       case MENU_ENUM_LABEL_ADD_TO_FAVORITES:

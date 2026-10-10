@@ -4432,6 +4432,10 @@ static uintptr_t xmb_icon_get_id(xmb_handle_t *xmb,
 #endif
       case MENU_ENUM_LABEL_DISC_INFORMATION:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_DISC]);
+#ifdef HAVE_LAKKA
+      case MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS:
+         return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_CLOCK]);
+#endif
       case MENU_ENUM_LABEL_CONTENT_SETTINGS:
       case MENU_ENUM_LABEL_UPDATE_ASSETS:
          return GFX_SURFACE_HANDLE(xmb->textures.list[XMB_TEXTURE_QUICKMENU]);
