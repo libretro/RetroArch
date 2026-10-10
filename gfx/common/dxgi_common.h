@@ -392,14 +392,14 @@ static INLINE HRESULT DXGICreateSwapChain(
       DXGIFactory1 factory, void* device, DXGI_SWAP_CHAIN_DESC* desc, DXGISwapChain* swap_chain)
 {
    IDXGIFactory2 *factory2 = NULL;
+#ifdef __cplusplus
+   REFIID factory2_iid = libretro_IID_IDXGIFactory2;
+#else
+   REFIID factory2_iid = &libretro_IID_IDXGIFactory2;
+#endif
    if (     desc->SwapEffect >= DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
          && SUCCEEDED(factory->lpVtbl->QueryInterface(factory,
-#ifdef __cplusplus
-               libretro_IID_IDXGIFactory2,
-#else
-               &libretro_IID_IDXGIFactory2,
-#endif
-               (void**)&factory2)))
+               factory2_iid, (void**)&factory2)))
    {
       HRESULT hr;
       DXGI_SWAP_CHAIN_DESC1 desc1 = {0};
