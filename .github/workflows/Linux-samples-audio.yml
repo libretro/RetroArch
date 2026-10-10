@@ -1179,6 +1179,16 @@ jobs:
           # the integer front pair exists only behind its hint.
           make -j$(nproc) check SANITIZER=address,undefined
 
+      - name: Build and run unity_identity_test (plain, ASan + UBSan)
+        working-directory: samples/audio/unity_identity
+        run: |
+          # The unity passthrough end to end: an s16 batch at a pinned
+          # ratio of 1.0 reaches an s16 device with zero conversions,
+          # counted through linker wraps; the fallbacks still convert.
+          make -j$(nproc) check
+          make clean
+          make -j$(nproc) check SANITIZER=address,undefined
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |

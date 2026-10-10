@@ -850,10 +850,15 @@ static void audio_driver_extra_resample(audio_driver_state_t *audio_st,
     * when a resampler exists. Bailing out of the whole function would
     * be wrong - the extras still have to be resampled on that path,
     * because they are what the encoder is handed. */
-   if (bypass && !audio_st->extra.bypassed && !int16_path
-         && audio_st->resampler && audio_st->resampler->reset)
-      for (i = 0; i < audio_st->extra.nres; i++)
-         audio_st->resampler->reset(audio_st->extra.res[i]);
+   if (bypass && !audio_st->extra.bypassed)
+   {
+      if (!int16_path && audio_st->resampler && audio_st->resampler->reset)
+         for (i = 0; i < audio_st->extra.nres; i++)
+            audio_st->resampler->reset(audio_st->extra.res[i]);
+      else if (int16_path && audio_st->resampler_int16_reset)
+         for (i = 0; i < audio_st->extra.nres; i++)
+            audio_st->resampler_int16_reset(audio_st->extra.res[i]);
+   }
    audio_st->extra.bypassed = bypass;
    if (bypass)
    {
@@ -3014,12 +3019,38 @@ static void audio_driver_resume_topup(audio_driver_state_t *audio_st)
    }
 }
 
+/* The unity passthrough's identity write: s16 stereo already at the
+ * output rate goes to the driver as it is.  Callers have excluded the
+ * resume ramp and the pause mute, so pause_track() only reads the
+ * buffer - and reads true history, since the data is at the output
+ * rate. */
+static void audio_driver_write_identity_s16(audio_driver_state_t *audio_st,
+      const audio_driver_t *audio, const int16_t *data, size_t frames)
+{
+   audio_driver_pause_track(audio_st, (void*)data, frames, false);
+   AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
+   {
+      ssize_t w = audio_driver_write_frames(audio_st, audio, data,
+            frames, false, true);
+      audio_driver_retain_output(audio_st, data, frames, w);
+      audio_st->sink_offered_raw += (uint64_t)frames;
+      if (!audio_st->pipe_threaded)
+         audio_st->sink_offered  += (double)frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
+      if (w > 0)
+         audio_st->sink_accepted += (uint64_t)w / audio_driver_dev_frame_bytes(audio_st);
+   }
+   audio_driver_sink_refused(audio_st);
+   if (!audio_st->pipe_threaded)
+      audio_driver_sink_update(audio_st, cpu_features_get_time_usec());
+}
+
 static void audio_driver_flush(audio_driver_state_t *audio_st,
       float slowmotion_ratio,
       const void *data, size_t samples, bool is_float,
       bool is_slowmotion, bool is_fastforward)
 {
    struct resampler_data src_data;
+   const int16_t *s16_in          = NULL;
    bool output_sanitized          = false;
    int snap                       = retro_atomic_load_acquire_int(
          &audio_st->runloop_snapshot);
@@ -3200,7 +3231,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (use_i16)
       {
          struct resampler_data_int16 s16;
-         const int16_t *rs_in = (const int16_t*)data;
+         const int16_t *rs_in   = (const int16_t*)data;
+         const int16_t *res_src = audio_st->output_samples_int16;
          unsigned rs_frames   = (unsigned)(samples >> 1);
          double   i16_ratio;
          unsigned out_frames;
@@ -3307,15 +3339,61 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                audio_st->output_samples_int16_length
                      / (2 * sizeof(int16_t)));
 
-         s16.data_in       = rs_in;
-         s16.data_out      = audio_st->output_samples_int16;
-         s16.input_frames  = rs_frames;
-         s16.output_frames = 0;
-         s16.ratio         = i16_ratio;
-         audio_st->resampler_int16_process(audio_st->resampler_data_int16, &s16);
-         audio_driver_extra_resample(audio_st, i16_ratio, rs_frames, false, true);
-
-         out_frames = (unsigned)s16.output_frames;
+         /* Unity passthrough, as on the float path below: a ratio
+          * pinned at exactly 1.0 makes the convolution an identity. */
+         if (     (   !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_CONTROL)
+                   || audio_st->rate_control_delta == 0.0f)
+               && i16_ratio == 1.0
+               && !audio_st->resampler_hq)
+         {
+            audio_st->resampler_bypassed = true;
+            if (     audio_volume_gain == 1.0f
+                  && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+#ifdef HAVE_AUDIOMIXER
+                  && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+                  && !audio_st->fade_in_frames
+                  && !audio_st->pause_mute_frames)
+            {
+               /* s16 end to end: the input reaches the driver as it is. */
+               audio_driver_extra_resample(audio_st, i16_ratio, rs_frames,
+                     true, true);
+               audio_driver_write_identity_s16(audio_st, audio, rs_in,
+                     rs_frames);
+               return;
+            }
+            if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+               res_src = rs_in;
+            else
+               memcpy(audio_st->output_samples_int16, rs_in,
+                     (size_t)rs_frames * 2 * sizeof(int16_t));
+            out_frames = rs_frames;
+         }
+         else
+         {
+            if (audio_st->resampler_bypassed)
+            {
+               /* Stale history after a bypass, on both backends: the
+                * path can flip while bypassed. */
+               audio_st->resampler_bypassed = false;
+               if (audio_st->resampler_int16_reset
+                     && audio_st->resampler_data_int16)
+                  audio_st->resampler_int16_reset(
+                        audio_st->resampler_data_int16);
+               if (audio_st->resampler && audio_st->resampler->reset
+                     && audio_st->resampler_data)
+                  audio_st->resampler->reset(audio_st->resampler_data);
+            }
+            s16.data_in       = rs_in;
+            s16.data_out      = audio_st->output_samples_int16;
+            s16.input_frames  = rs_frames;
+            s16.output_frames = 0;
+            s16.ratio         = i16_ratio;
+            audio_st->resampler_int16_process(audio_st->resampler_data_int16, &s16);
+            out_frames = (unsigned)s16.output_frames;
+         }
+         audio_driver_extra_resample(audio_st, i16_ratio, rs_frames,
+               audio_st->resampler_bypassed, true);
 
          if (AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
          {
@@ -3323,7 +3401,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
              * pass at the output rate.  The integer resampler already
              * saturated to the s16 range. */
             convert_s16_to_float(audio_st->output_samples_buf,
-                  audio_st->output_samples_int16, out_frames * 2,
+                  res_src, out_frames * 2,
                   audio_volume_gain);
 #ifdef HAVE_AUDIOMIXER
             /* Sum the mixer voices in float on top of the (already
@@ -3501,7 +3579,21 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
             ;
 
-      if (!copy_input)
+      /* An int16 batch that nothing above touches: hold the s16 -> float
+       * conversion until the ratio is known, so the unity passthrough can
+       * take the s16 as it is; the resampler branch converts late. */
+      if (     !is_float
+            && audio_volume_gain == 1.0f
+            && !synth_on
+#ifdef HAVE_DSP_FILTER
+            && !audio_st->dsp
+#endif
+         )
+      {
+         s16_in                      = (const int16_t*)data;
+         src_data.data_in            = NULL;
+      }
+      else if (!copy_input)
          src_data.data_in            = (const float*)data;
       else
       {
@@ -3687,7 +3779,31 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          && src_data.ratio == 1.0
          && !audio_st->resampler_hq)
    {
-      if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+      if (s16_in)
+      {
+         if (     !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
+#ifdef HAVE_AUDIOMIXER
+               && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
+#endif
+               && !audio_st->fade_in_frames
+               && !audio_st->pause_mute_frames)
+         {
+            /* s16 end to end: the input reaches the driver as it is. */
+            audio_st->stat_frontend_is_float = false;
+            audio_st->resampler_bypassed     = true;
+            audio_driver_extra_resample(audio_st, src_data.ratio,
+                  src_data.input_frames, true, false);
+            audio_driver_write_identity_s16(audio_st, audio, s16_in,
+                  src_data.input_frames);
+            return;
+         }
+         /* A float device, the mixer or the ramp: one conversion,
+          * straight to the output buffer.  s16 widened is in range. */
+         convert_s16_to_float(audio_st->output_samples_buf, s16_in,
+               src_data.input_frames * 2, 1.0f);
+         output_sanitized = true;
+      }
+      else if ((AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_USE_FLOAT)
 #ifdef HAVE_AUDIOMIXER
             && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_MIXER_ACTIVE)
 #endif
@@ -3709,13 +3825,24 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       {
          /* The history is stale after a bypass; forgotten in place
           * where the backend can, on this thread with no allocator,
-          * or the state re-created where it cannot. */
+          * or the state re-created where it cannot.  Both backends:
+          * the path can flip while bypassed. */
          audio_st->resampler_bypassed = false;
          if (audio_st->resampler && audio_st->resampler->reset
                && audio_st->resampler_data)
             audio_st->resampler->reset(audio_st->resampler_data);
          else
             audio_driver_resampler_realloc(audio_st, audio_st->resampler_hq);
+         if (audio_st->resampler_int16_reset
+               && audio_st->resampler_data_int16)
+            audio_st->resampler_int16_reset(audio_st->resampler_data_int16);
+      }
+      if (s16_in)
+      {
+         /* The conversion the deferral held back. */
+         convert_s16_to_float(audio_st->input_data, s16_in,
+               src_data.input_frames * 2, 1.0f);
+         src_data.data_in = audio_st->input_data;
       }
       if (audio_st->resampler_data)
          audio_st->resampler->process(audio_st->resampler_data, &src_data);
