@@ -2257,6 +2257,9 @@ static struct config_bool_setting *populate_settings_bool(
 #ifndef HAVE_LAKKA
    SETTING_BOOL("gamemode_enable",               &settings->bools.gamemode_enable, true, DEFAULT_GAMEMODE_ENABLE, false);
 #endif
+#ifdef HAVE_LAKKA
+   SETTING_BOOL("rtc_update_enable",             &settings->bools.rtc_update_enable, true, DEFAULT_RTC_UPDATE_ENABLE, false);
+#endif
 #ifdef HAVE_LAKKA_SWITCH
    SETTING_BOOL("switch_oc",                     &settings->bools.switch_oc, true, DEFAULT_SWITCH_OC, false);
    SETTING_BOOL("switch_cec",                    &settings->bools.switch_cec, true, DEFAULT_SWITCH_CEC, false);

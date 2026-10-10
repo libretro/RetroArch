@@ -219,6 +219,9 @@ GENERIC_DEFERRED_PUSH(deferred_push_netplay_kick_list,              DISPLAYLIST_
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_ban_list,               DISPLAYLIST_NETPLAY_BAN_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_netplay_lobby_filters_list,     DISPLAYLIST_NETPLAY_LOBBY_FILTERS_LIST)
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_services_list,            DISPLAYLIST_LAKKA_SERVICES_LIST)
+#ifdef HAVE_LAKKA
+GENERIC_DEFERRED_PUSH(deferred_push_lakka_datetime_settings_list,   DISPLAYLIST_LAKKA_DATETIME_SETTINGS_LIST)
+#endif
 #ifdef HAVE_LAKKA_SWITCH
 GENERIC_DEFERRED_PUSH(deferred_push_lakka_switch_options_list,      DISPLAYLIST_LAKKA_SWITCH_OPTIONS_LIST)
 #endif
@@ -692,6 +695,9 @@ static int menu_cbs_init_bind_deferred_push_compare_label(
       {MENU_ENUM_LABEL_DEFERRED_WIFI_SETTINGS_LIST, deferred_push_wifi_settings_list},
       {MENU_ENUM_LABEL_DEFERRED_WIFI_NETWORKS_LIST, deferred_push_wifi_networks_list},
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SERVICES_LIST, deferred_push_lakka_services_list},
+#ifdef HAVE_LAKKA
+      {MENU_ENUM_LABEL_DEFERRED_LAKKA_DATETIME_SETTINGS_LIST, deferred_push_lakka_datetime_settings_list},
+#endif
 #ifdef HAVE_LAKKA_SWITCH
       {MENU_ENUM_LABEL_DEFERRED_LAKKA_SWITCH_OPTIONS_LIST, deferred_push_lakka_switch_options_list},
 #endif

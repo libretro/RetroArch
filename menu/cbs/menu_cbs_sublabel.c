@@ -43,6 +43,10 @@
 #include "../../bluetooth/bluetooth_driver.h"
 #endif
 #include "../../misc/cpufreq/cpufreq.h"
+#ifdef HAVE_LAKKA
+#include "../menu_setting.h"
+#include "../../misc/timedate/timedate.h"
+#endif
 
 #ifdef HAVE_NETWORKING
 #include "../../network/netplay/netplay.h"
@@ -277,6 +281,72 @@ DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_samba_enable,                  MENU_
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_bluetooth_enable,              MENU_ENUM_SUBLABEL_BLUETOOTH_ENABLE )
 #endif
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_localap_enable,                MENU_ENUM_SUBLABEL_LOCALAP_ENABLE )
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_rtc_update_enable,             MENU_ENUM_SUBLABEL_RTC_UPDATE_ENABLE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_settings,       MENU_ENUM_SUBLABEL_LAKKA_DATETIME_SETTINGS)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_year,           MENU_ENUM_SUBLABEL_LAKKA_DATETIME_YEAR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_month,          MENU_ENUM_SUBLABEL_LAKKA_DATETIME_MONTH)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_day,            MENU_ENUM_SUBLABEL_LAKKA_DATETIME_DAY)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_hour,           MENU_ENUM_SUBLABEL_LAKKA_DATETIME_HOUR)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_minute,         MENU_ENUM_SUBLABEL_LAKKA_DATETIME_MINUTE)
+DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_lakka_datetime_ampm,           MENU_ENUM_SUBLABEL_LAKKA_DATETIME_AMPM)
+
+/* Apply: preview the staged date and time, written the way the
+ * menu clock writes dates (its date order, separator and 12/24-hour
+ * setting). */
+static int action_bind_sublabel_lakka_datetime_apply(
+      file_list_t *list, unsigned type, unsigned i,
+      const char *label, const char *path, char *s, size_t len)
+{
+   char date_str[32];
+   char time_str[16];
+   char when[64];
+   settings_t *settings            = config_get_ptr();
+   const struct timedate_fields *f = menu_lakka_datetime_get();
+   char sep                        = '-';
+   unsigned order                  = MENU_TIMEDATE_DATE_ORDER_YMD;
+
+   switch (settings->uints.menu_timedate_date_separator)
+   {
+      case MENU_TIMEDATE_DATE_SEPARATOR_SLASH:
+         sep = '/';
+         break;
+      case MENU_TIMEDATE_DATE_SEPARATOR_PERIOD:
+         sep = '.';
+         break;
+      default:
+         break;
+   }
+
+   menu_timedate_date_order(&order);
+   switch (order)
+   {
+      case MENU_TIMEDATE_DATE_ORDER_MDY:
+         snprintf(date_str, sizeof(date_str), "%02u%c%02u%c%04u",
+               f->month, sep, f->day, sep, f->year);
+         break;
+      case MENU_TIMEDATE_DATE_ORDER_DMY:
+         snprintf(date_str, sizeof(date_str), "%02u%c%02u%c%04u",
+               f->day, sep, f->month, sep, f->year);
+         break;
+      case MENU_TIMEDATE_DATE_ORDER_YMD:
+      default:
+         snprintf(date_str, sizeof(date_str), "%04u%c%02u%c%02u",
+               f->year, sep, f->month, sep, f->day);
+         break;
+   }
+
+   if (menu_timedate_12hour_enabled())
+      snprintf(time_str, sizeof(time_str), "%u:%02u %s",
+            (f->hour % 12) ? (f->hour % 12) : 12, f->minute,
+            (f->hour >= 12) ? "PM" : "AM");
+   else
+      snprintf(time_str, sizeof(time_str), "%02u:%02u",
+            f->hour, f->minute);
+
+   snprintf(when, sizeof(when), "%s %s", date_str, time_str);
+   snprintf(s, len, msg_hash_to_str(MSG_LAKKA_DATETIME_APPLY_PREVIEW), when);
+   return 1;
+}
 #ifdef HAVE_RETROFLAG
 DEFAULT_SUBLABEL_MACRO(action_bind_sublabel_safeshutdown_enable,           MENU_ENUM_SUBLABEL_SAFESHUTDOWN_ENABLE)
 #endif
@@ -3754,6 +3824,33 @@ int menu_cbs_init_bind_sublabel(menu_file_list_cbs_t *cbs,
             break;
          case MENU_ENUM_LABEL_LOCALAP_ENABLE:
             BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_localap_enable);
+            break;
+         case MENU_ENUM_LABEL_RTC_UPDATE_ENABLE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_rtc_update_enable);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_settings);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_YEAR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_year);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_MONTH:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_month);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_DAY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_day);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_HOUR:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_hour);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_MINUTE:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_minute);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_AMPM:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_ampm);
+            break;
+         case MENU_ENUM_LABEL_LAKKA_DATETIME_APPLY:
+            BIND_ACTION_SUBLABEL(cbs, action_bind_sublabel_lakka_datetime_apply);
             break;
 #ifdef HAVE_RETROFLAG
          case MENU_ENUM_LABEL_SAFESHUTDOWN_ENABLE:

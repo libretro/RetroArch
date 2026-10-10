@@ -12640,6 +12640,9 @@ static void materialui_list_insert(void *userdata,
                   || string_is_equal(label, MENU_ENUM_LABEL_WIFI_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_NETWORK_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_LAKKA_SERVICES_STR)
+#ifdef HAVE_LAKKA
+                  || string_is_equal(label, MENU_ENUM_LABEL_LAKKA_DATETIME_SETTINGS_STR)
+#endif
                   || string_is_equal(label, MENU_ENUM_LABEL_PLAYLIST_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_USER_SETTINGS_STR)
                   || string_is_equal(label, MENU_ENUM_LABEL_DIRECTORY_SETTINGS_STR)
