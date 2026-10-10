@@ -7695,6 +7695,7 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t curr_time;
    static retro_time_t fps_time;
    static uint64_t last_fps_count;
+   static uint64_t last_memory_count;
    static float last_fps, frame_time;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
@@ -8042,7 +8043,7 @@ void video_driver_frame(const void *data, unsigned width,
           * text is formatted on that tick and copied in between. */
          static char mem_text[48];
 
-         if (     (video_st->frame_count % memory_update_interval) == 0
+         if (     (video_st->frame_count - last_memory_count) >= memory_update_interval
                || !mem_text[0])
          {
             /* Both are snapshots of a machine that moves underneath
@@ -8058,6 +8059,7 @@ void video_driver_frame(const void *data, unsigned width,
             snprintf(mem_text, sizeof(mem_text), "MEM: %.2f/%.2fMB",
                   used_memory  / (1024.0f * 1024.0f),
                   total_memory / (1024.0f * 1024.0f));
+            last_memory_count = video_st->frame_count;
          }
 
          if (_len > 0)
@@ -8115,6 +8117,7 @@ void video_driver_frame(const void *data, unsigned width,
    {
       curr_time = fps_time = new_time;
       last_fps_count = 0;
+      last_memory_count = 0;
 
       VIDEO_TITLE_LOCK(video_st);
       strlcpy(
