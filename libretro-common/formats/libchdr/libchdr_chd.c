@@ -1899,6 +1899,13 @@ static uint8_t* hunk_read_compressed(chd_file *chd, uint64_t offset, size_t size
 {
 	size_t bytes;
 
+	/* The staging buffer is one uncompressed hunk large. A malformed map
+	 * can advertise a larger 24-bit compressed length; reading that much
+	 * into chd->compressed would overflow it. CHD writers store a hunk
+	 * uncompressed when compression does not make it smaller. */
+	if (size > chd->header.hunkbytes)
+		return NULL;
+
 	if (chd->file_cache != NULL)
 	{
 		return chd->file_cache + offset;
