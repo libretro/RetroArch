@@ -1004,6 +1004,7 @@
 #define MENU_ENUM_LABEL_AUDIO_OUTPUT_LAYOUT_STR "audio_output_layout"
 #define MENU_ENUM_LABEL_AUDIO_OUTPUT_RATE_STR "audio_output_rate"
 #define MENU_ENUM_LABEL_AUDIO_OUTPUT_SETTINGS_STR "audio_output_settings"
+#define MENU_ENUM_LABEL_AUDIO_PIPELINE_FILL_CAP_STR "audio_pipeline_fill_cap"
 #define MENU_ENUM_LABEL_AUDIO_RESAMPLER_HQ_OVERSAMPLING_STR "audio_resampler_hq_oversampling"
 #define MENU_ENUM_LABEL_AUDIO_RESAMPLER_QUALITY_STR "audio_resampler_quality"
 #define MENU_ENUM_LABEL_AUDIO_RESPECT_SILENT_MODE_STR "audio_respect_silent_mode"

@@ -1253,7 +1253,9 @@ enum audio_runloop_snapshot_bits
    AUDIO_SNAP_FF_SPEEDUP  = (1 << 7),
    AUDIO_SNAP_SINK_EST    = (1 << 8),
    AUDIO_SNAP_FASTPATH_S16 = (1 << 9),
-   AUDIO_SNAP_STRETCH_LPF = (1 << 10)
+   AUDIO_SNAP_STRETCH_LPF = (1 << 10),
+   /* audio_pipeline_fill_cap: see audio_driver_pipe_cap_frames() */
+   AUDIO_SNAP_PIPE_CAP    = (1 << 11)
 };
 
 /**

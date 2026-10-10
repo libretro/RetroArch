@@ -16,6 +16,12 @@ S_BOOL(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
       "Threaded Pipeline",
       "Resample, filter and mix audio on the audio thread instead of inside each frame. Same latency as the frame-synchronous path at any Audio Latency setting, with rate control measured at the device's own pace and the resampler out of the frame budget. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
 
+S_BOOL(audio_pipeline_fill_cap, AUDIO_PIPELINE_FILL_CAP,
+      "audio_pipeline_fill_cap",
+      false, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
+      "Shallow Pipeline Queue",
+      "With Synchronization and the Threaded Pipeline on, hold the core once about two frames of audio wait ahead of the device, instead of letting the pipeline's whole queue fill. Lowers latency when audio is what paces the core, such as with Vertical Sync off, and starts the queue shallower when the display paces it.")
+
 S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_AUDIO_REINIT,

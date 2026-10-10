@@ -713,6 +713,7 @@ typedef struct settings
       bool audio_headphone_virtual_surround;
       bool audio_sink_rate_estimation;
       bool audio_threaded_pipeline;
+      bool audio_pipeline_fill_cap;
       bool audio_thread_priority;
       bool audio_rate_control;
       bool audio_fastforward_mute;

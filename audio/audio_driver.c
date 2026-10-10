@@ -4960,6 +4960,8 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_FASTPATH_S16;
    if (settings->bools.audio_time_stretch_lowpass)
       v |= AUDIO_SNAP_STRETCH_LPF;
+   if (settings->bools.audio_pipeline_fill_cap)
+      v |= AUDIO_SNAP_PIPE_CAP;
    ratio = settings->floats.slowmotion_ratio;
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(
@@ -5537,6 +5539,42 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    return target < ring_max ? target : ring_max;
 }
 
+/* How far the producer may fill the pipe, in frames, where it is to
+ * stop short of a full ring; zero where it is not.
+ *
+ * With Audio Sync on and nothing else pacing the core - no vsync, or a
+ * display that does not hold it - the core runs a frame, publishes,
+ * and is held only when the ring has no room left. So the ring sits
+ * full, and every sample published waits behind all of it: the whole
+ * ring of latency on top of the device's buffer, where a core paced by
+ * the display keeps the pipe near its target. Holding the core at the
+ * target and one publish on top puts the audio-paced fill where the
+ * display-paced one already is - one publish arriving while the
+ * consumer takes the last, the target behind it.
+ *
+ * Only with Audio Sync, where the producer blocks at all, and only on
+ * request: audio_pipeline_fill_cap, off by default, which leaves the
+ * core held by a full ring as it always was.
+ *
+ * A display-paced core never reaches the cap, but priming does: it
+ * waits for the target and the device's buffer on top, and is held
+ * under the cap (audio_driver_pipe_prime_frames()). Rate control keeps
+ * the pipe near where it started, so there the cap trims the device's
+ * worth that priming used to leave in the pipe for good.
+ * samples/audio/pipeline_clocked measures both, with JITTER_US for a
+ * late display-paced core. */
+static size_t audio_driver_pipe_cap_frames(audio_driver_state_t *audio_st)
+{
+   size_t target;
+   int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
+   if ((snap & (AUDIO_SNAP_SYNC | AUDIO_SNAP_PIPE_CAP))
+         != (AUDIO_SNAP_SYNC | AUDIO_SNAP_PIPE_CAP))
+      return 0;
+   if (!(target = audio_driver_pipe_target_frames(audio_st)))
+      return 0;
+   return target + audio_st->pipe_pass_frames;
+}
+
 /* What priming fills the pipe to: the target and the device's buffer
  * on top, since the device starts empty and the pipe is to hold a
  * buffer's worth ahead of it.  The same figure is the line above which
@@ -5556,6 +5594,16 @@ static size_t audio_driver_pipe_prime_frames(audio_driver_state_t *audio_st)
    room        = audio_st->pipe_ring.capacity / audio_st->pipe_frame_bytes;
    limit       = room > audio_st->pipe_pass_frames
       ? room - audio_st->pipe_pass_frames : 1;
+   /* Never past where the producer stops: the device's buffer is not
+    * waited for in the pipe when the pipe is not let hold it, and a
+    * priming wait for more than the cap allows would never end. The
+    * device fills from the pipe in its first passes instead; with the
+    * cap on, the core is paced by the device and keeps up. */
+   {
+      size_t cap = audio_driver_pipe_cap_frames(audio_st);
+      if (cap && cap < limit)
+         limit = cap;
+   }
    target     += device;
    return target > limit ? limit : target;
 }
@@ -5747,6 +5795,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
       size_t input_fb  = canon_width * (is_float ? sizeof(float) : sizeof(int16_t));
       unsigned slots[AUDIO_PIPE_CANON_CHANNELS], bit, count = 0;
       unsigned source_layout = canon_width != pc && pc > 2 ? audio_st->pipe_layout : 0;
+      size_t cap_bytes = 0;
       bool mapped;
       if (source_layout)
       {
@@ -5839,16 +5888,39 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          audio_st->fade_in_pending = false;
       }
 
+      /* Where the producer stops short of a full ring; see
+       * audio_driver_pipe_cap_frames(). Only where it would wait at all:
+       * a non-blocking producer drops at a full ring, and a held one is
+       * what the cap is. */
+      if (     len
+            && !is_fastforward
+            && !(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_NONBLOCK))
+         cap_bytes = audio_driver_pipe_cap_frames(audio_st)
+            * audio_st->pipe_frame_bytes;
+
       while (len)
       {
          int gen;
-         size_t n = mapped
+         size_t n, want = len;
+         bool capped    = false;
+         if (cap_bytes)
+         {
+            size_t held = retro_spsc_read_avail(&audio_st->pipe_ring);
+            size_t room = held < cap_bytes ? cap_bytes - held : 0;
+            room       -= room % audio_st->pipe_frame_bytes;
+            if (want > room)
+            {
+               want   = room;
+               capped = true;
+            }
+         }
+         n = !want ? 0 : mapped
             ? audio_driver_pipe_write_mapped(audio_st, p,
-                  len / audio_st->pipe_frame_bytes, canon_width, source_layout, slots, is_float)
+                  want / audio_st->pipe_frame_bytes, canon_width, source_layout, slots, is_float)
             : pc > 2 ? retro_spsc_write_frames(&audio_st->pipe_ring, p,
-                  len / audio_st->pipe_frame_bytes, audio_st->pipe_frame_bytes)
+                  want / audio_st->pipe_frame_bytes, audio_st->pipe_frame_bytes)
                   * audio_st->pipe_frame_bytes
-            : retro_spsc_write(&audio_st->pipe_ring, p, len);
+            : retro_spsc_write(&audio_st->pipe_ring, p, want);
          /* The sink estimate's source count: what entered the ring,
           * at the nominal ratio. Counted here, on the thread that
           * closes its windows, so a window holds whole publishes and
@@ -5893,7 +5965,10 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
          gen = retro_atomic_load_acquire_int(&audio_st->pipe_gen);
          if (retro_atomic_load_acquire_int(&audio_st->pipe_stalled))
             break;
-         if (retro_spsc_write_avail(&audio_st->pipe_ring) < audio_st->pipe_frame_bytes)
+         /* At the cap, wait for a pass exactly as at a full ring: the
+          * pass is what makes room under either. */
+         if (     capped
+               || retro_spsc_write_avail(&audio_st->pipe_ring) < audio_st->pipe_frame_bytes)
          {
             /* One deadline for the whole wait, not one per iteration.
              * The eventcount reports a spurious return as a wake, as a
@@ -6600,6 +6675,18 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    while (retro_spsc_read_avail(&audio_st->pipe_ring) < need)
    {
       int gen, key;
+      /* Taken again each lap while priming: the fill cap turned on
+       * mid-wait lowers it, and a wait for the old figure would hold a
+       * producer stopped at the cap until its stall bound. */
+      if (audio_st->pipe_priming)
+      {
+         size_t prime = audio_driver_pipe_prime_frames(audio_st);
+         if (prime && prime * audio_st->pipe_frame_bytes < need)
+         {
+            need = prime * audio_st->pipe_frame_bytes;
+            continue;
+         }
+      }
       /* A wake means the wrapper wants this thread back at its loop -
        * stop, free, or a reinit - not that there is data. Return so it
        * can see why. */

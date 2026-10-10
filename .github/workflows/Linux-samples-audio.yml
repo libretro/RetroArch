@@ -1235,6 +1235,27 @@ jobs:
           make clean
           make -j$(nproc) check SIMD_MASK=RESAMPLER_SIMD_SSE SANITIZER=address,undefined
 
+      - name: Build and run the pipeline fill cap lane (plain)
+        shell: bash
+        working-directory: samples/audio/pipeline_clocked
+        run: |
+          set -eu
+          # The threaded pipeline against a device that drains on a
+          # clock, with Audio Sync the only thing pacing the core: the
+          # ring sits full and every publish waits behind it. With
+          # audio_pipeline_fill_cap the queue has to come down to under
+          # half, against the same device, without the device running
+          # dry. Plain, not sanitized: it is the clock that is measured,
+          # and a sanitizer's slowdown is a host that starves the
+          # consumer whatever the cap does. Underruns with the cap are
+          # retried, since a host that takes the consumer off its core
+          # shows the same with the cap off; only a cap that never runs
+          # clean fails.
+          make clean && make -j$(nproc)
+          test -x pipeline_clocked_test
+          PACED_ONLY=1 timeout 600 ./pipeline_clocked_test 3
+          echo "[pass] pipeline_clocked_test (fill cap)"
+
       - name: Build and run resampler option tests (C89, ASan + UBSan)
         working-directory: samples/audio/resampler_options
         run: |
