@@ -143,9 +143,9 @@ static audio_driver_t scripted = {
  * The fold staging and the recorder remap staging are arena regions
  * too, carved at init to their fixed sizes - the batch callback no
  * longer grows them - so the stand-up carves them as init does.  The
- * buffers the frontend really does free - upmix_buf, upmix_i16,
- * pipe_wide - are not here, and must not be: deinit frees them and
- * this would double it. */
+ * buffers the frontend really does free - upmix_buf, upmix_i16 -
+ * are not here, and must not be: deinit frees them and this would
+ * double it. */
 static void *owned[8];
 
 /* The staging sizes init uses, from audio_driver.c */
@@ -286,8 +286,6 @@ static bool pipe_up(bool core_float, bool float_dev)
    st->core_multi        = true;
    st->pipe_channels     = AUDIO_PIPE_CANON_CHANNELS;
    st->pipe_frame_bytes  = AUDIO_PIPE_CANON_CHANNELS * (float_dev ? sizeof(float) : sizeof(int16_t));
-   st->pipe_wide_bytes   = st->pipe_pass_frames * AUDIO_PIPE_CANON_CHANNELS * sizeof(float);
-   st->pipe_wide         = (uint8_t*)malloc(st->pipe_wide_bytes);
    st->pipe_layout = AUDIO_LAYOUT_STEREO;
    audio_pipeline_layout_init(&st->pipe_layouts, AUDIO_LAYOUT_STEREO);
    retro_atomic_store_release_int(&st->pipe_ctrl_avail, -1);

@@ -584,12 +584,10 @@ static bool pipeline_up(unsigned latency_ms)
    audio_pipeline_layout_init(&st->pipe_layouts, source_layout);
    if (channels > 2)
    {
-      st->pipe_wide_bytes = per_frame * AUDIO_PIPE_CANON_CHANNELS * sizeof(float);
-      st->pipe_wide = (uint8_t*)malloc(st->pipe_wide_bytes);
       st->upmix_frames = (1 << 20) / (2 * sizeof(float));
       st->upmix_buf = (float*)malloc(st->upmix_frames * channels * sizeof(float));
       st->upmix_i16 = (int16_t*)malloc(st->upmix_frames * channels * sizeof(int16_t));
-      if (!st->pipe_wide || !st->upmix_buf || !st->upmix_i16
+      if (!st->upmix_buf || !st->upmix_i16
             || !audio_upmix_init(&st->upmix, source_layout, OUT_RATE))
          return false;
    }
@@ -662,7 +660,6 @@ static void pipeline_down(void)
    free(st->input_data);
    free(st->synth_buf);
    free(st->output_samples_int16);
-   free(st->pipe_wide);
    free(st->upmix_buf);
    free(st->upmix_i16);
    free(dev_ring);

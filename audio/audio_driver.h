@@ -655,8 +655,8 @@ typedef struct
     * wide, a slot per speaker bit, the ones the batch lacks zero. A
     * fixed width, so the ring is never switched under the consumer;
     * layout boundaries travel through pipe_layouts before audio publication.
-    * pipe_wide is the consumer's bounce for a pass of the
-    * frame. Producers construct frames directly in writable ring spans. */
+    * Producers construct frames directly in writable ring spans, and
+    * the consumer renders them where they lie. */
    unsigned pipe_channels;
    unsigned pipe_layout; /* producer-only requested layout */
    /* The output rate setting as of the driver's init - what the device
@@ -665,8 +665,6 @@ typedef struct
     * here rather than read from settings there; a changed setting
     * reaches it through the reinit that makes it real. */
    unsigned out_rate;
-   uint8_t *pipe_wide;
-   size_t   pipe_wide_bytes;
    bool     core_multi;   /* the multi-channel entry was negotiated */
    /* Whether the ring carries float frames - the core negotiated float
     * output - or int16. Decided before any audio flows: at pipe init

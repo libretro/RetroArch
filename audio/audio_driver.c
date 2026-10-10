@@ -1146,9 +1146,6 @@ static bool audio_driver_deinit_internal(bool audio_enable)
    if (audio_st->pipe_arena)
       memalign_free(audio_st->pipe_arena);
    audio_st->pipe_arena               = NULL;
-   free(audio_st->pipe_wide);
-   audio_st->pipe_wide                = NULL;
-   audio_st->pipe_wide_bytes          = 0;
    audio_st->pipe_channels            = 2;
    /* multi_fold is a region of arena_float, freed with it below. */
    audio_st->multi_fold               = NULL;
@@ -3032,7 +3029,25 @@ static void audio_driver_write_identity_s16(audio_driver_state_t *audio_st,
    {
       ssize_t w = audio_driver_write_frames(audio_st, audio, data,
             frames, false, true);
-      audio_driver_retain_output(audio_st, data, frames, w);
+      /* A short threaded write parks its tail for the retry. On the
+       * stereo path this buffer is a ring span, released as the render
+       * returns, so the tail is staged in pipe_scratch - free here -
+       * rather than pointed at. */
+      if (     audio_st->pipe_threaded && audio_st->pipe_scratch
+            && audio_st->out_channels <= 2
+            && !(audio_st->virtualize && audio_st->virt_buf))
+      {
+         size_t bytes = frames * 2 * sizeof(int16_t);
+         if (w >= 0 && (size_t)w < bytes)
+         {
+            memmove(audio_st->pipe_scratch,
+                  (const uint8_t*)data + w, bytes - (size_t)w);
+            audio_st->pipe_pending       = audio_st->pipe_scratch;
+            audio_st->pipe_pending_bytes = bytes - (size_t)w;
+         }
+      }
+      else
+         audio_driver_retain_output(audio_st, data, frames, w);
       audio_st->sink_offered_raw += (uint64_t)frames;
       if (!audio_st->pipe_threaded)
          audio_st->sink_offered  += (double)frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;
@@ -4433,8 +4448,9 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
          audio_driver_st.pipe_pass_frames = AUDIO_PIPE_SLICE_INT16S / 2;
       if (audio_driver_st.pipe_pass_frames < 64)
          audio_driver_st.pipe_pass_frames = 64;
-      /* A pass of the widest frame for the consumer's bounce and the
-       * producer's staging, whichever format the ring carries. */
+      /* A pass of the widest frame for the consumer's front split and
+       * parked write tail, and the producer's staging, whichever format
+       * the ring carries. */
       if (!audio_driver_st.pipe_arena)
          audio_driver_st.pipe_arena = memalign_alloc(64,
                2 * (AUDIO_PIPE_SLICE_INT16S / 2) * 2 * sizeof(float));
@@ -4453,22 +4469,6 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       retro_atomic_size_init(&audio_driver_st.pipe_source_waits, 0);
       retro_atomic_size_init(&audio_driver_st.pipe_source_wait_max_us, 0);
       retro_atomic_size_init(&audio_driver_st.pipe_held_min1, 0);
-      if (audio_driver_st.pipe_channels > 2)
-      {
-         size_t wide = audio_driver_st.pipe_pass_frames * AUDIO_PIPE_CANON_CHANNELS * sizeof(float);
-         if (wide > audio_driver_st.pipe_wide_bytes)
-         {
-            free(audio_driver_st.pipe_wide);
-            audio_driver_st.pipe_wide       = (uint8_t*)malloc(wide);
-            audio_driver_st.pipe_wide_bytes = audio_driver_st.pipe_wide ? wide : 0;
-         }
-         if (!audio_driver_st.pipe_wide)
-         {
-            RARCH_ERR("[Audio] Cannot allocate wide-frame storage. Exiting...\n");
-            retro_spsc_free(&audio_driver_st.pipe_ring);
-            return false;
-         }
-      }
       retro_atomic_int_init(&audio_driver_st.pipe_gen, 0);
       retro_atomic_int_init(&audio_driver_st.pipe_stalled, 0);
       retro_atomic_store_release_int(&audio_driver_st.pipe_ff_mult_q16, 65536);
@@ -6507,7 +6507,6 @@ static void audio_driver_transport_consume(audio_driver_state_t *st)
  **/
 static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
 {
-   void    *source;
    int      snap;
    double   out_ratio;
    size_t   frame_bytes, out_bytes, have;
@@ -6801,15 +6800,48 @@ static void audio_driver_pipeline_consume(audio_driver_state_t *audio_st)
    if (!audio->wait_writable(audio_st->context_audio_data, out_bytes))
       return;
 
-   source = audio_st->pipe_channels > 2 ? audio_st->pipe_wide : audio_st->pipe_scratch;
-   retro_spsc_read(&audio_st->pipe_ring, source, have * audio_st->pipe_frame_bytes);
+   /* Zero-copy drain: the chunk is rendered where it lies in the ring,
+    * span by span, and a frame the physical wrap splits is staged alone,
+    * as the transport's reader does. Each span returns to the producer
+    * as it is released; the pass notify stays one. */
+   {
+      size_t fb     = audio_st->pipe_frame_bytes;
+      size_t sample = audio_st->pipe_float ? sizeof(float) : sizeof(int16_t);
+      while (have)
+      {
+         const void *span_data = NULL;
+         size_t n = retro_spsc_read_begin(&audio_st->pipe_ring, &span_data) / fb;
+         if (n > have)
+            n = have;
+         if (!n || (uintptr_t)span_data % sample)
+         {
+            union { float f[AUDIO_PIPE_CANON_CHANNELS]; int16_t i[AUDIO_PIPE_CANON_CHANNELS]; } frame;
+            retro_spsc_read_end(&audio_st->pipe_ring, 0);
+            if (retro_spsc_read(&audio_st->pipe_ring, &frame, fb) != fb)
+               break;
+            audio_driver_pipeline_render(audio_st, &frame, 1,
+                  audio_st->pipe_layouts.current_layout, snap);
+            have--;
+         }
+         else
+         {
+            retro_spsc_read_end(&audio_st->pipe_ring, 0);
+            audio_driver_pipeline_render(audio_st, span_data, n,
+                  audio_st->pipe_layouts.current_layout, snap);
+            retro_spsc_skip(&audio_st->pipe_ring, n * fb);
+            have -= n;
+         }
+         /* A short write parked a tail; the rest of the chunk stays in
+          * the ring for the pass after the retry, so a second render
+          * cannot overwrite what the tail points at. */
+         if (audio_st->pipe_pending_bytes)
+            break;
+      }
+   }
 
    /* Let a throttled producer know ring space has opened - and that
     * the device is draining again, if it had been found stalled. */
    audio_driver_pipeline_pass_done(audio_st, true);
-
-   audio_driver_pipeline_render(audio_st, source,
-         have, audio_st->pipe_layouts.current_layout, snap);
 }
 #endif
 
