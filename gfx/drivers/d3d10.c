@@ -820,7 +820,7 @@ static void gfx_display_d3d10_draw(gfx_display_ctx_draw_t *draw,
       {
          sprite->pos.x       = VIDEO_POS_X(draw->pos) / (float)d3d10->viewport.Width;
          sprite->pos.y       =
-               (d3d10->viewport.Height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims))
+               ((float)d3d10->viewport.Height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims))
                / (float)d3d10->viewport.Height;
          sprite->pos.w       = VIDEO_SCALE_W(draw->dims)  / (float)d3d10->viewport.Width;
          sprite->pos.h       = VIDEO_SCALE_H(draw->dims) / (float)d3d10->viewport.Height;

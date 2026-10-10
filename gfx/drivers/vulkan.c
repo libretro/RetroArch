@@ -3322,8 +3322,8 @@ static bool gfx_display_vk_mesh_draw(void *data, unsigned video_dims,
    /* The whole display, as draw() sets it for a strip at the origin;
     * the viewport a quad before this one left is its own */
    vk->vk_vp.x        = 0;
-   vk->vk_vp.y        = VIDEO_SCALE_H(vk->context->swapchain_dims)
-      - VIDEO_SCALE_H(video_dims);
+   vk->vk_vp.y        = (int)VIDEO_SCALE_H(vk->context->swapchain_dims)
+      - (int)VIDEO_SCALE_H(video_dims);
    vk->vk_vp.width    = VIDEO_SCALE_W(video_dims);
    vk->vk_vp.height   = VIDEO_SCALE_H(video_dims);
    vk->vk_vp.minDepth = 0.0f;
@@ -3407,9 +3407,7 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    /* Per-element dynamic state, not the video viewport. Anything that
     * outlives this draw wants vk->video_vp. */
    vk->vk_vp.x                    = VIDEO_POS_X(draw->pos);
-   /* Signed: an element reaching past the top has a negative y, which
-    * a viewport may take; unsigned it wrapped to 2^32, past
-    * viewportBoundsRange, which makes the viewport invalid */
+   /* Signed: an element past the top has a negative y */
    vk->vk_vp.y                    = (float)((int)VIDEO_SCALE_H(vk->context->swapchain_dims)
          - VIDEO_POS_Y(draw->pos) - (int)VIDEO_SCALE_H(draw->dims));
    vk->vk_vp.width                = VIDEO_SCALE_W(draw->dims);
