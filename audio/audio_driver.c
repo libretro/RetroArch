@@ -4489,7 +4489,7 @@ bool audio_driver_init_internal(void *settings_data, bool audio_cb_inited)
       bytes            = frames * audio_driver_st.pipe_frame_bytes;
       if (bytes < 4096)
          bytes         = 4096;
-      if (!retro_spsc_init(&audio_driver_st.pipe_ring, bytes))
+      if (!retro_spsc_init_mirrored(&audio_driver_st.pipe_ring, bytes))
       {
          RARCH_ERR("[Audio] Cannot allocate the pipeline ring. Exiting...\n");
          return false;

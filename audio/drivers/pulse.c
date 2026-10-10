@@ -577,7 +577,7 @@ static void *pulse_init(const char *device, unsigned rate,
    /* The ring is in place before the stream can ask for audio. It only
     * ever holds what the stream has room for, so twice the requested
     * buffer covers a server that grants more than was asked. */
-   if (!(pa->ring_ok = retro_spsc_init(&pa->ring,
+   if (!(pa->ring_ok = retro_spsc_init_mirrored(&pa->ring,
                (size_t)buffer_attr.tlength * 2)))
       goto unlock_error;
    if (!(pa->room_ok = retro_eventcount_init(&pa->room)))

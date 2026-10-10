@@ -130,8 +130,8 @@ RETRO_BEGIN_DECLS
  * subtraction would produce a giant array; guard with a max() so
  * the pad is always at least 1 byte and never underflows. */
 #define RETRO_SPSC_PAD0_BYTES \
-   ((RETRO_SPSC_CACHE_LINE > (sizeof(uint8_t*) + sizeof(size_t))) \
-      ? (RETRO_SPSC_CACHE_LINE - (sizeof(uint8_t*) + sizeof(size_t))) \
+   ((RETRO_SPSC_CACHE_LINE > (sizeof(uint8_t*) + 3 * sizeof(size_t))) \
+      ? (RETRO_SPSC_CACHE_LINE - (sizeof(uint8_t*) + 3 * sizeof(size_t))) \
       : 1)
 /* Each cursor shares its line with that side's private copy of the
  * other cursor (see cached_tail / cached_head below), so the pad is
@@ -144,7 +144,14 @@ RETRO_BEGIN_DECLS
 typedef struct retro_spsc
 {
    uint8_t            *buffer;
-   size_t              capacity;   /* power of 2; mask = capacity - 1 */
+   size_t              capacity;   /* power of 2: the most the ring holds */
+   /* The buffer's size less one, also a power of 2: positions wrap
+    * here. Equal to capacity - 1 unless the buffer is mirrored. */
+   size_t              mask;
+   /* The buffer's size when its pages are mapped a second time right
+    * behind it, else 0: a span then runs past the end into the
+    * mirror, and no reservation is cut short at the wrap. */
+   size_t              mirror;
    /* Pad so head sits on a fresh cache line, isolating it from
     * the buffer/capacity fields that init may touch. */
    uint8_t             _pad0[RETRO_SPSC_PAD0_BYTES];
@@ -184,6 +191,22 @@ typedef struct retro_spsc
  * call retro_spsc_read / retro_spsc_read_avail.
  */
 bool retro_spsc_init(retro_spsc_t *q, size_t min_capacity);
+
+/**
+ * retro_spsc_init_mirrored:
+ * @q             : The queue.
+ * @min_capacity  : As retro_spsc_init; capacity is the same.
+ *
+ * As retro_spsc_init, but the buffer's pages are mapped twice, back
+ * to back, where the platform allows it, so write_begin and read_begin
+ * return every free or filled byte contiguously, across the wrap. The
+ * buffer is at least a page (an allocation granule on Windows); a ring
+ * smaller than that still holds only @min_capacity rounded up, so
+ * capacity, room and fill read exactly as they would from
+ * retro_spsc_init. Where mirroring is unavailable the queue is a plain
+ * one and q->mirror is 0.
+ */
+bool retro_spsc_init_mirrored(retro_spsc_t *q, size_t min_capacity);
 
 /**
  * retro_spsc_free:
@@ -304,7 +327,8 @@ size_t retro_spsc_peek(const retro_spsc_t *q, void *data, size_t bytes);
  *
  * Producer-side zero-copy reservation.  Returns the number of bytes
  * that can be written CONTIGUOUSLY at *@ptr - this is min(total free
- * space, distance to the physical end of the ring), so it can be
+ * space, distance to the physical end of the ring; on a mirrored ring
+ * the total free space alone), so it can be
  * smaller than retro_spsc_write_avail() when the head is near the
  * wrap point.  No cursor moves; call retro_spsc_write_end() with the
  * number of bytes actually written (which may be 0, and must not
@@ -345,8 +369,9 @@ void retro_spsc_write_end(retro_spsc_t *q, size_t bytes);
  *
  * Consumer-side zero-copy drain.  Returns the number of bytes
  * readable CONTIGUOUSLY at *@ptr - min(total buffered, distance to
- * the physical end of the ring).  Wrapped data needs a second
- * begin/end round after consuming the first span.  No cursor moves;
+ * the physical end of the ring; on a mirrored ring all of it).
+ * Otherwise wrapped data needs a second begin/end round after
+ * consuming the first span.  No cursor moves;
  * call retro_spsc_read_end() with the bytes actually consumed.
  *
  * The region stays stable until read_end: the producer cannot write

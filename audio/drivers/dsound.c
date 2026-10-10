@@ -761,7 +761,7 @@ static void *dsound_init(const char *dev, unsigned rate, unsigned latency,
     * nAvgBytesPerSec, already CHUNK_SIZE-aligned), sized after the
     * float->int16 fallback so both agree on the final format.  Keep
     * the old 4 KiB as the floor for very low latency settings. */
-   if (!retro_spsc_init(&ds->ring, ds->fifo_bufsize))
+   if (!retro_spsc_init_mirrored(&ds->ring, ds->fifo_bufsize))
       goto error;
    /* retro_spsc_init rounds capacity up to a power of 2.  Report the
     * true capacity as the driver buffer size, so rate control computes

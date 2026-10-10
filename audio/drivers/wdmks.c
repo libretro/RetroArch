@@ -1972,7 +1972,7 @@ static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
     * a deficit nothing repays - every fourth pass short, for good.
     * With two, a pass can move the fragment and the deficit. */
    w->rt_ring_size = wdmks_rt_ring_bytes(w->rt_ahead);
-   if (!retro_spsc_init(&w->rt_ring, w->rt_ring_size))
+   if (!retro_spsc_init_mirrored(&w->rt_ring, w->rt_ring_size))
       return false;
    if (!retro_eventcount_init(&w->rt_park))
    {

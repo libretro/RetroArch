@@ -644,6 +644,18 @@ jobs:
 
           TSAN_OPTIONS=halt_on_error=1 ./mpsc_stack_test
 
+      - name: Run retro_spsc_test on the POSIX shm mirror
+        shell: bash
+        working-directory: libretro-common/samples/queues/retro_spsc_test
+        run: |
+          # Linux mirrors a ring through memfd; macOS and the BSDs take
+          # the POSIX shm path, which this builds here so it runs on
+          # every push, under ASan.
+          set -eu
+          make clean
+          make all CC="gcc -DRETRO_SPSC_MIRROR_SHM" SANITIZER=address,undefined
+          ./retro_spsc_test
+
       - name: Run retro_spsc_test under Clang + ThreadSanitizer
         shell: bash
         working-directory: libretro-common/samples/queues/retro_spsc_test

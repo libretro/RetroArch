@@ -1944,7 +1944,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       if (w->ac3 && fifo_bytes < (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1)
          fifo_bytes     = (size_t)IEC61937_AC3_BURST_BYTES * 4 + 1;
       w->fifo_size = fifo_bytes;
-      if (!retro_spsc_init(&w->ring, fifo_bytes))
+      if (!retro_spsc_init_mirrored(&w->ring, fifo_bytes))
          goto error;
       RARCH_LOG("[WASAPI] Exclusive: %u ms setting as a %u-frame fifo (%u ms, rate control holds it about half full) in front of a %u-frame device period (%.1f ms); about %u ms from write to the device.\n",
             latency,
@@ -2052,7 +2052,7 @@ static void *wasapi_init(const char *dev_id, unsigned rate, unsigned latency,
       }
 
       w->fifo_size = sh_buffer_length * w->frame_size;
-      if (!retro_spsc_init(&w->ring, w->fifo_size))
+      if (!retro_spsc_init_mirrored(&w->ring, w->fifo_size))
          goto error;
       RARCH_LOG("[WASAPI] Shared: %u ms setting as a %u-frame fifo (%u ms) in front of a %u-frame engine buffer (%u ms) fed a %s-frame period at a time; %u ms in all, rate control holds the fifo about half full.\n",
             latency, sh_buffer_length, (unsigned)((uint64_t)sh_buffer_length * 1000 / rate),

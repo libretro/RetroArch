@@ -767,7 +767,7 @@ static void *sdl2_audio_init(const char *device,
 
    tmp                    = calloc(1, bufsize);
    sdl->speaker_ring_size = bufsize;
-   sdl->speaker_ring_init = retro_spsc_init(&sdl->speaker_ring, bufsize);
+   sdl->speaker_ring_init = retro_spsc_init_mirrored(&sdl->speaker_ring, bufsize);
 
    /* Bail on OOM (see the mic path above). */
    if (!sdl->speaker_ring_init)
