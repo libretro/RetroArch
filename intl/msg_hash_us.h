@@ -33197,6 +33197,10 @@ MSG_HASH(
    "Rebooting..."
    )
 MSG_HASH(
+   MSG_VALUE_INSTALL_UPDATE,
+   "Install Update"
+   )
+MSG_HASH(
    MSG_VALUE_SHUTTING_DOWN,
    "Shutting down..."
    )
@@ -35609,6 +35613,22 @@ MSG_HASH(
 MSG_HASH(
    MENU_ENUM_SUBLABEL_BLUETOOTH_ERTM_DISABLE,
    "Disable Bluetooth ERTM to fix pairing of some devices"
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT_PAYLOAD,
+   "Reboot Payload"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REBOOT_PAYLOAD,
+   "Choose which Hekate entry 'Reboot' in the Main Menu boots into. Use Left/Right to cycle through the entries in hekate_ipl.ini and bootloader/ini/. Defaults to the entry currently running."
+   )
+MSG_HASH(
+   MENU_ENUM_LABEL_VALUE_REBOOT_FORCE_SELF_ON_UPDATE,
+   "Force Reboot to Lakka if Update Exists"
+   )
+MSG_HASH(
+   MENU_ENUM_SUBLABEL_REBOOT_FORCE_SELF_ON_UPDATE,
+   "When a Lakka update is staged, reboot back into Lakka instead of the selected payload so the update is installed. Disable to always honour the payload selection."
    )
 #endif
 MSG_HASH(

@@ -272,11 +272,41 @@
 #endif
 
 #ifdef HAVE_LAKKA
+#include <retro_dirent.h>
 #include "lakka.h"
+#ifdef HAVE_LAKKA_SWITCH
+#include "misc/reboot2payload/reboot2payload.h"
+#endif
 #include <systemd/sd-daemon.h>
 #endif
 
 #define _PSUPP(var, name, desc) printf("  %s:\n\t\t%s: %s\n", name, desc, var ? "yes" : "no")
+
+#ifdef HAVE_LAKKA
+bool lakka_update_pending(void)
+{
+   bool         found = false;
+   struct RDIR *dir   = retro_opendir(LAKKA_UPDATE_DIR);
+
+   if (!dir)
+      return false;
+
+   while (!found && retro_readdir(dir))
+   {
+      const char *name = retro_dirent_get_name(dir);
+
+      if (retro_dirent_is_dir(dir, NULL))
+         continue;
+
+      found =    string_ends_with(name, ".tar")
+              || string_ends_with(name, ".img.gz")
+              || string_ends_with(name, ".img");
+   }
+
+   retro_closedir(dir);
+   return found;
+}
+#endif
 
 #define FAIL_CPU(simd_type) do { \
    RARCH_ERR(simd_type " code is compiled in, but CPU does not support this feature. Cannot continue.\n"); \
@@ -1931,6 +1961,13 @@ void drivers_init(
       gfx_display_init_first_driver(p_disp, video_is_threaded);
    }
 
+#ifdef HAVE_LAKKA_SWITCH
+   /* Parse the Hekate boot entries and restore the saved reboot
+    * payload before the menu driver is initialised, so the first
+    * menu build already shows the right destination. */
+   r2p_load_selection(settings);
+#endif
+
 #ifdef HAVE_MENU
    if (flags & DRIVER_VIDEO_MASK)
    {
@@ -2158,6 +2195,9 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 
 #ifdef HAVE_LAKKA
    cpu_scaling_driver_free();
+#endif
+#ifdef HAVE_LAKKA_SWITCH
+   r2p_deinit();
 #endif
 }
 
@@ -5175,6 +5215,20 @@ bool command_event(enum event_command cmd, void *data)
          {
 #if defined(__linux__) && !defined(ANDROID)
             const char *_msg = msg_hash_to_str(MSG_VALUE_REBOOTING);
+#ifdef HAVE_LAKKA_SWITCH
+            /* Tell Hekate what to boot next via pmc_r2p. A staged
+             * update reboots back into the running Lakka entry
+             * (unless the user opted out) so the initramfs installs
+             * it. If arming fails this is a plain reboot. */
+            if (r2p_is_supported())
+            {
+               if (     settings->bools.reboot_force_self_on_update
+                     && lakka_update_pending())
+                  r2p_arm_self();
+               else
+                  r2p_arm_selected();
+            }
+#endif
             if (settings->bools.config_save_on_exit)
                command_event(CMD_EVENT_MENU_SAVE_CURRENT_CONFIG, NULL);
             runloop_msg_queue_push(_msg, strlen(_msg), 1, 180, true, NULL,

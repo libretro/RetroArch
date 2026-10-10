@@ -18,6 +18,9 @@
 #ifndef __RARCH_LAKKA_H
 #define __RARCH_LAKKA_H
 
+#include <boolean.h>
+#include <retro_common_api.h>
+
 #define LAKKA_SSH_PATH                 "/storage/.cache/services/sshd.conf"
 #define LAKKA_SAMBA_PATH               "/storage/.cache/services/samba.conf"
 #define LAKKA_SAMBA_DISABLED_FILE_PATH "/storage/.cache/services/samba.disabled"
@@ -32,5 +35,15 @@
 
 #define DEFAULT_TIMEZONE "UTC"
 #define TIMEZONE_LENGTH 255
+
+RETRO_BEGIN_DECLS
+
+/* Returns true when an update image is staged in LAKKA_UPDATE_DIR,
+ * i.e. a file matching one of the patterns the Lakka initramfs
+ * check_update step installs on the next boot (*.tar, *.img.gz,
+ * *.img). */
+bool lakka_update_pending(void);
+
+RETRO_END_DECLS
 
 #endif
