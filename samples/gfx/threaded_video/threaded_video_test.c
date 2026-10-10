@@ -7654,15 +7654,37 @@ static void lane_surface_planar(void)
             checked = true;
          }
 #endif
+#if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
+         /* glcore reads back R,G,B,A bytes, gl the words as BGRA */
+         if (     !threaded && gpu && drv
+               && (!strcmp(drv, "gl") || !strcmp(drv, "glcore")))
+         {
+            unsigned bad = PW * PH;
+            bool core    = !strcmp(drv, "glcore");
+            image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
+                  PW, PH, flags | (core ? IMAGE_YUV_FLAG_RGBA : 0));
+            CHECK(lend_gl_readback(drv, s->handle, false, got),
+                  "surface planar lane: GL readback failed");
+            for (i = 0; i < PW * PH && bad == PW * PH; i++)
+               if (!planar_close(got[i], want[i], 2))
+                  bad = i;
+            CHECK(bad == PW * PH, "surface planar lane: %s %s texel %u is "
+                  "%08x, the CPU makes %08x", drv, nv12 ? "NV12" : "I420",
+                  bad, bad < PW * PH ? (unsigned)got[bad] : 0u,
+                  bad < PW * PH ? (unsigned)want[bad] : 0u);
+            checked = true;
+         }
+#endif
          gfx_surface_free(s);
          run_frames(2);
       }
    }
    set_threaded_via_setting(false);
    run_frames(2);
-   if (drv && !strcmp(drv, "vulkan"))
-      CHECK(gpu && checked, "surface planar lane: Vulkan did not convert "
-            "on the GPU");
+   if (drv && (!strcmp(drv, "vulkan") || !strcmp(drv, "gl")
+            || !strcmp(drv, "glcore")))
+      CHECK(gpu && checked, "surface planar lane: %s did not convert "
+            "on the GPU", drv);
    if (failures == had)
       fprintf(stderr, "[pass] surface planar lane (%s%s)\n",
             gpu ? "GPU conversion" : "CPU conversion",

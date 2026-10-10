@@ -5424,6 +5424,9 @@ static void gl2_free(void *data)
    gl->shader->deinit(gl->shader_data);
 
    gl2_scrgb_deinit(gl);
+#ifdef HAVE_GL_PLANAR
+   gl_planar_free(&gl->planar);
+#endif
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    gl2_fp16_forget_all();
 #endif
@@ -6948,6 +6951,26 @@ static void video_texture_load_gl2(
          ti ? ti->pix10 : false);
 }
 
+/* A texture of @ti: a planar frame converted on the GPU, anything else
+ * uploaded as it is */
+static void gl2_texture_load(gl2_t *gl, const struct texture_image *ti,
+      enum texture_filter_type filter_type, uintptr_t *id)
+{
+   *id = 0;
+   if (ti->planar)
+   {
+#ifdef HAVE_GL_PLANAR
+      if (gl)
+         *id = gl_planar_load(&gl->planar, ti,
+               filter_type != TEXTURE_FILTER_NEAREST
+               && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST,
+               (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE) != 0);
+#endif
+      return;
+   }
+   video_texture_load_gl2(ti, filter_type, id);
+}
+
 #ifdef HAVE_THREADS
 typedef struct
 {
@@ -6967,7 +6990,7 @@ static uintptr_t video_texture_load_wrap_gl2_mipmap(void *data)
       gl->ctx_driver->make_current(false);
 
    if (image)
-      video_texture_load_gl2((struct texture_image*)image,
+      gl2_texture_load(gl, (struct texture_image*)image,
             TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
@@ -6983,7 +7006,7 @@ static uintptr_t video_texture_load_wrap_gl2(void *data)
       gl->ctx_driver->make_current(false);
 
    if (image)
-      video_texture_load_gl2((struct texture_image*)image,
+      gl2_texture_load(gl, (struct texture_image*)image,
             TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
@@ -7005,6 +7028,10 @@ static uintptr_t video_texture_unload_wrap_gl2(void *data)
 #ifdef HAVE_GL_TEXTURE_LEND
    if (gl)
       gl_texture_lend_forget(&gl->lend, glid);
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (gl)
+      gl_planar_forget(&gl->planar, glid);
 #endif
    glDeleteTextures(1, &glid);
    return 0;
@@ -7038,7 +7065,8 @@ static uintptr_t gl2_load_texture(void *video_data, void *data,
    }
 #endif
 
-   video_texture_load_gl2((struct texture_image*)data, filter_type, &id);
+   gl2_texture_load((gl2_t*)video_data, (struct texture_image*)data,
+         filter_type, &id);
    return id;
 }
 
@@ -7071,6 +7099,10 @@ static void gl2_unload_texture(void *data,
    if (data)
       gl_texture_lend_forget(&((gl2_t*)data)->lend, glid);
 #endif
+#ifdef HAVE_GL_PLANAR
+   if (data)
+      gl_planar_forget(&((gl2_t*)data)->planar, glid);
+#endif
    glDeleteTextures(1, &glid);
 }
 
@@ -7085,6 +7117,16 @@ static enum video_texture_update gl2_update_texture_internal(gl2_t *gl,
    const void *pixels = ti->pixels;
 #ifdef HAVE_GL_TEXTURE_LEND
    int lent           = -1;
+#endif
+   if (ti->planar)
+   {
+#ifdef HAVE_GL_PLANAR
+      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+         return VIDEO_TEXTURE_UPDATE_DONE;
+#endif
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+#ifdef HAVE_GL_TEXTURE_LEND
    /* A lent slot holding the frame: uploaded from its buffer */
    if (gl && gl->lend
          && (lent = gl_texture_lend_bind(gl->lend, (unsigned)id, pixels)) != -1)
@@ -7133,7 +7175,7 @@ static uintptr_t video_texture_update_wrap_gl2(void *data)
 static enum video_texture_update gl2_update_texture(void *video_data,
       uintptr_t id, const struct texture_image *ti, bool threaded)
 {
-   if (!id || !ti || !ti->pixels)
+   if (!id || !ti || (!ti->pixels && !ti->planar))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 #if !defined(HAVE_OPENGLES) && !defined(HAVE_PSGL)
    /* Half floats only into half-float storage, and only there: the
@@ -7245,6 +7287,14 @@ static bool gl2_supports_texture_format(void *data,
    const gl2_t *gl = (const gl2_t*)data;
    switch (fmt)
    {
+      /* Converted by a draw into a framebuffer (gl_planar_load) */
+      case TEXTURE_GPU_FORMAT_YUV420:
+#ifdef HAVE_GL_PLANAR
+         return gl && (gl->flags & GL2_FLAG_HAVE_FBO)
+            && GL_PLANAR_OK(&gl->planar);
+#else
+         return false;
+#endif
       /* Both answers are fixed at init */
       case TEXTURE_GPU_FORMAT_RGBA16F:
          return gl && gl->fp16_textures;

@@ -550,6 +550,12 @@ check "gl3: desktop" \
    "$GL3DEFS $GLINC" gfx/drivers/gl3.c
 check "gl3: GLES3" \
    "$GL3DEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/drivers/gl3.c
+# The planar converter both GL drivers share: legacy and core GLSL, a
+# VAO and row lengths only where the API has them
+check "gl_common: GLES2" \
+   "$GLDEFS -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_EGL $GLINC" gfx/common/gl_common.c
+check "gl_common: GLES3" \
+   "$GL3DEFS -DHAVE_OPENGLES -DHAVE_OPENGLES3 -DHAVE_EGL $GLINC" gfx/common/gl_common.c
 # gl3 is not in the C89 job's configuration, so its C89 lane is here.
 # The flags the Makefile's C89_BUILD lane uses, _GNU_SOURCE included:
 # -ansi hides the C99 math names otherwise.

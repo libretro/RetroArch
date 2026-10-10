@@ -332,6 +332,9 @@ typedef struct gl3
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl_planar_t planar;
+#endif
 
    bool pbo_readback_valid[GL_CORE_NUM_PBOS];
    bool menu_texture_rgb32;
@@ -4200,6 +4203,9 @@ static void gl3_free(void *data)
    if (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
    gl3_destroy_resources(gl);
+#ifdef HAVE_GL_PLANAR
+   gl_planar_free(&gl->planar);
+#endif
    gl3_fp16_forget_all();
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
@@ -7013,6 +7019,25 @@ static struct video_shader *gl3_get_current_shader(void *data)
    return NULL;
 }
 
+/* A texture of @ti: a planar frame converted on the GPU, anything else
+ * uploaded as it is */
+static void gl3_texture_load(gl3_t *gl, const struct texture_image *ti,
+      enum texture_filter_type filter_type, GLuint *id)
+{
+   *id = 0;
+   if (ti->planar)
+   {
+#ifdef HAVE_GL_PLANAR
+      if (gl)
+         *id = gl_planar_load(&gl->planar, ti,
+               filter_type != TEXTURE_FILTER_NEAREST
+               && filter_type != TEXTURE_FILTER_MIPMAP_NEAREST, true);
+#endif
+      return;
+   }
+   video_texture_load_gl3(ti, filter_type, id);
+}
+
 #ifdef HAVE_THREADS
 typedef struct
 {
@@ -7032,7 +7057,7 @@ static uintptr_t video_texture_load_wrap_gl3_mipmap(void *data)
       gl->ctx_driver->make_current(false);
 
    if (image)
-      video_texture_load_gl3((struct texture_image*)image,
+      gl3_texture_load(gl, (struct texture_image*)image,
             TEXTURE_FILTER_MIPMAP_LINEAR, &id);
    return (int)id;
 }
@@ -7048,7 +7073,7 @@ static uintptr_t video_texture_load_wrap_gl3(void *data)
       gl->ctx_driver->make_current(false);
 
    if (image)
-      video_texture_load_gl3((struct texture_image*)image,
+      gl3_texture_load(gl, (struct texture_image*)image,
             TEXTURE_FILTER_LINEAR, &id);
    return (int)id;
 }
@@ -7068,6 +7093,10 @@ static uintptr_t video_texture_unload_wrap_gl3(void *data)
 #ifdef HAVE_GL_TEXTURE_LEND
    if (gl)
       gl_texture_lend_forget(&gl->lend, glid);
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (gl)
+      gl_planar_forget(&gl->planar, glid);
 #endif
    glDeleteTextures(1, &glid);
    return 0;
@@ -7101,7 +7130,8 @@ static uintptr_t gl3_load_texture(void *video_data, void *data,
    }
 #endif
 
-   video_texture_load_gl3((struct texture_image*)data, filter_type, &id);
+   gl3_texture_load((gl3_t*)video_data, (struct texture_image*)data,
+         filter_type, &id);
    return id;
 }
 
@@ -7114,6 +7144,14 @@ static enum video_texture_update gl3_update_texture_internal(gl3_t *gl,
 {
    const void *pixels = ti->pixels;
    int lent           = -1;
+   if (ti->planar)
+   {
+#ifdef HAVE_GL_PLANAR
+      if (gl && gl_planar_update(&gl->planar, (unsigned)id, ti))
+         return VIDEO_TEXTURE_UPDATE_DONE;
+#endif
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
 #ifdef HAVE_GL_TEXTURE_LEND
    /* A lent slot holding the frame: uploaded from its buffer */
    if (gl && gl->lend
@@ -7157,7 +7195,7 @@ static uintptr_t video_texture_update_wrap_gl3(void *data)
 static enum video_texture_update gl3_update_texture(void *video_data,
       uintptr_t id, const struct texture_image *ti, bool threaded)
 {
-   if (!id || !ti || !ti->pixels)
+   if (!id || !ti || (!ti->pixels && !ti->planar))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
@@ -7218,6 +7256,10 @@ static void gl3_unload_texture(void *data, bool threaded,
 #ifdef HAVE_GL_TEXTURE_LEND
    if (data)
       gl_texture_lend_forget(&((gl3_t*)data)->lend, glid);
+#endif
+#ifdef HAVE_GL_PLANAR
+   if (data)
+      gl_planar_forget(&((gl3_t*)data)->planar, glid);
 #endif
    glDeleteTextures(1, &glid);
 }
@@ -7560,6 +7602,13 @@ static bool gl3_supports_texture_format(void *data,
       /* RGBA16F from half floats is core in GL 3.0 and GLES 3.0. */
       case TEXTURE_GPU_FORMAT_RGBA16F:
          return true;
+      /* Converted by a draw (gl_planar_load) */
+      case TEXTURE_GPU_FORMAT_YUV420:
+#ifdef HAVE_GL_PLANAR
+         return data && GL_PLANAR_OK(&((const gl3_t*)data)->planar);
+#else
+         return false;
+#endif
       /* The linear program shows such a texture as linear scRGB while
        * the backbuffer is scRGB; in SDR there is no linear light. */
       case TEXTURE_GPU_FORMAT_SCRGB:

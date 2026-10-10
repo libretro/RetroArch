@@ -190,6 +190,9 @@ struct gl2
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
 #endif
+#ifdef HAVE_GL_PLANAR
+   gl_planar_t planar;
+#endif
    bool pbo_readback_valid[4];
    /* At init: textures take half floats (TEXTURE_GPU_FORMAT_RGBA16F) */
    bool fp16_textures;
