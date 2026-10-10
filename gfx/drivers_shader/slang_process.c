@@ -19,9 +19,11 @@
 #include <stdint.h>
 
 #include "glslang_util.h"
+/* Names the reflection table below needs in every build, with or
+ * without the compiler. */
+#include "slang_rect.h"
 #if defined(HAVE_GLSLANG)
 #include "slang_cache.h"
-#include "slang_rect.h"
 #endif
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
