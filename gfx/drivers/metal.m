@@ -33,6 +33,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <retro_math.h>
@@ -233,6 +234,16 @@ typedef NS_ENUM(NSUInteger, ViewportResetMode) {
                        library:(id<MTLLibrary>)l;
 
 - (Texture *)newTexture:(struct texture_image)image filter:(enum texture_filter_type)filter;
+/* An RGBA8 texture the planar conversion writes, at @image's size; the
+ * frame is the caller's to put in (metal_planar_update). nil when the
+ * conversion cannot be had. */
+- (Texture *)newPlanarTexture:(const struct texture_image *)image filter:(enum texture_filter_type)filter;
+/* The planar conversion, compiled the first time it is asked for; nil
+ * from then on when it did not compile */
+- (id<MTLComputePipelineState>)planarKernel;
+/* False once the planar conversion has failed to compile: a flag, read
+ * from any thread */
+- (bool)planarAvailable;
 #if TARGET_OS_OSX
 - (Texture *)newTextureCompressed:(const struct texture_compressed *)tc filter:(enum texture_filter_type)filter;
 #endif
@@ -920,6 +931,8 @@ static void buffer_chain_discard(buffer_chain_t *chain);
     * itself: an update from other memory never uses them. Touched
     * only on the thread that updates. */
    unsigned _stagingLent;
+   /* Made by newPlanarTexture: its updates are planar frames */
+   bool     _planar;
 }
 @property (nonatomic, readwrite, strong) id<MTLTexture> texture;
 @property (nonatomic, readwrite, strong) id<MTLSamplerState> sampler;
@@ -952,6 +965,10 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    id<MTLRenderCommandEncoder> _rce;
 
    id<MTLCommandBuffer> _blitCommandBuffer;
+
+   /* The planar conversion (planarKernel) */
+   id<MTLComputePipelineState> _planarKernel;
+   volatile bool _planarFailed;
 
    NSUInteger _currentChain;
    buffer_chain_t _chain[CHAIN_LENGTH];
@@ -1127,6 +1144,7 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    int j;
    for (i = 0; i < (int)(TEXTURE_FILTER_MIPMAP_NEAREST + 1); i++)
       [(id)_samplers[i] release];
+   [(id)_planarKernel release];
    for (i = 0; i < (int)RPixelFormatCount; i++)
       [_filters[i] release];
    for (i = 0; i < GFX_MAX_SHADERS; i++)
@@ -2209,6 +2227,81 @@ static void buffer_chain_discard(buffer_chain_t *chain);
    Texture *tex   = [Texture new];
    tex.texture    = RARCH_AUTORELEASE_R([self newTexture:image mipmapped:mipmapped]);
    tex.sampler    = _samplers[filter];
+   return tex;
+}
+
+- (bool)planarAvailable
+{
+   return !_planarFailed;
+}
+
+- (id<MTLComputePipelineState>)planarKernel
+{
+   NSError *err = nil;
+   id<MTLLibrary> lib;
+   id<MTLFunction> fn;
+   id<MTLComputePipelineState> k;
+   /* 8-bit 4:2:0 from a staging slot, where the update wrote it, into
+    * RGBA: each pixel takes the chroma its 2x2 block shares */
+   static NSString *src = @
+      "#include <metal_stdlib>\n"
+      "using namespace metal;\n"
+      "struct PlanarParams { uint w, h, y_off, y_stride, cb_off, cr_off,"
+      " c_stride, c_step; float k[8]; };\n"
+      "kernel void planar_yuv420(device const uchar *src [[buffer(0)]],"
+      " constant PlanarParams &p [[buffer(1)]],"
+      " texture2d<float, access::write> out [[texture(0)]],"
+      " uint2 id [[thread_position_in_grid]])\n"
+      "{\n"
+      "   if (id.x >= p.w || id.y >= p.h) return;\n"
+      "   uint  co = (id.y >> 1) * p.c_stride + (id.x >> 1) * p.c_step;\n"
+      "   float y  = float(src[p.y_off + id.y * p.y_stride + id.x]) / 255.0;\n"
+      "   float cb = float(src[p.cb_off + co]) / 255.0 - 128.0 / 255.0;\n"
+      "   float cr = float(src[p.cr_off + co]) / 255.0 - 128.0 / 255.0;\n"
+      "   float3 rgb = float3(p.k[0] * y + p.k[1]) + float3(p.k[2] * cr,"
+      " p.k[3] * cb + p.k[4] * cr, p.k[5] * cb);\n"
+      "   out.write(float4(saturate(rgb), 1.0), id);\n"
+      "}\n";
+   if (_planarKernel || _planarFailed)
+      return _planarKernel;
+   _planarFailed = true;
+   if (     !(lib = RARCH_AUTORELEASE_R([_device newLibraryWithSource:src
+                  options:nil error:&err]))
+         || !(fn  = RARCH_AUTORELEASE_R([lib newFunctionWithName:
+                  @"planar_yuv420"]))
+         || !(k   = RARCH_AUTORELEASE_R([_device
+                  newComputePipelineStateWithFunction:fn error:&err])))
+   {
+      RARCH_WARN("[Metal] Planar conversion unavailable, frames are"
+            " converted on the CPU: %s.\n",
+            err ? err.localizedDescription.UTF8String : "");
+      return nil;
+   }
+   RARCH_ASSIGN(_planarKernel, k);
+   _planarFailed = false;
+   return _planarKernel;
+}
+
+- (Texture *)newPlanarTexture:(const struct texture_image *)image filter:(enum texture_filter_type)filter
+{
+   MTLTextureDescriptor *td;
+   id<MTLTexture>        t;
+   Texture              *tex;
+   if (!image->width || !image->height || ![self planarKernel])
+      return nil;
+   td = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:
+         MTLPixelFormatRGBA8Unorm width:image->width height:image->height
+         mipmapped:NO];
+   td.usage       = MTLTextureUsageShaderRead | MTLTextureUsageShaderWrite;
+   td.storageMode = MTLStorageModePrivate;
+   if (!(t = [_device newTextureWithDescriptor:td]))
+      return nil;
+   tex          = [Texture new];
+   tex.texture  = RARCH_AUTORELEASE_R(t);
+   tex.sampler  = _samplers[(filter == TEXTURE_FILTER_NEAREST
+         || filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+      ? TEXTURE_FILTER_NEAREST : TEXTURE_FILTER_LINEAR];
+   tex->_planar = true;
    return tex;
 }
 
@@ -7415,6 +7508,9 @@ typedef struct
  * are explicitly documented as single-thread-only.  Concurrent
  * access from the main thread (mid-load) and the video thread
  * (mid-frame-end commit) is undefined behaviour. */
+static enum video_texture_update metal_planar_update(MetalDriver *md,
+      Texture *t, const struct texture_image *ti);
+
 static uintptr_t metal_load_texture_internal(void *video_data, void *data,
       enum texture_filter_type filter_type)
 {
@@ -7426,7 +7522,16 @@ static uintptr_t metal_load_texture_internal(void *video_data, void *data,
    @autoreleasepool
    {
       struct texture_image image = *img;
-      Texture *t = [md.context newTexture:image filter:filter_type];
+      Texture *t;
+      if (img->planar)
+      {
+         if (!(t = RARCH_AUTORELEASE_R([md.context newPlanarTexture:img
+                     filter:filter_type]))
+               || metal_planar_update(md, t, img) != VIDEO_TEXTURE_UPDATE_DONE)
+            return 0;
+         return (uintptr_t)RARCH_BRIDGE_RETAINED(t);
+      }
+      t = [md.context newTexture:image filter:filter_type];
       return (uintptr_t)RARCH_BRIDGE_RETAINED(RARCH_AUTORELEASE_R(t));
    }
 }
@@ -7462,9 +7567,11 @@ static uintptr_t metal_load_texture(void *video_data, void *data,
     * inline.  Menu icon and thumbnail loads are all non-mipmapped;
     * routing each of them through a video-thread round-trip was a
     * per-icon latency tax on menu population. */
+   /* A planar frame is converted on the blit command buffer: there too */
    if (      threaded
          && (   filter_type == TEXTURE_FILTER_MIPMAP_LINEAR
-             || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST))
+             || filter_type == TEXTURE_FILTER_MIPMAP_NEAREST
+             || (data && ((struct texture_image *)data)->planar)))
    {
       metal_texture_cmd_t cmd;
       cmd.video_data  = video_data;
@@ -7537,10 +7644,137 @@ static bool metal_texture_staging(Texture *t, NSUInteger len)
    return true;
 }
 
+/* A planar frame into planar texture @t: its planes copied once into a
+ * staging slot no conversion is still reading, then converted there by
+ * the planar kernel straight into the texture, on the blit command
+ * buffer, in order with the draws around it. A slot still the GPU's
+ * drops the frame, as an RGBA update does. Must run on the thread that
+ * owns Context.blitCommandBuffer. */
+static enum video_texture_update metal_planar_update(MetalDriver *md,
+      Texture *t, const struct texture_image *ti)
+{
+   const struct texture_planar *tp = ti->planar;
+   id<MTLTexture> tex = t.texture;
+   id<MTLComputePipelineState> kernel;
+   id<MTLCommandBuffer> cb;
+   id<MTLComputeCommandEncoder> ce;
+   struct
+   {
+      uint32_t w, h, y_off, y_stride, cb_off, cr_off, c_stride, c_step;
+      float k[8];
+   } params;
+   NSUInteger w  = ti->width;
+   NSUInteger h  = ti->height;
+   NSUInteger cw = (w + 1) / 2;
+   NSUInteger ch = (h + 1) / 2;
+   NSUInteger len, off, y, x, tw;
+   unsigned slot, k;
+   uint8_t *dst;
+
+   if (     !tp || !t->_planar || !tex
+         || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
+         || (tp->chroma_step != 1 && tp->chroma_step != 2)
+         || tex.width != w || tex.height != h
+         || !(kernel = [md.context planarKernel]))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   /* Luma, then Cb and Cr planes, tightly packed; kept a multiple of
+    * four so each slot starts aligned */
+   len = (w * h + 2 * cw * ch + 3) & ~(NSUInteger)3;
+   if (!metal_texture_staging(t, len))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   for (k = 0; k < METAL_STAGING_SLOTS; k++)
+   {
+      slot = (t->_stagingNext + k) % METAL_STAGING_SLOTS;
+      if (!__atomic_load_n(&t->_stagingBusy[slot], __ATOMIC_ACQUIRE))
+         break;
+   }
+   if (k == METAL_STAGING_SLOTS)
+      return VIDEO_TEXTURE_UPDATE_DROPPED;
+   if (!(cb = md.context.blitCommandBuffer))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   t->_stagingNext = (slot + 1) % METAL_STAGING_SLOTS;
+   off = (NSUInteger)slot * len;
+   dst = (uint8_t *)t.staging.contents + off;
+   for (y = 0; y < h; y++)
+      memcpy(dst + y * w, tp->planes[0] + y * tp->strides[0], w);
+   for (y = 0; y < ch; y++)
+   {
+      const uint8_t *cbp = tp->planes[1] + y * tp->strides[1];
+      const uint8_t *crp = tp->planes[2] + y * tp->strides[2];
+      uint8_t *ob        = dst + w * h + y * cw;
+      uint8_t *oc        = dst + w * h + cw * ch + y * cw;
+      if (tp->chroma_step == 1)
+      {
+         memcpy(ob, cbp, cw);
+         memcpy(oc, crp, cw);
+      }
+      else
+         for (x = 0; x < cw; x++)
+         {
+            ob[x] = cbp[x * 2];
+            oc[x] = crp[x * 2];
+         }
+   }
+#if TARGET_OS_OSX
+   if (t.staging.storageMode == MTLStorageModeManaged)
+      [t.staging didModifyRange:NSMakeRange(off, len)];
+#endif
+   params.w        = (uint32_t)w;
+   params.h        = (uint32_t)h;
+   params.y_off    = 0;
+   params.y_stride = (uint32_t)w;
+   params.cb_off   = (uint32_t)(w * h);
+   params.cr_off   = (uint32_t)(w * h + cw * ch);
+   params.c_stride = (uint32_t)cw;
+   params.c_step   = 1;
+   image_yuv_coefficients(tp->yuv, params.k);
+   params.k[6]     = 0.0f;
+   params.k[7]     = 0.0f;
+
+   ce = [cb computeCommandEncoder];
+   ce.label = @"planar conversion";
+   [ce setComputePipelineState:kernel];
+   [ce setBuffer:t.staging offset:off atIndex:0];
+   [ce setBytes:&params length:sizeof(params) atIndex:1];
+   [ce setTexture:tex atIndex:0];
+   tw = kernel.threadExecutionWidth;
+   if (!tw)
+      tw = 8;
+   {
+      NSUInteger th = kernel.maxTotalThreadsPerThreadgroup / tw;
+      MTLSize size, count;
+      if (th > 8)
+         th = 8;
+      if (!th)
+         th = 1;
+      size  = MTLSizeMake(tw, th, 1);
+      count = MTLSizeMake((w + tw - 1) / tw, (h + th - 1) / th, 1);
+      [ce dispatchThreadgroups:count threadsPerThreadgroup:size];
+   }
+   [ce endEncoding];
+   __atomic_store_n(&t->_stagingBusy[slot], 1, __ATOMIC_RELEASE);
+   {
+      Texture *held = t;
+      [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
+         (void)done;
+         __atomic_store_n(&held->_stagingBusy[slot], 0, __ATOMIC_RELEASE);
+      }];
+   }
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
 static enum video_texture_update metal_update_texture_internal(
       void *video_data, uintptr_t handle, const struct texture_image *ti)
 {
    MetalDriver *md = (__bridge MetalDriver *)video_data;
+   if (md && handle && ti && ti->planar)
+   {
+      @autoreleasepool
+      {
+         return metal_planar_update(md,
+               (__bridge Texture *)(void *)handle, ti);
+      }
+   }
    if (!md || !handle || !ti || !ti->pixels)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
@@ -7923,6 +8157,12 @@ static bool metal_supports_texture_format(void *video_data,
     * target */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return video_data != NULL;
+   /* Converted by the planar kernel, which every Metal device runs */
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+   {
+      MetalDriver *md = (__bridge MetalDriver *)video_data;
+      return md && [md.context planarAvailable];
+   }
    /* stock_fragment_linear shows such a texture as linear scRGB in the
     * RGBA16Float HDR overlay; in SDR there is no linear light */
    if (fmt == TEXTURE_GPU_FORMAT_SCRGB)

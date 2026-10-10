@@ -7686,7 +7686,8 @@ static void lane_surface_planar(void)
       CHECK(gpu && checked, "surface planar lane: %s did not convert "
             "on the GPU", drv);
    /* No readback here: that it converts, and every submit landed */
-   if (drv && (!strcmp(drv, "d3d11") || !strcmp(drv, "d3d12")))
+   if (drv && (!strcmp(drv, "d3d11") || !strcmp(drv, "d3d12")
+            || !strcmp(drv, "metal")))
       CHECK(gpu, "surface planar lane: %s did not convert on the GPU",
             drv);
    if (failures == had)
