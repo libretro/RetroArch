@@ -2910,8 +2910,7 @@ static void frontend_unix_get_env(int *argc,
       g_defaults.settings_video_refresh_rate = 60.0;
 #ifdef HAVE_MENU
 #ifdef HAVE_MATERIALUI
-      g_defaults.menu_materialui_menu_color_theme_enable = true;
-      g_defaults.menu_materialui_menu_color_theme        = MATERIALUI_THEME_NVIDIA_SHIELD;
+      g_defaults.menu_materialui_menu_color_theme = "nvidia_shield";
 #endif
 #endif
    }

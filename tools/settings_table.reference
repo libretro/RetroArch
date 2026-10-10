@@ -494,7 +494,6 @@ uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
-uint	materialui_menu_color_theme	1	MATERIALUI_THEME_OZONE_DARK
 uint	materialui_menu_transition_animation	1	MATERIALUI_TRANSITION_ANIM_AUTO
 uint	materialui_landscape_layout_optimization	1	MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_DISABLED
 uint	materialui_thumbnail_view_portrait	1	MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL
@@ -546,7 +545,6 @@ uint	menu_font_color_red	1	255
 uint	menu_font_color_green	1	255
 uint	menu_font_color_blue	1	255
 uint	xmb_layout	1	0
-uint	xmb_theme	1	XMB_ICON_THEME_MONOCHROME
 uint	playlist_sublabel_runtime_type	1	PLAYLIST_RUNTIME_PER_CORE
 uint	playlist_sublabel_last_played_style	1	PLAYLIST_LAST_PLAYED_STYLE_YMD_HM
 uint	playlist_show_inline_core_name	1	PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
@@ -581,8 +579,6 @@ uint	netplay_max_ping	1	0
 uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
-uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
-uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
 uint	video_record_threads	1	2
@@ -1184,7 +1180,6 @@ uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
-uint	materialui_menu_color_theme	1	MATERIALUI_THEME_OZONE_DARK
 uint	materialui_menu_transition_animation	1	MATERIALUI_TRANSITION_ANIM_AUTO
 uint	materialui_landscape_layout_optimization	1	MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS
 uint	materialui_thumbnail_view_portrait	1	MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL
@@ -1236,7 +1231,6 @@ uint	menu_font_color_red	1	255
 uint	menu_font_color_green	1	255
 uint	menu_font_color_blue	1	255
 uint	xmb_layout	1	0
-uint	xmb_theme	1	XMB_ICON_THEME_MONOCHROME
 uint	playlist_sublabel_runtime_type	1	PLAYLIST_RUNTIME_PER_CORE
 uint	playlist_sublabel_last_played_style	1	PLAYLIST_LAST_PLAYED_STYLE_YMD_HM
 uint	playlist_show_inline_core_name	1	PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
@@ -1270,8 +1264,6 @@ uint	netplay_max_ping	1	0
 uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
-uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
-uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
 uint	video_record_threads	1	2
@@ -1886,7 +1878,6 @@ uint	save_compression_codec	1	0
 uint	video_msg_bgcolor_red	1	0
 uint	video_msg_bgcolor_green	1	0
 uint	video_msg_bgcolor_blue	1	0
-uint	materialui_menu_color_theme	1	MATERIALUI_THEME_OZONE_DARK
 uint	materialui_menu_transition_animation	1	MATERIALUI_TRANSITION_ANIM_AUTO
 uint	materialui_landscape_layout_optimization	1	MATERIALUI_LANDSCAPE_LAYOUT_OPTIMIZATION_ALWAYS
 uint	materialui_thumbnail_view_portrait	1	MATERIALUI_THUMBNAIL_VIEW_PORTRAIT_LIST_SMALL
@@ -1948,7 +1939,6 @@ uint	menu_font_color_red	1	255
 uint	menu_font_color_green	1	255
 uint	menu_font_color_blue	1	255
 uint	xmb_layout	1	0
-uint	xmb_theme	1	XMB_ICON_THEME_MONOCHROME
 uint	playlist_sublabel_runtime_type	1	PLAYLIST_RUNTIME_PER_CORE
 uint	playlist_sublabel_last_played_style	1	PLAYLIST_LAST_PLAYED_STYLE_YMD_HM
 uint	playlist_show_inline_core_name	1	PLAYLIST_INLINE_CORE_DISPLAY_HIST_FAV
@@ -1983,8 +1973,6 @@ uint	netplay_max_ping	1	0
 uint	rgui_thumbnail_downscaler	1	RGUI_THUMB_SCALE_POINT
 uint	rgui_thumbnail_delay	1	0
 uint	menu_thumbnail_upscale_threshold	1	0
-uint	xmb_menu_color_theme	1	XMB_THEME_ELECTRIC_BLUE
-uint	rgui_menu_color_theme	1	RGUI_THEME_CLASSIC_GREEN
 uint	rgui_aspect_ratio	1	RGUI_ASPECT_RATIO_4_3
 uint	rgui_aspect_ratio_lock	1	RGUI_ASPECT_RATIO_LOCK_NONE
 uint	video_record_threads	1	2

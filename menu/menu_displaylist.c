@@ -14106,7 +14106,7 @@ unsigned menu_displaylist_build_list(
             bool menu_materialui_show_nav_bar          = settings->bools.menu_materialui_show_nav_bar;
             bool menu_use_preferred_system_color_theme = settings->bools.menu_use_preferred_system_color_theme;
             bool truncate_playlist                     = settings->bools.ozone_truncate_playlist_name;
-            unsigned menu_rgui_color_theme             = settings->uints.menu_rgui_color_theme;
+            const char *menu_rgui_color_theme          = settings->arrays.menu_rgui_color_theme;
             unsigned menu_rgui_particle_effect         = settings->uints.menu_rgui_particle_effect;
             unsigned menu_screensaver_timeout          = settings->uints.menu_screensaver_timeout;
             unsigned ozone_font_scale                  = settings->uints.menu_ozone_font_scale;
@@ -14117,12 +14117,12 @@ unsigned menu_displaylist_build_list(
                {MENU_ENUM_LABEL_MENU_FRAMEBUFFER_OPACITY,                     PARSE_ONLY_FLOAT,  true},
                {MENU_ENUM_LABEL_MENU_HDR_BRIGHTNESS_NITS,                     PARSE_ONLY_FLOAT,  false},
                {MENU_ENUM_LABEL_XMB_RIBBON_ENABLE,                            PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_XMB_THEME,                                    PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,                         PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_XMB_THEME,                                    PARSE_ONLY_STRING_OPTIONS, true},
+               {MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,                         PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_XMB_ALPHA_FACTOR,                             PARSE_ONLY_UINT,   true},
                {MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,                       PARSE_ONLY_STRING_OPTIONS, false},
-               {MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,                  PARSE_ONLY_UINT,   true},
-               {MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,                        PARSE_ONLY_UINT,   true},
+               {MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,                  PARSE_ONLY_STRING_OPTIONS, true},
+               {MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,                        PARSE_ONLY_STRING_OPTIONS, true},
                {MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET,                       PARSE_ONLY_PATH,   false},
                {MENU_ENUM_LABEL_MENU_USE_PREFERRED_SYSTEM_COLOR_THEME,        PARSE_ONLY_BOOL,   true},
                {MENU_ENUM_LABEL_MENU_WALLPAPER,                               PARSE_ONLY_PATH ,  true},
@@ -14219,12 +14219,12 @@ unsigned menu_displaylist_build_list(
                      build_list[i].checked = menu_horizontal_animation;
                      break;
                   case MENU_ENUM_LABEL_RGUI_MENU_THEME_PRESET:
-                     build_list[i].checked = (menu_rgui_color_theme == RGUI_THEME_CUSTOM);
+                     build_list[i].checked = string_is_equal(menu_rgui_color_theme, "custom");
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_TRANSPARENCY:
                      build_list[i].checked =
-                           (menu_rgui_color_theme != RGUI_THEME_CUSTOM)
-                        && (menu_rgui_color_theme != RGUI_THEME_DYNAMIC);
+                           string_is_not_equal(menu_rgui_color_theme, "custom")
+                        && string_is_not_equal(menu_rgui_color_theme, "dynamic");
                      break;
                   case MENU_ENUM_LABEL_MENU_RGUI_PARTICLE_EFFECT_SPEED:
                      build_list[i].checked =

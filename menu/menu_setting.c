@@ -50,6 +50,14 @@
 #ifdef HAVE_OZONE
 #include "drivers/ozone_color_themes.h"
 #endif
+#include "drivers/rgui_color_themes.h"
+#ifdef HAVE_XMB
+#include "drivers/xmb_color_themes.h"
+#include "drivers/xmb_icon_themes.h"
+#endif
+#ifdef HAVE_MATERIALUI
+#include "drivers/materialui_color_themes.h"
+#endif
 
 #if defined(HAVE_STEAM) && defined(HAVE_MIST)
 #include <mist.h>
@@ -4503,205 +4511,134 @@ static size_t setting_get_string_representation_uint_menu_contentless_cores_disp
    return 0;
 }
 
-static size_t setting_get_string_representation_uint_rgui_menu_color_theme(
+struct menu_theme_option
+{
+   const char *value;
+   enum msg_hash_enums label;
+};
+
+#define MENU_THEME_OPTION(ident, theme, label) { ident, label },
+#define MENU_THEME_VALUE(ident, theme, label) "|" ident
+
+#ifdef HAVE_OZONE
+static const struct menu_theme_option ozone_color_theme_options[] = {
+   OZONE_COLOR_THEME_LIST(MENU_THEME_OPTION)
+};
+#endif
+static const struct menu_theme_option rgui_color_theme_options[] = {
+   RGUI_COLOR_THEME_LIST(MENU_THEME_OPTION)
+};
+#ifdef HAVE_XMB
+static const struct menu_theme_option xmb_icon_theme_options[] = {
+   XMB_ICON_THEME_LIST(MENU_THEME_OPTION)
+};
+static const struct menu_theme_option xmb_color_theme_options[] = {
+   XMB_COLOR_THEME_LIST(MENU_THEME_OPTION)
+};
+#endif
+#ifdef HAVE_MATERIALUI
+static const struct menu_theme_option materialui_color_theme_options[] = {
+   MATERIALUI_COLOR_THEME_LIST(MENU_THEME_OPTION)
+};
+#endif
+
+struct menu_theme_list
+{
+   enum msg_hash_enums enum_idx;
+   const struct menu_theme_option *options;
+   size_t size;
+   const char *values;
+};
+
+#define MENU_THEME_LIST(enum_idx, options, list) \
+   { enum_idx, options, ARRAY_SIZE(options), &list(MENU_THEME_VALUE)[1] },
+
+static const struct menu_theme_list menu_theme_lists[] = {
+#ifdef HAVE_OZONE
+   MENU_THEME_LIST(MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME,
+         ozone_color_theme_options, OZONE_COLOR_THEME_LIST)
+#endif
+   MENU_THEME_LIST(MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME,
+         rgui_color_theme_options, RGUI_COLOR_THEME_LIST)
+#ifdef HAVE_XMB
+   MENU_THEME_LIST(MENU_ENUM_LABEL_XMB_THEME,
+         xmb_icon_theme_options, XMB_ICON_THEME_LIST)
+   MENU_THEME_LIST(MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME,
+         xmb_color_theme_options, XMB_COLOR_THEME_LIST)
+#endif
+#ifdef HAVE_MATERIALUI
+   MENU_THEME_LIST(MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME,
+         materialui_color_theme_options, MATERIALUI_COLOR_THEME_LIST)
+#endif
+};
+
+static const struct menu_theme_list *setting_menu_theme_list(
+      const rarch_setting_t *setting)
+{
+   size_t i;
+   for (i = 0; i < ARRAY_SIZE(menu_theme_lists); i++)
+      if (menu_theme_lists[i].enum_idx == setting->enum_idx)
+         return &menu_theme_lists[i];
+   return NULL;
+}
+
+/* Unknown values fall back to the default */
+static size_t setting_menu_theme_index(const rarch_setting_t *setting,
+      const struct menu_theme_list *list)
+{
+   size_t i;
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(setting->value.target.string, list->options[i].value))
+         return i;
+   for (i = 0; i < list->size; i++)
+      if (string_is_equal(setting->default_value.string, list->options[i].value))
+         return i;
+   return 0;
+}
+
+static int setting_string_action_menu_theme(
+      rarch_setting_t *setting, bool right)
+{
+   size_t size, i;
+   const struct menu_theme_list *list;
+   /* The dispatcher always passes wraparound as false */
+   bool wraparound = config_get_ptr()->bools.menu_navigation_wraparound_enable;
+
+   if (!setting || !(list = setting_menu_theme_list(setting)))
+      return -1;
+
+   size = list->size;
+   i    = setting_menu_theme_index(setting, list);
+
+   if (wraparound || (right ? i < size - 1 : i > 0))
+      i = right ? (i + 1) % size : (i + size - 1) % size;
+
+   strlcpy(setting->value.target.string, list->options[i].value, setting->size);
+   menu_state_get_ptr()->flags |= MENU_ST_FLAG_PREVENT_POPULATE
+                               |  MENU_ST_FLAG_ENTRIES_NEED_REFRESH;
+   return 0;
+}
+
+static int setting_string_action_left_menu_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_menu_theme(setting, false);
+}
+
+static int setting_string_action_right_menu_theme(
+      rarch_setting_t *setting, size_t idx, bool wraparound)
+{
+   return setting_string_action_menu_theme(setting, true);
+}
+
+static size_t setting_get_string_representation_menu_theme(
       rarch_setting_t *setting, char *s, size_t len)
 {
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case RGUI_THEME_CUSTOM:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CUSTOM),
-                  len);
-         case RGUI_THEME_CLASSIC_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_RED),
-                  len);
-         case RGUI_THEME_CLASSIC_ORANGE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_ORANGE),
-                  len);
-         case RGUI_THEME_CLASSIC_YELLOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_YELLOW),
-                  len);
-         case RGUI_THEME_CLASSIC_GREEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREEN),
-                  len);
-         case RGUI_THEME_CLASSIC_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_BLUE),
-                  len);
-         case RGUI_THEME_CLASSIC_VIOLET:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_VIOLET),
-                  len);
-         case RGUI_THEME_CLASSIC_GREY:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_CLASSIC_GREY),
-                  len);
-         case RGUI_THEME_LEGACY_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LEGACY_RED),
-                  len);
-         case RGUI_THEME_DARK_PURPLE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DARK_PURPLE),
-                  len);
-         case RGUI_THEME_MIDNIGHT_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_MIDNIGHT_BLUE),
-                  len);
-         case RGUI_THEME_GOLDEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GOLDEN),
-                  len);
-         case RGUI_THEME_ELECTRIC_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ELECTRIC_BLUE),
-                  len);
-         case RGUI_THEME_APPLE_GREEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_APPLE_GREEN),
-                  len);
-         case RGUI_THEME_VOLCANIC_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_VOLCANIC_RED),
-                  len);
-         case RGUI_THEME_LAGOON:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_LAGOON),
-                  len);
-         case RGUI_THEME_BROGRAMMER:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_BROGRAMMER),
-                  len);
-         case RGUI_THEME_DRACULA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DRACULA),
-                  len);
-         case RGUI_THEME_FAIRYFLOSS:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FAIRYFLOSS),
-                  len);
-         case RGUI_THEME_FLATUI:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLATUI),
-                  len);
-         case RGUI_THEME_GRUVBOX_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_DARK),
-                  len);
-         case RGUI_THEME_GRUVBOX_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRUVBOX_LIGHT),
-                  len);
-         case RGUI_THEME_HACKING_THE_KERNEL:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_HACKING_THE_KERNEL),
-                  len);
-         case RGUI_THEME_NORD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NORD),
-                  len);
-         case RGUI_THEME_NOVA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_NOVA),
-                  len);
-         case RGUI_THEME_ONE_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ONE_DARK),
-                  len);
-         case RGUI_THEME_PALENIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_PALENIGHT),
-                  len);
-         case RGUI_THEME_SOLARIZED_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_DARK),
-                  len);
-         case RGUI_THEME_SOLARIZED_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_SOLARIZED_LIGHT),
-                  len);
-         case RGUI_THEME_TANGO_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_DARK),
-                  len);
-         case RGUI_THEME_TANGO_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_TANGO_LIGHT),
-                  len);
-         case RGUI_THEME_ZENBURN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ZENBURN),
-                  len);
-         case RGUI_THEME_ANTI_ZENBURN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_ANTI_ZENBURN),
-                  len);
-         case RGUI_THEME_FLUX:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_FLUX),
-                  len);
-         case RGUI_THEME_DYNAMIC:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_DYNAMIC),
-                  len);
-         case RGUI_THEME_GRAY_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_DARK),
-                  len);
-         case RGUI_THEME_GRAY_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_GRAY_LIGHT),
-                  len);
-         case RGUI_THEME_EVERGARDEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_RGUI_MENU_COLOR_THEME_EVERGARDEN),
-                  len);
-      }
-   }
+   const struct menu_theme_list *list;
+   if (setting && (list = setting_menu_theme_list(setting)))
+      return strlcpy(s, msg_hash_to_str(
+               list->options[setting_menu_theme_index(setting, list)].label),
+            len);
    return 0;
 }
 
@@ -5030,54 +4967,6 @@ static size_t setting_get_string_representation_uint_menu_xmb_animation_horizont
 
 #endif
 #ifdef HAVE_XMB
-static size_t setting_get_string_representation_uint_xmb_icon_theme(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case XMB_ICON_THEME_MONOCHROME:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME), len);
-         case XMB_ICON_THEME_FLATUI:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUI), len);
-         case XMB_ICON_THEME_FLATUX:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_FLATUX), len);
-         case XMB_ICON_THEME_RETROSYSTEM:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_RETROSYSTEM), len);
-         case XMB_ICON_THEME_PIXEL:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_PIXEL), len);
-         case XMB_ICON_THEME_SYSTEMATIC:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_SYSTEMATIC), len);
-         case XMB_ICON_THEME_DOTART:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DOTART), len);
-         case XMB_ICON_THEME_MONOCHROME_INVERTED:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_MONOCHROME_INVERTED), len);
-         case XMB_ICON_THEME_CUSTOM:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_CUSTOM), len);
-         case XMB_ICON_THEME_AUTOMATIC:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC), len);
-         case XMB_ICON_THEME_AUTOMATIC_INVERTED:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_AUTOMATIC_INVERTED), len);
-         case XMB_ICON_THEME_DAITE:
-            return strlcpy(s,
-                  msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_ICON_THEME_DAITE), len);
-      }
-   }
-   return 0;
-}
-
 static size_t setting_get_string_representation_uint_xmb_layout(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -5091,128 +4980,6 @@ static size_t setting_get_string_representation_uint_xmb_layout(
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_CONSOLE), len);
          case 2:
             return strlcpy(s, msg_hash_to_str(MENU_ENUM_LABEL_VALUE_XMB_LAYOUT_HANDHELD), len);
-      }
-   }
-   return 0;
-}
-
-static size_t setting_get_string_representation_uint_xmb_menu_color_theme(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case XMB_THEME_WALLPAPER:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PLAIN),
-                  len);
-         case XMB_THEME_LEGACY_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LEGACY_RED),
-                  len);
-         case XMB_THEME_DARK_PURPLE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK_PURPLE),
-                  len);
-         case XMB_THEME_MIDNIGHT_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDNIGHT_BLUE),
-                  len);
-         case XMB_THEME_GOLDEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GOLDEN),
-                  len);
-         case XMB_THEME_ELECTRIC_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ELECTRIC_BLUE),
-                  len);
-         case XMB_THEME_APPLE_GREEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_APPLE_GREEN),
-                  len);
-         case XMB_THEME_UNDERSEA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_UNDERSEA),
-                  len);
-         case XMB_THEME_VOLCANIC_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_VOLCANIC_RED),
-                  len);
-         case XMB_THEME_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_DARK),
-                  len);
-         case XMB_THEME_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIGHT),
-                  len);
-         case XMB_THEME_MORNING_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MORNING_BLUE),
-                  len);
-         case XMB_THEME_SUNBEAM:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_SUNBEAM),
-                  len);
-         case XMB_THEME_LIME:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_LIME),
-                  len);
-         case XMB_THEME_MIDGAR:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_MIDGAR),
-                  len);
-         case XMB_THEME_PIKACHU_YELLOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_PIKACHU_YELLOW),
-                  len);
-         case XMB_THEME_GAMECUBE_PURPLE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GAMECUBE_PURPLE),
-                  len);
-         case XMB_THEME_FAMICOM_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FAMICOM_RED),
-                  len);
-         case XMB_THEME_FLAMING_HOT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_FLAMING_HOT),
-                  len);
-         case XMB_THEME_ICE_COLD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_ICE_COLD),
-                  len);
-         case XMB_THEME_GRAY_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_DARK),
-                  len);
-         case XMB_THEME_GRAY_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_XMB_MENU_COLOR_THEME_GRAY_LIGHT),
-                  len);
       }
    }
    return 0;
@@ -5287,120 +5054,6 @@ static size_t setting_get_string_representation_uint_xmb_shader_pipeline(
 #endif
 
 #ifdef HAVE_MATERIALUI
-static size_t setting_get_string_representation_uint_materialui_menu_color_theme(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      switch (*setting->value.target.unsigned_integer)
-      {
-         case MATERIALUI_THEME_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE), len);
-         case MATERIALUI_THEME_BLUE_GREY:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_BLUE_GREY), len);
-         case MATERIALUI_THEME_GREEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GREEN), len);
-         case MATERIALUI_THEME_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_RED), len);
-         case MATERIALUI_THEME_YELLOW:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_YELLOW), len);
-         case MATERIALUI_THEME_DARK_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DARK_BLUE), len);
-         case MATERIALUI_THEME_NVIDIA_SHIELD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NVIDIA_SHIELD), len);
-         case MATERIALUI_THEME_MATERIALUI:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI), len);
-         case MATERIALUI_THEME_MATERIALUI_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_MATERIALUI_DARK), len);
-         case MATERIALUI_THEME_OZONE_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_OZONE_DARK), len);
-         case MATERIALUI_THEME_NORD:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_NORD), len);
-         case MATERIALUI_THEME_GRUVBOX_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRUVBOX_DARK), len);
-         case MATERIALUI_THEME_SOLARIZED_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_SOLARIZED_DARK), len);
-         case MATERIALUI_THEME_CUTIE_BLUE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_BLUE), len);
-         case MATERIALUI_THEME_CUTIE_CYAN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_CYAN), len);
-         case MATERIALUI_THEME_CUTIE_GREEN:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_GREEN), len);
-         case MATERIALUI_THEME_CUTIE_ORANGE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_ORANGE), len);
-         case MATERIALUI_THEME_CUTIE_PINK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PINK), len);
-         case MATERIALUI_THEME_CUTIE_PURPLE:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_PURPLE), len);
-         case MATERIALUI_THEME_CUTIE_RED:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_CUTIE_RED), len);
-         case MATERIALUI_THEME_VIRTUAL_BOY:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_VIRTUAL_BOY), len);
-         case MATERIALUI_THEME_HACKING_THE_KERNEL:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_HACKING_THE_KERNEL), len);
-         case MATERIALUI_THEME_GRAY_DARK:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_DARK), len);
-         case MATERIALUI_THEME_GRAY_LIGHT:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_GRAY_LIGHT), len);
-         case MATERIALUI_THEME_DRACULA:
-            return strlcpy(s,
-                  msg_hash_to_str(
-                     MENU_ENUM_LABEL_VALUE_MATERIALUI_MENU_COLOR_THEME_DRACULA), len);
-         default:
-            break;
-      }
-   }
-   return 0;
-}
-
 static size_t setting_get_string_representation_uint_materialui_menu_transition_animation(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -5523,102 +5176,6 @@ static size_t setting_get_string_representation_uint_materialui_landscape_layout
 #endif
 
 #ifdef HAVE_OZONE
-#define OZONE_COLOR_THEME_ROW(ident, theme, label) { ident, label },
-static const struct ozone_color_theme_option
-{
-   const char *value;
-   enum msg_hash_enums label;
-} ozone_color_theme_options[] = {
-   OZONE_COLOR_THEME_LIST(OZONE_COLOR_THEME_ROW)
-};
-#undef OZONE_COLOR_THEME_ROW
-
-/* Position of a theme identifier in the list; ARRAY_SIZE() when it
- * is not one of them (an old out-of-range number, a hand edit). */
-static size_t ozone_color_theme_index(const char *value)
-{
-   size_t i;
-   for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
-      if (string_is_equal(value, ozone_color_theme_options[i].value))
-         return i;
-   return ARRAY_SIZE(ozone_color_theme_options);
-}
-
-/* The '|'-separated values string ST_STRING_OPTIONS wants, built
- * from the same list so it cannot drift from it. */
-static const char *ozone_color_theme_values(void)
-{
-   static char values[512];
-   if (!*values)
-   {
-      size_t i;
-      for (i = 0; i < ARRAY_SIZE(ozone_color_theme_options); i++)
-      {
-         if (i)
-            strlcat(values, "|", sizeof(values));
-         strlcat(values, ozone_color_theme_options[i].value, sizeof(values));
-      }
-   }
-   return values;
-}
-
-static int setting_string_action_ozone_menu_color_theme(
-      rarch_setting_t *setting, bool right)
-{
-   size_t size = ARRAY_SIZE(ozone_color_theme_options);
-   size_t i;
-   /* The setting dispatcher always passes wraparound as false, so
-    * read the user's preference here, as the uint handlers do. */
-   bool wraparound = config_get_ptr()->bools.menu_navigation_wraparound_enable;
-
-   if (!setting)
-      return -1;
-
-   i = ozone_color_theme_index(setting->value.target.string);
-
-   /* A value that is not in the list renders as the default theme;
-    * step from there rather than leaving left/right dead. */
-   if (i >= size)
-      i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
-   if (i >= size)
-      i = 0;
-
-   if (wraparound || (right ? i < size - 1 : i > 0))
-      i = right ? (i + 1) % size : (i + size - 1) % size;
-
-   strlcpy(setting->value.target.string,
-         ozone_color_theme_options[i].value, setting->size);
-   return 0;
-}
-
-static int setting_string_action_left_ozone_menu_color_theme(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   return setting_string_action_ozone_menu_color_theme(setting, false);
-}
-
-static int setting_string_action_right_ozone_menu_color_theme(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   return setting_string_action_ozone_menu_color_theme(setting, true);
-}
-
-static size_t setting_get_string_representation_ozone_menu_color_theme(
-      rarch_setting_t *setting, char *s, size_t len)
-{
-   if (setting)
-   {
-      size_t i = ozone_color_theme_index(setting->value.target.string);
-      /* Unknown values render as the default theme: show that */
-      if (i >= ARRAY_SIZE(ozone_color_theme_options))
-         i = ozone_color_theme_index(DEFAULT_OZONE_COLOR_THEME);
-      if (i < ARRAY_SIZE(ozone_color_theme_options))
-         return strlcpy(s,
-               msg_hash_to_str(ozone_color_theme_options[i].label), len);
-   }
-   return 0;
-}
-
 static size_t setting_get_string_representation_uint_ozone_header_icon(
       rarch_setting_t *setting, char *s, size_t len)
 {
@@ -11887,6 +11444,16 @@ static void settings_list_add_desc(
                   general_read_handler);
             if (d->flags != SD_FLAG_NONE)
                SETTINGS_DATA_LIST_CURRENT_ADD_FLAGS(list, list_info, d->flags);
+            {
+               /* The descriptor rows have no string-options kind */
+               rarch_setting_t *setting = &(*list)[list_info->index - 1];
+               const struct menu_theme_list *theme = setting_menu_theme_list(setting);
+               if (theme)
+               {
+                  setting->type   = ST_STRING_OPTIONS;
+                  setting->values = theme->values;
+               }
+            }
             break;
          case SDESC_PATH:
             CONFIG_PATH(
@@ -17108,21 +16675,6 @@ static void settings_build_menu(
       if (string_is_equal(settings->arrays.menu_driver, "ozone"))
       {
             ADD_DESC(menu_desc_31);
-            {
-               /* The descriptor rows have no string-options kind:
-                * find the color theme row by its enum, not by its
-                * position in settings_def_ozone_sidebar.h. */
-               int k = list_info->index - (int)ARRAY_SIZE(menu_desc_31);
-               for (k = (k < 0) ? 0 : k; k < list_info->index; k++)
-               {
-                  if ((*list)[k].enum_idx == MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME)
-                  {
-                     (*list)[k].type   = ST_STRING_OPTIONS;
-                     (*list)[k].values = ozone_color_theme_values();
-                     break;
-                  }
-               }
-            }
 
             ADD_DESC(menu2_desc_5);
 

@@ -45,10 +45,13 @@
 #include "../menu_str.h"
 #include "../menu_entries.h"
 #include "../menu_screensaver.h"
+#include "xmb_color_themes.h"
+#include "xmb_icon_themes.h"
 
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../content.h"
 #include "../../core_info.h"
@@ -689,9 +692,50 @@ static void xmb_calculate_visible_range(const xmb_handle_t *xmb,
    }
 }
 
+static unsigned xmb_icon_theme_from_ident(const char *ident)
+{
+#define XMB_ICON_THEME_ROW(ident, theme, label) { ident, theme },
+   static const struct
+   {
+      const char *ident;
+      unsigned theme;
+   } xmb_icon_themes[] = {
+      XMB_ICON_THEME_LIST(XMB_ICON_THEME_ROW)
+   };
+#undef XMB_ICON_THEME_ROW
+   size_t i;
+
+   for (i = 0; i < ARRAY_SIZE(xmb_icon_themes); i++)
+      if (string_is_equal(ident, xmb_icon_themes[i].ident))
+         return xmb_icon_themes[i].theme;
+   return string_is_equal(ident, DEFAULT_XMB_ICON_THEME)
+         ? 0 : xmb_icon_theme_from_ident(DEFAULT_XMB_ICON_THEME);
+}
+
+static unsigned xmb_color_theme_from_ident(const char *ident)
+{
+#define XMB_COLOR_THEME_ROW(ident, theme, label) { ident, theme },
+   static const struct
+   {
+      const char *ident;
+      unsigned theme;
+   } xmb_color_themes[] = {
+      XMB_COLOR_THEME_LIST(XMB_COLOR_THEME_ROW)
+   };
+#undef XMB_COLOR_THEME_ROW
+   size_t i;
+
+   for (i = 0; i < ARRAY_SIZE(xmb_color_themes); i++)
+      if (string_is_equal(ident, xmb_color_themes[i].ident))
+         return xmb_color_themes[i].theme;
+   return string_is_equal(ident, DEFAULT_XMB_THEME)
+         ? 0 : xmb_color_theme_from_ident(DEFAULT_XMB_THEME);
+}
+
 const char* xmb_theme_ident(void)
 {
-   unsigned menu_xmb_theme = config_get_ptr()->uints.menu_xmb_theme;
+   unsigned menu_xmb_theme = xmb_icon_theme_from_ident(
+         config_get_ptr()->arrays.menu_xmb_theme);
 
    switch (menu_xmb_theme)
    {
@@ -1769,7 +1813,8 @@ static void xmb_path_dynamic_wallpaper(xmb_handle_t *xmb, char *s, size_t len)
 {
    settings_t *settings               = config_get_ptr();
    bool menu_dynamic_wallpaper_enable = settings->bools.menu_dynamic_wallpaper_enable;
-   unsigned xmb_color_theme           = settings->uints.menu_xmb_color_theme;
+   unsigned xmb_color_theme           = xmb_color_theme_from_ident(
+         settings->arrays.menu_xmb_color_theme);
    const char *path_menu_wallpaper    = settings->paths.path_menu_wallpaper;
    const char *dir_dynamic_wallpapers = settings->paths.directory_dynamic_wallpapers;
    unsigned depth                     = (unsigned)xmb_list_get_size(xmb, MENU_LIST_PLAIN);
@@ -9236,7 +9281,8 @@ static void xmb_frame(void *data, video_frame_info_t *video_info)
    bool video_fullscreen               = video_info->fullscreen;
    bool mouse_grabbed                  = video_info->input_driver_grab_mouse_state;
    bool menu_mouse_enable              = video_info->menu_mouse_enable;
-   unsigned color_theme                = video_info->xmb_color_theme;
+   unsigned color_theme                = xmb_color_theme_from_ident(
+         video_info->xmb_color_theme);
    bool libretro_running               = video_info->libretro_running;
    unsigned menu_shader_pipeline       = video_info->menu_shader_pipeline;
    float menu_wallpaper_opacity        = video_info->menu_wallpaper_opacity;
@@ -10602,7 +10648,8 @@ static void xmb_context_reset(void *data, bool is_threaded)
 
    if (xmb)
       xmb_context_reset_internal(xmb, is_threaded, true,
-            config_get_ptr()->uints.menu_xmb_theme);
+            xmb_icon_theme_from_ident(
+               config_get_ptr()->arrays.menu_xmb_theme));
 
    video_driver_monitor_reset();
 }
