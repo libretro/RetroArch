@@ -351,9 +351,33 @@ int rmpeg1_ps_next(rmpeg1_ps_t *ps, rmpeg1_ps_packet_t *out)
 
          p = ps->buf + ps->rd + 4;
 
-         /* MPEG-1 packs carry '0010' here. MPEG-2 uses '01', and its pack
-          * header is 14 bytes with a different SCR layout; we do not claim
-          * to parse those, so resync past it rather than misread it. */
+         /* MPEG-2 (ISO/IEC 13818-1) packs carry '01' here: 14 bytes, the
+          * SCR in another layout, a 22-bit mux rate and up to 7 bytes of
+          * stuffing after. */
+         if ((p[0] & 0xC0) == 0x40)
+         {
+            size_t len;
+            if (avail < 14)
+               return 0;
+            len = 14 + (size_t)(p[9] & 0x07);
+            if (avail < len)
+               return 0;
+            ps->scr      = ((uint64_t)((p[0] >> 3) & 0x07) << 30)
+                         | ((uint64_t)( p[0]       & 0x03) << 28)
+                         | ((uint64_t)  p[1]               << 20)
+                         | ((uint64_t)((p[2] >> 3) & 0x1F) << 15)
+                         | ((uint64_t)( p[2]       & 0x03) << 13)
+                         | ((uint64_t)  p[3]               <<  5)
+                         |  (uint64_t)((p[4] >> 3) & 0x1F);
+            ps->mux_rate = ((uint32_t)p[6] << 14)
+                         | ((uint32_t)p[7] <<  6)
+                         | ((uint32_t)p[8] >>  2);
+            ps->rd      += len;
+            continue;
+         }
+
+         /* MPEG-1 packs carry '0010' here: anything else is not a pack
+          * header we know, so resync past it rather than misread it. */
          if ((p[0] & 0xF0) != 0x20)
          {
             ps->rd += 4;
@@ -420,7 +444,30 @@ int rmpeg1_ps_next(rmpeg1_ps_t *ps, rmpeg1_ps_packet_t *out)
       /* private_stream_2 has no header extension at all: payload starts
        * immediately. Everything else gets the stuffing/STD/timestamp
        * preamble. */
-      if (type != RMPEG1_PS_PRIVATE_2)
+      /* MPEG-2: '10', two flag bytes and the length of the optional
+       * fields, the timestamps first among them */
+      if (     type != RMPEG1_PS_PRIVATE_2 && pos + 3 <= payload_end
+            && (ps->buf[pos] & 0xC0) == 0x80)
+      {
+         unsigned flags = ps->buf[pos + 1] >> 6;
+         size_t   hdr   = pos + 3;
+         size_t   hlen  = ps->buf[pos + 2];
+         if (     hdr + hlen > payload_end
+               || flags == 1
+               || (flags == 2 && hlen < 5)
+               || (flags == 3 && hlen < 10))
+         {
+            ps->rd = payload_end;
+            ps->resyncs++;
+            continue;
+         }
+         if (flags & 2)
+            pts = rmpeg1_ps_read_ts(ps->buf + hdr);
+         if (flags == 3)
+            dts = rmpeg1_ps_read_ts(ps->buf + hdr + 5);
+         pos = hdr + hlen;
+      }
+      else if (type != RMPEG1_PS_PRIVATE_2)
       {
          /* Up to 16 stuffing bytes. The spec caps it; enforcing the cap
           * stops a run of FFh in corrupt data from eating the packet. */

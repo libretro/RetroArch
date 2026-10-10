@@ -3,7 +3,9 @@
 
 /* MPEG-1 Systems (Program Stream) demultiplexer.
  *
- * Written from ISO/IEC 11172-1. Splits an MPEG-1 Program Stream into its
+ * Written from ISO/IEC 11172-1, and takes the MPEG-2 program stream of
+ * ISO/IEC 13818-1 as well - its pack and PES headers, packet by packet -
+ * which is what a PSP movie (rpsmf.h) and a DVD's VOBs are. Splits an MPEG-1 Program Stream into its
  * constituent elementary streams (MPEG-1 video, MPEG-1 audio layer I/II/III,
  * private and padding streams) and recovers the timestamps attached to them.
  *
