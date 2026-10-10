@@ -147,6 +147,48 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
       ssize_t w = drv->write(h, buf, sizeof(buf));
       CHECK(w == (ssize_t)sizeof(buf), "%s: write after restart returned %ld", name, (long)w);
    }
+   /* The lend pair: a span of the driver's own buffer, produced into
+    * and published, with no mainloop lock on the writer's side; none
+    * while stopped, where write() restarts the stream instead. */
+   if (drv->write_begin && drv->write_end)
+   {
+      unsigned lent = 0, short_spans = 0;
+      size_t   want = sizeof(buf);
+      void    *region;
+      counting_locks = (drv == &audio_pulse);
+      writer_locks   = 0;
+      for (i = 0; i < 100; i++)
+      {
+         size_t got;
+         if (drv->wait_writable)
+            drv->wait_writable(h, want);
+         got = drv->write_begin(h, want, &region);
+         CHECK((got == 0) == (region == NULL),
+               "%s: lend %u: span %u with region %p", name, (unsigned)i,
+               (unsigned)got, region);
+         if (!region)
+            continue;
+         CHECK(got <= want && got % 8 == 0,
+               "%s: lend %u: span %u for %u asked", name, (unsigned)i,
+               (unsigned)got, (unsigned)want);
+         memcpy(region, buf, got);
+         CHECK(drv->write_end(h, got) == (ssize_t)got,
+               "%s: lend %u: not all of it published", name, (unsigned)i);
+         if (got < want)
+            short_spans++;
+         lent++;
+      }
+      counting_locks = 0;
+      printf("      lend: %u of 100 spans lent (%u cut at the wrap), mainloop lock taken %u times\n",
+            lent, short_spans, writer_locks);
+      CHECK(lent > 50, "%s: only %u of 100 lends", name, lent);
+      CHECK(writer_locks == 0, "%s: the lend took the mainloop lock %u times",
+            name, writer_locks);
+      CHECK(drv->stop(h), "%s: stop before a lend", name);
+      CHECK(drv->write_begin(h, want, &region) == 0 && !region,
+            "%s: a stopped stream lent", name);
+      CHECK(drv->start(h, false), "%s: start after the lend check", name);
+   }
    /* non-blocking: write_avail and partial writes */
    drv->set_nonblock_state(h, true);
    {

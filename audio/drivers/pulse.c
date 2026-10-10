@@ -710,16 +710,21 @@ static bool pulse_park(pa_t *pa, size_t want, unsigned ms)
          (int64_t)ms * 1000);
 }
 
-static void pulse_push(pa_t *pa, const void *s, size_t len)
+/* The server's thread drained the ring dry and is waiting on no
+ * callback: wake it. A full pipe means a wake is already pending. */
+static void pulse_kick(pa_t *pa)
 {
-   retro_spsc_write(&pa->ring, s, len);
-   /* The server's thread drained the ring dry and is waiting on no
-    * callback: wake it. A full pipe means a wake is already pending. */
    if (retro_atomic_exchange_int(&pa->starved, 0))
    {
       char c = 0;
       while (write(pa->kick_fd[1], &c, 1) < 0 && errno == EINTR) { }
    }
+}
+
+static void pulse_push(pa_t *pa, const void *s, size_t len)
+{
+   retro_spsc_write(&pa->ring, s, len);
+   pulse_kick(pa);
 }
 
 static ssize_t pulse_write(void *data, const void *s, size_t len)
@@ -754,6 +759,43 @@ static ssize_t pulse_write(void *data, const void *s, size_t len)
    }
 
    return _len;
+}
+
+/* The lend pair: the ring the server's thread drains, handed out span
+ * by span; a stream that is paused or not ready refuses, and write()
+ * restarts it as before. */
+static size_t pulse_write_begin(void *data, size_t len, void **region)
+{
+   pa_t  *pa   = (pa_t*)data;
+   void  *ptr  = NULL;
+   size_t room, span;
+   *region     = NULL;
+   if (!pa || !pa->ring_ok || pa->is_paused || !PULSE_READY(pa))
+      return 0;
+   room = pulse_room(pa);
+   span = retro_spsc_write_begin(&pa->ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   span -= span % pa->frame_bytes;
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&pa->ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t pulse_write_end(void *data, size_t len)
+{
+   pa_t *pa = (pa_t*)data;
+   len     -= len % pa->frame_bytes;
+   retro_spsc_write_end(&pa->ring, len);
+   if (len)
+      pulse_kick(pa);
+   return (ssize_t)len;
 }
 
 static bool pulse_stop(void *data)
@@ -1078,5 +1120,8 @@ audio_driver_t audio_pulse = {
    pulse_underruns,
    pulse_layout,
    NULL, /* frames_consumed_fallback */
-   pulse_device_clock_ppm
+   pulse_device_clock_ppm,
+   NULL, /* thread_grant */
+   pulse_write_begin,
+   pulse_write_end
 };

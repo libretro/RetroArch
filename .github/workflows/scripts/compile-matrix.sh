@@ -601,6 +601,15 @@ win32_audio "wasapi: C89, microphone" "-DHAVE_WASAPI -DHAVE_MICROPHONE" \
    audio/drivers/wasapi.c
 win32_audio "wasapi: C89, no microphone" "-DHAVE_WASAPI" \
    audio/drivers/wasapi.c
+win32_audio "wdmks: C89" "-DHAVE_WDMKS -DHAVE_MICROPHONE" \
+   audio/drivers/wdmks.c
+# WDM-KS keeps an inline path for builds without threads, which no
+# Windows job builds.
+SAVED_BASE=$BASE
+BASE=$NOTHREADS_BASE
+win32_audio "wdmks: C89, no threads" "-DHAVE_WDMKS -DHAVE_MICROPHONE" \
+   audio/drivers/wdmks.c
+BASE=$SAVED_BASE
 check "hw ring: OpenGL only" \
    "-DHAVE_OPENGL $GLINC" gfx/video_thread_hw.c
 check "hw ring: GLES only" \

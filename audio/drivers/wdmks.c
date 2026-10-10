@@ -1694,6 +1694,7 @@ typedef struct
     * the frontend needs back is published through the atomics
     * below. */
    retro_spsc_t        rt_ring;
+   unsigned char      *rt_lend;   /* the span write_begin lent */
    size_t              rt_ring_size;
    retro_eventcount_t  rt_park;
    sthread_t          *rt_thread;
@@ -1917,7 +1918,9 @@ static void wdmks_rt_event_unregister(HANDLE pin, HANDLE ev)
    CloseHandle(ev);
 }
 
+#ifdef HAVE_THREADS
 static size_t wdmks_rt_ring_bytes(size_t ahead);
+#endif
 
 static bool wdmks_rt_get_buffer(wdmks_t *w, size_t wanted)
 {
@@ -2638,6 +2641,24 @@ static ssize_t wdmks_rt_write(wdmks_t *w, const unsigned char *src,
    }
 }
 
+/* The loop's geometry from the latency setting, in one place so the
+ * harness runs the numbers the driver runs.  ahead is what is held
+ * ahead of the hardware - the setting, floored at 64 frames; loop is
+ * what is asked of the driver - two fragments of that.  The ring the
+ * frontend writes is two fragments too (wdmks_rt_ring_bytes): the
+ * refill moves it once per notification, and a ring of one fragment
+ * feeds exactly what a fragment plays, so a late pass leaves a deficit
+ * nothing repays. */
+static void wdmks_rt_geometry(unsigned latency, unsigned rate,
+      unsigned frame_bytes, size_t *ahead, size_t *loop)
+{
+   size_t a = (size_t)latency * rate / 1000 * frame_bytes;
+   if (a < (size_t)frame_bytes * 64)
+      a = (size_t)frame_bytes * 64;
+   *ahead = a;
+   *loop  = a * 2;
+}
+
 #ifdef HAVE_THREADS
 /* One pass of the refill thread: sample the position (the accounting
  * and the clock fit live here now, sampled every period, so the wrap
@@ -2734,24 +2755,6 @@ static void wdmks_mmcss_end(HMODULE avrt, HANDLE task)
          revert(task);
       FreeLibrary(avrt);
    }
-}
-
-/* The loop's geometry from the latency setting, in one place so the
- * harness runs the numbers the driver runs.  ahead is what is held
- * ahead of the hardware - the setting, floored at 64 frames; loop is
- * what is asked of the driver - two fragments of that.  The ring the
- * frontend writes is two fragments too (wdmks_rt_ring_bytes): the
- * refill moves it once per notification, and a ring of one fragment
- * feeds exactly what a fragment plays, so a late pass leaves a deficit
- * nothing repays. */
-static void wdmks_rt_geometry(unsigned latency, unsigned rate,
-      unsigned frame_bytes, size_t *ahead, size_t *loop)
-{
-   size_t a = (size_t)latency * rate / 1000 * frame_bytes;
-   if (a < (size_t)frame_bytes * 64)
-      a = (size_t)frame_bytes * 64;
-   *ahead = a;
-   *loop  = a * 2;
 }
 
 static size_t wdmks_rt_ring_bytes(size_t ahead)
@@ -4028,6 +4031,61 @@ static void *wdmks_init(const char *device, unsigned rate,
    return w;
 }
 
+/* The lend pair: the ring the refill thread drains, handed out span by
+ * span, on a threaded looped pin only. An integer pin is fed float of
+ * the same size, so the lent span is converted in place at the end.
+ * AC-3 frames are gathered and encapsulated inside write(). */
+static size_t wdmks_write_begin(void *data, size_t len, void **region)
+{
+   wdmks_t *w = (wdmks_t*)data;
+   *region    = NULL;
+#ifdef HAVE_THREADS
+   if (     !w || !w->running || !w->stream.looped || !w->rt_thread
+         || w->ac3 || retro_atomic_load_acquire_int(&w->dead))
+      return 0;
+   {
+      void  *ptr  = NULL;
+      size_t room = wdmks_rt_ring_room(w);
+      size_t span = retro_spsc_write_begin(&w->rt_ring, &ptr);
+      if (span > room)
+         span = room;
+      if (span > len)
+         span = len;
+      span -= span % w->frame_bytes;
+      if (!span || !ptr)
+      {
+         retro_spsc_write_end(&w->rt_ring, 0);
+         return 0;
+      }
+      w->rt_lend = (unsigned char*)ptr;
+      *region    = ptr;
+      return span;
+   }
+#else
+   (void)w;
+   (void)len;
+   return 0;
+#endif
+}
+
+static ssize_t wdmks_write_end(void *data, size_t len)
+{
+   wdmks_t *w = (wdmks_t*)data;
+#ifdef HAVE_THREADS
+   len -= len % w->frame_bytes;
+   if (len && w->cvt)
+      convert_float_to_s32((int32_t*)w->rt_lend, (const float*)w->rt_lend,
+            len / sizeof(float), w->stream.fmt.bits);
+   retro_spsc_write_end(&w->rt_ring, len);
+   w->rt_lend = NULL;
+   return (ssize_t)len;
+#else
+   (void)w;
+   (void)len;
+   return 0;
+#endif
+}
+
 audio_driver_t audio_wdmks = {
    wdmks_init,
    wdmks_write,
@@ -4049,7 +4107,9 @@ audio_driver_t audio_wdmks = {
    wdmks_layout,
    NULL, /* frames_consumed_fallback */
    wdmks_device_clock_ppm,
-   wdmks_thread_grant
+   wdmks_thread_grant,
+   wdmks_write_begin,
+   wdmks_write_end
 };
 
 /* ---- capture ------------------------------------------------------ */
