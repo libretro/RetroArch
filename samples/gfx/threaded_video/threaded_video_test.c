@@ -1666,6 +1666,23 @@ static unsigned  asyncwin_done;
 static unsigned  asyncwin_done_off_main;
 static uintptr_t asyncwin_main_thread;
 
+/* A load posted the way gfx_surface posts one: a node the caller owns,
+ * filled in full, handed to the video thread and back through done(). */
+static bool async_post_load(video_thread_async_load_t *n, void *img,
+      video_thread_async_done_t done, void *user,
+      video_thread_async_release_t release)
+{
+   memset(n, 0, sizeof(*n));
+   n->img         = img;
+   n->user        = user;
+   n->done        = done;
+   n->release     = release;
+   n->filter      = TEXTURE_FILTER_LINEAR;
+   n->kind        = VIDEO_THREAD_ASYNC_LOAD;
+   n->lent_idx[0] = n->lent_idx[1] = -1;
+   return video_thread_async_post(n);
+}
+
 static uintptr_t asyncwin_load(void *data, void *img, bool threaded,
       enum texture_filter_type filter)
 {
@@ -1714,6 +1731,7 @@ static void lane_async_done_main_thread(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t *thr;
    static struct texture_image img;
+   static video_thread_async_load_t nodes[120];
    unsigned i, posted = 0;
 
    asyncwin_main_thread   = sthread_get_current_thread_id();
@@ -1740,7 +1758,7 @@ static void lane_async_done_main_thread(void)
 
    for (i = 0; i < 120; i++)
    {
-      if (video_driver_texture_load_async(&img, TEXTURE_FILTER_LINEAR,
+      if (async_post_load(&nodes[i], &img,
                asyncwin_done_cb, NULL, asyncwin_release_cb))
          posted++;
       run_frames(1);
@@ -4347,10 +4365,11 @@ static void lane_zero_copy_ring_full(void)
 
 /* ------------------------------------------------------------------ */
 /* Lane: asynchronous texture uploads                                  */
-/*   video_driver_texture_load_async() must return at once, upload on  */
-/*   the video thread, deliver done() on the main thread in post       */
-/*   order with the driver's handle, release the image exactly once,   */
-/*   and hand every in-flight load a 0 when the wrapper is torn down.  */
+/*   video_thread_async_post() of a caller-owned node must return at   */
+/*   once, upload on the video thread, deliver done() on the main      */
+/*   thread in post order with the driver's handle, release the image  */
+/*   exactly once, and hand every in-flight load a 0 when the wrapper  */
+/*   is torn down. Without the wrapper it takes nothing.               */
 /* ------------------------------------------------------------------ */
 
 static video_driver_t async_driver;
@@ -4447,6 +4466,7 @@ static void lane_async_texture_load(void)
    video_driver_state_t *video_st = video_state_get_ptr();
    thread_video_t *thr;
    static struct texture_image imgs[ASYNC_N];
+   static video_thread_async_load_t nodes[ASYNC_N];
    unsigned i;
    retro_time_t t0, t1;
    uintptr_t main_thread = sthread_get_current_thread_id();
@@ -4482,7 +4502,7 @@ static void lane_async_texture_load(void)
    retro_atomic_store_release_int(&async_in_upload, 0);
    retro_atomic_store_release_int(&async_hold_release, 0);
    retro_atomic_store_release_int(&async_hold_arm, 1);
-   CHECK(video_driver_texture_load_async(&imgs[0], TEXTURE_FILTER_LINEAR,
+   CHECK(async_post_load(&nodes[0], &imgs[0],
             async_done_cb, (void*)(uintptr_t)0, async_release_cb),
          "async load 0 refused");
    for (i = 0; i < 2000
@@ -4493,7 +4513,7 @@ static void lane_async_texture_load(void)
 
    t0 = cpu_features_get_time_usec();
    for (i = 1; i < ASYNC_N; i++)
-      CHECK(video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
+      CHECK(async_post_load(&nodes[i], &imgs[i],
                async_done_cb, (void*)(uintptr_t)i, async_release_cb),
             "async load %u refused", i);
    t1 = cpu_features_get_time_usec();
@@ -4529,7 +4549,7 @@ static void lane_async_texture_load(void)
     * one must be released and answered with 0, none twice. */
    async_done_count = async_released = 0;
    for (i = 0; i < ASYNC_N; i++)
-      video_driver_texture_load_async(&imgs[i], TEXTURE_FILTER_LINEAR,
+      async_post_load(&nodes[i], &imgs[i],
             async_done_cb, (void*)(uintptr_t)i, async_release_cb);
    /* The fake poke stays in until the wrapper is gone: a post that the
     * worker already ran holds a handle the fake load made up, and at
@@ -4545,30 +4565,15 @@ static void lane_async_texture_load(void)
    CHECK(async_done_count == ASYNC_N, "teardown answered %u of %u loads",
          async_done_count, ASYNC_N);
 
-   /* Without the wrapper the call is synchronous and still keeps the
-    * contract: release, then done, before returning. The harness
-    * driver has no load_texture, so lend it the fake one. */
-   {
-      const video_poke_interface_t *real_poke = video_st->poke;
-      video_poke_interface_t sync_poke;
-      if (real_poke)
-         sync_poke = *real_poke;
-      else
-         memset(&sync_poke, 0, sizeof(sync_poke));
-      sync_poke.load_texture   = async_fake_load;
-      sync_poke.unload_texture = async_fake_unload;
-      video_st->poke = &sync_poke;
-      async_done_count = async_released = 0;
-      CHECK(video_driver_texture_load_async(&imgs[0], TEXTURE_FILTER_LINEAR,
-               async_done_cb, (void*)0, async_release_cb),
-            "synchronous fallback refused");
-      CHECK(async_released == 1 && async_done_count == 1,
-            "synchronous fallback: released %u, done %u",
-            async_released, async_done_count);
-      CHECK(async_done_thread == main_thread,
-            "synchronous fallback: done() off the main thread");
-      video_st->poke = real_poke;
-   }
+   /* Without the wrapper there is nothing to hand off to: the post is
+    * refused and nothing of it runs, so the caller loads directly. */
+   async_done_count = async_released = 0;
+   CHECK(!async_post_load(&nodes[0], &imgs[0],
+            async_done_cb, (void*)0, async_release_cb),
+         "a post was taken with no wrapper up");
+   CHECK(async_released == 0 && async_done_count == 0,
+         "a refused post ran: released %u, done %u",
+         async_released, async_done_count);
 
    if (failures == had)
       fprintf(stderr, "[pass] async texture load lane (%u uploads)\n", ASYNC_N);
@@ -5719,12 +5724,10 @@ static void lane_surface_update(void)
       int loads   = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
       int updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
       int posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
-      int allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
       int copies  = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
       fprintf(stderr, "[baseline] surface, threaded: %d loads, %d updates, "
-            "%d posts (%d allocated), %d copies\n",
-            loads, updates, posts, allocs, copies);
-      CHECK(allocs == 0, "%d of %d posts allocated a node", allocs, posts);
+            "%d posts, %d copies\n",
+            loads, updates, posts, copies);
       CHECK(copies == 0, "%d submits copied into a slot", copies);
       if (video_driver_texture_can_update())
       {
@@ -5802,12 +5805,10 @@ static void lane_surface_update(void)
       int updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
       int unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
       int posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
-      int allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
       int copies  = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
       fprintf(stderr, "[baseline] surface, direct: %d loads, %d updates, "
-            "%d unloads, %d posts (%d allocated), %d copies\n",
-            loads, updates, unloads, posts, allocs, copies);
-      CHECK(allocs == 0, "%d of %d posts allocated a node", allocs, posts);
+            "%d unloads, %d posts, %d copies\n",
+            loads, updates, unloads, posts, copies);
       CHECK(copies == 0, "%d submits copied into a slot", copies);
       if (video_driver_texture_can_update())
       {
@@ -6412,12 +6413,10 @@ static void lane_surface_4k(void)
 
 #ifdef HAVE_GFX_INSTRUMENT
    {
-      int allocs = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
       int copies = gfx_instrument_get(GFX_INSTR_SUBMIT_COPY);
       int loads  = gfx_instrument_get(GFX_INSTR_TEX_LOAD);
-      fprintf(stderr, "[baseline] 4k surface: %d loads, %d allocating "
-            "posts, %d copies\n", loads, allocs, copies);
-      CHECK(allocs == 0, "4K: %d posts allocated", allocs);
+      fprintf(stderr, "[baseline] 4k surface: %d loads, %d copies\n",
+            loads, copies);
       CHECK(copies == 0, "4K: %d submits copied", copies);
       if (video_driver_texture_can_update())
          CHECK(loads <= 1, "4K: %d texture loads for one streaming surface", loads);

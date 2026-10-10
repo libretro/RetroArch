@@ -2157,21 +2157,6 @@ bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
  * no driver, no poke, or a format it declines. */
 bool video_driver_supports_texture_format(enum texture_gpu_format fmt);
 
-/* Upload without making the caller wait for the video thread. @data
- * is a struct texture_image the caller gives up: it is handed to
- * release() once uploaded (on whichever thread uploads it). The
- * handle arrives through done(user, handle) on the main thread - at
- * once when the upload is synchronous (no wrapper, compressed image),
- * otherwise from a later video_thread_async_poll(), which every
- * frame push runs. done() gets 0 when the upload failed or the video
- * driver went away first. Returns false, having called neither
- * callback and taken no ownership, only when no texture can be
- * loaded at all. Main thread only. */
-bool video_driver_texture_load_async(void *data,
-      enum texture_filter_type filter_type,
-      void (*done)(void *user, uintptr_t handle), void *user,
-      void (*release)(void *img));
-
 void video_driver_build_info(video_frame_info_t *video_info);
 
 /* Context-cache acknowledgement.  Set by the context driver (video

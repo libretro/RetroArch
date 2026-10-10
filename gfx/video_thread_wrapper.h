@@ -231,12 +231,6 @@ typedef struct video_thread_async_load
    enum texture_filter_type filter;
    uint8_t kind;                   /* enum video_thread_async_kind */
    uint8_t dropped;                /* UPDATE: taken, nothing uploaded */
-   /* The node belongs to the poster, who embeds it in a resource that
-    * outlives the post: the wrapper never frees it, and delivers
-    * done() exactly once for every accepted post, so the poster can
-    * count on getting it back. Nodes the wrapper allocates itself
-    * (video_thread_texture_load_async) have this clear. */
-   uint8_t caller_owned;
    /* UPDATE: driver slots of the texture's upload memory to lend once
     * the update has gone, a bit each. What was lent comes back with the
     * node: lent_mem the memory, lent_idx the wrapper's record of it for
@@ -389,7 +383,7 @@ struct video_thread_menu_texture
 typedef struct thread_video
 {
    retro_time_t last_time;
-   /* Asynchronous texture uploads, see video_thread_texture_load_async(). */
+   /* Asynchronous texture uploads, see video_thread_async_post(). */
    struct
    {
       /* Any thread posts to in and this thread takes it whole; this
@@ -972,19 +966,6 @@ uintptr_t video_thread_run_blocking(custom_command_method_t func,
 
 uintptr_t video_thread_texture_handle(void *data,
       custom_command_method_t func);
-
-/* Upload @img on the video thread without blocking the caller. The
- * video thread runs the upload at its next wake, calls release(img),
- * and parks the handle; the main thread then gets done(user, handle)
- * from video_thread_async_poll(), which video_thread_frame() runs
- * every frame. If the wrapper is torn down first, in-flight loads are
- * released and delivered with handle 0. Returns false (and takes no
- * ownership) when the wrapper is not active - the caller does the
- * synchronous load instead. Main thread only. */
-bool video_thread_texture_load_async(void *img,
-      enum texture_filter_type filter,
-      video_thread_async_done_t done, void *user,
-      video_thread_async_release_t release);
 
 /* Post a caller-owned node (see video_thread_async_load_t) for the
  * video thread: kind, img, handle (UPDATE), filter (LOAD), done, user

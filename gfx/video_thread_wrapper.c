@@ -1566,14 +1566,11 @@ static void video_thread_async_deliver(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-      bool caller_owned                = n->caller_owned;
-      /* done() may repost a caller-owned node at once, which rewrites
-       * its link: nothing of the node is read after the call. */
+      /* done() may repost the node at once, which rewrites its link:
+       * nothing of the node is read after the call. */
       GFX_INSTR_INC(GFX_INSTR_ASYNC_DONE);
       if (n->done)
          n->done(n->user, n->handle);
-      if (!caller_owned)
-         free(n);
       n = next;
    }
 }
@@ -1588,67 +1585,20 @@ static void video_thread_async_drop_all(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-      bool caller_owned                = n->caller_owned;
       if (n->release && n->img)
          n->release(n->img);
       if (n->done)
          n->done(n->user, 0);
-      if (!caller_owned)
-         free(n);
       n = next;
    }
    n = video_thread_async_take(thr, &thr->async.out);
    while (n)
    {
       video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-      bool caller_owned                = n->caller_owned;
       if (n->done)
          n->done(n->user, 0);
-      if (!caller_owned)
-         free(n);
       n = next;
    }
-}
-
-bool video_thread_texture_load_async(void *img,
-      enum texture_filter_type filter,
-      video_thread_async_done_t done, void *user,
-      video_thread_async_release_t release)
-{
-   video_driver_state_t *video_st = video_state_get_ptr();
-   thread_video_t *thr;
-   video_thread_async_load_t *n;
-
-   if (!video_st->thread_wrapper_active || !img)
-      return false;
-   thr = (thread_video_t*)video_st->data;
-   if (!thr || !thr->thread)
-      return false;
-   /* On the video thread there is nothing to hand off to. */
-   if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
-      return false;
-   if (!(n = (video_thread_async_load_t*)calloc(1, sizeof(*n))))
-      return false;
-
-   n->img          = img;
-   n->user         = user;
-   n->done         = done;
-   n->release      = release;
-   n->filter       = filter;
-   n->kind         = VIDEO_THREAD_ASYNC_LOAD;
-   n->caller_owned = 0;
-   GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
-   GFX_INSTR_INC(GFX_INSTR_ASYNC_POST_ALLOC);
-
-   if (!(retro_atomic_load_acquire_int(&thr->win_flags)
-            & VIDEO_THREAD_WIN_ALIVE))
-   {
-      free(n);
-      return false;
-   }
-   video_thread_async_push(thr, &thr->async.in, n);
-   retro_eventcount_notify(&thr->work);
-   return true;
 }
 
 bool video_thread_async_post(video_thread_async_load_t *n)
@@ -1664,7 +1614,6 @@ bool video_thread_async_post(video_thread_async_load_t *n)
    if (sthread_get_thread_id(thr->thread) == sthread_get_current_thread_id())
       return false;
 
-   n->caller_owned = 1;
    GFX_INSTR_INC(GFX_INSTR_ASYNC_POST);
 
    if (!(retro_atomic_load_acquire_int(&thr->win_flags)

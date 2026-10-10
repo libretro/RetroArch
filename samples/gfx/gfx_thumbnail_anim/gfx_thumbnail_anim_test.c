@@ -340,7 +340,7 @@ int main(void)
     *    numbers are printed either way; the check is on the ones the
     *    plan states as budgets. */
    {
-      int frames, direct, copies, loads, unloads, updates, posts, allocs;
+      int frames, direct, copies, loads, unloads, updates, posts;
       int news, submits;
 
       reset_thumb(&th);
@@ -361,16 +361,15 @@ int main(void)
       unloads = gfx_instrument_get(GFX_INSTR_TEX_UNLOAD);
       updates = gfx_instrument_get(GFX_INSTR_TEX_UPDATE);
       posts   = gfx_instrument_get(GFX_INSTR_ASYNC_POST);
-      allocs  = gfx_instrument_get(GFX_INSTR_ASYNC_POST_ALLOC);
       news    = gfx_instrument_get(GFX_INSTR_SURFACE_NEW);
       submits = gfx_instrument_get(GFX_INSTR_SUBMIT_QUEUED)
               + gfx_instrument_get(GFX_INSTR_SUBMIT_DONE);
 
       printf("[baseline] %d frames: %d direct, %d canvas copies, "
-             "%d loads, %d updates, %d unloads, %d posts (%d allocated), "
+             "%d loads, %d updates, %d unloads, %d posts, "
              "%d surfaces, %d submits\n",
              frames, direct, copies, loads, updates, unloads,
-             posts, allocs, news, submits);
+             posts, news, submits);
 
       if (frames < 12)
       {
@@ -381,13 +380,6 @@ int main(void)
       if (news != 1)
       {
          printf("[FAIL] baseline: %d surfaces for one animation\n", news);
-         bad = 1;
-      }
-      /* Threaded posts must carry a descriptor, never allocate. */
-      if (allocs != 0)
-      {
-         printf("[FAIL] baseline: %d of %d posts allocated a node\n",
-                allocs, posts);
          bad = 1;
       }
       /* WEBP composes on a canvas, so a copy a frame is expected here
@@ -408,7 +400,7 @@ int main(void)
          bad = 1;
       }
       if (!bad)
-         printf("[ok]   baseline: one surface, %d posts with 0 allocations\n",
+         printf("[ok]   baseline: one surface, %d posts\n",
                 posts);
 
       gfx_thumbnail_reset(&th);

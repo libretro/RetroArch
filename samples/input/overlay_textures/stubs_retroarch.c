@@ -181,7 +181,6 @@ bool video_thread_async_post(video_thread_async_load_t *n)
    if (!stub_thread_active || !n)
       return false;
    STUB_NEXT(n)    = NULL;
-   n->caller_owned = 1;
    if (stub_in_tail)
       STUB_NEXT(stub_in_tail) = n;
    else
