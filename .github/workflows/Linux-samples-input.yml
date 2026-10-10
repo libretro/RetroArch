@@ -653,6 +653,21 @@ jobs:
           make clean
           echo "[pass] overlay_textures_test (plain, ASan, threaded ASan)"
 
+      - name: Check WinRaw mouse position-source draining
+        working-directory: samples/input/winraw_mouse_pending
+        shell: bash
+        run: |
+          set -eu
+          make clean all check
+          make clean
+          make SANITIZER=address,undefined check
+          make clean
+          make SANITIZER=thread check
+          make clean
+          make CC=x86_64-w64-mingw32-gcc all
+          WINEDEBUG=-all timeout 60 wine ./winraw_mouse_pending_test.exe
+          make clean
+
       - name: Build and run winraw_abs_pos_test (mingw + Wine)
         shell: bash
         working-directory: samples/input/winraw_abs_pos

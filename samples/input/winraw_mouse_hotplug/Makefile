@@ -18,7 +18,8 @@ LDLIBS  += -lhid -lsetupapi -luser32 -lgdi32
 
 all: $(TARGET)
 
-$(TARGET): winraw_mouse_hotplug_test.c $(REPO_ROOT)/input/drivers/winraw_input.c
+$(TARGET): winraw_mouse_hotplug_test.c $(REPO_ROOT)/input/drivers/winraw_input.c \
+	$(REPO_ROOT)/input/drivers/winraw_mouse_pending.h
 	$(CC) $(CFLAGS) -o $@ winraw_mouse_hotplug_test.c \
 		$(REPO_ROOT)/libretro-common/compat/compat_strl.c $(LDLIBS)
 

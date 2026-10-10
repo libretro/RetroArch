@@ -184,6 +184,7 @@ int main(void)
    static const LONG pos[][2] = {
       { 0, 0 }, { 1, 2 }, { 640, 360 }, { 7679, 4319 }, { 12, 4319 } };
    unsigned i;
+   uint32_t cursor_pos;
 
    printf("winraw absolute position:\n");
    wr        = (winraw_input_t*)calloc(1, sizeof(*wr));
@@ -222,6 +223,18 @@ int main(void)
    /* And the next poll takes the report that landed. */
    winraw_poll(wr);
    expect(3000, 4000, "the next poll");
+
+   report(12, 34);
+   retro_atomic_store_release_int(&g_mice[0].pos_pending, 1);
+   winraw_poll(wr);
+   cursor_pos = wr->mice[0].pos;
+   winraw_poll(wr);
+   if (wr->mice[0].pos != cursor_pos
+         || retro_atomic_load_acquire_int(&g_mice[0].abs_pending))
+   {
+      printf("   FAIL cursor priority left a stale absolute report\n");
+      failures++;
+   }
 
    if (failures)
    {

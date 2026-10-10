@@ -34,6 +34,7 @@ extern "C" {
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <retro_atomic.h>
+#include "winraw_mouse_pending.h"
 
 #ifndef _XBOX
 #include "../../gfx/common/win32_common.h"
@@ -2479,6 +2480,7 @@ static void winraw_poll(void *data)
       LONG dx;
       LONG dy;
       int dlt;
+      enum winraw_mouse_position_source source;
 
       /* Clear buttons when not focused */
       if (!winraw_focus)
@@ -2489,7 +2491,9 @@ static void winraw_poll(void *data)
       dx  = VIDEO_POS_X(dlt);
       dy  = VIDEO_POS_Y(dlt);
 
-      if (retro_atomic_exchange_int(&g_mice[i].pos_pending, 0))
+      source = winraw_mouse_take_position(&g_mice[i].pos_pending,
+            &g_mice[i].abs_pending);
+      if (source == WINRAW_MOUSE_CURSOR)
       {
          if (!crs_pos_valid)
          {
@@ -2504,7 +2508,7 @@ static void winraw_poll(void *data)
          if (crs_pos_valid)
             g_mice[i].pos = VIDEO_POS_PACK(crs_pos.x, crs_pos.y);
       }
-      else if (retro_atomic_exchange_int(&g_mice[i].abs_pending, 0))
+      else if (source == WINRAW_MOUSE_ABSOLUTE)
       {
          /* the report's word is the position's */
          g_mice[i].pos = (uint32_t)retro_atomic_load_acquire_int(
