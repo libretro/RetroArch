@@ -159,8 +159,8 @@ typedef struct
     * together. whl: WRAW_WHL_* bits. */
    retro_atomic_int_t dlt;
    retro_atomic_int_t whl;
-   /* Set by the wndproc when this mouse needs its position taken from
-    * the system cursor, drained once per frame by winraw_poll(). */
+   /* Cursor query request; carries no payload. Drained once per frame
+    * by winraw_poll(). */
    retro_atomic_int_t pos_pending;
    /* Set by the wndproc for a MOUSE_MOVE_ABSOLUTE report, with the
     * scaled position alongside as one VIDEO_POS_PACK word, so poll
@@ -1449,13 +1449,13 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
           * frame with a 1000 Hz mouse at 60 fps. Only the value in place
           * at the frame snapshot is ever read, so resolving it once per
           * frame gives the same result from a fresher sample. */
-         retro_atomic_store_release_int(&mouse->pos_pending, 1);
+         retro_atomic_store_relaxed_int(&mouse->pos_pending, 1);
       }
       else
       {
          /* This branch moves by delta, so any deferred cursor query or
           * absolute report from earlier in this frame is superseded. */
-         retro_atomic_store_release_int(&mouse->pos_pending, 0);
+         retro_atomic_store_relaxed_int(&mouse->pos_pending, 0);
          retro_atomic_store_release_int(&mouse->abs_pending, 0);
 
          /* Handle different sensitivity for lightguns */
