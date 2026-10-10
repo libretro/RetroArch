@@ -5637,10 +5637,61 @@ enum retro_camera_buffer
    RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER,
 
    /**
+    * Indicates that camera frames should be delivered to the core as
+    * the planar 4:2:0 YCbCr the capture device produces, in place.
+    *
+    * No conversion happens between the device and the core: the planes
+    * are the capture buffer itself. A core that can sample or convert
+    * YCbCr should prefer this over \c RETRO_CAMERA_BUFFER_RAW_FRAMEBUFFER,
+    * which costs the frontend a conversion pass per frame.
+    *
+    * @see retro_camera_frame_planar_t
+    */
+   RETRO_CAMERA_BUFFER_PLANAR,
+
+   /**
     * @private Defined to ensure <tt>sizeof(enum retro_camera_buffer) == sizeof(int)</tt>.
     * Do not use.
     */
    RETRO_CAMERA_BUFFER_DUMMY = INT_MAX
+};
+
+/** The luma plane is full range (0..255) rather than limited (16..235). */
+#define RETRO_CAMERA_PLANAR_FULL_RANGE (1 << 0)
+/** BT.709 matrix rather than BT.601. */
+#define RETRO_CAMERA_PLANAR_BT709      (1 << 1)
+
+/**
+ * One 8-bit 4:2:0 YCbCr frame, as planes.
+ *
+ * Covers NV12, NV21 and I420 without a format tag: the chroma planes
+ * are addressed by their own base pointers and a common sample step,
+ * so NV12 is <tt>planes[2] == planes[1] + 1</tt> with \c chroma_step 2,
+ * NV21 the other way round, and I420 two separate planes with
+ * \c chroma_step 1. Row pairs share a chroma row.
+ *
+ * @see RETRO_CAMERA_BUFFER_PLANAR
+ */
+struct retro_camera_planar_frame
+{
+   /** Y, Cb, Cr. Owned by the frontend, read-only, valid for the duration of the callback. */
+   const uint8_t *planes[3];
+
+   /** Row strides of the three planes, in bytes. */
+   size_t strides[3];
+
+   /** Distance between horizontally adjacent chroma samples of one plane, in bytes: 1 or 2. */
+   size_t chroma_step;
+
+   /** Frame size in luma pixels. */
+   unsigned width;
+   unsigned height;
+
+   /** Degrees the frame must be rotated clockwise to be upright: 0, 90, 180 or 270. */
+   unsigned rotation;
+
+   /** \c RETRO_CAMERA_PLANAR_* bits. */
+   unsigned flags;
 };
 
 /**
@@ -5722,6 +5773,17 @@ typedef void (RETRO_CALLCONV *retro_camera_frame_opengl_texture_t)(unsigned text
       unsigned texture_target, const float *affine);
 
 /**
+ * Called by the frontend to report a new camera frame,
+ * delivered as the capture device's own planar YCbCr buffer.
+ *
+ * @param frame The frame. Its planes may be invalidated when this function returns,
+ * so the core should make its own copy if necessary.
+ * @see RETRO_CAMERA_BUFFER_PLANAR
+ */
+typedef void (RETRO_CALLCONV *retro_camera_frame_planar_t)(
+      const struct retro_camera_planar_frame *frame);
+
+/**
  * An interface that the core can use to access a device's camera.
  *
  * @see RETRO_ENVIRONMENT_GET_CAMERA_INTERFACE
@@ -5796,6 +5858,15 @@ struct retro_camera_callback
     * May be \c NULL, in which case this function is skipped.
     */
    retro_camera_lifetime_status_t deinitialized;
+
+   /**
+    * @copydoc retro_camera_frame_planar_t
+    * @note Read by the frontend only when \c caps has the
+    * \c RETRO_CAMERA_BUFFER_PLANAR bit, so a core built against an
+    * older header, whose struct ends above, is never read past.
+    * If \c NULL, this function will not be called.
+    */
+   retro_camera_frame_planar_t frame_planar;
 };
 
 /** @} */

@@ -78,7 +78,7 @@ static bool poll_until_frame(void *h, unsigned tries)
    unsigned before = frames_seen;
    while (tries--)
    {
-      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
       if (frames_seen > before && last_width)
          return true;
       usleep(20000);
@@ -146,7 +146,7 @@ int main(void)
       /* Increasing amounts of work before the stop, so the thread is
        * at a different point each time. */
       usleep(i * 5000);
-      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
       camera_ffmpeg.stop(h);
       camera_ffmpeg.free(h);
    }
@@ -181,7 +181,7 @@ int main(void)
       CHECK(camera_ffmpeg.start(h), "start failed");
       for (i = 0; i < 300 && stable < 15; i++)
       {
-         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+         camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
          if (last_px == seen)
             stable++;
          else
@@ -213,10 +213,10 @@ int main(void)
       CHECK(poll_until_frame(h, 100), "no frame arrived");
       usleep(100000);
       cb_sleep_us = 300000;
-      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
       cb_sleep_us = 0;
       before = last_px;
-      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
       after = last_px;
       moved = (after - before + 256) % 256;
       printf("      %d frame(s) on after a 300 ms callback\n", moved);
@@ -232,7 +232,7 @@ int main(void)
    {
       unsigned before = frames_seen;
       /* Refused, not crashed, and no frame invented. */
-      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb);
+      camera_ffmpeg.poll(h, frame_raw_cb, frame_gl_cb, NULL);
       CHECK(frames_seen == before, "a camera that was never started produced a frame");
       camera_ffmpeg.free(h);
    }

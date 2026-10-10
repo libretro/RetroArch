@@ -395,9 +395,11 @@ static bool preprocess_image(void *data)
 
 static bool v4l_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-      retro_camera_frame_opengl_texture_t frame_gl_cb)
+      retro_camera_frame_opengl_texture_t frame_gl_cb,
+      retro_camera_frame_planar_t frame_planar_cb)
 {
    video4linux_t *v4l = (video4linux_t*)data;
+   (void)frame_planar_cb;
    if (!v4l->ready)
       return false;
 

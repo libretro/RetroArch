@@ -477,6 +477,7 @@ VIDEO IMAGE
 ============================================================ */
 
 #include "../libretro-common/formats/image_texture.c"
+#include "../libretro-common/formats/image/image_yuv_blit.c"
 #include "../libretro-common/formats/image_texture_scale.c"
 #include "../libretro-common/formats/image_texture_set.c"
 

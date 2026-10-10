@@ -3104,7 +3104,13 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          cb->start                        = driver_camera_start;
          cb->stop                         = driver_camera_stop;
 
-         camera_st->cb                    = *cb;
+         /* The planar callback sits past the end of the struct an
+          * older core allocated; its caps bit says the field exists */
+         memcpy(&camera_st->cb, cb,
+               offsetof(struct retro_camera_callback, frame_planar));
+         camera_st->cb.frame_planar       =
+            (cb->caps & (UINT64_C(1) << RETRO_CAMERA_BUFFER_PLANAR))
+            ? cb->frame_planar : NULL;
          camera_st->active                = (cb->caps != 0);
          break;
       }
@@ -9622,7 +9628,8 @@ int runloop_iterate(void)
    if (runloop_st->frame_work & RUNLOOP_WORK_CAMERA)
       camera_st->driver->poll(camera_st->data,
             camera_st->cb.frame_raw_framebuffer,
-            camera_st->cb.frame_opengl_texture);
+            camera_st->cb.frame_opengl_texture,
+            camera_st->cb.frame_planar);
 
 #ifdef HAVE_OPENXR
    if (runloop_st->core_vr_content)

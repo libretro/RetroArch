@@ -56,8 +56,10 @@ static void rwebcam_stop(void *data)
 
 static bool rwebcam_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-      retro_camera_frame_opengl_texture_t frame_gl_cb)
+      retro_camera_frame_opengl_texture_t frame_gl_cb,
+      retro_camera_frame_planar_t frame_planar_cb)
 {
+   (void)frame_planar_cb;
    return RWebCamPoll(data, frame_raw_cb, frame_gl_cb);
 }
 

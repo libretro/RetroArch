@@ -802,9 +802,11 @@ static void avfoundation_stop(void *data)
 
 static bool avfoundation_poll(void *data,
       retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-      retro_camera_frame_opengl_texture_t frame_gl_cb)
+      retro_camera_frame_opengl_texture_t frame_gl_cb,
+      retro_camera_frame_planar_t frame_planar_cb)
 {
     avfoundation_t *avf = (avfoundation_t*)data;
+    (void)frame_planar_cb;
     if (!avf || !frame_raw_cb)
     {
         RARCH_ERR("[Camera] Cannot poll - invalid data or callback.\n");

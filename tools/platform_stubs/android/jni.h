@@ -38,6 +38,8 @@ struct JNINativeInterface {
    jobject   (*GetObjectArrayElement)(JNIEnv*, jobjectArray, jsize);
    jint     *(*GetIntArrayElements)(JNIEnv*, jintArray, jboolean*);
    void      (*ReleaseIntArrayElements)(JNIEnv*, jintArray, jint*, jint);
+   jbyte    *(*GetByteArrayElements)(JNIEnv*, jbyteArray, jboolean*);
+   void      (*ReleaseByteArrayElements)(JNIEnv*, jbyteArray, jbyte*, jint);
    jobject   (*NewGlobalRef)(JNIEnv*, jobject);
    void      (*DeleteGlobalRef)(JNIEnv*, jobject);
    void      (*DeleteLocalRef)(JNIEnv*, jobject);

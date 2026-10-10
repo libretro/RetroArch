@@ -802,9 +802,11 @@ static void ffmpeg_camera_poll_thread(void *data)
 
 static bool ffmpeg_camera_poll(void *data,
    retro_camera_frame_raw_framebuffer_t frame_raw_cb,
-   retro_camera_frame_opengl_texture_t frame_gl_cb)
+   retro_camera_frame_opengl_texture_t frame_gl_cb,
+   retro_camera_frame_planar_t frame_planar_cb)
 {
    ffmpeg_camera_t *ffmpeg = (ffmpeg_camera_t*)data;
+   (void)frame_planar_cb;
 
    if (!ffmpeg->format_context)
    {

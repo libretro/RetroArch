@@ -44,7 +44,8 @@ static void nullcamera_stop(void *data) { }
 static bool nullcamera_start(void *data) { return true; }
 static bool nullcamera_poll(void *a,
       retro_camera_frame_raw_framebuffer_t b,
-      retro_camera_frame_opengl_texture_t c) { return true; }
+      retro_camera_frame_opengl_texture_t c,
+      retro_camera_frame_planar_t d) { return true; }
 
 static camera_driver_t camera_null = {
    nullcamera_init,

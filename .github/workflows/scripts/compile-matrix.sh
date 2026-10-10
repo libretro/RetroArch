@@ -778,10 +778,18 @@ for tu in libretro-common/crypto/crypto.c libretro-common/crypto/kdf.c libretro-
       libretro-common/vfs/vfs_prefetch.c network/tls_log.c; do
    android_clang "android clang/aarch64: $(basename $tu)" "$ANDROID_NET" "$tu"
 done
+android_clang "android clang/aarch64: camera" "-Itools/platform_stubs/android -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_CAMERA -DHAVE_CONFIG_H -DRARCH_INTERNAL -include tools/platform_stubs/android/jni.h -include frontend/drivers/platform_unix.h -include verbosity.h" camera/drivers/android.c
 # rwebaudio is its own translation unit in the emscripten build, not
 # part of griffin's, and nothing else compiles it at all.
 check "emscripten: rwebaudio"  "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN -DHAVE_RWEBAUDIO $CDECL" audio/drivers/rwebaudio.c
 check "emscripten: rwebcam"    "$HOSTOFF -Itools/platform_stubs/emscripten -D__EMSCRIPTEN__ -DEMSCRIPTEN $CDECL" camera/drivers/rwebcam.c
+# The Android camera driver is only ever compiled inside griffin on the
+# Android job, after platform_unix.h; the same shape here, so the C of
+# it is checked on every push.
+check "android: camera"        "$HOSTOFF -Itools/platform_stubs/android -DANDROID -DHAVE_OPENGLES -DHAVE_OPENGLES2 -DHAVE_CAMERA -DHAVE_CONFIG_H -include tools/platform_stubs/android/jni.h -include frontend/drivers/platform_unix.h -include verbosity.h $CDECL" camera/drivers/android.c
+[ -f /usr/include/linux/videodev2.h ] \
+   && check "camera: v4l2"     "-DHAVE_V4L2 -DHAVE_CAMERA $CDECL" camera/drivers/video4linux2.c \
+   || echo "skip  camera: v4l2 (no /usr/include/linux/videodev2.h)"
 
 # Two more that no job here compiles: the S3 cloud-sync backend, which
 # only griffin includes and which nothing defines HAVE_S3 for, and the
