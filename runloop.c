@@ -5339,6 +5339,79 @@ static void runloop_apply_fastmotion_override(runloop_state_t *runloop_st,
             fastforward_ratio_current);
 }
 
+static void runloop_apply_fastmotion(bool enabled)
+{
+   runloop_state_t *runloop_st     = &runloop_state;
+   input_driver_state_t *input_st = input_state_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings          = config_get_ptr();
+
+   if (enabled)
+   {
+      input_st->flags   |= INP_FLAG_NONBLOCKING;
+      runloop_st->flags |= RUNLOOP_FLAG_FASTMOTION;
+      command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
+   }
+   else
+   {
+      input_st->flags   &= ~INP_FLAG_NONBLOCKING;
+      runloop_st->flags &= ~RUNLOOP_FLAG_FASTMOTION;
+      runloop_st->fastforward_after_frames = 1;
+   }
+
+   if (settings->bools.audio_fastforward_mute && enabled)
+      AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
+   else
+      AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
+
+   driver_set_nonblock_state();
+
+   if (!enabled && settings->bools.frame_time_counter_auto_reset)
+      video_st->frame_time_count = 0;
+}
+
+static bool runloop_can_set_speed(void)
+{
+   if (!(runloop_state.flags & RUNLOOP_FLAG_CORE_RUNNING)
+         || (runloop_state.flags & RUNLOOP_FLAG_PAUSED))
+      return false;
+#ifdef HAVE_NETWORKING
+   if (!netplay_driver_ctl(RARCH_NETPLAY_CTL_ALLOW_TIMESKIP, NULL))
+      return false;
+#endif
+   return true;
+}
+
+bool runloop_set_fastmotion(bool enabled)
+{
+   if (((runloop_state.flags & RUNLOOP_FLAG_FASTMOTION) != 0) == enabled)
+      return true;
+   if (!runloop_can_set_speed()
+         || runloop_state.fastmotion_override.pending
+         || runloop_state.fastmotion_override.current.inhibit_toggle)
+      return false;
+   runloop_apply_fastmotion(enabled);
+   return true;
+}
+
+bool runloop_set_slowmotion(bool enabled)
+{
+   if (((runloop_state.flags & RUNLOOP_FLAG_SLOWMOTION) != 0) == enabled)
+      return true;
+   if (!runloop_can_set_speed())
+      return false;
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+      return false;
+#endif
+   if (enabled)
+      runloop_state.flags |= RUNLOOP_FLAG_SLOWMOTION;
+   else
+      runloop_state.flags &= ~RUNLOOP_FLAG_SLOWMOTION;
+   return true;
+}
+
 void runloop_event_deinit_core(void)
 {
    video_driver_state_t
@@ -8752,33 +8825,8 @@ static enum runloop_state_enum runloop_check_state(
 
       if (check2)
       {
-         bool audio_fastforward_mute = settings->bools.audio_fastforward_mute;
-         bool frame_time_counter_auto_reset = settings->bools.frame_time_counter_auto_reset;
-         if (input_st->flags & INP_FLAG_NONBLOCKING)
-         {
-            input_st->flags                     &= ~INP_FLAG_NONBLOCKING;
-            runloop_st->flags                   &= ~RUNLOOP_FLAG_FASTMOTION;
-            runloop_st->fastforward_after_frames = 1;
-         }
-         else
-         {
-            input_st->flags                     |=  INP_FLAG_NONBLOCKING;
-            runloop_st->flags                   |=  RUNLOOP_FLAG_FASTMOTION;
-            command_event(CMD_EVENT_SET_FRAME_LIMIT, NULL);
-         }
-
-         if (audio_fastforward_mute && (runloop_st->flags & RUNLOOP_FLAG_FASTMOTION))
-            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_MUTED);
-         else
-            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_MUTED);
-
-         driver_set_nonblock_state();
-
-         /* Reset frame time counter when toggling
-          * fast-forward off, if required */
-         if ( !(runloop_st->flags & RUNLOOP_FLAG_FASTMOTION)
-             && frame_time_counter_auto_reset)
-            video_st->frame_time_count  = 0;
+         runloop_apply_fastmotion(
+               !(input_st->flags & INP_FLAG_NONBLOCKING));
       }
 
       old_button_state                  = new_button_state;

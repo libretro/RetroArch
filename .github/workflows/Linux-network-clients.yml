@@ -132,6 +132,17 @@ jobs:
             make -C samples/network/mcp_server check
           make -C samples/network/mcp_server clean
 
+      - name: Command options and speed setters
+        shell: bash
+        working-directory: ${{ github.workspace }}
+        run: |
+          set -eu
+          make -C samples/network/command_options clean
+          make -C samples/network/command_options SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1 \
+            make -C samples/network/command_options check
+          make -C samples/network/command_options clean
+
 
       - name: Windows builds under Wine
         shell: bash
@@ -162,6 +173,9 @@ jobs:
           make -C samples/network/mcp_server compiler=x86_64-w64-mingw32-gcc
           (cd samples/network/mcp_server && wine ./mcp_server_test.exe)
           make -C samples/network/mcp_server clean
+          make -C samples/network/command_options compiler=x86_64-w64-mingw32-gcc
+          (cd samples/network/command_options && wine ./command_options_test.exe)
+          make -C samples/network/command_options clean
           export CC=x86_64-w64-mingw32-gcc RUNNER=wine EXE=.exe
           make -C samples/network/tls_retro clean
           samples/network/tls_retro/local_server_test.sh

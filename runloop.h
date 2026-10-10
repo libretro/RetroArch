@@ -1015,6 +1015,10 @@ void runloop_path_set_names(void);
 
 uint32_t runloop_get_flags(void);
 
+bool runloop_set_fastmotion(bool enabled);
+
+bool runloop_set_slowmotion(bool enabled);
+
 /* The platform has taken the application away, or given it back:
  * paused and idle while it is away. */
 void runloop_set_platform_paused(bool paused);

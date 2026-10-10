@@ -16,7 +16,8 @@ import re
 import sys
 
 HEADER = 'command.h'
-FLAGS  = {'0', 'CMD_INFO_READ_ONLY', 'CMD_INFO_DESTRUCTIVE'}
+FLAGS  = {'0', 'CMD_INFO_READ_ONLY', 'CMD_INFO_DESTRUCTIVE',
+          'CMD_INFO_NO_TOOL'}
 
 ACTION_ROW = re.compile(
     r'\{\s*"([A-Z0-9_]+)"\s*,\s*(\w+)\s*,\s*"([^"]*)"\s*'

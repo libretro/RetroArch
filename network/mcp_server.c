@@ -324,16 +324,21 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       return;
    }
    MCP_RAW(w, "\"result\":{\"tools\":[");
-   for (i = 0; i < n; i++, first = false)
+   for (i = 0; i < n; i++)
    {
+      if (acts[i].flags & CMD_INFO_NO_TOOL)
+         continue;
       if (!first)
          MCP_RAW(w, ",");
+      first = false;
       mcp_tool(w, acts[i].str, acts[i].desc, acts[i].arg_desc, acts[i].flags);
    }
    {
       const struct cmd_map *keys = command_hotkey_list(&n);
       for (i = 0; i < n; i++)
       {
+         if (keys[i].flags & CMD_INFO_NO_TOOL)
+            continue;
          if (!first)
             MCP_RAW(w, ",");
          first = false;
@@ -355,11 +360,13 @@ static bool mcp_tool_known(const char *name)
    const struct cmd_action_map *acts = command_action_list(&n);
    const struct cmd_map        *keys;
    for (i = 0; i < n; i++)
-      if (string_is_equal(acts[i].str, name))
+      if (     string_is_equal(acts[i].str, name)
+            && !(acts[i].flags & CMD_INFO_NO_TOOL))
          return true;
    keys = command_hotkey_list(&n);
    for (i = 0; i < n; i++)
-      if (string_is_equal(keys[i].str, name))
+      if (     string_is_equal(keys[i].str, name)
+            && !(keys[i].flags & CMD_INFO_NO_TOOL))
          return true;
    return false;
 }
@@ -415,24 +422,6 @@ static void *mcp_reply_dest(command_t *cmd)
    return o;
 }
 
-/* An error reply opens with its command's name and then ERROR
- * ("GET_PLAYLIST ERROR no such playlist", "SCREENSHOT ERROR ...").  A
- * reply that is a path, as SCREENSHOT's is, can hold " ERROR" anywhere
- * else - a game named so - and opens with no command name, so only the
- * first word is looked at. */
-static bool mcp_reply_is_error(const char *data, size_t len)
-{
-   size_t i;
-   if (len >= 2 && data[0] == '-' && data[1] == '1')
-      return true;
-   for (i = 0; i < len && data[i] != ' '; i++)
-      if (!(   (data[i] >= 'A' && data[i] <= 'Z')
-            || (data[i] >= '0' && data[i] <= '9')
-            ||  data[i] == '_'))
-         return false;
-   return i > 0 && len - i >= 6 && !strncmp(data + i, " ERROR", 6);
-}
-
 static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
       size_t len)
 {
@@ -445,8 +434,8 @@ static void mcp_reply_to(command_t *cmd, void *dest, const char *data,
    /* the connection timed out or was reused meanwhile */
    if (c->state != MCP_CONN_WAITING || c->serial != o->serial)
       return;
-   mcp_tool_result(c, c->id, c->modern, data, len,
-         mcp_reply_is_error(data, len));
+   mcp_tool_result(c, c->id, c->modern, data, len, cmd->error);
+   cmd->error = false;
 }
 
 /* A reply carrying an image, SCREENSHOT's: the picture, then the text
@@ -859,7 +848,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       if (c->state == MCP_CONN_WAITING)
          goto end;                         /* answered by reply_to */
       if (mcp->reply_len)
-         mcp_tool_result(c, r.id, modern, mcp->reply, mcp->reply_len, !ok);
+         mcp_tool_result(c, r.id, modern, mcp->reply, mcp->reply_len,
+               cmd->error || !ok);
       else
          mcp_tool_result(c, r.id, modern, ok ? "Done." : "The command failed.",
                ok ? 5 : 19, !ok);

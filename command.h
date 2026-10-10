@@ -325,7 +325,11 @@ enum cmd_info_flags
    /* May lose unsaved progress or data, or loads code from a path:
     * quits, resets, loads or overwrites states and saves, writes core
     * memory, loads or unloads cores and content. */
-   CMD_INFO_DESTRUCTIVE = (1 << 1)
+   CMD_INFO_DESTRUCTIVE = (1 << 1),
+   /* A line command that is not offered as a tool: what it does is
+    * covered by another one, or the interface already describes
+    * itself. It stays a command on every line interface. */
+   CMD_INFO_NO_TOOL     = (1 << 2)
 };
 
 /* A hotkey command: sending it presses the hotkey for one frame. */
@@ -375,6 +379,12 @@ struct command_handler
    /* Requests are structured (MCP), not lines: given the replies a
     * line-based client never had */
    bool structured;
+   /* The reply being sent reports a failure, for the interface sending
+    * it to read: what a line client reads as text a structured one is
+    * told outright. Set beside the reply by whatever answers - a
+    * command, a deferred reply, command_reply_error() - and cleared
+    * when a command starts and once the reply is away. */
+   bool error;
 };
 
 typedef struct command_handler command_t;
@@ -486,6 +496,15 @@ struct cmd_action_map
    unsigned flags;       /* enum cmd_info_flags */
 };
 
+/* GET_OPTION [option] / SET_OPTION <option> on|off */
+bool command_get_option(command_t *cmd, const char *arg);
+bool command_set_option(command_t *cmd, const char *arg);
+
+/* Replies with a failure and why, and marks the reply as one. The text
+ * opens with @name and ERROR, as a deferred reply's does. */
+void command_reply_error(command_t *cmd, const char *name,
+      const char *fmt, ...);
+
 /* HELP [command]: the commands, their arguments and what they do. */
 bool command_help(command_t *cmd, const char* arg);
 /* Queries for clients that browse and launch content. */
@@ -531,13 +550,19 @@ bool command_audio_reinit(command_t *cmd, const char* arg);
 bool command_drivers_reinit(command_t *cmd, const char* arg);
 
 static const struct cmd_action_map action_map[] = {
-   { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY },
+   /* HELP and VERSION are not tools: a structured interface lists the
+    * commands itself and names its version in every answer. */
+   { "HELP",             command_help,             "[command]", "List the commands, or describe one.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
 #if defined(HAVE_CG) || defined(HAVE_GLSL) || defined(HAVE_SLANG) || defined(HAVE_HLSL)
    { "SET_SHADER",       command_set_shader,       "<shader path>", "Load the shader preset at the given path.", 0 },
 #endif
-   { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY },
+   { "VERSION",          command_version,          "No argument", "Report the RetroArch version.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
    { "GET_STATUS",       command_get_status,       "No argument", "Report whether content is playing or paused, with its system, name and CRC32, or that none is loaded.", CMD_INFO_READ_ONLY },
-   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY },
+   { "GET_OPTION",       command_get_option,       "[option]", "Report an option's value, or list every option with its value.", CMD_INFO_READ_ONLY },
+   { "SET_OPTION",       command_set_option,       "<option> on|off", "Turn an option on or off. Asking for the state it is already in changes nothing.", 0 },
+   /* GET_OPTION reports these and more; this stays for the clients that
+    * have always asked it. */
+   { "GET_CONFIG_PARAM", command_get_config_param, "<param name>", "Report the value of a configuration setting.", CMD_INFO_READ_ONLY | CMD_INFO_NO_TOOL },
    { "LIST_CORES",       command_list_cores,       "No argument", "List the installed cores: name, a tab, and the path LOAD_CONTENT takes.", CMD_INFO_READ_ONLY },
    { "LIST_PLAYLISTS",   command_list_playlists,   "No argument", "List the playlists, as GET_PLAYLIST takes them.", CMD_INFO_READ_ONLY },
    { "GET_PLAYLIST",     command_get_playlist,     "<playlist> [first entry]", "List a playlist's entries: index, label, content path and core path, tab separated, 200 at a time; MORE <next> when there are more.", CMD_INFO_READ_ONLY },
@@ -570,19 +595,19 @@ static const struct cmd_action_map action_map[] = {
 };
 
 static const struct cmd_map map[] = {
-   { "MENU_TOGGLE", RARCH_MENU_TOGGLE, "Open or close the menu.", 0 },
+   { "MENU_TOGGLE", RARCH_MENU_TOGGLE, "Open or close the menu.", CMD_INFO_NO_TOOL },
    { "QUIT", RARCH_QUIT_KEY, "Quit RetroArch.", CMD_INFO_DESTRUCTIVE },
    { "RESET", RARCH_RESET, "Reset the running content.", CMD_INFO_DESTRUCTIVE },
 
-   { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", 0 },
+   { "FAST_FORWARD", RARCH_FAST_FORWARD_KEY, "Toggle fast-forward.", CMD_INFO_NO_TOOL },
    { "FAST_FORWARD_HOLD", RARCH_FAST_FORWARD_HOLD_KEY, "Fast-forward while held (one frame when sent as a command).", 0 },
-   { "SLOWMOTION", RARCH_SLOWMOTION_KEY, "Toggle slow motion.", 0 },
+   { "SLOWMOTION", RARCH_SLOWMOTION_KEY, "Toggle slow motion.", CMD_INFO_NO_TOOL },
    { "SLOWMOTION_HOLD", RARCH_SLOWMOTION_HOLD_KEY, "Slow motion while held (one frame when sent as a command).", 0 },
    { "REWIND", RARCH_REWIND, "Rewind while held (one frame when sent as a command).", 0 },
-   { "PAUSE_TOGGLE", RARCH_PAUSE_TOGGLE, "Pause or resume the content.", 0 },
+   { "PAUSE_TOGGLE", RARCH_PAUSE_TOGGLE, "Pause or resume the content.", CMD_INFO_NO_TOOL },
    { "FRAMEADVANCE", RARCH_FRAMEADVANCE, "Advance one frame while paused.", 0 },
 
-   { "MUTE", RARCH_MUTE, "Mute or unmute audio.", 0 },
+   { "MUTE", RARCH_MUTE, "Mute or unmute audio.", CMD_INFO_NO_TOOL },
    { "VOLUME_UP", RARCH_VOLUME_UP, "Raise the volume.", 0 },
    { "VOLUME_DOWN", RARCH_VOLUME_DOWN, "Lower the volume.", 0 },
 
@@ -604,7 +629,7 @@ static const struct cmd_map map[] = {
    { "DISK_NEXT", RARCH_DISK_NEXT, "Select the next disc image.", 0 },
    { "DISK_PREV", RARCH_DISK_PREV, "Select the previous disc image.", 0 },
 
-   { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", 0 },
+   { "SHADER_TOGGLE", RARCH_SHADER_TOGGLE, "Turn the shader on or off.", CMD_INFO_NO_TOOL },
    { "SHADER_HOLD", RARCH_SHADER_HOLD, "Turn the shader off while held (one frame when sent as a command).", 0 },
    { "SHADER_NEXT", RARCH_SHADER_NEXT, "Load the next shader preset in its directory.", 0 },
    { "SHADER_PREV", RARCH_SHADER_PREV, "Load the previous shader preset in its directory.", 0 },
@@ -614,23 +639,23 @@ static const struct cmd_map map[] = {
    { "CHEAT_INDEX_MINUS", RARCH_CHEAT_INDEX_MINUS, "Select the previous cheat.", 0 },
 
    { "SCREENSHOT", RARCH_SCREENSHOT, "Take a screenshot.", 0 },
-   { "RECORDING_TOGGLE", RARCH_RECORDING_TOGGLE, "Start or stop recording video.", 0 },
-   { "STREAMING_TOGGLE", RARCH_STREAMING_TOGGLE, "Start or stop streaming.", 0 },
+   { "RECORDING_TOGGLE", RARCH_RECORDING_TOGGLE, "Start or stop recording video.", CMD_INFO_NO_TOOL },
+   { "STREAMING_TOGGLE", RARCH_STREAMING_TOGGLE, "Start or stop streaming.", CMD_INFO_NO_TOOL },
 
-   { "TURBO_FIRE_TOGGLE", RARCH_TURBO_FIRE_TOGGLE, "Turn turbo fire on or off.", 0 },
-   { "GRAB_MOUSE_TOGGLE", RARCH_GRAB_MOUSE_TOGGLE, "Grab or release the mouse.", 0 },
-   { "GAME_FOCUS_TOGGLE", RARCH_GAME_FOCUS_TOGGLE, "Give the game all keyboard input, or hand it back to hotkeys.", 0 },
-   { "FULLSCREEN_TOGGLE", RARCH_FULLSCREEN_TOGGLE_KEY, "Switch between fullscreen and windowed.", 0 },
+   { "TURBO_FIRE_TOGGLE", RARCH_TURBO_FIRE_TOGGLE, "Turn turbo fire on or off.", CMD_INFO_NO_TOOL },
+   { "GRAB_MOUSE_TOGGLE", RARCH_GRAB_MOUSE_TOGGLE, "Grab or release the mouse.", CMD_INFO_NO_TOOL },
+   { "GAME_FOCUS_TOGGLE", RARCH_GAME_FOCUS_TOGGLE, "Give the game all keyboard input, or hand it back to hotkeys.", CMD_INFO_NO_TOOL },
+   { "FULLSCREEN_TOGGLE", RARCH_FULLSCREEN_TOGGLE_KEY, "Switch between fullscreen and windowed.", CMD_INFO_NO_TOOL },
    { "UI_COMPANION_TOGGLE", RARCH_UI_COMPANION_TOGGLE, "Show or hide the desktop companion window.", 0 },
 
-   { "VRR_RUNLOOP_TOGGLE", RARCH_VRR_RUNLOOP_TOGGLE, "Turn sync to exact content framerate on or off.", 0 },
-   { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", 0 },
-   { "PREEMPT_TOGGLE", RARCH_PREEMPT_TOGGLE, "Turn preemptive frames on or off.", 0 },
-   { "VIDEO_FILTER_TOGGLE", RARCH_VIDEO_FILTER_TOGGLE, "Turn the video filter on or off.", 0 },
+   { "VRR_RUNLOOP_TOGGLE", RARCH_VRR_RUNLOOP_TOGGLE, "Turn sync to exact content framerate on or off.", CMD_INFO_NO_TOOL },
+   { "RUNAHEAD_TOGGLE", RARCH_RUNAHEAD_TOGGLE, "Turn run-ahead on or off.", CMD_INFO_NO_TOOL },
+   { "PREEMPT_TOGGLE", RARCH_PREEMPT_TOGGLE, "Turn preemptive frames on or off.", CMD_INFO_NO_TOOL },
+   { "VIDEO_FILTER_TOGGLE", RARCH_VIDEO_FILTER_TOGGLE, "Turn the video filter on or off.", CMD_INFO_NO_TOOL },
    { "HEADSET_RECENTER", RARCH_HEADSET_RECENTER, "Recenter the headset's screens in front of where it looks.", 0 },
    { "LASER_POINTER_TOGGLE", RARCH_LASER_POINTER_TOGGLE, "Show or hide the headset's laser pointer.", 0 },
-   { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", 0 },
-   { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", 0 },
+   { "FPS_TOGGLE", RARCH_FPS_TOGGLE, "Show or hide the framerate.", CMD_INFO_NO_TOOL },
+   { "STATISTICS_TOGGLE", RARCH_STATISTICS_TOGGLE, "Show or hide the technical statistics.", CMD_INFO_NO_TOOL },
    { "AI_SERVICE", RARCH_AI_SERVICE, "Run the AI service (translate or narrate the screen).", 0 },
 
    { "NETPLAY_PING_TOGGLE", RARCH_NETPLAY_PING_TOGGLE, "Show or hide the netplay ping.", 0 },
