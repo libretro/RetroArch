@@ -389,6 +389,16 @@ typedef struct
       D3D11ShaderResourceView view;
       bool                    eligible;
    } hw_direct;
+   /* A software frame for the stock chain is written straight into
+    * this dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
+    * reads is renamed rather than waited for, and drawn from it through
+    * hw_direct.view: no staging copy, no copy on the GPU. `format` is the
+    * format it was made for, which the texture may hold as another. */
+   struct
+   {
+      d3d11_texture_t texture;
+      DXGI_FORMAT     format;
+   } sw_direct;
    /* The back buffer size the copy was made at, packed. */
    unsigned              retained_dims;
    unsigned              retained_light;
@@ -3441,6 +3451,7 @@ static void d3d11_gfx_free(void* data)
    d3d11_free_shader_preset(d3d11);
 
    d3d11_release_texture(&d3d11->frame.texture[0]);
+   d3d11_release_texture(&d3d11->sw_direct.texture);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
 
@@ -5092,6 +5103,46 @@ static retro_time_t d3d11_get_last_present_time(void *data)
 
 /* The view to draw a version 3 core's texture through. A core rotates a
  * few textures, so a view per texture is made once and found again. */
+/* Writes a software frame into sw_direct's texture, made or remade at
+ * its size first. False when it can't be: the frame takes the staging
+ * path instead. */
+static bool d3d11_sw_direct_upload(d3d11_video_t *d3d11,
+      D3D11DeviceContext ctx, unsigned width, unsigned height,
+      unsigned pitch, const void *frame)
+{
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   d3d11_texture_t *tex = &d3d11->sw_direct.texture;
+
+   if (     !tex->handle
+         || tex->desc.Width        != width
+         || tex->desc.Height       != height
+         || d3d11->sw_direct.format != d3d11->format)
+   {
+      d3d11_release_texture(tex);
+      memset(tex, 0, sizeof(*tex));
+      tex->desc.Width          = width;
+      tex->desc.Height         = height;
+      tex->desc.Format         = d3d11->format;
+      tex->desc.Usage          = D3D11_USAGE_DYNAMIC;
+      d3d11->sw_direct.format  = d3d11->format;
+      if (     !d3d11_init_texture_ex(d3d11->device, tex, false)
+            || !tex->view)
+      {
+         d3d11_release_texture(tex);
+         memset(tex, 0, sizeof(*tex));
+         return false;
+      }
+   }
+
+   if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)tex->handle, 0,
+               D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+      return false;
+   dxgi_copy(width, height, d3d11->format, pitch, frame,
+         tex->desc.Format, mapped.RowPitch, mapped.pData);
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)tex->handle, 0);
+   return true;
+}
+
 static D3D11ShaderResourceView d3d11_hw_direct_view(d3d11_video_t *d3d11,
       D3D11Texture2D texture)
 {
@@ -5518,8 +5569,17 @@ static bool d3d11_gfx_frame_body(
       }
       else if (d3d11->frame.texture[0].staging
             && frame != RETRO_HW_FRAME_BUFFER_VALID)
-         d3d11_update_texture(
-               context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
+      {
+         /* The stock chain draws a software frame from where it was
+          * written; a preset's passes read frame.texture[0]. */
+         if (     !(d3d11->shader_preset && video_info->shader_active)
+               && d3d11_sw_direct_upload(d3d11, context,
+                  width, height, pitch, frame))
+            d3d11->hw_direct.view = d3d11->sw_direct.texture.view;
+         else
+            d3d11_update_texture(context, width, height, pitch,
+                  d3d11->format, frame, &d3d11->frame.texture[0]);
+      }
    }
 
 #ifdef D3D11_ROLLING_SCANLINE_SIMULATION

@@ -308,6 +308,18 @@ typedef struct
 
    struct video_shader* shader_preset;
    d3d10_texture_t      luts[GFX_MAX_TEXTURES];
+   /* A software frame without a preset is written straight into this
+    * dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
+    * reads is renamed rather than waited for, and drawn from it: no
+    * staging copy, no copy on the GPU. `format` is the format it was
+    * made for, which the texture may hold as another; `active` while
+    * the frame on screen, repeats of it included, is in it. */
+   struct
+   {
+      d3d10_texture_t texture;
+      DXGI_FORMAT     format;
+      bool            active;
+   } sw_direct;
    struct string_list *gpu_list;
    IDXGIAdapter1 *adapters[D3D10_MAX_GPU_COUNT];
    IDXGIAdapter1 *current_adapter;
@@ -528,6 +540,48 @@ static void d3d10_update_texture(
 
    if (texture->desc.MiscFlags & D3D10_RESOURCE_MISC_GENERATE_MIPS)
       ctx->lpVtbl->GenerateMips(ctx, texture->view);
+}
+
+/* Writes a software frame into sw_direct's texture, made or remade at
+ * its size first. False when it can't be: the frame takes the staging
+ * path instead. */
+static bool d3d10_sw_direct_upload(d3d10_video_t *d3d10,
+      unsigned width, unsigned height, unsigned pitch, const void *frame)
+{
+   D3D10_MAPPED_TEXTURE2D mapped;
+   d3d10_texture_t *tex = &d3d10->sw_direct.texture;
+
+   if (     !tex->handle
+         || tex->desc.Width         != width
+         || tex->desc.Height        != height
+         || d3d10->sw_direct.format != d3d10->format)
+   {
+      d3d10_release_texture(tex);
+      memset(tex, 0, sizeof(*tex));
+      tex->desc.Width          = width;
+      tex->desc.Height         = height;
+      tex->desc.Format         = d3d10->format;
+      tex->desc.Usage          = D3D10_USAGE_DYNAMIC;
+      d3d10->sw_direct.format  = d3d10->format;
+      d3d10_init_texture(d3d10->device, tex);
+      /* Written in place: the staging twin is never used. */
+      Release(tex->staging);
+      tex->staging = NULL;
+      if (!tex->handle || !tex->view)
+      {
+         d3d10_release_texture(tex);
+         memset(tex, 0, sizeof(*tex));
+         return false;
+      }
+   }
+
+   if (FAILED(tex->handle->lpVtbl->Map(tex->handle, 0,
+               D3D10_MAP_WRITE_DISCARD, 0, &mapped)))
+      return false;
+   dxgi_copy(width, height, d3d10->format, pitch, frame,
+         tex->desc.Format, mapped.RowPitch, mapped.pData);
+   tex->handle->lpVtbl->Unmap(tex->handle, 0);
+   return true;
 }
 
 static bool d3d10_init_shader(
@@ -2427,6 +2481,7 @@ static void d3d10_gfx_free(void* data)
    d3d10_free_shader_preset(d3d10);
 
    d3d10_release_texture(&d3d10->frame.texture[0]);
+   d3d10_release_texture(&d3d10->sw_direct.texture);
    Release(d3d10->frame.ubo);
    Release(d3d10->frame.vbo);
 
@@ -3259,12 +3314,18 @@ static bool d3d10_gfx_frame(
       if (d3d10->flags & D3D10_ST_FLAG_RESIZE_RTS)
          d3d10_init_render_targets(d3d10, width, height);
 
-      if (frame != RETRO_HW_FRAME_BUFFER_VALID)
-         if (d3d10->frame.texture[0].staging)
-            d3d10_update_texture(
-                  d3d10->device,
-                  width, height, pitch, d3d10->format,
-                  frame, &d3d10->frame.texture[0]);
+      /* Without a preset a software frame is drawn from where it was
+       * written; a preset's passes read frame.texture[0]. */
+      d3d10->sw_direct.active = !d3d10->shader_preset
+         && frame != RETRO_HW_FRAME_BUFFER_VALID
+         && d3d10_sw_direct_upload(d3d10, width, height, pitch, frame);
+      if (     !d3d10->sw_direct.active
+            && frame != RETRO_HW_FRAME_BUFFER_VALID
+            && d3d10->frame.texture[0].staging)
+         d3d10_update_texture(
+               d3d10->device,
+               width, height, pitch, d3d10->format,
+               frame, &d3d10->frame.texture[0]);
    }
 
    stride = sizeof(d3d10_vertex_t);
@@ -3470,11 +3531,12 @@ static bool d3d10_gfx_frame(
    if (texture)
    {
       d3d10_set_shader(context, &d3d10->shaders[VIDEO_SHADER_STOCK_BLEND]);
-#if 0
-      /* TODO/FIXME */
-      if (!d3d10->hw.enable || d3d10->shader_preset)
-#endif
-         context->lpVtbl->PSSetShaderResources(context, 0, 1, &texture->view);
+      if (d3d10->sw_direct.active && texture == d3d10->frame.texture)
+         context->lpVtbl->PSSetShaderResources(context, 0, 1,
+               &d3d10->sw_direct.texture.view);
+      else
+         context->lpVtbl->PSSetShaderResources(context, 0, 1,
+               &texture->view);
       context->lpVtbl->PSSetSamplers(context, 0, 1,
             &d3d10->samplers[RARCH_FILTER_UNSPEC][RARCH_WRAP_DEFAULT]);
       context->lpVtbl->VSSetConstantBuffers(context, 0, 1,
