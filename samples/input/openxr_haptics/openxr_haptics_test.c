@@ -97,6 +97,18 @@ static void service(bool separate, bool paused)
 int main(void)
 {
    setup();
+   input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 10000);
+   input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 20000);
+   CHECK(!input_openxr_set_rumble(0, (enum retro_rumble_effect)2, 65535),
+         "invalid effect accepted");
+   CHECK(!input_openxr_set_rumble(0, (enum retro_rumble_effect)-1, 65535),
+         "negative effect accepted");
+   CHECK(!input_openxr_set_rumble(INPUT_OPENXR_PADS,
+         RETRO_RUMBLE_STRONG, 65535), "invalid port accepted");
+   CHECK(retro_atomic_load_acquire_int(&input_openxr_rumble[0][0]) == 10000
+         && retro_atomic_load_acquire_int(&input_openxr_rumble[0][1]) == 20000,
+         "invalid effect altered a valid motor");
+   setup();
    input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535);
    input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 32768);
    service(false, false);

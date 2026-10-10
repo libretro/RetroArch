@@ -1376,7 +1376,8 @@ bool input_openxr_menu_pointer(float *u, float *v, bool *pressed)
 bool input_openxr_set_rumble(unsigned port, enum retro_rumble_effect effect,
       uint16_t strength)
 {
-   if (port >= INPUT_OPENXR_PADS)
+   if (port >= INPUT_OPENXR_PADS
+         || (effect != RETRO_RUMBLE_STRONG && effect != RETRO_RUMBLE_WEAK))
       return false;
    retro_atomic_store_release_int(
          &input_openxr_rumble[port][(effect == RETRO_RUMBLE_STRONG) ? 0 : 1],
