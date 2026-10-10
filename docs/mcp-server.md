@@ -91,16 +91,13 @@ frontend is doing (the frame count, the state and replay slots, whether
 content is loading), and the configured directories. Some only report,
 and `SET_OPTION` says so for them.
 
-`fast_forward` and `slow_motion` have no setter in the frontend - their
-whole path is the runloop's hotkey handling - so setting them presses
-that hotkey, the change lands on the frame after, and `SET_OPTION`
-answers that the press went out rather than what came of it. Every other
-option takes effect at once and is read back before answering, so an
-option that cannot change right now - `pause` with no content running -
-is an error and not a quiet success.
+Options take effect at once and report the resulting state. Speed changes
+respect the runloop's pause, netplay, core override and hardcore restrictions.
+An option that cannot change right now is an error. Recording and streaming
+share one recorder; stop the active mode before starting the other.
 
 A hotkey tool that is still a tool answers `<NAME> pressed` for the same
-reason as the two above: the press goes out on the next poll, and what it
+reason: the press goes out on the next poll, and what it
 changed is read back with `GET_OPTION`.
 
 To find something to play, an assistant lists the playlists with

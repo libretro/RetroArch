@@ -1733,7 +1733,7 @@ static bool command_option_read(const struct cmd_option_map *o,
          break;
       case CMD_OPT_CHEEVOS_HARDCORE:
 #ifdef HAVE_CHEEVOS
-         on   = settings->bools.cheevos_hardcore_mode_enable;
+         on   = rcheevos_hardcore_active();
 #endif
          break;
       case CMD_OPT_CHEEVOS_ENABLE:
@@ -1829,8 +1829,19 @@ static bool command_option_set(const struct cmd_option_map *o,
          command_event(on ? CMD_EVENT_PAUSE : CMD_EVENT_UNPAUSE, NULL);
          break;
       case CMD_OPT_RECORDING:
-         command_event(on ? CMD_EVENT_RECORD_INIT
-                          : CMD_EVENT_RECORD_DEINIT, NULL);
+      case CMD_OPT_STREAMING:
+         if (on && recording_state_get_ptr()->enable)
+         {
+            command_reply_error(cmd, "SET_OPTION",
+                  "stop the active recording or stream before starting %s",
+                  o->str);
+            return false;
+         }
+         if (o->id == CMD_OPT_STREAMING)
+            command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
+         else
+            command_event(on ? CMD_EVENT_RECORD_INIT
+                             : CMD_EVENT_RECORD_DEINIT, NULL);
          break;
       case CMD_OPT_GAME_FOCUS:
          {
@@ -1839,16 +1850,10 @@ static bool command_option_set(const struct cmd_option_map *o,
             command_event(CMD_EVENT_GAME_FOCUS_TOGGLE, &type);
          }
          break;
-      /* These two the frontend changes nowhere but in the runloop's own
-       * hotkey handling, with the netplay, audio and nonblock work that
-       * goes with it, so the hotkey is pressed: the change lands on the
-       * frame after, leaving nothing to read back. */
       case CMD_OPT_FAST_FORWARD:
-         cmd->state[RARCH_FAST_FORWARD_KEY] = true;
-         return true;
+         return runloop_set_fastmotion(on);
       case CMD_OPT_SLOW_MOTION:
-         cmd->state[RARCH_SLOWMOTION_KEY] = true;
-         return true;
+         return runloop_set_slowmotion(on);
       default:
          command_event(o->event, NULL);
          break;
@@ -2089,8 +2094,9 @@ bool command_set_option(command_t *cmd, const char *arg)
    if (     command_option_read(o, NULL, 0, NULL, NULL) != on
          && !command_option_set(o, cmd, on))
    {
-      command_reply_error(cmd, "SET_OPTION", "%s could not be turned %s",
-            o->str, on ? "on" : "off");
+      if (!cmd->error)
+         command_reply_error(cmd, "SET_OPTION", "%s could not be turned %s",
+               o->str, on ? "on" : "off");
       return false;
    }
 
