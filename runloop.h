@@ -369,6 +369,12 @@ struct runloop
       char xdelta   [PATH_MAX_LENGTH];
    } name;
 
+   /* Main-thread state for deferred automatic state loading. */
+   bool auto_state_load_pending;
+   bool auto_state_load_attempted;
+   bool auto_state_load_ready;
+   bool auto_state_load_core_ran;
+
    bool perfcnt_enable;
    bool paused_hotkey;
 

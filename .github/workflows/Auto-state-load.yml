@@ -1,0 +1,35 @@
+name: Deferred auto-state regression
+on:
+  push:
+    paths:
+      - 'runloop.c'
+      - 'runloop.h'
+      - 'runahead.c'
+      - 'command.c'
+      - 'samples/runloop/auto_state_load/**'
+      - '.github/workflows/Auto-state-load.yml'
+  pull_request:
+    paths:
+      - 'runloop.c'
+      - 'runloop.h'
+      - 'runahead.c'
+      - 'command.c'
+      - 'samples/runloop/auto_state_load/**'
+      - '.github/workflows/Auto-state-load.yml'
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y gcc-mingw-w64-x86-64
+      - name: Linux and sanitizer tests
+        working-directory: samples/runloop/auto_state_load
+        run: |
+          make check
+          make clean
+          make check EXTRA_CFLAGS='-DHAVE_NETWORKING -DHAVE_CHEEVOS' SANITIZER=address,undefined
+      - name: Windows cross-build
+        working-directory: samples/runloop/auto_state_load
+        run: |
+          make clean
+          make CC=x86_64-w64-mingw32-gcc TARGET=auto_state_load_test.exe EXTRA_CFLAGS='-DHAVE_NETWORKING -DHAVE_CHEEVOS'
