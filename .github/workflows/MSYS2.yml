@@ -29,8 +29,12 @@ jobs:
             runner: windows-latest
 
           # New ARM64 build (native Windows on ARM)
+          # MSYS2's runtime runs emulated on these runners, so configure
+          # runs its checks one at a time here instead of in parallel
+          # background workers.
           - sys: CLANGARM64
             runner: windows-11-arm
+            qb_jobs: 1
 
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
@@ -69,7 +73,7 @@ jobs:
         shell: msys2 {0}
         run: |
           echo "Building RetroArch in ${{ matrix.sys }} on ${{ matrix.runner }}"
-          ./configure
+          QB_JOBS=${{ matrix.qb_jobs }} ./configure
           make -j"$(nproc)" info all
 
       - name: Collect DLLs and binaries
