@@ -102,12 +102,7 @@ enum overlay_show_input_type
 
 enum OVERLAY_LOADER_FLAGS
 {
-   OVERLAY_LOADER_RGBA_SUPPORT = (1 << 0),
    OVERLAY_LOADER_IS_OSK       = (1 << 1),
-   /* The driver samples XRGB2101010, so a 16-bit PNG in the pack is
-    * decoded at ten bits a channel instead of being flattened to
-    * eight. An 8-bit image decodes as it always did. */
-   OVERLAY_LOADER_10BIT        = (1 << 2),
    /* A desc of the pack names the LED its image shows (_led). */
    OVERLAY_LOADER_HAS_LEDS     = (1 << 3),
    /* The pack's images were decoded together before the first

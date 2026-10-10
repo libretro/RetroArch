@@ -140,12 +140,22 @@ bool gfx_surface_query_requirements(unsigned width,
    if (!req)
       return false;
    req->rgba       = false;
-   req->formats    = GFX_SURFACE_PIXFMT_8888;
-   req->preferred  = GFX_SURFACE_PIXFMT_8888;
+   req->formats    = IMAGE_PIXFMT_8888;
+   req->preferred  = IMAGE_PIXFMT_8888;
    req->can_update = false;
    req->pitch      = (size_t)width * sizeof(uint32_t);
    req->align      = 4;
    return true;
+}
+
+/* The request the frontend makes from those answers: 8-bit only */
+void gfx_surface_image_request(image_texture_request_t *req,
+      bool rgba, unsigned flags)
+{
+   req->rgba            = rgba;
+   req->want_10bit      = false;
+   req->want_fp16       = false;
+   req->want_compressed = (flags & GFX_SURFACE_REQ_COMPRESSED) ? true : false;
 }
 
 uint32_t video_driver_get_disp_flags(void)

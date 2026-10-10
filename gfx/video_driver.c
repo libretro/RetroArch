@@ -4782,6 +4782,18 @@ uintptr_t video_driver_window_get(void)
    return video_st->window;
 }
 
+bool video_driver_texture_fit(struct texture_image *ti)
+{
+   /* The texture path's own answer, not GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
+    * which says whether a context presents 10-bit core frames */
+   if (     ti->pix10
+         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
+      image_texture_narrow_10bit(ti);
+   /* Half floats have no 8-bit form to fall back to */
+   return !ti->fp16
+      || video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F);
+}
+
 bool video_driver_texture_load(void *data,
       enum texture_filter_type  filter_type,
       uintptr_t *id)
@@ -4824,19 +4836,7 @@ bool video_driver_texture_load(void *data,
    if (ti && ti->compressed && !ti->pixels)
       image_texture_realize_rgba(ti);
 
-   /* A 10-bit (XRGB2101010) texture is only kept for drivers whose
-    * texture path samples it; otherwise it is narrowed to 8 bits before
-    * upload so the driver's ordinary path stays correct. That is the
-    * texture path's own answer, not GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
-    * which says whether a context presents 10-bit core frames. */
-   if (     ti
-         && ti->pix10
-         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
-      image_texture_narrow_10bit(ti);
-   /* Half floats have no 8-bit form to fall back to here. */
-   if (     ti
-         && ti->fp16
-         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+   if (ti && !video_driver_texture_fit(ti))
       return false;
 
    GFX_INSTR_INC(GFX_INSTR_TEX_LOAD);

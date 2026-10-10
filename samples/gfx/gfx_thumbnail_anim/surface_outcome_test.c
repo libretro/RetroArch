@@ -49,7 +49,7 @@ int gt_surface_outcome_test(void)
    gt_drop_updates = 0;
 
    /* 1 */
-   if ((s = gfx_surface_new(dims, 2, GFX_SURFACE_PIXFMT_8888,
+   if ((s = gfx_surface_new(dims, 2, IMAGE_PIXFMT_8888,
          TEXTURE_FILTER_LINEAR, NULL, NULL)))
    {
       outcome_fill(s, 0, 0x11111111u);
@@ -75,7 +75,7 @@ int gt_surface_outcome_test(void)
       gfx_surface_src_t src;
       memset(&src, 0, sizeof(src));
       src.pixels      = px;
-      src.pixfmt      = GFX_SURFACE_PIXFMT_8888;
+      src.pixfmt      = IMAGE_PIXFMT_8888;
       src.rgba        = true;
       gfx_surface_submit_external(s, &src, NULL, NULL);
       first           = s->handle;
@@ -101,7 +101,7 @@ int gt_surface_outcome_test(void)
       gfx_surface_src_t src;
       memset(&src, 0, sizeof(src));
       src.pixels      = px;
-      src.pixfmt      = GFX_SURFACE_PIXFMT_8888;
+      src.pixfmt      = IMAGE_PIXFMT_8888;
       src.rgba        = true;
       gfx_surface_submit_external(s, &src, NULL, NULL);
       gt_async_flush();

@@ -276,7 +276,7 @@ enum task_image_load_flags
    TASK_IMAGE_LOAD_RGBA = (1 << 0),
    /* The caller uploads the image and takes RGBA half floats - linear
     * scRGB, ->fp16 set - which an HDR video still is then decoded as
-    * wherever the driver offers GFX_SURFACE_PIXFMT_FP16. Such a still
+    * wherever the driver offers IMAGE_PIXFMT_FP16. Such a still
     * is never resampled: upscale_threshold and downscale_cap pass it
     * by. Without the flag no load returns half floats. */
    TASK_IMAGE_LOAD_HDR  = (1 << 1)

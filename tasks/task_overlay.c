@@ -69,6 +69,11 @@ struct overlay_loader
    enum overlay_status state;
    enum overlay_image_transfer_status loading_status;
 
+   /* What the pack's images are decoded as: made on the main thread
+    * from the driver's answers when the load is pushed, since the
+    * decode runs where the driver cannot be asked */
+   image_texture_request_t req;
+
    uint16_t overlay_types;
 
    uint8_t flags;
@@ -392,12 +397,7 @@ static void task_overlay_predecode(overlay_loader_t *loader)
          break;
       rel->elems[i].attr.p = set.items[i];
    }
-   set.req.rgba            = (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT)
-      ? true : false;
-   set.req.want_10bit      = (loader->flags & OVERLAY_LOADER_10BIT)
-      ? true : false;
-   set.req.want_fp16       = false;
-   set.req.want_compressed = true;
+   set.req                 = loader->req;
 
    /* Out of memory part way: no predecode, every item decodes its own */
    if (i < n)
@@ -481,13 +481,11 @@ static bool task_overlay_load_image_texture(
       union string_list_elem_attr attr;
       int png_probe = -1;
 
-      image->supports_rgba =
-            (loader->flags & OVERLAY_LOADER_RGBA_SUPPORT) ? true : false;
+      image->supports_rgba = loader->req.rgba;
       /* An ask, answered by the decode: a 16-bit PNG comes back at
        * ten bits a channel where the driver can sample it, anything
        * else comes back eight. */
-      image->pix10         =
-            (loader->flags & OVERLAY_LOADER_10BIT) ? true : false;
+      image->pix10         = loader->req.want_10bit;
 
 #ifdef HAVE_COMPRESSION
       if (path_get_archive_delim(full_path))
@@ -520,11 +518,7 @@ static bool task_overlay_load_image_texture(
       else
 #endif
       {
-         image_texture_request_t req;
-         req.rgba            = image->supports_rgba;
-         req.want_10bit      = image->pix10;
-         req.want_fp16       = false;
-         req.want_compressed = true;
+         image_texture_request_t req = loader->req;
          /* A predecoded image that failed is as failed as a decode
           * here: an empty image */
          if (task_overlay_take_predecoded(loader, rel_path, image,
@@ -1818,16 +1812,10 @@ bool task_push_overlay_load_default(
    if (is_osk)
       loader->flags        |= OVERLAY_LOADER_IS_OSK;
 #ifdef RARCH_INTERNAL
-   {
-      gfx_surface_requirements_t req;
-      if (gfx_surface_query_requirements(0, &req))
-      {
-         if (req.rgba)
-            loader->flags  |= OVERLAY_LOADER_RGBA_SUPPORT;
-         if (req.formats & GFX_SURFACE_PIXFMT_2101010)
-            loader->flags  |= OVERLAY_LOADER_10BIT;
-      }
-   }
+   gfx_surface_image_request(&loader->req, gfx_surface_wants_rgba(),
+         GFX_SURFACE_REQ_COMPRESSED);
+#else
+   loader->req.want_compressed = true;
 #endif
 
    t                        = task_init();

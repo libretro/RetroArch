@@ -102,8 +102,8 @@ bool gfx_surface_query_requirements(unsigned width,
    if (!req)
       return false;
    req->rgba       = false;
-   req->formats    = GFX_SURFACE_PIXFMT_8888;
-   req->preferred  = GFX_SURFACE_PIXFMT_8888;
+   req->formats    = IMAGE_PIXFMT_8888;
+   req->preferred  = IMAGE_PIXFMT_8888;
    req->can_update = false;
    req->pitch      = (size_t)width * sizeof(uint32_t);
    req->align      = 4;

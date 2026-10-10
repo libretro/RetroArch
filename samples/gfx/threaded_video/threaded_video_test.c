@@ -4909,11 +4909,11 @@ static void lane_surface_external(void)
       gfx_surface_requirements_t req;
       surftex_poke.supports_texture_format = surf_rgb10_yes;
       gfx_surface_query_requirements(0, &req);
-      CHECK(req.formats & GFX_SURFACE_PIXFMT_2101010,
+      CHECK(req.formats & IMAGE_PIXFMT_2101010,
             "2101010 not offered by a texture path that takes it");
       surftex_poke.supports_texture_format = surf_rgb10_no;
       gfx_surface_query_requirements(0, &req);
-      CHECK(!(req.formats & GFX_SURFACE_PIXFMT_2101010),
+      CHECK(!(req.formats & IMAGE_PIXFMT_2101010),
             "2101010 offered by a texture path that reads it as 8-bit");
       surftex_poke.supports_texture_format = saved;
    }
@@ -4938,7 +4938,7 @@ static void lane_surface_external(void)
    src.pixels         = px;
    src.payload        = px;
    src.payload_free   = surf_payload_free;
-   src.pixfmt         = GFX_SURFACE_PIXFMT_8888;
+   src.pixfmt         = IMAGE_PIXFMT_8888;
    src.rgba           = rgba;
    r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
    CHECK(r == GFX_SURFACE_SUBMIT_QUEUED,
@@ -4973,14 +4973,14 @@ static void lane_surface_external(void)
        * texels; one that keeps them has the fp16 lane below. */
       if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
       {
-         src.pixfmt    = GFX_SURFACE_PIXFMT_FP16;
+         src.pixfmt    = IMAGE_PIXFMT_FP16;
          r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
          CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
                "FP16 external submit returned %d, not FAILED", r);
          CHECK(!s->payload_free && !s->inflight,
                "refused submit kept a payload or went in flight");
       }
-      src.pixfmt       = GFX_SURFACE_PIXFMT_GX_RGBA8;
+      src.pixfmt       = IMAGE_PIXFMT_GX_RGBA8;
       r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
 #ifdef GEKKO
       (void)r;
@@ -4990,14 +4990,14 @@ static void lane_surface_external(void)
 #endif
       memset(&req, 0, sizeof(req));
       gfx_surface_query_requirements(0, &req);
-      if (!(req.formats & GFX_SURFACE_PIXFMT_2101010))
+      if (!(req.formats & IMAGE_PIXFMT_2101010))
       {
-         src.pixfmt    = GFX_SURFACE_PIXFMT_2101010;
+         src.pixfmt    = IMAGE_PIXFMT_2101010;
          r = gfx_surface_submit_external(s, &src, surf_release_cb, NULL);
          CHECK(r == GFX_SURFACE_SUBMIT_FAILED,
                "2101010 submit to a driver without 10-bit returned %d", r);
       }
-      CHECK(!!(req.formats & GFX_SURFACE_PIXFMT_FP16)
+      CHECK(!!(req.formats & IMAGE_PIXFMT_FP16)
             == (     video_driver_supports_texture_format(
                         TEXTURE_GPU_FORMAT_RGBA16F)
                   && video_driver_supports_texture_format(
@@ -5022,7 +5022,7 @@ static void lane_surface_external(void)
       gfx_surface_requirements_t req;
       memset(&req, 0, sizeof(req));
       gfx_surface_query_requirements(0, &req);
-      if (real_driver() && (req.formats & GFX_SURFACE_PIXFMT_2101010))
+      if (real_driver() && (req.formats & IMAGE_PIXFMT_2101010))
       {
          uint32_t *p10 = (uint32_t*)malloc(n * sizeof(uint32_t));
          uint32_t *p8  = (uint32_t*)malloc(n * sizeof(uint32_t));
@@ -5046,8 +5046,8 @@ static void lane_surface_external(void)
             for (k = 0; k < 3; k++)
             {
                src.pixels = (k < 2) ? (const void*)p10 : (const void*)p8;
-               src.pixfmt = (k < 2) ? GFX_SURFACE_PIXFMT_2101010
-                                    : GFX_SURFACE_PIXFMT_8888;
+               src.pixfmt = (k < 2) ? IMAGE_PIXFMT_2101010
+                                    : IMAGE_PIXFMT_8888;
                for (tries = 0; tries < 8; tries++)
                {
                   r = gfx_surface_submit_external(s, &src, NULL, NULL);
@@ -5113,8 +5113,8 @@ static void lane_surface_external(void)
          for (k = 0; k < 3; k++)
          {
             src.pixels = (k < 2) ? (const void*)ph : (const void*)p8;
-            src.pixfmt = (k < 2) ? GFX_SURFACE_PIXFMT_FP16
-                                 : GFX_SURFACE_PIXFMT_8888;
+            src.pixfmt = (k < 2) ? IMAGE_PIXFMT_FP16
+                                 : IMAGE_PIXFMT_8888;
             for (tries = 0; tries < 8; tries++)
             {
                r = gfx_surface_submit_external(s, &src, NULL, NULL);
@@ -5142,7 +5142,7 @@ static void lane_surface_external(void)
 
       /* A stream of half floats through two slots. */
       s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
-            GFX_SURFACE_PIXFMT_FP16, TEXTURE_FILTER_LINEAR, NULL, NULL);
+            IMAGE_PIXFMT_FP16, TEXTURE_FILTER_LINEAR, NULL, NULL);
       CHECK(s != NULL, "fp16 lane: no stream surface");
       if (s)
       {
@@ -5193,19 +5193,19 @@ static void lane_surface_external(void)
    }
 
    /* One slot surface per format bit: sized from the format. */
-   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_FP16,
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, IMAGE_PIXFMT_FP16,
          TEXTURE_FILTER_LINEAR, NULL, NULL);
    CHECK(s != NULL, "FP16 slot surface not made");
    if (s)
    {
-      memset(s->slots[0], 0, n * GFX_SURFACE_PIXFMT_BPP(s->pixfmt));
+      memset(s->slots[0], 0, n * IMAGE_PIXFMT_BPP(s->pixfmt));
       if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
          CHECK(gfx_surface_submit(s, 0, rgba) == GFX_SURFACE_SUBMIT_FAILED,
                "FP16 slot submit reached a driver with no FP16 path");
       gfx_surface_free(s);
    }
    CHECK(gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,
-         GFX_SURFACE_PIXFMT_8888 | GFX_SURFACE_PIXFMT_2101010,
+         IMAGE_PIXFMT_8888 | IMAGE_PIXFMT_2101010,
          TEXTURE_FILTER_LINEAR, NULL, NULL) == NULL,
          "a surface of two formats at once was made");
 
@@ -5388,7 +5388,7 @@ static void lane_gl_lend_fence_refused(void)
    set_threaded_via_setting(false);
    run_frames(2);
    s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
-         GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+         IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
    CHECK(s != NULL, "lend fence lane: no surface");
    if (!s)
       return;
@@ -5465,7 +5465,7 @@ static void lane_surface_lend(void)
       run_frames(3);
       expect_wrapper(threaded, "surface lend lane");
       s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), nslots,
-            GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+            IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
       CHECK(s != NULL, "surface lend lane: no surface");
       if (!s)
          continue;
@@ -5627,7 +5627,7 @@ static void lane_surface_update(void)
 #ifdef HAVE_GFX_INSTRUMENT
    gfx_instrument_reset();
 #endif
-   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2, IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "surface allocation failed");
    if (!s)
    {
@@ -5749,7 +5749,7 @@ static void lane_surface_update(void)
    if (!real_driver())
       CHECK(surftex_install(),
             "surface lane, direct: no texture back end installed");
-   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
+   s = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1, IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, surf_release_cb, NULL);
    CHECK(s != NULL, "direct surface allocation failed");
    if (!s)
    {
@@ -6334,7 +6334,7 @@ static void lane_surface_4k(void)
    run_frames(3);
    expect_wrapper(true, "4k surface lane");
 
-   s = gfx_surface_new(VIDEO_SCALE_PACK(3840, 2160), 2, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+   s = gfx_surface_new(VIDEO_SCALE_PACK(3840, 2160), 2, IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
          surf_release_cb, NULL);
    CHECK(s != NULL, "4K surface allocation failed");
    if (!s)

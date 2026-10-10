@@ -170,6 +170,57 @@ enum image_type_enum image_texture_get_type(const char *path);
  * hook, or at the byte frontier. image_texture_load() is this loader
  * run to completion in one call. */
 
+/* Pixel layouts, a bit each, so a consumer can accept several and a
+ * producer pick the best it can emit. A name is a promise about the
+ * layout, not about any consumer taking it. The frontend's surfaces
+ * and a core's own renderer name formats the same way. */
+enum image_pixfmt
+{
+   /* 8 bits a channel in a 32-bit word, ARGB or memory-order RGBA */
+   IMAGE_PIXFMT_8888     = (1 << 0),
+   /* XRGB2101010: bits [29:20]=R [19:10]=G [9:0]=B */
+   IMAGE_PIXFMT_2101010  = (1 << 1),
+   /* Half float a channel, linear scRGB (1.0 = 80 nits) */
+   IMAGE_PIXFMT_FP16     = (1 << 2),
+   IMAGE_PIXFMT_FP32     = (1 << 3),
+   IMAGE_PIXFMT_565      = (1 << 4),
+   IMAGE_PIXFMT_4444     = (1 << 5),
+   /* GX RGBA8, the GameCube/Wii layout: 4x4 tiles of 64 bytes, the AR
+    * halves of a tile's 16 texels then their GB halves, both axes
+    * multiples of 4 (image_texture_tile_gx) */
+   IMAGE_PIXFMT_GX_RGBA8 = (1 << 6),
+   /* YCbCr 4:2:0, as video decoders and cameras produce it: a luma
+    * plane, then chroma at half resolution on both axes. I420 has the
+    * two chroma planes apart, NV12 interleaves them Cb,Cr in one, P010
+    * is NV12 with 16-bit samples holding 10 bits in the high bits. */
+   IMAGE_PIXFMT_I420     = (1 << 7),
+   IMAGE_PIXFMT_NV12     = (1 << 8),
+   IMAGE_PIXFMT_P010     = (1 << 9)
+};
+
+#define IMAGE_PIXFMT_PLANAR \
+   (IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)
+
+/* Planes of one image_pixfmt bit */
+#define IMAGE_PIXFMT_PLANES(f) \
+   (((f) & IMAGE_PIXFMT_I420) ? 3u \
+   : ((f) & (IMAGE_PIXFMT_NV12 | IMAGE_PIXFMT_P010)) ? 2u : 1u)
+
+/* Bytes a texel of a packed format takes, or a luma sample of a planar
+ * one */
+#define IMAGE_PIXFMT_BPP(f) \
+   (((f) & IMAGE_PIXFMT_FP32) ? 16u \
+   : ((f) & IMAGE_PIXFMT_FP16) ? 8u \
+   : ((f) & (IMAGE_PIXFMT_565 | IMAGE_PIXFMT_4444 | IMAGE_PIXFMT_P010)) ? 2u \
+   : ((f) & (IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12)) ? 1u : 4u)
+
+/* Bytes of a whole tightly packed @w x @h frame, every plane of it */
+#define IMAGE_PIXFMT_FRAME_SIZE(f, w, h) \
+   ((size_t)(w) * (size_t)(h) * IMAGE_PIXFMT_BPP(f) \
+    + (((f) & IMAGE_PIXFMT_PLANAR) \
+      ? 2u * (((size_t)(w) + 1) >> 1) * (((size_t)(h) + 1) >> 1) \
+        * IMAGE_PIXFMT_BPP(f) : 0u))
+
 /* What the caller takes of a still, asked of it once by whoever knows
  * (the video driver, a core's own renderer) and handed down. Zero is
  * the ordinary 8-bit image, ARGB words. */

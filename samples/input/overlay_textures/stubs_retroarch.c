@@ -115,6 +115,15 @@ bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
    return false;
 }
 
+/* As the frontend fits an image, from this stub's own answers */
+bool video_driver_texture_fit(struct texture_image *ti)
+{
+   if (ti->pix10 && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
+      image_texture_narrow_10bit(ti);
+   return !ti->fp16
+      || video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F);
+}
+
 enum texture_filter_type gfx_display_texture_filter(void)
 {
    return TEXTURE_FILTER_LINEAR;

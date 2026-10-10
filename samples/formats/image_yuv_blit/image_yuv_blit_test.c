@@ -11,12 +11,16 @@
  *   3. Odd sizes: the last column and row are converted, and nothing
  *      past the frame is written.
  *   4. The word order: RGBA puts R in the low byte, XRGB in the high
- *      one, alpha set either way. */
+ *      one, alpha set either way.
+ *   5. The image_pixfmt derivations a surface sizes its slots from:
+ *      planes, sample size and whole-frame bytes, odd sizes rounding
+ *      the chroma up. */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <formats/image.h>
 #include <formats/image_yuv_blit.h>
 
 static unsigned failures;
@@ -179,8 +183,28 @@ static void lane_odd(void)
    }
 }
 
+static void lane_pixfmt(void)
+{
+   CHECK(IMAGE_PIXFMT_PLANES(IMAGE_PIXFMT_I420) == 3, "I420 planes");
+   CHECK(IMAGE_PIXFMT_PLANES(IMAGE_PIXFMT_NV12) == 2, "NV12 planes");
+   CHECK(IMAGE_PIXFMT_PLANES(IMAGE_PIXFMT_8888) == 1, "8888 planes");
+   CHECK(IMAGE_PIXFMT_BPP(IMAGE_PIXFMT_P010) == 2, "P010 sample size");
+   CHECK(IMAGE_PIXFMT_BPP(IMAGE_PIXFMT_FP16) == 8, "FP16 texel size");
+   CHECK(IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_8888, 640, 480) == 640u * 480u * 4u,
+         "8888 frame size");
+   CHECK(IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_I420, 640, 480) == 640u * 480u * 3u / 2u,
+         "I420 frame size");
+   CHECK(IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_NV12, 63, 47) == 63u * 47u + 2u * 32u * 24u,
+         "odd NV12 frame size %u", (unsigned)IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_NV12, 63, 47));
+   CHECK(IMAGE_PIXFMT_FRAME_SIZE(IMAGE_PIXFMT_P010, 64, 48) == (64u * 48u + 2u * 32u * 24u) * 2u,
+         "P010 frame size");
+   CHECK(!(IMAGE_PIXFMT_PLANAR & (IMAGE_PIXFMT_8888 | IMAGE_PIXFMT_2101010
+         | IMAGE_PIXFMT_FP16 | IMAGE_PIXFMT_GX_RGBA8)), "packed format marked planar");
+}
+
 int main(void)
 {
+   lane_pixfmt();
    lane_matrices();
    lane_layouts();
    lane_odd();

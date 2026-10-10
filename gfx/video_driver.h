@@ -2152,6 +2152,12 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
 
+/* @ti as the active driver samples it: a 10-bit image it cannot take
+ * narrowed to 8 bits in place. False for a half-float image it cannot
+ * take, which has no narrower form. Every upload of an image goes
+ * through this, so the answer is made once. */
+bool video_driver_texture_fit(struct texture_image *ti);
+
 /* Whether the active driver can sample @fmt: a compressed texture, or
  * for TEXTURE_GPU_FORMAT_RGB10A2 a pix10 image as 10-bit. False with
  * no driver, no poke, or a format it declines. */

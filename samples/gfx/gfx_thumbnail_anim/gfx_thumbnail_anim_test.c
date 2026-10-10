@@ -544,7 +544,7 @@ int main(void)
       gt_lend_freed  = 0;
       gt_update_fail = 0;
       s8 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 2,
-            GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+            IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
       if (!s8)
       {
          printf("[FAIL] lane 8: no surface\n");
@@ -604,7 +604,7 @@ int main(void)
       for (nslots = 2; nslots >= 1; nslots--)
       {
          gfx_surface_t *s9 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48),
-               nslots, GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               nslots, IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
                NULL, NULL);
          int up0 = gt_uploads;
          if (!s9)
@@ -762,7 +762,7 @@ int main(void)
       for (round = 0; round < 2; round++)
       {
          gfx_surface_t *s13 = gfx_surface_new(VIDEO_SCALE_PACK(64, 48), 1,
-               GFX_SURFACE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
+               IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR,
                gt_release_frees, NULL);
          if (!s13)
          {

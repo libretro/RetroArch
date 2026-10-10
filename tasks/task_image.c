@@ -171,22 +171,14 @@ static int task_image_thumbnail_setup(nbio_handle_t *nbio, bool partial)
     * actual upload format and yield R/B-swapped images.  Re-sample it
     * here, once, at decode start (after any reinit has settled). */
    gfx_surface_query_requirements(0, &want);
-   req.rgba            = want.rgba;
    image->supports_rgba = want.rgba;
-   /* Native 10-bit output is worth asking the decoder for only when
-    * the driver can sample it; otherwise the buffer would be narrowed
-    * again at upload for nothing. The decoders emit 8-bit or 10-bit
-    * today, so a driver that takes something wider still gets 10-bit
-    * from here. */
-   req.want_10bit      = (want.formats & GFX_SURFACE_PIXFMT_2101010) ? true : false;
    /* Half floats only for a caller that said it takes them: nothing
     * narrows them, and a consumer that reads the pixels itself (RGUI)
-    * has no use for linear light. */
-   req.want_fp16       = (image->flags & IMAGE_FLAG_WANT_HDR)
-      && (want.formats & GFX_SURFACE_PIXFMT_FP16);
-   /* A compressed payload would decode on the main thread at upload
-    * for a driver that cannot sample it; this task decodes here. */
-   req.want_compressed = false;
+    * has no use for linear light. No compressed payload: it would
+    * decode on the main thread at upload for a driver that cannot
+    * sample it; this task decodes here. */
+   gfx_surface_image_request(&req, want.rgba,
+         (image->flags & IMAGE_FLAG_WANT_HDR) ? GFX_SURFACE_REQ_HDR : 0);
 
    if (!(image->loader = image_loader_new(image->type, &req)))
       return -1;
@@ -492,12 +484,8 @@ static void task_image_set_handler(retro_task_t *task)
    /* Asked now rather than at the push: the driver's answers reset on
     * a reinit, which may have happened since. */
    gfx_surface_query_requirements(0, &want);
-   set->req.rgba            = want.rgba;
-   set->req.want_10bit      = (want.formats & GFX_SURFACE_PIXFMT_2101010)
-      ? true : false;
-   set->req.want_fp16       = (set->flags & IMAGE_FLAG_WANT_HDR)
-      && (want.formats & GFX_SURFACE_PIXFMT_FP16);
-   set->req.want_compressed = false;
+   gfx_surface_image_request(&set->req, want.rgba,
+         (set->flags & IMAGE_FLAG_WANT_HDR) ? GFX_SURFACE_REQ_HDR : 0);
    set->task                = task;
 
    image_texture_set_run_ex(set->n, task_image_set_one, set,

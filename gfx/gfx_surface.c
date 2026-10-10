@@ -36,11 +36,12 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
    uint8_t *base;
    size_t frame_len, i, bpp;
 
-   bpp = GFX_SURFACE_PIXFMT_BPP(pixfmt);
+   bpp = IMAGE_PIXFMT_BPP(pixfmt);
    if (     !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
          || !num_slots || num_slots > GFX_SURFACE_MAX_SLOTS
          || !pixfmt || (pixfmt & (pixfmt - 1))
-         || pixfmt > GFX_SURFACE_PIXFMT_GX_RGBA8
+         /* no driver takes a planar texture yet */
+         || pixfmt > IMAGE_PIXFMT_GX_RGBA8
          || (size_t)VIDEO_SCALE_W(dims) > ((SIZE_MAX - GFX_SURFACE_SLOT_ALIGN)
                / bpp) / VIDEO_SCALE_H(dims))
       return NULL;
@@ -93,28 +94,28 @@ bool gfx_surface_query_requirements(unsigned width,
     * (TEXTURE_GPU_FORMAT_SCRGB), which it does only while the output
     * is HDR: anywhere else the composite treats a texture as SDR, and
     * a linear texel would be encoded a second time. */
-   req->formats    = GFX_SURFACE_PIXFMT_8888;
+   req->formats    = IMAGE_PIXFMT_8888;
    /* The texture path's own answer, not whether the context presents
     * 10-bit core frames (GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE): the two
     * are set by different code and need not agree. */
    if (video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
-      req->formats |= GFX_SURFACE_PIXFMT_2101010;
+      req->formats |= IMAGE_PIXFMT_2101010;
    if (     video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F)
          && video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_SCRGB))
-      req->formats |= GFX_SURFACE_PIXFMT_FP16;
-   if (req->formats & GFX_SURFACE_PIXFMT_FP16)
-      req->preferred = GFX_SURFACE_PIXFMT_FP16;
-   else if (req->formats & GFX_SURFACE_PIXFMT_2101010)
-      req->preferred = GFX_SURFACE_PIXFMT_2101010;
+      req->formats |= IMAGE_PIXFMT_FP16;
+   if (req->formats & IMAGE_PIXFMT_FP16)
+      req->preferred = IMAGE_PIXFMT_FP16;
+   else if (req->formats & IMAGE_PIXFMT_2101010)
+      req->preferred = IMAGE_PIXFMT_2101010;
    else
-      req->preferred = GFX_SURFACE_PIXFMT_8888;
-   if ((size_t)width > ((size_t)-1) / GFX_SURFACE_PIXFMT_BPP(req->preferred))
+      req->preferred = IMAGE_PIXFMT_8888;
+   if ((size_t)width > ((size_t)-1) / IMAGE_PIXFMT_BPP(req->preferred))
       return false;
    req->can_update = video_driver_texture_can_update();
    /* Every upload path in the tree takes tightly packed rows; the
     * alignment is what the GL paths set (glPixelStorei) and what the
     * others are happy with. */
-   req->pitch      = (size_t)width * GFX_SURFACE_PIXFMT_BPP(req->preferred);
+   req->pitch      = (size_t)width * IMAGE_PIXFMT_BPP(req->preferred);
    req->align      = 4;
    return true;
 }
@@ -173,7 +174,7 @@ static void gfx_surface_image_free(void *payload)
 /* Whether a 2101010 frame has to be narrowed for the driver up. */
 static bool gfx_surface_must_narrow(uint32_t pixfmt)
 {
-   return pixfmt == GFX_SURFACE_PIXFMT_2101010
+   return pixfmt == IMAGE_PIXFMT_2101010
       && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2);
 }
 
@@ -195,10 +196,10 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
    s->img.fp16          = false;
    switch (pixfmt)
    {
-      case GFX_SURFACE_PIXFMT_8888:
+      case IMAGE_PIXFMT_8888:
          s->img.pix10   = false;
          break;
-      case GFX_SURFACE_PIXFMT_FP16:
+      case IMAGE_PIXFMT_FP16:
          /* Half floats have no narrower form here: the driver takes
           * them as they are or the submit fails. */
          if (!video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
@@ -207,7 +208,7 @@ static bool gfx_surface_prepare(gfx_surface_t *s, const void *pixels,
          s->img.fp16    = true;
          *fmt = 4;
          return true;
-      case GFX_SURFACE_PIXFMT_2101010:
+      case IMAGE_PIXFMT_2101010:
          s->img.pix10   = true;
          if (gfx_surface_must_narrow(pixfmt))
          {
@@ -271,7 +272,7 @@ static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
    if (     slot >= s->num_slots || (s->lent & (1u << slot))
          || !s->handle || !s->can_update)
       return;
-   pitch = (size_t)VIDEO_SCALE_W(s->dims) * GFX_SURFACE_PIXFMT_BPP(s->pixfmt);
+   pitch = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
    if (s->num_slots >= 2)
    {
       if ((mem = video_driver_texture_lend(s->handle, slot, pitch)))
@@ -585,7 +586,7 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       }
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_COPY);
       memcpy(s->slots[0], pixels,
-            VIDEO_SCALE_AREA(s->dims) * GFX_SURFACE_PIXFMT_BPP(s->pixfmt));
+            VIDEO_SCALE_AREA(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt));
       return gfx_surface_submit(s, 0, rgba);
    }
 
@@ -685,17 +686,12 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
       s->fmt = GFX_SURFACE_FMT_NONE;
    s->dims = VIDEO_SCALE_PACK(img->width, img->height);
 
-   /* Half floats have no narrower form: a driver that cannot sample
-    * them takes no still from this image. A 10-bit image for a driver
-    * that cannot is narrowed here, where it is ours to rewrite. */
-   if (     img->fp16
-         && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F))
+   /* Fitted here, where the image is ours to rewrite */
+   if (!video_driver_texture_fit(img))
    {
       gfx_surface_image_free(img);
       return false;
    }
-   if (img->pix10 && gfx_surface_must_narrow(GFX_SURFACE_PIXFMT_2101010))
-      image_texture_narrow_10bit(img);
 
 #ifdef HAVE_THREADS
    if (     img->pixels && !img->compressed
@@ -708,9 +704,9 @@ bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
       src.pixels       = img->pixels;
       src.payload      = img;
       src.payload_free = gfx_surface_image_free;
-      src.pixfmt       = img->fp16  ? GFX_SURFACE_PIXFMT_FP16
-                       : img->pix10 ? GFX_SURFACE_PIXFMT_2101010
-                                    : GFX_SURFACE_PIXFMT_8888;
+      src.pixfmt       = img->fp16  ? IMAGE_PIXFMT_FP16
+                       : img->pix10 ? IMAGE_PIXFMT_2101010
+                                    : IMAGE_PIXFMT_8888;
       src.rgba         = img->supports_rgba;
       r                = gfx_surface_submit_external(s, &src,
             s->release, s->user);
@@ -746,18 +742,17 @@ gfx_surface_t *gfx_surface_still(gfx_surface_t **slot,
    return *slot;
 }
 
-/* What a still's decode is asked for: the order the caller named,
- * 10-bit where the driver samples it, a compressed payload as it lies
- * in the file */
-static void gfx_surface_request(image_texture_request_t *req,
-      bool supports_rgba)
+void gfx_surface_image_request(image_texture_request_t *req,
+      bool rgba, unsigned flags)
 {
    gfx_surface_requirements_t want;
-   req->rgba            = supports_rgba;
-   req->want_10bit      = gfx_surface_query_requirements(0, &want)
-      && (want.formats & GFX_SURFACE_PIXFMT_2101010);
-   req->want_fp16       = false;
-   req->want_compressed = true;
+   uint32_t formats = gfx_surface_query_requirements(0, &want)
+      ? want.formats : IMAGE_PIXFMT_8888;
+   req->rgba            = rgba;
+   req->want_10bit      = (formats & IMAGE_PIXFMT_2101010) ? true : false;
+   req->want_fp16       = (flags & GFX_SURFACE_REQ_HDR)
+      && (formats & IMAGE_PIXFMT_FP16);
+   req->want_compressed = (flags & GFX_SURFACE_REQ_COMPRESSED) ? true : false;
 }
 
 bool gfx_surface_submit_buffer(gfx_surface_t *s,
@@ -770,7 +765,7 @@ bool gfx_surface_submit_buffer(gfx_surface_t *s,
       return false;
    if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
       return false;
-   gfx_surface_request(&req, supports_rgba);
+   gfx_surface_image_request(&req, supports_rgba, GFX_SURFACE_REQ_COMPRESSED);
    if (!image_texture_load_buffer_request(img, type, buf, len, &req,
             NULL, NULL))
    {
@@ -802,7 +797,7 @@ bool gfx_surface_submit_file(gfx_surface_t *s, const char *path,
       return false;
    if (!(img = (struct texture_image*)calloc(1, sizeof(*img))))
       return false;
-   gfx_surface_request(&req, supports_rgba);
+   gfx_surface_image_request(&req, supports_rgba, GFX_SURFACE_REQ_COMPRESSED);
    if (!image_texture_load_request(img, path, &req, NULL, NULL))
    {
       free(img);
@@ -825,7 +820,7 @@ unsigned gfx_surface_submit_files(gfx_surface_t *const *slots,
    if (!slots || !paths)
       return 0;
 
-   gfx_surface_request(&req, supports_rgba);
+   gfx_surface_image_request(&req, supports_rgba, GFX_SURFACE_REQ_COMPRESSED);
 
    for (first = 0; first < n; first += GFX_SURFACE_DECODE_BATCH)
    {

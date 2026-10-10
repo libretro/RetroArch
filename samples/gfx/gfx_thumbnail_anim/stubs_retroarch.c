@@ -14,6 +14,7 @@
 #include <stdbool.h>
 
 #include "../../../gfx/video_defines.h"
+#include <formats/image.h>
 
 extern int      gt_uploads;
 extern unsigned gt_last_crc;
@@ -290,6 +291,15 @@ bool video_driver_test_all_flags(int flags)
 { (void)flags; return false; }
 bool video_driver_supports_texture_format(int fmt)
 { (void)fmt; return false; }
+
+/* As the frontend fits an image, from this stub's own answers */
+bool video_driver_texture_fit(struct texture_image *ti)
+{
+   if (ti->pix10 && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
+      image_texture_narrow_10bit(ti);
+   return !ti->fp16
+      || video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGBA16F);
+}
 
 /* --- lending ---
  * gt_lend_mode makes the driver lend each slot its own buffer, and
