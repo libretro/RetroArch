@@ -9,7 +9,9 @@ GPU memory RetroArch holds, and the pointer cases move the pointer of
 gamescope's own X server and look for the menu's cursor under it. The
 gl driver doesn't present views, so it runs one case that expects the
 packed frame and no PRESENTS. The exact cases check every pixel of
-views filled with noise, on glcore once for each way it copies them.
+views filled with noise, drawn straight from the frame by the stock
+chain and copied out of it for a preset, on glcore once for each way it
+copies them.
 Not run in CI: it needs a GPU, gamescope and a RetroArch build.
 
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
@@ -211,9 +213,11 @@ MEMORY_HW = {'glcore': 'gl', 'vulkan': 'vulkan'}
 
 # Views arrive pixel for pixel: the core fills each view with noise,
 # drawn unfiltered at an integer scale, and every pixel of each view on
-# screen must be its source pixel. glcore runs each case again with
-# Mesa hiding glCopyImageSubData, so the views are blitted instead, and
-# the two screenshots must match.
+# screen must be its source pixel. The stock chain's views are drawn
+# straight from the frame; each case runs again with a passthrough
+# preset, whose views are copied out of it, and on glcore once more with
+# Mesa hiding glCopyImageSubData, so the views are blitted instead. The
+# screenshots must match.
 # [(name, map option, core options, hw)]
 EXACT_SETTINGS = {'video_stereo_mode': '0', 'video_scale_integer': 'true',
                   'video_smooth': 'false'}
@@ -230,6 +234,19 @@ EXACT_CASES = [
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
 ]
 EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan')}
+# Filtered, a view drawn straight from the frame must stop at its edge
+# as its copy does: the ds screens touch in the frame, so a bottom row
+# blended with the other screen's top shows. Compared, not checked
+# pixel for pixel. [(name, map option, core options, hw)]
+SMOOTH_CASES = [
+    ('smooth-ds', 'ds', NOISE, 'off'),
+    ('smooth-3ds', '3ds', NOISE, 'gl'),
+]
+SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
+LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
+# Drivers that draw the stock chain's views straight from the frame.
+DIRECT_DRIVERS = ('glcore',)
+DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 # The core's 2D maps, as (x, y, width, height) in the packed frame.
 EXACT_VIEWS = {'ds': [(0, 0, 256, 192), (0, 192, 256, 192)],
                '3ds': [(0, 0, 400, 240), (240, 240, 320, 240)]}
@@ -744,18 +761,40 @@ def copy_path(d):
     return found
 
 
+def direct_drawn(d):
+    """Whether the log says views were drawn straight from the frame."""
+    for name in ('run.log', 'retroarch.log'):
+        path = os.path.join(d, name)
+        if os.path.exists(path):
+            with open(path, errors='replace') as f:
+                if DIRECT_RE.search(f.read()):
+                    return True
+    return False
+
+
 def run_exact_case(retroarch, root, driver, case, suffix='',
-                   env_extra=None, path=None):
+                   env_extra=None, path=None, preset=None, exact=True):
     """The errors, and the screenshot's rows for comparing runs. path is
-    how glcore must say it copies views."""
+    how glcore must say it copies views. preset, a preset's path, has the
+    views copied; without one a driver in DIRECT_DRIVERS must draw them
+    straight from the frame. exact checks each view pixel for pixel."""
     name, mapopt, opts, hw = case
     name += suffix
+    settings = EXACT_SETTINGS if exact else SMOOTH_SETTINGS
+    args = ()
+    if preset:
+        settings = dict(settings, video_shader_enable='true')
+        args = ('--set-shader=' + preset,)
     errors = run_case(retroarch, root, driver,
-                      (name, mapopt, EXACT_SETTINGS, []), hw, opts=opts,
-                      env_extra=env_extra)
+                      (name, mapopt, settings, []), hw, opts=opts,
+                      args=args, env_extra=env_extra)
     d = case_dir(root, driver, name, hw)
     if path and copy_path(d) != path:
         errors.append('views copied by %s, want %s' % (copy_path(d), path))
+    direct = direct_drawn(d)
+    if direct != (driver in DIRECT_DRIVERS and not preset):
+        errors.append('views %s straight from the frame' %
+                      ('drawn' if direct else 'not drawn'))
     shots = sorted(x for x in os.listdir(os.path.join(d, 'shots'))
                    if x.endswith('.png'))
     if not shots:
@@ -763,7 +802,23 @@ def run_exact_case(retroarch, root, driver, case, suffix='',
     w, h, bpp, rows = read_png(os.path.join(d, 'shots', shots[0]))
     if (w, h) != (W, H):
         return errors, None
-    return errors + exact_errors(rows, bpp, EXACT_VIEWS[mapopt]), rows
+    rows = [bytes(rgb_row(rows, bpp, y, 0, W)) for y in range(H)]
+    if exact:
+        errors += exact_errors(rows, 3, EXACT_VIEWS[mapopt])
+    return errors, rows
+
+
+def rows_differ(a, b, tolerance):
+    """How many pixels of two screenshots' RGB rows differ by more than
+    tolerance in a channel."""
+    bad = 0
+    for ra, rb in zip(a, b):
+        if ra == rb:
+            continue
+        for i in range(0, len(ra), 3):
+            if any(abs(ra[i + c] - rb[i + c]) > tolerance for c in range(3)):
+                bad += 1
+    return bad
 
 
 def run_menu_case(retroarch, root, driver, case):
@@ -1003,23 +1058,45 @@ def main():
         for case in [c for c in EXACT_CASES
                      if c[3] in EXACT_HW.get(driver, ())]:
             hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
-            errors, rows = run_exact_case(
-                retroarch, root, driver, case,
-                path='glCopyImageSubData' if driver == 'glcore' else None)
+            copy = 'glCopyImageSubData' if driver == 'glcore' else None
+            runs = [('', None, copy, None),
+                    ('-preset', None, copy, HISTORY_PRESET)]
+            if driver == 'glcore':
+                runs.append(('-preset-blit', NO_COPY_IMAGE,
+                             'framebuffer blits', HISTORY_PRESET))
+            first = None
+            for suffix, env_extra, path, preset in runs:
+                errors, rows = run_exact_case(
+                    retroarch, root, driver, case, suffix, env_extra, path,
+                    preset)
+                if first is None:
+                    first = rows
+                elif rows and first and rows != first:
+                    errors.append('screenshot differs from %s/%s\'s'
+                                  % (driver, case[0]))
+                print('%s %s/%s%s%s' % ('FAIL' if errors else 'pass', driver,
+                                        case[0], suffix, hw))
+                for e in errors:
+                    print('    ' + e)
+                failed += bool(errors)
+        for case in [c for c in SMOOTH_CASES
+                     if c[3] in EXACT_HW.get(driver, ())]:
+            hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
+            errors, rows = run_exact_case(retroarch, root, driver, case,
+                                          exact=False)
+            copy_errors, copy_rows = run_exact_case(
+                retroarch, root, driver, case, '-preset',
+                preset=LINEAR_PRESET, exact=False)
+            errors += copy_errors
+            if not rows or not copy_rows:
+                errors.append('no screenshot to compare')
+            else:
+                bad = rows_differ(rows, copy_rows, TOLERANCE)
+                if bad:
+                    errors.append('%d pixels differ from the preset\'s copies'
+                                  % bad)
             print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
                                   case[0], hw))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-            if driver != 'glcore':
-                continue
-            errors, blit_rows = run_exact_case(
-                retroarch, root, driver, case, '-blit', NO_COPY_IMAGE,
-                'framebuffer blits')
-            if rows and blit_rows and rows != blit_rows:
-                errors.append('screenshot differs from glCopyImageSubData\'s')
-            print('%s %s/%s-blit%s' % ('FAIL' if errors else 'pass', driver,
-                                       case[0], hw))
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)
