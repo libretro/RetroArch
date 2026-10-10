@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := pipewire_write_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -12,7 +14,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := pipewire_write_test.o $(LIBRETRO_COMM_DIR)/lists/string_list.o $(LIBRETRO_COMM_DIR)/compat/compat_strl.o
+OBJS := $(call sample_objs,pipewire_write_test.o $(LIBRETRO_COMM_DIR)/lists/string_list.o $(LIBRETRO_COMM_DIR)/compat/compat_strl.o)
 
 all: $(TARGET)
 
@@ -27,10 +29,15 @@ pipewire_write_test.o: pipewire_write_test.c ../../../audio/drivers/pipewire.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

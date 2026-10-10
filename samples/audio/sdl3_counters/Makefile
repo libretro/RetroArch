@@ -1,6 +1,8 @@
 # The SDL3 audio driver's underruns() accounting, and the callback it
 # has to be counted in. Builds audio/drivers/sdl3_audio.c itself.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -15,7 +17,7 @@ SOURCES_C := sdl3_counters_test.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 SDL_CFLAGS ?= $(shell pkg-config --cflags sdl3)
 SDL_LIBS   ?= $(shell pkg-config --libs sdl3)
@@ -42,10 +44,15 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

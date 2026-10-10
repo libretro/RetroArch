@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 compiler     := gcc
 TARGET       := unity_identity_test
 
@@ -61,23 +63,18 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-# Objects stay in this directory: shared sources compiled in place
-# are reused by the next sample to link them, whatever its flags.
-OBJDIR := obj
-OBJS   := $(patsubst $(CORE_DIR)/%.c,$(OBJDIR)/tree/%.o,$(filter $(CORE_DIR)/%,$(SOURCES_C))) \
-	$(patsubst %.c,$(OBJDIR)/%.o,$(filter-out $(CORE_DIR)/%,$(SOURCES_C)))
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
 
-$(OBJDIR)/unity_identity_test.o: ../../../audio/audio_driver.c
-$(OBJDIR)/stubs_retroarch.o: ../pipeline_clocked/stubs_retroarch.c
+unity_identity_test.o: ../../../audio/audio_driver.c
+stubs_retroarch.o: ../pipeline_clocked/stubs_retroarch.c
 
-$(OBJDIR)/tree/%.o: $(CORE_DIR)/%.c
-	@mkdir -p $(dir $@)
+%.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
-$(OBJDIR)/%.o: %.c
-	@mkdir -p $(dir $@)
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
 $(TARGET): $(OBJS)
@@ -87,7 +84,8 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
-	rm -rf $(OBJDIR)
+	rm -rf $(SAMPLE_OBJDIR)
+	rm -f $(OBJS)
 	rm -f $(TARGET)
 
 .PHONY: clean all check

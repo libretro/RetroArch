@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 compiler     := gcc
 TARGET       := discrete_multichannel_test
 
@@ -74,7 +76,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
 
@@ -92,9 +94,13 @@ $(GEN): $(WASAPI_SRC)
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
 discrete_multichannel_test.o: producer_spans.h inline_wide.h transport_quality.h ../../../audio/audio_driver.c ../../../audio/audio_driver.h ../../../audio/audio_pipeline_layout.h ../../../state_manager.h
 
-../../../state_manager.o: ../../../state_manager.h
+$(call sample_objs,../../../state_manager.o): ../../../state_manager.h
 stubs_retroarch.o: ../../../state_manager.h ../../../core_info.h ../../../content.h
 
 $(TARGET): $(OBJS)
@@ -104,6 +110,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 	rm -f $(GEN)

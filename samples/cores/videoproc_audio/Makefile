@@ -3,6 +3,8 @@
 # its statics; links the real libv4l2 and libasound, with the capture
 # read and the close wrapped.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -15,7 +17,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/string/rstrtod.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
 
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS   += -Wall $(INCDIRS) -DHAVE_ALSA -D_GNU_SOURCE
@@ -37,7 +39,12 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

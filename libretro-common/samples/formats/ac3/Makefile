@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 compiler     := gcc
 TARGET       := rac3_frame_test
 TARGET2      := rac3_tables_test
@@ -25,7 +27,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET) $(TARGET2) $(TARGET3) $(TARGET4)
 
@@ -41,6 +43,10 @@ $(TARGET2): rac3_tables_test.c $(LIBRETRO_COMM_DIR)/formats/ac3/rac3_tables.h
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
@@ -54,6 +60,7 @@ check: $(TARGET) $(TARGET2) $(TARGET3) $(TARGET4)
 	./$(TARGET4)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
 	rm -f $(TARGET) $(TARGET2) $(TARGET3) $(TARGET4)
 

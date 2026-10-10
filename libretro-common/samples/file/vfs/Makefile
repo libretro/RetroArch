@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET      := vfs_read_overflow_test
 TARGET_TEST := vfs_mapped_ptr_test
 TARGET_TEST2 := vfs_large_file_test
@@ -22,7 +24,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
+COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
 OBJS        := vfs_read_overflow_test.o vfs_mapped_ptr_test.o \
 	vfs_large_file_test.o vfs_seek_contract_test.o \
 	vfs_bulk_read_test.o filestream_rbuf_fault_test.o \
@@ -121,6 +123,10 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): vfs_read_overflow_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -175,6 +181,7 @@ $(TARGET_TEST7): vfs_rename_replace_test.o $(RENAME_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=rename,--wrap=remove,--wrap=stat
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) \
 		$(TARGET_TEST4) $(TARGET_TEST5) $(TARGET_TEST6) \
 		$(TARGET_TEST7) $(TARGET_TEST8) $(OBJS) $(FAULT_FS_OBJ) $(RENAME_VFS_OBJ)

@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := audioworklet_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -13,7 +15,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := audioworklet_test.o $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o
+OBJS := $(call sample_objs,audioworklet_test.o $(LIBRETRO_COMM_DIR)/queues/retro_spsc.o)
 
 all: $(TARGET)
 
@@ -28,10 +30,15 @@ audioworklet_test.o: audioworklet_test.c ../../../audio/drivers/audioworklet.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 compiler     := gcc
 TARGET       := ff_speedup_test
 
@@ -60,7 +62,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
 
@@ -71,6 +73,10 @@ ff_speedup_test.o: ../../../audio/audio_driver.c ../../../audio/audio_driver.h
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
@@ -78,6 +84,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 

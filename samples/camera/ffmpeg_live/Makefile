@@ -1,6 +1,8 @@
 # The ffmpeg camera driver against lavfi: a synthetic camera, so the
 # whole pipeline runs with no device attached.
 
+include ../../sample_objdir.mk
+
 TARGET := ffmpeg_live_test
 
 CORE_DIR          := ../../..
@@ -18,7 +20,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 FF_CFLAGS := $(shell pkg-config --cflags libavcodec libavformat libavdevice libavutil libswscale 2>/dev/null)
 FF_LIBS   := $(shell pkg-config --libs   libavcodec libavformat libavdevice libavutil libswscale 2>/dev/null)
@@ -45,10 +47,15 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

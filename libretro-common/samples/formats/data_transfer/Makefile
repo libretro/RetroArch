@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET       := data_transfer_source_test
 TARGET_TEST2 := data_transfer_prefix_test
 TARGET_TEST3 := data_transfer_window_test
@@ -18,7 +20,7 @@ COMMON_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-COMMON_OBJS := $(COMMON_SOURCES:.c=.o)
+COMMON_OBJS := $(call sample_objs,$(COMMON_SOURCES:.c=.o))
 OBJS        := data_transfer_source_test.o data_transfer_prefix_test.o \
 	data_transfer_window_test.o data_transfer_pool_scrub_test.o \
 	$(COMMON_OBJS)
@@ -35,6 +37,10 @@ all: $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): data_transfer_source_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -48,6 +54,7 @@ $(TARGET_TEST4): data_transfer_pool_scrub_test.o $(COMMON_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS)
 
 .PHONY: clean

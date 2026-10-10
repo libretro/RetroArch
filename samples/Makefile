@@ -10,9 +10,8 @@
 # break that sample's link without touching the main build. That has
 # happened, twice, both times caught by CI rather than here.
 #
-# Each sample is cleaned first: they compile shared sources into the
-# same object paths under gfx/ and libretro-common/, so one sample's
-# objects will otherwise be picked up by the next and fail its link.
+# Each sample is cleaned first, so a change of SAN= rebuilds it. Shared
+# sources are compiled into each sample's own obj/ (sample_objdir.mk).
 #
 # SAN= is passed through to the samples that honour it, so
 #   make -C samples check SAN=thread

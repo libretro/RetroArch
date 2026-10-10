@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := overlay_apng_test
 
 REPO_ROOT         := ../../..
@@ -32,7 +34,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # image_texture.c is here for the narrowing gfx_surface.c calls; its
 # loaders are dropped at the link rather than chased through the
@@ -59,6 +61,11 @@ check: all
 	./$(TARGET) fixtures/anim.png
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<

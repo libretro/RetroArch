@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := retro_eventcount_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -85,7 +87,7 @@ ifneq ($(SWITCH),)
    TARGET := retro_eventcount_test_switch
 endif
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SAN),)
    SANITIZER := $(SAN)
@@ -98,6 +100,10 @@ endif
 all: $(TARGET)
 
 %.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
@@ -123,6 +129,7 @@ check: all
 	./retro_eventcount_test_ctr
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) switch_arbiter_shim.o ctr_arbiter_shim.o retro_eventcount_test \
 	      retro_eventcount_test_scond retro_eventcount_test_sem \
 	      retro_eventcount_test_sempool retro_eventcount_test_switch \

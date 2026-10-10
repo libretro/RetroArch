@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 compiler     := gcc
 extra_flags  :=
 EXE_EXT      :=
@@ -81,17 +83,22 @@ CFLAGS += -DHAVE_THREADS -D_GNU_SOURCE
 CFLAGS += -DMENU_DIRWALK_SORT_RUN=32 -DMENU_DIRWALK_SORT_BATCH=8 -DMENU_DIRWALK_SORT_SYNC_MAX=64
 LDFLAGS += -lm -lpthread
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
 
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
 $(TARGET): $(OBJS)
 	$(CC) -o$@$(EXE_EXT) $(OBJS) $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS)
 	rm -f $(TARGET)
 

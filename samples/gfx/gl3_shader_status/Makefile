@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET       := gl3_shader_status_test
 CHAIN_TARGET := gl3_chain_alloc_test
 
@@ -42,8 +44,8 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS       := $(SOURCES:.c=.o)
-CHAIN_OBJS := $(CHAIN_SOURCES:.c=.o)
+OBJS       := $(call sample_objs,$(SOURCES:.c=.o))
+CHAIN_OBJS := $(call sample_objs,$(CHAIN_SOURCES:.c=.o))
 
 all: $(TARGET) $(CHAIN_TARGET)
 
@@ -58,11 +60,16 @@ gl3_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_gl3.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET) $(CHAIN_TARGET)
 	./$(TARGET)
 	./$(CHAIN_TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(CHAIN_OBJS) $(TARGET) $(TARGET).exe \
 	      $(CHAIN_TARGET) $(CHAIN_TARGET).exe
 

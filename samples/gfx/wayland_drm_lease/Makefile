@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := wayland_drm_lease_test
 
 # Path back to the repo root from this sample dir.  Like
@@ -50,7 +52,7 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 \
 
 LDFLAGS += $(shell pkg-config --libs wayland-client wayland-server) -lpthread
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -80,6 +82,10 @@ $(OBJS): $(GENERATED) $(REPO_ROOT)/gfx/common/wayland/drm-lease-v1.h
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(REPO_ROOT)/gfx/common/wayland/kde-%.h: $(KDE_XML)/kde-%.xml
 	wayland-scanner client-header $< $@
 kde-%-protocol.c: $(KDE_XML)/kde-%.xml
@@ -97,6 +103,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(GENERATED) $(KDE_CODE) $(WLR_CODE)
 
 .PHONY: all check clean

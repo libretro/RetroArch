@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET       := r7z_lzma_props_test
 TARGET_TEST2 := r7z_archive_detach_test
 
@@ -19,8 +21,8 @@ ARCHIVE_SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma2.c \
 	$(LIBRETRO_COMM_DIR)/formats/7z/r7z_lzma_stream.c
 
-OBJS         := $(SOURCES:.c=.o)
-ARCHIVE_OBJS := $(ARCHIVE_SOURCES:.c=.o)
+OBJS         := $(call sample_objs,$(SOURCES:.c=.o))
+ARCHIVE_OBJS := $(call sample_objs,$(ARCHIVE_SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
@@ -34,6 +36,10 @@ all: $(TARGET) $(TARGET_TEST2)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(TARGET): $(OBJS)
 	$(CC) $(OBJS) $(LDFLAGS) -o $@
 
@@ -45,6 +51,7 @@ check: $(TARGET) $(TARGET_TEST2)
 	./$(TARGET_TEST2)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST2) $(OBJS) $(ARCHIVE_OBJS)
 
 .PHONY: all check clean

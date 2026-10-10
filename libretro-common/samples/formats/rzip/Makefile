@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := rzip_archive_test
 # a deflated member read at any offset through an index (rzip_seek)
 SEEK   := rzip_seek_test
@@ -11,7 +13,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c \
 	$(LIBRETRO_COMM_DIR)/formats/zip/rzip_archive.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -I$(LIBRETRO_COMM_DIR)/include
 
@@ -25,6 +27,10 @@ all: $(TARGET) $(SEEK)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(TARGET): rzip_archive_test.o $(OBJS)
 	$(CC) rzip_archive_test.o $(OBJS) $(LDFLAGS) -o $@ -lm
 
@@ -36,6 +42,7 @@ check: $(TARGET) $(SEEK)
 	./$(SEEK)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(SEEK) rzip_archive_test.o rzip_seek_test.o $(OBJS)
 
 .PHONY: all check clean

@@ -1,9 +1,11 @@
+include ../../sample_objdir.mk
+
 TARGET := memshm_area_test
 LIBRETRO_COMM_DIR := ../../..
 SOURCES := memshm_area_test.c $(LIBRETRO_COMM_DIR)/memmap/memmap.c
 CFLAGS  += -Wall -W -std=gnu99 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
 LDFLAGS += -lrt
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(SAN),)
    SANITIZER := $(SAN)
 endif
@@ -13,6 +15,10 @@ ifneq ($(SANITIZER),)
 endif
 all: $(TARGET)
 %.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -24,5 +30,6 @@ legacy: $(SOURCES)
 check: all
 	./$(TARGET)
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET) $(TARGET)_legacy
 .PHONY: all check clean legacy

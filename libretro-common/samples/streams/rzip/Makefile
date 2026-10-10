@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET       := rzip
 TARGET_TEST  := rzip_chunk_size_test
 TARGET_TEST2 := rzip_matches_buf_test
@@ -65,11 +67,11 @@ SOURCES_TEST2 := rzip_matches_buf_test.c $(COMMON_SOURCES)
 SOURCES_TEST3 := rzip_codec_test.c $(COMMON_SOURCES)
 SOURCES_TEST4 := rzip_parallel_test.c $(COMMON_SOURCES)
 
-OBJS      := $(SOURCES:.c=.o)
-OBJS_TEST := $(SOURCES_TEST:.c=.o)
-OBJS_TEST2 := $(SOURCES_TEST2:.c=.o)
-OBJS_TEST3 := $(SOURCES_TEST3:.c=.o)
-OBJS_TEST4 := $(SOURCES_TEST4:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES:.c=.o))
+OBJS_TEST := $(call sample_objs,$(SOURCES_TEST:.c=.o))
+OBJS_TEST2 := $(call sample_objs,$(SOURCES_TEST2:.c=.o))
+OBJS_TEST3 := $(call sample_objs,$(SOURCES_TEST3:.c=.o))
+OBJS_TEST4 := $(call sample_objs,$(SOURCES_TEST4:.c=.o))
 
 INCLUDE_DIRS += -I$(LIBRETRO_COMM_DIR)/include
 CFLAGS += -DHAVE_COMPRESSION -DHAVE_RZSTD -DHAVE_THREADS -Wall -pedantic -std=gnu99 $(INCLUDE_DIRS)
@@ -100,6 +102,10 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -118,6 +124,7 @@ $(TARGET_TEST4): $(OBJS_TEST4)
 	$(CC) -o $@ $^ $(LDFLAGS) -Wl,--wrap=cpu_features_get_core_amount
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) $(OBJS) $(OBJS_TEST) $(OBJS_TEST2) $(OBJS_TEST3) $(OBJS_TEST4)
 
 .PHONY: clean

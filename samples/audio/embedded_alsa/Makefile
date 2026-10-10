@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET  := embedded_alsa_test
 TARGET2 := abi_check
 
@@ -22,7 +24,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET) $(TARGET2)
 
@@ -38,11 +40,16 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: all
 	./$(TARGET2)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET) $(TARGET2) ealsa_abi.h
 
 .PHONY: all check clean

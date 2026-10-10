@@ -1,6 +1,8 @@
 # deps/openxr's loader under concurrent use, against a stand-in runtime
 # (stub_runtime.c). Built from the loader's own sources; run it with
 # SANITIZER=thread or SANITIZER=address,undefined.
+include ../../sample_objdir.mk
+
 TARGET   := loader_threads_test
 ROOT     := ../../..
 LRC      := $(ROOT)/libretro-common
@@ -55,7 +57,7 @@ C_SOURCES := \
    $(LRC)/encodings/encoding_utf.c \
    $(LRC)/time/rtime.c
 
-OBJS := $(C_SOURCES:.c=.o) $(LOADER_SOURCES:.cpp=.o)
+OBJS := $(call sample_objs,$(C_SOURCES:.c=.o) $(LOADER_SOURCES:.cpp=.o))
 
 CFLAGS   += -g -O1 -Wall $(DEFINES) $(INCLUDES)
 CXXFLAGS += -g -O1 -Wall -std=gnu++17 -fno-exceptions $(DEFINES) $(INCLUDES)
@@ -72,7 +74,15 @@ all: $(TARGET)$(EXE) $(STUB)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 %.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).cpp
+	@mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 $(TARGET)$(EXE): $(OBJS)
@@ -87,6 +97,7 @@ check: all
 	   XR_LOADER_DEBUG=none ./$(TARGET)$(EXE) "$(CURDIR)"
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET)$(EXE) $(STUB) $(OBJS) stub_runtime.json
 
 .PHONY: all check clean

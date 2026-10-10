@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := vulkan_chain_alloc_test
 
 REPO_ROOT         := ../../..
@@ -21,7 +23,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 all: $(TARGET)
 
@@ -33,10 +35,15 @@ vulkan_chain_alloc_test.o: $(REPO_ROOT)/gfx/drivers_shader/shader_vulkan.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET) $(TARGET).exe
 
 .PHONY: all check clean

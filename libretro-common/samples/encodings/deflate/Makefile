@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET            := rinflate_window_test
 TARGET_TEST       := rdeflate_hash_test
 
@@ -16,7 +18,7 @@ SOURCES := \
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g -O2 -I$(LIBRETRO_COMM_DIR)/include
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # The hash test compiles encoding_deflate.c into itself; it needs the
 # rest of what the deflater links, not the window test.
@@ -42,6 +44,10 @@ all: $(TARGET) $(TARGET_TEST)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -53,6 +59,7 @@ check: all
 	./$(TARGET_TEST)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET).exe $(TARGET_TEST).exe $(OBJS)
 
 .PHONY: all check clean

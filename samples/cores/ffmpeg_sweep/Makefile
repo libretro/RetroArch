@@ -1,6 +1,8 @@
 # The ffmpeg core across the media it has to take and the abuse a
 # as a libretro host: steady state, seeks both ways, teardown.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 FF_CORE_DIR       := $(CORE_DIR)/cores/libretro-ffmpeg
@@ -16,7 +18,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 FF_CFLAGS := $(shell pkg-config --cflags libavcodec libavformat libavutil libswscale libswresample 2>/dev/null)
 FF_LIBS   := $(shell pkg-config --libs   libavcodec libavformat libavutil libswscale libswresample 2>/dev/null)
@@ -41,7 +43,12 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) ffmpeg_sweep_test.mkv
 
 .PHONY: clean

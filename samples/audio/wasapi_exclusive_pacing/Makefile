@@ -2,6 +2,8 @@
 # its three Windows include lines, against a fake device on a
 # real-time clock, under the reporter's settings.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -24,7 +26,7 @@ SOURCES_C := wasapi_exclusive_pacing_test.c fake_wasapi.c stubs_retroarch.c $(GE
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 INCDIRS   := -I. -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) -I$(CORE_DIR)/deps
 CFLAGS   += -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_WASAPI -D_GNU_SOURCE
@@ -55,7 +57,12 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET) $(GEN)
 
 .PHONY: all clean

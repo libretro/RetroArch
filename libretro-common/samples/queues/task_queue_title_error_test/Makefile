@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := task_queue_title_error_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -14,7 +16,7 @@ SOURCES := \
 	task_queue_title_error_test.c \
 	$(LIBRETRO_COMM_DIR)/queues/task_queue.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -28,10 +30,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

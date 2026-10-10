@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := retro_asym_eventcount_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -17,7 +19,7 @@ LDFLAGS += -lpthread
 # -lrt. Harmless on newer glibc.
 LDFLAGS += -lrt
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SAN),)
    SANITIZER := $(SAN)
@@ -30,6 +32,10 @@ endif
 all: $(TARGET)
 
 %.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
@@ -48,6 +54,7 @@ check: all
 	RETRO_PROCBARRIER=signal     ./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

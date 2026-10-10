@@ -2,6 +2,8 @@
 # implements wp_color_manager_v1: what the client asks for, in what
 # order, and that it never breaks the protocol's fatal rules.
 
+include ../../sample_objdir.mk
+
 TARGET := wayland_color_management_test
 
 REPO_ROOT := ../../..
@@ -23,7 +25,7 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 \
            $(shell pkg-config --cflags wayland-client wayland-server)
 LDFLAGS += $(shell pkg-config --libs wayland-client wayland-server) -lpthread
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -44,6 +46,10 @@ $(OBJS): $(GENERATED) $(CLIENT_H)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -51,6 +57,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(GENERATED)
 
 .PHONY: all check clean

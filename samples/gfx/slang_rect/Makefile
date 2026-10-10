@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
@@ -19,7 +21,7 @@ endif
 
 C_SOURCES := slang_rect_test.c \
              $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c
-C_OBJS    := $(C_SOURCES:.c=.o)
+C_OBJS    := $(call sample_objs,$(C_SOURCES:.c=.o))
 
 GRIFFIN_CPP := $(REPO_ROOT)/griffin/griffin_cpp.cpp
 
@@ -50,6 +52,10 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 slang_rect_test.o: slang_rect_spirv.h
 
 spirv_cross.o: $(GRIFFIN_CPP)
@@ -62,6 +68,7 @@ check: $(TARGET)
 	./$(TARGET) $(CHECK_ARGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(C_OBJS) spirv_cross.o $(TARGET) $(TARGET).exe
 
 .PHONY: all check clean

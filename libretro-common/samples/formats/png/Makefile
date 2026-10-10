@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := rpng
 TARGET_TEST := rpng_chunk_overflow_test
 TARGET_TEST2 := rpng_roundtrip_test
@@ -131,11 +133,11 @@ TEST4_SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/streams/trans_stream_deflate.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
 
-OBJS := $(SOURCES_C:.c=.o)
-TEST4_OBJS := $(TEST4_SOURCES_C:.c=.o)
-TEST_OBJS := $(TEST_SOURCES_C:.c=.o)
-TEST2_OBJS := $(TEST2_SOURCES_C:.c=.o)
-TEST3_OBJS := $(TEST3_SOURCES_C:.c=.corpus.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
+TEST4_OBJS := $(call sample_objs,$(TEST4_SOURCES_C:.c=.o))
+TEST_OBJS := $(call sample_objs,$(TEST_SOURCES_C:.c=.o))
+TEST2_OBJS := $(call sample_objs,$(TEST2_SOURCES_C:.c=.o))
+TEST3_OBJS := $(call sample_objs,$(TEST3_SOURCES_C:.c=.corpus.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -O0 -g -I$(LIBRETRO_COMM_DIR)/include
 
@@ -157,7 +159,15 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 %.corpus.o: %.c
+	$(CC) -c -o $@ $< $(CORPUS_CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.corpus.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CORPUS_CFLAGS)
 
 $(TARGET): $(OBJS)
@@ -176,6 +186,7 @@ $(TARGET_TEST4): $(TEST4_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET_TEST) $(TARGET_TEST2) $(TARGET_TEST3) $(TARGET_TEST4) \
 		$(OBJS) $(TEST_OBJS) $(TEST2_OBJS) $(TEST3_OBJS) $(TEST4_OBJS)
 

@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := vulkan_validation_test
 
 # Path back to the repo root from this sample dir.  Like the
@@ -33,7 +35,7 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 \
 
 LDFLAGS += -lvulkan -lpthread -ldl -lX11
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -43,6 +45,10 @@ endif
 all: $(TARGET)
 
 %.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 $(TARGET): $(OBJS)
@@ -60,6 +66,7 @@ run: $(TARGET)
 	VK_DRIVER_FILES=$(VK_DRIVER_FILES) ./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: all run clean

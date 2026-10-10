@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := overlay_textures_test
 
 REPO_ROOT         := ../../..
@@ -15,7 +17,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # image_texture.c is here for image_texture_free() alone; its loaders
 # are dropped at the link rather than chased through the transfer code.
@@ -43,6 +45,11 @@ check: all
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<

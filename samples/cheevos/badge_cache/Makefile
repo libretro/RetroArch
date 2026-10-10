@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := badge_cache_test
 
 # Links the real cheevos/cheevos_badge.c; everything it reaches for
@@ -17,7 +19,7 @@ SOURCES := badge_cache_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
-OBJECTS := $(SOURCES:.c=.o)
+OBJECTS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 -DHAVE_MENU -DHAVE_CHEEVOS -DHAVE_THREADS -DRARCH_INTERNAL \
            -I$(REPO_ROOT) -I$(LIBRETRO_COMM_DIR)/include \
@@ -39,10 +41,15 @@ $(TARGET): $(OBJECTS)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJECTS)
 
 .PHONY: all check clean

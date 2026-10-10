@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
@@ -51,12 +53,16 @@ HLSL_CONFIGS    := "-DHAVE_D3D10" "-DHAVE_D3D11" "-DHAVE_D3D12" \
 NO_HLSL_CONFIGS := "-DHAVE_OPENGL" "-DHAVE_D3D9" \
                    "-DHAVE_OPENGL -DHAVE_VULKAN"
 
-C_OBJS  := $(filter-out slang_hlsl_backend_test.o,$(C_SOURCES:.c=.o))
+C_OBJS  := $(call sample_objs,$(filter-out slang_hlsl_backend_test.o,$(C_SOURCES:.c=.o)))
 TARGETS := $(foreach l,$(RUN_LANES),hlsl_lane_$(l))
 
 all: $(TARGETS)
 
 %.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 spirv_cross_%.o: $(GRIFFIN_CPP)
@@ -84,6 +90,7 @@ check: $(TARGETS)
 	done
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(C_OBJS) $(TARGETS) $(TARGETS:=.exe) test_*.o spirv_cross_*.o
 
 .SECONDARY:

@@ -10,6 +10,8 @@
 #   make check SANITIZER=address
 #   make check SANITIZER=undefined
 
+include ../../sample_objdir.mk
+
 TARGET  := core_crc_slice_test
 CORE_DIR := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
@@ -40,7 +42,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 -fno-omit-frame-pointer \
            -I$(LIBRETRO_COMM_DIR)/include -DHAVE_ZLIB
@@ -57,6 +59,10 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LIBS)
 
@@ -64,6 +70,7 @@ check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: all check clean

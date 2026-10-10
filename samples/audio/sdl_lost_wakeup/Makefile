@@ -2,6 +2,8 @@
 # device. Builds audio/drivers/sdl2_audio.c itself - the subject is its
 # handshake, so a copy of the arithmetic would prove nothing.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -18,7 +20,7 @@ SOURCES_C := sdl_lost_wakeup_test.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strldup.c \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 INCDIRS   := -I$(LIBRETRO_COMM_DIR)/include -I$(CORE_DIR) $(shell pkg-config --cflags sdl2)
 CFLAGS   += -Wall $(INCDIRS) -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_SDL2 -DHAVE_MICROPHONE -D_GNU_SOURCE -std=gnu99
@@ -42,10 +44,15 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET) 2
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

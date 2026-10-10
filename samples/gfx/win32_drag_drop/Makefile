@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := win32_drag_drop_test
 GEN    := platform_sim.c ui_sim.c
 
@@ -12,7 +14,7 @@ SOURCES := win32_drag_drop_test.c \
            $(LIBRETRO_COMM_DIR)/lists/string_list.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -Wextra -Wno-unused-parameter -std=c89 -pedantic -g -O1 \
           -I. -I$(LIBRETRO_COMM_DIR)/include -DHAVE_DYLIB -DHAVE_MENU
@@ -55,6 +57,11 @@ check: all
 	./$(TARGET) wstub
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET) $(GEN)
 
 .PHONY: all check clean
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<

@@ -1,12 +1,14 @@
 # The open-endpoint table the WASAPI notifications consult.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
 TARGET    := mmdevice_active_test
 SOURCES_C := mmdevice_active_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 CFLAGS   += -Wall -I$(LIBRETRO_COMM_DIR)/include -DHAVE_THREADS -D_GNU_SOURCE
 
@@ -25,6 +27,10 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 # The table under ThreadSanitizer, then ASan/UBSan.
 check:
 	$(MAKE) -s clean
@@ -35,6 +41,7 @@ check:
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

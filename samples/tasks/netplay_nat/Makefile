@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := nat_task_serialisation_test
 
 # The unit under test is compiled from the tree - the shipping
@@ -31,7 +33,7 @@ SOURCES := nat_task_serialisation_test.c \
            $(LIBRETRO_COMM_DIR)/net/net_socket.c \
            $(LIBRETRO_COMM_DIR)/features/features_cpu.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 DEFINES := -DHAVE_NETWORKING -DHAVE_NETPLAY -DHAVE_THREADS
 
@@ -50,10 +52,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean all

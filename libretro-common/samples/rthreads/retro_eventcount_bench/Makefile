@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := retro_eventcount_bench
 
 LIBRETRO_COMM_DIR := ../../..
@@ -24,7 +26,7 @@ ifneq ($(SEM),)
    TARGET := retro_eventcount_bench_sem
 endif
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += $(EXTRA_CFLAGS) -Wall -pedantic -std=gnu99 -O2 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
@@ -46,10 +48,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) retro_eventcount_bench retro_eventcount_bench_scond retro_eventcount_bench_sem
 
 .PHONY: all clean

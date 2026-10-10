@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := hidraw_hid_test
 
 # The hidraw HID driver with the real pad handlers behind it, against
@@ -18,7 +20,7 @@ SOURCES := \
 	$(LRC)/features/features_cpu.c \
 	$(LRC)/encodings/encoding_utf.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 -U_FORTIFY_SOURCE -D_GNU_SOURCE \
            -DHAVE_HID -DHAVE_HIDRAW -DHAVE_THREADS \
@@ -37,6 +39,10 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
@@ -48,6 +54,7 @@ all check:
 endif
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: all check clean

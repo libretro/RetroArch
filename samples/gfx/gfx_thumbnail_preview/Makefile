@@ -1,5 +1,7 @@
 # HAVE_MMAP means POSIX mmap: the VFS and memmap take the Win32
 # mapping calls without it, the way the tree's own Windows build does.
+include ../../sample_objdir.mk
+
 ifeq ($(OS),Windows_NT)
 MMAP_DEF :=
 else
@@ -95,7 +97,7 @@ endif
 CFLAGS     += $(EXTRA_CFLAGS)
 UUT_CFLAGS += $(EXTRA_CFLAGS)
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # The decode test drives the real mixer directly (no gfx UUT, no
 # driver stubs), so it builds from its own leaner source list.  The
@@ -215,7 +217,7 @@ THREADED_DEFS   := -DHAVE_THREADS -DPREVIEW_THREADED
 THREADED_EXTRA  := $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
                    $(LIBRETRO_COMM_DIR)/rthreads/tpool.c \
                    $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c
-THREADED_OBJS   := $(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o)
+THREADED_OBJS   := $(call sample_objs,$(SOURCES:.c=.t.o) $(THREADED_EXTRA:.c=.t.o))
 
 all: $(TARGET) $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) $(PLATFORM_TARGETS) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(THREADED_TARGET)
 
@@ -322,6 +324,10 @@ $(LAYOUT_OBJ): settings_layout_uut.c
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -333,6 +339,10 @@ $(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
 # two builds never share one.
 
 %.t.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS) $(THREADED_DEFS)
+
+$(SAMPLE_OBJDIR)/%.t.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS) $(THREADED_DEFS)
 
 gfx_thumbnail_uut.t.o: $(UUT_SRC)
@@ -376,6 +386,7 @@ endif
 # a different SANITIZER=, and a clean that took the fixtures with it
 # left the following run globbing nothing.  Use distclean to drop them.
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \
 	      gfx_thumbnail_uut.t.o settings_layout_uut.t.o gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
 	      $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \

@@ -1,0 +1,41 @@
+name: CI Sample object directories
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+jobs:
+  sample-objdir-check:
+    name: Every sample builds its objects in its own directory
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Checker self-test
+        shell: bash
+        run: |
+          set -eu
+          python3 tools/sample_objdir_check.py --selftest
+
+      - name: Tree check
+        shell: bash
+        run: |
+          set -eu
+          # unity_identity once linked the ASan objects mic_handshake
+          # left beside the shared sources.
+          python3 tools/sample_objdir_check.py

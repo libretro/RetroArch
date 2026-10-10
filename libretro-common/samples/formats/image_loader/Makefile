@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := image_loader_test
 
 # The still loader (formats/image_texture.c) and the scale unit
@@ -38,7 +40,7 @@ SOURCES := image_loader_test.c \
            $(LIBRETRO_COMM_DIR)/time/rtime.c \
            $(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0 -DHAVE_RPNG -DHAVE_THREADS \
           -I$(LIBRETRO_COMM_DIR)/include
@@ -53,10 +55,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lm -lpthread
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(TARGET).exe $(OBJS)
 
 .PHONY: all clean

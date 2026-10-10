@@ -3,6 +3,8 @@
 # Builds where JACK is not installed (jack/ holds its public API) and
 # with mingw-w64:  make CC=x86_64-w64-mingw32-gcc check
 
+include ../../sample_objdir.mk
+
 CC       ?= gcc
 TARGET   := jack_runtime_test
 
@@ -40,11 +42,15 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET)
 
 %.o: %.c
+	$(CC) $(INCDIRS) $(CFLAGS) -c -o $@ $<
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) $(INCDIRS) $(CFLAGS) -c -o $@ $<
 
 $(TARGET): $(OBJS)
@@ -54,6 +60,7 @@ check: $(TARGET)
 	$(RUN)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) jack_runtime_test jack_runtime_test.exe
 
 .PHONY: all clean check

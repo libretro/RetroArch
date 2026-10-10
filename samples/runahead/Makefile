@@ -1,3 +1,5 @@
+include ../sample_objdir.mk
+
 compiler     := gcc
 TARGET       := runahead_copy_test
 
@@ -42,7 +44,7 @@ ifneq ($(SANITIZER),)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
 endif
 
-OBJS := $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 all: $(TARGET) runahead_tmpdir_test
 
@@ -69,6 +71,10 @@ runahead_copy_test.o: runahead_copy_fragment.c preempt_mask_fragment.c dense_cac
 %.o: %.c
 	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(INCDIRS) $(CFLAGS) $(flags) -c -o$@ $<
+
 $(TARGET): $(OBJS)
 	$(CC) -o$@ $(OBJS) $(LDFLAGS)
 
@@ -77,6 +83,7 @@ check: $(TARGET) runahead_tmpdir_test
 	./runahead_tmpdir_test
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) runahead_copy_fragment.c preempt_mask_fragment.c dense_cache_fragment.c preempt_slab_fragment.c runahead_tmpdir_fragment.c
 	rm -f $(TARGET) runahead_tmpdir_test
 

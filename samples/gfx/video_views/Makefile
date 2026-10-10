@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := video_views_test
 
 RARCH_DIR         := ../../..
@@ -8,7 +10,7 @@ SOURCES := \
 	video_views_test.c \
 	$(RARCH_DIR)/gfx/video_views.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -std=c89 -pedantic -Werror=declaration-after-statement -g -O1 \
            -I$(LIBRETRO_COMM_DIR)/include -I$(RARCH_DIR)
@@ -28,6 +30,11 @@ check: all
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<

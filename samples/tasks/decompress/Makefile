@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGETS := archive_name_safety_test decompress_window_test
 
 # decompress_window_test compiles the shipping tasks/task_decompress.c
@@ -30,7 +32,7 @@ WINDOW_SOURCES := decompress_window_test.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_posix_string.c \
            $(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c
 
-WINDOW_OBJS := $(WINDOW_SOURCES:.c=.o)
+WINDOW_OBJS := $(call sample_objs,$(WINDOW_SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=gnu99 -g -O0
 
@@ -46,7 +48,7 @@ WINDOW_LIBS   := -lz
 ifeq ($(BUILTIN_DEFLATE),1)
    WINDOW_CFLAGS  += -DARCHIVE_USE_BUILTIN_DEFLATE
    WINDOW_SOURCES += $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.c
-   WINDOW_OBJS    := $(WINDOW_SOURCES:.c=.o)
+   WINDOW_OBJS    := $(call sample_objs,$(WINDOW_SOURCES:.c=.o))
 else
    WINDOW_CFLAGS  += -DHAVE_ZLIB
 endif
@@ -69,7 +71,8 @@ archive_name_safety_test.o: archive_name_safety_test.c
 archive_name_safety_test: archive_name_safety_test.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-$(WINDOW_OBJS): %.o: %.c
+$(WINDOW_OBJS): %.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS) $(WINDOW_CFLAGS)
 
 decompress_window_test: $(WINDOW_OBJS)
@@ -80,6 +83,7 @@ check: all
 	./decompress_window_test
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGETS) archive_name_safety_test.o $(WINDOW_OBJS) \
 	      $(LIBRETRO_COMM_DIR)/encodings/encoding_deflate.o
 	rm -rf decompress_window_out decompress_window_fixture.zip

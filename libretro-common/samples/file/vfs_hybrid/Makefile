@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := vfs_hybrid_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -19,7 +21,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_hybrid.c \
 	$(LIBRETRO_COMM_DIR)/vfs/vfs_implementation.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # -DHAVE_MMAP so the local branch really produces a mapping; without
 # it the zero-copy check has nothing to assert and only reports a skip.
@@ -44,10 +46,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

@@ -1,6 +1,8 @@
 # record_ffmpeg end to end: frames and audio pushed from this thread,
 # taken by the driver's encoder thread, decoded back and checked.
 
+include ../../sample_objdir.mk
+
 CORE_DIR          := ../../..
 LIBRETRO_COMM_DIR := $(CORE_DIR)/libretro-common
 
@@ -43,7 +45,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/audio/resampler/drivers/nearest_resampler.c \
 	$(LIBRETRO_COMM_DIR)/memmap/memalign.c
 
-OBJS      := $(SOURCES_C:.c=.o)
+OBJS      := $(call sample_objs,$(SOURCES_C:.c=.o))
 
 FF_CFLAGS := $(shell pkg-config --cflags libavcodec libavformat libavutil libswscale libswresample 2>/dev/null)
 FF_LIBS   := $(shell pkg-config --libs   libavcodec libavformat libavutil libswscale libswresample 2>/dev/null)
@@ -68,7 +70,12 @@ $(TARGET): $(OBJS)
 %.o: %.c
 	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -std=gnu99 -c -o $@ $<
+
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) ffmpeg_pipeline_test.mkv
 
 .PHONY: clean

@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := icloud_drive_test
 
 CORE_DIR          = ../../..
@@ -23,7 +25,7 @@ SOURCES_C := \
 	$(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \
 	$(LIBRETRO_COMM_DIR)/time/rtime.c
 
-OBJS := $(SOURCES_M:.m=.o) $(SOURCES_C:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES_M:.m=.o) $(SOURCES_C:.c=.o))
 
 CFLAGS  += -Wall -g $(INCDIRS) -DHAVE_CLOUDSYNC
 OBJCFLAGS := $(CFLAGS) -fobjc-arc
@@ -43,13 +45,22 @@ $(TARGET): $(OBJS)
 %.o: %.m
 	$(CC) $(OBJCFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).m
+	@mkdir -p $(@D)
+	$(CC) $(OBJCFLAGS) -c -o $@ $<
+
 %.o: %.c
+	$(CC) $(CFLAGS) -c -o $@ $<
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 check: all
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

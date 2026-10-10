@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := gfx_thumbnail_anim_test
 
 # Path back to the repo root from this sample dir.  Links the real
@@ -78,7 +80,7 @@ LDFLAGS += -lm
 CFLAGS     += $(EXTRA_CFLAGS)
 UUT_CFLAGS += $(EXTRA_CFLAGS)
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS     := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -94,6 +96,10 @@ $(UUT_OBJ): $(UUT_SRC)
 	rm -f $@.tmp.o
 
 %.o: %.c
+	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
 # The preview session gfx_thumbnail now drives its window feeder and
@@ -122,6 +128,7 @@ sweep:
 	@echo "sweep clean"
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
 	   $(OUTCOME_OBJ)
 

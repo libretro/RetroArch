@@ -18,6 +18,8 @@
 #   make check SANITIZER=address
 #   make check SANITIZER=undefined
 
+include ../../sample_objdir.mk
+
 TARGET            := cloudsync_savefile_owner_test
 PATH_TARGET       := cloudsync_path_safety_test
 CORE_DIR          := ../../..
@@ -42,7 +44,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strcasestr.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 PATH_OBJS := cloudsync_path_safety_test.o
 
@@ -99,6 +101,10 @@ all: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET) $(PACING_TARGET) $(ASYNC_TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
@@ -122,6 +128,7 @@ check: $(TARGET) $(PATH_TARGET) $(ADDS_TARGET) $(PACING_TARGET) $(ASYNC_TARGET)
 	./$(ASYNC_TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(PATH_TARGET) $(PATH_OBJS) $(ADDS_TARGET) $(PACING_TARGET) $(ASYNC_TARGET)
 
 .PHONY: all check clean

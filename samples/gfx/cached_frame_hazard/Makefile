@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := cached_frame_hazard_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -10,7 +12,7 @@ SOURCES := \
 	cached_frame_hazard_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -std=gnu99 -g -O1 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
@@ -37,6 +39,11 @@ check: all
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(COMPILE.c) $(OUTPUT_OPTION) $<

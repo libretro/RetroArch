@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := ps3_ring_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -15,10 +17,10 @@ endif
 
 # audio_upmix.c for audio_layout_channels(), which the driver uses to
 # size the port; retro_spsc.c is the ring itself.
-OBJS := ps3_ring_test.o device_mock.o ps3_audio.o \
+OBJS := $(call sample_objs,ps3_ring_test.o device_mock.o ps3_audio.o \
 	../../../audio/audio_upmix.o \
 	$(LIBRETRO_COMM_DIR)/queues/retro_spsc.o \
-	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o
+	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o)
 
 all: $(TARGET)
 
@@ -31,10 +33,15 @@ ps3_audio.o: ../../../audio/drivers/ps3_audio.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: all
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

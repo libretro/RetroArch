@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := mpsc_stack_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -14,7 +16,7 @@ SOURCES := \
 	mpsc_stack_test.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS  += -Wall -pedantic -std=gnu99 -g -O0 \
            -DHAVE_THREADS -I$(LIBRETRO_COMM_DIR)/include
@@ -34,7 +36,12 @@ $(TARGET): $(OBJS)
 %.o: %.c $(LIBRETRO_COMM_DIR)/include/queues/mpsc_stack.h
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c $(LIBRETRO_COMM_DIR)/include/queues/mpsc_stack.h
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all clean

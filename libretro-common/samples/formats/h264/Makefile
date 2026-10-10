@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := rh264_lossless_test
 # The same oracle built without threads: a decoder path that is right
 # only with HAVE_THREADS - or wrong only without it - shows here.
@@ -16,10 +18,10 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
 	$(LIBRETRO_COMM_DIR)/rthreads/tpool.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 NOTHREADS_SOURCES := $(filter-out %/rthreads.c %/retro_eventcount.c %/tpool.c,$(SOURCES))
-NOTHREADS_OBJS    := $(NOTHREADS_SOURCES:.c=.nt.o)
-VOLATILE_OBJS     := $(SOURCES:.c=.vo.o)
+NOTHREADS_OBJS    := $(call sample_objs,$(NOTHREADS_SOURCES:.c=.nt.o))
+VOLATILE_OBJS     := $(call sample_objs,$(SOURCES:.c=.vo.o))
 
 # HAVE_THREADS: the oracle decodes every case on a pool as well, and
 # the threaded output has to be the single-thread output to the byte.
@@ -40,10 +42,18 @@ all: $(TARGET) $(TARGET_TEST) $(TARGET_VOLATILE)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 %.nt.o: %.c
+	$(CC) -c -o $@ $< $(filter-out -DHAVE_THREADS,$(CFLAGS))
+
+$(SAMPLE_OBJDIR)/%.nt.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(filter-out -DHAVE_THREADS,$(CFLAGS))
 
 $(TARGET_TEST): $(NOTHREADS_OBJS)
@@ -53,10 +63,16 @@ $(TARGET_TEST): $(NOTHREADS_OBJS)
 	$(CC) -c -o $@ $< $(CFLAGS) -DRETRO_ATOMIC_FORCE_VOLATILE \
 	   -DRETRO_ATOMIC_SUPPRESS_WARNING
 
+$(SAMPLE_OBJDIR)/%.vo.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS) -DRETRO_ATOMIC_FORCE_VOLATILE \
+	   -DRETRO_ATOMIC_SUPPRESS_WARNING
+
 $(TARGET_VOLATILE): $(VOLATILE_OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) $(LDLIBS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(TARGET_TEST) $(NOTHREADS_OBJS) \
 	   $(TARGET_VOLATILE) $(VOLATILE_OBJS)
 

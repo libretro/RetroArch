@@ -2,6 +2,8 @@
 # speaks KWin's output protocols: the modes it lists, the switch it asks
 # for, and both forms KWin has published outputs in.
 
+include ../../sample_objdir.mk
+
 TARGET    := wayland_kwin_output_test
 REPO_ROOT := ../../..
 LRC       := $(REPO_ROOT)/libretro-common
@@ -21,7 +23,7 @@ CFLAGS  += -Wall -std=gnu99 -g -O0 -DRARCH_INTERNAL -DHAVE_WAYLAND -D_GNU_SOURCE
            -I. -I$(REPO_ROOT) -I$(LRC)/include \
            $(shell pkg-config --cflags wayland-client wayland-server)
 LDFLAGS += $(shell pkg-config --libs wayland-client wayland-server) -lpthread
-OBJS    := $(SOURCES:.c=.o)
+OBJS    := $(call sample_objs,$(SOURCES:.c=.o))
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
    LDFLAGS := -fsanitize=$(SANITIZER) $(LDFLAGS)
@@ -37,10 +39,15 @@ kde-%-protocol.c: $(KDE_XML)/kde-%.xml
 $(OBJS): $(GENERATED) $(KDE_HDRS)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 check: $(TARGET)
 	./$(TARGET)
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(GENERATED)
 .PHONY: all check clean

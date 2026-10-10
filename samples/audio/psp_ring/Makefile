@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := psp_ring_test
 
 LIBRETRO_COMM_DIR := ../../../libretro-common
@@ -15,9 +17,9 @@ endif
 
 # Each driver is built for its own platform, against that platform's
 # compile-only SDK stubs; device_mock.c supplies the bodies.
-OBJS := psp_ring_test.o device_mock.o psp_audio.o psp2_audio.o ps4_audio.o \
+OBJS := $(call sample_objs,psp_ring_test.o device_mock.o psp_audio.o psp2_audio.o ps4_audio.o \
 	$(LIBRETRO_COMM_DIR)/rthreads/rthreads.o \
-	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o
+	$(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.o)
 
 all: $(TARGET)
 
@@ -44,10 +46,15 @@ device_mock.o: device_mock.c
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
+
 check: $(TARGET)
 	./$(TARGET)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(OBJS) $(TARGET)
 
 .PHONY: all check clean

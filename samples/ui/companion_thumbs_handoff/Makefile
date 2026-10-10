@@ -2,6 +2,8 @@
 # decoders: cache, workers, cancel, animation switching, preview audio
 # and the still-to-animation session handoff.
 
+include ../../sample_objdir.mk
+
 TARGET   := companion_thumbs_test
 CORE_DIR := ../../..
 LRC      := $(CORE_DIR)/libretro-common
@@ -18,7 +20,7 @@ SOURCES := companion_thumbs_test.c \
 CFLAGS  += -Wall -std=gnu99 -g -O1 -D_GNU_SOURCE -DHAVE_THREADS \
            -I$(CORE_DIR) -I$(LRC)/include
 LDFLAGS += -lpthread
-OBJS    := $(SOURCES:.c=.o)
+OBJS    := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
@@ -28,10 +30,15 @@ endif
 all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
+
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 check: $(TARGET)
 	./$(TARGET)
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 .PHONY: all check clean
