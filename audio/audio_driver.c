@@ -3066,6 +3066,10 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 {
    struct resampler_data src_data;
    const int16_t *s16_in          = NULL;
+   void    *lend                  = NULL;
+   size_t   lend_bytes            = 0;
+   float   *out_f;
+   int16_t *out_i;
    bool output_sanitized          = false;
    int snap                       = retro_atomic_load_acquire_int(
          &audio_st->runloop_snapshot);
@@ -3685,9 +3689,8 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
    }
 #endif
 
-   src_data.data_out                 = audio_st->output_samples_buf;
-
-   /* Now the resampler will write to the driver state's scratch buffer */
+   /* data_out is assigned below, once the destination is settled: the
+    * driver state's scratch, or a span the driver lent. */
 
    /* Readjust the audio input rate. Recomputed on the first flush after
     * audio_driver_frame_end() armed drc_pending, so the measurement lands
@@ -3754,6 +3757,38 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
             src_data.input_frames, (cap_f < cap_i) ? cap_f : cap_i);
    }
 
+   /* Threaded stereo path: borrow the driver's own buffer for the
+    * output stage, so what the write would copy into it is produced
+    * there. Taken after the pipe's room wait, which asked for this
+    * same bound; a span cut short by the driver's wrap falls back to
+    * the staged write, which splits the copy. */
+#ifdef HAVE_THREADS
+   if (     audio_st->pipe_threaded
+         && audio->write_begin && audio->write_end
+         && audio_st->out_channels <= 2
+         && !(audio_st->virtualize && audio_st->virt_buf))
+   {
+      size_t fb   = audio_driver_dev_frame_bytes(audio_st);
+      size_t need = audio_driver_output_bound(src_data.ratio,
+            src_data.input_frames) * fb;
+      size_t got  = audio->write_begin(audio_st->context_audio_data,
+            need, &lend);
+      if (!lend || got < need)
+      {
+         if (lend)
+            audio->write_end(audio_st->context_audio_data, 0);
+         lend = NULL;
+      }
+      else
+         lend_bytes = got;
+   }
+#endif
+   out_f = (lend && (aflags & AUDIO_FLAG_USE_FLOAT))
+         ? (float*)lend : audio_st->output_samples_buf;
+   out_i = (lend && !(aflags & AUDIO_FLAG_USE_FLOAT))
+         ? (int16_t*)lend : audio_st->output_samples_int16;
+   src_data.data_out = out_f;
+
    /* Unity passthrough: with dynamic rate control disabled the resampler
     * ratio is static, and when it is exactly 1.0 (input rate == output
     * rate, no slow-motion / fast-forward pitch change) the resampler would
@@ -3805,6 +3840,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                && !audio_st->pause_mute_frames)
          {
             /* s16 end to end: the input reaches the driver as it is. */
+            if (lend)
+            {
+               audio->write_end(audio_st->context_audio_data, 0);
+               lend = NULL;
+            }
             audio_st->stat_frontend_is_float = false;
             audio_st->resampler_bypassed     = true;
             audio_driver_extra_resample(audio_st, src_data.ratio,
@@ -3815,7 +3855,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          }
          /* A float device, the mixer or the ramp: one conversion,
           * straight to the output buffer.  s16 widened is in range. */
-         convert_s16_to_float(audio_st->output_samples_buf, s16_in,
+         convert_s16_to_float(out_f, s16_in,
                src_data.input_frames * 2, 1.0f);
          output_sanitized = true;
       }
@@ -3825,12 +3865,12 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
          )
       {
-         audio_driver_copy_clamp(audio_st->output_samples_buf,
+         audio_driver_copy_clamp(out_f,
                src_data.data_in, (unsigned)src_data.input_frames * 2);
          output_sanitized = true;
       }
       else
-         memcpy(audio_st->output_samples_buf, src_data.data_in,
+         memcpy(out_f, src_data.data_in,
                src_data.input_frames * 2 * sizeof(float));
       src_data.output_frames       = src_data.input_frames;
       audio_st->resampler_bypassed = true;
@@ -3888,11 +3928,11 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * unused until the float->s16 driver conversion further below. */
       if (audio_mixer_has_s16_voices())
          audio_mixer_fold_s16_voices_into_float(
-               audio_st->output_samples_buf,
+               out_f,
                audio_st->output_samples_int16,
                (unsigned)src_data.output_frames,
                mixer_gain, override);
-      audio_mixer_mix(audio_st->output_samples_buf,
+      audio_mixer_mix(out_f,
             src_data.output_frames, mixer_gain, override);
    }
 #endif
@@ -3901,7 +3941,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
     * It may not be played immediately, depending on
     * the driver implementation. */
    {
-      const void *output_data = audio_st->output_samples_buf;
+      const void *output_data = out_f;
       unsigned output_frames  = (unsigned)src_data.output_frames; /* Unit: frames */
       AUDIO_OUTPUT_BOUND_CHECK(output_frames,
             audio_driver_output_bound(src_data.ratio, src_data.input_frames));
@@ -3939,8 +3979,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
 #endif
          )
       {
-         audio_driver_copy_clamp(audio_st->output_samples_buf,
-               audio_st->output_samples_buf, output_frames * 2);
+         audio_driver_copy_clamp(out_f, out_f, output_frames * 2);
       }
 
       /* Resume ramp, and remember where the waveform got to: both belong on
@@ -3952,18 +3991,30 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
        * it narrowed. A wider device gets either widened on the way. */
       if (!(aflags & AUDIO_FLAG_USE_FLOAT))
       {
-         convert_float_to_s16(audio_st->output_samples_int16,
+         convert_float_to_s16(out_i,
                (const float*)output_data, output_frames * 2);
-         output_data          = audio_st->output_samples_int16;
+         output_data          = out_i;
       }
 
       AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_WROTE);
       {
          size_t  fb = audio_driver_dev_frame_bytes(audio_st);
-         ssize_t w  = audio_driver_write_frames(audio_st, audio, output_data,
-               output_frames,
-               (aflags & AUDIO_FLAG_USE_FLOAT) != 0, true);
-         audio_driver_retain_output(audio_st, output_data, output_frames, w);
+         ssize_t w;
+         if (lend)
+         {
+            /* The output is already in the driver's buffer; publish it. */
+            size_t bytes = (size_t)output_frames * fb;
+            if (bytes > lend_bytes)
+               bytes = lend_bytes;
+            w = audio->write_end(audio_st->context_audio_data, bytes);
+         }
+         else
+         {
+            w = audio_driver_write_frames(audio_st, audio, output_data,
+                  output_frames,
+                  (aflags & AUDIO_FLAG_USE_FLOAT) != 0, true);
+            audio_driver_retain_output(audio_st, output_data, output_frames, w);
+         }
          audio_st->sink_offered_raw += (uint64_t)output_frames;
          if (!audio_st->pipe_threaded)
             audio_st->sink_offered  += (double)output_frames * audio_st->src_ratio_orig / audio_st->src_ratio_curr;

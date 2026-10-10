@@ -2698,6 +2698,55 @@ static ssize_t wasapi_write_raw(wasapi_t *w, const void *data, size_t len)
    return _len;
 }
 
+/* The lend pair: the ring the pump drains, handed out span by span.
+ * Without the pump nothing drains a lent span, so without threads the
+ * pair refuses and write() keeps its inline drain; AC-3 frames are
+ * encapsulated inside write(), which a lend would skip. */
+static size_t wasapi_write_begin(void *wh, size_t len, void **region)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+   *region     = NULL;
+#ifdef HAVE_THREADS
+   if (!(w->flags & WASAPI_FLG_RUNNING) || w->ac3)
+      return 0;
+   {
+      void  *ptr  = NULL;
+      size_t room = wasapi_ring_room(w);
+      size_t span = retro_spsc_write_begin(&w->ring, &ptr);
+      if (span > room)
+         span = room;
+      if (span > len)
+         span = len;
+      if (!span || !ptr)
+      {
+         retro_spsc_write_end(&w->ring, 0);
+         return 0;
+      }
+      *region = ptr;
+      return span;
+   }
+#else
+   (void)w;
+   (void)len;
+   return 0;
+#endif
+}
+
+static ssize_t wasapi_write_end(void *wh, size_t len)
+{
+   wasapi_t *w = (wasapi_t*)wh;
+#ifdef HAVE_THREADS
+   retro_spsc_write_end(&w->ring, len);
+   if (len)
+      retro_atomic_store_release_int(&w->fed, 1);
+   return (ssize_t)len;
+#else
+   (void)w;
+   (void)len;
+   return -1;
+#endif
+}
+
 static bool wasapi_stop(void *wh)
 {
    wasapi_t *w = (wasapi_t*)wh;
@@ -3143,5 +3192,7 @@ audio_driver_t audio_wasapi = {
    wasapi_layout,
    wasapi_frames_consumed_fallback,
    wasapi_device_clock_ppm,
-   wasapi_thread_grant
+   wasapi_thread_grant,
+   wasapi_write_begin,
+   wasapi_write_end
 };

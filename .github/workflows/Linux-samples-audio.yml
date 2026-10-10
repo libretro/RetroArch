@@ -1189,6 +1189,16 @@ jobs:
           make clean
           make -j$(nproc) check SANITIZER=address,undefined
 
+      - name: Build and run lend_write_test (plain, ASan + UBSan)
+        working-directory: samples/audio/lend_write
+        run: |
+          # The driver lend pair: the pipeline produces its output in
+          # the driver's own buffer, bit-identical to the written
+          # stream, with write() never called while a lend is live.
+          make -j$(nproc) check
+          make clean
+          make -j$(nproc) check SANITIZER=address,undefined
+
       - name: Build and run extra-channel capacity test (ASan + UBSan)
         working-directory: samples/audio/extra_capacity
         run: |

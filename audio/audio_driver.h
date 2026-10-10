@@ -424,6 +424,23 @@ typedef struct audio_driver
     * statistics overlay; read from any thread. NULL where a driver
     * runs no thread of its own. */
    enum audio_thread_grant (*thread_grant)(void *data);
+
+   /* Optional pair, for a driver whose write() front is a buffer the
+    * frontend can produce into directly. write_begin lends the
+    * contiguous writable span at that buffer's head - up to len bytes
+    * of the driver's output format, possibly fewer, 0 when nothing is
+    * free or the driver cannot lend right now - without blocking and
+    * without publishing anything. The span is the frontend's until
+    * the matching write_end, which publishes its first len bytes (0
+    * abandons the lend) and returns them. At most one lend may be
+    * outstanding, and write() must not be called between the two.
+    * The threaded pipeline takes the pair after wait_writable() has
+    * reported the room, so the resampler and the format conversion
+    * land their output in the driver's own buffer instead of being
+    * copied into it; a driver without a lendable front leaves both
+    * NULL and keeps the copy inside write(). */
+   size_t  (*write_begin)(void *data, size_t len, void **region);
+   ssize_t (*write_end)(void *data, size_t len);
 } audio_driver_t;
 
 /* What a driver's device-clock word holds until it has an estimate.
