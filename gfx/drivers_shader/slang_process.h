@@ -121,6 +121,10 @@ typedef struct
    size_t size_stride;
 } texture_map_t;
 
+/* A driver that sets uniforms[SLANG_SEMANTIC_ORIGINAL_RECT] (and the
+ * clamp's and texels') may bind the frame inside a larger texture:
+ * slang_process() rewrites each pass to read it through them where it
+ * can, as slang_rect.h describes. */
 typedef struct
 {
    texture_map_t textures[SLANG_NUM_TEXTURE_SEMANTICS];
@@ -164,6 +168,9 @@ typedef struct
     * false when it was derived from preset FBO flags.  Backends must only
     * apply last-pass HDR heuristics to a shader-declared format. */
    bool                explicit_format;
+   /* The pass reads the frame wherever it lies in its texture, through
+    * the rect semantics, or does not read it: see semantics_map_t. */
+   bool                frame_in_place;
 } pass_semantics_t;
 
 

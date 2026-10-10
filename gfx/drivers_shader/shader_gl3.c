@@ -1349,74 +1349,11 @@ static void gl3_pass_set_pass_number(struct gl3_pass *pass, unsigned number)
  * copied out. */
 static void gl3_pass_read_frame_in_place(struct gl3_pass *pass)
 {
-   struct slang_rect_place place;
-   enum slang_rect_result  vres, fres;
-   uint32_t *vs     = NULL;
-   uint32_t *fs     = NULL;
-   size_t    vs_len = 0;
-   size_t    fs_len = 0;
-   uint32_t  vend, fend;
-
-   pass->frame_copy = true;
-   place.where      = SLANG_RECT_PUSH;
-   place.set        = 0;
-   place.binding    = 0;
-   place.offset     = 0;
-   vend = slang_rect_block_end(pass->vertex_shader,
-         pass->num_vertex_shader, &place);
-   fend = slang_rect_block_end(pass->fragment_shader,
-         pass->num_fragment_shader, &place);
-   if (vend == ~0u || fend == ~0u)
-      return;
-   place.offset = MAX(vend, fend);
-
-   /* Push constants are scarce: the uniform block takes what does not
-    * fit. */
-   if (((place.offset + 15) & ~15u) + 48 > SLANG_RECT_PUSH_LIMIT)
-   {
-      if (     !slang_rect_uniform_block(pass->vertex_shader,
-                  pass->num_vertex_shader, &place.set, &place.binding)
-            && !slang_rect_uniform_block(pass->fragment_shader,
-                  pass->num_fragment_shader, &place.set, &place.binding))
-         return;
-      place.where  = SLANG_RECT_UBO;
-      place.offset = 0;
-      vend = slang_rect_block_end(pass->vertex_shader,
-            pass->num_vertex_shader, &place);
-      fend = slang_rect_block_end(pass->fragment_shader,
-            pass->num_fragment_shader, &place);
-      if (vend == ~0u || fend == ~0u)
-         return;
-      place.offset = MAX(vend, fend);
-   }
-
-   vres = slang_rect_remap(pass->vertex_shader, pass->num_vertex_shader,
+   pass->frame_copy = !slang_rect_remap_pass(
+         &pass->vertex_shader, &pass->num_vertex_shader,
+         &pass->fragment_shader, &pass->num_fragment_shader,
          pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap, &place, &vs, &vs_len);
-   fres = slang_rect_remap(pass->fragment_shader, pass->num_fragment_shader,
-         pass->pass_number == 0, pass->common->frame_linear,
-         pass->common->frame_wrap, &place, &fs, &fs_len);
-
-   if (vres != SLANG_RECT_UNSUPPORTED && fres != SLANG_RECT_UNSUPPORTED)
-   {
-      pass->frame_copy = false;
-      if (vres == SLANG_RECT_REWRITTEN)
-      {
-         free(pass->vertex_shader);
-         pass->vertex_shader     = vs;
-         pass->num_vertex_shader = vs_len;
-         vs                      = NULL;
-      }
-      if (fres == SLANG_RECT_REWRITTEN)
-      {
-         free(pass->fragment_shader);
-         pass->fragment_shader     = fs;
-         pass->num_fragment_shader = fs_len;
-         fs                        = NULL;
-      }
-   }
-   free(vs);
-   free(fs);
+         pass->common->frame_wrap);
 }
 
 static bool gl3_pass_build(struct gl3_pass *pass)

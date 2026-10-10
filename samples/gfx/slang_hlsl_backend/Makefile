@@ -3,12 +3,13 @@ include ../../sample_objdir.mk
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
-# The real slang_process.c and glslang_util.c, the pass read from
-# memory; SPIRV-Cross from the unity build's griffin_cpp.cpp, compiled
-# once per configuration so each gets the HLSL emitter exactly when
-# that build would.
+# The real slang_process.c, slang_rect.c and glslang_util.c, the pass
+# read from memory; SPIRV-Cross from the unity build's griffin_cpp.cpp,
+# compiled once per configuration so each gets the HLSL emitter exactly
+# when that build would.
 C_SOURCES := slang_hlsl_backend_test.c \
              $(REPO_ROOT)/gfx/drivers_shader/slang_process.c \
+             $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
              $(REPO_ROOT)/gfx/drivers_shader/glslang_util.c \
              $(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
              $(LIBRETRO_COMM_DIR)/encodings/encoding_utf.c \

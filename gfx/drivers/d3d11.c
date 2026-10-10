@@ -74,6 +74,7 @@
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
 #include "../drivers_shader/slang_process.h"
+#include "../drivers_shader/slang_rect.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
 #endif
@@ -389,6 +390,17 @@ typedef struct
       D3D11ShaderResourceView view;
       bool                    eligible;
    } hw_direct;
+   /* Where the frame lies in the texture a preset's passes read it
+    * from: slang_rect.h's three vec4s, for the passes slang_process()
+    * rewrote to read it there. A hardware frame in the corner of a
+    * larger texture is read there by a preset whose passes all can. */
+   struct
+   {
+      float rect[4];
+      float clamp[4];
+      float texels[4];
+      bool  seen;
+   } frame_rect;
    /* A software frame for the stock chain is written straight into
     * this dynamic texture, mapped WRITE_DISCARD so a frame the GPU still
     * reads is renamed rather than waited for, and drawn from it through
@@ -2829,6 +2841,21 @@ static void d3d11_deferred_state_free(
 }
 #endif
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
+/* A hardware core's frame may lie in the corner of a larger texture:
+ * the preset's passes are rewritten to read it there where they can,
+ * through d3d11->frame_rect. */
+static void d3d11_frame_rect_semantics(d3d11_video_t *d3d11,
+      semantics_map_t *map)
+{
+   if (!(d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE))
+      return;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d11->frame_rect.rect;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d11->frame_rect.clamp;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d11->frame_rect.texels;
+}
+#endif
+
 static bool d3d11_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
 {
@@ -2907,6 +2934,7 @@ static bool d3d11_shader_load_step(void *data,
             }
          };
 
+         d3d11_frame_rect_semantics(d3d11, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL,
                   ds->shader_model, &semantics_map,
@@ -3254,6 +3282,7 @@ static bool d3d11_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       };
       /* clang-format on */
 
+      d3d11_frame_rect_semantics(d3d11, &semantics_map);
       if (!slang_process(
                d3d11->shader_preset, i, RARCH_SHADER_HLSL, shader_model,
                &semantics_map,
@@ -5150,19 +5179,52 @@ static bool d3d11_sw_direct_upload(d3d11_video_t *d3d11,
 /* Whether a preset's passes may read the frame where it is, through
  * hw_direct.view, as Original and as the first pass's Source: when it
  * keeps no history, which is copied out of frame.texture[0], and the
- * frame is the whole of a texture of one level, @texture's, or with
- * NULL sw_direct's. */
+ * frame is in a texture of one level, @texture's, or with NULL
+ * sw_direct's - the whole of it, or its corner when every pass reads
+ * the frame through the rectangle. */
 static bool d3d11_preset_reads_in_place(d3d11_video_t *d3d11,
       D3D11Texture2D texture, unsigned width, unsigned height)
 {
+   unsigned i;
    D3D11_TEXTURE2D_DESC desc;
    if (d3d11->shader_preset->history_size)
       return false;
    if (!texture)
       return true;
    texture->lpVtbl->GetDesc(texture, &desc);
-   return desc.Width == width && desc.Height == height
-      && desc.MipLevels == 1 && desc.ArraySize == 1;
+   if (     desc.MipLevels != 1 || desc.ArraySize != 1
+         || desc.Width < width  || desc.Height < height)
+      return false;
+   if (desc.Width == width && desc.Height == height)
+      return true;
+   for (i = 0; i < d3d11->shader_preset->passes; i++)
+      if (!d3d11->pass[i].semantics.frame_in_place)
+         return false;
+   return true;
+}
+
+/* The frame's rectangle, at the origin of a tex_width x tex_height
+ * texture, for the passes that read it through it. */
+static void d3d11_frame_rect_set(d3d11_video_t *d3d11,
+      unsigned width, unsigned height,
+      unsigned tex_width, unsigned tex_height)
+{
+   float w  = (float)width;
+   float h  = (float)height;
+   float tw = (float)tex_width;
+   float th = (float)tex_height;
+   d3d11->frame_rect.rect[0]   = w / tw;
+   d3d11->frame_rect.rect[1]   = h / th;
+   d3d11->frame_rect.rect[2]   = 0.0f;
+   d3d11->frame_rect.rect[3]   = 0.0f;
+   d3d11->frame_rect.clamp[0]  = (0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   d3d11->frame_rect.clamp[1]  = (0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   d3d11->frame_rect.clamp[2]  = (w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   d3d11->frame_rect.clamp[3]  = (h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   d3d11->frame_rect.texels[0] = w;
+   d3d11->frame_rect.texels[1] = h;
+   d3d11->frame_rect.texels[2] = 0.0f;
+   d3d11->frame_rect.texels[3] = 0.0f;
 }
 
 static D3D11ShaderResourceView d3d11_hw_direct_view(d3d11_video_t *d3d11,
@@ -5558,13 +5620,27 @@ static bool d3d11_gfx_frame_body(
 
       /* A frame that arrives any other way is drawn from
        * frame.texture[0] as always. */
+      d3d11_frame_rect_set(d3d11, width, height, width, height);
       if (!hw_texture || !d3d11->hw_direct.eligible
             || (     d3d11->shader_preset && video_info->shader_active
                  && !d3d11_preset_reads_in_place(d3d11, hw_texture,
                     width, height)))
          d3d11->hw_direct.view = NULL;
       else
+      {
+         D3D11_TEXTURE2D_DESC desc;
+         hw_texture->lpVtbl->GetDesc(hw_texture, &desc);
+         d3d11_frame_rect_set(d3d11, width, height,
+               desc.Width, desc.Height);
+         if (     (desc.Width != width || desc.Height != height)
+               && !d3d11->frame_rect.seen)
+         {
+            d3d11->frame_rect.seen = true;
+            RARCH_LOG("[D3D11] Preset reads frames where the core leaves "
+                  "them.\n");
+         }
          d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
+      }
       d3d11->hw_direct.eligible = false;
 
       if (hw_texture && d3d11->hw_direct.view)

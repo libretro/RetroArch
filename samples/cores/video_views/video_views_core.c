@@ -1084,10 +1084,16 @@ static void d3d_context_destroy(void)
    d3d = NULL;
 }
 
+/* With the large maximum the frame is drawn into the corner of a
+ * texture of the regular maximum's size, as a core rendering at a
+ * varying resolution does. */
 static bool d3d_send(unsigned fw, unsigned fh)
 {
    unsigned i, k;
+   D3D11_BOX box;
    ID3D11DeviceContext *ctx;
+   unsigned tw = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_W : fw;
+   unsigned th = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_H : fh;
    if (!d3d)
       return false;
    i = d3d->get_sync_index(d3d->handle);
@@ -1097,15 +1103,15 @@ static bool d3d_send(unsigned fw, unsigned fh)
    /* Always taken; true only says the frontend has used the context,
     * and an upload binds nothing. */
    d3d->lock_context(d3d->handle);
-   if (!d3d_tex[i] || d3d_dims[i] != (fw << 16 | fh))
+   if (!d3d_tex[i] || d3d_dims[i] != (tw << 16 | th))
    {
       D3D11_TEXTURE2D_DESC desc;
       if (d3d_tex[i])
          d3d_tex[i]->lpVtbl->Release(d3d_tex[i]);
       d3d_tex[i]              = NULL;
       memset(&desc, 0, sizeof(desc));
-      desc.Width              = fw;
-      desc.Height             = fh;
+      desc.Width              = tw;
+      desc.Height             = th;
       desc.MipLevels          = 1;
       desc.ArraySize          = 1;
       desc.Format             = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -1119,14 +1125,20 @@ static bool d3d_send(unsigned fw, unsigned fh)
          d3d->unlock_context(d3d->handle);
          return false;
       }
-      d3d_dims[i] = fw << 16 | fh;
+      d3d_dims[i] = tw << 16 | th;
    }
    /* XRGB: the X byte is the texture's alpha. */
    for (k = 0; k < fw * fh; k++)
       frame_buf[k] |= 0xFF000000u;
-   ctx = d3d->context;
+   ctx        = d3d->context;
+   box.left   = 0;
+   box.top    = 0;
+   box.front  = 0;
+   box.right  = fw;
+   box.bottom = fh;
+   box.back   = 1;
    ctx->lpVtbl->UpdateSubresource(ctx, (ID3D11Resource*)d3d_tex[i], 0,
-         NULL, frame_buf, fw * sizeof(uint32_t), 0);
+         &box, frame_buf, fw * sizeof(uint32_t), 0);
    d3d->set_texture(d3d->handle, d3d_tex[i]);
    d3d->unlock_context(d3d->handle);
    return true;

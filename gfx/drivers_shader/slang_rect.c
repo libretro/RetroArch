@@ -1875,3 +1875,68 @@ end:
    srect_rect_free(&r);
    return res;
 }
+
+bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
+      uint32_t **fs, size_t *fs_words,
+      bool source, bool linear, enum slang_rect_wrap wrap)
+{
+   struct slang_rect_place place;
+   enum slang_rect_result  vres, fres;
+   uint32_t *vout     = NULL;
+   uint32_t *fout     = NULL;
+   size_t    vout_len = 0;
+   size_t    fout_len = 0;
+   uint32_t  vend, fend;
+
+   place.where   = SLANG_RECT_PUSH;
+   place.set     = 0;
+   place.binding = 0;
+   place.offset  = 0;
+   vend = slang_rect_block_end(*vs, *vs_words, &place);
+   fend = slang_rect_block_end(*fs, *fs_words, &place);
+   if (vend == ~0u || fend == ~0u)
+      return false;
+   place.offset = vend > fend ? vend : fend;
+
+   /* Push constants are scarce: the uniform block takes what does not
+    * fit. */
+   if (((place.offset + 15) & ~15u) + 48 > SLANG_RECT_PUSH_LIMIT)
+   {
+      if (     !slang_rect_uniform_block(*vs, *vs_words,
+                  &place.set, &place.binding)
+            && !slang_rect_uniform_block(*fs, *fs_words,
+                  &place.set, &place.binding))
+         return false;
+      place.where  = SLANG_RECT_UBO;
+      place.offset = 0;
+      vend = slang_rect_block_end(*vs, *vs_words, &place);
+      fend = slang_rect_block_end(*fs, *fs_words, &place);
+      if (vend == ~0u || fend == ~0u)
+         return false;
+      place.offset = vend > fend ? vend : fend;
+   }
+
+   vres = slang_rect_remap(*vs, *vs_words, source, linear, wrap, &place,
+         &vout, &vout_len);
+   fres = slang_rect_remap(*fs, *fs_words, source, linear, wrap, &place,
+         &fout, &fout_len);
+   if (vres == SLANG_RECT_UNSUPPORTED || fres == SLANG_RECT_UNSUPPORTED)
+   {
+      free(vout);
+      free(fout);
+      return false;
+   }
+   if (vres == SLANG_RECT_REWRITTEN)
+   {
+      free(*vs);
+      *vs       = vout;
+      *vs_words = vout_len;
+   }
+   if (fres == SLANG_RECT_REWRITTEN)
+   {
+      free(*fs);
+      *fs       = fout;
+      *fs_words = fout_len;
+   }
+   return true;
+}

@@ -1,0 +1,3 @@
+shaders = 1
+shader0 = rect.slang
+wrap_mode0 = clamp_to_border
