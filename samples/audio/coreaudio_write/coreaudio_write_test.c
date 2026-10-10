@@ -259,6 +259,55 @@ static void fragment_buffer(unsigned channels)
    free(dev.buffer);
 }
 
+/* The lend pair, as the threaded pipeline takes it: wait for room, lend,
+ * fill, publish. Every sample plays in order across the ring's wrap, the
+ * spans stop at the wrap in whole frames, the first publish starts the
+ * unit, and a paused unit lends nothing. */
+static void lend(unsigned ms, unsigned channels, unsigned frames)
+{
+   coreaudio_t dev;
+   size_t total = frames * channels * sizeof(float), done = 0;
+   unsigned laps = 0, fallbacks = 0, lent = 0;
+   bool aligned = true;
+   char label[100];
+   void *region;
+   init(&dev, ms, channels);
+   while (done < total && laps++ < 100000)
+   {
+      size_t want = total - done, got;
+      if (want > dev.period_pull * channels * sizeof(float))
+         want = dev.period_pull * channels * sizeof(float);
+      coreaudio_wait_writable(&dev, want);
+      got = coreaudio_write_begin(&dev, want, &region);
+      if (!got)
+      {
+         /* A frame straddles the wrap: the frontend's fallback. */
+         done += (size_t)coreaudio_write(&dev, (const char*)input + done,
+               channels * sizeof(float));
+         fallbacks++;
+         continue;
+      }
+      if (got % (channels * sizeof(float)) || got > want)
+         aligned = false;
+      memcpy(region, (const char*)input + done, got);
+      done += (size_t)coreaudio_write_end(&dev, got);
+      lent++;
+   }
+   CHECK(lent > fallbacks, "the lend carries the stream, write() only the straddles");
+   sprintf(label, "%u ms / %u channels / %u frames: all of it lent", ms, channels, frames);
+   CHECK(done == total, label);
+   CHECK(aligned, "every lent span is whole frames within what was asked");
+   CHECK(dev.unit_running, "a publish starts the unit");
+   while (retro_atomic_load_acquire_size(&dev.filled))
+      render(&dev);
+   CHECK(played >= frames * channels && !memcmp(input, output, total),
+         "every lent sample played in order across the wrap");
+   dev.is_paused = true;
+   CHECK(!coreaudio_write_begin(&dev, 64, &region) && !region,
+         "a paused unit lends nothing");
+   free(dev.buffer);
+}
+
 int main(int argc, char **argv)
 {
    coreaudio_t dev;
@@ -299,6 +348,10 @@ int main(int argc, char **argv)
       for (j = 2; j <= 6; j += 4)
          for (k = 0; k < 4; k++)
             batch(latencies[i], j, frames[k]);
+   for (i = 0; i < 3; i++)
+      for (j = 2; j <= 6; j += 4)
+         for (k = 0; k < 4; k++)
+            lend(latencies[i], j, frames[k]);
 
    init(&dev, 8, 2);
    frozen = true;

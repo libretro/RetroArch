@@ -32,7 +32,8 @@ def main():
     names = ("rb_write_avail", "rb_write", "rb_read", "coreaudio_signal",
              "coreaudio_wait", "coreaudio_audio_write_cb", "coreaudio_run",
              "coreaudio_unit_stalled", "coreaudio_write",
-             "coreaudio_wait_writable")
+             "coreaudio_wait_writable", "coreaudio_write_begin",
+             "coreaudio_write_end")
     fixture = (HERE / "coreaudio_write_test.c").read_text()
     fixture = fixture.replace("/* DRIVER_FUNCTIONS */", "\n\n".join(function(source, n) for n in names))
     if args.build_dir:

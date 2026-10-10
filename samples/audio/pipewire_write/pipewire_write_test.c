@@ -60,14 +60,16 @@ bool pipewire_loop_wait_ms(struct pw_thread_loop *loop, unsigned ms)
    return true;
 }
 
+static enum pw_stream_state g_state = PW_STREAM_STATE_STREAMING;
+static unsigned             g_locks;
 enum pw_stream_state pw_stream_get_state(struct pw_stream *stream, const char **error)
 {
    (void)stream;
    if (error)
       *error = NULL;
-   return PW_STREAM_STATE_STREAMING;
+   return g_state;
 }
-void pw_thread_loop_lock(struct pw_thread_loop *loop)   { (void)loop; }
+void pw_thread_loop_lock(struct pw_thread_loop *loop)   { (void)loop; g_locks++; }
 void pw_thread_loop_unlock(struct pw_thread_loop *loop) { (void)loop; }
 void pw_thread_loop_signal(struct pw_thread_loop *loop, bool wait) { (void)loop; (void)wait; }
 
@@ -184,6 +186,59 @@ int main(void)
          "a playback cycle with no buffer is counted",
          retro_atomic_load_acquire_size(&g_audio->xruns), 1);
    CHECK(log_lines == 0, "the playback callback logs nothing", log_lines, 0);
+
+   /* The lend pair: the ring's span to its wrap, published as a write
+    * would put it, with no loop lock; refused while not streaming, and
+    * on a full ring; abandoned, nothing. */
+   {
+      static uint8_t back[HIGHWATER];
+      uint8_t *region = NULL;
+      size_t   got, i;
+      uint32_t ridx;
+      g_audio->stream = (struct pw_stream*)(uintptr_t)1;
+      spa_ringbuffer_init(&g_audio->ring);
+      /* Two frames short of the ring's wrap, so the span stops there. */
+      g_audio->ring.readindex  = RINGBUFFER_SIZE - 2 * FRAME;
+      g_audio->ring.writeindex = RINGBUFFER_SIZE - 2 * FRAME;
+      g_locks = 0;
+      got = pwire_write_begin(g_audio, 64 * FRAME, (void**)&region);
+      CHECK(region && got == 2 * FRAME, "a lend stops at the ring's wrap", got, 2 * FRAME);
+      if (region)
+         memset(region, 0x5a, got);
+      CHECK(pwire_write_end(g_audio, got) == (ssize_t)got, "and publishes it", got, got);
+      got = pwire_write_begin(g_audio, 64 * FRAME, (void**)&region);
+      CHECK(region && got == 64 * FRAME, "the next starts at the ring's head", got, 64 * FRAME);
+      for (i = 0; region && i < got; i++)
+         region[i] = (uint8_t)i;
+      pwire_write_end(g_audio, got);
+      CHECK(g_locks == 0, "the lend takes no loop lock", g_locks, 0);
+      filled = spa_ringbuffer_get_read_index(&g_audio->ring, &ridx);
+      CHECK(filled == (int32_t)(66 * FRAME), "both spans are in the ring", filled, 66 * FRAME);
+      spa_ringbuffer_read_data(&g_audio->ring, g_audio->buffer, RINGBUFFER_SIZE,
+            ridx & RINGBUFFER_MASK, back, 66 * FRAME);
+      CHECK(back[0] == 0x5a && back[2 * FRAME - 1] == 0x5a, "the first reads back", back[0], 0x5a);
+      for (i = 0; i < 64 * FRAME; i++)
+         if (back[2 * FRAME + i] != (uint8_t)i)
+            break;
+      CHECK(i == 64 * FRAME, "the second reads back across the wrap", i, 64 * FRAME);
+      spa_ringbuffer_read_update(&g_audio->ring, ridx + 66 * FRAME);
+
+      got = pwire_write_begin(g_audio, 16 * FRAME, (void**)&region);
+      pwire_write_end(g_audio, 0);
+      filled = spa_ringbuffer_get_write_index(&g_audio->ring, &idx);
+      CHECK(got && filled == 0, "an abandoned lend publishes nothing", filled, 0);
+
+      core.nonblock = true;
+      pwire_write(g_audio, samples, HIGHWATER);
+      CHECK(!pwire_write_begin(g_audio, FRAME, (void**)&region) && !region,
+            "a ring at the mark lends nothing", 0, 0);
+      pipewire_loop_wait_ms(NULL, 0);
+      g_state = PW_STREAM_STATE_PAUSED;
+      CHECK(!pwire_write_begin(g_audio, FRAME, (void**)&region) && !region,
+            "a paused stream lends nothing", 0, 0);
+      g_state = PW_STREAM_STATE_STREAMING;
+      g_audio->stream = NULL;
+   }
 
    free(g_audio);
 

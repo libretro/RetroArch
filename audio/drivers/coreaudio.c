@@ -1870,6 +1870,42 @@ static size_t coreaudio_frames_consumed_fallback(void *data)
    return retro_atomic_load_acquire_size(&dev->consumed) / dev->channels;
 }
 
+/* The lend pair: the ring the render callback drains, handed out to
+ * its wrap, in whole frames. A paused unit refuses; write() is what
+ * a stopped unit sees. */
+static size_t coreaudio_write_begin(void *data, size_t len, void **region)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t span;
+   *region = NULL;
+   if (!dev || dev->is_paused || !dev->channels)
+      return 0;
+   span = dev->capacity - dev->write_ptr;
+   if (span > rb_write_avail(dev))
+      span = rb_write_avail(dev);
+   if (span > len / sizeof(float))
+      span = len / sizeof(float);
+   span -= span % dev->channels;
+   if (!span)
+      return 0;
+   *region = dev->buffer + dev->write_ptr;
+   return span * sizeof(float);
+}
+
+static ssize_t coreaudio_write_end(void *data, size_t len)
+{
+   coreaudio_t *dev = (coreaudio_t*)data;
+   size_t samples   = len / sizeof(float);
+   samples         -= samples % dev->channels;
+   if (samples)
+   {
+      dev->write_ptr = (dev->write_ptr + samples) & (dev->capacity - 1);
+      retro_atomic_fetch_add_size(&dev->filled, samples);
+      coreaudio_run(dev, false);
+   }
+   return (ssize_t)(samples * sizeof(float));
+}
+
 audio_driver_t audio_coreaudio = {
    coreaudio_init,
    coreaudio_write,
@@ -1890,7 +1926,10 @@ audio_driver_t audio_coreaudio = {
    coreaudio_underruns,
    coreaudio_layout,
    coreaudio_frames_consumed_fallback,
-   coreaudio_device_clock_ppm
+   coreaudio_device_clock_ppm,
+   NULL, /* thread_grant */
+   coreaudio_write_begin,
+   coreaudio_write_end
 };
 
 
