@@ -42,6 +42,7 @@ unsigned opensl_mock_num_buffers(void);       /* numBuffers the player was creat
 unsigned opensl_mock_buffer_bytes(void);      /* the size of the blocks enqueued */
 unsigned opensl_mock_rate_milli(void);
 int      opensl_mock_is_float(void);
+const uint8_t *opensl_mock_capture(size_t *len); /* the bytes the device played, in order */
 size_t   opensl_mock_consumed(void);          /* blocks the device has played */
 unsigned opensl_mock_enqueue_failures(void);
 int      opensl_mock_playing(void);

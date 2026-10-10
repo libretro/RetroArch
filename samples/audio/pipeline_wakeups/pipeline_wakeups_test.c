@@ -153,6 +153,10 @@ static retro_atomic_int_t  dev_running   = RETRO_ATOMIC_INT_INITIALIZER(1);
 
 static retro_atomic_size_t cnt_wakes;      /* returns from consume()      */
 static retro_atomic_size_t cnt_writes;     /* calls that reached write()  */
+/* Writes a lending device that applies backpressure still took
+ * through write(). Without backpressure the device drops what does not
+ * fit, which only a staged write can do. */
+static retro_atomic_size_t cnt_staged;
 /* Notified by every device write and pull: the waits below wake on the
  * pipeline's own activity rather than on a timer. */
 static retro_eventcount_t  progress_ev;
@@ -373,6 +377,8 @@ static ssize_t cdev_write(void *data, const void *buf, size_t len)
 
    note_write();
    tap_samples(buf, samples);
+   if (dev_backpressure)
+      retro_atomic_fetch_add_size(&cnt_staged, 1);
 
    /* No backpressure: take it all, keep what the ring has room for and
     * drop the rest. A driver that never makes the caller wait. */
@@ -1554,8 +1560,10 @@ report:
    }
    if (clocked_driver.write_begin)
    {
-      size_t lends = retro_atomic_load_acquire_size(&cnt_lends);
-      printf("lend: %u spans produced in the device's ring\n", (unsigned)lends);
+      size_t lends  = retro_atomic_load_acquire_size(&cnt_lends);
+      size_t staged = retro_atomic_load_acquire_size(&cnt_staged);
+      printf("lend: %u spans produced in the device's ring, %u staged writes\n",
+            (unsigned)lends, (unsigned)staged);
       if (!lends)
       {
          fprintf(stderr, "the pipeline never reached the device's lend\n");

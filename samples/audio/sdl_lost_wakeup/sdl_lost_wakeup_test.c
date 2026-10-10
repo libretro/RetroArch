@@ -174,6 +174,55 @@ static void run_one(unsigned latency_ms, double seconds)
    drv->free(ctx);
 }
 
+/* --- the lend pair --------------------------------------------------- */
+
+/* The ring's span lent, filled and published as the threaded pipeline
+ * does, against SDL's dummy device draining it: whole frames, the
+ * device's pulls advancing, and none while stopped. */
+static unsigned lend_failures;
+static void run_lend(unsigned latency_ms)
+{
+   const audio_driver_t *drv = &audio_sdl2;
+   void        *ctx, *region;
+   unsigned     out_rate = OUT_RATE;
+   size_t       frame    = CHANNELS * sizeof(int16_t);
+   size_t       block    = (size_t)(OUT_RATE / FPS) * frame;
+   size_t       lent = 0, spans = 0, i, before;
+   sdl2_audio_t *sdl;
+
+   if (!(ctx = drv->init(NULL, OUT_RATE, latency_ms, &out_rate)))
+   {
+      printf("  %3u ms: device would not open\n", latency_ms);
+      return;
+   }
+   sdl = (sdl2_audio_t*)ctx;
+   drv->start(ctx, false);
+   drv->set_nonblock_state(ctx, false);
+   before = retro_atomic_load_acquire_size(&sdl->consumed_bytes);
+   for (i = 0; i < (size_t)FPS; i++)
+   {
+      size_t got;
+      drv->wait_writable(ctx, block);
+      got = drv->write_begin(ctx, block, &region);
+      if (!got)
+         continue;
+      if (got % frame || got > block)
+         lend_failures++;
+      memset(region, 0, got);
+      lent += (size_t)drv->write_end(ctx, got);
+      spans++;
+   }
+   printf("  %3u ms: %u spans, %u bytes lent, device pulled %u bytes\n",
+         latency_ms, (unsigned)spans, (unsigned)lent,
+         (unsigned)(retro_atomic_load_acquire_size(&sdl->consumed_bytes) - before));
+   if (!spans || retro_atomic_load_acquire_size(&sdl->consumed_bytes) == before)
+      lend_failures++;
+   drv->stop(ctx);
+   if (drv->write_begin(ctx, block, &region) || region)
+      lend_failures++;
+   drv->free(ctx);
+}
+
 /* --- the capture half ------------------------------------------------ */
 
 /* The same question on the microphone path: the capture callback
@@ -289,7 +338,16 @@ int main(int argc, char **argv)
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_capture(sweep[i], seconds);
 
+   printf("\n-- the lend pair --\n");
+   for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
+      run_lend(sweep[i]);
+
    free(wait_us);
+   if (lend_failures)
+   {
+      printf("sdl lost wakeup: %u lend failure(s)\n", lend_failures);
+      return 1;
+   }
    printf("sdl lost wakeup: run complete\n");
    return 0;
 }

@@ -482,6 +482,23 @@ static bool sl_start(void *data, bool is_shutdown)
    return sl->is_paused ? false : true;
 }
 
+/* The filled block at the index onto the device. A block the device
+ * refused is not on the device: it is not counted, and the index
+ * stays on it. */
+static bool sl_enqueue(sl_t *sl)
+{
+   SLresult res = (*sl->buffer_queue)->Enqueue(sl->buffer_queue,
+         sl->buffer[sl->buffer_index], sl->buf_size);
+   if (res != SL_RESULT_SUCCESS)
+   {
+      RARCH_ERR("[OpenSL] Failed to write. Error: 0x%x.\n", (unsigned)res);
+      return false;
+   }
+   sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
+   retro_atomic_fetch_add_int(&sl_shared.buffered_blocks, 1);
+   return true;
+}
+
 static ssize_t sl_write(void *data, const void *s, size_t len)
 {
    size_t _len = 0;
@@ -547,22 +564,55 @@ static ssize_t sl_write(void *data, const void *s, size_t len)
 
       if (sl->buffer_ptr >= sl->buf_size)
       {
-         SLresult res     = (*sl->buffer_queue)->Enqueue(sl->buffer_queue, sl->buffer[sl->buffer_index], sl->buf_size);
-
-         /* A block the device refused is not on the device: it is not
-          * counted, and the index stays on it. */
-         if (res != SL_RESULT_SUCCESS)
-         {
-            RARCH_ERR("[OpenSL] Failed to write. Error: 0x%x.\n", (unsigned)res);
+         if (!sl_enqueue(sl))
             return -1;
-         }
-         sl->buffer_index = (sl->buffer_index + 1) % sl->buf_count;
-         retro_atomic_fetch_add_int(&sl_shared.buffered_blocks, 1);
-         sl->buffer_ptr   = 0;
+         sl->buffer_ptr = 0;
       }
    }
 
    return _len;
+}
+
+/* The lend pair: the blocks are one arena, so the span runs from the
+ * fill point through every block the device does not hold, to the
+ * arena's end - the buffers the device plays from. The end enqueues
+ * each block it completes, as a write does. */
+static size_t sl_write_begin(void *data, size_t len, void **region)
+{
+   sl_t  *sl = (sl_t*)data;
+   size_t free_blocks, span;
+   *region = NULL;
+   if (!sl || !sl->buffer_chunk)
+      return 0;
+   free_blocks = sl->buf_count
+      - (size_t)retro_atomic_load_acquire_int(&sl_shared.buffered_blocks);
+   if (!free_blocks)
+      return 0;
+   span = free_blocks * sl->buf_size - sl->buffer_ptr;
+   if (span > (size_t)(sl->buf_count - sl->buffer_index) * sl->buf_size
+            - sl->buffer_ptr)
+      span = (size_t)(sl->buf_count - sl->buffer_index) * sl->buf_size
+            - sl->buffer_ptr;
+   if (span > len)
+      span = len;
+   if (!span)
+      return 0;
+   *region = sl->buffer[sl->buffer_index] + sl->buffer_ptr;
+   return span;
+}
+
+static ssize_t sl_write_end(void *data, size_t len)
+{
+   sl_t  *sl  = (sl_t*)data;
+   size_t _len = len;
+   sl->buffer_ptr += (unsigned)len;
+   while (sl->buffer_ptr >= sl->buf_size)
+   {
+      if (!sl_enqueue(sl))
+         return -1;
+      sl->buffer_ptr -= sl->buf_size;
+   }
+   return (ssize_t)_len;
 }
 
 /* Sleep on the condition the buffer-done callback signals until at
@@ -669,5 +719,10 @@ audio_driver_t audio_opensl = {
    sl_wait_writable,
    sl_frames_consumed,
    sl_underruns,
-   sl_layout
+   sl_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   sl_write_begin,
+   sl_write_end
 };

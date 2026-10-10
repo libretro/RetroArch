@@ -861,6 +861,46 @@ static ssize_t sdl2_audio_write(void *data, const void *s, size_t len)
    return _len;
 }
 
+/* The lend pair: the ring SDL's callback drains, handed out to its
+ * wrap in whole frames. */
+static size_t sdl2_audio_write_begin(void *data, size_t len, void **region)
+{
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
+   void   *ptr  = NULL;
+   size_t  fb, room, span;
+   *region = NULL;
+   if (!sdl || !sdl->speaker_ring_init || sdl->is_paused)
+      return 0;
+   fb   = (size_t)sdl->device_spec.channels
+      * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
+   room = sdl2_ring_room(&sdl->speaker_ring, sdl->speaker_ring_size);
+   span = retro_spsc_write_begin(&sdl->speaker_ring, &ptr);
+   if (span > room)
+      span = room;
+   if (span > len)
+      span = len;
+   if (fb)
+      span -= span % fb;
+   if (!span || !ptr)
+   {
+      retro_spsc_write_end(&sdl->speaker_ring, 0);
+      return 0;
+   }
+   *region = ptr;
+   return span;
+}
+
+static ssize_t sdl2_audio_write_end(void *data, size_t len)
+{
+   sdl2_audio_t *sdl = (sdl2_audio_t*)data;
+   size_t fb         = (size_t)sdl->device_spec.channels
+      * (SDL_AUDIO_BITSIZE(sdl->device_spec.format) / 8);
+   if (fb)
+      len -= len % fb;
+   retro_spsc_write_end(&sdl->speaker_ring, len);
+   return (ssize_t)len;
+}
+
 static bool sdl2_audio_stop(void *data)
 {
    sdl2_audio_t *sdl = (sdl2_audio_t*)data;
@@ -1043,5 +1083,10 @@ audio_driver_t audio_sdl2 = {
    sdl2_audio_wait_writable,
    sdl2_audio_frames_consumed,
    sdl2_audio_underruns,
-   sdl2_audio_layout
+   sdl2_audio_layout,
+   NULL, /* frames_consumed_fallback */
+   NULL, /* device_clock_ppm */
+   NULL, /* thread_grant */
+   sdl2_audio_write_begin,
+   sdl2_audio_write_end
 };

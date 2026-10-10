@@ -88,6 +88,73 @@ static void latency_case(unsigned latency, unsigned burst, unsigned rate)
    CHECK(opensl_mock_objects() == 0, "latency %u: %d object(s) left alive", latency, opensl_mock_objects());
 }
 
+/* The lend pair: spans run through the free blocks of the one arena,
+ * every completed block is enqueued, and what the device plays is
+ * what was lent, in order - none of it overwritten while queued. */
+static void lend_case(unsigned latency, unsigned burst, unsigned rate)
+{
+   void    *h, *region;
+   unsigned new_rate = 0, lent = 0, multi = 0, i;
+   size_t   frame, total, block, sent = 0, played;
+   uint32_t word = 0;
+   const uint8_t *cap;
+
+   opensl_mock_reset();
+   stub_device_block_frames = burst;
+   h = audio_opensl.init(NULL, rate, latency, &new_rate);
+   CHECK(h != NULL, "lend: init failed");
+   if (!h)
+      return;
+   frame = audio_opensl.use_float(h) ? 8 : 4;
+   total = audio_opensl.buffer_size(h);
+   block = total / opensl_mock_num_buffers();
+   audio_opensl.set_nonblock_state(h, false);
+   audio_opensl.start(h, false);
+   for (i = 0; i < 400 && sent < 96000 * frame / 4; i++)
+   {
+      size_t got, k;
+      /* As the pipeline waits: for the chunk it is about to produce. */
+      audio_opensl.wait_writable(h, total / 2);
+      got = audio_opensl.write_begin(h, total / 2, &region);
+      if (!got)
+         continue;
+      CHECK(got % frame == 0 || got == total, "lend: a span of %u bytes", (unsigned)got);
+      if (got > block)
+         multi++;
+      for (k = 0; k + 4 <= got; k += 4, word++)
+         memcpy((uint8_t*)region + k, &word, 4);
+      CHECK(audio_opensl.write_end(h, got) == (ssize_t)got, "lend: not all published");
+      sent += got;
+      lent++;
+   }
+   usleep(200000);
+   cap = opensl_mock_capture(&played);
+   printf("      latency %2u ms, burst %4u: %u lends (%u past one block), %u bytes lent, %u played\n",
+         latency, burst, lent, multi, (unsigned)sent, (unsigned)played);
+   CHECK(lent > 0 && played > 0, "lend: nothing reached the device");
+   CHECK(multi > 0, "lend: no span ran past one block");
+   {
+      /* Past the silence init queues to start the player. */
+      size_t at = 0, n;
+      uint32_t w = 0;
+      while (at + 4 <= played && !memcmp(cap + at, &w, 4))
+         at += 4;
+      at -= 4; /* word 0 is zero too */
+      for (n = 0; at + 4 <= played; at += 4, n++)
+      {
+         memcpy(&w, cap + at, 4);
+         if (w != n)
+         {
+            CHECK(0, "lend: played word %u reads %u", (unsigned)n, w);
+            break;
+         }
+      }
+   }
+   CHECK(opensl_mock_enqueue_failures() == 0,
+         "lend: %u block(s) pushed at a full queue", opensl_mock_enqueue_failures());
+   audio_opensl.free(h);
+}
+
 int main(void)
 {
    void *h;
@@ -136,6 +203,12 @@ int main(void)
       CHECK(!opensl_mock_is_float(), "the player was created with a float format anyway");
       audio_opensl.free(h);
    }
+
+   printf("   the lend pair: the arena's free blocks, played as lent\n");
+   lend_case(64, 192, 48000);
+   lend_case(16, 192, 48000);
+   lend_case(64, 1024, 44100);
+   lend_case(64, 0, 48000);
 
    printf("   a full queue: write_avail is nil, not an enormous number\n");
    opensl_mock_reset();

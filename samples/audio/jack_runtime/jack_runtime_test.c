@@ -219,6 +219,22 @@ static size_t fake_rb_write(jack_ringbuffer_t *rb, const char *src, size_t cnt)
    return cnt;
 }
 
+static void fake_rb_get_write_vector(const jack_ringbuffer_t *rb,
+      jack_ringbuffer_data_t *vec)
+{
+   size_t space = fake_rb_write_space(rb);
+   size_t start = rb->w % rb->size;
+   size_t first = rb->size - start;
+   if (first > space)
+      first = space;
+   vec[0].buf = rb->buf + start;
+   vec[0].len = first;
+   vec[1].buf = rb->buf;
+   vec[1].len = space - first;
+}
+
+static void fake_rb_write_advance(jack_ringbuffer_t *rb, size_t cnt) { rb->w += cnt; }
+
 /* ---- the fake loader ------------------------------------------------ */
 
 typedef struct
@@ -255,6 +271,8 @@ static const fake_sym_t fake_syms[] = {
    FAKE("jack_ringbuffer_read_advance",    fake_rb_read_advance),
    FAKE("jack_ringbuffer_write",           fake_rb_write),
    FAKE("jack_ringbuffer_write_space",     fake_rb_write_space),
+   FAKE("jack_ringbuffer_get_write_vector", fake_rb_get_write_vector),
+   FAKE("jack_ringbuffer_write_advance",   fake_rb_write_advance),
    /* Optional; listed last so the required ones are the leading run. */
    FAKE("jack_port_get_latency_range",     fake_port_get_latency_range)
 };
@@ -422,6 +440,37 @@ static void test_running(void)
          ok = 0;
    CHECK(ok, "written frames reach the port buffers deinterleaved");
    CHECK(audio_jack.underruns(jd) == 0, "no underrun on a full period");
+
+   /* The lend pair: the ring's write vector, produced into and
+    * published, deinterleaved by the same process callback. */
+   {
+      void  *region = NULL;
+      size_t got    = audio_jack.write_begin(jd, sizeof(frames), &region);
+      CHECK(region && got == sizeof(frames), "the ring lends a period");
+      if (region)
+      {
+         for (i = 0; i < 256; i++)
+         {
+            ((float*)region)[i * 2]     = 0.5f - (float)i / 512.0f;
+            ((float*)region)[i * 2 + 1] = (float)i / 1024.0f;
+         }
+         CHECK(audio_jack.write_end(jd, got) == (ssize_t)got, "and publishes it");
+      }
+      if (fake_process)
+         fake_process(256, fake_process_arg);
+      ok = 1;
+      for (i = 0; i < 256; i++)
+         if (     fake_ports[0].buf[i] != 0.5f - (float)i / 512.0f
+               || fake_ports[1].buf[i] != (float)i / 1024.0f)
+            ok = 0;
+      CHECK(ok, "lent frames reach the port buffers deinterleaved");
+      got = audio_jack.write_begin(jd, 64, &region);
+      audio_jack.write_end(jd, 0);
+      CHECK(got == 64, "a second lend");
+      if (fake_process)
+         fake_process(256, fake_process_arg);
+      CHECK(audio_jack.underruns(jd) == 1, "an abandoned lend published nothing");
+   }
 
    audio_jack.free(jd);
    CHECK(n_deactivate == 1 && n_close == 1, "deactivated and closed once");

@@ -92,6 +92,9 @@ typedef struct ja_api
    size_t (*ringbuffer_write)(jack_ringbuffer_t *rb, const char *src,
          size_t cnt);
    size_t (*ringbuffer_write_space)(const jack_ringbuffer_t *rb);
+   void (*ringbuffer_get_write_vector)(const jack_ringbuffer_t *rb,
+         jack_ringbuffer_data_t *vec);
+   void (*ringbuffer_write_advance)(jack_ringbuffer_t *rb, size_t cnt);
 } ja_api_t;
 
 #ifdef HAVE_DYLIB
@@ -171,6 +174,8 @@ static ja_api_t *ja_api_load(void)
    JA_SYM(ringbuffer_read_advance,    jack_ringbuffer_read_advance);
    JA_SYM(ringbuffer_write,           jack_ringbuffer_write);
    JA_SYM(ringbuffer_write_space,     jack_ringbuffer_write_space);
+   JA_SYM(ringbuffer_get_write_vector, jack_ringbuffer_get_write_vector);
+   JA_SYM(ringbuffer_write_advance,   jack_ringbuffer_write_advance);
 
    (void)sizeof(t->port_get_latency_range = jack_port_get_latency_range);
    if ((sym = dylib_proc(t->lib, "jack_port_get_latency_range")))
@@ -236,7 +241,9 @@ static const ja_api_t ja_api_linked = {
    jack_ringbuffer_mlock,
    jack_ringbuffer_read_advance,
    jack_ringbuffer_write,
-   jack_ringbuffer_write_space
+   jack_ringbuffer_write_space,
+   jack_ringbuffer_get_write_vector,
+   jack_ringbuffer_write_advance
 };
 
 static const ja_api_t *ja_api_get(void) { return &ja_api_linked; }
@@ -967,6 +974,37 @@ static void ja_free(void *data)
 
 static bool ja_use_float(void *data) { return true; }
 
+/* The lend pair: the first part of the ringbuffer's write vector,
+ * which the process callback deinterleaves from, in whole frames. */
+static size_t ja_write_begin(void *data, size_t len, void **region)
+{
+   jack_t *jd = (jack_t*)data;
+   jack_ringbuffer_data_t vec[2];
+   size_t span, fb;
+   *region = NULL;
+   if (!jd || retro_atomic_load_acquire_int(&jd->shutdown))
+      return 0;
+   fb = jd->channels * sizeof(float);
+   jd->jk->ringbuffer_get_write_vector(jd->buffer, vec);
+   span = vec[0].len;
+   if (span > len)
+      span = len;
+   span -= span % fb;
+   if (!span)
+      return 0;
+   *region = vec[0].buf;
+   return span;
+}
+
+static ssize_t ja_write_end(void *data, size_t len)
+{
+   jack_t *jd = (jack_t*)data;
+   len       -= len % (jd->channels * sizeof(float));
+   if (len)
+      jd->jk->ringbuffer_write_advance(jd->buffer, len);
+   return (ssize_t)len;
+}
+
 static size_t ja_write_avail(void *data)
 {
    jack_t *jd = (jack_t*)data;
@@ -1104,5 +1142,8 @@ audio_driver_t audio_jack = {
    ja_underruns,
    ja_layout,
    NULL, /* frames_consumed_fallback */
-   ja_device_clock_ppm
+   ja_device_clock_ppm,
+   NULL, /* thread_grant */
+   ja_write_begin,
+   ja_write_end
 };

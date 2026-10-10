@@ -21,8 +21,15 @@ static pthread_mutex_t q_lock = PTHREAD_MUTEX_INITIALIZER;
 static struct
 {
    unsigned bytes[MOCK_QUEUE_MAX];
+   const uint8_t *bufs[MOCK_QUEUE_MAX];
    unsigned head, count;
 } q;
+
+/* What the device played, block by block, read from each block as it
+ * finishes - the last moment the driver must not have touched it. */
+#define MOCK_CAPTURE_MAX (1u << 20)
+static uint8_t mock_capture[MOCK_CAPTURE_MAX];
+static size_t  mock_capture_len;
 
 static void (*q_cb)(SLAndroidSimpleBufferQueueItf, void*);
 static void  *q_cb_ctx;
@@ -98,6 +105,11 @@ unsigned opensl_mock_buffer_bytes(void)      { return mock_buffer_bytes; }
 unsigned opensl_mock_rate_milli(void)        { return mock_rate_milli; }
 int      opensl_mock_is_float(void)          { return mock_is_float; }
 unsigned opensl_mock_enqueue_failures(void)  { return mock_enq_fail; }
+const uint8_t *opensl_mock_capture(size_t *len)
+{
+   *len = __atomic_load_n(&mock_capture_len, __ATOMIC_ACQUIRE);
+   return mock_capture;
+}
 int      opensl_mock_playing(void)           { return mock_playing; }
 int      opensl_mock_objects(void)           { return mock_objects; }
 size_t   opensl_mock_consumed(void)
@@ -117,12 +129,14 @@ static void *pump_thread(void *arg)
    while (__atomic_load_n(&pump_run, __ATOMIC_ACQUIRE))
    {
       unsigned bytes = 0, is_float = 0, rate_milli = 0;
+      const uint8_t *played = NULL;
       pthread_mutex_lock(&q_lock);
       is_float   = (unsigned)mock_is_float;
       rate_milli = mock_rate_milli;
       if (mock_playing && !mock_frozen && q.count)
       {
          bytes    = q.bytes[q.head];
+         played   = q.bufs[q.head];
          q.head   = (q.head + 1) % MOCK_QUEUE_MAX;
          q.count--;
          mock_consumed++;
@@ -138,6 +152,15 @@ static void *pump_thread(void *arg)
          void  *ctx;
          if (usec > 100000) usec = 100000;
          usleep(usec);
+         if (played)
+         {
+            size_t at = __atomic_load_n(&mock_capture_len, __ATOMIC_RELAXED);
+            if (at + bytes <= MOCK_CAPTURE_MAX)
+            {
+               memcpy(mock_capture + at, played, bytes);
+               __atomic_store_n(&mock_capture_len, at + bytes, __ATOMIC_RELEASE);
+            }
+         }
 
          pthread_mutex_lock(&q_lock);
          cb  = q_cb;
@@ -185,6 +208,7 @@ void opensl_mock_reset(void)
    mock_float_ok = 1; mock_frozen = 0; mock_playing = 0; mock_objects = 0;
    mock_is_float = 0; mock_num_buffers = mock_buffer_bytes = mock_rate_milli = 0;
    mock_queue_limit = 0; mock_enq_fail = 0; mock_consumed = 0;
+   __atomic_store_n(&mock_capture_len, 0, __ATOMIC_RELEASE);
    pthread_mutex_unlock(&q_lock);
    __atomic_store_n(&pump_run, 1, __ATOMIC_RELEASE);
    pthread_create(&pump, NULL, pump_thread, NULL);
@@ -204,6 +228,7 @@ static SLresult bq_enqueue(SLAndroidSimpleBufferQueueItf self, const void *buf, 
       return SL_RESULT_PARAMETER_INVALID;
    }
    q.bytes[(q.head + q.count) % MOCK_QUEUE_MAX] = size;
+   q.bufs[(q.head + q.count) % MOCK_QUEUE_MAX]  = (const uint8_t*)buf;
    q.count++;
    mock_buffer_bytes = size;
    pthread_mutex_unlock(&q_lock);

@@ -21,5 +21,8 @@ void jack_ringbuffer_read_advance(jack_ringbuffer_t *rb, size_t cnt);
 size_t jack_ringbuffer_write(jack_ringbuffer_t *rb, const char *src,
       size_t cnt);
 size_t jack_ringbuffer_write_space(const jack_ringbuffer_t *rb);
+void jack_ringbuffer_get_write_vector(const jack_ringbuffer_t *rb,
+      jack_ringbuffer_data_t *vec);
+void jack_ringbuffer_write_advance(jack_ringbuffer_t *rb, size_t cnt);
 
 #endif

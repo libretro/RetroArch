@@ -78,6 +78,32 @@ int main(void)
    check(took > 300, "blocking writes wait for the device");
    check(after - before > RATE / 2, "the device consumed it");
 
+   printf("the lend pair\n");
+   {
+      unsigned lent = 0, k;
+      size_t   frame = audio_dsound.use_float(ds) ? 8 : 4, total = 0;
+      void    *region;
+      before = audio_dsound.frames_consumed(ds);
+      for (k = 0; k < 2000 && total < RATE / 2 * frame; k++)
+      {
+         size_t got;
+         audio_dsound.wait_writable(ds, 480 * frame);
+         got = audio_dsound.write_begin(ds, 480 * frame, &region);
+         if (!got)
+            continue;
+         check(got % frame == 0 && got <= 480 * frame, "a lent span is whole frames");
+         memset(region, 0, got);
+         total += (size_t)audio_dsound.write_end(ds, got);
+         lent++;
+      }
+      Sleep(200);
+      after = audio_dsound.frames_consumed(ds);
+      printf("  (%u spans, %u bytes lent; %u frames consumed)\n",
+            lent, (unsigned)total, (unsigned)(after - before));
+      check(total >= RATE / 2 * frame, "half a second went through the lend");
+      check(after - before > RATE / 4, "the pump played it");
+   }
+
    printf("the writer stops\n");
    before = audio_dsound.frames_consumed(ds);
    Sleep(300);
