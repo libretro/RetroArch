@@ -10639,7 +10639,7 @@ static void ozone_context_reset(void *data, bool is_threaded)
 
       /* Theme textures */
       ozone_unload_theme_textures(ozone);
-      retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
+      (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
       ozone_load_theme_textures(ozone, ozone->theme);
 
       /* Icons textures init */
@@ -10728,7 +10728,7 @@ static void ozone_context_destroy(void *data)
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
    ozone->context_generation++;
-   retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
+   (void)retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
 
    ozone_unload_theme_textures(ozone);
    ozone_free_context_textures(ozone);
