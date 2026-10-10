@@ -1,0 +1,4 @@
+shaders = 1
+shader0 = rect_hist.slang
+filter_linear0 = true
+wrap_mode0 = clamp_to_edge

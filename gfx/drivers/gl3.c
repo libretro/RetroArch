@@ -144,8 +144,10 @@ typedef struct gl3
       bool stock_failed;
       /* The stereo blend programs were asked for. */
       bool blend_tried;
-      /* Views have been drawn straight from the frame. */
+      /* Views have been drawn straight from the frame, and their
+       * presets have read it where it lies. */
       bool direct_seen;
+      bool in_place_seen;
       bool active;
       /* Drawing into the UI layer. */
       bool ui_pass;
@@ -485,21 +487,25 @@ void gl3_framebuffer_copy_partial(
       GLint flat_ubo_vertex,
       unsigned size_width, unsigned size_height,
       GLuint image,
-      float rx, float ry)
+      float ox, float oy, float rx, float ry)
 {
    GLuint vbo;
-   /* C89: an aggregate initializer must be constant, and rx/ry are
-    * not; the four corners are set after declaration. */
+   /* C89: an aggregate initializer must be constant, and the corners'
+    * texture coordinates are not; they are set after declaration. */
    float quad_data[16] = {
       0.0f, 0.0f, 0.0f, 0.0f,
       1.0f, 0.0f, 0.0f, 0.0f,
       0.0f, 1.0f, 0.0f, 0.0f,
       1.0f, 1.0f, 0.0f, 0.0f,
    };
-   quad_data[6]  = rx;
-   quad_data[11] = ry;
-   quad_data[14] = rx;
-   quad_data[15] = ry;
+   quad_data[2]  = ox;
+   quad_data[3]  = oy;
+   quad_data[6]  = ox + rx;
+   quad_data[7]  = oy;
+   quad_data[10] = ox;
+   quad_data[11] = oy + ry;
+   quad_data[14] = ox + rx;
+   quad_data[15] = oy + ry;
 
    glBindFramebuffer(GL_FRAMEBUFFER, fb_id);
    glActiveTexture(GL_TEXTURE2);
@@ -2997,10 +3003,11 @@ static void gl3_views_build_chains(gl3_t *gl)
    {
       if (gl->views.chains[i])
          continue;
+      /* A view is a rectangle of the frame: read where it lies. */
       gl->views.chains[i] = gl3_filter_chain_create_from_preset(
             gl->views.preset, gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST, false);
+            : GLSLANG_FILTER_CHAIN_NEAREST, true);
       if (!gl->views.chains[i])
          RARCH_ERR("[GLCore] Failed to create view %u's preset: \"%s\".\n",
                i, gl->views.preset);
@@ -5711,12 +5718,13 @@ static bool gl3_stock_rect_ready(gl3_t *gl,
 
 /* Whether this frame draws its views, with their chains picked and
  * each drawn view's rectangle copied, by this frame or for a repeat by
- * the last; in *blend whether they draw into the canvas, and in *direct
+ * the last; in *blend whether they draw into the canvas, in *direct
  * whether the stock chains' views draw straight from texture instead,
- * with no copy. */
+ * and in *in_place whether the preset's chains read each view where it
+ * lies in the frame: either way with no copy. */
 static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
       const void *frame, const struct gl3_filter_chain_texture *texture,
-      unsigned dims, bool *blend, bool *direct,
+      unsigned dims, bool *blend, bool *direct, bool *in_place,
       gl3_filter_chain_t **chains, video_views_rect_t *rects)
 {
    unsigned i;
@@ -5745,13 +5753,17 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
             *blend ? layout->canvas_dims : dims, chains, rects, &stock);
    *direct = views && stock && texture->image
       && gl3_stock_rect_ready(gl, video_info);
+   *in_place = views && !*direct && texture->image;
+   for (i = 0; *in_place && i < video_info->views.num_views; i++)
+      if (chains[i] && !gl3_filter_chain_reads_in_place(chains[i]))
+         *in_place = false;
    /* The map was checked against the core's frame; threaded video can
-    * crop it. A direct repeat draws from the frame again. */
-   if (     views && (frame || *direct)
+    * crop it. A repeat read in place reads the frame again. */
+   if (     views && (frame || *direct || *in_place)
          && !video_views_fit_frame(&video_info->views, texture->dims))
       views = false;
 
-   if (views && !*direct)
+   if (views && !*direct && !*in_place)
    {
       if (frame)
          views = gl3_views_copy(gl, video_info, chains, texture,
@@ -5762,15 +5774,25 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
             if (chains[i] && !(gl->views.copied & (1u << i)))
                views = false;
    }
-   /* A later repeat must not draw copies this frame outdates. */
-   if (frame && (!views || *direct))
+   /* A later repeat must not draw copies this frame outdates, and
+    * views read in place keep none. */
+   if (frame && (!views || *direct || *in_place))
       gl->views.copied = 0;
-   *blend  = views && *blend;
-   *direct = views && *direct;
+   if (frame && views && *in_place)
+      gl3_views_free_copies(gl, 0);
+   *blend    = views && *blend;
+   *direct   = views && *direct;
+   *in_place = views && *in_place;
    if (*direct && !gl->views.direct_seen)
    {
       gl->views.direct_seen = true;
       RARCH_LOG("[GLCore] Views drawn straight from the frame.\n");
+   }
+   if (*in_place && !gl->views.in_place_seen)
+   {
+      gl->views.in_place_seen = true;
+      RARCH_LOG("[GLCore] Views' presets read the frame where it "
+            "lies.\n");
    }
    return views;
 }
@@ -5928,13 +5950,14 @@ static void gl3_stock_rect_draw(gl3_t *gl,
  * target, sized dims, or with blend into the canvas, whose halves one
  * pass then blends into the frame target. A view placed twice runs its
  * final pass again, without a second feedback swap. With direct, views
- * draw straight from src, a bottom_up frame or not. */
+ * draw straight from src, a bottom_up frame or not; with in_place their
+ * chains read them there. */
 static void gl3_views_render(gl3_t *gl,
       const video_frame_info_t *video_info,
       gl3_filter_chain_t **chains, const video_views_rect_t *rects,
       bool blend, unsigned dims,
       const struct gl3_filter_chain_texture *src, bool bottom_up,
-      bool direct)
+      bool direct, bool in_place)
 {
    unsigned i;
    GLuint target;
@@ -5952,10 +5975,24 @@ static void gl3_views_render(gl3_t *gl,
       struct gl3_viewport vp;
       if (!chains[i] || direct)
          continue;
-      tex.image         = gl->views.tex[i];
-      tex.dims          = gl->views.tex_dims[i];
-      tex.padded_dims   = tex.dims;
-      tex.format        = gl->views.tex_format[i];
+      if (in_place)
+      {
+         const struct retro_video_view *v = &video_info->views.views[i];
+         tex.image       = src->image;
+         tex.dims        = VIDEO_SCALE_PACK(v->width, v->height);
+         tex.padded_dims = src->padded_dims ? src->padded_dims : src->dims;
+         tex.origin      = VIDEO_SCALE_PACK(v->x,
+               (unsigned)gl3_views_src_y(src, v, bottom_up));
+         tex.format      = src->format;
+      }
+      else
+      {
+         tex.image       = gl->views.tex[i];
+         tex.dims        = gl->views.tex_dims[i];
+         tex.padded_dims = tex.dims;
+         tex.origin      = 0;
+         tex.format      = gl->views.tex_format[i];
+      }
       gl3_filter_chain_set_input_texture(chains[i], &tex);
       gl3_views_vp(&rects[i], target_height, &vp);
       gl3_filter_chain_build_offscreen_passes(chains[i], &vp);
@@ -6052,6 +6089,7 @@ static bool gl3_frame(void *data, const void *frame,
    bool views                              = false;
    bool views_blend                        = false;
    bool views_direct                       = false;
+   bool views_in_place                     = false;
    bool views_ui                           = false;
 #endif
    bool views_per_eye                      = false;
@@ -6217,6 +6255,7 @@ static bool gl3_frame(void *data, const void *frame,
    texture.image            = 0;
    texture.dims             = streamed->dims;
    texture.padded_dims      = 0;
+   texture.origin           = 0;
    texture.format           = 0;
 
    if (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
@@ -6250,7 +6289,7 @@ static bool gl3_frame(void *data, const void *frame,
 
 #ifdef HAVE_SLANG
    views = gl3_views_setup(gl, video_info, frame, &texture,
-         video_info->dims, &views_blend, &views_direct,
+         video_info->dims, &views_blend, &views_direct, &views_in_place,
          view_chains, view_rects);
    /* gl->vp is the whole window while views draw. */
    if (views != gl->views.active)
@@ -6479,7 +6518,7 @@ static bool gl3_frame(void *data, const void *frame,
                views_blend, video_info->dims, &texture,
                (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
                && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT),
-               views_direct);
+               views_direct, views_in_place);
       /* The stock chain would copy a frame out of a larger texture
        * first; it is drawn straight from it instead. */
       else if (   filter_chain == gl->filter_chain_default

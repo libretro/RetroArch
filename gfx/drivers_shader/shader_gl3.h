@@ -35,7 +35,10 @@ struct gl3_filter_chain_texture
 {
    GLuint image;
    unsigned dims;        /* VIDEO_SCALE_PACK */
-   unsigned padded_dims; /* VIDEO_SCALE_PACK */
+   /* The texture's size, and where in it the frame starts, when the
+    * frame is not all of it: VIDEO_SCALE_PACK, padded_dims 0 for all. */
+   unsigned padded_dims;
+   unsigned origin;
    GLenum format;
 };
 
@@ -103,6 +106,10 @@ bool gl3_filter_chain_init(gl3_filter_chain_t *chain);
 void gl3_filter_chain_set_input_texture(
       gl3_filter_chain_t *chain,
       const struct gl3_filter_chain_texture *texture);
+
+/* Whether the chain reads a frame where it lies in a larger texture,
+ * rather than copying it out. */
+bool gl3_filter_chain_reads_in_place(gl3_filter_chain_t *chain);
 
 void gl3_filter_chain_set_frame_count(
       gl3_filter_chain_t *chain,

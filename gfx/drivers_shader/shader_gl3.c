@@ -102,7 +102,7 @@ RETRO_BEGIN_DECLS
          GLint flat_ubo_vertex,
          unsigned size_width, unsigned size_height,
          GLuint image,
-         float rx, float ry);
+         float ox, float oy, float rx, float ry);
 
    uint32_t gl3_get_cross_compiler_target_version(void);
 
@@ -2123,14 +2123,16 @@ static void gl3_pass_build_semantic_vec4_values(struct gl3_pass *pass,
    }
 }
 
-/* Where the frame lies in the texture bound for it: at the origin, the
- * whole of it unless padded_dims says the texture is larger. */
+/* Where the frame lies in the texture bound for it: the whole of it
+ * unless padded_dims says the texture is larger. */
 static void gl3_pass_build_semantic_frame_rect(struct gl3_pass *pass,
       uint8_t *buffer, const gl3_filter_chain_texture *frame)
 {
    float    v[4];
    float    w = (float)VIDEO_SCALE_W(frame->dims);
    float    h = (float)VIDEO_SCALE_H(frame->dims);
+   float    x = (float)VIDEO_SCALE_W(frame->origin);
+   float    y = (float)VIDEO_SCALE_H(frame->origin);
    unsigned tex_dims = frame->padded_dims ? frame->padded_dims : frame->dims;
    float    tw = (float)VIDEO_SCALE_W(tex_dims);
    float    th = (float)VIDEO_SCALE_H(tex_dims);
@@ -2145,20 +2147,20 @@ static void gl3_pass_build_semantic_frame_rect(struct gl3_pass *pass,
 
    v[0] = w / tw;
    v[1] = h / th;
-   v[2] = 0.0f;
-   v[3] = 0.0f;
+   v[2] = x / tw;
+   v[3] = y / th;
    gl3_pass_build_semantic_vec4_values(pass, buffer,
          SLANG_SEMANTIC_ORIGINAL_RECT, v);
-   v[0] = (0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   v[1] = (0.5f + SLANG_RECT_CLAMP_BIAS) / th;
-   v[2] = (w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   v[3] = (h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   v[0] = (x + 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[1] = (y + 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   v[2] = (x + w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[3] = (y + h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
    gl3_pass_build_semantic_vec4_values(pass, buffer,
          SLANG_SEMANTIC_ORIGINAL_CLAMP, v);
    v[0] = w;
    v[1] = h;
-   v[2] = 0.0f;
-   v[3] = 0.0f;
+   v[2] = x;
+   v[3] = y;
    gl3_pass_build_semantic_vec4_values(pass, buffer,
          SLANG_SEMANTIC_ORIGINAL_TEXELS, v);
 }
@@ -3640,7 +3642,8 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
    /* A frame inside a larger texture is copied out to one of its own,
     * unless every pass reads it where it is. */
    if (     chain->input_texture.padded_dims
-         && chain->input_texture.padded_dims != chain->input_texture.dims
+         && (   chain->input_texture.padded_dims != chain->input_texture.dims
+             || chain->input_texture.origin)
          && !chain->frame_in_place)
    {
       if (!chain->copy_framebuffer)
@@ -3664,12 +3667,17 @@ static void gl3_chain_set_input_texture(struct gl3_filter_chain *chain, const gl
                VIDEO_SCALE_W(chain->copy_framebuffer->size_dims),
                VIDEO_SCALE_H(chain->copy_framebuffer->size_dims),
                chain->input_texture.image,
+               (float)VIDEO_SCALE_W(chain->input_texture.origin)
+               / VIDEO_SCALE_W(chain->input_texture.padded_dims),
+               (float)VIDEO_SCALE_H(chain->input_texture.origin)
+               / VIDEO_SCALE_H(chain->input_texture.padded_dims),
                (float)VIDEO_SCALE_W(chain->input_texture.dims)
                / VIDEO_SCALE_W(chain->input_texture.padded_dims),
                (float)VIDEO_SCALE_H(chain->input_texture.dims)
                / VIDEO_SCALE_H(chain->input_texture.padded_dims));
       chain->input_texture.image       = chain->copy_framebuffer->image;
       chain->input_texture.padded_dims = chain->input_texture.dims;
+      chain->input_texture.origin      = 0;
    }
 }
 
@@ -4370,6 +4378,11 @@ void gl3_filter_chain_set_input_texture(
       const struct gl3_filter_chain_texture *texture)
 {
    gl3_chain_set_input_texture(chain, *texture);
+}
+
+bool gl3_filter_chain_reads_in_place(gl3_filter_chain_t *chain)
+{
+   return chain->frame_in_place;
 }
 
 void gl3_filter_chain_set_frame_count(

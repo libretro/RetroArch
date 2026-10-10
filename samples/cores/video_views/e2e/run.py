@@ -283,6 +283,18 @@ RECT_PRESETS = [('rect_nearest.slangp', True),
 RECT_HW = {'glcore': ('gl', 'gl_topleft')}
 IN_PLACE_RE = re.compile(
     r'\[GLCore\] Preset reads frames where the core leaves them\.')
+# A view's preset reads the view where it lies in the frame. Each runs
+# a rect preset, read in place, and its rect_hist twin, which reads a
+# frame of history too and so has the views copied out: the screenshots
+# must match. [(name, map option, core options, hw)]
+VIEW_RECT_CASES = [('view-rect-ds', 'ds', NOISE, 'off'),
+                   ('view-rect-ds-rgb565', 'ds', NOISE_565, 'off'),
+                   ('view-rect-3ds', '3ds', NOISE, 'gl'),
+                   ('view-rect-3ds', '3ds', NOISE, 'gl_topleft')]
+VIEW_RECT_PRESETS = ('nearest', 'nearest_repeat', 'linear')
+VIEW_RECT_DRIVERS = ('glcore',)
+VIEW_IN_PLACE_RE = re.compile(
+    r'\[GLCore\] Views\' presets read the frame where it lies\.')
 
 # Mesa without GL 4.3 and ARB_copy_image: glcore must blit.
 NO_COPY_IMAGE = {'MESA_GL_VERSION_OVERRIDE': '4.2',
@@ -1146,6 +1158,34 @@ def main():
                                   'frame\'s' % bad)
                 print('%s %s/%s (hw %s)' % ('FAIL' if errors else 'pass',
                                             driver, name, hw))
+                for e in errors:
+                    print('    ' + e)
+                failed += bool(errors)
+        for case in (VIEW_RECT_CASES if driver in VIEW_RECT_DRIVERS
+                     else []):
+            name, mapopt, opts, hw = case
+            for mode in VIEW_RECT_PRESETS:
+                rows = {}
+                errors = []
+                for kind, in_place in (('rect', True), ('rect_hist', False)):
+                    preset = os.path.join(HERE, '%s_%s.slangp' % (kind, mode))
+                    c = ('%s-%s-%s' % (name, kind, mode), mapopt, opts, hw)
+                    e, rows[kind] = run_exact_case(retroarch, root, driver, c,
+                                                   preset=preset, exact=False)
+                    errors += e
+                    d = case_dir(root, driver, c[0], hw)
+                    if direct_drawn(d, VIEW_IN_PLACE_RE) != in_place:
+                        errors.append('%s: views %s where they lie' % (
+                            kind, 'not read' if in_place else 'read'))
+                if not rows['rect'] or not rows['rect_hist']:
+                    errors.append('no screenshot to compare')
+                elif rows['rect'] != rows['rect_hist']:
+                    errors.append('%d pixels differ from the copied views\''
+                                  % rows_differ(rows['rect'],
+                                                rows['rect_hist'], 0))
+                print('%s %s/%s-%s%s' % ('FAIL' if errors else 'pass', driver,
+                                         name, mode, '' if hw == 'off'
+                                         else ' (hw ' + hw + ')'))
                 for e in errors:
                     print('    ' + e)
                 failed += bool(errors)
