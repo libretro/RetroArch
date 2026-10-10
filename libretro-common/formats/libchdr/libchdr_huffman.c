@@ -509,7 +509,13 @@ enum huffman_error huffman_assign_canonical_codes(struct huffman_decoder* decode
 	{
 		struct node_t* node = &decoder->huffnode[curcode];
 		if (node->numbits > 0)
+		{
+			/* An oversubscribed tree assigns codes outside the space for
+			 * this length, which would index past the lookup table. */
+			if (bithisto[node->numbits] >= (1U << node->numbits))
+				return HUFFERR_INVALID_DATA;
 			node->bits = bithisto[node->numbits]++;
+		}
 	}
 	return HUFFERR_NONE;
 }
