@@ -41,6 +41,7 @@
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 
 #include <dxgi.h>
 
@@ -281,6 +282,20 @@ typedef struct
    float4_t                size_data;
 } d3d11_texture_t;
 
+/* A planar texture's planes, and the view the conversion writes the
+ * texture through */
+typedef struct d3d11_planar
+{
+   struct d3d11_planar     *next;
+   d3d11_texture_t         *texture;
+   D3D11Texture2D           plane[3];
+   D3D11ShaderResourceView  plane_view[3];
+   D3D11UnorderedAccessView uav;
+   bool                     interleaved;
+} d3d11_planar_t;
+
+static void d3d11_planar_destroy(d3d11_planar_t *p);
+
 typedef struct
 {
    UINT32 colors[4];
@@ -418,6 +433,12 @@ typedef struct
    DXGISwapChain         swapChain;
    D3D11Device           device;
    D3D_FEATURE_LEVEL     supportedFeatureLevel;
+   /* Planar textures and what converts them (d3d11_planar_load): the
+    * compute shader and its constants, made on the first one. */
+   struct d3d11_planar  *planar;
+   D3D11ComputeShader    planar_cs;
+   D3D11Buffer           planar_cb;
+   bool                  planar_failed;
    D3D11DeviceContext    context;
    D3D11RasterizerState  scissor_enabled;
    D3D11RasterizerState  scissor_disabled;
@@ -3488,6 +3509,15 @@ static void d3d11_gfx_free(void* data)
    d3d11_release_texture(&d3d11->sw_direct.texture);
    Release(d3d11->frame.ubo);
    Release(d3d11->frame.vbo);
+
+   while (d3d11->planar)
+   {
+      d3d11_planar_t *p = d3d11->planar;
+      d3d11->planar     = p->next;
+      d3d11_planar_destroy(p);
+   }
+   Release(d3d11->planar_cs);
+   Release(d3d11->planar_cb);
 
    d3d11_release_texture(&d3d11->menu.texture);
    Release(d3d11->menu.vbo);
@@ -7005,6 +7035,261 @@ typedef struct
 } d3d11_texture_cmd_t;
 #endif
 
+/* 8-bit 4:2:0 in, RGBA out: the chroma of each 2x2 block from the one
+ * sample it shares, as the CPU conversion does, either order */
+static const char d3d11_planar_cs_src[] =
+   "Texture2D<float>  Y  : register(t0);\n"
+   "Texture2D<float2> C0 : register(t1);\n"
+   "Texture2D<float>  C1 : register(t2);\n"
+   "RWTexture2D<float4> Out : register(u0);\n"
+   "cbuffer P : register(b0) { float4 k0; float4 k1; uint4 size; };\n"
+   "[numthreads(8, 8, 1)]\n"
+   "void main(uint3 id : SV_DispatchThreadID)\n"
+   "{\n"
+   "   int3 c;\n"
+   "   float y;\n"
+   "   float2 ch;\n"
+   "   if (id.x >= size.x || id.y >= size.y)\n"
+   "      return;\n"
+   "   c  = int3(id.xy >> 1, 0);\n"
+   "   y  = Y.Load(int3(id.xy, 0));\n"
+   "   ch = k1.z > 0.5 ? C0.Load(c) : float2(C0.Load(c).x, C1.Load(c));\n"
+   "   if (k1.w > 0.5)\n"
+   "      ch = ch.yx;\n"
+   "   ch -= 128.0 / 255.0;\n"
+   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * ch.y,\n"
+   "         k0.w * ch.x + k1.x * ch.y, k1.y * ch.x)), 1.0);\n"
+   "}\n";
+
+/* The shader and its constants, made on the first planar texture; a
+ * failure turns planar textures off */
+static bool d3d11_planar_init(d3d11_video_t *d3d11)
+{
+   D3DBlob blob = NULL;
+   D3D11_BUFFER_DESC desc;
+   if (d3d11->planar_cs)
+      return true;
+   if (d3d11->planar_failed)
+      return false;
+   d3d11->planar_failed = true;
+   if (!d3d_compile(d3d11_planar_cs_src, sizeof(d3d11_planar_cs_src) - 1,
+            "planar", "main", "cs_5_0", &blob))
+      return false;
+   d3d11->device->lpVtbl->CreateComputeShader(d3d11->device,
+         blob->lpVtbl->GetBufferPointer(blob),
+         blob->lpVtbl->GetBufferSize(blob), NULL, &d3d11->planar_cs);
+   Release(blob);
+   if (!d3d11->planar_cs)
+      return false;
+   memset(&desc, 0, sizeof(desc));
+   desc.ByteWidth      = 48;
+   desc.Usage          = D3D11_USAGE_DYNAMIC;
+   desc.BindFlags      = D3D11_BIND_CONSTANT_BUFFER;
+   desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+   if (FAILED(d3d11->device->lpVtbl->CreateBuffer(d3d11->device, &desc,
+         NULL, &d3d11->planar_cb)))
+   {
+      Release(d3d11->planar_cs);
+      d3d11->planar_cs = NULL;
+      return false;
+   }
+   d3d11->planar_failed = false;
+   return true;
+}
+
+static void d3d11_planar_destroy(d3d11_planar_t *p)
+{
+   unsigned i;
+   for (i = 0; i < 3; i++)
+   {
+      Release(p->plane_view[i]);
+      Release(p->plane[i]);
+   }
+   Release(p->uav);
+   free(p);
+}
+
+/* @handle's planes, when it is a planar texture */
+static void d3d11_planar_forget(d3d11_video_t *d3d11, uintptr_t handle)
+{
+   d3d11_planar_t **cur = &d3d11->planar;
+   while (*cur)
+   {
+      d3d11_planar_t *p = *cur;
+      if ((uintptr_t)p->texture == handle)
+      {
+         *cur = p->next;
+         d3d11_planar_destroy(p);
+         return;
+      }
+      cur = &p->next;
+   }
+}
+
+static bool d3d11_planar_plane(D3D11Device device, unsigned w, unsigned h,
+      DXGI_FORMAT fmt, D3D11Texture2D *tex, D3D11ShaderResourceView *view)
+{
+   D3D11_TEXTURE2D_DESC desc;
+   memset(&desc, 0, sizeof(desc));
+   desc.Width            = w;
+   desc.Height           = h;
+   desc.MipLevels        = 1;
+   desc.ArraySize        = 1;
+   desc.Format           = fmt;
+   desc.SampleDesc.Count = 1;
+   desc.Usage            = D3D11_USAGE_DEFAULT;
+   desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE;
+   return SUCCEEDED(device->lpVtbl->CreateTexture2D(device, &desc, NULL,
+            tex))
+      && SUCCEEDED(device->lpVtbl->CreateShaderResourceView(device,
+            (D3D11Resource)*tex, NULL, view));
+}
+
+/* The planes of @image into @p's, from where they lie, and the dispatch
+ * that converts them into its texture */
+static enum video_texture_update d3d11_planar_update(d3d11_video_t *d3d11,
+      d3d11_planar_t *p, const struct texture_image *image)
+{
+   const struct texture_planar *tp = image->planar;
+   D3D11DeviceContext ctx          = d3d11->context;
+   D3D11ShaderResourceView none[3];
+   D3D11UnorderedAccessView no_uav = NULL;
+   D3D11Buffer no_cb               = NULL;
+   D3D11_MAPPED_SUBRESOURCE mapped;
+   const uint8_t *c0;
+   unsigned c0_stride;
+   bool swap;
+   float k[6];
+
+   if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
+         || p->texture->desc.Width  != image->width
+         || p->texture->desc.Height != image->height)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (tp->chroma_step == 1 && !p->interleaved)
+   {
+      swap      = false;
+      c0        = tp->planes[1];
+      c0_stride = tp->strides[1];
+   }
+   else if (tp->chroma_step == 2 && p->interleaved
+         && tp->planes[2] == tp->planes[1] + 1)
+   {
+      swap      = false;
+      c0        = tp->planes[1];
+      c0_stride = tp->strides[1];
+   }
+   else if (tp->chroma_step == 2 && p->interleaved
+         && tp->planes[1] == tp->planes[2] + 1)
+   {
+      swap      = true;
+      c0        = tp->planes[2];
+      c0_stride = tp->strides[2];
+   }
+   else
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   if (FAILED(ctx->lpVtbl->Map(ctx, (D3D11Resource)d3d11->planar_cb, 0,
+         D3D11_MAP_WRITE_DISCARD, 0, &mapped)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   {
+      float    *f = (float*)mapped.pData;
+      uint32_t *u = (uint32_t*)mapped.pData + 8;
+      image_yuv_coefficients(tp->yuv, k);
+      f[0] = k[0];
+      f[1] = k[1];
+      f[2] = k[2];
+      f[3] = k[3];
+      f[4] = k[4];
+      f[5] = k[5];
+      f[6] = p->interleaved ? 1.0f : 0.0f;
+      f[7] = swap ? 1.0f : 0.0f;
+      u[0] = image->width;
+      u[1] = image->height;
+      u[2] = 0;
+      u[3] = 0;
+   }
+   ctx->lpVtbl->Unmap(ctx, (D3D11Resource)d3d11->planar_cb, 0);
+
+   ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[0], 0, NULL,
+         tp->planes[0], tp->strides[0], 0);
+   ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[1], 0, NULL,
+         c0, c0_stride, 0);
+   if (!p->interleaved)
+      ctx->lpVtbl->UpdateSubresource(ctx, (D3D11Resource)p->plane[2], 0,
+            NULL, tp->planes[2], tp->strides[2], 0);
+
+   ctx->lpVtbl->CSSetShader(ctx, d3d11->planar_cs, NULL, 0);
+   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &d3d11->planar_cb);
+   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, p->plane_view);
+   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &p->uav, NULL);
+   ctx->lpVtbl->Dispatch(ctx, (image->width + 7) / 8,
+         (image->height + 7) / 8, 1);
+   /* Nothing of it stays bound: the texture is drawn from next */
+   none[0] = none[1] = none[2] = NULL;
+   ctx->lpVtbl->CSSetUnorderedAccessViews(ctx, 0, 1, &no_uav, NULL);
+   ctx->lpVtbl->CSSetShaderResources(ctx, 0, 3, none);
+   ctx->lpVtbl->CSSetConstantBuffers(ctx, 0, 1, &no_cb);
+   ctx->lpVtbl->CSSetShader(ctx, NULL, NULL, 0);
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* A texture for planar frames: RGBA8 a compute shader writes, its planes
+ * beside it, and the first frame converted into it */
+static uintptr_t d3d11_planar_load(d3d11_video_t *d3d11,
+      const struct texture_image *image, enum texture_filter_type filter)
+{
+   const struct texture_planar *tp = image->planar;
+   D3D11Device device = d3d11->device;
+   d3d11_texture_t *texture;
+   d3d11_planar_t  *p;
+   unsigned cw = (image->width  + 1) / 2;
+   unsigned ch = (image->height + 1) / 2;
+
+   if (     !image->width || !image->height
+         || (tp->chroma_step != 1 && tp->chroma_step != 2)
+         || !d3d11_planar_init(d3d11))
+      return 0;
+   if (!(texture = (d3d11_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+   if (!(p = (d3d11_planar_t*)calloc(1, sizeof(*p))))
+   {
+      free(texture);
+      return 0;
+   }
+   p->texture       = texture;
+   p->interleaved   = tp->chroma_step == 2;
+   texture->sampler = d3d11->samplers[
+         (filter == TEXTURE_FILTER_NEAREST
+          || filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+         ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->desc.Width     = image->width;
+   texture->desc.Height    = image->height;
+   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+   if (     !d3d11_init_texture_ex(device, texture, false)
+         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM
+         || FAILED(device->lpVtbl->CreateUnorderedAccessView(device,
+               (D3D11Resource)texture->handle, NULL, &p->uav))
+         || !d3d11_planar_plane(device, image->width, image->height,
+               DXGI_FORMAT_R8_UNORM, &p->plane[0], &p->plane_view[0])
+         || !d3d11_planar_plane(device, cw, ch, p->interleaved
+               ? DXGI_FORMAT_R8G8_UNORM : DXGI_FORMAT_R8_UNORM,
+               &p->plane[1], &p->plane_view[1])
+         || (!p->interleaved && !d3d11_planar_plane(device, cw, ch,
+               DXGI_FORMAT_R8_UNORM, &p->plane[2], &p->plane_view[2]))
+         || d3d11_planar_update(d3d11, p, image)
+               != VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      d3d11_planar_destroy(p);
+      d3d11_release_texture(texture);
+      free(texture);
+      return 0;
+   }
+   p->next       = d3d11->planar;
+   d3d11->planar = p;
+   return (uintptr_t)texture;
+}
+
 /* Inner load function -- performs all DeviceContext-touching work.
  * Must run on the same thread that owns the D3D11 immediate
  * context (ID3D11DeviceContext is NOT thread-safe). */
@@ -7021,6 +7306,8 @@ static uintptr_t d3d11_gfx_load_texture_internal(
 
    if (!d3d11)
       return 0;
+   if (image->planar)
+      return d3d11_planar_load(d3d11, image, filter_type);
 
    texture = (d3d11_texture_t*)calloc(1, sizeof(*texture));
 
@@ -7091,12 +7378,15 @@ static uintptr_t d3d11_gfx_load_texture_internal(
  * referencing via the ImmediateContext's pending command stream
  * can cause the GPU to access freed memory.  Running unload on
  * the video thread serialises it with the context's draw calls. */
-static void d3d11_gfx_unload_texture_internal(uintptr_t handle)
+static void d3d11_gfx_unload_texture_internal(d3d11_video_t *d3d11,
+      uintptr_t handle)
 {
    d3d11_texture_t* texture = (d3d11_texture_t*)handle;
 
    if (!texture)
       return;
+   if (d3d11)
+      d3d11_planar_forget(d3d11, handle);
 
    Release(texture->view);
    Release(texture->staging);
@@ -7116,7 +7406,7 @@ static uintptr_t d3d11_texture_load_wrap(void *data)
 static uintptr_t d3d11_texture_unload_wrap(void *data)
 {
    d3d11_texture_cmd_t *cmd = (d3d11_texture_cmd_t*)data;
-   d3d11_gfx_unload_texture_internal(cmd->handle);
+   d3d11_gfx_unload_texture_internal(cmd->d3d11, cmd->handle);
    return 0;
 }
 #endif
@@ -7166,6 +7456,14 @@ static enum video_texture_update d3d11_gfx_update_texture_internal(
    d3d11_texture_t *texture = (d3d11_texture_t*)handle;
    HRESULT hr;
 
+   if (d3d11 && image->planar)
+   {
+      d3d11_planar_t *p = d3d11->planar;
+      while (p && p->texture != texture)
+         p = p->next;
+      return p ? d3d11_planar_update(d3d11, p, image)
+               : VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
    if (     !d3d11 || !texture
          || texture->desc.Width  != image->width
          || texture->desc.Height != image->height)
@@ -7217,7 +7515,7 @@ static enum video_texture_update d3d11_gfx_update_texture(
       bool threaded)
 {
    d3d11_video_t *d3d11 = (d3d11_video_t*)video_data;
-   if (!id || !ti || !ti->pixels)
+   if (!id || !ti || (!ti->pixels && !ti->planar))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
@@ -7259,7 +7557,7 @@ static void d3d11_gfx_unload_texture(void* data,
    }
 #endif
 
-   d3d11_gfx_unload_texture_internal(handle);
+   d3d11_gfx_unload_texture_internal((d3d11_video_t*)data, handle);
 }
 
 /* --- the threaded wrapper's hardware ring ------------------------------ */
@@ -7496,6 +7794,10 @@ static bool d3d11_gfx_supports_texture_format(void* data,
     * level; load and update copy its rows as they are. */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return v && v->device;
+   /* A compute shader's typed store to R8G8B8A8 is feature level 11 */
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+      return v && v->device && !v->planar_failed
+         && v->supportedFeatureLevel >= D3D_FEATURE_LEVEL_11_0;
 #ifdef HAVE_DXGI_HDR
    /* PSMainLinearHDR shows such a texture as linear scRGB while the
     * output is HDR; in SDR there is no linear light to show it in. */
