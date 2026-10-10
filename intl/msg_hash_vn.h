@@ -480,6 +480,7 @@ static const struct
    char s_0a05438c[50];
    char s_1324c306[38];
    char s_152cd261[35];
+   char s_91318729[32];
    char s_7d00b7ed[13];
    char s_7bd7aa88[52];
    char s_0674b554[45];
@@ -1694,6 +1695,9 @@ static const struct
    char s_64dd7209[51];
    char s_77155e0f[23];
    char s_e2f6ffcd[7];
+   char s_04ef691f[38];
+   char s_af2f5836[56];
+   char s_04f38f4d[36];
    char s_3936fe87[103];
    char s_393985fc[32];
    char s_57110ba8[48];
@@ -2886,6 +2890,7 @@ static const struct
    char s_19b6373a[110];
    char s_f63531f4[65];
    char s_f83d414f[95];
+   char s_539bbd17[287];
    char s_65e89a5b[49];
    char s_1757ee76[91];
    char s_11fd7702[130];
@@ -4427,6 +4432,8 @@ static const struct
    char s_265dbfa3[55];
    char s_b0e45a57[26];
    char s_543fcabd[18];
+   char s_a4487584[101];
+   char s_8b9891bf[72];
    char s_59212b5f[22];
    char s_f26b6cff[33];
    char s_58909bc7[21];
@@ -4708,6 +4715,8 @@ static const struct
    char s_1a5c7ca6[29];
    char s_1a5c880d[17];
    char s_7b23d9e6[25];
+   char s_77943569[147];
+   char s_04305cd6[164];
    char s_c182bd2e[7];
    char s_0110d0c7[30];
    char s_c6156015[33];
@@ -5911,6 +5920,7 @@ static const struct
    "N\341\273\201n t\341\272\243ng \304\221\341\273\223ng b\341\273\231 \304\221\303\241m m\303\242y"
    ".",
    "B\341\272\255t \304\221\341\273\223ng b\341\273\231 h\303\263a \304\221\303\241m m\303\242y",
+   "Th\306\260 m\341\273\245c con \304\221\341\273\223ng b\341\273\231 NFS",
    "M\341\272\255t kh\341\272\251u",
    "Gi\341\272\243i quy\341\272\277t xung \304\221\341\273\231t: Gi\341\273\257 nguy\303\252n v\341"
    "\273\213 tr\303\255",
@@ -7320,6 +7330,10 @@ static const struct
    "\306\241i",
    "H\341\273\227 tr\341\273\243 c\341\272\243m \341\273\251ng",
    "C\341\273\225ng",
+   "- K\341\272\277t n\341\273\221i qua Bluetooth v\341\273\233i: %s",
+   "- K\341\272\277t n\341\273\221i qua Bluetooth v\341\273\233i: M\303\241y t\303\255nh n\303\240y "
+   "(%s)",
+   "- Gh\303\251p n\341\273\221i v\341\273\233i m\303\241y t\303\255nh n\303\240y",
    "T\303\252n hi\341\273\203n th\341\273\213 thi\341\272\277t b\341\273\213: %s\nT\303\252n c\341"
    "\272\245u h\303\254nh thi\341\272\277t b\341\273\213: %s\nVID/PID c\341\273\247a thi\341\272\277"
    "t b\341\273\213: %d/%d",
@@ -9122,6 +9136,13 @@ static const struct
    "Th\341\273\255 \304\221\341\273\223ng b\341\273\231 c\341\272\245u h\303\254nh, SRAM v\303\240 t"
    "r\341\272\241ng th\303\241i l\303\252n d\341\273\213ch v\341\273\245 l\306\260u tr\341\273\257 "
    "\304\221\303\241m m\303\242y.",
+   "Th\306\260 m\341\273\245c b\303\252n trong v\303\271ng chia s\341\272\273 NFS d\303\271ng \304"
+   "\221\341\273\203 \304\221\341\273\223ng b\341\273\231 d\341\273\257 li\341\273\207u \304\221\303"
+   "\241m m\303\242y. C\303\241c t\341\273\207p \304\221\306\260\341\273\243c l\306\260u trong th"
+   "\306\260 m\341\273\245c cloud_sync b\303\252n trong \304\221\303\263. \304\220\341\273\203 tr"
+   "\341\273\221ng \304\221\341\273\203 s\341\273\255 d\341\273\245ng Th\306\260 m\341\273\245c con "
+   "NFS, ho\341\272\267c nh\341\272\255p / \304\221\341\273\203 s\341\273\255 d\341\273\245ng th\306"
+   "\260 m\341\273\245c g\341\273\221c c\341\273\247a v\303\271ng chia s\341\272\273.",
    "M\341\272\255t kh\341\272\251u t\303\240i kho\341\272\243n l\306\260u tr\341\273\257 \304\221"
    "\303\241m m\303\242y.",
    "Gi\341\272\243i quy\341\272\277t m\341\273\215i xung \304\221\341\273\231t b\341\272\261ng c\303"
@@ -13685,6 +13706,11 @@ static const struct
    "\341\273\201u khi\341\273\203n",
    "Nh\341\272\243 ph\303\255m v\303\240 Ph\303\255m ra!",
    "Th\341\273\235i gian ch\341\273\235",
+   "Tay c\341\272\247m \341\273\237 c\341\273\225ng %u s\341\272\275 k\341\272\277t n\341\273\221i v"
+   "\341\273\233i m\303\241y t\303\255nh n\303\240y qua Bluetooth khi \304\221\306\260\341\273\243c "
+   "r\303\272t d\303\242y.",
+   "Kh\303\264ng th\341\273\203 gh\303\251p n\341\273\221i tay c\341\272\247m \341\273\237 c\341\273"
+   "\225ng %u v\341\273\233i m\303\241y t\303\255nh n\303\240y.",
    "Nh\341\272\255p m\303\243 gian l\341\272\255n",
    "Nh\341\272\255p t\303\252n t\341\273\207p m\303\243 gian l\341\272\255n",
    "Ch\341\273\215n h\303\240nh \304\221\341\273\231ng",
@@ -14150,6 +14176,14 @@ static const struct
    "K\303\255ch th\306\260\341\273\233c tr\341\272\241ng th\303\241i",
    "\303\224 tr\341\272\241ng th\303\241i",
    "Ch\341\273\245p \341\272\243nh m\303\240n h\303\254nh.",
+   "T\303\255nh n\304\203ng x\303\241c minh ch\341\273\251ng ch\341\273\211 TLS \304\221\303\243 b"
+   "\341\273\213 t\341\272\257t. C\303\241c k\341\272\277t n\341\273\221i b\341\272\243o m\341\272"
+   "\255t kh\303\264ng \304\221\306\260\341\273\243c ki\341\273\203m tra v\303\240 c\303\263 th\341"
+   "\273\203 b\341\273\213 \304\221\303\241nh ch\341\272\267n.",
+   "K\341\272\277t n\341\273\221i b\341\272\243o m\341\272\255t b\341\273\213 t\341\273\253 ch\341"
+   "\273\221i: kh\303\264ng th\341\273\203 x\303\241c minh ch\341\273\251ng ch\341\273\211 c\341\273"
+   "\247a m\303\241y ch\341\273\247. Xem nh\341\272\255t k\303\275 ho\341\272\267c thi\341\272\277t "
+   "l\341\272\255p 'X\303\241c minh ch\341\273\251ng ch\341\273\211 TLS'.",
    "\304\221\341\272\277n",
    "B\341\272\255t/T\341\272\257t si\303\252u d\341\273\257 li\341\273\207u",
    "H\303\254nh thu nh\341\273\217 to\303\240n m\303\240n h\303\254nh",
@@ -14203,7 +14237,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_vn_blob_check[
-      (sizeof(msg_hash_vn_blob) == (275459u
+      (sizeof(msg_hash_vn_blob) == (276392u
 #ifdef ANDROID
        + 373u
 #endif
@@ -15224,6 +15258,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_LABEL_VALUE_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -16438,6 +16473,9 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
@@ -17618,6 +17656,7 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DESTRUCTIVE,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_DRIVER,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_ENABLE,
+   (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_NFS_SUBDIR,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_PASSWORD,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_LOCAL,
    (uint32_t)MENU_ENUM_SUBLABEL_CLOUD_SYNC_RESOLVE_KEEP_SERVER,
@@ -19139,6 +19178,8 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_BT_PAIRED,
+   (uint32_t)MSG_INPUT_BT_PAIR_FAILED,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
    (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
@@ -19420,6 +19461,8 @@ static const uint32_t msg_hash_vn_ids[] =
    (uint32_t)MSG_STATE_SIZE,
    (uint32_t)MSG_STATE_SLOT,
    (uint32_t)MSG_TAKING_SCREENSHOT,
+   (uint32_t)MSG_TLS_VERIFY_DISABLED,
+   (uint32_t)MSG_TLS_VERIFY_FAILED,
    (uint32_t)MSG_TO,
    (uint32_t)MSG_TOGGLE_CONTENT_METADATA,
    (uint32_t)MSG_TOGGLE_FULLSCREEN_THUMBNAILS,

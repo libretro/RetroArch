@@ -1623,6 +1623,9 @@ static const struct
    char s_2010df6a[17];
    char s_64dd7209[38];
    char s_77155e0f[21];
+   char s_04ef691f[35];
+   char s_af2f5836[53];
+   char s_04f38f4d[30];
    char s_3936fe87[78];
    char s_393985fc[24];
    char s_57110ba8[30];
@@ -4250,6 +4253,8 @@ static const struct
    char s_265dbfa3[40];
    char s_b0e45a57[30];
    char s_543fcabd[10];
+   char s_a4487584[113];
+   char s_8b9891bf[77];
    char s_59212b5f[15];
    char s_f26b6cff[16];
    char s_58909bc7[18];
@@ -6398,6 +6403,9 @@ static const struct
    "Replay abspielen",
    "Wiedergabelisten Vorschaubild-Updater",
    "Touch-Unterst\303\274tzung",
+   "- Verbindet \303\274ber Bluetooth zu: %s",
+   "- Verbindet \303\274ber Bluetooth zu: Dieser Computer (%s)",
+   "- Mit diesem Computer koppeln",
    "Ger\303\244te-Anzeigename: %s\nGer\303\244te-Konfigurationsname: %s\nGer\303\244te-VID/PID: %d/%"
    "d",
    "Ger\303\244tename Port %d: %s",
@@ -9976,6 +9984,9 @@ static const struct
    "Tastatur, Maus oder Controller dr\303\274cken",
    "Tasten und Kn\303\266pfe freigeben!",
    "Zeitlimit",
+   "Der Controller an Port %u verbindet sich \303\274ber Bluetooth mit diesem Computer, sobald er vo"
+   "m Kabel getrennt wird.",
+   "Der Controller an Port %u konnte nicht mit diesem Computer gekoppelt werden.",
    "Cheat eingeben",
    "Cheat-Dateiname",
    "Aktion ausw\303\244hlen",
@@ -10311,7 +10322,7 @@ static const struct
  * compiler that pads this struct fails here instead of
  * misindexing at runtime. */
 typedef char msg_hash_de_blob_check[
-      (sizeof(msg_hash_de_blob) == (226246u
+      (sizeof(msg_hash_de_blob) == (226554u
 #ifdef ANDROID
        + 358u
 #endif
@@ -12484,6 +12495,9 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MENU_ENUM_LABEL_VALUE_PLAY_REPLAY,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PL_THUMBNAILS_UPDATER_LIST,
    (uint32_t)MENU_ENUM_LABEL_VALUE_POINTER_ENABLE,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_HOST_THIS,
+   (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_BT_PAIR,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_INFO,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NAME,
    (uint32_t)MENU_ENUM_LABEL_VALUE_PORT_DEVICE_NO_PROFILE,
@@ -15096,6 +15110,8 @@ static const uint32_t msg_hash_de_ids[] =
    (uint32_t)MSG_INPUT_BIND_PRESS,
    (uint32_t)MSG_INPUT_BIND_RELEASE,
    (uint32_t)MSG_INPUT_BIND_TIMEOUT,
+   (uint32_t)MSG_INPUT_BT_PAIRED,
+   (uint32_t)MSG_INPUT_BT_PAIR_FAILED,
    (uint32_t)MSG_INPUT_CHEAT,
    (uint32_t)MSG_INPUT_CHEAT_FILENAME,
    (uint32_t)MSG_INPUT_COMBO_CHOOSE_ACTION,
