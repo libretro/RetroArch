@@ -3117,6 +3117,8 @@ static void d3d12_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
    }
 }
 
+/* Only the slang passes set these. */
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 static void d3d12_set_hdr_inverse_tonemap(d3d12_video_t* d3d12, bool inverse_tonemap)
 {
    d3d12->hdr.ubo_values.inverse_tonemap  = inverse_tonemap ? 1.0f : 0.0f;
@@ -3144,6 +3146,7 @@ static void d3d12_set_hdr10(d3d12_video_t* d3d12, bool hdr10)
       }
    }
 }
+#endif
 #endif
 
 static void d3d12_set_filtering(void* data, unsigned index, bool smooth, bool ctx_scaling)
@@ -3442,6 +3445,7 @@ error:
 #endif
 }
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 static void d3d12_deferred_state_free(
       d3d12_video_t *d3d12,
       d3d12_deferred_state_t *ds,
@@ -3484,6 +3488,7 @@ static void d3d12_deferred_state_free(
 
    free(ds);
 }
+#endif
 
 static bool d3d12_shader_load_step(void *data,
       shader_load_deferred_t *deferred)

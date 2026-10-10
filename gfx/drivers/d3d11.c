@@ -2486,6 +2486,8 @@ static void d3d11_set_hdr_subpixel_layout(void* data, unsigned subpixel_layout)
    }
 }
 
+/* Only the slang passes set these. */
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 static void d3d11_set_hdr_inverse_tonemap(d3d11_video_t* d3d11, bool inverse_tonemap)
 {
 
@@ -2514,6 +2516,7 @@ static void d3d11_set_hdr10(d3d11_video_t* d3d11, bool hdr10)
          d3d11->pass[i].hdr10     = hdr10 ? 1.0f : 0.0f;
    }
 }
+#endif
 #endif
 
 static void d3d11_set_filtering(void* data, unsigned index,
@@ -2782,6 +2785,7 @@ error:
 #endif
 }
 
+#if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
 static void d3d11_deferred_state_free(
       d3d11_deferred_state_t *ds,
       unsigned passes_built)
@@ -2823,6 +2827,7 @@ static void d3d11_deferred_state_free(
 
    free(ds);
 }
+#endif
 
 static bool d3d11_shader_load_step(void *data,
       shader_load_deferred_t *deferred)
