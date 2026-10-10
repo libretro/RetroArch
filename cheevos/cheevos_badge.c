@@ -26,7 +26,6 @@
 #include "cheevos.h"
 
 #include "../gfx/gfx_display.h"
-#include "../gfx/video_driver.h"
 #include "../gfx/gfx_surface.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
@@ -42,8 +41,8 @@ void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size
 /* --- Badge textures ---------------------------------------------------
  * Nothing here reads a file, decodes or uploads on the thread that
  * asks. rcheevos_get_badge_texture() only looks a badge up in a small
- * table: a handle that is ready is handed over, anything else answers
- * 0 and the caller asks again on a later frame, which every caller
+ * table: a surface that is ready is handed over, anything else answers
+ * NULL and the caller asks again on a later frame, which every caller
  * already does for a badge that is still downloading. A badge that is
  * not in the table is written into it as a request, and that is all an
  * asking thread ever does - so any thread may ask. Under the threaded
@@ -53,18 +52,19 @@ void rcheevos_get_local_badge_filename(char badge_file[], size_t badge_file_size
  * The main thread does the work (rcheevos_badge_cache_service(), at
  * once when the asker is the main thread, else from the runloop): the
  * file check, the download request for a missing file, and the image
- * task (decode on a worker) whose completion posts the upload
- * (asynchronous under threaded video). Nothing waits on anything.
+ * task (decode on a worker) whose completion gives the image to a
+ * still surface, which uploads it (on the video thread under threaded
+ * video). Nothing waits on anything.
  *
- * Handles keep the old ownership: each one handed out belongs to the
- * caller, who unloads it. The server default badge, which many menu
- * entries show at once while their own is on its way, can also be
- * borrowed (rcheevos_get_default_badge_texture()): that one has a slot
- * of its own, is loaded once, and its handle stays the cache's.
+ * Each surface handed out belongs to the caller, who frees it. The
+ * server default badge, which many menu entries show at once while
+ * their own is on its way, can also be borrowed
+ * (rcheevos_get_default_badge_texture()): that one has a slot of its
+ * own, is loaded once, and its surface stays the cache's.
  *
  * The table is small and round-robin. A slot evicted or reset while
  * its load is in flight has its sequence bumped, so the late delivery
- * is unloaded instead of landing in whatever reuses the slot. A failed
+ * is freed instead of landing in whatever reuses the slot. A failed
  * load stays failed until the slot is reused or the file is downloaded
  * again, so a bad file is not decoded once a frame.
  *
@@ -81,14 +81,14 @@ enum rcheevos_badge_slot_state
    RCHEEVOS_BADGE_SLOT_REQUESTED,  /* asked for; the main thread has not looked yet */
    RCHEEVOS_BADGE_SLOT_FETCHING,   /* badge being downloaded */
    RCHEEVOS_BADGE_SLOT_LOADING,    /* badge being decoded and uploaded */
-   RCHEEVOS_BADGE_SLOT_READY,      /* handle waiting to be taken */
+   RCHEEVOS_BADGE_SLOT_READY,      /* surface waiting to be taken */
    RCHEEVOS_BADGE_SLOT_FAILED      /* missing, or download or load failed */
 };
 
 typedef struct
 {
    char key[RCHEEVOS_BADGE_KEY_LEN]; /* badge name: "NNNNN" */
-   uintptr_t handle;                 /* texture handle */
+   gfx_surface_t *surface;           /* READY: the badge, waiting to be taken */
    uint32_t seq;                     /* matched against the load tag, so a load
                                       * outlived by its slot is not delivered */
    uint8_t state;                    /* enum rcheevos_badge_slot_state */
@@ -96,8 +96,10 @@ typedef struct
    uint8_t download;                 /* REQUESTED: fetch the file if it is missing */
 } rcheevos_badge_slot_t;
 
+/* One load: the surface is the tag's until it lands in its slot */
 typedef struct
 {
+   gfx_surface_t *surface;
    unsigned slot;
    uint32_t seq;
 } rcheevos_badge_load_tag_t;
@@ -128,85 +130,81 @@ static int rcheevos_badge_requests;
 #define RCHEEVOS_BADGE_REQUESTS_GET()    (rcheevos_badge_requests)
 #endif
 
-static void rcheevos_badge_image_release(void* img)
+/* Caller holds the lock. Returns the surface the slot was holding,
+ * for the caller to free once the lock is dropped. */
+static gfx_surface_t *rcheevos_badge_slot_clear(rcheevos_badge_slot_t* slot)
 {
-   struct texture_image *ti = (struct texture_image*)img;
-   if (ti)
-   {
-      image_texture_free(ti);
-      free(ti);
-   }
-}
+   gfx_surface_t *s = (slot->state == RCHEEVOS_BADGE_SLOT_READY)
+      ? slot->surface : NULL;
 
-/* Caller holds the lock. Returns the handle the slot was holding, for
- * the caller to unload once the lock is dropped. */
-static uintptr_t rcheevos_badge_slot_clear(rcheevos_badge_slot_t* slot)
-{
-   uintptr_t handle = (slot->state == RCHEEVOS_BADGE_SLOT_READY)
-      ? slot->handle : 0;
-
-   slot->handle   = 0;
+   slot->surface  = NULL;
    slot->state    = RCHEEVOS_BADGE_SLOT_EMPTY;
    slot->download = 0;
    slot->key[0]   = '\0';
    slot->seq++; /* orphans any load still in flight */
-   return handle;
+   return s;
 }
 
-/* A load is over: @handle, or 0 if it failed. If the slot no longer
- * waits for this load the handle is nobody's, and is unloaded. */
-static void rcheevos_badge_load_done(void *user, uintptr_t handle)
+/* A load is over, with the badge up on the tag's surface or not. If
+ * the slot no longer waits for this load the surface is nobody's,
+ * and is freed. */
+static void rcheevos_badge_load_done(rcheevos_badge_load_tag_t *tag, bool landed)
 {
-   rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t*)user;
-   rcheevos_badge_slot_t *slot;
-   if (!tag)
-      return;
-
-   slot = &rcheevos_badge_slots[tag->slot];
+   gfx_surface_t *s            = tag->surface;
+   rcheevos_badge_slot_t *slot = &rcheevos_badge_slots[tag->slot];
 
    RCHEEVOS_BADGE_LOCK();
    if (slot->seq == tag->seq && slot->state == RCHEEVOS_BADGE_SLOT_LOADING)
    {
-      slot->handle = handle;
-      slot->state  = handle ? RCHEEVOS_BADGE_SLOT_READY : RCHEEVOS_BADGE_SLOT_FAILED;
-      handle       = 0;
+      if (landed)
+      {
+         slot->surface = s;
+         s             = NULL;
+      }
+      slot->state = landed ? RCHEEVOS_BADGE_SLOT_READY : RCHEEVOS_BADGE_SLOT_FAILED;
    }
    RCHEEVOS_BADGE_UNLOCK();
 
-   if (handle)
-      video_driver_texture_unload(&handle);
-
+   if (s)
+      gfx_surface_free(s);
    free(tag);
 }
 
-/* Main thread: the decode finished; hand the image to the uploader. */
+/* Main thread, from the surface once a queued upload has completed */
+static void rcheevos_badge_landed(void *user, gfx_surface_t *s, unsigned slot)
+{
+   (void)slot;
+   rcheevos_badge_load_done((rcheevos_badge_load_tag_t*)user, s->handle != 0);
+}
+
+/* Main thread: the decode finished; the still takes the image. With
+ * nothing in flight afterwards the texture is up now; otherwise the
+ * surface says when. */
 static void rcheevos_badge_decode_done(retro_task_t *task,
       void *task_data, void *user_data, const char *error)
 {
    struct texture_image      *img = (struct texture_image*)task_data;
    rcheevos_badge_load_tag_t *tag = (rcheevos_badge_load_tag_t*)user_data;
+   gfx_surface_t *s;
    (void)task; (void)error;
 
    if (!tag)
    {
-      rcheevos_badge_image_release(img);
+      if (img)
+      {
+         image_texture_free(img);
+         free(img);
+      }
       return;
    }
 
-   if (!img || img->width < 1 || img->height < 1 || !img->pixels)
-   {
-      rcheevos_badge_load_done(tag, 0);   /* frees tag */
-      rcheevos_badge_image_release(img);
-      return;
-   }
-
-   if (!video_driver_texture_load_async(img,
-         gfx_display_texture_filter_latched(),
-            rcheevos_badge_load_done, tag, rcheevos_badge_image_release))
-   {
-      rcheevos_badge_image_release(img);
-      rcheevos_badge_load_done(tag, 0);
-   }
+   s          = tag->surface;
+   s->release = rcheevos_badge_landed;
+   s->user    = tag;
+   if (!gfx_surface_submit_image(s, img))
+      rcheevos_badge_load_done(tag, false);
+   else if (!s->inflight)
+      rcheevos_badge_load_done(tag, s->handle != 0);
 }
 
 /* Caller holds the lock. */
@@ -227,10 +225,11 @@ static rcheevos_badge_slot_t *rcheevos_badge_slot_find(const char *key, bool loc
 }
 
 /* Caller holds the lock. The first empty slot from the cursor on; with
- * none empty a failed one, else the one at the cursor, whose handle (if
- * it held one) comes back in @evicted. Returned EMPTY, with its key. */
+ * none empty a failed one, else the one at the cursor, whose surface
+ * (if it held one) comes back in @evicted. Returned EMPTY, with its
+ * key. */
 static rcheevos_badge_slot_t* rcheevos_badge_slot_alloc(const char* key,
-      bool locked, uintptr_t *evicted)
+      bool locked, gfx_surface_t **evicted)
 {
    unsigned i;
    rcheevos_badge_slot_t* slot = NULL;
@@ -268,25 +267,25 @@ static rcheevos_badge_slot_t* rcheevos_badge_slot_alloc(const char* key,
 }
 
 /* Drop every cached or in-flight badge: the menu list is being
- * rebuilt, or the game unloaded. Ready handles are unloaded, loads in
+ * rebuilt, or the game unloaded. Ready surfaces are freed, loads in
  * flight orphaned. */
 void rcheevos_badge_cache_reset(void)
 {
    unsigned i;
    unsigned count = 0;
-   uintptr_t handles[RCHEEVOS_BADGE_SLOTS + 1];
+   gfx_surface_t *ready[RCHEEVOS_BADGE_SLOTS + 1];
 
    RCHEEVOS_BADGE_LOCK();
    for (i = 0; i < RCHEEVOS_BADGE_SLOTS + 1; i++)
    {
-      uintptr_t handle = rcheevos_badge_slot_clear(&rcheevos_badge_slots[i]);
-      if (handle)
-         handles[count++] = handle;
+      gfx_surface_t *s = rcheevos_badge_slot_clear(&rcheevos_badge_slots[i]);
+      if (s)
+         ready[count++] = s;
    }
    RCHEEVOS_BADGE_UNLOCK();
 
    for (i = 0; i < count; i++)
-      video_driver_texture_unload(&handles[i]);
+      gfx_surface_free(ready[i]);
 }
 
 /* Move slot @idx from LOADING to @state, unless it was reused since. */
@@ -336,13 +335,16 @@ static void rcheevos_badge_start_load(unsigned idx, uint32_t seq,
       return;
    }
 
-   tag->slot = idx;
-   tag->seq  = seq;
+   tag->slot    = idx;
+   tag->seq     = seq;
+   tag->surface = gfx_surface_new_still(gfx_display_texture_filter_latched());
 
    gfx_surface_query_requirements(0, &req);
-   if (!task_push_image_load(fullpath, req.rgba,
-         0, 0, rcheevos_badge_decode_done, tag))
+   if (     !tag->surface
+         || !task_push_image_load(fullpath, req.rgba,
+               0, 0, rcheevos_badge_decode_done, tag))
    {
+      gfx_surface_free(tag->surface);
       free(tag);
       rcheevos_badge_slot_settle(idx, seq, RCHEEVOS_BADGE_SLOT_FAILED);
    }
@@ -387,21 +389,21 @@ void rcheevos_badge_cache_service(void)
    }
 }
 
-/* @shared: the default badge's own slot, whose handle is lent rather
+/* @shared: the default badge's own slot, whose surface is lent rather
  * than given. */
-static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
+static gfx_surface_t *rcheevos_badge_ask(const char* badge, bool locked,
       bool download_if_missing, bool shared, bool *pending)
 {
    rcheevos_badge_slot_t *slot;
-   uintptr_t tex     = 0;
-   uintptr_t evicted = 0;
-   bool requested    = false;
+   gfx_surface_t *tex     = NULL;
+   gfx_surface_t *evicted = NULL;
+   bool requested         = false;
 
    if (pending)
       *pending = false;
 
    if (!badge || !badge[0] || strlen(badge) >= RCHEEVOS_BADGE_KEY_LEN)
-      return 0;
+      return NULL;
 
    RCHEEVOS_BADGE_LOCK();
    if (shared)
@@ -420,13 +422,13 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
    switch (slot->state)
    {
       case RCHEEVOS_BADGE_SLOT_READY:
-         tex = slot->handle;
+         tex = slot->surface;
          if (!shared)
          {
             /* the caller's from here on; the slot is free again */
-            slot->handle = 0;
-            slot->state  = RCHEEVOS_BADGE_SLOT_EMPTY;
-            slot->key[0] = '\0';
+            slot->surface = NULL;
+            slot->state   = RCHEEVOS_BADGE_SLOT_EMPTY;
+            slot->key[0]  = '\0';
          }
          break;
 
@@ -464,7 +466,7 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
    RCHEEVOS_BADGE_UNLOCK();
 
    if (evicted)
-      video_driver_texture_unload(&evicted);
+      gfx_surface_free(evicted);
 
    if (requested)
    {
@@ -489,18 +491,18 @@ static uintptr_t rcheevos_badge_ask(const char* badge, bool locked,
    return tex;
 }
 
-uintptr_t rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
+gfx_surface_t *rcheevos_get_badge_texture(const char* badge, bool locked, bool download_if_missing)
 {
    return rcheevos_badge_ask(badge, locked, download_if_missing, false, NULL);
 }
 
-uintptr_t rcheevos_get_badge_texture_ex(const char* badge, bool locked,
+gfx_surface_t *rcheevos_get_badge_texture_ex(const char* badge, bool locked,
       bool download_if_missing, bool *pending)
 {
    return rcheevos_badge_ask(badge, locked, download_if_missing, false, pending);
 }
 
-uintptr_t rcheevos_get_default_badge_texture(void)
+gfx_surface_t *rcheevos_get_default_badge_texture(void)
 {
    return rcheevos_badge_ask(RCHEEVOS_BADGE_DEFAULT_NAME, false, false, true, NULL);
 }

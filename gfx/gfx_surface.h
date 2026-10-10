@@ -414,7 +414,8 @@ void gfx_surface_slot_end(gfx_surface_t *s, unsigned slot);
 /* Unload the texture and free the surface. A submit in flight keeps
  * the slots alive until it completes, without a release() call; its
  * payload is still freed then. A decode still queued likewise: the
- * surface goes once it is answered. */
+ * surface goes once it is answered. A still with nothing in flight
+ * may be freed from the thread that draws it. NULL is a no-op. */
 void gfx_surface_free(gfx_surface_t *s);
 
 /* gfx_surface_free() for a surface whose submit was given pixels the

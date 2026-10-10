@@ -24,7 +24,7 @@
 #include "cheevos_client.h"
 
 #include "../gfx/gfx_display.h"
-#include "../gfx/video_driver.h"
+#include "../gfx/gfx_surface.h"
 #include "../tasks/tasks_internal.h"
 #include "../file_path_special.h"
 #include "../msg_hash.h"
@@ -222,12 +222,11 @@ void rcheevos_menu_reset_badges(void)
 
    while (menuitem < stop)
    {
-      /* A pending entry's texture is the default badge, which the
-       * cache reset above has already unloaded */
-      if (     menuitem->menu_badge_texture
-            && menuitem->menu_badge_grayscale != RCHEEVOS_MENU_BADGE_PENDING)
-         video_driver_texture_unload(&menuitem->menu_badge_texture);
-      menuitem->menu_badge_texture   = 0;
+      /* A pending entry's badge is the default badge, which the
+       * cache reset above has already freed */
+      if (menuitem->menu_badge_grayscale != RCHEEVOS_MENU_BADGE_PENDING)
+         gfx_surface_free(menuitem->menu_badge);
+      menuitem->menu_badge           = NULL;
       menuitem->menu_badge_grayscale = 0;
       ++menuitem;
    }
@@ -436,28 +435,32 @@ static void rcheevos_menu_update_badge(rcheevos_menuitem_t* menuitem, bool downl
       return;
    }
 
-   /* menu_badge_grayscale is 0 or 1 while the entry owns the texture
+   /* menu_badge_grayscale is 0 or 1 while the entry owns the surface
     * of its own badge in that rendition, and RCHEEVOS_MENU_BADGE_PENDING
-    * while it does not have it yet: the texture is then 0 or the server
-    * default badge, which is the cache's and never unloaded from here. */
-   if (!menuitem->menu_badge_texture || menuitem->menu_badge_grayscale != badge_grayscale)
+    * while it does not have it yet: the surface is then NULL or the
+    * server default badge, which is the cache's and never freed from
+    * here. */
+   if (!menuitem->menu_badge || menuitem->menu_badge_grayscale != badge_grayscale)
    {
-      uintptr_t new_badge_texture =
+      gfx_surface_t *new_badge =
          rcheevos_get_badge_texture(badge_name, badge_grayscale, download_if_missing);
 
       if (     menuitem->menu_badge_grayscale != RCHEEVOS_MENU_BADGE_PENDING
-            && menuitem->menu_badge_texture
-            && (new_badge_texture || menuitem->menu_badge_grayscale != badge_grayscale))
-         video_driver_texture_unload(&menuitem->menu_badge_texture);
-
-      if (new_badge_texture)
+            && menuitem->menu_badge
+            && (new_badge || menuitem->menu_badge_grayscale != badge_grayscale))
       {
-         menuitem->menu_badge_texture   = new_badge_texture;
+         gfx_surface_free(menuitem->menu_badge);
+         menuitem->menu_badge = NULL;
+      }
+
+      if (new_badge)
+      {
+         menuitem->menu_badge           = new_badge;
          menuitem->menu_badge_grayscale = badge_grayscale;
       }
       else
       {
-         menuitem->menu_badge_texture   = rcheevos_get_default_badge_texture();
+         menuitem->menu_badge           = rcheevos_get_default_badge_texture();
          menuitem->menu_badge_grayscale = RCHEEVOS_MENU_BADGE_PENDING;
       }
    }
@@ -485,7 +488,7 @@ uintptr_t rcheevos_menu_get_badge_texture(unsigned menu_offset)
          return 0;
       }
 
-      return menuitem->menu_badge_texture;
+      return GFX_SURFACE_HANDLE(menuitem->menu_badge);
    }
 
    return 0;

@@ -1,16 +1,18 @@
 /* badge_cache_test: rcheevos_get_badge_texture() never reads, decodes
  * or uploads on the calling thread, so any thread may call it. On the
  * main thread the first call for a badge on disk posts a decode and
- * returns 0; the decode's completion posts the upload; the first call
- * after the upload lands takes the handle, and the handle is the
- * caller's (a later call starts a fresh load). Off the main thread the
- * call only records the request, and rcheevos_badge_cache_service() on
- * the main thread starts it. A missing file returns 0 and asks for a
- * download exactly when told to, and the download's completion starts
- * the load. A failed load stays failed - it is not retried once a
- * frame - until a reset or a fresh download. A reset unloads ready
- * handles and orphans in-flight ones, also when their slot has been
- * reused meanwhile. The default badge is lent, not given. */
+ * returns NULL; the decode's completion gives the image to a still
+ * surface; the first call after the upload lands takes the surface,
+ * and the surface is the caller's (a later call starts a fresh load).
+ * Off the main thread the call only records the request, and
+ * rcheevos_badge_cache_service() on the main thread starts it. A
+ * missing file returns NULL and asks for a download exactly when told
+ * to, and the download's completion starts the load. A failed load
+ * stays failed - it is not retried once a frame - until a reset or a
+ * fresh download. A reset frees ready surfaces and orphans in-flight
+ * ones, also when their slot has been reused meanwhile. The default
+ * badge is lent, not given. Under direct video the upload lands in
+ * the decode's completion itself. */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +21,7 @@
 #include <boolean.h>
 #include <compat/strl.h>
 
+#include "../../../gfx/gfx_surface.h"
 #include "../../../cheevos/cheevos.h"
 
 extern int      st_on_main_thread;
@@ -31,7 +34,9 @@ extern unsigned st_unloads;
 extern uintptr_t st_last_unloaded;
 extern unsigned st_parked_count;
 extern unsigned st_uploads_pending_count;
+extern unsigned st_surfaces_live;
 extern int      st_async_available;
+extern int      st_upload_refused;
 void st_finish_decode(unsigned i, bool ok);
 void st_finish_upload(unsigned i, bool ok);
 
@@ -52,6 +57,25 @@ static void exists_png(const char *badge)
    exists(file);
 }
 
+/* What a call handed back, as its texture (0 for NULL). A surface
+ * given is the caller's: it is kept here and freed at the end, so the
+ * frees the cache itself makes can be counted on their own. */
+static gfx_surface_t *kept[64];
+static unsigned kept_count;
+
+static uintptr_t take(gfx_surface_t *s)
+{
+   if (s && kept_count < 64)
+      kept[kept_count++] = s;
+   return GFX_SURFACE_HANDLE(s);
+}
+
+/* The default badge is lent, never freed by the asker */
+static uintptr_t lent(gfx_surface_t *s)
+{
+   return GFX_SURFACE_HANDLE(s);
+}
+
 int main(void)
 {
    uintptr_t h, h2;
@@ -62,74 +86,74 @@ int main(void)
    exists("77777.png");
 
    /* 1. first ask: nothing synchronous, one decode posted, 0 back */
-   h = rcheevos_get_badge_texture("12345", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h == 0, "first call returned a handle (%lx)", (unsigned long)h);
    CHECK(st_parked_count == 1, "%u decodes posted, want 1", st_parked_count);
    CHECK(st_uploads_pending_count == 0, "upload posted before decode finished");
    CHECK(st_downloads == 0, "download requested for a file that exists");
 
    /* 2. asking again while loading: still 0, no second decode */
-   h = rcheevos_get_badge_texture("12345", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h == 0 && st_parked_count == 1, "second ask re-posted the decode");
 
    /* 3. decode lands -> upload posted, still nothing to hand out */
    st_finish_decode(0, true);
    CHECK(st_uploads_pending_count == 1, "decode completion did not post the upload");
-   h = rcheevos_get_badge_texture("12345", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h == 0, "handle handed out before the upload landed");
 
    /* 4. upload lands -> next ask takes the handle, exactly once */
    st_finish_upload(0, true);
-   h = rcheevos_get_badge_texture("12345", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h == 0x1001, "ready handle not handed out (got %lx)", (unsigned long)h);
-   h2 = rcheevos_get_badge_texture("12345", false, true);
+   h2 = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h2 == 0 && st_parked_count == 1,
          "second taker got %lx / %u decodes: the handle was not transferred",
          (unsigned long)h2, st_parked_count);
    CHECK(st_unloads == 0, "something unloaded during a clean hand-over");
 
    /* 5. the locked variant is its own key */
-   h2 = rcheevos_get_badge_texture("12345", true, false);
+   h2 = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(h2 == 0 && st_parked_count == 2, "locked badge shares the unlocked slot");
    st_finish_decode(1, true);
    st_finish_upload(0, true);
-   h2 = rcheevos_get_badge_texture("12345", true, false);
+   h2 = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(h2 == 0x1002, "locked badge handle wrong (%lx)", (unsigned long)h2);
    /* leave the unlocked reload (parked[0]) in flight for step 9 */
 
    /* 6. missing file: 0, download only when asked */
-   h = rcheevos_get_badge_texture("99999", false, false);
+   h = take(rcheevos_get_badge_texture("99999", false, false));
    CHECK(h == 0 && st_downloads == 0 && st_parked_count == 1,
          "missing badge without download flag: dl=%u parked=%u",
          st_downloads, st_parked_count);
-   h = rcheevos_get_badge_texture("99999", false, true);
+   h = take(rcheevos_get_badge_texture("99999", false, true));
    CHECK(h == 0 && st_downloads == 1 && !strcmp(st_last_download, "99999"),
          "missing badge with download flag: dl=%u last=%s",
          st_downloads, st_last_download);
 
    /* 7. failed decode: stays failed, no decode per ask; a reset
     *    forgets it */
-   h = rcheevos_get_badge_texture("00000", false, false);
+   h = take(rcheevos_get_badge_texture("00000", false, false));
    CHECK(st_parked_count == 2, "00000 decode not posted");
    st_finish_decode(1, false);
-   h = rcheevos_get_badge_texture("00000", false, false);
-   h = rcheevos_get_badge_texture("00000", false, false);
+   h = take(rcheevos_get_badge_texture("00000", false, false));
+   h = take(rcheevos_get_badge_texture("00000", false, false));
    CHECK(h == 0 && st_parked_count == 1, "a failed decode was retried per ask (parked=%u)",
          st_parked_count);
 
    /* 8. failed upload: same */
-   h = rcheevos_get_badge_texture("12345", true, false);
+   h = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(st_parked_count == 2, "locked reload not posted");
    st_finish_decode(1, true);
    st_finish_upload(0, false);
-   h = rcheevos_get_badge_texture("12345", true, false);
+   h = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(h == 0 && st_parked_count == 1, "a failed upload was retried per ask");
 
    /* 9. reset with one load in flight (12345 unlocked, parked[0]) and
     *    a ready handle: ready is unloaded, in-flight is orphaned - its
     *    late delivery is unloaded, never handed out, not even to a
     *    badge that has taken over its slot meanwhile. */
-   h = rcheevos_get_badge_texture("77777", false, false);
+   h = take(rcheevos_get_badge_texture("77777", false, false));
    CHECK(st_parked_count == 2, "77777 decode not posted");
    st_finish_decode(1, true);
    st_finish_upload(0, true);                 /* 77777 now READY (0x1003) */
@@ -146,7 +170,7 @@ int main(void)
       {
          snprintf(name, sizeof(name), "5%04u", i);
          exists_png(name);
-         h = rcheevos_get_badge_texture(name, false, false);
+         h = take(rcheevos_get_badge_texture(name, false, false));
       }
       CHECK(st_parked_count == 17, "%u decodes parked, want 17", st_parked_count);
    }
@@ -161,7 +185,7 @@ int main(void)
       for (i = 0; i < 16; i++)
       {
          snprintf(name, sizeof(name), "5%04u", i);
-         h = rcheevos_get_badge_texture(name, false, false);
+         h = take(rcheevos_get_badge_texture(name, false, false));
          CHECK(h == 0, "%s was handed the orphan's texture", name);
       }
    }
@@ -169,11 +193,11 @@ int main(void)
    while (st_parked_count)
       st_finish_decode(0, false);
    /* the reset forgot the failures of 7 and 8 too */
-   h = rcheevos_get_badge_texture("12345", true, false);
+   h = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(h == 0 && st_parked_count == 1, "reset did not forget a failed load");
    st_finish_decode(0, true);
    st_finish_upload(0, true);
-   h = rcheevos_get_badge_texture("12345", true, false);
+   h = take(rcheevos_get_badge_texture("12345", true, false));
    CHECK(h != 0, "reload after reset not handed out");
 
    /* 10. off the main thread: the request is recorded and nothing
@@ -181,8 +205,8 @@ int main(void)
     *     asking thread takes the handle */
    st_on_main_thread = 0;
    st_downloads      = 0;
-   h = rcheevos_get_badge_texture("12345", false, true);
-   h = rcheevos_get_badge_texture("88888", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
+   h = take(rcheevos_get_badge_texture("88888", false, true));
    rcheevos_badge_cache_service();            /* not the main thread: no-op */
    CHECK(h == 0 && st_parked_count == 0 && st_downloads == 0,
          "off-thread call did work: parked=%u dl=%u", st_parked_count, st_downloads);
@@ -195,10 +219,10 @@ int main(void)
    st_finish_decode(0, true);
    st_finish_upload(0, true);
    st_on_main_thread = 0;
-   h = rcheevos_get_badge_texture("12345", false, true);
+   h = take(rcheevos_get_badge_texture("12345", false, true));
    CHECK(h != 0, "off-thread asker was not handed the ready handle");
    /* still downloading: asked every frame, requested once */
-   h = rcheevos_get_badge_texture("88888", false, true);
+   h = take(rcheevos_get_badge_texture("88888", false, true));
    st_on_main_thread = 1;
    rcheevos_badge_cache_service();
    CHECK(h == 0 && st_downloads == 1 && st_parked_count == 0,
@@ -210,7 +234,7 @@ int main(void)
    CHECK(st_parked_count == 1, "download completion did not start the load");
    st_finish_decode(0, true);
    st_finish_upload(0, true);
-   h = rcheevos_get_badge_texture("88888", false, false);
+   h = take(rcheevos_get_badge_texture("88888", false, false));
    CHECK(h != 0, "downloaded badge not handed out");
    /* a name nobody waits for is ignored */
    rcheevos_update_badge_references("12345_lock");
@@ -219,28 +243,28 @@ int main(void)
    /* 12. missing without the download flag fails; an asker that does
     *     want the download gets it, once */
    st_downloads = 0;
-   h = rcheevos_get_badge_texture("66666", true, false);
-   h = rcheevos_get_badge_texture("66666", true, false);
+   h = take(rcheevos_get_badge_texture("66666", true, false));
+   h = take(rcheevos_get_badge_texture("66666", true, false));
    CHECK(st_downloads == 0, "download without the flag");
-   h = rcheevos_get_badge_texture("66666", true, true);
-   h = rcheevos_get_badge_texture("66666", true, true);
+   h = take(rcheevos_get_badge_texture("66666", true, true));
+   h = take(rcheevos_get_badge_texture("66666", true, true));
    CHECK(st_downloads == 1, "%u downloads, want 1", st_downloads);
    exists("66666_lock.png");
    rcheevos_update_badge_references("66666_lock");
    CHECK(st_parked_count == 1, "locked download completion did not start the load");
    st_finish_decode(0, true);
    st_finish_upload(0, true);
-   h = rcheevos_get_badge_texture("66666", true, false);
+   h = take(rcheevos_get_badge_texture("66666", true, false));
    CHECK(h != 0, "downloaded locked badge not handed out");
 
    /* 13. the default badge is lent: same handle to every asker, the
     *     slot keeps it, a reset unloads it exactly once */
-   h = rcheevos_get_default_badge_texture();
+   h = lent(rcheevos_get_default_badge_texture());
    CHECK(h == 0 && st_parked_count == 1, "default badge decode not posted");
    st_finish_decode(0, true);
    st_finish_upload(0, true);
-   h  = rcheevos_get_default_badge_texture();
-   h2 = rcheevos_get_default_badge_texture();
+   h  = lent(rcheevos_get_default_badge_texture());
+   h2 = lent(rcheevos_get_default_badge_texture());
    CHECK(h != 0 && h == h2 && st_parked_count == 0,
          "default badge: %lx then %lx", (unsigned long)h, (unsigned long)h2);
    st_unloads = 0;
@@ -252,34 +276,56 @@ int main(void)
     *     being downloaded, and after a failure */
    {
       bool pending = false;
-      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      h = take(rcheevos_get_badge_texture_ex("12345", false, true, &pending));
       CHECK(h == 0 && pending, "local load not reported pending");
       st_finish_decode(0, true);
-      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      h = take(rcheevos_get_badge_texture_ex("12345", false, true, &pending));
       CHECK(h == 0 && pending, "upload in flight not reported pending");
       st_finish_upload(0, true);
-      h = rcheevos_get_badge_texture_ex("12345", false, true, &pending);
+      h = take(rcheevos_get_badge_texture_ex("12345", false, true, &pending));
       CHECK(h != 0 && !pending, "handed over, still pending");
-      h = rcheevos_get_badge_texture_ex("44444", false, true, &pending);
+      h = take(rcheevos_get_badge_texture_ex("44444", false, true, &pending));
       CHECK(h == 0 && !pending, "a download reported as a short wait");
-      h = rcheevos_get_badge_texture_ex("33333", false, false, &pending);
+      h = take(rcheevos_get_badge_texture_ex("33333", false, false, &pending));
       CHECK(h == 0 && !pending, "a missing file reported as a short wait");
       st_on_main_thread = 0;
-      h = rcheevos_get_badge_texture_ex("12345", true, false, &pending);
+      h = take(rcheevos_get_badge_texture_ex("12345", true, false, &pending));
       st_on_main_thread = 1;
       CHECK(h == 0 && pending, "off-thread request not reported pending");
       rcheevos_badge_cache_reset();
    }
 
-   /* 15. no async uploader (no wrapper, driver refuses): treated as a
-    *     failed load, not a hang */
+   /* 15. direct video: the texture is up when the decode completes,
+    *     and the next ask takes it */
    st_async_available = 0;
-   h = rcheevos_get_badge_texture("00000", false, false);
+   h = take(rcheevos_get_badge_texture("00000", false, false));
    st_finish_decode(0, true);
-   h = rcheevos_get_badge_texture("00000", false, false);
+   h = take(rcheevos_get_badge_texture("00000", false, false));
+   CHECK(h != 0 && st_parked_count == 0 && st_uploads_pending_count == 0,
+         "direct upload not handed out (got %lx)", (unsigned long)h);
+   st_async_available = 1;
+
+   /* 16. the still refuses the image (a format the driver cannot
+    *     sample): a failed load, not a hang, and no surface kept */
+   st_upload_refused = 1;
+   h = take(rcheevos_get_badge_texture("77777", false, false));
+   st_finish_decode(0, true);
+   h = take(rcheevos_get_badge_texture("77777", false, false));
    CHECK(h == 0 && st_parked_count == 0 && st_uploads_pending_count == 0,
          "refused upload left the slot loading");
-   st_async_available = 1;
+   st_upload_refused = 0;
+
+   /* 17. nothing leaks: every surface the cache made is either the
+    *     caller's (freed here) or freed by the cache */
+   rcheevos_badge_cache_reset();
+   while (st_parked_count)
+      st_finish_decode(0, false);
+   {
+      unsigned i;
+      for (i = 0; i < kept_count; i++)
+         gfx_surface_free(kept[i]);
+   }
+   CHECK(st_surfaces_live == 0, "%u surface(s) still live", st_surfaces_live);
 
    if (failures)
    {

@@ -25,8 +25,9 @@ unsigned st_existing_count;
 unsigned st_downloads;                /* rcheevos_badge_request_download calls */
 char     st_last_download[64];
 unsigned st_uploads;                  /* texture handles minted */
-unsigned st_unloads;
+unsigned st_unloads;                  /* surfaces freed with a texture */
 uintptr_t st_last_unloaded;
+unsigned st_surfaces_live;            /* stills made and not yet freed */
 
 /* parked image-load tasks */
 typedef struct
@@ -38,17 +39,16 @@ typedef struct
 parked_t st_parked[32];
 unsigned st_parked_count;
 
-/* parked async uploads */
+/* parked uploads: a still given an image while the wrapper is "up" */
 typedef struct
 {
-   void *img;
-   void (*done)(void*, uintptr_t);
-   void *user;
-   void (*release)(void*);
+   gfx_surface_t *s;
+   struct texture_image *img;
 } upload_t;
 upload_t st_uploads_pending[16];
 unsigned st_uploads_pending_count;
-int      st_async_available = 1;
+int      st_async_available = 1;      /* 1: uploads park; 0: they land at once */
+int      st_upload_refused;           /* 1: the still refuses the image */
 
 /* ---- stubs ---- */
 bool task_is_on_main_thread(void) { return st_on_main_thread != 0; }
@@ -124,30 +124,59 @@ bool task_push_image_load(const char *fullpath, bool supports_rgba,
    return true;
 }
 
-bool video_driver_texture_load_async(void *data,
-      enum texture_filter_type filter,
-      void (*done)(void *user, uintptr_t handle), void *user,
-      void (*release)(void *img))
+/* The surface layer, as the badge cache sees it: a still is made
+ * empty, takes one image, and either has its texture at once (direct
+ * video) or after a completion the test drives (threaded video). */
+gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter)
 {
-   (void)filter;
-   if (!st_async_available)
+   gfx_surface_t *s = (gfx_surface_t*)calloc(1, sizeof(*s));
+   if (s)
+   {
+      s->filter = filter;
+      st_surfaces_live++;
+   }
+   return s;
+}
+
+static void st_image_free(struct texture_image *img)
+{
+   image_texture_free(img);
+   free(img);
+}
+
+bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)
+{
+   if (!img)
       return false;
-   if (st_uploads_pending_count >= 16)
+   if (!s || !img->width || !img->height || !img->pixels || st_upload_refused)
+   {
+      st_image_free(img);
       return false;
-   st_uploads_pending[st_uploads_pending_count].img     = data;
-   st_uploads_pending[st_uploads_pending_count].done    = done;
-   st_uploads_pending[st_uploads_pending_count].user    = user;
-   st_uploads_pending[st_uploads_pending_count].release = release;
-   st_uploads_pending_count++;
+   }
+   if (st_async_available && st_uploads_pending_count < 16)
+   {
+      st_uploads_pending[st_uploads_pending_count].s   = s;
+      st_uploads_pending[st_uploads_pending_count].img = img;
+      st_uploads_pending_count++;
+      s->inflight = 1;
+      return true;
+   }
+   st_image_free(img);
+   s->handle = 0x1000 + ++st_uploads;
    return true;
 }
 
-bool video_driver_texture_unload(uintptr_t *id)
+void gfx_surface_free(gfx_surface_t *s)
 {
-   st_unloads++;
-   st_last_unloaded = *id;
-   *id = 0;
-   return true;
+   if (!s)
+      return;
+   if (s->handle)
+   {
+      st_unloads++;
+      st_last_unloaded = s->handle;
+   }
+   st_surfaces_live--;
+   free(s);
 }
 
 /* ---- steps the test drives ---- */
@@ -168,17 +197,18 @@ void st_finish_decode(unsigned i, bool ok)
    p.cb(NULL, img, p.user, ok ? NULL : "decode failed");
 }
 
-/* Complete parked upload #i: release the image, hand a handle (or 0). */
+/* Complete parked upload #i: the image is consumed, the still has its
+ * texture (or none, failed), and its release callback runs. */
 void st_finish_upload(unsigned i, bool ok)
 {
    upload_t u = st_uploads_pending[i];
-   uintptr_t h = 0;
    memmove(&st_uploads_pending[i], &st_uploads_pending[i + 1],
          (st_uploads_pending_count - i - 1) * sizeof(upload_t));
    st_uploads_pending_count--;
-   if (u.release)
-      u.release(u.img);
+   st_image_free(u.img);
+   u.s->inflight = 0;
    if (ok)
-      h = 0x1000 + ++st_uploads;
-   u.done(u.user, h);
+      u.s->handle = 0x1000 + ++st_uploads;
+   if (u.s->release)
+      u.s->release(u.s->user, u.s, 0);
 }

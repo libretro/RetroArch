@@ -32,7 +32,7 @@ typedef struct cheevo_popup
    char* title;
    char* subtitle;
    char* badge_name;
-   uintptr_t badge;
+   gfx_surface_t *badge;
 } cheevo_popup;
 
 enum
@@ -62,7 +62,7 @@ struct cheevo_popup_msg
    char *title;
    char *subtitle;
    char *badge_name;
-   uintptr_t badge;
+   gfx_surface_t *badge;
 };
 
 struct gfx_widget_achievement_popup_state
@@ -121,6 +121,7 @@ static void gfx_widget_achievement_popup_drain_free(void)
       free(node->title);
       free(node->subtitle);
       free(node->badge_name);
+      gfx_surface_free(node->badge);
       free(node);
    }
 }
@@ -294,7 +295,7 @@ static void gfx_widget_achievement_popup_frame(void* data, void* userdata)
             p_disp,
             VIDEO_SCALE_PACK(video_width, video_height),
             VIDEO_SCALE_PACK(state->height, state->height),
-            state->queue[state->queue_read_index].badge,
+            GFX_SURFACE_HANDLE(state->queue[state->queue_read_index].badge),
             screen_pos_x,
             screen_pos_y,
             0.0f, /* rad */
@@ -394,11 +395,8 @@ static void gfx_widget_achievement_popup_free_current(
       state->queue[state->queue_read_index].badge_name = NULL;
    }
 
-   if (state->queue[state->queue_read_index].badge)
-   {
-      video_driver_texture_unload(&state->queue[state->queue_read_index].badge);
-      state->queue[state->queue_read_index].badge = 0;
-   }
+   gfx_surface_free(state->queue[state->queue_read_index].badge);
+   state->queue[state->queue_read_index].badge = NULL;
 
    state->queue_read_index = (state->queue_read_index + 1) % ARRAY_SIZE(state->queue);
 }
@@ -592,16 +590,17 @@ static void gfx_widgets_push_achievement_state(const char* title, const char* su
 {
    struct cheevo_popup_msg *node;
 
-   /* The badge texture fetch may itself round-trip to the video
-    * thread, so it happens here, before anything queue-shaped. */
-   uintptr_t badge_id = rcheevos_get_badge_texture(badge, false, true);
+   gfx_surface_t *badge_s = rcheevos_get_badge_texture(badge, false, true);
 
    if (!(node = (struct cheevo_popup_msg *)malloc(sizeof(*node))))
+   {
+      gfx_surface_free(badge_s);
       return;
+   }
    node->title      = strdup(title);
    node->subtitle   = strdup(subtitle);
-   node->badge      = badge_id;
-   node->badge_name = badge_id ? NULL : strdup(badge);
+   node->badge      = badge_s;
+   node->badge_name = badge_s ? NULL : strdup(badge);
 
    mpsc_stack_push(&gfx_widget_achievement_pending, &node->link);
 }
@@ -645,6 +644,7 @@ static void gfx_widget_achievement_popup_iterate(void *user_data,
             free(node->title);
             free(node->subtitle);
             free(node->badge_name);
+            gfx_surface_free(node->badge);
             free(node);
             continue;
          }

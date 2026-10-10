@@ -39,8 +39,6 @@
  * with Ozone driver metrics */
 #define OZONE_SIDEBAR_WIDTH 408
 
-/* Small 1x1 white texture used for blending purposes */
-
 /* ptr alignment */
 static gfx_display_t dispgfx_st = {0};
 

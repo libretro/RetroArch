@@ -155,7 +155,8 @@ static void android_camera_stop(void *data)
          androidcamera->onCameraStop);
 
    if (androidcamera->tex)
-      video_driver_texture_unload((uintptr_t*)&androidcamera->tex);
+      glDeleteTextures(1, &androidcamera->tex);
+   androidcamera->tex = 0;
 }
 
 static bool android_camera_poll(void *data,

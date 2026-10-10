@@ -86,7 +86,7 @@ typedef struct rcheevos_menuitem_t
          int action; /* enum menu_settings_type */
       } action;
    } source;
-   uintptr_t menu_badge_texture;
+   struct gfx_surface *menu_badge; /* draw GFX_SURFACE_HANDLE of it */
    uint32_t subset_id;
    int state_label_idx; /* enum msg_hash_enums */
    uint8_t menu_badge_grayscale;

@@ -42,7 +42,7 @@ struct leaderboard_display_info
 struct challenge_display_info
 {
    unsigned id;
-   uintptr_t image;
+   gfx_surface_t *image;
    char badge_name[8];
    uint8_t hold;      /* see CHEEVO_BADGE_HOLD_FRAMES */
 };
@@ -55,14 +55,14 @@ struct challenge_display_info
 
 struct progress_tracker_badge
 {
-   uintptr_t image;   /* the tracker's to unload; 0: entry unused */
+   gfx_surface_t *image; /* the tracker's to free; NULL: entry unused */
    unsigned last_used;
    char badge_name[8];
 };
 
 struct progress_tracker_info
 {
-   uintptr_t image;   /* one of badges[].image, or 0: draw the placeholder */
+   gfx_surface_t *image; /* one of badges[].image, or NULL: draw the placeholder */
    unsigned width;
    char display[32];
    char badge_name[8];
@@ -166,11 +166,16 @@ static void gfx_widget_leaderboard_display_drop_tracker_badges(
    unsigned i;
    for (i = 0; i < CHEEVO_PROGRESS_TRACKER_BADGES; i++)
    {
-      if (state->progress_tracker.badges[i].image)
-         video_driver_texture_unload(&state->progress_tracker.badges[i].image);
+      gfx_surface_free(state->progress_tracker.badges[i].image);
+      state->progress_tracker.badges[i].image         = NULL;
       state->progress_tracker.badges[i].badge_name[0] = '\0';
    }
-   state->progress_tracker.image      = 0;
+   for (i = 0; i < state->challenge_count; i++)
+   {
+      gfx_surface_free(state->challenge_info[i].image);
+      state->challenge_info[i].image = NULL;
+   }
+   state->progress_tracker.image      = NULL;
    state->progress_tracker.hold       = 0;
    state->progress_tracker.show_until = 0;
 }
@@ -202,7 +207,7 @@ static void gfx_widget_leaderboard_display_context_destroy(void)
 
 /* Ask for a badge the indicator does not have yet, and count its
  * hold down: to nothing when there is no point in waiting any more. */
-static void gfx_widget_leaderboard_display_poll_badge(uintptr_t *image,
+static void gfx_widget_leaderboard_display_poll_badge(gfx_surface_t **image,
       uint8_t *hold, const char *badge_name, bool locked,
       bool download_if_missing)
 {
@@ -215,7 +220,7 @@ static void gfx_widget_leaderboard_display_poll_badge(uintptr_t *image,
       (*hold)--;
 }
 
-static uintptr_t gfx_widget_progress_tracker_find_badge(
+static gfx_surface_t *gfx_widget_progress_tracker_find_badge(
       struct progress_tracker_info *tracker, const char *badge_name)
 {
    unsigned i;
@@ -228,14 +233,14 @@ static uintptr_t gfx_widget_progress_tracker_find_badge(
          return entry->image;
       }
    }
-   return 0;
+   return NULL;
 }
 
 /* @image is the tracker's from here on. The least recently shown
  * badge makes room, never the one on screen. */
 static void gfx_widget_progress_tracker_keep_badge(
       struct progress_tracker_info *tracker, const char *badge_name,
-      uintptr_t image)
+      gfx_surface_t *image)
 {
    unsigned i;
    struct progress_tracker_badge *victim = NULL;
@@ -252,8 +257,7 @@ static void gfx_widget_progress_tracker_keep_badge(
       if (!victim || entry->last_used < victim->last_used)
          victim = entry;
    }
-   if (victim->image)
-      video_driver_texture_unload(&victim->image);
+   gfx_surface_free(victim->image);
    victim->image     = image;
    victim->last_used = ++tracker->badge_tick;
    strlcpy(victim->badge_name, badge_name, sizeof(victim->badge_name));
@@ -261,7 +265,7 @@ static void gfx_widget_progress_tracker_keep_badge(
 
 /* The waiting update goes on screen, with @image or the placeholder. */
 static void gfx_widget_progress_tracker_commit(
-      struct progress_tracker_info *tracker, uintptr_t image,
+      struct progress_tracker_info *tracker, gfx_surface_t *image,
       retro_time_t now)
 {
    tracker->image      = image;
@@ -278,7 +282,7 @@ static void gfx_widget_progress_tracker_poll(
       struct progress_tracker_info *tracker, retro_time_t now,
       bool download_if_missing)
 {
-   uintptr_t image = 0;
+   gfx_surface_t *image = NULL;
 
    if (tracker->hold)
    {
@@ -448,7 +452,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      p_disp,
                      VIDEO_SCALE_PACK(video_width, video_height),
                      VIDEO_SCALE_PACK(widget_size, widget_size),
-                     state->challenge_info[i].image,
+                     GFX_SURFACE_HANDLE(state->challenge_info[i].image),
                      x,
                      y,
                      0.0f, /* rad */
@@ -537,7 +541,7 @@ static void gfx_widget_leaderboard_display_frame(void* data, void* userdata)
                      p_disp,
                      VIDEO_SCALE_PACK(video_width, video_height),
                      VIDEO_SCALE_PACK(image_size, image_size),
-                     state->progress_tracker.image,
+                     GFX_SURFACE_HANDLE(state->progress_tracker.image),
                      x,
                      y,
                      0.0f, /* rad */
@@ -718,11 +722,15 @@ void gfx_widgets_set_leaderboard_display(unsigned id, const char* value)
 
 static void gfx_widgets_clear_challenge_displays_state(void)
 {
+   unsigned i;
    gfx_widget_leaderboard_display_state_t* state = &p_w_leaderboard_display_st;
 
-
+   for (i = 0; i < state->challenge_count; i++)
+   {
+      gfx_surface_free(state->challenge_info[i].image);
+      state->challenge_info[i].image = NULL;
+   }
    state->challenge_count = 0;
-
 }
 
 void gfx_widgets_clear_challenge_displays(void)
@@ -737,7 +745,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
 
    /* Draw-thread applier: the badge texture fetch runs here, on the
     * thread the video driver expects it from. */
-   uintptr_t old_badge_id = 0;
+   gfx_surface_t *old_badge = NULL;
 
 
    for (i = 0; i < state->challenge_count; ++i)
@@ -753,7 +761,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
          /* hide indicator */
          if (i < state->challenge_count)
          {
-            old_badge_id = state->challenge_info[i].image;
+            old_badge = state->challenge_info[i].image;
 
             --state->challenge_count;
             if (i < state->challenge_count)
@@ -764,7 +772,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
                   (state->challenge_count - i) * sizeof(state->challenge_info[i]));
             }
 
-            state->challenge_info[state->challenge_count].image = 0;
+            state->challenge_info[state->challenge_count].image = NULL;
          }
       }
       else
@@ -773,7 +781,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
          if (i == state->challenge_count)
          {
             /* new indicator, assign id */
-            state->challenge_info[i].image = 0;
+            state->challenge_info[i].image = NULL;
             state->challenge_info[state->challenge_count++].id = id;
          }
          else if (state->challenge_info[i].image)
@@ -781,8 +789,8 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
             if (!string_is_equal(state->challenge_info[i].badge_name, badge))
             {
                /* existing indicator, different image. discard and replace */
-               old_badge_id = state->challenge_info[i].image;
-               state->challenge_info[i].image = 0;
+               old_badge = state->challenge_info[i].image;
+               state->challenge_info[i].image = NULL;
             }
          }
 
@@ -799,8 +807,7 @@ static void gfx_widgets_set_challenge_display_state(unsigned id, const char* bad
    }
 
 
-   if (old_badge_id)
-      video_driver_texture_unload(&old_badge_id);
+   gfx_surface_free(old_badge);
 }
 
 void gfx_widgets_set_challenge_display(unsigned id, const char* badge)
@@ -826,7 +833,7 @@ static void gfx_widget_set_achievement_progress_state(const char* badge, const c
    {
       /* show indicator */
       const retro_time_t now = cpu_features_get_time_usec();
-      uintptr_t image        = gfx_widget_progress_tracker_find_badge(tracker, badge);
+      gfx_surface_t *image   = gfx_widget_progress_tracker_find_badge(tracker, badge);
 
       snprintf(tracker->next_display, sizeof(tracker->next_display), "%s", progress);
       strlcpy(tracker->next_badge_name, badge, sizeof(tracker->next_badge_name));
