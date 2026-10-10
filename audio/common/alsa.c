@@ -143,10 +143,10 @@ int alsa_init_pcm(snd_pcm_t **pcm,
          snd_pcm_name(*pcm)
    );
 
-   /* Playback for the threaded pipeline opens a device's own buffer
-    * for mmap, so the driver can lend it: hw and plug only, whose
-    * buffer is native - a dmix, ioplug or extplug buffer is emulated,
-    * and lending it adds the copy it was meant to remove. */
+   /* Playback for the threaded pipeline opens hw and plug PCMs for
+    * mmap, so the driver can lend their buffer. An ioplug or extplug
+    * PCM - PulseAudio's or PipeWire's - only emulates mmap, and
+    * lending it adds the copy it was meant to remove. */
    access            = SND_PCM_ACCESS_RW_INTERLEAVED;
    stream_info->mmap = false;
 #ifdef HAVE_THREADS
