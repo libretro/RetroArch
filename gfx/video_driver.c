@@ -5620,6 +5620,15 @@ void video_driver_ff_frameskip_decide(retro_time_t now)
    menu_is_alive = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
 #endif
 
+   /* Count the last frame if the core skipped it,
+    * so the FPS counter still sees it */
+   if (     video_st->frame_count
+         && (video_st->main_flags & VIDEO_FLAG_FF_DECIDED)
+         && runloop_ff_skips_render(
+            (video_st->main_flags & VIDEO_FLAG_FF_SKIP_FRAME) != 0,
+            (video_st->main_flags & VIDEO_FLAG_FF_FRAME_OWED) != 0))
+      video_st->frame_count++;
+
    video_st->main_flags &= ~VIDEO_FLAG_FF_SKIP_FRAME;
    video_st->main_flags |=  VIDEO_FLAG_FF_DECIDED;
 
@@ -7685,6 +7694,7 @@ void video_driver_frame(const void *data, unsigned width,
    static retro_time_t last_render_time;
    static retro_time_t curr_time;
    static retro_time_t fps_time;
+   static uint64_t last_fps_count;
    static float last_fps, frame_time;
    /* Initialise 'last_frame_duped' to 'true'
     * to ensure that the first frame is rendered */
@@ -8062,11 +8072,11 @@ void video_driver_frame(const void *data, unsigned width,
                sizeof(status_text) - _len);
       }
 
-      if ((video_st->frame_count % fps_update_interval) == 0)
+      if ((video_st->frame_count - last_fps_count) >= fps_update_interval)
       {
          size_t __len;
          last_fps = TIME_TO_FPS(curr_time, new_time,
-               fps_update_interval);
+               video_st->frame_count - last_fps_count);
 
          /* Under the mailbox, window_title is this thread's scratch
           * and publishing is the exchange in video_title_publish();
@@ -8098,11 +8108,13 @@ void video_driver_frame(const void *data, unsigned width,
          VIDEO_TITLE_UNLOCK(video_st);
 
          curr_time                  = new_time;
+         last_fps_count             = video_st->frame_count;
       }
    }
    else
    {
       curr_time = fps_time = new_time;
+      last_fps_count = 0;
 
       VIDEO_TITLE_LOCK(video_st);
       strlcpy(
