@@ -5854,8 +5854,12 @@ static void gl3_views_draw_stock(gl3_t *gl,
       const struct gl3_viewport *vp, const struct gl3_viewport *cut,
       const float *mvp)
 {
+   static const float white[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
    unsigned k;
    float vbo_data[32];
+   /* The fragment UBO: the mvp, then the first and last texel
+    * centres. */
+   float ubo[20];
    float tw = (float)VIDEO_SCALE_W(src->padded_dims);
    float th = (float)VIDEO_SCALE_H(src->padded_dims);
    float u0 = (float)v->x / tw;
@@ -5863,8 +5867,6 @@ static void gl3_views_draw_stock(gl3_t *gl,
    float v0 = (float)gl3_views_src_y(src, v, bottom_up) / th;
    float v1 = v0 + (float)v->height / th;
 
-   /* Position, texture coordinate, and in the colour the first and
-    * last texel centres. */
    for (k = 0; k < 4; k++)
    {
       float *d = &vbo_data[k * 8];
@@ -5872,11 +5874,13 @@ static void gl3_views_draw_stock(gl3_t *gl,
       d[1]     = (float)(k >> 1);
       d[2]     = (k & 1)  ? u1 : u0;
       d[3]     = (k >> 1) ? v1 : v0;
-      d[4]     = u0 + 0.5f / tw;
-      d[5]     = v0 + 0.5f / th;
-      d[6]     = u1 - 0.5f / tw;
-      d[7]     = v1 - 0.5f / th;
+      memcpy(&d[4], white, sizeof(white));
    }
+   memcpy(ubo, mvp, 16 * sizeof(float));
+   ubo[16] = u0 + 0.5f / tw;
+   ubo[17] = v0 + 0.5f / th;
+   ubo[18] = u1 - 0.5f / tw;
+   ubo[19] = v1 - 0.5f / th;
 
    glViewport(VIDEO_POS_X(vp->pos), VIDEO_POS_Y(vp->pos),
          VIDEO_SCALE_W(vp->dims), VIDEO_SCALE_H(vp->dims));
@@ -5892,6 +5896,9 @@ static void gl3_views_draw_stock(gl3_t *gl,
    glActiveTexture(GL_TEXTURE0 + 1);
    glBindTexture(GL_TEXTURE_2D, src->image);
    glBindSampler(1, gl->views.samplers[gl->video_info.smooth ? 1 : 0]);
+   glUseProgram(gl->pipelines.views_stock);
+   if (gl->pipelines.views_stock_loc.flat_ubo_fragment >= 0)
+      glUniform4fv(gl->pipelines.views_stock_loc.flat_ubo_fragment, 5, ubo);
    gl3_draw_textured_quad(gl, gl->pipelines.views_stock,
          &gl->pipelines.views_stock_loc, mvp, vbo_data);
    glBindSampler(1, 0);

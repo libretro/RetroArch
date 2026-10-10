@@ -241,11 +241,12 @@ EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan')}
 SMOOTH_CASES = [
     ('smooth-ds', 'ds', NOISE, 'off'),
     ('smooth-3ds', '3ds', NOISE, 'gl'),
+    ('smooth-3ds', '3ds', NOISE, 'vulkan'),
 ]
 SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame.
-DIRECT_DRIVERS = ('glcore',)
+DIRECT_DRIVERS = ('glcore', 'vulkan')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 # The core's 2D maps, as (x, y, width, height) in the packed frame.
 EXACT_VIEWS = {'ds': [(0, 0, 256, 192), (0, 192, 256, 192)],

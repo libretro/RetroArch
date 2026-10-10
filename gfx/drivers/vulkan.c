@@ -328,6 +328,8 @@ typedef struct vk
       bool active;
       /* The UI layer is drawn with the SDR pipeline set. */
       bool ui_sdr;
+      /* Stock views have been drawn straight from the frame. */
+      bool direct_seen;
    } views;
 #ifdef HAVE_OPENXR
    /* Headset output: each slot's swapchain images, with a view and a
@@ -513,6 +515,7 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
+      VkPipeline views_stock;
       VkPipeline alpha_premult;
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline hdr;
@@ -5167,6 +5170,10 @@ static void vulkan_init_pipelines(vk_t *vk)
 #include "vulkan_shaders/stereo_interlaced.frag.inc"
       ;
 
+   static const uint32_t views_stock_frag[] =
+#include "vulkan_shaders/views_stock.frag.inc"
+      ;
+
    static const uint32_t rgb565_to_rgba8888_comp[] =
 #include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
    ;
@@ -5383,6 +5390,16 @@ static void vulkan_init_pipelines(vk_t *vk)
             &module_info, NULL, &shader_stages[1].module);
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
             1, &pipe, NULL, &vk->pipelines.stereo_interlaced);
+      vkDestroyShaderModule(vk->context->device,
+            shader_stages[1].module, NULL);
+
+      /* Stock views straight from the frame. */
+      module_info.codeSize         = sizeof(views_stock_frag);
+      module_info.pCode            = views_stock_frag;
+      vkCreateShaderModule(vk->context->device,
+            &module_info, NULL, &shader_stages[1].module);
+      vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
+            1, &pipe, NULL, &vk->pipelines.views_stock);
       vkDestroyShaderModule(vk->context->device,
             shader_stages[1].module, NULL);
 
@@ -5856,6 +5873,8 @@ static void vulkan_deinit_pipelines(vk_t *vk)
          vk->pipelines.stereo_anaglyph, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.stereo_interlaced, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.views_stock, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.alpha_premult, NULL);
    vkDestroyPipeline(vk->context->device,
@@ -9451,26 +9470,29 @@ static void vulkan_draw_xr_eye(vk_t *vk, unsigned eye)
 /* For each view drawn into a target of size dims (all_areas false:
  * the left eye's area only), its chain and the rectangle its first draw
  * uses, which its offscreen passes are sized for; a NULL chain for a
- * view not drawn. False when views can't be drawn this frame. Preset
- * chains come from vulkan_views_build_chains() only. */
+ * view not drawn, and in *stock whether they are the stock chains.
+ * False when views can't be drawn this frame. Preset chains come from
+ * vulkan_views_build_chains() only. */
 static bool vulkan_views_prepare(vk_t *vk,
       const video_frame_info_t *video_info, bool all_areas, unsigned dims,
-      vulkan_filter_chain_t **chains, video_views_rect_t *rects)
+      vulkan_filter_chain_t **chains, video_views_rect_t *rects, bool *stock)
 {
    unsigned i, j;
    const video_views_layout_t *layout = &video_info->views_layout;
    struct video_shader *live          = NULL;
-   bool stock = !video_info->shader_active
+   vulkan_filter_chain_t **set;
+
+   *stock = !video_info->shader_active
       || !vk->filter_chain
       || vk->filter_chain == vk->filter_chain_default;
-   vulkan_filter_chain_t **set = stock ? vk->views.stock : vk->views.chains;
+   set    = *stock ? vk->views.stock : vk->views.chains;
 
    for (i = 0; i < RETRO_VIDEO_VIEWS_MAX; i++)
       chains[i] = NULL;
    if (!vulkan_views_allowed(vk))
       return false;
    /* Parameter edits land in the main chain's preset. */
-   if (!stock)
+   if (!*stock)
       live = vulkan_filter_chain_get_preset(vk->filter_chain);
 
    for (i = 0; i < video_info->views.num_views; i++)
@@ -9482,7 +9504,7 @@ static bool vulkan_views_prepare(vk_t *vk,
        * keeps no chain past the count. */
       if (i >= vk->views.count)
          return false;
-      if (!set[i] && stock && !vk->views.stock_failed)
+      if (!set[i] && *stock && !vk->views.stock_failed)
       {
          set[i]                 = vulkan_views_create_stock(vk);
          vk->views.stock_failed = !set[i];
@@ -9497,6 +9519,22 @@ static bool vulkan_views_prepare(vk_t *vk,
             preset->parameters[j].current = live->parameters[j].current;
    }
    return true;
+}
+
+/* The size of the image this frame's views come out of: a repeat's is
+ * the last frame's. */
+static unsigned vulkan_views_src_dims(vk_t *vk, const void *frame,
+      unsigned dims)
+{
+   struct vk_per_frame *pf;
+   if (frame)
+      return dims;
+   if (vk->flags & VK_FLAG_HW_ENABLE)
+      return vk->hw.last_dims;
+   pf = &vk->swapchain[vk->last_valid_index];
+   if (pf->texture_optimal.memory != VK_NULL_HANDLE)
+      return pf->texture_optimal.dims;
+   return pf->texture.dims;
 }
 
 /* The format of the image this frame's views are copied out of. */
@@ -9641,15 +9679,88 @@ static void vulkan_views_offscreen(vk_t *vk,
    }
 }
 
+/* Draws view v straight from the frame's texture src over vp, cut to
+ * sci, as the stock chain draws its copy: the same texels, the same
+ * filter, stopping at the view's edge as at an image's. */
+static void vulkan_views_draw_stock(vk_t *vk, struct vk_texture *src,
+      const struct retro_video_view *v, const VkViewport *vp,
+      const VkRect2D *sci)
+{
+   /* The mvp, then the first and last texel centres. */
+   struct
+   {
+      math_matrix_4x4 mvp;
+      float clamp[4];
+   } ubo;
+   struct vk_draw_triangles call;
+   struct vk_buffer_range range;
+   VkViewport saved_vp = vk->vk_vp;
+   VkRect2D saved_sci  = vk->tracker.scissor;
+   uint32_t saved_flag = vk->flags & VK_FLAG_TRACKER_USE_SCISSOR;
+   float tw            = (float)VIDEO_SCALE_W(src->dims);
+   float th            = (float)VIDEO_SCALE_H(src->dims);
+   float u0            = (float)v->x / tw;
+   float v0            = (float)v->y / th;
+   float uw            = (float)v->width  / tw;
+   float vh            = (float)v->height / th;
+
+   ubo.mvp      = vk->mvp;
+   ubo.clamp[0] = u0 + 0.5f / tw;
+   ubo.clamp[1] = v0 + 0.5f / th;
+   ubo.clamp[2] = u0 + uw - 0.5f / tw;
+   ubo.clamp[3] = v0 + vh - 0.5f / th;
+
+   vk->vk_vp            = *vp;
+   vk->tracker.scissor  = *sci;
+   vk->flags           |= VK_FLAG_TRACKER_USE_SCISSOR;
+   vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+
+   call.pipeline     = vk->pipelines.views_stock;
+   call.texture      = src;
+   call.sampler      = vk->video.smooth
+      ? vk->samplers.linear : vk->samplers.nearest;
+   call.uniform      = &ubo;
+   call.uniform_size = sizeof(ubo);
+   call.vbo          = &range;
+   call.vertices     = 4;
+   if (     vulkan_draw_bind(vk, &call)
+         && vulkan_buffer_chain_alloc(vk->context, &vk->chain->vbo,
+            4 * sizeof(struct vk_vertex), &range))
+   {
+      struct vk_vertex *pv = (struct vk_vertex*)range.data;
+      VULKAN_WRITE_QUAD_VBO(pv, 0.0f, 0.0f, 1.0f, 1.0f,
+            u0, v0, uw, vh, RGBA16_WHITE);
+      vkCmdBindVertexBuffers(vk->cmd, 0, 1, &range.buffer, &range.offset);
+      if (     vk->quad_ibo.buffer != VK_NULL_HANDLE
+            && vk->quad_ibo.num_quads >= 1)
+      {
+         vkCmdBindIndexBuffer(vk->cmd, vk->quad_ibo.buffer,
+               0, VK_INDEX_TYPE_UINT16);
+         vkCmdDrawIndexed(vk->cmd, 6, 1, 0, 0, 0);
+      }
+      else
+         vkCmdDraw(vk->cmd, 4, 1, 0, 0);
+   }
+
+   vk->vk_vp            = saved_vp;
+   vk->tracker.scissor  = saved_sci;
+   vk->flags            = (vk->flags & ~VK_FLAG_TRACKER_USE_SCISSOR)
+      | saved_flag;
+   vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
+}
+
 /* Draws the placements into the current render pass, a target of size
  * dims, with the same all_areas and dims that vulkan_views_prepare()
  * was given. A view placed twice runs its final pass again, without a
- * second feedback swap. */
-static void vulkan_views_draw(vk_t *vk, const video_views_layout_t *layout,
-      vulkan_filter_chain_t **chains, bool all_areas, unsigned dims)
+ * second feedback swap. With direct, the frame's texture, views draw
+ * straight from it. */
+static void vulkan_views_draw(vk_t *vk, const video_frame_info_t *video_info,
+      vulkan_filter_chain_t **chains, bool all_areas, unsigned dims,
+      struct vk_texture *direct)
 {
    unsigned i;
    bool drawn[RETRO_VIDEO_VIEWS_MAX];
+   const video_views_layout_t *layout = &video_info->views_layout;
    memset(drawn, 0, sizeof(drawn));
    for (i = 0; i < layout->num_placements; i++)
    {
@@ -9666,6 +9777,12 @@ static void vulkan_views_draw(vk_t *vk, const video_views_layout_t *layout,
       sci.offset.y      = VIDEO_POS_Y(r.pos);
       sci.extent.width  = VIDEO_SCALE_W(r.dims);
       sci.extent.height = VIDEO_SCALE_H(r.dims);
+      if (direct)
+      {
+         vulkan_views_draw_stock(vk, direct,
+               &video_info->views.views[p->view], &vp, &sci);
+         continue;
+      }
       vulkan_filter_chain_set_scissor(chains[p->view], &sci);
       if (drawn[p->view])
          vulkan_filter_chain_build_viewport_pass_again(chains[p->view],
@@ -9785,12 +9902,14 @@ static void vulkan_views_end(vk_t *vk, const struct vk_image *img)
 }
 
 /* Both eyes into the canvas, side by side. */
-static void vulkan_views_canvas(vk_t *vk, const video_views_layout_t *layout,
-      vulkan_filter_chain_t **chains)
+static void vulkan_views_canvas(vk_t *vk, const video_frame_info_t *video_info,
+      vulkan_filter_chain_t **chains, struct vk_texture *direct)
 {
+   const video_views_layout_t *layout = &video_info->views_layout;
    vulkan_views_begin(vk, &vk->views.canvas, layout->canvas_dims,
          vk->views.render_pass);
-   vulkan_views_draw(vk, layout, chains, true, layout->canvas_dims);
+   vulkan_views_draw(vk, video_info, chains, true, layout->canvas_dims,
+         direct);
    vulkan_views_end(vk, &vk->views.canvas);
 }
 
@@ -10472,6 +10591,10 @@ static bool vulkan_frame(void *data, const void *frame,
    unsigned num_setup_chains, num_setup, c;
    /* The views copied out of the frame. */
    vulkan_filter_chain_t **copy_chains           = view_chains;
+   /* The frame's texture, when stock views draw straight from it. */
+   struct vk_texture views_src;
+   struct vk_texture *views_direct_tex           = NULL;
+   bool views_direct                             = false;
    bool views                                    = false;
    bool views_blend                              = false;
    bool views_per_eye                            = false;
@@ -10882,17 +11005,30 @@ static bool vulkan_frame(void *data, const void *frame,
             views_blend || !video_info->views_layout.offscreen,
             views_blend ? video_info->views_layout.canvas_dims
                         : vk->context->swapchain_dims,
-            view_chains, view_rects);
-   /* A hardware frame needs the core's image, in a format a view image
-    * can copy: vulkan_create_texture() widens R5G6B5. */
+            view_chains, view_rects, &views_direct);
+   /* Stock views draw straight from the frame, but for a rolling
+    * scanline, drawn by the chain's final pass. */
+   views_direct = views_direct && vk->pipelines.views_stock
+      && !(video_info->shader_subframes > 1 && video_info->scan_subframes);
+#ifdef HAVE_OPENXR
+   /* The headset draws its views from copies. */
+   if (xr_map)
+      views_direct = false;
+#endif
+   /* A hardware frame needs the core's image, and to be copied, in a
+    * format a view image can take: vulkan_create_texture() widens
+    * R5G6B5. */
    if (     views && (vk->flags & VK_FLAG_HW_ENABLE)
          && (!(vk->hw.image && vk->hw.image->create_info.image)
-            || VK_REMAP_TO_TEXFMT(vk->hw.image->create_info.format)
-               != vk->hw.image->create_info.format))
+            || (!views_direct
+               && VK_REMAP_TO_TEXFMT(vk->hw.image->create_info.format)
+                  != vk->hw.image->create_info.format)))
       views = false;
    /* The map was checked against the core's frame; threaded video can
-    * crop it. */
-   if (views && frame && !video_views_fit_frame(&video_info->views, dims))
+    * crop it. A repeat drawn straight from the frame checks it again. */
+   if (     views && (frame || views_direct)
+         && !video_views_fit_frame(&video_info->views,
+            vulkan_views_src_dims(vk, frame, dims)))
       views = false;
 #ifdef HAVE_OPENXR
    /* The headset's views come from the same copies. */
@@ -10905,12 +11041,12 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
    /* A view image that can't be made draws this frame whole. */
-   if (     views && frame
+   if (     views && frame && !views_direct
          && !vulkan_views_images(vk, chain, video_info, copy_chains,
                vulkan_views_src_format(vk)))
       views = false;
    /* A repeat needs every view it draws copied by an earlier frame. */
-   if (views && !frame)
+   if (views && !frame && !views_direct)
    {
       unsigned i;
       for (i = 0; i < video_info->views.num_views; i++)
@@ -10935,8 +11071,9 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
    /* A later repeat must not draw view images this frame outdates. */
-   if (frame && !views)
+   if (frame && (!views || views_direct))
       vk->views.copied = 0;
+   views_direct     = views && views_direct;
    views_blend      = views && views_blend;
    vk->views.active = views;
    retro_atomic_store_release_int(&vk->views.fallback,
@@ -11155,7 +11292,20 @@ static bool vulkan_frame(void *data, const void *frame,
       if (xr_frame_shrink)
          vulkan_filter_chain_set_input_texture(xr_frame_shrink, &input);
 #endif
-      if (views)
+      if (views_direct)
+      {
+         memset(&views_src, 0, sizeof(views_src));
+         views_src.view   = input.view;
+         views_src.layout = input.layout;
+         views_src.dims   = input.dims;
+         views_direct_tex = &views_src;
+         if (!vk->views.direct_seen)
+         {
+            vk->views.direct_seen = true;
+            RARCH_LOG("[Vulkan] Views drawn straight from the frame.\n");
+         }
+      }
+      else if (views)
       {
          unsigned i;
          struct vk_per_frame *vf;
@@ -11203,12 +11353,12 @@ static bool vulkan_frame(void *data, const void *frame,
    xr_frame_dims = vk->vp.dims;
 #endif
 
-   if (views)
-      vulkan_views_offscreen(vk, video_info, view_chains, view_rects);
-   else
+   if (!views)
       vulkan_filter_chain_build_offscreen_passes(
             (vulkan_filter_chain_t*)filter_chain,
             vk->cmd, &vk->video_vp);
+   else if (!views_direct_tex)
+      vulkan_views_offscreen(vk, video_info, view_chains, view_rects);
 
 #if defined(HAVE_MENU)
    /* Upload menu texture. */
@@ -11272,7 +11422,7 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 
    if (views_blend)
-      vulkan_views_canvas(vk, &video_info->views_layout, view_chains);
+      vulkan_views_canvas(vk, video_info, view_chains, views_direct_tex);
 
    /* As the main thread laid the UI out, also in a frame drawn whole:
     * it lays out later frames whole once it reads the fallback. */
@@ -11355,9 +11505,9 @@ static bool vulkan_frame(void *data, const void *frame,
          vulkan_views_blend(vk, &video_info->views_layout,
                video_info->dims);
       else if (views)
-         vulkan_views_draw(vk, &video_info->views_layout, view_chains,
+         vulkan_views_draw(vk, video_info, view_chains,
                !video_info->views_layout.offscreen,
-               vk->context->swapchain_dims);
+               vk->context->swapchain_dims, views_direct_tex);
       else
          vulkan_filter_chain_build_viewport_pass(
                (vulkan_filter_chain_t*)filter_chain, vk->cmd,
@@ -11670,10 +11820,10 @@ static bool vulkan_frame(void *data, const void *frame,
    /* End the filter chain frame.
     * This must happen outside a render pass.
     */
-   if (views)
-      vulkan_views_end_frame(vk, video_info, view_chains);
-   else
+   if (!views)
       vulkan_filter_chain_end_frame((vulkan_filter_chain_t*)filter_chain, vk->cmd);
+   else if (!views_direct_tex)
+      vulkan_views_end_frame(vk, video_info, view_chains);
 
    if (
             (backbuffer->image != VK_NULL_HANDLE)
