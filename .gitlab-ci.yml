@@ -358,7 +358,7 @@ build-retroarch-linux-aarch64:
     # Non-Qt build
     - "mkdir -p ${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir"
     - "make clean"
-    - "./configure --disable-ffmpeg --disable-qt --prefix=/usr"
+    - "./configure --disable-ffmpeg --disable-qt --enable-openxr --prefix=/usr"
     - "make -j$NUMPROC"
     - if [ $STRIP_BIN -eq 1 ]; then strip --strip-unneeded retroarch; fi
     - "make install DESTDIR=${MEDIA_PATH}/${CI_PROJECT_NAME}/AppDir prefix=/usr"
