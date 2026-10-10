@@ -384,9 +384,41 @@ static INLINE HRESULT DXGIMakeWindowAssociation(DXGIFactory1 factory, HWND windo
    return factory->lpVtbl->MakeWindowAssociation(factory, window_handle, flags);
 }
 
+static const GUID libretro_IID_IDXGIFactory2 = { 0x50c83a1c,0xe072,0x4c48, { 0x87,0xb0,0x36,0x30,0xfa,0x36,0xa6,0xd0 } };
+
+/* Flip model: allows setting scaling to DXGI_SCALING_NONE, preventing the frame stretching
+ * that the legacy CreateSwapChain() causes when switching screen modes. */
 static INLINE HRESULT DXGICreateSwapChain(
       DXGIFactory1 factory, void* device, DXGI_SWAP_CHAIN_DESC* desc, DXGISwapChain* swap_chain)
 {
+   IDXGIFactory2 *factory2 = NULL;
+   if (     desc->SwapEffect >= DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL
+         && SUCCEEDED(factory->lpVtbl->QueryInterface(factory,
+#ifdef __cplusplus
+               libretro_IID_IDXGIFactory2,
+#else
+               &libretro_IID_IDXGIFactory2,
+#endif
+               (void**)&factory2)))
+   {
+      HRESULT hr;
+      DXGI_SWAP_CHAIN_DESC1 desc1 = {0};
+      desc1.Width       = desc->BufferDesc.Width;
+      desc1.Height      = desc->BufferDesc.Height;
+      desc1.Format      = desc->BufferDesc.Format;
+      desc1.SampleDesc  = desc->SampleDesc;
+      desc1.BufferUsage = desc->BufferUsage;
+      desc1.BufferCount = desc->BufferCount;
+      desc1.Scaling     = DXGI_SCALING_NONE;
+      desc1.SwapEffect  = desc->SwapEffect;
+      desc1.Flags       = desc->Flags;
+      hr = factory2->lpVtbl->CreateSwapChainForHwnd(factory2,
+            (IUnknown*)device, desc->OutputWindow, &desc1, NULL, NULL,
+            (IDXGISwapChain1**)swap_chain);
+      factory2->lpVtbl->Release(factory2);
+      if (SUCCEEDED(hr))
+         return hr;
+   }
    return factory->lpVtbl->CreateSwapChain(
          factory, (IUnknown*)device, desc, (IDXGISwapChain**)swap_chain);
 }
