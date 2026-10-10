@@ -5513,7 +5513,8 @@ static bool d3d11_gfx_frame_body(
           Release(hw_texture);
           hw_texture = NULL;
       }
-      else if (d3d11->frame.texture[0].staging)
+      else if (d3d11->frame.texture[0].staging
+            && frame != RETRO_HW_FRAME_BUFFER_VALID)
          d3d11_update_texture(
                context, width, height, pitch, d3d11->format, frame, &d3d11->frame.texture[0]);
    }

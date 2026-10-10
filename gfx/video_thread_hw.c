@@ -1076,8 +1076,11 @@ void video_thread_hw_before_frame(thread_video_t *thr, int hw_slot,
 #endif
 #ifdef HAVE_D3D11
       case HW_API_D3D11:
-         thr->poke->hw_ring_install(thr->driver_data,
-               ring->slot[hw_slot].d3d11_direct, NULL, 0, 0, NULL, 0);
+         if (ring->d3d11_v2)
+            thr->poke->hw_ring_install(thr->driver_data,
+                  ring->slot[hw_slot].d3d11_direct, NULL, 0, 0, NULL, 0);
+         else
+            thr->poke->hw_ring_present_slot(thr->driver_data, (unsigned)hw_slot);
          break;
 #endif
       case HW_API_GL:
