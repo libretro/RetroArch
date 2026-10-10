@@ -518,6 +518,7 @@ int main(int argc, char *argv[])
     * made again around the frame textures */
    if (string_is_equal(getenv("HARNESS_SHADER"), "1"))
    {
+#ifdef HAVE_GLSL
       char preset[600];
       snprintf(preset, sizeof(preset), "%.*s/twopass.glslp", dirlen, base);
       if (!video_shader_apply_shader(config_get_ptr(),
@@ -527,6 +528,10 @@ int main(int argc, char *argv[])
          return 1;
       }
       pump(2);
+#else
+      fprintf(stderr, "FAIL: HARNESS_SHADER requires GLSL support\n");
+      return 1;
+#endif
    }
    menu_open(true);
    if (!menu_is_up())
