@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <retro_miscellaneous.h>
+#include <formats/image_yuv_blit.h>
 
 #include "gfx_surface.h"
 #include "gfx_instrument.h"
@@ -34,25 +35,33 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
 {
    gfx_surface_t *s;
    uint8_t *base;
-   size_t frame_len, i, bpp;
+   size_t frame_len, rgb_len = 0, i;
+   bool planar = (pixfmt & (IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12)) != 0;
 
-   bpp = IMAGE_PIXFMT_BPP(pixfmt);
+   /* Bounded at four bytes a pixel for every format: the widest
+    * single-plane one short of FP32, and what a planar frame is
+    * converted into. */
    if (     !VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims)
          || !num_slots || num_slots > GFX_SURFACE_MAX_SLOTS
          || !pixfmt || (pixfmt & (pixfmt - 1))
-         /* no driver takes a planar texture yet */
-         || pixfmt > IMAGE_PIXFMT_GX_RGBA8
-         || (size_t)VIDEO_SCALE_W(dims) > ((SIZE_MAX - GFX_SURFACE_SLOT_ALIGN)
-               / bpp) / VIDEO_SCALE_H(dims))
+         || (pixfmt > IMAGE_PIXFMT_GX_RGBA8 && !planar)
+         || (size_t)VIDEO_SCALE_W(dims) > ((SIZE_MAX / 4
+               - GFX_SURFACE_SLOT_ALIGN) / 4) / VIDEO_SCALE_H(dims))
       return NULL;
 
-   frame_len = (VIDEO_SCALE_AREA(dims) * bpp
+   frame_len = (IMAGE_PIXFMT_FRAME_SIZE(pixfmt, (size_t)VIDEO_SCALE_W(dims),
+            (size_t)VIDEO_SCALE_H(dims))
          + GFX_SURFACE_SLOT_ALIGN - 1) & ~(size_t)(GFX_SURFACE_SLOT_ALIGN - 1);
-   if (frame_len > (SIZE_MAX - sizeof(*s) - GFX_SURFACE_SLOT_ALIGN) / num_slots)
+   if (planar)
+      rgb_len = (VIDEO_SCALE_AREA(dims) * 4
+            + GFX_SURFACE_SLOT_ALIGN - 1)
+            & ~(size_t)(GFX_SURFACE_SLOT_ALIGN - 1);
+   if (frame_len > (SIZE_MAX / 2 - sizeof(*s) - GFX_SURFACE_SLOT_ALIGN)
+         / num_slots)
       return NULL;
 
-   if (!(s = (gfx_surface_t*)calloc(1,
-         sizeof(*s) + GFX_SURFACE_SLOT_ALIGN + frame_len * num_slots)))
+   if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s)
+         + GFX_SURFACE_SLOT_ALIGN + frame_len * num_slots + rgb_len)))
       return NULL;
 
    base = (uint8_t*)(s + 1);
@@ -63,6 +72,8 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
       s->slots[i]     = (uint32_t*)(base + i * frame_len);
       s->own_slots[i] = s->slots[i];
    }
+   if (planar)
+      s->rgb        = (uint32_t*)(base + num_slots * frame_len);
 
    s->release    = release;
    s->user       = user;
@@ -73,7 +84,8 @@ gfx_surface_t *gfx_surface_new(unsigned dims,
    s->fmt        = GFX_SURFACE_FMT_NONE;
    s->can_update = video_driver_texture_can_update() ? 1 : 0;
    GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
-   GFX_INSTR_ADD(GFX_INSTR_SURFACE_BYTES, (int)(frame_len * num_slots));
+   GFX_INSTR_ADD(GFX_INSTR_SURFACE_BYTES,
+         (int)(frame_len * num_slots + rgb_len));
    return s;
 }
 
@@ -270,7 +282,9 @@ static void gfx_surface_lend(gfx_surface_t *s, unsigned slot)
    size_t pitch;
    void *mem, *spare;
    if (     slot >= s->num_slots || (s->lent & (1u << slot))
-         || !s->handle || !s->can_update)
+         || !s->handle || !s->can_update
+         /* the texture holds the converted frame, not the slot's */
+         || s->rgb)
       return;
    pitch = (size_t)VIDEO_SCALE_W(s->dims) * IMAGE_PIXFMT_BPP(s->pixfmt);
    if (s->num_slots >= 2)
@@ -482,7 +496,7 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
       s->node.lend        = 0;
       s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
       s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
-      if (!need_load && s->num_slots)
+      if (!need_load && s->num_slots && !s->rgb)
       {
          if (s->num_slots >= 2)
             s->node.lend = (slot < 2 && !(s->lent & (1u << slot)))
@@ -512,6 +526,51 @@ static enum gfx_surface_submit_result gfx_surface_submit_img(
    return gfx_surface_upload_sync(s, fmt);
 }
 
+/* A planar frame of @s converted into s->rgb in the order @rgba names,
+ * and s->img made its upload. The one pass over the planes. */
+static bool gfx_surface_planar(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba, uint8_t *fmt)
+{
+   unsigned w     = VIDEO_SCALE_W(s->dims);
+   unsigned h     = VIDEO_SCALE_H(s->dims);
+   unsigned flags = s->yuv | (rgba ? IMAGE_YUV_FLAG_RGBA : 0);
+   if (     !p->planes[0] || !p->planes[1] || !p->planes[2]
+         || !p->chroma_step)
+      return false;
+   image_yuv_420_to_rgb32(s->rgb, w,
+         p->planes[0], p->strides[0],
+         p->planes[1], p->strides[1],
+         p->planes[2], p->strides[2],
+         p->chroma_step, w, h, flags);
+   return gfx_surface_prepare(s, s->rgb, IMAGE_PIXFMT_8888, rgba, false,
+         fmt);
+}
+
+/* The planes of a frame laid out as a planar slot is (gfx_surface_new) */
+static void gfx_surface_planes_of(const gfx_surface_t *s,
+      const void *frame, gfx_surface_planes_t *p)
+{
+   const uint8_t *y = (const uint8_t*)frame;
+   unsigned w       = VIDEO_SCALE_W(s->dims);
+   unsigned cw      = (w + 1) / 2;
+   size_t   csz     = (size_t)cw * ((VIDEO_SCALE_H(s->dims) + 1) / 2);
+   p->planes[0]     = y;
+   p->strides[0]    = w;
+   p->planes[1]     = y + VIDEO_SCALE_AREA(s->dims);
+   if (s->pixfmt == IMAGE_PIXFMT_NV12)
+   {
+      p->planes[2]   = p->planes[1] + 1;
+      p->strides[1]  = p->strides[2] = cw * 2;
+      p->chroma_step = 2;
+   }
+   else
+   {
+      p->planes[2]   = p->planes[1] + csz;
+      p->strides[1]  = p->strides[2] = cw;
+      p->chroma_step = 1;
+   }
+}
+
 static void gfx_surface_count(enum gfx_surface_submit_result r)
 {
    GFX_INSTR_INC(r == GFX_SURFACE_SUBMIT_QUEUED
@@ -536,6 +595,17 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
    {
       GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
       return GFX_SURFACE_SUBMIT_BUSY;
+   }
+
+   if (s->rgb)
+   {
+      gfx_surface_planes_t p;
+      gfx_surface_planes_of(s, s->slots[slot], &p);
+      r = gfx_surface_planar(s, &p, rgba, &fmt)
+         ? gfx_surface_submit_img(s, slot, fmt)
+         : GFX_SURFACE_SUBMIT_FAILED;
+      gfx_surface_count(r);
+      return r;
    }
 
    r = gfx_surface_prepare(s, s->slots[slot], s->pixfmt, rgba, true, &fmt)
@@ -566,6 +636,15 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       return GFX_SURFACE_SUBMIT_BUSY;
    }
 
+   /* A planar frame is converted where it lies: the conversion is the
+    * one copy, and its result is the surface's own. */
+   if (s->rgb)
+   {
+      gfx_surface_planes_t p;
+      gfx_surface_planes_of(s, pixels, &p);
+      return gfx_surface_submit_planes(s, &p, rgba);
+   }
+
    /* The caller's buffer does not outlive this call for the video
     * thread's purposes, and is not the surface's to narrow; a slot is
     * both. One copy, the size of a frame, against a wait of up to a
@@ -592,6 +671,37 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
 
    r = gfx_surface_prepare(s, pixels, s->pixfmt, rgba, false, &fmt)
       ? gfx_surface_upload_sync(s, fmt)
+      : GFX_SURFACE_SUBMIT_FAILED;
+   gfx_surface_count(r);
+   return r;
+}
+
+void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags)
+{
+   if (s && s->rgb)
+      s->yuv = (uint8_t)(flags & (IMAGE_YUV_FLAG_VU
+            | IMAGE_YUV_FLAG_FULL_RANGE | IMAGE_YUV_FLAG_BT709));
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba)
+{
+   enum gfx_surface_submit_result r;
+   uint8_t fmt;
+
+   if (!s || !s->rgb || !p)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_FAILED);
+      return GFX_SURFACE_SUBMIT_FAILED;
+   }
+   /* The last converted frame is still on its way up */
+   if (s->inflight)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
+      return GFX_SURFACE_SUBMIT_BUSY;
+   }
+   r = gfx_surface_planar(s, p, rgba, &fmt)
+      ? gfx_surface_submit_img(s, 0, fmt)
       : GFX_SURFACE_SUBMIT_FAILED;
    gfx_surface_count(r);
    return r;

@@ -158,6 +158,16 @@ struct gfx_surface
    uint8_t can_update; /* driver updates in place */
    /* Set while release() runs for a dropped submit. */
    uint8_t dropped;
+   /* A planar surface (I420, NV12): the colour space its frames are
+    * in, as IMAGE_YUV_FLAG_* (BT709, FULL_RANGE, VU). */
+   uint8_t yuv;
+   /* A planar surface, while no driver samples YCbCr: the frame
+    * converted for upload, in the same allocation as the slots. The
+    * conversion reads the planes where they lie - a slot, or the
+    * caller's own (gfx_surface_submit_planes) - so it is the one pass
+    * over the frame, and the upload reads it from here. NULL for any
+    * other surface. */
+   uint32_t *rgb;
 };
 
 /* What the active video driver wants of an image, asked once before
@@ -167,6 +177,18 @@ struct gfx_surface
  * order, a context flag for 10-bit sources, a poke for compressed
  * formats - and every producer that cared had to know all three. A
  * decoder asks this instead, and emits what it is told. */
+/* A planar frame where it lies: a decoder's output surface, a camera
+ * buffer. Plane 0 is luma; planes 1 and 2 are Cb and Cr, each
+ * @chroma_step bytes from one sample to the next (1 for I420, 2 for
+ * NV12, whose single interleaved plane is then planes[1] at offset 0
+ * and planes[2] at offset 1). Strides in bytes. */
+typedef struct
+{
+   const uint8_t *planes[3];
+   unsigned strides[3];
+   unsigned chroma_step;
+} gfx_surface_planes_t;
+
 /* An upload of pixels the caller keeps (gfx_surface_submit_external). */
 typedef struct
 {
@@ -342,7 +364,16 @@ enum gfx_surface_submit_result gfx_surface_submit_external(gfx_surface_t *s,
 /* A surface of @num_slots (1..GFX_SURFACE_MAX_SLOTS) frames of @dims
  * (one packed size word) in @pixfmt, one image_pixfmt bit, all
  * in one allocation. NULL when out of memory or the arguments are out
- * of range. */
+ * of range.
+ *
+ * A planar @pixfmt (I420, NV12) makes slots of IMAGE_PIXFMT_FRAME_SIZE
+ * bytes, the planes one after another with no padding: luma rows of
+ * width bytes, then chroma rows of (width + 1) / 2 samples - two
+ * planes of them for I420, one interleaved plane for NV12. Until a
+ * driver samples YCbCr the frame is converted to 8888 at submit,
+ * once, from where it lies; the slot is free again as soon as the
+ * submit returns. P010 is refused until there is a 10-bit
+ * conversion. */
 gfx_surface_t *gfx_surface_new(unsigned dims,
       unsigned num_slots, uint32_t pixfmt, enum texture_filter_type filter,
       gfx_surface_release_t release, void *user);
@@ -364,6 +395,18 @@ enum gfx_surface_submit_result gfx_surface_submit(gfx_surface_t *s,
  * sample the surface's format and the surface knows how. */
 enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
       const void *pixels, bool rgba);
+
+/* The colour space of a planar surface's frames from now on:
+ * IMAGE_YUV_FLAG_BT709, _FULL_RANGE and _VU (formats/image_yuv_blit.h);
+ * BT.601 limited range by default. Ignored by any other surface. */
+void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags);
+
+/* Upload a planar frame from where it lies, into a planar surface of
+ * slots or none. Nothing is staged: the planes are read once, by the
+ * conversion, before this returns, so they are the caller's again
+ * whatever the result. Main thread. */
+enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
+      const gfx_surface_planes_t *p, bool rgba);
 
 /* Whether slot @slot may be written now. A slot lent the driver's upload
  * memory is the GPU's until the copy of its last frame has run; the
