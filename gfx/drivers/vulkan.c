@@ -515,7 +515,7 @@ typedef struct vk
       VkPipeline rgb565_to_rgba8888;
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
-      VkPipeline views_stock;
+      VkPipeline stock_rect;
       VkPipeline alpha_premult;
 #ifdef VULKAN_HDR_SWAPCHAIN
       VkPipeline hdr;
@@ -5170,8 +5170,8 @@ static void vulkan_init_pipelines(vk_t *vk)
 #include "vulkan_shaders/stereo_interlaced.frag.inc"
       ;
 
-   static const uint32_t views_stock_frag[] =
-#include "vulkan_shaders/views_stock.frag.inc"
+   static const uint32_t stock_rect_frag[] =
+#include "vulkan_shaders/stock_rect.frag.inc"
       ;
 
    static const uint32_t rgb565_to_rgba8888_comp[] =
@@ -5394,12 +5394,12 @@ static void vulkan_init_pipelines(vk_t *vk)
             shader_stages[1].module, NULL);
 
       /* Stock views straight from the frame. */
-      module_info.codeSize         = sizeof(views_stock_frag);
-      module_info.pCode            = views_stock_frag;
+      module_info.codeSize         = sizeof(stock_rect_frag);
+      module_info.pCode            = stock_rect_frag;
       vkCreateShaderModule(vk->context->device,
             &module_info, NULL, &shader_stages[1].module);
       vkCreateGraphicsPipelines(vk->context->device, vk->pipelines.cache,
-            1, &pipe, NULL, &vk->pipelines.views_stock);
+            1, &pipe, NULL, &vk->pipelines.stock_rect);
       vkDestroyShaderModule(vk->context->device,
             shader_stages[1].module, NULL);
 
@@ -5874,7 +5874,7 @@ static void vulkan_deinit_pipelines(vk_t *vk)
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.stereo_interlaced, NULL);
    vkDestroyPipeline(vk->context->device,
-         vk->pipelines.views_stock, NULL);
+         vk->pipelines.stock_rect, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.alpha_premult, NULL);
    vkDestroyPipeline(vk->context->device,
@@ -9715,7 +9715,7 @@ static void vulkan_views_draw_stock(vk_t *vk, struct vk_texture *src,
    vk->flags           |= VK_FLAG_TRACKER_USE_SCISSOR;
    vk->tracker.dirty   |= VULKAN_DIRTY_DYNAMIC_BIT;
 
-   call.pipeline     = vk->pipelines.views_stock;
+   call.pipeline     = vk->pipelines.stock_rect;
    call.texture      = src;
    call.sampler      = vk->video.smooth
       ? vk->samplers.linear : vk->samplers.nearest;
@@ -11008,7 +11008,7 @@ static bool vulkan_frame(void *data, const void *frame,
             view_chains, view_rects, &views_direct);
    /* Stock views draw straight from the frame, but for a rolling
     * scanline, drawn by the chain's final pass. */
-   views_direct = views_direct && vk->pipelines.views_stock
+   views_direct = views_direct && vk->pipelines.stock_rect
       && !(video_info->shader_subframes > 1 && video_info->scan_subframes);
 #ifdef HAVE_OPENXR
    /* The headset draws its views from copies. */

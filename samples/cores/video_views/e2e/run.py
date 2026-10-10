@@ -11,7 +11,8 @@ gl driver doesn't present views, so it runs one case that expects the
 packed frame and no PRESENTS. The exact cases check every pixel of
 views filled with noise, drawn straight from the frame by the stock
 chain and copied out of it for a preset, on glcore once for each way it
-copies them.
+copies them; and, on glcore, a frame drawn whole out of a core's larger
+framebuffer.
 Not run in CI: it needs a GPU, gamescope and a RetroArch build.
 
 Usage: run.py <retroarch binary> <output dir> <driver> [driver ...]
@@ -223,6 +224,7 @@ EXACT_SETTINGS = {'video_stereo_mode': '0', 'video_scale_integer': 'true',
                   'video_smooth': 'false'}
 NOISE = {'video_views_test_pattern': 'noise'}
 NOISE_565 = dict(NOISE, video_views_test_format='rgb565')
+NOISE_LARGE = dict(NOISE, video_views_test_max='large')
 EXACT_CASES = [
     ('exact-ds', 'ds', NOISE, 'off'),
     ('exact-ds-rgb565', 'ds', NOISE_565, 'off'),
@@ -232,6 +234,11 @@ EXACT_CASES = [
     ('exact-3ds', '3ds', NOISE, 'gl'),
     ('exact-3ds', '3ds', NOISE, 'gl_topleft'),
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
+    # No map: the frame drawn whole. A core's GL framebuffer as large as
+    # its maximum holds the frame in a corner, so the stock chain would
+    # copy it out; glcore draws it straight from there instead.
+    ('whole-3ds', 'none', NOISE_LARGE, 'gl'),
+    ('whole-3ds', 'none', NOISE_LARGE, 'gl_topleft'),
 ]
 EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan')}
 # Filtered, a view drawn straight from the frame must stop at its edge
@@ -242,15 +249,21 @@ SMOOTH_CASES = [
     ('smooth-ds', 'ds', NOISE, 'off'),
     ('smooth-3ds', '3ds', NOISE, 'gl'),
     ('smooth-3ds', '3ds', NOISE, 'vulkan'),
+    ('smooth-whole-3ds', 'none', NOISE_LARGE, 'gl'),
 ]
 SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
-# Drivers that draw the stock chain's views straight from the frame.
+# Drivers that draw the stock chain's views straight from the frame,
+# and that draw a frame whole straight from a larger texture.
 DIRECT_DRIVERS = ('glcore', 'vulkan')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
+WHOLE_DRIVERS = ('glcore',)
+WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')
 # The core's 2D maps, as (x, y, width, height) in the packed frame.
 EXACT_VIEWS = {'ds': [(0, 0, 256, 192), (0, 192, 256, 192)],
                '3ds': [(0, 0, 400, 240), (240, 240, 320, 240)]}
+# Without a map the core still draws its 2D 3ds screens.
+EXACT_VIEWS['none'] = EXACT_VIEWS['3ds']
 NOISE_COLOURS = [BLACK, RED, GREEN, BLUE, (0, 255, 255), (255, 0, 255),
                  YELLOW]
 # Mesa without GL 4.3 and ARB_copy_image: glcore must blit.
@@ -762,13 +775,14 @@ def copy_path(d):
     return found
 
 
-def direct_drawn(d):
-    """Whether the log says views were drawn straight from the frame."""
+def direct_drawn(d, regex):
+    """Whether the log says the frame or its views were drawn straight
+    from the frame's texture, by regex."""
     for name in ('run.log', 'retroarch.log'):
         path = os.path.join(d, name)
         if os.path.exists(path):
             with open(path, errors='replace') as f:
-                if DIRECT_RE.search(f.read()):
+                if regex.search(f.read()):
                     return True
     return False
 
@@ -792,10 +806,14 @@ def run_exact_case(retroarch, root, driver, case, suffix='',
     d = case_dir(root, driver, name, hw)
     if path and copy_path(d) != path:
         errors.append('views copied by %s, want %s' % (copy_path(d), path))
-    direct = direct_drawn(d)
-    if direct != (driver in DIRECT_DRIVERS and not preset):
-        errors.append('views %s straight from the frame' %
-                      ('drawn' if direct else 'not drawn'))
+    if mapopt == 'none':
+        regex, drivers, what = WHOLE_RE, WHOLE_DRIVERS, 'frame'
+    else:
+        regex, drivers, what = DIRECT_RE, DIRECT_DRIVERS, 'views'
+    direct = direct_drawn(d, regex)
+    if direct != (driver in drivers and not preset):
+        errors.append('%s %s straight from the frame' %
+                      (what, 'drawn' if direct else 'not drawn'))
     shots = sorted(x for x in os.listdir(os.path.join(d, 'shots'))
                    if x.endswith('.png'))
     if not shots:

@@ -123,8 +123,6 @@ typedef struct gl3
       bool tex_swizzle[RETRO_VIDEO_VIEWS_MAX];
       GLuint read_fbo;
       GLuint draw_fbo;
-      /* Nearest and linear, for views drawn straight from the frame. */
-      GLuint samplers[2];
       GLuint canvas_fbo;
       GLuint canvas_tex;
       unsigned canvas_dims;
@@ -146,9 +144,8 @@ typedef struct gl3
       bool stock_failed;
       /* The stereo blend programs were asked for. */
       bool blend_tried;
-      /* The program views draw with straight from the frame was
-       * asked for. */
-      bool stock_tried;
+      /* Views have been drawn straight from the frame. */
+      bool direct_seen;
       bool active;
       /* Drawing into the UI layer. */
       bool ui_pass;
@@ -218,6 +215,15 @@ typedef struct gl3
       GLuint alpha_blend_linear;
       struct gl3_buffer_locations alpha_blend_linear_loc;
       bool   alpha_blend_linear_tried;
+      /* stock_rect.frag, made the first time the stock chain would draw
+       * a view or a padded frame: with its nearest and linear samplers,
+       * it draws them straight from the frame's texture. */
+      GLuint stock_rect;
+      GLuint stock_rect_samplers[2];
+      struct gl3_buffer_locations stock_rect_loc;
+      bool   stock_rect_tried;
+      /* A padded frame has been drawn straight from its texture. */
+      bool   stock_rect_frame_seen;
 #ifdef HAVE_SHADERPIPELINE
       struct gl3_buffer_locations ribbon_loc;
       struct gl3_buffer_locations ribbon_simple_loc;
@@ -233,10 +239,8 @@ typedef struct gl3
       struct gl3_buffer_locations mesh_loc;
       GLuint stereo_anaglyph;
       GLuint stereo_interlaced;
-      GLuint views_stock;
       struct gl3_buffer_locations stereo_anaglyph_loc;
       struct gl3_buffer_locations stereo_interlaced_loc;
-      struct gl3_buffer_locations views_stock_loc;
    } pipelines;
 #endif /* HAVE_SLANG */
 
@@ -2242,10 +2246,6 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteFramebuffers(1, &gl->views.draw_fbo);
    gl->views.read_fbo = 0;
    gl->views.draw_fbo = 0;
-   if (gl->views.samplers[0])
-      glDeleteSamplers(2, gl->views.samplers);
-   gl->views.samplers[0] = 0;
-   gl->views.samplers[1] = 0;
    gl3_views_free_target(&gl->views.canvas_fbo, &gl->views.canvas_tex,
          &gl->views.canvas_dims);
    gl3_views_free_target(&gl->views.ui_fbo, &gl->views.ui_tex,
@@ -2335,13 +2335,17 @@ static void gl3_destroy_resources(gl3_t *gl)
       glDeleteProgram(gl->pipelines.stereo_interlaced);
       gl->pipelines.stereo_interlaced = 0;
    }
-   if (gl->pipelines.views_stock)
+   if (gl->pipelines.stock_rect)
    {
-      glDeleteProgram(gl->pipelines.views_stock);
-      gl->pipelines.views_stock = 0;
+      glDeleteProgram(gl->pipelines.stock_rect);
+      gl->pipelines.stock_rect = 0;
    }
-   gl->views.blend_tried = false;
-   gl->views.stock_tried = false;
+   if (gl->pipelines.stock_rect_samplers[0])
+      glDeleteSamplers(2, gl->pipelines.stock_rect_samplers);
+   gl->pipelines.stock_rect_samplers[0] = 0;
+   gl->pipelines.stock_rect_samplers[1] = 0;
+   gl->pipelines.stock_rect_tried       = false;
+   gl->views.blend_tried                = false;
    if (gl->scrgb.fbo)
    {
       glDeleteFramebuffers(1, &gl->scrgb.fbo);
@@ -5653,43 +5657,54 @@ static void gl3_views_init_blend(gl3_t *gl)
          &gl->pipelines.stereo_interlaced_loc, true);
 }
 
-/* The program and samplers stock views draw with straight from the
- * frame. Without them views are copied out of it. */
-static void gl3_views_init_stock(gl3_t *gl)
+/* The program and samplers that draw a rectangle of a texture as the
+ * stock chain would draw a texture of its own. Without them views and
+ * padded frames are copied for the chain. */
+static void gl3_stock_rect_init(gl3_t *gl)
 {
    unsigned i;
    static const uint32_t alpha_blend_vert[] =
 #include "vulkan_shaders/alpha_blend.vert.inc"
       ;
 
-   static const uint32_t views_stock_frag[] =
-#include "vulkan_shaders/views_stock.frag.inc"
+   static const uint32_t stock_rect_frag[] =
+#include "vulkan_shaders/stock_rect.frag.inc"
       ;
 
-   gl->views.stock_tried       = true;
-   gl->pipelines.views_stock   = gl3_cross_compile_program(
+   gl->pipelines.stock_rect_tried = true;
+   gl->pipelines.stock_rect       = gl3_cross_compile_program(
          alpha_blend_vert, sizeof(alpha_blend_vert),
-         views_stock_frag, sizeof(views_stock_frag),
-         &gl->pipelines.views_stock_loc, true);
-   if (!gl->pipelines.views_stock)
+         stock_rect_frag, sizeof(stock_rect_frag),
+         &gl->pipelines.stock_rect_loc, true);
+   if (!gl->pipelines.stock_rect)
    {
-      RARCH_WARN("[GLCore] Views are copied out of the frame.\n");
+      RARCH_WARN("[GLCore] Views and padded frames are copied for the "
+            "stock chain.\n");
       return;
    }
-   RARCH_LOG("[GLCore] Views drawn straight from the frame.\n");
-   glGenSamplers(2, gl->views.samplers);
+   glGenSamplers(2, gl->pipelines.stock_rect_samplers);
    for (i = 0; i < 2; i++)
    {
       GLint filter = i ? GL_LINEAR : GL_NEAREST;
-      glSamplerParameteri(gl->views.samplers[i],
-            GL_TEXTURE_MIN_FILTER, filter);
-      glSamplerParameteri(gl->views.samplers[i],
-            GL_TEXTURE_MAG_FILTER, filter);
-      glSamplerParameteri(gl->views.samplers[i],
-            GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glSamplerParameteri(gl->views.samplers[i],
-            GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+      GLuint smp   = gl->pipelines.stock_rect_samplers[i];
+      glSamplerParameteri(smp, GL_TEXTURE_MIN_FILTER, filter);
+      glSamplerParameteri(smp, GL_TEXTURE_MAG_FILTER, filter);
+      glSamplerParameteri(smp, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+      glSamplerParameteri(smp, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
    }
+}
+
+/* Whether the stock chain's draws can be made straight from the
+ * frame's texture: not for a rolling scanline, which the chain's final
+ * pass draws. */
+static bool gl3_stock_rect_ready(gl3_t *gl,
+      const video_frame_info_t *video_info)
+{
+   if (video_info->shader_subframes > 1 && video_info->scan_subframes)
+      return false;
+   if (!gl->pipelines.stock_rect_tried)
+      gl3_stock_rect_init(gl);
+   return gl->pipelines.stock_rect != 0;
 }
 
 /* Whether this frame draws its views, with their chains picked and
@@ -5708,9 +5723,6 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
    const video_views_layout_t *layout = &video_info->views_layout;
    bool offscreen = video_info->views.num_views && layout->offscreen;
    bool hw        = (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) ? true : false;
-   /* A rolling scanline is drawn by the chain's final pass. */
-   bool scan      = video_info->shader_subframes > 1
-      && video_info->scan_subframes;
 
    if (offscreen && !gl->views.blend_tried)
       gl3_views_init_blend(gl);
@@ -5729,10 +5741,8 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
    views = video_info->views.num_views
       && gl3_views_prepare(gl, video_info, *blend || !layout->offscreen,
             *blend ? layout->canvas_dims : dims, chains, rects, &stock);
-   if (views && stock && !scan && !gl->views.stock_tried)
-      gl3_views_init_stock(gl);
-   *direct = views && stock && !scan && texture->image
-      && gl->pipelines.views_stock;
+   *direct = views && stock && texture->image
+      && gl3_stock_rect_ready(gl, video_info);
    /* The map was checked against the core's frame; threaded video can
     * crop it. A direct repeat draws from the frame again. */
    if (     views && (frame || *direct)
@@ -5755,6 +5765,11 @@ static bool gl3_views_setup(gl3_t *gl, const video_frame_info_t *video_info,
       gl->views.copied = 0;
    *blend  = views && *blend;
    *direct = views && *direct;
+   if (*direct && !gl->views.direct_seen)
+   {
+      gl->views.direct_seen = true;
+      RARCH_LOG("[GLCore] Views drawn straight from the frame.\n");
+   }
    return views;
 }
 
@@ -5845,10 +5860,10 @@ static void gl3_views_ui_end(gl3_t *gl, video_frame_info_t *video_info)
    gl3_set_viewport(gl, video_info->dims, false, true);
 }
 
-/* Draws view v straight from the frame's texture src over vp, cut to
- * cut, as the stock chain draws its copy: the same texels, the same
- * filter, stopping at the view's edge as at a texture's. */
-static void gl3_views_draw_stock(gl3_t *gl,
+/* Draws rectangle v of the frame's texture src over vp, cut to cut, as
+ * the stock chain draws a copy of it: the same texels, the same filter,
+ * stopping at the rectangle's edge as at a texture's. */
+static void gl3_stock_rect_draw(gl3_t *gl,
       const struct gl3_filter_chain_texture *src,
       const struct retro_video_view *v, bool bottom_up,
       const struct gl3_viewport *vp, const struct gl3_viewport *cut,
@@ -5895,12 +5910,13 @@ static void gl3_views_draw_stock(gl3_t *gl,
 #endif
    glActiveTexture(GL_TEXTURE0 + 1);
    glBindTexture(GL_TEXTURE_2D, src->image);
-   glBindSampler(1, gl->views.samplers[gl->video_info.smooth ? 1 : 0]);
-   glUseProgram(gl->pipelines.views_stock);
-   if (gl->pipelines.views_stock_loc.flat_ubo_fragment >= 0)
-      glUniform4fv(gl->pipelines.views_stock_loc.flat_ubo_fragment, 5, ubo);
-   gl3_draw_textured_quad(gl, gl->pipelines.views_stock,
-         &gl->pipelines.views_stock_loc, mvp, vbo_data);
+   glBindSampler(1,
+         gl->pipelines.stock_rect_samplers[gl->video_info.smooth ? 1 : 0]);
+   glUseProgram(gl->pipelines.stock_rect);
+   if (gl->pipelines.stock_rect_loc.flat_ubo_fragment >= 0)
+      glUniform4fv(gl->pipelines.stock_rect_loc.flat_ubo_fragment, 5, ubo);
+   gl3_draw_textured_quad(gl, gl->pipelines.stock_rect,
+         &gl->pipelines.stock_rect_loc, mvp, vbo_data);
    glBindSampler(1, 0);
    glBindTexture(GL_TEXTURE_2D, 0);
    glDisable(GL_SCISSOR_TEST);
@@ -5976,7 +5992,7 @@ static void gl3_views_render(gl3_t *gl,
       glBindFramebuffer(GL_FRAMEBUFFER, target);
       if (direct)
       {
-         gl3_views_draw_stock(gl, src, &video_info->views.views[p->view],
+         gl3_stock_rect_draw(gl, src, &video_info->views.views[p->view],
                bottom_up, &vp, &cut, mvp);
          continue;
       }
@@ -6462,6 +6478,35 @@ static bool gl3_frame(void *data, const void *frame,
                (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
                && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT),
                views_direct);
+      /* The stock chain would copy a frame out of a larger texture
+       * first; it is drawn straight from it instead. */
+      else if (   filter_chain == gl->filter_chain_default
+               && texture.padded_dims != texture.dims
+               && gl3_stock_rect_ready(gl, video_info))
+      {
+         struct retro_video_view whole;
+         memset(&whole, 0, sizeof(whole));
+         whole.width  = VIDEO_SCALE_W(texture.dims);
+         whole.height = VIDEO_SCALE_H(texture.dims);
+         if (!gl->pipelines.stock_rect_frame_seen)
+         {
+            gl->pipelines.stock_rect_frame_seen = true;
+            RARCH_LOG("[GLCore] Frames drawn straight from the core's "
+                  "texture.\n");
+         }
+         glBindFramebuffer(GL_FRAMEBUFFER,
+               gl3_frame_target_fbo(gl, video_info->dims));
+         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+         glClear(GL_COLOR_BUFFER_BIT);
+         gl3_stock_rect_draw(gl, &texture, &whole,
+               (gl->flags & GL3_FLAG_HW_RENDER_ENABLE)
+               && (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT),
+               &gl->filter_chain_vp, &gl->filter_chain_vp,
+               (gl->flags & GL3_FLAG_HW_RENDER_BOTTOM_LEFT)
+               ? gl->mvp.data
+               : gl->mvp_yflip.data);
+         glBindFramebuffer(GL_FRAMEBUFFER, 0);
+      }
       else
       {
          gl3_filter_chain_set_input_texture(filter_chain, &texture);
