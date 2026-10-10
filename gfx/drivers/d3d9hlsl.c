@@ -921,7 +921,7 @@ static void gfx_display_d3d9_hlsl_draw(gfx_display_ctx_draw_t *draw,
        * (the packed y is height - y - h). The Y-flip here undoes that,
        * then topdown_ortho applies the correct top-down mapping. */
       x1 = VIDEO_POS_X(draw->pos) / (float)video_width;
-      y1 = ((float)video_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
+      y1 = (float)VIDEO_POS_FLIP_Y(video_height, draw->pos, draw->dims) / (float)video_height;
       x2 = (VIDEO_POS_X(draw->pos) + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
       y2 = ((float)video_height - VIDEO_POS_Y(draw->pos)) / (float)video_height;
 

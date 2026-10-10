@@ -445,7 +445,7 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
          unsigned dw  = VIDEO_SCALE_W(draw->dims);
          unsigned dh  = VIDEO_SCALE_H(draw->dims);
          float x      = VIDEO_POS_X(draw->pos);
-         float y      = (float)video_height - VIDEO_POS_Y(draw->pos) - dh;
+         float y      = VIDEO_POS_FLIP_Y(video_height, draw->pos, draw->dims);
          /* Remember: this is a triangle strip, not a quad, draw in a Z shape
             Bottom-left, right, top-left, right */
          v[0].pos.x   = (x          ) / video_width;
@@ -515,8 +515,8 @@ static void gfx_display_wiiu_draw(gfx_display_ctx_draw_t *draw,
 
       v                  = wiiu->vertex_cache.v + wiiu->vertex_cache.current;
       v->pos.x           = VIDEO_POS_X(draw->pos);
-      v->pos.y           = (float)wiiu->color_buffer.surface.height -
-                           VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims);
+      v->pos.y           = VIDEO_POS_FLIP_Y(wiiu->color_buffer.surface.height,
+                           draw->pos, draw->dims);
       v->pos.width       = VIDEO_SCALE_W(draw->dims);
       v->pos.height      = VIDEO_SCALE_H(draw->dims);
       v->coord.u         = 0.0f;

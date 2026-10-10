@@ -3407,9 +3407,8 @@ static void gfx_display_vk_draw(gfx_display_ctx_draw_t *draw,
    /* Per-element dynamic state, not the video viewport. Anything that
     * outlives this draw wants vk->video_vp. */
    vk->vk_vp.x                    = VIDEO_POS_X(draw->pos);
-   /* Signed: an element past the top has a negative y */
-   vk->vk_vp.y                    = (float)((int)VIDEO_SCALE_H(vk->context->swapchain_dims)
-         - VIDEO_POS_Y(draw->pos) - (int)VIDEO_SCALE_H(draw->dims));
+   vk->vk_vp.y                    = VIDEO_POS_FLIP_Y(
+         VIDEO_SCALE_H(vk->context->swapchain_dims), draw->pos, draw->dims);
    vk->vk_vp.width                = VIDEO_SCALE_W(draw->dims);
    vk->vk_vp.height               = VIDEO_SCALE_H(draw->dims);
    vk->vk_vp.minDepth             = 0.0f;

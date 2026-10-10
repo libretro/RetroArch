@@ -1137,7 +1137,7 @@ static void gfx_display_gdi_draw(gfx_display_ctx_draw_t *draw,
        * coordinate system (the video_height value we were
        * passed), so flip. */
       dst_x = (int)VIDEO_POS_X(draw->pos);
-      dst_y = (int)video_height - (int)VIDEO_SCALE_H(draw->dims) - (int)VIDEO_POS_Y(draw->pos);
+      dst_y = VIDEO_POS_FLIP_Y(video_height, draw->pos, draw->dims);
       dst_w = VIDEO_SCALE_W(draw->dims);
       dst_h = VIDEO_SCALE_H(draw->dims);
 

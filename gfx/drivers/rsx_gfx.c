@@ -369,8 +369,7 @@ static void gfx_display_rsx_draw(gfx_display_ctx_draw_t *draw,
       return;
 
    vp.pos                   = VIDEO_POS_PACK(abs(VIDEO_POS_X(draw->pos)),
-         abs((int)rsx->height - VIDEO_POS_Y(draw->pos)
-            - (int)VIDEO_SCALE_H(draw->dims)));
+         abs(VIDEO_POS_FLIP_Y(rsx->height, draw->pos, draw->dims)));
    vp.dims                  = VIDEO_SCALE_PACK(
          MIN(VIDEO_SCALE_W(draw->dims), rsx->width),
          MIN(VIDEO_SCALE_H(draw->dims), rsx->height));

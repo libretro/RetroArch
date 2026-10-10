@@ -905,7 +905,7 @@ static void gfx_display_d3d9_cg_draw(gfx_display_ctx_draw_t *draw,
       /* Undo the Y pre-flip, then let topdown_ortho handle the mapping.
        * This matches the HLSL driver's single-sprite coordinate path. */
       x1 = VIDEO_POS_X(draw->pos) / (float)video_width;
-      y1 = ((float)video_height - VIDEO_POS_Y(draw->pos) - VIDEO_SCALE_H(draw->dims)) / (float)video_height;
+      y1 = (float)VIDEO_POS_FLIP_Y(video_height, draw->pos, draw->dims) / (float)video_height;
       x2 = (VIDEO_POS_X(draw->pos) + VIDEO_SCALE_W(draw->dims))  / (float)video_width;
       y2 = ((float)video_height - VIDEO_POS_Y(draw->pos)) / (float)video_height;
 

@@ -1160,7 +1160,7 @@ static void gfx_display_sdl3_draw(gfx_display_ctx_draw_t *draw,
       x0 = (float)VIDEO_POS_X(draw->pos);
       x1 = (float)VIDEO_POS_X(draw->pos) + (float)VIDEO_SCALE_W(draw->dims);
       /* Re-flip Y from bottom-up to SDL top-down. */
-      y0 = (float)video_height - (float)VIDEO_SCALE_H(draw->dims) - (float)VIDEO_POS_Y(draw->pos);
+      y0 = (float)VIDEO_POS_FLIP_Y(video_height, draw->pos, draw->dims);
       y1 = y0 + (float)VIDEO_SCALE_H(draw->dims);
 
       /* Apply draw->scale_factor (centred scaling around the quad's

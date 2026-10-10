@@ -20,12 +20,17 @@
  *   5. Sign: the origin's halves are signed, since integer scaling
  *      overscans and pushes an axis negative, and a sign bit must not
  *      reach the other axis.
+ *   6. Flip: VIDEO_POS_FLIP_Y turns a bottom-up origin into the
+ *      top-down y every driver draws at. It stays signed whatever type
+ *      the surface height comes in, so an element reaching past the top
+ *      lands at a small negative y rather than near 2^32.
  *
  * Header-only: the pack layout is all macros, so the harness needs
  * nothing from the tree but the header that declares them. */
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <boolean.h>
 #include <retro_common_api.h>
 #include "../../../gfx/video_defines.h"
@@ -214,6 +219,52 @@ static void lane_viewport(void)
          "viewport: writing a size moved the origin to %d,%d", VIDEO_POS_X(vp.pos), VIDEO_POS_Y(vp.pos));
 }
 
+/* 6. the flip to top-down, against the float math it stands for, with
+ *    the surface height in each type the drivers hold it in */
+static void lane_flip(void)
+{
+   static const int      ys[] = { -32768, -40, -1, 0, 10, 600, 719, 750, 32767 };
+   static const int      xs[] = { -30, 0, 1270 };
+   static const unsigned hs[] = { 1, 64, 200, 65535 };
+   unsigned surf_u  = 720;
+   uint32_t surf_32 = 720;
+   float    surf_f  = 720.0f;
+   size_t i, j, k;
+
+   for (i = 0; i < sizeof(ys) / sizeof(ys[0]); i++)
+      for (j = 0; j < sizeof(hs) / sizeof(hs[0]); j++)
+         for (k = 0; k < sizeof(xs) / sizeof(xs[0]); k++)
+         {
+            unsigned p   = VIDEO_POS_PACK(xs[k], ys[i]);
+            unsigned d   = VIDEO_SCALE_PACK(64, hs[j]);
+            double  want = 720.0 - (double)ys[i] - (double)hs[j];
+
+            CHECK((double)VIDEO_POS_FLIP_Y(surf_u, p, d) == want,
+                  "flip: y %d h %u on an unsigned 720 gave %d, not %.0f",
+                  ys[i], hs[j], VIDEO_POS_FLIP_Y(surf_u, p, d), want);
+            CHECK((double)VIDEO_POS_FLIP_Y(surf_32, p, d) == want,
+                  "flip: y %d h %u on a uint32_t 720 gave %d, not %.0f",
+                  ys[i], hs[j], VIDEO_POS_FLIP_Y(surf_32, p, d), want);
+            CHECK((double)VIDEO_POS_FLIP_Y(surf_f, p, d) == want,
+                  "flip: y %d h %u on a float 720 gave %d, not %.0f",
+                  ys[i], hs[j], VIDEO_POS_FLIP_Y(surf_f, p, d), want);
+            /* what a driver stores it in: float viewports and vertices */
+            CHECK((float)VIDEO_POS_FLIP_Y(surf_u, p, d) == (float)want,
+                  "flip: y %d h %u read as a float gave %f, not %.0f",
+                  ys[i], hs[j], (double)(float)VIDEO_POS_FLIP_Y(surf_u, p, d),
+                  want);
+         }
+
+   /* a 64-tall element 24 px past the top of a 720 surface */
+   {
+      unsigned p = VIDEO_POS_PACK(16, 720 + 24 - 64);
+      unsigned d = VIDEO_SCALE_PACK(64, 64);
+      CHECK(VIDEO_POS_FLIP_Y(surf_u, p, d) == -24,
+            "flip: an element 24 past the top came out at %d, not -24",
+            VIDEO_POS_FLIP_Y(surf_u, p, d));
+   }
+}
+
 int main(void)
 {
    lane_round_trip();
@@ -221,6 +272,7 @@ int main(void)
    lane_clamp();
    lane_origin();
    lane_viewport();
+   lane_flip();
 
    if (failures)
    {

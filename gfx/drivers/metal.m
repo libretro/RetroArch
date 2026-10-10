@@ -3695,8 +3695,8 @@ static bool buffer_chain_alloc_range(buffer_chain_t *chain,
 
    MTLViewport vp = {
       .originX = VIDEO_POS_X(draw->pos),
-      .originY = (int)VIDEO_SCALE_H(_context.viewport->full_dims) - VIDEO_POS_Y(draw->pos)
-               - (int)VIDEO_SCALE_H(draw->dims),
+      .originY = VIDEO_POS_FLIP_Y(VIDEO_SCALE_H(_context.viewport->full_dims),
+            draw->pos, draw->dims),
       .width   = VIDEO_SCALE_W(draw->dims),
       .height  = VIDEO_SCALE_H(draw->dims),
       .znear   = 0,

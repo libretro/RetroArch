@@ -271,6 +271,11 @@ enum text_alignment
 #define VIDEO_POS_PUT_Y(p, y) ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p), (y)))
 #define VIDEO_POS_ADD(p, dx, dy) \
    ((p) = VIDEO_POS_PACK(VIDEO_POS_X(p) + (dx), VIDEO_POS_Y(p) + (dy)))
+/* The top-down y of an element with origin p and size d on a surface h
+ * tall, whose origin is bottom-up. Signed: an element reaching past the
+ * top comes out negative. */
+#define VIDEO_POS_FLIP_Y(h, p, d) \
+   ((int)(h) - VIDEO_POS_Y(p) - (int)VIDEO_SCALE_H(d))
 
 /* One axis of an origin, leaving the other half as it stands. */
 #define VIDEO_POS_PUT_X(p, x) \

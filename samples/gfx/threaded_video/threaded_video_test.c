@@ -7502,6 +7502,98 @@ static void lane_hw_ring_sync(void)
             f1 - f0, replaced, s1 - s0, hw_replaced, h1 - h0);
 }
 
+/* ------------------------------------------------------------------ */
+/* Lane: a display element past the top                              */
+/*   The menu draws a quad whose top reaches above the screen through */
+/*   the display driver, unthreaded and under the wrapper. Its        */
+/*   top-down y is negative, and a viewport or vertex the driver      */
+/*   builds from it has to be too: on Vulkan a y outside             */
+/*   viewportBoundsRange is VUID-VkViewport-y-01776, which the        */
+/*   validation layer turns into a failure here.                      */
+/* ------------------------------------------------------------------ */
+
+static menu_ctx_driver_t         pastop_menu;
+static const menu_ctx_driver_t  *pastop_inner;
+static retro_atomic_int_t        pastop_draws;
+
+static void pastop_frame(void *data, video_frame_info_t *video_info)
+{
+   static float white[16] = {
+      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f,
+      1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f
+   };
+   gfx_display_t *p_disp = disp_get_ptr();
+   unsigned h            = VIDEO_SCALE_H(video_info->dims);
+   struct video_coords coords;
+   gfx_display_ctx_draw_t draw;
+
+   if (pastop_inner->frame)
+      pastop_inner->frame(data, video_info);
+   if (!p_disp->dispctx || !p_disp->dispctx->draw || h < 64)
+      return;
+
+   memset(&draw, 0, sizeof(draw));
+   coords.vertices      = 4;
+   coords.vertex        = NULL;
+   coords.tex_coord     = NULL;
+   coords.lut_tex_coord = NULL;
+   coords.color         = white;
+   /* 64x64, bottom-up origin, its top 24 px above the screen */
+   draw.pos             = VIDEO_POS_PACK(16, (int)h + 24 - 64);
+   draw.dims            = VIDEO_SCALE_PACK(64, 64);
+   draw.coords          = &coords;
+   draw.scale_factor    = 1.0f;
+   gfx_display_draw(p_disp->dispctx, &draw, video_info->userdata,
+         video_info->dims);
+   retro_atomic_fetch_add_int(&pastop_draws, 1);
+}
+
+static void lane_display_past_top(void)
+{
+   unsigned had               = failures;
+   struct menu_state *menu_st = menu_state_get_ptr();
+   bool opened                = false;
+   int unthreaded, threaded;
+
+   if (!menu_is_up())
+   {
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+      opened = true;
+   }
+   CHECK(menu_is_up(), "past-top lane: menu not up");
+
+   /* Swapped only while no video thread exists; the thread's creation
+    * and join order it against the frames that read it. */
+   set_threaded_via_setting(false);
+   pastop_inner        = menu_st->driver_ctx;
+   pastop_menu         = *pastop_inner;
+   pastop_menu.frame   = pastop_frame;
+   menu_st->driver_ctx = &pastop_menu;
+   retro_atomic_store_release_int(&pastop_draws, 0);
+
+   run_frames(10);
+   unthreaded = retro_atomic_load_acquire_int(&pastop_draws);
+   CHECK(unthreaded > 0, "past-top lane: no element drawn unthreaded");
+
+   set_threaded_via_setting(true);
+   run_frames(10);
+   video_thread_wait_idle();
+   set_threaded_via_setting(false);
+   threaded = retro_atomic_load_acquire_int(&pastop_draws) - unthreaded;
+   CHECK(threaded > 0, "past-top lane: no element drawn under the wrapper");
+   CHECK(menu_st->driver_ctx == &pastop_menu,
+         "past-top lane: a reinit replaced the menu driver");
+
+   menu_st->driver_ctx = pastop_inner;
+   if (opened)
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] display element past the top lane"
+            " (%d draws unthreaded, %d under the wrapper)\n",
+            unthreaded, threaded);
+}
+
 int main(int argc, char *argv[])
 {
    char cfg_path[512];
@@ -7661,6 +7753,8 @@ int main(int argc, char *argv[])
    lane_command_runs_once();
    lane_concurrent_posters();
    lane_font_marshal();
+   if (real_driver())
+      lane_display_past_top();
    if (!real_driver())
       lane_menu_texture();
    if (!real_driver())
