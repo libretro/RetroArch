@@ -87,6 +87,55 @@ jobs:
           python3 tools/texture_image_init_check.py --selftest
           python3 tools/texture_image_init_check.py
 
+  slang-rect:
+    name: Presets read frames where they lie
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Install dependencies
+        timeout-minutes: 10
+        run: |
+          set -eu
+          pkgs="build-essential libegl-dev libgl-dev libegl-mesa0 libgl1-mesa-dri"
+          pkgs="$pkgs gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 wine64"
+          for i in 1 2 3; do
+            sudo timeout 90 apt-get update -y \
+              -o Acquire::Retries=3 -o Acquire::http::Timeout=30 && break
+            sleep 10
+          done
+          sudo apt-get install -y -qq \
+            -o Acquire::Retries=3 -o Acquire::http::Timeout=30 $pkgs
+
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build and run slang_rect_test (ASan + UBSan, llvmpipe)
+        shell: bash
+        working-directory: samples/gfx/slang_rect
+        run: |
+          set -eu
+          # gfx/drivers_shader/slang_rect.c rewrites a preset's stage
+          # to read its frame inside a larger texture. Each test shader,
+          # sampled each way, comes back rewritten, left alone or
+          # refused as it should and cross-compiles; and drawn by Mesa,
+          # every rewritten stage reads the frame bit for bit as the
+          # stage it was reads a texture of its own.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1 \
+             timeout 600 make check CHECK_ARGS=--require-gl
+          make clean
+
+      - name: Build and run slang_rect_test (mingw-w64, Wine)
+        shell: bash
+        working-directory: samples/gfx/slang_rect
+        run: |
+          set -eu
+          make clean all CC=x86_64-w64-mingw32-gcc CXX=x86_64-w64-mingw32-g++ \
+             LDFLAGS=-static
+          WINEDEBUG=-all timeout 300 wine ./slang_rect_test.exe
+          make clean
+
   samples-gfx:
     name: Build and run samples/gfx
     runs-on: ubuntu-latest

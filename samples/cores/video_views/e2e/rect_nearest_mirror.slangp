@@ -1,0 +1,4 @@
+shaders = 1
+shader0 = rect.slang
+filter_linear0 = false
+wrap_mode0 = mirrored_repeat

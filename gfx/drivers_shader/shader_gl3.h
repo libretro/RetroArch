@@ -185,9 +185,13 @@ void gl3_filter_chain_build_viewport_pass_again(
 gl3_filter_chain_t *gl3_filter_chain_create_default(
       enum glslang_filter_chain_filter filter);
 
+/* @frame_rect: frames may come inside a larger texture (padded_dims);
+ * the passes are built to read them there where the preset allows,
+ * rather than have each copied out. */
 gl3_filter_chain_t *gl3_filter_chain_create_from_preset(
       const char *path,
-      enum glslang_filter_chain_filter filter);
+      enum glslang_filter_chain_filter filter,
+      bool frame_rect);
 
 /**
  * Deferred (per-frame) filter chain creation API.
@@ -211,6 +215,7 @@ struct video_shader *gl3_filter_chain_get_preset(
 gl3_filter_chain_t *gl3_filter_chain_create_deferred(
       const char *path,
       enum glslang_filter_chain_filter filter,
+      bool frame_rect,
       unsigned *out_num_passes);
 
 /**

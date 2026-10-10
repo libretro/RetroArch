@@ -1,0 +1,9 @@
+shaders = 2
+shader0 = rect.slang
+filter_linear0 = false
+wrap_mode0 = mirrored_repeat
+scale_type0 = source
+scale0 = 1.0
+shader1 = rect.slang
+filter_linear1 = true
+wrap_mode1 = clamp_to_edge

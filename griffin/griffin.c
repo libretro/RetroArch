@@ -434,6 +434,7 @@ VIDEO SHADERS
 #ifdef HAVE_SLANG
 #include "../gfx/drivers_shader/glslang_util.c"
 #include "../gfx/drivers_shader/slang_cache.c"
+#include "../gfx/drivers_shader/slang_rect.c"
 #include "../gfx/drivers_shader/slang_process.c"
 #endif
 

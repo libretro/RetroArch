@@ -80,10 +80,15 @@ enum slang_semantic
     * sub-frames and repeats alike - so a shader can key an effect to the
     * monitor's cadence rather than the core's. */
    SLANG_SEMANTIC_SWAP_COUNT            = 22,
-   SLANG_NUM_BASE_SEMANTICS        = 23,
+   /* vec4s, where the frame lies in the texture bound for it; see
+    * slang_rect.h */
+   SLANG_SEMANTIC_ORIGINAL_RECT         = 23,
+   SLANG_SEMANTIC_ORIGINAL_CLAMP        = 24,
+   SLANG_SEMANTIC_ORIGINAL_TEXELS       = 25,
+   SLANG_NUM_BASE_SEMANTICS        = 26,
 
    /* float, user defined parameter, arrayed */
-   SLANG_SEMANTIC_FLOAT_PARAMETER  = 24,
+   SLANG_SEMANTIC_FLOAT_PARAMETER  = 27,
 
    SLANG_NUM_SEMANTICS,
    SLANG_INVALID_SEMANTIC          = -1

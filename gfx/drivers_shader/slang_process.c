@@ -21,6 +21,7 @@
 #include "glslang_util.h"
 #if defined(HAVE_GLSLANG)
 #include "slang_cache.h"
+#include "slang_rect.h"
 #endif
 /* The vendored SPIRV-Cross headers end their enumerator lists with a
  * comma, which the C89 lane rejects under -pedantic; they are upstream
@@ -89,7 +90,10 @@ static const char *semantic_uniform_names[] = {
    "Gyroscope",
    "Accelerometer",
    "AccelerometerRest",
-   "SwapCount"
+   "SwapCount",
+   SLANG_RECT_NAME_RECT,
+   SLANG_RECT_NAME_CLAMP,
+   SLANG_RECT_NAME_TEXELS
 };
 
 static bool slang_reflect(
@@ -1858,6 +1862,12 @@ static bool validate_type_for_semantic(spvc_type type, enum slang_semantic sem)
       case SLANG_SEMANTIC_ACCELEROMETER_REST:
          return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
             &&  spvc_type_get_vector_size(type)  == 3
+            &&  spvc_type_get_columns(type)  == 1;
+      case SLANG_SEMANTIC_ORIGINAL_RECT:
+      case SLANG_SEMANTIC_ORIGINAL_CLAMP:
+      case SLANG_SEMANTIC_ORIGINAL_TEXELS:
+         return spvc_type_get_basetype(type) == SPVC_BASETYPE_FP32
+            &&  spvc_type_get_vector_size(type)  == 4
             &&  spvc_type_get_columns(type)  == 1;
          /* float */
       case SLANG_SEMANTIC_FLOAT_PARAMETER:

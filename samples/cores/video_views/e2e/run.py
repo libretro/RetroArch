@@ -266,6 +266,24 @@ EXACT_VIEWS = {'ds': [(0, 0, 256, 192), (0, 192, 256, 192)],
 EXACT_VIEWS['none'] = EXACT_VIEWS['3ds']
 NOISE_COLOURS = [BLACK, RED, GREEN, BLUE, (0, 255, 255), (255, 0, 255),
                  YELLOW]
+# A preset reads a frame inside a larger texture where it lies. Each
+# preset runs on the core's frame drawn in hardware into a framebuffer
+# as large as its maximum, and again on its software frame, which comes
+# on its own: the screenshots must match. Linear filtering with border
+# wrap mixes in what lies past the frame, so that preset has the frame
+# copied out. [(preset, read in place)]
+RECT_PRESETS = [('rect_nearest.slangp', True),
+                ('rect_nearest_edge.slangp', True),
+                ('rect_nearest_repeat.slangp', True),
+                ('rect_nearest_mirror.slangp', True),
+                ('rect_linear.slangp', True),
+                ('rect_linear_border.slangp', False),
+                ('rect_full.slangp', True),
+                ('rect_two.slangp', True)]
+RECT_HW = {'glcore': ('gl', 'gl_topleft')}
+IN_PLACE_RE = re.compile(
+    r'\[GLCore\] Preset reads frames where the core leaves them\.')
+
 # Mesa without GL 4.3 and ARB_copy_image: glcore must blit.
 NO_COPY_IMAGE = {'MESA_GL_VERSION_OVERRIDE': '4.2',
                  'MESA_EXTENSION_OVERRIDE': '-GL_ARB_copy_image'}
@@ -1095,6 +1113,39 @@ def main():
                                   % (driver, case[0]))
                 print('%s %s/%s%s%s' % ('FAIL' if errors else 'pass', driver,
                                         case[0], suffix, hw))
+                for e in errors:
+                    print('    ' + e)
+                failed += bool(errors)
+        for preset, in_place in (RECT_PRESETS if driver in RECT_HW
+                                 else []):
+            name = 'rect-' + preset[:-len('.slangp')]
+            path = os.path.join(HERE, preset)
+            errors, first = run_exact_case(
+                retroarch, root, driver, (name, 'none', NOISE_LARGE, 'off'),
+                preset=path, exact=False)
+            print('%s %s/%s' % ('FAIL' if errors else 'pass', driver, name))
+            for e in errors:
+                print('    ' + e)
+            failed += bool(errors)
+            for hw in RECT_HW[driver]:
+                case = (name, 'none', NOISE_LARGE, hw)
+                errors, rows = run_exact_case(retroarch, root, driver, case,
+                                              preset=path, exact=False)
+                d = case_dir(root, driver, name, hw)
+                if direct_drawn(d, IN_PLACE_RE) != in_place:
+                    errors.append('frame %s where it lies' %
+                                  ('not read' if in_place else 'read'))
+                # A copied frame upside down filters to within a step
+                # of the software frame's: weights round the other way.
+                bad = rows_differ(rows, first, 0 if in_place else 1) \
+                    if rows and first else None
+                if bad is None:
+                    errors.append('no screenshot to compare')
+                elif bad:
+                    errors.append('%d pixels differ from the software '
+                                  'frame\'s' % bad)
+                print('%s %s/%s (hw %s)' % ('FAIL' if errors else 'pass',
+                                            driver, name, hw))
                 for e in errors:
                     print('    ' + e)
                 failed += bool(errors)

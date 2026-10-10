@@ -3000,7 +3000,7 @@ static void gl3_views_build_chains(gl3_t *gl)
       gl->views.chains[i] = gl3_filter_chain_create_from_preset(
             gl->views.preset, gl->video_info.smooth
             ? GLSLANG_FILTER_CHAIN_LINEAR
-            : GLSLANG_FILTER_CHAIN_NEAREST);
+            : GLSLANG_FILTER_CHAIN_NEAREST, false);
       if (!gl->views.chains[i])
          RARCH_ERR("[GLCore] Failed to create view %u's preset: \"%s\".\n",
                i, gl->views.preset);
@@ -3025,7 +3025,8 @@ static bool gl3_init_filter_chain_preset(gl3_t *gl, const char *shader_path)
          shader_path,
          gl->video_info.smooth
          ? GLSLANG_FILTER_CHAIN_LINEAR
-         : GLSLANG_FILTER_CHAIN_NEAREST);
+         : GLSLANG_FILTER_CHAIN_NEAREST,
+         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0);
 
    if (!gl->filter_chain)
    {
@@ -4314,6 +4315,7 @@ static bool gl3_shader_load_begin(void *data,
    ds->new_chain = gl3_filter_chain_create_deferred(
          deferred->preset_path,
          ds->filter,
+         (gl->flags & GL3_FLAG_HW_RENDER_ENABLE) != 0,
          &deferred->total_passes);
 
    if (     (gl->flags & GL3_FLAG_USE_SHARED_CONTEXT)
