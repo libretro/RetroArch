@@ -56,11 +56,29 @@ and 2025-03-26 for clients that open with `initialize`.
 ## What the tools do
 
 Each command is one tool, named as the command (`GET_STATUS`,
-`SAVE_STATE_SLOT`, `SCREENSHOT`). A command that takes an argument has a
-single string parameter, `argument`, written as the command expects it:
-`SAVE_STATE_SLOT` takes a slot number, `LOAD_CONTENT` takes
-`<core path>|<content path>`. The tool's result is what the command
-answers; commands that answer nothing report `Done.`.
+`SAVE_STATE_SLOT`, `SCREENSHOT`). Its parameters are named, typed and
+marked needed or not, so a client is told what to send rather than
+having to write the command's own line by hand:
+
+```json
+{ "name": "LOAD_CONTENT",
+  "arguments": { "core": "/path/to/core.so", "content": "/games/a.rom" } }
+```
+
+`SAVE_STATE_SLOT` takes `slot` as a number, `GET_PLAYLIST` takes
+`playlist` and an optional `first`, `SET_OPTION` takes `option` and a
+`state` of `on` or `off` - which the schema gives as the only two values
+it accepts. `tools/list` describes every one of them.
+
+A parameter that is needed and left out is answered before the command
+runs at all, as JSON-RPC invalid params rather than as a tool failure.
+
+The single `argument` string this server took before the parameters
+still works, so a client holding a cached tool list keeps going until it
+reads the new one.
+
+The tool's result is what the command answers; commands that answer
+nothing report `Done.`.
 
 Not every command is a tool. `HELP` and `VERSION` are not, because
 `tools/list` already lists the commands and every answer names the
@@ -107,10 +125,12 @@ argument for the next page, as in `Nintendo - SNES.lpl 200`), and loads
 an entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES`
 gives the installed cores and their paths.
 
-Name the playlist as `LIST_PLAYLISTS` gives it, `.lpl` and all. A
-trailing number alone is the entry to start at, so `Atari - 2600` reads
-as the playlist `Atari -` from entry 2600, while `Atari - 2600.lpl`
-cannot be read as anything but the playlist.
+Over MCP, `playlist` and `first` are separate parameters, so a name is
+never mistaken for an entry number. On the network and stdin interfaces
+the two share one line, where a trailing number alone is the entry to
+start at: `Atari - 2600` reads there as the playlist `Atari -` from
+entry 2600, while `Atari - 2600.lpl` cannot be read as anything but the
+playlist.
 
 A tool whose work runs over later frames answers once that work is
 through, with what came of it, or with the command's name, `ERROR` and
