@@ -47,7 +47,6 @@ struct hidpad_retrode_data
    void *handle;
    hid_driver_t *driver;
    retrode_pad_data_t pad_data[RETRODE_MAX_PAD];
-   uint8_t data[64];
 };
 
 static void* hidpad_retrode_init(void *data, uint32_t slot, hid_driver_t *driver)
@@ -175,10 +174,9 @@ static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, ui
    retrode_device_data_t *device = (retrode_device_data_t *)device_data;
    uint8_t port;
 
-   /* Reports contain a port byte followed by the axis and button state.
-    * Both destinations below are fixed-size buffers. */
+   /* Reports contain a port byte followed by the axis and button state. */
    if (     !device || !packet
-         || len < 4 || len > sizeof(device->data))
+         || len < 4 || len > sizeof(device->pad_data[0].data))
       return;
 
    /*
@@ -192,9 +190,8 @@ static void hidpad_retrode_packet_handler(void *device_data, uint8_t *packet, ui
    if (port < 1 || port > RETRODE_MAX_PAD)
       return;
 
-   memcpy(device->data, packet, len);
    hidpad_retrode_pad_packet_handler(
-         &device->pad_data[port - 1], device->data, len);
+         &device->pad_data[port - 1], packet, len);
 }
 
 static void hidpad_retrode_set_rumble(void *data,
