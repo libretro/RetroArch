@@ -6912,7 +6912,7 @@ static void gl2_load_texture_fp16(GLuint id,
 #endif
 
 static void video_texture_load_gl2(
-      struct texture_image *ti,
+      const struct texture_image *ti,
       enum texture_filter_type filter_type,
       uintptr_t *idptr)
 {
