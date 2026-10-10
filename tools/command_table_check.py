@@ -8,8 +8,12 @@ them, so a command added without a description reaches all of those
 as a blank. This fails on any row of action_map or map that has no
 description, an empty one, or an unknown flag.
 
+A command that takes an argument also has to describe it as parameters,
+or a structured client is given a tool it cannot call properly; one that
+takes none must have NULL there.
+
 Rows are matched as C initializers:
-  action_map: { "NAME", handler, "arg", "description", flags },
+  action_map: { "NAME", handler, "arg", "description", flags, params },
   map:        { "NAME", ID, "description", flags },
 """
 import re
@@ -21,7 +25,8 @@ FLAGS  = {'0', 'CMD_INFO_READ_ONLY', 'CMD_INFO_DESTRUCTIVE',
 
 ACTION_ROW = re.compile(
     r'\{\s*"([A-Z0-9_]+)"\s*,\s*(\w+)\s*,\s*"([^"]*)"\s*'
-    r'(?:,\s*"((?:[^"\\]|\\.)*)"\s*)?(?:,\s*([\w|\s]+?)\s*)?\}')
+    r'(?:,\s*"((?:[^"\\]|\\.)*)"\s*)?(?:,\s*([\w|\s]+?)\s*)?'
+    r'(?:,\s*(\w+)\s*)?\}')
 HOTKEY_ROW = re.compile(
     r'\{\s*"([A-Z0-9_]+)"\s*,\s*([A-Z0-9_]+)\s*'
     r'(?:,\s*"((?:[^"\\]|\\.)*)"\s*)?(?:,\s*([\w|\s]+?)\s*)?\}')
@@ -53,11 +58,18 @@ def main():
         return 1
 
     for m in ACTION_ROW.finditer(actions):
-        name, _, _, desc, flags = m.groups()
+        name, _, arg, desc, flags, params = m.groups()
         count += 1
         if not desc or not desc.strip():
             bad.append('%s: no description' % name)
         check_flags(name, flags, bad)
+        takes_arg = arg != 'No argument'
+        if takes_arg and params in (None, 'NULL'):
+            bad.append('%s: takes %r but has no parameters; a structured '
+                       'client cannot call it' % (name, arg))
+        elif not takes_arg and params not in (None, 'NULL'):
+            bad.append('%s: takes no argument but has parameters %r'
+                       % (name, params))
     for m in HOTKEY_ROW.finditer(hotkeys):
         name, _, desc, flags = m.groups()
         count += 1
