@@ -325,8 +325,8 @@ typedef struct
    uint32_t      stale_max;
    unsigned long stale_polls;
    /* The menu is up or an overlay is configured: every mouse is placed
-    * by the cursor. Asked at the start of each poll. */
-   bool          cursor_for_all;
+    * by the cursor. Poll publishes it to the window's thread. */
+   retro_atomic_int_t cursor_for_all;
 } winraw_input_t;
 
 /* TODO/FIXME - static globals */
@@ -1437,7 +1437,7 @@ static void winraw_update_mouse_state(winraw_input_t *wr,
        * once a poll (winraw_poll()), not once a report: a mouse sends
        * a thousand of these a second, or eight thousand. */
       bool getcursorpos = (mouse->device == RETRO_DEVICE_POINTER)
-         || wr->cursor_for_all;
+         || retro_atomic_load_relaxed_int(&wr->cursor_for_all);
 
       if (getcursorpos)
       {
@@ -2362,13 +2362,15 @@ static void winraw_poll(void *data)
    POINT crs_pos          = {0, 0};
    bool crs_pos_valid     = false;
    winraw_input_t *wr     = (winraw_input_t*)data;
+   bool cursor_for_all;
 
    /* asked here for every report read below, and until the next poll */
-   wr->cursor_for_all = input_config_overlay_configured();
+   cursor_for_all = input_config_overlay_configured();
 #ifdef HAVE_MENU
    if (menu_driver_alive())
-      wr->cursor_for_all = true;
+      cursor_for_all = true;
 #endif
+   retro_atomic_store_relaxed_int(&wr->cursor_for_all, cursor_for_all);
 
    /* Everything the devices have sent up to now, before any of it is
     * looked at below. */
