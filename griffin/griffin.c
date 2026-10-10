@@ -1657,6 +1657,7 @@ MENU
 #endif
 
 #ifdef HAVE_MENU
+#include "../misc/timezone/timezone.c"
 #include "../menu/menu_str.c"
 #include "../menu/menu_driver.c"
 #include "../menu/menu_setting.c"

@@ -83,6 +83,7 @@
 #include "../performance_counters.h"
 #include "../version.h"
 #include "../misc/cpufreq/cpufreq.h"
+#include "../misc/timezone/timezone.h"
 
 #ifdef HAVE_LIBNX
 #include <switch.h>
@@ -814,6 +815,47 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
    return match_found;
 }
 
+/* The order dates are written in where the time zone is: Lakka's
+ * time zone setting, else the system's. False when there is no way to
+ * tell (no time zone to be had, or one such as UTC tied to no place). */
+bool menu_timedate_date_order(unsigned *order)
+{
+   enum timezone_date_order o = TIMEZONE_DATE_ORDER_UNKNOWN;
+   char tz[128];
+#ifdef HAVE_LAKKA
+   settings_t *settings       = config_get_ptr();
+
+   if (!string_is_empty(settings->arrays.timezone))
+      o = timezone_get_date_order(settings->arrays.timezone);
+   else
+#endif
+   if (timezone_get_system(tz, sizeof(tz)))
+      o = timezone_get_date_order(tz);
+
+   if (o == TIMEZONE_DATE_ORDER_UNKNOWN)
+      return false;
+   *order = (unsigned)o;
+   return true;
+}
+
+/* @style with its date written in the time zone's order; where that
+ * cannot be told, the style's own order stands. */
+unsigned menu_timedate_style_for_locale(unsigned style)
+{
+   unsigned order;
+   if (!menu_timedate_date_order(&order))
+      return style;
+   return menu_timedate_style_with_order(style, order);
+}
+
+/* Whether times are shown and entered as 12-hour (AM/PM) or
+ * 24-hour: the '12-Hour Clock' option in Appearance. */
+bool menu_timedate_12hour_enabled(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->bools.menu_timedate_12hour;
+}
+
 /* Display the date and time - time_mode will influence how
  * the time representation will look like.
  * */
@@ -835,6 +877,13 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
       struct tm tm_;
       bool has_am_pm         = false;
       const char *format_str = "";
+      settings_t *settings   = config_get_ptr();
+      /* The style picks what is shown, the 12-hour option how */
+      unsigned time_mode     = menu_timedate_style_for_locale(
+            menu_timedate_style_to_24hour(datetime->time_mode));
+
+      if (settings->bools.menu_timedate_12hour)
+         time_mode = menu_timedate_style_to_12hour(time_mode);
 
       datetime_last_time_us = menu_st->current_time_us;
 
@@ -843,7 +892,7 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
       rtime_localtime(&time_, &tm_);
 
       /* Format string representation */
-      switch (datetime->time_mode)
+      switch (time_mode)
       {
          case MENU_TIMEDATE_STYLE_YMD_HMS: /* YYYY-MM-DD HH:MM:SS */
             /* Using switch statements to set the format
