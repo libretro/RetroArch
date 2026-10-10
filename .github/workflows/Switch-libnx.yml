@@ -23,9 +23,6 @@ jobs:
     timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-build-libnx-devkitpro:v4-10-0
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
       options: --user root
 
     steps:

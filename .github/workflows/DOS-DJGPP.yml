@@ -23,9 +23,6 @@ jobs:
     timeout-minutes: 30
     container:
       image: reallibretroretroarch/libretro-djgpp-build-container:latest
-      credentials:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
       options: --user root
 
     steps:
