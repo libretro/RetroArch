@@ -7717,6 +7717,22 @@ static bool config_load_file(const char *path, settings_t *settings)
          settings->ints.content_favorites_size = (int)settings->uints.content_history_size;
    }
 
+#ifdef HAVE_MENU
+   /* The AM/PM date/time styles became the '12-Hour Clock' option:
+    * a config still holding one keeps its look as the matching
+    * 24-hour style with the option on. */
+   if (     settings->uints.menu_timedate_style >= MENU_TIMEDATE_STYLE_YMD_HMS_AMPM
+         && settings->uints.menu_timedate_style <  MENU_TIMEDATE_STYLE_LAST)
+   {
+      configuration_set_uint(settings,
+            settings->uints.menu_timedate_style,
+            menu_timedate_style_to_24hour(
+               settings->uints.menu_timedate_style));
+      configuration_set_bool(settings,
+            settings->bools.menu_timedate_12hour, true);
+   }
+#endif
+
    /* Migrate "quit_press_twice" to "confirm_quit" */
    {
       const char *tmp_key = "quit_press_twice";

@@ -1647,6 +1647,7 @@
 #define MENU_ENUM_LABEL_THREADED_DATA_RUNLOOP_ENABLE_STR "threaded_data_runloop_enable"
 #define MENU_ENUM_LABEL_THREAD_PREFER_FAST_CORES_STR "thread_prefer_fast_cores"
 #define MENU_ENUM_LABEL_THUMBNAILS_DIRECTORY_STR "thumbnails_directory"
+#define MENU_ENUM_LABEL_TIMEDATE_12HOUR_STR "menu_timedate_12hour"
 #define MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR_STR "menu_timedate_date_separator"
 #define MENU_ENUM_LABEL_TIMEDATE_ENABLE_STR "menu_timedate_enable"
 #define MENU_ENUM_LABEL_TIMEDATE_STYLE_STR "menu_timedate_style"
