@@ -36,8 +36,12 @@
  * With video_views_test_fps it reports another frame rate, and logs
  * every tenth frame with the monotonic time, for the headset pacing
  * tests. With video_views_test_pattern checker it fills each view with
- * a one-pixel black and white checkerboard instead of its colour, in
- * software or its own Vulkan images, for the headset's shrinking. */
+ * a one-pixel black and white checkerboard instead of its colour, for
+ * the headset's shrinking, and with noise a different colour in every
+ * pixel, for e2e/run.py to check views arrive pixel for pixel. A pattern
+ * is drawn in software and, in the GL modes, uploaded and blitted into
+ * the core's framebuffer. With video_views_test_format rgb565 a software
+ * frame is sent in RGB565. */
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -86,6 +90,13 @@ enum hw_kind
    HW_VULKAN_KEEP
 };
 
+enum pattern_kind
+{
+   PATTERN_SOLID = 0,
+   PATTERN_CHECKER,
+   PATTERN_NOISE
+};
+
 /* The GL the hardware mode uses, loaded through the frontend's
  * get_proc_address: the core links no GL library. */
 #ifndef APIENTRY
@@ -98,11 +109,30 @@ enum hw_kind
 #define GL_COLOR_BUFFER_BIT 0x00004000
 #define GL_SCISSOR_TEST     0x0C11
 #define GL_FRAMEBUFFER      0x8D40
+#define GL_TEXTURE_2D       0x0DE1
+#define GL_RGBA8            0x8058
+#define GL_BGRA             0x80E1
+#define GL_UNSIGNED_INT_8_8_8_8_REV 0x8367
+#define GL_NEAREST          0x2600
+#define GL_READ_FRAMEBUFFER 0x8CA8
+#define GL_DRAW_FRAMEBUFFER 0x8CA9
+#define GL_COLOR_ATTACHMENT0 0x8CE0
 typedef void (APIENTRY *gl_bind_framebuffer_t)(unsigned, unsigned);
 typedef void (APIENTRY *gl_enable_t)(unsigned);
 typedef void (APIENTRY *gl_scissor_t)(int, int, int, int);
 typedef void (APIENTRY *gl_clear_color_t)(float, float, float, float);
 typedef void (APIENTRY *gl_clear_t)(unsigned);
+typedef void (APIENTRY *gl_gen_t)(int, unsigned*);
+typedef void (APIENTRY *gl_delete_t)(int, const unsigned*);
+typedef void (APIENTRY *gl_bind_texture_t)(unsigned, unsigned);
+typedef void (APIENTRY *gl_tex_image_2d_t)(unsigned, int, int, int, int,
+      int, unsigned, unsigned, const void*);
+typedef void (APIENTRY *gl_tex_sub_image_2d_t)(unsigned, int, int, int,
+      int, int, unsigned, unsigned, const void*);
+typedef void (APIENTRY *gl_framebuffer_texture_2d_t)(unsigned, unsigned,
+      unsigned, unsigned, int);
+typedef void (APIENTRY *gl_blit_framebuffer_t)(int, int, int, int,
+      int, int, int, int, unsigned, unsigned);
 
 /* The Vulkan modes' device functions, from the frontend's
  * get_device_proc_addr: the core links no Vulkan loader either. */
@@ -163,10 +193,12 @@ static retro_input_state_t   input_state_cb;
 static retro_log_printf_t    log_cb;
 
 static uint32_t frame_buf[CROP_W * CROP_H];
+static uint16_t frame_buf16[CROP_W * CROP_H];
 static enum map_kind map_kind = MAP_3DS;
 static enum hw_kind hw_kind   = HW_OFF;
+static enum pattern_kind pattern = PATTERN_SOLID;
 static bool large_max;
-static bool checker;
+static bool rgb565;
 static double core_fps = 60.0;
 static unsigned frames_run;
 static struct retro_hw_render_callback hw_render;
@@ -176,7 +208,19 @@ static gl_enable_t           p_glDisable;
 static gl_scissor_t          p_glScissor;
 static gl_clear_color_t      p_glClearColor;
 static gl_clear_t            p_glClear;
+static gl_gen_t              p_glGenTextures;
+static gl_delete_t           p_glDeleteTextures;
+static gl_bind_texture_t     p_glBindTexture;
+static gl_tex_image_2d_t     p_glTexImage2D;
+static gl_tex_sub_image_2d_t p_glTexSubImage2D;
+static gl_gen_t              p_glGenFramebuffers;
+static gl_delete_t           p_glDeleteFramebuffers;
+static gl_framebuffer_texture_2d_t p_glFramebufferTexture2D;
+static gl_blit_framebuffer_t p_glBlitFramebuffer;
 static bool gl_ready;
+/* A pattern's upload: a frame_buf-sized texture and its framebuffer. */
+static unsigned gl_upload_tex;
+static unsigned gl_upload_fbo;
 static const struct retro_hw_render_interface_vulkan *vk;
 static struct vk_funcs vkf;
 static VkPhysicalDeviceMemoryProperties vk_memory;
@@ -236,6 +280,80 @@ static void fill_checker(unsigned x, unsigned y, unsigned w, unsigned h,
          frame_buf[j * fw + i] = ((i ^ j) & 1) ? COL_WHITE : COL_BLACK;
 }
 
+/* One of seven colours by frame position, so a view copied from the
+ * wrong place shows. None is white, which the markers keep, and every
+ * channel is 0 or 255, exact in RGB565. e2e/run.py repeats it. */
+static uint32_t noise_colour(unsigned x, unsigned y)
+{
+   static const uint32_t cols[7] = { COL_BLACK, COL_RED, COL_GREEN,
+      COL_BLUE, 0x00FFFF, 0xFF00FF, COL_YELLOW };
+   uint32_t h = (uint32_t)x * 0x9E3779B1u + (uint32_t)y * 0x85EBCA77u;
+   h ^= h >> 15;
+   h *= 0x2C1B3C6Du;
+   h ^= h >> 12;
+   return cols[h % 7];
+}
+
+static void fill_noise(unsigned x, unsigned y, unsigned w, unsigned h,
+      unsigned fw)
+{
+   unsigned i, j;
+   for (j = y; j < y + h; j++)
+      for (i = x; i < x + w; i++)
+         frame_buf[j * fw + i] = noise_colour(i, j);
+}
+
+/* Whether the frame is drawn through GL clears rather than into
+ * frame_buf: GL modes do so for solid colours only. */
+static bool gl_clears(void)
+{
+   return (hw_kind == HW_GL || hw_kind == HW_GL_TOPLEFT)
+      && pattern == PATTERN_SOLID;
+}
+
+/* frame_buf into the core's framebuffer, its top row last with a
+ * bottom-left origin. Scissor must be off: it clips a blit. */
+static void gl_upload(unsigned fw, unsigned fh)
+{
+   unsigned fbo = (unsigned)hw_render.get_current_framebuffer();
+   if (!gl_upload_tex)
+   {
+      p_glGenTextures(1, &gl_upload_tex);
+      p_glBindTexture(GL_TEXTURE_2D, gl_upload_tex);
+      p_glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, CROP_W, CROP_H, 0,
+            GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
+      p_glGenFramebuffers(1, &gl_upload_fbo);
+      p_glBindFramebuffer(GL_FRAMEBUFFER, gl_upload_fbo);
+      p_glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, gl_upload_tex, 0);
+   }
+   p_glBindTexture(GL_TEXTURE_2D, gl_upload_tex);
+   p_glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, (int)fw, (int)fh,
+         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, frame_buf);
+   p_glBindTexture(GL_TEXTURE_2D, 0);
+   p_glBindFramebuffer(GL_READ_FRAMEBUFFER, gl_upload_fbo);
+   p_glBindFramebuffer(GL_DRAW_FRAMEBUFFER, fbo);
+   if (hw_kind == HW_GL)
+      p_glBlitFramebuffer(0, 0, (int)fw, (int)fh, 0, (int)fh, (int)fw, 0,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+   else
+      p_glBlitFramebuffer(0, 0, (int)fw, (int)fh, 0, 0, (int)fw, (int)fh,
+            GL_COLOR_BUFFER_BIT, GL_NEAREST);
+   p_glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+}
+
+static void send_rgb565(unsigned fw, unsigned fh)
+{
+   unsigned i;
+   for (i = 0; i < fw * fh; i++)
+   {
+      uint32_t c     = frame_buf[i];
+      frame_buf16[i] = (uint16_t)(((c >> 8) & 0xF800)
+            | ((c >> 5) & 0x07E0) | ((c >> 3) & 0x001F));
+   }
+   video_cb(frame_buf16, fw, fh, fw * sizeof(uint16_t));
+}
+
 /* A top-left rectangle of the frame, cleared to c through the scissor.
  * With a bottom-left origin, GL counts rows from the frame's bottom. */
 static void gl_rect(unsigned x, unsigned y, unsigned w, unsigned h,
@@ -251,7 +369,7 @@ static void gl_rect(unsigned x, unsigned y, unsigned w, unsigned h,
 static void rect(unsigned x, unsigned y, unsigned w, unsigned h,
       unsigned fw, unsigned fh, uint32_t c)
 {
-   if (hw_kind == HW_GL || hw_kind == HW_GL_TOPLEFT)
+   if (gl_clears())
       gl_rect(x, y, w, h, fh, c);
    else
       fill(x, y, w, h, fw, c);
@@ -267,15 +385,44 @@ static void context_reset(void)
    p_glClearColor      = (gl_clear_color_t)
       hw_render.get_proc_address("glClearColor");
    p_glClear           = (gl_clear_t)hw_render.get_proc_address("glClear");
+   p_glGenTextures     = (gl_gen_t)hw_render.get_proc_address("glGenTextures");
+   p_glDeleteTextures  = (gl_delete_t)
+      hw_render.get_proc_address("glDeleteTextures");
+   p_glBindTexture     = (gl_bind_texture_t)
+      hw_render.get_proc_address("glBindTexture");
+   p_glTexImage2D      = (gl_tex_image_2d_t)
+      hw_render.get_proc_address("glTexImage2D");
+   p_glTexSubImage2D   = (gl_tex_sub_image_2d_t)
+      hw_render.get_proc_address("glTexSubImage2D");
+   p_glGenFramebuffers = (gl_gen_t)
+      hw_render.get_proc_address("glGenFramebuffers");
+   p_glDeleteFramebuffers = (gl_delete_t)
+      hw_render.get_proc_address("glDeleteFramebuffers");
+   p_glFramebufferTexture2D = (gl_framebuffer_texture_2d_t)
+      hw_render.get_proc_address("glFramebufferTexture2D");
+   p_glBlitFramebuffer = (gl_blit_framebuffer_t)
+      hw_render.get_proc_address("glBlitFramebuffer");
+   gl_upload_tex       = 0;
+   gl_upload_fbo       = 0;
    gl_ready            = p_glBindFramebuffer && p_glEnable && p_glDisable
-      && p_glScissor && p_glClearColor && p_glClear;
+      && p_glScissor && p_glClearColor && p_glClear && p_glGenTextures
+      && p_glDeleteTextures && p_glBindTexture && p_glTexImage2D
+      && p_glTexSubImage2D && p_glGenFramebuffers && p_glDeleteFramebuffers
+      && p_glFramebufferTexture2D && p_glBlitFramebuffer;
    if (!gl_ready)
       log_cb(RETRO_LOG_ERROR, "[video_views] GL entry points missing\n");
 }
 
 static void context_destroy(void)
 {
-   gl_ready = false;
+   if (gl_ready && gl_upload_tex)
+   {
+      p_glDeleteFramebuffers(1, &gl_upload_fbo);
+      p_glDeleteTextures(1, &gl_upload_tex);
+   }
+   gl_upload_tex = 0;
+   gl_upload_fbo = 0;
+   gl_ready      = false;
 }
 
 static long long now_us(void)
@@ -682,8 +829,19 @@ static void read_options(void)
 
    var.key   = "video_views_test_pattern";
    var.value = NULL;
-   checker   = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var)
-      && var.value && !strcmp(var.value, "checker");
+   pattern   = PATTERN_SOLID;
+   if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
+   {
+      if (!strcmp(var.value, "checker"))
+         pattern = PATTERN_CHECKER;
+      else if (!strcmp(var.value, "noise"))
+         pattern = PATTERN_NOISE;
+   }
+
+   var.key   = "video_views_test_format";
+   var.value = NULL;
+   rgb565    = environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var)
+      && var.value && !strcmp(var.value, "rgb565");
 
    var.key   = "video_views_test_fps";
    var.value = NULL;
@@ -736,7 +894,9 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_fps",
         "Frame rate; 60|10|16" },
       { "video_views_test_pattern",
-        "View fill; solid|checker" },
+        "View fill; solid|checker|noise" },
+      { "video_views_test_format",
+        "Software pixel format; xrgb8888|rgb565" },
       { NULL, NULL }
    };
    struct retro_log_callback logging;
@@ -920,14 +1080,16 @@ void retro_run(void)
       }
       p_glBindFramebuffer(GL_FRAMEBUFFER,
             (unsigned)hw_render.get_current_framebuffer());
-      p_glEnable(GL_SCISSOR_TEST);
+      if (gl_clears())
+         p_glEnable(GL_SCISSOR_TEST);
    }
    rect(0, 0, fw, fh, fw, fh, COL_BG);
    for (i = 0; i < n; i++)
    {
-      /* GL clears through a scissor, so it keeps solid colours. */
-      if (checker && (hw_kind == HW_OFF || hw_kind >= HW_VULKAN))
+      if (pattern == PATTERN_CHECKER)
          fill_checker(v[i].x, v[i].y, v[i].width, v[i].height, fw);
+      else if (pattern == PATTERN_NOISE)
+         fill_noise(v[i].x, v[i].y, v[i].width, v[i].height, fw);
       else
          rect(v[i].x, v[i].y, v[i].width, v[i].height, fw, fh, c[i]);
       rect(v[i].x, v[i].y, 8, 8, fw, fh, COL_WHITE);
@@ -980,8 +1142,12 @@ void retro_run(void)
    else if (hw_kind != HW_OFF)
    {
       p_glDisable(GL_SCISSOR_TEST);
+      if (!gl_clears())
+         gl_upload(fw, fh);
       video_cb(RETRO_HW_FRAME_BUFFER_VALID, fw, fh, 0);
    }
+   else if (rgb565)
+      send_rgb565(fw, fh);
    else
       video_cb(frame_buf, fw, fh, fw * sizeof(uint32_t));
 }
@@ -1001,9 +1167,13 @@ bool retro_load_game(const struct retro_game_info *game)
 {
    enum retro_pixel_format fmt = RETRO_PIXEL_FORMAT_XRGB8888;
    (void)game;
+   read_options();
+   if (rgb565 && hw_kind == HW_OFF)
+      fmt = RETRO_PIXEL_FORMAT_RGB565;
+   else
+      rgb565 = false;
    if (!environ_cb(RETRO_ENVIRONMENT_SET_PIXEL_FORMAT, &fmt))
       return false;
-   read_options();
    if (!environ_cb(RETRO_ENVIRONMENT_GET_RUMBLE_INTERFACE, &rumble))
       memset(&rumble, 0, sizeof(rumble));
    if (hw_kind >= HW_VULKAN)
