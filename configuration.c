@@ -1983,6 +1983,16 @@ static struct config_array_setting *populate_settings_array(
 #ifdef HAVE_OZONE
    SETTING_ARRAY("ozone_menu_color_theme",       settings->arrays.menu_ozone_color_theme, false, NULL, false);
 #endif
+#ifdef HAVE_RGUI
+   SETTING_ARRAY("rgui_menu_color_theme",        settings->arrays.menu_rgui_color_theme, false, NULL, false);
+#endif
+#ifdef HAVE_XMB
+   SETTING_ARRAY("xmb_theme",                    settings->arrays.menu_xmb_theme, false, NULL, false);
+   SETTING_ARRAY("xmb_menu_color_theme",         settings->arrays.menu_xmb_color_theme, false, NULL, false);
+#endif
+#ifdef HAVE_MATERIALUI
+   SETTING_ARRAY("materialui_menu_color_theme",  settings->arrays.menu_materialui_color_theme, false, NULL, false);
+#endif
 #endif
 
    SETTING_ARRAY("record_driver",                settings->arrays.record_driver, false, NULL, true);
@@ -5912,12 +5922,23 @@ void config_set_defaults(settings_t *target)
             def_menu);
 #ifdef HAVE_XMB
    *settings->paths.path_menu_xmb_font            = '\0';
+   configuration_set_string(settings,
+         settings->arrays.menu_xmb_theme,
+         DEFAULT_XMB_ICON_THEME);
+   configuration_set_string(settings,
+         settings->arrays.menu_xmb_color_theme,
+         DEFAULT_XMB_THEME);
 #endif
 #ifdef HAVE_OZONE
    *settings->paths.path_menu_ozone_font          = '\0';
    configuration_set_string(settings,
          settings->arrays.menu_ozone_color_theme,
          DEFAULT_OZONE_COLOR_THEME);
+#endif
+#ifdef HAVE_RGUI
+   configuration_set_string(settings,
+         settings->arrays.menu_rgui_color_theme,
+         DEFAULT_RGUI_COLOR_THEME);
 #endif
 
    configuration_set_string(settings,
@@ -5929,8 +5950,11 @@ void config_set_defaults(settings_t *target)
          DEFAULT_AI_SERVICE_URL);
 
 #ifdef HAVE_MATERIALUI
-   if (g_defaults.menu_materialui_menu_color_theme_enable)
-      settings->uints.menu_materialui_color_theme = g_defaults.menu_materialui_menu_color_theme;
+   configuration_set_string(settings,
+         settings->arrays.menu_materialui_color_theme,
+         g_defaults.menu_materialui_menu_color_theme
+         ? g_defaults.menu_materialui_menu_color_theme
+         : DEFAULT_MATERIALUI_THEME);
 #endif
 #endif
 
@@ -6742,6 +6766,25 @@ static void config_sanitize_turbo_binds(settings_t *settings)
       settings->uints.input_turbo_button  = DEFAULT_TURBO_BUTTON;
 }
 
+#if defined(HAVE_OZONE) || defined(HAVE_RGUI) || defined(HAVE_XMB) || defined(HAVE_MATERIALUI)
+/* Numbers from older configs map through the legacy table */
+static void config_get_menu_theme(config_file_t *conf,
+      settings_t *settings, const char *key, char *s, size_t len,
+      const char **legacy, unsigned count)
+{
+   unsigned theme;
+
+   config_get_array(conf, key, s, len);
+
+   if (   config_get_uint(conf, key, &theme)
+       && theme < count)
+   {
+      strlcpy(s, legacy[theme], len);
+      settings->flags |= SETTINGS_FLG_MODIFIED;
+   }
+}
+#endif
+
 /**
  * config_load:
  * @path                : path to be read from.
@@ -7466,9 +7509,9 @@ static bool config_load_file(const char *path, settings_t *settings)
    if (settings->floats.fastforward_ratio < 0.0f)
       configuration_set_float(settings, settings->floats.fastforward_ratio, 0.0f);
 
-#ifdef HAVE_OZONE
-   /* Convert legacy numeric values of Ozone color themes to string identifiers.
+   /* Convert legacy numeric values of menu themes to string identifiers.
     * Necessary to avoid breaking existing configs. */
+#ifdef HAVE_OZONE
    {
       static const char *legacy_ozone_color_themes[] = {
          "basic_white",
@@ -7487,17 +7530,153 @@ static bool config_load_file(const char *path, settings_t *settings)
          "selenium",
          "evergarden"
       };
-      unsigned color_theme;
-
-      config_get_array(conf, MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR,
+      config_get_menu_theme(conf, settings,
+            MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR,
             settings->arrays.menu_ozone_color_theme,
-            sizeof(settings->arrays.menu_ozone_color_theme));
-
-      if (   config_get_uint(conf, MENU_ENUM_LABEL_OZONE_MENU_COLOR_THEME_STR, &color_theme)
-          && color_theme < ARRAY_SIZE(legacy_ozone_color_themes))
-         configuration_set_string(settings,
-               settings->arrays.menu_ozone_color_theme,
-               legacy_ozone_color_themes[color_theme]);
+            sizeof(settings->arrays.menu_ozone_color_theme),
+            legacy_ozone_color_themes,
+            ARRAY_SIZE(legacy_ozone_color_themes));
+   }
+#endif
+#ifdef HAVE_RGUI
+   {
+      static const char *legacy_rgui_color_themes[] = {
+         "custom",
+         "classic_red",
+         "classic_orange",
+         "classic_yellow",
+         "classic_green",
+         "classic_blue",
+         "classic_violet",
+         "classic_grey",
+         "legacy_red",
+         "dark_purple",
+         "midnight_blue",
+         "golden",
+         "electric_blue",
+         "apple_green",
+         "volcanic_red",
+         "lagoon",
+         "brogrammer",
+         "dracula",
+         "fairyfloss",
+         "flatui",
+         "gruvbox_dark",
+         "gruvbox_light",
+         "hacking_the_kernel",
+         "nord",
+         "nova",
+         "one_dark",
+         "palenight",
+         "solarized_dark",
+         "solarized_light",
+         "tango_dark",
+         "tango_light",
+         "zenburn",
+         "anti_zenburn",
+         "flux",
+         "dynamic",
+         "gray_dark",
+         "gray_light",
+         "evergarden"
+      };
+      config_get_menu_theme(conf, settings,
+            MENU_ENUM_LABEL_RGUI_MENU_COLOR_THEME_STR,
+            settings->arrays.menu_rgui_color_theme,
+            sizeof(settings->arrays.menu_rgui_color_theme),
+            legacy_rgui_color_themes,
+            ARRAY_SIZE(legacy_rgui_color_themes));
+   }
+#endif
+#ifdef HAVE_XMB
+   {
+      static const char *legacy_xmb_icon_themes[] = {
+         "monochrome",
+         "flatui",
+         "flatux",
+         "pixel",
+         "systematic",
+         "dotart",
+         "custom",
+         "retrosystem",
+         "monochrome_inverted",
+         "automatic",
+         "automatic_inverted",
+         "daite"
+      };
+      static const char *legacy_xmb_color_themes[] = {
+         "legacy_red",
+         "dark_purple",
+         "midnight_blue",
+         "golden",
+         "electric_blue",
+         "apple_green",
+         "undersea",
+         "volcanic_red",
+         "dark",
+         "light",
+         "plain",
+         "morning_blue",
+         "sunbeam",
+         "lime",
+         "pikachu_yellow",
+         "gamecube_purple",
+         "famicom_red",
+         "flaming_hot",
+         "ice_cold",
+         "midgar",
+         "gray_dark",
+         "gray_light"
+      };
+      config_get_menu_theme(conf, settings,
+            MENU_ENUM_LABEL_XMB_THEME_STR,
+            settings->arrays.menu_xmb_theme,
+            sizeof(settings->arrays.menu_xmb_theme),
+            legacy_xmb_icon_themes,
+            ARRAY_SIZE(legacy_xmb_icon_themes));
+      config_get_menu_theme(conf, settings,
+            MENU_ENUM_LABEL_XMB_MENU_COLOR_THEME_STR,
+            settings->arrays.menu_xmb_color_theme,
+            sizeof(settings->arrays.menu_xmb_color_theme),
+            legacy_xmb_color_themes,
+            ARRAY_SIZE(legacy_xmb_color_themes));
+   }
+#endif
+#ifdef HAVE_MATERIALUI
+   {
+      static const char *legacy_materialui_color_themes[] = {
+         "blue",
+         "blue_grey",
+         "dark_blue",
+         "green",
+         "red",
+         "yellow",
+         "nvidia_shield",
+         "materialui",
+         "materialui_dark",
+         "ozone_dark",
+         "nord",
+         "gruvbox_dark",
+         "solarized_dark",
+         "cutie_blue",
+         "cutie_cyan",
+         "cutie_green",
+         "cutie_orange",
+         "cutie_pink",
+         "cutie_purple",
+         "cutie_red",
+         "virtual_boy",
+         "hacking_the_kernel",
+         "gray_dark",
+         "gray_light",
+         "dracula"
+      };
+      config_get_menu_theme(conf, settings,
+            MENU_ENUM_LABEL_MATERIALUI_MENU_COLOR_THEME_STR,
+            settings->arrays.menu_materialui_color_theme,
+            sizeof(settings->arrays.menu_materialui_color_theme),
+            legacy_materialui_color_themes,
+            ARRAY_SIZE(legacy_materialui_color_themes));
    }
 #endif
 

@@ -3480,6 +3480,27 @@ static bool video_thread_frame(void *data, const void *frame_,
                         video_info->menu.ozone_color_theme,
                         sizeof(thr->frame.slot[slot].menu_ozone_color_theme));
 #endif
+#ifdef HAVE_RGUI
+         if (video_info->menu.rgui_color_theme)
+            thr->frame.slot[slot].video_info.menu.rgui_color_theme =
+                  memcpy(thr->frame.slot[slot].menu_rgui_color_theme,
+                        video_info->menu.rgui_color_theme,
+                        sizeof(thr->frame.slot[slot].menu_rgui_color_theme));
+#endif
+#ifdef HAVE_XMB
+         if (video_info->xmb_color_theme)
+            thr->frame.slot[slot].video_info.xmb_color_theme =
+                  memcpy(thr->frame.slot[slot].menu_xmb_color_theme,
+                        video_info->xmb_color_theme,
+                        sizeof(thr->frame.slot[slot].menu_xmb_color_theme));
+#endif
+#ifdef HAVE_MATERIALUI
+         if (video_info->materialui_color_theme)
+            thr->frame.slot[slot].video_info.materialui_color_theme =
+                  memcpy(thr->frame.slot[slot].menu_materialui_color_theme,
+                        video_info->materialui_color_theme,
+                        sizeof(thr->frame.slot[slot].menu_materialui_color_theme));
+#endif
          /* The text belongs to the main thread's buffer, which it
           * rewrites next frame: this frame keeps its own copy. */
          if (video_info->stat_text_len)

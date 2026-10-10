@@ -5813,9 +5813,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
        * scattered settings cachelines loaded per frame for values
        * nothing would look at.  Zeroed below when the menu is closed
        * so the struct stays deterministic. */
-      video_info->materialui_color_theme   = settings->uints.menu_materialui_color_theme;
+      video_info->materialui_color_theme   = settings->arrays.menu_materialui_color_theme;
       video_info->menu_shader_pipeline     = settings->uints.menu_xmb_shader_pipeline;
-      video_info->xmb_color_theme          = settings->uints.menu_xmb_color_theme;
+      video_info->xmb_color_theme          = settings->arrays.menu_xmb_color_theme;
       video_info->timedate_enable          = settings->bools.menu_timedate_enable;
       video_info->battery_level_enable     = settings->bools.menu_battery_level_enable;
       video_info->xmb_shadows_enable       = settings->bools.menu_xmb_shadows_enable;
@@ -5826,7 +5826,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       video_info->menu.rgui_theme_preset                      = settings->paths.path_rgui_theme_preset;
       video_info->menu.dynamic_wallpapers_dir                 = settings->paths.directory_dynamic_wallpapers;
       video_info->menu.ozone_color_theme                      = settings->arrays.menu_ozone_color_theme;
-      video_info->menu.rgui_color_theme                       = settings->uints.menu_rgui_color_theme;
+      video_info->menu.rgui_color_theme                       = settings->arrays.menu_rgui_color_theme;
       video_info->menu.rgui_aspect_ratio                      = settings->uints.menu_rgui_aspect_ratio;
       video_info->menu.rgui_aspect_ratio_lock                 = settings->uints.menu_rgui_aspect_ratio_lock;
       video_info->menu.rgui_particle_effect                   = settings->uints.menu_rgui_particle_effect;
@@ -5916,9 +5916,9 @@ void video_driver_build_info(video_frame_info_t *video_info)
    else
 #endif
    {
-      video_info->materialui_color_theme   = 0;
+      video_info->materialui_color_theme   = NULL;
       video_info->menu_shader_pipeline     = 0;
-      video_info->xmb_color_theme          = 0;
+      video_info->xmb_color_theme          = NULL;
       video_info->timedate_enable          = false;
       video_info->battery_level_enable     = false;
       memset(&video_info->menu, 0, sizeof(video_info->menu));

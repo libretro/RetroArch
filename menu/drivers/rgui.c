@@ -43,11 +43,13 @@
 #include "../../frontend/frontend_driver.h"
 
 #include "../menu_driver.h"
+#include "rgui_color_themes.h"
 #include "../../gfx/gfx_surface.h"
 #include "../../gfx/gfx_animation.h"
 #include "../../gfx/gfx_thumbnail.h"
 
 #include "../../msg_hash_lbl_str.h"
+#include "../../config.def.h"
 #include "../../configuration.h"
 #include "../../file_path_special.h"
 #include "../../input/input_osk.h"
@@ -3793,6 +3795,26 @@ static void rgui_cache_background(
       rgui_render_border(rgui, background_buf->data, fb_dims);
 }
 
+static unsigned rgui_color_theme_from_ident(const char *ident)
+{
+#define RGUI_COLOR_THEME_ROW(ident, theme, label) { ident, theme },
+   static const struct
+   {
+      const char *ident;
+      unsigned theme;
+   } rgui_color_themes[] = {
+      RGUI_COLOR_THEME_LIST(RGUI_COLOR_THEME_ROW)
+   };
+#undef RGUI_COLOR_THEME_ROW
+   size_t i;
+
+   for (i = 0; i < ARRAY_SIZE(rgui_color_themes); i++)
+      if (string_is_equal(ident, rgui_color_themes[i].ident))
+         return rgui_color_themes[i].theme;
+   return string_is_equal(ident, DEFAULT_RGUI_COLOR_THEME)
+         ? 0 : rgui_color_theme_from_ident(DEFAULT_RGUI_COLOR_THEME);
+}
+
 static void rgui_prepare_colors(
       rgui_t *rgui,
       unsigned menu_rgui_color_theme,
@@ -7359,7 +7381,8 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
 #else
    unsigned aspect_ratio_lock    = settings->uints.menu_rgui_aspect_ratio_lock;
 #endif
-   unsigned rgui_color_theme     = settings->uints.menu_rgui_color_theme;
+   unsigned rgui_color_theme     = rgui_color_theme_from_ident(
+         settings->arrays.menu_rgui_color_theme);
    const char *dynamic_theme_dir = settings->paths.directory_dynamic_wallpapers;
    menu_handle_t *menu           = (menu_handle_t*)calloc(1, sizeof(*menu));
    struct menu_state *menu_st    = menu_state_get_ptr();
@@ -7417,7 +7440,7 @@ static void *rgui_init(void **userdata, bool video_is_threaded)
       rgui_update_dynamic_theme_path(rgui, dynamic_theme_dir);
 
    rgui_prepare_colors(rgui,
-         settings->uints.menu_rgui_color_theme,
+         rgui_color_theme,
          settings->paths.path_rgui_theme_preset,
          settings->bools.menu_rgui_transparency,
          settings->uints.menu_rgui_aspect_ratio
@@ -8598,6 +8621,8 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
    bool border_filler_enable           = ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_BORDER_FILLER_ENABLE) ? true : false);
    unsigned video_width                = VIDEO_SCALE_W(video_info->dims);
    unsigned video_height               = VIDEO_SCALE_H(video_info->dims);
+   unsigned color_theme                = rgui_color_theme_from_ident(
+         video_info->menu.rgui_color_theme);
    gfx_display_t *p_disp               = disp_get_ptr();
 
    if (bg_filler_thickness_enable != ((rgui->flags & RGUI_FLAG_BG_THICKNESS) > 0))
@@ -8674,39 +8699,39 @@ static void rgui_frame(void *data, video_frame_info_t *video_info)
          rgui->flags             &= ~RGUI_FLAG_EXTENDED_ASCII_ENABLE;
    }
 
-   if (     (video_info->menu.rgui_color_theme != rgui->color_theme)
+   if (     (color_theme != rgui->color_theme)
          || (  (rgui->flags & RGUI_FLAG_TRANSPARENCY_SUPPORTED)
             && (((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false) !=
                ((rgui->flags & RGUI_FLAG_TRANSPARENCY_ENABLE) > 0))))
    {
-      if (video_info->menu.rgui_color_theme == RGUI_THEME_DYNAMIC)
+      if (color_theme == RGUI_THEME_DYNAMIC)
          rgui_update_dynamic_theme_path(rgui,
                video_info->menu.dynamic_wallpapers_dir);
 
       rgui_prepare_colors(rgui,
-            video_info->menu.rgui_color_theme,
+            color_theme,
             video_info->menu.rgui_theme_preset,
             ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
             video_info->menu.rgui_aspect_ratio
             );
    }
-   else if (video_info->menu.rgui_color_theme == RGUI_THEME_CUSTOM)
+   else if (color_theme == RGUI_THEME_CUSTOM)
    {
       if (!string_is_equal(video_info->menu.rgui_theme_preset,
             rgui->theme_preset_path))
          rgui_prepare_colors(rgui,
-               video_info->menu.rgui_color_theme,
+               color_theme,
                video_info->menu.rgui_theme_preset,
                ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
                video_info->menu.rgui_aspect_ratio
                );
    }
-   else if (video_info->menu.rgui_color_theme == RGUI_THEME_DYNAMIC)
+   else if (color_theme == RGUI_THEME_DYNAMIC)
    {
       if (!string_is_equal(rgui->last_theme_dynamic_path,
             rgui->theme_dynamic_path))
          rgui_prepare_colors(rgui,
-               video_info->menu.rgui_color_theme,
+               color_theme,
                video_info->menu.rgui_theme_preset,
                ((video_info->menu.flags & VIDEO_MENU_FLAG_RGUI_TRANSPARENCY) ? true : false),
                video_info->menu.rgui_aspect_ratio

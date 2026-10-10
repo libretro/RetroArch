@@ -330,7 +330,6 @@ typedef struct settings
       unsigned menu_thumbnail_preview_threads;
       unsigned menu_rgui_thumbnail_downscaler;
       unsigned menu_rgui_thumbnail_delay;
-      unsigned menu_rgui_color_theme;
       unsigned menu_xmb_animation_opening_main_menu;
       unsigned menu_xmb_animation_horizontal_highlight;
       unsigned menu_xmb_animation_move_up_down;
@@ -338,11 +337,8 @@ typedef struct settings
       unsigned menu_xmb_shader_pipeline;
       unsigned menu_xmb_alpha_factor;
       unsigned menu_xmb_current_menu_icon;
-      unsigned menu_xmb_theme;
-      unsigned menu_xmb_color_theme;
       unsigned menu_xmb_thumbnail_scale_factor;
       unsigned menu_xmb_vertical_fade_factor;
-      unsigned menu_materialui_color_theme;
       unsigned menu_materialui_transition_animation;
       unsigned menu_materialui_thumbnail_view_portrait;
       unsigned menu_materialui_thumbnail_view_landscape;
@@ -1236,6 +1232,10 @@ typedef struct settings
       char cloud_sync_driver[32];
       char menu_driver[32];
       char menu_ozone_color_theme[32];
+      char menu_rgui_color_theme[32];
+      char menu_xmb_theme[32];
+      char menu_xmb_color_theme[32];
+      char menu_materialui_color_theme[32];
       char cheevos_username[32];
       char cheevos_token[32];
       char cheevos_leaderboards_enable[32];

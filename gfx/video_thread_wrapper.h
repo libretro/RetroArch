@@ -748,6 +748,15 @@ typedef struct thread_video
 #ifdef HAVE_OZONE
          char menu_ozone_color_theme[32];
 #endif
+#ifdef HAVE_RGUI
+         char menu_rgui_color_theme[32];
+#endif
+#ifdef HAVE_XMB
+         char menu_xmb_color_theme[32];
+#endif
+#ifdef HAVE_MATERIALUI
+         char menu_materialui_color_theme[32];
+#endif
 #ifdef HAVE_GFX_WIDGETS
          /* The on-screen panels' text for the widgets, which this
           * thread draws; zero length leaves what they show */
