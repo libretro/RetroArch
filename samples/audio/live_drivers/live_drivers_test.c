@@ -30,6 +30,7 @@
 #include <retro_common_api.h>
 #include <retro_miscellaneous.h>
 #include "../../../audio/audio_driver.h"
+#include "../../../configuration.h"
 
 extern audio_driver_t audio_pulse;
 
@@ -48,6 +49,7 @@ void __wrap_pa_threaded_mainloop_lock(pa_threaded_mainloop *m)
 }
 #include "../../../audio/drivers/alsa.c"
 static bool alsa_no_pause = false;
+static bool alsa_expect_mmap = false;
 
 static unsigned failures = 0;
 #define CHECK(cond, ...) do { if (!(cond)) { printf("      FAIL: "); printf(__VA_ARGS__); printf("\n"); failures++; } } while (0)
@@ -65,6 +67,14 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
    if (!h) return;
    printf("      rate %u, buffer %u bytes, layout 0x%x\n", rate, (unsigned)drv->buffer_size(h),
          drv->layout ? drv->layout(h) : 0);
+   if (drv == &audio_alsa)
+   {
+      printf("      access: %s\n", ((alsa_t*)h)->stream_info.mmap ? "mmap" : "read/write");
+      CHECK(((alsa_t*)h)->stream_info.mmap == alsa_expect_mmap,
+            "%s: opened %s, expected %s", name,
+            ((alsa_t*)h)->stream_info.mmap ? "mmap" : "read/write",
+            alsa_expect_mmap ? "mmap" : "read/write");
+   }
    /* No estimate before the device has played a second: the clock
     * word starts out saying so, not as a reading of 0 ppm. */
    if (drv->device_clock_ppm)
@@ -168,7 +178,7 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
                (unsigned)got, region);
          if (!region)
             continue;
-         CHECK(got <= want && got % 8 == 0,
+         CHECK(got <= want && got % (drv->use_float(h) ? 8 : 4) == 0,
                "%s: lend %u: span %u for %u asked", name, (unsigned)i,
                (unsigned)got, (unsigned)want);
          memcpy(region, buf, got);
@@ -181,7 +191,16 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
       counting_locks = 0;
       printf("      lend: %u of 100 spans lent (%u cut at the wrap), mainloop lock taken %u times\n",
             lent, short_spans, writer_locks);
-      CHECK(lent > 50, "%s: only %u of 100 lends", name, lent);
+      if (drv == &audio_alsa && !((alsa_t*)h)->stream_info.mmap)
+         CHECK(lent == 0, "%s: a read/write PCM lent %u spans", name, lent);
+      else
+      {
+         CHECK(lent > 50, "%s: only %u of 100 lends", name, lent);
+         if (drv == &audio_alsa)
+            CHECK(snd_pcm_state(((alsa_t*)h)->pcm) == SND_PCM_STATE_RUNNING,
+                  "%s: committed spans did not start the stream (%s)", name,
+                  snd_pcm_state_name(snd_pcm_state(((alsa_t*)h)->pcm)));
+      }
       CHECK(writer_locks == 0, "%s: the lend took the mainloop lock %u times",
             name, writer_locks);
       CHECK(drv->stop(h), "%s: stop before a lend", name);
@@ -201,6 +220,62 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
    drv->free(h);
 }
 
+/* What a lent span carries reaches the device as written: a plug over
+ * a file plugin records every committed frame, so a numbered pattern
+ * produced through the lend must come back out of the file in order. */
+static void lend_bytes(const char *device, const char *path)
+{
+   unsigned rate = 48000, i;
+   uint32_t next = 0, check = 0, word;
+   size_t   frame, total = 0;
+   void    *h, *region;
+   FILE    *f;
+   printf("   ALSA lend, bytes through %s\n", device);
+   remove(path);
+   config_get_ptr()->bools.audio_threaded_pipeline = true;
+   h = audio_alsa.init(device, rate, 64, &rate);
+   CHECK(h != NULL, "lend bytes: init failed");
+   if (!h) return;
+   CHECK(((alsa_t*)h)->stream_info.mmap, "lend bytes: not opened for mmap");
+   audio_alsa.start(h, false);
+   frame = ((alsa_t*)h)->stream_info.frame_bits / 8;
+   for (i = 0; i < 400 && total < 96000 * frame / 2; i++)
+   {
+      size_t got, k;
+      audio_alsa.wait_writable(h, 1024 * frame);
+      got = audio_alsa.write_begin(h, 1024 * frame, &region);
+      if (!region)
+         continue;
+      for (k = 0; k + 4 <= got; k += 4)
+      {
+         word = next++;
+         memcpy((uint8_t*)region + k, &word, 4);
+      }
+      total += (size_t)audio_alsa.write_end(h, got);
+   }
+   audio_alsa.free(h);
+   config_get_ptr()->bools.audio_threaded_pipeline = false;
+   CHECK(total > 0, "lend bytes: nothing lent");
+   if (!(f = fopen(path, "rb")))
+   {
+      CHECK(0, "lend bytes: %s not written", path);
+      return;
+   }
+   while (fread(&word, 4, 1, f) == 1 && check < next)
+   {
+      if (word != check)
+      {
+         CHECK(0, "lend bytes: word %u reads %u", check, word);
+         break;
+      }
+      check++;
+   }
+   fclose(f);
+   remove(path);
+   printf("      %u of %u lent words read back in order\n", check, next);
+   CHECK(check > 0, "lend bytes: the file holds none of it");
+}
+
 int main(void)
 {
    printf("live drivers:\n");
@@ -208,6 +283,20 @@ int main(void)
    drive(&audio_alsa, "nullpcm", 64, "ALSA");
    alsa_no_pause = true;
    drive(&audio_alsa, "nullpcm", 64, "ALSA, no pause");
+   alsa_no_pause = false;
+   /* The threaded pipeline: a plug PCM opens for mmap and lends its
+    * buffer; the null PCM itself is no hw or plug, and does not. */
+   config_get_ptr()->bools.audio_threaded_pipeline = true;
+   drive(&audio_alsa, "nullpcm", 64, "ALSA, threaded pipeline, null");
+   alsa_expect_mmap = true;
+   drive(&audio_alsa, "plugnull", 64, "ALSA, threaded pipeline, plug");
+   alsa_no_pause = true;
+   drive(&audio_alsa, "plugnull", 64, "ALSA, threaded pipeline, plug, no pause");
+   alsa_no_pause    = false;
+   alsa_expect_mmap = false;
+   config_get_ptr()->bools.audio_threaded_pipeline = false;
+   drive(&audio_alsa, "plugnull", 64, "ALSA, plug, pipeline off");
+   lend_bytes("plugfile", "/tmp/ra_live_drivers_lend.raw");
    if (failures) { printf("%u failure(s)\n", failures); return 1; }
    printf("live drivers: Pulse's cached telemetry and ALSA's pauseless stop behave\n");
    return 0;

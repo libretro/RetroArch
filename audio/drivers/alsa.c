@@ -398,6 +398,8 @@ typedef struct alsa
     * device having run out of audio, which -EINTR and -ESTRPIPE
     * beside it are not. */
    retro_atomic_size_t underruns;
+   /* Where the outstanding lend sits in the device's buffer. */
+   snd_pcm_uframes_t lend_off;
    bool nonblock;
    /* Stopped, as the frontend sees it: alive() is its inverse. Held
     * says how: the stream paused with its buffer kept, or dropped,
@@ -541,6 +543,15 @@ static bool alsa_start(void *data, bool is_shutdown)
    return true;
 }
 
+/* An mmap-opened PCM takes no snd_pcm_writei(). */
+static INLINE snd_pcm_sframes_t alsa_writei(alsa_t *alsa, const void *buf,
+      snd_pcm_uframes_t size)
+{
+   if (alsa->stream_info.mmap)
+      return snd_pcm_mmap_writei(alsa->pcm, buf, size);
+   return snd_pcm_writei(alsa->pcm, buf, size);
+}
+
 static ssize_t alsa_write(void *data, const void *buf_, size_t len)
 {
    ssize_t _len = 0;
@@ -558,7 +569,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
    {
       while (size)
       {
-         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
+         snd_pcm_sframes_t frames = alsa_writei(alsa, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
@@ -598,7 +609,7 @@ static ssize_t alsa_write(void *data, const void *buf_, size_t len)
 
       while (size)
       {
-         snd_pcm_sframes_t frames = snd_pcm_writei(alsa->pcm, buf, size);
+         snd_pcm_sframes_t frames = alsa_writei(alsa, buf, size);
 
          if (frames == -EPIPE || frames == -EINTR || frames == -ESTRPIPE)
          {
@@ -1001,6 +1012,66 @@ static size_t alsa_underruns(void *data)
    return alsa ? retro_atomic_load_acquire_size(&alsa->underruns) : 0;
 }
 
+/* The lend pair, on a PCM opened for mmap: the contiguous span of the
+ * device's own buffer at the application pointer. A commit never
+ * starts the stream, so the end starts it at the threshold a write
+ * would have. A paused stream or an xrun refuses; write() recovers. */
+static size_t alsa_write_begin(void *data, size_t len, void **region)
+{
+   alsa_t *alsa = (alsa_t*)data;
+   const snd_pcm_channel_area_t *areas;
+   snd_pcm_uframes_t off, frames;
+   snd_pcm_sframes_t avail;
+   size_t fb;
+   *region = NULL;
+   if (!alsa || !alsa->stream_info.mmap || alsa->is_paused)
+      return 0;
+   fb     = alsa->stream_info.frame_bits / 8;
+   avail  = snd_pcm_avail_update(alsa->pcm);
+   if (avail <= 0 || !fb)
+      return 0;
+   frames = len / fb;
+   if (frames > (snd_pcm_uframes_t)avail)
+      frames = (snd_pcm_uframes_t)avail;
+   if (!frames || snd_pcm_mmap_begin(alsa->pcm, &areas, &off, &frames) < 0)
+      return 0;
+   if (     !frames || areas[0].first
+         || areas[0].step != alsa->stream_info.frame_bits)
+   {
+      snd_pcm_mmap_commit(alsa->pcm, off, 0);
+      return 0;
+   }
+   alsa->lend_off = off;
+   *region        = (uint8_t*)areas[0].addr + off * fb;
+   return frames * fb;
+}
+
+static ssize_t alsa_write_end(void *data, size_t len)
+{
+   alsa_t           *alsa = (alsa_t*)data;
+   size_t            fb   = alsa->stream_info.frame_bits / 8;
+   snd_pcm_sframes_t c    = snd_pcm_mmap_commit(alsa->pcm, alsa->lend_off,
+         len / fb);
+   if (c < 0)
+   {
+      if (c == -EPIPE)
+         retro_atomic_fetch_add_size(&alsa->underruns, 1);
+      alsa_recover(alsa, (int)c);
+      return 0;
+   }
+   if (c && snd_pcm_state(alsa->pcm) == SND_PCM_STATE_PREPARED)
+   {
+      snd_pcm_sframes_t avail = snd_pcm_avail_update(alsa->pcm);
+      if (     avail >= 0
+            && alsa->stream_info.buffer_frames - (snd_pcm_uframes_t)avail
+               >= alsa->stream_info.start_frames)
+         snd_pcm_start(alsa->pcm);
+   }
+   alsa->frames_written += (uint64_t)c;
+   alsa_clock_sample(alsa);
+   return (ssize_t)c * (ssize_t)fb;
+}
+
 audio_driver_t audio_alsa = {
    alsa_init,
    alsa_write,
@@ -1021,7 +1092,10 @@ audio_driver_t audio_alsa = {
    alsa_underruns,
    alsa_layout,
    NULL, /* frames_consumed_fallback */
-   alsa_device_clock_ppm
+   alsa_device_clock_ppm,
+   NULL, /* thread_grant */
+   alsa_write_begin,
+   alsa_write_end
 };
 
 #endif /* HAVE_ALSA */

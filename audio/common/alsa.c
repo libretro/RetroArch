@@ -84,6 +84,7 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    int mode)
 {
    snd_pcm_format_t format;
+   snd_pcm_access_t access;
    snd_pcm_uframes_t buffer_size;
    snd_pcm_hw_params_t *params    = NULL;
    snd_pcm_sw_params_t *sw_params = NULL;
@@ -142,10 +143,26 @@ int alsa_init_pcm(snd_pcm_t **pcm,
          snd_pcm_name(*pcm)
    );
 
-   if ((errnum = snd_pcm_hw_params_set_access(*pcm, params, SND_PCM_ACCESS_RW_INTERLEAVED)) < 0)
+   /* Playback for the threaded pipeline opens a device's own buffer
+    * for mmap, so the driver can lend it: hw and plug only, whose
+    * buffer is native - a dmix, ioplug or extplug buffer is emulated,
+    * and lending it adds the copy it was meant to remove. */
+   access            = SND_PCM_ACCESS_RW_INTERLEAVED;
+   stream_info->mmap = false;
+#ifdef HAVE_THREADS
+   if (     stream == SND_PCM_STREAM_PLAYBACK
+         && config_get_ptr()->bools.audio_threaded_pipeline
+         && (   snd_pcm_type(*pcm) == SND_PCM_TYPE_HW
+             || snd_pcm_type(*pcm) == SND_PCM_TYPE_PLUG)
+         && snd_pcm_hw_params_test_access(*pcm, params,
+               SND_PCM_ACCESS_MMAP_INTERLEAVED) == 0)
+      access = SND_PCM_ACCESS_MMAP_INTERLEAVED;
+#endif
+
+   if ((errnum = snd_pcm_hw_params_set_access(*pcm, params, access)) < 0)
    {
       RARCH_ERR("[ALSA] Failed to set %s access for %s device \"%s\": %s.\n",
-            snd_pcm_access_name(SND_PCM_ACCESS_RW_INTERLEAVED),
+            snd_pcm_access_name(access),
             snd_pcm_stream_name(stream),
             snd_pcm_name(*pcm),
             snd_strerror(errnum));
@@ -333,7 +350,8 @@ int alsa_init_pcm(snd_pcm_t **pcm,
                snd_strerror((int)bytes));
          goto error;
       }
-      stream_info->buffer_size = (size_t)bytes;
+      stream_info->buffer_size   = (size_t)bytes;
+      stream_info->buffer_frames = buffer_size;
    }
    RARCH_LOG("[ALSA] Buffer size: %lu frames (%lu bytes).\n",
          (unsigned long)buffer_size, (unsigned long)stream_info->buffer_size);
@@ -341,6 +359,9 @@ int alsa_init_pcm(snd_pcm_t **pcm,
    stream_info->can_pause = snd_pcm_hw_params_can_pause(params);
 
    RARCH_LOG("[ALSA] Can pause: %s.\n", stream_info->can_pause ? "yes" : "no");
+   stream_info->mmap = (access == SND_PCM_ACCESS_MMAP_INTERLEAVED);
+   if (stream_info->mmap)
+      RARCH_LOG("[ALSA] Opened for mmap: the threaded pipeline writes into the device's buffer.\n");
 
    if ((errnum = snd_pcm_sw_params_malloc(&sw_params)) < 0)
    {
@@ -370,6 +391,8 @@ int alsa_init_pcm(snd_pcm_t **pcm,
 
       goto error;
    }
+
+   stream_info->start_frames = buffer_size / 2;
 
    if ((errnum = snd_pcm_sw_params(*pcm, sw_params)) < 0)
    {

@@ -614,10 +614,15 @@ jobs:
           # thread's callbacks and its writer takes no mainloop lock;
           # ALSA is run once as the device reports
           # itself and once told it cannot pause, the fallback from
-          # snd_pcm_pause to snd_pcm_drop.
+          # snd_pcm_pause to snd_pcm_drop. With the threaded pipeline a
+          # plug PCM opens for mmap and lends its buffer; a plug over a
+          # file plugin reads the lent bytes back.
           export XDG_RUNTIME_DIR=/tmp/xdg
           mkdir -p "$XDG_RUNTIME_DIR/pulse"
-          printf 'pcm.nullpcm { type null }\n' > "$HOME/.asoundrc"
+          printf '%s\n' 'pcm.nullpcm { type null }' \
+            'pcm.plugnull { type plug slave.pcm "nullpcm" }' \
+            'pcm.filenull { type file slave.pcm "nullpcm" file "/tmp/ra_live_drivers_lend.raw" format raw }' \
+            'pcm.plugfile { type plug slave.pcm "filenull" }' > "$HOME/.asoundrc"
           pulseaudio --daemonize=no --exit-idle-time=-1 --disallow-exit -n \
             -L "module-null-sink sink_name=nullsink rate=48000 channels=2" \
             -L "module-native-protocol-unix auth-anonymous=1 socket=$XDG_RUNTIME_DIR/pulse/native" \

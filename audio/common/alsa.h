@@ -41,8 +41,15 @@ typedef struct alsa_stream_info
     * say, not the request's. 0 when the map could not be read. */
    unsigned int channels;
    uint32_t     layout;
+   /* The start threshold, which a lent span's commit has to honour
+    * itself: snd_pcm_mmap_commit() never starts the stream. */
+   snd_pcm_uframes_t start_frames;
+   snd_pcm_uframes_t buffer_frames;
    bool has_float;
    bool can_pause;
+   /* Opened for mmap access: written through snd_pcm_mmap_writei(),
+    * which is the only write such a PCM accepts, and lendable. */
+   bool mmap;
 } alsa_stream_info_t;
 
 int alsa_init_pcm(snd_pcm_t **pcm,
