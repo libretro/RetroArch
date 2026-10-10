@@ -1175,4 +1175,7 @@ check "unity: gl2 + gl3 + vulkan in one translation unit" \
    "$UNITY_DIR/unity_gfx.c"
 rm -rf "$UNITY_DIR"
 
+check "image YUV: PS2 C89" "-DPS2 -DRARCH_CONSOLE $HOSTOFF -std=c89" \
+   libretro-common/formats/image/image_yuv_blit.c
+
 exit $fail

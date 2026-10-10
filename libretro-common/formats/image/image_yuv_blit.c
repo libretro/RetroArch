@@ -20,6 +20,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+#include <stddef.h>
+
 #include <formats/image_yuv_blit.h>
 
 /* The matrices in 18.14 fixed point, the luma term pre-biased so the
