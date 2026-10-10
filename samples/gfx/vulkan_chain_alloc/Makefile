@@ -6,9 +6,11 @@ REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 
 # gfx/drivers_shader/shader_vulkan.c compiled into the test, its Vulkan
-# calls through the real symbol wrapper pointed at the test's mocks.
+# calls through the real symbol wrapper pointed at the test's mocks, and
+# the real slang_rect.c it rewrites stages with.
 SOURCES := vulkan_chain_alloc_test.c \
            stubs.c \
+           $(REPO_ROOT)/gfx/drivers_shader/slang_rect.c \
            $(LIBRETRO_COMM_DIR)/vulkan/vulkan_symbol_wrapper.c \
            $(LIBRETRO_COMM_DIR)/compat/compat_strl.c
 

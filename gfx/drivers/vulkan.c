@@ -328,8 +328,10 @@ typedef struct vk
       bool active;
       /* The UI layer is drawn with the SDR pipeline set. */
       bool ui_sdr;
-      /* Stock views have been drawn straight from the frame. */
+      /* Stock views have been drawn straight from the frame, and
+       * presets' views read where they lie in it. */
       bool direct_seen;
+      bool in_place_seen;
    } views;
 #ifdef HAVE_OPENXR
    /* Headset output: each slot's swapchain images, with a view and a
@@ -6142,6 +6144,7 @@ static void vulkan_filter_chain_info_init(vk_t *vk,
    info->swapchain.format      = vk->context->swapchain_format;
    info->swapchain.render_pass = vk->render_pass;
    info->swapchain.num_indices = vk->context->num_swapchain_images;
+   info->frame_rect            = false;
 }
 
 static bool vulkan_init_default_filter_chain(vk_t *vk)
@@ -6320,6 +6323,8 @@ static void vulkan_views_build_chains(vk_t *vk)
    if (!*vk->views.preset)
       return;
    vulkan_views_chain_info(vk, &info);
+   /* A view is a rectangle of the frame: read where it lies. */
+   info.frame_rect = true;
    for (i = 0; i < vk->views.count; i++)
    {
       if (vk->views.chains[i])
@@ -6333,7 +6338,9 @@ static void vulkan_views_build_chains(vk_t *vk)
                i, vk->views.preset);
    }
 #ifdef HAVE_OPENXR
-   /* With a headset, its own: one per view and one for the whole frame. */
+   /* With a headset, its own: one per view and one for the whole frame,
+    * drawn from copies. */
+   info.frame_rect = false;
    if (!vk->context->xr)
       return;
    for (i = 0; i <= vk->views.count; i++)
@@ -10600,6 +10607,7 @@ static bool vulkan_frame(void *data, const void *frame,
    struct vk_texture views_src;
    struct vk_texture *views_direct_tex           = NULL;
    bool views_direct                             = false;
+   bool views_in_place                           = false;
    bool views                                    = false;
    bool views_blend                              = false;
    bool views_per_eye                            = false;
@@ -11020,18 +11028,36 @@ static bool vulkan_frame(void *data, const void *frame,
    if (xr_map)
       views_direct = false;
 #endif
+   /* A preset's views are read where they lie when every drawn view's
+    * chain can, from a frame of one level; not for the headset, which
+    * draws from the copies. */
+   views_in_place = views && !views_direct
+      && (!(vk->flags & VK_FLAG_HW_ENABLE)
+         || (   vk->hw.image && vk->hw.image->create_info.image
+             && vk->hw.image->create_info.subresourceRange.levelCount == 1));
+#ifdef HAVE_OPENXR
+   if (xr_map)
+      views_in_place = false;
+#endif
+   {
+      unsigned i;
+      for (i = 0; views_in_place && i < video_info->views.num_views; i++)
+         if (     view_chains[i]
+               && !vulkan_filter_chain_reads_in_place(view_chains[i]))
+            views_in_place = false;
+   }
    /* A hardware frame needs the core's image, and to be copied, in a
     * format a view image can take: vulkan_create_texture() widens
     * R5G6B5. */
    if (     views && (vk->flags & VK_FLAG_HW_ENABLE)
          && (!(vk->hw.image && vk->hw.image->create_info.image)
-            || (!views_direct
+            || (!views_direct && !views_in_place
                && VK_REMAP_TO_TEXFMT(vk->hw.image->create_info.format)
                   != vk->hw.image->create_info.format)))
       views = false;
    /* The map was checked against the core's frame; threaded video can
     * crop it. A repeat drawn straight from the frame checks it again. */
-   if (     views && (frame || views_direct)
+   if (     views && (frame || views_direct || views_in_place)
          && !video_views_fit_frame(&video_info->views,
             vulkan_views_src_dims(vk, frame, dims)))
       views = false;
@@ -11046,12 +11072,12 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
    /* A view image that can't be made draws this frame whole. */
-   if (     views && frame && !views_direct
+   if (     views && frame && !views_direct && !views_in_place
          && !vulkan_views_images(vk, chain, video_info, copy_chains,
                vulkan_views_src_format(vk)))
       views = false;
    /* A repeat needs every view it draws copied by an earlier frame. */
-   if (views && !frame && !views_direct)
+   if (views && !frame && !views_direct && !views_in_place)
    {
       unsigned i;
       for (i = 0; i < video_info->views.num_views; i++)
@@ -11076,9 +11102,10 @@ static bool vulkan_frame(void *data, const void *frame,
    }
 #endif
    /* A later repeat must not draw view images this frame outdates. */
-   if (frame && (!views || views_direct))
+   if (frame && (!views || views_direct || views_in_place))
       vk->views.copied = 0;
    views_direct     = views && views_direct;
+   views_in_place   = views && views_in_place;
    views_blend      = views && views_blend;
    vk->views.active = views;
    retro_atomic_store_release_int(&vk->views.fallback,
@@ -11240,6 +11267,9 @@ static bool vulkan_frame(void *data, const void *frame,
       /* Set the source texture in the filter chain */
       struct vulkan_filter_chain_texture input;
 
+      input.padded_dims = 0;
+      input.origin      = 0;
+
       if (vk->flags & VK_FLAG_HW_ENABLE)
       {
          /* Does this make that this can happen at all? */
@@ -11310,6 +11340,27 @@ static bool vulkan_frame(void *data, const void *frame,
             RARCH_LOG("[Vulkan] Views drawn straight from the frame.\n");
          }
       }
+      else if (views && views_in_place)
+      {
+         unsigned i;
+         for (i = 0; i < video_info->views.num_views; i++)
+         {
+            const struct retro_video_view *v = &video_info->views.views[i];
+            struct vulkan_filter_chain_texture vin = input;
+            if (!view_chains[i])
+               continue;
+            vin.dims        = VIDEO_SCALE_PACK(v->width, v->height);
+            vin.padded_dims = input.dims;
+            vin.origin      = VIDEO_SCALE_PACK(v->x, v->y);
+            vulkan_filter_chain_set_input_texture(view_chains[i], &vin);
+         }
+         if (!vk->views.in_place_seen)
+         {
+            vk->views.in_place_seen = true;
+            RARCH_LOG("[Vulkan] Views' presets read the frame where it "
+                  "lies.\n");
+         }
+      }
       else if (views)
       {
          unsigned i;
@@ -11329,10 +11380,12 @@ static bool vulkan_frame(void *data, const void *frame,
                continue;
             if (!img->image || !(vk->views.copied & (1u << i)))
                img = &vk->default_texture;
-            vin.image  = img->image;
-            vin.view   = img->view;
-            vin.layout = img->layout;
-            vin.dims   = img->dims;
+            vin.image       = img->image;
+            vin.view        = img->view;
+            vin.layout      = img->layout;
+            vin.dims        = img->dims;
+            vin.padded_dims = 0;
+            vin.origin      = 0;
             /* As for the whole frame: software formats are already
              * configured, a hardware frame says its own. */
             vin.format = (vk->flags & VK_FLAG_HW_ENABLE)

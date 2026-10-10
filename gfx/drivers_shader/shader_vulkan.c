@@ -27,6 +27,7 @@
 #include <retro_miscellaneous.h>
 
 #include "slang_process.h"
+#include "slang_rect.h"
 
 #include "../common/vulkan_common.h"
 #include "../../retroarch.h"
@@ -790,9 +791,15 @@ struct CommonResources
    float core_aspect_rot;
    uint32_t total_subframes;      /* init: 1 */
    uint32_t current_subframe;     /* init: 1 */
+   /* How every pass samples the frame: as the first does. */
+   enum slang_rect_wrap frame_wrap;
    /* What the final pass is cut to, when scissor_set. */
    VkRect2D scissor;
    bool scissor_set;
+   /* Frames may come inside a larger image: passes are built to read
+    * them there. */
+   bool frame_rect;
+   bool frame_linear;
 #ifdef VULKAN_ROLLING_SCANLINE_SIMULATION
    bool simulate_scanline;
 #endif /* VULKAN_ROLLING_SCANLINE_SIMULATION */
@@ -827,6 +834,11 @@ struct slang_pass
    unsigned num_sync_indices;
    unsigned sync_index;
    bool final_pass;
+   /* The stages were offered the rewrite to read the frame in place;
+    * frame_copy, they read it in a way only an image of its own
+    * serves. */
+   bool frame_tried;
+   bool frame_copy;
 
    VkPipeline pipeline;
    VkPipelineLayout pipeline_layout;
@@ -967,6 +979,8 @@ struct vulkan_filter_chain
    bool alias_initialized;
    bool emits_hdr_colorspace;
    bool emits_hdr16_output;
+   /* Every pass reads a frame where it lies. */
+   bool frame_in_place;
 
    /* See vulkan_filter_chain_create_info. */
    void *queue_lock_handle;
@@ -1534,6 +1548,7 @@ static struct vulkan_filter_chain *slang_chain_new(
          info->memory_properties);
    chain->max_input_size_dims   = info->max_input_dims;
    chain->deferred_source_dims  = chain->max_input_size_dims;
+   chain->common.frame_rect     = info->frame_rect;
    if (     !slang_chain_set_swapchain_info(chain, info->swapchain)
          || !slang_chain_set_num_passes(chain, info->num_passes))
    {
@@ -2143,6 +2158,40 @@ static void slang_chain_set_pass_info(struct vulkan_filter_chain *chain,
       const vulkan_filter_chain_pass_info info)
 {
    chain->pass_info[pass] = info;
+
+   /* Every pass samples the frame as the first does. */
+   if (pass == 0)
+   {
+      chain->common.frame_linear =
+         info.source_filter == GLSLANG_FILTER_CHAIN_LINEAR;
+      switch (info.address)
+      {
+         case GLSLANG_FILTER_CHAIN_ADDRESS_REPEAT:
+            chain->common.frame_wrap = SLANG_RECT_WRAP_REPEAT;
+            break;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_MIRRORED_REPEAT:
+            chain->common.frame_wrap = SLANG_RECT_WRAP_MIRROR;
+            break;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_BORDER:
+            chain->common.frame_wrap = SLANG_RECT_WRAP_BORDER;
+            break;
+         case GLSLANG_FILTER_CHAIN_ADDRESS_CLAMP_TO_EDGE:
+         default:
+            chain->common.frame_wrap = SLANG_RECT_WRAP_EDGE;
+            break;
+      }
+   }
+}
+
+/* Whether frames can be read where they lie, once every pass is built
+ * and the history is known: history is copied from the frame. */
+static void slang_chain_init_frame_in_place(struct vulkan_filter_chain *chain)
+{
+   size_t i;
+   chain->frame_in_place = chain->common.frame_rect && !chain->num_history;
+   for (i = 0; i < chain->pass_count && chain->frame_in_place; i++)
+      if (chain->passes[i]->frame_copy)
+         chain->frame_in_place = false;
 }
 
 static VkFormat slang_chain_get_pass_rt_format(struct vulkan_filter_chain *chain,
@@ -2303,6 +2352,7 @@ static bool slang_chain_init(struct vulkan_filter_chain *chain)
    RARCH_DBG("[Vulkan] Chain feedback ready.\n");
    texture_array_resize(&chain->common.pass_outputs,
          &chain->common.num_pass_outputs, chain->pass_count);
+   slang_chain_init_frame_in_place(chain);
    return true;
 }
 
@@ -2620,6 +2670,7 @@ static bool slang_chain_finalize(struct vulkan_filter_chain *chain)
       return false;
    texture_array_resize(&chain->common.pass_outputs,
          &chain->common.num_pass_outputs, chain->pass_count);
+   slang_chain_init_frame_in_place(chain);
    return true;
 }
 
@@ -2903,6 +2954,7 @@ static void slang_pass_set_shader(struct slang_pass *pass,
       const uint32_t *spirv,
       size_t spirv_words)
 {
+   pass->frame_tried = false;
    switch (stage)
    {
       case VK_SHADER_STAGE_VERTEX_BIT:
@@ -3576,6 +3628,85 @@ static bool slang_pass_init_feedback(struct slang_pass *pass)
    return pass->fb_feedback != NULL;
 }
 
+/* Has a pass's stages read the frame where it lies, as slang_rect.h
+ * describes, once for the stages it was given: a chain rebuilt for a
+ * new swapchain builds its passes again. A pass that cannot keeps its
+ * stages and needs the frame on its own. */
+static void slang_pass_read_frame_in_place(struct slang_pass *pass)
+{
+   struct slang_rect_place place;
+   enum slang_rect_result  vres, fres;
+   uint32_t *vs     = NULL;
+   uint32_t *fs     = NULL;
+   size_t    vs_len = 0;
+   size_t    fs_len = 0;
+   uint32_t  vend, fend;
+
+   if (pass->frame_tried)
+      return;
+   pass->frame_tried = true;
+   pass->frame_copy  = true;
+   place.where       = SLANG_RECT_PUSH;
+   place.set         = 0;
+   place.binding     = 0;
+   place.offset      = 0;
+   vend = slang_rect_block_end(pass->vertex_shader,
+         pass->num_vertex_shader, &place);
+   fend = slang_rect_block_end(pass->fragment_shader,
+         pass->num_fragment_shader, &place);
+   if (vend == ~0u || fend == ~0u)
+      return;
+   place.offset = MAX(vend, fend);
+
+   /* Push constants are scarce: the uniform block takes what does not
+    * fit. */
+   if (((place.offset + 15) & ~15u) + 48 > SLANG_RECT_PUSH_LIMIT)
+   {
+      if (     !slang_rect_uniform_block(pass->vertex_shader,
+                  pass->num_vertex_shader, &place.set, &place.binding)
+            && !slang_rect_uniform_block(pass->fragment_shader,
+                  pass->num_fragment_shader, &place.set, &place.binding))
+         return;
+      place.where  = SLANG_RECT_UBO;
+      place.offset = 0;
+      vend = slang_rect_block_end(pass->vertex_shader,
+            pass->num_vertex_shader, &place);
+      fend = slang_rect_block_end(pass->fragment_shader,
+            pass->num_fragment_shader, &place);
+      if (vend == ~0u || fend == ~0u)
+         return;
+      place.offset = MAX(vend, fend);
+   }
+
+   vres = slang_rect_remap(pass->vertex_shader, pass->num_vertex_shader,
+         pass->pass_number == 0, pass->common->frame_linear,
+         pass->common->frame_wrap, &place, &vs, &vs_len);
+   fres = slang_rect_remap(pass->fragment_shader, pass->num_fragment_shader,
+         pass->pass_number == 0, pass->common->frame_linear,
+         pass->common->frame_wrap, &place, &fs, &fs_len);
+
+   if (vres != SLANG_RECT_UNSUPPORTED && fres != SLANG_RECT_UNSUPPORTED)
+   {
+      pass->frame_copy = false;
+      if (vres == SLANG_RECT_REWRITTEN)
+      {
+         free(pass->vertex_shader);
+         pass->vertex_shader     = vs;
+         pass->num_vertex_shader = vs_len;
+         vs                      = NULL;
+      }
+      if (fres == SLANG_RECT_REWRITTEN)
+      {
+         free(pass->fragment_shader);
+         pass->fragment_shader     = fs;
+         pass->num_fragment_shader = fs_len;
+         fs                        = NULL;
+      }
+   }
+   free(vs);
+   free(fs);
+}
+
 static bool slang_pass_build(struct slang_pass *pass)
 {
    unsigned i;
@@ -3588,6 +3719,9 @@ static bool slang_pass_build(struct slang_pass *pass)
     * slang_pass_new(), which is the only way a pass reaches here. */
    if (!pass->common)
       return false;
+
+   if (pass->common->frame_rect)
+      slang_pass_read_frame_in_place(pass);
 
    slang_framebuffer_delete(&pass->framebuffer);
 
@@ -3833,6 +3967,62 @@ static void slang_pass_build_semantic_float(struct slang_pass *pass,
       *((float*)(pass->push.buffer + (refl->push_constant_offset >> 2))) = value;
 }
 
+static void slang_pass_build_semantic_vec4_values(struct slang_pass *pass,
+      uint8_t *data, enum slang_semantic semantic, const float *values)
+{
+   const slang_semantic_meta *refl = &pass->reflection.semantics[semantic];
+
+   if (data && refl->uniform)
+      memcpy(data + refl->ubo_offset, values, 4 * sizeof(float));
+
+   if (refl->push_constant)
+      memcpy(pass->push.buffer + (refl->push_constant_offset >> 2), values,
+            4 * sizeof(float));
+}
+
+/* Where the frame lies in the image bound for it: the whole of it
+ * unless padded_dims says the image is larger. */
+static void slang_pass_build_semantic_frame_rect(struct slang_pass *pass,
+      uint8_t *buffer, const vulkan_filter_chain_texture *frame)
+{
+   const slang_semantic_meta *sem = pass->reflection.semantics;
+   float    v[4];
+   float    w        = (float)VIDEO_SCALE_W(frame->dims);
+   float    h        = (float)VIDEO_SCALE_H(frame->dims);
+   float    x        = (float)VIDEO_SCALE_W(frame->origin);
+   float    y        = (float)VIDEO_SCALE_H(frame->origin);
+   unsigned tex_dims = frame->padded_dims ? frame->padded_dims : frame->dims;
+   float    tw       = (float)VIDEO_SCALE_W(tex_dims);
+   float    th       = (float)VIDEO_SCALE_H(tex_dims);
+
+   if (     !sem[SLANG_SEMANTIC_ORIGINAL_RECT].uniform
+         && !sem[SLANG_SEMANTIC_ORIGINAL_RECT].push_constant
+         && !sem[SLANG_SEMANTIC_ORIGINAL_CLAMP].uniform
+         && !sem[SLANG_SEMANTIC_ORIGINAL_CLAMP].push_constant
+         && !sem[SLANG_SEMANTIC_ORIGINAL_TEXELS].uniform
+         && !sem[SLANG_SEMANTIC_ORIGINAL_TEXELS].push_constant)
+      return;
+
+   v[0] = w / tw;
+   v[1] = h / th;
+   v[2] = x / tw;
+   v[3] = y / th;
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_ORIGINAL_RECT, v);
+   v[0] = (x + 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[1] = (y + 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   v[2] = (x + w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[3] = (y + h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_ORIGINAL_CLAMP, v);
+   v[0] = w;
+   v[1] = h;
+   v[2] = x;
+   v[3] = y;
+   slang_pass_build_semantic_vec4_values(pass, buffer,
+         SLANG_SEMANTIC_ORIGINAL_TEXELS, v);
+}
+
 static void slang_pass_build_semantic_vec3(struct slang_pass *pass,
       uint8_t *data, enum slang_semantic semantic,
                               const float *values)
@@ -3980,6 +4170,7 @@ static void slang_pass_build_semantics(struct slang_pass *pass,
    }
 
    /* Standard inputs */
+   slang_pass_build_semantic_frame_rect(pass, buffer, &original->texture);
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_ORIGINAL, original,
          batch_image_infos, batch_writes, &batch_count);
    slang_pass_build_semantic_texture(pass, set, buffer, SLANG_TEXTURE_SEMANTIC_SOURCE, source,
@@ -5165,6 +5356,11 @@ void vulkan_filter_chain_notify_sync_index(
 bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain)
 {
    return slang_chain_init(chain);
+}
+
+bool vulkan_filter_chain_reads_in_place(vulkan_filter_chain_t *chain)
+{
+   return chain->frame_in_place;
 }
 
 void vulkan_filter_chain_set_input_texture(

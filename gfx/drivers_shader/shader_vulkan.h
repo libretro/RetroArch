@@ -40,6 +40,11 @@ struct vulkan_filter_chain_texture
    VkImageView view;
    VkImageLayout layout;
    unsigned dims;                /* VIDEO_SCALE_PACK */
+   /* The image's size, and where in it the frame starts, when the frame
+    * is not all of it: VIDEO_SCALE_PACK, padded_dims 0 for all. Only a
+    * chain that reads frames in place takes a frame that is not. */
+   unsigned padded_dims;
+   unsigned origin;
    VkFormat format;
 };
 
@@ -104,6 +109,9 @@ struct vulkan_filter_chain_create_info
    VkFormat original_format;
    unsigned max_input_dims;      /* VIDEO_SCALE_PACK */
    struct vulkan_filter_chain_swapchain_info swapchain;
+   /* Frames may come inside a larger image (padded_dims, origin): the
+    * passes are built to read them there where the preset allows. */
+   bool frame_rect;
 #ifdef VULKAN_HDR_SWAPCHAIN
    bool hdr_enabled;
 #endif /* VULKAN_HDR_SWAPCHAIN */ 
@@ -133,6 +141,9 @@ bool vulkan_filter_chain_init(vulkan_filter_chain_t *chain);
 
 void vulkan_filter_chain_set_input_texture(vulkan_filter_chain_t *chain,
       const struct vulkan_filter_chain_texture *texture);
+
+/* Whether the chain reads a frame where it lies in a larger image. */
+bool vulkan_filter_chain_reads_in_place(vulkan_filter_chain_t *chain);
 
 void vulkan_filter_chain_set_frame_count(vulkan_filter_chain_t *chain,
       uint64_t count);

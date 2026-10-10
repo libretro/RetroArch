@@ -290,11 +290,11 @@ IN_PLACE_RE = re.compile(
 VIEW_RECT_CASES = [('view-rect-ds', 'ds', NOISE, 'off'),
                    ('view-rect-ds-rgb565', 'ds', NOISE_565, 'off'),
                    ('view-rect-3ds', '3ds', NOISE, 'gl'),
-                   ('view-rect-3ds', '3ds', NOISE, 'gl_topleft')]
+                   ('view-rect-3ds', '3ds', NOISE, 'gl_topleft'),
+                   ('view-rect-3ds', '3ds', NOISE, 'vulkan')]
 VIEW_RECT_PRESETS = ('nearest', 'nearest_repeat', 'linear')
-VIEW_RECT_DRIVERS = ('glcore',)
 VIEW_IN_PLACE_RE = re.compile(
-    r'\[GLCore\] Views\' presets read the frame where it lies\.')
+    r'\] Views\' presets read the frame where it lies\.')
 
 # Mesa without GL 4.3 and ARB_copy_image: glcore must blit.
 NO_COPY_IMAGE = {'MESA_GL_VERSION_OVERRIDE': '4.2',
@@ -1161,8 +1161,8 @@ def main():
                 for e in errors:
                     print('    ' + e)
                 failed += bool(errors)
-        for case in (VIEW_RECT_CASES if driver in VIEW_RECT_DRIVERS
-                     else []):
+        for case in [c for c in VIEW_RECT_CASES
+                     if c[3] in EXACT_HW.get(driver, ())]:
             name, mapopt, opts, hw = case
             for mode in VIEW_RECT_PRESETS:
                 rows = {}
