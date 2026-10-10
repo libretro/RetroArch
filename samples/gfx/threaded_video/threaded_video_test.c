@@ -6614,6 +6614,9 @@ static void lane_x11_grabbed_mouse(void)
    XSync(dpy, False);
    run_frames(2);
    input_st->current_driver->grab_mouse(input_st->current_data, true);
+   /* A frame still queued requests on the shared connection - a title
+    * change is three properties - which would count as the poll's. */
+   video_thread_wait_idle();
 
    for (i = 0; i < GRABLANE_POLLS; i++)
    {
