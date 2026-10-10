@@ -15134,7 +15134,7 @@ void input_driver_poll(void)
                               input_st->port_deadzone[i][0],
                               input_analog_sensitivity,
                               joypad, &joypad_info[i],
-                              i, k, input_config_binds[i],
+                              (unsigned)i, k, input_config_binds[i],
                               &stick_x, &stick_y))
                      {
                         unsigned off_x = 0 + (k * 4);
