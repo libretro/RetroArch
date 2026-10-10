@@ -6294,10 +6294,17 @@ static void lane_overlay_textures(void)
  * with one core the video thread's 33 MB upload preempts the main
  * thread in the middle of a submit, and wall clock would charge that
  * to the hand-off. Thread CPU time charges only what the submit
- * itself did. */
+ * itself did. Windows charges thread time in whole 15.625 ms ticks to
+ * whichever thread holds the CPU at the tick, which says nothing about
+ * a submit of microseconds: there the wall clock is read instead, and
+ * the median checked. */
+#if defined(_WIN32)
+#define SUBMIT_CLOCK_WALL 1
+#endif
+
 static int64_t thread_cpu_usec(void)
 {
-#if defined(CLOCK_THREAD_CPUTIME_ID)
+#if defined(CLOCK_THREAD_CPUTIME_ID) && !defined(SUBMIT_CLOCK_WALL)
    struct timespec ts;
    if (clock_gettime(CLOCK_THREAD_CPUTIME_ID, &ts) == 0)
       return (int64_t)ts.tv_sec * 1000000 + ts.tv_nsec / 1000;
@@ -6385,16 +6392,19 @@ static void lane_surface_4k(void)
             (long long)release_frames[(n_rel * 95) / 100],
             (long long)release_frames[(n_rel * 99) / 100]);
       /* A submit hands over a descriptor. A 4K copy on this thread
-       * would be milliseconds of its own CPU time; the budget leaves
-       * room for a slow host and none for a copy. The mean is what is
-       * checked: Windows charges thread CPU time in whole 15.625 ms
-       * scheduler ticks, so a single submit that straddles a tick
-       * reads as one full tick, while the sum over all submits still
-       * tracks the time actually spent. A copy puts milliseconds on
-       * every submit and so fails the mean on any clock. */
+       * would be milliseconds on every submit; the budget leaves room
+       * for a slow host and none for a copy. On the wall clock a
+       * preempted submit is charged its wait, which the median rides
+       * out and a copy on every submit does not. */
+#ifdef SUBMIT_CLOCK_WALL
+      CHECK(submit_us[n_sub / 2] < 2000,
+            "4K submit median is %lld us: that is a copy, not a hand-off",
+            (long long)submit_us[n_sub / 2]);
+#else
       CHECK(submit_total / n_sub < 2000,
             "4K submit mean is %lld us: that is a copy, not a hand-off",
             (long long)(submit_total / n_sub));
+#endif
    }
    CHECK(n_sub >= 30, "only %u of 60 4K submits were accepted", n_sub);
    if (s->handle && video_driver_texture_can_update())
