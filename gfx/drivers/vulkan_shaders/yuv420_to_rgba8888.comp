@@ -1,0 +1,48 @@
+#version 450
+
+// One invocation for each 2x2 block of pixels, which share a chroma
+// sample.
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set = 0, binding = 3, rgba8) writeonly uniform image2D uImage;
+// A 16 word header, then the planes, all where the header says.
+layout(set = 0, binding = 4, std430) readonly buffer SSBO
+{
+	uint words[];
+};
+
+float byte_at(uint off)
+{
+	return float((words[off >> 2u] >> ((off & 3u) * 8u)) & 0xffu) * (1.0 / 255.0);
+}
+
+void main()
+{
+	uvec2 res = uvec2(words[0], words[1]);
+	uvec2 blk = gl_GlobalInvocationID.xy;
+	uvec2 p0  = blk * 2u;
+	if (any(greaterThanEqual(p0, res)))
+		return;
+
+	uint y_off    = words[2];
+	uint y_stride = words[3];
+	uint co       = blk.y * words[6] + blk.x * words[7];
+	float ym      = uintBitsToFloat(words[8]);
+	float yb      = uintBitsToFloat(words[9]);
+	float cb      = byte_at(words[4] + co) - (128.0 / 255.0);
+	float cr      = byte_at(words[5] + co) - (128.0 / 255.0);
+	vec3 c        = vec3(uintBitsToFloat(words[10]) * cr,
+	                     uintBitsToFloat(words[11]) * cb + uintBitsToFloat(words[12]) * cr,
+	                     uintBitsToFloat(words[13]) * cb);
+
+	for (uint j = 0u; j < 2u; j++)
+		for (uint i = 0u; i < 2u; i++)
+		{
+			uvec2 p = p0 + uvec2(i, j);
+			if (p.x < res.x && p.y < res.y)
+			{
+				float y = byte_at(y_off + p.y * y_stride + p.x);
+				imageStore(uImage, ivec2(p), vec4(clamp(vec3(ym * y + yb) + c, 0.0, 1.0), 1.0));
+			}
+		}
+}

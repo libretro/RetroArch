@@ -202,12 +202,59 @@ static void lane_pixfmt(void)
          | IMAGE_PIXFMT_FP16 | IMAGE_PIXFMT_GX_RGBA8)), "packed format marked planar");
 }
 
+/* The matrix a GPU is given, applied in floats as a shader does,
+ * lands within a step of the fixed-point conversion for every input */
+static void lane_coefficients(void)
+{
+   unsigned m;
+   for (m = 0; m < 4; m++)
+   {
+      unsigned flags = (m & 2 ? IMAGE_YUV_FLAG_BT709 : 0)
+                     | (m & 1 ? IMAGE_YUV_FLAG_FULL_RANGE : 0);
+      unsigned worst = 0, yv, cb, cr;
+      float c[6];
+      image_yuv_coefficients(flags, c);
+      for (yv = 0; yv < 256; yv += 5)
+         for (cb = 0; cb < 256; cb += 17)
+            for (cr = 0; cr < 256; cr += 17)
+            {
+               uint8_t py[1], pu[1], pv[1];
+               uint32_t px;
+               float y = yv / 255.0f, u = cb / 255.0f - 128.0f / 255.0f;
+               float v = cr / 255.0f - 128.0f / 255.0f;
+               float f[3];
+               unsigned k;
+               py[0] = (uint8_t)yv;
+               pu[0] = (uint8_t)cb;
+               pv[0] = (uint8_t)cr;
+               image_yuv_i420_to_rgb32(&px, 1, py, 1, pu, 1, pv, 1, 1, 1,
+                     flags);
+               f[0] = c[0] * y + c[1] + c[2] * v;
+               f[1] = c[0] * y + c[1] + c[3] * u + c[4] * v;
+               f[2] = c[0] * y + c[1] + c[5] * u;
+               for (k = 0; k < 3; k++)
+               {
+                  int g = (int)(f[k] * 255.0f + 0.5f);
+                  int w = (int)((px >> (16 - 8 * k)) & 0xff);
+                  unsigned d;
+                  g = g < 0 ? 0 : g > 255 ? 255 : g;
+                  d = (unsigned)(g > w ? g - w : w - g);
+                  if (d > worst)
+                     worst = d;
+               }
+            }
+      CHECK(worst <= 1, "matrix %u: GPU coefficients %u off the CPU", m,
+            worst);
+   }
+}
+
 int main(void)
 {
    lane_pixfmt();
    lane_matrices();
    lane_layouts();
    lane_odd();
+   lane_coefficients();
    if (failures)
    {
       printf("image_yuv_blit_test: %u failure(s)\n", failures);

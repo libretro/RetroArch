@@ -63,6 +63,7 @@
 #include <features/features_cpu.h>
 #include <rthreads/rthreads.h>
 #include <file/config_file.h>
+#include <formats/image_yuv_blit.h>
 #include <queues/task_queue.h>
 
 static unsigned failures = 0;
@@ -7385,6 +7386,289 @@ static void lane_hw_cached_context(void)
 #endif
 }
 
+#ifdef HAVE_VULKAN
+/* The head of struct vk_texture, as gfx/drivers/vulkan.c lays it out */
+typedef struct
+{
+   VkDeviceSize memory_size;
+   void *mapped;
+   VkImage image;
+} planar_vk_texture_head_t;
+
+/* What Vulkan texture @id holds, as R,G,B,A bytes; direct video only,
+ * the queue taken under its lock and waited idle - a test's readback */
+static bool planar_vk_readback(uintptr_t id, unsigned w, unsigned h,
+      uint32_t *out)
+{
+   const planar_vk_texture_head_t *tex = (const planar_vk_texture_head_t*)id;
+   vulkan_context_t *ctx = hwcached_context();
+   VkBufferCreateInfo binfo;
+   VkMemoryRequirements req;
+   VkMemoryAllocateInfo alloc;
+   VkCommandPoolCreateInfo pinfo;
+   VkCommandBufferAllocateInfo cinfo;
+   VkCommandBufferBeginInfo begin;
+   VkImageMemoryBarrier bar;
+   VkBufferImageCopy region;
+   VkSubmitInfo submit;
+   VkBuffer buf          = VK_NULL_HANDLE;
+   VkDeviceMemory mem    = VK_NULL_HANDLE;
+   VkCommandPool pool    = VK_NULL_HANDLE;
+   VkCommandBuffer cmd   = VK_NULL_HANDLE;
+   void *ptr             = NULL;
+   bool ok               = false;
+   uint32_t i;
+   if (!ctx || !tex || !tex->image)
+      return false;
+   memset(&binfo, 0, sizeof(binfo));
+   binfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   binfo.size        = (VkDeviceSize)w * h * 4;
+   binfo.usage       = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+   binfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+   if (vkCreateBuffer(ctx->device, &binfo, NULL, &buf) != VK_SUCCESS)
+      return false;
+   vkGetBufferMemoryRequirements(ctx->device, buf, &req);
+   memset(&alloc, 0, sizeof(alloc));
+   alloc.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.allocationSize = req.size;
+   for (i = 0; i < ctx->memory_properties.memoryTypeCount; i++)
+      if (     (req.memoryTypeBits & (1u << i))
+            && (ctx->memory_properties.memoryTypes[i].propertyFlags
+               & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+               == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+         break;
+   alloc.memoryTypeIndex = i;
+   memset(&pinfo, 0, sizeof(pinfo));
+   pinfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pinfo.queueFamilyIndex = ctx->graphics_queue_index;
+   memset(&cinfo, 0, sizeof(cinfo));
+   cinfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cinfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cinfo.commandBufferCount = 1;
+   if (     i == ctx->memory_properties.memoryTypeCount
+         || vkAllocateMemory(ctx->device, &alloc, NULL, &mem) != VK_SUCCESS
+         || vkBindBufferMemory(ctx->device, buf, mem, 0) != VK_SUCCESS
+         || vkCreateCommandPool(ctx->device, &pinfo, NULL, &pool) != VK_SUCCESS)
+      goto end;
+   cinfo.commandPool = pool;
+   if (vkAllocateCommandBuffers(ctx->device, &cinfo, &cmd) != VK_SUCCESS)
+      goto end;
+   memset(&begin, 0, sizeof(begin));
+   begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   vkBeginCommandBuffer(cmd, &begin);
+   memset(&bar, 0, sizeof(bar));
+   bar.sType                       = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   bar.srcAccessMask               = VK_ACCESS_SHADER_WRITE_BIT
+                                   | VK_ACCESS_SHADER_READ_BIT;
+   bar.dstAccessMask               = VK_ACCESS_TRANSFER_READ_BIT;
+   bar.oldLayout                   = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   bar.newLayout                   = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   bar.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
+   bar.image                       = tex->image;
+   bar.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   bar.subresourceRange.levelCount = 1;
+   bar.subresourceRange.layerCount = 1;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+   memset(&region, 0, sizeof(region));
+   region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+   region.imageSubresource.layerCount = 1;
+   region.imageExtent.width           = w;
+   region.imageExtent.height          = h;
+   region.imageExtent.depth           = 1;
+   vkCmdCopyImageToBuffer(cmd, tex->image,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buf, 1, &region);
+   bar.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+   bar.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+   bar.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.newLayout     = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+   vkEndCommandBuffer(cmd);
+   memset(&submit, 0, sizeof(submit));
+   submit.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit.commandBufferCount = 1;
+   submit.pCommandBuffers    = &cmd;
+   slock_lock(ctx->queue_lock);
+   ok = vkQueueSubmit(ctx->queue, 1, &submit, VK_NULL_HANDLE) == VK_SUCCESS
+      && vkQueueWaitIdle(ctx->queue) == VK_SUCCESS;
+   slock_unlock(ctx->queue_lock);
+   if (ok && vkMapMemory(ctx->device, mem, 0, binfo.size, 0, &ptr)
+         == VK_SUCCESS)
+   {
+      memcpy(out, ptr, (size_t)binfo.size);
+      vkUnmapMemory(ctx->device, mem);
+   }
+   else
+      ok = false;
+end:
+   if (pool)
+      vkDestroyCommandPool(ctx->device, pool, NULL);
+   if (buf)
+      vkDestroyBuffer(ctx->device, buf, NULL);
+   if (mem)
+      vkFreeMemory(ctx->device, mem, NULL);
+   return ok;
+}
+#endif
+
+/* Within @tol in each channel */
+static bool planar_close(uint32_t a, uint32_t b, unsigned tol)
+{
+   unsigned k;
+   for (k = 0; k < 32; k += 8)
+   {
+      int d = (int)((a >> k) & 0xff) - (int)((b >> k) & 0xff);
+      if (d > (int)tol || d < -(int)tol)
+         return false;
+   }
+   return true;
+}
+
+/* Planar surfaces on the real driver, direct and threaded, I420 from
+ * the caller's padded planes and NV12 from a slot, at an odd size. A
+ * driver that converts on the GPU (Vulkan) is checked against the CPU
+ * conversion pixel for pixel; one that does not is given the CPU's. */
+static void lane_surface_planar(void)
+{
+   enum { PW = 63, PH = 47, PS = 72 };
+   static uint8_t y[PS * PH], u[PS * 24], v[PS * 24];
+   static uint32_t want[PW * PH], got[PW * PH];
+   unsigned had   = failures;
+   const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+   bool gpu       = false, checked = false;
+   unsigned pass, k, i, j, tries;
+
+   if (!real_driver())
+   {
+      fprintf(stderr, "[skip] surface planar lane (no real driver)\n");
+      return;
+   }
+   for (j = 0; j < PH; j++)
+      for (i = 0; i < PW; i++)
+         y[j * PS + i] = (uint8_t)(16 + ((i * 3 + j * 5) % 220));
+   for (j = 0; j < 24; j++)
+      for (i = 0; i < 32; i++)
+      {
+         u[j * PS + i] = (uint8_t)(40 + ((i * 7 + j) % 180));
+         v[j * PS + i] = (uint8_t)(220 - ((i + j * 9) % 180));
+      }
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      bool threaded = pass == 1;
+      unsigned fmt;
+      set_threaded_via_setting(threaded);
+      run_frames(3);
+      expect_wrapper(threaded, "surface planar lane");
+      if (!threaded)
+         gpu = video_driver_supports_texture_format(
+               TEXTURE_GPU_FORMAT_YUV420);
+      for (fmt = 0; fmt < 2; fmt++)
+      {
+         bool nv12        = fmt == 1;
+         unsigned flags   = nv12 ? IMAGE_YUV_FLAG_BT709 : 0;
+         uintptr_t first  = 0;
+         gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(PW, PH), 2,
+               nv12 ? IMAGE_PIXFMT_NV12 : IMAGE_PIXFMT_I420,
+               TEXTURE_FILTER_LINEAR, NULL, NULL);
+         CHECK(s != NULL, "surface planar lane: no surface");
+         if (!s)
+            continue;
+         gfx_surface_set_yuv(s, flags);
+         for (k = 0; k < 4; k++)
+         {
+            enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
+            unsigned slot = k & 1;
+            for (tries = 0; tries < 16 && (s->inflight
+                     || !gfx_surface_slot_writable(s, slot)); tries++)
+               run_frames(1);
+            if (nv12)
+            {
+               /* A slot: the luma rows, then Cb,Cr pairs */
+               uint8_t *f = (uint8_t*)s->slots[slot];
+               for (j = 0; j < PH; j++)
+                  memcpy(f + j * PW, y + j * PS, PW);
+               f += PW * PH;
+               for (j = 0; j < 24; j++)
+                  for (i = 0; i < 32; i++)
+                  {
+                     f[(j * 32 + i) * 2]     = u[j * PS + i];
+                     f[(j * 32 + i) * 2 + 1] = v[j * PS + i];
+                  }
+            }
+            for (tries = 0; tries < 16; tries++)
+            {
+               if (nv12)
+                  r = gfx_surface_submit(s, slot, false);
+               else
+               {
+                  gfx_surface_planes_t p;
+                  p.planes[0]   = y;
+                  p.planes[1]   = u;
+                  p.planes[2]   = v;
+                  p.strides[0]  = p.strides[1] = p.strides[2] = PS;
+                  p.chroma_step = 1;
+                  r = gfx_surface_submit_planes(s, &p, false);
+               }
+               if (r != GFX_SURFACE_SUBMIT_DROPPED
+                     && r != GFX_SURFACE_SUBMIT_BUSY)
+                  break;
+               run_frames(1);
+            }
+            CHECK(r == GFX_SURFACE_SUBMIT_DONE
+                  || r == GFX_SURFACE_SUBMIT_QUEUED,
+                  "surface planar lane: %s %s submit %u returned %d",
+                  threaded ? "threaded" : "direct", nv12 ? "NV12" : "I420",
+                  k, r);
+            for (tries = 0; tries < 16 && s->inflight; tries++)
+               run_frames(1);
+            if (k == 0)
+               first = s->handle;
+            else if (s->can_update)
+               CHECK(s->handle == first, "surface planar lane: frame %u "
+                     "replaced the texture", k);
+         }
+         CHECK(s->handle != 0, "surface planar lane: no texture");
+         CHECK(gpu == !s->rgb, "surface planar lane: %s converted on "
+               "the %s", drv ? drv : "?", s->rgb ? "CPU" : "GPU");
+#ifdef HAVE_VULKAN
+         if (!threaded && gpu && drv && !strcmp(drv, "vulkan"))
+         {
+            unsigned bad = PW * PH;
+            image_yuv_420_to_rgb32(want, PW, y, PS, u, PS, v, PS, 1,
+                  PW, PH, flags | IMAGE_YUV_FLAG_RGBA);
+            CHECK(planar_vk_readback(s->handle, PW, PH, got),
+                  "surface planar lane: Vulkan readback failed");
+            for (i = 0; i < PW * PH && bad == PW * PH; i++)
+               if (!planar_close(got[i], want[i], 2))
+                  bad = i;
+            CHECK(bad == PW * PH, "surface planar lane: %s texel %u is "
+                  "%08x, the CPU makes %08x", nv12 ? "NV12" : "I420", bad,
+                  bad < PW * PH ? (unsigned)got[bad] : 0u,
+                  bad < PW * PH ? (unsigned)want[bad] : 0u);
+            checked = true;
+         }
+#endif
+         gfx_surface_free(s);
+         run_frames(2);
+      }
+   }
+   set_threaded_via_setting(false);
+   run_frames(2);
+   if (drv && !strcmp(drv, "vulkan"))
+      CHECK(gpu && checked, "surface planar lane: Vulkan did not convert "
+            "on the GPU");
+   if (failures == had)
+      fprintf(stderr, "[pass] surface planar lane (%s%s)\n",
+            gpu ? "GPU conversion" : "CPU conversion",
+            checked ? ", texels match the CPU's" : "");
+}
+
 static void lane_hw_ring_sync(void)
 {
    unsigned had = failures;
@@ -7783,6 +8067,7 @@ int main(int argc, char *argv[])
    lane_surface_update();
    lane_surface_external();
    lane_surface_lend();
+   lane_surface_planar();
 #if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
       lane_gl2_linear();

@@ -26,6 +26,7 @@
 #include <gfx/scaler/scaler.h>
 #include <gfx/video_frame.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 #include <retro_inline.h>
 #include <retro_miscellaneous.h>
 #include <queues/mpsc_stack.h>
@@ -515,6 +516,7 @@ typedef struct vk
       VkPipeline alpha_blend;
       VkPipeline font;
       VkPipeline rgb565_to_rgba8888;
+      VkPipeline yuv420_to_rgba8888;
       VkPipeline stereo_anaglyph;
       VkPipeline stereo_interlaced;
       VkPipeline stock_rect;
@@ -1506,6 +1508,11 @@ struct vk_stream_state
    /* Slots whose staging memory a producer writes itself
     * (vulkan_texture_lend): an update from elsewhere never uses them. */
    unsigned lent;
+   /* A planar texture's: each slot's staging buffer holds a header and
+    * the planes, which yuv420_to_rgba8888 reads through the slot's set
+    * into the texture. VK_NULL_HANDLE for any other. */
+   VkDescriptorPool pool;
+   VkDescriptorSet set[VK_STREAM_SLOTS];
 };
 
 /* Signalled fences go back here for the next upload. */
@@ -1757,6 +1764,26 @@ static void vulkan_upload_batch_submit(vk_t *vk)
    vk->deferred_cmds = node;
 }
 
+/* @st and what it holds, its last submissions known to have run */
+static void vulkan_stream_state_free(vk_t *vk, struct vk_stream_state *st)
+{
+   unsigned i;
+   VkDevice device = vk->context->device;
+   if (st->cmd[0] != VK_NULL_HANDLE)
+      vkFreeCommandBuffers(device, vk->staging_pool, VK_STREAM_SLOTS,
+            st->cmd);
+   for (i = 0; i < VK_STREAM_SLOTS; i++)
+   {
+      if (st->fence[i] != VK_NULL_HANDLE)
+         vkDestroyFence(device, st->fence[i], NULL);
+      if (st->staging[i].memory != VK_NULL_HANDLE)
+         vulkan_destroy_texture(device, &st->staging[i]);
+   }
+   if (st->pool != VK_NULL_HANDLE)
+      vkDestroyDescriptorPool(device, st->pool, NULL);
+   free(st);
+}
+
 /* Driver teardown, after the queue is idle: stream state of textures
  * the frontend never unloaded. The textures themselves are its to
  * leak or keep. */
@@ -1767,18 +1794,7 @@ static void vulkan_stream_states_flush(vk_t *vk)
    while (st)
    {
       struct vk_stream_state *next = st->next;
-      unsigned i;
-      if (st->cmd[0] != VK_NULL_HANDLE)
-         vkFreeCommandBuffers(vk->context->device, vk->staging_pool,
-               VK_STREAM_SLOTS, st->cmd);
-      for (i = 0; i < VK_STREAM_SLOTS; i++)
-      {
-         if (st->fence[i] != VK_NULL_HANDLE)
-            vkDestroyFence(vk->context->device, st->fence[i], NULL);
-         if (st->staging[i].memory != VK_NULL_HANDLE)
-            vulkan_destroy_texture(vk->context->device, &st->staging[i]);
-      }
-      free(st);
+      vulkan_stream_state_free(vk, st);
       st = next;
    }
 }
@@ -1793,21 +1809,10 @@ static void vulkan_texture_retire(vk_t *vk, struct vk_texture *texture)
       struct vk_stream_state *st = *cur;
       if (st->texture == texture)
       {
-         unsigned i;
          *cur = st->next;
          /* The deferral window has closed on the texture, so the last
           * copies its slots recorded have run. */
-         if (st->cmd[0] != VK_NULL_HANDLE)
-            vkFreeCommandBuffers(vk->context->device, vk->staging_pool,
-                  VK_STREAM_SLOTS, st->cmd);
-         for (i = 0; i < VK_STREAM_SLOTS; i++)
-         {
-            if (st->fence[i] != VK_NULL_HANDLE)
-               vkDestroyFence(vk->context->device, st->fence[i], NULL);
-            if (st->staging[i].memory != VK_NULL_HANDLE)
-               vulkan_destroy_texture(vk->context->device, &st->staging[i]);
-         }
-         free(st);
+         vulkan_stream_state_free(vk, st);
          break;
       }
       cur = &st->next;
@@ -2079,6 +2084,8 @@ static struct vk_texture vulkan_create_texture(vk_t *vk,
       case VULKAN_TEXTURE_DYNAMIC:
          retro_assert(!initial && "Dynamic textures must not have initial data.\n");
          info.tiling        = VK_IMAGE_TILING_OPTIMAL;
+         if (vk->flags & VK_FLAG_TEXTURE_FOR_STORAGE)
+            info.usage     |= VK_IMAGE_USAGE_STORAGE_BIT;
          info.usage        |= VK_IMAGE_USAGE_SAMPLED_BIT
                             | VK_IMAGE_USAGE_TRANSFER_DST_BIT
                             | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -5184,6 +5191,9 @@ static void vulkan_init_pipelines(vk_t *vk)
    static const uint32_t rgb565_to_rgba8888_comp[] =
 #include "vulkan_shaders/rgb565_to_rgba8888.comp.inc"
    ;
+   static const uint32_t yuv420_to_rgba8888_comp[] =
+#include "vulkan_shaders/yuv420_to_rgba8888.comp.inc"
+   ;
 
    int i;
    VkPipelineMultisampleStateCreateInfo multisample;
@@ -5670,6 +5680,17 @@ static void vulkan_init_pipelines(vk_t *vk)
    vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
          1, &cpipe, NULL, &vk->pipelines.rgb565_to_rgba8888);
    vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
+
+   module_info.codeSize   = sizeof(yuv420_to_rgba8888_comp);
+   module_info.pCode      = yuv420_to_rgba8888_comp;
+   cpipe.stage.module     = VK_NULL_HANDLE;
+   vkCreateShaderModule(vk->context->device,
+         &module_info, NULL, &cpipe.stage.module);
+   /* None: planar textures are refused, and converted on the CPU */
+   if (vkCreateComputePipelines(vk->context->device, vk->pipelines.cache,
+         1, &cpipe, NULL, &vk->pipelines.yuv420_to_rgba8888) != VK_SUCCESS)
+      vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
+   vkDestroyShaderModule(vk->context->device, cpipe.stage.module, NULL);
 }
 
 static void vulkan_init_samplers(vk_t *vk)
@@ -5888,6 +5909,9 @@ static void vulkan_deinit_pipelines(vk_t *vk)
          vk->pipelines.font, NULL);
    vkDestroyPipeline(vk->context->device,
          vk->pipelines.rgb565_to_rgba8888, NULL);
+   vkDestroyPipeline(vk->context->device,
+         vk->pipelines.yuv420_to_rgba8888, NULL);
+   vk->pipelines.yuv420_to_rgba8888 = VK_NULL_HANDLE;
 #ifdef VULKAN_HDR_SWAPCHAIN
 if (vk->context->flags & VK_CTX_FLAG_HDR_SUPPORT)
 {
@@ -12686,6 +12710,10 @@ static void vulkan_set_texture_enable(void *data, bool state, bool fullscreen)
 #define VK_T0 0xff000000u
 #define VK_T1 0xffffffffu
 
+static uintptr_t vulkan_load_texture_planar(vk_t *vk,
+      const struct texture_image *image,
+      enum texture_filter_type filter_type);
+
 static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
       enum texture_filter_type filter_type)
 {
@@ -12693,6 +12721,8 @@ static uintptr_t vulkan_load_texture_internal(vk_t *vk, void *data,
    struct texture_image *image = (struct texture_image*)data;
    if (!image)
       return 0;
+   if (image->planar)
+      return vulkan_load_texture_planar(vk, image, filter_type);
 
    if (!(texture = (struct vk_texture*)calloc(1, sizeof(*texture))))
       return 0;
@@ -12858,6 +12888,9 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
 
    while (st && st->texture != texture)
       st = st->next;
+   /* A planar texture's slots hold planes, not texels */
+   if (st && st->pool != VK_NULL_HANDLE)
+      return NULL;
    if (st)
       return (   st->fence[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE
               || !st->staging[VK_STREAM_SLOTS - 1].mapped
@@ -12901,6 +12934,338 @@ static struct vk_stream_state *vulkan_stream_state_get(vk_t *vk,
    return st;
 }
 
+/* Slot @slot's recorded command buffer submitted with the slot's
+ * fence, after any batched upload. */
+static enum video_texture_update vulkan_stream_submit(vk_t *vk,
+      struct vk_stream_state *st, unsigned slot)
+{
+   VkSubmitInfo submit_info;
+   VkResult res;
+   VkDevice device = vk->context->device;
+
+   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                = NULL;
+   submit_info.waitSemaphoreCount   = 0;
+   submit_info.pWaitSemaphores      = NULL;
+   submit_info.pWaitDstStageMask    = NULL;
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &st->cmd[slot];
+   submit_info.signalSemaphoreCount = 0;
+   submit_info.pSignalSemaphores    = NULL;
+
+   /* The texture's own upload, if still batched, goes first */
+   vulkan_upload_batch_submit(vk);
+   if (vkResetFences(device, 1, &st->fence[slot]) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   res = vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
+   /* Refused with the fence reset: nothing would signal it and the
+    * slot would stay busy, so an empty submission signals it instead;
+    * a device that refuses that too is lost. */
+   if (res != VK_SUCCESS)
+      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
+               NULL, st->fence[slot]));
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+   if (res != VK_SUCCESS)
+   {
+      vulkan_check_device_lost(vk, res);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+/* The planar staging layout: a header of VK_PLANAR_HEADER words the
+ * shader reads its parameters from, then luma rows of the width, then
+ * the two chroma planes rows of half of it, all tightly packed */
+#define VK_PLANAR_HEADER 16
+
+/* Bytes of a planar staging buffer for a frame of @dims */
+static size_t vulkan_planar_size(unsigned dims)
+{
+   size_t cw = (VIDEO_SCALE_W(dims) + 1) / 2;
+   size_t ch = (VIDEO_SCALE_H(dims) + 1) / 2;
+   return VK_PLANAR_HEADER * 4 + VIDEO_SCALE_AREA(dims) + 2 * cw * ch;
+}
+
+/* The update state of planar @texture, made on first use: two slots,
+ * each a mapped staging buffer of planes, a command buffer, a fence
+ * and a descriptor set that points the compute shader at that buffer
+ * and the texture. NULL when it cannot be built; a half-built state
+ * stays on the list for the texture's retirement. */
+static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
+      struct vk_texture *texture)
+{
+   struct vk_stream_state *st = vk->stream_states;
+   VkFenceCreateInfo fence_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkDescriptorPoolSize sizes[2];
+   VkDescriptorPoolCreateInfo pool_info;
+   VkDescriptorSetAllocateInfo set_info;
+   VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
+   VkDevice device = vk->context->device;
+   size_t len      = vulkan_planar_size(texture->dims);
+   unsigned i;
+
+   while (st && st->texture != texture)
+      st = st->next;
+   if (st)
+      return (   st->pool == VK_NULL_HANDLE
+              || st->set[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE) ? NULL : st;
+
+   if (!(st = (struct vk_stream_state*)calloc(1, sizeof(*st))))
+      return NULL;
+   st->texture       = texture;
+   st->next          = vk->stream_states;
+   vk->stream_states = st;
+
+   fence_info.sType            = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext            = NULL;
+   fence_info.flags            = VK_FENCE_CREATE_SIGNALED_BIT;
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.pNext              = NULL;
+   cmd_info.commandPool        = vk->staging_pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = VK_STREAM_SLOTS;
+   if (vkAllocateCommandBuffers(device, &cmd_info, st->cmd) != VK_SUCCESS)
+   {
+      st->cmd[0] = VK_NULL_HANDLE;
+      return NULL;
+   }
+
+   sizes[0].type              = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+   sizes[0].descriptorCount   = VK_STREAM_SLOTS;
+   sizes[1].type              = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   sizes[1].descriptorCount   = VK_STREAM_SLOTS;
+   pool_info.sType            = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+   pool_info.pNext            = NULL;
+   pool_info.flags            = 0;
+   pool_info.maxSets          = VK_STREAM_SLOTS;
+   pool_info.poolSizeCount    = 2;
+   pool_info.pPoolSizes       = sizes;
+   if (vkCreateDescriptorPool(device, &pool_info, NULL, &st->pool)
+         != VK_SUCCESS)
+   {
+      st->pool = VK_NULL_HANDLE;
+      return NULL;
+   }
+   for (i = 0; i < VK_STREAM_SLOTS; i++)
+      layouts[i]                = vk->pipelines.set_layout;
+   set_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+   set_info.pNext              = NULL;
+   set_info.descriptorPool     = st->pool;
+   set_info.descriptorSetCount = VK_STREAM_SLOTS;
+   set_info.pSetLayouts        = layouts;
+   if (vkAllocateDescriptorSets(device, &set_info, st->set) != VK_SUCCESS)
+   {
+      st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
+      return NULL;
+   }
+
+   for (i = 0; i < VK_STREAM_SLOTS; i++)
+   {
+      VkDescriptorImageInfo image_info;
+      VkDescriptorBufferInfo buffer_info;
+      VkWriteDescriptorSet writes[2];
+      /* One byte texels, so the buffer is @len bytes */
+      st->staging[i] = vulkan_create_texture(vk, NULL,
+            (unsigned)len, 1, VK_FORMAT_R8_UNORM,
+            NULL, NULL, VULKAN_TEXTURE_STAGING);
+      if (     st->staging[i].memory == VK_NULL_HANDLE
+            || vkCreateFence(device, &fence_info, NULL,
+                  &st->fence[i]) != VK_SUCCESS
+            || vkMapMemory(device, st->staging[i].memory,
+                  st->staging[i].offset, st->staging[i].size, 0,
+                  &st->staging[i].mapped) != VK_SUCCESS)
+      {
+         st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
+         return NULL;
+      }
+      image_info.sampler          = VK_NULL_HANDLE;
+      image_info.imageView        = texture->view;
+      image_info.imageLayout      = VK_IMAGE_LAYOUT_GENERAL;
+      buffer_info.buffer          = st->staging[i].buffer;
+      buffer_info.offset          = 0;
+      buffer_info.range           = VK_WHOLE_SIZE;
+      writes[0].sType             = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[0].pNext             = NULL;
+      writes[0].dstSet            = st->set[i];
+      writes[0].dstBinding        = 3;
+      writes[0].dstArrayElement   = 0;
+      writes[0].descriptorCount   = 1;
+      writes[0].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      writes[0].pImageInfo        = &image_info;
+      writes[0].pBufferInfo       = NULL;
+      writes[0].pTexelBufferView  = NULL;
+      writes[1]                   = writes[0];
+      writes[1].dstBinding        = 4;
+      writes[1].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      writes[1].pImageInfo        = NULL;
+      writes[1].pBufferInfo       = &buffer_info;
+      vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
+   }
+   return st;
+}
+
+/* A planar frame into @texture: the planes copied once, into a slot's
+ * staging buffer whose last conversion has retired, and converted
+ * there by yuv420_to_rgba8888 straight into the texture - one copy
+ * into memory the GPU reads, no CPU conversion, no intermediate
+ * image. Neither slot free: the frame is dropped. */
+static enum video_texture_update vulkan_update_texture_planar(vk_t *vk,
+      struct vk_texture *texture, const struct texture_image *image)
+{
+   const struct texture_planar *tp = image->planar;
+   struct vk_stream_state *st;
+   VkCommandBufferBeginInfo begin_info;
+   VkCommandBuffer cmd;
+   VkDevice device;
+   uint32_t *hdr;
+   uint8_t *dst;
+   float coef[6];
+   unsigned w  = image->width;
+   unsigned h  = image->height;
+   unsigned cw = (w + 1) / 2;
+   unsigned ch = (h + 1) / 2;
+   unsigned slot, x, y, i;
+   size_t y_off, cb_off, cr_off;
+
+   if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
+         || !tp->chroma_step
+         || VIDEO_SCALE_W(texture->dims) != w
+         || VIDEO_SCALE_H(texture->dims) != h
+         || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
+         || !(st = vulkan_planar_state_get(vk, texture)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   device = vk->context->device;
+   slot   = st->next_slot;
+   if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+   {
+      slot ^= 1;
+      if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
+   st->next_slot = slot ^ 1;
+
+   y_off  = VK_PLANAR_HEADER * 4;
+   cb_off = y_off + (size_t)w * h;
+   cr_off = cb_off + (size_t)cw * ch;
+   hdr    = (uint32_t*)st->staging[slot].mapped;
+   dst    = (uint8_t*)hdr;
+   image_yuv_coefficients(tp->yuv, coef);
+   hdr[0] = w;
+   hdr[1] = h;
+   hdr[2] = (uint32_t)y_off;
+   hdr[3] = w;
+   hdr[4] = (uint32_t)cb_off;
+   hdr[5] = (uint32_t)cr_off;
+   hdr[6] = cw;
+   hdr[7] = 1;
+   for (i = 0; i < 6; i++)
+      memcpy(&hdr[8 + i], &coef[i], sizeof(float));
+   for (y = 0; y < h; y++)
+      memcpy(dst + y_off + (size_t)y * w,
+            tp->planes[0] + (size_t)y * tp->strides[0], w);
+   for (y = 0; y < ch; y++)
+   {
+      const uint8_t *cb = tp->planes[1] + (size_t)y * tp->strides[1];
+      const uint8_t *cr = tp->planes[2] + (size_t)y * tp->strides[2];
+      uint8_t *ob       = dst + cb_off + (size_t)y * cw;
+      uint8_t *oc       = dst + cr_off + (size_t)y * cw;
+      if (tp->chroma_step == 1)
+      {
+         memcpy(ob, cb, cw);
+         memcpy(oc, cr, cw);
+      }
+      else
+         for (x = 0; x < cw; x++)
+         {
+            ob[x] = cb[x * tp->chroma_step];
+            oc[x] = cr[x * tp->chroma_step];
+         }
+   }
+
+   if (st->staging[slot].flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+   {
+      VkMappedMemoryRange range;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.memory = st->staging[slot].memory;
+      range.offset = 0;
+      range.size   = VK_WHOLE_SIZE;
+      vkFlushMappedMemoryRanges(device, 1, &range);
+   }
+
+   cmd = st->cmd[slot];
+   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext            = NULL;
+   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo = NULL;
+   if (     vkResetCommandBuffer(cmd, 0) != VK_SUCCESS
+         || vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   /* Every texel is written: what the texture held goes */
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.yuv420_to_rgba8888);
+   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.layout, 0, 1, &st->set[slot], 0, NULL);
+   vkCmdDispatch(cmd, (cw + 7) / 8, (ch + 7) / 8, 1);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+   return vulkan_stream_submit(vk, st, slot);
+}
+
+/* A texture for planar frames: RGBA8 the compute shader writes, and
+ * the first frame converted into it. */
+static uintptr_t vulkan_load_texture_planar(vk_t *vk,
+      const struct texture_image *image,
+      enum texture_filter_type filter_type)
+{
+   struct vk_texture *texture;
+   if (     vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
+         || !image->width || !image->height
+         || !(texture = (struct vk_texture*)calloc(1, sizeof(*texture))))
+      return 0;
+   vk->flags |=  VK_FLAG_TEXTURE_FOR_STORAGE;
+   *texture   = vulkan_create_texture(vk, NULL, image->width,
+         image->height, VK_FORMAT_R8G8B8A8_UNORM, NULL, NULL,
+         VULKAN_TEXTURE_DYNAMIC);
+   vk->flags &= ~VK_FLAG_TEXTURE_FOR_STORAGE;
+   if (texture->image == VK_NULL_HANDLE)
+   {
+      free(texture);
+      return 0;
+   }
+   texture->flags &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH | VK_TEX_FLAG_MIPMAP);
+   if (     filter_type == TEXTURE_FILTER_LINEAR
+         || filter_type == TEXTURE_FILTER_MIPMAP_LINEAR)
+      texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
+   if (vulkan_update_texture_planar(vk, texture, image)
+         != VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      /* Its state, if any was built, goes with it */
+      vulkan_texture_retire(vk, texture);
+      return 0;
+   }
+   return (uintptr_t)texture;
+}
+
 static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
       uintptr_t handle, const struct texture_image *image)
 {
@@ -12910,8 +13275,6 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    VkCommandBuffer cmd;
    VkCommandBufferBeginInfo begin_info;
    VkBufferImageCopy region;
-   VkSubmitInfo submit_info;
-   VkResult res;
    VkDevice device;
    const uint8_t *src;
    uint8_t *dst;
@@ -12919,6 +13282,8 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    unsigned slot, y, k;
    bool lent_src = false;
 
+   if (vk && vk->context && texture && image && image->planar)
+      return vulkan_update_texture_planar(vk, texture, image);
    if (     !vk || !vk->context || !texture || !image || !image->pixels
          || VIDEO_SCALE_W(texture->dims) != image->width
          || VIDEO_SCALE_H(texture->dims) != image->height
@@ -13022,39 +13387,7 @@ static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
    if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
-   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-   submit_info.pNext                = NULL;
-   submit_info.waitSemaphoreCount   = 0;
-   submit_info.pWaitSemaphores      = NULL;
-   submit_info.pWaitDstStageMask    = NULL;
-   submit_info.commandBufferCount   = 1;
-   submit_info.pCommandBuffers      = &cmd;
-   submit_info.signalSemaphoreCount = 0;
-   submit_info.pSignalSemaphores    = NULL;
-
-   /* The texture's own upload, if still batched, goes first */
-   vulkan_upload_batch_submit(vk);
-   if (vkResetFences(device, 1, &st->fence[slot]) != VK_SUCCESS)
-      return VIDEO_TEXTURE_UPDATE_REFUSED;
-#ifdef HAVE_THREADS
-   slock_lock(vk->context->queue_lock);
-#endif
-   res = vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
-   /* Refused with the fence reset: nothing would signal it and the
-    * slot would stay busy, so an empty submission signals it instead;
-    * a device that refuses that too is lost. */
-   if (res != VK_SUCCESS)
-      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
-               NULL, st->fence[slot]));
-#ifdef HAVE_THREADS
-   slock_unlock(vk->context->queue_lock);
-#endif
-   if (res != VK_SUCCESS)
-   {
-      vulkan_check_device_lost(vk, res);
-      return VIDEO_TEXTURE_UPDATE_REFUSED;
-   }
-   return VIDEO_TEXTURE_UPDATE_DONE;
+   return vulkan_stream_submit(vk, st, slot);
 }
 
 #ifdef HAVE_THREADS
@@ -13201,6 +13534,10 @@ static bool vulkan_supports_texture_format(void *data,
     * and blits. */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
       return vk && vk->context;
+   /* yuv420_to_rgba8888 writes R8G8B8A8, which every device stores to */
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+      return vk && vk->context
+         && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE;
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* alpha_blend_linear.frag shows such a texture as linear scRGB in the
     * HDR UI layer; in SDR there is no linear light to show it in. */

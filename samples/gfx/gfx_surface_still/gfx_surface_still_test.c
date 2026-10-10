@@ -27,10 +27,19 @@ static uintptr_t st_last_unloaded;
 static video_thread_async_load_t *st_head, *st_tail;
 /* The first and last word of the last frame the driver read */
 static uint32_t st_px_first, st_px_last;
+/* The planes and colour space of the last planar frame read */
+static struct texture_planar st_planar;
+static int st_planar_reads;
 
 static void st_saw(void *data)
 {
    const struct texture_image *ti = (const struct texture_image*)data;
+   if (ti && ti->planar)
+   {
+      st_planar = *ti->planar;
+      st_planar_reads++;
+      return;
+   }
    if (ti && ti->pixels && ti->width && ti->height)
    {
       st_px_first = ti->pixels[0];
@@ -81,15 +90,18 @@ bool video_driver_texture_can_update(void) { return true; }
 bool video_driver_thread_wrapper_active(void) { return st_async != 0; }
 bool task_is_on_main_thread(void) { return true; }
 unsigned video_driver_get_disp_flags(void) { return 0; }
+/* Whether the stub driver converts YCbCr itself */
+static int st_yuv420;
 bool video_driver_supports_texture_format(enum texture_gpu_format fmt)
 {
-   (void)fmt;
-   return false;
+   return fmt == TEXTURE_GPU_FORMAT_YUV420 && st_yuv420;
 }
 
 /* As the frontend fits an image, from this stub's own answers */
 bool video_driver_texture_fit(struct texture_image *ti)
 {
+   if (ti->planar)
+      return video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_YUV420);
    if (ti->pix10 && !video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_RGB10A2))
       image_texture_narrow_10bit(ti);
    return !ti->fp16
@@ -493,7 +505,7 @@ int main(void)
       uint8_t *f;
       CHECK(!gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1, IMAGE_PIXFMT_P010,
                TEXTURE_FILTER_NEAREST, NULL, NULL), "P010 surface made");
-      CHECK(s && s->rgb, "no planar surface");
+      CHECK(s && GFX_SURFACE_IS_PLANAR(s) && !s->rgb, "no planar surface");
       /* 5x3: 15 luma, two 3x2 chroma planes */
       f = (uint8_t*)gfx_surface_slot_begin(s, 0);
       memset(f, 235, 15);
@@ -549,6 +561,52 @@ int main(void)
       CHECK(st_live == 0, "%d live after NV12", st_live);
    }
    st_async = 0;
+
+   /* A driver that converts on the GPU: given the planes as they lie,
+    * nothing converted, the caller's planes copied only for the
+    * wrapper, Cr first swapped back to Cb first */
+   st_yuv420 = 1;
+   {
+      static uint8_t frame[64];
+      gfx_surface_planes_t p;
+      gfx_surface_t *s = gfx_surface_new(VIDEO_SCALE_PACK(4, 4), 1,
+            IMAGE_PIXFMT_NV12, TEXTURE_FILTER_NEAREST, NULL, NULL);
+      int reads = st_planar_reads;
+      memset(frame, 0, sizeof(frame));
+      frame[16] = 1;  /* Cb, Cr of the first pair */
+      frame[17] = 2;
+      p.planes[0]   = frame;
+      p.planes[1]   = frame + 16;
+      p.planes[2]   = frame + 17;
+      p.strides[0]  = 4;
+      p.strides[1]  = p.strides[2] = 8;  /* padded chroma rows */
+      p.chroma_step = 2;
+      st_async = 0;
+      gfx_surface_set_yuv(s, IMAGE_YUV_FLAG_VU | IMAGE_YUV_FLAG_BT709);
+      CHECK(gfx_surface_submit_planes(s, &p, false)
+               == GFX_SURFACE_SUBMIT_DONE
+            && st_planar_reads == reads + 1
+            && st_planar.planes[0] == frame
+            && st_planar.planes[1] == frame + 17
+            && st_planar.planes[2] == frame + 16
+            && st_planar.strides[1] == 8
+            && st_planar.yuv == IMAGE_YUV_FLAG_BT709
+            && !s->rgb,
+            "direct planes not handed over as they lie");
+      st_async = 1;
+      CHECK(gfx_surface_submit_planes(s, &p, false)
+            == GFX_SURFACE_SUBMIT_QUEUED, "wrapper planes not queued");
+      memset(frame, 0xee, sizeof(frame)); /* the caller's again */
+      st_flush();
+      CHECK(st_planar.planes[0] == (const uint8_t*)s->slots[0]
+            && st_planar.planes[1][0] == 2 && st_planar.planes[2][0] == 1
+            && st_planar.strides[1] == 4 && st_planar.planes[0][0] == 0
+            && !s->rgb, "wrapper planes not copied into the slot");
+      st_async = 0;
+      gfx_surface_free(s);
+      CHECK(st_live == 0, "%d live after GPU planar", st_live);
+   }
+   st_yuv420 = 0;
 
    printf("%s\n", failures ? "FAILED" : "PASS");
    return failures ? 1 : 0;

@@ -48,6 +48,19 @@ enum image_process_code
 
 struct texture_compressed;  /* defined below, after enum image_type_enum */
 
+/* An 8-bit YCbCr 4:2:0 frame where it lies. Plane 0 is luma; planes
+ * 1 and 2 are Cb and Cr, @chroma_step bytes between neighbours (1 for
+ * I420; 2 for NV12, whose one interleaved plane is planes 1 and 2 at
+ * offsets 0 and 1). Strides in bytes; @yuv is IMAGE_YUV_FLAG_*
+ * (formats/image_yuv_blit.h). */
+struct texture_planar
+{
+   const uint8_t *planes[3];
+   unsigned strides[3];
+   unsigned chroma_step;
+   unsigned yuv;
+};
+
 struct texture_image
 {
    uint32_t *pixels;
@@ -69,6 +82,9 @@ struct texture_image
     * image_texture_realize_rgba() decodes to ->pixels on demand for
     * drivers that cannot sample the format. */
    struct texture_compressed *compressed;
+   /* When non-NULL the frame is this, ->pixels is NULL, and only a
+    * driver answering TEXTURE_GPU_FORMAT_YUV420 is given it. */
+   const struct texture_planar *planar;
 };
 
 enum image_type_enum
@@ -124,7 +140,10 @@ enum texture_gpu_format
     * texture drawn in the menu or over content is shown as linear
     * scRGB - 1.0 at 80 nits, the 709 primaries - rather than as an
     * SDR-encoded one: true only while the output is HDR. */
-   TEXTURE_GPU_FORMAT_SCRGB
+   TEXTURE_GPU_FORMAT_SCRGB,
+   /* 8-bit YCbCr 4:2:0 on ->planar (I420 or NV12), converted to RGB
+    * on the GPU: whether load_texture and update_texture take one. */
+   TEXTURE_GPU_FORMAT_YUV420
 };
 
 /* Numeric mip layout reported by a loader without decoding.  Offsets are

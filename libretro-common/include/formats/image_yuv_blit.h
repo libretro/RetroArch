@@ -66,6 +66,14 @@ void image_yuv_i420_to_rgb32(uint32_t *dst, unsigned dst_stride,
       const uint8_t *v, unsigned v_stride,
       unsigned w, unsigned h, unsigned flags);
 
+/* The matrix @flags names (BT709, FULL_RANGE), for a GPU to apply to
+ * samples normalised to 0..1: with chroma less 128/255,
+ *    R = c[0] * Y + c[1] + c[2] * Cr
+ *    G = c[0] * Y + c[1] + c[3] * Cb + c[4] * Cr
+ *    B = c[0] * Y + c[1] + c[5] * Cb
+ * the same matrix the conversions above use. */
+void image_yuv_coefficients(unsigned flags, float c[6]);
+
 RETRO_END_DECLS
 
 #endif

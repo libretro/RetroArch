@@ -161,14 +161,18 @@ struct gfx_surface
    /* A planar surface (I420, NV12): the colour space its frames are
     * in, as IMAGE_YUV_FLAG_* (BT709, FULL_RANGE, VU). */
    uint8_t yuv;
-   /* A planar surface, while no driver samples YCbCr: the frame
-    * converted for upload, in the same allocation as the slots. The
-    * conversion reads the planes where they lie - a slot, or the
-    * caller's own (gfx_surface_submit_planes) - so it is the one pass
-    * over the frame, and the upload reads it from here. NULL for any
-    * other surface. */
+   /* A planar surface's frame as the driver is given it, when the
+    * driver converts YCbCr itself (TEXTURE_GPU_FORMAT_YUV420). */
+   struct texture_planar planar;
+   /* A planar surface under a driver that does not: the frame
+    * converted for upload, made on the first such frame. The
+    * conversion reads the planes where they lie, so it is the one pass
+    * over the frame. NULL until then, and for any other surface. */
    uint32_t *rgb;
 };
+
+#define GFX_SURFACE_IS_PLANAR(s) \
+   (((s)->pixfmt & (IMAGE_PIXFMT_I420 | IMAGE_PIXFMT_NV12)) != 0)
 
 /* What the active video driver wants of an image, asked once before
  * it is decoded rather than guessed from a flag at every producer.
@@ -401,10 +405,11 @@ enum gfx_surface_submit_result gfx_surface_submit_pixels(gfx_surface_t *s,
  * BT.601 limited range by default. Ignored by any other surface. */
 void gfx_surface_set_yuv(gfx_surface_t *s, unsigned flags);
 
-/* Upload a planar frame from where it lies, into a planar surface of
- * slots or none. Nothing is staged: the planes are read once, by the
- * conversion, before this returns, so they are the caller's again
- * whatever the result. Main thread. */
+/* Upload a planar frame from where it lies. The planes are the
+ * caller's again when this returns, whatever the result: direct video
+ * reads them in the call, and under the thread wrapper a driver that
+ * converts on the GPU has them copied into slot 0 first (BUSY while
+ * that slot is the GPU's). Main thread. */
 enum gfx_surface_submit_result gfx_surface_submit_planes(gfx_surface_t *s,
       const gfx_surface_planes_t *p, bool rgba);
 

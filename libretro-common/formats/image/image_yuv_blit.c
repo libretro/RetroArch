@@ -152,3 +152,18 @@ void image_yuv_i420_to_rgb32(uint32_t *dst, unsigned dst_stride,
       image_yuv_frame(dst, dst_stride, y, y_stride,
             u, u_stride, 1, v, v_stride, 1, w, h, flags);
 }
+
+void image_yuv_coefficients(unsigned flags, float c[6])
+{
+   const image_yuv_coef_t *k =
+      &image_yuv_coefs[((flags & IMAGE_YUV_FLAG_BT709) ? 2 : 0)
+                     | ((flags & IMAGE_YUV_FLAG_FULL_RANGE) ? 1 : 0)];
+   const float one = (float)(1 << IMAGE_YUV_SHIFT);
+   c[0] = (float)k->ym / one;
+   /* the bias less its rounding half, in 0..1 */
+   c[1] = (float)(k->yb - (1 << (IMAGE_YUV_SHIFT - 1))) / one / 255.0f;
+   c[2] = (float)k->rv / one;
+   c[3] = (float)k->gu / one;
+   c[4] = (float)k->gv / one;
+   c[5] = (float)k->bu / one;
+}

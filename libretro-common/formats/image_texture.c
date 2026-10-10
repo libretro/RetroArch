@@ -388,6 +388,7 @@ bool image_loader_finish(image_loader_t *l, struct texture_image *img)
       return false;
    img->pixels        = l->pixels;
    img->compressed    = l->compressed;
+   img->planar        = NULL;
    img->width         = l->width;
    img->height        = l->height;
    img->supports_rgba = l->req.rgba;
@@ -445,6 +446,7 @@ static void image_texture_clear(struct texture_image *img)
    img->width         = 0;
    img->height        = 0;
    img->compressed    = NULL;
+   img->planar        = NULL;
    img->pix10         = false;
    img->fp16          = false;
 }
@@ -460,6 +462,7 @@ static bool image_texture_load_buffer_probe(struct texture_image *out_img,
    if (!out_img)
       return false;
    out_img->compressed = NULL;
+   out_img->planar     = NULL;
    if (!ptr || !len || !(l = image_loader_new(type, req)))
    {
       image_texture_clear(out_img);

@@ -4784,6 +4784,8 @@ uintptr_t video_driver_window_get(void)
 
 bool video_driver_texture_fit(struct texture_image *ti)
 {
+   if (ti->planar)
+      return video_driver_supports_texture_format(TEXTURE_GPU_FORMAT_YUV420);
    /* The texture path's own answer, not GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE,
     * which says whether a context presents 10-bit core frames */
    if (     ti->pix10

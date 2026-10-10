@@ -2153,8 +2153,8 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
 
 /* @ti as the active driver samples it: a 10-bit image it cannot take
- * narrowed to 8 bits in place. False for a half-float image it cannot
- * take, which has no narrower form. Every upload of an image goes
+ * narrowed to 8 bits in place. False for a half-float image or a
+ * planar frame it cannot take, which have no narrower form. Every upload of an image goes
  * through this, so the answer is made once. */
 bool video_driver_texture_fit(struct texture_image *ti);
 

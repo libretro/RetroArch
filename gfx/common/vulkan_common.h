@@ -135,7 +135,9 @@ enum vk_flags
    /* frontend uses openxr */
    VK_FLAG_OPEN_XR              = (1 << 22),
    /* core opted into VR via SET_VIDEO_VIEWS */
-   VK_FLAG_XR_STEREO            = (1 << 23)
+   VK_FLAG_XR_STEREO            = (1 << 23),
+   /* Held across creating a texture a compute shader writes */
+   VK_FLAG_TEXTURE_FOR_STORAGE  = (1 << 24)
 };
 
 enum vk_texture_type
