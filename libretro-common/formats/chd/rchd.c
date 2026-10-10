@@ -356,6 +356,7 @@ struct rchd
     * audio/video pays nothing for them. */
    uint16_t          *av_lookup;
    int16_t           *av_samples;
+   uint32_t           av_samples_capacity;
    struct rchd_av_scratch *av_scratch;
 
    /* One decoded hunk, kept so a range spanning several hunks, or two
@@ -1550,11 +1551,15 @@ static int rchd_decode_avhuff(rchd_t *chd, const uint8_t *src,
 
       if (mode == 0xffff)
       {
-      if (!chd->av_samples)
+      if (samples > chd->av_samples_capacity)
       {
-         chd->av_samples = (int16_t*)malloc((size_t)samples * sizeof(int16_t));
-         if (!chd->av_samples)
+         int16_t *grown = (int16_t*)realloc(chd->av_samples,
+               (size_t)samples * sizeof(int16_t));
+
+         if (!grown)
             return RCHD_ERROR_MEM;
+         chd->av_samples          = grown;
+         chd->av_samples_capacity = samples;
       }
 
       fmt.sample_rate     = 44100;
