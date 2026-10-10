@@ -5181,6 +5181,10 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
                } else if (len < 128) {
                   // Copy next len+1 bytes literally.
                   len++;
+                  if (len > pixelCount - count) {
+                     STBI_FREE(out);
+                     return stbi__errpuc("corrupt", "bad RLE data");
+                  }
                   count += len;
                   while (len) {
                      *p = stbi__get8(s);
@@ -5193,6 +5197,10 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
                   // (Interpret len as a negative 8-bit int.)
                   len ^= 0x0FF;
                   len += 2;
+                  if (len > pixelCount - count) {
+                     STBI_FREE(out);
+                     return stbi__errpuc("corrupt", "bad RLE data");
+                  }
                   val = stbi__get8(s);
                   count += len;
                   while (len) {
@@ -5969,17 +5977,20 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
          if (scanline == NULL) scanline = (stbi_uc *) stbi__malloc(width * 4);
 
          for (k = 0; k < 4; ++k) {
+            int nleft;
             i = 0;
-            while (i < width) {
+            while ((nleft = width - i) > 0) {
                count = stbi__get8(s);
                if (count > 128) {
                   // Run
                   value = stbi__get8(s);
                   count -= 128;
+                  if (count == 0 || count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
                      scanline[i++ * 4 + k] = value;
                } else {
                   // Dump
+                  if (count == 0 || count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
                      scanline[i++ * 4 + k] = stbi__get8(s);
                }
