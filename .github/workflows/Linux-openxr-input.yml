@@ -47,6 +47,30 @@ jobs:
           make clean
           rm -f openxr_input.log
 
+  openxr-haptics:
+    name: Desktop haptic results (Linux sanitizers, Windows build)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install Windows cross compiler
+        run: sudo apt-get install -y -qq gcc-mingw-w64-x86-64
+
+      - name: Run desktop haptics against scripted runtime results
+        working-directory: samples/input/openxr_haptics
+        shell: bash
+        run: |
+          set -eu
+          make clean
+          make SANITIZER=address,undefined check
+          make clean
+          make SANITIZER=thread check
+          make clean
+          make CC=x86_64-w64-mingw32-gcc all
+          make clean
+
   openxr-loader-threads:
     name: OpenXR loader under concurrent use (TSan, ASan+UBSan)
     runs-on: ubuntu-latest

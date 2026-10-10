@@ -363,7 +363,9 @@ typedef struct input_openxr
    bool menu_toggle;
    bool recenter;
    bool laser_toggle;
-   float haptic[INPUT_OPENXR_HANDS];      /* the amplitude last applied */
+   float haptic[INPUT_OPENXR_HANDS];      /* the amplitude last accepted */
+   float haptic_attempt[INPUT_OPENXR_HANDS];
+   bool haptic_retry[INPUT_OPENXR_HANDS];
    retro_time_t haptic_time[INPUT_OPENXR_HANDS];
    /* The laser, from this poll. */
    video_xr_quad_set_t quads;
@@ -1106,6 +1108,7 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
       XrHapticActionInfo info;
+      XrResult res;
       float amp;
       int s;
       if (paused)
@@ -1121,7 +1124,13 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
       else
          s = retro_atomic_load_acquire_int(&input_openxr_rumble[0][h]);
       amp = (float)s / 65535.0f;
-      if (     amp == st->haptic[h]
+      if (st->haptic_retry[h])
+      {
+         if (amp == st->haptic_attempt[h]
+               && now - st->haptic_time[h] < INPUT_OPENXR_HAPTIC_REFRESH)
+            continue;
+      }
+      else if (amp == st->haptic[h]
             && (amp <= 0.0f
                || now - st->haptic_time[h] < INPUT_OPENXR_HAPTIC_REFRESH))
          continue;
@@ -1137,13 +1146,17 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
          vib.duration  = INPUT_OPENXR_HAPTIC_DURATION;
          vib.frequency = XR_FREQUENCY_UNSPECIFIED;
          vib.amplitude = amp;
-         st->ApplyHapticFeedback(st->session, &info,
+         res = st->ApplyHapticFeedback(st->session, &info,
                (const XrHapticBaseHeader*)&vib);
       }
       else
-         st->StopHapticFeedback(st->session, &info);
-      st->haptic[h]      = amp;
-      st->haptic_time[h] = now;
+         res = st->StopHapticFeedback(st->session, &info);
+      st->haptic_attempt[h] = amp;
+      st->haptic_time[h]    = now;
+      /* NOT_FOCUSED is positive, but the runtime discards the request. */
+      st->haptic_retry[h]   = XR_FAILED(res) || res == XR_SESSION_NOT_FOCUSED;
+      if (!st->haptic_retry[h])
+         st->haptic[h] = amp;
    }
 }
 
@@ -1208,6 +1221,8 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
       /* The runtime drops haptics out of focus: apply again after. */
       st->haptic[0] = 0.0f;
       st->haptic[1] = 0.0f;
+      st->haptic_retry[0] = false;
+      st->haptic_retry[1] = false;
       return;
    }
    st->focused = true;
