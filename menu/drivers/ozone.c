@@ -20,6 +20,7 @@
 
 #include <retro_miscellaneous.h>
 #include <retro_inline.h>
+#include <retro_atomic.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -35,6 +36,7 @@
 #include <retro_math.h>
 
 #include "../../gfx/gfx_surface.h"
+#include "../../gfx/video_thread_wrapper.h"
 #include "../menu_cbs.h"
 #include "../menu_driver.h"
 #include "../menu_str.h"
@@ -197,7 +199,9 @@ enum OZONE_TEXTURE
 
 enum OZONE_THEME_TEXTURES
 {
-   OZONE_THEME_TEXTURE_SWITCH = 0,
+#ifdef HAVE_LIBNX
+   OZONE_THEME_TEXTURE_SWITCH,
+#endif
    OZONE_THEME_TEXTURE_CHECK,
 
    OZONE_THEME_TEXTURE_CURSOR_NO_BORDER,
@@ -719,6 +723,7 @@ struct ozone_handle
    uint32_t cursor_pos_old;   /* VIDEO_POS_PACK */
 
    uint16_t flags2;
+   retro_atomic_ptr_t pending_theme;
 
    uint8_t selection_lastplayed_lines;
    uint8_t system_tab_end;
@@ -3075,7 +3080,9 @@ static void ozone_unload_theme_textures(ozone_handle_t *ozone)
 }
 
 static const char *OZONE_THEME_TEXTURES_FILES[OZONE_THEME_TEXTURE_LAST] = {
+#ifdef HAVE_LIBNX
    "switch.png",
+#endif
    "check.png",
 
    "cursor_noborder.png",
@@ -3144,30 +3151,36 @@ static void ozone_entries_icon_path(unsigned i, void *ud, char *buf,
          ozone_entries_icon_texture_path(i), len);
 }
 
-static void ozone_reset_theme_textures(ozone_handle_t *ozone)
+static void ozone_load_theme_textures(ozone_handle_t *ozone,
+      ozone_theme_t *theme)
 {
-   unsigned j;
    char theme_path[NAME_MAX_LENGTH];
-   bool supports_rgba = gfx_surface_wants_rgba();
+   bool supports_rgba;
+#ifdef HAVE_THREADS
+   ozone_theme_t *pending_theme;
+#endif
 
-   for (j = 0; j < ARRAY_SIZE(ozone_themes); j++)
-   {
-      ozone_theme_t *theme = ozone_themes[j];
+   if (!theme->name || theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
+      return;
 
-      if (!theme->name || theme != ozone->theme)
-         continue;
+#ifdef HAVE_THREADS
+   /* Publish new slots only between threaded frames. */
+   video_thread_wait_idle();
+   pending_theme = (ozone_theme_t*)retro_atomic_exchange_ptr(
+         &ozone->pending_theme, NULL);
+   if (pending_theme)
+      theme = pending_theme;
+   if (!theme->name || theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
+      return;
+#endif
+   supports_rgba = gfx_surface_wants_rgba();
 
-      fill_pathname_join_special(
-            theme_path,
-            ozone->png_path,
-            theme->name,
-            sizeof(theme_path)
-      );
+   fill_pathname_join_special(theme_path, ozone->png_path,
+         theme->name, sizeof(theme_path));
 
-      gfx_surface_submit_named(theme->textures, OZONE_THEME_TEXTURE_LAST,
-            gfx_display_texture_filter(), ozone_theme_texture_path,
-            theme_path, supports_rgba);
-   }
+   gfx_surface_submit_named(theme->textures, OZONE_THEME_TEXTURE_LAST,
+         gfx_display_texture_filter(), ozone_theme_texture_path,
+         theme_path, supports_rgba);
 }
 
 static void ozone_sidebar_collapse_end(void *userdata)
@@ -3486,7 +3499,10 @@ static void ozone_draw_cursor(
       ozone_apply_cursor_wiggle_offset(ozone, &new_x, &new_y);
 
    /* Draw the cursor */
+   /* The slice needs the theme's cursor texture: until it is up (a
+    * theme just switched to, a decode in flight) draw the quads */
    if (     (ozone->theme->name)
+         && GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_NO_BORDER])
          && ((ozone->flags & OZONE_FLAG_HAS_ALL_ASSETS) || (ozone->flags2 & OZONE_FLAG2_IGNORE_MISSING_ASSETS)))
       ozone_draw_cursor_slice(ozone,
             p_disp,
@@ -5634,7 +5650,12 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
    /* Check icon */
    if (entry->flags & MENU_ENTRY_FLAG_CHECKED)
    {
+      uintptr_t check_texture = ozone->theme->name
+            ? GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK])
+            : 0;
       float *col = ozone->theme_dynamic.entries_checkmark;
+      if (!check_texture)
+         check_texture = GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK]);
       gfx_display_blend_begin(dispctx, userdata);
       ozone_draw_icon(
             p_disp,
@@ -5642,9 +5663,7 @@ OZONE_NOINLINE static void ozone_draw_entry_value(
             video_dims,
             30 * scale_factor,
             30 * scale_factor,
-            ozone->theme->name
-                  ? GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CHECK])
-                  : GFX_SURFACE_HANDLE(ozone->icons_textures[OZONE_ENTRIES_ICONS_TEXTURE_CHECKMARK]),
+            check_texture,
             x - 20 * scale_factor,
             y - 22 * scale_factor,
             0.0f,
@@ -7734,13 +7753,16 @@ OZONE_NOINLINE static void ozone_draw_osk(
 
    /* Keyboard */
    {
+      uintptr_t cursor_texture = ozone->theme->name
+            ? GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC])
+            : 0;
+      if (!cursor_texture)
+         cursor_texture = GFX_SURFACE_HANDLE(ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]);
       gfx_display_draw_keyboard(
             p_disp,
             userdata,
             video_dims,
-            ozone->theme->name
-                  ? GFX_SURFACE_HANDLE(ozone->theme->textures[OZONE_THEME_TEXTURE_CURSOR_STATIC])
-                  : GFX_SURFACE_HANDLE(ozone->textures[OZONE_TEXTURE_CURSOR_BORDER]),
+            cursor_texture,
             ozone->fonts.entries_label.font,
             menu_st->osk_grid,
             input_driver_keyboard_textbox_focus() ? 44 : menu_st->osk_ptr,
@@ -9928,6 +9950,7 @@ static void *ozone_init(void **userdata, bool video_is_threaded)
    if (!(ozone = (ozone_handle_t*)calloc(1, sizeof(ozone_handle_t))))
       goto error;
 
+   retro_atomic_ptr_init(&ozone->pending_theme, NULL);
    *userdata = ozone;
 
    for (i = 0; i < 16; i++)
@@ -10615,7 +10638,9 @@ static void ozone_context_reset(void *data, bool is_threaded)
             supports_rgba);
 
       /* Theme textures */
-      ozone_reset_theme_textures(ozone);
+      ozone_unload_theme_textures(ozone);
+      retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
+      ozone_load_theme_textures(ozone, ozone->theme);
 
       /* Icons textures init */
       gfx_surface_submit_named(ozone->icons_textures,
@@ -10703,6 +10728,7 @@ static void ozone_context_destroy(void *data)
     * Under threaded video, ozone_frame() may be mid-render on
     * the video thread when this runs on the main thread. */
    ozone->context_generation++;
+   retro_atomic_exchange_ptr(&ozone->pending_theme, NULL);
 
    ozone_unload_theme_textures(ozone);
    ozone_free_context_textures(ozone);
@@ -10885,6 +10911,14 @@ static void ozone_render(void *data,
             settings->arrays.menu_ozone_color_theme,
             ozone->pending_color_theme);
       ozone->flags2 &= ~OZONE_FLAG2_COLOR_THEME_WRITE_PENDING;
+   }
+
+   if (retro_atomic_load_acquire_ptr(&ozone->pending_theme))
+   {
+      ozone_theme_t *pending_theme = (ozone_theme_t*)retro_atomic_exchange_ptr(
+            &ozone->pending_theme, NULL);
+      if (pending_theme)
+         ozone_load_theme_textures(ozone, pending_theme);
    }
 
    /* Advance animated thumbnails (animated WebP) once per frame on the
@@ -12856,6 +12890,7 @@ static void ozone_frame(void *data, video_frame_info_t *video_info)
       }
 
       ozone_set_color_theme(ozone, color_theme);
+      retro_atomic_store_release_ptr(&ozone->pending_theme, ozone->theme);
       if (ozone->theme->background_libretro_running)
          ozone_set_background_running_opacity(ozone, menu_framebuffer_opacity);
 

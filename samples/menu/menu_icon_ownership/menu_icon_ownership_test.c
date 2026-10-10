@@ -237,6 +237,32 @@ static bool fixture_make(const char *menu_driver)
    if (!write_file(path, png_1x1, sizeof(png_1x1)))
       return false;
 
+   if (string_is_equal(menu_driver, "ozone"))
+   {
+      static const char *themes[] = { "dark", "light", "nord" };
+      static const char *files[] = {
+         "switch.png", "check.png", "cursor_noborder.png", "cursor_static.png"
+      };
+      char theme_dir[768];
+      char png_dir[768];
+      unsigned i, j;
+      fill_pathname_join_special(path, assets_dir, "ozone", sizeof(path));
+      fill_pathname_join_special(png_dir, path, "png", sizeof(png_dir));
+      for (i = 0; i < sizeof(themes) / sizeof(themes[0]); i++)
+      {
+         fill_pathname_join_special(theme_dir, png_dir, themes[i],
+               sizeof(theme_dir));
+         if (!path_mkdir(theme_dir))
+            return false;
+         for (j = 0; j < sizeof(files) / sizeof(files[0]); j++)
+         {
+            fill_pathname_join_special(path, theme_dir, files[j], sizeof(path));
+            if (!write_file(path, png_1x1, sizeof(png_1x1)))
+               return false;
+         }
+      }
+   }
+
    fill_pathname_join_special(playlist_path, playlists_dir,
          "Harness System.lpl", sizeof(playlist_path));
    if (!write_text(playlist_path,
@@ -309,6 +335,8 @@ static bool fixture_make(const char *menu_driver)
             "input_joypad_driver = \"null\"\n"
             "video_threaded = \"false\"\n"
             "threaded_data_runloop_enable = \"false\"\n"
+            "menu_ozone_color_theme = \"basic_black\"\n"
+            "menu_use_preferred_system_color_theme = \"false\"\n"
             "menu_ignore_missing_assets = \"true\"\n"
             "content_show_playlists = \"true\"\n"
             "materialui_icons_enable = \"true\"\n"
@@ -355,6 +383,60 @@ static void run_tasks(void)
    unsigned i;
    for (i = 0; i < 2000; i++)
       task_queue_check();
+}
+
+static void ozone_theme_cache_test(struct menu_state *menu_st)
+{
+   static const char *themes[] = { "basic_black", "basic_white", "nord" };
+   settings_t *settings = config_get_ptr();
+   unsigned i, pass;
+   unsigned had_loads, had_unloads;
+#ifdef HAVE_LIBNX
+   const unsigned theme_icons = 4;
+#else
+   const unsigned theme_icons = 3;
+#endif
+
+   for (i = 1; i < sizeof(themes) / sizeof(themes[0]); i++)
+   {
+      had_loads = loads;
+      had_unloads = unloads;
+      configuration_set_string(settings,
+            settings->arrays.menu_ozone_color_theme, themes[i]);
+      one_frame();
+      one_frame();
+      CHECK(loads == had_loads + theme_icons,
+            "%s first visit loaded %u icons, want %u", themes[i],
+            loads - had_loads, theme_icons);
+      CHECK(unloads == had_unloads, "theme change evicted cached icons");
+   }
+
+   had_loads = loads;
+   had_unloads = unloads;
+   for (pass = 0; pass < 4; pass++)
+      for (i = 0; i < sizeof(themes) / sizeof(themes[0]); i++)
+      {
+         configuration_set_string(settings,
+               settings->arrays.menu_ozone_color_theme, themes[i]);
+         one_frame();
+         one_frame();
+      }
+   CHECK(loads == had_loads, "cached visits uploaded %u additional textures",
+         loads - had_loads);
+   CHECK(unloads == had_unloads, "cached visits unloaded %u textures",
+         unloads - had_unloads);
+
+   menu_st->driver_ctx->context_destroy(menu_st->userdata);
+   menu_st->driver_ctx->context_reset(menu_st->userdata, false);
+   run_tasks();
+   one_frame();
+   had_loads = loads;
+   configuration_set_string(settings,
+         settings->arrays.menu_ozone_color_theme, themes[0]);
+   one_frame();
+   one_frame();
+   CHECK(loads == had_loads + theme_icons,
+         "context reset did not invalidate cached theme textures");
 }
 
 int main(int argc, char *argv[])
@@ -451,6 +533,9 @@ int main(int argc, char *argv[])
       one_frame();
       one_frame();
    }
+
+   if (string_is_equal(menu_driver, "ozone"))
+      ozone_theme_cache_test(menu_st);
 
    CHECK(unknown_unloads == 0,
          "%u unload(s) of a handle that was not live before deinit",
