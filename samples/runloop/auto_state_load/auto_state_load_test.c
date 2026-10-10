@@ -25,8 +25,10 @@ settings_t *config_get_ptr(void)
 }
 
 void input_driver_poll(void) {}
+void input_driver_poll_between_frames(void (*poll)(void)) { poll(); }
 void video_driver_cached_frame(void) {}
 void audio_driver_frame_end(void) {}
+void audio_driver_publish_runloop(void) {}
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 bool verbosity_is_enabled(void) { return false; }
 

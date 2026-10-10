@@ -4492,8 +4492,6 @@ void runloop_event_deinit_core(void)
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
 
-   runloop_reset_auto_state_load(runloop_st);
-
 #ifdef HAVE_THREADS
    /* Defensive: ensure the autosave worker thread is joined
     * before we touch core-owned memory. autosave_t->retro_buffer
@@ -4512,6 +4510,8 @@ void runloop_event_deinit_core(void)
    if (runloop_st->flags & RUNLOOP_FLAG_USE_SRAM)
       autosave_deinit();
 #endif
+
+   runloop_reset_auto_state_load(runloop_st);
 
    /* Remap save and cleanup logic should be placed before
     * core_unload_game(), to ensure that input description data
