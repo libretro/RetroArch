@@ -23,10 +23,12 @@
  * option through a GL core context, with either origin, into Vulkan
  * images of its own handed over with set_image, or on Windows into
  * D3D11 textures of its own, one per sync index, handed over with
- * set_texture (libretro_d3d11.h version 2). With
+ * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
+ * handed over with set_texture_fenced (libretro_d3d12.h version 2). With
  * video_views_test_max it declares a far larger maximum than it draws.
  * e2e/run.py checks the colours on screen and the status in the log;
- * e2e/wine.sh checks the d3d11 driver's frames under Wine.
+ * e2e/d3d.sh checks the d3d11 and d3d12 drivers' frames, under Wine
+ * or on Windows.
  *
  * In the Vulkan modes context_destroy first waits on the device without
  * the queue lock, as a core draining its work may, and logs when:
@@ -56,6 +58,7 @@
 #include <libretro_vulkan.h>
 #ifdef _WIN32
 #include <libretro_d3d11.h>
+#include <libretro_d3d12.h>
 #endif
 
 #define MAX_W 800
@@ -94,7 +97,8 @@ enum hw_kind
    HW_GL_TOPLEFT,
    HW_VULKAN,
    HW_VULKAN_KEEP,
-   HW_D3D11
+   HW_D3D11,
+   HW_D3D12
 };
 
 /* The Vulkan modes, by the order above. */
@@ -833,6 +837,8 @@ static void read_options(void)
 #ifdef _WIN32
       else if (!strcmp(var.value, "d3d11"))
          hw_kind = HW_D3D11;
+      else if (!strcmp(var.value, "d3d12"))
+         hw_kind = HW_D3D12;
 #endif
    }
 
@@ -902,7 +908,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep|d3d11" },
+        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep|d3d11|d3d12" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -1143,6 +1149,221 @@ static bool d3d_send(unsigned fw, unsigned fh)
    d3d->unlock_context(d3d->handle);
    return true;
 }
+
+/* The D3D12 mode: frame_buf copied through an upload buffer into a
+ * texture per sync index, on the frontend's queue, and handed over with
+ * set_texture_fenced and the fence the copy signals. With the large
+ * maximum the textures are the regular maximum's size, as in the D3D11
+ * mode. */
+static const struct retro_hw_render_interface_d3d12 *d12;
+static ID3D12Resource            *d12_tex[D3D_TEXTURES];
+static unsigned                   d12_dims[D3D_TEXTURES];
+static ID3D12Resource            *d12_upload;
+static size_t                     d12_upload_size;
+static ID3D12CommandAllocator    *d12_alloc;
+static ID3D12GraphicsCommandList *d12_list;
+static ID3D12Fence               *d12_fence;
+static HANDLE                     d12_event;
+static UINT64                     d12_value;
+static struct retro_hw_render_context_negotiation_interface_d3d12 d12_nego;
+
+/* The last copy has executed: its upload buffer and list are free. */
+static void d12_wait(void)
+{
+   if (!d12_fence || d12_fence->lpVtbl->GetCompletedValue(d12_fence) >= d12_value)
+      return;
+   d12_fence->lpVtbl->SetEventOnCompletion(d12_fence, d12_value, d12_event);
+   WaitForSingleObject(d12_event, INFINITE);
+}
+
+static void d12_context_destroy(void)
+{
+   unsigned i;
+   d12_wait();
+   for (i = 0; i < D3D_TEXTURES; i++)
+   {
+      if (d12_tex[i])
+         d12_tex[i]->lpVtbl->Release(d12_tex[i]);
+      d12_tex[i]  = NULL;
+      d12_dims[i] = 0;
+   }
+   if (d12_upload)
+      d12_upload->lpVtbl->Release(d12_upload);
+   if (d12_list)
+      d12_list->lpVtbl->Release(d12_list);
+   if (d12_alloc)
+      d12_alloc->lpVtbl->Release(d12_alloc);
+   if (d12_fence)
+      d12_fence->lpVtbl->Release(d12_fence);
+   if (d12_event)
+      CloseHandle(d12_event);
+   d12_upload      = NULL;
+   d12_upload_size = 0;
+   d12_list        = NULL;
+   d12_alloc       = NULL;
+   d12_fence       = NULL;
+   d12_event       = NULL;
+   d12_value       = 0;
+   d12             = NULL;
+}
+
+static void d12_context_reset(void)
+{
+   ID3D12Device *dev;
+   d12 = NULL;
+   if (     !environ_cb(RETRO_ENVIRONMENT_GET_HW_RENDER_INTERFACE,
+               (void*)&d12)
+         || !d12
+         || d12->interface_type    != RETRO_HW_RENDER_INTERFACE_D3D12
+         || d12->interface_version <  RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2)
+   {
+      log_cb(RETRO_LOG_ERROR, "[video_views] no D3D12 interface version 2\n");
+      d12 = NULL;
+      return;
+   }
+   dev       = d12->device;
+   d12_event = CreateEvent(NULL, FALSE, FALSE, NULL);
+   if (     !d12_event
+         || FAILED(dev->lpVtbl->CreateCommandAllocator(dev,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, &IID_ID3D12CommandAllocator,
+               (void**)&d12_alloc))
+         || FAILED(dev->lpVtbl->CreateCommandList(dev, 0,
+               D3D12_COMMAND_LIST_TYPE_DIRECT, d12_alloc, NULL,
+               &IID_ID3D12GraphicsCommandList, (void**)&d12_list))
+         || FAILED(dev->lpVtbl->CreateFence(dev, 0, D3D12_FENCE_FLAG_NONE,
+               &IID_ID3D12Fence, (void**)&d12_fence)))
+   {
+      log_cb(RETRO_LOG_ERROR, "[video_views] D3D12 setup failed\n");
+      d12_context_destroy();
+      return;
+   }
+   d12_list->lpVtbl->Close(d12_list);
+}
+
+static void d12_barrier(ID3D12Resource *res, D3D12_RESOURCE_STATES before,
+      D3D12_RESOURCE_STATES after)
+{
+   D3D12_RESOURCE_BARRIER b;
+   memset(&b, 0, sizeof(b));
+   b.Type                   = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+   b.Transition.pResource   = res;
+   b.Transition.Subresource = D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+   b.Transition.StateBefore = before;
+   b.Transition.StateAfter  = after;
+   d12_list->lpVtbl->ResourceBarrier(d12_list, 1, &b);
+}
+
+static bool d12_send(unsigned fw, unsigned fh)
+{
+   unsigned i, j;
+   uint8_t *dst;
+   ID3D12CommandList *lists[1];
+   D3D12_HEAP_PROPERTIES heap;
+   D3D12_RESOURCE_DESC desc;
+   D3D12_TEXTURE_COPY_LOCATION from, to;
+   D3D12_RANGE none;
+   ID3D12Device *dev;
+   unsigned tw    = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_W : fw;
+   unsigned th    = (large_max && fw <= MAX_W && fh <= MAX_H) ? MAX_H : fh;
+   unsigned pitch = (fw * 4 + D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1)
+      & ~(D3D12_TEXTURE_DATA_PITCH_ALIGNMENT - 1);
+   size_t   size  = (size_t)pitch * fh;
+   if (!d12)
+      return false;
+   dev = d12->device;
+   i   = d12->get_sync_index(d12->handle);
+   if (i >= D3D_TEXTURES)
+      return false;
+   d12->wait_sync_index(d12->handle);
+   d12_wait();
+
+   memset(&heap, 0, sizeof(heap));
+   memset(&desc, 0, sizeof(desc));
+   desc.DepthOrArraySize = 1;
+   desc.MipLevels        = 1;
+   desc.SampleDesc.Count = 1;
+   if (!d12_tex[i] || d12_dims[i] != (tw << 16 | th))
+   {
+      if (d12_tex[i])
+         d12_tex[i]->lpVtbl->Release(d12_tex[i]);
+      d12_tex[i]       = NULL;
+      heap.Type        = D3D12_HEAP_TYPE_DEFAULT;
+      desc.Dimension   = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      desc.Width       = tw;
+      desc.Height      = th;
+      desc.Format      = DXGI_FORMAT_B8G8R8A8_UNORM;
+      if (FAILED(dev->lpVtbl->CreateCommittedResource(dev, &heap,
+                  D3D12_HEAP_FLAG_NONE, &desc, d12->required_state, NULL,
+                  &IID_ID3D12Resource, (void**)&d12_tex[i])))
+      {
+         d12_tex[i] = NULL;
+         return false;
+      }
+      d12_dims[i] = tw << 16 | th;
+   }
+   if (d12_upload_size < size)
+   {
+      if (d12_upload)
+         d12_upload->lpVtbl->Release(d12_upload);
+      d12_upload       = NULL;
+      d12_upload_size  = 0;
+      heap.Type        = D3D12_HEAP_TYPE_UPLOAD;
+      desc.Dimension   = D3D12_RESOURCE_DIMENSION_BUFFER;
+      desc.Width       = size;
+      desc.Height      = 1;
+      desc.Format      = DXGI_FORMAT_UNKNOWN;
+      desc.Layout      = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      if (FAILED(dev->lpVtbl->CreateCommittedResource(dev, &heap,
+                  D3D12_HEAP_FLAG_NONE, &desc,
+                  D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
+                  &IID_ID3D12Resource, (void**)&d12_upload)))
+      {
+         d12_upload = NULL;
+         return false;
+      }
+      d12_upload_size = size;
+   }
+
+   /* XRGB: the X byte is the texture's alpha. */
+   none.Begin = 0;
+   none.End   = 0;
+   if (FAILED(d12_upload->lpVtbl->Map(d12_upload, 0, &none, (void**)&dst)))
+      return false;
+   for (j = 0; j < fh; j++)
+   {
+      unsigned k;
+      uint32_t *row = (uint32_t*)(dst + (size_t)j * pitch);
+      for (k = 0; k < fw; k++)
+         row[k] = frame_buf[j * fw + k] | 0xFF000000u;
+   }
+   d12_upload->lpVtbl->Unmap(d12_upload, 0, NULL);
+
+   d12_alloc->lpVtbl->Reset(d12_alloc);
+   d12_list->lpVtbl->Reset(d12_list, d12_alloc, NULL);
+   d12_barrier(d12_tex[i], d12->required_state,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+   memset(&from, 0, sizeof(from));
+   memset(&to, 0, sizeof(to));
+   from.pResource                          = d12_upload;
+   from.Type                               = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   from.PlacedFootprint.Footprint.Format   = DXGI_FORMAT_B8G8R8A8_UNORM;
+   from.PlacedFootprint.Footprint.Width    = fw;
+   from.PlacedFootprint.Footprint.Height   = fh;
+   from.PlacedFootprint.Footprint.Depth    = 1;
+   from.PlacedFootprint.Footprint.RowPitch = pitch;
+   to.pResource                            = d12_tex[i];
+   to.Type                                 = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   d12_list->lpVtbl->CopyTextureRegion(d12_list, &to, 0, 0, 0, &from, NULL);
+   d12_barrier(d12_tex[i], D3D12_RESOURCE_STATE_COPY_DEST,
+         d12->required_state);
+   d12_list->lpVtbl->Close(d12_list);
+   lists[0] = (ID3D12CommandList*)d12_list;
+   d12->queue->lpVtbl->ExecuteCommandLists(d12->queue, 1, lists);
+   d12->queue->lpVtbl->Signal(d12->queue, d12_fence, ++d12_value);
+   d12->set_texture_fenced(d12->handle, d12_tex[i],
+         DXGI_FORMAT_B8G8R8A8_UNORM, d12_fence, d12_value);
+   return true;
+}
 #endif
 
 void retro_run(void)
@@ -1186,6 +1407,14 @@ void retro_run(void)
    else if (hw_kind == HW_D3D11)
    {
       if (!d3d)
+      {
+         video_cb(NULL, fw, fh, 0);
+         return;
+      }
+   }
+   else if (hw_kind == HW_D3D12)
+   {
+      if (!d12)
       {
          video_cb(NULL, fw, fh, 0);
          return;
@@ -1264,6 +1493,9 @@ void retro_run(void)
    else if (hw_kind == HW_D3D11)
       video_cb(d3d_send(fw, fh) ? RETRO_HW_FRAME_BUFFER_VALID : NULL,
             fw, fh, 0);
+   else if (hw_kind == HW_D3D12)
+      video_cb(d12_send(fw, fh) ? RETRO_HW_FRAME_BUFFER_VALID : NULL,
+            fw, fh, 0);
 #endif
    else if (hw_kind != HW_OFF)
    {
@@ -1339,6 +1571,32 @@ bool retro_load_game(const struct retro_game_info *game)
             && probe.interface_version >= 1)
          environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
                &d3d_nego);
+   }
+   else if (hw_kind == HW_D3D12)
+   {
+      struct retro_hw_render_context_negotiation_interface probe;
+      memset(&hw_render, 0, sizeof(hw_render));
+      hw_render.context_type    = RETRO_HW_CONTEXT_D3D12;
+      hw_render.version_major   = 12;
+      hw_render.context_reset   = d12_context_reset;
+      hw_render.context_destroy = d12_context_destroy;
+      if (!environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER, &hw_render))
+         return false;
+      probe.interface_type    =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12;
+      probe.interface_version = 0;
+      d12_nego.interface_type =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12;
+      d12_nego.interface_version =
+         RETRO_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_D3D12_VERSION;
+      d12_nego.max_render_interface_version =
+         RETRO_HW_RENDER_INTERFACE_D3D12_VERSION_2;
+      if (     environ_cb(
+                  RETRO_ENVIRONMENT_GET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE_SUPPORT,
+                  &probe)
+            && probe.interface_version >= 1)
+         environ_cb(RETRO_ENVIRONMENT_SET_HW_RENDER_CONTEXT_NEGOTIATION_INTERFACE,
+               &d12_nego);
    }
 #endif
    else if (hw_kind != HW_OFF)

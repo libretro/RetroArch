@@ -3923,14 +3923,8 @@ static void slang_pass_build_semantic_frame_rect(struct slang_pass *pass,
       uint8_t *buffer, const vulkan_filter_chain_texture *frame)
 {
    const slang_semantic_meta *sem = pass->reflection.semantics;
-   float    v[4];
-   float    w        = (float)VIDEO_SCALE_W(frame->dims);
-   float    h        = (float)VIDEO_SCALE_H(frame->dims);
-   float    x        = (float)VIDEO_SCALE_W(frame->origin);
-   float    y        = (float)VIDEO_SCALE_H(frame->origin);
+   float    v[12];
    unsigned tex_dims = frame->padded_dims ? frame->padded_dims : frame->dims;
-   float    tw       = (float)VIDEO_SCALE_W(tex_dims);
-   float    th       = (float)VIDEO_SCALE_H(tex_dims);
 
    if (     !sem[SLANG_SEMANTIC_ORIGINAL_RECT].uniform
          && !sem[SLANG_SEMANTIC_ORIGINAL_RECT].push_constant
@@ -3940,24 +3934,13 @@ static void slang_pass_build_semantic_frame_rect(struct slang_pass *pass,
          && !sem[SLANG_SEMANTIC_ORIGINAL_TEXELS].push_constant)
       return;
 
-   v[0] = w / tw;
-   v[1] = h / th;
-   v[2] = x / tw;
-   v[3] = y / th;
+   slang_rect_values(v, frame->dims, frame->origin, tex_dims);
    slang_pass_build_semantic_vec4_values(pass, buffer,
          SLANG_SEMANTIC_ORIGINAL_RECT, v);
-   v[0] = (x + 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   v[1] = (y + 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
-   v[2] = (x + w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   v[3] = (y + h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
    slang_pass_build_semantic_vec4_values(pass, buffer,
-         SLANG_SEMANTIC_ORIGINAL_CLAMP, v);
-   v[0] = w;
-   v[1] = h;
-   v[2] = x;
-   v[3] = y;
+         SLANG_SEMANTIC_ORIGINAL_CLAMP, v + 4);
    slang_pass_build_semantic_vec4_values(pass, buffer,
-         SLANG_SEMANTIC_ORIGINAL_TEXELS, v);
+         SLANG_SEMANTIC_ORIGINAL_TEXELS, v + 8);
 }
 
 static void slang_pass_build_semantic_vec3(struct slang_pass *pass,

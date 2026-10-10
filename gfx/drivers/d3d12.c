@@ -79,6 +79,7 @@
  * constants used by pass state.  The actual slang_process() call
  * sites remain guarded with HAVE_SLANG+HAVE_SPIRV_CROSS. */
 #include "../drivers_shader/slang_process.h"
+#include "../drivers_shader/slang_rect.h"
 #ifdef HAVE_THREADS
 #include "../video_thread_wrapper.h"
 #endif
@@ -402,6 +403,16 @@ typedef struct
       D3D12_GPU_DESCRIPTOR_HANDLE current_gpu;
       bool                        eligible;
    } hw_direct;
+   /* Where the frame lies in the texture a preset's passes read it
+    * from: slang_rect.h's three vec4s, for the passes slang_process()
+    * rewrote to read it there. With no history the passes read
+    * hw_direct.current in place of frame.texture[0], in the corner of
+    * a larger texture when all of them can. */
+   struct
+   {
+      float values[12];
+      bool  seen;
+   } frame_rect;
 
    IDXGIAdapter1 *adapters[D3D12_MAX_GPU_COUNT];
    struct string_list *gpu_list;
@@ -3566,6 +3577,19 @@ static void d3d12_deferred_state_free(
 
    free(ds);
 }
+
+/* A hardware core's frame may lie in the corner of a larger texture:
+ * the preset's passes are rewritten to read it there where they can,
+ * through d3d12->frame_rect. */
+static void d3d12_frame_rect_semantics(d3d12_video_t *d3d12,
+      semantics_map_t *map)
+{
+   if (!(d3d12->flags & D3D12_ST_FLAG_HW_IFACE_ENABLE))
+      return;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d12->frame_rect.values;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d12->frame_rect.values + 4;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d12->frame_rect.values + 8;
+}
 #endif
 
 static bool d3d12_shader_load_step(void *data,
@@ -3650,6 +3674,7 @@ static bool d3d12_shader_load_step(void *data,
             }
          };
 
+         d3d12_frame_rect_semantics(d3d12, &semantics_map);
          if (!slang_process(
                   ds->shader_preset, i, RARCH_SHADER_HLSL, 50,
                   &semantics_map, &ds->passes[i].semantics))
@@ -4012,6 +4037,7 @@ static bool d3d12_gfx_set_shader(void* data, enum rarch_shader_type type, const 
       };
       /* clang-format on */
 
+      d3d12_frame_rect_semantics(d3d12, &semantics_map);
       if (!slang_process(
                d3d12->shader_preset, i, RARCH_SHADER_HLSL, 50, &semantics_map,
                &d3d12->pass[i].semantics))
@@ -5485,6 +5511,18 @@ static void d3d12_hw_direct_slot_free(d3d12_video_t *d3d12, unsigned i)
    memset(&d3d12->hw_direct.cache[i], 0, sizeof(d3d12->hw_direct.cache[i]));
 }
 
+/* ID3D12Resource::GetDesc is struct-by-value in the C vtable and
+ * mingw cannot call it as declared; called as what it is. */
+static void d3d12_resource_get_desc(D3D12Resource resource,
+      D3D12_RESOURCE_DESC *desc)
+{
+   D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get_desc)(ID3D12Resource*,
+         D3D12_RESOURCE_DESC*) =
+      (D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *)(ID3D12Resource*,
+            D3D12_RESOURCE_DESC*))resource->lpVtbl->GetDesc;
+   get_desc(resource, desc);
+}
+
 /* The descriptor to draw the core's texture through, in the driver's
  * own heap. False if there is none to be had; the frame is copied then. */
 static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
@@ -5533,6 +5571,28 @@ static bool d3d12_hw_direct_lookup(d3d12_video_t *d3d12,
    d3d12->hw_direct.cache[i].gpu.ptr  = cpu.ptr - heap->cpu.ptr + heap->gpu.ptr;
    d3d12->hw_direct.next              = (i + 1) % countof(d3d12->hw_direct.cache);
    *gpu = d3d12->hw_direct.cache[i].gpu;
+   return true;
+}
+
+/* Whether a preset's passes may read the frame where the core leaves
+ * it, @desc's texture, as Original and as the first pass's Source: when
+ * the preset keeps no history, which is copied out of frame.texture[0],
+ * and the frame is in a texture of one level - the whole of it, or its
+ * corner when every pass reads the frame through the rectangle. */
+static bool d3d12_preset_reads_in_place(d3d12_video_t *d3d12,
+      const D3D12_RESOURCE_DESC *desc, unsigned width, unsigned height)
+{
+   unsigned i;
+   if (d3d12->shader_preset->history_size)
+      return false;
+   if (     desc->MipLevels != 1 || desc->DepthOrArraySize != 1
+         || desc->Width < width  || desc->Height < height)
+      return false;
+   if (desc->Width == width && desc->Height == height)
+      return true;
+   for (i = 0; i < d3d12->shader_preset->passes; i++)
+      if (!d3d12->pass[i].semantics.frame_in_place)
+         return false;
    return true;
 }
 
@@ -7008,17 +7068,43 @@ static bool d3d12_gfx_frame(
       }
 
       /* A frame that arrives any other way is drawn from
-       * frame.texture[0] as always. */
+       * frame.texture[0] as always, which is its size. */
       d3d12->hw_direct.current         = NULL;
       d3d12->hw_direct.current_gpu.ptr = 0;
-      if (     frame == RETRO_HW_FRAME_BUFFER_VALID
-            && d3d12->hw_direct.eligible
-            && d3d12->hw_render_texture
-            && !(d3d12->shader_preset && video_info->shader_active)
-            && d3d12_hw_direct_lookup(d3d12, d3d12->hw_render_texture,
-               d3d12->hw_render_texture_format,
-               &d3d12->hw_direct.current_gpu))
-         d3d12->hw_direct.current      = d3d12->hw_render_texture;
+      {
+         unsigned tex_dims = VIDEO_SCALE_PACK(width, height);
+         if (     frame == RETRO_HW_FRAME_BUFFER_VALID
+               && d3d12->hw_direct.eligible
+               && d3d12->hw_render_texture)
+         {
+            D3D12_RESOURCE_DESC desc;
+            d3d12_resource_get_desc(d3d12->hw_render_texture, &desc);
+            if (     (     !(d3d12->shader_preset && video_info->shader_active)
+                        || d3d12_preset_reads_in_place(d3d12, &desc,
+                           width, height))
+                  && d3d12_hw_direct_lookup(d3d12, d3d12->hw_render_texture,
+                     d3d12->hw_render_texture_format,
+                     &d3d12->hw_direct.current_gpu))
+            {
+               d3d12->hw_direct.current = d3d12->hw_render_texture;
+               tex_dims = VIDEO_SCALE_PACK(desc.Width, desc.Height);
+               if (     d3d12->shader_preset && video_info->shader_active
+                     && (desc.Width != width || desc.Height != height)
+                     && !d3d12->frame_rect.seen)
+               {
+                  d3d12->frame_rect.seen = true;
+                  RARCH_LOG("[D3D12] Preset reads frames where the core "
+                        "leaves them.\n");
+               }
+            }
+         }
+#ifdef HAVE_SLANG
+         slang_rect_values(d3d12->frame_rect.values,
+               VIDEO_SCALE_PACK(width, height), 0, tex_dims);
+#else
+         (void)tex_dims;
+#endif
+      }
       d3d12->hw_direct.eligible        = false;
 
       if (frame == RETRO_HW_FRAME_BUFFER_VALID && d3d12->hw_direct.current)
@@ -7108,6 +7194,19 @@ static bool d3d12_gfx_frame(
    {
       cmd->lpVtbl->SetGraphicsRootSignature(cmd,
             d3d12->desc.sl_rootSignature);
+
+      /* The passes read the core's texture in place of frame.texture[0],
+       * repeats included; it is readable for them and put back after,
+       * and the core waits for them as for the stock draw. */
+      if (d3d12->hw_direct.current)
+      {
+         D3D12_RESOURCE_TRANSITION(
+               cmd,
+               d3d12->hw_direct.current,
+               D3D12_RESOURCE_STATE_COPY_SOURCE,
+               D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+         d3d12->hw_v2.frame_took_texture = true;
+      }
 
       for (i = 0; i < d3d12->shader_preset->passes; i++)
       {
@@ -7241,10 +7340,19 @@ static bool d3d12_gfx_frame(
                      d3d12_texture_t* tex =
                         (d3d12_texture_t*)texture_sem->texture_data;
                      unsigned binding     = texture_sem->binding;
+                     D3D12Resource resource = tex->handle;
+                     UINT          levels   = tex->desc.MipLevels;
 
-                     if (   d3d12->pass[i].desc_cache.srv_resource[binding]   != tex->handle
+                     /* The frame where the core left it. */
+                     if (tex == d3d12->frame.texture && d3d12->hw_direct.current)
+                     {
+                        resource = d3d12->hw_direct.current;
+                        levels   = 1;
+                     }
+
+                     if (   d3d12->pass[i].desc_cache.srv_resource[binding]   != resource
                            || d3d12->pass[i].desc_cache.srv_format[binding]     != tex->desc.Format
-                           || d3d12->pass[i].desc_cache.srv_mip_levels[binding] != tex->desc.MipLevels)
+                           || d3d12->pass[i].desc_cache.srv_mip_levels[binding] != levels)
                      {
                         D3D12_CPU_DESCRIPTOR_HANDLE handle   = {
                            d3d12->pass[i].textures.ptr
@@ -7258,14 +7366,14 @@ static bool d3d12_gfx_frame(
                            D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
                         desc.ViewDimension                   =
                            D3D12_SRV_DIMENSION_TEXTURE2D;
-                        desc.Texture2D.MipLevels             = tex->desc.MipLevels;
+                        desc.Texture2D.MipLevels             = levels;
 
                         d3d12->device->lpVtbl->CreateShaderResourceView(d3d12->device,
-                              tex->handle, &desc, handle);
+                              resource, &desc, handle);
 
-                        d3d12->pass[i].desc_cache.srv_resource[binding]   = tex->handle;
+                        d3d12->pass[i].desc_cache.srv_resource[binding]   = resource;
                         d3d12->pass[i].desc_cache.srv_format[binding]     = tex->desc.Format;
-                        d3d12->pass[i].desc_cache.srv_mip_levels[binding] = tex->desc.MipLevels;
+                        d3d12->pass[i].desc_cache.srv_mip_levels[binding] = levels;
                      }
                   }
 
@@ -7414,6 +7522,13 @@ static bool d3d12_gfx_frame(
             }
          }
       } /* end hoisted loop-invariant scope */
+
+      if (d3d12->hw_direct.current)
+         D3D12_RESOURCE_TRANSITION(
+               cmd,
+               d3d12->hw_direct.current,
+               D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+               D3D12_RESOURCE_STATE_COPY_SOURCE);
    }
 
    if (texture)
@@ -9334,19 +9449,9 @@ static bool d3d12_hw_ring_capture(void *data, unsigned slot,
    if (!d3d12 || !core || slot >= 3 || !d3d12_hw_ring_prepare(d3d12))
       return false;
 
-   /* ID3D12Resource::GetDesc is struct-by-value in the C vtable and
-    * mingw cannot call it as declared; the size arrives with the
-    * texture the same way the driver's own frame path learns it. */
-   width  = d3d12->hw_ring.width[slot];
-   height = d3d12->hw_ring.height[slot];
-   {
-      D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *get_desc)(ID3D12Resource*, D3D12_RESOURCE_DESC*) =
-         (D3D12_RESOURCE_DESC *(STDMETHODCALLTYPE *)(ID3D12Resource*, D3D12_RESOURCE_DESC*))
-         core->lpVtbl->GetDesc;
-      get_desc(core, &desc);
-      width  = (unsigned)desc.Width;
-      height = desc.Height;
-   }
+   d3d12_resource_get_desc(core, &desc);
+   width  = (unsigned)desc.Width;
+   height = desc.Height;
 
    if (     !d3d12->hw_ring.texture[slot]
          || d3d12->hw_ring.width[slot]  != width

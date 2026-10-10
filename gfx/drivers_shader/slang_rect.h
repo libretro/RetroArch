@@ -139,6 +139,12 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
       uint32_t **fs, size_t *fs_words,
       bool source, bool linear, enum slang_rect_wrap wrap);
 
+/* The three vec4s, in that order, for the frame at @origin, @dims in
+ * size, in a texture @tex_dims in size; each packed as
+ * VIDEO_SCALE_PACK() packs it. */
+void slang_rect_values(float v[12], unsigned dims, unsigned origin,
+      unsigned tex_dims);
+
 RETRO_END_DECLS
 
 #endif

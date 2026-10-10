@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "slang_rect.h"
+#include "../video_defines.h"
 
 /* The SPIR-V this needs, as numbered in the specification. */
 enum
@@ -1939,4 +1940,27 @@ bool slang_rect_remap_pass(uint32_t **vs, size_t *vs_words,
       *fs_words = fout_len;
    }
    return true;
+}
+
+void slang_rect_values(float v[12], unsigned dims, unsigned origin,
+      unsigned tex_dims)
+{
+   float w  = (float)VIDEO_SCALE_W(dims);
+   float h  = (float)VIDEO_SCALE_H(dims);
+   float x  = (float)VIDEO_SCALE_W(origin);
+   float y  = (float)VIDEO_SCALE_H(origin);
+   float tw = (float)VIDEO_SCALE_W(tex_dims);
+   float th = (float)VIDEO_SCALE_H(tex_dims);
+   v[0]  = w / tw;
+   v[1]  = h / th;
+   v[2]  = x / tw;
+   v[3]  = y / th;
+   v[4]  = (x + 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[5]  = (y + 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   v[6]  = (x + w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
+   v[7]  = (y + h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
+   v[8]  = w;
+   v[9]  = h;
+   v[10] = x;
+   v[11] = y;
 }

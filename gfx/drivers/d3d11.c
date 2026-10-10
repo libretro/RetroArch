@@ -411,9 +411,7 @@ typedef struct
     * larger texture is read there by a preset whose passes all can. */
    struct
    {
-      float rect[4];
-      float clamp[4];
-      float texels[4];
+      float values[12];
       bool  seen;
    } frame_rect;
    /* A software frame for the stock chain is written straight into
@@ -2871,9 +2869,9 @@ static void d3d11_frame_rect_semantics(d3d11_video_t *d3d11,
 {
    if (!(d3d11->flags & D3D11_ST_FLAG_HW_IFACE_ENABLE))
       return;
-   map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d11->frame_rect.rect;
-   map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d11->frame_rect.clamp;
-   map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d11->frame_rect.texels;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_RECT]   = d3d11->frame_rect.values;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_CLAMP]  = d3d11->frame_rect.values + 4;
+   map->uniforms[SLANG_SEMANTIC_ORIGINAL_TEXELS] = d3d11->frame_rect.values + 8;
 }
 #endif
 
@@ -5233,30 +5231,6 @@ static bool d3d11_preset_reads_in_place(d3d11_video_t *d3d11,
    return true;
 }
 
-/* The frame's rectangle, at the origin of a tex_width x tex_height
- * texture, for the passes that read it through it. */
-static void d3d11_frame_rect_set(d3d11_video_t *d3d11,
-      unsigned width, unsigned height,
-      unsigned tex_width, unsigned tex_height)
-{
-   float w  = (float)width;
-   float h  = (float)height;
-   float tw = (float)tex_width;
-   float th = (float)tex_height;
-   d3d11->frame_rect.rect[0]   = w / tw;
-   d3d11->frame_rect.rect[1]   = h / th;
-   d3d11->frame_rect.rect[2]   = 0.0f;
-   d3d11->frame_rect.rect[3]   = 0.0f;
-   d3d11->frame_rect.clamp[0]  = (0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   d3d11->frame_rect.clamp[1]  = (0.5f + SLANG_RECT_CLAMP_BIAS) / th;
-   d3d11->frame_rect.clamp[2]  = (w - 0.5f + SLANG_RECT_CLAMP_BIAS) / tw;
-   d3d11->frame_rect.clamp[3]  = (h - 0.5f + SLANG_RECT_CLAMP_BIAS) / th;
-   d3d11->frame_rect.texels[0] = w;
-   d3d11->frame_rect.texels[1] = h;
-   d3d11->frame_rect.texels[2] = 0.0f;
-   d3d11->frame_rect.texels[3] = 0.0f;
-}
-
 static D3D11ShaderResourceView d3d11_hw_direct_view(d3d11_video_t *d3d11,
       D3D11Texture2D texture)
 {
@@ -5649,27 +5623,35 @@ static bool d3d11_gfx_frame_body(
          d3d11_init_render_targets(d3d11, width, height);
 
       /* A frame that arrives any other way is drawn from
-       * frame.texture[0] as always. */
-      d3d11_frame_rect_set(d3d11, width, height, width, height);
-      if (!hw_texture || !d3d11->hw_direct.eligible
-            || (     d3d11->shader_preset && video_info->shader_active
-                 && !d3d11_preset_reads_in_place(d3d11, hw_texture,
-                    width, height)))
-         d3d11->hw_direct.view = NULL;
-      else
+       * frame.texture[0] as always, which is its size. */
       {
-         D3D11_TEXTURE2D_DESC desc;
-         hw_texture->lpVtbl->GetDesc(hw_texture, &desc);
-         d3d11_frame_rect_set(d3d11, width, height,
-               desc.Width, desc.Height);
-         if (     (desc.Width != width || desc.Height != height)
-               && !d3d11->frame_rect.seen)
+         unsigned tex_dims = VIDEO_SCALE_PACK(width, height);
+         if (!hw_texture || !d3d11->hw_direct.eligible
+               || (     d3d11->shader_preset && video_info->shader_active
+                    && !d3d11_preset_reads_in_place(d3d11, hw_texture,
+                       width, height)))
+            d3d11->hw_direct.view = NULL;
+         else
          {
-            d3d11->frame_rect.seen = true;
-            RARCH_LOG("[D3D11] Preset reads frames where the core leaves "
-                  "them.\n");
+            D3D11_TEXTURE2D_DESC desc;
+            hw_texture->lpVtbl->GetDesc(hw_texture, &desc);
+            tex_dims = VIDEO_SCALE_PACK(desc.Width, desc.Height);
+            if (     d3d11->shader_preset && video_info->shader_active
+                  && (desc.Width != width || desc.Height != height)
+                  && !d3d11->frame_rect.seen)
+            {
+               d3d11->frame_rect.seen = true;
+               RARCH_LOG("[D3D11] Preset reads frames where the core leaves "
+                     "them.\n");
+            }
+            d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
          }
-         d3d11->hw_direct.view = d3d11_hw_direct_view(d3d11, hw_texture);
+#ifdef HAVE_SLANG
+         slang_rect_values(d3d11->frame_rect.values,
+               VIDEO_SCALE_PACK(width, height), 0, tex_dims);
+#else
+         (void)tex_dims;
+#endif
       }
       d3d11->hw_direct.eligible = false;
 
