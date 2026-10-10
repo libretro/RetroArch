@@ -40,6 +40,7 @@
 #include <encodings/utf.h>
 #include <lists/string_list.h>
 #include <formats/image.h>
+#include <formats/image_yuv_blit.h>
 
 #if defined(HAVE_DYLIB) && !defined(__WINRT__)
 #include <dynamic/dylib.h>
@@ -227,6 +228,45 @@ typedef struct
 } d3d12_sprite_t;
 
 
+/* What a planar texture's conversion reads: the texture the planes are
+ * copied into and its footprint in the upload buffer, the views of it
+ * and of the texture written, and the constants that say where the
+ * chroma is */
+typedef struct d3d12_planar
+{
+   D3D12Resource               planes;
+   D3D12_PLACED_SUBRESOURCE_FOOTPRINT footprint;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_uav;
+   D3D12_CPU_DESCRIPTOR_HANDLE cpu_src;
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_uav;
+   D3D12_GPU_DESCRIPTOR_HANDLE gpu_src;
+   UINT32                      constants[16];
+} d3d12_planar_t;
+
+/* 8-bit 4:2:0 in, RGBA out: luma above the chroma in one R8 texture,
+ * each pixel taking the chroma its 2x2 block shares, at a step and an
+ * offset per channel that serve either layout and order */
+static const char d3d12_planar_cs_src[] =
+   "Texture2D<float> P : register(t0);\n"
+   "RWTexture2D<float4> Out : register(u0);\n"
+   "cbuffer C : register(b0) { uint4 a; uint4 b; float4 k0; float4 k1; };\n"
+   "[numthreads(8, 8, 1)]\n"
+   "void main(uint3 id : SV_DispatchThreadID)\n"
+   "{\n"
+   "   uint cx, cy;\n"
+   "   float y, cb, cr;\n"
+   "   if (id.x >= a.x || id.y >= a.y)\n"
+   "      return;\n"
+   "   cx = (id.x >> 1) * a.z;\n"
+   "   cy = a.y + (id.y >> 1);\n"
+   "   y  = P.Load(int3(id.xy, 0));\n"
+   "   cb = P.Load(int3(cx + b.x, cy, 0)) - 128.0 / 255.0;\n"
+   "   cr = P.Load(int3(cx + b.y, cy, 0)) - 128.0 / 255.0;\n"
+   "   Out[id.xy] = float4(saturate(k0.x * y + k0.y + float3(k0.z * cr,\n"
+   "         k0.w * cb + k1.x * cr, k1.y * cb)), 1.0);\n"
+   "}\n";
+
+
 typedef struct
 {
    D3D12Resource                      handle;
@@ -264,6 +304,8 @@ typedef struct
    UINT64                             lend_fence[2];
    uint8_t                            pending;
    uint8_t                            lent;
+   /* A planar texture's conversion (d3d12_planar_load); NULL else */
+   d3d12_planar_t                    *planar;
 } d3d12_texture_t;
 
 /* A texture is released and freed; anything else is a COM object
@@ -598,6 +640,8 @@ typedef struct
 
    D3D12PipelineState              pipes[GFX_MAX_SHADERS];
    D3D12PipelineState              mipmapgen_pipe;
+   /* Planar textures' conversion; NULL where it did not compile */
+   D3D12PipelineState              planar_pipe;
    d3d12_uniform_t                 ubo_values;
    D3D12Resource                   ubo;
    D3D12_CONSTANT_BUFFER_VIEW_DESC ubo_view;
@@ -946,7 +990,13 @@ static void d3d12_queue_drain(d3d12_video_t *d3d12)
 static void d3d12_release_texture(d3d12_texture_t* texture)
 {
    if (!texture->handle)
+   {
+      if (texture->planar)
+         Release(texture->planar->planes);
+      free(texture->planar);
+      texture->planar = NULL;
       return;
+   }
 
    if (texture->srv_heap && texture->desc.MipLevels <= countof(texture->cpu_descriptor))
    {
@@ -964,6 +1014,26 @@ static void d3d12_release_texture(d3d12_texture_t* texture)
          }
          texture->cpu_descriptor[i].ptr = 0;
       }
+   }
+
+   if (texture->planar)
+   {
+      d3d12_descriptor_heap_t *heap = texture->srv_heap;
+      D3D12_CPU_DESCRIPTOR_HANDLE h[2];
+      int i;
+      h[0] = texture->planar->cpu_uav;
+      h[1] = texture->planar->cpu_src;
+      for (i = 0; i < 2; i++)
+         if (heap && h[i].ptr)
+         {
+            unsigned _i = (h[i].ptr - heap->cpu.ptr) / heap->stride;
+            heap->map[_i] = false;
+            if (heap->start > (int)_i)
+               heap->start = _i;
+         }
+      Release(texture->planar->planes);
+      free(texture->planar);
+      texture->planar = NULL;
    }
 
    Release(texture->handle);
@@ -1327,10 +1397,18 @@ static void d3d12_upload_texture_from(D3D12GraphicsCommandList cmd,
    texture->dirty = false;
 }
 
+static void d3d12_planar_record(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t *texture, d3d12_video_t *d3d12);
+
 static void d3d12_upload_texture(D3D12GraphicsCommandList cmd,
       d3d12_texture_t* texture, void *userdata)
 {
    unsigned k = texture->pending;
+   if (texture->planar && userdata)
+   {
+      d3d12_planar_record(cmd, texture, (d3d12_video_t*)userdata);
+      return;
+   }
    d3d12_upload_texture_from(cmd, texture, userdata,
          k ? texture->upload_buffer2 : texture->upload_buffer,
          &texture->layout, NULL);
@@ -4563,6 +4641,24 @@ static bool d3d12_gfx_init_pipelines(d3d12_video_t* d3d12)
       cs_code = NULL;
    }
 
+   /* Planar textures are converted on the CPU without it */
+   {
+      D3D12_COMPUTE_PIPELINE_STATE_DESC desc = { d3d12->desc.cs_rootSignature };
+      d3d12->planar_pipe = NULL;
+      if (d3d_compile(d3d12_planar_cs_src, sizeof(d3d12_planar_cs_src) - 1,
+               NULL, "main", "cs_5_0", &cs_code))
+      {
+         desc.CS.pShaderBytecode = cs_code->lpVtbl->GetBufferPointer(cs_code);
+         desc.CS.BytecodeLength  = cs_code->lpVtbl->GetBufferSize(cs_code);
+         if (FAILED(d3d12->device->lpVtbl->CreateComputePipelineState(
+                     d3d12->device, &desc, uuidof(ID3D12PipelineState),
+                     (void**)&d3d12->planar_pipe)))
+            d3d12->planar_pipe = NULL;
+         Release(cs_code);
+         cs_code = NULL;
+      }
+   }
+
    return true;
 
 error:
@@ -4661,6 +4757,7 @@ static void d3d12_gfx_free(void* data)
       Release(d3d12->pipes[i]);
 
    Release(d3d12->mipmapgen_pipe);
+   Release(d3d12->planar_pipe);
    Release(d3d12->sprites.pipe_blend);
    Release(d3d12->sprites.pipe_noblend);
    Release(d3d12->sprites.pipe_font);
@@ -5168,7 +5265,8 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    cs_root_params[CS_ROOT_ID_UAV_T].ShaderVisibility                    = D3D12_SHADER_VISIBILITY_ALL;
 
    cs_root_params[CS_ROOT_ID_CONSTANTS].ParameterType = D3D12_ROOT_PARAMETER_TYPE_32BIT_CONSTANTS;
-   cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 3;
+   /* The mipmap generator's three, the planar conversion's sixteen */
+   cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.Num32BitValues = 16;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.RegisterSpace  = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.ShaderRegister = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL;
@@ -8576,6 +8674,253 @@ typedef struct
 } d3d12_texture_cmd_t;
 #endif
 
+/* The planes of @image into @texture's upload buffer, laid out as the
+ * planes texture's footprint: luma rows, then under them the chroma -
+ * Cb and Cr side by side, or the interleaved plane as it is - and the
+ * constants that say where the conversion finds them. The draw that
+ * next samples the texture records the copy and the conversion
+ * (d3d12_planar_record). False when they cannot be written. */
+static bool d3d12_planar_write(d3d12_texture_t *texture,
+      const struct texture_image *image)
+{
+   const struct texture_planar *tp = image->planar;
+   d3d12_planar_t *p               = texture->planar;
+   unsigned w     = image->width;
+   unsigned h     = image->height;
+   unsigned cw    = (w + 1) / 2;
+   unsigned ch    = (h + 1) / 2;
+   UINT     pitch = p->footprint.Footprint.RowPitch;
+   const uint8_t *c;
+   unsigned c_stride, y;
+   uint8_t *dst;
+   D3D12_RANGE read_range;
+   float k[6];
+   UINT32 cb_x, cr_x, step;
+
+   if (     !tp || !tp->planes[0] || !tp->planes[1] || !tp->planes[2]
+         || texture->desc.Width != w || texture->desc.Height != h)
+      return false;
+   /* One interleaved plane copies as it is, in either order */
+   if (tp->chroma_step == 2 && tp->planes[2] == tp->planes[1] + 1)
+   {
+      c        = tp->planes[1];
+      c_stride = tp->strides[1];
+      cb_x     = 0;
+      cr_x     = 1;
+      step     = 2;
+   }
+   else if (tp->chroma_step == 2 && tp->planes[1] == tp->planes[2] + 1)
+   {
+      c        = tp->planes[2];
+      c_stride = tp->strides[2];
+      cb_x     = 1;
+      cr_x     = 0;
+      step     = 2;
+   }
+   else if (tp->chroma_step == 1)
+   {
+      c        = NULL;
+      c_stride = 0;
+      cb_x     = 0;
+      cr_x     = cw;
+      step     = 1;
+   }
+   else
+      return false;
+
+   read_range.Begin = 0;
+   read_range.End   = 0;
+   if (     FAILED(texture->upload_buffer->lpVtbl->Map(texture->upload_buffer,
+               0, &read_range, (void**)&dst))
+         || !dst)
+      return false;
+   dst += p->footprint.Offset;
+   for (y = 0; y < h; y++)
+      memcpy(dst + (size_t)y * pitch,
+            tp->planes[0] + (size_t)y * tp->strides[0], w);
+   for (y = 0; y < ch; y++)
+   {
+      uint8_t *row = dst + (size_t)(h + y) * pitch;
+      if (c)
+         memcpy(row, c + (size_t)y * c_stride, (size_t)cw * 2);
+      else
+      {
+         memcpy(row,      tp->planes[1] + (size_t)y * tp->strides[1], cw);
+         memcpy(row + cw, tp->planes[2] + (size_t)y * tp->strides[2], cw);
+      }
+   }
+   texture->upload_buffer->lpVtbl->Unmap(texture->upload_buffer, 0, NULL);
+
+   image_yuv_coefficients(tp->yuv, k);
+   p->constants[0] = w;
+   p->constants[1] = h;
+   p->constants[2] = step;
+   p->constants[3] = 0;
+   p->constants[4] = cb_x;
+   p->constants[5] = cr_x;
+   p->constants[6] = 0;
+   p->constants[7] = 0;
+   memcpy(&p->constants[8], k, sizeof(k));
+   p->constants[14] = 0;
+   p->constants[15] = 0;
+   texture->dirty   = true;
+   return true;
+}
+
+/* In the frame's command list, where the texture is about to be drawn:
+ * the planes into their texture, and converted from it into this one */
+static void d3d12_planar_record(D3D12GraphicsCommandList cmd,
+      d3d12_texture_t *texture, d3d12_video_t *d3d12)
+{
+   D3D12_TEXTURE_COPY_LOCATION src, dst;
+   d3d12_planar_t *p = texture->planar;
+
+   texture->upload_fence = d3d12->queue.fenceValue + 1;
+   src.pResource         = texture->upload_buffer;
+   src.Type              = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
+   src.PlacedFootprint   = p->footprint;
+   dst.pResource         = p->planes;
+   dst.Type              = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+   dst.SubresourceIndex  = 0;
+   D3D12_RESOURCE_TRANSITION(cmd, p->planes,
+         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_COPY_DEST);
+   cmd->lpVtbl->CopyTextureRegion(cmd, &dst, 0, 0, 0, &src, NULL);
+   D3D12_RESOURCE_TRANSITION(cmd, p->planes,
+         D3D12_RESOURCE_STATE_COPY_DEST,
+         D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE,
+         D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
+   cmd->lpVtbl->SetComputeRootSignature(cmd, d3d12->desc.cs_rootSignature);
+   cmd->lpVtbl->SetPipelineState(cmd, d3d12->planar_pipe);
+   cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_TEXTURE_T,
+         p->gpu_src);
+   cmd->lpVtbl->SetComputeRootDescriptorTable(cmd, CS_ROOT_ID_UAV_T,
+         p->gpu_uav);
+   cmd->lpVtbl->SetComputeRoot32BitConstants(cmd, CS_ROOT_ID_CONSTANTS,
+         16, p->constants, 0);
+   cmd->lpVtbl->Dispatch(cmd, (UINT)((texture->desc.Width + 7) / 8),
+         (texture->desc.Height + 7) / 8, 1);
+   D3D12_RESOURCE_TRANSITION(cmd, texture->handle,
+         D3D12_RESOURCE_STATE_UNORDERED_ACCESS,
+         D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+   texture->lend_fence[0] = texture->upload_fence;
+   texture->dirty         = false;
+}
+
+/* A texture for planar frames: RGBA8 a compute shader writes; an R8
+ * texture beside it the planes are copied into, luma above chroma;
+ * the upload buffer laid out as that one; and the first frame written
+ * there */
+static uintptr_t d3d12_planar_load(d3d12_video_t *d3d12,
+      const struct texture_image *image, enum texture_filter_type filter)
+{
+   D3D12Device device = d3d12->device;
+   d3d12_descriptor_heap_t *heap;
+   d3d12_texture_t *texture;
+   d3d12_planar_t  *p;
+   unsigned cw = (image->width  + 1) / 2;
+   unsigned ch = (image->height + 1) / 2;
+
+   if (     !d3d12->planar_pipe || !image->width || !image->height
+         || !(texture = (d3d12_texture_t*)calloc(1, sizeof(*texture))))
+      return 0;
+   if (!(p = (d3d12_planar_t*)calloc(1, sizeof(*p))))
+   {
+      free(texture);
+      return 0;
+   }
+   texture->planar  = p;
+   texture->sampler = d3d12->samplers[
+         (filter == TEXTURE_FILTER_NEAREST
+          || filter == TEXTURE_FILTER_MIPMAP_NEAREST)
+         ? RARCH_FILTER_NEAREST : RARCH_FILTER_LINEAR][RARCH_WRAP_EDGE];
+   texture->desc.Width     = image->width;
+   texture->desc.Height    = image->height;
+   texture->desc.Format    = DXGI_FORMAT_R8G8B8A8_UNORM;
+   texture->desc.MipLevels = 1;
+   texture->desc.Flags     = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+   texture->srv_heap       = heap = &d3d12->desc.srv_heap;
+   d3d12_init_texture(device, texture);
+   if (     !texture->handle
+         || texture->desc.Format != DXGI_FORMAT_R8G8B8A8_UNORM)
+      goto error;
+
+   {
+      D3D12_HEAP_PROPERTIES heap_props;
+      D3D12_RESOURCE_DESC   desc;
+      UINT64 total = 0;
+      memset(&heap_props, 0, sizeof(heap_props));
+      memset(&desc, 0, sizeof(desc));
+      heap_props.Type             = D3D12_HEAP_TYPE_DEFAULT;
+      heap_props.CreationNodeMask = 1;
+      heap_props.VisibleNodeMask  = 1;
+      desc.Dimension              = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+      desc.Width                  = MAX(image->width, cw * 2);
+      desc.Height                 = image->height + ch;
+      desc.DepthOrArraySize       = 1;
+      desc.MipLevels              = 1;
+      desc.Format                 = DXGI_FORMAT_R8_UNORM;
+      desc.SampleDesc.Count       = 1;
+      if (FAILED(device->lpVtbl->CreateCommittedResource(device,
+               &heap_props, D3D12_HEAP_FLAG_NONE, &desc,
+               D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE, NULL,
+               uuidof(ID3D12Resource), (void**)&p->planes)))
+      {
+         p->planes = NULL;
+         goto error;
+      }
+      device->lpVtbl->GetCopyableFootprints(device, &desc, 0, 1, 0,
+            &p->footprint, NULL, NULL, &total);
+
+      /* The upload buffer the texture was made with is laid out for
+       * RGBA: one for the planes instead */
+      Release(texture->upload_buffer);
+      texture->upload_buffer = NULL;
+      heap_props.Type        = D3D12_HEAP_TYPE_UPLOAD;
+      memset(&desc, 0, sizeof(desc));
+      desc.Dimension         = D3D12_RESOURCE_DIMENSION_BUFFER;
+      desc.Width             = total;
+      desc.Height            = 1;
+      desc.DepthOrArraySize  = 1;
+      desc.MipLevels         = 1;
+      desc.SampleDesc.Count  = 1;
+      desc.Layout            = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+      if (FAILED(device->lpVtbl->CreateCommittedResource(device,
+               &heap_props, D3D12_HEAP_FLAG_NONE, &desc,
+               D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
+               uuidof(ID3D12Resource), (void**)&texture->upload_buffer)))
+      {
+         texture->upload_buffer = NULL;
+         goto error;
+      }
+   }
+
+   {
+      D3D12_UNORDERED_ACCESS_VIEW_DESC uav;
+      memset(&uav, 0, sizeof(uav));
+      p->cpu_uav = d3d12_descriptor_heap_slot_alloc(heap);
+      p->cpu_src = d3d12_descriptor_heap_slot_alloc(heap);
+      if (!p->cpu_uav.ptr || !p->cpu_src.ptr)
+         goto error;
+      uav.Format        = DXGI_FORMAT_R8G8B8A8_UNORM;
+      uav.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+      device->lpVtbl->CreateUnorderedAccessView(device, texture->handle,
+            NULL, &uav, p->cpu_uav);
+      device->lpVtbl->CreateShaderResourceView(device, p->planes, NULL,
+            p->cpu_src);
+      p->gpu_uav.ptr = p->cpu_uav.ptr - heap->cpu.ptr + heap->gpu.ptr;
+      p->gpu_src.ptr = p->cpu_src.ptr - heap->cpu.ptr + heap->gpu.ptr;
+   }
+   if (d3d12_planar_write(texture, image))
+      return (uintptr_t)texture;
+error:
+   d3d12_release_texture(texture);
+   free(texture);
+   return 0;
+}
+
 /* Inner load function -- performs all GPU-touching work.
  * Must run on the same thread that owns the D3D12 command
  * queue (the video thread when threaded video is active,
@@ -8588,6 +8933,8 @@ static uintptr_t d3d12_gfx_load_texture_internal(
 
    if (!d3d12)
       return 0;
+   if (image->planar)
+      return d3d12_planar_load(d3d12, image, filter_type);
 
    texture = (d3d12_texture_t*)calloc(1, sizeof(*texture));
 
@@ -8760,6 +9107,19 @@ static enum video_texture_update d3d12_gfx_update_texture_internal(
          || texture->desc.Height != image->height
          || texture->desc.MipLevels > 1)
       return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (texture->planar || image->planar)
+   {
+      if (!texture->planar || !image->planar)
+         return VIDEO_TEXTURE_UPDATE_REFUSED;
+      /* The conversion of the last frame reads the planes where this
+       * one would go until its frame is done: dropped meanwhile */
+      if (     !texture->dirty && texture->upload_fence && d3d12
+            && d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+               < texture->upload_fence)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+      return d3d12_planar_write(texture, image)
+         ? VIDEO_TEXTURE_UPDATE_DONE : VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
    if (!texture->lent)
    {
       /* A copy from the upload buffer recorded by a frame that has not
@@ -8823,7 +9183,7 @@ static enum video_texture_update d3d12_gfx_update_texture(
       void *video_data, uintptr_t id, const struct texture_image *ti,
       bool threaded)
 {
-   if (!id || !ti || !ti->pixels)
+   if (!id || !ti || (!ti->pixels && !ti->planar))
       return VIDEO_TEXTURE_UPDATE_REFUSED;
 
 #ifdef HAVE_THREADS
@@ -9374,6 +9734,9 @@ static bool d3d12_gfx_supports_texture_format(void* data,
     * and every feature level samples it. */
    if (fmt == TEXTURE_GPU_FORMAT_RGB10A2)
       return d3d12 && d3d12->device;
+   /* A typed store to R8G8B8A8 every device has */
+   if (fmt == TEXTURE_GPU_FORMAT_YUV420)
+      return d3d12 && d3d12->device && d3d12->planar_pipe;
    /* R16G16B16A16_FLOAT is sampled and filtered at every feature
     * level; load and update copy its rows as they are. */
    if (fmt == TEXTURE_GPU_FORMAT_RGBA16F)
