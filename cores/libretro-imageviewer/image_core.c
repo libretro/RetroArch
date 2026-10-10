@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 
 #include <boolean.h>
 #include <lists/dir_list.h>
@@ -213,7 +214,8 @@ void IMAGE_CORE_PREFIX(retro_cheat_set)(unsigned a, bool b, const char * c) { }
 static bool imageviewer_load(const char *path, int image_index)
 {
 #ifdef STB_IMAGE_IMPLEMENTATION
-   int comp;
+   int comp, info_width, info_height;
+   int64_t file_size, decoded_height;
    RFILE* f;
    size_t len;
    void* buf;
@@ -226,13 +228,47 @@ static bool imageviewer_load(const char *path, int image_index)
 
 #ifdef STB_IMAGE_IMPLEMENTATION
    f = filestream_open(path, RETRO_VFS_FILE_ACCESS_READ, RETRO_VFS_FILE_ACCESS_HINT_NONE);
-   len = filestream_get_size(f);
+   if (!f)
+      return false;
+
+   file_size = filestream_get_size(f);
+   if (file_size <= 0 || file_size > INT_MAX)
+   {
+      filestream_close(f);
+      return false;
+   }
+   len = (size_t)file_size;
    buf = malloc(len);
-   filestream_read(f, buf, len);
+   if (!buf || filestream_read(f, buf, file_size) != file_size)
+   {
+      free(buf);
+      filestream_close(f);
+      return false;
+   }
    filestream_close(f);
 
+   /* The bundled stb_image uses signed int for pixel offsets and
+    * performs several allocation products at that width. Preflight the
+    * dimensions before decoding so those products cannot wrap. A
+    * negative height is valid for a top-down BMP. */
+   if (!stbi_info_from_memory(buf, (int)len,
+            &info_width, &info_height, &comp))
+   {
+      free(buf);
+      return false;
+   }
+   decoded_height = info_height;
+   if (decoded_height < 0)
+      decoded_height = -decoded_height;
+   if (info_width <= 0 || decoded_height <= 0
+         || (int64_t)info_width * decoded_height > INT_MAX / 4)
+   {
+      free(buf);
+      return false;
+   }
+
    image_buffer           = (uint32_t*)stbi_load_from_memory(
-         buf, len,
+         buf, (int)len,
          &image_width, &image_height,
          &comp, 4);
    free(buf);
