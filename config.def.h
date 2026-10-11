@@ -1429,6 +1429,12 @@
 #define DEFAULT_AUDIO_THREADED_PIPELINE false
 #endif
 
+/* The threaded pipeline's queue held to the frame-synchronous path's:
+ * see audio_driver_pipe_cap_frames(). Off, rate control holds the
+ * device near full with a publish on top, and an audio-paced core is
+ * held only by a full ring. */
+#define DEFAULT_AUDIO_PIPELINE_FILL_CAP true
+
 /* Ask the OS to schedule the audio thread ahead of the rest of the
  * frontend. Best effort: a system that refuses keeps the default
  * priority. On wherever there is an audio thread to raise. */

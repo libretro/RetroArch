@@ -14,13 +14,13 @@ S_BOOL(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
       "audio_threaded_pipeline",
       DEFAULT_AUDIO_THREADED_PIPELINE, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
       "Threaded Pipeline",
-      "Resample, filter and mix audio on the audio thread instead of inside each frame, with rate control measured at the device's own pace and the resampler out of the frame budget. Holds more audio ahead of the device than the frame-synchronous path unless Shallow Pipeline Queue is on. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
+      "Resample, filter and mix audio on the audio thread instead of inside each frame, with rate control measured at the device's own pace and the resampler out of the frame budget. With Shallow Pipeline Queue off, holds more audio ahead of the device than the frame-synchronous path. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
 
 S_BOOL(audio_pipeline_fill_cap, AUDIO_PIPELINE_FILL_CAP,
       "audio_pipeline_fill_cap",
-      false, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
+      DEFAULT_AUDIO_PIPELINE_FILL_CAP, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Shallow Pipeline Queue",
-      "Keep the Threaded Pipeline's queue to what the frame-synchronous path holds: rate control keeps half the Audio Latency queued rather than nearly all of it and a frame on top. With Synchronization on and audio pacing the core, such as with Vertical Sync off, the core is held where a frame-synchronous write would hold it rather than at a full queue. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
+      "Keep the Threaded Pipeline's queue to what the frame-synchronous path holds, for the lowest latency: rate control keeps half the Audio Latency queued rather than nearly all of it and a frame on top. With Synchronization on and audio pacing the core, such as with Vertical Sync off, the core is held where a frame-synchronous write would hold it rather than at a full queue. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
 
 S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",

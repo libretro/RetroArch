@@ -5589,9 +5589,9 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
  * the pipe holds what the consumer moves in a pass puts the queue where
  * a blocking inline write leaves it: the device's buffer and a chunk.
  *
- * Only with Audio Sync, where the producer blocks at all, and only on
- * request: audio_pipeline_fill_cap, off by default, which leaves the
- * core held by a full ring as it always was.
+ * Only with Audio Sync, where the producer blocks at all, and with
+ * audio_pipeline_fill_cap, on by default; off, the core is held by a
+ * full ring.
  *
  * A display-paced core never reaches the cap, but priming does: it
  * waits for the target and the device's buffer on top, and is held
