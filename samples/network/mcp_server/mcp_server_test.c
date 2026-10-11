@@ -389,6 +389,20 @@ int main(void)
 
    printf("parameters\n");
    st = post(cmd, PORT_OPEN, NULL,
+         call("WIPE", "{\"what\":\"\"}"), out, sizeof(out), NULL);
+   check("an explicit empty required string is present",
+         st == 200 && strstr(out, "\"isError\":false"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"\",\"b\":\"two\"}"),
+         out, sizeof(out), NULL);
+   check("an empty first operand keeps the next separator",
+         st == 200 && strstr(out, "JOIN[|two 0]"));
+   st = post(cmd, PORT_OPEN, NULL,
+         call("JOIN", "{\"a\":\"one\",\"b\":\"\",\"mode\":\"\"}"),
+         out, sizeof(out), NULL);
+   check("empty later operands retain their positions",
+         st == 200 && strstr(out, "JOIN[one| 0 ]"));
+   st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"a\":\"one\",\"b\":\"two\"}"),
          out, sizeof(out), NULL);
    check("named arguments are joined as the table says",

@@ -445,7 +445,7 @@ static const char *mcp_param_value(const struct cmd_param *p,
       const struct mcp_request *r)
 {
    const char *v = mcp_arg(r, p->name);
-   return (v && *v) ? v : p->def;
+   return v ? v : p->def;
 }
 
 /* Puts what the client sent by name back into the one line the command
@@ -462,6 +462,7 @@ static char *mcp_compose(const struct cmd_action_map *act,
    const char *only;
    size_t      len = 1;
    char       *out;
+   bool        first = true;
 
    if (!act || !act->params)
       return NULL;
@@ -499,9 +500,10 @@ static char *mcp_compose(const struct cmd_action_map *act,
          continue;
       /* a space joins them unless the command's own form says
        * otherwise, and nothing leads the first */
-      if (*out)
+      if (!first)
          strlcat(out, p->lead ? p->lead : " ", len);
       strlcat(out, v, len);
+      first = false;
    }
    return out;
 }
