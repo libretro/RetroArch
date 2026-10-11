@@ -295,6 +295,9 @@ jobs:
             # stereo stream (tones, gain points, swap and negate masks)
             # and a mono one, then bad frames and garbage.
             ratrac3p_test
+            # Animation playback against a scripted stream: order,
+            # pacing, loops, catch-up, the worker's two jobs.
+            video_player_test
           )
 
           # Targets that are built but deliberately not executed, each
@@ -588,6 +591,23 @@ jobs:
           CC=clang make all SANITIZER=thread
 
           TSAN_OPTIONS=halt_on_error=1 ./retro_atomic_test
+
+      - name: Run video_player_test under Clang + ThreadSanitizer, and threadless
+        shell: bash
+        working-directory: libretro-common/samples/formats/video_player
+        run: |
+          # The decode worker hands two jobs back and forth with the
+          # polling thread through atomics alone; the threadless shape
+          # decodes every frame on the polling thread.
+          set -u
+          set -o pipefail
+
+          make clean
+          CC=clang make all SANITIZER=thread
+          TSAN_OPTIONS=halt_on_error=1 ./video_player_test
+          make clean
+          make all THREADS=0 SANITIZER=address,undefined
+          ./video_player_test
 
       - name: Run rtime_localtime_test under Clang + ThreadSanitizer
         shell: bash

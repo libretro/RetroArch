@@ -297,6 +297,7 @@ jobs:
              for f in gfx/video_thread_wrapper.c \
                       gfx/font_driver.c \
                       gfx/gfx_thumbnail.c \
+                      libretro-common/formats/video_player.c \
                       libretro-common/queues/task_queue.c; do
                 gcc -std=gnu99 -O2 -Wall -Werror $INC $EXTRA $DEF \
                    "-DRETRO_ATOMIC_FORCE_$backend" -c "$f" -o /dev/null
