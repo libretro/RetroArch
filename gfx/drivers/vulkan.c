@@ -429,11 +429,9 @@ typedef struct vk
    float    hdr_scanlines_latched;
    unsigned hdr_subpixel_latched;
    unsigned num_swapchain_images;
+   unsigned num_frame_resources;
    unsigned last_valid_index;
-   /* What everything that does not depend on the swapchain's size was
-    * last built for: its format, and the context's HDR flags. With
-    * num_swapchain_images above, that is all those resources are made
-    * from; see vulkan_check_swapchain(). */
+   /* Format and HDR state of retained renderer resources. */
    VkFormat built_format;
    uint32_t built_hdr_flags;
    /* built_hdr_flags' HDR output, for get_flags() on the main thread
@@ -5775,7 +5773,7 @@ static void vulkan_buffer_chain_free(
 static void vulkan_deinit_buffers(vk_t *vk)
 {
    int i;
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
+   for (i = 0; i < (int) vk->num_frame_resources; i++)
    {
       vulkan_buffer_chain_free(
             vk->context->device, &vk->swapchain[i].vbo);
@@ -5787,7 +5785,7 @@ static void vulkan_deinit_buffers(vk_t *vk)
 static void vulkan_deinit_descriptor_pool(vk_t *vk)
 {
    int i;
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
+   for (i = 0; i < (int) vk->num_frame_resources; i++)
       vulkan_destroy_descriptor_manager(
             vk->context->device,
             &vk->swapchain[i].descriptor_manager);
@@ -5802,6 +5800,9 @@ static void vulkan_init_textures(vk_t *vk)
       int i;
       for (i = 0; i < (int) vk->num_swapchain_images; i++)
       {
+         if (vk->swapchain[i].texture.memory != VK_NULL_HANDLE)
+            continue;
+
          vk->swapchain[i].texture = vulkan_create_texture(
                vk, NULL,
                VIDEO_SCALE_W(vk->tex_dims),
@@ -5822,9 +5823,10 @@ static void vulkan_init_textures(vk_t *vk)
       }
    }
 
-   vk->default_texture = vulkan_create_texture(vk, NULL,
-         1, 1, VK_FORMAT_B8G8R8A8_UNORM,
-         &zero, NULL, VULKAN_TEXTURE_STATIC);
+   if (vk->default_texture.memory == VK_NULL_HANDLE)
+      vk->default_texture = vulkan_create_texture(vk, NULL,
+            1, 1, VK_FORMAT_B8G8R8A8_UNORM,
+            &zero, NULL, VULKAN_TEXTURE_STATIC);
 }
 
 static void vulkan_destroy_hdr_buffer(VkDevice device, struct vk_image *img);
@@ -5842,7 +5844,7 @@ static void vulkan_deinit_textures(vk_t *vk)
    vkDestroySampler(vk->context->device, vk->samplers.mipmap_nearest, NULL);
    vkDestroySampler(vk->context->device, vk->samplers.mipmap_linear,  NULL);
 
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
+   for (i = 0; i < (int) vk->num_frame_resources; i++)
    {
       if (vk->swapchain[i].texture.memory != VK_NULL_HANDLE)
          vulkan_destroy_texture(
@@ -5870,7 +5872,7 @@ static void vulkan_deinit_textures(vk_t *vk)
 static void vulkan_deinit_command_buffers(vk_t *vk)
 {
    int i;
-   for (i = 0; i < (int) vk->num_swapchain_images; i++)
+   for (i = 0; i < (int) vk->num_frame_resources; i++)
    {
       if (vk->swapchain[i].cmd)
          vkFreeCommandBuffers(vk->context->device,
@@ -7246,6 +7248,59 @@ static void vulkan_note_built(vk_t *vk)
          (vk->built_hdr_flags & VK_CTX_FLAG_HDR_ENABLE) ? 1 : 0);
 }
 
+static void vulkan_init_frame_resources(vk_t *vk, unsigned first)
+{
+   unsigned i;
+   static const VkDescriptorPoolSize pool_sizes[4] = {
+      { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+      { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
+      { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+      { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
+   };
+
+   for (i = first; i < vk->num_swapchain_images; i++)
+   {
+      VkCommandPoolCreateInfo pool_info;
+      VkCommandBufferAllocateInfo info;
+
+      vk->swapchain[i].descriptor_manager =
+         vulkan_create_descriptor_manager(
+               vk->context->device,
+               pool_sizes, 4, vk->pipelines.set_layout);
+
+      vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
+            VULKAN_BUFFER_BLOCK_SIZE,
+            16,
+            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+      vk->swapchain[i].ubo       = vulkan_buffer_chain_init(
+            VULKAN_BUFFER_BLOCK_SIZE,
+            vk->context->gpu_properties.limits.minUniformBufferOffsetAlignment,
+            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+
+      pool_info.sType            =
+         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+      pool_info.pNext            = NULL;
+      /* RESET_COMMAND_BUFFER_BIT allows command buffer to be reset. */
+      pool_info.flags            =
+         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+      pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
+
+      vkCreateCommandPool(vk->context->device,
+            &pool_info, NULL, &vk->swapchain[i].cmd_pool);
+
+      info.sType                 =
+         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+      info.pNext                 = NULL;
+      info.commandPool           = vk->swapchain[i].cmd_pool;
+      info.level                 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+      info.commandBufferCount    = 1;
+
+      vkAllocateCommandBuffers(vk->context->device,
+            &info, &vk->swapchain[i].cmd);
+   }
+   vk->num_frame_resources = vk->num_swapchain_images;
+}
+
 static void *vulkan_init(const video_info_t *video)
 {
    unsigned full_x, full_y;
@@ -7483,14 +7538,6 @@ static void *vulkan_init(const video_info_t *video)
    vulkan_init_hw_render(vk);
    if (vk->context)
    {
-      int i;
-      static const VkDescriptorPoolSize pool_sizes[4] = {
-         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
-         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-      };
-
       vulkan_init_static_resources(vk);
 
       vk->num_swapchain_images = vk->context->num_swapchain_images;
@@ -7505,46 +7552,7 @@ static void *vulkan_init(const video_info_t *video)
       vulkan_init_samplers(vk);
       vulkan_init_textures(vk);
 
-      for (i = 0; i < (int) vk->num_swapchain_images; i++)
-      {
-         VkCommandPoolCreateInfo pool_info;
-         VkCommandBufferAllocateInfo info;
-
-         vk->swapchain[i].descriptor_manager =
-            vulkan_create_descriptor_manager(
-                  vk->context->device,
-                  pool_sizes, 4, vk->pipelines.set_layout);
-         vk->swapchain[i].vbo                =
-            vulkan_buffer_chain_init(
-               VULKAN_BUFFER_BLOCK_SIZE, 16,
-               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-         vk->swapchain[i].ubo                =
-            vulkan_buffer_chain_init(
-               VULKAN_BUFFER_BLOCK_SIZE,
-               vk->context->gpu_properties.limits.minUniformBufferOffsetAlignment,
-               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
-         pool_info.sType            =
-            VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-         pool_info.pNext            = NULL;
-         /* RESET_COMMAND_BUFFER_BIT allows command buffer to be reset. */
-         pool_info.flags            =
-            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-         pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-
-         vkCreateCommandPool(vk->context->device,
-               &pool_info, NULL, &vk->swapchain[i].cmd_pool);
-
-         info.sType                 =
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-         info.pNext                 = NULL;
-         info.commandPool           = vk->swapchain[i].cmd_pool;
-         info.level                 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-         info.commandBufferCount    = 1;
-
-         vkAllocateCommandBuffers(vk->context->device,
-               &info, &vk->swapchain[i].cmd);
-      }
+      vulkan_init_frame_resources(vk, 0);
    }
 
    if (!vulkan_init_filter_chain(vk))
@@ -7594,28 +7602,9 @@ error:
    return NULL;
 }
 
-/* The driver's resources brought in line with the context's
- * swapchain, which has changed.
- *
- * Nearly everything the driver builds is made from three things about
- * the swapchain: its format (the render passes, and with them every
- * pipeline), how many images it has (the command pools, descriptor
- * pools and vertex and uniform buffers, one of each an image) and
- * whether HDR is in play. The samplers, the default texture and the
- * textures the core's frames are uploaded into are made from none of
- * it. Only the views of the swapchain's images and the framebuffers
- * on them are made from its size.
- *
- * A swapchain is replaced far more often for its size than for any of
- * the rest: every resize of the window, every fullscreen toggle, and
- * once at every start of the driver. All of the above used to be
- * destroyed and built again each time. When the format, the image
- * count and the HDR flags are what they were, only the views and
- * framebuffers are; the rest is rebuilt when one of those changes, as
- * before.
- *
- * RETROARCH_VULKAN_REBUILD_ALL=1 in the environment rebuilds
- * everything every time, as it used to be. */
+/* Format and HDR changes require a full rebuild. Otherwise retain frame
+ * resources, growing their capacity only when the image count exceeds it.
+ * RETROARCH_VULKAN_REBUILD_ALL=1 forces a full rebuild for comparison. */
 static void vulkan_check_swapchain(vk_t *vk)
 {
    unsigned v;
@@ -7640,19 +7629,29 @@ static void vulkan_check_swapchain(vk_t *vk)
          && vk->built
          && !rebuild_all
          && vk->built_format    == vk->context->swapchain_format
-         && vk->built_hdr_flags == (vk->context->flags & VULKAN_BUILT_HDR_FLAGS)
-         && vk->num_swapchain_images == vk->context->num_swapchain_images)
+         && vk->built_hdr_flags == (vk->context->flags & VULKAN_BUILT_HDR_FLAGS))
    {
-      /* Another size, and nothing else: what is made of the
-       * swapchain's images, and no more. */
+      bool count_changed = vk->num_swapchain_images
+         != vk->context->num_swapchain_images;
+      /* Keep compatible resources, including inactive frame slots. */
       vulkan_deinit_backbuffers(vk);
+      vk->num_swapchain_images = vk->context->num_swapchain_images;
+      if (vk->num_swapchain_images > vk->num_frame_resources)
+      {
+         vulkan_init_textures(vk);
+         vulkan_init_frame_resources(vk, vk->num_frame_resources);
+      }
       vulkan_init_framebuffers(vk);
 #ifdef VULKAN_HDR_SWAPCHAIN
       if (vk->context->flags & VK_CTX_FLAG_HDR_ENABLE)
          vulkan_hdr_buffers_init(vk, vk->video_dims);
 #endif
-      RARCH_DBG("[Vulkan] Swapchain changed in size only: its framebuffers"
-            " are made again, everything else is kept.\n");
+      if (count_changed)
+         RARCH_DBG("[Vulkan] Swapchain image count changed: compatible"
+               " resources are kept.\n");
+      else
+         RARCH_DBG("[Vulkan] Swapchain changed in size only: its framebuffers"
+               " are made again, everything else is kept.\n");
       goto built;
    }
 
@@ -7671,13 +7670,6 @@ static void vulkan_check_swapchain(vk_t *vk)
 #endif
    if (vk->context)
    {
-      int i;
-      static const VkDescriptorPoolSize pool_sizes[4] = {
-         { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS * 2 },
-         { VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,          VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,         VULKAN_DESCRIPTOR_MANAGER_BLOCK_SETS },
-      };
       vk->num_swapchain_images = vk->context->num_swapchain_images;
 
       vulkan_init_render_pass(vk);
@@ -7696,46 +7688,7 @@ static void vulkan_check_swapchain(vk_t *vk)
       vulkan_init_samplers(vk);
       vulkan_init_textures(vk);
 
-      for (i = 0; i < (int) vk->num_swapchain_images; i++)
-      {
-         VkCommandPoolCreateInfo pool_info;
-         VkCommandBufferAllocateInfo info;
-
-         vk->swapchain[i].descriptor_manager =
-            vulkan_create_descriptor_manager(
-                  vk->context->device,
-                  pool_sizes, 4, vk->pipelines.set_layout);
-
-         vk->swapchain[i].vbo       = vulkan_buffer_chain_init(
-               VULKAN_BUFFER_BLOCK_SIZE,
-               16,
-               VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-         vk->swapchain[i].ubo       = vulkan_buffer_chain_init(
-               VULKAN_BUFFER_BLOCK_SIZE,
-               vk->context->gpu_properties.limits.minUniformBufferOffsetAlignment,
-               VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
-
-         pool_info.sType            =
-            VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-         pool_info.pNext            = NULL;
-         /* RESET_COMMAND_BUFFER_BIT allows command buffer to be reset. */
-         pool_info.flags            =
-            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-         pool_info.queueFamilyIndex = vk->context->graphics_queue_index;
-
-         vkCreateCommandPool(vk->context->device,
-               &pool_info, NULL, &vk->swapchain[i].cmd_pool);
-
-         info.sType                 =
-            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-         info.pNext                 = NULL;
-         info.commandPool           = vk->swapchain[i].cmd_pool;
-         info.level                 = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-         info.commandBufferCount    = 1;
-
-         vkAllocateCommandBuffers(vk->context->device,
-               &info, &vk->swapchain[i].cmd);
-      }
+      vulkan_init_frame_resources(vk, 0);
       vulkan_note_built(vk);
    }
 built:

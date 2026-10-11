@@ -1021,6 +1021,9 @@ static bool slang_chain_update_swapchain_info(
       struct vulkan_filter_chain *chain,
       const vulkan_filter_chain_swapchain_info info);
 
+static bool slang_pass_init_pipeline_layout(struct slang_pass *pass);
+static bool slang_chain_init_ubo(struct vulkan_filter_chain *chain);
+
 static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
       unsigned index);
 static void slang_chain_set_input_texture(struct vulkan_filter_chain *chain,
@@ -1639,28 +1642,9 @@ static void slang_chain_notify_sync_index(struct vulkan_filter_chain *chain,
       slang_pass_notify_sync_index(chain->passes[i], index);
 }
 
-/* The chain told of a new swapchain.
- *
- * It used to rebuild itself whole each time: every pass's descriptor
- * pool, set layout, pipeline layout and pipeline destroyed, its
- * framebuffer made again, its SPIR-V reflected again and its pipeline
- * compiled again, then the uniform buffer, the history and the
- * feedback buffers. For a preset of a dozen passes that is a dozen
- * pipeline compiles on every resize of the window.
- *
- * What a pass builds is made from the render pass it draws to and its
- * format, and from the number of sync indices (its descriptor sets
- * and its share of the uniform buffer, one of each an index). None of
- * it is made from the swapchain's size: viewport and scissor are
- * dynamic state, and a pass whose framebuffer follows the viewport
- * already brings it to size as it draws, each frame, from the
- * viewport it is given then (slang_pass_build_commands()).
- *
- * So when the render pass, the format and the index count are what
- * the chain was built for, and every pass is built, there is nothing
- * to do but note the new viewport. Anything else is the rebuild it
- * always was. RETROARCH_VULKAN_REBUILD_ALL=1 in the environment
- * rebuilds every time, as before. */
+/* Compatible render passes retain pipelines, history and feedback. Sync
+ * resources grow as needed; viewport-dependent framebuffers resize on draw.
+ * RETROARCH_VULKAN_REBUILD_ALL=1 forces a full rebuild for comparison. */
 static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
       const vulkan_filter_chain_swapchain_info info)
 {
@@ -1677,21 +1661,49 @@ static bool slang_chain_update_swapchain_info(struct vulkan_filter_chain *chain,
          && chain->pass_count
          && chain->alias_initialized
          && chain->swapchain_info.render_pass == info.render_pass
-         && chain->swapchain_info.format      == info.format
-         && chain->swapchain_info.num_indices == info.num_indices)
+         && chain->swapchain_info.format      == info.format)
    {
       for (i = 0; i < chain->pass_count; i++)
          if (chain->passes[i]->pipeline == VK_NULL_HANDLE)
             break;
       if (i == chain->pass_count)
       {
+         bool count_changed = chain->swapchain_info.num_indices
+            != info.num_indices;
+         if (info.num_indices > chain->num_deferred)
+         {
+            slang_chain_flush(chain);
+            if (!slang_chain_set_num_sync_indices(chain, info.num_indices))
+               goto rebuild;
+            for (i = 0; i < chain->pass_count; i++)
+            {
+               struct slang_pass *pass = chain->passes[i];
+               vkDestroyDescriptorPool(pass->device, pass->pool, NULL);
+               pass->pool = VK_NULL_HANDLE;
+               pass->num_sync_indices = info.num_indices;
+               if (!slang_pass_init_pipeline_layout(pass))
+                  goto rebuild;
+            }
+            if (!slang_chain_init_ubo(chain))
+               goto rebuild;
+         }
+         if (count_changed)
+         {
+            chain->current_sync_index = 0;
+            for (i = 0; i < chain->pass_count; i++)
+               chain->passes[i]->sync_index = 0;
+         }
          chain->swapchain_info = info;
-         RARCH_DBG("[Vulkan] Shader chain kept: the swapchain changed in"
-               " size only.\n");
+         if (count_changed)
+            RARCH_DBG("[Vulkan] Shader chain kept: the swapchain image count changed.\n");
+         else
+            RARCH_DBG("[Vulkan] Shader chain kept: the swapchain changed in"
+                  " size only.\n");
          return true;
       }
    }
 
+rebuild:
    slang_chain_flush(chain);
    if (!slang_chain_set_swapchain_info(chain, info))
       return false;
@@ -3159,7 +3171,8 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
    set_layout_info.bindingCount           = (uint32_t)num_bindings;
    set_layout_info.pBindings              = bindings;
 
-   if (vkCreateDescriptorSetLayout(pass->device,
+   if (pass->set_layout == VK_NULL_HANDLE
+         && vkCreateDescriptorSetLayout(pass->device,
             &set_layout_info, NULL, &pass->set_layout) != VK_SUCCESS)
    {
       free(bindings);
@@ -3197,22 +3210,27 @@ static bool slang_pass_init_pipeline_layout(struct slang_pass *pass)
       {
          size_t new_size = (pass->reflection.push_constant_size
                + sizeof(uint32_t) - 1) / sizeof(uint32_t);
-         free(pass->push.buffer);
-         pass->push.buffer_size = 0;
-         if (!(pass->push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
+         if (pass->pipeline_layout == VK_NULL_HANDLE
+               || !pass->push.buffer || pass->push.buffer_size != new_size)
          {
-            free(bindings);
-            free(desc_counts);
-            return false;
+            free(pass->push.buffer);
+            pass->push.buffer_size = 0;
+            if (!(pass->push.buffer = (uint32_t*)calloc(new_size, sizeof(uint32_t))))
+            {
+               free(bindings);
+               free(desc_counts);
+               return false;
+            }
+            pass->push.buffer_size = new_size;
          }
-         pass->push.buffer_size = new_size;
       }
    }
 
    pass->push.stages     = push_range.stageFlags;
    push_range.size = (uint32_t)pass->reflection.push_constant_size;
 
-   if (vkCreatePipelineLayout(pass->device,
+   if (pass->pipeline_layout == VK_NULL_HANDLE
+         && vkCreatePipelineLayout(pass->device,
             &layout_info, NULL, &pass->pipeline_layout) != VK_SUCCESS)
    {
       free(bindings);
