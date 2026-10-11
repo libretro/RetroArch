@@ -54,7 +54,129 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <retro_inline.h>
 #include <formats/raac.h>
+
+/* Four-float vectors for the FFT: SSE2 or NEON where the target has
+ * them, chosen at compile time, plain C otherwise or with
+ * RAAC_NO_SIMD. */
+#if defined(RAAC_NO_SIMD)
+#define RAAC_V_SCALAR 1
+#elif defined(__SSE2__) || defined(_M_X64) || (defined(_M_IX86_FP) && _M_IX86_FP >= 2)
+#include <emmintrin.h>
+typedef __m128 raac_v;
+#define RAAC_LD(p)      _mm_loadu_ps(p)
+#define RAAC_ST(p, v)   _mm_storeu_ps((p), (v))
+#define RAAC_ADD(a, b)  _mm_add_ps((a), (b))
+#define RAAC_SUB(a, b)  _mm_sub_ps((a), (b))
+#define RAAC_MUL(a, b)  _mm_mul_ps((a), (b))
+#define RAAC_SET1(x)    _mm_set1_ps(x)
+#define RAAC_REV(v)     _mm_shuffle_ps((v), (v), _MM_SHUFFLE(0, 1, 2, 3))
+#define RAAC_ZIPLO(a, b) _mm_unpacklo_ps((a), (b))
+#define RAAC_ZIPHI(a, b) _mm_unpackhi_ps((a), (b))
+#define RAAC_EVEN(a, b) _mm_shuffle_ps((a), (b), _MM_SHUFFLE(2, 0, 2, 0))
+#define RAAC_ODD(a, b)  _mm_shuffle_ps((a), (b), _MM_SHUFFLE(3, 1, 3, 1))
+/* Eight samples to s16 as the scalar path does it: anything outside
+ * +-1e9 (and NaN) to zero, +-0.5 by sign, clamped, truncated */
+static INLINE void raac_v_st_s16x8(int16_t *dst, raac_v a, raac_v b)
+{
+   const __m128 big = _mm_set1_ps(1e9f), nbig = _mm_set1_ps(-1e9f);
+   const __m128 half = _mm_set1_ps(0.5f), sgn = _mm_set1_ps(-0.0f);
+   const __m128 lo = _mm_set1_ps(-32768.0f), hi = _mm_set1_ps(32767.0f);
+   a = _mm_and_ps(a, _mm_and_ps(_mm_cmplt_ps(a, big), _mm_cmpgt_ps(a, nbig)));
+   b = _mm_and_ps(b, _mm_and_ps(_mm_cmplt_ps(b, big), _mm_cmpgt_ps(b, nbig)));
+   a = _mm_add_ps(a, _mm_or_ps(half, _mm_and_ps(a, sgn)));
+   b = _mm_add_ps(b, _mm_or_ps(half, _mm_and_ps(b, sgn)));
+   a = _mm_min_ps(_mm_max_ps(a, lo), hi);
+   b = _mm_min_ps(_mm_max_ps(b, lo), hi);
+   _mm_storeu_si128((__m128i*)dst,
+         _mm_packs_epi32(_mm_cvttps_epi32(a), _mm_cvttps_epi32(b)));
+}
+#define RAAC_HAVE_S16 1
+#elif defined(__ARM_NEON) || defined(__ARM_NEON__) || defined(__aarch64__) || defined(_M_ARM64)
+#include <arm_neon.h>
+typedef float32x4_t raac_v;
+#define RAAC_LD(p)      vld1q_f32(p)
+#define RAAC_ST(p, v)   vst1q_f32((p), (v))
+#define RAAC_ADD(a, b)  vaddq_f32((a), (b))
+#define RAAC_SUB(a, b)  vsubq_f32((a), (b))
+#define RAAC_MUL(a, b)  vmulq_f32((a), (b))
+#define RAAC_SET1(x)    vdupq_n_f32(x)
+static INLINE raac_v raac_v_rev(raac_v v)
+{
+   v = vrev64q_f32(v);
+   return vcombine_f32(vget_high_f32(v), vget_low_f32(v));
+}
+static INLINE raac_v raac_v_ziplo(raac_v a, raac_v b)
+{
+   float32x4x2_t z = vzipq_f32(a, b);
+   return z.val[0];
+}
+static INLINE raac_v raac_v_ziphi(raac_v a, raac_v b)
+{
+   float32x4x2_t z = vzipq_f32(a, b);
+   return z.val[1];
+}
+#define RAAC_REV(v)      raac_v_rev(v)
+#define RAAC_ZIPLO(a, b) raac_v_ziplo((a), (b))
+#define RAAC_ZIPHI(a, b) raac_v_ziphi((a), (b))
+static INLINE raac_v raac_v_even(raac_v a, raac_v b)
+{
+   float32x4x2_t z = vuzpq_f32(a, b);
+   return z.val[0];
+}
+static INLINE raac_v raac_v_odd(raac_v a, raac_v b)
+{
+   float32x4x2_t z = vuzpq_f32(a, b);
+   return z.val[1];
+}
+#define RAAC_EVEN(a, b) raac_v_even((a), (b))
+#define RAAC_ODD(a, b)  raac_v_odd((a), (b))
+static INLINE int32x4_t raac_v_s32(raac_v a)
+{
+   uint32x4_t ok   = vandq_u32(vcltq_f32(a, vdupq_n_f32(1e9f)),
+         vcgtq_f32(a, vdupq_n_f32(-1e9f)));
+   uint32x4_t neg  = vcltq_f32(a, vdupq_n_f32(0.0f));
+   a = vreinterpretq_f32_u32(vandq_u32(vreinterpretq_u32_f32(a), ok));
+   a = vaddq_f32(a, vbslq_f32(neg, vdupq_n_f32(-0.5f), vdupq_n_f32(0.5f)));
+   a = vminq_f32(vmaxq_f32(a, vdupq_n_f32(-32768.0f)), vdupq_n_f32(32767.0f));
+   return vcvtq_s32_f32(a);
+}
+static INLINE void raac_v_st_s16x8(int16_t *dst, raac_v a, raac_v b)
+{
+   vst1q_s16(dst, vcombine_s16(vmovn_s32(raac_v_s32(a)),
+            vmovn_s32(raac_v_s32(b))));
+}
+#define RAAC_HAVE_S16 1
+#else
+#define RAAC_V_SCALAR 1
+#endif
+#ifdef RAAC_V_SCALAR
+typedef struct { float f[4]; } raac_v;
+static INLINE raac_v raac_v_ld(const float *p)
+{ raac_v v; v.f[0] = p[0]; v.f[1] = p[1]; v.f[2] = p[2]; v.f[3] = p[3]; return v; }
+static INLINE void raac_v_st(float *p, raac_v v)
+{ p[0] = v.f[0]; p[1] = v.f[1]; p[2] = v.f[2]; p[3] = v.f[3]; }
+static INLINE raac_v raac_v_add(raac_v a, raac_v b)
+{ a.f[0] += b.f[0]; a.f[1] += b.f[1]; a.f[2] += b.f[2]; a.f[3] += b.f[3]; return a; }
+static INLINE raac_v raac_v_sub(raac_v a, raac_v b)
+{ a.f[0] -= b.f[0]; a.f[1] -= b.f[1]; a.f[2] -= b.f[2]; a.f[3] -= b.f[3]; return a; }
+static INLINE raac_v raac_v_mul(raac_v a, raac_v b)
+{ a.f[0] *= b.f[0]; a.f[1] *= b.f[1]; a.f[2] *= b.f[2]; a.f[3] *= b.f[3]; return a; }
+#define RAAC_LD(p)      raac_v_ld(p)
+#define RAAC_ST(p, v)   raac_v_st((p), (v))
+#define RAAC_ADD(a, b)  raac_v_add((a), (b))
+#define RAAC_SUB(a, b)  raac_v_sub((a), (b))
+#define RAAC_MUL(a, b)  raac_v_mul((a), (b))
+static INLINE raac_v raac_v_set4(float a, float b, float c, float e)
+{ raac_v v; v.f[0] = a; v.f[1] = b; v.f[2] = c; v.f[3] = e; return v; }
+#define RAAC_SET1(x)     raac_v_set4((x), (x), (x), (x))
+#define RAAC_REV(v)      raac_v_set4((v).f[3], (v).f[2], (v).f[1], (v).f[0])
+#define RAAC_ZIPLO(a, b) raac_v_set4((a).f[0], (b).f[0], (a).f[1], (b).f[1])
+#define RAAC_ZIPHI(a, b) raac_v_set4((a).f[2], (b).f[2], (a).f[3], (b).f[3])
+#define RAAC_EVEN(a, b) raac_v_set4((a).f[0], (a).f[2], (b).f[0], (b).f[2])
+#define RAAC_ODD(a, b)  raac_v_set4((a).f[1], (a).f[3], (b).f[1], (b).f[3])
+#endif
 #ifdef RAAC_SBR_TRACE
 #include <stdio.h>
 #endif
@@ -596,151 +718,225 @@ static void raac_bits_init(raac_bits *b, const uint8_t *buf, size_t size)
    b->err  = 0;
 }
 
-static uint32_t raac_getbits(raac_bits *b, int n)
+/* Up to 32 bits from the read position, MSB first, zeroes past the end */
+static INLINE uint32_t raac_peek32(const raac_bits *b)
 {
-   uint32_t v = 0;
-   while (n > 0)
+   size_t   byte = b->pos >> 3;
+   unsigned sh   = (unsigned)(b->pos & 7);
+   if (byte + 8 <= b->size)
    {
-      size_t byte = b->pos >> 3;
-      int avail   = 8 - (int)(b->pos & 7);
-      int take    = n < avail ? n : avail;
-      if (byte >= b->size)
-      {
-         b->err = 1;
-         return 0;
-      }
-      v = (v << take)
-        | ((uint32_t)(b->buf[byte] >> (avail - take)) & ((1u << take) - 1));
-      b->pos += (size_t)take;
-      n      -= take;
+      /* eight bytes big-endian: compilers make it one load and a swap */
+      const uint8_t *q = b->buf + byte;
+      uint64_t v = ((uint64_t)q[0] << 56) | ((uint64_t)q[1] << 48)
+         | ((uint64_t)q[2] << 40) | ((uint64_t)q[3] << 32)
+         | ((uint64_t)q[4] << 24) | ((uint64_t)q[5] << 16)
+         | ((uint64_t)q[6] << 8)  |  (uint64_t)q[7];
+      return (uint32_t)((v << sh) >> 32);
    }
+   else
+   {
+      uint64_t v = 0;
+      unsigned k;
+      for (k = 0; k < 5; k++)
+         v = (v << 8) | (byte + k < b->size ? b->buf[byte + k] : 0u);
+      return (uint32_t)(v >> (8 - sh));
+   }
+}
+
+/* 64 bits from bit pos on, MSB first, zeroes past the end; at least 57
+ * of them are from the stream while it lasts */
+static INLINE uint64_t raac_peek64(const raac_bits *b, size_t pos)
+{
+   size_t   byte = pos >> 3;
+   uint64_t v;
+   if (byte + 8 <= b->size)
+   {
+      const uint8_t *q = b->buf + byte;
+      v = ((uint64_t)q[0] << 56) | ((uint64_t)q[1] << 48)
+        | ((uint64_t)q[2] << 40) | ((uint64_t)q[3] << 32)
+        | ((uint64_t)q[4] << 24) | ((uint64_t)q[5] << 16)
+        | ((uint64_t)q[6] << 8)  |  (uint64_t)q[7];
+   }
+   else
+   {
+      unsigned k;
+      v = 0;
+      for (k = 0; k < 8; k++)
+         v = (v << 8) | (byte + k < b->size ? b->buf[byte + k] : 0u);
+   }
+   return v << (pos & 7);
+}
+
+static INLINE uint32_t raac_getbits(raac_bits *b, int n)
+{
+   uint32_t v;
+   if (n <= 0)
+      return 0;
+   if (b->pos + (size_t)n > b->size * 8)
+   {
+      /* as far as the data goes, then the error */
+      b->pos = b->size * 8;
+      b->err = 1;
+      return 0;
+   }
+   v       = raac_peek32(b) >> (32 - n);
+   b->pos += (size_t)n;
    return v;
 }
 
 /* ===== Huffman decoding =====
  *
- * The codebooks are small; decode by peeking bits and linearly
- * matching against the (code, length) list bucketed by length. To
- * keep it fast enough a first-fit table maps an 8-bit peek straight
- * to a symbol for codes of eight bits or fewer; longer codes fall
- * back to the linear scan. Tables are built once at open. */
+ * Two-level lookup: the next RAAC_HUFF_ROOT bits index a root table
+ * whose entry is either the symbol and its length, or, for the few
+ * prefixes that start longer codes, a subtable indexed by the bits
+ * after them. Entries: a symbol as (symbol << 8) | length; a subtable
+ * as RAAC_HUFF_SUB | (offset << 5) | bits; 0 for a code that does not
+ * exist. Built once at open. */
+
+#define RAAC_HUFF_ROOT     9
+#define RAAC_HUFF_SUB      0x80000000u
+#define RAAC_HUFF_SPEC_CAP ((1 << RAAC_HUFF_ROOT) + 256)
+#define RAAC_HUFF_SF_CAP   ((1 << RAAC_HUFF_ROOT) + 1088)
 
 typedef struct
 {
-   int16_t  fast[256];      /* symbol for a code <= 8 bits, else -1  */
-   uint8_t  fast_len[256];
-   const uint16_t *code;
-   const uint8_t  *bits;
-   int      n;
-   uint32_t max_len;
+   uint32_t *lut;
 } raac_huff;
 
-static void raac_huff_build(raac_huff *h, const uint16_t *code,
-      const uint8_t *bits, int n)
+/* What a spectral codebook's symbol stands for, unpacked at build time
+ * so the decode loop reads it straight from the table: quadruple books
+ * (1..4) four 4-bit two's complement values from bit 12 down and the
+ * count of nonzero ones at bit 16; pair books (5..11) two 6-bit values
+ * at bits 6 and 0 and the count at bit 12. cb 0 (scalefactors) keeps
+ * the symbol. */
+static uint32_t raac_huff_payload(int cb, int i)
 {
-   int i;
-   h->code = code; h->bits = bits; h->n = n; h->max_len = 0;
-   for (i = 0; i < 256; i++)
+   int      q[4], j, n, nz = 0;
+   uint32_t p = 0;
+   if (cb == 0)
+      return (uint32_t)i;
+   if (cb <= 4)
    {
-      h->fast[i]     = -1;
-      h->fast_len[i] = 0;
+      int off = cb <= 2 ? 1 : 0;
+      q[0] = i / 27 % 3 - off;
+      q[1] = i / 9  % 3 - off;
+      q[2] = i / 3  % 3 - off;
+      q[3] = i      % 3 - off;
+      n    = 4;
    }
+   else if (cb <= 6)
+   {
+      q[0] = i / 9 - 4;
+      q[1] = i % 9 - 4;
+      n    = 2;
+   }
+   else
+   {
+      int lav = (cb <= 8) ? 8 : (cb <= 10 ? 13 : 17);
+      q[0] = i / lav;
+      q[1] = i % lav;
+      n    = 2;
+   }
+   for (j = 0; j < n; j++)
+      if (q[j])
+         nz++;
+   if (n == 4)
+   {
+      for (j = 0; j < 4; j++)
+         p |= ((uint32_t)q[j] & 15u) << (12 - 4 * j);
+      return p | ((uint32_t)nz << 16);
+   }
+   return (((uint32_t)q[0] & 63u) << 6) | ((uint32_t)q[1] & 63u)
+      | ((uint32_t)nz << 12);
+}
+
+/* code[] as 16- or 32-bit codes, one of the two given; cb as for
+ * raac_huff_payload */
+static int raac_huff_build(raac_huff *h, uint32_t *lut, size_t cap,
+      const uint16_t *code16, const uint32_t *code32,
+      const uint8_t *bits, int n, int cb)
+{
+   size_t   used = (size_t)1 << RAAC_HUFF_ROOT;
+   unsigned sub[1 << RAAC_HUFF_ROOT];
+   int      i;
+   h->lut = lut;
+   memset(lut, 0, cap * sizeof(*lut));
+   memset(sub, 0, sizeof(sub));
+   /* the subtable each long-code prefix needs: its longest code */
+   for (i = 0; i < n; i++)
+      if (bits[i] > RAAC_HUFF_ROOT)
+      {
+         uint32_t c   = code16 ? code16[i] : code32[i];
+         unsigned pre = (unsigned)(c >> (bits[i] - RAAC_HUFF_ROOT));
+         unsigned sb  = bits[i] - RAAC_HUFF_ROOT;
+         if (sb > sub[pre])
+            sub[pre] = sb;
+      }
+   for (i = 0; i < (1 << RAAC_HUFF_ROOT); i++)
+      if (sub[i])
+      {
+         if (used + ((size_t)1 << sub[i]) > cap)
+            return -1;
+         lut[i] = RAAC_HUFF_SUB | ((uint32_t)used << 5) | sub[i];
+         used  += (size_t)1 << sub[i];
+      }
    for (i = 0; i < n; i++)
    {
-      if (bits[i] > h->max_len)
-         h->max_len = bits[i];
-      if (bits[i] <= 8)
+      uint32_t c = code16 ? code16[i] : code32[i];
+      uint32_t e = (raac_huff_payload(cb, i) << 8) | bits[i];
+      uint32_t k, fill;
+      if (bits[i] <= RAAC_HUFF_ROOT)
       {
-         uint32_t pre  = (uint32_t)code[i] << (8 - bits[i]);
-         uint32_t fill = 1u << (8 - bits[i]);
-         uint32_t k;
+         uint32_t pre = c << (RAAC_HUFF_ROOT - bits[i]);
+         fill = 1u << (RAAC_HUFF_ROOT - bits[i]);
          for (k = 0; k < fill; k++)
-         {
-            h->fast[pre + k]     = (int16_t)i;
-            h->fast_len[pre + k] = bits[i];
-         }
+            lut[pre + k] = e;
       }
-   }
-}
-
-/* the scalefactor codebook holds 19-bit codes: same scheme, 32-bit list */
-typedef struct
-{
-   int16_t  fast[256];
-   uint8_t  fast_len[256];
-} raac_huff_sf;
-
-static int raac_huff_decode(raac_bits *b, const raac_huff *h)
-{
-   size_t   save = b->pos;
-   uint32_t peek = 0;
-   uint32_t len, i;
-   int      have = 0;
-   /* peek up to 8 bits without committing */
-   while (have < 8 && b->pos < b->size * 8)
-   {
-      peek = (peek << 1) | raac_getbits(b, 1);
-      have++;
-   }
-   peek <<= (8 - have);
-   b->pos = save;
-   if (have > 0 && h->fast[peek] >= 0 && h->fast_len[peek] <= (uint8_t)have)
-   {
-      b->pos += h->fast_len[peek];
-      return h->fast[peek];
-   }
-   /* long code: extend bit by bit and scan matching lengths */
-   {
-      uint32_t acc = 0;
-      b->pos = save;
-      for (len = 1; len <= h->max_len; len++)
+      else
       {
-         acc = (acc << 1) | raac_getbits(b, 1);
-         if (b->err)
-            return -1;
-         if (len < 9)
-            continue;   /* would have hit the fast table */
-         for (i = 0; i < (uint32_t)h->n; i++)
-            if (h->bits[i] == len && h->code[i] == acc)
-               return (int)i;
+         uint32_t root = lut[c >> (bits[i] - RAAC_HUFF_ROOT)];
+         uint32_t sb   = root & 31;
+         uint32_t off  = (root >> 5) & 0x3FFFFFF;
+         uint32_t rest = bits[i] - RAAC_HUFF_ROOT;
+         uint32_t low  = c & ((1u << rest) - 1);
+         fill = 1u << (sb - rest);
+         for (k = 0; k < fill; k++)
+            lut[off + (low << (sb - rest)) + k] = e;
       }
    }
-   b->err = 1;
-   return -1;
+   return 0;
 }
 
-static int raac_huff_decode_sf(raac_bits *b, const raac_huff_sf *h)
+static INLINE int raac_huff_decode(raac_bits *b, const raac_huff *h)
 {
-   size_t   save = b->pos;
-   uint32_t peek = 0, acc = 0, len, i;
-   int      have = 0;
-   while (have < 8 && b->pos < b->size * 8)
+   uint32_t peek = raac_peek32(b);
+   uint32_t e    = h->lut[peek >> (32 - RAAC_HUFF_ROOT)];
+   uint32_t len;
+   if (e & RAAC_HUFF_SUB)
+      e = h->lut[((e >> 5) & 0x3FFFFFF)
+         + ((peek << RAAC_HUFF_ROOT) >> (32 - (e & 31)))];
+   len = e & 0xFF;
+   if (!len || b->pos + len > b->size * 8)
    {
-      peek = (peek << 1) | raac_getbits(b, 1);
-      have++;
+      b->err = 1;
+      return -1;
    }
-   peek <<= (8 - have);
-   b->pos = save;
-   if (have > 0 && h->fast[peek] >= 0 && h->fast_len[peek] <= (uint8_t)have)
-   {
-      b->pos += h->fast_len[peek];
-      return h->fast[peek];
-   }
-   b->pos = save;
-   for (len = 1; len <= 19; len++)
-   {
-      acc = (acc << 1) | raac_getbits(b, 1);
-      if (b->err)
-         return -1;
-      if (len < 9)
-         continue;
-      for (i = 0; i < 121; i++)
-         if (raac_sf_bits[i] == len && raac_sf_code[i] == acc)
-            return (int)i;
-   }
-   b->err = 1;
-   return -1;
+   b->pos += len;
+   return (int)(e >> 8);
 }
+
+#define raac_huff_decode_sf(b, h) raac_huff_decode((b), (h))
+
+/* The entry for the code at the top of the 64-bit cc */
+#define RAAC_HUFF_LOOKUP(e, h, cc) do { \
+   (e) = (h)->lut[(cc) >> (64 - RAAC_HUFF_ROOT)]; \
+   if ((e) & RAAC_HUFF_SUB) \
+      (e) = (h)->lut[(((e) >> 5) & 0x3FFFFFF) \
+         + (uint32_t)(((cc) << RAAC_HUFF_ROOT) >> (64 - ((e) & 31)))]; \
+} while (0)
+
+#define RAAC_SEXT4(v) ((int)(((unsigned)(v) & 15u) ^ 8u) - 8)
+#define RAAC_SEXT6(v) ((int)(((unsigned)(v) & 63u) ^ 32u) - 32)
 
 /* ===== per-channel and decoder state ===== */
 
@@ -1497,10 +1693,14 @@ typedef struct
 /* per-output-channel QMF bank state, allocated only when the doubled
  * output rate is active: analysis history over the core signal, the
  * synthesis overlap ring, and this channel's upsampled frame */
+#define RAAC_QMF_RING 32    /* slots between history moves */
 typedef struct
 {
-   float x[320];
-   float v[1280];
+   /* the analysis window and the synthesis overlap slide through
+    * longer buffers and move back once every RAAC_QMF_RING slots */
+   float x[320 + 32 * (RAAC_QMF_RING - 1)];
+   float v[1280 + 128 * (RAAC_QMF_RING - 1)];
+   int   xring, vring;        /* slots since the last move           */
    float W[2][32][32][2];     /* analysis output, previous and
                                * current frame (slot, band, re/im) */
    float Y[2][38][64][2];     /* adjusted high band, previous and
@@ -1583,7 +1783,12 @@ struct raac
    raac_cce cce[RAAC_MAX_CCE];
    raac_sbr sbr[RAAC_MAX_SBR];
    raac_huff     spec[11];
-   raac_huff_sf  sfh;
+   raac_huff     sfh;
+   uint32_t      huff_lut[11 * RAAC_HUFF_SPEC_CAP + RAAC_HUFF_SF_CAP];
+   float         iq43[8192];                   /* |q|^(4/3)              */
+   float         iq43s[33];                    /* the same, signed, for
+                                                * q in -16..16          */
+   float         sf_gain[256];                 /* 2^((sf - 100) / 4)     */
    /* windows */
    float    kbd_long[2048];
    float    kbd_short[256];
@@ -1593,6 +1798,9 @@ struct raac
    float    tw512_re[1024], tw512_im[1024];    /* pre+post twiddles 2048 */
    float    tw64_re[128],  tw64_im[128];       /* pre+post twiddles 256  */
    float    fft_re[512], fft_im[512];          /* scratch                */
+   float    fft2_re[512], fft2_im[512];        /* FFT output             */
+   uint16_t fft_rev[512];                      /* 9-bit reversal         */
+   float    fft_twr[512], fft_twi[512];        /* per-pass twiddle runs  */
    unsigned frame_len;                          /* 1024, or 960 when the
                                                 * short frame length is
                                                 * signalled at open     */
@@ -1692,47 +1900,128 @@ static void raac_sine_window(float *w, int n)
  * MDCT symmetries. Output is the full N time samples of this frame's
  * windowed contribution before overlap-add (scale 2/N folded in). */
 
-static void raac_fft(float *re, float *im, int n)
+/* Forward complex FFT, split real and imaginary arrays, n a power of
+ * two from 8 to RAAC_FFT_MAX, out of place. The first pass reads the
+ * input in bit-reversed order and does the first two radix-2 passes
+ * together (their twiddles are 1 and -i); the rest go two at a time as
+ * radix-2^2 butterflies, four of them at once, and a last single pass
+ * when the count is odd. The radix-2 pass of length len has its
+ * twiddles at a->fft_tw*[len / 2 - 4 ..]. */
+#define RAAC_FFT_MAX   512
+#define RAAC_FFT_BITS  9
+static void raac_fft(const raac_t *a, const float *in_re, const float *in_im,
+      float *re, float *im, int n)
 {
-   int i, j, k, len;
-   /* bit reversal */
-   for (i = 1, j = 0; i < n; i++)
+   int i, len, shift = 0;
+   while ((RAAC_FFT_MAX >> shift) > n)
+      shift++;
+   for (i = 0; i < n; i += 4)
    {
-      int bit = n >> 1;
-      for (; j & bit; bit >>= 1)
-         j ^= bit;
-      j |= bit;
-      if (i < j)
-      {
-         float t;
-         t = re[i]; re[i] = re[j]; re[j] = t;
-         t = im[i]; im[i] = im[j]; im[j] = t;
-      }
+      int   j0 = a->fft_rev[i] >> shift,     j1 = a->fft_rev[i + 1] >> shift;
+      int   j2 = a->fft_rev[i + 2] >> shift, j3 = a->fft_rev[i + 3] >> shift;
+      float b0r = in_re[j0] + in_re[j1], b0i = in_im[j0] + in_im[j1];
+      float b1r = in_re[j0] - in_re[j1], b1i = in_im[j0] - in_im[j1];
+      float b2r = in_re[j2] + in_re[j3], b2i = in_im[j2] + in_im[j3];
+      float b3r = in_re[j2] - in_re[j3], b3i = in_im[j2] - in_im[j3];
+      re[i]     = b0r + b2r; im[i]     = b0i + b2i;
+      re[i + 2] = b0r - b2r; im[i + 2] = b0i - b2i;
+      re[i + 1] = b1r + b3i; im[i + 1] = b1i - b3r;
+      re[i + 3] = b1r - b3i; im[i + 3] = b1i + b3r;
    }
-   for (len = 2; len <= n; len <<= 1)
+   for (len = 8; len <= n; len <<= 2)
    {
-      double ang = -2.0 * M_PI / len;
-      float  wr0 = (float)cos(ang), wi0 = (float)sin(ang);
-      for (i = 0; i < n; i += len)
+      if (len * 2 <= n)
       {
-         float wr = 1.0f, wi = 0.0f;
-         for (j = 0; j < len / 2; j++)
+         /* passes len and 2 * len: with q = len / 2, points k, k + q,
+          * k + 2q, k + 3q of each run of 4q */
+         int          q   = len >> 1, s, k;
+         const float *w1r = a->fft_twr + q - 4, *w1i = a->fft_twi + q - 4;
+         const float *w2r = a->fft_twr + len - 4, *w2i = a->fft_twi + len - 4;
+         for (s = 0; s < n; s += 4 * q)
          {
-            float ur = re[i + j],           ui = im[i + j];
-            float vr = re[i + j + len / 2], vi = im[i + j + len / 2];
-            float tr = vr * wr - vi * wi;
-            float ti = vr * wi + vi * wr;
-            float nr;
-            re[i + j] = ur + tr; im[i + j] = ui + ti;
-            re[i + j + len / 2] = ur - tr;
-            im[i + j + len / 2] = ui - ti;
-            nr = wr * wr0 - wi * wi0;
-            wi = wr * wi0 + wi * wr0;
-            wr = nr;
+            float *r0 = re + s, *i0 = im + s;
+            for (k = 0; k < q; k += 4)
+            {
+               raac_v ar = RAAC_LD(r0 + k),         ai = RAAC_LD(i0 + k);
+               raac_v br = RAAC_LD(r0 + k + q),     bi = RAAC_LD(i0 + k + q);
+               raac_v cr = RAAC_LD(r0 + k + 2 * q), ci = RAAC_LD(i0 + k + 2 * q);
+               raac_v dr = RAAC_LD(r0 + k + 3 * q), di = RAAC_LD(i0 + k + 3 * q);
+               raac_v ur = RAAC_LD(w1r + k), ui = RAAC_LD(w1i + k);
+               raac_v vr = RAAC_LD(w2r + k), vi = RAAC_LD(w2i + k);
+               raac_v xr, xi, b0r, b0i, b1r, b1i, b2r, b2i, b3r, b3i;
+               /* first pass: (a, b) and (c, d) by u */
+               xr  = RAAC_SUB(RAAC_MUL(br, ur), RAAC_MUL(bi, ui));
+               xi  = RAAC_ADD(RAAC_MUL(br, ui), RAAC_MUL(bi, ur));
+               b0r = RAAC_ADD(ar, xr); b0i = RAAC_ADD(ai, xi);
+               b1r = RAAC_SUB(ar, xr); b1i = RAAC_SUB(ai, xi);
+               xr  = RAAC_SUB(RAAC_MUL(dr, ur), RAAC_MUL(di, ui));
+               xi  = RAAC_ADD(RAAC_MUL(dr, ui), RAAC_MUL(di, ur));
+               b2r = RAAC_ADD(cr, xr); b2i = RAAC_ADD(ci, xi);
+               b3r = RAAC_SUB(cr, xr); b3i = RAAC_SUB(ci, xi);
+               /* second pass: (b0, b2) by v, (b1, b3) by v times -i */
+               xr  = RAAC_SUB(RAAC_MUL(b2r, vr), RAAC_MUL(b2i, vi));
+               xi  = RAAC_ADD(RAAC_MUL(b2r, vi), RAAC_MUL(b2i, vr));
+               RAAC_ST(r0 + k,         RAAC_ADD(b0r, xr));
+               RAAC_ST(i0 + k,         RAAC_ADD(b0i, xi));
+               RAAC_ST(r0 + k + 2 * q, RAAC_SUB(b0r, xr));
+               RAAC_ST(i0 + k + 2 * q, RAAC_SUB(b0i, xi));
+               xr  = RAAC_SUB(RAAC_MUL(b3r, vr), RAAC_MUL(b3i, vi));
+               xi  = RAAC_ADD(RAAC_MUL(b3r, vi), RAAC_MUL(b3i, vr));
+               /* (xr + i xi) * -i = xi - i xr */
+               RAAC_ST(r0 + k + q,     RAAC_ADD(b1r, xi));
+               RAAC_ST(i0 + k + q,     RAAC_SUB(b1i, xr));
+               RAAC_ST(r0 + k + 3 * q, RAAC_SUB(b1r, xi));
+               RAAC_ST(i0 + k + 3 * q, RAAC_ADD(b1i, xr));
+            }
+         }
+      }
+      else
+      {
+         int          half = len >> 1, s, k;
+         const float *wr   = a->fft_twr + half - 4;
+         const float *wi   = a->fft_twi + half - 4;
+         for (s = 0; s < n; s += len)
+         {
+            float *ar = re + s, *ai = im + s;
+            float *cr = re + s + half, *ci = im + s + half;
+            for (k = 0; k < half; k += 4)
+            {
+               raac_v vwr = RAAC_LD(wr + k), vwi = RAAC_LD(wi + k);
+               raac_v vcr = RAAC_LD(cr + k), vci = RAAC_LD(ci + k);
+               raac_v var = RAAC_LD(ar + k), vai = RAAC_LD(ai + k);
+               raac_v xr  = RAAC_SUB(RAAC_MUL(vcr, vwr), RAAC_MUL(vci, vwi));
+               raac_v xi  = RAAC_ADD(RAAC_MUL(vcr, vwi), RAAC_MUL(vci, vwr));
+               RAAC_ST(cr + k, RAAC_SUB(var, xr));
+               RAAC_ST(ci + k, RAAC_SUB(vai, xi));
+               RAAC_ST(ar + k, RAAC_ADD(var, xr));
+               RAAC_ST(ai + k, RAAC_ADD(vai, xi));
+            }
          }
       }
    }
-   (void)k;
+}
+
+static void raac_fft_tables(raac_t *a)
+{
+   int i, len;
+   for (i = 0; i < RAAC_FFT_MAX; i++)
+   {
+      int r = 0, k;
+      for (k = 0; k < RAAC_FFT_BITS; k++)
+         if (i & (1 << k))
+            r |= 1 << (RAAC_FFT_BITS - 1 - k);
+      a->fft_rev[i] = (uint16_t)r;
+   }
+   for (len = 8; len <= RAAC_FFT_MAX; len <<= 1)
+   {
+      int half = len >> 1, k;
+      for (k = 0; k < half; k++)
+      {
+         double ang = -2.0 * M_PI * k / len;
+         a->fft_twr[half - 4 + k] = (float)cos(ang);
+         a->fft_twi[half - 4 + k] = (float)sin(ang);
+      }
+   }
 }
 
 /* Mixed-radix complex FFT for the 960-frame transforms, whose cores
@@ -1798,15 +2087,32 @@ static void raac_imdct(raac_t *a, const float *x, float *out, int n)
    float *v   = a->imdct_v;
    int    k;
 
-   for (k = 0; k < n4; k++)
-   {
-      float xr = x[2 * k];
-      float xi = x[n2 - 1 - 2 * k];
-      fre[k] = xr * pr[k] - xi * pi_[k];
-      fim[k] = xr * pi_[k] + xi * pr[k];
-   }
+   if (!(n4 & 3))
+      for (k = 0; k < n4; k += 4)
+      {
+         /* x[2k] for four k, and x[n2 - 1 - 2k]: the odd ones of the
+          * eight below, turned around */
+         const float *lo = x + 2 * k, *hi = x + n2 - 8 - 2 * k;
+         raac_v xr = RAAC_EVEN(RAAC_LD(lo), RAAC_LD(lo + 4));
+         raac_v xi = RAAC_REV(RAAC_ODD(RAAC_LD(hi), RAAC_LD(hi + 4)));
+         raac_v wr = RAAC_LD(pr + k), wi = RAAC_LD(pi_ + k);
+         RAAC_ST(fre + k, RAAC_SUB(RAAC_MUL(xr, wr), RAAC_MUL(xi, wi)));
+         RAAC_ST(fim + k, RAAC_ADD(RAAC_MUL(xr, wi), RAAC_MUL(xi, wr)));
+      }
+   else
+      for (k = 0; k < n4; k++)
+      {
+         float xr = x[2 * k];
+         float xi = x[n2 - 1 - 2 * k];
+         fre[k] = xr * pr[k] - xi * pi_[k];
+         fim[k] = xr * pi_[k] + xi * pr[k];
+      }
    if ((n4 & (n4 - 1)) == 0)
-      raac_fft(fre, fim, n4);
+   {
+      raac_fft(a, fre, fim, a->fft2_re, a->fft2_im, n4);
+      fre = a->fft2_re;
+      fim = a->fft2_im;
+   }
    else
    {
       const float *wr = (n4 == 480) ? a->w480_re : a->w60_re;
@@ -1816,12 +2122,48 @@ static void raac_imdct(raac_t *a, const float *x, float *out, int n)
       memcpy(fre, a->mr_re, sizeof(float) * (size_t)n4);
       memcpy(fim, a->mr_im, sizeof(float) * (size_t)n4);
    }
-   for (k = 0; k < n4; k++)
+   if (!(n4 & 3))
    {
-      float yr = fre[k] * qr[k] - fim[k] * qi[k];
-      float yi = fre[k] * qi[k] + fim[k] * qr[k];
-      v[2 * k]           =  yr;
-      v[n2 - 1 - 2 * k]  = -yi;
+      /* post-twiddle in place, then v[2k] = yr[k] and
+       * v[2k + 1] = -yi[n4 - 1 - k] */
+      for (k = 0; k < n4; k += 4)
+      {
+         raac_v fr = RAAC_LD(fre + k), fi = RAAC_LD(fim + k);
+         raac_v wr = RAAC_LD(qr + k),  wi = RAAC_LD(qi + k);
+         RAAC_ST(fre + k, RAAC_SUB(RAAC_MUL(fr, wr), RAAC_MUL(fi, wi)));
+         RAAC_ST(fim + k, RAAC_ADD(RAAC_MUL(fr, wi), RAAC_MUL(fi, wr)));
+      }
+      for (k = 0; k < n4; k += 4)
+      {
+         raac_v yr = RAAC_LD(fre + k);
+         raac_v yi = RAAC_REV(RAAC_LD(fim + n4 - 4 - k));
+         yi = RAAC_SUB(RAAC_SET1(0.0f), yi);
+         RAAC_ST(v + 2 * k,     RAAC_ZIPLO(yr, yi));
+         RAAC_ST(v + 2 * k + 4, RAAC_ZIPHI(yr, yi));
+      }
+   }
+   else
+      for (k = 0; k < n4; k++)
+      {
+         float yr = fre[k] * qr[k] - fim[k] * qi[k];
+         float yi = fre[k] * qi[k] + fim[k] * qr[k];
+         v[2 * k]           =  yr;
+         v[n2 - 1 - 2 * k]  = -yi;
+      }
+   if (!(n4 & 3))
+   {
+      /* the same scatter four at a time; reversed runs load the four
+       * below and turn them around */
+      raac_v s  = RAAC_SET1(2.0f / n);
+      raac_v ns = RAAC_SET1(-2.0f / n);
+      for (k = 0; k < n4; k += 4)
+      {
+         RAAC_ST(out + k,           RAAC_MUL(RAAC_LD(v + n4 + k), s));
+         RAAC_ST(out + n4 + k,      RAAC_MUL(RAAC_REV(RAAC_LD(v + n2 - 4 - k)), ns));
+         RAAC_ST(out + n2 + k,      RAAC_MUL(RAAC_REV(RAAC_LD(v + n4 - 4 - k)), ns));
+         RAAC_ST(out + n2 + n4 + k, RAAC_MUL(RAAC_LD(v + k), ns));
+      }
+      return;
    }
    for (k = 0; k < n4; k++)
    {
@@ -2066,12 +2408,38 @@ static int raac_tns_data(raac_t *a, raac_bits *b, raac_ch *c)
 
 /* ===== spectral data ===== */
 
+#define RAAC_IQ_TAB 8192   /* |q| below this from the table: 8191 is
+                            * the largest an escape codes */
+
+
+/* 2^(0.25 * (sf - 100)), sf as the bitstream holds it (0..255) */
+static float raac_sf_gain(const raac_t *a, int sf)
+{
+   if ((unsigned)sf < 256u)
+      return a->sf_gain[sf];
+   return (float)pow(2.0, 0.25 * (sf - 100));
+}
+
+/* |q|^(4/3) * gain with q's sign */
+static INLINE float raac_dq(const raac_t *a, int q, float gain)
+{
+   int   m = q < 0 ? -q : q;
+   float v = m < RAAC_IQ_TAB ? a->iq43[m] : (float)pow((double)m, 4.0 / 3.0);
+   return (q < 0 ? -v : v) * gain;
+}
+
+/* Decodes the quantised spectrum into quant[], or, given coef, straight
+ * into the scaled spectrum there (what raac_dequant would make of it)
+ * when nothing needs the quantised values first */
 static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
-      int quant[RAAC_FRAME])
+      int quant[RAAC_FRAME], float *coef)
 {
    const uint16_t *swb = raac_swb_off(a, c->window_sequence == 2);
    int g, win_base = 0;
-   memset(quant, 0, sizeof(int) * RAAC_FRAME);
+   if (coef)
+      memset(coef, 0, sizeof(float) * RAAC_FRAME);
+   else
+      memset(quant, 0, sizeof(int) * RAAC_FRAME);
    for (g = 0; g < c->num_window_groups; g++)
    {
       int glen = c->group_len[g];
@@ -2087,59 +2455,118 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
             int lo = swb[k], hi = swb[k + 1];
             int base = win_base + w * 128;
             int i;
+            const raac_huff *h  = &a->spec[cb - 1];
+            int             *qo = quant + base;
+            float           *co = coef ? coef + base : NULL;
+            float            gn = coef ? raac_sf_gain(a, c->sf[g][k]) : 0.0f;
+            /* |q|^(4/3) with q's sign for the values a codeword itself
+             * carries, -16..16 */
+            const float     *sq = a->iq43s + 16;
+            /* the bits ahead in a register: bp is the position of cc's
+             * top bit, avail how many of cc's bits are the stream's */
+            size_t           bp    = b->pos;
+            uint64_t         cc    = raac_peek64(b, bp);
+            unsigned         avail = 57;
             if (cb <= 4)
             {
+               int sgn = cb > 2;
                for (i = lo; i < hi; i += 4)
                {
-                  int idx = raac_huff_decode(b, &a->spec[cb - 1]);
-                  int q[4], j;
-                  if (idx < 0)
-                     return -1;
-                  if (cb <= 2)
+                  uint32_t e, len;
+                  int      p, q0, q1, q2, q3;
+                  if (avail < 24)
                   {
-                     q[0] = idx / 27 % 3 - 1;
-                     q[1] = idx / 9  % 3 - 1;
-                     q[2] = idx / 3  % 3 - 1;
-                     q[3] = idx      % 3 - 1;
+                     cc    = raac_peek64(b, bp);
+                     avail = 57;
+                  }
+                  RAAC_HUFF_LOOKUP(e, h, cc);
+                  len = e & 0xFF;
+                  if (!len)
+                  {
+                     b->err = 1;
+                     return -1;
+                  }
+                  cc   <<= len;
+                  avail -= len;
+                  bp    += len;
+                  p  = (int)(e >> 8);
+                  q0 = RAAC_SEXT4(p >> 12);
+                  q1 = RAAC_SEXT4(p >> 8);
+                  q2 = RAAC_SEXT4(p >> 4);
+                  q3 = RAAC_SEXT4(p);
+                  if (sgn)
+                  {
+                     /* one sign bit for each nonzero value, in order,
+                      * applied without branches */
+                     unsigned nz = (unsigned)p >> 16;
+                     uint32_t sb = (uint32_t)(cc >> 32), t, x;
+                     t = q0 != 0; x = (sb >> 31) & t; q0 = (q0 ^ -(int)x) + (int)x; sb <<= t;
+                     t = q1 != 0; x = (sb >> 31) & t; q1 = (q1 ^ -(int)x) + (int)x; sb <<= t;
+                     t = q2 != 0; x = (sb >> 31) & t; q2 = (q2 ^ -(int)x) + (int)x; sb <<= t;
+                     t = q3 != 0; x = (sb >> 31) & t; q3 = (q3 ^ -(int)x) + (int)x;
+                     cc   <<= nz;
+                     avail -= nz;
+                     bp    += nz;
+                  }
+                  if (co)
+                  {
+                     co[i]     = sq[q0] * gn;
+                     co[i + 1] = sq[q1] * gn;
+                     co[i + 2] = sq[q2] * gn;
+                     co[i + 3] = sq[q3] * gn;
                   }
                   else
                   {
-                     q[0] = idx / 27 % 3;
-                     q[1] = idx / 9  % 3;
-                     q[2] = idx / 3  % 3;
-                     q[3] = idx      % 3;
-                     for (j = 0; j < 4; j++)
-                        if (q[j] && raac_getbits(b, 1))
-                           q[j] = -q[j];
+                     qo[i]     = q0;
+                     qo[i + 1] = q1;
+                     qo[i + 2] = q2;
+                     qo[i + 3] = q3;
                   }
-                  for (j = 0; j < 4; j++)
-                     quant[base + i + j] = q[j];
                }
             }
             else
             {
+               int sgn = cb > 6;
                for (i = lo; i < hi; i += 2)
                {
-                  int idx = raac_huff_decode(b, &a->spec[cb - 1]);
-                  int q[2], j, lav;
-                  if (idx < 0)
+                  uint32_t e, len;
+                  int      p, q0, q1;
+                  if (avail < 24)
+                  {
+                     cc    = raac_peek64(b, bp);
+                     avail = 57;
+                  }
+                  RAAC_HUFF_LOOKUP(e, h, cc);
+                  len = e & 0xFF;
+                  if (!len)
+                  {
+                     b->err = 1;
                      return -1;
-                  if (cb <= 6)          /* signed pairs, -4..4        */
-                  {
-                     q[0] = idx / 9 - 4;
-                     q[1] = idx % 9 - 4;
                   }
-                  else
+                  cc   <<= len;
+                  avail -= len;
+                  bp    += len;
+                  p  = (int)(e >> 8);
+                  q0 = RAAC_SEXT6(p >> 6);
+                  q1 = RAAC_SEXT6(p);
+                  if (sgn)
                   {
-                     lav  = (cb <= 8) ? 8 : (cb <= 10 ? 13 : 17);
-                     q[0] = idx / lav;
-                     q[1] = idx % lav;
-                     for (j = 0; j < 2; j++)
-                        if (q[j] && raac_getbits(b, 1))
-                           q[j] = -q[j];
+                     unsigned nz = (unsigned)p >> 12;
+                     uint32_t sb = (uint32_t)(cc >> 32), t, x;
+                     t = q0 != 0; x = (sb >> 31) & t; q0 = (q0 ^ -(int)x) + (int)x; sb <<= t;
+                     t = q1 != 0; x = (sb >> 31) & t; q1 = (q1 ^ -(int)x) + (int)x;
+                     cc   <<= nz;
+                     avail -= nz;
+                     bp    += nz;
                   }
-                  if (cb == RAAC_ESC_BOOK)
+                  if (cb == RAAC_ESC_BOOK
+                        && (q0 == 16 || q0 == -16 || q1 == 16 || q1 == -16))
                   {
+                     /* escapes: back to the plain reader */
+                     int q[2], j;
+                     q[0]   = q0;
+                     q[1]   = q1;
+                     b->pos = bp;
                      for (j = 0; j < 2; j++)
                         if (q[j] == 16 || q[j] == -16)
                         {
@@ -2154,11 +2581,42 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
                                 | raac_getbits(b, nb));
                            q[j] = sign * esc;
                         }
+                     q0    = q[0];
+                     q1    = q[1];
+                     bp    = b->pos;
+                     cc    = raac_peek64(b, bp);
+                     avail = 57;
+                     if (co)
+                     {
+                        co[i]     = raac_dq(a, q0, gn);
+                        co[i + 1] = raac_dq(a, q1, gn);
+                     }
+                     else
+                     {
+                        qo[i]     = q0;
+                        qo[i + 1] = q1;
+                     }
+                     continue;
                   }
-                  quant[base + i]     = q[0];
-                  quant[base + i + 1] = q[1];
+                  if (co)
+                  {
+                     co[i]     = sq[q0] * gn;
+                     co[i + 1] = sq[q1] * gn;
+                  }
+                  else
+                  {
+                     qo[i]     = q0;
+                     qo[i + 1] = q1;
+                  }
                }
             }
+            if (bp > b->size * 8)
+            {
+               b->pos = b->size * 8;
+               b->err = 1;
+               return -1;
+            }
+            b->pos = bp;
          }
       }
       win_base += glen * 128;
@@ -2168,12 +2626,6 @@ static int raac_spectral_data(raac_t *a, raac_bits *b, raac_ch *c,
 
 /* ===== channel decode: dequant, tools, filterbank ===== */
 
-static float raac_iquant(int q)
-{
-   float a = (float)(q < 0 ? -q : q);
-   float v = (float)pow(a, 4.0 / 3.0);
-   return q < 0 ? -v : v;
-}
 
 /* quantised -> scaled spectrum, in window-interleaved layout for
  * short sequences (as spectral_data stored it: groups x windows x 128) */
@@ -2192,13 +2644,19 @@ static void raac_dequant(raac_t *a, raac_ch *c, const int quant[RAAC_FRAME])
          int w;
          if (cb == RAAC_CB_ZERO || cb >= RAAC_CB_NOISE)
             continue;
-         gain = (float)pow(2.0, 0.25 * (c->sf[g][k] - 100));
+         gain = raac_sf_gain(a, c->sf[g][k]);
          for (w = 0; w < glen; w++)
          {
-            int base = win_base + w * 128 + ((c->window_sequence == 2) ? 0 : 0);
+            int base = win_base + w * 128;
             int i;
             for (i = swb[k]; i < swb[k + 1]; i++)
-               c->coef[base + i] = raac_iquant(quant[base + i]) * gain;
+            {
+               int   q = quant[base + i];
+               int   m = q < 0 ? -q : q;
+               float v = m < RAAC_IQ_TAB ? a->iq43[m]
+                                         : (float)pow((double)m, 4.0 / 3.0);
+               c->coef[base + i] = (q < 0 ? -v : v) * gain;
+            }
          }
       }
       win_base += glen * ((c->window_sequence == 2) ? 128 : 1024);
@@ -2261,13 +2719,21 @@ static void raac_ms_stereo(raac_t *a, raac_ch *l, raac_ch *r,
             continue;   /* intensity/noise bands are not M/S           */
          for (w = 0; w < glen; w++)
          {
-            int base = win_base + w * 128;
-            int i;
-            for (i = swb[k]; i < swb[k + 1]; i++)
+            int    base = win_base + w * 128;
+            int    i    = swb[k], end = swb[k + 1];
+            float *lc   = l->coef + base, *rc = r->coef + base;
+            /* four at a time, then any odd end of a band */
+            for (; i + 4 <= end; i += 4)
             {
-               float m = l->coef[base + i], s = r->coef[base + i];
-               l->coef[base + i] = m + s;
-               r->coef[base + i] = m - s;
+               raac_v m = RAAC_LD(lc + i), s = RAAC_LD(rc + i);
+               RAAC_ST(lc + i, RAAC_ADD(m, s));
+               RAAC_ST(rc + i, RAAC_SUB(m, s));
+            }
+            for (; i < end; i++)
+            {
+               float m = lc[i], s = rc[i];
+               lc[i] = m + s;
+               rc[i] = m - s;
             }
          }
       }
@@ -2407,7 +2873,10 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
       {
          case 0:  /* only long  */
          case 1:  /* long start */
-            for (i = 0; i < L; i++)
+            for (i = 0; i + 4 <= L; i += 4)
+               RAAC_ST(buf + i, RAAC_MUL(RAAC_LD(buf + i),
+                        RAAC_LD(long_prev + i)));
+            for (; i < L; i++)
                buf[i] = buf[i] * long_prev[i];
             break;
          default: /* long stop: zero head, short rise, then a flat
@@ -2423,7 +2892,10 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
       {
          case 0:  /* long tail */
          case 3:
-            for (i = 0; i < L; i++)
+            for (i = 0; i + 4 <= L; i += 4)
+               RAAC_ST(buf + L + i, RAAC_MUL(RAAC_LD(buf + L + i),
+                        RAAC_LD(long_cur + L + i)));
+            for (; i < L; i++)
                buf[L + i] = buf[L + i] * long_cur[L + i];
             break;
          default: /* long start: a flat run kept as it stands, then
@@ -2455,7 +2927,9 @@ static void raac_filterbank(raac_t *a, raac_ch *c, float out[RAAC_FRAME])
       }
    }
 
-   for (i = 0; i < L; i++)
+   for (i = 0; i + 4 <= L; i += 4)
+      RAAC_ST(out + i, RAAC_ADD(RAAC_LD(buf + i), RAAC_LD(c->overlap + i)));
+   for (; i < L; i++)
       out[i] = buf[i] + c->overlap[i];
    memcpy(c->overlap, buf + L, sizeof(float) * (size_t)L);
    c->prev_window_shape = c->window_shape;
@@ -2492,7 +2966,11 @@ static int raac_decode_ics(raac_t *a, raac_bits *b, raac_ch *c,
          return -1;
    if (raac_getbits(b, 1)) /* gain_control_data_present     */
       return -1; /* SSR tool: out of scope */
-   if (raac_spectral_data(a, b, c, quant) < 0)
+   /* without pulses nothing touches the quantised values: decode the
+    * spectrum scaled */
+   if (!pulse.pulse_present)
+      return raac_spectral_data(a, b, c, quant, c->coef);
+   if (raac_spectral_data(a, b, c, quant, NULL) < 0)
       return -1;
    if (pulse.pulse_present)
    {
@@ -3354,7 +3832,9 @@ static void raac_imdct_half128(raac_t *a, const float in[64],
       fre[k] = xr * pr - xi * pi_;
       fim[k] = xr * pi_ + xi * pr;
    }
-   raac_fft(fre, fim, 32);
+   raac_fft(a, fre, fim, a->fft2_re, a->fft2_im, 32);
+   fre = a->fft2_re;
+   fim = a->fft2_im;
    for (k = 0; k < 32; k++)
    {
       float qr = a->tw32_re[32 + k], qi = a->tw32_im[32 + k];
@@ -3384,12 +3864,25 @@ static void raac_qmf_analysis_slot(raac_t *a, raac_qmf_ch *c,
    float *z64 = a->qmf_z64;
    float *m   = a->qmf_m;
    int    i, k;
-   memmove(c->x, c->x + 32, sizeof(float) * 288);
-   memcpy(c->x + 288, in32, sizeof(float) * 32);
-   for (i = 0; i < 320; i++)
-      z[i] = raac_qmf_window[2 * i] * c->x[319 - i];
-   for (k = 0; k < 64; k++)
-      z[k] = z[k] + z[k + 64] + z[k + 128] + z[k + 192] + z[k + 256];
+   float *x;
+   if (c->xring == RAAC_QMF_RING)
+   {
+      memmove(c->x, c->x + 32 * RAAC_QMF_RING, sizeof(float) * 288);
+      c->xring = 0;
+   }
+   x = c->x + 32 * c->xring++;
+   memcpy(x + 288, in32, sizeof(float) * 32);
+   /* z[i] = window[2i] * x[319 - i], then the five 64-sample folds */
+   for (i = 0; i < 320; i += 4)
+   {
+      raac_v w = RAAC_EVEN(RAAC_LD(raac_qmf_window + 2 * i),
+            RAAC_LD(raac_qmf_window + 2 * i + 4));
+      RAAC_ST(z + i, RAAC_MUL(w, RAAC_REV(RAAC_LD(x + 316 - i))));
+   }
+   for (k = 0; k < 64; k += 4)
+      RAAC_ST(z + k, RAAC_ADD(RAAC_ADD(RAAC_ADD(RAAC_LD(z + k),
+                  RAAC_LD(z + k + 64)), RAAC_ADD(RAAC_LD(z + k + 128),
+                  RAAC_LD(z + k + 192))), RAAC_LD(z + k + 256)));
    z64[0] = z[0];
    for (k = 1; k < 32; k++)
    {
@@ -3416,22 +3909,31 @@ static void raac_qmf_synthesis_slot(raac_t *a, raac_qmf_ch *c,
    float *m0  = a->qmf_m0;
    float *m1  = a->qmf_m1;
    int    n, j;
-   memmove(c->v + 128, c->v, sizeof(float) * (1280 - 128));
+   float *v;
+   if (c->vring == RAAC_QMF_RING)
+   {
+      memmove(c->v + 128 * RAAC_QMF_RING, c->v, sizeof(float) * (1280 - 128));
+      c->vring = 0;
+   }
+   v = c->v + 128 * (RAAC_QMF_RING - 1 - c->vring++);
    for (n = 0; n < 64; n++)
       xim[n] = (n & 1) ? -Xi[n] : Xi[n];
    raac_imdct_half128(a, Xr, m0, 1.0f / 64.0f);
    raac_imdct_half128(a, xim, m1, 1.0f / 64.0f);
    for (n = 0; n < 64; n++)
    {
-      c->v[n]       = -m0[63 - n] + m1[n];
-      c->v[127 - n] =  m0[63 - n] + m1[n];
+      v[n]       = -m0[63 - n] + m1[n];
+      v[127 - n] =  m0[63 - n] + m1[n];
    }
-   for (n = 0; n < 64; n++)
+   /* out[n] = sum over j of v[n + vo[j]] * window[n + 64j], four n at
+    * a time */
+   for (n = 0; n < 64; n += 4)
    {
-      float acc = 0.0f;
-      for (j = 0; j < 10; j++)
-         acc += c->v[n + vo[j]] * raac_qmf_window[n + 64 * j];
-      out64[n] = acc;
+      raac_v acc = RAAC_MUL(RAAC_LD(v + n), RAAC_LD(raac_qmf_window + n));
+      for (j = 1; j < 10; j++)
+         acc = RAAC_ADD(acc, RAAC_MUL(RAAC_LD(v + n + vo[j]),
+                  RAAC_LD(raac_qmf_window + n + 64 * j)));
+      RAAC_ST(out64 + n, acc);
    }
 }
 
@@ -4786,26 +5288,21 @@ raac_t *raac_open(const uint8_t *asc, size_t asc_size)
    }
 
    for (i = 0; i < 11; i++)
-      raac_huff_build(&a->spec[i], raac_hcb_code[i], raac_hcb_bits[i],
-            raac_hcb_size[i]);
-   /* scalefactor fast table (19-bit codes; 8-bit prefix slice) */
-   for (i = 0; i < 256; i++)
+      raac_huff_build(&a->spec[i], a->huff_lut + i * RAAC_HUFF_SPEC_CAP,
+            RAAC_HUFF_SPEC_CAP, raac_hcb_code[i], NULL, raac_hcb_bits[i],
+            raac_hcb_size[i], i + 1);
+   raac_huff_build(&a->sfh, a->huff_lut + 11 * RAAC_HUFF_SPEC_CAP,
+         RAAC_HUFF_SF_CAP, NULL, raac_sf_code, raac_sf_bits, 121, 0);
+   raac_fft_tables(a);
+   for (i = 0; i < 8192; i++)
+      a->iq43[i] = (float)pow((double)i, 4.0 / 3.0);
+   for (i = 0; i <= 16; i++)
    {
-      a->sfh.fast[i]     = -1;
-      a->sfh.fast_len[i] = 0;
+      a->iq43s[16 + i] =  a->iq43[i];
+      a->iq43s[16 - i] = -a->iq43[i];
    }
-   for (i = 0; i < 121; i++)
-      if (raac_sf_bits[i] <= 8)
-      {
-         uint32_t pre  = raac_sf_code[i] << (8 - raac_sf_bits[i]);
-         uint32_t fill = 1u << (8 - raac_sf_bits[i]);
-         uint32_t k;
-         for (k = 0; k < fill; k++)
-         {
-            a->sfh.fast[pre + k]     = (int16_t)i;
-            a->sfh.fast_len[pre + k] = raac_sf_bits[i];
-         }
-      }
+   for (i = 0; i < 256; i++)
+      a->sf_gain[i] = (float)pow(2.0, 0.25 * (i - 100));
 
    {
       int nl = (int)a->frame_len * 2;   /* 2048 or 1920 */
@@ -5163,21 +5660,45 @@ int raac_decode_s16(raac_t *a, const uint8_t *pkt, size_t size,
       return ret;
    if (a->sbr_mode)
       ret = raac_upsample_frame(a);
-   for (i = 0; i < ret; i++)
-      for (ch = 0; ch < a->channels; ch++)
+#ifdef RAAC_HAVE_S16
+   if (a->channels == 2 && !(ret & 7))
+   {
+      const float *l = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
+      const float *r = a->sbr_mode ? a->qmf[1].out : a->pcm[1];
+      for (i = 0; i < ret; i += 4)
+      {
+         raac_v x = RAAC_LD(l + i), y = RAAC_LD(r + i);
+         raac_v_st_s16x8(out + 2 * i, RAAC_ZIPLO(x, y), RAAC_ZIPHI(x, y));
+      }
+      return ret;
+   }
+   if (a->channels == 1 && !(ret & 7))
+   {
+      const float *p = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
+      for (i = 0; i < ret; i += 8)
+         raac_v_st_s16x8(out + i, RAAC_LD(p + i), RAAC_LD(p + i + 4));
+      return ret;
+   }
+#endif
+   for (ch = 0; ch < a->channels; ch++)
+   {
+      const float *p = a->sbr_mode ? a->qmf[ch].out : a->pcm[ch];
+      int16_t     *o = out + ch;
+      for (i = 0; i < ret; i++, o += a->channels)
       {
          /* one rounding, clamped in the float domain: casting an
           * out-of-range or non-finite float to int is undefined, and
           * hostile TNS filters can push the synthesis arbitrarily
           * high, so saturate before the cast (NaN pins to zero). */
-         float v = a->sbr_mode ? a->qmf[ch].out[i] : a->pcm[ch][i];
+         float v = p[i];
          if (!(v > -1e9f && v < 1e9f))
             v = 0.0f;
          v += (v >= 0.0f) ? 0.5f : -0.5f;
          if (v >  32767.0f) v =  32767.0f;
          if (v < -32768.0f) v = -32768.0f;
-         out[i * a->channels + ch] = (int16_t)(int)v;
+         *o = (int16_t)(int)v;
       }
+   }
    return ret;
 }
 
@@ -5193,10 +5714,26 @@ int raac_decode_f32(raac_t *a, const uint8_t *pkt, size_t size,
       return ret;
    if (a->sbr_mode)
       ret = raac_upsample_frame(a);
-   for (i = 0; i < ret; i++)
-      for (ch = 0; ch < a->channels; ch++)
-         out[i * a->channels + ch] = (a->sbr_mode ? a->qmf[ch].out[i]
-               : a->pcm[ch][i]) * (1.0f / 32768.0f);
+   if (a->channels == 2 && !(ret & 3))
+   {
+      const float *l = a->sbr_mode ? a->qmf[0].out : a->pcm[0];
+      const float *r = a->sbr_mode ? a->qmf[1].out : a->pcm[1];
+      raac_v       k = RAAC_SET1(1.0f / 32768.0f);
+      for (i = 0; i < ret; i += 4)
+      {
+         raac_v x = RAAC_MUL(RAAC_LD(l + i), k);
+         raac_v y = RAAC_MUL(RAAC_LD(r + i), k);
+         RAAC_ST(out + 2 * i,     RAAC_ZIPLO(x, y));
+         RAAC_ST(out + 2 * i + 4, RAAC_ZIPHI(x, y));
+      }
+      return ret;
+   }
+   for (ch = 0; ch < a->channels; ch++)
+   {
+      const float *p = a->sbr_mode ? a->qmf[ch].out : a->pcm[ch];
+      for (i = 0; i < ret; i++)
+         out[i * a->channels + ch] = p[i] * (1.0f / 32768.0f);
+   }
    return ret;
 }
 
