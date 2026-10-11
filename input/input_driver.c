@@ -11510,6 +11510,60 @@ typedef struct
    bool    is_menu;
 } input_hotkey_block_t;
 
+/* A hotkey held only by the enabler is not a separate menu chord. */
+static bool input_hotkey_uses_enable(input_hotkey_block_t *b,
+      unsigned i, bool keyboard_mapping_blocked)
+{
+   const struct retro_keybind *bind = INPUT_CONFIG_BIND(b->port, i);
+   const struct retro_keybind *en   = INPUT_CONFIG_BIND(b->port, RARCH_ENABLE_HOTKEY);
+   const struct retro_keybind *auto_binds = b->joypad_info->auto_binds;
+   uint16_t joykey = bind->joykey != NO_BTN ? bind->joykey : auto_binds[i].joykey;
+   uint16_t en_key = en->joykey != NO_BTN ? en->joykey : auto_binds[RARCH_ENABLE_HOTKEY].joykey;
+   uint32_t joyaxis = bind->joyaxis != AXIS_NONE ? bind->joyaxis : auto_binds[i].joyaxis;
+   uint32_t en_axis = en->joyaxis != AXIS_NONE ? en->joyaxis : auto_binds[RARCH_ENABLE_HOTKEY].joyaxis;
+   unsigned key = RETRO_KEYBIND_KEY(bind);
+   unsigned mbutton = RETRO_KEYBIND_MBUTTON(bind);
+   bool shared = false;
+
+   if (!RETRO_KEYBIND_VALID(en))
+      return false;
+
+   if (b->joypad && joykey != NO_BTN
+         && b->joypad->button(b->joypad_info->joy_idx, joykey))
+   {
+      if (joykey != en_key)
+         return false;
+      shared = true;
+   }
+   if (b->joypad && joyaxis != AXIS_NONE
+         && (float)abs(b->joypad->axis(b->joypad_info->joy_idx, joyaxis))
+               * INV_0x8000 > b->joypad_info->axis_threshold)
+   {
+      if (joyaxis != en_axis)
+         return false;
+      shared = true;
+   }
+   if (!keyboard_mapping_blocked && key != RETROK_UNKNOWN
+         && input_state_wrap(b->input_st->current_driver,
+               b->input_st->current_data, b->joypad, b->joypad_info,
+               b->binds, false, b->port, RETRO_DEVICE_KEYBOARD, 0, key))
+   {
+      if (key != RETRO_KEYBIND_KEY(en))
+         return false;
+      shared = true;
+   }
+   if (input_mbutton_bit(mbutton)
+         && input_state_wrap(b->input_st->current_driver,
+               b->input_st->current_data, b->joypad, b->joypad_info,
+               b->binds, false, b->port, RETRO_DEVICE_MOUSE, 0, mbutton))
+   {
+      if (mbutton != RETRO_KEYBIND_MBUTTON(en))
+         return false;
+      shared = true;
+   }
+   return shared;
+}
+
 /* Whether hotkey @i is blocked, for one that is pressed.
  *
  * "Hotkey Enable" blocks the hotkeys while it is not held, by rules
@@ -13221,7 +13275,10 @@ static void input_keys_pressed(
             }
             else if (i != RARCH_ENABLE_HOTKEY)
             {
-               input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
+               if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+                     || other_pressed
+                     || !input_hotkey_uses_enable(&blk, i, kb_blocked))
+                  input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;
 
                /* Game Focus toggle is always allowed, so it must clear menu cancel */
                if (i == RARCH_GAME_FOCUS_TOGGLE)

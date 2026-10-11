@@ -2998,6 +2998,46 @@ static void lane_hotkey_facts(void)
       input_config_binds[1][RARCH_PAUSE_TOGGLE]    = saved_p1;
    }
 
+   {
+      struct retro_keybind saved_ff = input_config_binds[0][RARCH_FAST_FORWARD_HOLD_KEY];
+      struct retro_keybind saved_menu = input_config_binds[0][RARCH_MENU_TOGGLE];
+      struct retro_keybind *ff = &input_config_binds[0][RARCH_FAST_FORWARD_HOLD_KEY];
+      struct retro_keybind *menu = &input_config_binds[0][RARCH_MENU_TOGGLE];
+
+      input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey = 23;
+      ff->joykey = 23;
+      ff->joyaxis = AXIS_NONE;
+      RETRO_KEYBIND_SET_KEY(ff, RETROK_UNKNOWN);
+      RETRO_KEYBIND_SET_MBUTTON(ff, NO_BTN);
+      menu->joykey = 22;
+      menu->joyaxis = AXIS_NONE;
+      binds_written_by_a_lane();
+      syn_buttons = en_bit;
+      run_loop_frames(settings->uints.input_hotkey_block_delay + 2);
+      hf_press(en_bit, 1u << 22);
+      CHECK(menu_is_up(), "hotkey facts: sharing fast-forward hold with the enabler cancelled menu");
+      pm_set_menu(false);
+      run_loop_frames(4);
+
+      input_config_binds[0][RARCH_ENABLE_HOTKEY].joykey = NO_BTN;
+      input_autoconf_binds[0][RARCH_ENABLE_HOTKEY].joykey = 23;
+      binds_written_by_a_lane();
+      syn_buttons = en_bit;
+      run_loop_frames(settings->uints.input_hotkey_block_delay + 2);
+      hf_press(en_bit, 1u << 22);
+      CHECK(menu_is_up(), "hotkey facts: sharing the profile's enabler cancelled menu");
+      pm_set_menu(false);
+      run_loop_frames(4);
+
+      ff->joykey = 21;
+      binds_written_by_a_lane();
+      hf_press(en_bit | (1u << 21), 1u << 22);
+      CHECK(!menu_is_up(), "hotkey facts: a separate fast-forward hotkey did not cancel menu");
+
+      input_config_binds[0][RARCH_FAST_FORWARD_HOLD_KEY] = saved_ff;
+      input_config_binds[0][RARCH_MENU_TOGGLE] = saved_menu;
+   }
+
    input_config_binds[0][RARCH_PAUSE_TOGGLE]     = saved_pause;
    input_config_binds[0][RARCH_ENABLE_HOTKEY]    = saved_en;
    input_autoconf_binds[0][RARCH_ENABLE_HOTKEY]  = saved_auto0;

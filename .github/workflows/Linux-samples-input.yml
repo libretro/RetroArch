@@ -489,6 +489,14 @@ jobs:
           make clean
           echo "[pass] bind_trigger_axis_test (ASan)"
 
+      - name: Build and run hotkey_menu_test (ASan + UBSan, mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/input/hotkey_menu clean check SANITIZER=address,undefined
+          make -C samples/input/hotkey_menu clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/input/hotkey_menu clean
+
       - name: Build and run key_lane_test (plain, ASan + UBSan, TSan)
         shell: bash
         working-directory: samples/input/key_lane
