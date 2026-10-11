@@ -5817,6 +5817,9 @@ bool command_event(enum event_command cmd, void *data)
             bool ra_is_forced_fs      = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
                VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
+            bool exclusive_fullscreen =
+                  !settings->bools.video_windowed_fullscreen
+               && video_driver_display_type_get() != RARCH_DISPLAY_WAYLAND;
 
             if (!video_driver_has_windowed())
                return false;
@@ -5835,7 +5838,7 @@ bool command_event(enum event_command cmd, void *data)
                video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
 
             /* Where the window can change state in place - borderless
-             * fullscreen on a context that says so - that is all a
+             * or compositor-managed fullscreen - that is all a
              * toggle is: the window is restyled and the video driver
              * sees a resize. Device, shaders, audio and input drivers
              * stay as they are.
@@ -5843,7 +5846,7 @@ bool command_event(enum event_command cmd, void *data)
              * Otherwise (exclusive fullscreen, which changes the
              * display mode, or a context without the means) all
              * drivers are dropped and reinitialised, as before. */
-            if (     !settings->bools.video_windowed_fullscreen
+            if (     exclusive_fullscreen
                   || !video_driver_test_all_flags(
                         GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE)
                   || !video_driver_set_video_mode(
@@ -5857,7 +5860,7 @@ bool command_event(enum event_command cmd, void *data)
             /* fullscreen hides the cursor, and exclusive fullscreen
              * grabs; leaving it lets go of that and of nothing else */
             input_pointer_capture_set_fullscreen(video_fullscreen,
-                  !settings->bools.video_windowed_fullscreen);
+                  exclusive_fullscreen);
             input_pointer_capture_apply(false);
 #ifdef HAVE_OVERLAY
             input_overlay_check_mouse_cursor();
