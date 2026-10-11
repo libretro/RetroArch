@@ -44,6 +44,7 @@ typedef struct openxr_runtime
    XrEnvironmentBlendMode blend_mode;
    unsigned max_dim;          /* the largest swapchain side */
    uint32_t rec_width;        /* one eye's recommended image width */
+   uint32_t rec_height;       /* and its height */
    bool frame_controller;     /* XR_VALVE_frame_controller_interaction */
    bool refresh_ext;          /* XR_FB_display_refresh_rate */
 } openxr_runtime_t;

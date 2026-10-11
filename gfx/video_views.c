@@ -167,6 +167,33 @@ int video_views_find(const video_views_map_t *map,
    return (eye == RETRO_VIDEO_VIEW_EYE_NONE) ? left : -1;
 }
 
+bool video_views_eye_pair(const video_views_map_t *map, int eyes[2])
+{
+   unsigned i;
+   eyes[0] = -1;
+   eyes[1] = -1;
+   for (i = 0; i < map->num_views; i++)
+   {
+      int e;
+      if (map->views[i].eye == RETRO_VIDEO_VIEW_EYE_LEFT)
+         e = 0;
+      else if (map->views[i].eye == RETRO_VIDEO_VIEW_EYE_RIGHT)
+         e = 1;
+      else
+         continue;
+      if (eyes[e] >= 0)
+         break;
+      eyes[e] = (int)i;
+   }
+   if (i < map->num_views || eyes[0] < 0 || eyes[1] < 0)
+   {
+      eyes[0] = -1;
+      eyes[1] = -1;
+      return false;
+   }
+   return true;
+}
+
 bool video_views_snapshot(const video_views_map_t *map,
       unsigned frame_dims, unsigned out_dims,
       video_views_map_t *out)

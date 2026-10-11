@@ -29,6 +29,12 @@
 #include "../../runloop.h"
 #include "../../verbosity.h"
 
+/* The seqlock's copy holds the largest thing it publishes. */
+typedef char openxr_seq_fits[
+      (   OPENXR_WORDS(openxr_tracked_t)    <= OPENXR_WORDS(video_xr_quad_set_t)
+       && OPENXR_WORDS(openxr_projection_t) <= OPENXR_WORDS(video_xr_quad_set_t))
+      ? 1 : -1];
+
 /* One writer stamps odd, stores the words, stamps even; a reader that
  * sees the stamp move across its copy starts over. */
 static void openxr_seq_publish(retro_atomic_int_t *seq,
@@ -181,6 +187,46 @@ static unsigned openxr_frame_layers(openxr_frame_t *f,
    return n;
 }
 
+/* The published projection, if its slot has content and its space is
+ * the session's. The caller holds the graphics lock, so neither
+ * changes under it. */
+static bool openxr_frame_projection(openxr_frame_t *f,
+      XrCompositionLayerProjection *layer,
+      XrCompositionLayerProjectionView *views)
+{
+   unsigned eye, w, h;
+   openxr_projection_t p;
+   openxr_slot_t *slot = &f->sc->slots[OPENXR_PROJECTION_SLOT];
+   openxr_seq_read(&f->proj_seq, f->proj_words, &p, sizeof(p));
+   if (     !p.active || !slot->swapchains[0] || slot->layers < 2
+         || !f->session->track_space
+         || p.track_seq != retro_atomic_load_acquire_int(
+               &f->session->track_seq)
+         || !retro_atomic_load_acquire_int(&slot->content))
+      return false;
+   w = MIN(p.width,  VIDEO_SCALE_W(slot->dims));
+   h = MIN(p.height, VIDEO_SCALE_H(slot->dims));
+   if (!w || !h)
+      return false;
+   for (eye = 0; eye < 2; eye++)
+   {
+      memset(&views[eye], 0, sizeof(views[eye]));
+      views[eye].type                             =
+         XR_TYPE_COMPOSITION_LAYER_PROJECTION_VIEW;
+      views[eye].pose                             = p.pose[eye];
+      views[eye].fov                              = p.fov[eye];
+      views[eye].subImage.swapchain               = slot->swapchains[eye];
+      views[eye].subImage.imageRect.extent.width  = (int32_t)w;
+      views[eye].subImage.imageRect.extent.height = (int32_t)h;
+   }
+   memset(layer, 0, sizeof(*layer));
+   layer->type      = XR_TYPE_COMPOSITION_LAYER_PROJECTION;
+   layer->space     = f->session->track_space;
+   layer->viewCount = 2;
+   layer->views     = views;
+   return true;
+}
+
 /* The head's position and heading at time become the anchor. */
 static void openxr_frame_recenter(openxr_frame_t *f, XrTime time)
 {
@@ -209,6 +255,7 @@ static void openxr_frame_recenter(openxr_frame_t *f, XrTime time)
       return;
    f->tracked.anchor = anchor;
    openxr_frame_publish_tracked(f);
+   retro_atomic_fetch_add_int(&f->recenters, 1);
    RARCH_LOG("[OpenXR] Recentered at %.2f, %.2f, %.2f.\n",
          anchor.position.x, anchor.position.y, anchor.position.z);
 }
@@ -256,8 +303,10 @@ static void openxr_frame_run(openxr_frame_t *f)
    XrFrameState state;
    XrFrameBeginInfo begin_info;
    XrFrameEndInfo end_info;
+   XrCompositionLayerProjection proj;
+   XrCompositionLayerProjectionView proj_views[2];
    XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
-   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS
+   const XrCompositionLayerBaseHeader *ptrs[1 + VIDEO_XR_MAX_QUADS
       + OPENXR_MAX_EXTRA_LAYERS];
 
    memset(&wait_info, 0, sizeof(wait_info));
@@ -312,7 +361,11 @@ static void openxr_frame_run(openxr_frame_t *f)
             && (   session_state == XR_SESSION_STATE_VISIBLE
                 || session_state == XR_SESSION_STATE_FOCUSED))
       {
-         end_info.layerCount = openxr_frame_layers(f, layers, ptrs);
+         if (openxr_frame_projection(f, &proj, proj_views))
+            ptrs[end_info.layerCount++] =
+               (const XrCompositionLayerBaseHeader*)&proj;
+         end_info.layerCount += openxr_frame_layers(f, layers,
+               ptrs + end_info.layerCount);
          if (f->extra_layers)
             end_info.layerCount += f->extra_layers(f->extra_user,
                   state.predictedDisplayTime,
@@ -457,6 +510,7 @@ void openxr_frame_local_changed(openxr_frame_t *f)
    retro_atomic_store_release_int(&f->recenter, 0);
    video_xr_pose_identity(&f->tracked.anchor);
    openxr_frame_publish_tracked(f);
+   retro_atomic_fetch_add_int(&f->recenters, 1);
    RARCH_LOG("[OpenXR] Recentered by the runtime.\n");
 }
 
@@ -593,6 +647,19 @@ void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set)
    openxr_seq_publish(&f->quads_seq, f->quads_words, set, sizeof(*set));
 }
 
+void openxr_frame_publish_projection(openxr_frame_t *f,
+      const openxr_projection_t *p)
+{
+   openxr_seq_publish(&f->proj_seq, f->proj_words, p, sizeof(*p));
+}
+
+void openxr_frame_clear_projection(openxr_frame_t *f)
+{
+   openxr_projection_t none;
+   memset(&none, 0, sizeof(none));
+   openxr_seq_publish(&f->proj_seq, f->proj_words, &none, sizeof(none));
+}
+
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor)
 {
    openxr_tracked_t t;
@@ -608,4 +675,14 @@ void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
 void openxr_frame_request_recenter(openxr_frame_t *f)
 {
    retro_atomic_store_release_int(&f->recenter, 1);
+}
+
+int openxr_frame_recenters(openxr_frame_t *f)
+{
+   return retro_atomic_load_acquire_int(&f->recenters);
+}
+
+XrDuration openxr_frame_period(openxr_frame_t *f)
+{
+   return (XrDuration)retro_atomic_load_acquire_int(&f->period_ns);
 }

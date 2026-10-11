@@ -72,6 +72,7 @@ RUNTIME_DIR = 'run'
 RED, BLUE, GREEN = (255, 0, 0), (0, 0, 255), (0, 255, 0)
 YELLOW, WHITE, GREY = (255, 255, 0), (255, 255, 255), (32, 32, 32)
 MAGENTA = (255, 0, 255)
+BLACK = (0, 0, 0)
 
 
 def read_env(path):
@@ -337,6 +338,8 @@ def run_case(retroarch, root, monado, case, validate):
                 os.replace(tmp, script)
             elif kind == 'unfocus':
                 open(os.path.join(d, 'unfocus'), 'w').close()
+            elif kind == 'touch':
+                open(os.path.join(d, arg), 'w').close()
             elif kind == 'wait_exit':
                 try:
                     p.wait(arg)
@@ -409,6 +412,618 @@ def facing(q, want):
 def no_quads(res):
     return ['no frame with quads and images (see %s)'
             % os.path.join(res.dir, 'run.log')]
+
+
+def projections(frame):
+    return [x for x in frame['layers'] if x['type'] == 'projection']
+
+
+def last_projection_snap(res):
+    for fr in reversed(res.frames):
+        if fr['snap'] and projections(fr):
+            return fr
+    return None
+
+
+HMD_RE = re.compile(r'\[video_views\] hmd=(\d) recommended=(\d+)x(\d+)')
+STATUS_RE = re.compile(r'\[video_views\] presents=(\d) stereo=(\d) '
+                       r'accepted=(\d) views=(\d+)')
+EYES_RE = re.compile(r'\[video_views\] vr eyes frame=(\d+) '
+                     r'left=([-\d.]+),([-\d.]+),'
+                     r'([-\d.]+) right=([-\d.]+),([-\d.]+),([-\d.]+) '
+                     r'fov=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+) '
+                     r'rfov=([-\d.]+),([-\d.]+),([-\d.]+),([-\d.]+)')
+FLAGS_RE = re.compile(r'\[video_views\] vr frame flags=(\d+)')
+RECENTERED, TARGET_RESIZED = 1, 2
+EYE_W, EYE_H = 400, 240  # the 3DS map's top screen, one eye
+EXACT = 1.5e-5  # the core and the layer both log five decimals
+
+
+def frame_tag(path, v, size):
+    """The frame number's low sixteen bits along the bottom of an eye
+    the core drew, or None where a block is neither white nor black."""
+    tag = 0
+    for b in range(16):
+        c, _ = colour(path, (24 + 20 * b) * v['rect'][2] / EYE_W / size[0],
+                      (EYE_H - 16) * v['rect'][3] / EYE_H / size[1])
+        if near(c, WHITE):
+            tag |= 1 << b
+        elif not near(c, BLACK):
+            return None
+    return tag
+
+
+def tracked_size(res):
+    """The recommended eye size the core was last given with HMD set."""
+    hmd = [m for m in HMD_RE.findall(res.log) if m[0] == '1']
+    return (int(hmd[-1][1]), int(hmd[-1][2])) if hmd else None
+
+
+def check_paused(res, start, end):
+    """The core ran no frame between the marks start and end: the eyes
+    of every snapped projection between them carry one frame tag, and
+    there is one."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    t0, t1 = res.marks[start] * 1e6, res.marks[end] * 1e6
+    tags = set(frame_tag(image(res, f, v), v, size) for f in res.frames
+               if f['snap'] and t0 < f['t_us'] < t1
+               for p in projections(f) for v in p['views'])
+    if not tags:
+        return ['no snapped projection between %s and %s' % (start, end)]
+    if len(tags) != 1 or None in tags:
+        return ['the core ran between %s and %s: the eyes show frames %s'
+                % (start, end, sorted(tags, key=str))]
+    return []
+
+
+def check_tracked(space='local'):
+    """HMD reaches the core, its tracked map is taken, and its two eyes
+    are a projection behind the other screen: one swapchain per eye at
+    the recommended size, each eye drawn 1:1 from its top-left, with the
+    poses and fields of view the core drew that frame from, in the space
+    it asked for (LOCAL where the runtime has no STAGE)."""
+    def check(res):
+        errors = []
+        size = tracked_size(res)
+        if not size or not size[0] or not size[1]:
+            return ['the core never saw HMD with an eye size: %s'
+                    % HMD_RE.findall(res.log)]
+        status = STATUS_RE.findall(res.log)
+        if not status or status[-1][2] != '1':
+            errors.append('the tracked map was not taken: %s' % status[-1:])
+        fr = last_projection_snap(res)
+        if not fr:
+            return errors + ['no snapped frame with a projection (see %s)'
+                             % os.path.join(res.dir, 'run.log')]
+        if fr['layers'][0]['type'] != 'projection':
+            errors.append('the projection is not behind the screens: %s'
+                          % [x['type'] for x in fr['layers']])
+        p = projections(fr)[0]
+        want = space
+        if space == 'stage' and \
+                'No STAGE space: tracked content is seated.' in res.log:
+            want = 'local'
+        if p['space'] != want:
+            errors.append('the projection is in %s, want %s'
+                          % (p['space'], want))
+        if len(p['views']) != 2:
+            return errors + ['%d projection views' % len(p['views'])]
+        lv, rv = p['views']
+        if lv['sc'] == rv['sc']:
+            errors.append('both eyes come from one swapchain')
+        for v, what in ((lv, 'left'), (rv, 'right')):
+            sc = res.chains.get(v['sc'])
+            if not sc or (sc['w'], sc['h']) != size:
+                errors.append('the %s eye\'s swapchain is %s, want %dx%d'
+                              % (what, sc and (sc['w'], sc['h']), size[0],
+                                 size[1]))
+            if v['rect'] != [0, 0, min(EYE_W, size[0]), min(EYE_H, size[1])]:
+                errors.append('the %s eye shows %s' % (what, v['rect']))
+            if v['layer'] != 0:
+                errors.append('the %s eye shows array layer %d'
+                              % (what, v['layer']))
+        for v, colour_want, what in ((lv, RED, 'left eye'),
+                                     (rv, BLUE, 'right eye')):
+            path = image(res, fr, v)
+            c, _ = colour(path, EYE_W * 0.5 / size[0], EYE_H * 0.5 / size[1])
+            if not near(c, colour_want):
+                errors.append('%s shows %s, want %s' % (what, c, colour_want))
+            c, _ = colour(path, 2.0 / size[0], 2.0 / size[1])
+            if not near(c, WHITE):
+                errors.append('%s top-left is %s, want white' % (what, c))
+        q = [x for x in quads(fr) if not x['flags'] & BLEND]
+        if [x['eye'] for x in q] != ['both']:
+            errors.append('screens beside the projection: %s'
+                          % [x['eye'] for x in q])
+        else:
+            c, _ = colour(image(res, fr, q[0]), 0.5, 0.5)
+            if not near(c, YELLOW):
+                errors.append('the bottom screen shows %s' % (c,))
+        eyes = [(int(m[0]), [float(x) for x in m[1:]])
+                for m in EYES_RE.findall(res.log)]
+        tags = [frame_tag(image(res, fr, v), v, size) for v in (lv, rv)]
+        if not eyes:
+            errors.append('the core logged no eye poses')
+        elif None in tags or tags[0] != tags[1]:
+            errors.append('the eyes are tagged frames %s' % tags)
+        else:
+            # The headset moves a few millimetres a sample: the poses
+            # shown must be the ones logged for the frame shown, which
+            # its tag numbers (a run is far short of 65536 frames).
+            frame = tags[0]
+            upto = [x for x in eyes if x[0] <= frame]
+            if not upto:
+                return errors + ['no eye poses logged by frame %d' % frame]
+            e = max(upto, key=lambda x: x[0])[1]
+            for v, pos, what in ((lv, e[0:3], 'left'), (rv, e[3:6], 'right')):
+                if any(abs(a - b) > EXACT for a, b in zip(v['pose'][:3], pos)):
+                    errors.append('the %s eye is shown at %s, drawn at %s '
+                                  'in frame %d' % (what, v['pose'][:3], pos,
+                                                   frame))
+            for v, drawn, what in ((lv, e[6:10], 'left'),
+                                   (rv, e[10:14], 'right')):
+                tans = [abs(math.tan(a)) for a in v['fov']]
+                if any(abs(a - b) > 0.01 for a, b in zip(tans, drawn)):
+                    errors.append('the %s eye is shown with tangents %s, '
+                                  'drawn with %s' % (what, tans, drawn))
+        return errors
+    return check
+
+
+def check_tracked_flat(res):
+    """A core's eyes going flat while it runs: the projection goes, and
+    their screen is a quad pair again."""
+    flat = res.marks.get('flat', 0) * 1e6
+    errors = []
+    if not any(projections(f) for f in res.frames if f['t_us'] < flat):
+        errors.append('no projection before the core went flat')
+    if '[video_views] vr flat' not in res.log:
+        return errors + ['the core never went flat']
+    after = [f for f in res.frames if f['t_us'] > flat + 1e6]
+    if any(projections(f) for f in after):
+        errors.append('the projection stayed after the core went flat')
+    fr = last_snap(res)
+    if not after or not fr or fr['t_us'] <= flat + 1e6:
+        return errors + ['no snapped frame after the core went flat']
+    return errors + check_screens()(res)
+
+
+SLOT_REFUSED = re.compile(r'\[OpenXR\] No (\d+)x(\d+) swapchain with 2 layer')
+
+
+def check_tracked_fallback(res):
+    """Tracked eyes whose projection the runtime refuses stay a quad
+    pair, as a flat map's."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    errors = []
+    if '%dx%d' % size not in ['%sx%s' % m for m in
+                              SLOT_REFUSED.findall(res.log)]:
+        errors.append('the projection slot was not refused: %s'
+                      % SLOT_REFUSED.findall(res.log))
+    status = STATUS_RE.findall(res.log)
+    if not status or status[-1][2] != '1':
+        errors.append('the tracked map was not taken: %s' % status[-1:])
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown')
+    return errors + check_screens()(res)
+
+
+def check_tracked_refused(res):
+    """A TRACKED map without a pair of eyes is refused while HMD is set."""
+    size = tracked_size(res)
+    status = STATUS_RE.findall(res.log)
+    if not size:
+        return ['the core never saw HMD']
+    if not status or status[-1][2] != '0':
+        return ['the map without eyes was taken: %s' % status[-1:]]
+    if any(projections(f) for f in res.frames):
+        return ['a projection was shown']
+    return []
+
+
+def check_flat_size(res):
+    """A map without TRACKED under HMD is screens, as before, and the core
+    is still given the eye size."""
+    errors = check_screens()(res)
+    size = tracked_size(res)
+    if not size or not size[0] or not size[1]:
+        errors.append('no eye size with HMD: %s' % HMD_RE.findall(res.log))
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown for a map without TRACKED')
+    return errors
+
+
+def check_tracked_menu(res):
+    """The menu opens in front of the tracked eyes, which stay."""
+    opened = res.marks.get('menu', 0) * 1e6
+    late = [f for f in res.frames if f['t_us'] > opened + 2e6]
+    menu = [f for f in late if any(x['type'] == 'quad' and x['flags'] & BLEND
+                                   for x in f['layers'])]
+    if not menu:
+        return ['no frame with the menu after it opened']
+    errors = []
+    for f in menu[-3:]:
+        kinds = [x['type'] for x in f['layers']]
+        if not kinds or kinds[0] != 'projection':
+            errors.append('frame %d shows %s, want the projection first'
+                          % (f['n'], kinds))
+    return errors
+
+
+def recenter_flags(res):
+    """How many frames the core saw RECENTERED in: it logs a frame's
+    flags whenever there are any."""
+    return sum(1 for m in FLAGS_RE.finditer(res.log)
+               if int(m.group(1)) & RECENTERED)
+
+
+def check_tracked_recenter(res):
+    """The Recenter hotkey moves the screens and a seated world together:
+    the core hears RECENTERED once, and the projection goes on."""
+    errors = []
+    if 'Headset recenter requested' not in res.log:
+        errors.append('the network command did not reach the hotkey')
+    n = recenter_flags(res)
+    if n != 1:
+        errors.append('the core saw RECENTERED %d times, want 1' % n)
+    shown = [f for f in res.frames if projections(f)]
+    late = [f for f in shown
+            if f['t_us'] > res.marks['recenter'] * 1e6 + 1e6]
+    if not late:
+        errors.append('no projection after the recenter')
+    return errors
+
+
+def check_tracked_recenter_paused(res):
+    """A recenter while tracked content is paused keeps its world on
+    screen: the space is remade only at a sample, which a paused core
+    never takes."""
+    errors = []
+    if 'Headset recenter requested' not in res.log:
+        errors.append('the network command did not reach the hotkey')
+    errors += check_paused(res, 'recenter', 'resume')
+    asked = res.marks['recenter'] * 1e6
+    resumed = res.marks['resume'] * 1e6
+    paused = [f for f in res.frames
+              if asked + 5e5 < f['t_us'] < resumed and f['layers']]
+    if not paused:
+        errors.append('no frames between the recenter and the unpause')
+    blank = [f['n'] for f in paused if not projections(f)]
+    if blank:
+        errors.append('%d frames without the projection while paused, '
+                      'first %d' % (len(blank), blank[0]))
+    if not [f for f in res.frames
+            if f['t_us'] > resumed + 1e6 and projections(f)]:
+        errors.append('no projection after the unpause')
+    if recenter_flags(res) != 1:
+        errors.append('the core saw RECENTERED %d times, want 1'
+                      % recenter_flags(res))
+    return errors
+
+
+def check_tracked_runtime_recenter(res):
+    """The runtime's LOCAL change is a recenter too; a STAGE change is
+    not one for a seated core."""
+    errors = []
+    n = recenter_flags(res)
+    if n != 1:
+        errors.append('the core saw RECENTERED %d times, want 1 (for '
+                      'the LOCAL change)' % n)
+    if res.log.count('[OpenXR] Recentered by the runtime.') != 1:
+        errors.append('the runtime\'s recenter was not logged once')
+    return errors
+
+
+def check_tracked_exit(res):
+    """EXITING ends the session: HMD goes, no projection is submitted
+    after, and the window keeps running."""
+    errors = check_exit_window(res)
+    hmd = [m[0] for m in HMD_RE.findall(res.log)]
+    if '1' not in hmd or hmd[-1] != '0':
+        errors.append('HMD did not go with the session: %s' % hmd)
+    lost = res.marks['lost'] * 1e6
+    late = [f for f in res.frames if f['t_us'] > lost + 5e5 and projections(f)]
+    if late:
+        errors.append('%d frames with a projection after the session ended'
+                      % len(late))
+    return errors
+
+
+def check_tracked_stopping(res):
+    """A session the runtime stops is alive but not running: HMD goes
+    with it."""
+    errors = []
+    if '[OpenXR] Session stopping.' not in res.log:
+        errors.append('the session did not stop')
+    hmd = [m[0] for m in HMD_RE.findall(res.log)]
+    if '1' not in hmd or hmd[-1] != '0':
+        errors.append('HMD did not go with the session: %s' % hmd)
+    return errors
+
+
+SESSION_CREATED = '[OpenXR] Session created.'
+
+
+def check_tracked_reinit(res):
+    """A video driver reinit while tracked content runs: the new driver
+    takes the map's content info again, so the core sees HMD with an eye
+    size on both sides, and the projection comes back in the space the
+    core asked for (LOCAL where the runtime has no STAGE)."""
+    first = res.log.find(SESSION_CREATED)
+    again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+    if again < 0:
+        return ['the video driver did not restart']
+    errors = []
+    before = [m for m in HMD_RE.findall(res.log[:again]) if m[0] == '1'
+              and int(m[1]) and int(m[2])]
+    if not before:
+        errors.append('the core saw no HMD with an eye size before the '
+                      'reinit: %s' % HMD_RE.findall(res.log[:again]))
+    last = HMD_RE.findall(res.log)[-1:]
+    if not last or last[0][0] != '1' or not int(last[0][1]) \
+            or not int(last[0][2]):
+        errors.append('the core sees %s after the reinit, want HMD with an '
+                      'eye size' % last)
+    for line in ('Unable to set VR content info', 'No eye target size'):
+        if line in res.log:
+            errors.append('"%s" in the log' % line)
+    reinit = res.marks['reinit'] * 1e6
+    late = [p['space'] for f in res.frames if f['t_us'] > reinit + 2e6
+            for p in projections(f)]
+    want = 'stage'
+    if 'No STAGE space: tracked content is seated.' in res.log[:again]:
+        want = 'local'
+    if not late:
+        errors.append('no projection after the reinit')
+    elif set(late) != set([want]):
+        errors.append('the projection is in %s after the reinit, want %s'
+                      % (sorted(set(late)), want))
+    return errors
+
+
+def shown_as_drawn(res, fr):
+    """Errors unless snapped frame fr's projection shows the eyes with
+    the poses and fields of view the core logged for the frame they are
+    tagged with."""
+    size = tracked_size(res)
+    views = projections(fr)[0]['views']
+    if len(views) != 2:
+        return ['%d projection views' % len(views)]
+    tags = [frame_tag(image(res, fr, v), v, size) for v in views]
+    if None in tags or tags[0] != tags[1]:
+        return ['the eyes are tagged frames %s' % tags]
+    upto = [(int(m[0]), [float(x) for x in m[1:]])
+            for m in EYES_RE.findall(res.log) if int(m[0]) <= tags[0]]
+    if not upto:
+        return ['no eye poses logged by frame %d' % tags[0]]
+    e = max(upto, key=lambda x: x[0])[1]
+    errors = []
+    for v, pos, fov, what in ((views[0], e[0:3], e[6:10], 'left'),
+                              (views[1], e[3:6], e[10:14], 'right')):
+        if any(abs(a - b) > EXACT for a, b in zip(v['pose'][:3], pos)):
+            errors.append('the %s eye is shown at %s, drawn at %s in frame '
+                          '%d' % (what, v['pose'][:3], pos, tags[0]))
+        tans = [abs(math.tan(a)) for a in v['fov']]
+        if any(abs(a - b) > 0.01 for a, b in zip(tans, fov)):
+            errors.append('the %s eye is shown with tangents %s, drawn '
+                          'with %s' % (what, tans, fov))
+    return errors
+
+
+def qmul(a, b):
+    ax, ay, az, aw = a
+    bx, by, bz, bw = b
+    return (aw * bx + ax * bw + ay * bz - az * by,
+            aw * by - ax * bz + ay * bw + az * bx,
+            aw * bz + ax * by - ay * bx + az * bw,
+            aw * bw - ax * bx - ay * by - az * bz)
+
+
+def in_stage(p, v):
+    """Projection p's view v as a pose in STAGE, through the layer's
+    location of p's space there; None without one."""
+    s = p.get('stage')
+    if not s:
+        return None
+    q = s[3:]
+    r = qmul(qmul(q, tuple(v['pose'][:3]) + (0.0,)),
+             (-q[0], -q[1], -q[2], q[3]))
+    return ([a + b for a, b in zip(s[:3], r[:3])]
+            + list(qmul(q, v['pose'][3:])))
+
+
+def same_place(a, b):
+    """Two eyes' STAGE poses are the same within the layer's rounding:
+    0.2 mm, and 0.2 degrees between the orientations."""
+    def turn(x, y):
+        d = sum(i * j for i, j in zip(x, y))
+        n = math.sqrt(sum(i * i for i in x) * sum(j * j for j in y))
+        return abs(d) / n
+    return all(x and y and all(abs(i - j) <= 2e-4 for i, j in zip(x[:3], y[:3]))
+               and turn(x[3:], y[3:]) >= math.cos(math.radians(0.1))
+               for x, y in zip(a, b))
+
+
+def recentered_after(res, pos):
+    """The frames the core saw RECENTERED in, from log offset pos on."""
+    return sum(1 for m in FLAGS_RE.finditer(res.log, pos)
+               if int(m.group(1)) & RECENTERED)
+
+
+def check_tracked_reinit_recentered(space):
+    """A video driver reinit while seated content runs: the new session's
+    LOCAL is wherever the runtime puts it, so the core hears RECENTERED
+    once, with its first sample after; the projection goes on in space,
+    or with None, there is none (a core that only reads the poses)."""
+    def check(res):
+        first = res.log.find(SESSION_CREATED)
+        again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+        if again < 0:
+            return ['the video driver did not restart']
+        errors = []
+        n = recentered_after(res, again)
+        if n != 1:
+            errors.append('the core saw RECENTERED %d times after the '
+                          'reinit, want 1' % n)
+        if recentered_after(res, 0) != n:
+            errors.append('the core saw RECENTERED before the reinit')
+        bad = [x.strip() for x in res.log.splitlines() if '[ERROR]' in x]
+        if bad:
+            errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
+        reinit = res.marks['reinit'] * 1e6
+        late = set(p['space'] for f in res.frames if f['t_us'] > reinit + 2e6
+                   for p in projections(f))
+        if late != (set([space]) if space else set()):
+            errors.append('the projection is in %s after the reinit, want %s'
+                          % (sorted(late), space))
+        return errors
+    return check
+
+
+def check_tracked_reinit_resized(res):
+    """A video driver reinit to a headset that recommends another eye
+    size: the core hears TARGET_RESIZED once, after the reinit, though
+    the new session's first frames have no poses, and it is given the
+    new size."""
+    first = res.log.find(SESSION_CREATED)
+    again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+    if again < 0:
+        return ['the video driver did not restart']
+    errors = []
+    told = [m.start() for m in FLAGS_RE.finditer(res.log)
+            if int(m.group(1)) & TARGET_RESIZED]
+    if len(told) != 1 or told[0] < again:
+        errors.append('the core saw TARGET_RESIZED %d times, %d after the '
+                      'reinit, want once after it'
+                      % (len(told), sum(1 for t in told if t > again)))
+    if tracked_size(res) != RESIZED:
+        errors.append('the core was last given %s, want %s'
+                      % (tracked_size(res), RESIZED))
+    return errors
+
+
+def check_tracked_recenter_unlocated(res):
+    """A recenter while the runtime cannot locate the eyes: the core
+    hears RECENTERED once, when they are located again."""
+    n = recenter_flags(res)
+    return [] if n == 1 else ['the core saw RECENTERED %d times, want 1' % n]
+
+
+def check_tracked_reinit_paused(shown, space):
+    """A video driver reinit while tracked content is paused: the core
+    runs no frame until the unpause, and nothing logs an error. Until
+    then the headset shows, by shown: 'projection', the kept frame's
+    eyes where they were in the room, as STAGE places them in both
+    sessions, from the poses the core drew them from; 'pair', no
+    projection but the eyes as a quad pair, as without STAGE nothing
+    places them; None, no projection, as a hardware frame is not kept.
+    After the unpause the projection is back, in space, and a seated
+    core, whose origin moved, hears RECENTERED once."""
+    def check(res):
+        first = res.log.find(SESSION_CREATED)
+        again = res.log.find(SESSION_CREATED, first + 1) if first >= 0 else -1
+        if again < 0:
+            return ['the video driver did not restart']
+        errors = check_paused(res, 'paused', 'resume')
+        bad = [x.strip() for x in res.log.splitlines() if '[ERROR]' in x]
+        if bad:
+            errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
+        reinit = res.marks['reinit'] * 1e6
+        resumed = res.marks['resume'] * 1e6
+        paused = [f for f in res.frames
+                  if reinit + 5e5 < f['t_us'] < resumed and f['layers']]
+        if not paused:
+            return errors + ['no frames between the reinit and the unpause']
+        shown_proj = [f for f in paused if projections(f)]
+        if shown == 'projection':
+            blank = [f['n'] for f in paused if not projections(f)]
+            if blank:
+                errors.append('%d frames without the projection while '
+                              'paused, first %d' % (len(blank), blank[0]))
+            spaces = set(p['space'] for f in shown_proj
+                         for p in projections(f))
+            if shown_proj and spaces != set([space]):
+                errors.append('the projection is in %s while paused, want %s'
+                              % (sorted(spaces), space))
+            # The last projection before the reinit shows the poses the
+            # frame was drawn from; every one after shows them at the same
+            # place in the room, never at poses sampled since.
+            before = [f for f in res.frames if f['snap'] and projections(f)
+                      and res.marks['paused'] * 1e6 < f['t_us'] < reinit]
+            # check_paused sees this frame's tags only in a snapped one.
+            if not [f for f in shown_proj if f['snap']]:
+                errors.append('no snapped projection while paused after the '
+                              'reinit')
+            if not before:
+                errors.append('no snapped projection between the pause and '
+                              'the reinit')
+            else:
+                errors += shown_as_drawn(res, before[-1])
+                p = projections(before[-1])[0]
+                want = [in_stage(p, v) for v in p['views']]
+                moved = [f['n'] for f in shown_proj
+                         if not same_place(want, [
+                             in_stage(projections(f)[0], v)
+                             for v in projections(f)[0]['views']])]
+                if None in want:
+                    errors.append('no STAGE pose before the reinit')
+                elif moved:
+                    errors.append('%d frames show the eyes elsewhere in the '
+                                  'room, first %d' % (len(moved), moved[0]))
+        elif shown_proj:
+            errors.append('%d frames with a projection while paused after the '
+                          'reinit, first %d' % (len(shown_proj),
+                                                shown_proj[0]['n']))
+        if shown == 'pair':
+            unpaired = [f['n'] for f in paused
+                        if not set(['left', 'right'])
+                        <= set(x['eye'] for x in quads(f))]
+            if unpaired:
+                errors.append('%d frames without the eyes\' quad pair while '
+                              'paused, first %d' % (len(unpaired),
+                                                    unpaired[0]))
+        late = [p['space'] for f in res.frames if f['t_us'] > resumed + 1e6
+                for p in projections(f)]
+        if not late:
+            errors.append('no projection after the unpause')
+        elif set(late) != set([space]):
+            errors.append('the projection is in %s after the unpause, want %s'
+                          % (sorted(set(late)), space))
+        want = 1 if space == 'local' else 0
+        n = recentered_after(res, again)
+        if n != want or recentered_after(res, 0) != n:
+            errors.append('the core saw RECENTERED %d times after the reinit '
+                          'and %d before, want %d and 0'
+                          % (n, recentered_after(res, 0) - n, want))
+        return errors
+    return check
+
+
+REINIT_RUNNING = [('wait', 6), ('mark', 'reinit'),
+                  ('send', 'FULLSCREEN_TOGGLE'), ('wait', 6)]
+# The next instance's headset recommends another eye size, and its
+# session's first frames have no poses, as SteamVR's take a while.
+RESIZED = (1600, 1680)
+REINIT_RESIZED = [('wait', 6), ('script', 'eyes %d %d' % RESIZED),
+                  ('wait', 1), ('mark', 'reinit'),
+                  ('script', 'eyes %d %d\ninvalid views' % RESIZED),
+                  ('send', 'FULLSCREEN_TOGGLE'), ('wait', 4),
+                  ('script', 'eyes %d %d' % RESIZED), ('wait', 4)]
+
+# The pause hotkey, then the fullscreen one, which restarts the driver.
+REINIT_PAUSED = [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+                 ('mark', 'paused'), ('wait', 3), ('mark', 'reinit'),
+                 ('send', 'FULLSCREEN_TOGGLE'), ('wait', 4), ('mark', 'resume'),
+                 ('send', 'PAUSE_TOGGLE'), ('wait', 3)]
+# The new session's first STAGE locations are not had yet.
+REINIT_PAUSED_UNLOCATED = (REINIT_PAUSED[:4]
+                           + [('wait', 2), ('script', 'invalid stage 3'),
+                              ('wait', 1)]
+                           + REINIT_PAUSED[5:])
 
 
 def image_size(res, q, native=None, distance=1.8):
@@ -953,9 +1568,9 @@ def check_options_follow(res):
         errors.append('no "[OpenXR] The headset session ended" in the log')
     seen = re.findall(r'\[video_views\] options display status=(\d+)',
                       res.log)
-    # Status 3 while the headset shows; 1 only after it ended.
-    if '3' not in seen or '1' not in seen[seen.index('3'):]:
-        errors.append('no options display update from status 3 to 1 (2D) '
+    # Status 7 (HMD) while the headset tracks; 1 only after it ended.
+    if '7' not in seen or '1' not in seen[seen.index('7'):]:
+        errors.append('no options display update from status 7 to 1 (2D) '
                       'after the session ended: %s' % seen)
     return errors
 
@@ -3187,6 +3802,133 @@ CASES = [
      'settings': dict(WINDOW1, video_openxr_refresh_rate='10'),
      'script': 'rates 20 10\n', 'steps': PACE_STEPS,
      'check': check_request(10.0, 1, 10.0)},
+    # Head tracking: the 3DS map's top screen as TRACKED eyes.
+    {'name': 'tracked', 'map': '3ds', 'options': {'video_views_test_vr': 'local'},
+     'steps': SETTLE, 'check': check_tracked()},
+    {'name': 'tracked-stage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': SETTLE,
+     'check': check_tracked('stage')},
+    {'name': 'tracked-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': SETTLE,
+     'check': threaded(check_tracked())},
+    {'name': 'tracked-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local', 'video_views_test_hw': 'vulkan'},
+     'steps': SETTLE, 'check': check_tracked()},
+    # 10 fps on the 20 Hz headset: each core frame has its own sample.
+    {'name': 'tracked-paced', 'map': '3ds',
+     'options': dict(FPS10, video_views_test_vr='local'), 'settings': WINDOW1,
+     'steps': SETTLE, 'check': check_tracked()},
+    {'name': 'tracked-nopair', 'map': '3ds',
+     'options': {'video_views_test_vr': 'nopair'}, 'steps': SETTLE,
+     'check': check_tracked_refused},
+    {'name': 'flat-hmd-size', 'map': '3ds', 'steps': SETTLE,
+     'check': check_flat_size},
+    {'name': 'tracked-menu', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'menu'), ('send', 'MENU_TOGGLE'),
+               ('wait', 4)],
+     'check': check_tracked_menu},
+    {'name': 'tracked-flat', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('mark', 'flat'), ('touch', 'vr_flat'),
+               ('wait', 5)],
+     'check': check_tracked_flat},
+    {'name': 'tracked-fallback', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'script': 'fail eyes\n',
+     'steps': SETTLE, 'check': check_tracked_fallback},
+    {'name': 'tracked-recenter', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+               ('wait', 3)],
+     'check': check_tracked_recenter},
+    # space 3 is STAGE, space 2 LOCAL.
+    {'name': 'tracked-runtime-recenter', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'space 3'), ('wait', 2),
+               ('script', 'space 2'), ('wait', 2)],
+     'check': check_tracked_runtime_recenter},
+    {'name': 'tracked-exit', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'env': {'SteamAppId': ''},
+     'steps': [('wait', 6), ('mark', 'lost'), ('script', 'state 8'),
+               ('wait_exit', 3), ('shot', None)],
+     'check': check_tracked_exit},
+    {'name': 'tracked-stopping', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'state 6'), ('wait', 3)],
+     'check': check_tracked_stopping},
+    # The pause hotkey, not the menu: the menu takes no other hotkey.
+    {'name': 'tracked-recenter-paused', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 2),
+               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+               ('wait', 3), ('mark', 'resume'), ('send', 'PAUSE_TOGGLE'),
+               ('wait', 3)],
+     'check': check_tracked_recenter_paused},
+    {'name': 'tracked-reinit', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit},
+    {'name': 'tracked-reinit-resized', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_RESIZED,
+     'check': check_tracked_reinit_resized},
+    # The recenter is taken while the samples fail, and told after.
+    {'name': 'tracked-recenter-unlocated', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6),
+               ('script', 'head 0.5 0.2 0.3 90\ninvalid views'),
+               ('wait', 1), ('mark', 'recenter'),
+               ('send', 'HEADSET_RECENTER'), ('wait', 2),
+               ('script', 'head 0.5 0.2 0.3 90'), ('wait', 3)],
+     'check': check_tracked_recenter_unlocated},
+    {'name': 'tracked-reinit-paused', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'}, 'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('projection', 'stage')},
+    {'name': 'tracked-reinit-paused-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_PAUSED,
+     'check': threaded(check_tracked_reinit_paused('projection', 'stage'))},
+    {'name': 'tracked-reinit-paused-local', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('projection', 'local')},
+    {'name': 'tracked-reinit-paused-local-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_PAUSED,
+     'check': threaded(check_tracked_reinit_paused('projection', 'local'))},
+    {'name': 'tracked-reinit-paused-unlocated', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': REINIT_PAUSED_UNLOCATED,
+     'check': check_tracked_reinit_paused('projection', 'local')},
+    {'name': 'tracked-reinit-paused-nostage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'script': 'fail stage\n',
+     'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused('pair', 'local')},
+    {'name': 'tracked-reinit-local', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit_recentered('local')},
+    {'name': 'tracked-reinit-local-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local',
+                 'video_views_test_hw': 'vulkan'},
+     'steps': REINIT_RUNNING, 'check': check_tracked_reinit_recentered('local')},
+    {'name': 'tracked-reinit-local-hw-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local',
+                 'video_views_test_hw': 'vulkan'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_RUNNING,
+     'check': threaded(check_tracked_reinit_recentered('local'))},
+    # Sampled through its pose calls alone: no tracked map.
+    {'name': 'tracked-reinit-poses', 'map': '3ds',
+     'options': {'video_views_test_vr': 'poses'}, 'steps': REINIT_RUNNING,
+     'check': check_tracked_reinit_recentered(None)},
+    {'name': 'tracked-reinit-poses-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'poses'},
+     'settings': {'video_threaded': 'true'}, 'steps': REINIT_RUNNING,
+     'check': threaded(check_tracked_reinit_recentered(None))},
+    {'name': 'tracked-reinit-paused-hw', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage',
+                 'video_views_test_hw': 'vulkan'},
+     'steps': REINIT_PAUSED,
+     'check': check_tracked_reinit_paused(None, 'stage')},
 ]
 
 

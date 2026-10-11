@@ -45,6 +45,14 @@
  *   fail waitframe          xrWaitFrame reports XR_ERROR_SESSION_LOST
  *   fail instance           xrPollEvent reports XR_ERROR_INSTANCE_LOST
  *                           while a session exists
+ *   fail eyes               xrCreateSwapchain fails at the recommended
+ *                           view size
+ *   fail stage              xrCreateReferenceSpace has no STAGE
+ *   invalid stage <n>       the next session's first n locations in a
+ *                           STAGE space come back without valid bits
+ *   invalid views           xrLocateViews answers without valid bits
+ *   eyes <w> <h>            xrEnumerateViewConfigurationViews recommends
+ *                           w x h; eyes off: the runtime's own
  *   sync <n>                xrSyncActions answers XrResult n with nothing
  *                           active (8: the session is not focused);
  *                           sync 0: the runtime's own answer
@@ -67,11 +75,11 @@
  *   aim <left|right> off    that hand untracked
  *
  * A changed script (a new mtime, inode or size) is applied line by
- * line. head, fail, sync, divide and rates stay in effect until a later
- * line of the same kind replaces them (head off, fail off). state and space
- * fire once per change of the file. Every read starts from no actions
- * and no aims: a script is the whole controller state. Action states
- * and hand poses never come from the runtime.
+ * line. head, fail, sync, divide, rates and eyes stay in effect until a
+ * later line of the same kind replaces them (head off, fail off). state
+ * and space fire once per change of the file. Every read starts from no
+ * actions, no aims and valid views: a script is the whole controller
+ * state. Action states and hand poses never come from the runtime.
  */
 
 #include <math.h>
@@ -152,11 +160,19 @@ static struct
    bool fail_session;
    bool fail_waitframe;
    bool fail_instance;
+   bool fail_eyes;
+   bool fail_stage;
+   unsigned invalid_stage_next;  /* for the next session */
+   unsigned invalid_stage;       /* left in this one */
+   bool invalid_views;
+   uint32_t script_eye_w, script_eye_h;  /* 0: the runtime's */
+   uint32_t eye_w, eye_h;    /* the recommended view size */
    int sync_result;
    int inject_states[8];     /* oldest first */
    unsigned num_inject_states;
    int inject_space;
    XrSession session;
+   XrSpace stage;              /* the layer's own, for "stage" poses */
    XrPosef head;
    uint64_t frames;
    XrDuration period;
@@ -185,6 +201,7 @@ static struct
    PFN_xrPollEvent PollEvent;
    PFN_xrCreateReferenceSpace CreateReferenceSpace;
    PFN_xrLocateSpace LocateSpace;
+   PFN_xrLocateViews LocateViews;
    PFN_xrCreateSwapchain CreateSwapchain;
    PFN_xrDestroySwapchain DestroySwapchain;
    PFN_xrEnumerateSwapchainImages EnumerateSwapchainImages;
@@ -193,6 +210,7 @@ static struct
    PFN_xrWaitFrame WaitFrame;
    PFN_xrBeginFrame BeginFrame;
    PFN_xrEndFrame EndFrame;
+   PFN_xrEnumerateViewConfigurationViews EnumerateViewConfigurationViews;
 
    XrInstance instance;
    bool frame;               /* the application enabled FRAME_EXT */
@@ -384,6 +402,8 @@ static void script_fail(const char *args)
    L.fail_session   = !strncmp(args, "session", 7);
    L.fail_waitframe = !strncmp(args, "waitframe", 9);
    L.fail_instance  = !strncmp(args, "instance", 8);
+   L.fail_eyes      = !strncmp(args, "eyes", 4);
+   L.fail_stage     = !strncmp(args, "stage", 5);
 }
 
 static void script_sync(const char *args)
@@ -402,6 +422,27 @@ static void script_state(const char *args)
 static void script_space(const char *args)
 {
    L.inject_space = atoi(args);
+}
+
+static void script_invalid(const char *args)
+{
+   unsigned n;
+   if (sscanf(args, "stage %u", &n) == 1)
+      L.invalid_stage_next = n;
+   else if (!strncmp(args, "views", 5))
+      L.invalid_views = true;
+}
+
+static void script_eyes(const char *args)
+{
+   unsigned w, h;
+   if (!strncmp(args, "off", 3))
+      L.script_eye_w = L.script_eye_h = 0;
+   else if (sscanf(args, "%u %u", &w, &h) == 2 && w && h)
+   {
+      L.script_eye_w = w;
+      L.script_eye_h = h;
+   }
 }
 
 static void script_divide(const char *args)
@@ -429,9 +470,10 @@ static void script_rates(const char *args)
 
 static void script_reset(void)
 {
-   L.num_scripted = 0;
-   L.aim_set[1]   = false;
-   L.aim_set[2]   = false;
+   L.num_scripted  = 0;
+   L.aim_set[1]    = false;
+   L.aim_set[2]    = false;
+   L.invalid_views = false;
 }
 
 static int parse_hand(const char *s)
@@ -510,6 +552,8 @@ static const struct
    { "action", script_action },
    { "aim", script_aim },
    { "space", script_space },
+   { "invalid", script_invalid },
+   { "eyes", script_eyes },
    { "divide", script_divide },
    { "rates", script_rates },
 };
@@ -809,7 +853,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSession(XrInstance instance,
       {
          const XrGraphicsBindingVulkanKHR *b =
             (const XrGraphicsBindingVulkanKHR*)p;
-         L.session      = *session;
+         L.session            = *session;
+         L.invalid_stage      = L.invalid_stage_next;
+         L.invalid_stage_next = 0;
          L.gpu          = b->physicalDevice;
          L.device       = b->device;
          L.queue_family = b->queueFamilyIndex;
@@ -851,6 +897,9 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_DestroySession(XrSession session)
       free(L.chains[i].pixels);
       memset(&L.chains[i], 0, sizeof(L.chains[i]));
    }
+   if (L.stage)
+      L.DestroySpace(L.stage);
+   L.stage           = XR_NULL_HANDLE;
    L.num_spaces      = 0;
    L.num_hand_spaces = 0;
    L.session         = XR_NULL_HANDLE;
@@ -938,7 +987,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_PollEvent(XrInstance instance,
 static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateReferenceSpace(XrSession session,
       const XrReferenceSpaceCreateInfo *info, XrSpace *space)
 {
-   XrResult res = L.CreateReferenceSpace(session, info, space);
+   XrResult res;
+   bool fail;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   fail = L.fail_stage
+      && info->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE;
+   pthread_mutex_unlock(&L.lock);
+   if (fail)
+      return XR_ERROR_REFERENCE_SPACE_UNSUPPORTED;
+   res = L.CreateReferenceSpace(session, info, space);
    if (XR_SUCCEEDED(res))
    {
       pthread_mutex_lock(&L.lock);
@@ -998,6 +1056,49 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
          }
       }
    }
+   else if (     XR_SUCCEEDED(res) && L.invalid_stage
+            && space_type(base) == XR_REFERENCE_SPACE_TYPE_STAGE)
+   {
+      L.invalid_stage--;
+      loc->locationFlags = 0;
+   }
+   pthread_mutex_unlock(&L.lock);
+   return res;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateViewConfigurationViews(
+      XrInstance instance, XrSystemId system, XrViewConfigurationType type,
+      uint32_t capacity, uint32_t *count, XrViewConfigurationView *views)
+{
+   XrResult res = L.EnumerateViewConfigurationViews(instance, system, type,
+         capacity, count, views);
+   if (XR_SUCCEEDED(res) && views && *count)
+   {
+      uint32_t i;
+      pthread_mutex_lock(&L.lock);
+      script_poll();
+      for (i = 0; L.script_eye_w && i < *count && i < capacity; i++)
+      {
+         views[i].recommendedImageRectWidth  = L.script_eye_w;
+         views[i].recommendedImageRectHeight = L.script_eye_h;
+      }
+      L.eye_w = views[0].recommendedImageRectWidth;
+      L.eye_h = views[0].recommendedImageRectHeight;
+      pthread_mutex_unlock(&L.lock);
+   }
+   return res;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateViews(XrSession session,
+      const XrViewLocateInfo *info, XrViewState *state, uint32_t capacity,
+      uint32_t *count, XrView *views)
+{
+   XrResult res = L.LocateViews(session, info, state, capacity, count,
+         views);
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   if (XR_SUCCEEDED(res) && L.invalid_views)
+      state->viewStateFlags = 0;
    pthread_mutex_unlock(&L.lock);
    return res;
 }
@@ -1006,8 +1107,15 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSwapchain(XrSession session,
       const XrSwapchainCreateInfo *info, XrSwapchain *sc)
 {
    int i;
+   bool fail;
    XrResult res;
    XrSwapchainCreateInfo ci = *info;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   fail = L.fail_eyes && info->width == L.eye_w && info->height == L.eye_h;
+   pthread_mutex_unlock(&L.lock);
+   if (fail)
+      return XR_ERROR_LIMIT_REACHED;
    /* So released images can be copied back. */
    ci.usageFlags |= XR_SWAPCHAIN_USAGE_TRANSFER_SRC_BIT;
    res = L.CreateSwapchain(session, &ci, sc);
@@ -1224,7 +1332,38 @@ static const char *space_name(XrSpace s)
 {
    int t = space_type(s);
    return t == XR_REFERENCE_SPACE_TYPE_LOCAL ? "local"
-      : (t == XR_REFERENCE_SPACE_TYPE_VIEW ? "view" : "other");
+      : (t == XR_REFERENCE_SPACE_TYPE_VIEW ? "view"
+      : (t == XR_REFERENCE_SPACE_TYPE_STAGE ? "stage" : "other"));
+}
+
+/* Where a layer's space is in STAGE at time, so poses from two sessions
+ * compare in the room; false without a STAGE. */
+static bool in_stage(XrSession session, XrSpace space, XrTime time,
+      XrPosef *out)
+{
+   XrSpaceLocation loc;
+   XrSpaceLocationFlags valid = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
+      | XR_SPACE_LOCATION_POSITION_VALID_BIT;
+   if (!L.stage)
+   {
+      XrReferenceSpaceCreateInfo rci;
+      memset(&rci, 0, sizeof(rci));
+      rci.type                   = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+      rci.referenceSpaceType     = XR_REFERENCE_SPACE_TYPE_STAGE;
+      rci.poseInReferenceSpace.orientation.w = 1.0f;
+      if (XR_FAILED(L.CreateReferenceSpace(session, &rci, &L.stage)))
+      {
+         L.stage = XR_NULL_HANDLE;
+         return false;
+      }
+   }
+   memset(&loc, 0, sizeof(loc));
+   loc.type = XR_TYPE_SPACE_LOCATION;
+   if (     XR_FAILED(L.LocateSpace(space, L.stage, time, &loc))
+         || (loc.locationFlags & valid) != valid)
+      return false;
+   *out = loc.pose;
+   return true;
 }
 
 static int chain_id(XrSwapchain h)
@@ -1295,17 +1434,41 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_EndFrame(XrSession session,
          }
          else if (h->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION)
          {
+            XrPosef st;
             const XrCompositionLayerProjection *p =
                (const XrCompositionLayerProjection*)h;
-            fputs("{\"type\":\"projection\",\"views\":[", L.out);
+            fprintf(L.out, "{\"type\":\"projection\",\"space\":\"%s\",",
+                  space_name(p->space));
+            if (in_stage(session, p->space, info->displayTime, &st))
+               fprintf(L.out, "\"stage\":[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f],",
+                     st.position.x, st.position.y, st.position.z,
+                     st.orientation.x, st.orientation.y, st.orientation.z,
+                     st.orientation.w);
+            else
+               fputs("\"stage\":null,", L.out);
+            fputs("\"views\":[", L.out);
             for (v = 0; v < p->viewCount; v++)
             {
-               fprintf(L.out, "%s{\"sc\":%d,\"layer\":%u}", v ? "," : "",
-                     chain_id(p->views[v].subImage.swapchain),
-                     p->views[v].subImage.imageArrayIndex);
+               const XrCompositionLayerProjectionView *pv = &p->views[v];
+               fprintf(L.out, "%s{\"sc\":%d,\"layer\":%u,"
+                     "\"rect\":[%d,%d,%d,%d],"
+                     "\"pose\":[%.5f,%.5f,%.5f,%.5f,%.5f,%.5f,%.5f],"
+                     "\"fov\":[%.5f,%.5f,%.5f,%.5f]}", v ? "," : "",
+                     chain_id(pv->subImage.swapchain),
+                     pv->subImage.imageArrayIndex,
+                     pv->subImage.imageRect.offset.x,
+                     pv->subImage.imageRect.offset.y,
+                     pv->subImage.imageRect.extent.width,
+                     pv->subImage.imageRect.extent.height,
+                     pv->pose.position.x, pv->pose.position.y,
+                     pv->pose.position.z, pv->pose.orientation.x,
+                     pv->pose.orientation.y, pv->pose.orientation.z,
+                     pv->pose.orientation.w,
+                     pv->fov.angleLeft, pv->fov.angleRight,
+                     pv->fov.angleUp, pv->fov.angleDown);
                if (do_snap)
-                  snap(n, p->views[v].subImage.swapchain,
-                        p->views[v].subImage.imageArrayIndex);
+                  snap(n, pv->subImage.swapchain,
+                        pv->subImage.imageArrayIndex);
             }
             fputs("]}", L.out);
          }
@@ -1616,6 +1779,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(PollEvent)
    HOOK(CreateReferenceSpace)
    HOOK(LocateSpace)
+   HOOK(LocateViews)
    HOOK(CreateSwapchain)
    HOOK(DestroySwapchain)
    HOOK(EnumerateSwapchainImages)
@@ -1623,6 +1787,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(ReleaseSwapchainImage)
    HOOK(WaitFrame)
    HOOK(EndFrame)
+   HOOK(EnumerateViewConfigurationViews)
    HOOK(CreateActionSet)
    HOOK(DestroyActionSet)
    HOOK(CreateAction)
@@ -1679,6 +1844,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(PollEvent);
    NEXT(CreateReferenceSpace);
    NEXT(LocateSpace);
+   NEXT(LocateViews);
    NEXT(CreateSwapchain);
    NEXT(DestroySwapchain);
    NEXT(EnumerateSwapchainImages);
@@ -1687,6 +1853,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(WaitFrame);
    NEXT(BeginFrame);
    NEXT(EndFrame);
+   NEXT(EnumerateViewConfigurationViews);
    NEXT(PathToString);
    NEXT(CreateActionSet);
    NEXT(DestroyActionSet);

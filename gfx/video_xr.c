@@ -210,6 +210,8 @@ static void video_xr_place_screens(const video_xr_params_t *p,
          y    = edge - gap - h / 2.0;
          edge = y - h / 2.0;
       }
+      if (p->skip_screens & (1u << s))
+         continue;
       video_xr_put(p, x, y, -p->distance, &pose);
 
       slot->dims    = video_xr_screen_dims(p, (float)w, (float)h,

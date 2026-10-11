@@ -1792,6 +1792,8 @@ ifeq ($(HAVE_VULKAN), 1)
    ifeq ($(HAVE_OPENXR), 1)
       OBJ += gfx/common/openxr_runtime.o \
              gfx/common/openxr_session.o \
+             gfx/common/openxr_tracking.o \
+             gfx/common/openxr_host.o \
              gfx/common/openxr_swapchain.o \
              gfx/common/openxr_frame.o \
              gfx/common/vulkan_openxr.o \

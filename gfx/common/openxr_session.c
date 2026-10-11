@@ -133,10 +133,15 @@ void openxr_session_poll(openxr_session_t *s)
       {
          const XrEventDataReferenceSpaceChangePending *sc =
             (const XrEventDataReferenceSpaceChangePending*)&ev;
-         if (     sc->session == s->session
-               && sc->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL
-               && s->hooks.local_changed)
-            s->hooks.local_changed(s->hooks.user);
+         if (sc->session == s->session)
+         {
+            if (     sc->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_LOCAL
+                  && s->hooks.local_changed)
+               s->hooks.local_changed(s->hooks.user);
+            else if (sc->referenceSpaceType == XR_REFERENCE_SPACE_TYPE_STAGE
+                  && s->hooks.stage_changed)
+               s->hooks.stage_changed(s->hooks.user);
+         }
       }
       if (ev.type == XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED)
       {
@@ -221,15 +226,65 @@ error:
 
 void openxr_session_destroy(openxr_session_t *s)
 {
+   if (s->track_space)
+      s->DestroySpace(s->track_space);
    if (s->view_space)
       s->DestroySpace(s->view_space);
    if (s->local_space)
       s->DestroySpace(s->local_space);
    if (s->session)
       s->DestroySession(s->session);
+   s->track_space = XR_NULL_HANDLE;
    s->view_space  = XR_NULL_HANDLE;
    s->local_space = XR_NULL_HANDLE;
    s->session     = XR_NULL_HANDLE;
+}
+
+bool openxr_session_set_track_space(openxr_session_t *s,
+      enum retro_vr_reference_space *space, const XrPosef *origin)
+{
+   XrResult res;
+   XrReferenceSpaceCreateInfo rci;
+   XrSpace fresh                     = XR_NULL_HANDLE;
+   enum retro_vr_reference_space got = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   bool stage_failed                 = false;
+
+   if (!s->session)
+      return false;
+   memset(&rci, 0, sizeof(rci));
+   rci.type                 = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
+   rci.poseInReferenceSpace = *origin;
+   if (*space == RETRO_VR_REFERENCE_SPACE_STAGE)
+   {
+      rci.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_STAGE;
+      if (XR_SUCCEEDED(s->CreateReferenceSpace(s->session, &rci, &fresh)))
+         got = RETRO_VR_REFERENCE_SPACE_STAGE;
+      else
+      {
+         fresh        = XR_NULL_HANDLE;
+         stage_failed = true;
+      }
+   }
+   if (!fresh)
+   {
+      rci.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_LOCAL;
+      if (XR_FAILED(res = s->CreateReferenceSpace(s->session, &rci, &fresh)))
+      {
+         RARCH_ERR("[OpenXR] No space for tracked content (%d).\n", (int)res);
+         return false;
+      }
+      if (stage_failed)
+         RARCH_WARN("[OpenXR] No STAGE space: tracked content is seated.\n");
+   }
+   /* The XR thread submits in it under the lock. */
+   openxr_session_lock(s);
+   if (s->track_space)
+      s->DestroySpace(s->track_space);
+   s->track_space = fresh;
+   retro_atomic_fetch_add_int(&s->track_seq, 1);
+   openxr_session_unlock(s);
+   *space = got;
+   return true;
 }
 
 /* Keeps lost: a lost instance cannot make a new session. */

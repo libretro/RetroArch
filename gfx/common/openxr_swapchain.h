@@ -33,6 +33,10 @@ RETRO_BEGIN_DECLS
 #define OPENXR_MAX_IMAGES  8
 #define OPENXR_MAX_FORMATS 64
 
+/* The tracked eyes' swapchains, one layer per eye, after the screens'. */
+#define OPENXR_PROJECTION_SLOT VIDEO_XR_MAX_SLOTS
+#define OPENXR_MAX_SLOTS       (VIDEO_XR_MAX_SLOTS + 1)
+
 /* A swapchain per layer, not one array: SteamVR on the Steam Frame
  * ignores a quad's imageArrayIndex and shows layer 0. */
 typedef struct openxr_slot
@@ -56,7 +60,7 @@ typedef struct openxr_swapchains
    openxr_session_t *session;
    int64_t formats[OPENXR_MAX_FORMATS];
    uint32_t num_formats;
-   openxr_slot_t slots[VIDEO_XR_MAX_SLOTS];
+   openxr_slot_t slots[OPENXR_MAX_SLOTS];
    PFN_xrEnumerateSwapchainFormats EnumerateSwapchainFormats;
    PFN_xrCreateSwapchain CreateSwapchain;
    PFN_xrDestroySwapchain DestroySwapchain;

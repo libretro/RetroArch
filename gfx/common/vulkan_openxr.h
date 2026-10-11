@@ -210,6 +210,30 @@ void vulkan_openxr_slot_forget(vulkan_openxr_t *xr, unsigned slot);
 void vulkan_openxr_publish(vulkan_openxr_t *xr,
       const video_xr_quad_set_t *set);
 
+/* Video thread: while the driver shows the headset nothing, it is not
+ * said to present or track, so a core sees no HMD. */
+void vulkan_openxr_set_hidden(vulkan_openxr_t *xr, bool hidden);
+
+/* Video thread, after the frame that drew them is submitted: the
+ * projection slot's two images, each eye width x height from the top
+ * left, with the views the core was last given. Clear: none. */
+void vulkan_openxr_publish_projection(vulkan_openxr_t *xr,
+      unsigned width, unsigned height);
+void vulkan_openxr_clear_projection(vulkan_openxr_t *xr);
+
+/* Video thread: a projection published now would be shown, as the core
+ * was given views in the current track space. */
+bool vulkan_openxr_has_given(const vulkan_openxr_t *xr);
+/* Video thread, each frame: views kept across a reinit are placed in
+ * this session once a frame time locates it (a repeat), and go with a
+ * new core frame, which they did not draw. */
+void vulkan_openxr_place_kept(vulkan_openxr_t *xr);
+void vulkan_openxr_new_frame(vulkan_openxr_t *xr);
+
+/* One eye's recommended image size, no larger than the headset takes;
+ * 0 without one. */
+unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr);
+
 /* Where screen 0 is centred in front of. */
 void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor);
 

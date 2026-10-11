@@ -19,6 +19,7 @@
 #include <boolean.h>
 #include <retro_atomic.h>
 #include <retro_common_api.h>
+#include <libretro.h>
 
 #include <openxr/openxr.h>
 
@@ -27,7 +28,7 @@
 RETRO_BEGIN_DECLS
 
 /* What the host does when the session changes; any may be NULL. The
- * first four are called on the thread that polls; ended also on the one
+ * first five are called on the thread that polls; ended also on the one
  * whose frame finds the session lost. */
 typedef struct openxr_session_hooks
 {
@@ -39,9 +40,12 @@ typedef struct openxr_session_hooks
    void (*exiting)(void *user);
    /* The runtime recentered this session's LOCAL space. */
    void (*local_changed)(void *user);
+   /* The runtime moved this session's STAGE. */
+   void (*stage_changed)(void *user);
    /* The graphics queue's lock, around every runtime call that may use
     * the queue (xrBeginSession and xrEndSession, a slot's create and
-    * destroy, xrBeginFrame to xrEndFrame), on whichever thread makes it. */
+    * destroy, xrBeginFrame to xrEndFrame) and replacing the track space,
+    * on whichever thread makes it. */
    void (*lock)(void *user);
    void (*unlock)(void *user);
    void *user;
@@ -54,6 +58,8 @@ typedef struct openxr_session
    XrSession session;
    XrSpace local_space;
    XrSpace view_space;
+   XrSpace track_space;           /* tracked content's, once it asks */
+   retro_atomic_int_t track_seq;  /* bumped each time it is replaced */
    retro_atomic_int_t state;   /* XrSessionState */
    retro_atomic_int_t alive;   /* the host's frames reach the headset */
    retro_atomic_int_t running; /* between xrBeginSession and xrEndSession */
@@ -75,10 +81,18 @@ bool openxr_session_load(openxr_session_t *s, const openxr_runtime_t *rt);
 /* The session on graphics_binding (chained into XrSessionCreateInfo),
  * with LOCAL and VIEW spaces. */
 bool openxr_session_create(openxr_session_t *s, const void *graphics_binding);
+/* After the frame loop has stopped. */
 void openxr_session_destroy(openxr_session_t *s);
+
+/* Tracked content's space: STAGE when asked for and the runtime has
+ * one, else LOCAL, with origin as its pose there; what was granted is
+ * written back. It replaces the last one under the lock. */
+bool openxr_session_set_track_space(openxr_session_t *s,
+      enum retro_vr_reference_space *space, const XrPosef *origin);
 void openxr_session_lock(openxr_session_t *s);
 void openxr_session_unlock(openxr_session_t *s);
-/* After a session the runtime ended: forget it, ready for a new one. */
+/* After a session the runtime ended, and after the frame loop has stopped:
+ * forget it, ready for a new one. */
 void openxr_session_reset(openxr_session_t *s);
 void openxr_session_poll(openxr_session_t *s);
 void openxr_session_end(openxr_session_t *s, bool instance_lost);

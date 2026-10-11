@@ -123,6 +123,10 @@ typedef struct video_xr_params
    unsigned rotation;
    /* The UI layer's size, or 0 for no menu quad. */
    unsigned ui_dims;
+
+   /* Screens the headset's projection shows, a bit each: no quad, and
+    * the others keep their places. */
+   unsigned skip_screens;
    bool swap_eyes;
    /* The screens are drawn by the stock chain, which shrinks smoothly:
     * their images are the shown size, even below the source's. */

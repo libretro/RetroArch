@@ -1051,6 +1051,12 @@ static unsigned                      hslane_pose_calls;
 static uintptr_t                     hslane_pose_thread;
 static bool                          hslane_focused;
 static unsigned                      hslane_space_calls;
+static unsigned                      hslane_sample_calls;
+static uint32_t                      hslane_sample_flags;
+static bool                          hslane_sample_fail;
+static bool                          hslane_tracking = true;
+static unsigned                      hslane_eye_w    = 1832;
+static unsigned                      hslane_eye_h    = 1920;
 #endif
 
 /* Out of order, and fewer than any fallback list. Twice the harness
@@ -1082,7 +1088,7 @@ static unsigned hslane_host_state(void *user)
 {
    (void)user;
    return VIDEO_XR_HEADSET_PRESENTING
-        | VIDEO_XR_HEADSET_TRACKING
+        | (hslane_tracking ? VIDEO_XR_HEADSET_TRACKING : 0)
         | (hslane_focused ? VIDEO_XR_HEADSET_FOCUSED : 0);
 }
 
@@ -1103,7 +1109,7 @@ static bool hslane_eye_state(void *user, struct retro_vr_eye_state out[2])
    memset(out, 0, 2 * sizeof(*out));
    out[0].position[0] = -0.032f;
    out[1].position[0] =  0.032f;
-   return true;
+   return !hslane_sample_fail;
 }
 
 static bool hslane_set_space(void *user, enum retro_vr_reference_space *space,
@@ -1112,8 +1118,24 @@ static bool hslane_set_space(void *user, enum retro_vr_reference_space *space,
    (void)user;
    hslane_space_calls++;
    *space = RETRO_VR_REFERENCE_SPACE_LOCAL;
-   *w     = 1832;
-   *h     = 1920;
+   *w     = hslane_eye_w;
+   *h     = hslane_eye_h;
+   return true;
+}
+
+static bool hslane_sample(void *user, uint32_t *frame_flags)
+{
+   (void)user;
+   hslane_sample_calls++;
+   *frame_flags |= hslane_sample_flags;
+   return !hslane_sample_fail;
+}
+
+static bool hslane_eye_size(void *user, unsigned *w, unsigned *h)
+{
+   (void)user;
+   *w = hslane_eye_w;
+   *h = hslane_eye_h;
    return true;
 }
 #endif
@@ -1185,6 +1207,8 @@ static void lane_headset_calls(void)
       host.state     = hslane_host_state;
       host.eye_state = hslane_eye_state;
       host.set_space = hslane_set_space;
+      host.sample    = hslane_sample;
+      host.eye_size  = hslane_eye_size;
       video_driver_set_xr_host(&host);
    }
    CHECK(video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD,
@@ -1243,6 +1267,7 @@ static void lane_headset_calls(void)
       memset(&views, 0, sizeof(views));
       views.views           = v;
       views.num_views       = 2;
+      views.flags           = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
       views.reference_space = RETRO_VR_REFERENCE_SPACE_STAGE;
       hslane_space_calls    = 0;
       hslane_info_calls     = 0;
@@ -1298,6 +1323,206 @@ static void lane_headset_calls(void)
             "headset lane: a second clear reached the driver");
       views.num_views = 0;
       video_driver_set_views(&views);
+   }
+
+   /* While the headset tracks, a TRACKED map is one pair of eyes, any
+    * map learns the eye size, and a size that changes behind the
+    * core's back comes as TARGET_RESIZED, once. */
+   {
+      struct retro_video_view v[2];
+      struct retro_video_views views;
+      struct retro_vr_frame_state fs;
+      memset(v, 0, sizeof(v));
+      v[0].width      = 400;
+      v[0].height     = 240;
+      v[1]            = v[0];
+      v[1].y          = 240;
+      v[1].screen     = 1;
+      memset(&views, 0, sizeof(views));
+      views.views     = v;
+      views.num_views = 2;
+      views.flags     = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+      CHECK(!video_driver_set_views(&views),
+            "headset lane: a TRACKED map without a pair of eyes was taken");
+      views.flags = 0;
+      CHECK(     video_driver_set_views(&views)
+            && views.recommended_view_width == 1832
+            && views.recommended_view_height == 1920,
+            "headset lane: a flat map was given %ux%u, not the eye size",
+            views.recommended_view_width, views.recommended_view_height);
+
+      hslane_tracking = false;
+      views.flags     = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+      CHECK(     video_driver_set_views(&views)
+            && !views.recommended_view_width
+            && !views.recommended_view_height,
+            "headset lane: without tracking the flag counted (%ux%u)",
+            views.recommended_view_width, views.recommended_view_height);
+      hslane_tracking = true;
+
+      /* The eyes side by side on screen 0. */
+      v[0].eye              = RETRO_VIDEO_VIEW_EYE_LEFT;
+      v[1]                  = v[0];
+      v[1].eye              = RETRO_VIDEO_VIEW_EYE_RIGHT;
+      v[1].x                = 400;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair was refused");
+      hslane_eye_w = 2000;
+      hslane_eye_h = 2016;
+      video_driver_vr_driver_changed();
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && (fs.flags & RETRO_VR_FRAME_TARGET_RESIZED),
+            "headset lane: a new eye size after a reinit was not flagged "
+            "(flags %u)", (unsigned)fs.flags);
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && !(fs.flags & RETRO_VR_FRAME_TARGET_RESIZED),
+            "headset lane: TARGET_RESIZED came twice");
+      views.recommended_view_width  = 0;
+      views.recommended_view_height = 0;
+      CHECK(     video_driver_set_views(&views)
+            && views.recommended_view_width == 2000
+            && views.recommended_view_height == 2016,
+            "headset lane: the map was not answered with the new size "
+            "(%ux%u)", views.recommended_view_width,
+            views.recommended_view_height);
+      hslane_eye_w    = 1832;
+      hslane_eye_h    = 1920;
+      views.num_views = 0;
+      hslane_info_calls = 0;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: an empty TRACKED map was refused");
+      CHECK(hslane_info_calls == 1 && !hslane_info_stereo,
+            "headset lane: an empty TRACKED map left the content up (%u)",
+            hslane_info_calls);
+
+      /* A flat map, or an empty one, after a tracked map drops it too. */
+      views.num_views = 2;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair was refused again");
+      hslane_info_calls = 0;
+      views.flags       = 0;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: a flat map was refused");
+      CHECK(hslane_info_calls == 1 && !hslane_info_stereo,
+            "headset lane: a flat map left the content up (%u)",
+            hslane_info_calls);
+      views.flags     = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair was refused a third time");
+      hslane_info_calls = 0;
+      views.num_views   = 0;
+      views.flags       = 0;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: an empty map was refused");
+      CHECK(hslane_info_calls == 1 && !hslane_info_stereo,
+            "headset lane: an empty map left the content up (%u)",
+            hslane_info_calls);
+
+      /* A size the core is handed with its map is no news to it. */
+      views.flags           = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+      views.num_views       = 2;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair was refused a fourth time");
+      hslane_eye_w          = 2000;
+      hslane_eye_h          = 2016;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_STAGE;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair in another space was refused");
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && !(fs.flags & RETRO_VR_FRAME_TARGET_RESIZED),
+            "headset lane: a size given with the map came as TARGET_RESIZED");
+
+      /* The core going takes a resize it was due with it. */
+      hslane_eye_w = 1832;
+      hslane_eye_h = 1920;
+      video_driver_vr_driver_changed();
+      video_driver_vr_content_clear();
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && !(fs.flags & RETRO_VR_FRAME_TARGET_RESIZED),
+            "headset lane: a resize outlived the core's content");
+
+      /* A map sent from retro_run is sampled before the poses answer. */
+      {
+         runloop_state_t *runloop_st = runloop_state_get_ptr();
+         struct retro_vr_frame_state fs2;
+         views.reference_space       = RETRO_VR_REFERENCE_SPACE_LOCAL;
+         runloop_st->core_vr_content = false;
+         hslane_sample_calls         = 0;
+         CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_VIDEO_VIEWS,
+               &views), "headset lane: the environment refused the map");
+         memset(&fs2, 0, sizeof(fs2));
+         CHECK(     runloop_environment_cb(
+                  RETRO_ENVIRONMENT_GET_VR_FRAME_STATE, &fs2)
+               && hslane_sample_calls == 1,
+               "headset lane: the poses after a map were sampled %u times",
+               hslane_sample_calls);
+         runloop_st->core_vr_content = false;
+         video_driver_vr_content_clear();
+      }
+
+      /* A flag waits for a frame state that returns it: through samples
+       * while the headset does not track, and maps sent then, which
+       * are given no size; and from a sample that failed. The core
+       * going takes it. */
+      views.flags           = RETRO_VIDEO_VIEWS_FLAG_TRACKED;
+      views.num_views       = 2;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+      CHECK(video_driver_set_views(&views),
+            "headset lane: the eye pair was refused a fifth time");
+      hslane_eye_w    = 2000;
+      hslane_eye_h    = 2016;
+      video_driver_vr_driver_changed();
+      hslane_tracking = false;
+      video_driver_set_views(&views);
+      video_driver_vr_sample_tracking();
+      hslane_tracking = true;
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && (fs.flags & RETRO_VR_FRAME_TARGET_RESIZED),
+            "headset lane: a resize was lost while the headset did not "
+            "track (flags %u)", (unsigned)fs.flags);
+      hslane_sample_flags = RETRO_VR_FRAME_RECENTERED;
+      hslane_sample_fail  = true;
+      video_driver_vr_sample_tracking();
+      CHECK(!video_driver_get_vr_frame_state(&fs),
+            "headset lane: the poses of a failed sample answered");
+      hslane_sample_flags = 0;
+      hslane_sample_fail  = false;
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(     video_driver_get_vr_frame_state(&fs)
+            && fs.flags == RETRO_VR_FRAME_RECENTERED,
+            "headset lane: a failed sample's recenter came as flags %u",
+            (unsigned)fs.flags);
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(video_driver_get_vr_frame_state(&fs) && !fs.flags,
+            "headset lane: flags a frame state returned came again (%u)",
+            (unsigned)fs.flags);
+      hslane_eye_w        = 1832;
+      hslane_eye_h        = 1920;
+      hslane_sample_flags = RETRO_VR_FRAME_RECENTERED;
+      hslane_sample_fail  = true;
+      video_driver_vr_sample_tracking();
+      hslane_sample_flags = 0;
+      hslane_sample_fail  = false;
+      video_driver_vr_content_clear();
+      video_driver_vr_sample_tracking();
+      memset(&fs, 0, sizeof(fs));
+      CHECK(video_driver_get_vr_frame_state(&fs) && !fs.flags,
+            "headset lane: flags outlived the core's content (%u)",
+            (unsigned)fs.flags);
    }
 
 #endif

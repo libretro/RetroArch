@@ -104,6 +104,10 @@ double video_views_aspect(const struct retro_video_view *v);
 int video_views_find(const video_views_map_t *map,
       unsigned screen, unsigned eye);
 
+/* A tracked map's eyes: true when the map holds exactly one LEFT and
+ * one RIGHT view, their indices in eyes[0] and eyes[1]; else -1. */
+bool video_views_eye_pair(const video_views_map_t *map, int eyes[2]);
+
 /* The map for one frame: a copy scaled from the core's frame size to the
  * size the driver receives. False, with out emptied, when there is no map
  * or it does not fit the frame. */

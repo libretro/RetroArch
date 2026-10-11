@@ -29,6 +29,7 @@
 #include "openxr_session.h"
 #include "openxr_swapchain.h"
 #include "openxr_frame.h"
+#include "openxr_host.h"
 #include "../video_driver.h"
 
 #include "../../msg_hash.h"
@@ -45,6 +46,9 @@ struct vulkan_openxr
    openxr_session_t session;
    openxr_swapchains_t sc;
    openxr_frame_t frame;
+   openxr_host_t host;
+   /* The driver shows the headset nothing (HDR output). */
+   retro_atomic_int_t hidden;
    VkDevice device;
    slock_t *queue_lock;
    XrSwapchain cursor;             /* start to stop; the XR thread reads it */
@@ -100,15 +104,55 @@ static void vulkan_openxr_local_hook(void *user)
    openxr_frame_local_changed(&((vulkan_openxr_t*)user)->frame);
 }
 
+static void vulkan_openxr_stage_hook(void *user)
+{
+   openxr_host_stage_changed(&((vulkan_openxr_t*)user)->host);
+}
+
 static unsigned vulkan_openxr_host_state(void *user)
 {
    vulkan_openxr_t *xr = (vulkan_openxr_t*)user;
    unsigned bits       = 0;
-   if (openxr_session_alive(&xr->session))
+   bool shown          = !retro_atomic_load_acquire_int(&xr->hidden);
+   if (shown && openxr_session_alive(&xr->session))
       bits |= VIDEO_XR_HEADSET_PRESENTING;
    if (openxr_session_focused(&xr->session))
       bits |= VIDEO_XR_HEADSET_FOCUSED;
+   /* The driver draws a tracked map's eyes as the projection. */
+   if (     shown && openxr_session_alive(&xr->session)
+         && openxr_session_running(&xr->session))
+      bits |= VIDEO_XR_HEADSET_TRACKING;
    return bits;
+}
+
+static bool vulkan_openxr_host_sample(void *user, uint32_t *frame_flags)
+{
+   return openxr_host_sample(&((vulkan_openxr_t*)user)->host, frame_flags);
+}
+
+static bool vulkan_openxr_host_eye_state(void *user,
+      struct retro_vr_eye_state out[2])
+{
+   return openxr_host_eye_state(&((vulkan_openxr_t*)user)->host, out);
+}
+
+static bool vulkan_openxr_host_head_pose(void *user,
+      struct retro_vr_head_pose *out)
+{
+   return openxr_host_head_pose(&((vulkan_openxr_t*)user)->host, out);
+}
+
+static bool vulkan_openxr_host_eye_size(void *user, unsigned *w,
+      unsigned *h)
+{
+   return openxr_host_eye_size(&((vulkan_openxr_t*)user)->host, w, h);
+}
+
+static bool vulkan_openxr_host_set_space(void *user,
+      enum retro_vr_reference_space *space, unsigned *w, unsigned *h)
+{
+   return openxr_host_set_space(&((vulkan_openxr_t*)user)->host, space,
+         w, h);
 }
 
 #define VULKAN_OPENXR_FN(xr, name) OPENXR_FN(&(xr)->rt, (xr), name)
@@ -117,6 +161,15 @@ static vulkan_openxr_hooks_t vulkan_openxr_hooks;
 /* Set after a session fails on a device made for it: the reinit that
  * follows builds the device without the runtime. */
 static bool vulkan_openxr_skip_once;
+/* What the last stopped host carries to the next after a reinit: a new
+ * instance's, or a kept device's. */
+static openxr_host_kept_t vulkan_openxr_kept;
+
+static void vulkan_openxr_host_resume(void *user)
+{
+   openxr_host_resume(&((vulkan_openxr_t*)user)->host, &vulkan_openxr_kept);
+   memset(&vulkan_openxr_kept, 0, sizeof(vulkan_openxr_kept));
+}
 
 static unsigned vulkan_openxr_extra_layers(void *user, XrTime time,
       const XrCompositionLayerBaseHeader **layers, unsigned cap)
@@ -190,10 +243,12 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
    xr->session.hooks.ended         = vulkan_openxr_ended_hook;
    xr->session.hooks.exiting       = vulkan_openxr_exiting_hook;
    xr->session.hooks.local_changed = vulkan_openxr_local_hook;
+   xr->session.hooks.stage_changed = vulkan_openxr_stage_hook;
    xr->session.hooks.lock          = vulkan_openxr_lock_queue;
    xr->session.hooks.unlock        = vulkan_openxr_unlock_queue;
    xr->session.hooks.user          = xr;
    xr->frame.extra_layers          = vulkan_openxr_extra_layers;
+   openxr_host_init(&xr->host, &xr->rt, &xr->session, &xr->frame);
    xr->enable2 = !enable1;
    ext         = enable1 ? XR_KHR_VULKAN_ENABLE_EXTENSION_NAME
                          : XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME;
@@ -438,6 +493,7 @@ static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
    xr->device = device;
    openxr_swapchains_list_formats(&xr->sc);
    openxr_frame_session_created(&xr->frame);
+   openxr_host_session_created(&xr->host);
    RARCH_LOG("[OpenXR] Session created.\n");
 
    if (vulkan_openxr_hooks.session_created)
@@ -732,6 +788,7 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
       RARCH_ERR("[OpenXR] The session belongs to another Vulkan device.\n");
       return false;
    }
+   /* Also marks the session started for vulkan_openxr_stop's keep. */
    xr->queue_lock = queue_lock;
    if (!xr->cursor)
       vulkan_openxr_cursor_create(xr, gpu, device, queue_family);
@@ -740,8 +797,14 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
    {
       video_xr_host_t host;
       memset(&host, 0, sizeof(host));
-      host.state = vulkan_openxr_host_state;
-      host.user  = xr;
+      host.state     = vulkan_openxr_host_state;
+      host.sample    = vulkan_openxr_host_sample;
+      host.eye_state = vulkan_openxr_host_eye_state;
+      host.set_space = vulkan_openxr_host_set_space;
+      host.head_pose = vulkan_openxr_host_head_pose;
+      host.eye_size  = vulkan_openxr_host_eye_size;
+      host.resume    = vulkan_openxr_host_resume;
+      host.user      = xr;
       video_driver_set_xr_host(&host);
    }
    return true;
@@ -758,10 +821,14 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    unsigned s;
    if (!xr)
       return;
+   /* Once a start, while the session still shows what the core drew:
+    * free's second stop keeps what the first did. */
+   if (xr->queue_lock)
+      openxr_host_keep(&xr->host, &vulkan_openxr_kept);
    vulkan_openxr_stop_thread(xr);
    video_driver_set_xr_host(NULL);
    /* A kept session outlives the driver's views of its images. */
-   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   for (s = 0; s < OPENXR_MAX_SLOTS; s++)
       vulkan_openxr_slot_destroy(xr, s);
    if (xr->cursor)
    {
@@ -771,6 +838,7 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
       xr->cursor = XR_NULL_HANDLE;
    }
    openxr_frame_clear_quads(&xr->frame);
+   openxr_frame_clear_projection(&xr->frame);
    /* The context frees it next; a kept session outlives it. */
    xr->queue_lock = NULL;
 }
@@ -914,6 +982,48 @@ void vulkan_openxr_publish(vulkan_openxr_t *xr,
       const video_xr_quad_set_t *set)
 {
    openxr_frame_publish(&xr->frame, set);
+}
+
+void vulkan_openxr_set_hidden(vulkan_openxr_t *xr, bool hidden)
+{
+   retro_atomic_store_release_int(&xr->hidden, hidden ? 1 : 0);
+}
+
+void vulkan_openxr_publish_projection(vulkan_openxr_t *xr,
+      unsigned width, unsigned height)
+{
+   openxr_projection_t p;
+   openxr_host_projection(&xr->host, width, height, &p);
+   openxr_frame_publish_projection(&xr->frame, &p);
+}
+
+void vulkan_openxr_clear_projection(vulkan_openxr_t *xr)
+{
+   openxr_frame_clear_projection(&xr->frame);
+}
+
+bool vulkan_openxr_has_given(const vulkan_openxr_t *xr)
+{
+   return openxr_host_has_given(&xr->host);
+}
+
+void vulkan_openxr_place_kept(vulkan_openxr_t *xr)
+{
+   openxr_host_place_kept(&xr->host);
+}
+
+void vulkan_openxr_new_frame(vulkan_openxr_t *xr)
+{
+   openxr_host_new_frame(&xr->host);
+}
+
+unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr)
+{
+   unsigned w = xr->rt.rec_width;
+   unsigned h = xr->rt.rec_height;
+   if (!w || !h)
+      return 0;
+   return VIDEO_SCALE_PACK(MIN(w, xr->rt.max_dim), MIN(h, xr->rt.max_dim));
 }
 
 void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor)

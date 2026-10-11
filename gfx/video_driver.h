@@ -724,6 +724,9 @@ typedef struct video_frame_info
    bool stereo_swap_eyes;
    /* The last frame sent again (paused, menu), not a new core frame. */
    bool frame_repeat;
+   /* The tracked eyes' views, which the headset shows as its
+    * projection; -1 while it shows none. */
+   int headset_eye[2];
 } video_frame_info_t;
 
 typedef void (*update_window_title_cb)(void*);
@@ -1420,6 +1423,11 @@ typedef struct video_xr_host
    bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
    /* Any thread: one eye's recommended image size. */
    bool (*eye_size)(void *user, unsigned *eye_width, unsigned *eye_height);
+   /* The drawing thread, after a reinit set the same content's space
+    * again: the host places the views the core was last given in it,
+    * through the room, and tells a core whose origin moved. NULL if the
+    * host keeps none. */
+   void (*resume)(void *user);
    void *user;
 } video_xr_host_t;
 
@@ -1427,6 +1435,8 @@ typedef struct video_xr_host
 void video_driver_set_xr_host(const video_xr_host_t *host);
 /* VIDEO_XR_HEADSET_ bits; 0 without a host. */
 unsigned video_driver_xr_headset(void);
+/* After a video init: the core's VR content goes to the new driver. */
+void video_driver_vr_driver_changed(void);
 
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);

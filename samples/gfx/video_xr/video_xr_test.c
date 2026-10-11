@@ -168,6 +168,28 @@ static void test_place_3ds(void)
    CHECK(set.slots[2].dims == 0 && set.slots[VIDEO_XR_MENU_SLOT].dims == 0);
 }
 
+static void test_place_skip(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.skip_screens = 1u << 0;
+   video_xr_place(&p, &set);
+
+   /* Screen 1 where it was beside screen 0, which the projection shows. */
+   CHECK(set.num_quads == 1);
+   CHECK(set.quads[0].screen == 1 && set.quads[0].slot == 1);
+   CHECK(set.quads[0].eye == VIDEO_XR_EYE_BOTH);
+   CHECK(pos_is(&set.quads[0], 0.0, -0.992, -1.8));
+   CHECK(NEAR(set.quads[0].width, 1.28) && NEAR(set.quads[0].height, 0.96));
+   CHECK(set.slots[0].dims == 0 && set.slots[0].layers == 0);
+   CHECK(set.slots[1].layers == 1 && set.slots[1].view[0] == 2);
+   CHECK(dims_is(set.slots[1].dims, 684, 513));
+}
+
 static void test_place_swap_horizontal(void)
 {
    video_views_map_t map;
@@ -699,6 +721,7 @@ int main(void)
    test_image_dims();
    test_shrinks();
    test_place_3ds();
+   test_place_skip();
    test_place_swap_horizontal();
    test_place_ds_rotation();
    test_place_frame_menu();

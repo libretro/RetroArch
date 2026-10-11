@@ -205,6 +205,7 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
       return OPENXR_RUNTIME_UNAVAILABLE;
    }
    rt->rec_width  = views[0].recommendedImageRectWidth;
+   rt->rec_height = views[0].recommendedImageRectHeight;
 
    count          = 0;
    rt->blend_mode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;

@@ -46,6 +46,19 @@ typedef struct openxr_tracked
 
 #define OPENXR_WORDS(t) ((sizeof(t) + sizeof(int) - 1) / sizeof(int))
 
+/* The tracked eyes as the drawing thread drew them: each eye's pose and
+ * field of view in the session's track space as track_seq numbered it,
+ * and the rectangle drawn in its image. */
+typedef struct openxr_projection
+{
+   XrPosef pose[2];
+   XrFovf fov[2];
+   unsigned width;
+   unsigned height;
+   int track_seq;
+   bool active;
+} openxr_projection_t;
+
 typedef struct openxr_frame
 {
    const openxr_runtime_t *rt;
@@ -67,7 +80,12 @@ typedef struct openxr_frame
     * same way. */
    retro_atomic_int_t quads_seq;
    retro_atomic_int_t quads_words[OPENXR_WORDS(video_xr_quad_set_t)];
+   /* The drawing thread's projection, the same way. */
+   retro_atomic_int_t proj_seq;
+   retro_atomic_int_t proj_words[OPENXR_WORDS(openxr_projection_t)];
    retro_atomic_int_t recenter;
+   /* Each move of the anchor, the hotkey's or the runtime's. */
+   retro_atomic_int_t recenters;
    /* The headset's period as the XR thread measures it, and the one it
     * published, 0 until known. */
    video_xr_period_t period;       /* XR thread */
@@ -119,9 +137,21 @@ unsigned openxr_frame_refresh_rates(const openxr_frame_t *f,
       float *rates, unsigned cap);
 void openxr_frame_request_rate(openxr_frame_t *f, float hz);
 void openxr_frame_publish(openxr_frame_t *f, const video_xr_quad_set_t *set);
+/* The projection the XR thread submits from now on, behind the
+ * screens; left out until its slot releases an image, and once the
+ * track space it was drawn in is replaced. Published in the same
+ * graphics-lock span as its slot's release, so a new image never goes
+ * out with the previous poses. */
+void openxr_frame_publish_projection(openxr_frame_t *f,
+      const openxr_projection_t *p);
+void openxr_frame_clear_projection(openxr_frame_t *f);
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor);
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out);
 void openxr_frame_request_recenter(openxr_frame_t *f);
+/* Any thread: how often the anchor has moved, and the display period
+ * the frames publish, 0 until measured. */
+int openxr_frame_recenters(openxr_frame_t *f);
+XrDuration openxr_frame_period(openxr_frame_t *f);
 
 RETRO_END_DECLS
 

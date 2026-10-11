@@ -540,11 +540,17 @@ static void gl_xr_end_frame(void)
 bool gl_android_openxr_sample_tracking(void)
 {
    gl_android_openxr_t *xr = &gl_xr;
+   openxr_session_t s;
    xr->tracking.valid      = false;
    if (!xr->running || xr->predicted_display_time <= 0)
       return false;
-   return openxr_tracking_sample(&xr->tracking, xr->session,
-         xr->stage_space, xr->view_space,
+   /* This context's own handles, and the loader's calls. */
+   memset(&s, 0, sizeof(s));
+   s.session     = xr->session;
+   s.view_space  = xr->view_space;
+   s.LocateViews = xrLocateViews;
+   s.LocateSpace = xrLocateSpace;
+   return openxr_tracking_sample(&xr->tracking, &s, xr->stage_space,
          xr->predicted_display_time + xr->predicted_period);
 }
 
@@ -568,7 +574,7 @@ bool gl_android_openxr_get_eye_state(struct retro_vr_eye_state out[2])
    else
       return false;
    for (eye = 0; eye < 2; eye++)
-      openxr_view_to_eye(&src[eye], &out[eye]);
+      openxr_tracking_eye(&src[eye], &out[eye]);
    return true;
 }
 
