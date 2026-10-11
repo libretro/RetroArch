@@ -275,7 +275,8 @@ static bool play_feature_delivery_enabled_internal(void)
 
    if (!env ||
        !app ||
-       !app->isPlayStoreBuild)
+       !app->isPlayStoreBuild ||
+        app->isMetaQuestBuild)
       return false;
 
    CALL_BOOLEAN_METHOD(env, enabled, app->activity->clazz,
