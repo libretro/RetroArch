@@ -14,13 +14,13 @@ S_BOOL(audio_threaded_pipeline, AUDIO_THREADED_PIPELINE,
       "audio_threaded_pipeline",
       DEFAULT_AUDIO_THREADED_PIPELINE, SD_FLAG_NONE, 0, CMD_EVENT_AUDIO_REINIT,
       "Threaded Pipeline",
-      "Resample, filter and mix audio on the audio thread instead of inside each frame. Same latency as the frame-synchronous path at any Audio Latency setting, with rate control measured at the device's own pace and the resampler out of the frame budget. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
+      "Resample, filter and mix audio on the audio thread instead of inside each frame, with rate control measured at the device's own pace and the resampler out of the frame budget. Holds more audio ahead of the device than the frame-synchronous path unless Shallow Pipeline Queue is on. Audio drivers that cannot wake on the device keep the frame-synchronous path.")
 
 S_BOOL(audio_pipeline_fill_cap, AUDIO_PIPELINE_FILL_CAP,
       "audio_pipeline_fill_cap",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Shallow Pipeline Queue",
-      "Keep the Threaded Pipeline's queue to about two frames of audio ahead of the device. With Synchronization on, the core is held there instead of at a full queue, which lowers latency when audio paces the core, such as with Vertical Sync off. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
+      "Keep the Threaded Pipeline's queue to what the frame-synchronous path holds: rate control keeps half the Audio Latency queued rather than nearly all of it and a frame on top. With Synchronization on, the core is held about two frames ahead of the device instead of at a full queue when audio paces it, such as with Vertical Sync off. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
 
 S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",

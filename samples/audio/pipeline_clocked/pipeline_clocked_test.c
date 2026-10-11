@@ -22,7 +22,8 @@
  * Then the same device with Audio Sync as the only pacer, the core
  * blocking in the publish, against the display-paced core, with
  * audio_pipeline_fill_cap off and on: what each publish waits behind.
- * Then Audio Sync off, display-paced, the pipe deep and shallow.
+ * Then display-paced against the frame-synchronous path's setpoint,
+ * and Audio Sync off, display-paced, the pipe deep and shallow.
  * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
@@ -512,7 +513,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    retro_atomic_store_release_int(&dev_running, 1);
    retro_atomic_store_release_int(&consumer_run, 1);
    pthread_create(&dev,  NULL, dev_thread, NULL);
-   pthread_create(&cons, NULL, consumer,   NULL);
+   pthread_create(&cons, NULL, consumer, NULL);
 
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
@@ -645,6 +646,54 @@ static void audio_paced_case(double seconds)
                paced_failures++;
             }
          }
+      }
+   }
+}
+
+/* Audio Sync on, the core paced by the display: with the fill cap,
+ * rate control holds the device and the pipe together where the
+ * frame-synchronous path holds the device alone - half the buffer
+ * before the publish, or the publish where the buffer is smaller -
+ * so each publish waits behind that and itself. Without it the device
+ * runs between three quarters and full, a publish on top. */
+static void setpoint_case(double seconds)
+{
+   static const unsigned lat[] = { 32, 64 };
+   size_t i;
+   printf("Audio Sync on, display-paced, against the inline setpoint:\n");
+   for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
+   {
+      double half  = lat[i] / 2.0, publish = 1000.0 / FPS;
+      double bound = (half > publish ? half : publish) + publish + 4.0;
+      double avg[2], mx;
+      size_t sp = 0, held = 0;
+      int    cap, attempt;
+      for (cap = 0; cap < 2; cap++)
+      {
+         /* Retried as above: the host taking the consumer off its core
+          * runs any device dry */
+         for (attempt = 0; attempt < 5; attempt++)
+         {
+            audio_paced_once(lat[i], seconds, cap != 0, true, true, 0,
+                  &avg[cap], &mx, &sp, &held);
+            if (!(cap && (sp || held)))
+               break;
+            printf("  %3u ms  shallow | %u short pulls, %u held; host or setpoint, again\n",
+                  lat[i], (unsigned)sp, (unsigned)held);
+         }
+         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u\n",
+               lat[i], cap ? "shallow" : "deep", avg[cap], mx, (unsigned)sp);
+      }
+      if (sp || held)
+      {
+         printf("FAIL: the shallow setpoint ran the device dry or held the core in every run\n");
+         paced_failures++;
+      }
+      if (!(avg[1] < bound))
+      {
+         printf("FAIL: shallow queued %.1f ms; the inline setpoint is %.1f ms\n",
+               avg[1], bound - 4.0);
+         paced_failures++;
       }
    }
 }
@@ -928,12 +977,14 @@ int main(int argc, char **argv)
    if (getenv("PACED_ONLY"))
    {
       audio_paced_case(seconds);
+      setpoint_case(seconds);
       sync_off_case(seconds);
       return paced_failures ? 1 : 0;
    }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
    audio_paced_case(seconds);
+   setpoint_case(seconds);
    sync_off_case(seconds);
    stall_case();
    return (stall_failures || paced_failures) ? 1 : 0;

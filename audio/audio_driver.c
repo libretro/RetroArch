@@ -5619,6 +5619,18 @@ static size_t audio_driver_pipe_prime_frames(audio_driver_state_t *audio_st)
       if (cap && cap < limit)
          limit = cap;
    }
+   /* With the fill cap, what rate control holds it to: half the
+    * device's buffer, or a publish where that is less. Primed any
+    * deeper, the controller's half percent takes seconds to bleed the
+    * difference off. */
+   if (     retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+         & AUDIO_SNAP_PIPE_CAP)
+   {
+      target = device / 2;
+      if (target < audio_st->pipe_pass_frames)
+         target = audio_st->pipe_pass_frames;
+      return target > limit ? limit : target;
+   }
    target     += device;
    return target > limit ? limit : target;
 }
@@ -5855,7 +5867,22 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
           * changing one moves the other. */
          double band = (double)audio_st->buffer_size / 2.0
                - (double)audio_driver_pipe_chunk_bytes(audio_st) / 2.0;
-         double eff = (double)audio_st->current_audio->write_avail(
+         double eff;
+         /* audio_pipeline_fill_cap: the frame-synchronous path's
+          * setpoint - the device and the pipe together half the buffer
+          * before the publish, as the device alone is before an inline
+          * write - but never under the publish itself, which the
+          * device must be able to play out while the next is made. */
+         if (     retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+               & AUDIO_SNAP_PIPE_CAP)
+         {
+            double publish = (double)audio_st->pipe_pass_frames
+                  * audio_st->src_ratio_orig * frame_bytes;
+            double half    = (double)audio_st->buffer_size / 2.0;
+            band           = publish > half ? publish - half : 0.0;
+            target         = 0.0;
+         }
+         eff = (double)audio_st->current_audio->write_avail(
                   audio_st->context_audio_data)
                + band + target - pipe_bytes;
          if (eff < 0.0)

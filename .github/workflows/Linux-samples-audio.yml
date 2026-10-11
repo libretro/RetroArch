@@ -1247,7 +1247,9 @@ jobs:
           # half, against the same device, without the device running
           # dry. With Audio Sync off it has to take the queue down too,
           # with a core up to a frame late not reaching the device as
-          # silence. Plain, not sanitized: it is the clock that is measured,
+          # silence. And display-paced with Audio Sync on, rate control
+          # has to hold the queue where the frame-synchronous path
+          # holds it. Plain, not sanitized: it is the clock that is measured,
           # and a sanitizer's slowdown is a host that starves the
           # consumer whatever the cap does. Underruns with the cap are
           # retried, since a host that takes the consumer off its core
