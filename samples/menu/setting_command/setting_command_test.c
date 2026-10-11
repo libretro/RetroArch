@@ -78,8 +78,10 @@ static void *(*null_init)(const video_info_t *video);
 
 static void *harness_init(const video_info_t *video)
 {
+   void *ret = null_init(video);
    inits++;
-   return null_init(video);
+   video_driver_modify_disp_flags(VIDEO_FLAG_HDR_SUPPORT, 0);
+   return ret;
 }
 
 /* Presses a row with OK, right, left and Start; each press has to
@@ -463,6 +465,32 @@ static void *latency_mic_init(void)
 }
 #endif
 
+static void lane_hdr_restart_scope(void)
+{
+   rarch_setting_t *s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_HDR_ENABLE);
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   unsigned before_video = inits;
+   unsigned before_audio = audio_inits;
+
+   config_get_ptr()->bools.audio_enable_menu = true;
+   core_info_get_current_core(&before_core);
+   CHECK(s != NULL, "HDR mode row must exist");
+   if (!s)
+      return;
+   *s->value.target.unsigned_integer = 1;
+   menu_setting_generic(s, 0, false);
+   CHECK(inits == before_video + 1, "HDR mode must rebuild video/input once");
+   CHECK(audio_inits == before_audio, "HDR mode must retain audio");
+   core_info_get_current_core(&after_core);
+   CHECK(before_core == after_core, "HDR mode must retain core metadata");
+   before_video = inits;
+   *s->value.target.unsigned_integer = 0;
+   menu_setting_generic(s, 0, false);
+   CHECK(inits == before_video + 1, "disabling HDR must rebuild video/input once");
+   CHECK(audio_inits == before_audio, "disabling HDR must retain audio");
+}
+
 static void lane_input_restart_scope(void)
 {
    rarch_setting_t *s = menu_setting_find_enum(
@@ -837,6 +865,7 @@ int main(int argc, char *argv[])
    lane_window_scale();
 #endif
 
+   lane_hdr_restart_scope();
    lane_input_restart_scope();
    lane_font_fallback();
    lane_minimum_audio_latency();

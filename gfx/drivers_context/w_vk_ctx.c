@@ -42,6 +42,7 @@
 #endif
 
 #include "../../configuration.h"
+#include "../../driver.h"
 #include "../../dynamic.h"
 #include "../../retroarch.h"
 #include "../../verbosity.h"
@@ -103,8 +104,9 @@ static void gfx_ctx_w_vk_check_window(void *data, bool *quit,
          && (g_win32_resize_width  == VIDEO_SCALE_W(*dims))
          && (g_win32_resize_height == VIDEO_SCALE_H(*dims)))
    {
+      int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
       g_win32_refresh_rate = settings->floats.video_refresh_rate;
-      command_event(CMD_EVENT_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, &reinit_flags);
    }
 }
 

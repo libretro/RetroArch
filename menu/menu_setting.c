@@ -9937,6 +9937,7 @@ static void write_handler_logging_verbosity(rarch_setting_t *setting)
 
 static void general_write_handler(rarch_setting_t *setting)
 {
+   int reinit_flags = DRIVERS_CMD_ALL;
    enum event_command rarch_cmd = CMD_EVENT_NONE;
    settings_t *settings         = config_get_ptr();
    unsigned vp_w, vp_h;
@@ -10319,6 +10320,7 @@ static void general_write_handler(rarch_setting_t *setting)
             settings->flags               |= SETTINGS_FLG_MODIFIED;
             settings->uints.video_hdr_mode = *setting->value.target.unsigned_integer;
 
+            reinit_flags                   = DRIVER_VIDEO_AND_INPUT_MASK;
             rarch_cmd                      = CMD_EVENT_REINIT;
 
             /* Switching HDR on/off shows or hides the dependent HDR
@@ -11027,7 +11029,8 @@ static void general_write_handler(rarch_setting_t *setting)
 
    if (     setting != setting_cmd_held_for
          && (rarch_cmd || (setting->flags & SD_FLAG_CMD_TRIGGER_EVENT_TRIGGERED)))
-      command_event(rarch_cmd, NULL);
+      command_event(rarch_cmd, rarch_cmd == CMD_EVENT_REINIT
+            ? &reinit_flags : NULL);
 }
 
 static void frontend_log_level_change_handler(rarch_setting_t *setting)
