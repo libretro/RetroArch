@@ -5819,11 +5819,11 @@ bool command_event(enum event_command cmd, void *data)
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
             bool exclusive_fullscreen =
                   video_driver_fullscreen_is_exclusive();
+            bool reinit_drivers;
 
             if (!video_driver_has_windowed())
                return false;
 
-            AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
             video_driver_modify_disp_flags(VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE, 0);
 
             /* we toggled manually, write the new value to settings */
@@ -5845,13 +5845,17 @@ bool command_event(enum event_command cmd, void *data)
              * Otherwise (exclusive fullscreen, which changes the
              * display mode, or a context without the means) all
              * drivers are dropped and reinitialised, as before. */
-            if (     exclusive_fullscreen
+            reinit_drivers = exclusive_fullscreen
                   || !video_driver_test_all_flags(
                         GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE)
                   || !video_driver_set_video_mode(
                         video_driver_window_dims(new_fullscreen_state),
-                        new_fullscreen_state))
+                        new_fullscreen_state);
+            if (reinit_drivers)
+            {
+               AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
                command_event(CMD_EVENT_REINIT, NULL);
+            }
             /* The key that asked for this is likely still down, and the
              * window loses the focus for a moment either way: it is not
              * to ask again when the focus is back. */
@@ -5866,7 +5870,8 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             video_driver_modify_disp_flags(0, VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE);
-            AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
+            if (reinit_drivers)
+               AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
 
             if (userdata && *userdata == true)
                video_driver_cached_frame();
