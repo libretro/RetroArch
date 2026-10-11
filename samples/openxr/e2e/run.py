@@ -1968,6 +1968,162 @@ def check_start_menu_hold(res):
     return errors
 
 
+# The headset's controllers as a controller: a joypad device in a slot,
+# read through the port's binds.
+DEVICE_IN_RE = re.compile(r'\[Input\] Device \d+, "([^"]+)" '
+                          r'\([0-9a-f]{4}:[0-9a-f]{4}, (\w+)\): '
+                          r'(?:new|back), in slot (\d+)\.')
+DEVICE_LEFT_RE = re.compile(r'\[Input\] Device \d+, "([^"]+)": '
+                            r'left slot (\d+)\.')
+# The test joypad driver's pad in slot 0, from the start or later.
+PAD_FIRST = os.path.join(HERE, 'pad-first.ratst')
+PAD_LATER = os.path.join(HERE, 'pad-later.ratst')
+# RGUI, OK and Cancel unswapped, from the Quick Menu: back to the Main
+# Menu, Settings (row 5), Input (3), RetroPad Binds, Port 1 Controls, and
+# B Button (row 14), whose OK starts the capture.
+BIND_B_NAV = ([('send', 'MENU_B'), ('wait', 0.5)]
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 5
+              + [('send', 'MENU_A'), ('wait', 0.5)]
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 3
+              + [('send', 'MENU_A'), ('wait', 0.5)] * 3
+              + [('send', 'MENU_DOWN'), ('wait', 0.3)] * 14
+              + [('send', 'MENU_A'), ('wait', 1)])
+
+
+def device_lines(res):
+    """The registry's lines, in log order: ('in' or 'left', name, slot),
+    a pad of the test driver's named 'pad'."""
+    out = []
+    for line in res.log.splitlines():
+        m = DEVICE_IN_RE.search(line)
+        if m:
+            out.append(('in', 'pad' if m.group(2) == 'test' else m.group(1),
+                        int(m.group(3))))
+        m = DEVICE_LEFT_RE.search(line)
+        if m:
+            out.append(('left', m.group(1), int(m.group(2))))
+    return out
+
+
+def check_input_device(res):
+    """The session's controllers are one controller, in slot 0 and on
+    port 1, read through the port, and gone with the session."""
+    errors = []
+    if '[Autoconf] OpenXR Controllers configured in port 1.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 1" in the '
+                      'log')
+    seq = [l for l in device_lines(res) if l[1] != 'pad']
+    if seq[:1] != [('in', 'OpenXR Controllers', 0)]:
+        errors.append('the device lines start %s, want the device in slot 0'
+                      % seq[:2])
+    elif ('left', 'OpenXR Controllers', 0) not in seq[1:]:
+        errors.append('the device never left slot 0 when the session ended: '
+                      '%s' % seq)
+    if ('[Autoconf] OpenXR Controllers disconnected from port 1.'
+            not in res.log):
+        errors.append('no "OpenXR Controllers disconnected from port 1" in '
+                      'the log')
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1 through the device')
+    return errors
+
+
+def check_input_device_second(res):
+    """A pad in slot 0 from the start: the headset is the next controller,
+    slot 1 and port 2, which is the core's player 2."""
+    errors = []
+    if device_lines(res)[:2] != [('in', 'pad', 0),
+                                 ('in', 'OpenXR Controllers', 1)]:
+        errors.append('the device lines start %s, want the pad in slot 0 '
+                      'and the headset in slot 1' % device_lines(res)[:3])
+    if '[Autoconf] OpenXR Controllers configured in port 2.' not in res.log:
+        errors.append('no "OpenXR Controllers configured in port 2" in the '
+                      'log')
+    if find(pads(res, 1), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 2')
+    if any(f['buttons'] for f in pads(res, 0)):
+        errors.append('the headset reached player 1')
+    return errors
+
+
+def check_input_device_taken(res):
+    """A pad the driver puts in the headset's slot takes it; the headset
+    moves to slot 1 and keeps player 1."""
+    errors = []
+    seq = [l for l in device_lines(res) if l[0] == 'in']
+    if seq[:3] != [('in', 'OpenXR Controllers', 0), ('in', 'pad', 0),
+                   ('in', 'OpenXR Controllers', 1)]:
+        errors.append('the device lines are %s, want the headset in slot '
+                      '0, the pad there, the headset in slot 1' % seq[:4])
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['A']) < 0:
+        errors.append('A never reached player 1 after the move')
+    if any(f['buttons'] for f in pads(res, 1)):
+        errors.append('the headset reached player 2')
+    return errors
+
+
+def check_input_hotkeys(res):
+    """Hotkey Enable on L3 and Screenshot on X: X alone reaches the core
+    and takes no screenshot; with L3 held it takes one."""
+    errors = []
+    if find(pads(res, 0), 0, lambda f: f['buttons'] == RP['X']) < 0:
+        errors.append('X alone never reached player 1')
+    shots = [os.path.join(res.dir, 'shots', x)
+             for x in os.listdir(os.path.join(res.dir, 'shots'))
+             if x.endswith('.png')]
+    combo = res.marks.get('combo', 0) + time.time() - time.monotonic()
+    early = [s for s in shots if os.path.getmtime(s) < combo]
+    if early:
+        errors.append('X without Hotkey Enable took a screenshot')
+    if len(shots) - len(early) != 1:
+        errors.append('L3 with X took %d screenshots, want 1'
+                      % (len(shots) - len(early)))
+    return errors
+
+
+def check_input_hotkeys_separate(res):
+    """Separate, Menu Toggle on R: the right hand is port 2 and opens
+    nothing; the left hand is port 1, the hotkey port, and opens the
+    menu."""
+    errors = []
+    for name, port in (('Left', 1), ('Right', 2)):
+        if ('[Autoconf] OpenXR %s Controller configured in port %d.'
+                % (name, port)) not in res.log:
+            errors.append('no "OpenXR %s Controller configured in port %d" '
+                          'in the log' % (name, port))
+    left = res.marks.get('left', 0) * 1e6
+    opened = [f['t_us'] for f in res.frames if menus(f)]
+    if any(t < left for t in opened):
+        errors.append('R on the right hand opened the menu')
+    if not any(t >= left for t in opened):
+        errors.append('R on the left hand did not open the menu')
+    return errors
+
+
+def check_input_port_binds(res):
+    """Port 1's own binds with A and B swapped apply to the headset: its
+    A press, then its B press, reach player 1 as B, then A."""
+    presses = []
+    for f in pads(res, 0):
+        if not presses or presses[-1] != f['buttons']:
+            presses.append(f['buttons'])
+    presses = [b for b in presses if b]
+    if presses != [RP['B'], RP['A']]:
+        return ['the headset\'s A then B reached player 1 as %s, want B '
+                'then A' % ['0x%x' % b for b in presses]]
+    return []
+
+
+def check_input_bind_capture(res):
+    """X captured into Port 1's B Button through the menu: X is then B
+    too."""
+    p0 = pads(res, 0)
+    if find(p0, 0, lambda f: f['buttons'] == RP['B'] | RP['X']) < 0:
+        return ['X never reached player 1 as B after the capture: %s'
+                % p0[-3:]]
+    return []
+
+
 def check_combined(res):
     errors = bindings_errors(res) + sync_errors(res, ('combined', 'pointer'))
     p0 = pads(res, 0)
@@ -4241,6 +4397,57 @@ CASES = [
                ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED)),
                ('wait', 2)],
      'check': check_placement_follow_laser},
+    {'name': 'input-device', 'map': '3ds', 'env': {'SteamAppId': ''},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1), ('script', 'state 8'),
+               ('wait', 3)],
+     'check': check_input_device},
+    {'name': 'input-device-second', 'map': '3ds',
+     'settings': {'test_input_file_joypad': PAD_FIRST},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_device_second},
+    {'name': 'input-device-taken', 'map': '3ds',
+     'settings': {'test_input_file_joypad': PAD_LATER},
+     'steps': [('wait', 14), ('script', 'action combined/a 1'), ('wait', 1),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_device_taken},
+    {'name': 'input-hotkeys', 'map': '3ds',
+     'settings': {'input_enable_hotkey_btn': '14',
+                  'input_screenshot_btn': '9'},
+     'steps': [('wait', 6), ('script', 'action combined/x 1'), ('wait', 2),
+               ('script', ''), ('wait', 1),
+               ('script', 'action combined/l3 1'), ('wait', 1),
+               ('mark', 'combo'),
+               ('script', script('action combined/l3 1',
+                                 'action combined/x 1')),
+               ('wait', 2), ('script', ''), ('wait', 2)],
+     'check': check_input_hotkeys},
+    {'name': 'input-hotkeys-separate', 'map': '3ds',
+     'settings': {'video_openxr_controllers': '1', 'menu_driver': 'ozone',
+                  'input_menu_toggle_btn': '11'},
+     'steps': [('wait', 6), ('script', 'action separate/r@right 1'),
+               ('wait', 1), ('script', ''), ('wait', 2), ('mark', 'left'),
+               ('script', 'action separate/r@left 1'), ('wait', 0.5),
+               ('script', ''), ('wait', 3)],
+     'check': check_input_hotkeys_separate},
+    {'name': 'input-port-binds', 'map': '3ds',
+     'settings': {'input_player1_b_btn': '8', 'input_player1_a_btn': '0'},
+     'steps': [('wait', 6), ('script', 'action combined/a 1'), ('wait', 2),
+               ('script', ''), ('wait', 1),
+               ('script', 'action combined/b 1'), ('wait', 2),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_port_binds},
+    {'name': 'input-bind-capture', 'map': '3ds',
+     'settings': {'menu_driver': 'rgui',
+                  'menu_swap_ok_cancel_buttons': 'false'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3)]
+     + BIND_B_NAV
+     + [('script', 'action combined/x 1'), ('wait', 2), ('script', ''),
+        ('wait', 1), ('send', 'MENU_TOGGLE'), ('wait', 2),
+        ('script', 'action combined/x 1'), ('wait', 2), ('script', ''),
+        ('wait', 1)],
+     'check': check_input_bind_capture},
 ]
 
 

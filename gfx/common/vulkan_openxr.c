@@ -731,7 +731,7 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
       slock_t *queue_lock)
 {
    /* A kept device outlives a session the runtime ended: a new one. */
-   if (xr->session.ended)
+   if (openxr_session_ended(&xr->session))
    {
       vulkan_openxr_destroy_session(xr);
       openxr_session_reset(&xr->session);

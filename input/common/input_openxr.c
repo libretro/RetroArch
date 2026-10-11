@@ -18,6 +18,7 @@
 
 #include <boolean.h>
 #include <compat/strl.h>
+#include <string/stdstring.h>
 #include <retro_miscellaneous.h>
 #include <retro_atomic.h>
 #include <features/features_cpu.h>
@@ -31,6 +32,7 @@
 #include "../input_defines.h"
 #include "../input_driver.h"
 #include "../../runloop.h"
+#include "../../tasks/tasks_internal.h"
 #include "../../gfx/video_views.h"
 #include "../../gfx/common/openxr_frame.h"
 #include "../../gfx/video_driver.h"
@@ -410,10 +412,32 @@ static input_openxr_t input_openxr_st;
 #define INPUT_OPENXR_MENU_OPEN  4
 static retro_atomic_int_t input_openxr_pointer_config;
 
-/* A core's rumble per player, strong then weak, and whether a session's
- * controllers exist: cores set rumble from any thread. */
+/* A core's rumble per pad, strong then weak, and whether a session's
+ * controllers exist: asked from any thread. */
 static retro_atomic_int_t input_openxr_rumble[INPUT_OPENXR_PADS][2];
 static retro_atomic_int_t input_openxr_ready;
+
+/* The pads as joypad devices. Main thread; apart from input_openxr_st,
+ * which a session's release clears, so a session remade before the
+ * next poll keeps them. */
+typedef struct input_openxr_devices
+{
+   int slot[INPUT_OPENXR_PADS];    /* each pad's slot, or -1 */
+   int lost[INPUT_OPENXR_PADS];    /* a slot a pad took from it, or -1 */
+   unsigned count;                 /* named for 1 (Combined) or 2 pads */
+   bool landed[INPUT_OPENXR_PADS]; /* its last connect was applied */
+   bool warned;
+} input_openxr_devices_t;
+
+static input_openxr_devices_t input_openxr_devs = {
+   { -1, -1 }, { -1, -1 }, 0, { false, false }, false };
+
+/* The joypad driver under the devices' slots, and two tables to hand
+ * out: a new driver under them gets the other, as the snapshot bridge
+ * knows a driver by its table. */
+static const input_device_driver_t *input_openxr_inner;
+static input_device_driver_t input_openxr_wrap[2];
+static unsigned input_openxr_wrap_cur;
 
 #define INPUT_OPENXR_PROC(st, get, inst, name) \
    (XR_SUCCEEDED((get)((inst), "xr" #name, \
@@ -791,34 +815,6 @@ static void input_openxr_triggers(input_openxr_t *st, float threshold)
       if (v > threshold)
          pad->buttons |= (uint16_t)(1u
                << (RETRO_DEVICE_ID_JOYPAD_L2 + st->trig[h].slot));
-   }
-}
-
-/* Analog to Digital as a gamepad on the port gets it: the D-pad (or
- * Twin Stick's face buttons) from the sticks the mode takes, which then
- * read as centred. The menu reads the sticks itself, as it does a
- * gamepad's. */
-static void input_openxr_dpad(input_openxr_t *st, float threshold)
-{
-   unsigned p;
-#ifdef HAVE_MENU
-   if (menu_driver_alive())
-      return;
-#endif
-   for (p = 0; p < INPUT_OPENXR_PADS; p++)
-   {
-      input_openxr_pad_t *pad = &st->pads[p];
-      unsigned mode           = input_driver_analog_dpad_mode(p);
-      pad->buttons |= input_driver_analog_dpad_buttons(mode, pad->analog,
-            threshold);
-      if (     mode == ANALOG_DPAD_LSTICK
-            || mode == ANALOG_DPAD_LRSTICK
-            || mode == ANALOG_DPAD_TWINSTICK)
-         pad->analog[0] = pad->analog[1] = 0;
-      if (     mode == ANALOG_DPAD_RSTICK
-            || mode == ANALOG_DPAD_LRSTICK
-            || mode == ANALOG_DPAD_TWINSTICK)
-         pad->analog[2] = pad->analog[3] = 0;
    }
 }
 
@@ -1210,8 +1206,248 @@ static void input_openxr_haptics(input_openxr_t *st, bool separate,
    }
 }
 
-void input_openxr_poll(unsigned controllers, unsigned laser,
-      float threshold)
+/* The pad in @slot, or -1. */
+static int input_openxr_pad_of(unsigned slot)
+{
+   unsigned p;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      if (input_openxr_devs.slot[p] == (int)slot)
+         return (int)p;
+   return -1;
+}
+
+static const char *input_openxr_device_name(unsigned p)
+{
+   if (p)
+      return INPUT_OPENXR_JOYPAD_RIGHT;
+   return input_openxr_devs.count < 2 ? INPUT_OPENXR_JOYPAD_COMBINED
+      : INPUT_OPENXR_JOYPAD_LEFT;
+}
+
+/* Pad @p's device reported in its slot. Its layout is RetroArch's own,
+ * the runtime binding the controllers, so its profile loads with
+ * autodetect off too. */
+static void input_openxr_announce(unsigned p)
+{
+   input_openxr_devs.landed[p] = false;
+   input_autoconfigure_connect_ex(input_openxr_device_name(p), NULL, NULL,
+         INPUT_OPENXR_JOYPAD, (unsigned)input_openxr_devs.slot[p], 0, 0,
+         AUTOCONF_FLAG_AUTOCONFIG_ENABLED);
+}
+
+/* The lowest slot no controller has, as a pad plugged in gets. */
+static int input_openxr_free_slot(void)
+{
+   unsigned s;
+   for (s = 0; s < MAX_USERS; s++)
+      if (!input_config_get_device_name(s) && input_openxr_pad_of(s) < 0)
+         return (int)s;
+   return -1;
+}
+
+/* A device for each pad the session's controllers make: none without
+ * them or once the session has ended, one in Combined, a hand each in
+ * Separate. */
+static void input_openxr_devices(unsigned max_users, bool separate)
+{
+   unsigned p;
+   input_openxr_devices_t *dv = &input_openxr_devs;
+   input_openxr_t *st         = &input_openxr_st;
+   /* an ended session keeps its controllers until the driver goes */
+   bool ended                 = st->frame
+      && openxr_session_ended(st->frame->session);
+   unsigned want              = (!input_openxr_active() || ended) ? 0
+      : separate ? 2 : 1;
+   /* a connect still to come may be for a slot that looks free */
+   bool pending               = input_autoconfigure_pending();
+
+   /* Gone once its connect has landed, so the registry is told of the
+    * one before the other. */
+   for (p = want; p < INPUT_OPENXR_PADS; p++)
+   {
+      dv->lost[p] = -1;
+      if (dv->slot[p] >= 0 && dv->landed[p])
+      {
+         input_autoconfigure_disconnect((unsigned)dv->slot[p],
+               input_openxr_device_name(p));
+         dv->slot[p]   = -1;
+         dv->landed[p] = false;
+      }
+   }
+   if (!want)
+   {
+      dv->warned = false;
+      return;
+   }
+   /* A mode switch renames the first in place, so the left hand keeps
+    * the pair's port. */
+   if (want != dv->count)
+   {
+      dv->count = want;
+      if (dv->slot[0] >= 0)
+         input_openxr_announce(0);
+   }
+
+   for (p = 0; p < want; p++)
+   {
+      int s = dv->slot[p];
+      if (s >= 0)
+      {
+         /* forgotten, as a config load forgets */
+         if (     dv->landed[p]
+               && !input_config_get_device_autoconfigured((unsigned)s))
+            input_openxr_announce(p);
+         continue;
+      }
+      if (pending)
+         continue;
+      if ((s = input_openxr_free_slot()) < 0)
+      {
+         if (!dv->warned)
+            RARCH_WARN("[OpenXR] No free slot for the headset's controllers.\n");
+         dv->warned = true;
+         continue;
+      }
+      dv->slot[p] = s;
+      /* a pad took its slot: the port goes where it went, for this run */
+      if (dv->lost[p] >= 0)
+         input_driver_exchange_ports((unsigned)dv->lost[p], (unsigned)s);
+      dv->lost[p] = -1;
+      input_openxr_announce(p);
+      if ((unsigned)s >= max_users && !dv->warned)
+      {
+         RARCH_WARN("[OpenXR] The headset's controllers are in slot %d, past Max Users (%u).\n",
+               s, max_users);
+         dv->warned = true;
+      }
+   }
+}
+
+/* The joypad driver readers get while the devices have slots: theirs
+ * answered from their pads, the RetroPad's ids as buttons, the sticks
+ * as axes 0 to 3 and L2 and R2 as 4 and 5, every other slot by the
+ * driver under them. */
+static const input_openxr_pad_t *input_openxr_slot_pad(unsigned slot)
+{
+   int p = input_openxr_pad_of(slot);
+   return p >= 0 ? &input_openxr_st.pads[p] : NULL;
+}
+
+static int16_t input_openxr_pad_axis(const input_openxr_pad_t *pad,
+      unsigned axis)
+{
+   if (axis < 4)
+      return pad->analog[axis];
+   return pad->trigger[axis - 4];
+}
+
+static bool input_openxr_joypad_query(unsigned pad)
+{
+   if (input_openxr_slot_pad(pad))
+      return true;
+   return input_openxr_inner->query_pad
+      && input_openxr_inner->query_pad(pad);
+}
+
+static int32_t input_openxr_joypad_button(unsigned port, uint16_t joykey)
+{
+   const input_openxr_pad_t *pad = input_openxr_slot_pad(port);
+   if (!pad)
+      return input_openxr_inner->button
+         ? input_openxr_inner->button(port, joykey) : 0;
+   return joykey < RARCH_FIRST_CUSTOM_BIND
+      && (pad->buttons & (1u << joykey));
+}
+
+static int16_t input_openxr_joypad_axis(unsigned port, uint32_t joyaxis)
+{
+   int16_t v;
+   const input_openxr_pad_t *pad = input_openxr_slot_pad(port);
+   if (!pad)
+      return input_openxr_inner->axis
+         ? input_openxr_inner->axis(port, joyaxis) : 0;
+   if (AXIS_NEG_GET(joyaxis) < 6)
+   {
+      v = input_openxr_pad_axis(pad, AXIS_NEG_GET(joyaxis));
+      return v < 0 ? v : 0;
+   }
+   if (AXIS_POS_GET(joyaxis) < 6)
+   {
+      v = input_openxr_pad_axis(pad, AXIS_POS_GET(joyaxis));
+      return v > 0 ? v : 0;
+   }
+   return 0;
+}
+
+static int16_t input_openxr_joypad_state(rarch_joypad_info_t *joypad_info,
+      const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
+{
+   int i;
+   int16_t ret       = 0;
+   uint16_t port_idx = joypad_info->joy_idx;
+
+   if (!input_openxr_slot_pad(port_idx))
+      return input_openxr_inner->state ? input_openxr_inner->state(
+            joypad_info, joykeys, joyaxes, port) : 0;
+   for (i = 0; i < RARCH_FIRST_CUSTOM_BIND; i++)
+   {
+      const uint64_t joykey  = joykeys[i];
+      const uint32_t joyaxis = joyaxes[i];
+      if (     (uint16_t)joykey != NO_BTN
+            && input_openxr_joypad_button(port_idx, (uint16_t)joykey))
+         ret |= (1 << i);
+      else if (joyaxis != AXIS_NONE &&
+            ((float)abs(input_openxr_joypad_axis(port_idx, joyaxis))
+             / 0x8000) > joypad_info->axis_threshold)
+         ret |= (1 << i);
+   }
+   return ret;
+}
+
+static void input_openxr_joypad_get_buttons(unsigned port,
+      input_bits_t *state)
+{
+   unsigned id;
+   const input_openxr_pad_t *pad = input_openxr_slot_pad(port);
+   if (!pad)
+   {
+      input_openxr_inner->get_buttons(port, state);
+      return;
+   }
+   BIT256_CLEAR_ALL_PTR(state);
+   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+      if (pad->buttons & (1u << id))
+         BIT256_SET_PTR(state, id);
+}
+
+/* A core's rumble, applied at the next poll. */
+static bool input_openxr_joypad_rumble(unsigned pad,
+      enum retro_rumble_effect effect, uint16_t strength)
+{
+   int p;
+   if (pad >= MAX_USERS
+         || (effect != RETRO_RUMBLE_STRONG && effect != RETRO_RUMBLE_WEAK))
+      return false;
+   p = input_openxr_pad_of(pad);
+   if (p < 0)
+      return input_openxr_inner->set_rumble
+         && input_openxr_inner->set_rumble(pad, effect, strength);
+   retro_atomic_store_release_int(
+         &input_openxr_rumble[p][(effect == RETRO_RUMBLE_STRONG) ? 0 : 1],
+         (int)strength);
+   return input_openxr_active();
+}
+
+static const char *input_openxr_joypad_name(unsigned pad)
+{
+   int p = input_openxr_pad_of(pad);
+   if (p >= 0)
+      return input_openxr_device_name((unsigned)p);
+   return input_openxr_inner->name ? input_openxr_inner->name(pad) : NULL;
+}
+
+void input_openxr_poll(unsigned max_users, unsigned controllers,
+      unsigned laser, float threshold)
 {
    unsigned p;
    XrResult res;
@@ -1226,6 +1462,8 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
 #else
    bool menu_open       = false;
 #endif
+
+   input_openxr_devices(max_users, separate);
 
    /* The XR thread places the dots by these: none while the laser
     * yields, which a closed menu or the laser Off ends. */
@@ -1317,17 +1555,78 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
          (int)laser | (menu_open ? INPUT_OPENXR_MENU_OPEN : 0));
    input_openxr_laser_poll(st, laser, menu_open, threshold, was_pressed);
    input_openxr_triggers(st, threshold);
-   input_openxr_dpad(st, threshold);
    input_openxr_haptics(st, separate,
          (run_flags & RUNLOOP_FLAG_PAUSED) ? true : false);
 }
 
-bool input_openxr_button(unsigned port, unsigned id)
+const input_device_driver_t *input_openxr_joypad(
+      const input_device_driver_t *joypad)
 {
-   input_openxr_t *st = &input_openxr_st;
-   if (id < RARCH_FIRST_CUSTOM_BIND)
-      return port < INPUT_OPENXR_PADS
-         && (st->pads[port].buttons & (1u << id));
+   input_device_driver_t *wrap;
+   if (     !joypad
+         || (input_openxr_devs.slot[0] < 0 && input_openxr_devs.slot[1] < 0))
+      return joypad;
+   if (joypad != input_openxr_inner)
+   {
+      input_openxr_wrap_cur ^= 1;
+      wrap                   = &input_openxr_wrap[input_openxr_wrap_cur];
+      *wrap                  = *joypad;
+      wrap->init             = NULL;
+      wrap->destroy          = NULL;
+      wrap->query_pad        = input_openxr_joypad_query;
+      wrap->button           = input_openxr_joypad_button;
+      wrap->state            = input_openxr_joypad_state;
+      wrap->axis             = input_openxr_joypad_axis;
+      wrap->set_rumble       = input_openxr_joypad_rumble;
+      wrap->name             = input_openxr_joypad_name;
+      if (joypad->get_buttons)
+         wrap->get_buttons   = input_openxr_joypad_get_buttons;
+      input_openxr_inner     = joypad;
+   }
+   return &input_openxr_wrap[input_openxr_wrap_cur];
+}
+
+bool input_openxr_has_slot(unsigned slot)
+{
+   return input_openxr_pad_of(slot) >= 0;
+}
+
+void input_openxr_slot_connected(unsigned slot, const char *provider)
+{
+   int p = input_openxr_pad_of(slot);
+   if (p < 0)
+      return;
+   if (string_is_equal(provider, INPUT_OPENXR_JOYPAD))
+      input_openxr_devs.landed[p] = true;
+   else
+   {
+      /* the pad's now; the device moves at the next poll */
+      input_openxr_devs.lost[p]   = (int)slot;
+      input_openxr_devs.slot[p]   = -1;
+      input_openxr_devs.landed[p] = false;
+   }
+}
+
+void input_openxr_reannounce(void)
+{
+   unsigned p;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+      if (input_openxr_devs.slot[p] >= 0)
+         input_openxr_announce(p);
+}
+
+bool input_openxr_autoconfigure(unsigned slot)
+{
+   int p = input_openxr_pad_of(slot);
+   if (p < 0)
+      return false;
+   input_openxr_announce((unsigned)p);
+   return true;
+}
+
+bool input_openxr_hotkey(unsigned id)
+{
+   const input_openxr_t *st = &input_openxr_st;
    if (id == RARCH_MENU_TOGGLE)
       return st->menu_toggle;
    if (id == RARCH_HEADSET_RECENTER)
@@ -1335,31 +1634,6 @@ bool input_openxr_button(unsigned port, unsigned id)
    if (id == RARCH_LASER_POINTER_TOGGLE)
       return st->laser_toggle;
    return false;
-}
-
-int16_t input_openxr_analog(unsigned port, unsigned idx, unsigned id,
-      int16_t res)
-{
-   int v                     = 0;
-   int r                     = res;
-   const input_openxr_pad_t *pad;
-   if (port >= INPUT_OPENXR_PADS)
-      return res;
-   pad = &input_openxr_st.pads[port];
-   if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
-   {
-      if (id == RETRO_DEVICE_ID_JOYPAD_L2)
-         v = pad->trigger[0];
-      else if (id == RETRO_DEVICE_ID_JOYPAD_R2)
-         v = pad->trigger[1];
-   }
-   else if (     idx <= RETRO_DEVICE_INDEX_ANALOG_RIGHT
-              && id  <= RETRO_DEVICE_ID_ANALOG_Y)
-      v = pad->analog[idx * 2 + id];
-   /* Analog values keep the larger magnitude, as the overlay's do. */
-   if ((v < 0 ? -v : v) > (r < 0 ? -r : r))
-      return (int16_t)v;
-   return res;
 }
 
 bool input_openxr_pointer(unsigned port, unsigned device, unsigned idx,
@@ -1426,18 +1700,6 @@ bool input_openxr_menu_pointer(float *u, float *v, bool *pressed)
    *v       = st->menu_v;
    *pressed = st->menu_pressed;
    return true;
-}
-
-bool input_openxr_set_rumble(unsigned port, enum retro_rumble_effect effect,
-      uint16_t strength)
-{
-   if (port >= INPUT_OPENXR_PADS
-         || (effect != RETRO_RUMBLE_STRONG && effect != RETRO_RUMBLE_WEAK))
-      return false;
-   retro_atomic_store_release_int(
-         &input_openxr_rumble[port][(effect == RETRO_RUMBLE_STRONG) ? 0 : 1],
-         (int)strength);
-   return input_openxr_active();
 }
 
 bool input_openxr_can_rumble(void)

@@ -1719,7 +1719,7 @@ static bool autoconfigure_port_finder(retro_task_t *task, void *user_data)
    return false;
 }
 
-#ifdef HAVE_TEST_DRIVERS
+#if defined(HAVE_TEST_DRIVERS) || defined(HAVE_OPENXR)
 static bool autoconfigure_any_finder(retro_task_t *task, void *user_data)
 {
    return task
@@ -1731,7 +1731,8 @@ static bool autoconfigure_any_finder(retro_task_t *task, void *user_data)
  * task_queue_find() reports a task until its callback has run, so
  * 'false' means every port's device table is what the driver last
  * reported.  For the test joypad driver, whose scripted steps run on
- * a frame count that the task queue does not follow. */
+ * a frame count that the task queue does not follow, and the headset's
+ * controllers, which take a slot no driver has reported. */
 bool input_autoconfigure_pending(void)
 {
    task_finder_data_t find_data;

@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <retro_atomic.h>
-#include "gfx/common/openxr_frame.h"
 
 static void (*after_load)(void);
 static int test_load(const retro_atomic_int_t *value)
@@ -31,6 +30,9 @@ static XrResult apply_result[2], stop_result[2];
 static unsigned failures;
 static openxr_session_t test_session;
 static openxr_frame_t test_host_frame;
+static input_device_driver_t test_pad_driver;
+static char test_device_name[MAX_USERS][64];
+static bool test_device_auto[MAX_USERS];
 
 #define CHECK(c, msg) do { if (!(c)) { \
    fprintf(stderr, "FAIL %s\n", msg); failures++; } } while (0)
@@ -39,24 +41,46 @@ retro_time_t cpu_features_get_time_usec(void) { return test_now; }
 uint32_t runloop_get_flags(void) { return RUNLOOP_FLAG_CORE_RUNNING; }
 bool openxr_session_focused(openxr_session_t *session)
 { (void)session; return test_focused; }
+bool openxr_session_ended(openxr_session_t *session)
+{ (void)session; return false; }
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *frame)
 { (void)frame; return test_frame ? (XrSwapchain)(uintptr_t)1 : XR_NULL_HANDLE; }
 void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
 { (void)hooks; }
 XrTime openxr_frame_predicted_time(openxr_frame_t *frame)
 { (void)frame; return 0; }
-void openxr_frame_get_quads(openxr_frame_t *frame, video_xr_quad_set_t *out)
-{ (void)frame; memset(out, 0, sizeof(*out)); }
-unsigned input_driver_analog_dpad_mode(unsigned port)
-{ (void)port; return 0; }
-uint16_t input_driver_analog_dpad_buttons(unsigned mode,
-      const int16_t *analog, float axis_threshold)
-{ (void)mode; (void)analog; (void)axis_threshold; return 0; }
+void openxr_frame_get_shown_quads(openxr_frame_t *frame,
+      video_xr_quad_set_t *out, XrSpace *space)
+{ (void)frame; memset(out, 0, sizeof(*out)); *space = XR_NULL_HANDLE; }
 bool menu_driver_alive(void) { return test_menu_open; }
 bool video_driver_get_views_core(const video_views_map_t **map, unsigned *dims)
 { (void)map; (void)dims; return false; }
 bool video_driver_get_viewport_info(struct video_viewport *vp)
 { (void)vp; return false; }
+bool input_autoconfigure_connect_ex(const char *name,
+      const char *display_name, const char *phys, const char *driver,
+      unsigned port, unsigned vid, unsigned pid, uint8_t flags)
+{
+   (void)display_name; (void)phys; (void)vid; (void)pid;
+   strlcpy(test_device_name[port], name, sizeof(test_device_name[port]));
+   test_device_auto[port] = (flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED) != 0;
+   input_openxr_slot_connected(port, driver);
+   return true;
+}
+bool input_autoconfigure_disconnect(unsigned port, const char *name)
+{
+   (void)name;
+   test_device_name[port][0] = '\0';
+   test_device_auto[port] = false;
+   return true;
+}
+bool input_autoconfigure_pending(void) { return false; }
+const char *input_config_get_device_name(unsigned port)
+{ return test_device_name[port][0] ? test_device_name[port] : NULL; }
+bool input_config_get_device_autoconfigured(unsigned port)
+{ return test_device_auto[port]; }
+void input_driver_exchange_ports(unsigned a, unsigned b)
+{ (void)a; (void)b; }
 void RARCH_LOG(const char *fmt, ...) { (void)fmt; }
 void RARCH_WARN(const char *fmt, ...) { (void)fmt; }
 void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,
@@ -142,6 +166,19 @@ static void setup(void)
    memset(&test_host_frame, 0, sizeof(test_host_frame));
    test_host_frame.session = &test_session;
    input_openxr_st.frame = &test_host_frame;
+   memset(&test_pad_driver, 0, sizeof(test_pad_driver));
+   memset(test_device_name, 0, sizeof(test_device_name));
+   memset(test_device_auto, 0, sizeof(test_device_auto));
+   input_openxr_devs.count = INPUT_OPENXR_PADS;
+   for (p = 0; p < INPUT_OPENXR_PADS; p++)
+   {
+      input_openxr_devs.slot[p] = (int)p;
+      input_openxr_devs.lost[p] = -1;
+      input_openxr_devs.landed[p] = true;
+      strlcpy(test_device_name[p], input_openxr_device_name(p),
+            sizeof(test_device_name[p]));
+      test_device_auto[p] = true;
+   }
    memset(applies, 0, sizeof(applies));
    memset(stops, 0, sizeof(stops));
    for (h = 0; h < 2; h++)
@@ -161,14 +198,14 @@ static void service(bool separate, bool paused)
 
 static bool set_rumble(unsigned slot, enum retro_rumble_effect effect,
       uint16_t strength)
-{ return input_openxr_set_rumble(slot, effect, strength); }
+{ return input_openxr_joypad(&test_pad_driver)->set_rumble(slot, effect, strength); }
 
 static void publish_pointer(unsigned laser, bool menu)
 {
    openxr_frame_t *frame = input_openxr_st.frame;
    test_menu_open = menu;
    input_openxr_st.frame = NULL;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, laser, 0.5f);
    input_openxr_st.frame = frame;
 }
 static void replace_pointer(void)
@@ -216,13 +253,13 @@ static void pointer_tests(void)
    input_openxr_st.GetActionStateFloat = read_float;
    input_openxr_st.GetActionStateVector2f = read_vector;
    test_navigation = test_menu_open = true;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
    picks = 0;
    input_openxr_frame_layers(NULL, 1, layers, 2);
    CHECK(picks == 0, "post-navigation publication did not hide pointer");
    test_navigation = test_menu_open = false;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED,
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED,
          VIDEO_OPENXR_LASER_ALWAYS, 0.5f);
    input_openxr_frame_layers(NULL, 1, layers, 2);
    CHECK(picks == 2 && picked_laser == VIDEO_OPENXR_LASER_ALWAYS
@@ -302,7 +339,7 @@ int main(void)
    service(false, false);
    CHECK(input_openxr_st.haptic[0] == 0.0f, "unfocused result cached as applied");
    test_focused = false;
-   input_openxr_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
+   input_openxr_poll(4, VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF, 0.5f);
    test_focused = true;
    apply_result[0] = XR_SUCCESS;
    service(false, false);

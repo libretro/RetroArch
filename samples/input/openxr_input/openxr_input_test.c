@@ -7,8 +7,13 @@
  * that nothing stays held when the runtime has nothing to give.
  *
  * - Combined: one pad from both hands, sticks with Y down, analog and
- *   digital L2/R2, Analog to Digital; Separate: a pad per hand, the
- *   other set unread.
+ *   digital L2/R2; Separate: a pad per hand, the other set unread. Each
+ *   pad is a joypad device in a slot, read through the joypad driver
+ *   the module wraps; other slots reach the driver under it.
+ * - The devices: connected at the first free slot once a session's
+ *   controllers are up, renamed and added or dropped by a mode switch,
+ *   gone with the session; a pad that takes a slot moves the headset's
+ *   device on, and its port with it.
  * - Out of focus, a failed sync, the session gone, a failed setup:
  *   nothing held; the first two logged once.
  * - Touch's menu button: Start, and the RetroArch menu held a second;
@@ -353,16 +358,71 @@ static retro_time_t t_clock = 1000000;
 retro_time_t cpu_features_get_time_usec(void) { return t_clock; }
 static uint32_t t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
 uint32_t runloop_get_flags(void) { return t_run_flags; }
-static unsigned t_dpad_mode = ANALOG_DPAD_NONE;
-unsigned input_driver_analog_dpad_mode(unsigned port) { return t_dpad_mode; }
-/* The left stick right as the D-pad's right: what the test needs. */
-uint16_t input_driver_analog_dpad_buttons(unsigned mode,
-      const int16_t *analog, float axis_threshold)
+
+/* The device table and the autoconfig tasks: each connect and
+ * disconnect is queued, and applied when a case lands them, as the
+ * task's callback does. */
+typedef struct t_op
 {
-   if (     mode == ANALOG_DPAD_LSTICK
-         && analog[0] > (int16_t)(axis_threshold * 32767.0f))
-      return (uint16_t)(1u << RETRO_DEVICE_ID_JOYPAD_RIGHT);
-   return 0;
+   bool connect;
+   unsigned slot;
+   uint8_t flags;
+   char name[64];
+   char driver[16];
+} t_op_t;
+static t_op_t   t_ops[256];
+static unsigned t_num_ops, t_num_landed;
+static char     t_dev_name[MAX_USERS][64];
+static bool     t_dev_auto[MAX_USERS];
+static bool     t_pending;
+bool input_autoconfigure_connect_ex(const char *name,
+      const char *display_name, const char *phys, const char *driver,
+      unsigned port, unsigned vid, unsigned pid, uint8_t flags)
+{
+   t_op_t *op = &t_ops[t_num_ops++ & 255];
+   op->connect = true;
+   op->slot    = port;
+   op->flags   = flags;
+   strlcpy(op->name, name ? name : "", sizeof(op->name));
+   strlcpy(op->driver, driver ? driver : "", sizeof(op->driver));
+   return true;
+}
+bool input_autoconfigure_disconnect(unsigned port, const char *name)
+{
+   t_op_t *op = &t_ops[t_num_ops++ & 255];
+   op->connect = false;
+   op->slot    = port;
+   strlcpy(op->name, name ? name : "", sizeof(op->name));
+   op->driver[0] = '\0';
+   return true;
+}
+bool input_autoconfigure_pending(void)
+{
+   return t_pending || t_num_landed < t_num_ops;
+}
+const char *input_config_get_device_name(unsigned port)
+{
+   return (port < MAX_USERS && t_dev_name[port][0]) ? t_dev_name[port]
+      : NULL;
+}
+bool input_config_get_device_autoconfigured(unsigned port)
+{
+   return port < MAX_USERS && t_dev_auto[port];
+}
+/* Port n reads slot t_index[n]. */
+static unsigned t_index[MAX_USERS];
+static unsigned t_exchanges;
+void input_driver_exchange_ports(unsigned a, unsigned b)
+{
+   unsigned i;
+   t_exchanges++;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      if (t_index[i] == a)
+         t_index[i] = b;
+      else if (t_index[i] == b)
+         t_index[i] = a;
+   }
 }
 /* A whole 800x480 frame, no view map. */
 bool video_driver_get_views_core(const video_views_map_t **map,
@@ -389,12 +449,17 @@ bool menu_driver_alive(void) { return t_menu_open; }
 static openxr_session_t     t_xr_session;
 static openxr_frame_t       t_xr_frame;
 static bool                 t_focused = true;
+static bool                 t_ended;
 static XrTime               t_time    = 1000000000;
 static video_xr_quad_set_t  t_quads;
 static openxr_input_hooks_t t_hooks;
 bool openxr_session_focused(openxr_session_t *s)
 {
    return s == &t_xr_session && t_focused;
+}
+bool openxr_session_ended(openxr_session_t *s)
+{
+   return s == &t_xr_session && t_ended;
 }
 XrTime openxr_frame_predicted_time(openxr_frame_t *f) { return t_time; }
 /* The quads as shown, and their space: LOCAL unless a case sets it. */
@@ -436,19 +501,145 @@ static void t_session(bool frame_controller)
    t_hooks.session_created(t_hooks.user, &h);
 }
 
+/* The joypad driver under the headset's: slot 5 has a pad, with
+ * button 3 down and every axis at 1234. */
+static unsigned t_inner_calls;
+static bool t_inner_query(unsigned pad) { t_inner_calls++; return pad == 5; }
+static int32_t t_inner_button(unsigned port, uint16_t joykey)
+{
+   t_inner_calls++;
+   return port == 5 && joykey == 3;
+}
+static int16_t t_inner_state(rarch_joypad_info_t *joypad_info,
+      const uint16_t *joykeys, const uint32_t *joyaxes, unsigned port)
+{
+   t_inner_calls++;
+   return 0x55;
+}
+static void t_inner_get_buttons(unsigned port, input_bits_t *state)
+{
+   t_inner_calls++;
+   BIT256_CLEAR_ALL_PTR(state);
+   BIT256_SET_PTR(state, 7);
+}
+static int16_t t_inner_axis(unsigned port, uint32_t joyaxis)
+{
+   t_inner_calls++;
+   return port == 5 ? 1234 : 0;
+}
+static void t_inner_poll(void) { }
+static bool t_inner_rumble(unsigned pad, enum retro_rumble_effect effect,
+      uint16_t strength)
+{
+   t_inner_calls++;
+   return true;
+}
+static const char *t_inner_name(unsigned pad)
+{
+   t_inner_calls++;
+   return pad == 5 ? "Pad" : NULL;
+}
+static input_device_driver_t t_joypad = {
+   NULL, t_inner_query, NULL, t_inner_button, t_inner_state,
+   t_inner_get_buttons, t_inner_axis, t_inner_poll, t_inner_rumble,
+   NULL, NULL, NULL, t_inner_name, "test" };
+
+/* The queued tasks applied, as their callbacks apply them: the newest
+ * on a slot wins. */
+static void t_land(void)
+{
+   for (; t_num_landed < t_num_ops; t_num_landed++)
+   {
+      unsigned k;
+      bool newer      = false;
+      const t_op_t *op = &t_ops[t_num_landed & 255];
+      for (k = t_num_landed + 1; k < t_num_ops; k++)
+         if (t_ops[k & 255].slot == op->slot)
+            newer = true;
+      if (newer)
+         continue;
+      if (op->connect)
+      {
+         strlcpy(t_dev_name[op->slot], op->name, sizeof(t_dev_name[0]));
+         t_dev_auto[op->slot] = (op->flags
+               & AUTOCONF_FLAG_AUTOCONFIG_ENABLED) != 0;
+         input_openxr_slot_connected(op->slot, op->driver);
+      }
+      else
+      {
+         t_dev_name[op->slot][0] = '\0';
+         t_dev_auto[op->slot]    = false;
+      }
+   }
+}
+
+/* A pad the joypad driver connects to @slot. */
+static void t_pad_lands(unsigned slot, const char *name)
+{
+   strlcpy(t_dev_name[slot], name, sizeof(t_dev_name[0]));
+   t_dev_auto[slot] = true;
+   input_openxr_slot_connected(slot, "udev");
+}
+
+static void t_forget_devices(void)
+{
+   unsigned i;
+   for (i = 0; i < MAX_USERS; i++)
+   {
+      t_dev_name[i][0] = '\0';
+      t_dev_auto[i]    = false;
+      t_index[i]       = i;
+   }
+}
+
+/* Unless a case holds them, the tasks a poll queues have run by the
+ * next. */
+static bool t_hold_tasks;
+
 static void t_poll(unsigned controllers, unsigned laser)
 {
-   input_openxr_poll(controllers, laser, 0.5f);
+   input_openxr_poll(4, controllers, laser, 0.5f);
+   if (!t_hold_tasks)
+      t_land();
+}
+
+/* User port's pad: the headset's device in its slot. */
+static int t_slot(unsigned port)
+{
+   return port < INPUT_OPENXR_PADS ? input_openxr_devs.slot[port] : -1;
 }
 
 static bool t_btn(unsigned port, unsigned id)
 {
-   return input_openxr_button(port, id);
+   const input_device_driver_t *j = input_openxr_joypad(&t_joypad);
+   if (id >= RARCH_FIRST_CUSTOM_BIND)
+      return input_openxr_hotkey(id);
+   return t_slot(port) >= 0
+      && j->button((unsigned)t_slot(port), (uint16_t)id);
 }
 
+/* A stick axis, or L2 or R2's (axes 4 and 5) for ANALOG_BUTTON. */
 static int16_t t_axis(unsigned port, unsigned idx, unsigned id)
 {
-   return input_openxr_analog(port, idx, id, 0);
+   unsigned a;
+   const input_device_driver_t *j = input_openxr_joypad(&t_joypad);
+   int s                          = t_slot(port);
+   if (s < 0)
+      return 0;
+   if (idx == RETRO_DEVICE_INDEX_ANALOG_BUTTON)
+      return j->axis((unsigned)s,
+            AXIS_POS(id == RETRO_DEVICE_ID_JOYPAD_L2 ? 4 : 5));
+   a = idx * 2 + id;
+   return j->axis((unsigned)s, AXIS_POS(a))
+      + j->axis((unsigned)s, AXIS_NEG(a));
+}
+
+static bool t_rumble(unsigned port, enum retro_rumble_effect effect,
+      uint16_t strength)
+{
+   const input_device_driver_t *j = input_openxr_joypad(&t_joypad);
+   return t_slot(port) >= 0
+      && j->set_rumble((unsigned)t_slot(port), effect, strength);
 }
 
 static bool t_nothing_held(void)
@@ -545,23 +736,17 @@ static void test_combined(void)
          "player 2 in Combined, or the Separate set read");
    CHECK(t_logged("[OpenXR] Controllers: combined.\n") == 1,
          "log: %s", t_log);
-   /* A source further from centre keeps its value, as the overlay's. */
-   CHECK(input_openxr_analog(0, RETRO_DEVICE_INDEX_ANALOG_LEFT,
-            RETRO_DEVICE_ID_ANALOG_X, -20000) == -20000,
-         "the larger value from elsewhere was lost");
 
-   /* Analog to Digital: the left stick is the D-pad, and centred. */
-   t_dpad_mode = ANALOG_DPAD_LSTICK;
+   /* A stick is a stick: Analog to Digital is the port's, by its binds. */
    t_let_go();
    t_hold("combined/left_stick", 0, 0.75f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
-   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_RIGHT)
-         && !t_axis(0, RETRO_DEVICE_INDEX_ANALOG_LEFT,
-            RETRO_DEVICE_ID_ANALOG_X),
-         "Analog to Digital: right %d, stick %d",
+   CHECK(!t_btn(0, RETRO_DEVICE_ID_JOYPAD_RIGHT)
+         && t_axis(0, RETRO_DEVICE_INDEX_ANALOG_LEFT,
+            RETRO_DEVICE_ID_ANALOG_X) == 24575,
+         "the stick pushed right: D-pad right %d, stick %d",
          t_btn(0, RETRO_DEVICE_ID_JOYPAD_RIGHT),
          t_axis(0, RETRO_DEVICE_INDEX_ANALOG_LEFT, RETRO_DEVICE_ID_ANALOG_X));
-   t_dpad_mode = ANALOG_DPAD_NONE;
 }
 
 static void test_separate(void)
@@ -848,15 +1033,17 @@ static void test_rumble(void)
 {
    t_let_go();
    t_run_flags = RUNLOOP_FLAG_CORE_RUNNING;
-   CHECK(input_openxr_set_rumble(0, RETRO_RUMBLE_STRONG, 65535)
-         && input_openxr_set_rumble(0, RETRO_RUMBLE_WEAK, 32768),
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_rumble(0, RETRO_RUMBLE_STRONG, 65535)
+         && t_rumble(0, RETRO_RUMBLE_WEAK, 32768),
          "rumble refused with controllers ready");
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_amp[1] == 1.0f && fabs(t_amp[2] - 32768.0f / 65535.0f) < 1e-4f,
          "Combined: left %.3f right %.3f, want strong left, weak right",
          t_amp[1], t_amp[2]);
-   /* Separate: each hand its player's stronger motor. */
-   input_openxr_set_rumble(1, RETRO_RUMBLE_WEAK, 16384);
+   /* Separate: each hand its player's stronger motor, by its slot. */
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_OFF);
+   t_rumble(1, RETRO_RUMBLE_WEAK, 16384);
    t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_OFF);
    CHECK(t_amp[1] == 1.0f && fabs(t_amp[2] - 16384.0f / 65535.0f) < 1e-4f,
          "Separate: left %.3f right %.3f", t_amp[1], t_amp[2]);
@@ -926,8 +1113,299 @@ static void test_session_failed(void)
    t_let_go();
 }
 
+/* A session of its own: the runtime's tables start over, so any number
+ * of cases can make one. */
+static void t_fresh_session(void)
+{
+   t_num_sets    = 0;
+   t_num_actions = 0;
+   t_num_touch   = 0;
+   t_spaces_made = 0;
+   t_session(false);
+}
+
+static bool t_op_is(unsigned i, bool connect, unsigned slot,
+      const char *name)
+{
+   const t_op_t *op = &t_ops[i & 255];
+   return i < t_num_ops && op->connect == connect && op->slot == slot
+      && (!connect || (!strcmp(op->name, name)
+            && !strcmp(op->driver, INPUT_OPENXR_JOYPAD)
+            && (op->flags & AUTOCONF_FLAG_AUTOCONFIG_ENABLED)));
+}
+
+/* The devices' lives: connected when a session's controllers are up,
+ * at the lowest free slot, renamed in place and joined or left by the
+ * other hand on a mode switch, kept through a session remade before a
+ * poll or out of focus, announced again when forgotten or after a
+ * driver restart, and disconnected when the session ends or goes once
+ * their connect has landed. */
+static void test_devices(void)
+{
+   unsigned n;
+   t_let_go();
+   t_forget_devices();
+   t_land();
+   n = t_num_ops;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n, "a device without a session");
+
+   /* A pad in slot 0: the headset is the next controller. */
+   t_pad_lands(0, "Pad");
+   t_fresh_session();
+   t_pending = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n, "a slot was taken while another connect was "
+         "pending");
+   t_pending = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 1
+         && t_op_is(n, true, 1, INPUT_OPENXR_JOYPAD_COMBINED),
+         "%u ops, the first to slot %u as \"%s\" by \"%s\" (flags %u), "
+         "want \"%s\" by \"openxr\" in slot 1", t_num_ops - n,
+         t_ops[n & 255].slot, t_ops[n & 255].name, t_ops[n & 255].driver,
+         (unsigned)t_ops[n & 255].flags, INPUT_OPENXR_JOYPAD_COMBINED);
+   n = t_num_ops;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n, "connected again");
+
+   /* Separate: the device is the left hand where it is, the right hand
+    * the next free slot. */
+   t_poll(VIDEO_OPENXR_CONTROLLERS_SEPARATE, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 2
+         && t_op_is(n, true, 1, INPUT_OPENXR_JOYPAD_LEFT)
+         && t_op_is(n + 1, true, 2, INPUT_OPENXR_JOYPAD_RIGHT),
+         "Separate: %u ops (%s in %u, %s in %u)", t_num_ops - n,
+         t_ops[n & 255].name, t_ops[n & 255].slot,
+         t_ops[(n + 1) & 255].name, t_ops[(n + 1) & 255].slot);
+   /* And back: the right hand goes, the left is the pair again. */
+   n = t_num_ops;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 2 && t_op_is(n, false, 2, NULL)
+         && t_op_is(n + 1, true, 1, INPUT_OPENXR_JOYPAD_COMBINED),
+         "back to Combined: %u ops", t_num_ops - n);
+
+   /* A session remade before a poll changes nothing. */
+   n = t_num_ops;
+   t_hooks.session_destroying(t_hooks.user);
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n, "a remade session moved the device");
+
+   /* Forgotten, as a config load forgets: announced again in place. */
+   t_dev_name[1][0] = '\0';
+   t_dev_auto[1]    = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 1
+         && t_op_is(n, true, 1, INPUT_OPENXR_JOYPAD_COMBINED),
+         "a forgotten device was not announced again");
+
+   /* Out of focus it stays; once the session has ended the next poll
+    * disconnects it, and a new session connects it again. */
+   n = t_num_ops;
+   t_focused = false;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n, "an unfocused session dropped the device");
+   t_ended = true;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 1 && t_op_is(n, false, 1, NULL),
+         "an ended session's device was not disconnected: %u ops",
+         t_num_ops - n);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 1, "an ended session's device came back");
+   t_hooks.session_destroying(t_hooks.user);
+   t_ended   = false;
+   t_focused = true;
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 2
+         && t_op_is(n + 1, true, 1, INPUT_OPENXR_JOYPAD_COMBINED),
+         "a new session did not connect the device again");
+
+   /* A driver restart: reported again in place; the disconnect that
+    * follows waits for that connect to land. */
+   t_hold_tasks = true;
+   n = t_num_ops;
+   input_openxr_reannounce();
+   CHECK(t_num_ops == n + 1
+         && t_op_is(n, true, 1, INPUT_OPENXR_JOYPAD_COMBINED),
+         "not reported again after a restart");
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 1, "disconnected ahead of its own connect");
+   t_land();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_num_ops == n + 2 && t_op_is(n + 1, false, 1, NULL),
+         "not disconnected with the session");
+   t_hold_tasks = false;
+   t_land();
+   CHECK(input_openxr_joypad(&t_joypad) == &t_joypad,
+         "the driver is wrapped with no device");
+}
+
+/* A pad the joypad driver puts in the headset's slot: the slot is the
+ * pad's at once, and the headset's device moves to the next free slot
+ * with its port. */
+static void test_device_taken(void)
+{
+   unsigned x;
+   t_let_go();
+   t_forget_devices();
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_slot(0) == 0, "the device is in slot %d, want 0", t_slot(0));
+   t_hold("combined/a", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_pad_lands(0, "Pad");
+   CHECK(input_openxr_joypad(&t_joypad) == &t_joypad,
+         "slot 0 is still answered for the headset");
+   x = t_exchanges;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(t_slot(0) == 1 && t_exchanges == x + 1
+         && t_index[0] == 1 && t_index[1] == 0,
+         "moved to slot %d, ports read %u and %u, want the headset's 1 on "
+         "port 1", t_slot(0), t_index[0], t_index[1]);
+   CHECK(t_btn(0, RETRO_DEVICE_ID_JOYPAD_A),
+         "A is not answered in the new slot");
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_let_go();
+   t_forget_devices();
+}
+
+/* The joypad driver readers get: the device's slot answered from its
+ * pad with the RetroPad's ids as buttons and sticks, L2 and R2 as axes
+ * 0 to 5; every other slot from the driver under it. */
+static void test_joypad_wrapped(void)
+{
+   static const char *const names[RARCH_FIRST_CUSTOM_BIND] = {
+      "b", "y", "select", "start", "dpad_up", "dpad_down", "dpad_left",
+      "dpad_right", "a", "x", "l", "r", "l2", "r2", "l3", "r3" };
+   unsigned id, s, calls;
+   input_bits_t bits;
+   rarch_joypad_info_t info;
+   uint16_t keys[RARCH_FIRST_CUSTOM_BIND];
+   uint32_t axes[RARCH_FIRST_CUSTOM_BIND];
+   const input_device_driver_t *j;
+
+   t_let_go();
+   t_forget_devices();
+   t_fresh_session();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   s = (unsigned)t_slot(0);
+   j = input_openxr_joypad(&t_joypad);
+   CHECK(j != &t_joypad && j->query_pad(s) && input_openxr_has_slot(s)
+         && !input_openxr_has_slot(5)
+         && !strcmp(j->name(s), INPUT_OPENXR_JOYPAD_COMBINED)
+         && !strcmp(j->ident, "test"),
+         "the device's slot %u is not answered as a device", s);
+
+   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   {
+      char action[32];
+      unsigned other, mask = 0;
+      snprintf(action, sizeof(action), "combined/%s", names[id]);
+      t_let_go();
+      t_hold(action, 0, 1.0f, 0.0f);
+      t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+      for (other = 0; other < RARCH_FIRST_CUSTOM_BIND; other++)
+         if (j->button(s, (uint16_t)other))
+            mask |= 1u << other;
+      j->get_buttons(s, &bits);
+      CHECK(mask == (1u << id) && bits.data[0] == mask,
+            "%s held: buttons 0x%x, get_buttons 0x%x", names[id], mask,
+            (unsigned)bits.data[0]);
+   }
+
+   t_let_go();
+   t_hold("combined/b", 0, 1.0f, 0.0f);
+   t_hold("combined/left_stick", 0, 0.5f, 0.5f);
+   t_hold("combined/right_stick", 0, -1.0f, -0.25f);
+   t_hold("combined/l2", 0, 0.25f, 0.0f);
+   t_hold("combined/r2", 0, 0.75f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(j->axis(s, AXIS_POS(0)) == 16383 && j->axis(s, AXIS_NEG(0)) == 0
+         && j->axis(s, AXIS_NEG(1)) == -16383 && j->axis(s, AXIS_POS(1)) == 0
+         && j->axis(s, AXIS_NEG(2)) == -32767 && j->axis(s, AXIS_POS(3)) == 8191
+         && j->axis(s, AXIS_POS(4)) == 8191 && j->axis(s, AXIS_POS(5)) == 24575
+         && j->axis(s, AXIS_NEG(4)) == 0 && j->axis(s, AXIS_POS(6)) == 0
+         && j->axis(s, AXIS_NONE) == 0,
+         "axes %d %d %d %d %d %d", j->axis(s, AXIS_POS(0)),
+         j->axis(s, AXIS_NEG(1)), j->axis(s, AXIS_NEG(2)),
+         j->axis(s, AXIS_POS(3)), j->axis(s, AXIS_POS(4)),
+         j->axis(s, AXIS_POS(5)));
+   /* The common loop over a port's joykeys and joyaxes. */
+   for (id = 0; id < RARCH_FIRST_CUSTOM_BIND; id++)
+   {
+      keys[id] = NO_BTN;
+      axes[id] = AXIS_NONE;
+   }
+   keys[RETRO_DEVICE_ID_JOYPAD_B]  = RETRO_DEVICE_ID_JOYPAD_B;
+   keys[RETRO_DEVICE_ID_JOYPAD_A]  = RETRO_DEVICE_ID_JOYPAD_A;
+   axes[RETRO_DEVICE_ID_JOYPAD_UP] = AXIS_NEG(1);
+   axes[RETRO_DEVICE_ID_JOYPAD_L2] = AXIS_POS(4);
+   axes[RETRO_DEVICE_ID_JOYPAD_R2] = AXIS_POS(5);
+   info.joy_idx        = s;
+   info.auto_binds     = NULL;
+   info.axis_threshold = 0.4f;
+   CHECK(j->state(&info, keys, axes, 0)
+         == ((1 << RETRO_DEVICE_ID_JOYPAD_B) | (1 << RETRO_DEVICE_ID_JOYPAD_UP)
+            | (1 << RETRO_DEVICE_ID_JOYPAD_R2)),
+         "state 0x%x", (unsigned)j->state(&info, keys, axes, 0));
+
+   /* Other slots are the driver's. */
+   calls        = t_inner_calls;
+   info.joy_idx = 5;
+   j->get_buttons(5, &bits);
+   CHECK(j->button(5, 3) && j->axis(5, AXIS_POS(0)) == 1234
+         && j->query_pad(5) && !strcmp(j->name(5), "Pad")
+         && j->state(&info, keys, axes, 5) == 0x55 && BIT256_GET(bits, 7)
+         && j->set_rumble(5, RETRO_RUMBLE_STRONG, 1)
+         && t_inner_calls == calls + 7,
+         "slot 5 did not reach the driver under it");
+
+   /* While the laser owns a trigger, its axis is 0 too. */
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_quads.num_quads = 1;
+   video_xr_pose_identity(&t_quads.quads[0].pose);
+   t_quads.quads[0].pose.position.z = -1.8f;
+   t_quads.quads[0].width           = 1.6f;
+   t_quads.quads[0].height          = 0.96f;
+   t_quads.quads[0].kind            = VIDEO_XR_QUAD_FRAME;
+   memset(t_aim, 0, sizeof(t_aim));
+   t_aim[2].orientation.w = 1.0f;
+   t_aim_tracked[2]       = true;
+   t_let_go();
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   t_hold("combined/r2", 0, 1.0f, 0.0f);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   CHECK(!j->axis(s, AXIS_POS(5))
+         && !j->button(s, RETRO_DEVICE_ID_JOYPAD_R2),
+         "the laser's trigger reads axis %d, R2 %d",
+         j->axis(s, AXIS_POS(5)), j->button(s, RETRO_DEVICE_ID_JOYPAD_R2));
+   memset(&t_quads, 0, sizeof(t_quads));
+   t_aim_tracked[2] = false;
+   t_let_go();
+
+   /* Save Controller Profile looks the device's profile up again, as
+    * the headset's. */
+   calls = t_num_ops;
+   CHECK(input_openxr_autoconfigure(s) && !input_openxr_autoconfigure(5)
+         && t_num_ops == calls + 1
+         && t_op_is(calls, true, s, INPUT_OPENXR_JOYPAD_COMBINED),
+         "the device's profile was not looked up again as the headset's");
+
+   t_hooks.session_destroying(t_hooks.user);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_OFF);
+   CHECK(input_openxr_joypad(&t_joypad) == &t_joypad,
+         "the driver is wrapped after the session");
+   t_forget_devices();
+}
+
 int main(void)
 {
+   t_forget_devices();
    test_before_session();
    test_session_made();
    test_combined();
@@ -939,6 +1417,9 @@ int main(void)
    test_rumble();
    test_session_gone();
    test_session_failed();
+   test_devices();
+   test_device_taken();
+   test_joypad_wrapped();
    if (failures)
    {
       printf("%d failure(s)\n", failures);

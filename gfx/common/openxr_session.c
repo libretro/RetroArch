@@ -52,9 +52,9 @@ void openxr_session_end(openxr_session_t *s, bool instance_lost)
    retro_atomic_store_release_int(&s->running, 0);
    if (instance_lost)
       s->lost = true;
-   if (s->ended)
+   if (retro_atomic_load_acquire_int(&s->ended))
       return;
-   s->ended = true;
+   retro_atomic_store_release_int(&s->ended, 1);
    retro_atomic_store_release_int(&s->alive, 0);
    if (s->hooks.ended)
       s->hooks.ended(s->hooks.user);
@@ -300,7 +300,7 @@ bool openxr_session_swap_track_space(openxr_session_t *s,
 void openxr_session_reset(openxr_session_t *s)
 {
    openxr_session_destroy(s);
-   s->ended = false;
+   retro_atomic_store_release_int(&s->ended, 0);
    retro_atomic_store_release_int(&s->state, XR_SESSION_STATE_UNKNOWN);
 }
 
@@ -312,6 +312,11 @@ void openxr_session_set_alive(openxr_session_t *s, bool alive)
 bool openxr_session_alive(openxr_session_t *s)
 {
    return retro_atomic_load_acquire_int(&s->alive) != 0;
+}
+
+bool openxr_session_ended(openxr_session_t *s)
+{
+   return retro_atomic_load_acquire_int(&s->ended) != 0;
 }
 
 bool openxr_session_running(openxr_session_t *s)

@@ -770,6 +770,7 @@ static void test_session(void)
          "STOPPING did not end it");
    CHECK(t_end_in_lock, "xrEndSession ran outside the lock");
    CHECK(!openxr_session_visible(&s), "visible while stopping");
+   CHECK(!openxr_session_ended(&s), "STOPPING ended the session");
 
    /* Another session's events are not this one's. */
    t_session_fresh(&rt, &s);
@@ -797,7 +798,8 @@ static void test_session(void)
    openxr_session_poll(&s);
    CHECK(t_h_ended == 1 && t_h_exiting == 1, "exiting: ended %u exiting %u",
          t_h_ended, t_h_exiting);
-   CHECK(s.ended && !openxr_session_alive(&s) && !s.lost, "exit state");
+   CHECK(openxr_session_ended(&s) && !openxr_session_alive(&s) && !s.lost,
+         "exit state");
    CHECK(t_ended_seq && t_ended_seq < t_exiting_seq,
          "ended (%u) not before exiting (%u)", t_ended_seq, t_exiting_seq);
    t_push_state(T_SESSION, XR_SESSION_STATE_EXITING);
@@ -810,7 +812,8 @@ static void test_session(void)
    openxr_session_create(&s, &dummy_binding);
    t_push_state(T_SESSION, XR_SESSION_STATE_LOSS_PENDING);
    openxr_session_poll(&s);
-   CHECK(s.ended && !s.lost && t_h_ended == 1, "loss pending");
+   CHECK(openxr_session_ended(&s) && !s.lost && t_h_ended == 1,
+         "loss pending");
    t_push_instance_loss();
    openxr_session_poll(&s);
    CHECK(s.lost && t_h_ended == 1, "instance loss: lost %d ended %u", s.lost, t_h_ended);
@@ -828,12 +831,14 @@ static void test_session(void)
    CHECK(openxr_session_focused(&s), "not focused before the loss");
    t_poll_result = XR_ERROR_INSTANCE_LOST;
    openxr_session_poll(&s);
-   CHECK(s.lost && s.ended, "XR_ERROR_INSTANCE_LOST not lost");
+   CHECK(s.lost && openxr_session_ended(&s),
+         "XR_ERROR_INSTANCE_LOST not lost");
 
    /* Reset forgets an ended session but not a lost instance (the host
     * drops the runtime on it); destroy frees the spaces. */
    openxr_session_reset(&s);
-   CHECK(!s.session && !s.ended && s.lost, "reset keeps lost");
+   CHECK(!s.session && !openxr_session_ended(&s) && s.lost,
+         "reset keeps lost");
    CHECK(t_spaces_destroyed == 2, "spaces destroyed: %u", t_spaces_destroyed);
    CHECK(retro_atomic_load_acquire_int(&s.state) == XR_SESSION_STATE_UNKNOWN,
          "state not cleared by reset");
@@ -1317,6 +1322,7 @@ static void test_frame_pacing(void)
    CHECK(!f.thread && !openxr_session_alive(&s),
          "after stop: thread %p alive %d", (void*)f.thread,
          (int)openxr_session_alive(&s));
+   CHECK(!openxr_session_ended(&s), "a stopped XR thread ended the session");
 
    t_frame_free(&rt, &s, &f);
 }
