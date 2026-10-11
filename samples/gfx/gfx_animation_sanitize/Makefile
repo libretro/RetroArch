@@ -2,9 +2,7 @@ include ../../sample_objdir.mk
 
 TARGET := gfx_animation_sanitize_test
 
-# Path back to the repo root from this sample dir.  Links the real
-# gfx/gfx_animation.c, which reaches for only sixteen symbols outside
-# itself -- fourteen from libc and libretro-common, two stubbed here.
+# Links the real gfx/gfx_animation.c with minimal frontend stubs.
 REPO_ROOT         := ../../..
 LIBRETRO_COMM_DIR := $(REPO_ROOT)/libretro-common
 

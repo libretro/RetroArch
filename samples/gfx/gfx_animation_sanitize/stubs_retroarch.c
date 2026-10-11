@@ -20,13 +20,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/* The only two frontend symbols gfx/gfx_animation.c reaches for.
- *
- * The smooth ticker takes either a font_data_t or, when that is NULL,
- * a fixed glyph_width; the test passes NULL so the width path is the
- * one exercised and these are never entered.  They still have to
- * resolve, and their signatures are copied from gfx/font_driver.h
- * rather than guessed. */
+/* Frontend symbols used by the horizontal and vertical tickers. */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -35,8 +29,16 @@
 int font_driver_get_message_width(void *font, const char *msg,
       size_t len, float scale)
 {
-   (void)font; (void)msg; (void)len; (void)scale;
-   return 0;
+   if (!font || !len)
+      return 0;
+   return (int)(((unsigned char)msg[0] < 128 ? 8 : 16) * scale);
+}
+
+const char *animation_test_wideglyph;
+
+const char *msg_hash_get_wideglyph_str(void)
+{
+   return animation_test_wideglyph;
 }
 
 unsigned font_driver_get_generation(void *font)

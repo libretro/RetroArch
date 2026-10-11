@@ -22,9 +22,6 @@
 
 /* Sanitizer sweep for gfx/gfx_animation.c.
  *
- * gfx_animation.c reaches for only sixteen
- * symbols outside itself, so it stands up almost bare.
- *
  * Two areas are worth the sanitizers' attention.
  *
  * The tween list: entries hold a pointer to the caller's float
@@ -36,7 +33,7 @@
  * the animation is in flight, which is what a menu does every
  * time a list is repopulated mid-transition.
  *
- * The tickers: both forms slice UTF-8 by glyph and write into a
+ * The tickers: horizontal and vertical forms write into a
  * caller-supplied buffer of a caller-supplied length.  Off-by-one
  * there is invisible until it is not.  The test feeds them
  * multi-byte text, buffers of every length from 1 upward, and
@@ -512,6 +509,161 @@ static void test_widget_handover(void)
    }
 }
 
+extern const char *animation_test_wideglyph;
+
+static void test_line_ticker(void)
+{
+   gfx_animation_t anim;
+   gfx_animation_ctx_line_ticker_t ticker;
+   char out[64], *scratch = NULL, *previous;
+   size_t capacity = 0, previous_capacity;
+   size_t i, len;
+   int type;
+
+   memset(&anim, 0, sizeof(anim));
+   memset(&ticker, 0, sizeof(ticker));
+   ticker.s                = out;
+   ticker.len              = sizeof(out);
+   ticker.line_len         = 16;
+   ticker.max_lines        = 2;
+   ticker.wrap_scratch     = &scratch;
+   ticker.wrap_scratch_cap = &capacity;
+   ticker.str              = "one\ntwo\nthree\nfour";
+   ticker.type_enum        = TICKER_TYPE_BOUNCE;
+   CHECK(gfx_animation_line_ticker(&anim, &ticker),
+         "line ticker: overflowing text animates");
+   CHECK(strcmp(out, "one\ntwo") == 0,
+         "line ticker: first window");
+   CHECK(anim.flags & GFX_ANIM_FLAG_TICKER_IS_ACTIVE,
+         "line ticker: marks the supplied animation instance");
+   previous          = scratch;
+   previous_capacity = capacity;
+   ticker.idx        = TICKER_LINE_DISPLAY_TICKS(16) * 2;
+   gfx_animation_line_ticker(&anim, &ticker);
+   CHECK(strcmp(out, "two\nthree") == 0,
+         "line ticker: bounce advances one line");
+   CHECK(scratch == previous && capacity == previous_capacity,
+         "line ticker: reuses caller scratch storage");
+   ticker.type_enum = TICKER_TYPE_LOOP;
+   ticker.idx       = TICKER_LINE_DISPLAY_TICKS(16);
+   gfx_animation_line_ticker(&anim, &ticker);
+   CHECK(strcmp(out, "two\nthree") == 0,
+         "line ticker: loop advances one line");
+   ticker.str = "short";
+   anim.flags = 0;
+   CHECK(!gfx_animation_line_ticker(&anim, &ticker)
+         && strcmp(out, "short") == 0 && !anim.flags,
+         "line ticker: fitting text stays still");
+
+   for (i = 0; i < sizeof(ticker_inputs) / sizeof(ticker_inputs[0]); i++)
+      for (type = 0; type < TICKER_TYPE_LAST; type++)
+         for (len = 1; len <= 24; len++)
+         {
+            char *dst = (char*)malloc(len);
+            if (!dst)
+               continue;
+            memset(dst, 'X', len);
+            ticker.str       = ticker_inputs[i];
+            ticker.s         = dst;
+            ticker.len       = len;
+            ticker.idx       = len * 7;
+            ticker.type_enum = (enum gfx_animation_ticker_type)type;
+            gfx_animation_line_ticker(&anim, &ticker);
+            ticker_calls++;
+            CHECK(memchr(dst, '\0', len) != NULL,
+                  "line ticker: bounded destination is terminated");
+            free(dst);
+         }
+   free(scratch);
+}
+
+static void test_line_ticker_smooth(void)
+{
+   gfx_animation_t anim;
+   gfx_animation_ctx_line_ticker_smooth_t ticker;
+   font_data_t font;
+   char out[64], top[64], bottom[64];
+   float y = 0, top_y = 0, bottom_y = 0, top_alpha = 0, bottom_alpha = 0;
+   size_t i, len;
+   int type, fade, wide;
+
+   memset(&anim, 0, sizeof(anim));
+   memset(&ticker, 0, sizeof(ticker));
+   memset(&font, 0, sizeof(font));
+   font.metrics.height           = 12;
+   ticker.font                   = &font;
+   ticker.font_scale             = 1.0f;
+   ticker.field_dims             = VIDEO_SCALE_PACK(128, 24);
+   ticker.dst_str                = out;
+   ticker.dst_str_len            = sizeof(out);
+   ticker.y_offset               = &y;
+   ticker.top_fade_str           = top;
+   ticker.top_fade_str_len       = sizeof(top);
+   ticker.top_fade_y_offset      = &top_y;
+   ticker.top_fade_alpha         = &top_alpha;
+   ticker.bottom_fade_str        = bottom;
+   ticker.bottom_fade_str_len    = sizeof(bottom);
+   ticker.bottom_fade_y_offset   = &bottom_y;
+   ticker.bottom_fade_alpha      = &bottom_alpha;
+   ticker.fade_enabled           = true;
+   ticker.src_str                = "short";
+   CHECK(gfx_animation_line_ticker_smooth(&anim, &ticker)
+         && strcmp(out, "short") == 0 && y == 0
+         && !*top && !*bottom && top_alpha == 0 && bottom_alpha == 0,
+         "smooth line ticker: fitting text has no offsets or fades");
+   ticker.src_str = "one\ntwo\nthree\nfour";
+   ticker.idx = TICKER_LINE_SMOOTH_SCROLL_TICKS(16) - 1;
+   CHECK(gfx_animation_line_ticker_smooth(&anim, &ticker)
+         && strcmp(out, "one\ntwo") == 0,
+         "smooth line ticker: static first window");
+
+   for (wide = 0; wide < 2; wide++)
+      for (i = 0; i < sizeof(ticker_inputs) / sizeof(ticker_inputs[0]); i++)
+         for (type = 0; type < TICKER_TYPE_LAST; type++)
+            for (fade = 0; fade < 2; fade++)
+               for (len = 1; len <= 24; len++)
+               {
+                  char *dst = (char*)calloc(len, 1);
+                  char *fade_top = (char*)calloc(len, 1);
+                  char *fade_bottom = (char*)calloc(len, 1);
+                  if (!dst || !fade_top || !fade_bottom)
+                  {
+                     free(dst);
+                     free(fade_top);
+                     free(fade_bottom);
+                     continue;
+                  }
+                  animation_test_wideglyph  = wide ? "\xE4\xB8\xAD" : NULL;
+                  ticker.src_str            = ticker_inputs[i];
+                  ticker.dst_str            = dst;
+                  ticker.dst_str_len        = len;
+                  ticker.top_fade_str       = fade_top;
+                  ticker.top_fade_str_len   = len;
+                  ticker.bottom_fade_str    = fade_bottom;
+                  ticker.bottom_fade_str_len = len;
+                  ticker.type_enum          = (enum gfx_animation_ticker_type)type;
+                  ticker.fade_enabled       = fade != 0;
+                  ticker.idx                = len * 37;
+                  gfx_animation_line_ticker_smooth(&anim, &ticker);
+                  ticker_calls++;
+                  CHECK(memchr(dst, '\0', len) != NULL,
+                        "smooth line ticker: destination is terminated");
+                  if (fade)
+                  {
+                     CHECK(memchr(fade_top, '\0', len) != NULL
+                           && memchr(fade_bottom, '\0', len) != NULL,
+                           "smooth line ticker: fade strings are terminated");
+                     CHECK(top_alpha >= 0 && top_alpha <= 1
+                           && bottom_alpha >= 0 && bottom_alpha <= 1,
+                           "smooth line ticker: fade alphas stay in range");
+                  }
+                  free(dst);
+                  free(fade_top);
+                  free(fade_bottom);
+               }
+   animation_test_wideglyph = NULL;
+}
+
 int main(void)
 {
    test_multibyte_does_not_overflow();
@@ -521,6 +673,8 @@ int main(void)
    test_deinit_while_running();
    test_ticker();
    test_ticker_smooth();
+   test_line_ticker();
+   test_line_ticker_smooth();
    test_widget_handover();
 
    printf("pushes=%d callbacks=%d ticker calls=%d\n",
