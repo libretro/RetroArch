@@ -288,7 +288,8 @@ void video_xr_place(const video_xr_params_t *p, video_xr_quad_set_t *out)
       out->slots[0].dims   = video_xr_screen_dims(p, p->width, h,
             p->frame_dims);
       out->slots[0].layers = 1;
-      video_xr_add(out, VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
+      video_xr_add(out, p->window ? VIDEO_XR_QUAD_WINDOW
+            : VIDEO_XR_QUAD_FRAME, VIDEO_XR_EYE_BOTH, 0, 0, 0,
             &pose, p->width, h);
    }
 
@@ -401,6 +402,24 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
    return true;
 }
 
+bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v)
+{
+   double fu, fv;
+   unsigned w = VIDEO_SCALE_W(vp->dims);
+   unsigned h = VIDEO_SCALE_H(vp->dims);
+   if (!w || !h)
+      return false;
+   fu = ((double)*u * VIDEO_SCALE_W(vp->full_dims)
+         - VIDEO_POS_X(vp->pos)) / w;
+   fv = ((double)*v * VIDEO_SCALE_H(vp->full_dims)
+         - VIDEO_POS_Y(vp->pos)) / h;
+   if (fu < -1e-4 || fu > 1.0 + 1e-4 || fv < -1e-4 || fv > 1.0 + 1e-4)
+      return false;
+   *u = (float)(fu < 0.0 ? 0.0 : (fu > 1.0 ? 1.0 : fu));
+   *v = (float)(fv < 0.0 ? 0.0 : (fv > 1.0 ? 1.0 : fv));
+   return true;
+}
+
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open)
 {
@@ -410,6 +429,10 @@ bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
    {
       case VIDEO_XR_QUAD_MENU:
          return menu_open;
+      case VIDEO_XR_QUAD_WINDOW:
+         if (menu_open)
+            return true;
+         break;
       case VIDEO_XR_QUAD_SCREEN:
          if (q->screen >= 1)
             return true;
@@ -467,6 +490,30 @@ float video_xr_cursor(const video_xr_quad_t *q, float u, float v,
    pose->position.y    = q->pose.position.y + world.y;
    pose->position.z    = q->pose.position.z + world.z;
    return (size < VIDEO_XR_CURSOR_MIN) ? VIDEO_XR_CURSOR_MIN : size;
+}
+
+void video_xr_cursor_pixels(uint8_t *px)
+{
+   unsigned x, y;
+   const float c = (VIDEO_XR_CURSOR_DIM - 1) * 0.5f;
+   const float r = VIDEO_XR_CURSOR_DIM * 0.5f;
+   for (y = 0; y < VIDEO_XR_CURSOR_DIM; y++)
+   {
+      for (x = 0; x < VIDEO_XR_CURSOR_DIM; x++)
+      {
+         float dx   = (float)x - c;
+         float dy   = (float)y - c;
+         float d    = (float)sqrt(dx * dx + dy * dy) / r;
+         float a    = (d < 1.0f - 1.0f / r) ? 1.0f
+            : ((d < 1.0f) ? (1.0f - d) * r : 0.0f);
+         float l    = (d < 0.6f) ? 1.0f : 0.15f;
+         uint8_t *p = px + ((size_t)y * VIDEO_XR_CURSOR_DIM + x) * 4;
+         p[0]       = (uint8_t)(l * a * 255.0f + 0.5f);
+         p[1]       = p[0];
+         p[2]       = p[0];
+         p[3]       = (uint8_t)(a * 255.0f + 0.5f);
+      }
+   }
 }
 
 /* Two rates this close in skew are a tie. */

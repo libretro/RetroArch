@@ -47,7 +47,7 @@
 #include "../drivers_keyboard/keyboard_event_android.h"
 #include "android_kbd_route.h"
 #ifdef HAVE_OPENXR
-#include "openxr_input.h"
+#include "../common/input_openxr.h"
 #endif
 #include "android_key_state.h"
 #include "android_stylus_map.h"
@@ -2679,9 +2679,9 @@ static void android_input_poll_input_default(android_input_t *android)
                {
 #ifdef HAVE_OPENXR
                   /* XR controllers deliver input through OpenXR actions;
-                   * window motion events would double up while a session
-                   * is live. */
-                  if (!openxr_input_session_active())
+                   * window motion events would double up while the
+                   * headset's controllers are set up. */
+                  if (!input_openxr_active())
 #endif
                   android_input_poll_event_type_motion(android, event,
                         port, source);

@@ -532,6 +532,52 @@ void openxr_frame_session_created(openxr_frame_t *f)
    openxr_frame_list_rates(f);
 }
 
+static openxr_input_hooks_t openxr_frame_input_hooks;
+
+void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks)
+{
+   if (hooks)
+      openxr_frame_input_hooks = *hooks;
+   else
+      memset(&openxr_frame_input_hooks, 0,
+            sizeof(openxr_frame_input_hooks));
+}
+
+void openxr_frame_input_attach(openxr_frame_t *f)
+{
+   openxr_input_handles_t h;
+   const openxr_input_hooks_t *in = &openxr_frame_input_hooks;
+   if (f->input_attached || !in->session_created)
+      return;
+   memset(&h, 0, sizeof(h));
+   h.frame            = f;
+   h.instance         = f->rt->instance;
+   h.session          = f->session->session;
+   h.get_proc         = f->rt->GetInstanceProcAddr;
+   h.frame_controller = f->rt->frame_controller;
+   f->extra_layers    = in->frame_layers;
+   f->extra_user      = in->user;
+   f->input_attached  = true;
+   in->session_created(in->user, &h);
+}
+
+void openxr_frame_input_detach(openxr_frame_t *f)
+{
+   const openxr_input_hooks_t *in = &openxr_frame_input_hooks;
+   if (!f->input_attached)
+      return;
+   f->input_attached = false;
+   f->extra_layers   = NULL;
+   f->extra_user     = NULL;
+   if (in->session_destroying)
+      in->session_destroying(in->user);
+}
+
+XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
+{
+   return f->cursor;
+}
+
 bool openxr_frame_start(openxr_frame_t *f)
 {
    if (f->inline_host)

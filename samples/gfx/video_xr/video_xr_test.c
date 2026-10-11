@@ -568,6 +568,99 @@ static void test_pick(void)
    CHECK(NEAR(u, 0.5) && NEAR(v, 0.5) && NEAR(t, 1.8));
 }
 
+static void test_window(void)
+{
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_xr_vec3_t o, d;
+   float u, v, t;
+   int16_t x, y;
+   unsigned frame = VIDEO_SCALE_PACK(800, 480);
+
+   params_init(&p, NULL);
+   p.frame_dims = frame;
+   p.window     = true;
+   video_xr_place(&p, &set);
+   CHECK(set.num_quads == 1 && set.quads[0].kind == VIDEO_XR_QUAD_WINDOW);
+
+   /* The menu's while it is open; otherwise a whole frame. */
+   CHECK( video_xr_quad_live(&set.quads[0], VIDEO_OPENXR_LASER_AUTO, true));
+   CHECK(!video_xr_quad_live(&set.quads[0], VIDEO_OPENXR_LASER_AUTO, false));
+   CHECK( video_xr_quad_live(&set.quads[0], VIDEO_OPENXR_LASER_ALWAYS, false));
+   CHECK(!video_xr_quad_live(&set.quads[0], VIDEO_OPENXR_LASER_OFF, true));
+   o.x = 0.0f; o.y = 0.0f; o.z = 0.0f;
+   d.x = 0.0f; d.y = 0.0f; d.z = -1.0f;
+   CHECK(video_xr_pick(&set, VIDEO_OPENXR_LASER_AUTO, true,
+            &o, &d, &u, &v, &t) == 0);
+   CHECK(NEAR(u, 0.5) && NEAR(v, 0.5));
+   CHECK(video_xr_quad_to_frame(&set.quads[0], 0.25f, 0.75f, NULL, frame,
+            &x, &y));
+   CHECK(x == -16364 && y == 16485);
+}
+
+/* A 256x224 core at 3x in a 1280x720 window: 768x672 at 256,24, bars
+ * on every side. */
+static void test_window_point(void)
+{
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_viewport_t vp;
+   float u, v;
+   int16_t x, y;
+
+   params_init(&p, NULL);
+   p.frame_dims = VIDEO_SCALE_PACK(1280, 720);
+   p.window     = true;
+   video_xr_place(&p, &set);
+   vp.pos       = VIDEO_POS_PACK(256, 24);
+   vp.dims      = VIDEO_SCALE_PACK(768, 672);
+   vp.full_dims = VIDEO_SCALE_PACK(1280, 720);
+
+   /* Each bar hits no frame pixel. */
+   u = 0.1f; v = 0.5f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+   u = 0.9f; v = 0.5f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+   u = 0.5f; v = 0.02f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+   u = 0.5f; v = 0.98f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+
+   /* The drawn area's corners and middle. */
+   u = 0.2f; v = 24.0f / 720.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v) && NEAR(u, 0.0) && NEAR(v, 0.0));
+   u = 0.8f; v = 696.0f / 720.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v) && NEAR(u, 1.0) && NEAR(v, 1.0));
+   u = 0.5f; v = 0.5f;
+   CHECK(video_xr_window_point(&vp, &u, &v) && NEAR(u, 0.5) && NEAR(v, 0.5));
+
+   /* The middle of window pixel 449,361 is frame pixel 64,112. */
+   u = 449.5f / 1280.0f; v = 361.5f / 720.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v));
+   CHECK(video_xr_quad_to_frame(&set.quads[0], u, v, NULL,
+            VIDEO_SCALE_PACK(256, 224), &x, &y));
+   CHECK(x == -16320 && y == 146);
+
+   /* An 8-pixel bar above, 40 below: the viewport is from the top. */
+   vp.pos = VIDEO_POS_PACK(256, 8);
+   u = 0.5f; v = 20.0f / 720.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v) && NEAR(v, 12.0 / 672.0));
+   u = 0.5f; v = 4.0f / 720.0f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+
+   /* Wider than the window, cropped at both sides. */
+   vp.pos  = VIDEO_POS_PACK(-100, 0);
+   vp.dims = VIDEO_SCALE_PACK(1480, 720);
+   u = 0.0f; v = 0.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v)
+         && NEAR(u, 100.0 / 1480.0) && NEAR(v, 0.0));
+
+   /* No viewport, no frame. */
+   vp.dims = 0;
+   u = 0.5f; v = 0.5f;
+   CHECK(!video_xr_window_point(&vp, &u, &v));
+}
+
 static void test_cursor(void)
 {
    video_views_map_t map;
@@ -597,6 +690,23 @@ static void test_cursor(void)
    CHECK(NEAR(pose.position.x, -1.798) && NEAR(pose.position.y, 0.0)
          && NEAR(pose.position.z, -0.4));
    CHECK(NEAR(pose.orientation.y, 0.70711));
+}
+
+static void test_cursor_pixels(void)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_DIM * VIDEO_XR_CURSOR_DIM * 4];
+   const uint8_t *centre = px + ((size_t)(VIDEO_XR_CURSOR_DIM / 2)
+         * VIDEO_XR_CURSOR_DIM + VIDEO_XR_CURSOR_DIM / 2) * 4;
+   const uint8_t *rim    = px + ((size_t)2 * VIDEO_XR_CURSOR_DIM
+         + VIDEO_XR_CURSOR_DIM / 2) * 4;
+
+   video_xr_cursor_pixels(px);
+   /* White in the middle, a dark rim, nothing in the corners; grey, so
+    * RGBA and BGRA are the same bytes. */
+   CHECK(centre[0] == 255 && centre[1] == 255 && centre[2] == 255
+         && centre[3] == 255);
+   CHECK(rim[0] == 38 && rim[1] == 38 && rim[2] == 38 && rim[3] == 255);
+   CHECK(!px[0] && !px[1] && !px[2] && !px[3]);
 }
 
 /* A 120 Hz and a 72 Hz headset's predicted display periods, in ns. */
@@ -732,7 +842,10 @@ int main(void)
    test_quad_to_frame();
    test_live();
    test_pick();
+   test_window();
+   test_window_point();
    test_cursor();
+   test_cursor_pixels();
    test_period_settle();
    test_period_jitter();
    test_period_change();

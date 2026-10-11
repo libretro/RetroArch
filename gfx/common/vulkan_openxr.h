@@ -82,53 +82,12 @@ VkResult vulkan_openxr_create_device(vulkan_openxr_t *xr,
 /* The GPU the headset is attached to, or VK_NULL_HANDLE. */
 VkPhysicalDevice vulkan_openxr_gpu(vulkan_openxr_t *xr, VkInstance instance);
 
-/* What the headset input needs from a session, valid between the hooks'
- * session_created and session_destroying. */
-typedef struct vulkan_openxr_handles
-{
-   vulkan_openxr_t *xr;
-   XrInstance instance;
-   XrSession session;
-   XrSpace local_space;
-   PFN_xrGetInstanceProcAddr get_proc;
-   /* XR_VALVE_frame_controller_interaction is enabled. */
-   bool frame_controller;
-} vulkan_openxr_handles_t;
-
-typedef struct vulkan_openxr_hooks
-{
-   /* The session and its spaces exist and its frame loop has not
-    * started: make, suggest and attach action sets here, and destroy
-    * them in session_destroying. A kept device's instance gets a new
-    * session after the runtime ends one. */
-   void (*session_created)(void *user, const vulkan_openxr_handles_t *handles);
-   /* The frame loop has stopped; the session is destroyed next. */
-   void (*session_destroying)(void *user, vulkan_openxr_t *xr);
-   /* The XR thread, each headset frame: up to cap layers drawn over
-    * RetroArch's. Returns how many were written. */
-   unsigned (*frame_layers)(void *user, XrTime display_time,
-         const XrCompositionLayerBaseHeader **layers, unsigned cap);
-   void *user;
-} vulkan_openxr_hooks_t;
-
-/* Main thread, while the XR thread is stopped. NULL clears. */
-void vulkan_openxr_set_hooks(const vulkan_openxr_hooks_t *hooks);
-
 /* A headset's own context (the Quest's): the runtime's loader and
- * instance chain, and what it hears of the session in place of the
- * headset input's hooks. A runtime made while it is set runs in-line,
- * in the video frame. */
+ * instance chain, and what it hears when the session ends. A runtime
+ * made while it is set runs in-line, in the video frame. */
 typedef struct vulkan_openxr_platform
 {
    openxr_runtime_platform_t runtime;
-   /* Hooks run on the video thread, inside vulkan_openxr_begin_frame
-    * or the session poll. False fails the session. */
-   bool (*session_created)(void *user, XrInstance instance,
-         XrSession session);
-   void (*session_destroying)(void *user);
-   /* After each wait for a headset frame, or each frame the session is
-    * not running. */
-   void (*frame_waited)(void *user, XrSession session, bool running);
    /* The session exited or was lost; only ask to quit, never free xr. */
    void (*ended)(void *user);
    void *user;
@@ -183,10 +142,8 @@ bool vulkan_openxr_alive(vulkan_openxr_t *xr);
  * made on its device again. */
 bool vulkan_openxr_lost(const vulkan_openxr_t *xr);
 
-/* The session's focus as the XR thread last saw it, and its latest
- * predicted display time. */
+/* The session's focus as the XR thread last saw it. */
 bool vulkan_openxr_focused(vulkan_openxr_t *xr);
-XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr);
 
 #define VULKAN_OPENXR_MAX_IMAGES OPENXR_MAX_IMAGES
 
@@ -278,19 +235,9 @@ unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr);
 /* Where screen 0 is centred in front of. */
 void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor);
 
-/* Any thread: the quads the XR thread submits. */
-bool vulkan_openxr_get_quads(vulkan_openxr_t *xr, video_xr_quad_set_t *out);
-
 /* Any thread: place the screens in front of where the headset looks, at
  * its next frame. */
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr);
-
-#define VULKAN_OPENXR_CURSOR_DIM 32
-
-/* The laser's round dot: one image, made at each start and freed at
- * each stop, for layers the hooks add. XR_NULL_HANDLE if it could not
- * be made. The XR thread may use it. */
-XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr);
 
 RETRO_END_DECLS
 

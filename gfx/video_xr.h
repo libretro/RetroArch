@@ -21,6 +21,7 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 
+#include "video_defines.h"
 #include "video_views.h"
 
 RETRO_BEGIN_DECLS
@@ -55,7 +56,9 @@ enum video_xr_kind
 {
    VIDEO_XR_QUAD_SCREEN = 0,
    VIDEO_XR_QUAD_FRAME,
-   VIDEO_XR_QUAD_MENU
+   VIDEO_XR_QUAD_MENU,
+   /* A whole frame that is the window: the menu is drawn over it. */
+   VIDEO_XR_QUAD_WINDOW
 };
 
 typedef struct video_xr_vec3
@@ -128,6 +131,8 @@ typedef struct video_xr_params
     * the others keep their places. */
    unsigned skip_screens;
    bool swap_eyes;
+   /* The whole frame is the window, with the menu drawn in it. */
+   bool window;
    /* The screens are drawn by the stock chain, which shrinks smoothly:
     * their images are the shown size, even below the source's. */
    bool stock;
@@ -171,6 +176,19 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
       const video_views_map_t *map, unsigned frame_dims,
       int16_t *res_x, int16_t *res_y);
 
+/* A point on a window's quad as one on the core's frame, which the
+ * window draws in vp (the video driver's viewport, from the window's
+ * top left). False on the bars around it. */
+bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v);
+
+/* The laser's dot image is this many pixels square. */
+#define VIDEO_XR_CURSOR_DIM 32
+
+/* Its pixels, RGBA8 premultiplied: a white dot with a dark rim and a
+ * one-pixel soft edge, grey so RGBA and BGRA hold the same bytes. px
+ * holds VIDEO_XR_CURSOR_DIM squared times four bytes. */
+void video_xr_cursor_pixels(uint8_t *px);
+
 /* The laser's dot: this wide per metre along the ray, never narrower
  * than VIDEO_XR_CURSOR_MIN, just in front of the quad it is on. */
 #define VIDEO_XR_CURSOR_SCALE 0.012f
@@ -178,8 +196,8 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
 #define VIDEO_XR_CURSOR_LIFT  0.002f
 
 /* Whether a laser (enum video_openxr_laser) can point at q. Auto: the
- * menu while it is open, and screens 1 and up. Always: every screen
- * and a whole frame too. Off: nothing. */
+ * menu or a window while the menu is open, and screens 1 and up.
+ * Always: every screen and a whole frame too. Off: nothing. */
 bool video_xr_quad_live(const video_xr_quad_t *q, unsigned laser,
       bool menu_open);
 

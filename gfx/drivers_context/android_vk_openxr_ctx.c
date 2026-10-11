@@ -47,8 +47,6 @@
 #include "../common/vulkan_openxr.h"
 #include "../video_driver.h"
 
-#include "../../input/drivers/openxr_input.h"
-
 /* As many as a swapchain would give. */
 #define ANDROID_VK_OPENXR_IMAGES 3
 
@@ -65,32 +63,6 @@ typedef struct android_vk_openxr
 } android_vk_openxr_t;
 
 static android_vk_openxr_t android_vk_openxr_ctx;
-
-static bool android_vk_openxr_session_created(void *user,
-      XrInstance instance, XrSession session)
-{
-   if (openxr_input_init(instance) && openxr_input_attach(session))
-      return true;
-   RARCH_ERR("[XR] Touch controller input setup failed.\n");
-   return false;
-}
-
-static void android_vk_openxr_session_destroying(void *user)
-{
-   openxr_input_deinit();
-}
-
-/* The controllers are read once the wait for the frame is over: the
- * frontend polls straight after the frame, so what it gets is as old as
- * the frame took to draw. Nothing stays held while the session is down. */
-static void android_vk_openxr_frame_waited(void *user, XrSession session,
-      bool running)
-{
-   if (running)
-      openxr_input_sync(session);
-   else
-      openxr_input_idle();
-}
 
 /* Exit or loss: the headset was all there was. */
 static void android_vk_openxr_ended(void *user)
@@ -241,9 +213,6 @@ static void *android_vk_openxr_gfx_ctx_init(void *video_driver)
    platform.runtime.instance_next = &xr->instance_info;
    platform.runtime.instance_ext  =
       XR_KHR_ANDROID_CREATE_INSTANCE_EXTENSION_NAME;
-   platform.session_created       = android_vk_openxr_session_created;
-   platform.session_destroying    = android_vk_openxr_session_destroying;
-   platform.frame_waited          = android_vk_openxr_frame_waited;
    platform.ended                 = android_vk_openxr_ended;
    platform.user                  = xr;
    vulkan_openxr_set_platform(&platform);

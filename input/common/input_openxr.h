@@ -21,7 +21,6 @@
 #include <boolean.h>
 #include <retro_common_api.h>
 #include <libretro.h>
-#include <retro_inline.h>
 
 RETRO_BEGIN_DECLS
 
@@ -31,7 +30,6 @@ RETRO_BEGIN_DECLS
 
 #define INPUT_OPENXR_PADS 2
 
-#ifdef HAVE_VULKAN
 /* Joins every headset session video makes from now on. */
 void input_openxr_register(void);
 
@@ -67,23 +65,9 @@ bool input_openxr_set_rumble(unsigned port, enum retro_rumble_effect effect,
 
 /* Whether a core's rumble reaches the controllers now. Any thread. */
 bool input_openxr_can_rumble(void);
-#else
-/* The headset's controllers come with its Vulkan path for now. */
-static INLINE void input_openxr_register(void) { }
-static INLINE void input_openxr_poll(unsigned controllers, unsigned laser,
-      float threshold) { }
-static INLINE bool input_openxr_button(unsigned port, unsigned id)
-{ return false; }
-static INLINE int16_t input_openxr_analog(unsigned port, unsigned idx,
-      unsigned id, int16_t res) { return res; }
-static INLINE bool input_openxr_pointer(unsigned port, unsigned device,
-      unsigned idx, unsigned id, int16_t *res) { return false; }
-static INLINE bool input_openxr_menu_pointer(float *u, float *v,
-      bool *pressed) { return false; }
-static INLINE bool input_openxr_set_rumble(unsigned port,
-      enum retro_rumble_effect effect, uint16_t strength) { return false; }
-static INLINE bool input_openxr_can_rumble(void) { return false; }
-#endif
+
+/* Any thread: the controllers are set up on a live session. */
+bool input_openxr_active(void);
 
 RETRO_END_DECLS
 

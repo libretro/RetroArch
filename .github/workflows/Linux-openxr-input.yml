@@ -29,20 +29,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Run input/drivers/openxr_input.c against a stand-in runtime
+      - name: Run input/common/input_openxr.c against a stand-in runtime
         working-directory: samples/input/openxr_input
         shell: bash
         run: |
-          set -eu
-          # The OpenXR input file is built for the Quest only, and a
-          # headset cannot be scripted. This builds it as it ships, with
-          # the host's compiler and the vendored OpenXR headers, against
-          # a runtime the test stands in for, and holds it to what it
-          # does when the runtime has nothing to give: a failed sync,
-          # the session out of focus or not running, a control whose
-          # state cannot be had, and deinit all leave nothing held.
-          make clean all
-          ./openxr_input_test | tee openxr_input.log
+          set -euo pipefail
+          # The headset's controllers, the desktop's and the Quest's, as
+          # they ship, against a runtime and a frontend the test stands
+          # in for: what the actions give the RetroPad, Touch's menu
+          # button, the laser on a frame and on the menu, rumble, and
+          # nothing held when the runtime has nothing to give.
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./openxr_input_test | tee openxr_input.log
           grep -q "PASS openxr_input_test" openxr_input.log
           make clean
           rm -f openxr_input.log

@@ -54,7 +54,6 @@
 #include "../../frontend/drivers/platform_unix.h"
 #include "../../verbosity.h"
 #include "../../input/input_driver.h"
-#include "../../input/drivers/openxr_input.h"
 #include "../video_driver.h"
 
 #include "gl_android_openxr.h"
@@ -332,6 +331,44 @@ static void gl_android_openxr_host_register(gl_android_openxr_t *xr)
 
 /* ===================== the session ===================== */
 
+/* The dot's image, with the video context current. */
+static bool gl_xr_cursor_fill(void *user, uint32_t index,
+      const char **step, int *code)
+{
+   static uint8_t px[VIDEO_XR_CURSOR_DIM * VIDEO_XR_CURSOR_DIM * 4];
+   uint32_t (*tex)[2] = (uint32_t (*)[2])user;
+   video_xr_cursor_pixels(px);
+   glBindTexture(GL_TEXTURE_2D, (GLuint)tex[index][0]);
+   glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, VIDEO_XR_CURSOR_DIM,
+         VIDEO_XR_CURSOR_DIM, GL_RGBA, GL_UNSIGNED_BYTE, px);
+   glBindTexture(GL_TEXTURE_2D, 0);
+   /* The compositor reads the image on its own context. */
+   glFlush();
+   return true;
+}
+
+/* The laser's dot, as Vulkan's; none if the runtime will not make it. */
+static void gl_xr_cursor_create(gl_android_openxr_t *xr)
+{
+   static const int64_t formats[2] = {
+      OPENXR_GLES_SRGB8_ALPHA8, OPENXR_GLES_RGBA8 };
+   uint32_t tex[OPENXR_MAX_IMAGES][2];
+   openxr_gles_images_t li;
+   const char *step = NULL;
+   int code         = 0;
+
+   li.sc            = &xr->sc;
+   li.tex           = tex;
+   xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 2,
+         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_DIM, VIDEO_XR_CURSOR_DIM),
+         openxr_binding_gles_images, &li, gl_xr_cursor_fill, tex,
+         &step, &code);
+   if (xr->frame.cursor)
+      RARCH_LOG("[XR] Laser cursor ready.\n");
+   else
+      RARCH_WARN("[XR] No laser cursor (%s, %d).\n", step, code);
+}
+
 static bool gl_xr_start(gl_android_openxr_t *xr)
 {
    XrGraphicsBindingOpenGLESAndroidKHR binding;
@@ -381,12 +418,8 @@ static bool gl_xr_start(gl_android_openxr_t *xr)
    openxr_frame_session_created(&xr->frame);
    openxr_host_session_created(&xr->host);
 
-   if (     !openxr_input_init(xr->rt.instance)
-         || !openxr_input_attach(xr->session.session))
-   {
-      RARCH_ERR("[XR] Touch controller input setup failed.\n");
-      return false;
-   }
+   openxr_frame_input_attach(&xr->frame);
+   gl_xr_cursor_create(xr);
    return openxr_frame_start_inline(&xr->frame);
 }
 
@@ -397,10 +430,15 @@ static void gl_xr_stop(gl_android_openxr_t *xr)
       openxr_frame_stop_inline(&xr->frame);
    for (s = 0; s < OPENXR_MAX_SLOTS; s++)
       openxr_slot_destroy(&xr->sc, s);
+   if (xr->frame.cursor)
+   {
+      xr->sc.DestroySwapchain(xr->frame.cursor);
+      xr->frame.cursor = XR_NULL_HANDLE;
+   }
    if (xr->session.session)
    {
+      openxr_frame_input_detach(&xr->frame);
       openxr_session_destroy(&xr->session);
-      openxr_input_deinit();
    }
    openxr_frame_deinit(&xr->frame);
    openxr_runtime_deinit(&xr->rt);
@@ -517,6 +555,7 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
       p.width      = settings->floats.video_openxr_width;
       p.px_per_rad = openxr_frame_pixels_per_radian(&xr->frame);
       p.max_dim    = xr->rt.max_dim;
+      p.window     = true;
    }
    /* With no width, an empty set: the eyes are all there is. */
    video_xr_place(&p, &xr->set);
@@ -618,11 +657,6 @@ bool gl_android_openxr_begin_frame(void)
       return xr->begun.begun;
    /* The frame keeps what openxr_host samples from. */
    openxr_frame_begin(&xr->frame, &xr->begun);
-   /* Read once the wait is over; nothing held while the session is down. */
-   if (openxr_session_running(&xr->session))
-      openxr_input_sync(xr->session.session);
-   else
-      openxr_input_idle();
    xr->in_frame = true;
    return xr->begun.begun;
 }

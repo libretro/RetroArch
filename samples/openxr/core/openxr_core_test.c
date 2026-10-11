@@ -2898,8 +2898,7 @@ static void test_binding_gles(void)
    openxr_runtime_deinit(&rt);
 }
 
-/* vulkan_openxr.c's Vulkan calls are all the laser dot's, which an
- * in-line host does not make. */
+/* vulkan_openxr.c's Vulkan calls are all the laser dot's fill. */
 #define T_VK(name) PFN_##name vulkan_symbol_wrapper_##name;
 T_VK(vkGetDeviceQueue) T_VK(vkCreateBuffer) T_VK(vkDestroyBuffer)
 T_VK(vkGetBufferMemoryRequirements) T_VK(vkGetPhysicalDeviceMemoryProperties)
@@ -2910,7 +2909,7 @@ T_VK(vkBeginCommandBuffer) T_VK(vkEndCommandBuffer)
 T_VK(vkCmdPipelineBarrier) T_VK(vkCmdCopyBufferToImage) T_VK(vkQueueSubmit)
 T_VK(vkCreateFence) T_VK(vkDestroyFence) T_VK(vkWaitForFences)
 
-/* Any call here is a cursor being made: it fails at the first step. */
+/* Any call here is a dot being filled: it fails at the first buffer. */
 static unsigned t_vk_calls;
 static void VKAPI_PTR t_vkGetDeviceQueue(VkDevice device,
       uint32_t family, uint32_t index, VkQueue *queue)
@@ -2937,15 +2936,23 @@ void video_driver_set_xr_host(const video_xr_host_t *host)
 void video_driver_headset_exit_request(void) { t_exit_requests++; }
 
 /* What the headset's own context hears. */
-static unsigned  t_p_created, t_p_destroying, t_p_waited, t_p_ended;
-static bool      t_p_running;
-static XrSession t_p_session;
-static bool t_p_session_created(void *u, XrInstance i, XrSession s)
-{ t_p_created++; t_p_session = s; return true; }
-static void t_p_session_destroying(void *u) { t_p_destroying++; }
-static void t_p_frame_waited(void *u, XrSession s, bool running)
-{ t_p_waited++; t_p_running = running; }
+static unsigned t_p_ended;
 static void t_p_session_ended(void *u) { t_p_ended++; }
+
+/* What the headset input hears, and how many sessions had been
+ * destroyed when it heard one go. */
+static unsigned t_in_created, t_in_destroying, t_in_destroyed_at;
+static openxr_input_handles_t t_in_handles;
+static void t_in_created_fn(void *user, const openxr_input_handles_t *h)
+{
+   t_in_created++;
+   t_in_handles = *h;
+}
+static void t_in_destroying_fn(void *user)
+{
+   t_in_destroying++;
+   t_in_destroyed_at = t_sessions_destroyed;
+}
 
 static void t_push_shown(void)
 {
@@ -2962,11 +2969,13 @@ static void test_vulkan_inline(void)
 {
    vulkan_openxr_platform_t platform;
    XrLoaderInitInfoBaseHeaderKHR loader;
+   openxr_input_hooks_t hooks;
    struct retro_vr_eye_state eyes[2];
    enum retro_vr_reference_space space;
    openxr_projection_t p;
    vulkan_openxr_t *xr;
-   unsigned waits, begins, ends, waited, instances, i;
+   unsigned waits, begins, ends, instances, i;
+   unsigned sc_made, sc_destroyed;
    int kept;
    VkInstance vk_inst   = (VkInstance)(uintptr_t)0x50;
    VkPhysicalDevice gpu = (VkPhysicalDevice)(uintptr_t)0x58;
@@ -2982,14 +2991,19 @@ static void test_vulkan_inline(void)
    loader.type = XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR;
    memset(&platform, 0, sizeof(platform));
    platform.runtime.loader     = &loader;
-   platform.session_created    = t_p_session_created;
-   platform.session_destroying = t_p_session_destroying;
-   platform.frame_waited       = t_p_frame_waited;
    platform.ended              = t_p_session_ended;
+   memset(&hooks, 0, sizeof(hooks));
+   hooks.session_created       = t_in_created_fn;
+   hooks.session_destroying    = t_in_destroying_fn;
+   openxr_frame_set_input_hooks(&hooks);
+   t_in_created = t_in_destroying = 0;
    t_runtime_defaults();
    t_begun = t_ended_sessions = 0;
    t_sessions_made = t_sessions_destroyed = 0;
    t_spaces_made = t_spaces_destroyed = 0;
+   t_sc_wait    = XR_SUCCESS;
+   sc_made      = t_sc_made;
+   sc_destroyed = t_sc_destroyed;
    instances = t_destroyed_instances;
    t_vk_calls = 0;
    vulkan_symbol_wrapper_vkGetDeviceQueue = t_vkGetDeviceQueue;
@@ -3003,17 +3017,24 @@ static void test_vulkan_inline(void)
          t_loader_calls);
    if (!xr)
    {
+      openxr_frame_set_input_hooks(NULL);
       vulkan_openxr_set_platform(NULL);
       slock_free(lock);
       return;
    }
    CHECK(     vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock)
-         && t_sessions_made == 1 && t_p_created == 1
-         && t_p_session == T_SESSION && t_xr_host.user == xr,
-         "start: %u sessions, the platform told of %u", t_sessions_made,
-         t_p_created);
-   CHECK(!vulkan_openxr_cursor(xr) && !t_vk_calls,
-         "an in-line host made a cursor (%u Vulkan calls)", t_vk_calls);
+         && t_sessions_made == 1 && t_in_created == 1
+         && t_in_handles.session == T_SESSION && t_xr_host.user == xr,
+         "start: %u sessions, the input told of %u", t_sessions_made,
+         t_in_created);
+   /* The dot as the desktop's, which the stand-in fails at its first
+    * buffer: its swapchain goes with it. */
+   CHECK(     !openxr_frame_cursor(&xr->frame) && t_vk_calls == 1
+         && t_sc_made == sc_made + 1 && t_sc_destroyed == sc_destroyed + 1
+         && LOGGED("[OpenXR] No laser cursor (vkCreateBuffer, "),
+         "the in-line host's dot: %u Vulkan calls, %u swapchains made, "
+         "%u destroyed, log: %s", t_vk_calls, t_sc_made - sc_made,
+         t_sc_destroyed - sc_destroyed, t_log);
 
    /* The first begin begins the session; each begin then waits for and
     * begins one headset frame, a second begin does nothing, and each
@@ -3024,11 +3045,10 @@ static void test_vulkan_inline(void)
       waits  = t_waits;
       begins = t_begins;
       ends   = t_ends;
-      waited = t_p_waited;
       vulkan_openxr_begin_frame(xr);
       vulkan_openxr_begin_frame(xr);
       CHECK(     t_waits == waits + 1 && t_begins == begins + 1
-            && t_ends == ends && t_p_waited == waited + 1 && t_p_running,
+            && t_ends == ends,
             "frame %u's begin: %u waits, %u begins, %u ends", i,
             t_waits - waits, t_begins - begins, t_ends - ends);
       vulkan_openxr_end_frame(xr);
@@ -3056,7 +3076,6 @@ static void test_vulkan_inline(void)
    waits  = t_waits;
    begins = t_begins;
    ends   = t_ends;
-   waited = t_p_waited;
    for (i = 0; i < 3; i++)
    {
       vulkan_openxr_begin_frame(xr);
@@ -3066,19 +3085,23 @@ static void test_vulkan_inline(void)
          && !t_xr_host.state(t_xr_host.user),
          "EXITING: %u ended, the platform told %u times, %u exits asked",
          t_ended_sessions, t_p_ended, t_exit_requests);
-   CHECK(     t_waits == waits && t_begins == begins && t_ends == ends
-         && t_p_waited == waited + 3 && !t_p_running,
+   CHECK(     t_waits == waits && t_begins == begins && t_ends == ends,
          "after EXITING: %u waits, %u begins, %u ends", t_waits - waits,
          t_begins - begins, t_ends - ends);
 
-   /* A restart makes the session again, and its frames run: the only
-    * frame calls since EXITING. */
+   /* A stop keeps the session, and the input on it. A restart makes the
+    * session again, the input told of the old one going before it went,
+    * and its frames run: the only frame calls since EXITING. */
    vulkan_openxr_stop(xr);
+   CHECK(!t_in_destroying, "a stop took the input off a kept session");
    CHECK(     vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock)
          && t_sessions_made == 2 && t_sessions_destroyed == 1
-         && t_p_created == 2 && t_p_destroying == 1 && t_xr_host.user == xr,
-         "restart: %u sessions made, %u destroyed", t_sessions_made,
-         t_sessions_destroyed);
+         && t_in_created == 2 && t_in_destroying == 1
+         && !t_in_destroyed_at && t_xr_host.user == xr,
+         "restart: %u sessions made, %u destroyed, the input told of %u "
+         "and %u gone (after %u destroyed)", t_sessions_made,
+         t_sessions_destroyed, t_in_created, t_in_destroying,
+         t_in_destroyed_at);
    t_push_shown();
    vulkan_openxr_begin_frame(xr);
    vulkan_openxr_end_frame(xr);
@@ -3090,12 +3113,15 @@ static void test_vulkan_inline(void)
    /* Everything goes at free. */
    vulkan_openxr_free(xr);
    CHECK(     t_sessions_destroyed == t_sessions_made
-         && t_p_destroying == t_p_created
+         && t_in_destroying == t_in_created
+         && t_in_destroyed_at == t_sessions_destroyed - 1
          && t_spaces_destroyed == t_spaces_made
          && t_destroyed_instances == instances + 1 && !t_xr_host.user,
-         "free: %u of %u sessions, %u of %u spaces, %u instances",
+         "free: %u of %u sessions, %u of %u spaces, %u instances, the "
+         "input told of %u of %u going, after session %u",
          t_sessions_destroyed, t_sessions_made, t_spaces_destroyed,
-         t_spaces_made, t_destroyed_instances - instances);
+         t_spaces_made, t_destroyed_instances - instances, t_in_destroying,
+         t_in_created, t_in_destroyed_at);
 
    /* A stop while the session shows the core's views keeps them, and
     * free's stop keeps what that one did. */
@@ -3191,8 +3217,215 @@ done:
    memset(&openxr_host_record, 0, sizeof(openxr_host_record));
    t_views_tracked = false;
    t_head_tracked  = false;
+   openxr_frame_set_input_hooks(NULL);
    vulkan_openxr_set_platform(NULL);
    slock_free(lock);
+}
+
+static void test_input_hooks(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_input_hooks_t hooks;
+   int user = 0;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+
+   /* No input: nothing to call, and no layers of its. */
+   openxr_frame_set_input_hooks(NULL);
+   openxr_frame_input_attach(&f);
+   CHECK(!f.extra_layers && !f.input_attached, "attached without hooks");
+   openxr_frame_input_detach(&f);
+
+   /* The session's handles, and its layers over the screens. */
+   memset(&hooks, 0, sizeof(hooks));
+   hooks.session_created    = t_in_created_fn;
+   hooks.session_destroying = t_in_destroying_fn;
+   hooks.frame_layers       = t_extra_layers;
+   hooks.user               = &user;
+   openxr_frame_set_input_hooks(&hooks);
+   t_in_created = t_in_destroying = 0;
+   memset(&t_in_handles, 0, sizeof(t_in_handles));
+   openxr_frame_input_attach(&f);
+   CHECK(t_in_created == 1 && t_in_handles.frame == &f
+         && t_in_handles.instance == rt.instance
+         && t_in_handles.session == s.session
+         && t_in_handles.get_proc == rt.GetInstanceProcAddr
+         && t_in_handles.frame_controller,
+         "handles: %u calls, frame %d, instance %d, session %d, proc %d, "
+         "frame controller %d", t_in_created, t_in_handles.frame == &f,
+         t_in_handles.instance == rt.instance,
+         t_in_handles.session == s.session,
+         t_in_handles.get_proc == rt.GetInstanceProcAddr,
+         (int)t_in_handles.frame_controller);
+   CHECK(f.extra_layers == t_extra_layers && f.extra_user == &user,
+         "the input's layers are not the frame's");
+   /* Once a session: a second would leak the first's action sets. */
+   openxr_frame_input_attach(&f);
+   CHECK(t_in_created == 1, "attached %u times", t_in_created);
+   openxr_session_set_alive(&s, true);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+   openxr_frame_run(&f);
+   CHECK(t_last_layer_count == 1 && t_extra_cap == OPENXR_MAX_EXTRA_LAYERS,
+         "%u layers with the input's, cap %u", t_last_layer_count,
+         t_extra_cap);
+
+   /* Detached once, however often asked; its layers go with it. */
+   openxr_frame_input_detach(&f);
+   openxr_frame_input_detach(&f);
+   CHECK(t_in_destroying == 1 && !f.extra_layers && !f.extra_user,
+         "detached %u times, layers %d", t_in_destroying,
+         f.extra_layers != NULL);
+   openxr_frame_run(&f);
+   CHECK(t_last_layer_count == 0, "%u layers after the detach",
+         t_last_layer_count);
+
+   /* A host's dot is not the input's to touch. */
+   f.cursor = (XrSwapchain)(uintptr_t)0x777;
+   openxr_frame_input_attach(&f);
+   openxr_frame_input_detach(&f);
+   CHECK(openxr_frame_cursor(&f) == (XrSwapchain)(uintptr_t)0x777,
+         "the dot is not the host's after a detach");
+   f.cursor = XR_NULL_HANDLE;
+
+   openxr_frame_set_input_hooks(NULL);
+   t_frame_free(&rt, &s, &f);
+}
+
+/* A filled swapchain's binding: what its fill was given, and fills made
+ * with the session's lock held. */
+static unsigned t_fills, t_fills_locked;
+static uint32_t t_fill_index;
+static void    *t_fill_user;
+static bool     t_fill_fails;
+static bool t_fill_fn(void *user, uint32_t index, const char **step,
+      int *code)
+{
+   t_fills++;
+   t_fill_index = index;
+   t_fill_user  = user;
+   if (t_locks > t_unlocks)
+      t_fills_locked++;
+   if (!t_fill_fails)
+      return true;
+   *step = "the stand-in's fill";
+   *code = -7;
+   return false;
+}
+
+/* An image that never changes, as the laser's dot: made in the first
+ * format the session lists, waited for at most 100 ms, filled outside
+ * the lock, released. Any failure leaves no swapchain. */
+static void test_swapchain_filled(void)
+{
+   static const int64_t formats[3] = { 37, 44, 50 };
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   XrSwapchain chain;
+   const char *step  = NULL;
+   int code          = 0;
+   int dummy_binding = 0;
+   int cb_user       = 0;
+   int fill_user     = 0;
+   unsigned dims     = VIDEO_SCALE_PACK(32, 32);
+
+   t_session_fresh(&rt, &s);
+   openxr_session_load(&s, &rt);
+   CHECK(openxr_session_create(&s, &dummy_binding), "session create");
+   memset(&sc, 0, sizeof(sc));
+   CHECK(openxr_swapchains_load(&sc, &rt, &s), "load");
+   openxr_swapchains_list_formats(&sc);
+   t_sc_images        = 3;
+   t_sc_images_second = 0;
+   t_sc_wait          = XR_SUCCESS;
+   t_sc_release       = XR_SUCCESS;
+   t_sc_wait_timeout  = -1;
+   t_sc_made = t_sc_destroyed = t_sc_acquires = t_sc_releases = 0;
+   t_sc_unlocked      = 0;
+   t_listed_got       = -1;
+   t_listed[0]        = 0;
+   t_fills = t_fills_locked = 0;
+   t_fill_fails       = false;
+   t_locks = t_unlocks = 0;
+
+   chain = openxr_swapchains_create_filled(&sc, formats, 3, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   CHECK(chain && t_sc_made == 1 && !t_sc_destroyed,
+         "made %u, destroyed %u", t_sc_made, t_sc_destroyed);
+   CHECK(     t_ci_format == 44 && !t_ci_mutable
+         && t_ci_width == 32 && t_ci_height == 32,
+         "create info: format %d mutable %d %ux%u", (int)t_ci_format,
+         (int)t_ci_mutable, t_ci_width, t_ci_height);
+   CHECK(     t_listed[0] == 3 && t_listed_sc[0] == chain
+         && t_listed_user[0] == &cb_user, "the binding listed no images");
+   CHECK(     t_sc_acquires == 1 && t_sc_wait_timeout == 100000000
+         && t_sc_releases == 1,
+         "%u acquired, a %lld ns wait, %u released", t_sc_acquires,
+         (long long)t_sc_wait_timeout, t_sc_releases);
+   CHECK(     t_fills == 1 && t_fill_index == 1 && t_fill_user == &fill_user
+         && !t_fills_locked,
+         "%u fills of image %u, %u under the lock", t_fills, t_fill_index,
+         t_fills_locked);
+   CHECK(!t_sc_unlocked && t_locks && t_locks == t_unlocks,
+         "%u runtime calls outside the lock", t_sc_unlocked);
+   openxr_session_lock(&s);
+   sc.DestroySwapchain(chain);
+   openxr_session_unlock(&s);
+
+   /* No format the session lists: nothing is made. */
+   t_sc_made = t_fills = 0;
+   step      = NULL;
+   chain = openxr_swapchains_create_filled(&sc, formats, 1, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   CHECK(!chain && !t_sc_made && !t_fills && step,
+         "with no format: made %u, filled %u", t_sc_made, t_fills);
+
+   /* An image still busy after the wait, an index past the images the
+    * binding got, a failed fill, a failed release: none left. */
+   t_sc_made = t_sc_destroyed = t_fills = 0;
+   t_sc_wait = XR_TIMEOUT_EXPIRED;
+   chain = openxr_swapchains_create_filled(&sc, formats, 3, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   t_sc_wait = XR_SUCCESS;
+   CHECK(     !chain && t_sc_made == 1 && t_sc_destroyed == 1 && !t_fills
+         && code == XR_TIMEOUT_EXPIRED,
+         "a busy image: made %u, destroyed %u, filled %u, code %d",
+         t_sc_made, t_sc_destroyed, t_fills, code);
+   t_sc_made = t_sc_destroyed = 0;
+   t_listed_got = 1;
+   chain = openxr_swapchains_create_filled(&sc, formats, 3, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   t_listed_got = -1;
+   CHECK(!chain && t_sc_destroyed == t_sc_made && t_sc_made && !t_fills,
+         "index 1 of 1 image: made %u, destroyed %u, filled %u", t_sc_made,
+         t_sc_destroyed, t_fills);
+   t_sc_made = t_sc_destroyed = 0;
+   t_fill_fails = true;
+   chain = openxr_swapchains_create_filled(&sc, formats, 3, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   t_fill_fails = false;
+   CHECK(     !chain && t_sc_destroyed == t_sc_made && t_sc_made
+         && step && !strcmp(step, "the stand-in's fill") && code == -7,
+         "a failed fill: made %u, destroyed %u, step %s, code %d",
+         t_sc_made, t_sc_destroyed, step ? step : "none", code);
+   t_sc_made = t_sc_destroyed = 0;
+   t_sc_release = XR_ERROR_RUNTIME_FAILURE;
+   chain = openxr_swapchains_create_filled(&sc, formats, 3, dims,
+         t_images_cb, &cb_user, t_fill_fn, &fill_user, &step, &code);
+   t_sc_release = XR_SUCCESS;
+   CHECK(     !chain && t_sc_destroyed == t_sc_made && t_sc_made
+         && code == XR_ERROR_RUNTIME_FAILURE,
+         "a failed release: made %u, destroyed %u, code %d", t_sc_made,
+         t_sc_destroyed, code);
+   CHECK(!t_sc_unlocked && !t_fills_locked,
+         "%u runtime calls outside the lock, %u fills in it",
+         t_sc_unlocked, t_fills_locked);
+
+   openxr_session_destroy(&s);
+   openxr_runtime_deinit(&rt);
 }
 
 int main(void)
@@ -3216,6 +3449,8 @@ int main(void)
    test_frame_inline();
    test_binding_gles();
    test_vulkan_inline();
+   test_input_hooks();
+   test_swapchain_filled();
    if (failures)
    {
       fprintf(stderr, "%d failure(s)\n", failures);

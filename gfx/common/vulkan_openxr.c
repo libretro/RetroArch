@@ -14,7 +14,6 @@
  */
 
 #include <stdlib.h>
-#include <math.h>
 #include <string.h>
 
 #include <boolean.h>
@@ -52,7 +51,6 @@ struct vulkan_openxr
    retro_atomic_int_t hidden;
    VkDevice device;
    slock_t *queue_lock;
-   XrSwapchain cursor;             /* start to stop; XR thread or in-line */
    /* A headset's own context: its hooks, and the frame it began. */
    vulkan_openxr_platform_t platform;
    openxr_frame_begun_t begun;
@@ -171,7 +169,6 @@ static bool vulkan_openxr_host_set_space(void *user,
 
 #define VULKAN_OPENXR_FN(xr, name) OPENXR_FN(&(xr)->rt, (xr), name)
 
-static vulkan_openxr_hooks_t vulkan_openxr_hooks;
 /* Set after a session fails on a device made for it: the reinit that
  * follows builds the device without the runtime. */
 static bool vulkan_openxr_skip_once;
@@ -191,15 +188,6 @@ void vulkan_openxr_set_platform(const vulkan_openxr_platform_t *p)
    else
       memset(&vulkan_openxr_platform, 0, sizeof(vulkan_openxr_platform));
    vulkan_openxr_has_platform = (p != NULL);
-}
-
-static unsigned vulkan_openxr_extra_layers(void *user, XrTime time,
-      const XrCompositionLayerBaseHeader **layers, unsigned cap)
-{
-   if (!vulkan_openxr_hooks.frame_layers)
-      return 0;
-   return vulkan_openxr_hooks.frame_layers(vulkan_openxr_hooks.user, time,
-         layers, cap);
 }
 
 /* Splits a space-separated list in buf into names; false when there
@@ -279,8 +267,6 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
       xr->rt.platform = vulkan_openxr_platform.runtime;
       xr->inline_host = true;
    }
-   else
-      xr->frame.extra_layers = vulkan_openxr_extra_layers;
    openxr_host_init(&xr->host, &xr->rt, &xr->session, &xr->frame);
    xr->enable2 = !enable1;
    ext         = enable1 ? XR_KHR_VULKAN_ENABLE_EXTENSION_NAME
@@ -368,15 +354,7 @@ end:
 static void vulkan_openxr_destroy_session(vulkan_openxr_t *xr)
 {
    if (xr->session.session)
-   {
-      if (xr->inline_host)
-      {
-         if (xr->platform.session_destroying)
-            xr->platform.session_destroying(xr->platform.user);
-      }
-      else if (vulkan_openxr_hooks.session_destroying)
-         vulkan_openxr_hooks.session_destroying(vulkan_openxr_hooks.user, xr);
-   }
+      openxr_frame_input_detach(&xr->frame);
    openxr_session_destroy(&xr->session);
 }
 
@@ -502,14 +480,6 @@ VkPhysicalDevice vulkan_openxr_gpu(vulkan_openxr_t *xr, VkInstance instance)
    return gpu;
 }
 
-void vulkan_openxr_set_hooks(const vulkan_openxr_hooks_t *hooks)
-{
-   if (hooks)
-      vulkan_openxr_hooks = *hooks;
-   else
-      memset(&vulkan_openxr_hooks, 0, sizeof(vulkan_openxr_hooks));
-}
-
 static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
       VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
       uint32_t queue_family)
@@ -539,73 +509,51 @@ static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
    openxr_host_session_created(&xr->host);
    RARCH_LOG("[OpenXR] Session created.\n");
 
-   if (xr->inline_host)
-   {
-      if (     xr->platform.session_created
-            && !xr->platform.session_created(xr->platform.user,
-               xr->rt.instance, xr->session.session))
-      {
-         RARCH_ERR("[OpenXR] The platform refused the session.\n");
-         openxr_session_destroy(&xr->session);
-         return false;
-      }
-   }
-   else if (vulkan_openxr_hooks.session_created)
-   {
-      vulkan_openxr_handles_t h;
-      h.xr          = xr;
-      h.instance    = xr->rt.instance;
-      h.session     = xr->session.session;
-      h.local_space = xr->session.local_space;
-      h.get_proc    = xr->rt.GetInstanceProcAddr;
-      h.frame_controller = xr->rt.frame_controller;
-      vulkan_openxr_hooks.session_created(vulkan_openxr_hooks.user, &h);
-   }
+   openxr_frame_input_attach(&xr->frame);
    return true;
 }
 
-/* A white dot with a dark rim and a one-pixel soft edge, alpha
- * premultiplied. Grey, so RGBA and BGRA hold the same bytes. */
-static void vulkan_openxr_cursor_pixels(uint8_t *px)
+struct vulkan_openxr_images
 {
-   unsigned x, y;
-   const float c = (VULKAN_OPENXR_CURSOR_DIM - 1) * 0.5f;
-   const float r = VULKAN_OPENXR_CURSOR_DIM * 0.5f;
-   for (y = 0; y < VULKAN_OPENXR_CURSOR_DIM; y++)
-   {
-      for (x = 0; x < VULKAN_OPENXR_CURSOR_DIM; x++)
-      {
-         float dx   = (float)x - c;
-         float dy   = (float)y - c;
-         float d    = (float)sqrt(dx * dx + dy * dy) / r;
-         float a    = (d < 1.0f - 1.0f / r) ? 1.0f
-            : ((d < 1.0f) ? (1.0f - d) * r : 0.0f);
-         float l    = (d < 0.6f) ? 1.0f : 0.15f;
-         uint8_t *p = px + ((size_t)y * VULKAN_OPENXR_CURSOR_DIM + x) * 4;
-         p[0]       = (uint8_t)(l * a * 255.0f + 0.5f);
-         p[1]       = p[0];
-         p[2]       = p[0];
-         p[3]       = (uint8_t)(a * 255.0f + 0.5f);
-      }
-   }
+   vulkan_openxr_t *xr;
+   VkImage (*images)[2];
+};
+
+static XrResult vulkan_openxr_list_images(void *user, XrSwapchain swapchain,
+      unsigned layer, uint32_t *count)
+{
+   uint32_t i;
+   XrResult res;
+   XrSwapchainImageVulkanKHR imgs[OPENXR_MAX_IMAGES];
+   struct vulkan_openxr_images *li = (struct vulkan_openxr_images*)user;
+   memset(imgs, 0, sizeof(imgs));
+   for (i = 0; i < OPENXR_MAX_IMAGES; i++)
+      imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
+   res = li->xr->sc.EnumerateSwapchainImages(swapchain, *count, count,
+         (XrSwapchainImageBaseHeader*)imgs);
+   for (i = 0; XR_SUCCEEDED(res) && i < *count; i++)
+      li->images[i][layer] = imgs[i].image;
+   return res;
 }
 
-/* The dot's swapchain, filled once from a staging buffer on the
- * session's queue. A failure leaves no dot and changes nothing else. */
-static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
-      VkPhysicalDevice gpu, VkDevice device, uint32_t queue_family)
+struct vulkan_openxr_dot
 {
-   static const VkFormat formats[4] = {
-      VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_B8G8R8A8_SRGB,
-      VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM };
+   vulkan_openxr_t *xr;
+   VkPhysicalDevice gpu;
+   VkDevice device;
+   uint32_t queue_family;
+   VkImage images[OPENXR_MAX_IMAGES][2];
+};
+
+/* The dot's image from a staging buffer, on the session's queue. */
+static bool vulkan_openxr_cursor_fill(void *user, uint32_t index,
+      const char **step, int *code)
+{
    unsigned i;
-   uint32_t n                 = 0;
-   uint32_t index             = 0;
-   XrResult res               = XR_SUCCESS;
+   struct vulkan_openxr_dot *dot = (struct vulkan_openxr_dot*)user;
+   VkDevice device            = dot->device;
    VkResult vk_res            = VK_SUCCESS;
-   const char *step           = NULL;
-   VkFormat format            = VK_FORMAT_UNDEFINED;
-   XrSwapchain chain          = XR_NULL_HANDLE;
+   const char *failed         = NULL;
    VkQueue queue              = VK_NULL_HANDLE;
    VkBuffer buffer            = VK_NULL_HANDLE;
    VkDeviceMemory memory      = VK_NULL_HANDLE;
@@ -613,15 +561,10 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    VkCommandBuffer cmd        = VK_NULL_HANDLE;
    VkFence fence              = VK_NULL_HANDLE;
    void *map                  = NULL;
-   VkDeviceSize size          = VULKAN_OPENXR_CURSOR_DIM
-      * VULKAN_OPENXR_CURSOR_DIM * 4;
+   VkDeviceSize size          = VIDEO_XR_CURSOR_DIM
+      * VIDEO_XR_CURSOR_DIM * 4;
    VkMemoryPropertyFlags host = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-   XrSwapchainCreateInfo ci;
-   XrSwapchainImageVulkanKHR imgs[OPENXR_MAX_IMAGES];
-   XrSwapchainImageAcquireInfo ai;
-   XrSwapchainImageWaitInfo wi;
-   XrSwapchainImageReleaseInfo ri;
    VkBufferCreateInfo bi;
    VkMemoryRequirements req;
    VkPhysicalDeviceMemoryProperties props;
@@ -634,57 +577,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    VkBufferImageCopy region;
    VkSubmitInfo si;
 
-   for (i = 0; i < 4 && format == VK_FORMAT_UNDEFINED; i++)
-      if (vulkan_openxr_supports_format(xr, formats[i]))
-         format = formats[i];
-   if (format == VK_FORMAT_UNDEFINED)
-   {
-      step = "no 8-bit RGBA format";
-      goto end;
-   }
-
-   memset(&ci, 0, sizeof(ci));
-   ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
-   ci.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
-      | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
-   ci.format      = (int64_t)format;
-   ci.sampleCount = 1;
-   ci.width       = VULKAN_OPENXR_CURSOR_DIM;
-   ci.height      = VULKAN_OPENXR_CURSOR_DIM;
-   ci.faceCount   = 1;
-   ci.arraySize   = 1;
-   ci.mipCount    = 1;
-   memset(imgs, 0, sizeof(imgs));
-   for (i = 0; i < OPENXR_MAX_IMAGES; i++)
-      imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
-   memset(&ai, 0, sizeof(ai));
-   ai.type        = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
-   memset(&wi, 0, sizeof(wi));
-   wi.type        = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
-   wi.timeout     = 100000000; /* 100 ms: a fresh swapchain is free */
-
-   slock_lock(xr->queue_lock);
-   res = xr->sc.CreateSwapchain(xr->session.session, &ci, &chain);
-   if (XR_SUCCEEDED(res))
-      res = xr->sc.EnumerateSwapchainImages(chain, 0, &n, NULL);
-   if (XR_SUCCEEDED(res) && (!n || n > OPENXR_MAX_IMAGES))
-      res = XR_ERROR_SIZE_INSUFFICIENT;
-   if (XR_SUCCEEDED(res))
-      res = xr->sc.EnumerateSwapchainImages(chain, n, &n,
-            (XrSwapchainImageBaseHeader*)imgs);
-   if (XR_SUCCEEDED(res))
-      res = xr->sc.AcquireSwapchainImage(chain, &ai, &index);
-   if (XR_SUCCEEDED(res))
-      res = xr->sc.WaitSwapchainImage(chain, &wi);
-   slock_unlock(xr->queue_lock);
-   /* XR_TIMEOUT_EXPIRED succeeds too, but leaves no image. */
-   if (res != XR_SUCCESS)
-   {
-      step = "swapchain";
-      goto end;
-   }
-
-   vkGetDeviceQueue(device, queue_family, 0, &queue);
+   vkGetDeviceQueue(device, dot->queue_family, 0, &queue);
    memset(&bi, 0, sizeof(bi));
    bi.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
    bi.size        = size;
@@ -692,11 +585,11 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
    if (vkCreateBuffer(device, &bi, NULL, &buffer) != VK_SUCCESS)
    {
-      step = "vkCreateBuffer";
+      failed = "vkCreateBuffer";
       goto end;
    }
    vkGetBufferMemoryRequirements(device, buffer, &req);
-   vkGetPhysicalDeviceMemoryProperties(gpu, &props);
+   vkGetPhysicalDeviceMemoryProperties(dot->gpu, &props);
    for (i = 0; i < props.memoryTypeCount; i++)
       if (     (req.memoryTypeBits & (1u << i))
             && (props.memoryTypes[i].propertyFlags & host) == host)
@@ -710,15 +603,15 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
          || vkBindBufferMemory(device, buffer, memory, 0) != VK_SUCCESS
          || vkMapMemory(device, memory, 0, size, 0, &map) != VK_SUCCESS)
    {
-      step = "staging memory";
+      failed = "staging memory";
       goto end;
    }
-   vulkan_openxr_cursor_pixels((uint8_t*)map);
+   video_xr_cursor_pixels((uint8_t*)map);
    vkUnmapMemory(device, memory);
 
    memset(&pi, 0, sizeof(pi));
    pi.sType              = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-   pi.queueFamilyIndex   = queue_family;
+   pi.queueFamilyIndex   = dot->queue_family;
    memset(&cai, 0, sizeof(cai));
    cai.sType             = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
    cai.level             = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
@@ -727,14 +620,14 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    fi.sType              = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
    if (vkCreateCommandPool(device, &pi, NULL, &pool) != VK_SUCCESS)
    {
-      step = "command pool";
+      failed = "command pool";
       goto end;
    }
    cai.commandPool = pool;
    if (     vkAllocateCommandBuffers(device, &cai, &cmd) != VK_SUCCESS
          || vkCreateFence(device, &fi, NULL, &fence) != VK_SUCCESS)
    {
-      step = "command buffer";
+      failed = "command buffer";
       goto end;
    }
 
@@ -750,7 +643,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    b.newLayout                   = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
    b.srcQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
    b.dstQueueFamilyIndex         = VK_QUEUE_FAMILY_IGNORED;
-   b.image                       = imgs[index].image;
+   b.image                       = dot->images[index][0];
    b.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    b.subresourceRange.levelCount = 1;
    b.subresourceRange.layerCount = 1;
@@ -759,10 +652,10 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    memset(&region, 0, sizeof(region));
    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
    region.imageSubresource.layerCount = 1;
-   region.imageExtent.width           = VULKAN_OPENXR_CURSOR_DIM;
-   region.imageExtent.height          = VULKAN_OPENXR_CURSOR_DIM;
+   region.imageExtent.width           = VIDEO_XR_CURSOR_DIM;
+   region.imageExtent.height          = VIDEO_XR_CURSOR_DIM;
    region.imageExtent.depth           = 1;
-   vkCmdCopyBufferToImage(cmd, buffer, imgs[index].image,
+   vkCmdCopyBufferToImage(cmd, buffer, dot->images[index][0],
          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
    /* The layout the runtime takes it back in. */
    b.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -778,30 +671,16 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    si.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
    si.commandBufferCount = 1;
    si.pCommandBuffers    = &cmd;
-   slock_lock(xr->queue_lock);
+   slock_lock(dot->xr->queue_lock);
    vk_res = vkQueueSubmit(queue, 1, &si, fence);
-   slock_unlock(xr->queue_lock);
+   slock_unlock(dot->xr->queue_lock);
    if (     vk_res != VK_SUCCESS
          || vkWaitForFences(device, 1, &fence, VK_TRUE, UINT64_MAX)
          != VK_SUCCESS)
    {
-      step = "submit";
+      failed = "submit";
       goto end;
    }
-
-   memset(&ri, 0, sizeof(ri));
-   ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
-   slock_lock(xr->queue_lock);
-   res = xr->sc.ReleaseSwapchainImage(chain, &ri);
-   slock_unlock(xr->queue_lock);
-   if (XR_FAILED(res))
-   {
-      step = "xrReleaseSwapchainImage";
-      goto end;
-   }
-   xr->cursor = chain;
-   chain      = XR_NULL_HANDLE;
-   RARCH_LOG("[OpenXR] Laser cursor ready.\n");
 
 end:
    if (fence)
@@ -812,15 +691,39 @@ end:
       vkFreeMemory(device, memory, NULL);
    if (buffer)
       vkDestroyBuffer(device, buffer, NULL);
-   if (chain)
-   {
-      slock_lock(xr->queue_lock);
-      xr->sc.DestroySwapchain(chain);
-      slock_unlock(xr->queue_lock);
-   }
-   if (step)
-      RARCH_WARN("[OpenXR] No laser cursor (%s, %d).\n", step,
-            (res != XR_SUCCESS) ? (int)res : (int)vk_res);
+   if (!failed)
+      return true;
+   *step = failed;
+   *code = (int)vk_res;
+   return false;
+}
+
+/* The laser's dot. A failure leaves none and changes nothing else. */
+static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
+      VkPhysicalDevice gpu, VkDevice device, uint32_t queue_family)
+{
+   static const int64_t formats[4] = {
+      VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_B8G8R8A8_SRGB,
+      VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM };
+   struct vulkan_openxr_images li;
+   struct vulkan_openxr_dot dot;
+   const char *step = NULL;
+   int code         = 0;
+
+   dot.xr           = xr;
+   dot.gpu          = gpu;
+   dot.device       = device;
+   dot.queue_family = queue_family;
+   li.xr            = xr;
+   li.images        = dot.images;
+   xr->frame.cursor = openxr_swapchains_create_filled(&xr->sc, formats, 4,
+         VIDEO_SCALE_PACK(VIDEO_XR_CURSOR_DIM, VIDEO_XR_CURSOR_DIM),
+         vulkan_openxr_list_images, &li, vulkan_openxr_cursor_fill, &dot,
+         &step, &code);
+   if (xr->frame.cursor)
+      RARCH_LOG("[OpenXR] Laser cursor ready.\n");
+   else
+      RARCH_WARN("[OpenXR] No laser cursor (%s, %d).\n", step, code);
 }
 
 bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
@@ -844,9 +747,7 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
    }
    /* Also marks the session started for vulkan_openxr_stop's keep. */
    xr->queue_lock = queue_lock;
-   /* The laser's dot is the headset input's, which an in-line host
-    * does not have. */
-   if (!xr->cursor && !xr->inline_host)
+   if (!xr->frame.cursor)
       vulkan_openxr_cursor_create(xr, gpu, device, queue_family);
    if (xr->inline_host ? !openxr_frame_start_inline(&xr->frame)
                        : !openxr_frame_start(&xr->frame))
@@ -894,12 +795,12 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    /* A kept session outlives the driver's views of its images. */
    for (s = 0; s < OPENXR_MAX_SLOTS; s++)
       vulkan_openxr_slot_destroy(xr, s);
-   if (xr->cursor)
+   if (xr->frame.cursor)
    {
       slock_lock(xr->queue_lock);
-      xr->sc.DestroySwapchain(xr->cursor);
+      xr->sc.DestroySwapchain(xr->frame.cursor);
       slock_unlock(xr->queue_lock);
-      xr->cursor = XR_NULL_HANDLE;
+      xr->frame.cursor = XR_NULL_HANDLE;
    }
    openxr_frame_clear_quads(&xr->frame);
    openxr_frame_clear_projection(&xr->frame);
@@ -928,11 +829,6 @@ bool vulkan_openxr_alive(vulkan_openxr_t *xr)
 bool vulkan_openxr_focused(vulkan_openxr_t *xr)
 {
    return openxr_session_focused(&xr->session);
-}
-
-XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr)
-{
-   return openxr_frame_predicted_time(&xr->frame);
 }
 
 bool vulkan_openxr_should_draw(vulkan_openxr_t *xr)
@@ -990,29 +886,6 @@ bool vulkan_openxr_supports_format(const vulkan_openxr_t *xr,
 void vulkan_openxr_slot_destroy(vulkan_openxr_t *xr, unsigned slot)
 {
    openxr_slot_destroy(&xr->sc, slot);
-}
-
-struct vulkan_openxr_images
-{
-   vulkan_openxr_t *xr;
-   VkImage (*images)[2];
-};
-
-static XrResult vulkan_openxr_list_images(void *user, XrSwapchain swapchain,
-      unsigned layer, uint32_t *count)
-{
-   uint32_t i;
-   XrResult res;
-   XrSwapchainImageVulkanKHR imgs[OPENXR_MAX_IMAGES];
-   struct vulkan_openxr_images *li = (struct vulkan_openxr_images*)user;
-   memset(imgs, 0, sizeof(imgs));
-   for (i = 0; i < OPENXR_MAX_IMAGES; i++)
-      imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
-   res = li->xr->sc.EnumerateSwapchainImages(swapchain, *count, count,
-         (XrSwapchainImageBaseHeader*)imgs);
-   for (i = 0; XR_SUCCEEDED(res) && i < *count; i++)
-      li->images[i][layer] = imgs[i].image;
-   return res;
 }
 
 bool vulkan_openxr_slot_create(vulkan_openxr_t *xr, unsigned slot,
@@ -1095,22 +968,9 @@ void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor)
    openxr_frame_get_anchor(&xr->frame, anchor);
 }
 
-bool vulkan_openxr_get_quads(vulkan_openxr_t *xr, video_xr_quad_set_t *out)
-{
-   if (!xr)
-      return false;
-   openxr_frame_get_quads(&xr->frame, out);
-   return true;
-}
-
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr)
 {
    openxr_frame_request_recenter(&xr->frame);
-}
-
-XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr)
-{
-   return xr->cursor;
 }
 
 bool vulkan_openxr_inline(const vulkan_openxr_t *xr)
@@ -1124,9 +984,6 @@ void vulkan_openxr_begin_frame(vulkan_openxr_t *xr)
    if (xr->begun.waited)
       return;
    openxr_frame_begin(&xr->frame, &xr->begun);
-   if (xr->platform.frame_waited)
-      xr->platform.frame_waited(xr->platform.user, xr->session.session,
-            openxr_session_running(&xr->session));
 }
 
 void vulkan_openxr_end_frame(vulkan_openxr_t *xr)

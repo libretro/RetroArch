@@ -32,7 +32,7 @@
 #include "../input_driver.h"
 #include "../../runloop.h"
 #include "../../gfx/video_views.h"
-#include "../../gfx/common/vulkan_openxr.h"
+#include "../../gfx/common/openxr_frame.h"
 #include "../../gfx/video_driver.h"
 #include "../../verbosity.h"
 
@@ -48,6 +48,9 @@
 #define INPUT_OPENXR_HAPTIC_DURATION 1000000000
 /* Half a stick's travel. */
 #define INPUT_OPENXR_YIELD_STICK   0x4000
+/* Touch's one menu button opens the RetroArch menu once held this long
+ * (us). */
+#define INPUT_OPENXR_MENU_HOLD     1000000
 
 enum input_openxr_set
 {
@@ -81,6 +84,7 @@ enum input_openxr_action
    IXA_C_MENU,
    IXA_C_RECENTER,
    IXA_C_LASER,
+   IXA_C_START_MENU,
    IXA_S_B,
    IXA_S_A,
    IXA_S_R,
@@ -128,6 +132,7 @@ static const input_openxr_action_def_t input_openxr_actions[IXA_COUNT] = {
    { INPUT_OPENXR_SET_COMBINED, "menu",        "RetroArch Menu", XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "recenter",    "Recenter",       XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
    { INPUT_OPENXR_SET_COMBINED, "laser",       "Laser Pointer",  XR_ACTION_TYPE_BOOLEAN_INPUT,    false },
+   { INPUT_OPENXR_SET_COMBINED, "start_menu",  "Start (Held: RetroArch Menu)", XR_ACTION_TYPE_BOOLEAN_INPUT, false },
    { INPUT_OPENXR_SET_SEPARATE, "b",           "B",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_SEPARATE, "a",           "A",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
    { INPUT_OPENXR_SET_SEPARATE, "r",           "R",              XR_ACTION_TYPE_BOOLEAN_INPUT,    true  },
@@ -188,7 +193,7 @@ static const input_openxr_bind_t input_openxr_index[] = {
 };
 
 /* Oculus Touch: X and Y on the left, A and B on the right, and one menu
- * button (left), which Start takes. */
+ * button (left): Start, and the RetroArch menu once held a second. */
 static const input_openxr_bind_t input_openxr_touch[] = {
    IXB_R(IXA_C_B,      "a/click"),
    IXB_R(IXA_C_A,      "b/click"),
@@ -202,7 +207,7 @@ static const input_openxr_bind_t input_openxr_touch[] = {
    IXB_R(IXA_C_R3,     "thumbstick/click"),
    IXB_L(IXA_C_LSTICK, "thumbstick"),
    IXB_R(IXA_C_RSTICK, "thumbstick"),
-   IXB_L(IXA_C_START,  "menu/click"),
+   IXB_L(IXA_C_START_MENU, "menu/click"),
    IXB_L(IXA_S_B,      "x/click"),
    IXB_R(IXA_S_B,      "a/click"),
    IXB_L(IXA_S_A,      "y/click"),
@@ -330,10 +335,9 @@ typedef struct input_openxr
 {
    /* Written by the session hooks, while neither the poll nor the XR
     * thread runs. */
-   vulkan_openxr_t *xr;
+   openxr_frame_t *frame;
    XrInstance instance;
    XrSession session;
-   XrSpace local_space;
    XrPath hands[INPUT_OPENXR_HANDS];
    XrActionSet sets[INPUT_OPENXR_SETS];
    XrAction actions[IXA_COUNT];
@@ -363,6 +367,9 @@ typedef struct input_openxr
    bool menu_toggle;
    bool recenter;
    bool laser_toggle;
+   /* Touch's menu button: held since start_menu_since. */
+   bool start_menu_held;
+   retro_time_t start_menu_since;
    float haptic[INPUT_OPENXR_HANDS];      /* the amplitude last accepted */
    float haptic_attempt[INPUT_OPENXR_HANDS];
    bool haptic_retry[INPUT_OPENXR_HANDS];
@@ -498,7 +505,7 @@ static void input_openxr_release(input_openxr_t *st)
 }
 
 static void input_openxr_session_created(void *user,
-      const vulkan_openxr_handles_t *h)
+      const openxr_input_handles_t *h)
 {
    unsigned i;
    XrResult res             = XR_SUCCESS;
@@ -516,7 +523,6 @@ static void input_openxr_session_created(void *user,
    }
    st->instance    = h->instance;
    st->session     = h->session;
-   st->local_space = h->local_space;
    if (     XR_FAILED(res = st->StringToPath(h->instance,
                "/user/hand/left", &st->hands[0]))
          || XR_FAILED(res = st->StringToPath(h->instance,
@@ -597,7 +603,7 @@ static void input_openxr_session_created(void *user,
       }
    }
 
-   st->xr = h->xr;
+   st->frame = h->frame;
    retro_atomic_store_release_int(&input_openxr_ready, 1);
    RARCH_LOG("[OpenXR] Headset controllers ready.\n");
    return;
@@ -608,10 +614,9 @@ error:
    input_openxr_release(st);
 }
 
-static void input_openxr_session_destroying(void *user, vulkan_openxr_t *xr)
+static void input_openxr_session_destroying(void *user)
 {
    (void)user;
-   (void)xr;
    input_openxr_release(&input_openxr_st);
 }
 
@@ -673,6 +678,28 @@ static void input_openxr_stick(input_openxr_t *st, unsigned a, XrPath hand,
    xy[1] = input_openxr_axis(-s.currentState.y);
 }
 
+/* Touch's one menu button: Start while it is held, and the RetroArch
+ * menu too when let go after a second. */
+static void input_openxr_start_menu(input_openxr_t *st, bool down,
+      input_openxr_pad_t *pad)
+{
+   retro_time_t now;
+   if (!down)
+   {
+      st->start_menu_held = false;
+      return;
+   }
+   now = cpu_features_get_time_usec();
+   if (!st->start_menu_held)
+   {
+      st->start_menu_held  = true;
+      st->start_menu_since = now;
+   }
+   pad->buttons |= (uint16_t)(1u << RETRO_DEVICE_ID_JOYPAD_START);
+   if (now - st->start_menu_since >= INPUT_OPENXR_MENU_HOLD)
+      st->menu_toggle = true;
+}
+
 static void input_openxr_read_combined(input_openxr_t *st)
 {
    unsigned id;
@@ -694,12 +721,15 @@ static void input_openxr_read_combined(input_openxr_t *st)
    st->menu_toggle   = input_openxr_bool(st, IXA_C_MENU, XR_NULL_PATH);
    st->recenter      = input_openxr_bool(st, IXA_C_RECENTER, XR_NULL_PATH);
    st->laser_toggle  = input_openxr_bool(st, IXA_C_LASER, XR_NULL_PATH);
+   input_openxr_start_menu(st,
+         input_openxr_bool(st, IXA_C_START_MENU, XR_NULL_PATH), pad);
 }
 
 /* The left hand player 1, the right player 2. */
 static void input_openxr_read_separate(input_openxr_t *st)
 {
    unsigned h;
+   st->start_menu_held = false;
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
    {
       XrPath hand             = st->hands[h];
@@ -806,8 +836,8 @@ static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
    memset(&loc, 0, sizeof(loc));
    loc.type = XR_TYPE_SPACE_LOCATION;
    if (     !st->aim[h] || !time
-         || XR_FAILED(st->LocateSpace(st->aim[h], st->local_space, time,
-               &loc))
+         || XR_FAILED(st->LocateSpace(st->aim[h],
+               st->frame->session->local_space, time, &loc))
          || (loc.locationFlags & valid) != valid)
       return false;
    q.x   = loc.pose.orientation.x;
@@ -826,15 +856,31 @@ static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
 }
 
 /* A point on a screen's quad as the core's pointer coordinates: into
- * the core's view map when it has one, over the whole frame when not. */
+ * the core's view map when it has one, over the whole frame when not.
+ * A window has the frame where the video driver's viewport puts it, as
+ * the window's own pointer does. */
 static bool input_openxr_frame_point(const video_xr_quad_t *q, float u,
       float v, int16_t *x, int16_t *y)
 {
    unsigned dims                = 0;
    const video_views_map_t *map = NULL;
+   if (q->kind == VIDEO_XR_QUAD_WINDOW)
+   {
+      video_viewport_t vp;
+      if (     !video_driver_get_viewport_info(&vp)
+            || !video_xr_window_point(&vp, &u, &v))
+         return false;
+   }
    if (!video_driver_get_views_core(&map, &dims))
       return false;
    return video_xr_quad_to_frame(q, u, v, map, dims, x, y);
+}
+
+/* The menu's own quad, or a window while the menu is open over it. */
+static bool input_openxr_on_menu(const video_xr_quad_t *q, bool menu_open)
+{
+   return q->kind == VIDEO_XR_QUAD_MENU
+      || (q->kind == VIDEO_XR_QUAD_WINDOW && menu_open);
 }
 
 /* Where each hand points, which hand is the pointer, and what it points
@@ -873,22 +919,23 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
          st->role[h] = INPUT_OPENXR_ROLE_SPENT;
    }
 
-   st->pointer = -1;
+   st->pointer         = -1;
+   st->quads.num_quads = 0;
    if (     laser != VIDEO_OPENXR_LASER_OFF
-         && (time = vulkan_openxr_predicted_time(st->xr))
-         && vulkan_openxr_get_quads(st->xr, &st->quads))
-      for (i = 0; i < st->quads.num_quads; i++)
-      {
-         const video_xr_quad_t *lq = &st->quads.quads[i];
-         if (!video_xr_quad_live(lq, laser, menu_open))
-            continue;
-         /* Without a live screen, the mouse and the overlay keep the
-          * core's pointer and gun. */
-         if (lq->kind == VIDEO_XR_QUAD_MENU)
-            menu_live     = true;
-         else
-            st->ptr_owned = true;
-      }
+         && (time = openxr_frame_predicted_time(st->frame)))
+      openxr_frame_get_quads(st->frame, &st->quads);
+   for (i = 0; i < st->quads.num_quads; i++)
+   {
+      const video_xr_quad_t *lq = &st->quads.quads[i];
+      if (!video_xr_quad_live(lq, laser, menu_open))
+         continue;
+      /* Without a live screen, the mouse and the overlay keep the
+       * core's pointer and gun. */
+      if (input_openxr_on_menu(lq, menu_open))
+         menu_live     = true;
+      else
+         st->ptr_owned = true;
+   }
    /* A press ends with its quads. */
    for (h = 0; h < INPUT_OPENXR_HANDS; h++)
       if (     (st->role[h] == INPUT_OPENXR_ROLE_MENU && !menu_live)
@@ -937,8 +984,8 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
             st->role[h] = INPUT_OPENXR_ROLE_SPENT;
       }
       else if (pulled[h] && st->hit[h] >= 0)
-         st->role[h] = (st->quads.quads[st->hit[h]].kind
-               == VIDEO_XR_QUAD_MENU)
+         st->role[h] = input_openxr_on_menu(
+               &st->quads.quads[st->hit[h]], menu_open)
             ? INPUT_OPENXR_ROLE_MENU : INPUT_OPENXR_ROLE_TOUCH;
       else if (pulled[h] && laser == VIDEO_OPENXR_LASER_ALWAYS)
          st->role[h] = INPUT_OPENXR_ROLE_TOUCH;
@@ -953,7 +1000,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
    if (st->role[p] == INPUT_OPENXR_ROLE_MENU)
    {
       /* Off the quad, the press stays where it left it. */
-      if (q && q->kind == VIDEO_XR_QUAD_MENU)
+      if (q && input_openxr_on_menu(q, menu_open))
       {
          st->menu_u = st->hit_u[p];
          st->menu_v = st->hit_v[p];
@@ -962,7 +1009,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       st->menu_pressed = !lift;
       return;
    }
-   if (q && q->kind == VIDEO_XR_QUAD_MENU)
+   if (q && input_openxr_on_menu(q, menu_open))
    {
       st->menu_on = true;
       st->menu_u  = st->hit_u[p];
@@ -1057,11 +1104,11 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    bool menu_open     = (config & INPUT_OPENXR_MENU_OPEN) != 0;
    (void)user;
 
-   if (     !st->xr || laser == VIDEO_OPENXR_LASER_OFF
-         || !vulkan_openxr_focused(st->xr)
-         || !(cursor = vulkan_openxr_cursor(st->xr))
-         || !vulkan_openxr_get_quads(st->xr, &set))
+   if (     !st->frame || laser == VIDEO_OPENXR_LASER_OFF
+         || !openxr_session_focused(st->frame->session)
+         || !(cursor = openxr_frame_cursor(st->frame)))
       return 0;
+   openxr_frame_get_quads(st->frame, &set);
    for (h = 0; h < INPUT_OPENXR_HANDS && n < cap; h++)
    {
       int q;
@@ -1078,11 +1125,11 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->layerFlags                       =
          XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
-      l->space                            = st->local_space;
+      l->space                            = st->frame->session->local_space;
       l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
       l->subImage.swapchain               = cursor;
-      l->subImage.imageRect.extent.width  = VULKAN_OPENXR_CURSOR_DIM;
-      l->subImage.imageRect.extent.height = VULKAN_OPENXR_CURSOR_DIM;
+      l->subImage.imageRect.extent.width  = VIDEO_XR_CURSOR_DIM;
+      l->subImage.imageRect.extent.height = VIDEO_XR_CURSOR_DIM;
       l->pose.orientation.x               = pose.orientation.x;
       l->pose.orientation.y               = pose.orientation.y;
       l->pose.orientation.z               = pose.orientation.z;
@@ -1209,13 +1256,17 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
    st->gun_pressed  = false;
    st->menu_on      = false;
    st->menu_pressed = false;
-   if (!st->xr)
+   if (!st->frame)
+   {
+      st->start_menu_held = false;
       return;
-   if (!vulkan_openxr_focused(st->xr))
+   }
+   if (!openxr_session_focused(st->frame->session))
    {
       if (st->focused)
          RARCH_LOG("[OpenXR] Controllers released: the headset is not focused.\n");
       st->focused = false;
+      st->start_menu_held = false;
       input_openxr_triggers_lost(st);
       /* So their return is logged too. */
       st->mode    = -1;
@@ -1243,6 +1294,7 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
          RARCH_WARN("[OpenXR] Controllers not read: xrSyncActions %d.\n",
                (int)res);
       st->sync_result = res;
+      st->start_menu_held = false;
       input_openxr_triggers_lost(st);
       return;
    }
@@ -1384,20 +1436,25 @@ bool input_openxr_set_rumble(unsigned port, enum retro_rumble_effect effect,
    retro_atomic_store_release_int(
          &input_openxr_rumble[port][(effect == RETRO_RUMBLE_STRONG) ? 0 : 1],
          (int)strength);
-   return retro_atomic_load_acquire_int(&input_openxr_ready) != 0;
+   return input_openxr_active();
 }
 
 bool input_openxr_can_rumble(void)
+{
+   return input_openxr_active();
+}
+
+bool input_openxr_active(void)
 {
    return retro_atomic_load_acquire_int(&input_openxr_ready) != 0;
 }
 
 void input_openxr_register(void)
 {
-   vulkan_openxr_hooks_t hooks;
+   openxr_input_hooks_t hooks;
    hooks.session_created    = input_openxr_session_created;
    hooks.session_destroying = input_openxr_session_destroying;
    hooks.frame_layers       = input_openxr_frame_layers;
    hooks.user               = NULL;
-   vulkan_openxr_set_hooks(&hooks);
+   openxr_frame_set_input_hooks(&hooks);
 }

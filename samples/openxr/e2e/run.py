@@ -1791,6 +1791,60 @@ def check_no_frame_profile(res):
     return errors
 
 
+TOUCH_PROFILE = '/interaction_profiles/oculus/touch_controller'
+START_MENU = 'action combined/start_menu 1'
+
+
+def touch_start_menu_binds(res):
+    """Touch's one menu button is Start and the RetroArch menu."""
+    got = [e for e in events(res, 'bindings')
+           if e['profile'] == TOUCH_PROFILE]
+    if not got:
+        return ['no bindings suggested for %s' % TOUCH_PROFILE]
+    binds = set(tuple(b) for b in got[0]['binds'])
+    errors = []
+    if ('combined/start_menu',
+            '/user/hand/left/input/menu/click') not in binds:
+        errors.append('Touch\'s menu button is not combined/start_menu')
+    if any(b[0] == 'combined/start' for b in binds):
+        errors.append('Touch still binds combined/start')
+    return errors
+
+
+def start_seen(res):
+    return any(f['buttons'] & RP['START'] for f in pads(res, 0))
+
+
+def check_start_menu_tap(res):
+    """Touch's menu button tapped: Start for the core, no menu."""
+    errors = touch_start_menu_binds(res)
+    if not start_seen(res):
+        errors.append('a tap gave the core no Start')
+    if any(menus(f) for f in res.frames):
+        errors.append('a tap opened the menu')
+    return errors
+
+
+def check_start_menu_hold(res):
+    """Held past a second and let go, the RetroArch menu opens (the
+    input driver toggles on release); the core has Start while it is
+    held."""
+    errors = touch_start_menu_binds(res)
+    release = res.marks['release'] * 1e6
+    opened = [f['t_us'] for f in res.frames if menus(f)]
+    if not opened:
+        errors.append('holding the menu button did not open the menu')
+    elif opened[0] < release:
+        errors.append('the menu opened %.2f s before the release'
+                      % ((release - opened[0]) / 1e6))
+    elif opened[0] - release > 1.5e6:
+        errors.append('the menu opened %.2f s after the release'
+                      % ((opened[0] - release) / 1e6))
+    if not start_seen(res):
+        errors.append('the core had no Start while the button was held')
+    return errors
+
+
 def check_combined(res):
     errors = bindings_errors(res) + sync_errors(res, ('combined', 'pointer'))
     p0 = pads(res, 0)
@@ -2845,7 +2899,7 @@ def check_kept_retry(res):
     if seq != ['live', 'released', 'live']:
         errors.append('controllers went %s, want live, released when the '
                       'session ended, live in the new one' % seq)
-    # The laser's dot is VULKAN_OPENXR_CURSOR_DIM square; each start makes
+    # The laser's dot is VIDEO_XR_CURSOR_DIM square; each start makes
     # one, and each start here made a session.
     dots = [e for e in events(res, 'swapchain')
             if (e['w'], e['h']) == (32, 32)]
@@ -3929,6 +3983,16 @@ CASES = [
                  'video_views_test_hw': 'vulkan'},
      'steps': REINIT_PAUSED,
      'check': check_tracked_reinit_paused(None, 'stage')},
+    {'name': 'input-start-menu-tap', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('mark', 'press'), ('script', START_MENU),
+               ('wait', 0.3), ('script', ''), ('wait', 3)],
+     'check': check_start_menu_tap},
+    {'name': 'input-start-menu-hold', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('script', START_MENU), ('wait', 1.5),
+               ('mark', 'release'), ('script', ''), ('wait', 3)],
+     'check': check_start_menu_hold},
 ]
 
 

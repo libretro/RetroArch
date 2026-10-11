@@ -55,6 +55,11 @@ typedef struct openxr_slot
 typedef XrResult (*openxr_images_cb)(void *user, XrSwapchain swapchain,
       unsigned layer, uint32_t *count);
 
+/* The binding fills image index of those it listed; false on a failure,
+ * with *step naming it and *code its result. */
+typedef bool (*openxr_fill_cb)(void *user, uint32_t index,
+      const char **step, int *code);
+
 typedef struct openxr_swapchains
 {
    openxr_session_t *session;
@@ -76,6 +81,16 @@ bool openxr_swapchains_load(openxr_swapchains_t *sc,
 void openxr_swapchains_list_formats(openxr_swapchains_t *sc);
 bool openxr_swapchains_supports(const openxr_swapchains_t *sc,
       int64_t format);
+/* An image that never changes, as the laser's dot: a swapchain in the
+ * first of formats the session lists, filled once and released. The
+ * session's lock is held around the runtime's calls, not the fill.
+ * XR_NULL_HANDLE, nothing of it left, on a failure *step names, with
+ * *code its result. */
+XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
+      const int64_t *formats, unsigned num_formats, unsigned dims,
+      openxr_images_cb images, void *images_user,
+      openxr_fill_cb fill, void *fill_user,
+      const char **step, int *code);
 bool openxr_slot_create(openxr_swapchains_t *sc, unsigned slot,
       int64_t format, bool mutable_format, unsigned dims, unsigned layers,
       openxr_images_cb images, void *images_user, unsigned *num_images);

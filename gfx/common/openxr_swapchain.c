@@ -67,6 +67,96 @@ bool openxr_swapchains_supports(const openxr_swapchains_t *sc,
    return false;
 }
 
+XrSwapchain openxr_swapchains_create_filled(openxr_swapchains_t *sc,
+      const int64_t *formats, unsigned num_formats, unsigned dims,
+      openxr_images_cb images, void *images_user,
+      openxr_fill_cb fill, void *fill_user,
+      const char **step, int *code)
+{
+   unsigned i;
+   uint32_t n        = 0;
+   uint32_t index    = 0;
+   bool found        = false;
+   XrResult res      = XR_SUCCESS;
+   XrSwapchain chain = XR_NULL_HANDLE;
+   XrSwapchainCreateInfo ci;
+   XrSwapchainImageAcquireInfo ai;
+   XrSwapchainImageWaitInfo wi;
+   XrSwapchainImageReleaseInfo ri;
+
+   *step = NULL;
+   *code = 0;
+   memset(&ci, 0, sizeof(ci));
+   for (i = 0; i < num_formats && !found; i++)
+      if ((found = openxr_swapchains_supports(sc, formats[i])))
+         ci.format = formats[i];
+   if (!found)
+   {
+      *step = "no 8-bit RGBA format";
+      return XR_NULL_HANDLE;
+   }
+   ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
+   ci.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
+      | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
+   ci.sampleCount = 1;
+   ci.width       = VIDEO_SCALE_W(dims);
+   ci.height      = VIDEO_SCALE_H(dims);
+   ci.faceCount   = 1;
+   ci.arraySize   = 1;
+   ci.mipCount    = 1;
+   memset(&ai, 0, sizeof(ai));
+   ai.type        = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
+   memset(&wi, 0, sizeof(wi));
+   wi.type        = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
+   wi.timeout     = 100000000; /* 100 ms: a fresh swapchain is free */
+
+   openxr_session_lock(sc->session);
+   res = sc->CreateSwapchain(sc->session->session, &ci, &chain);
+   if (XR_SUCCEEDED(res))
+      res = sc->EnumerateSwapchainImages(chain, 0, &n, NULL);
+   if (XR_SUCCEEDED(res) && (!n || n > OPENXR_MAX_IMAGES))
+      res = XR_ERROR_SIZE_INSUFFICIENT;
+   if (XR_SUCCEEDED(res))
+      res = images(images_user, chain, 0, &n);
+   if (XR_SUCCEEDED(res))
+      res = sc->AcquireSwapchainImage(chain, &ai, &index);
+   if (XR_SUCCEEDED(res) && index >= n)
+      res = XR_ERROR_SIZE_INSUFFICIENT;
+   if (XR_SUCCEEDED(res))
+      res = sc->WaitSwapchainImage(chain, &wi);
+   openxr_session_unlock(sc->session);
+   /* XR_TIMEOUT_EXPIRED succeeds too, but leaves no image. */
+   if (res != XR_SUCCESS)
+   {
+      *step = "swapchain";
+      *code = (int)res;
+      goto fail;
+   }
+   if (!fill(fill_user, index, step, code))
+      goto fail;
+   memset(&ri, 0, sizeof(ri));
+   ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
+   openxr_session_lock(sc->session);
+   res = sc->ReleaseSwapchainImage(chain, &ri);
+   openxr_session_unlock(sc->session);
+   if (XR_FAILED(res))
+   {
+      *step = "xrReleaseSwapchainImage";
+      *code = (int)res;
+      goto fail;
+   }
+   return chain;
+
+fail:
+   if (chain)
+   {
+      openxr_session_lock(sc->session);
+      sc->DestroySwapchain(chain);
+      openxr_session_unlock(sc->session);
+   }
+   return XR_NULL_HANDLE;
+}
+
 void openxr_slot_destroy(openxr_swapchains_t *sc, unsigned slot)
 {
    unsigned l;

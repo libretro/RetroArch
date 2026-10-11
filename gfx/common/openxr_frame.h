@@ -78,6 +78,11 @@ typedef struct openxr_frame
    unsigned (*extra_layers)(void *user, XrTime display_time,
          const XrCompositionLayerBaseHeader **layers, unsigned cap);
    void *extra_user;
+   /* The laser's dot the host made for the input's layers, start to
+    * stop; the frame loop reads it. */
+   XrSwapchain cursor;
+   /* From the input's attach to its detach. */
+   bool input_attached;
    sthread_t *thread;
    retro_atomic_int_t quit;
    bool frame_failed;              /* the frame loop's thread */
@@ -127,6 +132,34 @@ typedef struct openxr_frame
    PFN_xrEndFrame EndFrame;
 } openxr_frame_t;
 
+/* What the headset input needs of a session: valid from its
+ * session_created to its session_destroying. Handles rather than the
+ * runtime, since the stand-in builds no openxr_runtime_t. */
+typedef struct openxr_input_handles
+{
+   openxr_frame_t *frame;      /* its session, predicted time, quads, dot */
+   XrInstance instance;
+   XrSession session;
+   PFN_xrGetInstanceProcAddr get_proc;
+   bool frame_controller;      /* XR_VALVE_frame_controller_interaction */
+} openxr_input_handles_t;
+
+typedef struct openxr_input_hooks
+{
+   /* The session and its spaces exist and its frame loop has not
+    * started: make, suggest and attach action sets here. A kept
+    * device's instance gets a new session after the runtime ends one,
+    * so this runs again for each. */
+   void (*session_created)(void *user, const openxr_input_handles_t *h);
+   /* The frame loop has stopped; the session is destroyed next. */
+   void (*session_destroying)(void *user);
+   /* The frame loop's thread, each headset frame: up to cap layers over
+    * the screens. Returns how many were written. */
+   unsigned (*frame_layers)(void *user, XrTime display_time,
+         const XrCompositionLayerBaseHeader **layers, unsigned cap);
+   void *user;
+} openxr_input_hooks_t;
+
 bool openxr_frame_load(openxr_frame_t *f, const openxr_runtime_t *rt,
       openxr_session_t *session, openxr_swapchains_t *sc);
 void openxr_frame_deinit(openxr_frame_t *f);
@@ -175,6 +208,14 @@ void openxr_frame_request_recenter(openxr_frame_t *f);
  * the frames publish, 0 until measured. */
 int openxr_frame_recenters(openxr_frame_t *f);
 XrDuration openxr_frame_period(openxr_frame_t *f);
+
+/* Main thread, while no host's frame loop runs. NULL clears. */
+void openxr_frame_set_input_hooks(const openxr_input_hooks_t *hooks);
+/* Every host: after each new session, before its frame loop starts;
+ * and before destroying a session, once the loop has stopped. */
+void openxr_frame_input_attach(openxr_frame_t *f);
+void openxr_frame_input_detach(openxr_frame_t *f);
+XrSwapchain openxr_frame_cursor(const openxr_frame_t *f);
 
 RETRO_END_DECLS
 
