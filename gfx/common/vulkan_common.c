@@ -84,6 +84,10 @@
  * mechanism assumes single-context ownership. */
 static dylib_t                       vulkan_library;
 static VkInstance                    cached_instance_vk;
+#if defined(_WIN32) && !defined(__WINRT__)
+#include "win_vulkan_dxgi.h"
+#endif
+
 static VkDevice                      cached_device_vk;
 static VkPhysicalDevice              cached_gpu_vk;
 static int                           cached_gpu_index_vk;
@@ -874,7 +878,28 @@ static const char *vulkan_optional_device_extensions[] = {
     * HDR still works via the colour space alone. */
    , "VK_EXT_hdr_metadata"
 #endif
+#if defined(_WIN32) && !defined(__WINRT__)
+   , "VK_KHR_external_memory"
+   , "VK_KHR_external_memory_win32"
+   , "VK_KHR_external_semaphore"
+   , "VK_KHR_external_semaphore_win32"
+   , "VK_KHR_dedicated_allocation"
+   , "VK_KHR_get_memory_requirements2"
+#endif
 };
+
+
+static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
+{
+   unsigned count = ARRAY_SIZE(vulkan_optional_device_extensions);
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (!vk->context.swapchain_settings.dxgi_present)
+      count -= 6;
+#else
+   (void)vk;
+#endif
+   return count;
+}
 
 #if defined(HAVE_OPENXR) && defined(ANDROID)
 static VkDevice vulkan_create_openxr_vulkan_device(
@@ -1087,7 +1112,7 @@ static VkDevice vulkan_context_create_device_wrapper(
          device_extensions, &info.enabledExtensionCount,
          vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
          vulkan_optional_device_extensions,
-         ARRAY_SIZE(vulkan_optional_device_extensions))))
+         vulkan_optional_device_count(vk))))
    {
       RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
       free((void*)device_extensions);
@@ -1109,7 +1134,8 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
 {
    uint32_t queue_count;
    unsigned i;
-   const char *enabled_device_extensions[8];
+   const char *enabled_device_extensions[ARRAY_SIZE(vulkan_device_extensions)
+      + ARRAY_SIZE(vulkan_optional_device_extensions)];
    VkDeviceCreateInfo device_info;
    VkDeviceQueueCreateInfo queue_info;
    static const float one                  = 1.0f;
@@ -1385,7 +1411,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
               enabled_device_extensions, &enabled_device_extension_count,
               vulkan_device_extensions, ARRAY_SIZE(vulkan_device_extensions),
               vulkan_optional_device_extensions,
-              ARRAY_SIZE(vulkan_optional_device_extensions))))
+         vulkan_optional_device_count(vk))))
       {
           RARCH_ERR("[Vulkan] Could not find required device extensions.\n");
           return false;
@@ -1582,7 +1608,25 @@ static const char *vulkan_optional_instance_extensions[] = {
 #ifdef VULKAN_HDR_SWAPCHAIN
    VULKAN_COLORSPACE_EXTENSION_NAME
 #endif
+#if defined(_WIN32) && !defined(__WINRT__)
+   , "VK_KHR_get_physical_device_properties2"
+   , "VK_KHR_external_memory_capabilities"
+   , "VK_KHR_external_semaphore_capabilities"
+#endif
 };
+
+
+static unsigned vulkan_optional_instance_count(const gfx_ctx_vulkan_data_t *vk)
+{
+   unsigned count = ARRAY_SIZE(vulkan_optional_instance_extensions);
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (!vk->context.swapchain_settings.dxgi_present)
+      count -= 3;
+#else
+   (void)vk;
+#endif
+   return count;
+}
 
 /* vkCreateInstance, or the runtime's, which adds what it needs. An
  * instance the runtime refuses drops the headset. */
@@ -1721,7 +1765,7 @@ static VkInstance vulkan_context_create_instance_wrapper(void *opaque, const VkI
             instance_extensions, &info.enabledExtensionCount,
             required_extensions, required_extension_count,
             vulkan_optional_instance_extensions,
-            ARRAY_SIZE(vulkan_optional_instance_extensions))))
+            vulkan_optional_instance_count(vk))))
    {
       RARCH_ERR("[Vulkan] Instance does not support required extensions.\n");
       goto end;
@@ -2090,6 +2134,17 @@ static void vulkan_destroy_swapchain(gfx_ctx_vulkan_data_t *vk)
    vk->fse_acquired = false;
 #endif
 
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (vk->dxgi_presenter)
+   {
+      ra_vulkan_dxgi_destroy((ra_vulkan_dxgi_t *)vk->dxgi_presenter);
+      vk->dxgi_presenter = NULL;
+      vk->context.swapchain_external = false;
+      vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+      memset(vk->context.swapchain_images, 0, sizeof(vk->context.swapchain_images));
+   }
+#endif
+
    vulkan_emulated_mailbox_deinit(&vk->mailbox);
    if (vk->swapchain != VK_NULL_HANDLE)
    {
@@ -2418,6 +2473,9 @@ bool vulkan_surface_create(gfx_ctx_vulkan_data_t *vk,
             surf_info.flags     = 0;
             surf_info.hinstance = *(const HINSTANCE*)display;
             surf_info.hwnd      = *(const HWND*)surface;
+#ifndef __WINRT__
+            vk->dxgi_window     = surf_info.hwnd;
+#endif
 
             if (create(vk->context.instance,
                      &surf_info, NULL, &vk->vk_surface) != VK_SUCCESS)
@@ -2734,7 +2792,7 @@ void vulkan_acquire_next_image(gfx_ctx_vulkan_data_t *vk)
    sem_info.flags                 = 0;
 
 retry:
-   if (vk->swapchain == VK_NULL_HANDLE)
+   if (!vulkan_has_swapchain(vk))
    {
       /* We don't have a swapchain, try to create one now. */
       if (!vulkan_create_swapchain(vk, vk->context.swapchain_dims,
@@ -2752,7 +2810,7 @@ retry:
          return;
       }
 
-      if (vk->swapchain == VK_NULL_HANDLE)
+      if (!vulkan_has_swapchain(vk))
       {
          /* We still don't have a swapchain, so just fake it ... */
          vk->context.current_swapchain_index = 0;
@@ -2779,14 +2837,23 @@ retry:
    }
    else
    {
-      if (vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
+      if ((vk->flags & VK_DATA_FLAG_USE_WSI_SEMAPHORE)
+            || vk->context.swapchain_external)
           semaphore = vulkan_get_wsi_acquire_semaphore(&vk->context);
       else
           vkCreateFence(vk->context.device, &fence_info, NULL, &fence);
 
-      err = vkAcquireNextImageKHR(vk->context.device,
-            vk->swapchain, UINT64_MAX,
-            semaphore, fence, &vk->context.current_swapchain_index);
+#if defined(_WIN32) && !defined(__WINRT__)
+      if (vk->dxgi_presenter)
+      {
+         err = ra_vulkan_dxgi_acquire((ra_vulkan_dxgi_t *)vk->dxgi_presenter,
+               semaphore, fence, &vk->context.current_swapchain_index);
+      }
+      else
+#endif
+         err = vkAcquireNextImageKHR(vk->context.device,
+               vk->swapchain, UINT64_MAX,
+               semaphore, fence, &vk->context.current_swapchain_index);
    }
 
    if (err == VK_SUCCESS || err == VK_SUBOPTIMAL_KHR)
@@ -2829,6 +2896,12 @@ retry:
 
 #ifdef WSI_HARDENING_TEST
    trigger_spurious_error_vkresult(&err);
+#endif
+
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (vk->dxgi_presenter && err != VK_SUCCESS && err != VK_SUBOPTIMAL_KHR
+         && err != VK_NOT_READY && err != VK_TIMEOUT)
+      vk->dxgi_failed = true;
 #endif
 
    if (fence != VK_NULL_HANDLE)
@@ -3051,7 +3124,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
-   reuse_swapchain = (vk->swapchain != VK_NULL_HANDLE)
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (vk->dxgi_presenter)
+      vk->flags &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
+#endif
+   reuse_swapchain = vulkan_has_swapchain(vk)
          && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
          &&   (vk->context.swapchain_dims == dims)
          &&   (   (vk->context.swap_interval          == swap_interval)
@@ -3458,6 +3535,10 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          && (swapchain_size.height == 0))
    {
       /* Cannot create swapchain yet, try again later. */
+#if defined(_WIN32) && !defined(__WINRT__)
+      if (vk->dxgi_presenter)
+         vulkan_destroy_swapchain(vk);
+#endif
       if (vk->swapchain != VK_NULL_HANDLE)
          vkDestroySwapchainKHR(vk->context.device, vk->swapchain, NULL);
       vk->swapchain                    = VK_NULL_HANDLE;
@@ -3515,6 +3596,91 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       composite                = VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
 
    old_swapchain               = vk->swapchain;
+
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (ss->dxgi_present && !vk->dxgi_failed && vk->wsi_type == VULKAN_WSI_WIN32)
+   {
+      VkFormat import_format = format.format;
+      bool srgb = import_format == VK_FORMAT_R8G8B8A8_SRGB
+         || import_format == VK_FORMAT_B8G8R8A8_SRGB;
+      if (import_format == VK_FORMAT_R8G8B8A8_SRGB)
+         import_format = VK_FORMAT_R8G8B8A8_UNORM;
+      else if (import_format == VK_FORMAT_B8G8R8A8_SRGB)
+         import_format = VK_FORMAT_B8G8R8A8_UNORM;
+      vulkan_destroy_swapchain(vk);
+      old_swapchain = VK_NULL_HANDLE;
+      if (     format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+            && (import_format == VK_FORMAT_R8G8B8A8_UNORM
+               || import_format == VK_FORMAT_B8G8R8A8_UNORM))
+         vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,
+               vk->context.gpu, vk->context.device, vk->context.queue,
+               vk->context.graphics_queue_index, (HWND)vk->dxgi_window,
+               swapchain_size.width, swapchain_size.height, import_format,
+               vk->context.queue_lock);
+#ifdef VULKAN_HDR_SWAPCHAIN
+      else if (     format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+                 && format.format == VK_FORMAT_R16G16B16A16_SFLOAT)
+         vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,
+               vk->context.gpu, vk->context.device, vk->context.queue,
+               vk->context.graphics_queue_index, (HWND)vk->dxgi_window,
+               swapchain_size.width, swapchain_size.height, format.format,
+               vk->context.queue_lock);
+#endif
+#ifdef VULKAN_HDR_SWAPCHAIN
+      else if (     format.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT
+                 && format.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+      {
+         vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,
+               vk->context.gpu, vk->context.device, vk->context.queue,
+               vk->context.graphics_queue_index, (HWND)vk->dxgi_window,
+               swapchain_size.width, swapchain_size.height, format.format,
+               vk->context.queue_lock);
+         if (vk->dxgi_presenter)
+            ra_vulkan_dxgi_hdr_metadata((ra_vulkan_dxgi_t *)vk->dxgi_presenter,
+                  ss->display_peak);
+      }
+#endif
+      if (vk->dxgi_presenter)
+      {
+         VkSemaphoreCreateInfo semaphore;
+         memset(&semaphore, 0, sizeof(semaphore));
+         semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+         RARCH_LOG("[Vulkan] DXGI presentation active.\n");
+         vk->context.swapchain_external = true;
+         vk->context.flags &= ~VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
+         if (srgb)
+            vk->context.flags |= VK_CTX_FLAG_SWAPCHAIN_IS_SRGB;
+         vk->context.num_swapchain_images = 2;
+         vk->context.swapchain_format = import_format;
+         vk->context.swapchain_dims = VIDEO_SCALE_PACK(swapchain_size.width, swapchain_size.height);
+         vk->context.swapchain_present_mode = swapchain_present_mode;
+#ifdef VULKAN_HDR_SWAPCHAIN
+         vk->context.swapchain_colour_space = format.colorSpace;
+#endif
+         vk->flags &= ~VK_DATA_FLAG_EMULATING_MAILBOX;
+         for (i = 0; i < 2; i++)
+         {
+            vk->context.swapchain_images[i] = ra_vulkan_dxgi_image(
+                  (ra_vulkan_dxgi_t *)vk->dxgi_presenter, i);
+            if (vkCreateSemaphore(vk->context.device, &semaphore, NULL,
+                     &vk->context.swapchain_semaphores[i]) != VK_SUCCESS)
+            {
+               vulkan_destroy_swapchain(vk);
+               goto dxgi_unavailable;
+            }
+         }
+         vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+         vk->context.flags &= ~VK_CTX_FLAG_HAS_ACQUIRED_SWAPCHAIN;
+         vk->context.current_swapchain_index = 0;
+         vulkan_create_wait_fences(vk);
+         vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+         return true;
+      }
+dxgi_unavailable:
+      vk->dxgi_failed = true;
+      RARCH_WARN("[Vulkan] DXGI presentation unavailable; using native presentation.\n");
+   }
+#endif
 
    info.sType                  = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
    info.pNext                  = NULL;
@@ -3797,6 +3963,7 @@ static void vulkan_swapchain_settings_init(vulkan_swapchain_settings_t *ss)
    ss->vsync               = settings->bools.video_vsync;
    ss->adaptive_vsync      = settings->bools.video_adaptive_vsync;
    ss->windowed_fullscreen = settings->bools.video_windowed_fullscreen;
+   ss->dxgi_present        = settings->bools.video_dxgi_present;
 }
 
 #ifdef HAVE_OPENXR
@@ -4271,13 +4438,22 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
     * Where the mutex is not recursive - everywhere but Windows - the
     * thread then waited on itself: an out-of-date present, as on a
     * resize, never returned. */
-#ifdef HAVE_THREADS
-   slock_lock(vk->context.queue_lock);
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (vk->dxgi_presenter)
+      err = ra_vulkan_dxgi_present((ra_vulkan_dxgi_t *)vk->dxgi_presenter,
+            index, present.waitSemaphoreCount, present.pWaitSemaphores,
+            vk->context.swap_interval > 0 ? (unsigned)vk->context.swap_interval : 0);
+   else
 #endif
-   err = vkQueuePresentKHR(vk->context.queue, &present);
+   {
 #ifdef HAVE_THREADS
-   slock_unlock(vk->context.queue_lock);
+      slock_lock(vk->context.queue_lock);
 #endif
+      err = vkQueuePresentKHR(vk->context.queue, &present);
+#ifdef HAVE_THREADS
+      slock_unlock(vk->context.queue_lock);
+#endif
+   }
    /* Queued whatever it returned: a failed present has still put its
     * semaphore wait on the queue, or may have, and the fence taken
     * before the next rebuild covers either. */
@@ -4343,6 +4519,10 @@ void vulkan_present(gfx_ctx_vulkan_data_t *vk, unsigned index)
       if (     (err == VK_ERROR_DEVICE_LOST || result == VK_ERROR_DEVICE_LOST)
             && vk->context.swapchain_never_presented >= 8)
          video_driver_modify_disp_flags(VIDEO_FLAG_GPU_DEVICE_LOST, 0);
+#if defined(_WIN32) && !defined(__WINRT__)
+      if (vk->dxgi_presenter)
+         vk->dxgi_failed = true;
+#endif
       vulkan_destroy_swapchain(vk);
    }
 }

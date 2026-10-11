@@ -3115,3 +3115,16 @@ endif
 endif
 
 ##################################
+
+ifneq ($(findstring Win32,$(OS)),)
+   ifneq ($(findstring 1,$(HAVE_VULKAN) $(WANT_WGL)),)
+      INCLUDE_DIRS += -isystemgfx/include/dxsdk
+      OBJ += gfx/common/win_dxgi_present.o
+      ifeq ($(HAVE_VULKAN),1)
+         OBJ += gfx/common/win_vulkan_dxgi.o
+      endif
+      ifeq ($(WANT_WGL),1)
+         OBJ += gfx/common/win_wgl_dxgi.o
+      endif
+   endif
+endif

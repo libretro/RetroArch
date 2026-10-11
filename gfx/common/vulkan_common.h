@@ -229,6 +229,7 @@ typedef struct vulkan_swapchain_settings
    bool     vsync;
    bool     adaptive_vsync;
    bool     windowed_fullscreen;
+   bool     dxgi_present;
 } vulkan_swapchain_settings_t;
 
 typedef struct vulkan_context
@@ -260,6 +261,7 @@ typedef struct vulkan_context
    unsigned swapchain_never_presented;
    /* The device in use, as the GPU list numbers it */
    int gpu_index;
+   bool swapchain_external;
    VkImage swapchain_images[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFence swapchain_fences[VULKAN_MAX_SWAPCHAIN_IMAGES];
    VkFormat swapchain_format;
@@ -363,6 +365,9 @@ typedef struct gfx_ctx_vulkan_data
    VkSurfaceKHR vk_surface;      /* ptr alignment */
    VkSwapchainKHR swapchain;     /* ptr alignment */
    struct vulkan_emulated_mailbox mailbox;
+   void *dxgi_presenter;
+   void *dxgi_window;
+   bool dxgi_failed;
    uint8_t flags;
    enum vulkan_wsi_type wsi_type;
    bool fse_supported;
@@ -388,6 +393,17 @@ typedef struct gfx_ctx_vulkan_data
    PFN_vkSetHdrMetadataEXT set_hdr_metadata;
 #endif
 } gfx_ctx_vulkan_data_t;
+
+static INLINE bool vulkan_has_swapchain(const gfx_ctx_vulkan_data_t *vk)
+{
+   return vk->swapchain != VK_NULL_HANDLE || vk->context.swapchain_external;
+}
+
+static INLINE VkImageLayout vulkan_swapchain_layout(const vulkan_context_t *ctx)
+{
+   return ctx->swapchain_external ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+}
+
 
 struct vulkan_display_surface_info
 {

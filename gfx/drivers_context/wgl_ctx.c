@@ -160,9 +160,17 @@ enum gfx_ctx_api win32_api                = GFX_CTX_NONE;
 static dylib_t          dll_handle        = NULL; /* Handle to OpenGL32.dll/libGLESv2.dll */
 #endif
 
+#ifndef __WINRT__
+#include "../common/win_wgl_dxgi.h"
+#endif
+
 typedef struct gfx_ctx_cgl_data
 {
-   void *empty;
+   void *dxgi;
+   unsigned dxgi_dims;
+   bool dxgi_requested;
+   bool dxgi_failed;
+   bool dxgi_fp16;
 } gfx_ctx_wgl_data_t;
 
 /* FORWARD DECLARATIONS */
@@ -523,6 +531,42 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
    switch (win32_api)
    {
       case GFX_CTX_OPENGL_API:
+#ifndef __WINRT__
+         {
+            gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
+            RECT rect;
+            if (wgl && wgl->dxgi_requested && !wgl->dxgi_failed
+                  && GetClientRect(win32_get_window(), &rect)
+                  && rect.right > 0 && rect.bottom > 0
+                  && !IsIconic(win32_get_window()))
+            {
+               unsigned dims = VIDEO_SCALE_PACK(rect.right, rect.bottom);
+               bool fp16 = win32_backbuffer_is_scrgb();
+               if (wgl->dxgi && (wgl->dxgi_dims != dims || wgl->dxgi_fp16 != fp16))
+               {
+                  ra_wgl_dxgi_destroy((ra_wgl_dxgi_t *)wgl->dxgi);
+                  wgl->dxgi = NULL;
+               }
+               if (!wgl->dxgi)
+               {
+                  wgl->dxgi = ra_wgl_dxgi_create(win32_get_window(),
+                        rect.right, rect.bottom, fp16 ? 10 : 28,
+                        fp16 ? 0x881A : 0x8058);
+                  wgl->dxgi_dims = dims;
+                  wgl->dxgi_fp16 = fp16;
+                  if (wgl->dxgi)
+                     RARCH_LOG("[WGL] DXGI presentation active.\n");
+               }
+               if (wgl->dxgi && ra_wgl_dxgi_present((ra_wgl_dxgi_t *)wgl->dxgi,
+                        win32_interval > 0 ? (unsigned)win32_interval : 0) != 0)
+                  return;
+               ra_wgl_dxgi_destroy((ra_wgl_dxgi_t *)wgl->dxgi);
+               wgl->dxgi = NULL;
+               wgl->dxgi_failed = true;
+               RARCH_WARN("[WGL] DXGI presentation unavailable; using native presentation.\n");
+            }
+         }
+#endif
          /* gdi32's SwapBuffers only locates and forwards to this, and
           * re-resolves it on every call. See the commit message. */
          wglSwapBuffers(win32_hdc);
@@ -557,6 +601,14 @@ static void gfx_ctx_wgl_destroy(void *data)
          {
             uint32_t video_st_flags;
             video_driver_state_t *video_st = video_state_get_ptr();
+#ifndef __WINRT__
+            if (wgl && wgl->dxgi)
+            {
+               wglMakeCurrent(win32_hdc, win32_hrc);
+               ra_wgl_dxgi_destroy((ra_wgl_dxgi_t *)wgl->dxgi);
+               wgl->dxgi = NULL;
+            }
+#endif
             gl_finish();
             wglMakeCurrent(NULL, NULL);
 
@@ -642,6 +694,8 @@ static void *gfx_ctx_wgl_init(void *video_driver)
 
    if (!wgl)
       return NULL;
+
+   wgl->dxgi_requested = settings->bools.video_dxgi_present;
 
    if (win32_flags & WIN32_CMN_FLAG_INITED)
       gfx_ctx_wgl_destroy(NULL);
@@ -929,11 +983,13 @@ void win32_setup_pixel_format(HDC hdc, bool supports_gl) { }
  * context does not see; always presentable, as it was before. */
 static bool gfx_ctx_wgl_presentable(void *data)
 {
-   (void)data;
 #ifdef __WINRT__
+   (void)data;
    return true;
 #else
-   return !IsIconic(win32_get_window());
+   gfx_ctx_wgl_data_t *wgl = (gfx_ctx_wgl_data_t *)data;
+   return !IsIconic(win32_get_window())
+      && (!wgl || !wgl->dxgi || ra_wgl_dxgi_presentable((ra_wgl_dxgi_t *)wgl->dxgi));
 #endif
 }
 

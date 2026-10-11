@@ -31,3 +31,9 @@ S_UINT(video_fullscreen_y, VIDEO_FULLSCREEN_Y,
       "Fullscreen Height",
       "Set the custom height size for the non-windowed fullscreen mode. Leaving it unset will use the desktop resolution.")
 #endif
+
+S_BOOL(video_dxgi_present, VIDEO_DXGI_PRESENT,
+      "video_dxgi_present",
+      false, SD_FLAG_CMD_APPLY_AUTO, 0, CMD_EVENT_REINIT,
+      "DXGI Presentation",
+      "Use DXGI presentation with compatible Windows OpenGL and Vulkan drivers. Falls back to native presentation when unsupported. May change frame latency; disabled by default.")

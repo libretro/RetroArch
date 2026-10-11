@@ -1,0 +1,302 @@
+#if defined(_WIN32) && !defined(__WINRT__)
+#include <stdlib.h>
+#include <string.h>
+#include <stdint.h>
+#ifdef HAVE_THREADS
+#include <rthreads/rthreads.h>
+#endif
+#include <dxgiformat.h>
+#include "win_dxgi_present.h"
+#include "win_vulkan_dxgi.h"
+#define vkGetInstanceProcAddr vulkan_symbol_wrapper_instance_proc_addr()
+
+struct ra_vulkan_dxgi
+{
+   ra_dxgi_bridge_t *bridge;
+   VkDevice device;
+   VkQueue queue;
+   void *queue_lock;
+   VkCommandPool pool;
+   VkImage images[2];
+   VkDeviceMemory memory[2];
+   VkSemaphore ready, done;
+   VkCommandBuffer acquire[2], release[2];
+   uint64_t ready_value;
+   int submitted;
+};
+
+static VkResult ra_vulkan_dxgi_submit(ra_vulkan_dxgi_t *p,
+      const VkSubmitInfo *submit, VkFence fence)
+{
+   VkResult result;
+#ifdef HAVE_THREADS
+   if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
+#endif
+   result = vkQueueSubmit(p->queue, 1, submit, fence);
+   if (result == VK_SUCCESS) p->submitted = 1;
+#ifdef HAVE_THREADS
+   if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
+#endif
+   return result;
+}
+
+int ra_vulkan_dxgi_presentable(ra_vulkan_dxgi_t *p)
+{ return ra_dxgi_bridge_presentable(p->bridge); }
+
+void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *p)
+{
+   unsigned i;
+   if (!p) return;
+   if (p->submitted)
+   {
+#ifdef HAVE_THREADS
+      if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
+#endif
+      vkQueueWaitIdle(p->queue);
+#ifdef HAVE_THREADS
+      if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
+#endif
+   }
+   ra_dxgi_bridge_destroy(p->bridge);
+   if (p->pool) vkDestroyCommandPool(p->device, p->pool, NULL);
+   if (p->ready) vkDestroySemaphore(p->device, p->ready, NULL);
+   if (p->done) vkDestroySemaphore(p->device, p->done, NULL);
+   for (i = 0; i < 2; i++)
+   {
+      if (p->images[i]) vkDestroyImage(p->device, p->images[i], NULL);
+      if (p->memory[i]) vkFreeMemory(p->device, p->memory[i], NULL);
+   }
+   free(p);
+}
+
+#define CHECK_VK(expr) do { if ((expr) != VK_SUCCESS) goto error; } while (0)
+
+ra_vulkan_dxgi_t *ra_vulkan_dxgi_create(VkInstance instance,
+      VkPhysicalDevice gpu, VkDevice device, VkQueue queue, unsigned family,
+      HWND window, unsigned width, unsigned height, VkFormat format, void *queue_lock)
+{
+   ra_vulkan_dxgi_t *p;
+   VkPhysicalDeviceIDProperties id;
+   VkPhysicalDeviceProperties2 properties;
+   VkPhysicalDeviceMemoryProperties memory_properties;
+   VkPhysicalDeviceExternalSemaphoreInfo semaphore_info;
+   VkExternalSemaphoreProperties semaphore_properties;
+   VkPhysicalDeviceExternalImageFormatInfo external_format_info;
+   VkPhysicalDeviceImageFormatInfo2 format_info;
+   VkExternalImageFormatProperties external_format_properties;
+   VkImageFormatProperties2 format_properties;
+   VkCommandPoolCreateInfo pool_info;
+   PFN_vkGetPhysicalDeviceProperties2 get_properties;
+   PFN_vkGetPhysicalDeviceExternalSemaphoreProperties get_semaphore_properties;
+   PFN_vkGetPhysicalDeviceImageFormatProperties2 get_format_properties;
+   PFN_vkGetMemoryWin32HandlePropertiesKHR get_memory_properties;
+   PFN_vkImportSemaphoreWin32HandleKHR import_semaphore;
+   unsigned dxgi_format, i;
+
+   if (format == VK_FORMAT_R8G8B8A8_UNORM) dxgi_format = DXGI_FORMAT_R8G8B8A8_UNORM;
+   else if (format == VK_FORMAT_B8G8R8A8_UNORM) dxgi_format = DXGI_FORMAT_B8G8R8A8_UNORM;
+   else if (format == VK_FORMAT_A2B10G10R10_UNORM_PACK32) dxgi_format = DXGI_FORMAT_R10G10B10A2_UNORM;
+   else if (format == VK_FORMAT_R16G16B16A16_SFLOAT) dxgi_format = DXGI_FORMAT_R16G16B16A16_FLOAT;
+   else return NULL;
+   get_properties = (PFN_vkGetPhysicalDeviceProperties2)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceProperties2KHR");
+   get_semaphore_properties = (PFN_vkGetPhysicalDeviceExternalSemaphoreProperties)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
+   get_format_properties = (PFN_vkGetPhysicalDeviceImageFormatProperties2)vkGetInstanceProcAddr(instance, "vkGetPhysicalDeviceImageFormatProperties2KHR");
+   get_memory_properties = (PFN_vkGetMemoryWin32HandlePropertiesKHR)vkGetDeviceProcAddr(device, "vkGetMemoryWin32HandlePropertiesKHR");
+   import_semaphore = (PFN_vkImportSemaphoreWin32HandleKHR)vkGetDeviceProcAddr(device, "vkImportSemaphoreWin32HandleKHR");
+   if (!get_properties || !get_semaphore_properties || !get_format_properties
+         || !get_memory_properties || !import_semaphore) return NULL;
+   memset(&id, 0, sizeof(id));
+   memset(&properties, 0, sizeof(properties));
+   id.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES;
+   properties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+   properties.pNext = &id;
+   get_properties(gpu, &properties);
+   if (!id.deviceLUIDValid) return NULL;
+   memset(&semaphore_info, 0, sizeof(semaphore_info));
+   memset(&semaphore_properties, 0, sizeof(semaphore_properties));
+   semaphore_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO;
+   semaphore_info.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+   semaphore_properties.sType = VK_STRUCTURE_TYPE_EXTERNAL_SEMAPHORE_PROPERTIES;
+   get_semaphore_properties(gpu, &semaphore_info, &semaphore_properties);
+   if (!(semaphore_properties.externalSemaphoreFeatures & VK_EXTERNAL_SEMAPHORE_FEATURE_IMPORTABLE_BIT)) return NULL;
+   memset(&external_format_info, 0, sizeof(external_format_info));
+   memset(&format_info, 0, sizeof(format_info));
+   memset(&external_format_properties, 0, sizeof(external_format_properties));
+   memset(&format_properties, 0, sizeof(format_properties));
+   external_format_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_IMAGE_FORMAT_INFO;
+   external_format_info.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
+   format_info.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2;
+   format_info.pNext = &external_format_info;
+   format_info.format = format;
+   format_info.type = VK_IMAGE_TYPE_2D;
+   format_info.tiling = VK_IMAGE_TILING_OPTIMAL;
+   format_info.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+   external_format_properties.sType = VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES;
+   format_properties.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
+   format_properties.pNext = &external_format_properties;
+   if (get_format_properties(gpu, &format_info, &format_properties) != VK_SUCCESS
+         || !(external_format_properties.externalMemoryProperties.externalMemoryFeatures
+            & VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT)) return NULL;
+   p = (ra_vulkan_dxgi_t *)calloc(1, sizeof(*p));
+   if (!p) return NULL;
+   p->device = device; p->queue = queue; p->queue_lock = queue_lock;
+   p->bridge = ra_dxgi_bridge_create(window, width, height, dxgi_format, id.deviceLUID);
+   if (!p->bridge) goto error;
+   memset(&pool_info, 0, sizeof(pool_info));
+   pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+   pool_info.queueFamilyIndex = family;
+   CHECK_VK(vkCreateCommandPool(device, &pool_info, NULL, &p->pool));
+   vkGetPhysicalDeviceMemoryProperties(gpu, &memory_properties);
+   for (i = 0; i < 2; i++)
+   {
+      VkExternalMemoryImageCreateInfo external_image;
+      VkImageCreateInfo image;
+      VkMemoryRequirements requirements;
+      VkMemoryWin32HandlePropertiesKHR handle_properties;
+      VkImportMemoryWin32HandleInfoKHR import_memory;
+      VkMemoryDedicatedAllocateInfo dedicated;
+      VkMemoryAllocateInfo allocation;
+      VkSemaphoreCreateInfo semaphore;
+      VkImportSemaphoreWin32HandleInfoKHR import;
+      VkCommandBufferAllocateInfo command;
+      unsigned type, j;
+      memset(&external_image, 0, sizeof(external_image));
+      memset(&image, 0, sizeof(image));
+      external_image.sType = VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO;
+      external_image.handleTypes = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
+      image.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+      image.pNext = &external_image;
+      image.imageType = VK_IMAGE_TYPE_2D; image.format = format;
+      image.extent.width = width; image.extent.height = height; image.extent.depth = 1;
+      image.mipLevels = image.arrayLayers = 1;
+      image.samples = VK_SAMPLE_COUNT_1_BIT;
+      image.tiling = VK_IMAGE_TILING_OPTIMAL;
+      image.usage = format_info.usage;
+      CHECK_VK(vkCreateImage(device, &image, NULL, &p->images[i]));
+      vkGetImageMemoryRequirements(device, p->images[i], &requirements);
+      memset(&handle_properties, 0, sizeof(handle_properties));
+      handle_properties.sType = VK_STRUCTURE_TYPE_MEMORY_WIN32_HANDLE_PROPERTIES_KHR;
+      CHECK_VK(get_memory_properties(device, VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT,
+               ra_dxgi_bridge_resource(p->bridge, i), &handle_properties));
+      for (type = 0; type < memory_properties.memoryTypeCount; type++)
+         if ((requirements.memoryTypeBits & handle_properties.memoryTypeBits) & (1u << type)) break;
+      if (type == memory_properties.memoryTypeCount) goto error;
+      memset(&import_memory, 0, sizeof(import_memory));
+      memset(&dedicated, 0, sizeof(dedicated));
+      memset(&allocation, 0, sizeof(allocation));
+      import_memory.sType = VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR;
+      import_memory.handleType = VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT;
+      import_memory.handle = ra_dxgi_bridge_resource(p->bridge, i);
+      dedicated.sType = VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO;
+      dedicated.pNext = &import_memory; dedicated.image = p->images[i];
+      allocation.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      allocation.pNext = &dedicated;
+      allocation.allocationSize = requirements.size;
+      allocation.memoryTypeIndex = type;
+      CHECK_VK(vkAllocateMemory(device, &allocation, NULL, &p->memory[i]));
+      CHECK_VK(vkBindImageMemory(device, p->images[i], p->memory[i], 0));
+      memset(&semaphore, 0, sizeof(semaphore));
+      memset(&import, 0, sizeof(import));
+      semaphore.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+      import.sType = VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR;
+      import.handleType = VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT;
+      import.handle = i ? ra_dxgi_bridge_done_fence(p->bridge) : ra_dxgi_bridge_ready_fence(p->bridge);
+      CHECK_VK(vkCreateSemaphore(device, &semaphore, NULL, i ? &p->done : &p->ready));
+      import.semaphore = i ? p->done : p->ready;
+      CHECK_VK(import_semaphore(device, &import));
+      for (j = 0; j < 2; j++)
+      {
+         VkCommandBufferBeginInfo begin;
+         VkImageMemoryBarrier barrier;
+         VkCommandBuffer *buffer = j ? &p->release[i] : &p->acquire[i];
+         memset(&command, 0, sizeof(command));
+         command.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+         command.commandPool = p->pool; command.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+         command.commandBufferCount = 1;
+         CHECK_VK(vkAllocateCommandBuffers(device, &command, buffer));
+         memset(&begin, 0, sizeof(begin));
+         begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+         begin.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+         CHECK_VK(vkBeginCommandBuffer(*buffer, &begin));
+         memset(&barrier, 0, sizeof(barrier));
+         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+         barrier.oldLayout = barrier.newLayout = VK_IMAGE_LAYOUT_GENERAL;
+         barrier.image = p->images[i];
+         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+         barrier.subresourceRange.levelCount = barrier.subresourceRange.layerCount = 1;
+         barrier.srcQueueFamilyIndex = j ? family : VK_QUEUE_FAMILY_EXTERNAL;
+         barrier.dstQueueFamilyIndex = j ? VK_QUEUE_FAMILY_EXTERNAL : family;
+         barrier.srcAccessMask = j ? VK_ACCESS_MEMORY_WRITE_BIT : 0;
+         barrier.dstAccessMask = j ? 0 : VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
+         vkCmdPipelineBarrier(*buffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+               VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0, 0, NULL, 0, NULL, 1, &barrier);
+         CHECK_VK(vkEndCommandBuffer(*buffer));
+      }
+   }
+   return p;
+error:
+   ra_vulkan_dxgi_destroy(p);
+   return NULL;
+}
+
+void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *p, float peak)
+{
+   ra_dxgi_bridge_hdr_metadata(p->bridge, peak);
+}
+
+VkImage ra_vulkan_dxgi_image(ra_vulkan_dxgi_t *p, unsigned index)
+{ return index < 2 ? p->images[index] : VK_NULL_HANDLE; }
+
+VkResult ra_vulkan_dxgi_acquire(ra_vulkan_dxgi_t *p,
+      VkSemaphore semaphore, VkFence fence, unsigned *index)
+{
+   VkD3D12FenceSubmitInfoKHR values;
+   VkSubmitInfo submit;
+   VkPipelineStageFlags stage = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+   uint64_t wait_value, signal_value = 0;
+   *index = ra_dxgi_bridge_index(p->bridge);
+   if (*index >= 2) return ra_dxgi_bridge_failed(p->bridge) ? VK_ERROR_OUT_OF_DATE_KHR : VK_NOT_READY;
+   wait_value = ra_dxgi_bridge_last_use(p->bridge, *index);
+   memset(&values, 0, sizeof(values));
+   memset(&submit, 0, sizeof(submit));
+   values.sType = VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
+   values.waitSemaphoreValuesCount = 1; values.pWaitSemaphoreValues = &wait_value;
+   values.signalSemaphoreValuesCount = semaphore ? 1 : 0;
+   values.pSignalSemaphoreValues = &signal_value;
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; submit.pNext = &values;
+   submit.waitSemaphoreCount = 1; submit.pWaitSemaphores = &p->done;
+   submit.pWaitDstStageMask = &stage;
+   submit.commandBufferCount = 1; submit.pCommandBuffers = &p->acquire[*index];
+   submit.signalSemaphoreCount = semaphore ? 1 : 0; submit.pSignalSemaphores = &semaphore;
+   return ra_vulkan_dxgi_submit(p, &submit, fence);
+}
+
+VkResult ra_vulkan_dxgi_present(ra_vulkan_dxgi_t *p, unsigned index,
+      unsigned count, const VkSemaphore *wait, unsigned interval)
+{
+   VkD3D12FenceSubmitInfoKHR values;
+   VkSubmitInfo submit;
+   VkPipelineStageFlags stages[16];
+   uint64_t wait_values[16];
+   VkResult result;
+   unsigned i;
+   if (count > 16 || index >= 2) return VK_ERROR_INITIALIZATION_FAILED;
+   for (i = 0; i < count; i++) { stages[i] = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT; wait_values[i] = 0; }
+   memset(&values, 0, sizeof(values));
+   memset(&submit, 0, sizeof(submit));
+   ++p->ready_value;
+   values.sType = VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
+   values.waitSemaphoreValuesCount = count; values.pWaitSemaphoreValues = wait_values;
+   values.signalSemaphoreValuesCount = 1; values.pSignalSemaphoreValues = &p->ready_value;
+   submit.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO; submit.pNext = &values;
+   submit.waitSemaphoreCount = count; submit.pWaitSemaphores = wait;
+   submit.pWaitDstStageMask = stages;
+   submit.commandBufferCount = 1; submit.pCommandBuffers = &p->release[index];
+   submit.signalSemaphoreCount = 1; submit.pSignalSemaphores = &p->ready;
+   result = ra_vulkan_dxgi_submit(p, &submit, VK_NULL_HANDLE);
+   if (result != VK_SUCCESS) return result;
+   return ra_dxgi_bridge_present(p->bridge, p->ready_value, interval)
+      ? VK_SUCCESS : VK_ERROR_OUT_OF_DATE_KHR;
+}
+
+#endif

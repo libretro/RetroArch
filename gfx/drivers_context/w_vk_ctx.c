@@ -50,6 +50,9 @@
 #include "../common/win32_common.h"
 
 #include "../common/vulkan_common.h"
+#ifndef __WINRT__
+#include "../common/win_vulkan_dxgi.h"
+#endif
 
 typedef struct gfx_ctx_w_vk_data
 {
@@ -68,7 +71,7 @@ static void gfx_ctx_w_vk_swap_interval(void *data, int interval)
    if (win32_vk_interval != interval)
    {
       win32_vk_interval = interval;
-      if (win32_vk.swapchain)
+      if (vulkan_has_swapchain(&win32_vk))
          win32_vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
    }
 }
@@ -113,10 +116,12 @@ static bool gfx_ctx_w_vk_presentable(void *data)
     * has neither IsIconic nor an HWND - see the wgl context for the
     * detail; the swapchain check below still applies there. */
 #ifndef __WINRT__
-   if (IsIconic(win32_get_window()))
+   if (IsIconic(win32_get_window())
+         || (win32_vk.dxgi_presenter && !ra_vulkan_dxgi_presentable(
+               (ra_vulkan_dxgi_t *)win32_vk.dxgi_presenter)))
       return false;
 #endif
-   return win32_vk.swapchain != VK_NULL_HANDLE;
+   return vulkan_has_swapchain(&win32_vk);
 }
 
 static void gfx_ctx_w_vk_swap_buffers(void *data)
@@ -128,7 +133,7 @@ static void gfx_ctx_w_vk_swap_buffers(void *data)
        * create is retried in vulkan_acquire_next_image() below, which
        * throttles that path itself. Nothing to present and nothing to
        * wait for here. */
-      if (win32_vk.swapchain != VK_NULL_HANDLE)
+      if (vulkan_has_swapchain(&win32_vk))
          vulkan_present(&win32_vk, win32_vk.context.current_swapchain_index);
    }
    vulkan_acquire_next_image(&win32_vk);
@@ -222,7 +227,8 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
    {
       settings_t *settings = config_get_ptr();
       bool exclusive      = !settings->bools.video_windowed_fullscreen;
-      bool recreate       = exclusive || win32_vk.fse_acquired;
+      bool recreate       = (exclusive && !win32_vk.context.swapchain_external)
+         || win32_vk.fse_acquired;
       if (recreate && win32_vk.mailbox.swapchain != VK_NULL_HANDLE)
          return false;
       if (win32_vk.fse_acquired)

@@ -12016,6 +12016,15 @@ unsigned menu_displaylist_build_list(
                count += menu_displaylist_parse_settings_rows(list, settings,
                      dl_rows_8, (unsigned)ARRAY_SIZE(dl_rows_8));
 
+#if defined(_WIN32) && !defined(__WINRT__)
+               if (     video_context_driver_get_api() == GFX_CTX_OPENGL_API
+                     || video_context_driver_get_api() == GFX_CTX_VULKAN_API)
+                  if (MENU_DISPLAYLIST_PARSE_SETTINGS_ENUM(list,
+                           MENU_ENUM_LABEL_VIDEO_DXGI_PRESENT,
+                           PARSE_ONLY_BOOL, false) == 0)
+                     count++;
+#endif
+
                /* Only the GPUs the driver found: an index past them
                 * names no device, and picking one leaves the frontend
                 * on a GPU that may not reach the display at all. */

@@ -306,6 +306,9 @@ VIDEO CONTEXT
 #if defined(_WIN32) && !defined(_XBOX)
 
 #if (defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)) && !defined(HAVE_ANGLE)
+#ifndef __WINRT__
+#include "../gfx/common/win_wgl_dxgi.c"
+#endif
 #include "../gfx/drivers_context/wgl_ctx.c"
 #endif
 #if defined(HAVE_VULKAN)
@@ -1931,4 +1934,13 @@ SMB CLIENT
 #endif
 #if defined(HAVE_SMBCLIENT) || defined(HAVE_NFSCLIENT)
 #include "../libretro-common/vfs/vfs_prefetch.c"
+#endif
+
+#if defined(_WIN32) && !defined(__WINRT__)
+#if defined(HAVE_VULKAN) || defined(HAVE_OPENGL) || defined(HAVE_OPENGL1) || defined(HAVE_OPENGL_CORE) || defined(HAVE_OPENGLES)
+#include "../gfx/common/win_dxgi_present.c"
+#endif
+#ifdef HAVE_VULKAN
+#include "../gfx/common/win_vulkan_dxgi.c"
+#endif
 #endif
