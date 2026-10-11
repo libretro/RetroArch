@@ -1104,6 +1104,38 @@ static unsigned translate_address(unsigned address, unsigned char **curr)
    return offset;
 }
 
+static bool translate_address_range(unsigned address, unsigned size,
+      unsigned char **curr, unsigned *offset)
+{
+   unsigned current_offset     = 0;
+   unsigned                  i = 0;
+   cheat_manager_t   *cheat_st = &cheat_manager_state;
+
+   for (i = 0; i < cheat_st->num_memory_buffers; i++)
+   {
+      unsigned buffer_size = cheat_st->memory_size_list[i];
+
+      if (address >= current_offset)
+      {
+         unsigned buffer_offset = address - current_offset;
+
+         if (buffer_offset < buffer_size)
+         {
+            if (size > buffer_size - buffer_offset)
+               return false;
+
+            *curr   = cheat_st->memory_buf_list[i];
+            *offset = current_offset;
+            return true;
+         }
+      }
+
+      current_offset += buffer_size;
+   }
+
+   return false;
+}
+
 static void cheat_manager_setup_search_meta(
       unsigned int bitsize,
       unsigned int *bytes_per_item,
@@ -1739,7 +1771,8 @@ void cheat_manager_apply_retro_cheats(void)
       curr   = cheat_st->curr_memory_buf;
       idx    = cheat_st->cheats[i].address;
 
-      offset = translate_address(idx, &curr);
+      if (!translate_address_range(idx, bytes_per_item, &curr, &offset))
+         continue;
 
       switch (bytes_per_item)
       {
@@ -1801,6 +1834,10 @@ void cheat_manager_apply_retro_cheats(void)
 #endif
          for (repeat_iter = 1; repeat_iter <= cheat_st->cheats[i].repeat_count; repeat_iter++)
          {
+            if (!translate_address_range(
+                     idx, bytes_per_item, &curr, &offset))
+               break;
+
             switch (bytes_per_item)
             {
                case 2:
@@ -1882,8 +1919,6 @@ void cheat_manager_apply_retro_cheats(void)
                idx += (cheat_st->cheats[i].repeat_add_to_address * bytes_per_item);
 
             idx = idx % cheat_st->total_memory_size;
-
-            offset = translate_address(idx, &curr);
          }
       }
    }
