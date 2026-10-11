@@ -1861,7 +1861,8 @@ static void d3d8_deinitialize(d3d8_video_t *d3d)
    }
    d3d->renderchain_data    = NULL;
    _vbo                     = (LPDIRECT3DVERTEXBUFFER8)d3d->menu_display.buffer;
-   IDirect3DVertexBuffer8_Release(_vbo);
+   if (_vbo)
+      IDirect3DVertexBuffer8_Release(_vbo);
    d3d->menu_display.buffer = NULL;
    d3d->menu_display.decl   = NULL;
 }
