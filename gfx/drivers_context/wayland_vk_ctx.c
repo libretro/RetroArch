@@ -161,6 +161,16 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
+   if (wl->vk.vk_surface != VK_NULL_HANDLE)
+   {
+      /* Keep the WSI surface and HDR state; resize on the next frame. */
+      wl->ignore_configuration = false;
+      if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
+         goto error;
+      wl->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+      return true;
+   }
+
    {
       struct wl_region *opaque = wl_compositor_create_region(wl->compositor);
       if (opaque)
@@ -304,6 +314,8 @@ static uint32_t gfx_ctx_wl_get_flags(void *data)
 {
    uint32_t             flags = 0;
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
+
+   BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);
