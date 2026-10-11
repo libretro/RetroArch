@@ -252,8 +252,60 @@ static void test_short_input_tiny_dest(void)
    free(dst);
 }
 
+static void test_regular_wrap_copy(void)
+{
+   static const struct {
+      const char *src;
+      const char *expected;
+      int width;
+      unsigned max_lines;
+   } cases[] = {
+      { "alpha beta gamma delta", "alpha\nbeta\ngamma\ndelta", 8, 0 },
+      { "caf\xc3\xa9 d\xc3\xa9j\xc3\xa0 vu encore",
+        "caf\xc3\xa9\nd\xc3\xa9j\xc3\xa0 vu\nencore", 8, 0 },
+      { "a b\ncccc dddd eeee", "a b\ncccc\ndddd\neeee", 6, 0 },
+      { "  leading  spaces and trailing  ",
+        " \nleading  spaces and trailing  ", 8, 2 },
+      { "one\ntwo\nthree\n", "one\ntwo\nthree\n", 4, 0 },
+      { "abcdefghij", "abcdefghij", 4, 0 },
+      { "", "", 4, 0 }
+   };
+   size_t i;
+   for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+   {
+      size_t len = strlen(cases[i].src);
+      size_t returned;
+      char *dst = (char*)malloc(len + 1);
+      if (!dst)
+      {
+         failures++;
+         continue;
+      }
+      memset(dst, 0xcc, len + 1);
+      returned = word_wrap(dst, len + 1, cases[i].src, len,
+            cases[i].width, 100, cases[i].max_lines);
+      if (returned != strlen(cases[i].expected)
+            || strcmp(dst, cases[i].expected) != 0)
+      {
+         printf("[ERROR] regular wrap case %zu changed output or length\n", i);
+         failures++;
+      }
+      free(dst);
+   }
+   {
+      char small[4] = {'X', 'X', 'X', 'X'};
+      if (word_wrap(small, sizeof(small), "too long", 8, 4, 100, 0) != 0
+            || memcmp(small, "XXXX", sizeof(small)) != 0)
+      {
+         printf("[ERROR] regular wrap changed an undersized destination\n");
+         failures++;
+      }
+   }
+}
+
 int main(void)
 {
+   test_regular_wrap_copy();
    test_truncating_normal_case();
    test_truncating_tiny_dest();
    test_fits();
@@ -266,6 +318,6 @@ int main(void)
             failures);
       return 1;
    }
-   printf("\nAll word_wrap_wideglyph regression tests passed.\n");
+   printf("\nAll word wrapping regression tests passed.\n");
    return 0;
 }

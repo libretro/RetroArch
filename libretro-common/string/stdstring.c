@@ -224,7 +224,7 @@ size_t word_wrap(
    unsigned lines      = 1;
    const char *src_end = src + src_len;
    char *s_start       = s;
-   size_t _len         = len;
+   size_t text_len     = 0;
 
    /* Prevent buffer overflow */
    if (len < src_len + 1)
@@ -234,6 +234,9 @@ size_t word_wrap(
     * than line width */
    if (src_len < (size_t)line_width)
       return strlcpy(s, src, len);
+
+   /* Only whitespace changes; rewound spans already contain their text. */
+   text_len = strlcpy(s, src, len);
 
    while (*src != '\0')
    {
@@ -252,14 +255,11 @@ size_t word_wrap(
          /* Early return if remaining src string
           * length is less than line width */
          if (src_end - src <= line_width)
-         {
-            _len = len - (size_t)(s - s_start);
-            return (size_t)(s - s_start) + strlcpy(s, src, _len);
-         }
+            return text_len;
       }
 
-      while (char_len--)
-         *s++ = *src++;
+      s   += char_len;
+      src += char_len;
 
       if (counter >= (unsigned)line_width)
       {
@@ -279,10 +279,7 @@ size_t word_wrap(
             /* Early return if remaining src string
              * length is less than line width */
             if (src_end - src < line_width)
-            {
-               _len = len - (size_t)(s - s_start);
-               return (size_t)(s - s_start) + strlcpy(s, src, _len);
-            }
+               return text_len;
          }
       }
    }
