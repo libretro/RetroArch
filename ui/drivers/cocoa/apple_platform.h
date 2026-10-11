@@ -143,7 +143,14 @@ UINavigationControllerDelegate> {
 @property (nonatomic, assign) NSWindow *window;
 @end
 
-@interface RetroArch_OSX : NSObject<ApplePlatform RARCH_PROTO_NSAPPLICATIONDELEGATE> {
+/* Window restoration requires explicit conformance on modern AppKit. */
+#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_MAX_ALLOWED) && (MAC_OS_X_VERSION_MAX_ALLOWED >= 1070)
+#define RARCH_PROTO_NSWINDOWRESTORATION , NSWindowRestoration
+#else
+#define RARCH_PROTO_NSWINDOWRESTORATION
+#endif
+
+@interface RetroArch_OSX : NSObject<ApplePlatform RARCH_PROTO_NSAPPLICATIONDELEGATE RARCH_PROTO_NSWINDOWRESTORATION> {
 	NSWindow *_window;
 	/* Host of the render view while in the pre-10.7 borderless
 	 * full-screen mode; nil otherwise.  See -setVideoMode:. */
