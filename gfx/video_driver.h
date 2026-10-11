@@ -1136,6 +1136,24 @@ typedef struct video_poke_interface
     * wrapper from the video thread while the main thread waits.
     * Optional. */
    bool (*set_frame_format)(void *data, bool rgb32, unsigned input_scale);
+
+   /* Frame memory, for the threaded video wrapper's frame buffers: a
+    * frame pushed from inside one is read by the GPU where it lies, so
+    * a frame the wrapper took in is never copied a second time on its
+    * way up. All three are called on the driver's own thread.
+    *
+    * frame_mem_alloc maps @size bytes the CPU writes and the GPU reads,
+    * at least 64-byte aligned, names them in @id, and sets @cached when
+    * the CPU reads them back at cached speed; NULL when it has none.
+    * frame() given a frame inside them uploads from there.
+    * frame_mem_ready answers whether @id may be written: false while a
+    * frame submitted from it may still be read. Never waits.
+    * frame_mem_free lets @id go once nothing in flight reads it.
+    * Optional, all three or none. */
+   void *(*frame_mem_alloc)(void *data, size_t size, uintptr_t *id,
+         bool *cached);
+   bool  (*frame_mem_ready)(void *data, uintptr_t id);
+   void  (*frame_mem_free)(void *data, uintptr_t id);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

@@ -4193,6 +4193,164 @@ static void lane_lent_window_paused(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the wrapper's frame buffers are the driver's frame memory     */
+/*   A driver with frame_mem_alloc gives the threaded wrapper the       */
+/*   buffers its ring slots and spare are made of, and uploads a frame  */
+/*   from where it lies in one: the push copies the core's frame in,    */
+/*   or the core renders into the loan, and the video thread copies     */
+/*   nothing. Each of the core's three ways of pushing - its own        */
+/*   buffer, the loan, a window cropped out of the loan - must reach    */
+/*   the screen exactly as it does with threaded video off, and with    */
+/*   the tree built GFX_INSTRUMENT=1 by that path: every frame drawn    */
+/*   from frame memory, none copied by the CPU on the video thread.     */
+/* ------------------------------------------------------------------ */
+
+static uint8_t *frame_mem_lane_read(unsigned *dims)
+{
+   struct video_viewport vp;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   uint8_t *buf;
+   size_t len;
+
+   /* The read draws the cached frame again first, from wherever it
+    * lies, which for a frame the core pushed from its own buffer is
+    * not the path under test: with none cached, the read draws again
+    * what the last frame put in the driver's texture. */
+   video_driver_cached_frame_invalidate();
+   memset(&vp, 0, sizeof(vp));
+   video_driver_get_viewport_info(&vp);
+   *dims = vp.dims;
+   len   = (size_t)VIDEO_SCALE_W(vp.dims) * VIDEO_SCALE_H(vp.dims) * 3;
+   if (     !len || !video_st->current_video->read_viewport
+         || !(buf = (uint8_t*)malloc(len)))
+      return NULL;
+   if (!video_st->current_video->read_viewport(video_st->data, buf, false))
+   {
+      free(buf);
+      return NULL;
+   }
+   return buf;
+}
+
+static const char *const frame_mem_lane_names[3] = {
+   "frame memory lane, copied frames",
+   "frame memory lane, lent frames",
+   "frame memory lane, cropped window"
+};
+
+/* Mode @mode with the wrapper up: drawn from frame memory, and on screen
+ * as @ref, read with threaded video off */
+static void lane_frame_mem_mode(int mode, const uint8_t *ref,
+      unsigned ref_dims, void (*use_fb)(int))
+{
+   const char *name = frame_mem_lane_names[mode];
+   unsigned had     = failures;
+   unsigned got_dims = 0;
+   uint8_t *got;
+   size_t differ = 0, len, i;
+
+   use_fb(mode);
+   run_frames(10);
+#ifdef HAVE_GFX_INSTRUMENT
+   gfx_instrument_reset();
+#endif
+   run_frames(60);
+   video_thread_wait_idle();
+#ifdef HAVE_GFX_INSTRUMENT
+   {
+      int fm     = gfx_instrument_get(GFX_INSTR_FRAME_MEM);
+      int copies = gfx_instrument_get(GFX_INSTR_FRAME_COPY_HOST);
+      /* Every third frame is a dupe; the rest reach the driver unless
+       * the push replaced them first. A frame buffer still in flight
+       * is swapped for a host one, which is copied, but not often. */
+      CHECK(fm >= 20, "%s: only %d of 60 frames drawn from frame memory",
+            name, fm);
+      CHECK(copies <= fm / 4,
+            "%s: %d frames copied by the CPU, %d from frame memory",
+            name, copies, fm);
+      fprintf(stderr, "[baseline] %s: %d frames from frame memory, %d host copies\n",
+            name, fm, copies);
+   }
+#endif
+
+   got = frame_mem_lane_read(&got_dims);
+   CHECK(ref && got, "%s: the viewport could not be read back", name);
+   CHECK(ref_dims == got_dims, "%s: viewport %ux%u threaded, %ux%u not",
+         name, VIDEO_SCALE_W(got_dims), VIDEO_SCALE_H(got_dims),
+         VIDEO_SCALE_W(ref_dims), VIDEO_SCALE_H(ref_dims));
+   if (ref && got && ref_dims == got_dims)
+   {
+      len = (size_t)VIDEO_SCALE_W(ref_dims) * VIDEO_SCALE_H(ref_dims) * 3;
+      for (i = 0; i < len; i++)
+         if (ref[i] != got[i])
+            differ++;
+      CHECK(!differ, "%s: %lu of %lu bytes on screen differ from the frame drawn unthreaded",
+            name, (unsigned long)differ, (unsigned long)len);
+   }
+   free(got);
+
+   if (failures == had)
+      fprintf(stderr, "[pass] %s\n", name);
+}
+
+static void lane_frame_mem(void)
+{
+   dylib_t lib = runloop_state_get_ptr()->lib_handle;
+   void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
+   void (*freeze)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_freeze") : NULL;
+   uint8_t *ref[3] = { NULL, NULL, NULL };
+   unsigned ref_dims[3] = { 0, 0, 0 };
+   unsigned driver_mem = 0, i;
+   thread_video_t *thr;
+   int mode;
+
+   CHECK(use_fb && freeze, "harness core lacks the framebuffer exports");
+   if (!use_fb || !freeze)
+      return;
+
+   /* The same frame every run, drawn each way with threaded video off */
+   freeze(0x1234);
+   set_threaded_via_setting(false);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   for (mode = 0; mode < 3; mode++)
+   {
+      use_fb(mode);
+      run_frames(8);
+      ref[mode] = frame_mem_lane_read(&ref_dims[mode]);
+   }
+
+   set_threaded_via_setting(true);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   run_frames(10);
+   expect_wrapper(true, "frame memory lane");
+   video_thread_wait_idle();
+   thr = (thread_video_t*)video_state_get_ptr()->data;
+   for (i = 0; i < VIDEO_THREAD_FRAME_MEM; i++)
+      if (thr->frame.mem[i].id)
+         driver_mem++;
+   if (!driver_mem)
+      fprintf(stderr, "[skip] frame memory lane (driver has no frame memory)\n");
+   else
+   {
+      CHECK(thr->frame.mem[thr->frame.slot[0].mem].id
+            && thr->frame.mem[thr->frame.slot[1].mem].id,
+            "frame memory lane: the ring slots are not in the driver's frame memory");
+      for (mode = 0; mode < 3; mode++)
+         lane_frame_mem_mode(mode, ref[mode], ref_dims[mode], use_fb);
+   }
+
+   for (mode = 0; mode < 3; mode++)
+      free(ref[mode]);
+   freeze(0);
+   use_fb(0);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   set_threaded_via_setting(false);
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the pacing flag a driver sees follows the presenter            */
 /*   video_frame_info_t::threaded_display_pacing tells a driver its     */
 /*   pushes are being held to the display's vblank; Metal takes its     */
@@ -8090,6 +8248,9 @@ int main(int argc, char *argv[])
    lane_zero_copy_ring_full();
    if (real_driver())
       lane_lent_window_paused();
+   if (     real_driver()
+         && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+      lane_frame_mem();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
    lane_surface_external();

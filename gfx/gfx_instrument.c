@@ -54,8 +54,10 @@ static const char *gfx_instrument_names[GFX_INSTR_COUNT] = {
    "frame_tex_create",
    "frame_copy_host",
    "frame_lent_window",
+   "frame_mem",
    "hw_drop",
-   "hw_drop_submit"
+   "hw_drop_submit",
+   "upload_submit"
 };
 
 int gfx_instrument_get(enum gfx_instrument_counter c)

@@ -348,6 +348,13 @@ enum video_thread_vp_slot
 
 /* frame.lent when the loan is the spare buffer rather than a ring slot */
 #define VIDEO_THREAD_LEND_SPARE 2
+/* Frame buffers the slots and the spare are taken from: the two host
+ * buffers init makes, the driver's frame memory, and host buffers made
+ * when every other one is in use */
+#define VIDEO_THREAD_FRAME_MEM 8
+/* Driver frame memory taken at once: the slots, the spare, and enough
+ * besides for the frames the GPU may still be reading */
+#define VIDEO_THREAD_FRAME_MEM_DRIVER 5
 
 /* The frame ring's bookkeeping, one word: the slot the video thread
  * claims next, how many filled slots wait for it, and whether it is
@@ -714,8 +721,29 @@ typedef struct thread_video
        * rendered - a driver whose present blocks until vblank keeps
        * the ring that way). The push that returns it swaps it into the
        * slot it picks, and the buffer it displaces becomes the spare.
-       * Allocated on the first ask that needs it; main thread only. */
+       * Taken from mem[] on the first ask that needs it, and again
+       * when a frame in flight still reads it; main thread only. */
       uint8_t *spare;
+      /* The buffers slot[].buffer and spare are. id names driver frame
+       * memory (frame_mem_alloc), 0 host memory. busy is set by the
+       * video thread when a frame it submitted reads the buffer where
+       * it lies, and cleared once the driver says that read is done:
+       * the main thread writes a buffer only while it is clear, and
+       * takes another otherwise, never waiting. ptr, size, id and
+       * cached change only with the main thread waiting on the video
+       * thread or the video thread stopped. */
+      struct
+      {
+         uint8_t *ptr;
+         size_t size;
+         uintptr_t id;
+         retro_atomic_int_t busy;
+         bool cached;
+      } mem[VIDEO_THREAD_FRAME_MEM];
+      int spare_mem;    /* the spare's mem[] index, -1 for none */
+      /* The driver's poke table, for its frame memory: video thread */
+      const struct video_poke_interface *mem_poke;
+      unsigned mem_busy; /* video thread: the entries it set busy */
       /* Bytes allocated for each slot buffer at thread_init, from the
        * core's declared maximum geometry. A core that hands over a
        * larger frame than it declared is clamped to this. */
@@ -738,6 +766,7 @@ typedef struct thread_video
           * which holds whatever frame was last put in it, an old one. */
          bool dupe;
          uint8_t *buffer;
+         int mem; /* buffer's mem[] index */
          /* Where the frame starts inside buffer: 0 for a copied frame,
           * and for a lent frame whatever the core pushed, which may sit
           * past the start (a core that crops by pointer offset). */

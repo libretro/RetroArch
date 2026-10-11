@@ -292,6 +292,11 @@ struct vk_effect_template
    bool                                   valid;
 };
 
+/* Frame buffers lent to the threaded wrapper at once: what it takes
+ * (VIDEO_THREAD_FRAME_MEM_DRIVER), with room for a set made again at
+ * a new size while the old one is still being let go */
+#define VK_FRAME_MEM_MAX 12
+
 typedef struct vk
 {
    vulkan_filter_chain_t *filter_chain;
@@ -680,6 +685,16 @@ typedef struct vk
     * pair and fences each one streams through. Frame-recording thread
     * only, like the two lists above. */
    struct vk_stream_state *stream_states;
+   /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
+    * host buffers a frame is copied out of on the GPU, never by the
+    * CPU. index is the frame fence the last copy out of one was
+    * submitted under, -1 when none may still be reading it. Frame-
+    * recording thread only. */
+   struct vk_frame_mem
+   {
+      struct vk_texture tex;
+      int index;
+   } frame_mem[VK_FRAME_MEM_MAX];
 
    struct
    {
@@ -2824,6 +2839,203 @@ static bool vulkan_frame_window(const struct vk_texture *tex,
          || *y + VIDEO_SCALE_H(dims) > VIDEO_SCALE_H(tex->dims))
       return false;
    return true;
+}
+
+/* The threaded wrapper's frame buffers. Each is a buffer of its own,
+ * mapped for good, from host memory the CPU reads at cached speed where
+ * the device has it: a core rendering into one may read back what it
+ * drew. The GPU copies a frame out of one into the frame's texture
+ * (vulkan_frame_mem_upload), so the frame is never copied by the CPU on
+ * this thread. */
+static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached)
+{
+   unsigned i;
+   VkBufferCreateInfo info;
+   VkMemoryRequirements reqs;
+   VkMemoryAllocateInfo alloc;
+   VkMemoryPropertyFlags props;
+   struct vk_texture *tex;
+   vk_t *vk = (vk_t*)data;
+
+   if (     !vk || !vk->context || !vk->context->device || !size
+         || (vk->flags & VK_FLAG_HW_ENABLE))
+      return NULL;
+   for (i = 0; i < VK_FRAME_MEM_MAX; i++)
+      if (!vk->frame_mem[i].tex.buffer)
+         break;
+   if (i == VK_FRAME_MEM_MAX)
+      return NULL;
+   tex                         = &vk->frame_mem[i].tex;
+
+   info.sType                  = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+   info.pNext                  = NULL;
+   info.flags                  = 0;
+   info.size                   = size;
+   /* Storage too: an RGB565 frame on a device that cannot sample it is
+    * converted by a compute pass that reads the buffer */
+   info.usage                  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+                               | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+   info.sharingMode            = VK_SHARING_MODE_EXCLUSIVE;
+   info.queueFamilyIndexCount  = 0;
+   info.pQueueFamilyIndices    = NULL;
+   if (vkCreateBuffer(vk->context->device, &info, NULL, &tex->buffer)
+         != VK_SUCCESS)
+   {
+      tex->buffer = VK_NULL_HANDLE;
+      return NULL;
+   }
+   vulkan_debug_mark_buffer(vk->context->device, tex->buffer);
+   vkGetBufferMemoryRequirements(vk->context->device, tex->buffer, &reqs);
+
+   alloc.sType                 = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.pNext                 = NULL;
+   alloc.allocationSize        = reqs.size;
+   alloc.memoryTypeIndex       = vulkan_find_memory_type_fallback(
+         &vk->context->memory_properties, reqs.memoryTypeBits,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_CACHED_BIT,
+           VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+         | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+   props                       = vk->context->memory_properties.memoryTypes[
+      alloc.memoryTypeIndex].propertyFlags;
+   if (     vkAllocateMemory(vk->context->device, &alloc, NULL,
+               &tex->memory) != VK_SUCCESS
+         || vkBindBufferMemory(vk->context->device, tex->buffer,
+               tex->memory, 0) != VK_SUCCESS
+         || vkMapMemory(vk->context->device, tex->memory, 0, VK_WHOLE_SIZE,
+               0, &tex->mapped) != VK_SUCCESS)
+   {
+      tex->mapped = NULL;
+      vulkan_destroy_texture(vk->context->device, tex);
+      return NULL;
+   }
+   tex->type                   = VULKAN_TEXTURE_STAGING;
+   tex->size                   = size;
+   tex->memory_size            = reqs.size;
+   if (!(props & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+      tex->flags              |= VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT;
+   vk->frame_mem[i].index      = -1;
+   *id                         = (uintptr_t)i + 1;
+   *cached                     = (props & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
+      ? true : false;
+   return tex->mapped;
+}
+
+/* Never waits: the fence of the frame that last copied out of the
+ * buffer is polled. A fence the acquire has since waited out and reset
+ * says the copy is done; one submitted again since says nothing
+ * either way, and the buffer is reported busy until it signals. */
+static bool vulkan_frame_mem_ready(void *data, uintptr_t id)
+{
+   vk_t *vk = (vk_t*)data;
+   struct vk_frame_mem *fm;
+   int idx;
+
+   if (!vk || !id || id > VK_FRAME_MEM_MAX)
+      return true;
+   fm  = &vk->frame_mem[id - 1];
+   if ((idx = fm->index) < 0)
+      return true;
+   if (     idx < VULKAN_MAX_SWAPCHAIN_IMAGES
+         && vk->context->swapchain_fences_signalled[idx]
+         && vk->context->swapchain_fences[idx] != VK_NULL_HANDLE
+         && vkGetFenceStatus(vk->context->device,
+            vk->context->swapchain_fences[idx]) != VK_SUCCESS)
+      return false;
+   fm->index = -1;
+   return true;
+}
+
+/* Parked with the textures a frame in flight may still read, and
+ * destroyed once nothing can */
+static void vulkan_frame_mem_free(void *data, uintptr_t id)
+{
+   vk_t *vk = (vk_t*)data;
+   if (!vk || !id || id > VK_FRAME_MEM_MAX)
+      return;
+   vulkan_texture_defer_copy(vk, &vk->frame_mem[id - 1].tex);
+   vk->frame_mem[id - 1].index = -1;
+}
+
+/* The frame buffer @frame lies in, with the frame's texel origin in it,
+ * when the GPU can copy the frame out of it where it is: whole rows
+ * inside the buffer, a pitch and an origin on a texel, and for a frame
+ * the compute pass converts, on a word. -1 otherwise. */
+static int vulkan_frame_mem_find(vk_t *vk, const void *frame,
+      unsigned dims, size_t pitch, unsigned *x, unsigned *y)
+{
+   unsigned i;
+   uintptr_t p   = (uintptr_t)frame;
+   unsigned bpp  = vulkan_format_to_bpp(vk->tex_fmt);
+   unsigned w    = VIDEO_SCALE_W(dims);
+   unsigned h    = VIDEO_SCALE_H(dims);
+   unsigned word = (VK_REMAP_TO_TEXFMT(vk->tex_fmt) != vk->tex_fmt)
+      ? 4 : bpp;
+
+   if (!p || !bpp || !pitch || pitch % word || pitch < (size_t)w * bpp)
+      return -1;
+   for (i = 0; i < VK_FRAME_MEM_MAX; i++)
+   {
+      const struct vk_texture *tex = &vk->frame_mem[i].tex;
+      uintptr_t base               = (uintptr_t)tex->mapped;
+      size_t off;
+      if (!base || p < base || p - base >= tex->size)
+         continue;
+      off = (size_t)(p - base);
+      if (     off % word
+            || (off % pitch) % bpp
+            || tex->size - off < (size_t)w * bpp
+            || (tex->size - off - (size_t)w * bpp) / pitch < (size_t)h - 1)
+         return -1;
+      *y = (unsigned)(off / pitch);
+      *x = (unsigned)((off % pitch) / bpp);
+      return (int)i;
+   }
+   return -1;
+}
+
+/* The frame out of frame buffer @i into this frame index's texture, on
+ * the GPU, which reads it where the wrapper's push or the core put it.
+ * The texture is made once at the frame's size. */
+static void vulkan_frame_mem_upload(vk_t *vk, struct vk_per_frame *chain,
+      unsigned frame_index, int i, unsigned dims, size_t pitch,
+      unsigned x, unsigned y)
+{
+   struct vk_texture src;
+   struct vk_frame_mem *fm = &vk->frame_mem[i];
+
+   if (     chain->texture_optimal.memory == VK_NULL_HANDLE
+         || chain->texture_optimal.dims   != dims
+         || chain->texture_optimal.format != VK_REMAP_TO_TEXFMT(vk->tex_fmt))
+   {
+      GFX_INSTR_INC(GFX_INSTR_FRAME_TEX_CREATE);
+      chain->texture_optimal = vulkan_create_texture(vk,
+            &chain->texture_optimal,
+            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), vk->tex_fmt,
+            NULL, NULL, VULKAN_TEXTURE_DYNAMIC);
+   }
+
+   if (fm->tex.flags & VK_TEX_FLAG_NEED_MANUAL_CACHE_MANAGEMENT)
+   {
+      VkMappedMemoryRange range;
+      range.sType  = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.pNext  = NULL;
+      range.memory = fm->tex.memory;
+      range.offset = 0;
+      range.size   = VK_WHOLE_SIZE;
+      vkFlushMappedMemoryRanges(vk->context->device, 1, &range);
+   }
+
+   memset(&src, 0, sizeof(src));
+   src.type   = VULKAN_TEXTURE_STAGING;
+   src.buffer = fm->tex.buffer;
+   src.stride = pitch;
+   src.format = vk->tex_fmt;
+   src.dims   = dims;
+   vulkan_copy_staging_to_dynamic(vk, vk->cmd, &chain->texture_optimal,
+         &src, x, y);
+   fm->index  = (int)frame_index;
 }
 
 /**
@@ -6840,6 +7052,14 @@ static void vulkan_free(void *data)
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);
+      {
+         /* Frame buffers the wrapper did not let go */
+         unsigned i;
+         for (i = 0; i < VK_FRAME_MEM_MAX; i++)
+            if (vk->frame_mem[i].tex.buffer)
+               vulkan_destroy_texture(vk->context->device,
+                     &vk->frame_mem[i].tex);
+      }
 
       /* Innermost first: a command buffer references the descriptor
        * sets and the pipelines it was recorded with, and a set
@@ -10557,6 +10777,9 @@ static bool vulkan_frame(void *data, const void *frame,
 #endif
    unsigned frame_index;
    unsigned swapchain_index;
+   unsigned frame_mem_x                          = 0;
+   unsigned frame_mem_y                          = 0;
+   int frame_mem                                 = -1;
 #ifdef HAVE_OVERLAY
    bool overlay_behind_menu                      = video_info->overlay_behind_menu;
 #endif
@@ -10809,7 +11032,19 @@ static bool vulkan_frame(void *data, const void *frame,
     * validation layer rejects, and only kept working because the old
     * texture's memory was silently reused. The texture that is there
     * stays, and draws as it did. */
-   if (frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
+   if (     frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
+         && !(vk->flags & VK_FLAG_HW_ENABLE)
+         && (frame_mem = vulkan_frame_mem_find(vk, frame, dims, pitch,
+               &frame_mem_x, &frame_mem_y)) >= 0)
+   {
+      /* In one of the threaded wrapper's frame buffers: the GPU copies
+       * it out from there */
+      GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+      vulkan_frame_mem_upload(vk, chain, frame_index, frame_mem, dims,
+            pitch, frame_mem_x, frame_mem_y);
+      vk->last_valid_index = frame_index;
+   }
+   else if (frame && VIDEO_SCALE_W(dims) && VIDEO_SCALE_H(dims)
          && (!(vk->flags & VK_FLAG_HW_ENABLE)))
    {
       unsigned y;
@@ -13882,7 +14117,10 @@ static const video_poke_interface_t vulkan_poke_interface = {
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
 #endif
-   vulkan_set_frame_format
+   vulkan_set_frame_format,
+   vulkan_frame_mem_alloc,
+   vulkan_frame_mem_ready,
+   vulkan_frame_mem_free
 };
 
 static void vulkan_get_poke_interface(void *data,

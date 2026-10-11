@@ -712,13 +712,17 @@ RETRO_API void harness_core_set_run_us(unsigned us)
       harness_run_us    = us;
    }
 }
+/* Nonzero: every frame carries this number instead of the run's, at
+ * the base size, so two ways of drawing it can be compared on screen */
+static unsigned harness_frozen;
+RETRO_API void harness_core_freeze(unsigned n) { harness_frozen = n; }
 RETRO_API unsigned harness_core_fb_granted(void)   { return harness_fb_granted; }
 RETRO_API unsigned harness_core_fb_uncached(void)  { return harness_fb_uncached; }
 
 void retro_run(void)
 {
-   unsigned h = (runs % 61 == 60) ? H_OVERSIZE : H;
-   unsigned i;
+   unsigned h = (runs % 61 == 60 && !harness_frozen) ? H_OVERSIZE : H;
+   unsigned i, n;
    uint8_t *dst   = frame;
    size_t   pitch = W * bpp;
    unsigned out_w = W, out_h = h;
@@ -783,13 +787,14 @@ void retro_run(void)
     * lane reading the first pixel as 16-bit sees the run number
     * move whichever format is on. Rows at the pitch: a loan may pad
     * them. */
+   n = harness_frozen ? harness_frozen : runs;
    for (i = 0; i < W * h; i++)
    {
       uint8_t *px = dst + (i / W) * pitch + (i % W) * bpp;
       if (bpp == 4)
-         *(uint32_t*)px = (uint32_t)(runs + i);
+         *(uint32_t*)px = (uint32_t)(n + i);
       else
-         *(uint16_t*)px = (uint16_t)(runs + i);
+         *(uint16_t*)px = (uint16_t)(n + i);
    }
    push = dst;
    if (harness_use_fb == 2 && h == H)
