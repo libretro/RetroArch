@@ -24,7 +24,9 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <boolean.h>
+#include <string/stdstring.h>
 
 int font_driver_get_message_width(void *font, const char *msg,
       size_t len, float scale)
@@ -41,8 +43,44 @@ const char *msg_hash_get_wideglyph_str(void)
    return animation_test_wideglyph;
 }
 
-unsigned font_driver_get_generation(void *font)
+unsigned animation_test_font_generation;
+unsigned animation_test_wrap_calls;
+unsigned animation_test_allocations;
+bool animation_test_fail_malloc;
+
+unsigned font_driver_get_generation(void)
 {
-   (void)font;
-   return 0;
+   return animation_test_font_generation;
+}
+
+size_t animation_test_word_wrap(char *dst, size_t len, const char *src,
+      size_t src_len, int width, int wide_width, unsigned max_lines)
+{
+   animation_test_wrap_calls++;
+   return word_wrap(dst, len, src, src_len, width, wide_width, max_lines);
+}
+
+size_t animation_test_word_wrap_wideglyph(char *dst, size_t len, const char *src,
+      size_t src_len, int width, int wide_width, unsigned max_lines)
+{
+   animation_test_wrap_calls++;
+   return word_wrap_wideglyph(dst, len, src, src_len,
+         width, wide_width, max_lines);
+}
+
+void *animation_test_malloc(size_t size)
+{
+   animation_test_allocations++;
+   if (animation_test_fail_malloc)
+   {
+      animation_test_fail_malloc = false;
+      return NULL;
+   }
+   return malloc(size);
+}
+
+void *animation_test_realloc(void *ptr, size_t size)
+{
+   animation_test_allocations++;
+   return realloc(ptr, size);
 }

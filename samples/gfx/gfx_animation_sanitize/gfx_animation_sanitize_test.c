@@ -664,6 +664,133 @@ static void test_line_ticker_smooth(void)
    animation_test_wideglyph = NULL;
 }
 
+extern unsigned animation_test_font_generation;
+extern unsigned animation_test_wrap_calls;
+extern unsigned animation_test_allocations;
+extern bool animation_test_fail_malloc;
+
+static void test_line_layout_cache(void)
+{
+   gfx_animation_t anim;
+   gfx_animation_ctx_line_ticker_t stepped;
+   gfx_animation_ctx_line_ticker_smooth_t smooth;
+   font_data_t font;
+   char source[] = "one\ntwo\nthree\nfour";
+   char out[64], top[64] = {0}, bottom[64] = {0}, *scratch = NULL;
+   char cache_key[64], expected[64], long_source[PATH_MAX_LENGTH + 32];
+   size_t capacity = 0;
+   float y = 0, top_y = 0, bottom_y = 0, top_alpha = 0, bottom_alpha = 0;
+   unsigned wraps, allocations, i;
+
+   gfx_animation_deinit();
+   memset(&anim, 0, sizeof(anim));
+   memset(&stepped, 0, sizeof(stepped));
+   stepped.str              = source;
+   stepped.s                = out;
+   stepped.len              = sizeof(out);
+   stepped.line_len         = 16;
+   stepped.max_lines        = 2;
+   stepped.wrap_scratch     = &scratch;
+   stepped.wrap_scratch_cap = &capacity;
+   gfx_animation_line_ticker(&anim, &stepped);
+   wraps       = animation_test_wrap_calls;
+   allocations = animation_test_allocations;
+   for (i = 0; i < 10000; i++)
+   {
+      stepped.idx = i;
+      gfx_animation_line_ticker(&anim, &stepped);
+   }
+   CHECK(animation_test_wrap_calls == wraps
+         && animation_test_allocations == allocations,
+         "stepped layout: repeated frames neither wrap nor allocate");
+   stepped.idx = 0;
+   source[0] = 'O';
+   gfx_animation_line_ticker(&anim, &stepped);
+   CHECK(animation_test_wrap_calls == wraps + 1
+         && strcmp(out, "One\ntwo") == 0,
+         "stepped layout: in-place source changes invalidate cached text");
+   wraps = animation_test_wrap_calls;
+   stepped.line_len = 17;
+   gfx_animation_line_ticker(&anim, &stepped);
+   CHECK(animation_test_wrap_calls == wraps + 1,
+         "stepped layout: width changes invalidate wrapping");
+   stepped.str = "red\ngreen\nblue";
+   wraps = animation_test_wrap_calls;
+   animation_test_fail_malloc = true;
+   gfx_animation_line_ticker(&anim, &stepped);
+   CHECK(animation_test_wrap_calls == wraps + 1
+         && strcmp(out, "red\ngreen") == 0 && !animation_test_fail_malloc,
+         "stepped layout: allocation failure retains scratch output");
+   for (i = 0; i < 100; i++)
+   {
+      snprintf(cache_key, sizeof(cache_key), "label-%u\nsecond\nthird", i);
+      snprintf(expected, sizeof(expected), "label-%u\nsecond", i);
+      stepped.str = cache_key;
+      gfx_animation_line_ticker(&anim, &stepped);
+      CHECK(strcmp(out, expected) == 0,
+            "stepped layout: eviction and reused source buffers stay correct");
+   }
+   for (i = 0; i < sizeof(long_source) - 1; i++)
+      long_source[i] = (i & 1) ? ' ' : 'a';
+   long_source[sizeof(long_source) - 1] = '\0';
+   stepped.str = long_source;
+   wraps = animation_test_wrap_calls;
+   gfx_animation_line_ticker(&anim, &stepped);
+   CHECK(animation_test_wrap_calls == wraps + 1 && *out,
+         "stepped layout: oversized source wraps only once on fallback");
+
+   memset(&smooth, 0, sizeof(smooth));
+   memset(&font, 0, sizeof(font));
+   font.metrics.height          = 12;
+   smooth.font                  = &font;
+   smooth.font_scale            = 1.0f;
+   smooth.field_dims            = VIDEO_SCALE_PACK(128, 24);
+   smooth.src_str               = source;
+   smooth.dst_str               = out;
+   smooth.dst_str_len           = sizeof(out);
+   smooth.y_offset              = &y;
+   smooth.top_fade_str          = top;
+   smooth.top_fade_str_len      = sizeof(top);
+   smooth.top_fade_y_offset     = &top_y;
+   smooth.top_fade_alpha        = &top_alpha;
+   smooth.bottom_fade_str       = bottom;
+   smooth.bottom_fade_str_len   = sizeof(bottom);
+   smooth.bottom_fade_y_offset  = &bottom_y;
+   smooth.bottom_fade_alpha     = &bottom_alpha;
+   smooth.fade_enabled          = true;
+   gfx_animation_line_ticker_smooth(&anim, &smooth);
+   wraps       = animation_test_wrap_calls;
+   allocations = animation_test_allocations;
+   for (i = 0; i < 10000; i++)
+   {
+      smooth.idx = i;
+      gfx_animation_line_ticker_smooth(&anim, &smooth);
+   }
+   CHECK(animation_test_wrap_calls == wraps
+         && animation_test_allocations == allocations,
+         "smooth layout: repeated frames neither wrap nor allocate");
+   smooth.field_dims = VIDEO_SCALE_PACK(128, 36);
+   gfx_animation_line_ticker_smooth(&anim, &smooth);
+   CHECK(animation_test_wrap_calls == wraps,
+         "smooth layout: field height does not change line breaks");
+   animation_test_font_generation++;
+   gfx_animation_line_ticker_smooth(&anim, &smooth);
+   CHECK(animation_test_wrap_calls == ++wraps,
+         "smooth layout: recycled font generations invalidate layout");
+   smooth.font_scale = 2.0f;
+   gfx_animation_line_ticker_smooth(&anim, &smooth);
+   CHECK(animation_test_wrap_calls == ++wraps,
+         "smooth layout: font scaling invalidates layout");
+   animation_test_wideglyph = "\xE4\xB8\xAD";
+   gfx_animation_line_ticker_smooth(&anim, &smooth);
+   CHECK(animation_test_wrap_calls == ++wraps,
+         "smooth layout: wideglyph wrapping invalidates layout");
+   animation_test_wideglyph = NULL;
+   printf("layout cache: 20000 warm frames, zero wraps and allocations\n");
+   free(scratch);
+   gfx_animation_deinit();
+}
+
 int main(void)
 {
    test_multibyte_does_not_overflow();
@@ -676,6 +803,7 @@ int main(void)
    test_line_ticker();
    test_line_ticker_smooth();
    test_widget_handover();
+   test_line_layout_cache();
 
    printf("pushes=%d callbacks=%d ticker calls=%d\n",
          pushes, cb_calls, ticker_calls);

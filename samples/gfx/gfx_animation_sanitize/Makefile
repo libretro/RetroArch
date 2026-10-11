@@ -24,6 +24,11 @@ LDFLAGS += -lm
 CFLAGS += $(EXTRA_CFLAGS)
 
 OBJS := $(call sample_objs,$(SOURCES:.c=.o))
+ANIMATION_OBJ := $(call sample_objs,$(REPO_ROOT)/gfx/gfx_animation.o)
+
+$(ANIMATION_OBJ): CFLAGS += -Dword_wrap=animation_test_word_wrap \
+   -Dword_wrap_wideglyph=animation_test_word_wrap_wideglyph \
+   -Dmalloc=animation_test_malloc -Drealloc=animation_test_realloc
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)
