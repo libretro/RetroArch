@@ -173,7 +173,8 @@ void *linked_list_remove_all(linked_list_t *list, void *value);
  * @brief Remove the first matching element
  *
  * Removes the first matching element from the linked list. The "matches" function
- * is used to test for matching element values. Does nothing if "list" is NULL.
+ * is used to test for matching element values. Does nothing if "list" or
+ * "matches" is NULL.
  *
  * @param list linked list to remove the element from
  * @param matches function to use for testing element values for a match
@@ -185,7 +186,8 @@ void *linked_list_remove_first_matching(linked_list_t *list, bool (*matches)(voi
  * @brief Remove the last matching element
  *
  * Removes the last matching element from the linked list. The "matches" function
- * is used to test for matching element values.
+ * is used to test for matching element values. Does nothing if "list" or
+ * "matches" is NULL.
  *
  * @param list linked list to remove the element from
  * @param matches function to use for testing element value for a match
@@ -197,7 +199,8 @@ void *linked_list_remove_last_matching(linked_list_t *list, bool (*matches)(void
  * @brief Remove all matching elements
  *
  * Removes all matching elements from the linked list. The "matches" function
- * is used to test for matching element values. Does nothing if "list" is NULL.
+ * is used to test for matching element values. Does nothing if "list" or
+ * "matches" is NULL.
  *
  * @param list linked list to remove the elements from
  * @param matches function to use for testing element values for a match
