@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdint.h>
 
 typedef int bool;
 #define FBO_SCALE_FLAG_VALID 1
@@ -29,10 +30,10 @@ static unsigned failures;
    fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #x); failures++; \
 } } while (0)
 
-struct resource { int state; unsigned pixel; };
+struct resource { int state; unsigned pixel, mip_levels; };
 struct descriptor
 {
-   unsigned Width, Height, Format, Flags, BindFlags, MiscFlags;
+   unsigned Width, Height, Format, Flags, BindFlags, MiscFlags, MipLevels;
 };
 typedef struct texture
 {
@@ -118,16 +119,30 @@ static void init_texture(void *device, d3d11_texture_t *t)
    t->rt_view = t->handle;
    t->handle->state = D3D12_RESOURCE_STATE_RENDER_TARGET;
    t->handle->pixel = 0xdead;
+   t->handle->mip_levels = t->desc.MipLevels;
    t->size_data.x = (float)t->desc.Width;
    t->size_data.y = (float)t->desc.Height;
 }
-static void release_texture(d3d11_texture_t *t) { t->handle = t->rt_view = NULL; }
+static void release_texture(d3d11_texture_t *t)
+{
+   if (t->handle)
+      CHECK(t->desc.MipLevels == t->handle->mip_levels);
+   t->handle = t->rt_view = NULL;
+}
 #define d3d11_init_texture init_texture
 #define d3d12_init_texture init_texture
 #define d3d11_release_texture release_texture
 #define d3d12_release_texture release_texture
 static unsigned glslang_format_to_dxgi(unsigned format) { return format; }
 static int video_driver_get_rotation_snapshot(void) { return 0; }
+
+static void d3d12_generate_mipmaps(struct context *cmd,
+      d3d12_texture_t *texture, d3d12_video_t *video)
+{
+   (void)cmd;
+   (void)video;
+   CHECK(texture->handle->state == D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+}
 
 #include "driver_code.inc"
 
@@ -154,6 +169,8 @@ static void run_case(int api, unsigned passes, unsigned feedback_pass)
       v.vp.dims = width | (height << 16);
       v.vp.pos = 7 | (9 << 16);
       v.flags = 1;
+      if (passes > 1)
+         preset.pass[1].mipmap = !resize;
       if (api == 11)
          d3d11_init_render_targets(&v, width, height);
       else
@@ -167,6 +184,14 @@ static void run_case(int api, unsigned passes, unsigned feedback_pass)
          CHECK((v.pass[i].rt.handle != NULL)
                == (i + 1 < passes || i == feedback_pass));
          CHECK((v.pass[i].feedback.handle != NULL) == (i == feedback_pass));
+         if (api == 12 && v.pass[i].rt.handle)
+         {
+            unsigned requested = i + 1 < passes && preset.pass[i + 1].mipmap
+               ? UINT16_MAX : 1;
+            CHECK(v.pass[i].rt.desc.MipLevels == requested);
+            if (v.pass[i].feedback.handle)
+               CHECK(v.pass[i].feedback.desc.MipLevels == requested);
+         }
       }
       if (feedback_pass >= passes)
          continue;

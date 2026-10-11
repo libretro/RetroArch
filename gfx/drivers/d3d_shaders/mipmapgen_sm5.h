@@ -40,7 +40,7 @@ SRC(
             c0.rgb *= c0.a;
             c += w[i] * w[j] * c0;
          }
-      c.rgb /= c.a;
+      c.rgb = c.a != 0.0f ? c.rgb / c.a : 0.0f;
 
       u0[DTid.xy] = c;
       return;
