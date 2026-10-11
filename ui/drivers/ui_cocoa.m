@@ -105,6 +105,7 @@ typedef struct ui_application_cocoa
 /* TODO/FIXME - static global variables */
 static int waiting_argc;
 static char **waiting_argv;
+static bool cocoa_termination_pending;
 
 extern id<ApplePlatform> apple_platform;
 
@@ -1205,11 +1206,17 @@ void cocoa_publish_focus(bool focused);
    if (!runloop_is_inited())
       return NSTerminateNow;
 
-   /* Let the main loop save state and deinitialize the core before
-    * ui_companion_cocoa_deinit() requests termination again. */
-   command_event(CMD_EVENT_QUIT, NULL);
+   if (!cocoa_termination_pending)
+   {
+      cocoa_termination_pending = true;
+      command_event(CMD_EVENT_QUIT, NULL);
+#ifdef HAVE_QT
+      /* AppKit's pending termination runs a modal loop, not the Qt loop. */
+      rarch_start_draw_observer();
+#endif
+   }
 
-   return NSTerminateCancel;
+   return NSTerminateLater;
 }
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
@@ -1793,7 +1800,13 @@ int main(int argc, char *argv[])
 
 static void ui_companion_cocoa_deinit(void *data)
 {
-   [[NSApplication sharedApplication] terminate:nil];
+   if (cocoa_termination_pending)
+   {
+      cocoa_termination_pending = false;
+      [[NSApplication sharedApplication] replyToApplicationShouldTerminate:YES];
+   }
+   else
+      [[NSApplication sharedApplication] terminate:nil];
 }
 
 static void *ui_companion_cocoa_init(void) { return (void*)-1; }
