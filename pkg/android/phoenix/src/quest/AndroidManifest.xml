@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:installLocation="auto"
+    tools:replace="android:installLocation">
     <!-- Package-visibility declaration for the OpenXR runtime brokers: the
          vendored loader resolves the active runtime through ContentProviders
          at these two authorities (android_utilities.cpp), and with
@@ -24,7 +26,11 @@
     <uses-permission android:name="com.oculus.permission.HAND_TRACKING" />
     <application>
         <meta-data android:name="com.oculus.app_id" android:value="1361809223675054" />
-        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture">
+        <activity android:name="com.retroarch.browser.retroactivity.RetroActivityFuture"
+             android:screenOrientation="landscape">
+            <meta-data
+                android:name="com.oculus.vr.focusaware"
+                android:value="true" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="com.oculus.intent.category.VR" />
@@ -32,6 +38,12 @@
         </activity>
         <activity-alias android:name="com.retroarch.browser.mainmenu.MainMenuActivity"
             android:targetActivity="com.retroarch.browser.retroactivity.RetroActivityFuture">
+            <intent-filter tools:node="remove">
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+                <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
+                <category android:name="tv.ouya.intent.category.GAME" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

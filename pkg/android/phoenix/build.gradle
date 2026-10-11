@@ -49,6 +49,7 @@ android {
     }
     versionCode = (System.currentTimeMillis() / 1000).toInteger()
     versionName "${getManifestAttribute("versionName")}_GIT"
+    buildConfigField "boolean", "META_QUEST_BUILD", "false"
   }
 
   android {
@@ -135,6 +136,7 @@ android {
       applicationIdSuffix '.quest'
       resValue "string", "app_name", "RetroArch XR"
       buildConfigField "boolean", "PLAY_STORE_BUILD", "true"
+      buildConfigField "boolean", "META_QUEST_BUILD", "true"
 
       dimension "variant"
       ndk {

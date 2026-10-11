@@ -1617,6 +1617,17 @@ public class RetroActivityCommon extends NativeActivity
   }
 
   /**
+   * Checks if this version of RetroArch is a Meta Quest build.
+   *
+   * @return true if this is a Meta Quest build, false otherwise
+   */
+  public boolean isMetaQuestBuild() {
+    Log.i("RetroActivity", "isMetaQuestBuild: " + BuildConfig.META_QUEST_BUILD);
+
+    return BuildConfig.META_QUEST_BUILD;
+  }
+
+  /**
    * Gets the list of available cores that can be downloaded as Dynamic Feature Modules.
    *
    * @return the list of available cores

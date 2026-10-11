@@ -174,6 +174,7 @@ struct android_app
    jmethodID doHapticFeedback;
 
    jmethodID isPlayStoreBuild;
+   jmethodID isMetaQuestBuild;
    jmethodID getAvailableCores;
    jmethodID getInstalledCores;
    jmethodID downloadCore;
@@ -209,6 +210,7 @@ struct android_app
    int id[MAX_USERS];
 
    bool is_play_store_build;
+   bool is_meta_quest_build;
 
 #ifdef HAVE_SAF
    jmethodID requestOpenDocumentTree;

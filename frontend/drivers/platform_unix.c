@@ -3430,6 +3430,8 @@ static void frontend_unix_init(void *data)
          "getUserLanguageString", "()Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->isPlayStoreBuild, class,
          "isPlayStoreBuild", "()Z");
+   GET_METHOD_ID(env, android_app->isMetaQuestBuild, class,
+         "isMetaQuestBuild", "()Z");
    GET_METHOD_ID(env, android_app->getAvailableCores, class,
          "getAvailableCores", "()[Ljava/lang/String;");
    GET_METHOD_ID(env, android_app->getInstalledCores, class,
@@ -3457,7 +3459,8 @@ static void frontend_unix_init(void *data)
 
    CALL_BOOLEAN_METHOD(env, android_app->is_play_store_build,
          android_app->activity->clazz, android_app->isPlayStoreBuild);
-
+   CALL_BOOLEAN_METHOD(env, android_app->is_meta_quest_build,
+         android_app->activity->clazz, android_app->isMetaQuestBuild);
 #ifdef HAVE_SAF
    GET_METHOD_ID(env, android_app->requestOpenDocumentTree, class,
          "requestOpenDocumentTree", "()V");
