@@ -713,8 +713,6 @@ bool menu_timedate_12hour_enabled(void);
 
 bool menu_timedate_date_order(unsigned *order);
 
-unsigned menu_timedate_style_for_locale(unsigned style);
-
 size_t menu_display_powerstate(gfx_display_ctx_powerstate_t *powerstate, char *s, size_t len);
 
 void menu_display_handle_wallpaper_upload(retro_task_t *task,

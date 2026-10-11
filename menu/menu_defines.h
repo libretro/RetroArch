@@ -169,11 +169,19 @@ enum menu_timedate_style_type
    MENU_TIMEDATE_STYLE_LAST
 };
 
-/* The AM/PM styles mirror the 24-hour ones. Whether the menu clock
- * shows 12- or 24-hour time is the 'menu_timedate_12hour' setting,
- * so the style picks only what is shown; these map a style to the
- * matching member of the other set (date-only styles map to
- * themselves). */
+/* Date and Time Format: Automatic writes the date in the order used
+ * where the time zone is and takes 12- or 24-hour time from the
+ * '12-Hour Clock' option; Manual uses 'Style of Date and Time' as
+ * chosen. */
+enum menu_timedate_mode_type
+{
+   MENU_TIMEDATE_MODE_AUTOMATIC = 0,
+   MENU_TIMEDATE_MODE_MANUAL,
+   MENU_TIMEDATE_MODE_LAST
+};
+
+/* The AM/PM style matching a 24-hour one (styles without a time map
+ * to themselves). */
 static INLINE unsigned menu_timedate_style_to_12hour(unsigned style)
 {
    switch (style)
@@ -249,36 +257,6 @@ static INLINE unsigned menu_timedate_style_with_order(unsigned style,
             || style == shapes[row][1]
             || style == shapes[row][2])
          return shapes[row][col];
-   return style;
-}
-
-static INLINE unsigned menu_timedate_style_to_24hour(unsigned style)
-{
-   switch (style)
-   {
-      case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
-         return MENU_TIMEDATE_STYLE_YMD_HMS;
-      case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_YMD_HM;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
-         return MENU_TIMEDATE_STYLE_MDYYYY_HMS;
-      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_MDYYYY_HM;
-      case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_MD_HM;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
-         return MENU_TIMEDATE_STYLE_DDMMYYYY_HMS;
-      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_DDMMYYYY_HM;
-      case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_DDMM_HM;
-      case MENU_TIMEDATE_STYLE_HMS_AMPM:
-         return MENU_TIMEDATE_STYLE_HMS;
-      case MENU_TIMEDATE_STYLE_HM_AMPM:
-         return MENU_TIMEDATE_STYLE_HM;
-      default:
-         break;
-   }
    return style;
 }
 

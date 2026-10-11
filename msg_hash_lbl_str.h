@@ -1650,6 +1650,7 @@
 #define MENU_ENUM_LABEL_TIMEDATE_12HOUR_STR "menu_timedate_12hour"
 #define MENU_ENUM_LABEL_TIMEDATE_DATE_SEPARATOR_STR "menu_timedate_date_separator"
 #define MENU_ENUM_LABEL_TIMEDATE_ENABLE_STR "menu_timedate_enable"
+#define MENU_ENUM_LABEL_TIMEDATE_MODE_STR "menu_timedate_mode"
 #define MENU_ENUM_LABEL_TIMEDATE_STYLE_STR "menu_timedate_style"
 #define MENU_ENUM_LABEL_TIME_SHOW_STR "time_show"
 #define MENU_ENUM_LABEL_TLS_VERIFY_MODE_STR "tls_verify_mode"

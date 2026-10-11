@@ -4260,61 +4260,16 @@ static void setting_set_string_representation_timedate_date_separator(char *s)
    }
 }
 
-/* Style of Date and Time: when the date order comes from the time
- * zone, only the styles written in that order are offered, so the
- * list holds no two entries that show the same thing. */
-static int setting_uint_action_timedate_style_step(
-      rarch_setting_t *setting, int dir)
+static size_t setting_get_string_representation_uint_menu_timedate_mode(
+   rarch_setting_t *setting, char *s, size_t len)
 {
-   unsigned *target = setting->value.target.unsigned_integer;
-   unsigned v       = *target;
-   unsigned i;
-
-   for (i = 0; i <= MENU_TIMEDATE_STYLE_HM; i++)
-   {
-      if (dir < 0)
-         v = (v == 0 || v > MENU_TIMEDATE_STYLE_HM)
-            ? MENU_TIMEDATE_STYLE_HM : v - 1;
-      else
-         v = (v >= MENU_TIMEDATE_STYLE_HM) ? 0 : v + 1;
-      if (menu_timedate_style_for_locale(v) == v)
-         break;
-   }
-   *target = v;
-   return 0;
-}
-
-static int setting_uint_action_left_timedate_style(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   unsigned order;
    if (!setting)
-      return -1;
-   if (menu_timedate_date_order(&order))
-      return setting_uint_action_timedate_style_step(setting, -1);
-   return setting_uint_action_left_default(setting, idx, wraparound);
-}
-
-static int setting_uint_action_right_timedate_style(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   unsigned order;
-   if (!setting)
-      return -1;
-   if (menu_timedate_date_order(&order))
-      return setting_uint_action_timedate_style_step(setting, 1);
-   return setting_uint_action_right_default(setting, idx, wraparound);
-}
-
-static int setting_action_ok_uint_timedate_style(
-      rarch_setting_t *setting, size_t idx, bool wraparound)
-{
-   unsigned order;
-   /* The drop-down would list the styles of every order; step like
-    * Right instead */
-   if (menu_timedate_date_order(&order))
-      return setting_uint_action_right_timedate_style(setting, idx, wraparound);
-   return setting_action_ok_uint(setting, idx, wraparound);
+      return 0;
+   if (*setting->value.target.unsigned_integer == MENU_TIMEDATE_MODE_MANUAL)
+      return strlcpy(s, msg_hash_to_str(
+            MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_MANUAL), len);
+   return strlcpy(s, msg_hash_to_str(
+         MENU_ENUM_LABEL_VALUE_TIMEDATE_MODE_AUTOMATIC), len);
 }
 
 static size_t setting_get_string_representation_uint_menu_timedate_style(
@@ -4323,9 +4278,7 @@ static size_t setting_get_string_representation_uint_menu_timedate_style(
    size_t _len = 0;
    if (setting)
    {
-      /* Label what is shown: the style in the time zone's order */
-      switch (menu_timedate_style_for_locale(
-               *setting->value.target.unsigned_integer))
+      switch (*setting->value.target.unsigned_integer)
       {
          case MENU_TIMEDATE_STYLE_YMD_HMS:
             _len = strlcpy(s, msg_hash_to_str(

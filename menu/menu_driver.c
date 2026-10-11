@@ -818,7 +818,7 @@ bool menu_entries_list_search(const char *needle, size_t *idx)
 /* The order dates are written in where the time zone is: Lakka's
  * time zone setting, else the system's. False when there is no way to
  * tell (no time zone to be had, or one such as UTC tied to no place). */
-bool menu_timedate_date_order(unsigned *order)
+static bool menu_timedate_zone_date_order(unsigned *order)
 {
    enum timezone_date_order o = TIMEZONE_DATE_ORDER_UNKNOWN;
    char tz[128];
@@ -838,22 +838,96 @@ bool menu_timedate_date_order(unsigned *order)
    return true;
 }
 
-/* @style with its date written in the time zone's order; where that
- * cannot be told, the style's own order stands. */
-unsigned menu_timedate_style_for_locale(unsigned style)
+/* The order @style writes the date in; false for time-only styles. */
+static bool menu_timedate_style_date_order(unsigned style, unsigned *order)
 {
-   unsigned order;
-   if (!menu_timedate_date_order(&order))
-      return style;
-   return menu_timedate_style_with_order(style, order);
+   switch (style)
+   {
+      case MENU_TIMEDATE_STYLE_YMD_HMS:
+      case MENU_TIMEDATE_STYLE_YMD_HM:
+      case MENU_TIMEDATE_STYLE_YMD:
+      case MENU_TIMEDATE_STYLE_YM:
+      case MENU_TIMEDATE_STYLE_YMD_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_YMD_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_YMD;
+         return true;
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM:
+      case MENU_TIMEDATE_STYLE_MD_HM:
+      case MENU_TIMEDATE_STYLE_MDYYYY:
+      case MENU_TIMEDATE_STYLE_MD:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_MDYYYY_HM_AMPM:
+      case MENU_TIMEDATE_STYLE_MD_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_MDY;
+         return true;
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM:
+      case MENU_TIMEDATE_STYLE_DDMM_HM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY:
+      case MENU_TIMEDATE_STYLE_DDMM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HMS_AMPM:
+      case MENU_TIMEDATE_STYLE_DDMMYYYY_HM_AMPM:
+      case MENU_TIMEDATE_STYLE_DDMM_HM_AMPM:
+         *order = MENU_TIMEDATE_DATE_ORDER_DMY;
+         return true;
+      default:
+         break;
+   }
+   return false;
 }
 
-/* Whether times are shown and entered as 12-hour (AM/PM) or
- * 24-hour: the '12-Hour Clock' option in Appearance. */
+static bool menu_timedate_manual(void)
+{
+   settings_t *settings = config_get_ptr();
+   return settings->uints.menu_timedate_mode == MENU_TIMEDATE_MODE_MANUAL;
+}
+
+/* The order dates are shown and entered in, following 'Date and Time
+ * Format': Automatic takes it from the time zone, Manual from 'Style
+ * of Date and Time'. False when there is no way to tell. */
+bool menu_timedate_date_order(unsigned *order)
+{
+   if (menu_timedate_manual())
+   {
+      settings_t *settings = config_get_ptr();
+      return menu_timedate_style_date_order(
+            settings->uints.menu_timedate_style, order);
+   }
+   return menu_timedate_zone_date_order(order);
+}
+
+/* Whether times are shown and entered as 12-hour (AM/PM) or 24-hour,
+ * following 'Date and Time Format': Automatic takes it from the
+ * '12-Hour Clock' option, Manual from whether 'Style of Date and Time'
+ * is an AM/PM style. */
 bool menu_timedate_12hour_enabled(void)
 {
    settings_t *settings = config_get_ptr();
+   if (menu_timedate_manual())
+      return    settings->uints.menu_timedate_style >= MENU_TIMEDATE_STYLE_YMD_HMS_AMPM
+             && settings->uints.menu_timedate_style <  MENU_TIMEDATE_STYLE_LAST;
    return settings->bools.menu_timedate_12hour;
+}
+
+/* The style the menu clock is drawn with. Manual: @style as chosen.
+ * Automatic: date and HH:MM, the date in the time zone's order (year
+ * first where that cannot be told), on the 12- or 24-hour clock as
+ * the '12-Hour Clock' option says. */
+static unsigned menu_timedate_effective_style(unsigned style)
+{
+   unsigned order;
+   settings_t *settings = config_get_ptr();
+
+   if (settings->uints.menu_timedate_mode == MENU_TIMEDATE_MODE_MANUAL)
+      return style;
+
+   style = MENU_TIMEDATE_STYLE_YMD_HM;
+   if (menu_timedate_zone_date_order(&order))
+      style = menu_timedate_style_with_order(style, order);
+   if (settings->bools.menu_timedate_12hour)
+      style = menu_timedate_style_to_12hour(style);
+   return style;
 }
 
 /* Display the date and time - time_mode will influence how
@@ -877,13 +951,8 @@ size_t menu_display_timedate(gfx_display_ctx_datetime_t *datetime,
       struct tm tm_;
       bool has_am_pm         = false;
       const char *format_str = "";
-      settings_t *settings   = config_get_ptr();
-      /* The style picks what is shown, the 12-hour option how */
-      unsigned time_mode     = menu_timedate_style_for_locale(
-            menu_timedate_style_to_24hour(datetime->time_mode));
-
-      if (settings->bools.menu_timedate_12hour)
-         time_mode = menu_timedate_style_to_12hour(time_mode);
+      unsigned time_mode     = menu_timedate_effective_style(
+            datetime->time_mode);
 
       datetime_last_time_us = menu_st->current_time_us;
 
