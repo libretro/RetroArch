@@ -242,7 +242,8 @@ size_t word_wrap(
 
    while (*src != '\0')
    {
-      unsigned char_len = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len = (unsigned char)*src < 0x80
+         ? 1 : (unsigned)(utf8skip(src, 1) - src);
       counter++;
 
       if (*src == ' ')
@@ -397,7 +398,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    while (*src != '\0')
    {
       size_t remaining;
-      unsigned char_len   = (unsigned)(utf8skip(src, 1) - src);
+      unsigned char_len   = (unsigned char)*src < 0x80
+         ? 1 : (unsigned)(utf8skip(src, 1) - src);
       counter_normalized += 100;
 
       /* Prevent buffer overflow.  `remaining` is computed from

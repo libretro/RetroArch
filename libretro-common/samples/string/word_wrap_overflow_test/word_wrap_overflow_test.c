@@ -333,13 +333,36 @@ static void test_forward_glyph_scan(void)
          }
          glyph_scans = 0;
          returned = word_wrap(dst, len + 1, inputs[i], len, width, 100, 0);
-         if (returned != len || !glyph_scans || glyph_scans > utf8len(inputs[i]))
+         if (returned != len || glyph_scans > utf8len(inputs[i]))
          {
             printf("[ERROR] regular wrap rescanned glyphs at width %u\n", width);
             failures++;
          }
          free(dst);
       }
+}
+
+static void test_ascii_glyph_scan(void)
+{
+   const char *src = "alpha beta gamma delta epsilon zeta eta theta";
+   char dst[128];
+   unsigned wide;
+   for (wide = 0; wide < 2; wide++)
+   {
+      size_t returned;
+      glyph_scans = 0;
+      if (wide)
+         returned = word_wrap_wideglyph(dst, sizeof(dst), src, strlen(src), 8, 200, 0);
+      else
+         returned = word_wrap(dst, sizeof(dst), src, strlen(src), 8, 100, 0);
+      if (returned != strlen(src) || strcmp(dst,
+               "alpha\nbeta\ngamma\ndelta\nepsilon\nzeta\neta\ntheta") != 0
+            || glyph_scans != 0)
+      {
+         printf("[ERROR] ASCII wrap used UTF-8 decoding (wide=%u)\n", wide);
+         failures++;
+      }
+   }
 }
 
 static void test_wide_glyph_scan(void)
@@ -364,6 +387,7 @@ static void test_wide_glyph_scan(void)
 }
 int main(void)
 {
+   test_ascii_glyph_scan();
    test_wide_glyph_scan();
    test_forward_glyph_scan();
    test_regular_wrap_copy();
