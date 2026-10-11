@@ -39,6 +39,17 @@
  * build, where glibc hides it, sees the same one. */
 extern long syscall(long number, ...);
 #endif
+#if defined(__linux__) && (defined(__arm__) || defined(__aarch64__))
+#if defined(HAVE_GETAUXVAL) || \
+      (defined(__GLIBC__) && ((__GLIBC__ > 2) || \
+       (__GLIBC__ == 2 && __GLIBC_MINOR__ >= 16))) || \
+      (defined(__ANDROID__) && defined(__ANDROID_API__) && __ANDROID_API__ >= 18)
+#define CPU_ARM_GETAUXVAL 1
+#include <errno.h>
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+#endif
+#endif
 #include <retro_atomic.h>
 #include <retro_timers.h>
 
@@ -386,7 +397,89 @@ static unsigned char check_arm_cpu_feature(const char* feature)
 {
    char line[1024];
    unsigned char status = 0;
-   FILE *fp = fopen("/proc/cpuinfo", "r");
+   FILE *fp;
+
+#ifdef CPU_ARM_GETAUXVAL
+   unsigned long mask = 0;
+   unsigned long caps;
+   unsigned long type = AT_HWCAP;
+#if defined(__aarch64__)
+#ifdef HWCAP_ASIMD
+   if (!strcmp(feature, "asimd"))
+      mask = HWCAP_ASIMD;
+#endif
+#ifdef HWCAP_AES
+   if (!strcmp(feature, "aes"))
+      mask = HWCAP_AES;
+#endif
+#ifdef HWCAP_CRC32
+   if (!strcmp(feature, "crc32"))
+      mask = HWCAP_CRC32;
+#endif
+#ifdef HWCAP_SHA1
+   if (!strcmp(feature, "sha1"))
+      mask = HWCAP_SHA1;
+#endif
+#ifdef HWCAP_SHA2
+   if (!strcmp(feature, "sha2"))
+      mask = HWCAP_SHA2;
+#endif
+#ifdef HWCAP_SHA512
+   if (!strcmp(feature, "sha512"))
+      mask = HWCAP_SHA512;
+#endif
+#else
+#ifdef HWCAP_NEON
+   if (!strcmp(feature, "neon"))
+      mask = HWCAP_NEON;
+#endif
+#ifdef HWCAP_VFPv3
+   if (!strcmp(feature, "vfpv3"))
+      mask = HWCAP_VFPv3;
+#endif
+#ifdef HWCAP_VFPv4
+   if (!strcmp(feature, "vfpv4"))
+      mask = HWCAP_VFPv4;
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_AES)
+   if (!strcmp(feature, "aes"))
+   {
+      mask = HWCAP2_AES;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_CRC32)
+   if (!strcmp(feature, "crc32"))
+   {
+      mask = HWCAP2_CRC32;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_SHA1)
+   if (!strcmp(feature, "sha1"))
+   {
+      mask = HWCAP2_SHA1;
+      type = AT_HWCAP2;
+   }
+#endif
+#if defined(AT_HWCAP2) && defined(HWCAP2_SHA2)
+   if (!strcmp(feature, "sha2"))
+   {
+      mask = HWCAP2_SHA2;
+      type = AT_HWCAP2;
+   }
+#endif
+#endif
+   if (mask)
+   {
+      errno = 0;
+      caps = getauxval(type);
+      if (errno == 0)
+         return (caps & mask) != 0;
+   }
+#endif
+
+   fp = fopen("/proc/cpuinfo", "r");
 
    if (!fp)
       return 0;
