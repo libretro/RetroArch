@@ -6409,6 +6409,15 @@ enum gfx_ctx_api video_context_driver_get_api(void)
    return ctx_api;
 }
 
+bool video_driver_fullscreen_is_exclusive(void)
+{
+   settings_t *settings           = config_get_ptr();
+   video_driver_state_t *video_st = &video_driver_st;
+
+   return !settings->bools.video_windowed_fullscreen
+      && video_st->display_type != RARCH_DISPLAY_WAYLAND;
+}
+
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
 bool video_driver_has_windowed(void)
 {

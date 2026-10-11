@@ -5818,8 +5818,7 @@ bool command_event(enum event_command cmd, void *data)
                VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
             bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
             bool exclusive_fullscreen =
-                  !settings->bools.video_windowed_fullscreen
-               && video_driver_display_type_get() != RARCH_DISPLAY_WAYLAND;
+                  video_driver_fullscreen_is_exclusive();
 
             if (!video_driver_has_windowed())
                return false;

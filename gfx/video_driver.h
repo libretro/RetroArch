@@ -1659,6 +1659,8 @@ struct aspect_ratio_elem
 
 extern struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END];
 
+bool video_driver_fullscreen_is_exclusive(void);
+
 #if !(defined(RARCH_CONSOLE) || defined(RARCH_MOBILE))
 bool video_driver_has_windowed(void);
 #else
