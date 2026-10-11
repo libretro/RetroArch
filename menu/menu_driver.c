@@ -911,9 +911,9 @@ bool menu_timedate_12hour_enabled(void)
 }
 
 /* The style the menu clock is drawn with. Manual: @style as chosen.
- * Automatic: date and HH:MM, the date in the time zone's order (year
- * first where that cannot be told), on the 12- or 24-hour clock as
- * the '12-Hour Clock' option says. */
+ * Automatic: month, day and HH:MM, no year, the day first where the
+ * time zone writes it first (else month first), on the 12- or 24-hour
+ * clock as the '12-Hour Clock' option says. */
 static unsigned menu_timedate_effective_style(unsigned style)
 {
    unsigned order;
@@ -922,7 +922,7 @@ static unsigned menu_timedate_effective_style(unsigned style)
    if (settings->uints.menu_timedate_mode == MENU_TIMEDATE_MODE_MANUAL)
       return style;
 
-   style = MENU_TIMEDATE_STYLE_YMD_HM;
+   style = MENU_TIMEDATE_STYLE_MD_HM;
    if (menu_timedate_zone_date_order(&order))
       style = menu_timedate_style_with_order(style, order);
    if (settings->bools.menu_timedate_12hour)

@@ -20,7 +20,7 @@ S_UINT_EX(menu_timedate_mode, TIMEDATE_MODE,
       "menu_timedate_mode",
       DEFAULT_MENU_TIMEDATE_MODE, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, MENU_TIMEDATE_MODE_LAST - 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_uint_menu_timedate_mode, NULL, NULL, setting_uint_action_left_with_refresh, setting_uint_action_right_with_refresh, ST_UI_TYPE_UINT_COMBOBOX,
       "Date and Time Format",
-      "Automatic writes the date in the order used in your time zone, with the 12-hour or 24-hour clock as chosen. Manual uses the chosen 'Style of Date and Time'.")
+      "Automatic shows the month, day and time (no year), in the order used in your time zone, with the 12-hour or 24-hour clock as chosen. Manual uses the chosen 'Style of Date and Time'.")
 #endif
 /* The configuration row lives under defined(HAVE_MENU); other passes are
  * unaffected. */
