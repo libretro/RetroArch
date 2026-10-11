@@ -291,6 +291,10 @@ jobs:
             # stereo and joint stereo streams, then bad frames and
             # garbage.
             ratrac3_test
+            # ATRAC3plus against a reference decoder's output for a
+            # stereo stream (tones, gain points, swap and negate masks)
+            # and a mono one, then bad frames and garbage.
+            ratrac3p_test
           )
 
           # Targets that are built but deliberately not executed, each
