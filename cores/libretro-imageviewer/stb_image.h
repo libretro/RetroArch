@@ -551,6 +551,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 
 
 #include <stdarg.h>
+#include <limits.h>
 #include <stddef.h> /* ptrdiff_t on osx */
 #include <stdlib.h>
 #include <string.h>
@@ -5108,6 +5109,9 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
    h = stbi__get32be(s);
    w = stbi__get32be(s);
 
+   if (w <= 0 || h <= 0 || w > INT_MAX / 4 / h)
+      return stbi__errpuc("too large", "Invalid PSD dimensions");
+
    /* Make sure the depth is 8 bits. */
    if (stbi__get16be(s) != 8)
       return stbi__errpuc("unsupported bit depth", "PSD bit depth is not 8 bit");
@@ -5141,6 +5145,9 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
    compression = stbi__get16be(s);
    if (compression > 1)
       return stbi__errpuc("bad compression", "PSD has an unknown compression format");
+
+   if (compression && channelCount && h > INT_MAX / 2 / channelCount)
+      return stbi__errpuc("too large", "PSD row table is too large");
 
    // Create the destination image.
    out = (stbi_uc *) stbi__malloc(4 * w*h);
@@ -5181,6 +5188,10 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
                } else if (len < 128) {
                   // Copy next len+1 bytes literally.
                   len++;
+                  if (len > pixelCount - count) {
+                     STBI_FREE(out);
+                     return stbi__errpuc("corrupt", "bad RLE data");
+                  }
                   count += len;
                   while (len) {
                      *p = stbi__get8(s);
@@ -5193,6 +5204,10 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
                   // (Interpret len as a negative 8-bit int.)
                   len ^= 0x0FF;
                   len += 2;
+                  if (len > pixelCount - count) {
+                     STBI_FREE(out);
+                     return stbi__errpuc("corrupt", "bad RLE data");
+                  }
                   val = stbi__get8(s);
                   count += len;
                   while (len) {
@@ -5969,17 +5984,20 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
          if (scanline == NULL) scanline = (stbi_uc *) stbi__malloc(width * 4);
 
          for (k = 0; k < 4; ++k) {
+            int nleft;
             i = 0;
-            while (i < width) {
+            while ((nleft = width - i) > 0) {
                count = stbi__get8(s);
                if (count > 128) {
                   // Run
                   value = stbi__get8(s);
                   count -= 128;
+                  if (count == 0 || count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
                      scanline[i++ * 4 + k] = value;
                } else {
                   // Dump
+                  if (count == 0 || count > nleft) { STBI_FREE(hdr_data); STBI_FREE(scanline); return stbi__errpf("corrupt", "bad RLE data in HDR"); }
                   for (z = 0; z < count; ++z)
                      scanline[i++ * 4 + k] = stbi__get8(s);
                }
