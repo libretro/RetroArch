@@ -29,6 +29,7 @@ struct submit {
 typedef struct submit VkSubmitInfo;
 typedef struct presenter {
    void *bridge;
+   unsigned pool;
    VkSemaphore done;
    VkCommandBuffer acquire[2];
 } ra_vulkan_dxgi_t;
@@ -53,9 +54,38 @@ static VkResult ra_vulkan_dxgi_submit(ra_vulkan_dxgi_t *p,
    return submit_result;
 }
 #include "acquire.inc"
+#define VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO 3
+#define VK_COMMAND_BUFFER_LEVEL_PRIMARY 0
+typedef struct command_info {
+   unsigned sType, commandPool, level, commandBufferCount;
+} VkCommandBufferAllocateInfo;
+static unsigned allocations;
+static VkResult allocation_result;
+static VkResult vkAllocateCommandBuffers(unsigned device,
+      const VkCommandBufferAllocateInfo *info, VkCommandBuffer *buffer)
+{
+   assert(device == 1 && info->commandPool == 7 && info->commandBufferCount == 1);
+   ++allocations;
+   if (allocation_result != VK_SUCCESS) return allocation_result;
+   *buffer = allocations;
+   return VK_SUCCESS;
+}
+static int record_command(ra_vulkan_dxgi_t *p, unsigned device,
+      VkCommandBuffer *buffer)
+{
+   VkCommandBufferAllocateInfo command;
+#define CHECK_VK(expr) do { if ((expr) != VK_SUCCESS) goto error; } while (0)
+#include "commands.inc"
+#undef CHECK_VK
+   return 1;
+error:
+   return 0;
+}
 int main(void)
 {
-   unsigned index = 0;
+   unsigned index = 0, i;
+   VkCommandBuffer buffers[4] = {0, 0, 0, 0};
+   VkCommandBuffer failed_buffer = VK_NULL_HANDLE;
    ra_vulkan_dxgi_t p;
    memset(&p, 0, sizeof(p));
    next_index = ~0u;
@@ -67,6 +97,18 @@ int main(void)
    failed = 0; next_index = 1;
    assert(ra_vulkan_dxgi_acquire(&p, 1, VK_NULL_HANDLE, &index) == VK_SUCCESS);
    assert(index == 1 && submissions == 1);
-   puts("PASS: Vulkan/DXGI unavailable frames preserve a valid image index");
+   p.pool = 7;
+   for (i = 0; i < 4; i++) assert(record_command(&p, 1, &buffers[i]));
+   assert(allocations == 4);
+   for (i = 0; i < 4; i++)
+   {
+      assert(record_command(&p, 1, &buffers[i]));
+      assert(buffers[i] == i + 1);
+   }
+   assert(allocations == 4);
+   allocation_result = -2;
+   assert(!record_command(&p, 1, &failed_buffer));
+   assert(failed_buffer == VK_NULL_HANDLE && allocations == 5);
+   puts("PASS: Vulkan/DXGI acquire safety and command buffer reuse");
    return 0;
 }

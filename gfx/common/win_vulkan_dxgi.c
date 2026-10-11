@@ -51,9 +51,6 @@ static void ra_vulkan_dxgi_destroy_images(ra_vulkan_dxgi_t *p)
    unsigned i;
    for (i = 0; i < 2; i++)
    {
-      if (p->acquire[i]) vkFreeCommandBuffers(p->device, p->pool, 1, &p->acquire[i]);
-      if (p->release[i]) vkFreeCommandBuffers(p->device, p->pool, 1, &p->release[i]);
-      p->acquire[i] = p->release[i] = VK_NULL_HANDLE;
       if (p->images[i]) vkDestroyImage(p->device, p->images[i], NULL);
       if (p->memory[i]) vkFreeMemory(p->device, p->memory[i], NULL);
       p->images[i] = VK_NULL_HANDLE; p->memory[i] = VK_NULL_HANDLE;
@@ -164,7 +161,8 @@ static int ra_vulkan_dxgi_create_images(ra_vulkan_dxgi_t *p,
          command.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
          command.commandPool = p->pool; command.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
          command.commandBufferCount = 1;
-         CHECK_VK(vkAllocateCommandBuffers(device, &command, buffer));
+         if (*buffer == VK_NULL_HANDLE)
+            CHECK_VK(vkAllocateCommandBuffers(device, &command, buffer));
          memset(&begin, 0, sizeof(begin));
          begin.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
          begin.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
@@ -206,6 +204,7 @@ int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p,
    if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
 #endif
    if (result != VK_SUCCESS) return 0;
+   if (vkResetCommandPool(p->device, p->pool, 0) != VK_SUCCESS) return 0;
    ra_vulkan_dxgi_destroy_images(p);
    if (format == VK_FORMAT_R8G8B8A8_UNORM) dxgi_format = DXGI_FORMAT_R8G8B8A8_UNORM;
    else if (format == VK_FORMAT_B8G8R8A8_UNORM) dxgi_format = DXGI_FORMAT_B8G8R8A8_UNORM;

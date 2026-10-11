@@ -23,6 +23,9 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     acquire_start = vulkan.index("VkResult ra_vulkan_dxgi_acquire(")
     acquire_end = vulkan.index("VkResult ra_vulkan_dxgi_present(", acquire_start)
     (directory / "acquire.inc").write_text(vulkan[acquire_start:acquire_end])
+    commands_start = vulkan.index("         memset(&command, 0, sizeof(command));")
+    commands_end = vulkan.index("         memset(&begin, 0, sizeof(begin));", commands_start)
+    (directory / "commands.inc").write_text(vulkan[commands_start:commands_end])
     for name in ("test", "teardown", "acquire"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",

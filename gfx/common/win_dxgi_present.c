@@ -70,8 +70,6 @@ static void ra_dxgi_bridge_destroy_buffers(ra_dxgi_bridge_t *b)
    unsigned i;
    for (i = 0; i < 2; i++)
    {
-      DROP(b->lists[i]);
-      DROP(b->allocators[i]);
       DROP(b->buffers[i]);
       DROP(b->shared[i]);
       if (b->resources[i]) CloseHandle(b->resources[i]);
@@ -81,9 +79,15 @@ static void ra_dxgi_bridge_destroy_buffers(ra_dxgi_bridge_t *b)
 
 void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
 {
+   unsigned i;
    if (!b)
       return;
    ra_dxgi_bridge_wait_idle(b);
+   for (i = 0; i < 2; i++)
+   {
+      DROP(b->lists[i]);
+      DROP(b->allocators[i]);
+   }
    ra_dxgi_bridge_destroy_buffers(b);
    DROP(b->chain);
    DROP(b->ready);
@@ -128,12 +132,18 @@ static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
                &b->resources[i]));
       CHECK(b->chain->lpVtbl->GetBuffer(b->chain, i, &bridge_ID3D12Resource,
                (void **)&b->buffers[i]));
-      CHECK(b->device->lpVtbl->CreateCommandAllocator(b->device,
-               D3D12_COMMAND_LIST_TYPE_DIRECT, &bridge_ID3D12CommandAllocator,
-               (void **)&b->allocators[i]));
-      CHECK(b->device->lpVtbl->CreateCommandList(b->device, 0,
-               D3D12_COMMAND_LIST_TYPE_DIRECT, b->allocators[i], NULL,
-               &bridge_ID3D12GraphicsCommandList, (void **)&b->lists[i]));
+      if (b->allocators[i])
+         CHECK(b->allocators[i]->lpVtbl->Reset(b->allocators[i]));
+      else
+         CHECK(b->device->lpVtbl->CreateCommandAllocator(b->device,
+                  D3D12_COMMAND_LIST_TYPE_DIRECT, &bridge_ID3D12CommandAllocator,
+                  (void **)&b->allocators[i]));
+      if (b->lists[i])
+         CHECK(b->lists[i]->lpVtbl->Reset(b->lists[i], b->allocators[i], NULL));
+      else
+         CHECK(b->device->lpVtbl->CreateCommandList(b->device, 0,
+                  D3D12_COMMAND_LIST_TYPE_DIRECT, b->allocators[i], NULL,
+                  &bridge_ID3D12GraphicsCommandList, (void **)&b->lists[i]));
       memset(barriers, 0, sizeof(barriers));
       barriers[0].Type = barriers[1].Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
       barriers[0].Transition.pResource = b->shared[i];

@@ -67,7 +67,7 @@ static HRESULT resize_buffers(object *p, unsigned count, unsigned width,
       unsigned height, DXGI_FORMAT format, unsigned flags)
 {
    (void)p; assert(count == 2 && width == 640 && height == 480 && format == 28);
-   assert(drained && releases == 8 && flags == 512);
+   assert(drained && releases == 4 && flags == 512);
    ++resizes; return resize_result;
 }
 static int ra_dxgi_bridge_color_space(ra_dxgi_bridge_t *b, unsigned format)
@@ -79,7 +79,10 @@ static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
    (void)width; (void)height; (void)format;
    assert(resizes == 1 && drained);
    for (i = 0; i < 2; i++)
-      b->lists[i] = b->allocators[i] = b->buffers[i] = b->shared[i] = b->device;
+   {
+      assert(b->lists[i] == b->device && b->allocators[i] == b->device);
+      b->buffers[i] = b->shared[i] = b->device;
+   }
    ++allocations; return 1;
 }
 #include "resize.inc"
@@ -141,14 +144,14 @@ int main(void)
    assert(ra_dxgi_bridge_resize(b, 640, 480, 28));
    assert(b->width == 640 && b->height == 480 && b->format == 28);
    assert(b->queue == &p && b->done == &p && b->device == &p && b->chain == &p);
-   assert(b->sequence == 8 && resizes == 1 && allocations == 1 && releases == 8);
+   assert(b->sequence == 8 && resizes == 1 && allocations == 1 && releases == 4);
    expected = 9; completed = 8; drained = 0; released_before_wait = releases;
    ra_dxgi_bridge_destroy(b);
-   assert(releases == 22);
+   assert(releases == 18);
    b = make_bridge(&p, 7); b->chain_flags = 512;
    resizes = allocations = 0; resize_result = -1;
    assert(!ra_dxgi_bridge_resize(b, 640, 480, 28) && b->failed);
-   assert(resizes == 1 && allocations == 0 && releases == 8);
+   assert(resizes == 1 && allocations == 0 && releases == 4);
    expected = 9; completed = 8; drained = 0; released_before_wait = releases;
    ra_dxgi_bridge_destroy(b);
    assert(releases == 14);

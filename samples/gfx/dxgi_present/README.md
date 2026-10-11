@@ -4,7 +4,8 @@ GPU queue ordering, fence bookkeeping, occlusion recovery, failed presents,
 VSync interval clamping and optional tearing with portable COM mocks.
 The resize and teardown tests check resource retention, first-frame pacing,
 queue draining, partial initialization and failures. Vulkan acquire tests
-check that unavailable frames preserve a valid image index.
+check that unavailable frames preserve a valid image index and command
+buffers are allocated only once.
 
 For MinGW and Wine:
 
