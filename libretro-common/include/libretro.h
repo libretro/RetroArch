@@ -3015,7 +3015,12 @@ enum retro_vr_reference_space {
  * both eyes are shown; only set together with PRESENTS. */
 #define RETRO_VIDEO_VIEWS_STATUS_PRESENTS (1 << 0)
 #define RETRO_VIDEO_VIEWS_STATUS_STEREO   (1 << 1)
-/** An active headset session is presenting; eye-tagged views render on it. */
+/** A headset session is running and head tracking is available:
+ * RETRO_ENVIRONMENT_GET_VR_FRAME_STATE and GET_VR_HEAD_POSE answer, and a
+ * map with RETRO_VIDEO_VIEWS_FLAG_TRACKED becomes the head-tracked view.
+ * Only set together with PRESENTS and STEREO. A core learns about a
+ * headset from this bit only: SET_VIDEO_VIEWS returning true means the
+ * map was accepted, headset or not. */
 #define RETRO_VIDEO_VIEWS_STATUS_HMD      (1 << 2)
 
 /* The eye a view shows; see RETRO_ENVIRONMENT_SET_VIDEO_VIEWS. */
@@ -3025,8 +3030,14 @@ enum retro_vr_reference_space {
 
 /* The most views one map may hold. */
 #define RETRO_VIDEO_VIEWS_MAX      8
-/** The core asks for a flat presentation even on a headset. */
-#define RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT (1 << 0)
+/** The map's one LEFT and one RIGHT view were drawn from this frame's
+ * RETRO_ENVIRONMENT_GET_VR_FRAME_STATE eye poses and fields of view.
+ * While RETRO_VIDEO_VIEWS_STATUS_HMD is set, the frontend shows those two
+ * as the headset's head-tracked view and every other view as a screen.
+ * Without HMD the flag changes nothing. While HMD is set, a map with the
+ * flag and any views must hold exactly one LEFT and one RIGHT view, or it
+ * is refused; an empty map clears the views whatever its flags. */
+#define RETRO_VIDEO_VIEWS_FLAG_TRACKED (1 << 0)
 
 /**
  * One view of the frame.
@@ -3058,26 +3069,29 @@ struct retro_video_views
    /** RETRO_VIDEO_VIEWS_FLAG_ values. */
    unsigned flags;
 
-   /** Headset reference space for eye-tagged views. */
+   /**
+    * The space a TRACKED map's poses are in: LOCAL (seated) or STAGE
+    * (standing, LOCAL where the runtime has none).
+    */
    enum retro_vr_reference_space reference_space;
 
    /**
-    * Requested interpupillary distance in meters, used only if the
-    * frontend cannot obtain one from the runtime/HMD itself.
-    * 0.0f means "use whatever the frontend/runtime already knows".
-    */
-   float ipd_hint_m;
-
-   /**
-    * Output: recommended size of one eye-tagged view's render target.
-    * The core must not use these to determine its system AV geometry;
-    * the frame geometry stays retro_get_system_av_info()'s.
+    * Output, while RETRO_VIDEO_VIEWS_STATUS_HMD is set: the recommended
+    * size of one eye's render target; 0 otherwise.
+    * The frontend does not change the core's geometry for it: a core
+    * that draws at this size reports its new frame size with
+    * RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO.
     */
    unsigned recommended_view_width;
    unsigned recommended_view_height;
 };
 
-#define RETRO_VR_FRAME_RECENTERED     (1u << 0)  /* user recentered: re-capture any reference */
+/* RETRO_VR_FRAME_RECENTERED: the user or the runtime recentered, the
+ * runtime moved STAGE, or a new headset session started, as after a
+ * video driver restart. LOCAL poses then have a new origin; STAGE poses
+ * keep the room's through a recenter. A core that was paused hears of it
+ * at its next frame. A core keeping a reference pose takes it again. */
+#define RETRO_VR_FRAME_RECENTERED     (1u << 0)
 #define RETRO_VR_FRAME_TARGET_RESIZED (1u << 1)  /* eye size changed: call SET_VIDEO_VIEWS again */
 
 /**

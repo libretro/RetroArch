@@ -3105,9 +3105,6 @@ static void video_driver_views_to_headset(struct retro_video_views *views)
 
    memset(&info, 0, sizeof(info));
    info.stereo_native   = true;
-   info.request_flat    =
-      (views->flags & RETRO_VIDEO_VIEWS_FLAG_REQUEST_FLAT) != 0;
-   info.ipd_hint_m      = views->ipd_hint_m;
    info.reference_space = views->reference_space;
 
    if (!video_driver_set_vr_content_info(&info))

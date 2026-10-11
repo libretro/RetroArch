@@ -120,8 +120,6 @@ RETRO_BEGIN_DECLS
 typedef struct video_vr_content_info
 {
    bool stereo_native;
-   bool request_flat;
-   float ipd_hint_m;
    enum retro_vr_reference_space reference_space;
    unsigned recommended_eye_width;
    unsigned recommended_eye_height;
