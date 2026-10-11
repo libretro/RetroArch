@@ -20,6 +20,8 @@ trap cleanup EXIT INT TERM
 
 start_mock()
 {
+   # Clear the previous ready marker before the background shell runs.
+   : > "$WORK/mock.log"
    python3 "$HERE/mock_mutter.py" > "$WORK/mock.log" 2>&1 &
    MOCK=$!
    PIDS="$PIDS $MOCK"
