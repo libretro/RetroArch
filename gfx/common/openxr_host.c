@@ -50,30 +50,40 @@ void openxr_host_stage_changed(openxr_host_t *h)
    retro_atomic_fetch_add_int(&h->stage_moves, 1);
 }
 
-static bool openxr_host_make_space(openxr_host_t *h,
-      enum retro_vr_reference_space *space)
+/* A recenter's remake: what the core drew in the old seated space keeps
+ * its poses in the new, so its world moves with the screens. Run in the
+ * swap's locked span: no headset frame shows the new space without it. */
+static void openxr_host_carry(void *user, int from, int to)
 {
-   XrPosef origin;
-   memset(&origin, 0, sizeof(origin));
-   origin.orientation.w = 1.0f;
-   if (*space == RETRO_VR_REFERENCE_SPACE_LOCAL)
-   {
-      video_xr_pose_t anchor;
-      openxr_frame_get_anchor(h->frame, &anchor);
-      origin.orientation.x = anchor.orientation.x;
-      origin.orientation.y = anchor.orientation.y;
-      origin.orientation.z = anchor.orientation.z;
-      origin.orientation.w = anchor.orientation.w;
-      origin.position.x    = anchor.position.x;
-      origin.position.y    = anchor.position.y;
-      origin.position.z    = anchor.position.z;
-   }
-   return openxr_session_set_track_space(h->session, space, &origin);
+   openxr_host_t *h = (openxr_host_t*)user;
+   if (h->given_seq == from)
+      h->given_seq = to;
+   openxr_frame_move_projection(h->frame, from, to);
 }
 
-/* The track space: a seated world at the anchor, so the screens and it
- * recenter together; a standing one where the room puts it. */
-static bool openxr_host_track_space(openxr_host_t *h)
+static bool openxr_host_make_space(openxr_host_t *h,
+      enum retro_vr_reference_space *space, bool carry)
+{
+   XrPosef origin;
+   video_xr_pose_t anchor;
+   /* For a STAGE ask too: a LOCAL fallback is at the anchor from the
+    * first frame shown in it. */
+   openxr_frame_get_anchor(h->frame, &anchor);
+   origin.orientation.x = anchor.orientation.x;
+   origin.orientation.y = anchor.orientation.y;
+   origin.orientation.z = anchor.orientation.z;
+   origin.orientation.w = anchor.orientation.w;
+   origin.position.x    = anchor.position.x;
+   origin.position.y    = anchor.position.y;
+   origin.position.z    = anchor.position.z;
+   return openxr_session_swap_track_space(h->session, space, &origin,
+         carry ? openxr_host_carry : NULL, h);
+}
+
+/* The track space: a seated world at the anchor, so a recenter moves it
+ * and the screens' Fixed and Lazy anchors together; a standing one where
+ * the room puts it. */
+static bool openxr_host_track_space(openxr_host_t *h, bool carry)
 {
    enum retro_vr_reference_space space = h->track_asked;
    int recenters;
@@ -84,19 +94,14 @@ static bool openxr_host_track_space(openxr_host_t *h)
    /* Counts from before the anchor is read: a later move is not lost. */
    recenters   = openxr_frame_recenters(h->frame);
    stage_moves = retro_atomic_load_acquire_int(&h->stage_moves);
-   if (!openxr_host_make_space(h, &space))
+   if (!openxr_host_make_space(h, &space, carry))
       return false;
    h->track_made = true;
    h->track_type = space;
+   /* Seated for the session. */
    if (     space == RETRO_VR_REFERENCE_SPACE_LOCAL
-         && h->track_asked == RETRO_VR_REFERENCE_SPACE_STAGE
-         && !h->stage_missing)
-   {
-      /* Seated for the session: made again at the anchor. */
+         && h->track_asked == RETRO_VR_REFERENCE_SPACE_STAGE)
       h->stage_missing = true;
-      if (!openxr_host_make_space(h, &space))
-         return false;
-   }
    h->track_recenters   = recenters;
    h->track_stage_moves = stage_moves;
    h->track_done        = true;
@@ -130,7 +135,7 @@ bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
                && h->track_type == RETRO_VR_REFERENCE_SPACE_LOCAL)
          {
             /* A failed remake is tried again at the next sample. */
-            if (openxr_host_track_space(h))
+            if (openxr_host_track_space(h, true))
                *frame_flags |= RETRO_VR_FRAME_RECENTERED;
          }
          else
@@ -141,7 +146,7 @@ bool openxr_host_sample(openxr_host_t *h, uint32_t *frame_flags)
          }
       }
    }
-   if (!h->session->track_space && !openxr_host_track_space(h))
+   if (!h->session->track_space && !openxr_host_track_space(h, false))
       return false;
    if (h->origin_changed)
    {
@@ -198,7 +203,7 @@ bool openxr_host_set_space(openxr_host_t *h,
    h->track_asked  = *space;
    h->kept_pending = false;
    /* A remade space orphans the views given in it. */
-   if (!same && !openxr_host_track_space(h))
+   if (!same && !openxr_host_track_space(h, false))
       return false;
    *space = h->track_type;
    return openxr_host_eye_size(h, width, height);
@@ -377,6 +382,13 @@ void openxr_host_place_kept(openxr_host_t *h)
    unsigned e;
    int located;
    XrPosef origin;
+   /* A paused core takes no sample, so its seated world follows a
+    * recenter here, and the core hears of it at its next sample. */
+   if (     h->session->track_space
+         && h->track_type == RETRO_VR_REFERENCE_SPACE_LOCAL
+         && openxr_frame_recenters(h->frame) != h->track_recenters
+         && openxr_host_track_space(h, true))
+      h->origin_changed = true;
    if (!h->kept_pending)
       return;
    /* A new session's first frames may have no time or location yet:

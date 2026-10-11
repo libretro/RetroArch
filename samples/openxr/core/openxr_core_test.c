@@ -292,6 +292,7 @@ static bool    t_head_tracked;   /* xrLocateSpace finds the head at t_head */
 static XrSpaceLocationFlags t_head_lost;
 static XrPosef t_head;
 static XrSpace t_head_space, t_head_base;
+static unsigned t_head_locates;
 static XRAPI_ATTR XrResult XRAPI_CALL t_locate_space(XrSpace a, XrSpace b,
       XrTime t, XrSpaceLocation *loc)
 {
@@ -307,6 +308,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_locate_space(XrSpace a, XrSpace b,
       }
       return XR_SUCCESS;
    }
+   t_head_locates++;
    if (!t_head_tracked)
       return XR_ERROR_RUNTIME_FAILURE;
    t_head_space       = a;
@@ -328,7 +330,19 @@ static void t_hook_exiting(void *u) { t_h_exiting++; t_exiting_seq = ++t_seq; }
 static void t_hook_local(void *u) { t_h_local++; }
 static void t_hook_stage(void *u) { t_h_stage++; }
 static void t_hook_lock(void *u) { t_locks++; }
-static void t_hook_unlock(void *u) { t_unlocks++; }
+/* Run at each unlock, as another thread that takes the lock next. */
+static void (*t_at_unlock)(void);
+static void t_hook_unlock(void *u)
+{
+   void (*at)(void) = t_at_unlock;
+   t_unlocks++;
+   if (at)
+   {
+      t_at_unlock = NULL;
+      at();
+      t_at_unlock = at;
+   }
+}
 
 /* the swapchain stand-in */
 static uint32_t t_sc_images = 3;
@@ -427,6 +441,9 @@ static XrResult t_images_cb(void *user, XrSwapchain sc, unsigned layer,
 
 /* the frame stand-in: a 72 Hz headset */
 static unsigned t_waits, t_begins, t_ends, t_frame_unlocked;
+/* A begin before the open frame's end discards it, as a runtime does. */
+static unsigned t_discarded;
+static bool t_frame_open;
 static uint32_t t_last_layer_count;
 static unsigned t_extra_cap;
 static XrResult t_wait_frame_res = XR_SUCCESS;
@@ -449,20 +466,34 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_begin_frame(XrSession s,
    t_begins++;
    if (t_locks - t_unlocks != 1)
       t_frame_unlocked++;
+   if (t_begin_frame_res == XR_SUCCESS)
+   {
+      if (t_frame_open)
+         t_discarded++;
+      t_frame_open = true;
+   }
    return t_begin_frame_res;
 }
 static XrCompositionLayerProjection     t_proj;
 static XrCompositionLayerProjectionView t_proj_views[2];
 static XrStructureType                  t_layer_types[4];
+static XrCompositionLayerQuad           t_quad;   /* the first quad */
 static XRAPI_ATTR XrResult XRAPI_CALL t_end_frame(XrSession s,
       const XrFrameEndInfo *ei)
 {
    uint32_t i;
    t_ends++;
+   t_frame_open       = false;
    t_last_layer_count = ei->layerCount;
    memset(t_layer_types, 0, sizeof(t_layer_types));
    for (i = 0; i < ei->layerCount && i < 4; i++)
       t_layer_types[i] = ei->layers[i]->type;
+   for (i = 0; i < ei->layerCount; i++)
+      if (ei->layers[i]->type == XR_TYPE_COMPOSITION_LAYER_QUAD)
+      {
+         t_quad = *(const XrCompositionLayerQuad*)ei->layers[i];
+         break;
+      }
    if (     ei->layerCount
          && ei->layers[0]->type == XR_TYPE_COMPOSITION_LAYER_PROJECTION)
    {
@@ -1373,7 +1404,8 @@ static void test_track_space(void)
    /* LOCAL at the origin given, swapped in under the lock. */
    t_locks = t_unlocks = 0;
    space   = RETRO_VR_REFERENCE_SPACE_LOCAL;
-   CHECK(openxr_session_set_track_space(&s, &space, &origin), "LOCAL");
+   CHECK(openxr_session_swap_track_space(&s, &space, &origin,
+            NULL, NULL), "LOCAL");
    CHECK(s.track_space && t_space_type == XR_REFERENCE_SPACE_TYPE_LOCAL
          && t_near(t_space_pose.position.z, -0.5f)
          && space == RETRO_VR_REFERENCE_SPACE_LOCAL,
@@ -1387,10 +1419,15 @@ static void test_track_space(void)
    /* STAGE replaces it; the old one goes under the lock. */
    t_spaces_destroyed = 0;
    space              = RETRO_VR_REFERENCE_SPACE_STAGE;
-   CHECK(openxr_session_set_track_space(&s, &space, &origin), "STAGE");
+   CHECK(openxr_session_swap_track_space(&s, &space, &origin,
+            NULL, NULL), "STAGE");
    CHECK(t_space_type == XR_REFERENCE_SPACE_TYPE_STAGE
          && space == RETRO_VR_REFERENCE_SPACE_STAGE && s.track_space != first,
          "STAGE not granted");
+   CHECK(     t_near(t_space_pose.position.z, 0.0f)
+         && t_near(t_space_pose.orientation.w, 1.0f),
+         "STAGE made away from the room's origin: z %.2f",
+         t_space_pose.position.z);
    CHECK(t_spaces_destroyed == 1 && t_space_destroyed_last == first
          && t_space_destroy_in_lock,
          "the old space: %u destroyed, in the lock %d", t_spaces_destroyed,
@@ -1401,9 +1438,13 @@ static void test_track_space(void)
    t_stage_missing = true;
    t_reset_log();
    space           = RETRO_VR_REFERENCE_SPACE_STAGE;
-   CHECK(openxr_session_set_track_space(&s, &space, &origin), "STAGE missing");
+   CHECK(openxr_session_swap_track_space(&s, &space, &origin,
+            NULL, NULL), "STAGE missing");
    CHECK(space == RETRO_VR_REFERENCE_SPACE_LOCAL
          && t_space_type == XR_REFERENCE_SPACE_TYPE_LOCAL, "no LOCAL fallback");
+   CHECK(t_near(t_space_pose.position.z, -0.5f),
+         "the LOCAL fallback not at the origin given: z %.2f",
+         t_space_pose.position.z);
    CHECK(LOGGED("[OpenXR] No STAGE space: tracked content is seated.\n"),
          "log: %s", t_log);
    t_stage_missing = false;
@@ -1415,7 +1456,8 @@ static void test_track_space(void)
    t_locks = t_unlocks = 0;
    t_reset_log();
    space              = RETRO_VR_REFERENCE_SPACE_STAGE;
-   CHECK(!openxr_session_set_track_space(&s, &space, &origin),
+   CHECK(!openxr_session_swap_track_space(&s, &space, &origin,
+            NULL, NULL),
          "made from nothing");
    CHECK(s.track_space == first
          && retro_atomic_load_acquire_int(&s.track_seq) == 3,
@@ -1541,7 +1583,7 @@ static void test_projection(void)
    t_frame_fresh(&rt, &s, &sc, &f);
    memset(&origin, 0, sizeof(origin));
    origin.orientation.w = 1.0f;
-   openxr_session_set_track_space(&s, &space, &origin);
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
    CHECK(openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
             VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n),
          "projection slot");
@@ -1610,7 +1652,7 @@ static void test_projection(void)
 
    /* A new track space leaves out what was drawn in the last, until
     * the eyes are drawn in it. */
-   openxr_session_set_track_space(&s, &space, &origin);
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
    openxr_frame_run(&f);
    CHECK(t_last_layer_count == 1
          && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_QUAD,
@@ -1751,7 +1793,10 @@ static void test_host(void)
          "sampled at %lld without a period", (long long)t_located_at);
 
    /* A recenter: the seated space is made again at the new anchor and
-    * the core is told, once; views from the old space are not shown. */
+    * the core is told, once; the views it was given, and the projection
+    * shown from them, go on there with their poses. */
+   openxr_host_projection(&h, 400, 240, &p);
+   openxr_frame_publish_projection(&f, &p);
    t_head.orientation.y = 0.70710678f;
    t_head.orientation.w = 0.70710678f;
    t_head.position.x    = 0.25f;
@@ -1765,8 +1810,15 @@ static void test_host(void)
          && t_near(t_space_pose.orientation.y, anchor.orientation.y),
          "the seated space was not made at the anchor");
    openxr_host_projection(&h, 400, 240, &p);
-   CHECK(p.track_seq != retro_atomic_load_acquire_int(&s.track_seq),
-         "views from the old space are tagged with the new one");
+   CHECK(     openxr_host_has_given(&h)
+         && p.track_seq == retro_atomic_load_acquire_int(&s.track_seq)
+         && t_near(p.pose[0].position.x, -0.032f),
+         "the views the core was given did not go on in the new space");
+   openxr_seq_read(&f.proj_seq, f.proj_words, &p, sizeof(p));
+   CHECK(     p.active
+         && p.track_seq == retro_atomic_load_acquire_int(&s.track_seq)
+         && t_near(p.pose[0].position.x, -0.032f),
+         "the projection shown did not go on in the new space");
    flags = 0;
    openxr_host_sample(&h, &flags);
    CHECK(!(flags & RETRO_VR_FRAME_RECENTERED), "a recenter told twice");
@@ -1906,30 +1958,6 @@ static void test_host_remake(void)
    CHECK(t_stage_asked == 1, "STAGE asked %u times, want once", t_stage_asked);
    t_frame_free(&rt, &s, &f);
 
-   /* A seated fallback whose make at the anchor failed is made again for
-    * the same ask, not kept at identity. */
-   t_host_up(&rt, &s, &sc, &f, &h);
-   openxr_frame_run(&f);
-   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
-   openxr_host_set_space(&h, &space, &w, &ht);
-   t_host_recenter_at(&f, 0.25f);
-   openxr_frame_get_anchor(&f, &anchor);
-   t_space_fail_at = t_spaces_made + 2;
-   space           = RETRO_VR_REFERENCE_SPACE_STAGE;
-   CHECK(!openxr_host_set_space(&h, &space, &w, &ht),
-         "a seated fallback not made at the anchor was granted");
-   t_space_fail_at = 0;
-   made            = t_spaces_made;
-   space           = RETRO_VR_REFERENCE_SPACE_STAGE;
-   CHECK(     openxr_host_set_space(&h, &space, &w, &ht)
-         && space == RETRO_VR_REFERENCE_SPACE_LOCAL
-         && t_spaces_made == made + 1
-         && t_near(t_space_pose.position.x, anchor.position.x)
-         && t_near(t_space_pose.orientation.y, anchor.orientation.y),
-         "a half-made seated fallback was kept: %u made, x %.2f",
-         t_spaces_made - made, t_space_pose.position.x);
-   t_frame_free(&rt, &s, &f);
-
    /* A remake that fails is tried again, and its recenter is told once,
     * when it succeeds. */
    t_stage_missing = false;
@@ -1987,6 +2015,228 @@ static void test_host_remake(void)
    openxr_host_sample(&h, &flags);
    CHECK(!(flags & RETRO_VR_FRAME_RECENTERED), "a recenter told twice");
 
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
+/* A paused core takes no sample: a frame it did not draw remakes its
+ * seated space at a recenter, where the views it was given and the
+ * projection shown from them go on, and its next sample tells it once.
+ * A standing space stays. */
+static void test_host_recenter_paused(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   openxr_projection_t p;
+   openxr_projection_t shown;
+   struct retro_vr_eye_state eyes[2];
+   video_xr_pose_t anchor;
+   enum retro_vr_reference_space space;
+   unsigned w     = 0;
+   unsigned ht    = 0;
+   unsigned n     = 0;
+   unsigned made  = 0;
+   uint32_t flags = 0;
+   int cb_user    = 0;
+   int seq;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   CHECK(openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+            VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n),
+         "projection slot");
+   retro_atomic_store_release_int(
+         &sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   openxr_frame_run(&f);
+   made = t_spaces_made;
+   t_host_recenter_at(&f, 0.25f);
+   openxr_host_place_kept(&h);
+   CHECK(!s.track_space && t_spaces_made == made,
+         "a recenter made a space no content asked for");
+   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   t_view[0].pose.position.x = -0.25f;
+   openxr_host_sample(&h, &flags);
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_projection(&h, 400, 240, &p);
+   openxr_frame_publish_projection(&f, &p);
+   made = t_spaces_made;
+   seq  = retro_atomic_load_acquire_int(&s.track_seq);
+   openxr_host_place_kept(&h);
+   CHECK(     t_spaces_made == made
+         && retro_atomic_load_acquire_int(&s.track_seq) == seq,
+         "a frame the core did not draw remade a space nothing moved");
+
+   t_host_recenter_at(&f, 0.5f);
+   openxr_frame_get_anchor(&f, &anchor);
+   t_view[0].pose.position.x = 0.75f;
+   openxr_host_place_kept(&h);
+   seq = retro_atomic_load_acquire_int(&s.track_seq);
+   CHECK(     t_spaces_made == made + 1
+         && t_near(t_space_pose.position.x, anchor.position.x)
+         && t_near(t_space_pose.orientation.y, anchor.orientation.y),
+         "the seated space did not follow a recenter while paused");
+   openxr_host_projection(&h, 400, 240, &p);
+   openxr_seq_read(&f.proj_seq, f.proj_words, &shown, sizeof(shown));
+   CHECK(     openxr_host_has_given(&h) && p.track_seq == seq
+         && t_near(p.pose[0].position.x, -0.25f)
+         && shown.track_seq == seq && t_near(shown.pose[0].position.x, -0.25f),
+         "the paused frame's views did not go on in the new space");
+   memset(&t_proj, 0, sizeof(t_proj));
+   openxr_frame_run(&f);
+   CHECK(     t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj.space == s.track_space
+         && t_near(t_proj_views[0].pose.position.x, -0.25f),
+         "the paused frame is not shown in the new space");
+   made = t_spaces_made;
+   openxr_host_place_kept(&h);
+   CHECK(t_spaces_made == made, "a recenter followed twice");
+   flags = 0;
+   CHECK(     openxr_host_sample(&h, &flags)
+         && (flags & RETRO_VR_FRAME_RECENTERED) && t_spaces_made == made,
+         "the next sample: flags %u, %u made", (unsigned)flags,
+         t_spaces_made - made);
+   flags = 0;
+   openxr_host_sample(&h, &flags);
+   CHECK(!(flags & RETRO_VR_FRAME_RECENTERED), "a recenter told twice");
+
+   /* A remake that fails moves nothing and tells nothing; the sample
+    * tries again. */
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_projection(&h, 400, 240, &p);
+   openxr_frame_publish_projection(&f, &p);
+   seq = retro_atomic_load_acquire_int(&s.track_seq);
+   t_host_recenter_at(&f, 0.25f);
+   t_space_fail_at = t_spaces_made + 1;
+   openxr_host_place_kept(&h);
+   openxr_seq_read(&f.proj_seq, f.proj_words, &shown, sizeof(shown));
+   CHECK(     retro_atomic_load_acquire_int(&s.track_seq) == seq
+         && openxr_host_has_given(&h) && shown.track_seq == seq,
+         "a failed remake moved the paused frame");
+   flags = 0;
+   openxr_host_sample(&h, &flags);
+   CHECK(!(flags & RETRO_VR_FRAME_RECENTERED),
+         "a recenter told for a remake that failed");
+   t_space_fail_at = 0;
+   flags           = 0;
+   CHECK(     openxr_host_sample(&h, &flags)
+         && (flags & RETRO_VR_FRAME_RECENTERED)
+         && retro_atomic_load_acquire_int(&s.track_seq) != seq,
+         "a failed remake was not retried: flags %u", (unsigned)flags);
+
+   /* Views and a projection from a space replaced since stay there. */
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_projection(&h, 400, 240, &p);
+   openxr_frame_publish_projection(&f, &p);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   t_host_recenter_at(&f, 0.5f);
+   openxr_host_place_kept(&h);
+   openxr_seq_read(&f.proj_seq, f.proj_words, &shown, sizeof(shown));
+   CHECK(     !openxr_host_has_given(&h)
+         && shown.track_seq == p.track_seq
+         && shown.track_seq != retro_atomic_load_acquire_int(&s.track_seq),
+         "views from a replaced space went on in a recentered one");
+
+   /* Standing: the room stays, and the sample tells the recenter. */
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_host_sample(&h, &flags);
+   openxr_host_eye_state(&h, eyes);
+   made = t_spaces_made;
+   seq  = retro_atomic_load_acquire_int(&s.track_seq);
+   t_host_recenter_at(&f, 0.25f);
+   openxr_host_place_kept(&h);
+   CHECK(     t_spaces_made == made
+         && retro_atomic_load_acquire_int(&s.track_seq) == seq
+         && openxr_host_has_given(&h),
+         "a recenter moved a standing space while paused");
+   flags = 0;
+   CHECK(     openxr_host_sample(&h, &flags)
+         && (flags & RETRO_VR_FRAME_RECENTERED) && t_spaces_made == made,
+         "a standing core's recenter: flags %u, %u made", (unsigned)flags,
+         t_spaces_made - made);
+
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
+/* The XR thread's frame as it takes the lock the moment it is let go:
+ * how many ran, and how many left the projection out. */
+static openxr_frame_t *t_xr;
+static unsigned t_xr_frames, t_xr_no_proj;
+static void t_xr_frame(void)
+{
+   unsigned ends = t_ends;
+   openxr_frame_run(t_xr);
+   t_xr_frames++;
+   if (     t_ends == ends
+         || t_layer_types[0] != XR_TYPE_COMPOSITION_LAYER_PROJECTION)
+      t_xr_no_proj++;
+}
+
+/* A headset frame between a recenter's swap and its carry would show
+ * the new space without the projection: none gets in, running or
+ * paused. */
+static void test_host_recenter_locked(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   openxr_projection_t p;
+   struct retro_vr_eye_state eyes[2];
+   enum retro_vr_reference_space space;
+   unsigned w     = 0;
+   unsigned ht    = 0;
+   unsigned n     = 0;
+   unsigned pass;
+   uint32_t flags = 0;
+   int cb_user    = 0;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   CHECK(openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+            VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n),
+         "projection slot");
+   retro_atomic_store_release_int(
+         &sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   for (pass = 0; pass < 2; pass++)
+   {
+      int seq;
+      openxr_host_sample(&h, &flags);
+      openxr_host_eye_state(&h, eyes);
+      openxr_host_projection(&h, 400, 240, &p);
+      openxr_frame_publish_projection(&f, &p);
+      t_host_recenter_at(&f, pass ? 0.5f : 0.25f);
+      seq          = retro_atomic_load_acquire_int(&s.track_seq);
+      t_xr         = &f;
+      t_xr_frames  = 0;
+      t_xr_no_proj = 0;
+      t_at_unlock  = t_xr_frame;
+      if (pass)
+         openxr_host_place_kept(&h);
+      else
+         openxr_host_sample(&h, &flags);
+      t_at_unlock  = NULL;
+      CHECK(retro_atomic_load_acquire_int(&s.track_seq) != seq,
+            "%s: no remake", pass ? "paused" : "running");
+      CHECK(t_xr_frames && !t_xr_no_proj,
+            "%s: %u of %u headset frames at the remake left the projection out",
+            pass ? "paused" : "running", t_xr_no_proj, t_xr_frames);
+   }
+
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
    t_views_tracked = false;
    t_head_tracked  = false;
    t_frame_free(&rt, &s, &f);
@@ -2588,7 +2838,7 @@ static void test_frame_inline(void)
    CHECK(t_ends == ends, "ended a frame that was not begun");
 
    /* The begin polls: READY begins the session, then its first frame,
-    * with the lock around xrBeginFrame alone, and no tick or rate. */
+    * with the lock around xrBeginFrame alone, and no tick. */
    rt.refresh_ext = true;
    openxr_frame_request_rate(&f, 90.0f);
    openxr_frame_set_pacing(&f, 1);
@@ -2601,8 +2851,10 @@ static void test_frame_inline(void)
    CHECK(t_locks == 2 && t_unlocks == 2 && !t_frame_unlocked,
          "locks %u/%u, %u frame calls outside them", t_locks, t_unlocks,
          t_frame_unlocked);
-   CHECK(retro_atomic_load_acquire_int(&f.tick_seq) == ticks
-         && !t_rate_requests, "an in-line frame ticked or asked a rate");
+   CHECK(retro_atomic_load_acquire_int(&f.tick_seq) == ticks,
+         "an in-line frame ticked");
+   CHECK(t_rate_requests == 1, "an in-line frame asked %u rates, want 1",
+         t_rate_requests);
    CHECK(b.period == 13888889 && openxr_frame_predicted_time(&f) == b.display_time,
          "period %lld, published time", (long long)b.period);
    CHECK(!b.render, "drawn while not visible");
@@ -2633,6 +2885,8 @@ static void test_frame_inline(void)
    CHECK(retro_atomic_load_acquire_int(&f.period_ns) == 13888889,
          "period %d after %u in-line frames",
          retro_atomic_load_acquire_int(&f.period_ns), (unsigned)VIDEO_XR_PERIODS);
+   CHECK(t_rate_requests == 1, "the in-line frames asked %u rates, want 1",
+         t_rate_requests);
    t_head_tracked       = true;
    memset(&t_head, 0, sizeof(t_head));
    t_head.orientation.w = 1.0f;
@@ -2792,7 +3046,7 @@ static void test_frame_inline(void)
    t_frame_fresh(&rt, &s, &sc, &f);
    memset(&origin, 0, sizeof(origin));
    origin.orientation.w = 1.0f;
-   openxr_session_set_track_space(&s, &space, &origin);
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
    openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
          VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n);
    openxr_slot_create(&sc, 1, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
@@ -2974,7 +3228,7 @@ static void test_vulkan_inline(void)
    enum retro_vr_reference_space space;
    openxr_projection_t p;
    vulkan_openxr_t *xr;
-   unsigned waits, begins, ends, instances, i;
+   unsigned waits, begins, ends, instances, i, discarded;
    unsigned sc_made, sc_destroyed;
    int kept;
    VkInstance vk_inst   = (VkInstance)(uintptr_t)0x50;
@@ -3051,12 +3305,26 @@ static void test_vulkan_inline(void)
             && t_ends == ends,
             "frame %u's begin: %u waits, %u begins, %u ends", i,
             t_waits - waits, t_begins - begins, t_ends - ends);
-      vulkan_openxr_end_frame(xr);
+      vulkan_openxr_end_frame(xr, 1);
       CHECK(     t_waits == waits + 1 && t_begins == begins + 1
             && t_ends == ends + 1,
             "frame %u's end: %u waits, %u begins, %u ends", i,
             t_waits - waits, t_begins - begins, t_ends - ends);
    }
+   /* An interval of 3 shows the core frame for two more headset
+    * frames, after its own. */
+   waits        = t_waits;
+   begins       = t_begins;
+   ends         = t_ends;
+   discarded    = t_discarded;
+   t_frame_open = false;
+   vulkan_openxr_begin_frame(xr);
+   vulkan_openxr_end_frame(xr, 3);
+   CHECK(     t_waits == waits + 3 && t_begins == begins + 3
+         && t_ends == ends + 3 && t_discarded == discarded,
+         "an interval of 3: %u waits, %u begins, %u ends, %u discarded",
+         t_waits - waits, t_begins - begins, t_ends - ends,
+         t_discarded - discarded);
    CHECK(t_begun == 1 && t_xr_host.state(t_xr_host.user) == shown,
          "%u sessions begun, state %x", t_begun,
          t_xr_host.state(t_xr_host.user));
@@ -3079,7 +3347,7 @@ static void test_vulkan_inline(void)
    for (i = 0; i < 3; i++)
    {
       vulkan_openxr_begin_frame(xr);
-      vulkan_openxr_end_frame(xr);
+      vulkan_openxr_end_frame(xr, 0);
    }
    CHECK(     t_ended_sessions == 1 && t_p_ended == 1 && !t_exit_requests
          && !t_xr_host.state(t_xr_host.user),
@@ -3104,7 +3372,7 @@ static void test_vulkan_inline(void)
          t_in_destroyed_at);
    t_push_shown();
    vulkan_openxr_begin_frame(xr);
-   vulkan_openxr_end_frame(xr);
+   vulkan_openxr_end_frame(xr, 0);
    CHECK(     t_begun == 2 && t_waits == waits + 1 && t_begins == begins + 1
          && t_ends == ends + 1,
          "the restarted session's frame: %u waits, %u begins, %u ends",
@@ -3139,7 +3407,7 @@ static void test_vulkan_inline(void)
       goto done;
    t_push_shown();
    vulkan_openxr_begin_frame(xr);
-   vulkan_openxr_end_frame(xr);
+   vulkan_openxr_end_frame(xr, 0);
    space = RETRO_VR_REFERENCE_SPACE_STAGE;
    t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
    t_view[0].pose.position.x = -0.25f;
@@ -3163,7 +3431,7 @@ static void test_vulkan_inline(void)
       goto done;
    t_push_shown();
    vulkan_openxr_begin_frame(xr);
-   vulkan_openxr_end_frame(xr);
+   vulkan_openxr_end_frame(xr, 0);
    space = RETRO_VR_REFERENCE_SPACE_STAGE;
    t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
    t_view[0].pose.position.x = 0.5f;
@@ -3197,7 +3465,7 @@ static void test_vulkan_inline(void)
    {
       t_push_shown();
       vulkan_openxr_begin_frame(xr);
-      vulkan_openxr_end_frame(xr);
+      vulkan_openxr_end_frame(xr, 0);
       space = RETRO_VR_REFERENCE_SPACE_STAGE;
       t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
       t_xr_host.sample(t_xr_host.user, &flags);
@@ -3428,6 +3696,651 @@ static void test_swapchain_filled(void)
    openxr_runtime_deinit(&rt);
 }
 
+static void test_screen_placement(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   video_xr_quad_set_t set, shown;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   XrSpace space = XR_NULL_HANDLE;
+   unsigned n    = 0;
+   unsigned i;
+   int seq;
+   int cb_user   = 0;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   openxr_slot_create(&sc, 0, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc.slots[0].content, 1);
+   /* Screen 0 as a driver places it: from an identity anchor. */
+   memset(&set, 0, sizeof(set));
+   set.num_quads = 1;
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.z = -1.8f;
+   set.quads[0].width           = 1.6f;
+   set.quads[0].height          = 0.9f;
+   openxr_frame_publish(&f, &set);
+   openxr_session_set_alive(&s, true);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+
+   /* Before any frame: where the driver put them, in LOCAL. */
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(space == s.local_space
+         && t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.0f, 0.0f, -1.8f),
+         "before a frame: at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+
+   /* Fixed in Room: at the anchor a recenter moved. */
+   t_head_tracked       = true;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   t_head.position.x    = 0.5f;
+   t_head.position.y    = 0.2f;
+   t_head.position.z    = 0.3f;
+   openxr_frame_request_recenter(&f);
+   openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(space == s.local_space
+         && t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.3f, 0.2f, 0.3f),
+         "Fixed: at %.2f,%.2f,%.2f", shown.quads[0].pose.position.x,
+         shown.quads[0].pose.position.y, shown.quads[0].pose.position.z);
+   CHECK(openxr_frame_layers(&f, layers, ptrs) == 1
+         && layers[0].space == s.local_space
+         && t_near(layers[0].pose.position.x, -1.3f)
+         && t_near(layers[0].pose.position.z, 0.3f)
+         && t_near(layers[0].pose.orientation.y, 0.70710678f),
+         "Fixed: the layer at %.2f,%.2f", layers[0].pose.position.x,
+         layers[0].pose.position.z);
+   openxr_frame_get_quads(&f, &shown);
+   CHECK(!memcmp(&shown, &set, sizeof(set)),
+         "the driver's quads were changed");
+
+   /* Follow Head: in VIEW, where the driver put them; published once in
+    * the frame. */
+   seq = retro_atomic_load_acquire_int(&f.tracked_seq);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FOLLOW);
+   openxr_frame_run(&f);
+   CHECK(retro_atomic_load_acquire_int(&f.tracked_seq) == seq + 2,
+         "%d tracked publishes in a frame",
+         (retro_atomic_load_acquire_int(&f.tracked_seq) - seq) / 2);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(space == s.view_space
+         && t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.0f, 0.0f, -1.8f),
+         "Follow: at %.2f,%.2f,%.2f in %s", shown.quads[0].pose.position.x,
+         shown.quads[0].pose.position.y, shown.quads[0].pose.position.z,
+         space == s.view_space ? "VIEW" : "another space");
+   CHECK(openxr_frame_layers(&f, layers, ptrs) == 1
+         && layers[0].space == s.view_space
+         && t_near(layers[0].pose.position.z, -1.8f),
+         "Follow: the layer is not in VIEW in front of the eyes");
+
+   /* Lazy Follow starts at the anchor; a 20 degree turn leaves it. */
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_LAZY);
+   t_head.orientation.y = 0.81915204f;   /* 110 degrees */
+   t_head.orientation.w = 0.57357644f;
+   for (i = 0; i < 10; i++)
+      openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(space == s.local_space
+         && t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.3f, 0.2f, 0.3f),
+         "Lazy: a 20 degree turn moved them to %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   /* Back to 0 degrees, 90 from them: they glide there, not jump. */
+   t_head.orientation.y = 0.0f;
+   t_head.orientation.w = 1.0f;
+   openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(   !t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+               -1.3f, 0.2f, 0.3f)
+         && !t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.5f, 0.2f, -1.5f),
+         "Lazy: no glide, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   for (i = 0; i < 400; i++)
+      openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.5f, 0.2f, -1.5f),
+         "Lazy: they ended at %.2f,%.2f,%.2f, want 0.50,0.20,-1.50",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   /* A recenter snaps them to its anchor. */
+   memset(&t_head.position, 0, sizeof(t_head.position));
+   t_head.orientation.y = 0.70710678f;
+   t_head.orientation.w = 0.70710678f;
+   openxr_frame_request_recenter(&f);
+   openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.8f, 0.0f, 0.0f),
+         "Lazy: the recenter left them at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   /* So does the runtime's; a head it cannot find moves nothing. */
+   openxr_frame_local_changed(&f);
+   t_head_tracked = false;
+   for (i = 0; i < 10; i++)
+      openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &space);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.0f, 0.0f, -1.8f),
+         "Lazy: after the runtime's recenter at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+
+   openxr_slot_destroy(&sc, 0);
+   t_frame_free(&rt, &s, &f);
+}
+
+/* The XR thread's frame at an unlock, and how many showed the screens
+ * away from t_xr_want. */
+static video_xr_pose_t t_xr_want;
+static unsigned t_xr_off;
+static void t_xr_frame_screens(void)
+{
+   t_xr_frame();
+   if (!t_pose_is(&t_xr->screens.pose, t_xr_want.orientation.y,
+            t_xr_want.orientation.w, t_xr_want.position.x,
+            t_xr_want.position.y, t_xr_want.position.z))
+      t_xr_off++;
+}
+
+/* A recenter moves the screens in the frame it moves a seated world:
+ * they stay at the anchor its space was made at until the space is made
+ * again, in Fixed in Room and Lazy Follow alike. A standing world stays,
+ * so they take the new anchor at once. Only Lazy Follow locates the
+ * head. */
+static void test_screen_placement_seated(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   video_xr_quad_set_t set, shown;
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS];
+   enum retro_vr_reference_space space;
+   XrSpace in       = XR_NULL_HANDLE;
+   unsigned w       = 0;
+   unsigned ht      = 0;
+   unsigned n       = 0;
+   unsigned i;
+   unsigned locates;
+   int cb_user      = 0;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   openxr_slot_create(&sc, 0, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc.slots[0].content, 1);
+   memset(&set, 0, sizeof(set));
+   set.num_quads = 1;
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.z = -1.8f;
+   set.quads[0].width           = 1.6f;
+   set.quads[0].height          = 0.9f;
+   openxr_frame_publish(&f, &set);
+   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_frame_run(&f);
+
+   /* Fixed in Room: the recenter's own frame leaves them with the
+    * world, and the frame the space is made again in moves both. */
+   t_host_recenter_at(&f, 0.5f);
+   openxr_frame_get_shown_quads(&f, &shown, &in);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.0f, 1.0f, 0.0f, 0.0f, -1.8f),
+         "Fixed: before the seated world, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   CHECK(     openxr_frame_layers(&f, layers, ptrs) == 1
+         && t_near(layers[0].pose.position.x, 0.0f)
+         && t_near(layers[0].pose.position.z, -1.8f),
+         "Fixed: the layer before the seated world, at %.2f,%.2f",
+         layers[0].pose.position.x, layers[0].pose.position.z);
+   openxr_host_place_kept(&h);
+   openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &in);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.3f, 0.0f, 0.0f),
+         "Fixed: not with the seated world, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+
+   /* Lazy Follow: held, however far the head goes, until the world
+    * moves; then at the recenter's anchor. */
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_LAZY);
+   openxr_frame_run(&f);
+   t_host_recenter_at(&f, 0.25f);
+   t_head.position.x = 3.0f;
+   for (i = 0; i < 5; i++)
+      openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &in);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.3f, 0.0f, 0.0f),
+         "Lazy: before the seated world, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+   openxr_host_place_kept(&h);
+   openxr_frame_run(&f);
+   openxr_frame_get_shown_quads(&f, &shown, &in);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.55f, 0.0f, 0.0f),
+         "Lazy: not with the seated world, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+
+   locates = t_head_locates;
+   openxr_frame_run(&f);
+   CHECK(t_head_locates == locates + 1, "Lazy: %u head locates in a frame",
+         t_head_locates - locates);
+   locates = t_head_locates;
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FIXED);
+   openxr_frame_run(&f);
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FOLLOW);
+   openxr_frame_run(&f);
+   CHECK(t_head_locates == locates,
+         "%u head locates in a Fixed and a Follow frame",
+         t_head_locates - locates);
+
+   /* Standing: at the recenter's anchor in its own frame. */
+   openxr_frame_set_placement(&f, VIDEO_OPENXR_PLACEMENT_FIXED);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_frame_run(&f);
+   t_host_recenter_at(&f, 0.5f);
+   openxr_frame_get_shown_quads(&f, &shown, &in);
+   CHECK(t_pose_is(&shown.quads[0].pose, 0.70710678f, 0.70710678f,
+            -1.3f, 0.0f, 0.0f),
+         "standing: not at the recenter's anchor, at %.2f,%.2f,%.2f",
+         shown.quads[0].pose.position.x, shown.quads[0].pose.position.y,
+         shown.quads[0].pose.position.z);
+
+   /* No STAGE: a headset frame in the seated fallback already has the
+    * screens at the anchor. */
+   space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_frame_get_anchor(&f, &t_xr_want);
+   t_stage_missing = true;
+   t_xr            = &f;
+   t_xr_frames     = 0;
+   t_xr_off        = 0;
+   t_at_unlock     = t_xr_frame_screens;
+   space           = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   t_at_unlock     = NULL;
+   t_stage_missing = false;
+   CHECK(space == RETRO_VR_REFERENCE_SPACE_LOCAL && t_xr_frames && !t_xr_off,
+         "no STAGE: %u of %u headset frames at the fallback's makes showed "
+         "the screens away from the anchor", t_xr_off, t_xr_frames);
+
+   openxr_slot_destroy(&sc, 0);
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
+/* An in-line host's video frame, in vulkan.c's and gl2's order: a
+ * running core's sample, the begin, the driver's Recenter request, then
+ * the new frame's projection or, paused, place_kept, and the end. */
+static void t_inline_frame(openxr_frame_t *f, openxr_host_t *h,
+      bool running, bool recenter)
+{
+   openxr_frame_begun_t b;
+   openxr_projection_t p;
+   struct retro_vr_eye_state eyes[2];
+   uint32_t flags = 0;
+   if (running)
+   {
+      openxr_host_sample(h, &flags);
+      openxr_host_eye_state(h, eyes);
+   }
+   openxr_frame_begin(f, &b);
+   if (recenter)
+      openxr_frame_request_recenter(f);
+   if (running)
+   {
+      openxr_host_new_frame(h);
+      openxr_host_projection(h, 400, 240, &p);
+      openxr_frame_publish_projection(f, &p);
+   }
+   else
+      openxr_host_place_kept(h);
+   openxr_frame_end(f, &b);
+}
+
+/* In-line hosts remake a seated space at the next frame's sample while
+ * the core runs, and at place_kept, after the begin, while it is paused.
+ * Either way the first frame whose screens move at a recenter is the
+ * first whose world moves, in Fixed in Room and Lazy Follow. */
+static void test_screen_placement_inline(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   openxr_frame_begun_t b;
+   video_xr_quad_set_t set;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   unsigned w       = 0;
+   unsigned ht      = 0;
+   unsigned n       = 0;
+   unsigned pass, i;
+   int cb_user      = 0;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   openxr_frame_start_inline(&f);
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+   openxr_slot_create(&sc, 0, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc.slots[0].content, 1);
+   openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+         VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(
+         &sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   memset(&set, 0, sizeof(set));
+   set.num_quads = 1;
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.z = -1.8f;
+   set.quads[0].width           = 1.6f;
+   set.quads[0].height          = 0.9f;
+   openxr_frame_publish(&f, &set);
+   openxr_host_set_space(&h, &space, &w, &ht);
+
+   /* The head a quarter metre aside each time, unturned: no glide. */
+   for (pass = 0; pass < 4; pass++)
+   {
+      XrSpace world;
+      float x;
+      bool running   = !(pass & 1);
+      int screens_at = -1;
+      int world_at   = -1;
+      openxr_frame_set_placement(&f, (pass < 2)
+            ? VIDEO_OPENXR_PLACEMENT_FIXED : VIDEO_OPENXR_PLACEMENT_LAZY);
+      t_inline_frame(&f, &h, true, false);
+      t_inline_frame(&f, &h, running, false);
+      CHECK(t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+            "pass %u: no projection before the recenter", pass);
+      world             = t_proj.space;
+      x                 = t_quad.pose.position.x;
+      t_head.position.x = 0.25f * (float)(pass + 1);
+      for (i = 0; i < 4; i++)
+      {
+         t_inline_frame(&f, &h, running, i == 0);
+         if (screens_at < 0 && !t_near(t_quad.pose.position.x, x))
+            screens_at = (int)i;
+         if (     world_at < 0 && t_proj.space != world
+               && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION)
+            world_at = (int)i;
+      }
+      CHECK(screens_at >= 0 && screens_at == world_at,
+            "%s %s: the screens moved in frame %d, the world in frame %d",
+            (pass < 2) ? "Fixed" : "Lazy", running ? "running" : "paused",
+            screens_at, world_at);
+      CHECK(t_near(t_quad.pose.position.x, t_head.position.x),
+            "pass %u: the screens at %.2f, want %.2f", pass,
+            t_quad.pose.position.x, t_head.position.x);
+   }
+
+   openxr_slot_destroy(&sc, 0);
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
+static void test_frame_repeat(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_frame_begun_t b;
+   video_xr_quad_set_t set;
+   retro_time_t t0;
+   openxr_projection_t proj;
+   XrPosef origin;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   unsigned waits, ends, recenters;
+   unsigned n  = 0;
+   int cb_user = 0;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   openxr_frame_start_inline(&f);
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+   openxr_slot_create(&sc, 1, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc.slots[1].content, 1);
+   memset(&set, 0, sizeof(set));
+   set.num_quads     = 1;
+   set.quads[0].slot = 1;
+   video_xr_pose_identity(&set.quads[0].pose);
+   openxr_frame_publish(&f, &set);
+
+   /* A core frame, then two more headset frames showing it. */
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   waits = t_waits;
+   ends  = t_ends;
+   openxr_frame_repeat(&f, 2);
+   CHECK(t_waits == waits + 2 && t_ends == ends + 2
+         && t_last_layer_count == 1,
+         "repeats: %u waits, %u ends, %u layers", t_waits - waits,
+         t_ends - ends, t_last_layer_count);
+   waits = t_waits;
+   openxr_frame_repeat(&f, 0);
+   CHECK(t_waits == waits, "a repeat with none asked");
+
+   /* A repeat shows the projection too, until the track space moves. */
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+         VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(
+         &sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   memset(&proj, 0, sizeof(proj));
+   proj.active                = true;
+   proj.width                 = 1600;
+   proj.height                = 1800;
+   proj.pose[0].orientation.w = 1.0f;
+   proj.pose[0].position.x    = -0.032f;
+   proj.pose[1].orientation.w = 1.0f;
+   proj.pose[1].position.x    = 0.032f;
+   proj.track_seq             = retro_atomic_load_acquire_int(&s.track_seq);
+   openxr_frame_publish_projection(&f, &proj);
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   memset(t_proj_views, 0, sizeof(t_proj_views));
+   openxr_frame_repeat(&f, 1);
+   CHECK(t_last_layer_count == 2
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_near(t_proj_views[0].pose.position.x, -0.032f),
+         "a repeat without the projection: %u layers, the first %d",
+         t_last_layer_count, (int)t_layer_types[0]);
+   openxr_session_swap_track_space(&s, &space, &origin, NULL, NULL);
+   openxr_frame_repeat(&f, 1);
+   CHECK(t_last_layer_count == 1
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_QUAD,
+         "a repeat showed a projection from the replaced space");
+   openxr_frame_clear_projection(&f);
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
+
+   /* A recenter asked for in a core frame waits for the next one. */
+   t_head_tracked       = true;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.w = 1.0f;
+   t_head.position.x    = 0.25f;
+   openxr_frame_begin(&f, &b);
+   recenters = openxr_frame_recenters(&f);
+   openxr_frame_request_recenter(&f);
+   openxr_frame_end(&f, &b);
+   openxr_frame_repeat(&f, 1);
+   CHECK(openxr_frame_recenters(&f) == recenters
+         && retro_atomic_load_acquire_int(&f.recenter),
+         "a repeat took the recenter");
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   CHECK(openxr_frame_recenters(&f) == recenters + 1
+         && !retro_atomic_load_acquire_int(&f.recenter),
+         "the next core frame did not take the recenter");
+   t_head_tracked = false;
+
+   /* The session down: each repeat is a period on the clock, after the
+    * one that restarts its stale schedule. */
+   retro_atomic_store_release_int(&s.running, 0);
+   retro_atomic_store_release_int(&f.period_ns, 5000000);
+   waits = t_waits;
+   openxr_frame_repeat(&f, 1);
+   t0    = (retro_time_t)(f.pace_anchor_ns / 1000);
+   openxr_frame_repeat(&f, 2);
+   CHECK(t_waits == waits
+         && cpu_features_get_time_usec() - t0 >= 9000,
+         "repeats with the session down: %u waits, %lld us",
+         t_waits - waits, (long long)(cpu_features_get_time_usec() - t0));
+
+   openxr_frame_stop_inline(&f);
+   openxr_slot_destroy(&sc, 1);
+   t_frame_free(&rt, &s, &f);
+}
+
+/* At an interval of 2 each core frame's repeat is submitted too. From a
+ * recenter asked for in a core frame, no submit moves the screens
+ * without the seated world or the world without them, running or
+ * paused, and a Lazy glide holds from the recenter until the world
+ * moves, then snaps. */
+static void test_screen_placement_repeat(void)
+{
+   static const char *const names[6] = {
+      "Fixed running", "Fixed paused", "Lazy running", "Lazy paused",
+      "Lazy gliding running", "Lazy gliding paused" };
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   openxr_frame_begun_t b;
+   video_xr_quad_set_t set;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   unsigned w       = 0;
+   unsigned ht      = 0;
+   unsigned n       = 0;
+   unsigned pass, i, k;
+   int cb_user      = 0;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   openxr_frame_start_inline(&f);
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   openxr_frame_begin(&f, &b);
+   openxr_frame_end(&f, &b);
+   retro_atomic_store_release_int(&s.state, XR_SESSION_STATE_FOCUSED);
+   openxr_slot_create(&sc, 0, 44, false, VIDEO_SCALE_PACK(64, 64), 1,
+         t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(&sc.slots[0].content, 1);
+   openxr_slot_create(&sc, OPENXR_PROJECTION_SLOT, 44, false,
+         VIDEO_SCALE_PACK(1728, 1824), 2, t_images_cb, &cb_user, &n);
+   retro_atomic_store_release_int(
+         &sc.slots[OPENXR_PROJECTION_SLOT].content, 1);
+   memset(&set, 0, sizeof(set));
+   set.num_quads = 1;
+   video_xr_pose_identity(&set.quads[0].pose);
+   set.quads[0].pose.position.z = -1.8f;
+   set.quads[0].width           = 1.6f;
+   set.quads[0].height          = 0.9f;
+   openxr_frame_publish(&f, &set);
+   openxr_host_set_space(&h, &space, &w, &ht);
+
+   for (pass = 0; pass < 6; pass++)
+   {
+      XrSpace world;
+      float x, want;
+      int recenters;
+      bool running   = !(pass & 1);
+      bool turned    = pass >= 4;
+      bool glided    = false;
+      int screens_at = -1;
+      int world_at   = -1;
+      openxr_frame_set_placement(&f, (pass < 2)
+            ? VIDEO_OPENXR_PLACEMENT_FIXED : VIDEO_OPENXR_PLACEMENT_LAZY);
+      t_inline_frame(&f, &h, true, false);
+      openxr_frame_repeat(&f, 1);
+      t_inline_frame(&f, &h, running, false);
+      openxr_frame_repeat(&f, 1);
+      if (turned)
+      {
+         /* A quarter turn, then back: a repeat glides, the world stays. */
+         t_head.orientation.y = (pass == 4) ? 0.70710678f : 0.0f;
+         t_head.orientation.w = (pass == 4) ? 0.70710678f : 1.0f;
+         world                = t_proj.space;
+         for (i = 0; i < 2; i++)
+         {
+            t_inline_frame(&f, &h, running, false);
+            x = t_quad.pose.position.x;
+            openxr_frame_repeat(&f, 1);
+            if (!t_near(t_quad.pose.position.x, x))
+               glided = true;
+         }
+         CHECK(glided && t_proj.space == world,
+               "%s: no repeat glided, or the world moved", names[pass]);
+      }
+      else
+         t_head.position.x = 0.25f * (float)(pass + 1);
+      want      = t_head.position.x - ((pass == 4) ? 1.8f : 0.0f);
+      world     = t_proj.space;
+      x         = t_quad.pose.position.x;
+      recenters = openxr_frame_recenters(&f);
+      /* Even: a core frame, the first asking for the recenter. Odd: its
+       * repeat. */
+      for (k = 0; k < 8; k++)
+      {
+         bool taken, quads, moved;
+         if (k & 1)
+            openxr_frame_repeat(&f, 1);
+         else
+            t_inline_frame(&f, &h, running, k == 0);
+         taken = openxr_frame_recenters(&f) != recenters;
+         quads = !t_near(t_quad.pose.position.x, x);
+         moved = t_proj.space != world;
+         CHECK(t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+               "%s, submit %u: no projection", names[pass], k);
+         CHECK(quads == moved || (turned && !taken && !moved),
+               "%s, %s %u: the screens %s, the world %s", names[pass],
+               (k & 1) ? "repeat" : "core frame", k / 2,
+               quads ? "moved" : "stayed", moved ? "moved" : "stayed");
+         if (screens_at < 0 && quads && (taken || !turned))
+            screens_at = (int)k;
+         if (world_at < 0 && moved)
+            world_at = (int)k;
+         x     = t_quad.pose.position.x;
+         world = t_proj.space;
+      }
+      CHECK(world_at >= 0 && screens_at == world_at,
+            "%s: the screens moved at submit %d, the world at %d",
+            names[pass], screens_at, world_at);
+      CHECK(t_near(t_quad.pose.position.x, want),
+            "%s: the screens at %.2f, want %.2f", names[pass],
+            t_quad.pose.position.x, want);
+   }
+
+   openxr_slot_destroy(&sc, 0);
+   openxr_slot_destroy(&sc, OPENXR_PROJECTION_SLOT);
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
 int main(void)
 {
    test_runtime();
@@ -3441,6 +4354,8 @@ int main(void)
    test_projection();
    test_host();
    test_host_remake();
+   test_host_recenter_paused();
+   test_host_recenter_locked();
    test_host_kept();
    test_host_record();
    test_host_same_space();
@@ -3451,6 +4366,11 @@ int main(void)
    test_vulkan_inline();
    test_input_hooks();
    test_swapchain_filled();
+   test_screen_placement();
+   test_screen_placement_seated();
+   test_screen_placement_inline();
+   test_frame_repeat();
+   test_screen_placement_repeat();
    if (failures)
    {
       fprintf(stderr, "%d failure(s)\n", failures);

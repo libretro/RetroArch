@@ -822,10 +822,10 @@ static void input_openxr_dpad(input_openxr_t *st, float threshold)
    }
 }
 
-/* A hand's aim ray in LOCAL space at time, when it is tracked. Either
+/* A hand's aim ray in space at time, when it is tracked. Either
  * thread: it only reads what the session hooks wrote. */
 static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
-      XrTime time, video_xr_vec3_t *o, video_xr_vec3_t *d)
+      XrSpace space, XrTime time, video_xr_vec3_t *o, video_xr_vec3_t *d)
 {
    XrSpaceLocation loc;
    video_xr_quat_t q;
@@ -836,8 +836,7 @@ static bool input_openxr_ray(const input_openxr_t *st, unsigned h,
    memset(&loc, 0, sizeof(loc));
    loc.type = XR_TYPE_SPACE_LOCATION;
    if (     !st->aim[h] || !time
-         || XR_FAILED(st->LocateSpace(st->aim[h],
-               st->frame->session->local_space, time, &loc))
+         || XR_FAILED(st->LocateSpace(st->aim[h], space, time, &loc))
          || (loc.locationFlags & valid) != valid)
       return false;
    q.x   = loc.pose.orientation.x;
@@ -898,6 +897,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
    bool pulled[INPUT_OPENXR_HANDS];
    bool tracked[INPUT_OPENXR_HANDS];
    XrTime time              = 0;
+   XrSpace space            = XR_NULL_HANDLE;
    const video_xr_quad_t *q = NULL;
    bool menu_live           = false;
    bool touch_on            = st->touch_on;
@@ -923,7 +923,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
    st->quads.num_quads = 0;
    if (     laser != VIDEO_OPENXR_LASER_OFF
          && (time = openxr_frame_predicted_time(st->frame)))
-      openxr_frame_get_quads(st->frame, &st->quads);
+      openxr_frame_get_shown_quads(st->frame, &st->quads, &space);
    for (i = 0; i < st->quads.num_quads; i++)
    {
       const video_xr_quad_t *lq = &st->quads.quads[i];
@@ -951,7 +951,7 @@ static void input_openxr_laser_poll(input_openxr_t *st, unsigned laser,
       video_xr_vec3_t o, d;
       /* A press keeps its hand off the quads too. */
       can[h]     = input_openxr_pressing(st->role[h]);
-      tracked[h] = input_openxr_ray(st, h, time, &o, &d);
+      tracked[h] = input_openxr_ray(st, h, space, time, &o, &d);
       if (tracked[h])
       {
          st->hit[h] = video_xr_pick(&st->quads, laser, menu_open, &o, &d,
@@ -1097,6 +1097,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
    XrSwapchain cursor;
    video_xr_quad_set_t set;
    unsigned n         = 0;
+   XrSpace space      = XR_NULL_HANDLE;
    input_openxr_t *st = &input_openxr_st;
    int config         = retro_atomic_load_acquire_int(
          &input_openxr_pointer_config);
@@ -1108,7 +1109,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
          || !openxr_session_focused(st->frame->session)
          || !(cursor = openxr_frame_cursor(st->frame)))
       return 0;
-   openxr_frame_get_quads(st->frame, &set);
+   openxr_frame_get_shown_quads(st->frame, &set, &space);
    for (h = 0; h < INPUT_OPENXR_HANDS && n < cap; h++)
    {
       int q;
@@ -1116,7 +1117,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       video_xr_pose_t pose;
       video_xr_vec3_t o, d;
       XrCompositionLayerQuad *l = &st->cursors[h];
-      if (     !input_openxr_ray(st, h, time, &o, &d)
+      if (     !input_openxr_ray(st, h, space, time, &o, &d)
             || (q = video_xr_pick(&set, (unsigned)laser, menu_open,
                   &o, &d, &u, &v, &t)) < 0)
          continue;
@@ -1125,7 +1126,7 @@ static unsigned input_openxr_frame_layers(void *user, XrTime time,
       l->type                             = XR_TYPE_COMPOSITION_LAYER_QUAD;
       l->layerFlags                       =
          XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT;
-      l->space                            = st->frame->session->local_space;
+      l->space                            = space;
       l->eyeVisibility                    = XR_EYE_VISIBILITY_BOTH;
       l->subImage.swapchain               = cursor;
       l->subImage.imageRect.extent.width  = VIDEO_XR_CURSOR_DIM;

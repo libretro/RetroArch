@@ -58,6 +58,15 @@ enum video_openxr_laser
    VIDEO_OPENXR_LASER_LAST
 };
 
+/* video_openxr_placement: where the headset keeps the screens. */
+enum video_openxr_placement
+{
+   VIDEO_OPENXR_PLACEMENT_FIXED = 0,
+   VIDEO_OPENXR_PLACEMENT_FOLLOW,
+   VIDEO_OPENXR_PLACEMENT_LAZY,
+   VIDEO_OPENXR_PLACEMENT_LAST
+};
+
 /* video_openxr_refresh_rate: one of these, or a rate in Hz. */
 enum video_openxr_refresh
 {

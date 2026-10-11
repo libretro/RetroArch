@@ -709,11 +709,12 @@ typedef struct video_frame_info
     * when the frame is drawn whole. */
    video_views_map_t views;
    video_views_layout_t views_layout;
-   /* Headset output: the screens' distance and width in metres, and a
-    * count of recenter requests the driver compares with the last it
-    * saw. */
+   /* Headset output: the screens' distance and width in metres, where
+    * they are kept (enum video_openxr_placement), and a count of
+    * recenter requests the driver compares with the last it saw. */
    float headset_distance;
    float headset_width;
+   unsigned headset_placement;
    unsigned headset_recenter;
    /* Each core frame shows for this many headset frames and waits for
     * them in place of the window's vsync; 0 while the window paces. */
@@ -1435,6 +1436,9 @@ typedef struct video_xr_host
 void video_driver_set_xr_host(const video_xr_host_t *host);
 /* Whether the current context is a headset's own (its get_flags). */
 bool video_context_driver_headset_inline(void);
+/* Whether this build shows a headset through the video driver named:
+ * the menu lists the headset's settings for it. */
+bool video_driver_has_headset_path(const char *ident);
 /* VIDEO_XR_HEADSET_ bits; 0 without a host. */
 unsigned video_driver_xr_headset(void);
 /* After a video init: the core's VR content goes to the new driver. */

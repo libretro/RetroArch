@@ -3816,6 +3816,27 @@ static size_t setting_get_string_representation_video_openxr_laser(
    return 0;
 }
 
+static size_t setting_get_string_representation_video_openxr_placement(
+      rarch_setting_t *setting, char *s, size_t len)
+{
+   if (setting)
+   {
+      switch (*setting->value.target.unsigned_integer)
+      {
+         case VIDEO_OPENXR_PLACEMENT_FIXED:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FIXED), len);
+         case VIDEO_OPENXR_PLACEMENT_FOLLOW:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_FOLLOW), len);
+         case VIDEO_OPENXR_PLACEMENT_LAZY:
+            return strlcpy(s, msg_hash_to_str(
+                     MENU_ENUM_LABEL_VALUE_VIDEO_OPENXR_PLACEMENT_LAZY), len);
+      }
+   }
+   return 0;
+}
+
 /* Stereo 3D & Screens has no Stereo Mode entry while the headset is
  * on, so Headset Output is one entry higher: the cursor follows it. */
 static void setting_video_openxr_enable_follow(bool was, bool now)

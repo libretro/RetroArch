@@ -149,6 +149,26 @@ void video_xr_rotate(const video_xr_quat_t *q, const video_xr_vec3_t *v,
 bool video_xr_anchor_from_head(const video_xr_pose_t *head,
       video_xr_pose_t *anchor);
 
+/* out = b, a pose in a's frame, in a's space; out may be a or b. */
+void video_xr_compose(const video_xr_pose_t *a, const video_xr_pose_t *b,
+      video_xr_pose_t *out);
+
+/* Lazy Follow: the screens stay until the head's heading is this far
+ * from theirs, or the head this far from where they were placed from;
+ * then they glide back, closing about two thirds of the way each
+ * VIDEO_XR_LAZY_TIME seconds, until this close. */
+#define VIDEO_XR_LAZY_START_DEG 30.0
+#define VIDEO_XR_LAZY_START_M   0.5
+#define VIDEO_XR_LAZY_STOP_DEG  1.0
+#define VIDEO_XR_LAZY_STOP_M    0.01
+#define VIDEO_XR_LAZY_TIME      0.3
+
+/* One frame, dt seconds, of Lazy Follow: anchor (level, as
+ * video_xr_anchor_from_head makes them) moves towards target while it
+ * glides. Returns whether it still glides. */
+bool video_xr_lazy_follow(video_xr_pose_t *anchor,
+      const video_xr_pose_t *target, double dt, bool gliding);
+
 /* A quad's image size: its angular width at px_per_rad, never below
  * native_dims' width (the source's; 0 for no floor), the quad's shape,
  * at most max_dim a side. 0 for an empty quad. */
@@ -180,6 +200,24 @@ bool video_xr_quad_to_frame(const video_xr_quad_t *q, float u, float v,
  * window draws in vp (the video driver's viewport, from the window's
  * top left). False on the bars around it. */
 bool video_xr_window_point(const video_viewport_t *vp, float *u, float *v);
+
+/* Where view v of a frame of frame_dims shows in a window that draws
+ * the frame in vp, as video_xr_window_point maps it back, the frame
+ * turned rotation quarter turns anticlockwise: in window pixels from
+ * its top left, reaching past the window where vp does. */
+void video_xr_window_rect(const video_viewport_t *vp, unsigned frame_dims,
+      unsigned rotation, const struct retro_video_view *v,
+      video_views_rect_t *out);
+
+/* The quads of a window that holds the frame, the menu and all, as
+ * the Quest's GL host shows it: p's map as video_xr_place puts its screens
+ * while it is untracked and the menu is closed, each slot's layers cut
+ * from the window at rects; else the window whole, its rect the window.
+ * vp and frame_dims as video_xr_window_rect's, turned p->rotation. */
+void video_xr_place_window(const video_xr_params_t *p, bool menu,
+      bool tracked, const video_viewport_t *vp, unsigned frame_dims,
+      video_xr_quad_set_t *out,
+      video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2]);
 
 /* The laser's dot image is this many pixels square. */
 #define VIDEO_XR_CURSOR_DIM 32

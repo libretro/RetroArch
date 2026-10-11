@@ -292,6 +292,7 @@ typedef struct settings
       unsigned video_openxr_refresh_rate;
       unsigned video_openxr_controllers;
       unsigned video_openxr_laser;
+      unsigned video_openxr_placement;
       unsigned video_fse_negotiation;
       unsigned video_hw_decode;
       unsigned screen_orientation;

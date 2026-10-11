@@ -24,6 +24,11 @@ S_FLOAT(video_openxr_width, VIDEO_OPENXR_WIDTH,
       1.6f, "%.1f m", SD_FLAG_ALLOW_INPUT, SDESC_RANGE_MINMAX, CMD_EVENT_NONE, 0.3, 10.0, 0.1, NULL, NULL,
       "Screen Width",
       "The width of the main screen in the headset. Other screens are sized to match it.")
+S_UINT_EX(video_openxr_placement, VIDEO_OPENXR_PLACEMENT,
+      "video_openxr_placement",
+      0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 2, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_placement, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,
+      "Screen Placement",
+      "Where the headset keeps the screens. Fixed in Room: where Recenter puts them. Follow Head: always in front of you; on a large screen the edges sit where the lenses blur. Lazy Follow: they stay until you turn well away, then glide back in front of you.")
 S_UINT_EX(video_openxr_controllers, VIDEO_OPENXR_CONTROLLERS,
       "video_openxr_controllers",
       0, SD_FLAG_NONE, SDESC_RANGE_MINMAX, 0, 0, 1, 1, 0, setting_action_ok_uint, setting_get_string_representation_video_openxr_controllers, NULL, NULL, NULL, NULL, ST_UI_TYPE_UINT_COMBOBOX,

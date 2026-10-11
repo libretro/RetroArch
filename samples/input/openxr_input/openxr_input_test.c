@@ -397,9 +397,13 @@ bool openxr_session_focused(openxr_session_t *s)
    return s == &t_xr_session && t_focused;
 }
 XrTime openxr_frame_predicted_time(openxr_frame_t *f) { return t_time; }
-void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out)
+/* The quads as shown, and their space: LOCAL unless a case sets it. */
+static XrSpace t_space;
+void openxr_frame_get_shown_quads(openxr_frame_t *f,
+      video_xr_quad_set_t *out, XrSpace *space)
 {
-   *out = t_quads;
+   *out   = t_quads;
+   *space = t_space ? t_space : t_xr_session.local_space;
 }
 XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 {
@@ -729,6 +733,12 @@ static void test_laser(void)
          "the gun at %d,%d, want the middle", x, y);
    CHECK(t_located_base == t_xr_session.local_space,
          "the aim was located in another space");
+   /* Screens that follow the head are in VIEW, and so is the aim. */
+   t_space = t_xr_session.view_space;
+   t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);
+   CHECK(t_located_base == t_xr_session.view_space,
+         "the aim was not located where the screens are");
+   t_space = XR_NULL_HANDLE;
    /* Its trigger fires the gun and is no R2. */
    t_hold("combined/r2", 0, 1.0f, 0.0f);
    t_poll(VIDEO_OPENXR_CONTROLLERS_COMBINED, VIDEO_OPENXR_LASER_ALWAYS);

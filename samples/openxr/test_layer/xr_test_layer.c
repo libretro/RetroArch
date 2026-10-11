@@ -71,7 +71,8 @@
  *                           an action's state while its set is synced:
  *                           boolean x != 0, float x, vector2f x y
  *   aim <left|right> <px> <py> <pz> <tx> <ty> <tz>
- *                           that hand's pose spaces at p, -Z towards t
+ *                           that hand's pose spaces at p, -Z towards t,
+ *                           in LOCAL; in VIEW through the scripted head
  *   aim <left|right> off    that hand untracked
  *
  * A changed script (a new mtime, inode or size) is applied line by
@@ -1011,6 +1012,40 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateReferenceSpace(XrSession sessi
    return res;
 }
 
+/* b, a pose in LOCAL, as seen from a, another pose in LOCAL. */
+static XrPosef pose_from(const XrPosef *a, const XrPosef *b)
+{
+   XrPosef out;
+   XrVector3f d;
+   float cx, cy, cz, ccx, ccy, ccz;
+   XrQuaternionf q = a->orientation;
+   q.x = -q.x;
+   q.y = -q.y;
+   q.z = -q.z;
+   d.x = b->position.x - a->position.x;
+   d.y = b->position.y - a->position.y;
+   d.z = b->position.z - a->position.z;
+   /* d turned by q: d + 2w (q x d) + 2 q x (q x d) */
+   cx  = q.y * d.z - q.z * d.y;
+   cy  = q.z * d.x - q.x * d.z;
+   cz  = q.x * d.y - q.y * d.x;
+   ccx = q.y * cz - q.z * cy;
+   ccy = q.z * cx - q.x * cz;
+   ccz = q.x * cy - q.y * cx;
+   out.position.x    = d.x + 2.0f * (q.w * cx + ccx);
+   out.position.y    = d.y + 2.0f * (q.w * cy + ccy);
+   out.position.z    = d.z + 2.0f * (q.w * cz + ccz);
+   out.orientation.x = q.w * b->orientation.x + q.x * b->orientation.w
+      + q.y * b->orientation.z - q.z * b->orientation.y;
+   out.orientation.y = q.w * b->orientation.y - q.x * b->orientation.z
+      + q.y * b->orientation.w + q.z * b->orientation.x;
+   out.orientation.z = q.w * b->orientation.z + q.x * b->orientation.y
+      - q.y * b->orientation.x + q.z * b->orientation.w;
+   out.orientation.w = q.w * b->orientation.w - q.x * b->orientation.x
+      - q.y * b->orientation.y - q.z * b->orientation.z;
+   return out;
+}
+
 static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
       XrSpace base, XrTime time, XrSpaceLocation *loc)
 {
@@ -1031,12 +1066,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_LocateSpace(XrSpace space,
    }
    else if (XR_SUCCEEDED(res) && hand)
    {
-      /* Hands are only where the script puts them. */
-      bool tracked = L.aim_set[hand]
-         && space_type(base) == XR_REFERENCE_SPACE_TYPE_LOCAL;
+      /* Hands are only where the script puts them: in LOCAL, or in VIEW
+       * through the scripted head. */
+      int base_type = space_type(base);
+      bool tracked  = L.aim_set[hand]
+         && (   base_type == XR_REFERENCE_SPACE_TYPE_LOCAL
+             || (base_type == XR_REFERENCE_SPACE_TYPE_VIEW && L.head_set));
       if (tracked)
       {
-         loc->pose          = L.aim[hand];
+         loc->pose          = (base_type == XR_REFERENCE_SPACE_TYPE_VIEW)
+            ? pose_from(&L.head, &L.aim[hand]) : L.aim[hand];
          loc->locationFlags = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
             | XR_SPACE_LOCATION_POSITION_VALID_BIT
             | XR_SPACE_LOCATION_ORIENTATION_TRACKED_BIT

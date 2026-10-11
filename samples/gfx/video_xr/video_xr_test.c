@@ -661,6 +661,185 @@ static void test_window_point(void)
    CHECK(!video_xr_window_point(&vp, &u, &v));
 }
 
+/* VB's stereo pair side by side. Frame 768x224. */
+static void map_vb(video_views_map_t *map)
+{
+   struct retro_video_view v[2];
+   v[0] = mkview(  0, 0, 384, 224, 0, RETRO_VIDEO_VIEW_EYE_LEFT);
+   v[1] = mkview(384, 0, 384, 224, 0, RETRO_VIDEO_VIEW_EYE_RIGHT);
+   video_views_validate(v, 2, map);
+}
+
+static void vp_set(video_viewport_t *vp, int x, int y, unsigned w,
+      unsigned h)
+{
+   vp->pos       = VIDEO_POS_PACK(x, y);
+   vp->dims      = VIDEO_SCALE_PACK(w, h);
+   vp->full_dims = VIDEO_SCALE_PACK(1280, 720);
+}
+
+static int rect_is(const video_views_rect_t *r, int x, int y,
+      unsigned w, unsigned h)
+{
+   return VIDEO_POS_X(r->pos) == x && VIDEO_POS_Y(r->pos) == y
+      && dims_is(r->dims, w, h);
+}
+
+static int quad_is(const video_xr_quad_t *q, unsigned kind, unsigned eye,
+      unsigned slot, unsigned layer)
+{
+   return q->kind == kind && q->eye == eye && q->slot == slot
+      && q->layer == layer;
+}
+
+static void window_params(video_xr_params_t *p, const video_views_map_t *map)
+{
+   params_init(p, map);
+   p->frame_dims = VIDEO_SCALE_PACK(1280, 720);
+   p->window     = true;
+}
+
+static void test_window_views_stereo(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_viewport_t vp;
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+
+   /* Letterboxed: each eye's image is its half of the window's frame. */
+   map_vb(&map);
+   window_params(&p, &map);
+   vp_set(&vp, 0, 173, 1280, 374);
+   video_xr_place_window(&p, false, false, &vp,
+         VIDEO_SCALE_PACK(768, 224), &set, rects);
+   CHECK(set.num_quads == 2);
+   CHECK(quad_is(&set.quads[0], VIDEO_XR_QUAD_SCREEN, VIDEO_XR_EYE_LEFT,
+            0, 0));
+   CHECK(quad_is(&set.quads[1], VIDEO_XR_QUAD_SCREEN, VIDEO_XR_EYE_RIGHT,
+            0, 1));
+   CHECK(set.slots[0].layers == 2);
+   CHECK(set.slots[0].view[0] == 0 && set.slots[0].view[1] == 1);
+   CHECK(rect_is(&rects[0][0],   0, 173, 640, 374));
+   CHECK(rect_is(&rects[0][1], 640, 173, 640, 374));
+
+   /* Tracked: its eyes are the projection's, the window stays whole. */
+   video_xr_place_window(&p, false, true, &vp,
+         VIDEO_SCALE_PACK(768, 224), &set, rects);
+   CHECK(set.num_quads == 1);
+   CHECK(quad_is(&set.quads[0], VIDEO_XR_QUAD_WINDOW, VIDEO_XR_EYE_BOTH,
+            0, 0));
+   CHECK(set.slots[0].layers == 1 && set.slots[0].view[0] == -1);
+   CHECK(rect_is(&rects[0][0], 0, 0, 1280, 720));
+   /* And once the projection shows it, nothing. */
+   p.width = 0.0f;
+   video_xr_place_window(&p, false, true, &vp,
+         VIDEO_SCALE_PACK(768, 224), &set, rects);
+   CHECK(set.num_quads == 0);
+
+   /* No map: the window whole, as before. */
+   window_params(&p, NULL);
+   video_xr_place_window(&p, false, false, &vp,
+         VIDEO_SCALE_PACK(768, 224), &set, rects);
+   CHECK(set.num_quads == 1);
+   CHECK(quad_is(&set.quads[0], VIDEO_XR_QUAD_WINDOW, VIDEO_XR_EYE_BOTH,
+            0, 0));
+   CHECK(rect_is(&rects[0][0], 0, 0, 1280, 720));
+}
+
+static void test_window_views_3ds(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_viewport_t vp;
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   video_xr_quad_t win;
+   int16_t sx, sy, wx, wy;
+   float u, v;
+
+   /* Pillarboxed and letterboxed, 800x480 at 1.35: the top pair per
+    * eye, the bottom screen to both, below it. */
+   map_3ds(&map);
+   window_params(&p, &map);
+   vp_set(&vp, 100, 24, 1080, 648);
+   video_xr_place_window(&p, false, false, &vp,
+         VIDEO_SCALE_PACK(800, 480), &set, rects);
+   CHECK(set.num_quads == 3);
+   CHECK(quad_is(&set.quads[0], VIDEO_XR_QUAD_SCREEN, VIDEO_XR_EYE_LEFT,
+            0, 0));
+   CHECK(quad_is(&set.quads[1], VIDEO_XR_QUAD_SCREEN, VIDEO_XR_EYE_RIGHT,
+            0, 1));
+   CHECK(quad_is(&set.quads[2], VIDEO_XR_QUAD_SCREEN, VIDEO_XR_EYE_BOTH,
+            1, 0));
+   CHECK(set.quads[2].screen == 1 && set.quads[2].pose.position.y < 0.0f);
+   CHECK(set.slots[1].layers == 1 && set.slots[1].view[0] == 2);
+   CHECK(rect_is(&rects[0][0], 100,  24, 540, 324));
+   CHECK(rect_is(&rects[0][1], 640,  24, 540, 324));
+   CHECK(rect_is(&rects[1][0], 424, 348, 432, 324));
+
+   /* The laser on the bottom screen hits the frame pixel the window
+    * shows there: frame pixel 336,360. */
+   u = 96.5f / 320.0f;
+   v = 120.5f / 240.0f;
+   CHECK(video_xr_quad_to_frame(&set.quads[2], u, v, &map,
+            VIDEO_SCALE_PACK(800, 480), &sx, &sy));
+   u = (424.0f + u * 432.0f) / 1280.0f;
+   v = (348.0f + v * 324.0f) / 720.0f;
+   CHECK(video_xr_window_point(&vp, &u, &v));
+   memset(&win, 0, sizeof(win));
+   win.kind = VIDEO_XR_QUAD_WINDOW;
+   CHECK(video_xr_quad_to_frame(&win, u, v, &map,
+            VIDEO_SCALE_PACK(800, 480), &wx, &wy));
+   CHECK(sx == wx && sy == wy);
+
+   /* The menu is drawn over the window: it shows whole. */
+   video_xr_place_window(&p, true, false, &vp,
+         VIDEO_SCALE_PACK(800, 480), &set, rects);
+   CHECK(set.num_quads == 1);
+   CHECK(quad_is(&set.quads[0], VIDEO_XR_QUAD_WINDOW, VIDEO_XR_EYE_BOTH,
+            0, 0));
+   CHECK(set.slots[0].layers == 1 && !set.slots[1].dims);
+   CHECK(rect_is(&rects[0][0], 0, 0, 1280, 720));
+}
+
+static void test_window_rect_rotation(void)
+{
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t set;
+   video_viewport_t vp;
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   video_views_rect_t r;
+
+   /* DS turned a quarter anticlockwise: the top screen on the left. */
+   map_ds(&map);
+   window_params(&p, &map);
+   p.rotation = 1;
+   vp_set(&vp, 64, 0, 1152, 768);
+   vp.full_dims = VIDEO_SCALE_PACK(1280, 768);
+   video_xr_place_window(&p, false, false, &vp,
+         VIDEO_SCALE_PACK(256, 384), &set, rects);
+   CHECK(set.num_quads == 2);
+   CHECK(rect_is(&rects[0][0],  64, 0, 576, 768));
+   CHECK(rect_is(&rects[1][0], 640, 0, 576, 768));
+   /* The screens' shapes are the rects'. */
+   CHECK(NEAR(set.quads[0].width / set.quads[0].height, 576.0 / 768.0));
+
+   /* Three quarters: on the right. */
+   video_xr_window_rect(&vp, VIDEO_SCALE_PACK(256, 384), 3,
+         &map.views[0], &r);
+   CHECK(rect_is(&r, 640, 0, 576, 768));
+   /* A half: upside down, the top screen below. */
+   video_xr_window_rect(&vp, VIDEO_SCALE_PACK(256, 384), 2,
+         &map.views[0], &r);
+   CHECK(rect_is(&r, 64, 384, 1152, 384));
+
+   /* No frame size, nowhere. */
+   video_xr_window_rect(&vp, 0, 0, &map.views[1], &r);
+   CHECK(r.pos == 0 && r.dims == 0);
+}
+
 static void test_cursor(void)
 {
    video_views_map_t map;
@@ -707,6 +886,158 @@ static void test_cursor_pixels(void)
          && centre[3] == 255);
    CHECK(rim[0] == 38 && rim[1] == 38 && rim[2] == 38 && rim[3] == 255);
    CHECK(!px[0] && !px[1] && !px[2] && !px[3]);
+}
+
+static int pose_same(const video_xr_pose_t *a, const video_xr_pose_t *b)
+{
+   return a->orientation.x == b->orientation.x
+      && a->orientation.y == b->orientation.y
+      && a->orientation.z == b->orientation.z
+      && a->orientation.w == b->orientation.w
+      && a->position.x    == b->position.x
+      && a->position.y    == b->position.y
+      && a->position.z    == b->position.z;
+}
+
+static void test_compose(void)
+{
+   unsigned i;
+   video_views_map_t map;
+   video_xr_params_t p;
+   video_xr_quad_set_t at, from;
+   video_xr_pose_t a, b, out;
+
+   /* Screen 0's place in front of a head turned a quarter left. */
+   video_xr_pose_identity(&a);
+   a.orientation.y = 0.70711f;
+   a.orientation.w = 0.70711f;
+   a.position.x    = 0.5f;
+   a.position.y    = 0.2f;
+   a.position.z    = 0.3f;
+   video_xr_pose_identity(&b);
+   b.position.z    = -1.8f;
+   video_xr_compose(&a, &b, &out);
+   CHECK(NEAR(out.position.x, -1.3) && NEAR(out.position.y, 0.2)
+         && NEAR(out.position.z, 0.3));
+   CHECK(NEAR(out.orientation.y, 0.70711) && NEAR(out.orientation.w, 0.70711));
+   video_xr_compose(&a, &b, &b);
+   CHECK(pose_same(&b, &out));
+
+   /* Placed from an identity anchor and composed with a, a 3DS layout
+    * and its menu are exactly where placing them at a puts them. */
+   map_3ds(&map);
+   params_init(&p, &map);
+   p.ui_dims = VIDEO_SCALE_PACK(1600, 960);
+   p.anchor  = a;
+   video_xr_place(&p, &at);
+   video_xr_pose_identity(&p.anchor);
+   video_xr_place(&p, &from);
+   CHECK(at.num_quads == 4 && from.num_quads == 4);
+   for (i = 0; i < from.num_quads; i++)
+   {
+      video_xr_compose(&a, &from.quads[i].pose, &out);
+      CHECK(pose_same(&out, &at.quads[i].pose));
+   }
+}
+
+static void test_lazy_follow(void)
+{
+   unsigned i;
+   bool glide;
+   video_xr_pose_t a, t;
+   /* Half angles: 20, 90 and 170 degrees. */
+   double s10 = sin(M_PI / 18.0), c10 = cos(M_PI / 18.0);
+   double s45 = sin(M_PI / 4.0),  c45 = cos(M_PI / 4.0);
+   double s85 = sin(M_PI * 85.0 / 180.0), c85 = cos(M_PI * 85.0 / 180.0);
+
+   /* Turned 20 degrees, or 0.3 m away: they stay. */
+   video_xr_pose_identity(&a);
+   video_xr_pose_identity(&t);
+   t.orientation.y = (float)s10;
+   t.orientation.w = (float)c10;
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, false));
+   CHECK(NEAR(a.orientation.y, 0.0) && NEAR(a.orientation.w, 1.0));
+   video_xr_pose_identity(&t);
+   t.position.x = 0.3f;
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, false));
+   CHECK(NEAR(a.position.x, 0.0));
+
+   /* 0.6 m away: a step towards it. */
+   t.position.x = 0.6f;
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, false));
+   CHECK(a.position.x > 0.0f && a.position.x < 0.1f);
+
+   /* Turned 90 degrees: a step at a time, then exactly in front. */
+   video_xr_pose_identity(&a);
+   video_xr_pose_identity(&t);
+   t.orientation.y = (float)s45;
+   t.orientation.w = (float)c45;
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, false));
+   CHECK(a.orientation.y > 0.0f && a.orientation.y < 0.1f);
+   glide = true;
+   for (i = 0; i < 200 && glide; i++)
+      glide = video_xr_lazy_follow(&a, &t, 0.0139, true);
+   CHECK(!glide);
+   CHECK(NEAR(a.orientation.y, s45) && NEAR(a.orientation.w, c45));
+
+   /* Once gliding, a turn under the start goes on to the end. */
+   video_xr_pose_identity(&a);
+   video_xr_pose_identity(&t);
+   t.orientation.y = (float)s10;
+   t.orientation.w = (float)c10;
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, true));
+
+   /* The short way round: 170 to -170 degrees is 20. */
+   video_xr_pose_identity(&a);
+   a.orientation.y = (float)s85;
+   a.orientation.w = (float)c85;
+   video_xr_pose_identity(&t);
+   t.orientation.y = (float)-s85;
+   t.orientation.w = (float)c85;
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, false));
+}
+
+/* A target turned deg about y and moved x along it. */
+static void lazy_target(video_xr_pose_t *t, double deg, double x)
+{
+   video_xr_pose_identity(t);
+   t->orientation.y = (float)sin(deg * M_PI / 360.0);
+   t->orientation.w = (float)cos(deg * M_PI / 360.0);
+   t->position.x    = (float)x;
+}
+
+/* Either side of each threshold. */
+static void test_lazy_edges(void)
+{
+   video_xr_pose_t a, t;
+
+   /* Resting: a turn or a step just under the start stays, just over
+    * glides. */
+   video_xr_pose_identity(&a);
+   lazy_target(&t, VIDEO_XR_LAZY_START_DEG - 2.0, 0.0);
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, false));
+   lazy_target(&t, VIDEO_XR_LAZY_START_DEG + 2.0, 0.0);
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, false));
+   video_xr_pose_identity(&a);
+   lazy_target(&t, 0.0, VIDEO_XR_LAZY_START_M - 0.02);
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, false));
+   lazy_target(&t, 0.0, VIDEO_XR_LAZY_START_M + 0.02);
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, false));
+
+   /* Gliding: within both stops it lands on the target; past either it
+    * glides on. */
+   video_xr_pose_identity(&a);
+   lazy_target(&t, VIDEO_XR_LAZY_STOP_DEG - 0.2, VIDEO_XR_LAZY_STOP_M - 0.002);
+   CHECK(!video_xr_lazy_follow(&a, &t, 0.0139, true));
+   CHECK(   NEAR(a.orientation.y, t.orientation.y)
+         && NEAR(a.orientation.w, t.orientation.w)
+         && NEAR(a.position.x, t.position.x));
+   video_xr_pose_identity(&a);
+   lazy_target(&t, VIDEO_XR_LAZY_STOP_DEG + 0.2, VIDEO_XR_LAZY_STOP_M - 0.002);
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, true));
+   video_xr_pose_identity(&a);
+   lazy_target(&t, VIDEO_XR_LAZY_STOP_DEG - 0.2, VIDEO_XR_LAZY_STOP_M + 0.002);
+   CHECK(video_xr_lazy_follow(&a, &t, 0.0139, true));
 }
 
 /* A 120 Hz and a 72 Hz headset's predicted display periods, in ns. */
@@ -844,8 +1175,14 @@ int main(void)
    test_pick();
    test_window();
    test_window_point();
+   test_window_views_stereo();
+   test_window_views_3ds();
+   test_window_rect_rotation();
    test_cursor();
    test_cursor_pixels();
+   test_compose();
+   test_lazy_follow();
+   test_lazy_edges();
    test_period_settle();
    test_period_jitter();
    test_period_change();

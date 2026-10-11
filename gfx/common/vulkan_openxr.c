@@ -963,14 +963,14 @@ unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr)
    return VIDEO_SCALE_PACK(MIN(w, xr->rt.max_dim), MIN(h, xr->rt.max_dim));
 }
 
-void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor)
-{
-   openxr_frame_get_anchor(&xr->frame, anchor);
-}
-
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr)
 {
    openxr_frame_request_recenter(&xr->frame);
+}
+
+void vulkan_openxr_set_placement(vulkan_openxr_t *xr, unsigned placement)
+{
+   openxr_frame_set_placement(&xr->frame, placement);
 }
 
 bool vulkan_openxr_inline(const vulkan_openxr_t *xr)
@@ -986,10 +986,12 @@ void vulkan_openxr_begin_frame(vulkan_openxr_t *xr)
    openxr_frame_begin(&xr->frame, &xr->begun);
 }
 
-void vulkan_openxr_end_frame(vulkan_openxr_t *xr)
+void vulkan_openxr_end_frame(vulkan_openxr_t *xr, unsigned interval)
 {
    openxr_frame_end(&xr->frame, &xr->begun);
    memset(&xr->begun, 0, sizeof(xr->begun));
+   if (interval > 1)
+      openxr_frame_repeat(&xr->frame, interval - 1);
 }
 
 void vulkan_openxr_eye_size(const vulkan_openxr_t *xr, unsigned *width,

@@ -129,7 +129,8 @@ void openxr_host_forget(void);
  * moved hears RECENTERED, and the views it was last given are placed in
  * the track space through STAGE. The record serves this start alone. */
 void openxr_host_resume(openxr_host_t *h);
-/* The drawing thread: kept views wait for a frame time and a location
+/* The drawing thread, on a frame the core did not draw: a seated space
+ * follows a recenter; kept views wait for a frame time and a location
  * to be placed by, and are dropped where there is no STAGE. */
 void openxr_host_place_kept(openxr_host_t *h);
 /* The drawing thread, a new core frame: kept views drew none of it, and

@@ -5732,6 +5732,7 @@ void video_driver_build_info(video_frame_info_t *video_info)
       ? 1 : settings->uints.video_shader_subframes;
    video_info->headset_distance            = settings->floats.video_openxr_distance;
    video_info->headset_width               = settings->floats.video_openxr_width;
+   video_info->headset_placement           = settings->uints.video_openxr_placement;
    video_info->headset_recenter            = video_st->headset_recenter;
    video_info->headset_interval            = video_st->headset_interval;
    video_info->headset_request_hz          = video_st->headset_request_hz;
@@ -6194,6 +6195,20 @@ bool video_context_driver_headset_inline(void)
    return ctx->get_flags
       && BIT32_GET(ctx->get_flags((void*)video_st->context_data),
             GFX_CTX_FLAGS_HEADSET_INLINE);
+}
+
+bool video_driver_has_headset_path(const char *ident)
+{
+#if defined(ANDROID) && defined(HAVE_OPENGLES3)
+   /* The Quest's GLES headset context shows gl2's frames. */
+   if (string_is_equal(ident, "gl"))
+      return true;
+#endif
+#ifdef HAVE_VULKAN
+   if (string_is_equal(ident, "vulkan"))
+      return true;
+#endif
+   return false;
 }
 #endif
 

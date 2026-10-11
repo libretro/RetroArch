@@ -10305,7 +10305,7 @@ static void vulkan_xr_plan(vk_t *vk, const video_frame_info_t *video_info,
       p.frame_aspect = (float)VIDEO_SCALE_W(frame_dims)
          / (float)VIDEO_SCALE_H(frame_dims);
    p.frame_dims    = src_dims;
-   vulkan_openxr_get_anchor(xr, &p.anchor);
+   video_xr_pose_identity(&p.anchor);
    p.distance      = video_info->headset_distance;
    p.width         = video_info->headset_width;
    p.px_per_rad    = vulkan_openxr_pixels_per_radian(xr);
@@ -10703,7 +10703,8 @@ static void vulkan_xr_release(vk_t *vk)
    }
 }
 
-/* A recenter request since the last frame goes to the XR thread. */
+/* A recenter request since the last frame, and where the screens are
+ * kept, go to the headset's frame. */
 static void vulkan_xr_recenter(vk_t *vk, const video_frame_info_t *video_info)
 {
    if (!vk->context->xr)
@@ -10713,6 +10714,8 @@ static void vulkan_xr_recenter(vk_t *vk, const video_frame_info_t *video_info)
       vulkan_openxr_request_recenter(vk->context->xr);
    vk->xr.recenter      = video_info->headset_recenter;
    vk->xr.recenter_seen = true;
+   vulkan_openxr_set_placement(vk->context->xr,
+         video_info->headset_placement);
 }
 
 /* Whether the headset shows this frame: a session it can see, its
@@ -10760,8 +10763,11 @@ static void vulkan_xr_pace_setup(vk_t *vk,
    if (vk->ctx_driver->swap_interval)
       vk->ctx_driver->swap_interval(vk->ctx_data,
             paced ? 0 : vk->xr.window_interval);
-   RARCH_LOG("[Vulkan] Headset pacing %s.\n", paced
-         ? "on: the window presents without waiting" : "off");
+   if (xr && vulkan_openxr_inline(xr))
+      RARCH_LOG("[Vulkan] Headset pacing %s.\n", paced ? "on" : "off");
+   else
+      RARCH_LOG("[Vulkan] Headset pacing %s.\n", paced
+            ? "on: the window presents without waiting" : "off");
 }
 #endif
 
@@ -12568,7 +12574,8 @@ static bool vulkan_frame(void *data, const void *frame,
 
 #ifdef HAVE_OPENXR
    if (xr_inline)
-      vulkan_openxr_end_frame(vk->context->xr);
+      vulkan_openxr_end_frame(vk->context->xr,
+            input_driver_nonblock_state ? 0 : video_info->headset_interval);
    /* In place of the window's vsync: once a core frame, never under
     * fast-forward. */
    if (     vk->xr.paced
@@ -13979,9 +13986,7 @@ static float vulkan_get_headset_refresh(void *data, float *rates,
 {
    vk_t *vk = (vk_t*)data;
    *count   = 0;
-   /* An in-line host's frames are the core's: no rate to pace by. */
    if (     !vk || !vk->context || !vk->context->xr
-         || vulkan_openxr_inline(vk->context->xr)
          || !vulkan_openxr_alive(vk->context->xr))
       return 0.0f;
    *count   = vulkan_openxr_refresh_rates(vk->context->xr, rates, cap);

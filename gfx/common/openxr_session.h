@@ -60,6 +60,9 @@ typedef struct openxr_session
    XrSpace view_space;
    XrSpace track_space;           /* tracked content's, once it asks */
    retro_atomic_int_t track_seq;  /* bumped each time it is replaced */
+   /* A LOCAL track_space's pose in LOCAL: a seated world's origin. */
+   XrPosef track_origin;
+   bool track_local;
    retro_atomic_int_t state;   /* XrSessionState */
    retro_atomic_int_t alive;   /* the host's frames reach the headset */
    retro_atomic_int_t running; /* between xrBeginSession and xrEndSession */
@@ -84,11 +87,14 @@ bool openxr_session_create(openxr_session_t *s, const void *graphics_binding);
 /* After the frame loop has stopped. */
 void openxr_session_destroy(openxr_session_t *s);
 
-/* Tracked content's space: STAGE when asked for and the runtime has
- * one, else LOCAL, with origin as its pose there; what was granted is
- * written back. It replaces the last one under the lock. */
-bool openxr_session_set_track_space(openxr_session_t *s,
-      enum retro_vr_reference_space *space, const XrPosef *origin);
+/* Tracked content's space: STAGE at the room's origin when asked for
+ * and the runtime has one, else LOCAL with origin as its pose there;
+ * what was granted is written back. It replaces the last one under the
+ * lock, and swapped, when given, runs in that locked span with the old
+ * and new track_seq: a frame sees both or neither. */
+bool openxr_session_swap_track_space(openxr_session_t *s,
+      enum retro_vr_reference_space *space, const XrPosef *origin,
+      void (*swapped)(void *user, int from, int to), void *user);
 void openxr_session_lock(openxr_session_t *s);
 void openxr_session_unlock(openxr_session_t *s);
 /* After a session the runtime ended, and after the frame loop has stopped:

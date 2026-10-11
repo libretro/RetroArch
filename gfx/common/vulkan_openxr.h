@@ -102,9 +102,10 @@ bool vulkan_openxr_inline(const vulkan_openxr_t *xr);
  * the session and begins the headset's frame at the top of the video
  * frame; end, after the frame's submit, ends it with what was
  * published, or keeps the core on the clock when none was begun. A
- * second begin before the end does nothing. */
+ * second begin before the end does nothing. The core frame then shows
+ * for interval headset frames. */
 void vulkan_openxr_begin_frame(vulkan_openxr_t *xr);
-void vulkan_openxr_end_frame(vulkan_openxr_t *xr);
+void vulkan_openxr_end_frame(vulkan_openxr_t *xr, unsigned interval);
 
 /* The video thread, as vulkan_openxr_start does: again for a context
  * kept across a reinit, which the driver's free made forget it. */
@@ -232,12 +233,13 @@ void vulkan_openxr_new_frame(vulkan_openxr_t *xr);
  * 0 without one. */
 unsigned vulkan_openxr_eye_dims(const vulkan_openxr_t *xr);
 
-/* Where screen 0 is centred in front of. */
-void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor);
-
 /* Any thread: place the screens in front of where the headset looks, at
  * its next frame. */
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr);
+
+/* Any thread: where the headset keeps the screens (enum
+ * video_openxr_placement). */
+void vulkan_openxr_set_placement(vulkan_openxr_t *xr, unsigned placement);
 
 RETRO_END_DECLS
 

@@ -4777,6 +4777,8 @@ static retro_time_t gl2_get_last_present_time(void *data)
 }
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+static void gl2_viewport_info(void *data, struct video_viewport *vp);
+
 /* A tracked map's eyes, each its rectangle of the core's frame drawn
  * with the stock shader and no chain into the headset's images from
  * their origin, at the left eye's size, shrunk if larger, as Vulkan
@@ -4864,6 +4866,13 @@ static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    gl_android_openxr_eyes_drawn(w, h);
 }
+
+static float gl2_get_headset_refresh(void *data, float *rates,
+      unsigned cap, unsigned *count)
+{
+   (void)data;
+   return gl_android_openxr_refresh(rates, cap, count);
+}
 #endif
 
 static bool gl2_frame(void *data, const void *frame,
@@ -4896,6 +4905,9 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
    bool video_scale_integer            = video_info->scale_integer;
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   video_viewport_t xr_vp;
+#endif
 
    if (!gl)
       return false;
@@ -5160,6 +5172,11 @@ static bool gl2_frame(void *data, const void *frame,
             frame_count, &gl->tex_info, &feedback_info,
             video_scale_integer);
 
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   /* Where the frame is, before the UI sets viewports of its own. */
+   gl2_viewport_info(gl, &xr_vp);
+#endif
+
 #ifdef __EMSCRIPTEN__
    /* Workaround for a chromium-specific bug */
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -5359,6 +5376,14 @@ static bool gl2_frame(void *data, const void *frame,
    }
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   gl_android_openxr_recenter(video_info->headset_recenter);
+   gl_android_openxr_set_placement(video_info->headset_placement,
+         video_info->headset_distance, video_info->headset_width);
+   gl_android_openxr_set_pacing(video_info->input_driver_nonblock_state
+         ? 0 : video_info->headset_interval, video_info->headset_request_hz);
+   gl_android_openxr_set_views(&video_info->views, dims, &xr_vp,
+         gl->rotation / 90, video_info->screen_layout,
+         video_info->stereo_swap_eyes);
    if (gl_android_openxr_active())
    {
       bool new_frame = frame && !video_info->frame_repeat;
@@ -7719,7 +7744,11 @@ static const video_poke_interface_t gl2_poke_interface = {
    gl2_get_last_present_wait,
    NULL, /* set_view_count */
    NULL, /* hw_context_destroying */
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   gl2_get_headset_refresh,
+#else
    NULL, /* get_headset_refresh */
+#endif
    gl2_set_frame_format,
 #ifdef HAVE_GL_TEXTURE_LEND
    gl2_frame_mem_alloc,

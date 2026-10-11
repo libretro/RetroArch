@@ -661,9 +661,37 @@ def recenter_flags(res):
                if int(m.group(1)) & RECENTERED)
 
 
+def same_frame_errors(res):
+    """After the recenter mark, the first headset frame where the screens
+    move is the first where the seated world's space moves in STAGE."""
+    def moves(a, b):
+        return (a is not None and b is not None
+                and any(abs(x - y) > 1e-3 for x, y in zip(a[:3], b[:3])))
+    asked = res.marks['recenter'] * 1e6
+    screens = world = was_q = was_s = None
+    for f in res.frames:
+        q = quads(f)[0]['pose'] if quads(f) else None
+        s = projections(f)[0].get('stage') if projections(f) else None
+        if f['t_us'] > asked:
+            if screens is None and moves(was_q, q):
+                screens = f['n']
+            if world is None and moves(was_s, s):
+                world = f['n']
+        was_q = q if q is not None else was_q
+        was_s = s if s is not None else was_s
+    if screens is None or world is None:
+        return ['after the recenter the screens moved at frame %s, the '
+                'world at frame %s' % (screens, world)]
+    if screens != world:
+        return ['the screens moved at frame %d, the seated world at frame '
+                '%d' % (screens, world)]
+    return []
+
+
 def check_tracked_recenter(res):
-    """The Recenter hotkey moves the screens and a seated world together:
-    the core hears RECENTERED once, and the projection goes on."""
+    """The Recenter hotkey moves the screens and a seated world together,
+    in one headset frame: the core hears RECENTERED once, and the
+    projection goes on."""
     errors = []
     if 'Headset recenter requested' not in res.log:
         errors.append('the network command did not reach the hotkey')
@@ -675,34 +703,83 @@ def check_tracked_recenter(res):
             if f['t_us'] > res.marks['recenter'] * 1e6 + 1e6]
     if not late:
         errors.append('no projection after the recenter')
-    return errors
+    return errors + same_frame_errors(res)
 
 
-def check_tracked_recenter_paused(res):
-    """A recenter while tracked content is paused keeps its world on
-    screen: the space is remade only at a sample, which a paused core
-    never takes."""
-    errors = []
-    if 'Headset recenter requested' not in res.log:
-        errors.append('the network command did not reach the hotkey')
-    errors += check_paused(res, 'recenter', 'resume')
-    asked = res.marks['recenter'] * 1e6
-    resumed = res.marks['resume'] * 1e6
-    paused = [f for f in res.frames
-              if asked + 5e5 < f['t_us'] < resumed and f['layers']]
-    if not paused:
-        errors.append('no frames between the recenter and the unpause')
-    blank = [f['n'] for f in paused if not projections(f)]
-    if blank:
-        errors.append('%d frames without the projection while paused, '
-                      'first %d' % (len(blank), blank[0]))
-    if not [f for f in res.frames
-            if f['t_us'] > resumed + 1e6 and projections(f)]:
-        errors.append('no projection after the unpause')
-    if recenter_flags(res) != 1:
-        errors.append('the core saw RECENTERED %d times, want 1'
-                      % recenter_flags(res))
-    return errors
+# The anchor at the scripted head 0.5, 0.2, 0.3, turned 90 degrees left.
+TURNED = [0.5, 0.2, 0.3, 0.0, 0.70711, 0.0, 0.70711]
+
+
+def check_tracked_recenter_paused(space):
+    """A recenter while tracked content is paused keeps its frozen frame
+    on screen, with the poses the core drew it from. In space 'local' the
+    seated world moves with the screens to the turned head's anchor, in
+    the same headset frame; in 'stage' it stays in the room. The core
+    hears RECENTERED once."""
+    def check(res):
+        errors = []
+        if 'Headset recenter requested' not in res.log:
+            errors.append('the network command did not reach the hotkey')
+        errors += check_paused(res, 'recenter', 'resume')
+        asked = res.marks['recenter'] * 1e6
+        resumed = res.marks['resume'] * 1e6
+        paused = [f for f in res.frames
+                  if asked + 5e5 < f['t_us'] < resumed and f['layers']]
+        if not paused:
+            return errors + ['no frames between the recenter and the unpause']
+        blank = [f['n'] for f in paused if not projections(f)]
+        if blank:
+            errors.append('%d frames without the projection while paused, '
+                          'first %d' % (len(blank), blank[0]))
+        before = [f for f in res.frames
+                  if f['t_us'] < asked and projections(f) and quads(f)]
+        if not before or not projections(before[-1])[0].get('stage'):
+            return errors + ['no projection located in STAGE before the '
+                             'recenter']
+        b = projections(before[-1])[0]
+        # Where the space the eyes are shown in should be in STAGE.
+        want = b['stage']
+        if space == 'local':
+            want = in_stage(b, {'pose': TURNED})
+        shown = [f for f in paused if projections(f)]
+        for f in shown:
+            p = projections(f)[0]
+            if p['space'] != space:
+                errors.append('frame %d shows the eyes in %s, want %s'
+                              % (f['n'], p['space'], space))
+                break
+            if any(abs(x - y) > EXACT for v, w in zip(p['views'], b['views'])
+                   for x, y in zip(v['pose'], w['pose'])):
+                errors.append('frame %d shows the eyes at other poses than '
+                              'the paused frame\'s' % f['n'])
+                break
+            if not same_place([want], [p.get('stage')]):
+                errors.append('frame %d shows the eyes\' space at %s in '
+                              'STAGE, want %s' % (f['n'], p.get('stage'),
+                                                  want))
+                break
+        snapped = [f for f in shown if f['snap']]
+        if snapped:
+            errors += shown_as_drawn(res, snapped[-1])
+        # The screens went to the turned anchor either way.
+        q0 = quads(before[-1])[0]
+        q1 = [x for x in quads(paused[-1])
+              if x['eye'] == q0['eye'] and x['flags'] == q0['flags']]
+        moved = in_stage({'stage': TURNED}, q0)
+        if not q1 or not same_place([moved], [q1[0]['pose']]):
+            errors.append('the screen at %s did not go to %s with the '
+                          'recenter: %s' % (q0['pose'], moved,
+                                            q1 and q1[0]['pose']))
+        if not [f for f in res.frames
+                if f['t_us'] > resumed + 1e6 and projections(f)]:
+            errors.append('no projection after the unpause')
+        if recenter_flags(res) != 1:
+            errors.append('the core saw RECENTERED %d times, want 1'
+                          % recenter_flags(res))
+        if space == 'local':
+            errors += same_frame_errors(res)
+        return errors
+    return check
 
 
 def check_tracked_runtime_recenter(res):
@@ -1019,6 +1096,13 @@ REINIT_PAUSED = [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 1),
                  ('mark', 'paused'), ('wait', 3), ('mark', 'reinit'),
                  ('send', 'FULLSCREEN_TOGGLE'), ('wait', 4), ('mark', 'resume'),
                  ('send', 'PAUSE_TOGGLE'), ('wait', 3)]
+# The head turns while paused, so the frozen frame was drawn from other
+# poses than the anchor the recenter takes.
+RECENTER_PAUSED = [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 1),
+                   ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+                   ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+                   ('wait', 3), ('mark', 'resume'), ('send', 'PAUSE_TOGGLE'),
+                   ('wait', 3)]
 # The new session's first STAGE locations are not had yet.
 REINIT_PAUSED_UNLOCATED = (REINIT_PAUSED[:4]
                            + [('wait', 2), ('script', 'invalid stage 3'),
@@ -1410,6 +1494,45 @@ def check_recenter(res):
                       % last[0]['pose'][3:])
     if 'Headset recenter requested' not in res.log:
         errors.append('the network command did not reach the hotkey')
+    return errors
+
+
+def check_recenter_menu(res):
+    """The hotkey recenters while the menu is open: the menu and the
+    screens go to the turned head's anchor. A press with the menu
+    closed is the second, and no press runs twice."""
+    mark = res.marks['recenter'] * 1e6
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    before = [f for f in shown if f['t_us'] < mark]
+    after = [f for f in shown
+             if mark + 1e6 < f['t_us'] < res.marks['closed'] * 1e6]
+    if not before or not after:
+        return ['no frames on both sides of the recenter']
+    errors = []
+    for name, fr, want, turn in (
+            ('before', before[-1], (0.0, 0.0, -1.7), None),
+            ('after', after[-1], (-1.2, 0.2, 0.3),
+             (0.0, 0.70711, 0.0, 0.70711))):
+        menus = [x for x in quads(fr) if x['flags'] & BLEND]
+        if len(menus) != 1:
+            return ['want one blended menu quad %s the recenter, got %d'
+                    % (name, len(menus))]
+        if not at(menus[0], want):
+            errors.append('menu at %s %s the recenter, want %s'
+                          % (menus[0]['pose'][:3], name, want))
+        if turn and not facing(menus[0], turn):
+            errors.append('menu turned %s, want a quarter turn left'
+                          % menus[0]['pose'][3:])
+    screens = [x for x in quads(after[-1])
+               if not x['flags'] & BLEND and x['eye'] == 'left']
+    if not screens or not at(screens[0], (-1.3, 0.2, 0.3)):
+        errors.append('screen 0 at %s after the recenter, want (-1.3, 0.2, 0.3)'
+                      % (screens[0]['pose'][:3] if screens else None))
+    if res.log.count('Headset recenter requested') != 2:
+        errors.append('the hotkey ran %d times for two presses'
+                      % res.log.count('Headset recenter requested'))
     return errors
 
 
@@ -2368,6 +2491,87 @@ def check_menu_laser(res):
     if not shown or not any(at(c, (0.16, -0.048, -1.7))
                             for c in cursors(shown[-1])):
         errors.append('no dot on the menu where the laser points')
+    return errors
+
+
+HEAD_TURNED = 'head 0.5 0.2 0.3 90'
+# AIM_MENU_HIGH, AIM_MENU_LOW and AIM_BOTTOM from a head at HEAD_TURNED:
+# the same rays relative to the head, given in LOCAL.
+AIM_MENU_HIGH_TURNED = 'aim right 0.2 -0.2 0.1 -1.2 0.392 0.14'
+AIM_MENU_LOW_TURNED = 'aim right 0.2 -0.2 0.1 -1.2 0.152 0.14'
+AIM_BOTTOM_TURNED = 'aim right 0.2 -0.2 0.1 -1.3 -1.032 0.62'
+
+
+def screen0(frame):
+    left = [q for q in quads(frame) if q['eye'] == 'left']
+    return left[0] if left else None
+
+
+def check_placement_follow(res):
+    """Follow Head: the screens ride in VIEW space, straight ahead of
+    the eyes whichever way the head turns, and the laser's dot on
+    screen 1 with them."""
+    shown = [f for f in res.frames if screen0(f)]
+    if not shown:
+        return no_quads(res)
+    errors = []
+    turned = res.marks.get('turned', 0) * 1e6
+    late = [f for f in shown if f['t_us'] > turned + 1e6]
+    if not late:
+        errors.append('no frames after the head turned')
+    for f in [shown[0]] + late[-1:]:
+        q = screen0(f)
+        if q['space'] != 'view':
+            errors.append('screen 0 in %s space, want view' % q['space'])
+        elif not at(q, (0.0, 0.0, -1.8)) or not facing(q, (0, 0, 0, 1)):
+            errors.append('screen 0 at %s, want straight ahead'
+                          % q['pose'])
+    dots = [f for f in late if cursors(f)]
+    if not dots:
+        errors.append('no laser dot after the head turned')
+    else:
+        c = cursors(dots[-1])[0]
+        if c['space'] != 'view' or not at(c, DOT_BOTTOM):
+            errors.append('the dot is at %s in %s space, want %s in view'
+                          % (c['pose'][:3], c['space'], DOT_BOTTOM))
+    return errors
+
+
+def check_placement_lazy(res):
+    """Lazy Follow: a small turn leaves the screens; a large one has them
+    glide, not jump, back in front of the head."""
+    small = res.marks.get('small', 0) * 1e6
+    big = res.marks.get('big', 0) * 1e6
+    held = [screen0(f) for f in res.frames
+            if small + 1e6 < f['t_us'] < big and screen0(f)]
+    after = [screen0(f) for f in res.frames
+             if f['t_us'] > big and screen0(f)]
+    if not held or not after:
+        return no_quads(res)
+    errors = []
+    if any(q['space'] != 'local' for q in held + after):
+        errors.append('a screen outside LOCAL')
+    moved = [q['pose'][:3] for q in held if not at(q, (0.0, 0.0, -1.8))]
+    if moved:
+        errors.append('a 20 degree turn moved screen 0 to %s' % moved[0])
+    end = after[-1]
+    if (     not at(end, (-1.3, 0.2, 0.3))
+            or not facing(end, (0.0, 0.70711, 0.0, 0.70711))):
+        errors.append('screen 0 ends at %s, want in front of the turned '
+                      'head' % end['pose'])
+    if not [q for q in after if not at(q, (0.0, 0.0, -1.8))
+            and not at(q, (-1.3, 0.2, 0.3))]:
+        errors.append('screen 0 jumped instead of gliding')
+    return errors
+
+
+def check_placement_follow_laser(res):
+    """Follow Head with the menu open: the laser points at the menu and
+    its dot sits on it, all in VIEW space."""
+    errors = check_menu_laser(res)
+    shown = [f for f in res.frames if cursors(f)]
+    if shown and any(c['space'] != 'view' for c in cursors(shown[-1])):
+        errors.append('the laser\'s dot is not in VIEW space')
     return errors
 
 
@@ -3345,6 +3549,13 @@ CASES = [
      'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
                ('send', 'HEADSET_RECENTER'), ('wait', 3)],
      'check': check_recenter},
+    {'name': 'recenter-menu', 'map': '3ds', 'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('send', 'MENU_TOGGLE'), ('wait', 3), ('mark', 'recenter'),
+               ('send', 'HEADSET_RECENTER'), ('wait', 3), ('mark', 'closed'),
+               ('send', 'MENU_TOGGLE'), ('wait', 2),
+               ('send', 'HEADSET_RECENTER'), ('wait', 2)],
+     'check': check_recenter_menu},
     # The runtime's recenter after the hotkey's (space 2 is LOCAL).
     {'name': 'runtime-recenter', 'map': '3ds',
      'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
@@ -3913,14 +4124,24 @@ CASES = [
      'options': {'video_views_test_vr': 'local'},
      'steps': [('wait', 6), ('script', 'state 6'), ('wait', 3)],
      'check': check_tracked_stopping},
-    # The pause hotkey, not the menu: the menu takes no other hotkey.
     {'name': 'tracked-recenter-paused', 'map': '3ds',
      'options': {'video_views_test_vr': 'local'},
-     'steps': [('wait', 6), ('send', 'PAUSE_TOGGLE'), ('wait', 2),
-               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
-               ('wait', 3), ('mark', 'resume'), ('send', 'PAUSE_TOGGLE'),
-               ('wait', 3)],
-     'check': check_tracked_recenter_paused},
+     'steps': RECENTER_PAUSED,
+     'check': check_tracked_recenter_paused('local')},
+    {'name': 'tracked-recenter-paused-threaded', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'video_threaded': 'true'}, 'steps': RECENTER_PAUSED,
+     'check': threaded(check_tracked_recenter_paused('local'))},
+    {'name': 'tracked-recenter-paused-stage', 'map': '3ds',
+     'options': {'video_views_test_vr': 'stage'},
+     'steps': RECENTER_PAUSED,
+     'check': check_tracked_recenter_paused('stage')},
+    {'name': 'tracked-recenter-menu', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('send', 'MENU_TOGGLE') if s == ('send', 'PAUSE_TOGGLE')
+               else s for s in RECENTER_PAUSED],
+     'check': check_tracked_recenter_paused('local')},
     {'name': 'tracked-reinit', 'map': '3ds',
      'options': {'video_views_test_vr': 'stage'}, 'steps': REINIT_RUNNING,
      'check': check_tracked_reinit},
@@ -3993,6 +4214,33 @@ CASES = [
      'steps': [('wait', 6), ('script', START_MENU), ('wait', 1.5),
                ('mark', 'release'), ('script', ''), ('wait', 3)],
      'check': check_start_menu_hold},
+    {'name': 'placement-follow', 'map': '3ds',
+     'settings': {'video_openxr_placement': '1'},
+     'steps': [('script', script('head 0 0 0 0', AIM_BOTTOM)), ('wait', 6),
+               ('mark', 'turned'),
+               ('script', script(HEAD_TURNED, AIM_BOTTOM_TURNED)),
+               ('wait', 3)],
+     'check': check_placement_follow},
+    {'name': 'placement-lazy', 'map': '3ds',
+     'settings': {'video_openxr_placement': '2'}, 'script': 'head 0 0 0 0',
+     'steps': [('script', 'head 0 0 0 0'), ('wait', 6), ('mark', 'small'),
+               ('script', 'head 0 0 0 20'), ('wait', 2), ('mark', 'big'),
+               ('script', HEAD_TURNED), ('wait', 4)],
+     'check': check_placement_lazy},
+    {'name': 'placement-follow-laser', 'map': '3ds',
+     'settings': {'video_openxr_placement': '1', 'menu_driver': 'ozone',
+                  'frontend_log_level': '0'},
+     'steps': [('script', HEAD_TURNED), ('wait', 6), ('send', 'MENU_TOGGLE'),
+               ('wait', 3),
+               ('script', script(HEAD_TURNED, AIM_MENU_HIGH_TURNED)),
+               ('wait', 2),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED)),
+               ('wait', 2),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED, R2)),
+               ('wait', 1),
+               ('script', script(HEAD_TURNED, AIM_MENU_LOW_TURNED)),
+               ('wait', 2)],
+     'check': check_placement_follow_laser},
 ]
 
 

@@ -91,10 +91,14 @@ typedef struct gl_android_openxr
    unsigned slot_dims[OPENXR_MAX_SLOTS];
    unsigned slot_failed[OPENXR_MAX_SLOTS];
    int64_t format;
-   /* Set on the video thread, read by get_flags on the main thread. */
+   /* Set and read on the video thread. */
    retro_atomic_int_t stereo;
    bool in_frame;
    bool ended;
+   /* The Recenter hotkey's count gl2 last passed. */
+   unsigned recenter;
+   bool recenter_seen;
+   unsigned interval;
    /* The headset was given a projection to show. */
    bool proj_shown;
    /* The window: gl2 draws its frame here, the headset shows it. */
@@ -102,6 +106,18 @@ typedef struct gl_android_openxr
    GLuint tex;
    GLuint copy_fbo;
    unsigned dims;
+   /* The screens' distance and width gl2 last passed. */
+   float distance;
+   float width;
+   /* The frame's views as gl2 last passed them, with where the window
+    * has the frame: gl2 sets them in its frame, before the swap that
+    * draws with them, both on the video thread. */
+   video_views_map_t views;
+   video_viewport_t views_vp;
+   unsigned views_dims;
+   unsigned rotation;
+   unsigned screen_layout;
+   bool swap_eyes;
 
    EGLDisplay egl_display;
    EGLConfig egl_config;
@@ -526,16 +542,18 @@ static unsigned gl_xr_eye_dims(const gl_android_openxr_t *xr)
    return VIDEO_SCALE_PACK(MIN(w, xr->rt.max_dim), MIN(h, xr->rt.max_dim));
 }
 
-/* The window as a screen in the room, unless a tracked map's eyes fill
- * the headset and the menu is closed. An image the compositor still
- * holds keeps the last one shown. */
+/* The window as a screen in the room, or an untracked map's screens
+ * cut from it, unless a tracked map's eyes fill the headset and the
+ * menu is closed. An image the compositor still holds keeps the last
+ * one shown. */
 static void gl_xr_draw(gl_android_openxr_t *xr)
 {
    video_xr_params_t p;
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   unsigned s, l;
    unsigned index[2];
-   settings_t *settings = config_get_ptr();
-   bool menu            = false;
-   bool stereo          = retro_atomic_load_acquire_int(&xr->stereo) != 0;
+   bool menu   = false;
+   bool stereo = retro_atomic_load_acquire_int(&xr->stereo) != 0;
 
 #ifdef HAVE_MENU
    menu = (menu_state_get_ptr()->flags & MENU_ST_FLAG_ALIVE) != 0;
@@ -549,35 +567,54 @@ static void gl_xr_draw(gl_android_openxr_t *xr)
    memset(&p, 0, sizeof(p));
    if (!stereo || menu || !xr->proj_shown)
    {
-      p.frame_dims = xr->dims;
-      openxr_frame_get_anchor(&xr->frame, &p.anchor);
-      p.distance   = settings->floats.video_openxr_distance;
-      p.width      = settings->floats.video_openxr_width;
-      p.px_per_rad = openxr_frame_pixels_per_radian(&xr->frame);
-      p.max_dim    = xr->rt.max_dim;
-      p.window     = true;
+      p.map           = &xr->views;
+      p.frame_dims    = xr->dims;
+      video_xr_pose_identity(&p.anchor);
+      p.distance      = xr->distance;
+      p.width         = xr->width;
+      p.px_per_rad    = openxr_frame_pixels_per_radian(&xr->frame);
+      p.max_dim       = xr->rt.max_dim;
+      p.screen_layout = xr->screen_layout;
+      p.rotation      = xr->rotation;
+      p.swap_eyes     = xr->swap_eyes;
+      p.window        = true;
    }
    /* With no width, an empty set: the eyes are all there is. */
-   video_xr_place(&p, &xr->set);
-   if (     xr->set.slots[0].dims
-         && gl_xr_slot_ensure(xr, 0, xr->set.slots[0].dims, 1)
-         && openxr_slot_acquire(&xr->sc, 0, index))
+   video_xr_place_window(&p, menu, stereo, &xr->views_vp, xr->views_dims,
+         &xr->set, rects);
+   /* The blits are scissored: whatever gl2 drew last must not clip them. */
+   glDisable(GL_SCISSOR_TEST);
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
    {
-      unsigned dims = xr->set.slots[0].dims;
-      /* The blit is scissored: whatever gl2 drew last must not clip it. */
-      glDisable(GL_SCISSOR_TEST);
+      unsigned dims   = xr->set.slots[s].dims;
+      unsigned layers = xr->set.slots[s].layers;
+      if (     !dims
+            || !gl_xr_slot_ensure(xr, s, dims, layers)
+            || !openxr_slot_acquire(&xr->sc, s, index))
+         continue;
       glBindFramebuffer(GL_READ_FRAMEBUFFER, xr->fbo);
       glBindFramebuffer(GL_DRAW_FRAMEBUFFER, xr->copy_fbo);
-      glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
-            GL_TEXTURE_2D, (GLuint)xr->images[0][index[0]][0], 0);
-      glBlitFramebuffer(0, 0, (GLint)VIDEO_SCALE_W(xr->dims),
-            (GLint)VIDEO_SCALE_H(xr->dims), 0, 0,
-            (GLint)VIDEO_SCALE_W(dims), (GLint)VIDEO_SCALE_H(dims),
-            GL_COLOR_BUFFER_BIT, GL_LINEAR);
+      for (l = 0; l < layers; l++)
+      {
+         /* The window is bottom up. What lies past it is not copied:
+          * the clear leaves it black. */
+         const video_views_rect_t *r = &rects[s][l];
+         GLint x = VIDEO_POS_X(r->pos);
+         GLint y = (GLint)VIDEO_SCALE_H(xr->views_vp.full_dims)
+            - VIDEO_POS_Y(r->pos) - (GLint)VIDEO_SCALE_H(r->dims);
+         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, (GLuint)xr->images[s][index[l]][l], 0);
+         glClear(GL_COLOR_BUFFER_BIT);
+         glBlitFramebuffer(x, y, x + (GLint)VIDEO_SCALE_W(r->dims),
+               y + (GLint)VIDEO_SCALE_H(r->dims), 0, 0,
+               (GLint)VIDEO_SCALE_W(dims), (GLint)VIDEO_SCALE_H(dims),
+               GL_COLOR_BUFFER_BIT, GL_LINEAR);
+      }
       glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      /* The compositor reads the image on its own context. */
+      /* The compositor reads the images on its own context. */
       glFlush();
-      openxr_slot_release(&xr->sc, 0);
+      openxr_slot_release(&xr->sc, s);
    }
    openxr_frame_publish(&xr->frame, &xr->set);
 }
@@ -595,6 +632,56 @@ uint32_t gl_android_openxr_get_framebuffer(void)
 void gl_android_openxr_set_stereo(bool on)
 {
    retro_atomic_store_release_int(&gl_xr.stereo, on ? 1 : 0);
+}
+
+void gl_android_openxr_recenter(unsigned count)
+{
+   gl_android_openxr_t *xr = &gl_xr;
+   if (     xr->session.session && xr->recenter_seen
+         && xr->recenter != count)
+      openxr_frame_request_recenter(&xr->frame);
+   xr->recenter      = count;
+   xr->recenter_seen = true;
+}
+
+void gl_android_openxr_set_placement(unsigned placement, float distance,
+      float width)
+{
+   gl_xr.distance = distance;
+   gl_xr.width    = width;
+   openxr_frame_set_placement(&gl_xr.frame, placement);
+}
+
+void gl_android_openxr_set_views(const video_views_map_t *map,
+      unsigned frame_dims, const video_viewport_t *vp, unsigned rotation,
+      unsigned screen_layout, bool swap_eyes)
+{
+   gl_android_openxr_t *xr = &gl_xr;
+   xr->views               = *map;
+   xr->views_dims          = frame_dims;
+   xr->views_vp            = *vp;
+   xr->rotation            = rotation;
+   xr->screen_layout       = screen_layout;
+   xr->swap_eyes           = swap_eyes;
+}
+
+void gl_android_openxr_set_pacing(unsigned interval, float hz)
+{
+   gl_android_openxr_t *xr = &gl_xr;
+   xr->interval = interval;
+   if (xr->session.session)
+      openxr_frame_request_rate(&xr->frame, hz);
+}
+
+float gl_android_openxr_refresh(float *rates, unsigned cap,
+      unsigned *count)
+{
+   gl_android_openxr_t *xr = &gl_xr;
+   *count = 0;
+   if (!openxr_session_alive(&xr->session))
+      return 0.0f;
+   *count = openxr_frame_refresh_rates(&xr->frame, rates, cap);
+   return openxr_frame_refresh_rate(&xr->frame);
 }
 
 bool gl_android_openxr_eye_targets(uint32_t tex[2], unsigned *dims)
@@ -769,6 +856,8 @@ static void gl_android_openxr_ctx_swap_buffers(void *data)
    if (xr->begun.begun && xr->begun.render)
       gl_xr_draw(xr);
    openxr_frame_end(&xr->frame, &xr->begun);
+   if (xr->interval > 1)
+      openxr_frame_repeat(&xr->frame, xr->interval - 1);
 }
 
 static bool gl_android_openxr_ctx_has_focus(void *data)
@@ -803,10 +892,10 @@ static uint32_t gl_android_openxr_ctx_get_flags(void *data)
    gl_android_openxr_t *xr = (gl_android_openxr_t*)data;
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
    BIT32_SET(flags, GFX_CTX_FLAGS_HEADSET_INLINE);
-   /* gl2 finds the tracked eyes in the frame's views; the window
-    * shows the frame whole. */
-   if (     xr && retro_atomic_load_acquire_int(&xr->stereo)
-         && openxr_session_running(&xr->session))
+   /* gl2 draws the frame whole in the window, so touch, overlays and
+    * the UI follow it; the headset shows a tracked map's eyes from the
+    * frame's views, and an untracked map's screens from the window. */
+   if (xr && openxr_session_running(&xr->session))
    {
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
       BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);

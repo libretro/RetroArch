@@ -45,6 +45,7 @@
 #include <streams/file_stream.h>
 #include <string/stdstring.h>
 #include <features/features_cpu.h>
+#include <retro_miscellaneous.h>
 
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../configuration.h"
@@ -53,6 +54,7 @@
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_driver.h"
 #include "../../../menu/menu_entries.h"
+#include "../../../gfx/video_driver.h"
 #include "../../../frontend/frontend_driver.h"
 
 static unsigned failures = 0;
@@ -186,6 +188,75 @@ static void lane_on_other_driver(void)
          "fixture: Headset Output is listed under glcore");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not listed under glcore with the setting on");
+}
+
+/* The headset's rows follow the driver's headset path: all of them, in
+ * order, under one that has it; none under one that has not. */
+static void lane_headset_rows(void)
+{
+   static const char *const rows[] = {
+      MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_REFRESH_RATE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_DISTANCE_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_WIDTH_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_CONTROLLERS_STR,
+      MENU_ENUM_LABEL_VIDEO_OPENXR_LASER_STR };
+   unsigned i;
+   int last = -1;
+
+   CHECK(video_driver_has_headset_path("vulkan"),
+         "vulkan has no headset path");
+   CHECK(     !video_driver_has_headset_path("gl")
+         && !video_driver_has_headset_path("glcore")
+         && !video_driver_has_headset_path("null"),
+         "a desktop driver other than vulkan has a headset path");
+
+   set_headset(false);
+   set_driver("vulkan");
+   open_stereo_list();
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+   {
+      int r = row(rows[i]);
+      CHECK(r > last, "%s is at row %d, after row %d", rows[i], r, last);
+      last = r;
+   }
+
+   set_driver("gl");
+   open_stereo_list();
+   for (i = 0; i < ARRAY_SIZE(rows); i++)
+      CHECK(row(rows[i]) < 0, "%s is listed under gl", rows[i]);
+   set_driver("vulkan");
+}
+
+/* Fixed in Room by default; each value shows its own name. */
+static void lane_placement(void)
+{
+   static const char *const shown[] = {
+      "Fixed in Room", "Follow Head", "Lazy Follow" };
+   char s[64];
+   unsigned i;
+   settings_t *settings     = config_get_ptr();
+   rarch_setting_t *setting = menu_setting_find_enum(
+         MENU_ENUM_LABEL_VIDEO_OPENXR_PLACEMENT);
+
+   CHECK(setting != NULL, "fixture: no Screen Placement setting");
+   if (!setting)
+      return;
+   CHECK(settings->uints.video_openxr_placement
+         == VIDEO_OPENXR_PLACEMENT_FIXED,
+         "Screen Placement is %u by default, want Fixed in Room",
+         settings->uints.video_openxr_placement);
+   for (i = 0; i < ARRAY_SIZE(shown); i++)
+   {
+      configuration_set_uint(settings,
+            settings->uints.video_openxr_placement, i);
+      setting->actions->repr(setting, s, sizeof(s));
+      CHECK(string_is_equal(s, shown[i]),
+            "placement %u shows \"%s\", want \"%s\"", i, s, shown[i]);
+   }
+   configuration_set_uint(settings, settings->uints.video_openxr_placement,
+         VIDEO_OPENXR_PLACEMENT_FIXED);
 }
 
 static void lane_toggle(void)
@@ -400,6 +471,8 @@ int main(int argc, char *argv[])
    lane_off();
    lane_on();
    lane_on_other_driver();
+   lane_headset_rows();
+   lane_placement();
    lane_toggle();
    lane_refresh_rate();
 
