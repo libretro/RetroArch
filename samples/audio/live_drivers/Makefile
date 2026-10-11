@@ -8,7 +8,6 @@ INCDIRS := -I$(LIBRETRO_COMM_DIR)/include -I../../.. -I../../../deps
 SOURCES_C := \
 	live_drivers_test.c \
 	stubs_retroarch.c \
-	../../../audio/drivers/pulse.c \
 	../../../audio/common/alsa.c \
 	../../../audio/audio_upmix.c \
 	$(LIBRETRO_COMM_DIR)/string/stdstring.c \

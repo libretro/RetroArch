@@ -32,7 +32,6 @@
 #include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
 
-extern audio_driver_t audio_pulse;
 
 /* The driver's calls to the mainloop lock, counted while the writer
  * runs. libpulse's own thread locks its mutex directly, not through
@@ -48,6 +47,8 @@ void __wrap_pa_threaded_mainloop_lock(pa_threaded_mainloop *m)
    __real_pa_threaded_mainloop_lock(m);
 }
 #include "../../../audio/drivers/alsa.c"
+/* Here rather than linked, so the lend check can see the driver's ring */
+#include "../../../audio/drivers/pulse.c"
 static bool alsa_no_pause = false;
 static bool alsa_expect_mmap = false;
 
@@ -196,6 +197,12 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
       else
       {
          CHECK(lent > 50, "%s: only %u of 100 lends", name, lent);
+         /* A span shorter than asked is no sign of a wrap - the room
+          * the server granted bounds it as well - so the ring itself is
+          * asked: mirrored, no span stops at its end. */
+         if (drv == &audio_pulse)
+            CHECK(((pa_t*)h)->ring.mirror != 0,
+                  "%s: the ring is not mirrored; spans stop at its wrap", name);
          if (drv == &audio_alsa)
             CHECK(snd_pcm_state(((alsa_t*)h)->pcm) == SND_PCM_STATE_RUNNING,
                   "%s: committed spans did not start the stream (%s)", name,
