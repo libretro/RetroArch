@@ -1243,8 +1243,9 @@ jobs:
           # The threaded pipeline against a device that drains on a
           # clock, with Audio Sync the only thing pacing the core: the
           # ring sits full and every publish waits behind it. With
-          # audio_pipeline_fill_cap the queue has to come down to under
-          # half, against the same device, without the device running
+          # audio_pipeline_fill_cap the queue has to come down to the
+          # device's buffer and no more than a publish past it, where a
+          # blocking inline write leaves it, without the device running
           # dry. With Audio Sync off it has to take the queue down too,
           # with a core up to a frame late not reaching the device as
           # silence. And display-paced with Audio Sync on, rate control

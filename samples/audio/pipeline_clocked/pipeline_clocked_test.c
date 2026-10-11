@@ -587,7 +587,6 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
 static void audio_paced_case(double seconds)
 {
    static const unsigned lat[] = { 16, 32, 64 };
-   double uncapped_ms = 0.0;
    size_t i;
    printf("queued ahead of each publish (pipe + device), steady state:\n");
    for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
@@ -632,19 +631,14 @@ static void audio_paced_case(double seconds)
             printf("FAIL: the cap held a display-paced core in every run\n");
             paced_failures++;
          }
-         /* And it is to lower the queue, by most of the ring: at least
-          * half of what the full ring held, cap off, against the same
-          * device. */
-         if (!video)
+         /* And it is to lower the queue to where a blocking inline
+          * write leaves it: the device's buffer, and no more than a
+          * publish past it - against the whole ring, cap off. */
+         if (!video && cap && !(avg < lat[i] + 1000.0 / FPS + 4.0))
          {
-            if (!cap)
-               uncapped_ms = avg;
-            else if (!(avg < uncapped_ms / 2.0))
-            {
-               printf("FAIL: the cap left %.1f ms queued against %.1f ms without it\n",
-                     avg, uncapped_ms);
-               paced_failures++;
-            }
+            printf("FAIL: the cap left %.1f ms queued; the device holds %u ms\n",
+                  avg, lat[i]);
+            paced_failures++;
          }
       }
    }

@@ -5553,10 +5553,9 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
  * and is held only when the ring has no room left. So the ring sits
  * full, and every sample published waits behind all of it: the whole
  * ring of latency on top of the device's buffer, where a core paced by
- * the display keeps the pipe near its target. Holding the core at the
- * target and one publish on top puts the audio-paced fill where the
- * display-paced one already is - one publish arriving while the
- * consumer takes the last, the target behind it.
+ * the display keeps the pipe near its target. Holding the core once
+ * the pipe holds what the consumer moves in a pass puts the queue where
+ * a blocking inline write leaves it: the device's buffer and a chunk.
  *
  * Only with Audio Sync, where the producer blocks at all, and only on
  * request: audio_pipeline_fill_cap, off by default, which leaves the
@@ -5578,16 +5577,23 @@ static size_t audio_driver_pipe_cap_frames(audio_driver_state_t *audio_st)
       return 0;
    if (!(target = audio_driver_pipe_target_frames(audio_st)))
       return 0;
-   /* Paced by the display as well, one publish more: the fill swings
-    * by a publish with the phase between the core's publish and the
-    * consumer's pass, and at one publish over the target that swing
+   /* Paced by the display as well, two publishes over the target:
+    * the fill swings by a publish with the phase between the core's
+    * publish and the consumer's pass, and at one publish over the target that swing
     * held a display-paced core for part of a pass now and then - time
     * the display pacing hold measures as the core's and reserves. Two
     * clear the swing, so only a core running ahead of the device is
     * held, as a full ring held it. */
    if (snap & AUDIO_SNAP_DISPLAY_PACED)
-      target += audio_st->pipe_pass_frames;
-   return target + audio_st->pipe_pass_frames;
+      return target + 2 * audio_st->pipe_pass_frames;
+   /* Paced by audio alone, the device's buffer is the cushion, as it is
+    * for an inline write that blocks until the frame is in it: the pipe
+    * need only hold what the consumer moves in one pass, a chunk of the
+    * device's buffer. The core is held through its publish a chunk at a
+    * time and leaves it with that much queued past the device. */
+   target = (size_t)((double)audio_driver_pipe_chunk_bytes(audio_st)
+         / audio_driver_dev_frame_bytes(audio_st) / audio_st->src_ratio_orig);
+   return target < 32 ? 32 : target;
 }
 
 /* What priming fills the pipe to: the target and the device's buffer

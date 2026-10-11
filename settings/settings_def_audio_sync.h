@@ -20,7 +20,7 @@ S_BOOL(audio_pipeline_fill_cap, AUDIO_PIPELINE_FILL_CAP,
       "audio_pipeline_fill_cap",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Shallow Pipeline Queue",
-      "Keep the Threaded Pipeline's queue to what the frame-synchronous path holds: rate control keeps half the Audio Latency queued rather than nearly all of it and a frame on top. With Synchronization on, the core is held about two frames ahead of the device instead of at a full queue when audio paces it, such as with Vertical Sync off. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
+      "Keep the Threaded Pipeline's queue to what the frame-synchronous path holds: rate control keeps half the Audio Latency queued rather than nearly all of it and a frame on top. With Synchronization on and audio pacing the core, such as with Vertical Sync off, the core is held where a frame-synchronous write would hold it rather than at a full queue. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
 
 S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",
