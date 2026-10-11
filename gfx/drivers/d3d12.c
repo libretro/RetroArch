@@ -6054,7 +6054,8 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
 
       RARCH_DBG("[D3D12] Updating framebuffer size %ux%u.\n", width, height);
 
-      if (i == (d3d12->shader_preset->passes - 1))
+      if (     (i == (d3d12->shader_preset->passes - 1))
+            && !pass->feedback)
       {
          d3d12->pass[i].viewport.TopLeftX    = VIDEO_POS_X(d3d12->vp.pos);
          d3d12->pass[i].viewport.TopLeftY    = VIDEO_POS_Y(d3d12->vp.pos);
@@ -6082,6 +6083,7 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
       }
 
       if (     (i != (d3d12->shader_preset->passes - 1))
+            || pass->feedback
             || (width  != VIDEO_SCALE_W(d3d12->vp.dims))
             || (height != VIDEO_SCALE_H(d3d12->vp.dims)))
       {
