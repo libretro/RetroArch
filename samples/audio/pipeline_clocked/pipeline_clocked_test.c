@@ -22,8 +22,10 @@
  * Then the same device with Audio Sync as the only pacer, the core
  * blocking in the publish, against the display-paced core, with
  * audio_pipeline_fill_cap off and on: what each publish waits behind.
- * Then display-paced against the frame-synchronous path's setpoint,
- * and Audio Sync off, display-paced, the pipe deep and shallow.
+ * Then display-paced against the frame-synchronous path's setpoint;
+ * rate control with audio the only clock, inline and threaded, and
+ * with a present that blocks behind the runloop's back; and Audio
+ * Sync off, display-paced, the pipe deep and shallow.
  * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
@@ -285,11 +287,26 @@ static audio_driver_t clocked_driver = {
 static retro_atomic_int_t consumer_run = RETRO_ATOMIC_INT_INITIALIZER(1);
 static unsigned stall_failures;
 
+/* Rate control's adjustment, summed on the thread that computes it
+ * once adj_on is set; read after the join. */
+static retro_atomic_int_t adj_on = RETRO_ATOMIC_INT_INITIALIZER(0);
+static double             cons_adj_sum;
+static long               cons_adj_n;
+
 static void *consumer(void *arg)
 {
    (void)arg;
+   cons_adj_sum = 0.0;
+   cons_adj_n   = 0;
    while (retro_atomic_load_acquire_int(&consumer_run))
+   {
       audio_driver_pipeline_consume(&audio_driver_st);
+      if (retro_atomic_load_acquire_int(&adj_on))
+      {
+         cons_adj_sum += audio_driver_st.cached_rate_adjust;
+         cons_adj_n++;
+      }
+   }
    return NULL;
 }
 
@@ -472,6 +489,16 @@ static void run_one(unsigned latency_ms, double seconds)
  * default, the core held only by a full ring. */
 static unsigned paced_failures;
 
+/* Knobs the rate control lane turns: the frame-synchronous path in
+ * place of the pipeline; the pace the runloop reports, where it differs
+ * from what holds the loop - a present that blocks with vsync off; the
+ * display's rate against the content's. And what it reads back: rate
+ * control's adjustment, averaged over the steady state. */
+static bool     paced_inline;
+static unsigned paced_pace;
+static double   paced_fps_scale = 1.0;
+static double   paced_adjust;
+
 static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       bool video_paced, bool sync, unsigned jitter_us,
       double *avg_ms, double *max_ms, size_t *short_pulls, size_t *held)
@@ -483,7 +510,9 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    size_t    warm_under = 0;
    double    sum = 0.0, worst = 0.0;
    struct timespec next;
-   long      step_ns   = video_paced ? (long)(1e9 / FPS) : 2000000L;
+   long      step_ns   = video_paced
+      ? (long)(1e9 / (FPS * paced_fps_scale)) : 2000000L;
+   double    adjust_sum = 0.0;
    unsigned  seed      = 12345;
    if (getenv("JITTER_US"))
       jitter_us = (unsigned)atoi(getenv("JITTER_US"));
@@ -499,7 +528,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    config_get_ptr()->bools.audio_pipeline_fill_cap = cap;
    /* What the runloop's last pace decision says held it: the display
     * pacing hold, or the publish itself. */
-   runloop_state_get_ptr()->pace = video_paced
+   runloop_state_get_ptr()->pace = paced_pace ? paced_pace : video_paced
       ? RUNLOOP_PACE_DISPLAY : RUNLOOP_PACE_AUDIO;
    /* Audio Sync off: the publish never waits, as the frontend's
     * non-blocking state has it. */
@@ -512,8 +541,14 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
 
    retro_atomic_store_release_int(&dev_running, 1);
    retro_atomic_store_release_int(&consumer_run, 1);
+   if (paced_inline)
+   {
+      AUDIO_FLAGS_CLEAR(st, AUDIO_FLAG_PIPELINE_THREADED);
+      st->pipe_threaded = false;
+   }
    pthread_create(&dev,  NULL, dev_thread, NULL);
-   pthread_create(&cons, NULL, consumer, NULL);
+   if (!paced_inline)
+      pthread_create(&cons, NULL, consumer, NULL);
 
    clock_gettime(CLOCK_MONOTONIC, &next);
    for (i = 0; i < frames; i++)
@@ -540,6 +575,8 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
          struct timespec t0, t1;
          long held_us;
          clock_gettime(CLOCK_MONOTONIC, &t0);
+         /* As the runloop does before each core run */
+         audio_driver_publish_runloop();
          audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
                false, false, false, true);
          clock_gettime(CLOCK_MONOTONIC, &t1);
@@ -552,10 +589,15 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       }
       audio_driver_pipeline_signal(st);
       if (i == (size_t)FPS)
+         retro_atomic_store_release_int(&adj_on, 1);
+      if (i == (size_t)FPS)
          warm_under = retro_atomic_load_acquire_size(&dev_underruns);
       if (i >= (size_t)FPS)
       {
-         double q = (double)retro_spsc_read_avail(&st->pipe_ring)
+         double q;
+         if (paced_inline)
+            adjust_sum += st->cached_rate_adjust;
+         q = (double)retro_spsc_read_avail(&st->pipe_ring)
                / st->pipe_frame_bytes
             + (double)retro_atomic_load_acquire_size(&dev_filled) / CHANNELS;
          q = q * 1000.0 / OUT_RATE;
@@ -572,15 +614,20 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    retro_atomic_store_release_int(&dev_running, 0);
    audio_driver_pipeline_wake();
    dev_signal();
-   pthread_join(cons, NULL);
+   if (!paced_inline)
+      pthread_join(cons, NULL);
    pthread_join(dev,  NULL);
+   retro_atomic_store_release_int(&adj_on, 0);
    pipeline_down();
    config_get_ptr()->bools.audio_pipeline_fill_cap = false;
    runloop_state_get_ptr()->pace = 0;
+   paced_adjust = 1.0;
    if (counted)
    {
       *avg_ms = sum / (double)counted;
       *max_ms = worst;
+      paced_adjust = paced_inline ? adjust_sum / (double)counted
+         : cons_adj_n ? cons_adj_sum / (double)cons_adj_n : 1.0;
    }
 }
 
@@ -688,6 +735,68 @@ static void setpoint_case(double seconds)
          printf("FAIL: shallow queued %.1f ms; the inline setpoint is %.1f ms\n",
                avg[1], bound - 4.0);
          paced_failures++;
+      }
+   }
+}
+
+/* Rate control with audio the only clock. The write blocks until there
+ * is room, so the device sits full, which the controller read as
+ * overfill and corrected at its whole delta: the core ran half a
+ * percent fast and the audio as much sharp, inline as on the threaded
+ * pipeline. It is to stand aside there - and only there: a present
+ * that blocks with vsync off is a second clock the runloop cannot see,
+ * and there the controller must still hold the fill short of the full
+ * ring, a display faster than the content or slower. */
+static void rate_control_case(double seconds)
+{
+   static const unsigned lat[] = { 32, 64 };
+   size_t i;
+   printf("rate control, audio the only clock:\n");
+   for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
+   {
+      double avg, mx;
+      size_t sp, held;
+      int    path, attempt;
+      for (path = 0; path < 2; path++)
+      {
+         paced_inline = path == 0;
+         audio_paced_once(lat[i], seconds, false, false, true, 0,
+               &avg, &mx, &sp, &held);
+         paced_inline = false;
+         printf("  %3u ms  %-8s audio-paced  | adjust %.5f, avg %6.1f ms\n",
+               lat[i], path ? "threaded" : "inline", paced_adjust, avg);
+         if (!(paced_adjust > 0.9995))
+         {
+            printf("FAIL: rate control corrected a single clock by %.3f%%\n",
+                  (1.0 - paced_adjust) * 100.0);
+            paced_failures++;
+         }
+      }
+      /* A present that blocks: the display's schedule, at 0.2% either
+       * side of the content's rate, with the runloop reporting audio as
+       * the only pace */
+      for (path = 0; path < 2; path++)
+      {
+         double scale = path ? 0.998 : 1.002;
+         paced_pace      = RUNLOOP_PACE_AUDIO;
+         paced_fps_scale = scale;
+         for (attempt = 0; attempt < 5; attempt++)
+         {
+            audio_paced_once(lat[i], seconds, false, true, true, 0,
+                  &avg, &mx, &sp, &held);
+            if (!(sp || held))
+               break;
+         }
+         paced_pace      = 0;
+         paced_fps_scale = 1.0;
+         printf("  %3u ms  display %s  | adjust %.5f, avg %6.1f ms, short %u, held %u\n",
+               lat[i], path ? "0.2% slow" : "0.2% fast", paced_adjust, avg,
+               (unsigned)sp, (unsigned)held);
+         if (sp || held)
+         {
+            printf("FAIL: with a second clock the fill left the setpoint in every run\n");
+            paced_failures++;
+         }
       }
    }
 }
@@ -972,6 +1081,7 @@ int main(int argc, char **argv)
    {
       audio_paced_case(seconds);
       setpoint_case(seconds);
+      rate_control_case(seconds);
       sync_off_case(seconds);
       return paced_failures ? 1 : 0;
    }
@@ -979,6 +1089,7 @@ int main(int argc, char **argv)
       run_one(sweep[i], seconds);
    audio_paced_case(seconds);
    setpoint_case(seconds);
+   rate_control_case(seconds);
    sync_off_case(seconds);
    stall_case();
    return (stall_failures || paced_failures) ? 1 : 0;

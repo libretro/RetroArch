@@ -1345,7 +1345,8 @@ static INLINE double audio_driver_sink_bias(audio_driver_state_t *audio_st)
    return 1.0 + (double)retro_atomic_load_acquire_int(&audio_st->sink_bias_q) / 1e8;
 }
 
-static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
+static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st,
+      size_t samples)
 {
    unsigned write_idx;
    int avail;
@@ -1400,6 +1401,29 @@ static double audio_driver_compute_rate_adjust(audio_driver_state_t *audio_st)
 
    delta_mid              = avail - half_size;
    direction              = (double)delta_mid / half_size;
+   /* Held by audio alone, the device sits full because the write waits
+    * for room in it: one clock, and the overfill the controller reads
+    * is the blocking write working, not a rate to correct. Corrected,
+    * it ran the core up to the whole delta fast and the audio as much
+    * sharp. Only once the write is seen waiting - a present that blocks
+    * whatever the vsync setting says is a second clock, and there the
+    * controller holds the fill at its setpoint, short of any wait - and
+    * only that side: a device running emptier than the setpoint is
+    * still a core falling behind. Inline, the write waits when the
+    * room is less than this batch will need; on the threaded pipeline
+    * the publish says so itself. */
+   if (     direction < 0.0
+         && (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+            & AUDIO_SNAP_AUDIO_PACED))
+   {
+      bool held = audio_st->pipe_threaded
+         ? (retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
+               & AUDIO_SNAP_WRITER_HELD) != 0
+         : (double)avail < (double)(samples / 2) * audio_st->src_ratio_orig
+               * audio_driver_dev_frame_bytes(audio_st);
+      if (held)
+         direction = 0.0;
+   }
    /* Scale rate_control_delta inversely with the resampling ratio
     * so the effective loop gain stays constant regardless of output
     * sample rate (e.g. 96 kHz+).  Without this, high ratios amplify
@@ -3132,7 +3156,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
          if (     audio_st->drc_pending
                || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
          {
-            rate_adjust           = audio_driver_compute_rate_adjust(audio_st);
+            rate_adjust           = audio_driver_compute_rate_adjust(audio_st, samples);
             audio_st->drc_pending = false;
          }
          else
@@ -3331,7 +3355,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
                   || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
             {
                audio_st->src_ratio_curr = audio_st->src_ratio_orig *
-                     audio_driver_compute_rate_adjust(audio_st);
+                     audio_driver_compute_rate_adjust(audio_st, samples);
                audio_st->drc_pending    = false;
             }
          }
@@ -3704,7 +3728,7 @@ static void audio_driver_flush(audio_driver_state_t *audio_st,
       if (     audio_st->drc_pending
             || audio_st->samples_since_drc >= audio_st->drc_threshold_int16s)
       {
-         double adjust            = audio_driver_compute_rate_adjust(audio_st);
+         double adjust            = audio_driver_compute_rate_adjust(audio_st, samples);
          audio_st->src_ratio_curr = audio_st->src_ratio_orig * adjust;
          audio_st->drc_pending    = false;
 
@@ -4962,9 +4986,17 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_STRETCH_LPF;
    if (settings->bools.audio_pipeline_fill_cap)
       v |= AUDIO_SNAP_PIPE_CAP;
-   if (runloop_state_get_ptr()->pace & (RUNLOOP_PACE_VSYNC
-            | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_DISPLAY))
-      v |= AUDIO_SNAP_DISPLAY_PACED;
+   {
+      unsigned pace = runloop_state_get_ptr()->pace;
+      if (pace & (RUNLOOP_PACE_VSYNC | RUNLOOP_PACE_SCANLINE
+               | RUNLOOP_PACE_DISPLAY))
+         v |= AUDIO_SNAP_DISPLAY_PACED;
+      else if ((pace & RUNLOOP_PACE_AUDIO) && !(pace & RUNLOOP_PACE_TIMER))
+         v |= AUDIO_SNAP_AUDIO_PACED;
+   }
+   if (audio_driver_st.writer_held)
+      v |= AUDIO_SNAP_WRITER_HELD;
+   audio_driver_st.writer_held = false;
    ratio = settings->floats.slowmotion_ratio;
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(
@@ -6025,6 +6057,7 @@ static void audio_driver_submit_width(audio_driver_state_t *audio_st,
              * frontend sits here for multiples of it. */
             retro_time_t deadline = cpu_features_get_time_usec()
                   + audio_driver_pipe_wait_us(audio_st);
+            audio_st->writer_held = true;
             /* The frame-end signal cannot arrive while its producer waits
              * here. Wake a consumer parked for data before waiting for space. */
             audio_driver_pipeline_signal(audio_st);

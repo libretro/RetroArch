@@ -57,13 +57,18 @@ static audio_driver_t scripted = {
 };
 
 /* One DRC evaluation: enough samples since the last to cross the
- * threshold, then the computation. */
-static double adjust_for(size_t avail)
+ * threshold, then the computation, for a batch of that many. */
+static double adjust_batch(size_t avail, size_t samples)
 {
    audio_driver_state_t *st = &audio_driver_st;
    scripted_avail           = avail;
    st->samples_since_drc    = st->drc_threshold_int16s;
-   return audio_driver_compute_rate_adjust(st);
+   return audio_driver_compute_rate_adjust(st, samples);
+}
+
+static double adjust_for(size_t avail)
+{
+   return adjust_batch(avail, audio_driver_st.drc_threshold_int16s);
 }
 
 int main(void)
@@ -100,11 +105,45 @@ int main(void)
    CHECK(fabs(a - (1.0 + delta)) < 1e-9,
          "over-report: adjust %.6f, expected the clamped %.6f", a, 1.0 + delta);
 
+   /* Audio the only clock, and the write about to wait - less room
+    * than the batch needs: the overfill is the blocking write working,
+    * and nothing is corrected. A device emptier than the setpoint
+    * still is: a core falling behind. */
+   st->out_channels = 2;
+   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_AUDIO_PACED);
+   a = adjust_batch(100, 400);
+   CHECK(fabs(a - 1.0) < 1e-9, "audio-paced, write waits: adjust %.6f, expected 1.0", a);
+   a = adjust_batch(900, 400);
+   CHECK(a > 1.0, "audio-paced, emptier than the setpoint: adjust %.6f, expected a correction", a);
+   /* Audio-paced as the runloop sees it, but the write is not waiting:
+    * a present that blocks behind the runloop's back is a second clock,
+    * and the controller holds the fill as ever. */
+   a = adjust_batch(300, 100);
+   CHECK(fabs(a - (1.0 - 0.4 * delta)) < 1e-9,
+         "audio-paced, write not waiting: adjust %.6f, expected %.6f", a, 1.0 - 0.4 * delta);
+   /* Any display source: corrected as ever, waiting or not. */
+   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_DISPLAY_PACED);
+   a = adjust_batch(100, 400);
+   CHECK(fabs(a - (1.0 - 0.8 * delta)) < 1e-9,
+         "display-paced: adjust %.6f, expected %.6f", a, 1.0 - 0.8 * delta);
+   /* Threaded: the publish says whether it waited. */
+   st->pipe_threaded = true;
+   retro_atomic_store_release_int(&st->pipe_ctrl_avail, 100);
+   retro_atomic_store_release_int(&st->runloop_snapshot, AUDIO_SNAP_AUDIO_PACED);
+   a = adjust_batch(100, 400);
+   CHECK(fabs(a - (1.0 - 0.8 * delta)) < 1e-9,
+         "threaded, publish not held: adjust %.6f, expected %.6f", a, 1.0 - 0.8 * delta);
+   retro_atomic_store_release_int(&st->runloop_snapshot,
+         AUDIO_SNAP_AUDIO_PACED | AUDIO_SNAP_WRITER_HELD);
+   a = adjust_batch(100, 400);
+   CHECK(fabs(a - 1.0) < 1e-9, "threaded, publish held: adjust %.6f, expected 1.0", a);
+
    if (failures)
    {
       printf("%u failure(s)\n", failures);
       return 1;
    }
-   printf("rate control: stays within 1 +/- delta whatever write_avail() reports\n");
+   printf("rate control: stays within 1 +/- delta whatever write_avail() reports,\n"
+          "and stands aside only for a blocking write that is the only clock\n");
    return 0;
 }

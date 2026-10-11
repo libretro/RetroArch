@@ -721,6 +721,9 @@ typedef struct
     * pipe's target then, not just a frame. Consumer thread only after
     * init. */
    bool     pipe_priming;
+   /* Main thread: the publish waited for room since the last
+    * audio_driver_publish_runloop(), which takes it into the snapshot */
+   bool     writer_held;
    /* How the consumer fared against the core after priming, said once
     * at teardown beside the driver's silence count: the passes that
     * found the pipe short and had to wait for the core, the longest
@@ -1258,7 +1261,12 @@ enum audio_runloop_snapshot_bits
    AUDIO_SNAP_PIPE_CAP    = (1 << 11),
    /* The last iteration's pace had a display source: vsync, Scanline
     * Sync or the display pacing hold */
-   AUDIO_SNAP_DISPLAY_PACED = (1 << 12)
+   AUDIO_SNAP_DISPLAY_PACED = (1 << 12),
+   /* The last iteration was held by audio alone, and the threaded
+    * pipeline's publish waited for room in it: see
+    * audio_driver_compute_rate_adjust() */
+   AUDIO_SNAP_AUDIO_PACED   = (1 << 13),
+   AUDIO_SNAP_WRITER_HELD   = (1 << 14)
 };
 
 /**
