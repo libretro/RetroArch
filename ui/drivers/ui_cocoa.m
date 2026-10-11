@@ -16,6 +16,7 @@
 
 #import <objc/objc-runtime.h>
 #include "../../apple_runtime.h"
+#include <dlfcn.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -1761,8 +1762,19 @@ static NSWindow *cocoa_create_main_window(void)
    if (     [window respondsToSelector:set_identifier]
          && [window respondsToSelector:set_restoration])
    {
+      Protocol *(*get_protocol)(const char *) =
+            (Protocol *(*)(const char *))dlsym(RTLD_DEFAULT, "objc_getProtocol");
+      BOOL (*add_protocol)(Class, Protocol *) =
+            (BOOL (*)(Class, Protocol *))dlsym(RTLD_DEFAULT, "class_addProtocol");
+      Protocol *protocol = get_protocol
+            ? get_protocol("NSWindowRestoration") : nil;
+      Class restoration_class = [RetroArch_OSX class];
       apple_rt_send_id(window, set_identifier, @"RetroArchMainWindow");
-      apple_rt_send_id(window, set_restoration, [RetroArch_OSX class]);
+      if (protocol && ([restoration_class conformsToProtocol:protocol]
+               || (add_protocol && add_protocol(restoration_class, protocol))))
+         apple_rt_send_id(window, set_restoration, restoration_class);
+      else
+         RARCH_WARN("[Cocoa] Window restoration protocol unavailable.\n");
    }
 #endif
    return window;
