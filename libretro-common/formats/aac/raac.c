@@ -857,7 +857,7 @@ static int raac_huff_build(raac_huff *h, uint32_t *lut, size_t cap,
       const uint8_t *bits, int n, int cb)
 {
    size_t   used = (size_t)1 << RAAC_HUFF_ROOT;
-   unsigned sub[1 << RAAC_HUFF_ROOT];
+   uint8_t  sub[1 << RAAC_HUFF_ROOT];
    int      i;
    h->lut = lut;
    memset(lut, 0, cap * sizeof(*lut));
