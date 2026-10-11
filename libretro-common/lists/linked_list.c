@@ -303,7 +303,7 @@ void *linked_list_remove_first_matching(linked_list_t *list, bool (*matches)(voi
 {
    struct linked_list_item_t *item;
 
-   if (!list)
+   if (!list || !matches)
       return NULL;
 
    for (item = list->first_item; item; item = item->next)
@@ -328,7 +328,7 @@ void *linked_list_remove_last_matching(linked_list_t *list, bool (*matches)(void
 {
    struct linked_list_item_t *item;
 
-   if (!list)
+   if (!list || !matches)
       return NULL;
 
    for (item = list->last_item; item; item = item->previous)
@@ -353,7 +353,7 @@ void linked_list_remove_all_matching(linked_list_t *list, bool (*matches)(void *
 {
    struct linked_list_item_t *item;
 
-   if (!list)
+   if (!list || !matches)
       return;
 
    for (item = list->first_item; item;)
