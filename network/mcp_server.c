@@ -98,6 +98,18 @@ struct mcp_conn
    bool     modern;
 };
 
+/* One of params.arguments, by the name the schema gave it. */
+struct mcp_arg
+{
+   char  name[32];
+   char *value;          /* heap; a number arrives as its digits */
+   bool  is_number;
+};
+
+/* More than any command's parameters, plus room for a client that
+ * sends one this build does not know. */
+#define MCP_MAX_ARGS 6
+
 /* What a request says, picked out of its JSON body. */
 struct mcp_request
 {
@@ -106,12 +118,31 @@ struct mcp_request
    char name[64];        /* params.name */
    char version[16];     /* params._meta protocolVersion */
    char init_version[16];/* params.protocolVersion (initialize) */
-   char *argument;       /* params.arguments.argument, heap */
+   struct mcp_arg args[MCP_MAX_ARGS];
+   unsigned num_args;
    bool has_id;
    bool is_batch;
    bool has_meta;
    bool has_caps;        /* params._meta clientCapabilities */
 };
+
+static void mcp_request_free(struct mcp_request *r)
+{
+   unsigned i;
+   for (i = 0; i < r->num_args; i++)
+      free(r->args[i].value);
+   r->num_args = 0;
+}
+
+/* What the client sent for @name, or NULL. */
+static const char *mcp_arg(const struct mcp_request *r, const char *name)
+{
+   unsigned i;
+   for (i = 0; i < r->num_args; i++)
+      if (string_is_equal(r->args[i].name, name))
+         return r->args[i].value;
+   return NULL;
+}
 
 typedef struct
 {
@@ -283,28 +314,71 @@ static void mcp_result_end(rjsonwriter_t *w, bool modern)
 /* ------------------------------------------------------------------ */
 /* Tools: the command tables                                           */
 
-static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
-      const char *arg_desc, unsigned flags)
+/* The set a parameter accepts, written "on|off", as a schema enum. */
+static void mcp_schema_enum(rjsonwriter_t *w, const char *values)
 {
-   bool has_arg  = arg_desc && !string_is_equal(arg_desc, "No argument");
-   bool optional = has_arg && arg_desc[0] == '[';
-   bool ro       = (flags & CMD_INFO_READ_ONLY)   != 0;
-   bool de       = (flags & CMD_INFO_DESTRUCTIVE) != 0;
+   const char *p = values;
+   MCP_RAW(w, ",\"enum\":[");
+   for (;;)
+   {
+      const char *bar = strchr(p, '|');
+      size_t      len = bar ? (size_t)(bar - p) : strlen(p);
+      rjsonwriter_add_string_len(w, p, (int)len);
+      if (!bar)
+         break;
+      MCP_RAW(w, ",");
+      p = bar + 1;
+   }
+   MCP_RAW(w, "]");
+}
+
+/* A tool: its parameters as a JSON Schema, from the table rather than
+ * from the prose HELP prints, so a client is told each one's name, type
+ * and whether it is needed. A hotkey, and a command that takes nothing,
+ * has no properties. */
+static void mcp_tool(rjsonwriter_t *w, const char *name, const char *desc,
+      const struct cmd_param *params, unsigned flags)
+{
+   const struct cmd_param *p;
+   bool first = true;
+   bool ro    = (flags & CMD_INFO_READ_ONLY)   != 0;
+   bool de    = (flags & CMD_INFO_DESTRUCTIVE) != 0;
 
    MCP_RAW(w, "{\"name\":");
    rjsonwriter_add_string(w, name);
    MCP_RAW(w, ",\"description\":");
    rjsonwriter_add_string(w, desc ? desc : "");
    MCP_RAW(w, ",\"inputSchema\":{\"type\":\"object\",\"properties\":{");
-   if (has_arg)
+   for (p = params; p && p->name; p++)
    {
-      MCP_RAW(w, "\"argument\":{\"type\":\"string\",\"description\":");
-      rjsonwriter_add_string(w, arg_desc);
+      if (!first)
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, p->name);
+      rjsonwriter_rawf(w, ":{\"type\":\"%s\",\"description\":",
+            p->type == CMD_PARAM_INT ? "integer" : "string");
+      rjsonwriter_add_string(w, p->desc ? p->desc : "");
+      if (p->values)
+         mcp_schema_enum(w, p->values);
       MCP_RAW(w, "}");
    }
    MCP_RAW(w, "}");
-   if (has_arg && !optional)
-      MCP_RAW(w, ",\"required\":[\"argument\"]");
+   first = true;
+   for (p = params; p && p->name; p++)
+   {
+      if (!p->required)
+         continue;
+      /* MCP_RAW takes the length from the literal, so each one is its
+       * own call rather than a choice between two */
+      if (first)
+         MCP_RAW(w, ",\"required\":[");
+      else
+         MCP_RAW(w, ",");
+      first = false;
+      rjsonwriter_add_string(w, p->name);
+   }
+   if (!first)
+      MCP_RAW(w, "]");
    MCP_RAW(w, ",\"additionalProperties\":false}");
    rjsonwriter_rawf(w, ",\"annotations\":{\"readOnlyHint\":%s,"
          "\"destructiveHint\":%s,\"openWorldHint\":false}}",
@@ -331,7 +405,7 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
       if (!first)
          MCP_RAW(w, ",");
       first = false;
-      mcp_tool(w, acts[i].str, acts[i].desc, acts[i].arg_desc, acts[i].flags);
+      mcp_tool(w, acts[i].str, acts[i].desc, acts[i].params, acts[i].flags);
    }
    {
       const struct cmd_map *keys = command_hotkey_list(&n);
@@ -352,6 +426,190 @@ static void mcp_tools_list(struct mcp_conn *c, const struct mcp_request *r,
             MCP_TOOLS_TTL_MS);
    mcp_result_end(w, modern);
    mcp_respond_writer(c, w);
+}
+
+/* The action row for @name, or NULL when the command is a hotkey -
+ * which takes no parameters - or not a command at all. */
+static const struct cmd_action_map *mcp_tool_action(const char *name)
+{
+   size_t n, i;
+   const struct cmd_action_map *acts = command_action_list(&n);
+   for (i = 0; i < n; i++)
+      if (string_is_equal(acts[i].str, name))
+         return &acts[i];
+   return NULL;
+}
+
+/* What goes on the line for @p: what the client sent, else what the
+ * table stands in for it, else nothing. */
+static const char *mcp_param_value(const struct cmd_param *p,
+      const struct mcp_request *r)
+{
+   const char *v = mcp_arg(r, p->name);
+   return v ? v : p->def;
+}
+
+/* Normalize exactly, without rounding through a floating-point value. */
+static char *mcp_integer(const char *value)
+{
+   const char *s = value;
+   size_t n = 0, fractional = 0, first = 0, i, count, size;
+   long exponent = 0, places;
+   bool negative = false, dot = false, exp_negative = false;
+   char *digits, *out;
+
+   if (*s == '-')
+   {
+      negative = true;
+      s++;
+   }
+   if (!(digits = (char*)malloc(strlen(s) + 1)))
+      return NULL;
+   while (*s && *s != 'e' && *s != 'E')
+   {
+      if (*s == '.')
+         dot = true;
+      else
+      {
+         digits[n++] = *s;
+         if (dot)
+            fractional++;
+      }
+      s++;
+   }
+   if (*s)
+   {
+      s++;
+      if (*s == '-' || *s == '+')
+         exp_negative = *s++ == '-';
+      while (*s)
+      {
+         if (exponent < MCP_MAX_REQUEST * 2)
+            exponent = exponent * 10 + (*s - '0');
+         s++;
+      }
+   }
+   while (first < n && digits[first] == '0')
+      first++;
+   if (first == n)
+   {
+      digits[0] = '0';
+      digits[1] = '\0';
+      return digits;
+   }
+   if (exp_negative)
+      exponent = -exponent;
+   places = exponent - (long)fractional;
+   while (places < 0 && n > first && digits[n - 1] == '0')
+   {
+      n--;
+      places++;
+   }
+   if (places < 0 || places > MCP_MAX_REQUEST)
+   {
+      free(digits);
+      return NULL;
+   }
+   count = n - first;
+   size  = count + (size_t)places + (negative ? 1 : 0) + 1;
+   if (size > MCP_MAX_REQUEST || !(out = (char*)malloc(size)))
+   {
+      free(digits);
+      return NULL;
+   }
+   i = 0;
+   if (negative)
+      out[i++] = '-';
+   memcpy(out + i, digits + first, count);
+   i += count;
+   memset(out + i, '0', (size_t)places);
+   out[i + (size_t)places] = '\0';
+   free(digits);
+   return out;
+}
+
+static const char *mcp_integer_args(const struct cmd_action_map *act,
+      struct mcp_request *r)
+{
+   const struct cmd_param *p;
+   unsigned i;
+   if (!act || !act->params)
+      return NULL;
+   if (mcp_arg(r, "argument") && !mcp_arg(r, act->params[0].name))
+      return NULL;
+   for (p = act->params; p->name; p++)
+      if (p->type == CMD_PARAM_INT)
+         for (i = 0; i < r->num_args; i++)
+            if (string_is_equal(r->args[i].name, p->name))
+            {
+               char *value;
+               if (!r->args[i].is_number
+                     || !(value = mcp_integer(r->args[i].value)))
+                  return p->name;
+               free(r->args[i].value);
+               r->args[i].value = value;
+            }
+   return NULL;
+}
+
+/* Puts what the client sent by name back into the one line the command
+ * handlers read, in the order and with the separators the table gives.
+ * Returns the line, which the caller frees, or NULL with @err set.
+ *
+ * A client still sending the single "argument" this server used to take
+ * - one whose cached tool list predates the parameters - is given it
+ * verbatim, so an upgrade does not break it mid-session. */
+static char *mcp_compose(const struct cmd_action_map *act,
+      const struct mcp_request *r, const char **err)
+{
+   const struct cmd_param *p;
+   const char *only;
+   size_t      len = 1;
+   char       *out;
+   bool        first = true;
+
+   if (!act || !act->params)
+      return NULL;
+
+   if ((only = mcp_arg(r, "argument")) && !mcp_arg(r, act->params[0].name))
+   {
+      size_t l = strlen(only);
+      if ((out = (char*)malloc(l + 1)))
+         memcpy(out, only, l + 1);
+      return out;
+   }
+
+   for (p = act->params; p->name; p++)
+   {
+      const char *v = mcp_param_value(p, r);
+      if (!v)
+      {
+         if (p->required)
+         {
+            *err = p->name;
+            return NULL;
+         }
+         continue;
+      }
+      len += strlen(v) + (p->lead ? strlen(p->lead) : 1);
+   }
+
+   if (!(out = (char*)malloc(len)))
+      return NULL;
+   *out = '\0';
+   for (p = act->params; p->name; p++)
+   {
+      const char *v = mcp_param_value(p, r);
+      if (!v)
+         continue;
+      /* a space joins them unless the command's own form says
+       * otherwise, and nothing leads the first */
+      if (!first)
+         strlcat(out, p->lead ? p->lead : " ", len);
+      strlcat(out, v, len);
+      first = false;
+   }
+   return out;
 }
 
 static bool mcp_tool_known(const char *name)
@@ -582,16 +840,23 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
       }
       else if (depth == 3 && string_is_equal(key[0], "params"))
       {
-         if (string_is_equal(key[1], "arguments")
-               && string_is_equal(key[2], "argument") && t == RJSON_STRING)
+         if (     string_is_equal(key[1], "arguments")
+               && *key[2]
+               && (t == RJSON_STRING || t == RJSON_NUMBER)
+               && r->num_args < MCP_MAX_ARGS)
          {
-            size_t      l = 0;
-            const char *s = rjson_get_string(j, &l);
-            free(r->argument);
-            if ((r->argument = (char*)malloc(l + 1)))
+            /* A number arrives as the digits it was written with, which
+             * is what the line form wants anyway. */
+            size_t      l    = 0;
+            const char *v    = rjson_get_string(j, &l);
+            struct mcp_arg *a = &r->args[r->num_args];
+            if ((a->value = (char*)malloc(l + 1)))
             {
-               memcpy(r->argument, s, l);
-               r->argument[l] = '\0';
+               memcpy(a->value, v, l);
+               a->value[l] = '\0';
+               a->is_number = t == RJSON_NUMBER;
+               strlcpy(a->name, key[2], sizeof(a->name));
+               r->num_args++;
             }
          }
          else if (string_is_equal(key[1], "_meta"))
@@ -832,10 +1097,33 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp_tools_list(c, &r, modern);
    else if (string_is_equal(r.method, "tools/call"))
    {
-      bool ok;
+      bool        ok;
+      char       *line    = NULL;
+      const char *missing = NULL;
+      const char *invalid;
       if (!mcp_tool_known(r.name))
       {
          mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown tool.", false);
+         goto end;
+      }
+      if ((invalid = mcp_integer_args(mcp_tool_action(r.name), &r)))
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Invalid integer parameter \"%s\".",
+               invalid);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
+         goto end;
+      }
+      /* What the client sent by name becomes the line the handler
+       * reads; a parameter it needed and left out is answered before
+       * the command runs at all. */
+      line = mcp_compose(mcp_tool_action(r.name), &r, &missing);
+      if (missing)
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Missing required parameter \"%s\".",
+               missing);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
       }
       /* the command runs now; what it replies is the result */
@@ -843,7 +1131,8 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp->current   = ci;
       strlcpy(c->id, r.id, sizeof(c->id));
       c->modern      = modern;
-      ok = command_run(cmd, r.name, r.argument);
+      ok = command_run(cmd, r.name, line);
+      free(line);
       mcp->current   = -1;
       if (c->state == MCP_CONN_WAITING)
          goto end;                         /* answered by reply_to */
@@ -858,7 +1147,7 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       mcp_error(c, r.id, MCP_ERR_METHOD, "Method not found.", false);
 
 end:
-   free(r.argument);
+   mcp_request_free(&r);
 }
 
 /* A request has fully arrived in @c: check it as HTTP, then answer. */
