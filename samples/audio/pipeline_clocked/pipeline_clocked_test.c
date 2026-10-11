@@ -498,6 +498,7 @@ static bool     paced_inline;
 static unsigned paced_pace;
 static double   paced_fps_scale = 1.0;
 static double   paced_adjust;
+static double   paced_startup_min;
 
 static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       bool video_paced, bool sync, unsigned jitter_us,
@@ -513,6 +514,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    long      step_ns   = video_paced
       ? (long)(1e9 / (FPS * paced_fps_scale)) : 2000000L;
    double    adjust_sum = 0.0;
+   double    startup_min = 1e9;
    unsigned  seed      = 12345;
    if (getenv("JITTER_US"))
       jitter_us = (unsigned)atoi(getenv("JITTER_US"));
@@ -557,6 +559,19 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
        * emulation from wherever the last publish let go. */
       if (!video_paced)
          clock_gettime(CLOCK_MONOTONIC, &next);
+      else
+      {
+         /* A display does not catch up on frames it missed: a frame
+          * more than a period late is followed by the next vblank, not
+          * a burst. Catching up instead ran the core at the audio's
+          * pace for seconds after any host stall, against a schedule
+          * no runloop keeps. */
+         struct timespec now;
+         clock_gettime(CLOCK_MONOTONIC, &now);
+         if ((now.tv_sec - next.tv_sec) * 1000000000L
+               + (now.tv_nsec - next.tv_nsec) > step_ns)
+            next = now;
+      }
       next.tv_nsec += step_ns;
       next.tv_sec  += next.tv_nsec / 1000000000L;
       next.tv_nsec %= 1000000000L;
@@ -592,6 +607,17 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
          retro_atomic_store_release_int(&adj_on, 1);
       if (i == (size_t)FPS)
          warm_under = retro_atomic_load_acquire_size(&dev_underruns);
+      /* What is queued just after each publish over the first second,
+       * past the first few, where priming left the device */
+      if (i >= 3 && i < (size_t)FPS)
+      {
+         double q0 = ((double)retro_spsc_read_avail(&st->pipe_ring)
+               / st->pipe_frame_bytes
+            + (double)retro_atomic_load_acquire_size(&dev_filled) / CHANNELS)
+            * 1000.0 / OUT_RATE;
+         if (q0 < startup_min)
+            startup_min = q0;
+      }
       if (i >= (size_t)FPS)
       {
          double q;
@@ -621,7 +647,8 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    pipeline_down();
    config_get_ptr()->bools.audio_pipeline_fill_cap = false;
    runloop_state_get_ptr()->pace = 0;
-   paced_adjust = 1.0;
+   paced_adjust      = 1.0;
+   paced_startup_min = startup_min;
    if (counted)
    {
       *avg_ms = sum / (double)counted;
@@ -699,14 +726,18 @@ static void audio_paced_case(double seconds)
  * runs between three quarters and full, a publish on top. */
 static void setpoint_case(double seconds)
 {
-   static const unsigned lat[] = { 32, 64 };
+   static const unsigned lat[] = { 16, 32, 64 };
    size_t i;
    printf("Audio Sync on, display-paced, against the inline setpoint:\n");
    for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
    {
       double half  = lat[i] / 2.0, publish = 1000.0 / FPS;
-      double bound = (half > publish ? half : publish) + publish + 4.0;
-      double avg[2], mx;
+      double set   = (half > publish ? half : publish) + publish;
+      /* Priming lands on a whole publish past the setpoint, and rate
+       * control's half percent bleeds that off over seconds: half a
+       * publish of allowance for a run this short. */
+      double bound = set + publish / 2.0 + 4.0;
+      double avg[2], mx, shallow_start = 0.0;
       size_t sp = 0, held = 0;
       int    cap, attempt;
       for (cap = 0; cap < 2; cap++)
@@ -722,18 +753,31 @@ static void setpoint_case(double seconds)
             printf("  %3u ms  shallow | %u short pulls, %u held; host or setpoint, again\n",
                   lat[i], (unsigned)sp, (unsigned)held);
          }
-         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u\n",
-               lat[i], cap ? "shallow" : "deep", avg[cap], mx, (unsigned)sp);
+         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u, first second at least %.1f ms\n",
+               lat[i], cap ? "shallow" : "deep", avg[cap], mx, (unsigned)sp,
+               paced_startup_min);
+         if (cap)
+            shallow_start = paced_startup_min;
       }
       if (sp || held)
       {
          printf("FAIL: the shallow setpoint ran the device dry or held the core in every run\n");
          paced_failures++;
       }
+      /* Primed to that and a publish, not to the setpoint alone: a
+       * device that started on one publish held next to nothing at
+       * each of the next ones for a second and more, while rate
+       * control climbed to the setpoint at its half percent. */
+      if (!(shallow_start >= set - publish / 2.0))
+      {
+         printf("FAIL: the first second held %.1f ms after a publish; the setpoint and a publish are %.1f ms\n",
+               shallow_start, set);
+         paced_failures++;
+      }
       if (!(avg[1] < bound))
       {
          printf("FAIL: shallow queued %.1f ms; the inline setpoint is %.1f ms\n",
-               avg[1], bound - 4.0);
+               avg[1], set);
          paced_failures++;
       }
    }

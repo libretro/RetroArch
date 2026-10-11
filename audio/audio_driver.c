@@ -5657,16 +5657,19 @@ static size_t audio_driver_pipe_prime_frames(audio_driver_state_t *audio_st)
       if (cap && cap < limit)
          limit = cap;
    }
-   /* With the fill cap, what rate control holds it to: half the
-    * device's buffer, or a publish where that is less. Primed any
-    * deeper, the controller's half percent takes seconds to bleed the
-    * difference off. */
+   /* With the fill cap, what rate control holds it to just after a
+    * publish: half the device's buffer, or a publish where that is
+    * less, and the publish on top. Primed to the setpoint alone, the
+    * device started on one publish and held next to nothing at each of
+    * the next for a second and more, while the controller climbed at
+    * its half percent; any deeper, it takes as long to bleed off. */
    if (     retro_atomic_load_acquire_int(&audio_st->runloop_snapshot)
          & AUDIO_SNAP_PIPE_CAP)
    {
       target = device / 2;
       if (target < audio_st->pipe_pass_frames)
          target = audio_st->pipe_pass_frames;
+      target += audio_st->pipe_pass_frames;
       return target > limit ? limit : target;
    }
    target     += device;
