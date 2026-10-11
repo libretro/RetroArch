@@ -6103,6 +6103,8 @@ static int stbi__pic_info(stbi__context *s, int *x, int *y, int *comp)
    int act_comp=0,num_packets=0,chained;
    stbi__pic_packet packets[10];
 
+   if (!stbi__pic_test(s)) return 0;
+
    stbi__skip(s, 92);
 
    *x = stbi__get16be(s);
