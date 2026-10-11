@@ -113,6 +113,8 @@ static void xdg_configure_apply(gfx_ctx_wayland_data_t *wl)
    bool floating  = wl->cfg_pending.floating;
 
    wl->fullscreen = wl->cfg_pending.fullscreen;
+   if (wl->fullscreen == wl->fullscreen_requested)
+      wl->fullscreen_pending = false;
    wl->maximized  = wl->cfg_pending.maximized;
    if (wl->cfg_pending.resizing)
       wl->resize  = true;
@@ -175,6 +177,7 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
    int width = 0, height = 0;
    struct libdecor_state *state = NULL;
    enum libdecor_window_state window_state;
+   bool fullscreen_pending = wl->fullscreen_pending;
 #if 0
    static const enum
       libdecor_window_state tiled_states = (
@@ -204,6 +207,9 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
       tiled          = (window_state & tiled_states) != 0;
 #endif
    }
+
+   if (wl->fullscreen == wl->fullscreen_requested)
+      wl->fullscreen_pending = false;
 
    if (!wl->libdecor_configuration_get_content_size(configuration, frame,
          &width, &height))
@@ -239,7 +245,6 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
          /* Stretch old buffer to fill new size, commit/roundtrip to apply */
          wp_viewport_set_destination(wl->viewport,
                VIDEO_SCALE_W(wl->dims), VIDEO_SCALE_H(wl->dims));
-         wl_surface_commit(wl->surface);
       }
    }
 
@@ -247,6 +252,10 @@ static void libdecor_frame_handle_configure_common(struct libdecor_frame *frame,
          VIDEO_SCALE_H(wl->dims));
    wl->libdecor_frame_commit(frame, state, configuration);
    wl->libdecor_state_free(state);
+   if (fullscreen_pending && !wl->fullscreen_pending)
+      wl->libdecor_frame_set_visibility(frame, !wl->fullscreen);
+   if (wl->viewport)
+      wl_surface_commit(wl->surface);
 
    if (wl->libdecor_frame_is_floating(frame))
       wl->floating_dims = VIDEO_SCALE_PACK(width, height);
@@ -353,6 +362,9 @@ static void xdg_surface_handle_configure_latch(void *data,
 {
    gfx_ctx_wayland_data_t *wl = (gfx_ctx_wayland_data_t*)data;
 
+   /* Size-dependent commits below must acknowledge the new state first. */
+   xdg_surface_ack_configure(xdg_surface, serial);
+
    if (wl->cfg_pending.pending)
    {
       wl->cfg_pending.pending = false;
@@ -367,10 +379,6 @@ static void xdg_surface_handle_configure_latch(void *data,
          wl->configured = false;
       }
    }
-
-   /* Always acknowledge; the new state takes effect on the next
-    * wl_surface.commit, which the frame loop performs. */
-   xdg_surface_ack_configure(xdg_surface, serial);
 }
 
 static const struct xdg_surface_listener wl_xdg_surface_listener = {
@@ -1395,25 +1403,22 @@ bool gfx_ctx_wl_init_common(
 static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
       bool fullscreen);
 
-/* A window kept across a reinit is still fullscreen when a windowed
- * mode is asked for. Leaving fullscreen has to come before the
- * windowed size is put on the surface: while the compositor still
- * holds the window fullscreen, a size larger than the screen in either
- * direction is a protocol error (xdg_wm_base's invalid_surface_state),
- * and the compositor closes the connection - RetroArch quit when
- * fullscreen was turned off with a window taller or wider than the
- * screen. Waits for the compositor to say the window has left. */
-static void gfx_ctx_wl_leave_fullscreen(gfx_ctx_wayland_data_t *wl)
+/* Windowed geometry must wait until fullscreen is no longer current. */
+static void gfx_ctx_wl_leave_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool wait_for_configure)
 {
-   if (!wl->fullscreen)
+   if (wait_for_configure && !wl->fullscreen && !wl->fullscreen_pending)
       return;
+   wl->fullscreen_requested = false;
+   wl->fullscreen_pending = wl->fullscreen_pending || wl->fullscreen;
 #ifdef HAVE_LIBDECOR_H
    if (wl->libdecor)
       wl->libdecor_frame_unset_fullscreen(wl->libdecor_frame);
    else
 #endif
       xdg_toplevel_unset_fullscreen(wl->xdg_toplevel);
-   gfx_ctx_wl_wait_for_fullscreen(wl, false);
+   if (wait_for_configure)
+      gfx_ctx_wl_wait_for_fullscreen(wl, false);
 }
 
 bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
@@ -1444,7 +1449,7 @@ bool gfx_ctx_wl_set_video_mode_common_size(gfx_ctx_wayland_data_t *wl,
             : bh * wl->buffer_scale);
 
       /* out of fullscreen first, then the windowed size below */
-      gfx_ctx_wl_leave_fullscreen(wl);
+      gfx_ctx_wl_leave_fullscreen(wl, true);
    }
    if (wl->viewport)
    {
@@ -1479,7 +1484,8 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
 
    clock_gettime(CLOCK_MONOTONIC, &start);
 
-   while (wl->fullscreen != fullscreen && remaining > 0)
+   while ((wl->fullscreen_pending || wl->fullscreen != fullscreen)
+         && remaining > 0)
    {
 #ifdef HAVE_LIBDECOR_H
       if (wl->libdecor)
@@ -1498,7 +1504,7 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
          int ret;
 
          flush_wayland_fd(&wl->input);
-         if (wl->fullscreen == fullscreen)
+         if (!wl->fullscreen_pending && wl->fullscreen == fullscreen)
             break;
 
          fd.fd      = wl->input.fd;
@@ -1520,16 +1526,20 @@ static void gfx_ctx_wl_wait_for_fullscreen(gfx_ctx_wayland_data_t *wl,
             + (now.tv_nsec - start.tv_nsec) / 1000000);
    }
 
-   if (wl->fullscreen != fullscreen)
+   if (wl->fullscreen_pending || wl->fullscreen != fullscreen)
       RARCH_WARN("[Wayland] No %s configure received; continuing.\n",
             fullscreen ? "fullscreen" : "windowed");
 }
 
-bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
-      bool fullscreen)
+static bool gfx_ctx_wl_set_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen, bool wait_for_configure)
 {
    settings_t *settings         = config_get_ptr();
    unsigned video_monitor_index = settings->uints.video_monitor_index;
+
+   wl->fullscreen_requested = fullscreen;
+   wl->fullscreen_pending = wl->fullscreen_pending
+      || wl->fullscreen != fullscreen;
 
    if (fullscreen)
    {
@@ -1579,16 +1589,20 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
 
       /* Map only once fullscreen, or window managers such as tiling
        * scripts place the window as a normal one first. */
-      gfx_ctx_wl_wait_for_fullscreen(wl, true);
+      if (wait_for_configure)
+         gfx_ctx_wl_wait_for_fullscreen(wl, true);
    }
    else
       /* A window kept across the reinit that is still fullscreen:
        * gfx_ctx_wl_set_video_mode_common_size() took it out already,
        * before sizing it; this is for a caller that did not go
        * through there. */
-      gfx_ctx_wl_leave_fullscreen(wl);
+      gfx_ctx_wl_leave_fullscreen(wl, wait_for_configure);
 
-   flush_wayland_fd(&wl->input);
+   if (wait_for_configure)
+      flush_wayland_fd(&wl->input);
+   else
+      wl_display_flush(wl->input.dpy);
 
    if (fullscreen)
    {
@@ -1599,6 +1613,18 @@ bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
       wl->cursor.visible = true;
 
    return true;
+}
+
+bool gfx_ctx_wl_set_video_mode_common_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen)
+{
+   return gfx_ctx_wl_set_fullscreen(wl, fullscreen, true);
+}
+
+bool gfx_ctx_wl_request_fullscreen(gfx_ctx_wayland_data_t *wl,
+      bool fullscreen)
+{
+   return gfx_ctx_wl_set_fullscreen(wl, fullscreen, false);
 }
 
 bool gfx_ctx_wl_suppress_screensaver(void *data, bool state)

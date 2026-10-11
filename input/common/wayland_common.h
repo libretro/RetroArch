@@ -405,6 +405,8 @@ typedef struct gfx_ctx_wayland_data
 #endif
    bool core_hw_context_enable;
    bool fullscreen;
+   bool fullscreen_requested;
+   bool fullscreen_pending;
    bool maximized;
    bool resize;
    bool configured;

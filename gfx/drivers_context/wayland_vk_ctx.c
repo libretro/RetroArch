@@ -158,18 +158,17 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    unsigned height = VIDEO_SCALE_H(dims);
    gfx_ctx_wayland_data_t *wl   = (gfx_ctx_wayland_data_t*)data;
 
-   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
-      goto error;
-
    if (wl->vk.vk_surface != VK_NULL_HANDLE)
    {
-      /* Keep the WSI surface and HDR state; resize on the next frame. */
+      /* Keep current geometry until the compositor configures the new state. */
+      if (!fullscreen && width && height)
+         wl->floating_dims = VIDEO_SCALE_PACK(width, height);
       wl->ignore_configuration = false;
-      if (!gfx_ctx_wl_set_video_mode_common_fullscreen(wl, fullscreen))
-         goto error;
-      wl->vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
-      return true;
+      return gfx_ctx_wl_request_fullscreen(wl, fullscreen);
    }
+
+   if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
+      goto error;
 
    {
       struct wl_region *opaque = wl_compositor_create_region(wl->compositor);
