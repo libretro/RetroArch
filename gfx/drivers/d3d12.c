@@ -6101,7 +6101,6 @@ static void d3d12_init_render_targets(d3d12_video_t* d3d12, unsigned width, unsi
             d3d12->pass[i].feedback.srv_heap = &d3d12->desc.srv_heap;
             d3d12_release_texture(&d3d12->pass[i].feedback);
             d3d12_init_texture(d3d12->device, &d3d12->pass[i].feedback);
-            /* TODO/FIXME: do we need to clear it to black here ? */
          }
       }
       else
@@ -7051,6 +7050,7 @@ static bool d3d12_gfx_frame(
 
       if (d3d12->flags & D3D12_ST_FLAG_RESIZE_RTS)
       {
+         static const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
          d3d12_init_render_targets(d3d12, width, height);
 
          /* d3d12_init_texture creates render-target resources in
@@ -7061,11 +7061,28 @@ static bool d3d12_gfx_frame(
          for (k = 0; k < d3d12->shader_preset->passes; k++)
          {
             if (d3d12->pass[k].rt.handle)
+            {
+               if (d3d12->shader_preset->pass[k].feedback)
+               {
+                  cmd->lpVtbl->ClearRenderTargetView(cmd,
+                        d3d12->pass[k].rt.rt_view, clear_color, 0, NULL);
+               }
                D3D12_RESOURCE_TRANSITION(
                      cmd,
                      d3d12->pass[k].rt.handle,
                      D3D12_RESOURCE_STATE_RENDER_TARGET,
                      D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            }
+            if (d3d12->pass[k].feedback.handle)
+            {
+               cmd->lpVtbl->ClearRenderTargetView(cmd,
+                     d3d12->pass[k].feedback.rt_view, clear_color, 0, NULL);
+               D3D12_RESOURCE_TRANSITION(
+                     cmd,
+                     d3d12->pass[k].feedback.handle,
+                     D3D12_RESOURCE_STATE_RENDER_TARGET,
+                     D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE);
+            }
          }
       }
 

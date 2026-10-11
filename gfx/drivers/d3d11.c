@@ -4754,10 +4754,16 @@ static void d3d11_init_render_targets(d3d11_video_t* d3d11, unsigned width, unsi
 
          if (pass->feedback)
          {
+            static const float clear_color[4] = { 0.0f, 0.0f, 0.0f, 0.0f };
             d3d11->pass[i].feedback.desc = d3d11->pass[i].rt.desc;
             d3d11_release_texture(&d3d11->pass[i].feedback);
             d3d11_init_texture(d3d11->device, &d3d11->pass[i].feedback);
-            /* TODO/FIXME: do we need to clear it to black here ? */
+            if (d3d11->pass[i].rt.rt_view)
+               d3d11->context->lpVtbl->ClearRenderTargetView(d3d11->context,
+                     d3d11->pass[i].rt.rt_view, clear_color);
+            if (d3d11->pass[i].feedback.rt_view)
+               d3d11->context->lpVtbl->ClearRenderTargetView(d3d11->context,
+                     d3d11->pass[i].feedback.rt_view, clear_color);
          }
       }
       else

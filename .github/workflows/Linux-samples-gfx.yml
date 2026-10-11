@@ -1098,6 +1098,14 @@ jobs:
           TSAN_OPTIONS=halt_on_error=1 timeout 300 ./run.sh
           echo "[pass] dbus_screensaver_test"
 
+      - name: D3D11/12 shader feedback lifecycle (Linux and mingw + Wine)
+        shell: bash
+        run: |
+          set -eu
+          make -C samples/gfx/d3d_feedback clean check SANITIZER=address,undefined
+          make -C samples/gfx/d3d_feedback clean check CC=x86_64-w64-mingw32-gcc EXE=.exe RUNNER=wine
+          make -C samples/gfx/d3d_feedback clean
+
       - name: D3D11 hardware ring under threaded video (mingw + Wine, headless)
         shell: bash
         run: |
