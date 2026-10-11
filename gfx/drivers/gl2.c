@@ -1714,14 +1714,6 @@ static void gl2_set_viewport(gl2_t *gl,
       bool force_full, bool allow_rotate)
 {
    gl->vp.full_dims   = dims;
-#ifdef HAVE_OPENXR
-   if (gl_android_openxr_stereo_active())
-   {
-      gl->vp.pos  = VIDEO_POS_PACK(0, 0);
-      gl->vp.dims = dims;
-   }
-   else
-#endif
    video_driver_update_viewport(&gl->vp, force_full,
          (gl->flags & GL2_FLAG_KEEP_ASPECT) ? true : false, false);
 
@@ -4784,6 +4776,96 @@ static retro_time_t gl2_get_last_present_time(void *data)
    return 0;
 }
 
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+/* A tracked map's eyes, each its rectangle of the core's frame drawn
+ * with the stock shader and no chain into the headset's images from
+ * their origin, at the left eye's size, shrunk if larger, as Vulkan
+ * draws them. Sampled, so any format gl2 draws will do; each image is
+ * cleared whole, as the compositor may read past the rectangle. */
+static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
+{
+   unsigned e, dims, w, h;
+   uint32_t dst[2];
+   GLfloat coords[8];
+   const video_views_map_t *map = &video_info->views;
+   int l                        = video_info->headset_eye[0];
+   int r                        = video_info->headset_eye[1];
+   float tex_w                  = gl->tex_info.tex_size[0];
+   float tex_h                  = gl->tex_info.tex_size[1];
+   float frame_h                = gl->tex_info.input_size[1];
+   bool bottom_left             = (gl->vertex_ptr == vertexes);
+
+   if (     l < 0 || r < 0
+         || l >= (int)map->num_views || r >= (int)map->num_views
+         || !gl_android_openxr_eye_targets(dst, &dims))
+      return;
+   w = MIN(map->views[l].width,  VIDEO_SCALE_W(dims));
+   h = MIN(map->views[l].height, VIDEO_SCALE_H(dims));
+   if (!gl->xr_fbo)
+      glGenFramebuffers(1, &gl->xr_fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, gl->xr_fbo);
+   glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
+   glDisable(GL_SCISSOR_TEST);
+   glDisable(GL_BLEND);
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   glViewport(0, 0, w, h);
+
+   gl->coords.vertex    = vertexes;
+   gl->coords.tex_coord = coords;
+   gl->coords.color     = gl->white_color_ptr;
+   gl->coords.vertices  = 4;
+   gl->shader->use(gl, gl->shader_data, VIDEO_SHADER_STOCK_BLEND, true);
+   gl->shader->set_mvp(gl->shader_data, &gl->mvp_no_rot);
+
+   for (e = 0; e < 2; e++)
+   {
+      const struct retro_video_view *v = &map->views[e ? r : l];
+      bool scaled = (v->width != w || v->height != h);
+      /* Scaled, the filter stays off the next rectangle's texels. */
+      float in    = scaled ? 0.5f : 0.0f;
+      float s0    = ((float)v->x + in) / tex_w;
+      float s1    = ((float)(v->x + v->width) - in) / tex_w;
+      float t0, t1;   /* the rows shown at the image's bottom and top */
+      GLint filter = scaled ? GL_LINEAR : GL_NEAREST;
+
+      if (bottom_left)
+      {
+         t0 = (frame_h - (float)(v->y + v->height) + in) / tex_h;
+         t1 = (frame_h - (float)v->y - in) / tex_h;
+      }
+      else
+      {
+         t0 = ((float)(v->y + v->height) - in) / tex_h;
+         t1 = ((float)v->y + in) / tex_h;
+      }
+      coords[0] = s0;
+      coords[1] = t0;
+      coords[2] = s1;
+      coords[3] = t0;
+      coords[4] = s0;
+      coords[5] = t1;
+      coords[6] = s1;
+      coords[7] = t1;
+
+      glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+            GL_TEXTURE_2D, (GLuint)dst[e], 0);
+      glClear(GL_COLOR_BUFFER_BIT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filter);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filter);
+      gl->shader->set_coords(gl->shader_data, &gl->coords);
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+   }
+
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl->tex_min_filter);
+   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl->tex_mag_filter);
+   gl->coords.vertex    = gl->vertex_ptr;
+   gl->coords.tex_coord = gl->tex_info.coord;
+   glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+   glBindFramebuffer(GL_FRAMEBUFFER, 0);
+   gl_android_openxr_eyes_drawn(w, h);
+}
+#endif
+
 static bool gl2_frame(void *data, const void *frame,
       unsigned dims,
       uint64_t frame_count,
@@ -5276,6 +5358,23 @@ static bool gl2_frame(void *data, const void *frame,
       gl->retained_dark  = 0;
    }
 
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   if (gl_android_openxr_active())
+   {
+      bool new_frame = frame && !video_info->frame_repeat;
+      /* Views kept across a reinit drew only the frame a repeat shows. */
+      if (new_frame)
+         gl_android_openxr_new_frame();
+      else
+         gl_android_openxr_place_kept();
+      /* A dupe's image was drawn from older poses than the core's last:
+       * a repeat that carries a software frame draws its eyes only while
+       * none are shown, with the views that frame was drawn from. */
+      if (new_frame || (frame && gl_android_openxr_repeat_eyes()))
+         gl2_xr_draw_eyes(gl, video_info);
+   }
+#endif
+
     gl2_hw_ring_drawn(gl);
     gl2_present_wait = 0;
     if (gl->ctx_driver->swap_buffers)
@@ -5295,6 +5394,10 @@ static bool gl2_frame(void *data, const void *frame,
          && !video_info->input_driver_nonblock_state
          && !video_info->runloop_is_slowmotion
          && !video_info->runloop_is_paused
+#ifdef HAVE_OPENXR
+         /* Each would end another headset frame. */
+         && !gl_android_openxr_active()
+#endif
          && !(gl->flags & GL2_FLAG_MENU_TEXTURE_ENABLE))
    {
       unsigned n;
@@ -5465,6 +5568,10 @@ static void gl2_free(void *data)
 #endif
 
    glDeleteTextures(gl->textures, gl->texture);
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   if (gl->xr_fbo)
+      glDeleteFramebuffers(1, &gl->xr_fbo);
+#endif
 
 #if defined(HAVE_MENU)
    if (gl->menu_texture)
@@ -7775,12 +7882,9 @@ static bool gl2_set_vr_content_info(void *data,
 {
    /* VR is only available while the OpenXR context owns a live session;
     * on the flat fallback context it must be reported unavailable. */
-   bool live = gl_android_openxr_has_session();
+   bool live = gl_android_openxr_active();
    (void)data;
-#if defined(ANDROID)
-   /* The context draws stereo content side by side. */
    gl_android_openxr_set_stereo(live && info && info->stereo_native);
-#endif
    return live;
 }
 #endif

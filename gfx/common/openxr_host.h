@@ -122,15 +122,18 @@ typedef struct openxr_host_kept
 } openxr_host_kept_t;
 
 /* Before the host stops showing the session. */
-void openxr_host_keep(const openxr_host_t *h, openxr_host_kept_t *out);
+void openxr_host_keep(const openxr_host_t *h);
+/* A start that gave up: no later start resumes a record kept before it. */
+void openxr_host_forget(void);
 /* After the same content's space was set again: a core whose origin
  * moved hears RECENTERED, and the views it was last given are placed in
- * the track space through STAGE. */
-void openxr_host_resume(openxr_host_t *h, const openxr_host_kept_t *kept);
+ * the track space through STAGE. The record serves this start alone. */
+void openxr_host_resume(openxr_host_t *h);
 /* The drawing thread: kept views wait for a frame time and a location
  * to be placed by, and are dropped where there is no STAGE. */
 void openxr_host_place_kept(openxr_host_t *h);
-/* The drawing thread, a new core frame: kept views drew none of it. */
+/* The drawing thread, a new core frame: kept views drew none of it, and
+ * the record serves the driver start after its stop, not a later one. */
 void openxr_host_new_frame(openxr_host_t *h);
 
 RETRO_END_DECLS

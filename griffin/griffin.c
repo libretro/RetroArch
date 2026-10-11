@@ -327,7 +327,9 @@ VIDEO CONTEXT
 #include "../gfx/drivers_context/android_ctx.c"
 #if defined(HAVE_OPENXR)
 #include "../input/drivers/openxr_input.c"
+#if defined(HAVE_OPENGLES3)
 #include "../gfx/drivers_context/gl_android_openxr_ctx.c"
+#endif
 #include "../deps/openxr/src/xr_generated_dispatch_table_core.c"
 #endif
 #if defined(HAVE_VULKAN)

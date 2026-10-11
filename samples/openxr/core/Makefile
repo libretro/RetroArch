@@ -1,11 +1,12 @@
-# The shared OpenXR units (gfx/common/openxr_*.c) against a stand-in
-# for the runtime: the host's compiler, the vendored OpenXR headers.
+# The shared OpenXR units (gfx/common/openxr_*.c, vulkan_openxr.c)
+# against a stand-in for the runtime: the host's compiler, the vendored
+# OpenXR and Vulkan headers.
 TARGET := openxr_core_test
 ROOT   := ../../..
 CFLAGS += -std=gnu99 -O1 -g -Wall -Wno-unused-function -Wno-unused-parameter \
           -DRARCH_INTERNAL -DHAVE_THREADS -DHAVE_OPENXR \
           -I$(ROOT) -I$(ROOT)/libretro-common/include -I$(ROOT)/deps \
-          -I$(ROOT)/deps/openxr/include
+          -I$(ROOT)/deps/openxr/include -I$(ROOT)/gfx/include
 
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
@@ -25,7 +26,8 @@ SRCS := openxr_core_test.c \
 
 all: $(TARGET)
 
-$(TARGET): $(SRCS) $(wildcard $(ROOT)/gfx/common/openxr_*.c)
+$(TARGET): $(SRCS) $(wildcard $(ROOT)/gfx/common/openxr_*.c) \
+           $(ROOT)/gfx/common/vulkan_openxr.c
 	$(CC) $(CFLAGS) -o $@ $(SRCS) $(LDFLAGS) -lm -lpthread
 
 check: all

@@ -175,14 +175,10 @@ static vulkan_openxr_hooks_t vulkan_openxr_hooks;
 /* Set after a session fails on a device made for it: the reinit that
  * follows builds the device without the runtime. */
 static bool vulkan_openxr_skip_once;
-/* What the last stopped host carries to the next after a reinit: a new
- * instance's, or a kept device's. */
-static openxr_host_kept_t vulkan_openxr_kept;
 
 static void vulkan_openxr_host_resume(void *user)
 {
-   openxr_host_resume(&((vulkan_openxr_t*)user)->host, &vulkan_openxr_kept);
-   memset(&vulkan_openxr_kept, 0, sizeof(vulkan_openxr_kept));
+   openxr_host_resume(&((vulkan_openxr_t*)user)->host);
 }
 
 static vulkan_openxr_platform_t vulkan_openxr_platform;
@@ -260,11 +256,15 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
    if (vulkan_openxr_skip_once)
    {
       vulkan_openxr_skip_once = false;
+      openxr_host_forget();
       RARCH_LOG("[OpenXR] Starting once without headset output after a failure.\n");
       return NULL;
    }
    if (!(xr = (vulkan_openxr_t*)calloc(1, sizeof(*xr))))
+   {
+      openxr_host_forget();
       return NULL;
+   }
    xr->session.hooks.state_changed = vulkan_openxr_state_hook;
    xr->session.hooks.ended         = vulkan_openxr_ended_hook;
    xr->session.hooks.exiting       = vulkan_openxr_exiting_hook;
@@ -360,6 +360,7 @@ end:
    openxr_runtime_notify((rr == OPENXR_RUNTIME_UNAVAILABLE)
          ? MSG_OPENXR_UNAVAILABLE : MSG_OPENXR_FAILED);
    vulkan_openxr_free(xr);
+   openxr_host_forget();
    return NULL;
 }
 
@@ -395,6 +396,7 @@ void vulkan_openxr_drop(vulkan_openxr_t *xr)
    RARCH_WARN("[OpenXR] Continuing without headset output.\n");
    openxr_runtime_notify(MSG_OPENXR_FAILED);
    vulkan_openxr_free(xr);
+   openxr_host_forget();
 }
 
 void vulkan_openxr_needs_reload(void)
@@ -886,7 +888,7 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    /* Once a start, while the session still shows what the core drew:
     * free's second stop keeps what the first did. */
    if (xr->queue_lock)
-      openxr_host_keep(&xr->host, &vulkan_openxr_kept);
+      openxr_host_keep(&xr->host);
    vulkan_openxr_stop_thread(xr);
    video_driver_set_xr_host(NULL);
    /* A kept session outlives the driver's views of its images. */
@@ -1076,8 +1078,6 @@ void vulkan_openxr_place_kept(vulkan_openxr_t *xr)
 
 void vulkan_openxr_new_frame(vulkan_openxr_t *xr)
 {
-   /* A record serves the driver start after its stop, not a later one. */
-   memset(&vulkan_openxr_kept, 0, sizeof(vulkan_openxr_kept));
    openxr_host_new_frame(&xr->host);
 }
 

@@ -306,7 +306,7 @@ static const gfx_ctx_driver_t *gfx_ctx_gl_drivers[] = {
    &gfx_ctx_drm,
 #endif
 #if defined(ANDROID)
-#ifdef HAVE_OPENXR
+#if defined(HAVE_OPENXR) && defined(HAVE_OPENGLES3)
    &gfx_ctx_gl_android_openxr,
 #endif
    &gfx_ctx_android,

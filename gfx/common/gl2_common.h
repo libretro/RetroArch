@@ -244,6 +244,10 @@ struct gl2
       unsigned expand_gamut;
    } scrgb;
 
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+   /* The framebuffer the headset's tracked eyes are drawn through. */
+   GLuint xr_fbo;
+#endif
 };
 
 bool gl2_load_luts(

@@ -14,6 +14,9 @@
 #include <openxr/openxr.h>
 typedef unsigned int EGLenum; /* the header wants EGL types */
 #define XR_USE_GRAPHICS_API_OPENGL_ES
+/* vulkan_openxr.c's half too: the header is read once. */
+#include "../../../gfx/common/vksym.h"
+#define XR_USE_GRAPHICS_API_VULKAN
 #include <openxr/openxr_platform.h>
 #include <queues/message_queue.h>
 
@@ -151,6 +154,7 @@ static XrEventDataBuffer t_events[8];
 static unsigned t_num_events, t_next_event;
 static XrResult t_poll_result = XR_SUCCESS;  /* after the queue runs dry */
 static unsigned t_begun, t_ended_sessions, t_locks, t_unlocks;
+static unsigned t_sessions_made, t_sessions_destroyed;
 static unsigned t_spaces_made, t_spaces_destroyed, t_space_fail_at;
 static unsigned t_seq, t_state_seq, t_begin_seq, t_ended_seq, t_exiting_seq;
 static bool t_begin_in_lock, t_end_in_lock;
@@ -200,8 +204,10 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_poll_event(XrInstance i, XrEventDataBuff
    return t_poll_result == XR_SUCCESS ? XR_EVENT_UNAVAILABLE : t_poll_result;
 }
 static XRAPI_ATTR XrResult XRAPI_CALL t_create_session(XrInstance i,
-      const XrSessionCreateInfo *ci, XrSession *s) { *s = T_SESSION; return XR_SUCCESS; }
-static XRAPI_ATTR XrResult XRAPI_CALL t_destroy_session(XrSession s) { return XR_SUCCESS; }
+      const XrSessionCreateInfo *ci, XrSession *s)
+{ t_sessions_made++; *s = T_SESSION; return XR_SUCCESS; }
+static XRAPI_ATTR XrResult XRAPI_CALL t_destroy_session(XrSession s)
+{ t_sessions_destroyed++; return XR_SUCCESS; }
 static XRAPI_ATTR XrResult XRAPI_CALL t_begin_session(XrSession s,
       const XrSessionBeginInfo *b)
 {
@@ -485,6 +491,25 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_gles_reqs(XrInstance i, XrSystemId s,
    return t_gles_reqs_res;
 }
 
+/* XR_KHR_vulkan_enable2: only the requirements are asked for when the
+ * caller makes no Vulkan object through the runtime. */
+static XRAPI_ATTR XrResult XRAPI_CALL t_vk_reqs(XrInstance i, XrSystemId s,
+      XrGraphicsRequirementsVulkanKHR *r)
+{
+   r->minApiVersionSupported = XR_MAKE_VERSION(1, 0, 0);
+   r->maxApiVersionSupported = XR_MAKE_VERSION(1, 3, 0);
+   return XR_SUCCESS;
+}
+static XRAPI_ATTR XrResult XRAPI_CALL t_vk_instance(XrInstance i,
+      const XrVulkanInstanceCreateInfoKHR *ci, VkInstance *out, VkResult *r)
+{ return XR_ERROR_FUNCTION_UNSUPPORTED; }
+static XRAPI_ATTR XrResult XRAPI_CALL t_vk_device(XrInstance i,
+      const XrVulkanDeviceCreateInfoKHR *ci, VkDevice *out, VkResult *r)
+{ return XR_ERROR_FUNCTION_UNSUPPORTED; }
+static XRAPI_ATTR XrResult XRAPI_CALL t_vk_gpu(XrInstance i,
+      const XrVulkanGraphicsDeviceGetInfoKHR *gi, VkPhysicalDevice *out)
+{ return XR_ERROR_FUNCTION_UNSUPPORTED; }
+
 static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrEnumerateInstanceExtensionProperties", (PFN_xrVoidFunction)t_enum_exts },
    { "xrCreateInstance",                  (PFN_xrVoidFunction)t_create_instance_fn },
@@ -516,6 +541,10 @@ static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrEndFrame",   (PFN_xrVoidFunction)t_end_frame },
    { "xrInitializeLoaderKHR",  (PFN_xrVoidFunction)t_init_loader },
    { "xrGetOpenGLESGraphicsRequirementsKHR", (PFN_xrVoidFunction)t_gles_reqs },
+   { "xrGetVulkanGraphicsRequirements2KHR",  (PFN_xrVoidFunction)t_vk_reqs },
+   { "xrCreateVulkanInstanceKHR",            (PFN_xrVoidFunction)t_vk_instance },
+   { "xrCreateVulkanDeviceKHR",              (PFN_xrVoidFunction)t_vk_device },
+   { "xrGetVulkanGraphicsDevice2KHR",        (PFN_xrVoidFunction)t_vk_gpu },
    { NULL, NULL }
 };
 
@@ -535,6 +564,13 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_get_proc(XrInstance i,
    return XR_ERROR_FUNCTION_UNSUPPORTED;
 }
 
+/* The loader's: vulkan_openxr_new names it itself. */
+XRAPI_ATTR XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance i,
+      const char *name, PFN_xrVoidFunction *fn)
+{
+   return t_get_proc(i, name, fn);
+}
+
 /* ---- the units, as they ship ---- */
 #include "../../../gfx/common/openxr_runtime.c"
 #include "../../../gfx/common/openxr_session.c"
@@ -543,6 +579,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_get_proc(XrInstance i,
 #include "../../../gfx/common/openxr_tracking.c"
 #include "../../../gfx/common/openxr_host.c"
 #include "../../../gfx/common/openxr_binding_gles.c"
+#include "../../../gfx/common/vulkan_openxr.c"
 
 static void t_runtime_defaults(void)
 {
@@ -1964,6 +2001,20 @@ static void t_pose(XrPosef *p, float x, float z, float yaw_y)
    p->orientation.w = (float)sqrt(1.0 - yaw_y * yaw_y);
 }
 
+/* A host's stop and the next one's resume through openxr_host's
+ * record, saved and given back, so one test can hold several. */
+static void t_keep(const openxr_host_t *h, openxr_host_kept_t *out)
+{
+   openxr_host_keep(h);
+   *out = openxr_host_record;
+}
+
+static void t_resume(openxr_host_t *h, const openxr_host_kept_t *kept)
+{
+   openxr_host_record = *kept;
+   openxr_host_resume(h);
+}
+
 /* Across a video driver reinit, a core's views go on where they were in
  * the room, through STAGE, and a core whose origin moved hears
  * RECENTERED. */
@@ -1993,25 +2044,25 @@ static void test_host_kept(void)
    openxr_host_set_space(&h, &space, &w, &ht);
    t_view[0].pose.position.x = -0.25f;
    openxr_host_sample(&h, &flags);
-   openxr_host_keep(&h, &kept);
+   t_keep(&h, &kept);
    CHECK(!kept.valid && kept.session,
          "views kept before the core was given any");
    openxr_host_eye_state(&h, eyes);
-   openxr_host_keep(&h, &kept);
+   t_keep(&h, &kept);
    CHECK(     kept.valid && openxr_host_has_given(&h)
          && t_near(kept.views[0].pose.position.x, -0.25f),
          "the views a STAGE core was given were not kept");
    /* Views from before the session stopped showing tracked content drew
     * none of the frames since. */
    retro_atomic_store_release_int(&s.running, 0);
-   openxr_host_keep(&h, &none);
+   t_keep(&h, &none);
    CHECK(!none.valid && none.session == kept.session,
          "views kept from a session that shows no tracked content");
    retro_atomic_store_release_int(&s.running, 1);
    /* Given in a space since replaced: not where they were drawn. */
    space = RETRO_VR_REFERENCE_SPACE_LOCAL;
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_keep(&h, &none);
+   t_keep(&h, &none);
    CHECK(!none.valid && !openxr_host_has_given(&h),
          "views from a replaced space were kept");
    t_frame_free(&rt, &s, &f);
@@ -2024,7 +2075,7 @@ static void test_host_kept(void)
    space = RETRO_VR_REFERENCE_SPACE_STAGE;
    openxr_host_set_space(&h, &space, &w, &ht);
    openxr_host_sample(&h, &flags);
-   openxr_host_resume(&h, &kept);
+   t_resume(&h, &kept);
    openxr_host_projection(&h, 400, 240, &p);
    CHECK(     openxr_host_has_given(&h) && p.active
          && p.track_seq == retro_atomic_load_acquire_int(&s.track_seq)
@@ -2038,7 +2089,7 @@ static void test_host_kept(void)
     * for since. */
    openxr_host_new_frame(&h);
    CHECK(!openxr_host_has_given(&h), "kept views outlived a new core frame");
-   openxr_host_resume(&h, &kept);
+   t_resume(&h, &kept);
    openxr_host_eye_state(&h, eyes);
    openxr_host_new_frame(&h);
    CHECK(openxr_host_has_given(&h),
@@ -2058,7 +2109,7 @@ static void test_host_kept(void)
    t_pose(&t_in_stage, 1.0f, 0.0f, 0.70710678f);
    t_in_stage_set = true;
    gone           = t_spaces_destroyed;
-   openxr_host_keep(&h, &seated);
+   t_keep(&h, &seated);
    CHECK(     seated.valid && seated.track_type == space
          && t_near(seated.views[0].pose.position.x, 1.0f)
          && t_near(seated.views[0].pose.position.z, 0.25f)
@@ -2068,7 +2119,7 @@ static void test_host_kept(void)
          seated.views[0].pose.position.x, seated.views[0].pose.position.z);
    /* The same session again, as a kept device's: nothing moved. */
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    flags = 0;
    openxr_host_sample(&h, &flags);
    CHECK(!(flags & RETRO_VR_FRAME_RECENTERED),
@@ -2081,7 +2132,7 @@ static void test_host_kept(void)
    space = RETRO_VR_REFERENCE_SPACE_LOCAL;
    openxr_host_set_space(&h, &space, &w, &ht);
    t_pose(&t_in_stage, 0.0f, 2.0f, 0.0f);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    CHECK(!openxr_host_has_given(&h), "kept views placed without a time");
    openxr_frame_run(&f);
    /* A new session's first location may not be had yet: tried again. */
@@ -2110,7 +2161,7 @@ static void test_host_kept(void)
    t_host_up(&rt, &s, &sc, &f, &h);
    space = RETRO_VR_REFERENCE_SPACE_LOCAL;
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    openxr_frame_run(&f);
    t_view[0].pose.position.x = 0.75f;
    openxr_host_sample(&h, &flags);
@@ -2122,7 +2173,7 @@ static void test_host_kept(void)
    t_frame_free(&rt, &s, &f);
    t_host_up(&rt, &s, &sc, &f, &h);
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    openxr_host_new_frame(&h);
    openxr_frame_run(&f);
    openxr_host_place_kept(&h);
@@ -2131,7 +2182,7 @@ static void test_host_kept(void)
    t_frame_free(&rt, &s, &f);
    t_host_up(&rt, &s, &sc, &f, &h);
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    openxr_host_set_space(&h, &space, &w, &ht);
    openxr_frame_run(&f);
    openxr_host_place_kept(&h);
@@ -2147,14 +2198,99 @@ static void test_host_kept(void)
    openxr_host_set_space(&h, &space, &w, &ht);
    openxr_host_sample(&h, &flags);
    openxr_host_eye_state(&h, eyes);
-   openxr_host_keep(&h, &none);
+   t_keep(&h, &none);
    CHECK(!none.valid && none.session, "seated views kept without a STAGE");
    space = RETRO_VR_REFERENCE_SPACE_STAGE;
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &seated);
+   t_resume(&h, &seated);
    CHECK(!openxr_host_has_given(&h), "kept views placed without a STAGE");
    t_stage_missing = false;
    t_in_stage_set  = false;
+
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   t_frame_free(&rt, &s, &f);
+}
+
+/* openxr_host's one record: a stopping host keeps it, the next host's
+ * resume places its views and spends it, and a new core frame before
+ * that start drops it. */
+static void test_host_record(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_host_t h;
+   openxr_projection_t p;
+   struct retro_vr_eye_state eyes[2];
+   enum retro_vr_reference_space space;
+   unsigned w     = 0;
+   unsigned ht    = 0;
+   uint32_t flags = 0;
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   retro_atomic_store_release_int(&s.running, 1);
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   t_view[0].pose.position.x = -0.25f;
+   openxr_host_sample(&h, &flags);
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_keep(&h);
+   CHECK(     openxr_host_record.valid
+         && openxr_host_record.session == h.session_serial
+         && t_near(openxr_host_record.views[0].pose.position.x, -0.25f),
+         "a stopping host's views are not in the record");
+   t_frame_free(&rt, &s, &f);
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   t_view[0].pose.position.x = 0.5f;
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_host_resume(&h);
+   openxr_host_projection(&h, 400, 240, &p);
+   CHECK(     openxr_host_has_given(&h) && p.active
+         && t_near(p.pose[0].position.x, -0.25f),
+         "the next host did not place the record's views");
+   CHECK(!openxr_host_record.session,
+         "a resume left the record for a later start");
+   t_frame_free(&rt, &s, &f);
+
+   /* A start that gave up leaves nothing for the next. */
+   t_host_up(&rt, &s, &sc, &f, &h);
+   retro_atomic_store_release_int(&s.running, 1);
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_host_sample(&h, &flags);
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_keep(&h);
+   t_frame_free(&rt, &s, &f);
+   openxr_host_forget();
+   CHECK(!openxr_host_record.session, "a forget left the record");
+   t_host_up(&rt, &s, &sc, &f, &h);
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_host_resume(&h);
+   CHECK(!openxr_host_has_given(&h), "a resume placed a forgotten record");
+   t_frame_free(&rt, &s, &f);
+
+   t_host_up(&rt, &s, &sc, &f, &h);
+   retro_atomic_store_release_int(&s.running, 1);
+   openxr_frame_run(&f);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   openxr_host_set_space(&h, &space, &w, &ht);
+   openxr_host_sample(&h, &flags);
+   openxr_host_eye_state(&h, eyes);
+   openxr_host_keep(&h);
+   t_frame_free(&rt, &s, &f);
+   t_host_up(&rt, &s, &sc, &f, &h);
+   openxr_frame_run(&f);
+   openxr_host_new_frame(&h);
+   CHECK(!openxr_host_record.session, "a new core frame left the record");
 
    t_views_tracked = false;
    t_head_tracked  = false;
@@ -2172,7 +2308,6 @@ static void test_host_same_space(void)
    openxr_swapchains_t sc;
    openxr_frame_t f;
    openxr_host_t h;
-   openxr_host_kept_t kept;
    struct retro_vr_eye_state eyes[2];
    enum retro_vr_reference_space space;
    unsigned w     = 0;
@@ -2259,8 +2394,9 @@ static void test_host_same_space(void)
    t_view[0].pose.position.x = -0.25f;
    openxr_host_sample(&h, &flags);
    openxr_host_eye_state(&h, eyes);
-   openxr_host_keep(&h, &kept);
-   CHECK(kept.valid, "the views of the first content were not kept");
+   openxr_host_keep(&h);
+   CHECK(openxr_host_record.valid,
+         "the views of the first content were not kept");
    t_frame_free(&rt, &s, &f);
    t_host_up(&rt, &s, &sc, &f, &h);
    retro_atomic_store_release_int(&s.running, 1);
@@ -2271,11 +2407,9 @@ static void test_host_same_space(void)
    openxr_host_sample(&h, &flags);
    openxr_host_eye_state(&h, eyes);
    openxr_host_new_frame(&h);
-   /* What vulkan_openxr_new_frame does to its record. */
-   memset(&kept, 0, sizeof(kept));
    space = RETRO_VR_REFERENCE_SPACE_LOCAL;
    openxr_host_set_space(&h, &space, &w, &ht);
-   openxr_host_resume(&h, &kept);
+   openxr_host_resume(&h);
    openxr_host_place_kept(&h);
    flags = 0;
    openxr_host_sample(&h, &flags);
@@ -2764,6 +2898,303 @@ static void test_binding_gles(void)
    openxr_runtime_deinit(&rt);
 }
 
+/* vulkan_openxr.c's Vulkan calls are all the laser dot's, which an
+ * in-line host does not make. */
+#define T_VK(name) PFN_##name vulkan_symbol_wrapper_##name;
+T_VK(vkGetDeviceQueue) T_VK(vkCreateBuffer) T_VK(vkDestroyBuffer)
+T_VK(vkGetBufferMemoryRequirements) T_VK(vkGetPhysicalDeviceMemoryProperties)
+T_VK(vkAllocateMemory) T_VK(vkFreeMemory) T_VK(vkBindBufferMemory)
+T_VK(vkMapMemory) T_VK(vkUnmapMemory) T_VK(vkCreateCommandPool)
+T_VK(vkDestroyCommandPool) T_VK(vkAllocateCommandBuffers)
+T_VK(vkBeginCommandBuffer) T_VK(vkEndCommandBuffer)
+T_VK(vkCmdPipelineBarrier) T_VK(vkCmdCopyBufferToImage) T_VK(vkQueueSubmit)
+T_VK(vkCreateFence) T_VK(vkDestroyFence) T_VK(vkWaitForFences)
+
+/* Any call here is a cursor being made: it fails at the first step. */
+static unsigned t_vk_calls;
+static void VKAPI_PTR t_vkGetDeviceQueue(VkDevice device,
+      uint32_t family, uint32_t index, VkQueue *queue)
+{
+   t_vk_calls++;
+}
+static VkResult VKAPI_PTR t_vkCreateBuffer(VkDevice device,
+      const VkBufferCreateInfo *info, const VkAllocationCallbacks *alloc,
+      VkBuffer *buffer)
+{
+   return VK_ERROR_INITIALIZATION_FAILED;
+}
+
+/* The video driver's side: the host it was given, and exits asked. */
+static video_xr_host_t t_xr_host;
+static unsigned t_exit_requests;
+void video_driver_set_xr_host(const video_xr_host_t *host)
+{
+   if (host)
+      t_xr_host = *host;
+   else
+      memset(&t_xr_host, 0, sizeof(t_xr_host));
+}
+void video_driver_headset_exit_request(void) { t_exit_requests++; }
+
+/* What the headset's own context hears. */
+static unsigned  t_p_created, t_p_destroying, t_p_waited, t_p_ended;
+static bool      t_p_running;
+static XrSession t_p_session;
+static bool t_p_session_created(void *u, XrInstance i, XrSession s)
+{ t_p_created++; t_p_session = s; return true; }
+static void t_p_session_destroying(void *u) { t_p_destroying++; }
+static void t_p_frame_waited(void *u, XrSession s, bool running)
+{ t_p_waited++; t_p_running = running; }
+static void t_p_session_ended(void *u) { t_p_ended++; }
+
+static void t_push_shown(void)
+{
+   t_num_events = t_next_event = 0;
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   t_push_state(T_SESSION, XR_SESSION_STATE_SYNCHRONIZED);
+   t_push_state(T_SESSION, XR_SESSION_STATE_VISIBLE);
+   t_push_state(T_SESSION, XR_SESSION_STATE_FOCUSED);
+}
+
+/* The Quest's Vulkan host: vulkan_openxr.c in-line, each headset frame
+ * begun and ended inside the video frame. */
+static void test_vulkan_inline(void)
+{
+   vulkan_openxr_platform_t platform;
+   XrLoaderInitInfoBaseHeaderKHR loader;
+   struct retro_vr_eye_state eyes[2];
+   enum retro_vr_reference_space space;
+   openxr_projection_t p;
+   vulkan_openxr_t *xr;
+   unsigned waits, begins, ends, waited, instances, i;
+   int kept;
+   VkInstance vk_inst   = (VkInstance)(uintptr_t)0x50;
+   VkPhysicalDevice gpu = (VkPhysicalDevice)(uintptr_t)0x58;
+   VkDevice dev         = (VkDevice)(uintptr_t)0x60;
+   slock_t *lock        = slock_new();
+   unsigned w           = 0;
+   unsigned ht          = 0;
+   uint32_t flags       = 0;
+   const unsigned shown = VIDEO_XR_HEADSET_PRESENTING
+      | VIDEO_XR_HEADSET_FOCUSED | VIDEO_XR_HEADSET_TRACKING;
+
+   memset(&loader, 0, sizeof(loader));
+   loader.type = XR_TYPE_LOADER_INIT_INFO_ANDROID_KHR;
+   memset(&platform, 0, sizeof(platform));
+   platform.runtime.loader     = &loader;
+   platform.session_created    = t_p_session_created;
+   platform.session_destroying = t_p_session_destroying;
+   platform.frame_waited       = t_p_frame_waited;
+   platform.ended              = t_p_session_ended;
+   t_runtime_defaults();
+   t_begun = t_ended_sessions = 0;
+   t_sessions_made = t_sessions_destroyed = 0;
+   t_spaces_made = t_spaces_destroyed = 0;
+   instances = t_destroyed_instances;
+   t_vk_calls = 0;
+   vulkan_symbol_wrapper_vkGetDeviceQueue = t_vkGetDeviceQueue;
+   vulkan_symbol_wrapper_vkCreateBuffer   = t_vkCreateBuffer;
+
+   /* The platform makes the runtime in-line, from its loader. */
+   vulkan_openxr_set_platform(&platform);
+   xr = vulkan_openxr_new(false, VK_API_VERSION_1_1);
+   CHECK(xr && vulkan_openxr_inline(xr) && t_loader_calls == 1,
+         "not in-line on the platform: loader started %u times",
+         t_loader_calls);
+   if (!xr)
+   {
+      vulkan_openxr_set_platform(NULL);
+      slock_free(lock);
+      return;
+   }
+   CHECK(     vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock)
+         && t_sessions_made == 1 && t_p_created == 1
+         && t_p_session == T_SESSION && t_xr_host.user == xr,
+         "start: %u sessions, the platform told of %u", t_sessions_made,
+         t_p_created);
+   CHECK(!vulkan_openxr_cursor(xr) && !t_vk_calls,
+         "an in-line host made a cursor (%u Vulkan calls)", t_vk_calls);
+
+   /* The first begin begins the session; each begin then waits for and
+    * begins one headset frame, a second begin does nothing, and each
+    * end ends it. */
+   t_push_shown();
+   for (i = 0; i < 3; i++)
+   {
+      waits  = t_waits;
+      begins = t_begins;
+      ends   = t_ends;
+      waited = t_p_waited;
+      vulkan_openxr_begin_frame(xr);
+      vulkan_openxr_begin_frame(xr);
+      CHECK(     t_waits == waits + 1 && t_begins == begins + 1
+            && t_ends == ends && t_p_waited == waited + 1 && t_p_running,
+            "frame %u's begin: %u waits, %u begins, %u ends", i,
+            t_waits - waits, t_begins - begins, t_ends - ends);
+      vulkan_openxr_end_frame(xr);
+      CHECK(     t_waits == waits + 1 && t_begins == begins + 1
+            && t_ends == ends + 1,
+            "frame %u's end: %u waits, %u begins, %u ends", i,
+            t_waits - waits, t_begins - begins, t_ends - ends);
+   }
+   CHECK(t_begun == 1 && t_xr_host.state(t_xr_host.user) == shown,
+         "%u sessions begun, state %x", t_begun,
+         t_xr_host.state(t_xr_host.user));
+   /* A headset the driver shows nothing (HDR output) gives no HMD. */
+   vulkan_openxr_set_hidden(xr, true);
+   CHECK(!(t_xr_host.state(t_xr_host.user) & (VIDEO_XR_HEADSET_PRESENTING
+         | VIDEO_XR_HEADSET_TRACKING)), "state %x while hidden",
+         t_xr_host.state(t_xr_host.user));
+   vulkan_openxr_set_hidden(xr, false);
+
+   /* The runtime ends the session: the platform hears it, nothing asks
+    * the window to take over, and no frame call follows. */
+   t_num_events = t_next_event = 0;
+   t_push_state(T_SESSION, XR_SESSION_STATE_STOPPING);
+   t_push_state(T_SESSION, XR_SESSION_STATE_IDLE);
+   t_push_state(T_SESSION, XR_SESSION_STATE_EXITING);
+   waits  = t_waits;
+   begins = t_begins;
+   ends   = t_ends;
+   waited = t_p_waited;
+   for (i = 0; i < 3; i++)
+   {
+      vulkan_openxr_begin_frame(xr);
+      vulkan_openxr_end_frame(xr);
+   }
+   CHECK(     t_ended_sessions == 1 && t_p_ended == 1 && !t_exit_requests
+         && !t_xr_host.state(t_xr_host.user),
+         "EXITING: %u ended, the platform told %u times, %u exits asked",
+         t_ended_sessions, t_p_ended, t_exit_requests);
+   CHECK(     t_waits == waits && t_begins == begins && t_ends == ends
+         && t_p_waited == waited + 3 && !t_p_running,
+         "after EXITING: %u waits, %u begins, %u ends", t_waits - waits,
+         t_begins - begins, t_ends - ends);
+
+   /* A restart makes the session again, and its frames run: the only
+    * frame calls since EXITING. */
+   vulkan_openxr_stop(xr);
+   CHECK(     vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock)
+         && t_sessions_made == 2 && t_sessions_destroyed == 1
+         && t_p_created == 2 && t_p_destroying == 1 && t_xr_host.user == xr,
+         "restart: %u sessions made, %u destroyed", t_sessions_made,
+         t_sessions_destroyed);
+   t_push_shown();
+   vulkan_openxr_begin_frame(xr);
+   vulkan_openxr_end_frame(xr);
+   CHECK(     t_begun == 2 && t_waits == waits + 1 && t_begins == begins + 1
+         && t_ends == ends + 1,
+         "the restarted session's frame: %u waits, %u begins, %u ends",
+         t_waits - waits, t_begins - begins, t_ends - ends);
+
+   /* Everything goes at free. */
+   vulkan_openxr_free(xr);
+   CHECK(     t_sessions_destroyed == t_sessions_made
+         && t_p_destroying == t_p_created
+         && t_spaces_destroyed == t_spaces_made
+         && t_destroyed_instances == instances + 1 && !t_xr_host.user,
+         "free: %u of %u sessions, %u of %u spaces, %u instances",
+         t_sessions_destroyed, t_sessions_made, t_spaces_destroyed,
+         t_spaces_made, t_destroyed_instances - instances);
+
+   /* A stop while the session shows the core's views keeps them, and
+    * free's stop keeps what that one did. */
+   memset(t_view, 0, sizeof(t_view));
+   t_view[0].pose.orientation.w = 1.0f;
+   t_view[1].pose.orientation.w = 1.0f;
+   memset(&t_head, 0, sizeof(t_head));
+   t_head.orientation.w         = 1.0f;
+   t_views_tracked              = true;
+   t_head_tracked               = true;
+   xr = vulkan_openxr_new(false, VK_API_VERSION_1_1);
+   CHECK(xr && vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock),
+         "a kept-views host did not start");
+   if (!xr)
+      goto done;
+   t_push_shown();
+   vulkan_openxr_begin_frame(xr);
+   vulkan_openxr_end_frame(xr);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
+   t_view[0].pose.position.x = -0.25f;
+   t_xr_host.sample(t_xr_host.user, &flags);
+   t_xr_host.eye_state(t_xr_host.user, eyes);
+   vulkan_openxr_stop(xr);
+   CHECK(     openxr_host_record.valid
+         && t_near(openxr_host_record.views[0].pose.position.x, -0.25f),
+         "a stop did not keep the views the core was given");
+   vulkan_openxr_free(xr);
+   CHECK(     openxr_host_record.valid
+         && t_near(openxr_host_record.views[0].pose.position.x, -0.25f),
+         "free's stop replaced the kept views");
+
+   /* After a reinit, a resume with no new core frame places them, not
+    * the head sampled since; a new frame drops them. */
+   xr = vulkan_openxr_new(false, VK_API_VERSION_1_1);
+   CHECK(xr && vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock),
+         "a resumed host did not start");
+   if (!xr)
+      goto done;
+   t_push_shown();
+   vulkan_openxr_begin_frame(xr);
+   vulkan_openxr_end_frame(xr);
+   space = RETRO_VR_REFERENCE_SPACE_STAGE;
+   t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
+   t_view[0].pose.position.x = 0.5f;
+   t_xr_host.sample(t_xr_host.user, &flags);
+   if (t_xr_host.resume)
+      t_xr_host.resume(t_xr_host.user);
+   vulkan_openxr_place_kept(xr);
+   openxr_host_projection(&xr->host, 400, 240, &p);
+   CHECK(     vulkan_openxr_has_given(xr) && p.active
+         && t_near(p.pose[0].position.x, -0.25f),
+         "a resume did not place the kept views: x %.2f",
+         p.pose[0].position.x);
+   vulkan_openxr_new_frame(xr);
+   CHECK(!vulkan_openxr_has_given(xr), "kept views outlived a new core frame");
+
+   /* A new core frame drops a record kept for the next start. */
+   t_xr_host.eye_state(t_xr_host.user, eyes);
+   vulkan_openxr_stop(xr);
+   vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock);
+   kept = openxr_host_record.session;
+   vulkan_openxr_new_frame(xr);
+   CHECK(kept && !openxr_host_record.session,
+         "a new core frame left the record (%d kept)", kept);
+   vulkan_openxr_free(xr);
+
+   /* A start that gave up leaves no record for the next. */
+   xr = vulkan_openxr_new(false, VK_API_VERSION_1_1);
+   CHECK(xr && vulkan_openxr_start(xr, vk_inst, gpu, dev, 0, lock),
+         "a dropped host did not start");
+   if (xr)
+   {
+      t_push_shown();
+      vulkan_openxr_begin_frame(xr);
+      vulkan_openxr_end_frame(xr);
+      space = RETRO_VR_REFERENCE_SPACE_STAGE;
+      t_xr_host.set_space(t_xr_host.user, &space, &w, &ht);
+      t_xr_host.sample(t_xr_host.user, &flags);
+      t_xr_host.eye_state(t_xr_host.user, eyes);
+      vulkan_openxr_drop(xr);
+      CHECK(!openxr_host_record.session, "a drop left the record");
+   }
+   openxr_host_record.session = 1;
+   t_missing = "xrCreateInstance";
+   xr = vulkan_openxr_new(false, VK_API_VERSION_1_1);
+   t_missing = NULL;
+   CHECK(!xr && !openxr_host_record.session,
+         "a failed new left the record");
+   vulkan_openxr_free(xr);
+
+done:
+   memset(&openxr_host_record, 0, sizeof(openxr_host_record));
+   t_views_tracked = false;
+   t_head_tracked  = false;
+   vulkan_openxr_set_platform(NULL);
+   slock_free(lock);
+}
+
 int main(void)
 {
    test_runtime();
@@ -2778,11 +3209,13 @@ int main(void)
    test_host();
    test_host_remake();
    test_host_kept();
+   test_host_record();
    test_host_same_space();
    test_runtime_platform();
    test_runtime_gaps();
    test_frame_inline();
    test_binding_gles();
+   test_vulkan_inline();
    if (failures)
    {
       fprintf(stderr, "%d failure(s)\n", failures);

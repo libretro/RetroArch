@@ -22,6 +22,8 @@
 
 /* Sessions any host made, so a reinit's next session is another. */
 static int openxr_host_sessions;
+/* The last stopped host's, for the next to start after a reinit. */
+static openxr_host_kept_t openxr_host_record;
 
 void openxr_host_init(openxr_host_t *h, const openxr_runtime_t *rt,
       openxr_session_t *session, openxr_frame_t *frame)
@@ -318,10 +320,11 @@ static int openxr_host_track_in_stage(const openxr_host_t *h,
    return 1;
 }
 
-void openxr_host_keep(const openxr_host_t *h, openxr_host_kept_t *out)
+void openxr_host_keep(const openxr_host_t *h)
 {
    unsigned e;
    XrPosef origin;
+   openxr_host_kept_t *out = &openxr_host_record;
    memset(out, 0, sizeof(*out));
    if (!h->session->track_space)
       return;
@@ -344,20 +347,27 @@ void openxr_host_keep(const openxr_host_t *h, openxr_host_kept_t *out)
    out->valid = true;
 }
 
-void openxr_host_resume(openxr_host_t *h, const openxr_host_kept_t *kept)
+void openxr_host_forget(void)
 {
-   if (!kept->session)
+   memset(&openxr_host_record, 0, sizeof(openxr_host_record));
+}
+
+void openxr_host_resume(openxr_host_t *h)
+{
+   const openxr_host_kept_t kept = openxr_host_record;
+   memset(&openxr_host_record, 0, sizeof(openxr_host_record));
+   if (!kept.session)
       return;
    /* Another session's origin is not this one's, unless both are the
     * room. */
-   if (     kept->session != h->session_serial
-         && (   kept->track_type != RETRO_VR_REFERENCE_SPACE_STAGE
-             || h->track_type    != RETRO_VR_REFERENCE_SPACE_STAGE))
+   if (     kept.session != h->session_serial
+         && (   kept.track_type != RETRO_VR_REFERENCE_SPACE_STAGE
+             || h->track_type   != RETRO_VR_REFERENCE_SPACE_STAGE))
       h->origin_changed = true;
-   if (!kept->valid)
+   if (!kept.valid)
       return;
-   h->kept[0]      = kept->views[0];
-   h->kept[1]      = kept->views[1];
+   h->kept[0]      = kept.views[0];
+   h->kept[1]      = kept.views[1];
    h->kept_pending = true;
    openxr_host_place_kept(h);
 }
@@ -391,6 +401,7 @@ void openxr_host_place_kept(openxr_host_t *h)
 
 void openxr_host_new_frame(openxr_host_t *h)
 {
+   memset(&openxr_host_record, 0, sizeof(openxr_host_record));
    h->kept_pending = false;
    if (h->given_kept)
       h->given_valid = false;
