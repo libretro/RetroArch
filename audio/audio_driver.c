@@ -4962,6 +4962,9 @@ void audio_driver_publish_runloop(void)
       v |= AUDIO_SNAP_STRETCH_LPF;
    if (settings->bools.audio_pipeline_fill_cap)
       v |= AUDIO_SNAP_PIPE_CAP;
+   if (runloop_state_get_ptr()->pace & (RUNLOOP_PACE_VSYNC
+            | RUNLOOP_PACE_SCANLINE | RUNLOOP_PACE_DISPLAY))
+      v |= AUDIO_SNAP_DISPLAY_PACED;
    ratio = settings->floats.slowmotion_ratio;
    memcpy(&ratio_bits, &ratio, sizeof(ratio_bits));
    retro_atomic_store_release_int(
@@ -5575,6 +5578,15 @@ static size_t audio_driver_pipe_cap_frames(audio_driver_state_t *audio_st)
       return 0;
    if (!(target = audio_driver_pipe_target_frames(audio_st)))
       return 0;
+   /* Paced by the display as well, one publish more: the fill swings
+    * by a publish with the phase between the core's publish and the
+    * consumer's pass, and at one publish over the target that swing
+    * held a display-paced core for part of a pass now and then - time
+    * the display pacing hold measures as the core's and reserves. Two
+    * clear the swing, so only a core running ahead of the device is
+    * held, as a full ring held it. */
+   if (snap & AUDIO_SNAP_DISPLAY_PACED)
+      target += audio_st->pipe_pass_frames;
    return target + audio_st->pipe_pass_frames;
 }
 

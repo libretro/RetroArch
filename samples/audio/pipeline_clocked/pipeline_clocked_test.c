@@ -473,7 +473,7 @@ static unsigned paced_failures;
 
 static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       bool video_paced, bool sync, unsigned jitter_us,
-      double *avg_ms, double *max_ms, size_t *short_pulls)
+      double *avg_ms, double *max_ms, size_t *short_pulls, size_t *held)
 {
    audio_driver_state_t *st = &audio_driver_st;
    pthread_t cons, dev;
@@ -488,7 +488,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       jitter_us = (unsigned)atoi(getenv("JITTER_US"));
 
    *avg_ms = *max_ms = 0.0;
-   *short_pulls = 0;
+   *short_pulls = *held = 0;
    if (!pipeline_up(latency_ms))
    {
       printf("  paced %u ms: fixture failed\n", latency_ms);
@@ -496,6 +496,10 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       return;
    }
    config_get_ptr()->bools.audio_pipeline_fill_cap = cap;
+   /* What the runloop's last pace decision says held it: the display
+    * pacing hold, or the publish itself. */
+   runloop_state_get_ptr()->pace = video_paced
+      ? RUNLOOP_PACE_DISPLAY : RUNLOOP_PACE_AUDIO;
    /* Audio Sync off: the publish never waits, as the frontend's
     * non-blocking state has it. */
    if (!sync)
@@ -531,8 +535,20 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
          }
          clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &at, NULL);
       }
-      audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
-            false, false, false, true);
+      {
+         struct timespec t0, t1;
+         long held_us;
+         clock_gettime(CLOCK_MONOTONIC, &t0);
+         audio_driver_submit(st, 1.0f, frame_audio, per_frame * 2,
+               false, false, false, true);
+         clock_gettime(CLOCK_MONOTONIC, &t1);
+         held_us = (t1.tv_sec - t0.tv_sec) * 1000000L
+            + (t1.tv_nsec - t0.tv_nsec) / 1000L;
+         /* A publish that waited: under a display-paced core that is
+          * time the display pacing hold reads as the core's */
+         if (i >= (size_t)FPS && held_us > 1000)
+            (*held)++;
+      }
       audio_driver_pipeline_signal(st);
       if (i == (size_t)FPS)
          warm_under = retro_atomic_load_acquire_size(&dev_underruns);
@@ -559,6 +575,7 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    pthread_join(dev,  NULL);
    pipeline_down();
    config_get_ptr()->bools.audio_pipeline_fill_cap = false;
+   runloop_state_get_ptr()->pace = 0;
    if (counted)
    {
       *avg_ms = sum / (double)counted;
@@ -579,7 +596,7 @@ static void audio_paced_case(double seconds)
       {
          bool   video = (mode & 2) != 0, cap = (mode & 1) != 0;
          double avg, mx;
-         size_t sp;
+         size_t sp, held;
          int    attempt;
          /* The cap is to bring the audio-paced queue down to what the
           * video-paced one already holds, and not to buy that with
@@ -592,18 +609,26 @@ static void audio_paced_case(double seconds)
          for (attempt = 0; attempt < 5; attempt++)
          {
             audio_paced_once(lat[i], seconds, cap, video, true, 0,
-                  &avg, &mx, &sp);
-            if (!(cap && !video && sp))
+                  &avg, &mx, &sp, &held);
+            if (!(cap && ((!video && sp) || (video && held))))
                break;
-            printf("  %3u ms  %-12s cap on  | %u short pulls; host or cap, again\n",
-                  lat[i], video ? "video-paced" : "audio-paced", (unsigned)sp);
+            printf("  %3u ms  %-12s cap on  | %u short pulls, %u held; host or cap, again\n",
+                  lat[i], video ? "video-paced" : "audio-paced",
+                  (unsigned)sp, (unsigned)held);
          }
-         printf("  %3u ms  %-12s cap %-3s | avg %6.1f ms, max %6.1f ms, short %u\n",
+         printf("  %3u ms  %-12s cap %-3s | avg %6.1f ms, max %6.1f ms, short %u, held %u\n",
                lat[i], video ? "video-paced" : "audio-paced",
-               cap ? "on" : "off", avg, mx, (unsigned)sp);
+               cap ? "on" : "off", avg, mx, (unsigned)sp, (unsigned)held);
          if (cap && !video && sp)
          {
             printf("FAIL: the cap starved the device in every run\n");
+            paced_failures++;
+         }
+         /* A display-paced core is the display's to hold: the cap
+          * holding it moves the display pacing hold's estimate. */
+         if (cap && video && held)
+         {
+            printf("FAIL: the cap held a display-paced core in every run\n");
             paced_failures++;
          }
          /* And it is to lower the queue, by most of the ring: at least
@@ -641,14 +666,14 @@ static void sync_off_case(double seconds)
       for (cap = 0; cap < 2; cap++)
       {
          double avg, mx;
-         size_t sp;
+         size_t sp, held;
          int    attempt;
          /* Retried as above: a host that takes the consumer off its
           * core shows the same holes with the deep pipe. */
          for (attempt = 0; attempt < 5; attempt++)
          {
             audio_paced_once(lat[i], seconds, cap != 0, true, false, 16000,
-                  &avg, &mx, &sp);
+                  &avg, &mx, &sp, &held);
             if (!(cap && sp))
                break;
             printf("  %3u ms  shallow | %u short pulls; host or cushion, again\n",
