@@ -551,6 +551,7 @@ STBIDEF int   stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const ch
 
 
 #include <stdarg.h>
+#include <limits.h>
 #include <stddef.h> /* ptrdiff_t on osx */
 #include <stdlib.h>
 #include <string.h>
@@ -5108,6 +5109,9 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
    h = stbi__get32be(s);
    w = stbi__get32be(s);
 
+   if (w <= 0 || h <= 0 || w > INT_MAX / 4 / h)
+      return stbi__errpuc("too large", "Invalid PSD dimensions");
+
    /* Make sure the depth is 8 bits. */
    if (stbi__get16be(s) != 8)
       return stbi__errpuc("unsupported bit depth", "PSD bit depth is not 8 bit");
@@ -5141,6 +5145,9 @@ static stbi_uc *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int 
    compression = stbi__get16be(s);
    if (compression > 1)
       return stbi__errpuc("bad compression", "PSD has an unknown compression format");
+
+   if (compression && channelCount && h > INT_MAX / 2 / channelCount)
+      return stbi__errpuc("too large", "PSD row table is too large");
 
    // Create the destination image.
    out = (stbi_uc *) stbi__malloc(4 * w*h);
