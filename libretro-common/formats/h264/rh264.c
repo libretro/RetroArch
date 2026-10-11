@@ -4913,9 +4913,12 @@ static int rh264_decode_islice(rh264_bits *b,const rh264_sps *sps,
 typedef struct {
    const uint8_t *buf, *end;
    uint32_t range;      /* codIRange */
-   uint32_t offset;     /* codIOffset */
-   uint32_t bitbuf;
+   /* codIOffset << bitcnt, with the next bitcnt bits of the stream
+    * below it: a renormalisation only takes bitcnt down, and bytes come
+    * in a few at a time when it runs low */
+   uint64_t val;
    int      bitcnt;
+   int      pad;        /* zero bytes fed in past end */
    uint8_t  state[1024];   /* pStateIdx * 2 | valMPS, fused */
    /* fused state transitions, built from rh264_transIdxMPS/LPS at init:
     * next[0] follows an MPS, next[1] an LPS (including the valMPS flip
@@ -6400,34 +6403,31 @@ static const int8_t rh264_cabac_init_PB[3][1024][2]={
 /* Pull n (1..7) bits for renormalisation.  When the buffer runs low it
  * is topped up past 16 bits so consecutive renormalisations share one
  * refill; bytes past the end read as zero (end-of-data semantics). */
-static RH264_INLINE uint32_t rh264_cb_bits(rh264_cabac *c, int n)
+static RH264_INLINE void rh264_cb_refill(rh264_cabac *c)
 {
-   if (c->bitcnt < n)
+   /* val stays below 2^(9 + bitcnt): stop before bitcnt passes 55 */
+   while (c->bitcnt <= 47)
    {
-      do
+      if (c->buf < c->end)
+         c->val = (c->val << 8) | (uint64_t)*c->buf++;
+      else
       {
-         c->bitbuf = (c->bitbuf << 8)
-               | (uint32_t)((c->buf < c->end) ? *c->buf++ : 0);
-         c->bitcnt += 8;
-      } while (c->bitcnt <= 16);
+         c->val <<= 8;
+         c->pad++;
+      }
+      c->bitcnt += 8;
    }
-   c->bitcnt -= n;
-   return (c->bitbuf >> c->bitcnt) & ((1u << n) - 1u);
-}
-
-static RH264_INLINE int rh264_cb_bit(rh264_cabac *c)
-{
-   return (int)rh264_cb_bits(c, 1);
 }
 
 static void rh264_cabac_init_engine(rh264_cabac *c,
       const uint8_t *buf, const uint8_t *end)
 {
-   int i;
-   c->buf = buf; c->end = end; c->bitbuf = 0; c->bitcnt = 0;
-   c->range = 510;
-   c->offset = 0;
-   for (i = 0; i < 9; i++) c->offset = (c->offset << 1) | (uint32_t)rh264_cb_bit(c);
+   c->buf = buf; c->end = end;
+   c->range  = 510;
+   c->val    = 0;
+   c->bitcnt = -9;   /* the first nine bits are codIOffset */
+   c->pad    = 0;
+   rh264_cb_refill(c);
 }
 
 /* 9.3.1.1 context variable initialisation for an I slice at SliceQPy. */
@@ -6458,52 +6458,65 @@ static void rh264_cabac_init_contexts(rh264_cabac *c, int sliceQP, int init_idc)
    }
 }
 
-static int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
+static RH264_INLINE int rh264_cabac_decode(rh264_cabac *c, int ctxIdx)
 {
    uint32_t s    = c->state[ctxIdx];
    uint32_t rLPS = rh264_rangeTabLPS[s >> 1][(c->range >> 6) & 3];
+   uint64_t sc;
    uint32_t m;
    int bin;
    c->range -= rLPS;
+   sc  = (uint64_t)c->range << c->bitcnt;
    /* the LPS/MPS decision is the decoded bin itself, so as a branch it
     * mispredicts at exactly the bin entropy; taken as an all-ones mask
     * instead, both outcomes cost the same straight-line code */
-   m   = (uint32_t)0 - (uint32_t)(c->offset >= c->range);
+   m   = (uint32_t)0 - (uint32_t)(c->val >= sc);
    bin = (int)((s ^ m) & 1u);
-   c->offset -= c->range & m;
-   c->range  ^= (c->range ^ rLPS) & m;
+   c->val   -= sc & (uint64_t)(int64_t)(int32_t)m;
+   c->range ^= (c->range ^ rLPS) & m;
    c->state[ctxIdx] = c->next[m & 1u][s];
    if (c->range < 256)
    {
-      /* range is 2..255 here, so 1..7 doublings restore it; take them
-       * in one step instead of a bit at a time */
+      /* range is 2..255 here, so 1..7 doublings restore it; each is a
+       * bit of val moving into codIOffset */
       int n = (int)compat_clz_u32(c->range) - 23;
-      c->range <<= n;
-      c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
+      c->range  <<= n;
+      c->bitcnt  -= n;
+      if (c->bitcnt < 16)
+         rh264_cb_refill(c);
    }
    return bin;
 }
 
-static int rh264_cabac_bypass(rh264_cabac *c)
+static RH264_INLINE int rh264_cabac_bypass(rh264_cabac *c)
 {
+   uint64_t sc;
    uint32_t m;
-   c->offset = (c->offset << 1) | (uint32_t)rh264_cb_bit(c);
-   /* bypass bins (signs, suffix bits) are near-uniform - the worst
-    * case for a branch, the indifferent case for a mask */
-   m = (uint32_t)0 - (uint32_t)(c->offset >= c->range);
-   c->offset -= c->range & m;
+   /* one more bit into codIOffset, then the comparison; bypass bins
+    * (signs, suffix bits) are near-uniform - the worst case for a
+    * branch, the indifferent case for a mask */
+   /* refill before the shift: codIOffset is ten bits until the
+    * comparison, and val must still fit */
+   if (c->bitcnt < 16)
+      rh264_cb_refill(c);
+   c->bitcnt--;
+   sc = (uint64_t)c->range << c->bitcnt;
+   m  = (uint32_t)0 - (uint32_t)(c->val >= sc);
+   c->val -= sc & (uint64_t)(int64_t)(int32_t)m;
    return (int)(m & 1u);
 }
 
 static int rh264_cabac_terminate(rh264_cabac *c)
 {
    c->range -= 2;
-   if (c->offset >= c->range) return 1;
+   if (c->val >= ((uint64_t)c->range << c->bitcnt)) return 1;
    if (c->range < 256)
    {
       int n = (int)compat_clz_u32(c->range) - 23;
-      c->range <<= n;
-      c->offset  = (c->offset << n) | rh264_cb_bits(c, n);
+      c->range  <<= n;
+      c->bitcnt  -= n;
+      if (c->bitcnt < 16)
+         rh264_cb_refill(c);
    }
    return 0;
 }
@@ -7047,7 +7060,7 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
           * the arithmetic decoder's read position (the nine-bit window
           * covers the encoder's flush and stop bit, 9.3.4.5; then
           * pcm_alignment_zero_bits, 7.3.5).  This engine prefetches:
-          * buf is up to three bytes past that position and bitcnt bits
+          * buf is up to seven bytes past that position and bitcnt bits
           * of it are unconsumed, so give back the whole unconsumed
           * bytes - restarting at buf itself skipped up to two sample
           * bytes and desynchronised everything after the first I_PCM
@@ -7059,7 +7072,13 @@ static int rh264_cabac_decode_mb_ctx(rh264_cabac *cb, const rh264_sps *sps,
          /* (an earlier rule stepped one bit further before rounding,
           * which only differed when the prefetch held a whole number of
           * bytes - then it started the samples a byte late) */
-         cb->buf -= cb->bitcnt >> 3;
+         {
+            /* the prefetch holds bitcnt bits; the whole bytes among
+             * them that came from the stream go back */
+            int back = (cb->bitcnt >> 3) - cb->pad;
+            if (back > 0)
+               cb->buf -= back;
+         }
          cb->bitcnt = 0;
          /* 256 + 2 x (ch x cw) samples of bit_depth bits, then byte
           * alignment before the engine restarts (7.3.5, 9.3.1.2) */
