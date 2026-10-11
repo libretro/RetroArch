@@ -189,6 +189,7 @@ struct gl2
    char device_str[128];
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
+   gl_frame_mem_t *frame_mem;
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;

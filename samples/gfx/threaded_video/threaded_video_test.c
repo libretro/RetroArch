@@ -8566,7 +8566,9 @@ int main(int argc, char *argv[])
       lane_lent_window_paused();
    if (     real_driver()
          && (  !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan")
-            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d12")))
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d12")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")))
       lane_frame_mem();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();

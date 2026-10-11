@@ -31,6 +31,7 @@
 #endif
 
 #include "../video_record.h"
+#include "../gfx_instrument.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <math.h>
@@ -2849,6 +2850,9 @@ static void gl2_renderchain_copy_frame(
 #else
    {
       const GLvoid *data_buf = frame;
+#ifdef HAVE_GL_TEXTURE_LEND
+      int fm_slot            = -1;
+#endif
       glPixelStorei(GL_UNPACK_ALIGNMENT, gl2_get_alignment(pitch));
 
       if (gl->base_size == 2 && (!(gl->flags & GL2_FLAG_HAVE_ES2_COMPAT)))
@@ -2868,13 +2872,35 @@ static void gl2_renderchain_copy_frame(
          data_buf = gl->conv_buffer;
       }
       else
+      {
          glPixelStorei(GL_UNPACK_ROW_LENGTH, pitch / gl->base_size);
+#ifdef HAVE_GL_TEXTURE_LEND
+         /* A frame in one of the threaded wrapper's buffers is read out
+          * of it by the GL, the upload queued rather than copied here */
+         {
+            size_t off    = 0;
+            size_t extent = height ? (size_t)(height - 1) * pitch
+               + (size_t)width * gl->base_size : 0;
+            fm_slot       = gl_frame_mem_bind(gl->frame_mem, frame,
+                  extent, &off);
+            if (fm_slot >= 0)
+               data_buf   = (const GLvoid*)off;
+         }
+#endif
+      }
 
       glTexSubImage2D(GL_TEXTURE_2D,
             0, 0, 0, width, height, gl->texture_type,
             gl->texture_fmt, data_buf);
 
       glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+#ifdef HAVE_GL_TEXTURE_LEND
+      if (fm_slot >= 0)
+      {
+         GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+         gl_frame_mem_unbind(gl->frame_mem, fm_slot);
+      }
+#endif
    }
 #endif
 }
@@ -5433,6 +5459,7 @@ static void gl2_free(void *data)
 #endif
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+   gl_frame_mem_destroy(&gl->frame_mem);
 #endif
 
    glDeleteTextures(gl->textures, gl->texture);
@@ -7220,6 +7247,34 @@ static bool gl2_texture_lend_ready(void *data, uintptr_t id,
    gl2_t *gl = (gl2_t*)data;
    return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
 }
+
+/* The threaded wrapper's frame buffers, on the context's thread: a
+ * frame pushed from one is uploaded out of it by the GL
+ * (gl2_renderchain_copy_frame). Not for a hardware core. */
+static void *gl2_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (!gl || (gl->flags & GL2_FLAG_HW_RENDER_USE))
+      return NULL;
+   /* Where the GL puts a persistent mapping is its own choice */
+   *cached      = false;
+   *pitch_align = 4;
+   return gl_frame_mem_alloc(&gl->frame_mem, size, id);
+}
+
+static bool gl2_frame_mem_ready(void *data, uintptr_t id)
+{
+   gl2_t *gl = (gl2_t*)data;
+   return !gl || gl_frame_mem_ready(gl->frame_mem, id);
+}
+
+static void gl2_frame_mem_free(void *data, uintptr_t id)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (gl)
+      gl_frame_mem_free(gl->frame_mem, id);
+}
 #endif
 
 static uint32_t gl2_get_flags(void *data)
@@ -7523,7 +7578,16 @@ static const video_poke_interface_t gl2_poke_interface = {
    NULL, /* set_view_count */
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
-   gl2_set_frame_format
+   gl2_set_frame_format,
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl2_frame_mem_alloc,
+   gl2_frame_mem_ready,
+   gl2_frame_mem_free
+#else
+   NULL, /* frame_mem_alloc */
+   NULL, /* frame_mem_ready */
+   NULL  /* frame_mem_free */
+#endif
 };
 
 static void gl2_get_poke_interface(void *data,

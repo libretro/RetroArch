@@ -297,6 +297,143 @@ void gl_texture_lend_free(gl_texture_lend_t **list)
       gl_texture_lend_destroy(st);
    }
 }
+
+#ifndef GL_MAP_READ_BIT
+#define GL_MAP_READ_BIT 0x0001
+#endif
+
+#define GL_FRAME_MEM_MAX 12
+
+struct gl_frame_mem
+{
+   GLsync   fence[GL_FRAME_MEM_MAX];
+   void    *mapped[GL_FRAME_MEM_MAX];
+   size_t   size[GL_FRAME_MEM_MAX];
+   GLuint   pbo[GL_FRAME_MEM_MAX];
+   /* As a lent slot's: an upload issued and not seen to finish */
+   bool     busy[GL_FRAME_MEM_MAX];
+};
+
+void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id)
+{
+   unsigned i;
+   gl_frame_mem_t *f;
+   /* Readable too: a core may read back the frame it rendered */
+   GLbitfield flags = GL_MAP_WRITE_BIT | GL_MAP_READ_BIT
+      | GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+
+   if (!fm || !size || !gl_texture_lend_supported())
+      return NULL;
+   if (!*fm && !(*fm = (gl_frame_mem_t*)calloc(1, sizeof(**fm))))
+      return NULL;
+   f = *fm;
+   for (i = 0; i < GL_FRAME_MEM_MAX; i++)
+      if (!f->pbo[i])
+         break;
+   if (i == GL_FRAME_MEM_MAX)
+      return NULL;
+   glGenBuffers(1, &f->pbo[i]);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, f->pbo[i]);
+   glBufferStorage(GL_PIXEL_UNPACK_BUFFER, (GLsizeiptr)size, NULL, flags);
+   f->mapped[i] = glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0,
+         (GLsizeiptr)size, flags);
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   if (!f->mapped[i])
+   {
+      glDeleteBuffers(1, &f->pbo[i]);
+      f->pbo[i] = 0;
+      return NULL;
+   }
+   f->size[i] = size;
+   f->busy[i] = false;
+   *id        = (uintptr_t)i + 1;
+   return f->mapped[i];
+}
+
+static bool gl_frame_mem_slot_ready(gl_frame_mem_t *f, unsigned i)
+{
+   GLenum r;
+   if (!f->busy[i])
+      return true;
+   if (     !f->fence[i]
+         && !(f->fence[i] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0)))
+      return false;
+   r = glClientWaitSync(f->fence[i], 0, 0);
+   if (r != GL_ALREADY_SIGNALED && r != GL_CONDITION_SATISFIED)
+      return false;
+   glDeleteSync(f->fence[i]);
+   f->fence[i] = 0;
+   f->busy[i]  = false;
+   return true;
+}
+
+bool gl_frame_mem_ready(gl_frame_mem_t *fm, uintptr_t id)
+{
+   if (!fm || !id || id > GL_FRAME_MEM_MAX || !fm->pbo[id - 1])
+      return true;
+   return gl_frame_mem_slot_ready(fm, (unsigned)id - 1);
+}
+
+void gl_frame_mem_free(gl_frame_mem_t *fm, uintptr_t id)
+{
+   unsigned i;
+   if (!fm || !id || id > GL_FRAME_MEM_MAX || !fm->pbo[id - 1])
+      return;
+   i = (unsigned)id - 1;
+   if (fm->fence[i])
+      glDeleteSync(fm->fence[i]);
+   /* Deleting a mapped buffer unmaps it */
+   glDeleteBuffers(1, &fm->pbo[i]);
+   fm->fence[i]  = 0;
+   fm->pbo[i]    = 0;
+   fm->mapped[i] = NULL;
+   fm->size[i]   = 0;
+   fm->busy[i]   = false;
+}
+
+int gl_frame_mem_bind(gl_frame_mem_t *fm, const void *pixels,
+      size_t extent, size_t *offset)
+{
+   unsigned i;
+   uintptr_t p = (uintptr_t)pixels;
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   if (!fm || !p)
+      return -1;
+   for (i = 0; i < GL_FRAME_MEM_MAX; i++)
+   {
+      uintptr_t base = (uintptr_t)fm->mapped[i];
+      if (     base && p >= base && p - base < fm->size[i]
+            && extent <= fm->size[i] - (size_t)(p - base))
+      {
+         glBindBuffer(GL_PIXEL_UNPACK_BUFFER, fm->pbo[i]);
+         *offset = (size_t)(p - base);
+         return (int)i;
+      }
+   }
+   return -1;
+}
+
+void gl_frame_mem_unbind(gl_frame_mem_t *fm, int slot)
+{
+   glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+   if (!fm || slot < 0 || slot >= GL_FRAME_MEM_MAX)
+      return;
+   if (fm->fence[slot])
+      glDeleteSync(fm->fence[slot]);
+   fm->busy[slot]  = true;
+   fm->fence[slot] = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0);
+}
+
+void gl_frame_mem_destroy(gl_frame_mem_t **fm)
+{
+   unsigned i;
+   if (!fm || !*fm)
+      return;
+   for (i = 0; i < GL_FRAME_MEM_MAX; i++)
+      gl_frame_mem_free(*fm, (uintptr_t)i + 1);
+   free(*fm);
+   *fm = NULL;
+}
 #endif
 
 #ifdef HAVE_GL_PLANAR

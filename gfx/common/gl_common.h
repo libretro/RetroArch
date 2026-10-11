@@ -62,6 +62,28 @@ void gl_texture_lend_unbind(gl_texture_lend_t *list, unsigned tex,
 /* With the texture, or with every texture */
 void gl_texture_lend_forget(gl_texture_lend_t **list, unsigned tex);
 void gl_texture_lend_free(gl_texture_lend_t **list);
+
+/* The threaded wrapper's frame buffers (video_poke_interface_t
+ * frame_mem_alloc): pixel unpack buffers mapped for good, each with
+ * the fence of the last upload from it. Made on first use; used on the
+ * thread that owns the context. */
+#include <stdint.h>
+typedef struct gl_frame_mem gl_frame_mem_t;
+
+void *gl_frame_mem_alloc(gl_frame_mem_t **fm, size_t size, uintptr_t *id);
+bool gl_frame_mem_ready(gl_frame_mem_t *fm, uintptr_t id);
+/* GL keeps a buffer a queued upload reads until the upload has run */
+void gl_frame_mem_free(gl_frame_mem_t *fm, uintptr_t id);
+
+/* For an upload reading @extent bytes from @pixels: when they lie in a
+ * frame buffer, binds it as the unpack source, sets *offset to where
+ * they start in it and returns its slot, which
+ * gl_frame_mem_unbind() fences; -1, with the unpack buffer unbound,
+ * otherwise */
+int gl_frame_mem_bind(gl_frame_mem_t *fm, const void *pixels,
+      size_t extent, size_t *offset);
+void gl_frame_mem_unbind(gl_frame_mem_t *fm, int slot);
+void gl_frame_mem_destroy(gl_frame_mem_t **fm);
 #endif
 
 #if defined(__APPLE__) && !defined(HAVE_OPENGLES)

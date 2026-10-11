@@ -30,6 +30,7 @@
 #include <math.h>
 
 #include "../common/gl3_defines.h"
+#include "../gfx_instrument.h"
 #include "../common/gl_common.h"
 #include "../common/rgba16_pack.h"
 
@@ -331,6 +332,7 @@ typedef struct gl3
 
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_t *lend;
+   gl_frame_mem_t *frame_mem;
 #endif
 #ifdef HAVE_GL_PLANAR
    gl_planar_t planar;
@@ -4209,6 +4211,7 @@ static void gl3_free(void *data)
    gl3_fp16_forget_all();
 #ifdef HAVE_GL_TEXTURE_LEND
    gl_texture_lend_free(&gl->lend);
+   gl_frame_mem_destroy(&gl->frame_mem);
 #endif
    if (gl->ctx_driver && gl->ctx_driver->destroy)
       gl->ctx_driver->destroy(gl->ctx_data);
@@ -4785,6 +4788,9 @@ static void gl3_update_cpu_texture(gl3_t *gl,
 {
    unsigned width  = VIDEO_SCALE_W(dims);
    unsigned height = VIDEO_SCALE_H(dims);
+#ifdef HAVE_GL_TEXTURE_LEND
+   int fm_slot     = -1;
+#endif
    if (gl->chain.active)
    {
       /* The input texture is expected to be square with a power of 2 size when not using Slang */
@@ -4824,7 +4830,22 @@ static void gl3_update_cpu_texture(gl3_t *gl,
    else
       glBindTexture(GL_TEXTURE_2D, streamed->tex);
 
+#ifdef HAVE_GL_TEXTURE_LEND
+   /* A frame in one of the threaded wrapper's buffers is read out of it
+    * by the GL, the upload queued rather than copied here */
+   {
+      size_t bpp    = (gl->video_info.rgb32 || gl->video_info.source_10bit)
+         ? 4 : 2;
+      size_t extent = height ? (size_t)(height - 1) * pitch
+         + (size_t)width * bpp : 0;
+      size_t off    = 0;
+      fm_slot       = gl_frame_mem_bind(gl->frame_mem, frame, extent, &off);
+      if (fm_slot >= 0)
+         frame      = (const void*)off;
+   }
+#else
    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+#endif
    if (gl->video_info.source_10bit)
    {
       /* Packed 2-10-10-10, one word per pixel like the 8-bit path. */
@@ -4848,6 +4869,13 @@ static void gl3_update_cpu_texture(gl3_t *gl,
       glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
                       width, height, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, frame);
    }
+#ifdef HAVE_GL_TEXTURE_LEND
+   if (fm_slot >= 0)
+   {
+      GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+      gl_frame_mem_unbind(gl->frame_mem, fm_slot);
+   }
+#endif
 }
 
 #ifdef HAVE_SLANG
@@ -7228,6 +7256,35 @@ static bool gl3_texture_lend_ready(void *data, uintptr_t id,
    gl3_t *gl = (gl3_t*)data;
    return !gl || gl_texture_lend_ready(gl->lend, (unsigned)id, slot);
 }
+
+/* The threaded wrapper's frame buffers, on the context's thread: a
+ * frame pushed from one is uploaded out of it by the GL
+ * (gl3_update_cpu_texture). Not for a hardware core, whose frames are
+ * its own. */
+static void *gl3_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (!gl || (gl->flags & GL3_FLAG_HW_RENDER_ENABLE))
+      return NULL;
+   /* Where the GL puts a persistent mapping is its own choice */
+   *cached      = false;
+   *pitch_align = 4;
+   return gl_frame_mem_alloc(&gl->frame_mem, size, id);
+}
+
+static bool gl3_frame_mem_ready(void *data, uintptr_t id)
+{
+   gl3_t *gl = (gl3_t*)data;
+   return !gl || gl_frame_mem_ready(gl->frame_mem, id);
+}
+
+static void gl3_frame_mem_free(void *data, uintptr_t id)
+{
+   gl3_t *gl = (gl3_t*)data;
+   if (gl)
+      gl_frame_mem_free(gl->frame_mem, id);
+}
 #endif
 
 static void gl3_unload_texture(void *data, bool threaded,
@@ -7849,7 +7906,16 @@ static const video_poke_interface_t gl3_poke_interface = {
 #endif
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
-   gl3_set_frame_format
+   gl3_set_frame_format,
+#ifdef HAVE_GL_TEXTURE_LEND
+   gl3_frame_mem_alloc,
+   gl3_frame_mem_ready,
+   gl3_frame_mem_free
+#else
+   NULL, /* frame_mem_alloc */
+   NULL, /* frame_mem_ready */
+   NULL  /* frame_mem_free */
+#endif
 };
 
 static void gl3_get_poke_interface(void *data,
