@@ -8,6 +8,8 @@
 @end
 @protocol NSApplicationDelegate <NSObject>
 @end
+@protocol NSWindowRestoration <NSObject>
+@end
 @interface NSView : NSResponder
 - (NSRect)frame;
 - (NSRect)bounds;
