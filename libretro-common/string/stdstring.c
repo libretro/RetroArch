@@ -221,6 +221,8 @@ size_t word_wrap(
 {
    char *last_space    = NULL;
    unsigned counter    = 0;
+   unsigned space_counter = 0;
+   bool space_on_line  = false;
    unsigned lines      = 1;
    const char *src_end = src + src_len;
    char *s_start       = s;
@@ -244,13 +246,18 @@ size_t word_wrap(
       counter++;
 
       if (*src == ' ')
+      {
          last_space = s; /* Remember the location of the whitespace */
+         space_counter = counter;
+         space_on_line = true;
+      }
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
           * reset the index */
          lines++;
          counter   = 0;
+         space_on_line = false;
 
          /* Early return if remaining src string
           * length is less than line width */
@@ -263,22 +270,31 @@ size_t word_wrap(
 
       if (counter >= (unsigned)line_width)
       {
+         unsigned scanned = counter;
          counter = 0;
 
          if (last_space && (max_lines == 0 || lines < max_lines))
          {
+            const char *restart = src - (s - last_space - 1);
             /* Replace nearest (previous) whitespace
              * with newline character */
             *last_space = '\n';
             lines++;
 
-            src        -= s - last_space - 1;
-            s           = last_space + 1;
+            if (space_on_line)
+               counter = scanned - space_counter;
+            else
+            {
+               /* A saved space may precede an embedded newline. */
+               src = restart;
+               s   = last_space + 1;
+            }
             last_space  = NULL;
+            space_on_line = false;
 
             /* Early return if remaining src string
              * length is less than line width */
-            if (src_end - src < line_width)
+            if (src_end - restart < line_width)
                return text_len;
          }
       }

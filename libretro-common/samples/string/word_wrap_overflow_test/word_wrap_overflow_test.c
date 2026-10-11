@@ -59,8 +59,16 @@
 #include <string.h>
 
 #include <string/stdstring.h>
+#include <encodings/utf.h>
 
 static int failures = 0;
+static size_t glyph_scans;
+
+const char *word_wrap_test_utf8skip(const char *str, size_t chars)
+{
+   glyph_scans++;
+   return utf8skip(str, chars);
+}
 
 /* A long ASCII source with no embedded newlines or wide glyphs.
  * "ASCII through wideglyph" is the worst-case for this function:
@@ -303,8 +311,40 @@ static void test_regular_wrap_copy(void)
    }
 }
 
+static void test_forward_glyph_scan(void)
+{
+   static const char *inputs[] = {
+      "alpha beta gamma delta epsilon zeta eta theta iota kappa lambda",
+      "a abcdefghijklmnopqrstuvwxyz a abcdefghijklmnopqrstuvwxyz",
+      "caf\xc3\xa9 d\xc3\xa9j\xc3\xa0 vu encore caf\xc3\xa9 d\xc3\xa9j\xc3\xa0 vu encore"
+   };
+   size_t i;
+   unsigned width;
+   for (i = 0; i < sizeof(inputs) / sizeof(inputs[0]); i++)
+      for (width = 4; width <= 32; width *= 2)
+      {
+         size_t len = strlen(inputs[i]);
+         size_t returned;
+         char *dst = (char*)malloc(len + 1);
+         if (!dst)
+         {
+            failures++;
+            continue;
+         }
+         glyph_scans = 0;
+         returned = word_wrap(dst, len + 1, inputs[i], len, width, 100, 0);
+         if (returned != len || !glyph_scans || glyph_scans > utf8len(inputs[i]))
+         {
+            printf("[ERROR] regular wrap rescanned glyphs at width %u\n", width);
+            failures++;
+         }
+         free(dst);
+      }
+}
+
 int main(void)
 {
+   test_forward_glyph_scan();
    test_regular_wrap_copy();
    test_truncating_normal_case();
    test_truncating_tiny_dest();
