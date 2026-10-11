@@ -42,6 +42,11 @@ static void  *q_cb_ctx;
  * destroy waits for it to leave, which is what the real thing
  * guarantees by not calling back after the player is gone. */
 static unsigned q_cb_inflight;
+/* Bumped under q_lock by a clear and by the player's destroy. A block
+ * popped before either is no longer the device's: the driver frees its
+ * buffers after the destroy, so the capture of a block whose playing
+ * spanned one would read freed memory. */
+static unsigned q_gen;
 static pthread_cond_t q_cb_idle = PTHREAD_COND_INITIALIZER;
 static SLAndroidSimpleBufferQueueItf q_itf;
 
@@ -128,7 +133,7 @@ static void *pump_thread(void *arg)
    (void)arg;
    while (__atomic_load_n(&pump_run, __ATOMIC_ACQUIRE))
    {
-      unsigned bytes = 0, is_float = 0, rate_milli = 0;
+      unsigned bytes = 0, is_float = 0, rate_milli = 0, gen = 0;
       const uint8_t *played = NULL;
       pthread_mutex_lock(&q_lock);
       is_float   = (unsigned)mock_is_float;
@@ -140,6 +145,7 @@ static void *pump_thread(void *arg)
          q.head   = (q.head + 1) % MOCK_QUEUE_MAX;
          q.count--;
          mock_consumed++;
+         gen      = q_gen;
       }
       pthread_mutex_unlock(&q_lock);
       if (bytes)
@@ -152,7 +158,8 @@ static void *pump_thread(void *arg)
          void  *ctx;
          if (usec > 100000) usec = 100000;
          usleep(usec);
-         if (played)
+         pthread_mutex_lock(&q_lock);
+         if (played && gen == q_gen)
          {
             size_t at = __atomic_load_n(&mock_capture_len, __ATOMIC_RELAXED);
             if (at + bytes <= MOCK_CAPTURE_MAX)
@@ -161,8 +168,6 @@ static void *pump_thread(void *arg)
                __atomic_store_n(&mock_capture_len, at + bytes, __ATOMIC_RELEASE);
             }
          }
-
-         pthread_mutex_lock(&q_lock);
          cb  = q_cb;
          ctx = q_cb_ctx;
          if (cb)
@@ -239,6 +244,7 @@ static SLresult bq_clear(SLAndroidSimpleBufferQueueItf self)
    (void)self;
    pthread_mutex_lock(&q_lock);
    q.head = q.count = 0;
+   q_gen++;
    pthread_mutex_unlock(&q_lock);
    return SL_RESULT_SUCCESS;
 }
@@ -298,6 +304,7 @@ static void obj_destroy(SLObjectItf self)
    {
       pthread_mutex_lock(&q_lock);
       q.head       = q.count = 0;
+      q_gen++;
       mock_playing = 0;
       if (!mock_racy)
       {
