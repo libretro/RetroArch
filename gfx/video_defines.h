@@ -420,7 +420,9 @@ enum display_flags
     * Record Game Only is on - in its present output mode. */
    GFX_CTX_FLAGS_RECORD_GAME_ONLY,
    /* Exclusive mode can change without restarting the drivers. */
-   GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE
+   GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE,
+   /* set_video_mode can resize an existing window without restarting video. */
+   GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE
 };
 
 enum shader_uniform_type

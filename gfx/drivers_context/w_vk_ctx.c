@@ -227,7 +227,10 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
    {
       settings_t *settings = config_get_ptr();
       bool exclusive      = !settings->bools.video_windowed_fullscreen;
-      bool recreate       = (exclusive && !win32_vk.context.swapchain_external)
+      bool fullscreen_changed = fullscreen
+         != ((win32_vk.flags & VK_DATA_FLAG_FULLSCREEN) != 0);
+      bool recreate       = (exclusive && fullscreen_changed
+            && !win32_vk.context.swapchain_external)
          || win32_vk.fse_acquired;
       if (recreate && win32_vk.mailbox.swapchain != VK_NULL_HANDLE)
          return false;
@@ -327,6 +330,7 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
    if (win32_fullscreen_in_place())
    {
       BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+      BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
       if (win32_vk.mailbox.swapchain == VK_NULL_HANDLE)
          BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
    }

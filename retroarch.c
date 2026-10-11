@@ -4056,11 +4056,14 @@ bool command_event(enum event_command cmd, void *data)
          if (!content_ram_state_to_file((char *) data))
             return false;
          break;
+      case CMD_EVENT_APPLY_WINDOWED_SCALE:
       case CMD_EVENT_RESIZE_WINDOWED_SCALE:
          if
             (!command_event_resize_windowed_scale
              (settings,
-              runloop_st->pending_windowed_scale))
+              cmd == CMD_EVENT_APPLY_WINDOWED_SCALE
+                 ? settings->uints.video_scale
+                 : runloop_st->pending_windowed_scale))
             return false;
          break;
       case CMD_VIDEO_FILTER_TOGGLE:

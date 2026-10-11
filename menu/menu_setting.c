@@ -10294,8 +10294,7 @@ static void general_write_handler(rarch_setting_t *setting)
          settings->flags                  |= SETTINGS_FLG_MODIFIED;
          settings->uints.video_scale       = *setting->value.target.unsigned_integer;
 
-         if (!settings->bools.video_fullscreen)
-            rarch_cmd = CMD_EVENT_REINIT;
+         rarch_cmd = CMD_EVENT_APPLY_WINDOWED_SCALE;
          break;
       case MENU_ENUM_LABEL_REWIND_ENABLE:
          {

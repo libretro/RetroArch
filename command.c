@@ -3121,7 +3121,8 @@ bool command_event_resize_windowed_scale(settings_t *settings,
       unsigned window_scale)
 {
    unsigned idx = 0;
-   bool video_fullscreen = settings->bools.video_fullscreen;
+   bool video_fullscreen = settings->bools.video_fullscreen
+         || (video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN);
 
    if (window_scale == 0)
       return false;
@@ -3129,7 +3130,15 @@ bool command_event_resize_windowed_scale(settings_t *settings,
    configuration_set_uint(settings, settings->uints.video_scale, window_scale);
 
    if (!video_fullscreen)
-      command_event(CMD_EVENT_REINIT, NULL);
+   {
+      if (     !video_driver_test_all_flags(GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE)
+            || !video_driver_set_video_mode(
+                  video_driver_window_dims(false), false))
+      {
+         int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
+         command_event(CMD_EVENT_REINIT, &reinit_flags);
+      }
+   }
 
    retroarch_ctl(RARCH_CTL_SET_WINDOWED_SCALE, &idx);
 

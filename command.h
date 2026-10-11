@@ -239,8 +239,10 @@ enum event_command
    CMD_EVENT_NETPLAY_HOST_TOGGLE,
    /* Reinitializes audio driver. */
    CMD_EVENT_AUDIO_REINIT,
-   /* Resizes windowed scale. Will reinitialize video driver. */
+   /* Resizes the window to the queued scale. */
    CMD_EVENT_RESIZE_WINDOWED_SCALE,
+   /* Applies the configured windowed scale. */
+   CMD_EVENT_APPLY_WINDOWED_SCALE,
    /* Toggles disk eject. */
    CMD_EVENT_DISK_EJECT_TOGGLE,
    /* Cycle to next disk. */

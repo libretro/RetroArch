@@ -218,6 +218,7 @@ static void *harness_audio_init(const char *device, unsigned rate,
 }
 
 static unsigned modes;
+static unsigned requested_dims;
 static bool requested_fullscreen;
 static bool mode_success;
 static uint32_t mode_flags;
@@ -237,7 +238,7 @@ static uint32_t harness_flags(void *data)
 static void harness_mode(void *data, unsigned dims, bool fullscreen)
 {
    (void)data;
-   (void)dims;
+   requested_dims = dims;
    modes++;
    requested_fullscreen = fullscreen;
    if (!mode_success)
@@ -325,6 +326,95 @@ static void lane_fullscreen(void)
    video_null.has_windowed = saved_windowed;
    settings->bools.audio_enable_menu = false;
 }
+
+
+#ifndef RARCH_MOBILE
+static void lane_window_scale(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   settings_t *settings = config_get_ptr();
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke = *saved_poke;
+   struct retro_game_geometry saved_geometry = video_st->av_info.geometry;
+   rarch_setting_t *s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_SCALE);
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   unsigned before = inits;
+   unsigned before_audio_inits = audio_inits;
+   unsigned before_modes;
+   unsigned expected_dims;
+
+   CHECK(s != NULL, "fixture: window scale setting exists");
+   if (!s)
+      return;
+   settings->bools.video_fullscreen = false;
+   settings->bools.video_force_aspect = false;
+   settings->bools.video_window_save_positions = false;
+   settings->bools.video_window_custom_size_enable = false;
+   settings->bools.audio_enable_menu = true;
+   settings->uints.window_auto_dims_max = VIDEO_SCALE_PACK(1280, 960);
+   video_st->av_info.geometry.base_width = 320;
+   video_st->av_info.geometry.base_height = 240;
+   poke.get_flags = harness_flags;
+   poke.set_video_mode = harness_mode;
+   video_st->poke = &poke;
+   mode_flags = 0;
+   BIT32_SET(mode_flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
+   mode_success = true;
+   modes = 0;
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
+   core_info_get_current_core(&before_core);
+
+   CHECK(command_event_resize_windowed_scale(settings, 2),
+         "window scale request succeeds");
+   CHECK(modes == 1 && !requested_fullscreen
+         && requested_dims == VIDEO_SCALE_PACK(640, 480) && inits == before,
+         "window scale must resize the live window to the requested dimensions");
+
+   menu_action_handle_setting(s, 0, MENU_ACTION_RIGHT, false);
+   CHECK(modes == 2 && settings->uints.video_scale == 3
+         && requested_dims == VIDEO_SCALE_PACK(960, 720) && inits == before,
+         "menu scale must apply its current value once in place");
+   expected_dims = VIDEO_SCALE_PACK(320 * s->default_value.unsigned_integer,
+         240 * s->default_value.unsigned_integer);
+   menu_action_handle_setting(s, 0, MENU_ACTION_START, false);
+   CHECK(modes == 3 && requested_dims == expected_dims && inits == before,
+         "Start must apply the default window scale once");
+
+   before_modes = modes;
+   CHECK(!command_event_resize_windowed_scale(settings, 0) && modes == before_modes,
+         "zero scale must not resize or restart");
+   settings->bools.video_fullscreen = true;
+   CHECK(command_event_resize_windowed_scale(settings, 4) && modes == before_modes,
+         "fullscreen scale changes must wait for windowed mode");
+   settings->bools.video_fullscreen = false;
+   video_driver_modify_disp_flags(VIDEO_FLAG_FORCE_FULLSCREEN, 0);
+   CHECK(command_event_resize_windowed_scale(settings, 2) && modes == before_modes,
+         "CLI-forced fullscreen must not become windowed on a scale change");
+   video_driver_modify_disp_flags(0, VIDEO_FLAG_FORCE_FULLSCREEN);
+
+   mode_success = false;
+   CHECK(command_event_resize_windowed_scale(settings, 3),
+         "failed live resize must recover");
+   CHECK(modes == before_modes + 1 && inits == before + 1,
+         "failed live resize must rebuild video once");
+   video_st->poke = &poke;
+   mode_flags = 0;
+   BIT32_SET(mode_flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   CHECK(command_event_resize_windowed_scale(settings, 2),
+         "unsupported live resize must recover");
+   CHECK(modes == before_modes + 1 && inits == before + 2,
+         "fullscreen capability alone must not attempt a live resize");
+   CHECK(audio_inits == before_audio_inits,
+         "resize recovery must not reopen audio with menu sounds enabled");
+   core_info_get_current_core(&after_core);
+   CHECK(before_core && before_core == after_core,
+         "resize recovery must retain core metadata");
+   video_st->poke = saved_poke;
+   video_st->av_info.geometry = saved_geometry;
+   settings->bools.audio_enable_menu = false;
+}
+#endif
 
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
@@ -421,6 +511,9 @@ int main(int argc, char *argv[])
 #endif
 
    lane_fullscreen();
+#ifndef RARCH_MOBILE
+   lane_window_scale();
+#endif
 
    scratch_remove(dir);
 

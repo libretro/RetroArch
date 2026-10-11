@@ -868,6 +868,7 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          if (win32_fullscreen_in_place())
          {
             BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+            BIT32_SET(flags, GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE);
             BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
          }
 #endif
