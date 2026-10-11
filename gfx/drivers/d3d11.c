@@ -5406,9 +5406,6 @@ static bool d3d11_gfx_frame_body(
 
       d3d11->chain_bit_depth     = desired_bit_depth;
 
-      if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
-         d3d11_release_texture(&d3d11->back_buffer);
-
       /* Unbind all render targets before ResizeBuffers —
        * the debug layer requires no outstanding references
        * to back buffer resources during the resize */
@@ -5466,14 +5463,20 @@ static bool d3d11_gfx_frame_body(
 
       if (d3d11->flags & D3D11_ST_FLAG_HDR_ENABLE)
       {
-         memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
-         d3d11->back_buffer.desc.Width              = video_width;
-         d3d11->back_buffer.desc.Height             = video_height;
-         d3d11->back_buffer.desc.Format             = d3d11_back_buffer_format(d3d11);
-         d3d11->back_buffer_req                     = d3d11->back_buffer.desc.Format;
-         d3d11->back_buffer.desc.BindFlags          = D3D11_BIND_RENDER_TARGET;
-         d3d11_release_texture(&d3d11->back_buffer);
-         d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
+         if (     !d3d11->back_buffer.handle
+               || d3d11->back_buffer.desc.Width  != video_width
+               || d3d11->back_buffer.desc.Height != video_height
+               || d3d11->back_buffer_req != d3d11_back_buffer_format(d3d11))
+         {
+            d3d11_release_texture(&d3d11->back_buffer);
+            memset(&d3d11->back_buffer, 0, sizeof(d3d11->back_buffer));
+            d3d11->back_buffer.desc.Width     = video_width;
+            d3d11->back_buffer.desc.Height    = video_height;
+            d3d11->back_buffer.desc.Format    = d3d11_back_buffer_format(d3d11);
+            d3d11->back_buffer_req            = d3d11->back_buffer.desc.Format;
+            d3d11->back_buffer.desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+            d3d11_init_texture(d3d11->device, &d3d11->back_buffer);
+         }
 
          dxgi_swapchain_color_space(
                d3d11->swapChain,

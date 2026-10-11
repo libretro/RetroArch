@@ -6817,12 +6817,6 @@ static bool d3d12_gfx_frame(
                Release(d3d12->chain.renderTargets[i]);
 
 #ifdef HAVE_DXGI_HDR
-            if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-            {
-               d3d12_release_texture(&d3d12->chain.back_buffer);
-               d3d12->chain.back_buffer.handle = NULL;
-            }
-
             DXGIResizeBuffers(d3d12->chain.handle,
                   countof(d3d12->chain.renderTargets),
                   video_width,
@@ -6893,22 +6887,6 @@ static bool d3d12_gfx_frame(
 
             if (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
             {
-               memset(&d3d12->chain.back_buffer,
-                     0, sizeof(d3d12->chain.back_buffer));
-               d3d12->chain.back_buffer.desc.Width  = video_width;
-               d3d12->chain.back_buffer.desc.Height = video_height;
-               d3d12->chain.back_buffer.desc.Format = use_back_buffer
-                  ? back_buffer_format : DXGI_FORMAT_R16G16B16A16_FLOAT;
-               d3d12->chain.back_buffer.desc.Flags  =
-                  D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET;
-               d3d12->chain.back_buffer.srv_heap    = &d3d12->desc.srv_heap;
-               d3d12->chain.back_buffer.rt_view.ptr =
-                  d3d12->desc.rtv_heap.cpu.ptr
-                  + countof(d3d12->chain.renderTargets)
-                  * d3d12->desc.rtv_heap.stride;
-               d3d12_release_texture(&d3d12->chain.back_buffer);
-               d3d12_init_texture(d3d12->device, &d3d12->chain.back_buffer);
-
                dxgi_swapchain_color_space(d3d12->chain.handle,
                      &d3d12->chain.color_space,
                      (d3d12->chain.bit_depth == DXGI_SWAPCHAIN_BIT_DEPTH_16)
@@ -6953,7 +6931,10 @@ static bool d3d12_gfx_frame(
          : DXGI_FORMAT_R16G16B16A16_FLOAT;
 
       if (     (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE)
-            && d3d12->chain.back_buffer.desc.Format != needed_bb_fmt)
+            && (   !d3d12->chain.back_buffer.handle
+                || d3d12->chain.back_buffer.desc.Width  != video_width
+                || d3d12->chain.back_buffer.desc.Height != video_height
+                || d3d12->chain.back_buffer.desc.Format != needed_bb_fmt))
       {
          d3d12->chain.back_buffer.desc.Width  = video_width;
          d3d12->chain.back_buffer.desc.Height = video_height;
