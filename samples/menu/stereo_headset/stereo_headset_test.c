@@ -18,9 +18,9 @@
  * Links the shipping objects with only main() replaced (the
  * playlist_nav pattern). A headset gives each eye its own image, so
  * the list leaves Stereo Mode out while Headset Output is on, and
- * pressing Headset Output rebuilds the open list. Headset Refresh Rate
- * sits under Headset Output, and with no headset lists the fixed
- * rates.
+ * pressing Headset Output rebuilds the open list with the cursor still
+ * on it. Headset Refresh Rate sits under Headset Output, and with no
+ * headset lists the fixed rates.
  *
  * The video driver stays null: the list reads only the driver's name,
  * and a press's reinit runs under "null", so no Vulkan device or
@@ -119,9 +119,9 @@ static void open_stereo_list(void)
    run_frame();
 }
 
-/* OK on the Headset Output row, with the driver name null while its
- * reinit runs. */
-static void press_headset_output(void)
+/* A press on the Headset Output row, with the driver name null while
+ * its reinit runs. */
+static void press_headset_output(unsigned action)
 {
    struct menu_state *menu_st = menu_state_get_ptr();
    file_list_t *buf           = selection_buf();
@@ -132,8 +132,14 @@ static void press_headset_output(void)
       return;
    menu_st->selection_ptr = (size_t)i;
    set_driver("null");
-   menu_setting_set(buf->list[i].type, MENU_ACTION_OK, false);
+   menu_setting_set(buf->list[i].type, action, false);
    set_driver("vulkan");
+}
+
+static bool cursor_on_headset_output(void)
+{
+   return (int)menu_state_get_ptr()->selection_ptr
+      == row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR);
 }
 
 static void lane_off(void)
@@ -190,7 +196,7 @@ static void lane_toggle(void)
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "fixture: Stereo Mode is not listed before the press");
 
-   press_headset_output();
+   press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output did not turn it on");
@@ -198,13 +204,31 @@ static void lane_toggle(void)
          "Stereo Mode is still listed after turning Headset Output on");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_OPENXR_ENABLE_STR) >= 0,
          "the list lost Headset Output after the press");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when it was turned on");
 
-   press_headset_output();
+   press_headset_output(MENU_ACTION_OK);
    run_frame();
    CHECK(!config_get_ptr()->bools.video_openxr_enable,
          "fixture: pressing Headset Output again did not turn it off");
    CHECK(row(MENU_ENUM_LABEL_VIDEO_STEREO_MODE_STR) >= 0,
          "Stereo Mode is not back after turning Headset Output off");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when it was turned off");
+
+   /* Start puts it back to off, its default. */
+   press_headset_output(MENU_ACTION_RIGHT);
+   run_frame();
+   CHECK(config_get_ptr()->bools.video_openxr_enable,
+         "fixture: right on Headset Output did not turn it on");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when right turned it on");
+   press_headset_output(MENU_ACTION_START);
+   run_frame();
+   CHECK(!config_get_ptr()->bools.video_openxr_enable,
+         "fixture: Start on Headset Output did not turn it off");
+   CHECK(cursor_on_headset_output(),
+         "the cursor left Headset Output when Start turned it off");
 }
 
 /* Right under Headset Output. With no headset to list its rates it
