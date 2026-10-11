@@ -37,6 +37,7 @@
 #include <boolean.h>
 
 #include "android_kbd_route.h"
+#include "android_key_state.h"
 
 /* android/input.h, as far as this cares. */
 #define SOURCE_KEYBOARD     0x00000101
@@ -164,6 +165,37 @@ static int key_event(struct driver *d, int id, int source)
    return port < 0 ? NO_ROW : port;
 }
 
+static void lane_remote_key_state(void)
+{
+   static const int keys[] = { 19, 20, 21, 22, ANDROID_KEY_DPAD_CENTER,
+      ANDROID_KEY_ENTER, ANDROID_KEY_BACK };
+   struct driver d;
+   uint8_t rows[MAX_PADS + 1][(219 + 7) / 8];
+   unsigned i;
+   driver_reset(&d, "H616 TV Box");
+   memset(rows, 0, sizeof(rows));
+
+   for (i = 0; i < sizeof(keys) / sizeof(keys[0]); i++)
+   {
+      int row = key_event(&d, -1, SOURCE_HDMI);
+      int callback_keycode = android_keycode_for_keyboard(keys[i]);
+      CHECK(row == KEYBOARD_ROW, "CEC key did not route to the keyboard");
+      if (row != KEYBOARD_ROW)
+         continue;
+      android_key_state_write(rows[row], rows[KEYBOARD_ROW], 219,
+            keys[i], SOURCE_HDMI, true);
+      CHECK(BIT_GET(rows[row], callback_keycode),
+            "CEC callback identity differs from the held keyboard key");
+      android_key_state_write(rows[row], rows[KEYBOARD_ROW], 219,
+            keys[i], SOURCE_HDMI, false);
+      CHECK(!BIT_GET(rows[row], callback_keycode),
+            "CEC release left its callback key held");
+      CHECK(!BIT_GET(rows[KEYBOARD_ROW], ANDROID_KEY_X),
+            "CEC Back release left its alias held");
+   }
+   CHECK(d.pads_connected == 0, "CEC keys consumed a controller port");
+}
+
 static bool has_pad_named(const struct driver *d, const char *name)
 {
    unsigned i;
@@ -271,6 +303,7 @@ static void lane_shield(void)
 static void all_lanes(void)
 {
    lane_remote_first();
+   lane_remote_key_state();
    lane_remote_after_pad();
    lane_sources();
    lane_virtual_gamepad();

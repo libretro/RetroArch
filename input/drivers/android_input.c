@@ -1841,7 +1841,8 @@ static INLINE void android_input_poll_event_type_keyboard(
 {
    int keydown           = (AKeyEvent_getAction(event)
          == AKEY_EVENT_ACTION_DOWN);
-   unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keycode);
+   int keyboard_keycode  = android_keycode_for_keyboard(keycode);
+   unsigned keyboardcode = input_keymaps_translate_keysym_to_rk(keyboard_keycode);
    /* Set keyboard modifier based on shift,ctrl and alt state */
    uint16_t mod          = 0;
    int meta              = AKeyEvent_getMetaState(event);
@@ -1867,7 +1868,7 @@ static INLINE void android_input_poll_event_type_keyboard(
     * symbols, and yields 0 for modifier/lock keys so they no longer leak
     * into menu text fields as '?'. */
    character = android_keycode_to_unicode(
-         AInputEvent_getDeviceId(event), keycode, meta);
+         AInputEvent_getDeviceId(event), keyboard_keycode, meta);
 
    /* Fall back to the raw keysym for the plain ASCII range when the
     * platform could not resolve a character (e.g. JNI unavailable).

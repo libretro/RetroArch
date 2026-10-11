@@ -240,7 +240,13 @@ static void lane_out_of_range(void)
 static void lane_center(void)
 {
    struct state st;
+   int keycode;
    state_reset(&st);
+
+   for (keycode = -1; keycode <= LAST_KEYCODE; keycode++)
+      CHECK(android_keycode_for_keyboard(keycode) ==
+            (keycode == ANDROID_KEY_DPAD_CENTER ? ANDROID_KEY_ENTER : keycode),
+            "keyboard normalization changed a key other than Center");
 
    key(&st, KEYBOARD_ROW, ANDROID_KEY_DPAD_CENTER, SOURCE_KEYBOARD, true);
    CHECK(BIT_GET(st.rows[KEYBOARD_ROW], ANDROID_KEY_ENTER),

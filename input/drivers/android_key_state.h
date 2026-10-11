@@ -61,6 +61,11 @@
 #define ANDROID_KEY_SOURCE_GAMEPAD  0x00000401
 #define ANDROID_KEY_SOURCE_JOYSTICK 0x01000010
 
+static INLINE int android_keycode_for_keyboard(int keycode)
+{
+   return keycode == ANDROID_KEY_DPAD_CENTER ? ANDROID_KEY_ENTER : keycode;
+}
+
 /* Whether a BACK from this source also presses X. */
 static INLINE bool android_key_back_is_aliased(int source)
 {
@@ -83,10 +88,8 @@ static INLINE void android_key_state_write(
       uint8_t *row, uint8_t *kbd_row, int last_keycode,
       int keycode, int source, bool down)
 {
-   int keysym = keycode;
-
-   if (row == kbd_row && keycode == ANDROID_KEY_DPAD_CENTER)
-      keysym = ANDROID_KEY_ENTER;
+   int keysym = row == kbd_row
+      ? android_keycode_for_keyboard(keycode) : keycode;
 
    if (keysym < 0 || keysym >= last_keycode)
       return;

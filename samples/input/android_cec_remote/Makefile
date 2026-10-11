@@ -23,7 +23,7 @@ all: $(TARGET)
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $(OBJS) $(LDFLAGS)
 
-android_cec_remote_test.o: $(DRIVER_DIR)/android_kbd_route.h
+android_cec_remote_test.o: $(DRIVER_DIR)/android_kbd_route.h $(DRIVER_DIR)/android_key_state.h
 
 check: all
 	./$(TARGET)
