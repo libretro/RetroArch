@@ -3044,6 +3044,11 @@ bool video_driver_set_video_mode(unsigned dims, bool fullscreen)
    {
       poke->set_video_mode(video_st->data,
             dims, fullscreen);
+      if (video_driver_get_disp_flags() & VIDEO_FLAG_DRIVER_REINIT)
+      {
+         video_driver_modify_disp_flags(0, VIDEO_FLAG_DRIVER_REINIT);
+         return false;
+      }
       return true;
    }
    return false;

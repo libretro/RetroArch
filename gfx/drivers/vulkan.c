@@ -8279,6 +8279,8 @@ static void vulkan_set_video_mode(void *data,
        * drawn to it (vulkan_apply_pending_resize()). */
       vulkan_alive(vk);
    }
+   else
+      video_driver_modify_disp_flags(VIDEO_FLAG_DRIVER_REINIT, 0);
 }
 
 static void vulkan_set_viewport(void *data, unsigned dims,

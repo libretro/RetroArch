@@ -2367,11 +2367,12 @@ static bool win32_monitor_set_fullscreen(
          CDS_FULLSCREEN) == DISP_CHANGE_SUCCESSFUL;
 }
 
-void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+bool win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
    unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
    RECT *rect, RECT *mon_rect, DWORD *style)
 {
    settings_t *settings             = config_get_ptr();
+   bool mode_set                    = true;
 
    if (fullscreen)
    {
@@ -2405,8 +2406,9 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       {
          *style          = WS_POPUP | WS_VISIBLE;
 
-         if (win32_monitor_set_fullscreen(*width, *height,
-               (int)refresh_rate, false, current_mon->szDevice))
+         mode_set = win32_monitor_set_fullscreen(*width, *height,
+               (int)refresh_rate, false, current_mon->szDevice);
+         if (mode_set)
          {
             RARCH_LOG("[Video] Fullscreen set to %ux%u @ %uHz on device %s.\n",
                   *width, *height, (int)refresh_rate, current_mon->szDevice);
@@ -2470,6 +2472,7 @@ void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
          g_win32_resize_height = *height  = rect->bottom - rect->top;
       }
    }
+   return mode_set;
 }
 
 void win32_set_window(unsigned *width, unsigned *height,
@@ -2680,23 +2683,9 @@ bool win32_fullscreen_in_place(void)
    return in_place != 0;
 }
 
-/* Takes the window that is already there between windowed and
- * borderless fullscreen: its style, position and size change, and it
- * stays the same window.
- *
- * A fullscreen toggle used to mean a full driver restart - window,
- * video device, shaders, audio, input drivers, controllers detected
- * again - because the only way to a window of the other kind was to
- * destroy this one and create another. For a borderless fullscreen
- * window nothing but the window differs. The size it ends up with
- * reaches the video driver as any resize does, through WM_SIZE.
- *
- * Not for exclusive fullscreen, which changes the display mode: that
- * answers false and is left to the restart.
- *
- * Has to run on the thread that owns the window; a video driver's
- * set_video_mode does. */
-bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
+/* Restyle on the window thread. Exclusive callers handle GPU ownership. */
+static bool win32_window_change_fullscreen(unsigned dims, bool fullscreen,
+      bool allow_exclusive)
 {
    DWORD style;
    RECT mon_rect;
@@ -2710,12 +2699,19 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
    HWND hwnd            = main_window.hwnd;
    settings_t *settings = config_get_ptr();
    win32_common_state_t *g_win32 = (win32_common_state_t*)&win32_st;
+   bool windowed_full   = settings->bools.video_windowed_fullscreen;
    /* where the window stood before it last went fullscreen */
    static RECT windowed_rect;
    static HWND windowed_rect_of;
 
-   if (!hwnd || !settings->bools.video_windowed_fullscreen)
+   if (!hwnd || (!windowed_full && !allow_exclusive))
       return false;
+
+   if (!fullscreen && (g_win32_flags & WIN32_CMN_FLAG_RESTORE_DESKTOP))
+   {
+      win32_monitor_get_info();
+      g_win32_flags &= ~WIN32_CMN_FLAG_RESTORE_DESKTOP;
+   }
 
    /* fullscreen on the monitor the window is on, as a restart has it */
    win32_monitor_last = MonitorFromWindow(hwnd, MONITOR_DEFAULTTONEAREST);
@@ -2733,8 +2729,14 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
       windowed_rect_of = hwnd;
    }
 
-   win32_set_style(&current_mon, &hm_to_use, &width, &height,
-         fullscreen, true, &rect, &mon_rect, &style);
+   if (!win32_set_style(&current_mon, &hm_to_use, &width, &height,
+            fullscreen, windowed_full, &rect, &mon_rect, &style))
+      return false;
+   if (fullscreen && !windowed_full)
+   {
+      win32_monitor_last = hm_to_use;
+      g_win32_flags |= WIN32_CMN_FLAG_RESTORE_DESKTOP;
+   }
 
    if (fullscreen)
    {
@@ -2768,13 +2770,23 @@ bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
    SetWindowPos(hwnd, HWND_TOP, x, y, width, height,
          SWP_FRAMECHANGED | SWP_NOOWNERZORDER);
 
-   win32_set_window(&width, &height, fullscreen, true, &rect);
+   win32_set_window(&width, &height, fullscreen, windowed_full, &rect);
 
    /* what the video driver is told is the size the window has now */
    win32_window_tell_client_size(hwnd);
 
    return true;
 }
+bool win32_window_set_fullscreen(unsigned dims, bool fullscreen)
+{
+   return win32_window_change_fullscreen(dims, fullscreen, false);
+}
+
+bool win32_window_set_fullscreen_exclusive(unsigned dims, bool fullscreen)
+{
+   return win32_window_change_fullscreen(dims, fullscreen, true);
+}
+
 #endif
 
 bool win32_get_client_rect(RECT* rect)

@@ -96,7 +96,7 @@ int win32_change_display_settings(const char *str, void *devmode_data,
 #if !defined(__WINRT__)
 bool win32_window_init(WNDCLASSEX *wndclass, bool fullscreen, const char *class_name);
 
-void win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
+bool win32_set_style(MONITORINFOEX *current_mon, HMONITOR *hm_to_use,
       unsigned *width, unsigned *height, bool fullscreen, bool windowed_full,
       RECT *rect, RECT *mon_rect, DWORD *style);
 #endif
@@ -113,6 +113,7 @@ bool win32_set_video_mode(void *data,
  * without destroying it. False if there is no window, or fullscreen is
  * the exclusive kind. Call on the thread that owns the window. */
 bool win32_window_set_fullscreen(unsigned dims, bool fullscreen);
+bool win32_window_set_fullscreen_exclusive(unsigned dims, bool fullscreen);
 
 /* Whether a borderless fullscreen toggle is to restyle the window in
  * place (win32_window_set_fullscreen()) rather than restart the

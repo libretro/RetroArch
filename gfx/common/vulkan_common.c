@@ -2949,6 +2949,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       VK_STRUCTURE_TYPE_SURFACE_FULL_SCREEN_EXCLUSIVE_INFO_EXT;
    fse_info.pNext                          = NULL;
    fse_info.fullScreenExclusive            = video_windowed_fullscreen
+      || !(vk->flags & VK_DATA_FLAG_FULLSCREEN)
       ? VK_FULL_SCREEN_EXCLUSIVE_DISALLOWED_EXT
       : (fse_forced
             ? VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT
@@ -3606,7 +3607,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    vk->fse_acquired = false;
-   if (fse_forced && vk->fse_supported && vk->fse_acquire)
+   if (     fse_forced && vk->fse_supported && vk->fse_acquire
+         && (vk->flags & VK_DATA_FLAG_FULLSCREEN))
    {
       VkResult res = ((PFN_vkAcquireFullScreenExclusiveModeEXT)
             vk->fse_acquire)(vk->context.device, vk->swapchain);

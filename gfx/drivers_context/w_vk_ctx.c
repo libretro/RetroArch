@@ -218,14 +218,36 @@ static bool gfx_ctx_w_vk_set_video_mode(void *data,
       unsigned dims,
       bool fullscreen)
 {
-   /* With a window already up this is a fullscreen toggle on it: the
-    * window is restyled where it stands, and the swapchain follows
-    * when the resize reaches check_window, as for any resize. Where
-    * that is refused - exclusive fullscreen - this goes on as it
-    * always has. */
-   if (     win32_get_window()
-         && win32_window_set_fullscreen(dims, fullscreen))
+   if (win32_get_window() && win32_vk.vk_surface != VK_NULL_HANDLE)
    {
+      settings_t *settings = config_get_ptr();
+      bool exclusive      = !settings->bools.video_windowed_fullscreen;
+      bool recreate       = exclusive || win32_vk.fse_acquired;
+      if (recreate && win32_vk.mailbox.swapchain != VK_NULL_HANDLE)
+         return false;
+      if (win32_vk.fse_acquired)
+      {
+         VkResult res;
+         if (!win32_vk.fse_release)
+            return false;
+         res = ((PFN_vkReleaseFullScreenExclusiveModeEXT)win32_vk.fse_release)(
+               win32_vk.context.device, win32_vk.swapchain);
+         if (res != VK_SUCCESS && res != VK_ERROR_FULL_SCREEN_EXCLUSIVE_MODE_LOST_EXT)
+            return false;
+         win32_vk.fse_acquired = false;
+      }
+      if (exclusive)
+      {
+         if (!win32_window_set_fullscreen_exclusive(dims, fullscreen))
+            return false;
+      }
+      else if (!win32_window_set_fullscreen(dims, fullscreen))
+         return false;
+      if (recreate)
+      {
+         win32_vk.context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;
+         win32_vk.flags |= VK_DATA_FLAG_NEED_NEW_SWAPCHAIN;
+      }
       if (fullscreen)
          win32_vk.flags |=  VK_DATA_FLAG_FULLSCREEN;
       else
@@ -297,7 +319,11 @@ static uint32_t gfx_ctx_w_vk_get_flags(void *data)
     * so that a toggle restarts the drivers as it used to, should it
     * need telling apart from something else. */
    if (win32_fullscreen_in_place())
+   {
       BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+      if (win32_vk.mailbox.swapchain == VK_NULL_HANDLE)
+         BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
+   }
 
 #if defined(HAVE_SLANG) && defined(HAVE_SPIRV_CROSS)
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_SLANG);

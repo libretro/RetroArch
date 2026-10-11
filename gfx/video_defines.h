@@ -418,7 +418,9 @@ enum display_flags
    /* Set by a video driver whose GPU recording reads the core's image
     * before the menu, overlays and messages are drawn over it, when
     * Record Game Only is on - in its present output mode. */
-   GFX_CTX_FLAGS_RECORD_GAME_ONLY
+   GFX_CTX_FLAGS_RECORD_GAME_ONLY,
+   /* Exclusive mode can change without restarting the drivers. */
+   GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE
 };
 
 enum shader_uniform_type

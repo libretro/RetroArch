@@ -5842,10 +5842,12 @@ bool command_event(enum event_command cmd, void *data)
              * sees a resize. Device, shaders, audio and input drivers
              * stay as they are.
              *
-             * Otherwise (exclusive fullscreen, which changes the
-             * display mode, or a context without the means) all
+             * Otherwise (an unsupported exclusive transition, or a
+             * context without the means) all
              * drivers are dropped and reinitialised, as before. */
-            reinit_drivers = exclusive_fullscreen
+            reinit_drivers = (exclusive_fullscreen
+                  && !video_driver_test_all_flags(
+                        GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE))
                   || !video_driver_test_all_flags(
                         GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE)
                   || !video_driver_set_video_mode(
