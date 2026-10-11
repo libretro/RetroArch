@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
+#include <errno.h>
 
 #include <net/net_smb2.h>
 #include <net/net_krb5.h>
@@ -60,6 +61,7 @@
 #define STATUS_END_OF_FILE              0xc0000011
 #define STATUS_NO_MORE_FILES            0x80000006
 #define STATUS_OBJECT_NAME_NOT_FOUND    0xc0000034
+#define STATUS_OBJECT_NAME_COLLISION    0xc0000035
 #define STATUS_LOGON_FAILURE            0xc000006d
 
 #define DIALECT_202 0x0202
@@ -1449,7 +1451,7 @@ static int rsmb_create(struct rsmb_ctx *c, const char *path,
    if (c->status != STATUS_SUCCESS || rlen < 88)
    {
       rsmb_err(c, c->status == STATUS_OBJECT_NAME_NOT_FOUND ? "not found" : "open refused");
-      return -1;
+      return c->status == STATUS_OBJECT_NAME_COLLISION ? -EEXIST : -1;
    }
    memcpy(fid, r + 64, 16);
    if (size)
@@ -1824,9 +1826,10 @@ int rsmb_unlink(struct rsmb_ctx *c, const char *path)
 int rsmb_mkdir(struct rsmb_ctx *c, const char *path)
 {
    uint8_t fid[16];
-   if (rsmb_create(c, path, SMB2_FILE_READ_ATTRIBUTES | SMB2_SYNCHRONIZE,
-            SMB2_FILE_CREATE, SMB2_FILE_DIRECTORY_FILE, fid, NULL, NULL) != 0)
-      return -1;
+   int rc = rsmb_create(c, path, SMB2_FILE_READ_ATTRIBUTES | SMB2_SYNCHRONIZE,
+         SMB2_FILE_CREATE, SMB2_FILE_DIRECTORY_FILE, fid, NULL, NULL);
+   if (rc != 0)
+      return rc;
    return rsmb_close_fid(c, fid);
 }
 

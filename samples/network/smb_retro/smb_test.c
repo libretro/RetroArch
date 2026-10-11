@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 #include <net/net_compat.h>
 #include <net/net_smb2.h>
 #include <features/features_cpu.h>
@@ -43,6 +44,12 @@ int main(int argc, char **argv)
    if (getenv("SMB_KRB_REQUIRE"))
       CHECK(rsmb_used_kerberos(c), "session authenticated with Kerberos");
    CHECK(rsmb_echo(c) == 0, "echo");
+
+   CHECK(rsmb_mkdir(c, "rsmb_test_dir") == 0, "mkdir");
+   CHECK(rsmb_mkdir(c, "rsmb_test_dir") == -EEXIST, "mkdir existing directory");
+   CHECK(rsmb_stat(c, "rsmb_test_dir", &st) == 0 && st.is_dir, "stat directory");
+   CHECK(rsmb_mkdir(c, "no_such_parent/child") == -1, "mkdir missing parent");
+   CHECK(rsmb_unlink(c, "rsmb_test_dir") == 0, "remove directory");
 
    for (i = 0; i < sizeof(big); i++)
       big[i] = (uint8_t)(i * 31 + 7);
