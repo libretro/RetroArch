@@ -7,6 +7,7 @@ queue draining, partial initialization and failures. Vulkan acquire tests
 check that unavailable frames preserve a valid image index and command
 buffers are allocated only once. Resize fence tests check queue locking,
 submission and wait ordering, reuse, and failures.
+Frontend resize tests check synchronization retention and fallback cleanup.
 
 For MinGW and Wine:
 

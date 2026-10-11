@@ -3146,7 +3146,11 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    /* Replacing the swapchain or changing the acquire path needs the
     * old submissions drained before their fences are cleared. */
    vulkan_context_wait_frames(vk);
-   vulkan_acquire_clear_fences(vk);
+#if defined(_WIN32) && !defined(__WINRT__)
+   if (!(ss->dxgi_present && !vk->dxgi_failed && vk->dxgi_presenter
+            && vk->wsi_type == VULKAN_WSI_WIN32))
+#endif
+      vulkan_acquire_clear_fences(vk);
 
    vk->flags |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
 
@@ -3611,7 +3615,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                (ra_vulkan_dxgi_t *)vk->dxgi_presenter,
                swapchain_size.width, swapchain_size.height, import_format))
       {
-         void *presenter = vk->dxgi_presenter;
          if (vk->context.swapchain_dims == VIDEO_SCALE_PACK(
                   swapchain_size.width, swapchain_size.height)
                && vk->context.swapchain_format == import_format)
@@ -3620,10 +3623,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
             vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
             return true;
          }
-         vulkan_context_wait_frames(vk);
-         vk->dxgi_presenter = NULL;
-         vulkan_destroy_swapchain(vk);
-         vk->dxgi_presenter = presenter;
+         /* The resize drained submissions; keep their synchronization objects. */
       }
       else
          vulkan_destroy_swapchain(vk);
@@ -3681,7 +3681,8 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          {
             vk->context.swapchain_images[i] = ra_vulkan_dxgi_image(
                   (ra_vulkan_dxgi_t *)vk->dxgi_presenter, i);
-            if (vkCreateSemaphore(vk->context.device, &semaphore, NULL,
+            if (vk->context.swapchain_semaphores[i] == VK_NULL_HANDLE
+                  && vkCreateSemaphore(vk->context.device, &semaphore, NULL,
                      &vk->context.swapchain_semaphores[i]) != VK_SUCCESS)
             {
                vulkan_destroy_swapchain(vk);

@@ -29,7 +29,17 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     wait_start = vulkan.index("static VkResult ra_vulkan_dxgi_wait_resize(")
     wait_end = vulkan.index("int ra_vulkan_dxgi_resize(", wait_start)
     (directory / "wait.inc").write_text(vulkan[wait_start:wait_end])
-    for name in ("test", "teardown", "acquire", "wait"):
+    frontend = (root / "gfx/common/vulkan_common.c").read_text()
+    drain_start = frontend.index("   vulkan_context_wait_frames(vk);", frontend.index("/* Replacing the swapchain or changing the acquire path"))
+    drain_end = frontend.index("   vk->flags |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;", drain_start)
+    (directory / "drain.inc").write_text(frontend[drain_start:drain_end])
+    reuse_start = frontend.index("      if (vk->dxgi_presenter && ra_vulkan_dxgi_resize(")
+    reuse_end = frontend.index("      old_swapchain = VK_NULL_HANDLE;", reuse_start)
+    (directory / "reuse.inc").write_text(frontend[reuse_start:reuse_end])
+    images_start = frontend.index("         for (i = 0; i < 2; i++)", reuse_end)
+    images_end = frontend.index("         vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;", images_start)
+    (directory / "images.inc").write_text(frontend[images_start:images_end])
+    for name in ("test", "teardown", "acquire", "wait", "frontend"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",
                         "-Wextra", "-Werror", "-I" + str(directory),
