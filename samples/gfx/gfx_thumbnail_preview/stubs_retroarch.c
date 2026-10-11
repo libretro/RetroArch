@@ -417,6 +417,14 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
    return NULL;
 }
 
+/* No device to import into: REFUSED */
+int video_driver_texture_import(uintptr_t *id, const void *frame,
+      int filter)
+{
+   (void)id; (void)frame; (void)filter;
+   return 0;
+}
+
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
 {
    (void)id; (void)slot;

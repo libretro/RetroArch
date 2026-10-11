@@ -187,7 +187,10 @@ enum vulkan_context_flags
    /* Whether HDR colorspaces are supported by the instance */
    VK_CTX_FLAG_HDR_SUPPORT                  = (1 << 5),
    /* scRGB mode: RGBA16F swapchain with extended linear sRGB colour space */
-   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6)
+   VK_CTX_FLAG_HDR_SCRGB                    = (1 << 6),
+   /* The device was made with timeline semaphores, which imported
+    * frames are synchronised with */
+   VK_CTX_FLAG_TIMELINE_SEMAPHORE           = (1 << 7)
 };
 
 enum gfx_ctx_vulkan_data_flags

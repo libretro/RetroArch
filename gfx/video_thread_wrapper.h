@@ -211,11 +211,14 @@ typedef void (*video_thread_async_release_t)(void *img);
  * img and reports the handle; UPDATE writes img into the texture whose
  * handle the node carries, in place, and reports that handle back (0
  * when the driver could not take the update), with dropped set when
- * the driver took it but uploaded nothing. */
+ * the driver took it but uploaded nothing. IMPORT does as UPDATE with
+ * img a video_frame_import_t, making the texture when the handle is
+ * 0 (made set). */
 enum video_thread_async_kind
 {
    VIDEO_THREAD_ASYNC_LOAD = 0,
-   VIDEO_THREAD_ASYNC_UPDATE
+   VIDEO_THREAD_ASYNC_UPDATE,
+   VIDEO_THREAD_ASYNC_IMPORT
 };
 
 typedef struct video_thread_async_load
@@ -231,6 +234,7 @@ typedef struct video_thread_async_load
    enum texture_filter_type filter;
    uint8_t kind;                   /* enum video_thread_async_kind */
    uint8_t dropped;                /* UPDATE: taken, nothing uploaded */
+   uint8_t made;                   /* IMPORT: the texture is this node's */
    /* UPDATE: driver slots of the texture's upload memory to lend once
     * the update has gone, a bit each. What was lent comes back with the
     * node: lent_mem the memory, lent_idx the wrapper's record of it for

@@ -1526,6 +1526,9 @@ struct vk_stream_state
     * into the texture. VK_NULL_HANDLE for any other. */
    VkDescriptorPool pool;
    VkDescriptorSet set[VK_STREAM_SLOTS];
+   /* An imported texture's: the staging buffers are the GPU's own,
+    * filled by a copy out of the frame (vulkan_import_texture) */
+   bool import;
 };
 
 /* Signalled fences go back here for the next upload. */
@@ -13205,7 +13208,7 @@ static struct vk_stream_state *vulkan_planar_state_get(vk_t *vk,
    while (st && st->texture != texture)
       st = st->next;
    if (st)
-      return (   st->pool == VK_NULL_HANDLE
+      return (   st->pool == VK_NULL_HANDLE || st->import
               || st->set[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE) ? NULL : st;
 
    if (!(st = (struct vk_stream_state*)calloc(1, sizeof(*st))))
@@ -13456,6 +13459,399 @@ static uintptr_t vulkan_load_texture_planar(vk_t *vk,
       return 0;
    }
    return (uintptr_t)texture;
+}
+
+/* An imported texture's state: as a planar texture's, but each slot's
+ * buffer lives on the device and is filled by the GPU - the header by
+ * an update, the planes by a copy out of the frame - so a frame goes
+ * from the decoder to the texture without the CPU touching it. */
+static struct vk_stream_state *vulkan_import_state_get(vk_t *vk,
+      struct vk_texture *texture)
+{
+   struct vk_stream_state *st = vk->stream_states;
+   VkFenceCreateInfo fence_info;
+   VkCommandBufferAllocateInfo cmd_info;
+   VkDescriptorPoolSize sizes[2];
+   VkDescriptorPoolCreateInfo pool_info;
+   VkDescriptorSetAllocateInfo set_info;
+   VkDescriptorSetLayout layouts[VK_STREAM_SLOTS];
+   VkDevice device = vk->context->device;
+   size_t len      = vulkan_planar_size(texture->dims) + 4;
+   unsigned i;
+
+   while (st && st->texture != texture)
+      st = st->next;
+   if (st)
+      return (   !st->import
+              || st->set[VK_STREAM_SLOTS - 1] == VK_NULL_HANDLE) ? NULL : st;
+
+   if (!(st = (struct vk_stream_state*)calloc(1, sizeof(*st))))
+      return NULL;
+   st->texture       = texture;
+   st->import        = true;
+   st->next          = vk->stream_states;
+   vk->stream_states = st;
+
+   fence_info.sType            = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+   fence_info.pNext            = NULL;
+   fence_info.flags            = VK_FENCE_CREATE_SIGNALED_BIT;
+   cmd_info.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+   cmd_info.pNext              = NULL;
+   cmd_info.commandPool        = vk->staging_pool;
+   cmd_info.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+   cmd_info.commandBufferCount = VK_STREAM_SLOTS;
+   if (vkAllocateCommandBuffers(device, &cmd_info, st->cmd) != VK_SUCCESS)
+   {
+      st->cmd[0] = VK_NULL_HANDLE;
+      return NULL;
+   }
+
+   sizes[0].type              = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+   sizes[0].descriptorCount   = VK_STREAM_SLOTS;
+   sizes[1].type              = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+   sizes[1].descriptorCount   = VK_STREAM_SLOTS;
+   pool_info.sType            = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+   pool_info.pNext            = NULL;
+   pool_info.flags            = 0;
+   pool_info.maxSets          = VK_STREAM_SLOTS;
+   pool_info.poolSizeCount    = 2;
+   pool_info.pPoolSizes       = sizes;
+   if (vkCreateDescriptorPool(device, &pool_info, NULL, &st->pool)
+         != VK_SUCCESS)
+   {
+      st->pool = VK_NULL_HANDLE;
+      return NULL;
+   }
+   for (i = 0; i < VK_STREAM_SLOTS; i++)
+      layouts[i]                = vk->pipelines.set_layout;
+   set_info.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+   set_info.pNext              = NULL;
+   set_info.descriptorPool     = st->pool;
+   set_info.descriptorSetCount = VK_STREAM_SLOTS;
+   set_info.pSetLayouts        = layouts;
+   if (vkAllocateDescriptorSets(device, &set_info, st->set) != VK_SUCCESS)
+   {
+      st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
+      return NULL;
+   }
+
+   for (i = 0; i < VK_STREAM_SLOTS; i++)
+   {
+      VkBufferCreateInfo binfo;
+      VkMemoryRequirements req;
+      VkMemoryAllocateInfo alloc;
+      VkDescriptorImageInfo image_info;
+      VkDescriptorBufferInfo buffer_info;
+      VkWriteDescriptorSet writes[2];
+
+      binfo.sType                 = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      binfo.pNext                 = NULL;
+      binfo.flags                 = 0;
+      binfo.size                  = len;
+      binfo.usage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT
+                                  | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+      binfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+      binfo.queueFamilyIndexCount = 0;
+      binfo.pQueueFamilyIndices   = NULL;
+      if (vkCreateBuffer(device, &binfo, NULL, &st->staging[i].buffer)
+            != VK_SUCCESS)
+      {
+         st->staging[i].buffer = VK_NULL_HANDLE;
+         st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
+         return NULL;
+      }
+      vkGetBufferMemoryRequirements(device, st->staging[i].buffer, &req);
+      alloc.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      alloc.pNext           = NULL;
+      alloc.allocationSize  = req.size;
+      alloc.memoryTypeIndex = vulkan_find_memory_type_fallback(
+            &vk->context->memory_properties, req.memoryTypeBits,
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 0);
+      if (     vkAllocateMemory(device, &alloc, NULL, &st->staging[i].memory)
+               != VK_SUCCESS
+            || vkBindBufferMemory(device, st->staging[i].buffer,
+               st->staging[i].memory, 0) != VK_SUCCESS
+            || vkCreateFence(device, &fence_info, NULL, &st->fence[i])
+               != VK_SUCCESS)
+      {
+         st->set[VK_STREAM_SLOTS - 1] = VK_NULL_HANDLE;
+         return NULL;
+      }
+      image_info.sampler          = VK_NULL_HANDLE;
+      image_info.imageView        = texture->view;
+      image_info.imageLayout      = VK_IMAGE_LAYOUT_GENERAL;
+      buffer_info.buffer          = st->staging[i].buffer;
+      buffer_info.offset          = 0;
+      buffer_info.range           = VK_WHOLE_SIZE;
+      writes[0].sType             = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+      writes[0].pNext             = NULL;
+      writes[0].dstSet            = st->set[i];
+      writes[0].dstBinding        = 3;
+      writes[0].dstArrayElement   = 0;
+      writes[0].descriptorCount   = 1;
+      writes[0].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+      writes[0].pImageInfo        = &image_info;
+      writes[0].pBufferInfo       = NULL;
+      writes[0].pTexelBufferView  = NULL;
+      writes[1]                   = writes[0];
+      writes[1].dstBinding        = 4;
+      writes[1].descriptorType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+      writes[1].pImageInfo        = NULL;
+      writes[1].pBufferInfo       = &buffer_info;
+      vkUpdateDescriptorSets(device, 2, writes, 0, NULL);
+   }
+   return st;
+}
+
+/* The frame's planes copied into a slot's buffer and converted from
+ * there into @texture, on the GPU: the copy waits for the producer's
+ * timeline, and the producer's other timeline is signalled once the
+ * frame is read no more. */
+static enum video_texture_update vulkan_import_convert(vk_t *vk,
+      struct vk_texture *texture, const video_frame_import_t *f)
+{
+   struct vk_stream_state *st;
+   VkCommandBufferBeginInfo begin_info;
+   VkImageMemoryBarrier bar;
+   VkBufferMemoryBarrier bbar;
+   VkBufferImageCopy regions[2];
+   VkTimelineSemaphoreSubmitInfoKHR tl;
+   VkSubmitInfo submit_info;
+   VkSemaphore wait, done;
+   VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+   VkCommandBuffer cmd;
+   VkDevice device;
+   VkResult res;
+   uint32_t hdr[VK_PLANAR_HEADER];
+   float coef[6];
+   unsigned w  = VIDEO_SCALE_W(f->dims);
+   unsigned h  = VIDEO_SCALE_H(f->dims);
+   unsigned cw = (w + 1) / 2;
+   unsigned ch = (h + 1) / 2;
+   unsigned slot, i;
+   size_t y_off, c_off;
+
+   if (     f->pixfmt != IMAGE_PIXFMT_NV12 || !f->image
+         || texture->dims != f->dims
+         || !(st = vulkan_import_state_get(vk, texture)))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   device = vk->context->device;
+   slot   = st->next_slot;
+   if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+   {
+      slot ^= 1;
+      if (vkGetFenceStatus(device, st->fence[slot]) != VK_SUCCESS)
+         return VIDEO_TEXTURE_UPDATE_DROPPED;
+   }
+   st->next_slot = slot ^ 1;
+
+   /* The interleaved chroma read two bytes a sample, Cr one after Cb;
+    * the copy wants it on a texel's boundary */
+   y_off  = VK_PLANAR_HEADER * 4;
+   c_off  = (y_off + (size_t)w * h + 3) & ~(size_t)3;
+   memset(hdr, 0, sizeof(hdr));
+   image_yuv_coefficients(f->yuv, coef);
+   hdr[0] = w;
+   hdr[1] = h;
+   hdr[2] = (uint32_t)y_off;
+   hdr[3] = w;
+   hdr[4] = (uint32_t)c_off;
+   hdr[5] = (uint32_t)c_off + 1;
+   hdr[6] = cw * 2;
+   hdr[7] = 2;
+   for (i = 0; i < 6; i++)
+      memcpy(&hdr[8 + i], &coef[i], sizeof(float));
+
+   cmd = st->cmd[slot];
+   begin_info.sType            = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+   begin_info.pNext            = NULL;
+   begin_info.flags            = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+   begin_info.pInheritanceInfo = NULL;
+   if (     vkResetCommandBuffer(cmd, 0) != VK_SUCCESS
+         || vkBeginCommandBuffer(cmd, &begin_info) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+
+   vkCmdUpdateBuffer(cmd, st->staging[slot].buffer, 0, sizeof(hdr), hdr);
+
+   bar.sType                           = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+   bar.pNext                           = NULL;
+   bar.srcAccessMask                   = 0;
+   bar.dstAccessMask                   = VK_ACCESS_TRANSFER_READ_BIT;
+   bar.oldLayout                       = (VkImageLayout)f->layout;
+   bar.newLayout                       = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   bar.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+   /* Non-dispatchable handles are 64 bits wide on every target */
+   memcpy(&bar.image, &f->image, sizeof(bar.image));
+   bar.subresourceRange.aspectMask     = VK_IMAGE_ASPECT_COLOR_BIT;
+   bar.subresourceRange.baseMipLevel   = 0;
+   bar.subresourceRange.levelCount     = 1;
+   bar.subresourceRange.baseArrayLayer = 0;
+   bar.subresourceRange.layerCount     = 1;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+
+   memset(regions, 0, sizeof(regions));
+   regions[0].bufferOffset                = y_off;
+   regions[0].bufferRowLength             = w;
+   regions[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].imageSubresource.layerCount = 1;
+   regions[0].imageExtent.width           = w;
+   regions[0].imageExtent.height          = h;
+   regions[0].imageExtent.depth           = 1;
+   regions[1]                             = regions[0];
+   regions[1].bufferOffset                = c_off;
+   regions[1].bufferRowLength             = cw;
+   regions[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+   regions[1].imageExtent.width           = cw;
+   regions[1].imageExtent.height          = ch;
+   vkCmdCopyImageToBuffer(cmd, bar.image,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, st->staging[slot].buffer,
+         2, regions);
+
+   /* The frame back as the producer left it */
+   bar.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+   bar.dstAccessMask = 0;
+   bar.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+   bar.newLayout     = (VkImageLayout)f->layout;
+   if (     bar.newLayout == VK_IMAGE_LAYOUT_UNDEFINED
+         || bar.newLayout == VK_IMAGE_LAYOUT_PREINITIALIZED)
+      bar.newLayout  = VK_IMAGE_LAYOUT_GENERAL;
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, NULL, 0, NULL, 1, &bar);
+
+   bbar.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+   bbar.pNext               = NULL;
+   bbar.srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
+   bbar.dstAccessMask       = VK_ACCESS_SHADER_READ_BIT;
+   bbar.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+   bbar.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+   bbar.buffer              = st->staging[slot].buffer;
+   bbar.offset              = 0;
+   bbar.size                = VK_WHOLE_SIZE;
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+         VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_SHADER_WRITE_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+   vkCmdPipelineBarrier(cmd, VK_PIPELINE_STAGE_TRANSFER_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, NULL, 1, &bbar, 0, NULL);
+   vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.yuv420_to_rgba8888);
+   vkCmdBindDescriptorSets(cmd, VK_PIPELINE_BIND_POINT_COMPUTE,
+         vk->pipelines.layout, 0, 1, &st->set[slot], 0, NULL);
+   vkCmdDispatch(cmd, (cw + 7) / 8, (ch + 7) / 8, 1);
+   VULKAN_IMAGE_LAYOUT_TRANSITION(cmd, texture->image,
+         VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+         VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
+   if (vkEndCommandBuffer(cmd) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   texture->layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+   memcpy(&wait, &f->wait, sizeof(wait));
+   memcpy(&done, &f->done, sizeof(done));
+   tl.sType                         =
+      VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO_KHR;
+   tl.pNext                         = NULL;
+   tl.waitSemaphoreValueCount       = wait ? 1 : 0;
+   tl.pWaitSemaphoreValues          = &f->wait_value;
+   tl.signalSemaphoreValueCount     = done ? 1 : 0;
+   tl.pSignalSemaphoreValues        = &f->done_value;
+   submit_info.sType                = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+   submit_info.pNext                = &tl;
+   submit_info.waitSemaphoreCount   = wait ? 1 : 0;
+   submit_info.pWaitSemaphores      = &wait;
+   submit_info.pWaitDstStageMask    = &wait_stage;
+   submit_info.commandBufferCount   = 1;
+   submit_info.pCommandBuffers      = &cmd;
+   submit_info.signalSemaphoreCount = done ? 1 : 0;
+   submit_info.pSignalSemaphores    = &done;
+
+   vulkan_upload_batch_submit(vk);
+   if (vkResetFences(device, 1, &st->fence[slot]) != VK_SUCCESS)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#ifdef HAVE_THREADS
+   slock_lock(vk->context->queue_lock);
+#endif
+   res = vkQueueSubmit(vk->context->queue, 1, &submit_info, st->fence[slot]);
+   if (res != VK_SUCCESS)
+      vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 0,
+               NULL, st->fence[slot]));
+#ifdef HAVE_THREADS
+   slock_unlock(vk->context->queue_lock);
+#endif
+   if (res != VK_SUCCESS)
+   {
+      vulkan_check_device_lost(vk, res);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   return VIDEO_TEXTURE_UPDATE_DONE;
+}
+
+static enum video_texture_update vulkan_import_texture(void *data,
+      uintptr_t *id, const video_frame_import_t *f,
+      enum texture_filter_type filter)
+{
+   vk_t *vk = (vk_t*)data;
+   struct vk_texture *texture;
+   enum video_texture_update r;
+
+   if (     !vk || !vk->context || !id || !f
+         || !(vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
+         || vk->pipelines.yuv420_to_rgba8888 == VK_NULL_HANDLE
+         || !VIDEO_SCALE_W(f->dims) || !VIDEO_SCALE_H(f->dims))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   if (*id)
+      return vulkan_import_convert(vk, (struct vk_texture*)*id, f);
+
+   if (!(texture = (struct vk_texture*)calloc(1, sizeof(*texture))))
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   vk->flags |=  VK_FLAG_TEXTURE_FOR_STORAGE;
+   *texture   = vulkan_create_texture(vk, NULL, VIDEO_SCALE_W(f->dims),
+         VIDEO_SCALE_H(f->dims), VK_FORMAT_R8G8B8A8_UNORM, NULL, NULL,
+         VULKAN_TEXTURE_DYNAMIC);
+   vk->flags &= ~VK_FLAG_TEXTURE_FOR_STORAGE;
+   if (texture->image == VK_NULL_HANDLE)
+   {
+      free(texture);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   texture->flags &= ~(VK_TEX_FLAG_DEFAULT_SMOOTH | VK_TEX_FLAG_MIPMAP);
+   if (     filter == TEXTURE_FILTER_LINEAR
+         || filter == TEXTURE_FILTER_MIPMAP_LINEAR)
+      texture->flags |= VK_TEX_FLAG_DEFAULT_SMOOTH;
+   /* A texture nobody has seen: its first frame or none */
+   if ((r = vulkan_import_convert(vk, texture, f))
+         != VIDEO_TEXTURE_UPDATE_DONE)
+   {
+      vulkan_texture_retire(vk, texture);
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   }
+   *id = (uintptr_t)texture;
+   return r;
+}
+
+static bool vulkan_get_device(void *data, video_device_info_t *info)
+{
+   vk_t *vk = (vk_t*)data;
+   if (     !vk || !vk->context || !info
+         || vk->context->device == VK_NULL_HANDLE)
+      return false;
+   info->api                    = VIDEO_DEVICE_VULKAN;
+   info->instance               = (void*)vk->context->instance;
+   info->physical_device        = (void*)vk->context->gpu;
+   info->device                 = (void*)vk->context->device;
+   info->get_instance_proc_addr = (retro_proc_address_t)
+      vulkan_symbol_wrapper_instance_proc_addr();
+   info->queue_family           = vk->context->graphics_queue_index;
+   info->import_formats         =
+         (     (vk->context->flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE)
+            && vk->pipelines.yuv420_to_rgba8888 != VK_NULL_HANDLE)
+      ? IMAGE_PIXFMT_NV12 : 0;
+   return true;
 }
 
 static enum video_texture_update vulkan_update_texture_internal(vk_t *vk,
@@ -14122,7 +14518,9 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_set_frame_format,
    vulkan_frame_mem_alloc,
    vulkan_frame_mem_ready,
-   vulkan_frame_mem_free
+   vulkan_frame_mem_free,
+   vulkan_get_device,
+   vulkan_import_texture
 };
 
 static void vulkan_get_poke_interface(void *data,

@@ -169,6 +169,9 @@ struct gfx_surface
     * conversion reads the planes where they lie, so it is the one pass
     * over the frame. NULL until then, and for any other surface. */
    uint32_t *rgb;
+   /* An imported surface's frame in flight (gfx_surface_submit_import) */
+   video_frame_import_t import;
+   uint8_t imported;
 };
 
 #define GFX_SURFACE_IS_PLANAR(s) \
@@ -293,6 +296,24 @@ gfx_surface_t *gfx_surface_new_static(unsigned dims,
  * when an image has landed sets release/user on it; a still whose
  * texture is read when drawn needs neither. NULL when out of memory. */
 gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter);
+
+/* A surface whose frames live on the driver's device - a hardware
+ * decoder's - and are converted into its texture on the GPU
+ * (video_poke_interface::import_texture): no slots, no pixels. NULL
+ * when out of memory. */
+gfx_surface_t *gfx_surface_new_import(unsigned dims,
+      enum texture_filter_type filter, gfx_surface_release_t release,
+      void *user);
+
+/* Hands @frame to the driver; the descriptor is copied. DONE or QUEUED:
+ * the driver will signal frame->done once it reads the frame no more
+ * (QUEUED: release() comes once the video thread has taken it, with
+ * dropped set when it was not, and then done is never signalled).
+ * DROPPED: not taken, done never signalled. BUSY: a frame is still on
+ * its way to the video thread. FAILED: the driver imports no such
+ * frame. Main thread. */
+enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *s,
+      const video_frame_import_t *frame);
 
 /* The still in @slot, made on first use; its filter is @filter from
  * here, for the next image it is given. NULL when out of memory. */

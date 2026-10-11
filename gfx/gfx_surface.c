@@ -169,6 +169,25 @@ gfx_surface_t *gfx_surface_new_still(enum texture_filter_type filter)
    return s;
 }
 
+gfx_surface_t *gfx_surface_new_import(unsigned dims,
+      enum texture_filter_type filter, gfx_surface_release_t release,
+      void *user)
+{
+   gfx_surface_t *s;
+   if (!VIDEO_SCALE_W(dims) || !VIDEO_SCALE_H(dims))
+      return NULL;
+   if (!(s = (gfx_surface_t*)calloc(1, sizeof(*s))))
+      return NULL;
+   s->dims     = dims;
+   s->filter   = filter;
+   s->fmt      = GFX_SURFACE_FMT_NONE;
+   s->release  = release;
+   s->user     = user;
+   s->imported = 1;
+   GFX_INSTR_INC(GFX_INSTR_SURFACE_NEW);
+   return s;
+}
+
 /* A decoded image a still was given, pixels and descriptor */
 static void gfx_surface_image_free(void *payload)
 {
@@ -391,7 +410,18 @@ static void gfx_surface_done(void *user, uintptr_t handle)
    s->inflight      = 0;
    s->dropped       = 0;
 
-   if (s->node.kind == VIDEO_THREAD_ASYNC_LOAD)
+   if (s->node.kind == VIDEO_THREAD_ASYNC_IMPORT)
+   {
+      /* Refused or dropped alike: the frame was not taken */
+      if (handle && s->node.made)
+         s->handle = handle;
+      if (!handle || s->node.dropped)
+      {
+         GFX_INSTR_INC(GFX_INSTR_SUBMIT_DROPPED);
+         s->dropped = 1;
+      }
+   }
+   else if (s->node.kind == VIDEO_THREAD_ASYNC_LOAD)
    {
       if (handle)
       {
@@ -854,6 +884,56 @@ void gfx_surface_free(gfx_surface_t *s)
       video_driver_texture_unload(&s->retired_handle);
    free(s->rgb);
    free(s);
+}
+
+enum gfx_surface_submit_result gfx_surface_submit_import(gfx_surface_t *s,
+      const video_frame_import_t *frame)
+{
+   enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
+   enum video_texture_update u;
+
+   if (!s || !s->imported || !frame || frame->dims != s->dims)
+   {
+      gfx_surface_count(r);
+      return r;
+   }
+   if (s->inflight)
+   {
+      GFX_INSTR_INC(GFX_INSTR_SUBMIT_BUSY);
+      return GFX_SURFACE_SUBMIT_BUSY;
+   }
+   s->import = *frame;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+   {
+      s->node.kind        = VIDEO_THREAD_ASYNC_IMPORT;
+      s->node.img         = &s->import;
+      s->node.handle      = s->handle;
+      s->node.filter      = s->filter;
+      s->node.done        = gfx_surface_done;
+      s->node.user        = s;
+      s->node.release     = NULL;
+      s->node.dropped     = 0;
+      s->node.made        = 0;
+      s->node.lend        = 0;
+      s->node.lent_idx[0] = s->node.lent_idx[1] = -1;
+      s->node.lent_mem[0] = s->node.lent_mem[1] = NULL;
+      if (video_thread_async_post(&s->node))
+      {
+         s->inflight      = 1;
+         s->inflight_slot = 0;
+         r                = GFX_SURFACE_SUBMIT_QUEUED;
+         gfx_surface_count(r);
+         return r;
+      }
+   }
+#endif
+   u = video_driver_texture_import(&s->handle, &s->import, s->filter);
+   r = (u == VIDEO_TEXTURE_UPDATE_DONE) ? GFX_SURFACE_SUBMIT_DONE
+     : (u == VIDEO_TEXTURE_UPDATE_DROPPED) ? GFX_SURFACE_SUBMIT_DROPPED
+     : GFX_SURFACE_SUBMIT_FAILED;
+   gfx_surface_count(r);
+   return r;
 }
 
 bool gfx_surface_submit_image(gfx_surface_t *s, struct texture_image *img)

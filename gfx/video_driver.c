@@ -4904,6 +4904,31 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot,
    return poke->texture_lend(video_st->data, id, slot, pitch);
 }
 
+bool video_driver_get_device(video_device_info_t *info)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+   if (!info)
+      return false;
+   memset(info, 0, sizeof(*info));
+   return poke && poke->get_device && video_st->data
+      && poke->get_device(video_st->data, info);
+}
+
+enum video_texture_update video_driver_texture_import(uintptr_t *id,
+      const video_frame_import_t *frame, enum texture_filter_type filter)
+{
+   video_driver_state_t *video_st     = &video_driver_st;
+   const video_poke_interface_t *poke = video_st->poke;
+#ifdef HAVE_THREADS
+   if (video_driver_thread_wrapper_active())
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+#endif
+   if (!id || !frame || !poke || !poke->import_texture || !video_st->data)
+      return VIDEO_TEXTURE_UPDATE_REFUSED;
+   return poke->import_texture(video_st->data, id, frame, filter);
+}
+
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
 {
    video_driver_state_t *video_st     = &video_driver_st;

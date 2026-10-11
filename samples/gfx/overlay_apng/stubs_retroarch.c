@@ -62,6 +62,14 @@ void *video_driver_texture_lend(uintptr_t id, unsigned slot, size_t pitch)
    return NULL;
 }
 
+/* No device to import into */
+enum video_texture_update video_driver_texture_import(uintptr_t *id,
+      const video_frame_import_t *frame, enum texture_filter_type filter)
+{
+   (void)id; (void)frame; (void)filter;
+   return VIDEO_TEXTURE_UPDATE_REFUSED;
+}
+
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot)
 {
    (void)id; (void)slot;

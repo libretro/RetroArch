@@ -918,6 +918,52 @@ enum video_texture_update
    VIDEO_TEXTURE_UPDATE_DROPPED
 };
 
+/* The device a driver draws with, for a producer that makes frames on
+ * it - a hardware video decoder - so its frames are imported rather
+ * than copied (see import_texture). */
+enum video_device_api
+{
+   VIDEO_DEVICE_NONE = 0,
+   VIDEO_DEVICE_VULKAN
+};
+
+typedef struct video_device_info
+{
+   enum video_device_api api;
+   /* Vulkan: VkInstance, VkPhysicalDevice, VkDevice, and the loader's
+    * vkGetInstanceProcAddr. */
+   void *instance;
+   void *physical_device;
+   void *device;
+   retro_proc_address_t get_instance_proc_addr;
+   /* The driver's queue family: an image the driver imports is either
+    * exclusive to it or shared with it (concurrent). */
+   unsigned queue_family;
+   /* image_pixfmt bits import_texture takes; 0 when it takes none. */
+   uint32_t import_formats;
+} video_device_info_t;
+
+/* A frame that lives on the driver's device; handles are given as
+ * their bytes (a Vulkan non-dispatchable handle is 64 bits wide on
+ * every target). Vulkan: a VkImage of
+ * VK_FORMAT_G8_B8R8_2PLANE_420_UNORM for IMAGE_PIXFMT_NV12, and two
+ * timeline semaphores - the driver's reads wait for @wait to reach
+ * @wait_value, and it signals @done with @done_value once it reads the
+ * frame no more. The frame is left in @layout, or in GENERAL from
+ * UNDEFINED or PREINITIALIZED. */
+typedef struct video_frame_import
+{
+   uint64_t image;
+   uint64_t wait;
+   uint64_t wait_value;
+   uint64_t done;
+   uint64_t done_value;
+   uint32_t pixfmt;
+   unsigned dims;
+   unsigned layout;
+   unsigned yuv;           /* IMAGE_YUV_FLAG_* */
+} video_frame_import_t;
+
 typedef struct video_poke_interface
 {
    uint32_t (*get_flags)(void *data);
@@ -1156,6 +1202,19 @@ typedef struct video_poke_interface
          bool *cached, unsigned *pitch_align);
    bool  (*frame_mem_ready)(void *data, uintptr_t id);
    void  (*frame_mem_free)(void *data, uintptr_t id);
+
+   /* The device the driver draws with; false when it has none to share.
+    * Any thread: the handles stand for the driver's life. */
+   bool (*get_device)(void *data, video_device_info_t *info);
+   /* Converts @frame into texture *@id on the GPU, the frame never
+    * reaching the CPU: *@id 0 makes the texture (RGBA, @filter) and
+    * sets it. Never waits for the frame: the GPU does. DROPPED when no
+    * conversion slot is free, and then @frame->done is not signalled;
+    * REFUSED when the frame cannot be imported. Called on the driver's
+    * own thread. Optional. */
+   enum video_texture_update (*import_texture)(void *data, uintptr_t *id,
+         const video_frame_import_t *frame,
+         enum texture_filter_type filter);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a
@@ -2173,6 +2232,13 @@ bool video_driver_texture_can_update(void);
 void *video_driver_texture_lend(uintptr_t id, unsigned slot,
       size_t pitch);
 bool video_driver_texture_lend_ready(uintptr_t id, unsigned slot);
+
+/* get_device / import_texture of the active driver. The import is
+ * REFUSED under the thread wrapper, which takes imports as nodes
+ * (VIDEO_THREAD_ASYNC_IMPORT). Main thread. */
+bool video_driver_get_device(video_device_info_t *info);
+enum video_texture_update video_driver_texture_import(uintptr_t *id,
+      const video_frame_import_t *frame, enum texture_filter_type filter);
 
 /* @ti as the active driver samples it: a 10-bit image it cannot take
  * narrowed to 8 bits in place. False for a half-float image or a

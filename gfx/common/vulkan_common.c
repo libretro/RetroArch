@@ -93,6 +93,7 @@ static VkPhysicalDevice              cached_gpu_vk;
 static int                           cached_gpu_index_vk;
 static retro_vulkan_destroy_device_t cached_destroy_device_vk;
 static bool                          cached_instance_hdr_vk;
+static bool                          cached_timeline_vk;
 #ifdef HAVE_OPENXR
 /* Kept with a cached device: the runtime made it. */
 static vulkan_openxr_t              *cached_xr;
@@ -870,7 +871,9 @@ static const char *vulkan_optional_device_extensions[] = {
    "VK_KHR_portability_subset",
    /* Display timestamps for the presenter's repeat cadence; absent on
     * most Windows drivers, present on Android and Mesa. */
-   "VK_GOOGLE_display_timing"
+   "VK_GOOGLE_display_timing",
+   /* What imported frames (a hardware decoder's) synchronise with */
+   "VK_KHR_timeline_semaphore"
 #ifdef VULKAN_HDR_SWAPCHAIN
    /* Lets the app signal SMPTE-2086 mastering-display metadata to the
     * compositor via vkSetHdrMetadataEXT. Optional: if absent (common on
@@ -1146,6 +1149,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    video_driver_state_t *video_st          = video_state_get_ptr();
 
    VkPhysicalDeviceFeatures features       = { false };
+   VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline;
 
    unsigned enabled_device_extension_count = 0;
 
@@ -1197,6 +1201,9 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
             iface->interface_version,
             (void*)iface->create_device2);
 #endif
+
+   /* Set below for a device made here; a core's has none of ours */
+   vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
 
    if (!vulkan_context_init_gpu(vk))
       return false;
@@ -1453,6 +1460,42 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       queue_info.queueCount               = 1;
       queue_info.pQueuePriorities         = &one;
 
+      /* Timeline semaphores, where the extension came with the feature */
+      timeline.sType             =
+         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+      timeline.pNext             = NULL;
+      timeline.timelineSemaphore = VK_FALSE;
+      for (i = 0; i < enabled_device_extension_count; i++)
+         if (!strcmp(enabled_device_extensions[i],
+                  VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+         {
+            PFN_vkGetPhysicalDeviceFeatures2 get_features2 =
+               (PFN_vkGetPhysicalDeviceFeatures2)
+               vulkan_symbol_wrapper_instance_proc_addr()(
+                     vk->context.instance, "vkGetPhysicalDeviceFeatures2");
+            uint32_t inst_version = VK_API_VERSION_1_0;
+            /* A 1.1 command: the instance is made 1.1 where the loader
+             * is (vulkan_context_init) */
+            if (vkEnumerateInstanceVersion)
+               vkEnumerateInstanceVersion(&inst_version);
+            if (     get_features2
+                  && inst_version >= VK_API_VERSION_1_1
+                  && vk->context.gpu_properties.apiVersion
+                     >= VK_API_VERSION_1_1)
+            {
+               VkPhysicalDeviceFeatures2 f2;
+               f2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+               f2.pNext = &timeline;
+               get_features2(vk->context.gpu, &f2);
+            }
+            break;
+         }
+      if (timeline.timelineSemaphore)
+      {
+         device_info.pNext  = &timeline;
+         vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+      }
+
       device_info.queueCreateInfoCount    = 1;
       device_info.pQueueCreateInfos       = &queue_info;
       device_info.enabledExtensionCount   = enabled_device_extension_count;
@@ -1463,6 +1506,10 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       {
          vk->context.device = cached_device_vk;
          cached_device_vk   = NULL;
+         if (cached_timeline_vk)
+            vk->context.flags |=  VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+         else
+            vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
          cached_gpu_vk      = VK_NULL_HANDLE;
 
          if (cached_destroy_device_vk)
@@ -4334,6 +4381,8 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
       cached_destroy_device_vk = vk->context.destroy_device;
       cached_instance_hdr_vk   =
          (vk->context.flags & VK_CTX_FLAG_HDR_SUPPORT) ? true : false;
+      cached_timeline_vk       =
+         (vk->context.flags & VK_CTX_FLAG_TIMELINE_SEMAPHORE) ? true : false;
 #ifdef HAVE_OPENXR
       cached_xr                = vk->context.xr;
       vk->context.xr           = NULL;

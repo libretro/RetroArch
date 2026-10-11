@@ -978,7 +978,7 @@ static bool video_thread_handle_packet(
             while (n)
             {
                video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-               if (     n->kind != VIDEO_THREAD_ASYNC_UPDATE
+               if (     (n->kind == VIDEO_THREAD_ASYNC_LOAD || n->made)
                      && n->handle
                      && thr->poke && thr->poke->unload_texture
                      && thr->driver_data)
@@ -1734,7 +1734,18 @@ static void video_thread_async_run(thread_video_t *thr)
    while (n)
    {
       video_thread_async_load_t *next = VIDEO_THREAD_ASYNC_NEXT(n);
-      if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
+      if (n->kind == VIDEO_THREAD_ASYNC_IMPORT)
+      {
+         enum video_texture_update r = VIDEO_TEXTURE_UPDATE_REFUSED;
+         uintptr_t id                = n->handle;
+         if (driver_data && poke && poke->import_texture)
+            r = poke->import_texture(driver_data, &id,
+                  (const video_frame_import_t*)n->img, n->filter);
+         n->made    = (!n->handle && id && r != VIDEO_TEXTURE_UPDATE_REFUSED);
+         n->dropped = (r == VIDEO_TEXTURE_UPDATE_DROPPED);
+         n->handle  = (r == VIDEO_TEXTURE_UPDATE_REFUSED) ? 0 : id;
+      }
+      else if (n->kind == VIDEO_THREAD_ASYNC_UPDATE)
       {
          /* The handle is the poster's texture; it comes back as the
           * result so done() sees the same value on success, 0 when
@@ -4883,6 +4894,16 @@ static bool thread_supports_texture_format(void *video_data,
    return false;
 }
 
+/* The handles stand for the driver's life, which the main thread
+ * starts and ends: read from here. */
+static bool thread_get_device(void *video_data, video_device_info_t *info)
+{
+   thread_video_t *thr = (thread_video_t*)video_data;
+   if (thr && thr->driver_data && thr->poke && thr->poke->get_device)
+      return thr->poke->get_device(thr->driver_data, info);
+   return false;
+}
+
 /* Forward the compressed upload with 'threaded' passed through, exactly as
  * thread_load_texture does. The underlying driver decides whether to marshal
  * the GPU work onto the video thread; the descriptor stays alive because
@@ -4989,7 +5010,12 @@ static const video_poke_interface_t thread_poke = {
    thread_set_view_count,
    thread_hw_context_destroying,
    thread_get_headset_refresh,
-   thread_set_frame_format
+   thread_set_frame_format,
+   NULL, /* frame_mem_alloc: the video thread's */
+   NULL, /* frame_mem_ready */
+   NULL, /* frame_mem_free */
+   thread_get_device,
+   NULL  /* import_texture: a node (VIDEO_THREAD_ASYNC_IMPORT) */
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the

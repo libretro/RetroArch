@@ -7866,6 +7866,310 @@ static void lane_surface_planar(void)
             checked ? ", texels match the CPU's" : "");
 }
 
+/* ------------------------------------------------------------------ */
+/* Imported frames: a producer on the driver's own device - what a     */
+/* hardware decoder is - hands over NV12 images and the driver turns   */
+/* them into the surface's texture on the GPU. The producer here is a  */
+/* stand-in for one: it writes a linear image from the host and        */
+/* signals its timeline from the host, so the contract - wait for the  */
+/* producer's timeline, signal the other once the frame is read, never */
+/* wait on the CPU, one texture for the stream - is held on lavapipe   */
+/* under the validation layer, threaded and not, with the texels        */
+/* checked against the CPU's conversion.                               */
+/* ------------------------------------------------------------------ */
+
+#ifdef HAVE_VULKAN
+typedef struct
+{
+   VkImage image;
+   VkDeviceMemory mem;
+   VkSemaphore wait, done;
+   VkSubresourceLayout planes[2];
+   uint8_t *map;
+   PFN_vkSignalSemaphoreKHR signal;
+   PFN_vkGetSemaphoreCounterValueKHR value;
+} import_producer_t;
+
+static void import_release_cb(void *user, gfx_surface_t *s, unsigned slot)
+{
+   (void)slot;
+   if (s->dropped)
+      (*(unsigned*)user)++;
+}
+
+static VkSemaphore import_timeline(VkDevice dev)
+{
+   VkSemaphoreTypeCreateInfoKHR type;
+   VkSemaphoreCreateInfo info;
+   VkSemaphore sem = VK_NULL_HANDLE;
+   type.sType         = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO_KHR;
+   type.pNext         = NULL;
+   type.semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE_KHR;
+   type.initialValue  = 0;
+   info.sType         = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+   info.pNext         = &type;
+   info.flags         = 0;
+   if (vkCreateSemaphore(dev, &info, NULL, &sem) != VK_SUCCESS)
+      return VK_NULL_HANDLE;
+   return sem;
+}
+
+/* A linear NV12 image the host writes; false where the device cannot
+ * have one, which is a skip rather than a failure */
+static bool import_producer_new(vulkan_context_t *ctx, unsigned w,
+      unsigned h, import_producer_t *p)
+{
+   VkFormatProperties fp;
+   VkImageCreateInfo info;
+   VkMemoryRequirements req;
+   VkMemoryAllocateInfo alloc;
+   VkImageSubresource sub;
+   video_device_info_t dev;
+   uint32_t i;
+
+   memset(p, 0, sizeof(*p));
+   if (!video_driver_get_device(&dev))
+      return false;
+   vkGetPhysicalDeviceFormatProperties((VkPhysicalDevice)dev.physical_device,
+         VK_FORMAT_G8_B8R8_2PLANE_420_UNORM, &fp);
+   if (!(fp.linearTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT))
+      return false;
+   p->signal = (PFN_vkSignalSemaphoreKHR)vkGetDeviceProcAddr(ctx->device,
+         "vkSignalSemaphoreKHR");
+   p->value  = (PFN_vkGetSemaphoreCounterValueKHR)vkGetDeviceProcAddr(
+         ctx->device, "vkGetSemaphoreCounterValueKHR");
+   if (!p->signal || !p->value)
+      return false;
+   memset(&info, 0, sizeof(info));
+   info.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+   info.imageType     = VK_IMAGE_TYPE_2D;
+   info.format        = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+   info.extent.width  = w;
+   info.extent.height = h;
+   info.extent.depth  = 1;
+   info.mipLevels     = 1;
+   info.arrayLayers   = 1;
+   info.samples       = VK_SAMPLE_COUNT_1_BIT;
+   info.tiling        = VK_IMAGE_TILING_LINEAR;
+   info.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+   info.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+   info.initialLayout = VK_IMAGE_LAYOUT_PREINITIALIZED;
+   if (vkCreateImage(ctx->device, &info, NULL, &p->image) != VK_SUCCESS)
+   {
+      p->image = VK_NULL_HANDLE;
+      return false;
+   }
+   vkGetImageMemoryRequirements(ctx->device, p->image, &req);
+   memset(&alloc, 0, sizeof(alloc));
+   alloc.sType          = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+   alloc.allocationSize = req.size;
+   for (i = 0; i < ctx->memory_properties.memoryTypeCount; i++)
+      if (     (req.memoryTypeBits & (1u << i))
+            && (ctx->memory_properties.memoryTypes[i].propertyFlags
+               & (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+               == (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
+                  | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT))
+         break;
+   alloc.memoryTypeIndex = i;
+   if (     i == ctx->memory_properties.memoryTypeCount
+         || vkAllocateMemory(ctx->device, &alloc, NULL, &p->mem) != VK_SUCCESS
+         || vkBindImageMemory(ctx->device, p->image, p->mem, 0) != VK_SUCCESS
+         || vkMapMemory(ctx->device, p->mem, 0, VK_WHOLE_SIZE, 0,
+               (void**)&p->map) != VK_SUCCESS)
+      return false;
+   sub.mipLevel   = 0;
+   sub.arrayLayer = 0;
+   sub.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   vkGetImageSubresourceLayout(ctx->device, p->image, &sub, &p->planes[0]);
+   sub.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+   vkGetImageSubresourceLayout(ctx->device, p->image, &sub, &p->planes[1]);
+   p->wait = import_timeline(ctx->device);
+   p->done = import_timeline(ctx->device);
+   return p->wait != VK_NULL_HANDLE && p->done != VK_NULL_HANDLE;
+}
+
+static void import_producer_free(vulkan_context_t *ctx, import_producer_t *p)
+{
+   if (p->map)
+      vkUnmapMemory(ctx->device, p->mem);
+   if (p->wait)
+      vkDestroySemaphore(ctx->device, p->wait, NULL);
+   if (p->done)
+      vkDestroySemaphore(ctx->device, p->done, NULL);
+   if (p->image)
+      vkDestroyImage(ctx->device, p->image, NULL);
+   if (p->mem)
+      vkFreeMemory(ctx->device, p->mem, NULL);
+}
+
+/* Frame @k into the image, and the same as tight planes for the CPU */
+static void import_fill(import_producer_t *p, unsigned w, unsigned h,
+      unsigned k, uint8_t *y, uint8_t *uv)
+{
+   unsigned i, j;
+   for (j = 0; j < h; j++)
+      for (i = 0; i < w; i++)
+         y[j * w + i] = (uint8_t)(16 + ((i * 3 + j * 5 + k * 11) % 220));
+   for (j = 0; j < h / 2; j++)
+      for (i = 0; i < w / 2; i++)
+      {
+         uv[j * w + i * 2]     = (uint8_t)(40 + ((i * 7 + j + k * 13) % 180));
+         uv[j * w + i * 2 + 1] = (uint8_t)(220 - ((i + j * 9 + k) % 180));
+      }
+   for (j = 0; j < h; j++)
+      memcpy(p->map + p->planes[0].offset + j * p->planes[0].rowPitch,
+            y + j * w, w);
+   for (j = 0; j < h / 2; j++)
+      memcpy(p->map + p->planes[1].offset + j * p->planes[1].rowPitch,
+            uv + j * w, w);
+}
+#endif
+
+static void lane_surface_import(void)
+{
+#ifdef HAVE_VULKAN
+   enum { IW = 64, IH = 48, FRAMES = 4 };
+   static uint8_t y[IW * IH], uv[IW * IH / 2];
+   static uint32_t want[IW * IH], got[IW * IH];
+   const char *drv = getenv("HARNESS_VIDEO_DRIVER");
+   unsigned had    = failures;
+   bool checked    = false;
+   video_device_info_t dev;
+   vulkan_context_t *ctx;
+   unsigned pass;
+
+   if (!real_driver() || !drv || strcmp(drv, "vulkan"))
+      return;
+   set_threaded_via_setting(false);
+   run_frames(3);
+   if (     !video_driver_get_device(&dev)
+         || !(dev.import_formats & IMAGE_PIXFMT_NV12))
+   {
+      fprintf(stderr, "[skip] surface import lane (no import on this device)\n");
+      return;
+   }
+
+   for (pass = 0; pass < 2; pass++)
+   {
+      bool threaded       = pass == 1;
+      import_producer_t p;
+      unsigned dropped    = 0;
+      uintptr_t first     = 0;
+      uint64_t value      = 0;
+      unsigned layout     = VK_IMAGE_LAYOUT_PREINITIALIZED;
+      gfx_surface_t *s;
+      unsigned k, tries;
+
+      set_threaded_via_setting(threaded);
+      run_frames(3);
+      expect_wrapper(threaded, "surface import lane");
+      /* The toggle made the driver, and its device, again */
+      if (!(ctx = hwcached_context()))
+         break;
+      CHECK(     video_driver_get_device(&dev)
+            && dev.api == VIDEO_DEVICE_VULKAN
+            && dev.device == (void*)ctx->device,
+            "surface import lane: get_device named another device");
+      if (!import_producer_new(ctx, IW, IH, &p))
+      {
+         import_producer_free(ctx, &p);
+         CHECK(pass == 0, "surface import lane: the producer could not "
+               "be made again");
+         fprintf(stderr, "[skip] surface import lane (no linear NV12)\n");
+         set_threaded_via_setting(false);
+         return;
+      }
+      s = gfx_surface_new_import(VIDEO_SCALE_PACK(IW, IH),
+            TEXTURE_FILTER_LINEAR, import_release_cb, &dropped);
+      CHECK(s != NULL, "surface import lane: no surface");
+      for (k = 0; s && k < FRAMES; k++)
+      {
+         video_frame_import_t f;
+         VkSemaphoreSignalInfoKHR sig;
+         enum gfx_surface_submit_result r = GFX_SURFACE_SUBMIT_FAILED;
+         uint64_t seen = 0;
+
+         import_fill(&p, IW, IH, k, y, uv);
+         value++;
+         sig.sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO_KHR;
+         sig.pNext     = NULL;
+         sig.semaphore = p.wait;
+         sig.value     = value;
+         p.signal(ctx->device, &sig);
+         memset(&f, 0, sizeof(f));
+         memcpy(&f.image, &p.image, sizeof(p.image));
+         memcpy(&f.wait, &p.wait, sizeof(p.wait));
+         memcpy(&f.done, &p.done, sizeof(p.done));
+         f.wait_value = value;
+         f.done_value = value;
+         f.pixfmt     = IMAGE_PIXFMT_NV12;
+         f.dims       = VIDEO_SCALE_PACK(IW, IH);
+         f.layout     = layout;
+         f.yuv        = IMAGE_YUV_FLAG_BT709;
+         for (tries = 0; tries < 16; tries++)
+         {
+            r = gfx_surface_submit_import(s, &f);
+            if (r != GFX_SURFACE_SUBMIT_BUSY && r != GFX_SURFACE_SUBMIT_DROPPED)
+               break;
+            run_frames(1);
+         }
+         CHECK(r == GFX_SURFACE_SUBMIT_DONE || r == GFX_SURFACE_SUBMIT_QUEUED,
+               "surface import lane: %s frame %u returned %d",
+               threaded ? "threaded" : "direct", k, r);
+         CHECK(threaded == (r == GFX_SURFACE_SUBMIT_QUEUED),
+               "surface import lane: %s frame %u came back %d",
+               threaded ? "threaded" : "direct", k, r);
+         for (tries = 0; tries < 64 && s->inflight; tries++)
+            run_frames(1);
+         /* The producer waits for its frame, the CPU never does */
+         for (tries = 0; tries < 200; tries++)
+         {
+            p.value(ctx->device, p.done, &seen);
+            if (seen >= value)
+               break;
+            run_frames(1);
+         }
+         CHECK(seen >= value, "surface import lane: %s frame %u never "
+               "released (done at %llu)", threaded ? "threaded" : "direct",
+               k, (unsigned long long)seen);
+         layout = VK_IMAGE_LAYOUT_GENERAL;
+         if (k == 0)
+            first = s->handle;
+         else
+            CHECK(s->handle == first, "surface import lane: frame %u "
+                  "replaced the texture", k);
+      }
+      CHECK(!dropped, "surface import lane: %u frames not taken", dropped);
+      CHECK(s && s->handle, "surface import lane: no texture");
+      if (s && s->handle && !threaded)
+      {
+         unsigned i, bad = IW * IH;
+         image_yuv_420_to_rgb32(want, IW, y, IW, uv, IW, uv + 1, IW, 2,
+               IW, IH, IMAGE_YUV_FLAG_BT709 | IMAGE_YUV_FLAG_RGBA);
+         CHECK(planar_vk_readback(s->handle, IW, IH, got),
+               "surface import lane: readback failed");
+         for (i = 0; i < IW * IH && bad == IW * IH; i++)
+            if (!planar_close(got[i], want[i], 2))
+               bad = i;
+         CHECK(bad == IW * IH, "surface import lane: texel %u is %08x, "
+               "the CPU makes %08x", bad,
+               bad < IW * IH ? (unsigned)got[bad] : 0u,
+               bad < IW * IH ? (unsigned)want[bad] : 0u);
+         checked = true;
+      }
+      gfx_surface_free(s);
+      run_frames(2);
+      import_producer_free(ctx, &p);
+   }
+   set_threaded_via_setting(false);
+   run_frames(2);
+   if (failures == had)
+      fprintf(stderr, "[pass] surface import lane (%s)\n",
+            checked ? "texels match the CPU's" : "not read back");
+#endif
+}
+
 static void lane_hw_ring_sync(void)
 {
    unsigned had = failures;
@@ -8269,6 +8573,7 @@ int main(int argc, char *argv[])
    lane_surface_external();
    lane_surface_lend();
    lane_surface_planar();
+   lane_surface_import();
 #if defined(HAVE_OPENGL) && defined(HAVE_GL_TEXTURE_LEND)
    if (real_driver() && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl"))
       lane_gl2_linear();
