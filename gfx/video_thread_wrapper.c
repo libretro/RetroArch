@@ -357,7 +357,8 @@ static void video_thread_mem_provision(thread_video_t *thr)
       if (thr->frame.mem[i].ptr)
          continue;
       if (!(p = poke->frame_mem_alloc(thr->driver_data,
-                  thr->frame.buffer_size, &id, &cached)))
+                  thr->frame.buffer_size, &id, &cached,
+                  &thr->frame.pitch_align)))
          break;
       thr->frame.mem[i].ptr    = (uint8_t*)p;
       thr->frame.mem[i].size   = thr->frame.buffer_size;
@@ -3626,6 +3627,7 @@ static bool video_thread_frame(void *data, const void *frame_,
       const uint8_t *src   = (const uint8_t*)frame_;
       uint8_t       *dst;
       unsigned copy_stride;
+      unsigned row_bytes;
       unsigned rows;
 
       /* A slot buffer a frame in flight still reads is swapped for a
@@ -3660,6 +3662,19 @@ static bool video_thread_frame(void *data, const void *frame_,
          height            = rows;
       }
 
+      /* Into the driver's frame memory, rows at the pitch it reads in
+       * place (a copy pads them for free), where the slot has room */
+      row_bytes            = copy_stride;
+      if (     src && !zero_copy && !filter_bpp && hw_slot < 0
+            && thr->frame.pitch_align > 1
+            && thr->frame.mem[thr->frame.slot[slot].mem].id)
+      {
+         unsigned a      = thr->frame.pitch_align;
+         unsigned padded = (copy_stride + a - 1) / a * a;
+         if (padded && (size_t)height <= thr->frame.buffer_size / padded)
+            copy_stride  = padded;
+      }
+
       if (zero_copy)
       {
          /* Already in place, at lent_off into the slot and with the
@@ -3688,7 +3703,7 @@ static bool video_thread_frame(void *data, const void *frame_,
          {
             unsigned i;
             for (i = 0; i < height; i++, src += pitch, dst += copy_stride)
-               memcpy(dst, src, copy_stride);
+               memcpy(dst, src, row_bytes);
          }
          if (timed)
             c_copy = (uint64_t)cpu_features_get_perf_counter() - c0;

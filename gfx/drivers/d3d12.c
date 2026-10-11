@@ -515,6 +515,19 @@ typedef struct
       unsigned                            last;
    } sw_fb;
 
+   /* The threaded wrapper's frame buffers (frame_mem_alloc): mapped
+    * WRITE_BACK buffers, as the lent ones are, that a frame is copied
+    * out of on the GPU. fence is the value behind the last frame that
+    * copied out of one. Frame-recording thread only. */
+#define D3D12_FRAME_MEM_MAX 12
+   struct
+   {
+      D3D12Resource                       buffer;
+      void                               *mapped;
+      UINT64                              size;
+      UINT64                              fence;
+   } frame_mem[D3D12_FRAME_MEM_MAX];
+
 #ifdef HAVE_DXGI_HDR
    struct
    {
@@ -991,6 +1004,8 @@ static void d3d12_fence_wait(d3d12_video_t *d3d12, UINT64 value)
             " the device is most likely lost.\n",
             (unsigned)D3D12_FENCE_WAIT_MS);
 }
+
+static void d3d12_frame_mem_free(void *data, uintptr_t id);
 
 static void d3d12_queue_drain(d3d12_video_t *d3d12)
 {
@@ -4773,6 +4788,8 @@ static void d3d12_gfx_free(void* data)
    /* Through the retired list, which goes next */
    d3d12_free_overlays(d3d12);
 #endif
+   for (i = 0; i < D3D12_FRAME_MEM_MAX; i++)
+      d3d12_frame_mem_free(d3d12, (uintptr_t)i + 1);
    d3d12_retired_flush(d3d12);
    free(d3d12->retired);
    d3d12->retired     = NULL;
@@ -6671,6 +6688,144 @@ static bool d3d12_sw_fb_window(d3d12_video_t *d3d12,
    return true;
 }
 
+/* The threaded wrapper's frame buffers. Each a buffer of its own in
+ * the heap the lent framebuffers use, mapped for good; a frame pushed
+ * from one is copied out on the GPU (d3d12_frame_mem_window). Rows
+ * are read in place at a multiple of the copy pitch alignment, which
+ * the wrapper pads a frame it copies in to. */
+static void *d3d12_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
+      bool *cached, unsigned *pitch_align)
+{
+   unsigned i;
+   D3D12_HEAP_PROPERTIES heap_props;
+   D3D12_RESOURCE_DESC   buf_desc;
+   D3D12_RANGE           read_range;
+   d3d12_video_t        *d3d12 = (d3d12_video_t*)data;
+
+   if (!d3d12 || !d3d12->device || !size)
+      return NULL;
+   for (i = 0; i < D3D12_FRAME_MEM_MAX; i++)
+      if (!d3d12->frame_mem[i].buffer)
+         break;
+   if (i == D3D12_FRAME_MEM_MAX)
+      return NULL;
+
+   memset(&heap_props, 0, sizeof(heap_props));
+   memset(&buf_desc, 0, sizeof(buf_desc));
+   heap_props.Type                 = D3D12_HEAP_TYPE_CUSTOM;
+   heap_props.CPUPageProperty      = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK;
+   heap_props.MemoryPoolPreference = D3D12_MEMORY_POOL_L0;
+   heap_props.CreationNodeMask     = 1;
+   heap_props.VisibleNodeMask      = 1;
+   buf_desc.Dimension              = D3D12_RESOURCE_DIMENSION_BUFFER;
+   buf_desc.Alignment              = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
+   buf_desc.Width                  = size;
+   buf_desc.Height                 = 1;
+   buf_desc.DepthOrArraySize       = 1;
+   buf_desc.MipLevels              = 1;
+   buf_desc.Format                 = DXGI_FORMAT_UNKNOWN;
+   buf_desc.SampleDesc.Count       = 1;
+   buf_desc.Layout                 = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
+   read_range.Begin                = 0;
+   read_range.End                  = (SIZE_T)size;
+   if (     FAILED(d3d12->device->lpVtbl->CreateCommittedResource(
+               d3d12->device, &heap_props, D3D12_HEAP_FLAG_NONE,
+               &buf_desc, D3D12_RESOURCE_STATE_GENERIC_READ, NULL,
+               uuidof(ID3D12Resource), (void**)&d3d12->frame_mem[i].buffer))
+         || !d3d12->frame_mem[i].buffer)
+   {
+      d3d12->frame_mem[i].buffer = NULL;
+      return NULL;
+   }
+   if (     FAILED(d3d12->frame_mem[i].buffer->lpVtbl->Map(
+               d3d12->frame_mem[i].buffer, 0, &read_range,
+               &d3d12->frame_mem[i].mapped))
+         || !d3d12->frame_mem[i].mapped)
+   {
+      Release(d3d12->frame_mem[i].buffer);
+      d3d12->frame_mem[i].buffer = NULL;
+      d3d12->frame_mem[i].mapped = NULL;
+      return NULL;
+   }
+   d3d12->frame_mem[i].size  = size;
+   d3d12->frame_mem[i].fence = 0;
+   *id                       = (uintptr_t)i + 1;
+   *cached                   = true;
+   *pitch_align              = D3D12_TEXTURE_DATA_PITCH_ALIGNMENT;
+   return d3d12->frame_mem[i].mapped;
+}
+
+/* Never waits: the frame that last copied out of @id has signalled */
+static bool d3d12_frame_mem_ready(void *data, uintptr_t id)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12 || !id || id > D3D12_FRAME_MEM_MAX || !d3d12->queue.fence)
+      return true;
+   return d3d12->queue.fence->lpVtbl->GetCompletedValue(d3d12->queue.fence)
+      >= d3d12->frame_mem[id - 1].fence;
+}
+
+/* Behind the fence of the frame that last copied out of it */
+static void d3d12_frame_mem_free(void *data, uintptr_t id)
+{
+   d3d12_video_t *d3d12 = (d3d12_video_t*)data;
+   if (!d3d12 || !id || id > D3D12_FRAME_MEM_MAX
+         || !d3d12->frame_mem[id - 1].buffer)
+      return;
+   d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->frame_mem[id - 1].buffer,
+         d3d12->frame_mem[id - 1].fence);
+   memset(&d3d12->frame_mem[id - 1], 0, sizeof(d3d12->frame_mem[0]));
+}
+
+/* Where a pushed frame lies in the wrapper's frame buffers: true, with
+ * the buffer in *slot, its footprint and the box to copy, when @frame
+ * at @pitch is inside one, on a texel and at a pitch the copy takes */
+static bool d3d12_frame_mem_window(d3d12_video_t *d3d12,
+      const void *frame, unsigned width, unsigned height,
+      unsigned pitch, unsigned *slot,
+      D3D12_PLACED_SUBRESOURCE_FOOTPRINT *layout, D3D12_BOX *box)
+{
+   unsigned i;
+   uintptr_t p   = (uintptr_t)frame;
+   unsigned bpp  = (d3d12->format == DXGI_FORMAT_B8G8R8X8_UNORM) ? 4 : 2;
+   UINT64 rows;
+   size_t off;
+
+   if (!p || !pitch || pitch % D3D12_TEXTURE_DATA_PITCH_ALIGNMENT)
+      return false;
+   for (i = 0; i < D3D12_FRAME_MEM_MAX; i++)
+   {
+      uintptr_t base = (uintptr_t)d3d12->frame_mem[i].mapped;
+      if (base && p >= base && p - base < d3d12->frame_mem[i].size)
+         break;
+   }
+   if (i == D3D12_FRAME_MEM_MAX)
+      return false;
+   off  = (size_t)(p - (uintptr_t)d3d12->frame_mem[i].mapped);
+   rows = d3d12->frame_mem[i].size / pitch;
+   if (rows > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION)
+      rows = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+   if (     (off % pitch) % bpp
+         || pitch / bpp > D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION)
+      return false;
+   box->left   = (UINT)((off % pitch) / bpp);
+   box->top    = (UINT)(off / pitch);
+   box->front  = 0;
+   box->right  = box->left + width;
+   box->bottom = box->top  + height;
+   box->back   = 1;
+   if (box->right > pitch / bpp || box->bottom > rows)
+      return false;
+   layout->Offset             = 0;
+   layout->Footprint.Format   = d3d12->format;
+   layout->Footprint.Width    = pitch / bpp;
+   layout->Footprint.Height   = (UINT)rows;
+   layout->Footprint.Depth    = 1;
+   layout->Footprint.RowPitch = pitch;
+   *slot                      = i;
+   return true;
+}
+
 static bool d3d12_gfx_frame(
       void*               data,
       const void*         frame,
@@ -7207,7 +7362,18 @@ static bool d3d12_gfx_frame(
           * a dupe, and a core that crops overscan by offset pushes a
           * pointer partway into the loan with the window's size
           * (beetle-psx does) - the copy takes that window. */
-         if (d3d12_sw_fb_window(d3d12, frame, width, height, pitch,
+         D3D12_PLACED_SUBRESOURCE_FOOTPRINT layout;
+         if (d3d12_frame_mem_window(d3d12, frame, width, height, pitch,
+                  &slot, &layout, &window))
+         {
+            /* In one of the threaded wrapper's frame buffers: copied
+             * out where the push or the core put it */
+            GFX_INSTR_INC(GFX_INSTR_FRAME_MEM);
+            d3d12_upload_texture_from(cmd, &d3d12->frame.texture[0],
+                  d3d12, d3d12->frame_mem[slot].buffer, &layout, &window);
+            d3d12->frame_mem[slot].fence = d3d12->queue.fenceValue + 1;
+         }
+         else if (d3d12_sw_fb_window(d3d12, frame, width, height, pitch,
                   &slot, &window))
          {
             GFX_INSTR_INC(GFX_INSTR_FRAME_LENT_WINDOW);
@@ -10291,7 +10457,10 @@ static const video_poke_interface_t d3d12_poke_interface = {
    NULL, /* set_view_count */
    NULL, /* hw_context_destroying */
    NULL, /* get_headset_refresh */
-   d3d12_set_frame_format
+   d3d12_set_frame_format,
+   d3d12_frame_mem_alloc,
+   d3d12_frame_mem_ready,
+   d3d12_frame_mem_free
 };
 
 static void d3d12_gfx_get_poke_interface(void* data, const video_poke_interface_t** iface)

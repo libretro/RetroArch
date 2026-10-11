@@ -4202,7 +4202,9 @@ static void lane_lent_window_paused(void)
 /*   buffer, the loan, a window cropped out of the loan - must reach    */
 /*   the screen exactly as it does with threaded video off, and with    */
 /*   the tree built GFX_INSTRUMENT=1 by that path: every frame drawn    */
-/*   from frame memory, none copied by the CPU on the video thread.     */
+/*   from frame memory, none copied by the CPU on the video thread -    */
+/*   but a loan at a pitch the driver reads only copied (D3D12 takes    */
+/*   rows in place at 256 bytes; a copied frame is padded to that).     */
 /* ------------------------------------------------------------------ */
 
 static uint8_t *frame_mem_lane_read(unsigned *dims)
@@ -4248,6 +4250,13 @@ static void lane_frame_mem_mode(int mode, const uint8_t *ref,
    unsigned got_dims = 0;
    uint8_t *got;
    size_t differ = 0, len, i;
+   thread_video_t *thr = (thread_video_t*)video_state_get_ptr()->data;
+   /* A loan is lent at the core's own pitch, which a driver that reads
+    * frame memory only at a wider multiple (D3D12's 256 bytes) copies
+    * out on the CPU instead; a copied frame is padded to it */
+   unsigned lent_pitch = 320 * (thr->info.rgb32 ? 4 : 2);
+   bool in_place       = !mode || !thr->frame.pitch_align
+      || !(lent_pitch % thr->frame.pitch_align);
 
    use_fb(mode);
    run_frames(10);
@@ -4263,11 +4272,14 @@ static void lane_frame_mem_mode(int mode, const uint8_t *ref,
       /* Every third frame is a dupe; the rest reach the driver unless
        * the push replaced them first. A frame buffer still in flight
        * is swapped for a host one, which is copied, but not often. */
-      CHECK(fm >= 20, "%s: only %d of 60 frames drawn from frame memory",
-            name, fm);
-      CHECK(copies <= fm / 4,
-            "%s: %d frames copied by the CPU, %d from frame memory",
-            name, copies, fm);
+      if (in_place)
+      {
+         CHECK(fm >= 20, "%s: only %d of 60 frames drawn from frame memory",
+               name, fm);
+         CHECK(copies <= fm / 4,
+               "%s: %d frames copied by the CPU, %d from frame memory",
+               name, copies, fm);
+      }
       fprintf(stderr, "[baseline] %s: %d frames from frame memory, %d host copies\n",
             name, fm, copies);
    }
@@ -8249,7 +8261,8 @@ int main(int argc, char *argv[])
    if (real_driver())
       lane_lent_window_paused();
    if (     real_driver()
-         && !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan"))
+         && (  !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "d3d12")))
       lane_frame_mem();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();

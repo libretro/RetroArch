@@ -1143,15 +1143,17 @@ typedef struct video_poke_interface
     * way up. All three are called on the driver's own thread.
     *
     * frame_mem_alloc maps @size bytes the CPU writes and the GPU reads,
-    * at least 64-byte aligned, names them in @id, and sets @cached when
-    * the CPU reads them back at cached speed; NULL when it has none.
+    * at least 64-byte aligned, names them in @id, sets @cached when
+    * the CPU reads them back at cached speed, and @pitch_align to the
+    * row pitch multiple frame() reads them at in place; NULL when it
+    * has none.
     * frame() given a frame inside them uploads from there.
     * frame_mem_ready answers whether @id may be written: false while a
     * frame submitted from it may still be read. Never waits.
     * frame_mem_free lets @id go once nothing in flight reads it.
     * Optional, all three or none. */
    void *(*frame_mem_alloc)(void *data, size_t size, uintptr_t *id,
-         bool *cached);
+         bool *cached, unsigned *pitch_align);
    bool  (*frame_mem_ready)(void *data, uintptr_t id);
    void  (*frame_mem_free)(void *data, uintptr_t id);
 } video_poke_interface_t;

@@ -2848,7 +2848,7 @@ static bool vulkan_frame_window(const struct vk_texture *tex,
  * (vulkan_frame_mem_upload), so the frame is never copied by the CPU on
  * this thread. */
 static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
-      bool *cached)
+      bool *cached, unsigned *pitch_align)
 {
    unsigned i;
    VkBufferCreateInfo info;
@@ -2919,6 +2919,8 @@ static void *vulkan_frame_mem_alloc(void *data, size_t size, uintptr_t *id,
    *id                         = (uintptr_t)i + 1;
    *cached                     = (props & VK_MEMORY_PROPERTY_HOST_CACHED_BIT)
       ? true : false;
+   /* A word, as the RGB565 conversion reads (vulkan_frame_mem_find) */
+   *pitch_align                = 4;
    return tex->mapped;
 }
 

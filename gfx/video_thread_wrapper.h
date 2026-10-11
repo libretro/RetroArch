@@ -744,6 +744,10 @@ typedef struct thread_video
       /* The driver's poke table, for its frame memory: video thread */
       const struct video_poke_interface *mem_poke;
       unsigned mem_busy; /* video thread: the entries it set busy */
+      /* The row pitch multiple the driver reads its frame memory at in
+       * place, which a copy into it is padded to; set with the main
+       * thread waiting on the video thread */
+      unsigned pitch_align;
       /* Bytes allocated for each slot buffer at thread_init, from the
        * core's declared maximum geometry. A core that hands over a
        * larger frame than it declared is clamped to this. */
