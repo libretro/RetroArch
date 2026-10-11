@@ -11510,7 +11510,8 @@ typedef struct
    bool    is_menu;
 } input_hotkey_block_t;
 
-/* A hotkey held only by the enabler is not a separate menu chord. */
+/* Called for a hotkey already known to be down. Only independent
+ * sources need another read; shared inputs cannot cancel the chord. */
 static bool input_hotkey_uses_enable(input_hotkey_block_t *b,
       unsigned i, bool keyboard_mapping_blocked)
 {
@@ -11523,45 +11524,35 @@ static bool input_hotkey_uses_enable(input_hotkey_block_t *b,
    uint32_t en_axis = en->joyaxis != AXIS_NONE ? en->joyaxis : auto_binds[RARCH_ENABLE_HOTKEY].joyaxis;
    unsigned key = RETRO_KEYBIND_KEY(bind);
    unsigned mbutton = RETRO_KEYBIND_MBUTTON(bind);
-   bool shared = false;
+   bool shared_pad = b->joypad && joykey != NO_BTN && joykey == en_key;
+   bool shared_axis = b->joypad && joyaxis != AXIS_NONE && joyaxis == en_axis;
+   bool shared_key = !keyboard_mapping_blocked && key != RETROK_UNKNOWN
+      && key == RETRO_KEYBIND_KEY(en);
+   bool has_mouse = input_mbutton_bit(mbutton) != 0;
+   bool shared_mouse = has_mouse && mbutton == RETRO_KEYBIND_MBUTTON(en);
 
-   if (!RETRO_KEYBIND_VALID(en))
+   if (!RETRO_KEYBIND_VALID(en)
+         || !(shared_pad || shared_axis || shared_key || shared_mouse))
       return false;
 
-   if (b->joypad && joykey != NO_BTN
+   if (b->joypad && joykey != NO_BTN && !shared_pad
          && b->joypad->button(b->joypad_info->joy_idx, joykey))
-   {
-      if (joykey != en_key)
-         return false;
-      shared = true;
-   }
-   if (b->joypad && joyaxis != AXIS_NONE
+      return false;
+   if (b->joypad && joyaxis != AXIS_NONE && !shared_axis
          && (float)abs(b->joypad->axis(b->joypad_info->joy_idx, joyaxis))
                * INV_0x8000 > b->joypad_info->axis_threshold)
-   {
-      if (joyaxis != en_axis)
-         return false;
-      shared = true;
-   }
-   if (!keyboard_mapping_blocked && key != RETROK_UNKNOWN
+      return false;
+   if (!keyboard_mapping_blocked && key != RETROK_UNKNOWN && !shared_key
          && input_state_wrap(b->input_st->current_driver,
                b->input_st->current_data, b->joypad, b->joypad_info,
                b->binds, false, b->port, RETRO_DEVICE_KEYBOARD, 0, key))
-   {
-      if (key != RETRO_KEYBIND_KEY(en))
-         return false;
-      shared = true;
-   }
-   if (input_mbutton_bit(mbutton)
+      return false;
+   if (has_mouse && !shared_mouse
          && input_state_wrap(b->input_st->current_driver,
                b->input_st->current_data, b->joypad, b->joypad_info,
                b->binds, false, b->port, RETRO_DEVICE_MOUSE, 0, mbutton))
-   {
-      if (mbutton != RETRO_KEYBIND_MBUTTON(en))
-         return false;
-      shared = true;
-   }
-   return shared;
+      return false;
+   return true;
 }
 
 /* Whether hotkey @i is blocked, for one that is pressed.
@@ -13275,7 +13266,8 @@ static void input_keys_pressed(
             }
             else if (i != RARCH_ENABLE_HOTKEY)
             {
-               if (!(input_st->flags & INP_FLAG_MENU_PRESS_PENDING)
+               if ((input_st->flags & (INP_FLAG_MENU_PRESS_PENDING
+                        | INP_FLAG_MENU_PRESS_CANCEL)) != INP_FLAG_MENU_PRESS_PENDING
                      || other_pressed
                      || !input_hotkey_uses_enable(&blk, i, kb_blocked))
                   input_st->flags |= INP_FLAG_MENU_PRESS_CANCEL;

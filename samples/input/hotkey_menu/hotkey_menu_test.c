@@ -15,6 +15,7 @@ static uint32_t buttons;
 static uint32_t axis_down;
 static unsigned key_down, mouse_down;
 static unsigned expected_pad = 3;
+static unsigned button_reads, axis_reads, key_reads, mouse_reads;
 
 #define CHECK(c) do { if (!(c)) { \
    fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #c); exit(1); } } while (0)
@@ -22,21 +23,29 @@ static unsigned expected_pad = 3;
 static int32_t button(unsigned port, uint16_t id)
 {
    CHECK(port == expected_pad);
+   button_reads++;
    return id < 32 && (buttons & (1u << id)) != 0;
 }
 
 static int16_t axis(unsigned port, uint32_t id)
 {
    CHECK(port == expected_pad);
+   axis_reads++;
    return id == axis_down ? 32767 : 0;
 }
 
 static int32_t source_down(unsigned device, unsigned id)
 {
    if (device == RETRO_DEVICE_KEYBOARD)
+   {
+      key_reads++;
       return id == key_down;
+   }
    if (device == RETRO_DEVICE_MOUSE)
+   {
+      mouse_reads++;
       return id == mouse_down;
+   }
    return 0;
 }
 
@@ -64,6 +73,7 @@ static void reset(void)
    axis_down = AXIS_NONE;
    key_down = RETROK_UNKNOWN;
    mouse_down = NO_BTN;
+   button_reads = axis_reads = key_reads = mouse_reads = 0;
    pad.button = button;
    pad.axis = axis;
    info.auto_binds = auto_binds;
@@ -109,6 +119,7 @@ int main(void)
    en->joykey = ff->joykey = 23;
    buttons = 1u << 23;
    chord(true, false, false);
+   CHECK(button_reads == 0 && axis_reads == 0 && key_reads == 0 && mouse_reads == 0);
 
    reset();
    auto_binds[RARCH_ENABLE_HOTKEY].joykey = ff->joykey = 23;
@@ -131,6 +142,7 @@ int main(void)
    ff->joykey = 20;
    buttons = (1u << 23) | (1u << 20);
    chord(false, false, false);
+   CHECK(button_reads == 0 && axis_reads == 0 && key_reads == 0 && mouse_reads == 0);
 
    reset();
    en->joykey = ff->joykey = 23;
@@ -138,6 +150,7 @@ int main(void)
    buttons = 1u << 23;
    key_down = RETROK_f;
    chord(false, false, false);
+   CHECK(button_reads == 0 && axis_reads == 0 && key_reads == 1 && mouse_reads == 0);
 
    reset();
    en->joykey = ff->joykey = 23;
@@ -156,6 +169,7 @@ int main(void)
    en->joyaxis = ff->joyaxis = AXIS_POS(1);
    axis_down = AXIS_POS(1);
    chord(true, false, false);
+   CHECK(axis_reads == 0);
 
    reset();
    auto_binds[RARCH_ENABLE_HOTKEY].joyaxis = AXIS_NEG(1);
