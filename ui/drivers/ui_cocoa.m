@@ -85,11 +85,9 @@
 - (void)setActivationPolicy:(NSInteger)policy;
 @end
 #endif
-#if !defined(MAC_OS_X_VERSION_10_7) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_7
 @interface NSObject (RetroArchSelectors107)
 - (void)toggleFullScreen:(id)sender;
 @end
-#endif
 #if !defined(MAC_OS_X_VERSION_10_9) || MAC_OS_X_VERSION_MAX_ALLOWED < MAC_OS_X_VERSION_10_9
 @interface NSObject (RetroArchSelectors109)
 - (id)beginActivityWithOptions:(unsigned long long)options reason:(NSString *)reason;
@@ -719,14 +717,9 @@ static ui_application_t ui_application_cocoa = {
 @end
 
 
-#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
-@interface RetroArch_OSX () <NSWindowRestoration>
-@end
-#endif
-
 @implementation RetroArch_OSX
 
-#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+#if defined(__BLOCKS__)
 + (void)restoreWindowWithIdentifier:(NSString *)identifier
                              state:(NSCoder *)state
                  completionHandler:(void (^)(NSWindow *, NSError *))completionHandler
@@ -1762,11 +1755,14 @@ static NSWindow *cocoa_create_main_window(void)
          && NSAppKitVersionNumber >= 1138.0)
       [window setCollectionBehavior:
             NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
-#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
-   if ([window respondsToSelector:@selector(setRestorationClass:)])
+#if defined(__BLOCKS__)
+   SEL set_identifier = sel_registerName("setIdentifier:");
+   SEL set_restoration = sel_registerName("setRestorationClass:");
+   if (     [window respondsToSelector:set_identifier]
+         && [window respondsToSelector:set_restoration])
    {
-      [window setIdentifier:@"RetroArchMainWindow"];
-      [window setRestorationClass:[RetroArch_OSX class]];
+      apple_rt_send_id(window, set_identifier, @"RetroArchMainWindow");
+      apple_rt_send_id(window, set_restoration, [RetroArch_OSX class]);
    }
 #endif
    return window;
