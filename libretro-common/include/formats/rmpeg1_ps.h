@@ -84,6 +84,14 @@ size_t rmpeg1_ps_space(const rmpeg1_ps_t *ps);
  * when the buffer is full; drain with rmpeg1_ps_next() and retry the rest. */
 size_t rmpeg1_ps_write(rmpeg1_ps_t *ps, const uint8_t *data, size_t len);
 
+/* Hand over input to be parsed where it lies, rather than copied in: the
+ * packets that lie whole within it point into it, and a unit it ends part
+ * way into is copied, to be completed by what comes next. @data must stay
+ * valid and unchanged until rmpeg1_ps_next() returns 0. Returns @len, or 0
+ * while data borrowed before is still being parsed; rmpeg1_ps_write()
+ * likewise takes nothing until it has been. */
+size_t rmpeg1_ps_borrow(rmpeg1_ps_t *ps, const uint8_t *data, size_t len);
+
 /* Pull one packet. Returns 1 and fills *out on success, 0 when more input is
  * needed. Padding packets are consumed silently and never returned. */
 int rmpeg1_ps_next(rmpeg1_ps_t *ps, rmpeg1_ps_packet_t *out);

@@ -49,8 +49,8 @@
  *    while (rpsmf_next(d, &pkt))
  *       ...
  *
- * Packet data points into the demuxer and stays valid until the next
- * rpsmf_write() or rpsmf_next(). C89. */
+ * Packet data points into the demuxer, or into borrowed input, and stays
+ * valid until the next rpsmf_next(). C89. */
 
 #include <stddef.h>
 #include <stdint.h>
@@ -109,9 +109,15 @@ rpsmf_t *rpsmf_init(void);
 void rpsmf_free(rpsmf_t *d);
 /* After a seek: everything buffered and every partial frame goes */
 void rpsmf_reset(rpsmf_t *d);
-/* Program stream bytes, from the header's data_offset on. Returns what
- * was taken: less than @len only when full, drained by rpsmf_next(). */
+/* Program stream bytes, from the header's data_offset on, copied in.
+ * Returns what was taken: less than @len only when full, or nothing while
+ * the last packet is not yet drained by rpsmf_next(). */
 size_t rpsmf_write(rpsmf_t *d, const uint8_t *data, size_t len);
+/* The same parsed where it lies (rmpeg1_ps_borrow): video packets and
+ * the audio frames whole within one packet point into @data, which stays
+ * valid and unchanged until rpsmf_next() returns 0. No copy but the
+ * frames that run across packets, and what @data ends part way into. */
+size_t rpsmf_borrow(rpsmf_t *d, const uint8_t *data, size_t len);
 /* One packet: 1 and *out filled, 0 when more input is needed */
 int rpsmf_next(rpsmf_t *d, rpsmf_packet_t *out);
 /* Frames dropped because they did not chain */

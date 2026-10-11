@@ -149,11 +149,13 @@ static size_t build(uint8_t *file, unsigned skip, bool broken)
 
 typedef struct
 {
-   unsigned video, frames, other;
+   unsigned video, frames, other, borrowed;
    uint64_t video_pts, video_dts;
    uint64_t pts[8];
    bool     ok[8];
 } seen_t;
+
+static const uint8_t *in_lo, *in_hi;
 
 static void drain(rpsmf_t *d, seen_t *s)
 {
@@ -177,6 +179,8 @@ static void drain(rpsmf_t *d, seen_t *s)
          s->ok[s->frames]  = p.size == 376 && p.params[0] == 0x28
             && p.params[1] == 0x2E && !memcmp(p.data, atrac[f] + 8, 376);
          s->pts[s->frames] = p.pts;
+         if (p.data >= in_lo && p.data < in_hi)
+            s->borrowed++;
          s->frames++;
       }
       else
@@ -184,12 +188,15 @@ static void drain(rpsmf_t *d, seen_t *s)
    }
 }
 
+/* @borrow: the input parsed where it lies, rather than written in */
 static void run(const uint8_t *file, size_t len, size_t chunk,
-      seen_t *s)
+      bool borrow, seen_t *s)
 {
    rpsmf_info_t info;
    rpsmf_t *d = rpsmf_init();
    size_t off;
+   in_lo = file;
+   in_hi = file + len;
    memset(s, 0, sizeof(*s));
    CHECK(rpsmf_parse_header(file, len, &info), "header");
    CHECK(info.version == 15 && info.data_offset == 0x800
@@ -198,7 +205,8 @@ static void run(const uint8_t *file, size_t len, size_t chunk,
    for (off = info.data_offset; off < len; )
    {
       size_t n = len - off < chunk ? len - off : chunk;
-      size_t w = rpsmf_write(d, file + off, n);
+      size_t w = borrow ? rpsmf_borrow(d, file + off, n)
+                        : rpsmf_write(d, file + off, n);
       off += w;
       drain(d, s);
    }
@@ -211,15 +219,16 @@ static uint8_t file[0x800 + (1 << 16)];
 int main(void)
 {
    static const size_t chunks[] = { (size_t)-1, 1, 7, 2048 };
-   unsigned skip, c;
+   unsigned skip, c, b;
    make_frames();
 
+   for (b = 0; b < 2; b++)
    for (skip = 3; skip <= 5; skip += 2)
       for (c = 0; c < sizeof(chunks) / sizeof(chunks[0]); c++)
       {
          seen_t s;
          size_t len = build(file, skip, false);
-         run(file, len, chunks[c], &s);
+         run(file, len, chunks[c], b != 0, &s);
          CHECK(s.video == 1 && s.video_pts == 9000 && s.video_dts == 6000,
                "video PTS and DTS");
          CHECK(s.frames == 4, "four ATRAC3plus frames");
@@ -228,9 +237,13 @@ int main(void)
          CHECK(s.pts[0] == 9100 && s.pts[1] == RPSMF_NO_PTS
                && s.pts[2] == 9500 && s.pts[3] == 9900, "frame PTS");
          CHECK(!s.other, "nothing else");
+         /* fed in pieces as large as a packet, at least the first frame
+          * lies whole where it was handed over */
+         if (b && chunks[c] >= 2048)
+            CHECK(s.borrowed >= 1, "frames whole in a packet not copied");
 
          len = build(file, skip, true);
-         run(file, len, chunks[c], &s);
+         run(file, len, chunks[c], b != 0, &s);
          /* the broken one goes; the stream comes back on the next */
          CHECK(s.frames == 3 && s.ok[0] && s.ok[1] && s.ok[2]
                && s.pts[2] == 9900, "recovers after a broken frame");

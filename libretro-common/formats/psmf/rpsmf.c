@@ -44,9 +44,9 @@ typedef struct
 struct rpsmf
 {
    rmpeg1_ps_t *ps;
-   /* The audio packet being cut into frames: its own copy, since a
-    * write may move the demuxer's buffer between two frames of it */
-   uint8_t      pkt[0x10000];
+   /* The audio packet being cut into frames, where the demuxer has it:
+    * nothing is written or borrowed until it is used up */
+   const uint8_t *pkt;
    size_t       pkt_len;
    size_t       pkt_pos;
    uint64_t     pkt_pts; /* for the first frame to start in it */
@@ -132,7 +132,14 @@ void rpsmf_reset(rpsmf_t *d)
 
 size_t rpsmf_write(rpsmf_t *d, const uint8_t *data, size_t len)
 {
-   return d ? rmpeg1_ps_write(d->ps, data, len) : 0;
+   return (d && d->pkt_pos >= d->pkt_len)
+      ? rmpeg1_ps_write(d->ps, data, len) : 0;
+}
+
+size_t rpsmf_borrow(rpsmf_t *d, const uint8_t *data, size_t len)
+{
+   return (d && d->pkt_pos >= d->pkt_len)
+      ? rmpeg1_ps_borrow(d->ps, data, len) : 0;
 }
 
 uint32_t rpsmf_resyncs(const rpsmf_t *d)
@@ -162,6 +169,27 @@ static int rpsmf_cut(rpsmf_t *d, rpsmf_packet_t *out)
    while (d->pkt_pos < d->pkt_len)
    {
       size_t take;
+      /* A frame whole within the packet goes out from where it lies */
+      if (!s->have && d->pkt_len - d->pkt_pos >= 8
+            && rpsmf_frame_header(d->pkt + d->pkt_pos))
+      {
+         const uint8_t *f = d->pkt + d->pkt_pos;
+         size_t n         = RPSMF_ATRAC3P_FRAME_BYTES(f[2], f[3]);
+         if (8 + n <= d->pkt_len - d->pkt_pos)
+         {
+            out->data      = f + 8;
+            out->size      = n;
+            out->pts       = d->pkt_pts;
+            out->dts       = RPSMF_NO_PTS;
+            out->kind      = RPSMF_ATRAC3P;
+            out->stream    = (uint8_t)d->pkt_sub;
+            out->params[0] = f[2];
+            out->params[1] = f[3];
+            d->pkt_pts     = RPSMF_NO_PTS;
+            d->pkt_pos    += 8 + n;
+            return 1;
+         }
+      }
       if (!s->need)
       {
          /* A frame starts here: the packet's timestamp is the first
@@ -251,7 +279,7 @@ int rpsmf_next(rpsmf_t *d, rpsmf_packet_t *out)
       }
       {
          rpsmf_sub_t *s = &d->sub[pkt.data[0]];
-         memcpy(d->pkt, pkt.data + 1, pkt.size - 1);
+         d->pkt     = pkt.data + 1;
          d->pkt_len = pkt.size - 1;
          d->pkt_pos = 0;
          d->pkt_pts = pkt.pts;
