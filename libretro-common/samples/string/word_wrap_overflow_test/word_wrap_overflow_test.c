@@ -405,8 +405,37 @@ static void test_wide_glyph_scan(void)
       }
    }
 }
+static void test_bounded_utf8_copy(void)
+{
+   const char *src = "abc\xe4\xb8\xad\xf0\x9f\x98\x80\xc3\xa9xyz";
+   static const size_t lengths[] = {0, 0, 1, 2, 3, 3, 3, 6, 6,
+      6, 6, 10, 10, 12, 13, 14, 15, 15};
+   size_t cap;
+   for (cap = 0; cap < sizeof(lengths) / sizeof(lengths[0]); cap++)
+   {
+      unsigned char dst[32];
+      size_t i, returned;
+      memset(dst, 0xcc, sizeof(dst));
+      returned = utf8cpy((char*)dst, cap, src, 1000);
+      if (returned != lengths[cap] || memcmp(dst, src, returned)
+            || (cap && dst[returned] != 0))
+      {
+         printf("[ERROR] UTF-8 copy split a glyph at capacity %zu\n", cap);
+         failures++;
+      }
+      for (i = cap; i < sizeof(dst); i++)
+         if (dst[i] != 0xcc)
+         {
+            printf("[ERROR] UTF-8 copy exceeded capacity %zu\n", cap);
+            failures++;
+            break;
+         }
+   }
+}
+
 int main(void)
 {
+   test_bounded_utf8_copy();
    test_wide_word_tail_scan();
    test_ascii_glyph_scan();
    test_wide_glyph_scan();
