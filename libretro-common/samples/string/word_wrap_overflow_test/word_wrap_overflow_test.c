@@ -342,6 +342,26 @@ static void test_forward_glyph_scan(void)
       }
 }
 
+static void test_wide_word_tail_scan(void)
+{
+   const char *src = "a \xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9 a "
+      "\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9 a "
+      "\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9";
+   char dst[128];
+   size_t returned;
+   glyph_scans = 0;
+   returned = word_wrap_wideglyph(dst, sizeof(dst), src, strlen(src), 4, 200, 0);
+   if (returned != strlen(src) || strcmp(dst,
+            "a\n\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9 a\n"
+            "\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9 a\n"
+            "\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9") != 0
+         || glyph_scans != 15)
+   {
+      printf("[ERROR] wide wrap tail: scans=%zu length=%zu output=%s\n", glyph_scans, returned, dst);
+      failures++;
+   }
+}
+
 static void test_ascii_glyph_scan(void)
 {
    const char *src = "alpha beta gamma delta epsilon zeta eta theta";
@@ -387,6 +407,7 @@ static void test_wide_glyph_scan(void)
 }
 int main(void)
 {
+   test_wide_word_tail_scan();
    test_ascii_glyph_scan();
    test_wide_glyph_scan();
    test_forward_glyph_scan();

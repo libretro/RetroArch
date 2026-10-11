@@ -351,6 +351,8 @@ size_t word_wrap_wideglyph(char *s, size_t len,
    const char *src_end               = src + src_len;
    char *s_start                     = s;
    unsigned lines                    = 1;
+   unsigned space_counter            = 0;
+   bool space_on_line                = false;
    /* 'line_width' means max numbers of characters per line,
     * but this metric is only meaningful when dealing with
     * 'regular' glyphs that have an on-screen pixel width
@@ -414,13 +416,18 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          break;
 
       if (*src == ' ')
-         lastspace          = s; /* Remember the location of the whitespace */
+      {
+         lastspace     = s;
+         space_counter = counter_normalized;
+         space_on_line = true;
+      }
       else if (*src == '\n')
       {
          /* If newlines embedded in the input,
           * reset the index */
          lines++;
          counter_normalized = 0;
+         space_on_line      = false;
 
          /* Early return if remaining src string
           * length is less than line width */
@@ -460,6 +467,7 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          }
          lastwideglyph       = s;
          counter_normalized = (unsigned)wideglyph_width;
+         space_on_line      = false;
          memcpy(s, src, char_len);
          s   += char_len;
          src += char_len;
@@ -471,7 +479,10 @@ size_t word_wrap_wideglyph(char *s, size_t len,
 
       if (counter_normalized >= (unsigned)line_width_normalized)
       {
+         unsigned scanned = counter_normalized;
+         bool carry_space = space_on_line;
          counter_normalized = 0;
+         space_on_line      = false;
 
          if (max_lines != 0 && lines >= max_lines)
             continue;
@@ -503,6 +514,14 @@ size_t word_wrap_wideglyph(char *s, size_t len,
              * with newline character */
             *lastspace = '\n';
             lines++;
+            /* The tail after this space has already been measured. */
+            if (carry_space
+                  && src_end - (src - (s - lastspace - 1)) >= line_width)
+            {
+               counter_normalized = scanned - space_counter;
+               lastspace = NULL;
+               continue;
+            }
             src       -= s - lastspace - 1;
             s          = lastspace + 1;
             lastspace  = NULL;
