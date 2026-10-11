@@ -378,17 +378,9 @@ struct aspect_ratio_elem aspectratio_lut[ASPECT_RATIO_END] = {
 };
 
 #ifdef HAVE_OPENXR
-enum {
-   VR_CTX_NONE = 0,
-   VR_CTX_VK,
-   VR_CTX_GL
-};
-
 static uint32_t video_vr_frame_flags;
-static uint32_t vr_ctx_id;
 static video_vr_content_info_t vr_saved_info;
 static bool video_driver_set_vr_content_info(video_vr_content_info_t *info);
-static int video_driver_vr_ctx(void);
 
 /* The shape a headset renders natively: two full-height eye views
  * side by side on screen 0. Any other map is drawn flat. */
@@ -422,6 +414,10 @@ static bool video_views_is_sbs(const struct retro_video_views *v)
 }
 
 static bool vr_saved_valid;
+/* The space the accepted map asked for; vr_saved_info has what was
+ * granted. */
+static enum retro_vr_reference_space vr_asked_space;
+static video_xr_host_t video_xr_host;
 #endif
 
 static INLINE bool realloc_checked(void **ptr, size_t len)
@@ -2916,6 +2912,10 @@ void video_driver_free_internal(void)
    /* The next driver's headset, if any, is measured afresh. */
    video_st->headset_hz         = 0.0f;
    video_st->headset_interval   = 0;
+#ifdef HAVE_OPENXR
+   /* A context kept for the next driver registers again from its init. */
+   video_driver_set_xr_host(NULL);
+#endif
 
    /* The poke interface is a pointer into the driver's static vtable, so
     * unlike video_st->data it survives free "working" - and
@@ -3094,12 +3094,22 @@ static void video_driver_views_to_headset(struct retro_video_views *views)
 {
    video_vr_content_info_t info;
 
-   if (video_driver_vr_ctx() == VR_CTX_NONE)
+   if (!video_xr_host.set_space)
       return;
    if (!views->num_views || !video_views_is_sbs(views))
    {
       if (vr_saved_valid)
          video_driver_set_vr_content_info(NULL);
+      return;
+   }
+
+   /* Cores send their map every frame: the same one is answered from
+    * the last, without recreating the space or waiting on the video
+    * thread. */
+   if (vr_saved_valid && views->reference_space == vr_asked_space)
+   {
+      views->recommended_view_width  = vr_saved_info.recommended_eye_width;
+      views->recommended_view_height = vr_saved_info.recommended_eye_height;
       return;
    }
 
@@ -3109,6 +3119,8 @@ static void video_driver_views_to_headset(struct retro_video_views *views)
 
    if (!video_driver_set_vr_content_info(&info))
       return;
+
+   vr_asked_space = views->reference_space;
 
    views->recommended_view_width  = info.recommended_eye_width;
    views->recommended_view_height = info.recommended_eye_height;
@@ -3171,19 +3183,22 @@ unsigned video_driver_views_status(void)
 {
    settings_t *settings = config_get_ptr();
    unsigned status      = 0;
+   bool headset         = false;
 #ifdef HAVE_OPENXR
-   video_driver_state_t *video_st = &video_driver_st;
-   if (     video_st->current_video
-         && video_st->current_video->get_video_views_status)
-      status = video_st->current_video->get_video_views_status(
-            video_st->data);
+   unsigned bits        = video_driver_xr_headset();
+   headset              = (bits & VIDEO_XR_HEADSET_PRESENTING) != 0;
+   /* HMD only with both eyes shown on a headset that presents. */
+   if (bits & VIDEO_XR_HEADSET_TRACKING)
+      status |= RETRO_VIDEO_VIEWS_STATUS_HMD
+              | RETRO_VIDEO_VIEWS_STATUS_PRESENTS
+              | RETRO_VIDEO_VIEWS_STATUS_STEREO;
 #endif
    if (!video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS))
       return status;
    status |= RETRO_VIDEO_VIEWS_STATUS_PRESENTS;
    /* A headset shows both eyes whatever the window's mode. */
    if (     settings->uints.video_stereo_mode != VIDEO_STEREO_MODE_2D
-         || video_driver_test_all_flags(GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET))
+         || headset)
       status |= RETRO_VIDEO_VIEWS_STATUS_STEREO;
    return status;
 }
@@ -5456,7 +5471,11 @@ bool video_driver_has_focus(void)
 
 bool video_driver_headset_focused(void)
 {
-   return video_driver_test_all_flags(GFX_CTX_FLAGS_HEADSET_FOCUSED);
+#ifdef HAVE_OPENXR
+   return (video_driver_xr_headset() & VIDEO_XR_HEADSET_FOCUSED) != 0;
+#else
+   return false;
+#endif
 }
 
 /* The window title crosses from the main thread, which builds it, to
@@ -6746,10 +6765,10 @@ unsigned video_driver_window_dims(bool fullscreen)
 #ifdef HAVE_OPENXR
 void video_driver_vr_driver_changed(void)
 {
-   vr_ctx_id = 0;                       /* drop cached GL/VK id */
    if (vr_saved_valid)
    {
       video_vr_content_info_t i = vr_saved_info;
+      i.reference_space = vr_asked_space;
       video_driver_set_vr_content_info(&i);
    }
 }
@@ -9271,21 +9290,19 @@ VIDEO_NOINLINE static void video_driver_scanline_after_frame(video_driver_state_
 }
 
 #ifdef HAVE_OPENXR
-static int video_driver_vr_ctx(void)
+void video_driver_set_xr_host(const video_xr_host_t *host)
 {
-   const char *id = video_driver_st.current_video_context.ident;
+   if (host)
+      video_xr_host = *host;
+   else
+      memset(&video_xr_host, 0, sizeof(video_xr_host));
+}
 
-   if (vr_ctx_id)
-      return vr_ctx_id;
-
-   if (!id)
-      return VR_CTX_NONE;
-   if (string_is_equal(id, "android_vk_openxr"))
-      vr_ctx_id = VR_CTX_VK;
-   else if (string_is_equal(id, "gl_android_openxr"))
-      vr_ctx_id = VR_CTX_GL;
-
-   return vr_ctx_id;
+unsigned video_driver_xr_headset(void)
+{
+   if (!video_xr_host.state)
+      return 0;
+   return video_xr_host.state(video_xr_host.user);
 }
 
 /* The headset context's state belongs to the thread drawing its frames:
@@ -9306,46 +9323,29 @@ static uintptr_t video_driver_vr_ctx_run(uintptr_t (*func)(void*),
    return func(data);
 }
 
-#if defined(ANDROID)
 static uintptr_t video_driver_vr_content_clear_cb(void *data)
 {
+   video_driver_state_t *video_st = video_state_get_ptr();
    (void)data;
-   gl_android_openxr_set_stereo(false);
+   if (     video_st->data && video_st->current_video
+         && video_st->current_video->set_vr_content_info)
+      video_st->current_video->set_vr_content_info(video_st->data, NULL);
    return 0;
 }
-#endif
 
+/* The core is going: its VR content with it. */
 void video_driver_vr_content_clear(void)
 {
-#if defined(ANDROID)
-   video_driver_vr_ctx_run(video_driver_vr_content_clear_cb, NULL);
-#endif
+   if (vr_saved_valid)
+      video_driver_vr_ctx_run(video_driver_vr_content_clear_cb, NULL);
+   vr_saved_valid = false;
 }
 
 static uintptr_t video_driver_vr_sample(void *data)
 {
-   uint32_t *flags = (uint32_t*)data;
-   bool ok         = false;
-
-   switch (video_driver_vr_ctx())
-   {
-#if defined(ANDROID) && defined(HAVE_VULKAN)
-      case VR_CTX_VK:
-         ok = android_vk_openxr_sample_tracking();
-         *flags = android_vk_openxr_take_frame_flags();
-         break;
-#endif
-#if defined(ANDROID)
-      case VR_CTX_GL:
-         ok = gl_android_openxr_sample_tracking();
-         *flags = gl_android_openxr_take_frame_flags();
-         break;
-#endif
-      default:
-         break;
-   }
-
-   return ok;
+   if (!video_xr_host.sample)
+      return 0;
+   return video_xr_host.sample(video_xr_host.user, (uint32_t*)data);
 }
 
 /* Called by the runloop once per iteration, BEFORE retro_run(), so the
@@ -9355,7 +9355,7 @@ bool video_driver_vr_sample_tracking(void)
    bool ok        = false;
    uint32_t flags = 0;
 
-   if (video_driver_vr_ctx() != VR_CTX_NONE)
+   if (video_xr_host.sample)
       ok = video_driver_vr_ctx_run(video_driver_vr_sample, &flags) != 0;
 
    video_vr_frame_flags = flags;
@@ -9369,57 +9369,34 @@ static uintptr_t video_driver_vr_content_info_apply(void *data)
    video_driver_state_t *video_st = video_state_get_ptr();
    unsigned w = 0, h = 0;
 
-   /* reset stored graphics driver id (in case of reinit) */
-   vr_ctx_id = 0;
-
    if (!video_st->current_video || !video_st->current_video->set_vr_content_info)
    {
       RARCH_ERR("[XR] set_vr_content_info unavailable\n");
+      vr_saved_valid = false;
       return false;
    }
 
    if (!video_st->current_video->set_vr_content_info(video_st->data, info))
    {
       RARCH_ERR("[XR] Unable to set VR content info...\n");
+      vr_saved_valid = false;
       return false;
    }
 
    if (!info)
    {
       RARCH_DBG("[XR] VR content info cleared.\n");
-#if defined(ANDROID)
-      gl_android_openxr_set_stereo(false);
-#endif
       vr_saved_valid = false;
       return true;
    }
 
-   switch (video_driver_vr_ctx())
-   {
-#if defined(ANDROID) && defined(HAVE_VULKAN)
-      case VR_CTX_VK:
-         android_vk_openxr_set_reference_space(&info->reference_space);
-         android_vk_openxr_get_eye_size(&w, &h);
-         break;
-#endif
-#if defined(ANDROID)
-      case VR_CTX_GL:
-         gl_android_openxr_set_stereo(true);
-         gl_android_openxr_set_reference_space(&info->reference_space);
-         gl_android_openxr_get_eye_size(&w, &h);
-         break;
-#endif
-      default:
-         break;
-   }
-
-   if (!w || !h)
+   if (     !video_xr_host.set_space
+         || !video_xr_host.set_space(video_xr_host.user,
+               &info->reference_space, &w, &h)
+         || !w || !h)
    {
       RARCH_ERR("[XR] No eye target size available.\n");
       video_st->current_video->set_vr_content_info(video_st->data, NULL);
-#if defined(ANDROID)
-      gl_android_openxr_set_stereo(false);
-#endif
       vr_saved_valid = false;
       return false;
    }
@@ -9441,28 +9418,23 @@ static bool video_driver_set_vr_content_info(video_vr_content_info_t *info)
 
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out)
 {
-   switch (video_driver_vr_ctx())
-   {
-#if defined(ANDROID) && defined(HAVE_VULKAN)
-      case VR_CTX_VK: return android_vk_openxr_get_head_pose(out);
-#endif
-#if defined(ANDROID)
-      case VR_CTX_GL: return gl_android_openxr_get_head_pose(out);
-#endif
-      default: break;
-   }
-   return false;
+   if (!video_xr_host.head_pose)
+      return false;
+   return video_xr_host.head_pose(video_xr_host.user, out);
+}
+
+static uintptr_t video_driver_vr_eye_state(void *data)
+{
+   struct retro_vr_frame_state *out = (struct retro_vr_frame_state*)data;
+   if (!video_xr_host.eye_state)
+      return 0;
+   return video_xr_host.eye_state(video_xr_host.user, out->eyes);
 }
 
 bool video_driver_get_vr_frame_state(struct retro_vr_frame_state *out)
 {
-   video_driver_state_t *video_st = video_state_get_ptr();
-
-   if (!video_st->current_video
-         || !video_st->current_video->get_vr_frame_state)
-      return false;
-
-   if (!video_st->current_video->get_vr_frame_state(video_st->data, out))
+   if (     !video_xr_host.eye_state
+         || !video_driver_vr_ctx_run(video_driver_vr_eye_state, out))
       return false;
 
    out->flags = video_vr_frame_flags;

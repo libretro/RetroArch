@@ -419,11 +419,6 @@ enum display_flags
    GFX_CTX_FLAGS_VIDEO_VIEWS,
    /* Set while such a driver draws a frame that has a map whole. */
    GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK,
-   /* Set by a video driver that also shows a core's views in a headset,
-    * which shows both eyes whatever the stereo mode. */
-   GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET,
-   /* Set while that headset's session has the runtime's focus. */
-   GFX_CTX_FLAGS_HEADSET_FOCUSED,
    /* Set by a video driver whose GPU recording reads the core's image
     * before the menu, overlays and messages are drawn over it, when
     * Record Game Only is on - in its present output mode. */

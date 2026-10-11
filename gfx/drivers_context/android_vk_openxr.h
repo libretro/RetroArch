@@ -12,6 +12,7 @@
 static INLINE bool android_vk_openxr_begin_frame(void) { return false; }
 static INLINE void android_vk_openxr_end_frame(bool stereo_layer) { (void)stereo_layer; }
 static INLINE unsigned android_vk_openxr_get_backbuffer_index(int eye) { (void)eye; return 0; }
+static INLINE bool android_vk_openxr_has_session(void) { return false; }
 static INLINE bool android_vk_openxr_is_session_ready(void) { return false; }
 static INLINE bool android_vk_openxr_get_eye_state(struct retro_vr_eye_state out[2]) { (void)out; return false; }
 #else
@@ -37,6 +38,9 @@ unsigned android_vk_openxr_get_backbuffer_index(int eye);
 
 /* True once xrCreateSession + both eye swapchains have been created
  * successfully and the session has not since been torn down. */
+bool android_vk_openxr_has_session(void);
+
+/* has_session, and the session is between xrBeginSession and xrEndSession. */
 bool android_vk_openxr_is_session_ready(void);
 
 /* True if vk_data is the OpenXR context's gfx_ctx_vulkan_data_t; lets

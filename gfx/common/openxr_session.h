@@ -56,7 +56,7 @@ typedef struct openxr_session
    XrSpace view_space;
    retro_atomic_int_t state;   /* XrSessionState */
    retro_atomic_int_t alive;   /* the host's frames reach the headset */
-   bool running;               /* the polling thread */
+   retro_atomic_int_t running; /* between xrBeginSession and xrEndSession */
    bool ended;                 /* the polling thread, or while it is stopped */
    bool lost;                  /* the instance was lost too */
    PFN_xrPollEvent PollEvent;
@@ -84,6 +84,7 @@ void openxr_session_poll(openxr_session_t *s);
 void openxr_session_end(openxr_session_t *s, bool instance_lost);
 void openxr_session_set_alive(openxr_session_t *s, bool alive);
 bool openxr_session_alive(openxr_session_t *s);
+bool openxr_session_running(openxr_session_t *s);
 bool openxr_session_focused(openxr_session_t *s);
 /* Alive and VISIBLE or FOCUSED: the headset shows the session. */
 bool openxr_session_visible(openxr_session_t *s);

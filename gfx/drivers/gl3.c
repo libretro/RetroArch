@@ -8052,9 +8052,7 @@ video_driver_t video_gl3 = {
    gl3_read_viewport_hdr,
    &gl3_raster_font,
 #ifdef HAVE_OPENXR
-   NULL, /* get_vr_frame_state */
    NULL, /* set_vr_content_info */
-   NULL, /* get_video_views_status */
 #endif
    gl3_read_viewport_bgrx
 };

@@ -1380,10 +1380,7 @@ typedef struct video_driver
    const struct font_renderer *font_backend;
 
 #ifdef HAVE_OPENXR
-   bool (*get_vr_frame_state)(void *data, struct retro_vr_frame_state *out);
    bool (*set_vr_content_info)(void *data, const video_vr_content_info_t *info);
-   /* Optional: RETRO_VIDEO_VIEWS_STATUS_ flags for the live session. */
-   unsigned (*get_video_views_status)(void *data);
 #endif
 
    /* Optional: read_viewport as 32-bit B,G,R,X, viewport width * 4
@@ -1394,6 +1391,43 @@ typedef struct video_driver
 } video_driver_t;
 
 #ifdef HAVE_OPENXR
+/* What the headset's host says of it. */
+enum video_xr_headset_bits
+{
+   /* Its frames reach the headset. */
+   VIDEO_XR_HEADSET_PRESENTING = (1 << 0),
+   VIDEO_XR_HEADSET_FOCUSED    = (1 << 1),
+   /* The pose calls answer: a core's RETRO_VIDEO_VIEWS_STATUS_HMD. */
+   VIDEO_XR_HEADSET_TRACKING   = (1 << 2)
+};
+
+/* What owns the OpenXR session: the desktop's XR thread, or a Quest
+ * context's own frame. It registers from its driver's init and clears
+ * itself when it stops; the driver's free forgets it too. */
+typedef struct video_xr_host
+{
+   /* Any thread: VIDEO_XR_HEADSET_ bits. */
+   unsigned (*state)(void *user);
+   /* The thread that draws the host's frames. sample runs once a core
+    * frame, before the core, and writes the frame's RETRO_VR_FRAME_ bits. */
+   bool (*sample)(void *user, uint32_t *frame_flags);
+   bool (*eye_state)(void *user, struct retro_vr_eye_state out[2]);
+   /* The space tracked content is in, and one eye's recommended image
+    * size; what was granted is written back. */
+   bool (*set_space)(void *user, enum retro_vr_reference_space *space,
+         unsigned *eye_width, unsigned *eye_height);
+   /* Main thread, after sample: the head as sampled. */
+   bool (*head_pose)(void *user, struct retro_vr_head_pose *out);
+   /* Any thread: one eye's recommended image size. */
+   bool (*eye_size)(void *user, unsigned *eye_width, unsigned *eye_height);
+   void *user;
+} video_xr_host_t;
+
+/* NULL forgets the host. */
+void video_driver_set_xr_host(const video_xr_host_t *host);
+/* VIDEO_XR_HEADSET_ bits; 0 without a host. */
+unsigned video_driver_xr_headset(void);
+
 void video_driver_vr_content_clear(void);
 bool video_driver_vr_sample_tracking(void);
 bool video_driver_get_vr_head_pose(struct retro_vr_head_pose *out);

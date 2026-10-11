@@ -100,6 +100,17 @@ static void vulkan_openxr_local_hook(void *user)
    openxr_frame_local_changed(&((vulkan_openxr_t*)user)->frame);
 }
 
+static unsigned vulkan_openxr_host_state(void *user)
+{
+   vulkan_openxr_t *xr = (vulkan_openxr_t*)user;
+   unsigned bits       = 0;
+   if (openxr_session_alive(&xr->session))
+      bits |= VIDEO_XR_HEADSET_PRESENTING;
+   if (openxr_session_focused(&xr->session))
+      bits |= VIDEO_XR_HEADSET_FOCUSED;
+   return bits;
+}
+
 #define VULKAN_OPENXR_FN(xr, name) OPENXR_FN(&(xr)->rt, (xr), name)
 
 static vulkan_openxr_hooks_t vulkan_openxr_hooks;
@@ -724,7 +735,16 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
    xr->queue_lock = queue_lock;
    if (!xr->cursor)
       vulkan_openxr_cursor_create(xr, gpu, device, queue_family);
-   return openxr_frame_start(&xr->frame);
+   if (!openxr_frame_start(&xr->frame))
+      return false;
+   {
+      video_xr_host_t host;
+      memset(&host, 0, sizeof(host));
+      host.state = vulkan_openxr_host_state;
+      host.user  = xr;
+      video_driver_set_xr_host(&host);
+   }
+   return true;
 }
 
 void vulkan_openxr_stop_thread(vulkan_openxr_t *xr)
@@ -739,6 +759,7 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    if (!xr)
       return;
    vulkan_openxr_stop_thread(xr);
+   video_driver_set_xr_host(NULL);
    /* A kept session outlives the driver's views of its images. */
    for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
       vulkan_openxr_slot_destroy(xr, s);

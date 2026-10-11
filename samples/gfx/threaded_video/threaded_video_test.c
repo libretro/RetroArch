@@ -1028,13 +1028,14 @@ static void lane_context_api_behind_wrapper(void)
 
 /* ------------------------------------------------------------------ */
 /* Lane: headset calls behind the wrapper                             */
-/*   The headset's rates, its status, a stereo request and the eye    */
-/*   poses go to the wrapped driver, and its answers come back. The   */
-/*   request and the poses are run on the video thread, whose frame   */
-/*   reads what they change. Without the forwards the menu offered    */
-/*   the fallback rates, the runloop never learned the headset's      */
-/*   rate, and a VR core saw no headset at all. A rate that fits      */
-/*   still leaves threaded video on the window's pacing.              */
+/*   The headset's rates and a stereo request go to the wrapped       */
+/*   driver, and its answers come back; the status and the eye poses  */
+/*   come from the headset's host. The request and the poses are      */
+/*   run on the video thread, whose frame reads what they change.     */
+/*   Without the forwards the menu offered the fallback rates, the    */
+/*   runloop never learned the headset's rate, and a VR core saw no   */
+/*   headset at all. A rate that fits still leaves threaded video on  */
+/*   the window's pacing.                                             */
 /* ------------------------------------------------------------------ */
 
 static video_driver_t                hslane_driver;
@@ -1045,8 +1046,11 @@ static const video_poke_interface_t *hslane_inner_poke;
 static unsigned                      hslane_info_calls;
 static uintptr_t                     hslane_info_thread;
 static bool                          hslane_info_stereo;
+static bool                          hslane_info_fail;
 static unsigned                      hslane_pose_calls;
 static uintptr_t                     hslane_pose_thread;
+static bool                          hslane_focused;
+static unsigned                      hslane_space_calls;
 #endif
 
 /* Out of order, and fewer than any fallback list. Twice the harness
@@ -1074,10 +1078,12 @@ static void hslane_get_poke(void *data, const video_poke_interface_t **iface)
 }
 
 #ifdef HAVE_OPENXR
-static unsigned hslane_status(void *data)
+static unsigned hslane_host_state(void *user)
 {
-   (void)data;
-   return RETRO_VIDEO_VIEWS_STATUS_HMD;
+   (void)user;
+   return VIDEO_XR_HEADSET_PRESENTING
+        | VIDEO_XR_HEADSET_TRACKING
+        | (hslane_focused ? VIDEO_XR_HEADSET_FOCUSED : 0);
 }
 
 static bool hslane_set_info(void *data, const video_vr_content_info_t *info)
@@ -1086,17 +1092,28 @@ static bool hslane_set_info(void *data, const video_vr_content_info_t *info)
    hslane_info_calls++;
    hslane_info_thread = sthread_get_current_thread_id();
    hslane_info_stereo = info && info->stereo_native;
+   return !hslane_info_fail;
+}
+
+static bool hslane_eye_state(void *user, struct retro_vr_eye_state out[2])
+{
+   (void)user;
+   hslane_pose_calls++;
+   hslane_pose_thread = sthread_get_current_thread_id();
+   memset(out, 0, 2 * sizeof(*out));
+   out[0].position[0] = -0.032f;
+   out[1].position[0] =  0.032f;
    return true;
 }
 
-static bool hslane_frame_state(void *data, struct retro_vr_frame_state *out)
+static bool hslane_set_space(void *user, enum retro_vr_reference_space *space,
+      unsigned *w, unsigned *h)
 {
-   (void)data;
-   hslane_pose_calls++;
-   hslane_pose_thread = sthread_get_current_thread_id();
-   memset(out->eyes, 0, sizeof(out->eyes));
-   out->eyes[0].position[0] = -0.032f;
-   out->eyes[1].position[0] =  0.032f;
+   (void)user;
+   hslane_space_calls++;
+   *space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   *w     = 1832;
+   *h     = 1920;
    return true;
 }
 #endif
@@ -1123,9 +1140,7 @@ static void lane_headset_calls(void)
    hslane_driver                        = *thr->driver;
    hslane_driver.poke_interface         = hslane_get_poke;
 #ifdef HAVE_OPENXR
-   hslane_driver.get_video_views_status = hslane_status;
    hslane_driver.set_vr_content_info    = hslane_set_info;
-   hslane_driver.get_vr_frame_state     = hslane_frame_state;
 #endif
    set_driver(thr, &hslane_driver);
    set_poke_from(thr, &hslane_driver);
@@ -1164,8 +1179,24 @@ static void lane_headset_calls(void)
       run_frames(2);
    }
 
+   {
+      video_xr_host_t host;
+      memset(&host, 0, sizeof(host));
+      host.state     = hslane_host_state;
+      host.eye_state = hslane_eye_state;
+      host.set_space = hslane_set_space;
+      video_driver_set_xr_host(&host);
+   }
    CHECK(video_driver_views_status() & RETRO_VIDEO_VIEWS_STATUS_HMD,
-         "headset lane: the views status did not carry the driver's HMD");
+         "headset lane: the views status did not carry the host's HMD");
+
+   hslane_focused = false;
+   CHECK(!video_driver_headset_focused(),
+         "headset lane: the headset was focused without the host saying so");
+   hslane_focused = true;
+   CHECK(video_driver_headset_focused(),
+         "headset lane: the host's focus did not reach the frontend");
+   hslane_focused = false;
 
    {
       video_vr_content_info_t info;
@@ -1191,12 +1222,84 @@ static void lane_headset_calls(void)
       hslane_pose_calls = 0;
       ok = video_driver_get_vr_frame_state(&fs);
       CHECK(ok && hslane_pose_calls == 1 && fs.eyes[1].position[0] == 0.032f,
-            "headset lane: the eye poses reached the driver %u times "
+            "headset lane: the eye poses reached the host %u times "
             "(answer %d)", hslane_pose_calls, ok);
       CHECK(!hslane_pose_calls
             || hslane_pose_thread == sthread_get_thread_id(thr->thread),
             "headset lane: the eye poses were read off the video thread");
    }
+
+   /* A core sends its map every frame: the same one is applied once. */
+   {
+      struct retro_video_view v[2];
+      struct retro_video_views views;
+      memset(v, 0, sizeof(v));
+      v[0].eye    = RETRO_VIDEO_VIEW_EYE_LEFT;
+      v[0].width  = 640;
+      v[0].height = 480;
+      v[1]        = v[0];
+      v[1].eye    = RETRO_VIDEO_VIEW_EYE_RIGHT;
+      v[1].x      = 640;
+      memset(&views, 0, sizeof(views));
+      views.views           = v;
+      views.num_views       = 2;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_STAGE;
+      hslane_space_calls    = 0;
+      hslane_info_calls     = 0;
+      video_driver_set_views(&views);
+      views.recommended_view_width  = 0;
+      views.recommended_view_height = 0;
+      video_driver_set_views(&views);
+      CHECK(hslane_space_calls == 1 && hslane_info_calls == 1,
+            "headset lane: a map sent twice was applied %u times",
+            hslane_space_calls);
+      CHECK(     views.recommended_view_width == 1832
+            && views.recommended_view_height == 1920,
+            "headset lane: the second send lost the eye size (%ux%u)",
+            views.recommended_view_width, views.recommended_view_height);
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+      video_driver_set_views(&views);
+      CHECK(hslane_space_calls == 2,
+            "headset lane: a map in another space was not applied");
+
+      /* A refused map is asked again, not answered from the old grant. */
+      hslane_info_fail      = true;
+      hslane_info_calls     = 0;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_STAGE;
+      video_driver_set_views(&views);
+      video_driver_set_views(&views);
+      CHECK(hslane_info_calls == 2,
+            "headset lane: a refused map was not asked again (%u)",
+            hslane_info_calls);
+      hslane_info_fail      = false;
+      video_driver_set_views(&views);
+
+      /* After a refusal the same map reaches the driver again. */
+      hslane_info_calls     = 0;
+      hslane_info_fail      = true;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+      video_driver_set_views(&views);
+      hslane_info_fail      = false;
+      views.reference_space = RETRO_VR_REFERENCE_SPACE_STAGE;
+      video_driver_set_views(&views);
+      CHECK(hslane_info_calls == 2,
+            "headset lane: a map after a refusal was answered from the cache (%u)",
+            hslane_info_calls);
+
+      /* The core going drops its content on the video thread, once. */
+      hslane_info_calls = 0;
+      video_driver_vr_content_clear();
+      CHECK(hslane_info_calls == 1 && !hslane_info_stereo
+            && hslane_info_thread == sthread_get_thread_id(thr->thread),
+            "headset lane: the core's going reached the driver %u times",
+            hslane_info_calls);
+      video_driver_vr_content_clear();
+      CHECK(hslane_info_calls == 1,
+            "headset lane: a second clear reached the driver");
+      views.num_views = 0;
+      video_driver_set_views(&views);
+   }
+
 #endif
 
    video_thread_wait_idle();
@@ -1212,6 +1315,12 @@ static void lane_headset_calls(void)
    run_frames(2);
    set_threaded_via_setting(false);
    run_frames(2);
+#ifdef HAVE_OPENXR
+   /* The driver's free forgets the host. */
+   CHECK(!video_driver_xr_headset(),
+         "headset lane: the host outlived its driver");
+   video_driver_set_xr_host(NULL);
+#endif
 
    if (failures == had)
       fprintf(stderr, "[pass] headset calls lane\n");

@@ -12576,19 +12576,6 @@ static bool vulkan_frame(void *data, const void *frame,
 }
 
 #ifdef HAVE_OPENXR
-static unsigned vulkan_get_video_views_status(void *data)
-{
-   vk_t *vk = (vk_t*)data;
-
-   if (!vk || !vk->ctx_driver)
-      return 0;
-   if (!string_is_equal(vk->ctx_driver->ident, "android_vk_openxr"))
-      return 0;
-   if (!android_vk_openxr_is_session_ready())
-      return 0;
-   return RETRO_VIDEO_VIEWS_STATUS_HMD | RETRO_VIDEO_VIEWS_STATUS_STEREO;
-}
-
 static bool vulkan_set_vr_content_info(void *data,
       const video_vr_content_info_t *info)
 {
@@ -12601,7 +12588,7 @@ static bool vulkan_set_vr_content_info(void *data,
     * context driver AND its session and reached a usable state. */
    if (     !vk->ctx_driver
          || !string_is_equal(vk->ctx_driver->ident, "android_vk_openxr")
-         || !android_vk_openxr_is_session_ready())
+         || !android_vk_openxr_has_session())
    {
       if (info)
          vk->flags &= ~VK_FLAG_XR_STEREO;
@@ -14082,14 +14069,6 @@ static uint32_t vulkan_get_flags(void *data)
    if (vk && !retro_atomic_load_acquire_int(&vk->built_hdr_output))
 #endif
       BIT32_SET(flags, GFX_CTX_FLAGS_RECORD_GAME_ONLY);
-#ifdef HAVE_OPENXR
-   if (     vk && vk->context && vk->context->xr
-         && vulkan_openxr_alive(vk->context->xr))
-      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_HEADSET);
-   if (     vk && vk->context && vk->context->xr
-         && vulkan_openxr_focused(vk->context->xr))
-      BIT32_SET(flags, GFX_CTX_FLAGS_HEADSET_FOCUSED);
-#endif
 
    return flags;
 }
@@ -15675,16 +15654,6 @@ static font_renderer_t vulkan_raster_font = {
    vulkan_font_get_line_metrics
 };
 
-#ifdef HAVE_OPENXR
-static bool vulkan_get_vr_frame_state(void *data, struct retro_vr_frame_state *out)
-{
-   vk_t *vk = (vk_t*)data;
-   if (!vk || !out || !(vk->flags & VK_FLAG_OPEN_XR))
-      return false;
-   return android_vk_openxr_get_eye_state(out->eyes);
-}
-#endif
-
 video_driver_t video_vulkan = {
    vulkan_init,
    vulkan_frame,
@@ -15718,9 +15687,7 @@ video_driver_t video_vulkan = {
 #endif
    &vulkan_raster_font,
 #ifdef HAVE_OPENXR
-   vulkan_get_vr_frame_state,
    vulkan_set_vr_content_info,
-   vulkan_get_video_views_status,
 #endif
    vulkan_read_viewport_bgrx
 };

@@ -336,7 +336,7 @@ static void openxr_frame_thread(void *data)
    while (!retro_atomic_load_acquire_int(&f->quit))
    {
       openxr_session_poll(f->session);
-      if (f->session->running)
+      if (openxr_session_running(f->session))
          openxr_frame_run(f);
       else
          retro_sleep(10);

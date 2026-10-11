@@ -49,7 +49,7 @@ const char *openxr_session_state_name(XrSessionState state)
 
 void openxr_session_end(openxr_session_t *s, bool instance_lost)
 {
-   s->running = false;
+   retro_atomic_store_release_int(&s->running, 0);
    if (instance_lost)
       s->lost = true;
    if (s->ended)
@@ -92,7 +92,7 @@ static void openxr_session_state(openxr_session_t *s, XrSessionState state)
             res = s->BeginSession(s->session, &bi);
             openxr_session_unlock(s);
             if (XR_SUCCEEDED(res))
-               s->running = true;
+               retro_atomic_store_release_int(&s->running, 1);
             else
                RARCH_ERR("[OpenXR] xrBeginSession failed (%d).\n", (int)res);
          }
@@ -101,7 +101,7 @@ static void openxr_session_state(openxr_session_t *s, XrSessionState state)
          openxr_session_lock(s);
          s->EndSession(s->session);
          openxr_session_unlock(s);
-         s->running = false;
+         retro_atomic_store_release_int(&s->running, 0);
          break;
       case XR_SESSION_STATE_EXITING:
          openxr_session_end(s, false);
@@ -248,6 +248,11 @@ void openxr_session_set_alive(openxr_session_t *s, bool alive)
 bool openxr_session_alive(openxr_session_t *s)
 {
    return retro_atomic_load_acquire_int(&s->alive) != 0;
+}
+
+bool openxr_session_running(openxr_session_t *s)
+{
+   return retro_atomic_load_acquire_int(&s->running) != 0;
 }
 
 bool openxr_session_focused(openxr_session_t *s)

@@ -2467,9 +2467,7 @@ video_driver_t video_sdl2 = {
    NULL, /* sdl2_raster_font needs SDL_RenderGeometry */
 #endif
 #ifdef HAVE_OPENXR
-   NULL, /* get_vr_frame_state */
    NULL, /* set_vr_content_info */
-   NULL, /* get_video_views_status */
 #endif
    sdl2_gfx_read_viewport_bgrx
 };

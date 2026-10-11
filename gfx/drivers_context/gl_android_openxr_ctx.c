@@ -284,9 +284,14 @@ bool gl_android_openxr_active(void)
    return gl_xr.session != XR_NULL_HANDLE;
 }
 
-bool gl_android_openxr_is_session_ready(void)
+bool gl_android_openxr_has_session(void)
 {
    return gl_xr.session != XR_NULL_HANDLE && gl_xr.images != NULL;
+}
+
+bool gl_android_openxr_is_session_ready(void)
+{
+   return gl_android_openxr_has_session() && gl_xr.running;
 }
 
 uint32_t gl_android_openxr_get_framebuffer(void)
@@ -892,6 +897,62 @@ bool gl_android_openxr_stereo_active(void)
 
 /* ===================== gfx_ctx_driver_t entry points ===================== */
 
+static unsigned gl_android_openxr_host_state(void *user)
+{
+   gl_android_openxr_t *xr = (gl_android_openxr_t*)user;
+   unsigned bits           = 0;
+   if (gl_android_openxr_is_session_ready())
+      bits |= VIDEO_XR_HEADSET_PRESENTING | VIDEO_XR_HEADSET_TRACKING;
+   if (xr->focused)
+      bits |= VIDEO_XR_HEADSET_FOCUSED;
+   return bits;
+}
+
+static bool gl_android_openxr_host_sample(void *user, uint32_t *frame_flags)
+{
+   bool ok      = gl_android_openxr_sample_tracking();
+   *frame_flags = gl_android_openxr_take_frame_flags();
+   return ok;
+}
+
+static bool gl_android_openxr_host_eye_state(void *user,
+      struct retro_vr_eye_state out[2])
+{
+   return gl_android_openxr_get_eye_state(out);
+}
+
+static bool gl_android_openxr_host_set_space(void *user,
+      enum retro_vr_reference_space *space, unsigned *w, unsigned *h)
+{
+   gl_android_openxr_set_reference_space(space);
+   return gl_android_openxr_get_eye_size(w, h);
+}
+
+static bool gl_android_openxr_host_head_pose(void *user,
+      struct retro_vr_head_pose *out)
+{
+   return gl_android_openxr_get_head_pose(out);
+}
+
+static bool gl_android_openxr_host_eye_size(void *user, unsigned *w, unsigned *h)
+{
+   return gl_android_openxr_get_eye_size(w, h);
+}
+
+static void gl_android_openxr_host_register(gl_android_openxr_t *xr)
+{
+   video_xr_host_t host;
+   memset(&host, 0, sizeof(host));
+   host.state     = gl_android_openxr_host_state;
+   host.sample    = gl_android_openxr_host_sample;
+   host.eye_state = gl_android_openxr_host_eye_state;
+   host.set_space = gl_android_openxr_host_set_space;
+   host.head_pose = gl_android_openxr_host_head_pose;
+   host.eye_size  = gl_android_openxr_host_eye_size;
+   host.user      = xr;
+   video_driver_set_xr_host(&host);
+}
+
 static void gl_android_openxr_ctx_destroy(void *data);
 
 static void *gl_android_openxr_ctx_init(void *video_driver)
@@ -938,6 +999,7 @@ static void *gl_android_openxr_ctx_init(void *video_driver)
    if (!gl_xr_create_session(xr))
       goto error;
 
+   gl_android_openxr_host_register(xr);
    return xr;
 
 error:
@@ -950,6 +1012,8 @@ static void gl_android_openxr_ctx_destroy(void *data)
    gl_android_openxr_t *xr = (gl_android_openxr_t*)data;
    if (!xr)
       return;
+
+   video_driver_set_xr_host(NULL);
 
    /* GL objects first, while the context is still current. */
    if (xr->egl_display != EGL_NO_DISPLAY && xr->egl_context != EGL_NO_CONTEXT)

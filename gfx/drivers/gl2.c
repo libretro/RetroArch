@@ -7770,31 +7770,18 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
 }
 
 #ifdef HAVE_OPENXR
-static unsigned gl2_get_video_views_status(void *data)
-{
-   (void)data;
-#if defined(ANDROID)
-   if (gl_android_openxr_is_session_ready())
-      return RETRO_VIDEO_VIEWS_STATUS_HMD | RETRO_VIDEO_VIEWS_STATUS_STEREO;
-#endif
-   return 0;
-}
-
 static bool gl2_set_vr_content_info(void *data,
       const video_vr_content_info_t *info)
 {
-   (void)data;
    /* VR is only available while the OpenXR context owns a live session;
     * on the flat fallback context it must be reported unavailable. */
-   if (!gl_android_openxr_is_session_ready())
-      return false;
-   return true;
-}
-
-static bool gl2_get_vr_frame_state(void *data, struct retro_vr_frame_state *out)
-{
+   bool live = gl_android_openxr_has_session();
    (void)data;
-   return gl_android_openxr_get_eye_state(out->eyes);
+#if defined(ANDROID)
+   /* The context draws stereo content side by side. */
+   gl_android_openxr_set_stereo(live && info && info->stereo_native);
+#endif
+   return live;
 }
 #endif
 
@@ -7839,9 +7826,7 @@ video_driver_t video_gl2 = {
    gl2_read_viewport_hdr,
    &gl2_raster_font,
 #ifdef HAVE_OPENXR
-   gl2_get_vr_frame_state,
    gl2_set_vr_content_info,
-   gl2_get_video_views_status,
 #endif
    gl2_read_viewport_bgrx
 };

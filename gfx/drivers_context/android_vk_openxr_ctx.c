@@ -961,6 +961,62 @@ static void android_vk_openxr_poll_events(android_vk_openxr_t *xr, bool *quit)
 
 /* ===================== gfx_ctx_driver_t entry points ===================== */
 
+static unsigned android_vk_openxr_host_state(void *user)
+{
+   android_vk_openxr_t *xr = (android_vk_openxr_t*)user;
+   unsigned bits           = 0;
+   if (android_vk_openxr_is_session_ready())
+      bits |= VIDEO_XR_HEADSET_PRESENTING | VIDEO_XR_HEADSET_TRACKING;
+   if (xr->focused)
+      bits |= VIDEO_XR_HEADSET_FOCUSED;
+   return bits;
+}
+
+static bool android_vk_openxr_host_sample(void *user, uint32_t *frame_flags)
+{
+   bool ok      = android_vk_openxr_sample_tracking();
+   *frame_flags = android_vk_openxr_take_frame_flags();
+   return ok;
+}
+
+static bool android_vk_openxr_host_eye_state(void *user,
+      struct retro_vr_eye_state out[2])
+{
+   return android_vk_openxr_get_eye_state(out);
+}
+
+static bool android_vk_openxr_host_set_space(void *user,
+      enum retro_vr_reference_space *space, unsigned *w, unsigned *h)
+{
+   android_vk_openxr_set_reference_space(space);
+   return android_vk_openxr_get_eye_size(w, h);
+}
+
+static bool android_vk_openxr_host_head_pose(void *user,
+      struct retro_vr_head_pose *out)
+{
+   return android_vk_openxr_get_head_pose(out);
+}
+
+static bool android_vk_openxr_host_eye_size(void *user, unsigned *w, unsigned *h)
+{
+   return android_vk_openxr_get_eye_size(w, h);
+}
+
+static void android_vk_openxr_host_register(android_vk_openxr_t *xr)
+{
+   video_xr_host_t host;
+   memset(&host, 0, sizeof(host));
+   host.state     = android_vk_openxr_host_state;
+   host.sample    = android_vk_openxr_host_sample;
+   host.eye_state = android_vk_openxr_host_eye_state;
+   host.set_space = android_vk_openxr_host_set_space;
+   host.head_pose = android_vk_openxr_host_head_pose;
+   host.eye_size  = android_vk_openxr_host_eye_size;
+   host.user      = xr;
+   video_driver_set_xr_host(&host);
+}
+
 /* forward declaration */
 static void android_vk_openxr_gfx_ctx_destroy(void *data);
 
@@ -973,7 +1029,10 @@ static void *android_vk_openxr_gfx_ctx_init(void *video_driver)
          && xr->vk.context.instance != VK_NULL_HANDLE
          && xr->vk.context.device != VK_NULL_HANDLE
          && xr->combined_images)
+   {
+      android_vk_openxr_host_register(xr);
       return xr;
+   }
 
    memset(xr, 0, sizeof(*xr));
 
@@ -1054,6 +1113,7 @@ static void *android_vk_openxr_gfx_ctx_init(void *video_driver)
       return NULL;
    }
 
+   android_vk_openxr_host_register(xr);
    return xr;
 }
 
@@ -1130,6 +1190,8 @@ static void android_vk_openxr_gfx_ctx_destroy(void *data)
       return;
    }
 
+   video_driver_set_xr_host(NULL);
+
    android_vk_openxr_destroy_swapchains(xr);
 
    if (xr->stage_space != XR_NULL_HANDLE)
@@ -1199,12 +1261,18 @@ static void *android_vk_openxr_gfx_ctx_get_context_data(void *data)
    return &xr->vk.context;
 }
 
-bool android_vk_openxr_is_session_ready(void)
+bool android_vk_openxr_has_session(void)
 {
    android_vk_openxr_t *xr = &android_vk_openxr_ctx;
 
    return xr->session != XR_NULL_HANDLE
        && xr->combined_images != NULL;
+}
+
+bool android_vk_openxr_is_session_ready(void)
+{
+   return android_vk_openxr_has_session()
+       && android_vk_openxr_ctx.running;
 }
 
 static void android_vk_openxr_gfx_ctx_release_current(void *data)

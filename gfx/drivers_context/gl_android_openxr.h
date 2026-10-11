@@ -13,6 +13,7 @@ static INLINE bool gl_android_openxr_active(void) { return false; }
 static INLINE bool gl_android_openxr_begin_frame(void) { return false; }
 static INLINE uint32_t gl_android_openxr_get_framebuffer(void) { return 0; }
 static INLINE bool gl_android_openxr_get_eye_state(struct retro_vr_eye_state out[2]) { (void)out; return false; }
+static INLINE bool gl_android_openxr_has_session(void) { return false; }
 static INLINE bool gl_android_openxr_is_session_ready(void) { return false; }
 static INLINE bool gl_android_openxr_stereo_active(void) { return false; }
 #else
@@ -32,6 +33,9 @@ bool gl_android_openxr_get_eye_size(unsigned *w, unsigned *h);
 bool gl_android_openxr_set_reference_space(enum retro_vr_reference_space *space);
 uint32_t gl_android_openxr_take_frame_flags(void);
 
+bool gl_android_openxr_has_session(void);
+
+/* has_session, and the session is between xrBeginSession and xrEndSession. */
 bool gl_android_openxr_is_session_ready(void);
 
 void gl_android_openxr_set_stereo(bool on);

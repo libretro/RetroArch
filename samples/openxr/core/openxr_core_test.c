@@ -537,7 +537,7 @@ static void test_session(void)
    openxr_session_set_alive(&s, true);
    t_push_state(T_SESSION, XR_SESSION_STATE_READY);
    openxr_session_poll(&s);
-   CHECK(t_begun == 1 && s.running, "not begun");
+   CHECK(t_begun == 1 && openxr_session_running(&s), "not begun");
    CHECK(t_locks == 1 && t_unlocks == 1, "begin not under the lock");
    CHECK(t_begin_in_lock, "xrBeginSession ran outside the lock");
    CHECK(t_state_seq && t_state_seq < t_begin_seq,
@@ -554,7 +554,7 @@ static void test_session(void)
    CHECK(!openxr_session_focused(&s) && openxr_session_visible(&s), "visible");
    t_push_state(T_SESSION, XR_SESSION_STATE_STOPPING);
    openxr_session_poll(&s);
-   CHECK(t_ended_sessions == 1 && !s.running, "STOPPING did not end it");
+   CHECK(t_ended_sessions == 1 && !openxr_session_running(&s), "STOPPING did not end it");
    CHECK(t_end_in_lock, "xrEndSession ran outside the lock");
    CHECK(!openxr_session_visible(&s), "visible while stopping");
 
@@ -1143,9 +1143,9 @@ static void test_frame_lost(void)
       t_wait_frame_res = XR_SUCCESS;
       t_end_frame_res  = XR_SUCCESS;
       CHECK(t_h_ended == 1, "%u: ended %u times", i, t_h_ended);
-      CHECK(!openxr_session_alive(&s) && !s.running && s.lost == cases[i].lost,
+      CHECK(!openxr_session_alive(&s) && !openxr_session_running(&s) && s.lost == cases[i].lost,
             "%u: alive %d running %d lost %d", i,
-            (int)openxr_session_alive(&s), (int)s.running, (int)s.lost);
+            (int)openxr_session_alive(&s), (int)openxr_session_running(&s), (int)s.lost);
       CHECK(t_logged_times(cases[i].line) == 1, "%u: logged %u times: %s",
             i, t_logged_times(cases[i].line), t_log);
       t_frame_free(&rt, &s, &f);
