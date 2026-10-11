@@ -300,6 +300,9 @@ void gl_texture_lend_free(gl_texture_lend_t **list)
 #endif
 
 #ifdef HAVE_GL_PLANAR
+#ifndef GL_LUMINANCE
+#define GL_LUMINANCE 0x1909
+#endif
 #ifndef GL_R8
 #define GL_R8 0x8229
 #endif

@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := rpsmf_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -7,7 +9,7 @@ SOURCES := \
 	$(LIBRETRO_COMM_DIR)/formats/psmf/rpsmf.c \
 	$(LIBRETRO_COMM_DIR)/formats/mpeg1/rmpeg1_ps.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=c89 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -21,10 +23,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

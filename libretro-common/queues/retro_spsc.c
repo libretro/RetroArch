@@ -25,7 +25,10 @@
 #if defined(__linux__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE
 #endif
-#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE)
+/* Tiger must keep the legacy symbols rather than UNIX2003 variants. */
+#if defined(__APPLE__) && !defined(_DARWIN_C_SOURCE) \
+      && !(defined(__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__) \
+         && (__ENVIRONMENT_MAC_OS_X_VERSION_MIN_REQUIRED__ < 1050))
 #define _DARWIN_C_SOURCE
 #endif
 

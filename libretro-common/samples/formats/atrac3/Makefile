@@ -1,3 +1,5 @@
+include ../../sample_objdir.mk
+
 TARGET := ratrac3_test
 
 LIBRETRO_COMM_DIR := ../../..
@@ -6,7 +8,7 @@ SOURCES := \
 	ratrac3_test.c \
 	$(LIBRETRO_COMM_DIR)/formats/atrac3/ratrac3.c
 
-OBJS := $(SOURCES:.c=.o)
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 CFLAGS += -Wall -pedantic -std=c89 -g -O1 -I$(LIBRETRO_COMM_DIR)/include
 
@@ -20,10 +22,15 @@ all: $(TARGET)
 %.o: %.c
 	$(CC) -c -o $@ $< $(CFLAGS)
 
+$(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
+	@mkdir -p $(@D)
+	$(CC) -c -o $@ $< $(CFLAGS)
+
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS) -lm
 
 clean:
+	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS)
 
 .PHONY: clean

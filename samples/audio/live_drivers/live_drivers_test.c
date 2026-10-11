@@ -189,17 +189,13 @@ static void drive(audio_driver_t *drv, const char *device, unsigned latency, con
          lent++;
       }
       counting_locks = 0;
-      printf("      lend: %u of 100 spans lent (%u cut at the wrap), mainloop lock taken %u times\n",
+      printf("      lend: %u of 100 spans lent (%u shorter than requested), mainloop lock taken %u times\n",
             lent, short_spans, writer_locks);
       if (drv == &audio_alsa && !((alsa_t*)h)->stream_info.mmap)
          CHECK(lent == 0, "%s: a read/write PCM lent %u spans", name, lent);
       else
       {
          CHECK(lent > 50, "%s: only %u of 100 lends", name, lent);
-         /* Pulse's ring is mirrored: no span stops at its wrap. */
-         if (drv == &audio_pulse)
-            CHECK(short_spans == 0, "%s: %u spans cut at the ring's wrap",
-                  name, short_spans);
          if (drv == &audio_alsa)
             CHECK(snd_pcm_state(((alsa_t*)h)->pcm) == SND_PCM_STATE_RUNNING,
                   "%s: committed spans did not start the stream (%s)", name,

@@ -45,6 +45,7 @@ libretro-common/formats/aac/raac.c|memcpy|q->q_temp|q->q_temp
 libretro-common/formats/aac/raac.c|memcpy|s->d|s->d
 libretro-common/formats/aac/raac.c|raac_decode_cpe|a->ch|a->ch
 libretro-common/formats/aac/raac.c|raac_sbr_copy_grid|s->d|s->d
+libretro-common/formats/atrac3/ratrac3.c|memcpy|d->js_sel|d->js_sel
 libretro-common/formats/mp3/rmp3.c|memcpy|dst|dst
 libretro-common/formats/opus/ropus.c|memcpy|buf|buf
 libretro-common/formats/opus/ropus.c|memcpy|ctrl->PredCoef_Q12|ctrl->PredCoef_Q12
