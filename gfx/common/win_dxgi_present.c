@@ -50,11 +50,14 @@ void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
    unsigned i;
    if (!b)
       return;
-   if (b->done && b->sequence
-         && b->done->lpVtbl->GetCompletedValue(b->done) < b->sequence)
+   /* The frame fence precedes Present; drain its queued work as well. */
+   if (b->queue && b->done && b->event
+         && SUCCEEDED(b->queue->lpVtbl->Signal(
+                  b->queue, b->done, b->sequence + 1)))
    {
-      if (SUCCEEDED(b->done->lpVtbl->SetEventOnCompletion(
-                  b->done, b->sequence, b->event)))
+      if (b->done->lpVtbl->GetCompletedValue(b->done) < b->sequence + 1
+            && SUCCEEDED(b->done->lpVtbl->SetEventOnCompletion(
+                  b->done, b->sequence + 1, b->event)))
          WaitForSingleObject(b->event, INFINITE);
    }
    for (i = 0; i < 2; i++)
