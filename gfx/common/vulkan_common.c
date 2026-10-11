@@ -2924,6 +2924,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
    const vulkan_swapchain_settings_t *ss   = &vk->context.swapchain_settings;
    bool vsync                              = ss->vsync;
    bool adaptive_vsync                     = ss->adaptive_vsync;
+   bool reuse_swapchain;
 #ifdef VK_USE_PLATFORM_WIN32_KHR
    bool video_windowed_fullscreen          = ss->windowed_fullscreen;
    /* Relaxed: ALLOWED is a hint and the driver may decline - and on
@@ -2960,16 +2961,6 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
 
    format.format                           = VK_FORMAT_UNDEFINED;
    format.colorSpace                       = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-
-   /* Every frame that could still render into the old swapchain's
-    * images has completed, by its own fence: the new swapchain retires
-    * the old one and the old one is destroyed below, and the video
-    * driver rebuilds its framebuffers after waiting on the same
-    * fences. Nothing else on the device is waited for - a resize or a
-    * fullscreen toggle used to drain a threaded hardware core's whole
-    * queue here, unsynchronised with its submissions. */
-   vulkan_context_wait_frames(vk);
-   vulkan_acquire_clear_fences(vk);
 
    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vk->context.gpu,
          vk->vk_surface, &surface_properties);
@@ -3059,13 +3050,29 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
       }
    }
 
-   vk->flags        |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
-
-   if (       (vk->swapchain != VK_NULL_HANDLE)
+   reuse_swapchain = (vk->swapchain != VK_NULL_HANDLE)
          && (!(vk->context.flags & VK_CTX_FLAG_INVALID_SWAPCHAIN))
          &&   (vk->context.swapchain_dims == dims)
          &&   (   (vk->context.swap_interval          == swap_interval)
-               || (vk->context.swapchain_present_mode == swapchain_present_mode)))
+               || (vk->context.swapchain_present_mode == swapchain_present_mode));
+
+   if (     reuse_swapchain
+         && ((vk->flags & VK_DATA_FLAG_EMULATING_MAILBOX) != 0)
+               == (vk->mailbox.swapchain != VK_NULL_HANDLE))
+   {
+      vk->context.swap_interval = swap_interval;
+      vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+      return true;
+   }
+
+   /* Replacing the swapchain or changing the acquire path needs the
+    * old submissions drained before their fences are cleared. */
+   vulkan_context_wait_frames(vk);
+   vulkan_acquire_clear_fences(vk);
+
+   vk->flags |= VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+
+   if (reuse_swapchain)
    {
       /* Do not bother creating a swapchain redundantly.  The interval
        * still takes effect: the driver reads it for frame duplication,
