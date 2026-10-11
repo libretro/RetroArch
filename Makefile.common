@@ -1790,7 +1790,11 @@ ifeq ($(HAVE_VULKAN), 1)
       OBJ += gfx/drivers_context/khr_display_ctx.o
    endif
    ifeq ($(HAVE_OPENXR), 1)
-      OBJ += gfx/common/vulkan_openxr.o \
+      OBJ += gfx/common/openxr_runtime.o \
+             gfx/common/openxr_session.o \
+             gfx/common/openxr_swapchain.o \
+             gfx/common/openxr_frame.o \
+             gfx/common/vulkan_openxr.o \
              gfx/video_xr.o \
              input/common/input_openxr.o
    endif

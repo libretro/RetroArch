@@ -33,6 +33,7 @@
 #endif
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
+#include "openxr_swapchain.h"
 #include "../video_xr.h"
 
 RETRO_BEGIN_DECLS
@@ -146,7 +147,7 @@ bool vulkan_openxr_lost(const vulkan_openxr_t *xr);
 bool vulkan_openxr_focused(vulkan_openxr_t *xr);
 XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr);
 
-#define VULKAN_OPENXR_MAX_IMAGES 8
+#define VULKAN_OPENXR_MAX_IMAGES OPENXR_MAX_IMAGES
 
 /* Video thread: whether to draw for the headset now. */
 bool vulkan_openxr_should_draw(vulkan_openxr_t *xr);

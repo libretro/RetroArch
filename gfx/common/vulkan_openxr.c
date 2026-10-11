@@ -18,13 +18,6 @@
 #include <string.h>
 
 #include <boolean.h>
-#include <compat/strl.h>
-#include <features/features_cpu.h>
-#include <retro_atomic.h>
-#include <retro_miscellaneous.h>
-#include <retro_timers.h>
-#include <rthreads/retro_eventcount.h>
-#include <string/stdstring.h>
 
 #ifdef HAVE_CONFIG_H
 #include "../../config.h"
@@ -32,146 +25,28 @@
 
 #include "vksym.h"
 #include "vulkan_openxr.h"
-#include "../video_defines.h"
+#include "openxr_runtime.h"
+#include "openxr_session.h"
+#include "openxr_swapchain.h"
+#include "openxr_frame.h"
 #include "../video_driver.h"
 
 #include "../../msg_hash.h"
-#include "../../runloop.h"
 #include "../../verbosity.h"
 
 #define VULKAN_OPENXR_EXT_BUF 1024
-#define VULKAN_OPENXR_MAX_FORMATS 64
-/* The Steam Frame's controllers; newer than the bundled headers. */
-#define VULKAN_OPENXR_FRAME_EXT "XR_VALVE_frame_controller_interaction"
-
-/* A swapchain per layer, not one array: SteamVR on the Steam Frame
- * ignores a quad's imageArrayIndex and shows layer 0. */
-struct vulkan_openxr_slot
-{
-   XrSwapchain swapchains[2];   /* changed under the queue lock and lock */
-   unsigned dims;
-   unsigned layers;
-   uint32_t index[2];           /* video thread */
-   bool acquired[2];
-   bool waited[2];
-   retro_atomic_int_t content;  /* every layer has released an image */
-};
-
-struct vulkan_openxr_tracked
-{
-   XrTime predicted_time;
-   video_xr_pose_t anchor;
-   float px_per_rad;
-};
-
-#define VULKAN_OPENXR_WORDS(t) ((sizeof(t) + sizeof(int) - 1) / sizeof(int))
-
-/* One writer stamps odd, stores the words, stamps even; a reader that
- * sees the stamp move across its copy starts over. */
-static void vulkan_openxr_seq_publish(retro_atomic_int_t *seq,
-      retro_atomic_int_t *words, const void *src, size_t len)
-{
-   int tmp[VULKAN_OPENXR_WORDS(video_xr_quad_set_t)];
-   size_t n = (len + sizeof(int) - 1) / sizeof(int);
-   size_t i;
-   int s    = retro_atomic_load_relaxed_int(seq);
-
-   tmp[n - 1] = 0;
-   memcpy(tmp, src, len);
-   retro_atomic_store_release_int(seq, s + 1);
-   retro_atomic_thread_fence_release();
-   for (i = 0; i < n; i++)
-      retro_atomic_store_relaxed_int(&words[i], tmp[i]);
-   retro_atomic_store_release_int(seq, s + 2);
-}
-
-static void vulkan_openxr_seq_read(retro_atomic_int_t *seq,
-      retro_atomic_int_t *words, void *dst, size_t len)
-{
-   int tmp[VULKAN_OPENXR_WORDS(video_xr_quad_set_t)];
-   size_t n = (len + sizeof(int) - 1) / sizeof(int);
-   for (;;)
-   {
-      size_t i;
-      int s1 = retro_atomic_load_acquire_int(seq);
-      if (s1 & 1)
-      {
-         retro_cpu_relax();
-         continue;
-      }
-      for (i = 0; i < n; i++)
-         tmp[i] = retro_atomic_load_relaxed_int(&words[i]);
-      retro_atomic_thread_fence_acquire();
-      if (retro_atomic_load_relaxed_int(seq) == s1)
-         break;
-   }
-   memcpy(dst, tmp, len);
-}
 
 struct vulkan_openxr
 {
-   XrInstance instance;
-   XrSystemId system;
-   XrEnvironmentBlendMode blend_mode;
-   unsigned max_dim;
-   uint32_t rec_width;
+   openxr_runtime_t rt;
    bool enable2;
-   bool frame_controller;
-   bool refresh_ext;               /* XR_FB_display_refresh_rate */
    /* The session is made on the thread that makes the device; its frame
     * loop runs on the XR thread. lock guards what both read. */
-   XrSession session;
-   XrSpace local_space;
-   XrSpace view_space;
+   openxr_session_t session;
+   openxr_swapchains_t sc;
+   openxr_frame_t frame;
    VkDevice device;
    slock_t *queue_lock;
-   sthread_t *thread;
-   /* What the XR thread publishes for the video thread, as a seqlock
-    * over its words like video_driver.c's viewport parameters: the
-    * writer's own copy, the stamp and the words. */
-   struct vulkan_openxr_tracked tracked;        /* XR thread */
-   retro_atomic_int_t tracked_seq;
-   retro_atomic_int_t tracked_words[VULKAN_OPENXR_WORDS(struct vulkan_openxr_tracked)];
-   /* The video thread's quads for the XR thread and the pointer, the
-    * same way. */
-   retro_atomic_int_t quads_seq;
-   retro_atomic_int_t quads_words[VULKAN_OPENXR_WORDS(video_xr_quad_set_t)];
-   retro_atomic_int_t quit;
-   retro_atomic_int_t state;       /* XrSessionState */
-   retro_atomic_int_t alive;
-   retro_atomic_int_t recenter;
-   bool running;                   /* XR thread */
-   bool ended;                     /* XR thread, or while it is stopped */
-   /* The instance was lost too, so a kept device cannot get a new
-    * session. Written like ended. */
-   bool lost;
-   bool frame_failed;              /* XR thread */
-   /* The headset's period as the XR thread measures it, and the one it
-    * published, 0 until known. */
-   video_xr_period_t period;       /* XR thread */
-   retro_atomic_int_t period_ns;
-   /* Pacing: every interval headset frames the XR thread bumps tick_seq
-    * and signals tick; the video thread waits on it once a core frame,
-    * or on the clock while the headset doesn't show the session. */
-   retro_eventcount_t tick;
-   retro_atomic_int_t tick_seq;
-   bool tick_ready;
-   retro_atomic_int_t interval;
-   unsigned tick_count;            /* XR thread */
-   unsigned tick_interval;         /* XR thread */
-   int tick_seen;                  /* video thread */
-   int64_t pace_anchor_ns;         /* video thread */
-   unsigned pace_mode;             /* video thread: 0, 1 ticks, 2 clock */
-   bool tick_late;                 /* video thread: warned, no tick since */
-   /* XR_FB_display_refresh_rate: the rates the session lists, the one
-    * to ask for (float bits, 0 for none), and the last one asked. */
-   float rates[VIDEO_HEADSET_MAX_RATES];
-   unsigned num_rates;
-   retro_atomic_int_t want_rate;
-   float asked_rate;               /* XR thread */
-   int64_t formats[VULKAN_OPENXR_MAX_FORMATS];
-   uint32_t num_formats;
-   struct vulkan_openxr_slot slots[VIDEO_XR_MAX_SLOTS];
    XrSwapchain cursor;             /* start to stop; the XR thread reads it */
 
    /* XR_KHR_vulkan_enable's lists, split in place. */
@@ -182,27 +57,6 @@ struct vulkan_openxr
    unsigned num_inst_exts;
    unsigned num_dev_exts;
 
-   PFN_xrGetInstanceProcAddr GetInstanceProcAddr;
-   PFN_xrDestroyInstance DestroyInstance;
-   PFN_xrPollEvent PollEvent;
-   PFN_xrCreateSession CreateSession;
-   PFN_xrDestroySession DestroySession;
-   PFN_xrBeginSession BeginSession;
-   PFN_xrEndSession EndSession;
-   PFN_xrCreateReferenceSpace CreateReferenceSpace;
-   PFN_xrDestroySpace DestroySpace;
-   PFN_xrLocateViews LocateViews;
-   PFN_xrLocateSpace LocateSpace;
-   PFN_xrWaitFrame WaitFrame;
-   PFN_xrBeginFrame BeginFrame;
-   PFN_xrEndFrame EndFrame;
-   PFN_xrEnumerateSwapchainFormats EnumerateSwapchainFormats;
-   PFN_xrCreateSwapchain CreateSwapchain;
-   PFN_xrDestroySwapchain DestroySwapchain;
-   PFN_xrEnumerateSwapchainImages EnumerateSwapchainImages;
-   PFN_xrAcquireSwapchainImage AcquireSwapchainImage;
-   PFN_xrWaitSwapchainImage WaitSwapchainImage;
-   PFN_xrReleaseSwapchainImage ReleaseSwapchainImage;
    PFN_xrGetVulkanGraphicsRequirements2KHR GetVulkanGraphicsRequirements2KHR;
    PFN_xrCreateVulkanInstanceKHR CreateVulkanInstanceKHR;
    PFN_xrCreateVulkanDeviceKHR CreateVulkanDeviceKHR;
@@ -211,71 +65,55 @@ struct vulkan_openxr
    PFN_xrGetVulkanGraphicsDeviceKHR GetVulkanGraphicsDeviceKHR;
    PFN_xrGetVulkanInstanceExtensionsKHR GetVulkanInstanceExtensionsKHR;
    PFN_xrGetVulkanDeviceExtensionsKHR GetVulkanDeviceExtensionsKHR;
-   PFN_xrEnumerateDisplayRefreshRatesFB EnumerateDisplayRefreshRatesFB;
-   PFN_xrRequestDisplayRefreshRateFB RequestDisplayRefreshRateFB;
 };
 
-static void vulkan_openxr_publish_tracked(vulkan_openxr_t *xr)
+static void vulkan_openxr_lock_queue(void *user)
 {
-   vulkan_openxr_seq_publish(&xr->tracked_seq, xr->tracked_words,
-         &xr->tracked, sizeof(xr->tracked));
+   slock_lock(((vulkan_openxr_t*)user)->queue_lock);
 }
 
-static void vulkan_openxr_read_tracked(vulkan_openxr_t *xr,
-      struct vulkan_openxr_tracked *out)
+static void vulkan_openxr_unlock_queue(void *user)
 {
-   vulkan_openxr_seq_read(&xr->tracked_seq, xr->tracked_words,
-         out, sizeof(*out));
+   slock_unlock(((vulkan_openxr_t*)user)->queue_lock);
 }
 
-static void vulkan_openxr_tick_notify(vulkan_openxr_t *xr)
+static void vulkan_openxr_state_hook(void *user, XrSessionState state)
 {
-   if (xr->tick_ready)
-      retro_eventcount_notify(&xr->tick);
+   if (state == XR_SESSION_STATE_STOPPING)
+      openxr_frame_tick_notify(&((vulkan_openxr_t*)user)->frame);
 }
 
-static PFN_xrVoidFunction vulkan_openxr_proc(const vulkan_openxr_t *xr,
-      const char *name)
+static void vulkan_openxr_ended_hook(void *user)
 {
-   PFN_xrVoidFunction fn = NULL;
-   if (xr->GetInstanceProcAddr(xr->instance, name, &fn) != XR_SUCCESS)
-      return NULL;
-   return fn;
+   openxr_frame_tick_notify(&((vulkan_openxr_t*)user)->frame);
+   RARCH_WARN("[OpenXR] The headset session ended; the window keeps the output.\n");
+   openxr_runtime_notify(MSG_OPENXR_SESSION_ENDED);
 }
 
-/* An instance function into the field named like it, without "xr". */
-#define VULKAN_OPENXR_FN(xr, name) \
-   ((xr)->name = (PFN_xr##name)vulkan_openxr_proc((xr), "xr" #name))
+static void vulkan_openxr_exiting_hook(void *user)
+{
+   video_driver_headset_exit_request();
+}
+
+static void vulkan_openxr_local_hook(void *user)
+{
+   openxr_frame_local_changed(&((vulkan_openxr_t*)user)->frame);
+}
+
+#define VULKAN_OPENXR_FN(xr, name) OPENXR_FN(&(xr)->rt, (xr), name)
 
 static vulkan_openxr_hooks_t vulkan_openxr_hooks;
 /* Set after a session fails on a device made for it: the reinit that
  * follows builds the device without the runtime. */
 static bool vulkan_openxr_skip_once;
 
-static void vulkan_openxr_notify(enum msg_hash_enums msg)
+static unsigned vulkan_openxr_extra_layers(void *user, XrTime time,
+      const XrCompositionLayerBaseHeader **layers, unsigned cap)
 {
-   const char *s = msg_hash_to_str(msg);
-   runloop_msg_queue_push(s, strlen(s), 2, 240, false, NULL,
-         MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_WARNING);
-}
-
-static bool vulkan_openxr_has_extension(
-      PFN_xrEnumerateInstanceExtensionProperties enum_exts,
-      uint32_t count, const char *name)
-{
-   uint32_t i;
-   bool found                   = false;
-   XrExtensionProperties *props = (XrExtensionProperties*)
-      calloc(count, sizeof(*props));
-   if (!props)
-      return false;
-   for (i = 0; i < count; i++)
-      props[i].type = XR_TYPE_EXTENSION_PROPERTIES;
-   if (XR_SUCCEEDED(enum_exts(NULL, count, &count, props)))
-      for (i = 0; i < count && !found; i++)
-         found = string_is_equal(props[i].extensionName, name);
-   free(props);
-   return found;
+   if (!vulkan_openxr_hooks.frame_layers)
+      return 0;
+   return vulkan_openxr_hooks.frame_layers(vulkan_openxr_hooks.user, time,
+         layers, cap);
 }
 
 /* Splits a space-separated list in buf into names; false when there
@@ -309,12 +147,12 @@ static bool vulkan_openxr_list(vulkan_openxr_t *xr,
 {
    uint32_t len = 0;
    *count       = 0;
-   if (     XR_FAILED(get(xr->instance, xr->system, 0, &len, NULL))
+   if (     XR_FAILED(get(xr->rt.instance, xr->rt.system, 0, &len, NULL))
          || len > VULKAN_OPENXR_EXT_BUF)
       return false;
    if (!len)
       return true;
-   if (XR_FAILED(get(xr->instance, xr->system, len, &len, buf)))
+   if (XR_FAILED(get(xr->rt.instance, xr->rt.system, len, &len, buf)))
       return false;
    buf[VULKAN_OPENXR_EXT_BUF - 1] = '\0';
    return vulkan_openxr_split(buf, names, count);
@@ -324,22 +162,9 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
 {
    XrResult res;
    XrVersion api;
-   uint32_t count = 0;
-   uint32_t num_exts;
-   const char *exts[3];
-   XrInstanceCreateInfo ici;
-   XrSystemGetInfo sgi;
-   XrSystemProperties props;
-   XrViewConfigurationView views[2];
-   XrEnvironmentBlendMode modes[8];
    XrGraphicsRequirementsVulkanKHR reqs;
+   enum openxr_runtime_result rr;
    const char *ext;
-   PFN_xrEnumerateInstanceExtensionProperties enum_exts;
-   PFN_xrCreateInstance create_instance;
-   PFN_xrGetSystem get_system;
-   PFN_xrGetSystemProperties get_system_properties;
-   PFN_xrEnumerateViewConfigurationViews enum_views;
-   PFN_xrEnumerateEnvironmentBlendModes enum_modes;
    vulkan_openxr_t *xr;
 
    if (vulkan_openxr_skip_once)
@@ -350,79 +175,21 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
    }
    if (!(xr = (vulkan_openxr_t*)calloc(1, sizeof(*xr))))
       return NULL;
+   xr->session.hooks.state_changed = vulkan_openxr_state_hook;
+   xr->session.hooks.ended         = vulkan_openxr_ended_hook;
+   xr->session.hooks.exiting       = vulkan_openxr_exiting_hook;
+   xr->session.hooks.local_changed = vulkan_openxr_local_hook;
+   xr->session.hooks.lock          = vulkan_openxr_lock_queue;
+   xr->session.hooks.unlock        = vulkan_openxr_unlock_queue;
+   xr->session.hooks.user          = xr;
+   xr->frame.extra_layers          = vulkan_openxr_extra_layers;
    xr->enable2 = !enable1;
    ext         = enable1 ? XR_KHR_VULKAN_ENABLE_EXTENSION_NAME
                          : XR_KHR_VULKAN_ENABLE2_EXTENSION_NAME;
 
-   xr->GetInstanceProcAddr = xrGetInstanceProcAddr;
-   enum_exts       = (PFN_xrEnumerateInstanceExtensionProperties)
-      vulkan_openxr_proc(xr, "xrEnumerateInstanceExtensionProperties");
-   create_instance = (PFN_xrCreateInstance)
-      vulkan_openxr_proc(xr, "xrCreateInstance");
-   if (!enum_exts || !create_instance)
-   {
-      RARCH_WARN("[OpenXR] No runtime (the loader lacks xrCreateInstance or xrEnumerateInstanceExtensionProperties).\n");
-      goto unavailable;
-   }
-
-   if (XR_FAILED(res = enum_exts(NULL, 0, &count, NULL)))
-   {
-      RARCH_WARN("[OpenXR] No runtime (xrEnumerateInstanceExtensionProperties: %d).\n",
-            (int)res);
-      goto unavailable;
-   }
-   if (!vulkan_openxr_has_extension(enum_exts, count, ext))
-   {
-      RARCH_WARN("[OpenXR] The runtime lacks %s.\n", ext);
-      goto unavailable;
-   }
-   exts[0]  = ext;
-   num_exts = 1;
-   if (vulkan_openxr_has_extension(enum_exts, count, VULKAN_OPENXR_FRAME_EXT))
-   {
-      exts[num_exts++]     = VULKAN_OPENXR_FRAME_EXT;
-      xr->frame_controller = true;
-   }
-   if (vulkan_openxr_has_extension(enum_exts, count,
-            XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME))
-   {
-      exts[num_exts++] = XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME;
-      xr->refresh_ext  = true;
-   }
-
-   memset(&ici, 0, sizeof(ici));
-   ici.type                       = XR_TYPE_INSTANCE_CREATE_INFO;
-   strlcpy(ici.applicationInfo.applicationName, "RetroArch",
-         sizeof(ici.applicationInfo.applicationName));
-   strlcpy(ici.applicationInfo.engineName, "RetroArch",
-         sizeof(ici.applicationInfo.engineName));
-   ici.applicationInfo.apiVersion = XR_API_VERSION_1_0;
-   ici.enabledExtensionCount      = num_exts;
-   ici.enabledExtensionNames      = exts;
-   if (XR_FAILED(res = create_instance(&ici, &xr->instance)))
-   {
-      RARCH_WARN("[OpenXR] No runtime (xrCreateInstance: %d).\n", (int)res);
-      xr->instance = XR_NULL_HANDLE;
-      goto unavailable;
-   }
-
-   get_system            = (PFN_xrGetSystem)
-      vulkan_openxr_proc(xr, "xrGetSystem");
-   get_system_properties = (PFN_xrGetSystemProperties)
-      vulkan_openxr_proc(xr, "xrGetSystemProperties");
-   enum_views            = (PFN_xrEnumerateViewConfigurationViews)
-      vulkan_openxr_proc(xr, "xrEnumerateViewConfigurationViews");
-   enum_modes            = (PFN_xrEnumerateEnvironmentBlendModes)
-      vulkan_openxr_proc(xr, "xrEnumerateEnvironmentBlendModes");
-   if (     !VULKAN_OPENXR_FN(xr, DestroyInstance)
-         || !get_system || !get_system_properties
-         || !enum_views || !enum_modes)
-      goto missing;
-   /* Without them the rate is still measured, never asked for. */
-   if (     xr->refresh_ext
-         && (  !VULKAN_OPENXR_FN(xr, EnumerateDisplayRefreshRatesFB)
-            || !VULKAN_OPENXR_FN(xr, RequestDisplayRefreshRateFB)))
-      xr->refresh_ext = false;
+   if ((rr = openxr_runtime_create_instance(&xr->rt, xrGetInstanceProcAddr,
+               ext)) != OPENXR_RUNTIME_OK)
+      goto end;
    if (enable1)
    {
       if (     !VULKAN_OPENXR_FN(xr, GetVulkanGraphicsRequirementsKHR)
@@ -436,56 +203,15 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
          || !VULKAN_OPENXR_FN(xr, CreateVulkanDeviceKHR)
          || !VULKAN_OPENXR_FN(xr, GetVulkanGraphicsDevice2KHR))
       goto missing;
-
-   memset(&sgi, 0, sizeof(sgi));
-   sgi.type       = XR_TYPE_SYSTEM_GET_INFO;
-   sgi.formFactor = XR_FORM_FACTOR_HEAD_MOUNTED_DISPLAY;
-   if (XR_FAILED(res = get_system(xr->instance, &sgi, &xr->system)))
-   {
-      RARCH_WARN("[OpenXR] No headset (xrGetSystem: %d).\n", (int)res);
-      goto unavailable;
-   }
-
-   xr->max_dim = 4096;
-   memset(&props, 0, sizeof(props));
-   props.type  = XR_TYPE_SYSTEM_PROPERTIES;
-   if (XR_SUCCEEDED(get_system_properties(xr->instance, xr->system, &props)))
-   {
-      uint32_t mw = props.graphicsProperties.maxSwapchainImageWidth;
-      uint32_t mh = props.graphicsProperties.maxSwapchainImageHeight;
-      if (mw && mw < xr->max_dim)
-         xr->max_dim = mw;
-      if (mh && mh < xr->max_dim)
-         xr->max_dim = mh;
-      RARCH_LOG("[OpenXR] Headset: %s.\n", props.systemName);
-   }
-
-   memset(views, 0, sizeof(views));
-   views[0].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
-   views[1].type = XR_TYPE_VIEW_CONFIGURATION_VIEW;
-   count         = 0;
-   if (     XR_FAILED(enum_views(xr->instance, xr->system,
-               XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 2, &count, views))
-         || count < 1)
-   {
-      RARCH_WARN("[OpenXR] No headset (no stereo view configuration).\n");
-      goto unavailable;
-   }
-   xr->rec_width  = views[0].recommendedImageRectWidth;
-
-   count          = 0;
-   xr->blend_mode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
-   if (     XR_SUCCEEDED(enum_modes(xr->instance, xr->system,
-               XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 8, &count, modes))
-         && count)
-      xr->blend_mode = modes[0];
+   if ((rr = openxr_runtime_find_system(&xr->rt)) != OPENXR_RUNTIME_OK)
+      goto end;
 
    /* The runtime must be asked before any Vulkan object is made. */
    memset(&reqs, 0, sizeof(reqs));
    reqs.type = XR_TYPE_GRAPHICS_REQUIREMENTS_VULKAN_KHR;
    res       = enable1
-      ? xr->GetVulkanGraphicsRequirementsKHR(xr->instance, xr->system, &reqs)
-      : xr->GetVulkanGraphicsRequirements2KHR(xr->instance, xr->system, &reqs);
+      ? xr->GetVulkanGraphicsRequirementsKHR(xr->rt.instance, xr->rt.system, &reqs)
+      : xr->GetVulkanGraphicsRequirements2KHR(xr->rt.instance, xr->rt.system, &reqs);
    if (XR_FAILED(res))
    {
       RARCH_ERR("[OpenXR] xrGetVulkanGraphicsRequirements failed (%d).\n",
@@ -525,14 +251,15 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
    }
    return xr;
 
-unavailable:
-   vulkan_openxr_notify(MSG_OPENXR_UNAVAILABLE);
-   vulkan_openxr_free(xr);
-   return NULL;
 missing:
    RARCH_ERR("[OpenXR] The runtime lacks functions headset output needs.\n");
+   rr = OPENXR_RUNTIME_FAILED;
+   goto end;
 failed:
-   vulkan_openxr_notify(MSG_OPENXR_FAILED);
+   rr = OPENXR_RUNTIME_FAILED;
+end:
+   openxr_runtime_notify((rr == OPENXR_RUNTIME_UNAVAILABLE)
+         ? MSG_OPENXR_UNAVAILABLE : MSG_OPENXR_FAILED);
    vulkan_openxr_free(xr);
    return NULL;
 }
@@ -540,17 +267,9 @@ failed:
 /* After vulkan_openxr_stop(). */
 static void vulkan_openxr_destroy_session(vulkan_openxr_t *xr)
 {
-   if (xr->session && vulkan_openxr_hooks.session_destroying)
+   if (xr->session.session && vulkan_openxr_hooks.session_destroying)
       vulkan_openxr_hooks.session_destroying(vulkan_openxr_hooks.user, xr);
-   if (xr->view_space)
-      xr->DestroySpace(xr->view_space);
-   if (xr->local_space)
-      xr->DestroySpace(xr->local_space);
-   if (xr->session)
-      xr->DestroySession(xr->session);
-   xr->view_space  = XR_NULL_HANDLE;
-   xr->local_space = XR_NULL_HANDLE;
-   xr->session     = XR_NULL_HANDLE;
+   openxr_session_destroy(&xr->session);
 }
 
 void vulkan_openxr_free(vulkan_openxr_t *xr)
@@ -559,24 +278,22 @@ void vulkan_openxr_free(vulkan_openxr_t *xr)
       return;
    vulkan_openxr_stop(xr);
    vulkan_openxr_destroy_session(xr);
-   if (xr->instance && xr->DestroyInstance)
-      xr->DestroyInstance(xr->instance);
-   if (xr->tick_ready)
-      retro_eventcount_free(&xr->tick);
+   openxr_runtime_deinit(&xr->rt);
+   openxr_frame_deinit(&xr->frame);
    free(xr);
 }
 
 void vulkan_openxr_drop(vulkan_openxr_t *xr)
 {
    RARCH_WARN("[OpenXR] Continuing without headset output.\n");
-   vulkan_openxr_notify(MSG_OPENXR_FAILED);
+   openxr_runtime_notify(MSG_OPENXR_FAILED);
    vulkan_openxr_free(xr);
 }
 
 void vulkan_openxr_needs_reload(void)
 {
    RARCH_WARN("[OpenXR] The content keeps its Vulkan context; headset output starts when it is loaded again.\n");
-   vulkan_openxr_notify(MSG_OPENXR_NEEDS_RELOAD);
+   openxr_runtime_notify(MSG_OPENXR_NEEDS_RELOAD);
 }
 
 bool vulkan_openxr_uses_enable2(const vulkan_openxr_t *xr)
@@ -612,10 +329,10 @@ VkResult vulkan_openxr_create_instance(vulkan_openxr_t *xr,
 
    memset(&ci, 0, sizeof(ci));
    ci.type                   = XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR;
-   ci.systemId               = xr->system;
+   ci.systemId               = xr->rt.system;
    ci.pfnGetInstanceProcAddr = gipa;
    ci.vulkanCreateInfo       = info;
-   res = xr->CreateVulkanInstanceKHR(xr->instance, &ci, instance, &vk_res);
+   res = xr->CreateVulkanInstanceKHR(xr->rt.instance, &ci, instance, &vk_res);
    if (XR_FAILED(res) || vk_res != VK_SUCCESS)
    {
       RARCH_WARN("[OpenXR] The runtime could not create the Vulkan instance (%d, %d).\n",
@@ -636,11 +353,11 @@ VkResult vulkan_openxr_create_device(vulkan_openxr_t *xr,
 
    memset(&ci, 0, sizeof(ci));
    ci.type                   = XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR;
-   ci.systemId               = xr->system;
+   ci.systemId               = xr->rt.system;
    ci.pfnGetInstanceProcAddr = gipa;
    ci.vulkanPhysicalDevice   = gpu;
    ci.vulkanCreateInfo       = info;
-   res = xr->CreateVulkanDeviceKHR(xr->instance, &ci, device, &vk_res);
+   res = xr->CreateVulkanDeviceKHR(xr->rt.instance, &ci, device, &vk_res);
    if (XR_FAILED(res) || vk_res != VK_SUCCESS)
    {
       RARCH_WARN("[OpenXR] The runtime could not create the Vulkan device (%d, %d).\n",
@@ -661,12 +378,12 @@ VkPhysicalDevice vulkan_openxr_gpu(vulkan_openxr_t *xr, VkInstance instance)
       XrVulkanGraphicsDeviceGetInfoKHR gi;
       memset(&gi, 0, sizeof(gi));
       gi.type           = XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR;
-      gi.systemId       = xr->system;
+      gi.systemId       = xr->rt.system;
       gi.vulkanInstance = instance;
-      res = xr->GetVulkanGraphicsDevice2KHR(xr->instance, &gi, &gpu);
+      res = xr->GetVulkanGraphicsDevice2KHR(xr->rt.instance, &gi, &gpu);
    }
    else
-      res = xr->GetVulkanGraphicsDeviceKHR(xr->instance, xr->system,
+      res = xr->GetVulkanGraphicsDeviceKHR(xr->rt.instance, xr->rt.system,
             instance, &gpu);
    if (XR_FAILED(res) || gpu == VK_NULL_HANDLE)
    {
@@ -684,465 +401,15 @@ void vulkan_openxr_set_hooks(const vulkan_openxr_hooks_t *hooks)
       memset(&vulkan_openxr_hooks, 0, sizeof(vulkan_openxr_hooks));
 }
 
-static const char *vulkan_openxr_state_name(XrSessionState state)
-{
-   switch (state)
-   {
-      case XR_SESSION_STATE_IDLE:
-         return "idle";
-      case XR_SESSION_STATE_READY:
-         return "ready";
-      case XR_SESSION_STATE_SYNCHRONIZED:
-         return "synchronized";
-      case XR_SESSION_STATE_VISIBLE:
-         return "visible";
-      case XR_SESSION_STATE_FOCUSED:
-         return "focused";
-      case XR_SESSION_STATE_STOPPING:
-         return "stopping";
-      case XR_SESSION_STATE_LOSS_PENDING:
-         return "loss pending";
-      case XR_SESSION_STATE_EXITING:
-         return "exiting";
-      default:
-         break;
-   }
-   return "unknown";
-}
-
-static void vulkan_openxr_ended(vulkan_openxr_t *xr, bool instance_lost)
-{
-   xr->running = false;
-   if (instance_lost)
-      xr->lost = true;
-   if (xr->ended)
-      return;
-   xr->ended = true;
-   retro_atomic_store_release_int(&xr->alive, 0);
-   vulkan_openxr_tick_notify(xr);
-   RARCH_WARN("[OpenXR] The headset session ended; the window keeps the output.\n");
-   vulkan_openxr_notify(MSG_OPENXR_SESSION_ENDED);
-}
-
-static void vulkan_openxr_session_state(vulkan_openxr_t *xr,
-      XrSessionState state)
-{
-   XrResult res;
-   retro_atomic_store_release_int(&xr->state, (int)state);
-   RARCH_LOG("[OpenXR] Session %s.\n", vulkan_openxr_state_name(state));
-   if (state == XR_SESSION_STATE_STOPPING)
-      vulkan_openxr_tick_notify(xr);
-   switch (state)
-   {
-      case XR_SESSION_STATE_READY:
-         {
-            XrSessionBeginInfo bi;
-            memset(&bi, 0, sizeof(bi));
-            bi.type                         = XR_TYPE_SESSION_BEGIN_INFO;
-            bi.primaryViewConfigurationType =
-               XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-            slock_lock(xr->queue_lock);
-            res = xr->BeginSession(xr->session, &bi);
-            slock_unlock(xr->queue_lock);
-            if (XR_SUCCEEDED(res))
-               xr->running = true;
-            else
-               RARCH_ERR("[OpenXR] xrBeginSession failed (%d).\n", (int)res);
-         }
-         break;
-      case XR_SESSION_STATE_STOPPING:
-         slock_lock(xr->queue_lock);
-         xr->EndSession(xr->session);
-         slock_unlock(xr->queue_lock);
-         xr->running = false;
-         break;
-      case XR_SESSION_STATE_EXITING:
-         vulkan_openxr_ended(xr, false);
-         video_driver_headset_exit_request();
-         break;
-      case XR_SESSION_STATE_LOSS_PENDING:
-         vulkan_openxr_ended(xr, false);
-         break;
-      default:
-         break;
-   }
-}
-
-/* The runtime's own recenter moves LOCAL, which the anchor is in: the
- * screens go back straight ahead, and a hotkey request with them. */
-static void vulkan_openxr_space_changed(vulkan_openxr_t *xr,
-      const XrEventDataReferenceSpaceChangePending *ev)
-{
-   if (     ev->session != xr->session
-         || ev->referenceSpaceType != XR_REFERENCE_SPACE_TYPE_LOCAL)
-      return;
-   retro_atomic_store_release_int(&xr->recenter, 0);
-   video_xr_pose_identity(&xr->tracked.anchor);
-   vulkan_openxr_publish_tracked(xr);
-   RARCH_LOG("[OpenXR] Recentered by the runtime.\n");
-}
-
-static void vulkan_openxr_poll(vulkan_openxr_t *xr)
-{
-   XrResult res;
-   XrEventDataBuffer ev;
-   for (;;)
-   {
-      memset(&ev, 0, sizeof(ev));
-      ev.type = XR_TYPE_EVENT_DATA_BUFFER;
-      res     = xr->PollEvent(xr->instance, &ev);
-      if (res == XR_ERROR_INSTANCE_LOST)
-         vulkan_openxr_ended(xr, true);
-      if (res != XR_SUCCESS)
-         break;
-      if (ev.type == XR_TYPE_EVENT_DATA_REFERENCE_SPACE_CHANGE_PENDING)
-         vulkan_openxr_space_changed(xr,
-               (const XrEventDataReferenceSpaceChangePending*)&ev);
-      if (ev.type == XR_TYPE_EVENT_DATA_SESSION_STATE_CHANGED)
-      {
-         const XrEventDataSessionStateChanged *sc =
-            (const XrEventDataSessionStateChanged*)&ev;
-         /* A session destroyed for a new one may have some queued. */
-         if (sc->session == xr->session)
-            vulkan_openxr_session_state(xr, sc->state);
-      }
-      else if (ev.type == XR_TYPE_EVENT_DATA_INSTANCE_LOSS_PENDING)
-         vulkan_openxr_ended(xr, true);
-      else if (ev.type == XR_TYPE_EVENT_DATA_DISPLAY_REFRESH_RATE_CHANGED_FB)
-      {
-         const XrEventDataDisplayRefreshRateChangedFB *rc =
-            (const XrEventDataDisplayRefreshRateChangedFB*)&ev;
-         RARCH_LOG("[OpenXR] The headset changed from %.2f to %.2f Hz.\n",
-               rc->fromDisplayRefreshRate, rc->toDisplayRefreshRate);
-      }
-   }
-}
-
-/* Pixels per radian across one eye, from the first located views. */
-static void vulkan_openxr_measure(vulkan_openxr_t *xr, XrTime time)
-{
-   float fov;
-   uint32_t n = 0;
-   XrViewLocateInfo li;
-   XrViewState vs;
-   XrView views[2];
-
-   memset(&li, 0, sizeof(li));
-   li.type                  = XR_TYPE_VIEW_LOCATE_INFO;
-   li.viewConfigurationType = XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO;
-   li.displayTime           = time;
-   li.space                 = xr->local_space;
-   memset(&vs, 0, sizeof(vs));
-   vs.type                  = XR_TYPE_VIEW_STATE;
-   memset(views, 0, sizeof(views));
-   views[0].type            = XR_TYPE_VIEW;
-   views[1].type            = XR_TYPE_VIEW;
-   if (     XR_FAILED(xr->LocateViews(xr->session, &li, &vs, 2, &n, views))
-         || !n)
-      return;
-   fov = views[0].fov.angleRight - views[0].fov.angleLeft;
-   if (fov < 0.1f || !xr->rec_width)
-      return;
-   xr->tracked.px_per_rad = (float)xr->rec_width / fov;
-   vulkan_openxr_publish_tracked(xr);
-   RARCH_LOG("[OpenXR] %u pixels across %.0f degrees per eye.\n",
-         (unsigned)xr->rec_width, fov * 57.29578f);
-}
-
-static void vulkan_openxr_frame_error(vulkan_openxr_t *xr,
-      const char *fn, XrResult res)
-{
-   if (!xr->frame_failed)
-   {
-      xr->frame_failed = true;
-      RARCH_ERR("[OpenXR] %s failed (%d).\n", fn, (int)res);
-   }
-   /* A runtime may report the loss here without an event. */
-   if (res == XR_ERROR_SESSION_LOST || res == XR_ERROR_INSTANCE_LOST)
-      vulkan_openxr_ended(xr, res == XR_ERROR_INSTANCE_LOST);
-}
-
-/* The published quads whose slot has released an image. The caller
- * holds the queue lock, so no slot changes under it. */
-static unsigned vulkan_openxr_layers(vulkan_openxr_t *xr,
-      XrCompositionLayerQuad *layers,
-      const XrCompositionLayerBaseHeader **ptrs)
-{
-   unsigned i;
-   unsigned n = 0;
-   video_xr_quad_set_t quads;
-   vulkan_openxr_seq_read(&xr->quads_seq, xr->quads_words,
-         &quads, sizeof(quads));
-   for (i = 0; i < quads.num_quads; i++)
-   {
-      const video_xr_quad_t *q        = &quads.quads[i];
-      struct vulkan_openxr_slot *slot = &xr->slots[q->slot];
-      XrCompositionLayerQuad *l       = &layers[n];
-      if (     !slot->swapchains[0] || q->layer >= slot->layers
-            || !retro_atomic_load_acquire_int(&slot->content))
-         continue;
-      memset(l, 0, sizeof(*l));
-      l->type          = XR_TYPE_COMPOSITION_LAYER_QUAD;
-      /* The UI is drawn over transparent black: premultiplied. */
-      l->layerFlags    = (q->kind == VIDEO_XR_QUAD_MENU)
-         ? XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT : 0;
-      l->space         = xr->local_space;
-      l->eyeVisibility = (q->eye == VIDEO_XR_EYE_LEFT)
-         ? XR_EYE_VISIBILITY_LEFT
-         : ((q->eye == VIDEO_XR_EYE_RIGHT)
-               ? XR_EYE_VISIBILITY_RIGHT : XR_EYE_VISIBILITY_BOTH);
-      l->subImage.swapchain               = slot->swapchains[q->layer];
-      l->subImage.imageRect.extent.width  = (int32_t)VIDEO_SCALE_W(slot->dims);
-      l->subImage.imageRect.extent.height = (int32_t)VIDEO_SCALE_H(slot->dims);
-      l->pose.orientation.x = q->pose.orientation.x;
-      l->pose.orientation.y = q->pose.orientation.y;
-      l->pose.orientation.z = q->pose.orientation.z;
-      l->pose.orientation.w = q->pose.orientation.w;
-      l->pose.position.x    = q->pose.position.x;
-      l->pose.position.y    = q->pose.position.y;
-      l->pose.position.z    = q->pose.position.z;
-      l->size.width         = q->width;
-      l->size.height        = q->height;
-      ptrs[n++]             = (const XrCompositionLayerBaseHeader*)l;
-   }
-   return n;
-}
-
-/* The head's position and heading at time become the anchor. */
-static void vulkan_openxr_recenter(vulkan_openxr_t *xr, XrTime time)
-{
-   XrSpaceLocation loc;
-   video_xr_pose_t head, anchor;
-   XrSpaceLocationFlags valid = XR_SPACE_LOCATION_ORIENTATION_VALID_BIT
-      | XR_SPACE_LOCATION_POSITION_VALID_BIT;
-
-   memset(&loc, 0, sizeof(loc));
-   loc.type = XR_TYPE_SPACE_LOCATION;
-   if (     XR_FAILED(xr->LocateSpace(xr->view_space, xr->local_space,
-               time, &loc))
-         || (loc.locationFlags & valid) != valid)
-   {
-      RARCH_WARN("[OpenXR] Recenter: the headset is not tracked.\n");
-      return;
-   }
-   head.orientation.x = loc.pose.orientation.x;
-   head.orientation.y = loc.pose.orientation.y;
-   head.orientation.z = loc.pose.orientation.z;
-   head.orientation.w = loc.pose.orientation.w;
-   head.position.x    = loc.pose.position.x;
-   head.position.y    = loc.pose.position.y;
-   head.position.z    = loc.pose.position.z;
-   if (!video_xr_anchor_from_head(&head, &anchor))
-      return;
-   xr->tracked.anchor = anchor;
-   vulkan_openxr_publish_tracked(xr);
-   RARCH_LOG("[OpenXR] Recentered at %.2f, %.2f, %.2f.\n",
-         anchor.position.x, anchor.position.y, anchor.position.z);
-}
-
-/* Every interval headset frames, a tick for the core. */
-static void vulkan_openxr_tick(vulkan_openxr_t *xr)
-{
-   unsigned interval = (unsigned)retro_atomic_load_acquire_int(
-         &xr->interval);
-   if (interval != xr->tick_interval)
-   {
-      xr->tick_interval = interval;
-      xr->tick_count    = 0;
-   }
-   if (!interval || ++xr->tick_count < interval)
-      return;
-   xr->tick_count = 0;
-   retro_atomic_fetch_add_int(&xr->tick_seq, 1);
-   vulkan_openxr_tick_notify(xr);
-}
-
-/* The rate the video thread wants, asked once a session and value. */
-static void vulkan_openxr_ask_rate(vulkan_openxr_t *xr)
-{
-   XrResult res;
-   float hz;
-   int bits = retro_atomic_load_acquire_int(&xr->want_rate);
-   memcpy(&hz, &bits, sizeof(hz));
-   if (!xr->refresh_ext || hz <= 0.0f || hz == xr->asked_rate)
-      return;
-   xr->asked_rate = hz;
-   res            = xr->RequestDisplayRefreshRateFB(xr->session, hz);
-   RARCH_LOG("[OpenXR] Asked the headset for %.2f Hz (%d).\n", hz,
-         (int)res);
-}
-
-/* One headset frame. xrWaitFrame paces this thread at the headset's
- * rate, and the core too while the headset paces it. */
-static void vulkan_openxr_frame(vulkan_openxr_t *xr)
-{
-   XrResult res;
-   int session_state;
-   const char *fn = NULL;
-   XrFrameWaitInfo wait_info;
-   XrFrameState state;
-   XrFrameBeginInfo begin_info;
-   XrFrameEndInfo end_info;
-   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
-   const XrCompositionLayerBaseHeader *ptrs[VIDEO_XR_MAX_QUADS
-      + VULKAN_OPENXR_MAX_EXTRA_LAYERS];
-
-   memset(&wait_info, 0, sizeof(wait_info));
-   wait_info.type = XR_TYPE_FRAME_WAIT_INFO;
-   memset(&state, 0, sizeof(state));
-   state.type     = XR_TYPE_FRAME_STATE;
-   if (XR_FAILED(res = xr->WaitFrame(xr->session, &wait_info, &state)))
-   {
-      vulkan_openxr_frame_error(xr, "xrWaitFrame", res);
-      retro_sleep(1);
-      return;
-   }
-   session_state = retro_atomic_load_acquire_int(&xr->state);
-   /* A headset that is not worn reports periods that are not its own. */
-   if (    (   session_state == XR_SESSION_STATE_VISIBLE
-            || session_state == XR_SESSION_STATE_FOCUSED)
-         && video_xr_period_add(&xr->period,
-            (int64_t)state.predictedDisplayPeriod))
-   {
-      retro_atomic_store_release_int(&xr->period_ns,
-            (int)xr->period.published);
-      RARCH_LOG("[OpenXR] The headset runs at %.2f Hz.\n",
-            1000000000.0 / (double)xr->period.published);
-   }
-   vulkan_openxr_tick(xr);
-   vulkan_openxr_ask_rate(xr);
-   xr->tracked.predicted_time = state.predictedDisplayTime;
-   vulkan_openxr_publish_tracked(xr);
-   if (xr->tracked.px_per_rad <= 0.0f)
-      vulkan_openxr_measure(xr, state.predictedDisplayTime);
-   if (retro_atomic_load_acquire_int(&xr->recenter))
-   {
-      retro_atomic_store_release_int(&xr->recenter, 0);
-      vulkan_openxr_recenter(xr, state.predictedDisplayTime);
-   }
-
-   memset(&begin_info, 0, sizeof(begin_info));
-   begin_info.type               = XR_TYPE_FRAME_BEGIN_INFO;
-   memset(&end_info, 0, sizeof(end_info));
-   end_info.type                 = XR_TYPE_FRAME_END_INFO;
-   end_info.displayTime          = state.predictedDisplayTime;
-   end_info.environmentBlendMode = xr->blend_mode;
-
-   slock_lock(xr->queue_lock);
-   if (XR_FAILED(res = xr->BeginFrame(xr->session, &begin_info)))
-      fn = "xrBeginFrame";
-   else
-   {
-      session_state = retro_atomic_load_acquire_int(&xr->state);
-      /* Layers only while the headset shows the session. */
-      if (     state.shouldRender
-            && (   session_state == XR_SESSION_STATE_VISIBLE
-                || session_state == XR_SESSION_STATE_FOCUSED))
-      {
-         end_info.layerCount = vulkan_openxr_layers(xr, layers, ptrs);
-         if (vulkan_openxr_hooks.frame_layers)
-            end_info.layerCount += vulkan_openxr_hooks.frame_layers(
-                  vulkan_openxr_hooks.user, state.predictedDisplayTime,
-                  ptrs + end_info.layerCount,
-                  VULKAN_OPENXR_MAX_EXTRA_LAYERS);
-      }
-      end_info.layers = end_info.layerCount ? ptrs : NULL;
-      if (XR_FAILED(res = xr->EndFrame(xr->session, &end_info)))
-         fn = "xrEndFrame";
-   }
-   slock_unlock(xr->queue_lock);
-   if (fn)
-      vulkan_openxr_frame_error(xr, fn, res);
-   else
-      xr->frame_failed = false;
-}
-
-static void vulkan_openxr_thread(void *data)
-{
-   vulkan_openxr_t *xr = (vulkan_openxr_t*)data;
-   while (!retro_atomic_load_acquire_int(&xr->quit))
-   {
-      vulkan_openxr_poll(xr);
-      if (xr->running)
-         vulkan_openxr_frame(xr);
-      else
-         retro_sleep(10);
-   }
-}
-
-/* The rates XR_FB_display_refresh_rate lists for this session. */
-static void vulkan_openxr_list_rates(vulkan_openxr_t *xr)
-{
-   char s[256];
-   uint32_t i;
-   size_t len    = 0;
-   uint32_t n    = 0;
-   xr->num_rates = 0;
-   if (     !xr->refresh_ext
-         || XR_FAILED(xr->EnumerateDisplayRefreshRatesFB(xr->session, 0,
-               &n, NULL))
-         || !n)
-      return;
-   if (n > VIDEO_HEADSET_MAX_RATES)
-   {
-      /* The runtime takes no less room than it lists. */
-      uint32_t all = n;
-      float *tmp   = (float*)malloc(all * sizeof(*tmp));
-      if (!tmp)
-         return;
-      if (XR_FAILED(xr->EnumerateDisplayRefreshRatesFB(xr->session, all,
-               &all, tmp)))
-      {
-         free(tmp);
-         return;
-      }
-      n = (all < VIDEO_HEADSET_MAX_RATES) ? all : VIDEO_HEADSET_MAX_RATES;
-      memcpy(xr->rates, tmp, n * sizeof(*tmp));
-      free(tmp);
-      if (all > n)
-         RARCH_WARN("[OpenXR] The headset offers %u rates; %u dropped.\n",
-               (unsigned)all, (unsigned)(all - n));
-   }
-   else if (XR_FAILED(xr->EnumerateDisplayRefreshRatesFB(xr->session, n,
-            &n, xr->rates)))
-      return;
-   xr->num_rates = n;
-   s[0]          = '\0';
-   for (i = 0; i < n && len < sizeof(s); i++)
-      len += snprintf(s + len, sizeof(s) - len, "%s%.2f",
-            i ? ", " : "", xr->rates[i]);
-   RARCH_LOG("[OpenXR] The headset offers %s Hz.\n", s);
-}
-
 static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
       VkInstance instance, VkPhysicalDevice gpu, VkDevice device,
       uint32_t queue_family)
 {
-   XrResult res;
-   uint32_t count = 0;
    XrGraphicsBindingVulkanKHR binding;
-   XrSessionCreateInfo sci;
-   XrReferenceSpaceCreateInfo rci;
 
-   if (     !VULKAN_OPENXR_FN(xr, PollEvent)
-         || !VULKAN_OPENXR_FN(xr, CreateSession)
-         || !VULKAN_OPENXR_FN(xr, DestroySession)
-         || !VULKAN_OPENXR_FN(xr, BeginSession)
-         || !VULKAN_OPENXR_FN(xr, EndSession)
-         || !VULKAN_OPENXR_FN(xr, CreateReferenceSpace)
-         || !VULKAN_OPENXR_FN(xr, DestroySpace)
-         || !VULKAN_OPENXR_FN(xr, LocateViews)
-         || !VULKAN_OPENXR_FN(xr, LocateSpace)
-         || !VULKAN_OPENXR_FN(xr, WaitFrame)
-         || !VULKAN_OPENXR_FN(xr, BeginFrame)
-         || !VULKAN_OPENXR_FN(xr, EndFrame)
-         || !VULKAN_OPENXR_FN(xr, EnumerateSwapchainFormats)
-         || !VULKAN_OPENXR_FN(xr, CreateSwapchain)
-         || !VULKAN_OPENXR_FN(xr, DestroySwapchain)
-         || !VULKAN_OPENXR_FN(xr, EnumerateSwapchainImages)
-         || !VULKAN_OPENXR_FN(xr, AcquireSwapchainImage)
-         || !VULKAN_OPENXR_FN(xr, WaitSwapchainImage)
-         || !VULKAN_OPENXR_FN(xr, ReleaseSwapchainImage))
+   if (     !openxr_session_load(&xr->session, &xr->rt)
+         || !openxr_frame_load(&xr->frame, &xr->rt, &xr->session, &xr->sc)
+         || !openxr_swapchains_load(&xr->sc, &xr->rt, &xr->session))
    {
       RARCH_ERR("[OpenXR] The runtime lacks session functions.\n");
       return false;
@@ -1155,68 +422,25 @@ static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
    binding.device           = device;
    binding.queueFamilyIndex = queue_family;
    binding.queueIndex       = 0;
-   memset(&sci, 0, sizeof(sci));
-   sci.type                 = XR_TYPE_SESSION_CREATE_INFO;
-   sci.next                 = &binding;
-   sci.systemId             = xr->system;
-   if (XR_FAILED(res = xr->CreateSession(xr->instance, &sci, &xr->session)))
-   {
-      RARCH_ERR("[OpenXR] xrCreateSession failed (%d).\n", (int)res);
-      xr->session = XR_NULL_HANDLE;
+   if (!openxr_session_create(&xr->session, &binding))
       return false;
-   }
    xr->device = device;
-   video_xr_pose_identity(&xr->tracked.anchor);
-   vulkan_openxr_publish_tracked(xr);
-   retro_atomic_store_release_int(&xr->recenter, 0);
-
-   memset(&rci, 0, sizeof(rci));
-   rci.type                               = XR_TYPE_REFERENCE_SPACE_CREATE_INFO;
-   rci.referenceSpaceType                 = XR_REFERENCE_SPACE_TYPE_LOCAL;
-   rci.poseInReferenceSpace.orientation.w = 1.0f;
-   if (XR_FAILED(res = xr->CreateReferenceSpace(xr->session, &rci,
-               &xr->local_space)))
-   {
-      RARCH_ERR("[OpenXR] No LOCAL space (%d).\n", (int)res);
-      xr->local_space = XR_NULL_HANDLE;
-      goto error;
-   }
-   rci.referenceSpaceType = XR_REFERENCE_SPACE_TYPE_VIEW;
-   if (XR_FAILED(res = xr->CreateReferenceSpace(xr->session, &rci,
-               &xr->view_space)))
-   {
-      RARCH_ERR("[OpenXR] No VIEW space (%d).\n", (int)res);
-      xr->view_space = XR_NULL_HANDLE;
-      goto error;
-   }
-   if (XR_FAILED(xr->EnumerateSwapchainFormats(xr->session,
-               VULKAN_OPENXR_MAX_FORMATS, &count, xr->formats)))
-      count = 0;
-   xr->num_formats = count;
-   vulkan_openxr_list_rates(xr);
+   openxr_swapchains_list_formats(&xr->sc);
+   openxr_frame_session_created(&xr->frame);
    RARCH_LOG("[OpenXR] Session created.\n");
 
    if (vulkan_openxr_hooks.session_created)
    {
       vulkan_openxr_handles_t h;
       h.xr          = xr;
-      h.instance    = xr->instance;
-      h.session     = xr->session;
-      h.local_space = xr->local_space;
-      h.get_proc    = xr->GetInstanceProcAddr;
-      h.frame_controller = xr->frame_controller;
+      h.instance    = xr->rt.instance;
+      h.session     = xr->session.session;
+      h.local_space = xr->session.local_space;
+      h.get_proc    = xr->rt.GetInstanceProcAddr;
+      h.frame_controller = xr->rt.frame_controller;
       vulkan_openxr_hooks.session_created(vulkan_openxr_hooks.user, &h);
    }
    return true;
-
-error:
-   /* Freed here, so session_destroying only follows session_created. */
-   if (xr->local_space)
-      xr->DestroySpace(xr->local_space);
-   xr->local_space = XR_NULL_HANDLE;
-   xr->DestroySession(xr->session);
-   xr->session     = XR_NULL_HANDLE;
-   return false;
 }
 
 /* A white dot with a dark rim and a one-pixel soft edge, alpha
@@ -1260,7 +484,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    VkResult vk_res            = VK_SUCCESS;
    const char *step           = NULL;
    VkFormat format            = VK_FORMAT_UNDEFINED;
-   XrSwapchain sc             = XR_NULL_HANDLE;
+   XrSwapchain chain          = XR_NULL_HANDLE;
    VkQueue queue              = VK_NULL_HANDLE;
    VkBuffer buffer            = VK_NULL_HANDLE;
    VkDeviceMemory memory      = VK_NULL_HANDLE;
@@ -1273,7 +497,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    VkMemoryPropertyFlags host = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT
       | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
    XrSwapchainCreateInfo ci;
-   XrSwapchainImageVulkanKHR imgs[VULKAN_OPENXR_MAX_IMAGES];
+   XrSwapchainImageVulkanKHR imgs[OPENXR_MAX_IMAGES];
    XrSwapchainImageAcquireInfo ai;
    XrSwapchainImageWaitInfo wi;
    XrSwapchainImageReleaseInfo ri;
@@ -1310,7 +534,7 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    ci.arraySize   = 1;
    ci.mipCount    = 1;
    memset(imgs, 0, sizeof(imgs));
-   for (i = 0; i < VULKAN_OPENXR_MAX_IMAGES; i++)
+   for (i = 0; i < OPENXR_MAX_IMAGES; i++)
       imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
    memset(&ai, 0, sizeof(ai));
    ai.type        = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
@@ -1319,18 +543,18 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    wi.timeout     = 100000000; /* 100 ms: a fresh swapchain is free */
 
    slock_lock(xr->queue_lock);
-   res = xr->CreateSwapchain(xr->session, &ci, &sc);
+   res = xr->sc.CreateSwapchain(xr->session.session, &ci, &chain);
    if (XR_SUCCEEDED(res))
-      res = xr->EnumerateSwapchainImages(sc, 0, &n, NULL);
-   if (XR_SUCCEEDED(res) && (!n || n > VULKAN_OPENXR_MAX_IMAGES))
+      res = xr->sc.EnumerateSwapchainImages(chain, 0, &n, NULL);
+   if (XR_SUCCEEDED(res) && (!n || n > OPENXR_MAX_IMAGES))
       res = XR_ERROR_SIZE_INSUFFICIENT;
    if (XR_SUCCEEDED(res))
-      res = xr->EnumerateSwapchainImages(sc, n, &n,
+      res = xr->sc.EnumerateSwapchainImages(chain, n, &n,
             (XrSwapchainImageBaseHeader*)imgs);
    if (XR_SUCCEEDED(res))
-      res = xr->AcquireSwapchainImage(sc, &ai, &index);
+      res = xr->sc.AcquireSwapchainImage(chain, &ai, &index);
    if (XR_SUCCEEDED(res))
-      res = xr->WaitSwapchainImage(sc, &wi);
+      res = xr->sc.WaitSwapchainImage(chain, &wi);
    slock_unlock(xr->queue_lock);
    /* XR_TIMEOUT_EXPIRED succeeds too, but leaves no image. */
    if (res != XR_SUCCESS)
@@ -1447,15 +671,15 @@ static void vulkan_openxr_cursor_create(vulkan_openxr_t *xr,
    memset(&ri, 0, sizeof(ri));
    ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
    slock_lock(xr->queue_lock);
-   res = xr->ReleaseSwapchainImage(sc, &ri);
+   res = xr->sc.ReleaseSwapchainImage(chain, &ri);
    slock_unlock(xr->queue_lock);
    if (XR_FAILED(res))
    {
       step = "xrReleaseSwapchainImage";
       goto end;
    }
-   xr->cursor = sc;
-   sc         = XR_NULL_HANDLE;
+   xr->cursor = chain;
+   chain      = XR_NULL_HANDLE;
    RARCH_LOG("[OpenXR] Laser cursor ready.\n");
 
 end:
@@ -1467,10 +691,10 @@ end:
       vkFreeMemory(device, memory, NULL);
    if (buffer)
       vkDestroyBuffer(device, buffer, NULL);
-   if (sc)
+   if (chain)
    {
       slock_lock(xr->queue_lock);
-      xr->DestroySwapchain(sc);
+      xr->sc.DestroySwapchain(chain);
       slock_unlock(xr->queue_lock);
    }
    if (step)
@@ -1482,21 +706,13 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
       VkPhysicalDevice gpu, VkDevice device, uint32_t queue_family,
       slock_t *queue_lock)
 {
-   if (!xr->tick_ready)
-   {
-      if (!retro_eventcount_init(&xr->tick))
-         return false;
-      xr->tick_ready = true;
-   }
    /* A kept device outlives a session the runtime ended: a new one. */
-   if (xr->ended)
+   if (xr->session.ended)
    {
       vulkan_openxr_destroy_session(xr);
-      xr->ended        = false;
-      xr->frame_failed = false;
-      retro_atomic_store_release_int(&xr->state, XR_SESSION_STATE_UNKNOWN);
+      openxr_session_reset(&xr->session);
    }
-   if (     !xr->session
+   if (     !xr->session.session
          && !vulkan_openxr_create_session(xr, instance, gpu, device,
             queue_family))
       return false;
@@ -1508,31 +724,13 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
    xr->queue_lock = queue_lock;
    if (!xr->cursor)
       vulkan_openxr_cursor_create(xr, gpu, device, queue_family);
-   video_xr_period_init(&xr->period);
-   retro_atomic_store_release_int(&xr->period_ns, 0);
-   xr->tick_count    = 0;
-   xr->tick_interval = 0;
-   xr->asked_rate    = 0.0f;
-   retro_atomic_store_release_int(&xr->quit, 0);
-   retro_atomic_store_release_int(&xr->alive, 1);
-   if (!(xr->thread = sthread_create(vulkan_openxr_thread, xr)))
-   {
-      retro_atomic_store_release_int(&xr->alive, 0);
-      return false;
-   }
-   return true;
+   return openxr_frame_start(&xr->frame);
 }
 
 void vulkan_openxr_stop_thread(vulkan_openxr_t *xr)
 {
-   if (!xr || !xr->thread)
-      return;
-   retro_atomic_store_release_int(&xr->quit, 1);
-   sthread_join(xr->thread);
-   xr->thread = NULL;
-   /* Nothing shows the session's frames now: a driver that presents on
-    * (a staged content load keeps it up) draws none for it. */
-   retro_atomic_store_release_int(&xr->alive, 0);
+   if (xr)
+      openxr_frame_stop(&xr->frame);
 }
 
 void vulkan_openxr_stop(vulkan_openxr_t *xr)
@@ -1547,16 +745,11 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
    if (xr->cursor)
    {
       slock_lock(xr->queue_lock);
-      xr->DestroySwapchain(xr->cursor);
+      xr->sc.DestroySwapchain(xr->cursor);
       slock_unlock(xr->queue_lock);
       xr->cursor = XR_NULL_HANDLE;
    }
-   {
-      video_xr_quad_set_t none;
-      memset(&none, 0, sizeof(none));
-      vulkan_openxr_seq_publish(&xr->quads_seq, xr->quads_words,
-            &none, sizeof(none));
-   }
+   openxr_frame_clear_quads(&xr->frame);
    /* The context frees it next; a kept session outlives it. */
    xr->queue_lock = NULL;
 }
@@ -1564,365 +757,160 @@ void vulkan_openxr_stop(vulkan_openxr_t *xr)
 void vulkan_openxr_drop_and_reinit(vulkan_openxr_t *xr)
 {
    RARCH_ERR("[OpenXR] Rebuilding video without headset output.\n");
-   vulkan_openxr_notify(MSG_OPENXR_FAILED);
+   openxr_runtime_notify(MSG_OPENXR_FAILED);
    vulkan_openxr_free(xr);
    vulkan_openxr_skip_once = true;
 }
 
 bool vulkan_openxr_lost(const vulkan_openxr_t *xr)
 {
-   return xr->lost;
+   return xr->session.lost;
 }
 
 bool vulkan_openxr_alive(vulkan_openxr_t *xr)
 {
-   return retro_atomic_load_acquire_int(&xr->alive) != 0;
+   return openxr_session_alive(&xr->session);
 }
 
 bool vulkan_openxr_focused(vulkan_openxr_t *xr)
 {
-   return retro_atomic_load_acquire_int(&xr->alive)
-      && retro_atomic_load_acquire_int(&xr->state) == XR_SESSION_STATE_FOCUSED;
+   return openxr_session_focused(&xr->session);
 }
 
 XrTime vulkan_openxr_predicted_time(vulkan_openxr_t *xr)
 {
-   struct vulkan_openxr_tracked t;
-   vulkan_openxr_read_tracked(xr, &t);
-   return t.predicted_time;
+   return openxr_frame_predicted_time(&xr->frame);
 }
 
 bool vulkan_openxr_should_draw(vulkan_openxr_t *xr)
 {
-   int state = retro_atomic_load_acquire_int(&xr->state);
-   return retro_atomic_load_acquire_int(&xr->alive)
-      && (   state == XR_SESSION_STATE_VISIBLE
-          || state == XR_SESSION_STATE_FOCUSED);
+   return openxr_session_visible(&xr->session);
 }
 
 float vulkan_openxr_pixels_per_radian(vulkan_openxr_t *xr)
 {
-   struct vulkan_openxr_tracked t;
-   vulkan_openxr_read_tracked(xr, &t);
-   return t.px_per_rad;
+   return openxr_frame_pixels_per_radian(&xr->frame);
 }
 
 float vulkan_openxr_refresh_rate(vulkan_openxr_t *xr)
 {
-   int ns = retro_atomic_load_acquire_int(&xr->period_ns);
-   return (ns > 0) ? (float)(1000000000.0 / (double)ns) : 0.0f;
+   return openxr_frame_refresh_rate(&xr->frame);
 }
 
 void vulkan_openxr_set_pacing(vulkan_openxr_t *xr, unsigned interval)
 {
-   retro_atomic_store_release_int(&xr->interval, (int)interval);
-   if (!interval)
-      xr->pace_mode = 0;
-}
-
-/* The next tick after the last one seen, or false after timeout_ns. */
-static bool vulkan_openxr_wait_tick(vulkan_openxr_t *xr,
-      int64_t timeout_ns)
-{
-   int seq;
-   retro_time_t deadline = cpu_features_get_time_usec()
-      + (retro_time_t)(timeout_ns / 1000);
-   for (;;)
-   {
-      int key;
-      retro_time_t left;
-      seq = retro_atomic_load_acquire_int(&xr->tick_seq);
-      if (seq != xr->tick_seen || !vulkan_openxr_should_draw(xr))
-         break;
-      left = deadline - cpu_features_get_time_usec();
-      if (left <= 0)
-         break;
-      key = retro_eventcount_prepare_wait(&xr->tick);
-      seq = retro_atomic_load_acquire_int(&xr->tick_seq);
-      if (seq != xr->tick_seen || !vulkan_openxr_should_draw(xr))
-      {
-         retro_eventcount_cancel_wait(&xr->tick);
-         break;
-      }
-      if (!retro_eventcount_commit_wait_timeout(&xr->tick, key, left))
-      {
-         seq = retro_atomic_load_acquire_int(&xr->tick_seq);
-         break;
-      }
-   }
-   if (seq == xr->tick_seen)
-      return false;
-   xr->tick_seen = seq;
-   return true;
+   openxr_frame_set_pacing(&xr->frame, interval);
 }
 
 void vulkan_openxr_pace_skip(vulkan_openxr_t *xr)
 {
-   if (!xr->tick_ready)
-      return;
-   xr->tick_seen = retro_atomic_load_acquire_int(&xr->tick_seq);
+   openxr_frame_pace_skip(&xr->frame);
 }
 
 void vulkan_openxr_pace_wait(vulkan_openxr_t *xr)
 {
-   int64_t period = (int64_t)retro_atomic_load_acquire_int(&xr->period_ns)
-      * retro_atomic_load_acquire_int(&xr->interval);
-   if (period <= 0 || !xr->tick_ready)
-      return;
-   if (vulkan_openxr_should_draw(xr))
-   {
-      if (xr->pace_mode != 1)
-         RARCH_LOG("[OpenXR] Pacing on the headset's frames.\n");
-      xr->pace_mode = 1;
-      if (vulkan_openxr_wait_tick(xr, period * 2))
-         xr->tick_late = false;
-      else if (vulkan_openxr_should_draw(xr) && !xr->tick_late)
-      {
-         xr->tick_late = true;
-         RARCH_WARN("[OpenXR] No headset frame for two intervals; the core carries on.\n");
-      }
-      xr->pace_anchor_ns = (int64_t)cpu_features_get_time_usec() * 1000;
-   }
-   else
-   {
-      /* No ticks to wait on: keep the core's rate on the clock, from
-       * the last tick on. */
-      retro_time_t sleep_us;
-      if (xr->pace_mode != 2)
-         RARCH_LOG("[OpenXR] Pacing on the clock while the headset does not show the session.\n");
-      xr->pace_mode = 2;
-      vulkan_openxr_pace_skip(xr);
-      sleep_us      = runloop_pace_schedule(&xr->pace_anchor_ns, period,
-            cpu_features_get_time_usec());
-      if (sleep_us > 0)
-         retro_sleep_us((unsigned)sleep_us);
-   }
+   openxr_frame_pace_wait(&xr->frame);
 }
 
 unsigned vulkan_openxr_refresh_rates(const vulkan_openxr_t *xr,
       float *rates, unsigned cap)
 {
-   unsigned i;
-   for (i = 0; i < xr->num_rates && i < cap; i++)
-      rates[i] = xr->rates[i];
-   return i;
+   return openxr_frame_refresh_rates(&xr->frame, rates, cap);
 }
 
 void vulkan_openxr_request_rate(vulkan_openxr_t *xr, float hz)
 {
-   int bits;
-   memcpy(&bits, &hz, sizeof(bits));
-   retro_atomic_store_release_int(&xr->want_rate, bits);
+   openxr_frame_request_rate(&xr->frame, hz);
 }
 
 unsigned vulkan_openxr_max_dim(const vulkan_openxr_t *xr)
 {
-   return xr->max_dim;
+   return xr->rt.max_dim;
 }
 
 bool vulkan_openxr_supports_format(const vulkan_openxr_t *xr,
       VkFormat format)
 {
-   uint32_t i;
-   for (i = 0; i < xr->num_formats; i++)
-      if (xr->formats[i] == (int64_t)format)
-         return true;
-   return false;
+   return openxr_swapchains_supports(&xr->sc, (int64_t)format);
 }
 
 void vulkan_openxr_slot_destroy(vulkan_openxr_t *xr, unsigned slot)
 {
-   unsigned l;
-   XrSwapchain sc[2];
-   struct vulkan_openxr_slot *s = &xr->slots[slot];
-   if (!s->swapchains[0])
-      return;
-   slock_lock(xr->queue_lock);
-   memcpy(sc, s->swapchains, sizeof(sc));
-   memset(s->swapchains, 0, sizeof(s->swapchains));
-   memset(s->acquired, 0, sizeof(s->acquired));
-   memset(s->waited, 0, sizeof(s->waited));
-   s->dims      = 0;
-   s->layers    = 0;
-   retro_atomic_store_release_int(&s->content, 0);
-   for (l = 0; l < 2; l++)
-      if (sc[l])
-         xr->DestroySwapchain(sc[l]);
-   slock_unlock(xr->queue_lock);
+   openxr_slot_destroy(&xr->sc, slot);
+}
+
+struct vulkan_openxr_images
+{
+   vulkan_openxr_t *xr;
+   VkImage (*images)[2];
+};
+
+static XrResult vulkan_openxr_list_images(void *user, XrSwapchain swapchain,
+      unsigned layer, uint32_t *count)
+{
+   uint32_t i;
+   XrResult res;
+   XrSwapchainImageVulkanKHR imgs[OPENXR_MAX_IMAGES];
+   struct vulkan_openxr_images *li = (struct vulkan_openxr_images*)user;
+   memset(imgs, 0, sizeof(imgs));
+   for (i = 0; i < OPENXR_MAX_IMAGES; i++)
+      imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
+   res = li->xr->sc.EnumerateSwapchainImages(swapchain, *count, count,
+         (XrSwapchainImageBaseHeader*)imgs);
+   for (i = 0; XR_SUCCEEDED(res) && i < *count; i++)
+      li->images[i][layer] = imgs[i].image;
+   return res;
 }
 
 bool vulkan_openxr_slot_create(vulkan_openxr_t *xr, unsigned slot,
       VkFormat format, bool mutable_format, unsigned dims, unsigned layers,
       VkImage (*images)[2], unsigned *num_images)
 {
-   uint32_t i, l;
-   uint32_t n   = 0;
-   XrResult res = XR_SUCCESS;
-   XrSwapchainCreateInfo ci;
-   XrSwapchainImageVulkanKHR imgs[VULKAN_OPENXR_MAX_IMAGES];
-   XrSwapchain sc[2];
-   struct vulkan_openxr_slot *s = &xr->slots[slot];
-
-   vulkan_openxr_slot_destroy(xr, slot);
-   memset(&ci, 0, sizeof(ci));
-   ci.type        = XR_TYPE_SWAPCHAIN_CREATE_INFO;
-   ci.usageFlags  = XR_SWAPCHAIN_USAGE_COLOR_ATTACHMENT_BIT
-      | XR_SWAPCHAIN_USAGE_TRANSFER_DST_BIT;
-   /* The chains' final passes write through a view in the window's
-    * format. */
-   if (mutable_format)
-      ci.usageFlags |= XR_SWAPCHAIN_USAGE_MUTABLE_FORMAT_BIT;
-   ci.format      = (int64_t)format;
-   ci.sampleCount = 1;
-   ci.width       = VIDEO_SCALE_W(dims);
-   ci.height      = VIDEO_SCALE_H(dims);
-   ci.faceCount   = 1;
-   ci.arraySize   = 1;
-   ci.mipCount    = 1;
-   memset(imgs, 0, sizeof(imgs));
-   for (i = 0; i < VULKAN_OPENXR_MAX_IMAGES; i++)
-      imgs[i].type = XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR;
-   sc[0] = XR_NULL_HANDLE;
-   sc[1] = XR_NULL_HANDLE;
-
-   slock_lock(xr->queue_lock);
-   for (l = 0; l < layers && XR_SUCCEEDED(res); l++)
-   {
-      uint32_t count = 0;
-      res = xr->CreateSwapchain(xr->session, &ci, &sc[l]);
-      if (XR_SUCCEEDED(res))
-         res = xr->EnumerateSwapchainImages(sc[l], 0, &count, NULL);
-      /* The driver keeps one image count per slot. */
-      if (     XR_SUCCEEDED(res)
-            && (  !count || count > VULKAN_OPENXR_MAX_IMAGES
-               || (l && count != n)))
-         res = XR_ERROR_SIZE_INSUFFICIENT;
-      if (XR_SUCCEEDED(res))
-         res = xr->EnumerateSwapchainImages(sc[l], count, &count,
-               (XrSwapchainImageBaseHeader*)imgs);
-      for (i = 0; XR_SUCCEEDED(res) && i < count; i++)
-         images[i][l] = imgs[i].image;
-      n = count;
-   }
-   if (XR_SUCCEEDED(res))
-   {
-      memcpy(s->swapchains, sc, sizeof(sc));
-      memset(s->acquired, 0, sizeof(s->acquired));
-      memset(s->waited, 0, sizeof(s->waited));
-      s->dims      = dims;
-      s->layers    = layers;
-      retro_atomic_store_release_int(&s->content, 0);
-   }
-   else
-      for (l = 0; l < 2; l++)
-         if (sc[l] != XR_NULL_HANDLE)
-            xr->DestroySwapchain(sc[l]);
-   slock_unlock(xr->queue_lock);
-
-   if (XR_FAILED(res))
-   {
-      RARCH_ERR("[OpenXR] No %ux%u swapchain with %u layer(s) (%d).\n",
-            VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), layers, (int)res);
-      return false;
-   }
-   *num_images = n;
-   RARCH_LOG("[OpenXR] Slot %u: %ux%u, %u layer(s), %u images.\n", slot,
-         VIDEO_SCALE_W(dims), VIDEO_SCALE_H(dims), layers, (unsigned)n);
-   return true;
+   struct vulkan_openxr_images li;
+   li.xr     = xr;
+   li.images = images;
+   return openxr_slot_create(&xr->sc, slot, (int64_t)format, mutable_format,
+         dims, layers, vulkan_openxr_list_images, &li, num_images);
 }
 
 bool vulkan_openxr_slot_acquire(vulkan_openxr_t *xr, unsigned slot,
       unsigned *index)
 {
-   unsigned l;
-   struct vulkan_openxr_slot *s = &xr->slots[slot];
-   if (!s->swapchains[0])
-      return false;
-   for (l = 0; l < s->layers; l++)
-   {
-      if (!s->acquired[l])
-      {
-         XrSwapchainImageAcquireInfo ai;
-         memset(&ai, 0, sizeof(ai));
-         ai.type = XR_TYPE_SWAPCHAIN_IMAGE_ACQUIRE_INFO;
-         if (XR_FAILED(xr->AcquireSwapchainImage(s->swapchains[l], &ai,
-                     &s->index[l])))
-            return false;
-         s->acquired[l] = true;
-         s->waited[l]   = false;
-      }
-      if (!s->waited[l])
-      {
-         XrSwapchainImageWaitInfo wi;
-         memset(&wi, 0, sizeof(wi));
-         wi.type    = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO;
-         /* Never stall the core, nor the XR thread behind the queue lock:
-          * an image the compositor still reads is tried again next frame. */
-         wi.timeout = 0;
-         if (xr->WaitSwapchainImage(s->swapchains[l], &wi) != XR_SUCCESS)
-            return false;
-         s->waited[l] = true;
-      }
-      index[l] = s->index[l];
-   }
-   return true;
+   return openxr_slot_acquire(&xr->sc, slot, index);
 }
 
 void vulkan_openxr_slot_release(vulkan_openxr_t *xr, unsigned slot)
 {
-   unsigned l;
-   bool released = true;
-   XrSwapchainImageReleaseInfo ri;
-   struct vulkan_openxr_slot *s = &xr->slots[slot];
-   if (!s->swapchains[0])
-      return;
-   for (l = 0; l < s->layers; l++)
-      if (!s->acquired[l] || !s->waited[l])
-         return;
-   memset(&ri, 0, sizeof(ri));
-   ri.type = XR_TYPE_SWAPCHAIN_IMAGE_RELEASE_INFO;
-   for (l = 0; l < s->layers; l++)
-   {
-      if (XR_FAILED(xr->ReleaseSwapchainImage(s->swapchains[l], &ri)))
-         released = false;
-      s->acquired[l] = false;
-      s->waited[l]   = false;
-   }
-   if (released)
-      retro_atomic_store_release_int(&s->content, 1);
+   openxr_slot_release(&xr->sc, slot);
 }
 
 void vulkan_openxr_slot_forget(vulkan_openxr_t *xr, unsigned slot)
 {
-   retro_atomic_store_release_int(&xr->slots[slot].content, 0);
+   openxr_slot_forget(&xr->sc, slot);
 }
 
 void vulkan_openxr_publish(vulkan_openxr_t *xr,
       const video_xr_quad_set_t *set)
 {
-   vulkan_openxr_seq_publish(&xr->quads_seq, xr->quads_words,
-         set, sizeof(*set));
+   openxr_frame_publish(&xr->frame, set);
 }
 
 void vulkan_openxr_get_anchor(vulkan_openxr_t *xr, video_xr_pose_t *anchor)
 {
-   struct vulkan_openxr_tracked t;
-   vulkan_openxr_read_tracked(xr, &t);
-   *anchor = t.anchor;
+   openxr_frame_get_anchor(&xr->frame, anchor);
 }
 
 bool vulkan_openxr_get_quads(vulkan_openxr_t *xr, video_xr_quad_set_t *out)
 {
    if (!xr)
       return false;
-   vulkan_openxr_seq_read(&xr->quads_seq, xr->quads_words,
-         out, sizeof(*out));
+   openxr_frame_get_quads(&xr->frame, out);
    return true;
 }
 
 void vulkan_openxr_request_recenter(vulkan_openxr_t *xr)
 {
-   retro_atomic_store_release_int(&xr->recenter, 1);
+   openxr_frame_request_recenter(&xr->frame);
 }
 
 XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr)

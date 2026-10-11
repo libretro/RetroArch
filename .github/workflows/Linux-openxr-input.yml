@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   openxr-input:
-    name: OpenXR input against a stand-in for the runtime
+    name: OpenXR input and shared units against a stand-in runtime
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -46,6 +46,30 @@ jobs:
           grep -q "PASS openxr_input_test" openxr_input.log
           make clean
           rm -f openxr_input.log
+
+      - name: Run the shared OpenXR units against a stand-in runtime
+        working-directory: samples/openxr/core
+        shell: bash
+        run: |
+          set -euo pipefail
+          make clean all SANITIZER=address,undefined
+          ASAN_OPTIONS=detect_leaks=1 UBSAN_OPTIONS=print_stacktrace=1:halt_on_error=1 \
+            ./openxr_core_test | tee openxr_core.log
+          grep -q "PASS openxr_core_test" openxr_core.log
+          make clean
+          rm -f openxr_core.log
+
+      - name: Run the shared OpenXR units under TSan
+        working-directory: samples/openxr/core
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The XR thread, the tick waiters and the lock gaps.
+          make clean all SANITIZER=thread
+          ./openxr_core_test | tee openxr_core.log
+          grep -q "PASS openxr_core_test" openxr_core.log
+          make clean
+          rm -f openxr_core.log
 
   openxr-haptics:
     name: Desktop haptic results (Linux sanitizers, Windows build)
