@@ -42,7 +42,8 @@ struct vulkan_openxr
    openxr_runtime_t rt;
    bool enable2;
    /* The session is made on the thread that makes the device; its frame
-    * loop runs on the XR thread. lock guards what both read. */
+    * loop runs on the XR thread or in-line. queue_lock guards what both
+    * read. */
    openxr_session_t session;
    openxr_swapchains_t sc;
    openxr_frame_t frame;
@@ -51,7 +52,11 @@ struct vulkan_openxr
    retro_atomic_int_t hidden;
    VkDevice device;
    slock_t *queue_lock;
-   XrSwapchain cursor;             /* start to stop; the XR thread reads it */
+   XrSwapchain cursor;             /* start to stop; XR thread or in-line */
+   /* A headset's own context: its hooks, and the frame it began. */
+   vulkan_openxr_platform_t platform;
+   openxr_frame_begun_t begun;
+   bool inline_host;
 
    /* XR_KHR_vulkan_enable's lists, split in place. */
    char inst_ext_buf[VULKAN_OPENXR_EXT_BUF];
@@ -89,14 +94,23 @@ static void vulkan_openxr_state_hook(void *user, XrSessionState state)
 
 static void vulkan_openxr_ended_hook(void *user)
 {
-   openxr_frame_tick_notify(&((vulkan_openxr_t*)user)->frame);
+   vulkan_openxr_t *xr = (vulkan_openxr_t*)user;
+   openxr_frame_tick_notify(&xr->frame);
+   /* A headset's own context has nothing to fall back to. */
+   if (xr->inline_host)
+   {
+      if (xr->platform.ended)
+         xr->platform.ended(xr->platform.user);
+      return;
+   }
    RARCH_WARN("[OpenXR] The headset session ended; the window keeps the output.\n");
    openxr_runtime_notify(MSG_OPENXR_SESSION_ENDED);
 }
 
 static void vulkan_openxr_exiting_hook(void *user)
 {
-   video_driver_headset_exit_request();
+   if (!((vulkan_openxr_t*)user)->inline_host)
+      video_driver_headset_exit_request();
 }
 
 static void vulkan_openxr_local_hook(void *user)
@@ -169,6 +183,18 @@ static void vulkan_openxr_host_resume(void *user)
 {
    openxr_host_resume(&((vulkan_openxr_t*)user)->host, &vulkan_openxr_kept);
    memset(&vulkan_openxr_kept, 0, sizeof(vulkan_openxr_kept));
+}
+
+static vulkan_openxr_platform_t vulkan_openxr_platform;
+static bool vulkan_openxr_has_platform;
+
+void vulkan_openxr_set_platform(const vulkan_openxr_platform_t *p)
+{
+   if (p)
+      vulkan_openxr_platform = *p;
+   else
+      memset(&vulkan_openxr_platform, 0, sizeof(vulkan_openxr_platform));
+   vulkan_openxr_has_platform = (p != NULL);
 }
 
 static unsigned vulkan_openxr_extra_layers(void *user, XrTime time,
@@ -247,7 +273,14 @@ vulkan_openxr_t *vulkan_openxr_new(bool enable1, uint32_t api_version)
    xr->session.hooks.lock          = vulkan_openxr_lock_queue;
    xr->session.hooks.unlock        = vulkan_openxr_unlock_queue;
    xr->session.hooks.user          = xr;
-   xr->frame.extra_layers          = vulkan_openxr_extra_layers;
+   if (vulkan_openxr_has_platform)
+   {
+      xr->platform    = vulkan_openxr_platform;
+      xr->rt.platform = vulkan_openxr_platform.runtime;
+      xr->inline_host = true;
+   }
+   else
+      xr->frame.extra_layers = vulkan_openxr_extra_layers;
    openxr_host_init(&xr->host, &xr->rt, &xr->session, &xr->frame);
    xr->enable2 = !enable1;
    ext         = enable1 ? XR_KHR_VULKAN_ENABLE_EXTENSION_NAME
@@ -333,8 +366,16 @@ end:
 /* After vulkan_openxr_stop(). */
 static void vulkan_openxr_destroy_session(vulkan_openxr_t *xr)
 {
-   if (xr->session.session && vulkan_openxr_hooks.session_destroying)
-      vulkan_openxr_hooks.session_destroying(vulkan_openxr_hooks.user, xr);
+   if (xr->session.session)
+   {
+      if (xr->inline_host)
+      {
+         if (xr->platform.session_destroying)
+            xr->platform.session_destroying(xr->platform.user);
+      }
+      else if (vulkan_openxr_hooks.session_destroying)
+         vulkan_openxr_hooks.session_destroying(vulkan_openxr_hooks.user, xr);
+   }
    openxr_session_destroy(&xr->session);
 }
 
@@ -496,7 +537,18 @@ static bool vulkan_openxr_create_session(vulkan_openxr_t *xr,
    openxr_host_session_created(&xr->host);
    RARCH_LOG("[OpenXR] Session created.\n");
 
-   if (vulkan_openxr_hooks.session_created)
+   if (xr->inline_host)
+   {
+      if (     xr->platform.session_created
+            && !xr->platform.session_created(xr->platform.user,
+               xr->rt.instance, xr->session.session))
+      {
+         RARCH_ERR("[OpenXR] The platform refused the session.\n");
+         openxr_session_destroy(&xr->session);
+         return false;
+      }
+   }
+   else if (vulkan_openxr_hooks.session_created)
    {
       vulkan_openxr_handles_t h;
       h.xr          = xr;
@@ -790,29 +842,39 @@ bool vulkan_openxr_start(vulkan_openxr_t *xr, VkInstance instance,
    }
    /* Also marks the session started for vulkan_openxr_stop's keep. */
    xr->queue_lock = queue_lock;
-   if (!xr->cursor)
+   /* The laser's dot is the headset input's, which an in-line host
+    * does not have. */
+   if (!xr->cursor && !xr->inline_host)
       vulkan_openxr_cursor_create(xr, gpu, device, queue_family);
-   if (!openxr_frame_start(&xr->frame))
+   if (xr->inline_host ? !openxr_frame_start_inline(&xr->frame)
+                       : !openxr_frame_start(&xr->frame))
       return false;
-   {
-      video_xr_host_t host;
-      memset(&host, 0, sizeof(host));
-      host.state     = vulkan_openxr_host_state;
-      host.sample    = vulkan_openxr_host_sample;
-      host.eye_state = vulkan_openxr_host_eye_state;
-      host.set_space = vulkan_openxr_host_set_space;
-      host.head_pose = vulkan_openxr_host_head_pose;
-      host.eye_size  = vulkan_openxr_host_eye_size;
-      host.resume    = vulkan_openxr_host_resume;
-      host.user      = xr;
-      video_driver_set_xr_host(&host);
-   }
+   vulkan_openxr_host_register(xr);
    return true;
+}
+
+void vulkan_openxr_host_register(vulkan_openxr_t *xr)
+{
+   video_xr_host_t host;
+   memset(&host, 0, sizeof(host));
+   host.state     = vulkan_openxr_host_state;
+   host.sample    = vulkan_openxr_host_sample;
+   host.eye_state = vulkan_openxr_host_eye_state;
+   host.set_space = vulkan_openxr_host_set_space;
+   host.head_pose = vulkan_openxr_host_head_pose;
+   host.eye_size  = vulkan_openxr_host_eye_size;
+   host.resume    = vulkan_openxr_host_resume;
+   host.user      = xr;
+   video_driver_set_xr_host(&host);
 }
 
 void vulkan_openxr_stop_thread(vulkan_openxr_t *xr)
 {
-   if (xr)
+   if (!xr)
+      return;
+   if (xr->inline_host)
+      openxr_frame_stop_inline(&xr->frame);
+   else
       openxr_frame_stop(&xr->frame);
 }
 
@@ -1014,6 +1076,8 @@ void vulkan_openxr_place_kept(vulkan_openxr_t *xr)
 
 void vulkan_openxr_new_frame(vulkan_openxr_t *xr)
 {
+   /* A record serves the driver start after its stop, not a later one. */
+   memset(&vulkan_openxr_kept, 0, sizeof(vulkan_openxr_kept));
    openxr_host_new_frame(&xr->host);
 }
 
@@ -1047,4 +1111,33 @@ void vulkan_openxr_request_recenter(vulkan_openxr_t *xr)
 XrSwapchain vulkan_openxr_cursor(const vulkan_openxr_t *xr)
 {
    return xr->cursor;
+}
+
+bool vulkan_openxr_inline(const vulkan_openxr_t *xr)
+{
+   return xr->inline_host;
+}
+
+void vulkan_openxr_begin_frame(vulkan_openxr_t *xr)
+{
+   /* A second wait costs a whole headset period. */
+   if (xr->begun.waited)
+      return;
+   openxr_frame_begin(&xr->frame, &xr->begun);
+   if (xr->platform.frame_waited)
+      xr->platform.frame_waited(xr->platform.user, xr->session.session,
+            openxr_session_running(&xr->session));
+}
+
+void vulkan_openxr_end_frame(vulkan_openxr_t *xr)
+{
+   openxr_frame_end(&xr->frame, &xr->begun);
+   memset(&xr->begun, 0, sizeof(xr->begun));
+}
+
+void vulkan_openxr_eye_size(const vulkan_openxr_t *xr, unsigned *width,
+      unsigned *height)
+{
+   *width  = xr->rt.rec_width;
+   *height = xr->rt.rec_height;
 }

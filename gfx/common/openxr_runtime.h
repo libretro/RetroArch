@@ -33,6 +33,15 @@ enum openxr_runtime_result
    OPENXR_RUNTIME_FAILED
 };
 
+/* A platform whose loader has to be started first (Android): what it
+ * is started with, and what the instance is told. */
+typedef struct openxr_runtime_platform
+{
+   const XrLoaderInitInfoBaseHeaderKHR *loader;  /* NULL: none to start */
+   const void *instance_next;   /* chained into XrInstanceCreateInfo */
+   const char *instance_ext;    /* enabled when the runtime lists it */
+} openxr_runtime_platform_t;
+
 typedef struct openxr_runtime
 {
    PFN_xrGetInstanceProcAddr GetInstanceProcAddr;
@@ -45,8 +54,10 @@ typedef struct openxr_runtime
    unsigned max_dim;          /* the largest swapchain side */
    uint32_t rec_width;        /* one eye's recommended image width */
    uint32_t rec_height;       /* and its height */
+   uint32_t max_layers;       /* the most layers a frame may end with */
    bool frame_controller;     /* XR_VALVE_frame_controller_interaction */
    bool refresh_ext;          /* XR_FB_display_refresh_rate */
+   openxr_runtime_platform_t platform;   /* set before create_instance */
 } openxr_runtime_t;
 
 /* The instance, with graphics_ext and the optional extensions the

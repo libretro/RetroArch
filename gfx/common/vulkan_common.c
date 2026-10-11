@@ -52,9 +52,6 @@
 
 #ifdef HAVE_OPENXR
 #include <openxr/openxr_platform.h>
-#ifdef ANDROID
-#include "../drivers_context/android_vk_openxr.h"
-#endif
 #endif
 
 #define VENDOR_ID_AMD 0x1002
@@ -1072,150 +1069,6 @@ static unsigned vulkan_optional_device_count(const gfx_ctx_vulkan_data_t *vk)
    return count;
 }
 
-#if defined(HAVE_OPENXR) && defined(ANDROID)
-static VkDevice vulkan_create_openxr_vulkan_device(
-      VkInstance vk_instance, VkPhysicalDevice gpu,
-      const VkDeviceCreateInfo *create_info)
-{
-   XrInstance xr_instance = android_vk_openxr_xr_instance();
-   PFN_xrCreateVulkanDeviceKHR create_vulkan_device = NULL;
-   PFN_xrGetVulkanGraphicsDevice2KHR get_vulkan_device = NULL;
-   XrVulkanDeviceCreateInfoKHR xr_device_info =
-      { XR_TYPE_VULKAN_DEVICE_CREATE_INFO_KHR };
-   XrVulkanGraphicsDeviceGetInfoKHR get_device_info =
-      { XR_TYPE_VULKAN_GRAPHICS_DEVICE_GET_INFO_KHR };
-   XrResult xr_result;
-   VkResult vulkan_result = VK_ERROR_INITIALIZATION_FAILED;
-   VkPhysicalDevice xr_gpu = VK_NULL_HANDLE;
-   VkDevice device = VK_NULL_HANDLE;
-
-   xr_result = xrGetInstanceProcAddr(
-         xr_instance,
-         "xrGetVulkanGraphicsDevice2KHR",
-         (PFN_xrVoidFunction*)&get_vulkan_device);
-
-   if (xr_result != XR_SUCCESS || !get_vulkan_device)
-   {
-      RARCH_ERR("[Vulkan] Failed to get xrGetVulkanGraphicsDevice2KHR (%d).\n",
-            xr_result);
-      return VK_NULL_HANDLE;
-   }
-
-   get_device_info.systemId = android_vk_openxr_xr_system_id();
-   get_device_info.vulkanInstance = vk_instance;
-
-   xr_result = get_vulkan_device(
-         xr_instance,
-         &get_device_info,
-         &xr_gpu);
-
-   if (xr_result != XR_SUCCESS || xr_gpu == VK_NULL_HANDLE)
-   {
-      char result_str[XR_MAX_RESULT_STRING_SIZE];
-
-      xrResultToString(xr_instance,
-            xr_result, result_str);
-
-      RARCH_ERR("[Vulkan] xrGetVulkanGraphicsDevice2KHR failed: %s (%d).\n",
-            result_str, xr_result);
-      return VK_NULL_HANDLE;
-   }
-
-   if (xr_gpu != gpu)
-   {
-      RARCH_ERR("[XR] OpenXR selected a different VkPhysicalDevice.\n");
-      return VK_NULL_HANDLE;
-   }
-
-   xr_result = xrGetInstanceProcAddr(
-         xr_instance,
-         "xrCreateVulkanDeviceKHR",
-         (PFN_xrVoidFunction*)&create_vulkan_device);
-
-   if (xr_result != XR_SUCCESS || !create_vulkan_device)
-   {
-      RARCH_ERR("[Vulkan] Failed to get xrCreateVulkanDeviceKHR (%d).\n",
-            xr_result);
-      return VK_NULL_HANDLE;
-   }
-
-   xr_device_info.systemId = android_vk_openxr_xr_system_id();
-   xr_device_info.pfnGetInstanceProcAddr =
-      vulkan_symbol_wrapper_instance_proc_addr();
-   xr_device_info.vulkanCreateInfo = create_info;
-   xr_device_info.vulkanPhysicalDevice = xr_gpu;
-   xr_device_info.vulkanAllocator = NULL;
-
-   xr_result = create_vulkan_device(
-         xr_instance,
-         &xr_device_info,
-         &device,
-         &vulkan_result);
-
-   if (xr_result != XR_SUCCESS || vulkan_result != VK_SUCCESS)
-   {
-      char result_str[XR_MAX_RESULT_STRING_SIZE];
-
-      xrResultToString(xr_instance,
-            xr_result, result_str);
-
-      RARCH_ERR("[Vulkan] xrCreateVulkanDeviceKHR failed: %s (%d), Vulkan result=%d.\n",
-            result_str, xr_result, vulkan_result);
-
-      return VK_NULL_HANDLE;
-   }
-
-   return device;
-}
-
-static VkResult vulkan_create_openxr_vulkan_instance(
-      const VkInstanceCreateInfo *info, VkInstance *instance)
-{
-   XrVulkanInstanceCreateInfoKHR xr_create_info =
-      { XR_TYPE_VULKAN_INSTANCE_CREATE_INFO_KHR };
-   VkResult vulkan_result = VK_ERROR_INITIALIZATION_FAILED;
-   PFN_xrCreateVulkanInstanceKHR create_vulkan_instance = NULL;
-   XrInstance xr_instance = android_vk_openxr_xr_instance();
-   XrResult xr_result;
-
-   xr_result = xrGetInstanceProcAddr(
-         xr_instance,
-         "xrCreateVulkanInstanceKHR",
-         (PFN_xrVoidFunction*)&create_vulkan_instance);
-
-   if (xr_result != XR_SUCCESS || !create_vulkan_instance)
-   {
-      RARCH_ERR("[Vulkan] Failed to get xrCreateVulkanInstanceKHR (%d).\n",
-            xr_result);
-      return VK_ERROR_INITIALIZATION_FAILED;
-   }
-
-   xr_create_info.systemId               = android_vk_openxr_xr_system_id();
-   xr_create_info.pfnGetInstanceProcAddr = vulkan_symbol_wrapper_instance_proc_addr();
-   xr_create_info.vulkanCreateInfo       = info;
-   xr_create_info.vulkanAllocator        = NULL;
-
-   xr_result = create_vulkan_instance(
-         xr_instance,
-         &xr_create_info,
-         instance,
-         &vulkan_result);
-
-   if (xr_result != XR_SUCCESS)
-   {
-      char result_str[XR_MAX_RESULT_STRING_SIZE];
-
-      xrResultToString(xr_instance, xr_result, result_str);
-
-      RARCH_ERR("[Vulkan] xrCreateVulkanInstanceKHR failed: %s (%d), Vulkan result=%d.\n",
-            result_str, xr_result, vulkan_result);
-      return VK_ERROR_INITIALIZATION_FAILED;
-   }
-
-   return vulkan_result;
-}
-#endif
-
 /* vkCreateDevice, or the runtime's, which adds what it needs. A device
  * the runtime refuses drops the headset, not the device. */
 static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
@@ -1232,14 +1085,6 @@ static VkResult vulkan_context_create_device(gfx_ctx_vulkan_data_t *vk,
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;
    }
-#ifdef ANDROID
-   if (android_vk_openxr_owns_vk_context(vk))
-   {
-      *device = vulkan_create_openxr_vulkan_device(
-            vk->context.instance, gpu, info);
-      return *device ? VK_SUCCESS : VK_ERROR_INITIALIZATION_FAILED;
-   }
-#endif
 #endif
    return vkCreateDevice(gpu, info, NULL, device);
 }
@@ -1361,17 +1206,6 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
       else
          RARCH_LOG("[Vulkan] Got HW context negotiation interface %u.\n", iface->interface_version);
    }
-
-#if defined(HAVE_OPENXR) && defined(ANDROID)
-   if (android_vk_openxr_owns_vk_context(vk) && iface
-         && (iface->interface_version < 2 || !iface->create_device2))
-      RARCH_WARN("[Vulkan] Legacy core device negotiation not compatible with OpenXR: "
-            "iface=%p type=%u version=%u create_device2=%p\n",
-            (void*)iface,
-            iface->interface_type,
-            iface->interface_version,
-            (void*)iface->create_device2);
-#endif
 
    /* Set below for a device made here; a core's has none of ours */
    vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
@@ -1823,7 +1657,7 @@ static bool vulkan_context_init_device(gfx_ctx_vulkan_data_t *vk)
    {
       /* The device was made for the runtime: rebuild video without it,
        * unless the core keeps its context, which a reinit would reuse. */
-      if (video_st->hw_render.cache_context)
+      if (video_st->hw_render.cache_context || vk->openxr_headset)
          vulkan_openxr_drop(vk->context.xr);
       else
       {
@@ -1929,10 +1763,6 @@ static VkResult vulkan_context_create_instance(gfx_ctx_vulkan_data_t *vk,
       vulkan_openxr_drop(vk->context.xr);
       vk->context.xr = NULL;
    }
-#ifdef ANDROID
-   if (android_vk_openxr_owns_vk_context(vk))
-      return vulkan_create_openxr_vulkan_instance(info, instance);
-#endif
 #endif
    return vkCreateInstance(info, NULL, instance);
 }
@@ -4312,6 +4142,12 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
    bool enable1         = iface && iface->create_device
       && !(iface->interface_version >= 2 && iface->create_device2);
 
+#ifdef ANDROID
+   /* Only a headset's own context starts the runtime, and it needs no
+    * setting to. */
+   enable = vk->openxr_headset;
+#endif
+
    /* A kept device keeps the runtime it was made for, while the runtime
     * keeps the instance. */
    if (cached_instance_vk)
@@ -4334,10 +4170,6 @@ static void vulkan_context_openxr_init(gfx_ctx_vulkan_data_t *vk,
    }
    if (!enable)
       return;
-#ifdef ANDROID
-   /* The headset is the projection context's. */
-   return;
-#endif
    vk->context.xr = vulkan_openxr_new(enable1, api_version);
    if (     vk->context.xr && enable1
          && !vulkan_context_openxr_instance_exts_ok(vk->context.xr))
@@ -4488,6 +4320,11 @@ bool vulkan_context_init(gfx_ctx_vulkan_data_t *vk,
 
 #ifdef HAVE_OPENXR
    vulkan_context_openxr_init(vk, iface, app.apiVersion);
+   /* A headset's own context without its runtime makes no instance
+    * and takes no kept one: the flat context follows in the list, and
+    * what is kept is that one's. */
+   if (vk->openxr_headset && !vk->context.xr)
+      return false;
 #endif
 
    if (cached_instance_vk)

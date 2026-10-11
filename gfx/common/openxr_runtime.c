@@ -68,6 +68,23 @@ static bool openxr_runtime_has_extension(
    return found;
 }
 
+/* Before anything else is asked of the loader. */
+static bool openxr_runtime_start_loader(openxr_runtime_t *rt)
+{
+   XrResult res;
+   PFN_xrInitializeLoaderKHR init = NULL;
+   if (     XR_FAILED(res = rt->GetInstanceProcAddr(XR_NULL_HANDLE,
+               "xrInitializeLoaderKHR", (PFN_xrVoidFunction*)&init))
+         || !init
+         || XR_FAILED(res = init(rt->platform.loader)))
+   {
+      RARCH_WARN("[OpenXR] The loader could not be started (%d).\n",
+            (int)res);
+      return false;
+   }
+   return true;
+}
+
 enum openxr_runtime_result openxr_runtime_create_instance(
       openxr_runtime_t *rt, PFN_xrGetInstanceProcAddr get_proc,
       const char *graphics_ext)
@@ -75,12 +92,14 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    XrResult res;
    uint32_t count = 0;
    uint32_t num_exts;
-   const char *exts[3];
+   const char *exts[4];
    XrInstanceCreateInfo ici;
    PFN_xrEnumerateInstanceExtensionProperties enum_exts;
    PFN_xrCreateInstance create_instance;
 
    rt->GetInstanceProcAddr = get_proc;
+   if (rt->platform.loader && !openxr_runtime_start_loader(rt))
+      return OPENXR_RUNTIME_UNAVAILABLE;
    enum_exts       = (PFN_xrEnumerateInstanceExtensionProperties)
       openxr_runtime_proc(rt, "xrEnumerateInstanceExtensionProperties");
    create_instance = (PFN_xrCreateInstance)
@@ -114,9 +133,14 @@ enum openxr_runtime_result openxr_runtime_create_instance(
       exts[num_exts++] = XR_FB_DISPLAY_REFRESH_RATE_EXTENSION_NAME;
       rt->refresh_ext  = true;
    }
+   if (     rt->platform.instance_ext
+         && openxr_runtime_has_extension(enum_exts, count,
+            rt->platform.instance_ext))
+      exts[num_exts++] = rt->platform.instance_ext;
 
    memset(&ici, 0, sizeof(ici));
    ici.type                       = XR_TYPE_INSTANCE_CREATE_INFO;
+   ici.next                       = rt->platform.instance_next;
    strlcpy(ici.applicationInfo.applicationName, "RetroArch",
          sizeof(ici.applicationInfo.applicationName));
    strlcpy(ici.applicationInfo.engineName, "RetroArch",
@@ -179,9 +203,10 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
       return OPENXR_RUNTIME_UNAVAILABLE;
    }
 
-   rt->max_dim = 4096;
+   rt->max_dim    = 4096;
+   rt->max_layers = XR_MIN_COMPOSITION_LAYERS_SUPPORTED;
    memset(&props, 0, sizeof(props));
-   props.type  = XR_TYPE_SYSTEM_PROPERTIES;
+   props.type     = XR_TYPE_SYSTEM_PROPERTIES;
    if (XR_SUCCEEDED(get_system_properties(rt->instance, rt->system, &props)))
    {
       uint32_t mw = props.graphicsProperties.maxSwapchainImageWidth;
@@ -190,6 +215,8 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
          rt->max_dim = mw;
       if (mh && mh < rt->max_dim)
          rt->max_dim = mh;
+      if (props.graphicsProperties.maxLayerCount)
+         rt->max_layers = props.graphicsProperties.maxLayerCount;
       RARCH_LOG("[OpenXR] Headset: %s.\n", props.systemName);
    }
 
@@ -212,7 +239,14 @@ enum openxr_runtime_result openxr_runtime_find_system(openxr_runtime_t *rt)
    if (     XR_SUCCEEDED(enum_modes(rt->instance, rt->system,
                XR_VIEW_CONFIGURATION_TYPE_PRIMARY_STEREO, 8, &count, modes))
          && count)
+   {
+      uint32_t i;
+      /* A runtime with passthrough may list a blend first. */
       rt->blend_mode = modes[0];
+      for (i = 0; i < count && i < 8; i++)
+         if (modes[i] == XR_ENVIRONMENT_BLEND_MODE_OPAQUE)
+            rt->blend_mode = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
+   }
    return OPENXR_RUNTIME_OK;
 }
 

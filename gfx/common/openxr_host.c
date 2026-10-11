@@ -76,6 +76,7 @@ static bool openxr_host_track_space(openxr_host_t *h)
    enum retro_vr_reference_space space = h->track_asked;
    int recenters;
    int stage_moves;
+   h->track_done = false;
    if (h->stage_missing)
       space = RETRO_VR_REFERENCE_SPACE_LOCAL;
    /* Counts from before the anchor is read: a later move is not lost. */
@@ -96,6 +97,7 @@ static bool openxr_host_track_space(openxr_host_t *h)
    }
    h->track_recenters   = recenters;
    h->track_stage_moves = stage_moves;
+   h->track_done        = true;
    return true;
 }
 
@@ -187,9 +189,14 @@ bool openxr_host_set_space(openxr_host_t *h,
       enum retro_vr_reference_space *space, unsigned *width,
       unsigned *height)
 {
+   bool same = h->session->track_space && h->track_done
+      && *space == h->track_asked
+      && h->track_type == (h->stage_missing
+         ? RETRO_VR_REFERENCE_SPACE_LOCAL : h->track_asked);
    h->track_asked  = *space;
    h->kept_pending = false;
-   if (!openxr_host_track_space(h))
+   /* A remade space orphans the views given in it. */
+   if (!same && !openxr_host_track_space(h))
       return false;
    *space = h->track_type;
    return openxr_host_eye_size(h, width, height);

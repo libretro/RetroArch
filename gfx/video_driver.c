@@ -42,15 +42,6 @@
 #include "video_xr.h"
 #endif
 
-#ifdef HAVE_OPENXR
-#if defined(ANDROID)
-#ifdef HAVE_VULKAN
-#include "drivers_context/android_vk_openxr.h"
-#endif
-#include "drivers_context/gl_android_openxr.h"
-#endif
-#endif
-
 /* Decided here, at the top, because an #ifdef on a macro defined
  * later in the file is silently false: the first user of this gate
  * is video_driver_lock_new()'s mailbox drain, far above the title
@@ -6195,6 +6186,17 @@ bool video_context_driver_is(const char *ident)
          && string_is_equal(video_st->current_video_context.ident, ident);
 }
 
+#ifdef HAVE_OPENXR
+bool video_context_driver_headset_inline(void)
+{
+   video_driver_state_t *video_st = &video_driver_st;
+   const gfx_ctx_driver_t *ctx    = &video_st->current_video_context;
+   return ctx->get_flags
+      && BIT32_GET(ctx->get_flags((void*)video_st->context_data),
+            GFX_CTX_FLAGS_HEADSET_INLINE);
+}
+#endif
+
 #ifdef HAVE_THREADS
 /* EGL bindings are per-thread. Under threaded video the context is made
  * current on the video thread, so an eglMakeCurrent() issued from the
@@ -8587,10 +8589,9 @@ void video_driver_reinit(int flags)
    struct retro_hw_render_callback *hwr    =
          VIDEO_DRIVER_GET_HW_CONTEXT_INTERNAL(video_st);
 #ifdef HAVE_OPENXR
+   /* A headset's own Vulkan context keeps its session across a reinit. */
    bool cache_openxr_context =
-         video_st->current_video_context.ident
-      && string_is_equal(video_st->current_video_context.ident,
-            "android_vk_openxr")
+         video_context_driver_headset_inline()
       && string_is_equal(settings->arrays.video_driver, "vulkan");
 #endif
 

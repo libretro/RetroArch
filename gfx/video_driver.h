@@ -1433,6 +1433,8 @@ typedef struct video_xr_host
 
 /* NULL forgets the host. */
 void video_driver_set_xr_host(const video_xr_host_t *host);
+/* Whether the current context is a headset's own (its get_flags). */
+bool video_context_driver_headset_inline(void);
 /* VIDEO_XR_HEADSET_ bits; 0 without a host. */
 unsigned video_driver_xr_headset(void);
 /* After a video init: the core's VR content goes to the new driver. */

@@ -374,6 +374,16 @@ VIDEO CONTEXT
 #include "../gfx/common/vulkan_video_decode.c"
 #endif
 #ifdef HAVE_OPENXR
+#include "../gfx/common/vulkan_openxr.c"
+#include "../input/common/input_openxr.c"
+#endif
+#ifdef HAVE_VULKAN_DISPLAY
+#include "../gfx/drivers_context/khr_display_ctx.c"
+#endif
+#endif
+
+#ifdef HAVE_OPENXR
+/* The headset's units that name no graphics API. */
 #include "../gfx/video_xr.c"
 #include "../gfx/common/openxr_runtime.c"
 #include "../gfx/common/openxr_session.c"
@@ -381,11 +391,8 @@ VIDEO CONTEXT
 #include "../gfx/common/openxr_host.c"
 #include "../gfx/common/openxr_swapchain.c"
 #include "../gfx/common/openxr_frame.c"
-#include "../gfx/common/vulkan_openxr.c"
-#include "../input/common/input_openxr.c"
-#endif
-#ifdef HAVE_VULKAN_DISPLAY
-#include "../gfx/drivers_context/khr_display_ctx.c"
+#if defined(ANDROID) && defined(HAVE_OPENGLES3)
+#include "../gfx/common/openxr_binding_gles.c"
 #endif
 #endif
 

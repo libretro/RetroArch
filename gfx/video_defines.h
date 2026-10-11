@@ -426,7 +426,11 @@ enum display_flags
    /* Exclusive mode can change without restarting the drivers. */
    GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE,
    /* set_video_mode can resize an existing window without restarting video. */
-   GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE
+   GFX_CTX_FLAGS_WINDOW_RESIZE_IN_PLACE,
+   /* Set by a headset's own context driver (the Quest's): the headset is
+    * all it shows, the headset's frames are begun and ended in the video
+    * frame, and the platform's flat context follows it in the list. */
+   GFX_CTX_FLAGS_HEADSET_INLINE
 };
 
 enum shader_uniform_type

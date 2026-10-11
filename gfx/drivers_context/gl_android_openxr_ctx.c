@@ -1135,6 +1135,7 @@ static uint32_t gl_android_openxr_ctx_get_flags(void *data)
 {
    uint32_t flags = 0;
    BIT32_SET(flags, GFX_CTX_FLAGS_SHADERS_GLSL);
+   BIT32_SET(flags, GFX_CTX_FLAGS_HEADSET_INLINE);
    return flags;
 }
 

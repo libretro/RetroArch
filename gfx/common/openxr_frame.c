@@ -292,23 +292,18 @@ static void openxr_frame_ask_rate(openxr_frame_t *f)
          (int)res);
 }
 
-/* One headset frame. xrWaitFrame paces this thread at the headset's
- * rate, and the core too while the headset paces it. */
-static void openxr_frame_run(openxr_frame_t *f)
+/* xrWaitFrame and what every headset frame keeps, then xrBeginFrame
+ * under the graphics lock, which keep_lock leaves held for the end. */
+static bool openxr_frame_wait_begin(openxr_frame_t *f,
+      openxr_frame_begun_t *b, bool keep_lock)
 {
    XrResult res;
    int session_state;
-   const char *fn = NULL;
    XrFrameWaitInfo wait_info;
    XrFrameState state;
    XrFrameBeginInfo begin_info;
-   XrFrameEndInfo end_info;
-   XrCompositionLayerProjection proj;
-   XrCompositionLayerProjectionView proj_views[2];
-   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
-   const XrCompositionLayerBaseHeader *ptrs[1 + VIDEO_XR_MAX_QUADS
-      + OPENXR_MAX_EXTRA_LAYERS];
 
+   memset(b, 0, sizeof(*b));
    memset(&wait_info, 0, sizeof(wait_info));
    wait_info.type = XR_TYPE_FRAME_WAIT_INFO;
    memset(&state, 0, sizeof(state));
@@ -316,9 +311,11 @@ static void openxr_frame_run(openxr_frame_t *f)
    if (XR_FAILED(res = f->WaitFrame(f->session->session, &wait_info, &state)))
    {
       openxr_frame_error(f, "xrWaitFrame", res);
-      retro_sleep(1);
-      return;
+      return false;
    }
+   b->waited       = true;
+   b->display_time = state.predictedDisplayTime;
+   b->period       = state.predictedDisplayPeriod;
    session_state = retro_atomic_load_acquire_int(&f->session->state);
    /* A headset that is not worn reports periods that are not its own. */
    if (    (   session_state == XR_SESSION_STATE_VISIBLE
@@ -331,8 +328,12 @@ static void openxr_frame_run(openxr_frame_t *f)
       RARCH_LOG("[OpenXR] The headset runs at %.2f Hz.\n",
             1000000000.0 / (double)f->period.published);
    }
-   openxr_frame_tick(f);
-   openxr_frame_ask_rate(f);
+   /* An in-line host's frames are the core's own. */
+   if (!f->inline_host)
+   {
+      openxr_frame_tick(f);
+      openxr_frame_ask_rate(f);
+   }
    f->tracked.predicted_time = state.predictedDisplayTime;
    openxr_frame_publish_tracked(f);
    if (f->tracked.px_per_rad <= 0.0f)
@@ -344,43 +345,99 @@ static void openxr_frame_run(openxr_frame_t *f)
    }
 
    memset(&begin_info, 0, sizeof(begin_info));
-   begin_info.type               = XR_TYPE_FRAME_BEGIN_INFO;
-   memset(&end_info, 0, sizeof(end_info));
-   end_info.type                 = XR_TYPE_FRAME_END_INFO;
-   end_info.displayTime          = state.predictedDisplayTime;
-   end_info.environmentBlendMode = f->rt->blend_mode;
-
+   begin_info.type = XR_TYPE_FRAME_BEGIN_INFO;
    openxr_session_lock(f->session);
    if (XR_FAILED(res = f->BeginFrame(f->session->session, &begin_info)))
-      fn = "xrBeginFrame";
-   else
    {
-      session_state = retro_atomic_load_acquire_int(&f->session->state);
-      /* Layers only while the headset shows the session. */
-      if (     state.shouldRender
-            && (   session_state == XR_SESSION_STATE_VISIBLE
-                || session_state == XR_SESSION_STATE_FOCUSED))
-      {
-         if (openxr_frame_projection(f, &proj, proj_views))
-            ptrs[end_info.layerCount++] =
-               (const XrCompositionLayerBaseHeader*)&proj;
-         end_info.layerCount += openxr_frame_layers(f, layers,
-               ptrs + end_info.layerCount);
-         if (f->extra_layers)
-            end_info.layerCount += f->extra_layers(f->extra_user,
-                  state.predictedDisplayTime,
-                  ptrs + end_info.layerCount,
-                  OPENXR_MAX_EXTRA_LAYERS);
-      }
-      end_info.layers = end_info.layerCount ? ptrs : NULL;
-      if (XR_FAILED(res = f->EndFrame(f->session->session, &end_info)))
-         fn = "xrEndFrame";
+      openxr_session_unlock(f->session);
+      openxr_frame_error(f, "xrBeginFrame", res);
+      return false;
    }
+   if (!keep_lock)
+      openxr_session_unlock(f->session);
+   session_state = retro_atomic_load_acquire_int(&f->session->state);
+   /* Layers only while the headset shows the session. */
+   b->render = state.shouldRender
+      && (   session_state == XR_SESSION_STATE_VISIBLE
+          || session_state == XR_SESSION_STATE_FOCUSED);
+   b->begun  = true;
+   return true;
+}
+
+/* At most the runtime's layer count: the last screens go first, so the
+ * menu and the host's layers over it stay. The quads are ptrs[first]
+ * up to ptrs[end]; returns the count kept. */
+static uint32_t openxr_frame_fit(const openxr_frame_t *f,
+      const XrCompositionLayerBaseHeader **ptrs, uint32_t count,
+      uint32_t first, uint32_t end)
+{
+   XrSwapchain menu = f->sc->slots[VIDEO_XR_MENU_SLOT].swapchains[0];
+   while (count > f->rt->max_layers && end > first)
+   {
+      const XrCompositionLayerQuad *q =
+         (const XrCompositionLayerQuad*)ptrs[--end];
+      if (q->subImage.swapchain == menu)
+         continue;
+      memmove(&ptrs[end], &ptrs[end + 1],
+            (count - end - 1) * sizeof(*ptrs));
+      count--;
+   }
+   return MIN(count, f->rt->max_layers);
+}
+
+/* The layers and xrEndFrame; locked: the begin kept the lock. */
+static void openxr_frame_submit(openxr_frame_t *f,
+      const openxr_frame_begun_t *b, bool locked)
+{
+   XrResult res;
+   XrFrameEndInfo end_info;
+   XrCompositionLayerProjection proj;
+   XrCompositionLayerProjectionView proj_views[2];
+   XrCompositionLayerQuad layers[VIDEO_XR_MAX_QUADS];
+   const XrCompositionLayerBaseHeader *ptrs[1 + VIDEO_XR_MAX_QUADS
+      + OPENXR_MAX_EXTRA_LAYERS];
+
+   memset(&end_info, 0, sizeof(end_info));
+   end_info.type                 = XR_TYPE_FRAME_END_INFO;
+   end_info.displayTime          = b->display_time;
+   end_info.environmentBlendMode = f->rt->blend_mode;
+   if (!locked)
+      openxr_session_lock(f->session);
+   if (b->render)
+   {
+      uint32_t first, end;
+      if (openxr_frame_projection(f, &proj, proj_views))
+         ptrs[end_info.layerCount++] =
+            (const XrCompositionLayerBaseHeader*)&proj;
+      first               = end_info.layerCount;
+      end                 = first + openxr_frame_layers(f, layers,
+            ptrs + first);
+      end_info.layerCount = end;
+      if (f->extra_layers)
+         end_info.layerCount += f->extra_layers(f->extra_user,
+               b->display_time, ptrs + end_info.layerCount,
+               OPENXR_MAX_EXTRA_LAYERS);
+      end_info.layerCount = openxr_frame_fit(f, ptrs,
+            end_info.layerCount, first, end);
+   }
+   end_info.layers = end_info.layerCount ? ptrs : NULL;
+   res = f->EndFrame(f->session->session, &end_info);
    openxr_session_unlock(f->session);
-   if (fn)
-      openxr_frame_error(f, fn, res);
+   if (XR_FAILED(res))
+      openxr_frame_error(f, "xrEndFrame", res);
    else
       f->frame_failed = false;
+}
+
+/* One headset frame on the XR thread. xrWaitFrame paces this thread at
+ * the headset's rate, and the core too while the headset paces it. */
+static void openxr_frame_run(openxr_frame_t *f)
+{
+   openxr_frame_begun_t b;
+   if (openxr_frame_wait_begin(f, &b, true))
+      openxr_frame_submit(f, &b, true);
+   else if (!b.waited)
+      retro_sleep(1);
 }
 
 static void openxr_frame_thread(void *data)
@@ -460,6 +517,8 @@ bool openxr_frame_load(openxr_frame_t *f, const openxr_runtime_t *rt,
 void openxr_frame_deinit(openxr_frame_t *f)
 {
    openxr_frame_stop(f);
+   if (f->inline_host)
+      openxr_frame_stop_inline(f);
    if (f->tick_ready)
       retro_eventcount_free(&f->tick);
    f->tick_ready = false;
@@ -475,6 +534,8 @@ void openxr_frame_session_created(openxr_frame_t *f)
 
 bool openxr_frame_start(openxr_frame_t *f)
 {
+   if (f->inline_host)
+      return false;
    video_xr_period_init(&f->period);
    retro_atomic_store_release_int(&f->period_ns, 0);
    f->tick_count    = 0;
@@ -501,6 +562,60 @@ void openxr_frame_stop(openxr_frame_t *f)
    /* Nothing shows the session's frames now: a driver that presents on
     * (a staged content load keeps it up) draws none for it. */
    openxr_session_set_alive(f->session, false);
+}
+
+bool openxr_frame_start_inline(openxr_frame_t *f)
+{
+   if (f->thread)
+      return false;
+   video_xr_period_init(&f->period);
+   retro_atomic_store_release_int(&f->period_ns, 0);
+   f->asked_rate     = 0.0f;
+   f->frame_failed   = false;
+   f->pace_anchor_ns = 0;
+   f->inline_host    = true;
+   openxr_session_set_alive(f->session, true);
+   return true;
+}
+
+void openxr_frame_stop_inline(openxr_frame_t *f)
+{
+   f->inline_host = false;
+   if (f->session)
+      openxr_session_set_alive(f->session, false);
+}
+
+bool openxr_frame_begin(openxr_frame_t *f, openxr_frame_begun_t *b)
+{
+   memset(b, 0, sizeof(*b));
+   if (!f->inline_host)
+      return false;
+   openxr_session_poll(f->session);
+   if (!openxr_session_running(f->session))
+      return false;
+   return openxr_frame_wait_begin(f, b, false);
+}
+
+void openxr_frame_end(openxr_frame_t *f, const openxr_frame_begun_t *b)
+{
+   retro_time_t sleep_us;
+   int64_t period;
+   if (!f->inline_host)
+      return;
+   if (b->begun)
+   {
+      openxr_frame_submit(f, b, false);
+      return;
+   }
+   /* No headset frame: its last period on the clock, or the XR
+    * thread's 10 ms while the session is down. */
+   period = (int64_t)retro_atomic_load_acquire_int(&f->period_ns);
+   if (period <= 0)
+      period = 10000000;
+   sleep_us = runloop_pace_schedule(&f->pace_anchor_ns, period,
+         cpu_features_get_time_usec());
+   if (sleep_us > 0)
+      retro_sleep_us((unsigned)sleep_us);
 }
 
 /* The runtime's own recenter moves LOCAL, which the anchor is in: the
@@ -594,7 +709,9 @@ void openxr_frame_pace_wait(openxr_frame_t *f)
 {
    int64_t period = (int64_t)retro_atomic_load_acquire_int(&f->period_ns)
       * retro_atomic_load_acquire_int(&f->interval);
-   if (period <= 0 || !f->tick_ready)
+   /* No XR-thread ticks to wait on, and pace_anchor_ns is the idle
+    * clock's. */
+   if (f->inline_host || period <= 0 || !f->tick_ready)
       return;
    if (openxr_session_visible(f->session))
    {

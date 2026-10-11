@@ -59,6 +59,16 @@ typedef struct openxr_projection
    bool active;
 } openxr_projection_t;
 
+/* One headset frame as far as its begin: what the end needs. */
+typedef struct openxr_frame_begun
+{
+   XrTime display_time;     /* the wait's predicted display time */
+   XrDuration period;       /* and its predicted period, as given */
+   bool waited;             /* xrWaitFrame succeeded */
+   bool begun;              /* xrBeginFrame succeeded: end it */
+   bool render;             /* shouldRender, and the headset shows the session */
+} openxr_frame_begun_t;
+
 typedef struct openxr_frame
 {
    const openxr_runtime_t *rt;
@@ -70,10 +80,13 @@ typedef struct openxr_frame
    void *extra_user;
    sthread_t *thread;
    retro_atomic_int_t quit;
-   bool frame_failed;              /* XR thread */
+   bool frame_failed;              /* the frame loop's thread */
+   /* The frames are the drawing thread's own: begun and ended in its
+    * frame, no XR thread. */
+   bool inline_host;
    /* A seqlock over its words like video_driver.c's viewport
     * parameters: the writer's own copy, the stamp and the words. */
-   openxr_tracked_t tracked;       /* XR thread */
+   openxr_tracked_t tracked;       /* the frame loop's thread */
    retro_atomic_int_t tracked_seq;
    retro_atomic_int_t tracked_words[OPENXR_WORDS(openxr_tracked_t)];
    /* The drawing thread's quads for the XR thread and the pointer, the
@@ -122,6 +135,16 @@ void openxr_frame_session_created(openxr_frame_t *f);
 /* The desktop host: the XR thread. */
 bool openxr_frame_start(openxr_frame_t *f);
 void openxr_frame_stop(openxr_frame_t *f);
+
+/* A host that draws the headset's frames in its own (the Quest's): no
+ * thread; begin polls, waits and begins, end submits and ends, each
+ * taking the graphics lock around its runtime calls alone. A frame
+ * that was not begun still ends: the core keeps the headset's period
+ * on the clock. */
+bool openxr_frame_start_inline(openxr_frame_t *f);
+void openxr_frame_stop_inline(openxr_frame_t *f);
+bool openxr_frame_begin(openxr_frame_t *f, openxr_frame_begun_t *b);
+void openxr_frame_end(openxr_frame_t *f, const openxr_frame_begun_t *b);
 void openxr_frame_tick_notify(openxr_frame_t *f);
 /* The runtime recentered LOCAL. */
 void openxr_frame_local_changed(openxr_frame_t *f);

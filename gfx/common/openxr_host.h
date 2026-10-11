@@ -61,6 +61,8 @@ typedef struct openxr_host
    int track_stage_moves;
    /* STAGE was asked and refused: seated for the session. */
    bool stage_missing;
+   /* The last make of the space finished: a half-made one is made again. */
+   bool track_done;
    /* A space was made in some session; a new one starts at a new origin
     * the core has yet to be told of. */
    bool track_made;
