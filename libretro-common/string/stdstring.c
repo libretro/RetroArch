@@ -438,6 +438,32 @@ size_t word_wrap_wideglyph(char *s, size_t len,
          counter_normalized += additional_counter_normalized;
       }
 
+      /* A break before this glyph need not copy and decode it twice. */
+      if (lastwideglyph == s && char_len >= 3
+            && counter_normalized >= (unsigned)line_width_normalized
+            && (max_lines == 0 || lines < max_lines)
+            && (unsigned)wideglyph_width < (unsigned)line_width_normalized
+            && char_len + 1 < remaining)
+      {
+         *s++ = '\n';
+         lines++;
+         if (src_end - src <= line_width)
+         {
+            size_t copied;
+            remaining--;
+            copied = strlcpy(s, src, remaining);
+            if (copied >= remaining)
+               copied = remaining - 1;
+            return (size_t)(s - s_start) + copied;
+         }
+         lastwideglyph       = s;
+         counter_normalized = (unsigned)wideglyph_width;
+         memcpy(s, src, char_len);
+         s   += char_len;
+         src += char_len;
+         continue;
+      }
+
       while (char_len--)
          *s++ = *src++;
 

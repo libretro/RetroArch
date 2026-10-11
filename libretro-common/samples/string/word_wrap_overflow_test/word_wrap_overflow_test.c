@@ -342,8 +342,29 @@ static void test_forward_glyph_scan(void)
       }
 }
 
+static void test_wide_glyph_scan(void)
+{
+   const char *src = "\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad"
+      "\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad"
+      "\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad\xe4\xb8\xad";
+   char dst[128];
+   unsigned width;
+   for (width = 4; width <= 16; width *= 2)
+   {
+      size_t returned;
+      glyph_scans = 0;
+      returned = word_wrap_wideglyph(dst, sizeof(dst), src, strlen(src), width, 200, 0);
+      if (returned != strlen(dst) || !strchr(dst, '\n')
+            || !glyph_scans || glyph_scans > utf8len(src))
+      {
+         printf("[ERROR] wide wrap rescanned glyphs at width %u\n", width);
+         failures++;
+      }
+   }
+}
 int main(void)
 {
+   test_wide_glyph_scan();
    test_forward_glyph_scan();
    test_regular_wrap_copy();
    test_truncating_normal_case();
