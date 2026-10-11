@@ -8,6 +8,7 @@ check that unavailable frames preserve a valid image index and command
 buffers are allocated only once. Resize fence tests check queue locking,
 submission and wait ordering, reuse, and failures.
 Frontend resize tests check synchronization retention and fallback cleanup.
+GL tests check framebuffer reuse, attachment release, and failure teardown.
 
 For MinGW and Wine:
 

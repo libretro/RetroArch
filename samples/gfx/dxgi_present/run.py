@@ -39,7 +39,11 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     images_start = frontend.index("         for (i = 0; i < 2; i++)", reuse_end)
     images_end = frontend.index("         vk->context.flags |= VK_CTX_FLAG_INVALID_SWAPCHAIN;", images_start)
     (directory / "images.inc").write_text(frontend[images_start:images_end])
-    for name in ("test", "teardown", "acquire", "wait", "frontend"):
+    wgl = (root / "gfx/common/win_wgl_dxgi.c").read_text()
+    wgl_start = wgl.index("static void ra_wgl_dxgi_destroy_images(")
+    wgl_end = wgl.index("int ra_wgl_dxgi_resize(", wgl_start)
+    (directory / "wgl_images.inc").write_text(wgl[wgl_start:wgl_end])
+    for name in ("test", "teardown", "acquire", "wait", "frontend", "wgl"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",
                         "-Wextra", "-Werror", "-I" + str(directory),

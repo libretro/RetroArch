@@ -59,10 +59,23 @@ int ra_wgl_dxgi_presentable(ra_wgl_dxgi_t *p)
 
 static void ra_wgl_dxgi_destroy_images(ra_wgl_dxgi_t *p)
 {
-   if (p->delete_framebuffer) p->delete_framebuffer(2, p->framebuffer);
+   GLint old_draw;
+   unsigned i;
+   if ((p->framebuffer[0] || p->framebuffer[1])
+         && p->bind_framebuffer && p->attach_texture)
+   {
+      glGetIntegerv(RA_WGL_DRAW_FRAMEBUFFER_BINDING, &old_draw);
+      for (i = 0; i < 2; i++)
+         if (p->framebuffer[i])
+         {
+            p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, p->framebuffer[i]);
+            p->attach_texture(RA_WGL_DRAW_FRAMEBUFFER, RA_WGL_COLOR_ATTACHMENT0,
+                  GL_TEXTURE_2D, 0, 0);
+         }
+      p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, old_draw);
+   }
    glDeleteTextures(2, p->texture);
    if (p->delete_memory) p->delete_memory(2, p->memory);
-   memset(p->framebuffer, 0, sizeof(p->framebuffer));
    memset(p->texture, 0, sizeof(p->texture));
    memset(p->memory, 0, sizeof(p->memory));
 }
@@ -71,6 +84,8 @@ void ra_wgl_dxgi_destroy(ra_wgl_dxgi_t *p)
 {
    if (!p) return;
    glFinish();
+   if (p->delete_framebuffer) p->delete_framebuffer(2, p->framebuffer);
+   memset(p->framebuffer, 0, sizeof(p->framebuffer));
    ra_wgl_dxgi_destroy_images(p);
    if (p->delete_semaphore)
    {
@@ -88,7 +103,6 @@ static int ra_wgl_dxgi_create_images(ra_wgl_dxgi_t *p,
    unsigned i;
    p->create_memory(2, p->memory);
    glGenTextures(2, p->texture);
-   p->gen_framebuffer(2, p->framebuffer);
    glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
    glGetIntegerv(RA_WGL_DRAW_FRAMEBUFFER_BINDING, &old_draw);
    for (i = 0; i < 2; i++)
@@ -99,6 +113,7 @@ static int ra_wgl_dxgi_create_images(ra_wgl_dxgi_t *p,
       glBindTexture(GL_TEXTURE_2D, p->texture[i]);
       p->texture_storage(GL_TEXTURE_2D, 1, internal_format, width, height,
             p->memory[i], 0);
+      if (!p->framebuffer[i]) p->gen_framebuffer(1, &p->framebuffer[i]);
       p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, p->framebuffer[i]);
       p->attach_texture(RA_WGL_DRAW_FRAMEBUFFER, RA_WGL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
             p->texture[i], 0);
