@@ -1283,13 +1283,32 @@ static void RH264_FN(tb_copy)(RH264_PEL *dst, int dstride, const RH264_PEL *src,
       memcpy(dst + y*dstride, src + y*sstride, (size_t)w * sizeof(RH264_PEL));
 }
 
-/* Fetch a luma sample from the reference with edge clamping. */
-static RH264_INLINE int RH264_FN(ref_luma)(const RH264_PEL *ref, int stride,
-      int w, int h, int x, int y)
+/* A w x h window of the reference at (x0,y0), coordinates clamped into
+ * the picture (8.4.2.2), a row at a time: the row index clamped once,
+ * then the columns left of the picture repeating its first sample, the
+ * ones inside copied, the ones right of it repeating its last. */
+static void RH264_FN(mc_edge)(RH264_PEL *dst, int dstride, int w, int h,
+      const RH264_PEL *ref, int stride, int rw, int rh, int x0, int y0)
 {
-   x = RH264_MC_CLAMP(x, w);
-   y = RH264_MC_CLAMP(y, h);
-   return ref[y * stride + x];
+   int r;
+   int lo = x0 < 0 ? -x0 : 0;               /* columns left of 0  */
+   int hi = rw - x0;                        /* first column past  */
+   if (lo > w) lo = w;
+   if (hi > w) hi = w;
+   if (hi < lo) hi = lo;
+   for (r = 0; r < h; r++)
+   {
+      int y = RH264_MC_CLAMP(y0 + r, rh), c;
+      const RH264_PEL *row = ref + (size_t)y * stride;
+      RH264_PEL *d = dst + (size_t)r * dstride;
+      RH264_PEL first = row[0], last = row[rw - 1];
+      for (c = 0; c < lo; c++)
+         d[c] = first;
+      if (hi > lo)
+         memcpy(d + lo, row + x0 + lo, (size_t)(hi - lo) * sizeof(RH264_PEL));
+      for (c = hi; c < w; c++)
+         d[c] = last;
+   }
 }
 
 /* 6-tap filter kernel: (E - 5F + 20G + 20H - 5I + J). */
@@ -1451,10 +1470,8 @@ static void RH264_FN(mc_luma)(RH264_PEL *dst, int dstride,
             memcpy(dst + y * dstride, ref + (iy + y) * rstride + ix, (size_t)bw * sizeof(RH264_PEL));
       }
       else
-         for (y = 0; y < bh; y++)
-            for (x = 0; x < bw; x++)
-               dst[y * dstride + x] = (RH264_PEL)
-                  RH264_FN(ref_luma)(ref, rstride, rw, rh, ix + x, iy + y);
+         RH264_FN(mc_edge)(dst, dstride, bw, bh, ref, rstride, rw, rh,
+               ix, iy);
       return;
    }
 
@@ -1471,10 +1488,8 @@ static void RH264_FN(mc_luma)(RH264_PEL *dst, int dstride,
    }
    else
    {
-      for (r = 0; r < ph; r++)
-         for (c = 0; c < pw; c++)
-            pat[r * pw + c] = (RH264_PEL)
-               RH264_FN(ref_luma)(ref, rstride, rw, rh, ix - 2 + c, iy - 2 + r);
+      RH264_FN(mc_edge)(pat, pw, pw, ph, ref, rstride, rw, rh,
+            ix - 2, iy - 2);
       pc = pat + 2 * pw + 2;                /* patch centre (block origin) */
    }
 
@@ -1840,7 +1855,7 @@ static void RH264_FN(mc_chroma)(RH264_PEL *dst, int dstride,
    int ix = ox + (mvx >> 3);
    int iy = oy + (mvy >> 3);
    int fx = mvx & 7, fy = mvy & 7;
-   int x, y, r, c;
+   int x, y;
    /* bilinear window: block plus one sample right/below, edge clamp baked */
    /* bilinear window: 4:2:0 chroma blocks are at most 8x8, 4:2:2 ones
     * at most 8x16, and the window is one sample wider and taller */
@@ -1857,10 +1872,7 @@ static void RH264_FN(mc_chroma)(RH264_PEL *dst, int dstride,
       pc = ref + iy * rstride + ix;
    }
    else
-      for (r = 0; r < bh + 1; r++)
-         for (c = 0; c < pw; c++)
-            pat[r * pw + c] = (RH264_PEL)
-               RH264_FN(ref_luma)(ref, rstride, rw, rh, ix + c, iy + r);
+      RH264_FN(mc_edge)(pat, pw, pw, bh + 1, ref, rstride, rw, rh, ix, iy);
 
    if (fx == 0 && fy == 0)
    {
