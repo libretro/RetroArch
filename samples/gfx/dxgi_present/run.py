@@ -26,7 +26,10 @@ with tempfile.TemporaryDirectory(prefix="retroarch-dxgi-") as directory:
     commands_start = vulkan.index("         memset(&command, 0, sizeof(command));")
     commands_end = vulkan.index("         memset(&begin, 0, sizeof(begin));", commands_start)
     (directory / "commands.inc").write_text(vulkan[commands_start:commands_end])
-    for name in ("test", "teardown", "acquire"):
+    wait_start = vulkan.index("static VkResult ra_vulkan_dxgi_wait_resize(")
+    wait_end = vulkan.index("int ra_vulkan_dxgi_resize(", wait_start)
+    (directory / "wait.inc").write_text(vulkan[wait_start:wait_end])
+    for name in ("test", "teardown", "acquire", "wait"):
         executable = directory / (name + ".exe")
         subprocess.run([os.environ.get("CC", "cc"), "-std=c89", "-pedantic", "-Wall",
                         "-Wextra", "-Werror", "-I" + str(directory),

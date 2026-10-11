@@ -17,6 +17,7 @@ struct ra_vulkan_dxgi
    VkQueue queue;
    void *queue_lock;
    VkCommandPool pool;
+   VkFence resize_fence;
    VkImage images[2];
    VkDeviceMemory memory[2];
    VkSemaphore ready, done;
@@ -72,6 +73,7 @@ void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *p)
    }
    ra_dxgi_bridge_destroy(p->bridge);
    ra_vulkan_dxgi_destroy_images(p);
+   if (p->resize_fence) vkDestroyFence(p->device, p->resize_fence, NULL);
    if (p->pool) vkDestroyCommandPool(p->device, p->pool, NULL);
    if (p->ready) vkDestroySemaphore(p->device, p->ready, NULL);
    if (p->done) vkDestroySemaphore(p->device, p->done, NULL);
@@ -188,6 +190,31 @@ error:
    return 0;
 }
 
+static VkResult ra_vulkan_dxgi_wait_resize(ra_vulkan_dxgi_t *p)
+{
+   VkResult result;
+   if (!p->resize_fence)
+   {
+      VkFenceCreateInfo info;
+      memset(&info, 0, sizeof(info));
+      info.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+      result = vkCreateFence(p->device, &info, NULL, &p->resize_fence);
+      if (result != VK_SUCCESS) return result;
+   }
+#ifdef HAVE_THREADS
+   if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
+#endif
+   result = vkQueueSubmit(p->queue, 0, NULL, p->resize_fence);
+   if (result == VK_SUCCESS) p->submitted = 1;
+#ifdef HAVE_THREADS
+   if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
+#endif
+   if (result != VK_SUCCESS) return result;
+   result = vkWaitForFences(p->device, 1, &p->resize_fence, VK_TRUE, UINT64_MAX);
+   if (result != VK_SUCCESS) return result;
+   return vkResetFences(p->device, 1, &p->resize_fence);
+}
+
 int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p,
       unsigned width, unsigned height, VkFormat format)
 {
@@ -196,13 +223,7 @@ int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *p,
    if (!p || !width || !height || format != p->format) return 0;
    if (p->width == width && p->height == height)
       return !ra_dxgi_bridge_failed(p->bridge);
-#ifdef HAVE_THREADS
-   if (p->queue_lock) slock_lock((slock_t *)p->queue_lock);
-#endif
-   result = vkQueueWaitIdle(p->queue);
-#ifdef HAVE_THREADS
-   if (p->queue_lock) slock_unlock((slock_t *)p->queue_lock);
-#endif
+   result = ra_vulkan_dxgi_wait_resize(p);
    if (result != VK_SUCCESS) return 0;
    if (vkResetCommandPool(p->device, p->pool, 0) != VK_SUCCESS) return 0;
    ra_vulkan_dxgi_destroy_images(p);
