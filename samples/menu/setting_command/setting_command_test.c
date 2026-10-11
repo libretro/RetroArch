@@ -54,9 +54,11 @@
 #include "../../../menu/menu_defines.h"
 #include "../../../menu/menu_setting.h"
 #include "../../../menu/menu_cbs.h"
+#include "../../../menu/menu_driver.h"
 #include "../../../msg_hash_lbl_str.h"
 #include "../../../msg_hash.h"
 #include "../../../gfx/video_driver.h"
+#include "../../../input/input_driver.h"
 #include "../../../frontend/frontend_driver.h"
 
 static unsigned failures = 0;
@@ -461,6 +463,60 @@ static void *latency_mic_init(void)
 }
 #endif
 
+static void lane_input_restart_scope(void)
+{
+   rarch_setting_t *s = menu_setting_find_enum(
+         MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME);
+   menu_file_list_cbs_t cbs;
+   char enum_s[16];
+   struct menu_state *menu_st = menu_state_get_ptr();
+   file_list_t *menu_stack = MENU_LIST_GET(menu_st->entries.list, 0);
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   unsigned before_video = inits;
+   unsigned before_audio = audio_inits;
+
+   config_get_ptr()->bools.audio_enable_menu = true;
+   core_info_get_current_core(&before_core);
+   CHECK(s != NULL, "reserved device row must exist");
+   if (!s)
+      return;
+   strlcpy(s->value.target.string, "1234:5678 Test controller", s->size);
+   menu_action_handle_setting(s, 0, MENU_ACTION_START, false);
+   CHECK(!s->value.target.string[0], "Start must clear the reserved device");
+   CHECK(inits == before_video + 1, "reservation reset must rebuild video/input once");
+   CHECK(audio_inits == before_audio, "reservation reset must retain audio");
+   core_info_get_current_core(&after_core);
+   CHECK(before_core == after_core, "reservation reset must retain core metadata");
+
+   memset(&cbs, 0, sizeof(cbs));
+   menu_cbs_init_bind_ok(&cbs, NULL, "", 0,
+         MENU_SETTING_DROPDOWN_ITEM_INPUT_SELECT_RESERVED_DEVICE, 0, "", 0);
+   CHECK(menu_stack && cbs.action_ok, "reserved device dropdown must bind OK");
+   if (menu_stack && cbs.action_ok)
+   {
+      snprintf(enum_s, sizeof(enum_s), "%d",
+            (int)MENU_ENUM_LABEL_INPUT_DEVICE_RESERVED_DEVICE_NAME);
+      menu_entries_append(menu_stack, enum_s, "", MSG_UNKNOWN,
+            MENU_SETTING_ACTION, 0, 0, NULL);
+      strlcpy(s->value.target.string, "1234:5678 Test controller", s->size);
+      before_video = inits;
+      cbs.action_ok(msg_hash_to_str(MENU_ENUM_LABEL_VALUE_OFF), "", 0, 0, 0);
+      CHECK(!s->value.target.string[0], "Off must clear the reserved device");
+      CHECK(inits == before_video + 1, "reservation dropdown must rebuild video/input once");
+      CHECK(audio_inits == before_audio, "reservation dropdown must retain audio");
+      core_info_get_current_core(&after_core);
+      CHECK(before_core == after_core, "reservation dropdown must retain core metadata");
+   }
+
+   before_video = inits;
+   input_driver_platform_request(INPUT_PLATFORM_REINIT_VIDEO);
+   CHECK(inits == before_video + 1, "surface recovery must rebuild video/input once");
+   CHECK(audio_inits == before_audio, "surface recovery must retain audio");
+   core_info_get_current_core(&after_core);
+   CHECK(before_core == after_core, "surface recovery must retain core metadata");
+}
+
 static void lane_font_fallback(void)
 {
    rarch_setting_t *s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
@@ -781,6 +837,7 @@ int main(int argc, char *argv[])
    lane_window_scale();
 #endif
 
+   lane_input_restart_scope();
    lane_font_fallback();
    lane_minimum_audio_latency();
 

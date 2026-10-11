@@ -9224,6 +9224,7 @@ static int setting_action_start_input_device_reservation_type(rarch_setting_t *s
 static int setting_action_start_input_device_reserved_device_name(
    rarch_setting_t *setting)
 {
+   int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
    settings_t      *settings = config_get_ptr();
 
    if (!setting || !settings)
@@ -9233,7 +9234,7 @@ static int setting_action_start_input_device_reserved_device_name(
          settings->arrays.input_reserved_devices[setting->index_offset],
          "");
 
-   command_event(CMD_EVENT_REINIT, NULL);
+   command_event(CMD_EVENT_REINIT, &reinit_flags);
    return 0;
 }
 

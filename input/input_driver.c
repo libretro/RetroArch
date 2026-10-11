@@ -14195,7 +14195,10 @@ static void input_driver_platform_do(enum input_platform_request req)
          command_event(CMD_EVENT_MENU_TOGGLE, NULL);
          break;
       case INPUT_PLATFORM_REINIT_VIDEO:
-         command_event(CMD_EVENT_REINIT, NULL);
+         {
+            int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
+            command_event(CMD_EVENT_REINIT, &reinit_flags);
+         }
          break;
       case INPUT_PLATFORM_FOCUS_LOST:
          if (input_driver_game_focus_enabled())

@@ -8282,6 +8282,7 @@ static int action_ok_push_dropdown_item_input_device_type(const char *path,
 static int action_ok_push_dropdown_item_input_select_reserved_device(const char *path,
       const char *label, unsigned type, size_t idx, size_t entry_idx)
 {
+    int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
     unsigned user;
     const char *no_device;
     const char *reserved_device_name;
@@ -8328,7 +8329,7 @@ static int action_ok_push_dropdown_item_input_select_reserved_device(const char 
 
     settings->flags |= SETTINGS_FLG_MODIFIED;
 
-    command_event(CMD_EVENT_REINIT, NULL);
+    command_event(CMD_EVENT_REINIT, &reinit_flags);
 
     /* Refresh menu */
     menu_st->flags                  |= MENU_ST_FLAG_ENTRIES_NEED_REFRESH
