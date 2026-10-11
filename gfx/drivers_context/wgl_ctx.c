@@ -687,14 +687,9 @@ static bool gfx_ctx_wgl_set_video_mode(void *data,
       bool fullscreen)
 {
 #ifndef __WINRT__
-   /* With a window already up this is a fullscreen toggle on it: the
-    * window is restyled where it stands, and the driver sees the new
-    * size through check_window, as for any resize. The context, and
-    * everything made in it, stays. Where that is refused - exclusive
-    * fullscreen - this goes on as it always has. */
-   if (     win32_get_window()
-         && win32_window_set_fullscreen(dims, fullscreen))
-      return true;
+   /* Keep the context on live transitions; let the caller recover failures. */
+   if (win32_get_window())
+      return win32_window_set_fullscreen_exclusive(dims, fullscreen);
 #endif
 
    if (!win32_set_video_mode(NULL, dims, fullscreen))
@@ -807,7 +802,10 @@ static uint32_t gfx_ctx_wgl_get_flags(void *data)
          /* a borderless fullscreen toggle restyles the window; see
           * gfx_ctx_wgl_set_video_mode() */
          if (win32_fullscreen_in_place())
+         {
             BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+            BIT32_SET(flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
+         }
 #endif
 
          if (wgl_flags & WGL_FLAG_CORE_HW_CTX_ENABLE)

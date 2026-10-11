@@ -7268,9 +7268,10 @@ static void gl3_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    gl3_t *gl = (gl3_t*)data;
-   if (gl->ctx_driver->set_video_mode)
-      gl->ctx_driver->set_video_mode(gl->ctx_data,
-            dims, fullscreen);
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            dims, fullscreen))
+      video_driver_modify_disp_flags(VIDEO_FLAG_DRIVER_REINIT, 0);
 }
 
 static void gl3_show_mouse(void *data, bool state)

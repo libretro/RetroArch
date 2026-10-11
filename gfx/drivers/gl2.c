@@ -3724,9 +3724,10 @@ static void gl2_set_video_mode(void *data, unsigned dims,
       bool fullscreen)
 {
    gl2_t               *gl = (gl2_t*)data;
-   if (gl->ctx_driver->set_video_mode)
-      gl->ctx_driver->set_video_mode(gl->ctx_data,
-            dims, fullscreen);
+   if (     !gl->ctx_driver->set_video_mode
+         || !gl->ctx_driver->set_video_mode(gl->ctx_data,
+            dims, fullscreen))
+      video_driver_modify_disp_flags(VIDEO_FLAG_DRIVER_REINIT, 0);
 }
 
 static void gl2_update_input_size(gl2_t *gl, unsigned width,
