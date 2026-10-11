@@ -60,6 +60,7 @@ import android.os.CombinedVibration;
 import android.os.Vibrator;
 import android.os.VibrationEffect;
 import android.os.VibratorManager;
+import android.provider.Settings;
 import android.util.Log;
 import android.util.SparseArray;
 import android.text.Editable;
@@ -988,8 +989,36 @@ public class RetroActivityCommon extends NativeActivity
     runOnUiThread(new Runnable() {
       @Override
       public void run() {
-        getWindow().getDecorView().performHapticFeedback(effect,
-            HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING | HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING);
+        int touchEffect = effect == HapticFeedbackConstants.KEYBOARD_PRESS
+            ? HapticFeedbackConstants.VIRTUAL_KEY : effect;
+        if (getWindow().getDecorView().performHapticFeedback(touchEffect,
+            HapticFeedbackConstants.FLAG_IGNORE_VIEW_SETTING))
+          return;
+
+        // Some devices provide vibration but no view haptic feedback.
+        if (effect != HapticFeedbackConstants.KEYBOARD_PRESS
+            || Settings.System.getInt(getContentResolver(),
+                Settings.System.HAPTIC_FEEDBACK_ENABLED, 0) == 0)
+          return;
+
+        Vibrator vibrator = (Vibrator)getSystemService(Context.VIBRATOR_SERVICE);
+        if (vibrator == null || !vibrator.hasVibrator())
+          return;
+
+        if (Build.VERSION.SDK_INT >= 21) {
+          AudioAttributes attrs = new AudioAttributes.Builder()
+              .setUsage(AudioAttributes.USAGE_ASSISTANCE_SONIFICATION)
+              .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+              .build();
+          if (Build.VERSION.SDK_INT >= 26) {
+            VibrationEffect vibration = Build.VERSION.SDK_INT >= 29
+                ? VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK)
+                : VibrationEffect.createOneShot(30, VibrationEffect.DEFAULT_AMPLITUDE);
+            vibrator.vibrate(vibration, attrs);
+          } else
+            vibrator.vibrate(30, attrs);
+        } else
+          vibrator.vibrate(30);
       }
     });
   }
