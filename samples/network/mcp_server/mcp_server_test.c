@@ -412,6 +412,52 @@ int main(void)
          out, sizeof(out), NULL);
    check("an integer arrives as its digits",
          st == 200 && strstr(out, "JOIN[one|two 7]"));
+   {
+      static const struct {
+         const char *number;
+         const char *line;
+      } cases[] = {
+         { "7.0", "JOIN[one|two 7]" },
+         { "7e0", "JOIN[one|two 7]" },
+         { "7e1", "JOIN[one|two 70]" },
+         { "700e-2", "JOIN[one|two 7]" },
+         { "0.07e2", "JOIN[one|two 7]" },
+         { "-7.0", "JOIN[one|two -7]" },
+         { "-0.0001e4", "JOIN[one|two -1]" },
+         { "-0.0", "JOIN[one|two 0]" },
+         { "0e999999999999999999", "JOIN[one|two 0]" },
+         { "0e-999999999999999999", "JOIN[one|two 0]" },
+         { "9007199254740993.0", "JOIN[one|two 9007199254740993]" },
+         { "1.2300e+2", "JOIN[one|two 123]" }
+      };
+      static const char *invalid[] = {
+         "2.5", "7e-1", "-0.0001e3", "\"7\"",
+         "1e999999999999999999", "1e-999999999999999999"
+      };
+      unsigned i;
+      char args[256], label[128];
+      for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++)
+      {
+         snprintf(args, sizeof(args),
+               "{\"a\":\"one\",\"b\":\"two\",\"n\":%s}", cases[i].number);
+         st = post(cmd, PORT_OPEN, NULL, call("JOIN", args),
+               out, sizeof(out), NULL);
+         snprintf(label, sizeof(label), "integer %s is normalized exactly",
+               cases[i].number);
+         check(label, st == 200 && strstr(out, cases[i].line));
+      }
+      for (i = 0; i < sizeof(invalid) / sizeof(invalid[0]); i++)
+      {
+         snprintf(args, sizeof(args),
+               "{\"a\":\"one\",\"b\":\"two\",\"n\":%s}", invalid[i]);
+         st = post(cmd, PORT_OPEN, NULL, call("JOIN", args),
+               out, sizeof(out), NULL);
+         snprintf(label, sizeof(label), "invalid integer %s is rejected",
+               invalid[i]);
+         check(label, st == 200 && strstr(out, "-32602")
+               && strstr(out, "Invalid integer") && !strstr(out, "JOIN["));
+      }
+   }
    st = post(cmd, PORT_OPEN, NULL,
          call("JOIN", "{\"b\":\"two\",\"a\":\"one\",\"n\":7}"),
          out, sizeof(out), NULL);

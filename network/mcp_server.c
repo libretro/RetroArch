@@ -103,6 +103,7 @@ struct mcp_arg
 {
    char  name[32];
    char *value;          /* heap; a number arrives as its digits */
+   bool  is_number;
 };
 
 /* More than any command's parameters, plus room for a client that
@@ -448,6 +449,109 @@ static const char *mcp_param_value(const struct cmd_param *p,
    return v ? v : p->def;
 }
 
+/* Normalize exactly, without rounding through a floating-point value. */
+static char *mcp_integer(const char *value)
+{
+   const char *s = value;
+   size_t n = 0, fractional = 0, first = 0, i, count, size;
+   long exponent = 0, places;
+   bool negative = false, dot = false, exp_negative = false;
+   char *digits, *out;
+
+   if (*s == '-')
+   {
+      negative = true;
+      s++;
+   }
+   if (!(digits = (char*)malloc(strlen(s) + 1)))
+      return NULL;
+   while (*s && *s != 'e' && *s != 'E')
+   {
+      if (*s == '.')
+         dot = true;
+      else
+      {
+         digits[n++] = *s;
+         if (dot)
+            fractional++;
+      }
+      s++;
+   }
+   if (*s)
+   {
+      s++;
+      if (*s == '-' || *s == '+')
+         exp_negative = *s++ == '-';
+      while (*s)
+      {
+         if (exponent < MCP_MAX_REQUEST * 2)
+            exponent = exponent * 10 + (*s - '0');
+         s++;
+      }
+   }
+   while (first < n && digits[first] == '0')
+      first++;
+   if (first == n)
+   {
+      digits[0] = '0';
+      digits[1] = '\0';
+      return digits;
+   }
+   if (exp_negative)
+      exponent = -exponent;
+   places = exponent - (long)fractional;
+   while (places < 0 && n > first && digits[n - 1] == '0')
+   {
+      n--;
+      places++;
+   }
+   if (places < 0 || places > MCP_MAX_REQUEST)
+   {
+      free(digits);
+      return NULL;
+   }
+   count = n - first;
+   size  = count + (size_t)places + (negative ? 1 : 0) + 1;
+   if (size > MCP_MAX_REQUEST || !(out = (char*)malloc(size)))
+   {
+      free(digits);
+      return NULL;
+   }
+   i = 0;
+   if (negative)
+      out[i++] = '-';
+   memcpy(out + i, digits + first, count);
+   i += count;
+   memset(out + i, '0', (size_t)places);
+   out[i + (size_t)places] = '\0';
+   free(digits);
+   return out;
+}
+
+static const char *mcp_integer_args(const struct cmd_action_map *act,
+      struct mcp_request *r)
+{
+   const struct cmd_param *p;
+   unsigned i;
+   if (!act || !act->params)
+      return NULL;
+   if (mcp_arg(r, "argument") && !mcp_arg(r, act->params[0].name))
+      return NULL;
+   for (p = act->params; p->name; p++)
+      if (p->type == CMD_PARAM_INT)
+         for (i = 0; i < r->num_args; i++)
+            if (string_is_equal(r->args[i].name, p->name))
+            {
+               char *value;
+               if (!r->args[i].is_number
+                     || !(value = mcp_integer(r->args[i].value)))
+                  return p->name;
+               free(r->args[i].value);
+               r->args[i].value = value;
+            }
+   return NULL;
+}
+
 /* Puts what the client sent by name back into the one line the command
  * handlers read, in the order and with the separators the table gives.
  * Returns the line, which the caller frees, or NULL with @err set.
@@ -750,6 +854,7 @@ static int mcp_parse(const char *body, size_t len, struct mcp_request *r)
             {
                memcpy(a->value, v, l);
                a->value[l] = '\0';
+               a->is_number = t == RJSON_NUMBER;
                strlcpy(a->name, key[2], sizeof(a->name));
                r->num_args++;
             }
@@ -995,9 +1100,18 @@ static void mcp_handle(mcp_server_t *mcp, command_t *cmd, int ci,
       bool        ok;
       char       *line    = NULL;
       const char *missing = NULL;
+      const char *invalid;
       if (!mcp_tool_known(r.name))
       {
          mcp_error(c, r.id, MCP_ERR_PARAMS, "Unknown tool.", false);
+         goto end;
+      }
+      if ((invalid = mcp_integer_args(mcp_tool_action(r.name), &r)))
+      {
+         char msg[128];
+         snprintf(msg, sizeof(msg), "Invalid integer parameter \"%s\".",
+               invalid);
+         mcp_error(c, r.id, MCP_ERR_PARAMS, msg, false);
          goto end;
       }
       /* What the client sent by name becomes the line the handler
