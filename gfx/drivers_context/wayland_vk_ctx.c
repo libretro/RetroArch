@@ -161,6 +161,17 @@ static bool gfx_ctx_wl_set_video_mode(void *data,
    if (!gfx_ctx_wl_set_video_mode_common_size(wl, width, height, fullscreen))
       goto error;
 
+   {
+      struct wl_region *opaque = wl_compositor_create_region(wl->compositor);
+      if (opaque)
+      {
+         /* Surface coordinates: keep the hint valid across resizes. */
+         wl_region_add(opaque, 0, 0, 0x7FFFFFFF, 0x7FFFFFFF);
+         wl_surface_set_opaque_region(wl->surface, opaque);
+         wl_region_destroy(opaque);
+      }
+   }
+
    /* Set buffer scale before creating the Vulkan WSI surface.
     * Fixes incorrect size/offset on HiDPI/fullscreen. */
    if (!wl->fractional_scale &&
