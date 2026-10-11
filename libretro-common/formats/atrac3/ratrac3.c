@@ -1305,6 +1305,28 @@ static void ratrac3_qmf(const ratrac3_t *d, float *s, float *dd,
       R3_ST(st + i, R3_ADD(a, b));
       R3_ST(dt + i, R3_SUB(a, b));
    }
+#ifdef RATRAC3_SCALAR
+   /* Plain C: four output pairs a pass in eight scalar accumulators,
+    * each coefficient loaded once for the sums and the differences */
+   for (j = 0; j < n; j += 4)
+   {
+      const float *sp = s + j, *dp = dd + j + 23;
+      float q  = d->qmf_even[0];
+      float o0 = q * sp[0], o1 = q * sp[1], o2 = q * sp[2], o3 = q * sp[3];
+      float e0 = q * dp[0], e1 = q * dp[1], e2 = q * dp[2], e3 = q * dp[3];
+      for (m = 1; m < 24; m++)
+      {
+         const float *a = sp + m, *b = dp - m;
+         q   = d->qmf_even[4 * m];
+         o0 += q * a[0]; o1 += q * a[1]; o2 += q * a[2]; o3 += q * a[3];
+         e0 += q * b[0]; e1 += q * b[1]; e2 += q * b[2]; e3 += q * b[3];
+      }
+      out[2 * j]     = e0; out[2 * j + 1] = o0;
+      out[2 * j + 2] = e1; out[2 * j + 3] = o1;
+      out[2 * j + 4] = e2; out[2 * j + 5] = o2;
+      out[2 * j + 6] = e3; out[2 * j + 7] = o3;
+   }
+#else
    /* The odd taps are the even ones backwards, so each coefficient is
     * loaded once for both; sixteen output pairs a pass */
    for (j = 0; j < n; j += 16)
@@ -1341,6 +1363,7 @@ static void ratrac3_qmf(const ratrac3_t *d, float *s, float *dd,
       R3_ST(out + 2 * j + 24, R3_ZIPLO(e3, o3));
       R3_ST(out + 2 * j + 28, R3_ZIPHI(e3, o3));
    }
+#endif
    memmove(s,  s + n,  RATRAC3_QMF_H * sizeof(float));
    memmove(dd, dd + n, RATRAC3_QMF_H * sizeof(float));
 }
@@ -1492,15 +1515,12 @@ int ratrac3_decode_s16(ratrac3_t *d, const uint8_t *frame, size_t len,
       const float *p = d->pcm[c];
       for (i = 0; i < RATRAC3_SAMPLES; i++)
       {
+         /* clamped, then rounded by truncating the value moved above
+          * zero: selects and no branch on the sign */
          float v = p[i];
-         int   s;
-         if (v >= 32767.0f)
-            s = 32767;
-         else if (v <= -32768.0f)
-            s = -32768;
-         else
-            s = (int)(v < 0.0f ? v - 0.5f : v + 0.5f);
-         out[i * nc + c] = (int16_t)s;
+         v = v > 32767.0f ? 32767.0f : v;
+         v = v < -32768.0f ? -32768.0f : v;
+         out[i * nc + c] = (int16_t)((int)(v + 32768.5f) - 32768);
       }
    }
    return RATRAC3_SAMPLES;
