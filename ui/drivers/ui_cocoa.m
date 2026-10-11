@@ -106,6 +106,7 @@ typedef struct ui_application_cocoa
 static int waiting_argc;
 static char **waiting_argv;
 static bool cocoa_termination_pending;
+static bool cocoa_window_restored;
 
 extern id<ApplePlatform> apple_platform;
 
@@ -718,7 +719,29 @@ static ui_application_t ui_application_cocoa = {
 @end
 
 
+#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+@interface RetroArch_OSX () <NSWindowRestoration>
+@end
+#endif
+
 @implementation RetroArch_OSX
+
+#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
++ (void)restoreWindowWithIdentifier:(NSString *)identifier
+                             state:(NSCoder *)state
+                 completionHandler:(void (^)(NSWindow *, NSError *))completionHandler
+{
+   RetroArch_OSX *delegate = (RetroArch_OSX *)[NSApp delegate];
+   (void)state;
+   if ([identifier isEqualToString:@"RetroArchMainWindow"] && delegate.window)
+   {
+      cocoa_window_restored = true;
+      completionHandler(delegate.window, nil);
+   }
+   else
+      completionHandler(nil, nil);
+}
+#endif
 
 /* Written out rather than synthesized: a synthesized retain property
  * calls objc_setProperty / objc_getProperty, which the 10.4 runtime
@@ -778,16 +801,9 @@ static ui_application_t ui_application_cocoa = {
    apple_platform   = self;
    [self.window setAcceptsMouseMovedEvents: YES];
 
-   /* Full-screen-primary is 10.7; the property is on NSWindow from
-    * 10.5, so ask whether this system knows the behaviour rather than
-    * whether the build SDK declared the constant, which is spelled out
-    * above. Setting it on 10.5 or 10.6 would leave a window the system
-    * cannot full-screen anyway; there the bit is left alone. */
-   /* NSAppKitVersionNumber10_6 is 1038; 10.7 is 1138. */
-   if (     [self.window respondsToSelector:@selector(setCollectionBehavior:)]
-         && NSAppKitVersionNumber >= 1138.0)
-      [self.window setCollectionBehavior:
-            NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
+   if (!cocoa_window_restored)
+      [self.window makeKeyAndOrderFront:nil];
+   [NSApp activateIgnoringOtherApps:YES];
 
    _listener = [WindowListener new];
    [_listener setWindow:self.window];
@@ -808,6 +824,7 @@ static ui_application_t ui_application_cocoa = {
    if (rarch_main(waiting_argc, waiting_argv, NULL))
       [[NSApplication sharedApplication] terminate:nil];
 
+   cocoa_window_restored = false;
    waiting_argc = 0;
 
    [self setupMainWindow];
@@ -1024,6 +1041,10 @@ static ui_application_t ui_application_cocoa = {
 - (void)setVideoMode:(gfx_ctx_mode_t)mode
 {
    BOOL is_fullscreen = [self isFullScreen];
+
+   /* AppKit owns the restored frame and full-screen transition at launch. */
+   if (cocoa_window_restored)
+      return;
 
    if (mode.fullscreen)
    {
@@ -1736,6 +1757,18 @@ static NSWindow *cocoa_create_main_window(void)
    [window setReleasedWhenClosed:NO];
    [window setAllowsToolTipsWhenApplicationIsInactive:NO];
    [window center];
+   /* Set before AppKit restores a native full-screen window (10.7+). */
+   if (     [window respondsToSelector:@selector(setCollectionBehavior:)]
+         && NSAppKitVersionNumber >= 1138.0)
+      [window setCollectionBehavior:
+            NS_WINDOW_COLLECTION_BEHAVIOR_FULLSCREEN_PRIMARY];
+#if defined(__BLOCKS__) && defined(MAC_OS_X_VERSION_10_7) && MAC_OS_X_VERSION_MAX_ALLOWED >= MAC_OS_X_VERSION_10_7
+   if ([window respondsToSelector:@selector(setRestorationClass:)])
+   {
+      [window setIdentifier:@"RetroArchMainWindow"];
+      [window setRestorationClass:[RetroArch_OSX class]];
+   }
+#endif
    return window;
 }
 
@@ -1791,8 +1824,6 @@ int main(int argc, char *argv[])
 
       cocoa_create_menu_bar(delegate);
 
-      [window makeKeyAndOrderFront:nil];
-      [NSApp activateIgnoringOtherApps:YES];
       [NSApp run];
    RARCH_AUTORELEASEPOOL_END
    return 0;
