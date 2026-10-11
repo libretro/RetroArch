@@ -59,6 +59,8 @@
 #include "../../../retroarch.h"
 #include "../../../runloop.h"
 #include "../../../command.h"
+#include "../../../audio/audio_driver.h"
+#include "../../../core_info.h"
 #include "../../../frontend/frontend_driver.h"
 #include "../../../frontend/frontend.h"
 #include "../../../verbosity.h"
@@ -89,10 +91,27 @@ static bool real_driver;
 /* ------------------------------------------------------------------ */
 
 static video_driver_t hooked_video;
+extern audio_driver_t audio_null;
+static unsigned audio_inits;
+static unsigned before_audio;
+static core_info_t *before_core;
+
+static void *harness_audio_init(const char *device, unsigned rate,
+      unsigned latency, unsigned *new_rate)
+{
+   (void)device;
+   (void)rate;
+   (void)latency;
+   (void)new_rate;
+   audio_inits++;
+   return NULL;
+}
 
 static void hook_install(void)
 {
    video_driver_state_t *video_st = video_state_get_ptr();
+   before_audio = audio_inits;
+   core_info_get_current_core(&before_core);
    hooked_video            = *video_st->current_video;
    video_st->current_video = &hooked_video;
 }
@@ -250,6 +269,10 @@ static void check_screen(const char *step)
 static void step_done(const char *step, bool needs_setup)
 {
    char what[256];
+   core_info_t *after_core = NULL;
+   core_info_get_current_core(&after_core);
+   CHECK(audio_inits == before_audio, "filter change must retain audio");
+   CHECK(before_core == after_core, "filter change must retain core metadata");
    if (real_driver)
    {
       snprintf(what, sizeof(what), "%s: the driver was set up again", step);
@@ -482,6 +505,7 @@ int main(int argc, char *argv[])
    if (getenv("HARNESS_VERBOSE"))
       verbosity_enable();
 
+   audio_null.init = harness_audio_init;
    config_file_set_io_default(config_file_io_filestream());
    rtime_init();
    retroarch_config_init();

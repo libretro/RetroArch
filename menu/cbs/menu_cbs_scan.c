@@ -30,6 +30,7 @@
 
 #include "../../config.def.h"
 #include "../../configuration.h"
+#include "../../driver.h"
 #include "../../tasks/tasks_internal.h"
 #ifdef __MACH__
 #include <TargetConditionals.h>
@@ -231,6 +232,7 @@ static int action_scan_input_desc(const char *path,
 static int action_scan_video_font_path(const char *path,
       const char *label, unsigned type, size_t idx)
 {
+   int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
    settings_t *settings       = config_get_ptr();
 
    strlcpy_lit(settings->paths.path_font, "null", sizeof(settings->paths.path_font));
@@ -239,7 +241,7 @@ static int action_scan_video_font_path(const char *path,
     * place, and reinitialise only where a driver keeps its own. */
    if (!font_driver_reinit_osd(settings->paths.path_font,
             settings->floats.video_font_size))
-      command_event(CMD_EVENT_REINIT, NULL);
+      command_event(CMD_EVENT_REINIT, &reinit_flags);
 
    return 0;
 }

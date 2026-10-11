@@ -2643,6 +2643,7 @@ static void video_driver_frame_format(video_driver_state_t *video_st,
 
 void video_driver_filter_apply(void)
 {
+   int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
    bool rgb32;
    unsigned scale;
    video_driver_state_t *video_st     = &video_driver_st;
@@ -2670,7 +2671,7 @@ void video_driver_filter_apply(void)
       video_st->frame_scale = scale;
       return;
    }
-   command_event(CMD_EVENT_REINIT, NULL);
+   command_event(CMD_EVENT_REINIT, &reinit_flags);
 }
 
 void video_driver_init_filter(enum retro_pixel_format colfmt_int,

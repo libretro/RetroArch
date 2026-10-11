@@ -10014,6 +10014,8 @@ static void general_write_handler(rarch_setting_t *setting)
          break;
       case MENU_ENUM_LABEL_VIDEO_FONT_PATH:
       case MENU_ENUM_LABEL_VIDEO_FONT_SIZE:
+      {
+         int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
          /* The OSD font is rebuilt where it stands: the font_data_t
           * keeps its address, so nothing holding one has to be told,
           * and the generation bump recomputes the derived metrics on
@@ -10028,8 +10030,9 @@ static void general_write_handler(rarch_setting_t *setting)
           * and need a reinit for the change to land. */
          if (!font_driver_reinit_osd(settings->paths.path_font,
                   settings->floats.video_font_size))
-            command_event(CMD_EVENT_REINIT, NULL);
+            command_event(CMD_EVENT_REINIT, &reinit_flags);
          break;
+      }
       case MENU_ENUM_LABEL_USER_LANGUAGE:
 #if defined(_WIN32) && !defined(_XBOX) && !defined(__WINRT__) && defined(HAVE_MENU)
          /* The native Win32 menubar bakes translated strings at

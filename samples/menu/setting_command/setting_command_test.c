@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 #include <boolean.h>
@@ -52,6 +53,8 @@
 #include "../../../setting_list.h"
 #include "../../../menu/menu_defines.h"
 #include "../../../menu/menu_setting.h"
+#include "../../../menu/menu_cbs.h"
+#include "../../../msg_hash_lbl_str.h"
 #include "../../../msg_hash.h"
 #include "../../../gfx/video_driver.h"
 #include "../../../frontend/frontend_driver.h"
@@ -458,6 +461,49 @@ static void *latency_mic_init(void)
 }
 #endif
 
+static void lane_font_fallback(void)
+{
+   rarch_setting_t *s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FONT_SIZE);
+   menu_file_list_cbs_t cbs;
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   unsigned before_video = inits;
+   unsigned before_audio = audio_inits;
+
+   config_get_ptr()->bools.audio_enable_menu = true;
+   core_info_get_current_core(&before_core);
+   CHECK(s != NULL, "font size row must exist");
+   if (!s)
+      return;
+   menu_action_handle_setting(s, 0, MENU_ACTION_RIGHT, false);
+   core_info_get_current_core(&after_core);
+   CHECK(inits == before_video + 1, "private font fallback must rebuild video once");
+   CHECK(audio_inits == before_audio, "private font fallback must retain audio");
+   CHECK(before_core == after_core, "private font fallback must retain core metadata");
+   s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FONT_PATH);
+   CHECK(s != NULL, "font path row must exist");
+   if (!s)
+      return;
+   before_video = inits;
+   strlcpy(s->value.target.string, "null", s->size);
+   menu_setting_generic(s, 0, false);
+   CHECK(inits == before_video + 1, "font path fallback must rebuild video once");
+   CHECK(audio_inits == before_audio, "font path fallback must retain audio");
+
+   memset(&cbs, 0, sizeof(cbs));
+   cbs.setting = s;
+   menu_cbs_init_bind_scan(&cbs, NULL, MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR, 0, 0);
+   CHECK(cbs.action_scan != NULL, "font path reset must bind its scan callback");
+   if (!cbs.action_scan)
+      return;
+   before_video = inits;
+   cbs.action_scan(NULL, MENU_ENUM_LABEL_VIDEO_FONT_PATH_STR, 0, 0);
+   core_info_get_current_core(&after_core);
+   CHECK(inits == before_video + 1, "font path reset must rebuild video once");
+   CHECK(audio_inits == before_audio, "font path reset must retain audio");
+   CHECK(before_core == after_core, "font path reset must retain core metadata");
+}
+
 static void lane_minimum_audio_latency(void)
 {
    settings_t *settings = config_get_ptr();
@@ -735,6 +781,7 @@ int main(int argc, char *argv[])
    lane_window_scale();
 #endif
 
+   lane_font_fallback();
    lane_minimum_audio_latency();
 
    scratch_remove(dir);
