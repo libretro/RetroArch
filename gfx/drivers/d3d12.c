@@ -5249,6 +5249,16 @@ static bool d3d12_create_root_signature(
 }
 
 
+static void d3d12_init_compute_sampler(D3D12_STATIC_SAMPLER_DESC *sampler)
+{
+   memset(sampler, 0, sizeof(*sampler));
+   sampler->Filter   = D3D12_FILTER_MIN_MAG_MIP_POINT;
+   sampler->AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+   sampler->AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+   sampler->AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+   sampler->MaxLOD   = D3D12_FLOAT32_MAX;
+}
+
 static void d3d12_init_descriptors(d3d12_video_t* d3d12)
 {
    size_t i;
@@ -5259,7 +5269,7 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    D3D12_DESCRIPTOR_RANGE    srv_tbl[1]            = { { D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1 } };
    D3D12_DESCRIPTOR_RANGE    uav_tbl[1]            = { { D3D12_DESCRIPTOR_RANGE_TYPE_UAV, 1 } };
    D3D12_DESCRIPTOR_RANGE    sampler_tbl[1]        = { { D3D12_DESCRIPTOR_RANGE_TYPE_SAMPLER, 1 } };
-   D3D12_STATIC_SAMPLER_DESC static_sampler        = { D3D12_FILTER_MIN_MAG_MIP_POINT };
+   D3D12_STATIC_SAMPLER_DESC static_sampler;
 
    root_params[ROOT_ID_TEXTURE_T].ParameterType    = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
    root_params[ROOT_ID_TEXTURE_T].DescriptorTable.NumDescriptorRanges = countof(srv_tbl);
@@ -5310,9 +5320,7 @@ static void d3d12_init_descriptors(d3d12_video_t* d3d12)
    cs_root_params[CS_ROOT_ID_CONSTANTS].Constants.ShaderRegister = 0;
    cs_root_params[CS_ROOT_ID_CONSTANTS].ShaderVisibility         = D3D12_SHADER_VISIBILITY_ALL;
 
-   static_sampler.AddressU = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-   static_sampler.AddressV = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
-   static_sampler.AddressW = D3D12_TEXTURE_ADDRESS_MODE_CLAMP;
+   d3d12_init_compute_sampler(&static_sampler);
 
    desc.NumParameters     = countof(cs_root_params);
    desc.pParameters       = cs_root_params;

@@ -7,7 +7,8 @@ source = (here.parents[2] / 'gfx/drivers/d3d12.c').read_text()
 masked = re.sub(r'/\*.*?\*/|//[^\n]*|"(?:\\.|[^"\\])*"',
                 lambda m: ' ' * len(m[0]), source, flags=re.S)
 parts = []
-for name in ('d3d12_mip_levels', 'd3d12_generate_mipmaps'):
+for name in ('d3d12_mip_levels', 'd3d12_generate_mipmaps',
+             'd3d12_init_compute_sampler'):
     match = re.search(r'static (?:unsigned|void) ' + name + r'\(', source)
     end = masked.index('{', match.start()) + 1
     depth = 1

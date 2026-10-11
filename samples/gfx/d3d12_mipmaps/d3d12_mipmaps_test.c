@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <limits.h>
+#include <float.h>
 
 #define D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE 1
 #define D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE 2
@@ -14,6 +15,15 @@
 #define CS_ROOT_ID_UAV_T 1
 #define CS_ROOT_ID_CONSTANTS 2
 #define MAX_MIPS 15
+#define D3D12_FILTER_MIN_MAG_MIP_POINT 0
+#define D3D12_TEXTURE_ADDRESS_MODE_CLAMP 3
+#define D3D12_FLOAT32_MAX FLT_MAX
+
+typedef struct
+{
+   unsigned Filter, AddressU, AddressV, AddressW;
+   float MinLOD, MaxLOD;
+} D3D12_STATIC_SAMPLER_DESC;
 
 typedef unsigned UINT;
 typedef unsigned D3D12PipelineState;
@@ -48,6 +58,7 @@ struct command
    d3d12_texture_t *texture;
    unsigned src, dst, dispatches, barriers, root, pipeline;
    float tx, ty;
+   D3D12_STATIC_SAMPLER_DESC sampler;
 };
 static unsigned failures;
 #define CHECK(x) do { if (!(x)) { failures++; fprintf(stderr,"FAIL line %d: %s\n",__LINE__,#x); } } while(0)
@@ -96,6 +107,7 @@ static void dispatch(struct command *cmd, unsigned x, unsigned y, unsigned z)
    if (!h) h=1;
    CHECK(cmd->root == 7 && cmd->pipeline == 8);
    CHECK(cmd->dst == cmd->src + 1);
+   CHECK(cmd->src >= cmd->sampler.MinLOD && cmd->src <= cmd->sampler.MaxLOD);
    CHECK(cmd->texture->handle->state[cmd->src] == D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE);
    CHECK(cmd->texture->handle->state[cmd->dst] == D3D12_RESOURCE_STATE_UNORDERED_ACCESS);
    CHECK(x == (w+7)/8 && y == (h+7)/8 && z == 1);
@@ -125,6 +137,10 @@ int main(void)
       CHECK(tex.desc.MipLevels == (req==2?levels:1));
       CHECK(d3d12_mip_levels(tex.desc.Width,tex.desc.Height,2) == (levels>1?2:1));
       cmd.lpVtbl=&vt; cmd.texture=&tex; r.levels=tex.desc.MipLevels;
+      d3d12_init_compute_sampler(&cmd.sampler);
+      CHECK(cmd.sampler.Filter == D3D12_FILTER_MIN_MAG_MIP_POINT);
+      CHECK(cmd.sampler.AddressU == D3D12_TEXTURE_ADDRESS_MODE_CLAMP);
+      CHECK(cmd.sampler.AddressV == cmd.sampler.AddressU && cmd.sampler.AddressW == cmd.sampler.AddressU);
       for(k=0;k<r.levels;k++) { r.state[k]=D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE; tex.gpu_descriptor[k]=k; }
       for(frame=1;frame<=3;frame++)
       {
