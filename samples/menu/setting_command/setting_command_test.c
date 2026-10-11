@@ -37,6 +37,11 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 
+#include "../../../runloop.h"
+#include "../../../record/record_driver.h"
+#ifdef HAVE_MICROPHONE
+#include "../../../audio/microphone_driver.h"
+#endif
 #include "../../../command.h"
 #include "../../../core_info.h"
 #include "../../../driver.h"
@@ -205,6 +210,7 @@ static void lane_overlay_opacity_start(void)
 
 extern audio_driver_t audio_null;
 static unsigned audio_inits;
+static unsigned requested_audio_latency;
 
 static void *harness_audio_init(const char *device, unsigned rate,
       unsigned latency, unsigned *new_rate)
@@ -212,7 +218,7 @@ static void *harness_audio_init(const char *device, unsigned rate,
    audio_inits++;
    (void)device;
    (void)rate;
-   (void)latency;
+   requested_audio_latency = latency;
    (void)new_rate;
    return NULL;
 }
@@ -416,6 +422,220 @@ static void lane_window_scale(void)
 }
 #endif
 
+
+static unsigned latency_cursor_calls;
+static unsigned latency_aspect_calls;
+static unsigned latency_record_frees;
+
+static void latency_show_mouse(void *data, bool visible)
+{
+   (void)data;
+   (void)visible;
+   latency_cursor_calls++;
+}
+
+static void latency_set_aspect(void *data, unsigned aspect)
+{
+   (void)data;
+   (void)aspect;
+   latency_aspect_calls++;
+}
+
+static void latency_record_free(void *data)
+{
+   (void)data;
+   latency_record_frees++;
+}
+
+#ifdef HAVE_MICROPHONE
+extern microphone_driver_t microphone_null;
+static unsigned latency_mic_inits;
+
+static void *latency_mic_init(void)
+{
+   latency_mic_inits++;
+   return NULL;
+}
+#endif
+
+static void lane_minimum_audio_latency(void)
+{
+   settings_t *settings = config_get_ptr();
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+   video_driver_state_t *video_st = video_state_get_ptr();
+   recording_state_t *rec_st = recording_state_get_ptr();
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke = *saved_poke;
+   void *saved_record_data = rec_st->data;
+   const record_driver_t *saved_record_driver = rec_st->driver;
+   static record_driver_t record_driver;
+   static unsigned record_cookie;
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   unsigned before_video = inits;
+   unsigned before_audio = audio_inits;
+   unsigned request;
+   void *saved_video_data;
+#ifdef HAVE_MICROPHONE
+   void *(*saved_mic_init)(void) = microphone_null.init;
+   unsigned before_mic;
+#endif
+
+   settings->bools.audio_enable = true;
+   settings->bools.audio_enable_menu = true;
+   settings->bools.video_fullscreen = true;
+   settings->uints.audio_latency = 64;
+   settings->uints.audio_latency_floor = 1;
+   runloop_st->audio_latency = 0;
+   poke.show_mouse = latency_show_mouse;
+   poke.set_aspect_ratio = latency_set_aspect;
+   video_st->poke = &poke;
+   record_driver.free = latency_record_free;
+   rec_st->data = &record_cookie;
+   rec_st->driver = &record_driver;
+   core_info_get_current_core(&before_core);
+#ifdef HAVE_MICROPHONE
+   settings->bools.microphone_enable = true;
+   settings->uints.microphone_latency = 512;
+   strlcpy(settings->arrays.microphone_driver, "null",
+         sizeof(settings->arrays.microphone_driver));
+   microphone_null.init = latency_mic_init;
+   command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+   before_mic = latency_mic_inits;
+#endif
+
+   request = 128;
+   CHECK(runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request),
+         "minimum audio latency is supported");
+   CHECK(audio_inits == before_audio + 1 && requested_audio_latency == 128,
+         "changed latency must reopen audio once, including with menu sounds");
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 1, "identical latency must retain audio");
+   request = 32;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 2 && requested_audio_latency == 64,
+         "latency below the frontend default must use that default");
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, NULL);
+   CHECK(audio_inits == before_audio + 2 && runloop_st->audio_latency == 0,
+         "clearing an already-default request must retain audio");
+   request = 999;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 3 && requested_audio_latency == 512
+         && runloop_st->audio_latency == 512, "latency is capped at 512 ms");
+   request = 513;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 3, "the same capped latency must retain audio");
+   request = 64;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 4 && requested_audio_latency == 64,
+         "lowering latency to the default must reopen audio once");
+#ifdef HAVE_MICROPHONE
+   CHECK(latency_mic_inits == before_mic,
+         "a microphone with an unchanged latency floor must survive");
+#endif
+
+   runloop_st->content_switching = true;
+   request = 256;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 4 && runloop_st->audio_latency == 256,
+         "staged loading must store latency without restarting drivers");
+   runloop_st->content_switching = false;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   CHECK(audio_inits == before_audio + 5 && requested_audio_latency == 256,
+         "the deferred request must be used when audio starts");
+   saved_video_data = video_st->data;
+   video_st->data = NULL;
+   request = 512;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 5 && runloop_st->audio_latency == 512,
+         "a request before driver startup must not open audio early");
+   video_st->data = saved_video_data;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   CHECK(audio_inits == before_audio + 6 && requested_audio_latency == 512,
+         "audio startup must use the stored request");
+   request = 64;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+#ifdef HAVE_MICROPHONE
+   settings->uints.microphone_latency = 16;
+   command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+   before_mic = latency_mic_inits;
+   request = 128;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 1,
+         "a changed microphone latency floor must reopen the microphone");
+   request = 32;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 2 && requested_audio_latency == 64,
+         "microphone and audio floors must follow their own limits");
+   before_audio = audio_inits;
+   request = 16;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 3 && audio_inits == before_audio,
+         "a microphone-only latency change must retain playback audio");
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, NULL);
+   CHECK(latency_mic_inits == before_mic + 3 && audio_inits == before_audio,
+         "unchanged playback and microphone floors must retain both drivers");
+   runloop_st->content_switching = true;
+   request = 32;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 3 && audio_inits == before_audio
+         && runloop_st->audio_latency == 32,
+         "staged loading must defer a microphone-only latency change");
+   runloop_st->content_switching = false;
+   command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+   saved_video_data = video_st->data;
+   video_st->data = NULL;
+   request = 64;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 4 && audio_inits == before_audio,
+         "microphone-only latency requests must wait for driver startup");
+   video_st->data = saved_video_data;
+   command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+   settings->bools.microphone_enable = false;
+   request = 128;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(latency_mic_inits == before_mic + 5,
+         "a disabled microphone must not be restarted");
+   microphone_driver_deinit(false);
+   microphone_null.init = saved_mic_init;
+#endif
+
+
+   runloop_st->audio_latency = 64;
+   settings->uints.audio_latency_floor = 256;
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   before_audio = audio_inits;
+   request = 128;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   request = 256;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio && requested_audio_latency == 256,
+         "requests satisfied by the configured floor must retain audio");
+   request = 512;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 1 && requested_audio_latency == 512,
+         "a request exceeding the configured floor must reopen audio once");
+   request = 128;
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, &request);
+   CHECK(audio_inits == before_audio + 2 && requested_audio_latency == 256,
+         "lowering latency must stop at the configured floor");
+   runloop_environment_cb(RETRO_ENVIRONMENT_SET_MINIMUM_AUDIO_LATENCY, NULL);
+   CHECK(audio_inits == before_audio + 2,
+         "clearing a request below the configured floor must retain audio");
+
+   core_info_get_current_core(&after_core);
+   CHECK(inits == before_video && before_core && before_core == after_core,
+         "minimum latency changes must retain video and core metadata");
+   CHECK(latency_cursor_calls == 0 && latency_aspect_calls == 0,
+         "minimum latency changes must not change cursor or video aspect");
+   CHECK(latency_record_frees == 0 && rec_st->data == &record_cookie
+         && rec_st->driver == &record_driver,
+         "minimum latency changes must keep the current recording");
+   rec_st->data = saved_record_data;
+   rec_st->driver = saved_record_driver;
+   video_st->poke = saved_poke;
+}
+
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
 {
@@ -514,6 +734,8 @@ int main(int argc, char *argv[])
 #ifndef RARCH_MOBILE
    lane_window_scale();
 #endif
+
+   lane_minimum_audio_latency();
 
    scratch_remove(dir);
 

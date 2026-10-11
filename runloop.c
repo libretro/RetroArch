@@ -2977,6 +2977,10 @@ bool runloop_environment_cb(unsigned cmd, void *data)
                       (runloop_st->audio_latency > audio_latency_default)
                      ? runloop_st->audio_latency : audio_latency_default;
          unsigned audio_latency_new;
+#ifdef HAVE_MICROPHONE
+         unsigned microphone_latency_current = MAX(
+               runloop_st->audio_latency, settings->uints.microphone_latency);
+#endif
 
          RARCH_LOG("[Environ] SET_MINIMUM_AUDIO_LATENCY.\n");
 
@@ -3004,51 +3008,21 @@ bool runloop_environment_cb(unsigned cmd, void *data)
             audio_latency_new = audio_latency_default;
          }
 
-         /* Check whether audio driver requires reinitialisation
-          * (Identical to RETRO_ENVIRONMENT_SET_SYSTEM_AV_INFO,
-          * without video driver initialisation) */
-         if (audio_latency_new != audio_latency_current)
+         /* A staged load applies the request when its drivers start. */
+         if (video_state_get_ptr()->data && !runloop_is_content_switching())
          {
-            recording_state_t *rec_st      = recording_state_get_ptr();
-            video_driver_state_t *video_st = video_state_get_ptr();
-            bool video_fullscreen          = settings->bools.video_fullscreen;
-            int reinit_flags               = DRIVERS_CMD_ALL &
-                  ~(DRIVER_VIDEO_MASK | DRIVER_INPUT_MASK | DRIVER_MENU_MASK);
-
-            RARCH_LOG("[Environ] Setting audio latency to %u ms.\n", audio_latency_new);
-
-            command_event(CMD_EVENT_REINIT, &reinit_flags);
-            command_event(CMD_EVENT_VIDEO_SET_ASPECT_RATIO, NULL);
-
-            /* Cannot continue recording with different
-             * parameters.
-             * Take the easiest route out and just restart
-             * the recording. */
-
-            if (rec_st->data)
+            if (MAX(audio_latency_new, settings->uints.audio_latency_floor)
+                  != MAX(audio_latency_current, settings->uints.audio_latency_floor))
             {
-               const char *_msg = msg_hash_to_str(MSG_RESTARTING_RECORDING_DUE_TO_DRIVER_REINIT);
-               runloop_msg_queue_push(_msg, strlen(_msg), 2, 180, false, NULL,
-                     MESSAGE_QUEUE_ICON_DEFAULT, MESSAGE_QUEUE_CATEGORY_INFO);
-               if (rec_st->streaming_enable)
-               {
-                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
-                  command_event(CMD_EVENT_STREAMING_TOGGLE, NULL);
-               }
-               else
-               {
-                  command_event(CMD_EVENT_RECORD_DEINIT, NULL);
-                  command_event(CMD_EVENT_RECORD_INIT, NULL);
-               }
+               RARCH_LOG("[Environ] Setting audio latency to %u ms.\n", audio_latency_new);
+               command_event(CMD_EVENT_AUDIO_REINIT, NULL);
             }
-
-            /* Hide mouse cursor in fullscreen mode */
-            if (video_fullscreen)
-            {
-               if (     video_st->poke
-                     && video_st->poke->show_mouse)
-                  video_st->poke->show_mouse(video_st->data, false);
-            }
+#ifdef HAVE_MICROPHONE
+            if (     settings->bools.microphone_enable
+                  && microphone_latency_current != MAX(
+                        runloop_st->audio_latency, settings->uints.microphone_latency))
+               command_event(CMD_EVENT_MICROPHONE_REINIT, NULL);
+#endif
          }
          break;
       }
