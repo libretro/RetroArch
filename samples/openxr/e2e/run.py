@@ -1241,6 +1241,28 @@ def check_input_focus(res):
     return errors
 
 
+def check_input_sync_unfocused(res):
+    """xrSyncActions answers XR_SESSION_NOT_FOCUSED (8), which succeeds
+    with nothing active, ahead of the state event: the pads release and
+    nothing is logged as not read."""
+    p0 = pads(res, 0)
+    i = find(p0, 0, lambda f: f['buttons'] == RP['B'] and f['lx'] == 32767)
+    j = find(p0, i + 1, lambda f: not moved(f)) if i >= 0 else -1
+    k = (find(p0, j + 1, lambda f: f['buttons'] == RP['B']
+              and f['lx'] == 32767) if j >= 0 else -1)
+    errors = []
+    if i < 0:
+        errors.append('B and the stick never reached player 1')
+    elif j < 0:
+        errors.append('still held while the sync said not focused')
+    elif k < 0:
+        errors.append('not held again once the sync had focus back')
+    if 'Controllers not read' in res.log:
+        errors.append('"Controllers not read" in the log for a sync that '
+                      'succeeded')
+    return errors
+
+
 def check_input_unfocused(res):
     """The window unfocused, with Pause Content When Not Active and no
     background joypads: check_focus()'s pause rule, and the headset's
@@ -2736,6 +2758,12 @@ CASES = [
                ('script', script(HELD, 'state 5')), ('wait', 2),
                ('script', ''), ('wait', 1)],
      'check': check_input_focus},
+    {'name': 'input-sync-unfocused', 'map': '3ds',
+     'steps': [('wait', 6), ('script', HELD), ('wait', 2),
+               ('script', script(HELD, 'sync 8')), ('wait', 2),
+               ('script', script(HELD, 'sync 0')), ('wait', 2),
+               ('script', ''), ('wait', 1)],
+     'check': check_input_sync_unfocused},
     # Output spec section 3, Focus: the headset's focus keeps its
     # controllers and the content going while the window is unfocused;
     # only visible (4), they release and the content pauses.

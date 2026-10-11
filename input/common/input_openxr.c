@@ -1239,7 +1239,7 @@ void input_openxr_poll(unsigned controllers, unsigned laser,
    /* XR_SESSION_NOT_FOCUSED succeeds too, with nothing active. */
    if ((res = st->SyncActions(st->session, &si)) != XR_SUCCESS)
    {
-      if (res != st->sync_result)
+      if (res != st->sync_result && XR_FAILED(res))
          RARCH_WARN("[OpenXR] Controllers not read: xrSyncActions %d.\n",
                (int)res);
       st->sync_result = res;

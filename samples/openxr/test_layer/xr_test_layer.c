@@ -45,6 +45,9 @@
  *   fail waitframe          xrWaitFrame reports XR_ERROR_SESSION_LOST
  *   fail instance           xrPollEvent reports XR_ERROR_INSTANCE_LOST
  *                           while a session exists
+ *   sync <n>                xrSyncActions answers XrResult n with nothing
+ *                           active (8: the session is not focused);
+ *                           sync 0: the runtime's own answer
  *   state <n>               queue session state n: while a session
  *                           exists, each xrPollEvent reports the oldest
  *   space <n>               the next xrPollEvent reports reference space
@@ -64,8 +67,8 @@
  *   aim <left|right> off    that hand untracked
  *
  * A changed script (a new mtime, inode or size) is applied line by
- * line. head, fail, divide and rates stay in effect until a later line
- * of the same kind replaces them (head off, fail off). state and space
+ * line. head, fail, sync, divide and rates stay in effect until a later
+ * line of the same kind replaces them (head off, fail off). state and space
  * fire once per change of the file. Every read starts from no actions
  * and no aims: a script is the whole controller state. Action states
  * and hand poses never come from the runtime.
@@ -149,6 +152,7 @@ static struct
    bool fail_session;
    bool fail_waitframe;
    bool fail_instance;
+   int sync_result;
    int inject_states[8];     /* oldest first */
    unsigned num_inject_states;
    int inject_space;
@@ -382,6 +386,11 @@ static void script_fail(const char *args)
    L.fail_instance  = !strncmp(args, "instance", 8);
 }
 
+static void script_sync(const char *args)
+{
+   L.sync_result = atoi(args);
+}
+
 /* Queued until a session exists, so a script may lead with states. */
 static void script_state(const char *args)
 {
@@ -496,6 +505,7 @@ static const struct
 } script_cmds[] = {
    { "head", script_head },
    { "fail", script_fail },
+   { "sync", script_sync },
    { "state", script_state },
    { "action", script_action },
    { "aim", script_aim },
@@ -1429,6 +1439,8 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_SyncActions(XrSession session,
    XrResult res = L.SyncActions(session, info);
    pthread_mutex_lock(&L.lock);
    script_poll();
+   if (L.sync_result)
+      res = (XrResult)L.sync_result;
    names[0]     = '\0';
    L.num_synced = 0;
    /* An unfocused or failed sync makes nothing active. */
