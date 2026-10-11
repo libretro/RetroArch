@@ -22,7 +22,8 @@
  * Then the same device with Audio Sync as the only pacer, the core
  * blocking in the publish, against the display-paced core, with
  * audio_pipeline_fill_cap off and on: what each publish waits behind.
- * PACED_ONLY runs that lane alone; JITTER_US makes the display-paced
+ * Then Audio Sync off, display-paced, the pipe deep and shallow.
+ * PACED_ONLY runs those lanes alone; JITTER_US makes the display-paced
  * core up to that late on each frame, its schedule kept.
  *
  * Includes audio/audio_driver.c so the shipping producer and consumer
@@ -471,7 +472,8 @@ static void run_one(unsigned latency_ms, double seconds)
 static unsigned paced_failures;
 
 static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
-      bool video_paced, double *avg_ms, double *max_ms, size_t *short_pulls)
+      bool video_paced, bool sync, unsigned jitter_us,
+      double *avg_ms, double *max_ms, size_t *short_pulls)
 {
    audio_driver_state_t *st = &audio_driver_st;
    pthread_t cons, dev;
@@ -481,8 +483,9 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
    double    sum = 0.0, worst = 0.0;
    struct timespec next;
    long      step_ns   = video_paced ? (long)(1e9 / FPS) : 2000000L;
-   unsigned  seed      = 12345, jitter_us = getenv("JITTER_US")
-      ? (unsigned)atoi(getenv("JITTER_US")) : 0;
+   unsigned  seed      = 12345;
+   if (getenv("JITTER_US"))
+      jitter_us = (unsigned)atoi(getenv("JITTER_US"));
 
    *avg_ms = *max_ms = 0.0;
    *short_pulls = 0;
@@ -493,6 +496,13 @@ static void audio_paced_once(unsigned latency_ms, double seconds, bool cap,
       return;
    }
    config_get_ptr()->bools.audio_pipeline_fill_cap = cap;
+   /* Audio Sync off: the publish never waits, as the frontend's
+    * non-blocking state has it. */
+   if (!sync)
+   {
+      config_get_ptr()->bools.audio_sync = false;
+      AUDIO_FLAGS_SET(st, AUDIO_FLAG_NONBLOCK);
+   }
    audio_driver_publish_runloop();
 
    retro_atomic_store_release_int(&dev_running, 1);
@@ -581,7 +591,8 @@ static void audio_paced_case(double seconds)
           * tried again, and only a cap that never runs clean fails. */
          for (attempt = 0; attempt < 5; attempt++)
          {
-            audio_paced_once(lat[i], seconds, cap, video, &avg, &mx, &sp);
+            audio_paced_once(lat[i], seconds, cap, video, true, 0,
+                  &avg, &mx, &sp);
             if (!(cap && !video && sp))
                break;
             printf("  %3u ms  %-12s cap on  | %u short pulls; host or cap, again\n",
@@ -606,6 +617,58 @@ static void audio_paced_case(double seconds)
             {
                printf("FAIL: the cap left %.1f ms queued against %.1f ms without it\n",
                      avg, uncapped_ms);
+               paced_failures++;
+            }
+         }
+      }
+   }
+}
+
+/* Audio Sync off, the core paced by the display: the pipe holds a
+ * device buffer ahead of the device as cushion, and the setting gives
+ * that up for the publish floors.  It has to take the queue down, and
+ * a core up to a frame late on every frame must still not reach the
+ * device as silence. */
+static void sync_off_case(double seconds)
+{
+   static const unsigned lat[] = { 32, 64 };
+   size_t i;
+   printf("Audio Sync off, display-paced, frames up to 16 ms late:\n");
+   for (i = 0; i < sizeof(lat) / sizeof(lat[0]); i++)
+   {
+      double deep = 0.0;
+      int    cap;
+      for (cap = 0; cap < 2; cap++)
+      {
+         double avg, mx;
+         size_t sp;
+         int    attempt;
+         /* Retried as above: a host that takes the consumer off its
+          * core shows the same holes with the deep pipe. */
+         for (attempt = 0; attempt < 5; attempt++)
+         {
+            audio_paced_once(lat[i], seconds, cap != 0, true, false, 16000,
+                  &avg, &mx, &sp);
+            if (!(cap && sp))
+               break;
+            printf("  %3u ms  shallow | %u short pulls; host or cushion, again\n",
+                  lat[i], (unsigned)sp);
+         }
+         printf("  %3u ms  %-7s | avg %6.1f ms, max %6.1f ms, short %u\n",
+               lat[i], cap ? "shallow" : "deep", avg, mx, (unsigned)sp);
+         if (!cap)
+            deep = avg;
+         else
+         {
+            if (sp)
+            {
+               printf("FAIL: the shallow pipe let a late frame through in every run\n");
+               paced_failures++;
+            }
+            if (!(avg < deep * 0.85))
+            {
+               printf("FAIL: shallow left %.1f ms queued against %.1f ms deep\n",
+                     avg, deep);
                paced_failures++;
             }
          }
@@ -840,11 +903,13 @@ int main(int argc, char **argv)
    if (getenv("PACED_ONLY"))
    {
       audio_paced_case(seconds);
+      sync_off_case(seconds);
       return paced_failures ? 1 : 0;
    }
    for (i = 0; i < sizeof(sweep) / sizeof(sweep[0]); i++)
       run_one(sweep[i], seconds);
    audio_paced_case(seconds);
+   sync_off_case(seconds);
    stall_case();
    return (stall_failures || paced_failures) ? 1 : 0;
 }

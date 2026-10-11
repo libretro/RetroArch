@@ -5506,7 +5506,10 @@ static size_t audio_driver_pipe_target_frames(audio_driver_state_t *audio_st)
    int snap = retro_atomic_load_acquire_int(&audio_st->runloop_snapshot);
    if (!audio_st->buffer_size)
       return 0;
-   if (snap & AUDIO_SNAP_SYNC)
+   /* A non-blocking writer's pipe holds a device buffer ahead of the
+    * device, as cushion against a late core; audio_pipeline_fill_cap
+    * gives that up for the publish floors below, as Audio Sync has. */
+   if (snap & (AUDIO_SNAP_SYNC | AUDIO_SNAP_PIPE_CAP))
       target      = 0;
    else
    {

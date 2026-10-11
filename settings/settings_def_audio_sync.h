@@ -20,7 +20,7 @@ S_BOOL(audio_pipeline_fill_cap, AUDIO_PIPELINE_FILL_CAP,
       "audio_pipeline_fill_cap",
       false, SD_FLAG_ADVANCED, 0, CMD_EVENT_NONE,
       "Shallow Pipeline Queue",
-      "With Synchronization and the Threaded Pipeline on, hold the core once about two frames of audio wait ahead of the device, instead of letting the pipeline's whole queue fill. Lowers latency when audio is what paces the core, such as with Vertical Sync off, and starts the queue shallower when the display paces it.")
+      "Keep the Threaded Pipeline's queue to about two frames of audio ahead of the device. With Synchronization on, the core is held there instead of at a full queue, which lowers latency when audio paces the core, such as with Vertical Sync off. With Synchronization off, the queue no longer keeps an extra Audio Latency's worth of audio as a cushion against late frames.")
 
 S_BOOL(audio_time_stretch, AUDIO_TIME_STRETCH,
       "audio_time_stretch",
