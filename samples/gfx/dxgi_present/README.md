@@ -2,8 +2,9 @@ Run `python3 samples/gfx/dxgi_present/run.py` from a configured checkout.
 The test extracts the production pacing and submission functions and checks
 GPU queue ordering, fence bookkeeping, occlusion recovery, failed presents,
 VSync interval clamping and optional tearing with portable COM mocks.
-The teardown test checks that presentation drains before resource release,
-including partial initialization and queue or event failures.
+The resize and teardown tests check resource retention, first-frame pacing,
+queue draining, partial initialization and failures. Vulkan acquire tests
+check that unavailable frames preserve a valid image index.
 
 For MinGW and Wine:
 

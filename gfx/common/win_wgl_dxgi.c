@@ -23,7 +23,7 @@ struct ra_wgl_dxgi
 {
    ra_dxgi_bridge_t *bridge;
    GLuint memory[2], texture[2], framebuffer[2], ready, done;
-   unsigned width, height;
+   unsigned width, height, format, internal_format;
    uint64_t ready_value;
    create_objects_t create_memory, gen_semaphore, gen_framebuffer;
    delete_objects_t delete_memory, delete_semaphore, delete_framebuffer;
@@ -57,13 +57,21 @@ struct ra_wgl_dxgi
 int ra_wgl_dxgi_presentable(ra_wgl_dxgi_t *p)
 { return ra_dxgi_bridge_presentable(p->bridge); }
 
+static void ra_wgl_dxgi_destroy_images(ra_wgl_dxgi_t *p)
+{
+   if (p->delete_framebuffer) p->delete_framebuffer(2, p->framebuffer);
+   glDeleteTextures(2, p->texture);
+   if (p->delete_memory) p->delete_memory(2, p->memory);
+   memset(p->framebuffer, 0, sizeof(p->framebuffer));
+   memset(p->texture, 0, sizeof(p->texture));
+   memset(p->memory, 0, sizeof(p->memory));
+}
+
 void ra_wgl_dxgi_destroy(ra_wgl_dxgi_t *p)
 {
    if (!p) return;
    glFinish();
-   if (p->delete_framebuffer) p->delete_framebuffer(2, p->framebuffer);
-   glDeleteTextures(2, p->texture);
-   if (p->delete_memory) p->delete_memory(2, p->memory);
+   ra_wgl_dxgi_destroy_images(p);
    if (p->delete_semaphore)
    {
       p->delete_semaphore(1, &p->ready);
@@ -73,13 +81,54 @@ void ra_wgl_dxgi_destroy(ra_wgl_dxgi_t *p)
    free(p);
 }
 
+static int ra_wgl_dxgi_create_images(ra_wgl_dxgi_t *p,
+      unsigned width, unsigned height, unsigned internal_format)
+{
+   GLint old_texture, old_draw, dedicated = GL_TRUE;
+   unsigned i;
+   p->create_memory(2, p->memory);
+   glGenTextures(2, p->texture);
+   p->gen_framebuffer(2, p->framebuffer);
+   glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
+   glGetIntegerv(RA_WGL_DRAW_FRAMEBUFFER_BINDING, &old_draw);
+   for (i = 0; i < 2; i++)
+   {
+      p->memory_parameter(p->memory[i], RA_WGL_DEDICATED_MEMORY, &dedicated);
+      p->import_memory(p->memory[i], 0, RA_WGL_D3D12_RESOURCE,
+            ra_dxgi_bridge_resource(p->bridge, i));
+      glBindTexture(GL_TEXTURE_2D, p->texture[i]);
+      p->texture_storage(GL_TEXTURE_2D, 1, internal_format, width, height,
+            p->memory[i], 0);
+      p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, p->framebuffer[i]);
+      p->attach_texture(RA_WGL_DRAW_FRAMEBUFFER, RA_WGL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
+            p->texture[i], 0);
+      if (p->check_framebuffer(RA_WGL_DRAW_FRAMEBUFFER) != RA_WGL_FRAMEBUFFER_COMPLETE) break;
+   }
+   glBindTexture(GL_TEXTURE_2D, old_texture);
+   p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, old_draw);
+   if (i != 2 || glGetError() != GL_NO_ERROR) return 0;
+   p->width = width; p->height = height; p->internal_format = internal_format;
+   return 1;
+}
+
+int ra_wgl_dxgi_resize(ra_wgl_dxgi_t *p, unsigned width, unsigned height,
+      unsigned format, unsigned internal_format)
+{
+   if (!p || !width || !height || format != p->format
+         || internal_format != p->internal_format) return 0;
+   if (p->width == width && p->height == height)
+      return !ra_dxgi_bridge_failed(p->bridge);
+   glFinish();
+   ra_wgl_dxgi_destroy_images(p);
+   if (!ra_dxgi_bridge_resize(p->bridge, width, height, format)) return 0;
+   return ra_wgl_dxgi_create_images(p, width, height, internal_format);
+}
+
 ra_wgl_dxgi_t *ra_wgl_dxgi_create(HWND window, unsigned width,
       unsigned height, unsigned format, unsigned internal_format)
 {
    ra_wgl_dxgi_t *p = (ra_wgl_dxgi_t *)calloc(1, sizeof(*p));
    GLubyte luid[8];
-   GLint old_texture, old_draw, dedicated = GL_TRUE;
-   unsigned i;
    if (!p) return NULL;
 #define LOAD(field, type, name) do { \
    PROC address = wglGetProcAddress(name); \
@@ -110,32 +159,12 @@ ra_wgl_dxgi_t *ra_wgl_dxgi_create(HWND window, unsigned width,
    if (glGetError() != GL_NO_ERROR) goto error;
    p->bridge = ra_dxgi_bridge_create(window, width, height, format, luid);
    if (!p->bridge) goto error;
-   p->width = width; p->height = height;
+   p->format = format;
    p->gen_semaphore(1, &p->ready);
    p->gen_semaphore(1, &p->done);
    p->import_semaphore(p->ready, RA_WGL_D3D12_FENCE, ra_dxgi_bridge_ready_fence(p->bridge));
    p->import_semaphore(p->done, RA_WGL_D3D12_FENCE, ra_dxgi_bridge_done_fence(p->bridge));
-   p->create_memory(2, p->memory);
-   glGenTextures(2, p->texture);
-   p->gen_framebuffer(2, p->framebuffer);
-   glGetIntegerv(GL_TEXTURE_BINDING_2D, &old_texture);
-   glGetIntegerv(RA_WGL_DRAW_FRAMEBUFFER_BINDING, &old_draw);
-   for (i = 0; i < 2; i++)
-   {
-      p->memory_parameter(p->memory[i], RA_WGL_DEDICATED_MEMORY, &dedicated);
-      p->import_memory(p->memory[i], 0, RA_WGL_D3D12_RESOURCE,
-            ra_dxgi_bridge_resource(p->bridge, i));
-      glBindTexture(GL_TEXTURE_2D, p->texture[i]);
-      p->texture_storage(GL_TEXTURE_2D, 1, internal_format, width, height,
-            p->memory[i], 0);
-      p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, p->framebuffer[i]);
-      p->attach_texture(RA_WGL_DRAW_FRAMEBUFFER, RA_WGL_COLOR_ATTACHMENT0, GL_TEXTURE_2D,
-            p->texture[i], 0);
-      if (p->check_framebuffer(RA_WGL_DRAW_FRAMEBUFFER) != RA_WGL_FRAMEBUFFER_COMPLETE) break;
-   }
-   glBindTexture(GL_TEXTURE_2D, old_texture);
-   p->bind_framebuffer(RA_WGL_DRAW_FRAMEBUFFER, old_draw);
-   if (i != 2 || glGetError() != GL_NO_ERROR) goto error;
+   if (!ra_wgl_dxgi_create_images(p, width, height, internal_format)) goto error;
    return p;
 error:
    ra_wgl_dxgi_destroy(p);

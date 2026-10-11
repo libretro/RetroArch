@@ -8,6 +8,8 @@ typedef struct ra_vulkan_dxgi ra_vulkan_dxgi_t;
 ra_vulkan_dxgi_t *ra_vulkan_dxgi_create(VkInstance instance,
       VkPhysicalDevice gpu, VkDevice device, VkQueue queue, unsigned family,
       HWND window, unsigned width, unsigned height, VkFormat format, void *queue_lock);
+int ra_vulkan_dxgi_resize(ra_vulkan_dxgi_t *presenter,
+      unsigned width, unsigned height, VkFormat format);
 int ra_vulkan_dxgi_presentable(ra_vulkan_dxgi_t *presenter);
 void ra_vulkan_dxgi_destroy(ra_vulkan_dxgi_t *presenter);
 void ra_vulkan_dxgi_hdr_metadata(ra_vulkan_dxgi_t *presenter, float peak);

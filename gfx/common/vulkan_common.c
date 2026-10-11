@@ -3607,9 +3607,28 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
          import_format = VK_FORMAT_R8G8B8A8_UNORM;
       else if (import_format == VK_FORMAT_B8G8R8A8_SRGB)
          import_format = VK_FORMAT_B8G8R8A8_UNORM;
-      vulkan_destroy_swapchain(vk);
+      if (vk->dxgi_presenter && ra_vulkan_dxgi_resize(
+               (ra_vulkan_dxgi_t *)vk->dxgi_presenter,
+               swapchain_size.width, swapchain_size.height, import_format))
+      {
+         void *presenter = vk->dxgi_presenter;
+         if (vk->context.swapchain_dims == VIDEO_SCALE_PACK(
+                  swapchain_size.width, swapchain_size.height)
+               && vk->context.swapchain_format == import_format)
+         {
+            vk->context.swap_interval = swap_interval;
+            vk->flags &= ~VK_DATA_FLAG_CREATED_NEW_SWAPCHAIN;
+            return true;
+         }
+         vulkan_context_wait_frames(vk);
+         vk->dxgi_presenter = NULL;
+         vulkan_destroy_swapchain(vk);
+         vk->dxgi_presenter = presenter;
+      }
+      else
+         vulkan_destroy_swapchain(vk);
       old_swapchain = VK_NULL_HANDLE;
-      if (     format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
+      if (!vk->dxgi_presenter && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR
             && (import_format == VK_FORMAT_R8G8B8A8_UNORM
                || import_format == VK_FORMAT_B8G8R8A8_UNORM))
          vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,
@@ -3618,7 +3637,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                swapchain_size.width, swapchain_size.height, import_format,
                vk->context.queue_lock);
 #ifdef VULKAN_HDR_SWAPCHAIN
-      else if (     format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
+      else if (!vk->dxgi_presenter && format.colorSpace == VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT
                  && format.format == VK_FORMAT_R16G16B16A16_SFLOAT)
          vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,
                vk->context.gpu, vk->context.device, vk->context.queue,
@@ -3627,7 +3646,7 @@ bool vulkan_create_swapchain(gfx_ctx_vulkan_data_t *vk,
                vk->context.queue_lock);
 #endif
 #ifdef VULKAN_HDR_SWAPCHAIN
-      else if (     format.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT
+      else if (!vk->dxgi_presenter && format.colorSpace == VK_COLOR_SPACE_HDR10_ST2084_EXT
                  && format.format == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
       {
          vk->dxgi_presenter = ra_vulkan_dxgi_create(vk->context.instance,

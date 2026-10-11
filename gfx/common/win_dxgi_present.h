@@ -5,6 +5,8 @@
 typedef struct ra_dxgi_bridge ra_dxgi_bridge_t;
 ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
       unsigned height, unsigned format, const unsigned char luid[8]);
+int ra_dxgi_bridge_resize(ra_dxgi_bridge_t *bridge,
+      unsigned width, unsigned height, unsigned format);
 void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *bridge);
 HANDLE ra_dxgi_bridge_resource(ra_dxgi_bridge_t *bridge, unsigned index);
 HANDLE ra_dxgi_bridge_ready_fence(ra_dxgi_bridge_t *bridge);

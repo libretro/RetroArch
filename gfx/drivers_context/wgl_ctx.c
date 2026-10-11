@@ -544,8 +544,18 @@ static void gfx_ctx_wgl_swap_buffers(void *data)
                bool fp16 = win32_backbuffer_is_scrgb();
                if (wgl->dxgi && (wgl->dxgi_dims != dims || wgl->dxgi_fp16 != fp16))
                {
-                  ra_wgl_dxgi_destroy((ra_wgl_dxgi_t *)wgl->dxgi);
-                  wgl->dxgi = NULL;
+                  if (ra_wgl_dxgi_resize((ra_wgl_dxgi_t *)wgl->dxgi,
+                           rect.right, rect.bottom, fp16 ? 10 : 28,
+                           fp16 ? 0x881A : 0x8058))
+                  {
+                     wgl->dxgi_dims = dims;
+                     wgl->dxgi_fp16 = fp16;
+                  }
+                  else
+                  {
+                     ra_wgl_dxgi_destroy((ra_wgl_dxgi_t *)wgl->dxgi);
+                     wgl->dxgi = NULL;
+                  }
                }
                if (!wgl->dxgi)
                {

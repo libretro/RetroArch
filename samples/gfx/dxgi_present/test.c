@@ -34,7 +34,7 @@ typedef struct ra_dxgi_bridge {
    IDXGISwapChain3 *chain;
    void *ready, *done, *latency, *lists[2];
    unsigned current_index;
-   int failed, tearing, occluded;
+   int failed, tearing, occluded, resized;
    UINT64 sequence, last_use[2];
 } ra_dxgi_bridge_t;
 
@@ -91,6 +91,9 @@ int main(void)
    probe_result = 0;
    assert(ra_dxgi_bridge_presentable(&bridge));
    probe_result = 0; wait_result = WAIT_TIMEOUT;
+   assert(ra_dxgi_bridge_index(&bridge) == ~0u && !ra_dxgi_bridge_failed(&bridge));
+   bridge.resized = 1;
+   assert(ra_dxgi_bridge_index(&bridge) == 1 && !bridge.resized);
    assert(ra_dxgi_bridge_index(&bridge) == ~0u && !ra_dxgi_bridge_failed(&bridge));
    wait_result = WAIT_FAILED;
    assert(ra_dxgi_bridge_index(&bridge) == ~0u && ra_dxgi_bridge_failed(&bridge));

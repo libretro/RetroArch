@@ -31,10 +31,11 @@ struct ra_dxgi_bridge
    ID3D12CommandAllocator *allocators[2];
    ID3D12GraphicsCommandList *lists[2];
    HANDLE resources[2], ready_handle, done_handle, event, latency;
-   unsigned current_index;
+   unsigned current_index, width, height, format;
+   UINT chain_flags;
    int failed;
    BOOL tearing;
-   int occluded;
+   int occluded, resized;
    UINT64 sequence, last_use[2];
 };
 
@@ -45,21 +46,28 @@ typedef HRESULT (WINAPI *create_device_t)(IUnknown *, D3D_FEATURE_LEVEL,
 #define DROP(p) do { if (p) { (p)->lpVtbl->Release(p); (p) = NULL; } } while (0)
 #define CHECK(expr) do { if (FAILED(expr)) goto error; } while (0)
 
-void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
+static int ra_dxgi_bridge_wait_idle(ra_dxgi_bridge_t *b)
+{
+   if (!b->queue || !b->done || !b->event)
+      return 1;
+   /* The frame fence precedes Present. */
+   if (FAILED(b->queue->lpVtbl->Signal(b->queue, b->done, b->sequence + 1)))
+      return 0;
+   ++b->sequence;
+   if (b->done->lpVtbl->GetCompletedValue(b->done) < b->sequence)
+   {
+      if (FAILED(b->done->lpVtbl->SetEventOnCompletion(
+                  b->done, b->sequence, b->event)))
+         return 0;
+      if (WaitForSingleObject(b->event, INFINITE) != WAIT_OBJECT_0)
+         return 0;
+   }
+   return 1;
+}
+
+static void ra_dxgi_bridge_destroy_buffers(ra_dxgi_bridge_t *b)
 {
    unsigned i;
-   if (!b)
-      return;
-   /* The frame fence precedes Present; drain its queued work as well. */
-   if (b->queue && b->done && b->event
-         && SUCCEEDED(b->queue->lpVtbl->Signal(
-                  b->queue, b->done, b->sequence + 1)))
-   {
-      if (b->done->lpVtbl->GetCompletedValue(b->done) < b->sequence + 1
-            && SUCCEEDED(b->done->lpVtbl->SetEventOnCompletion(
-                  b->done, b->sequence + 1, b->event)))
-         WaitForSingleObject(b->event, INFINITE);
-   }
    for (i = 0; i < 2; i++)
    {
       DROP(b->lists[i]);
@@ -67,7 +75,16 @@ void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
       DROP(b->buffers[i]);
       DROP(b->shared[i]);
       if (b->resources[i]) CloseHandle(b->resources[i]);
+      b->resources[i] = NULL;
    }
+}
+
+void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
+{
+   if (!b)
+      return;
+   ra_dxgi_bridge_wait_idle(b);
+   ra_dxgi_bridge_destroy_buffers(b);
    DROP(b->chain);
    DROP(b->ready);
    DROP(b->done);
@@ -83,92 +100,12 @@ void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b)
    free(b);
 }
 
-ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
-      unsigned height, unsigned format, const unsigned char luid[8])
+static int ra_dxgi_bridge_create_buffers(ra_dxgi_bridge_t *b,
+      unsigned width, unsigned height, unsigned format)
 {
-   ra_dxgi_bridge_t *b;
-   create_factory_t create_factory;
-   create_device_t create_device;
-   IDXGIAdapter1 *adapter = NULL;
-   IDXGISwapChain1 *chain = NULL;
-   IDXGIFactory5 *factory5 = NULL;
-   D3D12_COMMAND_QUEUE_DESC queue_desc;
-   DXGI_SWAP_CHAIN_DESC1 chain_desc;
    D3D12_HEAP_PROPERTIES heap;
    D3D12_RESOURCE_DESC resource_desc;
    unsigned i;
-   if (!window || !width || !height || !luid)
-      return NULL;
-   b = (ra_dxgi_bridge_t *)calloc(1, sizeof(*b));
-   if (!b) return NULL;
-   b->dxgi_dll = LoadLibraryA("dxgi.dll");
-   b->d3d_dll  = LoadLibraryA("d3d12.dll");
-   if (!b->dxgi_dll || !b->d3d_dll) goto error;
-   create_factory = (create_factory_t)GetProcAddress(b->dxgi_dll, "CreateDXGIFactory1");
-   create_device  = (create_device_t)GetProcAddress(b->d3d_dll, "D3D12CreateDevice");
-   if (!create_factory || !create_device) goto error;
-   CHECK(create_factory(&bridge_IDXGIFactory2, (void **)&b->factory));
-   if (SUCCEEDED(b->factory->lpVtbl->QueryInterface(b->factory,
-               &bridge_IDXGIFactory5, (void **)&factory5)))
-   {
-      if (FAILED(factory5->lpVtbl->CheckFeatureSupport(factory5,
-                  DXGI_FEATURE_PRESENT_ALLOW_TEARING, &b->tearing,
-                  sizeof(b->tearing))))
-         b->tearing = FALSE;
-      DROP(factory5);
-   }
-   for (i = 0; ; i++)
-   {
-      DXGI_ADAPTER_DESC1 desc;
-      CHECK(b->factory->lpVtbl->EnumAdapters1(b->factory, i, &adapter));
-      CHECK(adapter->lpVtbl->GetDesc1(adapter, &desc));
-      if (memcmp(&desc.AdapterLuid, luid, 8) == 0) break;
-      DROP(adapter);
-   }
-   CHECK(create_device((IUnknown *)adapter, D3D_FEATURE_LEVEL_11_0,
-            &bridge_ID3D12Device, (void **)&b->device));
-   DROP(adapter);
-   memset(&queue_desc, 0, sizeof(queue_desc));
-   queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
-   CHECK(b->device->lpVtbl->CreateCommandQueue(b->device, &queue_desc,
-            &bridge_ID3D12CommandQueue, (void **)&b->queue));
-   memset(&chain_desc, 0, sizeof(chain_desc));
-   chain_desc.Width = width;
-   chain_desc.Height = height;
-   chain_desc.Format = (DXGI_FORMAT)format;
-   chain_desc.SampleDesc.Count = 1;
-   chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-   chain_desc.BufferCount = 2;
-   chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-   chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-   if (b->tearing)
-      chain_desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-   CHECK(b->factory->lpVtbl->CreateSwapChainForHwnd(b->factory,
-            (IUnknown *)b->queue, window, &chain_desc, NULL, NULL, &chain));
-   CHECK(chain->lpVtbl->QueryInterface(chain, &bridge_IDXGISwapChain3,
-            (void **)&b->chain));
-   DROP(chain);
-   CHECK(b->chain->lpVtbl->SetMaximumFrameLatency(b->chain, 1));
-   b->latency = b->chain->lpVtbl->GetFrameLatencyWaitableObject(b->chain);
-   if (!b->latency) goto error;
-   if (format == DXGI_FORMAT_R16G16B16A16_FLOAT)
-      CHECK(b->chain->lpVtbl->SetColorSpace1(b->chain,
-               DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709));
-   else if (format == DXGI_FORMAT_R10G10B10A2_UNORM)
-      CHECK(b->chain->lpVtbl->SetColorSpace1(b->chain,
-               DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020));
-   CHECK(b->factory->lpVtbl->MakeWindowAssociation(b->factory,
-            window, DXGI_MWA_NO_ALT_ENTER));
-   CHECK(b->device->lpVtbl->CreateFence(b->device, 0, D3D12_FENCE_FLAG_SHARED,
-            &bridge_ID3D12Fence, (void **)&b->ready));
-   CHECK(b->device->lpVtbl->CreateFence(b->device, 0, D3D12_FENCE_FLAG_SHARED,
-            &bridge_ID3D12Fence, (void **)&b->done));
-   CHECK(b->device->lpVtbl->CreateSharedHandle(b->device, (ID3D12DeviceChild *)b->ready,
-            NULL, GENERIC_ALL, NULL, &b->ready_handle));
-   CHECK(b->device->lpVtbl->CreateSharedHandle(b->device, (ID3D12DeviceChild *)b->done,
-            NULL, GENERIC_ALL, NULL, &b->done_handle));
-   b->event = CreateEventA(NULL, FALSE, FALSE, NULL);
-   if (!b->event) goto error;
    memset(&heap, 0, sizeof(heap));
    heap.Type = D3D12_HEAP_TYPE_DEFAULT;
    heap.CreationNodeMask = heap.VisibleNodeMask = 1;
@@ -216,6 +153,127 @@ ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
       b->lists[i]->lpVtbl->ResourceBarrier(b->lists[i], 2, barriers);
       CHECK(b->lists[i]->lpVtbl->Close(b->lists[i]));
    }
+   return 1;
+error:
+   return 0;
+}
+
+static int ra_dxgi_bridge_color_space(ra_dxgi_bridge_t *b, unsigned format)
+{
+   DXGI_COLOR_SPACE_TYPE space = DXGI_COLOR_SPACE_RGB_FULL_G22_NONE_P709;
+   if (format == DXGI_FORMAT_R16G16B16A16_FLOAT)
+      space = DXGI_COLOR_SPACE_RGB_FULL_G10_NONE_P709;
+   else if (format == DXGI_FORMAT_R10G10B10A2_UNORM)
+      space = DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020;
+   return SUCCEEDED(b->chain->lpVtbl->SetColorSpace1(b->chain, space));
+}
+
+int ra_dxgi_bridge_resize(ra_dxgi_bridge_t *b,
+      unsigned width, unsigned height, unsigned format)
+{
+   if (!b || !width || !height || b->failed)
+      return 0;
+   if (b->width == width && b->height == height && b->format == format)
+      return 1;
+   if (!ra_dxgi_bridge_wait_idle(b)) goto error;
+   ra_dxgi_bridge_destroy_buffers(b);
+   if (FAILED(b->chain->lpVtbl->ResizeBuffers(b->chain, 2,
+               width, height, (DXGI_FORMAT)format, b->chain_flags))) goto error;
+   if (!ra_dxgi_bridge_color_space(b, format)) goto error;
+   if (!ra_dxgi_bridge_create_buffers(b, width, height, format)) goto error;
+   b->width = width; b->height = height; b->format = format;
+   b->last_use[0] = b->last_use[1] = 0;
+   b->current_index = 0;
+   b->occluded = 0;
+   b->resized = 1;
+   return 1;
+error:
+   b->failed = 1;
+   return 0;
+}
+
+ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
+      unsigned height, unsigned format, const unsigned char luid[8])
+{
+   ra_dxgi_bridge_t *b;
+   create_factory_t create_factory;
+   create_device_t create_device;
+   IDXGIAdapter1 *adapter = NULL;
+   IDXGISwapChain1 *chain = NULL;
+   IDXGIFactory5 *factory5 = NULL;
+   D3D12_COMMAND_QUEUE_DESC queue_desc;
+   DXGI_SWAP_CHAIN_DESC1 chain_desc;
+   unsigned i;
+   if (!window || !width || !height || !luid)
+      return NULL;
+   b = (ra_dxgi_bridge_t *)calloc(1, sizeof(*b));
+   if (!b) return NULL;
+   b->dxgi_dll = LoadLibraryA("dxgi.dll");
+   b->d3d_dll  = LoadLibraryA("d3d12.dll");
+   if (!b->dxgi_dll || !b->d3d_dll) goto error;
+   create_factory = (create_factory_t)GetProcAddress(b->dxgi_dll, "CreateDXGIFactory1");
+   create_device  = (create_device_t)GetProcAddress(b->d3d_dll, "D3D12CreateDevice");
+   if (!create_factory || !create_device) goto error;
+   CHECK(create_factory(&bridge_IDXGIFactory2, (void **)&b->factory));
+   if (SUCCEEDED(b->factory->lpVtbl->QueryInterface(b->factory,
+               &bridge_IDXGIFactory5, (void **)&factory5)))
+   {
+      if (FAILED(factory5->lpVtbl->CheckFeatureSupport(factory5,
+                  DXGI_FEATURE_PRESENT_ALLOW_TEARING, &b->tearing,
+                  sizeof(b->tearing))))
+         b->tearing = FALSE;
+      DROP(factory5);
+   }
+   for (i = 0; ; i++)
+   {
+      DXGI_ADAPTER_DESC1 desc;
+      CHECK(b->factory->lpVtbl->EnumAdapters1(b->factory, i, &adapter));
+      CHECK(adapter->lpVtbl->GetDesc1(adapter, &desc));
+      if (memcmp(&desc.AdapterLuid, luid, 8) == 0) break;
+      DROP(adapter);
+   }
+   CHECK(create_device((IUnknown *)adapter, D3D_FEATURE_LEVEL_11_0,
+            &bridge_ID3D12Device, (void **)&b->device));
+   DROP(adapter);
+   memset(&queue_desc, 0, sizeof(queue_desc));
+   queue_desc.Type = D3D12_COMMAND_LIST_TYPE_DIRECT;
+   CHECK(b->device->lpVtbl->CreateCommandQueue(b->device, &queue_desc,
+            &bridge_ID3D12CommandQueue, (void **)&b->queue));
+   memset(&chain_desc, 0, sizeof(chain_desc));
+   chain_desc.Width = width;
+   chain_desc.Height = height;
+   chain_desc.Format = (DXGI_FORMAT)format;
+   chain_desc.SampleDesc.Count = 1;
+   chain_desc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
+   chain_desc.BufferCount = 2;
+   chain_desc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+   chain_desc.Flags = DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
+   if (b->tearing)
+      chain_desc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
+   b->chain_flags = chain_desc.Flags;
+   CHECK(b->factory->lpVtbl->CreateSwapChainForHwnd(b->factory,
+            (IUnknown *)b->queue, window, &chain_desc, NULL, NULL, &chain));
+   CHECK(chain->lpVtbl->QueryInterface(chain, &bridge_IDXGISwapChain3,
+            (void **)&b->chain));
+   DROP(chain);
+   CHECK(b->chain->lpVtbl->SetMaximumFrameLatency(b->chain, 1));
+   b->latency = b->chain->lpVtbl->GetFrameLatencyWaitableObject(b->chain);
+   if (!b->latency) goto error;
+   if (!ra_dxgi_bridge_color_space(b, format)) goto error;
+   CHECK(b->factory->lpVtbl->MakeWindowAssociation(b->factory,
+            window, DXGI_MWA_NO_ALT_ENTER));
+   CHECK(b->device->lpVtbl->CreateFence(b->device, 0, D3D12_FENCE_FLAG_SHARED,
+            &bridge_ID3D12Fence, (void **)&b->ready));
+   CHECK(b->device->lpVtbl->CreateFence(b->device, 0, D3D12_FENCE_FLAG_SHARED,
+            &bridge_ID3D12Fence, (void **)&b->done));
+   CHECK(b->device->lpVtbl->CreateSharedHandle(b->device, (ID3D12DeviceChild *)b->ready,
+            NULL, GENERIC_ALL, NULL, &b->ready_handle));
+   CHECK(b->device->lpVtbl->CreateSharedHandle(b->device, (ID3D12DeviceChild *)b->done,
+            NULL, GENERIC_ALL, NULL, &b->done_handle));
+   b->event = CreateEventA(NULL, FALSE, FALSE, NULL);
+   if (!b->event) goto error;
+   if (!ra_dxgi_bridge_create_buffers(b, width, height, format)) goto error;
+   b->width = width; b->height = height; b->format = format;
    return b;
 error:
    DROP(adapter);
@@ -245,12 +303,17 @@ unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b)
          return ~0u;
       }
    }
-   wait = WaitForSingleObject(b->latency, 1000);
-   if (wait != WAIT_OBJECT_0)
+   /* ResizeBuffers resets presentation; submit its first frame before pacing. */
+   if (!b->resized)
    {
-      b->failed = wait == WAIT_FAILED;
-      return ~0u;
+      wait = WaitForSingleObject(b->latency, 1000);
+      if (wait != WAIT_OBJECT_0)
+      {
+         b->failed = wait == WAIT_FAILED;
+         return ~0u;
+      }
    }
+   b->resized = 0;
    b->current_index = b->chain->lpVtbl->GetCurrentBackBufferIndex(b->chain);
    return b->current_index;
 }
