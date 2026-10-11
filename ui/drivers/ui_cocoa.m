@@ -1202,13 +1202,14 @@ void cocoa_publish_focus(bool focused);
 - (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)theApplication { return YES; }
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender
 {
-   NSApplicationTerminateReply reply = NSTerminateNow;
+   if (!runloop_is_inited())
+      return NSTerminateNow;
 
+   /* Let the main loop save state and deinitialize the core before
+    * ui_companion_cocoa_deinit() requests termination again. */
    command_event(CMD_EVENT_QUIT, NULL);
 
-   rarch_stop_draw_observer();
-
-   return reply;
+   return NSTerminateCancel;
 }
 
 - (void)application:(NSApplication *)sender openFiles:(NSArray *)filenames
