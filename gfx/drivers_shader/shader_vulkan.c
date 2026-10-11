@@ -2540,7 +2540,7 @@ static bool slang_chain_compile_full_pass(struct vulkan_filter_chain *chain,
       p_info.max_levels = ~0u;
 
    p_info.mip_filter =
-      (pass->filter != RARCH_FILTER_NEAREST && p_info.max_levels > 1)
+      (p_info.source_filter == GLSLANG_FILTER_CHAIN_LINEAR && pass->mipmap)
       ? GLSLANG_FILTER_CHAIN_LINEAR
       : GLSLANG_FILTER_CHAIN_NEAREST;
 
@@ -4950,7 +4950,7 @@ vulkan_filter_chain_t *vulkan_filter_chain_create_from_preset(
          pass_info.max_levels = ~0u;
 
       pass_info.mip_filter =
-         (pass->filter != RARCH_FILTER_NEAREST && pass_info.max_levels > 1)
+         (pass_info.source_filter == GLSLANG_FILTER_CHAIN_LINEAR && pass->mipmap)
          ? GLSLANG_FILTER_CHAIN_LINEAR
          : GLSLANG_FILTER_CHAIN_NEAREST;
 
