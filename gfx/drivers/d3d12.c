@@ -497,7 +497,9 @@ typedef struct
     * the core gets fast reads AND fast writes, and the GPU reaches them
     * by the same path a D3D12_HEAP_TYPE_UPLOAD heap uses. Persistently
     * mapped: each mapping is valid for its buffer's lifetime. */
-#define D3D12_SW_FB_SLOTS 2
+/* Three, so that one is free while the GPU still copies the frame
+ * before last out of a second and the cached frame sits in a third */
+#define D3D12_SW_FB_SLOTS 3
    struct
    {
       D3D12Resource                       buffer[D3D12_SW_FB_SLOTS];
@@ -959,9 +961,9 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
    return handle;
 }
 
-/* Waits for the queue to drain, bounded.
+/* Waits on the queue fence, bounded.
  *
- * The GPU signals the fence when the work submitted before this point
+ * The GPU signals the fence when the work submitted before the signal
  * has retired. A GPU that has been reset or removed never signals, and
  * waiting without a bound here freezes the frontend thread rather than
  * the renderer - so the wait gives up, says so once, and returns. The
@@ -970,25 +972,17 @@ static D3D12_CPU_DESCRIPTOR_HANDLE d3d12_descriptor_heap_slot_alloc(d3d12_descri
  * either. */
 #define D3D12_FENCE_WAIT_MS 2000
 
-static void d3d12_queue_drain(d3d12_video_t *d3d12)
+/* Waits, bounded, for the queue fence to reach @value: one of this
+ * driver's own signals, so work queued behind it - a hardware core's
+ * next frame - is not waited for. */
+static void d3d12_fence_wait(d3d12_video_t *d3d12, UINT64 value)
 {
    D3D12Fence fence = d3d12->queue.fence;
 
-   /* A driver whose start-up failed before it had a queue is freed
-    * through d3d12_gfx_free() like any other, which begins by
-    * draining: with no device there is no queue and no fence, and
-    * this used to call through both. Nothing was queued; nothing to
-    * wait for. */
-   if (!d3d12->queue.handle || !fence)
+   if (!fence || fence->lpVtbl->GetCompletedValue(fence) >= value)
       return;
 
-   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle, fence,
-         ++d3d12->queue.fenceValue);
-
-   if (fence->lpVtbl->GetCompletedValue(fence) >= d3d12->queue.fenceValue)
-      return;
-
-   fence->lpVtbl->SetEventOnCompletion(fence, d3d12->queue.fenceValue,
+   fence->lpVtbl->SetEventOnCompletion(fence, value,
          d3d12->queue.fenceEvent);
 
    if (WaitForSingleObject(d3d12->queue.fenceEvent, D3D12_FENCE_WAIT_MS)
@@ -996,6 +990,44 @@ static void d3d12_queue_drain(d3d12_video_t *d3d12)
       RARCH_ERR("[D3D12] The GPU did not signal its fence within %u ms;"
             " the device is most likely lost.\n",
             (unsigned)D3D12_FENCE_WAIT_MS);
+}
+
+static void d3d12_queue_drain(d3d12_video_t *d3d12)
+{
+   /* A driver whose start-up failed before it had a queue is freed
+    * through d3d12_gfx_free() like any other, which begins by
+    * draining: with no device there is no queue and no fence, and
+    * this used to call through both. Nothing was queued; nothing to
+    * wait for. */
+   if (!d3d12->queue.handle || !d3d12->queue.fence)
+      return;
+
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->queue.fence, ++d3d12->queue.fenceValue);
+   d3d12_fence_wait(d3d12, d3d12->queue.fenceValue);
+}
+
+/* The frame command list, recorded again: the allocator behind it is
+ * free once the last list recorded from it has executed, which its
+ * own signal says (d3d12_cmd_execute). Normally long since. */
+static void d3d12_cmd_begin(d3d12_video_t *d3d12, D3D12PipelineState pso)
+{
+   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
+   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
+   d3d12->queue.cmd->lpVtbl->Reset(d3d12->queue.cmd,
+         d3d12->queue.allocator, pso);
+}
+
+/* The frame command list executed, and signalled behind: what it
+ * copied or drew from is free once the fence reaches frameSignal */
+static void d3d12_cmd_execute(d3d12_video_t *d3d12)
+{
+   d3d12->queue.cmd->lpVtbl->Close(d3d12->queue.cmd);
+   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
+         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
+   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
+         d3d12->queue.fence, d3d12->queue.frameSignal);
 }
 
 static void d3d12_release_texture(d3d12_texture_t* texture)
@@ -2819,21 +2851,34 @@ static uint32_t d3d12_get_flags(void *data)
 #ifdef HAVE_OVERLAY
 /* The page goes, the sprite buffer stays for the next one
  * (d3d12_overlay_sprites_begin). Textures this driver made are still
- * the GPU's to read until the frame in flight is done - the queue is
- * drained at the top of a frame, not at the end of one - so they are
- * waited out before they are released; a borrowed page releases
- * nothing and waits for nothing. */
+ * the GPU's to read until the frame in flight is done, so they go
+ * behind its fence; a borrowed page releases nothing. */
+static void d3d12_overlay_texture_retire(d3d12_video_t *d3d12,
+      d3d12_texture_t *texture)
+{
+   d3d12_texture_t *copy = (d3d12_texture_t*)malloc(sizeof(*copy));
+   if (copy)
+   {
+      *copy = *texture;
+      d3d12_retire(d3d12, copy, NULL, d3d12->queue.fenceValue + 1);
+   }
+   else
+   {
+      /* Between frames: the last one signalled has read it */
+      d3d12_fence_wait(d3d12, d3d12->queue.fenceValue);
+      d3d12_release_texture(texture);
+   }
+   memset(texture, 0, sizeof(*texture));
+}
+
 static void d3d12_free_overlay_page(d3d12_video_t* d3d12)
 {
    size_t i;
    if (     !d3d12->overlays.borrowed
          && d3d12->overlays.textures
          && d3d12->overlays.count)
-   {
-      d3d12_queue_drain(d3d12);
       for (i = 0; i < (unsigned)d3d12->overlays.count; i++)
-         d3d12_release_texture(&d3d12->overlays.textures[i]);
-   }
+         d3d12_overlay_texture_retire(d3d12, &d3d12->overlays.textures[i]);
    free(d3d12->overlays.textures);
    free(d3d12->overlays.refs);
    d3d12->overlays.textures     = NULL;
@@ -2846,8 +2891,8 @@ static void d3d12_free_overlays(d3d12_video_t* d3d12)
 {
    d3d12_free_overlay_page(d3d12);
    if (d3d12->overlays.vbo)
-      d3d12_queue_drain(d3d12);
-   Release(d3d12->overlays.vbo);
+      d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->overlays.vbo,
+            d3d12->queue.fenceValue + 1);
    free(d3d12->overlays.shadow);
    d3d12->overlays.vbo          = NULL;
    d3d12->overlays.shadow       = NULL;
@@ -2855,9 +2900,9 @@ static void d3d12_free_overlays(d3d12_video_t* d3d12)
 }
 
 /* A page's sprite buffer and its copy: reused across pages while big
- * enough, else made anew behind a drain of the frame that may still
- * read the old one. @num sprites reset to the whole screen in white;
- * the draw copies them in. */
+ * enough, else made anew, the old one going behind the fence of the
+ * frame that may still read it. @num sprites reset to the whole screen
+ * in white; the draw copies them in. */
 static bool d3d12_overlay_sprites_begin(d3d12_video_t *d3d12,
       unsigned num)
 {
@@ -2866,8 +2911,9 @@ static bool d3d12_overlay_sprites_begin(d3d12_video_t *d3d12,
 
    if (!d3d12->overlays.vbo || d3d12->overlays.vbo_capacity < (int)num)
    {
-      d3d12_queue_drain(d3d12);
-      Release(d3d12->overlays.vbo);
+      if (d3d12->overlays.vbo)
+         d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->overlays.vbo,
+               d3d12->queue.fenceValue + 1);
       free(d3d12->overlays.shadow);
       d3d12->overlays.vbo                     = NULL;
       d3d12->overlays.vbo_capacity            = 0;
@@ -3285,9 +3331,8 @@ static void d3d12_gfx_set_rotation(void* data, unsigned rotation)
    if (!d3d12)
       return;
 
-   {
-      d3d12_queue_drain(d3d12);
-   }
+   /* frame.ubo is rewritten below: the last frame is done reading it */
+   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
    d3d12->frame.rotation = rotation;
 
    radians                 = d3d12->frame.rotation * (M_PI / 2.0f);
@@ -4724,6 +4769,10 @@ static void d3d12_gfx_free(void* data)
       return;
 
    d3d12_queue_drain(d3d12);
+#ifdef HAVE_OVERLAY
+   /* Through the retired list, which goes next */
+   d3d12_free_overlays(d3d12);
+#endif
    d3d12_retired_flush(d3d12);
    free(d3d12->retired);
    d3d12->retired     = NULL;
@@ -4735,11 +4784,6 @@ static void d3d12_gfx_free(void* data)
    d3d12->chain.retained = NULL;
    d3d12_hw_ring_free(d3d12);
    d3d12_record_teardown(d3d12);
-
-
-#ifdef HAVE_OVERLAY
-   d3d12_free_overlays(d3d12);
-#endif
 
    d3d12_free_shader_preset(d3d12);
 
@@ -6207,18 +6251,7 @@ static void d3d12_record_free(d3d12_video_t *d3d12)
       {
          /* Table full: wait for the oldest generation, bounded as the
           * queue drain is, then release it to make room. */
-         D3D12Fence fence = d3d12->queue.fence;
-         UINT64     value = d3d12->record.retired[0].fence;
-         if (fence->lpVtbl->GetCompletedValue(fence) < value)
-         {
-            fence->lpVtbl->SetEventOnCompletion(fence, value,
-                  d3d12->queue.fenceEvent);
-            if (WaitForSingleObject(d3d12->queue.fenceEvent,
-                     D3D12_FENCE_WAIT_MS) != WAIT_OBJECT_0)
-               RARCH_ERR("[D3D12] The GPU did not signal its fence within "
-                     "%u ms; the device is most likely lost.\n",
-                     (unsigned)D3D12_FENCE_WAIT_MS);
-         }
+         d3d12_fence_wait(d3d12, d3d12->record.retired[0].fence);
          for (i = 0; i < D3D12_RECORD_RING; i++)
             Release(d3d12->record.retired[0].readback[i]);
          memmove(&d3d12->record.retired[0], &d3d12->record.retired[1],
@@ -6451,16 +6484,10 @@ static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
    D3D12GraphicsCommandList cmd = d3d12->queue.cmd;
    D3D12Resource backbuffer;
 
-   {
-      d3d12_queue_drain(d3d12);
-   }
-
    if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
       WaitForSingleObjectEx(d3d12->chain.frameLatencyWaitableObject, 1000, true);
 
-   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
-   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+   d3d12_cmd_begin(d3d12, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(d3d12->chain.handle);
    backbuffer = d3d12->chain.renderTargets[d3d12->chain.frame_index];
@@ -6476,9 +6503,7 @@ static bool d3d12_present_retained_once(d3d12_video_t *d3d12)
    D3D12_RESOURCE_TRANSITION(cmd, backbuffer,
          D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PRESENT);
 
-   cmd->lpVtbl->Close(cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   d3d12_cmd_execute(d3d12);
    DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
    return true;
 }
@@ -6555,13 +6580,7 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
 {
    D3D12GraphicsCommandList cmd   = d3d12->queue.cmd;
 
-   {
-      d3d12_queue_drain(d3d12);
-   }
-
-   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
-   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+   d3d12_cmd_begin(d3d12, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
 
    d3d12->chain.frame_index = DXGIGetCurrentBackBufferIndex(
          d3d12->chain.handle);
@@ -6587,16 +6606,7 @@ static void dx12_inject_black_frame(d3d12_video_t* d3d12)
          D3D12_RESOURCE_STATE_RENDER_TARGET,
          D3D12_RESOURCE_STATE_PRESENT);
 
-   cmd->lpVtbl->Close(cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
-   /* A signal behind the frame, not waited on here: what the frame
-    * copied from its upload buffers is known to be done when the fence
-    * reaches it, which is what an in-place texture update between
-    * frames asks (d3d12_gfx_update_texture). */
-   d3d12->queue.frameSignal = ++d3d12->queue.fenceValue;
-   d3d12->queue.handle->lpVtbl->Signal(d3d12->queue.handle,
-         d3d12->queue.fence, d3d12->queue.frameSignal);
+   d3d12_cmd_execute(d3d12);
    DXGIPresent(d3d12->chain.handle, d3d12->chain.swap_interval, 0);
 
 }
@@ -6726,6 +6736,27 @@ static bool d3d12_gfx_frame(
              || (d3d12->flags & D3D12_ST_FLAG_OVERLAYS_ENABLE)))
       use_back_buffer = true;
 
+   d3d12->chain.current_rt_format = back_buffer_format;
+   /* A swapchain this frame rebuilds takes the display's peak from
+    * the frame, not the settings */
+   d3d12->hdr.display_peak        = video_info->hdr_display_peak;
+#endif
+   cmd                            = d3d12->queue.cmd;
+
+   if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
+      WaitForSingleObjectEx(
+            d3d12->chain.frameLatencyWaitableObject,
+            1000,
+            true);
+
+   /* What the last frame read - its constants, its upload buffers, the
+    * back buffers a resize gives up - is free once its own signal is
+    * reached; the queue is not drained, so a hardware core's work
+    * queued since runs on */
+   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
+   d3d12_retired_tick(d3d12);
+
+#ifdef HAVE_DXGI_HDR
    /* HDR-aware sprite entries: when UI (widgets / OSD) draws
     * directly into the HDR swapchain -- no back-buffer composite
     * this frame -- the sprite shaders must encode SDR content
@@ -6758,23 +6789,6 @@ static bool d3d12_gfx_frame(
       }
    }
 
-   d3d12->chain.current_rt_format = back_buffer_format;
-   /* A swapchain this frame rebuilds takes the display's peak from
-    * the frame, not the settings */
-   d3d12->hdr.display_peak        = video_info->hdr_display_peak;
-#endif
-   cmd                            = d3d12->queue.cmd;
-
-   if (d3d12->flags & D3D12_ST_FLAG_WAITABLE_SWAPCHAINS)
-      WaitForSingleObjectEx(
-            d3d12->chain.frameLatencyWaitableObject,
-            1000,
-            true);
-
-   d3d12_queue_drain(d3d12);
-   d3d12_retired_tick(d3d12);
-
-#ifdef HAVE_DXGI_HDR
    d3d12_hdr_enable = (d3d12->flags & D3D12_ST_FLAG_HDR_ENABLE) ? true : false;
    {
       enum dxgi_swapchain_bit_depth desired_bit_depth;
@@ -6953,10 +6967,7 @@ static bool d3d12_gfx_frame(
    }
 #endif
 
-   d3d12->queue.allocator->lpVtbl->Reset(d3d12->queue.allocator);
-
-   cmd->lpVtbl->Reset(cmd, d3d12->queue.allocator,
-         d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
+   d3d12_cmd_begin(d3d12, d3d12->pipes[VIDEO_SHADER_STOCK_BLEND]);
 
    {
       D3D12DescriptorHeap desc_heaps[] = { d3d12->desc.srv_heap.handle,
@@ -8185,9 +8196,7 @@ static bool d3d12_gfx_frame(
    else if (!video_info->gpu_recording && d3d12->record.enable)
       d3d12_record_free(d3d12);
 
-   cmd->lpVtbl->Close(cmd);
-   d3d12->queue.handle->lpVtbl->ExecuteCommandLists(d3d12->queue.handle, 1,
-         (ID3D12CommandList* const*)&d3d12->queue.cmd);
+   d3d12_cmd_execute(d3d12);
    d3d12_record_signal(d3d12);
 
    /* Version 2: the core's texture is the core's again once this list,
@@ -8723,6 +8732,11 @@ static void d3d12_set_menu_texture_frame(
    DXGI_FORMAT    format   = rgb32 ? DXGI_FORMAT_B8G8R8A8_UNORM
       : (DXGI_FORMAT)DXGI_FORMAT_EX_A4R4G4B4_UNORM;
 
+   /* The upload buffer and the quad are rewritten below: the last frame,
+    * which copied and drew from them, is done first - as the next frame
+    * would wait for it anyway */
+   d3d12_fence_wait(d3d12, d3d12->queue.frameSignal);
+
    if (
          d3d12->menu.texture.desc.Width  != width ||
          d3d12->menu.texture.desc.Height != height)
@@ -9204,9 +9218,8 @@ static uintptr_t d3d12_gfx_load_texture(
 /* Same-size contents into a texture d3d12_gfx_load_texture made: the
  * upload buffer it kept is rewritten and the texture marked dirty,
  * so the next draw that samples it records the copy - the same path
- * the menu texture streams through. The queue is drained at the top
- * of every frame, so the buffer is not being read when this writes
- * it between frames. */
+ * the menu texture streams through. A frame still copying out of the
+ * buffer is told by its fence, and the update is dropped meanwhile. */
 /* The second upload buffer lending uses, the layout of the first,
  * made once. False when it cannot be had. */
 static bool d3d12_texture_upload_buffer2(d3d12_video_t *d3d12,
@@ -9705,12 +9718,22 @@ static bool d3d12_sw_fb_ensure(d3d12_video_t* d3d12,
          && d3d12->sw_fb.format == format)
       return true;
 
-   /* A size or format change: whatever the GPU still copies out of the
-    * old buffers finishes first. */
+   /* A size or format change: the old buffers go behind the frames
+    * that still copy out of them rather than after a drain, and the
+    * cached frame, which may point into one, goes first. */
    if (d3d12->sw_fb.buffer[0])
    {
-      d3d12_queue_drain(d3d12);
-      d3d12_sw_fb_free(d3d12);
+      video_driver_cached_frame_retire();
+      for (i = 0; i < D3D12_SW_FB_SLOTS; i++)
+      {
+         if (d3d12->sw_fb.buffer[i])
+            d3d12_retire(d3d12, NULL, (IUnknown*)d3d12->sw_fb.buffer[i],
+                  d3d12->sw_fb.fence[i]);
+         d3d12->sw_fb.buffer[i] = NULL;
+         d3d12->sw_fb.mapped[i] = NULL;
+         d3d12->sw_fb.fence[i]  = 0;
+      }
+      d3d12->sw_fb.dims = 0;
    }
 
    /* Compute the placed-subresource layout the buffers need to
@@ -9788,7 +9811,8 @@ static bool d3d12_get_current_software_framebuffer(
 {
    d3d12_video_t* d3d12 = (d3d12_video_t*)data;
    D3D12Fence     fence;
-   unsigned       slot;
+   UINT64         done;
+   unsigned       slot, k;
 
    if (!d3d12 || !fb)
       return false;
@@ -9814,20 +9838,20 @@ static bool d3d12_get_current_software_framebuffer(
          return false;
    }
 
-   /* The buffer the last pushed frame is not in: the cached frame
-    * stays put. A copy out of it recorded by an earlier frame is waited
-    * for; by now one frame has normally gone through since. */
-   slot  = (d3d12->sw_fb.last + 1) % D3D12_SW_FB_SLOTS;
+   /* A buffer the last pushed frame is not in - the cached frame stays
+    * put - and that no copy still in flight reads from. None is never
+    * waited for: the core renders into its own buffer this once, and
+    * the frame is copied as any other. */
    fence = d3d12->queue.fence;
-   if (     fence
-         && fence->lpVtbl->GetCompletedValue(fence) < d3d12->sw_fb.fence[slot])
+   done  = fence ? fence->lpVtbl->GetCompletedValue(fence) : 0;
+   for (k = 1; k < D3D12_SW_FB_SLOTS; k++)
    {
-      fence->lpVtbl->SetEventOnCompletion(fence, d3d12->sw_fb.fence[slot],
-            d3d12->queue.fenceEvent);
-      if (WaitForSingleObject(d3d12->queue.fenceEvent, D3D12_FENCE_WAIT_MS)
-            != WAIT_OBJECT_0)
-         return false;
+      slot = (d3d12->sw_fb.last + k) % D3D12_SW_FB_SLOTS;
+      if (!fence || done >= d3d12->sw_fb.fence[slot])
+         break;
    }
+   if (k == D3D12_SW_FB_SLOTS)
+      return false;
 
    fb->data         = (uint8_t *)d3d12->sw_fb.mapped[slot]
                     + d3d12->sw_fb.layout.Offset;

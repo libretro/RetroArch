@@ -1,0 +1,33 @@
+# Waits that remain in the D3D12 driver, checked by
+# tools/d3d12_idle_wait_check.py: file|function|call|count. A new
+# d3d12_queue_drain or SetEventOnCompletion in the checked files fails
+# CI unless it is added here, and an entry whose call is gone fails
+# too. Do not add to this list to make a stall go away: a frame waits
+# for its predecessor's own signal (d3d12_cmd_begin), and anything
+# else a frame may still read goes behind its fence (d3d12_retire).
+#
+# The bounded wait every own-fence wait goes through.
+gfx/drivers/d3d12.c|d3d12_fence_wait|SetEventOnCompletion|1
+#
+# Lifecycle drains: driver teardown, a shader preset swapped, the font
+# rebuilt, a hardware core's textures changing size, and the retired
+# list unable to grow.
+gfx/drivers/d3d12.c|d3d12_gfx_free|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_gfx_set_shader|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_shader_load_step|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_font_free|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_hw_direct_lookup|d3d12_queue_drain|1
+gfx/drivers/d3d12.c|d3d12_retire|d3d12_queue_drain|1
+#
+# Synchronous readback (screenshots): the copy has to be finished to
+# be read.
+gfx/drivers/d3d12.c|d3d12_gfx_read_viewport|d3d12_queue_drain|2
+gfx/drivers/d3d12.c|d3d12_gfx_read_viewport_hdr|d3d12_queue_drain|2
+#
+# Hardware core handoff: waits on the core's own fences, which the
+# core asks for (wait_sync_index, the ring's fence wait), or before
+# their objects go.
+gfx/drivers/d3d12.c|d3d12_hw_v2_wait_sync_index|SetEventOnCompletion|1
+gfx/drivers/d3d12.c|d3d12_hw_ring_fence_wait|SetEventOnCompletion|1
+gfx/drivers/d3d12.c|d3d12_hw_ring_capture|SetEventOnCompletion|1
+gfx/drivers/d3d12.c|d3d12_hw_ring_free|SetEventOnCompletion|1
