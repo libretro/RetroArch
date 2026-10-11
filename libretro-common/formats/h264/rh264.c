@@ -4484,6 +4484,19 @@ static RH264_INLINE int rh264_bs_mvcmp(int ax, int ay, int bx, int by,
         || ay - by >= mvlim || by - ay >= mvlim);
 }
 
+/* Whether two cells carry the same motion from the same pictures: both
+ * vectors and the four reference fields, compared as two words */
+static RH264_INLINE int rh264_mv_same_pic(const rh264_mv *a, const rh264_mv *b)
+{
+   uint64_t va, vb;
+   uint32_t ra, rb;
+   memcpy(&va, &a->mvx, 8);
+   memcpy(&vb, &b->mvx, 8);
+   memcpy(&ra, &a->ref, 4);
+   memcpy(&rb, &b->ref, 4);
+   return va == vb && ra == rb;
+}
+
 /* Boundary strength between blocks P and Q per 8.7.2.1, over both prediction
  * lists. Reference pictures compare as unordered pairs; a list a block does
  * not use carries picture -1 with a zero vector, so one-list blocks fall out
@@ -4504,10 +4517,7 @@ static RH264_INLINE int rh264_inter_bs(int mbedge, int intra_p, int intra_q,
     * every reference comparison matches and every vector difference is
     * zero.  Static and skipped regions make this the common case, so
     * take it before the general list-pairing walk below. */
-   if (mp->mvx == mq->mvx && mp->mvy == mq->mvy
-         && mp->mvx1 == mq->mvx1 && mp->mvy1 == mq->mvy1
-         && mp->ref == mq->ref && mp->ref1 == mq->ref1
-         && mp->pic == mq->pic && mp->pic1 == mq->pic1)
+   if (rh264_mv_same_pic(mp, mq))
       return 0;
    p0 = mp->ref  < 0 ? -1 : mp->pic;
    p1 = mp->ref1 < 0 ? -1 : mp->pic1;
@@ -4588,7 +4598,7 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
       const signed char *soA, const signed char *soB, const rh264_mv *mvg,
       int mby0, int mby1)
 {
-   int mbx, mby, edge, seg, mba;
+   int mbx, mby, edge, seg, mba, nedge;
    int gw = f->mbw * 4, cgw = f->mbw * 2;
 
    /* address order, not raster: see rh264_deblock */
@@ -4622,8 +4632,23 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
          if (rh264_bs_nz(f, gw, mbx*4 + 3, mby*4 - 1)) topm |= 8u;
       }
 
+      /* An inter macroblock with no luma coefficients and one motion
+       * over all sixteen cells has bS 0 on every internal edge, in
+       * every plane: only its outer edges are left to filter */
+      nedge = 4;
+      if (!curm)
+      {
+         const rh264_mv *c0 = &mvg[(mby*4)*gw + mbx*4];
+         int r, k, same = !c0->intra;
+         for (r = 0; same && r < 4; r++)
+            for (k = 0; same && k < 4; k++)
+               same = rh264_mv_same(c0, &c0[r*gw + k]);
+         if (same)
+            nedge = 1;
+      }
+
       /* ---- vertical edges (filter columns), left to right ---- */
-      for (edge = 0; edge < 4; edge++)
+      for (edge = 0; edge < nedge; edge++)
       {
          int x = mbx*16 + edge*4;
          int mbedge = (edge == 0);
@@ -4739,7 +4764,7 @@ static void rh264_deblock_pslice(rh264_frame *f, const signed char *sidc,
       }
 
       /* ---- horizontal edges (filter rows), top to bottom ---- */
-      for (edge = 0; edge < 4; edge++)
+      for (edge = 0; edge < nedge; edge++)
       {
          int y = mby*16 + edge*4;
          int mbedge = (edge == 0);
