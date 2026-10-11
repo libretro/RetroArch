@@ -1897,38 +1897,41 @@ void drivers_init(
          core_info_init_current_core();
    }
 
+   if (flags & (DRIVER_VIDEO_MASK | DRIVER_MENU_MASK))
+   {
 #if defined(HAVE_GFX_WIDGETS)
-   /* Note that we only enable widgets if 'video_font_enable'
-    * is true. 'video_font_enable' corresponds to the generic
-    * 'On-Screen Notifications' setting, which should serve as
-    * a global notifications on/off toggle switch */
-   if (   video_font_enable
-       && menu_enable_widgets
-       && video_st->current_video
-       && video_st->current_video->gfx_widgets_enabled
-       && video_st->current_video->gfx_widgets_enabled(video_st->data))
-   {
-      bool rarch_force_fullscreen = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
-         VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
-      bool video_is_fullscreen    = settings->bools.video_fullscreen
-                                 || rarch_force_fullscreen;
-      unsigned output_size        = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
+      /* Note that we only enable widgets if 'video_font_enable'
+       * is true. 'video_font_enable' corresponds to the generic
+       * 'On-Screen Notifications' setting, which should serve as
+       * a global notifications on/off toggle switch */
+      if (   video_font_enable
+          && menu_enable_widgets
+          && video_st->current_video
+          && video_st->current_video->gfx_widgets_enabled
+          && video_st->current_video->gfx_widgets_enabled(video_st->data))
+      {
+         bool rarch_force_fullscreen = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
+            VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
+         bool video_is_fullscreen    = settings->bools.video_fullscreen
+                                    || rarch_force_fullscreen;
+         unsigned output_size        = VIDEO_DRIVER_OUTPUT_DIMS(video_st);
 
-      p_dispwidget->active= gfx_widgets_init(
-            p_disp,
-            anim_get_ptr(),
-            settings,
-            (uintptr_t)&p_dispwidget->active,
-            video_is_threaded,
-            output_size,
-            video_is_fullscreen,
-            settings->paths.directory_assets,
-            settings->paths.path_font);
-   }
-   else
+         p_dispwidget->active= gfx_widgets_init(
+               p_disp,
+               anim_get_ptr(),
+               settings,
+               (uintptr_t)&p_dispwidget->active,
+               video_is_threaded,
+               output_size,
+               video_is_fullscreen,
+               settings->paths.directory_assets,
+               settings->paths.path_font);
+      }
+      else
 #endif
-   {
-      gfx_display_init_first_driver(p_disp, video_is_threaded);
+      {
+         gfx_display_init_first_driver(p_disp, video_is_threaded);
+      }
    }
 
 #ifdef HAVE_MENU
@@ -1960,8 +1963,10 @@ void drivers_init(
    /* Initialising the menu driver will also initialise
     * core info - if we are not initialising the menu
     * driver, must initialise core info 'by hand' */
-   if (   !(flags & DRIVER_VIDEO_MASK)
-       || !(flags & DRIVER_MENU_MASK))
+   if (     (!(lifetime_flags & DRIVER_LIFETIME_RESET)
+               || (flags & DRIVER_MENU_MASK))
+         && (!(flags & DRIVER_VIDEO_MASK)
+               || !(flags & DRIVER_MENU_MASK)))
    {
       command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
       if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_SYMBOLS_INITED))
@@ -1970,9 +1975,13 @@ void drivers_init(
 
 #else
    /* Qt uses core info, even if the menu is disabled */
-   command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
-   if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_SYMBOLS_INITED))
-      command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   if (!(lifetime_flags & DRIVER_LIFETIME_RESET)
+         || (flags & DRIVER_MENU_MASK))
+   {
+      command_event(CMD_EVENT_CORE_INFO_INIT, NULL);
+      if (!(runloop_st->current_core.flags & RETRO_CORE_FLAG_SYMBOLS_INITED))
+         command_event(CMD_EVENT_LOAD_CORE_PERSIST, NULL);
+   }
 #endif
 
    /* Keep non-throttled state as good as possible. */
@@ -2008,8 +2017,12 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
 
    DRIVER_FLAGS_NORMALIZE(flags);
 
-   core_info_deinit_list();
-   core_info_free_current_core();
+   if (!(lifetime_flags & DRIVER_LIFETIME_RESET)
+         || (flags & DRIVER_MENU_MASK))
+   {
+      core_info_deinit_list();
+      core_info_free_current_core();
+   }
 
 #ifdef HAVE_THREADS
    /* Wait for the video thread to finish any pending frame before
@@ -2020,7 +2033,7 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
     * use-after-free crashes on D3D12/Vulkan under threaded video.
     *
     * No-op when threaded video is not active. */
-   if (     (flags & DRIVER_VIDEO_AND_INPUT_MASK)
+   if (     (flags & (DRIVER_VIDEO_AND_INPUT_MASK | DRIVER_MENU_MASK))
          && VIDEO_DRIVER_IS_THREADED_INTERNAL(video_st)
          && video_st->thread_wrapper_active)
       video_thread_wait_idle();
@@ -2030,7 +2043,8 @@ void driver_uninit(int flags, enum driver_lifetime_flags lifetime_flags)
    /* This absolutely has to be done before video_driver_free_internal()
     * is called/completes, otherwise certain menu drivers
     * (e.g. Vulkan) will segfault */
-   if (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED)
+   if (     (flags & (DRIVER_VIDEO_MASK | DRIVER_MENU_MASK))
+         && (p_dispwidget->flags & DISPGFX_WIDGET_FLAG_INITED))
    {
       gfx_widgets_deinit(p_dispwidget->persisting);
       p_dispwidget->active = false;
@@ -4537,7 +4551,9 @@ bool command_event(enum event_command cmd, void *data)
 
 #if defined(HAVE_AUDIOMIXER) && defined(HAVE_MENU)
          /* Menu sounds require audio reinit. */
-         if (settings->bools.audio_enable_menu)
+         if (     settings->bools.audio_enable_menu
+               && (!data || (*(const int*)data
+                     & (DRIVER_AUDIO_MASK | DRIVER_MENU_MASK))))
             command_event(CMD_EVENT_AUDIO_REINIT, NULL);
 #endif
 
@@ -5808,6 +5824,7 @@ bool command_event(enum event_command cmd, void *data)
       case CMD_EVENT_NETPLAY_FADE_CHAT_TOGGLE:
          return false;
 #endif
+      case CMD_EVENT_FULLSCREEN_APPLY:
       case CMD_EVENT_FULLSCREEN_TOGGLE:
          {
             audio_driver_state_t
@@ -5816,10 +5833,13 @@ bool command_event(enum event_command cmd, void *data)
             bool video_fullscreen     = settings->bools.video_fullscreen;
             bool ra_is_forced_fs      = ((uint32_t)retro_atomic_load_relaxed_int(&video_st->flags) &
                VIDEO_FLAG_FORCE_FULLSCREEN) ? true : false;
-            bool new_fullscreen_state = !video_fullscreen && !ra_is_forced_fs;
+            bool new_fullscreen_state = (cmd == CMD_EVENT_FULLSCREEN_APPLY)
+                  ? video_fullscreen : !video_fullscreen && !ra_is_forced_fs;
             bool exclusive_fullscreen =
                   video_driver_fullscreen_is_exclusive();
             bool reinit_drivers;
+            bool audio_was_suspended = AUDIO_FLAGS_GET(audio_st)
+                  & AUDIO_FLAG_SUSPENDED;
 
             if (!video_driver_has_windowed())
                return false;
@@ -5842,9 +5862,7 @@ bool command_event(enum event_command cmd, void *data)
              * sees a resize. Device, shaders, audio and input drivers
              * stay as they are.
              *
-             * Otherwise (an unsupported exclusive transition, or a
-             * context without the means) all
-             * drivers are dropped and reinitialised, as before. */
+             * Unsupported or failed transitions rebuild video and input. */
             reinit_drivers = (exclusive_fullscreen
                   && !video_driver_test_all_flags(
                         GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE))
@@ -5855,8 +5873,9 @@ bool command_event(enum event_command cmd, void *data)
                         new_fullscreen_state);
             if (reinit_drivers)
             {
+               int reinit_flags = DRIVER_VIDEO_AND_INPUT_MASK;
                AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
-               command_event(CMD_EVENT_REINIT, NULL);
+               command_event(CMD_EVENT_REINIT, &reinit_flags);
             }
             /* The key that asked for this is likely still down, and the
              * window loses the focus for a moment either way: it is not
@@ -5872,7 +5891,7 @@ bool command_event(enum event_command cmd, void *data)
 #endif
 
             video_driver_modify_disp_flags(0, VIDEO_FLAG_IS_SWITCHING_DISPLAY_MODE);
-            if (reinit_drivers)
+            if (reinit_drivers && !audio_was_suspended)
                AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
 
             if (userdata && *userdata == true)

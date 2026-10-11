@@ -38,6 +38,9 @@
 #include <string/stdstring.h>
 
 #include "../../../command.h"
+#include "../../../core_info.h"
+#include "../../../driver.h"
+#include "../../../audio/audio_driver.h"
 #include "../../../configuration.h"
 #include "../../../file_path_special.h"
 #include "../../../retroarch.h"
@@ -199,6 +202,130 @@ static void lane_overlay_opacity_start(void)
 }
 #endif
 
+
+extern audio_driver_t audio_null;
+static unsigned audio_inits;
+
+static void *harness_audio_init(const char *device, unsigned rate,
+      unsigned latency, unsigned *new_rate)
+{
+   audio_inits++;
+   (void)device;
+   (void)rate;
+   (void)latency;
+   (void)new_rate;
+   return NULL;
+}
+
+static unsigned modes;
+static bool requested_fullscreen;
+static bool mode_success;
+static uint32_t mode_flags;
+
+static bool harness_windowed(void *data)
+{
+   (void)data;
+   return true;
+}
+
+static uint32_t harness_flags(void *data)
+{
+   (void)data;
+   return mode_flags;
+}
+
+static void harness_mode(void *data, unsigned dims, bool fullscreen)
+{
+   (void)data;
+   (void)dims;
+   modes++;
+   requested_fullscreen = fullscreen;
+   if (!mode_success)
+      video_driver_modify_disp_flags(VIDEO_FLAG_DRIVER_REINIT, 0);
+}
+
+static void lane_fullscreen(void)
+{
+   video_driver_state_t *video_st = video_state_get_ptr();
+   audio_driver_state_t *audio_st = audio_state_get_ptr();
+   settings_t *settings = config_get_ptr();
+   const video_poke_interface_t *saved_poke = video_st->poke;
+   video_poke_interface_t poke = *saved_poke;
+   bool (*saved_windowed)(void*) = video_null.has_windowed;
+   rarch_setting_t *s = menu_setting_find_enum(MENU_ENUM_LABEL_VIDEO_FULLSCREEN);
+   core_info_t *before_core = NULL;
+   core_info_t *after_core = NULL;
+   void *before_audio = audio_st->context_audio_data;
+   unsigned before = inits;
+   unsigned before_audio_inits = audio_inits;
+   unsigned i;
+
+   CHECK(s && s->cmd_trigger_idx == CMD_EVENT_FULLSCREEN_APPLY,
+         "fullscreen setting must apply its selected state");
+   if (!s)
+      return;
+   poke.get_flags = harness_flags;
+   poke.set_video_mode = harness_mode;
+   video_null.has_windowed = harness_windowed;
+   video_st->poke = &poke;
+   mode_flags = 0;
+   BIT32_SET(mode_flags, GFX_CTX_FLAGS_FULLSCREEN_IN_PLACE);
+   BIT32_SET(mode_flags, GFX_CTX_FLAGS_FULLSCREEN_EXCLUSIVE_IN_PLACE);
+   mode_success = true;
+   modes = 0;
+   video_driver_modify_disp_flags(VIDEO_FLAG_FORCE_FULLSCREEN, 0);
+   settings->bools.audio_enable_menu = true;
+   core_info_get_current_core(&before_core);
+   if (!before_core)
+   {
+      core_info_init_current_core();
+      core_info_get_current_core(&before_core);
+   }
+
+   for (i = 0; i < 2; i++)
+   {
+      bool was = settings->bools.video_fullscreen;
+      menu_action_handle_setting(s, 0, MENU_ACTION_RIGHT, false);
+      CHECK(settings->bools.video_fullscreen != was,
+            "fullscreen menu press must change selected state");
+      CHECK(requested_fullscreen == settings->bools.video_fullscreen,
+            "fullscreen apply must not invert the selected state");
+   }
+   CHECK(!(video_driver_get_disp_flags() & VIDEO_FLAG_FORCE_FULLSCREEN),
+         "menu fullscreen selection must replace forced CLI fullscreen");
+   CHECK(modes == 2 && inits == before,
+         "fullscreen menu presses must use in-place transitions");
+
+   mode_success = false;
+   AUDIO_FLAGS_SET(audio_st, AUDIO_FLAG_SUSPENDED);
+   CHECK(command_event(CMD_EVENT_FULLSCREEN_TOGGLE, NULL),
+         "failed in-place transition must recover");
+   CHECK(inits == before + 1, "fallback must rebuild video once");
+   CHECK(audio_inits == before_audio_inits
+         && audio_st->context_audio_data == before_audio,
+         "fullscreen fallback must retain audio with menu sounds enabled");
+   CHECK(AUDIO_FLAGS_GET(audio_st) & AUDIO_FLAG_SUSPENDED,
+         "fullscreen fallback must preserve suspended audio");
+   core_info_get_current_core(&after_core);
+   CHECK(before_core && before_core == after_core,
+         "video fallback must retain the current core metadata");
+   video_st->poke = &poke;
+   mode_flags = 0;
+   CHECK(command_event(CMD_EVENT_FULLSCREEN_APPLY, NULL),
+         "unsupported in-place transition must recover");
+   CHECK(modes == 3 && inits == before + 2
+         && audio_inits == before_audio_inits,
+         "unsupported transition must rebuild only video once");
+   AUDIO_FLAGS_CLEAR(audio_st, AUDIO_FLAG_SUSPENDED);
+   command_event(CMD_EVENT_AUDIO_REINIT, NULL);
+   core_info_get_current_core(&after_core);
+   CHECK(before_core == after_core && inits == before + 2,
+         "audio reset must retain core metadata and video");
+   video_st->poke = saved_poke;
+   video_null.has_windowed = saved_windowed;
+   settings->bools.audio_enable_menu = false;
+}
+
 /* The frontend keeps more than the config beside it. */
 static void scratch_remove(const char *dir)
 {
@@ -225,6 +352,7 @@ int main(int argc, char *argv[])
    (void)argv;
 
    /* Every init, the reinit a press performs included, takes this. */
+   audio_null.init = harness_audio_init;
    null_init       = video_null.init;
    video_null.init = harness_init;
 
@@ -291,6 +419,8 @@ int main(int argc, char *argv[])
          "input_osk_overlay", OSK_OVERLAY_DEFAULT);
    lane_overlay_opacity_start();
 #endif
+
+   lane_fullscreen();
 
    scratch_remove(dir);
 

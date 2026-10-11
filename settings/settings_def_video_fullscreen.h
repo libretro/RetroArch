@@ -6,7 +6,7 @@
 
 S_BOOL(video_fullscreen, VIDEO_FULLSCREEN,
       "video_fullscreen",
-      DEFAULT_FULLSCREEN, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_REINIT_FROM_TOGGLE,
+      DEFAULT_FULLSCREEN, SD_FLAG_CMD_APPLY_AUTO | SD_FLAG_LAKKA_ADVANCED, 0, CMD_EVENT_FULLSCREEN_APPLY,
       "Fullscreen Display",
       "Display in fullscreen. Can be changed at runtime. Can be overridden by a command line switch.")
 S_BOOL(video_windowed_fullscreen, VIDEO_WINDOWED_FULLSCREEN,

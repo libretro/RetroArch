@@ -263,6 +263,7 @@ enum event_command
    CMD_EVENT_UI_COMPANION_TOGGLE,
    /* Toggles fullscreen mode. */
    CMD_EVENT_FULLSCREEN_TOGGLE,
+   CMD_EVENT_FULLSCREEN_APPLY,
    /* Toggle recording. */
    CMD_EVENT_RECORDING_TOGGLE,
    /* Toggle streaming. */
