@@ -35,6 +35,8 @@ void genode_free_secondary_stack(void *stack);
     #include "psp1.c"
   #elif defined VITA
     #include "scefiber.c"
+  #elif defined(__mips__)
+    #include "mips.c"
   #elif defined(__ARM_EABI__) || defined(__arm__)
     #include "armeabi.c"
   #else
