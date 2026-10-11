@@ -287,6 +287,10 @@ jobs:
             # PSP movies demultiplexed from program streams built for it,
             # fed whole, a byte at a time and in odd chunks.
             rpsmf_test
+            # ATRAC3 against a reference decoder's output for crafted
+            # stereo and joint stereo streams, then bad frames and
+            # garbage.
+            ratrac3_test
           )
 
           # Targets that are built but deliberately not executed, each
