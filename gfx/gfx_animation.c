@@ -1202,7 +1202,7 @@ static size_t build_ticker_loop_string(
 static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
       gfx_animation_ctx_ticker_t *ticker)
 {
-   size_t str_len          = utf8len(ticker->str);
+   size_t str_len = 0;
 
    /* utf8cpy() computes its clamp as (len - 1), so a zero here
     * underflows to SIZE_MAX and the clamp never fires.  A caller that
@@ -1210,6 +1210,19 @@ static bool gfx_animation_ticker_in(gfx_animation_t *p_anim,
     * unbounded write. */
    if (ticker->s_len < 1)
       return false;
+
+   if (ticker->selected)
+      str_len = utf8len(ticker->str);
+   else if (ticker->str)
+   {
+      const unsigned char *p = (const unsigned char*)ticker->str;
+      /* Clipped labels only need to know whether the field overflows. */
+      while (*p)
+      {
+         if ((*p++ & 0xc0) != 0x80 && ++str_len > ticker->len)
+            break;
+      }
+   }
 
    if (!ticker->spacer)
       ticker->spacer       = TICKER_SPACER_DEFAULT;

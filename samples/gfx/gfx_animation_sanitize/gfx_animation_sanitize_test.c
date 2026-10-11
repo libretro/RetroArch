@@ -791,8 +791,29 @@ static void test_line_layout_cache(void)
    gfx_animation_deinit();
 }
 
+static void test_clipped_label_boundary(void)
+{
+   gfx_animation_ctx_ticker_t ticker;
+   char dst[64];
+   memset(&ticker, 0, sizeof(ticker));
+   ticker.s = dst;
+   ticker.s_len = sizeof(dst);
+   ticker.str = "ab\xe4\xb8\xad\xf0\x9f\x98\x80";
+   ticker.len = 4;
+   CHECK(!gfx_animation_ticker(&ticker), "fitting unselected label stays still");
+   CHECK(strcmp(dst, ticker.str) == 0, "fitting UTF-8 label is copied whole");
+   ticker.str = "ab\xe4\xb8\xad\xf0\x9f\x98\x80xyz";
+   CHECK(!gfx_animation_ticker(&ticker), "clipped unselected label stays still");
+   CHECK(strcmp(dst, "a...") == 0, "overflowing label has an ellipsis");
+   ticker.len = 6;
+   gfx_animation_ticker(&ticker);
+   CHECK(strcmp(dst, "ab\xe4\xb8\xad...") == 0,
+         "clipped UTF-8 label preserves complete glyphs");
+}
+
 int main(void)
 {
+   test_clipped_label_boundary();
    test_multibyte_does_not_overflow();
    test_zero_s_len_is_rejected();
    test_easing_types();
