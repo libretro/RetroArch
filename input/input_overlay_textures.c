@@ -34,6 +34,7 @@
 #include "input_overlay.h"
 #include "../gfx/gfx_instrument.h"
 #include "../gfx/gfx_surface.h"
+#include "../gfx/gfx_surface_player.h"
 #include "../gfx/video_driver.h"
 #ifdef HAVE_THREADS
 #include "../gfx/video_thread_wrapper.h"
@@ -70,11 +71,25 @@ static void input_overlay_forget_pixels(input_overlay_t *ol,
    }
 }
 
+void input_overlay_anim_stop(input_overlay_t *ol)
+{
+   size_t i;
+   if (!ol || !ol->anim_player)
+      return;
+   for (i = 0; i < ol->num_images; i++)
+   {
+      gfx_surface_player_free((gfx_surface_player_t*)ol->anim_player[i]);
+      ol->anim_player[i] = NULL;
+   }
+}
+
 void input_overlay_release_textures(input_overlay_t *ol)
 {
    size_t i;
    if (!ol)
       return;
+   /* a playback finds its surface in the array freed below */
+   input_overlay_anim_stop(ol);
    if (ol->surfaces)
    {
       for (i = 0; i < ol->num_images; i++)
@@ -206,7 +221,13 @@ static bool input_overlay_submit_textures(input_overlay_t *ol)
          if (gfx_surface_submit(s, 0, ol->images[i]->supports_rgba)
                == GFX_SURFACE_SUBMIT_FAILED)
             return false;
-         ol->anim_next_us[i] = 0;
+         if (ol->anim_player)
+         {
+            /* the clock starts again from the frame shown here */
+            gfx_surface_player_free(
+                  (gfx_surface_player_t*)ol->anim_player[i]);
+            ol->anim_player[i] = NULL;
+         }
          if (ol->anim_resend)
             ol->anim_resend[i] = 0;
          /* The new texture shows the first (unpressed) frame, so a

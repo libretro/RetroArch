@@ -203,11 +203,7 @@ enum gfx_thumbnail_flags
    GFX_THUMB_FLAG_FADE_ACTIVE = (1 << 0),
    GFX_THUMB_FLAG_CORE_ASPECT = (1 << 1),
    GFX_THUMB_FLAG_BG_ONLY     = (1 << 2),
-   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3),
-   /* The animation's decode is behind the file's rate and the stream
-    * has been asked to pass over droppable pictures until it catches
-    * up. Cleared the moment a frame lands on time. */
-   GFX_THUMB_FLAG_ANIM_BEHIND = (1 << 5)
+   GFX_THUMB_FLAG_ANIM_ACTIVE = (1 << 3)
 };
 
 /* Holds all runtime parameters associated with
@@ -254,12 +250,9 @@ typedef struct
    void *anim_buf;
    struct data_transfer *anim_dt; /* transfer owning anim_buf (and the
                                       adopted nbio handle beneath it)   */
-   /* Decode-worker ping-pong job pair (HAVE_THREADS builds): while
-    * the frame held in one job waits for its due time, the other is
-    * already decoding its successor.  anim_job_upload selects which
-    * of the two uploads next. */
-   void *anim_job;
-   void *anim_job2;
+   /* The playback (gfx_surface_player_t*): its clock and loops, and
+    * the decode, a frame ahead on a worker where there is one. */
+   void *anim_player;
    /* The GPU surface (gfx_surface_t*) the still goes to, and the
     * animation's frames are decoded into and shown from: one
     * persistent texture updated per frame, kept after the animation
@@ -267,14 +260,12 @@ typedef struct
     * gfx_thumbnail_reset. */
    void *anim_surface;
    size_t anim_buf_len;    /* size of anim_buf                         */
-   int64_t anim_next_us;   /* time the next frame is due (0 = at once) */
    /* Generation the in-flight request was issued under.  Only
     * meaningful while status is PENDING: if it no longer matches the
     * current generation, that request was superseded and nothing will
     * ever deliver it, so the slot must be re-requested rather than
     * waited on. */
    uint64_t list_id;
-   int32_t anim_loops_left; /* remaining loops, -1 = infinite */
    /* Both axes in one word, VIDEO_SCALE_PACK's layout. */
    unsigned dims;
    float alpha;
@@ -282,7 +273,6 @@ typedef struct
    retro_atomic_int_t status;
    uint8_t flags;
    uint8_t anim_type;      /* enum image_type_enum of 'anim' */
-   uint8_t anim_job_upload; /* index of the next job to upload (0/1) */
    uint8_t anim_read_pending; /* adopted nbio read still in flight;
                                  animation/audio held at the static
                                  frame until it completes */
@@ -319,20 +309,16 @@ static INLINE void gfx_thumbnail_init_blank(gfx_thumbnail_t *t)
    t->anim_buf        = NULL;
    t->anim_dt         = NULL;
    t->anim_sess       = NULL;
-   t->anim_job        = NULL;
-   t->anim_job2       = NULL;
+   t->anim_player     = NULL;
    t->anim_surface    = NULL;
    t->anim_buf_len    = 0;
-   t->anim_next_us    = 0;
    t->list_id         = 0;
-   t->anim_loops_left = 0;
    t->dims            = 0;
    t->alpha           = 0.0f;
    t->delay_timer     = 0.0f;
    retro_atomic_int_init(&t->status, 0 /* GFX_THUMBNAIL_STATUS_UNKNOWN */);
    t->flags           = 0;
    t->anim_type       = 0;
-   t->anim_job_upload = 0;
    t->anim_read_pending = 0;
    t->anim_windowed   = 0;
 }
@@ -375,12 +361,6 @@ struct gfx_thumbnail_state
     * playlists), we delay loading until an entry has been on screen
     * for at least gfx_thumbnail_delay ms */
    float stream_delay;
-
-   /* Animated thumbnails: per-vsync frame-decode budget, so many
-    * simultaneously visible animations degrade to a lower frame rate
-    * instead of stalling the menu (main thread only) */
-   int64_t anim_budget_start_us;
-   int64_t anim_budget_used_us;
 
    /* Duration in ms of the thumbnail 'fade in' animation */
    float fade_duration;

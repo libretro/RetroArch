@@ -14,11 +14,12 @@ SOURCES := \
 	$(REPO_ROOT)/input/input_overlay_textures.c \
 	$(REPO_ROOT)/input/input_overlay_alpha.c \
 	$(REPO_ROOT)/gfx/gfx_surface.c \
+	$(REPO_ROOT)/gfx/gfx_surface_player.c \
+	$(LIBRETRO_COMM_DIR)/formats/video_player.c \
 	$(REPO_ROOT)/libretro-common/formats/image/image_yuv_blit.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture.c \
 	$(LIBRETRO_COMM_DIR)/formats/image_texture_set.c
 
-OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 # image_texture.c is here for image_texture_free() alone; its loaders
 # are dropped at the link rather than chased through the transfer code.
@@ -30,7 +31,14 @@ LDFLAGS += -Wl,--gc-sections -lm
 # adds the lanes that decide the race between the posts and the poll.
 ifeq ($(THREADS),1)
    CFLAGS += -DHAVE_THREADS
+   # the playbacks' decode worker
+   SOURCES += $(LIBRETRO_COMM_DIR)/rthreads/rthreads.c \
+              $(LIBRETRO_COMM_DIR)/rthreads/retro_eventcount.c \
+              $(LIBRETRO_COMM_DIR)/rthreads/tpool.c
+   LDFLAGS += -lpthread
 endif
+
+OBJS := $(call sample_objs,$(SOURCES:.c=.o))
 
 ifneq ($(SANITIZER),)
    CFLAGS  := -fsanitize=$(SANITIZER) -fno-omit-frame-pointer $(CFLAGS)

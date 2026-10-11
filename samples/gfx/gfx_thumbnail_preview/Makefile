@@ -32,6 +32,9 @@ ANIM_PREVIEW_OBJ := gfx_anim_preview_uut.o
 # The streaming surface the animation frames go through, real.
 SURFACE_SRC := $(REPO_ROOT)/gfx/gfx_surface.c
 SURFACE_OBJ := gfx_surface_uut.o
+# The playback the animation goes through, and its surface side.
+PLAYER_SRC := $(REPO_ROOT)/gfx/gfx_surface_player.c
+PLAYER_OBJ := gfx_surface_player_uut.o
 
 # Layout facts (settings_t offsets/size) for the stubs, compiled with
 # UUT_CFLAGS so they match what the UUT's configuration.h produces.
@@ -57,6 +60,7 @@ SOURCES := gfx_thumbnail_preview_test.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+           $(LIBRETRO_COMM_DIR)/formats/video_player.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_hdr_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_blit_bands.c \
            $(LIBRETRO_COMM_DIR)/formats/aac/raac.c \
@@ -319,6 +323,9 @@ $(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
 $(SURFACE_OBJ): $(SURFACE_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(PLAYER_OBJ): $(PLAYER_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 $(LAYOUT_OBJ): settings_layout_uut.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
@@ -329,7 +336,8 @@ $(SAMPLE_OBJDIR)/%.o: $$(call sample_src,$$*).c
 	@mkdir -p $(@D)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ)
+$(TARGET): $(OBJS) $(UUT_OBJ) $(LAYOUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
+      $(PLAYER_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # The same test with HAVE_THREADS: the thumbnail decodes on its worker
@@ -352,11 +360,14 @@ gfx_anim_preview_uut.t.o: $(ANIM_PREVIEW_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
 gfx_surface_uut.t.o: $(SURFACE_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
+gfx_surface_player_uut.t.o: $(PLAYER_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
 settings_layout_uut.t.o: settings_layout_uut.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS) $(THREADED_DEFS)
 
 $(THREADED_TARGET): $(THREADED_OBJS) gfx_thumbnail_uut.t.o settings_layout_uut.t.o \
-                    gfx_anim_preview_uut.t.o gfx_surface_uut.t.o
+                    gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
+                    gfx_surface_player_uut.t.o
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # The fixtures are container layouts, not clips: see mkfixtures.py.
@@ -390,6 +401,7 @@ clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(THREADED_TARGET) $(THREADED_TARGET).exe $(THREADED_OBJS) \
 	      gfx_thumbnail_uut.t.o settings_layout_uut.t.o gfx_anim_preview_uut.t.o gfx_surface_uut.t.o \
+	      gfx_surface_player_uut.t.o $(PLAYER_OBJ) \
 	      $(DECODE_TARGET) $(DECODE_TARGET_NORWEBM) \
 	      $(ANIM_WINDOW_TARGET) $(BLIT_BANDS_TARGET) $(CATCHUP_TARGET) $(CATCHUP_THREADED_TARGET) $(AUDIO_ORACLE_TARGET) $(BENCH_TARGET) \
 	      $(TARGET).exe $(CATCHUP_TARGET).exe $(BENCH_TARGET).exe $(BLIT_BANDS_TARGET).exe \

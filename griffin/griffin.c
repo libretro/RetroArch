@@ -513,6 +513,7 @@ VIDEO IMAGE
 #endif
 
 #include "../libretro-common/formats/image_transfer.c"
+#include "../libretro-common/formats/video_player.c"
 #include "../libretro-common/formats/data_transfer.c"
 #ifdef HAVE_RPNG
 #include "../libretro-common/formats/png/rpng.c"
@@ -1226,6 +1227,7 @@ DRIVERS
 #include "../gfx/gfx_display.c"
 #include "../gfx/gfx_instrument.c"
 #include "../gfx/gfx_surface.c"
+#include "../gfx/gfx_surface_player.c"
 #include "../gfx/gfx_thumbnail.c"
 #include "../gfx/gfx_anim_preview.c"
 

@@ -232,7 +232,7 @@ static void pack_free(input_overlay_t *ol)
    }
    free(ol->overlays);
    free(ol->anim_stream);
-   free(ol->anim_next_us);
+   free(ol->anim_player);
    free(ol->anim_resend);
    free(ol);
 }
@@ -571,7 +571,7 @@ static void lane_anim_dropped(bool threaded)
 #endif
    ol = pack_new(&iface_textures, NUM_IMAGES);
    ol->anim_stream    = (void**)calloc(NUM_IMAGES, sizeof(void*));
-   ol->anim_next_us   = (int64_t*)calloc(NUM_IMAGES, sizeof(int64_t));
+   ol->anim_player    = (void**)calloc(NUM_IMAGES, sizeof(void*));
    ol->anim_resend    = (uint8_t*)calloc(NUM_IMAGES, sizeof(uint8_t));
    ol->anim_stream[0] = &dummy_stream; /* image 0 animates */
    pack_show(ol, 0);

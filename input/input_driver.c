@@ -57,6 +57,7 @@
 #endif
 #include "../gfx/gfx_instrument.h"
 #include "../gfx/gfx_surface.h"
+#include "../gfx/gfx_surface_player.h"
 #ifdef HAVE_RPNG
 #include <formats/rpng.h>
 #endif
@@ -5996,10 +5997,28 @@ static void input_overlay_update_2frame(input_overlay_t *ol)
    }
 }
 
+/* An image's surface, as the pack made it at upload. */
+static gfx_surface_t *input_overlay_anim_surface(void *user, unsigned dims,
+      unsigned num_slots, uint32_t pixfmt)
+{
+   gfx_surface_t *s = (gfx_surface_t*)*(void**)user;
+   if (     !s || s->dims != dims || s->num_slots < num_slots
+         || s->pixfmt != pixfmt)
+      return NULL;
+   return s;
+}
+
+/* The texture handle stands across frames: nothing to adopt. */
+static void input_overlay_anim_shown(void *user, gfx_surface_t *s)
+{
+   (void)user;
+   (void)s;
+}
+
 /* Advance every animated image of the pack whose frame is due, once
  * per input poll on the main thread. A frame is composed by the
- * stream into a free slot and submitted: the texture is updated in
- * place, so the page's handles stand and a page switch is still an
+ * stream into the image's slot and submitted: the texture is updated
+ * in place, so the page's handles stand and a page switch is still an
  * upload of nothing. A slot still with the video thread means the
  * frame is skipped rather than waited for - the overlay is a control
  * surface, and a late button image is worse than a dropped one. */
@@ -6009,18 +6028,17 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
 
    if (     !ol
          || !ol->anim_stream
+         || !ol->anim_player
          || !(ol->flags & INPUT_OVERLAY_ENABLE)
          || !ol->surfaces)
       return;
 
    for (i = 0; i < ol->num_images; i++)
    {
-      rpng_apng_stream_t *st = (rpng_apng_stream_t*)ol->anim_stream[i];
-      gfx_surface_t *s       = (gfx_surface_t*)ol->surfaces[i];
-      const uint32_t *frame;
-      int duration_ms        = 0;
+      gfx_surface_player_t *gsp = (gfx_surface_player_t*)ol->anim_player[i];
+      gfx_surface_t *s          = (gfx_surface_t*)ol->surfaces[i];
 
-      if (!st || !s || !s->num_slots)
+      if (!ol->anim_stream[i] || !s || !s->num_slots)
          continue;
       /* Two-frame APNGs are driven by desc press state, not time. */
       if (ol->anim_2frame && ol->anim_2frame[i])
@@ -6033,28 +6051,22 @@ void input_overlay_animate(input_overlay_t *ol, retro_time_t now)
             input_overlay_anim_submit(ol, i);
          continue;
       }
-      if (ol->anim_next_us[i] && now < ol->anim_next_us[i])
-         continue;
-      /* The last frame is still the video thread's, or the GPU's: this
-       * one is dropped rather than waited for, and the next poll tries
-       * again. */
-      if (s->inflight || !gfx_surface_slot_writable(s, 0))
-         continue;
-
-      if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+      if (!gsp)
       {
-         /* End of a pass: overlays loop, which is what an animated
-          * control surface is for. */
-         rpng_apng_stream_rewind(st);
-         if (!(frame = rpng_apng_stream_next(st, &duration_ms)))
+         gfx_surface_player_cbs_t cb;
+         cb.user    = &ol->surfaces[i];
+         cb.surface = input_overlay_anim_surface;
+         cb.shown   = input_overlay_anim_shown;
+         cb.feed    = NULL;
+         /* Overlays loop whatever the file says: an animated control
+          * surface is for that. */
+         if (!(gsp = gfx_surface_player_new(ol->anim_stream[i],
+               IMAGE_TYPE_PNG, 0, &ol->surfaces[i], &cb,
+               VIDEO_PLAYER_INLINE)))
             continue;
+         ol->anim_player[i] = gsp;
       }
-      memcpy(s->slots[0], frame,
-            VIDEO_SCALE_AREA(s->dims) * sizeof(uint32_t));
-      if (!input_overlay_anim_submit(ol, i))
-         continue;
-      ol->anim_next_us[i] = now
-         + (retro_time_t)(duration_ms > 0 ? duration_ms : 100) * 1000;
+      video_player_poll(gsp->vp, now);
    }
 }
 #endif
@@ -6482,6 +6494,8 @@ static void input_overlay_free_images(input_overlay_t *ol)
    for (i = 0; i < ol->num_images; i++)
       image_texture_free(ol->images[i]);
 
+   /* the playbacks borrow the streams */
+   input_overlay_anim_stop(ol);
 #ifdef HAVE_RPNG
    if (ol->anim_stream)
       for (i = 0; i < ol->num_images; i++)
@@ -6494,7 +6508,7 @@ static void input_overlay_free_images(input_overlay_t *ol)
    free(ol->anim_stream);
    free(ol->anim_data);
    free(ol->anim_len);
-   free(ol->anim_next_us);
+   free(ol->anim_player);
    free(ol->anim_resend);
    if (ol->anim_2frame_pix)
       for (i = 0; i < ol->num_images; i++)
@@ -6506,7 +6520,7 @@ static void input_overlay_free_images(input_overlay_t *ol)
    ol->anim_stream         = NULL;
    ol->anim_data           = NULL;
    ol->anim_len            = NULL;
-   ol->anim_next_us        = NULL;
+   ol->anim_player         = NULL;
    ol->anim_resend         = NULL;
    ol->anim_2frame         = NULL;
    ol->anim_2frame_pressed = NULL;
@@ -10936,7 +10950,7 @@ static void input_overlay_loaded_move_images(input_overlay_t *ol,
             && (ol->anim_data    = (void**)calloc(ol->num_images, sizeof(void*)))
             && (ol->anim_len     = (size_t*)calloc(ol->num_images, sizeof(size_t)))
             && (ol->anim_stream  = (void**)calloc(ol->num_images, sizeof(void*)))
-            && (ol->anim_next_us = (int64_t*)calloc(ol->num_images, sizeof(int64_t)))
+            && (ol->anim_player  = (void**)calloc(ol->num_images, sizeof(void*)))
             && (ol->anim_resend  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame  = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))
             && (ol->anim_2frame_pressed = (uint8_t*)calloc(ol->num_images, sizeof(uint8_t)))

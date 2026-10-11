@@ -40,6 +40,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/formats/json/rjson.c \
       $LC/formats/image_texture.c \
       $LC/formats/image_transfer.c \
+      $LC/formats/video_player.c \
       $LC/formats/data_transfer.c \
       $LC/formats/png/rpng.c \
       $LC/formats/png/rpng_apng.c \
@@ -80,6 +81,7 @@ SRCS="ui/companion/companion_core.c \
       $LC/time/rtime.c \
       $LC/features/features_cpu.c \
       $LC/rthreads/rthreads.c \
+      $LC/rthreads/tpool.c \
       $LC/rthreads/retro_eventcount.c"
 
 $CC -std=gnu99 -O1 -g $SAN -Wall -Wno-unused-parameter -Wno-unused-function \

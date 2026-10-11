@@ -11,6 +11,9 @@ SOURCES := \
 	overlay_apng_test.c \
 	stubs_retroarch.c \
 	$(REPO_ROOT)/gfx/gfx_surface.c \
+	$(REPO_ROOT)/gfx/gfx_surface_player.c \
+	$(LIBRETRO_COMM_DIR)/formats/video_player.c \
+	$(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
 	$(REPO_ROOT)/libretro-common/formats/image/image_yuv_blit.c \
 	$(LIBRETRO_COMM_DIR)/compat/compat_strl.c \
 	$(LIBRETRO_COMM_DIR)/compat/fopen_utf8.c \

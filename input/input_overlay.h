@@ -431,9 +431,9 @@ struct input_overlay
    void **anim_data;
    size_t *anim_len;
    void **anim_stream;
-   /* When the frame showing now is due to be replaced, in
-    * microseconds on the same clock as the rest of the frontend. */
-   int64_t *anim_next_us;
+   /* A looping image's playback (gfx_surface_player_t*) into its
+    * surface, made on its first tick once the pack is uploaded. */
+   void **anim_player;
    /* Set while a looping image's slot holds a frame the driver dropped:
     * it is sent again before the stream moves on. */
    uint8_t *anim_resend;
@@ -608,6 +608,10 @@ bool input_overlay_upload_textures(input_overlay_t *ol);
 /* Submit the frame in looping animated image @i's slot, or the one a
  * driver dropped there before. False when nothing was taken. */
 bool input_overlay_anim_submit(input_overlay_t *ol, size_t i);
+
+/* Stops every looping image's playback; the next tick starts each
+ * again from where its stream stands. */
+void input_overlay_anim_stop(input_overlay_t *ol);
 
 /* Whether the pack can still be shown: it has its textures, or the
  * pixels to make them from. */

@@ -27,6 +27,7 @@
 #include <retro_timers.h>
 
 #include "../../gfx/gfx_anim_preview.h"
+#include <formats/video_player.h>
 #include <features/features_cpu.h>
 #include <retro_atomic.h>
 #include <retro_miscellaneous.h>
@@ -1045,14 +1046,70 @@ static bool ct_anim_stale(companion_thumbs_t *t, unsigned gen)
       || (unsigned)retro_atomic_load_acquire_int(&t->anim_gen_now) != gen;
 }
 
+/* The animation thread's sink: video_player decodes in line on this
+ * thread and hands each frame over in the stream's canvas, which is
+ * scaled - swizzled on the sampled pixels only - into the triple
+ * buffer's back slot and published. */
+struct ct_play
+{
+   companion_thumbs_t *t;
+   gfx_anim_preview_t *sess;
+   const char *path;
+   uintptr_t tag;
+   unsigned dims;
+   unsigned gen;
+   uint32_t bg;
+};
+
+static int ct_play_start(void *user, unsigned width, unsigned height,
+      unsigned num_slots)
+{
+   (void)user;
+   (void)width;
+   (void)height;
+   (void)num_slots;
+   return 0; /* ARGB words */
+}
+
+static bool ct_play_feed(void *user)
+{
+   /* keep the window straddling the decoder's frontier */
+   return gfx_anim_preview_feed(((struct ct_play*)user)->sess);
+}
+
+static enum video_player_present ct_play_present(void *user,
+      const video_player_frame_t *frame)
+{
+   struct ct_play *pl = (struct ct_play*)user;
+   struct ct_anim_frame *fr;
+   uint32_t *bits;
+
+   if (     !pl->sess->dims || !frame->pixels
+         || !(bits = companion_thumbs_scale_ex(frame->pixels,
+               pl->sess->dims, pl->dims, pl->bg, !frame->native)))
+      return VIDEO_PLAYER_PRESENT_FAILED;
+   /* The back slot is this thread's until it is published. */
+   fr       = (struct ct_anim_frame*)retro_triple_buffer_back(
+         &pl->t->anim_tb);
+   free(fr->bits);
+   fr->bits = bits;
+   fr->dims = pl->dims;
+   fr->gen  = pl->gen;
+   fr->tag  = pl->tag;
+   strlcpy(fr->path, pl->path, sizeof(fr->path));
+   retro_triple_buffer_publish(&pl->t->anim_tb);
+   return VIDEO_PLAYER_PRESENT_DONE;
+}
+
 /* One animation at a time, played exactly the way RetroArch's File
  * Browser plays its thumbnail: gfx_anim_preview opens the file as a
  * sliding window (frames start from the first resident bytes; a tail-
  * moov MP4 opens from a few MiB; memory admission scales with the
  * heap), feeds the window ahead of the decoder each frame, and hands
- * back frames on the container's clock. This thread scales each frame
- * into the triple buffer's back slot, publishes it, and holds it for
- * its duration - until superseded or quit. The session is published
+ * back frames; video_player keeps the container's clock, the loop
+ * count and catch-up. This thread scales each frame into the triple
+ * buffer's back slot, publishes it, and holds it until the next is
+ * due - until superseded or quit. The session is published
  * (t->anim_sess) so the UI thread can start and feed the preview audio
  * through the mixer on its own ticks. */
 static void ct_anim_thread(void *ud)
@@ -1066,8 +1123,9 @@ static void ct_anim_thread(void *ud)
       uint32_t bg;
       unsigned gen;
       gfx_anim_preview_t *sess;
-      int loops_left;
-      retro_time_t next_at;
+      video_player_t *vp;
+      video_player_sink_t sink;
+      struct ct_play pl;
 
       /* a request */
       for (;;)
@@ -1148,9 +1206,6 @@ static void ct_anim_thread(void *ud)
          slock_unlock(t->lock);
          continue;
       }
-      loops_left = sess->loop_count; /* 0 = forever */
-      next_at    = cpu_features_get_time_usec();
-
       slock_lock(t->lock);
       t->anim_opening = false;
       slock_unlock(t->lock);
@@ -1163,73 +1218,49 @@ static void ct_anim_thread(void *ud)
       retro_atomic_store_release_int(&t->anim_sess_gen, (int)gen);
       retro_atomic_store_release_ptr(&t->anim_sess, sess);
 
-      for (;;)
+      pl.t            = t;
+      pl.sess         = sess;
+      pl.path         = path;
+      pl.tag          = tag;
+      pl.dims         = dims;
+      pl.gen          = gen;
+      pl.bg           = bg;
+      sink.user       = &pl;
+      sink.start      = ct_play_start;
+      sink.slot_begin = NULL;
+      sink.slot_end   = NULL;
+      sink.present    = ct_play_present;
+      sink.feed       = ct_play_feed;
+      sink.decoded    = NULL;
+      vp = video_player_new(sess->stream, sess->type, sess->loop_count,
+            &sink, VIDEO_PLAYER_INLINE);
+
+      while (vp && !ct_anim_stale(t, gen))
       {
-         const uint32_t *frame;
-         int duration_ms = 0;
-         bool native_argb = false;
-         uint32_t *bits;
-         struct ct_anim_frame *fr;
-
-         if (ct_anim_stale(t, gen))
+         retro_time_t now = cpu_features_get_time_usec();
+         retro_time_t due;
+         if (video_player_poll(vp, now) == VIDEO_PLAYER_ENDED)
             break;
-
-         /* keep the window straddling the decoder's frontier */
-         if (!gfx_anim_preview_feed(sess))
-            break;
-
-         frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
-         if (!frame)
+         /* Hold the frame until the next is due, on the player's
+          * schedule rather than a sleep after each push, so decode and
+          * scale time does not stretch every frame. A new animation, a
+          * stop and free() all notify, which ends the hold at once. */
+         due = video_player_due(vp);
+         now = cpu_features_get_time_usec();
+         while (now < due)
          {
-            if (loops_left > 0 && --loops_left == 0)
-               break;
-            gfx_anim_preview_rewind(sess);
-            frame = gfx_anim_preview_next(sess, &duration_ms, &native_argb);
-            if (!frame)
-               break;
-         }
-         if (!sess->dims)
-            break;
-         /* The byte order is handled on the sampled pixels only: a
-          * whole-canvas swizzle was 12 ms a frame at 4K. */
-         bits = companion_thumbs_scale_ex(frame, sess->dims, dims, bg,
-               !native_argb);
-         if (!bits)
-            break;
-
-         /* The back slot is this thread's until it is published. */
-         fr = (struct ct_anim_frame*)retro_triple_buffer_back(&t->anim_tb);
-         free(fr->bits);
-         fr->bits = bits;
-         fr->dims = dims;
-         fr->gen  = gen;
-         fr->tag  = tag;
-         strlcpy(fr->path, path, sizeof(fr->path));
-         retro_triple_buffer_publish(&t->anim_tb);
-
-         /* Hold the frame for its duration, on a schedule rather than
-          * a sleep after each push, so decode and scale time does not
-          * stretch every frame. A new animation, a stop and free() all
-          * notify, which ends the hold at once. */
-         {
-            retro_time_t now = cpu_features_get_time_usec();
-            next_at += (retro_time_t)duration_ms * 1000;
-            if (next_at < now)
-               next_at = now;
-            while (now < next_at)
+            int key = retro_eventcount_prepare_wait(&t->anim_ec);
+            if (ct_anim_stale(t, gen))
             {
-               int key = retro_eventcount_prepare_wait(&t->anim_ec);
-               if (ct_anim_stale(t, gen))
-               {
-                  retro_eventcount_cancel_wait(&t->anim_ec);
-                  break;
-               }
-               retro_eventcount_commit_wait_timeout(&t->anim_ec, key,
-                     next_at - now);
-               now = cpu_features_get_time_usec();
+               retro_eventcount_cancel_wait(&t->anim_ec);
+               break;
             }
+            retro_eventcount_commit_wait_timeout(&t->anim_ec, key,
+                  due - now);
+            now = cpu_features_get_time_usec();
          }
       }
+      video_player_free(vp);
 
       /* Unpublish, and wait out a UI-thread call inside it, before
        * closing. */

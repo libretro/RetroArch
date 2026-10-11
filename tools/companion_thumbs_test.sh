@@ -40,6 +40,7 @@ SRCS="ui/companion/companion_thumbs.c \
       ui/companion/test/companion_thumbs_test.c \
       $LC/formats/image_texture.c \
       $LC/formats/image_transfer.c \
+      $LC/formats/video_player.c \
       $LC/formats/data_transfer.c \
       $LC/memmap/memmap.c \
       $LC/formats/tga/rtga.c \

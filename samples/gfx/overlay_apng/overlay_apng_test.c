@@ -12,7 +12,9 @@
  *     an upload of nothing;
  *   - a frame whose slot is still with the video thread is skipped,
  *     not waited for;
- *   - closing the stream with a frame in flight is clean.
+ *   - closing the stream with a frame in flight is clean;
+ *   - played as the overlay plays it (gfx_surface_player, decoded in
+ *     line), it loops for good, or stops after the container's count.
  *
  * The decode and the surface are the real ones; the driver is the
  * stub below, as in the other overlay samples.
@@ -26,11 +28,82 @@
 #include <streams/file_stream.h>
 
 #include "../../../gfx/gfx_surface.h"
+#include "../../../gfx/gfx_surface_player.h"
 
 static unsigned failures;
 #define CHECK(cond, ...) do { \
    if (!(cond)) { printf("[FAIL] "); printf(__VA_ARGS__); printf("\n"); failures++; } \
 } while (0)
+
+static unsigned shown;
+
+static gfx_surface_t *lane_surface(void *user, unsigned dims,
+      unsigned num_slots, uint32_t pixfmt)
+{
+   gfx_surface_t *s = (gfx_surface_t*)*(void**)user;
+   if (!s || s->dims != dims || s->num_slots < num_slots
+         || s->pixfmt != pixfmt)
+      return NULL;
+   return s;
+}
+
+static void lane_shown(void *user, gfx_surface_t *s)
+{
+   (void)user;
+   (void)s;
+   shown++;
+}
+
+/* The overlay's playback: frames on their durations into the one
+ * slot, the texture updated in place; @loops 0 plays for good. */
+static void lane_player(rpng_apng_stream_t *st, unsigned w, unsigned h,
+      int num_frames, int loops)
+{
+   gfx_surface_player_cbs_t cb;
+   gfx_surface_player_t *gsp;
+   void *surface = gfx_surface_new(VIDEO_SCALE_PACK(w, h), 1,
+         IMAGE_PIXFMT_8888, TEXTURE_FILTER_LINEAR, NULL, NULL);
+   uintptr_t first = 0;
+   int64_t now     = 0;
+   int i, ended    = -1;
+
+   CHECK(surface != NULL, "player: surface allocation failed");
+   if (!surface)
+      return;
+   rpng_apng_stream_rewind(st);
+   shown      = 0;
+   cb.user    = &surface;
+   cb.surface = lane_surface;
+   cb.shown   = lane_shown;
+   cb.feed    = NULL;
+   gsp = gfx_surface_player_new(st, IMAGE_TYPE_PNG, loops, &surface, &cb,
+         VIDEO_PLAYER_INLINE);
+   CHECK(gsp != NULL, "player: new failed");
+   for (i = 0; gsp && i < 3 * num_frames; i++)
+   {
+      if (video_player_poll(gsp->vp, now) == VIDEO_PLAYER_ENDED)
+      {
+         ended = i;
+         break;
+      }
+      CHECK(video_player_due(gsp->vp) > now, "player: step %d not paced", i);
+      now = video_player_due(gsp->vp);
+      if (!first)
+         first = ((gfx_surface_t*)surface)->handle;
+      else
+         CHECK(((gfx_surface_t*)surface)->handle == first,
+               "player: step %d replaced the texture", i);
+   }
+   if (loops)
+      CHECK(ended == loops * num_frames && shown == (unsigned)ended,
+            "player: %d loop(s) of %d ended at %d, %u shown", loops,
+            num_frames, ended, shown);
+   else
+      CHECK(ended < 0 && shown == (unsigned)(3 * num_frames),
+            "player: looping playback ended at %d, %u shown", ended, shown);
+   gfx_surface_player_free(gsp);
+   gfx_surface_free((gfx_surface_t*)surface);
+}
 
 int main(int argc, char **argv)
 {
@@ -120,6 +193,9 @@ int main(int argc, char **argv)
          gfx_surface_free(s);
       }
    }
+
+   lane_player(st, w, h, num_frames, 0);
+   lane_player(st, w, h, num_frames, 1);
 
    rpng_apng_stream_close(st);
    free(buf);

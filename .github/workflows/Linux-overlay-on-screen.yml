@@ -24,6 +24,8 @@ on:
       - 'tasks/task_overlay.c'
       - 'led/drivers/led_overlay.c'
       - 'gfx/gfx_surface.*'
+      - 'gfx/gfx_surface_player.*'
+      - 'libretro-common/formats/video_player.c'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'gfx/drivers/gl2.c'
@@ -43,6 +45,8 @@ on:
       - 'tasks/task_overlay.c'
       - 'led/drivers/led_overlay.c'
       - 'gfx/gfx_surface.*'
+      - 'gfx/gfx_surface_player.*'
+      - 'libretro-common/formats/video_player.c'
       - 'gfx/video_driver.c'
       - 'gfx/video_thread_wrapper.*'
       - 'gfx/drivers/gl2.c'
@@ -186,6 +190,12 @@ jobs:
           # was set and the overlay covered 100% of the screen, in both
           # modes.
           timeout 180 python3 samples/input/overlay_on_screen/overlay_on_screen_test.py ./retroarch
+
+      - name: Run overlay_apng_on_screen_test (an animated image plays and loops, threaded off and on)
+        shell: bash
+        run: |
+          set -eu
+          timeout 180 python3 samples/input/overlay_on_screen/overlay_apng_on_screen_test.py ./retroarch
 
       - name: Run statistics_on_screen_test (threaded video off, then on)
         shell: bash

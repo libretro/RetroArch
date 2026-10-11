@@ -337,6 +337,7 @@ OBJ += \
        gfx/gfx_animation.o \
        gfx/gfx_instrument.o \
        gfx/gfx_surface.o \
+       gfx/gfx_surface_player.o \
        gfx/gfx_thumbnail.o \
        gfx/gfx_anim_preview.o \
        configuration.o \
@@ -2436,6 +2437,7 @@ OBJ += $(LIBRETRO_COMM_DIR)/formats/bmp/rbmp_encode.o \
        $(LIBRETRO_COMM_DIR)/file/rbmp_file.o \
        $(LIBRETRO_COMM_DIR)/formats/json/rjson.o \
        $(LIBRETRO_COMM_DIR)/formats/image_transfer.o \
+       $(LIBRETRO_COMM_DIR)/formats/video_player.o \
        $(LIBRETRO_COMM_DIR)/formats/audio_transfer.o \
        $(LIBRETRO_COMM_DIR)/formats/data_transfer.o \
        $(LIBRETRO_COMM_DIR)/memmap/memmap.o \

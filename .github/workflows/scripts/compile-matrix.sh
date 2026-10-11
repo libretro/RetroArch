@@ -694,8 +694,8 @@ check "features_cpu: emscripten" "$HOSTOFF -Itools/platform_stubs/emscripten -D_
 # the stubs already here and shed the host identity like the ones
 # above.
 MENUGFX="gfx/video_driver.c gfx/gfx_display.c gfx/gfx_widgets.c \
- gfx/gfx_thumbnail.c gfx/gfx_surface.c gfx/video_thread_wrapper.c \
- menu/drivers/xmb.c menu/drivers/ozone.c menu/drivers/materialui.c"
+ gfx/gfx_thumbnail.c gfx/gfx_surface.c gfx/gfx_surface_player.c \
+ gfx/video_thread_wrapper.c menu/drivers/xmb.c menu/drivers/ozone.c menu/drivers/materialui.c"
 MG_BASE="-DHAVE_XMB -DHAVE_OZONE -DHAVE_MATERIALUI -DHAVE_RGUI \
  -DHAVE_GFX_WIDGETS -DHAVE_OVERLAY -DHAVE_CONFIGFILE -DRARCH_CONSOLE \
  -DRARCH_INTERNAL -Iinput/include"
@@ -873,8 +873,8 @@ check "dingux: rgui" "-DDINGUX -DHAVE_MENU -DHAVE_RGUI" menu/drivers/rgui.c
 # colour conversion sit behind HAVE_THREADS; both shapes compile.
 check "vp9/h265/video streams: threads" "-DHAVE_RVP9 -DHAVE_RVP8 -DHAVE_RWEBM -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RH265" libretro-common/formats/vp9/rvp9.c libretro-common/formats/h265/rh265.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c libretro-common/formats/image/image_blit_bands.c
 check_nothreads "no threads: vp9/h265/video streams" "-DHAVE_RVP9 -DHAVE_RVP8 -DHAVE_RWEBM -DHAVE_RMP4 -DHAVE_RH264 -DHAVE_RH265" libretro-common/formats/vp9/rvp9.c libretro-common/formats/h265/rh265.c libretro-common/formats/webm/rwebm_video.c libretro-common/formats/mp4/rmp4_video.c libretro-common/formats/image/image_blit_bands.c
-check "gfx_surface: threads" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c
-check_nothreads "no threads: gfx_surface" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c
+check "gfx_surface: threads" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c gfx/gfx_surface_player.c libretro-common/formats/video_player.c
+check_nothreads "no threads: gfx_surface" "$GLINC" gfx/gfx_surface.c gfx/gfx_thumbnail.c gfx/gfx_surface_player.c libretro-common/formats/video_player.c
 check_nothreads "no threads: gl2"          "$GLDEFS $GLINC"       gfx/drivers/gl2.c
 check_nothreads "no threads: video_driver" "$GLINC"               gfx/video_driver.c
 check_nothreads "no threads: retroarch"    "$GLINC -DHAVE_COMMAND -DHAVE_STDIN_CMD" retroarch.c

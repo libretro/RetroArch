@@ -10,8 +10,10 @@ LRC      := $(CORE_DIR)/libretro-common
 
 SOURCES := companion_thumbs_test.c \
            $(CORE_DIR)/ui/companion/companion_thumbs.c \
+           $(LRC)/formats/video_player.c \
            $(LRC)/rthreads/rthreads.c \
            $(LRC)/rthreads/retro_eventcount.c \
+           $(LRC)/rthreads/tpool.c \
            $(LRC)/features/features_cpu.c \
            $(LRC)/compat/compat_strl.c \
            $(LRC)/compat/compat_strldup.c \

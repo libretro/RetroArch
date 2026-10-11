@@ -21,6 +21,9 @@ UUT_OBJ := gfx_thumbnail_uut.o
 # video-thread edge (the post) is stubbed and parked like the loads.
 SURFACE_SRC := $(REPO_ROOT)/gfx/gfx_surface.c
 SURFACE_OBJ := gfx_surface_uut.o
+# The playback the animation goes through, and its surface side.
+PLAYER_SRC := $(REPO_ROOT)/gfx/gfx_surface_player.c
+PLAYER_OBJ := gfx_surface_player_uut.o
 # Direct-video outcomes of the surface, slot by slot; it includes
 # gfx_surface.h, so it takes the unit's flags.
 OUTCOME_OBJ := surface_outcome_test.o
@@ -41,6 +44,7 @@ SOURCES := gfx_thumbnail_anim_test.c \
            $(LIBRETRO_COMM_DIR)/formats/image/image_yuv_blit.c \
            $(LIBRETRO_COMM_DIR)/formats/image_texture_set.c \
            $(LIBRETRO_COMM_DIR)/formats/image_transfer.c \
+           $(LIBRETRO_COMM_DIR)/formats/video_player.c \
            $(LIBRETRO_COMM_DIR)/formats/vp8/rvp8.c \
            $(LIBRETRO_COMM_DIR)/formats/webp/rwebp.c \
            $(LIBRETRO_COMM_DIR)/lists/file_list.c \
@@ -112,10 +116,14 @@ $(ANIM_PREVIEW_OBJ): $(ANIM_PREVIEW_SRC)
 $(SURFACE_OBJ): $(SURFACE_SRC)
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
+$(PLAYER_OBJ): $(PLAYER_SRC)
+	$(CC) -c -o $@ $< $(UUT_CFLAGS)
+
 $(OUTCOME_OBJ): surface_outcome_test.c
 	$(CC) -c -o $@ $< $(UUT_CFLAGS)
 
-$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) $(OUTCOME_OBJ)
+$(TARGET): $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
+      $(PLAYER_OBJ) $(OUTCOME_OBJ)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
 # ASan and TSan are mutually exclusive, hence separate passes.
@@ -131,6 +139,6 @@ sweep:
 clean:
 	rm -rf $(SAMPLE_OBJDIR)
 	rm -f $(TARGET) $(OBJS) $(UUT_OBJ) $(ANIM_PREVIEW_OBJ) $(SURFACE_OBJ) \
-	   $(OUTCOME_OBJ)
+	   $(PLAYER_OBJ) $(OUTCOME_OBJ)
 
 .PHONY: all sweep clean

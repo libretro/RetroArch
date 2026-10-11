@@ -157,6 +157,8 @@ gfx_anim_preview_t *gfx_anim_preview_open(const char *path, int png_probe)
    s = (fake_sess_t*)calloc(1, sizeof(*s));
    s->p.dims       = VIDEO_SCALE_PACK(32, 24);
    s->p.loop_count = 0;
+   s->p.stream     = s;
+   s->p.type       = IMAGE_TYPE_WEBM;
    s->id           = anim_id(path);
    retro_atomic_store_release_int(&s->magic, (int)SESS_LIVE);
    retro_atomic_fetch_add_int(&opens[s->id], 1);
@@ -185,6 +187,68 @@ const uint32_t *gfx_anim_preview_next(gfx_anim_preview_t *p,
 void gfx_anim_preview_rewind(gfx_anim_preview_t *p)
 {
    ((fake_sess_t*)p)->frame = 0;
+}
+
+/* The stream behind the session, as video_player plays it: the fake
+ * session is its own stream. */
+const uint32_t *image_transfer_anim_stream_next(void *stream,
+      enum image_type_enum type, int *duration_ms)
+{
+   bool native;
+   (void)type;
+   return gfx_anim_preview_next((gfx_anim_preview_t*)stream, duration_ms,
+         &native);
+}
+void image_transfer_anim_stream_rewind(void *stream,
+      enum image_type_enum type)
+{
+   (void)type;
+   gfx_anim_preview_rewind((gfx_anim_preview_t*)stream);
+}
+void image_transfer_anim_stream_get_info(void *stream,
+      enum image_type_enum type, unsigned *width, unsigned *height,
+      int *num_frames, int *loop_count)
+{
+   (void)stream;
+   (void)type;
+   *width      = 32;
+   *height     = 24;
+   *num_frames = FRAMES;
+   *loop_count = 0;
+}
+bool image_transfer_anim_stream_set_argb(void *stream,
+      enum image_type_enum type, int argb)
+{
+   (void)stream; (void)type;
+   return argb != 0;
+}
+bool image_transfer_anim_stream_set_output(void *stream,
+      enum image_type_enum type, uint32_t *out)
+{
+   (void)stream; (void)type; (void)out;
+   return false;
+}
+void image_transfer_anim_stream_set_catchup(void *stream,
+      enum image_type_enum type, int on)
+{
+   (void)stream; (void)type; (void)on;
+}
+void image_transfer_anim_stream_set_want_fp16(void *stream,
+      enum image_type_enum type, bool want)
+{
+   (void)stream; (void)type; (void)want;
+}
+bool image_transfer_anim_stream_is_fp16(const void *stream,
+      enum image_type_enum type)
+{
+   (void)stream; (void)type;
+   return false;
+}
+bool image_transfer_anim_stream_set_blit_pool(void *stream,
+      enum image_type_enum type, void *pool, unsigned bands)
+{
+   (void)stream; (void)type; (void)pool; (void)bands;
+   return false;
 }
 
 /* Live on the way in and still live on the way out: a close while the
