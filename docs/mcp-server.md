@@ -188,6 +188,14 @@ argument for the next page, as in `Nintendo - SNES.lpl 200`), and loads
 an entry with `LOAD_CONTENT <core path>|<content path>`. `LIST_CORES`
 gives the installed cores and their paths.
 
+An entry with no core of its own gives `DETECT` as its core path, and
+`LOAD_CONTENT` takes an entry as it reads: `DETECT`, or no `core` at
+all, loads the content with an installed core that supports it, and
+says which cores do where more than one is a candidate. Both paths are
+checked before anything is unloaded, so content that cannot be found
+and a core that is not installed are answered with what is wrong while
+the running game keeps playing.
+
 Over MCP, `playlist` and `first` are separate parameters, so a name is
 never mistaken for an entry number. On the network and stdin interfaces
 the two share one line, where a trailing number alone is the entry to
