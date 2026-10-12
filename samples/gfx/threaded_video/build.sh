@@ -94,8 +94,7 @@ else
       "$cc_line" | sh
 fi
 
-rm -f retroarch retroarch_debug
-make -n $MAKE_ARGS 2>/dev/null | grep -E ' -o retroarch(_debug)? ' | tail -1 > "$ld_line"
+make -n -W "$objdir/retroarch.o" $MAKE_ARGS 2>/dev/null | grep -E ' -o retroarch(_debug)? ' | tail -1 > "$ld_line"
 if [ ! -s "$ld_line" ]; then
    echo "could not determine the link command" >&2
    exit 1
