@@ -704,7 +704,7 @@ static void menu_input_st_string_cb(void *userdata, const char *str)
 static int setting_generic_action_ok_linefeed(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    input_keyboard_line_complete_t cb = NULL;
    enum menu_input_dialog_kb_text_type text_type = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
 
@@ -733,6 +733,8 @@ static int setting_generic_action_ok_linefeed(
       case ST_STRING:
       case ST_STRING_OPTIONS:
          cb = menu_input_st_string_cb;
+         line.dialog_type  = MENU_INPUT_DIALOG_TYPE_EDIT;
+         line.initial_text = setting->value.target.string;
          if (setting->ui_type == ST_UI_TYPE_PASSWORD_LINE_EDIT)
             text_type = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
          break;
@@ -746,9 +748,6 @@ static int setting_generic_action_ok_linefeed(
    line.idx           = 0;
    line.text_type     = text_type;
    line.cb            = cb;
-   line.initial_text  = (setting->type == ST_STRING
-         || setting->type == ST_STRING_OPTIONS)
-         ? setting->value.target.string : NULL;
 
    if (!menu_input_dialog_start(&line))
       return -1;
@@ -3378,7 +3377,7 @@ static void setting_action_ok_color_rgb_cb(void *userdata, const char *line)
 static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
       bool wraparound)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
 
    if (!setting)
       return -1;
@@ -3389,7 +3388,6 @@ static int setting_action_ok_color_rgb(rarch_setting_t *setting, size_t idx,
    line.idx           = 0;
    line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb            = setting_action_ok_color_rgb_cb;
-   line.initial_text  = NULL;
 
    if (!menu_input_dialog_start(&line))
       return -1;
@@ -14033,7 +14031,7 @@ static void menu_input_st_string_cb_keychain_passphrase(void *userdata,
 static int setting_action_keychain_passphrase(
       rarch_setting_t *setting, size_t idx, bool wraparound)
 {
-   menu_input_ctx_line_t line;
+   menu_input_ctx_line_t line = {0};
    line.label         = msg_hash_to_str(keychain_is_locked()
          ? MSG_INPUT_KEYCHAIN_PASSPHRASE : MSG_INPUT_KEYCHAIN_PASSPHRASE_NEW);
    line.label_setting = setting ? setting->name : NULL;
@@ -14041,7 +14039,6 @@ static int setting_action_keychain_passphrase(
    line.idx           = 0;
    line.text_type     = MENU_INPUT_DIALOG_KB_TYPE_PASSWORD;
    line.cb            = menu_input_st_string_cb_keychain_passphrase;
-   line.initial_text  = NULL;
    if (!menu_input_dialog_start(&line))
       return -1;
    return 0;

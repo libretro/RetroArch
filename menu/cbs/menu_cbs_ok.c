@@ -4079,6 +4079,7 @@ static int action_ok_rename_entry(const char *path,
    line.idx                           = (unsigned)entry_idx;
    line.text_type                     = MENU_INPUT_DIALOG_KB_TYPE_TEXT;
    line.cb                            = menu_input_st_string_cb_rename_entry;
+   line.dialog_type                   = MENU_INPUT_DIALOG_TYPE_EDIT;
 
    if ((playlist = playlist_get_cached()))
       playlist_get_index(playlist, entry_idx, &entry);

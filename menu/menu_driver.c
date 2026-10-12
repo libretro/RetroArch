@@ -9201,7 +9201,7 @@ bool menu_input_dialog_start(menu_input_ctx_line_t *line)
             line->cb,
             line->label,
             (enum input_text_type)line->text_type,
-            config_get_ptr()->bools.menu_input_preserve_text
+            line->dialog_type == MENU_INPUT_DIALOG_TYPE_EDIT
             ? line->initial_text : NULL);
 
 
