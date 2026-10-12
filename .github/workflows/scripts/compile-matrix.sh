@@ -246,7 +246,10 @@ fi
 # networking they are built on) and the frontend compiled under exactly
 # them. Makefile.retrofw asked for the TLS client with no networking
 # and only its own workflow saw the undefined reference.
-pm_out=$(tools/platform_makefile_check.sh 2>&1); pm_rc=$?
+# Captured with the status in the same list: under set -e a failing
+# substitution in a plain assignment ends the script before the status
+# is read, with nothing said and every lane after it skipped.
+pm_out=$(tools/platform_makefile_check.sh 2>&1) && pm_rc=0 || pm_rc=$?
 printf '%s\n' "$pm_out" | sed 's/^ok    /ok    platform makefile: /'
 [ $pm_rc -eq 0 ] || { echo "FAIL  platform makefile check"; fail=1; }
 
@@ -254,7 +257,7 @@ printf '%s\n' "$pm_out" | sed 's/^ok    /ok    platform makefile: /'
 # no MCP server on any console (a desktop HAVE_MCP option; listed once
 # with the networking objects it broke the 3DS), and no crypto library
 # on the 24/32 MiB machines.
-co_out=$(tools/console_objects_check.sh 2>&1); co_rc=$?
+co_out=$(tools/console_objects_check.sh 2>&1) && co_rc=0 || co_rc=$?
 printf '%s\n' "$co_out" | sed 's/^ok    /ok    console objects: /'
 [ $co_rc -eq 0 ] || { echo "FAIL  console object check"; fail=1; }
 
