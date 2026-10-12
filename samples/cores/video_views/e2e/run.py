@@ -8,8 +8,7 @@ and checks the views status the core logged; a case is shot once that
 status is final, not after a fixed wait. One case also bounds the GPU
 memory RetroArch holds, and the pointer cases move the pointer of
 gamescope's own X server and look for the menu's cursor under it. The
-gl driver doesn't present views, so it runs one case that expects the
-packed frame and no PRESENTS. The exact cases check every pixel of
+exact cases check every pixel of
 views filled with noise, drawn straight from the frame by the stock
 chain and copied out of it for a preset, on glcore once for each way it
 copies them; and, on glcore, a frame drawn whole out of a core's larger
@@ -131,10 +130,14 @@ CASES = [
      [(800, 100, GREEN), (800, 900, YELLOW), (1500, 480, GREEN)]),
 ]
 
-# The same cases drawn in hardware: through a GL core context, with each
-# origin, on glcore, and into the core's own images on vulkan.
+# The same cases drawn in hardware: through a GL compatibility context on
+# gl, a core context with each origin on glcore, and into the core's own
+# images on vulkan.
 # {driver: [(case, video_views_test_hw)]}
 HW_CASES = {
+    'gl': [(name, 'gl_compat')
+           for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
+                        '3ds-interlaced')],
     'glcore': [(name, hw) for hw in ('gl', 'gl_topleft')
                for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
                             '3ds-interlaced')],
@@ -148,6 +151,10 @@ HW_CASES = {
               for name in ('3ds-2d', '3ds-sbs-full', '3ds-anaglyph',
                            '3ds-interlaced', '3ds-sbs-full-threaded')],
 }
+
+# Drivers that can't show a frame past the declared maximum at all (gl
+# draws it black), so the crop map's cases are left out there.
+NO_OVERSIZE_DRIVERS = ('gl',)
 
 # A frame past the declared maximum in the core's own Vulkan image.
 # Nothing is copied out of it, so threaded video does not crop it, and
@@ -215,14 +222,6 @@ POINTER_PARK = (40, 900)
 POINTER_TOLERANCE = 6
 POINTER_REACH = 48
 
-# The gl driver doesn't present views: the map is accepted, STEREO is off,
-# and the core's 2D packing shows whole.
-GL_CASES = [
-    ('3ds-sbs-full-gl', '3ds', {'video_stereo_mode': '2'},
-     [(400, 240, GREEN), (1200, 240, GREY), (800, 720, YELLOW),
-      (100, 720, GREY)]),
-]
-
 # The core declares Azahar's 8000x4800 maximum, draws its usual frame in
 # hardware as Azahar does, and runs a preset keeping eight frames of
 # history. Sized for that maximum, the history is 1.75 GiB a chain: the
@@ -259,6 +258,7 @@ EXACT_CASES = [
     # Rows counted from the frame's bottom, and from its top.
     ('exact-3ds', '3ds', NOISE, 'gl'),
     ('exact-3ds', '3ds', NOISE, 'gl_topleft'),
+    ('exact-3ds', '3ds', NOISE, 'gl_compat'),
     ('exact-3ds', '3ds', NOISE, 'vulkan'),
     ('exact-3ds', '3ds', NOISE, 'd3d11'),
     ('exact-3ds', '3ds', NOISE, 'd3d12'),
@@ -268,7 +268,8 @@ EXACT_CASES = [
     ('whole-3ds', 'none', NOISE_LARGE, 'gl'),
     ('whole-3ds', 'none', NOISE_LARGE, 'gl_topleft'),
 ]
-EXACT_HW = {'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
+EXACT_HW = {'gl': ('off', 'gl_compat'),
+            'glcore': ('off', 'gl', 'gl_topleft'), 'vulkan': ('off', 'vulkan'),
             'd3d11': ('off', 'd3d11'), 'd3d12': ('off', 'd3d12')}
 # Drivers whose views take a preset: on the others a preset draws the
 # frame whole, so the cases that need one are left out there.
@@ -292,7 +293,7 @@ SMOOTH_SETTINGS = dict(EXACT_SETTINGS, video_smooth='true')
 LINEAR_PRESET = os.path.join(HERE, 'history_linear.slangp')
 # Drivers that draw the stock chain's views straight from the frame,
 # and that draw a frame whole straight from a larger texture.
-DIRECT_DRIVERS = ('glcore', 'vulkan', 'd3d11', 'd3d12')
+DIRECT_DRIVERS = ('gl', 'glcore', 'vulkan', 'd3d11', 'd3d12')
 DIRECT_RE = re.compile(r'\] Views drawn straight from the frame\.')
 WHOLE_DRIVERS = ('glcore',)
 WHOLE_RE = re.compile(r'\] Frames drawn straight from the core\'s texture\.')
@@ -497,8 +498,6 @@ def winpath(v):
 
 def expected_status(driver, settings):
     """(presents, stereo) the frontend should report for these settings."""
-    if driver == 'gl':
-        return (0, 0)
     return (1, 0 if settings.get('video_stereo_mode', '0') == '0' else 1)
 
 
@@ -562,8 +561,6 @@ def status_errors(d, driver, settings):
     if found[:2] != want:
         errors.append('status presents=%d stereo=%d, want presents=%d '
                       'stereo=%d' % (found[0], found[1], want[0], want[1]))
-    if driver == 'gl' and found[2] != 1:
-        errors.append('map not accepted on gl')
     return errors
 
 
@@ -1251,10 +1248,8 @@ def main():
     os.makedirs(root, exist_ok=True)
     failed = 0
     for driver in sys.argv[3:]:
-        if driver == 'gl':
-            runs = [(case, 'off') for case in GL_CASES]
-        else:
-            runs = [(case, 'off') for case in CASES]
+        runs = [(case, 'off') for case in CASES
+                if not (case[1] == 'crop' and driver in NO_OVERSIZE_DRIVERS)]
         runs += [(case, hw) for name, hw in HW_CASES.get(driver, [])
                  for case in CASES if case[0] == name]
         if driver == 'vulkan':
@@ -1388,17 +1383,15 @@ def main():
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)
-        for case in [c for c in (MENU_CASES if driver != 'gl' else [])
-                     if wanted(c[0])]:
+        for case in [c for c in MENU_CASES if wanted(c[0])]:
             errors = run_menu_case(retroarch, root, driver, case)
             print('%s %s/%s' % ('FAIL' if errors else 'pass', driver,
                                 case[0]))
             for e in errors:
                 print('    ' + e)
             failed += bool(errors)
-        for menu, case in ([(m, c) for m in sorted(POINTER_MENUS)
-                            for c in POINTER_CASES if wanted(c[0])]
-                           if driver != 'gl' else []):
+        for menu, case in [(m, c) for m in sorted(POINTER_MENUS)
+                           for c in POINTER_CASES if wanted(c[0])]:
             errors = run_pointer_case(retroarch, root, driver, menu, case)
             print('%s %s/%s-%s' % ('FAIL' if errors else 'pass', driver,
                                    case[0], menu))

@@ -30,6 +30,7 @@
 #include <gfx/scaler/scaler.h>
 #include <glsym/glsym.h>
 #include <formats/image.h>
+#include <retro_atomic.h>
 
 #include "../video_driver.h"
 #include "gl_common.h"
@@ -37,6 +38,23 @@
 RETRO_BEGIN_DECLS
 
 typedef struct gl2 gl2_t;
+
+/* A render target views draw into: a texture and its framebuffer */
+struct gl2_views_fbo
+{
+   GLuint fbo;
+   GLuint tex;
+};
+
+/* A program views draw with, and where its uniforms are */
+struct gl2_views_prog
+{
+   GLuint prog;
+   GLint  loc_mvp;
+   GLint  loc_tex;
+   GLint  loc_clamp;
+   GLint  loc_height;
+};
 
 enum gl2_flags
 {
@@ -248,6 +266,37 @@ struct gl2
       float    paper_white_nits;
       unsigned expand_gamut;
    } scrgb;
+
+   /* Views, drawn straight from the frame as the stock shader draws
+    * it; with a preset the frame is drawn whole. A view's stock chain
+    * is the driver itself. The canvas holds both eyes for anaglyph and
+    * interlaced, the UI layer the UI drawn once for both eyes. */
+   struct
+   {
+      video_views_chains_t  chains;
+      struct gl2_views_fbo  canvas;
+      struct gl2_views_fbo  ui;
+      video_views_target_t  canvas_target;
+      video_views_target_t  ui_target;
+      video_views_ui_dims_t saved;
+      struct gl2_views_prog rect;
+      struct gl2_views_prog layer;
+      struct gl2_views_prog anaglyph;
+      struct gl2_views_prog interlaced;
+      GLuint                vbo;
+      /* For get_flags on the main thread: whether views may be drawn,
+       * and whether the last frame with a map was drawn whole. */
+      retro_atomic_int_t    allowed;
+      retro_atomic_int_t    fallback;
+      /* A shader preset is loaded: views are then drawn whole. */
+      bool                  preset;
+      bool                  tried;
+      bool                  failed;
+      bool                  active;
+      /* Drawing into the UI layer */
+      bool                  ui_pass;
+      bool                  direct_seen;
+   } views;
 
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
    /* The framebuffer the headset's tracked eyes are drawn through. */

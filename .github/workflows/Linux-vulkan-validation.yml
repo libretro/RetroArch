@@ -307,12 +307,12 @@ jobs:
           HARNESS_CORE_HW_VULKAN=3 SAN=none VK_DEBUG=1 GFX_INSTRUMENT=1 CYCLES=1 make -C samples/gfx/threaded_video check-vulkan
           make -C samples/gfx/threaded_video clean
 
-      - name: Views on glcore and Vulkan, end to end (Xvfb, llvmpipe, lavapipe)
+      - name: Views on gl, glcore and Vulkan, end to end (Xvfb, llvmpipe, lavapipe)
         shell: bash
         run: |
           set -eu
-          # The views compositor (gfx/video_views_draw.h) as glcore and
-          # Vulkan instantiate it: the video_views test core's map in
+          # The views compositor (gfx/video_views_draw.h) as gl, glcore
+          # and Vulkan instantiate it: the video_views test core's map in
           # each stereo mode, a view per eye, the blend canvas, views
           # read exactly out of the frame in every way the drivers copy
           # or draw them, the UI layer per eye with the menu open, and a
@@ -323,7 +323,7 @@ jobs:
           export LIBGL_ALWAYS_SOFTWARE=1
           RA_E2E_XVFB=1 RA_E2E_ONLY='^(3ds-sbs-full|3ds-sbs-half|3ds-top-bottom|3ds-anaglyph|3ds-interlaced|ds-horizontal|exact-3ds|crop-threaded-menu|pointer-sbs-full)$' \
             python3 samples/cores/video_views/e2e/run.py ./retroarch \
-            "$RUNNER_TEMP/views-e2e" glcore vulkan
+            "$RUNNER_TEMP/views-e2e" gl glcore vulkan
 
   vulkan-validation-openxr:
     name: Threaded-video harness on Vulkan built with OpenXR (lavapipe, validation layer)
