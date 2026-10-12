@@ -8941,6 +8941,17 @@ static bool vulkan_hw_ring_fence_wait(void *data, void *fence, unsigned timeout_
  * DXGI can confirm the current frame's vblank; otherwise its
  * completion remains unknown and the presenter estimates it. */
 static retro_time_t vulkan_present_wait;
+/* The frame fence and the queue lock waited for ahead of the present:
+ * counted in cycles, scaled by the present's own clock reads. */
+static retro_time_t vulkan_fence_wait;
+static retro_time_t vulkan_lock_wait;
+
+static void vulkan_get_last_present_sync(void *data,
+      retro_time_t *fence_wait, retro_time_t *lock_wait)
+{
+   *fence_wait = data ? vulkan_fence_wait : 0;
+   *lock_wait  = data ? vulkan_lock_wait  : 0;
+}
 
 static retro_time_t vulkan_get_last_present_wait(void *data, bool *shown)
 {
@@ -10776,6 +10787,7 @@ static bool vulkan_frame(void *data, const void *frame,
    VkRenderPassBeginInfo rp_info;
    VkCommandBufferBeginInfo begin_info;
    VkSemaphore signal_semaphores[2];
+   retro_perf_tick_t c_lock                      = 0;
    vk_t *vk                                      = (vk_t*)data;
    vulkan_filter_chain_t *filter_chain           = NULL;
    bool waits_for_semaphores                     = false;
@@ -12374,7 +12386,9 @@ static bool vulkan_frame(void *data, const void *frame,
    vulkan_upload_batch_submit(vk);
 
 #ifdef HAVE_THREADS
+   c_lock = cpu_features_get_perf_counter();
    slock_lock(vk->context->queue_lock);
+   c_lock = cpu_features_get_perf_counter() - c_lock;
 #endif
    vulkan_check_device_lost(vk, vkQueueSubmit(vk->context->queue, 1,
          &submit_info, vk->context->swapchain_fences[frame_index]));
@@ -12409,17 +12423,34 @@ static bool vulkan_frame(void *data, const void *frame,
    slock_unlock(vk->context->queue_lock);
 #endif
 
-   vulkan_await_frame_before_present(vk, frame_index);
-
    vulkan_present_wait = 0;
-   vk->presented_at = 0;
+   vulkan_fence_wait   = 0;
+   vulkan_lock_wait    = 0;
+   vk->presented_at    = 0;
    if (vk->ctx_driver->swap_buffers)
    {
-      /* timed: see vulkan_get_last_present_wait() */
-      retro_time_t swap_at = cpu_features_get_time_usec();
+      /* timed: see vulkan_get_last_present_wait() and
+       * vulkan_get_last_present_sync() */
+      retro_time_t      sync_at = cpu_features_get_time_usec();
+      retro_perf_tick_t c0      = cpu_features_get_perf_counter();
+      retro_perf_tick_t c1, c2;
+      retro_time_t      total;
+      vulkan_await_frame_before_present(vk, frame_index);
+      c1 = cpu_features_get_perf_counter();
       vk->ctx_driver->swap_buffers(vk->ctx_data);
-      vulkan_present_wait = cpu_features_get_time_usec() - swap_at;
+      c2    = cpu_features_get_perf_counter();
+      total = cpu_features_get_time_usec() - sync_at;
+      if (c2 > c0 && total > 0)
+      {
+         vulkan_fence_wait = (retro_time_t)((uint64_t)total
+               * (uint64_t)(c1 - c0) / (uint64_t)(c2 - c0));
+         vulkan_lock_wait  = (retro_time_t)((uint64_t)total
+               * (uint64_t)c_lock / (uint64_t)(c2 - c0));
+      }
+      vulkan_present_wait = total - vulkan_fence_wait;
    }
+   else
+      vulkan_await_frame_before_present(vk, frame_index);
 
    /* Retire unloaded textures whose deferral window has elapsed. */
    vulkan_deferred_textures_tick(vk);
@@ -14461,7 +14492,8 @@ static const video_poke_interface_t vulkan_poke_interface = {
    vulkan_frame_mem_ready,
    vulkan_frame_mem_free,
    vulkan_get_device,
-   vulkan_import_texture
+   vulkan_import_texture,
+   vulkan_get_last_present_sync
 };
 
 static void vulkan_get_poke_interface(void *data,

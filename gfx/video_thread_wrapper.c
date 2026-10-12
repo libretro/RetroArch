@@ -1389,6 +1389,8 @@ typedef struct
    retro_time_t core_time;
    retro_time_t render_time;
    retro_time_t present_wait;
+   retro_time_t fence_wait;
+   retro_time_t lock_wait;
    retro_time_t present_period;
    retro_time_t next_present;
    int          flags;
@@ -1449,6 +1451,10 @@ static void video_thread_publish_stats(thread_video_t *thr)
          (uint64_t)thr->render_time);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_WAIT_LO,
          (uint64_t)thr->present_wait);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_FENCE_LO,
+         (uint64_t)thr->fence_wait);
+   video_thread_stat_put64(s, VIDEO_THREAD_STAT_LOCK_LO,
+         (uint64_t)thr->lock_wait);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_SWAPS_LO,
          thr->video_st->swap_count);
    video_thread_stat_put64(s, VIDEO_THREAD_STAT_PERIOD_LO,
@@ -1499,6 +1505,10 @@ static void video_thread_read_stats(thread_video_t *thr,
             VIDEO_THREAD_STAT_RENDER_LO);
       out->present_wait = (retro_time_t)video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_WAIT_LO);
+      out->fence_wait  = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_FENCE_LO);
+      out->lock_wait   = (retro_time_t)video_thread_stat_get64(s,
+            VIDEO_THREAD_STAT_LOCK_LO);
       out->swaps       = video_thread_stat_get64(s,
             VIDEO_THREAD_STAT_SWAPS_LO);
       out->present_period = (retro_time_t)video_thread_stat_get64(s,
@@ -2693,6 +2703,16 @@ static void video_thread_loop(void *data)
                   /* for the statistics, averaged as the render time is */
                   thr->present_wait = thr->present_wait
                      ? (thr->present_wait * 7 + waited) / 8 : waited;
+               }
+               if (ret && thr->poke && thr->poke->get_last_present_sync)
+               {
+                  retro_time_t fence = 0, lock = 0;
+                  thr->poke->get_last_present_sync(thr->driver_data,
+                        &fence, &lock);
+                  thr->fence_wait = thr->fence_wait
+                     ? (thr->fence_wait * 7 + fence) / 8 : fence;
+                  thr->lock_wait  = thr->lock_wait
+                     ? (thr->lock_wait * 7 + lock) / 8 : lock;
                }
                if (ret)
                {
@@ -5059,7 +5079,8 @@ static const video_poke_interface_t thread_poke = {
    NULL, /* frame_mem_ready */
    NULL, /* frame_mem_free */
    thread_get_device,
-   NULL  /* import_texture: a node (VIDEO_THREAD_ASYNC_IMPORT) */
+   NULL, /* import_texture: a node (VIDEO_THREAD_ASYNC_IMPORT) */
+   NULL  /* get_last_present_sync: read on the video thread */
 };
 
 /* Video thread, for video_thread_get_poke_interface(): installs the
@@ -5444,6 +5465,25 @@ bool video_thread_latency_stats(retro_time_t *avg, retro_time_t *worst,
    *worst        = snap.latency_max;
    *from_display = (snap.flags & VIDEO_THREAD_STAT_F_LAT_DISPLAY) != 0;
    return *avg > 0;
+}
+
+bool video_thread_present_sync_stats(retro_time_t *fence_wait,
+      retro_time_t *lock_wait)
+{
+   video_thread_stat_snap_t snap;
+   video_driver_state_t *video_st = video_state_get_ptr();
+   thread_video_t       *thr;
+   *fence_wait = 0;
+   *lock_wait  = 0;
+   if (!video_st->thread_wrapper_active)
+      return false;
+   if (     !(thr = (thread_video_t*)video_st->data) || !thr->thread
+         || !thr->poke || !thr->poke->get_last_present_sync)
+      return false;
+   video_thread_read_stats(thr, &snap);
+   *fence_wait = snap.fence_wait;
+   *lock_wait  = snap.lock_wait;
+   return true;
 }
 
 bool video_thread_present_wait_stats(retro_time_t *wait)

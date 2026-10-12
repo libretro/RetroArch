@@ -1263,6 +1263,15 @@ typedef struct video_poke_interface
    enum video_texture_update (*import_texture)(void *data, uintptr_t *id,
          const video_frame_import_t *frame,
          enum texture_filter_type filter);
+
+   /* What the last frame's present waited for besides the display, in
+    * microseconds: @fence_wait the frame's own GPU work, where a driver
+    * waits it out before presenting (the Vulkan driver does for a
+    * hardware core under the threaded wrapper); @lock_wait the queue
+    * lock, held by a core submitting from its own thread. Read on the
+    * video thread next to get_last_present_wait. Optional. */
+   void (*get_last_present_sync)(void *video_data,
+         retro_time_t *fence_wait, retro_time_t *lock_wait);
 } video_poke_interface_t;
 
 /* dims is the frame's size, VIDEO_SCALE_PACK'd; msg is for showing a

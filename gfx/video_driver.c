@@ -7682,6 +7682,17 @@ VIDEO_NOINLINE static void video_driver_frame_statistics(
                   wait / 1000.0f);
       }
       {
+         /* What the present waited for ahead of the display: the
+          * frame's own fence, waited out before presenting for a
+          * hardware core under the wrapper, and the queue lock a core
+          * submitting from its own thread may hold. */
+         retro_time_t fence, lock;
+         if (video_thread_present_sync_stats(&fence, &lock))
+            __len = video_driver_stat_appendf(video_st->stat_text, __len,
+                  " Present:    %5.2f ms frame fence, %5.2f ms queue lock\n",
+                  fence / 1000.0f, lock / 1000.0f);
+      }
+      {
          retro_time_t lat_avg, lat_max;
          bool lat_display;
          if (video_thread_latency_stats(&lat_avg, &lat_max, &lat_display))

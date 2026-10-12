@@ -320,6 +320,12 @@ enum video_thread_stat_slot
     * says (get_last_present_wait) */
    VIDEO_THREAD_STAT_WAIT_LO,
    VIDEO_THREAD_STAT_WAIT_HI,
+   /* what else the present waited for, where the driver says
+    * (get_last_present_sync): the frame's fence and the queue lock */
+   VIDEO_THREAD_STAT_FENCE_LO,
+   VIDEO_THREAD_STAT_FENCE_HI,
+   VIDEO_THREAD_STAT_LOCK_LO,
+   VIDEO_THREAD_STAT_LOCK_HI,
    VIDEO_THREAD_STAT_SLOTS
 };
 
@@ -468,6 +474,8 @@ typedef struct thread_video
     * returned. Both main-thread only. */
    retro_time_t render_time;
    retro_time_t present_wait; /* the wait in the driver's present, averaged as render_time is */
+   retro_time_t fence_wait;   /* the frame fence waited out before it, averaged the same */
+   retro_time_t lock_wait;    /* the queue lock waited for, averaged the same */
    retro_time_t slack_min;       /* the least a frame had to spare in the window */
    retro_time_t slack_window_at;  /* when the window began */
    unsigned miss_run;            /* frames in a row that missed their vblank */
@@ -1057,6 +1065,11 @@ bool video_thread_presenter_stats(uint64_t *repeats, bool *display_phase);
  * there is no wrapper. For the statistics: beside the render time,
  * which no longer counts it. */
 bool video_thread_present_wait_stats(retro_time_t *wait);
+/* What the driver's present waited for besides the display: the
+ * frame's own fence and the queue lock. False where the driver does
+ * not say. */
+bool video_thread_present_sync_stats(retro_time_t *fence_wait,
+      retro_time_t *lock_wait);
 
 bool video_thread_pacing_stats(bool *display_pacing,
       retro_time_t *core_time, retro_time_t *render_time);
