@@ -175,7 +175,7 @@ jobs:
           # That is how retro_vfs_file_get_mapped_ptr_impl reached the
           # branch broken.  This is the same check at source level, for
           # free, on Linux.
-          python3 tools/vfs_backend_parity.py
+          tools/check.sh tools/vfs_backend_parity.c
 
       - name: Check every command describes itself
         shell: bash
@@ -185,7 +185,7 @@ jobs:
           # HELP prints command.h's tables, and interfaces that hand the
           # commands to a client are generated from them: a command
           # added without a description reaches all of those blank.
-          python3 tools/command_table_check.py
+          tools/check.sh tools/command_table_check.c
 
       - name: Check video and input code stay out of each other's state
         shell: bash
@@ -197,8 +197,8 @@ jobs:
           # moved is listed in the check, file by file, and the lists
           # only shrink: a video file that starts naming an input
           # driver, or either side taking the other's state, fails.
-          python3 tools/input_video_separation_check.py --selftest
-          python3 tools/input_video_separation_check.py
+          tools/check.sh tools/input_video_separation_check.c --selftest
+          tools/check.sh tools/input_video_separation_check.c
 
       - name: Check input drivers ask by name and do not take the frontend's state
         shell: bash
@@ -221,8 +221,8 @@ jobs:
           # Taken after the swap, the fence completes only when a driver
           # that queues swaps releases it, and a hardware rendered core
           # fast-forwards at the display's rate.
-          python3 tools/gl_ring_fence_check.py --selftest
-          python3 tools/gl_ring_fence_check.py
+          tools/check.sh tools/gl_ring_fence_check.c --selftest
+          tools/check.sh tools/gl_ring_fence_check.c
 
       - name: Check the GL drivers set their vsync report with the swap interval
         shell: bash
@@ -231,8 +231,8 @@ jobs:
           set -eu
           # Set apart, the threaded presenter counts a vsync wait as
           # drawing time, or subtracts one that was not made.
-          python3 tools/gl_present_vsynced_check.py --selftest
-          python3 tools/gl_present_vsynced_check.py
+          tools/check.sh tools/gl_present_vsynced_check.c --selftest
+          tools/check.sh tools/gl_present_vsynced_check.c
 
       - name: Check a setting's label exists wherever its translations name it
         shell: bash
@@ -262,7 +262,7 @@ jobs:
           # restarted. No runner can run a GL driver, so this is the
           # check at source level: every driver with load_textures
           # sets, tests and clears its borrowed marker.
-          python3 tools/overlay_texture_ownership.py
+          tools/check.sh tools/overlay_texture_ownership.c
 
       - name: Check overlay setters refuse an image the driver does not hold
         shell: bash
@@ -276,7 +276,7 @@ jobs:
           # set_alpha; D3D, Vulkan and Metal had no check at all. No
           # runner can run these drivers, so this is the check at
           # source level for the ones that have been audited.
-          python3 tools/overlay_setter_bounds.py
+          tools/check.sh tools/overlay_setter_bounds.c
 
       - name: Check companion backend feature parity
         shell: bash
@@ -288,7 +288,7 @@ jobs:
           # a feature (no file browser, no scan, no core picker) and still
           # build and run, the gap only showing when a user switches
           # drivers.  Source-level check, for free, on Linux.
-          python3 tools/companion_parity.py
+          tools/check.sh tools/companion_parity.c
 
       - name: Companion thumbnail engine regression test (plain, TSan, ASan)
         shell: bash

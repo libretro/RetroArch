@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -eu
-          python3 tools/sample_objdir_check.py --selftest
+          tools/check.sh tools/sample_objdir_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -38,4 +38,4 @@ jobs:
           set -eu
           # unity_identity once linked the ASan objects mic_handshake
           # left beside the shared sources.
-          python3 tools/sample_objdir_check.py
+          tools/check.sh tools/sample_objdir_check.c

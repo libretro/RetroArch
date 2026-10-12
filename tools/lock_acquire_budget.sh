@@ -19,7 +19,7 @@
 # block, which means a lock taken through a helper the compiler inlined
 # is counted too - and one taken through a call the compiler kept is
 # not. So a clean run means "no acquisition this can see", not "none
-# exists": a floor, like tools/video_thread_state_check.py, and worth
+# exists": a floor, like tools/video_thread_state_check.c, and worth
 # having because every count it reports is a real one.
 #
 # Some of these are not zero, and are not meant to be. viewport_info

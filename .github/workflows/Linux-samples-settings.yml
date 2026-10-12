@@ -116,7 +116,7 @@ jobs:
           # each build profile, what every list is given against the
           # size it is allocated with, so that the next one is found
           # here.
-          timeout 300 python3 tools/settings_capacity_check.py
+          timeout 300 tools/check.sh tools/settings_capacity_check.c
           echo "[pass] settings_capacity_check"
 
       - name: Build and run pipeline_migration_test (ASan + UBSan)

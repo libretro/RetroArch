@@ -43,7 +43,7 @@ jobs:
           # for platforms with no video thread are listed in the
           # checker with that reason, and the list has to shrink when
           # one of them stops doing it.
-          python3 tools/video_thread_state_check.py
+          tools/check.sh tools/video_thread_state_check.c
 
   surface-requirements:
     name: Producers ask the surface layer
@@ -62,7 +62,7 @@ jobs:
           # directly must be caught, and so must an entry whose file has
           # stopped reading them - the second is what makes the list
           # shrink as producers migrate instead of sitting there.
-          python3 tools/surface_requirements_check.py --selftest
+          tools/check.sh tools/surface_requirements_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -73,7 +73,7 @@ jobs:
           # to ask rather than three unrelated flags to know about. The
           # files still asking directly are listed in the checker and
           # are migrated one at a time; a new one may not join them.
-          python3 tools/surface_requirements_check.py
+          tools/check.sh tools/surface_requirements_check.c
 
       - name: texture_image request check
         shell: bash
@@ -84,8 +84,8 @@ jobs:
           # whatever the stack held and a 16-bit PNG comes back as packed
           # 10-bit words now and then. Every loaded image has its request
           # set first; the self-test proves an unset one is caught.
-          python3 tools/texture_image_init_check.py --selftest
-          python3 tools/texture_image_init_check.py
+          tools/check.sh tools/texture_image_init_check.c --selftest
+          tools/check.sh tools/texture_image_init_check.c
 
   slang-rect:
     name: Presets read frames where they lie

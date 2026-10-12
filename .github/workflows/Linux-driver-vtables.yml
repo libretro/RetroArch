@@ -49,8 +49,8 @@ jobs:
           # failed build, to MSVC. That reached master for the UWP
           # driver. This counts the entries of every input driver's
           # table in the source, whatever SDK the driver needs.
-          python3 tools/input_driver_table_check.py --selftest
-          python3 tools/input_driver_table_check.py
+          tools/check.sh tools/input_driver_table_check.c --selftest
+          tools/check.sh tools/input_driver_table_check.c
 
       - name: Compile each driver against its interface
         shell: bash

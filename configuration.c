@@ -979,7 +979,7 @@ static void config_settings_list_full(const char *key, unsigned cap)
  * many for its list wrote past the end of the allocation, and the
  * process died of heap corruption at the next allocation - at
  * startup, on every run. A setting there is no room for is now left
- * out and said so, loudly; tools/settings_capacity_check.py, in CI,
+ * out and said so, loudly; tools/settings_capacity_check.c, in CI,
  * counts what each list is given against what it holds, so that it
  * is found before anything is run. */
 #define GENERAL_SETTING(key, configval, default_enable, default_setting, type, handle_setting) \

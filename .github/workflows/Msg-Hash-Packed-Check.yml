@@ -68,7 +68,7 @@ jobs:
           # from intl/, so this reports the same thing whether or not
           # the shipped headers currently pass - it is measuring the
           # checker, not the tree.
-          python3 tools/msg_hash_packed_check.py --selftest
+          tools/check.sh tools/msg_hash_packed_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -80,7 +80,7 @@ jobs:
           # the chunk, for a non-final chunk of a split row), no row may
           # hold an embedded NUL, and the sizeof() check must still add
           # up to the members it guards.
-          python3 tools/msg_hash_packed_check.py
+          tools/check.sh tools/msg_hash_packed_check.c
 
       - name: Format parity self-test
         shell: bash
@@ -94,7 +94,7 @@ jobs:
           # argument taken from the table directly and through a local,
           # and must not see a string that is copied, passed as a value,
           # or split on a placeholder rather than formatted.
-          python3 tools/msg_hash_format_check.py --selftest
+          tools/check.sh tools/msg_hash_format_check.c --selftest
 
       - name: Format parity tree check
         shell: bash
@@ -107,4 +107,4 @@ jobs:
           # That last set is measured from the call sites rather than
           # assumed from the namespace: ninety rows reach a printf-family
           # format argument today and twenty-nine of them are not MSG_*.
-          python3 tools/msg_hash_format_check.py
+          tools/check.sh tools/msg_hash_format_check.c

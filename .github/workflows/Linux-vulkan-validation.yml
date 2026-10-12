@@ -9,10 +9,10 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 # load, font free and swapchain resize - and all of them were replaced
 # by waits on the driver's own fences.
 #
-# 1. Idle-wait check: tools/vulkan_idle_wait_check.py fails on any
+# 1. Idle-wait check: tools/vulkan_idle_wait_check.c fails on any
 #    vkQueueWaitIdle/vkDeviceWaitIdle in the Vulkan code that is not
 #    on tools/vulkan_idle_wait_allow.list, and on a stale entry.
-#    tools/d3d12_idle_wait_check.py holds the D3D12 driver to the same:
+#    tools/d3d12_idle_wait_check.c holds the D3D12 driver to the same:
 #    a queue drain or a fence wait not on
 #    tools/d3d12_idle_wait_allow.list fails, so the frame paths, which
 #    wait only for their predecessor's own signal, stay that way.
@@ -51,7 +51,7 @@ name: CI Vulkan/GL/D3D11 [idle waits + driver harness]
 #    BadAccess here rather than a corruption elsewhere; the first run
 #    caught the OSD font rebuild doing exactly that.
 #
-# 6. Teardown-order check: tools/vulkan_teardown_order_check.py holds
+# 6. Teardown-order check: tools/vulkan_teardown_order_check.c holds
 #    the order the driver retires a frame's objects in - command
 #    pools, then descriptor pools, then the pipelines that own the set
 #    layout - and the rule that destroying a descriptor pool is what
@@ -97,13 +97,13 @@ jobs:
         shell: bash
         run: |
           set -eu
-          python3 tools/vulkan_idle_wait_check.py --selftest
+          tools/check.sh tools/vulkan_idle_wait_check.c --selftest
 
       - name: Tree check
         shell: bash
         run: |
           set -eu
-          python3 tools/vulkan_idle_wait_check.py
+          tools/check.sh tools/vulkan_idle_wait_check.c
 
   d3d12-idle-waits:
     name: D3D12 wait allowlist
@@ -118,13 +118,13 @@ jobs:
         shell: bash
         run: |
           set -eu
-          python3 tools/d3d12_idle_wait_check.py --selftest
+          tools/check.sh tools/d3d12_idle_wait_check.c --selftest
 
       - name: Tree check
         shell: bash
         run: |
           set -eu
-          python3 tools/d3d12_idle_wait_check.py
+          tools/check.sh tools/d3d12_idle_wait_check.c
 
   vulkan-teardown-order:
     name: Vulkan teardown order
@@ -139,13 +139,13 @@ jobs:
         shell: bash
         run: |
           set -eu
-          python3 tools/vulkan_teardown_order_check.py --selftest
+          tools/check.sh tools/vulkan_teardown_order_check.c --selftest
 
       - name: Tree check
         shell: bash
         run: |
           set -eu
-          python3 tools/vulkan_teardown_order_check.py
+          tools/check.sh tools/vulkan_teardown_order_check.c
 
   vulkan-validation-harness:
     name: Threaded-video harness on Vulkan (lavapipe, validation layer)

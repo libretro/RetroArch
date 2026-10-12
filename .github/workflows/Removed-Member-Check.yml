@@ -74,7 +74,7 @@ jobs:
           # The fixtures are handed to the checker directly rather than
           # taken from the tree, so this reports the same thing whether
           # or not the tree currently passes - it measures the checker.
-          python3 tools/removed_member_check.py --selftest
+          tools/check.sh tools/removed_member_check.c --selftest
 
       - name: Range check
         shell: bash
@@ -104,7 +104,7 @@ jobs:
           # Every struct member the range removes, minus the ones the
           # tree still declares somewhere, against every .c .h .m .mm
           # .cpp .hpp and .inc reader of one.
-          python3 tools/removed_member_check.py --range "$base..$head"
+          tools/check.sh tools/removed_member_check.c --range "$base..$head"
         env:
           PR_BASE: ${{ github.event.pull_request.base.sha }}
           PR_HEAD: ${{ github.event.pull_request.head.sha }}

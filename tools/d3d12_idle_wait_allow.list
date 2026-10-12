@@ -1,5 +1,5 @@
 # Waits that remain in the D3D12 driver, checked by
-# tools/d3d12_idle_wait_check.py: file|function|call|count. A new
+# tools/d3d12_idle_wait_check.c: file|function|call|count. A new
 # d3d12_queue_drain or SetEventOnCompletion in the checked files fails
 # CI unless it is added here, and an entry whose call is gone fails
 # too. Do not add to this list to make a stall go away: a frame waits

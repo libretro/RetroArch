@@ -33,7 +33,7 @@ jobs:
           # Fixture pass: a correct driver is clean, a presentable()
           # casting another driver's context type is flagged, and one
           # that is defined but never wired into the vtable is flagged.
-          python3 tools/ctx_presentable_check.py --selftest
+          tools/check.sh tools/ctx_presentable_check.c --selftest
 
       - name: Tree check
         shell: bash
@@ -43,4 +43,4 @@ jobs:
           # presentable() that casts the wrong driver's type, or that is
           # never wired in, is invisible to every other job. This is the
           # check that sees all of them at once.
-          python3 tools/ctx_presentable_check.py
+          tools/check.sh tools/ctx_presentable_check.c
