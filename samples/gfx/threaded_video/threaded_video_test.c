@@ -4447,6 +4447,144 @@ static void lane_frame_mem(void)
 }
 
 /* ------------------------------------------------------------------ */
+/* Lane: the frame on screen is the core's newest                       */
+/*   The core stamps each frame with its number, in bands that survive  */
+/*   scaling and filtering, and the lane reads back what the driver     */
+/*   draws, copied, lent and lent as a cropped window. With threaded    */
+/*   video off that must be the frame the core pushed last, and so must */
+/*   it be with the wrapper idle; with frames still in its ring, at     */
+/*   most one pushed frame behind. A path that draws a buffer the core  */
+/*   has since written again, or one that holds a frame back, shows.    */
+/* ------------------------------------------------------------------ */
+
+/* The number a frame read back carries, or -1 where a band is neither
+ * set nor clear */
+static int frame_lag_stamp(const uint8_t *buf, unsigned dims, bool cropped)
+{
+   unsigned w = VIDEO_SCALE_W(dims), h = VIDEO_SCALE_H(dims);
+   unsigned b, v = 0;
+   const uint8_t *row;
+   if (!buf || !w || !h)
+      return -1;
+   /* Mid-height, clear of anything drawn over the frame */
+   row = buf + (size_t)(h / 2) * w * 3;
+   for (b = 0; b < 8; b++)
+   {
+      /* The band's middle in the core's 320, or in the 304 the cropped
+       * window starts 8 into */
+      unsigned sx = 40 * b + 20;
+      unsigned x  = cropped ? (sx - 8) * w / 304 : sx * w / 320;
+      unsigned g  = row[(size_t)x * 3 + 1];
+      if (g >= 192)
+         v |= 1u << b;
+      else if (g > 64)
+         return -1;
+   }
+   return (int)v;
+}
+
+/* Frames pushed after @stamp up to @last, the newest: every third run
+ * is a dupe */
+static unsigned frame_lag_pushes(unsigned last, int stamp)
+{
+   unsigned n = 0, k;
+   unsigned from = last - ((last - (unsigned)stamp) & 0xff);
+   for (k = from + 1; k != last + 1; k++)
+      if (k % 3)
+         n++;
+   return n;
+}
+
+static const char *const frame_lag_modes[3] = {
+   "copied", "lent", "lent, cropped"
+};
+
+static void lane_frame_lag(void)
+{
+   unsigned had = failures;
+   dylib_t lib  = runloop_state_get_ptr()->lib_handle;
+   void (*use_fb)(int) = lib ? (void (*)(int))dylib_proc(lib, "harness_core_use_framebuffer") : NULL;
+   void (*stamp)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_stamp") : NULL;
+   unsigned (*last_pushed)(void) = lib ? (unsigned (*)(void))dylib_proc(lib, "harness_core_last_pushed") : NULL;
+   void (*fb_access)(unsigned) = lib ? (void (*)(unsigned))dylib_proc(lib, "harness_core_fb_access") : NULL;
+   unsigned worst[2][3];
+   int threaded, mode, i;
+
+   CHECK(use_fb && stamp && last_pushed && fb_access,
+         "harness core lacks the stamp exports");
+   if (!use_fb || !stamp || !last_pushed || !fb_access)
+      return;
+   memset(worst, 0, sizeof(worst));
+
+   /* Write-only, so every driver that lends does */
+   fb_access(RETRO_MEMORY_ACCESS_WRITE);
+   stamp(1);
+   if (menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   for (threaded = 0; threaded < 2; threaded++)
+   {
+      set_threaded_via_setting(threaded != 0);
+      run_frames(6);
+      expect_wrapper(threaded != 0, "frame lag lane");
+      for (mode = 0; mode < 3; mode++)
+      {
+         use_fb(mode);
+         run_frames(6);
+         for (i = 0; i < 30; i++)
+         {
+            unsigned dims = 0, lag;
+            uint8_t *buf;
+            int s;
+            /* Half the reads with the wrapper idle, so its ring is
+             * empty, half with frames still in it */
+            bool idle = !threaded || (i & 1);
+            run_frames(1);
+            if (threaded && idle)
+               video_thread_wait_idle();
+            buf = frame_mem_lane_read(&dims);
+            s   = frame_lag_stamp(buf, dims, mode == 2);
+            free(buf);
+            CHECK(s >= 0, "frame lag lane (%s, %s): read %d back no frame "
+                  "number", threaded ? "threaded" : "unthreaded",
+                  frame_lag_modes[mode], i);
+            if (s < 0)
+               break;
+            lag = frame_lag_pushes(last_pushed(), s);
+            if (idle)
+            {
+               CHECK(!lag, "frame lag lane (%s, %s): %u pushed frames "
+                     "behind the core's newest, with nothing in flight",
+                     threaded ? "threaded" : "unthreaded",
+                     frame_lag_modes[mode], lag);
+               if (lag)
+                  break;
+            }
+            else if (lag > worst[threaded][mode])
+               worst[threaded][mode] = lag;
+         }
+         if (threaded)
+            CHECK(worst[threaded][mode] <= 1,
+                  "frame lag lane (threaded, %s): %u pushed frames behind "
+                  "the core's newest", frame_lag_modes[mode],
+                  worst[threaded][mode]);
+      }
+   }
+   fprintf(stderr, "[baseline] frame lag lane: threaded, frames in flight: "
+         "copied %u, lent %u, cropped %u pushed frames behind at worst\n",
+         worst[1][0], worst[1][1], worst[1][2]);
+
+   stamp(0);
+   use_fb(0);
+   fb_access(RETRO_MEMORY_ACCESS_WRITE | RETRO_MEMORY_ACCESS_READ);
+   set_threaded_via_setting(false);
+   run_frames(2);
+   if (!menu_is_up())
+      command_event(CMD_EVENT_MENU_TOGGLE, NULL);
+   if (failures == had)
+      fprintf(stderr, "[pass] frame lag lane\n");
+}
+
+/* ------------------------------------------------------------------ */
 /* Lane: the pacing flag a driver sees follows the presenter            */
 /*   video_frame_info_t::threaded_display_pacing tells a driver its     */
 /*   pushes are being held to the display's vblank; Metal takes its     */
@@ -8677,6 +8815,13 @@ int main(int argc, char *argv[])
             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")
             || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "metal")))
       lane_frame_mem();
+   /* Where the readback draws what the driver last uploaded (gl1's
+    * draws nothing without the cached frame) */
+   if (     real_driver()
+         && (  !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "vulkan")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "gl")
+            || !strcmp(getenv("HARNESS_VIDEO_DRIVER"), "glcore")))
+      lane_frame_lag();
    lane_pacing_flag_follows_wrapper();
    lane_surface_update();
    lane_surface_external();
