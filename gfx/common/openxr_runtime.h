@@ -58,6 +58,7 @@ typedef struct openxr_runtime
    bool frame_controller;     /* XR_VALVE_frame_controller_interaction */
    bool refresh_ext;          /* XR_FB_display_refresh_rate */
    openxr_runtime_platform_t platform;   /* set before create_instance */
+   const char *binding_ext;
 } openxr_runtime_t;
 
 /* The instance, with graphics_ext and the optional extensions the

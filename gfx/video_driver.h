@@ -730,6 +730,30 @@ typedef struct video_frame_info
    int headset_eye[2];
 } video_frame_info_t;
 
+enum gfx_ctx_shared_kind
+{
+   GFX_CTX_SHARED_NONE = 0,
+   GFX_CTX_SHARED_EGL,
+   GFX_CTX_SHARED_GLX
+};
+
+/* A second context in the window context's share group, for a thread
+ * of its own: textures and syncs are shared with the window's context,
+ * framebuffers and vertex arrays are not. The handles are the context
+ * driver's own, kept opaque here. */
+typedef struct gfx_ctx_shared_context
+{
+   enum gfx_ctx_shared_kind kind;
+   void *display;          /* EGLDisplay, or the X Display */
+   void *config;           /* EGLConfig, or GLXFBConfig */
+   void *context;          /* EGLContext, or GLXContext */
+   void *surface;          /* EGL: its own pbuffer, NULL surfaceless */
+   unsigned long drawable; /* GLX: its own pbuffer */
+   unsigned visual_id;     /* GLX: the config's visual */
+   unsigned api;           /* EGL: the client API it binds */
+   gfx_ctx_proc_t (*get_proc_address)(const char *);
+} gfx_ctx_shared_context_t;
+
 typedef void (*update_window_title_cb)(void*);
 typedef bool (*get_metrics_cb)(void *data, enum display_metric_types type,
       float *value);
@@ -890,6 +914,16 @@ typedef struct gfx_ctx_driver
     * Optional; the ring lets the context driver's teardown handle a
     * still-current context when it is missing. Placed last, as above. */
    void (*release_current)(void *data);
+
+   /* Optional, desktop GL: a context in the window context's share
+    * group (gfx_ctx_shared_context_t). New and free run on the video
+    * thread with the window's context current, and leave it so; bind
+    * and unbind run on the thread that uses the context, which never
+    * gets the window's surface. NULL where the driver has none. Placed
+    * last, as above. */
+   bool (*shared_context_new)(void *data, gfx_ctx_shared_context_t *out);
+   bool (*shared_context_bind)(gfx_ctx_shared_context_t *ctx, bool bind);
+   void (*shared_context_free)(gfx_ctx_shared_context_t *ctx);
 } gfx_ctx_driver_t;
 
 typedef struct gfx_ctx_mode

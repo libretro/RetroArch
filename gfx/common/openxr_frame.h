@@ -76,6 +76,15 @@ typedef struct openxr_frame_begun
    bool render;             /* shouldRender, and the headset shows the session */
 } openxr_frame_begun_t;
 
+/* Set before start and unchanged until join; stop also cleans failed start. */
+typedef struct openxr_frame_thread_hooks
+{
+   bool (*start)(void *user);
+   void (*fill)(void *user, XrTime display_time);
+   void (*stop)(void *user);
+   void *user;
+} openxr_frame_thread_hooks_t;
+
 typedef struct openxr_frame
 {
    const openxr_runtime_t *rt;
@@ -91,6 +100,8 @@ typedef struct openxr_frame
    /* From the input's attach to its detach. */
    bool input_attached;
    sthread_t *thread;
+   openxr_frame_thread_hooks_t thread_hooks;
+   retro_atomic_int_t thread_started;
    retro_atomic_int_t quit;
    bool frame_failed;              /* the frame loop's thread */
    /* The frames are the drawing thread's own: begun and ended in its
@@ -113,6 +124,9 @@ typedef struct openxr_frame
    /* The drawing thread's projection, the same way. */
    retro_atomic_int_t proj_seq;
    retro_atomic_int_t proj_words[OPENXR_WORDS(openxr_projection_t)];
+   /* Consecutive carried spaces, under the graphics lock. */
+   int carry_from;
+   int carry_to;
    retro_atomic_int_t recenter;
    /* Each move of the anchor, the hotkey's or the runtime's. */
    retro_atomic_int_t recenters;
@@ -229,6 +243,8 @@ void openxr_frame_clear_projection(openxr_frame_t *f);
 /* The drawing thread: a projection drawn in the track space numbered
  * from goes on, with the same poses, in the one numbered to. */
 void openxr_frame_move_projection(openxr_frame_t *f, int from, int to);
+/* A queued projection's space after carries; caller holds the graphics lock. */
+int openxr_frame_carried_seq(openxr_frame_t *f, int seq);
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor);
 void openxr_frame_get_quads(openxr_frame_t *f, video_xr_quad_set_t *out);
 /* Any thread: where the screens go (enum video_openxr_placement). */

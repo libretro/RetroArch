@@ -8,7 +8,7 @@ S_BOOL_EX(video_openxr_enable, VIDEO_OPENXR_ENABLE,
       "video_openxr_enable",
       false, SD_FLAG_CMD_APPLY_AUTO, SDESC_FLG_REFRESH, CMD_EVENT_REINIT, setting_bool_action_ok_video_openxr_enable, NULL, setting_action_start_video_openxr_enable, NULL, setting_bool_action_ok_video_openxr_enable, setting_bool_action_ok_video_openxr_enable, 0,
       "Headset Output (OpenXR)",
-      "Also show content in an OpenXR headset: each screen as its own floating screen, with both eyes of stereo 3D, and the menu in front of them. Vulkan only. The window keeps its normal output.")
+      "Also show content in an OpenXR headset: each screen as its own floating screen, with both eyes of stereo 3D, and the menu in front of them. Vulkan, or OpenGL on Linux. The window keeps its normal output.")
 S_UINT_EX(video_openxr_refresh_rate, VIDEO_OPENXR_REFRESH_RATE,
       "video_openxr_refresh_rate",
       0, SD_FLAG_NONE, 0, 0, 0, 0, 0, 0, setting_action_ok_video_openxr_refresh_rate, setting_get_string_representation_video_openxr_refresh_rate, NULL, NULL, setting_uint_action_left_video_openxr_refresh_rate, setting_uint_action_right_video_openxr_refresh_rate, 0,

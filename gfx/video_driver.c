@@ -6208,6 +6208,18 @@ bool video_driver_has_headset_path(const char *ident)
    if (string_is_equal(ident, "vulkan"))
       return true;
 #endif
+#ifdef HAVE_OPENXR_GL
+   /* The desktop GL drivers, through a context in the window's share
+    * group where the context driver makes one. */
+#ifdef HAVE_OPENGL_CORE
+   if (string_is_equal(ident, "glcore"))
+      return true;
+#endif
+#ifdef HAVE_OPENGL
+   if (string_is_equal(ident, "gl"))
+      return true;
+#endif
+#endif
    return false;
 }
 #endif

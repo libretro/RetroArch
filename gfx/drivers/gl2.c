@@ -99,6 +99,12 @@ static bool gl2_core_context_is_mains(gl2_t *gl);
 #ifdef HAVE_OPENXR
 #include "../drivers_context/gl_android_openxr.h"
 #endif
+/* Desktop headset output, never built with the Quest's. */
+#if defined(HAVE_OPENXR_GL) && !defined(ANDROID)
+#define HAVE_GL2_XR
+#include "../common/gl_openxr.h"
+#include "../video_xr.h"
+#endif
 
 #ifndef GL_UNSIGNED_INT_8_8_8_8_REV
 #define GL_UNSIGNED_INT_8_8_8_8_REV       0x8367
@@ -4776,18 +4782,19 @@ static retro_time_t gl2_get_last_present_time(void *data)
    return 0;
 }
 
-#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
-static void gl2_viewport_info(void *data, struct video_viewport *vp);
-
+#if (defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)) \
+   || defined(HAVE_GL2_XR)
 /* A tracked map's eyes, each its rectangle of the core's frame drawn
- * with the stock shader and no chain into the headset's images from
- * their origin, at the left eye's size, shrunk if larger, as Vulkan
- * draws them. Sampled, so any format gl2 draws will do; each image is
- * cleared whole, as the compositor may read past the rectangle. */
-static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
+ * with the stock shader and no chain into dst's images from their
+ * origin, at the left eye's size within dims, shrunk if larger, as
+ * Vulkan draws them. Sampled, so any format gl2 draws will do; each
+ * image is cleared whole, as the compositor may read past the
+ * rectangle. The framebuffer to draw through is bound. */
+static void gl2_xr_draw_eye_images(gl2_t *gl,
+      const video_frame_info_t *video_info, const uint32_t *dst,
+      unsigned dims, unsigned *width, unsigned *height)
 {
-   unsigned e, dims, w, h;
-   uint32_t dst[2];
+   unsigned e;
    GLfloat coords[8];
    const video_views_map_t *map = &video_info->views;
    int l                        = video_info->headset_eye[0];
@@ -4796,18 +4803,10 @@ static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
    float tex_h                  = gl->tex_info.tex_size[1];
    float frame_h                = gl->tex_info.input_size[1];
    bool bottom_left             = (gl->vertex_ptr == vertexes);
+   unsigned w = MIN(map->views[l].width,  VIDEO_SCALE_W(dims));
+   unsigned h = MIN(map->views[l].height, VIDEO_SCALE_H(dims));
 
-   if (     l < 0 || r < 0
-         || l >= (int)map->num_views || r >= (int)map->num_views
-         || !gl_android_openxr_eye_targets(dst, &dims))
-      return;
-   w = MIN(map->views[l].width,  VIDEO_SCALE_W(dims));
-   h = MIN(map->views[l].height, VIDEO_SCALE_H(dims));
-   if (!gl->xr_fbo)
-      glGenFramebuffers(1, &gl->xr_fbo);
-   glBindFramebuffer(GL_FRAMEBUFFER, gl->xr_fbo);
    glBindTexture(GL_TEXTURE_2D, gl->tex_info.tex);
-   glDisable(GL_SCISSOR_TEST);
    glDisable(GL_BLEND);
    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
    glViewport(0, 0, w, h);
@@ -4863,6 +4862,31 @@ static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
    gl->coords.vertex    = gl->vertex_ptr;
    gl->coords.tex_coord = gl->tex_info.coord;
    glViewport(VIDEO_POS_X(gl->vp.pos), VIDEO_POS_Y(gl->vp.pos), VIDEO_SCALE_W(gl->vp.dims), VIDEO_SCALE_H(gl->vp.dims));
+   *width  = w;
+   *height = h;
+}
+#endif
+
+#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+static void gl2_viewport_info(void *data, struct video_viewport *vp);
+
+static void gl2_xr_draw_eyes(gl2_t *gl, const video_frame_info_t *video_info)
+{
+   unsigned dims, w, h;
+   uint32_t dst[2];
+   const video_views_map_t *map = &video_info->views;
+   int l                        = video_info->headset_eye[0];
+   int r                        = video_info->headset_eye[1];
+
+   if (     l < 0 || r < 0
+         || l >= (int)map->num_views || r >= (int)map->num_views
+         || !gl_android_openxr_eye_targets(dst, &dims))
+      return;
+   if (!gl->xr_fbo)
+      glGenFramebuffers(1, &gl->xr_fbo);
+   glBindFramebuffer(GL_FRAMEBUFFER, gl->xr_fbo);
+   glDisable(GL_SCISSOR_TEST);
+   gl2_xr_draw_eye_images(gl, video_info, dst, dims, &w, &h);
    glBindFramebuffer(GL_FRAMEBUFFER, 0);
    gl_android_openxr_eyes_drawn(w, h);
 }
@@ -4874,6 +4898,358 @@ static float gl2_get_headset_refresh(void *data, float *rates,
    return gl_android_openxr_refresh(rates, cap, count);
 }
 #endif
+
+#ifdef HAVE_GL2_XR
+static void gl2_viewport_info(void *data, struct video_viewport *vp);
+
+/* Desktop headset output: the window as a screen in the room, or an
+ * untracked map's screens cut from it, and a tracked map's eyes as a
+ * projection, through gl_openxr's shared textures. The Quest's group
+ * above is its own: neither is built with the other. */
+typedef struct gl2_desktop_xr
+{
+   gl_openxr_t *host;
+   video_xr_quad_set_t set;
+   /* Where each slot's layers lie in the window, from its top left. */
+   video_views_rect_t rects[VIDEO_XR_MAX_SLOTS][2];
+   /* The slots the headset has an image for. */
+   bool published[VIDEO_XR_MAX_SLOTS];
+   GLuint fbo;
+   /* The core's last frame size: a repeat brings none. */
+   unsigned frame_dims;
+   unsigned recenter;
+   /* The headset paces frames, so the window presents without
+    * waiting; window_interval is what the window was asked for. */
+   int window_interval;
+   bool paced;
+   /* The headset was given a projection to show. */
+   bool proj_shown;
+   bool recenter_seen;
+   bool hdr_warned;
+} gl2_desktop_xr_t;
+
+/* Whether the map names two tracked eyes. */
+static bool gl2_desktop_xr_tracked(const video_frame_info_t *video_info)
+{
+   int l = video_info->headset_eye[0];
+   int r = video_info->headset_eye[1];
+   return l >= 0 && r >= 0
+      && l < (int)video_info->views.num_views
+      && r < (int)video_info->views.num_views;
+}
+
+/* Whether the projection can take the tracked eyes, as glcore's: at a
+ * size the runtime has not refused, and on a repeat only once it has
+ * them, or on a software repeat while none is shown, if the views the
+ * frame was drawn from still hold. Otherwise the window stays. */
+static bool gl2_desktop_xr_projection_ok(const gl2_t *gl, bool new_frame,
+      bool kept_frame)
+{
+   const gl2_desktop_xr_t *xr = gl->desktop_xr;
+   unsigned dims              = gl_openxr_eye_dims(xr->host);
+   return dims
+      && gl_openxr_slot_refused(xr->host, OPENXR_PROJECTION_SLOT) != dims
+      && (   new_frame || xr->proj_shown
+          || (kept_frame && gl_openxr_has_given(xr->host)));
+}
+
+/* A tracked map's eyes into the projection slot, a layer each, with
+ * the poses the core was given. */
+static bool gl2_desktop_xr_draw_eyes(gl2_t *gl,
+      const video_frame_info_t *video_info)
+{
+   unsigned w, h;
+   uint32_t dst[2];
+   openxr_projection_t p;
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   unsigned dims        = gl_openxr_eye_dims(xr->host);
+
+   if (     !dims
+         || gl->tex_info.tex_size[0] <= 0.0f
+         || gl->tex_info.tex_size[1] <= 0.0f
+         || !gl_openxr_slot_target(xr->host, OPENXR_PROJECTION_SLOT, dims,
+            2, dst))
+      return false;
+   glBindFramebuffer(GL_FRAMEBUFFER, xr->fbo);
+   gl2_xr_draw_eye_images(gl, video_info, dst, dims, &w, &h);
+   gl_openxr_projection(xr->host, w, h, &p);
+   gl_openxr_slot_publish(xr->host, OPENXR_PROJECTION_SLOT, NULL, &p);
+   xr->proj_shown = true;
+   return true;
+}
+
+/* This frame's quads and where each is cut from the window: the window
+ * whole while the menu is open, without a map or while a tracked map's
+ * eyes are not the projection's, an untracked map's screens otherwise,
+ * and nothing while the eyes fill the headset. vp: where the window
+ * drew the frame; map: the frame has one that fits it. */
+static void gl2_desktop_xr_plan(gl2_t *gl,
+      const video_frame_info_t *video_info, const video_viewport_t *vp,
+      bool map, bool eyes)
+{
+   video_xr_params_t p;
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   bool menu            = false;
+#ifdef HAVE_MENU
+   menu = (video_info->menu_st_flags & MENU_ST_FLAG_ALIVE) ? true : false;
+#endif
+
+   memset(&p, 0, sizeof(p));
+   if (!eyes || menu)
+   {
+      p.map           = map ? &video_info->views : NULL;
+      p.frame_dims    = gl->video_dims;
+      video_xr_pose_identity(&p.anchor);
+      p.distance      = video_info->headset_distance;
+      p.width         = video_info->headset_width;
+      p.px_per_rad    = gl_openxr_pixels_per_radian(xr->host);
+      p.max_dim       = gl_openxr_max_dim(xr->host);
+      p.screen_layout = video_info->screen_layout;
+      p.rotation      = gl->rotation / 90;
+      p.swap_eyes     = video_info->stereo_swap_eyes;
+      p.window        = true;
+   }
+   /* With no width, an empty set: the eyes are all there is. */
+   video_xr_place_window(&p, menu,
+         map && gl2_desktop_xr_tracked(video_info), vp, xr->frame_dims,
+         &xr->set, xr->rects);
+}
+
+/* The plan's rectangles out of the window's back buffer, which is
+ * bottom up, into each slot's textures, scaled to the slot's size; what
+ * lies past the window stays black. A slot the plan leaves out shows
+ * nothing more: at once, or with eyes once the projection shows. */
+static void gl2_desktop_xr_draw(gl2_t *gl, bool eyes)
+{
+   unsigned s, l;
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   GLint full_h         = (GLint)VIDEO_SCALE_H(gl->video_dims);
+
+   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   {
+      uint32_t tex[2];
+      const video_xr_slot_t *plan = &xr->set.slots[s];
+      if (!plan->dims)
+      {
+         if (xr->published[s])
+         {
+            if (eyes)
+               gl_openxr_slot_yield(xr->host, s);
+            else
+               gl_openxr_slot_forget(xr->host, s);
+         }
+         xr->published[s] = false;
+         continue;
+      }
+      if (     gl_openxr_slot_refused(xr->host, s) == plan->dims
+            || !gl_openxr_slot_target(xr->host, s, plan->dims, plan->layers,
+               tex))
+         continue;
+      gl2_renderchain_bind_backbuffer();
+      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, xr->fbo);
+      for (l = 0; l < plan->layers; l++)
+      {
+         const video_views_rect_t *r = &xr->rects[s][l];
+         GLint x = VIDEO_POS_X(r->pos);
+         GLint y = full_h - VIDEO_POS_Y(r->pos) - (GLint)VIDEO_SCALE_H(r->dims);
+         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+               GL_TEXTURE_2D, (GLuint)tex[l], 0);
+         glClear(GL_COLOR_BUFFER_BIT);
+         glBlitFramebuffer(x, y, x + (GLint)VIDEO_SCALE_W(r->dims),
+               y + (GLint)VIDEO_SCALE_H(r->dims), 0, 0,
+               (GLint)VIDEO_SCALE_W(plan->dims),
+               (GLint)VIDEO_SCALE_H(plan->dims),
+               GL_COLOR_BUFFER_BIT, GL_LINEAR);
+      }
+      gl_openxr_slot_publish(xr->host, s, &xr->set, NULL);
+      xr->published[s] = true;
+   }
+}
+
+/* Whether the headset shows this frame: a session it can see, its pixel
+ * density measured, and no HDR output, whose window is not what the
+ * headset's images hold. */
+static bool gl2_desktop_xr_ready(gl2_t *gl)
+{
+   unsigned s;
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   if (     !gl_openxr_should_draw(xr->host)
+         || gl_openxr_pixels_per_radian(xr->host) <= 0.0f)
+      return false;
+   if (!gl->scrgb.active)
+      return true;
+   if (!xr->hdr_warned)
+   {
+      RARCH_WARN("[OpenXR] The headset shows nothing while HDR output is on.\n");
+      xr->hdr_warned = true;
+   }
+   /* Nothing, rather than its last frame. */
+   for (s = 0; s < VIDEO_XR_MAX_SLOTS; s++)
+   {
+      if (xr->published[s])
+         gl_openxr_slot_forget(xr->host, s);
+      xr->published[s] = false;
+   }
+   if (xr->proj_shown)
+      gl_openxr_slot_forget(xr->host, OPENXR_PROJECTION_SLOT);
+   xr->proj_shown = false;
+   return false;
+}
+
+/* While the headset paces the core, the window presents without
+ * waiting, and each core frame waits for the headset instead. */
+static void gl2_desktop_xr_pace_setup(gl2_t *gl,
+      const video_frame_info_t *video_info)
+{
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   bool paced           = video_info->headset_interval != 0;
+   gl_openxr_set_pacing(xr->host, video_info->headset_interval);
+   gl_openxr_request_rate(xr->host, video_info->headset_request_hz);
+   if (paced == xr->paced)
+      return;
+   xr->paced = paced;
+   if (gl->ctx_driver->swap_interval)
+   {
+      int interval = paced ? 0 : xr->window_interval;
+      gl->ctx_driver->swap_interval(gl->ctx_data, interval);
+      gl2_present_vsynced = (interval != 0);
+   }
+   RARCH_LOG("[GL] Headset pacing %s.\n", paced
+         ? "on: the window presents without waiting" : "off");
+}
+
+/* The window this frame drew, before it is swapped, to the headset:
+ * what it shows of it, and a tracked map's eyes from the core's frame.
+ * frame: a core frame came, of dims; vp: where the window drew it. The
+ * window's framebuffer, scissor and blending are as they were. */
+static void gl2_desktop_xr_frame(gl2_t *gl,
+      const video_frame_info_t *video_info, bool frame, unsigned dims,
+      const video_viewport_t *vp)
+{
+   bool map, eyes;
+   GLboolean scissor, blend;
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   bool new_frame       = frame && !video_info->frame_repeat;
+
+   /* A recenter request since the last frame, and where the screens are
+    * kept, go to the headset's frame. */
+   if (xr->recenter_seen && xr->recenter != video_info->headset_recenter)
+      gl_openxr_request_recenter(xr->host);
+   xr->recenter      = video_info->headset_recenter;
+   xr->recenter_seen = true;
+   gl_openxr_set_placement(xr->host, video_info->headset_placement);
+   gl2_desktop_xr_pace_setup(gl, video_info);
+   if (frame && dims)
+      xr->frame_dims = dims;
+   /* Views kept across a reinit drew only the frame a repeat shows. */
+   if (new_frame)
+      gl_openxr_new_frame(xr->host);
+   else
+      gl_openxr_place_kept(xr->host);
+   if (!gl2_desktop_xr_ready(gl))
+      return;
+
+   /* The map was checked against the core's frame; threaded video can
+    * crop it, and then the window is all there is to show. */
+   map  = video_views_fit_frame(&video_info->views, xr->frame_dims);
+   eyes = map && gl2_desktop_xr_tracked(video_info)
+      && gl2_desktop_xr_projection_ok(gl, new_frame, frame);
+   if (!xr->fbo)
+      glGenFramebuffers(1, &xr->fbo);
+   /* Neither the blits nor the clears are to be clipped. */
+   scissor = glIsEnabled(GL_SCISSOR_TEST);
+   blend   = glIsEnabled(GL_BLEND);
+   glDisable(GL_SCISSOR_TEST);
+   gl2_desktop_xr_plan(gl, video_info, vp, map, eyes);
+   gl2_desktop_xr_draw(gl, eyes);
+   /* A repeat draws the eyes only for a projection not shown yet, with
+    * the poses that drew them. Without eyes the projection goes, in
+    * order behind the window that takes its place; a repeat may be a
+    * video-thread redraw, which names no eyes. */
+   if (eyes && (new_frame || !xr->proj_shown))
+      gl2_desktop_xr_draw_eyes(gl, video_info);
+   else if (xr->proj_shown && !eyes && !video_info->frame_repeat)
+   {
+      gl_openxr_slot_forget(xr->host, OPENXR_PROJECTION_SLOT);
+      xr->proj_shown = false;
+   }
+
+   /* An attachment held would keep a replaced texture alive. */
+   glBindFramebuffer(GL_FRAMEBUFFER, xr->fbo);
+   glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, 0, 0);
+   gl2_renderchain_bind_backbuffer();
+   if (scissor)
+      glEnable(GL_SCISSOR_TEST);
+   if (blend)
+      glEnable(GL_BLEND);
+}
+
+/* Headset output from a context in the window's share group, when the
+ * setting is on and the context can do what it takes; the window as
+ * ever otherwise. The window's context is current. */
+static void gl2_desktop_xr_start(gl2_t *gl)
+{
+   gl2_desktop_xr_t *xr;
+   settings_t *settings = config_get_ptr();
+   if (!settings->bools.video_openxr_enable)
+      return;
+   /* The window's rectangles are scaled into the headset's images. */
+   if (     !(gl->flags & GL2_FLAG_HAVE_FBO)
+         || !(   gl->version_major >= 3
+              || gl_query_extension("ARB_framebuffer_object")))
+   {
+      RARCH_WARN("[OpenXR] This GL context has no framebuffer blits; no headset output.\n");
+      return;
+   }
+   if (!(xr = (gl2_desktop_xr_t*)calloc(1, sizeof(*xr))))
+      return;
+   if (     !(xr->host = gl_openxr_new(gl->ctx_driver, gl->ctx_data))
+         || !gl_openxr_start(xr->host))
+   {
+      gl_openxr_free(xr->host);
+      free(xr);
+      return;
+   }
+   /* With HDR output the headset is shown nothing: no HMD either. */
+   gl_openxr_set_hidden(xr->host, gl->scrgb.active);
+   gl->desktop_xr = xr;
+}
+
+/* Before the core's context and the window's: the XR thread stops and
+ * its context goes. The window's context is current. */
+static void gl2_desktop_xr_free(gl2_t *gl)
+{
+   gl2_desktop_xr_t *xr = gl->desktop_xr;
+   if (!xr)
+      return;
+   if (xr->fbo)
+      glDeleteFramebuffers(1, &xr->fbo);
+   gl_openxr_free(xr->host);
+   free(xr);
+   gl->desktop_xr = NULL;
+}
+
+/* The XR thread stops before the core destroys its context. */
+static void gl2_desktop_xr_context_destroying(void *data)
+{
+   gl2_t *gl = (gl2_t*)data;
+   if (gl && gl->desktop_xr)
+      gl_openxr_stop_thread(gl->desktop_xr->host);
+}
+
+static float gl2_desktop_xr_refresh(void *data, float *rates, unsigned cap,
+      unsigned *count)
+{
+   gl2_t *gl = (gl2_t*)data;
+   *count    = 0;
+   if (!gl || !gl->desktop_xr || !gl_openxr_alive(gl->desktop_xr->host))
+      return 0.0f;
+   *count = gl_openxr_refresh_rates(gl->desktop_xr->host, rates, cap);
+   return gl_openxr_refresh_rate(gl->desktop_xr->host);
+}
+#endif /* HAVE_GL2_XR */
 
 static bool gl2_frame(void *data, const void *frame,
       unsigned dims,
@@ -4905,7 +5281,8 @@ static bool gl2_frame(void *data, const void *frame,
 #endif
    bool overlay_behind_menu            = video_info->overlay_behind_menu;
    bool video_scale_integer            = video_info->scale_integer;
-#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+#if (defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)) \
+   || defined(HAVE_GL2_XR)
    video_viewport_t xr_vp;
 #endif
 
@@ -5172,7 +5549,8 @@ static bool gl2_frame(void *data, const void *frame,
             frame_count, &gl->tex_info, &feedback_info,
             video_scale_integer);
 
-#if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
+#if (defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)) \
+   || defined(HAVE_GL2_XR)
    /* Where the frame is, before the UI sets viewports of its own. */
    gl2_viewport_info(gl, &xr_vp);
 #endif
@@ -5399,6 +5777,12 @@ static bool gl2_frame(void *data, const void *frame,
          gl2_xr_draw_eyes(gl, video_info);
    }
 #endif
+#ifdef HAVE_GL2_XR
+   /* The back buffer is what the window shows until the swap. Not from
+    * the BFI light dupes, which would only copy the same image. */
+   if (gl->desktop_xr && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
+      gl2_desktop_xr_frame(gl, video_info, frame != NULL, dims, &xr_vp);
+#endif
 
     gl2_hw_ring_drawn(gl);
     gl2_present_wait = 0;
@@ -5488,6 +5872,19 @@ static bool gl2_frame(void *data, const void *frame,
             hard_sync_frames);
    }
 
+#ifdef HAVE_GL2_XR
+   /* In place of the window's vsync: once a core frame, never under
+    * fast-forward. */
+   if (     gl->desktop_xr && gl->desktop_xr->paced
+         && !(gl->flags & GL2_FLAG_FRAME_DUPE_LOCK))
+   {
+      if (input_driver_nonblock_state)
+         gl_openxr_pace_skip(gl->desktop_xr->host);
+      else
+         gl_openxr_pace_wait(gl->desktop_xr->host);
+   }
+#endif
+
 #ifndef HAVE_OPENGLES
    if (gl->flags & GL2_FLAG_CORE_CONTEXT_IN_USE)
       glBindVertexArray(0);
@@ -5570,6 +5967,9 @@ static void gl2_free(void *data)
 
    if (gl->flags & GL2_FLAG_SHARED_CONTEXT_USE)
       gl->ctx_driver->bind_hw_render(gl->ctx_data, false);
+#ifdef HAVE_GL2_XR
+   gl2_desktop_xr_free(gl);
+#endif
 
    if (gl->flags & GL2_FLAG_HAVE_SYNC)
       gl2_renderchain_fence_free(gl,
@@ -5669,6 +6069,15 @@ static void gl2_set_nonblock_state(
          interval               = swap_interval;
       if (interval == 1 && adaptive_vsync_enabled)
          interval = -1;
+#ifdef HAVE_GL2_XR
+      /* Kept for when the headset stops pacing. */
+      if (gl->desktop_xr)
+      {
+         gl->desktop_xr->window_interval = interval;
+         if (gl->desktop_xr->paced)
+            interval = 0;
+      }
+#endif
       gl->ctx_driver->swap_interval(gl->ctx_data, interval);
       gl2_present_vsynced = (interval != 0);
    }
@@ -6545,6 +6954,12 @@ static void *gl2_init(const video_info_t *video)
       free(error_string);
       goto error;
    }
+
+#ifdef HAVE_GL2_XR
+   gl2_desktop_xr_start(gl);
+   if (gl->desktop_xr)
+      gl->desktop_xr->window_interval = interval;
+#endif
 
    /* Init leaves the core's context current for context_reset on this
     * thread; when the wrapper's ring will drive the core, the main
@@ -7456,6 +7871,18 @@ static uint32_t gl2_get_flags(void *data)
    if (gl && gl->scrgb.active)
       BIT32_SET(flags, GFX_CTX_FLAGS_SCREEN_10BPC_SOURCE);
 #endif
+#ifdef HAVE_GL2_XR
+   /* While a headset shows it, as the Quest's context says: gl2 draws
+    * the frame whole in the window, so touch, overlays and the UI follow
+    * it; the headset shows a tracked map's eyes from the frame's views,
+    * and an untracked map's screens from the window. */
+   if (     gl && gl->desktop_xr && !gl->scrgb.active
+         && gl_openxr_alive(gl->desktop_xr->host))
+   {
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS);
+      BIT32_SET(flags, GFX_CTX_FLAGS_VIDEO_VIEWS_FALLBACK);
+   }
+#endif
 
    BIT32_SET(flags, GFX_CTX_FLAGS_HARD_SYNC);
    BIT32_SET(flags, GFX_CTX_FLAGS_BLACK_FRAME_INSERTION);
@@ -7743,11 +8170,16 @@ static const video_poke_interface_t gl2_poke_interface = {
 #endif
    gl2_get_last_present_wait,
    NULL, /* set_view_count */
+#ifdef HAVE_GL2_XR
+   gl2_desktop_xr_context_destroying,
+   gl2_desktop_xr_refresh,
+#else
    NULL, /* hw_context_destroying */
 #if defined(HAVE_OPENXR) && defined(ANDROID) && defined(HAVE_OPENGLES3)
    gl2_get_headset_refresh,
 #else
    NULL, /* get_headset_refresh */
+#endif
 #endif
    gl2_set_frame_format,
 #ifdef HAVE_GL_TEXTURE_LEND
@@ -7909,12 +8341,19 @@ static bool gl2_read_viewport_hdr(void *data, uint16_t *buffer,
 static bool gl2_set_vr_content_info(void *data,
       const video_vr_content_info_t *info)
 {
+#ifdef HAVE_GL2_XR
+   /* Tracked content is drawn from the map by the headset's host. */
+   gl2_t *gl = (gl2_t*)data;
+   (void)info;
+   return gl && gl->desktop_xr;
+#else
    /* VR is only available while the OpenXR context owns a live session;
     * on the flat fallback context it must be reported unavailable. */
    bool live = gl_android_openxr_active();
    (void)data;
    gl_android_openxr_set_stereo(live && info && info->stereo_native);
    return live;
+#endif
 }
 #endif
 

@@ -48,6 +48,10 @@
  *   fail eyes               xrCreateSwapchain fails at the recommended
  *                           view size
  *   fail stage              xrCreateReferenceSpace has no STAGE
+ *   busy eyes               xrWaitSwapchainImage times out for a
+ *                           swapchain at the recommended view size, as
+ *                           while the compositor still reads its image;
+ *                           busy off: the runtime's own answer
  *   invalid stage <n>       the next session's first n locations in a
  *                           STAGE space come back without valid bits
  *   invalid views           xrLocateViews answers without valid bits
@@ -75,9 +79,16 @@
  *                           in LOCAL; in VIEW through the scripted head
  *   aim <left|right> off    that hand untracked
  *
+ * A session on an OpenGL binding (XR_MNDX_egl_enable's EGL or
+ * XR_KHR_opengl_enable's Xlib) has its images read on the thread that
+ * releases them, which holds the session's context: through a
+ * framebuffer of the layer's own, bottom row last, as the compositor
+ * shows a GL image. A read that fails is recorded as a capture_failed
+ * event, never as an image.
+ *
  * A changed script (a new mtime, inode or size) is applied line by
- * line. head, fail, sync, divide, rates and eyes stay in effect until a
- * later line of the same kind replaces them (head off, fail off). state
+ * line. head, fail, busy, sync, divide, rates and eyes stay in effect until
+ * a later line of the same kind replaces them (head off, fail off). state
  * and space fire once per change of the file. Every read starts from no
  * actions, no aims and valid views: a script is the whole controller
  * state. Action states and hand poses never come from the runtime.
@@ -94,8 +105,17 @@
 #include <time.h>
 #include <zlib.h>
 
+#include <dlfcn.h>
 #include <vulkan/vulkan.h>
+#include <EGL/egl.h>
+#include <X11/Xlib.h>
+#include <GL/gl.h>
+#include <GL/glext.h>
+#include <GL/glx.h>
 #define XR_USE_GRAPHICS_API_VULKAN
+#define XR_USE_GRAPHICS_API_OPENGL
+#define XR_USE_PLATFORM_EGL
+#define XR_USE_PLATFORM_XLIB
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
 #include <openxr/openxr_loader_negotiation.h>
@@ -136,6 +156,7 @@ struct chain
    uint32_t width, height, layers;
    int64_t format;
    VkImage images[MAX_IMAGES];
+   GLuint gl_images[MAX_IMAGES];    /* a GL session's */
    uint32_t num_images;
    uint32_t acquired[MAX_IMAGES];   /* indices, oldest first */
    uint32_t num_acquired;
@@ -162,6 +183,7 @@ static struct
    bool fail_waitframe;
    bool fail_instance;
    bool fail_eyes;
+   bool busy_eyes;
    bool fail_stage;
    unsigned invalid_stage_next;  /* for the next session */
    unsigned invalid_stage;       /* left in this one */
@@ -181,6 +203,25 @@ static struct
    unsigned divide;            /* one runtime frame in divide */
    float rates[MAX_RATES];     /* offered in the runtime's place */
    unsigned num_rates;
+
+   /* The session's graphics: 1 Vulkan, 2 OpenGL. */
+   int graphics;
+   struct
+   {
+      void (*GenFramebuffers)(GLsizei, GLuint*);
+      void (*DeleteFramebuffers)(GLsizei, const GLuint*);
+      void (*BindFramebuffer)(GLenum, GLuint);
+      void (*FramebufferTexture2D)(GLenum, GLenum, GLenum, GLuint, GLint);
+      GLenum (*CheckFramebufferStatus)(GLenum);
+      void (*ReadBuffer)(GLenum);
+      void (*ReadPixels)(GLint, GLint, GLsizei, GLsizei, GLenum, GLenum,
+            void*);
+      void (*PixelStorei)(GLenum, GLint);
+      void (*GetIntegerv)(GLenum, GLint*);
+      GLenum (*GetError)(void);
+   } gl;
+   GLuint gl_fbo;              /* the session context's own */
+   unsigned capture_failures;
 
    VkPhysicalDevice gpu;
    VkDevice device;
@@ -207,6 +248,7 @@ static struct
    PFN_xrDestroySwapchain DestroySwapchain;
    PFN_xrEnumerateSwapchainImages EnumerateSwapchainImages;
    PFN_xrAcquireSwapchainImage AcquireSwapchainImage;
+   PFN_xrWaitSwapchainImage WaitSwapchainImage;
    PFN_xrReleaseSwapchainImage ReleaseSwapchainImage;
    PFN_xrWaitFrame WaitFrame;
    PFN_xrBeginFrame BeginFrame;
@@ -407,6 +449,11 @@ static void script_fail(const char *args)
    L.fail_stage     = !strncmp(args, "stage", 5);
 }
 
+static void script_busy(const char *args)
+{
+   L.busy_eyes = !strncmp(args, "eyes", 4);
+}
+
 static void script_sync(const char *args)
 {
    L.sync_result = atoi(args);
@@ -548,6 +595,7 @@ static const struct
 } script_cmds[] = {
    { "head", script_head },
    { "fail", script_fail },
+   { "busy", script_busy },
    { "sync", script_sync },
    { "state", script_state },
    { "action", script_action },
@@ -605,6 +653,10 @@ static bool rgba8(int64_t format, bool *bgra)
       case VK_FORMAT_B8G8R8A8_UNORM:
       case VK_FORMAT_B8G8R8A8_SRGB:
          *bgra = true;
+         return true;
+      case GL_RGBA8:
+      case GL_SRGB8_ALPHA8:
+         *bgra = false;
          return true;
       default:
          break;
@@ -747,6 +799,104 @@ static void capture(struct chain *c, uint32_t index)
    c->has_pixels = true;
 }
 
+/* GL's procedures through the binding's own loader: EGL's from the
+ * binding, GLX's from the library the application already loaded. */
+static bool gl_load(PFN_xrEglGetProcAddressMNDX egl_proc)
+{
+   typedef void (*(*glx_proc_t)(const GLubyte*))(void);
+   glx_proc_t glx = NULL;
+#define LAYER_GL_LOAD(field, name) do { void (*fn_)(void) = egl_proc \
+      ? (void (*)(void))egl_proc(name) : (glx ? glx((const GLubyte*)name) : NULL); \
+      memcpy(&L.gl.field, &fn_, sizeof(fn_)); \
+      if (!fn_) return false; } while (0)
+   if (!egl_proc)
+      glx = (glx_proc_t)dlsym(RTLD_DEFAULT, "glXGetProcAddressARB");
+   LAYER_GL_LOAD(GenFramebuffers, "glGenFramebuffers");
+   LAYER_GL_LOAD(DeleteFramebuffers, "glDeleteFramebuffers");
+   LAYER_GL_LOAD(BindFramebuffer, "glBindFramebuffer");
+   LAYER_GL_LOAD(FramebufferTexture2D, "glFramebufferTexture2D");
+   LAYER_GL_LOAD(CheckFramebufferStatus, "glCheckFramebufferStatus");
+   LAYER_GL_LOAD(ReadBuffer, "glReadBuffer");
+   LAYER_GL_LOAD(ReadPixels, "glReadPixels");
+   LAYER_GL_LOAD(PixelStorei, "glPixelStorei");
+   LAYER_GL_LOAD(GetIntegerv, "glGetIntegerv");
+   LAYER_GL_LOAD(GetError, "glGetError");
+#undef LAYER_GL_LOAD
+   return true;
+}
+
+static void capture_failed(struct chain *c, GLenum status, GLenum error)
+{
+   c->has_pixels = false;
+   L.capture_failures++;
+   if (L.out)
+   {
+      fprintf(L.out, "{\"ev\":\"capture_failed\",\"sc\":%d,"
+            "\"status\":%u,\"error\":%u,\"t_us\":%lld}\n", c->id,
+            (unsigned)status, (unsigned)error, now_us());
+      fflush(L.out);
+   }
+}
+
+/* Caller holds L.lock, on the thread releasing the image, the session's
+ * context current. The application's read framebuffer, its read buffer
+ * and pack alignment are as they were. */
+static void capture_gl(struct chain *c, uint32_t index)
+{
+   bool bgra;
+   uint32_t y;
+   GLenum status = 0, error;
+   GLint read_fbo = 0, pack = 4;
+   size_t row  = (size_t)c->width * 4;
+   size_t size = row * c->height;
+   unsigned char *tmp;
+
+   if (     L.graphics != 2 || !L.snap_every || index >= c->num_images
+         || c->layers != 1 || !rgba8(c->format, &bgra))
+      return;
+   if (!c->pixels || c->size != size)
+   {
+      free(c->pixels);
+      c->size = 0;
+      if (!(c->pixels = malloc(size)))
+         return;
+      c->size = size;
+   }
+   if (!(tmp = malloc(size)))
+      return;
+   while (L.gl.GetError() != GL_NO_ERROR) { }
+   L.gl.GetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &read_fbo);
+   L.gl.GetIntegerv(GL_PACK_ALIGNMENT, &pack);
+   if (!L.gl_fbo)
+      L.gl.GenFramebuffers(1, &L.gl_fbo);
+   L.gl.BindFramebuffer(GL_READ_FRAMEBUFFER, L.gl_fbo);
+   L.gl.FramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, c->gl_images[index], 0);
+   status = L.gl.CheckFramebufferStatus(GL_READ_FRAMEBUFFER);
+   if (status == GL_FRAMEBUFFER_COMPLETE)
+   {
+      L.gl.ReadBuffer(GL_COLOR_ATTACHMENT0);
+      L.gl.PixelStorei(GL_PACK_ALIGNMENT, 1);
+      L.gl.ReadPixels(0, 0, (GLsizei)c->width, (GLsizei)c->height, GL_RGBA,
+            GL_UNSIGNED_BYTE, tmp);
+   }
+   L.gl.FramebufferTexture2D(GL_READ_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+         GL_TEXTURE_2D, 0, 0);
+   L.gl.BindFramebuffer(GL_READ_FRAMEBUFFER, (GLuint)read_fbo);
+   L.gl.PixelStorei(GL_PACK_ALIGNMENT, pack);
+   error = L.gl.GetError();
+   if (status != GL_FRAMEBUFFER_COMPLETE || error != GL_NO_ERROR)
+      capture_failed(c, status, error);
+   else
+   {
+      /* GL's first row is the image's bottom: the PNG's is its top. */
+      for (y = 0; y < c->height; y++)
+         memcpy(c->pixels + y * row, tmp + (c->height - 1 - y) * row, row);
+      c->has_pixels = true;
+   }
+   free(tmp);
+}
+
 static void put_be32(unsigned char *p, uint32_t v)
 {
    p[0] = (unsigned char)(v >> 24);
@@ -850,13 +1000,33 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateSession(XrInstance instance,
       return res;
    pthread_mutex_lock(&L.lock);
    for (p = (const XrBaseInStructure*)info->next; p; p = p->next)
-      if (p->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR)
+      if (     p->type == XR_TYPE_GRAPHICS_BINDING_EGL_MNDX
+            || p->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR)
+      {
+         PFN_xrEglGetProcAddressMNDX egl_proc = NULL;
+         if (p->type == XR_TYPE_GRAPHICS_BINDING_EGL_MNDX)
+            egl_proc = ((const XrGraphicsBindingEGLMNDX*)p)->getProcAddress;
+         L.session            = *session;
+         L.invalid_stage      = L.invalid_stage_next;
+         L.invalid_stage_next = 0;
+         L.graphics           = gl_load(egl_proc) ? 2 : 0;
+         L.gl_fbo             = 0;
+         if (L.out)
+         {
+            fprintf(L.out, "{\"ev\":\"session\",\"t_us\":%lld,"
+                  "\"graphics\":\"%s\",\"capture\":%s}\n", now_us(),
+                  egl_proc ? "egl" : "glx", L.graphics ? "true" : "false");
+            fflush(L.out);
+         }
+      }
+      else if (p->type == XR_TYPE_GRAPHICS_BINDING_VULKAN_KHR)
       {
          const XrGraphicsBindingVulkanKHR *b =
             (const XrGraphicsBindingVulkanKHR*)p;
          L.session            = *session;
          L.invalid_stage      = L.invalid_stage_next;
          L.invalid_stage_next = 0;
+         L.graphics     = 1;
          L.gpu          = b->physicalDevice;
          L.device       = b->device;
          L.queue_family = b->queueFamilyIndex;
@@ -871,6 +1041,17 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_DestroySession(XrSession session)
 {
    int i;
    pthread_mutex_lock(&L.lock);
+   /* The session's context is still current: its framebuffer goes now. */
+   if (L.graphics == 2 && L.gl_fbo)
+      L.gl.DeleteFramebuffers(1, &L.gl_fbo);
+   if (L.out)
+   {
+      fprintf(L.out, "{\"ev\":\"session_end\",\"t_us\":%lld}\n",
+            now_us());
+      fflush(L.out);
+   }
+   L.gl_fbo   = 0;
+   L.graphics = 0;
    /* Before the application destroys its device. */
    if (L.device)
    {
@@ -1211,7 +1392,23 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_EnumerateSwapchainImages(
    uint32_t i;
    struct chain *c;
    XrResult res = L.EnumerateSwapchainImages(sc, cap, count, images);
-   if (XR_FAILED(res) || !images || images->type != XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR)
+   if (XR_FAILED(res) || !images)
+      return res;
+   if (images->type == XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR)
+   {
+      pthread_mutex_lock(&L.lock);
+      if ((c = find_chain(sc)))
+      {
+         const XrSwapchainImageOpenGLKHR *gl =
+            (const XrSwapchainImageOpenGLKHR*)images;
+         c->num_images = *count < MAX_IMAGES ? *count : MAX_IMAGES;
+         for (i = 0; i < c->num_images; i++)
+            c->gl_images[i] = gl[i].image;
+      }
+      pthread_mutex_unlock(&L.lock);
+      return res;
+   }
+   if (images->type != XR_TYPE_SWAPCHAIN_IMAGE_VULKAN_KHR)
       return res;
    pthread_mutex_lock(&L.lock);
    if ((c = find_chain(sc)))
@@ -1239,6 +1436,21 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_AcquireSwapchainImage(XrSwapchain sc
    return res;
 }
 
+static XRAPI_ATTR XrResult XRAPI_CALL layer_WaitSwapchainImage(XrSwapchain sc,
+      const XrSwapchainImageWaitInfo *info)
+{
+   bool busy;
+   struct chain *c;
+   pthread_mutex_lock(&L.lock);
+   script_poll();
+   busy = L.busy_eyes && (c = find_chain(sc)) && c->width == L.eye_w
+      && c->height == L.eye_h;
+   pthread_mutex_unlock(&L.lock);
+   if (busy)
+      return XR_TIMEOUT_EXPIRED;
+   return L.WaitSwapchainImage(sc, info);
+}
+
 static XRAPI_ATTR XrResult XRAPI_CALL layer_ReleaseSwapchainImage(XrSwapchain sc,
       const XrSwapchainImageReleaseInfo *info)
 {
@@ -1250,7 +1462,10 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_ReleaseSwapchainImage(XrSwapchain sc
       memmove(c->acquired, c->acquired + 1,
             (c->num_acquired - 1) * sizeof(c->acquired[0]));
       c->num_acquired--;
-      capture(c, index);
+      if (L.graphics == 2)
+         capture_gl(c, index);
+      else
+         capture(c, index);
       if (L.out)
       {
          fprintf(L.out, "{\"ev\":\"release\",\"sc\":%d,\"t_us\":%lld}\n",
@@ -1823,6 +2038,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_GetInstanceProcAddr(XrInstance insta
    HOOK(DestroySwapchain)
    HOOK(EnumerateSwapchainImages)
    HOOK(AcquireSwapchainImage)
+   HOOK(WaitSwapchainImage)
    HOOK(ReleaseSwapchainImage)
    HOOK(WaitFrame)
    HOOK(EndFrame)
@@ -1888,6 +2104,7 @@ static XRAPI_ATTR XrResult XRAPI_CALL layer_CreateApiLayerInstance(
    NEXT(DestroySwapchain);
    NEXT(EnumerateSwapchainImages);
    NEXT(AcquireSwapchainImage);
+   NEXT(WaitSwapchainImage);
    NEXT(ReleaseSwapchainImage);
    NEXT(WaitFrame);
    NEXT(BeginFrame);

@@ -912,7 +912,7 @@ else
 fi
 
 check_platform Linux OPENXR 'OpenXR is' true
-check_enabled VULKAN OPENXR OpenXR 'Vulkan is' false
+check_enabled 'VULKAN OPENGL OPENGL_CORE' OPENXR OpenXR 'Vulkan and OpenGL are' false
 check_enabled THREADS OPENXR OpenXR 'Threads are' false
 
 if [ "$HAVE_MENU" != 'no' ]; then

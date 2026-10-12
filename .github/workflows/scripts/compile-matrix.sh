@@ -480,6 +480,19 @@ platform_video "ctx: wayland gl" "-DHAVE_WAYLAND -DHAVE_EGL -DHAVE_OPENGL" "" \
    gfx/drivers_context/wayland_ctx.c "$WL_H"
 platform_video "ctx: wayland vulkan" "-DHAVE_WAYLAND -DHAVE_VULKAN" "" \
    gfx/drivers_context/wayland_vk_ctx.c "$WL_H /usr/include/vulkan/vulkan.h"
+# The desktop GL headset host is built where a GL driver has an EGL or a
+# GLX context driver. Every job that builds it has both, so each
+# binding gets a lane without the other.
+XRGL="-DHAVE_OPENXR -DHAVE_OPENXR_GL -DHAVE_OPENGL"
+XRINC="-Ideps/openxr/include"
+platform_video "openxr gl host, glx only" "$XRGL -DHAVE_X11" "$XRINC" \
+   gfx/common/gl_openxr.c /usr/include/GL/glx.h
+platform_video "openxr gl binding, glx only" "$XRGL -DHAVE_X11" "$XRINC" \
+   gfx/common/openxr_binding_gl.c /usr/include/GL/glx.h
+platform_video "openxr gl host, egl only" "$XRGL -DHAVE_EGL" "$XRINC" \
+   gfx/common/gl_openxr.c /usr/include/EGL/egl.h
+platform_video "openxr gl binding, egl only" "$XRGL -DHAVE_EGL" "$XRINC" \
+   gfx/common/openxr_binding_gl.c /usr/include/EGL/egl.h
 # The shared Wayland code the two contexts above call into. It was the
 # only Wayland unit no lane compiled, which is how four declarations
 # after a statement sat in it. Its libdecor half is a second lane: the

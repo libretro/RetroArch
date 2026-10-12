@@ -8,6 +8,15 @@ CFLAGS += -std=gnu99 -O1 -g -Wall -Wno-unused-function -Wno-unused-parameter \
           -I$(ROOT) -I$(ROOT)/libretro-common/include -I$(ROOT)/deps \
           -I$(ROOT)/deps/openxr/include -I$(ROOT)/gfx/include
 
+# The desktop GL binding's native half, on a Linux target with the
+# EGL, X11 and GL headers; the common tests build without it elsewhere.
+ifneq ($(findstring linux,$(shell $(CC) -dumpmachine 2>/dev/null)),)
+ifeq ($(shell pkg-config --exists egl x11 gl 2>/dev/null && echo y),y)
+   CFLAGS += -DHAVE_OPENXR_GL -DHAVE_EGL -DHAVE_X11 \
+             $(shell pkg-config --cflags egl x11 gl)
+endif
+endif
+
 ifneq ($(SANITIZER),)
    CFLAGS  += -fsanitize=$(SANITIZER) -fno-omit-frame-pointer
    LDFLAGS += -fsanitize=$(SANITIZER)
@@ -27,7 +36,8 @@ SRCS := openxr_core_test.c \
 all: $(TARGET)
 
 $(TARGET): $(SRCS) $(wildcard $(ROOT)/gfx/common/openxr_*.c) \
-           $(ROOT)/gfx/common/vulkan_openxr.c
+           $(ROOT)/gfx/common/vulkan_openxr.c $(ROOT)/gfx/common/openxr_ring.h \
+           $(wildcard $(ROOT)/gfx/common/gl_openxr.[ch])
 	$(CC) $(CFLAGS) -o $@ $(SRCS) $(LDFLAGS) -lm -lpthread
 
 check: all

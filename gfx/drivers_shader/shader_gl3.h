@@ -192,6 +192,8 @@ void gl3_filter_chain_build_viewport_pass_again(
 gl3_filter_chain_t *gl3_filter_chain_create_default(
       enum glslang_filter_chain_filter filter);
 
+gl3_filter_chain_t *gl3_filter_chain_create_shrink(void);
+
 /* @frame_rect: frames may come inside a larger texture (padded_dims);
  * the passes are built to read them there where the preset allows,
  * rather than have each copied out. */

@@ -7,7 +7,7 @@ samples/openxr/test_layer, which records every xrEndFrame's quads and
 saves the images they show. Not run in CI: it needs a GPU, gamescope,
 Monado, and a RetroArch built with HAVE_OPENXR.
 
-Usage: run.py <retroarch> <out dir> <monado.env> [--validate] [case ...]
+Usage: run.py <retroarch> <out dir> <monado.env> [--validate|--gl] [case ...]
 
 Build the test core and layer first (make -C samples/cores/video_views,
 make -C samples/openxr/test_layer). monado.env.example here runs
@@ -24,12 +24,16 @@ validation-baseline.txt here: the messages raised without RetroArch's
 headset code, one per line, a VUID and then text the message must
 contain (an object's name), so a VUID alone does not hide RetroArch's
 own.
+--gl runs the desktop GL lanes instead: chosen cases cloned for glcore on
+EGL/Wayland and on GLX, and gl on EGL/X11, each named <lane>-<case>; the
+layer reads their GL images itself. Validation is Vulkan's alone.
 --validate runs RetroArch under the Vulkan validation layer, which must
 be installed, and fails a case on any other message, or when none of the
 baseline's appear: the window's own come every run, so without them the
 layer did not load.
 """
 
+import copy
 import ctypes
 import json
 import math
@@ -143,6 +147,11 @@ class Result(object):
         self.marks = {}
         self.shot = None
         self.events = []
+        # A pixel of the window inside the 2D map's top screen.
+        self.top_px = (800, 240)
+        # Seconds after a video reinit's hotkey that its new session's
+        # first frames are not held to what the session then shows.
+        self.reinit_grace = 0.5
 
 
 def load(res):
@@ -217,6 +226,25 @@ def write_overlay(d):
             'input_overlay_opacity': '1.0'}
 
 
+def capture_errors(res, case):
+    """A GL lane's session on the binding its context driver makes, and
+    every image the layer read."""
+    errors = []
+    failed = [e for e in res.events if e.get('ev') == 'capture_failed']
+    if failed:
+        errors.append('%d GL images could not be read (first: swapchain %d, '
+                      'status %d, error %d)' % (len(failed), failed[0]['sc'],
+                                                failed[0]['status'],
+                                                failed[0]['error']))
+    if case.get('lane'):
+        want = 'glx' if case.get('context') == 'x' else 'egl'
+        got = [e.get('graphics') for e in res.events
+               if e.get('ev') == 'session']
+        if got and any(g != want for g in got):
+            errors.append('sessions on %s, want %s' % (', '.join(got), want))
+    return errors
+
+
 def run_case(retroarch, root, monado, case, validate):
     d = os.path.realpath(os.path.join(root, case['name']))
     if os.path.commonpath([root, d]) != root or d == root:
@@ -232,9 +260,22 @@ def run_case(retroarch, root, monado, case, validate):
     if case.get('overlay'):
         settings.update(write_overlay(d))
     settings.update(case.get('settings', {}))
+    if case.get('context'):
+        settings['video_context_driver'] = case['context']
+    if case.get('context') == 'wayland':
+        # gamescope sends its own Wayland clients no fullscreen size: a
+        # window of the output's instead. A build with SDL3 takes the
+        # size with the saved position.
+        size = case.get('screen', (W, H))
+        settings.update({'video_fullscreen': 'false',
+                         'video_window_show_decorations': 'false',
+                         'video_window_custom_size_enable': 'true',
+                         'video_window_save_positions': 'true',
+                         'video_windowed_position_width': str(size[0]),
+                         'video_windowed_position_height': str(size[1])})
     port = free_port()
     cfg = os.path.join(d, 'retroarch.cfg')
-    write_cfg(cfg, d, 'vulkan', settings, port)
+    write_cfg(cfg, d, case.get('driver', 'vulkan'), settings, port)
     options = {'video_views_test_map': case.get('map', '3ds'),
                'video_views_test_hw': 'off'}
     options.update(case.get('options', {}))
@@ -281,15 +322,22 @@ def run_case(retroarch, root, monado, case, validate):
         helper = ' %s %s --unfocus-when %s &' % (
             shlex.quote(sys.executable), shlex.quote(os.path.abspath(__file__)),
             shlex.quote(os.path.join(d, 'unfocus')))
+    # A Wayland lane's window is gamescope's own client, on its socket.
+    wayland = case.get('context') == 'wayland'
+    own_socket = (' [ -n "${GAMESCOPE_WAYLAND_DISPLAY:-}" ] || exit 97;'
+                  ' export WAYLAND_DISPLAY="$GAMESCOPE_WAYLAND_DISPLAY";'
+                  if wayland else '')
     guard = ('case "$DISPLAY" in ""|:0) echo "refusing DISPLAY=$DISPLAY" >&2;'
              ' exit 99;; esac; cd ' + shlex.quote(d) + ' || exit 98;' + helper +
              ' case "${GAMESCOPE_WAYLAND_DISPLAY:-}" in ""|/*) ;;'
              ' *) GAMESCOPE_WAYLAND_DISPLAY="$XDG_RUNTIME_DIR/'
              '$GAMESCOPE_WAYLAND_DISPLAY"; export GAMESCOPE_WAYLAND_DISPLAY;;'
-             ' esac; export ' + exports + '; exec "$0" "$@"')
+             ' esac; export ' + exports + ';' + own_socket +
+             ' exec "$0" "$@"')
 
     w, h = case.get('screen', (W, H))
-    cmd = ['gamescope', '--backend', 'headless',
+    cmd = ['gamescope', '--backend', 'headless'] + (
+           ['--expose-wayland'] if wayland else []) + [
            '-w', str(w), '-h', str(h), '-W', str(w), '-H', str(h),
            '-r', '60', '--', 'sh', '-c', guard,
            retroarch, '--config', cfg, '-L', case.get('core', CORE),
@@ -302,6 +350,8 @@ def run_case(retroarch, root, monado, case, validate):
     env = isolated_env()
     svc = svc_log = log = p = None
     res = Result(d)
+    res.top_px = case.get('top_px', res.top_px)
+    res.reinit_grace = case.get('reinit_grace', res.reinit_grace)
     try:
         if monado.get('MODE') == 'service':
             svc_env = dict(env)
@@ -478,12 +528,13 @@ def check_paused(res, start, end):
     return []
 
 
-def check_tracked(space='local'):
+def check_tracked(space='local', beside=True):
     """HMD reaches the core, its tracked map is taken, and its two eyes
     are a projection behind the other screen: one swapchain per eye at
     the recommended size, each eye drawn 1:1 from its top-left, with the
     poses and fields of view the core drew that frame from, in the space
-    it asked for (LOCAL where the runtime has no STAGE)."""
+    it asked for (LOCAL where the runtime has no STAGE). beside False:
+    the eyes are all the headset shows, as gl's window gives way."""
     def check(res):
         errors = []
         size = tracked_size(res)
@@ -534,7 +585,11 @@ def check_tracked(space='local'):
             if not near(c, WHITE):
                 errors.append('%s top-left is %s, want white' % (what, c))
         q = [x for x in quads(fr) if not x['flags'] & BLEND]
-        if [x['eye'] for x in q] != ['both']:
+        if not beside:
+            if quads(fr):
+                errors.append('quads beside the projection: %s'
+                              % [x['eye'] for x in quads(fr)])
+        elif [x['eye'] for x in q] != ['both']:
             errors.append('screens beside the projection: %s'
                           % [x['eye'] for x in q])
         else:
@@ -572,9 +627,9 @@ def check_tracked(space='local'):
     return check
 
 
-def check_tracked_flat(res):
+def check_tracked_flat(res, native=False):
     """A core's eyes going flat while it runs: the projection goes, and
-    their screen is a quad pair again."""
+    their screen is a quad pair again. native: as check_screens's."""
     flat = res.marks.get('flat', 0) * 1e6
     errors = []
     if not any(projections(f) for f in res.frames if f['t_us'] < flat):
@@ -587,7 +642,7 @@ def check_tracked_flat(res):
     fr = last_snap(res)
     if not after or not fr or fr['t_us'] <= flat + 1e6:
         return errors + ['no snapped frame after the core went flat']
-    return errors + check_screens()(res)
+    return errors + check_screens(native=native)(res)
 
 
 SLOT_REFUSED = re.compile(r'\[OpenXR\] No (\d+)x(\d+) swapchain with 2 layer')
@@ -625,10 +680,10 @@ def check_tracked_refused(res):
     return []
 
 
-def check_flat_size(res):
+def check_flat_size(res, native=False):
     """A map without TRACKED under HMD is screens, as before, and the core
-    is still given the eye size."""
-    errors = check_screens()(res)
+    is still given the eye size. native: as check_screens's."""
+    errors = check_screens(native=native)(res)
     size = tracked_size(res)
     if not size or not size[0] or not size[1]:
         errors.append('no eye size with HMD: %s' % HMD_RE.findall(res.log))
@@ -688,10 +743,11 @@ def same_frame_errors(res):
     return []
 
 
-def check_tracked_recenter(res):
+def check_tracked_recenter(res, screens=True):
     """The Recenter hotkey moves the screens and a seated world together,
     in one headset frame: the core hears RECENTERED once, and the
-    projection goes on."""
+    projection goes on. screens False: the eyes are all there is, as
+    with gl, and the world alone moves."""
     errors = []
     if 'Headset recenter requested' not in res.log:
         errors.append('the network command did not reach the hotkey')
@@ -703,19 +759,35 @@ def check_tracked_recenter(res):
             if f['t_us'] > res.marks['recenter'] * 1e6 + 1e6]
     if not late:
         errors.append('no projection after the recenter')
-    return errors + same_frame_errors(res)
+    if screens:
+        return errors + same_frame_errors(res)
+    asked = res.marks['recenter'] * 1e6
+    was = [projections(f)[0].get('stage') for f in shown
+           if f['t_us'] < asked]
+    now = [projections(f)[0].get('stage') for f in late]
+    if not was or not now or not was[-1] or not now[-1]:
+        errors.append('the eyes\' space was not located in STAGE on both '
+                      'sides of the recenter')
+    elif same_place([was[-1]], [now[-1]]):
+        errors.append('the seated world did not move with the recenter')
+    return errors
+
+
+def check_tracked_recenter_eyes(res):
+    return check_tracked_recenter(res, screens=False)
 
 
 # The anchor at the scripted head 0.5, 0.2, 0.3, turned 90 degrees left.
 TURNED = [0.5, 0.2, 0.3, 0.0, 0.70711, 0.0, 0.70711]
 
 
-def check_tracked_recenter_paused(space):
+def check_tracked_recenter_paused(space, screens=True):
     """A recenter while tracked content is paused keeps its frozen frame
     on screen, with the poses the core drew it from. In space 'local' the
     seated world moves with the screens to the turned head's anchor, in
     the same headset frame; in 'stage' it stays in the room. The core
-    hears RECENTERED once."""
+    hears RECENTERED once. screens False: the eyes are all there is, as
+    with gl."""
     def check(res):
         errors = []
         if 'Headset recenter requested' not in res.log:
@@ -732,7 +804,8 @@ def check_tracked_recenter_paused(space):
             errors.append('%d frames without the projection while paused, '
                           'first %d' % (len(blank), blank[0]))
         before = [f for f in res.frames
-                  if f['t_us'] < asked and projections(f) and quads(f)]
+                  if f['t_us'] < asked and projections(f)
+                  and (quads(f) or not screens)]
         if not before or not projections(before[-1])[0].get('stage'):
             return errors + ['no projection located in STAGE before the '
                              'recenter']
@@ -762,21 +835,22 @@ def check_tracked_recenter_paused(space):
         if snapped:
             errors += shown_as_drawn(res, snapped[-1])
         # The screens went to the turned anchor either way.
-        q0 = quads(before[-1])[0]
-        q1 = [x for x in quads(paused[-1])
-              if x['eye'] == q0['eye'] and x['flags'] == q0['flags']]
-        moved = in_stage({'stage': TURNED}, q0)
-        if not q1 or not same_place([moved], [q1[0]['pose']]):
-            errors.append('the screen at %s did not go to %s with the '
-                          'recenter: %s' % (q0['pose'], moved,
-                                            q1 and q1[0]['pose']))
+        if screens:
+            q0 = quads(before[-1])[0]
+            q1 = [x for x in quads(paused[-1])
+                  if x['eye'] == q0['eye'] and x['flags'] == q0['flags']]
+            moved = in_stage({'stage': TURNED}, q0)
+            if not q1 or not same_place([moved], [q1[0]['pose']]):
+                errors.append('the screen at %s did not go to %s with the '
+                              'recenter: %s' % (q0['pose'], moved,
+                                                q1 and q1[0]['pose']))
         if not [f for f in res.frames
                 if f['t_us'] > resumed + 1e6 and projections(f)]:
             errors.append('no projection after the unpause')
         if recenter_flags(res) != 1:
             errors.append('the core saw RECENTERED %d times, want 1'
                           % recenter_flags(res))
-        if space == 'local':
+        if space == 'local' and screens:
             errors += same_frame_errors(res)
         return errors
     return check
@@ -1011,8 +1085,12 @@ def check_tracked_reinit_paused(shown, space):
             errors.append('%d error lines, first: %s' % (len(bad), bad[0]))
         reinit = res.marks['reinit'] * 1e6
         resumed = res.marks['resume'] * 1e6
+        # A new session's first frame can show the eyes as a quad pair,
+        # on any driver, while STAGE has not located the kept views yet:
+        # the grace covers the restart and that frame.
         paused = [f for f in res.frames
-                  if reinit + 5e5 < f['t_us'] < resumed and f['layers']]
+                  if reinit + res.reinit_grace * 1e6 < f['t_us'] < resumed
+                  and f['layers']]
         if not paused:
             return errors + ['no frames between the reinit and the unpause']
         shown_proj = [f for f in paused if projections(f)]
@@ -1135,7 +1213,9 @@ def image_size(res, q, native=None, distance=1.8):
     return errors
 
 
-def check_screens(swap=False, horizontal=False):
+def check_screens(swap=False, horizontal=False, native=False):
+    """native: the images are never smaller than their views, as gl's
+    cuts of its window are."""
     def check(res):
         fr = last_snap(res)
         if not fr:
@@ -1161,9 +1241,9 @@ def check_screens(swap=False, horizontal=False):
         if not at(bq, want) or not sized(bq, (1.28, 0.96)):
             errors.append('bottom screen at %s size %s, want %s'
                           % (bq['pose'][:3], bq['size'], want))
-        errors += image_size(res, lq)
-        errors += image_size(res, rq)
-        errors += image_size(res, bq)
+        errors += image_size(res, lq, (400, 240) if native else None)
+        errors += image_size(res, rq, (400, 240) if native else None)
+        errors += image_size(res, bq, (320, 240) if native else None)
         if any(res.chains.get(x['sc'], {}).get('layers') != 1
                for x in (lq, rq)):
             errors.append('the eyes\' images are not one layer each')
@@ -1562,9 +1642,10 @@ def check_runtime_recenter(res):
     return errors
 
 
-def check_pacing(res):
+def check_pacing(res, still=True):
     """The headset's frames keep its own rate while the core is paused,
-    and no new images are drawn for it."""
+    and no new images are drawn for it. still False: images may come all
+    the same, as gl's window is copied whenever it is presented."""
     if 'paused' not in res.marks or 'resumed' not in res.marks:
         return ['the run did not pause']
     t0 = (res.marks['paused'] + 0.5) * 1e6
@@ -1581,12 +1662,16 @@ def check_pacing(res):
     if abs(len(frames) - want) > 0.15 * want:
         errors.append('%d headset frames while paused, want about %.0f'
                       % (len(frames), want))
-    if len(released) > 2:
+    if still and len(released) > 2:
         errors.append('%d images released while paused, want none'
                       % len(released))
     if not before:
         errors.append('no images were released before the pause')
     return errors
+
+
+def check_pacing_live(res):
+    return check_pacing(res, still=False)
 
 
 def check_focus(res):
@@ -1614,7 +1699,8 @@ def window_is(res, want, what):
     if not res.shot:
         return ['no screenshot']
     w, h, bpp, rows = read_png(res.shot)
-    got = tuple(rows[240][800 * bpp:800 * bpp + 3])
+    x, y = res.top_px
+    got = tuple(rows[y][x * bpp:x * bpp + 3])
     if not near(got, want):
         return ['the window shows %s at the top screen, want %s (%s)'
                 % (got, want, what)]
@@ -3346,8 +3432,12 @@ def headset_hz(res, t0, t1):
             periods[len(periods) // 2] / 1e6)
 
 
-# The window's swapchain going non-blocking under vsync (vk_x).
-MAILBOX = 'VK_DATA_FLAG_EMULATE_MAILBOX requires non-zero swap_interval'
+# The window presenting without waiting under vsync: Vulkan's swapchain
+# going non-blocking (vk_x), or a GL driver's swap interval of 0.
+UNWAITED = ('VK_DATA_FLAG_EMULATE_MAILBOX requires non-zero swap_interval',
+            '[GLCore] Headset pacing on: the window presents without '
+            'waiting.',
+            '[GL] Headset pacing on: the window presents without waiting.')
 TICKS_LINE = "[OpenXR] Pacing on the headset's frames."
 CLOCK_LINE = ('[OpenXR] Pacing on the clock while the headset does not '
               'show the session.')
@@ -3440,7 +3530,7 @@ def check_paced(n, hz, end=None):
         errors = pace_errors(res, t0, t1, n)
         if paced_line(hz, n) not in res.log:
             errors.append('no "%s" in the log' % paced_line(hz, n))
-        if MAILBOX not in res.log:
+        if not any(line in res.log for line in UNWAITED):
             errors.append('the window never presented without waiting')
         log = res.log.split(end)[0] if end else res.log
         if CLOCK_LINE in log:
@@ -4458,6 +4548,537 @@ class XFocusChangeEvent(ctypes.Structure):
                 ('detail', ctypes.c_int), ('pad', ctypes.c_long * 24)]
 
 
+def check_session_fails_gl(res):
+    """A GL host's refused session: one line, no video rebuild, the
+    window as it was."""
+    errors = []
+    if '[OpenXR] Continuing without headset output.' not in res.log:
+        errors.append('no "Continuing without headset output" line')
+    for line in ('[OpenXR] Rebuilding video without headset output.',
+                 '[Video] Reinitialising the video driver at its request.'):
+        if line in res.log:
+            errors.append('unexpected "%s"' % line)
+    if any(quads(f) for f in res.frames):
+        errors.append('quads were submitted after the session failed')
+    return errors + window_is(res, GREEN, 'the 2D map')
+
+
+def check_menu_reopen(res):
+    """A menu opened again after a while closed shows an image released
+    since it reopened, never the last one's, and nothing while closed."""
+    if 'closed' not in res.marks or 'reopen' not in res.marks:
+        return ['marks missing']
+    closed = res.marks['closed'] * 1e6 + 500000
+    reopen = res.marks['reopen'] * 1e6
+    errors = []
+    hidden = [f for f in res.frames if closed < f['t_us'] < reopen
+              and menus(f)]
+    if hidden:
+        errors.append('%d frames showed the menu while it was closed'
+                      % len(hidden))
+    shown = [f for f in res.frames if f['t_us'] > reopen and menus(f)]
+    if not shown:
+        return errors + ['the menu never came back']
+    sc = menus(shown[0])[0]['sc']
+    fresh = [r for r in res.releases
+             if r['sc'] == sc and reopen < r['t_us'] <= shown[0]['t_us']]
+    if not fresh:
+        errors.append('the menu came back with an image released before '
+                      'it reopened')
+    return errors
+
+
+GL_DESTROY = re.compile(r'\[video_views\] context_destroy at (\d+) us')
+
+
+def check_hw_teardown_gl(res):
+    """A GL core's context_destroy, at a video reinit and at unload: the
+    XR thread, which holds a context in the core's share group, has ended
+    its session first, and the headset's frames start again only in the
+    next one."""
+    times = [int(t) for t in GL_DESTROY.findall(res.log)]
+    if len(times) != 2:
+        return ['%d context_destroy calls, want 2 (reinit, unload)'
+                % len(times)]
+    made = [e['t_us'] for e in events(res, 'session')]
+    ended = [e['t_us'] for e in events(res, 'session_end')]
+    errors = []
+    for i, t in enumerate(times):
+        what = ('reinit', 'unload')[i]
+        alive = (sum(1 for x in made if x < t)
+                 - sum(1 for x in ended if x < t))
+        if alive:
+            errors.append('%d session alive at the core\'s context_destroy '
+                          '(%s)' % (alive, what))
+        later = [x for x in made if x > t]
+        if not later:
+            errors.append('no session after the %s' % what)
+            continue
+        between = [f for f in res.frames if t <= f['t_us'] < later[0]]
+        if between:
+            errors.append('%d headset frames between the core\'s '
+                          'context_destroy and the next session (%s)'
+                          % (len(between), what))
+        end = times[i + 1] if i + 1 < len(times) else float('inf')
+        if not [f for f in res.frames if later[0] < f['t_us'] < end]:
+            errors.append('no headset frames after the %s' % what)
+    return errors
+
+
+def check_tracked_busy(res):
+    """Two recenters while the compositor keeps the eyes' images: the
+    headset goes on showing the image it has with the poses that drew
+    it, never a later frame's, until a new image is released; then that
+    one with its own. The core hears RECENTERED for each."""
+    if marks_missing(res, 'busy', 'recenter', 'free'):
+        return ['the run did not reach its marks']
+    errors = []
+    n = recenter_flags(res)
+    if n != 2:
+        errors.append('the core saw RECENTERED %d times, want 2' % n)
+    size = tracked_size(res)
+    if not size:
+        return errors + ['the core never saw HMD']
+    t0, t1 = res.marks['busy'] * 1e6 + 5e5, res.marks['free'] * 1e6
+    held = [f for f in res.frames if t0 < f['t_us'] < t1 and f['layers']]
+    blank = [f['n'] for f in held if not projections(f)]
+    if blank:
+        errors.append('%d frames without the projection while its images '
+                      'were busy, first %d' % (len(blank), blank[0]))
+    snapped = [f for f in held if f['snap'] and projections(f)]
+    if not snapped:
+        return errors + ['no snapped projection while the eyes were busy']
+    tags, eyes, wrong = set(), set(), []
+    for f in snapped:
+        views = projections(f)[0]['views']
+        wrong += ['frame %d: %s' % (f['n'], e)
+                  for e in shown_as_drawn(res, f)]
+        tags |= set(frame_tag(image(res, f, v), v, size) for v in views)
+        eyes |= set(v['sc'] for v in views)
+    errors += wrong[:4]
+    if len(tags) != 1 or None in tags:
+        errors.append('the eyes changed while their images were busy: '
+                      'frames %s' % sorted(tags, key=str))
+    released = [r for r in res.releases
+                if r['sc'] in eyes and t0 < r['t_us'] < t1]
+    if released:
+        errors.append('%d eye images released while busy: the case did not '
+                      'hold them' % len(released))
+    after = [f for f in res.frames
+             if f['t_us'] > t1 + 1e6 and f['snap'] and projections(f)]
+    if not after:
+        return errors + ['no snapped projection once the eyes were free']
+    errors += shown_as_drawn(res, after[-1])
+    last = set(frame_tag(image(res, after[-1], v), v, size)
+               for v in projections(after[-1])[0]['views'])
+    if last & tags:
+        errors.append('the eyes still show frame %s once free'
+                      % sorted(last, key=str))
+    return errors
+
+
+def window_quad(res, fr):
+    """Errors unless fr shows gl's window whole: one quad for both eyes,
+    not blended, of the window's shape and no smaller than its pixels."""
+    q = quads(fr)
+    if len(q) != 1 or q[0]['eye'] != 'both' or q[0]['flags'] & BLEND:
+        return ['want the window as one unblended quad for both eyes, got '
+                '%s' % [(x['eye'], x['flags']) for x in q]]
+    errors = []
+    if not at(q[0], (0.0, 0.0, -1.8)) or not sized(q[0], (1.6, 0.96)):
+        errors.append('window at %s size %s'
+                      % (q[0]['pose'][:3], q[0]['size']))
+    return errors + image_size(res, q[0], (W, H))
+
+
+def check_window(res):
+    """gl without a map: its window whole, the frame in it as the window
+    draws it."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if errors:
+        return errors
+    q = quads(fr)[0]
+    for fx, fy, want in ((0.25, 0.25, RED), (0.75, 0.25, BLUE),
+                         (0.5, 0.75, YELLOW), (0.1, 0.75, GREY)):
+        c, _ = colour(image(res, fr, q), fx, fy)
+        if not near(c, want):
+            errors.append('(%.2f,%.2f) shows %s, want %s' % (fx, fy, c, want))
+    return errors
+
+
+def check_window_crop(res):
+    """Threaded video crops this frame above its second screen: the map
+    no longer fits, so gl shows the headset its window whole, not two
+    screens cut where the map says."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if 'cropping to 655 rows' not in res.log:
+        errors.append('threaded video did not crop the frame')
+    return errors
+
+
+def check_window_menu(res):
+    """gl's menu is drawn in its window: open, the headset shows the
+    window whole with the menu in it, and no quad of the menu's own; the
+    map's screens were cut from the window before."""
+    fr = last_snap(res)
+    if not fr:
+        return no_quads(res)
+    errors = window_quad(res, fr)
+    if errors:
+        return errors
+    # The top screen's left eye fills the window's top-left quarter in
+    # red; the menu over it leaves no plain red at its middle.
+    c, _ = colour(image(res, fr, quads(fr)[0]), 0.25, 0.25)
+    if near(c, RED):
+        errors.append('the window\'s quad shows the frame without the menu')
+    if not any(len(quads(f)) == 3 for f in res.frames):
+        errors.append('the screens were never shown before the menu opened')
+    return errors
+
+
+def check_window_menu_overlay(res):
+    """gl's overlay is drawn in its window, and so in the window the
+    headset shows whole."""
+    errors = check_window_menu(res)
+    fr = last_snap(res)
+    if fr and len(quads(fr)) == 1:
+        c, _ = colour(image(res, fr, quads(fr)[0]), 0.05, 0.05)
+        if not near(c, MAGENTA):
+            errors.append('the headset\'s window shows %s at the overlay, '
+                          'want %s' % (c, MAGENTA))
+    if not res.shot:
+        errors.append('no window screenshot')
+    else:
+        c, _ = colour(res.shot, 0.05, 0.05)
+        if not near(c, MAGENTA):
+            errors.append('the window shows %s at the overlay, want %s'
+                          % (c, MAGENTA))
+    return errors
+
+
+def check_window_recenter_menu(res):
+    """The hotkey recenters while gl's menu is open: the window, whole,
+    goes to the turned head's anchor, and the screens are there once the
+    menu closes. A press with the menu closed is the second, and no
+    press runs twice."""
+    mark = res.marks['recenter'] * 1e6
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    before = [f for f in shown if f['t_us'] < mark]
+    after = [f for f in shown
+             if mark + 1e6 < f['t_us'] < res.marks['closed'] * 1e6]
+    if not before or not after:
+        return ['no frames on both sides of the recenter']
+    errors = []
+    for name, fr, want, turn in (
+            ('before', before[-1], (0.0, 0.0, -1.8), None),
+            ('after', after[-1], (-1.3, 0.2, 0.3),
+             (0.0, 0.70711, 0.0, 0.70711))):
+        q = quads(fr)
+        if len(q) != 1 or q[0]['flags'] & BLEND:
+            return ['want the window whole %s the recenter, got %d quads'
+                    % (name, len(q))]
+        if not at(q[0], want):
+            errors.append('window at %s %s the recenter, want %s'
+                          % (q[0]['pose'][:3], name, want))
+        if turn and not facing(q[0], turn):
+            errors.append('window turned %s, want a quarter turn left'
+                          % q[0]['pose'][3:])
+    screens = [x for x in quads(shown[-1]) if x['eye'] == 'left']
+    if not screens or not at(screens[0], (-1.3, 0.2, 0.3)):
+        errors.append('screen 0 at %s after the menu closed, want '
+                      '(-1.3, 0.2, 0.3)'
+                      % (screens[0]['pose'][:3] if screens else None))
+    if res.log.count('Headset recenter requested') != 2:
+        errors.append('the hotkey ran %d times for two presses'
+                      % res.log.count('Headset recenter requested'))
+    return errors
+
+
+def check_tracked_window_menu(res):
+    """gl's menu opens in its window, shown whole in front of the tracked
+    eyes, which stay."""
+    opened = res.marks.get('menu', 0) * 1e6
+    late = [f for f in res.frames if f['t_us'] > opened + 2e6]
+    menu = [f for f in late if quads(f)]
+    if not menu:
+        return ['no frame with the window after the menu opened']
+    errors = []
+    for f in menu[-3:]:
+        kinds = [x['type'] for x in f['layers']]
+        if kinds != ['projection', 'quad']:
+            errors.append('frame %d shows %s, want the projection and the '
+                          'window in front' % (f['n'], kinds))
+    snapped = [f for f in menu if f['snap']]
+    if not snapped:
+        return errors + ['no snapped frame with the window']
+    return errors + window_quad(res, snapped[-1])
+
+
+def check_tracked_window_fallback(res):
+    """gl's tracked eyes whose projection the runtime refuses leave its
+    window whole, as while the menu is open."""
+    size = tracked_size(res)
+    if not size:
+        return ['the core never saw HMD']
+    errors = []
+    if '%dx%d' % size not in ['%sx%s' % m for m in
+                              SLOT_REFUSED.findall(res.log)]:
+        errors.append('the projection slot was not refused: %s'
+                      % SLOT_REFUSED.findall(res.log))
+    status = STATUS_RE.findall(res.log)
+    if not status or status[-1][2] != '1':
+        errors.append('the tracked map was not taken: %s' % status[-1:])
+    if any(projections(f) for f in res.frames):
+        errors.append('a projection was shown')
+    fr = last_snap(res)
+    if not fr:
+        return errors + no_quads(res)
+    return errors + window_quad(res, fr)
+
+
+def check_flat_size_native(res):
+    return check_flat_size(res, native=True)
+
+
+def check_tracked_flat_native(res):
+    return check_tracked_flat(res, native=True)
+
+
+def check_window_menu_closed(res):
+    """gl's menu closed again: the map's screens, cut from the window,
+    where the window whole was."""
+    shown = [f for f in res.frames if quads(f)]
+    if not shown:
+        return no_quads(res)
+    if not any(len(quads(f)) == 1 for f in shown):
+        return ['the window was never shown whole for the menu']
+    if len(quads(shown[-1])) != 3:
+        return ['%d quads after the menu closed, want the three screens'
+                % len(quads(shown[-1]))]
+    return []
+
+
+def check_window_reopen(res):
+    """gl's menu opened again after a while closed: the window whole
+    shows an image released since it reopened, and the screens show
+    while it is closed."""
+    if 'closed' not in res.marks or 'reopen' not in res.marks:
+        return ['marks missing']
+    closed = res.marks['closed'] * 1e6 + 500000
+    reopen = res.marks['reopen'] * 1e6
+    errors = []
+    whole = [f for f in res.frames if closed < f['t_us'] < reopen
+             and len(quads(f)) == 1]
+    if whole:
+        errors.append('%d frames showed the window whole while the menu '
+                      'was closed' % len(whole))
+    shown = [f for f in res.frames if f['t_us'] > reopen
+             and len(quads(f)) == 1]
+    if not shown:
+        return errors + ['the window never came back whole']
+    sc = quads(shown[0])[0]['sc']
+    fresh = [r for r in res.releases
+             if r['sc'] == sc and reopen < r['t_us'] <= shown[0]['t_us']]
+    if not fresh:
+        errors.append('the window came back with an image released before '
+                      'the menu reopened')
+    return errors
+
+
+# The desktop GL lanes: (lane, video driver, context driver).
+GL_LANES = (
+    ('glcore-egl', 'glcore', 'wayland'),
+    ('glcore-glx', 'glcore', 'x'),
+    ('gl-egl', 'gl', 'egl_x'),
+    ('gl-glx', 'gl', 'x'),
+)
+# Cases only the GL lanes run.
+GL_EXTRA = [
+    {'name': 'menu-reopen', 'map': '3ds',
+     'settings': {'menu_driver': 'ozone'},
+     'steps': [('wait', 6), ('send', 'MENU_TOGGLE'), ('wait', 3),
+               ('send', 'MENU_TOGGLE'), ('mark', 'closed'), ('wait', 4),
+               ('mark', 'reopen'), ('send', 'MENU_TOGGLE'), ('wait', 3)],
+     'check': check_menu_reopen},
+    # The head turns, the eyes' images stop coming back, and the user
+    # recenters twice, moving between: frames drawn since wait their turn.
+    {'name': 'tracked-recenter-busy', 'map': '3ds',
+     'options': {'video_views_test_vr': 'local'},
+     'steps': [('wait', 6), ('script', 'head 0.5 0.2 0.3 90'), ('wait', 1),
+               ('mark', 'busy'), ('script', 'busy eyes'), ('wait', 1),
+               ('mark', 'recenter'), ('send', 'HEADSET_RECENTER'),
+               ('wait', 1), ('script', 'head 0.1 0.4 0.2 0'), ('wait', 0.5),
+               ('send', 'HEADSET_RECENTER'), ('wait', 1.5),
+               ('mark', 'free'), ('script', 'busy off'), ('wait', 3)],
+     'check': check_tracked_busy},
+]
+# The cases each GL driver's lanes run, by name in CASES or GL_EXTRA.
+GL_BASE = {
+    'glcore': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0',
+               '3ds-swap-index0', '3ds-horizontal', 'no-map',
+               '3ds-stereo-threaded', 'crop-threaded', 'hw-3ds-stereo',
+               'hw-3ds-stereo-threaded', '3ds-output-size',
+               'no-map-output-size', '3ds-shrink', 'no-map-shrink',
+               '3ds-enlarge', 'menu', 'menu-running', 'menu-small',
+               'menu-overlay', 'menu-closes', 'menu-reopen', 'recenter',
+               'recenter-menu', 'runtime-recenter', 'no-runtime',
+               'session-fails', 'session-lost', 'exit-window',
+               'options-follow-headset', 'pacing', 'focus', 'hw-teardown',
+               'hw-teardown-threaded', 'pace-rate-change', 'pace-2',
+               'pace-misfit', 'pace-threaded', 'pace-vsync-off',
+               'pace-hidden', 'pace-hidden-slow', 'pace-stopping',
+               'pace-2-bfi', 'pace-fastforward', 'pace-vrr',
+               'pace-window-back', 'pace-loss-waiting', 'pace-auto',
+               'pace-headset-choice', 'pace-fixed-rate', 'tracked',
+               'tracked-stage', 'tracked-threaded', 'tracked-hw',
+               'tracked-paced', 'tracked-nopair', 'flat-hmd-size',
+               'tracked-menu', 'tracked-flat', 'tracked-fallback',
+               'tracked-recenter', 'tracked-runtime-recenter',
+               'tracked-exit', 'tracked-stopping', 'tracked-recenter-paused',
+               'tracked-recenter-paused-threaded',
+               'tracked-recenter-paused-stage', 'tracked-recenter-menu',
+               'tracked-recenter-busy', 'tracked-reinit',
+               'tracked-reinit-resized', 'tracked-recenter-unlocated',
+               'tracked-reinit-paused', 'tracked-reinit-paused-threaded',
+               'tracked-reinit-paused-local',
+               'tracked-reinit-paused-local-threaded',
+               'tracked-reinit-paused-unlocated',
+               'tracked-reinit-paused-nostage', 'tracked-reinit-local',
+               'tracked-reinit-local-hw', 'tracked-reinit-local-hw-threaded',
+               'tracked-reinit-poses', 'tracked-reinit-poses-threaded',
+               'tracked-reinit-paused-hw', 'placement-follow',
+               'placement-lazy', 'input-touch', 'input-menu',
+               'input-lightgun'],
+    # gl shows the headset its window: whole, or an untracked map's
+    # screens cut from it, and a tracked map's eyes as the projection.
+    'gl': ['3ds-stereo', '3ds-swap', '3ds-stereo-index0', '3ds-horizontal',
+           'no-map', '3ds-stereo-threaded', 'crop-threaded',
+           'hw-3ds-stereo', 'menu',
+           'menu-running', 'menu-overlay', 'menu-closes', 'menu-reopen',
+           'recenter', 'recenter-menu', 'runtime-recenter', 'no-runtime',
+           'session-fails', 'session-lost', 'exit-window', 'pacing',
+           'hw-teardown', 'hw-teardown-threaded', 'pace-rate-change',
+           'pace-2', 'pace-misfit', 'pace-threaded', 'pace-vsync-off',
+           'pace-hidden', 'pace-stopping', 'pace-fastforward',
+           'pace-window-back', 'pace-loss-waiting', 'tracked',
+           'tracked-stage', 'tracked-threaded', 'tracked-hw',
+           'tracked-paced', 'tracked-nopair', 'flat-hmd-size',
+           'tracked-menu', 'tracked-flat', 'tracked-fallback',
+           'tracked-recenter', 'tracked-runtime-recenter',
+           'tracked-stopping', 'tracked-recenter-paused',
+           'tracked-recenter-busy', 'tracked-reinit',
+           'tracked-reinit-resized', 'tracked-reinit-paused',
+           'tracked-reinit-local', 'tracked-reinit-local-hw',
+           'tracked-reinit-poses', 'tracked-reinit-paused-hw'],
+}
+# Where a GL host's answer is its own, by driver.
+GL_CHECKS = {
+    'glcore': {'session-fails': check_session_fails_gl,
+               'hw-teardown': check_hw_teardown_gl,
+               'hw-teardown-threaded': threaded(check_hw_teardown_gl)},
+    'gl': {'session-fails': check_session_fails_gl,
+           'hw-teardown': check_hw_teardown_gl,
+           'hw-teardown-threaded': threaded(check_hw_teardown_gl),
+           '3ds-stereo': check_screens(native=True),
+           '3ds-swap': check_screens(swap=True, native=True),
+           '3ds-stereo-index0': check_screens(native=True),
+           '3ds-horizontal': check_screens(horizontal=True, native=True),
+           '3ds-stereo-threaded': threaded(check_screens(native=True)),
+           'hw-3ds-stereo': check_screens(native=True),
+           'no-map': check_window,
+           'crop-threaded': threaded(check_window_crop),
+           'menu': check_window_menu,
+           'menu-running': check_window_menu,
+           'menu-overlay': check_window_menu_overlay,
+           'menu-closes': check_window_menu_closed,
+           'menu-reopen': check_window_reopen,
+           'recenter-menu': check_window_recenter_menu,
+           'pacing': check_pacing_live,
+           'tracked-menu': check_tracked_window_menu,
+           'tracked': check_tracked(beside=False),
+           'tracked-stage': check_tracked('stage', beside=False),
+           'tracked-threaded': threaded(check_tracked(beside=False)),
+           'tracked-hw': check_tracked(beside=False),
+           'tracked-paced': check_tracked(beside=False),
+           'flat-hmd-size': check_flat_size_native,
+           'tracked-flat': check_tracked_flat_native,
+           'tracked-fallback': check_tracked_window_fallback,
+           'tracked-recenter': check_tracked_recenter_eyes,
+           'tracked-recenter-paused':
+               check_tracked_recenter_paused('local', screens=False)},
+}
+# What a lane cannot run: the unfocus helper sends an X event, and the
+# Wayland lane's window is not an X one.
+GL_SKIP = {'glcore-egl': ('focus',)}
+# A lane that runs only these of its driver's cases: gl's other binding.
+GL_ONLY = {'gl-glx': ('3ds-stereo', 'no-map', 'menu', 'menu-closes',
+                      'tracked', 'tracked-menu', 'tracked-recenter',
+                      'tracked-reinit', 'pace-2', 'session-lost',
+                      'hw-teardown')}
+
+
+def gl_cases():
+    """The GL lanes' clones of their cases, CASES left as they are: a
+    core's own Vulkan images become a GL context's, and Vulkan's layers
+    stay out."""
+    by_name = {c['name']: c for c in CASES + GL_EXTRA}
+    out = []
+    for lane, driver, context in GL_LANES:
+        for name in GL_BASE[driver]:
+            if (name in GL_SKIP.get(lane, ())
+                    or name not in GL_ONLY.get(lane, (name,))):
+                continue
+            base = by_name[name]
+            c = copy.deepcopy(base)
+            c['check'] = GL_CHECKS[driver].get(name, base['check'])
+            c['name'] = '%s-%s' % (lane, name)
+            c['lane'] = lane
+            c['driver'] = driver
+            c['context'] = context
+            opts = c.setdefault('options', {})
+            if opts.get('video_views_test_hw', 'off').startswith('vulkan'):
+                # A core context is glcore's whatever the setting says;
+                # the gl driver takes a compatibility one.
+                opts['video_views_test_hw'] = ('gl' if driver == 'glcore'
+                                               else 'gl_compat')
+                c['gl_hardware'] = True
+            c['env'] = {k: v for k, v in c.get('env', {}).items()
+                        if not k.startswith('VK_')}
+            # gl's window shows the packed frame whole: the top screen is
+            # its top-left quarter.
+            if driver == 'gl':
+                c['top_px'] = (400, 240)
+            # gamescope gives a Wayland client its window back over half
+            # a second after a reinit, where an X one takes some 40 ms:
+            # the new session's first frames come that much later.
+            if context == 'wayland':
+                c['reinit_grace'] = 1.5
+            c.pop('baseline', None)
+            out.append(c)
+    return out
+
+
+def select(names, gl, validate):
+    """The cases to run, or an error: every name must be one."""
+    if gl and validate:
+        return None, '--gl and --validate: validation is Vulkan\'s alone'
+    pool = gl_cases() if gl else CASES
+    known = [c['name'] for c in pool]
+    unknown = [n for n in names if n not in known]
+    if unknown:
+        return None, 'no such case%s: %s' % (
+            's' if len(unknown) > 1 else '', ', '.join(unknown))
+    return [c for c in pool if not names or c['name'] in names], None
+
+
 def unfocus_when(trigger):
     """Inside a case's gamescope: once trigger exists, tell the window with
     the X input focus that it lost it. gamescope gives the real focus
@@ -4501,6 +5122,7 @@ def main():
         return unfocus_when(sys.argv[2])
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     validate = '--validate' in sys.argv[1:]
+    gl = '--gl' in sys.argv[1:]
     if len(args) < 3:
         print(__doc__)
         return 2
@@ -4514,13 +5136,15 @@ def main():
             os.path.dirname(os.path.abspath(args[2])),
             monado.get('VALIDATION_BASELINE', os.path.join(
                 HERE, 'validation-baseline.txt'))))
+    cases, error = select(names, gl, validate)
+    if error:
+        print(error)
+        return 2
     os.makedirs(root, exist_ok=True)
     failed = 0
-    for case in CASES:
-        if names and case['name'] not in names:
-            continue
+    for case in cases:
         res = run_case(retroarch, root, monado, case, validate)
-        errors = case['check'](res)
+        errors = case['check'](res) + capture_errors(res, case)
         if 'hung' in res.marks:
             errors.append('RetroArch did not quit')
         if validate:

@@ -419,9 +419,6 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
       RARCH_LOG("[OpenXR] The headset runs at %.2f Hz.\n",
             1000000000.0 / (double)f->period.published);
    }
-   /* An in-line host's frames are the core's own: no ticks. */
-   if (!f->inline_host)
-      openxr_frame_tick(f);
    openxr_frame_ask_rate(f);
    f->tracked.predicted_time = state.predictedDisplayTime;
    /* The world moves at the next core frame, so the screens wait too. */
@@ -433,6 +430,14 @@ static bool openxr_frame_wait_begin(openxr_frame_t *f,
    openxr_frame_publish_tracked(f);
    if (f->tracked.px_per_rad <= 0.0f)
       openxr_frame_measure(f, state.predictedDisplayTime);
+
+   if (keep_lock && f->thread_hooks.fill)
+      f->thread_hooks.fill(f->thread_hooks.user, state.predictedDisplayTime);
+   /* The core is woken after the host takes what it drew: a frame it
+    * finished first would be shown a headset frame early. An in-line
+    * host's frames are the core's own: no ticks. */
+   if (!f->inline_host)
+      openxr_frame_tick(f);
 
    memset(&begin_info, 0, sizeof(begin_info));
    begin_info.type = XR_TYPE_FRAME_BEGIN_INFO;
@@ -534,6 +539,14 @@ static void openxr_frame_run(openxr_frame_t *f)
 static void openxr_frame_thread(void *data)
 {
    openxr_frame_t *f = (openxr_frame_t*)data;
+   if (f->thread_hooks.start)
+   {
+      bool started = f->thread_hooks.start(f->thread_hooks.user);
+      retro_atomic_store_release_int(&f->thread_started, started ? 1 : -1);
+      openxr_frame_tick_notify(f);
+      if (!started)
+         goto end;
+   }
    while (!retro_atomic_load_acquire_int(&f->quit))
    {
       openxr_session_poll(f->session);
@@ -542,6 +555,9 @@ static void openxr_frame_thread(void *data)
       else
          retro_sleep(10);
    }
+end:
+   if (f->thread_hooks.stop)
+      f->thread_hooks.stop(f->thread_hooks.user);
 }
 
 /* The rates XR_FB_display_refresh_rate lists for this session. */
@@ -621,6 +637,8 @@ void openxr_frame_session_created(openxr_frame_t *f)
    video_xr_pose_identity(&f->screens.pose);
    f->screens.view = 0;
    f->lazy_valid   = false;
+   f->carry_from   = 0;
+   f->carry_to     = 0;
    openxr_frame_publish_tracked(f);
    openxr_seq_publish(&f->screens_seq, f->screens_words,
          &f->screens, sizeof(f->screens));
@@ -676,7 +694,7 @@ XrSwapchain openxr_frame_cursor(const openxr_frame_t *f)
 
 bool openxr_frame_start(openxr_frame_t *f)
 {
-   if (f->inline_host)
+   if (f->inline_host || f->thread)
       return false;
    video_xr_period_init(&f->period);
    retro_atomic_store_release_int(&f->period_ns, 0);
@@ -684,12 +702,31 @@ bool openxr_frame_start(openxr_frame_t *f)
    f->tick_interval = 0;
    f->asked_rate    = 0.0f;
    f->frame_failed  = false;
+   retro_atomic_store_release_int(&f->thread_started, 0);
    retro_atomic_store_release_int(&f->quit, 0);
    openxr_session_set_alive(f->session, true);
    if (!(f->thread = sthread_create(openxr_frame_thread, f)))
    {
       openxr_session_set_alive(f->session, false);
       return false;
+   }
+   if (f->thread_hooks.start)
+   {
+      while (!retro_atomic_load_acquire_int(&f->thread_started))
+      {
+         int key = retro_eventcount_prepare_wait(&f->tick);
+         if (retro_atomic_load_acquire_int(&f->thread_started))
+         {
+            retro_eventcount_cancel_wait(&f->tick);
+            break;
+         }
+         retro_eventcount_commit_wait(&f->tick, key);
+      }
+      if (retro_atomic_load_acquire_int(&f->thread_started) < 0)
+      {
+         openxr_frame_stop(f);
+         return false;
+      }
    }
    return true;
 }
@@ -935,11 +972,19 @@ void openxr_frame_clear_projection(openxr_frame_t *f)
 void openxr_frame_move_projection(openxr_frame_t *f, int from, int to)
 {
    openxr_projection_t p;
+   if (from != f->carry_to)
+      f->carry_from = from;
+   f->carry_to = to;
    openxr_seq_read(&f->proj_seq, f->proj_words, &p, sizeof(p));
    if (p.track_seq != from)
       return;
    p.track_seq = to;
    openxr_seq_publish(&f->proj_seq, f->proj_words, &p, sizeof(p));
+}
+
+int openxr_frame_carried_seq(openxr_frame_t *f, int seq)
+{
+   return (seq >= f->carry_from && seq < f->carry_to) ? f->carry_to : seq;
 }
 
 void openxr_frame_get_anchor(openxr_frame_t *f, video_xr_pose_t *anchor)

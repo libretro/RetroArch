@@ -20,7 +20,8 @@
  * in the packed frame. It sends its map even without
  * RETRO_VIDEO_VIEWS_STATUS_PRESENTS, so the frontend's answer there is
  * logged too. It draws in software, or with the video_views_test_hw
- * option through a GL core context, with either origin, into Vulkan
+ * option through a GL core context, with either origin, or a
+ * compatibility one (gl_compat, which the gl driver takes), into Vulkan
  * images of its own handed over with set_image, or on Windows into
  * D3D11 textures of its own, one per sync index, handed over with
  * set_texture (libretro_d3d11.h version 2), or into D3D12 textures
@@ -239,6 +240,8 @@ static uint32_t frame_buf[FRAME_MAX_PIXELS];
 static uint16_t frame_buf16[FRAME_MAX_PIXELS];
 static enum map_kind map_kind = MAP_3DS;
 static enum hw_kind hw_kind   = HW_OFF;
+/* HW_GL through a compatibility context. */
+static bool hw_gl_compat;
 static enum pattern_kind pattern = PATTERN_SOLID;
 static bool large_max;
 static bool rgb565;
@@ -469,6 +472,9 @@ static void context_reset(void)
       log_cb(RETRO_LOG_ERROR, "[video_views] GL entry points missing\n");
 }
 
+static long long now_us(void);
+
+/* When, for a test that orders it against the headset's session. */
 static void context_destroy(void)
 {
    if (gl_ready && gl_upload_tex)
@@ -479,6 +485,8 @@ static void context_destroy(void)
    gl_upload_tex = 0;
    gl_upload_fbo = 0;
    gl_ready      = false;
+   log_cb(RETRO_LOG_INFO, "[video_views] context_destroy at %lld us\n",
+         now_us());
 }
 
 static long long now_us(void)
@@ -888,11 +896,17 @@ static void read_options(void)
    struct retro_variable var;
    var.key   = "video_views_test_hw";
    var.value = NULL;
-   hw_kind   = HW_OFF;
+   hw_kind      = HW_OFF;
+   hw_gl_compat = false;
    if (environ_cb(RETRO_ENVIRONMENT_GET_VARIABLE, &var) && var.value)
    {
       if (!strcmp(var.value, "gl"))
          hw_kind = HW_GL;
+      else if (!strcmp(var.value, "gl_compat"))
+      {
+         hw_kind      = HW_GL;
+         hw_gl_compat = true;
+      }
       else if (!strcmp(var.value, "gl_topleft"))
          hw_kind = HW_GL_TOPLEFT;
       else if (!strcmp(var.value, "vulkan"))
@@ -1003,7 +1017,7 @@ void retro_set_environment(retro_environment_t cb)
       { "video_views_test_map",
         "View map; 3ds|3ds_force|ds|vb|invalid|none|crop" },
       { "video_views_test_hw",
-        "Hardware rendering; off|gl|gl_topleft|vulkan|vulkan_keep|d3d11|d3d12" },
+        "Hardware rendering; off|gl|gl_topleft|gl_compat|vulkan|vulkan_keep|d3d11|d3d12" },
       { "video_views_test_max",
         "Declared maximum size; normal|large" },
       { "video_views_test_fps",
@@ -2066,6 +2080,12 @@ bool retro_load_game(const struct retro_game_info *game)
       hw_render.context_type       = RETRO_HW_CONTEXT_OPENGL_CORE;
       hw_render.version_major      = 3;
       hw_render.version_minor      = 2;
+      if (hw_gl_compat)
+      {
+         hw_render.context_type    = RETRO_HW_CONTEXT_OPENGL;
+         hw_render.version_major   = 0;
+         hw_render.version_minor   = 0;
+      }
       hw_render.context_reset      = context_reset;
       hw_render.context_destroy    = context_destroy;
       hw_render.bottom_left_origin = (hw_kind == HW_GL);

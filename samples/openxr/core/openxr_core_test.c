@@ -12,7 +12,17 @@
 #include <compat/strl.h>
 #include <string/stdstring.h>
 #include <openxr/openxr.h>
+#ifdef HAVE_OPENXR_GL
+/* The desktop GL binding's native half: its headers, read once here. */
+#include <EGL/egl.h>
+#include <X11/Xlib.h>
+#include <GL/glx.h>
+#define XR_USE_PLATFORM_EGL
+#define XR_USE_PLATFORM_XLIB
+#else
 typedef unsigned int EGLenum; /* the header wants EGL types */
+#endif
+#define XR_USE_GRAPHICS_API_OPENGL
 #define XR_USE_GRAPHICS_API_OPENGL_ES
 /* vulkan_openxr.c's half too: the header is read once. */
 #include "../../../gfx/common/vksym.h"
@@ -203,9 +213,16 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_poll_event(XrInstance i, XrEventDataBuff
    }
    return t_poll_result == XR_SUCCESS ? XR_EVENT_UNAVAILABLE : t_poll_result;
 }
+static XrResult t_create_session_res = XR_SUCCESS;
 static XRAPI_ATTR XrResult XRAPI_CALL t_create_session(XrInstance i,
       const XrSessionCreateInfo *ci, XrSession *s)
-{ t_sessions_made++; *s = T_SESSION; return XR_SUCCESS; }
+{
+   if (t_create_session_res != XR_SUCCESS)
+      return t_create_session_res;
+   t_sessions_made++;
+   *s = T_SESSION;
+   return XR_SUCCESS;
+}
 static XRAPI_ATTR XrResult XRAPI_CALL t_destroy_session(XrSession s)
 { t_sessions_destroyed++; return XR_SUCCESS; }
 static XRAPI_ATTR XrResult XRAPI_CALL t_begin_session(XrSession s,
@@ -371,9 +388,12 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_enum_formats(XrSession s,
       f[i] = (i < 2) ? t_formats[i] : 1000 + i;
    return XR_SUCCESS;
 }
+static uint32_t t_sc_refuse_width;   /* a width the runtime refuses */
 static XRAPI_ATTR XrResult XRAPI_CALL t_create_sc(XrSession s,
       const XrSwapchainCreateInfo *ci, XrSwapchain *out)
 {
+   if (t_sc_refuse_width && ci->width == t_sc_refuse_width)
+      return XR_ERROR_SWAPCHAIN_FORMAT_UNSUPPORTED;
    *out = (XrSwapchain)(uintptr_t)(0x100 + (++t_sc_created_total));
    t_sc_made++;
    t_ci_format  = ci->format;
@@ -392,11 +412,26 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_destroy_sc(XrSwapchain s)
    return XR_SUCCESS;
 }
 static bool     t_fill_gles;    /* list GLES images, 0x500 apart a call */
+static bool     t_fill_gl;      /* the same for desktop GL images */
+static bool     t_gl_wrong_type; /* a GL list asked with another type */
 static uint32_t t_gles_base;
 static XRAPI_ATTR XrResult XRAPI_CALL t_enum_images(XrSwapchain s,
       uint32_t cap, uint32_t *n, XrSwapchainImageBaseHeader *imgs)
 {
    uint32_t i;
+   if (cap && imgs && t_fill_gl)
+   {
+      XrSwapchainImageOpenGLKHR *gl = (XrSwapchainImageOpenGLKHR*)imgs;
+      t_gles_base += 0x100;
+      for (i = 0; i < cap && i < t_sc_images; i++)
+      {
+         if (gl[i].type != XR_TYPE_SWAPCHAIN_IMAGE_OPENGL_KHR)
+            t_gl_wrong_type = true;
+         gl[i].image = t_gles_base + i;
+      }
+      *n = i;
+      return XR_SUCCESS;
+   }
    if (cap && imgs && t_fill_gles)
    {
       XrSwapchainImageOpenGLESKHR *es = (XrSwapchainImageOpenGLESKHR*)imgs;
@@ -415,9 +450,19 @@ static XRAPI_ATTR XrResult XRAPI_CALL t_enum_images(XrSwapchain s,
 static XRAPI_ATTR XrResult XRAPI_CALL t_acquire(XrSwapchain s,
       const XrSwapchainImageAcquireInfo *ai, uint32_t *i)
 { t_sc_acquires++; *i = 1; return XR_SUCCESS; }
+/* Busy as well: one swapchain, and every one made from a count on. */
+static XrSwapchain t_sc_busy;
+static uint32_t t_sc_busy_from;
 static XRAPI_ATTR XrResult XRAPI_CALL t_wait(XrSwapchain s,
       const XrSwapchainImageWaitInfo *wi)
-{ t_sc_wait_timeout = wi->timeout; return t_sc_wait; }
+{
+   t_sc_wait_timeout = wi->timeout;
+   if (     (t_sc_busy && s == t_sc_busy)
+         || (t_sc_busy_from
+            && (uint32_t)((uintptr_t)s - 0x100) >= t_sc_busy_from))
+      return XR_TIMEOUT_EXPIRED;
+   return t_sc_wait;
+}
 static XRAPI_ATTR XrResult XRAPI_CALL t_release(XrSwapchain s,
       const XrSwapchainImageReleaseInfo *ri)
 { t_sc_releases++; return t_sc_release; }
@@ -513,6 +558,17 @@ static unsigned t_extra_layers(void *user, XrTime time,
    return 1;
 }
 
+static XrResult t_gl_reqs_res = XR_SUCCESS;
+static unsigned t_gl_reqs_asked;
+static XRAPI_ATTR XrResult XRAPI_CALL t_gl_reqs(XrInstance i, XrSystemId s,
+      XrGraphicsRequirementsOpenGLKHR *r)
+{
+   t_gl_reqs_asked++;
+   r->minApiVersionSupported = XR_MAKE_VERSION(4, 3, 0);
+   r->maxApiVersionSupported = XR_MAKE_VERSION(4, 6, 0);
+   return t_gl_reqs_res;
+}
+
 static XrResult t_gles_reqs_res = XR_SUCCESS;
 static XRAPI_ATTR XrResult XRAPI_CALL t_gles_reqs(XrInstance i, XrSystemId s,
       XrGraphicsRequirementsOpenGLESKHR *r)
@@ -572,6 +628,7 @@ static const struct { const char *name; PFN_xrVoidFunction fn; } t_procs[] = {
    { "xrEndFrame",   (PFN_xrVoidFunction)t_end_frame },
    { "xrInitializeLoaderKHR",  (PFN_xrVoidFunction)t_init_loader },
    { "xrGetOpenGLESGraphicsRequirementsKHR", (PFN_xrVoidFunction)t_gles_reqs },
+   { "xrGetOpenGLGraphicsRequirementsKHR",   (PFN_xrVoidFunction)t_gl_reqs },
    { "xrGetVulkanGraphicsRequirements2KHR",  (PFN_xrVoidFunction)t_vk_reqs },
    { "xrCreateVulkanInstanceKHR",            (PFN_xrVoidFunction)t_vk_instance },
    { "xrCreateVulkanDeviceKHR",              (PFN_xrVoidFunction)t_vk_device },
@@ -608,8 +665,13 @@ XRAPI_ATTR XrResult XRAPI_CALL xrGetInstanceProcAddr(XrInstance i,
 #include "../../../gfx/common/openxr_swapchain.c"
 #include "../../../gfx/common/openxr_frame.c"
 #include "../../../gfx/common/openxr_tracking.c"
+#include "../../../gfx/common/openxr_ring.c"
 #include "../../../gfx/common/openxr_host.c"
 #include "../../../gfx/common/openxr_binding_gles.c"
+#include "../../../gfx/common/openxr_binding_gl.c"
+#ifdef HAVE_OPENXR_GL
+#include "../../../gfx/common/gl_openxr.c"
+#endif
 #include "../../../gfx/common/vulkan_openxr.c"
 
 static void t_runtime_defaults(void)
@@ -633,6 +695,71 @@ static void t_runtime_defaults(void)
    t_modes[0]        = XR_ENVIRONMENT_BLEND_MODE_OPAQUE;
    t_num_modes       = 1;
    t_reset_log();
+}
+
+static void test_runtime_binding_ext(void)
+{
+   openxr_runtime_t rt;
+   unsigned i, matches;
+
+   t_runtime_defaults();
+   t_exts[0] = "XR_KHR_opengl_enable";
+   t_exts[3] = "XR_MNDX_egl_enable";
+   t_exts[4] = "XR_TEST_platform";
+   t_num_exts = 5;
+   memset(&rt, 0, sizeof(rt));
+   rt.binding_ext = "XR_MNDX_egl_enable";
+   rt.platform.instance_ext = "XR_TEST_platform";
+   CHECK(openxr_runtime_create_instance(&rt, t_get_proc,
+            "XR_KHR_opengl_enable") == OPENXR_RUNTIME_OK,
+         "instance with two required extensions");
+   CHECK(t_num_enabled == 5, "enabled %u of 5 extensions", t_num_enabled);
+   matches = 0;
+   for (i = 0; i < t_num_enabled; i++)
+      if (string_is_equal(t_enabled[i], "XR_MNDX_egl_enable"))
+         matches++;
+   CHECK(matches == 1, "binding extension enabled %u times", matches);
+   CHECK(rt.refresh_ext && rt.frame_controller,
+         "binding extension displaced optional extensions");
+   CHECK(string_is_equal(t_enabled[0], "XR_KHR_opengl_enable"),
+         "graphics extension displaced");
+   CHECK(t_num_enabled && string_is_equal(t_enabled[t_num_enabled - 1],
+            "XR_TEST_platform"),
+         "platform extension displaced");
+   openxr_runtime_deinit(&rt);
+
+   t_runtime_defaults();
+   t_exts[0] = "XR_KHR_opengl_enable";
+   memset(&rt, 0, sizeof(rt));
+   rt.binding_ext = "XR_MNDX_egl_enable";
+   CHECK(openxr_runtime_create_instance(&rt, t_get_proc,
+            "XR_KHR_opengl_enable") == OPENXR_RUNTIME_UNAVAILABLE,
+         "accepted a runtime without the binding extension");
+   CHECK(rt.instance == XR_NULL_HANDLE, "made an instance without the binding");
+   CHECK(LOGGED("The runtime lacks XR_MNDX_egl_enable."),
+         "missing binding extension not diagnosed");
+   openxr_runtime_deinit(&rt);
+
+   t_runtime_defaults();
+   t_exts[0] = "XR_KHR_opengl_enable";
+   t_num_exts = 1;
+   memset(&rt, 0, sizeof(rt));
+   rt.binding_ext = "XR_KHR_opengl_enable";
+   CHECK(openxr_runtime_create_instance(&rt, t_get_proc,
+            "XR_KHR_opengl_enable") == OPENXR_RUNTIME_OK,
+         "binding equal to graphics extension refused");
+   CHECK(t_num_enabled == 1, "duplicate required extension enabled");
+   openxr_runtime_deinit(&rt);
+
+   t_runtime_defaults();
+   memset(&rt, 0, sizeof(rt));
+   CHECK(openxr_runtime_create_instance(&rt, t_get_proc,
+            "XR_KHR_vulkan_enable2") == OPENXR_RUNTIME_OK,
+         "NULL binding changed Vulkan negotiation");
+   CHECK(t_num_enabled == 3 && rt.refresh_ext && rt.frame_controller,
+         "NULL binding changed enabled extensions");
+   openxr_runtime_deinit(&rt);
+   t_runtime_defaults();
 }
 
 static void test_runtime(void)
@@ -3158,6 +3285,155 @@ static void test_binding_gles(void)
    openxr_runtime_deinit(&rt);
 }
 
+static void test_binding_gl(void)
+{
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_gl_images_t gi;
+   uint32_t tex[OPENXR_MAX_IMAGES][2];
+   unsigned n        = 0;
+   int dummy_binding = 0;
+
+   t_session_fresh(&rt, &s);
+
+   /* Asked of the runtime, and held against the context's version. */
+   t_gl_reqs_res   = XR_SUCCESS;
+   t_gl_reqs_asked = 0;
+   t_reset_log();
+   CHECK(openxr_binding_gl_requirements(&rt, 4, 6)
+         && t_gl_reqs_asked == 1
+         && LOGGED("[OpenXR] OpenGL 4.3 to 4.6.\n"), "requirements: %s", t_log);
+   CHECK(openxr_binding_gl_requirements(&rt, 4, 7),
+         "a version past the tested one refused");
+   t_reset_log();
+   CHECK(!openxr_binding_gl_requirements(&rt, 3, 3)
+         && LOGGED("[OpenXR] The runtime needs OpenGL 4.3; the context is 3.3.\n"),
+         "an old context accepted: %s", t_log);
+   CHECK(!openxr_binding_gl_requirements(&rt, 4, 2), "4.2 accepted");
+   t_gl_reqs_res = XR_ERROR_RUNTIME_FAILURE;
+   t_reset_log();
+   CHECK(!openxr_binding_gl_requirements(&rt, 4, 6)
+         && LOGGED("[OpenXR] xrGetOpenGLGraphicsRequirementsKHR failed (-2).\n"),
+         "a failed answer: %s", t_log);
+   t_gl_reqs_res = XR_SUCCESS;
+   t_missing     = "xrGetOpenGLGraphicsRequirementsKHR";
+   t_reset_log();
+   CHECK(!openxr_binding_gl_requirements(&rt, 4, 6)
+         && LOGGED("[OpenXR] The runtime lacks functions headset output needs.\n"),
+         "without the function: %s", t_log);
+   t_missing     = NULL;
+
+   openxr_session_load(&s, &rt);
+   openxr_session_create(&s, &dummy_binding);
+   memset(&sc, 0, sizeof(sc));
+   openxr_swapchains_load(&sc, &rt, &s);
+
+   /* sRGB first, whatever the runtime's order; RGBA8 alone; else none. */
+   t_formats[0] = OPENXR_GL_RGBA8;
+   t_formats[1] = OPENXR_GL_SRGB8_ALPHA8;
+   openxr_swapchains_list_formats(&sc);
+   CHECK(openxr_binding_gl_format(&sc) == 0x8c43, "sRGB8_ALPHA8 not chosen");
+   t_formats[0] = OPENXR_GL_SRGB8_ALPHA8;
+   t_formats[1] = OPENXR_GL_RGBA8;
+   openxr_swapchains_list_formats(&sc);
+   CHECK(openxr_binding_gl_format(&sc) == 0x8c43, "sRGB8_ALPHA8 not first");
+   t_formats[0] = 0x8c41;   /* SRGB8: no alpha */
+   t_formats[1] = OPENXR_GL_RGBA8;
+   openxr_swapchains_list_formats(&sc);
+   t_reset_log();
+   CHECK(openxr_binding_gl_format(&sc) == 0x8058
+         && LOGGED("[OpenXR] Only a linear swapchain format is offered; the output may look washed out.\n"),
+         "RGBA8 alone: %s", t_log);
+   t_formats[0] = 50;
+   t_formats[1] = 44;
+   openxr_swapchains_list_formats(&sc);
+   t_reset_log();
+   CHECK(!openxr_binding_gl_format(&sc)
+         && LOGGED("[OpenXR] No swapchain format for OpenGL.\n"),
+         "a format from nothing: %s", t_log);
+
+   /* Each layer's images land as its textures, asked as GL images. */
+   memset(tex, 0, sizeof(tex));
+   gi.sc            = &sc;
+   gi.tex           = tex;
+   t_fill_gl        = true;
+   t_gl_wrong_type  = false;
+   t_gles_base      = 0x400;
+   t_sc_images      = 3;
+   t_sc_images_second = 0;
+   CHECK(openxr_slot_create(&sc, 2, 0x8c43, false,
+            VIDEO_SCALE_PACK(64, 64), 2, openxr_binding_gl_images, &gi, &n)
+         && n == 3, "slot with GL images: %u", n);
+   CHECK(     tex[0][0] == 0x500 && tex[2][0] == 0x502
+         && tex[0][1] == 0x600 && tex[2][1] == 0x602,
+         "textures %x %x %x %x", tex[0][0], tex[2][0], tex[0][1], tex[2][1]);
+   CHECK(!t_gl_wrong_type, "GL images asked as another type");
+   openxr_slot_destroy(&sc, 2);
+   /* The swapchain rules hold for GL: too many, or layers that differ. */
+   t_sc_images = OPENXR_MAX_IMAGES + 1;
+   CHECK(!openxr_slot_create(&sc, 2, 0x8c43, false,
+            VIDEO_SCALE_PACK(64, 64), 1, openxr_binding_gl_images, &gi, &n),
+         "more images than a slot holds");
+   t_sc_images        = 3;
+   t_sc_images_second = 2;
+   CHECK(!openxr_slot_create(&sc, 2, 0x8c43, false,
+            VIDEO_SCALE_PACK(64, 64), 2, openxr_binding_gl_images, &gi, &n),
+         "layers with different image counts");
+   t_sc_images_second = 0;
+   t_fill_gl          = false;
+   openxr_slot_destroy(&sc, 2);
+   openxr_session_destroy(&s);
+   openxr_runtime_deinit(&rt);
+}
+
+#ifdef HAVE_OPENXR_GL
+static gfx_ctx_proc_t t_gl_proc(const char *name) { return NULL; }
+
+static void test_binding_gl_chain(void)
+{
+   openxr_gl_binding_t b;
+   gfx_ctx_shared_context_t ctx;
+   const XrGraphicsBindingEGLMNDX *egl;
+   const XrGraphicsBindingOpenGLXlibKHR *glx;
+
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.kind             = GFX_CTX_SHARED_EGL;
+   ctx.display          = (void*)0x10;
+   ctx.config           = (void*)0x20;
+   ctx.context          = (void*)0x30;
+   ctx.surface          = (void*)0x40;
+   ctx.get_proc_address = t_gl_proc;
+   memset(&b, 0x5a, sizeof(b));
+   egl = (const XrGraphicsBindingEGLMNDX*)openxr_binding_gl_chain(&b, &ctx);
+   CHECK(egl && egl->type == XR_TYPE_GRAPHICS_BINDING_EGL_MNDX && !egl->next
+         && egl->display == (EGLDisplay)0x10 && egl->config == (EGLConfig)0x20
+         && egl->context == (EGLContext)0x30
+         && egl->getProcAddress == (PFN_xrEglGetProcAddressMNDX)t_gl_proc,
+         "EGL binding");
+
+   memset(&ctx, 0, sizeof(ctx));
+   ctx.kind      = GFX_CTX_SHARED_GLX;
+   ctx.display   = (void*)0x11;
+   ctx.config    = (void*)0x21;
+   ctx.context   = (void*)0x31;
+   ctx.drawable  = 0x41;
+   ctx.visual_id = 0x29b;
+   memset(&b, 0x5a, sizeof(b));
+   glx = (const XrGraphicsBindingOpenGLXlibKHR*)openxr_binding_gl_chain(&b, &ctx);
+   CHECK(glx && glx->type == XR_TYPE_GRAPHICS_BINDING_OPENGL_XLIB_KHR
+         && !glx->next && glx->xDisplay == (Display*)0x11
+         && glx->glxFBConfig == (GLXFBConfig)0x21
+         && glx->glxContext == (GLXContext)0x31
+         && glx->glxDrawable == 0x41 && glx->visualid == 0x29b,
+         "GLX binding");
+
+   memset(&ctx, 0, sizeof(ctx));
+   CHECK(!openxr_binding_gl_chain(&b, &ctx), "a binding for no context");
+}
+
+#endif
+
 /* vulkan_openxr.c's Vulkan calls are all the laser dot's fill. */
 #define T_VK(name) PFN_##name vulkan_symbol_wrapper_##name;
 T_VK(vkGetDeviceQueue) T_VK(vkCreateBuffer) T_VK(vkDestroyBuffer)
@@ -4347,12 +4623,1360 @@ static void test_screen_placement_repeat(void)
    t_frame_free(&rt, &s, &f);
 }
 
+enum t_thread_hook_case
+{
+   T_THREAD_FRAME,
+   T_THREAD_STOPPED,
+   T_THREAD_WAIT_FAILED,
+   T_THREAD_BEGIN_FAILED,
+   T_THREAD_START_FAILED,
+   T_THREAD_START_EMPTY
+};
+
+typedef struct t_thread_hooks
+{
+   openxr_frame_t *frame;
+   slock_t *lock;
+   retro_atomic_int_t starts, fills, stops, errors;
+   enum t_thread_hook_case which;
+   unsigned phase;
+   int ticks;
+   XrTime time;
+} t_thread_hooks_t;
+
+static t_thread_hooks_t *t_active_thread_hooks;
+
+static void t_thread_lock(void *user)
+{
+   t_thread_hooks_t *t = (t_thread_hooks_t*)user;
+   slock_lock(t->lock);
+   t_hook_lock(NULL);
+}
+
+static void t_thread_unlock(void *user)
+{
+   t_thread_hooks_t *t = (t_thread_hooks_t*)user;
+   t_hook_unlock(NULL);
+   slock_unlock(t->lock);
+}
+
+static bool t_thread_start(void *user)
+{
+   static int binding;
+   t_thread_hooks_t *t = (t_thread_hooks_t*)user;
+   retro_atomic_fetch_add_int(&t->starts, 1);
+   if (t->which == T_THREAD_START_EMPTY)
+      return false;
+   if (!openxr_session_create(t->frame->session, &binding))
+      return false;
+   openxr_frame_session_created(t->frame);
+   return t->which != T_THREAD_START_FAILED;
+}
+
+static void t_thread_fill(void *user, XrTime time)
+{
+   t_thread_hooks_t *t = (t_thread_hooks_t*)user;
+   openxr_session_lock(t->frame->session);
+   if (t->phase != 1 || time != t->time || t_locks - t_unlocks != 1)
+      retro_atomic_fetch_or_int(&t->errors, 1);
+   /* The core is woken after the host takes what it drew: a frame it
+    * finished first would be shown a headset frame early. */
+   if (retro_atomic_load_acquire_int(&t->frame->tick_seq) != t->ticks)
+      retro_atomic_fetch_or_int(&t->errors, 8);
+   t->phase = 2;
+   retro_atomic_fetch_add_int(&t->fills, 1);
+   openxr_session_unlock(t->frame->session);
+}
+
+static void t_thread_stop(void *user)
+{
+   t_thread_hooks_t *t = (t_thread_hooks_t*)user;
+   openxr_session_destroy(t->frame->session);
+   retro_atomic_fetch_add_int(&t->stops, 1);
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_thread_wait_frame(XrSession s,
+      const XrFrameWaitInfo *wi, XrFrameState *state)
+{
+   t_thread_hooks_t *t = t_active_thread_hooks;
+   if (t->which == T_THREAD_WAIT_FAILED)
+   {
+      retro_atomic_store_release_int(&t->frame->quit, 1);
+      return XR_ERROR_RUNTIME_FAILURE;
+   }
+   t_wait_frame(s, wi, state);
+   t->time  = state->predictedDisplayTime;
+   t->phase = 1;
+   t->ticks = retro_atomic_load_acquire_int(&t->frame->tick_seq);
+   return XR_SUCCESS;
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_thread_begin_frame(XrSession s,
+      const XrFrameBeginInfo *bi)
+{
+   t_thread_hooks_t *t = t_active_thread_hooks;
+   if (     t->phase != 2
+         || retro_atomic_load_acquire_int(&t->frame->tick_seq)
+            != t->ticks + 1)
+      retro_atomic_fetch_or_int(&t->errors, 2);
+   t->phase = 3;
+   if (t->which == T_THREAD_BEGIN_FAILED)
+   {
+      retro_atomic_store_release_int(&t->frame->quit, 1);
+      return XR_ERROR_RUNTIME_FAILURE;
+   }
+   return t_begin_frame(s, bi);
+}
+
+static XRAPI_ATTR XrResult XRAPI_CALL t_thread_end_frame(XrSession s,
+      const XrFrameEndInfo *ei)
+{
+   t_thread_hooks_t *t = t_active_thread_hooks;
+   XrResult result = t_end_frame(s, ei);
+   if (t->phase != 3)
+      retro_atomic_fetch_or_int(&t->errors, 4);
+   retro_atomic_store_release_int(&t->frame->quit, 1);
+   return result;
+}
+
+static void test_frame_thread_hooks(void)
+{
+   enum t_thread_hook_case which;
+   for (which = T_THREAD_FRAME; which <= T_THREAD_START_EMPTY; which++)
+   {
+      openxr_runtime_t rt;
+      openxr_session_t s;
+      openxr_swapchains_t sc;
+      openxr_frame_t f;
+      t_thread_hooks_t t;
+      bool started, restarted = false;
+      unsigned made, destroyed, begins, ends;
+      int expected_fill = which == T_THREAD_FRAME || which == T_THREAD_BEGIN_FAILED;
+
+      t_frame_fresh(&rt, &s, &sc, &f);
+      openxr_session_destroy(&s);
+      memset(&t, 0, sizeof(t));
+      t.frame = &f;
+      t.which = which;
+      t.lock  = slock_new();
+      CHECK(t.lock, "no graphics lock");
+      if (!t.lock)
+      {
+         t_frame_free(&rt, &s, &f);
+         return;
+      }
+      retro_atomic_int_init(&t.starts, 0);
+      retro_atomic_int_init(&t.fills, 0);
+      retro_atomic_int_init(&t.stops, 0);
+      retro_atomic_int_init(&t.errors, 0);
+      s.hooks.lock        = t_thread_lock;
+      s.hooks.unlock      = t_thread_unlock;
+      s.hooks.user        = &t;
+      f.thread_hooks.start = t_thread_start;
+      f.thread_hooks.fill  = t_thread_fill;
+      f.thread_hooks.stop  = t_thread_stop;
+      f.thread_hooks.user  = &t;
+      f.WaitFrame         = t_thread_wait_frame;
+      f.BeginFrame        = t_thread_begin_frame;
+      f.EndFrame          = t_thread_end_frame;
+      openxr_frame_set_pacing(&f, 1);
+      t_active_thread_hooks = &t;
+      if (which != T_THREAD_STOPPED)
+      {
+         t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+         t_push_state(T_SESSION, XR_SESSION_STATE_FOCUSED);
+      }
+      made      = t_sessions_made;
+      destroyed = t_sessions_destroyed;
+      begins    = t_begins;
+      ends      = t_ends;
+      started   = openxr_frame_start(&f);
+      if (started)
+         restarted = openxr_frame_start(&f);
+      /* The stand-in ends a frame itself; give that thread a bounded run. */
+      if (started && which != T_THREAD_STOPPED)
+      {
+         retro_time_t deadline = cpu_features_get_time_usec() + 2000000;
+         while (!retro_atomic_load_acquire_int(&t.stops)
+               && cpu_features_get_time_usec() < deadline)
+            retro_sleep(1);
+      }
+      openxr_frame_stop(&f);
+      CHECK(started == (which < T_THREAD_START_FAILED) && !restarted,
+            "case %d: wrong startup result", which);
+      CHECK(!f.thread && !s.session && !openxr_session_alive(&s),
+            "case %d: thread or session escaped", which);
+      CHECK(retro_atomic_load_acquire_int(&t.starts) == 1
+            && retro_atomic_load_acquire_int(&t.stops) == 1,
+            "case %d: start/stop count", which);
+      CHECK(retro_atomic_load_acquire_int(&t.fills) == expected_fill,
+            "case %d: fill count", which);
+      CHECK(!retro_atomic_load_acquire_int(&t.errors),
+            "case %d: hook order/lock errors", which);
+      CHECK(t_sessions_made == made + (which != T_THREAD_START_EMPTY)
+            && t_sessions_destroyed == destroyed + (which != T_THREAD_START_EMPTY),
+            "case %d: session cleanup", which);
+      CHECK(t_begins == begins + (which == T_THREAD_FRAME)
+            && t_ends == ends + (which == T_THREAD_FRAME),
+            "case %d: submitted a failed or stopped frame", which);
+      openxr_frame_stop(&f);
+      CHECK(retro_atomic_load_acquire_int(&t.stops) == 1,
+            "case %d: repeated stop called the hook", which);
+      t_frame_free(&rt, &s, &f);
+      slock_free(t.lock);
+      t_active_thread_hooks = NULL;
+   }
+}
+
+static void test_frame_carried_seq(void)
+{
+   static int binding;
+   openxr_runtime_t rt;
+   openxr_session_t s;
+   openxr_swapchains_t sc;
+   openxr_frame_t f;
+   openxr_projection_t p, got;
+
+   t_frame_fresh(&rt, &s, &sc, &f);
+   memset(&p, 0, sizeof(p));
+   p.active             = true;
+   p.track_seq          = 10;
+   p.width              = 400;
+   p.height             = 240;
+   p.pose[0].position.x = -0.03f;
+   p.pose[1].position.x = 0.03f;
+   p.fov[0].angleLeft   = -0.75f;
+   p.fov[1].angleRight  = 0.8f;
+   openxr_session_lock(&s);
+   openxr_frame_publish_projection(&f, &p);
+   openxr_frame_move_projection(&f, 10, 11);
+   CHECK(openxr_frame_carried_seq(&f, 10) == 11, "first carry missing");
+   openxr_frame_move_projection(&f, 11, 12);
+   CHECK(openxr_frame_carried_seq(&f, 10) == 12
+         && openxr_frame_carried_seq(&f, 11) == 12
+         && openxr_frame_carried_seq(&f, 9) == 9,
+         "consecutive carries not composed");
+   openxr_seq_read(&f.proj_seq, f.proj_words, &got, sizeof(got));
+   p.track_seq = 12;
+   CHECK(!memcmp(&p, &got, sizeof(p)), "carry changed projection poses or size");
+   openxr_frame_clear_projection(&f);
+   openxr_frame_move_projection(&f, 12, 13);
+   CHECK(openxr_frame_carried_seq(&f, 10) == 13,
+         "carry lost a queued projection while none was published");
+   openxr_frame_move_projection(&f, 20, 21);
+   CHECK(openxr_frame_carried_seq(&f, 20) == 21
+         && openxr_frame_carried_seq(&f, 10) == 10,
+         "unrelated space was included in carry");
+   openxr_session_unlock(&s);
+   openxr_session_reset(&s);
+   openxr_session_create(&s, &binding);
+   openxr_frame_session_created(&f);
+   openxr_session_lock(&s);
+   CHECK(openxr_frame_carried_seq(&f, 20) == 20,
+         "new session kept a carry mapping");
+   openxr_session_unlock(&s);
+   t_frame_free(&rt, &s, &f);
+}
+
+static void t_ring_permutation(const openxr_ring_t *r)
+{
+   int back   = openxr_ring_back(r);
+   int front  = openxr_ring_front(r);
+   int middle = retro_atomic_load_acquire_int(&r->middle) & 3;
+   CHECK(back >= 0 && back < OPENXR_RING_SIZE, "back index %d", back);
+   CHECK(front >= 0 && front < OPENXR_RING_SIZE, "front index %d", front);
+   CHECK(middle >= 0 && middle < OPENXR_RING_SIZE, "middle index %d", middle);
+   CHECK(back != front && back != middle && front != middle,
+         "ring indices overlap: %d/%d/%d", back, middle, front);
+}
+
+static void test_ring_indices(void)
+{
+   openxr_ring_t r;
+   unsigned i;
+   int front = -1;
+   int published;
+   int held;
+   int back;
+
+   openxr_ring_init(&r);
+   t_ring_permutation(&r);
+   CHECK(!openxr_ring_take(&r, &front), "new ring has a publication");
+   CHECK(front == -1, "empty take changed its output");
+   published = openxr_ring_back(&r);
+   back = openxr_ring_publish(&r);
+   CHECK(back == openxr_ring_back(&r),
+         "publish did not return the next back index");
+   t_ring_permutation(&r);
+   CHECK(openxr_ring_take(&r, &front), "publication missing");
+   CHECK(front == published && front == openxr_ring_front(&r),
+         "take did not acquire the published record");
+   CHECK(!openxr_ring_take(&r, &front), "publication taken twice");
+
+   held = front;
+   for (i = 0; i < 101; i++)
+   {
+      published = openxr_ring_back(&r);
+      CHECK(published != held, "producer acquired the held front");
+      CHECK(openxr_ring_publish(&r) != held,
+            "publish returned the held front");
+      t_ring_permutation(&r);
+   }
+   CHECK(openxr_ring_take(&r, &front), "latest publication missing");
+   CHECK(front == published, "take did not acquire the latest record");
+   CHECK(!openxr_ring_take(&r, &front), "latest publication taken twice");
+   t_ring_permutation(&r);
+}
+
+#define T_RING_RECORDS 200000
+typedef struct t_ring_threads
+{
+   openxr_ring_t ring;
+   struct { unsigned a, b; } records[OPENXR_RING_SIZE];
+   retro_atomic_int_t done;
+} t_ring_threads_t;
+
+static void t_ring_produce(void *data)
+{
+   t_ring_threads_t *t = (t_ring_threads_t*)data;
+   unsigned seq;
+   for (seq = 1; seq <= T_RING_RECORDS; seq++)
+   {
+      int back = openxr_ring_back(&t->ring);
+      t->records[back].a = seq;
+      t->records[back].b = seq;
+      openxr_ring_publish(&t->ring);
+   }
+   retro_atomic_store_release_int(&t->done, 1);
+}
+
+static void t_ring_consume(t_ring_threads_t *t, unsigned *last)
+{
+   int front;
+   unsigned a, b;
+   if (!openxr_ring_take(&t->ring, &front))
+      return;
+   CHECK(front >= 0 && front < OPENXR_RING_SIZE, "taken index %d", front);
+   if (front < 0 || front >= OPENXR_RING_SIZE)
+      return;
+   a = t->records[front].a;
+   b = t->records[front].b;
+   CHECK(a == b, "torn record: %u/%u", a, b);
+   CHECK(a > *last, "sequence %u follows %u", a, *last);
+   *last = a;
+}
+
+static void test_ring_threads(void)
+{
+   t_ring_threads_t t;
+   sthread_t *thread;
+   unsigned last = 0;
+   memset(t.records, 0, sizeof(t.records));
+   openxr_ring_init(&t.ring);
+   retro_atomic_int_init(&t.done, 0);
+   thread = sthread_create(t_ring_produce, &t);
+   CHECK(thread, "no ring producer thread");
+   if (!thread)
+      return;
+   while (!retro_atomic_load_acquire_int(&t.done))
+      t_ring_consume(&t, &last);
+   t_ring_consume(&t, &last);
+   sthread_join(thread);
+   CHECK(last == T_RING_RECORDS, "final sequence %u", last);
+}
+
+#ifdef HAVE_OPENXR_GL
+/* ---- the desktop GL host, on a GL that only keeps books ---- */
+
+/* Which thread made a call: the test's (the video thread) or the XR
+ * thread. */
+static uintptr_t t_video_thread;
+static bool t_on_xr(void) { return sthread_get_current_thread_id() != t_video_thread; }
+
+#define T_GL_NAMES 0x2000
+#define T_GL_SYNCS 1024
+#define T_GL_TRACE 8192
+enum t_gl_op
+{
+   T_GL_WAIT = 1, T_GL_FENCE, T_GL_DELSYNC, T_GL_COPY, T_GL_GENTEX,
+   T_GL_DELTEX, T_GL_STORAGE, T_GL_BLIT
+};
+typedef struct t_gl_call { bool xr; unsigned op, a, b; } t_gl_call_t;
+typedef struct t_gl_sync { bool alive, xr_made, xr_deleted; unsigned deletes; } t_gl_sync_t;
+static slock_t *t_gl_lock;
+static unsigned t_gl_next_tex, t_gl_next_sync, t_gl_next_fbo;
+static unsigned t_tex_content[T_GL_NAMES];
+static bool t_tex_alive[T_GL_NAMES];
+static unsigned t_tex_dims[T_GL_NAMES];
+static t_gl_sync_t t_syncs[T_GL_SYNCS];
+static int t_fbos_alive;
+static unsigned t_gl_bound[2];            /* GL_TEXTURE_2D, per thread */
+static unsigned t_gl_read_att, t_gl_draw_att, t_gl_read_fbo, t_gl_draw_fbo;
+static t_gl_call_t t_gl_calls[T_GL_TRACE];
+static unsigned t_gl_num_calls;
+static unsigned t_gl_copies, t_gl_xr_wrong;
+static GLenum t_gl_error;
+static int t_gl_version;
+static const char *t_gl_missing;
+
+static void t_gl_reset(void)
+{
+   if (!t_gl_lock)
+      t_gl_lock = slock_new();
+   t_video_thread = sthread_get_current_thread_id();
+   t_gl_next_tex  = 0x1000;
+   t_gl_next_sync = 1;
+   t_gl_next_fbo  = 1;
+   memset(t_tex_content, 0, sizeof(t_tex_content));
+   memset(t_tex_alive, 0, sizeof(t_tex_alive));
+   memset(t_tex_dims, 0, sizeof(t_tex_dims));
+   memset(t_syncs, 0, sizeof(t_syncs));
+   memset(t_gl_bound, 0, sizeof(t_gl_bound));
+   t_fbos_alive   = 0;
+   t_gl_num_calls = t_gl_copies = t_gl_xr_wrong = 0;
+   t_gl_read_att  = t_gl_draw_att = t_gl_read_fbo = t_gl_draw_fbo = 0;
+   t_gl_error     = GL_NO_ERROR;
+   t_gl_version   = 46;
+   t_gl_missing   = NULL;
+}
+
+static void t_gl_trace(unsigned op, unsigned a, unsigned b)
+{
+   if (t_gl_num_calls < T_GL_TRACE)
+   {
+      t_gl_calls[t_gl_num_calls].xr = t_on_xr();
+      t_gl_calls[t_gl_num_calls].op = op;
+      t_gl_calls[t_gl_num_calls].a  = a;
+      t_gl_calls[t_gl_num_calls].b  = b;
+      t_gl_num_calls++;
+   }
+}
+
+static void APIENTRY t_glGenTextures(GLsizei n, GLuint *names)
+{
+   GLsizei i;
+   slock_lock(t_gl_lock);
+   for (i = 0; i < n; i++)
+   {
+      names[i] = t_gl_next_tex++;
+      t_tex_alive[names[i]] = true;
+      t_gl_trace(T_GL_GENTEX, names[i], 0);
+   }
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glDeleteTextures(GLsizei n, const GLuint *names)
+{
+   GLsizei i;
+   slock_lock(t_gl_lock);
+   for (i = 0; i < n; i++)
+      if (names[i] && names[i] < T_GL_NAMES)
+      {
+         t_tex_alive[names[i]] = false;
+         t_gl_trace(T_GL_DELTEX, names[i], 0);
+      }
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glBindTexture(GLenum target, GLuint name)
+{ t_gl_bound[t_on_xr()] = name; }
+static void APIENTRY t_glTexStorage2D(GLenum target, GLsizei levels,
+      GLenum format, GLsizei w, GLsizei h)
+{
+   unsigned name = t_gl_bound[t_on_xr()];
+   slock_lock(t_gl_lock);
+   if (name < T_GL_NAMES)
+      t_tex_dims[name] = VIDEO_SCALE_PACK(w, h);
+   t_gl_trace(T_GL_STORAGE, name, levels);
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glTexImage2D(GLenum target, GLint level,
+      GLint format, GLsizei w, GLsizei h, GLint border, GLenum fmt,
+      GLenum type, const void *data)
+{ t_glTexStorage2D(target, 1, (GLenum)format, w, h); }
+static void APIENTRY t_glTexParameteri(GLenum target, GLenum pname, GLint v) { }
+static void APIENTRY t_glTexSubImage2D(GLenum target, GLint level,
+      GLint x, GLint y, GLsizei w, GLsizei h, GLenum fmt, GLenum type,
+      const void *data) { }
+static void APIENTRY t_glPixelStorei(GLenum pname, GLint v) { }
+static void APIENTRY t_glGetIntegerv(GLenum pname, GLint *v)
+{
+   switch (pname)
+   {
+      case GL_MAJOR_VERSION:      *v = t_gl_version / 10; break;
+      case GL_MINOR_VERSION:      *v = t_gl_version % 10; break;
+      case GL_TEXTURE_BINDING_2D: *v = (GLint)t_gl_bound[t_on_xr()]; break;
+      default:                    *v = 0; break;
+   }
+}
+static const GLubyte *APIENTRY t_glGetStringi(GLenum name, GLuint i)
+{ return NULL; }
+static GLenum APIENTRY t_glGetError(void)
+{
+   GLenum e   = t_gl_error;
+   t_gl_error = GL_NO_ERROR;
+   return e;
+}
+static GLsync APIENTRY t_glFenceSync(GLenum cond, GLbitfield flags)
+{
+   unsigned id;
+   slock_lock(t_gl_lock);
+   id                  = t_gl_next_sync++;
+   t_syncs[id].alive   = true;
+   t_syncs[id].xr_made = t_on_xr();
+   t_gl_trace(T_GL_FENCE, id, 0);
+   slock_unlock(t_gl_lock);
+   return (GLsync)(uintptr_t)id;
+}
+static void APIENTRY t_glWaitSync(GLsync sync, GLbitfield flags,
+      GLuint64 timeout)
+{
+   unsigned id = (unsigned)(uintptr_t)sync;
+   slock_lock(t_gl_lock);
+   if (!id || id >= T_GL_SYNCS || !t_syncs[id].alive)
+      t_gl_xr_wrong++;
+   t_gl_trace(T_GL_WAIT, id, 0);
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glDeleteSync(GLsync sync)
+{
+   unsigned id = (unsigned)(uintptr_t)sync;
+   if (!id)
+      return;
+   slock_lock(t_gl_lock);
+   if (id < T_GL_SYNCS)
+   {
+      t_syncs[id].alive      = false;
+      t_syncs[id].xr_deleted = t_on_xr();
+      t_syncs[id].deletes++;
+   }
+   t_gl_trace(T_GL_DELSYNC, id, 0);
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glFlush(void) { }
+static void APIENTRY t_glFinish(void) { }
+static void APIENTRY t_glCopyImageSubData(GLuint src, GLenum st, GLint sl,
+      GLint sx, GLint sy, GLint sz, GLuint dst, GLenum dt, GLint dl,
+      GLint dx, GLint dy, GLint dz, GLsizei w, GLsizei h, GLsizei d)
+{
+   slock_lock(t_gl_lock);
+   if (!t_on_xr())
+      t_gl_xr_wrong++;
+   if (src < T_GL_NAMES && dst < T_GL_NAMES)
+      t_tex_content[dst] = t_tex_content[src];
+   t_gl_copies++;
+   t_gl_trace(T_GL_COPY, src, dst);
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glGenFramebuffers(GLsizei n, GLuint *names)
+{
+   GLsizei i;
+   slock_lock(t_gl_lock);
+   for (i = 0; i < n; i++)
+      names[i] = t_gl_next_fbo++;
+   t_fbos_alive += n;
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glDeleteFramebuffers(GLsizei n, const GLuint *names)
+{
+   GLsizei i;
+   slock_lock(t_gl_lock);
+   for (i = 0; i < n; i++)
+      if (names[i])
+         t_fbos_alive--;
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glBindFramebuffer(GLenum target, GLuint fbo)
+{
+   if (target == GL_READ_FRAMEBUFFER || target == GL_FRAMEBUFFER)
+      t_gl_read_fbo = fbo;
+   if (target == GL_DRAW_FRAMEBUFFER || target == GL_FRAMEBUFFER)
+      t_gl_draw_fbo = fbo;
+}
+static void APIENTRY t_glFramebufferTexture2D(GLenum target, GLenum att,
+      GLenum textarget, GLuint tex, GLint level)
+{
+   if (target == GL_READ_FRAMEBUFFER)
+      t_gl_read_att = tex;
+   else
+      t_gl_draw_att = tex;
+}
+static GLenum APIENTRY t_glCheckFramebufferStatus(GLenum target)
+{ return GL_FRAMEBUFFER_COMPLETE; }
+static void APIENTRY t_glBlitFramebuffer(GLint sx0, GLint sy0, GLint sx1,
+      GLint sy1, GLint dx0, GLint dy0, GLint dx1, GLint dy1,
+      GLbitfield mask, GLenum filter)
+{
+   slock_lock(t_gl_lock);
+   if (t_gl_read_att < T_GL_NAMES && t_gl_draw_att < T_GL_NAMES)
+      t_tex_content[t_gl_draw_att] = t_tex_content[t_gl_read_att];
+   t_gl_copies++;
+   t_gl_trace(T_GL_BLIT, t_gl_read_att, t_gl_draw_att);
+   slock_unlock(t_gl_lock);
+}
+static void APIENTRY t_glDisable(GLenum cap) { }
+
+static const struct { const char *name; gfx_ctx_proc_t fn; } t_gl_procs[] = {
+   { "glGenTextures",            (gfx_ctx_proc_t)t_glGenTextures },
+   { "glDeleteTextures",         (gfx_ctx_proc_t)t_glDeleteTextures },
+   { "glBindTexture",            (gfx_ctx_proc_t)t_glBindTexture },
+   { "glTexStorage2D",           (gfx_ctx_proc_t)t_glTexStorage2D },
+   { "glTexImage2D",             (gfx_ctx_proc_t)t_glTexImage2D },
+   { "glTexParameteri",          (gfx_ctx_proc_t)t_glTexParameteri },
+   { "glTexSubImage2D",          (gfx_ctx_proc_t)t_glTexSubImage2D },
+   { "glPixelStorei",            (gfx_ctx_proc_t)t_glPixelStorei },
+   { "glGetIntegerv",            (gfx_ctx_proc_t)t_glGetIntegerv },
+   { "glGetStringi",             (gfx_ctx_proc_t)t_glGetStringi },
+   { "glGetError",               (gfx_ctx_proc_t)t_glGetError },
+   { "glFenceSync",              (gfx_ctx_proc_t)t_glFenceSync },
+   { "glWaitSync",               (gfx_ctx_proc_t)t_glWaitSync },
+   { "glDeleteSync",             (gfx_ctx_proc_t)t_glDeleteSync },
+   { "glFlush",                  (gfx_ctx_proc_t)t_glFlush },
+   { "glFinish",                 (gfx_ctx_proc_t)t_glFinish },
+   { "glCopyImageSubData",       (gfx_ctx_proc_t)t_glCopyImageSubData },
+   { "glGenFramebuffers",        (gfx_ctx_proc_t)t_glGenFramebuffers },
+   { "glDeleteFramebuffers",     (gfx_ctx_proc_t)t_glDeleteFramebuffers },
+   { "glBindFramebuffer",        (gfx_ctx_proc_t)t_glBindFramebuffer },
+   { "glFramebufferTexture2D",   (gfx_ctx_proc_t)t_glFramebufferTexture2D },
+   { "glCheckFramebufferStatus", (gfx_ctx_proc_t)t_glCheckFramebufferStatus },
+   { "glBlitFramebuffer",        (gfx_ctx_proc_t)t_glBlitFramebuffer },
+   { "glDisable",                (gfx_ctx_proc_t)t_glDisable },
+   { NULL, NULL }
+};
+
+static gfx_ctx_proc_t t_gl_get_proc(const char *name)
+{
+   unsigned i;
+   if (t_gl_missing && string_is_equal(name, t_gl_missing))
+      return NULL;
+   for (i = 0; t_gl_procs[i].name; i++)
+      if (string_is_equal(name, t_gl_procs[i].name))
+         return t_gl_procs[i].fn;
+   return NULL;
+}
+
+/* The context driver's shared context. */
+static bool t_shared_fail_new, t_shared_fail_bind;
+static unsigned t_shared_news, t_shared_frees, t_shared_binds,
+      t_shared_unbinds, t_shared_wrong_thread;
+static bool t_shared_new(void *data, gfx_ctx_shared_context_t *out)
+{
+   memset(out, 0, sizeof(*out));
+   if (t_shared_fail_new)
+      return false;
+   if (t_on_xr())
+      t_shared_wrong_thread++;
+   t_shared_news++;
+   out->kind             = GFX_CTX_SHARED_EGL;
+   out->display          = (void*)0x10;
+   out->config           = (void*)0x20;
+   out->context          = (void*)0x30;
+   out->get_proc_address = t_gl_get_proc;
+   return true;
+}
+static bool t_shared_bind(gfx_ctx_shared_context_t *ctx, bool bind)
+{
+   if (!t_on_xr())
+      t_shared_wrong_thread++;
+   if (!bind)
+   {
+      t_shared_unbinds++;
+      return true;
+   }
+   if (t_shared_fail_bind)
+      return false;
+   t_shared_binds++;
+   return true;
+}
+static void t_shared_free(gfx_ctx_shared_context_t *ctx)
+{
+   if (t_on_xr())
+      t_shared_wrong_thread++;
+   if (ctx->kind)
+      t_shared_frees++;
+   memset(ctx, 0, sizeof(*ctx));
+}
+static gfx_ctx_driver_t t_gl_ctx_driver;
+
+/* One headset frame at a time: the XR thread waits for the test's
+ * permit; the test waits for the frame's end. */
+static slock_t *t_gate_lock;
+static scond_t *t_gate_cond;
+static unsigned t_gate_permits, t_gate_done;
+static bool t_gate_all;
+static XRAPI_ATTR XrResult XRAPI_CALL t_gate_wait_frame(XrSession s,
+      const XrFrameWaitInfo *wi, XrFrameState *st)
+{
+   unsigned spins = 0;
+   slock_lock(t_gate_lock);
+   while (!t_gate_permits && !t_gate_all && spins++ < 5000)
+      scond_wait_timeout(t_gate_cond, t_gate_lock, 1000);
+   if (t_gate_permits)
+      t_gate_permits--;
+   slock_unlock(t_gate_lock);
+   return t_wait_frame(s, wi, st);
+}
+static XRAPI_ATTR XrResult XRAPI_CALL t_gate_end_frame(XrSession s,
+      const XrFrameEndInfo *ei)
+{
+   XrResult res = t_end_frame(s, ei);
+   slock_lock(t_gate_lock);
+   t_gate_done++;
+   scond_broadcast(t_gate_cond);
+   slock_unlock(t_gate_lock);
+   return res;
+}
+static bool t_gate_step(unsigned n)
+{
+   unsigned target;
+   bool ok = true;
+   slock_lock(t_gate_lock);
+   target          = t_gate_done + n;
+   t_gate_permits += n;
+   scond_broadcast(t_gate_cond);
+   while (ok && t_gate_done < target)
+      ok = scond_wait_timeout(t_gate_cond, t_gate_lock, 3000000);
+   slock_unlock(t_gate_lock);
+   return ok;
+}
+static void t_gate_set_all(bool all)
+{
+   slock_lock(t_gate_lock);
+   t_gate_all     = all;
+   t_gate_permits = 0;
+   scond_broadcast(t_gate_cond);
+   slock_unlock(t_gate_lock);
+}
+
+static void t_gl_host_setup(void)
+{
+   if (!t_gate_lock)
+   {
+      t_gate_lock = slock_new();
+      t_gate_cond = scond_new();
+   }
+   t_gate_set_all(false);
+   t_runtime_defaults();
+   t_exts[0]  = "XR_KHR_opengl_enable";
+   t_exts[3]  = "XR_MNDX_egl_enable";
+   t_num_exts = 4;
+   t_gl_reset();
+   memset(&t_gl_ctx_driver, 0, sizeof(t_gl_ctx_driver));
+   t_gl_ctx_driver.shared_context_new  = t_shared_new;
+   t_gl_ctx_driver.shared_context_bind = t_shared_bind;
+   t_gl_ctx_driver.shared_context_free = t_shared_free;
+   t_shared_fail_new = t_shared_fail_bind = false;
+   t_shared_news = t_shared_frees = t_shared_binds = t_shared_unbinds = 0;
+   t_shared_wrong_thread = 0;
+   t_formats[0]         = OPENXR_GL_SRGB8_ALPHA8;
+   t_formats[1]         = OPENXR_GL_RGBA8;
+   t_more_formats       = 0;
+   t_fill_gl            = true;
+   t_gl_wrong_type      = false;
+   t_gles_base          = 0x400;
+   t_sc_images          = 3;
+   t_sc_images_second   = 0;
+   t_sc_wait            = XR_SUCCESS;
+   t_sc_busy            = XR_NULL_HANDLE;
+   t_sc_busy_from       = 0;
+   t_sc_release         = XR_SUCCESS;
+   t_sc_refuse_width    = 0;
+   t_create_session_res = XR_SUCCESS;
+   t_gl_reqs_res        = XR_SUCCESS;
+   t_wait_frame_res = t_begin_frame_res = t_end_frame_res = XR_SUCCESS;
+   t_num_events = t_next_event = 0;
+   t_poll_result = XR_SUCCESS;
+   t_push_state(T_SESSION, XR_SESSION_STATE_READY);
+   t_push_state(T_SESSION, XR_SESSION_STATE_FOCUSED);
+   memset(&t_xr_host, 0, sizeof(t_xr_host));
+}
+
+static gl_openxr_t *t_gl_host_new(void)
+{
+   gl_openxr_t *xr;
+   t_gl_host_setup();
+   if (!(xr = gl_openxr_new(&t_gl_ctx_driver, NULL)))
+      return NULL;
+   xr->frame.WaitFrame = t_gate_wait_frame;
+   xr->frame.EndFrame  = t_gate_end_frame;
+   return xr;
+}
+
+static void t_gl_host_free(gl_openxr_t *xr)
+{
+   t_gate_set_all(true);
+   gl_openxr_free(xr);
+   t_gate_set_all(false);
+   t_fill_gl = false;
+}
+
+/* What the headset showed at its last frame: the quads' count and the
+ * first quad's swapchain, or a projection first. */
+static unsigned t_gl_shown(XrSwapchain *first)
+{
+   unsigned n;
+   slock_lock(t_gate_lock);
+   n = t_last_layer_count;
+   if (first)
+      *first = t_quad.subImage.swapchain;
+   slock_unlock(t_gate_lock);
+   return n;
+}
+
+/* The video thread's draw: slot's targets marked gen, published with a
+ * quad for slot and one for another slot, which the slot's image must
+ * not bring with it. */
+static bool t_gl_draw(gl_openxr_t *xr, unsigned slot, unsigned dims,
+      unsigned layers, unsigned gen, const openxr_projection_t *p)
+{
+   unsigned l;
+   uint32_t tex[2] = { 0, 0 };
+   video_xr_quad_set_t set;
+   if (!gl_openxr_slot_target(xr, slot, dims, layers, tex))
+      return false;
+   slock_lock(t_gl_lock);
+   for (l = 0; l < layers; l++)
+      if (tex[l] < T_GL_NAMES)
+         t_tex_content[tex[l]] = gen * 10 + l;
+   slock_unlock(t_gl_lock);
+   memset(&set, 0, sizeof(set));
+   if (slot != OPENXR_PROJECTION_SLOT)
+   {
+      set.quads[0].slot               = slot;
+      set.quads[0].kind               = (slot == VIDEO_XR_MENU_SLOT)
+         ? VIDEO_XR_QUAD_MENU : VIDEO_XR_QUAD_SCREEN;
+      set.quads[0].width              = 1.0f;
+      set.quads[0].height             = 1.0f;
+      set.quads[0].pose.orientation.w = 1.0f;
+      set.quads[1]                    = set.quads[0];
+      set.quads[1].slot               = (slot + 1) % VIDEO_XR_MAX_SLOTS;
+      set.slots[slot].dims            = dims;
+      set.slots[slot].layers          = layers;
+      set.num_quads                   = 2;
+   }
+   gl_openxr_slot_publish(xr, slot, &set, p);
+   return true;
+}
+
+/* The image the XR thread last copied into for slot's layer. */
+static unsigned t_gl_image_content(gl_openxr_t *xr, unsigned slot,
+      unsigned layer)
+{
+   unsigned c;
+   uint32_t image = xr->slots[slot].images[1][layer];
+   slock_lock(t_gl_lock);
+   c = (image < T_GL_NAMES) ? t_tex_content[image] : 0;
+   slock_unlock(t_gl_lock);
+   return c;
+}
+
+/* Each fence deleted once, by the thread that made it; none alive. */
+static void t_gl_books_closed(const char *name)
+{
+   unsigned i, wrong = 0, alive = 0, textures = 0;
+   for (i = 1; i < t_gl_next_sync && i < T_GL_SYNCS; i++)
+   {
+      if (t_syncs[i].alive)
+         alive++;
+      else if (t_syncs[i].deletes != 1
+            || t_syncs[i].xr_deleted != t_syncs[i].xr_made)
+         wrong++;
+   }
+   for (i = 0x1000; i < t_gl_next_tex && i < T_GL_NAMES; i++)
+      if (t_tex_alive[i])
+         textures++;
+   CHECK(!alive && !wrong && !textures && !t_fbos_alive,
+         "%s: %u fences alive, %u deleted wrongly, %u textures, %d "
+         "framebuffers", name, alive, wrong, textures, t_fbos_alive);
+}
+
+/* The video thread waited on the XR thread's copy fence before it
+ * deleted or reallocated a texture the XR thread had copied from, or
+ * the XR thread retired that fence first (after its glFinish at stop). */
+static void t_gl_reuse_waited(const char *name)
+{
+   unsigned i, j, k, bad = 0;
+   for (i = 0; i < t_gl_num_calls; i++)
+   {
+      unsigned tex, fence = 0;
+      if (!t_gl_calls[i].xr || t_gl_calls[i].op != T_GL_COPY)
+         continue;
+      tex = t_gl_calls[i].a;
+      for (j = i + 1; j < t_gl_num_calls; j++)
+         if (t_gl_calls[j].xr && t_gl_calls[j].op == T_GL_FENCE)
+         {
+            fence = t_gl_calls[j].a;
+            break;
+         }
+      for (k = j; fence && k < t_gl_num_calls; k++)
+      {
+         if (     t_gl_calls[k].a == fence
+               && (   (!t_gl_calls[k].xr && t_gl_calls[k].op == T_GL_WAIT)
+                   || (t_gl_calls[k].xr && t_gl_calls[k].op == T_GL_DELSYNC)))
+            break;
+         if (     !t_gl_calls[k].xr && t_gl_calls[k].op == T_GL_DELTEX
+               && t_gl_calls[k].a == tex)
+         {
+            bad++;
+            break;
+         }
+      }
+   }
+   CHECK(!bad, "%s: %u textures deleted before the copy from them", name,
+         bad);
+}
+
+static void test_gl_host_start_failure(void)
+{
+   gl_openxr_t *xr;
+   unsigned made;
+
+   /* No shared contexts in the context driver, or none it could make. */
+   t_gl_host_setup();
+   memset(&t_gl_ctx_driver, 0, sizeof(t_gl_ctx_driver));
+   t_reset_log();
+   CHECK(!gl_openxr_new(&t_gl_ctx_driver, NULL)
+         && LOGGED("[OpenXR] The context driver has no shared contexts; no headset output.\n"),
+         "a driver without shared contexts: %s", t_log);
+   t_gl_ctx_driver.shared_context_new  = t_shared_new;
+   t_gl_ctx_driver.shared_context_bind = t_shared_bind;
+   t_gl_ctx_driver.shared_context_free = t_shared_free;
+   t_shared_fail_new = true;
+   t_reset_log();
+   CHECK(!gl_openxr_new(&t_gl_ctx_driver, NULL)
+         && LOGGED("[OpenXR] No context could share the window's; no headset output.\n"),
+         "no shared context: %s", t_log);
+   t_shared_fail_new = false;
+   t_gl_missing      = "glFenceSync";
+   t_reset_log();
+   CHECK(!gl_openxr_new(&t_gl_ctx_driver, NULL)
+         && LOGGED("[OpenXR] The GL context lacks functions headset output needs.\n")
+         && t_shared_frees == t_shared_news,
+         "a context without fences: %s", t_log);
+   t_gl_missing = NULL;
+   t_gl_version = 33;
+   CHECK(!gl_openxr_new(&t_gl_ctx_driver, NULL)
+         && t_shared_frees == t_shared_news, "a context too old");
+   t_fill_gl = false;
+
+   /* The XR thread cannot take the context: no session, nothing left. */
+   xr = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   made               = t_sessions_made;
+   t_shared_fail_bind = true;
+   CHECK(!gl_openxr_start(xr), "started without its context");
+   CHECK(t_sessions_made == made && !t_xr_host.user, "bind failure: a "
+         "session %u or a host", t_sessions_made - made);
+   t_gl_host_free(xr);
+   CHECK(t_shared_frees == 1 && !t_shared_wrong_thread,
+         "bind failure: context freed %u, wrong threads %u", t_shared_frees,
+         t_shared_wrong_thread);
+   t_gl_books_closed("bind failure");
+
+   /* The runtime refuses the session: unbound on its thread, nothing left. */
+   xr = t_gl_host_new();
+   if (!xr)
+      return;
+   t_create_session_res = XR_ERROR_GRAPHICS_DEVICE_INVALID;
+   CHECK(!gl_openxr_start(xr), "started without a session");
+   CHECK(t_shared_binds == 1 && t_shared_unbinds == 1
+         && !t_shared_wrong_thread && !t_xr_host.user,
+         "session failure: binds %u unbinds %u wrong %u", t_shared_binds,
+         t_shared_unbinds, t_shared_wrong_thread);
+   t_gl_host_free(xr);
+   t_gl_books_closed("session failure");
+
+   /* A session without a format it can use: destroyed on its thread. */
+   xr = t_gl_host_new();
+   if (!xr)
+      return;
+   t_formats[0] = 50;
+   t_formats[1] = 44;
+   made         = t_sessions_destroyed;
+   CHECK(!gl_openxr_start(xr), "started without a format");
+   CHECK(t_sessions_destroyed == made + 1 && !xr->session.session
+         && t_shared_unbinds == t_shared_binds,
+         "format failure: session destroyed %u, unbinds %u of %u",
+         t_sessions_destroyed - made, t_shared_unbinds, t_shared_binds);
+   t_gl_host_free(xr);
+   t_gl_books_closed("format failure");
+}
+
+static void test_gl_host_records(void)
+{
+   unsigned i, copies, waits_on_xr;
+   XrSwapchain shown = XR_NULL_HANDLE;
+   gl_openxr_t *xr   = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   CHECK(gl_openxr_start(xr) && t_xr_host.user == xr, "start");
+   CHECK(t_shared_binds == 1 && !t_shared_wrong_thread, "bound %u, wrong %u",
+         t_shared_binds, t_shared_wrong_thread);
+
+   /* Nothing published: nothing copied, nothing shown. */
+   CHECK(t_gate_step(2), "frames");
+   CHECK(!t_gl_copies && !t_gl_shown(NULL), "copied %u before a record",
+         t_gl_copies);
+
+   /* A record: waited on, copied, released and shown with its quad
+    * alone. */
+   CHECK(t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 1, NULL), "draw 1");
+   CHECK(t_gate_step(1), "frame");
+   CHECK(t_gl_copies == 1 && t_gl_image_content(xr, 0, 0) == 10,
+         "copies %u, image %u", t_gl_copies, t_gl_image_content(xr, 0, 0));
+   CHECK(t_gl_shown(&shown) == 1
+         && shown == xr->sc.slots[0].swapchains[0],
+         "shown %u layers", t_gl_shown(NULL));
+   for (i = 0; i < t_gl_num_calls && t_gl_calls[i].op != T_GL_COPY; i++) { }
+   CHECK(i > 0 && i < t_gl_num_calls && t_gl_calls[i - 1].op == T_GL_WAIT
+         && t_gl_calls[i - 1].xr && !t_syncs[t_gl_calls[i - 1].a].xr_made,
+         "the copy did not follow a wait on the draw's fence");
+   CHECK(i + 1 < t_gl_num_calls && t_gl_calls[i + 1].op == T_GL_FENCE
+         && t_gl_calls[i + 1].xr, "no fence after the copy");
+
+   /* No copy without a new record. */
+   CHECK(t_gate_step(3), "frames");
+   CHECK(t_gl_copies == 1 && t_gl_shown(NULL) == 1, "copies %u",
+         t_gl_copies);
+
+   /* Three records before a frame: the newest alone is copied. */
+   CHECK(     t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 2, NULL)
+         && t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 3, NULL)
+         && t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, 4, NULL),
+         "draws 2-4");
+   CHECK(t_gate_step(1), "frame");
+   CHECK(t_gl_copies == 2 && t_gl_image_content(xr, 0, 0) == 40,
+         "copies %u, image %u", t_gl_copies, t_gl_image_content(xr, 0, 0));
+
+   /* Records reused: the video thread waits on the copies' fences. */
+   for (i = 5; i < 12; i++)
+   {
+      t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 32), 1, i, NULL);
+      t_gate_step(1);
+   }
+   copies      = t_gl_copies;
+   waits_on_xr = 0;
+   for (i = 0; i < t_gl_num_calls; i++)
+      if (     !t_gl_calls[i].xr && t_gl_calls[i].op == T_GL_WAIT
+            && t_syncs[t_gl_calls[i].a].xr_made)
+         waits_on_xr++;
+   CHECK(copies == 9 && t_gl_image_content(xr, 0, 0) == 110 && waits_on_xr,
+         "copies %u, image %u, waits on copies %u", copies,
+         t_gl_image_content(xr, 0, 0), waits_on_xr);
+   CHECK(!t_gl_xr_wrong, "%u calls on the wrong thread or fence",
+         t_gl_xr_wrong);
+   t_gl_host_free(xr);
+   CHECK(t_shared_unbinds == 1 && t_shared_frees == 1
+         && !t_shared_wrong_thread && !t_xr_host.user,
+         "free: unbinds %u frees %u wrong %u", t_shared_unbinds,
+         t_shared_frees, t_shared_wrong_thread);
+   t_gl_reuse_waited("records");
+   t_gl_books_closed("records");
+}
+
+static void test_gl_host_resize(void)
+{
+   unsigned made;
+   gl_openxr_t *xr = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   CHECK(gl_openxr_start(xr), "start");
+   CHECK(t_gl_draw(xr, 1, VIDEO_SCALE_PACK(64, 64), 2, 1, NULL)
+         && t_gate_step(1), "first size");
+   CHECK(t_ci_width == 64 && t_gl_image_content(xr, 1, 1) == 11
+         && t_gl_shown(NULL) == 1, "64: width %u, image %u",
+         (unsigned)t_ci_width, t_gl_image_content(xr, 1, 1));
+
+   /* A new size waits for its image: the slot shows nothing while the
+    * runtime is busy, never the new size's quad over the old pixels. */
+   t_sc_wait = XR_TIMEOUT_EXPIRED;
+   CHECK(t_gl_draw(xr, 1, VIDEO_SCALE_PACK(128, 64), 2, 2, NULL)
+         && t_gate_step(1), "second size");
+   CHECK(t_ci_width == 128 && !t_gl_shown(NULL)
+         && t_gl_image_content(xr, 1, 0) != 20,
+         "128 busy: width %u, shown %u", (unsigned)t_ci_width,
+         t_gl_shown(NULL));
+   t_sc_wait = XR_SUCCESS;
+   CHECK(t_gate_step(1), "frame");
+   CHECK(t_gl_image_content(xr, 1, 0) == 20 && t_gl_shown(NULL) == 1,
+         "128: image %u, shown %u", t_gl_image_content(xr, 1, 0),
+         t_gl_shown(NULL));
+
+   /* A size the runtime refuses: left out, said, not asked again. */
+   t_sc_refuse_width = 4096;
+   CHECK(t_gl_draw(xr, 1, VIDEO_SCALE_PACK(4096, 64), 2, 3, NULL)
+         && t_gate_step(1), "refused size");
+   made = t_sc_made;
+   CHECK(!t_gl_shown(NULL)
+         && gl_openxr_slot_refused(xr, 1) == VIDEO_SCALE_PACK(4096, 64),
+         "refused: shown %u, refused %x", t_gl_shown(NULL),
+         gl_openxr_slot_refused(xr, 1));
+   CHECK(t_gl_draw(xr, 1, VIDEO_SCALE_PACK(4096, 64), 2, 4, NULL)
+         && t_gate_step(2), "refused again");
+   CHECK(t_sc_made == made, "a refused size asked again");
+   CHECK(t_gl_draw(xr, 1, VIDEO_SCALE_PACK(256, 64), 2, 5, NULL)
+         && t_gate_step(1), "another size");
+   CHECK(t_gl_shown(NULL) == 1 && !gl_openxr_slot_refused(xr, 1)
+         && t_gl_image_content(xr, 1, 1) == 51,
+         "after refusal: shown %u, image %u", t_gl_shown(NULL),
+         t_gl_image_content(xr, 1, 1));
+   t_gl_host_free(xr);
+   t_gl_reuse_waited("resize");
+   t_gl_books_closed("resize");
+}
+
+static void test_gl_host_empty_record(void)
+{
+   const unsigned menu = VIDEO_XR_MENU_SLOT;
+   gl_openxr_t *xr     = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   CHECK(gl_openxr_start(xr), "start");
+   CHECK(t_gl_draw(xr, menu, VIDEO_SCALE_PACK(64, 64), 1, 1, NULL)
+         && t_gate_step(1), "menu");
+   CHECK(t_gl_shown(NULL) == 1 && (t_quad.layerFlags
+            & XR_COMPOSITION_LAYER_BLEND_TEXTURE_SOURCE_ALPHA_BIT),
+         "menu shown %u", t_gl_shown(NULL));
+
+   /* Closed: gone at the next frame. */
+   gl_openxr_slot_forget(xr, menu);
+   CHECK(t_gate_step(1) && !t_gl_shown(NULL), "closed menu shown");
+
+   /* Reopened while the runtime is busy: never the old image. */
+   t_sc_wait = XR_TIMEOUT_EXPIRED;
+   CHECK(t_gl_draw(xr, menu, VIDEO_SCALE_PACK(64, 64), 1, 2, NULL)
+         && t_gate_step(2), "reopen");
+   CHECK(!t_gl_shown(NULL) && t_gl_image_content(xr, menu, 0) == 10,
+         "the old menu came back: shown %u", t_gl_shown(NULL));
+   t_sc_wait = XR_SUCCESS;
+   CHECK(t_gate_step(1) && t_gl_shown(NULL) == 1
+         && t_gl_image_content(xr, menu, 0) == 20, "reopened: image %u",
+         t_gl_image_content(xr, menu, 0));
+
+   /* Drawn then closed before a frame: closed, in order. */
+   CHECK(t_gl_draw(xr, menu, VIDEO_SCALE_PACK(64, 64), 1, 3, NULL),
+         "draw 3");
+   gl_openxr_slot_forget(xr, menu);
+   CHECK(t_gate_step(1) && !t_gl_shown(NULL), "closed after a draw shown");
+   CHECK(t_gl_draw(xr, menu, VIDEO_SCALE_PACK(64, 64), 1, 4, NULL)
+         && t_gate_step(1) && t_gl_shown(NULL) == 1
+         && t_gl_image_content(xr, menu, 0) == 40, "reopened again");
+   t_gl_host_free(xr);
+   t_gl_books_closed("empty record");
+}
+
+/* The screen the tracked eyes are on yields to them: the headset shows
+ * one or the other, never neither, whichever image the runtime holds. */
+static void test_gl_host_yield(void)
+{
+   const unsigned slot = OPENXR_PROJECTION_SLOT;
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   XrPosef origin;
+   openxr_projection_t p;
+   gl_openxr_t *xr = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   CHECK(gl_openxr_start(xr), "start");
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   openxr_session_swap_track_space(&xr->session, &space, &origin, NULL, NULL);
+   memset(&p, 0, sizeof(p));
+   p.active    = true;
+   p.track_seq = retro_atomic_load_acquire_int(&xr->session.track_seq);
+   p.width     = 64;
+   p.height    = 48;
+   p.pose[0].orientation.w = p.pose[1].orientation.w = 1.0f;
+
+   CHECK(t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 64), 1, 1, NULL)
+         && t_gate_step(1) && t_gl_shown(NULL) == 1, "screen");
+
+   /* The eyes' new images are busy: the screen stays until they show. */
+   t_sc_busy_from = t_sc_created_total + 1;
+   CHECK(t_gl_draw(xr, slot, VIDEO_SCALE_PACK(64, 48), 2, 2, &p),
+         "eyes");
+   gl_openxr_slot_yield(xr, 0);
+   CHECK(t_gate_step(2), "frames");
+   CHECK(     t_gl_shown(NULL) == 1
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_QUAD,
+         "the screen went before the eyes showed: %u layers, type %d",
+         t_gl_shown(NULL), (int)t_layer_types[0]);
+   t_sc_busy_from = 0;
+   CHECK(t_gate_step(1), "frame");
+   CHECK(     t_gl_shown(NULL) == 1
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+         "eyes for the screen: %u layers, type %d", t_gl_shown(NULL),
+         (int)t_layer_types[0]);
+
+   /* Back to the screen while its image is busy: the eyes stay until
+    * the screen shows. */
+   t_sc_busy = xr->sc.slots[0].swapchains[0];
+   CHECK(t_gl_draw(xr, 0, VIDEO_SCALE_PACK(64, 64), 1, 3, NULL),
+         "screen again");
+   gl_openxr_slot_forget(xr, slot);
+   CHECK(t_gate_step(2), "frames");
+   CHECK(     t_gl_shown(NULL) == 1
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+         "the eyes went before the screen showed: %u layers, type %d",
+         t_gl_shown(NULL), (int)t_layer_types[0]);
+   t_sc_busy = XR_NULL_HANDLE;
+   CHECK(t_gate_step(1), "frame");
+   CHECK(     t_gl_shown(NULL) == 1
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_QUAD
+         && t_gl_image_content(xr, 0, 0) == 30,
+         "the screen for the eyes: %u layers, type %d", t_gl_shown(NULL),
+         (int)t_layer_types[0]);
+   t_gl_host_free(xr);
+   t_gl_books_closed("yield");
+}
+
+static openxr_frame_t *t_gl_carry_frame;
+static void t_gl_carry(void *user, int from, int to)
+{
+   openxr_frame_move_projection(t_gl_carry_frame, from, to);
+}
+
+static void test_gl_host_projection(void)
+{
+   const unsigned slot = OPENXR_PROJECTION_SLOT;
+   const unsigned dims = VIDEO_SCALE_PACK(96, 80);
+   enum retro_vr_reference_space space = RETRO_VR_REFERENCE_SPACE_LOCAL;
+   XrPosef origin;
+   openxr_projection_t p, got;
+   int seq;
+   gl_openxr_t *xr = t_gl_host_new();
+   CHECK(xr, "host");
+   if (!xr)
+      return;
+   CHECK(gl_openxr_start(xr), "start");
+   memset(&origin, 0, sizeof(origin));
+   origin.orientation.w = 1.0f;
+   CHECK(openxr_session_swap_track_space(&xr->session, &space, &origin,
+            NULL, NULL),
+         "track space");
+   seq = retro_atomic_load_acquire_int(&xr->session.track_seq);
+
+   memset(&p, 0, sizeof(p));
+   p.active                 = true;
+   p.track_seq              = seq;
+   p.width                  = 64;
+   p.height                 = 48;
+   p.pose[0].orientation.w  = p.pose[1].orientation.w = 1.0f;
+   p.pose[0].position.x     = -0.03f;
+   p.pose[1].position.x     = 0.03f;
+   p.fov[0].angleLeft       = p.fov[1].angleLeft = -0.7f;
+
+   /* A quad's slot takes no projection. */
+   CHECK(t_gl_draw(xr, 2, VIDEO_SCALE_PACK(32, 32), 1, 1, &p)
+         && t_gate_step(1), "screen");
+   CHECK(t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_QUAD,
+         "a screen's record brought a projection");
+
+   /* Copied, then shown with the poses it was drawn from. */
+   CHECK(t_gl_draw(xr, slot, dims, 2, 2, &p) && t_gate_step(1), "eyes");
+   CHECK(     t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj_views[0].pose.position.x == -0.03f
+         && t_proj_views[1].subImage.imageRect.extent.width == 64
+         && t_gl_image_content(xr, slot, 1) == 21,
+         "projection: type %d, x %f, image %u", (int)t_layer_types[0],
+         t_proj_views[0].pose.position.x, t_gl_image_content(xr, slot, 1));
+
+   /* Not copied yet: the old image keeps the old poses. */
+   t_sc_wait            = XR_TIMEOUT_EXPIRED;
+   p.pose[0].position.x = -0.05f;
+   CHECK(t_gl_draw(xr, slot, dims, 2, 3, &p) && t_gate_step(1), "busy");
+   CHECK(     t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj_views[0].pose.position.x == -0.03f
+         && t_gl_image_content(xr, slot, 0) == 20,
+         "new poses over the old image: x %f",
+         t_proj_views[0].pose.position.x);
+   t_sc_wait = XR_SUCCESS;
+   CHECK(t_gate_step(1) && t_proj_views[0].pose.position.x == -0.05f
+         && t_gl_image_content(xr, slot, 0) == 30, "copied: x %f",
+         t_proj_views[0].pose.position.x);
+
+   /* Two recenters while a record waits: it follows them both. */
+   t_sc_wait            = XR_TIMEOUT_EXPIRED;
+   p.pose[0].position.x = -0.07f;
+   CHECK(t_gl_draw(xr, slot, dims, 2, 4, &p) && t_gate_step(1), "queued");
+   t_gl_carry_frame = &xr->frame;
+   CHECK(openxr_session_swap_track_space(&xr->session, &space, &origin,
+            t_gl_carry, NULL)
+         && openxr_session_swap_track_space(&xr->session, &space, &origin,
+            t_gl_carry, NULL), "recenters");
+   t_sc_wait = XR_SUCCESS;
+   CHECK(t_gate_step(1), "frame");
+   openxr_seq_read(&xr->frame.proj_seq, xr->frame.proj_words, &got,
+         sizeof(got));
+   CHECK(     got.track_seq == seq + 2 && got.pose[0].position.x == -0.07f
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj_views[0].pose.position.x == -0.07f,
+         "carried: seq %d of %d, x %f", got.track_seq, seq + 2,
+         t_proj_views[0].pose.position.x);
+
+   /* Another eye size, its image not copied yet: no projection, rather
+    * than the new size's extent over the old pixels, or the old one's
+    * over images the runtime has none of. */
+   t_sc_wait = XR_TIMEOUT_EXPIRED;
+   p.width   = 100;
+   p.height  = 90;
+   CHECK(t_gl_draw(xr, slot, VIDEO_SCALE_PACK(128, 96), 2, 5, &p)
+         && t_gate_step(1), "resized, busy");
+   CHECK(t_ci_width == 128
+         && t_layer_types[0] != XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+         "resized, busy: width %u, type %d", (unsigned)t_ci_width,
+         (int)t_layer_types[0]);
+   t_sc_wait = XR_SUCCESS;
+   CHECK(     t_gate_step(1)
+         && t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && t_proj_views[0].subImage.imageRect.extent.width == 100
+         && t_proj_views[1].subImage.imageRect.extent.height == 90
+         && t_gl_image_content(xr, slot, 1) == 51,
+         "resized: type %d, extent %d, image %u", (int)t_layer_types[0],
+         (int)t_proj_views[0].subImage.imageRect.extent.width,
+         t_gl_image_content(xr, slot, 1));
+
+   /* A size the runtime refuses: no projection, and the size is said,
+    * so the driver shows the eyes' screen as a quad again. */
+   t_sc_refuse_width = 4096;
+   CHECK(t_gl_draw(xr, slot, VIDEO_SCALE_PACK(4096, 96), 2, 6, &p)
+         && t_gate_step(1), "refused size");
+   CHECK(     t_layer_types[0] != XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && gl_openxr_slot_refused(xr, slot) == VIDEO_SCALE_PACK(4096, 96),
+         "refused: type %d, refused %x", (int)t_layer_types[0],
+         gl_openxr_slot_refused(xr, slot));
+   t_sc_refuse_width = 0;
+   CHECK(t_gl_draw(xr, slot, dims, 2, 7, &p) && t_gate_step(1), "eyes again");
+   CHECK(     t_layer_types[0] == XR_TYPE_COMPOSITION_LAYER_PROJECTION
+         && !gl_openxr_slot_refused(xr, slot)
+         && t_gl_image_content(xr, slot, 0) == 70,
+         "after refusal: type %d, image %u", (int)t_layer_types[0],
+         t_gl_image_content(xr, slot, 0));
+
+   /* Cleared in order: no projection from the next frame. */
+   gl_openxr_slot_forget(xr, slot);
+   CHECK(t_gate_step(1)
+         && t_layer_types[0] != XR_TYPE_COMPOSITION_LAYER_PROJECTION,
+         "a cleared projection shown");
+   t_gl_host_free(xr);
+   t_gl_books_closed("projection");
+}
+#endif
+
 int main(void)
 {
    test_runtime();
+   test_runtime_binding_ext();
+   test_ring_indices();
+   test_ring_threads();
    test_session();
    test_swapchain();
    test_frame();
+   test_frame_thread_hooks();
+   test_frame_carried_seq();
    test_frame_pacing();
    test_frame_lost();
    test_track_space();
@@ -4369,6 +5993,10 @@ int main(void)
    test_runtime_gaps();
    test_frame_inline();
    test_binding_gles();
+   test_binding_gl();
+#ifdef HAVE_OPENXR_GL
+   test_binding_gl_chain();
+#endif
    test_vulkan_inline();
    test_input_hooks();
    test_swapchain_filled();
@@ -4377,6 +6005,15 @@ int main(void)
    test_screen_placement_inline();
    test_frame_repeat();
    test_screen_placement_repeat();
+#ifdef HAVE_OPENXR_GL
+   /* Last: they leave the stand-in's formats and extensions as GL's. */
+   test_gl_host_start_failure();
+   test_gl_host_records();
+   test_gl_host_resize();
+   test_gl_host_empty_record();
+   test_gl_host_projection();
+   test_gl_host_yield();
+#endif
    if (failures)
    {
       fprintf(stderr, "%d failure(s)\n", failures);

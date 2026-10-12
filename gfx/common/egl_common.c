@@ -506,6 +506,76 @@ void egl_release_current(egl_ctx_data_t *egl)
    _egl_make_current(egl->dpy, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
 }
 
+bool egl_shared_context_new(egl_ctx_data_t *egl, EGLenum api,
+      gfx_ctx_shared_context_t *out)
+{
+   EGLContext ctx;
+   EGLSurface surf = EGL_NO_SURFACE;
+
+   memset(out, 0, sizeof(*out));
+   if (     egl->dpy == EGL_NO_DISPLAY
+         || egl->ctx == EGL_NO_CONTEXT
+         || !egl->ctx_attribs_ok)
+      return false;
+   /* A context is of the thread's bound client API. */
+   if (!_egl_bind_api(api))
+      return false;
+   if ((ctx = _egl_create_context(egl->dpy, egl->config, egl->ctx,
+               egl->ctx_attribs)) == EGL_NO_CONTEXT)
+   {
+      RARCH_ERR("[EGL] A shared context could not be made.\n");
+      egl_report_error();
+      return false;
+   }
+   if (!egl_display_has_extension(egl->dpy, "EGL_KHR_surfaceless_context"))
+   {
+#ifndef __EMSCRIPTEN__
+      surf = egl_create_hw_pbuffer(egl);
+#endif
+      if (surf == EGL_NO_SURFACE)
+      {
+         RARCH_ERR("[EGL] A shared context has no surface of its own.\n");
+         _egl_destroy_context(egl->dpy, ctx);
+         return false;
+      }
+   }
+   out->kind             = GFX_CTX_SHARED_EGL;
+   out->display          = egl->dpy;
+   out->config           = egl->config;
+   out->context          = ctx;
+   out->surface          = surf;
+   out->api              = api;
+   out->get_proc_address = egl_get_proc_address;
+   return true;
+}
+
+bool egl_shared_context_bind(gfx_ctx_shared_context_t *ctx, bool bind)
+{
+   EGLSurface surf;
+   if (ctx->kind != GFX_CTX_SHARED_EGL)
+      return false;
+   if (!bind)
+      return _egl_make_current(ctx->display, EGL_NO_SURFACE,
+            EGL_NO_SURFACE, EGL_NO_CONTEXT);
+   /* A new thread starts on EGL_OPENGL_ES_API. */
+   if (!_egl_bind_api((EGLenum)ctx->api))
+      return false;
+   surf = ctx->surface ? (EGLSurface)ctx->surface : EGL_NO_SURFACE;
+   return _egl_make_current(ctx->display, surf, surf,
+         (EGLContext)ctx->context);
+}
+
+void egl_shared_context_free(gfx_ctx_shared_context_t *ctx)
+{
+   if (ctx->kind != GFX_CTX_SHARED_EGL)
+      return;
+   if (ctx->surface)
+      _egl_destroy_surface(ctx->display, (EGLSurface)ctx->surface);
+   if (ctx->context)
+      _egl_destroy_context(ctx->display, (EGLContext)ctx->context);
+   memset(ctx, 0, sizeof(*ctx));
+}
+
 void egl_swap_buffers(void *data)
 {
    egl_ctx_data_t *egl = (egl_ctx_data_t*)data;
@@ -828,6 +898,23 @@ bool egl_init_context(egl_ctx_data_t *egl,
    return true;
 }
 
+/* Kept for egl_shared_context_new, whole or not at all. */
+static void egl_keep_context_attribs(egl_ctx_data_t *egl,
+      const EGLint *attribs)
+{
+   size_t i = 0;
+   egl->ctx_attribs_ok = false;
+   for (; attribs && attribs[i] != EGL_NONE; i += 2)
+   {
+      if (i + 2 >= ARRAY_SIZE(egl->ctx_attribs))
+         return;
+      egl->ctx_attribs[i]     = attribs[i];
+      egl->ctx_attribs[i + 1] = attribs[i + 1];
+   }
+   egl->ctx_attribs[i] = EGL_NONE;
+   egl->ctx_attribs_ok = true;
+}
+
 bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
 {
    EGLContext ctx = _egl_create_context(egl->dpy, egl->config, EGL_NO_CONTEXT,
@@ -836,6 +923,7 @@ bool egl_create_context(egl_ctx_data_t *egl, const EGLint *egl_attribs)
    if (ctx == EGL_NO_CONTEXT)
       return false;
 
+   egl_keep_context_attribs(egl, egl_attribs);
    egl->ctx     = ctx;
    egl->hw_ctx  = NULL;
    egl->hw_surf = EGL_NO_SURFACE;

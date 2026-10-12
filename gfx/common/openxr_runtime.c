@@ -92,7 +92,7 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    XrResult res;
    uint32_t count = 0;
    uint32_t num_exts;
-   const char *exts[4];
+   const char *exts[5];
    XrInstanceCreateInfo ici;
    PFN_xrEnumerateInstanceExtensionProperties enum_exts;
    PFN_xrCreateInstance create_instance;
@@ -122,6 +122,16 @@ enum openxr_runtime_result openxr_runtime_create_instance(
    }
    exts[0]  = graphics_ext;
    num_exts = 1;
+   if (     rt->binding_ext
+         && !string_is_equal(rt->binding_ext, graphics_ext))
+   {
+      if (!openxr_runtime_has_extension(enum_exts, count, rt->binding_ext))
+      {
+         RARCH_WARN("[OpenXR] The runtime lacks %s.\n", rt->binding_ext);
+         return OPENXR_RUNTIME_UNAVAILABLE;
+      }
+      exts[num_exts++] = rt->binding_ext;
+   }
    if (openxr_runtime_has_extension(enum_exts, count, OPENXR_FRAME_EXT))
    {
       exts[num_exts++]     = OPENXR_FRAME_EXT;
