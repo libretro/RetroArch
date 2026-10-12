@@ -5499,6 +5499,11 @@ void runloop_event_deinit_core(void)
    runloop_state_t *runloop_st = &runloop_state;
    settings_t        *settings = config_get_ptr();
 
+#ifdef HAVE_COMMAND
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_cancel("the content was closed");
+#endif
+
    audio_driver_set_core_float(false);
    audio_driver_set_core_multi(false);
 
@@ -8777,7 +8782,9 @@ static enum runloop_state_enum runloop_check_state(
 #endif
       {
          frameadvance_pressed = BIT256_GET(current_bits, RARCH_FRAMEADVANCE);
-         frameadvance_trigger = frameadvance_pressed && !old_frameadvance;
+         /* RUN_FRAMES advances one frame each iteration until through */
+         frameadvance_trigger = (frameadvance_pressed && !old_frameadvance)
+            || (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES);
 
          /* FRAMEADVANCE will set us into special pause mode. */
          if (frameadvance_trigger)
@@ -9809,6 +9816,11 @@ int runloop_iterate(void)
    }
 
    runloop_load_deferred_auto_state();
+
+#ifdef HAVE_COMMAND
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_tick();
+#endif
 
    /* Increment runtime tick counter after each call to
     * core_run() or run_ahead() */

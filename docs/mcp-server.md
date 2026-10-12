@@ -118,6 +118,15 @@ A hotkey tool that is still a tool answers `<NAME> pressed` for the same
 reason: the press goes out on the next poll, and what it
 changed is read back with `GET_OPTION`.
 
+`RUN_FRAMES <count>` pauses the content, if it is running, and runs it
+that many frames, one per frame advance, answering once the last has
+run; it is left paused. With `SET_INPUT` before it, an assistant plays
+in steps: hold the input, run some frames, look with `SCREENSHOT` or
+`READ_CORE_MEMORY`. It is refused while the menu is open, without
+content, and in achievements hardcore mode; a second `RUN_FRAMES`
+replaces one still running, which is answered with an error, as it is
+when the content closes.
+
 `SET_INPUT <player> <control> <value>` holds a RetroPad button (`a`,
 `b`, `start`, `up` and the rest; 1 holds it, 0 lets it go) or a stick
 axis (`left_x`, `left_y`, `right_x`, `right_y`; -32768 to 32767, 0 lets

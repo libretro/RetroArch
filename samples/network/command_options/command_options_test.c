@@ -41,6 +41,7 @@ video_driver_state_t *video_state_get_ptr(void) { return &video_st; }
 recording_state_t *recording_state_get_ptr(void) { return &rec_st; }
 bool rcheevos_hardcore_active(void) { return hardcore; }
 bool input_driver_mouse_grabbed(void) { return false; }
+unsigned input_driver_command_generation(void) { return 0; }
 bool input_driver_game_focus_enabled(void) { return false; }
 uint64_t video_driver_get_frame_count(void) { return 0; }
 bool core_info_get_current_core(core_info_t **core)
@@ -316,6 +317,36 @@ int main(void)
                "8000\t400000\tff8000\t7f0000\tother\tnone\tbig\t\n"));
       runloop_st->system.mmaps.num_descriptors = 0;
    }
+
+   cmd.error = false;
+   runloop_st->flags = 0;
+   CHECK(!command_run_frames(&cmd, "3"));
+   CHECK(cmd.error && strstr(reply, "no content"));
+   runloop_st->flags = RUNLOOP_FLAG_CORE_RUNNING;
+   CHECK(!command_run_frames(&cmd, "0"));
+   cmd.error = false;
+   reply[0] = '\0';
+   CHECK(command_run_frames(&cmd, "3"));
+   CHECK(!reply[0] && (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+   command_run_frames_tick();
+   command_run_frames_tick();
+   CHECK(!reply[0]);
+   command_run_frames_tick();
+   CHECK(!strcmp(reply, "RUN_FRAMES 3\n") && !cmd.error);
+   CHECK(!(runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+   CHECK(command_run_frames(&cmd, "5"));
+   command_run_frames_tick();
+   CHECK(command_run_frames(&cmd, "2"));
+   CHECK(strstr(reply, "RUN_FRAMES ERROR replaced"));
+   cmd.error = false;
+   command_run_frames_tick();
+   command_run_frames_tick();
+   CHECK(!strcmp(reply, "RUN_FRAMES 2\n") && !cmd.error);
+   CHECK(command_run_frames(&cmd, "4"));
+   command_run_frames_cancel("the content was closed");
+   CHECK(cmd.error && strstr(reply, "content was closed"));
+   CHECK(!(runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES));
+   runloop_st->flags = 0;
 
    cmd.error = false;
    CHECK(command_set_input(&cmd, "2 a 1"));

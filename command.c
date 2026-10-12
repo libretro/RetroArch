@@ -2109,6 +2109,88 @@ bool command_set_option(command_t *cmd, const char *arg)
    return true;
 }
 
+/* RUN_FRAMES in progress: frames still to run, and the reply owed */
+static struct
+{
+   command_deferred_t deferred;
+   unsigned           asked;
+   unsigned           left;
+} command_run_frames_st;
+
+static void command_run_frames_answer(const char *msg, bool is_error)
+{
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, false);
+   command_run_frames_st.left = 0;
+   command_deferred_send(&command_run_frames_st.deferred, msg, strlen(msg),
+         is_error);
+}
+
+void command_run_frames_cancel(const char *why)
+{
+   char msg[128];
+   snprintf(msg, sizeof(msg), "RUN_FRAMES ERROR %s", why);
+   command_run_frames_answer(msg, true);
+}
+
+/* A frame has run: the reply goes once the last of them has */
+void command_run_frames_tick(void)
+{
+   char msg[64];
+   if (--command_run_frames_st.left)
+      return;
+   snprintf(msg, sizeof(msg), "RUN_FRAMES %u\n", command_run_frames_st.asked);
+   command_run_frames_answer(msg, false);
+}
+
+/* RUN_FRAMES <count>
+ *
+ * Pauses, if the content is running, and runs it @count frames,
+ * answered once the last has run; it stays paused. Another RUN_FRAMES
+ * replaces one still running, which is answered with an error. */
+bool command_run_frames(command_t *cmd, const char *arg)
+{
+   unsigned n                  = 0;
+   runloop_state_t *runloop_st = runloop_state_get_ptr();
+#ifdef HAVE_MENU
+   struct menu_state *menu_st  = menu_state_get_ptr();
+#endif
+
+   if (!command_arg_uint(arg, &n) || n < 1 || n > COMMAND_RUN_FRAMES_MAX)
+   {
+      command_reply_error(cmd, "RUN_FRAMES", "a frame count from 1 to %u",
+            COMMAND_RUN_FRAMES_MAX);
+      return false;
+   }
+   if (!(runloop_st->flags & RUNLOOP_FLAG_CORE_RUNNING))
+   {
+      command_reply_error(cmd, "RUN_FRAMES", "no content is running");
+      return false;
+   }
+#ifdef HAVE_MENU
+   if (menu_st && (menu_st->flags & MENU_ST_FLAG_ALIVE))
+   {
+      command_reply_error(cmd, "RUN_FRAMES", "the menu is open");
+      return false;
+   }
+#endif
+#ifdef HAVE_CHEEVOS
+   if (rcheevos_hardcore_active())
+   {
+      command_reply_error(cmd, "RUN_FRAMES",
+            "achievements hardcore mode forbids frame advance");
+      return false;
+   }
+#endif
+
+   if (runloop_st->frame_work & RUNLOOP_WORK_RUN_FRAMES)
+      command_run_frames_cancel("replaced by another RUN_FRAMES");
+   command_run_frames_st.asked = n;
+   command_run_frames_st.left  = n;
+   command_deferred_take(&command_run_frames_st.deferred, cmd);
+   runloop_frame_work_set(RUNLOOP_WORK_RUN_FRAMES, true);
+   return true;
+}
+
 /* RetroPad controls by the names SET_INPUT takes them by: the sixteen
  * buttons in RETRO_DEVICE_ID_JOYPAD order, then the four stick axes. */
 static const char *const command_input_names[] = {
