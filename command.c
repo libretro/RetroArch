@@ -63,6 +63,7 @@
 #include "cheat_manager.h"
 #include "content.h"
 #include "dynamic.h"
+#include "file_path_special.h"
 #include "list_special.h"
 #include "paths.h"
 #include "record/record_driver.h"
@@ -2520,41 +2521,109 @@ bool command_start_core(command_t *cmd, const char* arg)
  * filesystem paths and may legitimately contain spaces.  Routed through
  * the companion UI entry point so that the command interface takes the
  * same content load path as any other frontend-external requester,
- * rather than duplicating the menu-only variant. */
+ * rather than duplicating the menu-only variant.
+ *
+ * Both paths are resolved and checked before that load is pushed: the
+ * task unloads the running core first and only then finds out that a
+ * path is unusable, so a typo would otherwise cost the caller the game
+ * it was playing. */
 bool command_load_content(command_t *cmd, const char* arg)
 {
    char core_path[PATH_MAX_LENGTH];
+#if TARGET_OS_IPHONE
+   char expanded[PATH_MAX_LENGTH];
+#endif
    content_ctx_info_t content_info = {0};
+   const char *content_path        = NULL;
    const char *sep                 = NULL;
    size_t _len                     = 0;
 
-   if (!arg || !*arg)
+   if (!arg || !*arg || !(sep = strchr(arg, '|')))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT",
+            "a core path, '|' and a content path");
       return false;
-   if (!(sep = strchr(arg, '|')))
-      return false;
+   }
 
    _len = (size_t)(sep - arg);
-   if (_len == 0 || _len >= sizeof(core_path))
+   if (_len >= sizeof(core_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "core path is too long");
       return false;
+   }
    if (!*(sep + 1))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no content path after '|'");
       return false;
+   }
 
    memcpy(core_path, arg, _len);
    core_path[_len] = '\0';
 
+   content_path    = sep + 1;
 #if TARGET_OS_IPHONE
-   {
-      char exp[PATH_MAX_LENGTH];
-      fill_pathname_expand_special(exp, sep + 1, sizeof(exp));
-      if (!task_push_load_content_with_new_core_from_companion_ui(
-            core_path, exp, NULL, NULL, NULL, &content_info, NULL, NULL))
-         return false;
-   }
-#else
-   if (!task_push_load_content_with_new_core_from_companion_ui(
-         core_path, sep + 1, NULL, NULL, NULL, &content_info, NULL, NULL))
-      return false;
+   fill_pathname_expand_special(expanded, content_path, sizeof(expanded));
+   content_path    = expanded;
 #endif
+
+   /* Content inside an archive is named as one path, which
+    * path_is_valid() would reject */
+   if (!playlist_content_path_is_valid(content_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no content at %s",
+            content_path);
+      return false;
+   }
+
+   /* A playlist entry with no core of its own carries DETECT, so take
+    * that, and nothing at all, as a request for a core that supports
+    * the content.  The menu asks the user to pick one where the
+    * playlist's default core does not settle it; nobody is here to
+    * answer that, so an ambiguous one is reported with the candidates
+    * for the caller to choose from. */
+   if (!*core_path || string_is_equal(core_path, FILE_PATH_DETECT))
+   {
+      core_info_list_t *core_info_list = NULL;
+      const core_info_t *supported     = NULL;
+      size_t count                     = 0;
+
+      if (core_info_get_list(&core_info_list))
+         core_info_list_get_supported_cores(core_info_list, content_path,
+               &supported, &count);
+
+      if (count == 0)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "no installed core supports %s", content_path);
+         return false;
+      }
+      if (count > 1)
+      {
+         command_reply_error(cmd, "LOAD_CONTENT",
+               "%u cores support %s, name one of them, such as %s or %s",
+               (unsigned)count, content_path,
+               supported[0].path, supported[1].path);
+         return false;
+      }
+
+      strlcpy(core_path, supported[0].path, sizeof(core_path));
+   }
+   /* A built-in core is not a file on disk */
+   else if (   !string_ends_with_size(core_path, "builtin",
+                  strlen(core_path), STRLEN_CONST("builtin"))
+            && !path_is_valid(core_path))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "no core at %s", core_path);
+      return false;
+   }
+
+   if (!task_push_load_content_with_new_core_from_companion_ui(
+         core_path, content_path, NULL, NULL, NULL, &content_info, NULL, NULL))
+   {
+      command_reply_error(cmd, "LOAD_CONTENT", "could not load %s with %s",
+            content_path, core_path);
+      return false;
+   }
    return command_content_reply(cmd, "LOAD_CONTENT", false, true);
 }
 

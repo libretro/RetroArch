@@ -662,7 +662,9 @@ static const struct cmd_param cmd_params_core[] = {
 };
 static const struct cmd_param cmd_params_content[] = {
    { "core", "Path to the core to load it with, as LIST_CORES and "
-      "GET_PLAYLIST give it.", CMD_PARAM_STRING, true, NULL, NULL, NULL },
+      "GET_PLAYLIST give it; DETECT, as a playlist entry with no core "
+      "of its own gives it, picks a core that supports the content.",
+      CMD_PARAM_STRING, false, NULL, NULL, "DETECT" },
    { "content", "Path to the content, as GET_PLAYLIST gives it.",
       CMD_PARAM_STRING, true, "|", NULL, NULL },
    { NULL }
@@ -705,7 +707,7 @@ static const struct cmd_action_map action_map[] = {
 
    { "LOAD_CORE", command_load_core, "<core path>", "Load the core library at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_core },
    { "START_CORE", command_start_core, "No argument", "Start the loaded core without content.", CMD_INFO_DESTRUCTIVE, NULL },
-   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
+   { "LOAD_CONTENT", command_load_content, "<core path>|<content path>", "Load the content at the given path with the core at the given path, or with a core that supports it where the core path is DETECT or empty.", CMD_INFO_DESTRUCTIVE, cmd_params_content },
    { "CLOSE_CONTENT", command_close_content, "No argument", "Close the running content.", CMD_INFO_DESTRUCTIVE, NULL },
    { "UNLOAD_CORE", command_unload_core, "No argument", "Close the content and unload the core.", CMD_INFO_DESTRUCTIVE, NULL },
    { "VIDEO_REINIT", command_video_reinit, "No argument", "Restart the video driver.", 0, NULL },
