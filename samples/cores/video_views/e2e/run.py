@@ -18,7 +18,8 @@ In full it needs a GPU, gamescope and a RetroArch build.
 With RA_E2E_XVFB=1 each case runs on an Xvfb server of its own instead
 of gamescope, with Mesa's software renderers where there is no GPU:
 the screen is read with ImageMagick's import and the pointer moved on
-that server. The GPU memory cases are left out there. RA_E2E_ONLY, a
+that server, several cases at once (RA_E2E_JOBS, 4 by default). The
+GPU memory cases are left out there. RA_E2E_ONLY, a
 regular expression, runs only the cases whose names it finds; CI runs a
 set of them that way (Linux-vulkan-validation.yml).
 
@@ -42,8 +43,10 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import zlib
+from concurrent.futures import ThreadPoolExecutor
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 WINE = os.environ.get('RA_E2E_WINE') == '1'
@@ -399,12 +402,22 @@ def send(cmd, port):
     s.close()
 
 
+# Ports and displays handed to cases running side by side.
+TAKEN_LOCK = threading.Lock()
+TAKEN_PORTS = set()
+TAKEN_DISPLAYS = set()
+
+
 def free_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    s.bind(('127.0.0.1', 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
+    with TAKEN_LOCK:
+        while True:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.bind(('127.0.0.1', 0))
+            port = s.getsockname()[1]
+            s.close()
+            if port not in TAKEN_PORTS:
+                TAKEN_PORTS.add(port)
+                return port
 
 
 def write_cfg(path, d, driver, settings, port):
@@ -575,6 +588,12 @@ def isolated_env():
 
 
 XVFB = WINE or os.environ.get('RA_E2E_XVFB') == '1'
+# Cases run side by side, each on an Xvfb of its own, four at a time:
+# most of a case is waiting, so more than the cores still gains. One at
+# a time in gamescope, whose screenshot names one display, and under
+# Wine, whose prefix is shared. RA_E2E_JOBS sets how many.
+JOBS = int(os.environ.get('RA_E2E_JOBS') or 0) or (
+    4 if XVFB and not WINE else 1)
 ONLY = os.environ.get('RA_E2E_ONLY')
 
 
@@ -584,12 +603,21 @@ def wanted(name):
 
 
 def free_display():
-    """An X display number nothing serves."""
-    for n in range(90, 190):
-        if not os.path.exists('/tmp/.X11-unix/X%d' % n) and \
-                not os.path.exists('/tmp/.X%d-lock' % n):
-            return n
+    """An X display number nothing serves, kept for the caller until
+    release_display()."""
+    with TAKEN_LOCK:
+        for n in range(90, 190):
+            if n not in TAKEN_DISPLAYS and \
+                    not os.path.exists('/tmp/.X11-unix/X%d' % n) and \
+                    not os.path.exists('/tmp/.X%d-lock' % n):
+                TAKEN_DISPLAYS.add(n)
+                return n
     raise RuntimeError('no free X display')
+
+
+def release_display(display):
+    with TAKEN_LOCK:
+        TAKEN_DISPLAYS.discard(int(display.lstrip(':')))
 
 
 def xvfb_start(env):
@@ -839,6 +867,7 @@ def run_case(retroarch, root, driver, case, hw='off', menu=False,
                 xvfb.wait(5)
             except subprocess.TimeoutExpired:
                 xvfb.kill()
+            release_display(env['DISPLAY'])
         runtime_dir = env['XDG_RUNTIME_DIR']
         if os.path.basename(runtime_dir).startswith('ra-e2e-'):
             shutil.rmtree(runtime_dir, ignore_errors=True)
@@ -1233,6 +1262,165 @@ def pointer_helper(d):
     return 0
 
 
+def report(name, errors):
+    """A case's result lines."""
+    return ['%s %s' % ('FAIL' if errors else 'pass', name)] + \
+        ['    ' + e for e in errors]
+
+
+def driver_jobs(retroarch, root, driver):
+    """The driver's cases as jobs that can run side by side, each
+    returning its result lines and how many of them failed."""
+    jobs = []
+
+    def plain(case, hw):
+        errors = run_case(retroarch, root, driver, case, hw)
+        return report('%s/%s%s' % (driver, case[0], '' if hw == 'off'
+                                   else ' (hw ' + hw + ')'), errors), \
+            bool(errors)
+
+    def exact(case):
+        hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
+        copy = 'glCopyImageSubData' if driver == 'glcore' else None
+        runs = [('', None, copy, None)]
+        if driver in PRESET_DRIVERS:
+            runs.append(('-preset', None, copy, HISTORY_PRESET))
+        if driver == 'glcore':
+            runs.append(('-preset-blit', NO_COPY_IMAGE,
+                         'framebuffer blits', HISTORY_PRESET))
+        first, lines, failed = None, [], 0
+        for suffix, env_extra, path, preset in runs:
+            errors, rows = run_exact_case(
+                retroarch, root, driver, case, suffix, env_extra, path,
+                preset)
+            if first is None:
+                first = rows
+            elif rows and first and rows != first:
+                errors.append('screenshot differs from %s/%s\'s'
+                              % (driver, case[0]))
+            lines += report('%s/%s%s%s' % (driver, case[0], suffix, hw),
+                            errors)
+            failed += bool(errors)
+        return lines, failed
+
+    def rect(preset, in_place, tolerance):
+        name = 'rect-' + preset[:-len('.slangp')]
+        path = os.path.join(HERE, preset)
+        errors, first = run_exact_case(
+            retroarch, root, driver, (name, 'none', NOISE_LARGE, 'off'),
+            preset=path, exact=False)
+        lines = report('%s/%s' % (driver, name), errors)
+        failed = bool(errors)
+        for hw in RECT_HW[driver]:
+            case = (name, 'none', NOISE_LARGE, hw)
+            errors, rows = run_exact_case(retroarch, root, driver, case,
+                                          preset=path, exact=False)
+            d = case_dir(root, driver, name, hw)
+            if direct_drawn(d, IN_PLACE_RE) != in_place:
+                errors.append('frame %s where it lies' %
+                              ('not read' if in_place else 'read'))
+            # A copied frame upside down filters to within a step of the
+            # software frame's: weights round the other way.
+            bad = rows_differ(rows, first, tolerance if in_place else 1) \
+                if rows and first else None
+            if bad is None:
+                errors.append('no screenshot to compare')
+            elif bad:
+                errors.append('%d pixels differ from the software '
+                              'frame\'s' % bad)
+            lines += report('%s/%s (hw %s)' % (driver, name, hw), errors)
+            failed += bool(errors)
+        return lines, failed
+
+    def view_rect(case, mode, tolerance):
+        name, mapopt, opts, hw = case
+        rows = {}
+        errors = []
+        for kind, in_place in (('rect', True), ('rect_hist', False)):
+            preset = os.path.join(HERE, '%s_%s.slangp' % (kind, mode))
+            c = ('%s-%s-%s' % (name, kind, mode), mapopt, opts, hw)
+            e, rows[kind] = run_exact_case(retroarch, root, driver, c,
+                                           preset=preset, exact=False)
+            errors += e
+            d = case_dir(root, driver, c[0], hw)
+            if direct_drawn(d, VIEW_IN_PLACE_RE) != (
+                    in_place and not (hw == 'off'
+                                      and driver in COPY_SW_VIEWS)):
+                errors.append('%s: views %s where they lie' % (
+                    kind, 'not read' if in_place else 'read'))
+        if not rows['rect'] or not rows['rect_hist']:
+            errors.append('no screenshot to compare')
+        elif rows_differ(rows['rect'], rows['rect_hist'], tolerance):
+            errors.append('%d pixels differ from the copied views\''
+                          % rows_differ(rows['rect'],
+                                        rows['rect_hist'], tolerance))
+        return report('%s/%s-%s%s' % (driver, name, mode, '' if hw == 'off'
+                                      else ' (hw ' + hw + ')'), errors), \
+            bool(errors)
+
+    def smooth(case):
+        hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
+        errors, rows = run_exact_case(retroarch, root, driver, case,
+                                      exact=False)
+        copy_errors, copy_rows = run_exact_case(
+            retroarch, root, driver, case, '-preset',
+            preset=LINEAR_PRESET, exact=False)
+        errors += copy_errors
+        if not rows or not copy_rows:
+            errors.append('no screenshot to compare')
+        else:
+            bad = rows_differ(rows, copy_rows, TOLERANCE)
+            if bad:
+                errors.append('%d pixels differ from the preset\'s copies'
+                              % bad)
+        return report('%s/%s%s' % (driver, case[0], hw), errors), \
+            bool(errors)
+
+    def memory(case):
+        errors, peak = run_memory_case(retroarch, root, driver, case)
+        return report('%s/%s (hw %s, GPU %s MiB)'
+                      % (driver, case[0], MEMORY_HW[driver],
+                         '?' if peak is None else '%d' % peak), errors), \
+            bool(errors)
+
+    def menu_case(case):
+        errors = run_menu_case(retroarch, root, driver, case)
+        return report('%s/%s' % (driver, case[0]), errors), bool(errors)
+
+    def pointer(menu, case):
+        errors = run_pointer_case(retroarch, root, driver, menu, case)
+        return report('%s/%s-%s' % (driver, case[0], menu), errors), \
+            bool(errors)
+
+    runs = [(case, 'off') for case in CASES]
+    runs += [(case, hw) for name, hw in HW_CASES.get(driver, [])
+             for case in CASES if case[0] == name]
+    if driver == 'vulkan':
+        runs += [(case, 'vulkan') for case in VULKAN_CROP_CASES]
+    jobs += [lambda c=c, hw=hw: plain(c, hw)
+             for c, hw in runs if wanted(c[0])]
+    jobs += [lambda c=c: exact(c) for c in EXACT_CASES
+             if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]
+    jobs += [lambda p=p, i=i, t=t: rect(p, i, t)
+             for p, i, t in (RECT_PRESETS if driver in RECT_HW else [])
+             if wanted('rect-' + p[:-len('.slangp')])]
+    jobs += [lambda c=c, m=m, t=t: view_rect(c, m, t)
+             for c in VIEW_RECT_CASES
+             if c[3] in EXACT_HW.get(driver, ())
+             and driver in PRESET_DRIVERS and wanted(c[0])
+             for m, t in VIEW_RECT_PRESETS]
+    jobs += [lambda c=c: smooth(c) for c in SMOOTH_CASES
+             if c[3] in EXACT_HW.get(driver, ())
+             and driver in PRESET_DRIVERS and wanted(c[0])]
+    jobs += [lambda c=c: memory(c)
+             for c in (MEMORY_CASES if driver in MEMORY_HW and not XVFB
+                       else []) if wanted(c[0])]
+    jobs += [lambda c=c: menu_case(c) for c in MENU_CASES if wanted(c[0])]
+    jobs += [lambda m=m, c=c: pointer(m, c) for m in sorted(POINTER_MENUS)
+             for c in POINTER_CASES if wanted(c[0])]
+    return jobs
+
+
 def main():
     if sys.argv[1:2] == ['--pointer']:
         return pointer_helper(sys.argv[2])
@@ -1242,160 +1430,17 @@ def main():
     retroarch = os.path.abspath(sys.argv[1])
     root = os.path.realpath(sys.argv[2])
     os.makedirs(root, exist_ok=True)
+    jobs = [j for driver in sys.argv[3:]
+            for j in driver_jobs(retroarch, root, driver)]
     failed = 0
-    for driver in sys.argv[3:]:
-        runs = [(case, 'off') for case in CASES]
-        runs += [(case, hw) for name, hw in HW_CASES.get(driver, [])
-                 for case in CASES if case[0] == name]
-        if driver == 'vulkan':
-            runs += [(case, 'vulkan') for case in VULKAN_CROP_CASES]
-        for case, hw in [r for r in runs if wanted(r[0][0])]:
-            errors = run_case(retroarch, root, driver, case, hw)
-            print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
-                                  case[0], '' if hw == 'off' else ' (hw ' + hw + ')'))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-        for case in [c for c in EXACT_CASES
-                     if c[3] in EXACT_HW.get(driver, ()) and wanted(c[0])]:
-            hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
-            copy = 'glCopyImageSubData' if driver == 'glcore' else None
-            runs = [('', None, copy, None)]
-            if driver in PRESET_DRIVERS:
-                runs.append(('-preset', None, copy, HISTORY_PRESET))
-            if driver == 'glcore':
-                runs.append(('-preset-blit', NO_COPY_IMAGE,
-                             'framebuffer blits', HISTORY_PRESET))
-            first = None
-            for suffix, env_extra, path, preset in runs:
-                errors, rows = run_exact_case(
-                    retroarch, root, driver, case, suffix, env_extra, path,
-                    preset)
-                if first is None:
-                    first = rows
-                elif rows and first and rows != first:
-                    errors.append('screenshot differs from %s/%s\'s'
-                                  % (driver, case[0]))
-                print('%s %s/%s%s%s' % ('FAIL' if errors else 'pass', driver,
-                                        case[0], suffix, hw))
-                for e in errors:
-                    print('    ' + e)
-                failed += bool(errors)
-        for preset, in_place, tolerance in (RECT_PRESETS
-                                            if driver in RECT_HW else []):
-            name = 'rect-' + preset[:-len('.slangp')]
-            if not wanted(name):
-                continue
-            path = os.path.join(HERE, preset)
-            errors, first = run_exact_case(
-                retroarch, root, driver, (name, 'none', NOISE_LARGE, 'off'),
-                preset=path, exact=False)
-            print('%s %s/%s' % ('FAIL' if errors else 'pass', driver, name))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-            for hw in RECT_HW[driver]:
-                case = (name, 'none', NOISE_LARGE, hw)
-                errors, rows = run_exact_case(retroarch, root, driver, case,
-                                              preset=path, exact=False)
-                d = case_dir(root, driver, name, hw)
-                if direct_drawn(d, IN_PLACE_RE) != in_place:
-                    errors.append('frame %s where it lies' %
-                                  ('not read' if in_place else 'read'))
-                # A copied frame upside down filters to within a step
-                # of the software frame's: weights round the other way.
-                bad = rows_differ(rows, first, tolerance if in_place else 1) \
-                    if rows and first else None
-                if bad is None:
-                    errors.append('no screenshot to compare')
-                elif bad:
-                    errors.append('%d pixels differ from the software '
-                                  'frame\'s' % bad)
-                print('%s %s/%s (hw %s)' % ('FAIL' if errors else 'pass',
-                                            driver, name, hw))
-                for e in errors:
-                    print('    ' + e)
-                failed += bool(errors)
-        for case in [c for c in VIEW_RECT_CASES
-                     if c[3] in EXACT_HW.get(driver, ())
-                     and driver in PRESET_DRIVERS and wanted(c[0])]:
-            name, mapopt, opts, hw = case
-            for mode, tolerance in VIEW_RECT_PRESETS:
-                rows = {}
-                errors = []
-                for kind, in_place in (('rect', True), ('rect_hist', False)):
-                    preset = os.path.join(HERE, '%s_%s.slangp' % (kind, mode))
-                    c = ('%s-%s-%s' % (name, kind, mode), mapopt, opts, hw)
-                    e, rows[kind] = run_exact_case(retroarch, root, driver, c,
-                                                   preset=preset, exact=False)
-                    errors += e
-                    d = case_dir(root, driver, c[0], hw)
-                    if direct_drawn(d, VIEW_IN_PLACE_RE) != (
-                            in_place and not (hw == 'off'
-                                              and driver in COPY_SW_VIEWS)):
-                        errors.append('%s: views %s where they lie' % (
-                            kind, 'not read' if in_place else 'read'))
-                if not rows['rect'] or not rows['rect_hist']:
-                    errors.append('no screenshot to compare')
-                elif rows_differ(rows['rect'], rows['rect_hist'], tolerance):
-                    errors.append('%d pixels differ from the copied views\''
-                                  % rows_differ(rows['rect'],
-                                                rows['rect_hist'], tolerance))
-                print('%s %s/%s-%s%s' % ('FAIL' if errors else 'pass', driver,
-                                         name, mode, '' if hw == 'off'
-                                         else ' (hw ' + hw + ')'))
-                for e in errors:
-                    print('    ' + e)
-                failed += bool(errors)
-        for case in [c for c in SMOOTH_CASES
-                     if c[3] in EXACT_HW.get(driver, ())
-                     and driver in PRESET_DRIVERS and wanted(c[0])]:
-            hw = '' if case[3] == 'off' else ' (hw ' + case[3] + ')'
-            errors, rows = run_exact_case(retroarch, root, driver, case,
-                                          exact=False)
-            copy_errors, copy_rows = run_exact_case(
-                retroarch, root, driver, case, '-preset',
-                preset=LINEAR_PRESET, exact=False)
-            errors += copy_errors
-            if not rows or not copy_rows:
-                errors.append('no screenshot to compare')
-            else:
-                bad = rows_differ(rows, copy_rows, TOLERANCE)
-                if bad:
-                    errors.append('%d pixels differ from the preset\'s copies'
-                                  % bad)
-            print('%s %s/%s%s' % ('FAIL' if errors else 'pass', driver,
-                                  case[0], hw))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-        for case in [c for c in (MEMORY_CASES if driver in MEMORY_HW
-                                 and not XVFB else []) if wanted(c[0])]:
-            errors, peak = run_memory_case(retroarch, root, driver, case)
-            print('%s %s/%s (hw %s, GPU %s MiB)'
-                  % ('FAIL' if errors else 'pass', driver, case[0],
-                     MEMORY_HW[driver], '?' if peak is None else '%d' % peak))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-        for case in [c for c in MENU_CASES if wanted(c[0])]:
-            errors = run_menu_case(retroarch, root, driver, case)
-            print('%s %s/%s' % ('FAIL' if errors else 'pass', driver,
-                                case[0]))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
-        for menu, case in [(m, c) for m in sorted(POINTER_MENUS)
-                           for c in POINTER_CASES if wanted(c[0])]:
-            errors = run_pointer_case(retroarch, root, driver, menu, case)
-            print('%s %s/%s-%s' % ('FAIL' if errors else 'pass', driver,
-                                   case[0], menu))
-            for e in errors:
-                print('    ' + e)
-            failed += bool(errors)
+    with ThreadPoolExecutor(max_workers=JOBS) as pool:
+        for future in [pool.submit(j) for j in jobs]:
+            lines, n = future.result()
+            for line in lines:
+                print(line, flush=True)
+            failed += n
     print('%d failed' % failed)
     return 1 if failed else 0
-
 
 if __name__ == '__main__':
     sys.exit(main())
