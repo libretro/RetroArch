@@ -108,6 +108,7 @@ typedef struct d3d11vd_dec
    ID3D11VideoContext           *vctx;
    ID3D11VideoDecoder           *decoder;
    ID3D11Texture2D              *dpb;
+   ID3D11Texture2D              *readback;
    ID3D11VideoDecoderOutputView *view[D3D11VD_MAX_SLOTS];
 
    unsigned coded_w, coded_h, mbs;
@@ -168,6 +169,7 @@ static void d3d11vd_destroy(d3d11vd_dec_t *d)
    D3D11VD_RELEASE(d->ready);
    for (i = 0; i < D3D11VD_MAX_SLOTS; i++)
       D3D11VD_RELEASE(d->view[i]);
+   D3D11VD_RELEASE(d->readback);
    D3D11VD_RELEASE(d->dpb);
    D3D11VD_RELEASE(d->decoder);
    D3D11VD_RELEASE(d->vctx);
@@ -634,6 +636,47 @@ static int d3d11vd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    return 0;
 }
 
+static int d3d11vd_readback(void *dec, unsigned slot, uint8_t *planes[3])
+{
+   d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
+   D3D11_MAPPED_SUBRESOURCE map;
+   const uint8_t *uv;
+   unsigned x, y, cw = d->visible_w / 2, ch = d->visible_h / 2;
+   if (slot >= d->slots)
+      return -1;
+   if (!d->readback)
+   {
+      D3D11_TEXTURE2D_DESC desc;
+      d->dpb->lpVtbl->GetDesc(d->dpb, &desc);
+      desc.ArraySize = 1;
+      desc.Usage = D3D11_USAGE_STAGING;
+      desc.BindFlags = 0;
+      desc.MiscFlags = 0;
+      desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+      if (FAILED(d->dev->lpVtbl->CreateTexture2D(d->dev, &desc, NULL, &d->readback)))
+         return -1;
+   }
+   d->ctx->lpVtbl->CopySubresourceRegion(d->ctx, (ID3D11Resource*)d->readback,
+         0, 0, 0, 0, (ID3D11Resource*)d->dpb, slot, NULL);
+   if (FAILED(d->ctx->lpVtbl->Map(d->ctx, (ID3D11Resource*)d->readback,
+         0, D3D11_MAP_READ, 0, &map)))
+      return -1;
+   for (y = 0; y < d->visible_h; y++)
+      memcpy(planes[0] + y * d->visible_w,
+            (const uint8_t*)map.pData + (y + d->crop_y) * map.RowPitch + d->crop_x,
+            d->visible_w);
+   uv = (const uint8_t*)map.pData + d->coded_h * map.RowPitch;
+   for (y = 0; y < ch; y++)
+      for (x = 0; x < cw; x++)
+      {
+         size_t off = (y + d->crop_y / 2) * map.RowPitch + d->crop_x + x * 2;
+         planes[1][y * cw + x] = uv[off];
+         planes[2][y * cw + x] = uv[off + 1];
+      }
+   d->ctx->lpVtbl->Unmap(d->ctx, (ID3D11Resource*)d->readback, 0);
+   return 0;
+}
+
 static void d3d11vd_close(void *dec)
 {
    d3d11vd_dec_t *d = (d3d11vd_dec_t*)dec;
@@ -676,6 +719,7 @@ bool d3d11_video_decode_init_adapter(void *adapter)
    d3d11vd.ops.decode = d3d11vd_decode;
    d3d11vd.ops.output = d3d11vd_output;
    d3d11vd.ops.close  = d3d11vd_close;
+   d3d11vd.ops.readback = d3d11vd_readback;
    d3d11vd.up         = true;
    rh264_set_hw_backend(&d3d11vd.ops);
    return true;

@@ -239,6 +239,9 @@ typedef struct rh264_hw_ops
     * stays good while the slot is decoded into again. 0, or negative. */
    int (*output)(void *dec, unsigned slot, video_hw_frame_t *out);
    void (*close)(void *dec);
+   /* Optional: copy the visible picture in slot to packed I420 planes.
+    * Strides are width for Y, ceil(width/2) for U and V. */
+   int (*readback)(void *dec, unsigned slot, uint8_t *planes[3]);
 } rh264_hw_ops_t;
 
 /* The backend decoders try when asked to (rh264_video_set_hw);
@@ -251,6 +254,9 @@ void rh264_set_hw_backend(const rh264_hw_ops_t *ops);
  * be known (rh264_video_set_extradata) - false when it decodes in
  * software. Not with a thread pool. */
 int rh264_video_set_hw(rh264_video *v, int enable);
+/* Request hardware decoding with CPU planes before feeding Annex-B input.
+ * Parameter sets enable it before the first slice, or software is used. */
+void rh264_video_set_hw_readback(rh264_video *v, int enable);
 /* Whether the pictures come from the backend. */
 int rh264_video_is_hw(const rh264_video *v);
 /* The picture decode or drain made ready, as a hardware frame; 0 when

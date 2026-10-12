@@ -504,9 +504,11 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    }
    rh264_video_set_extradata(v, rmp4_get_track(m, trk)->codec_private,
          rmp4_get_track(m, trk)->codec_private_size);
-   if (hw)
+   if (hw == 2)
+      rh264_video_set_hw_readback(v, 1);
+   else if (hw)
       on_hw = rh264_video_set_hw(v, 1);
-   if (hw && !on_hw)
+   if (hw == 1 && !on_hw)
       ok = 0;
    while (ok && rmp4_read_packet(m, &pkt) == 1)
    {
@@ -516,7 +518,7 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
          ok = 0;
       else if (r == 1)
       {
-         if (!on_hw)
+         if (!on_hw || hw == 2)
             take_sw(f, v);
          else if (rh264_video_hw_frame(v, &fr) != 0
                || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
@@ -525,12 +527,14 @@ static int decode(const unsigned char *mp4, size_t len, int hw,
    }
    while (ok && rh264_video_drain(v) == 0)
    {
-      if (!on_hw)
+      if (!on_hw || hw == 2)
          take_sw(f, v);
       else if (rh264_video_hw_frame(v, &fr) != 0
             || !(use_d3d12 ? take_hw12(f, &fr) : take_hw(f, &o, &fr)))
          ok = 0;
    }
+   if (hw == 2 && !rh264_video_is_hw(v))
+      ok = 0;
    rh264_video_close(v);
    rmp4_close(m);
    opened_clear(&o);
@@ -644,6 +648,11 @@ int main(void)
                first, worst);
       snprintf(label, sizeof(label), "%s: every frame as in software",
             s->name);
+      check(label, on && bad == 0 && sw.n > 0);
+      frames_free(&hw);
+      on = decode(s->data, s->len, 2, &hw);
+      bad = compare(&sw, &hw, &first, &worst);
+      snprintf(label, sizeof(label), "%s: CPU readback matches software", s->name);
       check(label, on && bad == 0 && sw.n > 0);
       if (s->lists)
       {

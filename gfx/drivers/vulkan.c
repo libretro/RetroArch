@@ -7101,10 +7101,6 @@ static void vulkan_free(void *data)
    if (vk->context && vk->context->device)
    {
       vulkan_wait_own_submissions(vk);
-#ifdef HAVE_RMP4
-      /* the frames it imported are read: what decoded them goes */
-      vulkan_video_decode_deinit();
-#endif
       vulkan_deferred_textures_flush(vk);
       vulkan_deferred_cmds_flush(vk);
       vulkan_stream_states_flush(vk);

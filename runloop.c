@@ -68,6 +68,9 @@
 #include <encodings/utf.h>
 
 #include <libretro.h>
+#ifdef HAVE_RMP4
+#include <formats/rh264.h>
+#endif
 #ifdef HAVE_VULKAN
 #include <libretro_vulkan.h>
 #endif
@@ -1810,6 +1813,61 @@ static void core_performance_counter_stop(struct retro_perf_counter *perf)
 }
 
 
+#ifdef HAVE_RMP4
+static void *runloop_video_decode_open(void)
+{
+   rh264_video *v = rh264_video_open();
+   rh264_video_set_hw_readback(v, 1);
+   return v;
+}
+
+static int runloop_video_decode_frame(rh264_video *v,
+      struct retro_video_decode_frame *frame)
+{
+   int i, stride, w, h;
+   if (!frame || rh264_video_bit_depth(v) != 8)
+      return -1;
+   memset(frame, 0, sizeof(*frame));
+   for (i = 0; i < 3; i++)
+   {
+      frame->planes[i] = rh264_video_plane(v, i, &stride, &w, &h);
+      if (!frame->planes[i] || stride <= 0 || w <= 0 || h <= 0)
+         return -1;
+      frame->strides[i] = (unsigned)stride;
+      if (!i)
+      {
+         frame->width = (unsigned)w;
+         frame->height = (unsigned)h;
+      }
+      else if ((unsigned)w != (frame->width + 1) / 2
+            || (unsigned)h != (frame->height + 1) / 2)
+         return -1;
+   }
+   frame->hardware = rh264_video_is_hw(v) != 0;
+   return 1;
+}
+
+static int runloop_video_decode(void *decoder, const uint8_t *data,
+      size_t size, struct retro_video_decode_frame *frame)
+{
+   rh264_video *v = (rh264_video*)decoder;
+   int result = rh264_video_decode(v, data, size);
+   return result == 1 ? runloop_video_decode_frame(v, frame) : result;
+}
+
+static int runloop_video_decode_drain(void *decoder,
+      struct retro_video_decode_frame *frame)
+{
+   rh264_video *v = (rh264_video*)decoder;
+   return rh264_video_drain(v) == 0 ? runloop_video_decode_frame(v, frame) : 0;
+}
+
+static void runloop_video_decode_close(void *decoder)
+{
+   rh264_video_close((rh264_video*)decoder);
+}
+#endif
+
 bool runloop_environment_cb(unsigned cmd, void *data)
 {
    unsigned p;
@@ -3108,6 +3166,23 @@ bool runloop_environment_cb(unsigned cmd, void *data)
          break;
       }
 
+      case RETRO_ENVIRONMENT_GET_VIDEO_DECODE_INTERFACE:
+#ifdef HAVE_RMP4
+         {
+            struct retro_video_decode_interface *iface =
+               (struct retro_video_decode_interface*)data;
+            if (!iface || iface->interface_version != RETRO_VIDEO_DECODE_INTERFACE_VERSION)
+               return false;
+            RARCH_LOG("[Environ] GET_VIDEO_DECODE_INTERFACE: H.264 with CPU planes.\n");
+            iface->open = runloop_video_decode_open;
+            iface->decode = runloop_video_decode;
+            iface->drain = runloop_video_decode_drain;
+            iface->close = runloop_video_decode_close;
+            return true;
+         }
+#else
+         return false;
+#endif
       case RETRO_ENVIRONMENT_GET_LOG_INTERFACE:
       {
          struct retro_log_callback *cb = (struct retro_log_callback*)data;

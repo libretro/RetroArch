@@ -98,6 +98,10 @@ typedef struct vvd_dec
    VkSemaphore out_done[VVD_OUTS];
    uint64_t out_value[VVD_OUTS];  /* the read last handed out       */
    unsigned out_next;
+   VkBuffer readback;
+   VkDeviceMemory readback_mem;
+   uint8_t *readback_map;
+   bool readback_coherent;
 
    VkSemaphore tl;                /* the order of every submission   */
    uint64_t tl_value;
@@ -352,6 +356,12 @@ static void vvd_destroy(vvd_dec_t *d)
 {
    VkDevice dev = vvd.device;
    unsigned i;
+   if (d->readback_map)
+      vkUnmapMemory(dev, d->readback_mem);
+   if (d->readback)
+      vkDestroyBuffer(dev, d->readback, NULL);
+   if (d->readback_mem)
+      vkFreeMemory(dev, d->readback_mem, NULL);
    for (i = 0; i < VVD_RING; i++)
    {
       if (d->bs_map[i])
@@ -1327,6 +1337,130 @@ static int vvd_output(void *dec, unsigned slot, video_hw_frame_t *out)
    return 0;
 }
 
+/* Read the visible NV12 window back for cores that expose YUV in RAM. */
+static int vvd_readback(void *dec, unsigned slot, uint8_t *planes[3])
+{
+   vvd_dec_t *d = (vvd_dec_t*)dec;
+   VkBufferImageCopy regions[2];
+   VkCommandBuffer cb;
+   VkImage src;
+   uint32_t layer, type;
+   unsigned k, x, y, cw = (d->visible_w + 1) / 2;
+   unsigned ch = (d->visible_h + 1) / 2;
+   VkDeviceSize ysize = (VkDeviceSize)d->visible_w * d->visible_h;
+   VkDeviceSize uv_offset = (ysize + 3) & ~(VkDeviceSize)3;
+   const uint8_t *uv;
+   if (slot >= d->slots)
+      return -1;
+   if (!d->readback_map)
+   {
+      VkBufferCreateInfo info;
+      VkMemoryRequirements req;
+      VkMemoryAllocateInfo alloc;
+      memset(&info, 0, sizeof(info));
+      info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+      info.size = uv_offset + (VkDeviceSize)cw * ch * 2;
+      info.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+      info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+      if (vkCreateBuffer(vvd.device, &info, NULL, &d->readback) != VK_SUCCESS)
+         return -1;
+      vkGetBufferMemoryRequirements(vvd.device, d->readback, &req);
+      type = vvd_memory_type(req.memoryTypeBits,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VK_MEMORY_PROPERTY_PROTECTED_BIT);
+      d->readback_coherent = type != UINT32_MAX;
+      if (type == UINT32_MAX)
+         type = vvd_memory_type(req.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT,
+               VK_MEMORY_PROPERTY_PROTECTED_BIT);
+      if (type == UINT32_MAX)
+         return -1;
+      memset(&alloc, 0, sizeof(alloc));
+      alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+      alloc.allocationSize = req.size;
+      alloc.memoryTypeIndex = type;
+      if (vkAllocateMemory(vvd.device, &alloc, NULL, &d->readback_mem) != VK_SUCCESS
+            || vkBindBufferMemory(vvd.device, d->readback, d->readback_mem, 0) != VK_SUCCESS
+            || vkMapMemory(vvd.device, d->readback_mem, 0, VK_WHOLE_SIZE, 0,
+                  (void**)&d->readback_map) != VK_SUCCESS)
+         return -1;
+   }
+   k = d->xring++ % VVD_RING;
+   if (!vvd_wait(d->tl, d->xcb_value[k], VVD_WAIT_NS))
+      return -1;
+   src = d->dpb[d->dpb_array ? 0 : slot];
+   layer = d->dpb_array ? slot : 0;
+   memset(regions, 0, sizeof(regions));
+   regions[0].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_0_BIT;
+   regions[0].imageSubresource.baseArrayLayer = layer;
+   regions[0].imageSubresource.layerCount = 1;
+   regions[0].imageOffset.x = d->crop_x;
+   regions[0].imageOffset.y = d->crop_y;
+   regions[0].imageExtent.width = d->visible_w;
+   regions[0].imageExtent.height = d->visible_h;
+   regions[0].imageExtent.depth = 1;
+   regions[1] = regions[0];
+   regions[1].bufferOffset = uv_offset;
+   regions[1].imageSubresource.aspectMask = VK_IMAGE_ASPECT_PLANE_1_BIT;
+   regions[1].imageOffset.x = d->crop_x / 2;
+   regions[1].imageOffset.y = d->crop_y / 2;
+   regions[1].imageExtent.width = cw;
+   regions[1].imageExtent.height = ch;
+   cb = d->xcb[k];
+   if (!vvd_begin(cb))
+      return -1;
+   vvd_barrier(cb, src, layer, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR,
+         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR,
+         0, VK_PIPELINE_STAGE_2_COPY_BIT_KHR, VK_ACCESS_2_TRANSFER_READ_BIT_KHR);
+   vkCmdCopyImageToBuffer(cb, src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+         d->readback, 2, regions);
+   {
+      VkBufferMemoryBarrier2KHR barrier;
+      VkDependencyInfoKHR dep;
+      memset(&barrier, 0, sizeof(barrier));
+      barrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR;
+      barrier.srcStageMask = VK_PIPELINE_STAGE_2_COPY_BIT_KHR;
+      barrier.srcAccessMask = VK_ACCESS_2_TRANSFER_WRITE_BIT_KHR;
+      barrier.dstStageMask = VK_PIPELINE_STAGE_2_HOST_BIT_KHR;
+      barrier.dstAccessMask = VK_ACCESS_2_HOST_READ_BIT_KHR;
+      barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+      barrier.buffer = d->readback;
+      barrier.size = VK_WHOLE_SIZE;
+      memset(&dep, 0, sizeof(dep));
+      dep.sType = VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR;
+      dep.bufferMemoryBarrierCount = 1;
+      dep.pBufferMemoryBarriers = &barrier;
+      vvd.cmd_barrier2(cb, &dep);
+   }
+   vvd_barrier(cb, src, layer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+         VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, VK_PIPELINE_STAGE_2_COPY_BIT_KHR,
+         0, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT_KHR, 0);
+   if (vkEndCommandBuffer(cb) != VK_SUCCESS || !vvd_submit(d, d->xq, cb))
+      return -1;
+   d->xcb_value[k] = d->tl_value;
+   if (!vvd_wait(d->tl, d->tl_value, VVD_WAIT_NS))
+      return -1;
+   if (!d->readback_coherent)
+   {
+      VkMappedMemoryRange range;
+      memset(&range, 0, sizeof(range));
+      range.sType = VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE;
+      range.memory = d->readback_mem;
+      range.size = VK_WHOLE_SIZE;
+      if (vkInvalidateMappedMemoryRanges(vvd.device, 1, &range) != VK_SUCCESS)
+         return -1;
+   }
+   memcpy(planes[0], d->readback_map, (size_t)ysize);
+   uv = d->readback_map + uv_offset;
+   for (y = 0; y < ch; y++)
+      for (x = 0; x < cw; x++)
+      {
+         planes[1][y * cw + x] = uv[(y * cw + x) * 2];
+         planes[2][y * cw + x] = uv[(y * cw + x) * 2 + 1];
+      }
+   return 0;
+}
+
 static void vvd_close(void *dec)
 {
    vvd_dec_t *d = (vvd_dec_t*)dec;
@@ -1356,8 +1490,10 @@ static void vvd_close(void *dec)
 bool vulkan_video_decode_init(const vulkan_context_t *ctx)
 {
    unsigned i;
-   if (vvd.up || !ctx || !ctx->video_lanes || !ctx->device)
+   if (!ctx || !ctx->video_lanes || !ctx->device)
       return false;
+   if (vvd.up)
+      return vvd.device == ctx->device;
    vvd.instance    = ctx->instance;
    vvd.gpu         = ctx->gpu;
    vvd.device      = ctx->device;
@@ -1415,6 +1551,7 @@ bool vulkan_video_decode_init(const vulkan_context_t *ctx)
    vvd.ops.decode = vvd_decode;
    vvd.ops.output = vvd_output;
    vvd.ops.close  = vvd_close;
+   vvd.ops.readback = vvd_readback;
    vvd.up         = true;
    rh264_set_hw_backend(&vvd.ops);
    return true;

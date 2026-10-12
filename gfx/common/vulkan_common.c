@@ -26,6 +26,9 @@
 #endif
 
 #include "vulkan_common.h"
+#ifdef HAVE_RMP4
+#include "vulkan_video_decode.h"
+#endif
 #include "vulkan_memory_type.h"
 #include "../include/vulkan/vulkan.h"
 #include "vksym.h"
@@ -1274,7 +1277,8 @@ static VkDevice vulkan_context_create_device_wrapper(
    const char **device_extensions = (const char **)malloc(
          (info.enabledExtensionCount +
                ARRAY_SIZE(vulkan_device_extensions) +
-               ARRAY_SIZE(vulkan_optional_device_extensions)) * sizeof(const char *));
+               ARRAY_SIZE(vulkan_optional_device_extensions) +
+               ARRAY_SIZE(vulkan_video_device_extensions)) * sizeof(const char *));
 
    memcpy((void*)device_extensions, info.ppEnabledExtensionNames, info.enabledExtensionCount * sizeof(const char *));
    info.ppEnabledExtensionNames = device_extensions;
@@ -1290,7 +1294,111 @@ static VkDevice vulkan_context_create_device_wrapper(
       return VK_NULL_HANDLE;
    }
 
-   /* When we get around to using fancier features we can chain in PDF2 stuff. */
+   vk->context.gpu = gpu;
+   vkGetPhysicalDeviceProperties(gpu, &vk->context.gpu_properties);
+   /* Reserve video queues without sharing the core's graphics queue. */
+   if (info.queueCreateInfoCount == 1)
+   {
+      VkPhysicalDeviceTimelineSemaphoreFeaturesKHR timeline;
+      VkPhysicalDeviceSynchronization2FeaturesKHR sync2;
+      VkPhysicalDeviceFeatures2 f2;
+      const VkBaseInStructure *chain;
+      const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR *requested_timeline = NULL;
+      const VkPhysicalDeviceSynchronization2FeaturesKHR *requested_sync2 = NULL;
+      PFN_vkGetPhysicalDeviceFeatures2 get_features;
+      vulkan_video_probe_t video;
+      VkDeviceCreateInfo vinfo = info;
+      VkDeviceQueueCreateInfo qi[3];
+      float priorities[3] = {1.0f, 1.0f, 1.0f};
+      unsigned j, nq = 1, next = info.enabledExtensionCount;
+      bool timeline_ext = false;
+      for (j = 0; j < next; j++)
+         if (!strcmp(device_extensions[j], VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME))
+            timeline_ext = true;
+      memset(&timeline, 0, sizeof(timeline));
+      timeline.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES_KHR;
+      memset(&sync2, 0, sizeof(sync2));
+      sync2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES_KHR;
+      memset(&f2, 0, sizeof(f2));
+      f2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+      f2.pNext = &timeline;
+      get_features = (PFN_vkGetPhysicalDeviceFeatures2)
+         vulkan_symbol_wrapper_instance_proc_addr()(vk->context.instance,
+               "vkGetPhysicalDeviceFeatures2");
+      if (get_features && timeline_ext)
+         get_features(gpu, &f2);
+      for (chain = (const VkBaseInStructure*)info.pNext; chain; chain = chain->pNext)
+      {
+         if (chain->sType == timeline.sType)
+            requested_timeline = (const VkPhysicalDeviceTimelineSemaphoreFeaturesKHR*)chain;
+         if (chain->sType == sync2.sType)
+            requested_sync2 = (const VkPhysicalDeviceSynchronization2FeaturesKHR*)chain;
+      }
+      if (requested_timeline)
+         timeline.timelineSemaphore = requested_timeline->timelineSemaphore;
+      vk->context.graphics_queue_index = info.pQueueCreateInfos[0].queueFamilyIndex;
+      if (timeline.timelineSemaphore)
+         vk->context.flags |= VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+      if (     (!requested_sync2 || requested_sync2->synchronization2)
+            && vulkan_video_probe(vk, &video))
+      {
+         qi[0] = info.pQueueCreateInfos[0];
+         if (video.xfer_family == qi[0].queueFamilyIndex)
+         {
+            video.xfer_first = qi[0].queueCount;
+            /* The probe reserves after queue 0; only that core layout fits. */
+            if (qi[0].queueCount != 1)
+               video.lanes = 0;
+            qi[0].queueCount += video.lanes;
+            qi[0].pQueuePriorities = priorities;
+         }
+         qi[nq] = qi[0];
+         qi[nq].queueFamilyIndex = video.decode_family;
+         qi[nq].queueCount = video.lanes;
+         qi[nq++].pQueuePriorities = priorities;
+         if (video.xfer_family != qi[0].queueFamilyIndex)
+         {
+            qi[nq] = qi[0];
+            qi[nq].queueFamilyIndex = video.xfer_family;
+            qi[nq].queueCount = video.lanes;
+            qi[nq++].pQueuePriorities = priorities;
+         }
+         for (j = 0; j < ARRAY_SIZE(vulkan_video_device_extensions); j++)
+         {
+            unsigned k;
+            for (k = 0; k < next; k++)
+               if (!strcmp(device_extensions[k], vulkan_video_device_extensions[j]))
+                  break;
+            if (k == next)
+               device_extensions[next++] = vulkan_video_device_extensions[j];
+         }
+         if (!requested_timeline)
+         {
+            timeline.pNext = (void*)vinfo.pNext;
+            vinfo.pNext = &timeline;
+         }
+         if (!requested_sync2)
+         {
+            sync2.synchronization2 = VK_TRUE;
+            sync2.pNext = (void*)vinfo.pNext;
+            vinfo.pNext = &sync2;
+         }
+         vinfo.pQueueCreateInfos = qi;
+         vinfo.queueCreateInfoCount = nq;
+         vinfo.enabledExtensionCount = next;
+         if (video.lanes && vulkan_context_create_device(vk, gpu, &vinfo, &device) == VK_SUCCESS)
+         {
+            vk->context.video_decode_family = video.decode_family;
+            vk->context.video_xfer_family = video.xfer_family;
+            vk->context.video_xfer_first = video.xfer_first;
+            vk->context.video_lanes = video.lanes;
+            RARCH_LOG("[Vulkan] Core device: %u hardware video decode lane(s).\n", video.lanes);
+            free((void*)device_extensions);
+            return device;
+         }
+      }
+      vk->context.flags &= ~VK_CTX_FLAG_TIMELINE_SEMAPHORE;
+   }
    if ((res = vulkan_context_create_device(vk, gpu, &info, &device)) != VK_SUCCESS)
    {
       RARCH_ERR("[Vulkan] Failed to create device (%d).\n", res);
@@ -4641,6 +4749,9 @@ void vulkan_context_destroy(gfx_ctx_vulkan_data_t *vk,
 #endif
       if (vk->context.device)
       {
+#ifdef HAVE_RMP4
+         vulkan_video_decode_deinit();
+#endif
          /* Call the frontend's destroy_device callback BEFORE
           * vkDestroyDevice, so the frontend can clean up its
           * per-device resources while the device handle is still

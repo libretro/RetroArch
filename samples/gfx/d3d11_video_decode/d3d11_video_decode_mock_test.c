@@ -34,6 +34,7 @@
 #include <stddef.h>
 
 #include "../../../gfx/common/d3d11_video_decode.c"
+#include <mmsystem.h>
 
 #include <formats/rmp4.h>
 #include "frontend_stubs.h"
@@ -803,6 +804,7 @@ int main(void)
    mock_t *m;
    int live0;
 
+   timeBeginPeriod(1);
    setvbuf(stdout, NULL, _IONBF, 0);
    mocks_init();
    /* the backend finds D3D11CreateDevice in d3d11.dll, so it is loaded,
@@ -839,5 +841,6 @@ int main(void)
    subs_free();
    printf("d3d11_video_decode_mock_test: %s (%d failure%s)\n",
          fails ? "FAIL" : "PASS", fails, fails == 1 ? "" : "s");
+   timeEndPeriod(1);
    return fails ? 1 : 0;
 }

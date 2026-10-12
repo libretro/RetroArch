@@ -5305,6 +5305,7 @@ struct rh264_video
    /* The hardware path's state, while the pictures decode on a
     * backend (rh264_video_set_hw); NULL otherwise. */
    struct rh264_hw *hw;
+   int hw_readback;
    /* Slice-decode workspace for rh264_video_decode_inter.  As locals
     * these were a 7.5 KiB frame -- the slice header, the B-list
     * context with its implicit-weight table, and the reference-list
@@ -10911,6 +10912,9 @@ typedef struct rh264_hw
    rh264_hw_ref_t refs[RH264_MAX_REFS];
    video_hw_frame_t shown;
    int have_shown;
+   uint8_t *cpu;
+   int cpu_w, cpu_h;
+   int have_cpu;
    int fresh;                  /* shown during the present call     */
 } rh264_hw;
 
@@ -11106,6 +11110,33 @@ static int rh264_hw_show(rh264_video *v, int i)
    rh264_hw *hw     = v->hw;
    hw->out_used[i]  = 0;
    hw->out_len--;
+   if (v->hw_readback)
+   {
+      int w = hw->sps.width, h = hw->sps.height;
+      size_t y = (size_t)w * h, c = (size_t)((w + 1) / 2) * ((h + 1) / 2);
+      uint8_t *planes[3];
+      hw->have_cpu = 0;
+      if (hw->cpu_w != w || hw->cpu_h != h)
+      {
+         free(hw->cpu);
+         hw->cpu = (uint8_t*)malloc(y + 2 * c);
+         hw->cpu_w = w;
+         hw->cpu_h = h;
+      }
+      if (!hw->cpu)
+         return -1;
+      planes[0] = hw->cpu;
+      planes[1] = hw->cpu + y;
+      planes[2] = hw->cpu + y + c;
+      if (hw->ops->readback(hw->dec, (unsigned)hw->out_slot[i], planes) != 0)
+      {
+         hw->broken = 1;
+         return -1;
+      }
+      hw->have_cpu = 1;
+      hw->fresh = 1;
+      return 0;
+   }
    /* two pictures in one call: the first is passed over */
    if (hw->fresh)
       video_hw_frame_abandon(&hw->shown);
@@ -11376,6 +11407,7 @@ static void rh264_hw_free(rh264_video *v)
       return;
    if (hw->dec)
       hw->ops->close(hw->dec);
+   free(hw->cpu);
    free(hw->bs);
    free(hw);
    v->hw = NULL;
@@ -11395,7 +11427,8 @@ int rh264_video_set_hw(rh264_video *v, int enable)
       return 1;
    ops = RH264_HW_BACKEND_GET();
    /* before the first picture, of a stream the backend could take */
-   if (     !ops || !v->have_sps || !v->have_pps || v->alloc_w
+   if (     !ops || (v->hw_readback && !ops->readback)
+         || !v->have_sps || !v->have_pps || v->alloc_w
          || v->cur->pic_open || !rh264_hw_stream_ok(&v->sps))
       return 0;
    if (!(hw = (rh264_hw*)calloc(1, sizeof(*hw))))
@@ -11443,6 +11476,12 @@ int rh264_video_set_hw(rh264_video *v, int enable)
    return 1;
 }
 
+void rh264_video_set_hw_readback(rh264_video *v, int enable)
+{
+   if (v && !v->hw && !v->alloc_w)
+      v->hw_readback = enable;
+}
+
 int rh264_video_is_hw(const rh264_video *v)
 {
    return (v && v->hw) ? 1 : 0;
@@ -11460,6 +11499,8 @@ static int rh264_video_handle_slice_nal(rh264_video *v, const uint8_t *nal,
       size_t nl, int *got_pic)
 {
    int type = nal[0] & 0x1f;
+   if (v->hw_readback && !v->hw)
+      rh264_video_set_hw(v, 1);
    if (v->hw)
    {
       if (v->hw->broken)
@@ -11682,7 +11723,19 @@ const uint8_t *rh264_video_plane(const rh264_video *v, int plane,
    const uint8_t *p;
    const rh264_frame *f;
    int st, w, h;
-   if (!v || v->hw) return NULL;
+   if (!v || plane < 0 || plane > 2) return NULL;
+   if (v->hw)
+   {
+      const rh264_hw *hw = v->hw;
+      size_t y = (size_t)hw->cpu_w * hw->cpu_h;
+      size_t c = (size_t)((hw->cpu_w + 1) / 2) * ((hw->cpu_h + 1) / 2);
+      if (!hw->have_cpu)
+         return NULL;
+      if (stride) *stride = plane ? (hw->cpu_w + 1) / 2 : hw->cpu_w;
+      if (width) *width = plane ? (hw->cpu_w + 1) / 2 : hw->cpu_w;
+      if (height) *height = plane ? (hw->cpu_h + 1) / 2 : hw->cpu_h;
+      return hw->cpu + (plane == 0 ? 0 : plane == 1 ? y : y + c);
+   }
    f = (v->out_show >= 0) ? &v->out[v->out_show] : &v->cur->f;
    /* Cropping is display-only (reference reads use the full coded
     * picture), so it is applied here and nowhere else: the returned

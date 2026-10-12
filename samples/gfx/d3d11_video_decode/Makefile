@@ -30,6 +30,7 @@ BACKEND  := $(RA)/gfx/common/d3d11_video_decode.c \
 TARGETS := dxva_h264_test$(EXE)
 ifeq ($(EXE),.exe)
 TARGETS += d3d11_video_decode_mock_test$(EXE) d3d11_video_decode_test$(EXE)
+LDFLAGS += -lwinmm
 WINFLAGS := -isystem $(RA)/gfx/include/dxsdk -Wno-cast-function-type
 endif
 

@@ -228,6 +228,19 @@ static int fake_output(void *dec, unsigned slot, video_hw_frame_t *out)
    return 0;
 }
 
+static int fake_readback(void *dec, unsigned slot, uint8_t *planes[3])
+{
+   video_hw_frame_t out;
+   size_t y = (size_t)fake.width * fake.height;
+   size_t c = (size_t)((fake.width + 1) / 2) * ((fake.height + 1) / 2);
+   if (fake_output(dec, slot, &out) != 0)
+      return -1;
+   memset(planes[0], 19, y);
+   memset(planes[1], 71, c);
+   memset(planes[2], 137, c);
+   return 0;
+}
+
 static void fake_close(void *dec)
 {
    (void)dec;
@@ -235,7 +248,7 @@ static void fake_close(void *dec)
 }
 
 static rh264_hw_ops_t fake_ops = {
-   NULL, fake_open, fake_decode, fake_output, fake_close
+   NULL, fake_open, fake_decode, fake_output, fake_close, fake_readback
 };
 
 /* ---- the streams ---- */
@@ -286,7 +299,9 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
       rh264_video_set_extradata(v, rmp4_get_track(m, trk)->codec_private,
             rmp4_get_track(m, trk)->codec_private_size);
    memset(&fake, 0, sizeof(fake));
-   if (hw)
+   if (hw == 2)
+      rh264_video_set_hw_readback(v, 1);
+   else if (hw)
       res->hw = rh264_video_set_hw(v, 1);
 
    for (;;)
@@ -315,14 +330,38 @@ static int decode(const char *mp4, int hw, int skip_lo, int skip_hi,
    }
    while (!res->failed && rh264_video_drain(v) == 0)
       res->shown++;
+   if (hw == 2)
+      res->hw = rh264_video_is_hw(v);
    if (res->hw)
    {
       video_hw_frame_t fr;
       /* the frame of the last picture shown is still to be had */
-      if (res->shown && rh264_video_hw_frame(v, &fr) != 0)
+      if (hw != 2 && res->shown && rh264_video_hw_frame(v, &fr) != 0)
          res->failed = 1;
-      if (res->shown && rh264_video_plane(v, 0, NULL, NULL, NULL))
+      if (hw != 2 && res->shown && rh264_video_plane(v, 0, NULL, NULL, NULL))
          res->failed = 1;
+      if (hw == 2 && res->shown)
+      {
+         int plane, stride, w, h;
+         static const uint8_t expected[3] = {19, 71, 137};
+         for (plane = 0; plane < 3; plane++)
+         {
+            const uint8_t *pixels = rh264_video_plane(v, plane, &stride, &w, &h);
+            size_t j, count = (size_t)(plane ? (fake.width + 1) / 2 : fake.width)
+               * (plane ? (fake.height + 1) / 2 : fake.height);
+            if (!pixels || w != (plane ? (fake.width + 1) / 2 : fake.width)
+                  || h != (plane ? (fake.height + 1) / 2 : fake.height) || stride != w)
+            {
+               res->failed = 1;
+               break;
+            }
+            for (j = 0; j < count; j++)
+               if (pixels[j] != expected[plane])
+                  res->failed = 1;
+         }
+         if (rh264_video_hw_frame(v, &fr) == 0)
+            res->failed = 1;
+      }
       memcpy(res->order, fake.shown, sizeof(res->order));
    }
    rh264_video_close(v);
@@ -443,6 +482,14 @@ int main(void)
    decode(mp4, 1, -1, -1, 0, &r);
    check("no parameter sets yet: stays in software", !r.hw);
 
+   decode(mp4, 2, -1, -1, 1, &r);
+   check("readback: lazy hardware activation, I420 planes and drain",
+         r.hw && !r.failed && r.shown == r.n && !fake.errors && fake.closed);
+   fake_ops.readback = NULL;
+   decode(mp4, 2, -1, -1, 1, &r);
+   check("readback: backend without readback stays in software",
+         !r.hw && !r.failed && r.shown == r.n);
+   fake_ops.readback = fake_readback;
    rh264_set_hw_backend(NULL);
    decode(mp4, 1, -1, -1, 1, &r);
    check("no backend: stays in software", !r.hw && !r.failed && r.shown == r.n);

@@ -3187,6 +3187,36 @@ struct retro_vr_frame_state {
  */
 #define RETRO_ENVIRONMENT_GET_VR_HEAD_POSE (98 | RETRO_ENVIRONMENT_EXPERIMENTAL)
 
+/* Frontend H.264 decoding to CPU-readable 8-bit YUV 4:2:0 planes.
+ * Version must be initialized to 1 before querying. Calls for each decoder
+ * are serialized by the core; close all decoders before context teardown.
+ * Unsupported frontends return false. Input is one Annex-B access unit.
+ * Planes remain valid until decode, drain or close. */
+#define RETRO_ENVIRONMENT_GET_VIDEO_DECODE_INTERFACE (99 | RETRO_ENVIRONMENT_EXPERIMENTAL)
+#define RETRO_VIDEO_DECODE_INTERFACE_VERSION 1
+
+struct retro_video_decode_frame
+{
+   const uint8_t *planes[3];
+   unsigned strides[3];
+   unsigned width, height;
+   bool hardware;
+};
+
+struct retro_video_decode_interface
+{
+   unsigned interface_version;
+   void *(*open)(void);
+   /* 1: frame ready; 0: consumed, delayed output; -1: failure. */
+   int (*decode)(void *decoder, const uint8_t *data, size_t size,
+         struct retro_video_decode_frame *frame);
+   /* 1: frame ready; 0: no more frames; -1: failure. */
+   int (*drain)(void *decoder, struct retro_video_decode_frame *frame);
+   void (*close)(void *decoder);
+};
+
+
+
 #define RETRO_VR_HEAD_POSE_POSITION_VALID    (1u << 0)
 #define RETRO_VR_HEAD_POSE_ORIENTATION_VALID (1u << 1)
 #define RETRO_VR_HEAD_POSE_VELOCITY_VALID    (1u << 2)
