@@ -1,4 +1,31 @@
 #if defined(_WIN32) && !defined(__WINRT__)
+#if defined(_MSC_VER) && _MSC_VER < 1900
+/* No DXGI 1.5 / D3D12 headers before the Windows 10 SDK:
+ * presentation falls back to the native path. */
+#include <stddef.h>
+#include "win_dxgi_present.h"
+
+ra_dxgi_bridge_t *ra_dxgi_bridge_create(HWND window, unsigned width,
+      unsigned height, unsigned format, const unsigned char luid[8])
+{ return NULL; }
+int ra_dxgi_bridge_resize(ra_dxgi_bridge_t *b,
+      unsigned width, unsigned height, unsigned format) { return 0; }
+void ra_dxgi_bridge_destroy(ra_dxgi_bridge_t *b) { }
+HANDLE ra_dxgi_bridge_resource(ra_dxgi_bridge_t *b, unsigned index)
+{ return NULL; }
+HANDLE ra_dxgi_bridge_ready_fence(ra_dxgi_bridge_t *b) { return NULL; }
+HANDLE ra_dxgi_bridge_done_fence(ra_dxgi_bridge_t *b) { return NULL; }
+int ra_dxgi_bridge_presentable(ra_dxgi_bridge_t *b) { return 0; }
+int ra_dxgi_bridge_failed(ra_dxgi_bridge_t *b) { return 1; }
+void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak) { }
+unsigned ra_dxgi_bridge_index(ra_dxgi_bridge_t *b, unsigned interval)
+{ return 2; }
+int64_t ra_dxgi_bridge_present_time(ra_dxgi_bridge_t *b) { return 0; }
+uint64_t ra_dxgi_bridge_last_use(ra_dxgi_bridge_t *b, unsigned index)
+{ return 0; }
+int ra_dxgi_bridge_present(ra_dxgi_bridge_t *b, uint64_t ready,
+      unsigned interval) { return 0; }
+#else
 #define CINTERFACE
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
@@ -408,4 +435,5 @@ void ra_dxgi_bridge_hdr_metadata(ra_dxgi_bridge_t *b, float peak)
    DROP(chain);
 }
 
+#endif
 #endif

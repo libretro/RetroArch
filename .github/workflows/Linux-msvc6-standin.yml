@@ -50,6 +50,14 @@ jobs:
           # catch.
           tools/msvc6_standin_check.sh
 
+      - name: The DXGI bridge as Visual C++ 2005 and 2010 build it
+        shell: bash
+        run: |
+          set -eu
+          # Their SDKs have no dxgi1_5.h or d3d12.h; the griffin builds
+          # for them still compile and link the bridge.
+          tools/dxgi_bridge_old_sdk_check.sh
+
       - name: Run the waveout audio driver on a wave output device (Wine)
         working-directory: samples/audio/waveout
         shell: bash
