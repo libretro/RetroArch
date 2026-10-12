@@ -1359,6 +1359,10 @@ static void frontend_win32_env_get(int *argc, char *argv[],
 #endif
 }
 
+/* Not in older SDKs */
+#define RARCH_QUICK_EDIT_MODE 0x0040
+#define RARCH_EXTENDED_FLAGS  0x0080
+
 static void frontend_win32_attach_console(void)
 {
 #ifdef _WIN32
@@ -1389,8 +1393,21 @@ static void frontend_win32_attach_console(void)
 
    if (need_stdout || need_stderr)
    {
-      if (!AttachConsole(ATTACH_PARENT_PROCESS))
-         AllocConsole();
+      if (!AttachConsole(ATTACH_PARENT_PROCESS) && AllocConsole())
+      {
+         /* A selection in the window would block every log write */
+         DWORD mode;
+         HANDLE in = CreateFileA("CONIN$", GENERIC_READ | GENERIC_WRITE,
+               FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_EXISTING,
+               0, NULL);
+         if (in != INVALID_HANDLE_VALUE)
+         {
+            if (GetConsoleMode(in, &mode))
+               SetConsoleMode(in, (mode & ~RARCH_QUICK_EDIT_MODE)
+                     | RARCH_EXTENDED_FLAGS);
+            CloseHandle(in);
+         }
+      }
 
       SetConsoleTitle("Log Console");
 
